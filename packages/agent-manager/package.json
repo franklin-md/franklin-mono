@@ -1,0 +1,28 @@
+{
+	"name": "@franklin/agent-manager",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@franklin/managed-agent": "*"
+	}
+}

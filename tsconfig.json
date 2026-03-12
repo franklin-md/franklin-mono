@@ -1,0 +1,7 @@
+{
+	"files": [],
+	"references": [
+		{ "path": "./packages/managed-agent" },
+		{ "path": "./packages/agent-manager" }
+	]
+}
