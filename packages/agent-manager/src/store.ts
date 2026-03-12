@@ -1,9 +1,6 @@
-import type {
-	AgentId,
-	AgentMetadata,
-	AgentStore,
-	HistoryEntry,
-} from './types.js';
+import type { ManagedAgentEvent } from '@franklin/managed-agent';
+
+import type { AgentId, AgentMetadata, AgentStore } from './types.js';
 
 /**
  * In-memory implementation of AgentStore.
@@ -11,7 +8,7 @@ import type {
  */
 export class InMemoryAgentStore implements AgentStore {
 	private metadata = new Map<AgentId, AgentMetadata>();
-	private history = new Map<AgentId, HistoryEntry[]>();
+	private events = new Map<AgentId, ManagedAgentEvent[]>();
 
 	async saveMetadata(metadata: AgentMetadata): Promise<void> {
 		this.metadata.set(metadata.agentId, metadata);
@@ -27,19 +24,19 @@ export class InMemoryAgentStore implements AgentStore {
 
 	async remove(agentId: AgentId): Promise<void> {
 		this.metadata.delete(agentId);
-		this.history.delete(agentId);
+		this.events.delete(agentId);
 	}
 
-	async appendEntry(agentId: AgentId, entry: HistoryEntry): Promise<void> {
-		let entries = this.history.get(agentId);
+	async appendEvent(agentId: AgentId, event: ManagedAgentEvent): Promise<void> {
+		let entries = this.events.get(agentId);
 		if (!entries) {
 			entries = [];
-			this.history.set(agentId, entries);
+			this.events.set(agentId, entries);
 		}
-		entries.push(entry);
+		entries.push(event);
 	}
 
-	async loadHistory(agentId: AgentId): Promise<HistoryEntry[]> {
-		return [...(this.history.get(agentId) ?? [])];
+	async loadEvents(agentId: AgentId): Promise<ManagedAgentEvent[]> {
+		return [...(this.events.get(agentId) ?? [])];
 	}
 }

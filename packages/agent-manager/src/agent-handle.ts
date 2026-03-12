@@ -5,14 +5,12 @@ import type {
 	ManagedAgentEvent,
 } from '@franklin/managed-agent';
 
-import { ItemCompactor } from './item-compactor.js';
 import type {
 	AgentEventHandler,
 	AgentId,
 	AgentMetadata,
 	AgentStatus,
 	AgentStore,
-	HistoryEntry,
 	Unsubscribe,
 } from './types.js';
 
@@ -22,7 +20,7 @@ import type {
 
 /**
  * A handle to a single managed agent instance. Provides dispatch, event
- * subscription, history access, and disposal.
+ * subscription, event log access, and disposal.
  *
  * The app interacts with agents exclusively through handles obtained from
  * AgentManager.create() or AgentManager.resume().
@@ -33,7 +31,6 @@ export class AgentHandle {
 	private _metadata: AgentMetadata;
 	private readonly adapter: ManagedAgentAdapter;
 	private readonly store: AgentStore;
-	private readonly compactor = new ItemCompactor();
 	private readonly listeners = new Set<AgentEventHandler>();
 	private readonly onRemoveFromManager: (agentId: AgentId) => void;
 
@@ -77,15 +74,6 @@ export class AgentHandle {
 			};
 		}
 
-		const now = Date.now();
-
-		// Record the command in history
-		void this.store.appendEntry(this.agentId, {
-			kind: 'command',
-			ts: now,
-			command,
-		});
-
 		return this.adapter.dispatch(command);
 	}
 
@@ -105,11 +93,11 @@ export class AgentHandle {
 	}
 
 	// -----------------------------------------------------------------------
-	// History
+	// Events
 	// -----------------------------------------------------------------------
 
-	async history(): Promise<HistoryEntry[]> {
-		return this.store.loadHistory(this.agentId);
+	async events(): Promise<ManagedAgentEvent[]> {
+		return this.store.loadEvents(this.agentId);
 	}
 
 	// -----------------------------------------------------------------------
@@ -120,19 +108,11 @@ export class AgentHandle {
 		if (this.status === 'disposed') return;
 
 		this.updateStatus('disposed');
-
-		const now = Date.now();
-		void this.store.appendEntry(this.agentId, {
-			kind: 'status',
-			ts: now,
-			status: 'disposed',
-		});
-		void this.persistMetadata(now);
+		void this.persistMetadata(Date.now());
 
 		await this.adapter.dispose();
 
 		this.listeners.clear();
-		this.compactor.reset();
 		this.onRemoveFromManager(this.agentId);
 	}
 
@@ -150,19 +130,10 @@ export class AgentHandle {
 		// 2. Update internal status based on event type
 		this.updateStatusFromEvent(event);
 
-		// 3. Pass through compactor → 0 or more HistoryEntry values
+		// 3. Append raw event to store
 		const now = Date.now();
-		const entries = this.compactor.process(event, now);
-
-		// 4. Fire-and-forget store operations
-		for (const entry of entries) {
-			void this.store.appendEntry(this.agentId, entry);
-		}
-
-		// 5. Persist updated metadata
-		if (entries.length > 0) {
-			void this.persistMetadata(now);
-		}
+		void this.store.appendEvent(this.agentId, event);
+		void this.persistMetadata(now);
 	}
 
 	// -----------------------------------------------------------------------

@@ -1,7 +1,5 @@
 import type {
 	AdapterOptions,
-	ItemCompleted,
-	ItemKind,
 	ManagedAgentAdapter,
 	ManagedAgentCommand,
 	ManagedAgentCommandResult,
@@ -29,64 +27,7 @@ export type AgentStatus =
 	| 'disposed'; // handle.dispose() called
 
 // ---------------------------------------------------------------------------
-// History entries (compacted, discriminated on `kind`)
-// ---------------------------------------------------------------------------
-
-export type HistoryEntry =
-	| CommandEntry
-	| ItemEntry
-	| SessionEntry
-	| TurnEntry
-	| PermissionEntry
-	| ErrorEntry
-	| StatusEntry;
-
-export type CommandEntry = {
-	kind: 'command';
-	ts: number;
-	command: ManagedAgentCommand;
-};
-
-export type ItemEntry = {
-	kind: 'item';
-	ts: number;
-	itemKind: ItemKind;
-	item: ItemCompleted;
-};
-
-export type SessionEntry = {
-	kind: 'session';
-	ts: number;
-	event: 'started' | 'resumed' | 'forked';
-};
-
-export type TurnEntry = {
-	kind: 'turn';
-	ts: number;
-	event: 'started' | 'completed';
-};
-
-export type PermissionEntry = {
-	kind: 'permission';
-	ts: number;
-	event: 'requested' | 'resolved';
-	payload: PermissionRequest | PermissionResolution;
-};
-
-export type ErrorEntry = {
-	kind: 'error';
-	ts: number;
-	error: ManagedAgentError;
-};
-
-export type StatusEntry = {
-	kind: 'status';
-	ts: number;
-	status: AgentStatus;
-};
-
-// ---------------------------------------------------------------------------
-// Agent metadata (persisted alongside history)
+// Agent metadata (persisted alongside events)
 // ---------------------------------------------------------------------------
 
 export interface AgentMetadata {
@@ -126,7 +67,7 @@ export type AgentEventHandler = (event: ManagedAgentEvent) => void;
 export type Unsubscribe = () => void;
 
 // ---------------------------------------------------------------------------
-// Store interface (re-exported from store.ts, declared here for use in types)
+// Store interface — raw ManagedAgentEvent storage, no compaction
 // ---------------------------------------------------------------------------
 
 export interface AgentStore {
@@ -134,16 +75,14 @@ export interface AgentStore {
 	loadMetadata(agentId: AgentId): Promise<AgentMetadata | undefined>;
 	listMetadata(): Promise<AgentMetadata[]>;
 	remove(agentId: AgentId): Promise<void>;
-	appendEntry(agentId: AgentId, entry: HistoryEntry): Promise<void>;
-	loadHistory(agentId: AgentId): Promise<HistoryEntry[]>;
+	appendEvent(agentId: AgentId, event: ManagedAgentEvent): Promise<void>;
+	loadEvents(agentId: AgentId): Promise<ManagedAgentEvent[]>;
 }
 
 // Re-export upstream types used in our public API so consumers don't need
 // to import from @franklin/managed-agent directly.
 export type {
 	AdapterOptions,
-	ItemCompleted,
-	ItemKind,
 	ManagedAgentAdapter,
 	ManagedAgentCommand,
 	ManagedAgentCommandResult,

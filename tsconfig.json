@@ -2,6 +2,7 @@
 	"files": [],
 	"references": [
 		{ "path": "./packages/managed-agent" },
-		{ "path": "./packages/agent-manager" }
+		{ "path": "./packages/agent-manager" },
+		{ "path": "./apps/tui" }
 	]
 }

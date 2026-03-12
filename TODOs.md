@@ -1,6 +1,10 @@
 # TODOs — Deferred Work
 
-## Codex Adapter
+## `managed-agent`
+
+- [ ] MockedAgent for quick testing of `agent-manager` + (way to get quick agent-manager mock)
+
+### Codex Adapter
 
 - [ ] Extend item kinds beyond `user_message` / `assistant_message` (e.g. tool calls, tool results)
 - [ ] Fill in `SessionSpec` / `SessionRef` with real fields
@@ -11,11 +15,6 @@
 - [ ] Configurable transport timeouts (shutdown, request deadlines)
 - [ ] Transport reconnection / restart on crash
 
-## Other Adapters
+### Other Adapters
 
 - [ ] Claude adapter (`packages/adapter-claude` or `src/adapter/claude/`)
-
-## Infrastructure
-
-- [ ] Managed-agent core: controller, adapter registry, command dispatch, state management
-- [ ] Ink TUI app

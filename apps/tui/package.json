@@ -1,0 +1,30 @@
+{
+	"name": "@franklin/tui",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"bin": {
+		"franklin-tui": "./dist/index.js"
+	},
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"test": "vitest run --passWithNoTests",
+		"dev": "tsx src/index.tsx --mock"
+	},
+	"dependencies": {
+		"@franklin/agent-manager": "*",
+		"@franklin/managed-agent": "*",
+		"ink": "^5.1.0",
+		"react": "^18.3.1"
+	},
+	"devDependencies": {
+		"@types/react": "^18.3.0",
+		"ink-testing-library": "^4.0.0",
+		"tsx": "^4.19.0"
+	}
+}

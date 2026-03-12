@@ -79,13 +79,12 @@ describe('AgentHandle', () => {
 			expect(adapter.dispatch).toHaveBeenCalledWith(cmd);
 		});
 
-		it('records command in store history', async () => {
+		it('does not record commands in events', async () => {
 			const { handle, store } = createHandle();
 			await handle.dispatch({ type: 'session.start', spec: {} });
 
-			const history = await store.loadHistory('test-agent');
-			expect(history).toHaveLength(1);
-			expect(history[0]!.kind).toBe('command');
+			const events = await store.loadEvents('test-agent');
+			expect(events).toHaveLength(0);
 		});
 
 		it('returns error result when disposed', async () => {
@@ -201,11 +200,11 @@ describe('AgentHandle', () => {
 	});
 
 	// -----------------------------------------------------------------------
-	// History via compactor
+	// Events (raw event storage)
 	// -----------------------------------------------------------------------
 
-	describe('history', () => {
-		it('persists compacted entries via store', async () => {
+	describe('events', () => {
+		it('stores all raw events including deltas', async () => {
 			const { handle } = createHandle();
 
 			handle._handleEvent({ type: 'agent.ready' });
@@ -228,15 +227,36 @@ describe('AgentHandle', () => {
 			// Wait for fire-and-forget store operations
 			await new Promise((r) => setTimeout(r, 10));
 
-			const history = await handle.history();
-			const kinds = history.map((e) => e.kind);
+			const events = await handle.events();
+			const types = events.map((e) => e.type);
 
-			// Deltas are not in history (compacted away)
-			expect(kinds).toContain('status'); // agent.ready
-			expect(kinds).toContain('session'); // session.started
-			expect(kinds).toContain('turn'); // turn.started + turn.completed
-			expect(kinds).toContain('item'); // item.completed
-			expect(kinds).not.toContain('delta');
+			expect(types).toEqual([
+				'agent.ready',
+				'session.started',
+				'turn.started',
+				'item.started',
+				'item.delta',
+				'item.completed',
+				'turn.completed',
+			]);
+		});
+
+		it('preserves event payloads', async () => {
+			const { handle } = createHandle();
+
+			handle._handleEvent({
+				type: 'permission.requested',
+				payload: { kind: 'generic', message: 'approve?' },
+			});
+
+			await new Promise((r) => setTimeout(r, 10));
+
+			const events = await handle.events();
+			expect(events).toHaveLength(1);
+			expect(events[0]).toEqual({
+				type: 'permission.requested',
+				payload: { kind: 'generic', message: 'approve?' },
+			});
 		});
 	});
 
@@ -276,15 +296,15 @@ describe('AgentHandle', () => {
 			expect(events).toHaveLength(0);
 		});
 
-		it('persists disposed status entry to store', async () => {
+		it('does not store events in event log on dispose', async () => {
 			const { handle, store } = createHandle();
 			await handle.dispose();
 
 			await new Promise((r) => setTimeout(r, 10));
 
-			const history = await store.loadHistory('test-agent');
-			const statusEntries = history.filter((e) => e.kind === 'status');
-			expect(statusEntries.some((e) => e.status === 'disposed')).toBe(true);
+			const events = await store.loadEvents('test-agent');
+			// Dispose does not write events to the event log
+			expect(events).toHaveLength(0);
 		});
 
 		it('is idempotent', async () => {
