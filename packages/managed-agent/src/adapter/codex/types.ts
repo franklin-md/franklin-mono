@@ -8,7 +8,8 @@
 export type CodexUserMessage = {
 	type: 'userMessage';
 	id: string;
-	text: string;
+	text?: string;
+	content?: CodexUserInput[];
 };
 
 export type CodexAgentMessage = {
@@ -50,7 +51,12 @@ export type AgentMessageDeltaParams = {
 };
 
 export type ErrorParams = {
-	error: { code: string; message: string };
+	error: {
+		code?: string;
+		message: string;
+		codexErrorInfo?: unknown;
+		additionalDetails?: string | null;
+	};
 };
 
 export type ThreadClosedParams = {
@@ -88,19 +94,24 @@ export type InitializeParams = {
 	clientInfo: { name: string; version: string };
 };
 
-export type ThreadStartParams = Record<string, never>;
+export type ThreadStartParams = {
+	experimentalRawEvents: boolean;
+	persistExtendedHistory: boolean;
+};
 
 export type ThreadResumeParams = {
 	threadId: string;
+	persistExtendedHistory: boolean;
 };
 
 export type ThreadForkParams = {
 	threadId: string;
+	persistExtendedHistory: boolean;
 };
 
 export type TurnStartParams = {
 	threadId: string;
-	userInput: CodexUserInput[];
+	input: CodexUserInput[];
 };
 
 export type TurnInterruptParams = {

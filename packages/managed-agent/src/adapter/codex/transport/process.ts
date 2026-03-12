@@ -1,9 +1,3 @@
-import { spawn, type ChildProcess } from 'node:child_process';
-import {
-	createInterface,
-	type Interface as ReadlineInterface,
-} from 'node:readline';
-
 import type { AdapterEventHandler } from '../../types.js';
 import type { InputItem } from '../../../messages/input.js';
 import {
@@ -20,191 +14,23 @@ import {
 } from '../event-mapper.js';
 import type { ThreadStartedParams, TurnStartedParams } from '../types.js';
 import type { CodexProcessTransportOptions, CodexTransport } from './types.js';
-
-// ---------------------------------------------------------------------------
-// Low-level JSONL/JSON-RPC layer over a child process.
-// ---------------------------------------------------------------------------
-
-type PendingRequest = {
-	resolve: (result: unknown) => void;
-	reject: (error: Error) => void;
-};
-
-class JsonRpcProcess {
-	private process: ChildProcess | null = null;
-	private rl: ReadlineInterface | null = null;
-	private nextId = 1;
-	private pending = new Map<number | string, PendingRequest>();
-	private disposed = false;
-
-	private readonly command: string;
-	private readonly args: string[];
-
-	onNotification?: (method: string, params: unknown) => void;
-	onServerRequest?: (
-		method: string,
-		id: number | string,
-		params: unknown,
-	) => void;
-	onError?: (err: Error) => void;
-	onExit?: (code: number | null, signal: string | null) => void;
-
-	constructor(options?: CodexProcessTransportOptions) {
-		this.command = options?.command ?? 'codex';
-		this.args = options?.args ?? ['app-server'];
-	}
-
-	start(): void {
-		if (this.process) {
-			throw new Error('JsonRpcProcess already started');
-		}
-
-		this.process = spawn(this.command, this.args, {
-			stdio: ['pipe', 'pipe', 'pipe'],
-		});
-
-		this.process.on('error', (err) => {
-			this.onError?.(err);
-		});
-
-		this.process.on('exit', (code, signal) => {
-			this.rejectAllPending(
-				new Error(
-					`Process exited (code=${code ?? 'null'}, signal=${signal ?? 'none'})`,
-				),
-			);
-			this.onExit?.(code, signal);
-		});
-
-		const stdout = this.process.stdout;
-		if (!stdout) {
-			throw new Error('Codex transport stdout is unavailable');
-		}
-		this.rl = createInterface({ input: stdout });
-		this.rl.on('line', (line) => this.handleLine(line));
-	}
-
-	sendRequest(method: string, params: unknown): Promise<unknown> {
-		if (!this.process?.stdin?.writable) {
-			return Promise.reject(
-				new Error('Transport not started or stdin not writable'),
-			);
-		}
-
-		const id = this.nextId++;
-		const message = JSON.stringify({ jsonrpc: '2.0', method, id, params });
-		const stdin = this.process.stdin;
-
-		return new Promise((resolve, reject) => {
-			this.pending.set(id, { resolve, reject });
-			stdin.write(message + '\n');
-		});
-	}
-
-	sendResponse(id: number | string, result: unknown): void {
-		if (!this.process?.stdin?.writable) {
-			return;
-		}
-		const message = JSON.stringify({ jsonrpc: '2.0', id, result });
-		this.process.stdin.write(message + '\n');
-	}
-
-	async shutdown(): Promise<void> {
-		if (this.disposed) return;
-		this.disposed = true;
-
-		this.rl?.close();
-
-		if (!this.process) return;
-
-		const proc = this.process;
-		this.process = null;
-
-		if (proc.exitCode !== null || proc.signalCode !== null) {
-			this.rejectAllPending(new Error('Transport shut down'));
-			return;
-		}
-
-		return new Promise<void>((resolve) => {
-			const killTimer = setTimeout(() => {
-				proc.kill('SIGKILL');
-			}, 3000);
-
-			proc.on('exit', () => {
-				clearTimeout(killTimer);
-				this.rejectAllPending(new Error('Transport shut down'));
-				resolve();
-			});
-
-			proc.kill('SIGTERM');
-		});
-	}
-
-	private handleLine(line: string): void {
-		const trimmed = line.trim();
-		if (!trimmed) return;
-
-		let msg: Record<string, unknown>;
-		try {
-			msg = JSON.parse(trimmed) as Record<string, unknown>;
-		} catch {
-			this.onError?.(new Error(`Invalid JSON from codex: ${trimmed}`));
-			return;
-		}
-
-		const id = msg['id'] as number | string | undefined;
-		const method = msg['method'] as string | undefined;
-
-		// Response to a request we sent
-		if (id !== undefined && !method) {
-			const pending = this.pending.get(id);
-			if (!pending) return;
-			this.pending.delete(id);
-
-			if ('error' in msg) {
-				const err = msg['error'] as { code?: number; message?: string };
-				pending.reject(
-					new Error(
-						err.message ?? `JSON-RPC error ${String(err.code ?? 'unknown')}`,
-					),
-				);
-			} else {
-				pending.resolve(msg['result']);
-			}
-			return;
-		}
-
-		// Server request (has method + id)
-		if (method && id !== undefined) {
-			this.onServerRequest?.(method, id, msg['params']);
-			return;
-		}
-
-		// Notification (has method, no id)
-		if (method) {
-			this.onNotification?.(method, msg['params']);
-			return;
-		}
-	}
-
-	private rejectAllPending(error: Error): void {
-		for (const [, pending] of this.pending) {
-			pending.reject(error);
-		}
-		this.pending.clear();
-	}
-}
+import { JsonRpcStdio } from './lib/json-stdio/index.js';
 
 // ---------------------------------------------------------------------------
 // CodexProcessTransport — implements CodexTransport over codex app-server.
 // ---------------------------------------------------------------------------
 
 export class CodexProcessTransport implements CodexTransport {
-	private rpc: JsonRpcProcess | null = null;
+	private rpc: JsonRpcStdio | null = null;
 	private initialized = false;
 	private _threadId: string | null = null;
 	private turnId: string | null = null;
 	private pendingApproval: PendingApproval | null = null;
+	private pendingSessionEvent:
+		| 'session.started'
+		| 'session.resumed'
+		| 'session.forked'
+		| null = null;
 
 	private readonly options: CodexProcessTransportOptions | undefined;
 
@@ -223,28 +49,24 @@ export class CodexProcessTransport implements CodexTransport {
 	async startSession(threadId?: string): Promise<void> {
 		const rpc = this.createAndWireRpc();
 		rpc.start();
+		this.pendingSessionEvent = threadId ? 'session.resumed' : 'session.started';
 
 		if (threadId) {
 			const { initializeParams, threadResumeParams } =
 				mapSessionResume(threadId);
-			await rpc.sendRequest('initialize', initializeParams);
+			await rpc.request('initialize', initializeParams);
 			this.initialized = true;
 			this.onEvent({ type: 'agent.ready' });
-			await rpc.sendRequest('thread/resume', threadResumeParams);
+			await rpc.request('thread/resume', threadResumeParams);
 		} else {
 			const { initializeParams, threadStartParams } = mapSessionStart();
-			await rpc.sendRequest('initialize', initializeParams);
+			await rpc.request('initialize', initializeParams);
 			this.initialized = true;
 			this.onEvent({ type: 'agent.ready' });
 
-			const result = (await rpc.sendRequest(
-				'thread/start',
-				threadStartParams,
-			)) as { threadId?: string } | undefined;
-
-			if (result && typeof result === 'object' && 'threadId' in result) {
-				this._threadId = result.threadId as string;
-			}
+			this._threadId = getThreadIdFromResult(
+				await rpc.request('thread/start', threadStartParams),
+			);
 		}
 	}
 
@@ -257,16 +79,10 @@ export class CodexProcessTransport implements CodexTransport {
 		}
 
 		const { threadForkParams } = mapSessionFork(this._threadId);
-		const result = (await this.rpc.sendRequest(
-			'thread/fork',
-			threadForkParams,
-		)) as { threadId?: string } | undefined;
-
-		if (result && typeof result === 'object' && 'threadId' in result) {
-			this._threadId = result.threadId as string;
-		}
-
-		this.onEvent({ type: 'session.forked' });
+		this.pendingSessionEvent = 'session.forked';
+		this._threadId = getThreadIdFromResult(
+			await this.rpc.request('thread/fork', threadForkParams),
+		);
 	}
 
 	async startTurn(input: InputItem[]): Promise<void> {
@@ -278,7 +94,7 @@ export class CodexProcessTransport implements CodexTransport {
 		}
 
 		const params = mapTurnStart(input, this._threadId);
-		await this.rpc.sendRequest('turn/start', params);
+		await this.rpc.request('turn/start', params);
 	}
 
 	async interruptTurn(): Promise<void> {
@@ -290,7 +106,7 @@ export class CodexProcessTransport implements CodexTransport {
 		}
 
 		const params = mapTurnInterrupt(this._threadId, this.turnId);
-		await this.rpc.sendRequest('turn/interrupt', params);
+		await this.rpc.request('turn/interrupt', params);
 	}
 
 	resolvePermission(decision: 'allow' | 'deny'): void {
@@ -319,25 +135,32 @@ export class CodexProcessTransport implements CodexTransport {
 		this._threadId = null;
 		this.turnId = null;
 		this.pendingApproval = null;
+		this.pendingSessionEvent = null;
 	}
 
 	// -- Internal: expose RPC for tests that need to poke at the protocol -----
 
 	/** @internal — used by adapter tests that send raw server requests. */
-	get _rpc(): JsonRpcProcess | null {
+	get _rpc(): JsonRpcStdio | null {
 		return this.rpc;
 	}
 
 	// -- Wiring ---------------------------------------------------------------
 
-	private createAndWireRpc(): JsonRpcProcess {
-		const rpc = new JsonRpcProcess(this.options);
+	private createAndWireRpc(): JsonRpcStdio {
+		const rpc = new JsonRpcStdio({
+			command: this.options?.command ?? 'codex',
+			args: this.options?.args ?? ['app-server'],
+		});
 		this.rpc = rpc;
 
 		rpc.onNotification = (method, params) => {
 			if (method === 'thread/started') {
 				const p = params as ThreadStartedParams;
 				this._threadId = p.thread.id;
+				this.onEvent({ type: this.pendingSessionEvent ?? 'session.started' });
+				this.pendingSessionEvent = null;
+				return;
 			}
 			if (method === 'turn/started') {
 				const p = params as TurnStartedParams;
@@ -374,4 +197,24 @@ export class CodexProcessTransport implements CodexTransport {
 
 		return rpc;
 	}
+}
+
+function getThreadIdFromResult(result: unknown): string | null {
+	if (!result || typeof result !== 'object') {
+		return null;
+	}
+
+	if (
+		'threadId' in result &&
+		typeof (result as { threadId?: unknown }).threadId === 'string'
+	) {
+		return (result as { threadId: string }).threadId;
+	}
+
+	const thread = (result as { thread?: { id?: unknown } }).thread;
+	if (thread && typeof thread.id === 'string') {
+		return thread.id;
+	}
+
+	return null;
 }

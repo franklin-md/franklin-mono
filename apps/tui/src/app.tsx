@@ -24,7 +24,7 @@ export function App({ manager }: Props): React.ReactNode {
 	const createAgent = useCallback(async () => {
 		const id = `agent-${Date.now()}`;
 		const handle = await manager.create(id, {
-			adapterKind: 'mock',
+			adapterKind: 'codex',
 			sessionSpec: {},
 		});
 		await handle.dispatch({ type: 'session.start', spec: {} });

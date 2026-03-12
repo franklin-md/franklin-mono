@@ -14,6 +14,13 @@ import type {
 // ---------------------------------------------------------------------------
 
 const CLIENT_INFO = { name: 'franklin', version: '0.0.0' } as const;
+const THREAD_HISTORY_OPTIONS = {
+	experimentalRawEvents: false,
+	persistExtendedHistory: false,
+} as const;
+const RESUME_HISTORY_OPTIONS = {
+	persistExtendedHistory: false,
+} as const;
 
 function makeInitializeParams(): InitializeParams {
 	return { clientInfo: CLIENT_INFO };
@@ -35,7 +42,7 @@ export function mapSessionStart(): {
 } {
 	return {
 		initializeParams: makeInitializeParams(),
-		threadStartParams: {},
+		threadStartParams: { ...THREAD_HISTORY_OPTIONS },
 	};
 }
 
@@ -45,7 +52,7 @@ export function mapSessionResume(threadId: string): {
 } {
 	return {
 		initializeParams: makeInitializeParams(),
-		threadResumeParams: { threadId },
+		threadResumeParams: { threadId, ...RESUME_HISTORY_OPTIONS },
 	};
 }
 
@@ -55,7 +62,7 @@ export function mapSessionFork(threadId: string): {
 } {
 	return {
 		initializeParams: makeInitializeParams(),
-		threadForkParams: { threadId },
+		threadForkParams: { threadId, ...RESUME_HISTORY_OPTIONS },
 	};
 }
 
@@ -67,7 +74,7 @@ export function mapTurnStart(
 ): TurnStartParams {
 	return {
 		threadId,
-		userInput: mapInputToUserInput(input),
+		input: mapInputToUserInput(input),
 	};
 }
 

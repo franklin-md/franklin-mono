@@ -20,6 +20,7 @@
 		"@franklin/agent-manager": "*",
 		"@franklin/managed-agent": "*",
 		"ink": "^5.1.0",
+		"ink-scroll-view": "^0.3.6",
 		"react": "^18.3.1"
 	},
 	"devDependencies": {

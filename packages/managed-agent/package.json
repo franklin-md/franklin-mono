@@ -9,6 +9,10 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./testing": {
+			"types": "./dist/testing/index.d.ts",
+			"import": "./dist/testing/index.js"
 		}
 	},
 	"files": [
@@ -23,6 +27,7 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@openai/codex-sdk": "^0.114.0"
+		"@openai/codex-sdk": "^0.114.0",
+		"json-rpc-2.0": "^1.7.1"
 	}
 }

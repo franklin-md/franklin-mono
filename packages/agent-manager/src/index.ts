@@ -6,6 +6,7 @@ export { InMemoryAgentStore } from './store.js';
 // Types
 export type {
 	AdapterFactory,
+	AdapterFactoryOptions,
 	AgentEventHandler,
 	AgentId,
 	AgentManagerOptions,

@@ -44,9 +44,14 @@ export interface AgentMetadata {
 // Factory + options
 // ---------------------------------------------------------------------------
 
+export interface AdapterFactoryOptions extends AdapterOptions {
+	agentId: AgentId;
+	metadata: AgentMetadata;
+}
+
 export type AdapterFactory = (
 	adapterKind: string,
-	options: AdapterOptions,
+	options: AdapterFactoryOptions,
 ) => ManagedAgentAdapter;
 
 export interface AgentManagerOptions {

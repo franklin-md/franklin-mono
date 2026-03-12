@@ -2,74 +2,76 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What is Franklin
-
-Franklin is a managed-agent abstraction layer. The app never talks directly to vendor runtimes (Claude Code, Codex, OpenCode). Instead, it talks to a **managed agent** that exposes a stable protocol, and vendor-specific behavior lives inside adapters.
-
 ## Commands
 
 ```bash
 # Build all packages (TypeScript project references)
-npm run build
+npm run build            # tsc -b
 
-# Typecheck all packages
-npm run typecheck
-
-# Run all tests (vitest)
-npm run test
-
-# Run tests for a single package
-npm run test -w @franklin/managed-agent
+# Lint (strict — zero warnings allowed)
+npm run lint             # eslint . --cache --max-warnings=0
+npm run lint:fix         # autofix
 
 # Format
-npm run format          # write
-npm run format:check    # check only
+npm run format           # prettier --write .
+npm run format:check     # check only
 
-# Clean build artifacts
-npm run clean
+# Test all packages
+npm run test             # runs vitest in each workspace
+
+# Test a single package
+npm run test -w @franklin/managed-agent
+npm run test -w @franklin/agent-manager
+npm run test -w @franklin/tui
+
+# Run a single test file
+npx vitest run packages/managed-agent/src/adapter/codex/__tests__/codex-adapter.test.ts
+
+# Typecheck a single package
+npm run typecheck -w @franklin/managed-agent
+
+# Run TUI in dev mode (with mock adapter)
+npm run dev -w @franklin/tui   # tsx src/index.tsx --mock
 ```
 
-## Project Structure
+You should lint, build and format always. And test where appropriate.
 
-npm workspaces monorepo. Node >= 22. ESM-only (`"type": "module"`).
+## Architecture
 
-### Current packages
+Franklin is a managed-agent framework. The app never talks directly to vendor runtimes (Codex, Claude Code, etc.) — it talks to a **managed agent** that normalizes lifecycle, state, and events through vendor-specific **adapters**.
 
-- `packages/managed-agent` (`@franklin/managed-agent`) — Protocol types for the managed-agent contract: commands, events, items, permissions, sessions, results. **Types only** at this stage; no runtime code yet.
+### Layer stack (top → bottom)
 
-### Planned packages (from ARCHITECTURE.md)
+1. **App** (`apps/tui`) — Ink/React TUI. Owns rendering, user interaction, session list UI. Depends on `agent-manager`.
+2. **Agent Manager** (`packages/agent-manager`) — Manages multiple agent handles. Owns agent lifecycle (create/dispose), event routing, metadata persistence via `AgentStore`. The `AgentHandle` is the per-agent interface the app uses.
+3. **Managed Agent** (`packages/managed-agent`) — Defines the protocol (commands, events, items, permissions, sessions) and adapter interface. Contains vendor adapters.
+4. **Vendor Adapters** (currently `managed-agent/src/adapter/codex/`) — Translate between Franklin protocol and vendor-specific APIs. Codex adapter uses JSON-RPC over child-process stdio.
 
-- `packages/managed-agent-core` — Controller, adapter registry, command dispatch, state management
-- `packages/adapter-claude` — Claude Code stream-json adapter
-- `packages/adapter-codex` — Codex app-server adapter
-- `apps/ink` — Ink-based TUI
+### Key types and interfaces
 
-## Architecture (key decisions)
+- `ManagedAgentAdapter` — adapter contract: `dispatch(command) → result`, `dispose()`, emits events via `onEvent` callback.
+- `ManagedAgentCommand` / `ManagedAgentEvent` — the protocol's inbound/outbound message types (defined in `managed-agent/src/messages/`).
+- `AgentManager` — creates agents with `createAgent(spec)`, returns `AgentHandle`.
+- `AgentHandle` — per-agent API: `sendCommand()`, `subscribe()`, `dispose()`. Manages status transitions.
+- `AgentStore` — persistence interface for metadata + events. `InMemoryAgentStore` is the current implementation.
+- `AdapterFactory` — function that creates an adapter given `(adapterKind, options)`.
 
-**Layer model (top to bottom):**
+### Testing exports
 
-1. **App** — rendering, user interaction (Ink TUI, Obsidian plugin, etc.)
-2. **Managed agent protocol** — stable command/event contract between app and agent
-3. **Managed agent core** — controller, adapter registry, state, event normalization
-4. **Vendor adapters** — translate between Franklin protocol and vendor runtimes
-5. **Runtime harness** — MCP injection, hooks, skills, profiles (separate from core)
-6. **Local capability bridge** — deferred; local tools and capability endpoints
+Both `@franklin/managed-agent` and `@franklin/agent-manager` export a `/testing` subpath with mock implementations (`MockAdapter`, `MockAgentManager`) for use in tests and dev mode.
 
-**Communication:** JSON-RPC 2.0 semantics. Commands are requests, results are responses, streamed updates are notifications. Wire format is newline-delimited JSON over piped stdio (child process).
+### Dependency graph
 
-**Message flow:** App sends `ManagedAgentCommand` (inbound) → agent emits `ManagedAgentEvent` (outbound). Commands are discriminated unions on `type` field (`session.start`, `turn.start`, `permission.resolve`, etc.). Events follow the same pattern (`agent.ready`, `item.delta`, `turn.completed`, etc.).
+```
+apps/tui → @franklin/agent-manager → @franklin/managed-agent
+```
 
-**Design rules:**
+## Code conventions
 
-- App talks only to the managed-agent protocol, never vendor protocols
-- Franklin owns the state model; vendor state stays inside adapters
-- PTY is deferred; not part of initial transport
-- Runtime harness (MCP, hooks, skills) is separate from lifecycle/control core
-
-## Code Conventions
-
-- TypeScript strict mode with `noUncheckedIndexedAccess`
-- Tabs for indentation, single quotes, semicolons, trailing commas (Prettier)
-- Types use discriminated unions on `type` or `kind` fields
-- All exports are type-only re-exports at this stage
-- File imports use `.js` extensions (NodeNext module resolution)
+- **ESM only** — all packages use `"type": "module"`. Imports must include `.js` extensions.
+- **Type imports** — use `import type` (enforced by eslint: `consistent-type-imports`, `no-import-type-side-effects`).
+- **Exhaustive switches** — `switch-exhaustiveness-check` is enabled; no default case allowed on exhaustive switches.
+- **Unused vars** — prefix with `_` (e.g., `_unused`).
+- **Node ≥ 22** required.
+- **Vitest** for testing — test files use `__tests__/*.test.ts` convention.
+- **TypeScript project references** — root `tsconfig.json` references all packages; each package has its own `tsconfig.json` extending `tsconfig.base.json`.

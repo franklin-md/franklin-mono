@@ -1,6 +1,7 @@
 import type { ManagedAgentEvent } from '../../messages/event.js';
 import type {
 	AgentMessageDeltaParams,
+	CodexUserMessage,
 	CommandApprovalParams,
 	ErrorParams,
 	FileChangeApprovalParams,
@@ -42,12 +43,13 @@ export function mapNotification(
 		case 'item/started': {
 			const p = params as ItemStartedParams;
 			if (p.item.type === 'userMessage') {
+				const item = p.item as CodexUserMessage;
 				return [
 					{
 						type: 'item.started',
 						item: {
 							kind: 'user_message',
-							text: 'text' in p.item ? p.item.text : '',
+							text: getUserMessageText(item),
 						},
 					},
 				];
@@ -67,12 +69,13 @@ export function mapNotification(
 		case 'item/completed': {
 			const p = params as ItemCompletedParams;
 			if (p.item.type === 'userMessage') {
+				const item = p.item as CodexUserMessage;
 				return [
 					{
 						type: 'item.completed',
 						item: {
 							kind: 'user_message',
-							text: 'text' in p.item ? p.item.text : '',
+							text: getUserMessageText(item),
 						},
 					},
 				];
@@ -106,7 +109,10 @@ export function mapNotification(
 			return [
 				{
 					type: 'error',
-					error: { code: p.error.code, message: p.error.message },
+					error: {
+						code: p.error.code ?? 'CODEX_ERROR',
+						message: p.error.message,
+					},
 				},
 			];
 		}
@@ -117,6 +123,18 @@ export function mapNotification(
 		default:
 			return [];
 	}
+}
+
+function getUserMessageText(item: CodexUserMessage): string {
+	if (typeof item.text === 'string') {
+		return item.text;
+	}
+
+	if (!item.content) {
+		return '';
+	}
+
+	return item.content.map((segment) => segment.text).join('');
 }
 
 // ---------------------------------------------------------------------------

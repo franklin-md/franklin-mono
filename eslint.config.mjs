@@ -28,7 +28,7 @@ export default tseslint.config(
 		},
 	},
 	{
-		files: ['**/*.{ts,mts,cts}'],
+		files: ['**/*.{ts,mts,cts,tsx}'],
 		extends: [
 			js.configs.recommended,
 			...tseslint.configs.recommendedTypeChecked,

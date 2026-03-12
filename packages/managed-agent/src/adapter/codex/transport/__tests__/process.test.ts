@@ -121,7 +121,7 @@ describe('CodexProcessTransport', () => {
 		const events = collectEvents(transport);
 
 		await transport.startSession('existing-thread');
-		await waitForEvent(events, 'session.started', 1);
+		await waitForEvent(events, 'session.resumed', 1);
 
 		expect(events.map((e) => e.type)).toContain('agent.ready');
 		expect(transport.threadId).toBe('existing-thread');
@@ -268,7 +268,7 @@ describe('CodexProcessTransport', () => {
 		await waitForEvent(events, 'session.started', 1);
 
 		// Trigger approval via internal RPC (test hook)
-		await transport._rpc!.sendRequest('test/send-approval', {});
+		await transport._rpc!.request('test/send-approval', {});
 		await waitForEvent(events, 'permission.requested', 1);
 
 		transport.resolvePermission('allow');

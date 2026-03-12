@@ -37,6 +37,19 @@ describe('mapNotification', () => {
 		]);
 	});
 
+	it('maps item/started with userMessage content fallback', () => {
+		const events = mapNotification('item/started', {
+			item: {
+				type: 'userMessage',
+				id: 'i1',
+				content: [{ type: 'text', text: 'hello', text_elements: [] }],
+			},
+		});
+		expect(events).toEqual([
+			{ type: 'item.started', item: { kind: 'user_message', text: 'hello' } },
+		]);
+	});
+
 	it('maps item/started with agentMessage → item.started assistant_message', () => {
 		const events = mapNotification('item/started', {
 			item: { type: 'agentMessage', id: 'i2', text: '' },
@@ -105,6 +118,18 @@ describe('mapNotification', () => {
 			{
 				type: 'error',
 				error: { code: 'E_FAIL', message: 'Something broke' },
+			},
+		]);
+	});
+
+	it('maps error without code to CODEX_ERROR', () => {
+		const events = mapNotification('error', {
+			error: { message: 'Something broke' },
+		});
+		expect(events).toEqual([
+			{
+				type: 'error',
+				error: { code: 'CODEX_ERROR', message: 'Something broke' },
 			},
 		]);
 	});

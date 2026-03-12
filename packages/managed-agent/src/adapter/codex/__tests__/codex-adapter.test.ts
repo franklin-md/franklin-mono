@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import type { ManagedAgentEvent } from '../../../messages/event.js';
-import { CodexAdapter, type CodexAdapterOptions } from '../codex-adapter.js';
-import type { CodexProcessTransport } from '../transport/process.js';
+import type { CodexAdapter, CodexAdapterOptions } from '../codex-adapter.js';
+import {
+	createCodexAdapterHarness,
+	createScriptedCodexAdapterHarness,
+	getProcessTransport,
+} from './test-harness.js';
 
 // ---------------------------------------------------------------------------
 // Mock Codex app-server script.
@@ -98,55 +101,20 @@ function serverRequest(id, method, params) {
 `;
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function createAdapter(
-	events: ManagedAgentEvent[],
-	overrides?: Partial<CodexAdapterOptions>,
-): CodexAdapter {
-	return new CodexAdapter({
-		onEvent: (event) => events.push(event),
-		transport: { command: 'node', args: ['-e', MOCK_SERVER_SCRIPT] },
-		...overrides,
-	});
-}
-
-/** Wait until we've collected `count` events of a given type. */
-function waitForEvents(
-	events: ManagedAgentEvent[],
-	type: string,
-	count: number,
-	timeoutMs = 3000,
-): Promise<void> {
-	return new Promise((resolve, reject) => {
-		const timer = setTimeout(
-			() =>
-				reject(
-					new Error(
-						`Timed out waiting for ${count} "${type}" events (got ${events.filter((e) => e.type === type).length})`,
-					),
-				),
-			timeoutMs,
-		);
-		const check = () => {
-			if (events.filter((e) => e.type === type).length >= count) {
-				clearTimeout(timer);
-				resolve();
-			} else {
-				setTimeout(check, 10);
-			}
-		};
-		check();
-	});
-}
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe('CodexAdapter', () => {
 	let adapter: CodexAdapter | null = null;
+
+	function createHarness(overrides?: Partial<CodexAdapterOptions>) {
+		const harness = createScriptedCodexAdapterHarness(
+			MOCK_SERVER_SCRIPT,
+			overrides,
+		);
+		adapter = harness.adapter;
+		return harness;
+	}
 
 	afterEach(async () => {
 		if (adapter) {
@@ -156,37 +124,24 @@ describe('CodexAdapter', () => {
 	});
 
 	it('session.start initializes and emits agent.ready + session.started', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events);
+		const harness = createHarness();
 
-		const result = await adapter.dispatch({ type: 'session.start', spec: {} });
-		expect(result).toEqual({ ok: true });
+		await harness.startSession();
 
-		// Wait for notifications to arrive
-		await waitForEvents(events, 'session.started', 1);
-
-		const types = events.map((e) => e.type);
+		const types = harness.events.map((event) => event.type);
 		expect(types).toContain('agent.ready');
 		expect(types).toContain('session.started');
 	});
 
 	it('turn.start dispatches and streams item events', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events);
+		const harness = createHarness();
 
-		await adapter.dispatch({ type: 'session.start', spec: {} });
-		await waitForEvents(events, 'session.started', 1);
+		await harness.startSession();
+		await harness.startTurn('hi');
 
-		const result = await adapter.dispatch({
-			type: 'turn.start',
-			input: [{ kind: 'user_message', text: 'hi' }],
-		});
-		expect(result).toEqual({ ok: true });
+		await harness.waitForEvent('turn.completed', 1);
 
-		// Wait for turn.completed
-		await waitForEvents(events, 'turn.completed', 1);
-
-		const types = events.map((e) => e.type);
+		const types = harness.events.map((event) => event.type);
 		expect(types).toContain('turn.started');
 		expect(types).toContain('item.started');
 		expect(types).toContain('item.delta');
@@ -195,10 +150,9 @@ describe('CodexAdapter', () => {
 	});
 
 	it('turn.start fails if session not initialized', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events);
+		const harness = createHarness();
 
-		const result = await adapter.dispatch({
+		const result = await harness.dispatch({
 			type: 'turn.start',
 			input: [{ kind: 'user_message', text: 'hi' }],
 		});
@@ -209,13 +163,11 @@ describe('CodexAdapter', () => {
 	});
 
 	it('turn.interrupt fails if no active turn', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events);
+		const harness = createHarness();
 
-		await adapter.dispatch({ type: 'session.start', spec: {} });
-		await waitForEvents(events, 'session.started', 1);
+		await harness.startSession();
 
-		const result = await adapter.dispatch({ type: 'turn.interrupt' });
+		const result = await harness.dispatch({ type: 'turn.interrupt' });
 		expect(result).toEqual({
 			ok: false,
 			error: {
@@ -226,10 +178,9 @@ describe('CodexAdapter', () => {
 	});
 
 	it('session.resume requires a threadId', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events);
+		const harness = createHarness();
 
-		const result = await adapter.dispatch({
+		const result = await harness.dispatch({
 			type: 'session.resume',
 			ref: {},
 		});
@@ -243,41 +194,34 @@ describe('CodexAdapter', () => {
 	});
 
 	it('session.resume works when threadId is provided', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events, { threadId: 'existing-thread' });
+		const harness = createHarness({ threadId: 'existing-thread' });
 
-		const result = await adapter.dispatch({
-			type: 'session.resume',
-			ref: {},
-		});
-		expect(result).toEqual({ ok: true });
+		await harness.resumeSession();
 
-		await waitForEvents(events, 'session.started', 1);
-		expect(events.map((e) => e.type)).toContain('agent.ready');
+		expect(harness.events.map((event) => event.type)).toContain('agent.ready');
+		expect(harness.events.map((event) => event.type)).toContain(
+			'session.resumed',
+		);
 	});
 
 	it('session.fork updates threadId', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events);
+		const harness = createHarness();
 
-		await adapter.dispatch({ type: 'session.start', spec: {} });
-		await waitForEvents(events, 'session.started', 1);
+		await harness.startSession();
 
-		const result = await adapter.dispatch({
+		const result = await harness.dispatch({
 			type: 'session.fork',
 			ref: {},
 		});
 		expect(result).toEqual({ ok: true });
 
-		// Should emit session.forked
-		await waitForEvents(events, 'session.forked', 1);
+		await harness.waitForEvent('session.forked', 1);
 	});
 
 	it('session.fork fails without active session', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events);
+		const harness = createHarness();
 
-		const result = await adapter.dispatch({
+		const result = await harness.dispatch({
 			type: 'session.fork',
 			ref: {},
 		});
@@ -291,13 +235,11 @@ describe('CodexAdapter', () => {
 	});
 
 	it('permission.resolve fails without pending approval', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events);
+		const harness = createHarness();
 
-		await adapter.dispatch({ type: 'session.start', spec: {} });
-		await waitForEvents(events, 'session.started', 1);
+		await harness.startSession();
 
-		const result = await adapter.dispatch({
+		const result = await harness.dispatch({
 			type: 'permission.resolve',
 			decision: 'allow',
 		});
@@ -311,13 +253,11 @@ describe('CodexAdapter', () => {
 	});
 
 	it('dispose shuts down transport', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events);
+		const harness = createHarness();
 
-		await adapter.dispatch({ type: 'session.start', spec: {} });
-		await waitForEvents(events, 'session.started', 1);
+		await harness.startSession();
 
-		await adapter.dispose();
+		await harness.dispose();
 		adapter = null; // prevent double dispose in afterEach
 
 		// After dispose, dispatch should fail
@@ -325,10 +265,7 @@ describe('CodexAdapter', () => {
 	});
 
 	it('emits agent.exited when process exits', async () => {
-		const events: ManagedAgentEvent[] = [];
-		// Use a script that exits shortly after handling both initialize and thread/start
-		adapter = new CodexAdapter({
-			onEvent: (event) => events.push(event),
+		const harness = createCodexAdapterHarness({
 			transport: {
 				command: 'node',
 				args: [
@@ -339,6 +276,7 @@ describe('CodexAdapter', () => {
 						const msg = JSON.parse(line);
 						process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { threadId: 't1' } }) + '\\n');
 						if (msg.method === 'thread/start') {
+							process.stdout.write(JSON.stringify({ jsonrpc: '2.0', method: 'thread/started', params: { thread: { id: 't1' } } }) + '\\n');
 							setTimeout(() => process.exit(0), 50);
 						}
 					});
@@ -346,40 +284,40 @@ describe('CodexAdapter', () => {
 				],
 			},
 		});
+		adapter = harness.adapter;
 
-		await adapter.dispatch({ type: 'session.start', spec: {} });
-		await waitForEvents(events, 'agent.exited', 1);
+		await harness.startSession();
+		await harness.waitForEvent('agent.exited', 1);
 
-		expect(events.map((e) => e.type)).toContain('agent.exited');
+		expect(harness.events.map((event) => event.type)).toContain('agent.exited');
 	});
 
 	it('handles permission flow: request → resolve', async () => {
-		const events: ManagedAgentEvent[] = [];
-		adapter = createAdapter(events);
+		const harness = createHarness();
 
-		await adapter.dispatch({ type: 'session.start', spec: {} });
-		await waitForEvents(events, 'session.started', 1);
+		await harness.startSession();
 
 		// Trigger a command approval via the internal RPC test hook
-		const processTransport = (
-			adapter as unknown as { transport: CodexProcessTransport }
-		).transport;
-		await processTransport._rpc!.sendRequest('test/send-approval', {});
+		const processTransport = getProcessTransport(harness.adapter);
+		await processTransport._rpc!.request('test/send-approval', {});
 
-		await waitForEvents(events, 'permission.requested', 1);
+		await harness.waitForEvent('permission.requested', 1);
 
-		const permEvent = events.find((e) => e.type === 'permission.requested');
+		const permEvent = harness.events.find(
+			(event) => event.type === 'permission.requested',
+		);
 		expect(permEvent).toBeDefined();
 
 		// Resolve it
-		const result = await adapter.dispatch({
+		const result = await harness.dispatch({
 			type: 'permission.resolve',
 			decision: 'allow',
 		});
 		expect(result).toEqual({ ok: true });
 
-		// Should emit permission.resolved
-		const resolved = events.find((e) => e.type === 'permission.resolved');
+		const resolved = harness.events.find(
+			(event) => event.type === 'permission.resolved',
+		);
 		expect(resolved).toBeDefined();
 	});
 });

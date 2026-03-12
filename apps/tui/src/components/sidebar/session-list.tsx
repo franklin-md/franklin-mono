@@ -16,7 +16,7 @@ export function SessionList({
 	agents,
 	activeId,
 	onSelect,
-	onCreate,
+	onCreate: _onCreate,
 }: Props): React.ReactNode {
 	return (
 		<Box flexDirection="column">

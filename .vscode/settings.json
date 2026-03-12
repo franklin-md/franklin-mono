@@ -30,5 +30,20 @@
 	"[jsonc]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
-	"npm-scripts.showStartNotification": false
+	"npm-scripts.showStartNotification": false,
+	"eslint.useFlatConfig": true,
+	"jestrunner.enableTestExplorer": true,
+	"jestrunner.disableFrameworkConfig": true,
+	"jestrunner.defaultTestPatterns": [
+		"apps/**/*.{test,spec}.{ts,tsx,js,jsx,mts,cts,mjs,cjs}",
+		"apps/**/__tests__/**/*.{ts,tsx,js,jsx,mts,cts,mjs,cjs}",
+		"packages/**/*.{test,spec}.{ts,tsx,js,jsx,mts,cts,mjs,cjs}",
+		"packages/**/__tests__/**/*.{ts,tsx,js,jsx,mts,cts,mjs,cjs}"
+	],
+
+	"jestrunner.vitestDebugOptions": {
+		"env": {
+			"FRANKLIN_RUN_CODEX_INTEGRATION": "1"
+		}
+	}
 }

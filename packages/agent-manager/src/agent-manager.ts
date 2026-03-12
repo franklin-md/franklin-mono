@@ -130,6 +130,8 @@ export class AgentManager {
 		const handleRef: { current: AgentHandle | null } = { current: null };
 
 		const adapter = this.adapterFactory(adapterKind, {
+			agentId,
+			metadata,
 			onEvent: (event) => {
 				const handle = handleRef.current;
 				if (!handle) {

@@ -10,6 +10,8 @@
 		"verbatimModuleSyntax": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
-		"resolveJsonModule": true
+		"resolveJsonModule": true,
+		"sourceMap": true,
+		"inlineSources": true
 	}
 }

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 
+import { isEscapeSequence } from '../../lib/terminal-modes.js';
+
 interface Props {
 	value: string;
 	onChange: (value: string) => void;
@@ -22,7 +24,7 @@ export function InputBar({
 				onSubmit();
 			} else if (key.backspace || key.delete) {
 				onChange(value.slice(0, -1));
-			} else if (!key.ctrl && !key.meta && input) {
+			} else if (!key.ctrl && !key.meta && input && !isEscapeSequence(input)) {
 				onChange(value + input);
 			}
 		},

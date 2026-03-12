@@ -128,7 +128,7 @@ describe('CodexDirectTransport', () => {
 
 		await transport.startSession('existing-thread');
 
-		expect(result.events.map((e) => e.type)).toContain('session.started');
+		expect(result.events.map((e) => e.type)).toContain('session.resumed');
 		expect(transport.threadId).toBe('resumed-thread');
 	});
 

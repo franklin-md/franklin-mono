@@ -14,7 +14,10 @@ describe('mapSessionStart', () => {
 		expect(result.initializeParams).toEqual({
 			clientInfo: { name: 'franklin', version: '0.0.0' },
 		});
-		expect(result.threadStartParams).toEqual({});
+		expect(result.threadStartParams).toEqual({
+			experimentalRawEvents: false,
+			persistExtendedHistory: false,
+		});
 	});
 });
 
@@ -22,7 +25,10 @@ describe('mapSessionResume', () => {
 	it('returns initialize and threadResume params with threadId', () => {
 		const result = mapSessionResume('thread-abc');
 		expect(result.initializeParams.clientInfo.name).toBe('franklin');
-		expect(result.threadResumeParams).toEqual({ threadId: 'thread-abc' });
+		expect(result.threadResumeParams).toEqual({
+			threadId: 'thread-abc',
+			persistExtendedHistory: false,
+		});
 	});
 });
 
@@ -30,7 +36,10 @@ describe('mapSessionFork', () => {
 	it('returns initialize and threadFork params with threadId', () => {
 		const result = mapSessionFork('thread-xyz');
 		expect(result.initializeParams.clientInfo.name).toBe('franklin');
-		expect(result.threadForkParams).toEqual({ threadId: 'thread-xyz' });
+		expect(result.threadForkParams).toEqual({
+			threadId: 'thread-xyz',
+			persistExtendedHistory: false,
+		});
 	});
 });
 
@@ -42,7 +51,7 @@ describe('mapTurnStart', () => {
 		);
 		expect(result).toEqual({
 			threadId: 'thread-1',
-			userInput: [{ type: 'text', text: 'hello', text_elements: [] }],
+			input: [{ type: 'text', text: 'hello', text_elements: [] }],
 		});
 	});
 
@@ -54,14 +63,14 @@ describe('mapTurnStart', () => {
 			],
 			'thread-2',
 		);
-		expect(result.userInput).toHaveLength(2);
-		expect(result.userInput[0]!.text).toBe('first');
-		expect(result.userInput[1]!.text).toBe('second');
+		expect(result.input).toHaveLength(2);
+		expect(result.input[0]!.text).toBe('first');
+		expect(result.input[1]!.text).toBe('second');
 	});
 
 	it('handles empty input', () => {
 		const result = mapTurnStart([], 'thread-3');
-		expect(result.userInput).toEqual([]);
+		expect(result.input).toEqual([]);
 	});
 });
 

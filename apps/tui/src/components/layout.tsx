@@ -17,10 +17,11 @@ export function Layout({ sidebar, main, statusBar }: Props): React.ReactNode {
 					borderStyle="single"
 					borderColor="gray"
 					paddingX={1}
+					overflow="hidden"
 				>
 					{sidebar}
 				</Box>
-				<Box flexDirection="column" flexGrow={1} paddingX={1}>
+				<Box flexDirection="column" flexGrow={1} paddingX={1} overflow="hidden">
 					{main}
 				</Box>
 			</Box>

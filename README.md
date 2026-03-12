@@ -21,7 +21,8 @@
     - [ ] OpenCode
 - Way of extending the agentic runtime including: [rephrase better]
   - Explicit Memory System
-  - Runtime Provided Tools  
+  - Runtime Provided Tools like:
+    - **NameSession**
 - [ ] Capabilities
 
 ### `package/agent-manager`
@@ -29,3 +30,9 @@
 
 ### [In Progress] `package/local-tools`
 - SDK and standard for defining MCPs designed to interact with local applications.
+
+
+## Development
+
+### Testing Principles
+- [ ] Live Integration Tests
