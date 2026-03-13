@@ -3,6 +3,7 @@
 	"references": [
 		{ "path": "./packages/managed-agent" },
 		{ "path": "./packages/agent-manager" },
+		{ "path": "./packages/agent" },
 		{ "path": "./apps/tui" }
 	]
 }

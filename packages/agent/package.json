@@ -1,5 +1,5 @@
 {
-	"name": "@franklin/managed-agent",
+	"name": "@franklin/agent",
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
@@ -9,10 +9,6 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
-		},
-		"./testing": {
-			"types": "./dist/testing/index.d.ts",
-			"import": "./dist/testing/index.js"
 		}
 	},
 	"files": [
@@ -27,8 +23,6 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@agentclientprotocol/sdk": "^0.16.1",
-		"@openai/codex-sdk": "^0.114.0",
-		"json-rpc-2.0": "^1.7.1"
+		"@agentclientprotocol/sdk": "^0.16.1"
 	}
 }
