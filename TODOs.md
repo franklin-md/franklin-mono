@@ -2,7 +2,7 @@
 
 ## Packages
 ### libs:
-- Can we define a Codec abstraction to support JSONL and other specific encoding of data sent across transport (vs hard coding?)
+- [ ] Can we define a Codec abstraction to support JSONL and other specific encoding of data sent across transport (vs hard coding?). For example, HttpCallbackServer really hard codes this.
 
 ## Packaging / Publishing
 

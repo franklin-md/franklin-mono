@@ -3,10 +3,10 @@ import { createHttpCallbackServer } from '@franklin/transport';
 import type { HttpCallbackServer } from '@franklin/transport';
 import type { LocalMcpTransport, McpServerConfig } from '../../types.js';
 import type { AnyToolDefinition } from '../../tools/types.js';
-import { toJsonSchema } from '../../schema.js';
 import { getRelayPath } from './relay/path.js';
 import { RELAY_NAME } from './relay/tags.js';
 import { serializeRelayEnv } from './relay/env.js';
+import { ToolsManager } from '../../tools/manager.js';
 
 interface ToolCallRequest {
 	tool: string;
@@ -27,27 +27,12 @@ export class HttpLocalMcpTransport implements LocalMcpTransport {
 	async start(tools: AnyToolDefinition[]): Promise<McpServerConfig> {
 		this.callbackServer = await createHttpCallbackServer();
 
-		const handlerMap = new Map<string, AnyToolDefinition>();
-		for (const tool of tools) {
-			handlerMap.set(tool.name, tool);
-		}
+		const manager = new ToolsManager(tools);
 
 		this.callbackServer.onRequest(async (body) => {
 			const req = body as ToolCallRequest;
-			const tool = handlerMap.get(req.tool);
-			if (!tool) {
-				throw new Error(`Unknown tool: ${req.tool}`);
-			}
-
-			const parsed: unknown = tool.schema.parse(req.arguments);
-			return tool.handler(parsed);
+			return manager.dispatch(req.tool, req.arguments);
 		});
-
-		const toolSchemas = tools.map((t) => ({
-			name: t.name,
-			description: t.description,
-			inputSchema: toJsonSchema(t.schema),
-		}));
 
 		return {
 			name: RELAY_NAME,
@@ -55,7 +40,7 @@ export class HttpLocalMcpTransport implements LocalMcpTransport {
 			args: [getRelayPath()],
 			env: serializeRelayEnv({
 				callbackUrl: this.callbackServer.url,
-				tools: toolSchemas,
+				tools: manager.listTools(),
 			}),
 		};
 	}

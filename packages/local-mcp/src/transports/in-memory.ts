@@ -8,8 +8,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import type { LocalMcpTransport, McpServerConfig } from '../types.js';
 import type { AnyToolDefinition } from '../tools/types.js';
-import { toJsonSchema } from '../schema.js';
 import { createError, createSuccess } from './messages.js';
+import { ToolsManager } from '../tools/manager.js';
 
 /**
  * In-memory MCP transport for testing. Runs the MCP server and tools
@@ -29,10 +29,7 @@ export class InMemoryLocalMcpTransport implements LocalMcpTransport {
 	}
 
 	async start(tools: AnyToolDefinition[]): Promise<McpServerConfig> {
-		const toolMap = new Map<string, AnyToolDefinition>();
-		for (const tool of tools) {
-			toolMap.set(tool.name, tool);
-		}
+		const manager = new ToolsManager(tools);
 
 		this.server = new Server(
 			{ name: 'local-mcp-test', version: '0.0.0' },
@@ -40,23 +37,15 @@ export class InMemoryLocalMcpTransport implements LocalMcpTransport {
 		);
 
 		this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-			tools: tools.map((t) => ({
-				name: t.name,
-				description: t.description,
-				inputSchema: toJsonSchema(t.schema),
-			})),
+			tools: manager.listTools(),
 		}));
 
 		this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			const { name, arguments: args } = request.params;
-			const tool = toolMap.get(name);
-			if (!tool) {
-				return createError(`Unknown tool: ${name}`);
-			}
-
-			const parsed: unknown = tool.schema.parse(args);
-			const result = await tool.handler(parsed);
-			return createSuccess(result);
+			return manager
+				.dispatch(name, args)
+				.then(createSuccess)
+				.catch(createError);
 		});
 
 		const [clientTransport, serverTransport] =
