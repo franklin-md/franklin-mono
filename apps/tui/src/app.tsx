@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Text, useInput } from 'ink';
 
-import type { AgentStore } from './lib/agent-store.js';
 import type { TuiAgentManager } from './lib/tui-agent-manager.js';
 import { ConversationView } from './components/main/conversation-view.js';
 import { SessionList } from './components/sidebar/session-list.js';
 import { StatusBar } from './components/status-bar.js';
 import { Layout } from './components/layout.js';
+import type { TuiSession } from './lib/tui-session.js';
 
 interface Props {
 	manager: TuiAgentManager;
@@ -14,8 +14,8 @@ interface Props {
 
 export function App({ manager }: Props): React.ReactNode {
 	const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
-	const [agents, setAgents] = useState<AgentStore[]>([]);
-	const activeStore = activeAgentId ? manager.get(activeAgentId) : undefined;
+	const [agents, setAgents] = useState<TuiSession[]>([]);
+	const activeSession = activeAgentId ? manager.get(activeAgentId) : undefined;
 
 	useEffect(() => {
 		setAgents(manager.list());
@@ -32,7 +32,7 @@ export function App({ manager }: Props): React.ReactNode {
 
 	// Keyboard shortcut: 'n' to create new session (only when no active store)
 	useInput((input) => {
-		if (input === 'n' && !activeStore) {
+		if (input === 'n' && !activeSession) {
 			void createAgent();
 		}
 	});
@@ -48,13 +48,13 @@ export function App({ manager }: Props): React.ReactNode {
 				/>
 			}
 			main={
-				activeStore ? (
-					<ConversationView store={activeStore} />
+				activeSession ? (
+					<ConversationView session={activeSession} />
 				) : (
 					<Text dimColor>Press 'n' to create a new session</Text>
 				)
 			}
-			statusBar={<StatusBar store={activeStore} />}
+			statusBar={<StatusBar session={activeSession} />}
 		/>
 	);
 }

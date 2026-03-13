@@ -1,11 +1,11 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import type { AgentStore } from '../../lib/agent-store.js';
+import type { TuiSession } from '../../lib/tui-session.js';
 import { SessionListItem } from './session-list-item.js';
 
 interface Props {
-	agents: AgentStore[];
+	agents: TuiSession[];
 	activeId: string | null;
 	onSelect: (id: string) => void;
 	onCreate: () => void;
@@ -23,12 +23,12 @@ export function SessionList({
 				Sessions
 			</Text>
 			<Box flexDirection="column" marginTop={1}>
-				{agents.map((store) => (
+				{agents.map((session) => (
 					<SessionListItem
-						key={store.agentId}
-						store={store}
-						isActive={store.agentId === activeId}
-						onSelect={() => onSelect(store.agentId)}
+						key={session.agentId}
+						session={session}
+						isActive={session.agentId === activeId}
+						onSelect={() => onSelect(session.agentId)}
 					/>
 				))}
 			</Box>

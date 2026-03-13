@@ -1,5 +1,6 @@
 {
 	"compilerOptions": {
+		"baseUrl": ".",
 		"target": "ES2023",
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",
@@ -12,6 +13,10 @@
 		"skipLibCheck": true,
 		"resolveJsonModule": true,
 		"sourceMap": true,
-		"inlineSources": true
+		"inlineSources": true,
+		"paths": {
+			"@franklin/agent": ["packages/agent/src/index.ts"],
+			"@franklin/react-agents": ["packages/react-agents/src/index.ts"]
+		}
 	}
 }

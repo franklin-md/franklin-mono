@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import type { ConversationItem } from '../../lib/agent-store.js';
+import type { ConversationItem } from '../../lib/project-transcript.js';
 
 interface Props {
 	item: ConversationItem;

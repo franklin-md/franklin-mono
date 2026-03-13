@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import type { AgentStore } from '../lib/agent-store.js';
+import type { TuiSession } from '../lib/tui-session.js';
 
 export interface InputState {
 	text: string;
@@ -8,14 +8,14 @@ export interface InputState {
 	submit: () => void;
 }
 
-export function useInput(store: AgentStore | undefined): InputState {
+export function useInput(session: TuiSession | undefined): InputState {
 	const [text, setText] = useState('');
 
 	const submit = useCallback(() => {
-		if (!store || !text.trim()) return;
-		void store.prompt(text.trim());
+		if (!session || !text.trim()) return;
+		void session.prompt(text.trim());
 		setText('');
-	}, [store, text]);
+	}, [session, text]);
 
 	return { text, setText, submit };
 }

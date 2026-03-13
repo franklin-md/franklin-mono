@@ -1,0 +1,29 @@
+{
+	"name": "@franklin/react-agents",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "tsc -b tsconfig.json",
+		"typecheck": "tsc -b tsconfig.json --pretty false",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@franklin/agent": "*",
+		"react": "^18.3.1"
+	}
+}

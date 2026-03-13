@@ -12,12 +12,13 @@
 	},
 	"scripts": {
 		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"typecheck": "tsc -b tsconfig.json --pretty false",
 		"test": "vitest run --passWithNoTests",
 		"dev": "tsx src/index.tsx"
 	},
 	"dependencies": {
 		"@franklin/agent": "*",
+		"@franklin/react-agents": "*",
 		"ink": "^5.1.0",
 		"ink-scroll-view": "^0.3.6",
 		"react": "^18.3.1"

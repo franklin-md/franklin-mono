@@ -23,14 +23,14 @@ export interface SpawnOptions {
 	env?: Record<string, string>;
 }
 
-export interface SpawnResult {
+export interface AgentSession {
 	/** The composed middleware stack — use for outbound calls. */
 	stack: AgentStack;
 	/** The session ID from newSession. */
 	sessionId: string;
-	/** The raw connection — for signal, closed. */
-	connection: AgentConnection;
 }
+
+export type SpawnResult = AgentSession;
 
 // ---------------------------------------------------------------------------
 // spawn() — full lifecycle: transport → connection → compose → init → session
@@ -45,7 +45,7 @@ export interface SpawnResult {
 export async function spawn(
 	registry: AgentRegistry,
 	options: SpawnOptions,
-): Promise<SpawnResult> {
+): Promise<AgentSession> {
 	const spec =
 		typeof options.agent === 'string'
 			? registry.get(options.agent)
@@ -83,7 +83,7 @@ export interface SpawnFromConnectionOptions {
 export async function spawnFromConnection(
 	connection: AgentConnection,
 	options: SpawnFromConnectionOptions,
-): Promise<SpawnResult> {
+): Promise<AgentSession> {
 	const stack = compose(connection, options.middlewares ?? [], options.handler);
 
 	await stack.initialize({
@@ -96,5 +96,5 @@ export async function spawnFromConnection(
 		mcpServers: [],
 	});
 
-	return { stack, sessionId, connection };
+	return { stack, sessionId };
 }

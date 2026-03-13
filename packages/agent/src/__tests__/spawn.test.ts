@@ -63,7 +63,7 @@ describe('spawnFromConnection', () => {
 		expect(mockAgent.newSession).toHaveBeenCalled();
 		expect(result.sessionId).toBe('test-session');
 		expect(result.stack).toBeDefined();
-		expect(result.connection).toBe(connection);
+		expect('connection' in result).toBe(false);
 	});
 
 	it('the returned stack is functional for prompts', async () => {

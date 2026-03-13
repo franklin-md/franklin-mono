@@ -1,17 +1,14 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import type { AgentStore } from '../lib/agent-store.js';
-import { useAgentStore } from '../hooks/use-agent-store.js';
+import type { TuiSession } from '../lib/tui-session.js';
 
 interface Props {
-	store: AgentStore | undefined;
+	session: TuiSession | undefined;
 }
 
-export function StatusBar({ store }: Props): React.ReactNode {
-	const { status } = useAgentStore(store);
-
-	if (!store) {
+export function StatusBar({ session }: Props): React.ReactNode {
+	if (!session) {
 		return (
 			<Box borderStyle="single" borderColor="gray" paddingX={1}>
 				<Text dimColor>No active session</Text>
@@ -20,20 +17,20 @@ export function StatusBar({ store }: Props): React.ReactNode {
 	}
 
 	const statusColor =
-		status === 'running'
+		session.status === 'running'
 			? 'yellow'
-			: status === 'error'
+			: session.status === 'error'
 				? 'red'
-				: status === 'disposed'
+				: session.status === 'disposed'
 					? 'gray'
 					: 'green';
 
 	return (
 		<Box borderStyle="single" borderColor="gray" paddingX={1}>
 			<Text>
-				<Text bold>{store.agentId}</Text>
+				<Text bold>{session.agentId}</Text>
 				<Text> </Text>
-				<Text color={statusColor}>[{status}]</Text>
+				<Text color={statusColor}>[{session.status}]</Text>
 			</Text>
 		</Box>
 	);

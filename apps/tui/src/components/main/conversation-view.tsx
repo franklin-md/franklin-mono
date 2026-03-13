@@ -1,23 +1,26 @@
 import React, { useEffect, useRef } from 'react';
 import { Box, useInput } from 'ink';
 import { ScrollView, type ScrollViewRef } from 'ink-scroll-view';
+import { useTranscript } from '@franklin/react-agents';
 
-import type { AgentStore } from '../../lib/agent-store.js';
-import { useAgentStore } from '../../hooks/use-agent-store.js';
 import { useInput as useTextInput } from '../../hooks/use-input.js';
 import { useMouseScroll } from '../../hooks/use-mouse-scroll.js';
+import { projectTranscript } from '../../lib/project-transcript.js';
+import type { TuiSession } from '../../lib/tui-session.js';
 import { InputBar } from './input-bar.js';
 import { MessageList } from './message-list.js';
-import { PermissionPrompt } from './permission-prompt.js';
 
 interface Props {
-	store: AgentStore;
+	session: TuiSession;
 }
 
-export function ConversationView({ store }: Props): React.ReactNode {
-	const { items, pendingPermission, status } = useAgentStore(store);
-	const { text, setText, submit } = useTextInput(store);
-	const isDisabled = status === 'disposed';
+export function ConversationView({ session }: Props): React.ReactNode {
+	const transcript = useTranscript(session);
+	const items = projectTranscript(transcript, {
+		isRunning: session.status === 'running',
+	});
+	const { text, setText, submit } = useTextInput(session);
+	const isDisabled = session.status === 'disposed';
 	const scrollRef = useRef<ScrollViewRef>(null);
 	useMouseScroll(scrollRef);
 
@@ -55,9 +58,6 @@ export function ConversationView({ store }: Props): React.ReactNode {
 			<ScrollView ref={scrollRef} flexGrow={1} flexDirection="column">
 				<MessageList items={items} />
 			</ScrollView>
-			{pendingPermission ? (
-				<PermissionPrompt pending={pendingPermission} store={store} />
-			) : null}
 			<InputBar
 				value={text}
 				onChange={setText}

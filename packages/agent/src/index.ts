@@ -10,6 +10,7 @@ export { spawn, spawnFromConnection } from './spawn.js';
 export { StdioTransport, createMemoryTransport } from './transport/index.js';
 export type { AgentSpec } from './registry.js';
 export type {
+	AgentSession,
 	SpawnOptions,
 	SpawnResult,
 	SpawnFromConnectionOptions,

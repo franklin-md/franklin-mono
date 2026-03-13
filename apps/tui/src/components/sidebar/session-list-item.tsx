@@ -1,16 +1,15 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import type { AgentStatus, AgentStore } from '../../lib/agent-store.js';
-import { useAgentStore } from '../../hooks/use-agent-store.js';
+import type { TuiSession, TuiSessionStatus } from '../../lib/tui-session.js';
 
 interface Props {
-	store: AgentStore;
+	session: TuiSession;
 	isActive: boolean;
 	onSelect: () => void;
 }
 
-function statusIndicator(status: AgentStatus): {
+function statusIndicator(status: TuiSessionStatus): {
 	symbol: string;
 	color: string;
 } {
@@ -26,15 +25,17 @@ function statusIndicator(status: AgentStatus): {
 	}
 }
 
-export function SessionListItem({ store, isActive }: Props): React.ReactNode {
-	const { status } = useAgentStore(store);
-	const { symbol, color } = statusIndicator(status);
+export function SessionListItem({
+	session,
+	isActive,
+}: Props): React.ReactNode {
+	const { symbol, color } = statusIndicator(session.status);
 
 	return (
 		<Box>
 			<Text color={color}>{symbol} </Text>
 			<Text bold={isActive} inverse={isActive}>
-				{store.agentId}
+				{session.agentId}
 			</Text>
 		</Box>
 	);
