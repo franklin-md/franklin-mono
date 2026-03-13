@@ -13,9 +13,10 @@ import { AgentSideConnection as AgentSideConnectionImpl } from '@agentclientprot
 
 import { AgentConnection } from '../connection.js';
 
+import { createMemoryTransport } from '../transport/in-memory.js';
+
 import {
 	createMockClient,
-	createMemoryTransport,
 	createMockAgent,
 	createTestPair,
 } from './helpers.js';

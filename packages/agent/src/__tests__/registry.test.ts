@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { claudeAgentSpec, codexAgentSpec } from '../agents/index.js';
 import { AgentRegistry, createDefaultRegistry } from '../registry.js';
 
 describe('AgentRegistry', () => {
@@ -36,12 +37,17 @@ describe('AgentRegistry', () => {
 });
 
 describe('createDefaultRegistry', () => {
+	it('has claude-acp registered', () => {
+		const registry = createDefaultRegistry();
+
+		expect(registry.has('claude-acp')).toBe(true);
+		expect(registry.get('claude-acp')).toEqual(claudeAgentSpec);
+	});
+
 	it('has codex registered', () => {
 		const registry = createDefaultRegistry();
 
 		expect(registry.has('codex')).toBe(true);
-		const spec = registry.get('codex');
-		expect(spec.command).toBe('codex');
-		expect(spec.args).toContain('--acp');
+		expect(registry.get('codex')).toEqual(codexAgentSpec);
 	});
 });

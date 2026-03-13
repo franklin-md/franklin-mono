@@ -14,7 +14,9 @@ import { AgentConnection } from '../connection.js';
 import type { AgentStack, Middleware } from '../stack.js';
 import { compose } from '../stack.js';
 
-import { createMemoryTransport, createMockAgent } from './helpers.js';
+import { createMemoryTransport } from '../transport/in-memory.js';
+
+import { createMockAgent } from './helpers.js';
 
 /**
  * Sets up a composed stack with an in-memory transport.

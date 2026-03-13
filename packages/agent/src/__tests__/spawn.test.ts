@@ -8,7 +8,9 @@ import { AgentRegistry } from '../registry.js';
 import { spawnFromConnection } from '../spawn.js';
 import type { AgentStack } from '../stack.js';
 
-import { createMemoryTransport, createMockAgent } from './helpers.js';
+import { createMemoryTransport } from '../transport/in-memory.js';
+
+import { createMockAgent } from './helpers.js';
 
 /**
  * Sets up an in-memory agent connection + agent-side connection.

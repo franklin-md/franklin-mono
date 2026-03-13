@@ -1,8 +1,13 @@
 export { AgentConnection } from './connection.js';
+export {
+	commonAgentSpecs,
+	claudeAgentSpec,
+	codexAgentSpec,
+} from './agents/index.js';
 export { AgentRegistry, createDefaultRegistry } from './registry.js';
 export { compose } from './stack.js';
 export { spawn, spawnFromConnection } from './spawn.js';
-export { StdioTransport } from './transport.js';
+export { StdioTransport, createMemoryTransport } from './transport/index.js';
 export type { AgentSpec } from './registry.js';
 export type {
 	SpawnOptions,
@@ -10,7 +15,7 @@ export type {
 	SpawnFromConnectionOptions,
 } from './spawn.js';
 export type { AgentStack, Middleware } from './stack.js';
-export type { Transport, StdioTransportOptions } from './transport.js';
+export type { Transport, StdioTransportOptions } from './transport/index.js';
 
 // Re-export key ACP types so consumers don't need to depend on the SDK directly
 export type {

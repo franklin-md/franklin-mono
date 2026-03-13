@@ -11,6 +11,7 @@ export default tseslint.config(
 			'**/node_modules/**',
 			'**/*.d.ts',
 			'**/*.tsbuildinfo',
+			'**/vitest.config.ts',
 		],
 	},
 	{

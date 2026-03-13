@@ -4,7 +4,7 @@ import type { AgentConnection } from './connection.js';
 import type { AgentRegistry, AgentSpec } from './registry.js';
 import type { AgentStack, Middleware } from './stack.js';
 import { compose } from './stack.js';
-import { StdioTransport } from './transport.js';
+import { StdioTransport } from './transport/index.js';
 
 // ---------------------------------------------------------------------------
 // Options + result

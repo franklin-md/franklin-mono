@@ -1,4 +1,5 @@
-import type { StdioTransportOptions } from './transport.js';
+import type { StdioTransportOptions } from './transport/index.js';
+import { commonAgentSpecs } from './agents/index.js';
 
 /** Transport spec for an agent. */
 export type AgentSpec = StdioTransportOptions;
@@ -28,6 +29,8 @@ export class AgentRegistry {
 /** Registry pre-loaded with known ACP agents. */
 export function createDefaultRegistry(): AgentRegistry {
 	const registry = new AgentRegistry();
-	registry.register('codex', { command: 'codex', args: ['--acp'] });
+	for (const [name, spec] of Object.entries(commonAgentSpecs)) {
+		registry.register(name, spec);
+	}
 	return registry;
 }

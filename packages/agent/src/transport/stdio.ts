@@ -4,10 +4,7 @@ import { Readable, Writable } from 'node:stream';
 import type { Stream } from '@agentclientprotocol/sdk';
 import { ndJsonStream } from '@agentclientprotocol/sdk';
 
-export interface Transport {
-	readonly stream: Stream;
-	dispose(): Promise<void>;
-}
+import type { Transport } from './index.js';
 
 export interface StdioTransportOptions {
 	command: string;
@@ -42,7 +39,7 @@ export class StdioTransport implements Transport {
 	}
 
 	async dispose(): Promise<void> {
-		if (this.process.exitCode !== null) return;
+		if (this.process.exitCode !== null || this.process.killed) return;
 
 		const exited = new Promise<void>((resolve) => {
 			this.process.on('exit', () => resolve());

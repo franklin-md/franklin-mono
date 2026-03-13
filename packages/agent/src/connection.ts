@@ -20,7 +20,7 @@ import type {
 } from '@agentclientprotocol/sdk';
 import { ClientSideConnection, RequestError } from '@agentclientprotocol/sdk';
 
-import type { Transport } from './transport.js';
+import type { Transport } from './transport/index.js';
 
 export class AgentConnection {
 	private readonly conn: ClientSideConnection;
