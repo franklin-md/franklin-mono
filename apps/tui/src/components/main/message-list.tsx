@@ -1,11 +1,11 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import type { ConversationItem } from '../../lib/events-to-conversation.js';
+import type { ConversationItem } from '../../lib/agent-store.js';
 import { MessageBubble } from './message-bubble.js';
 
 interface Props {
-	items: ConversationItem[];
+	items: readonly ConversationItem[];
 }
 
 export function MessageList({ items }: Props): React.ReactNode {
@@ -19,8 +19,8 @@ export function MessageList({ items }: Props): React.ReactNode {
 
 	return (
 		<Box flexDirection="column">
-			{items.map((item, i) => (
-				<MessageBubble key={i} item={item} />
+			{items.map((item) => (
+				<MessageBubble key={item.id} item={item} />
 			))}
 		</Box>
 	);

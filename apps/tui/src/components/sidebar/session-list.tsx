@@ -1,12 +1,11 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import type { AgentMetadata } from '@franklin/agent-manager';
-
+import type { AgentStore } from '../../lib/agent-store.js';
 import { SessionListItem } from './session-list-item.js';
 
 interface Props {
-	agents: AgentMetadata[];
+	agents: AgentStore[];
 	activeId: string | null;
 	onSelect: (id: string) => void;
 	onCreate: () => void;
@@ -24,12 +23,12 @@ export function SessionList({
 				Sessions
 			</Text>
 			<Box flexDirection="column" marginTop={1}>
-				{agents.map((agent) => (
+				{agents.map((store) => (
 					<SessionListItem
-						key={agent.agentId}
-						agent={agent}
-						isActive={agent.agentId === activeId}
-						onSelect={() => onSelect(agent.agentId)}
+						key={store.agentId}
+						store={store}
+						isActive={store.agentId === activeId}
+						onSelect={() => onSelect(store.agentId)}
 					/>
 				))}
 			</Box>

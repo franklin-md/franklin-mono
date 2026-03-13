@@ -1,26 +1,25 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 
-import type { AgentHandle } from '@franklin/agent-manager';
-import type { PermissionRequest } from '@franklin/managed-agent';
+import type { AgentStore, PendingPermission } from '../../lib/agent-store.js';
 
 interface Props {
-	request: PermissionRequest;
-	handle: AgentHandle;
+	pending: PendingPermission;
+	store: AgentStore;
 }
 
-export function PermissionPrompt({ request, handle }: Props): React.ReactNode {
+export function PermissionPrompt({ pending, store }: Props): React.ReactNode {
+	const { request } = pending;
+	const title = request.toolCall.title ?? 'Unknown tool';
+	const kind = request.toolCall.kind ?? 'other';
+
 	useInput((input) => {
 		if (input === 'y' || input === 'Y') {
-			void handle.dispatch({
-				type: 'permission.resolve',
-				decision: 'allow',
-			});
+			const option = request.options.find((o) => o.kind === 'allow_once');
+			if (option) store.resolvePermission(option.optionId);
 		} else if (input === 'n' || input === 'N') {
-			void handle.dispatch({
-				type: 'permission.resolve',
-				decision: 'deny',
-			});
+			const option = request.options.find((o) => o.kind === 'reject_once');
+			if (option) store.resolvePermission(option.optionId);
 		}
 	});
 
@@ -34,7 +33,9 @@ export function PermissionPrompt({ request, handle }: Props): React.ReactNode {
 			<Text color="yellow" bold>
 				Permission Required
 			</Text>
-			<Text>{request.message}</Text>
+			<Text>
+				{title} ({kind})
+			</Text>
 			<Text dimColor>
 				Press <Text bold>y</Text> to allow, <Text bold>n</Text> to deny
 			</Text>

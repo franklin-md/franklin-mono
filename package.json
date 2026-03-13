@@ -10,7 +10,7 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"build": "tsc -b",
+		"build": "npm run build --workspaces --if-present",
 		"clean": "tsc -b --clean",
 		"lint": "eslint . --cache --max-warnings=0",
 		"lint:fix": "npm run lint -- --fix",

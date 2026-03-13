@@ -1,45 +1,38 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Text, useInput } from 'ink';
 
-import type { AgentManager, AgentMetadata } from '@franklin/agent-manager';
-
+import type { AgentStore } from './lib/agent-store.js';
+import type { TuiAgentManager } from './lib/tui-agent-manager.js';
 import { ConversationView } from './components/main/conversation-view.js';
 import { SessionList } from './components/sidebar/session-list.js';
 import { StatusBar } from './components/status-bar.js';
 import { Layout } from './components/layout.js';
 
 interface Props {
-	manager: AgentManager;
+	manager: TuiAgentManager;
 }
 
 export function App({ manager }: Props): React.ReactNode {
 	const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
-	const [agents, setAgents] = useState<AgentMetadata[]>([]);
-	const activeHandle = activeAgentId ? manager.get(activeAgentId) : undefined;
+	const [agents, setAgents] = useState<AgentStore[]>([]);
+	const activeStore = activeAgentId ? manager.get(activeAgentId) : undefined;
 
-	const refreshAgents = useCallback(async () => {
-		setAgents(await manager.list());
+	useEffect(() => {
+		setAgents(manager.list());
+		return manager.subscribe(() => {
+			setAgents(manager.list());
+		});
 	}, [manager]);
 
 	const createAgent = useCallback(async () => {
 		const id = `agent-${Date.now()}`;
-		const handle = await manager.create(id, {
-			adapterKind: 'codex',
-			sessionSpec: {},
-		});
-		await handle.dispatch({ type: 'session.start', spec: {} });
-		await refreshAgents();
+		await manager.spawn(id, process.cwd());
 		setActiveAgentId(id);
-	}, [manager, refreshAgents]);
+	}, [manager]);
 
-	// Refresh agent list on mount
-	useEffect(() => {
-		void refreshAgents();
-	}, [refreshAgents]);
-
-	// Keyboard shortcut: 'n' to create new session (only when no active handle)
+	// Keyboard shortcut: 'n' to create new session (only when no active store)
 	useInput((input) => {
-		if (input === 'n' && !activeHandle) {
+		if (input === 'n' && !activeStore) {
 			void createAgent();
 		}
 	});
@@ -55,13 +48,13 @@ export function App({ manager }: Props): React.ReactNode {
 				/>
 			}
 			main={
-				activeHandle ? (
-					<ConversationView handle={activeHandle} />
+				activeStore ? (
+					<ConversationView store={activeStore} />
 				) : (
 					<Text dimColor>Press 'n' to create a new session</Text>
 				)
 			}
-			statusBar={<StatusBar handle={activeHandle} />}
+			statusBar={<StatusBar store={activeStore} />}
 		/>
 	);
 }

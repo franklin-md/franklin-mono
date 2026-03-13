@@ -2,9 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { Box, useInput } from 'ink';
 import { ScrollView, type ScrollViewRef } from 'ink-scroll-view';
 
-import type { AgentHandle } from '@franklin/agent-manager';
-
-import { useAgentHandle } from '../../hooks/use-agent-handle.js';
+import type { AgentStore } from '../../lib/agent-store.js';
+import { useAgentStore } from '../../hooks/use-agent-store.js';
 import { useInput as useTextInput } from '../../hooks/use-input.js';
 import { useMouseScroll } from '../../hooks/use-mouse-scroll.js';
 import { InputBar } from './input-bar.js';
@@ -12,24 +11,22 @@ import { MessageList } from './message-list.js';
 import { PermissionPrompt } from './permission-prompt.js';
 
 interface Props {
-	handle: AgentHandle;
+	store: AgentStore;
 }
 
-export function ConversationView({ handle }: Props): React.ReactNode {
-	const { conversation, pendingPermission, status } = useAgentHandle(handle);
-	const { text, setText, submit } = useTextInput(handle);
-	const isDisabled = status === 'disposed' || status === 'exited';
+export function ConversationView({ store }: Props): React.ReactNode {
+	const { items, pendingPermission, status } = useAgentStore(store);
+	const { text, setText, submit } = useTextInput(store);
+	const isDisabled = status === 'disposed';
 	const scrollRef = useRef<ScrollViewRef>(null);
 	useMouseScroll(scrollRef);
 
 	// Auto-scroll to bottom when new messages arrive or content changes
 	useEffect(() => {
 		scrollRef.current?.scrollToBottom();
-	}, [conversation]);
+	}, [items]);
 
 	// Keyboard scroll: Shift+Up/Down to scroll, PageUp/PageDown for larger jumps
-	// Note: scrollBy is used for upward scrolling (always safe), but downward
-	// scrolling uses scrollTo clamped to bottomOffset to prevent scrolling past content.
 	useInput((_input, key) => {
 		const ref = scrollRef.current;
 		if (!ref) return;
@@ -56,10 +53,10 @@ export function ConversationView({ handle }: Props): React.ReactNode {
 	return (
 		<Box flexDirection="column" flexGrow={1}>
 			<ScrollView ref={scrollRef} flexGrow={1} flexDirection="column">
-				<MessageList items={conversation} />
+				<MessageList items={items} />
 			</ScrollView>
 			{pendingPermission ? (
-				<PermissionPrompt request={pendingPermission} handle={handle} />
+				<PermissionPrompt pending={pendingPermission} store={store} />
 			) : null}
 			<InputBar
 				value={text}

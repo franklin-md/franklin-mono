@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import type { AgentHandle } from '@franklin/agent-manager';
+import type { AgentStore } from '../lib/agent-store.js';
 
 export interface InputState {
 	text: string;
@@ -8,17 +8,14 @@ export interface InputState {
 	submit: () => void;
 }
 
-export function useInput(handle: AgentHandle | undefined): InputState {
+export function useInput(store: AgentStore | undefined): InputState {
 	const [text, setText] = useState('');
 
 	const submit = useCallback(() => {
-		if (!handle || !text.trim()) return;
-		void handle.dispatch({
-			type: 'turn.start',
-			input: [{ kind: 'user_message', text: text.trim() }],
-		});
+		if (!store || !text.trim()) return;
+		void store.prompt(text.trim());
 		setText('');
-	}, [handle, text]);
+	}, [store, text]);
 
 	return { text, setText, submit };
 }

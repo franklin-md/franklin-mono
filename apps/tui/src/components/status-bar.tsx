@@ -1,14 +1,17 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-import type { AgentHandle } from '@franklin/agent-manager';
+import type { AgentStore } from '../lib/agent-store.js';
+import { useAgentStore } from '../hooks/use-agent-store.js';
 
 interface Props {
-	handle: AgentHandle | undefined;
+	store: AgentStore | undefined;
 }
 
-export function StatusBar({ handle }: Props): React.ReactNode {
-	if (!handle) {
+export function StatusBar({ store }: Props): React.ReactNode {
+	const { status } = useAgentStore(store);
+
+	if (!store) {
 		return (
 			<Box borderStyle="single" borderColor="gray" paddingX={1}>
 				<Text dimColor>No active session</Text>
@@ -17,20 +20,20 @@ export function StatusBar({ handle }: Props): React.ReactNode {
 	}
 
 	const statusColor =
-		handle.status === 'running'
+		status === 'running'
 			? 'yellow'
-			: handle.status === 'error'
+			: status === 'error'
 				? 'red'
-				: handle.status === 'exited' || handle.status === 'disposed'
+				: status === 'disposed'
 					? 'gray'
 					: 'green';
 
 	return (
 		<Box borderStyle="single" borderColor="gray" paddingX={1}>
 			<Text>
-				<Text bold>{handle.agentId}</Text>
+				<Text bold>{store.agentId}</Text>
 				<Text> </Text>
-				<Text color={statusColor}>[{handle.status}]</Text>
+				<Text color={statusColor}>[{status}]</Text>
 			</Text>
 		</Box>
 	);
