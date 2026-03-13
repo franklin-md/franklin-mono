@@ -133,7 +133,6 @@ const INBOUND_METHODS = [
 
 // Internal function type — intentionally permissive. Type safety comes from
 // the public AgentStack/Middleware types, not from the chain-building internals.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ChainFn = (...args: any[]) => any;
 
 /**

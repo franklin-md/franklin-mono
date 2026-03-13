@@ -1,5 +1,5 @@
 import { ndJsonStream } from '@agentclientprotocol/sdk';
-import type { Transport } from '@franklin/agent';
+import type { Transport } from '@franklin/agent/browser';
 
 declare global {
 	interface Window {
@@ -21,7 +21,7 @@ declare global {
  * Bytes from the main process (subprocess stdout →) are pushed into the readable stream.
  * ndJsonStream wraps the raw byte streams into the ACP message-level Stream.
  */
-export function createIpcTransport(agentId: string): Transport {
+export function createRendererIpcTransport(agentId: string): Transport {
 	let readableController: ReadableStreamDefaultController<Uint8Array>;
 
 	const readable = new ReadableStream<Uint8Array>({

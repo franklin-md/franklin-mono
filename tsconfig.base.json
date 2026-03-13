@@ -17,8 +17,10 @@
 		"paths": {
 			"@franklin/transport": ["packages/lib/transport/src/index.ts"],
 			"@franklin/agent": ["packages/agent/src/index.ts"],
+			"@franklin/agent/browser": ["packages/agent/src/browser.ts"],
 			"@franklin/local-mcp": ["packages/local-mcp/src/index.ts"],
-			"@franklin/react-agents": ["packages/react-agents/src/index.ts"]
+			"@franklin/react-agents": ["packages/react-agents/src/index.ts"],
+			"@franklin/react-agents/browser": ["packages/react-agents/src/browser.ts"]
 		}
 	}
 }

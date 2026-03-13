@@ -1,17 +1,10 @@
-import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { app, BrowserWindow, ipcMain } from 'electron';
 
 import { AgentRelay } from './agent-relay.js';
 
 function getPreloadPath(): string {
-	const esmPreload = path.join(__dirname, '../preload/index.mjs');
-
-	if (existsSync(esmPreload)) {
-		return esmPreload;
-	}
-
-	return path.join(__dirname, '../preload/index.js');
+	return path.join(__dirname, '../preload/index.cjs');
 }
 
 function createWindow(): void {
@@ -25,25 +18,12 @@ function createWindow(): void {
 		},
 	});
 
-	const relay = new AgentRelay();
-
-	// Subprocess stdout → renderer
-	relay.setDataHandler((agentId, chunk) => {
-		mainWindow.webContents.send('franklin:relay-data', agentId, chunk);
-	});
+	const relay = new AgentRelay(mainWindow.webContents, ipcMain);
 
 	// Spawn agent subprocess, return agentId
 	ipcMain.handle('franklin:spawn', (_event, agentName: string, cwd: string) => {
 		return relay.create(agentName, cwd);
 	});
-
-	// Renderer → subprocess stdin
-	ipcMain.on(
-		'franklin:relay-data',
-		(_event, agentId: string, chunk: Uint8Array) => {
-			relay.write(agentId, chunk);
-		},
-	);
 
 	// Dispose agent subprocess
 	ipcMain.handle('franklin:dispose', (_event, agentId: string) => {
@@ -59,7 +39,6 @@ function createWindow(): void {
 
 	mainWindow.on('closed', () => {
 		ipcMain.removeHandler('franklin:spawn');
-		ipcMain.removeAllListeners('franklin:relay-data');
 		ipcMain.removeHandler('franklin:dispose');
 		void relay.disposeAll();
 	});

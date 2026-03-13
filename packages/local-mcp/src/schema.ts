@@ -8,5 +8,6 @@ import type { z } from 'zod';
  * zodToJsonSchema receives a `ZodType<any>`.
  */
 export function toJsonSchema(schema: z.ZodType): Record<string, unknown> {
-	return zodToJsonSchema(schema) as Record<string, unknown>;
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+	return zodToJsonSchema(schema as any) as Record<string, unknown>;
 }

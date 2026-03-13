@@ -1,88 +1,62 @@
-import { spawn as spawnProcess } from 'node:child_process';
-import type { ChildProcess } from 'node:child_process';
+import type { IpcMain, WebContents } from 'electron';
 import { createDefaultRegistry } from '@franklin/agent';
+import { connect, StdioPipe } from '@franklin/transport';
+import type { Connection } from '@franklin/transport';
+
+import { createMainIpcPipe } from './main-ipc-pipe.js';
 
 interface RelayEntry {
-	process: ChildProcess;
-	agentName: string;
+	connection: Connection;
+	stdioPipe: StdioPipe;
+	disposeIpc: () => void;
 }
 
 /**
- * Spawns ACP agent subprocesses and relays raw bytes to/from IPC.
- * Zero ACP awareness — just a byte-level bridge between the renderer
- * (via IPC) and agent subprocesses (via stdio).
+ * Spawns ACP agent subprocesses and connects them to the renderer via IPC.
+ *
+ * Each agent gets a StdioPipe (subprocess) connected to a MainIpcPipe
+ * (Electron IPC) — bytes flow bidirectionally with no manual pumping.
  */
 export class AgentRelay {
 	private readonly registry = createDefaultRegistry();
 	private readonly relays = new Map<string, RelayEntry>();
 	private nextId = 0;
-	private dataHandler: ((agentId: string, chunk: Uint8Array) => void) | null =
-		null;
+
+	constructor(
+		private readonly webContents: WebContents,
+		private readonly ipcMain: IpcMain,
+	) {}
 
 	/**
-	 * Set the callback that receives subprocess stdout chunks.
-	 * Typically wired to `webContents.send()`.
-	 */
-	setDataHandler(handler: (agentId: string, chunk: Uint8Array) => void): void {
-		this.dataHandler = handler;
-	}
-
-	/**
-	 * Spawn an agent subprocess and start relaying its stdout.
+	 * Spawn an agent subprocess and connect it to the renderer.
 	 * Returns a unique agentId for routing.
 	 */
 	create(agentName: string, cwd: string): string {
 		const spec = this.registry.get(agentName);
 		const agentId = `agent-${this.nextId++}`;
 
-		const proc = spawnProcess(spec.command, spec.args ?? [], {
-			stdio: ['pipe', 'pipe', 'inherit'],
-			cwd,
-			env: spec.env ? { ...process.env, ...spec.env } : undefined,
+		const stdioPipe = new StdioPipe({ ...spec, cwd });
+		const { pipe: ipcPipe, dispose: disposeIpc } = createMainIpcPipe({
+			agentId,
+			webContents: this.webContents,
+			ipcMain: this.ipcMain,
 		});
 
-		// Pump subprocess stdout → data handler (→ renderer via IPC)
-		proc.stdout.on('data', (chunk: Buffer) => {
-			this.dataHandler?.(agentId, new Uint8Array(chunk));
-		});
+		// Connect subprocess stdio ↔ renderer IPC
+		const connection = connect(stdioPipe.pipe, ipcPipe);
 
-		proc.on('error', (err) => {
-			console.error(`[AgentRelay] ${agentId} process error:`, err);
-		});
-
-		this.relays.set(agentId, { process: proc, agentName });
+		this.relays.set(agentId, { connection, stdioPipe, disposeIpc });
 		return agentId;
 	}
 
-	/**
-	 * Write bytes from the renderer into the agent subprocess stdin.
-	 */
-	write(agentId: string, chunk: Uint8Array): void {
-		const entry = this.relays.get(agentId);
-		if (!entry) throw new Error(`Unknown agent: ${agentId}`);
-		// stdin is guaranteed to exist when stdio[0] is 'pipe'
-		const { stdin } = entry.process;
-		if (stdin) {
-			stdin.write(Buffer.from(chunk));
-		}
-	}
-
-	/**
-	 * Kill an agent subprocess and clean up.
-	 */
 	async dispose(agentId: string): Promise<void> {
 		const entry = this.relays.get(agentId);
 		if (!entry) return;
-
 		this.relays.delete(agentId);
 
-		const proc = entry.process;
-		if (proc.exitCode !== null) return;
-
-		return new Promise<void>((resolve) => {
-			proc.on('exit', () => resolve());
-			proc.kill('SIGTERM');
-		});
+		await entry.connection.dispose();
+		entry.disposeIpc();
+		await entry.stdioPipe.dispose();
 	}
 
 	async disposeAll(): Promise<void> {

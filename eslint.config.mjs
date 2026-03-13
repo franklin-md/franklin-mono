@@ -106,5 +106,25 @@ export default tseslint.config(
 			'vitest/expect-expect': 'off',
 		},
 	},
+	// Prevent Electron renderer code from importing the full @franklin/agent
+	// barrel, which pulls in Node.js-only dependencies (StdioTransport, spawn).
+	// Renderer code must use @franklin/agent/browser instead.
+	{
+		files: ['apps/demo/src/renderer/**/*.{ts,tsx}'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					paths: [
+						{
+							name: '@franklin/agent',
+							message:
+								'Use @franklin/agent/browser in renderer code to avoid pulling in Node.js dependencies.',
+						},
+					],
+				},
+			],
+		},
+	},
 	eslintConfigPrettier,
 );
