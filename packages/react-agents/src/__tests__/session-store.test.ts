@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { RequestPermissionRequest, SessionNotification } from '@franklin/agent';
+import type {
+	RequestPermissionRequest,
+	SessionNotification,
+} from '@franklin/agent';
 
 import { createSessionStore } from '../session-store.js';
 

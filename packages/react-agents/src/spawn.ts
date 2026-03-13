@@ -12,7 +12,10 @@ import {
 import { createSessionStore, type ReactAgentSession } from './session-store.js';
 
 type ReactSpawnOptions = Omit<SpawnOptions, 'handler'>;
-type ReactSpawnFromConnectionOptions = Omit<SpawnFromConnectionOptions, 'handler'>;
+type ReactSpawnFromConnectionOptions = Omit<
+	SpawnFromConnectionOptions,
+	'handler'
+>;
 type AgentSessionResult = Awaited<ReturnType<typeof spawnAgentSession>>;
 
 function attachStore(

@@ -25,10 +25,7 @@ function statusIndicator(status: TuiSessionStatus): {
 	}
 }
 
-export function SessionListItem({
-	session,
-	isActive,
-}: Props): React.ReactNode {
+export function SessionListItem({ session, isActive }: Props): React.ReactNode {
 	const { symbol, color } = statusIndicator(session.status);
 
 	return (

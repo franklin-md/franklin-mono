@@ -42,7 +42,9 @@ export class TuiAgentManager {
 	}
 
 	async disposeAll(): Promise<void> {
-		await Promise.all([...this._sessions.values()].map((session) => session.dispose()));
+		await Promise.all(
+			[...this._sessions.values()].map((session) => session.dispose()),
+		);
 		this._sessions.clear();
 		this._emit();
 	}

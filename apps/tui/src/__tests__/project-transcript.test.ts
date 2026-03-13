@@ -5,10 +5,7 @@ import type { TranscriptEntry } from '@franklin/react-agents';
 
 import { projectTranscript } from '../lib/project-transcript.js';
 
-function entry(
-	id: string,
-	notification: SessionNotification,
-): TranscriptEntry {
+function entry(id: string, notification: SessionNotification): TranscriptEntry {
 	return {
 		id,
 		receivedAt: 1,

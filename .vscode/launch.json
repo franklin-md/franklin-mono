@@ -22,6 +22,47 @@
 			"runtimeArgs": ["run", "test:integration"],
 			"console": "integratedTerminal",
 			"skipFiles": ["<node_internals>/**"]
+		},
+		{
+			"name": "Demo: Start Dev",
+			"type": "node-terminal",
+			"request": "launch",
+			"cwd": "${workspaceFolder}",
+			"command": "npm run dev:debug -w @franklin/demo"
+		},
+		{
+			"name": "Demo: Attach Main",
+			"type": "node",
+			"request": "attach",
+			"port": 9229,
+			"restart": true,
+			"timeout": 30000,
+			"sourceMaps": true,
+			"skipFiles": ["<node_internals>/**"],
+			"resolveSourceMapLocations": [
+				"${workspaceFolder}/apps/demo/**",
+				"${workspaceFolder}/packages/**",
+				"!**/node_modules/**"
+			]
+		},
+		{
+			"name": "Demo: Attach Renderer",
+			"type": "chrome",
+			"request": "attach",
+			"port": 9223,
+			"timeout": 30000,
+			"webRoot": "${workspaceFolder}/apps/demo/src/renderer"
+		}
+	],
+	"compounds": [
+		{
+			"name": "Demo: Full Debug",
+			"configurations": [
+				"Demo: Start Dev",
+				"Demo: Attach Main",
+				"Demo: Attach Renderer"
+			],
+			"stopAll": true
 		}
 	]
 }

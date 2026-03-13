@@ -1,0 +1,34 @@
+{
+	"name": "@franklin/local-mcp",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"bin": {
+		"franklin-mcp-relay": "./dist/relay/relay.js"
+	},
+	"files": [
+		"dist"
+	],
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "tsc -b tsconfig.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@franklin/transport": "*",
+		"@modelcontextprotocol/sdk": "^1.27.1",
+		"zod": "^3.25.1",
+		"zod-to-json-schema": "^3.25.1"
+	}
+}

@@ -1,8 +1,11 @@
 {
 	"files": [],
 	"references": [
+		{ "path": "./packages/lib/transport" },
 		{ "path": "./packages/agent" },
+		{ "path": "./packages/local-mcp" },
 		{ "path": "./packages/react-agents" },
-		{ "path": "./apps/tui" }
+		{ "path": "./apps/tui" },
+		{ "path": "./apps/demo" }
 	]
 }

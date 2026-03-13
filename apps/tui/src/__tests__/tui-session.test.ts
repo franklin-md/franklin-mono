@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AgentStack } from '@franklin/agent';
-import type { AgentSessionStore, ReactAgentSession } from '@franklin/react-agents';
+import type {
+	AgentSessionStore,
+	ReactAgentSession,
+} from '@franklin/react-agents';
 
 import { TuiSession } from '../lib/tui-session.js';
 

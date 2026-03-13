@@ -17,6 +17,18 @@ export type {
 } from './spawn.js';
 export type { AgentStack, Middleware } from './stack.js';
 export type { Transport, StdioTransportOptions } from './transport/index.js';
+export {
+	createModuleMiddleware,
+	createThreadModule,
+} from './middleware/modules/index.js';
+export type {
+	FranklinModule,
+	ModuleCreateContext,
+	ModuleCreateResult,
+	ModulePromptContext,
+	ThreadRequest,
+	ThreadModuleOptions,
+} from './middleware/modules/index.js';
 
 // Re-export key ACP types so consumers don't need to depend on the SDK directly
 export type {

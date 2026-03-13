@@ -12,6 +12,8 @@ export default tseslint.config(
 			'**/*.d.ts',
 			'**/*.tsbuildinfo',
 			'**/vitest.config.ts',
+			'**/electron.vite.config.ts',
+			'**/out/**',
 		],
 	},
 	{
@@ -59,6 +61,7 @@ export default tseslint.config(
 					ignoreVoidOperator: true,
 				},
 			],
+			'@typescript-eslint/no-explicit-any': 'off',
 			'@typescript-eslint/no-import-type-side-effects': 'error',
 			'@typescript-eslint/no-misused-promises': [
 				'error',

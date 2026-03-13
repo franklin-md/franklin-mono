@@ -23,6 +23,9 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@agentclientprotocol/sdk": "^0.16.1"
+		"@agentclientprotocol/sdk": "^0.16.1",
+		"@franklin/local-mcp": "*",
+		"@franklin/transport": "*",
+		"zod": "^3.25.1"
 	}
 }

@@ -1,3 +1,4 @@
 ARCHITECTURE.md
 README.md
 docs/**/*.md
+**/dist

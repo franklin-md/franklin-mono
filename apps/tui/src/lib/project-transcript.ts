@@ -118,7 +118,8 @@ export function projectTranscript(
 				{
 					flushCurrent();
 					const idx = items.findLastIndex(
-						(item) => item.kind === 'tool_call' && item.id === update.toolCallId,
+						(item) =>
+							item.kind === 'tool_call' && item.id === update.toolCallId,
 					);
 					if (idx !== -1) {
 						const existing = items[idx];

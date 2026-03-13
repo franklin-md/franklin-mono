@@ -1,0 +1,12 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": "./src/preload",
+		"outDir": "./dist/preload",
+		"composite": true,
+		"declaration": true,
+		"declarationMap": true,
+		"lib": ["ES2023", "DOM"]
+	},
+	"include": ["src/preload/**/*.ts"]
+}
