@@ -13,7 +13,9 @@
 		"dev": "electron-vite dev",
 		"dev:debug": "electron-vite dev --sourcemap --inspect 9229 --remoteDebuggingPort 9223",
 		"build:vite": "electron-vite build",
-		"test": "vitest run --passWithNoTests"
+		"test": "vitest run --passWithNoTests",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build"
 	},
 	"dependencies": {
 		"@agentclientprotocol/sdk": "^0.16.1",
@@ -40,6 +42,10 @@
 		"react-markdown": "^10.1.0",
 		"rehype-highlight": "^7.0.2",
 		"tailwind-merge": "^3.3.0",
-		"tailwindcss": "^4.1.4"
+		"tailwindcss": "^4.1.4",
+		"storybook": "^10.2.19",
+		"@storybook/react-vite": "^10.2.19",
+		"@storybook/addon-docs": "^10.2.19",
+		"@storybook/addon-mcp": "^0.4.1"
 	}
 }
