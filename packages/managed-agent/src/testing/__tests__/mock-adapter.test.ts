@@ -22,30 +22,13 @@ function createHarness(
 }
 
 describe('MockAdapter', () => {
-	it('auto-emits ready and session.started on session.start', async () => {
+	it('records commands without emitting lifecycle events', async () => {
 		const { events, adapter, mock } = createHarness();
 
 		const result = await adapter.dispatch({ type: 'session.start', spec: {} });
 
 		expect(result).toEqual({ ok: true });
 		expect(mock.commands).toEqual([{ type: 'session.start', spec: {} }]);
-		expect(events).toEqual([
-			{ type: 'agent.ready' },
-			{ type: 'session.started' },
-		]);
-	});
-
-	it('records turn commands without emitting turn events by default', async () => {
-		const { events, adapter, mock } = createHarness();
-		const command = {
-			type: 'turn.start' as const,
-			input: [{ kind: 'user_message' as const, text: 'hello' }],
-		};
-
-		const result = await adapter.dispatch(command);
-
-		expect(result).toEqual({ ok: true });
-		expect(mock.commands).toEqual([command]);
 		expect(events).toEqual([]);
 	});
 
@@ -67,7 +50,6 @@ describe('MockAdapter', () => {
 				type: 'item.completed',
 				item: { kind: 'user_message', text: 'hello' },
 			},
-			{ type: 'turn.started' },
 			{
 				type: 'item.started',
 				item: { kind: 'assistant_message' },

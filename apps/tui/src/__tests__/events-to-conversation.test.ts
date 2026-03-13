@@ -11,10 +11,8 @@ describe('eventsToConversation', () => {
 
 	it('skips non-item events', () => {
 		const events: ManagedAgentEvent[] = [
-			{ type: 'agent.ready' },
-			{ type: 'session.started' },
-			{ type: 'turn.started' },
 			{ type: 'turn.completed' },
+			{ type: 'agent.exited' },
 		];
 		expect(eventsToConversation(events)).toEqual([]);
 	});
@@ -91,7 +89,6 @@ describe('eventsToConversation', () => {
 				type: 'item.completed',
 				item: { kind: 'user_message', text: 'question' },
 			},
-			{ type: 'turn.started' },
 			{ type: 'item.started', item: { kind: 'assistant_message' } },
 			{
 				type: 'item.delta',
@@ -167,5 +164,66 @@ describe('eventsToConversation', () => {
 				streaming: true,
 			},
 		]);
+	});
+
+	it('folds reasoning item through started/delta/completed', () => {
+		const events: ManagedAgentEvent[] = [
+			{ type: 'item.started', item: { kind: 'reasoning' } },
+			{
+				type: 'item.delta',
+				item: { kind: 'reasoning', textDelta: 'let me ' },
+			},
+			{
+				type: 'item.delta',
+				item: { kind: 'reasoning', textDelta: 'think' },
+			},
+			{
+				type: 'item.completed',
+				item: { kind: 'reasoning', text: 'let me think' },
+			},
+		];
+		expect(eventsToConversation(events)).toEqual([
+			{
+				kind: 'reasoning',
+				text: 'let me think',
+				streaming: false,
+			},
+		]);
+	});
+
+	it('handles reasoning item interleaved with assistant message', () => {
+		const events: ManagedAgentEvent[] = [
+			{ type: 'item.started', item: { kind: 'reasoning' } },
+			{
+				type: 'item.delta',
+				item: { kind: 'reasoning', textDelta: 'thinking...' },
+			},
+			{
+				type: 'item.completed',
+				item: { kind: 'reasoning', text: 'thinking...' },
+			},
+			{ type: 'item.started', item: { kind: 'assistant_message' } },
+			{
+				type: 'item.delta',
+				item: { kind: 'assistant_message', textDelta: 'answer' },
+			},
+			{
+				type: 'item.completed',
+				item: { kind: 'assistant_message', text: 'answer' },
+			},
+		];
+
+		const result = eventsToConversation(events);
+		expect(result).toHaveLength(2);
+		expect(result[0]).toEqual({
+			kind: 'reasoning',
+			text: 'thinking...',
+			streaming: false,
+		});
+		expect(result[1]).toEqual({
+			kind: 'assistant_message',
+			text: 'answer',
+			streaming: false,
+		});
 	});
 });

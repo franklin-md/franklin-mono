@@ -110,15 +110,14 @@ describe('CodexDirectTransport', () => {
 		}
 	});
 
-	it('startSession emits agent.ready + session.started', async () => {
+	it('startSession emits no lifecycle events', async () => {
 		const thread = createMockThread([]);
 		const result = createTransport(thread);
 		transport = result.transport;
 
 		await transport.startSession();
 
-		const types = result.events.map((e) => e.type);
-		expect(types).toEqual(['agent.ready', 'session.started']);
+		expect(result.events).toEqual([]);
 	});
 
 	it('startSession with threadId resumes', async () => {
@@ -128,7 +127,7 @@ describe('CodexDirectTransport', () => {
 
 		await transport.startSession('existing-thread');
 
-		expect(result.events.map((e) => e.type)).toContain('session.resumed');
+		expect(result.events).toEqual([]);
 		expect(transport.threadId).toBe('resumed-thread');
 	});
 
@@ -159,7 +158,6 @@ describe('CodexDirectTransport', () => {
 		await waitForEvent(result.events, 'turn.completed', 1);
 
 		const types = result.events.map((e) => e.type);
-		expect(types).toContain('turn.started');
 		expect(types).toContain('item.started');
 		expect(types).toContain('item.delta');
 		expect(types).toContain('item.completed');
@@ -234,8 +232,8 @@ describe('CodexDirectTransport', () => {
 		await transport.startSession();
 		await transport.startTurn([{ kind: 'user_message', text: 'hi' }]);
 
-		// Wait for turn.started
-		await waitForEvent(result.events, 'turn.started', 1);
+		// Give the async generator time to yield the turn.started event
+		await new Promise((r) => setTimeout(r, 50));
 
 		await transport.interruptTurn();
 		// The abort should not emit an error (signal was aborted intentionally)

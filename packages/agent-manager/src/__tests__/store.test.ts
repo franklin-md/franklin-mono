@@ -68,7 +68,7 @@ describe('InMemoryAgentStore', () => {
 	describe('events', () => {
 		it('appends and loads events', async () => {
 			const store = new InMemoryAgentStore();
-			const event: ManagedAgentEvent = { type: 'agent.ready' };
+			const event: ManagedAgentEvent = { type: 'turn.completed' };
 			await store.appendEvent('a1', event);
 
 			const events = await store.loadEvents('a1');
@@ -83,9 +83,15 @@ describe('InMemoryAgentStore', () => {
 		it('preserves event order', async () => {
 			const store = new InMemoryAgentStore();
 			const events: ManagedAgentEvent[] = [
-				{ type: 'agent.ready' },
-				{ type: 'session.started' },
-				{ type: 'turn.started' },
+				{
+					type: 'item.started',
+					item: { kind: 'assistant_message' },
+				},
+				{
+					type: 'item.completed',
+					item: { kind: 'assistant_message', text: 'hi' },
+				},
+				{ type: 'turn.completed' },
 			];
 			for (const e of events) {
 				await store.appendEvent('a1', e);
@@ -93,9 +99,9 @@ describe('InMemoryAgentStore', () => {
 
 			const loaded = await store.loadEvents('a1');
 			expect(loaded.map((e) => e.type)).toEqual([
-				'agent.ready',
-				'session.started',
-				'turn.started',
+				'item.started',
+				'item.completed',
+				'turn.completed',
 			]);
 		});
 
@@ -126,7 +132,7 @@ describe('InMemoryAgentStore', () => {
 
 		it('returns a copy, not a reference', async () => {
 			const store = new InMemoryAgentStore();
-			await store.appendEvent('a1', { type: 'agent.ready' });
+			await store.appendEvent('a1', { type: 'turn.completed' });
 
 			const events1 = await store.loadEvents('a1');
 			const events2 = await store.loadEvents('a1');
@@ -136,15 +142,15 @@ describe('InMemoryAgentStore', () => {
 
 		it('isolates events between agents', async () => {
 			const store = new InMemoryAgentStore();
-			await store.appendEvent('a1', { type: 'agent.ready' });
-			await store.appendEvent('a2', { type: 'turn.started' });
+			await store.appendEvent('a1', { type: 'turn.completed' });
+			await store.appendEvent('a2', { type: 'agent.exited' });
 
 			const e1 = await store.loadEvents('a1');
 			const e2 = await store.loadEvents('a2');
 			expect(e1).toHaveLength(1);
-			expect(e1[0]?.type).toBe('agent.ready');
+			expect(e1[0]?.type).toBe('turn.completed');
 			expect(e2).toHaveLength(1);
-			expect(e2[0]?.type).toBe('turn.started');
+			expect(e2[0]?.type).toBe('agent.exited');
 		});
 	});
 
@@ -156,7 +162,7 @@ describe('InMemoryAgentStore', () => {
 		it('removes both metadata and events', async () => {
 			const store = new InMemoryAgentStore();
 			await store.saveMetadata(createMetadata('a1'));
-			await store.appendEvent('a1', { type: 'agent.ready' });
+			await store.appendEvent('a1', { type: 'turn.completed' });
 
 			await store.remove('a1');
 

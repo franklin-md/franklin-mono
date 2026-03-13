@@ -18,9 +18,17 @@ export type CodexAgentMessage = {
 	text: string;
 };
 
+export type CodexReasoningItem = {
+	type: 'reasoning';
+	id: string;
+	content?: string[];
+	summary?: string[];
+};
+
 export type CodexThreadItem =
 	| CodexUserMessage
 	| CodexAgentMessage
+	| CodexReasoningItem
 	| { type: string; id: string };
 
 // -- Notification params ----------------------------------------------------
@@ -47,7 +55,23 @@ export type ItemCompletedParams = {
 
 export type AgentMessageDeltaParams = {
 	item: { id: string };
-	delta: { text: string };
+	delta?: { text?: string };
+};
+
+export type ReasoningTextDeltaParams = {
+	delta: string;
+	contentIndex: number;
+	itemId: string;
+	threadId: string;
+	turnId: string;
+};
+
+export type ReasoningSummaryTextDeltaParams = {
+	delta: string;
+	summaryIndex: number;
+	itemId: string;
+	threadId: string;
+	turnId: string;
 };
 
 export type ErrorParams = {
@@ -92,6 +116,7 @@ export type CodexUserInput = {
 
 export type InitializeParams = {
 	clientInfo: { name: string; version: string };
+	capabilities?: { experimentalApi?: boolean };
 };
 
 export type ThreadStartParams = {
@@ -101,11 +126,13 @@ export type ThreadStartParams = {
 
 export type ThreadResumeParams = {
 	threadId: string;
+	experimentalRawEvents?: boolean;
 	persistExtendedHistory: boolean;
 };
 
 export type ThreadForkParams = {
 	threadId: string;
+	experimentalRawEvents?: boolean;
 	persistExtendedHistory: boolean;
 };
 

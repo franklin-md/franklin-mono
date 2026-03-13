@@ -9,16 +9,22 @@ interface Props {
 
 export function MessageBubble({ item }: Props): React.ReactNode {
 	const isUser = item.kind === 'user_message';
-	const label = isUser ? '>' : '  ';
+	const isReasoning = item.kind === 'reasoning';
+	const label = isUser ? '>' : isReasoning ? '  ~' : '  ';
 	const color = isUser ? 'blue' : undefined;
 
 	return (
 		<Box flexDirection="row" marginBottom={1}>
-			<Text color={color} bold={isUser}>
+			<Text color={color} bold={isUser} dimColor={isReasoning}>
 				{label}{' '}
 			</Text>
 			<Box flexDirection="column" flexShrink={1}>
-				<Text color={color} wrap="wrap">
+				<Text
+					color={color}
+					dimColor={isReasoning}
+					italic={isReasoning}
+					wrap="wrap"
+				>
 					{item.text}
 					{item.streaming ? <Text dimColor> ...</Text> : null}
 				</Text>

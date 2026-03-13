@@ -28,15 +28,19 @@ export function ConversationView({ handle }: Props): React.ReactNode {
 	}, [conversation]);
 
 	// Keyboard scroll: Shift+Up/Down to scroll, PageUp/PageDown for larger jumps
+	// Note: scrollBy is used for upward scrolling (always safe), but downward
+	// scrolling uses scrollTo clamped to bottomOffset to prevent scrolling past content.
 	useInput((_input, key) => {
+		const ref = scrollRef.current;
+		if (!ref) return;
 		if (key.upArrow && key.shift) {
-			scrollRef.current?.scrollBy(-1);
+			ref.scrollBy(-1);
 		} else if (key.downArrow && key.shift) {
-			scrollRef.current?.scrollBy(1);
+			ref.scrollTo(Math.min(ref.getScrollOffset() + 1, ref.getBottomOffset()));
 		} else if (key.pageUp) {
-			scrollRef.current?.scrollBy(-10);
+			ref.scrollBy(-10);
 		} else if (key.pageDown) {
-			scrollRef.current?.scrollBy(10);
+			ref.scrollTo(Math.min(ref.getScrollOffset() + 10, ref.getBottomOffset()));
 		}
 	});
 

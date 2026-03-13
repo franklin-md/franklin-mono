@@ -74,7 +74,11 @@ export class AgentHandle {
 			};
 		}
 
-		return this.adapter.dispatch(command);
+		const result = await this.adapter.dispatch(command);
+		if (result.ok) {
+			this.updateStatusFromCommand(command);
+		}
+		return result;
 	}
 
 	// -----------------------------------------------------------------------
@@ -140,14 +144,24 @@ export class AgentHandle {
 	// Private helpers
 	// -----------------------------------------------------------------------
 
-	private updateStatusFromEvent(event: ManagedAgentEvent): void {
-		switch (event.type) {
-			case 'agent.ready':
+	private updateStatusFromCommand(command: ManagedAgentCommand): void {
+		switch (command.type) {
+			case 'session.start':
+			case 'session.resume':
+			case 'session.fork':
 				this.updateStatus('ready');
 				return;
-			case 'turn.started':
+			case 'turn.start':
 				this.updateStatus('running');
 				return;
+			case 'turn.interrupt':
+			case 'permission.resolve':
+				return;
+		}
+	}
+
+	private updateStatusFromEvent(event: ManagedAgentEvent): void {
+		switch (event.type) {
 			case 'turn.completed':
 				this.updateStatus('idle');
 				return;
@@ -157,9 +171,6 @@ export class AgentHandle {
 			case 'agent.exited':
 				this.updateStatus('exited');
 				return;
-			case 'session.started':
-			case 'session.resumed':
-			case 'session.forked':
 			case 'item.started':
 			case 'item.delta':
 			case 'item.completed':

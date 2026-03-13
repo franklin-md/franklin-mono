@@ -1,4 +1,4 @@
-export type ItemKind = 'user_message' | 'assistant_message';
+export type ItemKind = 'user_message' | 'assistant_message' | 'reasoning';
 
 export type ItemStarted =
 	| {
@@ -7,6 +7,9 @@ export type ItemStarted =
 	  }
 	| {
 			kind: 'assistant_message';
+	  }
+	| {
+			kind: 'reasoning';
 	  };
 
 export type ItemDelta =
@@ -17,6 +20,10 @@ export type ItemDelta =
 	| {
 			kind: 'assistant_message';
 			textDelta: string;
+	  }
+	| {
+			kind: 'reasoning';
+			textDelta: string;
 	  };
 
 export type ItemCompleted =
@@ -26,6 +33,10 @@ export type ItemCompleted =
 	  }
 	| {
 			kind: 'assistant_message';
+			text: string;
+	  }
+	| {
+			kind: 'reasoning';
 			text: string;
 	  };
 

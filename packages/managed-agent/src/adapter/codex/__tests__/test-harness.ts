@@ -8,7 +8,6 @@ import type { InputItem } from '../../../messages/input.js';
 import type { ManagedAgentCommandResult } from '../../../messages/result.js';
 
 type EventType = ManagedAgentEvent['type'];
-type SessionLifecycleEvent = 'session.started' | 'session.resumed';
 
 function ensureOk(
 	result: ManagedAgentCommandResult,
@@ -117,19 +116,17 @@ export function createCodexAdapterHarness(
 		},
 		async startSession(
 			spec: Record<string, unknown> = {},
-			timeoutMs = 3000,
+			_timeoutMs = 3000,
 		): Promise<void> {
 			const result = await adapter.dispatch({ type: 'session.start', spec });
 			ensureOk(result, 'session.start');
-			await collector.waitForEvent('session.started', 1, timeoutMs);
 		},
 		async resumeSession(
 			ref: Record<string, unknown> = {},
-			timeoutMs = 3000,
+			_timeoutMs = 3000,
 		): Promise<void> {
 			const result = await adapter.dispatch({ type: 'session.resume', ref });
 			ensureOk(result, 'session.resume');
-			await collector.waitForEvent('session.resumed', 1, timeoutMs);
 		},
 		async startTurn(input: InputItem[] | string): Promise<void> {
 			const normalizedInput: InputItem[] =
@@ -142,12 +139,6 @@ export function createCodexAdapterHarness(
 				input: normalizedInput,
 			});
 			ensureOk(result, 'turn.start');
-		},
-		async waitForSessionEvent(
-			type: SessionLifecycleEvent,
-			timeoutMs = 3000,
-		): Promise<void> {
-			await collector.waitForEvent(type, 1, timeoutMs);
 		},
 		async dispose(): Promise<void> {
 			await adapter.dispose();

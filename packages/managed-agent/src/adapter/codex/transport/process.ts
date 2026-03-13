@@ -26,11 +26,6 @@ export class CodexProcessTransport implements CodexTransport {
 	private _threadId: string | null = null;
 	private turnId: string | null = null;
 	private pendingApproval: PendingApproval | null = null;
-	private pendingSessionEvent:
-		| 'session.started'
-		| 'session.resumed'
-		| 'session.forked'
-		| null = null;
 
 	private readonly options: CodexProcessTransportOptions | undefined;
 
@@ -49,20 +44,24 @@ export class CodexProcessTransport implements CodexTransport {
 	async startSession(threadId?: string): Promise<void> {
 		const rpc = this.createAndWireRpc();
 		rpc.start();
-		this.pendingSessionEvent = threadId ? 'session.resumed' : 'session.started';
 
 		if (threadId) {
 			const { initializeParams, threadResumeParams } =
 				mapSessionResume(threadId);
 			await rpc.request('initialize', initializeParams);
 			this.initialized = true;
-			this.onEvent({ type: 'agent.ready' });
-			await rpc.request('thread/resume', threadResumeParams);
+			const result = await rpc.request('thread/resume', threadResumeParams);
+
+			// With experimentalApi, Codex may not send a thread/started
+			// notification on resume. Fall back to the RPC response or the
+			// known threadId when the notification handler hasn't fired yet.
+			if (!this._threadId) {
+				this._threadId = getThreadIdFromResult(result) ?? threadId;
+			}
 		} else {
 			const { initializeParams, threadStartParams } = mapSessionStart();
 			await rpc.request('initialize', initializeParams);
 			this.initialized = true;
-			this.onEvent({ type: 'agent.ready' });
 
 			this._threadId = getThreadIdFromResult(
 				await rpc.request('thread/start', threadStartParams),
@@ -79,7 +78,6 @@ export class CodexProcessTransport implements CodexTransport {
 		}
 
 		const { threadForkParams } = mapSessionFork(this._threadId);
-		this.pendingSessionEvent = 'session.forked';
 		this._threadId = getThreadIdFromResult(
 			await this.rpc.request('thread/fork', threadForkParams),
 		);
@@ -135,7 +133,6 @@ export class CodexProcessTransport implements CodexTransport {
 		this._threadId = null;
 		this.turnId = null;
 		this.pendingApproval = null;
-		this.pendingSessionEvent = null;
 	}
 
 	// -- Internal: expose RPC for tests that need to poke at the protocol -----
@@ -155,11 +152,9 @@ export class CodexProcessTransport implements CodexTransport {
 		this.rpc = rpc;
 
 		rpc.onNotification = (method, params) => {
-			if (method === 'thread/started') {
+			if (method === 'thread/started' || method === 'thread/resumed') {
 				const p = params as ThreadStartedParams;
 				this._threadId = p.thread.id;
-				this.onEvent({ type: this.pendingSessionEvent ?? 'session.started' });
-				this.pendingSessionEvent = null;
 				return;
 			}
 			if (method === 'turn/started') {

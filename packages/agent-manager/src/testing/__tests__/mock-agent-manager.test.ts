@@ -16,6 +16,7 @@ describe('createMockAgentManager', () => {
 		const result = await handle.dispatch({ type: 'session.start', spec: {} });
 
 		expect(result).toEqual({ ok: true });
+		// Status transitions are now command-driven
 		expect(handle.status).toBe('ready');
 		expect(mocks.get('a1').commands).toEqual([
 			{ type: 'session.start', spec: {} },
@@ -48,7 +49,6 @@ describe('createMockAgentManager', () => {
 				type: 'item.completed',
 				item: { kind: 'user_message', text: 'hello' },
 			},
-			{ type: 'turn.started' },
 			{
 				type: 'item.started',
 				item: { kind: 'assistant_message' },
@@ -88,7 +88,6 @@ describe('createMockAgentManager', () => {
 
 		expect(result).toEqual({ ok: true });
 		expect(events).toEqual([
-			{ type: 'turn.started' },
 			{
 				type: 'item.started',
 				item: { kind: 'assistant_message' },

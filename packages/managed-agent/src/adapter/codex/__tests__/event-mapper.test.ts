@@ -7,18 +7,18 @@ import { mapNotification, mapServerRequest } from '../event-mapper.js';
 // ---------------------------------------------------------------------------
 
 describe('mapNotification', () => {
-	it('maps thread/started → session.started', () => {
+	it('maps thread/started → [] (lifecycle removed)', () => {
 		const events = mapNotification('thread/started', {
 			thread: { id: 't1' },
 		});
-		expect(events).toEqual([{ type: 'session.started' }]);
+		expect(events).toEqual([]);
 	});
 
-	it('maps turn/started → turn.started', () => {
+	it('maps turn/started → [] (lifecycle removed)', () => {
 		const events = mapNotification('turn/started', {
 			turn: { id: 'turn1' },
 		});
-		expect(events).toEqual([{ type: 'turn.started' }]);
+		expect(events).toEqual([]);
 	});
 
 	it('maps turn/completed → turn.completed', () => {
@@ -139,6 +139,101 @@ describe('mapNotification', () => {
 			thread: { id: 't1' },
 		});
 		expect(events).toEqual([{ type: 'agent.exited' }]);
+	});
+
+	// -- Reasoning events -------------------------------------------------------
+
+	it('maps item/started with reasoning → item.started reasoning', () => {
+		const events = mapNotification('item/started', {
+			item: { type: 'reasoning', id: 'r1' },
+		});
+		expect(events).toEqual([
+			{ type: 'item.started', item: { kind: 'reasoning' } },
+		]);
+	});
+
+	it('maps item/completed with reasoning → item.completed reasoning', () => {
+		const events = mapNotification('item/completed', {
+			item: {
+				type: 'reasoning',
+				id: 'r1',
+				content: ['thinking ', 'hard'],
+			},
+		});
+		expect(events).toEqual([
+			{
+				type: 'item.completed',
+				item: { kind: 'reasoning', text: 'thinking hard' },
+			},
+		]);
+	});
+
+	it('maps item/completed with reasoning and no content → empty text', () => {
+		const events = mapNotification('item/completed', {
+			item: { type: 'reasoning', id: 'r1' },
+		});
+		expect(events).toEqual([
+			{
+				type: 'item.completed',
+				item: { kind: 'reasoning', text: '' },
+			},
+		]);
+	});
+
+	it('maps item/reasoning/textDelta → item.delta reasoning', () => {
+		const events = mapNotification('item/reasoning/textDelta', {
+			delta: 'thinking...',
+			contentIndex: 0,
+			itemId: 'r1',
+			threadId: 't1',
+			turnId: 'turn1',
+		});
+		expect(events).toEqual([
+			{
+				type: 'item.delta',
+				item: { kind: 'reasoning', textDelta: 'thinking...' },
+			},
+		]);
+	});
+
+	it('maps item/reasoning/summaryTextDelta → item.delta reasoning', () => {
+		const events = mapNotification('item/reasoning/summaryTextDelta', {
+			delta: 'summary chunk',
+			summaryIndex: 0,
+			itemId: 'r1',
+			threadId: 't1',
+			turnId: 'turn1',
+		});
+		expect(events).toEqual([
+			{
+				type: 'item.delta',
+				item: { kind: 'reasoning', textDelta: 'summary chunk' },
+			},
+		]);
+	});
+
+	it('maps item/reasoning/summaryPartAdded → [] (no-op)', () => {
+		const events = mapNotification('item/reasoning/summaryPartAdded', {
+			itemId: 'r1',
+			threadId: 't1',
+			turnId: 'turn1',
+		});
+		expect(events).toEqual([]);
+	});
+
+	// -- Undefined delta guard --------------------------------------------------
+
+	it('guards against undefined delta.text in agentMessage/delta', () => {
+		const events = mapNotification('item/agentMessage/delta', {
+			item: { id: 'i2' },
+			delta: {},
+		});
+		expect(events).toEqual([
+			{
+				type: 'item.delta',
+				item: { kind: 'assistant_message', textDelta: '' },
+			},
+		]);
 	});
 
 	it('returns [] for unknown notification methods', () => {

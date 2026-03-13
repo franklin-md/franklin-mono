@@ -15,7 +15,7 @@ import type {
 
 const CLIENT_INFO = { name: 'franklin', version: '0.0.0' } as const;
 const THREAD_HISTORY_OPTIONS = {
-	experimentalRawEvents: false,
+	experimentalRawEvents: true,
 	persistExtendedHistory: false,
 } as const;
 const RESUME_HISTORY_OPTIONS = {
@@ -23,7 +23,10 @@ const RESUME_HISTORY_OPTIONS = {
 } as const;
 
 function makeInitializeParams(): InitializeParams {
-	return { clientInfo: CLIENT_INFO };
+	return {
+		clientInfo: CLIENT_INFO,
+		capabilities: { experimentalApi: true },
+	};
 }
 
 function mapInputToUserInput(items: InputItem[]): CodexUserInput[] {

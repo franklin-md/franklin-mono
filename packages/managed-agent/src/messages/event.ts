@@ -7,21 +7,6 @@ import type { PermissionRequest, PermissionResolution } from './permission.js';
 import type { ManagedAgentError } from './shared.js';
 
 export type ManagedAgentEvent =
-	| {
-			type: 'agent.ready';
-	  }
-	| {
-			type: 'session.started';
-	  }
-	| {
-			type: 'session.resumed';
-	  }
-	| {
-			type: 'session.forked';
-	  }
-	| {
-			type: 'turn.started';
-	  }
 	| ItemStartedEvent
 	| ItemDeltaEvent
 	| ItemCompletedEvent

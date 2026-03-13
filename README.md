@@ -1,9 +1,15 @@
 # Franklin
 
 
+## Beliefs
+- The next generation of applications will be built on top of existing agents, as opposed to LLMs, with LLM consumption being charged only by the provider, not the application (end of AI app rent)
+
 ## Vision:
 - **General**
 - **File Over App**
+
+## Decisions:
+- Use the Agent Client Protocol (ACP) to standardize communication with agents.
 
 ## Packages:
 ### `package/managed-agents`

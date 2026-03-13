@@ -24,7 +24,6 @@ export type MockCommandHandler = (
 /* eslint-enable @typescript-eslint/no-invalid-void-type */
 
 export interface MockedAgentOptions {
-	autoEmitSessionLifecycle?: boolean;
 	commandHandler?: MockCommandHandler;
 }
 
@@ -43,12 +42,10 @@ export class MockedAgent {
 
 	private onEvent: AdapterEventHandler | null = null;
 	private commandHandler: MockCommandHandler | undefined;
-	private readonly autoEmitSessionLifecycle: boolean;
 
 	constructor(agentId: string, options: MockedAgentOptions = {}) {
 		this.agentId = agentId;
 		this.commandHandler = options.commandHandler;
-		this.autoEmitSessionLifecycle = options.autoEmitSessionLifecycle ?? true;
 	}
 
 	attach(onEvent: AdapterEventHandler): void {
@@ -76,21 +73,6 @@ export class MockedAgent {
 			);
 		}
 		this.onEvent(event);
-	}
-
-	startSession(): void {
-		this.emit({ type: 'agent.ready' });
-		this.emit({ type: 'session.started' });
-	}
-
-	resumeSession(): void {
-		this.emit({ type: 'agent.ready' });
-		this.emit({ type: 'session.resumed' });
-	}
-
-	forkSession(): void {
-		this.emit({ type: 'agent.ready' });
-		this.emit({ type: 'session.forked' });
 	}
 
 	requestPermission(request: string | PermissionRequest): void {
@@ -125,7 +107,6 @@ export class MockedAgent {
 			});
 		}
 
-		this.emit({ type: 'turn.started' });
 		this.emit({
 			type: 'item.started',
 			item: { kind: 'assistant_message' },
@@ -169,24 +150,6 @@ export class MockedAgent {
 		command: ManagedAgentCommand,
 	): Promise<ManagedAgentCommandResult> {
 		this.commands.push(command);
-
-		if (this.autoEmitSessionLifecycle) {
-			switch (command.type) {
-				case 'session.start':
-					this.startSession();
-					break;
-				case 'session.resume':
-					this.resumeSession();
-					break;
-				case 'session.fork':
-					this.forkSession();
-					break;
-				case 'turn.start':
-				case 'turn.interrupt':
-				case 'permission.resolve':
-					break;
-			}
-		}
 
 		if (!this.commandHandler) {
 			return ok();

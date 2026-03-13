@@ -30,8 +30,19 @@ export function useMouseScroll(
 		const handleInput = (data: Buffer) => {
 			const events = parseMouseWheelEvents(String(data));
 			for (const event of events) {
-				const delta = event.direction === 'up' ? -scrollSpeed : scrollSpeed;
-				scrollRef.current?.scrollBy(delta);
+				const ref = scrollRef.current;
+				if (!ref) continue;
+				if (event.direction === 'up') {
+					ref.scrollBy(-scrollSpeed);
+				} else {
+					// Clamp downward scroll to bottomOffset to prevent scrolling past content
+					ref.scrollTo(
+						Math.min(
+							ref.getScrollOffset() + scrollSpeed,
+							ref.getBottomOffset(),
+						),
+					);
+				}
 			}
 		};
 

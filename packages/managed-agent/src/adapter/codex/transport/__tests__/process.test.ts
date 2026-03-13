@@ -69,7 +69,7 @@ describe('CodexProcessTransport', () => {
 		}
 	});
 
-	it('startSession initializes and emits agent.ready + session.started', async () => {
+	it('startSession initializes and sets threadId', async () => {
 		const script = `
 			const rl = require('readline').createInterface({ input: process.stdin });
 			rl.on('line', (line) => {
@@ -91,11 +91,9 @@ describe('CodexProcessTransport', () => {
 		const events = collectEvents(transport);
 
 		await transport.startSession();
-		await waitForEvent(events, 'session.started', 1);
 
-		const types = events.map((e) => e.type);
-		expect(types).toContain('agent.ready');
-		expect(types).toContain('session.started');
+		// No lifecycle events emitted; threadId assigned from RPC response
+		expect(events).toEqual([]);
 		expect(transport.threadId).toBe('thread-1');
 	});
 
@@ -118,12 +116,10 @@ describe('CodexProcessTransport', () => {
 			});
 		`;
 		transport = createTestTransport(script);
-		const events = collectEvents(transport);
+		collectEvents(transport);
 
 		await transport.startSession('existing-thread');
-		await waitForEvent(events, 'session.resumed', 1);
 
-		expect(events.map((e) => e.type)).toContain('agent.ready');
 		expect(transport.threadId).toBe('existing-thread');
 	});
 
@@ -159,13 +155,11 @@ describe('CodexProcessTransport', () => {
 		const events = collectEvents(transport);
 
 		await transport.startSession();
-		await waitForEvent(events, 'session.started', 1);
 
 		await transport.startTurn([{ kind: 'user_message', text: 'hi' }]);
 		await waitForEvent(events, 'turn.completed', 1);
 
 		const types = events.map((e) => e.type);
-		expect(types).toContain('turn.started');
 		expect(types).toContain('item.started');
 		expect(types).toContain('item.delta');
 		expect(types).toContain('item.completed');
@@ -193,10 +187,9 @@ describe('CodexProcessTransport', () => {
 			});
 		`;
 		transport = createTestTransport(script);
-		const events = collectEvents(transport);
+		collectEvents(transport);
 
 		await transport.startSession();
-		await waitForEvent(events, 'session.started', 1);
 
 		await expect(transport.interruptTurn()).rejects.toThrow(
 			'No active turn to interrupt',
@@ -229,13 +222,11 @@ describe('CodexProcessTransport', () => {
 			});
 		`;
 		transport = createTestTransport(script);
-		const events = collectEvents(transport);
+		collectEvents(transport);
 
 		await transport.startSession();
-		await waitForEvent(events, 'session.started', 1);
 
 		await transport.forkSession();
-		await waitForEvent(events, 'session.forked', 1);
 	});
 
 	it('resolvePermission sends response and emits permission.resolved', async () => {
@@ -265,7 +256,6 @@ describe('CodexProcessTransport', () => {
 		const events = collectEvents(transport);
 
 		await transport.startSession();
-		await waitForEvent(events, 'session.started', 1);
 
 		// Trigger approval via internal RPC (test hook)
 		await transport._rpc!.request('test/send-approval', {});
@@ -289,10 +279,9 @@ describe('CodexProcessTransport', () => {
 			});
 		`;
 		transport = createTestTransport(script);
-		const events = collectEvents(transport);
+		collectEvents(transport);
 
 		await transport.startSession();
-		await waitForEvent(events, 'session.started', 1);
 
 		expect(() => transport!.resolvePermission('allow')).toThrow(
 			'No pending approval',

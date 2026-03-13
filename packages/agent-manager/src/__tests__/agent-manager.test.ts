@@ -103,9 +103,9 @@ describe('AgentManager', () => {
 				sessionSpec: {},
 			});
 
-			// Simulate adapter emitting agent.ready
-			getLastOnEvent()({ type: 'agent.ready' });
-			expect(handle.status).toBe('ready');
+			// Simulate adapter emitting turn.completed
+			getLastOnEvent()({ type: 'turn.completed' });
+			expect(handle.status).toBe('idle');
 		});
 	});
 

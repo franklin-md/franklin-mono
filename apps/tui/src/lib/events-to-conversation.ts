@@ -5,7 +5,7 @@ import type { ManagedAgentEvent } from '@franklin/managed-agent';
 // ---------------------------------------------------------------------------
 
 export type ConversationItem = {
-	kind: 'user_message' | 'assistant_message';
+	kind: 'user_message' | 'assistant_message' | 'reasoning';
 	text: string;
 	streaming: boolean;
 };
@@ -70,11 +70,6 @@ export function eventsToConversation(
 			}
 
 			// Non-item events are skipped
-			case 'agent.ready':
-			case 'session.started':
-			case 'session.resumed':
-			case 'session.forked':
-			case 'turn.started':
 			case 'turn.completed':
 			case 'permission.requested':
 			case 'permission.resolved':

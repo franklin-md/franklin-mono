@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box } from 'ink';
+import React, { useEffect, useState } from 'react';
+import { Box, useStdout } from 'ink';
 
 interface Props {
 	sidebar: React.ReactNode;
@@ -8,8 +8,19 @@ interface Props {
 }
 
 export function Layout({ sidebar, main, statusBar }: Props): React.ReactNode {
+	const { stdout } = useStdout();
+	const [height, setHeight] = useState(stdout.rows);
+
+	useEffect(() => {
+		const onResize = () => setHeight(stdout.rows);
+		stdout.on('resize', onResize);
+		return () => {
+			stdout.off('resize', onResize);
+		};
+	}, [stdout]);
+
 	return (
-		<Box flexDirection="column" height="100%">
+		<Box flexDirection="column" height={height}>
 			<Box flexDirection="row" flexGrow={1}>
 				<Box
 					flexDirection="column"

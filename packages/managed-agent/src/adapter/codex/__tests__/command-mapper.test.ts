@@ -13,9 +13,10 @@ describe('mapSessionStart', () => {
 		const result = mapSessionStart();
 		expect(result.initializeParams).toEqual({
 			clientInfo: { name: 'franklin', version: '0.0.0' },
+			capabilities: { experimentalApi: true },
 		});
 		expect(result.threadStartParams).toEqual({
-			experimentalRawEvents: false,
+			experimentalRawEvents: true,
 			persistExtendedHistory: false,
 		});
 	});

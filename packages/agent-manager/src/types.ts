@@ -19,7 +19,7 @@ export type AgentId = string;
 
 export type AgentStatus =
 	| 'created' // handle created, adapter not yet ready
-	| 'ready' // agent.ready received
+	| 'ready' // session command succeeded
 	| 'running' // turn in progress
 	| 'idle' // turn completed
 	| 'error' // error event received

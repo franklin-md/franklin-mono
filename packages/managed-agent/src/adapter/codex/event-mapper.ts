@@ -1,6 +1,7 @@
 import type { ManagedAgentEvent } from '../../messages/event.js';
 import type {
 	AgentMessageDeltaParams,
+	CodexReasoningItem,
 	CodexUserMessage,
 	CommandApprovalParams,
 	ErrorParams,
@@ -8,6 +9,8 @@ import type {
 	ItemCompletedParams,
 	ItemStartedParams,
 	PermissionsApprovalParams,
+	ReasoningSummaryTextDeltaParams,
+	ReasoningTextDeltaParams,
 } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -32,10 +35,10 @@ export function mapNotification(
 ): ManagedAgentEvent[] {
 	switch (method) {
 		case 'thread/started':
-			return [{ type: 'session.started' }];
+			return [];
 
 		case 'turn/started':
-			return [{ type: 'turn.started' }];
+			return [];
 
 		case 'turn/completed':
 			return [{ type: 'turn.completed' }];
@@ -59,6 +62,14 @@ export function mapNotification(
 					{
 						type: 'item.started',
 						item: { kind: 'assistant_message' },
+					},
+				];
+			}
+			if (p.item.type === 'reasoning') {
+				return [
+					{
+						type: 'item.started',
+						item: { kind: 'reasoning' },
 					},
 				];
 			}
@@ -91,6 +102,18 @@ export function mapNotification(
 					},
 				];
 			}
+			if (p.item.type === 'reasoning') {
+				const item = p.item as CodexReasoningItem;
+				return [
+					{
+						type: 'item.completed',
+						item: {
+							kind: 'reasoning',
+							text: item.content?.join('') ?? '',
+						},
+					},
+				];
+			}
 			return [];
 		}
 
@@ -99,10 +122,36 @@ export function mapNotification(
 			return [
 				{
 					type: 'item.delta',
-					item: { kind: 'assistant_message', textDelta: p.delta.text },
+					item: {
+						kind: 'assistant_message',
+						textDelta: p.delta?.text ?? '',
+					},
 				},
 			];
 		}
+
+		case 'item/reasoning/textDelta': {
+			const p = params as ReasoningTextDeltaParams;
+			return [
+				{
+					type: 'item.delta',
+					item: { kind: 'reasoning', textDelta: p.delta },
+				},
+			];
+		}
+
+		case 'item/reasoning/summaryTextDelta': {
+			const p = params as ReasoningSummaryTextDeltaParams;
+			return [
+				{
+					type: 'item.delta',
+					item: { kind: 'reasoning', textDelta: p.delta },
+				},
+			];
+		}
+
+		case 'item/reasoning/summaryPartAdded':
+			return [];
 
 		case 'error': {
 			const p = params as ErrorParams;

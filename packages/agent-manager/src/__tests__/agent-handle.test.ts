@@ -115,11 +115,11 @@ describe('AgentHandle', () => {
 			handle.on((e) => events1.push(e));
 			handle.on((e) => events2.push(e));
 
-			handle._handleEvent({ type: 'agent.ready' });
+			handle._handleEvent({ type: 'turn.completed' });
 
 			expect(events1).toHaveLength(1);
 			expect(events2).toHaveLength(1);
-			expect(events1[0]!.type).toBe('agent.ready');
+			expect(events1[0]!.type).toBe('turn.completed');
 		});
 
 		it('unsubscribe removes a specific listener', () => {
@@ -127,11 +127,11 @@ describe('AgentHandle', () => {
 			const events: ManagedAgentEvent[] = [];
 
 			const unsub = handle.on((e) => events.push(e));
-			handle._handleEvent({ type: 'agent.ready' });
+			handle._handleEvent({ type: 'turn.completed' });
 			expect(events).toHaveLength(1);
 
 			unsub();
-			handle._handleEvent({ type: 'turn.started' });
+			handle._handleEvent({ type: 'agent.exited' });
 			expect(events).toHaveLength(1); // no new event
 		});
 
@@ -164,21 +164,47 @@ describe('AgentHandle', () => {
 			expect(handle.status).toBe('created');
 		});
 
-		it('transitions to ready on agent.ready', () => {
+		it('transitions to ready on successful session.start dispatch', async () => {
 			const { handle } = createHandle();
-			handle._handleEvent({ type: 'agent.ready' });
+			await handle.dispatch({ type: 'session.start', spec: {} });
 			expect(handle.status).toBe('ready');
 		});
 
-		it('transitions to running on turn.started', () => {
+		it('transitions to ready on successful session.resume dispatch', async () => {
 			const { handle } = createHandle();
-			handle._handleEvent({ type: 'turn.started' });
+			await handle.dispatch({ type: 'session.resume', ref: {} });
+			expect(handle.status).toBe('ready');
+		});
+
+		it('transitions to ready on successful session.fork dispatch', async () => {
+			const { handle } = createHandle();
+			await handle.dispatch({ type: 'session.fork', ref: {} });
+			expect(handle.status).toBe('ready');
+		});
+
+		it('transitions to running on successful turn.start dispatch', async () => {
+			const { handle } = createHandle();
+			await handle.dispatch({
+				type: 'turn.start',
+				input: [{ kind: 'user_message', text: 'hi' }],
+			});
 			expect(handle.status).toBe('running');
 		});
 
-		it('transitions to idle on turn.completed', () => {
+		it('does not transition status on failed dispatch', async () => {
+			const adapter = createMockAdapter({
+				dispatch: vi.fn(async () => ({
+					ok: false as const,
+					error: { code: 'ERR', message: 'fail' },
+				})),
+			});
+			const { handle } = createHandle({ adapter });
+			await handle.dispatch({ type: 'session.start', spec: {} });
+			expect(handle.status).toBe('created');
+		});
+
+		it('transitions to idle on turn.completed event', () => {
 			const { handle } = createHandle();
-			handle._handleEvent({ type: 'turn.started' });
 			handle._handleEvent({ type: 'turn.completed' });
 			expect(handle.status).toBe('idle');
 		});
@@ -207,9 +233,6 @@ describe('AgentHandle', () => {
 		it('stores all raw events including deltas', async () => {
 			const { handle } = createHandle();
 
-			handle._handleEvent({ type: 'agent.ready' });
-			handle._handleEvent({ type: 'session.started' });
-			handle._handleEvent({ type: 'turn.started' });
 			handle._handleEvent({
 				type: 'item.started',
 				item: { kind: 'assistant_message' },
@@ -231,9 +254,6 @@ describe('AgentHandle', () => {
 			const types = events.map((e) => e.type);
 
 			expect(types).toEqual([
-				'agent.ready',
-				'session.started',
-				'turn.started',
 				'item.started',
 				'item.delta',
 				'item.completed',
@@ -292,7 +312,7 @@ describe('AgentHandle', () => {
 			await handle.dispose();
 
 			// Events after dispose should not reach listener
-			handle._handleEvent({ type: 'agent.ready' });
+			handle._handleEvent({ type: 'turn.completed' });
 			expect(events).toHaveLength(0);
 		});
 

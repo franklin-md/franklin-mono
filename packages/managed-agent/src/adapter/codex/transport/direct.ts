@@ -63,8 +63,6 @@ export class CodexDirectTransport implements CodexTransport {
 		}
 
 		this.initialized = true;
-		this.onEvent({ type: 'agent.ready' });
-		this.onEvent({ type: threadId ? 'session.resumed' : 'session.started' });
 	}
 
 	async forkSession(): Promise<void> {
@@ -168,7 +166,6 @@ export class CodexDirectTransport implements CodexTransport {
 				return;
 
 			case 'turn.started':
-				this.onEvent({ type: 'turn.started' });
 				return;
 
 			case 'turn.completed':

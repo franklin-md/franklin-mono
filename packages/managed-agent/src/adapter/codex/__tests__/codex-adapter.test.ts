@@ -123,14 +123,10 @@ describe('CodexAdapter', () => {
 		}
 	});
 
-	it('session.start initializes and emits agent.ready + session.started', async () => {
+	it('session.start initializes successfully', async () => {
 		const harness = createHarness();
 
 		await harness.startSession();
-
-		const types = harness.events.map((event) => event.type);
-		expect(types).toContain('agent.ready');
-		expect(types).toContain('session.started');
 	});
 
 	it('turn.start dispatches and streams item events', async () => {
@@ -142,7 +138,6 @@ describe('CodexAdapter', () => {
 		await harness.waitForEvent('turn.completed', 1);
 
 		const types = harness.events.map((event) => event.type);
-		expect(types).toContain('turn.started');
 		expect(types).toContain('item.started');
 		expect(types).toContain('item.delta');
 		expect(types).toContain('item.completed');
@@ -197,11 +192,6 @@ describe('CodexAdapter', () => {
 		const harness = createHarness({ threadId: 'existing-thread' });
 
 		await harness.resumeSession();
-
-		expect(harness.events.map((event) => event.type)).toContain('agent.ready');
-		expect(harness.events.map((event) => event.type)).toContain(
-			'session.resumed',
-		);
 	});
 
 	it('session.fork updates threadId', async () => {
@@ -214,8 +204,6 @@ describe('CodexAdapter', () => {
 			ref: {},
 		});
 		expect(result).toEqual({ ok: true });
-
-		await harness.waitForEvent('session.forked', 1);
 	});
 
 	it('session.fork fails without active session', async () => {

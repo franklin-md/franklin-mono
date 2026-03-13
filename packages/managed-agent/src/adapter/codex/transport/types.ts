@@ -27,7 +27,6 @@ export interface CodexTransport {
 
 	/**
 	 * Initialize the transport and start or resume a session.
-	 * Emits `agent.ready` and `session.started` on success.
 	 *
 	 * @param threadId — If provided, resumes an existing thread.
 	 */
@@ -35,14 +34,13 @@ export interface CodexTransport {
 
 	/**
 	 * Fork the current thread into a new session.
-	 * Emits `session.forked` on success.
 	 * Not all transports support this — unsupported transports should throw.
 	 */
 	forkSession(): Promise<void>;
 
 	/**
 	 * Start a new turn with the given user input.
-	 * Emits `turn.started`, `item.*`, and `turn.completed` events.
+	 * Emits `item.*` and `turn.completed` events.
 	 */
 	startTurn(input: InputItem[]): Promise<void>;
 
