@@ -3,9 +3,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 function getAbsolutePath(value: string) {
-	return dirname(
-		fileURLToPath(import.meta.resolve(`${value}/package.json`)),
-	);
+	return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`)));
 }
 
 const config: StorybookConfig = {

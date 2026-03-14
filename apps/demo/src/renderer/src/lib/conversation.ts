@@ -90,6 +90,11 @@ export function buildConversationState(
 	const thoughtIndex = new Map<string, ConversationThought>();
 	const toolCallIndex = new Map<string, ConversationToolCall>();
 
+	// Track the most recent message/thought for consecutive-chunk merging
+	// when messageId is absent.
+	let lastMessage: ConversationMessage | null = null;
+	let lastThought: ConversationThought | null = null;
+
 	for (const entry of transcript) {
 		const update = entry.notification.update;
 
@@ -98,57 +103,97 @@ export function buildConversationState(
 			case 'agent_message_chunk': {
 				const role =
 					update.sessionUpdate === 'user_message_chunk' ? 'user' : 'assistant';
-				const messageId = update.messageId ?? entry.id;
 				const text = extractText(update);
 
-				const existing = messageIndex.get(messageId);
-				if (existing) {
-					existing.text += text;
-					existing.isStreaming = true;
+				// When messageId is present, use it for keying.
+				// When absent, merge into the previous message if it has the
+				// same role (consecutive same-role chunk merging).
+				if (update.messageId) {
+					const existing = messageIndex.get(update.messageId);
+					if (existing) {
+						existing.text += text;
+						existing.isStreaming = true;
+						lastMessage = existing;
+					} else {
+						for (const msg of messageIndex.values()) {
+							if (msg.role === role && msg.isStreaming) {
+								msg.isStreaming = false;
+							}
+						}
+						const msg: ConversationMessage = {
+							id: update.messageId,
+							role,
+							text,
+							isStreaming: true,
+						};
+						messageIndex.set(update.messageId, msg);
+						items.push({ kind: 'message', data: msg });
+						lastMessage = msg;
+					}
+				} else if (lastMessage && lastMessage.role === role) {
+					// No messageId — merge into the last message of the same role
+					lastMessage.text += text;
+					lastMessage.isStreaming = true;
 				} else {
-					// Close any previous streaming message of the same role
+					// New message (different role or first message)
 					for (const msg of messageIndex.values()) {
 						if (msg.role === role && msg.isStreaming) {
 							msg.isStreaming = false;
 						}
 					}
 					const msg: ConversationMessage = {
-						id: messageId,
+						id: entry.id,
 						role,
 						text,
 						isStreaming: true,
 					};
-					messageIndex.set(messageId, msg);
 					items.push({ kind: 'message', data: msg });
+					lastMessage = msg;
 				}
 				break;
 			}
 
 			case 'agent_thought_chunk': {
-				const messageId = update.messageId ?? entry.id;
 				const text = extractText(update);
 
-				const existing = thoughtIndex.get(messageId);
-				if (existing) {
-					existing.text += text;
-					existing.isStreaming = true;
-				} else {
-					// Close previous streaming thoughts
-					for (const t of thoughtIndex.values()) {
-						if (t.isStreaming) t.isStreaming = false;
+				if (update.messageId) {
+					const existing = thoughtIndex.get(update.messageId);
+					if (existing) {
+						existing.text += text;
+						existing.isStreaming = true;
+						lastThought = existing;
+					} else {
+						for (const t of thoughtIndex.values()) {
+							if (t.isStreaming) t.isStreaming = false;
+						}
+						const thought: ConversationThought = {
+							id: update.messageId,
+							text,
+							isStreaming: true,
+						};
+						thoughtIndex.set(update.messageId, thought);
+						items.push({ kind: 'thought', data: thought });
+						lastThought = thought;
 					}
+				} else if (lastThought) {
+					lastThought.text += text;
+					lastThought.isStreaming = true;
+				} else {
 					const thought: ConversationThought = {
-						id: messageId,
+						id: entry.id,
 						text,
 						isStreaming: true,
 					};
-					thoughtIndex.set(messageId, thought);
 					items.push({ kind: 'thought', data: thought });
+					lastThought = thought;
 				}
 				break;
 			}
 
 			case 'tool_call': {
+				// Non-chunk event breaks consecutive merging
+				lastMessage = null;
+				lastThought = null;
 				const tc: ConversationToolCall = {
 					toolCallId: update.toolCallId,
 					title: update.title,
@@ -165,6 +210,8 @@ export function buildConversationState(
 			}
 
 			case 'tool_call_update': {
+				lastMessage = null;
+				lastThought = null;
 				const existing = toolCallIndex.get(update.toolCallId);
 				if (existing) {
 					if (update.title != null) existing.title = update.title;
@@ -181,6 +228,8 @@ export function buildConversationState(
 			}
 
 			case 'plan': {
+				lastMessage = null;
+				lastThought = null;
 				// Replace any existing plan item or add a new one
 				const existingIdx = items.findIndex((i) => i.kind === 'plan');
 				const planItem: ConversationItem = {
@@ -196,6 +245,8 @@ export function buildConversationState(
 			}
 
 			case 'usage_update': {
+				lastMessage = null;
+				lastThought = null;
 				usage = {
 					used: update.used,
 					size: update.size,
@@ -209,6 +260,8 @@ export function buildConversationState(
 			case 'current_mode_update':
 			case 'config_option_update':
 			case 'session_info_update':
+				lastMessage = null;
+				lastThought = null;
 				break;
 		}
 	}

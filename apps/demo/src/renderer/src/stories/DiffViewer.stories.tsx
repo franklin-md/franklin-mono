@@ -23,7 +23,8 @@ export const NewFile: Story = {
 		diff: {
 			path: 'src/lib/middleware.ts',
 			oldText: null,
-			newText: 'import type { Agent } from "./agent";\n\nexport interface Middleware {\n  name: string;\n  wrap(agent: Agent): Agent;\n}\n\nexport function compose(...fns: Middleware[]): Middleware {\n  return fns.reduce((a, b) => ({\n    name: `${a.name}+${b.name}`,\n    wrap: (agent) => a.wrap(b.wrap(agent)),\n  }));\n}',
+			newText:
+				'import type { Agent } from "./agent";\n\nexport interface Middleware {\n  name: string;\n  wrap(agent: Agent): Agent;\n}\n\nexport function compose(...fns: Middleware[]): Middleware {\n  return fns.reduce((a, b) => ({\n    name: `${a.name}+${b.name}`,\n    wrap: (agent) => a.wrap(b.wrap(agent)),\n  }));\n}',
 		},
 	},
 };
@@ -32,8 +33,10 @@ export const ModifiedFile: Story = {
 	args: {
 		diff: {
 			path: 'src/lib/agent.ts',
-			oldText: 'function createAgent(spec: AgentSpec) {\n  const proc = spawn(spec.command, spec.args);\n  return proc;\n}',
-			newText: 'async function createAgent(spec: AgentSpec): Promise<Agent> {\n  const proc = spawn(spec.command, spec.args);\n  await waitForReady(proc);\n  return new Agent(proc);\n}',
+			oldText:
+				'function createAgent(spec: AgentSpec) {\n  const proc = spawn(spec.command, spec.args);\n  return proc;\n}',
+			newText:
+				'async function createAgent(spec: AgentSpec): Promise<Agent> {\n  const proc = spawn(spec.command, spec.args);\n  await waitForReady(proc);\n  return new Agent(proc);\n}',
 		},
 	},
 };
