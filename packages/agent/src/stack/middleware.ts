@@ -13,12 +13,14 @@ export type Cont<Fn extends (...args: any[]) => any> = (
 // Directional middleware types
 // ---------------------------------------------------------------------------
 
+// next calls into the connection — complete: all command methods required
 export type CommandMiddleware = {
-	[K in keyof AgentCommands]?: Cont<AgentCommands[K]>;
+	[K in keyof AgentCommands]: Cont<AgentCommands[K]>;
 };
 
+// next calls into the client — complete: all event methods required
 export type EventMiddleware = {
-	[K in keyof AgentEvents]?: Cont<AgentEvents[K]>;
+	[K in keyof AgentEvents]: Cont<AgentEvents[K]>;
 };
 
 /**
@@ -26,11 +28,16 @@ export type EventMiddleware = {
  * receives the original params plus a `next` function that calls the next
  * layer in the chain. Call `next(params)` to forward, or return directly to
  * short-circuit.
+ *
+ * Unlike CommandMiddleware and EventMiddleware (which require all methods),
+ * Middleware is partial — implement only the methods you want to intercept.
  */
-export type Middleware = CommandMiddleware &
-	EventMiddleware & {
-		dispose?: Cont<AgentLifecycle['dispose']>;
-	};
+export type Middleware = Partial<
+	CommandMiddleware &
+		EventMiddleware & {
+			dispose: Cont<AgentLifecycle['dispose']>;
+		}
+>;
 
 // ---------------------------------------------------------------------------
 // Method name lists
@@ -89,7 +96,6 @@ export function buildChain(
 		const mw = middlewareFns[i];
 		if (mw) {
 			const next = chain;
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 			chain = (params: unknown) => mw(params, next);
 		}
 	}

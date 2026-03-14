@@ -20,9 +20,9 @@ import {
  * The first middleware in the array is outermost (runs first).
  */
 export function sequenceCommands(
-	middlewares: CommandMiddleware[],
-): CommandMiddleware {
-	const combined: CommandMiddleware = {};
+	middlewares: Partial<CommandMiddleware>[],
+): Partial<CommandMiddleware> {
+	const combined: Partial<CommandMiddleware> = {};
 
 	for (const method of COMMAND_METHODS) {
 		const mwFns = middlewares.map((mw) => mw[method] as ChainFn | undefined);
@@ -31,7 +31,6 @@ export function sequenceCommands(
 				params: unknown,
 				next: ChainFn,
 			) => {
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 				return buildChain(next, mwFns)(params);
 			};
 		}
@@ -49,9 +48,9 @@ export function sequenceCommands(
  * The first middleware in the array is outermost (runs first).
  */
 export function sequenceEvents(
-	middlewares: EventMiddleware[],
-): EventMiddleware {
-	const combined: EventMiddleware = {};
+	middlewares: Partial<EventMiddleware>[],
+): Partial<EventMiddleware> {
+	const combined: Partial<EventMiddleware> = {};
 
 	for (const method of EVENT_METHODS) {
 		const mwFns = middlewares.map((mw) => mw[method] as ChainFn | undefined);
@@ -60,7 +59,6 @@ export function sequenceEvents(
 				params: unknown,
 				next: ChainFn,
 			) => {
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 				return buildChain(next, mwFns)(params);
 			};
 		}
@@ -92,7 +90,6 @@ export function sequence(middlewares: Middleware[]): Middleware {
 				params: unknown,
 				next: ChainFn,
 			) => {
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 				return buildChain(next, mwFns)(params);
 			};
 		}
