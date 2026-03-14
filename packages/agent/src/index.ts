@@ -5,7 +5,13 @@ export {
 	codexAgentSpec,
 } from './agents/index.js';
 export { AgentRegistry, createDefaultRegistry } from './registry.js';
-export { compose, sequence } from './stack.js';
+export {
+	compose,
+	connect,
+	sequence,
+	sequenceCommands,
+	sequenceEvents,
+} from './stack/index.js';
 export { spawn, spawnFromConnection } from './spawn.js';
 export { StdioTransport, createMemoryTransport } from './transport/index.js';
 export type { AgentSpec } from './registry.js';
@@ -15,7 +21,17 @@ export type {
 	SpawnResult,
 	SpawnFromConnectionOptions,
 } from './spawn.js';
-export type { AgentStack, Middleware } from './stack.js';
+export type {
+	AgentCommands,
+	AgentControl,
+	AgentEvents,
+	AgentLifecycle,
+	AgentStack,
+	CommandMiddleware,
+	Cont,
+	EventMiddleware,
+	Middleware,
+} from './stack/index.js';
 export type { Transport, StdioTransportOptions } from './transport/index.js';
 export {
 	createModuleMiddleware,

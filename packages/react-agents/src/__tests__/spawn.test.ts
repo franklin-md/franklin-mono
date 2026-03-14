@@ -44,7 +44,7 @@ describe('react-agents spawnFromConnection', () => {
 		const session = await spawnFromConnection(connection, {
 			cwd: '/test',
 		});
-		stacks.push(session.stack);
+		stacks.push(session.control);
 
 		expect(session.sessionId).toBe('test-session');
 		expect(session.store.getSnapshot()).toEqual({ transcript: [] });
@@ -72,9 +72,9 @@ describe('react-agents spawnFromConnection', () => {
 		const session = await spawnFromConnection(connection, {
 			cwd: '/test',
 		});
-		stacks.push(session.stack);
+		stacks.push(session.control);
 
-		await session.stack.prompt({
+		await session.control.prompt({
 			sessionId: session.sessionId,
 			prompt: [{ type: 'text', text: 'test' }],
 		});

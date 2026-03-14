@@ -6,7 +6,7 @@ import { AgentSideConnection } from '@agentclientprotocol/sdk';
 import { AgentConnection } from '../connection.js';
 import { AgentRegistry } from '../registry.js';
 import { spawnFromConnection } from '../spawn.js';
-import type { AgentStack } from '../stack.js';
+import type { AgentControl } from '../stack/index.js';
 
 import { createMemoryTransport } from '../transport/in-memory.js';
 
@@ -36,7 +36,7 @@ function setup() {
 }
 
 describe('spawnFromConnection', () => {
-	const stacks: AgentStack[] = [];
+	const stacks: AgentControl[] = [];
 
 	afterEach(async () => {
 		while (stacks.length > 0) {
@@ -57,12 +57,12 @@ describe('spawnFromConnection', () => {
 				}),
 			},
 		});
-		stacks.push(result.stack);
+		stacks.push(result.control);
 
 		expect(mockAgent.initialize).toHaveBeenCalled();
 		expect(mockAgent.newSession).toHaveBeenCalled();
 		expect(result.sessionId).toBe('test-session');
-		expect(result.stack).toBeDefined();
+		expect(result.control).toBeDefined();
 		expect('connection' in result).toBe(false);
 	});
 
@@ -78,9 +78,9 @@ describe('spawnFromConnection', () => {
 				}),
 			},
 		});
-		stacks.push(result.stack);
+		stacks.push(result.control);
 
-		const resp = await result.stack.prompt({
+		const resp = await result.control.prompt({
 			sessionId: result.sessionId,
 			prompt: [{ type: 'text', text: 'hello' }],
 		});
@@ -112,9 +112,9 @@ describe('spawnFromConnection', () => {
 				}),
 			},
 		});
-		stacks.push(result.stack);
+		stacks.push(result.control);
 
-		await result.stack.prompt({
+		await result.control.prompt({
 			sessionId: result.sessionId,
 			prompt: [{ type: 'text', text: 'test' }],
 		});
@@ -151,9 +151,9 @@ describe('spawnFromConnection', () => {
 				}),
 			},
 		});
-		stacks.push(result.stack);
+		stacks.push(result.control);
 
-		await result.stack.prompt({
+		await result.control.prompt({
 			sessionId: result.sessionId,
 			prompt: [{ type: 'text', text: 'test' }],
 		});

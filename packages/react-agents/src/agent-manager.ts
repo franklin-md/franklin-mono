@@ -1,10 +1,10 @@
 import type {
 	AgentConnection,
-	AgentStack,
+	AgentControl,
 	Middleware,
 	PromptResponse,
 } from '@franklin/agent/browser';
-import { compose, sequence, PROTOCOL_VERSION } from '@franklin/agent/browser';
+import { connect, sequence, PROTOCOL_VERSION } from '@franklin/agent/browser';
 
 import type { AgentSessionStore, ReactAgentSession } from './session-store.js';
 import { createSessionStore } from './session-store.js';
@@ -35,7 +35,7 @@ export interface AgentManagerOptions {
 export class ManagedSession implements ReactAgentSession {
 	readonly id: string;
 	readonly agentName: string;
-	readonly stack: AgentStack;
+	readonly control: AgentControl;
 	readonly sessionId: string;
 	readonly store: AgentSessionStore;
 
@@ -45,14 +45,14 @@ export class ManagedSession implements ReactAgentSession {
 	constructor(
 		id: string,
 		agentName: string,
-		stack: AgentStack,
+		control: AgentControl,
 		sessionId: string,
 		store: AgentSessionStore,
 		onStatusChange: () => void,
 	) {
 		this.id = id;
 		this.agentName = agentName;
-		this.stack = stack;
+		this.control = control;
 		this.sessionId = sessionId;
 		this.store = store;
 		this._onStatusChange = onStatusChange;
@@ -75,7 +75,7 @@ export class ManagedSession implements ReactAgentSession {
 		}
 		this.setStatus('running');
 		try {
-			const response = await this.stack.prompt({
+			const response = await this.control.prompt({
 				sessionId: this.sessionId,
 				prompt: [{ type: 'text', text }],
 			});
@@ -90,7 +90,7 @@ export class ManagedSession implements ReactAgentSession {
 	async dispose(): Promise<void> {
 		if (this._status === 'disposed') return;
 		this.setStatus('disposed');
-		await this.stack.dispose();
+		await this.control.dispose();
 	}
 }
 
@@ -146,20 +146,25 @@ export class AgentManager {
 		const middlewares = this._createMiddlewares
 			? [middleware, ...this._middlewares, ...this._createMiddlewares()]
 			: [middleware, ...this._middlewares];
-		const stack = compose(connection, sequence(middlewares), handler);
+		const control = connect(connection, sequence(middlewares), handler);
 
-		await stack.initialize({
+		await control.initialize({
 			protocolVersion: PROTOCOL_VERSION,
 			clientCapabilities: {},
 		});
 
-		const { sessionId } = await stack.newSession({
+		const { sessionId } = await control.newSession({
 			cwd,
 			mcpServers: [],
 		});
 
-		const session = new ManagedSession(id, agent, stack, sessionId, store, () =>
-			this._emit(),
+		const session = new ManagedSession(
+			id,
+			agent,
+			control,
+			sessionId,
+			store,
+			() => this._emit(),
 		);
 
 		this._sessions.set(id, session);

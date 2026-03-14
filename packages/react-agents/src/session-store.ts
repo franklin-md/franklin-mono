@@ -1,5 +1,6 @@
 import type {
-	AgentStack,
+	AgentControl,
+	AgentEvents,
 	Middleware,
 	PromptRequest,
 	PromptResponse,
@@ -23,7 +24,7 @@ export interface AgentSessionStore {
 }
 
 export interface ReactAgentSession {
-	stack: AgentStack;
+	control: AgentControl;
 	sessionId: string;
 	store: AgentSessionStore;
 }
@@ -35,7 +36,7 @@ const EMPTY_SNAPSHOT: AgentSessionSnapshot = {
 export function createSessionStore(): {
 	store: AgentSessionStore;
 	middleware: Middleware;
-	handler: Pick<AgentStack, 'requestPermission' | 'sessionUpdate'>;
+	handler: Pick<AgentEvents, 'requestPermission' | 'sessionUpdate'>;
 } {
 	const listeners = new Set<() => void>();
 	let snapshot = EMPTY_SNAPSHOT;

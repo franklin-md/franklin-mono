@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AgentStack } from '@franklin/agent';
+import type { AgentControl } from '@franklin/agent';
 import type {
 	AgentSessionStore,
 	ReactAgentSession,
@@ -15,13 +15,13 @@ function createStore(): AgentSessionStore {
 	};
 }
 
-function createSession(overrides?: Partial<AgentStack>): ReactAgentSession {
+function createSession(overrides?: Partial<AgentControl>): ReactAgentSession {
 	return {
-		stack: {
+		control: {
 			prompt: vi.fn(async () => ({ stopReason: 'end_turn' as const })),
 			dispose: vi.fn(async () => {}),
 			...overrides,
-		} as unknown as AgentStack,
+		} as unknown as AgentControl,
 		sessionId: 'test-session',
 		store: createStore(),
 	};
@@ -40,7 +40,7 @@ describe('TuiSession', () => {
 
 		await session.prompt('hello');
 
-		expect(base.stack.prompt).toHaveBeenCalledWith({
+		expect(base.control.prompt).toHaveBeenCalledWith({
 			sessionId: 'test-session',
 			prompt: [{ type: 'text', text: 'hello' }],
 		});
@@ -72,6 +72,6 @@ describe('TuiSession', () => {
 		await session.dispose();
 
 		expect(session.status).toBe('disposed');
-		expect(base.stack.dispose).toHaveBeenCalledTimes(1);
+		expect(base.control.dispose).toHaveBeenCalledTimes(1);
 	});
 });

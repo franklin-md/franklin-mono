@@ -8,8 +8,24 @@
  */
 
 export { AgentConnection } from './connection.js';
-export { compose, sequence } from './stack.js';
-export type { AgentStack, Middleware } from './stack.js';
+export {
+	compose,
+	connect,
+	sequence,
+	sequenceCommands,
+	sequenceEvents,
+} from './stack/index.js';
+export type {
+	AgentCommands,
+	AgentControl,
+	AgentEvents,
+	AgentLifecycle,
+	AgentStack,
+	CommandMiddleware,
+	Cont,
+	EventMiddleware,
+	Middleware,
+} from './stack/index.js';
 export type { Transport } from './transport/index.js';
 export {
 	createModuleMiddleware,

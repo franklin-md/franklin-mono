@@ -2,8 +2,8 @@ import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 
 import type { AgentConnection } from './connection.js';
 import type { AgentRegistry, AgentSpec } from './registry.js';
-import type { AgentStack, Middleware } from './stack.js';
-import { compose, sequence } from './stack.js';
+import type { AgentControl, AgentEvents, Middleware } from './stack/index.js';
+import { connect, sequence } from './stack/index.js';
 import { StdioTransport } from './transport/index.js';
 
 // ---------------------------------------------------------------------------
@@ -17,15 +17,15 @@ export interface SpawnOptions {
 	cwd: string;
 	/** Middleware stack (outermost first). */
 	middlewares?: Middleware[];
-	/** App's inbound handlers (sessionUpdate, requestPermission, etc.). */
-	handler: Partial<AgentStack>;
+	/** App's inbound event handlers (sessionUpdate, requestPermission, etc.). */
+	handler: Partial<AgentEvents>;
 	/** Override env vars merged with the agent spec. */
 	env?: Record<string, string>;
 }
 
 export interface AgentSession {
-	/** The composed middleware stack — use for outbound calls. */
-	stack: AgentStack;
+	/** The agent control handle — commands + lifecycle. */
+	control: AgentControl;
 	/** The session ID from newSession. */
 	sessionId: string;
 }
@@ -72,8 +72,8 @@ export interface SpawnFromConnectionOptions {
 	cwd: string;
 	/** Middleware stack (outermost first). */
 	middlewares?: Middleware[];
-	/** App's inbound handlers. */
-	handler: Partial<AgentStack>;
+	/** App's inbound event handlers. */
+	handler: Partial<AgentEvents>;
 }
 
 /**
@@ -84,21 +84,21 @@ export async function spawnFromConnection(
 	connection: AgentConnection,
 	options: SpawnFromConnectionOptions,
 ): Promise<AgentSession> {
-	const stack = compose(
+	const control = connect(
 		connection,
 		sequence(options.middlewares ?? []),
 		options.handler,
 	);
 
-	await stack.initialize({
+	await control.initialize({
 		protocolVersion: PROTOCOL_VERSION,
 		clientCapabilities: {},
 	});
 
-	const { sessionId } = await stack.newSession({
+	const { sessionId } = await control.newSession({
 		cwd: options.cwd,
 		mcpServers: [],
 	});
 
-	return { stack, sessionId };
+	return { control, sessionId };
 }

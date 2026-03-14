@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { PromptRequest, PromptResponse } from '@agentclientprotocol/sdk';
 
-import type { Middleware } from '../stack.js';
-import { sequence } from '../stack.js';
+import type { Middleware } from '../stack/index.js';
+import { sequence } from '../stack/index.js';
 
 describe('sequence', () => {
 	it('returns an empty middleware for an empty array', () => {

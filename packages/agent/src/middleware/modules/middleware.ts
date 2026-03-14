@@ -5,7 +5,7 @@ import type {
 	PromptResponse,
 } from '@agentclientprotocol/sdk';
 
-import type { Middleware } from '../../stack.js';
+import type { Middleware } from '../../stack/index.js';
 import type { FranklinModule } from './types.js';
 import { SystemPromptBuilder } from './types.js';
 

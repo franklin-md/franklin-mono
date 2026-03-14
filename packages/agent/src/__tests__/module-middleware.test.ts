@@ -12,15 +12,15 @@ import {
 } from '@agentclientprotocol/sdk';
 
 import { AgentConnection } from '../connection.js';
-import type { AgentStack } from '../stack.js';
-import { compose, sequence } from '../stack.js';
+import type { AgentControl, AgentEvents } from '../stack/index.js';
+import { connect, sequence } from '../stack/index.js';
 import { createMemoryTransport } from '../transport/in-memory.js';
 import { createModuleMiddleware } from '../middleware/modules/middleware.js';
 import { createMockAgent } from './helpers.js';
 
 import type { FranklinModule } from '../middleware/modules/types.js';
 
-function setup(modules: FranklinModule[], handler: Partial<AgentStack>) {
+function setup(modules: FranklinModule[], handler: Partial<AgentEvents>) {
 	const { transport, agentStream } = createMemoryTransport();
 	const mockAgent = createMockAgent();
 
@@ -39,12 +39,12 @@ function setup(modules: FranklinModule[], handler: Partial<AgentStack>) {
 	const middleware =
 		middlewares.length === 1 ? middlewares[0]! : sequence(middlewares);
 	const connection = new AgentConnection(transport);
-	const stack = compose(connection, middleware, handler);
+	const stack = connect(connection, middleware, handler);
 
 	return { stack, mockAgent };
 }
 
-const defaultHandler: Partial<AgentStack> = {
+const defaultHandler: Partial<AgentEvents> = {
 	sessionUpdate: async () => {},
 	requestPermission: async () => ({
 		outcome: { outcome: 'selected' as const, optionId: 'allow' },
@@ -52,7 +52,7 @@ const defaultHandler: Partial<AgentStack> = {
 };
 
 describe('createModuleMiddleware', () => {
-	const stacks: AgentStack[] = [];
+	const stacks: AgentControl[] = [];
 
 	function tracked(modules: FranklinModule[]) {
 		const result = setup(modules, defaultHandler);

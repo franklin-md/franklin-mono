@@ -11,8 +11,8 @@ import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 import { AgentSideConnection as AgentSideConnectionImpl } from '@agentclientprotocol/sdk';
 
 import { AgentConnection } from '../connection.js';
-import type { AgentStack, Middleware } from '../stack.js';
-import { compose, sequence } from '../stack.js';
+import type { AgentControl, AgentEvents, Middleware } from '../stack/index.js';
+import { connect, sequence } from '../stack/index.js';
 
 import { createMemoryTransport } from '../transport/in-memory.js';
 
@@ -23,7 +23,7 @@ import { createMockAgent } from './helpers.js';
  * Returns the stack, the agent-side connection (for agent-initiated calls),
  * and the mock agent. Initializes and creates a session automatically.
  */
-function setup(middlewares: Middleware[], handler: Partial<AgentStack>) {
+function setup(middlewares: Middleware[], handler: Partial<AgentEvents>) {
 	const { transport, agentStream } = createMemoryTransport();
 	let agentConn: AgentSideConnection | undefined;
 	const mockAgent = createMockAgent();
@@ -40,7 +40,7 @@ function setup(middlewares: Middleware[], handler: Partial<AgentStack>) {
 	}, agentStream);
 
 	const connection = new AgentConnection(transport);
-	const stack = compose(connection, sequence(middlewares), handler);
+	const stack = connect(connection, sequence(middlewares), handler);
 
 	return {
 		stack,
@@ -53,7 +53,7 @@ function setup(middlewares: Middleware[], handler: Partial<AgentStack>) {
 	};
 }
 
-async function initAndSession(stack: AgentStack) {
+async function initAndSession(stack: AgentControl) {
 	await stack.initialize({
 		protocolVersion: PROTOCOL_VERSION,
 		clientCapabilities: {},
@@ -62,9 +62,9 @@ async function initAndSession(stack: AgentStack) {
 }
 
 describe('compose', () => {
-	const stacks: AgentStack[] = [];
+	const stacks: AgentControl[] = [];
 
-	function tracked(middlewares: Middleware[], handler: Partial<AgentStack>) {
+	function tracked(middlewares: Middleware[], handler: Partial<AgentEvents>) {
 		const result = setup(middlewares, handler);
 		stacks.push(result.stack);
 		return result;

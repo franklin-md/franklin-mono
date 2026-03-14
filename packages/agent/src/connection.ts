@@ -2,7 +2,6 @@ import type {
 	AuthenticateRequest,
 	AuthenticateResponse,
 	CancelNotification,
-	Client,
 	InitializeRequest,
 	InitializeResponse,
 	ListSessionsRequest,
@@ -20,30 +19,33 @@ import type {
 } from '@agentclientprotocol/sdk';
 import { ClientSideConnection, RequestError } from '@agentclientprotocol/sdk';
 
+import type { AgentControl, AgentEvents } from './stack/types.js';
 import type { Transport } from './transport/index.js';
 
-export class AgentConnection {
+export class AgentConnection implements AgentControl {
 	private readonly conn: ClientSideConnection;
 	private readonly transport: Transport;
-	handler: Client;
+	handler: Partial<AgentEvents>;
 
-	constructor(transport: Transport, handler?: Client) {
+	constructor(transport: Transport, handler?: Partial<AgentEvents>) {
 		this.transport = transport;
-		this.handler = handler ?? {
-			sessionUpdate: () => {
-				throw RequestError.methodNotFound('session/update');
-			},
-			requestPermission: () => {
-				throw RequestError.methodNotFound('permission/request');
-			},
-		};
+		this.handler = handler ?? {};
 
 		// Late-binding closure: reads this.handler at call time, not construction time.
-		// This enables middleware to swap the handler after the connection is built.
+		// This enables connect() to swap the handler after the connection is built.
+		/* eslint-disable @typescript-eslint/no-unsafe-argument */
 		this.conn = new ClientSideConnection(
 			() => ({
-				requestPermission: (p) => this.handler.requestPermission(p),
-				sessionUpdate: (p) => this.handler.sessionUpdate(p),
+				sessionUpdate: (p) => {
+					if (!this.handler.sessionUpdate)
+						throw RequestError.methodNotFound('session/update');
+					return this.handler.sessionUpdate(p);
+				},
+				requestPermission: (p) => {
+					if (!this.handler.requestPermission)
+						throw RequestError.methodNotFound('permission/request');
+					return this.handler.requestPermission(p);
+				},
 				writeTextFile: (p) => {
 					if (!this.handler.writeTextFile)
 						throw RequestError.methodNotFound('fs/write_text_file');
@@ -79,18 +81,16 @@ export class AgentConnection {
 						throw RequestError.methodNotFound('terminal/kill');
 					return this.handler.killTerminal(p);
 				},
-				extMethod: (method, p) => {
-					if (!this.handler.extMethod)
-						throw RequestError.methodNotFound(method);
-					return this.handler.extMethod(method, p);
+				extMethod: (method, _p) => {
+					throw RequestError.methodNotFound(method);
 				},
-				extNotification: (method, p) => {
-					if (!this.handler.extNotification) return Promise.resolve();
-					return this.handler.extNotification(method, p);
+				extNotification: (_method, _p) => {
+					return Promise.resolve();
 				},
 			}),
 			transport.stream,
 		);
+		/* eslint-enable @typescript-eslint/no-unsafe-argument */
 	}
 
 	// --- Agent methods (outbound) ---
