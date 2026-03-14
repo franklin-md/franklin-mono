@@ -6,19 +6,34 @@ import type {
 } from '@agentclientprotocol/sdk';
 
 import type { Middleware } from '../../stack.js';
-import type { FranklinModule, ModuleCreateContext } from './types.js';
+import type { FranklinModule } from './types.js';
+import { SystemPromptBuilder } from './types.js';
+
+// Symbol key used to thread the SystemPromptBuilder through newSession params.
+// When multiple module middlewares are composed via sequence(), they all share
+// the same builder instance via this key.
+const BUILDER_KEY = Symbol.for('franklin:systemPromptBuilder');
+
+type ParamsWithBuilder = NewSessionRequest & {
+	[BUILDER_KEY]?: SystemPromptBuilder;
+};
 
 /**
- * Creates a Middleware that composes an array of FranklinModules.
+ * Creates a Middleware from a single FranklinModule.
  *
- * - Intercepts `newSession` to run `onCreate` hooks and inject MCP servers.
- * - Intercepts `prompt` to run `onPrompt` hooks and prepend system prompts
- *   (collected from `onCreate`) to the first prompt only.
- * - Intercepts `dispose` to run `onDispose` hooks.
+ * - Intercepts `newSession` to run the module's `onCreate` hook and inject MCP servers.
+ * - Intercepts `prompt` to materialize the system prompt (from the shared builder)
+ *   on the first prompt only, then run the module's `onPrompt` hook.
+ * - Intercepts `dispose` to run the module's `onDispose` hook.
+ *
+ * To compose multiple modules, create one middleware per module and use `sequence()`:
+ * ```ts
+ * sequence([createModuleMiddleware(modA), createModuleMiddleware(modB)])
+ * ```
  */
-export function createModuleMiddleware(modules: FranklinModule[]): Middleware {
-	// System prompt fragments collected during onCreate, delivered on first prompt.
-	const systemPrompts: string[] = [];
+export function createModuleMiddleware(module: FranklinModule): Middleware {
+	let builder: SystemPromptBuilder | undefined;
+	let isOwner = false;
 	let firstPromptFired = false;
 
 	return {
@@ -26,23 +41,30 @@ export function createModuleMiddleware(modules: FranklinModule[]): Middleware {
 			params: NewSessionRequest,
 			next: (params: NewSessionRequest) => Promise<NewSessionResponse>,
 		) {
-			const ctx: ModuleCreateContext = { cwd: params.cwd };
-			const extraServers: NewSessionRequest['mcpServers'] = [];
+			const withBuilder = params as ParamsWithBuilder;
 
-			// Run onCreate hooks in order
-			for (const mod of modules) {
-				if (mod.onCreate) {
-					const result = await mod.onCreate(ctx);
-					if (result.mcpServers) {
-						extraServers.push(...result.mcpServers);
-					}
-					if (result.systemPrompt) {
-						systemPrompts.push(result.systemPrompt);
-					}
+			// Get or create the shared builder
+			if (withBuilder[BUILDER_KEY]) {
+				builder = withBuilder[BUILDER_KEY];
+				isOwner = false;
+			} else {
+				builder = new SystemPromptBuilder();
+				withBuilder[BUILDER_KEY] = builder;
+				isOwner = true;
+			}
+
+			let extraServers: NewSessionRequest['mcpServers'] = [];
+
+			if (module.onCreate) {
+				const result = await module.onCreate({
+					cwd: params.cwd,
+					systemPrompt: builder,
+				});
+				if (result.mcpServers) {
+					extraServers = result.mcpServers;
 				}
 			}
 
-			// Inject collected MCP servers into the newSession request
 			return next({
 				...params,
 				mcpServers: [...params.mcpServers, ...extraServers],
@@ -55,50 +77,37 @@ export function createModuleMiddleware(modules: FranklinModule[]): Middleware {
 		) {
 			let { prompt } = params;
 
-			// Prepend system prompts to the first prompt only
-			if (!firstPromptFired && systemPrompts.length > 0) {
+			// Only the owner (outermost middleware) materializes the system prompt
+			if (!firstPromptFired && isOwner && builder) {
 				firstPromptFired = true;
-				const systemBlock = {
-					type: 'text' as const,
-					text: systemPrompts.join('\n\n'),
-				};
-				prompt = [systemBlock, ...prompt];
+				const text = builder.build();
+				if (text) {
+					prompt = [{ type: 'text' as const, text }, ...prompt];
+				}
 			} else if (!firstPromptFired) {
 				firstPromptFired = true;
 			}
 
-			// Run onPrompt hooks in order
-			let ctx = { sessionId: params.sessionId, prompt };
-			for (const mod of modules) {
-				if (mod.onPrompt) {
-					ctx = await mod.onPrompt(ctx);
-				}
+			// Run onPrompt hook
+			if (module.onPrompt) {
+				const ctx = await module.onPrompt({
+					sessionId: params.sessionId,
+					prompt,
+				});
+				prompt = ctx.prompt;
 			}
 
-			return next({ ...params, prompt: ctx.prompt });
+			return next({ ...params, prompt });
 		},
 
 		async dispose(
 			_params: undefined,
 			next: (params: undefined) => Promise<void>,
 		) {
-			// Run onDispose hooks (all modules, don't short-circuit on error)
-			const errors: unknown[] = [];
-			for (const mod of modules) {
-				if (mod.onDispose) {
-					try {
-						await mod.onDispose();
-					} catch (err) {
-						errors.push(err);
-					}
-				}
+			if (module.onDispose) {
+				await module.onDispose();
 			}
-
 			await next(undefined);
-
-			if (errors.length > 0) {
-				throw errors[0];
-			}
 		},
 	};
 }

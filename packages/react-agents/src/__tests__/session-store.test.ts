@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type {
+	PromptRequest,
 	RequestPermissionRequest,
 	SessionNotification,
 } from '@franklin/agent';
@@ -48,6 +49,39 @@ describe('createSessionStore', () => {
 		const { store } = createSessionStore();
 
 		expect(store.getSnapshot()).toBe(store.getSnapshot());
+	});
+
+	it('middleware records outbound user prompts and injects a messageId', async () => {
+		const { store, middleware } = createSessionStore();
+		const next = vi.fn(async (params: PromptRequest) => ({
+			stopReason: 'end_turn' as const,
+			userMessageId: params.messageId,
+		}));
+
+		await middleware.prompt?.(
+			{
+				sessionId: 'test-session',
+				prompt: [{ type: 'text', text: 'hello' }],
+			},
+			next,
+		);
+
+		expect(next).toHaveBeenCalledWith(
+			expect.objectContaining({
+				sessionId: 'test-session',
+				messageId: expect.stringMatching(
+					/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+				),
+			}),
+		);
+
+		expect(store.getSnapshot().transcript).toHaveLength(1);
+		expect(
+			store.getSnapshot().transcript[0]?.notification.update,
+		).toMatchObject({
+			sessionUpdate: 'user_message_chunk',
+			content: { type: 'text', text: 'hello' },
+		});
 	});
 
 	it('auto-rejects permission requests by default', async () => {

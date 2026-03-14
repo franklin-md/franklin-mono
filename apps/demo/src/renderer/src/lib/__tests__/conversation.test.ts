@@ -92,10 +92,7 @@ describe('buildConversationState', () => {
 
 	describe('chunk merging without messageId (consecutive same-role)', () => {
 		it('merges consecutive agent chunks without messageId into one message', () => {
-			const transcript = [
-				agentChunk('Hello '),
-				agentChunk('world!'),
-			];
+			const transcript = [agentChunk('Hello '), agentChunk('world!')];
 
 			const state = buildConversationState(transcript);
 
@@ -106,10 +103,7 @@ describe('buildConversationState', () => {
 		});
 
 		it('merges consecutive user chunks without messageId into one message', () => {
-			const transcript = [
-				userChunk('part one '),
-				userChunk('part two'),
-			];
+			const transcript = [userChunk('part one '), userChunk('part two')];
 
 			const state = buildConversationState(transcript);
 
@@ -120,10 +114,7 @@ describe('buildConversationState', () => {
 		});
 
 		it('splits when role changes (user → agent)', () => {
-			const transcript = [
-				userChunk('Question?'),
-				agentChunk('Answer.'),
-			];
+			const transcript = [userChunk('Question?'), agentChunk('Answer.')];
 
 			const state = buildConversationState(transcript);
 
@@ -193,10 +184,7 @@ describe('buildConversationState', () => {
 		});
 
 		it('is not streaming when transcript ends with a non-chunk event', () => {
-			const transcript = [
-				agentChunk('done.'),
-				usageUpdate(100, 200000),
-			];
+			const transcript = [agentChunk('done.'), usageUpdate(100, 200000)];
 
 			const state = buildConversationState(transcript);
 

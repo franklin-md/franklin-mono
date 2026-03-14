@@ -10,6 +10,8 @@
 	"include": ["src/main/**/*.ts"],
 	"references": [
 		{ "path": "../../packages/agent" },
-		{ "path": "../../packages/react-agents" }
+		{ "path": "../../packages/react-agents" },
+		{ "path": "../../packages/lib/transport" },
+		{ "path": "../../packages/local-mcp" }
 	]
 }

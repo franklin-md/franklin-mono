@@ -104,7 +104,7 @@ export type Middleware = {
 };
 
 // ---------------------------------------------------------------------------
-// compose() — wire the middleware chain
+// Method lists
 // ---------------------------------------------------------------------------
 
 const OUTBOUND_METHODS = [
@@ -131,15 +131,21 @@ const INBOUND_METHODS = [
 	'killTerminal',
 ] as const;
 
+const ALL_METHODS = [
+	...OUTBOUND_METHODS,
+	...INBOUND_METHODS,
+	'dispose',
+] as const;
+
 // Internal function type — intentionally permissive. Type safety comes from
 // the public AgentStack/Middleware types, not from the chain-building internals.
 type ChainFn = (...args: any[]) => any;
 
 /**
  * Builds a chain of middleware functions around a terminal function.
- * Each middleware receives (...originalArgs, next) where next calls the
- * next layer. Middlewares are wrapped from last to first: the first
- * middleware in the array is outermost (runs first).
+ * Each middleware receives (params, next) where next calls the next layer.
+ * Middlewares are wrapped from last to first: the first middleware in the
+ * array is outermost (runs first).
  */
 function buildChain(
 	terminal: ChainFn,
@@ -150,7 +156,6 @@ function buildChain(
 		const mw = middlewareFns[i];
 		if (mw) {
 			const next = chain;
-			// Always call mw(params, next) — params is the first arg (or undefined for dispose).
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 			chain = (params: unknown) => mw(params, next);
 		}
@@ -158,31 +163,70 @@ function buildChain(
 	return chain;
 }
 
+// ---------------------------------------------------------------------------
+// sequence() — combine multiple middlewares into one
+// ---------------------------------------------------------------------------
+
 /**
- * Composes a middleware stack around an AgentConnection.
+ * Combines an ordered array of middlewares into a single Middleware.
+ * For each method, the first middleware in the array is outermost (runs first).
+ * Middlewares that don't define a method are skipped for that method's chain.
+ *
+ * @param middlewares - Ordered array. mw[0] is outermost (closest to caller).
+ * @returns A single Middleware that sequences all the input middlewares.
+ */
+export function sequence(middlewares: Middleware[]): Middleware {
+	const combined: Middleware = {};
+
+	for (const method of ALL_METHODS) {
+		const mwFns = middlewares.map((mw) => mw[method] as ChainFn | undefined);
+		// Only define the method if at least one middleware handles it
+		if (mwFns.some((fn) => fn !== undefined)) {
+			(combined as Record<string, ChainFn>)[method] = (
+				params: unknown,
+				next: ChainFn,
+			) => {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+				return buildChain(next, mwFns)(params);
+			};
+		}
+	}
+
+	return combined;
+}
+
+// ---------------------------------------------------------------------------
+// compose() — wire a middleware to an AgentConnection
+// ---------------------------------------------------------------------------
+
+/**
+ * Wires a middleware around an AgentConnection.
  *
  * @param connection - The AgentConnection (terminal for outbound, source for inbound)
- * @param middlewares - Ordered array. mw[0] is outermost (closest to app).
+ * @param middleware - A single Middleware. Use `sequence()` to combine multiple.
  * @param handler - App's terminal handlers for inbound callbacks. Partial — only
  *                  implement methods you handle (e.g. sessionUpdate + requestPermission).
  * @returns An AgentStack for the app to use for outbound calls.
  */
 export function compose(
 	connection: AgentConnection,
-	middlewares: Middleware[],
+	middleware: Middleware,
 	handler: Partial<AgentStack>,
 ): AgentStack {
 	const stack = {} as Record<string, ChainFn>;
 
-	// --- Outbound: app → mw[0] → mw[1] → ... → connection ---
+	// --- Outbound: app → middleware → connection ---
 	for (const method of OUTBOUND_METHODS) {
 		const terminal: ChainFn = ((p: never) =>
 			connection[method](p)) as unknown as ChainFn;
-		const mwFns = middlewares.map((mw) => mw[method] as ChainFn | undefined);
-		stack[method] = buildChain(terminal, mwFns);
+		const mwFn = middleware[method] as ChainFn | undefined;
+		stack[method] = mwFn
+			? // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+				(params: unknown) => mwFn(params, terminal)
+			: terminal;
 	}
 
-	// --- Inbound: connection → mw[N-1] → ... → mw[0] → handler ---
+	// --- Inbound: connection → middleware → handler ---
 	for (const method of INBOUND_METHODS) {
 		const terminal: ChainFn = ((p: never) => {
 			const fn = handler[method] as ChainFn | undefined;
@@ -190,24 +234,25 @@ export function compose(
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 			return fn(p);
 		}) as unknown as ChainFn;
-		// Reverse order: mw[0] wraps handler (innermost), mw[N-1] is outermost
-		const mwFns = [...middlewares]
-			.reverse()
-			.map((mw) => mw[method] as ChainFn | undefined);
-		stack[method] = buildChain(terminal, mwFns);
+		const mwFn = middleware[method] as ChainFn | undefined;
+		stack[method] = mwFn
+			? // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+				(params: unknown) => mwFn(params, terminal)
+			: terminal;
 	}
 
-	// --- Lifecycle: dispose chains through middlewares then connection ---
+	// --- Lifecycle: dispose through middleware then connection ---
 	{
 		const terminal: ChainFn = (() =>
 			connection.dispose()) as unknown as ChainFn;
-		const mwFns = middlewares.map((mw) => mw.dispose as ChainFn | undefined);
-		stack['dispose'] = buildChain(terminal, mwFns);
+		const mwFn = middleware.dispose as ChainFn | undefined;
+		stack['dispose'] = mwFn
+			? // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+				(params: unknown) => mwFn(params, terminal)
+			: terminal;
 	}
 
 	// --- Wire inbound chains to the connection's handler ---
-	// Type safety is enforced at the public AgentStack/Middleware boundary.
-	// The internal chain dispatch uses ChainFn, so we cast back here.
 	/* eslint-disable @typescript-eslint/no-unsafe-return */
 	connection.handler = Object.fromEntries(
 		INBOUND_METHODS.map((method) => [

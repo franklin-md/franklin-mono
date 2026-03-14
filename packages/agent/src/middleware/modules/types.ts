@@ -1,6 +1,38 @@
 import type { ContentBlock, McpServer } from '@agentclientprotocol/sdk';
 
 // ---------------------------------------------------------------------------
+// SystemPromptBuilder
+// ---------------------------------------------------------------------------
+
+/**
+ * Accumulates system prompt fragments across module middlewares.
+ *
+ * Shared via a symbol key on `NewSessionRequest` params so that
+ * `sequence()`-d module middlewares all contribute to the same builder.
+ * The outermost middleware materializes the result on the first prompt.
+ */
+export class SystemPromptBuilder {
+	private _prepended: string[] = [];
+	private _appended: string[] = [];
+
+	/** Add text before all existing content. */
+	prepend(text: string): void {
+		this._prepended.unshift(text);
+	}
+
+	/** Add text after all existing content. */
+	append(text: string): void {
+		this._appended.push(text);
+	}
+
+	/** Assemble the final text. Returns undefined if nothing was added. */
+	build(): string | undefined {
+		const parts = [...this._prepended, ...this._appended];
+		return parts.length > 0 ? parts.join('\n\n') : undefined;
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Module interface
 // ---------------------------------------------------------------------------
 
@@ -8,8 +40,8 @@ import type { ContentBlock, McpServer } from '@agentclientprotocol/sdk';
  * A FranklinModule extends an agent session with additional capabilities.
  *
  * Modules can inject MCP servers, add system prompt context, modify prompts,
- * and manage their own lifecycle. They are composed into a single Middleware
- * via `createModuleMiddleware()`.
+ * and manage their own lifecycle. Each module is wrapped into a Middleware
+ * via `createModuleMiddleware()`. Compose multiple modules with `sequence()`.
  */
 export interface FranklinModule {
 	name: string;
@@ -17,7 +49,7 @@ export interface FranklinModule {
 	/**
 	 * Called once when a new session is created (during `newSession` interception).
 	 * Can set up resources (e.g., MCP servers) and return them for injection
-	 * into the session, along with optional system prompt text.
+	 * into the session. Use `ctx.systemPrompt` to contribute system prompt text.
 	 */
 	onCreate?(
 		ctx: ModuleCreateContext,
@@ -44,13 +76,13 @@ export interface FranklinModule {
 export interface ModuleCreateContext {
 	/** Working directory for the session. */
 	cwd: string;
+	/** Builder for accumulating system prompt fragments. */
+	systemPrompt: SystemPromptBuilder;
 }
 
 export interface ModuleCreateResult {
 	/** MCP servers to inject into the session's newSession request. */
 	mcpServers?: McpServer[];
-	/** Static system prompt text prepended to the first prompt only. */
-	systemPrompt?: string;
 }
 
 export interface ModulePromptContext {

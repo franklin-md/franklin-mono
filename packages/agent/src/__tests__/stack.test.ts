@@ -12,7 +12,7 @@ import { AgentSideConnection as AgentSideConnectionImpl } from '@agentclientprot
 
 import { AgentConnection } from '../connection.js';
 import type { AgentStack, Middleware } from '../stack.js';
-import { compose } from '../stack.js';
+import { compose, sequence } from '../stack.js';
 
 import { createMemoryTransport } from '../transport/in-memory.js';
 
@@ -40,7 +40,7 @@ function setup(middlewares: Middleware[], handler: Partial<AgentStack>) {
 	}, agentStream);
 
 	const connection = new AgentConnection(transport);
-	const stack = compose(connection, middlewares, handler);
+	const stack = compose(connection, sequence(middlewares), handler);
 
 	return {
 		stack,
@@ -312,16 +312,17 @@ describe('compose', () => {
 		});
 
 		// Outbound: A-down → B-down → C-down → agent-prompt
-		// Inbound (during prompt): C-inbound → B-inbound → A-inbound → handler-inbound
+		// Inbound (during prompt): A-inbound → B-inbound → C-inbound → handler-inbound
+		//   (same order as outbound — compose no longer reverses inbound)
 		// Outbound return: C-up → B-up → A-up
 		expect(log).toEqual([
 			'A-down',
 			'B-down',
 			'C-down',
 			'agent-prompt',
-			'C-inbound',
-			'B-inbound',
 			'A-inbound',
+			'B-inbound',
+			'C-inbound',
 			'handler-inbound',
 			'C-up',
 			'B-up',

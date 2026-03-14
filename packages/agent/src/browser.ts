@@ -8,9 +8,22 @@
  */
 
 export { AgentConnection } from './connection.js';
-export { compose } from './stack.js';
+export { compose, sequence } from './stack.js';
 export type { AgentStack, Middleware } from './stack.js';
 export type { Transport } from './transport/index.js';
+export {
+	createModuleMiddleware,
+	createThreadModule,
+	SystemPromptBuilder,
+} from './middleware/modules/index.js';
+export type {
+	FranklinModule,
+	ModuleCreateContext,
+	ModuleCreateResult,
+	ModulePromptContext,
+	ThreadRequest,
+	ThreadModuleOptions,
+} from './middleware/modules/index.js';
 
 // Re-export key ACP types so consumers don't need to depend on the SDK directly
 export type {

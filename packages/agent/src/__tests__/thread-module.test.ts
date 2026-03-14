@@ -5,6 +5,7 @@ import { InMemoryLocalMcpTransport } from '@franklin/local-mcp';
 import { createThreadModule } from '../middleware/modules/thread.js';
 
 import type { FranklinModule } from '../middleware/modules/types.js';
+import { SystemPromptBuilder } from '../middleware/modules/types.js';
 
 describe('createThreadModule', () => {
 	const disposables: FranklinModule[] = [];
@@ -30,7 +31,11 @@ describe('createThreadModule', () => {
 		disposables.push(mod);
 
 		// Run onCreate
-		const result = await mod.onCreate!({ cwd: '/project' });
+		const builder = new SystemPromptBuilder();
+		const result = await mod.onCreate!({
+			cwd: '/project',
+			systemPrompt: builder,
+		});
 
 		// Should return an MCP server config
 		expect(result.mcpServers).toHaveLength(1);
@@ -38,9 +43,10 @@ describe('createThreadModule', () => {
 			name: 'franklin-threads',
 		});
 
-		// Should return a system prompt
-		expect(result.systemPrompt).toBeTruthy();
-		expect(result.systemPrompt).toContain('new_thread');
+		// Should have appended a system prompt to the builder
+		const builtPrompt = builder.build();
+		expect(builtPrompt).toBeTruthy();
+		expect(builtPrompt).toContain('new_thread');
 
 		// List tools through MCP client
 		const { tools } = await transport.client.listTools();
@@ -75,7 +81,10 @@ describe('createThreadModule', () => {
 			transport,
 		});
 
-		await mod.onCreate!({ cwd: '/project' });
+		await mod.onCreate!({
+			cwd: '/project',
+			systemPrompt: new SystemPromptBuilder(),
+		});
 
 		// Should not throw
 		await mod.onDispose!();

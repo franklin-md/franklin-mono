@@ -1,5 +1,6 @@
 export { createModuleMiddleware } from './middleware.js';
 export { createThreadModule } from './thread.js';
+export { SystemPromptBuilder } from './types.js';
 export type {
 	FranklinModule,
 	ModuleCreateContext,

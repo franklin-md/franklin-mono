@@ -5,6 +5,10 @@ export interface FranklinBridge {
 	send(agentId: string, chunk: Uint8Array): void;
 	onData(callback: (agentId: string, chunk: Uint8Array) => void): () => void;
 	dispose(agentId: string): Promise<void>;
+	startMcp(
+		serializedTools: unknown[],
+	): Promise<{ config: unknown; mcpId: string }>;
+	stopMcp(mcpId: string): Promise<void>;
 }
 
 // Relay subprocess stdout from main → renderer data listeners
@@ -35,6 +39,15 @@ const bridge: FranklinBridge = {
 
 	dispose: (agentId: string) =>
 		ipcRenderer.invoke('franklin:dispose', agentId) as Promise<void>,
+
+	startMcp: (serializedTools: unknown[]) =>
+		ipcRenderer.invoke('franklin:start-mcp', serializedTools) as Promise<{
+			config: unknown;
+			mcpId: string;
+		}>,
+
+	stopMcp: (mcpId: string) =>
+		ipcRenderer.invoke('franklin:stop-mcp', mcpId) as Promise<void>,
 };
 
 contextBridge.exposeInMainWorld('franklinBridge', bridge);

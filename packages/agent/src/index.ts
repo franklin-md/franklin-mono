@@ -5,7 +5,7 @@ export {
 	codexAgentSpec,
 } from './agents/index.js';
 export { AgentRegistry, createDefaultRegistry } from './registry.js';
-export { compose } from './stack.js';
+export { compose, sequence } from './stack.js';
 export { spawn, spawnFromConnection } from './spawn.js';
 export { StdioTransport, createMemoryTransport } from './transport/index.js';
 export type { AgentSpec } from './registry.js';
@@ -20,6 +20,7 @@ export type { Transport, StdioTransportOptions } from './transport/index.js';
 export {
 	createModuleMiddleware,
 	createThreadModule,
+	SystemPromptBuilder,
 } from './middleware/modules/index.js';
 export type {
 	FranklinModule,

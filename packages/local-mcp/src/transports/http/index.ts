@@ -3,9 +3,7 @@ import { createHttpCallbackServer } from '@franklin/transport';
 import type { HttpCallbackServer } from '@franklin/transport';
 import type { LocalMcpTransport, McpServerConfig } from '../../types.js';
 import type { AnyToolDefinition } from '../../tools/types.js';
-import { getRelayPath } from './relay/path.js';
-import { RELAY_NAME } from './relay/tags.js';
-import { serializeRelayEnv } from './relay/env.js';
+import { createRelayConfig } from '../../relay-config.js';
 import { ToolsManager } from '../../tools/manager.js';
 
 interface ToolCallRequest {
@@ -34,15 +32,10 @@ export class HttpLocalMcpTransport implements LocalMcpTransport {
 			return manager.dispatch(req.tool, req.arguments);
 		});
 
-		return {
-			name: RELAY_NAME,
-			command: process.execPath,
-			args: [getRelayPath()],
-			env: serializeRelayEnv({
-				callbackUrl: this.callbackServer.url,
-				tools: manager.listTools(),
-			}),
-		};
+		return createRelayConfig({
+			callbackUrl: this.callbackServer.url,
+			tools: manager.listTools(),
+		});
 	}
 
 	async dispose(): Promise<void> {

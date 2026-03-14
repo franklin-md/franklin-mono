@@ -32,9 +32,10 @@ export async function spawn(
 	registry: AgentRegistry,
 	options: ReactSpawnOptions,
 ): Promise<ReactAgentSession> {
-	const { store, handler } = createSessionStore();
+	const { store, middleware, handler } = createSessionStore();
 	const session = await spawnAgentSession(registry, {
 		...options,
+		middlewares: [middleware, ...(options.middlewares ?? [])],
 		handler,
 	});
 	return attachStore(session, store);
@@ -44,9 +45,10 @@ export async function spawnFromConnection(
 	connection: AgentConnection,
 	options: ReactSpawnFromConnectionOptions,
 ): Promise<ReactAgentSession> {
-	const { store, handler } = createSessionStore();
+	const { store, middleware, handler } = createSessionStore();
 	const session = await spawnAgentSessionFromConnection(connection, {
 		...options,
+		middlewares: [middleware, ...(options.middlewares ?? [])],
 		handler,
 	});
 	return attachStore(session, store);

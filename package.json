@@ -27,6 +27,7 @@
 		"@vitest/eslint-plugin": "^1.6.10",
 		"eslint": "^10.0.3",
 		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-storybook": "^10.2.19",
 		"globals": "^17.4.0",
 		"prettier": "^3.8.1",
 		"typescript": "^5.8.3",

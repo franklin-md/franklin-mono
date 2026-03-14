@@ -3,7 +3,7 @@ import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 import type { AgentConnection } from './connection.js';
 import type { AgentRegistry, AgentSpec } from './registry.js';
 import type { AgentStack, Middleware } from './stack.js';
-import { compose } from './stack.js';
+import { compose, sequence } from './stack.js';
 import { StdioTransport } from './transport/index.js';
 
 // ---------------------------------------------------------------------------
@@ -84,7 +84,11 @@ export async function spawnFromConnection(
 	connection: AgentConnection,
 	options: SpawnFromConnectionOptions,
 ): Promise<AgentSession> {
-	const stack = compose(connection, options.middlewares ?? [], options.handler);
+	const stack = compose(
+		connection,
+		sequence(options.middlewares ?? []),
+		options.handler,
+	);
 
 	await stack.initialize({
 		protocolVersion: PROTOCOL_VERSION,

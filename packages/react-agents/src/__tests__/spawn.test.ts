@@ -52,9 +52,11 @@ describe('react-agents spawnFromConnection', () => {
 
 	it('captures inbound updates in the session store transcript', async () => {
 		const { connection, mockAgent } = setup();
+		let capturedPrompt: PromptRequest | undefined;
 
 		mockAgent.prompt = vi.fn<(p: PromptRequest) => Promise<PromptResponse>>(
 			async (params) => {
+				capturedPrompt = params;
 				const ac = mockAgent.conn!;
 				await ac.sessionUpdate({
 					sessionId: params.sessionId,
@@ -78,8 +80,19 @@ describe('react-agents spawnFromConnection', () => {
 		});
 
 		const transcript = session.store.getSnapshot().transcript;
-		expect(transcript).toHaveLength(1);
-		expect(transcript[0]?.notification).toEqual({
+		expect(capturedPrompt?.messageId).toMatch(
+			/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+		);
+		expect(transcript).toHaveLength(2);
+		expect(transcript[0]?.notification).toMatchObject({
+			sessionId: 'test-session',
+			update: {
+				sessionUpdate: 'user_message_chunk',
+				messageId: capturedPrompt?.messageId,
+				content: { type: 'text', text: 'test' },
+			},
+		});
+		expect(transcript[1]?.notification).toEqual({
 			sessionId: 'test-session',
 			update: {
 				sessionUpdate: 'agent_message_chunk',

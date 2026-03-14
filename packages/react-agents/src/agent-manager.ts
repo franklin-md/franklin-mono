@@ -4,7 +4,7 @@ import type {
 	Middleware,
 	PromptResponse,
 } from '@franklin/agent/browser';
-import { compose, PROTOCOL_VERSION } from '@franklin/agent/browser';
+import { compose, sequence, PROTOCOL_VERSION } from '@franklin/agent/browser';
 
 import type { AgentSessionStore, ReactAgentSession } from './session-store.js';
 import { createSessionStore } from './session-store.js';
@@ -141,12 +141,12 @@ export class AgentManager {
 		}
 
 		const connection = await this._createConnection(agent, cwd);
-		const { store, handler } = createSessionStore();
+		const { store, middleware, handler } = createSessionStore();
 
 		const middlewares = this._createMiddlewares
-			? [...this._middlewares, ...this._createMiddlewares()]
-			: this._middlewares;
-		const stack = compose(connection, middlewares, handler);
+			? [middleware, ...this._middlewares, ...this._createMiddlewares()]
+			: [middleware, ...this._middlewares];
+		const stack = compose(connection, sequence(middlewares), handler);
 
 		await stack.initialize({
 			protocolVersion: PROTOCOL_VERSION,

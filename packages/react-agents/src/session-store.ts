@@ -1,5 +1,8 @@
 import type {
 	AgentStack,
+	Middleware,
+	PromptRequest,
+	PromptResponse,
 	RequestPermissionResponse,
 	SessionNotification,
 } from '@franklin/agent';
@@ -31,6 +34,7 @@ const EMPTY_SNAPSHOT: AgentSessionSnapshot = {
 
 export function createSessionStore(): {
 	store: AgentSessionStore;
+	middleware: Middleware;
 	handler: Pick<AgentStack, 'requestPermission' | 'sessionUpdate'>;
 } {
 	const listeners = new Set<() => void>();
@@ -42,6 +46,17 @@ export function createSessionStore(): {
 		for (const listener of listeners) {
 			listener();
 		}
+	}
+
+	function append(notification: SessionNotification): void {
+		emit([
+			...snapshot.transcript,
+			{
+				id: `entry-${nextId++}`,
+				receivedAt: Date.now(),
+				notification,
+			},
+		]);
 	}
 
 	function selectPermissionOption(
@@ -58,6 +73,39 @@ export function createSessionStore(): {
 		);
 	}
 
+	function createMessageId(): string {
+		if (typeof globalThis.crypto?.randomUUID === 'function') {
+			return globalThis.crypto.randomUUID();
+		}
+
+		const bytes = new Uint8Array(16);
+		if (typeof globalThis.crypto?.getRandomValues === 'function') {
+			globalThis.crypto.getRandomValues(bytes);
+		} else {
+			for (let i = 0; i < bytes.length; i++) {
+				bytes[i] = Math.floor(Math.random() * 256);
+			}
+		}
+
+		bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+		bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+
+		const hex = [...bytes]
+			.map((byte) => byte.toString(16).padStart(2, '0'))
+			.join('');
+		return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+	}
+
+	function extractPromptText(prompt: PromptRequest['prompt']): string {
+		return prompt
+			.filter(
+				(block): block is Extract<(typeof prompt)[number], { type: 'text' }> =>
+					block.type === 'text',
+			)
+			.map((block) => block.text)
+			.join('');
+	}
+
 	return {
 		store: {
 			subscribe: (listener) => {
@@ -68,16 +116,34 @@ export function createSessionStore(): {
 			},
 			getSnapshot: () => snapshot,
 		},
+		middleware: {
+			prompt: async (
+				params: PromptRequest,
+				next: (params: PromptRequest) => Promise<PromptResponse>,
+			) => {
+				const messageId = params.messageId ?? createMessageId();
+				const text = extractPromptText(params.prompt);
+
+				if (text.length > 0) {
+					append({
+						sessionId: params.sessionId,
+						update: {
+							sessionUpdate: 'user_message_chunk',
+							messageId,
+							content: { type: 'text', text },
+						},
+					} as SessionNotification);
+				}
+
+				return next({
+					...params,
+					messageId,
+				});
+			},
+		},
 		handler: {
 			sessionUpdate: async (notification) => {
-				emit([
-					...snapshot.transcript,
-					{
-						id: `entry-${nextId++}`,
-						receivedAt: Date.now(),
-						notification,
-					},
-				]);
+				append(notification);
 			},
 			requestPermission: async (request) => {
 				console.warn('Auto-rejecting ACP permission request', request);

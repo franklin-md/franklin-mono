@@ -1,13 +1,17 @@
 import { z } from 'zod';
-import { createLocalMcp, HttpLocalMcpTransport } from '@franklin/local-mcp';
+import { createLocalMcp } from '@franklin/local-mcp/browser';
 
 import type { McpServer } from '@agentclientprotocol/sdk';
 import type {
 	AnyToolDefinition,
 	LocalMcp,
 	LocalMcpTransport,
-} from '@franklin/local-mcp';
-import type { FranklinModule, ModuleCreateResult } from './types.js';
+} from '@franklin/local-mcp/browser';
+import type {
+	FranklinModule,
+	ModuleCreateContext,
+	ModuleCreateResult,
+} from './types.js';
 
 // ---------------------------------------------------------------------------
 // Thread module options
@@ -24,11 +28,11 @@ export interface ThreadModuleOptions {
 	/** Called when the agent requests a new thread. */
 	onNewThread: (request: ThreadRequest) => Promise<{ threadId: string }>;
 	/**
-	 * Override the MCP transport used to serve the thread tool.
-	 * Defaults to HttpLocalMcpTransport (production).
-	 * Pass InMemoryLocalMcpTransport for testing.
+	 * MCP transport used to serve the thread tool.
+	 * Each module instance must receive its own transport — do not reuse
+	 * a transport instance across module lifetimes.
 	 */
-	transport?: LocalMcpTransport;
+	transport: LocalMcpTransport;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,8 +74,8 @@ export function createThreadModule(
 	return {
 		name: 'thread',
 
-		async onCreate(): Promise<ModuleCreateResult> {
-			const transport = options.transport ?? new HttpLocalMcpTransport();
+		async onCreate(ctx: ModuleCreateContext): Promise<ModuleCreateResult> {
+			const transport = options.transport;
 
 			// Cast needed: TypeScript resolves zod v4 (hoisted) but runtime uses
 			// zod v3 (nested under agent). The types are structurally identical.
@@ -92,9 +96,10 @@ export function createThreadModule(
 				transport,
 			);
 
+			ctx.systemPrompt.append(THREAD_SYSTEM_PROMPT);
+
 			return {
 				mcpServers: [mcp.config as McpServer],
-				systemPrompt: THREAD_SYSTEM_PROMPT,
 			};
 		},
 

@@ -7,4 +7,5 @@ export { createMemoryPipes } from './in-memory/index.js';
 export type { MemoryPipePair } from './in-memory/index.js';
 export { createHttpCallbackServer } from './http/index.js';
 export type { HttpCallbackServer } from './http/index.js';
+export { createCallbackServerPipe } from './http/callback-server-pipe.js';
 export { PortManager, portManager } from './http/port-manager.js';

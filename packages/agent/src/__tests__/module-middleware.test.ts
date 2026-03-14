@@ -13,7 +13,7 @@ import {
 
 import { AgentConnection } from '../connection.js';
 import type { AgentStack } from '../stack.js';
-import { compose } from '../stack.js';
+import { compose, sequence } from '../stack.js';
 import { createMemoryTransport } from '../transport/in-memory.js';
 import { createModuleMiddleware } from '../middleware/modules/middleware.js';
 import { createMockAgent } from './helpers.js';
@@ -35,9 +35,11 @@ function setup(modules: FranklinModule[], handler: Partial<AgentStack>) {
 		};
 	}, agentStream);
 
-	const moduleMiddleware = createModuleMiddleware(modules);
+	const middlewares = modules.map((m) => createModuleMiddleware(m));
+	const middleware =
+		middlewares.length === 1 ? middlewares[0]! : sequence(middlewares);
 	const connection = new AgentConnection(transport);
-	const stack = compose(connection, [moduleMiddleware], handler);
+	const stack = compose(connection, middleware, handler);
 
 	return { stack, mockAgent };
 }
@@ -111,10 +113,9 @@ describe('createModuleMiddleware', () => {
 
 		const mod: FranklinModule = {
 			name: 'sys-prompt-mod',
-			async onCreate() {
-				return {
-					systemPrompt: 'You are a helpful assistant.',
-				};
+			async onCreate(ctx) {
+				ctx.systemPrompt.append('You are a helpful assistant.');
+				return {};
 			},
 		};
 
@@ -227,26 +228,26 @@ describe('createModuleMiddleware', () => {
 		expect(disposeLog).toEqual(['disposed']);
 	});
 
-	it('multiple modules compose — MCP servers merge, system prompts join', async () => {
+	it('multiple modules compose via sequence — MCP servers merge, system prompts join', async () => {
 		const capturedMcpServers: unknown[] = [];
 		const capturedPrompts: PromptRequest[] = [];
 
 		const modA: FranklinModule = {
 			name: 'mod-a',
-			async onCreate() {
+			async onCreate(ctx) {
+				ctx.systemPrompt.append('Prompt A.');
 				return {
 					mcpServers: [{ name: 'mcp-a', command: '/a', args: [], env: [] }],
-					systemPrompt: 'Prompt A.',
 				};
 			},
 		};
 
 		const modB: FranklinModule = {
 			name: 'mod-b',
-			async onCreate() {
+			async onCreate(ctx) {
+				ctx.systemPrompt.append('Prompt B.');
 				return {
 					mcpServers: [{ name: 'mcp-b', command: '/b', args: [], env: [] }],
-					systemPrompt: 'Prompt B.',
 				};
 			},
 		};
@@ -289,6 +290,44 @@ describe('createModuleMiddleware', () => {
 		expect(blocks[0]).toMatchObject({
 			type: 'text',
 			text: 'Prompt A.\n\nPrompt B.',
+		});
+	});
+
+	it('no system prompt block when no module uses the builder', async () => {
+		const capturedPrompts: PromptRequest[] = [];
+
+		const mod: FranklinModule = {
+			name: 'no-prompt-mod',
+			async onCreate() {
+				return {};
+			},
+		};
+
+		const { stack, mockAgent } = tracked([mod]);
+
+		mockAgent.prompt = vi.fn<(p: PromptRequest) => Promise<PromptResponse>>(
+			async (params) => {
+				capturedPrompts.push(params);
+				return { stopReason: 'end_turn' as const };
+			},
+		);
+
+		await stack.initialize({
+			protocolVersion: PROTOCOL_VERSION,
+			clientCapabilities: {},
+		});
+		await stack.newSession({ cwd: '/test', mcpServers: [] });
+
+		await stack.prompt({
+			sessionId: 'test-session',
+			prompt: [{ type: 'text', text: 'hello' }],
+		});
+
+		expect(capturedPrompts).toHaveLength(1);
+		expect(capturedPrompts[0]!.prompt).toHaveLength(1);
+		expect(capturedPrompts[0]!.prompt[0]).toMatchObject({
+			type: 'text',
+			text: 'hello',
 		});
 	});
 });

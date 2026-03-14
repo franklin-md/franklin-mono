@@ -294,10 +294,42 @@ describe('ManagedSession', () => {
 		await session.prompt('test');
 
 		const transcript = session.store.getSnapshot().transcript;
-		expect(transcript).toHaveLength(1);
-		expect(transcript[0]?.notification.update).toEqual({
+		expect(transcript).toHaveLength(2);
+		expect(transcript[0]?.notification.update).toMatchObject({
+			sessionUpdate: 'user_message_chunk',
+			content: { type: 'text', text: 'test' },
+		});
+		expect(transcript[1]?.notification.update).toEqual({
 			sessionUpdate: 'agent_message_chunk',
 			content: { type: 'text', text: 'hi from agent' },
+		});
+	});
+
+	it('sends a client-generated messageId and records it on the user transcript entry', async () => {
+		const { manager, mockAgents } = createTestManagerWithMockAgent();
+		managers.push(manager);
+
+		const session = await manager.spawn('claude', '/test');
+		let capturedPrompt: PromptRequest | undefined;
+
+		mockAgents[0]!.prompt = vi.fn<
+			(p: PromptRequest) => Promise<PromptResponse>
+		>(async (params) => {
+			capturedPrompt = params;
+			return { stopReason: 'end_turn' as const };
+		});
+
+		await session.prompt('test');
+
+		expect(capturedPrompt?.messageId).toMatch(
+			/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+		);
+
+		const transcript = session.store.getSnapshot().transcript;
+		expect(transcript[0]?.notification.update).toMatchObject({
+			sessionUpdate: 'user_message_chunk',
+			messageId: capturedPrompt?.messageId,
+			content: { type: 'text', text: 'test' },
 		});
 	});
 

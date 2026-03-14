@@ -10,6 +10,10 @@ declare global {
 				callback: (agentId: string, chunk: Uint8Array) => void,
 			): () => void;
 			dispose(agentId: string): Promise<void>;
+			startMcp(
+				serializedTools: unknown[],
+			): Promise<{ config: unknown; mcpId: string }>;
+			stopMcp(mcpId: string): Promise<void>;
 		};
 	}
 }
