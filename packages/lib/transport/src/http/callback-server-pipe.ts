@@ -1,5 +1,5 @@
+import type { Stream } from '../streams/types.js';
 import type { HttpCallbackServer } from './index.js';
-import type { Pipe } from '../pipe.js';
 
 /**
  * NDJSON protocol used over the pipe:
@@ -24,10 +24,9 @@ interface PendingRequest {
  * Takes ownership of the server's `onRequest` slot — callers must not register
  * another handler after calling this function.
  */
-export function createCallbackServerPipe(server: HttpCallbackServer): {
-	pipe: Pipe;
-	dispose: () => void;
-} {
+export function createCallbackServerPipe(
+	server: HttpCallbackServer,
+): Stream<Uint8Array> {
 	let nextRequestId = 0;
 	const pending = new Map<string, PendingRequest>();
 	const encoder = new TextEncoder();
@@ -99,8 +98,9 @@ export function createCallbackServerPipe(server: HttpCallbackServer): {
 	});
 
 	return {
-		pipe: { readable, writable },
-		dispose() {
+		readable,
+		writable,
+		close: async () => {
 			// Reject all pending requests
 			for (const [, entry] of pending) {
 				entry.reject(new Error('Callback server pipe disposed'));

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { connect } from '../connect.js';
+import { connect } from '../streams/connect.js';
 import { createMemoryPipes } from '../in-memory/index.js';
 
 /**
@@ -22,18 +22,18 @@ function createTestHarness() {
 	const pair2 = createMemoryPipes();
 
 	// Connect the "inner" ends: pair1.pipeB ↔ pair2.pipeA
-	const connection = connect(pair1.pipeB, pair2.pipeA);
+	const connection = connect(pair1.streamB, pair2.streamA);
 
 	return {
 		// Write bytes into this end → they flow through the connection
-		writerSide: pair1.pipeA,
+		writerSide: pair1.streamA,
 		// Read bytes from this end ← they arrived through the connection
-		readerSide: pair2.pipeB,
+		readerSide: pair2.streamB,
 		connection,
 		async cleanup() {
-			await connection.dispose();
-			await pair1.dispose();
-			await pair2.dispose();
+			await connection.close();
+			await pair1.close();
+			await pair2.close();
 		},
 	};
 }
@@ -63,12 +63,12 @@ describe('connect', () => {
 	it('pumps bytes from b.readable to a.writable (reverse direction)', async () => {
 		const pair1 = createMemoryPipes();
 		const pair2 = createMemoryPipes();
-		const connection = connect(pair1.pipeB, pair2.pipeA);
+		const connection = connect(pair1.streamB, pair2.streamA);
 
 		// Write into pair2's outer end (pipeB.writable)
-		const writer = pair2.pipeB.writable.getWriter();
+		const writer = pair2.streamB.writable.getWriter();
 		// Read from pair1's outer end (pipeA.readable)
-		const reader = pair1.pipeA.readable.getReader();
+		const reader = pair1.streamA.readable.getReader();
 
 		const [, { value }] = await Promise.all([
 			writer.write(encoder.encode('reverse')),
@@ -79,9 +79,9 @@ describe('connect', () => {
 
 		reader.releaseLock();
 		writer.releaseLock();
-		await connection.dispose();
-		await pair1.dispose();
-		await pair2.dispose();
+		await connection.close();
+		await pair1.close();
+		await pair2.close();
 	});
 
 	it('handles multiple chunks in sequence', async () => {
@@ -110,32 +110,32 @@ describe('connect', () => {
 	it('dispose stops the pump', async () => {
 		const pair1 = createMemoryPipes();
 		const pair2 = createMemoryPipes();
-		const connection = connect(pair1.pipeB, pair2.pipeA);
+		const connection = connect(pair1.streamB, pair2.streamA);
 
-		await connection.dispose();
+		await connection.close();
 
 		// After dispose, the connected streams are aborted.
 		// Writing to the source should not propagate.
 		// The reader on pair2's outer end should see EOF or an error
 		// because the connected writable (pair2.pipeA.writable) was aborted.
-		const reader = pair2.pipeB.readable.getReader();
+		const reader = pair2.streamB.readable.getReader();
 		const result = await reader.read();
 		expect(result.done).toBe(true);
 
 		reader.releaseLock();
-		await pair1.dispose();
-		await pair2.dispose();
+		await pair1.close();
+		await pair2.close();
 	});
 
 	it('dispose is idempotent', async () => {
 		const pair1 = createMemoryPipes();
 		const pair2 = createMemoryPipes();
-		const connection = connect(pair1.pipeB, pair2.pipeA);
+		const connection = connect(pair1.streamB, pair2.streamA);
 
-		await connection.dispose();
-		await connection.dispose(); // should not throw
+		await connection.close();
+		await connection.close(); // should not throw
 
-		await pair1.dispose();
-		await pair2.dispose();
+		await pair1.close();
+		await pair2.close();
 	});
 });

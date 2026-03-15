@@ -10,7 +10,7 @@ import {
 	PROTOCOL_VERSION,
 } from '@agentclientprotocol/sdk';
 
-import type { Transport } from '../../transport/index.js';
+import type { AgentTransport } from '../../transport/index.js';
 import { createMemoryTransport } from '../../transport/in-memory.js';
 
 /**
@@ -79,7 +79,7 @@ export function createMockClient(overrides?: Partial<Client>): Client {
  * Returns both sides for testing.
  */
 export function createTestPair(agentOverrides?: Partial<Agent>): {
-	transport: Transport;
+	transport: AgentTransport;
 	agentConn: AgentSideConnection;
 	mockAgent: Agent & { conn?: AgentSideConnection };
 } {

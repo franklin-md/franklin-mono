@@ -4,7 +4,11 @@ import { createMemoryPipes } from '../in-memory/index.js';
 
 describe('createMemoryPipes', () => {
 	it('sends data from pipeA to pipeB', async () => {
-		const { pipeA, pipeB, dispose } = createMemoryPipes();
+		const {
+			streamA: pipeA,
+			streamB: pipeB,
+			close: dispose,
+		} = createMemoryPipes<Uint8Array>();
 
 		const writer = pipeA.writable.getWriter();
 		const reader = pipeB.readable.getReader();
@@ -25,7 +29,11 @@ describe('createMemoryPipes', () => {
 	});
 
 	it('sends data from pipeB to pipeA', async () => {
-		const { pipeA, pipeB, dispose } = createMemoryPipes();
+		const {
+			streamA: pipeA,
+			streamB: pipeB,
+			close: dispose,
+		} = createMemoryPipes();
 
 		const writer = pipeB.writable.getWriter();
 		const reader = pipeA.readable.getReader();
@@ -45,7 +53,11 @@ describe('createMemoryPipes', () => {
 	});
 
 	it('dispose causes EOF on readers', async () => {
-		const { pipeA, pipeB, dispose } = createMemoryPipes();
+		const {
+			streamA: pipeA,
+			streamB: pipeB,
+			close: dispose,
+		} = createMemoryPipes();
 
 		const readerA = pipeA.readable.getReader();
 		const readerB = pipeB.readable.getReader();

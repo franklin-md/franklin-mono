@@ -8,7 +8,7 @@ describe('StdioPipe', () => {
 	afterEach(async () => {
 		while (pipes.length > 0) {
 			const p = pipes.pop();
-			if (p) await p.dispose();
+			if (p) await p.close();
 		}
 	});
 
@@ -16,23 +16,23 @@ describe('StdioPipe', () => {
 		const p = new StdioPipe({ command: 'cat' });
 		pipes.push(p);
 
-		expect(p.pipe.readable).toBeDefined();
-		expect(p.pipe.writable).toBeDefined();
+		expect(p.readable).toBeDefined();
+		expect(p.writable).toBeDefined();
 	});
 
 	it('dispose kills the subprocess', async () => {
 		const p = new StdioPipe({ command: 'cat' });
-		await p.dispose();
+		await p.close();
 		// Calling dispose again is a no-op
-		await p.dispose();
+		await p.close();
 	});
 
 	it('round-trips bytes through cat', async () => {
 		const p = new StdioPipe({ command: 'cat' });
 		pipes.push(p);
 
-		const writer = p.pipe.writable.getWriter();
-		const reader = p.pipe.readable.getReader();
+		const writer = p.writable.getWriter();
+		const reader = p.readable.getReader();
 
 		const input = new TextEncoder().encode('hello world\n');
 		await writer.write(input);

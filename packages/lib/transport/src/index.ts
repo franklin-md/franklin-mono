@@ -1,6 +1,5 @@
-export type { Pipe } from './pipe.js';
-export { connect } from './connect.js';
-export type { Connection } from './connect.js';
+export type { Stream } from './streams/types.js';
+export { connect } from './streams/connect.js';
 export { StdioPipe } from './stdio/index.js';
 export type { StdioPipeOptions } from './stdio/index.js';
 export { createMemoryPipes } from './in-memory/index.js';

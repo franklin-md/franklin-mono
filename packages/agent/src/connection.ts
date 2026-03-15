@@ -2,7 +2,7 @@ import type {} from '@agentclientprotocol/sdk';
 import { ClientSideConnection } from '@agentclientprotocol/sdk';
 
 import type { AgentCommands, AgentEvents } from './stack/types.js';
-import type { Transport } from './transport/index.js';
+import type { AgentTransport } from './transport/index.js';
 
 export type AgentConnection = {
 	commands: AgentCommands;
@@ -13,10 +13,10 @@ export type AgentConnection = {
 };
 
 export function createAgentConnection(
-	transport: Transport,
+	transport: AgentTransport,
 	handler: AgentEvents,
 ): AgentConnection {
-	const conn = new ClientSideConnection(() => handler, transport.stream);
+	const conn = new ClientSideConnection(() => handler, transport);
 
 	// Arrow functions preserve `this` binding to `conn`.
 	// ClientSideConnection uses private fields (#connection), which require
@@ -35,7 +35,7 @@ export function createAgentConnection(
 
 	return {
 		commands,
-		dispose: () => transport.dispose(),
+		dispose: () => transport.close(),
 		signal: conn.signal,
 		closed: conn.closed,
 	};

@@ -2,7 +2,7 @@ import type { Stream } from '@agentclientprotocol/sdk';
 import { ndJsonStream } from '@agentclientprotocol/sdk';
 import { StdioPipe } from '@franklin/transport';
 
-import type { Transport } from './index.js';
+import type { AgentTransport } from './index.js';
 
 export interface StdioTransportOptions {
 	command: string;
@@ -11,7 +11,7 @@ export interface StdioTransportOptions {
 	env?: Record<string, string>;
 }
 
-export class StdioTransport implements Transport {
+export class StdioTransport implements AgentTransport {
 	readonly stream: Stream;
 	private readonly stdioPipe: StdioPipe;
 

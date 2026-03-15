@@ -1,40 +1,34 @@
-import type { Pipe } from '../pipe.js';
+import { connect } from '../streams/connect.js';
+import type { Stream } from '../streams/types.js';
 
-export interface MemoryPipePair {
-	/** One end of the pair (e.g., client). */
-	pipeA: Pipe;
-	/** Other end of the pair (e.g., agent). */
-	pipeB: Pipe;
-	/** Closes all streams, causing EOF on both sides. */
-	dispose(): Promise<void>;
+export interface MemoryPipePair<T> {
+	streamA: Stream<T>;
+	streamB: Stream<T>;
+	close: () => Promise<void>;
 }
 
-/**
- * Creates a cross-connected pair of in-memory byte pipes.
- *
- * pipeA.writable -> pipeB.readable
- * pipeB.writable -> pipeA.readable
- */
-export function createMemoryPipes(): MemoryPipePair {
-	const aToB = new TransformStream<Uint8Array>();
-	const bToA = new TransformStream<Uint8Array>();
-
-	const pipeA: Pipe = {
-		writable: aToB.writable,
-		readable: bToA.readable,
-	};
-
-	const pipeB: Pipe = {
-		writable: bToA.writable,
-		readable: aToB.readable,
-	};
+export function createMemoryStream<T>(): Stream<T> {
+	const stream = new TransformStream<T>();
 
 	return {
-		pipeA,
-		pipeB,
-		async dispose() {
-			await aToB.writable.close().catch(() => {});
-			await bToA.writable.close().catch(() => {});
+		readable: stream.readable,
+		writable: stream.writable,
+		close: async () => {
+			await stream.writable.close();
+		},
+	};
+}
+
+export function createMemoryPipes<T = Uint8Array>(): MemoryPipePair<T> {
+	const streamA = createMemoryStream<T>();
+	const streamB = createMemoryStream<T>();
+	const joined = connect(streamA, streamB);
+
+	return {
+		streamA: streamA,
+		streamB: streamB,
+		close: async () => {
+			await joined.close();
 		},
 	};
 }

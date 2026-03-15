@@ -2,25 +2,31 @@ import type { Stream } from '@agentclientprotocol/sdk';
 import { ndJsonStream } from '@agentclientprotocol/sdk';
 import { createMemoryPipes } from '@franklin/transport';
 
-import type { Transport } from './index.js';
+import type { AgentTransport } from './index.js';
 
 /**
  * Creates an in-memory transport pair using shared memory pipes.
  * Returns a Transport (for the client side) and an agentStream (for the agent side).
  */
 export function createMemoryTransport(): {
-	transport: Transport;
+	transport: AgentTransport;
 	agentStream: Stream;
 } {
 	const pipes = createMemoryPipes();
 
-	const clientStream = ndJsonStream(pipes.pipeA.writable, pipes.pipeA.readable);
-	const agentStream = ndJsonStream(pipes.pipeB.writable, pipes.pipeB.readable);
+	const clientStream = ndJsonStream(
+		pipes.streamA.writable,
+		pipes.streamA.readable,
+	);
+	const agentStream = ndJsonStream(
+		pipes.streamB.writable,
+		pipes.streamB.readable,
+	);
 
-	const transport: Transport = {
+	const transport: AgentTransport = {
 		stream: clientStream,
 		async dispose() {
-			await pipes.dispose();
+			await pipes.close();
 		},
 	};
 

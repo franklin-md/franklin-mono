@@ -25,7 +25,7 @@ export type {
 	EventMiddleware,
 	Middleware,
 } from './stack/index.js';
-export type { Transport } from './transport/index.js';
+export type { AgentTransport as Transport } from './transport/index.js';
 export {
 	createModuleMiddleware,
 	createThreadModule,

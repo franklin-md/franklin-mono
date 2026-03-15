@@ -32,7 +32,10 @@ export type {
 	EventMiddleware,
 	Middleware,
 } from './stack/index.js';
-export type { Transport, StdioTransportOptions } from './transport/index.js';
+export type {
+	AgentTransport as Transport,
+	StdioTransportOptions,
+} from './transport/index.js';
 export {
 	createModuleMiddleware,
 	createThreadModule,

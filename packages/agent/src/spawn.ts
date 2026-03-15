@@ -12,7 +12,7 @@ import {
 } from './stack/index.js';
 import { EVENT_METHODS } from './middleware/types.js';
 import { StdioTransport } from './transport/index.js';
-import type { Transport } from './transport/index.js';
+import type { AgentTransport } from './transport/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -114,7 +114,7 @@ export interface SpawnFromTransportOptions {
  * session on the given transport. Useful for testing with in-memory transports.
  */
 export async function spawnFromTransport(
-	transport: Transport,
+	transport: AgentTransport,
 	options: SpawnFromTransportOptions,
 ): Promise<AgentSession> {
 	const composed = composeAll(options.middlewares ?? []);

@@ -1,7 +1,6 @@
 import { spawn } from 'node:child_process';
 import { Readable, Writable } from 'node:stream';
-
-import type { Pipe } from '../pipe.js';
+import type { Stream } from '../streams/types.js';
 
 export interface StdioPipeOptions {
 	command: string;
@@ -10,10 +9,13 @@ export interface StdioPipeOptions {
 	env?: Record<string, string>;
 }
 
-export class StdioPipe {
-	readonly pipe: Pipe;
+export class StdioPipe implements Stream<Uint8Array> {
 	private readonly process: ReturnType<typeof spawn>;
 
+	readonly readable: ReadableStream<Uint8Array>;
+	readonly writable: WritableStream<Uint8Array>;
+
+	// TODO: Should we just have a factory instead?
 	constructor(options: StdioPipeOptions) {
 		this.process = spawn(options.command, options.args ?? [], {
 			stdio: ['pipe', 'pipe', 'inherit'],
@@ -32,10 +34,11 @@ export class StdioPipe {
 			this.process.stdout,
 		) as ReadableStream<Uint8Array>;
 
-		this.pipe = { readable, writable };
+		this.readable = readable;
+		this.writable = writable;
 	}
 
-	async dispose(): Promise<void> {
+	async close(): Promise<void> {
 		if (this.process.exitCode !== null || this.process.killed) return;
 
 		const exited = new Promise<void>((resolve) => {
