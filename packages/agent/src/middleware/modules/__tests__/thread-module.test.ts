@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { InMemoryLocalMcpTransport } from '@franklin/local-mcp';
 
-import { createThreadModule } from '../middleware/modules/thread.js';
+import { createThreadModule } from '../thread.js';
 
-import type { FranklinModule } from '../middleware/modules/types.js';
-import { SystemPromptBuilder } from '../middleware/modules/types.js';
+import type { FranklinModule } from '../types.js';
+import { SystemPromptBuilder } from '../types.js';
 
 describe('createThreadModule', () => {
 	const disposables: FranklinModule[] = [];

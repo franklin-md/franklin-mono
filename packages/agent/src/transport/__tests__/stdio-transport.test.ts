@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { StdioTransport } from '../transport/stdio.js';
+import { StdioTransport } from '../stdio.js';
 
 describe('StdioTransport', () => {
 	const transports: StdioTransport[] = [];

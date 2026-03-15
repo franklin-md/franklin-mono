@@ -9,11 +9,11 @@ import type {
 } from '@agentclientprotocol/sdk';
 import { PROTOCOL_VERSION, RequestError } from '@agentclientprotocol/sdk';
 
-import type { AgentConnection } from '../connection.js';
-import { createAgentConnection } from '../connection.js';
-import type { AgentSpec } from '../registry.js';
-import type { AgentEvents } from '../stack/types.js';
-import { StdioTransport } from '../transport/index.js';
+import type { AgentConnection } from '../../connection.js';
+import { createAgentConnection } from '../../connection.js';
+import type { AgentSpec } from '../../registry.js';
+import type { AgentEvents } from '../../stack/types.js';
+import { StdioTransport } from '../../transport/index.js';
 
 import { collectAgentText, createMockClient } from './helpers.js';
 

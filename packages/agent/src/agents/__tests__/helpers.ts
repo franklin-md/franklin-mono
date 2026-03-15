@@ -10,8 +10,8 @@ import {
 	PROTOCOL_VERSION,
 } from '@agentclientprotocol/sdk';
 
-import type { Transport } from '../transport/index.js';
-import { createMemoryTransport } from '../transport/in-memory.js';
+import type { Transport } from '../../transport/index.js';
+import { createMemoryTransport } from '../../transport/in-memory.js';
 
 /**
  * Collects all agent text from session update notifications.

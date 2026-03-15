@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { codexAgentSpec } from '../../agents/index.js';
+import { codexAgentSpec } from '../../index.js';
 
 import { isCodexAvailable, runSandboxTest } from './sandbox-harness.js';
 

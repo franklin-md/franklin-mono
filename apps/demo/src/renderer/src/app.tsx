@@ -1,5 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ThreadPage } from '@/pages/thread/thread-page';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function App() {
 	return (
@@ -22,9 +21,9 @@ export function App() {
 					</TabsList>
 				</div>
 
-				<TabsContent value="thread" className="flex flex-1 overflow-hidden m-0">
+				{/* <TabsContent value="thread" className="flex flex-1 overflow-hidden m-0">
 					<ThreadPage />
-				</TabsContent>
+				</TabsContent> */}
 			</Tabs>
 		</div>
 	);
