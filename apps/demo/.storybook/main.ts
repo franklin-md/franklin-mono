@@ -19,7 +19,6 @@ const config: StorybookConfig = {
 		config.resolve = {
 			...config.resolve,
 			alias: {
-				...config.resolve?.alias,
 				'@': `${dirname(fileURLToPath(import.meta.url))}/../src/renderer/src`,
 			},
 		};

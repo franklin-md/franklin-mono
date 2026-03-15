@@ -8,5 +8,6 @@
 		"declarationMap": true,
 		"lib": ["ES2023", "DOM"]
 	},
-	"include": ["src/preload/**/*.ts"]
+	"include": ["src/preload/**/*.ts"],
+	"references": [{ "path": "../../packages/lib/transport" }]
 }

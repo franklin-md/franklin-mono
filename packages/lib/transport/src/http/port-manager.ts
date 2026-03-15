@@ -12,7 +12,7 @@ export class PortManager {
 	async allocate(): Promise<number> {
 		const port = await new Promise<number>((resolve, reject) => {
 			const server = createServer();
-			server.listen(0, () => {
+			server.listen(0, '127.0.0.1', () => {
 				const addr = server.address();
 				if (typeof addr !== 'object' || addr === null) {
 					server.close();

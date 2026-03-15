@@ -8,10 +8,5 @@
 		"declarationMap": true
 	},
 	"include": ["src/main/**/*.ts"],
-	"references": [
-		{ "path": "../../packages/agent" },
-		{ "path": "../../packages/react-agents" },
-		{ "path": "../../packages/lib/transport" },
-		{ "path": "../../packages/local-mcp" }
-	]
+	"references": [{ "path": "../../packages/lib/transport" }]
 }

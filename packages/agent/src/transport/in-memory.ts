@@ -24,8 +24,9 @@ export function createMemoryTransport(): {
 	);
 
 	const transport: AgentTransport = {
-		stream: clientStream,
-		async dispose() {
+		readable: clientStream.readable,
+		writable: clientStream.writable,
+		async close() {
 			await pipes.close();
 		},
 	};

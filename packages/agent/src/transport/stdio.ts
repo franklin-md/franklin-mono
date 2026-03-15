@@ -1,4 +1,4 @@
-import type { Stream } from '@agentclientprotocol/sdk';
+import type { AnyMessage } from '@agentclientprotocol/sdk';
 import { ndJsonStream } from '@agentclientprotocol/sdk';
 import { StdioPipe } from '@franklin/transport';
 
@@ -12,18 +12,21 @@ export interface StdioTransportOptions {
 }
 
 export class StdioTransport implements AgentTransport {
-	readonly stream: Stream;
+	readonly readable: ReadableStream<AnyMessage>;
+	readonly writable: WritableStream<AnyMessage>;
 	private readonly stdioPipe: StdioPipe;
 
 	constructor(options: StdioTransportOptions) {
 		this.stdioPipe = new StdioPipe(options);
-		this.stream = ndJsonStream(
-			this.stdioPipe.pipe.writable,
-			this.stdioPipe.pipe.readable,
+		const stream = ndJsonStream(
+			this.stdioPipe.writable,
+			this.stdioPipe.readable,
 		);
+		this.readable = stream.readable;
+		this.writable = stream.writable;
 	}
 
-	async dispose(): Promise<void> {
-		await this.stdioPipe.dispose();
+	async close(): Promise<void> {
+		await this.stdioPipe.close();
 	}
 }

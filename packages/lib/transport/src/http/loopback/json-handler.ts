@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 
 export function createJsonHandler(
-	callback: (body: unknown) => Promise<unknown>,
+	getHandler: () => ((body: unknown) => Promise<unknown>) | undefined,
 ) {
 	return (req: IncomingMessage, res: ServerResponse) => {
 		if (req.method !== 'POST') {
@@ -15,9 +15,16 @@ export function createJsonHandler(
 		req.on('end', () => {
 			void (async () => {
 				try {
+					const handler = getHandler();
+					if (!handler) {
+						res.writeHead(503, { 'Content-Type': 'application/json' });
+						res.end(JSON.stringify({ error: 'Handler not set' }));
+						return;
+					}
+
 					const body: unknown = JSON.parse(Buffer.concat(chunks).toString());
 
-					const result: unknown = await callback(body);
+					const result: unknown = await handler(body);
 					res.writeHead(200, {
 						'Content-Type': 'application/json',
 					});

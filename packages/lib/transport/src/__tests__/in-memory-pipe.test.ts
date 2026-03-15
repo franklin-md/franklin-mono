@@ -8,7 +8,7 @@ describe('createMemoryPipes', () => {
 			streamA: pipeA,
 			streamB: pipeB,
 			close: dispose,
-		} = createMemoryPipes<Uint8Array>();
+		} = createMemoryPipes();
 
 		const writer = pipeA.writable.getWriter();
 		const reader = pipeB.readable.getReader();

@@ -1,6 +1,6 @@
-import type { Stream } from '@franklin/agent/browser';
 import {
 	type MultiplexedEventInterface,
+	type Stream,
 	createMultiplexedEventStream,
 } from '@franklin/transport';
 
@@ -11,5 +11,8 @@ declare global {
 }
 
 export function createIpcStream<T>(streamName: string): Stream<T> {
-	return createMultiplexedEventStream(streamName, window.ipcStream);
+	return createMultiplexedEventStream<unknown>(
+		streamName,
+		window.ipcStream,
+	) as Stream<T>;
 }

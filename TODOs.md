@@ -8,6 +8,7 @@
 - [ ] Not sure about authentication flow.
 
 ### libs:
+
 - [ ] Not sure 'Streams' is right name for a primitive which is read and write streams.
 - [ ] Can we define a Codec abstraction to support JSONL and other specific encoding of data sent across transport (vs hard coding?). For example, HttpCallbackServer really hard codes this.
 

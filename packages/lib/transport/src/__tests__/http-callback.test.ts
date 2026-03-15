@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createJSONServer } from '../http/index.js';
+import { createJSONServer } from '../http/loopback/server.js';
 
-import type { HttpCallbackServer } from '../http/index.js';
+import type { HttpCallbackServer } from '../http/loopback/server.js';
 
 describe('HttpCallbackServer', () => {
 	const servers: HttpCallbackServer[] = [];

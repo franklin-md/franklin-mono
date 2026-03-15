@@ -10,17 +10,16 @@ describe('StdioTransport', () => {
 	afterEach(async () => {
 		while (transports.length > 0) {
 			const t = transports.pop();
-			if (t) await t.dispose();
+			if (t) await t.close();
 		}
 	});
 
-	it('spawns a subprocess and exposes a stream', () => {
+	it('spawns a subprocess and exposes readable/writable streams', () => {
 		const transport = new StdioTransport({ command: 'cat' });
 		transports.push(transport);
 
-		expect(transport.stream).toBeDefined();
-		expect(transport.stream.readable).toBeDefined();
-		expect(transport.stream.writable).toBeDefined();
+		expect(transport.readable).toBeDefined();
+		expect(transport.writable).toBeDefined();
 	});
 
 	it('child_process kill works in vitest (sanity check)', async () => {
@@ -32,19 +31,19 @@ describe('StdioTransport', () => {
 		await exited;
 	});
 
-	it('dispose kills the subprocess', async () => {
+	it('close kills the subprocess', async () => {
 		const transport = new StdioTransport({ command: 'cat' });
-		await transport.dispose();
-		// Calling dispose again is a no-op (process already exited)
-		await transport.dispose();
+		await transport.close();
+		// Calling close again is a no-op (process already exited)
+		await transport.close();
 	});
 
 	it('round-trips a JSON-RPC message through cat', async () => {
 		const transport = new StdioTransport({ command: 'cat' });
 		transports.push(transport);
 
-		const writer = transport.stream.writable.getWriter();
-		const reader = transport.stream.readable.getReader();
+		const writer = transport.writable.getWriter();
+		const reader = transport.readable.getReader();
 
 		const msg = { jsonrpc: '2.0' as const, method: 'test/ping', id: 1 };
 		await writer.write(msg);
