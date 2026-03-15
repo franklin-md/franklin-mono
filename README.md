@@ -29,7 +29,7 @@ A middleware stack for ACP-compliant coding agents.
     - Extensions (see below)
     - Auto-Permissioning / Sandboxing
       - https://github.com/anthropic-experimental/sandbox-runtime
-      - In order to externalize the agent tool execution out of the bundled agent and into the middleware, we need to guarantee that the underlying agent has sufficiently strict and configurable controls. This involves the agents providing permissions for:
+      - In order to externalize the agent tool execution out of the bundled agent and into the middleware, we need to guarantee that the underlying agent has sufficiently strict and configurable controls. This involves the agents providing permissions for: Filesystem Read and Write, Terminal Execution, Tool Calling
       - Agents that currently do:
         - ...
 - **Extensions**:
