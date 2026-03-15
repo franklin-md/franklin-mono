@@ -1,5 +1,4 @@
 import { getRelayPath } from './transports/http/relay/path.js';
-import { RELAY_NAME } from './transports/http/relay/tags.js';
 import { serializeRelayEnv } from './transports/http/relay/env.js';
 
 import type { McpServerConfig } from './types.js';
@@ -15,7 +14,7 @@ export function createRelayConfig(options: {
 	tools: SerializedToolDefinition[];
 }): McpServerConfig {
 	return {
-		name: RELAY_NAME,
+		// name: RELAY_NAME,
 		command: process.execPath,
 		args: [getRelayPath()],
 		env: serializeRelayEnv(options),

@@ -15,12 +15,12 @@ export function createMemoryTransport(): {
 	const pipes = createMemoryPipes();
 
 	const clientStream = ndJsonStream(
-		pipes.streamA.writable,
-		pipes.streamA.readable,
+		pipes.server.writable,
+		pipes.server.readable,
 	);
 	const agentStream = ndJsonStream(
-		pipes.streamB.writable,
-		pipes.streamB.readable,
+		pipes.client.writable,
+		pipes.client.readable,
 	);
 
 	const transport: AgentTransport = {

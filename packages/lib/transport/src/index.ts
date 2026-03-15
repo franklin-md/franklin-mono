@@ -5,9 +5,14 @@ export { StdioPipe } from './stdio/index.js';
 export type { StdioPipeOptions } from './stdio/index.js';
 export { createMemoryPipes } from './in-memory/index.js';
 export type { MemoryPipePair } from './in-memory/index.js';
-export { createJSONServer as createHttpCallbackServer } from './http/index.js';
-export type { HttpCallbackServer } from './http/index.js';
-export { createCallbackServerPipe } from './http/pipe.js';
+export { HttpJsonServer } from './http/index.js';
+export type { Options as HttpJsonServerOptions } from './http/index.js';
+export { asStream as createCallbackServerPipe } from './http/stream.js';
+export type {
+	Response as HttpPipeResponse,
+	SuccessResponse as HttpPipeSuccessResponse,
+	ErrorResponse as HttpPipeErrorResponse,
+} from './http/types.js';
 export { PortManager, portManager } from './http/port-manager.js';
 export {
 	createMultiplexedEventStream,
@@ -17,3 +22,4 @@ export {
 export { type EventInterface } from './event-driven/single.js';
 export { streamToEventInterface } from './event-driven/stream-to-event.js';
 export { observe, type Observer } from './streams/observe.js';
+export { mapStream, ndjsonCodec, type Codec } from './codec/index.js';

@@ -1,3 +1,4 @@
+import type { StdioPipeOptions, Stream } from '@franklin/transport';
 import type { AnyToolDefinition } from './tools/types.js';
 
 export interface LocalMcpOptions {
@@ -5,14 +6,22 @@ export interface LocalMcpOptions {
 	tools: AnyToolDefinition[];
 }
 
-export interface McpServerConfig {
-	name: string;
-	command: string;
-	args: string[];
-	env: Array<{ name: string; value: string }>;
-}
+export type McpServerConfig = StdioPipeOptions;
+
+type ToolCall = {
+	tool: string;
+	arguments: unknown;
+};
+
+export type ToolCallRequest = {
+	id: string;
+	body: ToolCall;
+};
+
+export type ToolCallStream = Stream<ToolCallRequest, Response>;
 
 export interface LocalMcpTransport {
-	start(tools: AnyToolDefinition[]): Promise<McpServerConfig>;
+	server: McpServerConfig;
+	stream: ToolCallStream;
 	dispose(): Promise<void>;
 }

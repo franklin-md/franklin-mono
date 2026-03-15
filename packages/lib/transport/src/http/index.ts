@@ -2,39 +2,46 @@ import { createServer } from 'node:http';
 
 import type { Server } from 'node:http';
 
-import { portManager } from './port-manager.js';
 import { createJsonHandler } from './json-handler.js';
 
 export type Options = {
-	handler: (body: unknown) => Promise<unknown>;
-	port?: number;
+	port: number;
 };
 
-export interface HttpCallbackServer {
-	readonly port: number;
-	readonly url: string;
-	dispose(): Promise<void>;
-}
+type Handler = (body: unknown) => Promise<unknown>;
+export class HttpJsonServer {
+	public readonly url: string;
+	private readonly port: number;
+	private server: Server | undefined;
+	private handler: Handler | undefined;
 
-export async function createJSONServer(
-	options: Options,
-): Promise<HttpCallbackServer> {
-	const port = options.port ?? (await portManager.allocate());
+	constructor(options: Options) {
+		this.url = `http://127.0.0.1:${options.port}`;
+		this.port = options.port;
+	}
 
-	const server: Server = createServer(createJsonHandler(options.handler));
+	public onRequest(handler: Handler): void {
+		this.handler = handler;
+	}
 
-	await new Promise<void>((resolve) => {
-		server.listen(port, '127.0.0.1', () => resolve());
-	});
+	async start(): Promise<void> {
+		if (!this.handler) {
+			throw new Error('Handler not set');
+		}
+		const server = createServer(createJsonHandler(this.handler));
+		this.server = server;
+		await new Promise<void>((resolve) => {
+			server.listen(this.port, '127.0.0.1', () => resolve());
+		});
+	}
 
-	return {
-		port,
-		url: `http://127.0.0.1:${port}`,
-		async dispose() {
-			portManager.release(port);
-			await new Promise<void>((resolve, reject) => {
-				server.close((err) => (err ? reject(err) : resolve()));
-			});
-		},
-	};
+	async stop(): Promise<void> {
+		await new Promise<void>((resolve, reject) => {
+			if (!this.server) {
+				resolve();
+				return;
+			}
+			this.server.close((err) => (err ? reject(err) : resolve()));
+		});
+	}
 }

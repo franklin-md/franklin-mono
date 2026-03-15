@@ -47,9 +47,7 @@ export class AgentRelay {
 		this.agentMux = streamToEventInterface(agentChannel);
 
 		// Handle spawn/kill requests from renderer
-		ipcMain.handle('agent:spawn', (_event, name: string) =>
-			this.spawn(name),
-		);
+		ipcMain.handle('agent:spawn', (_event, name: string) => this.spawn(name));
 		ipcMain.handle('agent:kill', (_event, agentId: string) =>
 			this.kill(agentId),
 		);

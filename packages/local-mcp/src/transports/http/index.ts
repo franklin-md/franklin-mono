@@ -1,44 +1,49 @@
-import { createHttpCallbackServer } from '@franklin/transport';
+import { mapStream, ndjsonCodec } from '@franklin/transport';
 
-import type { HttpCallbackServer } from '@franklin/transport';
-import type { LocalMcpTransport, McpServerConfig } from '../../types.js';
+import type {
+	HttpPipeResponse as Response,
+	HttpJsonServer,
+} from '@franklin/transport';
+import type {
+	LocalMcpTransport,
+	ToolCallRequest,
+	ToolCallStream,
+} from '../../types.js';
 import type { AnyToolDefinition } from '../../tools/types.js';
 import { createRelayConfig } from '../../relay-config.js';
-import { ToolsManager } from '../../tools/manager.js';
+import { asStream } from 'node_modules/@franklin/transport/src/http/stream.js';
+import { serializeTool } from '../../browser.js';
 
-interface ToolCallRequest {
-	tool: string;
-	arguments: unknown;
-}
+type Options = {
+	tools: AnyToolDefinition[];
+	// TODO: Should we pass in the options instead?
+	server: HttpJsonServer;
+};
 
-/**
- * HTTP-based MCP transport for production use.
- *
- * 1. Starts an HTTP callback server
- * 2. Registers a handler that dispatches tool calls to ToolDefinition handlers
- * 3. Returns McpServerConfig pointing at the relay subprocess with
- *    FRANKLIN_CALLBACK_URL and FRANKLIN_TOOLS in env
- */
-export class HttpLocalMcpTransport implements LocalMcpTransport {
-	private callbackServer: HttpCallbackServer | undefined;
+export async function createTransport(
+	options: Options,
+): Promise<LocalMcpTransport> {
+	const rawStream = asStream(options.server);
+	const stream = mapStream(
+		rawStream,
+		ndjsonCodec<ToolCallRequest | Response>(),
+	) as unknown as ToolCallStream; // TODO: Can we type this better? This is Uint ->ToolCall Request in one direction and Response -> Uint in the other direction.
 
-	async start(tools: AnyToolDefinition[]): Promise<McpServerConfig> {
-		const manager = new ToolsManager(tools);
-		this.callbackServer = await createHttpCallbackServer({
-			handler: async (body: unknown) => {
-				const req = body as ToolCallRequest;
-				return manager.dispatch(req.tool, req.arguments);
-			},
-		});
+	await options.server.start();
 
-		return createRelayConfig({
-			callbackUrl: this.callbackServer.url,
-			tools: manager.listTools(),
-		});
-	}
+	const config = createRelayConfig({
+		callbackUrl: options.server.url,
+		tools: options.tools.map(serializeTool),
+	});
 
-	async dispose(): Promise<void> {
-		await this.callbackServer?.dispose();
-		this.callbackServer = undefined;
-	}
+	const dispose = async () => {
+		await options.server.stop();
+		await stream.close();
+	};
+
+	return {
+		server: config,
+		stream,
+		dispose,
+	};
 }

@@ -1,2 +1,1 @@
-export { InMemoryLocalMcpTransport } from './in-memory.js';
-export { HttpLocalMcpTransport } from './http/index.js';
+export { createTransport as createHttpTransport } from './http/index.js';

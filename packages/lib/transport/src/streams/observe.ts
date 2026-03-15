@@ -3,7 +3,7 @@ export type Observer<T> = {
 };
 
 /**
- * Wraps a ReadableStream in an observer pattern.
+  Wraps a ReadableStream in an observer pattern.
  *
  * An internal pump consumes the readable and fans out each value
  * to all currently registered subscribers. Returns an Observer
@@ -16,6 +16,7 @@ export function observe<T>(readable: ReadableStream<T>): Observer<T> {
 	void (async () => {
 		try {
 			for (;;) {
+				// How does the lifecycle of this operation work? Does it terminate only if observe is disposed?
 				const { done, value } = await reader.read();
 				if (done) break;
 				for (const listener of listeners) {

@@ -10,7 +10,7 @@ import type { Stream } from './types.js';
  * and cleanly closes the destination writables (so readers see EOF,
  * not an abort error).
  */
-export function connect<T>(a: Stream<T>, b: Stream<T>): Stream<T> {
+export function connect<A, B>(a: Stream<A, B>, b: Stream<B, A>): Stream<A, B> {
 	const abort = new AbortController();
 
 	const aToB = a.readable.pipeTo(b.writable, { signal: abort.signal });
@@ -18,7 +18,7 @@ export function connect<T>(a: Stream<T>, b: Stream<T>): Stream<T> {
 
 	return {
 		readable: a.readable,
-		writable: b.writable,
+		writable: a.writable,
 		close: async () => {
 			abort.abort();
 			await Promise.allSettled([aToB, bToA]);

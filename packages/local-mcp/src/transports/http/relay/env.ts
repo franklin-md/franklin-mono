@@ -11,16 +11,14 @@ export interface RelayEnv {
 	tools: RelayToolDef[];
 }
 
-export type RelayEnvEntry = { name: string; value: string };
-
 /**
  * Builds the env array for McpServerConfig from typed RelayEnv.
  */
-export function serializeRelayEnv(env: RelayEnv): RelayEnvEntry[] {
-	return [
-		{ name: FRANKLIN_CALLBACK_URL_KEY, value: env.callbackUrl },
-		{ name: FRANKLIN_TOOLS_KEY, value: JSON.stringify(env.tools) },
-	];
+export function serializeRelayEnv(env: RelayEnv): Record<string, string> {
+	return {
+		[FRANKLIN_CALLBACK_URL_KEY]: env.callbackUrl,
+		[FRANKLIN_TOOLS_KEY]: JSON.stringify(env.tools),
+	};
 }
 
 /**

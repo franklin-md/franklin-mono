@@ -22,13 +22,13 @@ function createTestHarness() {
 	const pair2 = createMemoryPipes();
 
 	// Connect the "inner" ends: pair1.pipeB ↔ pair2.pipeA
-	const connection = connect(pair1.streamB, pair2.streamA);
+	const connection = connect(pair1.client, pair2.server);
 
 	return {
 		// Write bytes into this end → they flow through the connection
-		writerSide: pair1.streamA,
+		writerSide: pair1.server,
 		// Read bytes from this end ← they arrived through the connection
-		readerSide: pair2.streamB,
+		readerSide: pair2.client,
 		connection,
 		async cleanup() {
 			await connection.close();
@@ -63,12 +63,12 @@ describe('connect', () => {
 	it('pumps bytes from b.readable to a.writable (reverse direction)', async () => {
 		const pair1 = createMemoryPipes();
 		const pair2 = createMemoryPipes();
-		const connection = connect(pair1.streamB, pair2.streamA);
+		const connection = connect(pair1.client, pair2.server);
 
 		// Write into pair2's outer end (pipeB.writable)
-		const writer = pair2.streamB.writable.getWriter();
+		const writer = pair2.client.writable.getWriter();
 		// Read from pair1's outer end (pipeA.readable)
-		const reader = pair1.streamA.readable.getReader();
+		const reader = pair1.server.readable.getReader();
 
 		const [, { value }] = await Promise.all([
 			writer.write(encoder.encode('reverse')),
@@ -110,7 +110,7 @@ describe('connect', () => {
 	it('dispose stops the pump', async () => {
 		const pair1 = createMemoryPipes();
 		const pair2 = createMemoryPipes();
-		const connection = connect(pair1.streamB, pair2.streamA);
+		const connection = connect(pair1.client, pair2.server);
 
 		await connection.close();
 
@@ -118,7 +118,7 @@ describe('connect', () => {
 		// Writing to the source should not propagate.
 		// The reader on pair2's outer end should see EOF or an error
 		// because the connected writable (pair2.pipeA.writable) was aborted.
-		const reader = pair2.streamB.readable.getReader();
+		const reader = pair2.client.readable.getReader();
 		const result = await reader.read();
 		expect(result.done).toBe(true);
 
@@ -130,7 +130,7 @@ describe('connect', () => {
 	it('dispose is idempotent', async () => {
 		const pair1 = createMemoryPipes();
 		const pair2 = createMemoryPipes();
-		const connection = connect(pair1.streamB, pair2.streamA);
+		const connection = connect(pair1.client, pair2.server);
 
 		await connection.close();
 		await connection.close(); // should not throw

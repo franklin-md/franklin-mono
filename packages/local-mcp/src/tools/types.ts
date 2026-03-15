@@ -1,13 +1,13 @@
 import type z from 'zod';
 
-export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
+export interface ToolDefinition<TInput = unknown> {
 	name: string;
 	description: string;
 	schema: z.ZodType<TInput>;
-	handler: (args: TInput) => Promise<TOutput>;
+	// handler: (args: TInput) => Promise<TOutput>;
 }
 
-export type AnyToolDefinition = ToolDefinition<any, any>;
+export type AnyToolDefinition = ToolDefinition<any>;
 
 export interface SerializedToolDefinition {
 	name: string;

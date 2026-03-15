@@ -1,5 +1,3 @@
-export { createLocalMcp } from './local-mcp.js';
-export type { LocalMcp } from './local-mcp.js';
 export type {
 	LocalMcpOptions,
 	McpServerConfig,

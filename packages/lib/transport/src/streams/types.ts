@@ -1,6 +1,6 @@
-export interface Stream<T> {
-	readonly readable: ReadableStream<T>;
-	readonly writable: WritableStream<T>;
+export interface Stream<ReadT, WriteT = ReadT> {
+	readonly readable: ReadableStream<ReadT>;
+	readonly writable: WritableStream<WriteT>;
 
 	readonly close: () => Promise<void>;
 }

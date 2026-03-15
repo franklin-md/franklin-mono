@@ -1,14 +1,14 @@
 import { connect } from '../streams/connect.js';
 import type { Stream } from '../streams/types.js';
 
-export interface MemoryPipePair<T> {
-	streamA: Stream<T>;
-	streamB: Stream<T>;
+export interface MemoryPipePair<A, B = A> {
+	server: Stream<A, B>;
+	client: Stream<B, A>;
 	close: () => Promise<void>;
 }
 
-export function createMemoryStream<T>(): Stream<T> {
-	const stream = new TransformStream<T>();
+export function createMemoryStream<A, B = A>(): Stream<A, B> {
+	const stream = new TransformStream<B, A>();
 
 	return {
 		readable: stream.readable,
@@ -19,14 +19,17 @@ export function createMemoryStream<T>(): Stream<T> {
 	};
 }
 
-export function createMemoryPipes<T = Uint8Array>(): MemoryPipePair<T> {
-	const streamA = createMemoryStream<T>();
-	const streamB = createMemoryStream<T>();
-	const joined = connect(streamA, streamB);
+export function createMemoryPipes<A = Uint8Array, B = A>(): MemoryPipePair<
+	A,
+	B
+> {
+	const server = createMemoryStream<A, B>();
+	const client = createMemoryStream<B, A>();
+	const joined = connect(server, client);
 
 	return {
-		streamA: streamA,
-		streamB: streamB,
+		server,
+		client,
 		close: async () => {
 			await joined.close();
 		},

@@ -9,3 +9,8 @@ export type ErrorResponse = {
 };
 
 export type Response = SuccessResponse | ErrorResponse;
+
+export type Request<T> = {
+	id: string;
+	body: T;
+};

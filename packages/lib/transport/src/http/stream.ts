@@ -1,7 +1,6 @@
 import type { Stream } from '../streams/types.js';
 import { createNdjsonDecoder, encodeNdjsonLine } from '../streams/ndjson.js';
-import { createJSONServer } from './index.js';
-import type { Options } from './index.js';
+import type { HttpJsonServer } from './index.js';
 import type { Response } from './types.js';
 
 interface PendingRequest {
@@ -9,10 +8,12 @@ interface PendingRequest {
 	reject: (reason: Error) => void;
 }
 
-export function createCallbackServerPipe(
-	options: Omit<Options, 'handler'>,
-): Stream<Uint8Array> {
+// The readable is a stream of requests that need to get pumped out
+// The writable is a stream of responses that need to get matched to the requests.
+
+export function asStream(server: HttpJsonServer): Stream<Uint8Array> {
 	let nextRequestId = 0;
+	// A collection of futures. They get resolved when the writable pulls out a response and it matches the request.
 	const pending = new Map<string, PendingRequest>();
 	const responseDecoder = createNdjsonDecoder<Response>();
 	let readableController!: ReadableStreamDefaultController<Uint8Array>;
@@ -23,6 +24,7 @@ export function createCallbackServerPipe(
 		},
 	});
 
+	// The call back that should get used to match that response to the request.
 	function handleResponse(message: Response): void {
 		const entry = pending.get(message.id);
 		if (!entry) return;
@@ -59,10 +61,7 @@ export function createCallbackServerPipe(
 		return responsePromise;
 	};
 
-	void createJSONServer({
-		handler,
-		...options,
-	});
+	server.onRequest(handler);
 
 	return {
 		readable,

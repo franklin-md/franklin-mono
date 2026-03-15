@@ -5,8 +5,8 @@ import { createMemoryPipes } from '../in-memory/index.js';
 describe('createMemoryPipes', () => {
 	it('sends data from pipeA to pipeB', async () => {
 		const {
-			streamA: pipeA,
-			streamB: pipeB,
+			server: pipeA,
+			client: pipeB,
 			close: dispose,
 		} = createMemoryPipes();
 
@@ -30,8 +30,8 @@ describe('createMemoryPipes', () => {
 
 	it('sends data from pipeB to pipeA', async () => {
 		const {
-			streamA: pipeA,
-			streamB: pipeB,
+			server: pipeA,
+			client: pipeB,
 			close: dispose,
 		} = createMemoryPipes();
 
@@ -54,8 +54,8 @@ describe('createMemoryPipes', () => {
 
 	it('dispose causes EOF on readers', async () => {
 		const {
-			streamA: pipeA,
-			streamB: pipeB,
+			server: pipeA,
+			client: pipeB,
 			close: dispose,
 		} = createMemoryPipes();
 
