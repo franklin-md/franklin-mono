@@ -1,4 +1,4 @@
-import type { AgentCommands, AgentEvents, AgentLifecycle } from './types.js';
+import type { AgentCommands, AgentEvents } from '../stack/types.js';
 
 // ---------------------------------------------------------------------------
 // Cont — continuation-passing style wrapper for a single method
@@ -32,12 +32,7 @@ export type EventMiddleware = {
  * Unlike CommandMiddleware and EventMiddleware (which require all methods),
  * Middleware is partial — implement only the methods you want to intercept.
  */
-export type Middleware = Partial<
-	CommandMiddleware &
-		EventMiddleware & {
-			dispose: Cont<AgentLifecycle['dispose']>;
-		}
->;
+export type Middleware = CommandMiddleware & EventMiddleware;
 
 // ---------------------------------------------------------------------------
 // Method name lists
@@ -67,37 +62,4 @@ export const EVENT_METHODS = [
 	'killTerminal',
 ] as const satisfies readonly (keyof AgentEvents)[];
 
-export const ALL_METHODS = [
-	...COMMAND_METHODS,
-	...EVENT_METHODS,
-	'dispose',
-] as const;
-
-// ---------------------------------------------------------------------------
-// buildChain — internal chain builder
-// ---------------------------------------------------------------------------
-
-// Internal function type — intentionally permissive. Type safety comes from
-// the public types, not from the chain-building internals.
-export type ChainFn = (...args: any[]) => any;
-
-/**
- * Builds a chain of middleware functions around a terminal function.
- * Each middleware receives (params, next) where next calls the next layer.
- * Middlewares are wrapped from last to first: the first middleware in the
- * array is outermost (runs first).
- */
-export function buildChain(
-	terminal: ChainFn,
-	middlewareFns: Array<ChainFn | undefined>,
-): ChainFn {
-	let chain: ChainFn = terminal;
-	for (let i = middlewareFns.length - 1; i >= 0; i--) {
-		const mw = middlewareFns[i];
-		if (mw) {
-			const next = chain;
-			chain = (params: unknown) => mw(params, next);
-		}
-	}
-	return chain;
-}
+export const ALL_METHODS = [...COMMAND_METHODS, ...EVENT_METHODS] as const;

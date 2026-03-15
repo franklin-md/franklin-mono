@@ -1,5 +1,5 @@
 import type {
-	AgentControl,
+	AgentCommands,
 	AgentEvents,
 	Middleware,
 	PromptRequest,
@@ -7,6 +7,7 @@ import type {
 	RequestPermissionResponse,
 	SessionNotification,
 } from '@franklin/agent';
+import { emptyMiddleware } from '@franklin/agent';
 
 export interface TranscriptEntry {
 	id: string;
@@ -24,9 +25,10 @@ export interface AgentSessionStore {
 }
 
 export interface ReactAgentSession {
-	control: AgentControl;
+	commands: AgentCommands;
 	sessionId: string;
 	store: AgentSessionStore;
+	dispose(): Promise<void>;
 }
 
 const EMPTY_SNAPSHOT: AgentSessionSnapshot = {
@@ -75,12 +77,12 @@ export function createSessionStore(): {
 	}
 
 	function createMessageId(): string {
-		if (typeof globalThis.crypto?.randomUUID === 'function') {
+		if (typeof globalThis.crypto.randomUUID === 'function') {
 			return globalThis.crypto.randomUUID();
 		}
 
 		const bytes = new Uint8Array(16);
-		if (typeof globalThis.crypto?.getRandomValues === 'function') {
+		if (typeof globalThis.crypto.getRandomValues === 'function') {
 			globalThis.crypto.getRandomValues(bytes);
 		} else {
 			for (let i = 0; i < bytes.length; i++) {
@@ -88,8 +90,8 @@ export function createSessionStore(): {
 			}
 		}
 
-		bytes[6] = (bytes[6]! & 0x0f) | 0x40;
-		bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+		bytes[6] = (bytes[6] ?? 0 & 0x0f) | 0x40;
+		bytes[8] = (bytes[8] ?? 0 & 0x3f) | 0x80;
 
 		const hex = [...bytes]
 			.map((byte) => byte.toString(16).padStart(2, '0'))
@@ -118,6 +120,7 @@ export function createSessionStore(): {
 			getSnapshot: () => snapshot,
 		},
 		middleware: {
+			...emptyMiddleware,
 			prompt: async (
 				params: PromptRequest,
 				next: (params: PromptRequest) => Promise<PromptResponse>,

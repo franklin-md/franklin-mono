@@ -2,17 +2,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { PromptRequest, PromptResponse } from '@agentclientprotocol/sdk';
 import { AgentSideConnection } from '@agentclientprotocol/sdk';
-import { AgentConnection } from '@franklin/agent';
+import { createAgentConnection } from '@franklin/agent';
 
 import { createMemoryTransport } from '../../../agent/src/transport/in-memory.js';
 import { createMockAgent } from '../../../agent/src/__tests__/helpers.js';
 import { AgentManager, ManagedSession } from '../agent-manager.js';
 
 function createTestManager() {
-	const connections: AgentConnection[] = [];
-
 	const manager = new AgentManager({
-		createConnection: async (_agent, _cwd) => {
+		createConnection: async (_agent, _cwd, handler) => {
 			const { transport, agentStream } = createMemoryTransport();
 			const mockAgent = createMockAgent();
 
@@ -27,20 +25,18 @@ function createTestManager() {
 				};
 			}, agentStream);
 
-			const connection = new AgentConnection(transport);
-			connections.push(connection);
-			return connection;
+			return createAgentConnection(transport, handler);
 		},
 	});
 
-	return { manager, connections };
+	return { manager };
 }
 
 function createTestManagerWithMockAgent() {
 	const mockAgents: Array<ReturnType<typeof createMockAgent>> = [];
 
 	const manager = new AgentManager({
-		createConnection: async (_agent, _cwd) => {
+		createConnection: async (_agent, _cwd, handler) => {
 			const { transport, agentStream } = createMemoryTransport();
 			const mockAgent = createMockAgent();
 			mockAgents.push(mockAgent);
@@ -56,7 +52,7 @@ function createTestManagerWithMockAgent() {
 				};
 			}, agentStream);
 
-			return new AgentConnection(transport);
+			return createAgentConnection(transport, handler);
 		},
 	});
 

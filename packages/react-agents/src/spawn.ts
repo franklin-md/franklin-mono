@@ -1,19 +1,20 @@
 import type {
-	AgentConnection,
 	AgentRegistry,
-	SpawnFromConnectionOptions,
 	SpawnOptions,
+	SpawnFromTransportOptions,
 } from '@franklin/agent';
 import {
 	spawn as spawnAgentSession,
-	spawnFromConnection as spawnAgentSessionFromConnection,
+	spawnFromTransport as spawnAgentSessionFromTransport,
 } from '@franklin/agent';
+
+import type { Transport } from '@franklin/agent';
 
 import { createSessionStore, type ReactAgentSession } from './session-store.js';
 
 type ReactSpawnOptions = Omit<SpawnOptions, 'handler'>;
-type ReactSpawnFromConnectionOptions = Omit<
-	SpawnFromConnectionOptions,
+type ReactSpawnFromTransportOptions = Omit<
+	SpawnFromTransportOptions,
 	'handler'
 >;
 type AgentSessionResult = Awaited<ReturnType<typeof spawnAgentSession>>;
@@ -23,8 +24,10 @@ function attachStore(
 	store: ReactAgentSession['store'],
 ): ReactAgentSession {
 	return {
-		...session,
+		commands: session.commands,
+		sessionId: session.sessionId,
 		store,
+		dispose: () => session.dispose(),
 	};
 }
 
@@ -41,12 +44,12 @@ export async function spawn(
 	return attachStore(session, store);
 }
 
-export async function spawnFromConnection(
-	connection: AgentConnection,
-	options: ReactSpawnFromConnectionOptions,
+export async function spawnFromTransport(
+	transport: Transport,
+	options: ReactSpawnFromTransportOptions,
 ): Promise<ReactAgentSession> {
 	const { store, middleware, handler } = createSessionStore();
-	const session = await spawnAgentSessionFromConnection(connection, {
+	const session = await spawnAgentSessionFromTransport(transport, {
 		...options,
 		middlewares: [middleware, ...(options.middlewares ?? [])],
 		handler,

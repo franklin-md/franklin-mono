@@ -1,7 +1,6 @@
 // Types
 export type {
 	AgentCommands,
-	AgentControl,
 	AgentEvents,
 	AgentLifecycle,
 	AgentStack,
@@ -9,21 +8,18 @@ export type {
 
 // Middleware types + buildChain
 export type {
-	ChainFn,
 	CommandMiddleware,
 	Cont,
 	EventMiddleware,
 	Middleware,
-} from './middleware.js';
+} from '../middleware/types.js';
 export {
 	ALL_METHODS,
 	COMMAND_METHODS,
 	EVENT_METHODS,
-	buildChain,
-} from './middleware.js';
+} from '../middleware/types.js';
 
-// Sequence
-export { sequence, sequenceCommands, sequenceEvents } from './sequence.js';
-
-// Compose + Connect
-export { compose, connect } from './compose.js';
+// Composition
+export { emptyMiddleware } from '../middleware/empty.js';
+export { joinCommands, joinEvents } from '../middleware/join.js';
+export { sequence } from '../middleware/sequence.js';

@@ -3,11 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PromptRequest, PromptResponse } from '@agentclientprotocol/sdk';
 import { AgentSideConnection } from '@agentclientprotocol/sdk';
 import type { SessionNotification } from '@franklin/agent';
-import { AgentConnection } from '@franklin/agent';
 
 import { createMemoryTransport } from '../../../agent/src/transport/in-memory.js';
 import { createMockAgent } from '../../../agent/src/__tests__/helpers.js';
-import { spawnFromConnection } from '../spawn.js';
+import { spawnFromTransport } from '../spawn.js';
 
 function setup() {
 	const { transport, agentStream } = createMemoryTransport();
@@ -24,11 +23,10 @@ function setup() {
 		};
 	}, agentStream);
 
-	const connection = new AgentConnection(transport);
-	return { connection, mockAgent };
+	return { transport, mockAgent };
 }
 
-describe('react-agents spawnFromConnection', () => {
+describe('react-agents spawnFromTransport', () => {
 	const stacks: Array<{ dispose(): Promise<void> }> = [];
 
 	afterEach(async () => {
@@ -39,19 +37,19 @@ describe('react-agents spawnFromConnection', () => {
 	});
 
 	it('returns a session with a store', async () => {
-		const { connection } = setup();
+		const { transport } = setup();
 
-		const session = await spawnFromConnection(connection, {
+		const session = await spawnFromTransport(transport, {
 			cwd: '/test',
 		});
-		stacks.push(session.control);
+		stacks.push(session);
 
 		expect(session.sessionId).toBe('test-session');
 		expect(session.store.getSnapshot()).toEqual({ transcript: [] });
 	});
 
 	it('captures inbound updates in the session store transcript', async () => {
-		const { connection, mockAgent } = setup();
+		const { transport, mockAgent } = setup();
 		let capturedPrompt: PromptRequest | undefined;
 
 		mockAgent.prompt = vi.fn<(p: PromptRequest) => Promise<PromptResponse>>(
@@ -69,12 +67,12 @@ describe('react-agents spawnFromConnection', () => {
 			},
 		);
 
-		const session = await spawnFromConnection(connection, {
+		const session = await spawnFromTransport(transport, {
 			cwd: '/test',
 		});
-		stacks.push(session.control);
+		stacks.push(session);
 
-		await session.control.prompt({
+		await session.commands.prompt({
 			sessionId: session.sessionId,
 			prompt: [{ type: 'text', text: 'test' }],
 		});

@@ -5,3 +5,8 @@ apps/*/dist/
 apps/*/out/
 *.tsbuildinfo
 .eslintcache
+
+
+# Agent Folders
+.context/
+.playwright-mcp

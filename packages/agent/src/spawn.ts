@@ -1,10 +1,44 @@
-import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
+import { PROTOCOL_VERSION, RequestError } from '@agentclientprotocol/sdk';
 
-import type { AgentConnection } from './connection.js';
+import { createAgentConnection } from './connection.js';
 import type { AgentRegistry, AgentSpec } from './registry.js';
-import type { AgentControl, AgentEvents, Middleware } from './stack/index.js';
-import { connect, sequence } from './stack/index.js';
+import type { AgentCommands, AgentEvents } from './stack/types.js';
+import type { Middleware } from './stack/index.js';
+import {
+	emptyMiddleware,
+	joinCommands,
+	joinEvents,
+	sequence,
+} from './stack/index.js';
+import { EVENT_METHODS } from './middleware/types.js';
 import { StdioTransport } from './transport/index.js';
+import type { Transport } from './transport/index.js';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Fills a partial event handler with defaults that throw methodNotFound.
+ */
+function fillHandler(handler: Partial<AgentEvents>): AgentEvents {
+	const result: Record<string, unknown> = {};
+	for (const method of EVENT_METHODS) {
+		result[method] =
+			handler[method] ??
+			(() => {
+				throw RequestError.methodNotFound(method);
+			});
+	}
+	return result as unknown as AgentEvents;
+}
+
+/**
+ * Composes an array of middlewares into a single middleware via sequence().
+ */
+function composeAll(middlewares: Middleware[]): Middleware {
+	return middlewares.reduce((acc, mw) => sequence(acc, mw), emptyMiddleware);
+}
 
 // ---------------------------------------------------------------------------
 // Options + result
@@ -24,16 +58,18 @@ export interface SpawnOptions {
 }
 
 export interface AgentSession {
-	/** The agent control handle — commands + lifecycle. */
-	control: AgentControl;
+	/** The agent commands handle. */
+	commands: AgentCommands;
 	/** The session ID from newSession. */
 	sessionId: string;
+	/** Dispose the underlying connection. */
+	dispose(): Promise<void>;
 }
 
 export type SpawnResult = AgentSession;
 
 // ---------------------------------------------------------------------------
-// spawn() — full lifecycle: transport → connection → compose → init → session
+// spawn() — full lifecycle: transport → compose → init → session
 // ---------------------------------------------------------------------------
 
 /**
@@ -57,17 +93,14 @@ export async function spawn(
 		env: options.env ? { ...spec.env, ...options.env } : spec.env,
 	});
 
-	const { AgentConnection: Conn } = await import('./connection.js');
-	const connection = new Conn(transport);
-
-	return spawnFromConnection(connection, options);
+	return spawnFromTransport(transport, options);
 }
 
 // ---------------------------------------------------------------------------
-// spawnFromConnection() — compose + init + session on an existing connection
+// spawnFromTransport() — compose + init + session on a transport
 // ---------------------------------------------------------------------------
 
-export interface SpawnFromConnectionOptions {
+export interface SpawnFromTransportOptions {
 	/** Working directory for the session. */
 	cwd: string;
 	/** Middleware stack (outermost first). */
@@ -77,28 +110,41 @@ export interface SpawnFromConnectionOptions {
 }
 
 /**
- * Composes middleware, initializes, and creates a session on an existing
- * connection. Useful for testing with in-memory transports.
+ * Composes middleware, creates a connection, initializes, and creates a
+ * session on the given transport. Useful for testing with in-memory transports.
  */
-export async function spawnFromConnection(
-	connection: AgentConnection,
-	options: SpawnFromConnectionOptions,
+export async function spawnFromTransport(
+	transport: Transport,
+	options: SpawnFromTransportOptions,
 ): Promise<AgentSession> {
-	const control = connect(
-		connection,
-		sequence(options.middlewares ?? []),
-		options.handler,
-	);
+	const composed = composeAll(options.middlewares ?? []);
+	const handler = fillHandler(options.handler);
+	const composedHandler = joinEvents(composed, handler);
+	const conn = createAgentConnection(transport, composedHandler);
+	const commands = joinCommands(composed, conn.commands);
 
-	await control.initialize({
+	await commands.initialize({
 		protocolVersion: PROTOCOL_VERSION,
 		clientCapabilities: {},
 	});
 
-	const { sessionId } = await control.newSession({
+	const { sessionId } = await commands.newSession({
 		cwd: options.cwd,
 		mcpServers: [],
 	});
 
-	return { control, sessionId };
+	return { commands, sessionId, dispose: () => conn.dispose() };
 }
+
+// ---------------------------------------------------------------------------
+// Backward compat alias
+// ---------------------------------------------------------------------------
+
+/** @deprecated Use `spawnFromTransport` instead. */
+export type SpawnFromConnectionOptions = SpawnFromTransportOptions;
+
+/** @deprecated Use `spawnFromTransport` instead. */
+export const spawnFromConnection = (
+	transport: Transport,
+	options: SpawnFromTransportOptions,
+): Promise<AgentSession> => spawnFromTransport(transport, options);

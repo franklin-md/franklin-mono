@@ -4,9 +4,11 @@ export type TuiSessionStatus = 'idle' | 'running' | 'error' | 'disposed';
 
 export class TuiSession implements ReactAgentSession {
 	readonly agentId: string;
-	readonly control: ReactAgentSession['control'];
+	readonly commands: ReactAgentSession['commands'];
 	readonly sessionId: string;
 	readonly store: ReactAgentSession['store'];
+
+	private readonly _dispose: () => Promise<void>;
 
 	status: TuiSessionStatus = 'idle';
 
@@ -18,9 +20,10 @@ export class TuiSession implements ReactAgentSession {
 		onChange: () => void,
 	) {
 		this.agentId = agentId;
-		this.control = session.control;
+		this.commands = session.commands;
 		this.sessionId = session.sessionId;
 		this.store = session.store;
+		this._dispose = () => session.dispose();
 		this.onChange = onChange;
 	}
 
@@ -33,7 +36,7 @@ export class TuiSession implements ReactAgentSession {
 		this.setStatus('running');
 
 		try {
-			await this.control.prompt({
+			await this.commands.prompt({
 				sessionId: this.sessionId,
 				prompt: [{ type: 'text', text: prompt }],
 			});
@@ -46,7 +49,7 @@ export class TuiSession implements ReactAgentSession {
 	async dispose(): Promise<void> {
 		if (this.status === 'disposed') return;
 		this.setStatus('disposed');
-		await this.control.dispose();
+		await this._dispose();
 	}
 
 	private setStatus(status: TuiSessionStatus): void {

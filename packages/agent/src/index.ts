@@ -1,4 +1,4 @@
-export { AgentConnection } from './connection.js';
+export { createAgentConnection } from './connection.js';
 export {
 	commonAgentSpecs,
 	claudeAgentSpec,
@@ -6,24 +6,26 @@ export {
 } from './agents/index.js';
 export { AgentRegistry, createDefaultRegistry } from './registry.js';
 export {
-	compose,
-	connect,
+	emptyMiddleware,
+	joinCommands,
+	joinEvents,
 	sequence,
-	sequenceCommands,
-	sequenceEvents,
 } from './stack/index.js';
-export { spawn, spawnFromConnection } from './spawn.js';
+// eslint-disable-next-line @typescript-eslint/no-deprecated
+export { spawn, spawnFromTransport, spawnFromConnection } from './spawn.js';
 export { StdioTransport, createMemoryTransport } from './transport/index.js';
 export type { AgentSpec } from './registry.js';
 export type {
 	AgentSession,
 	SpawnOptions,
 	SpawnResult,
-	SpawnFromConnectionOptions,
+	SpawnFromTransportOptions,
 } from './spawn.js';
+// eslint-disable-next-line @typescript-eslint/no-deprecated
+export type { SpawnFromConnectionOptions } from './spawn.js';
+export type { AgentConnection } from './connection.js';
 export type {
 	AgentCommands,
-	AgentControl,
 	AgentEvents,
 	AgentLifecycle,
 	AgentStack,

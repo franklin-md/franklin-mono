@@ -7,18 +7,44 @@ import type {
 	PromptResponse,
 	SessionNotification,
 } from '@agentclientprotocol/sdk';
-import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
+import { PROTOCOL_VERSION, RequestError } from '@agentclientprotocol/sdk';
 
-import { AgentConnection } from '../connection.js';
+import type { AgentConnection } from '../connection.js';
+import { createAgentConnection } from '../connection.js';
 import type { AgentSpec } from '../registry.js';
+import type { AgentEvents } from '../stack/types.js';
 import { StdioTransport } from '../transport/index.js';
 
 import { collectAgentText, createMockClient } from './helpers.js';
 
+const EVENT_METHODS = [
+	'sessionUpdate',
+	'requestPermission',
+	'readTextFile',
+	'writeTextFile',
+	'createTerminal',
+	'terminalOutput',
+	'releaseTerminal',
+	'waitForTerminalExit',
+	'killTerminal',
+] as const;
+
+function fillHandler(handler: Partial<AgentEvents>): AgentEvents {
+	const result: Record<string, unknown> = {};
+	for (const method of EVENT_METHODS) {
+		result[method] =
+			handler[method] ??
+			(() => {
+				throw RequestError.methodNotFound(method);
+			});
+	}
+	return result as unknown as AgentEvents;
+}
+
 export interface AgentIntegrationTestOptions {
 	agentName: string;
 	spec?: AgentSpec;
-	createConnection?: (handler?: Client) => AgentConnection;
+	createConnection?: (handler: AgentEvents) => AgentConnection;
 	cwd?: string;
 	promptText?: string;
 	timeoutMs?: number;
@@ -39,10 +65,6 @@ export interface AgentPromptRoundTripContext {
 	handler: Client;
 }
 
-// function toIntegrationEnvVar(agentName: string): string {
-// 	return `FRANKLIN_RUN_${agentName.replace(/[^a-zA-Z0-9]+/g, '_').toUpperCase()}_INTEGRATION`;
-// }
-
 function isCommandAvailable(command: string): boolean {
 	const locator = process.platform === 'win32' ? 'where' : 'which';
 	return spawnSync(locator, [command], { stdio: 'ignore' }).status === 0;
@@ -50,7 +72,7 @@ function isCommandAvailable(command: string): boolean {
 
 function createConnectionFactory(
 	options: AgentIntegrationTestOptions,
-): (handler?: Client) => AgentConnection {
+): (handler: AgentEvents) => AgentConnection {
 	if (options.createConnection) return options.createConnection;
 	const { spec } = options;
 	if (!spec) {
@@ -59,8 +81,8 @@ function createConnectionFactory(
 		);
 	}
 
-	return (handler?: Client) =>
-		new AgentConnection(new StdioTransport(spec), handler);
+	return (handler: AgentEvents) =>
+		createAgentConnection(new StdioTransport(spec), handler);
 }
 
 export function runAgentIntegrationTests(
@@ -85,11 +107,12 @@ export function runAgentIntegrationTests(
 				}
 			});
 
-			async function initializeConnection(handler?: Client) {
+			async function initializeConnection(client?: Client) {
+				const handler = fillHandler(client ?? createMockClient());
 				const connection = buildConnection(handler);
 				connections.push(connection);
 
-				const initializeResponse = await connection.initialize({
+				const initializeResponse = await connection.commands.initialize({
 					protocolVersion: PROTOCOL_VERSION,
 					clientCapabilities: {},
 				});
@@ -97,10 +120,10 @@ export function runAgentIntegrationTests(
 				return { connection, initializeResponse };
 			}
 
-			async function createSession(handler?: Client) {
+			async function createSession(client?: Client) {
 				const { connection, initializeResponse } =
-					await initializeConnection(handler);
-				const sessionResponse = await connection.newSession({
+					await initializeConnection(client);
+				const sessionResponse = await connection.commands.newSession({
 					cwd: options.cwd ?? process.cwd(),
 					mcpServers: [],
 				});
@@ -140,7 +163,7 @@ export function runAgentIntegrationTests(
 					const { connection, sessionResponse } = await createSession(handler);
 					const promptText = options.promptText ?? 'say hello';
 
-					const promptResponse = await connection.prompt({
+					const promptResponse = await connection.commands.prompt({
 						sessionId: sessionResponse.sessionId,
 						prompt: [
 							{

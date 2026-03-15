@@ -17,7 +17,7 @@ runAgentIntegrationTests({
 		expect(firstPromptText).toMatch(/franklin/i);
 
 		const secondPromptStart = updates.length;
-		const secondPromptResponse = await connection.prompt({
+		const secondPromptResponse = await connection.commands.prompt({
 			sessionId,
 			prompt: [
 				{

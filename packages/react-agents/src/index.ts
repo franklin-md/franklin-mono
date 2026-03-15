@@ -1,2 +1,2 @@
 export * from './browser.js';
-export { spawn, spawnFromConnection } from './spawn.js';
+export { spawn, spawnFromTransport } from './spawn.js';

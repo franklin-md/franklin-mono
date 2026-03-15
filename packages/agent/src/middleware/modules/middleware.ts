@@ -6,6 +6,7 @@ import type {
 } from '@agentclientprotocol/sdk';
 
 import type { Middleware } from '../../stack/index.js';
+import { emptyMiddleware } from '../../stack/index.js';
 import type { FranklinModule } from './types.js';
 import { SystemPromptBuilder } from './types.js';
 
@@ -24,7 +25,6 @@ type ParamsWithBuilder = NewSessionRequest & {
  * - Intercepts `newSession` to run the module's `onCreate` hook and inject MCP servers.
  * - Intercepts `prompt` to materialize the system prompt (from the shared builder)
  *   on the first prompt only, then run the module's `onPrompt` hook.
- * - Intercepts `dispose` to run the module's `onDispose` hook.
  *
  * To compose multiple modules, create one middleware per module and use `sequence()`:
  * ```ts
@@ -37,6 +37,8 @@ export function createModuleMiddleware(module: FranklinModule): Middleware {
 	let firstPromptFired = false;
 
 	return {
+		...emptyMiddleware,
+
 		async newSession(
 			params: NewSessionRequest,
 			next: (params: NewSessionRequest) => Promise<NewSessionResponse>,
@@ -98,16 +100,6 @@ export function createModuleMiddleware(module: FranklinModule): Middleware {
 			}
 
 			return next({ ...params, prompt });
-		},
-
-		async dispose(
-			_params: undefined,
-			next: (params: undefined) => Promise<void>,
-		) {
-			if (module.onDispose) {
-				await module.onDispose();
-			}
-			await next(undefined);
 		},
 	};
 }

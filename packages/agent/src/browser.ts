@@ -7,17 +7,16 @@
  * (StdioTransport, spawn, etc.) on top of these.
  */
 
-export { AgentConnection } from './connection.js';
+export { createAgentConnection } from './connection.js';
 export {
-	compose,
-	connect,
+	emptyMiddleware,
+	joinCommands,
+	joinEvents,
 	sequence,
-	sequenceCommands,
-	sequenceEvents,
 } from './stack/index.js';
+export type { AgentConnection } from './connection.js';
 export type {
 	AgentCommands,
-	AgentControl,
 	AgentEvents,
 	AgentLifecycle,
 	AgentStack,

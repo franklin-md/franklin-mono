@@ -89,15 +89,11 @@ export interface AgentEvents {
 // AgentLifecycle — teardown
 // ---------------------------------------------------------------------------
 
+// TODO: Remove this from AgentControl and AgentStack. The MiddleWare should not be
+// disposed like this.
 export interface AgentLifecycle {
 	dispose(): Promise<void>;
 }
-
-// ---------------------------------------------------------------------------
-// AgentControl — what the app holds (commands + lifecycle)
-// ---------------------------------------------------------------------------
-
-export type AgentControl = AgentCommands & AgentLifecycle;
 
 // ---------------------------------------------------------------------------
 // AgentStack — full duplex (backward compat)

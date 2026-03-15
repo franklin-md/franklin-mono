@@ -1,13 +1,55 @@
 import type {
+	AgentCommands,
 	AgentConnection,
-	AgentControl,
 	Middleware,
 	PromptResponse,
 } from '@franklin/agent/browser';
-import { connect, sequence, PROTOCOL_VERSION } from '@franklin/agent/browser';
+import {
+	emptyMiddleware,
+	joinCommands,
+	joinEvents,
+	sequence,
+	PROTOCOL_VERSION,
+	RequestError,
+} from '@franklin/agent/browser';
 
 import type { AgentSessionStore, ReactAgentSession } from './session-store.js';
 import { createSessionStore } from './session-store.js';
+
+// Re-export EVENT_METHODS from the middleware types via the stack index
+import type { AgentEvents } from '@franklin/agent/browser';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const EVENT_METHODS = [
+	'sessionUpdate',
+	'requestPermission',
+	'readTextFile',
+	'writeTextFile',
+	'createTerminal',
+	'terminalOutput',
+	'releaseTerminal',
+	'waitForTerminalExit',
+	'killTerminal',
+] as const;
+
+function fillHandler(handler: Partial<AgentEvents>): AgentEvents {
+	const result: Record<string, unknown> = {};
+	for (const method of EVENT_METHODS) {
+		result[method] =
+			handler[method] ??
+			(() => {
+				throw RequestError.methodNotFound(method);
+			});
+	}
+	return result as unknown as AgentEvents;
+}
+
+function composeAll(middlewares: Middleware[]): Middleware {
+	return middlewares.reduce((acc, mw) => sequence(acc, mw), emptyMiddleware);
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -18,6 +60,7 @@ export type AgentStatus = 'idle' | 'running' | 'error' | 'disposed';
 export type CreateConnection = (
 	agent: string,
 	cwd: string,
+	handler: AgentEvents,
 ) => Promise<AgentConnection>;
 
 export interface AgentManagerOptions {
@@ -35,9 +78,10 @@ export interface AgentManagerOptions {
 export class ManagedSession implements ReactAgentSession {
 	readonly id: string;
 	readonly agentName: string;
-	readonly control: AgentControl;
+	readonly commands: AgentCommands;
 	readonly sessionId: string;
 	readonly store: AgentSessionStore;
+	private readonly _dispose: () => Promise<void>;
 
 	private _status: AgentStatus = 'idle';
 	private readonly _onStatusChange: () => void;
@@ -45,16 +89,18 @@ export class ManagedSession implements ReactAgentSession {
 	constructor(
 		id: string,
 		agentName: string,
-		control: AgentControl,
+		commands: AgentCommands,
 		sessionId: string,
 		store: AgentSessionStore,
+		disposeFn: () => Promise<void>,
 		onStatusChange: () => void,
 	) {
 		this.id = id;
 		this.agentName = agentName;
-		this.control = control;
+		this.commands = commands;
 		this.sessionId = sessionId;
 		this.store = store;
+		this._dispose = disposeFn;
 		this._onStatusChange = onStatusChange;
 	}
 
@@ -75,7 +121,7 @@ export class ManagedSession implements ReactAgentSession {
 		}
 		this.setStatus('running');
 		try {
-			const response = await this.control.prompt({
+			const response = await this.commands.prompt({
 				sessionId: this.sessionId,
 				prompt: [{ type: 'text', text }],
 			});
@@ -90,7 +136,7 @@ export class ManagedSession implements ReactAgentSession {
 	async dispose(): Promise<void> {
 		if (this._status === 'disposed') return;
 		this.setStatus('disposed');
-		await this.control.dispose();
+		await this._dispose();
 	}
 }
 
@@ -140,20 +186,28 @@ export class AgentManager {
 			throw new Error(`Session with id "${id}" already exists`);
 		}
 
-		const connection = await this._createConnection(agent, cwd);
 		const { store, middleware, handler } = createSessionStore();
 
 		const middlewares = this._createMiddlewares
 			? [middleware, ...this._middlewares, ...this._createMiddlewares()]
 			: [middleware, ...this._middlewares];
-		const control = connect(connection, sequence(middlewares), handler);
+		const composed = composeAll(middlewares);
 
-		await control.initialize({
+		const totalHandler = fillHandler(handler);
+		const composedHandler = joinEvents(composed, totalHandler);
+		const connection = await this._createConnection(
+			agent,
+			cwd,
+			composedHandler,
+		);
+		const commands = joinCommands(composed, connection.commands);
+
+		await commands.initialize({
 			protocolVersion: PROTOCOL_VERSION,
 			clientCapabilities: {},
 		});
 
-		const { sessionId } = await control.newSession({
+		const { sessionId } = await commands.newSession({
 			cwd,
 			mcpServers: [],
 		});
@@ -161,9 +215,10 @@ export class AgentManager {
 		const session = new ManagedSession(
 			id,
 			agent,
-			control,
+			commands,
 			sessionId,
 			store,
+			() => connection.dispose(),
 			() => this._emit(),
 		);
 
