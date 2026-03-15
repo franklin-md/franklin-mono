@@ -14,3 +14,6 @@ export {
 	type MultiplexedEventInterface,
 	type IdPacket as MultiplexedPacket,
 } from './event-driven/mutliplexed.js';
+export { type EventInterface } from './event-driven/single.js';
+export { streamToEventInterface } from './event-driven/stream-to-event.js';
+export { observe, type Observer } from './streams/observe.js';

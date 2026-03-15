@@ -13,12 +13,10 @@ export function createMultiplexedEventStream<T>(
 	handle: MultiplexedEventInterface<T>,
 ): Stream<T> {
 	const on = (callback: (_: T) => void) => {
-		return () => {
-			return handle.on((packet: IdPacket<T>) => {
-				if (packet.id !== channelName) return;
-				callback(packet.data);
-			});
-		};
+		return handle.on((packet: IdPacket<T>) => {
+			if (packet.id !== channelName) return;
+			callback(packet.data);
+		});
 	};
 
 	const invoke = (data: T) => {

@@ -1,6 +1,10 @@
 import path from 'node:path';
 import { app, BrowserWindow } from 'electron';
 
+import { AgentRelay } from './ipc/agent-relay.js';
+
+let relay: AgentRelay | undefined;
+
 function getPreloadPath(): string {
 	return path.join(__dirname, '../preload/index.cjs');
 }
@@ -14,6 +18,13 @@ function createWindow(): void {
 			contextIsolation: true,
 			nodeIntegration: false,
 		},
+	});
+
+	relay = new AgentRelay(mainWindow.webContents);
+
+	mainWindow.on('closed', () => {
+		void relay?.dispose();
+		relay = undefined;
 	});
 
 	// electron-vite injects ELECTRON_RENDERER_URL in dev

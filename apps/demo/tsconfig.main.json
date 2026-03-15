@@ -8,5 +8,8 @@
 		"declarationMap": true
 	},
 	"include": ["src/main/**/*.ts"],
-	"references": [{ "path": "../../packages/lib/transport" }]
+	"references": [
+		{ "path": "../../packages/lib/transport" },
+		{ "path": "../../packages/agent" }
+	]
 }

@@ -12,10 +12,15 @@ export function createMainIpcStream<T>(
 	webContents: WebContents,
 ): Stream<T> {
 	const on = (callback: (packet: MultiplexedPacket<T>) => void) => {
+		const handler = (
+			_event: Electron.IpcMainEvent,
+			packet: MultiplexedPacket<T>,
+		) => {
+			callback(packet);
+		};
+		ipcMain.on('ipc-stream', handler);
 		return () => {
-			ipcMain.on('ipc-stream', (_event, packet: MultiplexedPacket<T>) => {
-				callback(packet);
-			});
+			ipcMain.removeListener('ipc-stream', handler);
 		};
 	};
 
