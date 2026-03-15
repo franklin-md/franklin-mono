@@ -1,6 +1,7 @@
-import { createNdjsonDecoder, encodeNdjsonLine } from '../../streams/ndjson.js';
-import type { Stream } from '../../streams/types.js';
-import type { HttpCallbackServer } from './server.js';
+import type { Stream } from '../streams/types.js';
+import { createNdjsonDecoder, encodeNdjsonLine } from '../streams/ndjson.js';
+import { createJSONServer } from './index.js';
+import type { Options } from './index.js';
 import type { Response } from './types.js';
 
 interface PendingRequest {
@@ -8,13 +9,8 @@ interface PendingRequest {
 	reject: (reason: Error) => void;
 }
 
-export interface CallbackServerPipe {
-	pipe: Stream<Uint8Array>;
-	dispose: () => Promise<void>;
-}
-
-export function createHttpJsonLoopbackStream(
-	server: HttpCallbackServer,
+export function createCallbackServerPipe(
+	options: Omit<Options, 'handler'>,
 ): Stream<Uint8Array> {
 	let nextRequestId = 0;
 	const pending = new Map<string, PendingRequest>();
@@ -52,15 +48,20 @@ export function createHttpJsonLoopbackStream(
 		},
 	});
 
-	server.onRequest(async (body) => {
+	const handler = async (body: unknown) => {
 		const id = `req-${nextRequestId++}`;
-		const response = new Promise<unknown>((resolve, reject) => {
+		const responsePromise = new Promise<unknown>((resolve, reject) => {
 			pending.set(id, { resolve, reject });
 		});
 
 		readableController.enqueue(encodeNdjsonLine({ id, body }));
 
-		return response;
+		return responsePromise;
+	};
+
+	void createJSONServer({
+		handler,
+		...options,
 	});
 
 	return {
@@ -78,22 +79,9 @@ export function createHttpJsonLoopbackStream(
 				// Already closed.
 			}
 
-			await writable
+			void writable
 				.abort(new Error('Callback server pipe disposed'))
 				.catch(() => {});
 		},
 	};
 }
-
-export function createCallbackServerPipe(
-	server: HttpCallbackServer,
-): CallbackServerPipe {
-	const pipe = createHttpJsonLoopbackStream(server);
-
-	return {
-		pipe,
-		dispose: pipe.close,
-	};
-}
-
-export const createCallbackServerServer = createCallbackServerPipe;

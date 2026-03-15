@@ -23,13 +23,12 @@ export class HttpLocalMcpTransport implements LocalMcpTransport {
 	private callbackServer: HttpCallbackServer | undefined;
 
 	async start(tools: AnyToolDefinition[]): Promise<McpServerConfig> {
-		this.callbackServer = await createHttpCallbackServer();
-
 		const manager = new ToolsManager(tools);
-
-		this.callbackServer.onRequest(async (body) => {
-			const req = body as ToolCallRequest;
-			return manager.dispatch(req.tool, req.arguments);
+		this.callbackServer = await createHttpCallbackServer({
+			handler: async (body: unknown) => {
+				const req = body as ToolCallRequest;
+				return manager.dispatch(req.tool, req.arguments);
+			},
 		});
 
 		return createRelayConfig({

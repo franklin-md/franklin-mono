@@ -35,13 +35,13 @@ describe('MCP Relay', () => {
 	});
 
 	it('relays tool calls from MCP stdio to HTTP callback', async () => {
-		const callbackServer = await createHttpCallbackServer();
-		servers.push(callbackServer);
-
-		callbackServer.onRequest(async (body) => {
-			const req = body as ToolCallRequest;
-			return { product: req.arguments.x * req.arguments.y };
+		const callbackServer = await createHttpCallbackServer({
+			handler: async (body: unknown) => {
+				const req = body as ToolCallRequest;
+				return { product: req.arguments.x * req.arguments.y };
+			},
 		});
+		servers.push(callbackServer);
 
 		const tools = [
 			{

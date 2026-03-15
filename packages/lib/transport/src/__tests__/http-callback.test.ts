@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createJSONServer } from '../http/loopback/server.js';
+import { createJSONServer } from '../http/index.js';
 
-import type { HttpCallbackServer } from '../http/loopback/server.js';
+import type { HttpCallbackServer } from '../http/index.js';
 
 describe('HttpCallbackServer', () => {
 	const servers: HttpCallbackServer[] = [];
@@ -15,7 +15,9 @@ describe('HttpCallbackServer', () => {
 	});
 
 	it('creates a server on an available port', async () => {
-		const server = await createJSONServer();
+		const server = await createJSONServer({
+			handler: async () => ({ ok: true }),
+		});
 		servers.push(server);
 
 		expect(server.port).toBeGreaterThan(0);
@@ -23,13 +25,13 @@ describe('HttpCallbackServer', () => {
 	});
 
 	it('handles POST requests and returns handler response', async () => {
-		const server = await createJSONServer();
-		servers.push(server);
-
-		server.onRequest(async (body) => {
-			const req = body as { x: number };
-			return { result: req.x * 2 };
+		const server = await createJSONServer({
+			handler: async (body) => {
+				const req = body as { x: number };
+				return { result: req.x * 2 };
+			},
 		});
+		servers.push(server);
 
 		const resp = await fetch(server.url, {
 			method: 'POST',
@@ -43,15 +45,21 @@ describe('HttpCallbackServer', () => {
 	});
 
 	it('returns 405 for non-POST methods', async () => {
-		const server = await createJSONServer();
+		const server = await createJSONServer({
+			handler: async () => ({ ok: true }),
+		});
 		servers.push(server);
 
 		const resp = await fetch(server.url, { method: 'GET' });
 		expect(resp.status).toBe(405);
 	});
 
-	it('returns 503 when no handler is registered', async () => {
-		const server = await createJSONServer();
+	it('returns 500 when the handler throws', async () => {
+		const server = await createJSONServer({
+			handler: async () => {
+				throw new Error('boom');
+			},
+		});
 		servers.push(server);
 
 		const resp = await fetch(server.url, {
@@ -60,6 +68,6 @@ describe('HttpCallbackServer', () => {
 			body: JSON.stringify({}),
 		});
 
-		expect(resp.status).toBe(503);
+		expect(resp.status).toBe(500);
 	});
 });
