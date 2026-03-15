@@ -3,7 +3,7 @@ import { createDefaultRegistry } from '@franklin/agent';
 import { connect, StdioPipe } from '@franklin/transport';
 import type { Connection } from '@franklin/transport';
 
-import { createMainIpcPipe } from './main-ipc-pipe.js';
+import { createMainIpcStream } from './ipc/stream.js';
 
 interface RelayEntry {
 	connection: Connection;
@@ -36,8 +36,8 @@ export class AgentRelay {
 		const agentId = `agent-${this.nextId++}`;
 
 		const stdioPipe = new StdioPipe({ ...spec, cwd });
-		const { pipe: ipcPipe, dispose: disposeIpc } = createMainIpcPipe({
-			agentId,
+		const { pipe: ipcPipe, dispose: disposeIpc } = createMainIpcStream({
+			streamName: agentId,
 			webContents: this.webContents,
 			ipcMain: this.ipcMain,
 		});

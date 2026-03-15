@@ -1,4 +1,5 @@
 import { ToolsManager, serializeTool } from '@franklin/local-mcp/browser';
+import { createNdjsonDecoder, encodeNdjsonLine } from '@franklin/transport';
 import type {
 	AnyToolDefinition,
 	LocalMcpTransport,
@@ -44,9 +45,7 @@ export class IpcMcpTransport implements LocalMcpTransport {
 		this.mcpId = mcpId;
 
 		// Subscribe to NDJSON tool-call requests relayed from main
-		const encoder = new TextEncoder();
-		const decoder = new TextDecoder();
-		let lineBuffer = '';
+		const requestDecoder = createNdjsonDecoder<CallbackRequest>();
 		let disposed = false;
 		const manager = this.manager;
 
@@ -57,21 +56,8 @@ export class IpcMcpTransport implements LocalMcpTransport {
 		this.unsubscribe = window.franklinBridge.onData((id, chunk) => {
 			if (id !== mcpId) return;
 
-			lineBuffer += decoder.decode(chunk, { stream: true });
-
-			let newlineIdx: number;
-			while ((newlineIdx = lineBuffer.indexOf('\n')) !== -1) {
-				const line = lineBuffer.slice(0, newlineIdx).trim();
-				lineBuffer = lineBuffer.slice(newlineIdx + 1);
-
-				if (!line) continue;
-
-				try {
-					const req = JSON.parse(line) as CallbackRequest;
-					void handleRequest(req);
-				} catch {
-					// Malformed line — skip
-				}
+			for (const req of requestDecoder.write(chunk)) {
+				void handleRequest(req);
 			}
 		});
 
@@ -82,13 +68,17 @@ export class IpcMcpTransport implements LocalMcpTransport {
 					req.body.arguments,
 				);
 				if (disposed) return;
-				const response = JSON.stringify({ id: req.id, result }) + '\n';
-				window.franklinBridge.send(mcpId, encoder.encode(response));
+				window.franklinBridge.send(
+					mcpId,
+					encodeNdjsonLine({ id: req.id, result }),
+				);
 			} catch (err) {
 				if (disposed) return;
 				const error = err instanceof Error ? err.message : 'Unknown error';
-				const response = JSON.stringify({ id: req.id, error }) + '\n';
-				window.franklinBridge.send(mcpId, encoder.encode(response));
+				window.franklinBridge.send(
+					mcpId,
+					encodeNdjsonLine({ id: req.id, error }),
+				);
 			}
 		}
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createHttpCallbackServer } from '../http/index.js';
+import { createJSONServer } from '../http/index.js';
 
 import type { HttpCallbackServer } from '../http/index.js';
 
@@ -15,7 +15,7 @@ describe('HttpCallbackServer', () => {
 	});
 
 	it('creates a server on an available port', async () => {
-		const server = await createHttpCallbackServer();
+		const server = await createJSONServer();
 		servers.push(server);
 
 		expect(server.port).toBeGreaterThan(0);
@@ -23,7 +23,7 @@ describe('HttpCallbackServer', () => {
 	});
 
 	it('handles POST requests and returns handler response', async () => {
-		const server = await createHttpCallbackServer();
+		const server = await createJSONServer();
 		servers.push(server);
 
 		server.onRequest(async (body) => {
@@ -43,7 +43,7 @@ describe('HttpCallbackServer', () => {
 	});
 
 	it('returns 405 for non-POST methods', async () => {
-		const server = await createHttpCallbackServer();
+		const server = await createJSONServer();
 		servers.push(server);
 
 		const resp = await fetch(server.url, { method: 'GET' });
@@ -51,7 +51,7 @@ describe('HttpCallbackServer', () => {
 	});
 
 	it('returns 503 when no handler is registered', async () => {
-		const server = await createHttpCallbackServer();
+		const server = await createJSONServer();
 		servers.push(server);
 
 		const resp = await fetch(server.url, {

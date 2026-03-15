@@ -1,5 +1,7 @@
 import type { Stream } from '../streams/types.js';
-import type { HttpCallbackServer } from './index.js';
+import { createNdjsonDecoder, encodeNdjsonLine } from '../streams/ndjson.js';
+import type { Options, createJSONServer } from './index.js';
+import type { Response } from './types.js';
 
 /**
  * NDJSON protocol used over the pipe:
@@ -25,14 +27,12 @@ interface PendingRequest {
  * another handler after calling this function.
  */
 export function createCallbackServerPipe(
-	server: HttpCallbackServer,
+	options: Omit<Options, 'handler'>,
 ): Stream<Uint8Array> {
 	let nextRequestId = 0;
 	const pending = new Map<string, PendingRequest>();
-	const encoder = new TextEncoder();
-	const decoder = new TextDecoder();
+	const responseDecoder = createNdjsonDecoder<Response>();
 	let readableController!: ReadableStreamDefaultController<Uint8Array>;
-	let lineBuffer = '';
 
 	const readable = new ReadableStream<Uint8Array>({
 		start(controller) {
@@ -40,61 +40,46 @@ export function createCallbackServerPipe(
 		},
 	});
 
-	function processLines(): void {
-		let newlineIdx: number;
-		while ((newlineIdx = lineBuffer.indexOf('\n')) !== -1) {
-			const line = lineBuffer.slice(0, newlineIdx).trim();
-			lineBuffer = lineBuffer.slice(newlineIdx + 1);
+	function handleResponse(msg: Response): void {
+		const entry = pending.get(msg.id);
+		if (!entry) return;
 
-			if (!line) continue;
-
-			try {
-				const msg = JSON.parse(line) as {
-					id: string;
-					result?: unknown;
-					error?: string;
-				};
-				const entry = pending.get(msg.id);
-				if (entry) {
-					pending.delete(msg.id);
-					if (msg.error) {
-						entry.reject(new Error(msg.error));
-					} else {
-						entry.resolve(msg.result);
-					}
-				}
-			} catch {
-				// Malformed line — skip
-			}
+		pending.delete(msg.id);
+		if ('error' in msg) {
+			entry.reject(new Error(msg.error));
+		} else {
+			entry.resolve(msg.result);
 		}
 	}
 
 	const writable = new WritableStream<Uint8Array>({
 		write(chunk) {
-			lineBuffer += decoder.decode(chunk, { stream: true });
-			processLines();
+			for (const msg of responseDecoder.write(chunk)) {
+				handleResponse(msg);
+			}
 		},
 		close() {
-			// Flush any remaining decoder state
-			lineBuffer += decoder.decode();
-			processLines();
+			for (const msg of responseDecoder.flush()) {
+				handleResponse(msg);
+			}
 		},
 	});
 
-	// Register the HTTP handler: serialize requests as NDJSON, wait for responses.
-	// The pending entry is registered BEFORE enqueue to prevent a race where the
-	// response arrives (via a synchronous in-process pipe) before the entry exists.
-	server.onRequest(async (body) => {
+	const handler = async (body) => {
 		const id = `req-${nextRequestId++}`;
 
 		const responsePromise = new Promise<unknown>((resolve, reject) => {
 			pending.set(id, { resolve, reject });
 		});
 
-		const line = JSON.stringify({ id, body }) + '\n';
-		readableController.enqueue(encoder.encode(line));
+		readableController.enqueue(encodeNdjsonLine({ id, body }));
 
 		return responsePromise;
+	};
+
+	const server = createJSONServer({
+		handler,
+		...options,
 	});
 
 	return {

@@ -11,7 +11,7 @@ import type {
 	SerializedToolDefinition,
 } from '@franklin/local-mcp';
 
-import { createMainIpcPipe } from './main-ipc-pipe.js';
+import { createMainIpcStream } from './ipc/stream.js';
 
 interface McpRelayEntry {
 	connection: Connection;
@@ -58,8 +58,8 @@ export class McpRelay {
 			createCallbackServerPipe(callbackServer);
 
 		// Create an IPC pipe using the same channel as agent data
-		const { pipe: ipcPipe, dispose: disposeIpc } = createMainIpcPipe({
-			agentId: mcpId,
+		const { pipe: ipcPipe, dispose: disposeIpc } = createMainIpcStream({
+			streamName: mcpId,
 			webContents: this.webContents,
 			ipcMain: this.ipcMain,
 		});
