@@ -135,16 +135,3 @@ export async function spawnFromTransport(
 
 	return { commands, sessionId, dispose: () => conn.dispose() };
 }
-
-// ---------------------------------------------------------------------------
-// Backward compat alias
-// ---------------------------------------------------------------------------
-
-/** @deprecated Use `spawnFromTransport` instead. */
-export type SpawnFromConnectionOptions = SpawnFromTransportOptions;
-
-/** @deprecated Use `spawnFromTransport` instead. */
-export const spawnFromConnection = (
-	transport: Transport,
-	options: SpawnFromTransportOptions,
-): Promise<AgentSession> => spawnFromTransport(transport, options);

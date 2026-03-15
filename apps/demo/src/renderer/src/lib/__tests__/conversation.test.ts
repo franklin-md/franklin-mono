@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { SessionNotification } from '@franklin/agent';
+import type { SessionNotification } from '@franklin/agent/browser';
 import type { TranscriptEntry } from '@franklin/react-agents/browser';
 
 import { buildConversationState } from '../conversation.js';
