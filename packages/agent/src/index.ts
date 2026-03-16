@@ -11,14 +11,14 @@ export {
 	joinEvents,
 	sequence,
 } from './stack/index.js';
-export { spawn, spawnFromTransport } from './spawn.js';
+export { spawn as spawnFromTransport } from './spawn.js';
 export { StdioTransport, createMemoryTransport } from './transport/index.js';
 export type { AgentSpec } from './registry.js';
 export type {
 	AgentSession,
 	SpawnOptions,
 	SpawnResult,
-	SpawnFromTransportOptions,
+	SpawnOptions as SpawnFromTransportOptions,
 } from './spawn.js';
 
 export type { AgentConnection } from './connection.js';
@@ -26,7 +26,6 @@ export type {
 	AgentCommands,
 	AgentEvents,
 	AgentLifecycle,
-	AgentStack,
 	CommandMiddleware,
 	Cont,
 	EventMiddleware,

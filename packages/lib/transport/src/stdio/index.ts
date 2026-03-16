@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { Readable, Writable } from 'node:stream';
-import type { Stream } from '../streams/types.js';
+import type { Duplex } from '../streams/types.js';
 
 export interface StdioPipeOptions {
 	command: string;
@@ -9,7 +9,7 @@ export interface StdioPipeOptions {
 	env?: Record<string, string>;
 }
 
-export class StdioPipe implements Stream<Uint8Array> {
+export class StdioPipe implements Duplex<Uint8Array> {
 	private readonly process: ReturnType<typeof spawn>;
 
 	readonly readable: ReadableStream<Uint8Array>;

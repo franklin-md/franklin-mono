@@ -1,6 +1,6 @@
 import type { Cont, Middleware } from './types.js';
 import { COMMAND_METHODS, EVENT_METHODS } from './types.js';
-import type { AgentCommands, AgentEvents } from '../stack/types.js';
+import type { AgentCommands, AgentEvents } from '../types.js';
 
 // ---------------------------------------------------------------------------
 // sequenceCommands — combine command middlewares

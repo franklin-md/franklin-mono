@@ -4,7 +4,7 @@ import type { Server } from 'node:http';
 
 import { createJsonHandler } from './json-handler.js';
 
-export type Options = {
+export type HttpServerOptions = {
 	port: number;
 };
 
@@ -15,7 +15,7 @@ export class HttpJsonServer {
 	private server: Server | undefined;
 	private handler: Handler | undefined;
 
-	constructor(options: Options) {
+	constructor(options: HttpServerOptions) {
 		this.url = `http://127.0.0.1:${options.port}`;
 		this.port = options.port;
 	}

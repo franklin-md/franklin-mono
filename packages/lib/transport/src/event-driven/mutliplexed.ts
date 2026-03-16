@@ -1,4 +1,4 @@
-import type { Stream } from '@franklin/transport';
+import type { Duplex } from '@franklin/transport';
 import { createEventStream, type EventInterface } from './single.js';
 
 export type IdPacket<T> = {
@@ -11,7 +11,7 @@ export type MultiplexedEventInterface<T> = EventInterface<IdPacket<T>>;
 export function createMultiplexedEventStream<T>(
 	channelName: string,
 	handle: MultiplexedEventInterface<T>,
-): Stream<T> {
+): Duplex<T> {
 	const on = (callback: (_: T) => void) => {
 		return handle.on((packet: IdPacket<T>) => {
 			if (packet.id !== channelName) return;

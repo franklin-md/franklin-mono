@@ -1,11 +1,11 @@
-import type { Stream } from '@franklin/transport';
+import type { Duplex } from '@franklin/transport';
 
 export type EventInterface<T> = {
 	on: (callback: (data: T) => void) => () => void;
 	invoke: (data: T) => void;
 };
 
-export function createEventStream<T>(handle: EventInterface<T>): Stream<T> {
+export function createEventStream<T>(handle: EventInterface<T>): Duplex<T> {
 	let readableController: ReadableStreamDefaultController<T>;
 
 	const readable = new ReadableStream<T>({

@@ -15,7 +15,7 @@ import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 import type { AgentConnection } from '../../../connection.js';
 import { createAgentConnection } from '../../../connection.js';
 import type { AgentSpec } from '../../../registry.js';
-import type { AgentEvents } from '../../../stack/types.js';
+import type { AgentEvents } from '../../../types.js';
 import { StdioTransport } from '../../../transport/index.js';
 
 // ---------------------------------------------------------------------------

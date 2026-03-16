@@ -1,12 +1,39 @@
+// Stream algebra
+export type { Duplex, Observer } from './streams/types.js';
+// eslint-disable-next-line @typescript-eslint/no-deprecated -- backwards compat re-export
 export type { Stream } from './streams/types.js';
-export { connect } from './streams/connect.js';
+export { pump } from './streams/readable/pump.js';
+export { observe } from './streams/readable/observe.js';
+export { fromObserver } from './streams/readable/from-observer.js';
+export { emptyReadable } from './streams/readable/empty.js';
+export { callable } from './streams/writable/callable.js';
+export { fromCallable } from './streams/writable/from-callable.js';
+export { emptyWritable } from './streams/writable/empty.js';
+export { connect } from './streams/duplex/connect.js';
+export { map } from './streams/duplex/map.js';
+export {
+	bridge,
+	type Bridge,
+	type BridgeRequest,
+	type BridgeResponse,
+	type BridgeSuccessResponse,
+	type BridgeErrorResponse,
+} from './streams/duplex/bridge.js';
+export { emptyDuplex } from './streams/duplex/empty.js';
+
+// Codecs
+export { mapStream, ndjsonCodec, type Codec } from './codec/index.js';
+
+// NDJSON
 export { createNdjsonDecoder, encodeNdjsonLine } from './streams/ndjson.js';
+
+// Transports
 export { StdioPipe } from './stdio/index.js';
 export type { StdioPipeOptions } from './stdio/index.js';
 export { createMemoryPipes } from './in-memory/index.js';
 export type { MemoryPipePair } from './in-memory/index.js';
 export { HttpJsonServer } from './http/index.js';
-export type { Options as HttpJsonServerOptions } from './http/index.js';
+export type { HttpServerOptions as HttpJsonServerOptions } from './http/index.js';
 export { asStream as createCallbackServerPipe } from './http/stream.js';
 export type {
 	Response as HttpPipeResponse,
@@ -14,6 +41,8 @@ export type {
 	ErrorResponse as HttpPipeErrorResponse,
 } from './http/types.js';
 export { PortManager, portManager } from './http/port-manager.js';
+
+// Event-driven adapters
 export {
 	createMultiplexedEventStream,
 	type MultiplexedEventInterface,
@@ -21,5 +50,3 @@ export {
 } from './event-driven/mutliplexed.js';
 export { type EventInterface } from './event-driven/single.js';
 export { streamToEventInterface } from './event-driven/stream-to-event.js';
-export { observe, type Observer } from './streams/observe.js';
-export { mapStream, ndjsonCodec, type Codec } from './codec/index.js';

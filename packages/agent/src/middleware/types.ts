@@ -1,4 +1,4 @@
-import type { AgentCommands, AgentEvents } from '../stack/types.js';
+import type { AgentCommands, AgentEvents } from '../types.js';
 
 // ---------------------------------------------------------------------------
 // Cont — continuation-passing style wrapper for a single method
@@ -24,7 +24,7 @@ export type EventMiddleware = {
 };
 
 /**
- * A middleware intercepts methods on the agent stack. Each overridden method
+ * A middleware intercepts methods on the agent command/event surface. Each overridden method
  * receives the original params plus a `next` function that calls the next
  * layer in the chain. Call `next(params)` to forward, or return directly to
  * short-circuit.

@@ -1,5 +1,5 @@
-import type { Duplex } from '../streams/types.js';
-import type { Codec } from './types.js';
+import type { Duplex } from '../types.js';
+import type { Codec } from '../../codec/types.js';
 
 /**
  * Maps a Duplex<Raw> to a Duplex<Typed> using a codec.
@@ -7,8 +7,8 @@ import type { Codec } from './types.js';
  * The readable side decodes raw chunks into typed values (1:N).
  * The writable side encodes typed values into raw chunks (1:1).
  */
-export function mapStream<Raw, Typed>(
-	stream: Duplex<Raw>,
+export function map<Raw, Typed>(
+	duplex: Duplex<Raw>,
 	codec: Codec<Raw, Typed>,
 ): Duplex<Typed> {
 	const decoded = new TransformStream<Raw, Typed>({
@@ -25,15 +25,15 @@ export function mapStream<Raw, Typed>(
 		},
 	});
 
-	const readable = stream.readable.pipeThrough(decoded);
+	const readable = duplex.readable.pipeThrough(decoded);
 	const writable = encoded.writable;
 
 	// Pump encoded values into the underlying raw writable
-	void encoded.readable.pipeTo(stream.writable).catch(() => {});
+	void encoded.readable.pipeTo(duplex.writable).catch(() => {});
 
 	return {
 		readable,
 		writable,
-		close: () => stream.close(),
+		close: () => duplex.close(),
 	};
 }

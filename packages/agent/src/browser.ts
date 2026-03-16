@@ -19,7 +19,6 @@ export type {
 	AgentCommands,
 	AgentEvents,
 	AgentLifecycle,
-	AgentStack,
 	CommandMiddleware,
 	Cont,
 	EventMiddleware,

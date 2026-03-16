@@ -1,7 +1,7 @@
 import type {} from '@agentclientprotocol/sdk';
 import { ClientSideConnection } from '@agentclientprotocol/sdk';
 
-import type { AgentCommands, AgentEvents } from './stack/types.js';
+import type { AgentCommands, AgentEvents } from './types.js';
 import type { AgentTransport } from './transport/index.js';
 
 export type AgentConnection = {

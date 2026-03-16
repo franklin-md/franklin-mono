@@ -1,4 +1,4 @@
-import type { Stream } from '../streams/types.js';
+import type { Duplex } from '../streams/types.js';
 import { createNdjsonDecoder, encodeNdjsonLine } from '../streams/ndjson.js';
 import type { HttpJsonServer } from './index.js';
 import type { Response } from './types.js';
@@ -11,7 +11,7 @@ interface PendingRequest {
 // The readable is a stream of requests that need to get pumped out
 // The writable is a stream of responses that need to get matched to the requests.
 
-export function asStream(server: HttpJsonServer): Stream<Uint8Array> {
+export function asStream(server: HttpJsonServer): Duplex<Uint8Array> {
 	let nextRequestId = 0;
 	// A collection of futures. They get resolved when the writable pulls out a response and it matches the request.
 	const pending = new Map<string, PendingRequest>();

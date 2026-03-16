@@ -1,8 +1,8 @@
 import { PROTOCOL_VERSION, RequestError } from '@agentclientprotocol/sdk';
 
 import { createAgentConnection } from './connection.js';
-import type { AgentRegistry, AgentSpec } from './registry.js';
-import type { AgentCommands, AgentEvents } from './stack/types.js';
+import type { AgentSpec } from './registry.js';
+import type { AgentCommands, AgentEvents } from './types.js';
 import type { Middleware } from './stack/index.js';
 import {
 	emptyMiddleware,
@@ -11,7 +11,6 @@ import {
 	sequence,
 } from './stack/index.js';
 import { EVENT_METHODS } from './middleware/types.js';
-import { StdioTransport } from './transport/index.js';
 import type { AgentTransport } from './transport/index.js';
 
 // ---------------------------------------------------------------------------
@@ -69,40 +68,14 @@ export interface AgentSession {
 export type SpawnResult = AgentSession;
 
 // ---------------------------------------------------------------------------
-// spawn() — full lifecycle: transport → compose → init → session
-// ---------------------------------------------------------------------------
-
-/**
- * Spawns an ACP agent subprocess and returns a fully initialized stack.
- *
- * @param registry - The agent registry for name resolution.
- * @param options  - Agent spec (string or object), cwd, middlewares, handler.
- */
-export async function spawn(
-	registry: AgentRegistry,
-	options: SpawnOptions,
-): Promise<AgentSession> {
-	const spec =
-		typeof options.agent === 'string'
-			? registry.get(options.agent)
-			: options.agent;
-
-	const transport = new StdioTransport({
-		...spec,
-		cwd: options.cwd,
-		env: options.env ? { ...spec.env, ...options.env } : spec.env,
-	});
-
-	return spawnFromTransport(transport, options);
-}
-
-// ---------------------------------------------------------------------------
 // spawnFromTransport() — compose + init + session on a transport
 // ---------------------------------------------------------------------------
 
-export interface SpawnFromTransportOptions {
+export interface SpawnOptions {
+	// TODO: We need also a way to setup ENVIRONMENT (this will be the mechanism for sanboxing etc)
 	/** Working directory for the session. */
 	cwd: string;
+	// TODO: Lets move logic up so it just takes in AgentEvents
 	/** Middleware stack (outermost first). */
 	middlewares?: Middleware[];
 	/** App's inbound event handlers. */
@@ -113,9 +86,9 @@ export interface SpawnFromTransportOptions {
  * Composes middleware, creates a connection, initializes, and creates a
  * session on the given transport. Useful for testing with in-memory transports.
  */
-export async function spawnFromTransport(
+export async function spawn(
 	transport: AgentTransport,
-	options: SpawnFromTransportOptions,
+	options: SpawnOptions,
 ): Promise<AgentSession> {
 	const composed = composeAll(options.middlewares ?? []);
 	const handler = fillHandler(options.handler);

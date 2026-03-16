@@ -1,13 +1,13 @@
-import { connect } from '../streams/connect.js';
-import type { Stream } from '../streams/types.js';
+import { connect } from '../streams/duplex/connect.js';
+import type { Duplex } from '../streams/types.js';
 
 export interface MemoryPipePair<A, B = A> {
-	server: Stream<A, B>;
-	client: Stream<B, A>;
+	server: Duplex<A, B>;
+	client: Duplex<B, A>;
 	close: () => Promise<void>;
 }
 
-export function createMemoryStream<A, B = A>(): Stream<A, B> {
+export function createMemoryStream<A, B = A>(): Duplex<A, B> {
 	const stream = new TransformStream<B, A>();
 
 	return {

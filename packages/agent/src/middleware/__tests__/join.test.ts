@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AgentCommands, AgentEvents } from '../../stack/types.js';
+import type { AgentCommands, AgentEvents } from '../../types.js';
 import type { Middleware } from '../types.js';
 import { emptyMiddleware } from '../empty.js';
 import { joinCommands, joinEvents } from '../join.js';
