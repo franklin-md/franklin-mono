@@ -1,10 +1,4 @@
 import type { StdioPipeOptions, Stream } from '@franklin/transport';
-import type { AnyToolDefinition } from './tools/types.js';
-
-export interface LocalMcpOptions {
-	name: string;
-	tools: AnyToolDefinition[];
-}
 
 export type McpServerConfig = StdioPipeOptions;
 

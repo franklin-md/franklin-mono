@@ -1,5 +1,4 @@
 export { createModuleMiddleware } from './middleware.js';
-export { createThreadModule } from './thread.js';
 export { SystemPromptBuilder } from './types.js';
 export type {
 	FranklinModule,
@@ -7,4 +6,3 @@ export type {
 	ModuleCreateResult,
 	ModulePromptContext,
 } from './types.js';
-export type { ThreadRequest, ThreadModuleOptions } from './thread.js';

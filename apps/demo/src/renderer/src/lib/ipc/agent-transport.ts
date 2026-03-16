@@ -59,7 +59,7 @@ export async function spawn(name: string): Promise<Stream<AnyMessage>> {
 	const inner = createMultiplexedEventStream<AnyMessage>(agentId, agentMux);
 
 	return {
-		WriteT: inner.WriteT,
+		readable: inner.readable,
 		writable: inner.writable,
 		close: async () => {
 			await inner.close();

@@ -38,7 +38,6 @@ export type {
 } from './transport/index.js';
 export {
 	createModuleMiddleware,
-	createThreadModule,
 	SystemPromptBuilder,
 } from './middleware/modules/index.js';
 export type {
@@ -46,8 +45,6 @@ export type {
 	ModuleCreateContext,
 	ModuleCreateResult,
 	ModulePromptContext,
-	ThreadRequest,
-	ThreadModuleOptions,
 } from './middleware/modules/index.js';
 
 // Re-export key ACP types so consumers don't need to depend on the SDK directly

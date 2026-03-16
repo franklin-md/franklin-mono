@@ -10,16 +10,11 @@ export class ToolsManager {
 		}
 	}
 
-	listTools(): SerializedToolDefinition[] {
-		return Array.from(this.tools.values()).map(serializeTool);
+	get(name: string): AnyToolDefinition | undefined {
+		return this.tools.get(name);
 	}
 
-	dispatch(name: string, args: unknown): Promise<unknown> {
-		const tool = this.tools.get(name);
-		if (!tool) {
-			throw new Error(`Tool ${name} not found`);
-		}
-		const parsed: unknown = tool.schema.parse(args);
-		return tool.handler(parsed);
+	listTools(): SerializedToolDefinition[] {
+		return Array.from(this.tools.values()).map(serializeTool);
 	}
 }
