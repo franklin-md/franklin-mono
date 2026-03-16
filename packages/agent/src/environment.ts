@@ -13,12 +13,15 @@ import type { AgentTransport } from './transport/index.js';
  * before agents are spawned and may outlive any single agent. Multiple
  * agents can share an environment.
  *
- * Framework packages (e.g., `@franklin/node`) provide concrete
- * implementations via a `provision()` function.
+ * Framework packages (e.g., `@franklin/node`, `@franklin/electron`) provide
+ * concrete implementations.
  */
 export interface EnvironmentHandle {
-	/** Start an agent process in this environment, returning a transport. */
-	spawn(agent: AgentSpec): AgentTransport;
+	/**
+	 * Start an agent in this environment by name (resolved via registry),
+	 * returning a transport for ACP communication.
+	 */
+	spawn(agent: string): Promise<AgentTransport>;
 
 	/** Clean up the environment and release resources. */
 	dispose(): Promise<void>;

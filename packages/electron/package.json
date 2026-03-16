@@ -1,0 +1,49 @@
+{
+	"name": "@franklin/electron",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"exports": {
+		"./main": {
+			"types": "./dist/main/index.d.ts",
+			"import": "./dist/main/index.js"
+		},
+		"./preload": {
+			"types": "./dist/preload/index.d.ts",
+			"import": "./dist/preload/index.js"
+		},
+		"./renderer": {
+			"types": "./dist/renderer/index.d.ts",
+			"import": "./dist/renderer/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "tsc -b tsconfig.json",
+		"typecheck": "tsc -b tsconfig.json --pretty false",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@agentclientprotocol/sdk": "^0.16.1",
+		"@franklin/agent": "*",
+		"@franklin/node": "*",
+		"@franklin/local-mcp": "*",
+		"@franklin/transport": "*"
+	},
+	"devDependencies": {
+		"electron": "^36.3.2"
+	},
+	"peerDependencies": {
+		"electron": ">=30"
+	},
+	"peerDependenciesMeta": {
+		"electron": {
+			"optional": true
+		}
+	}
+}

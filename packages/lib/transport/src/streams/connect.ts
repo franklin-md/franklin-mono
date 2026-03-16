@@ -1,4 +1,4 @@
-import type { Stream } from './types.js';
+import type { Duplex } from './types.js';
 
 /**
  * Bidirectionally connects two Pipes by pumping bytes between them:
@@ -10,7 +10,7 @@ import type { Stream } from './types.js';
  * and cleanly closes the destination writables (so readers see EOF,
  * not an abort error).
  */
-export function connect<A, B>(a: Stream<A, B>, b: Stream<B, A>): Stream<A, B> {
+export function connect<A, B>(a: Duplex<A, B>, b: Duplex<B, A>): Duplex<A, B> {
 	const abort = new AbortController();
 
 	const aToB = a.readable.pipeTo(b.writable, { signal: abort.signal });

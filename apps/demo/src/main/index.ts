@@ -1,9 +1,11 @@
 import path from 'node:path';
 import { app, BrowserWindow } from 'electron';
+import { initializeMain } from '@franklin/electron/main';
+import { NodeFramework, createDefaultRegistry } from '@franklin/node';
 
-import { AgentRelay } from './ipc/agent-relay.js';
+import type { MainHandle } from '@franklin/electron/main';
 
-let relay: AgentRelay | undefined;
+let handle: MainHandle | undefined;
 
 function getPreloadPath(): string {
 	return path.join(__dirname, '../preload/index.cjs');
@@ -20,11 +22,12 @@ function createWindow(): void {
 		},
 	});
 
-	relay = new AgentRelay(mainWindow.webContents);
+	const framework = new NodeFramework(createDefaultRegistry());
+	handle = initializeMain(mainWindow.webContents, framework);
 
 	mainWindow.on('closed', () => {
-		void relay?.dispose();
-		relay = undefined;
+		void handle?.dispose();
+		handle = undefined;
 	});
 
 	// electron-vite injects ELECTRON_RENDERER_URL in dev

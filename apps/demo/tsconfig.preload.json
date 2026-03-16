@@ -9,5 +9,8 @@
 		"lib": ["ES2023", "DOM"]
 	},
 	"include": ["src/preload/**/*.ts"],
-	"references": [{ "path": "../../packages/lib/transport" }]
+	"references": [
+		{ "path": "../../packages/lib/transport" },
+		{ "path": "../../packages/electron/tsconfig.preload.json" }
+	]
 }

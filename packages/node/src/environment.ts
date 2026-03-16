@@ -1,4 +1,4 @@
-import type { AgentSpec, EnvironmentHandle, Transport } from '@franklin/agent';
+import type { EnvironmentHandle, Transport } from '@franklin/agent';
 import { StdioTransport } from '@franklin/agent';
 
 import type { AgentRegistry } from './registry.js';
@@ -18,8 +18,8 @@ export class NodeEnvironment implements EnvironmentHandle {
 		private readonly registry: AgentRegistry,
 	) {}
 
-	spawn(agent: AgentSpec | string): Transport {
-		const spec = typeof agent === 'string' ? this.registry.get(agent) : agent;
+	async spawn(agent: string): Promise<Transport> {
+		const spec = this.registry.get(agent);
 		return new StdioTransport({
 			command: spec.command,
 			args: spec.args,

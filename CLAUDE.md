@@ -49,5 +49,5 @@ See README.md
 - **Unused vars** — prefix with `_` (e.g., `_unused`).
 - **Node ≥ 22** required.
 - **Vitest** for testing — test files use `__tests__/*.test.ts` convention.
-- **TypeScript project references** — root `tsconfig.json` references all packages; each package has its own `tsconfig.json` extending `tsconfig.base.json`.
+- **TypeScript project references** — root `tsconfig.json` references all packages; each package has its own `tsconfig.json` extending `tsconfig.base.json`. **Always build with `tsc -b`** (or `npm run build`). Never run bare `tsc` — it ignores `outDir`/`rootDir` from project references and emits build artifacts into `src/`.
 - **Nesting** - prefer small files with single exported methods, with implementation in a series of files in a folder.

@@ -10,6 +10,18 @@
 // Environment
 export type { EnvironmentHandle, AgentSpec } from './environment.js';
 
+// Extensions (browser-safe — compileExtension only depends on @franklin/local-mcp/browser)
+export { compileExtension } from './extensions/index.js';
+export type {
+	Extension,
+	ExtensionAPI,
+	ExtensionToolDefinition,
+	McpTransportFactory,
+	PromptHandler,
+	SessionStartHandler,
+	SessionUpdateHandler,
+} from './extensions/index.js';
+
 // Connection
 export { createAgentConnection } from './connection.js';
 export type { AgentConnection } from './connection.js';

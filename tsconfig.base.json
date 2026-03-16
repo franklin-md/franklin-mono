@@ -20,6 +20,11 @@
 			"@franklin/agent/browser": ["packages/agent/src/browser.ts"],
 			"@franklin/local-mcp": ["packages/local-mcp/src/index.ts"],
 			"@franklin/node": ["packages/node/src/index.ts"],
+			"@franklin/electron/main": ["packages/electron/src/main/index.ts"],
+			"@franklin/electron/preload": ["packages/electron/src/preload/index.ts"],
+			"@franklin/electron/renderer": [
+				"packages/electron/src/renderer/index.ts"
+			],
 			"@franklin/react": ["packages/ui/react/src/index.ts"],
 			"@franklin/react/browser": ["packages/ui/react/src/browser.ts"]
 		}

@@ -5,6 +5,7 @@
 		{ "path": "./packages/agent" },
 		{ "path": "./packages/local-mcp" },
 		{ "path": "./packages/node" },
+		{ "path": "./packages/electron" },
 		{ "path": "./packages/ui/react" },
 		{ "path": "./apps/demo" }
 	]

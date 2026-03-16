@@ -1,3 +1,7 @@
+// Framework
+export { NodeFramework } from './framework.js';
+export type { FrameworkOptions } from './framework.js';
+
 // Environment
 export { NodeEnvironment, provision } from './environment.js';
 export type { ProvisionOptions } from './environment.js';
