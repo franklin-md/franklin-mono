@@ -6,11 +6,10 @@ import type {
 } from '@franklin/local-mcp';
 import { createRelayConfig } from '@franklin/local-mcp';
 import {
-	type MultiplexedPacket,
+	type MuxPacket,
+	Multiplexer,
 	bridge,
 	connect,
-	createMultiplexedEventStream,
-	streamToEventInterface,
 	HttpJsonServer,
 	PortManager,
 } from '@franklin/transport';
@@ -18,7 +17,7 @@ import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
 
 import { MCP_STREAM, MCP_START, MCP_STOP } from '../../shared/channels.js';
-import { createMainIpcStream } from './stream.js';
+import { createMainIpcMux } from './stream.js';
 
 // Shared port manager for all MCP relays in this process.
 const portManager = new PortManager();
@@ -38,21 +37,23 @@ interface McpRelayEntry {
  * 3. Connects the bridge to a Level 2 IPC stream (demuxed by mcpId)
  * 4. Returns the McpServerConfig (relay spawn config) to the renderer
  *
- * Tool calls flow: Agent subprocess → HTTP POST → bridge → IPC → renderer
- * Responses flow:  renderer → IPC → bridge → HTTP response → agent subprocess
+ * Tool calls flow: Agent subprocess -> HTTP POST -> bridge -> IPC -> renderer
+ * Responses flow:  renderer -> IPC -> bridge -> HTTP response -> agent subprocess
  */
 export class McpRelay {
 	private relays = new Map<string, McpRelayEntry>();
-	private mcpMux;
+	private mcpMux: Multiplexer<ToolCallResponse, ToolCallRequest>;
 
 	constructor(webContents: WebContents) {
-		// Level 1: demux the raw IPC channel to get the shared MCP stream
-		const mcpChannel = createMainIpcStream<
-			MultiplexedPacket<ToolCallRequest | ToolCallResponse>
-		>(MCP_STREAM, webContents);
+		// Level 0: demux the raw IPC channel
+		// Main reads responses from renderer, writes requests to renderer
+		const ipcMux = createMainIpcMux<
+			MuxPacket<ToolCallResponse>,
+			MuxPacket<ToolCallRequest>
+		>(webContents);
 
-		// Convert to EventInterface for level 2 demuxing by mcpId
-		this.mcpMux = streamToEventInterface(mcpChannel);
+		// Level 1: MCP transport channel -> Level 2 multiplexer by mcpId
+		this.mcpMux = new Multiplexer(ipcMux.channel(MCP_STREAM));
 
 		// Handle MCP lifecycle requests from renderer
 		ipcMain.handle(
@@ -82,16 +83,14 @@ export class McpRelay {
 				unknown
 			>();
 
-			// HTTP POST → enqueue to bridge readable
+			// HTTP POST -> enqueue to bridge readable
 			server.onRequest((body) => handler(body as ToolCallRequest['body']));
 
 			// Level 2: per-mcpId IPC stream
-			const mcpIpcStream = createMultiplexedEventStream<
-				ToolCallRequest | ToolCallResponse
-			>(mcpId, this.mcpMux);
+			const mcpIpcStream = this.mcpMux.channel(mcpId);
 
-			// Connect bridge ↔ IPC stream
-			// Requests flow main→renderer, responses flow renderer→main
+			// Connect bridge <-> IPC stream
+			// Requests flow main->renderer, responses flow renderer->main
 			connect(bridgeDuplex, mcpIpcStream);
 
 			await server.start();

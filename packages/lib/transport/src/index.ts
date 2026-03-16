@@ -43,11 +43,6 @@ export type {
 } from './http/types.js';
 export { PortManager, portManager } from './http/port-manager.js';
 
-// Event-driven adapters
-export {
-	createMultiplexedEventStream,
-	type MultiplexedEventInterface,
-	type IdPacket as MultiplexedPacket,
-} from './event-driven/multiplexed.js';
-export { type EventInterface } from './event-driven/single.js';
-export { streamToEventInterface } from './event-driven/stream-to-event.js';
+// Multiplexing
+export { Multiplexer } from './multiplex/index.js';
+export type { MuxPacket } from './multiplex/index.js';

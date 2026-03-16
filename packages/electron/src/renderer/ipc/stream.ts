@@ -1,7 +1,9 @@
 import {
-	type MultiplexedEventInterface,
 	type Duplex,
-	createMultiplexedEventStream,
+	type MuxPacket,
+	Multiplexer,
+	fromObserver,
+	fromCallable,
 } from '@franklin/transport';
 
 // ---------------------------------------------------------------------------
@@ -9,7 +11,10 @@ import {
 // ---------------------------------------------------------------------------
 
 interface FranklinBridge {
-	ipcStream: MultiplexedEventInterface<unknown>;
+	ipcStream: {
+		on: (callback: (packet: unknown) => void) => () => void;
+		invoke: (packet: unknown) => void;
+	};
 	agent: {
 		provisionEnv: (opts?: unknown) => Promise<string>;
 		disposeEnv: (envId: string) => Promise<void>;
@@ -30,15 +35,31 @@ declare global {
 
 export type { FranklinBridge };
 
+// ---------------------------------------------------------------------------
+// Lazy singleton for the Level 0 multiplexer
+// ---------------------------------------------------------------------------
+
+let mux: Multiplexer<unknown> | null = null;
+
+function getMux(): Multiplexer<unknown> {
+	if (!mux) {
+		const { on, invoke } = window.__franklinBridge.ipcStream;
+		const transport: Duplex<MuxPacket<unknown>> = {
+			readable: fromObserver(on) as ReadableStream<MuxPacket<unknown>>,
+			writable: fromCallable(invoke) as WritableStream<MuxPacket<unknown>>,
+			close: async () => {},
+		};
+		mux = new Multiplexer(transport);
+	}
+	return mux;
+}
+
 /**
  * Creates a Duplex stream backed by Electron IPC (renderer-process side).
  *
  * Level 1 demux: reads from the shared IPC channel and returns a named
  * stream (e.g. "agent-transport" or "mcp-transport").
  */
-export function createIpcStream<T>(streamName: string): Duplex<T> {
-	return createMultiplexedEventStream<unknown>(
-		streamName,
-		window.__franklinBridge.ipcStream,
-	) as Duplex<T>;
+export function createIpcStream<R, W = R>(streamName: string): Duplex<R, W> {
+	return getMux().channel(streamName) as Duplex<R, W>;
 }

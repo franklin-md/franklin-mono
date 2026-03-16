@@ -1,11 +1,9 @@
 import type { AnyMessage } from '@agentclientprotocol/sdk';
 import {
-	type MultiplexedEventInterface,
-	type MultiplexedPacket,
+	type MuxPacket,
 	type Duplex,
+	Multiplexer,
 	connect,
-	createMultiplexedEventStream,
-	streamToEventInterface,
 } from '@franklin/transport';
 import type { StdioTransport } from '@franklin/agent';
 import type { NodeFramework } from '@franklin/node';
@@ -21,33 +19,30 @@ import {
 	AGENT_SPAWN,
 	AGENT_KILL,
 } from '../../shared/channels.js';
-import { createMainIpcStream } from './stream.js';
+import { createMainIpcMux } from './stream.js';
 
 /**
- * Bridges renderer ↔ agent subprocesses over Electron IPC.
+ * Bridges renderer <-> agent subprocesses over Electron IPC.
  *
  * Environment lifecycle is delegated to NodeFramework.
- * This relay only manages the IPC ↔ stdio bridging for agents.
+ * This relay only manages the IPC <-> stdio bridging for agents.
  */
 export class AgentRelay {
 	private agents = new Map<
 		string,
 		{ stdio: StdioTransport; bridge: Duplex<AnyMessage> }
 	>();
-	private agentMux: MultiplexedEventInterface<AnyMessage>;
+	private agentMux: Multiplexer<AnyMessage>;
 
 	constructor(
 		webContents: WebContents,
 		private readonly framework: NodeFramework,
 	) {
-		// Level 1: demux the raw IPC channel to get the shared agent stream
-		const agentChannel = createMainIpcStream<MultiplexedPacket<AnyMessage>>(
-			AGENT_STREAM,
-			webContents,
-		);
+		// Level 0: demux the raw IPC channel
+		const ipcMux = createMainIpcMux<MuxPacket<AnyMessage>>(webContents);
 
-		// Convert to EventInterface for level 2 demuxing by agentId
-		this.agentMux = streamToEventInterface(agentChannel);
+		// Level 1: agent transport channel -> Level 2 multiplexer by agentId
+		this.agentMux = new Multiplexer(ipcMux.channel(AGENT_STREAM));
 
 		// Environment lifecycle — delegated to framework
 		ipcMain.handle(ENV_PROVISION, (_event, opts?: ProvisionOptions) => {
@@ -78,12 +73,9 @@ export class AgentRelay {
 		const stdio = transport as StdioTransport;
 
 		// Level 2: per-agent slice of the shared IPC stream
-		const ipcStream = createMultiplexedEventStream<AnyMessage>(
-			agentId,
-			this.agentMux,
-		);
+		const ipcStream = this.agentMux.channel(agentId);
 
-		// Bidirectionally connect IPC ↔ stdio
+		// Bidirectionally connect IPC <-> stdio
 		const bridge = connect(ipcStream, stdio);
 
 		this.agents.set(agentId, { stdio, bridge });

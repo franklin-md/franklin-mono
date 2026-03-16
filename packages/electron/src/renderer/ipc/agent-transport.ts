@@ -1,31 +1,21 @@
 import type { AnyMessage } from '@agentclientprotocol/sdk';
-import type { MultiplexedPacket, Duplex } from '@franklin/transport';
-import {
-	createMultiplexedEventStream,
-	streamToEventInterface,
-} from '@franklin/transport';
+import type { MuxPacket, Duplex } from '@franklin/transport';
+import { Multiplexer } from '@franklin/transport';
 
 import { AGENT_STREAM } from '../../shared/channels.js';
 import { createIpcStream } from './stream.js';
 
 // ---------------------------------------------------------------------------
-// Types
+// Lazy singleton for Level 1 agent multiplexer
 // ---------------------------------------------------------------------------
 
-type AgentMessage = MultiplexedPacket<AnyMessage>;
+let agentMux: Multiplexer<AnyMessage> | null = null;
 
-// ---------------------------------------------------------------------------
-// Lazy singleton for Level 1 agent channel + mux
-// ---------------------------------------------------------------------------
-
-let agentMux: ReturnType<typeof streamToEventInterface<AgentMessage>> | null =
-	null;
-
-function getAgentMux() {
+function getAgentMux(): Multiplexer<AnyMessage> {
 	if (!agentMux) {
-		const agentChannel: Duplex<AgentMessage> =
-			createIpcStream<AgentMessage>(AGENT_STREAM);
-		agentMux = streamToEventInterface(agentChannel);
+		const agentChannel: Duplex<MuxPacket<AnyMessage>> =
+			createIpcStream<MuxPacket<AnyMessage>>(AGENT_STREAM);
+		agentMux = new Multiplexer(agentChannel);
 	}
 	return agentMux;
 }
@@ -41,10 +31,7 @@ function getAgentMux() {
  * Wraps dispose to also kill the agent subprocess in main.
  */
 export function createIpcAgentTransport(agentId: string): Duplex<AnyMessage> {
-	const inner = createMultiplexedEventStream<AnyMessage>(
-		agentId,
-		getAgentMux(),
-	);
+	const inner = getAgentMux().channel(agentId);
 
 	return {
 		readable: inner.readable,

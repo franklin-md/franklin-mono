@@ -8,11 +8,8 @@ import type {
 	ToolCallResponse,
 } from '@franklin/local-mcp';
 import { serve } from '@franklin/local-mcp';
-import type { MultiplexedPacket } from '@franklin/transport';
-import {
-	createMultiplexedEventStream,
-	streamToEventInterface,
-} from '@franklin/transport';
+import type { MuxPacket } from '@franklin/transport';
+import { Multiplexer } from '@franklin/transport';
 
 import { MCP_STREAM } from '../../shared/channels.js';
 import { createIpcStream } from './stream.js';
@@ -20,17 +17,19 @@ import { createIpcStream } from './stream.js';
 import type { ExtensionToolDefinition } from '@franklin/agent/browser';
 
 // ---------------------------------------------------------------------------
-// Lazy singleton for Level 1 MCP channel + mux
+// Lazy singleton for Level 1 MCP multiplexer
 // ---------------------------------------------------------------------------
 
-type McpMessage = MultiplexedPacket<ToolCallRequest | ToolCallResponse>;
+// Renderer reads requests from main, writes responses to main
+let mcpMux: Multiplexer<ToolCallRequest, ToolCallResponse> | null = null;
 
-let mcpMux: ReturnType<typeof streamToEventInterface<McpMessage>> | null = null;
-
-function getMcpMux() {
+function getMcpMux(): Multiplexer<ToolCallRequest, ToolCallResponse> {
 	if (!mcpMux) {
-		const mcpChannel = createIpcStream<McpMessage>(MCP_STREAM);
-		mcpMux = streamToEventInterface(mcpChannel);
+		const mcpChannel = createIpcStream<
+			MuxPacket<ToolCallRequest>,
+			MuxPacket<ToolCallResponse>
+		>(MCP_STREAM);
+		mcpMux = new Multiplexer(mcpChannel);
 	}
 	return mcpMux;
 }
@@ -42,7 +41,6 @@ function getMcpMux() {
 function serializeToolForIpc(
 	tool: ExtensionToolDefinition,
 ): SerializedToolDefinition {
-	// Import serializeTool from local-mcp would pull Zod — just inline the shape
 	return {
 		name: tool.name,
 		description: tool.description,
@@ -70,8 +68,8 @@ function serializeToolForIpc(
  * 3. Sets up a Level 2 IPC stream for tool call dispatch
  * 4. Runs serve() on the IPC stream to handle tool calls in the renderer
  *
- * Tool calls flow: agent → HTTP POST (main) → IPC → renderer (serve)
- * Results flow:    renderer → IPC → main (HTTP response) → agent
+ * Tool calls flow: agent -> HTTP POST (main) -> IPC -> renderer (serve)
+ * Results flow:    renderer -> IPC -> main (HTTP response) -> agent
  */
 export const createIpcMcpTransport: McpTransportFactory = async (
 	tools: ExtensionToolDefinition[],
@@ -86,13 +84,11 @@ export const createIpcMcpTransport: McpTransportFactory = async (
 	)) as McpServerConfig;
 
 	// Level 2: per-mcpId IPC stream for tool call dispatch
-	const stream = createMultiplexedEventStream<
-		ToolCallRequest | ToolCallResponse
-	>(mcpId, getMcpMux());
+	const stream: McpToolStream = getMcpMux().channel(mcpId);
 
 	// Wire up tool dispatch — serve() reads requests, calls tool, writes responses
 	const toolMap = new Map(tools.map((t) => [t.name, t]));
-	serve(stream as unknown as McpToolStream, async (request) => {
+	serve(stream, async (request) => {
 		const tool = toolMap.get(request.tool);
 		if (!tool) throw new Error(`Unknown tool: "${request.tool}"`);
 		return await tool.execute(request.arguments);
@@ -100,7 +96,7 @@ export const createIpcMcpTransport: McpTransportFactory = async (
 
 	return {
 		config,
-		stream: stream as unknown as McpToolStream,
+		stream,
 		dispose: async () => {
 			await stream.close();
 			await window.__franklinBridge.mcp.stop(mcpId);

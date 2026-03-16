@@ -1,6 +1,8 @@
 import {
-	createMultiplexedEventStream,
-	type MultiplexedPacket,
+	type MuxPacket,
+	Multiplexer,
+	fromObserver,
+	fromCallable,
 	type Duplex,
 } from '@franklin/transport';
 import { ipcMain, type WebContents } from 'electron';
@@ -8,32 +10,33 @@ import { ipcMain, type WebContents } from 'electron';
 import { IPC_STREAM } from '../../shared/channels.js';
 
 /**
- * Creates a Duplex stream backed by Electron IPC (main-process side).
+ * Creates a Level 0 Multiplexer backed by Electron IPC (main-process side).
  *
- * Level 1 demux: the raw `IPC_STREAM` channel carries multiplexed packets.
- * This function returns a single named stream (e.g. "agent-transport")
- * sliced out of that shared channel.
+ * The raw IPC_STREAM channel carries multiplexed packets.
+ * Call .channel(streamName) to get a named stream (e.g. "agent-transport").
  */
-export function createMainIpcStream<T>(
-	streamName: string,
+export function createMainIpcMux<R, W = R>(
 	webContents: WebContents,
-): Duplex<T> {
-	const on = (callback: (packet: MultiplexedPacket<T>) => void) => {
-		const handler = (
-			_event: Electron.IpcMainEvent,
-			packet: MultiplexedPacket<T>,
-		) => {
+): Multiplexer<R, W> {
+	const readable = fromObserver<MuxPacket<R>>((callback) => {
+		const handler = (_event: Electron.IpcMainEvent, packet: MuxPacket<R>) => {
 			callback(packet);
 		};
 		ipcMain.on(IPC_STREAM, handler);
 		return () => {
 			ipcMain.removeListener(IPC_STREAM, handler);
 		};
-	};
+	});
 
-	const invoke = (packet: MultiplexedPacket<T>) => {
+	const writable = fromCallable<MuxPacket<W>>((packet) => {
 		webContents.send(IPC_STREAM, packet);
+	});
+
+	const transport: Duplex<MuxPacket<R>, MuxPacket<W>> = {
+		readable,
+		writable,
+		close: async () => {},
 	};
 
-	return createMultiplexedEventStream<T>(streamName, { on, invoke });
+	return new Multiplexer(transport);
 }
