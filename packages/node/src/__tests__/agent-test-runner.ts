@@ -13,10 +13,10 @@ import type { AgentConnection } from '@franklin/agent';
 import {
 	createAgentConnection,
 	fillHandler,
+	StdioTransport,
 	type AgentEvents,
 	type AgentSpec,
 } from '@franklin/agent';
-import { StdioTransport } from '../transport.js';
 
 import { collectAgentText, createMockClient } from './helpers.js';
 

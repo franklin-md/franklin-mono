@@ -1,7 +1,7 @@
 import type { AgentSpec, EnvironmentHandle, Transport } from '@franklin/agent';
+import { StdioTransport } from '@franklin/agent';
 
 import type { AgentRegistry } from './registry.js';
-import { StdioTransport } from './transport.js';
 
 // ---------------------------------------------------------------------------
 // NodeEnvironment — EnvironmentHandle for Node.js

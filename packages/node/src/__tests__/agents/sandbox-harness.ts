@@ -13,8 +13,7 @@ import type {
 import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 
 import type { AgentConnection, AgentEvents, AgentSpec } from '@franklin/agent';
-import { createAgentConnection } from '@franklin/agent';
-import { StdioTransport } from '../../transport.js';
+import { createAgentConnection, StdioTransport } from '@franklin/agent';
 
 // ---------------------------------------------------------------------------
 // Types

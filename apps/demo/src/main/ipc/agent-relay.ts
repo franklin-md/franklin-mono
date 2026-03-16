@@ -7,9 +7,9 @@ import {
 	createMultiplexedEventStream,
 	streamToEventInterface,
 } from '@franklin/transport';
+import { StdioTransport } from '@franklin/agent';
 import {
 	type AgentRegistry,
-	StdioTransport,
 	createDefaultRegistry,
 } from '@franklin/node';
 import type { WebContents } from 'electron/main';
