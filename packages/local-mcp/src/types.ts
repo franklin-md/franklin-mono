@@ -1,21 +1,23 @@
-import type { StdioPipeOptions, Stream } from '@franklin/transport';
+import type {
+	Duplex,
+	StdioPipeOptions,
+	BridgeRequest,
+	BridgeResponse,
+} from '@franklin/transport';
 
 export type McpServerConfig = StdioPipeOptions;
 
-type ToolCall = {
+export type ToolCall = {
 	tool: string;
 	arguments: unknown;
 };
 
-export type ToolCallRequest = {
-	id: string;
-	body: ToolCall;
-};
+export type ToolCallRequest = BridgeRequest<ToolCall>;
+export type ToolCallResponse = BridgeResponse<unknown>;
+export type McpToolStream = Duplex<ToolCallRequest, ToolCallResponse>;
 
-export type ToolCallStream = Stream<ToolCallRequest, Response>;
-
-export interface LocalMcpTransport {
-	server: McpServerConfig;
-	stream: ToolCallStream;
+export interface McpTransport {
+	config: McpServerConfig;
+	stream: McpToolStream;
 	dispose(): Promise<void>;
 }

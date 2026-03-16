@@ -5,11 +5,19 @@
  * The full barrel adds Node-only transports (createHttpTransport, etc.).
  */
 
-export type { McpServerConfig, LocalMcpTransport } from './types.js';
+export type {
+	McpServerConfig,
+	McpTransport,
+	McpToolStream,
+	ToolCall,
+	ToolCallRequest,
+	ToolCallResponse,
+} from './types.js';
 export type {
 	ToolDefinition,
 	AnyToolDefinition,
 	SerializedToolDefinition,
 } from './tools/types.js';
+export { serve, type ToolHandler } from './serve.js';
 export { ToolsManager } from './tools/manager.js';
 export { serializeTool } from './tools/serialize.js';

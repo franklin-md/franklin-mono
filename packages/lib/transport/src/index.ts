@@ -19,6 +19,7 @@ export {
 	type BridgeSuccessResponse,
 	type BridgeErrorResponse,
 } from './streams/duplex/bridge.js';
+export { serve } from './streams/duplex/serve.js';
 export { emptyDuplex } from './streams/duplex/empty.js';
 
 // Codecs
