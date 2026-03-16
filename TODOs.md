@@ -1,4 +1,4 @@
-# TODOs — Deferred Work Including
+# TODOs — Deferred Work Including. Before Grant Release
 
 ## Packages
 
@@ -18,4 +18,6 @@
 - [ ] Setup type declartion and exporting (especially for Browser Contexts)
 - [ ] Before publishing any package to npm: evaluate whether to strip `sourceMap` / `inlineSources` from `tsconfig.base.json` (or override per package) to avoid shipping source content in dist artifacts
 
-##
+## Testing
+
+- [ ] Basically all AI generated. we need to refactor etc

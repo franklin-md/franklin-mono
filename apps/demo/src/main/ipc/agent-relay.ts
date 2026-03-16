@@ -8,10 +8,7 @@ import {
 	streamToEventInterface,
 } from '@franklin/transport';
 import { StdioTransport } from '@franklin/agent';
-import {
-	type AgentRegistry,
-	createDefaultRegistry,
-} from '@franklin/node';
+import { type AgentRegistry, createDefaultRegistry } from '@franklin/node';
 import type { WebContents } from 'electron/main';
 import { ipcMain } from 'electron/main';
 import { randomUUID } from 'node:crypto';

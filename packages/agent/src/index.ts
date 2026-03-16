@@ -9,7 +9,7 @@ export { StdioTransport } from './transport/stdio.js';
 export type { StdioTransportOptions } from './transport/stdio.js';
 
 // Node-only: extensions
-export { compileExtension } from './extensions/index.js';
+export { compileExtension, TodoExtension } from './extensions/index.js';
 export type {
 	Extension,
 	ExtensionAPI,
@@ -18,4 +18,5 @@ export type {
 	PromptHandler,
 	SessionStartHandler,
 	SessionUpdateHandler,
+	Todo,
 } from './extensions/index.js';

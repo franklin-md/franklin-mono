@@ -33,6 +33,10 @@ export type {
 } from './stack/index.js';
 export type { AgentTransport as Transport } from './transport/index.js';
 
+// Store (browser-safe — immer is pure JS, no Node deps)
+export { createStore } from './store/index.js';
+export type { ReadonlyStore, Store } from './store/index.js';
+
 // Spawn helpers (browser-safe — no Node deps)
 export { fillHandler, composeAll } from './spawn.js';
 

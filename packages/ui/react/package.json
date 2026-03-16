@@ -1,0 +1,29 @@
+{
+	"name": "@franklin/react",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./browser": {
+			"types": "./dist/browser.d.ts",
+			"import": "./dist/browser.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc -b tsconfig.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json"
+	},
+	"dependencies": {
+		"@franklin/agent": "*"
+	},
+	"peerDependencies": {
+		"react": "^18.3.1 || ^19.0.0"
+	}
+}

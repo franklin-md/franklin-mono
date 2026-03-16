@@ -12,7 +12,7 @@ import type {
  */
 export interface Extension {
 	name: string;
-	setup: (api: ExtensionAPI) => void | Promise<void>;
+	setup: (api: ExtensionAPI) => Promise<void>;
 }
 
 /**

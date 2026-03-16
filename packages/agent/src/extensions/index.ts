@@ -8,3 +8,5 @@ export type {
 	SessionStartHandler,
 	SessionUpdateHandler,
 } from './types/index.js';
+export { TodoExtension } from './examples/todo/index.js';
+export type { Todo } from './examples/todo/index.js';

@@ -101,7 +101,7 @@ describe('compileExtension', () => {
 		it('produces passthrough middleware when no hooks or tools registered', async () => {
 			const ext: Extension = {
 				name: 'empty',
-				setup() {},
+				async setup() {},
 			};
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
@@ -152,7 +152,7 @@ describe('compileExtension', () => {
 		it('handler can modify cwd', async () => {
 			const ext: Extension = {
 				name: 'cwd-modifier',
-				setup(api) {
+				async setup(api) {
 					api.on('sessionStart', async () => {
 						return { cwd: '/modified' };
 					});
@@ -184,7 +184,7 @@ describe('compileExtension', () => {
 			};
 			const ext: Extension = {
 				name: 'mcp-injector',
-				setup(api) {
+				async setup(api) {
 					api.on('sessionStart', async (ctx) => {
 						return {
 							mcpServers: [...ctx.mcpServers, extraServer],
@@ -212,7 +212,7 @@ describe('compileExtension', () => {
 		it('undefined return passes through unchanged', async () => {
 			const ext: Extension = {
 				name: 'observer',
-				setup(api) {
+				async setup(api) {
 					api.on('sessionStart', async () => {
 						return undefined;
 					});
@@ -239,7 +239,7 @@ describe('compileExtension', () => {
 		it('multiple handlers chain in registration order', async () => {
 			const ext: Extension = {
 				name: 'chained',
-				setup(api) {
+				async setup(api) {
 					api.on('sessionStart', async () => {
 						return { cwd: '/first' };
 					});
@@ -269,7 +269,7 @@ describe('compileExtension', () => {
 			const receivedCtx: { sessionId?: string }[] = [];
 			const ext: Extension = {
 				name: 'load-observer',
-				setup(api) {
+				async setup(api) {
 					api.on('sessionStart', async (ctx) => {
 						receivedCtx.push({ sessionId: ctx.sessionId });
 						return undefined;
@@ -294,7 +294,7 @@ describe('compileExtension', () => {
 			const receivedCtx: { sessionId?: string }[] = [];
 			const ext: Extension = {
 				name: 'new-observer',
-				setup(api) {
+				async setup(api) {
 					api.on('sessionStart', async (ctx) => {
 						receivedCtx.push({ sessionId: ctx.sessionId });
 						return undefined;
@@ -316,7 +316,7 @@ describe('compileExtension', () => {
 		it('transforms prompt content', async () => {
 			const ext: Extension = {
 				name: 'prompt-transformer',
-				setup(api) {
+				async setup(api) {
 					api.on('prompt', async (ctx) => {
 						return {
 							prompt: [
@@ -354,7 +354,7 @@ describe('compileExtension', () => {
 		it('undefined return passes through unchanged', async () => {
 			const ext: Extension = {
 				name: 'prompt-observer',
-				setup(api) {
+				async setup(api) {
 					api.on('prompt', async () => {
 						return undefined;
 					});
@@ -386,7 +386,7 @@ describe('compileExtension', () => {
 		it('multiple handlers chain as waterfall', async () => {
 			const ext: Extension = {
 				name: 'prompt-chain',
-				setup(api) {
+				async setup(api) {
 					api.on('prompt', async (ctx) => {
 						return {
 							prompt: [{ type: 'text' as const, text: 'A' }, ...ctx.prompt],
@@ -428,7 +428,7 @@ describe('compileExtension', () => {
 			const received: SessionNotification[] = [];
 			const ext: Extension = {
 				name: 'update-observer',
-				setup(api) {
+				async setup(api) {
 					api.on('sessionUpdate', async (ctx) => {
 						received.push(ctx.notification);
 					});
@@ -465,7 +465,7 @@ describe('compileExtension', () => {
 		it('creates transport when tools are registered', async () => {
 			const ext: Extension = {
 				name: 'with-tools',
-				setup(api) {
+				async setup(api) {
 					api.registerTool({
 						name: 'my_tool',
 						description: 'A test tool',
@@ -502,7 +502,7 @@ describe('compileExtension', () => {
 			};
 			const ext: Extension = {
 				name: 'tools-and-hooks',
-				setup(api) {
+				async setup(api) {
 					api.on('sessionStart', async (ctx) => {
 						return {
 							mcpServers: [...ctx.mcpServers, extraServer],
@@ -540,7 +540,7 @@ describe('compileExtension', () => {
 		it('does not create transport when no tools registered', async () => {
 			const ext: Extension = {
 				name: 'no-tools',
-				setup(api) {
+				async setup(api) {
 					api.on('prompt', async () => undefined);
 				},
 			};
@@ -555,7 +555,7 @@ describe('compileExtension', () => {
 		it('multiple extensions compose correctly', async () => {
 			const ext1: Extension = {
 				name: 'ext1',
-				setup(api) {
+				async setup(api) {
 					api.on('prompt', async (ctx) => {
 						return {
 							prompt: [{ type: 'text' as const, text: 'ext1' }, ...ctx.prompt],
@@ -565,7 +565,7 @@ describe('compileExtension', () => {
 			};
 			const ext2: Extension = {
 				name: 'ext2',
-				setup(api) {
+				async setup(api) {
 					api.on('prompt', async (ctx) => {
 						return {
 							prompt: [...ctx.prompt, { type: 'text' as const, text: 'ext2' }],
@@ -605,7 +605,7 @@ describe('compileExtension', () => {
 		it('dispose cleans up transport', async () => {
 			const ext: Extension = {
 				name: 'disposable',
-				setup(api) {
+				async setup(api) {
 					api.registerTool({
 						name: 'tool',
 						description: 'test',
@@ -625,7 +625,7 @@ describe('compileExtension', () => {
 		it('dispose is safe when no transport was created', async () => {
 			const ext: Extension = {
 				name: 'no-tools',
-				setup() {},
+				async setup() {},
 			};
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
@@ -638,7 +638,7 @@ describe('compileExtension', () => {
 			const disposeLog: string[] = [];
 			const ext1: Extension = {
 				name: 'ext1',
-				setup(api) {
+				async setup(api) {
 					api.registerTool({
 						name: 't1',
 						description: 'test',
@@ -649,7 +649,7 @@ describe('compileExtension', () => {
 			};
 			const ext2: Extension = {
 				name: 'ext2',
-				setup(api) {
+				async setup(api) {
 					api.registerTool({
 						name: 't2',
 						description: 'test',
