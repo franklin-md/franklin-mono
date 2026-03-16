@@ -46,5 +46,13 @@ export function sequence(a: Middleware, b: Middleware): Middleware {
 		);
 	}
 
+	// Chain dispose — call both, a first then b
+	if (a.dispose || b.dispose) {
+		combined.dispose = async () => {
+			await a.dispose?.();
+			await b.dispose?.();
+		};
+	}
+
 	return combined as Middleware;
 }

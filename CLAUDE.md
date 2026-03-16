@@ -39,27 +39,8 @@ You should lint, build and format always. And test where appropriate.
 
 Franklin is a middleware stack for ACP-compliant coding agents. It builds on the [Agent Client Protocol (ACP)](https://agentclientprotocol.com) for wire communication and adds middleware layers (history, modules, permissions) on top.
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full design.
+See README.md
 
-### Layer stack (top → bottom)
-
-1. **App** (`apps/tui`) — Ink/React TUI. Owns rendering, user interaction, permission approval UX.
-2. **AgentHandle** — Per-agent interface for the app: `prompt()`, `on()`, `cancel()`, `history`, `dispose()`.
-3. **Middleware stack** — History (bidirectional event capture), Modules (MCP injection + prompt context), Permissions (policy-based auto-resolve). Each wraps the ACP `Agent` and/or `Client` interfaces.
-4. **ACP** (`@agentclientprotocol/sdk`) — Wire protocol. JSON-RPC over stdio to any ACP-compliant agent.
-
-### Key types and interfaces
-
-- `FranklinModule` — module contract: `name`, optional `mcpServers`, `env`, `onCreate()`, `onPrompt()` hooks.
-- `franklin.spawn(spec)` — factory that spawns an ACP agent with a configured middleware stack.
-- `AgentHandle` — per-agent API: `prompt()`, `on()`, `resolvePermission()`, `cancel()`, `history`, `dispose()`.
-- `AgentStore` — persistence interface for metadata + events.
-
-### Dependency graph
-
-```
-apps/tui → franklin → @agentclientprotocol/sdk
-```
 
 ## Code conventions
 
@@ -70,3 +51,4 @@ apps/tui → franklin → @agentclientprotocol/sdk
 - **Node ≥ 22** required.
 - **Vitest** for testing — test files use `__tests__/*.test.ts` convention.
 - **TypeScript project references** — root `tsconfig.json` references all packages; each package has its own `tsconfig.json` extending `tsconfig.base.json`.
+- **Nesting** - prefer small files with single exported methods, with implementation in a series of files in a folder.

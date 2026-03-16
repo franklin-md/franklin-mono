@@ -17,3 +17,15 @@ export {
 } from './agents/index.js';
 export { AgentRegistry, createDefaultRegistry } from './registry.js';
 export type { AgentSpec } from './registry.js';
+
+// Node-only: extensions
+export { compileExtension } from './extensions/index.js';
+export type {
+	Extension,
+	ExtensionAPI,
+	ExtensionToolDefinition,
+	McpTransportFactory,
+	PromptHandler,
+	SessionStartHandler,
+	SessionUpdateHandler,
+} from './extensions/index.js';

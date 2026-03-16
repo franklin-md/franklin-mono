@@ -33,18 +33,6 @@ export type { AgentTransport as Transport } from './transport/index.js';
 // Spawn helpers (browser-safe — no Node deps)
 export { fillHandler, composeAll } from './spawn.js';
 
-// Modules
-export {
-	createModuleMiddleware,
-	SystemPromptBuilder,
-} from './middleware/modules/index.js';
-export type {
-	FranklinModule,
-	ModuleCreateContext,
-	ModuleCreateResult,
-	ModulePromptContext,
-} from './middleware/modules/index.js';
-
 // Re-export key ACP types so consumers don't need to depend on the SDK directly
 export type {
 	Agent,

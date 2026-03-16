@@ -6,10 +6,11 @@
 
 - [ ] Checking for availability (is the packages installed, should we install them ourselves, and how do we cope with different versions)
 - [ ] Not sure about authentication flow.
+- Environments:
+  - Demo provisioning a worktree environement
 
 ### libs:
 
-- [ ] Not sure 'Streams' is right name for a primitive which is read and write streams.
 - [ ] Can we define a Codec abstraction to support JSONL and other specific encoding of data sent across transport (vs hard coding?). For example, HttpCallbackServer really hard codes this.
 
 ## Packaging / Publishing

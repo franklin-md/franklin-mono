@@ -32,7 +32,11 @@ export type EventMiddleware = {
  * Unlike CommandMiddleware and EventMiddleware (which require all methods),
  * Middleware is partial — implement only the methods you want to intercept.
  */
-export type Middleware = CommandMiddleware & EventMiddleware;
+export type Middleware = CommandMiddleware &
+	EventMiddleware & {
+		/** Clean up resources owned by this middleware. */
+		dispose?: () => Promise<void>;
+	};
 
 // ---------------------------------------------------------------------------
 // Method name lists
