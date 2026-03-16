@@ -48,6 +48,6 @@ export {
 	createMultiplexedEventStream,
 	type MultiplexedEventInterface,
 	type IdPacket as MultiplexedPacket,
-} from './event-driven/mutliplexed.js';
+} from './event-driven/multiplexed.js';
 export { type EventInterface } from './event-driven/single.js';
 export { streamToEventInterface } from './event-driven/stream-to-event.js';

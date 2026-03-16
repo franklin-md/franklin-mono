@@ -1,94 +1,19 @@
-export { createAgentConnection } from './connection.js';
+// Browser-safe exports (the bulk of the public API)
+export * from './browser.js';
+
+// Node-only: spawn
+export { spawn } from './spawn.js';
+export type { AgentSession, SpawnOptions } from './spawn.js';
+
+// Node-only: transports
+export { StdioTransport, createMemoryTransport } from './transport/index.js';
+export type { StdioTransportOptions } from './transport/index.js';
+
+// Node-only: registry
 export {
 	commonAgentSpecs,
 	claudeAgentSpec,
 	codexAgentSpec,
 } from './agents/index.js';
 export { AgentRegistry, createDefaultRegistry } from './registry.js';
-export {
-	emptyMiddleware,
-	joinCommands,
-	joinEvents,
-	sequence,
-} from './stack/index.js';
-export { spawn as spawnFromTransport } from './spawn.js';
-export { StdioTransport, createMemoryTransport } from './transport/index.js';
 export type { AgentSpec } from './registry.js';
-export type {
-	AgentSession,
-	SpawnOptions,
-	SpawnResult,
-	SpawnOptions as SpawnFromTransportOptions,
-} from './spawn.js';
-
-export type { AgentConnection } from './connection.js';
-export type {
-	AgentCommands,
-	AgentEvents,
-	AgentLifecycle,
-	CommandMiddleware,
-	Cont,
-	EventMiddleware,
-	Middleware,
-} from './stack/index.js';
-export type {
-	AgentTransport as Transport,
-	StdioTransportOptions,
-} from './transport/index.js';
-export {
-	createModuleMiddleware,
-	SystemPromptBuilder,
-} from './middleware/modules/index.js';
-export type {
-	FranklinModule,
-	ModuleCreateContext,
-	ModuleCreateResult,
-	ModulePromptContext,
-} from './middleware/modules/index.js';
-
-// Re-export key ACP types so consumers don't need to depend on the SDK directly
-export type {
-	Agent,
-	AnyMessage,
-	Client,
-	AuthenticateRequest,
-	AuthenticateResponse,
-	CancelNotification,
-	CreateTerminalRequest,
-	CreateTerminalResponse,
-	InitializeRequest,
-	InitializeResponse,
-	KillTerminalRequest,
-	KillTerminalResponse,
-	ListSessionsRequest,
-	ListSessionsResponse,
-	LoadSessionRequest,
-	LoadSessionResponse,
-	NewSessionRequest,
-	NewSessionResponse,
-	PromptRequest,
-	PromptResponse,
-	ReadTextFileRequest,
-	ReadTextFileResponse,
-	ReleaseTerminalRequest,
-	ReleaseTerminalResponse,
-	RequestPermissionRequest,
-	RequestPermissionResponse,
-	SessionNotification,
-	SetSessionConfigOptionRequest,
-	SetSessionConfigOptionResponse,
-	SetSessionModeRequest,
-	SetSessionModeResponse,
-	Stream,
-	TerminalOutputRequest,
-	TerminalOutputResponse,
-	WaitForTerminalExitRequest,
-	WaitForTerminalExitResponse,
-	WriteTextFileRequest,
-	WriteTextFileResponse,
-} from '@agentclientprotocol/sdk';
-export {
-	RequestError,
-	ndJsonStream,
-	PROTOCOL_VERSION,
-} from '@agentclientprotocol/sdk';

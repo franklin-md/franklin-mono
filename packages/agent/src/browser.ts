@@ -7,24 +7,33 @@
  * (StdioTransport, spawn, etc.) on top of these.
  */
 
+// Connection
 export { createAgentConnection } from './connection.js';
+export type { AgentConnection } from './connection.js';
+
+// Middleware stack
 export {
 	emptyMiddleware,
 	joinCommands,
 	joinEvents,
 	sequence,
+	COMMAND_METHODS,
+	EVENT_METHODS,
 } from './stack/index.js';
-export type { AgentConnection } from './connection.js';
 export type {
 	AgentCommands,
 	AgentEvents,
-	AgentLifecycle,
 	CommandMiddleware,
 	Cont,
 	EventMiddleware,
 	Middleware,
 } from './stack/index.js';
 export type { AgentTransport as Transport } from './transport/index.js';
+
+// Spawn helpers (browser-safe — no Node deps)
+export { fillHandler, composeAll } from './spawn.js';
+
+// Modules
 export {
 	createModuleMiddleware,
 	SystemPromptBuilder,

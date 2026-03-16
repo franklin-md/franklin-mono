@@ -84,13 +84,3 @@ export interface AgentEvents {
 		params: KillTerminalRequest,
 	): Promise<KillTerminalResponse | undefined>;
 }
-
-// ---------------------------------------------------------------------------
-// AgentLifecycle — teardown
-// ---------------------------------------------------------------------------
-
-// TODO: Remove this from the public control surface. Middleware should not be
-// disposed like this.
-export interface AgentLifecycle {
-	dispose(): Promise<void>;
-}

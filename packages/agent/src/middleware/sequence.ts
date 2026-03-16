@@ -29,7 +29,6 @@ export function composeCont<Fn extends (...args: any[]) => any>(
 // sequence — combine full middlewares (commands + events)
 // ---------------------------------------------------------------------------
 
-// TODO: Rename
 export function sequence(a: Middleware, b: Middleware): Middleware {
 	const combined: Partial<Middleware> = {};
 

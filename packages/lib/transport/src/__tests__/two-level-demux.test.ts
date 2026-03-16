@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMultiplexedEventStream } from '../event-driven/mutliplexed.js';
+import { createMultiplexedEventStream } from '../event-driven/multiplexed.js';
 import type { EventInterface } from '../event-driven/single.js';
 import { streamToEventInterface } from '../event-driven/stream-to-event.js';
-import type { IdPacket } from '../event-driven/mutliplexed.js';
+import type { IdPacket } from '../event-driven/multiplexed.js';
 
 /**
  * Tests the two-level demux pattern used for IPC agent transport:

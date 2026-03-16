@@ -7,39 +7,16 @@ import type {
 	PromptResponse,
 	SessionNotification,
 } from '@agentclientprotocol/sdk';
-import { PROTOCOL_VERSION, RequestError } from '@agentclientprotocol/sdk';
+import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 
 import type { AgentConnection } from '../../connection.js';
 import { createAgentConnection } from '../../connection.js';
 import type { AgentSpec } from '../../registry.js';
 import type { AgentEvents } from '../../types.js';
+import { fillHandler } from '../../spawn.js';
 import { StdioTransport } from '../../transport/index.js';
 
 import { collectAgentText, createMockClient } from './helpers.js';
-
-const EVENT_METHODS = [
-	'sessionUpdate',
-	'requestPermission',
-	'readTextFile',
-	'writeTextFile',
-	'createTerminal',
-	'terminalOutput',
-	'releaseTerminal',
-	'waitForTerminalExit',
-	'killTerminal',
-] as const;
-
-function fillHandler(handler: Partial<AgentEvents>): AgentEvents {
-	const result: Record<string, unknown> = {};
-	for (const method of EVENT_METHODS) {
-		result[method] =
-			handler[method] ??
-			(() => {
-				throw RequestError.methodNotFound(method);
-			});
-	}
-	return result as unknown as AgentEvents;
-}
 
 export interface AgentIntegrationTestOptions {
 	agentName: string;

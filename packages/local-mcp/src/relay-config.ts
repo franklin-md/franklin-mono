@@ -14,7 +14,6 @@ export function createRelayConfig(options: {
 	tools: SerializedToolDefinition[];
 }): McpServerConfig {
 	return {
-		// name: RELAY_NAME,
 		command: process.execPath,
 		args: [getRelayPath()],
 		env: serializeRelayEnv(options),
