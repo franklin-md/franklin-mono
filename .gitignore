@@ -1,8 +1,6 @@
 node_modules/
-packages/*/dist/
-packages/lib/*/dist/
-apps/*/dist/
-apps/*/out/
+**/dist/
+**/out/
 *.tsbuildinfo
 .eslintcache
 

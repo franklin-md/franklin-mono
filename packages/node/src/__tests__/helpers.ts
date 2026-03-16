@@ -10,8 +10,8 @@ import {
 	PROTOCOL_VERSION,
 } from '@agentclientprotocol/sdk';
 
-import type { AgentTransport } from '../../transport/index.js';
-import { createMemoryTransport } from '../../transport/in-memory.js';
+import type { Transport } from '@franklin/agent';
+import { createMemoryTransport } from '@franklin/agent';
 
 /**
  * Collects all agent text from session update notifications.
@@ -79,7 +79,7 @@ export function createMockClient(overrides?: Partial<Client>): Client {
  * Returns both sides for testing.
  */
 export function createTestPair(agentOverrides?: Partial<Agent>): {
-	transport: AgentTransport;
+	transport: Transport;
 	agentConn: AgentSideConnection;
 	mockAgent: Agent & { conn?: AgentSideConnection };
 } {

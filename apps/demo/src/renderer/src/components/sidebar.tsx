@@ -1,7 +1,7 @@
-import type { ManagedSession } from '@franklin/react-agents/browser';
-import { useAgentManager } from '@franklin/react-agents/browser';
+import type { ManagedSession } from '@franklin/react/browser';
+import { useAgentManager } from '@franklin/react/browser';
 
-import type { AgentManager } from '@franklin/react-agents/browser';
+import type { AgentManager } from '@franklin/react/browser';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {

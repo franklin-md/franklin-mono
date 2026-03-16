@@ -6,17 +6,7 @@ export { spawn } from './spawn.js';
 export type { AgentSession, SpawnOptions } from './spawn.js';
 
 // Node-only: transports
-export { StdioTransport, createMemoryTransport } from './transport/index.js';
-export type { StdioTransportOptions } from './transport/index.js';
-
-// Node-only: registry
-export {
-	commonAgentSpecs,
-	claudeAgentSpec,
-	codexAgentSpec,
-} from './agents/index.js';
-export { AgentRegistry, createDefaultRegistry } from './registry.js';
-export type { AgentSpec } from './registry.js';
+export { createMemoryTransport } from './transport/index.js';
 
 // Node-only: extensions
 export { compileExtension } from './extensions/index.js';

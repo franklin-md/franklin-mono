@@ -1,5 +1,5 @@
 {
-	"name": "@franklin/react-agents",
+	"name": "@franklin/node",
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
@@ -9,10 +9,6 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
-		},
-		"./browser": {
-			"types": "./dist/browser.d.ts",
-			"import": "./dist/browser.js"
 		}
 	},
 	"files": [
@@ -23,11 +19,13 @@
 	},
 	"scripts": {
 		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc -b tsconfig.json --pretty false",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
+		"@agentclientprotocol/sdk": "^0.16.1",
 		"@franklin/agent": "*",
-		"react": "^18.3.1"
+		"@franklin/local-mcp": "*",
+		"@franklin/transport": "*"
 	}
 }

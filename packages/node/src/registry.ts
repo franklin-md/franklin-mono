@@ -1,11 +1,9 @@
-import type { StdioTransportOptions } from './transport/index.js';
+import type { AgentSpec } from '@franklin/agent';
+
 import { commonAgentSpecs } from './agents/index.js';
 
-/** Transport spec for an agent. */
-export type AgentSpec = StdioTransportOptions;
-
 /**
- * Maps agent names to transport specs.
+ * Maps agent names to specs.
  * Use `register()` to add agents, `get()` to resolve by name.
  */
 export class AgentRegistry {

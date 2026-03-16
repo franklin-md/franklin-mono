@@ -7,6 +7,9 @@
  * (StdioTransport, spawn, etc.) on top of these.
  */
 
+// Environment
+export type { EnvironmentHandle, AgentSpec } from './environment.js';
+
 // Connection
 export { createAgentConnection } from './connection.js';
 export type { AgentConnection } from './connection.js';

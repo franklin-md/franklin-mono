@@ -10,6 +10,7 @@
 	"include": ["src/main/**/*.ts"],
 	"references": [
 		{ "path": "../../packages/lib/transport" },
-		{ "path": "../../packages/agent" }
+		{ "path": "../../packages/agent" },
+		{ "path": "../../packages/node" }
 	]
 }

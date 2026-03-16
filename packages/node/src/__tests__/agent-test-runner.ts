@@ -9,12 +9,14 @@ import type {
 } from '@agentclientprotocol/sdk';
 import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 
-import type { AgentConnection } from '../../connection.js';
-import { createAgentConnection } from '../../connection.js';
-import type { AgentSpec } from '../../registry.js';
-import type { AgentEvents } from '../../types.js';
-import { fillHandler } from '../../spawn.js';
-import { StdioTransport } from '../../transport/index.js';
+import type { AgentConnection } from '@franklin/agent';
+import {
+	createAgentConnection,
+	fillHandler,
+	type AgentEvents,
+	type AgentSpec,
+} from '@franklin/agent';
+import { StdioTransport } from '../transport.js';
 
 import { collectAgentText, createMockClient } from './helpers.js';
 

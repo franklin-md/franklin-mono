@@ -1,4 +1,4 @@
-import type { StdioTransportOptions } from '../transport/index.js';
+import type { AgentSpec } from '@franklin/agent';
 
 // ---------------------------------------------------------------------------
 // Codex sandboxing notes (investigated 2025-03-15)
@@ -48,4 +48,4 @@ const CODEX_SANDBOX_FLAGS = [
 export const codexAgentSpec = {
 	command: 'npx',
 	args: ['@zed-industries/codex-acp', ...CODEX_SANDBOX_FLAGS],
-} satisfies StdioTransportOptions;
+} satisfies AgentSpec;

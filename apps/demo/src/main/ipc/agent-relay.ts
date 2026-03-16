@@ -11,7 +11,7 @@ import {
 	type AgentRegistry,
 	StdioTransport,
 	createDefaultRegistry,
-} from '@franklin/agent';
+} from '@franklin/node';
 import type { WebContents } from 'electron/main';
 import { ipcMain } from 'electron/main';
 import { randomUUID } from 'node:crypto';

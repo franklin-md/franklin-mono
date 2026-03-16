@@ -1,7 +1,7 @@
 /* eslint-disable vitest/no-standalone-expect */
 import { expect } from 'vitest';
 
-import { codexAgentSpec } from '../../index.js';
+import { codexAgentSpec } from '../../agents/index.js';
 
 import { runAgentIntegrationTests } from '../agent-test-runner.js';
 import { collectAgentText } from '../helpers.js';

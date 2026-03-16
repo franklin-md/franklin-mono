@@ -4,7 +4,8 @@
 		{ "path": "./packages/lib/transport" },
 		{ "path": "./packages/agent" },
 		{ "path": "./packages/local-mcp" },
-		{ "path": "./packages/react-agents" },
+		{ "path": "./packages/node" },
+		{ "path": "./packages/ui/react" },
 		{ "path": "./apps/demo" }
 	]
 }

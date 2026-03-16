@@ -41,7 +41,6 @@ Franklin is a middleware stack for ACP-compliant coding agents. It builds on the
 
 See README.md
 
-
 ## Code conventions
 
 - **ESM only** — all packages use `"type": "module"`. Imports must include `.js` extensions.
