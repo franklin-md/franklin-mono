@@ -1,5 +1,6 @@
 import type { EnvironmentHandle, Transport } from '@franklin/agent';
 import { StdioTransport } from '@franklin/agent';
+import { randomUUID } from 'node:crypto';
 
 import type { AgentRegistry } from './registry.js';
 
@@ -12,11 +13,15 @@ import type { AgentRegistry } from './registry.js';
  * Spawns agent subprocesses via child_process with stdio transport.
  */
 export class NodeEnvironment implements EnvironmentHandle {
+	readonly id: string;
+
 	constructor(
 		readonly cwd: string,
 		private readonly env: Record<string, string>,
 		private readonly registry: AgentRegistry,
-	) {}
+	) {
+		this.id = randomUUID();
+	}
 
 	async spawn(agent: string): Promise<Transport> {
 		const spec = this.registry.get(agent);

@@ -9,7 +9,7 @@ import {
 } from '@franklin/transport';
 import type { StdioTransport } from '@franklin/agent';
 import type { NodeFramework } from '@franklin/node';
-import type { NodeEnvironment, ProvisionOptions } from '@franklin/node';
+import type { ProvisionOptions } from '@franklin/node';
 import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
 import { randomUUID } from 'node:crypto';
@@ -26,17 +26,14 @@ import { createMainIpcStream } from './stream.js';
 /**
  * Bridges renderer ↔ agent subprocesses over Electron IPC.
  *
- * The renderer sends ACP JSON-RPC messages over IPC, multiplexed by agentId.
- * The relay demuxes each agent's stream and connects it bidirectionally to
- * the agent's StdioTransport. Main is just a pipe — all middleware and
- * connection logic lives in the renderer.
+ * Environment lifecycle is delegated to NodeFramework.
+ * This relay only manages the IPC ↔ stdio bridging for agents.
  */
 export class AgentRelay {
 	private agents = new Map<
 		string,
 		{ stdio: StdioTransport; bridge: Duplex<AnyMessage> }
 	>();
-	private environments = new Map<string, NodeEnvironment>();
 	private agentMux: MultiplexedEventInterface<AnyMessage>;
 
 	constructor(
@@ -52,40 +49,20 @@ export class AgentRelay {
 		// Convert to EventInterface for level 2 demuxing by agentId
 		this.agentMux = streamToEventInterface(agentChannel);
 
-		// Handle environment lifecycle requests from renderer
-		ipcMain.handle(ENV_PROVISION, (_event, opts?: ProvisionOptions) =>
-			this.provisionEnv(opts),
-		);
+		// Environment lifecycle — delegated to framework
+		ipcMain.handle(ENV_PROVISION, (_event, opts?: ProvisionOptions) => {
+			const env = this.framework.provision(opts);
+			return env.id;
+		});
 		ipcMain.handle(ENV_DISPOSE, (_event, envId: string) =>
-			this.disposeEnv(envId),
+			this.framework.disposeEnv(envId),
 		);
 
-		// Handle agent lifecycle requests from renderer
+		// Agent lifecycle
 		ipcMain.handle(AGENT_SPAWN, (_event, envId: string, name: string) =>
 			this.spawn(envId, name),
 		);
 		ipcMain.handle(AGENT_KILL, (_event, agentId: string) => this.kill(agentId));
-	}
-
-	/**
-	 * Provisions a new environment via the NodeFramework.
-	 * Returns an envId — main owns ID generation.
-	 */
-	provisionEnv(opts?: ProvisionOptions): string {
-		const envId = randomUUID();
-		const env = this.framework.provision(opts);
-		this.environments.set(envId, env);
-		return envId;
-	}
-
-	/**
-	 * Disposes an environment and removes it from the map.
-	 */
-	async disposeEnv(envId: string): Promise<void> {
-		const env = this.environments.get(envId);
-		if (!env) return;
-		this.environments.delete(envId);
-		await env.dispose();
 	}
 
 	/**
@@ -94,8 +71,7 @@ export class AgentRelay {
 	 * Returns the agentId — main owns ID generation.
 	 */
 	async spawn(envId: string, name: string): Promise<string> {
-		const env = this.environments.get(envId);
-		if (!env) throw new Error(`Unknown environment: "${envId}"`);
+		const env = this.framework.get(envId);
 
 		const agentId = randomUUID();
 		const transport = await env.spawn(name);
@@ -125,20 +101,13 @@ export class AgentRelay {
 	}
 
 	/**
-	 * Disposes all agents and environments. Call on window close.
+	 * Disposes all agents. Call on window close.
+	 * (Environment disposal is handled by NodeFramework.dispose)
 	 */
 	async dispose(): Promise<void> {
-		// Kill all agents
 		const agentKills = [...this.agents.keys()].map((id) => this.kill(id));
 		await Promise.allSettled(agentKills);
 
-		// Dispose all environments
-		const envDisposals = [...this.environments.keys()].map((id) =>
-			this.disposeEnv(id),
-		);
-		await Promise.allSettled(envDisposals);
-
-		// Remove IPC handlers
 		ipcMain.removeHandler(ENV_PROVISION);
 		ipcMain.removeHandler(ENV_DISPOSE);
 		ipcMain.removeHandler(AGENT_SPAWN);
