@@ -1,10 +1,8 @@
 # Franklin
 
-A middleware stack for ACP-compliant coding agents.
-
-
 ## Beliefs
 - **Agents are the future core app primitive** just as form-building was during Web 2.0
+  - They are more convenient to interact with than raw LLMs.
   - [ ] Actually research into this app core primitive claim
 - **The SIM Card Model**:
   - Instead of applications charging rent over expensive APIs, you will be able to **bring your existing authenticated, AI plan from OpenAI, Anthropic, etc., into a primarily free application**
@@ -16,6 +14,11 @@ A middleware stack for ACP-compliant coding agents.
 - **File Over App**
 
 ## What is this?
+
+Franklin is an **extension runtime for ACP-compliant agents**.
+
+It does not define its own agent protocol. It builds on the [Agent Client Protocol (ACP)](https://agentclientprotocol.com) — the standard for client-to-agent communication — and provides a minimal set of primitives for spawning agents, communicating with them, and extending their behavior from the application layer.
+
 
 ### Our SDK and Architecture
 
