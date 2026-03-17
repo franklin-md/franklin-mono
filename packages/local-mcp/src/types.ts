@@ -3,7 +3,7 @@ import type {
 	StdioPipeOptions,
 	BridgeRequest,
 	BridgeResponse,
-} from '@franklin/transport/core';
+} from '@franklin/transport';
 
 export type McpServerConfig = StdioPipeOptions;
 

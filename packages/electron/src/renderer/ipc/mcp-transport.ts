@@ -8,8 +8,8 @@ import type {
 	ToolCallResponse,
 } from '@franklin/local-mcp';
 import { serve } from '@franklin/local-mcp';
-import type { MuxPacket } from '@franklin/transport/core';
-import { Multiplexer } from '@franklin/transport/core';
+import type { MuxPacket } from '@franklin/transport';
+import { Multiplexer } from '@franklin/transport';
 
 import { MCP_STREAM } from '../../shared/channels.js';
 import { createIpcStream } from './stream.js';

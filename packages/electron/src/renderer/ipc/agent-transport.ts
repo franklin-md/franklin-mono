@@ -1,6 +1,6 @@
 import type { AnyMessage } from '@agentclientprotocol/sdk';
-import type { MuxPacket, Duplex } from '@franklin/transport/core';
-import { Multiplexer } from '@franklin/transport/core';
+import type { MuxPacket, Duplex } from '@franklin/transport';
+import { Multiplexer } from '@franklin/transport';
 
 import { AGENT_STREAM } from '../../shared/channels.js';
 import { createIpcStream } from './stream.js';

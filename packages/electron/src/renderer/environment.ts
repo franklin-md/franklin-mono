@@ -1,5 +1,5 @@
 import type { EnvironmentHandle } from '@franklin/agent/browser';
-import type { Duplex } from '@franklin/transport/core';
+import type { Duplex } from '@franklin/transport';
 import type { AnyMessage } from '@agentclientprotocol/sdk';
 
 import { createIpcAgentTransport } from './ipc/agent-transport.js';
