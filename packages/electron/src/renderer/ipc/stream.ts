@@ -4,7 +4,7 @@ import {
 	Multiplexer,
 	fromObserver,
 	fromCallable,
-} from '@franklin/transport';
+} from '@franklin/transport/core';
 
 // ---------------------------------------------------------------------------
 // Bridge type — matches what the preload exposes

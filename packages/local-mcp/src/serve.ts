@@ -1,4 +1,4 @@
-import { serve as genericServe } from '@franklin/transport';
+import { serve as genericServe } from '@franklin/transport/core';
 
 import type { ToolCall, McpToolStream } from './types.js';
 
