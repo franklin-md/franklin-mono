@@ -26,3 +26,4 @@ export {
 	type BridgeErrorResponse,
 } from './duplex/bridge.js';
 export { emptyDuplex } from './duplex/empty.js';
+export { debugStream as debug } from './duplex/debug.js';

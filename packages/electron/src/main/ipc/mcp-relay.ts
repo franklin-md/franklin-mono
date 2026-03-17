@@ -37,8 +37,12 @@ export class McpRelay {
 		// Handle MCP lifecycle requests from renderer
 		ipcMain.handle(
 			MCP_START,
-			(_event, mcpId: string, tools: SerializedToolDefinition[]) =>
-				this.start(mcpId, tools),
+			(
+				_event,
+				mcpId: string,
+				name: string,
+				tools: SerializedToolDefinition[],
+			) => this.start(mcpId, name, tools),
 		);
 		ipcMain.handle(MCP_STOP, (_event, mcpId: string) => this.stop(mcpId));
 	}
@@ -49,9 +53,10 @@ export class McpRelay {
 	 */
 	async start(
 		mcpId: string,
+		name: string,
 		tools: SerializedToolDefinition[],
 	): Promise<McpServerConfig> {
-		const transport = await this.framework.toolTransport(tools);
+		const transport = await this.framework.toolTransport(name, tools);
 		this.transports.set(mcpId, transport);
 		// Level 2: per-mcpId IPC stream
 		const mcpIpcStream = this.mcpMux.channel(mcpId);

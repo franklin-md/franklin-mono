@@ -1,3 +1,4 @@
+import type { SerializedToolDefinition } from '@franklin/local-mcp';
 import {
 	type Duplex,
 	type MuxPacket,
@@ -24,7 +25,11 @@ interface FranklinBridge {
 		kill: (agentId: string) => Promise<void>;
 	};
 	mcp: {
-		start: (mcpId: string, tools: unknown) => Promise<unknown>;
+		start: (
+			mcpId: string,
+			name: string,
+			tools: SerializedToolDefinition[],
+		) => Promise<unknown>;
 		stop: (mcpId: string) => Promise<void>;
 	};
 }

@@ -28,6 +28,7 @@ export {
 } from './streams/duplex/bridge.js';
 export { serve } from './streams/duplex/serve.js';
 export { emptyDuplex } from './streams/duplex/empty.js';
+export { debugStream } from './streams/duplex/debug.js';
 
 // Codecs
 export { mapStream, ndjsonCodec, type Codec } from './codec/index.js';

@@ -73,7 +73,7 @@ function createMockTransportFactory(): {
 	getTransport: () => McpTransport | undefined;
 } {
 	let transport: McpTransport | undefined;
-	const factory: McpTransportFactory = async () => {
+	const factory: McpTransportFactory = async (_name) => {
 		const mockStream = {
 			readable: new ReadableStream<never>(),
 			writable: new WritableStream<never>(),
@@ -494,6 +494,37 @@ describe('compileExtension', () => {
 			expect(captured[0]!.mcpServers).toHaveLength(1);
 		});
 
+		it('passes extension name to transport factory', async () => {
+			const receivedNames: string[] = [];
+			const ext: Extension = {
+				name: 'my-extension',
+				async setup(api) {
+					api.registerTool({
+						name: 'my_tool',
+						description: 'A test tool',
+						schema: emptyObjectSchema,
+						execute: async () => ({ ok: true }),
+					});
+				},
+			};
+			const factory: McpTransportFactory = async (extensionName) => {
+				receivedNames.push(extensionName);
+				const mockStream = {
+					readable: new ReadableStream<never>(),
+					writable: new WritableStream<never>(),
+					close: async () => {},
+				} as unknown as McpToolStream;
+				return {
+					config: stubMcpConfig,
+					stream: mockStream,
+					dispose: async () => {},
+				};
+			};
+			await compileExtension(ext, factory);
+
+			expect(receivedNames).toEqual(['my-extension']);
+		});
+
 		it('injects tool MCP server after sessionStart handler modifications', async () => {
 			const extraServer: McpServer = {
 				name: 'extra',
@@ -667,14 +698,14 @@ describe('compileExtension', () => {
 					close: async () => {},
 				}) as unknown as McpToolStream;
 
-			const factory1: McpTransportFactory = async () => ({
+			const factory1: McpTransportFactory = async (_name) => ({
 				config: stubMcpConfig,
 				stream: mockStream(),
 				dispose: async () => {
 					disposeLog.push('ext1');
 				},
 			});
-			const factory2: McpTransportFactory = async () => ({
+			const factory2: McpTransportFactory = async (_name) => ({
 				config: stubMcpConfig,
 				stream: mockStream(),
 				dispose: async () => {

@@ -10,13 +10,11 @@ import {
 	fillHandler,
 	joinCommands,
 	joinEvents,
-	StdioTransport,
 	TodoExtension,
 } from '@franklin/agent';
 import type { AgentConnection, Middleware } from '@franklin/agent';
 
-import { codexAgentSpec } from '../agents/index.js';
-import { AgentRegistry } from '../registry.js';
+import { createDefaultRegistry } from '../registry.js';
 import { NodeFramework } from '../framework.js';
 
 // ---------------------------------------------------------------------------
@@ -48,15 +46,12 @@ describeIntegration('MCP tool integration (codex + TodoExtension)', () => {
 		// 1. Set up framework and compile TodoExtension into middleware.
 		//    compileExtensions creates an HTTP relay server that serves the
 		//    extension's tools (add_todo, complete_todo, list_todos).
-		const registry = new AgentRegistry();
-		registry.register('codex', codexAgentSpec);
-		const framework = new NodeFramework(registry);
+		const framework = new NodeFramework(createDefaultRegistry());
+		const env = framework.provision();
+		const transport = await env.spawn('claude-acp');
 
 		const todoExtension = new TodoExtension();
 		middleware = await framework.compileExtensions([todoExtension]);
-
-		// 2. Create stdio transport to the codex agent subprocess.
-		const transport = new StdioTransport(codexAgentSpec);
 
 		// 3. Wire the connection through middleware with custom event handlers.
 		//    - sessionUpdate: captures all agent updates for inspection

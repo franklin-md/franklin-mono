@@ -12,9 +12,12 @@ import type { ExtensionToolDefinition } from '../types/index.js';
 
 /**
  * Factory that creates an MCP transport for a set of tool definitions.
+ * The extensionName is used to produce a unique MCP server name so that
+ * multiple extensions don't collide when both inject into mcpServers.
  * Tests use in-memory, production uses HTTP relay.
  */
 export type McpTransportFactory = (
+	name: string,
 	tools: SerializedToolDefinition[],
 ) => Promise<McpTransport>;
 
@@ -23,7 +26,7 @@ export type McpTransportFactory = (
 // ---------------------------------------------------------------------------
 
 export async function startTransport(
-	extensionName: string,
+	name: string,
 	tools: ExtensionToolDefinition[],
 	transport: McpTransport,
 ): Promise<void> {
@@ -31,7 +34,7 @@ export async function startTransport(
 	serve(transport.stream, async (request) => {
 		const tool = toolMap.get(request.tool);
 		if (!tool) {
-			throw new Error(`[${extensionName}] Unknown tool: ${request.tool}`);
+			throw new Error(`[${name}] Unknown tool: ${request.tool}`);
 		}
 		return await tool.execute(request.arguments);
 	});

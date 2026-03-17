@@ -16,6 +16,7 @@ import type { SerializedToolDefinition } from '../../tools/types.js';
 import { createRelayConfig } from '../../relay-config.js';
 
 type Options = {
+	name: string;
 	tools: SerializedToolDefinition[];
 	// TODO: Should we pass in the options instead?
 	serverOptions: HttpJsonServerOptions;
@@ -39,6 +40,7 @@ export async function createTransport(options: Options): Promise<McpTransport> {
 	await server.start();
 
 	const config = createRelayConfig({
+		name: options.name,
 		callbackUrl: server.url,
 		tools: options.tools,
 	});

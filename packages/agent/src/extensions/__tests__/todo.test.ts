@@ -50,7 +50,7 @@ function createMockTransportFactory(): {
 	getTransport: () => McpTransport | undefined;
 } {
 	let transport: McpTransport | undefined;
-	const factory: McpTransportFactory = async () => {
+	const factory: McpTransportFactory = async (_name) => {
 		const mockStream = {
 			readable: new ReadableStream<never>(),
 			writable: new WritableStream<never>(),

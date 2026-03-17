@@ -5,7 +5,6 @@ import type { ProvisionOptions } from './environment.js';
 import type { NodeEnvironment } from './environment.js';
 import { provision } from './environment.js';
 import type { AgentRegistry } from './registry.js';
-import { createToolTransport } from './tool-transport.js';
 import { PortManager } from '@franklin/transport';
 import { createHttpTransport } from '@franklin/local-mcp';
 
@@ -48,10 +47,11 @@ export class NodeFramework extends Framework {
 		 * The agent subprocess connects to it via the MCP relay config
 		 * injected into the session's mcpServers.
 		 */
-		return async (tools) => {
+		return async (name, tools) => {
 			const port = await this.portManager.allocate();
 			try {
 				return await createHttpTransport({
+					name,
 					tools,
 					serverOptions: { port },
 				});

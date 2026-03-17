@@ -15,7 +15,6 @@ export {
 	compileExtension,
 	TodoExtension,
 	ConversationExtension,
-	createDebugMiddleware,
 } from './extensions/index.js';
 export type {
 	Extension,

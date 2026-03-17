@@ -17,6 +17,7 @@ describe('createRelayConfig', () => {
 
 	it('produces ACP-compliant McpServerStdio shape', () => {
 		const config = createRelayConfig({
+			name: 'test',
 			callbackUrl: 'http://localhost:3000',
 			tools,
 		});
@@ -38,6 +39,7 @@ describe('createRelayConfig', () => {
 
 	it('env is Array<{name, value}> not Record<string, string>', () => {
 		const config = createRelayConfig({
+			name: 'test',
 			callbackUrl: 'http://localhost:3000',
 			tools,
 		});
@@ -53,6 +55,7 @@ describe('createRelayConfig', () => {
 
 	it('passes callback URL and tools through env', () => {
 		const config = createRelayConfig({
+			name: 'test',
 			callbackUrl: 'http://localhost:3000',
 			tools,
 		});
@@ -69,6 +72,7 @@ describe('createRelayConfig', () => {
 		});
 
 		const config = createRelayConfig({
+			name: 'test',
 			callbackUrl: 'http://localhost:3000',
 			tools,
 		});
@@ -79,11 +83,37 @@ describe('createRelayConfig', () => {
 
 	it('does not add ELECTRON_RUN_AS_NODE outside Electron', () => {
 		const config = createRelayConfig({
+			name: 'test',
 			callbackUrl: 'http://localhost:3000',
 			tools,
 		});
 
 		const envMap = new Map(config.env.map((e) => [e.name, e.value]));
 		expect(envMap.has('ELECTRON_RUN_AS_NODE')).toBe(false);
+	});
+
+	it('uses extension name to produce a unique server name', () => {
+		const config = createRelayConfig({
+			name: 'todo',
+			callbackUrl: 'http://localhost:3000',
+			tools,
+		});
+
+		expect(config.name).toContain('todo');
+	});
+
+	it('different extension names produce different server names', () => {
+		const config1 = createRelayConfig({
+			name: 'todo',
+			callbackUrl: 'http://localhost:3000',
+			tools,
+		});
+		const config2 = createRelayConfig({
+			name: 'conversation',
+			callbackUrl: 'http://localhost:3000',
+			tools,
+		});
+
+		expect(config1.name).not.toBe(config2.name);
 	});
 });

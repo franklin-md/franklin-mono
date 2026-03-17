@@ -49,14 +49,15 @@ function getMcpMux(): Multiplexer<ToolCallRequest, ToolCallResponse> {
  * Results flow:    renderer -> IPC -> main (HTTP response) -> agent
  */
 export const createIpcMcpTransport: McpTransportFactory = async (
+	name: string,
 	tools: SerializedToolDefinition[],
 ) => {
 	const mcpId = crypto.randomUUID();
-	// TODO: If there is no tools, can we skip this?
 
 	// Ask main to create HTTP server + relay config
 	const config = (await window.__franklinBridge.mcp.start(
 		mcpId,
+		name,
 		tools,
 	)) as McpServerConfig;
 

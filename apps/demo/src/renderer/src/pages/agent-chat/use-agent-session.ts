@@ -4,7 +4,6 @@ import {
 	ConversationExtension,
 	TodoExtension,
 	PROTOCOL_VERSION,
-	createDebugMiddleware,
 } from '@franklin/agent/browser';
 import type { AgentCommands } from '@franklin/agent/browser';
 import { ElectronFramework } from '@franklin/electron/renderer';
@@ -53,7 +52,7 @@ export function useAgentSession(): AgentSession {
 					return;
 				}
 
-				const transport = await env.spawn('codex');
+				const transport = await env.spawn('claude-acp');
 				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated across await
 				if (disposedRef.current) {
 					await env.dispose();
@@ -64,12 +63,7 @@ export function useAgentSession(): AgentSession {
 					todoExt,
 					conversationExt,
 				]);
-				const debugMiddleware = createDebugMiddleware();
-				const { commands, dispose } = framework.connect(
-					transport,
-					middleware,
-					debugMiddleware,
-				);
+				const { commands, dispose } = framework.connect(transport, middleware);
 
 				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated across await
 				if (disposedRef.current) {

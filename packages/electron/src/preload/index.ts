@@ -58,8 +58,8 @@ const agent = {
 // ---------------------------------------------------------------------------
 
 const mcp = {
-	start: (mcpId: string, tools: unknown): Promise<unknown> =>
-		ipcRenderer.invoke(MCP_START, mcpId, tools) as Promise<unknown>,
+	start: (mcpId: string, name: string, tools: unknown): Promise<unknown> =>
+		ipcRenderer.invoke(MCP_START, mcpId, name, tools) as Promise<unknown>,
 
 	stop: (mcpId: string): Promise<void> =>
 		ipcRenderer.invoke(MCP_STOP, mcpId) as Promise<void>,

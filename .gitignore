@@ -7,4 +7,5 @@ node_modules/
 
 # Agent Folders
 .context/
+.cursor/debug*
 .playwright-mcp

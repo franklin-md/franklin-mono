@@ -19,4 +19,3 @@ export type {
 	ToolCallEntry,
 	UserEntry,
 } from './examples/conversation/index.js';
-export { createDebugMiddleware } from './examples/debug/middleware.js';

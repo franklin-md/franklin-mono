@@ -71,7 +71,7 @@ const stubMcpConfig = {
 function createMockTransportFactory(): {
 	factory: McpTransportFactory;
 } {
-	const factory: McpTransportFactory = async () => {
+	const factory: McpTransportFactory = async (_name) => {
 		const mockStream = {
 			readable: new ReadableStream<never>(),
 			writable: new WritableStream<never>(),
