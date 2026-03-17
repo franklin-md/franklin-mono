@@ -234,7 +234,7 @@ describe('TodoExtension', () => {
 
 			expect(captured[0]!.prompt).toHaveLength(2);
 			const prefix = (captured[0]!.prompt[0] as { text: string }).text;
-			expect(prefix).toContain('Current Todos');
+			expect(prefix).toContain('<todos>');
 			expect(prefix).toContain('Buy milk');
 			expect((captured[0]!.prompt[1] as { text: string }).text).toBe('hello');
 		});

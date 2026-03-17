@@ -60,8 +60,8 @@ export function useAgentSession(): AgentSession {
 				}
 
 				const middleware = await framework.compileExtensions([
-					todoExt,
 					conversationExt,
+					todoExt,
 				]);
 				const { commands, dispose } = framework.connect(transport, middleware);
 

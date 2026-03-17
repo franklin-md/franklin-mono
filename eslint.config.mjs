@@ -96,7 +96,7 @@ export default tseslint.config(
 			'@typescript-eslint/switch-exhaustiveness-check': [
 				'error',
 				{
-					allowDefaultCaseForExhaustiveSwitch: false,
+					allowDefaultCaseForExhaustiveSwitch: true,
 				},
 			],
 			'no-fallthrough': 'error',

@@ -15,6 +15,7 @@ export {
 	compileExtension,
 	TodoExtension,
 	ConversationExtension,
+	createTodoControl,
 } from './extensions/index.js';
 export type {
 	Extension,

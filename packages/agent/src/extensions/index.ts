@@ -9,6 +9,7 @@ export type {
 	SessionUpdateHandler,
 } from './types/index.js';
 export { TodoExtension } from './examples/todo/index.js';
+export { createTodoControl } from './examples/todo/index.js';
 export type { Todo } from './examples/todo/index.js';
 export { ConversationExtension } from './examples/conversation/index.js';
 export type {

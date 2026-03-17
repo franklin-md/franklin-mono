@@ -39,7 +39,8 @@ describe('formatTodos', () => {
 		];
 		const result = formatTodos(todos)!;
 
-		expect(result).toContain('## Current Todos');
+		expect(result).toContain('<todos>');
+		expect(result).toContain('</todos>');
 		expect(result).toContain('[ ] First (id: a)');
 		expect(result).toContain('[x] Second (id: b)');
 		expect(result).toContain('[ ] Third (id: c)');

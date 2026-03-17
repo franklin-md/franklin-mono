@@ -12,5 +12,5 @@ export function formatTodos(todos: readonly Todo[]): string | undefined {
 		return `${check} ${t.text} (id: ${t.id})`;
 	});
 
-	return `## Current Todos\n${lines.join('\n')}`;
+	return `<todos>\n${lines.join('\n')}</todos>`;
 }

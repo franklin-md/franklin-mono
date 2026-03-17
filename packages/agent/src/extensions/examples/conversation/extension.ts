@@ -98,13 +98,7 @@ export class ConversationExtension implements Extension {
 						}
 					});
 					break;
-				case 'user_message_chunk':
-				case 'plan':
-				case 'available_commands_update':
-				case 'current_mode_update':
-				case 'config_option_update':
-				case 'session_info_update':
-				case 'usage_update':
+				default:
 					break;
 			}
 		});

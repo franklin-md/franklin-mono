@@ -5,6 +5,7 @@ import type { Store } from '../../../store/index.js';
 import type { Extension, ExtensionAPI } from '../../types/index.js';
 import { formatTodos } from './format.js';
 import type { Todo } from './types.js';
+import { createTodoControl } from './control.js';
 
 /**
  * Extension that gives agents persistent task memory via tools
@@ -18,24 +19,15 @@ export class TodoExtension implements Extension {
 	readonly todos: Store<Todo[]> = createStore<Todo[]>([]);
 
 	async setup(api: ExtensionAPI): Promise<void> {
-		const { todos } = this;
+		const control = createTodoControl(this.todos);
 
 		api.registerTool({
 			name: 'add_todo',
 			description: 'Add a new todo item',
 			schema: z.object({ text: z.string() }),
 			async execute(params: { text: string }) {
-				const id = crypto.randomUUID();
-				const now = Date.now();
-				todos.set((draft) => {
-					draft.push({
-						id,
-						text: params.text,
-						completed: false,
-						createdAt: now,
-					});
-				});
-				return { id };
+				const todo = control.addTodo(params.text);
+				return { id: todo.id };
 			},
 		});
 
@@ -44,14 +36,7 @@ export class TodoExtension implements Extension {
 			description: 'Mark a todo item as completed',
 			schema: z.object({ id: z.string() }),
 			async execute(params: { id: string }) {
-				const todo = todos.get().find((t) => t.id === params.id);
-				if (!todo) {
-					throw new Error(`Todo not found: ${params.id}`);
-				}
-				todos.set((draft) => {
-					const item = draft.find((t) => t.id === params.id);
-					if (item) item.completed = true;
-				});
+				control.setStatus(params.id, true);
 				return { ok: true };
 			},
 		});
@@ -61,12 +46,12 @@ export class TodoExtension implements Extension {
 			description: 'List all todo items',
 			schema: z.object({}),
 			async execute() {
-				return { todos: todos.get() };
+				return { todos: control.todos() };
 			},
 		});
 
 		api.on('prompt', async (ctx) => {
-			const formatted = formatTodos(todos.get());
+			const formatted = formatTodos(this.todos.get());
 			if (!formatted) return undefined;
 			return {
 				prompt: [{ type: 'text' as const, text: formatted }, ...ctx.prompt],

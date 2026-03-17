@@ -1,15 +1,31 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
-import type { ReadonlyStore } from '@franklin/agent/browser';
+import type { Store } from '@franklin/agent/browser';
 
-/**
- * React hook that subscribes to a Franklin `ReadonlyStore` and
- * returns the current value. Re-renders automatically when the
- * store updates. Compatible with React 18+ concurrent features.
- */
-export function useStore<T>(store: ReadonlyStore<T>): T {
-	return useSyncExternalStore(
+// Same interface but works instantly within React.
+export function useStore<T>(store: Store<T>): Store<T> {
+	const value = useSyncExternalStore(
 		(cb) => store.subscribe(cb),
 		() => store.get(),
 	);
+
+	const set = useCallback(
+		(...args: Parameters<Store<T>['set']>) => {
+			store.set(...args);
+		},
+		[store],
+	);
+
+	const unsubscribe = useCallback(
+		(listener: (value: T) => void) => {
+			return store.subscribe(listener);
+		},
+		[store],
+	);
+
+	return {
+		get: () => value,
+		subscribe: unsubscribe,
+		set,
+	};
 }
