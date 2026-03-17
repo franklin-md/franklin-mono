@@ -30,6 +30,7 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
+		"@agentclientprotocol/sdk": "^0.16.1",
 		"@franklin/transport": "*",
 		"@modelcontextprotocol/sdk": "^1.27.1",
 		"zod": "^3.25.1",

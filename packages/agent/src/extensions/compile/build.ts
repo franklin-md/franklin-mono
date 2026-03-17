@@ -36,7 +36,7 @@ async function runSessionStartWaterfall(
 	}
 
 	if (transport) {
-		mcpServers = [...mcpServers, transport.config as unknown as McpServer];
+		mcpServers = [...mcpServers, transport.config as McpServer];
 	}
 
 	return { cwd, mcpServers };

@@ -14,6 +14,7 @@ export function createRelayConfig(options: {
 	tools: SerializedToolDefinition[];
 }): McpServerConfig {
 	return {
+		name: 'franklin-tool-relay',
 		command: process.execPath,
 		args: [getRelayPath()],
 		env: serializeRelayEnv(options),

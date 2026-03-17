@@ -40,8 +40,10 @@ function createTestTransport() {
 	};
 
 	const stubConfig = {
+		name: 'test-relay',
 		command: 'node',
 		args: ['--version'],
+		env: [] as Array<{ name: string; value: string }>,
 	};
 
 	const factory: McpTransportFactory = async () => ({
@@ -119,7 +121,7 @@ describe('startTransport', () => {
 		serverStream.writable.getWriter();
 
 		const factory: McpTransportFactory = async () => ({
-			config: { command: 'node' },
+			config: { name: 'test', command: 'node', args: [], env: [] },
 			stream: serverStream,
 			dispose: async () => {},
 		});

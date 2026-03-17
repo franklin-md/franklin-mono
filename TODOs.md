@@ -4,6 +4,7 @@
 
 ### agents:
 
+- [ ] The AgentConnection should not show AgentCommands (that is ACP wire level details). It should show a different interface
 - Codex:
   - https://github.com/cola-io/codex-acp
   - https://github.com/zed-industries/codex-acp

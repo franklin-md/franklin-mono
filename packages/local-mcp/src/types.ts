@@ -1,11 +1,17 @@
+import type { McpServerStdio } from '@agentclientprotocol/sdk';
 import type {
 	Duplex,
-	StdioPipeOptions,
 	BridgeRequest,
 	BridgeResponse,
 } from '@franklin/transport';
 
-export type McpServerConfig = StdioPipeOptions;
+/**
+ * ACP-compliant MCP server config.
+ *
+ * Agents validate this with zod on `session/new`; any shape mismatch
+ * causes an "Invalid params" JSON-RPC error.
+ */
+export type McpServerConfig = McpServerStdio;
 
 export type ToolCall = {
 	tool: string;

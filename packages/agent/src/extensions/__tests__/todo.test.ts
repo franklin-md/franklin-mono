@@ -39,9 +39,10 @@ function createTerminalCommands(
 }
 
 const stubMcpConfig = {
+	name: 'test-relay',
 	command: 'node',
 	args: ['--version'],
-	env: { STUB: 'true' },
+	env: [{ name: 'STUB', value: 'true' }],
 };
 
 function createMockTransportFactory(): {

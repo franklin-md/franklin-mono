@@ -1,3 +1,5 @@
+import type { EnvVariable } from '@agentclientprotocol/sdk';
+
 import { FRANKLIN_CALLBACK_URL_KEY, FRANKLIN_TOOLS_KEY } from './tags.js';
 
 export interface RelayToolDef {
@@ -14,11 +16,11 @@ export interface RelayEnv {
 /**
  * Builds the env array for McpServerConfig from typed RelayEnv.
  */
-export function serializeRelayEnv(env: RelayEnv): Record<string, string> {
-	return {
-		[FRANKLIN_CALLBACK_URL_KEY]: env.callbackUrl,
-		[FRANKLIN_TOOLS_KEY]: JSON.stringify(env.tools),
-	};
+export function serializeRelayEnv(env: RelayEnv): EnvVariable[] {
+	return [
+		{ name: FRANKLIN_CALLBACK_URL_KEY, value: env.callbackUrl },
+		{ name: FRANKLIN_TOOLS_KEY, value: JSON.stringify(env.tools) },
+	];
 }
 
 /**
