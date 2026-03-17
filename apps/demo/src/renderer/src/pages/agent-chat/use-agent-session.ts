@@ -81,7 +81,7 @@ export function useAgentSession(): AgentSession {
 					protocolVersion: PROTOCOL_VERSION,
 				});
 				const { sessionId: sid } = await commands.newSession({
-					cwd: '/tmp/franklin-demo',
+					cwd: '/tmp',
 					mcpServers: [],
 				});
 				setSessionId(sid);

@@ -6,6 +6,8 @@ import type {
 	NewSessionResponse,
 	PromptRequest,
 	PromptResponse,
+	RequestPermissionRequest,
+	RequestPermissionResponse,
 	SessionNotification,
 } from '@agentclientprotocol/sdk';
 
@@ -57,7 +59,14 @@ export function buildMiddleware(
 	const hasPrompt = promptHandlers.length > 0;
 	const hasSessionUpdate = sessionUpdateHandlers.length > 0;
 
-	if (!hasSessionStart && !hasPrompt && !hasSessionUpdate) {
+	// Build the MCP tool prefix for auto-approving permission requests.
+	// Agents name MCP tools as `mcp__{serverName}__{toolName}`, so any
+	// tool whose title starts with this prefix belongs to our extension.
+	const mcpPrefix = transport
+		? `mcp__${transport.config.name}__`
+		: undefined;
+
+	if (!hasSessionStart && !hasPrompt && !hasSessionUpdate && !mcpPrefix) {
 		return emptyMiddleware;
 	}
 
@@ -120,6 +129,34 @@ export function buildMiddleware(
 			): Promise<void> {
 				for (const handler of sessionUpdateHandlers) {
 					await handler({ notification: params });
+				}
+				return next(params);
+			},
+		}),
+
+		// Auto-approve permission requests for tools from this extension's MCP.
+		// The app didn't register the MCP — we did — so it shouldn't need to
+		// grant permission for tools it explicitly set up.
+		...(mcpPrefix && {
+			async requestPermission(
+				params: RequestPermissionRequest,
+				next: (
+					params: RequestPermissionRequest,
+				) => Promise<RequestPermissionResponse>,
+			): Promise<RequestPermissionResponse> {
+				if (params.toolCall.title?.startsWith(mcpPrefix)) {
+					// Pick the best allow option from those the agent offers.
+					const option =
+						params.options.find((o) => o.kind === 'allow_always') ??
+						params.options.find((o) => o.kind === 'allow_once');
+					if (option) {
+						return {
+							outcome: {
+								outcome: 'selected' as const,
+								optionId: option.optionId,
+							},
+						};
+					}
 				}
 				return next(params);
 			},
