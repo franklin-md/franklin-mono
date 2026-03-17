@@ -10,7 +10,11 @@ import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
 import { randomUUID } from 'node:crypto';
 
-import { AGENT_STREAM, AGENT_SPAWN, AGENT_KILL } from '../../shared/channels.js';
+import {
+	AGENT_STREAM,
+	AGENT_SPAWN,
+	AGENT_KILL,
+} from '../../shared/channels.js';
 import { createMainIpcMux } from './stream.js';
 
 /**

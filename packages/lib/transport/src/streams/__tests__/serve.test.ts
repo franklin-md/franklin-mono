@@ -78,4 +78,20 @@ describe('serve', () => {
 
 		await close();
 	});
+
+	it('locks the writable — second serve() on the same duplex throws', () => {
+		const duplex = {
+			readable: new ReadableStream<BridgeRequest<string>>(),
+			writable: new WritableStream<BridgeResponse<string>>(),
+			close: async () => {},
+		};
+
+		// First serve() locks the writable via callable()
+		serve(duplex, async (req) => `echo: ${req}`);
+
+		// Second serve() on the same duplex should throw because writable is locked
+		expect(() => {
+			serve(duplex, async (req) => `echo2: ${req}`);
+		}).toThrow();
+	});
 });

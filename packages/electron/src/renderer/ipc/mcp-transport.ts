@@ -7,7 +7,6 @@ import type {
 	ToolCallRequest,
 	ToolCallResponse,
 } from '@franklin/local-mcp';
-import { serve } from '@franklin/local-mcp';
 import type { MuxPacket } from '@franklin/transport';
 import { Multiplexer } from '@franklin/transport';
 
@@ -65,8 +64,10 @@ function serializeToolForIpc(
  * When called:
  * 1. Generates a unique mcpId (UUID)
  * 2. Asks main to create an HTTP server + relay config
- * 3. Sets up a Level 2 IPC stream for tool call dispatch
- * 4. Runs serve() on the IPC stream to handle tool calls in the renderer
+ * 3. Returns a Level 2 IPC stream for tool call dispatch
+ *
+ * The returned stream's writable is intentionally left unlocked —
+ * startTransport() in @franklin/agent wires serve() on it.
  *
  * Tool calls flow: agent -> HTTP POST (main) -> IPC -> renderer (serve)
  * Results flow:    renderer -> IPC -> main (HTTP response) -> agent
@@ -84,15 +85,10 @@ export const createIpcMcpTransport: McpTransportFactory = async (
 	)) as McpServerConfig;
 
 	// Level 2: per-mcpId IPC stream for tool call dispatch
+	// NOTE: Do NOT call serve() here — startTransport() in @franklin/agent
+	// wires tool dispatch on the returned stream. Calling serve() twice
+	// would double-lock the writable.
 	const stream: McpToolStream = getMcpMux().channel(mcpId);
-
-	// Wire up tool dispatch — serve() reads requests, calls tool, writes responses
-	const toolMap = new Map(tools.map((t) => [t.name, t]));
-	serve(stream, async (request) => {
-		const tool = toolMap.get(request.tool);
-		if (!tool) throw new Error(`Unknown tool: "${request.tool}"`);
-		return await tool.execute(request.arguments);
-	});
 
 	return {
 		config,
