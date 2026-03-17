@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createRelayConfig } from '../relay-config.js';
 
@@ -10,6 +10,10 @@ describe('createRelayConfig', () => {
 			inputSchema: { type: 'object', properties: { name: { type: 'string' } } },
 		},
 	];
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
 
 	it('produces ACP-compliant McpServerStdio shape', () => {
 		const config = createRelayConfig({
@@ -56,5 +60,30 @@ describe('createRelayConfig', () => {
 		const envMap = new Map(config.env.map((e) => [e.name, e.value]));
 		expect(envMap.get('FRANKLIN_CALLBACK_URL')).toBe('http://localhost:3000');
 		expect(JSON.parse(envMap.get('FRANKLIN_TOOLS')!)).toEqual(tools);
+	});
+
+	it('adds ELECTRON_RUN_AS_NODE when inside Electron', () => {
+		vi.stubGlobal('process', {
+			...process,
+			versions: { ...process.versions, electron: '33.0.0' },
+		});
+
+		const config = createRelayConfig({
+			callbackUrl: 'http://localhost:3000',
+			tools,
+		});
+
+		const envMap = new Map(config.env.map((e) => [e.name, e.value]));
+		expect(envMap.get('ELECTRON_RUN_AS_NODE')).toBe('1');
+	});
+
+	it('does not add ELECTRON_RUN_AS_NODE outside Electron', () => {
+		const config = createRelayConfig({
+			callbackUrl: 'http://localhost:3000',
+			tools,
+		});
+
+		const envMap = new Map(config.env.map((e) => [e.name, e.value]));
+		expect(envMap.has('ELECTRON_RUN_AS_NODE')).toBe(false);
 	});
 });

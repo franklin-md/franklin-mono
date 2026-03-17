@@ -114,7 +114,8 @@ export class ConversationExtension implements Extension {
 /**
  * Coalesces a content chunk into the latest turn. If an entry with the
  * same `messageId` exists, appends to it; otherwise creates a new entry.
- * When `messageId` is absent, always creates a new entry.
+ * When `messageId` is absent, appends to the last entry if it matches
+ * the same type (consecutive chunks from the same stream).
  */
 function appendChunk(
 	conversation: Store<ConversationTurn[]>,
@@ -127,7 +128,7 @@ function appendChunk(
 		if (!turn) return;
 
 		if (messageId) {
-			// Try to coalesce with an existing entry
+			// Try to coalesce with an existing entry by messageId
 			for (let i = turn.entries.length - 1; i >= 0; i--) {
 				const entry = turn.entries[i];
 				if (
@@ -139,20 +140,20 @@ function appendChunk(
 					return;
 				}
 			}
-
-			// No existing entry — create one
-			turn.entries.push({
-				type,
-				messageId,
-				content: [content],
-			} as AgentTextEntry | AgentThoughtEntry);
 		} else {
-			// No messageId — each chunk is its own entry
-			turn.entries.push({
-				type,
-				messageId: crypto.randomUUID(),
-				content: [content],
-			} as AgentTextEntry | AgentThoughtEntry);
+			// No messageId — coalesce with the last entry if it's the same type
+			const last = turn.entries[turn.entries.length - 1];
+			if (last && last.type === type) {
+				(last as AgentTextEntry | AgentThoughtEntry).content.push(content);
+				return;
+			}
 		}
+
+		// No existing entry to coalesce with — create one
+		turn.entries.push({
+			type,
+			messageId: messageId ?? crypto.randomUUID(),
+			content: [content],
+		} as AgentTextEntry | AgentThoughtEntry);
 	});
 }

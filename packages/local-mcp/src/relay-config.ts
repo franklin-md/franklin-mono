@@ -1,5 +1,6 @@
 import { getRelayPath } from './transports/http/relay/path.js';
 import { serializeRelayEnv } from './transports/http/relay/env.js';
+import { RELAY_NAME } from './transports/http/relay/tags.js';
 
 import type { McpServerConfig } from './types.js';
 import type { SerializedToolDefinition } from './tools/types.js';
@@ -13,10 +14,19 @@ export function createRelayConfig(options: {
 	callbackUrl: string;
 	tools: SerializedToolDefinition[];
 }): McpServerConfig {
+	const env = serializeRelayEnv(options);
+
+	// When running inside Electron, process.execPath is the Electron binary.
+	// ELECTRON_RUN_AS_NODE=1 forces it to behave as a plain Node process so
+	// it can execute the relay script.
+	if (process.versions.electron) {
+		env.push({ name: 'ELECTRON_RUN_AS_NODE', value: '1' });
+	}
+
 	return {
-		name: 'franklin-tool-relay',
+		name: RELAY_NAME,
 		command: process.execPath,
 		args: [getRelayPath()],
-		env: serializeRelayEnv(options),
+		env,
 	};
 }

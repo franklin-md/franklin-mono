@@ -62,9 +62,10 @@ function createTerminalEvents(overrides?: Partial<AgentEvents>): AgentEvents {
 }
 
 const stubMcpConfig = {
+	name: 'test-relay',
 	command: 'node',
 	args: ['--version'],
-	env: { STUB: 'true' },
+	env: [{ name: 'STUB', value: 'true' }],
 };
 
 function createMockTransportFactory(): {
@@ -225,7 +226,7 @@ describe('ConversationExtension', () => {
 			expect((entries[2] as AgentTextEntry).messageId).toBe('msg-2');
 		});
 
-		it('creates a new entry per chunk when messageId is absent', async () => {
+		it('coalesces consecutive chunks of the same type when messageId is absent', async () => {
 			const ext = new ConversationExtension();
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
@@ -247,8 +248,48 @@ describe('ConversationExtension', () => {
 			});
 
 			const entries = ext.conversation.get()[0]!.entries;
-			// user + two separate entries (no messageId to coalesce on)
-			expect(entries).toHaveLength(3);
+			// user + one coalesced text entry (consecutive chunks without messageId)
+			expect(entries).toHaveLength(2);
+
+			const textEntry = entries[1] as AgentTextEntry;
+			expect(textEntry.type).toBe('text');
+			expect(textEntry.content).toHaveLength(2);
+			expect((textEntry.content[0] as { text: string }).text).toBe('A');
+			expect((textEntry.content[1] as { text: string }).text).toBe('B');
+		});
+
+		it('starts a new entry when a different type interrupts chunks without messageId', async () => {
+			const ext = new ConversationExtension();
+			const { factory } = createMockTransportFactory();
+			const middleware = await compileExtension(ext, factory);
+
+			const terminal = createTerminalCommands();
+			const terminalEvents = createTerminalEvents();
+			const commands = joinCommands(middleware, terminal);
+			const events = joinEvents(middleware, terminalEvents);
+
+			await firePrompt(commands, 'test', 'hello');
+
+			await fireUpdate(events, 'test', {
+				sessionUpdate: 'agent_message_chunk',
+				content: { type: 'text', text: 'A' },
+			});
+			await fireUpdate(events, 'test', {
+				sessionUpdate: 'tool_call',
+				toolCallId: 'tc-1',
+				title: 'Read file',
+			});
+			await fireUpdate(events, 'test', {
+				sessionUpdate: 'agent_message_chunk',
+				content: { type: 'text', text: 'B' },
+			});
+
+			const entries = ext.conversation.get()[0]!.entries;
+			// user + text("A") + tool_call + text("B") — tool call breaks coalescing
+			expect(entries).toHaveLength(4);
+			expect(entries[1]!.type).toBe('text');
+			expect(entries[2]!.type).toBe('tool_call');
+			expect(entries[3]!.type).toBe('text');
 		});
 	});
 

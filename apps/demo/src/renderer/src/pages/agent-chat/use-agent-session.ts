@@ -4,6 +4,7 @@ import {
 	ConversationExtension,
 	TodoExtension,
 	PROTOCOL_VERSION,
+	createDebugMiddleware,
 } from '@franklin/agent/browser';
 import type { AgentCommands } from '@franklin/agent/browser';
 import { ElectronFramework } from '@franklin/electron/renderer';
@@ -63,7 +64,12 @@ export function useAgentSession(): AgentSession {
 					todoExt,
 					conversationExt,
 				]);
-				const { commands, dispose } = framework.connect(transport, middleware);
+				const debugMiddleware = createDebugMiddleware();
+				const { commands, dispose } = framework.connect(
+					transport,
+					middleware,
+					debugMiddleware,
+				);
 
 				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated across await
 				if (disposedRef.current) {

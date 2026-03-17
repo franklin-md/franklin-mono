@@ -6,6 +6,8 @@ import type { NodeEnvironment } from './environment.js';
 import { provision } from './environment.js';
 import type { AgentRegistry } from './registry.js';
 import { createToolTransport } from './tool-transport.js';
+import { PortManager } from '@franklin/transport';
+import { createHttpTransport } from '@franklin/local-mcp';
 
 // ---------------------------------------------------------------------------
 // FrameworkOptions
@@ -27,18 +29,37 @@ export interface FrameworkOptions {
  * and environment lifecycle (local filesystem).
  */
 export class NodeFramework extends Framework {
+	private readonly portManager;
 	private readonly environments = new Map<string, NodeEnvironment>();
 
-	constructor(
-		private readonly registry: AgentRegistry,
-		private readonly options?: FrameworkOptions,
-	) {
+	constructor(private readonly registry: AgentRegistry) {
 		super();
+		this.portManager = new PortManager();
 	}
 
 	/** MCP transport factory — defaults to the Node HTTP relay. */
 	get toolTransport(): McpTransportFactory {
-		return this.options?.toolTransport ?? createToolTransport;
+		// Shared port manager for all tool transports in this process.
+
+		/**
+		 * McpTransportFactory for Node.js environments.
+		 *
+		 * Spins up an HTTP server on localhost with an auto-assigned port.
+		 * The agent subprocess connects to it via the MCP relay config
+		 * injected into the session's mcpServers.
+		 */
+		return async (tools) => {
+			const port = await this.portManager.allocate();
+			try {
+				return await createHttpTransport({
+					tools,
+					serverOptions: { port },
+				});
+			} catch (error) {
+				this.portManager.release(port);
+				throw error;
+			}
+		};
 	}
 
 	/** Provision a new local environment. Returns the environment (which has an id). */

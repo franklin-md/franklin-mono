@@ -1,3 +1,4 @@
+import { serializeTool } from '@franklin/local-mcp';
 import type { Middleware } from '../../middleware/types.js';
 import type { Extension } from '../types/index.js';
 import { buildMiddleware } from './build.js';
@@ -21,10 +22,12 @@ export async function compileExtension(
 ): Promise<Middleware> {
 	const state = await collect(extension);
 
-	const transport =
-		state.tools.length > 0
-			? await startTransport(extension.name, state.tools, transportFactory)
-			: undefined;
+	const transport = await transportFactory(state.tools.map(serializeTool));
+
+	if (state.tools.length > 0) {
+		// TODO: Should we really having middleware define lifecycle (dispose AND start?)
+		await startTransport(extension.name, state.tools, transport);
+	}
 
 	return buildMiddleware(state, transport);
 }

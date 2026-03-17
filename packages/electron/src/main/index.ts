@@ -33,7 +33,7 @@ export function initializeMain(
 ): MainHandle {
 	const frameworkRelay = new FrameworkRelay(framework);
 	const agentRelay = new AgentRelay(webContents, framework);
-	const mcpRelay = new McpRelay(webContents);
+	const mcpRelay = new McpRelay(webContents, framework);
 
 	return {
 		dispose: async () => {

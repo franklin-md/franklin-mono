@@ -28,6 +28,7 @@
 			"type": "node-terminal",
 			"request": "launch",
 			"cwd": "${workspaceFolder}",
+			"preLaunchTask": "build",
 			"command": "npm run dev:debug -w @franklin/demo"
 		},
 		{

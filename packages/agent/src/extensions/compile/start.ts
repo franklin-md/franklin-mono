@@ -1,4 +1,7 @@
-import type { McpTransport } from '@franklin/local-mcp';
+import type {
+	McpTransport,
+	SerializedToolDefinition,
+} from '@franklin/local-mcp';
 import { serve } from '@franklin/local-mcp';
 
 import type { ExtensionToolDefinition } from '../types/index.js';
@@ -12,7 +15,7 @@ import type { ExtensionToolDefinition } from '../types/index.js';
  * Tests use in-memory, production uses HTTP relay.
  */
 export type McpTransportFactory = (
-	tools: ExtensionToolDefinition[],
+	tools: SerializedToolDefinition[],
 ) => Promise<McpTransport>;
 
 // ---------------------------------------------------------------------------
@@ -22,10 +25,8 @@ export type McpTransportFactory = (
 export async function startTransport(
 	extensionName: string,
 	tools: ExtensionToolDefinition[],
-	factory: McpTransportFactory,
-): Promise<McpTransport> {
-	const transport = await factory(tools);
-
+	transport: McpTransport,
+): Promise<void> {
 	const toolMap = new Map(tools.map((t) => [t.name, t]));
 	serve(transport.stream, async (request) => {
 		const tool = toolMap.get(request.tool);
@@ -34,6 +35,4 @@ export async function startTransport(
 		}
 		return await tool.execute(request.arguments);
 	});
-
-	return transport;
 }

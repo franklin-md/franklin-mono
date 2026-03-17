@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import type { McpToolStream } from '@franklin/local-mcp';
+import type { McpToolStream, McpTransport } from '@franklin/local-mcp';
 import {
 	bridge,
 	type BridgeRequest,
@@ -10,7 +10,6 @@ import {
 
 import type { ExtensionToolDefinition } from '../types/index.js';
 import { startTransport } from '../compile/start.js';
-import type { McpTransportFactory } from '../compile/start.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,7 +32,7 @@ function createTestTransport() {
 	void callerDuplex.readable.pipeTo(toServer.writable);
 	void toClient.readable.pipeTo(callerDuplex.writable);
 
-	const serverStream: McpToolStream = {
+	const toolStream: McpToolStream = {
 		readable: toServer.readable,
 		writable: toClient.writable,
 		close: async () => {},
@@ -46,14 +45,12 @@ function createTestTransport() {
 		env: [] as Array<{ name: string; value: string }>,
 	};
 
-	const factory: McpTransportFactory = async () => ({
-		config: stubConfig,
-		stream: serverStream,
-		dispose: async () => {},
-	});
-
 	return {
-		factory,
+		transport: {
+			config: stubConfig,
+			stream: toolStream,
+			dispose: async () => {},
+		},
 		call,
 		close: async () => {
 			await callerDuplex.close();
@@ -67,7 +64,7 @@ function createTestTransport() {
 
 describe('startTransport', () => {
 	it('dispatches tool calls to the correct execute handler', async () => {
-		const { factory, call, close } = createTestTransport();
+		const { transport, call, close } = createTestTransport();
 
 		const tools: ExtensionToolDefinition[] = [
 			{
@@ -78,7 +75,7 @@ describe('startTransport', () => {
 			},
 		];
 
-		await startTransport('test-ext', tools, factory);
+		await startTransport('test-ext', tools, transport);
 
 		const result = await call({ tool: 'greet', arguments: { name: 'World' } });
 		expect(result).toBe('Hello, World!');
@@ -87,7 +84,7 @@ describe('startTransport', () => {
 	});
 
 	it('returns error for unknown tools', async () => {
-		const { factory, call, close } = createTestTransport();
+		const { transport, call, close } = createTestTransport();
 
 		const tools: ExtensionToolDefinition[] = [
 			{
@@ -98,7 +95,7 @@ describe('startTransport', () => {
 			},
 		];
 
-		await startTransport('my-ext', tools, factory);
+		await startTransport('my-ext', tools, transport);
 
 		await expect(call({ tool: 'unknown_tool', arguments: {} })).rejects.toThrow(
 			'[my-ext] Unknown tool: unknown_tool',
@@ -120,11 +117,11 @@ describe('startTransport', () => {
 		// startTransport could call serve() itself)
 		serverStream.writable.getWriter();
 
-		const factory: McpTransportFactory = async () => ({
+		const transport: McpTransport = {
 			config: { name: 'test', command: 'node', args: [], env: [] },
 			stream: serverStream,
 			dispose: async () => {},
-		});
+		};
 
 		const tools: ExtensionToolDefinition[] = [
 			{
@@ -135,6 +132,8 @@ describe('startTransport', () => {
 			},
 		];
 
-		await expect(startTransport('test-ext', tools, factory)).rejects.toThrow();
+		await expect(
+			startTransport('test-ext', tools, transport),
+		).rejects.toThrow();
 	});
 });

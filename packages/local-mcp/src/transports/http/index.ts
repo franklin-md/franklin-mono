@@ -12,12 +12,11 @@ import type {
 	ToolCallRequest,
 	ToolCallResponse,
 } from '../../types.js';
-import type { AnyToolDefinition } from '../../tools/types.js';
+import type { SerializedToolDefinition } from '../../tools/types.js';
 import { createRelayConfig } from '../../relay-config.js';
-import { serializeTool } from '../../tools/serialize.js';
 
 type Options = {
-	tools: AnyToolDefinition[];
+	tools: SerializedToolDefinition[];
 	// TODO: Should we pass in the options instead?
 	serverOptions: HttpJsonServerOptions;
 };
@@ -41,7 +40,7 @@ export async function createTransport(options: Options): Promise<McpTransport> {
 
 	const config = createRelayConfig({
 		callbackUrl: server.url,
-		tools: options.tools.map(serializeTool),
+		tools: options.tools,
 	});
 
 	const dispose = async () => {

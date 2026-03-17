@@ -23,7 +23,12 @@ import { RELAY_NAME } from './tags.js';
 import { parseRelayEnv } from './env.js';
 import { createError, createSuccess } from '../../messages.js';
 
+process.stderr.write(`[relay] starting, pid=${process.pid}, execPath=${process.execPath}\n`);
+process.stderr.write(`[relay] FRANKLIN_CALLBACK_URL=${process.env['FRANKLIN_CALLBACK_URL'] ?? '(not set)'}\n`);
+process.stderr.write(`[relay] FRANKLIN_TOOLS=${(process.env['FRANKLIN_TOOLS'] ?? '(not set)').slice(0, 200)}\n`);
+
 const { callbackUrl, tools } = parseRelayEnv(process.env);
+process.stderr.write(`[relay] parsed ${tools.length} tools: ${tools.map((t) => t.name).join(', ')}\n`);
 
 const server = new Server(
 	{ name: RELAY_NAME, version: '0.0.0' },
@@ -66,3 +71,4 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
+process.stderr.write(`[relay] MCP server connected and ready\n`);
