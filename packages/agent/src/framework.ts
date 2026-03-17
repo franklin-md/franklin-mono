@@ -5,8 +5,9 @@ import type { AgentTransport } from './transport/index.js';
 import type { AgentConnection } from './connection.js';
 import { emptyMiddleware } from './middleware/empty.js';
 import { compileExtension } from './extensions/compile/index.js';
-import { composeAll, fillHandler } from './spawn.js';
+import { composeAll } from './middleware/compose.js';
 import { joinCommands, joinEvents } from './middleware/join.js';
+import { fillHandler } from './stack/fill-handler.js';
 import { createAgentConnection } from './connection.js';
 
 // ---------------------------------------------------------------------------

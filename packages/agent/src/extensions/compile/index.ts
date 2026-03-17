@@ -1,4 +1,4 @@
-import type { Middleware } from '../../stack/index.js';
+import type { Middleware } from '../../middleware/types.js';
 import type { Extension } from '../types/index.js';
 import { buildMiddleware } from './build.js';
 import { collect } from './collect.js';

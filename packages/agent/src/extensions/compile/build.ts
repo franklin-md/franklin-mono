@@ -11,8 +11,8 @@ import type {
 
 import type { McpTransport } from '@franklin/local-mcp';
 
-import type { Middleware } from '../../stack/index.js';
-import { emptyMiddleware } from '../../stack/index.js';
+import type { Middleware } from '../../middleware/types.js';
+import { emptyMiddleware } from '../../middleware/empty.js';
 import type { SessionStartHandler } from '../types/index.js';
 import type { CollectedState } from './collect.js';
 

@@ -1,8 +1,6 @@
 // Browser-safe exports (the bulk of the public API)
 export * from './browser.js';
 
-export type { AgentSession, SpawnOptions } from './spawn.js';
-
 // Node-only: transports
 export { createMemoryTransport } from './transport/index.js';
 export { StdioTransport } from './transport/stdio.js';

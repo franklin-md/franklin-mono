@@ -37,23 +37,22 @@ export type {
 export { createAgentConnection } from './connection.js';
 export type { AgentConnection } from './connection.js';
 
-// Middleware stack
-export {
-	emptyMiddleware,
-	joinCommands,
-	joinEvents,
-	sequence,
-	COMMAND_METHODS,
-	EVENT_METHODS,
-} from './stack/index.js';
+// Types
+export type { AgentCommands, AgentEvents } from './types.js';
+
+// Middleware
+export { emptyMiddleware } from './middleware/empty.js';
+export { joinCommands, joinEvents } from './middleware/join.js';
+export { sequence } from './middleware/sequence.js';
+export { composeAll } from './middleware/compose.js';
+export { fillHandler } from './stack/fill-handler.js';
+export { COMMAND_METHODS, EVENT_METHODS } from './middleware/types.js';
 export type {
-	AgentCommands,
-	AgentEvents,
 	CommandMiddleware,
 	Cont,
 	EventMiddleware,
 	Middleware,
-} from './stack/index.js';
+} from './middleware/types.js';
 export type { AgentTransport as Transport } from './transport/index.js';
 
 // Store (browser-safe — immer is pure JS, no Node deps)
@@ -62,9 +61,6 @@ export type { ReadonlyStore, Store } from './store/index.js';
 
 // Framework base class
 export { Framework } from './framework.js';
-
-// Spawn helpers (browser-safe — no Node deps)
-export { fillHandler, composeAll } from './spawn.js';
 
 // Re-export key ACP types so consumers don't need to depend on the SDK directly
 export type {
