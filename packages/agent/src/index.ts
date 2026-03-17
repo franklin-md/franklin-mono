@@ -8,15 +8,4 @@ export { createMemoryTransport } from './transport/index.js';
 export { StdioTransport } from './transport/stdio.js';
 export type { StdioTransportOptions } from './transport/stdio.js';
 
-// Node-only: extensions
-export { compileExtension, TodoExtension } from './extensions/index.js';
-export type {
-	Extension,
-	ExtensionAPI,
-	ExtensionToolDefinition,
-	McpTransportFactory,
-	PromptHandler,
-	SessionStartHandler,
-	SessionUpdateHandler,
-	Todo,
-} from './extensions/index.js';
+// Extensions are re-exported via browser.ts above.

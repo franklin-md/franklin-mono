@@ -11,7 +11,11 @@
 export type { EnvironmentHandle, AgentSpec } from './environment.js';
 
 // Extensions (browser-safe — compileExtension only depends on @franklin/local-mcp/browser)
-export { compileExtension } from './extensions/index.js';
+export {
+	compileExtension,
+	TodoExtension,
+	ConversationExtension,
+} from './extensions/index.js';
 export type {
 	Extension,
 	ExtensionAPI,
@@ -20,6 +24,13 @@ export type {
 	PromptHandler,
 	SessionStartHandler,
 	SessionUpdateHandler,
+	Todo,
+	AgentTextEntry,
+	AgentThoughtEntry,
+	ConversationEntry,
+	ConversationTurn,
+	ToolCallEntry,
+	UserEntry,
 } from './extensions/index.js';
 
 // Connection
@@ -48,6 +59,9 @@ export type { AgentTransport as Transport } from './transport/index.js';
 // Store (browser-safe — immer is pure JS, no Node deps)
 export { createStore } from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';
+
+// Framework base class
+export { Framework } from './framework.js';
 
 // Spawn helpers (browser-safe — no Node deps)
 export { fillHandler, composeAll } from './spawn.js';

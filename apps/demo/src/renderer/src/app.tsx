@@ -1,4 +1,5 @@
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AgentChatPage } from '@/pages/agent-chat/agent-chat-page.js';
 
 export function App() {
 	return (
@@ -12,18 +13,21 @@ export function App() {
 			</header>
 
 			<Tabs
-				defaultValue="thread"
+				defaultValue="agent-chat"
 				className="flex flex-1 flex-col overflow-hidden"
 			>
 				<div className="border-b px-6">
 					<TabsList>
-						<TabsTrigger value="thread">Thread</TabsTrigger>
+						<TabsTrigger value="agent-chat">Agent Chat</TabsTrigger>
 					</TabsList>
 				</div>
 
-				{/* <TabsContent value="thread" className="flex flex-1 overflow-hidden m-0">
-					<ThreadPage />
-				</TabsContent> */}
+				<TabsContent
+					value="agent-chat"
+					className="flex flex-1 overflow-hidden m-0"
+				>
+					<AgentChatPage />
+				</TabsContent>
 			</Tabs>
 		</div>
 	);

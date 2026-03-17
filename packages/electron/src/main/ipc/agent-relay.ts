@@ -5,7 +5,6 @@ import {
 	Multiplexer,
 	connect,
 } from '@franklin/transport';
-import type { StdioTransport } from '@franklin/agent';
 import type { NodeFramework } from '@franklin/node';
 import type { ProvisionOptions } from '@franklin/node';
 import type { WebContents } from 'electron';
@@ -28,10 +27,7 @@ import { createMainIpcMux } from './stream.js';
  * This relay only manages the IPC <-> stdio bridging for agents.
  */
 export class AgentRelay {
-	private agents = new Map<
-		string,
-		{ stdio: StdioTransport; bridge: Duplex<AnyMessage> }
-	>();
+	private agents = new Map<string, Duplex<AnyMessage>>();
 	private agentMux: Multiplexer<AnyMessage>;
 
 	constructor(
@@ -70,15 +66,14 @@ export class AgentRelay {
 
 		const agentId = randomUUID();
 		const transport = await env.spawn(name);
-		const stdio = transport as StdioTransport;
 
 		// Level 2: per-agent slice of the shared IPC stream
 		const ipcStream = this.agentMux.channel(agentId);
 
-		// Bidirectionally connect IPC <-> stdio
-		const bridge = connect(ipcStream, stdio);
+		// Bidirectionally connect IPC <-> agent transport
+		const agent = connect(ipcStream, transport);
 
-		this.agents.set(agentId, { stdio, bridge });
+		this.agents.set(agentId, agent);
 		return agentId;
 	}
 
@@ -86,10 +81,10 @@ export class AgentRelay {
 	 * Kills an agent and cleans up its streams.
 	 */
 	async kill(agentId: string): Promise<void> {
-		const entry = this.agents.get(agentId);
-		if (!entry) return;
+		const agent = this.agents.get(agentId);
+		if (!agent) return;
 		this.agents.delete(agentId);
-		await entry.bridge.close();
+		await agent.close();
 	}
 
 	/**

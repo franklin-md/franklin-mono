@@ -1,4 +1,5 @@
 import type { McpTransportFactory } from '@franklin/agent/browser';
+import { Framework } from '@franklin/agent/browser';
 
 import { ElectronEnvironmentHandle } from './environment.js';
 import { createIpcMcpTransport } from './ipc/mcp-transport.js';
@@ -20,10 +21,11 @@ export interface ProvisionOptions {
  * Renderer-side framework that proxies environment provisioning and agent
  * spawning over Electron IPC to the main process.
  *
- * Mirrors the NodeFramework API so that renderer code can use the same
- * Framework → EnvironmentHandle → AgentTransport interface as Node.
+ * Extends the base Framework class to inherit `compileExtensions` and
+ * `compileAgent`. Provides the Electron-specific `toolTransport` (IPC)
+ * and environment lifecycle (provisioned via main process).
  */
-export class ElectronFramework {
+export class ElectronFramework extends Framework {
 	private readonly environments = new Set<string>();
 
 	/** MCP transport factory — proxies tool calls over IPC. */

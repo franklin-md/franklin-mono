@@ -4,6 +4,10 @@
 
 ### agents:
 
+- Codex:
+  - https://github.com/cola-io/codex-acp
+  - https://github.com/zed-industries/codex-acp
+  - [ ] Instead of using codex-core ACP adapters, we could use the new app-server protocol and create an adaptor for that!
 - [ ] Checking for availability (is the packages installed, should we install them ourselves, and how do we cope with different versions)
 - [ ] Not sure about authentication flow.
 - Environments:

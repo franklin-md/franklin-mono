@@ -1,4 +1,5 @@
 import type { McpTransportFactory } from '@franklin/agent';
+import { Framework } from '@franklin/agent';
 
 import type { ProvisionOptions } from './environment.js';
 import type { NodeEnvironment } from './environment.js';
@@ -15,27 +16,25 @@ export interface FrameworkOptions {
 }
 
 // ---------------------------------------------------------------------------
-// NodeFramework — informal Framework for Node.js
+// NodeFramework
 // ---------------------------------------------------------------------------
 
 /**
  * Manages agent environments in a Node.js process.
  *
- * Wraps the existing `provision()` helper and adds lifecycle tracking
- * so that `dispose()` can tear down all provisioned environments.
- * Environments are keyed by their auto-generated ID for lookup.
- *
- * This is an informal framework — not yet formalized in `@franklin/agent`.
- * Once Electron and other frameworks prove the shape, we can extract an
- * abstract interface.
+ * Extends the base Framework class to inherit `compileExtensions` and
+ * `compileAgent`. Provides the Node-specific `toolTransport` (HTTP relay)
+ * and environment lifecycle (local filesystem).
  */
-export class NodeFramework {
+export class NodeFramework extends Framework {
 	private readonly environments = new Map<string, NodeEnvironment>();
 
 	constructor(
 		private readonly registry: AgentRegistry,
 		private readonly options?: FrameworkOptions,
-	) {}
+	) {
+		super();
+	}
 
 	/** MCP transport factory — defaults to the Node HTTP relay. */
 	get toolTransport(): McpTransportFactory {
