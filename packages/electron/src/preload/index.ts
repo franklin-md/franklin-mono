@@ -30,16 +30,22 @@ const ipcStream = {
 };
 
 // ---------------------------------------------------------------------------
+// Framework lifecycle (environment provisioning/disposal)
+// ---------------------------------------------------------------------------
+
+const framework = {
+	provision: (opts?: unknown): Promise<string> =>
+		ipcRenderer.invoke(ENV_PROVISION, opts) as Promise<string>,
+
+	dispose: (envId: string): Promise<void> =>
+		ipcRenderer.invoke(ENV_DISPOSE, envId) as Promise<void>,
+};
+
+// ---------------------------------------------------------------------------
 // Agent lifecycle (request/response over invoke)
 // ---------------------------------------------------------------------------
 
 const agent = {
-	provisionEnv: (opts?: unknown): Promise<string> =>
-		ipcRenderer.invoke(ENV_PROVISION, opts) as Promise<string>,
-
-	disposeEnv: (envId: string): Promise<void> =>
-		ipcRenderer.invoke(ENV_DISPOSE, envId) as Promise<void>,
-
 	spawn: (envId: string, name: string): Promise<string> =>
 		ipcRenderer.invoke(AGENT_SPAWN, envId, name) as Promise<string>,
 
@@ -65,6 +71,7 @@ const mcp = {
 
 contextBridge.exposeInMainWorld('__franklinBridge', {
 	ipcStream,
+	framework,
 	agent,
 	mcp,
 });

@@ -38,7 +38,7 @@ export class ElectronFramework extends Framework {
 	 * Returns a renderer-side handle for spawning agents.
 	 */
 	async provision(opts?: ProvisionOptions): Promise<ElectronEnvironmentHandle> {
-		const envId = await window.__franklinBridge.agent.provisionEnv(opts);
+		const envId = await window.__franklinBridge.framework.provision(opts);
 		this.environments.add(envId);
 		return new ElectronEnvironmentHandle(envId);
 	}
@@ -47,7 +47,7 @@ export class ElectronFramework extends Framework {
 	async dispose(): Promise<void> {
 		await Promise.allSettled(
 			[...this.environments].map((id) =>
-				window.__franklinBridge.agent.disposeEnv(id),
+				window.__franklinBridge.framework.dispose(id),
 			),
 		);
 		this.environments.clear();

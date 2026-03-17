@@ -6,25 +6,18 @@ import {
 	connect,
 } from '@franklin/transport';
 import type { NodeFramework } from '@franklin/node';
-import type { ProvisionOptions } from '@franklin/node';
 import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
 import { randomUUID } from 'node:crypto';
 
-import {
-	AGENT_STREAM,
-	ENV_PROVISION,
-	ENV_DISPOSE,
-	AGENT_SPAWN,
-	AGENT_KILL,
-} from '../../shared/channels.js';
+import { AGENT_STREAM, AGENT_SPAWN, AGENT_KILL } from '../../shared/channels.js';
 import { createMainIpcMux } from './stream.js';
 
 /**
  * Bridges renderer <-> agent subprocesses over Electron IPC.
  *
- * Environment lifecycle is delegated to NodeFramework.
  * This relay only manages the IPC <-> stdio bridging for agents.
+ * Environment lifecycle is handled separately by FrameworkRelay.
  */
 export class AgentRelay {
 	private agents = new Map<string, Duplex<AnyMessage>>();
@@ -39,15 +32,6 @@ export class AgentRelay {
 
 		// Level 1: agent transport channel -> Level 2 multiplexer by agentId
 		this.agentMux = new Multiplexer(ipcMux.channel(AGENT_STREAM));
-
-		// Environment lifecycle — delegated to framework
-		ipcMain.handle(ENV_PROVISION, (_event, opts?: ProvisionOptions) => {
-			const env = this.framework.provision(opts);
-			return env.id;
-		});
-		ipcMain.handle(ENV_DISPOSE, (_event, envId: string) =>
-			this.framework.disposeEnv(envId),
-		);
 
 		// Agent lifecycle
 		ipcMain.handle(AGENT_SPAWN, (_event, envId: string, name: string) =>
@@ -95,8 +79,6 @@ export class AgentRelay {
 		const agentKills = [...this.agents.keys()].map((id) => this.kill(id));
 		await Promise.allSettled(agentKills);
 
-		ipcMain.removeHandler(ENV_PROVISION);
-		ipcMain.removeHandler(ENV_DISPOSE);
 		ipcMain.removeHandler(AGENT_SPAWN);
 		ipcMain.removeHandler(AGENT_KILL);
 	}

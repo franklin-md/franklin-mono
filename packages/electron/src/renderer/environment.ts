@@ -20,6 +20,6 @@ export class ElectronEnvironmentHandle implements EnvironmentHandle {
 	}
 
 	async dispose(): Promise<void> {
-		await window.__franklinBridge.agent.disposeEnv(this.envId);
+		await window.__franklinBridge.framework.dispose(this.envId);
 	}
 }

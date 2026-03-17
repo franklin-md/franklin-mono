@@ -15,9 +15,11 @@ interface FranklinBridge {
 		on: (callback: (packet: unknown) => void) => () => void;
 		invoke: (packet: unknown) => void;
 	};
+	framework: {
+		provision: (opts?: unknown) => Promise<string>;
+		dispose: (envId: string) => Promise<void>;
+	};
 	agent: {
-		provisionEnv: (opts?: unknown) => Promise<string>;
-		disposeEnv: (envId: string) => Promise<void>;
 		spawn: (envId: string, name: string) => Promise<string>;
 		kill: (agentId: string) => Promise<void>;
 	};
