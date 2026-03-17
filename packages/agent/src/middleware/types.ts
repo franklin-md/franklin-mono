@@ -66,4 +66,8 @@ export const EVENT_METHODS = [
 	'killTerminal',
 ] as const satisfies readonly (keyof AgentEvents)[];
 
+export const NOTIFICATION_METHODS: ReadonlySet<string> = new Set([
+	'sessionUpdate',
+] as const satisfies readonly (keyof AgentEvents)[]);
+
 export const ALL_METHODS = [...COMMAND_METHODS, ...EVENT_METHODS] as const;
