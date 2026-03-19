@@ -27,5 +27,6 @@ export function useStore<T>(store: Store<T>): Store<T> {
 		get: () => value,
 		subscribe: unsubscribe,
 		set,
+		copy: () => store.copy(),
 	};
 }

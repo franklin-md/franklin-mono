@@ -62,9 +62,7 @@ export function buildMiddleware(
 	// Build the MCP tool prefix for auto-approving permission requests.
 	// Agents name MCP tools as `mcp__{serverName}__{toolName}`, so any
 	// tool whose title starts with this prefix belongs to our extension.
-	const mcpPrefix = transport
-		? `mcp__${transport.config.name}__`
-		: undefined;
+	const mcpPrefix = transport ? `mcp__${transport.config.name}__` : undefined;
 
 	if (!hasSessionStart && !hasPrompt && !hasSessionUpdate && !mcpPrefix) {
 		return emptyMiddleware;
