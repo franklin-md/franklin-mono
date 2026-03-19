@@ -1,12 +1,9 @@
 import type { Extension } from './extensions/types/index.js';
 import type { McpTransportFactory } from './extensions/compile/start.js';
-import type { Middleware } from './middleware/types.js';
+import type { AgentMiddleware } from './types.js';
 import type { AgentTransport } from './transport/index.js';
 import type { AgentConnection } from './connection.js';
-import { emptyMiddleware } from './middleware/empty.js';
 import { compileExtension } from './extensions/compile/index.js';
-import { composeAll } from './middleware/compose.js';
-import { joinCommands, joinEvents } from './middleware/join.js';
 import { fillHandler } from './stack/fill-handler.js';
 import { createAgentConnection } from './connection.js';
 
@@ -26,47 +23,32 @@ export abstract class Framework {
 	abstract get toolTransport(): McpTransportFactory;
 
 	/**
-	 * Compile a list of extensions into a single middleware.
+	 * Compile a list of extensions into a single transport-wrapping middleware.
 	 *
 	 * Each extension is compiled against this framework's `toolTransport`,
-	 * then all resulting middlewares are sequenced into one.
+	 * then all resulting middlewares are composed. Extensions listed first
+	 * are inner (closer to the agent).
 	 */
 	async compileExtensions(
 		extensions: readonly Extension<any>[],
-	): Promise<Middleware> {
+	): Promise<AgentMiddleware> {
 		const mws = await Promise.all(
 			extensions.map((ext) => compileExtension(ext, this.toolTransport)),
 		);
-		return composeAll(mws);
+		return mws.reduce<AgentMiddleware>(
+			(composed, mw) => (t) => mw(composed(t)),
+			(t) => t,
+		);
 	}
 
 	/**
-	 * Connect a transport through middleware, returning an AgentConnection.
+	 * Connect a transport, returning an AgentConnection.
 	 *
-	 * The returned connection has the same shape as a raw connection but
-	 * with commands wrapped through middleware and an empty terminal handler.
-	 * Supports zero middleware (pass nothing or an empty array).
+	 * The consumer wraps the transport with middleware before calling:
+	 *
+	 *     framework.connect(middleware(transport))
 	 */
-	connect(
-		transport: AgentTransport,
-		...middlewares: Middleware[]
-	): AgentConnection {
-		const middleware =
-			middlewares.length > 0 ? composeAll(middlewares) : emptyMiddleware;
-
-		const handler = fillHandler({});
-		const wrappedHandler = joinEvents(middleware, handler);
-		const connection = createAgentConnection(transport, wrappedHandler);
-		const commands = joinCommands(middleware, connection.commands);
-
-		return {
-			commands,
-			signal: connection.signal,
-			closed: connection.closed,
-			dispose: async () => {
-				await middleware.dispose?.();
-				await connection.dispose();
-			},
-		};
+	connect(transport: AgentTransport): AgentConnection {
+		return createAgentConnection(transport, fillHandler({}));
 	}
 }

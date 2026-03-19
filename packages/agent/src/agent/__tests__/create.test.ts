@@ -214,6 +214,10 @@ describe('createAgent', () => {
 		});
 		promptCall.catch(() => {});
 
+		// The transport-wrapping middleware processes writes asynchronously
+		// through the streams API, so we yield to let the handler fire.
+		await new Promise((r) => setTimeout(r, 0));
+
 		expect(captured).toEqual(['intercepted']);
 	});
 

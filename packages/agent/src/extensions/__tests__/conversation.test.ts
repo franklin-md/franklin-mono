@@ -1,18 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type {
-	NewSessionRequest,
-	NewSessionResponse,
-	PromptRequest,
-	SessionNotification,
-} from '@agentclientprotocol/sdk';
+import type { AnyMessage, SessionNotification } from '@agentclientprotocol/sdk';
+import { AGENT_METHODS, CLIENT_METHODS } from '@agentclientprotocol/sdk';
 
-import type { McpToolStream, McpTransport } from '@franklin/local-mcp';
-
-import { joinCommands, joinEvents } from '../../middleware/join.js';
-import type { AgentCommands, AgentEvents } from '../../types.js';
+import type { AgentMiddleware } from '../../types.js';
 import { compileExtension } from '../compile/index.js';
-import type { McpTransportFactory } from '../compile/index.js';
 import { ConversationExtension } from '../examples/conversation/index.js';
 import type {
 	AgentTextEntry,
@@ -21,90 +13,45 @@ import type {
 	ToolCallEntry,
 	UserEntry,
 } from '../examples/conversation/types.js';
+import {
+	createMockTransportFactory,
+	createTransportPair,
+	sendCommand,
+	sendNotification,
+} from './helpers.js';
 
 // ---------------------------------------------------------------------------
-// Helpers (same pattern as todo.test.ts / compile.test.ts)
+// Helpers
 // ---------------------------------------------------------------------------
 
-function createTerminalCommands(
-	overrides?: Partial<AgentCommands>,
-): AgentCommands {
-	const noop = () => Promise.resolve({}) as Promise<never>;
-	return {
-		initialize: noop,
-		newSession: async (_params: NewSessionRequest) =>
-			({ sessionId: 'test' }) as NewSessionResponse,
-		loadSession: noop,
-		listSessions: noop,
-		prompt: async () => ({ stopReason: 'end_turn' as const }),
-		cancel: async () => {},
-		setSessionMode: noop,
-		setSessionConfigOption: noop,
-		authenticate: noop,
-		...overrides,
-	};
-}
-
-function createTerminalEvents(overrides?: Partial<AgentEvents>): AgentEvents {
-	const noop = () => Promise.resolve({}) as Promise<never>;
-	return {
-		sessionUpdate: async () => {},
-		requestPermission: noop,
-		readTextFile: noop,
-		writeTextFile: noop,
-		createTerminal: noop,
-		terminalOutput: noop,
-		releaseTerminal: noop,
-		waitForTerminalExit: noop,
-		killTerminal: noop,
-		...overrides,
-	};
-}
-
-const stubMcpConfig = {
-	name: 'test-relay',
-	command: 'node',
-	args: ['--version'],
-	env: [{ name: 'STUB', value: 'true' }],
-};
-
-function createMockTransportFactory(): {
-	factory: McpTransportFactory;
+/**
+ * Sets up a test harness around a middleware instance.
+ *
+ * Returns helpers for sending commands (app → agent) and events (agent → app)
+ * through the transport-wrapped middleware.
+ */
+function setupTest(middleware: AgentMiddleware): {
+	sendPrompt: (sessionId: string, text: string) => Promise<void>;
+	sendUpdate: (
+		sessionId: string,
+		update: SessionNotification['update'],
+	) => Promise<void>;
 } {
-	const factory: McpTransportFactory = async (_name) => {
-		const mockStream = {
-			readable: new ReadableStream<never>(),
-			writable: new WritableStream<never>(),
-			close: async () => {},
-		} as unknown as McpToolStream;
-		return {
-			config: stubMcpConfig,
-			stream: mockStream,
-			dispose: vi.fn(async () => {}),
-		} as McpTransport;
+	const { a: agent, b: inner } = createTransportPair();
+	const app = middleware(inner);
+
+	return {
+		sendPrompt: (sessionId, text) =>
+			sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId,
+				prompt: [{ type: 'text', text }],
+			}).then(() => undefined),
+		sendUpdate: (sessionId, update) =>
+			sendNotification(agent, app, CLIENT_METHODS.session_update, {
+				sessionId,
+				update,
+			}).then(() => undefined),
 	};
-	return { factory };
-}
-
-/** Helper to fire a sessionUpdate notification through the event pipeline. */
-async function fireUpdate(
-	events: AgentEvents,
-	sessionId: string,
-	update: SessionNotification['update'],
-) {
-	await events.sessionUpdate({ sessionId, update });
-}
-
-/** Helper to fire a prompt through the command pipeline. */
-async function firePrompt(
-	commands: AgentCommands,
-	sessionId: string,
-	text: string,
-) {
-	await commands.prompt({
-		sessionId,
-		prompt: [{ type: 'text', text }],
-	});
 }
 
 // ---------------------------------------------------------------------------
@@ -118,10 +65,8 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const commands = joinCommands(middleware, terminal);
-
-			await firePrompt(commands, 'test', 'hello');
+			const { sendPrompt } = setupTest(middleware);
+			await sendPrompt('test', 'hello');
 
 			const turns = ext.state.get();
 			expect(turns).toHaveLength(1);
@@ -140,19 +85,30 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const writer = app.writable.getWriter();
+			await writer.write({
+				jsonrpc: '2.0',
+				id: 1,
+				method: AGENT_METHODS.session_prompt,
+				params: {
+					sessionId: 'test',
+					prompt: [{ type: 'text', text: 'hello' }],
 				},
-			});
+			} as AnyMessage);
+			writer.releaseLock();
 
-			const commands = joinCommands(middleware, terminal);
-			await firePrompt(commands, 'test', 'hello');
+			await new Promise((r) => setTimeout(r, 10));
+			const agentReader = agent.readable.getReader();
+			const { value: msg } = await agentReader.read();
+			agentReader.releaseLock();
 
-			expect(captured[0]!.prompt).toHaveLength(1);
-			expect((captured[0]!.prompt[0] as { text: string }).text).toBe('hello');
+			const prompt = (msg as { params: { prompt: Array<{ text: string }> } })
+				.params.prompt;
+			expect(prompt).toHaveLength(1);
+			expect(prompt[0]!.text).toBe('hello');
 		});
 	});
 
@@ -162,24 +118,20 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
+			await sendPrompt('test', 'hello');
 
-			await firePrompt(commands, 'test', 'hello');
-
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'Hello' },
 				messageId: 'msg-1',
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: ' world' },
 				messageId: 'msg-1',
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: '!' },
 				messageId: 'msg-1',
@@ -201,19 +153,15 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
+			await sendPrompt('test', 'hello');
 
-			await firePrompt(commands, 'test', 'hello');
-
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'First' },
 				messageId: 'msg-1',
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'Second' },
 				messageId: 'msg-2',
@@ -231,18 +179,14 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
+			await sendPrompt('test', 'hello');
 
-			await firePrompt(commands, 'test', 'hello');
-
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'A' },
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'B' },
 			});
@@ -263,23 +207,19 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
+			await sendPrompt('test', 'hello');
 
-			await firePrompt(commands, 'test', 'hello');
-
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'A' },
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'tool_call',
 				toolCallId: 'tc-1',
 				title: 'Read file',
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'B' },
 			});
@@ -299,19 +239,15 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
+			await sendPrompt('test', 'think about this');
 
-			await firePrompt(commands, 'test', 'think about this');
-
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_thought_chunk',
 				content: { type: 'text', text: 'Let me think...' },
 				messageId: 'thought-1',
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_thought_chunk',
 				content: { type: 'text', text: ' about this.' },
 				messageId: 'thought-1',
@@ -333,14 +269,10 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
+			await sendPrompt('test', 'do something');
 
-			await firePrompt(commands, 'test', 'do something');
-
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'tool_call',
 				toolCallId: 'tc-1',
 				title: 'Read file',
@@ -364,20 +296,16 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
+			await sendPrompt('test', 'do something');
 
-			await firePrompt(commands, 'test', 'do something');
-
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'tool_call',
 				toolCallId: 'tc-1',
 				title: 'Read file',
 				status: 'in_progress',
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'tool_call_update',
 				toolCallId: 'tc-1',
 				status: 'completed',
@@ -400,14 +328,10 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
+			await sendPrompt('test', 'hello');
 
-			await firePrompt(commands, 'test', 'hello');
-
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'user_message_chunk',
 				content: { type: 'text', text: 'hello' },
 				messageId: 'user-1',
@@ -424,14 +348,10 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
+			await sendPrompt('test', 'hello');
 
-			await firePrompt(commands, 'test', 'hello');
-
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'usage_update',
 				size: 1000,
 				used: 500,
@@ -448,22 +368,19 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
 
 			// Turn 1
-			await firePrompt(commands, 'test', 'first');
-			await fireUpdate(events, 'test', {
+			await sendPrompt('test', 'first');
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'response 1' },
 				messageId: 'msg-1',
 			});
 
 			// Turn 2
-			await firePrompt(commands, 'test', 'second');
-			await fireUpdate(events, 'test', {
+			await sendPrompt('test', 'second');
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'response 2' },
 				messageId: 'msg-2',
@@ -495,29 +412,25 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
+			await sendPrompt('test', 'do things');
 
-			await firePrompt(commands, 'test', 'do things');
-
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_thought_chunk',
 				content: { type: 'text', text: 'thinking...' },
 				messageId: 'thought-1',
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'I will read a file' },
 				messageId: 'msg-1',
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'tool_call',
 				toolCallId: 'tc-1',
 				title: 'Read file',
 			});
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'Here is the result' },
 				messageId: 'msg-2',
@@ -539,15 +452,12 @@ describe('ConversationExtension', () => {
 			const listener = vi.fn();
 			ext.state.subscribe(listener);
 
-			const terminal = createTerminalCommands();
-			const terminalEvents = createTerminalEvents();
-			const commands = joinCommands(middleware, terminal);
-			const events = joinEvents(middleware, terminalEvents);
+			const { sendPrompt, sendUpdate } = setupTest(middleware);
 
-			await firePrompt(commands, 'test', 'hello');
+			await sendPrompt('test', 'hello');
 			expect(listener).toHaveBeenCalledTimes(1);
 
-			await fireUpdate(events, 'test', {
+			await sendUpdate('test', {
 				sessionUpdate: 'agent_message_chunk',
 				content: { type: 'text', text: 'hi' },
 				messageId: 'msg-1',
@@ -566,8 +476,8 @@ describe('ConversationExtension', () => {
 			const mw1 = await compileExtension(ext1, f1);
 			await compileExtension(ext2, f2);
 
-			const commands1 = joinCommands(mw1, createTerminalCommands());
-			await firePrompt(commands1, 'test', 'only in ext1');
+			const { sendPrompt } = setupTest(mw1);
+			await sendPrompt('test', 'only in ext1');
 
 			expect(ext1.state.get()).toHaveLength(1);
 			expect(ext2.state.get()).toHaveLength(0);

@@ -1,6 +1,6 @@
 import { serializeTool } from '@franklin/local-mcp';
 import type { McpTransport } from '@franklin/local-mcp';
-import type { Middleware } from '../../middleware/types.js';
+import type { AgentMiddleware } from '../../types.js';
 import type { Extension } from '../types/index.js';
 import { buildMiddleware } from './build.js';
 import { collect } from './collect.js';
@@ -10,17 +10,17 @@ import type { McpTransportFactory } from './start.js';
 export type { McpTransportFactory } from './start.js';
 
 /**
- * Compiles an Extension into a Middleware with lifecycle.
+ * Compiles an Extension into an AgentMiddleware (transport wrapper).
  *
  * Steps:
  * 1. Collect — run setup() to gather hooks and tools
  * 2. Start — create MCP transport and wire tool dispatch (if tools registered)
- * 3. Build — construct the middleware from collected state
+ * 3. Build — construct the transport wrapper from collected state
  */
 export async function compileExtension(
 	extension: Extension<any>,
 	transportFactory: McpTransportFactory,
-): Promise<Middleware> {
+): Promise<AgentMiddleware> {
 	const state = await collect(extension);
 
 	let transport: McpTransport | undefined;

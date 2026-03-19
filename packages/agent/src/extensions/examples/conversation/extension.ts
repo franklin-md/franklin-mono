@@ -93,7 +93,13 @@ export class ConversationExtension implements Extension<ConversationTurn[]> {
 						}
 					});
 					break;
-				default:
+				case 'user_message_chunk':
+				case 'plan':
+				case 'available_commands_update':
+				case 'current_mode_update':
+				case 'config_option_update':
+				case 'session_info_update':
+				case 'usage_update':
 					break;
 			}
 		});

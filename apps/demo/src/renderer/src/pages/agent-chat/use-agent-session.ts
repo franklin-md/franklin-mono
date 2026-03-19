@@ -63,7 +63,7 @@ export function useAgentSession(): AgentSession {
 					conversationExt,
 					todoExt,
 				]);
-				const { commands, dispose } = framework.connect(transport, middleware);
+				const { commands, dispose } = framework.connect(middleware(transport));
 
 				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated across await
 				if (disposedRef.current) {

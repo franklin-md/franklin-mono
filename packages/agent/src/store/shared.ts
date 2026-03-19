@@ -5,7 +5,7 @@ import { BaseStore } from './base.js';
  * so all copies read and write the same underlying state.
  */
 class SharedStore<T> extends BaseStore<T> {
-	copy(): SharedStore<T> {
+	copy(): this {
 		return this;
 	}
 }
