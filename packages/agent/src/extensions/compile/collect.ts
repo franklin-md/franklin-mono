@@ -22,7 +22,9 @@ export interface CollectedState {
 // collect — run setup() and return accumulated state
 // ---------------------------------------------------------------------------
 
-export async function collect(extension: Extension): Promise<CollectedState> {
+export async function collect(
+	extension: Extension<any>,
+): Promise<CollectedState> {
 	const state: CollectedState = {
 		sessionStartHandlers: [],
 		promptHandlers: [],

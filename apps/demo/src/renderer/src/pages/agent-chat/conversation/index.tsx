@@ -14,7 +14,7 @@ export function ConversationPanel({
 	commands: AgentCommands;
 	sessionId: string;
 }) {
-	const conversation = useStore(conversationExt.conversation);
+	const conversation = useStore(conversationExt.state);
 
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">

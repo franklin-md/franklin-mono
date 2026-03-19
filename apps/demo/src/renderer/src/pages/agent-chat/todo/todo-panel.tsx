@@ -9,7 +9,7 @@ import { TodoAddForm } from './todo-add-form.js';
 import { TodoItem } from './todo-item.js';
 
 export function TodoPanel({ todoExt }: { todoExt: TodoExtension }) {
-	const reactStore = useStore(todoExt.todos);
+	const reactStore = useStore(todoExt.state);
 	const control = createTodoControl(reactStore);
 
 	return (

@@ -18,7 +18,7 @@ export type { McpTransportFactory } from './start.js';
  * 3. Build — construct the transport wrapper from collected state
  */
 export async function compileExtension(
-	extension: Extension,
+	extension: Extension<any>,
 	transportFactory: McpTransportFactory,
 ): Promise<AgentMiddleware> {
 	const state = await collect(extension);

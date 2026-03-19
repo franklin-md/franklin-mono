@@ -49,17 +49,23 @@ export { fillHandler } from './stack/fill-handler.js';
 export type { AgentTransport as Transport } from './transport/index.js';
 
 // Store (browser-safe — immer is pure JS, no Node deps)
-export { createStore } from './store/index.js';
+export {
+	createStore,
+	createSharedStore,
+	createPrivateStore,
+} from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';
+
+// Agent — typed handle unifying commands, extension stores, and lifecycle
+export { createAgent } from './agent/index.js';
+export type { Agent, ExtensionStores } from './agent/index.js';
 
 // Framework base class
 export { Framework } from './framework.js';
 
 // Re-export key ACP types so consumers don't need to depend on the SDK directly
 export type {
-	Agent,
 	AnyMessage,
-	Client,
 	AuthenticateRequest,
 	AuthenticateResponse,
 	CancelNotification,

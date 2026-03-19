@@ -20,12 +20,12 @@ import {
  * Wraps an extension to intercept tool registrations.
  * Returns the wrapped extension + the captured tool list.
  */
-function wrapExtension(extension: Extension): {
-	wrapped: Extension;
+function wrapExtension(extension: Extension<any>): {
+	wrapped: Extension<any>;
 	tools: ExtensionToolDefinition[];
 } {
 	const tools: ExtensionToolDefinition[] = [];
-	const wrapped: Extension = {
+	const wrapped: Extension<any> = {
 		name: extension.name,
 		async setup(api) {
 			const originalRegisterTool = api.registerTool.bind(api);
@@ -74,9 +74,9 @@ describe('TodoExtension', () => {
 
 			expect(result.id).toBeDefined();
 			expect(typeof result.id).toBe('string');
-			expect(ext.todos.get()).toHaveLength(1);
-			expect(ext.todos.get()[0]!.text).toBe('Buy milk');
-			expect(ext.todos.get()[0]!.completed).toBe(false);
+			expect(ext.state.get()).toHaveLength(1);
+			expect(ext.state.get()[0]!.text).toBe('Buy milk');
+			expect(ext.state.get()[0]!.completed).toBe(false);
 		});
 	});
 
@@ -95,7 +95,7 @@ describe('TodoExtension', () => {
 			};
 			await completeTool.execute({ id });
 
-			expect(ext.todos.get()[0]!.completed).toBe(true);
+			expect(ext.state.get()[0]!.completed).toBe(true);
 		});
 
 		it('throws on invalid id', async () => {
@@ -189,7 +189,7 @@ describe('TodoExtension', () => {
 			await compileExtension(wrapped, factory);
 
 			const listener = vi.fn();
-			ext.todos.subscribe(listener);
+			ext.state.subscribe(listener);
 
 			const addTool = findTool(tools, 'add_todo');
 			await addTool.execute({ text: 'Test' });
@@ -217,8 +217,8 @@ describe('TodoExtension', () => {
 			const addTool1 = findTool(wrap1.tools, 'add_todo');
 			await addTool1.execute({ text: 'Instance 1 only' });
 
-			expect(ext1.todos.get()).toHaveLength(1);
-			expect(ext2.todos.get()).toHaveLength(0);
+			expect(ext1.state.get()).toHaveLength(1);
+			expect(ext2.state.get()).toHaveLength(0);
 		});
 	});
 });

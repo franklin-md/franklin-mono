@@ -30,7 +30,7 @@ export abstract class Framework {
 	 * are inner (closer to the agent).
 	 */
 	async compileExtensions(
-		extensions: readonly Extension[],
+		extensions: readonly Extension<any>[],
 	): Promise<AgentMiddleware> {
 		const mws = await Promise.all(
 			extensions.map((ext) => compileExtension(ext, this.toolTransport)),

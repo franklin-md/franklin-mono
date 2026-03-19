@@ -103,7 +103,7 @@ describeIntegration('MCP tool integration (codex + TodoExtension)', () => {
 		//    have been updated by the tool handler, proving the full
 		//    round-trip: agent → relay subprocess → HTTP callback →
 		//    serve() → tool.execute() → store.
-		const todos = todoExtension.todos.get();
+		const todos = todoExtension.state.get();
 		expect(todos.length).toBeGreaterThan(0);
 		expect(todos[0]!.text).toMatch(/buy milk/i);
 	}, 60_000);

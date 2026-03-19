@@ -1,3 +1,4 @@
+import type { Store } from '../../store/types.js';
 import type { ExtensionToolDefinition } from './tool.js';
 import type {
 	PromptHandler,
@@ -9,9 +10,14 @@ import type {
  * An extension is a named setup function that receives an ExtensionAPI.
  * During setup, the extension registers hooks and tools. After setup,
  * the extension is compiled into a single Middleware.
+ *
+ * Stateful extensions declare their shared state type via the generic
+ * parameter and expose it as a `Store<T>` for UI binding and external
+ * mutation. Stateless extensions omit `state` (defaults to `void`).
  */
-export interface Extension {
+export interface Extension<T = void> {
 	name: string;
+	state?: Store<T>;
 	setup: (api: ExtensionAPI) => Promise<void>;
 }
 
