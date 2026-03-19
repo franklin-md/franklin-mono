@@ -1,20 +1,25 @@
 import type {
+	AnyMessage,
 	LoadSessionRequest,
-	LoadSessionResponse,
 	McpServer,
 	NewSessionRequest,
-	NewSessionResponse,
 	PromptRequest,
-	PromptResponse,
 	RequestPermissionRequest,
-	RequestPermissionResponse,
 	SessionNotification,
 } from '@agentclientprotocol/sdk';
+import { AGENT_METHODS, CLIENT_METHODS } from '@agentclientprotocol/sdk';
 
 import type { McpTransport } from '@franklin/local-mcp';
+import {
+	intercept,
+	matchNotification,
+	matchRequest,
+	rpcResponse,
+	withParams,
+} from '@franklin/transport';
+import type { RpcMessage } from '@franklin/transport';
 
-import type { Middleware } from '../../middleware/types.js';
-import { emptyMiddleware } from '../../middleware/empty.js';
+import type { AgentMiddleware } from '../../types.js';
 import type { SessionStartHandler } from '../types/index.js';
 import type { CollectedState } from './collect.js';
 
@@ -45,125 +50,153 @@ async function runSessionStartWaterfall(
 }
 
 // ---------------------------------------------------------------------------
-// buildMiddleware — construct Middleware from collected state + transport
+// Command-side waterfalls (app → agent)
+// ---------------------------------------------------------------------------
+
+async function transformCommand(
+	msg: RpcMessage,
+	sessionStartHandlers: SessionStartHandler[],
+	promptHandlers: CollectedState['promptHandlers'],
+	transport: McpTransport | undefined,
+): Promise<RpcMessage> {
+	// session/new or session/load — run sessionStart waterfall
+	const newReq = matchRequest<NewSessionRequest>(
+		msg,
+		AGENT_METHODS.session_new,
+	);
+	const loadReq =
+		!newReq &&
+		matchRequest<LoadSessionRequest>(msg, AGENT_METHODS.session_load);
+	const sessionReq = newReq ?? loadReq;
+
+	if (
+		sessionReq &&
+		(sessionStartHandlers.length > 0 || transport !== undefined)
+	) {
+		const sessionId = loadReq ? loadReq.params.sessionId : undefined;
+		const { cwd, mcpServers } = await runSessionStartWaterfall(
+			sessionId,
+			sessionReq.params.cwd,
+			[...sessionReq.params.mcpServers],
+			sessionStartHandlers,
+			transport,
+		);
+		return withParams(sessionReq, {
+			...sessionReq.params,
+			cwd,
+			mcpServers,
+		});
+	}
+
+	// session/prompt — run prompt waterfall
+	const promptReq = matchRequest<PromptRequest>(
+		msg,
+		AGENT_METHODS.session_prompt,
+	);
+	if (promptReq && promptHandlers.length > 0) {
+		let currentPrompt = promptReq.params.prompt;
+		for (const handler of promptHandlers) {
+			const result = await handler({
+				sessionId: promptReq.params.sessionId,
+				prompt: currentPrompt,
+			});
+			if (result) {
+				currentPrompt = result.prompt;
+			}
+		}
+		return withParams(promptReq, {
+			...promptReq.params,
+			prompt: currentPrompt,
+		});
+	}
+
+	return msg;
+}
+
+// ---------------------------------------------------------------------------
+// buildMiddleware — construct AgentMiddleware from collected state + transport
 // ---------------------------------------------------------------------------
 
 export function buildMiddleware(
 	state: CollectedState,
 	transport: McpTransport | undefined,
-): Middleware {
+): AgentMiddleware {
 	const { sessionStartHandlers, promptHandlers, sessionUpdateHandlers } = state;
 
-	const hasSessionStart =
-		sessionStartHandlers.length > 0 || transport !== undefined;
-	const hasPrompt = promptHandlers.length > 0;
-	const hasSessionUpdate = sessionUpdateHandlers.length > 0;
+	const mcpPrefix = transport ? `mcp__${transport.config.name}__` : undefined;
 
-	// Build the MCP tool prefix for auto-approving permission requests.
-	// Agents name MCP tools as `mcp__{serverName}__{toolName}`, so any
-	// tool whose title starts with this prefix belongs to our extension.
-	const mcpPrefix = transport
-		? `mcp__${transport.config.name}__`
-		: undefined;
+	const hasAnything =
+		sessionStartHandlers.length > 0 ||
+		promptHandlers.length > 0 ||
+		sessionUpdateHandlers.length > 0 ||
+		transport !== undefined;
 
-	if (!hasSessionStart && !hasPrompt && !hasSessionUpdate && !mcpPrefix) {
-		return emptyMiddleware;
+	if (!hasAnything) {
+		return (t) => t;
 	}
 
-	return {
-		...emptyMiddleware,
-
-		...(hasSessionStart && {
-			async newSession(
-				params: NewSessionRequest,
-				next: (params: NewSessionRequest) => Promise<NewSessionResponse>,
-			): Promise<NewSessionResponse> {
-				const { cwd, mcpServers } = await runSessionStartWaterfall(
-					undefined,
-					params.cwd,
-					[...params.mcpServers],
+	return (agentTransport) => {
+		const wrapped = intercept(agentTransport, {
+			// Commands: app → agent (waterfall transforms)
+			writable: async (msg, _addToRead, addToWrite) => {
+				const transformed = await transformCommand(
+					msg as RpcMessage,
 					sessionStartHandlers,
+					promptHandlers,
 					transport,
 				);
-				return next({ ...params, cwd, mcpServers });
+				addToWrite(transformed as AnyMessage);
 			},
 
-			async loadSession(
-				params: LoadSessionRequest,
-				next: (params: LoadSessionRequest) => Promise<LoadSessionResponse>,
-			): Promise<LoadSessionResponse> {
-				const { cwd, mcpServers } = await runSessionStartWaterfall(
-					params.sessionId,
-					params.cwd,
-					[...params.mcpServers],
-					sessionStartHandlers,
-					transport,
+			// Events: agent → app (side-effects + short-circuit)
+			readable: async (msg, addToRead, addToWrite) => {
+				// sessionUpdate — fire handlers, forward unchanged
+				const updateNotif = matchNotification<SessionNotification>(
+					msg as RpcMessage,
+					CLIENT_METHODS.session_update,
 				);
-				return next({ ...params, cwd, mcpServers });
-			},
-		}),
+				if (updateNotif && sessionUpdateHandlers.length > 0) {
+					for (const handler of sessionUpdateHandlers) {
+						await handler({ notification: updateNotif.params });
+					}
+					addToRead(msg);
+					return;
+				}
 
-		...(hasPrompt && {
-			async prompt(
-				params: PromptRequest,
-				next: (params: PromptRequest) => Promise<PromptResponse>,
-			): Promise<PromptResponse> {
-				let currentPrompt = params.prompt;
-				for (const handler of promptHandlers) {
-					const result = await handler({
-						sessionId: params.sessionId,
-						prompt: currentPrompt,
-					});
-					if (result) {
-						currentPrompt = result.prompt;
+				// requestPermission — auto-approve tools from this extension
+				if (mcpPrefix) {
+					const permReq = matchRequest<RequestPermissionRequest>(
+						msg as RpcMessage,
+						CLIENT_METHODS.session_request_permission,
+					);
+					if (permReq?.params.toolCall.title?.startsWith(mcpPrefix)) {
+						const option =
+							permReq.params.options.find((o) => o.kind === 'allow_always') ??
+							permReq.params.options.find((o) => o.kind === 'allow_once');
+						if (option) {
+							addToWrite(
+								rpcResponse(permReq.id, {
+									outcome: {
+										outcome: 'selected' as const,
+										optionId: option.optionId,
+									},
+								}) as AnyMessage,
+							);
+							return; // don't forward to app
+						}
 					}
 				}
-				return next({ ...params, prompt: currentPrompt });
-			},
-		}),
 
-		...(hasSessionUpdate && {
-			async sessionUpdate(
-				params: SessionNotification,
-				next: (params: SessionNotification) => Promise<void>,
-			): Promise<void> {
-				for (const handler of sessionUpdateHandlers) {
-					await handler({ notification: params });
-				}
-				return next(params);
+				addToRead(msg);
 			},
-		}),
+		});
 
-		// Auto-approve permission requests for tools from this extension's MCP.
-		// The app didn't register the MCP — we did — so it shouldn't need to
-		// grant permission for tools it explicitly set up.
-		...(mcpPrefix && {
-			async requestPermission(
-				params: RequestPermissionRequest,
-				next: (
-					params: RequestPermissionRequest,
-				) => Promise<RequestPermissionResponse>,
-			): Promise<RequestPermissionResponse> {
-				if (params.toolCall.title?.startsWith(mcpPrefix)) {
-					// Pick the best allow option from those the agent offers.
-					const option =
-						params.options.find((o) => o.kind === 'allow_always') ??
-						params.options.find((o) => o.kind === 'allow_once');
-					if (option) {
-						return {
-							outcome: {
-								outcome: 'selected' as const,
-								optionId: option.optionId,
-							},
-						};
-					}
-				}
-				return next(params);
+		return {
+			...wrapped,
+			close: async () => {
+				await transport?.dispose();
+				await wrapped.close();
 			},
-		}),
-
-		async dispose() {
-			await transport?.dispose();
-		},
+		};
 	};
 }

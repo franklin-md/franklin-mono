@@ -6,7 +6,13 @@
  */
 
 // Stream algebra
-export type { Duplex, ReadType, WriteType, Middleware, Observer } from './streams/types.js';
+export type {
+	Duplex,
+	ReadType,
+	WriteType,
+	Middleware,
+	Observer,
+} from './streams/types.js';
 // eslint-disable-next-line @typescript-eslint/no-deprecated -- backwards compat re-export
 export type { Stream } from './streams/types.js';
 export { pump } from './streams/readable/pump.js';
@@ -41,12 +47,27 @@ export { mapStream, ndjsonCodec, type Codec } from './codec/index.js';
 export { createNdjsonDecoder, encodeNdjsonLine } from './streams/ndjson.js';
 
 // In-memory (no Node deps)
-export { createMemoryPipes } from './in-memory/index.js';
-export type { MemoryPipePair } from './in-memory/index.js';
+export { createDuplexPair } from './in-memory/index.js';
 
 // Multiplexing
 export { Multiplexer } from './multiplex/index.js';
 export type { MuxPacket } from './multiplex/index.js';
+
+// RPC (JSON-RPC 2.0 type guards and marshalling)
+export type {
+	RpcRequest,
+	RpcNotification,
+	RpcResponse,
+	RpcError,
+	RpcMessage,
+} from './rpc/index.js';
+export {
+	matchRequest,
+	matchNotification,
+	isRequestOrNotification,
+	isResponse,
+} from './rpc/index.js';
+export { withParams, rpcResponse } from './rpc/index.js';
 
 // Config types (browser-safe — pure interfaces, no Node runtime deps)
 export type { StdioPipeOptions } from './stdio/types.js';

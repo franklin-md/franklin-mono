@@ -1,94 +1,26 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import type {
+	AnyMessage,
 	ContentBlock,
 	McpServer,
-	NewSessionRequest,
-	NewSessionResponse,
-	LoadSessionRequest,
-	LoadSessionResponse,
-	PromptRequest,
 	SessionNotification,
 } from '@agentclientprotocol/sdk';
+import { AGENT_METHODS, CLIENT_METHODS } from '@agentclientprotocol/sdk';
 
-import type { McpTransport, McpToolStream } from '@franklin/local-mcp';
+import type { McpToolStream } from '@franklin/local-mcp';
 
-import { joinCommands, joinEvents } from '../../middleware/join.js';
-import { sequence } from '../../middleware/sequence.js';
-import type { AgentCommands, AgentEvents } from '../../types.js';
+import type { AgentTransport } from '../../transport/index.js';
 import { compileExtension } from '../compile/index.js';
 import type { McpTransportFactory } from '../compile/index.js';
 import type { Extension } from '../types/index.js';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function createTerminalCommands(
-	overrides?: Partial<AgentCommands>,
-): AgentCommands {
-	const noop = () => Promise.resolve({}) as Promise<never>;
-	return {
-		initialize: noop,
-		newSession: async (_params: NewSessionRequest) =>
-			({ sessionId: 'test' }) as NewSessionResponse,
-		loadSession: async (params: LoadSessionRequest) =>
-			({ sessionId: params.sessionId }) as unknown as LoadSessionResponse,
-		listSessions: noop,
-		prompt: async () => ({ stopReason: 'end_turn' as const }),
-		cancel: async () => {},
-		setSessionMode: noop,
-		setSessionConfigOption: noop,
-		authenticate: noop,
-		...overrides,
-	};
-}
-
-function createTerminalEvents(overrides?: Partial<AgentEvents>): AgentEvents {
-	const noop = () => Promise.resolve({}) as Promise<never>;
-	return {
-		sessionUpdate: async () => {},
-		requestPermission: noop,
-		readTextFile: noop,
-		writeTextFile: noop,
-		createTerminal: noop,
-		terminalOutput: noop,
-		releaseTerminal: noop,
-		waitForTerminalExit: noop,
-		killTerminal: noop,
-		...overrides,
-	};
-}
-
-const stubMcpConfig = {
-	name: 'test-relay',
-	command: 'node',
-	args: ['--version'],
-	env: [{ name: 'STUB', value: 'true' }],
-};
-
-function createMockTransportFactory(): {
-	factory: McpTransportFactory;
-	getTransport: () => McpTransport | undefined;
-} {
-	let transport: McpTransport | undefined;
-	const factory: McpTransportFactory = async (_name) => {
-		const mockStream = {
-			readable: new ReadableStream<never>(),
-			writable: new WritableStream<never>(),
-			close: async () => {},
-		} as unknown as McpToolStream;
-
-		transport = {
-			config: stubMcpConfig,
-			stream: mockStream,
-			dispose: vi.fn(async () => {}),
-		};
-		return transport;
-	};
-	return { factory, getTransport: () => transport };
-}
+import {
+	createMockTransportFactory,
+	createTransportPair,
+	sendCommand,
+	stubMcpConfig,
+} from './helpers.js';
 
 // Shared tool schema for tests
 const emptyObjectSchema = z.object({});
@@ -107,13 +39,15 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
-				cwd: '/test',
-				mcpServers: [],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_new,
+				{ cwd: '/test', mcpServers: [] },
+			);
 
 			expect((msg as { params: { cwd: string } }).params.cwd).toBe('/test');
 			expect(
@@ -136,10 +70,10 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			await sendCommand(wrapped, agent.reader, 'prompt', {
+			await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'hello' }],
 			});
@@ -161,13 +95,15 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
-				cwd: '/original',
-				mcpServers: [],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_new,
+				{ cwd: '/original', mcpServers: [] },
+			);
 
 			expect((msg as { params: { cwd: string } }).params.cwd).toBe('/modified');
 		});
@@ -192,13 +128,15 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
-				cwd: '/test',
-				mcpServers: [],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_new,
+				{ cwd: '/test', mcpServers: [] },
+			);
 
 			expect(
 				(msg as { params: { mcpServers: McpServer[] } }).params.mcpServers,
@@ -217,13 +155,15 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
-				cwd: '/test',
-				mcpServers: [],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_new,
+				{ cwd: '/test', mcpServers: [] },
+			);
 
 			const params = (msg as { params: { cwd: string; mcpServers: [] } })
 				.params;
@@ -246,13 +186,15 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
-				cwd: '/original',
-				mcpServers: [],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_new,
+				{ cwd: '/original', mcpServers: [] },
+			);
 
 			expect((msg as { params: { cwd: string } }).params.cwd).toBe(
 				'/first/second',
@@ -273,10 +215,10 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			await sendCommand(wrapped, agent.reader, 'loadSession', {
+			await sendCommand(app, agent, AGENT_METHODS.session_load, {
 				sessionId: 'existing-session',
 				cwd: '/test',
 				mcpServers: [],
@@ -299,10 +241,10 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			await sendCommand(wrapped, agent.reader, 'newSession', {
+			await sendCommand(app, agent, AGENT_METHODS.session_new, {
 				cwd: '/test',
 				mcpServers: [],
 			});
@@ -329,13 +271,18 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'prompt', {
-				sessionId: 'test',
-				prompt: [{ type: 'text', text: 'hello' }],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_prompt,
+				{
+					sessionId: 'test',
+					prompt: [{ type: 'text', text: 'hello' }],
+				},
+			);
 
 			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
 				.prompt;
@@ -356,13 +303,18 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'prompt', {
-				sessionId: 'test',
-				prompt: [{ type: 'text', text: 'original' }],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_prompt,
+				{
+					sessionId: 'test',
+					prompt: [{ type: 'text', text: 'original' }],
+				},
+			);
 
 			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
 				.prompt;
@@ -389,13 +341,18 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'prompt', {
-				sessionId: 'test',
-				prompt: [{ type: 'text', text: 'X' }],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_prompt,
+				{
+					sessionId: 'test',
+					prompt: [{ type: 'text', text: 'X' }],
+				},
+			);
 
 			const texts = (
 				msg as { params: { prompt: ContentBlock[] } }
@@ -418,8 +375,8 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
 			const notification: SessionNotification = {
 				sessionId: 'test',
@@ -429,26 +386,30 @@ describe('compileExtension', () => {
 				},
 			};
 
-			// Start reading from the wrapped transport (app side)
-			const reader = wrapped.readable.getReader();
-			const readPromise = reader.read();
+			// Start reading from the app side
+			const appReader = app.readable.getReader();
+			const readPromise = appReader.read();
 
 			// Agent sends the notification
-			await agent.writer.write({
+			const agentWriter = agent.writable.getWriter();
+			await agentWriter.write({
 				jsonrpc: '2.0',
-				method: 'sessionUpdate',
+				method: CLIENT_METHODS.session_update,
 				params: notification,
 			} as AnyMessage);
+			agentWriter.releaseLock();
 
 			const { value: forwarded } = await readPromise;
-			reader.releaseLock();
+			appReader.releaseLock();
 
 			// Handler was called
 			expect(received).toHaveLength(1);
 			expect(received[0]).toEqual(notification);
 
 			// Message was forwarded
-			expect((forwarded as { method: string }).method).toBe('sessionUpdate');
+			expect((forwarded as { method: string }).method).toBe(
+				CLIENT_METHODS.session_update,
+			);
 		});
 	});
 
@@ -470,13 +431,15 @@ describe('compileExtension', () => {
 
 			expect(getTransport()).toBeDefined();
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
-				cwd: '/test',
-				mcpServers: [],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_new,
+				{ cwd: '/test', mcpServers: [] },
+			);
 
 			expect(
 				(msg as { params: { mcpServers: unknown[] } }).params.mcpServers,
@@ -540,13 +503,15 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
-				cwd: '/test',
-				mcpServers: [],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_new,
+				{ cwd: '/test', mcpServers: [] },
+			);
 
 			const mcpServers = (msg as { params: { mcpServers: McpServer[] } }).params
 				.mcpServers;
@@ -601,13 +566,18 @@ describe('compileExtension', () => {
 			// Compose: ext1 inner (closer to agent), ext2 outer
 			const composed = (t: AgentTransport) => mw2(mw1(t));
 
-			const { agent, transport } = createTestTransport();
-			const wrapped = composed(transport);
+			const { a: agent, b: inner } = createTransportPair();
+			const app = composed(inner);
 
-			const msg = await sendCommand(wrapped, agent.reader, 'prompt', {
-				sessionId: 'test',
-				prompt: [{ type: 'text', text: 'X' }],
-			});
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_prompt,
+				{
+					sessionId: 'test',
+					prompt: [{ type: 'text', text: 'X' }],
+				},
+			);
 
 			const texts = (
 				msg as { params: { prompt: ContentBlock[] } }
@@ -635,10 +605,10 @@ describe('compileExtension', () => {
 			const { factory, getTransport } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const { transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			await wrapped.close();
+			await app.close();
 
 			expect(getTransport()!.dispose).toHaveBeenCalled();
 		});
@@ -652,11 +622,11 @@ describe('compileExtension', () => {
 			const middleware = await compileExtension(ext, factory);
 
 			// Identity middleware — transport is returned as-is
-			const { transport } = createTestTransport();
-			const wrapped = middleware(transport);
+			const { b: inner } = createTransportPair();
+			const app = middleware(inner);
 
 			// Should not throw
-			await wrapped.close();
+			await app.close();
 		});
 
 		it('composed close cascades through layers', async () => {
@@ -709,11 +679,11 @@ describe('compileExtension', () => {
 			const mw1 = await compileExtension(ext1, factory1);
 			const mw2 = await compileExtension(ext2, factory2);
 
-			const { transport } = createTestTransport();
-			// ext1 inner, ext2 outer: mw2(mw1(transport))
-			const wrapped = mw2(mw1(transport));
+			const { b: inner } = createTransportPair();
+			// ext1 inner, ext2 outer: mw2(mw1(inner))
+			const app = mw2(mw1(inner));
 
-			await wrapped.close();
+			await app.close();
 
 			// ext2 (outer) closes first, then ext1 (inner)
 			expect(disposeLog).toEqual(['ext2', 'ext1']);

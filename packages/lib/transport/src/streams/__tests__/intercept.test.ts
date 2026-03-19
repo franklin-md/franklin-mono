@@ -39,10 +39,10 @@ function createMemoryDuplex<R, W = R>(): {
 
 describe('intercept', () => {
 	describe('passthrough', () => {
-		it('passes readable values through when handler just enqueues', async () => {
+		it('passes readable values through when handler calls addToRead', async () => {
 			const { duplex, pushReadable } = createMemoryDuplex<string>();
 			const wrapped = intercept(duplex, {
-				readable: (chunk, ctrl) => ctrl.enqueue(chunk),
+				readable: (chunk, addToRead) => addToRead(chunk),
 			});
 			const reader = wrapped.readable.getReader();
 
@@ -54,10 +54,10 @@ describe('intercept', () => {
 			await pushReadable.close();
 		});
 
-		it('passes writable values through when handler just enqueues', async () => {
+		it('passes writable values through when handler calls addToWrite', async () => {
 			const { duplex, pullWritable } = createMemoryDuplex<string>();
 			const wrapped = intercept(duplex, {
-				writable: (chunk, ctrl) => ctrl.enqueue(chunk),
+				writable: (_chunk, _addToRead, addToWrite) => addToWrite(_chunk),
 			});
 			const writer = wrapped.writable.getWriter();
 
@@ -75,7 +75,7 @@ describe('intercept', () => {
 		it('transforms readable chunks', async () => {
 			const { duplex, pushReadable } = createMemoryDuplex<number>();
 			const wrapped = intercept(duplex, {
-				readable: (chunk, ctrl) => ctrl.enqueue(chunk * 2),
+				readable: (chunk, addToRead) => addToRead(chunk * 2),
 			});
 			const reader = wrapped.readable.getReader();
 
@@ -90,7 +90,8 @@ describe('intercept', () => {
 		it('transforms writable chunks', async () => {
 			const { duplex, pullWritable } = createMemoryDuplex<string>();
 			const wrapped = intercept(duplex, {
-				writable: (chunk, ctrl) => ctrl.enqueue(chunk.toUpperCase()),
+				writable: (chunk, _addToRead, addToWrite) =>
+					addToWrite(chunk.toUpperCase()),
 			});
 			const writer = wrapped.writable.getWriter();
 
@@ -105,13 +106,13 @@ describe('intercept', () => {
 	});
 
 	describe('filter', () => {
-		it('drops readable chunks when handler does not enqueue', async () => {
+		it('drops readable chunks when handler does not call addToRead', async () => {
 			const { duplex, pushReadable } = createMemoryDuplex<number>();
 			const dropped: number[] = [];
 			const wrapped = intercept(duplex, {
-				readable: (chunk, ctrl) => {
+				readable: (chunk, addToRead) => {
 					if (chunk % 2 === 0) {
-						ctrl.enqueue(chunk);
+						addToRead(chunk);
 					} else {
 						dropped.push(chunk);
 					}
@@ -119,13 +120,10 @@ describe('intercept', () => {
 			});
 			const reader = wrapped.readable.getReader();
 
-			// Start read first so pipeThrough has pull demand
-			const readPromise = reader.read();
-
 			await pushReadable.write(1); // odd → dropped
 			await pushReadable.write(2); // even → enqueued
 
-			const { value } = await readPromise;
+			const { value } = await reader.read();
 			expect(value).toBe(2);
 			expect(dropped).toEqual([1]);
 
@@ -133,11 +131,11 @@ describe('intercept', () => {
 			await pushReadable.close();
 		});
 
-		it('drops writable chunks when handler does not enqueue', async () => {
+		it('drops writable chunks when handler does not call addToWrite', async () => {
 			const { duplex, pullWritable } = createMemoryDuplex<number>();
 			const wrapped = intercept(duplex, {
-				writable: (chunk, ctrl) => {
-					if (chunk > 0) ctrl.enqueue(chunk);
+				writable: (chunk, _addToRead, addToWrite) => {
+					if (chunk > 0) addToWrite(chunk);
 				},
 			});
 			const writer = wrapped.writable.getWriter();
@@ -157,10 +155,9 @@ describe('intercept', () => {
 		it('leaves writable unchanged when only readable handler provided', async () => {
 			const { duplex, pullWritable } = createMemoryDuplex<string>();
 			const wrapped = intercept(duplex, {
-				readable: (chunk, ctrl) => ctrl.enqueue(chunk + '!'),
+				readable: (chunk, addToRead) => addToRead(chunk + '!'),
 			});
 
-			// writable should be the original
 			const writer = wrapped.writable.getWriter();
 			await writer.write('raw');
 			await new Promise((r) => setTimeout(r, 0));
@@ -174,10 +171,9 @@ describe('intercept', () => {
 		it('leaves readable unchanged when only writable handler provided', async () => {
 			const { duplex, pushReadable } = createMemoryDuplex<string>();
 			const wrapped = intercept(duplex, {
-				writable: (chunk, ctrl) => ctrl.enqueue(chunk + '!'),
+				writable: (chunk, _addToRead, addToWrite) => addToWrite(chunk + '!'),
 			});
 
-			// readable should be the original
 			const reader = wrapped.readable.getReader();
 			await pushReadable.write('raw');
 			const { value } = await reader.read();
@@ -185,6 +181,72 @@ describe('intercept', () => {
 			expect(value).toBe('raw');
 			reader.releaseLock();
 			await pushReadable.close();
+		});
+	});
+
+	describe('cross-direction', () => {
+		it('readable handler can inject into writable via addToWrite', async () => {
+			const { duplex, pushReadable, pullWritable } =
+				createMemoryDuplex<string>();
+			const wrapped = intercept(duplex, {
+				readable: (chunk, addToRead, addToWrite) => {
+					if (chunk === 'ping') {
+						addToWrite('pong'); // respond back
+						return; // don't forward
+					}
+					addToRead(chunk);
+				},
+			});
+
+			const reader = wrapped.readable.getReader();
+
+			await pushReadable.write('ping');
+			await new Promise((r) => setTimeout(r, 0));
+
+			// 'pong' should appear on the writable (downstream) side
+			const { value: writeVal } = await pullWritable.read();
+			expect(writeVal).toBe('pong');
+
+			// 'ping' should NOT appear on readable output
+			await pushReadable.write('hello');
+			const { value: readVal } = await reader.read();
+			expect(readVal).toBe('hello');
+
+			reader.releaseLock();
+			pullWritable.releaseLock();
+			await pushReadable.close();
+		});
+
+		it('writable handler can inject into readable via addToRead', async () => {
+			const {
+				duplex,
+				pushReadable: _push,
+				pullWritable,
+			} = createMemoryDuplex<string>();
+			const wrapped = intercept(duplex, {
+				writable: (chunk, addToRead, addToWrite) => {
+					addToRead(`echo:${chunk}`); // inject into readable
+					addToWrite(chunk); // also forward normally
+				},
+			});
+
+			const reader = wrapped.readable.getReader();
+			const writer = wrapped.writable.getWriter();
+
+			await writer.write('test');
+			await new Promise((r) => setTimeout(r, 0));
+
+			// Should appear on readable
+			const { value: readVal } = await reader.read();
+			expect(readVal).toBe('echo:test');
+
+			// Should also appear on writable
+			const { value: writeVal } = await pullWritable.read();
+			expect(writeVal).toBe('test');
+
+			reader.releaseLock();
+			pullWritable.releaseLock();
+			await writer.close();
 		});
 	});
 
@@ -200,7 +262,7 @@ describe('intercept', () => {
 			};
 
 			const wrapped = intercept(duplex, {
-				readable: (chunk, ctrl) => ctrl.enqueue(chunk),
+				readable: (chunk, addToRead) => addToRead(chunk),
 			});
 			await wrapped.close();
 

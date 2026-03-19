@@ -1,71 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type {
-	NewSessionRequest,
-	NewSessionResponse,
-	PromptRequest,
-} from '@agentclientprotocol/sdk';
+import type { ContentBlock } from '@agentclientprotocol/sdk';
+import { AGENT_METHODS } from '@agentclientprotocol/sdk';
 
-import type { McpTransport, McpToolStream } from '@franklin/local-mcp';
-
-import { joinCommands } from '../../middleware/join.js';
-import type { AgentCommands } from '../../types.js';
 import { compileExtension } from '../compile/index.js';
-import type { McpTransportFactory } from '../compile/index.js';
 import type { Extension, ExtensionToolDefinition } from '../types/index.js';
 import { TodoExtension } from '../examples/todo/index.js';
+import {
+	createMockTransportFactory,
+	createTransportPair,
+	sendCommand,
+} from './helpers.js';
 
 // ---------------------------------------------------------------------------
-// Helpers (same pattern as compile.test.ts)
+// Helpers
 // ---------------------------------------------------------------------------
-
-function createTerminalCommands(
-	overrides?: Partial<AgentCommands>,
-): AgentCommands {
-	const noop = () => Promise.resolve({}) as Promise<never>;
-	return {
-		initialize: noop,
-		newSession: async (_params: NewSessionRequest) =>
-			({ sessionId: 'test' }) as NewSessionResponse,
-		loadSession: noop,
-		listSessions: noop,
-		prompt: async () => ({ stopReason: 'end_turn' as const }),
-		cancel: async () => {},
-		setSessionMode: noop,
-		setSessionConfigOption: noop,
-		authenticate: noop,
-		...overrides,
-	};
-}
-
-const stubMcpConfig = {
-	name: 'test-relay',
-	command: 'node',
-	args: ['--version'],
-	env: [{ name: 'STUB', value: 'true' }],
-};
-
-function createMockTransportFactory(): {
-	factory: McpTransportFactory;
-	getTransport: () => McpTransport | undefined;
-} {
-	let transport: McpTransport | undefined;
-	const factory: McpTransportFactory = async (_name) => {
-		const mockStream = {
-			readable: new ReadableStream<never>(),
-			writable: new WritableStream<never>(),
-			close: async () => {},
-		} as unknown as McpToolStream;
-
-		transport = {
-			config: stubMcpConfig,
-			stream: mockStream,
-			dispose: vi.fn(async () => {}),
-		};
-		return transport;
-	};
-	return { factory, getTransport: () => transport };
-}
 
 /**
  * Wraps an extension to intercept tool registrations.
@@ -191,52 +140,54 @@ describe('TodoExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_prompt,
+				{
+					sessionId: 'test',
+					prompt: [{ type: 'text', text: 'hello' }],
 				},
-			});
+			);
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.prompt({
-				sessionId: 'test',
-				prompt: [{ type: 'text', text: 'hello' }],
-			});
-
-			expect(captured[0]!.prompt).toHaveLength(1);
-			expect((captured[0]!.prompt[0] as { text: string }).text).toBe('hello');
+			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
+				.prompt;
+			expect(prompt).toHaveLength(1);
+			expect((prompt[0] as { text: string }).text).toBe('hello');
 		});
 
 		it('prepends formatted todo list when todos exist', async () => {
 			const ext = new TodoExtension();
-			const { wrapped, tools } = wrapExtension(ext);
+			const { wrapped: wrappedExt, tools } = wrapExtension(ext);
 			const { factory } = createMockTransportFactory();
-			const middleware = await compileExtension(wrapped, factory);
+			const middleware = await compileExtension(wrappedExt, factory);
 
 			const addTool = findTool(tools, 'add_todo');
 			await addTool.execute({ text: 'Buy milk' });
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const msg = await sendCommand(
+				app,
+				agent,
+				AGENT_METHODS.session_prompt,
+				{
+					sessionId: 'test',
+					prompt: [{ type: 'text', text: 'hello' }],
 				},
-			});
+			);
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.prompt({
-				sessionId: 'test',
-				prompt: [{ type: 'text', text: 'hello' }],
-			});
-
-			expect(captured[0]!.prompt).toHaveLength(2);
-			const prefix = (captured[0]!.prompt[0] as { text: string }).text;
+			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
+				.prompt;
+			expect(prompt).toHaveLength(2);
+			const prefix = (prompt[0] as { text: string }).text;
 			expect(prefix).toContain('<todos>');
 			expect(prefix).toContain('Buy milk');
-			expect((captured[0]!.prompt[1] as { text: string }).text).toBe('hello');
+			expect((prompt[1] as { text: string }).text).toBe('hello');
 		});
 	});
 

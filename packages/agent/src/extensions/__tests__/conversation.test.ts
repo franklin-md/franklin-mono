@@ -1,18 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type {
-	NewSessionRequest,
-	NewSessionResponse,
-	PromptRequest,
-	SessionNotification,
-} from '@agentclientprotocol/sdk';
+import type { AnyMessage, SessionNotification } from '@agentclientprotocol/sdk';
+import { AGENT_METHODS, CLIENT_METHODS } from '@agentclientprotocol/sdk';
 
-import type { McpToolStream, McpTransport } from '@franklin/local-mcp';
-
-import { joinCommands, joinEvents } from '../../middleware/join.js';
-import type { AgentCommands, AgentEvents } from '../../types.js';
+import type { AgentMiddleware } from '../../types.js';
 import { compileExtension } from '../compile/index.js';
-import type { McpTransportFactory } from '../compile/index.js';
 import { ConversationExtension } from '../examples/conversation/index.js';
 import type {
 	AgentTextEntry,
@@ -21,90 +13,45 @@ import type {
 	ToolCallEntry,
 	UserEntry,
 } from '../examples/conversation/types.js';
+import {
+	createMockTransportFactory,
+	createTransportPair,
+	sendCommand,
+	sendNotification,
+} from './helpers.js';
 
 // ---------------------------------------------------------------------------
-// Helpers (same pattern as todo.test.ts / compile.test.ts)
+// Helpers
 // ---------------------------------------------------------------------------
 
-function createTerminalCommands(
-	overrides?: Partial<AgentCommands>,
-): AgentCommands {
-	const noop = () => Promise.resolve({}) as Promise<never>;
-	return {
-		initialize: noop,
-		newSession: async (_params: NewSessionRequest) =>
-			({ sessionId: 'test' }) as NewSessionResponse,
-		loadSession: noop,
-		listSessions: noop,
-		prompt: async () => ({ stopReason: 'end_turn' as const }),
-		cancel: async () => {},
-		setSessionMode: noop,
-		setSessionConfigOption: noop,
-		authenticate: noop,
-		...overrides,
-	};
-}
-
-function createTerminalEvents(overrides?: Partial<AgentEvents>): AgentEvents {
-	const noop = () => Promise.resolve({}) as Promise<never>;
-	return {
-		sessionUpdate: async () => {},
-		requestPermission: noop,
-		readTextFile: noop,
-		writeTextFile: noop,
-		createTerminal: noop,
-		terminalOutput: noop,
-		releaseTerminal: noop,
-		waitForTerminalExit: noop,
-		killTerminal: noop,
-		...overrides,
-	};
-}
-
-const stubMcpConfig = {
-	name: 'test-relay',
-	command: 'node',
-	args: ['--version'],
-	env: [{ name: 'STUB', value: 'true' }],
-};
-
-function createMockTransportFactory(): {
-	factory: McpTransportFactory;
+/**
+ * Sets up a test harness around a middleware instance.
+ *
+ * Returns helpers for sending commands (app → agent) and events (agent → app)
+ * through the transport-wrapped middleware.
+ */
+function setupTest(middleware: AgentMiddleware): {
+	sendPrompt: (sessionId: string, text: string) => Promise<void>;
+	sendUpdate: (
+		sessionId: string,
+		update: SessionNotification['update'],
+	) => Promise<void>;
 } {
-	const factory: McpTransportFactory = async (_name) => {
-		const mockStream = {
-			readable: new ReadableStream<never>(),
-			writable: new WritableStream<never>(),
-			close: async () => {},
-		} as unknown as McpToolStream;
-		return {
-			config: stubMcpConfig,
-			stream: mockStream,
-			dispose: vi.fn(async () => {}),
-		} as McpTransport;
+	const { a: agent, b: inner } = createTransportPair();
+	const app = middleware(inner);
+
+	return {
+		sendPrompt: (sessionId, text) =>
+			sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId,
+				prompt: [{ type: 'text', text }],
+			}).then(() => undefined),
+		sendUpdate: (sessionId, update) =>
+			sendNotification(agent, app, CLIENT_METHODS.session_update, {
+				sessionId,
+				update,
+			}).then(() => undefined),
 	};
-	return { factory };
-}
-
-/** Helper to fire a sessionUpdate notification through the event pipeline. */
-async function fireUpdate(
-	events: AgentEvents,
-	sessionId: string,
-	update: SessionNotification['update'],
-) {
-	await events.sessionUpdate({ sessionId, update });
-}
-
-/** Helper to fire a prompt through the command pipeline. */
-async function firePrompt(
-	commands: AgentCommands,
-	sessionId: string,
-	text: string,
-) {
-	await commands.prompt({
-		sessionId,
-		prompt: [{ type: 'text', text }],
-	});
 }
 
 // ---------------------------------------------------------------------------
@@ -118,10 +65,8 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const commands = joinCommands(middleware, terminal);
-
-			await firePrompt(commands, 'test', 'hello');
+			const { sendPrompt } = setupTest(middleware);
+			await sendPrompt('test', 'hello');
 
 			const turns = ext.conversation.get();
 			expect(turns).toHaveLength(1);
@@ -140,19 +85,30 @@ describe('ConversationExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const writer = app.writable.getWriter();
+			await writer.write({
+				jsonrpc: '2.0',
+				id: 1,
+				method: AGENT_METHODS.session_prompt,
+				params: {
+					sessionId: 'test',
+					prompt: [{ type: 'text', text: 'hello' }],
 				},
-			});
+			} as AnyMessage);
+			writer.releaseLock();
 
-			const commands = joinCommands(middleware, terminal);
-			await firePrompt(commands, 'test', 'hello');
+			await new Promise((r) => setTimeout(r, 10));
+			const agentReader = agent.readable.getReader();
+			const { value: msg } = await agentReader.read();
+			agentReader.releaseLock();
 
-			expect(captured[0]!.prompt).toHaveLength(1);
-			expect((captured[0]!.prompt[0] as { text: string }).text).toBe('hello');
+			const prompt = (msg as { params: { prompt: Array<{ text: string }> } })
+				.params.prompt;
+			expect(prompt).toHaveLength(1);
+			expect(prompt[0]!.text).toBe('hello');
 		});
 	});
 

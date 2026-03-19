@@ -17,13 +17,13 @@ export function debugStream<R, W = R>(
 	};
 
 	return intercept(duplex, {
-		readable(chunk, controller) {
+		readable(chunk, addToRead) {
 			console.log(`[${label}] readable:`, render(chunk));
-			controller.enqueue(chunk);
+			addToRead(chunk);
 		},
-		writable(chunk, controller) {
+		writable(chunk, _addToRead, addToWrite) {
 			console.log(`[${label}] writable:`, render(chunk));
-			controller.enqueue(chunk);
+			addToWrite(chunk);
 		},
 	});
 }
