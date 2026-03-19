@@ -60,14 +60,16 @@ export type { AgentTransport as Transport } from './transport/index.js';
 export { createStore } from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';
 
+// Agent — typed handle unifying commands, extension stores, and lifecycle
+export { createAgent } from './agent/index.js';
+export type { Agent, ExtensionStores } from './agent/index.js';
+
 // Framework base class
 export { Framework } from './framework.js';
 
 // Re-export key ACP types so consumers don't need to depend on the SDK directly
 export type {
-	Agent,
 	AnyMessage,
-	Client,
 	AuthenticateRequest,
 	AuthenticateResponse,
 	CancelNotification,
