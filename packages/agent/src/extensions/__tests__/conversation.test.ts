@@ -123,7 +123,7 @@ describe('ConversationExtension', () => {
 
 			await firePrompt(commands, 'test', 'hello');
 
-			const turns = ext.conversation.get();
+			const turns = ext.state.get();
 			expect(turns).toHaveLength(1);
 
 			const turn = turns[0]!;
@@ -185,7 +185,7 @@ describe('ConversationExtension', () => {
 				messageId: 'msg-1',
 			});
 
-			const turns = ext.conversation.get();
+			const turns = ext.state.get();
 			expect(turns).toHaveLength(1);
 			// user entry + one coalesced text entry
 			expect(turns[0]!.entries).toHaveLength(2);
@@ -219,7 +219,7 @@ describe('ConversationExtension', () => {
 				messageId: 'msg-2',
 			});
 
-			const entries = ext.conversation.get()[0]!.entries;
+			const entries = ext.state.get()[0]!.entries;
 			// user + two separate text entries
 			expect(entries).toHaveLength(3);
 			expect((entries[1] as AgentTextEntry).messageId).toBe('msg-1');
@@ -247,7 +247,7 @@ describe('ConversationExtension', () => {
 				content: { type: 'text', text: 'B' },
 			});
 
-			const entries = ext.conversation.get()[0]!.entries;
+			const entries = ext.state.get()[0]!.entries;
 			// user + one coalesced text entry (consecutive chunks without messageId)
 			expect(entries).toHaveLength(2);
 
@@ -284,7 +284,7 @@ describe('ConversationExtension', () => {
 				content: { type: 'text', text: 'B' },
 			});
 
-			const entries = ext.conversation.get()[0]!.entries;
+			const entries = ext.state.get()[0]!.entries;
 			// user + text("A") + tool_call + text("B") — tool call breaks coalescing
 			expect(entries).toHaveLength(4);
 			expect(entries[1]!.type).toBe('text');
@@ -317,7 +317,7 @@ describe('ConversationExtension', () => {
 				messageId: 'thought-1',
 			});
 
-			const entries = ext.conversation.get()[0]!.entries;
+			const entries = ext.state.get()[0]!.entries;
 			expect(entries).toHaveLength(2); // user + thought
 
 			const thought = entries[1] as AgentThoughtEntry;
@@ -348,7 +348,7 @@ describe('ConversationExtension', () => {
 				kind: 'read',
 			});
 
-			const entries = ext.conversation.get()[0]!.entries;
+			const entries = ext.state.get()[0]!.entries;
 			expect(entries).toHaveLength(2); // user + tool call
 
 			const tc = entries[1] as ToolCallEntry;
@@ -384,7 +384,7 @@ describe('ConversationExtension', () => {
 				title: 'Read file (done)',
 			});
 
-			const entries = ext.conversation.get()[0]!.entries;
+			const entries = ext.state.get()[0]!.entries;
 			// Still just 2 entries — update merges into existing
 			expect(entries).toHaveLength(2);
 
@@ -413,7 +413,7 @@ describe('ConversationExtension', () => {
 				messageId: 'user-1',
 			});
 
-			const entries = ext.conversation.get()[0]!.entries;
+			const entries = ext.state.get()[0]!.entries;
 			// Only the user entry from prompt — chunk is ignored
 			expect(entries).toHaveLength(1);
 			expect(entries[0]!.type).toBe('user');
@@ -437,7 +437,7 @@ describe('ConversationExtension', () => {
 				used: 500,
 			} as SessionNotification['update']);
 
-			const entries = ext.conversation.get()[0]!.entries;
+			const entries = ext.state.get()[0]!.entries;
 			expect(entries).toHaveLength(1); // only the user entry
 		});
 	});
@@ -469,7 +469,7 @@ describe('ConversationExtension', () => {
 				messageId: 'msg-2',
 			});
 
-			const turns = ext.conversation.get();
+			const turns = ext.state.get();
 			expect(turns).toHaveLength(2);
 
 			// Turn 1: user + text
@@ -523,7 +523,7 @@ describe('ConversationExtension', () => {
 				messageId: 'msg-2',
 			});
 
-			const types = ext.conversation
+			const types = ext.state
 				.get()[0]!
 				.entries.map((e: ConversationEntry) => e.type);
 			expect(types).toEqual(['user', 'thought', 'text', 'tool_call', 'text']);
@@ -537,7 +537,7 @@ describe('ConversationExtension', () => {
 			const middleware = await compileExtension(ext, factory);
 
 			const listener = vi.fn();
-			ext.conversation.subscribe(listener);
+			ext.state.subscribe(listener);
 
 			const terminal = createTerminalCommands();
 			const terminalEvents = createTerminalEvents();
@@ -569,8 +569,8 @@ describe('ConversationExtension', () => {
 			const commands1 = joinCommands(mw1, createTerminalCommands());
 			await firePrompt(commands1, 'test', 'only in ext1');
 
-			expect(ext1.conversation.get()).toHaveLength(1);
-			expect(ext2.conversation.get()).toHaveLength(0);
+			expect(ext1.state.get()).toHaveLength(1);
+			expect(ext2.state.get()).toHaveLength(0);
 		});
 	});
 });

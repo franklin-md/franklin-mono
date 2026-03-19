@@ -32,7 +32,7 @@ export abstract class Framework {
 	 * then all resulting middlewares are sequenced into one.
 	 */
 	async compileExtensions(
-		extensions: readonly Extension[],
+		extensions: readonly Extension<any>[],
 	): Promise<Middleware> {
 		const mws = await Promise.all(
 			extensions.map((ext) => compileExtension(ext, this.toolTransport)),

@@ -17,19 +17,19 @@ import type {
  * (to record agent text, thoughts, and tool calls). Streaming chunks
  * with the same `messageId` are coalesced into single entries.
  *
- * Exposes a `conversation` store for UI binding.
+ * Exposes a `state` store for UI binding.
  */
-export class ConversationExtension implements Extension {
+export class ConversationExtension implements Extension<ConversationTurn[]> {
 	readonly name = 'conversation';
-	readonly conversation: Store<ConversationTurn[]> = createStore<
-		ConversationTurn[]
-	>([]);
+	readonly state: Store<ConversationTurn[]> = createStore<ConversationTurn[]>(
+		[],
+	);
 
 	async setup(api: ExtensionAPI): Promise<void> {
-		const { conversation } = this;
+		const { state } = this;
 
 		api.on('prompt', async (ctx) => {
-			conversation.set((draft) => {
+			state.set((draft) => {
 				draft.push({
 					id: crypto.randomUUID(),
 					timestamp: Date.now(),
@@ -44,18 +44,13 @@ export class ConversationExtension implements Extension {
 
 			switch (update.sessionUpdate) {
 				case 'agent_message_chunk':
-					appendChunk(conversation, 'text', update.content, update.messageId);
+					appendChunk(state, 'text', update.content, update.messageId);
 					break;
 				case 'agent_thought_chunk':
-					appendChunk(
-						conversation,
-						'thought',
-						update.content,
-						update.messageId,
-					);
+					appendChunk(state, 'thought', update.content, update.messageId);
 					break;
 				case 'tool_call':
-					conversation.set((draft) => {
+					state.set((draft) => {
 						const turn = draft[draft.length - 1];
 						if (!turn) return;
 						const entry: ToolCallEntry = {
@@ -73,7 +68,7 @@ export class ConversationExtension implements Extension {
 					});
 					break;
 				case 'tool_call_update':
-					conversation.set((draft) => {
+					state.set((draft) => {
 						const turn = draft[draft.length - 1];
 						if (!turn) return;
 						for (let i = turn.entries.length - 1; i >= 0; i--) {

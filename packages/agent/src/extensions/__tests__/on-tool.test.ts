@@ -11,7 +11,7 @@ import { onTool } from '../wrapper/on-tool.js';
 
 /** Run setup and return the registered tools. */
 async function collectTools(
-	ext: Extension,
+	ext: Extension<any>,
 ): Promise<ExtensionToolDefinition[]> {
 	const tools: ExtensionToolDefinition[] = [];
 	const api: ExtensionAPI = {
