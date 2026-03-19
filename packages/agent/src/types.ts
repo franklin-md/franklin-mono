@@ -37,6 +37,10 @@ import type {
 	WriteTextFileResponse,
 } from '@agentclientprotocol/sdk';
 
+import type { Middleware, ReadType, WriteType } from '@franklin/transport';
+
+import type { AgentTransport } from './transport/index.js';
+
 // ---------------------------------------------------------------------------
 // AgentCommands — outbound methods the app sends to the agent
 // ---------------------------------------------------------------------------
@@ -84,3 +88,46 @@ export interface AgentEvents {
 		params: KillTerminalRequest,
 	): Promise<KillTerminalResponse | undefined>;
 }
+
+// ---------------------------------------------------------------------------
+// AgentMiddleware — transport wrapping
+// ---------------------------------------------------------------------------
+
+export type AgentMiddleware = Middleware<
+	ReadType<AgentTransport>,
+	WriteType<AgentTransport>
+>;
+
+// ---------------------------------------------------------------------------
+// Method name lists
+// ---------------------------------------------------------------------------
+
+export const COMMAND_METHODS = [
+	'initialize',
+	'newSession',
+	'loadSession',
+	'listSessions',
+	'prompt',
+	'cancel',
+	'setSessionMode',
+	'setSessionConfigOption',
+	'authenticate',
+] as const satisfies readonly (keyof AgentCommands)[];
+
+export const EVENT_METHODS = [
+	'sessionUpdate',
+	'requestPermission',
+	'readTextFile',
+	'writeTextFile',
+	'createTerminal',
+	'terminalOutput',
+	'releaseTerminal',
+	'waitForTerminalExit',
+	'killTerminal',
+] as const satisfies readonly (keyof AgentEvents)[];
+
+export const NOTIFICATION_METHODS: ReadonlySet<string> = new Set([
+	'sessionUpdate',
+] as const satisfies readonly (keyof AgentEvents)[]);
+
+export const ALL_METHODS = [...COMMAND_METHODS, ...EVENT_METHODS] as const;

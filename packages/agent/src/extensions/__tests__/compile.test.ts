@@ -99,7 +99,7 @@ const emptyObjectSchema = z.object({});
 
 describe('compileExtension', () => {
 	describe('compilation', () => {
-		it('produces passthrough middleware when no hooks or tools registered', async () => {
+		it('produces identity middleware when no hooks or tools registered', async () => {
 			const ext: Extension = {
 				name: 'empty',
 				async setup() {},
@@ -107,20 +107,18 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
+				cwd: '/test',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
-
-			expect(captured).toHaveLength(1);
-			expect(captured[0]!.cwd).toBe('/test');
-			expect(captured[0]!.mcpServers).toEqual([]);
+			expect((msg as { params: { cwd: string } }).params.cwd).toBe('/test');
+			expect(
+				(msg as { params: { mcpServers: unknown[] } }).params.mcpServers,
+			).toEqual([]);
 		});
 
 		it('supports async setup', async () => {
@@ -138,9 +136,10 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const commands = joinCommands(middleware, terminal);
-			await commands.prompt({
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			await sendCommand(wrapped, agent.reader, 'prompt', {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'hello' }],
 			});
@@ -162,18 +161,15 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
+				cwd: '/original',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/original', mcpServers: [] });
-
-			expect(captured[0]!.cwd).toBe('/modified');
+			expect((msg as { params: { cwd: string } }).params.cwd).toBe('/modified');
 		});
 
 		it('handler can modify mcpServers', async () => {
@@ -196,18 +192,17 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
+				cwd: '/test',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
-
-			expect(captured[0]!.mcpServers).toEqual([extraServer]);
+			expect(
+				(msg as { params: { mcpServers: McpServer[] } }).params.mcpServers,
+			).toEqual([extraServer]);
 		});
 
 		it('undefined return passes through unchanged', async () => {
@@ -222,19 +217,18 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
+				cwd: '/test',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
-
-			expect(captured[0]!.cwd).toBe('/test');
-			expect(captured[0]!.mcpServers).toEqual([]);
+			const params = (msg as { params: { cwd: string; mcpServers: [] } })
+				.params;
+			expect(params.cwd).toBe('/test');
+			expect(params.mcpServers).toEqual([]);
 		});
 
 		it('multiple handlers chain in registration order', async () => {
@@ -252,18 +246,17 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
+				cwd: '/original',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/original', mcpServers: [] });
-
-			expect(captured[0]!.cwd).toBe('/first/second');
+			expect((msg as { params: { cwd: string } }).params.cwd).toBe(
+				'/first/second',
+			);
 		});
 
 		it('fires on loadSession with sessionId', async () => {
@@ -280,9 +273,10 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const commands = joinCommands(middleware, terminal);
-			await commands.loadSession({
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			await sendCommand(wrapped, agent.reader, 'loadSession', {
 				sessionId: 'existing-session',
 				cwd: '/test',
 				mcpServers: [],
@@ -305,9 +299,13 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			await sendCommand(wrapped, agent.reader, 'newSession', {
+				cwd: '/test',
+				mcpServers: [],
+			});
 
 			expect(receivedCtx[0]!.sessionId).toBeUndefined();
 		});
@@ -331,25 +329,19 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
-				},
-			});
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.prompt({
+			const msg = await sendCommand(wrapped, agent.reader, 'prompt', {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'hello' }],
 			});
 
-			expect(captured[0]!.prompt).toHaveLength(2);
-			expect((captured[0]!.prompt[0] as { text: string }).text).toBe(
-				'[PREFIX]',
-			);
-			expect((captured[0]!.prompt[1] as { text: string }).text).toBe('hello');
+			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
+				.prompt;
+			expect(prompt).toHaveLength(2);
+			expect((prompt[0] as { text: string }).text).toBe('[PREFIX]');
+			expect((prompt[1] as { text: string }).text).toBe('hello');
 		});
 
 		it('undefined return passes through unchanged', async () => {
@@ -364,24 +356,18 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
-				},
-			});
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.prompt({
+			const msg = await sendCommand(wrapped, agent.reader, 'prompt', {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'original' }],
 			});
 
-			expect(captured[0]!.prompt).toHaveLength(1);
-			expect((captured[0]!.prompt[0] as { text: string }).text).toBe(
-				'original',
-			);
+			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
+				.prompt;
+			expect(prompt).toHaveLength(1);
+			expect((prompt[0] as { text: string }).text).toBe('original');
 		});
 
 		it('multiple handlers chain as waterfall', async () => {
@@ -403,29 +389,23 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
-				},
-			});
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.prompt({
+			const msg = await sendCommand(wrapped, agent.reader, 'prompt', {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'X' }],
 			});
 
-			const texts = captured[0]!.prompt.map(
-				(b: ContentBlock) => (b as { text: string }).text,
-			);
+			const texts = (
+				msg as { params: { prompt: ContentBlock[] } }
+			).params.prompt.map((b: ContentBlock) => (b as { text: string }).text);
 			expect(texts).toEqual(['A', 'X', 'B']);
 		});
 	});
 
 	describe('sessionUpdate notify', () => {
-		it('fires handlers without modifying params', async () => {
+		it('fires handlers and forwards the notification', async () => {
 			const received: SessionNotification[] = [];
 			const ext: Extension = {
 				name: 'update-observer',
@@ -438,14 +418,9 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminalReceived: SessionNotification[] = [];
-			const terminal = createTerminalEvents({
-				sessionUpdate: async (p) => {
-					terminalReceived.push(p);
-				},
-			});
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
 
-			const events = joinEvents(middleware, terminal);
 			const notification: SessionNotification = {
 				sessionId: 'test',
 				update: {
@@ -453,12 +428,27 @@ describe('compileExtension', () => {
 					content: { type: 'text', text: 'hi' },
 				},
 			};
-			await events.sessionUpdate(notification);
 
+			// Start reading from the wrapped transport (app side)
+			const reader = wrapped.readable.getReader();
+			const readPromise = reader.read();
+
+			// Agent sends the notification
+			await agent.writer.write({
+				jsonrpc: '2.0',
+				method: 'sessionUpdate',
+				params: notification,
+			} as AnyMessage);
+
+			const { value: forwarded } = await readPromise;
+			reader.releaseLock();
+
+			// Handler was called
 			expect(received).toHaveLength(1);
-			expect(received[0]).toBe(notification);
-			expect(terminalReceived).toHaveLength(1);
-			expect(terminalReceived[0]).toBe(notification);
+			expect(received[0]).toEqual(notification);
+
+			// Message was forwarded
+			expect((forwarded as { method: string }).method).toBe('sessionUpdate');
 		});
 	});
 
@@ -480,18 +470,17 @@ describe('compileExtension', () => {
 
 			expect(getTransport()).toBeDefined();
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
+				cwd: '/test',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
-
-			expect(captured[0]!.mcpServers).toHaveLength(1);
+			expect(
+				(msg as { params: { mcpServers: unknown[] } }).params.mcpServers,
+			).toHaveLength(1);
 		});
 
 		it('passes extension name to transport factory', async () => {
@@ -551,20 +540,19 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { agent, transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			const msg = await sendCommand(wrapped, agent.reader, 'newSession', {
+				cwd: '/test',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
-
+			const mcpServers = (msg as { params: { mcpServers: McpServer[] } }).params
+				.mcpServers;
 			// Handler's server first, then tool server
-			expect(captured[0]!.mcpServers).toHaveLength(2);
-			expect(captured[0]!.mcpServers[0]).toBe(extraServer);
+			expect(mcpServers).toHaveLength(2);
+			expect(mcpServers[0]).toBe(extraServer);
 		});
 	});
 
@@ -583,8 +571,8 @@ describe('compileExtension', () => {
 		});
 	});
 
-	describe('composition via sequence()', () => {
-		it('multiple extensions compose correctly', async () => {
+	describe('composition', () => {
+		it('multiple extensions compose correctly via function application', async () => {
 			const ext1: Extension = {
 				name: 'ext1',
 				async setup(api) {
@@ -610,31 +598,29 @@ describe('compileExtension', () => {
 			const mw1 = await compileExtension(ext1, factory);
 			const mw2 = await compileExtension(ext2, factory);
 
-			const composed = sequence(mw1, mw2);
+			// Compose: ext1 inner (closer to agent), ext2 outer
+			const composed = (t: AgentTransport) => mw2(mw1(t));
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
-				},
-			});
+			const { agent, transport } = createTestTransport();
+			const wrapped = composed(transport);
 
-			const commands = joinCommands(composed, terminal);
-			await commands.prompt({
+			const msg = await sendCommand(wrapped, agent.reader, 'prompt', {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'X' }],
 			});
 
-			const texts = captured[0]!.prompt.map(
-				(b: ContentBlock) => (b as { text: string }).text,
-			);
+			const texts = (
+				msg as { params: { prompt: ContentBlock[] } }
+			).params.prompt.map((b: ContentBlock) => (b as { text: string }).text);
+			// ext2 (outer) transforms first on writable, then ext1 (inner)
+			// ext2 appends 'ext2', ext1 prepends 'ext1'
+			// Command flow: app → ext2 → ext1 → agent
 			expect(texts).toEqual(['ext1', 'X', 'ext2']);
 		});
 	});
 
 	describe('disposal', () => {
-		it('dispose cleans up transport', async () => {
+		it('close cleans up transport', async () => {
 			const ext: Extension = {
 				name: 'disposable',
 				async setup(api) {
@@ -649,12 +635,15 @@ describe('compileExtension', () => {
 			const { factory, getTransport } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			await middleware.dispose!();
+			const { transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
+			await wrapped.close();
 
 			expect(getTransport()!.dispose).toHaveBeenCalled();
 		});
 
-		it('dispose is safe when no transport was created', async () => {
+		it('close is safe when no transport was created', async () => {
 			const ext: Extension = {
 				name: 'no-tools',
 				async setup() {},
@@ -662,11 +651,15 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
+			// Identity middleware — transport is returned as-is
+			const { transport } = createTestTransport();
+			const wrapped = middleware(transport);
+
 			// Should not throw
-			await middleware.dispose?.();
+			await wrapped.close();
 		});
 
-		it('sequence chains dispose calls', async () => {
+		it('composed close cascades through layers', async () => {
 			const disposeLog: string[] = [];
 			const ext1: Extension = {
 				name: 'ext1',
@@ -715,11 +708,15 @@ describe('compileExtension', () => {
 
 			const mw1 = await compileExtension(ext1, factory1);
 			const mw2 = await compileExtension(ext2, factory2);
-			const composed = sequence(mw1, mw2);
 
-			await composed.dispose!();
+			const { transport } = createTestTransport();
+			// ext1 inner, ext2 outer: mw2(mw1(transport))
+			const wrapped = mw2(mw1(transport));
 
-			expect(disposeLog).toEqual(['ext1', 'ext2']);
+			await wrapped.close();
+
+			// ext2 (outer) closes first, then ext1 (inner)
+			expect(disposeLog).toEqual(['ext2', 'ext1']);
 		});
 	});
 });

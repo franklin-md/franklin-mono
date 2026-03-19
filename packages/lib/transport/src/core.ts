@@ -6,7 +6,7 @@
  */
 
 // Stream algebra
-export type { Duplex, Observer } from './streams/types.js';
+export type { Duplex, ReadType, WriteType, Middleware, Observer } from './streams/types.js';
 // eslint-disable-next-line @typescript-eslint/no-deprecated -- backwards compat re-export
 export type { Stream } from './streams/types.js';
 export { pump } from './streams/readable/pump.js';
@@ -29,6 +29,10 @@ export {
 export { serve } from './streams/duplex/serve.js';
 export { emptyDuplex } from './streams/duplex/empty.js';
 export { debugStream } from './streams/duplex/debug.js';
+export {
+	intercept,
+	type InterceptHandlers,
+} from './streams/duplex/intercept.js';
 
 // Codecs
 export { mapStream, ndjsonCodec, type Codec } from './codec/index.js';
