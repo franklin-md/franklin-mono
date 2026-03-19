@@ -23,8 +23,8 @@ export function createDuplexPair<A, B = A>(): {
 	a: Duplex<A, B>;
 	b: Duplex<B, A>;
 } {
-	const aToB = createMemoryStream<B, A>(); // a writes B, b reads B
-	const bToA = createMemoryStream<A, B>(); // b writes A, a reads A
+	const aToB = createMemoryStream<B>(); // a writes B, b reads B
+	const bToA = createMemoryStream<A>(); // b writes A, a reads A
 
 	return {
 		a: {

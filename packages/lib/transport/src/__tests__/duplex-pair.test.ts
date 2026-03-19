@@ -75,5 +75,4 @@ describe('createDuplexPair', () => {
 		const result = await reader.read();
 		expect(result.done).toBe(true);
 	});
-
 });

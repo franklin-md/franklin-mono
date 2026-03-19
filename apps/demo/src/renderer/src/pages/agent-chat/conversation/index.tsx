@@ -14,11 +14,11 @@ export function ConversationPanel({
 	commands: AgentCommands;
 	sessionId: string;
 }) {
-	const { get: turns } = useStore(conversationExt.conversation);
+	const conversation = useStore(conversationExt.conversation);
 
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
-			<ConversationView turns={turns()} />
+			<ConversationView turns={conversation.get()} />
 			<PromptInput commands={commands} sessionId={sessionId} />
 		</div>
 	);

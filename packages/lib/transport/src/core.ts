@@ -38,6 +38,7 @@ export { debugStream } from './streams/duplex/debug.js';
 export {
 	intercept,
 	type InterceptHandlers,
+	type Handler,
 } from './streams/duplex/intercept.js';
 
 // Codecs

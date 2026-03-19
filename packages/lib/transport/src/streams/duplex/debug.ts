@@ -9,21 +9,14 @@ export function debugStream<R, W = R>(
 	duplex: Duplex<R, W>,
 	label = 'debug',
 ): Duplex<R, W> {
-	const render = (chunk: unknown) => {
-		if (chunk instanceof Uint8Array) {
-			return chunk.toString();
-		}
-		return JSON.stringify(chunk);
-	};
-
 	return intercept(duplex, {
-		readable(chunk, addToRead) {
-			console.log(`[${label}] readable:`, render(chunk));
-			addToRead(chunk);
+		readable(chunk, pass) {
+			console.log(`[${label}] readable:`, chunk);
+			pass(chunk);
 		},
-		writable(chunk, _addToRead, addToWrite) {
-			console.log(`[${label}] writable:`, render(chunk));
-			addToWrite(chunk);
+		writable(chunk, pass) {
+			console.log(`[${label}] writable:`, chunk);
+			pass(chunk);
 		},
 	});
 }

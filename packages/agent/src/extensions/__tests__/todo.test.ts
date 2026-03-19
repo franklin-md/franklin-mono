@@ -143,15 +143,10 @@ describe('TodoExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_prompt,
-				{
-					sessionId: 'test',
-					prompt: [{ type: 'text', text: 'hello' }],
-				},
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId: 'test',
+				prompt: [{ type: 'text', text: 'hello' }],
+			});
 
 			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
 				.prompt;
@@ -171,15 +166,10 @@ describe('TodoExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_prompt,
-				{
-					sessionId: 'test',
-					prompt: [{ type: 'text', text: 'hello' }],
-				},
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId: 'test',
+				prompt: [{ type: 'text', text: 'hello' }],
+			});
 
 			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
 				.prompt;

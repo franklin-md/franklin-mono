@@ -138,18 +138,18 @@ export function buildMiddleware(
 	return (agentTransport) => {
 		const wrapped = intercept(agentTransport, {
 			// Commands: app → agent (waterfall transforms)
-			writable: async (msg, _addToRead, addToWrite) => {
+			writable: async (msg, passWrite) => {
 				const transformed = await transformCommand(
 					msg as RpcMessage,
 					sessionStartHandlers,
 					promptHandlers,
 					transport,
 				);
-				addToWrite(transformed as AnyMessage);
+				passWrite(transformed as AnyMessage);
 			},
 
 			// Events: agent → app (side-effects + short-circuit)
-			readable: async (msg, addToRead, addToWrite) => {
+			readable: async (msg, addToRead, passWriteReply) => {
 				// sessionUpdate — fire handlers, forward unchanged
 				const updateNotif = matchNotification<SessionNotification>(
 					msg as RpcMessage,
@@ -174,7 +174,7 @@ export function buildMiddleware(
 							permReq.params.options.find((o) => o.kind === 'allow_always') ??
 							permReq.params.options.find((o) => o.kind === 'allow_once');
 						if (option) {
-							addToWrite(
+							passWriteReply(
 								rpcResponse(permReq.id, {
 									outcome: {
 										outcome: 'selected' as const,

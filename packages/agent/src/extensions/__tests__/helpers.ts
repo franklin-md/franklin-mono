@@ -41,6 +41,8 @@ export async function sendCommand(
 	method: string,
 	params: unknown,
 ): Promise<AnyMessage> {
+	const reader = to.readable.getReader();
+	const readPromise = reader.read();
 	const writer = from.writable.getWriter();
 	await writer.write({
 		jsonrpc: '2.0',
@@ -49,10 +51,7 @@ export async function sendCommand(
 		params,
 	} as AnyMessage);
 	writer.releaseLock();
-
-	await new Promise((r) => setTimeout(r, 10));
-	const reader = to.readable.getReader();
-	const { value } = await reader.read();
+	const { value } = await readPromise;
 	reader.releaseLock();
 	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 	return value!;

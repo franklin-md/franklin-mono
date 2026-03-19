@@ -4,14 +4,14 @@
  */
 export async function pump<T>(
 	readable: ReadableStream<T>,
-	fn: (value: T) => void,
+	fn: (value: T) => void | Promise<void>,
 ): Promise<void> {
 	const reader = readable.getReader();
 	try {
 		for (;;) {
 			const { done, value } = await reader.read();
 			if (done) break;
-			fn(value);
+			await Promise.resolve(fn(value));
 		}
 	} catch {
 		// Stream closed or errored

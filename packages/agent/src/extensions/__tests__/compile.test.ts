@@ -42,12 +42,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_new,
-				{ cwd: '/test', mcpServers: [] },
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
+			});
 
 			expect((msg as { params: { cwd: string } }).params.cwd).toBe('/test');
 			expect(
@@ -98,12 +96,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_new,
-				{ cwd: '/original', mcpServers: [] },
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/original',
+				mcpServers: [],
+			});
 
 			expect((msg as { params: { cwd: string } }).params.cwd).toBe('/modified');
 		});
@@ -131,12 +127,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_new,
-				{ cwd: '/test', mcpServers: [] },
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
+			});
 
 			expect(
 				(msg as { params: { mcpServers: McpServer[] } }).params.mcpServers,
@@ -158,12 +152,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_new,
-				{ cwd: '/test', mcpServers: [] },
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
+			});
 
 			const params = (msg as { params: { cwd: string; mcpServers: [] } })
 				.params;
@@ -189,12 +181,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_new,
-				{ cwd: '/original', mcpServers: [] },
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/original',
+				mcpServers: [],
+			});
 
 			expect((msg as { params: { cwd: string } }).params.cwd).toBe(
 				'/first/second',
@@ -274,15 +264,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_prompt,
-				{
-					sessionId: 'test',
-					prompt: [{ type: 'text', text: 'hello' }],
-				},
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId: 'test',
+				prompt: [{ type: 'text', text: 'hello' }],
+			});
 
 			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
 				.prompt;
@@ -306,15 +291,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_prompt,
-				{
-					sessionId: 'test',
-					prompt: [{ type: 'text', text: 'original' }],
-				},
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId: 'test',
+				prompt: [{ type: 'text', text: 'original' }],
+			});
 
 			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
 				.prompt;
@@ -344,15 +324,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_prompt,
-				{
-					sessionId: 'test',
-					prompt: [{ type: 'text', text: 'X' }],
-				},
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId: 'test',
+				prompt: [{ type: 'text', text: 'X' }],
+			});
 
 			const texts = (
 				msg as { params: { prompt: ContentBlock[] } }
@@ -434,12 +409,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_new,
-				{ cwd: '/test', mcpServers: [] },
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
+			});
 
 			expect(
 				(msg as { params: { mcpServers: unknown[] } }).params.mcpServers,
@@ -506,12 +479,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = middleware(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_new,
-				{ cwd: '/test', mcpServers: [] },
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
+			});
 
 			const mcpServers = (msg as { params: { mcpServers: McpServer[] } }).params
 				.mcpServers;
@@ -569,15 +540,10 @@ describe('compileExtension', () => {
 			const { a: agent, b: inner } = createTransportPair();
 			const app = composed(inner);
 
-			const msg = await sendCommand(
-				app,
-				agent,
-				AGENT_METHODS.session_prompt,
-				{
-					sessionId: 'test',
-					prompt: [{ type: 'text', text: 'X' }],
-				},
-			);
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId: 'test',
+				prompt: [{ type: 'text', text: 'X' }],
+			});
 
 			const texts = (
 				msg as { params: { prompt: ContentBlock[] } }

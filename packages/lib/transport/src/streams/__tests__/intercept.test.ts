@@ -1,39 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { createDuplexPair } from '../../in-memory/index.js';
 import { intercept } from '../duplex/intercept.js';
 import type { Duplex } from '../types.js';
 
-/**
- * Creates an in-memory Duplex for testing.
- *
- * Uses a high readable HWM to avoid backpressure blocking in tests.
- * Without this, sequential writes can deadlock because the default
- * TransformStream readable HWM is 0.
- */
-function createMemoryDuplex<R, W = R>(): {
-	duplex: Duplex<R, W>;
-	/** Write into the readable side (simulates upstream source). */
-	pushReadable: WritableStreamDefaultWriter<R>;
-	/** Read from the writable side (simulates downstream sink). */
-	pullWritable: ReadableStreamDefaultReader<W>;
+/** Duplex `a` of a pair plus handles to push/read via the peer `b` (see `createDuplexPair`). */
+function createMemoryDuplex<T>(): {
+	duplex: Duplex<T>;
+	pushReadable: WritableStreamDefaultWriter<T>;
+	pullWritable: ReadableStreamDefaultReader<T>;
 } {
-	const input = new TransformStream<R>(undefined, undefined, {
-		highWaterMark: 16,
-	});
-	const output = new TransformStream<W>(undefined, undefined, {
-		highWaterMark: 16,
-	});
-
-	const duplex: Duplex<R, W> = {
-		readable: input.readable,
-		writable: output.writable,
-		close: async () => {},
-	};
-
+	const { a, b } = createDuplexPair<T>();
 	return {
-		duplex,
-		pushReadable: input.writable.getWriter(),
-		pullWritable: output.readable.getReader(),
+		duplex: a,
+		pushReadable: b.writable.getWriter(),
+		pullWritable: b.readable.getReader(),
 	};
 }
 
@@ -54,10 +35,11 @@ describe('intercept', () => {
 			await pushReadable.close();
 		});
 
-		it('passes writable values through when handler calls addToWrite', async () => {
+		it('passes writable values through when handler forwards on passWrite', async () => {
 			const { duplex, pullWritable } = createMemoryDuplex<string>();
 			const wrapped = intercept(duplex, {
-				writable: (_chunk, _addToRead, addToWrite) => addToWrite(_chunk),
+				// Handler<W,R>: pass inner write (2nd), inject readable (3rd)
+				writable: (_chunk, passWrite) => passWrite(_chunk),
 			});
 			const writer = wrapped.writable.getWriter();
 
@@ -90,8 +72,7 @@ describe('intercept', () => {
 		it('transforms writable chunks', async () => {
 			const { duplex, pullWritable } = createMemoryDuplex<string>();
 			const wrapped = intercept(duplex, {
-				writable: (chunk, _addToRead, addToWrite) =>
-					addToWrite(chunk.toUpperCase()),
+				writable: (chunk, passWrite) => passWrite(chunk.toUpperCase()),
 			});
 			const writer = wrapped.writable.getWriter();
 
@@ -134,8 +115,8 @@ describe('intercept', () => {
 		it('drops writable chunks when handler does not call addToWrite', async () => {
 			const { duplex, pullWritable } = createMemoryDuplex<number>();
 			const wrapped = intercept(duplex, {
-				writable: (chunk, _addToRead, addToWrite) => {
-					if (chunk > 0) addToWrite(chunk);
+				writable: (chunk, passWrite) => {
+					if (chunk > 0) passWrite(chunk);
 				},
 			});
 			const writer = wrapped.writable.getWriter();
@@ -171,7 +152,7 @@ describe('intercept', () => {
 		it('leaves readable unchanged when only writable handler provided', async () => {
 			const { duplex, pushReadable } = createMemoryDuplex<string>();
 			const wrapped = intercept(duplex, {
-				writable: (chunk, _addToRead, addToWrite) => addToWrite(chunk + '!'),
+				writable: (chunk, passWrite) => passWrite(chunk + '!'),
 			});
 
 			const reader = wrapped.readable.getReader();
@@ -224,9 +205,9 @@ describe('intercept', () => {
 				pullWritable,
 			} = createMemoryDuplex<string>();
 			const wrapped = intercept(duplex, {
-				writable: (chunk, addToRead, addToWrite) => {
-					addToRead(`echo:${chunk}`); // inject into readable
-					addToWrite(chunk); // also forward normally
+				writable: (chunk, passWrite, injectRead) => {
+					injectRead(`echo:${chunk}`); // inject into readable
+					passWrite(chunk); // also forward normally
 				},
 			});
 
