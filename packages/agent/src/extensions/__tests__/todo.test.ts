@@ -5,7 +5,7 @@ import { AGENT_METHODS } from '@agentclientprotocol/sdk';
 
 import { compileExtension } from '../compile/index.js';
 import type { Extension, ExtensionToolDefinition } from '../types/index.js';
-import { TodoExtension } from '../examples/todo/index.js';
+import { TodoExtension } from '../core/todo/index.js';
 import {
 	createMockTransportFactory,
 	createTransportPair,

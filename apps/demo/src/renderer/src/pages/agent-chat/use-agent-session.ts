@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
 	ConversationExtension,
 	TodoExtension,
+	createAgent,
 	PROTOCOL_VERSION,
 } from '@franklin/agent/browser';
 import type { AgentCommands } from '@franklin/agent/browser';
@@ -59,37 +60,37 @@ export function useAgentSession(): AgentSession {
 					return;
 				}
 
-				const middleware = await framework.compileExtensions([
-					conversationExt,
-					todoExt,
-				]);
-				const { commands, dispose } = framework.connect(middleware(transport));
+				const agent = await createAgent(
+					[conversationExt, todoExt],
+					transport,
+					framework.toolTransport,
+				);
 
 				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated across await
 				if (disposedRef.current) {
-					await dispose();
+					await agent.dispose();
 					await env.dispose();
 					return;
 				}
 
 				// Initialize + create session
-				await commands.initialize({
+				await agent.initialize({
 					clientInfo: {
 						name: 'franklin-demo',
 						version: '0.1.0',
 					},
 					protocolVersion: PROTOCOL_VERSION,
 				});
-				const { sessionId: sid } = await commands.newSession({
+				const { sessionId: sid } = await agent.newSession({
 					cwd: '/tmp',
 					mcpServers: [],
 				});
 				setSessionId(sid);
 
 				sessionRef.current = {
-					commands,
+					commands: agent,
 					dispose: async () => {
-						await dispose();
+						await agent.dispose();
 						await env.dispose();
 						await framework.dispose();
 					},

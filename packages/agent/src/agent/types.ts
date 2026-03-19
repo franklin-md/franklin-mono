@@ -40,6 +40,12 @@ export type ExtensionStores<E extends readonly Extension<any>[]> = {
  * - Each stateful extension's `Store<T>` is accessible at `agent.<name>`.
  * - Lifecycle methods (`dispose`, `signal`, `closed`) manage the connection.
  */
+
+/*
+ TODO: I dont think this should be AgentCommands. It should likely not have:
+ a) The session commands like new, load or fork (as those commands should actually give you this Agent). It also means the Agent is session-aware (it knows it session-id)
+
+*/
 export type Agent<E extends readonly Extension<any>[]> = AgentCommands &
 	ExtensionStores<E> & {
 		dispose: () => Promise<void>;

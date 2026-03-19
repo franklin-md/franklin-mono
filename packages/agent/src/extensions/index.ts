@@ -1,4 +1,4 @@
-export { compileExtension } from './compile/index.js';
+export { compileExtension, compileExtensions } from './compile/index.js';
 export type { McpTransportFactory } from './compile/index.js';
 export type {
 	Extension,
@@ -8,10 +8,10 @@ export type {
 	SessionStartHandler,
 	SessionUpdateHandler,
 } from './types/index.js';
-export { TodoExtension } from './examples/todo/index.js';
-export { createTodoControl } from './examples/todo/index.js';
-export type { Todo } from './examples/todo/index.js';
-export { ConversationExtension } from './examples/conversation/index.js';
+export { TodoExtension } from './core/todo/index.js';
+export { createTodoControl } from './core/todo/index.js';
+export type { Todo } from './core/todo/index.js';
+export { ConversationExtension } from './core/conversation/index.js';
 export type {
 	AgentTextEntry,
 	AgentThoughtEntry,
@@ -19,4 +19,4 @@ export type {
 	ConversationTurn,
 	ToolCallEntry,
 	UserEntry,
-} from './examples/conversation/index.js';
+} from './core/conversation/index.js';

@@ -34,3 +34,16 @@ export async function compileExtension(
 
 	return buildMiddleware(state, transport);
 }
+
+export async function compileExtensions(
+	extensions: readonly Extension<any>[],
+	transportFactory: McpTransportFactory,
+): Promise<AgentMiddleware> {
+	const mws = await Promise.all(
+		extensions.map((ext) => compileExtension(ext, transportFactory)),
+	);
+	return mws.reduce<AgentMiddleware>(
+		(composed, mw) => (t) => mw(composed(t)),
+		(t) => t,
+	);
+}
