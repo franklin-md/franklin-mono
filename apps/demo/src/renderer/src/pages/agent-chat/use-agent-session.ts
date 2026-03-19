@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
 	ConversationExtension,
 	TodoExtension,
+	QAExtension,
 	PROTOCOL_VERSION,
 } from '@franklin/agent/browser';
 import type { AgentCommands } from '@franklin/agent/browser';
@@ -15,6 +16,7 @@ export interface AgentSession {
 	sessionId: string | undefined;
 	todoExt: TodoExtension;
 	conversationExt: ConversationExtension;
+	qaExt: QAExtension;
 	status: SessionStatus;
 	error?: string;
 }
@@ -37,6 +39,7 @@ export function useAgentSession(): AgentSession {
 	// Extensions are created once, held in a ref so they survive re-renders.
 	const todoExt = useRef(new TodoExtension()).current;
 	const conversationExt = useRef(new ConversationExtension()).current;
+	const qaExt = useRef(new QAExtension()).current;
 
 	useEffect(() => {
 		const disposedRef = { current: false };
@@ -62,6 +65,7 @@ export function useAgentSession(): AgentSession {
 				const middleware = await framework.compileExtensions([
 					conversationExt,
 					todoExt,
+					qaExt,
 				]);
 				const { commands, dispose } = framework.connect(transport, middleware);
 
@@ -113,9 +117,9 @@ export function useAgentSession(): AgentSession {
 			disposedRef.current = true;
 			void sessionRef.current?.dispose();
 		};
-	}, [todoExt, conversationExt]);
+	}, [todoExt, conversationExt, qaExt]);
 
 	const commands = sessionRef.current?.commands ?? noopCommands;
 
-	return { commands, sessionId, todoExt, conversationExt, status, error };
+	return { commands, sessionId, todoExt, conversationExt, qaExt, status, error };
 }

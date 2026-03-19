@@ -1,9 +1,10 @@
 import { useAgentSession } from './use-agent-session.js';
 import { ConversationPanel } from './conversation/index.js';
 import { TodoPanel } from './todo/index.js';
+import { QuizPanel } from './q_and_a/index.js';
 
 export function AgentChatPage() {
-	const { commands, sessionId, todoExt, conversationExt, status, error } =
+	const { commands, sessionId, todoExt, conversationExt, qaExt, status, error } =
 		useAgentSession();
 
 	if (status === 'loading') {
@@ -33,6 +34,7 @@ export function AgentChatPage() {
 				sessionId={sessionId}
 			/>
 			<TodoPanel todoExt={todoExt} />
+			<QuizPanel qaExt={qaExt} />
 		</div>
 	);
 }

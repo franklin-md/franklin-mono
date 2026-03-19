@@ -16,6 +16,8 @@ export {
 	TodoExtension,
 	ConversationExtension,
 	createTodoControl,
+	QAExtension,
+	createQuizControl,
 } from './extensions/index.js';
 export type {
 	Extension,
@@ -32,6 +34,9 @@ export type {
 	ConversationTurn,
 	ToolCallEntry,
 	UserEntry,
+	Quiz,
+	Question,
+	QuizControl,
 } from './extensions/index.js';
 
 // Connection
