@@ -12,6 +12,8 @@ export { TodoExtension } from './core/todo/index.js';
 export { createTodoControl } from './core/todo/index.js';
 export type { Todo } from './core/todo/index.js';
 export { ConversationExtension } from './core/conversation/index.js';
+export { SpawnExtension } from './core/spawn/index.js';
+export type { SpawnPoint, SpawnPointFactory } from './core/spawn/index.js';
 export type {
 	AgentTextEntry,
 	AgentThoughtEntry,

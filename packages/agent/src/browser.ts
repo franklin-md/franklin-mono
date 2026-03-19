@@ -16,6 +16,7 @@ export {
 	compileExtensions,
 	TodoExtension,
 	ConversationExtension,
+	SpawnExtension,
 	createTodoControl,
 } from './extensions/index.js';
 export type {
@@ -33,6 +34,8 @@ export type {
 	ConversationTurn,
 	ToolCallEntry,
 	UserEntry,
+	SpawnPoint,
+	SpawnPointFactory,
 } from './extensions/index.js';
 
 // Connection
