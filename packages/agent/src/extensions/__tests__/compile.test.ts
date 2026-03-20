@@ -12,8 +12,11 @@ import { AGENT_METHODS, CLIENT_METHODS } from '@agentclientprotocol/sdk';
 import type { McpToolStream } from '@franklin/local-mcp';
 
 import type { AgentTransport } from '../../transport/index.js';
-import { compileExtension } from '../compile/index.js';
+import { compileExtension, compileExtensions } from '../compile/index.js';
 import type { McpTransportFactory } from '../compile/index.js';
+import { ConversationExtension } from '../core/conversation/index.js';
+import type { UserEntry } from '../core/conversation/types.js';
+import { TodoExtension } from '../core/todo/index.js';
 import type { Extension } from '../types/index.js';
 import {
 	createMockTransportFactory,
@@ -653,6 +656,99 @@ describe('compileExtension', () => {
 
 			// ext2 (outer) closes first, then ext1 (inner)
 			expect(disposeLog).toEqual(['ext2', 'ext1']);
+		});
+	});
+
+	describe('multi-extension prompt isolation', () => {
+		it('conversation records the raw user prompt, not todo-modified prompt', async () => {
+			const conversation = new ConversationExtension();
+			const todo = new TodoExtension();
+
+			// Pre-populate a todo so the prompt handler will prepend <todos>
+			todo.state.set((draft) => {
+				draft.push({
+					id: 'todo-1',
+					text: 'Buy milk',
+					completed: false,
+					createdAt: Date.now(),
+				});
+			});
+
+			const { factory } = createMockTransportFactory();
+			const middleware = await compileExtensions([conversation, todo], factory);
+
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			// Send a prompt through the composed middleware
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId: 'test',
+				prompt: [{ type: 'text', text: 'hello' }],
+			});
+
+			// Agent should receive the todo-modified prompt (with <todos> prepended)
+			const agentPrompt = (msg as { params: { prompt: ContentBlock[] } }).params
+				.prompt;
+			expect(agentPrompt).toHaveLength(2);
+			expect((agentPrompt[0] as { text: string }).text).toContain('<todos>');
+			expect((agentPrompt[1] as { text: string }).text).toBe('hello');
+
+			// But conversation state should record the RAW user prompt, not the modified one
+			const turns = conversation.state.get();
+			expect(turns).toHaveLength(1);
+
+			const userEntry = turns[0]!.entries[0] as UserEntry;
+			expect(userEntry.type).toBe('user');
+			expect(userEntry.content).toHaveLength(1);
+			expect((userEntry.content[0] as { text: string }).text).toBe('hello');
+		});
+
+		it('first extension in array is closer to app (observes raw prompt)', async () => {
+			const log: string[] = [];
+
+			const observer: Extension = {
+				name: 'observer',
+				async setup(api) {
+					api.on('prompt', async (ctx) => {
+						log.push(`observer:${(ctx.prompt[0] as { text: string }).text}`);
+						return undefined;
+					});
+				},
+			};
+
+			const transformer: Extension = {
+				name: 'transformer',
+				async setup(api) {
+					api.on('prompt', async (ctx) => {
+						log.push(`transformer:${(ctx.prompt[0] as { text: string }).text}`);
+						return {
+							prompt: [
+								{ type: 'text' as const, text: '[WRAPPED]' },
+								...ctx.prompt,
+							],
+						};
+					});
+				},
+			};
+
+			const { factory } = createMockTransportFactory();
+			// observer listed first — should see raw prompt
+			const middleware = await compileExtensions(
+				[observer, transformer],
+				factory,
+			);
+
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId: 'test',
+				prompt: [{ type: 'text', text: 'hello' }],
+			});
+
+			// observer should see raw 'hello', transformer should see raw 'hello'
+			// (observer doesn't modify, so transformer also sees 'hello')
+			expect(log).toEqual(['observer:hello', 'transformer:hello']);
 		});
 	});
 });
