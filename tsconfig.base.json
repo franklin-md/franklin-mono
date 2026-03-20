@@ -19,6 +19,7 @@
 			"@franklin/agent": ["packages/agent/src/index.ts"],
 			"@franklin/agent/browser": ["packages/agent/src/browser.ts"],
 			"@franklin/local-mcp": ["packages/local-mcp/src/index.ts"],
+			"@franklin/mini-acp": ["packages/mini-acp/src/index.ts"],
 			"@franklin/node": ["packages/node/src/index.ts"],
 			"@franklin/electron/main": ["packages/electron/src/main/index.ts"],
 			"@franklin/electron/preload": ["packages/electron/src/preload/index.ts"],
