@@ -13,8 +13,10 @@ export type { EnvironmentHandle, AgentSpec } from './environment.js';
 // Extensions (browser-safe — compileExtension only depends on @franklin/local-mcp/browser)
 export {
 	compileExtension,
+	compileExtensions,
 	TodoExtension,
 	ConversationExtension,
+	SpawnExtension,
 	createTodoControl,
 } from './extensions/index.js';
 export type {
@@ -32,6 +34,8 @@ export type {
 	ConversationTurn,
 	ToolCallEntry,
 	UserEntry,
+	SpawnPoint,
+	SpawnPointFactory,
 } from './extensions/index.js';
 
 // Connection
@@ -57,7 +61,7 @@ export {
 export type { ReadonlyStore, Store } from './store/index.js';
 
 // Agent — typed handle unifying commands, extension stores, and lifecycle
-export { createAgent } from './agent/index.js';
+export { createAgent, AgentManager } from './agent/index.js';
 export type { Agent, ExtensionStores } from './agent/index.js';
 
 // Framework base class

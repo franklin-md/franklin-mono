@@ -1,9 +1,8 @@
 import type { Extension } from '../extensions/types/extension.js';
 import type { McpTransportFactory } from '../extensions/compile/start.js';
 import type { AgentTransport } from '../transport/index.js';
-import type { AgentMiddleware } from '../types.js';
 import type { Agent } from './types.js';
-import { compileExtension } from '../extensions/compile/index.js';
+import { compileExtensions } from '../extensions/compile/index.js';
 import { fillHandler } from '../stack/fill-handler.js';
 import { createAgentConnection } from '../connection.js';
 
@@ -32,19 +31,13 @@ export async function createAgent<const E extends readonly Extension<any>[]>(
 	toolTransport: McpTransportFactory,
 ): Promise<Agent<E>> {
 	// Compile each extension into transport-wrapping middleware.
-	const mws = await Promise.all(
-		extensions.map((ext) => compileExtension(ext, toolTransport)),
-	);
-
-	// Compose: extensions listed first are inner (closer to agent).
-	const middleware = mws.reduce<AgentMiddleware>(
-		(composed, mw) => (t) => mw(composed(t)),
-		(t) => t,
-	);
+	const middleware = await compileExtensions(extensions, toolTransport);
 
 	// Apply middleware to transport and create connection.
-	const wrapped = middleware(transport);
-	const connection = createAgentConnection(wrapped, fillHandler({}));
+	const connection = createAgentConnection(
+		middleware(transport),
+		fillHandler({}),
+	);
 
 	// Build the agent object: commands + lifecycle + extension stores.
 	const agent: Record<string, unknown> = {

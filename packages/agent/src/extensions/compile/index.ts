@@ -34,3 +34,19 @@ export async function compileExtension(
 
 	return buildMiddleware(state, transport);
 }
+
+export async function compileExtensions(
+	extensions: readonly Extension<any>[],
+	transportFactory: McpTransportFactory,
+): Promise<AgentMiddleware> {
+	const mws = await Promise.all(
+		extensions.map((ext) => compileExtension(ext, transportFactory)),
+	);
+	// Earlier extensions are outer (closer to app), later ones are inner
+	// (closer to agent). This means observers listed first see the raw
+	// prompt before transformers listed later modify it.
+	return mws.reduce<AgentMiddleware>(
+		(composed, mw) => (t) => composed(mw(t)),
+		(t) => t,
+	);
+}

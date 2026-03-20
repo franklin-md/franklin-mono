@@ -7,6 +7,7 @@ import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 
 import {
 	createAgentConnection,
+	compileExtensions,
 	fillHandler,
 	TodoExtension,
 } from '@franklin/agent';
@@ -48,7 +49,10 @@ describeIntegration('MCP tool integration (codex + TodoExtension)', () => {
 		const transport = await env.spawn('claude-acp');
 
 		const todoExtension = new TodoExtension();
-		middleware = await framework.compileExtensions([todoExtension]);
+		middleware = await compileExtensions(
+			[todoExtension],
+			framework.toolTransport,
+		);
 
 		// 2. Wire the connection through middleware with custom event handlers.
 		//    The middleware auto-approves tool calls from this extension.

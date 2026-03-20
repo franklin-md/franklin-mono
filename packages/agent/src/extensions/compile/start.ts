@@ -17,7 +17,7 @@ import type { ExtensionToolDefinition } from '../types/index.js';
  * Tests use in-memory, production uses HTTP relay.
  */
 export type McpTransportFactory = (
-	name: string,
+	name: string, // Name of the Group
 	tools: SerializedToolDefinition[],
 ) => Promise<McpTransport>;
 

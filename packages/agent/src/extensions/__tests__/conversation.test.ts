@@ -5,14 +5,14 @@ import { AGENT_METHODS, CLIENT_METHODS } from '@agentclientprotocol/sdk';
 
 import type { AgentMiddleware } from '../../types.js';
 import { compileExtension } from '../compile/index.js';
-import { ConversationExtension } from '../examples/conversation/index.js';
+import { ConversationExtension } from '../core/conversation/index.js';
 import type {
 	AgentTextEntry,
 	AgentThoughtEntry,
 	ConversationEntry,
 	ToolCallEntry,
 	UserEntry,
-} from '../examples/conversation/types.js';
+} from '../core/conversation/types.js';
 import {
 	createMockTransportFactory,
 	createTransportPair,
