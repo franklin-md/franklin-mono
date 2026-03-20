@@ -16,7 +16,11 @@ import { createTodoControl } from './control.js';
  */
 export class TodoExtension implements Extension<Todo[]> {
 	readonly name = 'todo';
-	readonly state: Store<Todo[]> = createStore<Todo[]>([]);
+	readonly state: Store<Todo[]>;
+
+	constructor(todos?: Store<Todo[]>) {
+		this.state = todos ?? createStore<Todo[]>([]);
+	}
 
 	async setup(api: ExtensionAPI): Promise<void> {
 		const control = createTodoControl(this.state);

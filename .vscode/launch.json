@@ -2,18 +2,6 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Launch TUI",
-			"type": "node",
-			"request": "launch",
-			"cwd": "${workspaceFolder}/apps/tui",
-			"program": "${workspaceFolder}/apps/tui/dist/index.js",
-			"console": "integratedTerminal",
-			"preLaunchTask": "build",
-			"sourceMaps": true,
-			"outFiles": ["${workspaceFolder}/apps/tui/dist/**/*.js"],
-			"skipFiles": ["<node_internals>/**"]
-		},
-		{
 			"name": "Run Integration Tests",
 			"type": "node",
 			"request": "launch",

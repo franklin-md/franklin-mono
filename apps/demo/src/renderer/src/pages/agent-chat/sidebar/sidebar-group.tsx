@@ -8,6 +8,7 @@ interface AgentEntry<E extends Extension<any>[]> {
 	id: string;
 	name: string;
 	agent: Agent<E>;
+	sessionId: string;
 }
 
 export function SidebarGroup<E extends Extension<any>[]>({
@@ -21,7 +22,7 @@ export function SidebarGroup<E extends Extension<any>[]>({
 	agents: AgentEntry<E>[];
 	currentAgentId: string | null;
 	onSpawnAgent: () => void;
-	onSelectAgent: (agentId: string, agent: Agent<E>) => void;
+	onSelectAgent: (agentId: string, agent: Agent<E>, sessionId: string) => void;
 }) {
 	return (
 		<div className="mb-2">
@@ -44,7 +45,9 @@ export function SidebarGroup<E extends Extension<any>[]>({
 						key={entry.id}
 						name={entry.name}
 						active={entry.id === currentAgentId}
-						onClick={() => onSelectAgent(entry.id, entry.agent)}
+						onClick={() =>
+							onSelectAgent(entry.id, entry.agent, entry.sessionId)
+						}
 					/>
 				))}
 			</div>
