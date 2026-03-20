@@ -5,7 +5,13 @@ import type { ToolDefinition } from './tool.js';
 // Context — the full state needed to drive an agent turn
 // ---------------------------------------------------------------------------
 
-export type ThinkingLevel = 'none' | 'low' | 'medium' | 'high';
+export type ThinkingLevel =
+	| 'off'
+	| 'minimal'
+	| 'low'
+	| 'medium'
+	| 'high'
+	| 'xhigh';
 
 export type LLMConfig = {
 	model?: string;

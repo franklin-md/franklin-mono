@@ -23,3 +23,7 @@ export type ToolResult = {
 	>;
 	isError?: boolean;
 };
+
+export type ToolExecuteHandler = (params: {
+	call: ToolCall;
+}) => Promise<ToolResult>;

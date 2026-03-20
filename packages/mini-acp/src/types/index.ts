@@ -1,5 +1,8 @@
 export type {
 	Content,
+	UserContent,
+	AssistantContent,
+	ToolResultContent,
 	TextContent,
 	ThinkingContent,
 	ImageContent,
@@ -15,7 +18,12 @@ export type {
 
 export type { Ctx, History, LLMConfig, ThinkingLevel } from './context.js';
 
-export type { ToolDefinition, ToolCall, ToolResult } from './tool.js';
+export type {
+	ToolDefinition,
+	ToolCall,
+	ToolResult,
+	ToolExecuteHandler,
+} from './tool.js';
 
 export type {
 	TurnStart,

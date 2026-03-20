@@ -26,6 +26,16 @@ export type ToolCallContent = {
 	arguments: Record<string, unknown>;
 };
 
+// Per-role content unions — constrain what each message role can carry
+export type UserContent = TextContent | ImageContent;
+export type AssistantContent =
+	| TextContent
+	| ThinkingContent
+	| ImageContent
+	| ToolCallContent;
+export type ToolResultContent = TextContent | ImageContent;
+
+// All content types (superset)
 export type Content =
 	| TextContent
 	| ThinkingContent

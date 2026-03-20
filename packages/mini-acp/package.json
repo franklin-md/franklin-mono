@@ -23,6 +23,8 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@franklin/transport": "*"
+		"@franklin/transport": "*",
+		"@mariozechner/pi-agent-core": "^0.61.0",
+		"pi-agents": "^0.1.0"
 	}
 }

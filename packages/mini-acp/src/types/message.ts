@@ -1,4 +1,8 @@
-import type { Content } from './content.js';
+import type {
+	UserContent,
+	AssistantContent,
+	ToolResultContent,
+} from './content.js';
 
 // ---------------------------------------------------------------------------
 // Messages — 3 roles, each with constrained content types
@@ -13,20 +17,19 @@ import type { Content } from './content.js';
 //  toolResult   |  ✓   |          |   ✓   |
 
 export type UserMessage = {
-	role: 'user'; // user->agent
-	content: Content[];
+	role: 'user';
+	content: UserContent[];
 };
 
 export type AssistantMessage = {
-	role: 'assistant'; // agent->user
-	content: Content[];
+	role: 'assistant';
+	content: AssistantContent[];
 };
 
-// Not sure this should be here?
 export type ToolResultMessage = {
 	role: 'toolResult';
 	toolCallId: string;
-	content: Content[];
+	content: ToolResultContent[];
 };
 
 export type Message = UserMessage | AssistantMessage | ToolResultMessage;
