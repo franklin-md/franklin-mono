@@ -2,14 +2,16 @@ import type { StreamEvent } from '../types/stream.js';
 import type { ToolExecuteHandler } from '../types/tool.js';
 import type { UserMessage } from '../types/message.js';
 
-// ---------------------------------------------------------------------------
-// Base Protocol — sessionless, one agent, one conversation
-// ---------------------------------------------------------------------------
+export type PromptParams = {
+	message: UserMessage;
+};
+
+export type CancelParams = Record<string, never>;
 
 // Agent side (client calls agent)
 export interface BaseAgent {
-	prompt(params: { message: UserMessage }): AsyncIterable<StreamEvent>;
-	cancel(params: Record<string, never>): Promise<StreamEvent>;
+	prompt(params: PromptParams): AsyncIterable<StreamEvent>;
+	cancel(params: CancelParams): Promise<StreamEvent>;
 	// llmSignal(params: { payload: unknown }): Promise<void>;
 }
 

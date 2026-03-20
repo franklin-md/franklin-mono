@@ -24,6 +24,9 @@ export type ToolResult = {
 	isError?: boolean;
 };
 
-export type ToolExecuteHandler = (params: {
+export type ToolExecuteParams = {
 	call: ToolCall;
-}) => Promise<ToolResult>;
+};
+export type ToolExecuteHandler = (
+	params: ToolExecuteParams,
+) => Promise<ToolResult>;

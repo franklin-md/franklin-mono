@@ -1,13 +1,13 @@
-export type JsonRpcRequest<P = unknown> = {
+export type JsonRpcRequest<P = unknown, M extends string = string> = {
 	jsonrpc: '2.0';
 	id: number;
-	method: string;
+	method: M;
 	params: P;
 };
 
-export type JsonRpcNotification<P = unknown> = {
+export type JsonRpcNotification<P = unknown, M extends string = string> = {
 	jsonrpc: '2.0';
-	method: string;
+	method: M;
 	params: P;
 };
 

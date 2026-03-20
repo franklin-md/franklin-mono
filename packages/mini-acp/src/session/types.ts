@@ -1,41 +1,24 @@
+import type { CancelParams, PromptParams } from '../base/types.js';
 import type { Ctx } from '../types/context.js';
-import type { UserMessage } from '../types/message.js';
-import type { SessionId } from '../types/session.js';
 import type { StreamEvent } from '../types/stream.js';
-import type { ToolCall, ToolResult } from '../types/tool.js';
+import type { ToolExecuteParams, ToolResult } from '../types/tool.js';
 
-// ---------------------------------------------------------------------------
-// Session Protocol (Mini ACP) — wraps base protocol with session management
-// ---------------------------------------------------------------------------
+type AgentCtx = { ctx: Partial<Ctx> };
 
 // Agent side (client calls agent)
 export interface AgentMethods {
 	// Session management
-	sessionCreate(params: { ctx: Ctx }): Promise<{ sessionId: SessionId }>;
+	initialize(): Promise<void>;
 
-	sessionSet(params: {
-		sessionId: SessionId;
-		ctx: Partial<Ctx>;
-	}): Promise<void>;
+	setContext(params: AgentCtx): Promise<void>;
 
 	// S<BaseAgent> — base protocol methods, session-scoped
-	sessionPrompt(params: {
-		sessionId: SessionId;
-		message: UserMessage;
-	}): AsyncIterable<StreamEvent>;
+	prompt(params: PromptParams): AsyncIterable<StreamEvent>;
 
-	sessionCancel(params: { sessionId: SessionId }): Promise<StreamEvent>;
-
-	sessionLlmSignal(params: {
-		sessionId: SessionId;
-		payload: unknown;
-	}): Promise<void>;
+	cancel(params: CancelParams): Promise<StreamEvent>;
 }
 
 // Client side (agent calls client — reverse RPC)
 export interface ClientMethods {
-	toolExecute(params: {
-		sessionId: SessionId;
-		call: ToolCall;
-	}): Promise<ToolResult>;
+	toolExecute(params: ToolExecuteParams): Promise<ToolResult>;
 }
