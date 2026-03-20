@@ -44,5 +44,22 @@ export type { MemoryPipePair } from './in-memory/index.js';
 export { Multiplexer } from './multiplex/index.js';
 export type { MuxPacket } from './multiplex/index.js';
 
+// JSON-RPC
+export {
+	isRequest,
+	isNotification,
+	isResponse,
+	RpcError,
+	createConnection,
+	type JsonRpcRequest,
+	type JsonRpcNotification,
+	type JsonRpcSuccess,
+	type JsonRpcErrorPayload,
+	type JsonRpcErrorResponse,
+	type JsonRpcResponse,
+	type JsonRpcMessage,
+	type Connection,
+} from './jsonrpc/index.js';
+
 // Config types (browser-safe — pure interfaces, no Node runtime deps)
 export type { StdioPipeOptions } from './stdio/types.js';
