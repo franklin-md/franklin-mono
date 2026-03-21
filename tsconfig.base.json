@@ -18,6 +18,7 @@
 			"@franklin/transport": ["packages/lib/transport/src/index.ts"],
 			"@franklin/agent": ["packages/agent/src/index.ts"],
 			"@franklin/agent/browser": ["packages/agent/src/browser.ts"],
+			"@franklin/extensions": ["packages/extensions/src/index.ts"],
 			"@franklin/local-mcp": ["packages/local-mcp/src/index.ts"],
 			"@franklin/mini-acp": ["packages/mini-acp/src/index.ts"],
 			"@franklin/node": ["packages/node/src/index.ts"],

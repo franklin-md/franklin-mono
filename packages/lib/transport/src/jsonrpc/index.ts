@@ -1,28 +1,69 @@
 export type {
 	JsonRpcRequest,
 	JsonRpcNotification,
+	JsonRpcEventInvocation,
 	JsonRpcSuccess,
 	JsonRpcErrorPayload,
 	JsonRpcErrorResponse,
 	JsonRpcResponse,
+	JsonRpcEventNextNotification,
+	JsonRpcEventCompleteNotification,
+	JsonRpcEventErrorNotification,
+	JsonRpcEventCancelNotification,
 	JsonRpcMessage,
 } from './types.js';
 export type {
+	RpcRequestMethod,
+	RpcNotificationMethod,
+	RpcEventMethod,
 	RpcUnaryMethod,
 	RpcStreamMethod,
 	RpcMethod,
 	RpcMethods,
 	MethodParams,
 	MethodResult,
+	MethodKind,
 	MethodIsStream,
+	MethodSpec,
+	MethodSpecs,
+	MethodName,
+	UnaryMethodNames,
+	RequestMethodNames,
+	NotificationMethodNames,
+	EventMethodNames,
 	RequestFor,
+	NotificationFor,
+	EventInvocationFor,
 	ResponseFor,
 	Requests,
+	Notifications,
+	EventInvocations,
 	Responses,
+	EventControlMessages,
 	UpMessages,
 	DownMessages,
 	Protocol,
-} from './protocol.js';
-export { isRequest, isNotification, isResponse } from './types.js';
+	ServerOf,
+	ClientOf,
+	Reverse,
+	MethodDescriptor,
+	SideManifest,
+	ProtocolManifest,
+} from './protocol/index.js';
+export {
+	defineManifest,
+	request,
+	notification,
+	event,
+} from './protocol/index.js';
+export {
+	isRequest,
+	isNotification,
+	isResponse,
+	isEventNextNotification,
+	isEventCompleteNotification,
+	isEventErrorNotification,
+	isEventCancelNotification,
+} from './types.js';
 export { RpcError } from './errors.js';
-export { createConnection, type Connection } from './connection.js';
+export { bindClient, bindServer, type Binding } from './binding/index.js';

@@ -3,6 +3,7 @@
 	"references": [
 		{ "path": "./packages/lib/transport" },
 		{ "path": "./packages/agent" },
+		{ "path": "./packages/extensions" },
 		{ "path": "./packages/local-mcp" },
 		{ "path": "./packages/mini-acp" },
 		{ "path": "./packages/node" },
