@@ -35,10 +35,10 @@
 	"jestrunner.enableTestExplorer": true,
 	"jestrunner.disableFrameworkConfig": true,
 	"jestrunner.defaultTestPatterns": [
-		"apps/**/*.{test,spec}.{ts,tsx,js,jsx,mts,cts,mjs,cjs}",
-		"apps/**/__tests__/**/*.{ts,tsx,js,jsx,mts,cts,mjs,cjs}",
-		"packages/**/*.{test,spec}.{ts,tsx,js,jsx,mts,cts,mjs,cjs}",
-		"packages/**/__tests__/**/*.{ts,tsx,js,jsx,mts,cts,mjs,cjs}"
+		"apps/**/src/**/*.{test,spec}.{ts,tsx,js,jsx,mts,cts,mjs,cjs}",
+		"apps/**/src/**/__tests__/**/*.{ts,tsx,js,jsx,mts,cts,mjs,cjs}",
+		"packages/**/src/**/*.{test,spec}.{ts,tsx,js,jsx,mts,cts,mjs,cjs}",
+		"packages/**/src/**/__tests__/**/*.{ts,tsx,js,jsx,mts,cts,mjs,cjs}"
 	],
 
 	"jestrunner.vitestDebugOptions": {

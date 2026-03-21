@@ -13,7 +13,12 @@ export interface ReadonlyStore<T> {
 /**
  * A mutable reactive store. Extends ReadonlyStore with an Immer-style
  * `set()` method that accepts a producer function operating on a draft.
+ *
+ * `copy()` encodes sharing semantics:
+ * - SharedStore: returns itself (same reference, shared state)
+ * - PrivateStore: returns a new independent store snapshot
  */
 export interface Store<T> extends ReadonlyStore<T> {
 	set(recipe: (draft: Draft<T>) => void): void;
+	copy(): Store<T>;
 }

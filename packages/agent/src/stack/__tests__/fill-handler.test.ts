@@ -1,7 +1,7 @@
 import { RequestError } from '@agentclientprotocol/sdk';
 import { describe, expect, it, vi } from 'vitest';
 
-import { NOTIFICATION_METHODS } from '../../middleware/types.js';
+import { NOTIFICATION_METHODS } from '../../types.js';
 import { fillHandler } from '../fill-handler.js';
 
 describe('fillHandler', () => {

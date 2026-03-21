@@ -2,10 +2,10 @@ import type { Extension } from '@franklin/agent';
 import type { ExtensionToolDefinition } from '../types/tool.js';
 
 export function onTool<TInput, TOutput>(
-	extension: Extension,
+	extension: Extension<any>,
 	tool: ExtensionToolDefinition<TInput, TOutput>,
 	call: (params: TInput, next: typeof tool.execute) => Promise<TOutput>,
-): Extension {
+): Extension<any> {
 	return {
 		name: extension.name,
 		async setup(api) {

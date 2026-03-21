@@ -1,7 +1,7 @@
 import { RequestError } from '@agentclientprotocol/sdk';
 
 import type { AgentEvents } from '../types.js';
-import { EVENT_METHODS, NOTIFICATION_METHODS } from '../middleware/types.js';
+import { EVENT_METHODS, NOTIFICATION_METHODS } from '../types.js';
 
 export function fillHandler(handler: Partial<AgentEvents>): AgentEvents {
 	const result: Record<string, unknown> = {};

@@ -7,12 +7,11 @@ import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 
 import {
 	createAgentConnection,
+	compileExtensions,
 	fillHandler,
-	joinCommands,
-	joinEvents,
 	TodoExtension,
 } from '@franklin/agent';
-import type { AgentConnection, Middleware } from '@franklin/agent';
+import type { AgentConnection, AgentMiddleware } from '@franklin/agent';
 
 import { createDefaultRegistry } from '../registry.js';
 import { NodeFramework } from '../framework.js';
@@ -33,10 +32,9 @@ const describeIntegration = isCodexAvailable() ? describe : describe.skip;
 
 describeIntegration('MCP tool integration (codex + TodoExtension)', () => {
 	let rawConnection: AgentConnection | undefined;
-	let middleware: Middleware | undefined;
+	let middleware: AgentMiddleware | undefined;
 
 	afterEach(async () => {
-		await middleware?.dispose?.();
 		middleware = undefined;
 		await rawConnection?.dispose();
 		rawConnection = undefined;
@@ -51,36 +49,39 @@ describeIntegration('MCP tool integration (codex + TodoExtension)', () => {
 		const transport = await env.spawn('claude-acp');
 
 		const todoExtension = new TodoExtension();
-		middleware = await framework.compileExtensions([todoExtension]);
+		middleware = await compileExtensions(
+			[todoExtension],
+			framework.toolTransport,
+		);
 
-		// 3. Wire the connection through middleware with custom event handlers.
-		//    - sessionUpdate: captures all agent updates for inspection
-		//    - requestPermission: auto-approves (codex uses on-request policy)
+		// 2. Wire the connection through middleware with custom event handlers.
+		//    The middleware auto-approves tool calls from this extension.
+		//    The requestPermission handler serves as fallback for non-extension tools.
 		const updates: SessionNotification[] = [];
-		const handler = fillHandler({
-			sessionUpdate: vi.fn(async (notification: SessionNotification) => {
-				updates.push(notification);
+		rawConnection = createAgentConnection(
+			middleware(transport),
+			fillHandler({
+				sessionUpdate: vi.fn(async (notification: SessionNotification) => {
+					updates.push(notification);
+				}),
+				requestPermission: vi.fn(async () => ({
+					outcome: {
+						outcome: 'selected' as const,
+						optionId: 'allow',
+					},
+				})),
 			}),
-			requestPermission: vi.fn(async () => ({
-				outcome: {
-					outcome: 'selected' as const,
-					optionId: 'allow',
-				},
-			})),
-		});
+		);
+		const commands = rawConnection.commands;
 
-		const wrappedHandler = joinEvents(middleware, handler);
-		rawConnection = createAgentConnection(transport, wrappedHandler);
-		const commands = joinCommands(middleware, rawConnection.commands);
-
-		// 4. Initialize ACP protocol handshake.
+		// 3. Initialize ACP protocol handshake.
 		const initResponse = await commands.initialize({
 			protocolVersion: PROTOCOL_VERSION,
 			clientCapabilities: {},
 		});
 		expect(initResponse.protocolVersion).toBe(PROTOCOL_VERSION);
 
-		// 5. Create session — the extension middleware injects the tool
+		// 4. Create session — the extension middleware injects the tool
 		//    relay MCP server config into mcpServers so the agent can
 		//    discover and call the registered tools.
 		const { sessionId } = await commands.newSession({
@@ -89,7 +90,7 @@ describeIntegration('MCP tool integration (codex + TodoExtension)', () => {
 		});
 		expect(sessionId).toBeDefined();
 
-		// 6. Prompt the agent to call the add_todo tool.
+		// 5. Prompt the agent to call the add_todo tool.
 		const promptResponse = await commands.prompt({
 			sessionId,
 			prompt: [
@@ -102,11 +103,11 @@ describeIntegration('MCP tool integration (codex + TodoExtension)', () => {
 
 		expect(promptResponse.stopReason).toBeDefined();
 
-		// 7. Verify the tool was executed — the TodoExtension store should
+		// 6. Verify the tool was executed — the TodoExtension store should
 		//    have been updated by the tool handler, proving the full
 		//    round-trip: agent → relay subprocess → HTTP callback →
 		//    serve() → tool.execute() → store.
-		const todos = todoExtension.todos.get();
+		const todos = todoExtension.state.get();
 		expect(todos.length).toBeGreaterThan(0);
 		expect(todos[0]!.text).toMatch(/buy milk/i);
 	}, 60_000);

@@ -13,8 +13,10 @@ export type { EnvironmentHandle, AgentSpec } from './environment.js';
 // Extensions (browser-safe — compileExtension only depends on @franklin/local-mcp/browser)
 export {
 	compileExtension,
+	compileExtensions,
 	TodoExtension,
 	ConversationExtension,
+	SpawnExtension,
 	createTodoControl,
 } from './extensions/index.js';
 export type {
@@ -32,6 +34,8 @@ export type {
 	ConversationTurn,
 	ToolCallEntry,
 	UserEntry,
+	SpawnPoint,
+	SpawnPointFactory,
 } from './extensions/index.js';
 
 // Connection
@@ -39,35 +43,33 @@ export { createAgentConnection } from './connection.js';
 export type { AgentConnection } from './connection.js';
 
 // Types
-export type { AgentCommands, AgentEvents } from './types.js';
+export type { AgentCommands, AgentEvents, AgentMiddleware } from './types.js';
+export { COMMAND_METHODS, EVENT_METHODS } from './types.js';
 
-// Middleware
-export { emptyMiddleware } from './middleware/empty.js';
-export { joinCommands, joinEvents } from './middleware/join.js';
-export { sequence } from './middleware/sequence.js';
-export { composeAll } from './middleware/compose.js';
+// Stack
 export { fillHandler } from './stack/fill-handler.js';
-export { COMMAND_METHODS, EVENT_METHODS } from './middleware/types.js';
-export type {
-	CommandMiddleware,
-	Cont,
-	EventMiddleware,
-	Middleware,
-} from './middleware/types.js';
+
+// Transport
 export type { AgentTransport as Transport } from './transport/index.js';
 
 // Store (browser-safe — immer is pure JS, no Node deps)
-export { createStore } from './store/index.js';
+export {
+	createStore,
+	createSharedStore,
+	createPrivateStore,
+} from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';
+
+// Agent — typed handle unifying commands, extension stores, and lifecycle
+export { createAgent, AgentManager } from './agent/index.js';
+export type { Agent, ExtensionStores } from './agent/index.js';
 
 // Framework base class
 export { Framework } from './framework.js';
 
 // Re-export key ACP types so consumers don't need to depend on the SDK directly
 export type {
-	Agent,
 	AnyMessage,
-	Client,
 	AuthenticateRequest,
 	AuthenticateResponse,
 	CancelNotification,

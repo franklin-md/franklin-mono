@@ -21,9 +21,9 @@ export interface ProvisionOptions {
  * Renderer-side framework that proxies environment provisioning and agent
  * spawning over Electron IPC to the main process.
  *
- * Extends the base Framework class to inherit `compileExtensions` and
- * `compileAgent`. Provides the Electron-specific `toolTransport` (IPC)
- * and environment lifecycle (provisioned via main process).
+ * Extends the base Framework class. Provides the Electron-specific
+ * `toolTransport` (IPC) and environment lifecycle (provisioned via main
+ * process).
  */
 export class ElectronFramework extends Framework {
 	private readonly environments = new Set<string>();

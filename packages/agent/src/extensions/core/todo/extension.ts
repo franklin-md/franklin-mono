@@ -12,14 +12,18 @@ import { createTodoControl } from './control.js';
  * (`add_todo`, `complete_todo`, `list_todos`) and injects active
  * todos into every prompt.
  *
- * Exposes a `todos` store for UI binding and direct mutation.
+ * Exposes a `state` store for UI binding and direct mutation.
  */
-export class TodoExtension implements Extension {
+export class TodoExtension implements Extension<Todo[]> {
 	readonly name = 'todo';
-	readonly todos: Store<Todo[]> = createStore<Todo[]>([]);
+	readonly state: Store<Todo[]>;
+
+	constructor(todos?: Store<Todo[]>) {
+		this.state = todos ?? createStore<Todo[]>([]);
+	}
 
 	async setup(api: ExtensionAPI): Promise<void> {
-		const control = createTodoControl(this.todos);
+		const control = createTodoControl(this.state);
 
 		api.registerTool({
 			name: 'add_todo',
@@ -51,7 +55,7 @@ export class TodoExtension implements Extension {
 		});
 
 		api.on('prompt', async (ctx) => {
-			const formatted = formatTodos(this.todos.get());
+			const formatted = formatTodos(this.state.get());
 			if (!formatted) return undefined;
 			return {
 				prompt: [{ type: 'text' as const, text: formatted }, ...ctx.prompt],

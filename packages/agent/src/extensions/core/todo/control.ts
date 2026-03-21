@@ -22,6 +22,8 @@ export function createTodoControl(todos: Store<Todo[]>): TodoControl {
 			});
 		},
 		setStatus: (id: string, status: boolean) => {
+			const found = todos.get().some((t) => t.id === id);
+			if (!found) throw new Error(`Todo not found: ${id}`);
 			todos.set((draft) => {
 				const todo = draft.find((t) => t.id === id);
 				if (todo) todo.completed = status;

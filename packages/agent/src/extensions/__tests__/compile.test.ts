@@ -1,94 +1,29 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import type {
+	AnyMessage,
 	ContentBlock,
 	McpServer,
-	NewSessionRequest,
-	NewSessionResponse,
-	LoadSessionRequest,
-	LoadSessionResponse,
-	PromptRequest,
 	SessionNotification,
 } from '@agentclientprotocol/sdk';
+import { AGENT_METHODS, CLIENT_METHODS } from '@agentclientprotocol/sdk';
 
-import type { McpTransport, McpToolStream } from '@franklin/local-mcp';
+import type { McpToolStream } from '@franklin/local-mcp';
 
-import { joinCommands, joinEvents } from '../../middleware/join.js';
-import { sequence } from '../../middleware/sequence.js';
-import type { AgentCommands, AgentEvents } from '../../types.js';
-import { compileExtension } from '../compile/index.js';
+import type { AgentTransport } from '../../transport/index.js';
+import { compileExtension, compileExtensions } from '../compile/index.js';
 import type { McpTransportFactory } from '../compile/index.js';
+import { ConversationExtension } from '../core/conversation/index.js';
+import type { UserEntry } from '../core/conversation/types.js';
+import { TodoExtension } from '../core/todo/index.js';
 import type { Extension } from '../types/index.js';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function createTerminalCommands(
-	overrides?: Partial<AgentCommands>,
-): AgentCommands {
-	const noop = () => Promise.resolve({}) as Promise<never>;
-	return {
-		initialize: noop,
-		newSession: async (_params: NewSessionRequest) =>
-			({ sessionId: 'test' }) as NewSessionResponse,
-		loadSession: async (params: LoadSessionRequest) =>
-			({ sessionId: params.sessionId }) as unknown as LoadSessionResponse,
-		listSessions: noop,
-		prompt: async () => ({ stopReason: 'end_turn' as const }),
-		cancel: async () => {},
-		setSessionMode: noop,
-		setSessionConfigOption: noop,
-		authenticate: noop,
-		...overrides,
-	};
-}
-
-function createTerminalEvents(overrides?: Partial<AgentEvents>): AgentEvents {
-	const noop = () => Promise.resolve({}) as Promise<never>;
-	return {
-		sessionUpdate: async () => {},
-		requestPermission: noop,
-		readTextFile: noop,
-		writeTextFile: noop,
-		createTerminal: noop,
-		terminalOutput: noop,
-		releaseTerminal: noop,
-		waitForTerminalExit: noop,
-		killTerminal: noop,
-		...overrides,
-	};
-}
-
-const stubMcpConfig = {
-	name: 'test-relay',
-	command: 'node',
-	args: ['--version'],
-	env: [{ name: 'STUB', value: 'true' }],
-};
-
-function createMockTransportFactory(): {
-	factory: McpTransportFactory;
-	getTransport: () => McpTransport | undefined;
-} {
-	let transport: McpTransport | undefined;
-	const factory: McpTransportFactory = async (_name) => {
-		const mockStream = {
-			readable: new ReadableStream<never>(),
-			writable: new WritableStream<never>(),
-			close: async () => {},
-		} as unknown as McpToolStream;
-
-		transport = {
-			config: stubMcpConfig,
-			stream: mockStream,
-			dispose: vi.fn(async () => {}),
-		};
-		return transport;
-	};
-	return { factory, getTransport: () => transport };
-}
+import {
+	createMockTransportFactory,
+	createTransportPair,
+	sendCommand,
+	stubMcpConfig,
+} from './helpers.js';
 
 // Shared tool schema for tests
 const emptyObjectSchema = z.object({});
@@ -99,7 +34,7 @@ const emptyObjectSchema = z.object({});
 
 describe('compileExtension', () => {
 	describe('compilation', () => {
-		it('produces passthrough middleware when no hooks or tools registered', async () => {
+		it('produces identity middleware when no hooks or tools registered', async () => {
 			const ext: Extension = {
 				name: 'empty',
 				async setup() {},
@@ -107,20 +42,18 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
-
-			expect(captured).toHaveLength(1);
-			expect(captured[0]!.cwd).toBe('/test');
-			expect(captured[0]!.mcpServers).toEqual([]);
+			expect((msg as { params: { cwd: string } }).params.cwd).toBe('/test');
+			expect(
+				(msg as { params: { mcpServers: unknown[] } }).params.mcpServers,
+			).toEqual([]);
 		});
 
 		it('supports async setup', async () => {
@@ -138,9 +71,10 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const commands = joinCommands(middleware, terminal);
-			await commands.prompt({
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'hello' }],
 			});
@@ -162,18 +96,15 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/original',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/original', mcpServers: [] });
-
-			expect(captured[0]!.cwd).toBe('/modified');
+			expect((msg as { params: { cwd: string } }).params.cwd).toBe('/modified');
 		});
 
 		it('handler can modify mcpServers', async () => {
@@ -196,18 +127,17 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
-
-			expect(captured[0]!.mcpServers).toEqual([extraServer]);
+			expect(
+				(msg as { params: { mcpServers: McpServer[] } }).params.mcpServers,
+			).toEqual([extraServer]);
 		});
 
 		it('undefined return passes through unchanged', async () => {
@@ -222,19 +152,18 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
-
-			expect(captured[0]!.cwd).toBe('/test');
-			expect(captured[0]!.mcpServers).toEqual([]);
+			const params = (msg as { params: { cwd: string; mcpServers: [] } })
+				.params;
+			expect(params.cwd).toBe('/test');
+			expect(params.mcpServers).toEqual([]);
 		});
 
 		it('multiple handlers chain in registration order', async () => {
@@ -252,18 +181,17 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/original',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/original', mcpServers: [] });
-
-			expect(captured[0]!.cwd).toBe('/first/second');
+			expect((msg as { params: { cwd: string } }).params.cwd).toBe(
+				'/first/second',
+			);
 		});
 
 		it('fires on loadSession with sessionId', async () => {
@@ -280,9 +208,10 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const commands = joinCommands(middleware, terminal);
-			await commands.loadSession({
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			await sendCommand(app, agent, AGENT_METHODS.session_load, {
 				sessionId: 'existing-session',
 				cwd: '/test',
 				mcpServers: [],
@@ -305,9 +234,13 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminal = createTerminalCommands();
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
+			});
 
 			expect(receivedCtx[0]!.sessionId).toBeUndefined();
 		});
@@ -331,25 +264,19 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
-				},
-			});
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.prompt({
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'hello' }],
 			});
 
-			expect(captured[0]!.prompt).toHaveLength(2);
-			expect((captured[0]!.prompt[0] as { text: string }).text).toBe(
-				'[PREFIX]',
-			);
-			expect((captured[0]!.prompt[1] as { text: string }).text).toBe('hello');
+			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
+				.prompt;
+			expect(prompt).toHaveLength(2);
+			expect((prompt[0] as { text: string }).text).toBe('[PREFIX]');
+			expect((prompt[1] as { text: string }).text).toBe('hello');
 		});
 
 		it('undefined return passes through unchanged', async () => {
@@ -364,24 +291,18 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
-				},
-			});
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.prompt({
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'original' }],
 			});
 
-			expect(captured[0]!.prompt).toHaveLength(1);
-			expect((captured[0]!.prompt[0] as { text: string }).text).toBe(
-				'original',
-			);
+			const prompt = (msg as { params: { prompt: ContentBlock[] } }).params
+				.prompt;
+			expect(prompt).toHaveLength(1);
+			expect((prompt[0] as { text: string }).text).toBe('original');
 		});
 
 		it('multiple handlers chain as waterfall', async () => {
@@ -403,29 +324,23 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
-				},
-			});
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.prompt({
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'X' }],
 			});
 
-			const texts = captured[0]!.prompt.map(
-				(b: ContentBlock) => (b as { text: string }).text,
-			);
+			const texts = (
+				msg as { params: { prompt: ContentBlock[] } }
+			).params.prompt.map((b: ContentBlock) => (b as { text: string }).text);
 			expect(texts).toEqual(['A', 'X', 'B']);
 		});
 	});
 
 	describe('sessionUpdate notify', () => {
-		it('fires handlers without modifying params', async () => {
+		it('fires handlers and forwards the notification', async () => {
 			const received: SessionNotification[] = [];
 			const ext: Extension = {
 				name: 'update-observer',
@@ -438,14 +353,9 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const terminalReceived: SessionNotification[] = [];
-			const terminal = createTerminalEvents({
-				sessionUpdate: async (p) => {
-					terminalReceived.push(p);
-				},
-			});
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
 
-			const events = joinEvents(middleware, terminal);
 			const notification: SessionNotification = {
 				sessionId: 'test',
 				update: {
@@ -453,12 +363,31 @@ describe('compileExtension', () => {
 					content: { type: 'text', text: 'hi' },
 				},
 			};
-			await events.sessionUpdate(notification);
 
+			// Start reading from the app side
+			const appReader = app.readable.getReader();
+			const readPromise = appReader.read();
+
+			// Agent sends the notification
+			const agentWriter = agent.writable.getWriter();
+			await agentWriter.write({
+				jsonrpc: '2.0',
+				method: CLIENT_METHODS.session_update,
+				params: notification,
+			} as AnyMessage);
+			agentWriter.releaseLock();
+
+			const { value: forwarded } = await readPromise;
+			appReader.releaseLock();
+
+			// Handler was called
 			expect(received).toHaveLength(1);
-			expect(received[0]).toBe(notification);
-			expect(terminalReceived).toHaveLength(1);
-			expect(terminalReceived[0]).toBe(notification);
+			expect(received[0]).toEqual(notification);
+
+			// Message was forwarded
+			expect((forwarded as { method: string }).method).toBe(
+				CLIENT_METHODS.session_update,
+			);
 		});
 	});
 
@@ -480,18 +409,17 @@ describe('compileExtension', () => {
 
 			expect(getTransport()).toBeDefined();
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
-
-			expect(captured[0]!.mcpServers).toHaveLength(1);
+			expect(
+				(msg as { params: { mcpServers: unknown[] } }).params.mcpServers,
+			).toHaveLength(1);
 		});
 
 		it('passes extension name to transport factory', async () => {
@@ -551,20 +479,19 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			const captured: NewSessionRequest[] = [];
-			const terminal = createTerminalCommands({
-				newSession: async (p) => {
-					captured.push(p);
-					return { sessionId: 'test' } as NewSessionResponse;
-				},
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_new, {
+				cwd: '/test',
+				mcpServers: [],
 			});
 
-			const commands = joinCommands(middleware, terminal);
-			await commands.newSession({ cwd: '/test', mcpServers: [] });
-
+			const mcpServers = (msg as { params: { mcpServers: McpServer[] } }).params
+				.mcpServers;
 			// Handler's server first, then tool server
-			expect(captured[0]!.mcpServers).toHaveLength(2);
-			expect(captured[0]!.mcpServers[0]).toBe(extraServer);
+			expect(mcpServers).toHaveLength(2);
+			expect(mcpServers[0]).toBe(extraServer);
 		});
 	});
 
@@ -583,8 +510,8 @@ describe('compileExtension', () => {
 		});
 	});
 
-	describe('composition via sequence()', () => {
-		it('multiple extensions compose correctly', async () => {
+	describe('composition', () => {
+		it('multiple extensions compose correctly via function application', async () => {
 			const ext1: Extension = {
 				name: 'ext1',
 				async setup(api) {
@@ -610,31 +537,29 @@ describe('compileExtension', () => {
 			const mw1 = await compileExtension(ext1, factory);
 			const mw2 = await compileExtension(ext2, factory);
 
-			const composed = sequence(mw1, mw2);
+			// Compose: ext1 inner (closer to agent), ext2 outer
+			const composed = (t: AgentTransport) => mw2(mw1(t));
 
-			const captured: PromptRequest[] = [];
-			const terminal = createTerminalCommands({
-				prompt: async (p) => {
-					captured.push(p);
-					return { stopReason: 'end_turn' as const };
-				},
-			});
+			const { a: agent, b: inner } = createTransportPair();
+			const app = composed(inner);
 
-			const commands = joinCommands(composed, terminal);
-			await commands.prompt({
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
 				sessionId: 'test',
 				prompt: [{ type: 'text', text: 'X' }],
 			});
 
-			const texts = captured[0]!.prompt.map(
-				(b: ContentBlock) => (b as { text: string }).text,
-			);
+			const texts = (
+				msg as { params: { prompt: ContentBlock[] } }
+			).params.prompt.map((b: ContentBlock) => (b as { text: string }).text);
+			// ext2 (outer) transforms first on writable, then ext1 (inner)
+			// ext2 appends 'ext2', ext1 prepends 'ext1'
+			// Command flow: app → ext2 → ext1 → agent
 			expect(texts).toEqual(['ext1', 'X', 'ext2']);
 		});
 	});
 
 	describe('disposal', () => {
-		it('dispose cleans up transport', async () => {
+		it('close cleans up transport', async () => {
 			const ext: Extension = {
 				name: 'disposable',
 				async setup(api) {
@@ -649,12 +574,15 @@ describe('compileExtension', () => {
 			const { factory, getTransport } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
-			await middleware.dispose!();
+			const { b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			await app.close();
 
 			expect(getTransport()!.dispose).toHaveBeenCalled();
 		});
 
-		it('dispose is safe when no transport was created', async () => {
+		it('close is safe when no transport was created', async () => {
 			const ext: Extension = {
 				name: 'no-tools',
 				async setup() {},
@@ -662,11 +590,15 @@ describe('compileExtension', () => {
 			const { factory } = createMockTransportFactory();
 			const middleware = await compileExtension(ext, factory);
 
+			// Identity middleware — transport is returned as-is
+			const { b: inner } = createTransportPair();
+			const app = middleware(inner);
+
 			// Should not throw
-			await middleware.dispose?.();
+			await app.close();
 		});
 
-		it('sequence chains dispose calls', async () => {
+		it('composed close cascades through layers', async () => {
 			const disposeLog: string[] = [];
 			const ext1: Extension = {
 				name: 'ext1',
@@ -715,11 +647,108 @@ describe('compileExtension', () => {
 
 			const mw1 = await compileExtension(ext1, factory1);
 			const mw2 = await compileExtension(ext2, factory2);
-			const composed = sequence(mw1, mw2);
 
-			await composed.dispose!();
+			const { b: inner } = createTransportPair();
+			// ext1 inner, ext2 outer: mw2(mw1(inner))
+			const app = mw2(mw1(inner));
 
-			expect(disposeLog).toEqual(['ext1', 'ext2']);
+			await app.close();
+
+			// ext2 (outer) closes first, then ext1 (inner)
+			expect(disposeLog).toEqual(['ext2', 'ext1']);
+		});
+	});
+
+	describe('multi-extension prompt isolation', () => {
+		it('conversation records the raw user prompt, not todo-modified prompt', async () => {
+			const conversation = new ConversationExtension();
+			const todo = new TodoExtension();
+
+			// Pre-populate a todo so the prompt handler will prepend <todos>
+			todo.state.set((draft) => {
+				draft.push({
+					id: 'todo-1',
+					text: 'Buy milk',
+					completed: false,
+					createdAt: Date.now(),
+				});
+			});
+
+			const { factory } = createMockTransportFactory();
+			const middleware = await compileExtensions([conversation, todo], factory);
+
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			// Send a prompt through the composed middleware
+			const msg = await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId: 'test',
+				prompt: [{ type: 'text', text: 'hello' }],
+			});
+
+			// Agent should receive the todo-modified prompt (with <todos> prepended)
+			const agentPrompt = (msg as { params: { prompt: ContentBlock[] } }).params
+				.prompt;
+			expect(agentPrompt).toHaveLength(2);
+			expect((agentPrompt[0] as { text: string }).text).toContain('<todos>');
+			expect((agentPrompt[1] as { text: string }).text).toBe('hello');
+
+			// But conversation state should record the RAW user prompt, not the modified one
+			const turns = conversation.state.get();
+			expect(turns).toHaveLength(1);
+
+			const userEntry = turns[0]!.entries[0] as UserEntry;
+			expect(userEntry.type).toBe('user');
+			expect(userEntry.content).toHaveLength(1);
+			expect((userEntry.content[0] as { text: string }).text).toBe('hello');
+		});
+
+		it('first extension in array is closer to app (observes raw prompt)', async () => {
+			const log: string[] = [];
+
+			const observer: Extension = {
+				name: 'observer',
+				async setup(api) {
+					api.on('prompt', async (ctx) => {
+						log.push(`observer:${(ctx.prompt[0] as { text: string }).text}`);
+						return undefined;
+					});
+				},
+			};
+
+			const transformer: Extension = {
+				name: 'transformer',
+				async setup(api) {
+					api.on('prompt', async (ctx) => {
+						log.push(`transformer:${(ctx.prompt[0] as { text: string }).text}`);
+						return {
+							prompt: [
+								{ type: 'text' as const, text: '[WRAPPED]' },
+								...ctx.prompt,
+							],
+						};
+					});
+				},
+			};
+
+			const { factory } = createMockTransportFactory();
+			// observer listed first — should see raw prompt
+			const middleware = await compileExtensions(
+				[observer, transformer],
+				factory,
+			);
+
+			const { a: agent, b: inner } = createTransportPair();
+			const app = middleware(inner);
+
+			await sendCommand(app, agent, AGENT_METHODS.session_prompt, {
+				sessionId: 'test',
+				prompt: [{ type: 'text', text: 'hello' }],
+			});
+
+			// observer should see raw 'hello', transformer should see raw 'hello'
+			// (observer doesn't modify, so transformer also sees 'hello')
+			expect(log).toEqual(['observer:hello', 'transformer:hello']);
 		});
 	});
 });
