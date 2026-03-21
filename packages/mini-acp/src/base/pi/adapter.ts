@@ -10,10 +10,10 @@ import type { AgentEvent } from '@mariozechner/pi-agent-core';
 import type { Model } from '@mariozechner/pi-ai';
 import type { StreamFn } from '@mariozechner/pi-agent-core';
 
-import type { BaseAgent, BaseClient } from './types.js';
-import type { Ctx } from '../types/context.js';
-import type { StreamEvent } from '../types/stream.js';
-import type { UserMessage } from '../types/message.js';
+import type { BaseAgent, BaseClient } from '../types.js';
+import type { Ctx } from '../../types/context.js';
+import type { StreamEvent } from '../../types/stream.js';
+import type { UserMessage } from '../../types/message.js';
 import {
 	bridgeTool,
 	fromAgentEvent,

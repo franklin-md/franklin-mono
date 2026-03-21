@@ -1,5 +1,5 @@
 export type { BaseAgent, BaseClient } from './types.js';
-export { createPiAdapter, type PiAdapterOptions } from './pi-adapter.js';
+export { createPiAdapter, type PiAdapterOptions } from './pi/adapter.js';
 export {
 	fromPiUserContent,
 	fromPiAssistantContent,
@@ -9,4 +9,4 @@ export {
 	bridgeTool,
 	toPiUserMessage,
 	toPiMessage,
-} from './translate/index.js';
+} from './pi/translate/index.js';

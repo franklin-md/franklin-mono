@@ -14,7 +14,7 @@ import type {
 	UserMessage,
 	AssistantMessage,
 	ToolResultMessage,
-} from '../../types/message.js';
+} from '../../../types/message.js';
 import {
 	fromPiUserContent,
 	fromPiAssistantContent,
