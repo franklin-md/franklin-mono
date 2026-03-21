@@ -34,10 +34,3 @@ export type {
 } from './stream.js';
 
 export type { SessionId } from './session.js';
-
-export type {
-	AgentMethods,
-	ClientMethods,
-	Notifications,
-	Protocol,
-} from '../base/protocol.js';
