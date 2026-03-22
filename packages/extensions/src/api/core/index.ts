@@ -21,3 +21,12 @@ export type {
 	SessionUpdateHandler,
 } from './events.js';
 export type { ExtensionToolDefinition } from './tool.js';
+export type {
+	MethodMiddleware,
+	Middleware,
+	ServerMiddleware,
+	ClientMiddleware,
+	FullMiddleware,
+} from './middleware/index.js';
+export { compose, composeMethod, passThrough } from './middleware/index.js';
+export { apply } from './middleware/index.js';

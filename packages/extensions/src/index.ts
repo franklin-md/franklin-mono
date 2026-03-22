@@ -3,6 +3,11 @@ export type {
 	CoreEvent,
 	CoreEventMap,
 	ExtensionToolDefinition,
+	MethodMiddleware,
+	Middleware,
+	ServerMiddleware,
+	ClientMiddleware,
+	FullMiddleware,
 	PromptContext,
 	PromptHandler,
 	PromptTransform,
@@ -10,6 +15,8 @@ export type {
 	SessionUpdateHandler,
 	StoreAPI,
 } from './api/index.js';
+export { compose, composeMethod, passThrough } from './api/index.js';
+export { apply } from './api/index.js';
 export type { Compiler, CompilerTransform } from './compile/index.js';
 export type {
 	Extension,
