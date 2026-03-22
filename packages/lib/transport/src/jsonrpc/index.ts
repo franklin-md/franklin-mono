@@ -1,68 +1,15 @@
-export type {
-	JsonRpcRequest,
-	JsonRpcNotification,
-	JsonRpcSuccess,
-	JsonRpcErrorPayload,
-	JsonRpcErrorResponse,
-	JsonRpcResponse,
-	JsonRpcStreamUpdateNotification,
-	// eslint-disable-next-line @typescript-eslint/no-deprecated -- backwards compat re-export
-	JsonRpcStreamNextNotification,
-	JsonRpcStreamCancelNotification,
-	JsonRpcMessage,
-} from './types.js';
-export type {
-	RpcRequestMethod,
-	RpcNotificationMethod,
-	RpcEventMethod,
-	RpcUnaryMethod,
-	RpcStreamMethod,
-	RpcMethod,
-	RpcMethods,
-	MethodParams,
-	MethodResult,
-	MethodKind,
-	MethodIsStream,
-	MethodSpec,
-	MethodSpecs,
-	MethodName,
-	UnaryMethodNames,
-	RequestMethodNames,
-	NotificationMethodNames,
-	EventMethodNames,
-	RequestFor,
-	NotificationFor,
-	StreamRequestFor,
-	StreamRequests,
-	ResponseFor,
-	Requests,
-	Notifications,
-	Responses,
-	StreamControlMessages,
-	UpMessages,
-	DownMessages,
-	Protocol,
-	ServerOf,
-	ClientOf,
-	Reverse,
-	MethodDescriptor,
-	SideManifest,
-	ProtocolManifest,
-} from './protocol/index.js';
+// Protocol definition
+export type { Protocol, ServerOf, ClientOf } from './protocol/index.js';
+
+// Manifest definition
+export type { ProtocolManifest } from './protocol/index.js';
 export {
 	defineManifest,
 	request,
 	notification,
 	event,
 } from './protocol/index.js';
-export {
-	isRequest,
-	isNotification,
-	isResponse,
-	isStreamUpdateNotification,
-	// eslint-disable-next-line @typescript-eslint/no-deprecated -- backwards compat re-export
-	isStreamNextNotification,
-	isStreamCancelNotification,
-} from './types.js';
-export { RpcError } from './errors.js';
+
+// Binding (connecting)
 export { bindClient, bindServer, type Binding } from './binding/index.js';
+export { RpcError } from './errors.js';

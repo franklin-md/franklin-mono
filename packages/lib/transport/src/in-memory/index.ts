@@ -1,5 +1,6 @@
 import type { Duplex } from '../streams/types.js';
 
+// This is a pipe where you can put stuff in and take it out
 export function createMemoryStream<A, B = A>(): Duplex<A, B> {
 	const stream = new TransformStream<B, A>();
 

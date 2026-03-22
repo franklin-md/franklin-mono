@@ -1,4 +1,7 @@
-export type { BaseAgent, BaseClient } from './types.js';
+export type {
+	TurnClient as BaseAgent,
+	TurnAgent as BaseClient,
+} from './types.js';
 export { createPiAdapter, type PiAdapterOptions } from './pi/adapter.js';
 export {
 	fromPiUserContent,

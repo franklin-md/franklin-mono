@@ -49,4 +49,8 @@ export {
 } from './base/index.js';
 
 // Session protocol (Mini ACP)
-export type { AgentMethods, ClientMethods } from './session/index.js';
+export type {
+	MiniACPClient,
+	MiniACPAgent,
+	MiniACPProtocol,
+} from './protocol/index.js';

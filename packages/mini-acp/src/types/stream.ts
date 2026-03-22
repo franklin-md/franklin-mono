@@ -23,6 +23,8 @@ export type Chunk = {
 
 export type TurnEnd = {
 	type: 'turnEnd';
+	// TODO: reason instead of error?
+	// https://agentclientprotocol.com/protocol/prompt-turn#stop-reasons
 	error?: {
 		code: number;
 		message: string;

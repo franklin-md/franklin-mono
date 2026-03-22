@@ -8,8 +8,8 @@ import type {
 } from '@mariozechner/pi-ai';
 import type { AgentEvent } from '@mariozechner/pi-agent-core';
 
-import type { StreamEvent } from '../../types/stream.js';
 import { fromPiMessage } from './message.js';
+import type { StreamEvent } from 'packages/mini-acp/src/types/stream.js';
 
 // ---------------------------------------------------------------------------
 // AgentEvent → StreamEvent

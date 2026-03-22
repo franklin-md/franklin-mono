@@ -30,6 +30,7 @@ export function event(): MethodDescriptor<'event'> {
 	return { kind: 'event' };
 }
 
+// TODO: Is this needed?
 export function defineManifest<
 	TServer extends RpcMethods<TServer>,
 	TClient extends RpcMethods<TClient>,

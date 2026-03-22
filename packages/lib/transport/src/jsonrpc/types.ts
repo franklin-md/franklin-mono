@@ -33,15 +33,10 @@ export type JsonRpcResponse<R = unknown> =
 	| JsonRpcSuccess<R>
 	| JsonRpcErrorResponse;
 
-export type JsonRpcStreamUpdateNotification<
-	T extends Record<string, unknown> = Record<string, unknown>,
-> = JsonRpcNotification<T & { requestId: number }, `${string}/update`>;
-
-/** @deprecated Use JsonRpcStreamUpdateNotification */
-export type JsonRpcStreamNextNotification<T = unknown> =
-	JsonRpcStreamUpdateNotification<
-		T extends Record<string, unknown> ? T : Record<string, unknown>
-	>;
+export type JsonRpcStreamUpdateNotification<T = unknown> = JsonRpcNotification<
+	{ requestId: number; body: T },
+	`${string}/update`
+>;
 
 export type JsonRpcStreamCancelNotification = JsonRpcNotification<
 	{
@@ -74,20 +69,12 @@ export function isResponse(msg: JsonRpcMessage): msg is JsonRpcResponse {
 export function isStreamUpdateNotification(
 	msg: JsonRpcMessage,
 ): msg is JsonRpcStreamUpdateNotification {
-	return (
-		isNotification(msg) &&
-		msg.method.endsWith('/update') &&
-		typeof (msg.params as Record<string, unknown>).requestId === 'number'
-	);
+	if (!isNotification(msg) || !msg.method.endsWith('/update')) return false;
+	const params = msg.params as Record<string, unknown>;
+	return typeof params.requestId === 'number' && 'body' in params;
 }
 
-/** @deprecated Use isStreamUpdateNotification */
-export function isStreamNextNotification(
-	msg: JsonRpcMessage,
-): msg is JsonRpcStreamUpdateNotification {
-	return isStreamUpdateNotification(msg);
-}
-
+// TODO: Do we actually want this stream cancel mechanism?
 export function isStreamCancelNotification(
 	msg: JsonRpcMessage,
 ): msg is JsonRpcStreamCancelNotification {

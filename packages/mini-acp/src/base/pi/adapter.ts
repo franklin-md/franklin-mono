@@ -10,9 +10,9 @@ import type { AgentEvent } from '@mariozechner/pi-agent-core';
 import type { Model } from '@mariozechner/pi-ai';
 import type { StreamFn } from '@mariozechner/pi-agent-core';
 
-import type { BaseAgent, BaseClient } from '../types.js';
+import type { TurnClient, TurnAgent } from '../types.js';
 import type { Ctx } from '../../types/context.js';
-import type { StreamEvent } from '../../types/stream.js';
+import type { StreamEvent, TurnEnd } from '../../types/stream.js';
 import type { UserMessage } from '../../types/message.js';
 import {
 	bridgeTool,
@@ -20,6 +20,7 @@ import {
 	toPiMessage,
 	toPiUserMessage,
 } from './translate/index.js';
+import { createMemoryStream } from 'node_modules/@franklin/transport/src/in-memory/index.js';
 
 // ---------------------------------------------------------------------------
 // Adapter factory
@@ -27,7 +28,7 @@ import {
 
 export interface PiAdapterOptions {
 	/** BaseClient for reverse RPC (tool execution) */
-	client: BaseClient;
+	client: TurnAgent;
 	/** Pre-resolved pi-ai Model */
 	model: Model<string>;
 	/** Agent context (history, tools, config) */
@@ -36,7 +37,7 @@ export interface PiAdapterOptions {
 	streamFn?: StreamFn;
 }
 
-export function createPiAdapter(options: PiAdapterOptions): BaseAgent {
+export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 	const { client, model, ctx, streamFn } = options;
 
 	// Bridge tool definitions to pi AgentTools that call client.toolExecute
@@ -64,15 +65,7 @@ export function createPiAdapter(options: PiAdapterOptions): BaseAgent {
 		}): AsyncIterable<StreamEvent> {
 			const messageId = crypto.randomUUID();
 
-			// TransformStream bridges synchronous event pushes to async iteration.
-			// Writable HWM of 16 gives a small buffer for bursts from the agent
-			// loop. Writes from the subscribe callback are fire-and-forget (not
-			// awaited) — if the consumer falls behind, backpressure will cause
-			// write() promises to pend until the readable side drains.
-			const { readable, writable } = new TransformStream<StreamEvent>(
-				undefined,
-				{ highWaterMark: 16 },
-			);
+			const { readable, writable } = createMemoryStream<StreamEvent>();
 			const writer = writable.getWriter();
 
 			// Emit turnStart immediately
@@ -110,7 +103,7 @@ export function createPiAdapter(options: PiAdapterOptions): BaseAgent {
 			unsub();
 		},
 
-		async cancel(): Promise<StreamEvent> {
+		async cancel(): Promise<TurnEnd> {
 			piAgent.abort();
 			return {
 				type: 'turnEnd',

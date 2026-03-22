@@ -132,8 +132,7 @@ describe('type guards', () => {
 			method: 'prompt/update',
 			params: {
 				requestId: 1,
-				type: 'chunk',
-				text: 'hello',
+				body: { type: 'chunk', text: 'hello' },
 			},
 		};
 		expect(isStreamUpdateNotification(msg)).toBe(true);
@@ -663,12 +662,12 @@ describe('stream wire protocol', () => {
 		expect(yieldNotifications[0]).toMatchObject({
 			jsonrpc: '2.0',
 			method: 'prompt/update',
-			params: { requestId, type: 'chunk', text: 'chunk-a' },
+			params: { requestId, body: { type: 'chunk', text: 'chunk-a' } },
 		});
 		expect(yieldNotifications[1]).toMatchObject({
 			jsonrpc: '2.0',
 			method: 'prompt/update',
-			params: { requestId, type: 'chunk', text: 'chunk-b' },
+			params: { requestId, body: { type: 'chunk', text: 'chunk-b' } },
 		});
 
 		await client.close();

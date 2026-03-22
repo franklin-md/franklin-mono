@@ -17,6 +17,7 @@ export type LLMConfig = {
 	model?: string;
 	provider?: string;
 	reasoning?: ThinkingLevel;
+	// TODO: I wonder if Authentication Token should be here? Then the LLM should really be fully powered.
 };
 
 export type History = {

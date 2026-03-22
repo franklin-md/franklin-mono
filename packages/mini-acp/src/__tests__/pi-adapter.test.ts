@@ -12,7 +12,7 @@ import { createAssistantMessageEventStream } from '@mariozechner/pi-ai';
 import type { StreamFn } from '@mariozechner/pi-agent-core';
 
 import { createPiAdapter } from '../base/pi-adapter.js';
-import type { BaseClient } from '../base/types.js';
+import type { TurnAgent } from '../base/types.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { Ctx } from '../types/context.js';
 
@@ -176,7 +176,7 @@ async function collect(
 
 describe('createPiAdapter', () => {
 	it('simple text response — emits turnStart, chunks, update, turnEnd', async () => {
-		const client: BaseClient = {
+		const client: TurnAgent = {
 			toolExecute: vi.fn(),
 		};
 
@@ -220,7 +220,7 @@ describe('createPiAdapter', () => {
 
 	it('tool call flow — agent calls tool via BaseClient, then responds', async () => {
 		const toolCallId = 'tc-001';
-		const client: BaseClient = {
+		const client: TurnAgent = {
 			toolExecute: vi.fn().mockResolvedValue({
 				toolCallId,
 				content: [{ type: 'text', text: '42' }],
@@ -295,7 +295,7 @@ describe('createPiAdapter', () => {
 	});
 
 	it('cancel — returns turnEnd with error', async () => {
-		const client: BaseClient = {
+		const client: TurnAgent = {
 			toolExecute: vi.fn(),
 		};
 

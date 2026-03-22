@@ -10,7 +10,7 @@ import { expect, it } from 'vitest';
 import { getModel } from '@mariozechner/pi-ai';
 
 import { createPiAdapter } from '../base/pi-adapter.js';
-import type { BaseClient } from '../base/types.js';
+import type { TurnAgent } from '../base/types.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { Ctx } from '../types/context.js';
 import { describeIfKey } from './utils/describe-if-key.js';
@@ -50,7 +50,7 @@ describeIfKey(
 		const model = getModel('openrouter', 'z-ai/glm-5');
 
 		it('simple text prompt returns a coherent response', async () => {
-			const client: BaseClient = {
+			const client: TurnAgent = {
 				toolExecute: async () => {
 					throw new Error('toolExecute should not be called');
 				},
@@ -103,7 +103,7 @@ describeIfKey(
 		}, 30_000);
 
 		it('tool call flow — model calls a tool, gets result, responds', async () => {
-			const client: BaseClient = {
+			const client: TurnAgent = {
 				toolExecute: async ({ call }) => ({
 					toolCallId: call.id,
 					content: [
