@@ -1,15 +1,14 @@
 export type {
 	JsonRpcRequest,
 	JsonRpcNotification,
-	JsonRpcEventInvocation,
 	JsonRpcSuccess,
 	JsonRpcErrorPayload,
 	JsonRpcErrorResponse,
 	JsonRpcResponse,
-	JsonRpcEventNextNotification,
-	JsonRpcEventCompleteNotification,
-	JsonRpcEventErrorNotification,
-	JsonRpcEventCancelNotification,
+	JsonRpcStreamUpdateNotification,
+	// eslint-disable-next-line @typescript-eslint/no-deprecated -- backwards compat re-export
+	JsonRpcStreamNextNotification,
+	JsonRpcStreamCancelNotification,
 	JsonRpcMessage,
 } from './types.js';
 export type {
@@ -33,13 +32,13 @@ export type {
 	EventMethodNames,
 	RequestFor,
 	NotificationFor,
-	EventInvocationFor,
+	StreamRequestFor,
+	StreamRequests,
 	ResponseFor,
 	Requests,
 	Notifications,
-	EventInvocations,
 	Responses,
-	EventControlMessages,
+	StreamControlMessages,
 	UpMessages,
 	DownMessages,
 	Protocol,
@@ -60,10 +59,10 @@ export {
 	isRequest,
 	isNotification,
 	isResponse,
-	isEventNextNotification,
-	isEventCompleteNotification,
-	isEventErrorNotification,
-	isEventCancelNotification,
+	isStreamUpdateNotification,
+	// eslint-disable-next-line @typescript-eslint/no-deprecated -- backwards compat re-export
+	isStreamNextNotification,
+	isStreamCancelNotification,
 } from './types.js';
 export { RpcError } from './errors.js';
 export { bindClient, bindServer, type Binding } from './binding/index.js';

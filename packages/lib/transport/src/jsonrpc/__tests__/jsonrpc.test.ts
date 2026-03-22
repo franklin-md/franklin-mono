@@ -3,13 +3,11 @@ import type { Duplex } from '../../streams/types.js';
 
 import type { JsonRpcMessage } from '../types.js';
 import {
-	isEventCancelNotification,
-	isEventCompleteNotification,
-	isEventErrorNotification,
-	isEventNextNotification,
 	isNotification,
 	isRequest,
 	isResponse,
+	isStreamCancelNotification,
+	isStreamUpdateNotification,
 } from '../types.js';
 import { RpcError } from '../errors.js';
 import { bindClient, bindServer } from '../binding/index.js';
@@ -128,51 +126,29 @@ describe('type guards', () => {
 		expect(isResponse(msg)).toBe(true);
 	});
 
-	it('isEventNextNotification', () => {
+	it('isStreamUpdateNotification', () => {
 		const msg: JsonRpcMessage = {
 			jsonrpc: '2.0',
-			method: '$/event/next',
+			method: 'prompt/update',
 			params: {
-				callId: 1,
-				value: 'chunk',
+				requestId: 1,
+				type: 'chunk',
+				text: 'hello',
 			},
 		};
-		expect(isEventNextNotification(msg)).toBe(true);
+		expect(isStreamUpdateNotification(msg)).toBe(true);
 		expect(isNotification(msg)).toBe(true);
 	});
 
-	it('isEventCompleteNotification', () => {
+	it('isStreamCancelNotification', () => {
 		const msg: JsonRpcMessage = {
 			jsonrpc: '2.0',
-			method: '$/event/complete',
+			method: '$/stream/cancel',
 			params: {
-				callId: 1,
+				requestId: 1,
 			},
 		};
-		expect(isEventCompleteNotification(msg)).toBe(true);
-	});
-
-	it('isEventErrorNotification', () => {
-		const msg: JsonRpcMessage = {
-			jsonrpc: '2.0',
-			method: '$/event/error',
-			params: {
-				callId: 1,
-				error: { code: -32603, message: 'boom' },
-			},
-		};
-		expect(isEventErrorNotification(msg)).toBe(true);
-	});
-
-	it('isEventCancelNotification', () => {
-		const msg: JsonRpcMessage = {
-			jsonrpc: '2.0',
-			method: '$/event/cancel',
-			params: {
-				callId: 1,
-			},
-		};
-		expect(isEventCancelNotification(msg)).toBe(true);
+		expect(isStreamCancelNotification(msg)).toBe(true);
 	});
 });
 
@@ -211,14 +187,19 @@ describe('RpcError', () => {
 	});
 });
 
+interface StreamChunk {
+	type: 'chunk';
+	text: string;
+}
+
 interface ServerApi {
 	add(params: { a: number; b: number }): Promise<number>;
 	fail(params: Record<string, never>): Promise<never>;
 	ping(params: { msg: string }): Promise<void>;
 	delayed(params: { ms: number; value: string }): Promise<string>;
 	echo(params: { n: number }): Promise<number>;
-	prompt(params: { message: string }): AsyncIterable<string>;
-	failStream(params: Record<string, never>): AsyncIterable<string>;
+	prompt(params: { message: string }): AsyncIterable<StreamChunk>;
+	failStream(params: Record<string, never>): AsyncIterable<StreamChunk>;
 	hang(params: Record<string, never>): Promise<never>;
 }
 
@@ -262,10 +243,10 @@ const defaultServerHandlers: ServerApi = {
 		return n;
 	},
 	async *prompt({ message }) {
-		yield message;
+		yield { type: 'chunk' as const, text: message };
 	},
 	async *failStream() {
-		yield 'first';
+		yield { type: 'chunk' as const, text: 'first' };
 		throw new Error('stream failed');
 	},
 	async hang() {
@@ -439,15 +420,18 @@ describe('protocol-derived bindings', () => {
 		const { client, server } = createPair({
 			server: {
 				async *prompt({ message }) {
-					yield `${message}:1`;
-					yield `${message}:2`;
+					yield { type: 'chunk' as const, text: `${message}:1` };
+					yield { type: 'chunk' as const, text: `${message}:2` };
 				},
 			},
 		});
 
 		await expect(
 			collect(client.remote.prompt({ message: 'hello' })),
-		).resolves.toEqual(['hello:1', 'hello:2']);
+		).resolves.toEqual([
+			{ type: 'chunk', text: 'hello:1' },
+			{ type: 'chunk', text: 'hello:2' },
+		]);
 
 		await client.close();
 		await server.close();
@@ -457,7 +441,7 @@ describe('protocol-derived bindings', () => {
 		const { client, server } = createPair({
 			server: {
 				async *failStream() {
-					yield 'first';
+					yield { type: 'chunk' as const, text: 'first' };
 					throw new Error('stream failed');
 				},
 			},
@@ -466,7 +450,7 @@ describe('protocol-derived bindings', () => {
 		const iterator = client.remote.failStream({})[Symbol.asyncIterator]();
 		await expect(iterator.next()).resolves.toEqual({
 			done: false,
-			value: 'first',
+			value: { type: 'chunk', text: 'first' },
 		});
 		await expect(iterator.next()).rejects.toThrow('stream failed');
 
@@ -478,7 +462,7 @@ describe('protocol-derived bindings', () => {
 		const { client, server } = createPair({
 			server: {
 				async *prompt({ message }) {
-					yield message;
+					yield { type: 'chunk' as const, text: message };
 					await new Promise(() => {});
 				},
 			},
@@ -489,7 +473,7 @@ describe('protocol-derived bindings', () => {
 			[Symbol.asyncIterator]();
 		await expect(iterator.next()).resolves.toEqual({
 			done: false,
-			value: 'hello',
+			value: { type: 'chunk', text: 'hello' },
 		});
 
 		const pending = iterator.next();
@@ -515,10 +499,15 @@ describe('protocol-derived bindings', () => {
 							return {
 								async next() {
 									if (yielded) {
-										return await new Promise<IteratorResult<string>>(() => {});
+										return await new Promise<IteratorResult<StreamChunk>>(
+											() => {},
+										);
 									}
 									yielded = true;
-									return { done: false, value: 'first' };
+									return {
+										done: false,
+										value: { type: 'chunk' as const, text: 'first' },
+									};
 								},
 								async return() {
 									cancelled = true;
@@ -533,12 +522,303 @@ describe('protocol-derived bindings', () => {
 		});
 
 		for await (const value of client.remote.prompt({ message: 'ignored' })) {
-			expect(value).toBe('first');
+			expect(value).toEqual({ type: 'chunk', text: 'first' });
 			break;
 		}
 
 		await cancelledPromise;
 		expect(cancelled).toBe(true);
+
+		await client.close();
+		await server.close();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Wire-level interception helper
+// ---------------------------------------------------------------------------
+
+function createInterceptedPair(options?: {
+	server?: Partial<ServerApi>;
+	client?: Partial<ClientApi>;
+}) {
+	const clientToServer: JsonRpcMessage[] = [];
+	const serverToClient: JsonRpcMessage[] = [];
+
+	let controllerA!: ReadableStreamDefaultController<JsonRpcMessage>;
+	let controllerB!: ReadableStreamDefaultController<JsonRpcMessage>;
+
+	const readableA = new ReadableStream<JsonRpcMessage>({
+		start(c) {
+			controllerA = c;
+		},
+	});
+	const readableB = new ReadableStream<JsonRpcMessage>({
+		start(c) {
+			controllerB = c;
+		},
+	});
+
+	const writableA = new WritableStream<JsonRpcMessage>({
+		write(chunk) {
+			clientToServer.push(JSON.parse(JSON.stringify(chunk)) as JsonRpcMessage);
+			controllerB.enqueue(chunk);
+		},
+	});
+	const writableB = new WritableStream<JsonRpcMessage>({
+		write(chunk) {
+			serverToClient.push(JSON.parse(JSON.stringify(chunk)) as JsonRpcMessage);
+			controllerA.enqueue(chunk);
+		},
+	});
+
+	const a: Duplex<JsonRpcMessage> = {
+		readable: readableA,
+		writable: writableA,
+		close: async () => {
+			try {
+				controllerA.close();
+			} catch {
+				/* already closed */
+			}
+		},
+	};
+	const b: Duplex<JsonRpcMessage> = {
+		readable: readableB,
+		writable: writableB,
+		close: async () => {
+			try {
+				controllerB.close();
+			} catch {
+				/* already closed */
+			}
+		},
+	};
+
+	const client = bindClient({
+		duplex: a as TestProtocol,
+		manifest,
+		handlers: {
+			...defaultClientHandlers,
+			...options?.client,
+		},
+	});
+	const server = bindServer({
+		duplex: b as Protocol<ClientApi, ServerApi>,
+		manifest,
+		handlers: {
+			...defaultServerHandlers,
+			...options?.server,
+		},
+	});
+
+	return { client, server, clientToServer, serverToClient };
+}
+
+describe('stream wire protocol', () => {
+	it('stream invocation is a JSON-RPC request (has id)', async () => {
+		const { client, server, clientToServer } = createInterceptedPair({
+			server: {
+				async *prompt({ message }) {
+					yield { type: 'chunk' as const, text: message };
+				},
+			},
+		});
+
+		await collect(client.remote.prompt({ message: 'hello' }));
+
+		const invocation = clientToServer[0]!;
+		expect(isRequest(invocation)).toBe(true);
+		expect(invocation).toMatchObject({
+			jsonrpc: '2.0',
+			method: 'prompt',
+			params: { message: 'hello' },
+		});
+
+		await client.close();
+		await server.close();
+	});
+
+	it('yields arrive as {method}/update notifications with requestId', async () => {
+		const { client, server, clientToServer, serverToClient } =
+			createInterceptedPair({
+				server: {
+					async *prompt() {
+						yield { type: 'chunk' as const, text: 'chunk-a' };
+						yield { type: 'chunk' as const, text: 'chunk-b' };
+					},
+				},
+			});
+
+		await collect(client.remote.prompt({ message: 'hello' }));
+
+		const requestId = (clientToServer[0] as JsonRpcMessage & { id: number }).id;
+		const yieldNotifications = serverToClient.filter(
+			(m) =>
+				isNotification(m) &&
+				(m as JsonRpcMessage & { method: string }).method === 'prompt/update',
+		);
+
+		expect(yieldNotifications).toHaveLength(2);
+		expect(yieldNotifications[0]).toMatchObject({
+			jsonrpc: '2.0',
+			method: 'prompt/update',
+			params: { requestId, type: 'chunk', text: 'chunk-a' },
+		});
+		expect(yieldNotifications[1]).toMatchObject({
+			jsonrpc: '2.0',
+			method: 'prompt/update',
+			params: { requestId, type: 'chunk', text: 'chunk-b' },
+		});
+
+		await client.close();
+		await server.close();
+	});
+
+	it('completion sends a JSON-RPC response with result null', async () => {
+		const { client, server, clientToServer, serverToClient } =
+			createInterceptedPair({
+				server: {
+					async *prompt() {
+						yield { type: 'chunk' as const, text: 'done' };
+					},
+				},
+			});
+
+		await collect(client.remote.prompt({ message: 'hello' }));
+
+		const requestId = (clientToServer[0] as JsonRpcMessage & { id: number }).id;
+		const response = serverToClient.find(
+			(m) =>
+				isResponse(m) &&
+				(m as JsonRpcMessage & { id: number }).id === requestId,
+		);
+
+		expect(response).toBeDefined();
+		expect(response).toMatchObject({
+			jsonrpc: '2.0',
+			id: requestId,
+			result: null,
+		});
+
+		await client.close();
+		await server.close();
+	});
+
+	it('stream error sends a JSON-RPC error response', async () => {
+		const { client, server, clientToServer, serverToClient } =
+			createInterceptedPair({
+				server: {
+					async *failStream() {
+						yield { type: 'chunk' as const, text: 'first' };
+						throw new Error('stream boom');
+					},
+				},
+			});
+
+		const iter = client.remote.failStream({})[Symbol.asyncIterator]();
+		await iter.next(); // 'first'
+		await expect(iter.next()).rejects.toThrow('stream boom');
+
+		const requestId = (clientToServer[0] as JsonRpcMessage & { id: number }).id;
+		const errorResponse = serverToClient.find(
+			(m) =>
+				isResponse(m) &&
+				'error' in m &&
+				(m as JsonRpcMessage & { id: number }).id === requestId,
+		);
+
+		expect(errorResponse).toBeDefined();
+		expect(
+			(errorResponse as JsonRpcMessage & { error: { message: string } }).error
+				.message,
+		).toBe('stream boom');
+
+		await client.close();
+		await server.close();
+	});
+
+	it('cancel sends $/stream/cancel notification with requestId', async () => {
+		let resolveCancelled!: () => void;
+		const cancelledPromise = new Promise<void>((resolve) => {
+			resolveCancelled = resolve;
+		});
+
+		const { client, server, clientToServer } = createInterceptedPair({
+			server: {
+				prompt() {
+					return {
+						[Symbol.asyncIterator]() {
+							let yielded = false;
+							return {
+								async next() {
+									if (yielded)
+										return await new Promise<IteratorResult<StreamChunk>>(
+											() => {},
+										);
+									yielded = true;
+									return {
+										done: false as const,
+										value: { type: 'chunk' as const, text: 'first' },
+									};
+								},
+								async return() {
+									resolveCancelled();
+									return { done: true as const, value: undefined };
+								},
+							};
+						},
+					};
+				},
+			},
+		});
+
+		for await (const value of client.remote.prompt({ message: 'ignored' })) {
+			expect(value).toEqual({ type: 'chunk', text: 'first' });
+			break;
+		}
+
+		await cancelledPromise;
+
+		const requestId = (clientToServer[0] as JsonRpcMessage & { id: number }).id;
+		const cancelNotification = clientToServer.find(
+			(m) =>
+				isNotification(m) &&
+				(m as JsonRpcMessage & { method: string }).method === '$/stream/cancel',
+		);
+
+		expect(cancelNotification).toBeDefined();
+		expect(cancelNotification).toMatchObject({
+			jsonrpc: '2.0',
+			method: '$/stream/cancel',
+			params: { requestId },
+		});
+
+		await client.close();
+		await server.close();
+	});
+
+	it('no $/stream/* messages appear on the wire for yields', async () => {
+		const { client, server, clientToServer, serverToClient } =
+			createInterceptedPair({
+				server: {
+					async *prompt({ message }) {
+						yield { type: 'chunk' as const, text: `${message}:1` };
+						yield { type: 'chunk' as const, text: `${message}:2` };
+					},
+				},
+			});
+
+		await collect(client.remote.prompt({ message: 'test' }));
+
+		const allMessages = [...clientToServer, ...serverToClient];
+		const streamNextMessages = allMessages.filter(
+			(m) =>
+				'method' in m &&
+				typeof m.method === 'string' &&
+				m.method === '$/stream/next',
+		);
+		expect(streamNextMessages).toHaveLength(0);
 
 		await client.close();
 		await server.close();

@@ -11,15 +11,6 @@ export type JsonRpcNotification<P = unknown, M extends string = string> = {
 	params: P;
 };
 
-export type JsonRpcEventInvocation<P = unknown, M extends string = string> = {
-	jsonrpc: '2.0';
-	method: M;
-	params: {
-		callId: number;
-		params: P;
-	};
-};
-
 export type JsonRpcSuccess<R = unknown> = {
 	jsonrpc: '2.0';
 	id: number;
@@ -42,45 +33,29 @@ export type JsonRpcResponse<R = unknown> =
 	| JsonRpcSuccess<R>
 	| JsonRpcErrorResponse;
 
-export type JsonRpcEventNextNotification<T = unknown> = JsonRpcNotification<
-	{
-		callId: number;
-		value: T;
-	},
-	'$/event/next'
->;
+export type JsonRpcStreamUpdateNotification<
+	T extends Record<string, unknown> = Record<string, unknown>,
+> = JsonRpcNotification<T & { requestId: number }, `${string}/update`>;
 
-export type JsonRpcEventCompleteNotification = JsonRpcNotification<
-	{
-		callId: number;
-	},
-	'$/event/complete'
->;
+/** @deprecated Use JsonRpcStreamUpdateNotification */
+export type JsonRpcStreamNextNotification<T = unknown> =
+	JsonRpcStreamUpdateNotification<
+		T extends Record<string, unknown> ? T : Record<string, unknown>
+	>;
 
-export type JsonRpcEventErrorNotification = JsonRpcNotification<
+export type JsonRpcStreamCancelNotification = JsonRpcNotification<
 	{
-		callId: number;
-		error: JsonRpcErrorPayload;
+		requestId: number;
 	},
-	'$/event/error'
->;
-
-export type JsonRpcEventCancelNotification = JsonRpcNotification<
-	{
-		callId: number;
-	},
-	'$/event/cancel'
+	'$/stream/cancel'
 >;
 
 export type JsonRpcMessage =
 	| JsonRpcRequest
 	| JsonRpcNotification
 	| JsonRpcResponse
-	| JsonRpcEventInvocation
-	| JsonRpcEventNextNotification
-	| JsonRpcEventCompleteNotification
-	| JsonRpcEventErrorNotification
-	| JsonRpcEventCancelNotification;
+	| JsonRpcStreamUpdateNotification
+	| JsonRpcStreamCancelNotification;
 
 export function isRequest(msg: JsonRpcMessage): msg is JsonRpcRequest {
 	return 'method' in msg && 'id' in msg;
@@ -96,26 +71,25 @@ export function isResponse(msg: JsonRpcMessage): msg is JsonRpcResponse {
 	return !('method' in msg) && 'id' in msg;
 }
 
-export function isEventNextNotification(
+export function isStreamUpdateNotification(
 	msg: JsonRpcMessage,
-): msg is JsonRpcEventNextNotification {
-	return isNotification(msg) && msg.method === '$/event/next';
+): msg is JsonRpcStreamUpdateNotification {
+	return (
+		isNotification(msg) &&
+		msg.method.endsWith('/update') &&
+		typeof (msg.params as Record<string, unknown>).requestId === 'number'
+	);
 }
 
-export function isEventCompleteNotification(
+/** @deprecated Use isStreamUpdateNotification */
+export function isStreamNextNotification(
 	msg: JsonRpcMessage,
-): msg is JsonRpcEventCompleteNotification {
-	return isNotification(msg) && msg.method === '$/event/complete';
+): msg is JsonRpcStreamUpdateNotification {
+	return isStreamUpdateNotification(msg);
 }
 
-export function isEventErrorNotification(
+export function isStreamCancelNotification(
 	msg: JsonRpcMessage,
-): msg is JsonRpcEventErrorNotification {
-	return isNotification(msg) && msg.method === '$/event/error';
-}
-
-export function isEventCancelNotification(
-	msg: JsonRpcMessage,
-): msg is JsonRpcEventCancelNotification {
-	return isNotification(msg) && msg.method === '$/event/cancel';
+): msg is JsonRpcStreamCancelNotification {
+	return isNotification(msg) && msg.method === '$/stream/cancel';
 }

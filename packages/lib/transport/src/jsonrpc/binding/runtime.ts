@@ -15,13 +15,11 @@ import type {
 import type { ProtocolManifest } from '../protocol/manifest.js';
 import type { JsonRpcErrorPayload, JsonRpcMessage } from '../types.js';
 import {
-	isEventCancelNotification,
-	isEventCompleteNotification,
-	isEventErrorNotification,
-	isEventNextNotification,
 	isNotification,
 	isRequest,
 	isResponse,
+	isStreamCancelNotification,
+	isStreamUpdateNotification,
 } from '../types.js';
 
 export type RuntimeMethodKind = 'request' | 'notification' | 'event';
@@ -50,8 +48,8 @@ interface PendingRequest {
 interface BindRuntimeState {
 	send: (message: JsonRpcMessage) => void;
 	pendingRequests: Map<number, PendingRequest>;
-	outgoingEvents: Map<number, AsyncEventQueue<unknown>>;
-	activeIncomingEvents: Map<number, AsyncIterator<unknown>>;
+	pendingStreams: Map<number, AsyncEventQueue<unknown>>;
+	activeStreams: Map<number, AsyncIterator<unknown>>;
 }
 
 function toErrorPayload(error: unknown): JsonRpcErrorPayload {
@@ -74,10 +72,10 @@ function closePending(state: BindRuntimeState, error: Error): void {
 		pending.reject(error);
 	}
 	state.pendingRequests.clear();
-	for (const [, queue] of state.outgoingEvents) {
+	for (const [, queue] of state.pendingStreams) {
 		queue.fail(error);
 	}
-	state.outgoingEvents.clear();
+	state.pendingStreams.clear();
 }
 
 function handleResponseMessage(
@@ -85,6 +83,22 @@ function handleResponseMessage(
 	msg: JsonRpcMessage,
 ): boolean {
 	if (!isResponse(msg)) return false;
+
+	// Check if this completes a pending stream
+	const stream = state.pendingStreams.get(msg.id);
+	if (stream) {
+		state.pendingStreams.delete(msg.id);
+		if ('error' in msg) {
+			stream.fail(
+				new RpcError(msg.error.code, msg.error.message, msg.error.data),
+			);
+		} else {
+			stream.complete();
+		}
+		return true;
+	}
+
+	// Otherwise check pending unary requests
 	const pending = state.pendingRequests.get(msg.id);
 	if (!pending) return true;
 	state.pendingRequests.delete(msg.id);
@@ -98,40 +112,23 @@ function handleResponseMessage(
 	return true;
 }
 
-function handleEventControlMessage(
+function handleStreamControlMessage(
 	state: BindRuntimeState,
 	msg: JsonRpcMessage,
 ): boolean {
-	if (isEventNextNotification(msg)) {
-		state.outgoingEvents.get(msg.params.callId)?.push(msg.params.value);
+	if (isStreamUpdateNotification(msg)) {
+		const { requestId, ...value } = msg.params as Record<string, unknown> & {
+			requestId: number;
+		};
+		state.pendingStreams.get(requestId)?.push(value);
 		return true;
 	}
 
-	if (isEventCompleteNotification(msg)) {
-		state.outgoingEvents.get(msg.params.callId)?.complete();
-		state.outgoingEvents.delete(msg.params.callId);
-		return true;
-	}
-
-	if (isEventErrorNotification(msg)) {
-		state.outgoingEvents
-			.get(msg.params.callId)
-			?.fail(
-				new RpcError(
-					msg.params.error.code,
-					msg.params.error.message,
-					msg.params.error.data,
-				),
-			);
-		state.outgoingEvents.delete(msg.params.callId);
-		return true;
-	}
-
-	if (isEventCancelNotification(msg)) {
-		const iterator = state.activeIncomingEvents.get(msg.params.callId);
+	if (isStreamCancelNotification(msg)) {
+		const iterator = state.activeStreams.get(msg.params.requestId);
 		if (!iterator) return true;
 		void iterator.return?.();
-		state.activeIncomingEvents.delete(msg.params.callId);
+		state.activeStreams.delete(msg.params.requestId);
 		return true;
 	}
 
@@ -147,12 +144,7 @@ function handleRequestMessage<TLocal extends RpcMethods<TLocal>>(
 	if (!isRequest(msg)) return false;
 
 	if (localManifest[msg.method]?.kind !== 'request') {
-		state.send({
-			jsonrpc: '2.0',
-			id: msg.id,
-			error: RpcError.methodNotFound(msg.method).toPayload(),
-		});
-		return true;
+		return false;
 	}
 
 	const handler = handlers[msg.method as keyof TLocal] as (
@@ -186,25 +178,23 @@ function handleNotificationMessage<TLocal extends RpcMethods<TLocal>>(
 	return true;
 }
 
-function handleEventInvocation<TLocal extends RpcMethods<TLocal>>(
+function handleStreamRequest<TLocal extends RpcMethods<TLocal>>(
 	state: BindRuntimeState,
 	localManifest: RuntimeSideManifest,
 	handlers: TLocal,
 	msg: JsonRpcMessage,
 ): boolean {
-	if (!isNotification(msg)) return false;
+	if (!isRequest(msg)) return false;
 	if (localManifest[msg.method]?.kind !== 'event') return false;
 
-	const { callId, params } = msg.params as {
-		callId: number;
-		params: unknown;
-	};
+	const requestId = msg.id;
 	const handler = handlers[msg.method as keyof TLocal] as (
 		params: unknown,
 	) => AsyncIterable<unknown>;
-	const iterator = handler(params)[Symbol.asyncIterator]();
-	state.activeIncomingEvents.set(callId, iterator);
+	const iterator = handler(msg.params)[Symbol.asyncIterator]();
+	state.activeStreams.set(requestId, iterator);
 
+	const method = msg.method;
 	void (async () => {
 		try {
 			for (;;) {
@@ -212,28 +202,26 @@ function handleEventInvocation<TLocal extends RpcMethods<TLocal>>(
 				if (step.done) {
 					state.send({
 						jsonrpc: '2.0',
-						method: '$/event/complete',
-						params: { callId },
+						id: requestId,
+						result: null,
 					});
 					return;
 				}
+				const value = step.value as Record<string, unknown>;
 				state.send({
 					jsonrpc: '2.0',
-					method: '$/event/next',
-					params: { callId, value: step.value },
+					method: `${method}/update`,
+					params: { requestId, ...value },
 				});
 			}
 		} catch (error: unknown) {
 			state.send({
 				jsonrpc: '2.0',
-				method: '$/event/error',
-				params: {
-					callId,
-					error: toErrorPayload(error),
-				},
+				id: requestId,
+				error: toErrorPayload(error),
 			});
 		} finally {
-			state.activeIncomingEvents.delete(callId);
+			state.activeStreams.delete(requestId);
 		}
 	})();
 	return true;
@@ -243,8 +231,7 @@ function createRemoteProxy<TRemote extends RpcMethods<TRemote>>(
 	state: BindRuntimeState,
 	remoteManifest: RuntimeSideManifest,
 ): TRemote {
-	let nextRequestId = 0;
-	let nextEventCallId = 0;
+	let nextId = 0;
 
 	const remote = {} as TRemote;
 	for (const method of Object.keys(remoteManifest) as Array<
@@ -257,7 +244,7 @@ function createRemoteProxy<TRemote extends RpcMethods<TRemote>>(
 			(remote[method] as TRemote[RequestMethodNames<TRemote>]) = ((
 				params: unknown,
 			) => {
-				const id = nextRequestId++;
+				const id = nextId++;
 				return new Promise<unknown>((resolve, reject) => {
 					state.pendingRequests.set(id, { resolve, reject });
 					state.send({ jsonrpc: '2.0', id, method, params });
@@ -276,27 +263,22 @@ function createRemoteProxy<TRemote extends RpcMethods<TRemote>>(
 			continue;
 		}
 
+		// Stream (event) method: send a request, receive $/stream/next
+		// notifications, completed by the response
 		(remote[method] as TRemote[EventMethodNames<TRemote>]) = ((
 			params: unknown,
 		) => {
-			const callId = nextEventCallId++;
+			const id = nextId++;
 			const queue = new Queue<unknown>(() => {
 				state.send({
 					jsonrpc: '2.0',
-					method: '$/event/cancel',
-					params: { callId },
+					method: '$/stream/cancel',
+					params: { requestId: id },
 				});
-				state.outgoingEvents.delete(callId);
+				state.pendingStreams.delete(id);
 			});
-			state.outgoingEvents.set(callId, queue);
-			state.send({
-				jsonrpc: '2.0',
-				method,
-				params: {
-					callId,
-					params,
-				},
-			});
+			state.pendingStreams.set(id, queue);
+			state.send({ jsonrpc: '2.0', id, method, params });
 			return queue;
 		}) as unknown as TRemote[EventMethodNames<TRemote>];
 	}
@@ -316,16 +298,16 @@ export function bindPeer<
 	const state: BindRuntimeState = {
 		send: callable(duplex.writable),
 		pendingRequests: new Map<number, PendingRequest>(),
-		outgoingEvents: new Map<number, AsyncEventQueue<unknown>>(),
-		activeIncomingEvents: new Map<number, AsyncIterator<unknown>>(),
+		pendingStreams: new Map<number, AsyncEventQueue<unknown>>(),
+		activeStreams: new Map<number, AsyncIterator<unknown>>(),
 	};
 	const observer = observe(duplex.readable);
 
 	observer.subscribe((msg) => {
 		if (handleResponseMessage(state, msg)) return;
-		if (handleEventControlMessage(state, msg)) return;
+		if (handleStreamControlMessage(state, msg)) return;
 		if (handleRequestMessage(state, localManifest, handlers, msg)) return;
-		if (handleEventInvocation(state, localManifest, handlers, msg)) return;
+		if (handleStreamRequest(state, localManifest, handlers, msg)) return;
 		void handleNotificationMessage(localManifest, handlers, msg);
 	});
 
@@ -334,10 +316,10 @@ export function bindPeer<
 		async close() {
 			observer.dispose();
 			closePending(state, new Error('Connection closed'));
-			for (const [, iterator] of state.activeIncomingEvents) {
+			for (const [, iterator] of state.activeStreams) {
 				void iterator.return?.();
 			}
-			state.activeIncomingEvents.clear();
+			state.activeStreams.clear();
 			await duplex.close();
 		},
 	};

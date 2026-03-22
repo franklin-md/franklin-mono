@@ -21,9 +21,9 @@ export type {
 export type {
 	ClientOf,
 	DownMessages,
-	EventControlMessages,
-	EventInvocationFor,
-	EventInvocations,
+	StreamControlMessages,
+	StreamRequestFor,
+	StreamRequests,
 	NotificationFor,
 	Notifications,
 	Protocol,

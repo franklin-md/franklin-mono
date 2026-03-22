@@ -1,13 +1,10 @@
 import type { Duplex } from '../../streams/types.js';
 import type {
-	JsonRpcEventCancelNotification,
-	JsonRpcEventCompleteNotification,
-	JsonRpcEventErrorNotification,
-	JsonRpcEventInvocation,
-	JsonRpcEventNextNotification,
 	JsonRpcNotification,
 	JsonRpcRequest,
 	JsonRpcResponse,
+	JsonRpcStreamCancelNotification,
+	JsonRpcStreamUpdateNotification,
 } from '../types.js';
 import type {
 	EventMethodNames,
@@ -29,10 +26,10 @@ export type NotificationFor<
 	TMethodName extends NotificationMethodNames<TMethods>,
 > = JsonRpcNotification<MethodParams<TMethods[TMethodName]>, TMethodName>;
 
-export type EventInvocationFor<
+export type StreamRequestFor<
 	TMethods extends RpcMethods<TMethods>,
 	TMethodName extends EventMethodNames<TMethods>,
-> = JsonRpcEventInvocation<MethodParams<TMethods[TMethodName]>, TMethodName>;
+> = JsonRpcRequest<MethodParams<TMethods[TMethodName]>, TMethodName>;
 
 export type ResponseFor<
 	TMethods extends RpcMethods<TMethods>,
@@ -47,19 +44,17 @@ export type Notifications<TMethods extends RpcMethods<TMethods>> = {
 	[K in NotificationMethodNames<TMethods>]: NotificationFor<TMethods, K>;
 }[NotificationMethodNames<TMethods>];
 
-export type EventInvocations<TMethods extends RpcMethods<TMethods>> = {
-	[K in EventMethodNames<TMethods>]: EventInvocationFor<TMethods, K>;
+export type StreamRequests<TMethods extends RpcMethods<TMethods>> = {
+	[K in EventMethodNames<TMethods>]: StreamRequestFor<TMethods, K>;
 }[EventMethodNames<TMethods>];
 
 export type Responses<TMethods extends RpcMethods<TMethods>> = {
 	[K in RequestMethodNames<TMethods>]: ResponseFor<TMethods, K>;
 }[RequestMethodNames<TMethods>];
 
-export type EventControlMessages =
-	| JsonRpcEventNextNotification
-	| JsonRpcEventCompleteNotification
-	| JsonRpcEventErrorNotification
-	| JsonRpcEventCancelNotification;
+export type StreamControlMessages =
+	| JsonRpcStreamUpdateNotification
+	| JsonRpcStreamCancelNotification;
 
 export type UpMessages<
 	TServer extends RpcMethods<TServer>,
@@ -67,9 +62,9 @@ export type UpMessages<
 > =
 	| Requests<TServer>
 	| Notifications<TServer>
-	| EventInvocations<TServer>
+	| StreamRequests<TServer>
 	| Responses<TClient>
-	| EventControlMessages;
+	| StreamControlMessages;
 
 export type DownMessages<
 	TServer extends RpcMethods<TServer>,
@@ -77,9 +72,9 @@ export type DownMessages<
 > =
 	| Requests<TClient>
 	| Notifications<TClient>
-	| EventInvocations<TClient>
+	| StreamRequests<TClient>
 	| Responses<TServer>
-	| EventControlMessages;
+	| StreamControlMessages;
 
 export type Protocol<
 	TServer extends RpcMethods<TServer>,
