@@ -31,3 +31,24 @@ export {
 	createStoreCompiler,
 } from './compile/index.js';
 export type { Extension, MaybePromise } from './types/index.js';
+
+// ---------------------------------------------------------------------------
+// Built-in extensions
+// ---------------------------------------------------------------------------
+export {
+	conversationExtension,
+	todoExtension,
+	createTodoControl,
+	formatTodos,
+	spawnExtension,
+} from './extensions/index.js';
+export type {
+	ConversationTurn,
+	ConversationEntry,
+	UserEntry,
+	AgentTextEntry,
+	AgentThoughtEntry,
+	ToolCallEntry,
+	Todo,
+	TodoControl,
+} from './extensions/index.js';
