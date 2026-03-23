@@ -30,8 +30,6 @@ export type {
 	Chunk,
 	TurnEnd,
 	StreamEvent,
-	// Session
-	SessionId,
 } from './types/index.js';
 
 // Base protocol

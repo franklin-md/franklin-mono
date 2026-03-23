@@ -1,2 +1,3 @@
-export type { Compiler, CompilerTransform } from './types.js';
-export { buildCore } from './build-core.js';
+export type { Compiler } from '../types.js';
+export { compile, combine } from '../types.js';
+export { createCoreCompiler } from './compiler.js';

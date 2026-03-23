@@ -1,8 +1,9 @@
 /* eslint-disable require-yield */
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
-import { buildCore } from '../build-core.js';
-import type { Compiler } from '../types.js';
+import { createCoreCompiler } from '../compiler.js';
+import { compile, combine } from '../../types.js';
+import type { Compiler } from '../../types.js';
 import type { Extension } from '../../../types/extension.js';
 import type {
 	ClientMiddleware,
@@ -16,13 +17,9 @@ import type { MiniACPClient } from '@franklin/mini-acp';
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Base (identity) compiler — returns empty object, ignores the extension. */
-const baseCompile: Compiler<object, object> = async () => ({});
-
 /** Compile a single CoreAPI extension into FullMiddleware. */
-async function compile(ext: Extension): Promise<FullMiddleware> {
-	const compiler = buildCore(baseCompile);
-	return compiler(ext) as Promise<FullMiddleware>;
+async function compileExt(ext: Extension): Promise<FullMiddleware> {
+	return compile(createCoreCompiler(), ext);
 }
 
 /** Fill missing ClientMiddleware keys with passThrough. */
@@ -60,7 +57,7 @@ async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
 
 describe('buildCore – on() waterfall', () => {
 	it('single prompt handler transforms params', async () => {
-		const mw = await compile((api) => {
+		const mw = await compileExt((api) => {
 			api.on('prompt', (params) => ({
 				message: {
 					...params.message,
@@ -100,7 +97,7 @@ describe('buildCore – on() waterfall', () => {
 	it('multiple prompt handlers chain as waterfall', async () => {
 		const calls: string[] = [];
 
-		const mw = await compile((api) => {
+		const mw = await compileExt((api) => {
 			api.on('prompt', (params) => {
 				calls.push('h1');
 				return {
@@ -156,7 +153,7 @@ describe('buildCore – on() waterfall', () => {
 	});
 
 	it('handler returning void passes through unchanged', async () => {
-		const mw = await compile((api) => {
+		const mw = await compileExt((api) => {
 			api.on('prompt', () => {
 				// side-effect only, no return
 			});
@@ -183,7 +180,7 @@ describe('buildCore – on() waterfall', () => {
 	});
 
 	it('setContext handler transforms params', async () => {
-		const mw = await compile((api) => {
+		const mw = await compileExt((api) => {
 			api.on('setContext', (params) => ({
 				ctx: {
 					...params.ctx,
@@ -227,7 +224,7 @@ describe('buildCore – registerTool()', () => {
 	};
 
 	it('short-circuits toolExecute for matching tool', async () => {
-		const mw = await compile((api) => {
+		const mw = await compileExt((api) => {
 			api.registerTool(testTool);
 		});
 
@@ -261,7 +258,7 @@ describe('buildCore – registerTool()', () => {
 	});
 
 	it('passes through to next for non-matching tool', async () => {
-		const mw = await compile((api) => {
+		const mw = await compileExt((api) => {
 			api.registerTool(testTool);
 		});
 
@@ -287,7 +284,7 @@ describe('buildCore – registerTool()', () => {
 	});
 
 	it('injects tool definitions into setContext', async () => {
-		const mw = await compile((api) => {
+		const mw = await compileExt((api) => {
 			api.registerTool(testTool);
 		});
 
@@ -328,7 +325,7 @@ describe('buildCore – registerTool()', () => {
 	});
 
 	it('injects tools even when ctx.tools is undefined', async () => {
-		const mw = await compile((api) => {
+		const mw = await compileExt((api) => {
 			api.registerTool(testTool);
 		});
 
@@ -357,11 +354,215 @@ describe('buildCore – registerTool()', () => {
 
 describe('buildCore – empty extension', () => {
 	it('produces no middleware for an empty extension', async () => {
-		const mw = await compile(() => {
+		const mw = await compileExt(() => {
 			// no registrations
 		});
 
 		expect(mw.client).toBeUndefined();
 		expect(mw.server).toBeUndefined();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// combine()
+// ---------------------------------------------------------------------------
+
+describe('combine', () => {
+	it('merges APIs from two compilers', async () => {
+		const createA = (): Compiler<
+			{ greet(n: string): void },
+			{ greeted: string[] }
+		> => {
+			const names: string[] = [];
+			return {
+				api: {
+					greet: (n) => {
+						names.push(n);
+					},
+				},
+				async build() {
+					return { greeted: names };
+				},
+			};
+		};
+
+		const createB = (): Compiler<
+			{ log(m: string): void },
+			{ logged: string[] }
+		> => {
+			const msgs: string[] = [];
+			return {
+				api: {
+					log: (m) => {
+						msgs.push(m);
+					},
+				},
+				async build() {
+					return { logged: msgs };
+				},
+			};
+		};
+
+		const result = await compile(combine(createA(), createB()), (api) => {
+			api.greet('alice');
+			api.log('hello');
+		});
+
+		expect(result.greeted).toEqual(['alice']);
+		expect(result.logged).toEqual(['hello']);
+	});
+
+	it('is associative — combine(combine(a,b),c) ≡ combine(a,combine(b,c))', async () => {
+		const createA = (): Compiler<{ a(): void }, { aCount: number }> => {
+			let count = 0;
+			return {
+				api: {
+					a() {
+						count++;
+					},
+				},
+				async build() {
+					return { aCount: count };
+				},
+			};
+		};
+
+		const createB = (): Compiler<{ b(): void }, { bCount: number }> => {
+			let count = 0;
+			return {
+				api: {
+					b() {
+						count++;
+					},
+				},
+				async build() {
+					return { bCount: count };
+				},
+			};
+		};
+
+		const createC = (): Compiler<{ c(): void }, { cCount: number }> => {
+			let count = 0;
+			return {
+				api: {
+					c() {
+						count++;
+					},
+				},
+				async build() {
+					return { cCount: count };
+				},
+			};
+		};
+
+		const ext = (api: { a(): void; b(): void; c(): void }) => {
+			api.a();
+			api.b();
+			api.c();
+		};
+
+		// Left-associated: combine(combine(a, b), c)
+		const leftResult = await compile(
+			combine(combine(createA(), createB()), createC()),
+			ext,
+		);
+
+		// Right-associated: combine(a, combine(b, c))
+		const rightResult = await compile(
+			combine(createA(), combine(createB(), createC())),
+			ext,
+		);
+
+		expect(leftResult).toEqual({ aCount: 1, bCount: 1, cCount: 1 });
+		expect(rightResult).toEqual({ aCount: 1, bCount: 1, cCount: 1 });
+	});
+
+	it('each compiler collects independently', async () => {
+		const createCounter = (
+			name: string,
+		): Compiler<{ inc(): void }, Record<string, number>> => {
+			let count = 0;
+			return {
+				api: {
+					inc() {
+						count++;
+					},
+				},
+				async build() {
+					return { [name]: count };
+				},
+			};
+		};
+
+		// Two compilers with same API shape but different collectors
+		const result = await compile(
+			combine(createCounter('first'), createCounter('second')),
+			(api) => {
+				// The merged API has a single `inc` — the second compiler's wins
+				// because of object spread order in combine
+				api.inc();
+			},
+		);
+
+		// Second compiler's inc is called (spread overwrites), first sees 0
+		expect(result.first).toBe(0);
+		expect(result.second).toBe(1);
+	});
+
+	it('combines core compiler with a custom compiler', async () => {
+		const createTagCompiler = (): Compiler<
+			{ tag(t: string): void },
+			{ tags: string[] }
+		> => {
+			const tags: string[] = [];
+			return {
+				api: {
+					tag(t) {
+						tags.push(t);
+					},
+				},
+				async build() {
+					return { tags };
+				},
+			};
+		};
+
+		const result = await compile(
+			combine(createCoreCompiler(), createTagCompiler()),
+			(api) => {
+				api.on('prompt', (params) => ({
+					message: {
+						...params.message,
+						content: [
+							{ type: 'text' as const, text: 'injected' },
+							...params.message.content,
+						],
+					},
+				}));
+				api.tag('my-ext');
+			},
+		);
+
+		// Core compiler produced middleware
+		expect(result.client).toBeDefined();
+		expect(result.client!.prompt).toBeDefined();
+
+		// Tag compiler produced tags
+		expect(result.tags).toEqual(['my-ext']);
+	});
+
+	it('empty compilers combine to empty result', async () => {
+		const createEmpty = (): Compiler<object, object> => ({
+			api: {},
+			async build() {
+				return {};
+			},
+		});
+
+		const result = await compile(
+			combine(createEmpty(), createEmpty()),
+			() => {},
+		);
+		expect(result).toEqual({});
 	});
 });

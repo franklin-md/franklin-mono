@@ -32,5 +32,3 @@ export type {
 	TurnEnd,
 	StreamEvent,
 } from './stream.js';
-
-export type { SessionId } from './session.js';
