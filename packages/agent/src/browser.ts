@@ -8,11 +8,7 @@
  */
 
 // Environment
-export type {
-	EnvironmentHandle,
-	AgentSpec,
-	ClientTransport,
-} from './environment.js';
+export type { AgentSpec, ClientTransport } from './environment.js';
 
 // Types
 export type { AgentCommands } from './types.js';
@@ -20,9 +16,6 @@ export type { AgentCommands } from './types.js';
 // Agent — typed handle unifying commands, extension stores, and lifecycle
 export { createAgent, AgentManager } from './agent/index.js';
 export type { Agent, ManagedAgent } from './agent/index.js';
-
-// Framework base class
-export { Framework } from './framework.js';
 
 // Re-export from @franklin/extensions for convenience
 export {

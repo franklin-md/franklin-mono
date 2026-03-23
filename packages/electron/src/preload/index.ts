@@ -2,8 +2,6 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import {
 	IPC_STREAM,
-	ENV_PROVISION,
-	ENV_DISPOSE,
 	AGENT_SPAWN,
 	AGENT_KILL,
 	MCP_START,
@@ -30,24 +28,12 @@ const ipcStream = {
 };
 
 // ---------------------------------------------------------------------------
-// Framework lifecycle (environment provisioning/disposal)
-// ---------------------------------------------------------------------------
-
-const framework = {
-	provision: (opts?: unknown): Promise<string> =>
-		ipcRenderer.invoke(ENV_PROVISION, opts) as Promise<string>,
-
-	dispose: (envId: string): Promise<void> =>
-		ipcRenderer.invoke(ENV_DISPOSE, envId) as Promise<void>,
-};
-
-// ---------------------------------------------------------------------------
 // Agent lifecycle (request/response over invoke)
 // ---------------------------------------------------------------------------
 
 const agent = {
-	spawn: (envId: string, name: string): Promise<string> =>
-		ipcRenderer.invoke(AGENT_SPAWN, envId, name) as Promise<string>,
+	spawn: (): Promise<string> =>
+		ipcRenderer.invoke(AGENT_SPAWN) as Promise<string>,
 
 	kill: (agentId: string): Promise<void> =>
 		ipcRenderer.invoke(AGENT_KILL, agentId) as Promise<void>,
@@ -71,7 +57,6 @@ const mcp = {
 
 contextBridge.exposeInMainWorld('__franklinBridge', {
 	ipcStream,
-	framework,
 	agent,
 	mcp,
 });

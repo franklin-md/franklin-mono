@@ -1,48 +1,35 @@
-import { Framework } from '@franklin/agent/browser';
+import type { ClientTransport } from '@franklin/agent/browser';
 
-import { ElectronEnvironmentHandle } from './environment.js';
-
-// ---------------------------------------------------------------------------
-// ProvisionOptions — matches the shape from @franklin/node
-// ---------------------------------------------------------------------------
-
-export interface ProvisionOptions {
-	cwd?: string;
-	env?: Record<string, string | undefined>;
-}
+import { createIpcAgentTransport } from './ipc/agent-transport.js';
 
 // ---------------------------------------------------------------------------
 // ElectronFramework
 // ---------------------------------------------------------------------------
 
 /**
- * Renderer-side framework that proxies environment provisioning and agent
- * spawning over Electron IPC to the main process.
+ * Renderer-side framework that proxies agent spawning over Electron IPC
+ * to the main process.
  *
- * Extends the base Framework class. Environment lifecycle is provisioned via
- * the main process. MCP tool relay is no longer needed — extension tools
- * are handled in-channel.
+ * Each `spawn()` call asks the main process to create an in-process agent
+ * and returns a renderer-side IPC transport connected to it.
  */
-export class ElectronFramework extends Framework {
-	private readonly environments = new Set<string>();
+export class ElectronFramework {
+	private readonly agents = new Set<string>();
 
 	/**
-	 * Provision a new environment in the main process.
-	 * Returns a renderer-side handle for spawning agents.
+	 * Spawn an agent in the main process.
+	 * Returns a renderer-side transport for communicating with it.
 	 */
-	async provision(opts?: ProvisionOptions): Promise<ElectronEnvironmentHandle> {
-		const envId = await window.__franklinBridge.framework.provision(opts);
-		this.environments.add(envId);
-		return new ElectronEnvironmentHandle(envId);
+	async spawn(): Promise<ClientTransport> {
+		const agentId = await window.__franklinBridge.agent.spawn();
+		this.agents.add(agentId);
+		return createIpcAgentTransport(agentId);
 	}
 
-	/** Dispose all provisioned environments. */
 	async dispose(): Promise<void> {
 		await Promise.allSettled(
-			[...this.environments].map((id) =>
-				window.__franklinBridge.framework.dispose(id),
-			),
+			[...this.agents].map((id) => window.__franklinBridge.agent.kill(id)),
 		);
-		this.environments.clear();
+		this.agents.clear();
 	}
 }

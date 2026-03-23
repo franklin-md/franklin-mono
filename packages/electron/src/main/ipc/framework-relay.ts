@@ -1,27 +1,15 @@
 import type { NodeFramework } from '@franklin/node';
-import type { ProvisionOptions } from '@franklin/node';
-import { ipcMain } from 'electron';
-
-import { ENV_PROVISION, ENV_DISPOSE } from '../../shared/channels.js';
 
 /**
- * Bridges renderer <-> main for environment lifecycle over Electron IPC.
+ * Bridges renderer <-> main for framework operations over Electron IPC.
  *
- * Delegates provisioning and disposal to NodeFramework.
+ * With the in-process spawn model, environment provisioning is no longer
+ * needed — agents are spawned directly via NodeFramework.spawn().
  */
 export class FrameworkRelay {
-	constructor(private readonly framework: NodeFramework) {
-		ipcMain.handle(ENV_PROVISION, (_event, opts?: ProvisionOptions) => {
-			const env = this.framework.provision(opts);
-			return env.id;
-		});
-		ipcMain.handle(ENV_DISPOSE, (_event, envId: string) =>
-			this.framework.disposeEnv(envId),
-		);
-	}
+	constructor(readonly framework: NodeFramework) {}
 
 	async dispose(): Promise<void> {
-		ipcMain.removeHandler(ENV_PROVISION);
-		ipcMain.removeHandler(ENV_DISPOSE);
+		// Nothing to clean up — agent lifecycle is managed by AgentRelay
 	}
 }

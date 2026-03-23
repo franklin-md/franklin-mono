@@ -16,12 +16,8 @@ interface FranklinBridge {
 		on: (callback: (packet: unknown) => void) => () => void;
 		invoke: (packet: unknown) => void;
 	};
-	framework: {
-		provision: (opts?: unknown) => Promise<string>;
-		dispose: (envId: string) => Promise<void>;
-	};
 	agent: {
-		spawn: (envId: string, name: string) => Promise<string>;
+		spawn: () => Promise<string>;
 		kill: (agentId: string) => Promise<void>;
 	};
 	mcp: {
