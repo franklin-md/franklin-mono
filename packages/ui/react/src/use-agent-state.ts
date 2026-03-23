@@ -1,6 +1,11 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
-import type { Agent, ReadonlyStore, Store, StoreKey } from '@franklin/agent/browser';
+import type {
+	Agent,
+	ReadonlyStore,
+	Store,
+	StoreKey,
+} from '@franklin/agent/browser';
 
 // ---------------------------------------------------------------------------
 // useAgentState
@@ -52,13 +57,10 @@ export function useAgentState(
 		[store],
 	);
 
-	const getSnapshot = useCallback(
-		() => {
-			const value = store.get();
-			return selector ? selector(value) : value;
-		},
-		[store, selector],
-	);
+	const getSnapshot = useCallback(() => {
+		const value = store.get();
+		return selector ? selector(value) : value;
+	}, [store, selector]);
 
 	const value = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
