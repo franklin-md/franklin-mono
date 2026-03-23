@@ -31,7 +31,7 @@ export async function createAgent(
 	existingStores?: StoreResult,
 ): Promise<Agent> {
 	const result = await compileAll(
-		() => combine(createCoreCompiler(), createStoreCompiler(existingStores)),
+		combine(createCoreCompiler(), createStoreCompiler(existingStores)),
 		extensions,
 	);
 

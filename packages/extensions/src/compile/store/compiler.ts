@@ -49,11 +49,5 @@ export function createStoreCompiler(
 		async build() {
 			return createStoreResult(entries);
 		},
-		merge(a: StoreResult, b: StoreResult): StoreResult {
-			const merged = new Map<string, StoreEntry>();
-			for (const [k, v] of a.stores) merged.set(k, v);
-			for (const [k, v] of b.stores) merged.set(k, v);
-			return createStoreResult(merged);
-		},
 	};
 }

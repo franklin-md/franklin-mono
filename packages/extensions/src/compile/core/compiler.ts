@@ -7,7 +7,6 @@ import type {
 } from '../../api/core/events.js';
 import type { ExtensionToolDefinition } from '../../api/core/tool.js';
 import type { FullMiddleware } from '../../api/core/middleware/types.js';
-import { compose } from '../../api/core/middleware/compose.js';
 import { passThrough } from '../../api/core/middleware/pass-through.js';
 import type { Compiler } from '../types.js';
 import {
@@ -121,12 +120,6 @@ export function createCoreCompiler(): Compiler<CoreAPI, FullMiddleware> {
 			};
 
 			return { client, server };
-		},
-		merge(a, b) {
-			return {
-				client: compose(a.client, b.client),
-				server: compose(a.server, b.server),
-			};
 		},
 	};
 }

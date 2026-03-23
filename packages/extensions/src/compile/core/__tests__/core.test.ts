@@ -379,9 +379,6 @@ describe('combine', () => {
 				async build() {
 					return { greeted: names };
 				},
-				merge(a, b) {
-					return { greeted: [...a.greeted, ...b.greeted] };
-				},
 			};
 		};
 
@@ -398,9 +395,6 @@ describe('combine', () => {
 				},
 				async build() {
 					return { logged: msgs };
-				},
-				merge(a, b) {
-					return { logged: [...a.logged, ...b.logged] };
 				},
 			};
 		};
@@ -426,9 +420,6 @@ describe('combine', () => {
 				async build() {
 					return { aCount: count };
 				},
-				merge(a, b) {
-					return { aCount: a.aCount + b.aCount };
-				},
 			};
 		};
 
@@ -443,9 +434,6 @@ describe('combine', () => {
 				async build() {
 					return { bCount: count };
 				},
-				merge(a, b) {
-					return { bCount: a.bCount + b.bCount };
-				},
 			};
 		};
 
@@ -459,9 +447,6 @@ describe('combine', () => {
 				},
 				async build() {
 					return { cCount: count };
-				},
-				merge(a, b) {
-					return { cCount: a.cCount + b.cCount };
 				},
 			};
 		};
@@ -502,13 +487,6 @@ describe('combine', () => {
 				async build() {
 					return { [name]: count };
 				},
-				merge(a, b) {
-					const result: Record<string, number> = { ...a };
-					for (const [k, v] of Object.entries(b)) {
-						result[k] = (result[k] ?? 0) + v;
-					}
-					return result;
-				},
 			};
 		};
 
@@ -541,9 +519,6 @@ describe('combine', () => {
 				},
 				async build() {
 					return { tags };
-				},
-				merge(a, b) {
-					return { tags: [...a.tags, ...b.tags] };
 				},
 			};
 		};
@@ -578,9 +553,6 @@ describe('combine', () => {
 			async build() {
 				return {};
 			},
-			merge(a, _b) {
-				return a;
-			},
 		});
 
 		const result = await compile(
@@ -590,154 +562,15 @@ describe('combine', () => {
 		expect(result).toEqual({});
 	});
 
-	it('combine derives merge from constituent compilers', async () => {
-		const createA = (): Compiler<
-			{ greet(n: string): void },
-			{ greeted: string[] }
-		> => {
-			const names: string[] = [];
-			return {
-				api: { greet: (n) => names.push(n) },
-				async build() {
-					return { greeted: [...names] };
-				},
-				merge(a, b) {
-					return { greeted: [...a.greeted, ...b.greeted] };
-				},
-			};
-		};
-
-		const createB = (): Compiler<
-			{ log(m: string): void },
-			{ logged: string[] }
-		> => {
-			const msgs: string[] = [];
-			return {
-				api: { log: (m) => msgs.push(m) },
-				async build() {
-					return { logged: [...msgs] };
-				},
-				merge(a, b) {
-					return { logged: [...a.logged, ...b.logged] };
-				},
-			};
-		};
-
-		const combined = combine(createA(), createB());
-		const r1 = { greeted: ['alice'], logged: ['hi'] };
-		const r2 = { greeted: ['bob'], logged: ['bye'] };
-		const merged = combined.merge(r1, r2);
-
-		expect(merged.greeted).toEqual(['alice', 'bob']);
-		expect(merged.logged).toEqual(['hi', 'bye']);
-	});
 });
 
 // ---------------------------------------------------------------------------
-// Core compiler merge
-// ---------------------------------------------------------------------------
-
-describe('createCoreCompiler – merge', () => {
-	it('merge composes client middleware from two results', async () => {
-		const calls: string[] = [];
-
-		const mw1 = await compileExt((api) => {
-			api.on('prompt', (params) => {
-				calls.push('ext1');
-				return {
-					message: {
-						...params.message,
-						content: [
-							{
-								type: 'text' as const,
-								text: `ext1(${(params.message.content[0] as { text: string }).text})`,
-							},
-						],
-					},
-				};
-			});
-		});
-
-		const mw2 = await compileExt((api) => {
-			api.on('prompt', (params) => {
-				calls.push('ext2');
-				return {
-					message: {
-						...params.message,
-						content: [
-							{
-								type: 'text' as const,
-								text: `ext2(${(params.message.content[0] as { text: string }).text})`,
-							},
-						],
-					},
-				};
-			});
-		});
-
-		const compiler = createCoreCompiler();
-		const merged = compiler.merge(mw1, mw2);
-
-		expect(merged.client).toBeDefined();
-
-		const received: any[] = [];
-		const target = stubClient({
-			prompt: async function* (params) {
-				received.push(params);
-			},
-		});
-
-		const wrapped = apply(merged.client, target);
-		await collect(
-			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'x' }],
-				},
-			}),
-		);
-
-		// ext1 runs first, ext2 wraps its output
-		expect(calls).toEqual(['ext1', 'ext2']);
-		const params = received[0] as { message: { content: { text: string }[] } };
-		expect(params.message.content[0]?.text).toBe('ext2(ext1(x))');
-	});
-
-	it('merge handles one side having no client', async () => {
-		const mw1 = await compileExt((api) => {
-			api.on('prompt', () => {
-				/* side effect */
-			});
-		});
-		const mw2 = await compileExt(() => {
-			/* empty */
-		});
-
-		const compiler = createCoreCompiler();
-		const merged = compiler.merge(mw1, mw2);
-
-		expect(merged.client).toBeDefined();
-	});
-
-	it('merge of two empty results produces passthrough middleware', async () => {
-		const mw1 = await compileExt(() => {});
-		const mw2 = await compileExt(() => {});
-
-		const compiler = createCoreCompiler();
-		const merged = compiler.merge(mw1, mw2);
-
-		expect(merged.client).toBeDefined();
-		expect(merged.server).toBeDefined();
-	});
-});
-
-// ---------------------------------------------------------------------------
-// compileAll (fold)
+// compileAll
 // ---------------------------------------------------------------------------
 
 describe('compileAll', () => {
 	it('compiles 0 extensions to passthrough result', async () => {
-		const result = await compileAll(createCoreCompiler, []);
+		const result = await compileAll(createCoreCompiler(), []);
 
 		expect(result.client).toBeDefined();
 		expect(result.server).toBeDefined();
@@ -750,7 +583,7 @@ describe('compileAll', () => {
 			});
 		};
 
-		const result = await compileAll(createCoreCompiler, [ext]);
+		const result = await compileAll(createCoreCompiler(), [ext]);
 
 		expect(result.client).toBeDefined();
 		expect(result.client.prompt).toBeDefined();
@@ -793,7 +626,7 @@ describe('compileAll', () => {
 			});
 		};
 
-		const result = await compileAll(createCoreCompiler, [ext1, ext2]);
+		const result = await compileAll(createCoreCompiler(), [ext1, ext2]);
 
 		const received: any[] = [];
 		const target = stubClient({
@@ -836,7 +669,7 @@ describe('compileAll', () => {
 			});
 		};
 
-		const result = await compileAll(createCoreCompiler, [ext1, ext2]);
+		const result = await compileAll(createCoreCompiler(), [ext1, ext2]);
 
 		expect(result.server).toBeDefined();
 
