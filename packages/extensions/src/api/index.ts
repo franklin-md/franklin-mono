@@ -1,18 +1,14 @@
 export type {
 	CoreAPI,
 	CoreEvent,
+	CoreEventHandler,
 	CoreEventMap,
 	ExtensionToolDefinition,
 	MethodMiddleware,
 	Middleware,
-	ServerMiddleware,
 	ClientMiddleware,
+	ServerMiddleware,
 	FullMiddleware,
-	PromptContext,
-	PromptHandler,
-	PromptTransform,
-	SessionUpdateContext,
-	SessionUpdateHandler,
 } from './core/index.js';
 export { compose, composeMethod, passThrough } from './core/index.js';
 export { apply } from './core/index.js';

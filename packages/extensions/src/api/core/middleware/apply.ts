@@ -17,7 +17,9 @@ export function apply<T extends object>(
 
 		if (typeof targetFn === 'function') {
 			result[key] = (params: unknown) =>
-				mw[key]!(params, (p: unknown) => (targetFn as (p: unknown) => unknown)(p));
+				mw[key]!(params, (p: unknown) =>
+					(targetFn as (p: unknown) => unknown)(p),
+				);
 		} else {
 			result[key] = targetFn;
 		}

@@ -1,32 +1,17 @@
-import type {
-	ContentBlock,
-	SessionNotification,
-} from '@agentclientprotocol/sdk';
+import type { MiniACPClient } from '@franklin/mini-acp';
 import type { MaybePromise } from '../../types/shared.js';
 
-export interface PromptContext {
-	prompt: ContentBlock[];
-}
+// ---------------------------------------------------------------------------
+// Core events — derived 1:1 from MiniACPClient methods
+// ---------------------------------------------------------------------------
 
-export interface PromptTransform {
-	prompt: ContentBlock[];
-}
+export type CoreEvent = keyof MiniACPClient;
 
-export type PromptHandler = (
-	ctx: PromptContext,
-) => MaybePromise<PromptTransform | undefined>;
+export type CoreEventHandler<K extends CoreEvent> = (
+	params: Parameters<MiniACPClient[K]>[0],
+	// eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+) => MaybePromise<Parameters<MiniACPClient[K]>[0] | void>;
 
-export interface SessionUpdateContext {
-	notification: SessionNotification;
-}
-
-export type SessionUpdateHandler = (
-	ctx: SessionUpdateContext,
-) => MaybePromise<void>;
-
-export interface CoreEventMap {
-	prompt: PromptHandler;
-	sessionUpdate: SessionUpdateHandler;
-}
-
-export type CoreEvent = keyof CoreEventMap;
+export type CoreEventMap = {
+	[K in CoreEvent]: CoreEventHandler<K>;
+};

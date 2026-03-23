@@ -22,10 +22,10 @@ export type Middleware<T> = {
 // MiniACP-specific aliases
 // ---------------------------------------------------------------------------
 
-export type ServerMiddleware = Middleware<MiniACPClient>;
-export type ClientMiddleware = Middleware<MiniACPAgent>;
+export type ClientMiddleware = Middleware<MiniACPClient>;
+export type ServerMiddleware = Middleware<MiniACPAgent>;
 
 export type FullMiddleware = {
-	server?: ServerMiddleware;
 	client?: ClientMiddleware;
+	server?: ServerMiddleware;
 };

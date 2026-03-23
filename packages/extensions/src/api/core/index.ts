@@ -11,21 +11,13 @@ export interface CoreAPI {
 	): void;
 }
 
-export type {
-	CoreEvent,
-	CoreEventMap,
-	PromptContext,
-	PromptHandler,
-	PromptTransform,
-	SessionUpdateContext,
-	SessionUpdateHandler,
-} from './events.js';
+export type { CoreEvent, CoreEventHandler, CoreEventMap } from './events.js';
 export type { ExtensionToolDefinition } from './tool.js';
 export type {
 	MethodMiddleware,
 	Middleware,
-	ServerMiddleware,
 	ClientMiddleware,
+	ServerMiddleware,
 	FullMiddleware,
 } from './middleware/index.js';
 export { compose, composeMethod, passThrough } from './middleware/index.js';
