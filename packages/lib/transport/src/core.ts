@@ -64,7 +64,6 @@ export {
 	notification,
 	event,
 	type Protocol,
-	type Reverse,
 	type ServerOf,
 	type ClientOf,
 	type ProtocolManifest,

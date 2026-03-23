@@ -13,7 +13,11 @@ export interface MiniACPClient extends TurnClient {
 }
 
 export type MiniACPAgent = TurnAgent;
-export type MiniACPProtocol = Protocol<MiniACPClient, MiniACPAgent>;
+
+export type ClientProtocol = Protocol<MiniACPClient, MiniACPAgent>;
+export type AgentProtocol = Protocol<MiniACPAgent, MiniACPClient>;
+
+export type MiniACPProtocol = ClientProtocol;
 
 export type MiniACPAgentSide = WriteType<MiniACPProtocol>;
 export type MiniACPClientSide = ReadType<MiniACPProtocol>;

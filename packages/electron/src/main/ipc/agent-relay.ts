@@ -1,6 +1,4 @@
 import { Multiplexer, connect } from '@franklin/transport';
-import type { Reverse } from '@franklin/transport';
-import type { MiniACPProtocol } from '@franklin/mini-acp';
 import type { NodeFramework } from '@franklin/node';
 import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
@@ -17,6 +15,7 @@ import type {
 	AgentMuxUp,
 	AgentServerMux,
 } from '../../shared/types.js';
+import type { MiniACPProtocol } from '@franklin/mini-acp';
 
 /**
  * Bridges renderer <-> agent subprocesses over Electron IPC.
@@ -26,7 +25,7 @@ import type {
  */
 export class AgentRelay {
 	// This is the Agent Side of the MiniACPProtocol
-	private agents = new Map<string, Reverse<MiniACPProtocol>>();
+	private agents = new Map<string, MiniACPProtocol>();
 	private agentMux: AgentServerMux;
 
 	constructor(

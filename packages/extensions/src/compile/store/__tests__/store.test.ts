@@ -246,68 +246,12 @@ describe('createStoreCompiler – combine with core', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Store compiler merge
-// ---------------------------------------------------------------------------
-
-describe('createStoreCompiler – merge', () => {
-	it('merge unions two store results', async () => {
-		const r1 = await compile(createStoreCompiler(), (api: StoreAPI) => {
-			api.registerStore('a', 1);
-		});
-
-		const r2 = await compile(createStoreCompiler(), (api: StoreAPI) => {
-			api.registerStore('b', 2);
-		});
-
-		const compiler = createStoreCompiler();
-		const merged = compiler.merge(r1, r2);
-
-		expect(merged.stores.size).toBe(2);
-		expect(merged.stores.get('a')!.store.get()).toBe(1);
-		expect(merged.stores.get('b')!.store.get()).toBe(2);
-	});
-
-	it('merge of two empty results is empty', async () => {
-		const r1 = await compile(createStoreCompiler(), () => {});
-		const r2 = await compile(createStoreCompiler(), () => {});
-
-		const compiler = createStoreCompiler();
-		const merged = compiler.merge(r1, r2);
-
-		expect(merged.stores.size).toBe(0);
-	});
-
-	it('merged result supports copy()', async () => {
-		const r1 = await compile(createStoreCompiler(), (api: StoreAPI) => {
-			api.registerStore('priv', 'secret', 'private');
-		});
-
-		const r2 = await compile(createStoreCompiler(), (api: StoreAPI) => {
-			api.registerStore('glob', 'shared', 'global');
-		});
-
-		const compiler = createStoreCompiler();
-		const merged = compiler.merge(r1, r2);
-		const child = merged.copy('private');
-
-		// private store → snapshotted (different ref)
-		expect(child.stores.get('priv')!.store).not.toBe(
-			merged.stores.get('priv')!.store,
-		);
-		// global store → same ref
-		expect(child.stores.get('glob')!.store).toBe(
-			merged.stores.get('glob')!.store,
-		);
-	});
-});
-
-// ---------------------------------------------------------------------------
 // compileAll with store compiler
 // ---------------------------------------------------------------------------
 
 describe('compileAll – store compiler', () => {
 	it('compiles 0 extensions to empty stores', async () => {
-		const result = await compileAll(createStoreCompiler, []);
+		const result = await compileAll(createStoreCompiler(), []);
 		expect(result.stores.size).toBe(0);
 	});
 
@@ -322,7 +266,7 @@ describe('compileAll – store compiler', () => {
 			api.registerStore('config', {});
 		};
 
-		const result = await compileAll(createStoreCompiler, [ext1, ext2, ext3]);
+		const result = await compileAll(createStoreCompiler(), [ext1, ext2, ext3]);
 
 		expect(result.stores.size).toBe(3);
 		expect(result.stores.has('todos')).toBe(true);
@@ -331,8 +275,6 @@ describe('compileAll – store compiler', () => {
 	});
 
 	it('compileAll with combined compiler merges both middleware and stores', async () => {
-		const create = () => combine(createCoreCompiler(), createStoreCompiler());
-
 		const ext1 = (api: CoreAPI & StoreAPI) => {
 			api.registerStore('todos', [] as string[]);
 			api.on('prompt', () => {
@@ -344,7 +286,10 @@ describe('compileAll – store compiler', () => {
 			api.registerStore('conv', [] as string[]);
 		};
 
-		const result = await compileAll(create, [ext1, ext2]);
+		const result = await compileAll(
+			combine(createCoreCompiler(), createStoreCompiler()),
+			[ext1, ext2],
+		);
 
 		expect(result.stores.size).toBe(2);
 		expect(result.client).toBeDefined();

@@ -19,5 +19,7 @@ export type { StoreAPI } from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';
 export type { Sharing } from './store/index.js';
 export { shouldSnapshot } from './store/index.js';
+export type { StoreKey, StoreValueType } from './store/index.js';
+export { storeKey } from './store/index.js';
 export type { StoreResult, StoreEntry } from './store/index.js';
 export { createStoreResult, createStore } from './store/index.js';

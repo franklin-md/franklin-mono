@@ -3,8 +3,8 @@ import type { Extension } from '../../types/extension.js';
 import type { CoreAPI } from '../../api/core/api.js';
 import type { StoreAPI } from '../../api/store/api.js';
 import { formatTodos } from './format.js';
-import type { Todo } from './types.js';
 import { createTodoControl } from './control.js';
+import { todoKey } from './key.js';
 
 /**
  * Extension that gives agents persistent task memory via tools
@@ -13,7 +13,7 @@ import { createTodoControl } from './control.js';
  */
 export function todoExtension(): Extension<CoreAPI & StoreAPI> {
 	return (api) => {
-		const store = api.registerStore<Todo[]>('todo', [], 'private');
+		const store = api.registerStore(todoKey, [], 'private');
 		const control = createTodoControl(store);
 
 		api.registerTool({

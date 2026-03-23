@@ -1,4 +1,4 @@
-import type { Chunk, StreamEvent, TurnEnd, Update } from '../types/stream.js';
+import type { Chunk, TurnEnd, Update } from '../types/stream.js';
 import type { ToolExecuteHandler } from '../types/tool.js';
 import type { UserMessage } from '../types/message.js';
 

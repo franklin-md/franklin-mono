@@ -38,6 +38,9 @@ export {
 	createStoreCompiler,
 	apply,
 	createStore,
+	storeKey,
+	conversationKey,
+	todoKey,
 } from '@franklin/extensions';
 export type {
 	Extension,
@@ -47,6 +50,8 @@ export type {
 	Store,
 	ReadonlyStore,
 	Sharing,
+	StoreKey,
+	StoreValueType,
 	FullMiddleware,
 	ClientMiddleware,
 	ServerMiddleware,

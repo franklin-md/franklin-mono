@@ -1,4 +1,4 @@
-import type { Chunk, UserContent } from '@franklin/mini-acp';
+import type { Chunk } from '@franklin/mini-acp';
 import type { Extension } from '../../types/extension.js';
 import type { CoreAPI } from '../../api/core/api.js';
 import type { StoreAPI } from '../../api/store/api.js';
@@ -8,6 +8,7 @@ import type {
 	AgentThoughtEntry,
 	ConversationTurn,
 } from './types.js';
+import { conversationKey } from './key.js';
 
 /**
  * Extension that maintains a flat, coalesced conversation transcript.
@@ -20,11 +21,7 @@ import type {
  */
 export function conversationExtension(): Extension<CoreAPI & StoreAPI> {
 	return (api) => {
-		const store = api.registerStore<ConversationTurn[]>(
-			'conversation',
-			[],
-			'private',
-		);
+		const store = api.registerStore(conversationKey, [], 'private');
 
 		api.on('prompt', (params) => {
 			store.set((draft) => {
@@ -34,7 +31,7 @@ export function conversationExtension(): Extension<CoreAPI & StoreAPI> {
 					entries: [
 						{
 							type: 'user',
-							content: [...(params.message.content as UserContent[])],
+							content: [...params.message.content],
 						},
 					],
 				});

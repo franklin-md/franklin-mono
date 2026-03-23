@@ -32,7 +32,6 @@ export type {
 	Requests,
 	ResponseFor,
 	Responses,
-	Reverse,
 	ServerOf,
 	UpMessages,
 } from './messages.js';

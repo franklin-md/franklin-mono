@@ -1,10 +1,6 @@
 import { useMemo } from 'react';
 
-import type {
-	ConversationExtension,
-	TodoExtension,
-} from '@franklin/agent/browser';
-import { createTodoControl } from '@franklin/agent/browser';
+import { createTodoControl, todoKey } from '@franklin/agent/browser';
 import { useAgent, useAgentState } from '@franklin/react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,14 +9,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { TodoAddForm } from './todo-add-form.js';
 import { TodoItem } from './todo-item.js';
 
-type DemoExtensions = [ConversationExtension, TodoExtension];
-
 export function TodoPanel() {
-	const agent = useAgent<DemoExtensions>();
-	const todos = useAgentState(agent, 'todo');
+	const agent = useAgent();
+	const store = useAgentState(agent, todoKey);
+	const todos = store.get();
 
-	// Raw store for mutations — useAgentState handles reactive reads above
-	const control = useMemo(() => createTodoControl(agent.todo), [agent.todo]);
+	const control = useMemo(
+		() => createTodoControl(store),
+		[store],
+	);
 
 	return (
 		<Card className="flex w-80 flex-col overflow-hidden rounded-none border-y-0 border-r-0 shadow-none">

@@ -87,10 +87,5 @@ export type ServerOf<TProtocol extends Protocol<any, any>> =
 export type ClientOf<TProtocol extends Protocol<any, any>> =
 	TProtocol extends Protocol<infer _TServer, infer TClient> ? TClient : never;
 
-export type Reverse<TProtocol extends Protocol<any, any>> =
-	TProtocol extends Protocol<infer TServer, infer TClient>
-		? Protocol<TClient, TServer>
-		: never;
-
 export type ProtocolMethodNames<TMethods extends RpcMethods<TMethods>> =
 	MethodName<TMethods>;
