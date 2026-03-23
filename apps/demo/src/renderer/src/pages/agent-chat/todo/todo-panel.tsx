@@ -14,10 +14,7 @@ export function TodoPanel() {
 	const store = useAgentState(agent, todoKey);
 	const todos = store.get();
 
-	const control = useMemo(
-		() => createTodoControl(store),
-		[store],
-	);
+	const control = useMemo(() => createTodoControl(store), [store]);
 
 	return (
 		<Card className="flex w-80 flex-col overflow-hidden rounded-none border-y-0 border-r-0 shadow-none">

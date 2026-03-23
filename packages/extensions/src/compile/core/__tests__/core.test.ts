@@ -20,7 +20,6 @@ async function compileExt(ext: Extension): Promise<FullMiddleware> {
 
 /** Create a minimal MiniACPClient stub for testing with apply(). */
 type StubOverrides = {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	[K in keyof MiniACPClient]?: (...args: Parameters<MiniACPClient[K]>) => any;
 };
 
@@ -561,7 +560,6 @@ describe('combine', () => {
 		);
 		expect(result).toEqual({});
 	});
-
 });
 
 // ---------------------------------------------------------------------------
