@@ -175,7 +175,7 @@ async function collect(
 // ---------------------------------------------------------------------------
 
 describe('createPiAdapter', () => {
-	it('simple text response — emits turnStart, chunks, update, turnEnd', async () => {
+	it('simple text response — emits chunks, update, turnEnd', async () => {
 		const client: TurnAgent = {
 			toolExecute: vi.fn(),
 		};
@@ -193,8 +193,7 @@ describe('createPiAdapter', () => {
 			}),
 		);
 
-		// Should have turnStart, at least one chunk, an update, and turnEnd
-		expect(events[0]).toEqual({ type: 'turnStart' });
+		// Should have chunks, an update, and turnEnd as the last event
 		expect(events[events.length - 1]).toEqual({ type: 'turnEnd' });
 
 		// Find text chunks
@@ -271,8 +270,7 @@ describe('createPiAdapter', () => {
 			},
 		});
 
-		// Should have turnStart and turnEnd
-		expect(events[0]).toEqual({ type: 'turnStart' });
+		// Should have turnEnd as the last event
 		expect(events[events.length - 1]).toEqual({ type: 'turnEnd' });
 
 		// Should contain a toolCall chunk

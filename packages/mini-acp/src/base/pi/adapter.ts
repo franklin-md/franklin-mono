@@ -71,13 +71,11 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 	return {
 		async *prompt(
 			params: PromptParams,
-		): AsyncGenerator<Chunk | Update, TurnEnd> {
+		): AsyncGenerator<Chunk | Update | TurnEnd> {
 			const messageId = crypto.randomUUID();
 
 			const { readable, writable } = createMemoryStream<StreamEvent>();
 			const writer = writable.getWriter();
-
-			let turnEnd: TurnEnd = { type: 'turnEnd' };
 
 			// Subscribe to agent events and translate to StreamEvents
 			const unsub = piAgent.subscribe((event: AgentEvent) => {
@@ -107,15 +105,16 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 				});
 
 			for await (const event of readable) {
-				if (event.type === 'chunk' || event.type === 'update') {
+				if (
+					event.type === 'chunk' ||
+					event.type === 'update' ||
+					event.type === 'turnEnd'
+				) {
 					yield event;
-				} else if (event.type === 'turnEnd') {
-					turnEnd = event;
 				}
 			}
 
 			unsub();
-			return turnEnd;
 		},
 
 		async cancel(_params: CancelParams): Promise<TurnEnd> {

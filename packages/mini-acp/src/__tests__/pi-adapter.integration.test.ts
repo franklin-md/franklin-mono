@@ -76,8 +76,7 @@ describeIfKey(
 				}),
 			);
 
-			// Basic structure: turnStart ... chunks ... update ... turnEnd
-			expect(events[0]).toEqual({ type: 'turnStart' });
+			// Basic structure: chunks ... update ... turnEnd
 
 			const turnEnd = events[events.length - 1]!;
 			expect(turnEnd.type).toBe('turnEnd');
@@ -150,7 +149,6 @@ describeIfKey(
 				}),
 			);
 
-			expect(events[0]).toEqual({ type: 'turnStart' });
 			const turnEnd = events[events.length - 1]!;
 			expect(turnEnd.type).toBe('turnEnd');
 			expect((turnEnd as { error?: unknown }).error).toBeUndefined();

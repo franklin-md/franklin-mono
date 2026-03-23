@@ -2,14 +2,15 @@ import type { TurnClient, TurnAgent } from '../base/types.js';
 import type { Ctx } from '../types/context.js';
 import type { Protocol, ReadType, WriteType } from '@franklin/transport';
 
-type AgentCtx = { ctx: Partial<Ctx> };
-type InitializeParams = Record<string, never>;
+export type AgentCtx = { ctx: Partial<Ctx> };
+export type InitializeParams = Record<string, never>;
+export type InitializeResult = Record<string, never>;
 
 // Agent side (client calls agent)
 export interface MiniACPClient extends TurnClient {
 	// Session management
-	initialize(params: InitializeParams): Promise<void>;
-	setContext(params: AgentCtx): Promise<void>;
+	initialize(params: InitializeParams): Promise<InitializeResult>;
+	setContext(params: AgentCtx): Promise<InitializeResult>;
 }
 
 export type MiniACPAgent = TurnAgent;
