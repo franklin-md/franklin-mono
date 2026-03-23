@@ -1,7 +1,14 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { z } from 'zod';
-import type { MiniACPClient } from '@franklin/mini-acp';
+import { createDuplexPair } from '@franklin/transport';
+import {
+	createAgentConnection,
+	type MiniACPClient,
+	type ClientProtocol,
+	type AgentProtocol,
+	type AgentConnection,
+} from '@franklin/mini-acp';
 import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
 import { createAgent } from '../create.js';
 
@@ -9,24 +16,37 @@ import { createAgent } from '../create.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-type StubOverrides = {
-	[K in keyof MiniACPClient]?: (...args: Parameters<MiniACPClient[K]>) => any;
-};
+/**
+ * Sets up a duplex pair with a mock agent on one end.
+ * Returns the client-side transport (for createAgent) and the agent-side
+ * connection (for verifying tool execution via the protocol).
+ */
+function createTestTransport(overrides: Partial<MiniACPClient> = {}): {
+	clientTransport: ClientProtocol;
+	agentConnection: AgentConnection;
+} {
+	const { a, b } = createDuplexPair();
+	const clientTransport = a as unknown as ClientProtocol;
+	const agentTransport = b as unknown as AgentProtocol;
 
-function createStubClient(overrides: StubOverrides = {}): MiniACPClient {
-	return {
-		initialize: vi.fn(async () => {}),
-		setContext: vi.fn(async () => {}),
-		// eslint-disable-next-line require-yield
-		prompt: vi.fn(async function* () {
-			return { type: 'turnEnd' as const, messageId: '1' };
-		}),
-		cancel: vi.fn(async () => ({
-			type: 'turnEnd' as const,
-			messageId: '1',
-		})),
+	const handlers: MiniACPClient = {
+		async initialize() {
+			return {};
+		},
+		async setContext() {
+			return {};
+		},
+		async *prompt() {
+			yield { type: 'turnEnd' as const };
+		},
+		async cancel() {
+			return { type: 'turnEnd' as const };
+		},
 		...overrides,
-	} as unknown as MiniACPClient;
+	};
+
+	const agentConnection = createAgentConnection(agentTransport, handlers);
+	return { clientTransport, agentConnection };
 }
 
 // ---------------------------------------------------------------------------
@@ -49,8 +69,8 @@ describe('createAgent', () => {
 	}
 
 	it('exposes command methods at the top level', async () => {
-		const client = createStubClient();
-		const agent = track(await createAgent([], client));
+		const { clientTransport } = createTestTransport();
+		const agent = track(await createAgent([], clientTransport));
 
 		expect(typeof agent.prompt).toBe('function');
 		expect(typeof agent.cancel).toBe('function');
@@ -58,18 +78,18 @@ describe('createAgent', () => {
 		expect(typeof agent.setContext).toBe('function');
 	});
 
-	it('exposes toolExecute handler', async () => {
-		const client = createStubClient();
-		const agent = track(await createAgent([], client));
+	it('exposes dispose', async () => {
+		const { clientTransport } = createTestTransport();
+		const agent = track(await createAgent([], clientTransport));
 
-		expect(typeof agent.toolExecute).toBe('function');
+		expect(typeof agent.dispose).toBe('function');
 	});
 
 	it('toolExecute returns error for unknown tools', async () => {
-		const client = createStubClient();
-		const agent = track(await createAgent([], client));
+		const { clientTransport, agentConnection } = createTestTransport();
+		track(await createAgent([], clientTransport));
 
-		const result = await agent.toolExecute({
+		const result = await agentConnection.remote.toolExecute({
 			call: {
 				type: 'toolCall',
 				id: '1',
@@ -85,22 +105,13 @@ describe('createAgent', () => {
 		});
 	});
 
-	it('exposes lifecycle properties', async () => {
-		const client = createStubClient();
-		const agent = track(await createAgent([], client));
-
-		expect(typeof agent.dispose).toBe('function');
-		expect(agent.signal).toBeInstanceOf(AbortSignal);
-		expect(agent.closed).toBeInstanceOf(Promise);
-	});
-
 	it('exposes stores from compiled extensions', async () => {
 		const ext: Extension<CoreAPI & StoreAPI> = (api) => {
 			api.registerStore('items', [], 'private');
 		};
 
-		const client = createStubClient();
-		const agent = track(await createAgent([ext], client));
+		const { clientTransport } = createTestTransport();
+		const agent = track(await createAgent([ext], clientTransport));
 
 		expect(agent.stores.stores.get('items')).toBeDefined();
 		expect(agent.stores.stores.get('items')!.store.get()).toEqual([]);
@@ -116,8 +127,8 @@ describe('createAgent', () => {
 			});
 		};
 
-		const client = createStubClient();
-		const agent = track(await createAgent([ext], client));
+		const { clientTransport } = createTestTransport();
+		const agent = track(await createAgent([ext], clientTransport));
 
 		// prompt is an async generator — iterate it to drain
 		const stream = agent.prompt({
@@ -142,10 +153,10 @@ describe('createAgent', () => {
 			});
 		};
 
-		const client = createStubClient();
-		const agent = track(await createAgent([ext], client));
+		const { clientTransport, agentConnection } = createTestTransport();
+		track(await createAgent([ext], clientTransport));
 
-		const result = await agent.toolExecute({
+		const result = await agentConnection.remote.toolExecute({
 			call: { type: 'toolCall', id: '1', name: 'greet', arguments: {} },
 		});
 
@@ -157,14 +168,5 @@ describe('createAgent', () => {
 				content: [{ type: 'text', text: 'Hello!' }],
 			}),
 		});
-	});
-
-	it('dispose aborts the signal', async () => {
-		const client = createStubClient();
-		const agent = await createAgent([], client);
-
-		expect(agent.signal.aborted).toBe(false);
-		await agent.dispose();
-		expect(agent.signal.aborted).toBe(true);
 	});
 });

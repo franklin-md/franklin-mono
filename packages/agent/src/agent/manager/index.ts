@@ -1,4 +1,4 @@
-import type { MiniACPClient } from '@franklin/mini-acp';
+import type { ClientProtocol } from '@franklin/mini-acp';
 import type {
 	Extension,
 	CoreAPI,
@@ -25,14 +25,17 @@ export class AgentManager {
 		private readonly extFactory: () => Extension<CoreAPI & StoreAPI>[],
 	) {}
 
-	async spawn(client: MiniACPClient): Promise<ManagedAgent> {
-		return this.initAgent(client);
+	async spawn(transport: ClientProtocol): Promise<ManagedAgent> {
+		return this.initAgent(transport);
 	}
 
-	async child(agentId: string, client: MiniACPClient): Promise<ManagedAgent> {
+	async child(
+		agentId: string,
+		transport: ClientProtocol,
+	): Promise<ManagedAgent> {
 		const entry = this.getEntry(agentId);
 		const existingStores = entry.agent.stores.copy('private');
-		return this.initAgent(client, existingStores);
+		return this.initAgent(transport, existingStores);
 	}
 
 	get(agentId: string): Agent {
@@ -48,12 +51,12 @@ export class AgentManager {
 	}
 
 	private async initAgent(
-		client: MiniACPClient,
+		transport: ClientProtocol,
 		existingStores?: StoreResult,
 	): Promise<ManagedAgent> {
 		const agentId = crypto.randomUUID();
 		const extensions = this.extFactory();
-		const agent = await createAgent(extensions, client, existingStores);
+		const agent = await createAgent(extensions, transport, existingStores);
 		this.agents.set(agentId, { agentId, agent });
 		return { agentId, agent };
 	}

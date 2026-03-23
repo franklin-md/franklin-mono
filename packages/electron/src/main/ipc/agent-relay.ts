@@ -11,64 +11,54 @@ import {
 } from '../../shared/channels.js';
 import { createMainIpcMux } from './stream.js';
 import type {
-	AgentMuxDown,
-	AgentMuxUp,
-	AgentServerMux,
+	ServerMux,
+	ServerReceiveMux,
+	ServerSendMux,
 } from '../../shared/types.js';
-import type { MiniACPProtocol } from '@franklin/mini-acp';
+import type { AgentProtocol, ClientProtocol } from '@franklin/mini-acp';
 
 /**
- * Bridges renderer <-> agent subprocesses over Electron IPC.
+ * Bridges renderer <-> in-process agents over Electron IPC.
  *
- * This relay only manages the IPC <-> stdio bridging for agents.
- * Environment lifecycle is handled separately by FrameworkRelay.
+ * Each spawn() creates an in-process Pi agent via NodeFramework and
+ * bridges its protocol transport to the IPC channel.
  */
 export class AgentRelay {
-	// This is the Agent Side of the MiniACPProtocol
-	private agents = new Map<string, MiniACPProtocol>();
-	private agentMux: AgentServerMux;
+	private agents = new Map<string, ClientProtocol>();
+	private agentMux: ServerMux;
 
 	constructor(
 		webContents: WebContents,
 		private readonly framework: NodeFramework,
 	) {
-		// Level 0: demux the raw IPC channel
-		const ipcMux = createMainIpcMux<AgentMuxDown, AgentMuxUp>(webContents);
-
-		// Level 1: agent transport channel -> Level 2 multiplexer by agentId
+		const ipcMux = createMainIpcMux<ServerReceiveMux, ServerSendMux>(
+			webContents,
+		);
 		this.agentMux = new Multiplexer(ipcMux.channel(AGENT_STREAM));
 
-		// Agent lifecycle
-		ipcMain.handle(AGENT_SPAWN, (_event, envId: string, name: string) =>
-			this.spawn(envId, name),
-		);
+		ipcMain.handle(AGENT_SPAWN, () => this.spawn());
 		ipcMain.handle(AGENT_KILL, (_event, agentId: string) => this.kill(agentId));
 	}
 
 	/**
-	 * Spawns an agent subprocess in a provisioned environment
-	 * and bridges it to the IPC channel.
-	 * Returns the agentId — main owns ID generation.
+	 * Spawns an in-process agent and bridges it to the IPC channel.
+	 * Returns the agentId.
 	 */
-	async spawn(envId: string, name: string): Promise<string> {
-		const env = this.framework.get(envId);
-
+	async spawn(): Promise<string> {
 		const agentId = randomUUID();
-		const transport = await env.spawn(name);
+		const transport: ClientProtocol = this.framework.spawn();
 
-		// Level 2: per-agent slice of the shared IPC stream
-		const ipcStream = this.agentMux.channel(agentId);
+		// Per-agent slice of the shared IPC stream
+		const ipcStream: AgentProtocol = this.agentMux.channel(agentId);
 
 		// Bidirectionally connect IPC <-> agent transport
-		const agent = connect(ipcStream, transport);
+		// Both sides carry JsonRpcMessage on the wire — cast through Duplex<unknown>
+		const agent = connect(transport, ipcStream);
 
 		this.agents.set(agentId, agent);
 		return agentId;
 	}
 
-	/**
-	 * Kills an agent and cleans up its streams.
-	 */
 	async kill(agentId: string): Promise<void> {
 		const agent = this.agents.get(agentId);
 		if (!agent) return;
@@ -76,10 +66,6 @@ export class AgentRelay {
 		await agent.close();
 	}
 
-	/**
-	 * Disposes all agents. Call on window close.
-	 * (Environment disposal is handled by NodeFramework.dispose)
-	 */
 	async dispose(): Promise<void> {
 		const agentKills = [...this.agents.keys()].map((id) => this.kill(id));
 		await Promise.allSettled(agentKills);

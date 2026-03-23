@@ -1,6 +1,6 @@
 import type { TurnClient, TurnAgent } from '../base/types.js';
 import type { Ctx } from '../types/context.js';
-import type { Protocol, ReadType, WriteType } from '@franklin/transport';
+import type { Protocol } from '@franklin/transport';
 
 export type AgentCtx = { ctx: Partial<Ctx> };
 export type InitializeParams = Record<string, never>;
@@ -19,6 +19,3 @@ export type ClientProtocol = Protocol<MiniACPClient, MiniACPAgent>;
 export type AgentProtocol = Protocol<MiniACPAgent, MiniACPClient>;
 
 export type MiniACPProtocol = ClientProtocol;
-
-export type MiniACPAgentSide = WriteType<MiniACPProtocol>;
-export type MiniACPClientSide = ReadType<MiniACPProtocol>;

@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { MiniACPClient } from '@franklin/mini-acp';
+import { createDuplexPair } from '@franklin/transport';
+import {
+	createAgentConnection,
+	type MiniACPClient,
+	type ClientProtocol,
+	type AgentProtocol,
+} from '@franklin/mini-acp';
 import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
 import { AgentManager } from '../manager/index.js';
 
@@ -8,19 +14,32 @@ import { AgentManager } from '../manager/index.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createStubClient(): MiniACPClient {
-	return {
-		initialize: vi.fn(async () => {}),
-		setContext: vi.fn(async () => {}),
-		// eslint-disable-next-line require-yield
-		prompt: vi.fn(async function* () {
-			return { type: 'turnEnd' as const, messageId: '1' };
-		}),
-		cancel: vi.fn(async () => ({
-			type: 'turnEnd' as const,
-			messageId: '1',
-		})),
-	} as unknown as MiniACPClient;
+/**
+ * Creates a duplex pair with a mock agent on one end.
+ * Returns the client-side transport for AgentManager.
+ */
+function createTestTransport(): ClientProtocol {
+	const { a, b } = createDuplexPair();
+	const clientTransport = a as unknown as ClientProtocol;
+	const agentTransport = b as unknown as AgentProtocol;
+
+	const handlers: MiniACPClient = {
+		async initialize() {
+			return {};
+		},
+		async setContext() {
+			return {};
+		},
+		async *prompt() {
+			yield { type: 'turnEnd' as const };
+		},
+		async cancel() {
+			return { type: 'turnEnd' as const };
+		},
+	};
+
+	createAgentConnection(agentTransport, handlers);
+	return clientTransport;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,7 +86,7 @@ describe('AgentManager', () => {
 	it('spawn() creates an agent with extension stores', async () => {
 		const manager = new AgentManager(() => [itemsExtension()]);
 
-		const { agent } = await manager.spawn(createStubClient());
+		const { agent } = await manager.spawn(createTestTransport());
 		track(agent);
 
 		const items = agent.stores.stores.get('items');
@@ -78,7 +97,7 @@ describe('AgentManager', () => {
 	it('spawn() returns agentId alongside the agent', async () => {
 		const manager = new AgentManager(() => [itemsExtension()]);
 
-		const { agentId, agent } = await manager.spawn(createStubClient());
+		const { agentId, agent } = await manager.spawn(createTestTransport());
 		track(agent);
 
 		expect(typeof agentId).toBe('string');
@@ -89,8 +108,8 @@ describe('AgentManager', () => {
 		const factory = vi.fn(() => [counterExtension()]);
 		const manager = new AgentManager(factory);
 
-		const { agent: a1 } = await manager.spawn(createStubClient());
-		const { agent: a2 } = await manager.spawn(createStubClient());
+		const { agent: a1 } = await manager.spawn(createTestTransport());
+		const { agent: a2 } = await manager.spawn(createTestTransport());
 		track(a1);
 		track(a2);
 
@@ -106,7 +125,7 @@ describe('AgentManager', () => {
 	it('get() retrieves agent by ID', async () => {
 		const manager = new AgentManager(() => [itemsExtension()]);
 
-		const { agentId, agent } = await manager.spawn(createStubClient());
+		const { agentId, agent } = await manager.spawn(createTestTransport());
 		track(agent);
 
 		const retrieved = manager.get(agentId);
@@ -124,14 +143,18 @@ describe('AgentManager', () => {
 	it('child() creates agent with copied private stores', async () => {
 		const manager = new AgentManager(() => [counterExtension()]);
 
-		const { agentId: parentId, agent: parent } =
-			await manager.spawn(createStubClient());
+		const { agentId: parentId, agent: parent } = await manager.spawn(
+			createTestTransport(),
+		);
 		track(parent);
 
 		const parentStore = parent.stores.stores.get('counter')!.store;
 		parentStore.set(() => 10);
 
-		const { agent: child } = await manager.child(parentId, createStubClient());
+		const { agent: child } = await manager.child(
+			parentId,
+			createTestTransport(),
+		);
 		track(child);
 
 		const childStore = child.stores.stores.get('counter')!.store;
@@ -148,11 +171,15 @@ describe('AgentManager', () => {
 	it('child() shares global stores across parent/child', async () => {
 		const manager = new AgentManager(() => [sharedCounterExtension()]);
 
-		const { agentId: parentId, agent: parent } =
-			await manager.spawn(createStubClient());
+		const { agentId: parentId, agent: parent } = await manager.spawn(
+			createTestTransport(),
+		);
 		track(parent);
 
-		const { agent: child } = await manager.child(parentId, createStubClient());
+		const { agent: child } = await manager.child(
+			parentId,
+			createTestTransport(),
+		);
 		track(child);
 
 		const parentStore = parent.stores.stores.get('counter')!.store;
@@ -172,9 +199,9 @@ describe('AgentManager', () => {
 			counterExtension(),
 		]);
 
-		const { agent: a1 } = await manager.spawn(createStubClient());
-		const { agent: a2 } = await manager.spawn(createStubClient());
-		const { agent: a3 } = await manager.spawn(createStubClient());
+		const { agent: a1 } = await manager.spawn(createTestTransport());
+		const { agent: a2 } = await manager.spawn(createTestTransport());
+		const { agent: a3 } = await manager.spawn(createTestTransport());
 		track(a1);
 		track(a2);
 		track(a3);
