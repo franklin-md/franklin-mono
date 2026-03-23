@@ -1,33 +1,30 @@
 import { bindClient, bindServer, type Binding } from '@franklin/transport';
 
 import type {
-	MiniACPClient,
-	MiniACPAgent,
+	MuClient,
+	MuAgent,
 	ClientProtocol,
 	AgentProtocol,
 } from './types.js';
-import { miniACPManifest } from './manifest.js';
+import { muManifest } from './manifest.js';
 
 // ---------------------------------------------------------------------------
 // Client connection — you are the client, calling the agent
 // ---------------------------------------------------------------------------
 
-export type ClientConnection = Binding<MiniACPClient>;
+export type ClientConnection = Binding<MuClient>;
 
 /**
- * Create a client-side connection over a MiniACP protocol transport.
+ * Create a client-side connection over a Mu protocol transport.
  *
- * You provide `handlers` (MiniACPAgent) — what the agent can call back to you
- * (e.g. toolExecute). Returns a binding whose `.remote` is a MiniACPClient
- * proxy for calling initialize/setContext/prompt/cancel on the agent.
  */
 export function createClientConnection(
 	duplex: ClientProtocol,
-	handlers: MiniACPAgent,
+	handlers: MuAgent,
 ): ClientConnection {
 	return bindClient({
 		duplex,
-		manifest: miniACPManifest,
+		manifest: muManifest,
 		handlers,
 	});
 }
@@ -36,7 +33,7 @@ export function createClientConnection(
 // Agent connection — you are the agent, handling client requests
 // ---------------------------------------------------------------------------
 
-export type AgentConnection = Binding<MiniACPAgent>;
+export type AgentConnection = Binding<MuAgent>;
 
 /**
  * Create an agent-side connection over a MiniACP protocol transport.
@@ -47,11 +44,11 @@ export type AgentConnection = Binding<MiniACPAgent>;
  */
 export function createAgentConnection(
 	duplex: AgentProtocol,
-	handlers: MiniACPClient,
+	handlers: MuClient,
 ): AgentConnection {
 	return bindServer({
 		duplex,
-		manifest: miniACPManifest,
+		manifest: muManifest,
 		handlers,
 	});
 }

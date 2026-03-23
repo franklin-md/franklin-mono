@@ -79,6 +79,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 
 			// Subscribe to agent events and translate to StreamEvents
 			const unsub = piAgent.subscribe((event: AgentEvent) => {
+				// TODO: The assistant message may have a stopReason of 'error'
 				const streamEvent = fromAgentEvent(event, messageId);
 				if (streamEvent) {
 					void writer.write(streamEvent);
@@ -87,8 +88,9 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 
 			// Drive the agent loop — this runs until the agent is done
 			// (potentially multiple LLM turns with tool calls in between)
+			const piMessage = toPiUserMessage(params.message);
 			piAgent
-				.prompt(toPiUserMessage(params.message))
+				.prompt(piMessage)
 				.then(() => {
 					void writer.write({ type: 'turnEnd' });
 					void writer.close();

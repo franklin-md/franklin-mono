@@ -20,6 +20,7 @@ export function fromAgentEvent(
 	messageId: string,
 ): StreamEvent | null {
 	switch (event.type) {
+		// TODO: The agent_end may emit the stopReason = error because of no APIKey for example
 		// Lifecycle — we emit turnStart/turnEnd ourselves
 		case 'agent_start':
 		case 'agent_end':

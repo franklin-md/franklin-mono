@@ -20,7 +20,6 @@ export type {
 } from './method-types.js';
 export type {
 	ClientOf,
-	DownMessages,
 	StreamControlMessages,
 	StreamRequestFor,
 	StreamRequests,
@@ -33,7 +32,6 @@ export type {
 	ResponseFor,
 	Responses,
 	ServerOf,
-	UpMessages,
 } from './messages.js';
 export type {
 	MethodDescriptor,

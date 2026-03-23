@@ -1,8 +1,8 @@
 import { defineManifest, request, event } from '@franklin/transport';
 
-import type { MiniACPClient, MiniACPAgent } from './types.js';
+import type { MuClient, MuAgent } from './types.js';
 
-export const miniACPManifest = defineManifest<MiniACPClient, MiniACPAgent>({
+export const muManifest = defineManifest<MuClient, MuAgent>({
 	server: {
 		initialize: request(),
 		setContext: request(),

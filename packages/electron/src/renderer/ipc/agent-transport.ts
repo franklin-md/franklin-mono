@@ -18,8 +18,8 @@ let agentMux: ClientMux | null = null;
 
 function getAgentMux(): ClientMux {
 	if (!agentMux) {
-		const agentChannel: Duplex<ClientSendMux, ClientReceiveMux> =
-			createIpcStream<ClientSendMux, ClientReceiveMux>(AGENT_STREAM);
+		const agentChannel: Duplex<ClientReceiveMux, ClientSendMux> =
+			createIpcStream<ClientReceiveMux, ClientSendMux>(AGENT_STREAM);
 		agentMux = new Multiplexer(agentChannel);
 	}
 	return agentMux;

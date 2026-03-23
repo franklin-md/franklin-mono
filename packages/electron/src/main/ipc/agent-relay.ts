@@ -1,4 +1,4 @@
-import { Multiplexer, connect } from '@franklin/transport';
+import { Multiplexer, connect, debugStream } from '@franklin/transport';
 import type { NodeFramework } from '@franklin/node';
 import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
@@ -53,7 +53,7 @@ export class AgentRelay {
 
 		// Bidirectionally connect IPC <-> agent transport
 		// Both sides carry JsonRpcMessage on the wire — cast through Duplex<unknown>
-		const agent = connect(transport, ipcStream);
+		const agent = connect(debugStream(transport, 'agent'), ipcStream);
 
 		this.agents.set(agentId, agent);
 		return agentId;

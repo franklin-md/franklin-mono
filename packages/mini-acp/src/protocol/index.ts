@@ -1,9 +1,9 @@
 export type {
-	MiniACPClient,
-	MiniACPAgent,
-	MiniACPProtocol,
-	MiniACPAgentSide,
-	MiniACPClientSide,
+	MuClient as MiniACPClient,
+	MuAgent as MiniACPAgent,
+	MuProtocol as MiniACPProtocol,
+	MuClientReceive as MiniACPAgentSide,
+	MuClientWrite as MiniACPClientSide,
 	ClientProtocol,
 	AgentProtocol,
 	AgentCtx,
@@ -11,7 +11,7 @@ export type {
 	InitializeResult,
 } from './types.js';
 
-export { miniACPManifest } from './manifest.js';
+export { muManifest as miniACPManifest } from './manifest.js';
 
 export {
 	createClientConnection,

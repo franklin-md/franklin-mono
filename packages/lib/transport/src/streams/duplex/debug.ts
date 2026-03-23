@@ -11,11 +11,11 @@ export function debugStream<R, W = R>(
 ): Duplex<R, W> {
 	return intercept(duplex, {
 		readable(chunk, pass) {
-			console.log(`[${label}] readable:`, chunk);
+			console.log(`[${label}] readable:`, JSON.stringify(chunk, null, 2));
 			pass(chunk);
 		},
 		writable(chunk, pass) {
-			console.log(`[${label}] writable:`, chunk);
+			console.log(`[${label}] writable:`, JSON.stringify(chunk, null, 2));
 			pass(chunk);
 		},
 	});

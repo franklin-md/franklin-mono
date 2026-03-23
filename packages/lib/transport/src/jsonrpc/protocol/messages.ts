@@ -56,30 +56,23 @@ export type StreamControlMessages =
 	| JsonRpcStreamUpdateNotification
 	| JsonRpcStreamCancelNotification;
 
-export type UpMessages<
-	TServer extends RpcMethods<TServer>,
-	TClient extends RpcMethods<TClient>,
-> =
-	| Requests<TServer>
-	| Notifications<TServer>
-	| StreamRequests<TServer>
-	| Responses<TClient>
+export type SendMessages<TMethods extends RpcMethods<TMethods>> =
+	| Requests<TMethods>
+	| Notifications<TMethods>
+	| StreamRequests<TMethods>
 	| StreamControlMessages;
 
-export type DownMessages<
-	TServer extends RpcMethods<TServer>,
-	TClient extends RpcMethods<TClient>,
-> =
-	| Requests<TClient>
-	| Notifications<TClient>
-	| StreamRequests<TClient>
-	| Responses<TServer>
-	| StreamControlMessages;
+export type ReplyMessages<TMethods extends RpcMethods<TMethods>> =
+	Responses<TMethods>;
 
+// As understood from the side of the Client who needs to read the messages of the Server
 export type Protocol<
 	TServer extends RpcMethods<TServer>,
 	TClient extends RpcMethods<TClient>,
-> = Duplex<UpMessages<TServer, TClient>, DownMessages<TServer, TClient>>;
+> = Duplex<
+	SendMessages<TServer> | ReplyMessages<TClient>,
+	SendMessages<TClient> | ReplyMessages<TServer>
+>;
 
 export type ServerOf<TProtocol extends Protocol<any, any>> =
 	TProtocol extends Protocol<infer TServer, infer _TClient> ? TServer : never;
