@@ -1,4 +1,4 @@
-import type { MiniACPClient } from '@franklin/mini-acp';
+import type { MiniACPClient, Chunk, Update, TurnEnd } from '@franklin/mini-acp';
 import type { MaybePromise } from '../../types/shared.js';
 
 // ---------------------------------------------------------------------------
@@ -15,3 +15,19 @@ export type CoreEventHandler<K extends CoreEvent> = (
 export type CoreEventMap = {
 	[K in CoreEvent]: CoreEventHandler<K>;
 };
+
+// ---------------------------------------------------------------------------
+// Stream observer events — fire-and-forget side effects on response stream
+// ---------------------------------------------------------------------------
+
+export type StreamObserverEvent = 'chunk' | 'update' | 'turnEnd';
+
+export type StreamObserverParamsMap = {
+	chunk: Chunk;
+	update: Update;
+	turnEnd: TurnEnd;
+};
+
+export type StreamObserverHandler<K extends StreamObserverEvent> = (
+	event: StreamObserverParamsMap[K],
+) => void;

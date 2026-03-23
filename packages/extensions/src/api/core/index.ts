@@ -1,5 +1,12 @@
 export type { CoreAPI } from './api.js';
-export type { CoreEvent, CoreEventHandler, CoreEventMap } from './events.js';
+export type {
+	CoreEvent,
+	CoreEventHandler,
+	CoreEventMap,
+	StreamObserverEvent,
+	StreamObserverHandler,
+	StreamObserverParamsMap,
+} from './events.js';
 export type { ExtensionToolDefinition } from './tool.js';
 export type {
 	MethodMiddleware,

@@ -7,7 +7,7 @@ import type { Compiler } from '../../types.js';
 import type { Extension } from '../../../types/extension.js';
 import type { FullMiddleware } from '../../../api/core/middleware/types.js';
 import { apply } from '../../../api/core/middleware/apply.js';
-import type { MiniACPClient } from '@franklin/mini-acp';
+import type { MiniACPClient, Chunk, Update, TurnEnd } from '@franklin/mini-acp';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -19,7 +19,12 @@ async function compileExt(ext: Extension): Promise<FullMiddleware> {
 }
 
 /** Create a minimal MiniACPClient stub for testing with apply(). */
-function stubClient(overrides: Partial<MiniACPClient> = {}): MiniACPClient {
+type StubOverrides = {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	[K in keyof MiniACPClient]?: (...args: Parameters<MiniACPClient[K]>) => any;
+};
+
+function stubClient(overrides: StubOverrides = {}): MiniACPClient {
 	return {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async () => {}),
@@ -868,5 +873,262 @@ describe('compileAll', () => {
 			next,
 		);
 		expect(r2.toolCallId).toBe('c2');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Stream observer events
+// ---------------------------------------------------------------------------
+
+describe('buildCore – stream observers', () => {
+	it('on("chunk") fires for each chunk event', async () => {
+		const observed: Chunk[] = [];
+
+		const mw = await compileExt((api) => {
+			api.on('chunk', (event) => {
+				observed.push(event);
+			});
+		});
+
+		const chunk1: Chunk = {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'text', text: 'hello' },
+		};
+		const chunk2: Chunk = {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'text', text: ' world' },
+		};
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield chunk1;
+				yield chunk2;
+			},
+		});
+
+		const wrapped = apply(mw.client, target);
+		const events = await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		// Observer saw both chunks
+		expect(observed).toEqual([chunk1, chunk2]);
+		// Events still pass through
+		expect(events).toEqual([chunk1, chunk2]);
+	});
+
+	it('on("update") fires for update events only', async () => {
+		const observed: Update[] = [];
+
+		const mw = await compileExt((api) => {
+			api.on('update', (event) => {
+				observed.push(event);
+			});
+		});
+
+		const chunk: Chunk = {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'text', text: 'hello' },
+		};
+		const update: Update = {
+			type: 'update',
+			message: {
+				role: 'assistant',
+				content: [{ type: 'text', text: 'hello world' }],
+			},
+		};
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield chunk;
+				yield update;
+			},
+		});
+
+		const wrapped = apply(mw.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		// Only update was observed, not chunk
+		expect(observed).toEqual([update]);
+	});
+
+	it('on("turnEnd") fires when stream completes', async () => {
+		const observed: TurnEnd[] = [];
+		const turnEnd: TurnEnd = { type: 'turnEnd' };
+
+		const mw = await compileExt((api) => {
+			api.on('turnEnd', (event) => {
+				observed.push(event);
+			});
+		});
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield {
+					type: 'chunk',
+					messageId: 'm1',
+					role: 'assistant',
+					content: { type: 'text', text: 'hi' },
+				} as Chunk;
+				return turnEnd;
+			},
+		});
+
+		const wrapped = apply(mw.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		expect(observed).toEqual([turnEnd]);
+	});
+
+	it('multiple observers on same event fire in registration order', async () => {
+		const calls: string[] = [];
+
+		const mw = await compileExt((api) => {
+			api.on('chunk', () => {
+				calls.push('observer1');
+			});
+			api.on('chunk', () => {
+				calls.push('observer2');
+			});
+		});
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield {
+					type: 'chunk',
+					messageId: 'm1',
+					role: 'assistant',
+					content: { type: 'text', text: 'hi' },
+				} as Chunk;
+			},
+		});
+
+		const wrapped = apply(mw.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		expect(calls).toEqual(['observer1', 'observer2']);
+	});
+
+	it('observers and prompt handlers coexist', async () => {
+		const observed: Chunk[] = [];
+		const promptCalls: string[] = [];
+
+		const mw = await compileExt((api) => {
+			api.on('prompt', (params) => {
+				promptCalls.push('handler');
+				return {
+					message: {
+						...params.message,
+						content: [
+							...params.message.content,
+							{ type: 'text' as const, text: ' [injected]' },
+						],
+					},
+				};
+			});
+			api.on('chunk', (event) => {
+				observed.push(event);
+			});
+		});
+
+		const chunk: Chunk = {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'text', text: 'response' },
+		};
+
+		const received: any[] = [];
+		const target = stubClient({
+			prompt: async function* (params) {
+				received.push(params);
+				yield chunk;
+			},
+		});
+
+		const wrapped = apply(mw.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		// Prompt handler ran
+		expect(promptCalls).toEqual(['handler']);
+		// Params were transformed
+		expect(
+			(received[0] as { message: { content: { text: string }[] } }).message
+				.content,
+		).toHaveLength(2);
+		// Observer saw the chunk
+		expect(observed).toEqual([chunk]);
+	});
+
+	it('no observers uses fast path — events pass through correctly', async () => {
+		const mw = await compileExt((api) => {
+			api.on('prompt', () => {
+				// side effect only, no stream observers
+			});
+		});
+
+		const chunk: Chunk = {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'text', text: 'hello' },
+		};
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield chunk;
+			},
+		});
+
+		const wrapped = apply(mw.client, target);
+		const events = await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		expect(events).toEqual([chunk]);
 	});
 });
