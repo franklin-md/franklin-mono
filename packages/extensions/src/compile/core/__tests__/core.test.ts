@@ -2,15 +2,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import { createCoreCompiler } from '../compiler.js';
-import { compile, combine } from '../../types.js';
+import { compile, combine, compileAll } from '../../types.js';
 import type { Compiler } from '../../types.js';
 import type { Extension } from '../../../types/extension.js';
-import type {
-	ClientMiddleware,
-	FullMiddleware,
-} from '../../../api/core/middleware/types.js';
+import type { FullMiddleware } from '../../../api/core/middleware/types.js';
 import { apply } from '../../../api/core/middleware/apply.js';
-import { passThrough } from '../../../api/core/middleware/pass-through.js';
 import type { MiniACPClient } from '@franklin/mini-acp';
 
 // ---------------------------------------------------------------------------
@@ -20,17 +16,6 @@ import type { MiniACPClient } from '@franklin/mini-acp';
 /** Compile a single CoreAPI extension into FullMiddleware. */
 async function compileExt(ext: Extension): Promise<FullMiddleware> {
 	return compile(createCoreCompiler(), ext);
-}
-
-/** Fill missing ClientMiddleware keys with passThrough. */
-function withDefaults(partial: Partial<ClientMiddleware>): ClientMiddleware {
-	return {
-		initialize: passThrough(),
-		setContext: passThrough(),
-		prompt: passThrough(),
-		cancel: passThrough(),
-		...partial,
-	} as ClientMiddleware;
 }
 
 /** Create a minimal MiniACPClient stub for testing with apply(). */
@@ -70,7 +55,7 @@ describe('buildCore – on() waterfall', () => {
 		});
 
 		expect(mw.client).toBeDefined();
-		expect(mw.client!.prompt).toBeDefined();
+		expect(mw.client.prompt).toBeDefined();
 
 		const received: any[] = [];
 		const target = stubClient({
@@ -79,7 +64,7 @@ describe('buildCore – on() waterfall', () => {
 			},
 		});
 
-		const wrapped = apply(withDefaults(mw.client!), target);
+		const wrapped = apply(mw.client, target);
 
 		const originalContent = [{ type: 'text' as const, text: 'hello' }];
 		await collect(
@@ -135,7 +120,7 @@ describe('buildCore – on() waterfall', () => {
 			},
 		});
 
-		const wrapped = apply(withDefaults(mw.client!), target);
+		const wrapped = apply(mw.client, target);
 
 		await collect(
 			wrapped.prompt({
@@ -166,7 +151,7 @@ describe('buildCore – on() waterfall', () => {
 			},
 		});
 
-		const wrapped = apply(withDefaults(mw.client!), target);
+		const wrapped = apply(mw.client, target);
 
 		const original = {
 			message: {
@@ -189,7 +174,7 @@ describe('buildCore – on() waterfall', () => {
 			}));
 		});
 
-		expect(mw.client!.setContext).toBeDefined();
+		expect(mw.client.setContext).toBeDefined();
 
 		const received: any[] = [];
 		const target = stubClient({
@@ -198,7 +183,7 @@ describe('buildCore – on() waterfall', () => {
 			},
 		});
 
-		const wrapped = apply(withDefaults(mw.client!), target);
+		const wrapped = apply(mw.client, target);
 
 		await wrapped.setContext({
 			ctx: { history: { systemPrompt: '', messages: [] } },
@@ -229,14 +214,14 @@ describe('buildCore – registerTool()', () => {
 		});
 
 		expect(mw.server).toBeDefined();
-		expect(mw.server!.toolExecute).toBeDefined();
+		expect(mw.server.toolExecute).toBeDefined();
 
 		const next = vi.fn(async () => ({
 			toolCallId: 'fallback',
 			content: [{ type: 'text' as const, text: 'fallback' }],
 		}));
 
-		const result = await mw.server!.toolExecute(
+		const result = await mw.server.toolExecute(
 			{
 				call: {
 					type: 'toolCall',
@@ -267,7 +252,7 @@ describe('buildCore – registerTool()', () => {
 			content: [{ type: 'text' as const, text: 'from-next' }],
 		}));
 
-		const result = await mw.server!.toolExecute(
+		const result = await mw.server.toolExecute(
 			{
 				call: {
 					type: 'toolCall',
@@ -288,7 +273,7 @@ describe('buildCore – registerTool()', () => {
 			api.registerTool(testTool);
 		});
 
-		expect(mw.client!.setContext).toBeDefined();
+		expect(mw.client.setContext).toBeDefined();
 
 		const received: any[] = [];
 		const target = stubClient({
@@ -297,7 +282,7 @@ describe('buildCore – registerTool()', () => {
 			},
 		});
 
-		const wrapped = apply(withDefaults(mw.client!), target);
+		const wrapped = apply(mw.client, target);
 
 		await wrapped.setContext({
 			ctx: {
@@ -336,7 +321,7 @@ describe('buildCore – registerTool()', () => {
 			},
 		});
 
-		const wrapped = apply(withDefaults(mw.client!), target);
+		const wrapped = apply(mw.client, target);
 
 		await wrapped.setContext({ ctx: {} });
 
@@ -353,13 +338,19 @@ describe('buildCore – registerTool()', () => {
 // ---------------------------------------------------------------------------
 
 describe('buildCore – empty extension', () => {
-	it('produces no middleware for an empty extension', async () => {
+	it('produces passthrough middleware for an empty extension', async () => {
 		const mw = await compileExt(() => {
 			// no registrations
 		});
 
-		expect(mw.client).toBeUndefined();
-		expect(mw.server).toBeUndefined();
+		// Both client and server are always populated (with passthrough defaults)
+		expect(mw.client).toBeDefined();
+		expect(mw.client.prompt).toBeDefined();
+		expect(mw.client.setContext).toBeDefined();
+		expect(mw.client.initialize).toBeDefined();
+		expect(mw.client.cancel).toBeDefined();
+		expect(mw.server).toBeDefined();
+		expect(mw.server.toolExecute).toBeDefined();
 	});
 });
 
@@ -383,6 +374,9 @@ describe('combine', () => {
 				async build() {
 					return { greeted: names };
 				},
+				merge(a, b) {
+					return { greeted: [...a.greeted, ...b.greeted] };
+				},
 			};
 		};
 
@@ -399,6 +393,9 @@ describe('combine', () => {
 				},
 				async build() {
 					return { logged: msgs };
+				},
+				merge(a, b) {
+					return { logged: [...a.logged, ...b.logged] };
 				},
 			};
 		};
@@ -424,6 +421,9 @@ describe('combine', () => {
 				async build() {
 					return { aCount: count };
 				},
+				merge(a, b) {
+					return { aCount: a.aCount + b.aCount };
+				},
 			};
 		};
 
@@ -438,6 +438,9 @@ describe('combine', () => {
 				async build() {
 					return { bCount: count };
 				},
+				merge(a, b) {
+					return { bCount: a.bCount + b.bCount };
+				},
 			};
 		};
 
@@ -451,6 +454,9 @@ describe('combine', () => {
 				},
 				async build() {
 					return { cCount: count };
+				},
+				merge(a, b) {
+					return { cCount: a.cCount + b.cCount };
 				},
 			};
 		};
@@ -491,6 +497,13 @@ describe('combine', () => {
 				async build() {
 					return { [name]: count };
 				},
+				merge(a, b) {
+					const result: Record<string, number> = { ...a };
+					for (const [k, v] of Object.entries(b)) {
+						result[k] = (result[k] ?? 0) + v;
+					}
+					return result;
+				},
 			};
 		};
 
@@ -524,6 +537,9 @@ describe('combine', () => {
 				async build() {
 					return { tags };
 				},
+				merge(a, b) {
+					return { tags: [...a.tags, ...b.tags] };
+				},
 			};
 		};
 
@@ -545,7 +561,7 @@ describe('combine', () => {
 
 		// Core compiler produced middleware
 		expect(result.client).toBeDefined();
-		expect(result.client!.prompt).toBeDefined();
+		expect(result.client.prompt).toBeDefined();
 
 		// Tag compiler produced tags
 		expect(result.tags).toEqual(['my-ext']);
@@ -557,6 +573,9 @@ describe('combine', () => {
 			async build() {
 				return {};
 			},
+			merge(a, _b) {
+				return a;
+			},
 		});
 
 		const result = await compile(
@@ -564,5 +583,290 @@ describe('combine', () => {
 			() => {},
 		);
 		expect(result).toEqual({});
+	});
+
+	it('combine derives merge from constituent compilers', async () => {
+		const createA = (): Compiler<
+			{ greet(n: string): void },
+			{ greeted: string[] }
+		> => {
+			const names: string[] = [];
+			return {
+				api: { greet: (n) => names.push(n) },
+				async build() {
+					return { greeted: [...names] };
+				},
+				merge(a, b) {
+					return { greeted: [...a.greeted, ...b.greeted] };
+				},
+			};
+		};
+
+		const createB = (): Compiler<
+			{ log(m: string): void },
+			{ logged: string[] }
+		> => {
+			const msgs: string[] = [];
+			return {
+				api: { log: (m) => msgs.push(m) },
+				async build() {
+					return { logged: [...msgs] };
+				},
+				merge(a, b) {
+					return { logged: [...a.logged, ...b.logged] };
+				},
+			};
+		};
+
+		const combined = combine(createA(), createB());
+		const r1 = { greeted: ['alice'], logged: ['hi'] };
+		const r2 = { greeted: ['bob'], logged: ['bye'] };
+		const merged = combined.merge(r1, r2);
+
+		expect(merged.greeted).toEqual(['alice', 'bob']);
+		expect(merged.logged).toEqual(['hi', 'bye']);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Core compiler merge
+// ---------------------------------------------------------------------------
+
+describe('createCoreCompiler – merge', () => {
+	it('merge composes client middleware from two results', async () => {
+		const calls: string[] = [];
+
+		const mw1 = await compileExt((api) => {
+			api.on('prompt', (params) => {
+				calls.push('ext1');
+				return {
+					message: {
+						...params.message,
+						content: [
+							{
+								type: 'text' as const,
+								text: `ext1(${(params.message.content[0] as { text: string }).text})`,
+							},
+						],
+					},
+				};
+			});
+		});
+
+		const mw2 = await compileExt((api) => {
+			api.on('prompt', (params) => {
+				calls.push('ext2');
+				return {
+					message: {
+						...params.message,
+						content: [
+							{
+								type: 'text' as const,
+								text: `ext2(${(params.message.content[0] as { text: string }).text})`,
+							},
+						],
+					},
+				};
+			});
+		});
+
+		const compiler = createCoreCompiler();
+		const merged = compiler.merge(mw1, mw2);
+
+		expect(merged.client).toBeDefined();
+
+		const received: any[] = [];
+		const target = stubClient({
+			prompt: async function* (params) {
+				received.push(params);
+			},
+		});
+
+		const wrapped = apply(merged.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'x' }],
+				},
+			}),
+		);
+
+		// ext1 runs first, ext2 wraps its output
+		expect(calls).toEqual(['ext1', 'ext2']);
+		const params = received[0] as { message: { content: { text: string }[] } };
+		expect(params.message.content[0]?.text).toBe('ext2(ext1(x))');
+	});
+
+	it('merge handles one side having no client', async () => {
+		const mw1 = await compileExt((api) => {
+			api.on('prompt', () => {
+				/* side effect */
+			});
+		});
+		const mw2 = await compileExt(() => {
+			/* empty */
+		});
+
+		const compiler = createCoreCompiler();
+		const merged = compiler.merge(mw1, mw2);
+
+		expect(merged.client).toBeDefined();
+	});
+
+	it('merge of two empty results produces passthrough middleware', async () => {
+		const mw1 = await compileExt(() => {});
+		const mw2 = await compileExt(() => {});
+
+		const compiler = createCoreCompiler();
+		const merged = compiler.merge(mw1, mw2);
+
+		expect(merged.client).toBeDefined();
+		expect(merged.server).toBeDefined();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// compileAll (fold)
+// ---------------------------------------------------------------------------
+
+describe('compileAll', () => {
+	it('compiles 0 extensions to passthrough result', async () => {
+		const result = await compileAll(createCoreCompiler, []);
+
+		expect(result.client).toBeDefined();
+		expect(result.server).toBeDefined();
+	});
+
+	it('compiles 1 extension same as compile', async () => {
+		const ext: Extension = (api) => {
+			api.on('prompt', () => {
+				/* side effect */
+			});
+		};
+
+		const result = await compileAll(createCoreCompiler, [ext]);
+
+		expect(result.client).toBeDefined();
+		expect(result.client.prompt).toBeDefined();
+	});
+
+	it('compiles N extensions, waterfalls chain across extensions', async () => {
+		const calls: string[] = [];
+
+		const ext1: Extension = (api) => {
+			api.on('prompt', (params) => {
+				calls.push('ext1');
+				return {
+					message: {
+						...params.message,
+						content: [
+							{
+								type: 'text' as const,
+								text: `ext1(${(params.message.content[0] as { text: string }).text})`,
+							},
+						],
+					},
+				};
+			});
+		};
+
+		const ext2: Extension = (api) => {
+			api.on('prompt', (params) => {
+				calls.push('ext2');
+				return {
+					message: {
+						...params.message,
+						content: [
+							{
+								type: 'text' as const,
+								text: `ext2(${(params.message.content[0] as { text: string }).text})`,
+							},
+						],
+					},
+				};
+			});
+		};
+
+		const result = await compileAll(createCoreCompiler, [ext1, ext2]);
+
+		const received: any[] = [];
+		const target = stubClient({
+			prompt: async function* (params) {
+				received.push(params);
+			},
+		});
+
+		const wrapped = apply(result.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'x' }],
+				},
+			}),
+		);
+
+		expect(calls).toEqual(['ext1', 'ext2']);
+		const params = received[0] as { message: { content: { text: string }[] } };
+		expect(params.message.content[0]?.text).toBe('ext2(ext1(x))');
+	});
+
+	it('compileAll merges server middleware from multiple extensions', async () => {
+		const ext1: Extension = (api) => {
+			api.registerTool({
+				name: 'tool1',
+				description: 'Tool 1',
+				schema: z.object({}),
+				execute: async () => ({ result: 'tool1' }),
+			});
+		};
+
+		const ext2: Extension = (api) => {
+			api.registerTool({
+				name: 'tool2',
+				description: 'Tool 2',
+				schema: z.object({}),
+				execute: async () => ({ result: 'tool2' }),
+			});
+		};
+
+		const result = await compileAll(createCoreCompiler, [ext1, ext2]);
+
+		expect(result.server).toBeDefined();
+
+		// tool1 should short-circuit
+		const next = vi.fn(async () => ({
+			toolCallId: 'fallback',
+			content: [{ type: 'text' as const, text: 'fallback' }],
+		}));
+
+		const r1 = await result.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'c1',
+					name: 'tool1',
+					arguments: {},
+				},
+			},
+			next,
+		);
+		expect(r1.toolCallId).toBe('c1');
+		expect(next).not.toHaveBeenCalled();
+
+		// tool2 should also short-circuit
+		const r2 = await result.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'c2',
+					name: 'tool2',
+					arguments: {},
+				},
+			},
+			next,
+		);
+		expect(r2.toolCallId).toBe('c2');
 	});
 });

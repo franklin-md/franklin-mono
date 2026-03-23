@@ -26,6 +26,6 @@ export type ClientMiddleware = Middleware<MiniACPClient>;
 export type ServerMiddleware = Middleware<MiniACPAgent>;
 
 export type FullMiddleware = {
-	client?: ClientMiddleware;
-	server?: ServerMiddleware;
+	client: ClientMiddleware;
+	server: ServerMiddleware;
 };

@@ -1,10 +1,9 @@
 import type { CoreAPI } from '../../api/core/api.js';
 import type { CoreEvent, CoreEventHandler } from '../../api/core/events.js';
 import type { ExtensionToolDefinition } from '../../api/core/tool.js';
-import type {
-	ClientMiddleware,
-	FullMiddleware,
-} from '../../api/core/middleware/types.js';
+import type { FullMiddleware } from '../../api/core/middleware/types.js';
+import { compose } from '../../api/core/middleware/compose.js';
+import { passThrough } from '../../api/core/middleware/pass-through.js';
 import type { Compiler } from '../types.js';
 import {
 	buildAsyncWaterfall,
@@ -41,8 +40,15 @@ export function createCoreCompiler(): Compiler<CoreAPI, FullMiddleware> {
 	return {
 		api,
 		async build() {
-			// ----- ClientMiddleware (waterfall on outgoing requests) -----
-			const client: Partial<ClientMiddleware> = {};
+			// ----- ClientMiddleware -----
+			// Start with passThrough for every method, then overwrite with
+			// registered handlers. This ensures client is always complete.
+			const client: FullMiddleware['client'] = {
+				initialize: passThrough(),
+				setContext: passThrough(),
+				prompt: passThrough(),
+				cancel: passThrough(),
+			};
 
 			for (const [key, fns] of handlers) {
 				if (key === 'prompt') {
@@ -69,19 +75,19 @@ export function createCoreCompiler(): Compiler<CoreAPI, FullMiddleware> {
 				client.setContext = buildToolInjector(tools, client.setContext);
 			}
 
-			// ----- ServerMiddleware (short-circuit on tool execution) -----
-			const server =
-				tools.length > 0
-					? { toolExecute: buildToolExecuteMiddleware(tools) }
-					: undefined;
+			// ----- ServerMiddleware -----
+			const server: FullMiddleware['server'] = {
+				toolExecute:
+					tools.length > 0 ? buildToolExecuteMiddleware(tools) : passThrough(),
+			};
 
-			// ----- Assemble FullMiddleware -----
+			return { client, server };
+		},
+		merge(a, b) {
 			return {
-				...(Object.keys(client).length > 0
-					? { client: client as ClientMiddleware }
-					: {}),
-				...(server ? { server } : {}),
-			} as FullMiddleware;
+				client: compose(a.client, b.client),
+				server: compose(a.server, b.server),
+			};
 		},
 	};
 }

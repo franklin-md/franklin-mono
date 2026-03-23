@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compile, combine } from '../../types.js';
+import { compile, combine, compileAll } from '../../types.js';
 import { createStoreCompiler } from '../compiler.js';
 import { createCoreCompiler } from '../../core/compiler.js';
 import type { StoreResult } from '../../../api/store/result.js';
@@ -242,5 +242,111 @@ describe('createStoreCompiler – combine with core', () => {
 		// Store compiler produced stores
 		expect(result.stores.size).toBe(1);
 		expect(result.stores.get('items')!.store.get()).toEqual([]);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Store compiler merge
+// ---------------------------------------------------------------------------
+
+describe('createStoreCompiler – merge', () => {
+	it('merge unions two store results', async () => {
+		const r1 = await compile(createStoreCompiler(), (api: StoreAPI) => {
+			api.registerStore('a', 1);
+		});
+
+		const r2 = await compile(createStoreCompiler(), (api: StoreAPI) => {
+			api.registerStore('b', 2);
+		});
+
+		const compiler = createStoreCompiler();
+		const merged = compiler.merge(r1, r2);
+
+		expect(merged.stores.size).toBe(2);
+		expect(merged.stores.get('a')!.store.get()).toBe(1);
+		expect(merged.stores.get('b')!.store.get()).toBe(2);
+	});
+
+	it('merge of two empty results is empty', async () => {
+		const r1 = await compile(createStoreCompiler(), () => {});
+		const r2 = await compile(createStoreCompiler(), () => {});
+
+		const compiler = createStoreCompiler();
+		const merged = compiler.merge(r1, r2);
+
+		expect(merged.stores.size).toBe(0);
+	});
+
+	it('merged result supports copy()', async () => {
+		const r1 = await compile(createStoreCompiler(), (api: StoreAPI) => {
+			api.registerStore('priv', 'secret', 'private');
+		});
+
+		const r2 = await compile(createStoreCompiler(), (api: StoreAPI) => {
+			api.registerStore('glob', 'shared', 'global');
+		});
+
+		const compiler = createStoreCompiler();
+		const merged = compiler.merge(r1, r2);
+		const child = merged.copy('private');
+
+		// private store → snapshotted (different ref)
+		expect(child.stores.get('priv')!.store).not.toBe(
+			merged.stores.get('priv')!.store,
+		);
+		// global store → same ref
+		expect(child.stores.get('glob')!.store).toBe(
+			merged.stores.get('glob')!.store,
+		);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// compileAll with store compiler
+// ---------------------------------------------------------------------------
+
+describe('compileAll – store compiler', () => {
+	it('compiles 0 extensions to empty stores', async () => {
+		const result = await compileAll(createStoreCompiler, []);
+		expect(result.stores.size).toBe(0);
+	});
+
+	it('compiles N extensions, unions all stores', async () => {
+		const ext1 = (api: StoreAPI) => {
+			api.registerStore('todos', [] as string[]);
+		};
+		const ext2 = (api: StoreAPI) => {
+			api.registerStore('conversation', [] as string[]);
+		};
+		const ext3 = (api: StoreAPI) => {
+			api.registerStore('config', {});
+		};
+
+		const result = await compileAll(createStoreCompiler, [ext1, ext2, ext3]);
+
+		expect(result.stores.size).toBe(3);
+		expect(result.stores.has('todos')).toBe(true);
+		expect(result.stores.has('conversation')).toBe(true);
+		expect(result.stores.has('config')).toBe(true);
+	});
+
+	it('compileAll with combined compiler merges both middleware and stores', async () => {
+		const create = () => combine(createCoreCompiler(), createStoreCompiler());
+
+		const ext1 = (api: CoreAPI & StoreAPI) => {
+			api.registerStore('todos', [] as string[]);
+			api.on('prompt', () => {
+				/* side effect */
+			});
+		};
+
+		const ext2 = (api: CoreAPI & StoreAPI) => {
+			api.registerStore('conv', [] as string[]);
+		};
+
+		const result = await compileAll(create, [ext1, ext2]);
+
+		expect(result.stores.size).toBe(2);
+		expect(result.client).toBeDefined();
 	});
 });

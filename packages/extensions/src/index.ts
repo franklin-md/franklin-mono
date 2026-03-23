@@ -23,6 +23,7 @@ export type { Compiler } from './compile/index.js';
 export {
 	compile,
 	combine,
+	compileAll,
 	createCoreCompiler,
 	createStoreCompiler,
 } from './compile/index.js';
