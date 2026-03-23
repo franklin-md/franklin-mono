@@ -10,17 +10,26 @@ import type { AgentEvent } from '@mariozechner/pi-agent-core';
 import type { Model } from '@mariozechner/pi-ai';
 import type { StreamFn } from '@mariozechner/pi-agent-core';
 
-import type { TurnClient, TurnAgent } from '../types.js';
+import type {
+	TurnClient,
+	TurnAgent,
+	PromptParams,
+	CancelParams,
+} from '../types.js';
 import type { Ctx } from '../../types/context.js';
-import type { StreamEvent, TurnEnd } from '../../types/stream.js';
-import type { UserMessage } from '../../types/message.js';
+import type {
+	Chunk,
+	StreamEvent,
+	TurnEnd,
+	Update,
+} from '../../types/stream.js';
 import {
 	bridgeTool,
 	fromAgentEvent,
 	toPiMessage,
 	toPiUserMessage,
 } from './translate/index.js';
-import { createMemoryStream } from 'node_modules/@franklin/transport/src/in-memory/index.js';
+import { createMemoryStream } from '@franklin/transport';
 
 // ---------------------------------------------------------------------------
 // Adapter factory
@@ -60,16 +69,15 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 	});
 
 	return {
-		async *prompt(params: {
-			message: UserMessage;
-		}): AsyncIterable<StreamEvent> {
+		async *prompt(
+			params: PromptParams,
+		): AsyncGenerator<Chunk | Update, TurnEnd> {
 			const messageId = crypto.randomUUID();
 
 			const { readable, writable } = createMemoryStream<StreamEvent>();
 			const writer = writable.getWriter();
 
-			// Emit turnStart immediately
-			void writer.write({ type: 'turnStart' });
+			let turnEnd: TurnEnd = { type: 'turnEnd' };
 
 			// Subscribe to agent events and translate to StreamEvents
 			const unsub = piAgent.subscribe((event: AgentEvent) => {
@@ -98,12 +106,19 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 					void writer.close();
 				});
 
-			yield* readable;
+			for await (const event of readable) {
+				if (event.type === 'chunk' || event.type === 'update') {
+					yield event;
+				} else if (event.type === 'turnEnd') {
+					turnEnd = event;
+				}
+			}
 
 			unsub();
+			return turnEnd;
 		},
 
-		async cancel(): Promise<TurnEnd> {
+		async cancel(_params: CancelParams): Promise<TurnEnd> {
 			piAgent.abort();
 			return {
 				type: 'turnEnd',

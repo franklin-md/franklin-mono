@@ -29,8 +29,9 @@ async function* iteratePromptWithObservers(
 	for (;;) {
 		const result = await iterator.next();
 		const event = result.value;
-		// Notify the observers if they are provided
-		if (observers) {
+		// Notify observers — guard against undefined event (generator
+		// that returns void instead of TurnEnd) and empty observer map
+		if (observers && observers.size > 0 && event) {
 			await notifyObservers(observers, event);
 		}
 
