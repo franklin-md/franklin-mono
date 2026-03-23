@@ -1,10 +1,6 @@
-import type { AnyMessage } from '@agentclientprotocol/sdk';
-import {
-	type MuxPacket,
-	type Duplex,
-	Multiplexer,
-	connect,
-} from '@franklin/transport';
+import { Multiplexer, connect } from '@franklin/transport';
+import type { Reverse } from '@franklin/transport';
+import type { MiniACPProtocol } from '@franklin/mini-acp';
 import type { NodeFramework } from '@franklin/node';
 import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
@@ -16,6 +12,11 @@ import {
 	AGENT_KILL,
 } from '../../shared/channels.js';
 import { createMainIpcMux } from './stream.js';
+import type {
+	AgentMuxDown,
+	AgentMuxUp,
+	AgentServerMux,
+} from '../../shared/types.js';
 
 /**
  * Bridges renderer <-> agent subprocesses over Electron IPC.
@@ -24,15 +25,16 @@ import { createMainIpcMux } from './stream.js';
  * Environment lifecycle is handled separately by FrameworkRelay.
  */
 export class AgentRelay {
-	private agents = new Map<string, Duplex<AnyMessage>>();
-	private agentMux: Multiplexer<AnyMessage>;
+	// This is the Agent Side of the MiniACPProtocol
+	private agents = new Map<string, Reverse<MiniACPProtocol>>();
+	private agentMux: AgentServerMux;
 
 	constructor(
 		webContents: WebContents,
 		private readonly framework: NodeFramework,
 	) {
 		// Level 0: demux the raw IPC channel
-		const ipcMux = createMainIpcMux<MuxPacket<AnyMessage>>(webContents);
+		const ipcMux = createMainIpcMux<AgentMuxDown, AgentMuxUp>(webContents);
 
 		// Level 1: agent transport channel -> Level 2 multiplexer by agentId
 		this.agentMux = new Multiplexer(ipcMux.channel(AGENT_STREAM));

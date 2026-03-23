@@ -1,83 +1,48 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { AnyMessage } from '@agentclientprotocol/sdk';
-
-import type { McpToolStream } from '@franklin/local-mcp';
-
-import { createStore, createSharedStore } from '../../store/index.js';
-import type { Store } from '../../store/index.js';
-import type { Extension, ExtensionAPI } from '../../extensions/types/index.js';
-import type { McpTransportFactory } from '../../extensions/compile/start.js';
-import type { AgentTransport } from '../../transport/index.js';
+import type { MiniACPClient } from '@franklin/mini-acp';
+import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
 import { AgentManager } from '../manager/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createMockTransport(): AgentTransport {
-	const readable = new ReadableStream<AnyMessage>({
-		pull() {
-			return new Promise<void>(() => {});
-		},
-		cancel() {},
-	});
-
-	const writable = new WritableStream<AnyMessage>({
-		write() {},
-		close() {},
-		abort() {},
-	});
-
-	return { readable, writable, close: vi.fn(async () => {}) };
-}
-
-function createMockToolTransport(): McpTransportFactory {
-	return async (_name) => {
-		const mockStream = {
-			readable: new ReadableStream<never>(),
-			writable: new WritableStream<never>(),
-			close: async () => {},
-		} as unknown as McpToolStream;
-
-		return {
-			config: {
-				name: 'test-relay',
-				command: 'node',
-				args: ['--version'],
-				env: [{ name: 'STUB', value: 'true' }],
-			},
-			stream: mockStream,
-			dispose: vi.fn(async () => {}),
-		};
-	};
+function createStubClient(): MiniACPClient {
+	return {
+		initialize: vi.fn(async () => {}),
+		setContext: vi.fn(async () => {}),
+		// eslint-disable-next-line require-yield
+		prompt: vi.fn(async function* () {
+			return { type: 'turnEnd' as const, messageId: '1' };
+		}),
+		cancel: vi.fn(async () => ({
+			type: 'turnEnd' as const,
+			messageId: '1',
+		})),
+	} as unknown as MiniACPClient;
 }
 
 // ---------------------------------------------------------------------------
 // Test extensions
 // ---------------------------------------------------------------------------
 
-interface Item {
-	id: string;
-	text: string;
+function itemsExtension(): Extension<CoreAPI & StoreAPI> {
+	return (api) => {
+		api.registerStore<{ id: string; text: string }[]>('items', [], 'private');
+	};
 }
 
-class ItemsExtension implements Extension<Item[]> {
-	readonly name = 'items' as const;
-	readonly state: Store<Item[]> = createStore<Item[]>([]);
-	async setup(_api: ExtensionAPI): Promise<void> {}
+function counterExtension(): Extension<CoreAPI & StoreAPI> {
+	return (api) => {
+		api.registerStore<number>('counter', 0, 'private');
+	};
 }
 
-class CounterExtension implements Extension<number> {
-	readonly name = 'counter' as const;
-	readonly state: Store<number> = createStore<number>(0);
-	async setup(_api: ExtensionAPI): Promise<void> {}
-}
-
-class SharedCounterExtension implements Extension<number> {
-	readonly name = 'counter' as const;
-	readonly state: Store<number> = createSharedStore<number>(0);
-	async setup(_api: ExtensionAPI): Promise<void> {}
+function sharedCounterExtension(): Extension<CoreAPI & StoreAPI> {
+	return (api) => {
+		api.registerStore<number>('counter', 0, 'global');
+	};
 }
 
 // ---------------------------------------------------------------------------
@@ -99,26 +64,21 @@ describe('AgentManager', () => {
 		return v;
 	}
 
-	it('spawn() creates an agent with extension stores attached', async () => {
-		const manager = new AgentManager(
-			() => [new ItemsExtension()],
-			createMockToolTransport(),
-		);
+	it('spawn() creates an agent with extension stores', async () => {
+		const manager = new AgentManager(() => [itemsExtension()]);
 
-		const { agent } = await manager.spawn(createMockTransport());
+		const { agent } = await manager.spawn(createStubClient());
 		track(agent);
 
-		expect(agent.items).toBeDefined();
-		expect(agent.items.get()).toEqual([]);
+		const items = agent.stores.stores.get('items');
+		expect(items).toBeDefined();
+		expect(items!.store.get()).toEqual([]);
 	});
 
 	it('spawn() returns agentId alongside the agent', async () => {
-		const manager = new AgentManager(
-			() => [new ItemsExtension()],
-			createMockToolTransport(),
-		);
+		const manager = new AgentManager(() => [itemsExtension()]);
 
-		const { agentId, agent } = await manager.spawn(createMockTransport());
+		const { agentId, agent } = await manager.spawn(createStubClient());
 		track(agent);
 
 		expect(typeof agentId).toBe('string');
@@ -126,27 +86,27 @@ describe('AgentManager', () => {
 	});
 
 	it('spawn() calls factory each time to get fresh extensions', async () => {
-		const factory = vi.fn(() => [new CounterExtension()]);
-		const manager = new AgentManager(factory, createMockToolTransport());
+		const factory = vi.fn(() => [counterExtension()]);
+		const manager = new AgentManager(factory);
 
-		const { agent: a1 } = await manager.spawn(createMockTransport());
-		const { agent: a2 } = await manager.spawn(createMockTransport());
+		const { agent: a1 } = await manager.spawn(createStubClient());
+		const { agent: a2 } = await manager.spawn(createStubClient());
 		track(a1);
 		track(a2);
 
 		expect(factory).toHaveBeenCalledTimes(2);
+
 		// Independent stores
-		a1.counter.set(() => 42);
-		expect(a2.counter.get()).toBe(0);
+		const s1 = a1.stores.stores.get('counter')!.store;
+		const s2 = a2.stores.stores.get('counter')!.store;
+		s1.set(() => 42);
+		expect(s2.get()).toBe(0);
 	});
 
 	it('get() retrieves agent by ID', async () => {
-		const manager = new AgentManager(
-			() => [new ItemsExtension()],
-			createMockToolTransport(),
-		);
+		const manager = new AgentManager(() => [itemsExtension()]);
 
-		const { agentId, agent } = await manager.spawn(createMockTransport());
+		const { agentId, agent } = await manager.spawn(createStubClient());
 		track(agent);
 
 		const retrieved = manager.get(agentId);
@@ -154,10 +114,7 @@ describe('AgentManager', () => {
 	});
 
 	it('get() throws for unknown agent ID', () => {
-		const manager = new AgentManager(
-			() => [new ItemsExtension()],
-			createMockToolTransport(),
-		);
+		const manager = new AgentManager(() => [itemsExtension()]);
 
 		expect(() => manager.get('nonexistent')).toThrow(
 			'Agent nonexistent not found',
@@ -165,81 +122,85 @@ describe('AgentManager', () => {
 	});
 
 	it('child() creates agent with copied private stores', async () => {
-		const manager = new AgentManager(
-			() => [new CounterExtension()],
-			createMockToolTransport(),
-		);
+		const manager = new AgentManager(() => [counterExtension()]);
 
-		const { agentId: parentId, agent: parent } = await manager.spawn(
-			createMockTransport(),
-		);
+		const { agentId: parentId, agent: parent } =
+			await manager.spawn(createStubClient());
 		track(parent);
-		parent.counter.set(() => 10);
 
-		const { agent: child } = await manager.child(
-			parentId,
-			createMockTransport(),
-		);
+		const parentStore = parent.stores.stores.get('counter')!.store;
+		parentStore.set(() => 10);
+
+		const { agent: child } = await manager.child(parentId, createStubClient());
 		track(child);
+
+		const childStore = child.stores.stores.get('counter')!.store;
 
 		// Child starts with a snapshot of parent's state
-		expect(child.counter.get()).toBe(10);
+		expect(childStore.get()).toBe(10);
 
-		// But mutations are independent (PrivateStore → independent copy)
-		child.counter.set(() => 99);
-		expect(parent.counter.get()).toBe(10);
-		expect(child.counter.get()).toBe(99);
+		// But mutations are independent (private store → independent copy)
+		childStore.set(() => 99);
+		expect(parentStore.get()).toBe(10);
+		expect(childStore.get()).toBe(99);
 	});
 
-	it('child() shares SharedStore instances across parent/child', async () => {
-		const manager = new AgentManager(
-			() => [new SharedCounterExtension()],
-			createMockToolTransport(),
-		);
+	it('child() shares global stores across parent/child', async () => {
+		const manager = new AgentManager(() => [sharedCounterExtension()]);
 
-		const { agentId: parentId, agent: parent } = await manager.spawn(
-			createMockTransport(),
-		);
+		const { agentId: parentId, agent: parent } =
+			await manager.spawn(createStubClient());
 		track(parent);
 
-		const { agent: child } = await manager.child(
-			parentId,
-			createMockTransport(),
-		);
+		const { agent: child } = await manager.child(parentId, createStubClient());
 		track(child);
 
-		// SharedStore.copy() returns `this`, so parent and child share state
-		parent.counter.set(() => 42);
-		expect(child.counter.get()).toBe(42);
+		const parentStore = parent.stores.stores.get('counter')!.store;
+		const childStore = child.stores.stores.get('counter')!.store;
 
-		child.counter.set(() => 100);
-		expect(parent.counter.get()).toBe(100);
+		// Global stores are shared — same instance
+		parentStore.set(() => 42);
+		expect(childStore.get()).toBe(42);
+
+		childStore.set(() => 100);
+		expect(parentStore.get()).toBe(100);
 	});
 
 	it('multiple spawn() calls produce independent agents', async () => {
-		const manager = new AgentManager(
-			() => [new ItemsExtension(), new CounterExtension()],
-			createMockToolTransport(),
-		);
+		const manager = new AgentManager(() => [
+			itemsExtension(),
+			counterExtension(),
+		]);
 
-		const { agent: a1 } = await manager.spawn(createMockTransport());
-		const { agent: a2 } = await manager.spawn(createMockTransport());
-		const { agent: a3 } = await manager.spawn(createMockTransport());
+		const { agent: a1 } = await manager.spawn(createStubClient());
+		const { agent: a2 } = await manager.spawn(createStubClient());
+		const { agent: a3 } = await manager.spawn(createStubClient());
 		track(a1);
 		track(a2);
 		track(a3);
 
-		a1.items.set((draft) => {
-			draft.push({ id: '1', text: 'a1-item' });
+		const items1 = a1.stores.stores.get('items')!.store;
+		const items2 = a2.stores.stores.get('items')!.store;
+		const items3 = a3.stores.stores.get('items')!.store;
+
+		items1.set((draft: unknown) => {
+			(draft as { id: string; text: string }[]).push({
+				id: '1',
+				text: 'a1-item',
+			});
 		});
-		a2.counter.set(() => 5);
 
-		expect(a1.items.get()).toHaveLength(1);
-		expect(a2.items.get()).toHaveLength(0);
-		expect(a3.items.get()).toHaveLength(0);
+		const counter2 = a2.stores.stores.get('counter')!.store;
+		counter2.set(() => 5);
 
-		expect(a1.counter.get()).toBe(0);
-		expect(a2.counter.get()).toBe(5);
-		expect(a3.counter.get()).toBe(0);
+		expect(items1.get()).toHaveLength(1);
+		expect(items2.get()).toHaveLength(0);
+		expect(items3.get()).toHaveLength(0);
+
+		const counter1 = a1.stores.stores.get('counter')!.store;
+		const counter3 = a3.stores.stores.get('counter')!.store;
+		expect(counter1.get()).toBe(0);
+		expect(counter2.get()).toBe(5);
+		expect(counter3.get()).toBe(0);
 	});
 });

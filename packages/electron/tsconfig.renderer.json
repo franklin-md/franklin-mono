@@ -11,6 +11,7 @@
 	"include": ["src/renderer/**/*.ts", "src/shared/**/*.ts"],
 	"references": [
 		{ "path": "../lib/transport" },
+		{ "path": "../mini-acp" },
 		{ "path": "../agent" },
 		{ "path": "../local-mcp" }
 	]

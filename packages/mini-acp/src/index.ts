@@ -51,4 +51,6 @@ export type {
 	MiniACPClient,
 	MiniACPAgent,
 	MiniACPProtocol,
+	MiniACPAgentSide,
+	MiniACPClientSide,
 } from './protocol/index.js';

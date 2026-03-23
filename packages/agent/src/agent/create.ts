@@ -1,60 +1,69 @@
-import type { Extension } from '../extensions/types/extension.js';
-import type { McpTransportFactory } from '../extensions/compile/start.js';
-import type { AgentTransport } from '../transport/index.js';
+import type { MiniACPClient, MiniACPAgent } from '@franklin/mini-acp';
+import type {
+	Extension,
+	CoreAPI,
+	StoreAPI,
+	StoreResult,
+} from '@franklin/extensions';
+import {
+	compileAll,
+	combine,
+	createCoreCompiler,
+	createStoreCompiler,
+	apply,
+} from '@franklin/extensions';
 import type { Agent } from './types.js';
-import { compileExtensions } from '../extensions/compile/index.js';
-import { fillHandler } from '../stack/fill-handler.js';
-import { createAgentConnection } from '../connection.js';
 
 /**
- * Create a typed agent by compiling extensions and connecting a transport.
+ * Create a typed agent by compiling extensions and wrapping a mini-acp client.
  *
- * Each extension is compiled into middleware (registering tools, hooks,
- * etc.) and the resulting middlewares are composed over the transport
- * connection. Stateful extension stores are attached at `agent.<name>`.
+ * Extensions are compiled via `compileAll` (fold with merge), producing
+ * middleware for the client side (command interception) and server side
+ * (tool execution). The client is wrapped with middleware; the server
+ * middleware produces a `toolExecute` handler for the protocol to call.
  *
- * ```ts
- * const agent = await createAgent(
- *   [todoExt, convExt],
- *   transport,
- *   framework.toolTransport,
- * );
- *
- * agent.prompt(...);        // AgentCommands
- * agent.todo.get();         // Store<Todo[]>
- * agent.conversation.get(); // Store<ConversationTurn[]>
- * ```
+ * For child agents, pass `existingStores` from `parent.stores.copy('private')`
+ * to inherit state per store sharing semantics.
  */
-export async function createAgent<const E extends readonly Extension<any>[]>(
-	extensions: E,
-	transport: AgentTransport,
-	toolTransport: McpTransportFactory,
-): Promise<Agent<E>> {
-	// Compile each extension into transport-wrapping middleware.
-	const middleware = await compileExtensions(extensions, toolTransport);
-
-	// Apply middleware to transport and create connection.
-	const connection = createAgentConnection(
-		middleware(transport),
-		fillHandler({}),
+export async function createAgent(
+	extensions: Extension<CoreAPI & StoreAPI>[],
+	client: MiniACPClient,
+	existingStores?: StoreResult,
+): Promise<Agent> {
+	const result = await compileAll(
+		() => combine(createCoreCompiler(), createStoreCompiler(existingStores)),
+		extensions,
 	);
 
-	// Build the agent object: commands + lifecycle + extension stores.
-	const agent: Record<string, unknown> = {
-		...connection.commands,
-		dispose: async () => {
-			await connection.dispose();
-		},
-		signal: connection.signal,
-		closed: connection.closed,
+	// Wrap outgoing commands with client middleware
+	const wrappedClient = apply(result.client, client);
+
+	// Wrap tool execution with server middleware.
+	// Default handler returns an error for unknown tools.
+	const defaultAgent: MiniACPAgent = {
+		toolExecute: async (params) => ({
+			toolCallId: params.call.id,
+			content: [
+				{
+					type: 'text',
+					text: `Unknown tool: ${params.call.name}`,
+				},
+			],
+			isError: true,
+		}),
 	};
+	const wrappedAgent = apply(result.server, defaultAgent);
 
-	// Attach each stateful extension's store at agent.<name>.
-	for (const ext of extensions) {
-		if (ext.state) {
-			agent[ext.name] = ext.state;
-		}
-	}
+	const controller = new AbortController();
 
-	return agent as Agent<E>;
+	return {
+		...wrappedClient,
+		toolExecute: wrappedAgent.toolExecute,
+		stores: result,
+		dispose: async () => {
+			controller.abort();
+		},
+		signal: controller.signal,
+		closed: Promise.resolve(),
+	};
 }

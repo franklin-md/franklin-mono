@@ -4,110 +4,73 @@
  * Re-exports only the pieces that have zero Node.js transitive dependencies,
  * so they can be safely imported from an Electron renderer or any browser
  * environment. The full `@franklin/agent` barrel adds Node-only APIs
- * (StdioTransport, spawn, etc.) on top of these.
+ * (StdioTransport, etc.) on top of these.
  */
 
 // Environment
-export type { EnvironmentHandle, AgentSpec } from './environment.js';
-
-// Extensions (browser-safe — compileExtension only depends on @franklin/local-mcp/browser)
-export {
-	compileExtension,
-	compileExtensions,
-	TodoExtension,
-	ConversationExtension,
-	SpawnExtension,
-	createTodoControl,
-} from './extensions/index.js';
 export type {
-	Extension,
-	ExtensionAPI,
-	ExtensionToolDefinition,
-	McpTransportFactory,
-	PromptHandler,
-	SessionStartHandler,
-	SessionUpdateHandler,
-	Todo,
-	AgentTextEntry,
-	AgentThoughtEntry,
-	ConversationEntry,
-	ConversationTurn,
-	ToolCallEntry,
-	UserEntry,
-	SpawnPoint,
-	SpawnPointFactory,
-} from './extensions/index.js';
-
-// Connection
-export { createAgentConnection } from './connection.js';
-export type { AgentConnection } from './connection.js';
+	EnvironmentHandle,
+	AgentSpec,
+	ClientTransport,
+} from './environment.js';
 
 // Types
-export type { AgentCommands, AgentEvents, AgentMiddleware } from './types.js';
-export { COMMAND_METHODS, EVENT_METHODS } from './types.js';
-
-// Stack
-export { fillHandler } from './stack/fill-handler.js';
-
-// Transport
-export type { AgentTransport as Transport } from './transport/index.js';
-
-// Store (browser-safe — immer is pure JS, no Node deps)
-export {
-	createStore,
-	createSharedStore,
-	createPrivateStore,
-} from './store/index.js';
-export type { ReadonlyStore, Store } from './store/index.js';
+export type { AgentCommands } from './types.js';
 
 // Agent — typed handle unifying commands, extension stores, and lifecycle
 export { createAgent, AgentManager } from './agent/index.js';
-export type { Agent, ExtensionStores } from './agent/index.js';
+export type { Agent, ManagedAgent } from './agent/index.js';
 
 // Framework base class
 export { Framework } from './framework.js';
 
-// Re-export key ACP types so consumers don't need to depend on the SDK directly
-export type {
-	AnyMessage,
-	AuthenticateRequest,
-	AuthenticateResponse,
-	CancelNotification,
-	CreateTerminalRequest,
-	CreateTerminalResponse,
-	InitializeRequest,
-	InitializeResponse,
-	KillTerminalRequest,
-	KillTerminalResponse,
-	ListSessionsRequest,
-	ListSessionsResponse,
-	LoadSessionRequest,
-	LoadSessionResponse,
-	NewSessionRequest,
-	NewSessionResponse,
-	PromptRequest,
-	PromptResponse,
-	ReadTextFileRequest,
-	ReadTextFileResponse,
-	ReleaseTerminalRequest,
-	ReleaseTerminalResponse,
-	RequestPermissionRequest,
-	RequestPermissionResponse,
-	SessionNotification,
-	SetSessionConfigOptionRequest,
-	SetSessionConfigOptionResponse,
-	SetSessionModeRequest,
-	SetSessionModeResponse,
-	Stream,
-	TerminalOutputRequest,
-	TerminalOutputResponse,
-	WaitForTerminalExitRequest,
-	WaitForTerminalExitResponse,
-	WriteTextFileRequest,
-	WriteTextFileResponse,
-} from '@agentclientprotocol/sdk';
+// Re-export from @franklin/extensions for convenience
 export {
-	RequestError,
-	ndJsonStream,
-	PROTOCOL_VERSION,
-} from '@agentclientprotocol/sdk';
+	conversationExtension,
+	todoExtension,
+	createTodoControl,
+	formatTodos,
+	spawnExtension,
+	compile,
+	combine,
+	compileAll,
+	createCoreCompiler,
+	createStoreCompiler,
+	apply,
+	createStore,
+} from '@franklin/extensions';
+export type {
+	Extension,
+	CoreAPI,
+	StoreAPI,
+	StoreResult,
+	Store,
+	ReadonlyStore,
+	Sharing,
+	FullMiddleware,
+	ClientMiddleware,
+	ServerMiddleware,
+	ConversationTurn,
+	ConversationEntry,
+	UserEntry,
+	AgentTextEntry,
+	AgentThoughtEntry,
+	ToolCallEntry,
+	Todo,
+	TodoControl,
+} from '@franklin/extensions';
+
+// Re-export key mini-acp types so consumers don't need to depend on it directly
+export type {
+	MiniACPClient,
+	MiniACPAgent,
+	MiniACPProtocol,
+	Content,
+	UserContent,
+	Chunk,
+	Update,
+	TurnEnd,
+	ToolCall,
+	ToolResult,
+	ToolExecuteHandler,
+} from '@franklin/mini-acp';

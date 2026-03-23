@@ -27,10 +27,9 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@agentclientprotocol/sdk": "^0.16.1",
-		"@franklin/local-mcp": "*",
+		"@franklin/extensions": "*",
+		"@franklin/mini-acp": "*",
 		"@franklin/transport": "*",
-		"immer": "^10.1.1",
 		"zod": "^4.0.0"
 	}
 }

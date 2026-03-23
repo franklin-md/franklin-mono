@@ -13,7 +13,7 @@ import type {
 	UserContent,
 	AssistantContent,
 	ToolResultContent,
-} from '../../types/content.js';
+} from '../../../types/content.js';
 
 // ---------------------------------------------------------------------------
 // pi-ai → mini-acp (per-role, returning narrowed types)

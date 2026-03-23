@@ -9,7 +9,7 @@
 import { expect, it } from 'vitest';
 import { getModel } from '@mariozechner/pi-ai';
 
-import { createPiAdapter } from '../base/pi-adapter.js';
+import { createPiAdapter } from '../base/pi/adapter.js';
 import type { TurnAgent } from '../base/types.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { Ctx } from '../types/context.js';

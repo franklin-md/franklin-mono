@@ -1,17 +1,9 @@
-import type { McpTransportFactory } from './extensions/compile/start.js';
-
-// ---------------------------------------------------------------------------
-// Framework — abstract base for Node and Electron frameworks
-// ---------------------------------------------------------------------------
-
 /**
  * Base class for framework implementations.
  *
- * Provides `compileExtensions` and `connect` so that consumers don't
- * need to manually wire middleware, events, connections, and commands.
- * Subclasses provide the concrete `toolTransport` and environment lifecycle.
+ * Subclasses provide environment provisioning and agent spawning.
+ * Previously held `toolTransport` for MCP tool relay — that's now
+ * handled by in-channel extension tools (no MCP relay needed).
  */
-export abstract class Framework {
-	/** MCP transport factory used to serve extension tools. */
-	abstract get toolTransport(): McpTransportFactory;
-}
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
+export abstract class Framework {}

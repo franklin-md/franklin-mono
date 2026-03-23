@@ -1,20 +1,9 @@
-import type { McpTransportFactory } from '@franklin/agent';
 import { Framework } from '@franklin/agent';
 
 import type { ProvisionOptions } from './environment.js';
 import type { NodeEnvironment } from './environment.js';
 import { provision } from './environment.js';
 import type { AgentRegistry } from './registry.js';
-import { PortManager } from '@franklin/transport';
-import { createHttpTransport } from '@franklin/local-mcp';
-
-// ---------------------------------------------------------------------------
-// FrameworkOptions
-// ---------------------------------------------------------------------------
-
-export interface FrameworkOptions {
-	toolTransport?: McpTransportFactory;
-}
 
 // ---------------------------------------------------------------------------
 // NodeFramework
@@ -23,43 +12,15 @@ export interface FrameworkOptions {
 /**
  * Manages agent environments in a Node.js process.
  *
- * Extends the base Framework class to inherit `compileExtensions` and
- * `compileAgent`. Provides the Node-specific `toolTransport` (HTTP relay)
- * and environment lifecycle (local filesystem).
+ * Extends the base Framework class. Provides environment lifecycle
+ * (local filesystem). MCP tool relay is no longer needed — extension tools
+ * are handled in-channel.
  */
 export class NodeFramework extends Framework {
-	private readonly portManager;
 	private readonly environments = new Map<string, NodeEnvironment>();
 
 	constructor(private readonly registry: AgentRegistry) {
 		super();
-		this.portManager = new PortManager();
-	}
-
-	/** MCP transport factory — defaults to the Node HTTP relay. */
-	get toolTransport(): McpTransportFactory {
-		// Shared port manager for all tool transports in this process.
-
-		/**
-		 * McpTransportFactory for Node.js environments.
-		 *
-		 * Spins up an HTTP server on localhost with an auto-assigned port.
-		 * The agent subprocess connects to it via the MCP relay config
-		 * injected into the session's mcpServers.
-		 */
-		return async (name, tools) => {
-			const port = await this.portManager.allocate();
-			try {
-				return await createHttpTransport({
-					name,
-					tools,
-					serverOptions: { port },
-				});
-			} catch (error) {
-				this.portManager.release(port);
-				throw error;
-			}
-		};
 	}
 
 	/** Provision a new local environment. Returns the environment (which has an id). */

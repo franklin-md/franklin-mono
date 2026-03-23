@@ -1,5 +1,10 @@
 // Protocol definition
-export type { Protocol, ServerOf, ClientOf } from './protocol/index.js';
+export type {
+	Protocol,
+	Reverse,
+	ServerOf,
+	ClientOf,
+} from './protocol/index.js';
 
 // Manifest definition
 export type { ProtocolManifest } from './protocol/index.js';

@@ -1,47 +1,37 @@
 import { useCallback, useRef, useState } from 'react';
 
-import type { Agent, Extension } from '@franklin/agent/browser';
+import type { Agent } from '@franklin/agent/browser';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { SidebarGroup } from './sidebar-group.js';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface SpawnResult<E extends Extension<any>[]> {
-	agent: Agent<E>;
-	sessionId: string;
+interface SpawnResult {
+	agent: Agent;
 }
 
-interface AgentEntry<E extends Extension<any>[]> {
+interface AgentEntry {
 	id: string;
 	name: string;
-	agent: Agent<E>;
-	sessionId: string;
+	agent: Agent;
 }
 
-interface GroupData<E extends Extension<any>[]> {
+interface GroupData {
 	id: string;
 	name: string;
-	spawn: () => Promise<SpawnResult<E>>;
-	agents: AgentEntry<E>[];
+	spawn: () => Promise<SpawnResult>;
+	agents: AgentEntry[];
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-export function AgentSidebar<E extends Extension<any>[]>({
+export function AgentSidebar({
 	factory,
 	onSelectAgent,
 }: {
-	factory: () => () => Promise<SpawnResult<E>>;
-	onSelectAgent: (agentId: string, agent: Agent<E>, sessionId: string) => void;
+	factory: () => () => Promise<SpawnResult>;
+	onSelectAgent: (agentId: string, agent: Agent) => void;
 }) {
-	const [groups, setGroups] = useState<GroupData<E>[]>([]);
+	const [groups, setGroups] = useState<GroupData[]>([]);
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
 
 	const groupCounterRef = useRef(0);
@@ -68,13 +58,12 @@ export function AgentSidebar<E extends Extension<any>[]>({
 			const group = groupsRef.current.find((g) => g.id === groupId);
 			if (!group) return;
 
-			const { agent, sessionId } = await group.spawn();
+			const { agent } = await group.spawn();
 			agentCounterRef.current += 1;
-			const entry: AgentEntry<E> = {
+			const entry: AgentEntry = {
 				id: crypto.randomUUID(),
 				name: `Agent ${String(agentCounterRef.current)}`,
 				agent,
-				sessionId,
 			};
 
 			setGroups((prev) =>
@@ -83,17 +72,16 @@ export function AgentSidebar<E extends Extension<any>[]>({
 				),
 			);
 
-			// Auto-select the newly spawned agent
 			setCurrentAgentId(entry.id);
-			onSelectAgent(entry.id, agent, sessionId);
+			onSelectAgent(entry.id, agent);
 		},
 		[onSelectAgent],
 	);
 
 	const handleSelectAgent = useCallback(
-		(agentId: string, agent: Agent<E>, sessionId: string) => {
+		(agentId: string, agent: Agent) => {
 			setCurrentAgentId(agentId);
-			onSelectAgent(agentId, agent, sessionId);
+			onSelectAgent(agentId, agent);
 		},
 		[onSelectAgent],
 	);

@@ -16,7 +16,7 @@
 		"clean": "tsc -b --clean",
 		"lint": "eslint . --cache --max-warnings=0",
 		"lint:fix": "npm run lint -- --fix",
-		"typecheck": "npm run typecheck --workspaces --if-present",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
 		"test": "npm run test --workspaces --if-present",
 		"test:integration": "FRANKLIN_RUN_CODEX_INTEGRATION=1 npm run test --workspaces --if-present",
 		"format": "prettier --write .",

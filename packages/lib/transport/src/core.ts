@@ -48,7 +48,7 @@ export { mapStream, ndjsonCodec, type Codec } from './codec/index.js';
 export { createNdjsonDecoder, encodeNdjsonLine } from './streams/ndjson.js';
 
 // In-memory (no Node deps)
-export { createDuplexPair } from './in-memory/index.js';
+export { createMemoryStream, createDuplexPair } from './in-memory/index.js';
 
 // Multiplexing
 export { Multiplexer } from './multiplex/index.js';
@@ -64,6 +64,7 @@ export {
 	notification,
 	event,
 	type Protocol,
+	type Reverse,
 	type ServerOf,
 	type ClientOf,
 	type ProtocolManifest,

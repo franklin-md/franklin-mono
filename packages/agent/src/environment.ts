@@ -1,4 +1,15 @@
-import type { AgentTransport } from './transport/index.js';
+import type { MiniACPProtocol } from '@franklin/mini-acp';
+import type { Duplex, ReadType, WriteType } from '@franklin/transport';
+
+// ---------------------------------------------------------------------------
+// ClientTransport — the transport from the client's perspective
+// ---------------------------------------------------------------------------
+
+/** Transport from the spawner's (client) perspective — reads server responses, writes client requests. */
+export type ClientTransport = Duplex<
+	WriteType<MiniACPProtocol>,
+	ReadType<MiniACPProtocol>
+>;
 
 // ---------------------------------------------------------------------------
 // EnvironmentHandle — a handle to a provisioned environment
@@ -17,11 +28,8 @@ import type { AgentTransport } from './transport/index.js';
  * concrete implementations.
  */
 export interface EnvironmentHandle {
-	/**
-	 * Start an agent in this environment by name (resolved via registry),
-	 * returning a transport for ACP communication.
-	 */
-	spawn(agent: string): Promise<AgentTransport>;
+	/** Start an agent in this environment by name, returning a protocol transport. */
+	spawn(agent: string): Promise<ClientTransport>;
 
 	/** Clean up the environment and release resources. */
 	dispose(): Promise<void>;

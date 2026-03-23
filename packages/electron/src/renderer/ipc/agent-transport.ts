@@ -1,20 +1,27 @@
-import type { AnyMessage } from '@agentclientprotocol/sdk';
-import type { MuxPacket, Duplex } from '@franklin/transport';
+import type { ClientTransport } from '@franklin/agent/browser';
+import type { Duplex } from '@franklin/transport';
 import { Multiplexer } from '@franklin/transport';
 
 import { AGENT_STREAM } from '../../shared/channels.js';
 import { createIpcStream } from './stream.js';
+import type {
+	AgentClientMux,
+	AgentMuxDown,
+	AgentMuxUp,
+} from '../../shared/types.js';
 
 // ---------------------------------------------------------------------------
 // Lazy singleton for Level 1 agent multiplexer
 // ---------------------------------------------------------------------------
 
-let agentMux: Multiplexer<AnyMessage> | null = null;
+let agentMux: AgentClientMux | null = null;
 
-function getAgentMux(): Multiplexer<AnyMessage> {
+function getAgentMux(): AgentClientMux {
 	if (!agentMux) {
-		const agentChannel: Duplex<MuxPacket<AnyMessage>> =
-			createIpcStream<MuxPacket<AnyMessage>>(AGENT_STREAM);
+		const agentChannel: Duplex<AgentMuxUp, AgentMuxDown> = createIpcStream<
+			AgentMuxUp,
+			AgentMuxDown
+		>(AGENT_STREAM);
 		agentMux = new Multiplexer(agentChannel);
 	}
 	return agentMux;
@@ -25,12 +32,12 @@ function getAgentMux(): Multiplexer<AnyMessage> {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates an IPC-backed AgentTransport for a specific agent.
+ * Creates an IPC-backed MiniACPProtocol transport for a specific agent.
  *
  * Level 2 demux by agentId within the shared "agent-transport" channel.
  * Wraps dispose to also kill the agent subprocess in main.
  */
-export function createIpcAgentTransport(agentId: string): Duplex<AnyMessage> {
+export function createIpcAgentTransport(agentId: string): ClientTransport {
 	const inner = getAgentMux().channel(agentId);
 
 	return {

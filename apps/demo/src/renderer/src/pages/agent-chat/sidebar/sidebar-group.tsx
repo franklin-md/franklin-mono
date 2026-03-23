@@ -1,17 +1,16 @@
-import type { Agent, Extension } from '@franklin/agent/browser';
+import type { Agent } from '@franklin/agent/browser';
 
 import { Button } from '@/components/ui/button';
 
 import { SidebarItem } from './sidebar-item.js';
 
-interface AgentEntry<E extends Extension<any>[]> {
+interface AgentEntry {
 	id: string;
 	name: string;
-	agent: Agent<E>;
-	sessionId: string;
+	agent: Agent;
 }
 
-export function SidebarGroup<E extends Extension<any>[]>({
+export function SidebarGroup({
 	name,
 	agents,
 	currentAgentId,
@@ -19,10 +18,10 @@ export function SidebarGroup<E extends Extension<any>[]>({
 	onSelectAgent,
 }: {
 	name: string;
-	agents: AgentEntry<E>[];
+	agents: AgentEntry[];
 	currentAgentId: string | null;
 	onSpawnAgent: () => void;
-	onSelectAgent: (agentId: string, agent: Agent<E>, sessionId: string) => void;
+	onSelectAgent: (agentId: string, agent: Agent) => void;
 }) {
 	return (
 		<div className="mb-2">
@@ -45,9 +44,7 @@ export function SidebarGroup<E extends Extension<any>[]>({
 						key={entry.id}
 						name={entry.name}
 						active={entry.id === currentAgentId}
-						onClick={() =>
-							onSelectAgent(entry.id, entry.agent, entry.sessionId)
-						}
+						onClick={() => onSelectAgent(entry.id, entry.agent)}
 					/>
 				))}
 			</div>

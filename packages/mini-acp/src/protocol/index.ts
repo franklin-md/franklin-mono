@@ -1,1 +1,7 @@
-export type { MiniACPClient, MiniACPAgent, MiniACPProtocol } from './types.js';
+export type {
+	MiniACPClient,
+	MiniACPAgent,
+	MiniACPProtocol,
+	MiniACPAgentSide,
+	MiniACPClientSide,
+} from './types.js';

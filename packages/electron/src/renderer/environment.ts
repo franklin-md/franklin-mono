@@ -1,6 +1,7 @@
-import type { EnvironmentHandle } from '@franklin/agent/browser';
-import type { Duplex } from '@franklin/transport';
-import type { AnyMessage } from '@agentclientprotocol/sdk';
+import type {
+	EnvironmentHandle,
+	ClientTransport,
+} from '@franklin/agent/browser';
 
 import { createIpcAgentTransport } from './ipc/agent-transport.js';
 
@@ -14,7 +15,7 @@ import { createIpcAgentTransport } from './ipc/agent-transport.js';
 export class ElectronEnvironmentHandle implements EnvironmentHandle {
 	constructor(private readonly envId: string) {}
 
-	async spawn(name: string): Promise<Duplex<AnyMessage>> {
+	async spawn(name: string): Promise<ClientTransport> {
 		const agentId = await window.__franklinBridge.agent.spawn(this.envId, name);
 		return createIpcAgentTransport(agentId);
 	}

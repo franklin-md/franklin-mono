@@ -3,7 +3,7 @@ import type {
 	ToolDefinition,
 	ToolExecuteHandler,
 	ToolResult,
-} from '../../types/tool.js';
+} from '../../../types/tool.js';
 
 // ---------------------------------------------------------------------------
 // Tool bridging — ToolDefinition + handler → AgentTool

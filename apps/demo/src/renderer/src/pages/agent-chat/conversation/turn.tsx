@@ -13,7 +13,7 @@ export function Turn({ turn }: { turn: ConversationTurn }) {
 						return <UserBubble key={i} entry={entry} />;
 					case 'text':
 						return <AgentBubble key={i} entry={entry} />;
-					case 'tool_call':
+					case 'toolCall':
 						return <ToolCallCard key={i} entry={entry} />;
 					case 'thought':
 						return null;

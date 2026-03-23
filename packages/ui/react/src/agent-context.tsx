@@ -1,7 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 
 import type { Agent } from '@franklin/agent/browser';
-import type { Extension } from '@franklin/agent/browser';
 
 // ---------------------------------------------------------------------------
 // Context
@@ -14,23 +13,21 @@ import type { Extension } from '@franklin/agent/browser';
  * in useAgentState are independent of the context and do NOT cause re-renders
  * here.
  */
-const AgentContext = createContext<Agent<Extension<any>[]> | null>(null);
+const AgentContext = createContext<Agent | null>(null);
 
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
 
-export function AgentProvider<E extends readonly Extension<any>[]>({
+export function AgentProvider({
 	agent,
 	children,
 }: {
-	agent: Agent<E>;
+	agent: Agent;
 	children: ReactNode;
 }) {
 	return (
-		<AgentContext.Provider value={agent as Agent<Extension<any>[]>}>
-			{children}
-		</AgentContext.Provider>
+		<AgentContext.Provider value={agent}>{children}</AgentContext.Provider>
 	);
 }
 
@@ -45,10 +42,10 @@ export function AgentProvider<E extends readonly Extension<any>[]>({
  * a different agent). Store updates within the same agent do NOT trigger
  * re-renders — use `useAgentState(agent, storeName)` for reactive store reads.
  */
-export function useAgent<E extends readonly Extension<any>[]>(): Agent<E> {
+export function useAgent(): Agent {
 	const agent = useContext(AgentContext);
 	if (!agent) {
 		throw new Error('useAgent must be used inside an <AgentProvider>');
 	}
-	return agent as Agent<E>;
+	return agent;
 }

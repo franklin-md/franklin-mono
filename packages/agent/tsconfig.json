@@ -8,5 +8,9 @@
 		"declarationMap": true
 	},
 	"include": ["src/**/*.ts"],
-	"references": [{ "path": "../lib/transport" }, { "path": "../local-mcp" }]
+	"references": [
+		{ "path": "../lib/transport" },
+		{ "path": "../mini-acp" },
+		{ "path": "../extensions" }
+	]
 }

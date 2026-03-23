@@ -1,5 +1,4 @@
-import type { EnvironmentHandle, Transport } from '@franklin/agent';
-import { StdioTransport } from '@franklin/agent';
+import type { EnvironmentHandle, ClientTransport } from '@franklin/agent';
 import { randomUUID } from 'node:crypto';
 
 import type { AgentRegistry } from './registry.js';
@@ -23,14 +22,9 @@ export class NodeEnvironment implements EnvironmentHandle {
 		this.id = randomUUID();
 	}
 
-	async spawn(agent: string): Promise<Transport> {
-		const spec = this.registry.get(agent);
-		return new StdioTransport({
-			command: spec.command,
-			args: spec.args,
-			cwd: this.cwd,
-			env: this.env,
-		});
+	async spawn(_agent: string): Promise<ClientTransport> {
+		// TODO: Implement
+		throw new Error('Not implemented');
 	}
 
 	async dispose(): Promise<void> {
