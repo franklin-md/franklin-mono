@@ -32,6 +32,9 @@ export function useAgentManager(): GroupFactory {
 		return async (): Promise<SpawnResult> => {
 			const transport = await framework.spawn();
 			const agent = await createAgent(extensions, transport);
+			await agent.setContext({
+				ctx: { tools: [], history: { systemPrompt: '', messages: [] } },
+			});
 			return { agent };
 		};
 	}, []);

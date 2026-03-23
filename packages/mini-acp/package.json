@@ -25,6 +25,7 @@
 	"dependencies": {
 		"@franklin/transport": "*",
 		"@mariozechner/pi-agent-core": "^0.61.0",
+		"dotenv": "^17.3.1",
 		"pi-agents": "^0.1.0"
 	}
 }

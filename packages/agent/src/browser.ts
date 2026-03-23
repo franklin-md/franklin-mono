@@ -49,11 +49,6 @@ export type {
 	ClientMiddleware,
 	ServerMiddleware,
 	ConversationTurn,
-	ConversationEntry,
-	UserEntry,
-	AgentTextEntry,
-	AgentThoughtEntry,
-	ToolCallEntry,
 	Todo,
 	TodoControl,
 } from '@franklin/extensions';

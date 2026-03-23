@@ -65,6 +65,14 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 			tools: piTools,
 			messages: piMessages,
 		},
+		// TODO: Lets not hard code this. I think solution should be to pass this from ctx?
+		getApiKey: (provider: string) => {
+			const key = process.env[`${provider.toUpperCase()}_API_KEY`];
+			if (!key) {
+				throw new Error(`Missing API key for provider: ${provider}`);
+			}
+			return key;
+		},
 		streamFn,
 	});
 

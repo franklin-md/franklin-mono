@@ -1,114 +1,75 @@
-import type { Chunk } from '@franklin/mini-acp';
+import type { AssistantMessage, Chunk } from '@franklin/mini-acp';
 import type { Extension } from '../../types/extension.js';
 import type { CoreAPI } from '../../api/core/api.js';
 import type { StoreAPI } from '../../api/store/api.js';
 import type { Store } from '../../api/store/types.js';
-import type {
-	AgentTextEntry,
-	AgentThoughtEntry,
-	ConversationTurn,
-} from './types.js';
+import type { ConversationTurn } from './types.js';
 import { conversationKey } from './key.js';
 
 /**
- * Extension that maintains a flat, coalesced conversation transcript.
+ * Extension that maintains a conversation transcript as a list of turns,
+ * where each turn contains Message objects from mini-acp.
  *
  * Listens to `prompt` (to record user messages) and `chunk`
- * (to record agent text, thoughts, and tool calls). Streaming chunks
- * with the same `messageId` are coalesced into single entries.
- *
- * Exposes a `conversation` store for UI binding.
+ * (to build up assistant messages). Streaming chunks with the same
+ * `messageId` are coalesced into a single AssistantMessage.
  */
 export function conversationExtension(): Extension<CoreAPI & StoreAPI> {
 	return (api) => {
 		const store = api.registerStore(conversationKey, [], 'private');
 
+		// Track messageId → message index within the current turn
+		const messageIndex = new Map<string, number>();
+
 		api.on('prompt', (params) => {
+			messageIndex.clear();
 			store.set((draft) => {
 				draft.push({
 					id: crypto.randomUUID(),
 					timestamp: Date.now(),
-					entries: [
-						{
-							type: 'user',
-							content: [...params.message.content],
-						},
-					],
+					messages: [{ ...params.message }],
 				});
 			});
 		});
 
 		api.on('chunk', (event) => {
-			appendChunk(store, event);
+			appendChunk(store, event, messageIndex);
 		});
 	};
 }
 
 /**
  * Dispatch a chunk event into the conversation store.
- * Routes by content type to the appropriate entry kind.
+ * Coalesces content blocks into an AssistantMessage by messageId.
  */
-function appendChunk(store: Store<ConversationTurn[]>, chunk: Chunk): void {
+function appendChunk(
+	store: Store<ConversationTurn[]>,
+	chunk: Chunk,
+	messageIndex: Map<string, number>,
+): void {
 	const { content, messageId } = chunk;
 
-	switch (content.type) {
-		case 'text':
-			coalesceEntry(store, 'text', content, messageId);
-			break;
-		case 'thinking':
-			coalesceEntry(store, 'thought', content, messageId);
-			break;
-		case 'toolCall':
-			store.set((draft) => {
-				const turn = draft[draft.length - 1];
-				if (!turn) return;
-				turn.entries.push({
-					type: 'toolCall',
-					id: content.id,
-					name: content.name,
-					arguments: content.arguments,
-				});
-			});
-			break;
-		case 'image':
-			// Images are not coalesced — create a new text-like entry
-			coalesceEntry(store, 'text', content, messageId);
-			break;
-	}
-}
-
-/**
- * Coalesces a content block into the latest turn. If an entry with the
- * same `messageId` exists, appends to it; otherwise creates a new entry.
- */
-function coalesceEntry(
-	store: Store<ConversationTurn[]>,
-	type: 'text' | 'thought',
-	content: Chunk['content'],
-	messageId: string,
-): void {
 	store.set((draft) => {
 		const turn = draft[draft.length - 1];
 		if (!turn) return;
 
-		// Try to coalesce with an existing entry by messageId
-		for (let i = turn.entries.length - 1; i >= 0; i--) {
-			const entry = turn.entries[i];
-			if (
-				entry &&
-				(entry.type === 'text' || entry.type === 'thought') &&
-				entry.messageId === messageId
-			) {
-				entry.content.push(content);
+		// Try to find an existing assistant message with this messageId
+		const existingIdx = messageIndex.get(messageId);
+		if (existingIdx !== undefined) {
+			const msg = turn.messages[existingIdx];
+			if (msg && msg.role === 'assistant') {
+				msg.content.push(content);
 				return;
 			}
 		}
 
-		// No existing entry — create one
-		turn.entries.push({
-			type,
-			messageId,
+		// Create a new assistant message
+		const newMsg: AssistantMessage = {
+			role: 'assistant',
 			content: [content],
-		} as AgentTextEntry | AgentThoughtEntry);
+		};
+		const idx = turn.messages.length;
+		turn.messages.push(newMsg);
+		messageIndex.set(messageId, idx);
 	});
 }

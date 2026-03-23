@@ -2,14 +2,7 @@ export {
 	conversationExtension,
 	conversationKey,
 } from './conversation/index.js';
-export type {
-	ConversationTurn,
-	ConversationEntry,
-	UserEntry,
-	AgentTextEntry,
-	AgentThoughtEntry,
-	ToolCallEntry,
-} from './conversation/index.js';
+export type { ConversationTurn } from './conversation/index.js';
 
 export {
 	todoExtension,

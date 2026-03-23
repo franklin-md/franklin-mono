@@ -3,7 +3,7 @@ import { createCoreCompiler } from '../../compile/core/compiler.js';
 import { createStoreCompiler } from '../../compile/store/compiler.js';
 import { compile, combine } from '../../compile/types.js';
 import { apply } from '../../api/core/middleware/apply.js';
-import type { MiniACPClient, Chunk, Update } from '@franklin/mini-acp';
+import type { MiniACPClient, Chunk } from '@franklin/mini-acp';
 import { conversationExtension } from '../conversation/extension.js';
 import type { ConversationTurn } from '../conversation/types.js';
 
@@ -61,11 +61,11 @@ describe('conversationExtension', () => {
 
 		const turns = getStore(result);
 		expect(turns).toHaveLength(1);
-		expect(turns[0]!.entries).toHaveLength(1);
-		expect(turns[0]!.entries[0]!.type).toBe('user');
+		expect(turns[0]!.messages).toHaveLength(1);
+		expect(turns[0]!.messages[0]!.role).toBe('user');
 	});
 
-	it('coalesces text chunks by messageId', async () => {
+	it('coalesces text chunks by messageId into one assistant message', async () => {
 		const result = await compileConversation();
 
 		const chunk1: Chunk = {
@@ -100,27 +100,27 @@ describe('conversationExtension', () => {
 
 		const turns = getStore(result);
 		expect(turns).toHaveLength(1);
-		// user entry + one coalesced text entry
-		expect(turns[0]!.entries).toHaveLength(2);
-		const textEntry = turns[0]!.entries[1]!;
-		expect(textEntry.type).toBe('text');
-		expect((textEntry as any).content).toHaveLength(2);
+		// user message + one coalesced assistant message
+		expect(turns[0]!.messages).toHaveLength(2);
+		const assistantMsg = turns[0]!.messages[1]!;
+		expect(assistantMsg.role).toBe('assistant');
+		expect(assistantMsg.content).toHaveLength(2);
 	});
 
-	it('separates thinking chunks from text chunks', async () => {
+	it('coalesces thinking and text chunks into the same assistant message', async () => {
 		const result = await compileConversation();
 
+		const thinkingChunk: Chunk = {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'thinking', text: 'reasoning...' },
+		};
 		const textChunk: Chunk = {
 			type: 'chunk',
 			messageId: 'm1',
 			role: 'assistant',
 			content: { type: 'text', text: 'visible' },
-		};
-		const thinkingChunk: Chunk = {
-			type: 'chunk',
-			messageId: 'm2',
-			role: 'assistant',
-			content: { type: 'thinking', text: 'reasoning...' },
 		};
 
 		const target = stubClient({
@@ -141,14 +141,58 @@ describe('conversationExtension', () => {
 		);
 
 		const turns = getStore(result);
-		const entries = turns[0]!.entries;
-		// user + thought + text = 3 entries
-		expect(entries).toHaveLength(3);
-		expect(entries[1]!.type).toBe('thought');
-		expect(entries[2]!.type).toBe('text');
+		const messages = turns[0]!.messages;
+		// user + one assistant message with mixed content
+		expect(messages).toHaveLength(2);
+		const assistantMsg = messages[1]!;
+		expect(assistantMsg.role).toBe('assistant');
+		expect(assistantMsg.content).toHaveLength(2);
+		expect(assistantMsg.content[0]!.type).toBe('thinking');
+		expect(assistantMsg.content[1]!.type).toBe('text');
 	});
 
-	it('records toolCall chunks as tool call entries', async () => {
+	it('different messageIds create separate assistant messages', async () => {
+		const result = await compileConversation();
+
+		const chunk1: Chunk = {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'text', text: 'first' },
+		};
+		const chunk2: Chunk = {
+			type: 'chunk',
+			messageId: 'm2',
+			role: 'assistant',
+			content: { type: 'text', text: 'second' },
+		};
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield chunk1;
+				yield chunk2;
+			},
+		});
+
+		const wrapped = apply(result.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		const turns = getStore(result);
+		const messages = turns[0]!.messages;
+		// user + two separate assistant messages
+		expect(messages).toHaveLength(3);
+		expect(messages[1]!.role).toBe('assistant');
+		expect(messages[2]!.role).toBe('assistant');
+	});
+
+	it('records toolCall chunks as content within assistant message', async () => {
 		const result = await compileConversation();
 
 		const toolChunk: Chunk = {
@@ -180,11 +224,12 @@ describe('conversationExtension', () => {
 		);
 
 		const turns = getStore(result);
-		const entries = turns[0]!.entries;
-		// user + toolCall = 2
-		expect(entries).toHaveLength(2);
-		expect(entries[1]!.type).toBe('toolCall');
-		expect((entries[1] as any).name).toBe('read_file');
+		const messages = turns[0]!.messages;
+		// user + assistant with toolCall content
+		expect(messages).toHaveLength(2);
+		const assistantMsg = messages[1]!;
+		expect(assistantMsg.role).toBe('assistant');
+		expect(assistantMsg.content[0]!.type).toBe('toolCall');
 	});
 
 	it('multiple turns from multiple prompt calls', async () => {

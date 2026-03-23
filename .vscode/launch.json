@@ -17,7 +17,8 @@
 			"request": "launch",
 			"cwd": "${workspaceFolder}",
 			"preLaunchTask": "build",
-			"command": "npm run dev:debug -w @franklin/demo"
+			"command": "npm run dev:debug -w @franklin/demo",
+			"envFile": "${workspaceFolder}/.env"
 		},
 		{
 			"name": "Demo: Attach Main",

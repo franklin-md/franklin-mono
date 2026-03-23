@@ -53,11 +53,6 @@ export {
 } from './extensions/index.js';
 export type {
 	ConversationTurn,
-	ConversationEntry,
-	UserEntry,
-	AgentTextEntry,
-	AgentThoughtEntry,
-	ToolCallEntry,
 	Todo,
 	TodoControl,
 } from './extensions/index.js';
