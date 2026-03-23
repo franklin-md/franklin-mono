@@ -36,8 +36,4 @@ export type AssistantContent =
 export type ToolResultContent = TextContent | ImageContent;
 
 // All content types (superset)
-export type Content =
-	| TextContent
-	| ThinkingContent
-	| ImageContent
-	| ToolCallContent;
+export type Content = TextContent | ThinkingContent | ImageContent;

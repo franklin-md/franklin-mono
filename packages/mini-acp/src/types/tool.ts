@@ -1,4 +1,4 @@
-import type { ToolCallContent } from './content.js';
+import type { ImageContent, TextContent, ToolCallContent } from './content.js';
 
 // ---------------------------------------------------------------------------
 // Tool definitions and results
@@ -17,10 +17,7 @@ export type ToolCall = ToolCallContent;
 
 export type ToolResult = {
 	toolCallId: string;
-	content: Array<
-		| { type: 'text'; text: string }
-		| { type: 'image'; data: string; mimeType: string }
-	>;
+	content: Array<TextContent | ImageContent>;
 	isError?: boolean;
 };
 

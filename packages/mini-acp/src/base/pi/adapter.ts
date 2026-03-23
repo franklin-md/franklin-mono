@@ -12,7 +12,7 @@ import type { StreamFn } from '@mariozechner/pi-agent-core';
 
 import type {
 	TurnClient,
-	TurnAgent,
+	TurnServer,
 	PromptParams,
 	CancelParams,
 } from '../types.js';
@@ -37,7 +37,7 @@ import { createMemoryStream } from '@franklin/transport';
 
 export interface PiAdapterOptions {
 	/** BaseClient for reverse RPC (tool execution) */
-	client: TurnAgent;
+	client: TurnServer;
 	/** Pre-resolved pi-ai Model */
 	model: Model<string>;
 	/** Agent context (history, tools, config) */
@@ -100,7 +100,6 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 			piAgent
 				.prompt(piMessage)
 				.then(() => {
-					void writer.write({ type: 'turnEnd' });
 					void writer.close();
 				})
 				.catch((err: unknown) => {
@@ -129,6 +128,9 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 
 		async cancel(_params: CancelParams): Promise<TurnEnd> {
 			piAgent.abort();
+			// TODO: Ensure that aborting causes prompt to:
+			// a) not hang
+			// b) return a turnEnd with cancellation reason
 			return {
 				type: 'turnEnd',
 				error: { code: -1, message: 'Cancelled' },

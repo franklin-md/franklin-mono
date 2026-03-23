@@ -3,9 +3,6 @@ export type {
 	CoreEvent,
 	CoreEventHandler,
 	CoreEventMap,
-	StreamObserverEvent,
-	StreamObserverHandler,
-	StreamObserverParamsMap,
 	ExtensionToolDefinition,
 	ContentBlockResult,
 	MethodMiddleware,
@@ -47,6 +44,7 @@ export {
 	createSandboxCompiler,
 } from './compile/index.js';
 export type { Extension, MaybePromise } from './types/index.js';
+export { reduceExtensions } from './types/index.js';
 
 // ---------------------------------------------------------------------------
 // Built-in extensions
@@ -59,8 +57,6 @@ export {
 	createTodoControl,
 	formatTodos,
 	spawnExtension,
-	fsExtension,
-	terminalExtension,
 } from './extensions/index.js';
 export type {
 	ConversationTurn,

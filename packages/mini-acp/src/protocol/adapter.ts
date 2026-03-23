@@ -3,7 +3,7 @@
 // MiniACPClient with session management (initialize, setContext, multi-turn).
 // ---------------------------------------------------------------------------
 
-import type { TurnClient, TurnAgent } from '../base/types.js';
+import type { TurnClient, TurnServer } from '../base/types.js';
 import type { Ctx } from '../types/context.js';
 import type { MuClient, InitializeResult } from './types.js';
 
@@ -11,7 +11,7 @@ import type { MuClient, InitializeResult } from './types.js';
  * Factory that creates a single-turn agent (TurnClient) from context and
  * a reverse-RPC client handle.
  */
-export type BaseAgentFactory = (ctx: Ctx, client: TurnAgent) => TurnClient;
+export type BaseAgentFactory = (ctx: Ctx, client: TurnServer) => TurnClient;
 
 /**
  * Wraps a BaseAgentFactory as a full MiniACPClient with session management.
@@ -23,13 +23,13 @@ export type BaseAgentFactory = (ctx: Ctx, client: TurnAgent) => TurnClient;
  * - `cancel()` forwards to the current agent (if any)
  *
  * @param factory - Creates a TurnClient from context + reverse-RPC client
- * @param getClient - Lazy accessor for the reverse-RPC client (TurnAgent).
+ * @param getClient - Lazy accessor for the reverse-RPC client (TurnServer).
  *   Called on first prompt, not at construction time, so it's safe to pass
  *   a getter that references a binding created after this adapter.
  */
 export function createSessionAdapter(
 	factory: BaseAgentFactory,
-	getClient: () => TurnAgent,
+	getClient: () => TurnServer,
 ): MuClient {
 	const ctx: Ctx = {
 		history: { systemPrompt: '', messages: [] },

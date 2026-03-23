@@ -4,7 +4,7 @@ import type { SandboxAPI } from '../../api/sandbox/api.js';
 import { createBashToolDefinition } from '@mariozechner/pi-coding-agent';
 import { bridgePiToolDefinition } from '../../api/sandbox/bridge.js';
 import { toBashOperations } from '../../api/sandbox/adapters.js';
-import { bashSchema } from '../../api/sandbox/schemas.js';
+import { bashSchema } from './schema.js';
 
 /**
  * Extension that registers the bash tool backed by the sandbox's

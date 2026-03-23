@@ -72,6 +72,7 @@ export function toPiUserMessage(msg: UserMessage): PiUserMessage {
 	};
 }
 
+// TODO: This does not seem right....
 function toPiAssistantMessage(msg: AssistantMessage): PiAssistantMessage {
 	return {
 		role: 'assistant',
