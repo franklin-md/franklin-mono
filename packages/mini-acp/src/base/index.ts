@@ -1,6 +1,6 @@
 export type {
 	TurnClient as BaseAgent,
-	TurnAgent as BaseClient,
+	TurnServer as BaseClient,
 } from './types.js';
 export { createPiAdapter, type PiAdapterOptions } from './pi/adapter.js';
 export { createPiFactory, type PiFactoryOptions } from './pi/factory.js';

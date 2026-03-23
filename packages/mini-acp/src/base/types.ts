@@ -15,6 +15,6 @@ export interface TurnClient {
 }
 
 // Client side (agent calls client — reverse RPC)
-export interface TurnAgent {
+export interface TurnServer {
 	toolExecute: ToolExecuteHandler;
 }

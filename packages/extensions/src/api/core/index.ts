@@ -8,6 +8,8 @@ export type {
 	StreamObserverParamsMap,
 } from './events.js';
 export type { ExtensionToolDefinition } from './tool.js';
+export type { ContentBlockResult } from './content-block.js';
+export { isContentBlockResult } from './content-block.js';
 export type {
 	MethodMiddleware,
 	Middleware,

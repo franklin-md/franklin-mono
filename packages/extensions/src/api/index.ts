@@ -7,6 +7,7 @@ export type {
 	StreamObserverHandler,
 	StreamObserverParamsMap,
 	ExtensionToolDefinition,
+	ContentBlockResult,
 	MethodMiddleware,
 	Middleware,
 	ClientMiddleware,
@@ -14,7 +15,11 @@ export type {
 	FullMiddleware,
 } from './core/index.js';
 export { compose, composeMethod, passThrough } from './core/index.js';
+export { isContentBlockResult } from './core/index.js';
 export { apply } from './core/index.js';
+export type { SandboxAPI } from './sandbox/index.js';
+export type { Sandbox, Filesystem, Terminal } from './sandbox/index.js';
+export { createLocalSandbox } from './sandbox/index.js';
 export type { StoreAPI } from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';
 export type { Sharing } from './store/index.js';

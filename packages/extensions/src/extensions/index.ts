@@ -13,3 +13,6 @@ export {
 export type { Todo, TodoControl } from './todo/index.js';
 
 export { spawnExtension } from './spawn/index.js';
+
+export { fsExtension } from './fs/index.js';
+export { terminalExtension } from './terminal/index.js';
