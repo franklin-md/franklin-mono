@@ -11,6 +11,7 @@
 	"references": [
 		{ "path": "../agent" },
 		{ "path": "../lib/transport" },
-		{ "path": "../local-mcp" }
+		{ "path": "../local-mcp" },
+		{ "path": "../mini-acp" }
 	]
 }

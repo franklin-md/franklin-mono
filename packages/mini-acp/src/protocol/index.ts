@@ -19,3 +19,5 @@ export {
 	type ClientConnection,
 	type AgentConnection,
 } from './connection.js';
+
+export { createSessionAdapter, type BaseAgentFactory } from './adapter.js';

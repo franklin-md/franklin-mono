@@ -1,4 +1,4 @@
-import type { MiniACPClient, ToolExecuteHandler } from '@franklin/mini-acp';
+import type { MiniACPClient } from '@franklin/mini-acp';
 import type { StoreResult } from '@franklin/extensions';
 
 /**
@@ -16,9 +16,6 @@ export type AgentCommands = MiniACPClient;
  * - Stores are accessed via `agent.stores.stores.get(name)`.
  */
 export type Agent = AgentCommands & {
-	toolExecute: ToolExecuteHandler;
 	stores: StoreResult;
 	dispose: () => Promise<void>;
-	signal: AbortSignal;
-	closed: Promise<void>;
 };

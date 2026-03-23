@@ -1,10 +1,7 @@
 // Framework
-export { NodeFramework } from './framework.js';
+export { NodeFramework, type SpawnOptions } from './framework.js';
 
-// Environment
-export { NodeEnvironment, provision } from './environment.js';
-export type { ProvisionOptions } from './environment.js';
-// Registry
+// Registry (kept for subprocess agent specs)
 export { AgentRegistry, createDefaultRegistry } from './registry.js';
 
 // Agent specs

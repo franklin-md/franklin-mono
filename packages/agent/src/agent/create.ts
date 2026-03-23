@@ -1,4 +1,8 @@
-import type { MiniACPClient, MiniACPAgent } from '@franklin/mini-acp';
+import {
+	type MiniACPAgent,
+	createClientConnection,
+	type ClientProtocol,
+} from '@franklin/mini-acp';
 import type {
 	Extension,
 	CoreAPI,
@@ -27,16 +31,13 @@ import type { Agent } from './types.js';
  */
 export async function createAgent(
 	extensions: Extension<CoreAPI & StoreAPI>[],
-	client: MiniACPClient,
+	transport: ClientProtocol,
 	existingStores?: StoreResult,
 ): Promise<Agent> {
 	const result = await compileAll(
 		combine(createCoreCompiler(), createStoreCompiler(existingStores)),
 		extensions,
 	);
-
-	// Wrap outgoing commands with client middleware
-	const wrappedClient = apply(result.client, client);
 
 	// Wrap tool execution with server middleware.
 	// Default handler returns an error for unknown tools.
@@ -52,18 +53,18 @@ export async function createAgent(
 			isError: true,
 		}),
 	};
+	// Wrap outgoing commands with client middleware
 	const wrappedAgent = apply(result.server, defaultAgent);
+	const connection = createClientConnection(transport, wrappedAgent);
+	const wrappedClient = apply(result.client, connection.remote);
 
 	const controller = new AbortController();
 
 	return {
 		...wrappedClient,
-		toolExecute: wrappedAgent.toolExecute,
 		stores: result,
 		dispose: async () => {
 			controller.abort();
 		},
-		signal: controller.signal,
-		closed: Promise.resolve(),
 	};
 }

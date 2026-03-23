@@ -1,56 +1,60 @@
-import { Framework } from '@franklin/agent';
+import { getModel } from '@mariozechner/pi-ai';
+import type { Model } from '@mariozechner/pi-ai';
+import type { StreamFn } from '@mariozechner/pi-agent-core';
+import { createDuplexPair } from '@franklin/transport';
+import {
+	createPiFactory,
+	createSessionAdapter,
+	createAgentConnection,
+	type ClientProtocol,
+	type AgentProtocol,
+	type AgentConnection,
+} from '@franklin/mini-acp';
 
-import type { ProvisionOptions } from './environment.js';
-import type { NodeEnvironment } from './environment.js';
-import { provision } from './environment.js';
-import type { AgentRegistry } from './registry.js';
+// ---------------------------------------------------------------------------
+// Default model — OpenRouter with z-ai/glm-5
+// ---------------------------------------------------------------------------
+
+function defaultModel(): Model<string> {
+	return getModel('openrouter', 'z-ai/glm-5');
+}
 
 // ---------------------------------------------------------------------------
 // NodeFramework
 // ---------------------------------------------------------------------------
 
+export interface SpawnOptions {
+	model?: Model<string>;
+	streamFn?: StreamFn;
+}
+
 /**
- * Manages agent environments in a Node.js process.
+ * Spawns in-process Pi agents connected via MiniACP protocol.
  *
- * Extends the base Framework class. Provides environment lifecycle
- * (local filesystem). MCP tool relay is no longer needed — extension tools
- * are handled in-channel.
+ * Each `spawn()` call creates a new agent backed by pi-agent-core,
+ * wired up with bidirectional JSONRPC bindings. Returns the client-side
+ * protocol transport for the caller to bind.
  */
-export class NodeFramework extends Framework {
-	private readonly environments = new Map<string, NodeEnvironment>();
+export class NodeFramework {
+	spawn(options?: SpawnOptions): ClientProtocol {
+		const model = options?.model ?? defaultModel();
+		const factory = createPiFactory({ model, streamFn: options?.streamFn });
 
-	constructor(private readonly registry: AgentRegistry) {
-		super();
-	}
+		// TODO: Type this correctly, it is already correct but message type is painful
+		const { a, b } = createDuplexPair();
+		const clientDuplex = a as unknown as ClientProtocol;
+		const agentDuplex = b as unknown as AgentProtocol;
 
-	/** Provision a new local environment. Returns the environment (which has an id). */
-	provision(opts?: ProvisionOptions): NodeEnvironment {
-		const env = provision(this.registry, opts);
-		this.environments.set(env.id, env);
-		return env;
-	}
+		// Build handlers first, then pass to createAgentConnection.
+		// getClient() is only called on first prompt, so agentBinding is
+		// always set before it's accessed.
+		// eslint-disable-next-line prefer-const -- assigned after handlers, used in handler closures
+		let agentBinding!: AgentConnection;
 
-	/** Look up a provisioned environment by ID. Throws if not found. */
-	get(envId: string): NodeEnvironment {
-		const env = this.environments.get(envId);
-		if (!env) throw new Error(`Unknown environment: "${envId}"`);
-		return env;
-	}
+		const handlers = createSessionAdapter(factory, () => agentBinding.remote);
 
-	/** Dispose a single environment by ID. */
-	async disposeEnv(envId: string): Promise<void> {
-		const env = this.environments.get(envId);
-		if (!env) return;
-		this.environments.delete(envId);
-		await env.dispose();
-	}
+		agentBinding = createAgentConnection(agentDuplex, handlers);
 
-	/** Dispose all provisioned environments. */
-	async dispose(): Promise<void> {
-		const disposals = [...this.environments.values()].map((env) =>
-			env.dispose(),
-		);
-		await Promise.allSettled(disposals);
-		this.environments.clear();
+		return clientDuplex;
 	}
 }

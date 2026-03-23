@@ -1,5 +1,4 @@
-import type { ClientTransport } from '@franklin/agent/browser';
-
+import type { ClientProtocol } from '@franklin/mini-acp';
 import { createIpcAgentTransport } from './ipc/agent-transport.js';
 
 // ---------------------------------------------------------------------------
@@ -20,7 +19,7 @@ export class ElectronFramework {
 	 * Spawn an agent in the main process.
 	 * Returns a renderer-side transport for communicating with it.
 	 */
-	async spawn(): Promise<ClientTransport> {
+	async spawn(): Promise<ClientProtocol> {
 		const agentId = await window.__franklinBridge.agent.spawn();
 		this.agents.add(agentId);
 		return createIpcAgentTransport(agentId);

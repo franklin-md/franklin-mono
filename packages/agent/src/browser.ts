@@ -8,7 +8,7 @@
  */
 
 // Environment
-export type { AgentSpec, ClientTransport } from './environment.js';
+export type { AgentSpec } from './environment.js';
 
 // Types
 export type { AgentCommands } from './types.js';

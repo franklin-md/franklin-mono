@@ -26,6 +26,9 @@
 		"@agentclientprotocol/sdk": "^0.16.1",
 		"@franklin/agent": "*",
 		"@franklin/local-mcp": "*",
-		"@franklin/transport": "*"
+		"@franklin/mini-acp": "*",
+		"@franklin/transport": "*",
+		"@mariozechner/pi-ai": "*",
+		"@mariozechner/pi-agent-core": "*"
 	}
 }
