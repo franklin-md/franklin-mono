@@ -1,6 +1,5 @@
 import * as fs from 'node:fs/promises';
 import { spawn } from 'node:child_process';
-import { glob as fastGlob } from 'glob';
 import type { Sandbox, Filesystem, Terminal } from './types.js';
 
 function createLocalFilesystem(): Filesystem {
@@ -26,14 +25,17 @@ function createLocalFilesystem(): Filesystem {
 			}
 		},
 		async glob(pattern, options) {
-			return fastGlob(pattern, {
+			const results: string[] = [];
+			for await (const entry of fs.glob(pattern, {
 				cwd: options.cwd,
-				ignore: options.ignore,
-				maxDepth: undefined,
-			}).then((results) =>
-				options.limit ? results.slice(0, options.limit) : results,
-			);
+				exclude: options.ignore,
+			})) {
+				results.push(entry);
+				if (options.limit && results.length >= options.limit) break;
+			}
+			return results;
 		},
+		deleteFile: (path) => fs.unlink(path),
 	};
 }
 

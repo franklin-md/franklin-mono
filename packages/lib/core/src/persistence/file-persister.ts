@@ -1,4 +1,4 @@
-import type { FileSystemOps } from './file-system.js';
+import type { PersistenceFilesystem } from './file-system.js';
 import type { Persister } from './persister.js';
 
 /**
@@ -8,13 +8,13 @@ import type { Persister } from './persister.js';
  */
 export function createFilePersistence<T>(
 	dir: string,
-	fs: FileSystemOps,
+	fs: PersistenceFilesystem,
 ): Persister<T> {
 	let dirCreated = false;
 
 	async function ensureDir(): Promise<void> {
 		if (dirCreated) return;
-		await fs.mkdir(dir);
+		await fs.mkdir(dir, { recursive: true });
 		dirCreated = true;
 	}
 
@@ -27,7 +27,7 @@ export function createFilePersistence<T>(
 		async load() {
 			let entries: string[];
 			try {
-				entries = await fs.readDir(dir);
+				entries = await fs.readdir(dir);
 			} catch {
 				// Directory doesn't exist yet — nothing to load
 				return new Map<string, T>();
@@ -38,7 +38,7 @@ export function createFilePersistence<T>(
 				if (!entry.endsWith('.json')) continue;
 				const id = entry.slice(0, -'.json'.length);
 				const raw = await fs.readFile(`${dir}/${entry}`);
-				snapshots.set(id, JSON.parse(raw) as T);
+				snapshots.set(id, JSON.parse(raw.toString('utf-8')) as T);
 			}
 			return snapshots;
 		},

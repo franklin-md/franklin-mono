@@ -1,11 +1,7 @@
-/**
- * Generic persistence contract keyed by snapshot ID.
- *
- * Implementations handle I/O (filesystem, IPC, etc.) while callers own
- * the in-memory lifecycle and decide *when* to persist.
- */
+// A way to persist a Key-Value store (for key =String).
+type Store<T> = Map<string, T>;
 export interface Persister<T> {
-	save(id: string, snapshot: T): Promise<void>;
-	load(): Promise<Map<string, T>>;
-	delete(id: string): Promise<void>;
+	save(key: string, value: T): Promise<void>;
+	load(): Promise<Store<T>>;
+	delete(key: string): Promise<void>;
 }

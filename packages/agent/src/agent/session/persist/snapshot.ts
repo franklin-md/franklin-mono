@@ -1,6 +1,7 @@
-import type { StoreSnapshot } from '@franklin/extensions';
 import type { Session } from '../types.js';
 import type { SessionSnapshot } from './types.js';
+import { cloneCtx } from '../ctx.js';
+import type { StoreMapping } from '@franklin/extensions';
 
 // ---------------------------------------------------------------------------
 // Snapshot — extract serializable state from a live Session
@@ -14,21 +15,15 @@ import type { SessionSnapshot } from './types.js';
  */
 export function snapshotSession(session: Session): SessionSnapshot {
 	const ctx = session.tracker.get();
-	const stores: Record<string, StoreSnapshot> = {};
+	const stores: StoreMapping = {};
 
-	for (const [name, entry] of session.agent.stores.stores) {
-		stores[name] = {
-			poolId: entry.poolId,
-			sharing: entry.sharing,
-		};
+	for (const [name, entry] of session.agent.stores.entries()) {
+		stores[name] = entry.ref;
 	}
 
 	return {
 		sessionId: session.sessionId,
-		ctx: {
-			history: ctx.history,
-			config: ctx.config,
-		},
+		ctx: cloneCtx(ctx),
 		stores,
 	};
 }

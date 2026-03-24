@@ -4,15 +4,17 @@ export type {
 	PersistedCtx,
 	SessionSnapshot,
 	StoreSnapshot,
+	Filesystem,
 	FileSystemOps,
+	PersistenceFilesystem,
 } from './types.js';
 
 // Snapshot utilities
 export { snapshotSession } from './snapshot.js';
 
 // Session map
-export { SessionMap } from './session-map.js';
-export type { OnRestore } from './session-map.js';
+export { SessionMap } from '../session-map.js';
+export type { OnRestore } from '../session-map.js';
 
 // Debouncer
 export { Debouncer } from '@franklin/lib';

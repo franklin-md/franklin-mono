@@ -34,6 +34,7 @@ function mockSandbox(terminal: Terminal): Sandbox {
 			readdir: vi.fn(),
 			exists: vi.fn(),
 			glob: vi.fn(),
+			deleteFile: vi.fn(),
 		},
 		terminal,
 	};

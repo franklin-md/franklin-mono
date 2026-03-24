@@ -14,7 +14,12 @@ export type { AgentSpec } from './environment.js';
 export type { AgentCommands } from './types.js';
 
 // Agent — typed handle unifying commands, extension stores, and lifecycle
-export { createAgent, SessionManager, emptyCtx, mergeCtx } from './agent/index.js';
+export {
+	createAgent,
+	SessionManager,
+	emptyCtx,
+	mergeCtx,
+} from './agent/index.js';
 export type {
 	Agent,
 	Session,
@@ -37,7 +42,9 @@ export type {
 	Persister,
 	SessionSnapshot,
 	StoreSnapshot,
+	Filesystem,
 	FileSystemOps,
+	PersistenceFilesystem,
 } from './agent/index.js';
 
 // Re-export from @franklin/extensions for convenience

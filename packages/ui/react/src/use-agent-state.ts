@@ -14,7 +14,7 @@ import type {
 /**
  * Subscribe to a specific agent extension store by name.
  *
- * Looks up the store in `agent.stores.stores` (the compiled StoreResult map).
+ * Looks up the store in `agent.stores` via the compiled StoreResult.
  * Re-renders **only** when that store's value changes — other stores
  * updating will not cause a re-render.
  *
@@ -44,7 +44,7 @@ export function useAgentState(
 	storeName: string,
 	selector?: (value: unknown) => unknown,
 ): unknown {
-	const entry = agent.stores.stores.get(storeName);
+	const entry = agent.stores.get(storeName);
 
 	if (!entry) {
 		throw new Error(`useAgentState: no store named "${storeName}" on agent`);

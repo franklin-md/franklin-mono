@@ -1,7 +1,8 @@
-export type FileSystemOps = {
-	readFile: (path: string) => Promise<string>;
-	writeFile: (path: string, data: string) => Promise<void>;
-	readDir: (path: string) => Promise<string[]>;
-	deleteFile: (path: string) => Promise<void>;
-	mkdir: (path: string) => Promise<void>;
-};
+import type { Filesystem } from '../filesystem.js';
+
+export type PersistenceFilesystem = Pick<
+	Filesystem,
+	'readFile' | 'writeFile' | 'readdir' | 'deleteFile' | 'mkdir'
+>;
+
+export type FileSystemOps = PersistenceFilesystem;

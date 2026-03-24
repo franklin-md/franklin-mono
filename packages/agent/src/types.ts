@@ -13,7 +13,7 @@ export type AgentCommands = MiniACPClient;
  *   with extension middleware.
  * - `toolExecute` handles tool calls from the protocol, with extension-
  *   registered tools short-circuiting before reaching the default handler.
- * - Stores are accessed via `agent.stores.stores.get(name)`.
+ * - Stores are accessed via `agent.stores.get(name)`.
  */
 export type Agent = AgentCommands & {
 	stores: StoreResult;

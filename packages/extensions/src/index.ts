@@ -22,7 +22,6 @@ export type {
 	Store,
 	Sharing,
 	StoreResult,
-	StoreEntry,
 	StoreKey,
 	StoreValueType,
 } from './api/index.js';
@@ -31,18 +30,17 @@ export { isContentBlockResult } from './api/index.js';
 export { serializeTool, toJsonSchema } from './api/index.js';
 export { apply } from './api/index.js';
 export {
-	shouldSnapshot,
 	createEmptyStoreResult,
-	createStoreResult,
-	hydrateStores,
 	createStore,
 	storeKey,
-	StorePool,
 } from './api/index.js';
+export { StorePool } from './api/index.js';
+export { hydrateStores } from './api/index.js';
 export type {
 	Persister,
+	StoreEntry,
+	StoreMapping,
 	StoreSnapshot,
-	PoolStoreSnapshot,
 } from './api/index.js';
 export type { Compiler } from './compile/index.js';
 export type { SandboxResult } from './compile/index.js';

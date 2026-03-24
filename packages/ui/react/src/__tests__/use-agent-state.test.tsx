@@ -23,7 +23,7 @@ function entry(
 	store: Store<unknown>,
 	sharing: 'private' | 'global' | 'inherit' = 'private',
 ): StoreEntry {
-	return { poolId: crypto.randomUUID(), store, sharing };
+	return { ref: crypto.randomUUID(), store, sharing };
 }
 
 function makeAgentWithStore<T>(

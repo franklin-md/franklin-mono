@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
 	SessionManager,
@@ -7,17 +7,14 @@ import {
 } from '@franklin/agent/browser';
 import type { Agent } from '@franklin/agent/browser';
 import { AgentProvider, SessionManagerProvider } from '@franklin/react';
-import { ElectronFramework } from '@franklin/electron/renderer';
+import {
+	ElectronFramework,
+	createElectronPersistence,
+} from '@franklin/electron/renderer';
 
 import { AgentSidebar } from './sidebar/index.js';
 import { ConversationPanel } from './conversation/index.js';
 import { TodoPanel } from './todo/index.js';
-
-const framework = new ElectronFramework();
-const manager = new SessionManager(
-	() => framework.spawn(),
-	[conversationExtension(), todoExtension()],
-);
 
 interface SelectedAgent {
 	id: string;
@@ -25,7 +22,22 @@ interface SelectedAgent {
 }
 
 export function AgentChatPage() {
+	const [framework] = useState(() => new ElectronFramework());
+	const [manager] = useState(
+		() =>
+			new SessionManager(
+				() => framework.spawn(),
+				[conversationExtension(), todoExtension()],
+				createElectronPersistence(),
+			),
+	);
 	const [selected, setSelected] = useState<SelectedAgent | null>(null);
+
+	useEffect(() => {
+		return () => {
+			void framework.dispose();
+		};
+	}, [framework]);
 
 	const handleSelectAgent = useCallback((id: string, agent: Agent) => {
 		setSelected({ id, agent });
@@ -45,7 +57,7 @@ export function AgentChatPage() {
 					</AgentProvider>
 				) : (
 					<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-						Create a group and spawn an agent to start.
+						Spawn an agent to start.
 					</div>
 				)}
 			</div>

@@ -3,10 +3,9 @@ import { compile, combine } from '../../types.js';
 import { createSandboxCompiler } from '../compiler.js';
 import { createCoreCompiler } from '../../core/compiler.js';
 import { createStoreCompiler } from '../../store/compiler.js';
+import { createEmptyStoreResult } from '../../../api/store/registry/result.js';
 import type { Sandbox } from '../../../api/sandbox/types.js';
-import type { CoreAPI } from '../../../api/core/api.js';
-import type { SandboxAPI } from '../../../api/sandbox/api.js';
-import type { StoreAPI } from '../../../api/store/api.js';
+import { StoreRegistry } from '../../../api/store/registry/index.js';
 
 function mockSandbox(cwd = '/test'): Sandbox {
 	return {
@@ -20,6 +19,7 @@ function mockSandbox(cwd = '/test'): Sandbox {
 			readdir: vi.fn(),
 			exists: vi.fn(),
 			glob: vi.fn(),
+			deleteFile: vi.fn(),
 		},
 		terminal: {
 			exec: vi.fn(),
@@ -66,8 +66,10 @@ describe('createSandboxCompiler', () => {
 
 	it('combines with core + store compilers', async () => {
 		const sandbox = mockSandbox();
+		const registry = new StoreRegistry();
+		const seed = createEmptyStoreResult(registry);
 		const compiler = combine(
-			combine(createCoreCompiler(), createStoreCompiler()),
+			combine(createCoreCompiler(), createStoreCompiler(seed)),
 			createSandboxCompiler(sandbox),
 		);
 
@@ -78,6 +80,6 @@ describe('createSandboxCompiler', () => {
 		});
 
 		expect(result.sandbox).toBe(sandbox);
-		expect(result.stores.size).toBe(1);
+		expect(result.stores.has('test')).toBe(true);
 	});
 });

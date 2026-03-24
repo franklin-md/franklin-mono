@@ -1,15 +1,14 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { Agent } from '@franklin/agent/browser';
+import type {
+	Agent,
+	SessionManager as FranklinSessionManager,
+} from '@franklin/agent/browser';
+import { useSessionManager } from '@franklin/react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-import { SidebarGroup } from './sidebar-group.js';
-
-interface SpawnResult {
-	agent: Agent;
-}
+import { SidebarItem } from './sidebar-item.js';
 
 interface AgentEntry {
 	id: string;
@@ -17,66 +16,128 @@ interface AgentEntry {
 	agent: Agent;
 }
 
-interface GroupData {
+type StoredAgentData = Pick<AgentEntry, 'id' | 'name'>;
+type LegacyStoredGroupData = {
 	id: string;
 	name: string;
-	spawn: () => Promise<SpawnResult>;
-	agents: AgentEntry[];
+	agents: StoredAgentData[];
+};
+
+const AGENTS_STORAGE_KEY = 'franklin.demo.agent-list';
+const LEGACY_GROUPS_STORAGE_KEY = 'franklin.demo.agent-groups';
+
+let restorePromise: Promise<void> | null = null;
+
+function ensureRestored(manager: FranklinSessionManager): Promise<void> {
+	restorePromise ??= manager.restore();
+	return restorePromise;
+}
+
+function parseStoredAgents(): StoredAgentData[] {
+	const raw = window.localStorage.getItem(AGENTS_STORAGE_KEY);
+	if (raw) {
+		try {
+			return JSON.parse(raw) as StoredAgentData[];
+		} catch {
+			return [];
+		}
+	}
+
+	const legacyRaw = window.localStorage.getItem(LEGACY_GROUPS_STORAGE_KEY);
+	if (!legacyRaw) return [];
+
+	try {
+		const legacy = JSON.parse(legacyRaw) as LegacyStoredGroupData[];
+		return legacy.flatMap((group) => group.agents);
+	} catch {
+		return [];
+	}
+}
+
+function loadStoredAgents(manager: FranklinSessionManager): AgentEntry[] {
+	const stored = parseStoredAgents();
+	if (stored.length === 0) return [];
+
+	return stored.flatMap((entry) => {
+		try {
+			const session = manager.get(entry.id);
+			return [{ ...entry, agent: session.agent }];
+		} catch {
+			return [];
+		}
+	});
+}
+
+function persistAgents(agents: AgentEntry[]): void {
+	const stored: StoredAgentData[] = agents.map(({ id, name }) => ({
+		id,
+		name,
+	}));
+	window.localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(stored));
+	window.localStorage.removeItem(LEGACY_GROUPS_STORAGE_KEY);
+}
+
+function nextAgentName(count: number): string {
+	return `Agent ${String(count)}`;
 }
 
 export function AgentSidebar({
-	factory,
 	onSelectAgent,
 }: {
-	factory: () => () => Promise<SpawnResult>;
 	onSelectAgent: (agentId: string, agent: Agent) => void;
 }) {
-	const [groups, setGroups] = useState<GroupData[]>([]);
+	const manager = useSessionManager();
+	const [agents, setAgents] = useState<AgentEntry[]>([]);
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
+	const [isHydrated, setIsHydrated] = useState(false);
 
-	const groupCounterRef = useRef(0);
 	const agentCounterRef = useRef(0);
-	const groupsRef = useRef(groups);
-	groupsRef.current = groups;
 
-	const handleCreateGroup = useCallback(() => {
-		groupCounterRef.current += 1;
-		const spawn = factory();
-		setGroups((prev) => [
-			...prev,
-			{
-				id: crypto.randomUUID(),
-				name: `Group ${String(groupCounterRef.current)}`,
-				spawn,
-				agents: [],
-			},
-		]);
-	}, [factory]);
+	useEffect(() => {
+		let isActive = true;
 
-	const handleSpawnAgent = useCallback(
-		async (groupId: string) => {
-			const group = groupsRef.current.find((g) => g.id === groupId);
-			if (!group) return;
+		void (async () => {
+			await ensureRestored(manager);
+			if (!isActive) return;
 
-			const { agent } = await group.spawn();
-			agentCounterRef.current += 1;
-			const entry: AgentEntry = {
-				id: crypto.randomUUID(),
-				name: `Agent ${String(agentCounterRef.current)}`,
-				agent,
-			};
+			const restoredAgents = loadStoredAgents(manager);
+			setAgents(restoredAgents);
+			agentCounterRef.current = restoredAgents.length;
 
-			setGroups((prev) =>
-				prev.map((g) =>
-					g.id === groupId ? { ...g, agents: [...g.agents, entry] } : g,
-				),
-			);
+			const firstAgent = restoredAgents[0];
+			if (firstAgent) {
+				setCurrentAgentId(firstAgent.id);
+				onSelectAgent(firstAgent.id, firstAgent.agent);
+			}
 
-			setCurrentAgentId(entry.id);
-			onSelectAgent(entry.id, agent);
-		},
-		[onSelectAgent],
-	);
+			setIsHydrated(true);
+		})();
+
+		return () => {
+			isActive = false;
+		};
+	}, [manager, onSelectAgent]);
+
+	useEffect(() => {
+		if (!isHydrated) return;
+		persistAgents(agents);
+	}, [agents, isHydrated]);
+
+	const handleSpawnAgent = useCallback(async () => {
+		const session = await manager.new();
+		agentCounterRef.current += 1;
+
+		const entry: AgentEntry = {
+			id: session.sessionId,
+			name: nextAgentName(agentCounterRef.current),
+			agent: session.agent,
+		};
+
+		setAgents((prev) => [...prev, entry]);
+
+		setCurrentAgentId(entry.id);
+		onSelectAgent(entry.id, session.agent);
+	}, [manager, onSelectAgent]);
 
 	const handleSelectAgent = useCallback(
 		(agentId: string, agent: Agent) => {
@@ -90,26 +151,33 @@ export function AgentSidebar({
 		<div className="flex w-60 flex-col border-r">
 			<div className="flex items-center justify-between border-b px-4 py-3">
 				<span className="text-sm font-semibold">Agents</span>
-				<Button variant="ghost" size="sm" onClick={handleCreateGroup}>
-					+ Group
+				<Button
+					variant="ghost"
+					size="sm"
+					disabled={!isHydrated}
+					onClick={() => void handleSpawnAgent()}
+				>
+					+ Agent
 				</Button>
 			</div>
 
 			<ScrollArea className="flex-1">
 				<div className="p-2">
-					{groups.length === 0 ? (
+					{!isHydrated ? (
 						<p className="py-8 text-center text-xs text-muted-foreground">
-							No groups yet.
+							Loading agents...
+						</p>
+					) : agents.length === 0 ? (
+						<p className="py-8 text-center text-xs text-muted-foreground">
+							No agents yet.
 						</p>
 					) : (
-						groups.map((group) => (
-							<SidebarGroup
-								key={group.id}
-								name={group.name}
-								agents={group.agents}
-								currentAgentId={currentAgentId}
-								onSpawnAgent={() => void handleSpawnAgent(group.id)}
-								onSelectAgent={handleSelectAgent}
+						agents.map((entry) => (
+							<SidebarItem
+								key={entry.id}
+								name={entry.name}
+								active={entry.id === currentAgentId}
+								onClick={() => handleSelectAgent(entry.id, entry.agent)}
 							/>
 						))
 					)}

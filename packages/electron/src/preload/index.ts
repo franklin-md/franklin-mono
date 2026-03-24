@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { Filesystem } from '@franklin/lib';
 
 import {
 	IPC_STREAM,
@@ -6,11 +7,16 @@ import {
 	AGENT_KILL,
 	MCP_START,
 	MCP_STOP,
-	PERSIST_READ_FILE,
-	PERSIST_WRITE_FILE,
-	PERSIST_READ_DIR,
-	PERSIST_DELETE_FILE,
-	PERSIST_MKDIR,
+	APP_GET_STORAGE,
+	FILESYSTEM_READ_FILE,
+	FILESYSTEM_WRITE_FILE,
+	FILESYSTEM_READ_DIR,
+	FILESYSTEM_DELETE_FILE,
+	FILESYSTEM_MKDIR,
+	FILESYSTEM_ACCESS,
+	FILESYSTEM_STAT,
+	FILESYSTEM_EXISTS,
+	FILESYSTEM_GLOB,
 } from '../shared/channels.js';
 
 // ---------------------------------------------------------------------------
@@ -57,24 +63,66 @@ const mcp = {
 };
 
 // ---------------------------------------------------------------------------
-// Persist (file I/O bridged to main process)
+// App (request/response over invoke)
 // ---------------------------------------------------------------------------
 
-const persist = {
-	readFile: (path: string): Promise<string> =>
-		ipcRenderer.invoke(PERSIST_READ_FILE, path) as Promise<string>,
+const appBridge = {
+	getStorage: (): Promise<string> =>
+		ipcRenderer.invoke(APP_GET_STORAGE) as Promise<string>,
+};
 
-	writeFile: (path: string, data: string): Promise<void> =>
-		ipcRenderer.invoke(PERSIST_WRITE_FILE, path, data) as Promise<void>,
+// ---------------------------------------------------------------------------
+// Filesystem (file I/O bridged to main process)
+// ---------------------------------------------------------------------------
 
-	readDir: (path: string): Promise<string[]> =>
-		ipcRenderer.invoke(PERSIST_READ_DIR, path) as Promise<string[]>,
+type SerializedFileStat = {
+	isFile: boolean;
+	isDirectory: boolean;
+};
 
-	deleteFile: (path: string): Promise<void> =>
-		ipcRenderer.invoke(PERSIST_DELETE_FILE, path) as Promise<void>,
+const filesystem: Filesystem = {
+	async readFile(path) {
+		const data = (await ipcRenderer.invoke(FILESYSTEM_READ_FILE, path)) as
+			| Uint8Array
+			| ArrayBuffer;
+		return data instanceof ArrayBuffer ? Buffer.from(data) : Buffer.from(data);
+	},
 
-	mkdir: (path: string): Promise<void> =>
-		ipcRenderer.invoke(PERSIST_MKDIR, path) as Promise<void>,
+	writeFile: (path, data) =>
+		ipcRenderer.invoke(
+			FILESYSTEM_WRITE_FILE,
+			path,
+			typeof data === 'string' ? data : Buffer.from(data),
+		) as Promise<void>,
+
+	mkdir: (path, options) =>
+		ipcRenderer.invoke(FILESYSTEM_MKDIR, path, options) as Promise<void>,
+
+	access: (path) =>
+		ipcRenderer.invoke(FILESYSTEM_ACCESS, path) as Promise<void>,
+
+	async stat(path) {
+		const data = (await ipcRenderer.invoke(
+			FILESYSTEM_STAT,
+			path,
+		)) as SerializedFileStat;
+		return {
+			isFile: () => data.isFile,
+			isDirectory: () => data.isDirectory,
+		};
+	},
+
+	readdir: (path) =>
+		ipcRenderer.invoke(FILESYSTEM_READ_DIR, path) as Promise<string[]>,
+
+	exists: (path) =>
+		ipcRenderer.invoke(FILESYSTEM_EXISTS, path) as Promise<boolean>,
+
+	glob: (pattern, options) =>
+		ipcRenderer.invoke(FILESYSTEM_GLOB, pattern, options) as Promise<string[]>,
+
+	deleteFile: (path) =>
+		ipcRenderer.invoke(FILESYSTEM_DELETE_FILE, path) as Promise<void>,
 };
 
 // ---------------------------------------------------------------------------
@@ -83,7 +131,8 @@ const persist = {
 
 contextBridge.exposeInMainWorld('__franklinBridge', {
 	ipcStream,
+	app: appBridge,
 	agent,
 	mcp,
-	persist,
+	filesystem,
 });

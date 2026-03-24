@@ -1,10 +1,6 @@
 export { createAgent } from './create.js';
 export { SessionManager, emptyCtx, mergeCtx } from './session/index.js';
-export type {
-	Session,
-	SpawnFn,
-	PersistenceOptions,
-} from './session/index.js';
+export type { Session, SpawnFn, PersistenceOptions } from './session/index.js';
 export type { Agent } from './types.js';
 
 // Persistence
@@ -23,5 +19,7 @@ export type {
 	Persister,
 	SessionSnapshot,
 	StoreSnapshot,
+	Filesystem,
 	FileSystemOps,
+	PersistenceFilesystem,
 } from './session/persist/index.js';

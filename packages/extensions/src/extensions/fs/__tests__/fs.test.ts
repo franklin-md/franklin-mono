@@ -20,6 +20,7 @@ function mockFs(): Filesystem {
 		readdir: vi.fn(async () => ['a.txt', 'b.txt']),
 		exists: vi.fn(async () => true),
 		glob: vi.fn(async () => ['src/a.ts', 'src/b.ts']),
+		deleteFile: vi.fn(async () => {}),
 	};
 }
 

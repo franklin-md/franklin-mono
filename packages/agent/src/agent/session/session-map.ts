@@ -1,6 +1,6 @@
-import type { Session } from '../types.js';
-import type { Persister, SessionSnapshot } from './types.js';
-import { snapshotSession } from './snapshot.js';
+import type { Session } from './types.js';
+import type { Persister, SessionSnapshot } from './persist/types.js';
+import { snapshotSession } from './persist/snapshot.js';
 
 export type OnRestore = (snapshot: SessionSnapshot) => Promise<void>;
 
@@ -64,33 +64,8 @@ export class SessionMap {
 	// Lifecycle
 	// -----------------------------------------------------------------------
 
-	async remove(id: string): Promise<void> {
-		const session = this.sessions.get(id);
-		if (session) {
-			session.tracker.onChange = undefined;
-		}
-		this.sessions.delete(id);
-
-		if (this.persister) {
-			await this.persister.delete(id);
-		}
-	}
-
 	private async loadAll(): Promise<SessionSnapshot[]> {
 		if (!this.persister) return [];
 		return [...(await this.persister.load()).values()];
-	}
-
-	/**
-	 * Collect all pool IDs referenced by live sessions.
-	 */
-	collectPoolIds(): Set<string> {
-		const ids = new Set<string>();
-		for (const session of this.sessions.values()) {
-			for (const [_name, entry] of session.agent.stores.stores) {
-				ids.add(entry.poolId);
-			}
-		}
-		return ids;
 	}
 }

@@ -9,9 +9,7 @@ function cloneHistory(
 	};
 }
 
-function cloneConfig(
-	config: PersistedCtx['config'],
-): PersistedCtx['config'] {
+function cloneConfig(config: PersistedCtx['config']): PersistedCtx['config'] {
 	return config ? { ...config } : config;
 }
 
@@ -21,6 +19,13 @@ export function emptyCtx(): PersistedCtx {
 			systemPrompt: '',
 			messages: [],
 		},
+	};
+}
+
+export function cloneCtx(ctx: PersistedCtx): PersistedCtx {
+	return {
+		history: cloneHistory(ctx.history),
+		config: cloneConfig(ctx.config),
 	};
 }
 

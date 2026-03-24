@@ -11,6 +11,10 @@ import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
  *
  * The tracker is owned by SessionManager, not the extension.
  */
+
+// TODO: I think there is a bug here. We capture the ctx 'as seen by the agent', but we set it 'as seen by the client' during resume.
+// TODO: It almost feels like we should not be exposing setContext as a hook in coreAPI....
+// TODO: Maybe we put the tracker on the front side too? I think we might not even want to expose setContext as a command to the client at all!
 export function ctxExtension(
 	tracker: CtxTracker,
 ): Extension<CoreAPI & StoreAPI> {

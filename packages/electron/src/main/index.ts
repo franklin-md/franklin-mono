@@ -1,8 +1,9 @@
 import type { NodeFramework } from '@franklin/node';
 import type { WebContents } from 'electron';
 
+import { AppRelay } from './ipc/app-relay.js';
 import { AgentRelay } from './ipc/agent-relay.js';
-import { PersistRelay } from './ipc/persist-relay.js';
+import { FilesystemRelay } from './ipc/filesystem-relay.js';
 
 // ---------------------------------------------------------------------------
 // MainHandle — returned by initializeMain for lifecycle management
@@ -31,16 +32,19 @@ export function initializeMain(
 	webContents: WebContents,
 	framework: NodeFramework,
 ): MainHandle {
+	const appRelay = new AppRelay();
 	const agentRelay = new AgentRelay(webContents, framework);
-	const persistRelay = new PersistRelay();
+	const filesystemRelay = new FilesystemRelay();
 
 	return {
 		dispose: async () => {
+			appRelay.dispose();
 			await agentRelay.dispose();
-			persistRelay.dispose();
+			filesystemRelay.dispose();
 		},
 	};
 }
 
+export type { AppRelay } from './ipc/app-relay.js';
 export type { AgentRelay } from './ipc/agent-relay.js';
-export type { PersistRelay } from './ipc/persist-relay.js';
+export type { FilesystemRelay } from './ipc/filesystem-relay.js';

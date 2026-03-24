@@ -1,7 +1,7 @@
-import type { PoolStoreSnapshot } from '@franklin/extensions';
+import type { StoreSnapshot } from '@franklin/extensions';
 import {
 	createFilePersistence,
-	type FileSystemOps,
+	type PersistenceFilesystem,
 	type Persister,
 } from '@franklin/lib';
 import type { SessionSnapshot } from './types.js';
@@ -13,7 +13,7 @@ import type { SessionSnapshot } from './types.js';
  */
 export function createFileSessionPersister(
 	dir: string,
-	fs: FileSystemOps,
+	fs: PersistenceFilesystem,
 ): Persister<SessionSnapshot> {
 	return createFilePersistence<SessionSnapshot>(`${dir}/sessions`, fs);
 }
@@ -21,11 +21,11 @@ export function createFileSessionPersister(
 /**
  * Creates a pool-store persister backed by JSON files.
  *
- * Layout: `{dir}/store/{poolId}.json`
+ * Layout: `{dir}/store/{ref}.json`
  */
 export function createFilePoolPersister(
 	dir: string,
-	fs: FileSystemOps,
-): Persister<PoolStoreSnapshot> {
-	return createFilePersistence<PoolStoreSnapshot>(`${dir}/store`, fs);
+	fs: PersistenceFilesystem,
+): Persister<StoreSnapshot> {
+	return createFilePersistence<StoreSnapshot>(`${dir}/store`, fs);
 }

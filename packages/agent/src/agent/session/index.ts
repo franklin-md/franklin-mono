@@ -4,19 +4,19 @@ import type { Persister } from '@franklin/lib';
 import type {
 	Extension,
 	CoreAPI,
-	PoolStoreSnapshot,
 	StoreAPI,
 	StoreResult,
+	StoreSnapshot,
 } from '@franklin/extensions';
 import {
 	createEmptyStoreResult,
 	hydrateStores,
-	StorePool,
+	StorePool as StoreRegistry,
 } from '@franklin/extensions';
 import { createAgent } from '../create.js';
 import { emptyCtx, mergeCtx } from './ctx.js';
 import { ctxExtension } from './ctx-extension.js';
-import { SessionMap } from './persist/session-map.js';
+import { SessionMap } from './session-map.js';
 import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
 import type { SpawnFn, Session } from './types.js';
 
@@ -25,7 +25,7 @@ export type { Session, SpawnFn };
 
 export type PersistenceOptions = {
 	session: Persister<SessionSnapshot>;
-	pool: Persister<PoolStoreSnapshot>;
+	pool: Persister<StoreSnapshot>;
 	delayMs?: number;
 };
 
@@ -33,17 +33,17 @@ export type PersistenceOptions = {
  * Manages agent sessions — handles transport spawning, extension compilation,
  * and protocol initialization for each session lifecycle command.
  *
- * Owns a shared {@link StorePool} that all sessions register their stores
+ * Owns a shared {@link StoreRegistry} that all sessions register their stores
  * into. This decouples store lifecycle from session lifecycle and preserves
  * shared-store identity across persistence/restore.
  *
  * When persistence options are provided, session saves are debounced and
  * the pool persists its own store entries via a debounced
- * `Persister<PoolStoreSnapshot>`.
+ * `Persister<StoreSnapshot>`.
  */
 export class SessionManager {
 	private readonly sessions: SessionMap;
-	private readonly pool: StorePool;
+	private readonly registry: StoreRegistry;
 	private readonly persister?: Persister<SessionSnapshot>;
 
 	constructor(
@@ -60,7 +60,7 @@ export class SessionManager {
 			? new DebouncedPersister(persistence.pool, delayMs)
 			: undefined;
 
-		this.pool = new StorePool(poolPersister);
+		this.registry = new StoreRegistry(poolPersister);
 		this.persister = sessionPersister;
 		this.sessions = new SessionMap(sessionPersister);
 	}
@@ -69,7 +69,9 @@ export class SessionManager {
 	 * Create a brand new session with no parent state.
 	 */
 	async new(): Promise<Session> {
-		return this.createAndInit(emptyCtx());
+		// TODO: Create a fresh store result with the registry
+		const seed = createEmptyStoreResult(this.registry);
+		return this.createAndInit(emptyCtx(), seed);
 	}
 
 	/**
@@ -79,7 +81,7 @@ export class SessionManager {
 	async fork(sessionId: string): Promise<Session> {
 		const parent = this.get(sessionId);
 		const parentCtx = mergeCtx(parent.tracker.get());
-		const copiedStores = parent.agent.stores.copy('private');
+		const copiedStores = parent.agent.stores.share();
 
 		return this.createAndInit(parentCtx, copiedStores);
 	}
@@ -90,7 +92,7 @@ export class SessionManager {
 	 */
 	async child(sessionId: string): Promise<Session> {
 		const parent = this.get(sessionId);
-		const copiedStores = parent.agent.stores.copy('private');
+		const copiedStores = parent.agent.stores.share();
 		const ctx = mergeCtx(emptyCtx(), {
 			config: parent.tracker.get().config,
 		});
@@ -140,27 +142,19 @@ export class SessionManager {
 		if (!this.persister) return;
 
 		// Phase 1: hydrate the store pool
-		await this.pool.restore();
+		await this.registry.restore();
 
 		// Phase 2: restore sessions
 		await this.sessions.restore(async (snapshot) => {
 			await this.createAndInit(
 				snapshot.ctx,
-				hydrateStores(snapshot.stores, this.pool),
+				hydrateStores(snapshot.stores, this.registry),
 				snapshot.sessionId,
 			);
 		});
 
 		// Phase 3: GC orphaned pool entries (abnormal shutdown recovery)
-		await this.pool.gc(this.collectPoolIds());
-	}
-
-	/**
-	 * Remove a session and garbage-collect orphaned pool entries.
-	 */
-	async remove(sessionId: string): Promise<void> {
-		await this.sessions.remove(sessionId);
-		await this.pool.gc(this.collectPoolIds());
+		// TODO: Do should we clean any unreferred stores?
 	}
 
 	// -----------------------------------------------------------------------
@@ -169,7 +163,7 @@ export class SessionManager {
 
 	private async createAndInit(
 		ctx: PersistedCtx,
-		existingStores?: StoreResult,
+		existingStores: StoreResult,
 		sessionId?: string,
 	): Promise<Session> {
 		const transport = await this.spawn();
@@ -177,8 +171,7 @@ export class SessionManager {
 
 		// Append ctxExtension at the tail so it sees final transformed params
 		const extensions = [...this.extensions, ctxExtension(tracker)];
-		const seed = existingStores ?? createEmptyStoreResult(this.pool);
-		const agent = await createAgent(extensions, transport, seed);
+		const agent = await createAgent(extensions, transport, existingStores);
 		await agent.initialize({});
 		await agent.setContext({
 			ctx: {
@@ -195,9 +188,5 @@ export class SessionManager {
 		};
 		this.sessions.register(session);
 		return session;
-	}
-
-	private collectPoolIds(): Set<string> {
-		return this.sessions.collectPoolIds();
 	}
 }

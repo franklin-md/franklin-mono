@@ -10,11 +10,10 @@ import {
 } from '@franklin/mini-acp';
 import {
 	StorePool,
-	hydrateStores,
 	type Extension,
 	type CoreAPI,
 	type StoreAPI,
-	type PoolStoreSnapshot,
+	type StoreSnapshot,
 } from '@franklin/extensions';
 import { mergeCtx, SessionManager } from '../session/index.js';
 import type { Session } from '../session/types.js';
@@ -23,10 +22,7 @@ import {
 	createFileSessionPersister,
 	createFilePoolPersister,
 } from '../session/persist/file-persister.js';
-import type {
-	SessionSnapshot,
-	FileSystemOps,
-} from '../session/persist/types.js';
+import type { SessionSnapshot, Filesystem } from '../session/persist/types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -78,7 +74,7 @@ function counterExtension(): Extension<CoreAPI & StoreAPI> {
 	};
 }
 
-function createMockFs(): FileSystemOps & {
+function createMockFs(): Filesystem & {
 	files: Map<string, string>;
 } {
 	const files = new Map<string, string>();
@@ -87,12 +83,19 @@ function createMockFs(): FileSystemOps & {
 		readFile: async (path) => {
 			const content = files.get(path);
 			if (content === undefined) throw new Error(`ENOENT: ${path}`);
-			return content;
+			return Buffer.from(content, 'utf-8');
 		},
 		writeFile: async (path, data) => {
-			files.set(path, data);
+			files.set(path, typeof data === 'string' ? data : data.toString('utf-8'));
 		},
-		readDir: async (path) => {
+		access: async (path) => {
+			if (!files.has(path)) throw new Error(`ENOENT: ${path}`);
+		},
+		stat: async () => ({
+			isFile: () => true,
+			isDirectory: () => false,
+		}),
+		readdir: async (path) => {
 			const entries: string[] = [];
 			for (const key of files.keys()) {
 				if (key.startsWith(path + '/')) {
@@ -101,10 +104,12 @@ function createMockFs(): FileSystemOps & {
 			}
 			return entries;
 		},
+		exists: async (path) => files.has(path),
+		glob: async () => [],
 		deleteFile: async (path) => {
 			files.delete(path);
 		},
-		mkdir: async () => {},
+		mkdir: async () => undefined,
 	};
 }
 
@@ -126,20 +131,20 @@ function createMockPersister(): Persister<SessionSnapshot> & {
 	};
 }
 
-function createMockPoolPersister(): Persister<PoolStoreSnapshot> & {
-	savedStores: Map<string, PoolStoreSnapshot>;
+function createMockPoolPersister(): Persister<StoreSnapshot> & {
+	savedStores: Map<string, StoreSnapshot>;
 } {
-	const savedStores = new Map<string, PoolStoreSnapshot>();
+	const savedStores = new Map<string, StoreSnapshot>();
 	return {
 		savedStores,
-		async save(poolId, data) {
-			savedStores.set(poolId, data);
+		async save(ref, data) {
+			savedStores.set(ref, data);
 		},
 		async load() {
 			return new Map(savedStores);
 		},
-		async delete(poolId) {
-			savedStores.delete(poolId);
+		async delete(ref) {
+			savedStores.delete(ref);
 		},
 	};
 }
@@ -184,7 +189,7 @@ describe('Persistence', () => {
 			setSystemPrompt(session, 'You are helpful');
 
 			// Mutate the store
-			session.agent.stores.stores.get('counter')!.store.set(() => 42);
+			session.agent.stores.get('counter')!.store.set(() => 42);
 
 			// Add some messages to the tracker
 			session.tracker.append({
@@ -208,59 +213,8 @@ describe('Persistence', () => {
 				model: 'test-model',
 				reasoning: 'high',
 			});
-			// Store snapshot now contains poolId + sharing, not value
-			expect(snapshot.stores['counter']?.poolId).toBeDefined();
-			expect(snapshot.stores['counter']?.sharing).toBe('private');
-		});
-	});
-
-	// -----------------------------------------------------------------------
-	// hydrateStores
-	// -----------------------------------------------------------------------
-
-	describe('hydrateStores', () => {
-		it('rebuilds stores from pool references', () => {
-			const pool = new StorePool();
-
-			// Pre-populate the pool
-			const counter = pool.create(10, 'private');
-			const name = pool.create('test', 'global');
-
-			const result = hydrateStores(
-				{
-					counter: { poolId: counter.poolId, sharing: 'private' },
-					name: { poolId: name.poolId, sharing: 'global' },
-				},
-				pool,
-			);
-
-			expect(result.stores.size).toBe(2);
-
-			const counterEntry = result.stores.get('counter')!;
-			expect(counterEntry.store.get()).toBe(10);
-			expect(counterEntry.sharing).toBe('private');
-			expect(counterEntry.poolId).toBe(counter.poolId);
-
-			const nameEntry = result.stores.get('name')!;
-			expect(nameEntry.store.get()).toBe('test');
-			expect(nameEntry.sharing).toBe('global');
-			expect(nameEntry.poolId).toBe(name.poolId);
-		});
-
-		it('hydrated stores are live pool references', () => {
-			const pool = new StorePool();
-			const { poolId, store } = pool.create(0, 'global');
-
-			const result = hydrateStores(
-				{ shared: { poolId, sharing: 'global' } },
-				pool,
-			);
-
-			// Mutate via original pool store
-			store.set(() => 99);
-
-			// Hydrated store should reflect the change
-			expect(result.stores.get('shared')!.store.get()).toBe(99);
+			// Session snapshot stores refs only; pool metadata lives separately.
+			expect(snapshot.stores['counter']).toBeTypeOf('string');
 		});
 	});
 
@@ -276,28 +230,27 @@ describe('Persistence', () => {
 		it('persists newly created entries', async () => {
 			const persister = createMockPoolPersister();
 			const pool = new StorePool(persister);
-			const { poolId } = pool.create(1, 'private');
+			const { ref } = pool.create(1, 'private');
 
 			await vi.advanceTimersByTimeAsync(0);
 
-			expect(persister.savedStores.get(poolId)).toEqual({
-				value: 1,
-				sharing: 'private',
-			});
+			const saved = persister.savedStores.get(ref)!;
+			expect(saved.value).toBe(1);
+			expect(saved.sharing).toBe('private');
+			expect(saved.ref).toBe(ref);
 		});
 
 		it('persists direct store mutations without session tracker changes', async () => {
 			const persister = createMockPoolPersister();
 			const pool = new StorePool(persister);
-			const { poolId, store } = pool.create(1, 'private');
+			const { ref, store } = pool.create(1, 'private');
 
 			store.set(() => 2);
 			await vi.advanceTimersByTimeAsync(0);
 
-			expect(persister.savedStores.get(poolId)).toEqual({
-				value: 2,
-				sharing: 'private',
-			});
+			const saved = persister.savedStores.get(ref)!;
+			expect(saved.value).toBe(2);
+			expect(saved.sharing).toBe('private');
 		});
 	});
 
@@ -328,12 +281,14 @@ describe('Persistence', () => {
 			// Session snapshot saved
 			expect(persistence.session.saved.has(session.sessionId)).toBe(true);
 			const snapshot = persistence.session.saved.get(session.sessionId)!;
-			expect(snapshot.stores['counter']?.poolId).toBeDefined();
+			expect(snapshot.stores['counter']).toBeDefined();
 
 			// Store value saved separately via pool persister
-			const poolId = snapshot.stores['counter']!.poolId;
-			expect(persistence.pool.savedStores.has(poolId)).toBe(true);
-			expect(persistence.pool.savedStores.get(poolId)!.value).toBe(0);
+			const ref = snapshot.stores['counter'];
+			expect(persistence.pool.savedStores.has(ref!)).toBe(true);
+			const savedStore = persistence.pool.savedStores.get(ref!);
+			expect(savedStore).toBeDefined();
+			expect(savedStore?.value).toBe(0);
 		});
 
 		it('auto-persists after fork', async () => {
@@ -345,15 +300,15 @@ describe('Persistence', () => {
 			);
 
 			const parent = track(await manager.new());
-			parent.agent.stores.stores.get('counter')!.store.set(() => 7);
+			parent.agent.stores.get('counter')!.store.set(() => 7);
 
 			const forked = track(await manager.fork(parent.sessionId));
 			await vi.advanceTimersByTimeAsync(500);
 
 			expect(persistence.session.saved.has(forked.sessionId)).toBe(true);
 			const snapshot = persistence.session.saved.get(forked.sessionId)!;
-			const poolId = snapshot.stores['counter']!.poolId;
-			expect(persistence.pool.savedStores.get(poolId)!.value).toBe(7);
+			const ref = snapshot.stores['counter']!;
+			expect(persistence.pool.savedStores.get(ref)!.value).toBe(7);
 		});
 
 		it('auto-persists after child', async () => {
@@ -414,7 +369,7 @@ describe('Persistence', () => {
 					},
 				},
 				stores: {
-					counter: { poolId: 'pool-1', sharing: 'private' },
+					counter: 'pool-1',
 				},
 			};
 
@@ -430,13 +385,13 @@ describe('Persistence', () => {
 			expect(loaded.get('abc-123')!.ctx.history.systemPrompt).toBe(
 				'You are helpful',
 			);
-			expect(loaded.get('abc-123')!.stores['counter']?.poolId).toBe('pool-1');
+			expect(loaded.get('abc-123')!.stores['counter']).toBe('pool-1');
 		});
 
 		it('returns an empty map when sessions directory does not exist', async () => {
 			const mockFs = createMockFs();
-			// Override readDir to throw ENOENT
-			mockFs.readDir = async () => {
+			// Override readdir to throw ENOENT
+			mockFs.readdir = async () => {
 				throw new Error('ENOENT');
 			};
 			const persister = createFileSessionPersister('/data', mockFs);
@@ -508,10 +463,15 @@ describe('Persistence', () => {
 			const mockFs = createMockFs();
 			const persister = createFilePoolPersister('/data', mockFs);
 
-			await persister.save('pool-1', { value: 42, sharing: 'private' });
+			await persister.save('pool-1', {
+				ref: 'pool-1',
+				value: 42,
+				sharing: 'private',
+			});
 			await persister.save('pool-2', {
+				ref: 'pool-2',
 				value: 'hello',
-				sharing: 'global',
+				sharing: 'inherit',
 			});
 
 			// Files should exist in store subdirectory
@@ -523,14 +483,18 @@ describe('Persistence', () => {
 			expect(stores.get('pool-1')!.value).toBe(42);
 			expect(stores.get('pool-1')!.sharing).toBe('private');
 			expect(stores.get('pool-2')!.value).toBe('hello');
-			expect(stores.get('pool-2')!.sharing).toBe('global');
+			expect(stores.get('pool-2')!.sharing).toBe('inherit');
 		});
 
 		it('deletes store files', async () => {
 			const mockFs = createMockFs();
 			const persister = createFilePoolPersister('/data', mockFs);
 
-			await persister.save('pool-1', { value: 0, sharing: 'private' });
+			await persister.save('pool-1', {
+				ref: 'pool-1',
+				value: 0,
+				sharing: 'private',
+			});
 			expect(mockFs.files.has('/data/store/pool-1.json')).toBe(true);
 
 			await persister.delete('pool-1');
@@ -539,7 +503,7 @@ describe('Persistence', () => {
 
 		it('returns an empty map when the store directory does not exist', async () => {
 			const mockFs = createMockFs();
-			mockFs.readDir = async () => {
+			mockFs.readdir = async () => {
 				throw new Error('ENOENT');
 			};
 			const persister = createFilePoolPersister('/data', mockFs);
@@ -575,7 +539,7 @@ describe('Persistence', () => {
 			setSystemPrompt(session, 'You are helpful');
 
 			// Mutate store and add messages
-			session.agent.stores.stores.get('counter')!.store.set(() => 42);
+			session.agent.stores.get('counter')!.store.set(() => 42);
 			session.tracker.apply({
 				config: { model: 'test-model', reasoning: 'high' },
 			});
@@ -609,7 +573,7 @@ describe('Persistence', () => {
 			});
 
 			// Verify store value is restored
-			const counter = restoredSession.agent.stores.stores.get('counter')!.store;
+			const counter = restoredSession.agent.stores.get('counter')!.store;
 			expect(counter.get()).toBe(42);
 		});
 
@@ -650,9 +614,9 @@ describe('Persistence', () => {
 		it('shared stores maintain identity across restore', async () => {
 			const persistence = createMockPersistence();
 
-			// Create two sessions that share a global store
+			// Create two sessions that share an inherited store
 			const globalExt: Extension<CoreAPI & StoreAPI> = (api) => {
-				api.registerStore<number>('shared', 0, 'global');
+				api.registerStore<number>('shared', 0, 'inherit');
 			};
 
 			const manager1 = new SessionManager(
@@ -664,9 +628,9 @@ describe('Persistence', () => {
 			const s2 = track(await manager1.child(s1.sessionId));
 
 			// Verify they share the same store pre-restore
-			const s1Store = s1.agent.stores.stores.get('shared')!;
-			const s2Store = s2.agent.stores.stores.get('shared')!;
-			expect(s1Store.poolId).toBe(s2Store.poolId);
+			const s1Store = s1.agent.stores.get('shared')!;
+			const s2Store = s2.agent.stores.get('shared')!;
+			expect(s1Store.ref).toBe(s2Store.ref);
 			expect(s1Store.store).toBe(s2Store.store);
 
 			// Mutate the shared store and flush debounced pool persistence
@@ -684,9 +648,9 @@ describe('Persistence', () => {
 			// Verify shared store identity is preserved across restore
 			const r1 = track(manager2.get(s1.sessionId));
 			const r2 = track(manager2.get(s2.sessionId));
-			const r1Store = r1.agent.stores.stores.get('shared')!;
-			const r2Store = r2.agent.stores.stores.get('shared')!;
-			expect(r1Store.poolId).toBe(r2Store.poolId);
+			const r1Store = r1.agent.stores.get('shared')!;
+			const r2Store = r2.agent.stores.get('shared')!;
+			expect(r1Store.ref).toBe(r2Store.ref);
 			expect(r1Store.store).toBe(r2Store.store);
 			expect(r1Store.store.get()).toBe(42);
 		});

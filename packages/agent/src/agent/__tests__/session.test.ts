@@ -167,8 +167,8 @@ describe('SessionManager', () => {
 			const s1 = track(await manager.new());
 			const s2 = track(await manager.new());
 
-			const c1 = s1.agent.stores.stores.get('counter')!.store;
-			const c2 = s2.agent.stores.stores.get('counter')!.store;
+			const c1 = s1.agent.stores.get('counter')!.store;
+			const c2 = s2.agent.stores.get('counter')!.store;
 
 			c1.set(() => 42);
 			expect(c2.get()).toBe(0);
@@ -216,11 +216,11 @@ describe('SessionManager', () => {
 			]);
 
 			const parent = track(await manager.new());
-			const parentCounter = parent.agent.stores.stores.get('counter')!.store;
+			const parentCounter = parent.agent.stores.get('counter')!.store;
 			parentCounter.set(() => 10);
 
 			const child = track(await manager.child(parent.sessionId));
-			const childCounter = child.agent.stores.stores.get('counter')!.store;
+			const childCounter = child.agent.stores.get('counter')!.store;
 
 			// Child starts with a snapshot of parent's state
 			expect(childCounter.get()).toBe(10);
@@ -239,8 +239,8 @@ describe('SessionManager', () => {
 			const parent = track(await manager.new());
 			const child = track(await manager.child(parent.sessionId));
 
-			const parentCounter = parent.agent.stores.stores.get('counter')!.store;
-			const childCounter = child.agent.stores.stores.get('counter')!.store;
+			const parentCounter = parent.agent.stores.get('counter')!.store;
+			const childCounter = child.agent.stores.get('counter')!.store;
 
 			parentCounter.set(() => 42);
 			expect(childCounter.get()).toBe(42);
@@ -271,11 +271,11 @@ describe('SessionManager', () => {
 			]);
 
 			const parent = track(await manager.new());
-			const parentCounter = parent.agent.stores.stores.get('counter')!.store;
+			const parentCounter = parent.agent.stores.get('counter')!.store;
 			parentCounter.set(() => 5);
 
 			const forked = track(await manager.fork(parent.sessionId));
-			const forkedCounter = forked.agent.stores.stores.get('counter')!.store;
+			const forkedCounter = forked.agent.stores.get('counter')!.store;
 
 			// Forked gets snapshot of parent's store state
 			expect(forkedCounter.get()).toBe(5);

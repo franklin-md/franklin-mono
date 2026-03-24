@@ -9,5 +9,9 @@
 		"lib": ["ES2023", "DOM"]
 	},
 	"include": ["src/preload/**/*.ts", "src/shared/**/*.ts"],
-	"references": [{ "path": "../lib/transport" }, { "path": "../mini-acp" }]
+	"references": [
+		{ "path": "../lib/core" },
+		{ "path": "../lib/transport" },
+		{ "path": "../mini-acp" }
+	]
 }
