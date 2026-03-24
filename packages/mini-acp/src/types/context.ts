@@ -17,8 +17,8 @@ export type LLMConfig = {
 	model?: string;
 	provider?: string;
 	reasoning?: ThinkingLevel;
-	// TODO: I wonder if Authentication Token should be here? Then the LLM should really be fully powered.
-	authKey?: string;
+	/** API key for the LLM provider. Resolved by the auth layer and injected here. */
+	apiKey?: string;
 };
 
 export type History = {

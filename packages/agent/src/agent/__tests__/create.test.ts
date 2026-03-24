@@ -37,10 +37,10 @@ function createTestTransport(overrides: Partial<MiniACPClient> = {}): {
 			return {};
 		},
 		async *prompt() {
-			yield { type: 'turnEnd' as const };
+			yield { type: 'turnEnd' as const, stopReason: 'end_turn' };
 		},
 		async cancel() {
-			return { type: 'turnEnd' as const };
+			return { type: 'turnEnd' as const, stopReason: 'cancelled' };
 		},
 		...overrides,
 	};

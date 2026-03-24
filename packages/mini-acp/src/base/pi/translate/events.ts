@@ -4,13 +4,14 @@
 
 import type {
 	Message as PiMessage,
+	AssistantMessage as PiAssistantMessage,
 	AssistantMessageEvent,
 } from '@mariozechner/pi-ai';
 import type { AgentEvent } from '@mariozechner/pi-agent-core';
 
 import { fromPiMessage } from './message.js';
+import { fromPiStopReason  } from './content.js';
 import type { StreamEvent } from 'packages/mini-acp/src/types/stream.js';
-
 // ---------------------------------------------------------------------------
 // AgentEvent → StreamEvent
 // ---------------------------------------------------------------------------
@@ -20,15 +21,25 @@ export function fromAgentEvent(
 	messageId: string,
 ): StreamEvent | null {
 	switch (event.type) {
-		// TODO: The agent_end may emit the stopReason = error because of no APIKey for example
-		// Lifecycle — we emit turnStart/turnEnd ourselves
 		case 'agent_start':
-		case 'agent_end':
 		case 'turn_start':
-		case 'turn_end':
+		case 'turn_end': // turn_end in Pi is just one trip round the agent loop.
 		case 'message_start':
 			return null;
-
+		
+		// The agent_end may emit the stopReason = error because of no APIKey for example
+		case 'agent_end': {
+			// agent_end in Pi represents the end of one full turn of the agent
+			// The last message sent will be a `turn_end` message with reasons
+			const turnEnd = event.messages.at(-1) as PiAssistantMessage;
+			const stopReason = fromPiStopReason(turnEnd.stopReason);
+			if (stopReason === null) throw new Error("stopReason should never be undefined");
+				return {
+					type: 'turnEnd',
+					stopReason,
+					stopMessage: turnEnd.stopReason,
+				};
+			}
 		// Streaming deltas → chunks
 		case 'message_update':
 			return fromAssistantMessageEvent(event.assistantMessageEvent, messageId);

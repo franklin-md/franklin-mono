@@ -23,6 +23,7 @@ import type {
 	TurnEnd,
 	Update,
 } from '../../types/stream.js';
+
 import {
 	bridgeTool,
 	fromAgentEvent,
@@ -66,7 +67,8 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 			messages: piMessages,
 		},
 		// TODO: Lets not hard code this. I think solution should be to pass this from ctx?
-		getApiKey: (provider: string) => {
+		// Only resolve the API key when using the real stream function (not a test mock).
+		getApiKey: streamFn ? undefined : (provider: string) => {
 			const key = process.env[`${provider.toUpperCase()}_API_KEY`];
 			if (!key) {
 				throw new Error(`Missing API key for provider: ${provider}`);
@@ -100,16 +102,14 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 			piAgent
 				.prompt(piMessage)
 				.then(() => {
-					void writer.write({ type: 'turnEnd' });
 					void writer.close();
 				})
 				.catch((err: unknown) => {
+					const msg = err instanceof Error ? err.message : String(err ?? "unknown error");
 					void writer.write({
 						type: 'turnEnd',
-						error: {
-							code: -1,
-							message: err instanceof Error ? err.message : String(err),
-						},
+						stopReason: 'refusal',
+						stopMessage: msg,
 					});
 					void writer.close();
 				});
@@ -131,7 +131,8 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 			piAgent.abort();
 			return {
 				type: 'turnEnd',
-				error: { code: -1, message: 'Cancelled' },
+				stopReason: 'cancelled',
+				stopMessage: "Turn was cancelled by the user",
 			};
 		},
 	};

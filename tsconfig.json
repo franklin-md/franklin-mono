@@ -5,6 +5,7 @@
 		{ "path": "./packages/agent" },
 		{ "path": "./packages/extensions" },
 		{ "path": "./packages/local-mcp" },
+		{ "path": "./packages/auth" },
 		{ "path": "./packages/mini-acp" },
 		{ "path": "./packages/node" },
 		{ "path": "./packages/electron" },
