@@ -3,15 +3,15 @@ import { createCoreCompiler } from '../../compile/core/compiler.js';
 import { createStoreCompiler } from '../../compile/store/compiler.js';
 import { compile, combine } from '../../compile/types.js';
 import { apply } from '../../api/core/middleware/apply.js';
-import type { MiniACPClient, Chunk } from '@franklin/mini-acp';
+import type { MiniACPClient, Chunk, Update } from '@franklin/mini-acp';
 import { conversationExtension } from '../conversation/extension.js';
 import type { ConversationTurn } from '../conversation/types.js';
+import type { StoreResult } from '../../api/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type StubOverrides = { [K in keyof MiniACPClient]?: (...args: any[]) => any };
 
 function stubClient(overrides: StubOverrides = {}): MiniACPClient {
@@ -30,7 +30,7 @@ async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
 	return items;
 }
 
-function getStore(result: any): ConversationTurn[] {
+function getStore(result: StoreResult): ConversationTurn[] {
 	return result.stores.get('conversation')!.store.get() as ConversationTurn[];
 }
 
@@ -195,21 +195,24 @@ describe('conversationExtension', () => {
 	it('records toolCall chunks as content within assistant message', async () => {
 		const result = await compileConversation();
 
-		const toolChunk: Chunk = {
-			type: 'chunk',
-			messageId: 'm1',
-			role: 'assistant',
-			content: {
-				type: 'toolCall',
-				id: 'tc1',
-				name: 'read_file',
-				arguments: { path: '/foo' },
+		const toolUpdate: Update = {
+			type: 'update',
+			message: {
+				role: 'assistant',
+				content: [
+					{
+						type: 'toolCall',
+						id: 'tc1',
+						name: 'read_file',
+						arguments: { path: '/foo' },
+					},
+				],
 			},
 		};
 
 		const target = stubClient({
 			prompt: async function* () {
-				yield toolChunk;
+				yield toolUpdate;
 			},
 		});
 

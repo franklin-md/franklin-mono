@@ -7,6 +7,9 @@ export type {
 	StreamObserverHandler,
 	StreamObserverParamsMap,
 	ExtensionToolDefinition,
+	ToolDefinition,
+	AnyToolDefinition,
+	SerializedToolDefinition,
 	ContentBlockResult,
 	MethodMiddleware,
 	Middleware,
@@ -16,6 +19,7 @@ export type {
 } from './core/index.js';
 export { compose, composeMethod, passThrough } from './core/index.js';
 export { isContentBlockResult } from './core/index.js';
+export { serializeTool, toJsonSchema } from './core/index.js';
 export { apply } from './core/index.js';
 export type { SandboxAPI } from './sandbox/index.js';
 export type { Sandbox, Filesystem, Terminal } from './sandbox/index.js';

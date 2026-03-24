@@ -1,4 +1,4 @@
-import type { SerializedToolDefinition } from '@franklin/local-mcp';
+import type { ToolDefinition as SerializedToolDefinition } from '@franklin/mini-acp';
 import {
 	type Duplex,
 	type MuxPacket,

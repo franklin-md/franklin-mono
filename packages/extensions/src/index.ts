@@ -4,6 +4,9 @@ export type {
 	CoreEventHandler,
 	CoreEventMap,
 	ExtensionToolDefinition,
+	ToolDefinition,
+	AnyToolDefinition,
+	SerializedToolDefinition,
 	ContentBlockResult,
 	MethodMiddleware,
 	Middleware,
@@ -25,6 +28,7 @@ export type {
 } from './api/index.js';
 export { compose, composeMethod, passThrough } from './api/index.js';
 export { isContentBlockResult } from './api/index.js';
+export { serializeTool, toJsonSchema } from './api/index.js';
 export { createLocalSandbox } from './api/index.js';
 export { apply } from './api/index.js';
 export {

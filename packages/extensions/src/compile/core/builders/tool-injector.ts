@@ -1,5 +1,5 @@
 import type { MiniACPClient } from '@franklin/mini-acp';
-import { serializeTool } from '@franklin/local-mcp';
+import { serializeTool } from '../../../api/core/tools/index.js';
 import type { ExtensionToolDefinition } from '../../../api/core/tool.js';
 import type { MethodMiddleware } from '../../../api/core/middleware/types.js';
 

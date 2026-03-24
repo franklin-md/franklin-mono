@@ -155,7 +155,7 @@ describeIfKey(
 
 			// Should have a toolCall chunk
 			const toolChunks = events.filter(
-				(e) => e.type === 'chunk' && e.content.type === 'toolCall',
+				(e) => e.type === 'update' && e.message.content[0]?.type === 'toolCall',
 			);
 			expect(toolChunks.length).toBeGreaterThanOrEqual(1);
 

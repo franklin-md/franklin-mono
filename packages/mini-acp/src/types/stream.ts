@@ -28,6 +28,7 @@ export type Update = {
 	message: Message;
 };
 
+// TODO: Start to define all the codes.
 export type TurnEnd = {
 	type: 'turnEnd';
 	// TODO: reason instead of error?

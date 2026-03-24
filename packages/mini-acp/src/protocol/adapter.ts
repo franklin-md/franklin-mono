@@ -5,7 +5,7 @@
 
 import type { TurnClient, TurnServer } from '../base/types.js';
 import type { Ctx } from '../types/context.js';
-import type { MuClient, InitializeResult } from './types.js';
+import type { MuClient, InitializeResult, MuAgent } from './types.js';
 
 /**
  * Factory that creates a single-turn agent (TurnClient) from context and
@@ -29,7 +29,7 @@ export type BaseAgentFactory = (ctx: Ctx, client: TurnServer) => TurnClient;
  */
 export function createSessionAdapter(
 	factory: BaseAgentFactory,
-	getClient: () => TurnServer,
+	getClient: () => MuAgent,
 ): MuClient {
 	const ctx: Ctx = {
 		history: { systemPrompt: '', messages: [] },

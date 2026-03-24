@@ -23,7 +23,6 @@
 		"@franklin/extensions": "*",
 		"@franklin/mini-acp": "*",
 		"@franklin/node": "*",
-		"@franklin/local-mcp": "*",
 		"@franklin/transport": "*",
 		"@franklin/react": "*",
 		"react": "^18.3.1",
