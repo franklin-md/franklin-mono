@@ -6,6 +6,11 @@ import {
 	AGENT_KILL,
 	MCP_START,
 	MCP_STOP,
+	PERSIST_READ_FILE,
+	PERSIST_WRITE_FILE,
+	PERSIST_READ_DIR,
+	PERSIST_DELETE_FILE,
+	PERSIST_MKDIR,
 } from '../shared/channels.js';
 
 // ---------------------------------------------------------------------------
@@ -52,6 +57,27 @@ const mcp = {
 };
 
 // ---------------------------------------------------------------------------
+// Persist (file I/O bridged to main process)
+// ---------------------------------------------------------------------------
+
+const persist = {
+	readFile: (path: string): Promise<string> =>
+		ipcRenderer.invoke(PERSIST_READ_FILE, path) as Promise<string>,
+
+	writeFile: (path: string, data: string): Promise<void> =>
+		ipcRenderer.invoke(PERSIST_WRITE_FILE, path, data) as Promise<void>,
+
+	readDir: (path: string): Promise<string[]> =>
+		ipcRenderer.invoke(PERSIST_READ_DIR, path) as Promise<string[]>,
+
+	deleteFile: (path: string): Promise<void> =>
+		ipcRenderer.invoke(PERSIST_DELETE_FILE, path) as Promise<void>,
+
+	mkdir: (path: string): Promise<void> =>
+		ipcRenderer.invoke(PERSIST_MKDIR, path) as Promise<void>,
+};
+
+// ---------------------------------------------------------------------------
 // Expose to renderer (underscore-prefixed — this is plumbing, not user-facing)
 // ---------------------------------------------------------------------------
 
@@ -59,4 +85,5 @@ contextBridge.exposeInMainWorld('__franklinBridge', {
 	ipcStream,
 	agent,
 	mcp,
+	persist,
 });

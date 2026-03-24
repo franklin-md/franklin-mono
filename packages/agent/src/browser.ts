@@ -17,6 +17,20 @@ export type { AgentCommands } from './types.js';
 export { createAgent, SessionManager } from './agent/index.js';
 export type { Agent, Session, SessionOptions, SpawnFn } from './agent/index.js';
 
+// Persistence
+export {
+	SessionMap,
+	snapshotSession,
+	hydrateStores,
+	createFilePersister,
+} from './agent/index.js';
+export type {
+	Persister,
+	SessionSnapshot,
+	StoreSnapshot,
+	FileSystemOps,
+} from './agent/index.js';
+
 // Re-export from @franklin/extensions for convenience
 export {
 	conversationExtension,

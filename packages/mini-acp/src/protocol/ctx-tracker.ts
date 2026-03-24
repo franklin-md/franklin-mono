@@ -38,12 +38,16 @@ export class CtxTracker {
 		tools: [],
 	};
 
+	onChange?: () => void;
+
 	apply(partial: Partial<Ctx>): void {
 		applySetContext(this.ctx, partial);
+		this.onChange?.();
 	}
 
 	append(message: Message): void {
 		appendMessage(this.ctx, message);
+		this.onChange?.();
 	}
 
 	get(): Ctx {

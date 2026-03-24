@@ -10,3 +10,6 @@ export {
 	claudeAgentSpec,
 	codexAgentSpec,
 } from './agents/index.js';
+
+// Persistence
+export { createNodePersister } from './persister.js';

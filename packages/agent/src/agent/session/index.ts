@@ -6,9 +6,12 @@ import type {
 	StoreAPI,
 	StoreResult,
 } from '@franklin/extensions';
-import type { Agent } from '../types.js';
 import { createAgent } from '../create.js';
 import { ctxExtension } from './ctx-extension.js';
+import { DebouncedPersister } from './persist/debounced-persister.js';
+import { SessionMap } from './persist/session-map.js';
+import { hydrateStores } from './persist/snapshot.js';
+import type { Persister } from './persist/types.js';
 import type { SpawnFn, Session, SessionOptions } from './types.js';
 
 export type { Session, SessionOptions, SpawnFn };
@@ -21,14 +24,22 @@ export type { Session, SessionOptions, SpawnFn };
  * extensions. Each session owns a CtxTracker that is shared with the tail
  * ctxExtension, keeping the agent's Ctx shadow in lock-step with protocol
  * events (setContext, prompt, update).
+ *
+ * When a `Persister` is provided, it is wrapped in a debounced persister
+ * and sessions auto-persist on every ctx mutation via CtxTracker.onChange.
  */
 export class SessionManager {
-	private sessions = new Map<string, Session>();
+	private readonly sessions: SessionMap;
 
 	constructor(
 		private readonly spawn: SpawnFn,
 		private readonly extensions: Extension<CoreAPI & StoreAPI>[],
-	) {}
+		persister?: Persister,
+	) {
+		this.sessions = new SessionMap(
+			persister ? new DebouncedPersister(persister) : undefined,
+		);
+	}
 
 	/**
 	 * Create a brand new session with no parent state.
@@ -89,11 +100,38 @@ export class SessionManager {
 	 * Retrieve a session by ID. Throws if not found.
 	 */
 	get(sessionId: string): Session {
-		const session = this.sessions.get(sessionId);
-		if (!session) {
-			throw new Error(`Session ${sessionId} not found`);
-		}
-		return session;
+		return this.sessions.get(sessionId);
+	}
+
+	/**
+	 * Restore all sessions from the persister.
+	 *
+	 * Each snapshot is hydrated into a live session: a fresh transport
+	 * is spawned, extensions are compiled with the persisted store values,
+	 * and the context is replayed with the persisted history.
+	 */
+	async restore(): Promise<Session[]> {
+		return this.sessions.restore(async (snapshot) => {
+			const existingStores = hydrateStores(snapshot.stores);
+			const transport = await this.spawn();
+			const tracker = new CtxTracker();
+
+			const extensions = [...this.extensions, ctxExtension(tracker)];
+			const agent = await createAgent(extensions, transport, existingStores);
+			await agent.initialize({});
+			await agent.setContext({
+				ctx: {
+					history: {
+						systemPrompt: snapshot.systemPrompt,
+						messages: snapshot.messages,
+					},
+					tools: [],
+					config: snapshot.config,
+				},
+			});
+
+			return { agent, tracker };
+		});
 	}
 
 	// -----------------------------------------------------------------------
@@ -122,13 +160,6 @@ export class SessionManager {
 			},
 		});
 
-		return this.register(agent, tracker);
-	}
-
-	private register(agent: Agent, tracker: CtxTracker): Session {
-		const sessionId = crypto.randomUUID();
-		const session: Session = { sessionId, agent, tracker };
-		this.sessions.set(sessionId, session);
-		return session;
+		return this.sessions.register(agent, tracker);
 	}
 }
