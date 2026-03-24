@@ -1,4 +1,4 @@
 export { createAgent } from './create.js';
-export { AgentManager } from './manager/index.js';
-export type { ManagedAgent } from './manager/index.js';
+export { SessionManager } from './session/index.js';
+export type { Session, SessionOptions, SpawnFn } from './session/index.js';
 export type { Agent } from './types.js';

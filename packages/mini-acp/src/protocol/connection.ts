@@ -1,4 +1,4 @@
-import { bindClient, bindServer, type Binding } from '@franklin/transport';
+import { bindClient, bindServer, type PeerBinding } from '@franklin/transport';
 
 import type {
 	MuClient,
@@ -9,46 +9,38 @@ import type {
 import { muManifest } from './manifest.js';
 
 // ---------------------------------------------------------------------------
-// Client connection — you are the client, calling the agent
+// Types
 // ---------------------------------------------------------------------------
 
-export type ClientConnection = Binding<MuClient>;
+export type ClientBinding = PeerBinding<MuClient, MuAgent>;
+export type AgentBinding = PeerBinding<MuAgent, MuClient>;
+
+// ---------------------------------------------------------------------------
+// Client — you are the client, calling the agent
+// ---------------------------------------------------------------------------
 
 /**
- * Create a client-side connection over a Mu protocol transport.
+ * Bind as the client over a MiniACP transport.
  *
+ * Returns `remote` (agent proxy: initialize, prompt, etc.) immediately.
+ * Call `bind(handlers)` to provide client-side handlers (toolExecute)
+ * and start message dispatch.
  */
-export function createClientConnection(
-	duplex: ClientProtocol,
-	handlers: MuAgent,
-): ClientConnection {
-	return bindClient({
-		duplex,
-		manifest: muManifest,
-		handlers,
-	});
+export function createClientConnection(duplex: ClientProtocol): ClientBinding {
+	return bindClient({ duplex, manifest: muManifest });
 }
 
 // ---------------------------------------------------------------------------
-// Agent connection — you are the agent, handling client requests
+// Agent — you are the agent, handling client requests
 // ---------------------------------------------------------------------------
 
-export type AgentConnection = Binding<MuAgent>;
-
 /**
- * Create an agent-side connection over a MiniACP protocol transport.
+ * Bind as the agent over a MiniACP transport.
  *
- * You provide `handlers` (MiniACPClient) — what the client can call on you
- * (e.g. initialize, setContext, prompt, cancel). Returns a binding whose
- * `.remote` is a MiniACPAgent proxy for calling toolExecute on the client.
+ * Returns `remote` (client proxy: toolExecute) immediately.
+ * Call `bind(handlers)` to provide agent-side handlers (initialize,
+ * setContext, prompt, cancel) and start message dispatch.
  */
-export function createAgentConnection(
-	duplex: AgentProtocol,
-	handlers: MuClient,
-): AgentConnection {
-	return bindServer({
-		duplex,
-		manifest: muManifest,
-		handlers,
-	});
+export function createAgentConnection(duplex: AgentProtocol): AgentBinding {
+	return bindServer({ duplex, manifest: muManifest });
 }

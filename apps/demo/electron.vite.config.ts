@@ -65,7 +65,7 @@ export default defineConfig({
 					find: /^@franklin\/transport$/,
 					replacement: '@franklin/transport/core',
 				},
-				],
+			],
 		},
 	},
 });

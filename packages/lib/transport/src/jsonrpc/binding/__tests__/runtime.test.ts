@@ -65,14 +65,17 @@ function createServerWithRawWire(options?: {
 		},
 	};
 
-	const server = bindServer({
+	const { bind } = bindServer({
 		duplex: duplex as Protocol<ClientApi, ServerApi>,
 		manifest,
-		handlers: { ...serverHandlers, ...options?.handlers },
-		onError: options?.onError,
 	});
 
-	return { server, inject: injectController, outgoing };
+	const handle = bind(
+		{ ...serverHandlers, ...options?.handlers },
+		options?.onError,
+	);
+
+	return { server: handle, inject: injectController, outgoing };
 }
 
 describe('unknown method handling', () => {

@@ -1,0 +1,30 @@
+import type { CtxTracker } from '@franklin/mini-acp';
+import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
+
+/**
+ * Tail extension that shadows the agent's Ctx state via a CtxTracker.
+ *
+ * Placed at the end of the extensions array so it sees final
+ * transformed params after all other middleware. The tracker's
+ * apply/append methods mirror the session adapter's mutations,
+ * keeping both sides in lock-step.
+ *
+ * The tracker is owned by SessionManager, not the extension.
+ */
+export function ctxExtension(
+	tracker: CtxTracker,
+): Extension<CoreAPI & StoreAPI> {
+	return (api) => {
+		api.on('setContext', (params) => {
+			tracker.apply(params.ctx);
+		});
+
+		api.on('prompt', (params) => {
+			tracker.append(params.message);
+		});
+
+		api.on('update', (event) => {
+			tracker.append(event.message);
+		});
+	};
+}

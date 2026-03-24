@@ -7,7 +7,7 @@ import {
 	type MiniACPClient,
 	type ClientProtocol,
 	type AgentProtocol,
-	type AgentConnection,
+	type AgentBinding,
 } from '@franklin/mini-acp';
 import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
 import { createAgent } from '../create.js';
@@ -23,7 +23,7 @@ import { createAgent } from '../create.js';
  */
 function createTestTransport(overrides: Partial<MiniACPClient> = {}): {
 	clientTransport: ClientProtocol;
-	agentConnection: AgentConnection;
+	agentConnection: AgentBinding;
 } {
 	const { a, b } = createDuplexPair();
 	const clientTransport = a as unknown as ClientProtocol;
@@ -40,12 +40,13 @@ function createTestTransport(overrides: Partial<MiniACPClient> = {}): {
 			yield { type: 'turnEnd' as const };
 		},
 		async cancel() {
-			return { type: 'turnEnd' as const };
+			return;
 		},
 		...overrides,
 	};
 
-	const agentConnection = createAgentConnection(agentTransport, handlers);
+	const agentConnection = createAgentConnection(agentTransport);
+	agentConnection.bind(handlers);
 	return { clientTransport, agentConnection };
 }
 

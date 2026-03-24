@@ -126,15 +126,11 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 			unsub();
 		},
 
-		async cancel(_params: CancelParams): Promise<TurnEnd> {
+		async cancel(_params: CancelParams): Promise<void> {
 			piAgent.abort();
 			// TODO: Ensure that aborting causes prompt to:
 			// a) not hang
 			// b) return a turnEnd with cancellation reason
-			return {
-				type: 'turnEnd',
-				error: { code: -1, message: 'Cancelled' },
-			};
 		},
 	};
 }

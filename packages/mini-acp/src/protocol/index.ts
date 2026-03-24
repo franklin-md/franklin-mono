@@ -16,8 +16,10 @@ export { muManifest as miniACPManifest } from './manifest.js';
 export {
 	createClientConnection,
 	createAgentConnection,
-	type ClientConnection,
-	type AgentConnection,
+	type ClientBinding,
+	type AgentBinding,
 } from './connection.js';
 
-export { createSessionAdapter, type BaseAgentFactory } from './adapter.js';
+export { createSessionAdapter } from './adapter.js';
+
+export { CtxTracker } from './ctx-tracker.js';

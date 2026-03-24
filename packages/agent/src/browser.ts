@@ -14,8 +14,8 @@ export type { AgentSpec } from './environment.js';
 export type { AgentCommands } from './types.js';
 
 // Agent — typed handle unifying commands, extension stores, and lifecycle
-export { createAgent, AgentManager } from './agent/index.js';
-export type { Agent, ManagedAgent } from './agent/index.js';
+export { createAgent, SessionManager } from './agent/index.js';
+export type { Agent, Session, SessionOptions, SpawnFn } from './agent/index.js';
 
 // Re-export from @franklin/extensions for convenience
 export {
