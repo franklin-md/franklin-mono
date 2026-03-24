@@ -26,7 +26,7 @@ import type { AuthStore } from './store.js';
  * ```
  */
 export async function configureAgent(
-	agent: AgentCommands,  
+	agent: AgentCommands,
 	store: AuthStore,
 	config: {
 		provider: string;

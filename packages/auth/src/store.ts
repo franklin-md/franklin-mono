@@ -3,9 +3,12 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
-import type { OAuthCredentials, OAuthProviderId } from '@mariozechner/pi-ai/oauth';
+import type {
+	OAuthCredentials,
+	OAuthProviderId,
+} from '@mariozechner/pi-ai/oauth';
 
-import type { AuthEntry, AuthFile } from './types.js';
+import type { ApiKeyEntry, AuthEntry, AuthFile, OAuthEntry } from './types.js';
 
 // ---------------------------------------------------------------------------
 // Default location
@@ -53,10 +56,48 @@ export class AuthStore {
 		return this.load()[provider];
 	}
 
+	setApiKeyEntry(provider: string, entry: ApiKeyEntry): void {
+		const data = this.load();
+		if (data[provider]) {
+			data[provider].apiKey = entry;
+		} else {
+			data[provider] = { apiKey: entry };
+		}
+		this.save(data);
+	}
+
+	setOAuthEntry(provider: string, entry: OAuthEntry): void {
+		const data = this.load();
+		if (data[provider]) {
+			data[provider].oauth = entry;
+		} else {
+			data[provider] = { oauth: entry };
+		}
+		this.save(data);
+	}
+
 	setEntry(provider: string, entry: AuthEntry): void {
 		const data = this.load();
 		data[provider] = entry;
 		this.save(data);
+	}
+
+	removeApiKeyEntry(provider: string): void {
+		const data = this.load();
+		if (data[provider]) {
+			delete data[provider].apiKey;
+			if (Object.keys(data[provider]).length === 0) delete data[provider];
+			this.save(data);
+		}
+	}
+
+	removeOAuthEntry(provider: string): void {
+		const data = this.load();
+		if (data[provider]) {
+			delete data[provider].oauth;
+			if (Object.keys(data[provider]).length === 0) delete data[provider];
+			this.save(data);
+		}
 	}
 
 	removeEntry(provider: string): void {
@@ -83,21 +124,25 @@ export class AuthStore {
 		const entry = this.getEntry(provider);
 		if (!entry) return undefined;
 
-		if (entry.type === 'apiKey') {
-			return entry.key;
+		// OAuth takes precedence, user can always clear them if they wish
+		if (entry.oauth) {
+			// Build the credentials map pi-ai expects
+			const credMap: Record<string, OAuthCredentials> = {
+				[provider]: entry.oauth.credentials,
+			};
+
+			const result = await getOAuthApiKey(provider as OAuthProviderId, credMap);
+			if (!result) return undefined;
+
+			// Always persist newCredentials — getOAuthApiKey may have refreshed the token.
+			this.setOAuthEntry(provider, {
+				type: 'oauth',
+				credentials: result.newCredentials,
+			});
+
+			return result.apiKey;
 		}
 
-		// Build the credentials map pi-ai expects
-		const credMap: Record<string, OAuthCredentials> = {
-			[provider]: entry.credentials,
-		};
-
-		const result = await getOAuthApiKey(provider as OAuthProviderId, credMap);
-		if (!result) return undefined;
-
-		// Always persist newCredentials — getOAuthApiKey may have refreshed the token.
-		this.setEntry(provider, { type: 'oauth', credentials: result.newCredentials });
-
-		return result.apiKey;
+		return entry.apiKey?.key;
 	}
 }

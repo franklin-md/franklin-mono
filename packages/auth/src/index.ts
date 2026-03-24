@@ -7,6 +7,7 @@ export type {
 	OAuthEntry,
 	ApiKeyEntry,
 	AuthFile,
+	IAuthStore,
 } from './types.js';
 
 // Store

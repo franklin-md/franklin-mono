@@ -9,6 +9,10 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./react": {
+			"types": "./dist/react/index.d.ts",
+			"import": "./dist/react/index.js"
 		}
 	},
 	"files": [
@@ -26,5 +30,13 @@
 		"@franklin/agent": "*",
 		"@franklin/mini-acp": "*",
 		"@mariozechner/pi-ai": "^0.61.0"
+	},
+	"peerDependencies": {
+		"react": "^18.3.1 || ^19.0.0"
+	},
+	"peerDependenciesMeta": {
+		"react": {
+			"optional": true
+		}
 	}
 }

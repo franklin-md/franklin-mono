@@ -27,7 +27,7 @@ export type TurnEnd = {
 	type: 'turnEnd';
 	// https://agentclientprotocol.com/protocol/prompt-turn#stop-reasons
 	stopReason: StopReason;
-	stopMessage?: string;	
+	stopMessage?: string;
 };
 
 export type StreamEvent = TurnStart | Chunk | Update | TurnEnd;

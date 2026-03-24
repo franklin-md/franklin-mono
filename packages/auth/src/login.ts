@@ -1,5 +1,8 @@
 import { getOAuthProvider } from '@mariozechner/pi-ai/oauth';
-import type { OAuthLoginCallbacks, OAuthProviderId } from '@mariozechner/pi-ai/oauth';
+import type {
+	OAuthLoginCallbacks,
+	OAuthProviderId,
+} from '@mariozechner/pi-ai/oauth';
 
 import type { AuthStore } from './store.js';
 
@@ -27,7 +30,7 @@ export async function loginOAuth(
 	}
 
 	const credentials = await oauthProvider.login(callbacks);
-	store.setEntry(provider, { type: 'oauth', credentials });
+	store.setOAuthEntry(provider, { type: 'oauth', credentials });
 }
 
 // ---------------------------------------------------------------------------
@@ -40,6 +43,10 @@ export async function loginOAuth(
  * Use this for providers that issue long-lived API keys (e.g. a custom
  * OpenAI-compatible endpoint or any provider not covered by OAuth).
  */
-export function setApiKey(provider: string, key: string, store: AuthStore): void {
-	store.setEntry(provider, { type: 'apiKey', key });
+export function setApiKey(
+	provider: string,
+	key: string,
+	store: AuthStore,
+): void {
+	store.setApiKeyEntry(provider, { type: 'apiKey', key });
 }

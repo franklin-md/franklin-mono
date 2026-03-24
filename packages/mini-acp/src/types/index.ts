@@ -33,10 +33,6 @@ export type {
 	StreamEvent,
 } from './stream.js';
 
-export type {
-	AuthError,
-	OAuthError,
-	APIKeyError,
-} from './errors.js';
+export type { AuthError, OAuthError, APIKeyError } from './errors.js';
 
 export type { StopReason } from './stop_reason.js';

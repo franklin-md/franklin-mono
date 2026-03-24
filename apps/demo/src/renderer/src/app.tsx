@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AgentChatPage } from '@/pages/agent-chat/agent-chat-page.js';
+import { DemoAuthControls } from '@/components/demo-auth-controls.js';
 
 export function App() {
 	return (
@@ -9,6 +10,7 @@ export function App() {
 					<h1 className="text-lg font-semibold tracking-tight">
 						Franklin — Demo
 					</h1>
+					<DemoAuthControls />
 				</div>
 			</header>
 

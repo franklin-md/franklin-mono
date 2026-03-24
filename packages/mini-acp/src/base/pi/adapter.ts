@@ -68,13 +68,15 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 		},
 		// TODO: Lets not hard code this. I think solution should be to pass this from ctx?
 		// Only resolve the API key when using the real stream function (not a test mock).
-		getApiKey: streamFn ? undefined : (provider: string) => {
-			const key = process.env[`${provider.toUpperCase()}_API_KEY`];
-			if (!key) {
-				throw new Error(`Missing API key for provider: ${provider}`);
-			}
-			return key;
-		},
+		getApiKey: streamFn
+			? undefined
+			: (provider: string) => {
+					const key = process.env[`${provider.toUpperCase()}_API_KEY`];
+					if (!key) {
+						throw new Error(`Missing API key for provider: ${provider}`);
+					}
+					return key;
+				},
 		streamFn,
 	});
 
@@ -105,7 +107,8 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 					void writer.close();
 				})
 				.catch((err: unknown) => {
-					const msg = err instanceof Error ? err.message : String(err ?? "unknown error");
+					const msg =
+						err instanceof Error ? err.message : String(err ?? 'unknown error');
 					void writer.write({
 						type: 'turnEnd',
 						stopReason: 'refusal',
@@ -132,7 +135,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 			return {
 				type: 'turnEnd',
 				stopReason: 'cancelled',
-				stopMessage: "Turn was cancelled by the user",
+				stopMessage: 'Turn was cancelled by the user',
 			};
 		},
 	};

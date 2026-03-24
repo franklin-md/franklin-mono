@@ -65,10 +65,10 @@ export function createSessionAdapter(
 				return {
 					type: 'turnEnd' as const,
 					stopReason: 'refusal',
-					stopMessage: 'No active prompt' 
-				}
-			};
+					stopMessage: 'No active prompt',
+				};
+			}
 			return agent.cancel(params);
-		}
+		},
 	};
 }

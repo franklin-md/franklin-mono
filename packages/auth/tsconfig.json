@@ -5,11 +5,10 @@
 		"outDir": "./dist",
 		"composite": true,
 		"declaration": true,
-		"declarationMap": true
+		"declarationMap": true,
+		"jsx": "react-jsx",
+		"lib": ["ES2023", "DOM"]
 	},
-	"include": ["src/**/*.ts"],
-	"references": [
-		{ "path": "../agent" },
-		{ "path": "../mini-acp" }
-	]
+	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"references": [{ "path": "../agent" }, { "path": "../mini-acp" }]
 }

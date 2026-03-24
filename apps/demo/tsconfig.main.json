@@ -11,6 +11,7 @@
 	"references": [
 		{ "path": "../../packages/lib/transport" },
 		{ "path": "../../packages/agent" },
+		{ "path": "../../packages/auth" },
 		{ "path": "../../packages/node" },
 		{ "path": "../../packages/electron/tsconfig.main.json" }
 	]

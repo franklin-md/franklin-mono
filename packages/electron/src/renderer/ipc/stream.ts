@@ -7,6 +7,8 @@ import {
 	fromCallable,
 } from '@franklin/transport';
 
+import type { AuthBridge } from './auth-store.js';
+
 // ---------------------------------------------------------------------------
 // Bridge type — matches what the preload exposes
 // ---------------------------------------------------------------------------
@@ -28,6 +30,8 @@ interface FranklinBridge {
 		) => Promise<unknown>;
 		stop: (mcpId: string) => Promise<void>;
 	};
+	/** Present when `initializeMain` was called with an `AuthStore`. */
+	auth?: AuthBridge;
 }
 
 declare global {

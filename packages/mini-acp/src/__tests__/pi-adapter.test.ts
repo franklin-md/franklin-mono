@@ -194,7 +194,10 @@ describe('createPiAdapter', () => {
 		);
 
 		// Should have chunks, an update, and turnEnd as the last event
-		expect(events[events.length - 1]).toMatchObject({ type: 'turnEnd', stopReason: 'stop' });
+		expect(events[events.length - 1]).toMatchObject({
+			type: 'turnEnd',
+			stopReason: 'stop',
+		});
 
 		// Find text chunks
 		const chunks = events.filter(
@@ -271,7 +274,10 @@ describe('createPiAdapter', () => {
 		});
 
 		// Should have turnEnd as the last event
-		expect(events[events.length - 1]).toMatchObject({ type: 'turnEnd', stopReason: 'stop' });
+		expect(events[events.length - 1]).toMatchObject({
+			type: 'turnEnd',
+			stopReason: 'stop',
+		});
 
 		// Should contain a toolCall chunk
 		const toolChunks = events.filter(

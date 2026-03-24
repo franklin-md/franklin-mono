@@ -12,6 +12,7 @@
 		{ "path": "../lib/transport" },
 		{ "path": "../mini-acp" },
 		{ "path": "../agent" },
+		{ "path": "../auth" },
 		{ "path": "../node" },
 		{ "path": "../local-mcp" }
 	]
