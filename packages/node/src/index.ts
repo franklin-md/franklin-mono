@@ -12,4 +12,4 @@ export {
 } from './agents/index.js';
 
 // Persistence
-export { createNodePersister } from './persister.js';
+export { createNodePersistence } from './persister.js';

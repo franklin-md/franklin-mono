@@ -72,7 +72,7 @@ describe('createSandboxCompiler', () => {
 		);
 
 		const result = await compile(compiler, (api) => {
-			const full = api as CoreAPI & StoreAPI & SandboxAPI;
+			const full = api;
 			expect(full.getSandbox()).toBe(sandbox);
 			full.registerStore('test', 42);
 		});

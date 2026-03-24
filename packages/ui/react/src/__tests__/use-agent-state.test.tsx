@@ -19,13 +19,20 @@ function makeAgent(entries: Map<string, StoreEntry>): Agent {
 	} as Agent;
 }
 
+function entry(
+	store: Store<unknown>,
+	sharing: 'private' | 'global' | 'inherit' = 'private',
+): StoreEntry {
+	return { poolId: crypto.randomUUID(), store, sharing };
+}
+
 function makeAgentWithStore<T>(
 	name: string,
 	initial: T,
 ): { agent: Agent; store: Store<T> } {
 	const store = createStore(initial);
 	const entries = new Map<string, StoreEntry>([
-		[name, { store: store as Store<unknown>, sharing: 'private' }],
+		[name, entry(store as Store<unknown>)],
 	]);
 	return { agent: makeAgent(entries), store };
 }
@@ -322,8 +329,8 @@ describe('useAgentState – store isolation', () => {
 		const storeA = createStore(0);
 		const storeB = createStore('hello');
 		const entries = new Map<string, StoreEntry>([
-			['counter', { store: storeA as Store<unknown>, sharing: 'private' }],
-			['greeting', { store: storeB as Store<unknown>, sharing: 'private' }],
+			['counter', entry(storeA as Store<unknown>)],
+			['greeting', entry(storeB as Store<unknown>)],
 		]);
 		const agent = makeAgent(entries);
 
@@ -352,7 +359,7 @@ describe('useAgentState – edge cases', () => {
 	it('handles a store whose value is undefined', () => {
 		const store = createStore<string | undefined>(undefined);
 		const entries = new Map<string, StoreEntry>([
-			['maybe', { store: store as Store<unknown>, sharing: 'private' }],
+			['maybe', entry(store as Store<unknown>)],
 		]);
 		const agent = makeAgent(entries);
 		const maybeKey = storeKey<'maybe', string | undefined>('maybe');
@@ -364,7 +371,7 @@ describe('useAgentState – edge cases', () => {
 	it('handles a store whose value is null', () => {
 		const store = createStore<string | null>(null);
 		const entries = new Map<string, StoreEntry>([
-			['nullable', { store: store as Store<unknown>, sharing: 'private' }],
+			['nullable', entry(store as Store<unknown>)],
 		]);
 		const agent = makeAgent(entries);
 		const nullableKey = storeKey<'nullable', string | null>('nullable');
@@ -381,7 +388,7 @@ describe('useAgentState – edge cases', () => {
 		};
 		const store = createStore(initial);
 		const entries = new Map<string, StoreEntry>([
-			['complex', { store: store as Store<unknown>, sharing: 'private' }],
+			['complex', entry(store as Store<unknown>)],
 		]);
 		const agent = makeAgent(entries);
 		const complexKey = storeKey<'complex', State>('complex');

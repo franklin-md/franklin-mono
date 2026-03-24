@@ -1,41 +1,13 @@
-import type { Sharing } from '@franklin/extensions';
-import type { Message, LLMConfig } from '@franklin/mini-acp';
+import type { StoreSnapshot } from '@franklin/extensions';
+import type { Ctx } from '@franklin/mini-acp';
 
-// ---------------------------------------------------------------------------
-// Serializable snapshots
-// ---------------------------------------------------------------------------
+export type { FileSystemOps, Persister } from '@franklin/lib';
+export type { StoreSnapshot } from '@franklin/extensions';
 
-export type StoreSnapshot = {
-	value: unknown;
-	sharing: Sharing;
-};
+export type PersistedCtx = Pick<Ctx, 'history' | 'config'>;
 
 export type SessionSnapshot = {
 	sessionId: string;
-	systemPrompt: string;
-	messages: Message[];
-	config?: LLMConfig;
+	ctx: PersistedCtx;
 	stores: Record<string, StoreSnapshot>;
-};
-
-// ---------------------------------------------------------------------------
-// Abstract Persister — implementations handle I/O
-// ---------------------------------------------------------------------------
-
-export interface Persister {
-	save(id: string, snapshot: SessionSnapshot): Promise<void>;
-	load(): Promise<SessionSnapshot[]>;
-	delete(id: string): Promise<void>;
-}
-
-// ---------------------------------------------------------------------------
-// FileSystemOps — parameterized file I/O for concrete persisters
-// ---------------------------------------------------------------------------
-
-export type FileSystemOps = {
-	readFile: (path: string) => Promise<string>;
-	writeFile: (path: string, data: string) => Promise<void>;
-	readDir: (path: string) => Promise<string[]>;
-	deleteFile: (path: string) => Promise<void>;
-	mkdir: (path: string) => Promise<void>;
 };

@@ -1,79 +1,101 @@
 import { CtxTracker } from '@franklin/mini-acp';
-import type { Message } from '@franklin/mini-acp';
+import { DebouncedPersister } from '@franklin/lib';
+import type { Persister } from '@franklin/lib';
 import type {
 	Extension,
 	CoreAPI,
+	PoolStoreSnapshot,
 	StoreAPI,
 	StoreResult,
 } from '@franklin/extensions';
+import {
+	createEmptyStoreResult,
+	hydrateStores,
+	StorePool,
+} from '@franklin/extensions';
 import { createAgent } from '../create.js';
+import { emptyCtx, mergeCtx } from './ctx.js';
 import { ctxExtension } from './ctx-extension.js';
-import { DebouncedPersister } from './persist/debounced-persister.js';
 import { SessionMap } from './persist/session-map.js';
-import { hydrateStores } from './persist/snapshot.js';
-import type { Persister } from './persist/types.js';
-import type { SpawnFn, Session, SessionOptions } from './types.js';
+import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
+import type { SpawnFn, Session } from './types.js';
 
-export type { Session, SessionOptions, SpawnFn };
+export { emptyCtx, mergeCtx };
+export type { Session, SpawnFn };
+
+export type PersistenceOptions = {
+	session: Persister<SessionSnapshot>;
+	pool: Persister<PoolStoreSnapshot>;
+	delayMs?: number;
+};
 
 /**
  * Manages agent sessions — handles transport spawning, extension compilation,
  * and protocol initialization for each session lifecycle command.
  *
- * Parameterized by a spawn function (e.g., `Framework.spawn`) and a set of
- * extensions. Each session owns a CtxTracker that is shared with the tail
- * ctxExtension, keeping the agent's Ctx shadow in lock-step with protocol
- * events (setContext, prompt, update).
+ * Owns a shared {@link StorePool} that all sessions register their stores
+ * into. This decouples store lifecycle from session lifecycle and preserves
+ * shared-store identity across persistence/restore.
  *
- * When a `Persister` is provided, it is wrapped in a debounced persister
- * and sessions auto-persist on every ctx mutation via CtxTracker.onChange.
+ * When persistence options are provided, session saves are debounced and
+ * the pool persists its own store entries via a debounced
+ * `Persister<PoolStoreSnapshot>`.
  */
 export class SessionManager {
 	private readonly sessions: SessionMap;
+	private readonly pool: StorePool;
+	private readonly persister?: Persister<SessionSnapshot>;
 
 	constructor(
 		private readonly spawn: SpawnFn,
 		private readonly extensions: Extension<CoreAPI & StoreAPI>[],
-		persister?: Persister,
+		persistence?: PersistenceOptions,
 	) {
-		this.sessions = new SessionMap(
-			persister ? new DebouncedPersister(persister) : undefined,
-		);
+		const delayMs = persistence?.delayMs ?? 500;
+
+		const sessionPersister = persistence?.session
+			? new DebouncedPersister(persistence.session, delayMs)
+			: undefined;
+		const poolPersister = persistence?.pool
+			? new DebouncedPersister(persistence.pool, delayMs)
+			: undefined;
+
+		this.pool = new StorePool(poolPersister);
+		this.persister = sessionPersister;
+		this.sessions = new SessionMap(sessionPersister);
 	}
 
 	/**
 	 * Create a brand new session with no parent state.
 	 */
-	async new(options?: SessionOptions): Promise<Session> {
-		return this.createAndInit(options);
+	async new(): Promise<Session> {
+		return this.createAndInit(emptyCtx());
 	}
 
 	/**
 	 * Fork from an existing session — copies stores AND injects
 	 * the parent's full Ctx into the new agent's context.
 	 */
-	async fork(sessionId: string, options?: SessionOptions): Promise<Session> {
+	async fork(sessionId: string): Promise<Session> {
 		const parent = this.get(sessionId);
-		const parentCtx = parent.tracker.get();
+		const parentCtx = mergeCtx(parent.tracker.get());
 		const copiedStores = parent.agent.stores.copy('private');
 
-		return this.createAndInit(
-			{
-				systemPrompt: options?.systemPrompt ?? parentCtx.history.systemPrompt,
-			},
-			copiedStores,
-			parentCtx.history.messages,
-		);
+		return this.createAndInit(parentCtx, copiedStores);
 	}
 
 	/**
 	 * Create a child session — copies stores from parent but starts
 	 * a fresh conversation (no history injection).
 	 */
-	async child(sessionId: string, options?: SessionOptions): Promise<Session> {
+	async child(sessionId: string): Promise<Session> {
 		const parent = this.get(sessionId);
 		const copiedStores = parent.agent.stores.copy('private');
-		return this.createAndInit(options, copiedStores);
+		const ctx = mergeCtx(emptyCtx(), {
+			config: parent.tracker.get().config,
+		});
+
+		return this.createAndInit(ctx, copiedStores);
 	}
 
 	/**
@@ -106,32 +128,39 @@ export class SessionManager {
 	/**
 	 * Restore all sessions from the persister.
 	 *
-	 * Each snapshot is hydrated into a live session: a fresh transport
-	 * is spawned, extensions are compiled with the persisted store values,
-	 * and the context is replayed with the persisted history.
+	 * Two-phase restore:
+	 *   1. Restore pool entries from persistent storage
+	 *   2. Load session snapshots → hydrate each by wiring store refs
+	 *      to the now-live pool entries, then compile extensions and
+	 *      replay context.
+	 *   3. GC orphaned pool entries (abnormal shutdown recovery) —
+	 *      the pool handles its own persister deletion.
 	 */
-	async restore(): Promise<Session[]> {
-		return this.sessions.restore(async (snapshot) => {
-			const existingStores = hydrateStores(snapshot.stores);
-			const transport = await this.spawn();
-			const tracker = new CtxTracker();
+	async restore(): Promise<void> {
+		if (!this.persister) return;
 
-			const extensions = [...this.extensions, ctxExtension(tracker)];
-			const agent = await createAgent(extensions, transport, existingStores);
-			await agent.initialize({});
-			await agent.setContext({
-				ctx: {
-					history: {
-						systemPrompt: snapshot.systemPrompt,
-						messages: snapshot.messages,
-					},
-					tools: [],
-					config: snapshot.config,
-				},
-			});
+		// Phase 1: hydrate the store pool
+		await this.pool.restore();
 
-			return { agent, tracker };
+		// Phase 2: restore sessions
+		await this.sessions.restore(async (snapshot) => {
+			await this.createAndInit(
+				snapshot.ctx,
+				hydrateStores(snapshot.stores, this.pool),
+				snapshot.sessionId,
+			);
 		});
+
+		// Phase 3: GC orphaned pool entries (abnormal shutdown recovery)
+		await this.pool.gc(this.collectPoolIds());
+	}
+
+	/**
+	 * Remove a session and garbage-collect orphaned pool entries.
+	 */
+	async remove(sessionId: string): Promise<void> {
+		await this.sessions.remove(sessionId);
+		await this.pool.gc(this.collectPoolIds());
 	}
 
 	// -----------------------------------------------------------------------
@@ -139,27 +168,36 @@ export class SessionManager {
 	// -----------------------------------------------------------------------
 
 	private async createAndInit(
-		options?: SessionOptions,
+		ctx: PersistedCtx,
 		existingStores?: StoreResult,
-		messages?: Message[],
+		sessionId?: string,
 	): Promise<Session> {
 		const transport = await this.spawn();
 		const tracker = new CtxTracker();
 
 		// Append ctxExtension at the tail so it sees final transformed params
 		const extensions = [...this.extensions, ctxExtension(tracker)];
-		const agent = await createAgent(extensions, transport, existingStores);
+		const seed = existingStores ?? createEmptyStoreResult(this.pool);
+		const agent = await createAgent(extensions, transport, seed);
 		await agent.initialize({});
 		await agent.setContext({
 			ctx: {
-				history: {
-					systemPrompt: options?.systemPrompt ?? '',
-					messages: messages ?? [],
-				},
+				history: ctx.history,
 				tools: [],
+				config: ctx.config,
 			},
 		});
 
-		return this.sessions.register(agent, tracker);
+		const session: Session = {
+			sessionId: sessionId ?? crypto.randomUUID(),
+			agent,
+			tracker,
+		};
+		this.sessions.register(session);
+		return session;
+	}
+
+	private collectPoolIds(): Set<string> {
+		return this.sessions.collectPoolIds();
 	}
 }

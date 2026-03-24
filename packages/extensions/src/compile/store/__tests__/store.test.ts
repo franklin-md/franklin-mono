@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { compile, combine, compileAll } from '../../types.js';
 import { createStoreCompiler } from '../compiler.js';
 import { createCoreCompiler } from '../../core/compiler.js';
-import type { StoreResult } from '../../../api/store/result.js';
+import { StorePool } from '../../../api/store/pool.js';
+import {
+	createEmptyStoreResult,
+	type StoreResult,
+} from '../../../api/store/result.js';
 import type { Store } from '../../../api/store/types.js';
 import type { StoreAPI } from '../../../api/store/api.js';
 import type { CoreAPI } from '../../../api/core/api.js';
@@ -13,22 +17,31 @@ import type { CoreAPI } from '../../../api/core/api.js';
 
 describe('createStoreCompiler – registration', () => {
 	it('registers a store and returns it in the result', async () => {
-		const result = await compile(createStoreCompiler(), (api) => {
-			api.registerStore('counter', 0);
-		});
+		const pool = new StorePool();
+		const result = await compile(
+			createStoreCompiler(createEmptyStoreResult(pool)),
+			(api) => {
+				api.registerStore('counter', 0);
+			},
+		);
 
 		expect(result.stores.size).toBe(1);
 		const entry = result.stores.get('counter')!;
 		expect(entry.store.get()).toBe(0);
 		expect(entry.sharing).toBe('private');
+		expect(entry.poolId).toBeDefined();
 	});
 
 	it('returns the store to the extension for mutation', async () => {
 		let store!: Store<number>;
 
-		const result = await compile(createStoreCompiler(), (api) => {
-			store = api.registerStore('counter', 0);
-		});
+		const pool = new StorePool();
+		const result = await compile(
+			createStoreCompiler(createEmptyStoreResult(pool)),
+			(api) => {
+				store = api.registerStore('counter', 0);
+			},
+		);
 
 		// Extension mutates the store
 		store.set((draft) => {
@@ -41,11 +54,15 @@ describe('createStoreCompiler – registration', () => {
 	});
 
 	it('registers multiple stores', async () => {
-		const result = await compile(createStoreCompiler(), (api) => {
-			api.registerStore('todos', []);
-			api.registerStore('conversation', [], 'inherit');
-			api.registerStore('config', {}, 'global');
-		});
+		const pool = new StorePool();
+		const result = await compile(
+			createStoreCompiler(createEmptyStoreResult(pool)),
+			(api) => {
+				api.registerStore('todos', []);
+				api.registerStore('conversation', [], 'inherit');
+				api.registerStore('config', {}, 'global');
+			},
+		);
 
 		expect(result.stores.size).toBe(3);
 		expect(result.stores.get('todos')!.sharing).toBe('private');
@@ -54,12 +71,31 @@ describe('createStoreCompiler – registration', () => {
 	});
 
 	it('throws on duplicate store name', async () => {
+		const pool = new StorePool();
 		await expect(
-			compile(createStoreCompiler(), (api) => {
+			compile(createStoreCompiler(createEmptyStoreResult(pool)), (api) => {
 				api.registerStore('x', 0);
 				api.registerStore('x', 0);
 			}),
 		).rejects.toThrow('Store "x" is already registered');
+	});
+
+	it('all stores are backed by pool entries', async () => {
+		const pool = new StorePool();
+		const result = await compile(
+			createStoreCompiler(createEmptyStoreResult(pool)),
+			(api) => {
+				api.registerStore('priv', 1, 'private');
+				api.registerStore('glob', 2, 'global');
+			},
+		);
+
+		const privEntry = result.stores.get('priv')!;
+		const globEntry = result.stores.get('glob')!;
+
+		// Both stores should be retrievable from the pool
+		expect(pool.get(privEntry.poolId).get()).toBe(1);
+		expect(pool.get(globEntry.poolId).get()).toBe(2);
 	});
 });
 
@@ -69,7 +105,8 @@ describe('createStoreCompiler – registration', () => {
 
 describe('createStoreCompiler – copy()', () => {
 	async function buildResult(): Promise<StoreResult> {
-		return compile(createStoreCompiler(), (api) => {
+		const pool = new StorePool();
+		return compile(createStoreCompiler(createEmptyStoreResult(pool)), (api) => {
 			api.registerStore('priv', { value: 'private-data' }, 'private');
 			api.registerStore('inh', { value: 'inherit-data' }, 'inherit');
 			api.registerStore('glob', { value: 'global-data' }, 'global');
@@ -80,12 +117,18 @@ describe('createStoreCompiler – copy()', () => {
 		const parent = await buildResult();
 		const child = parent.copy('private');
 
-		// Global: same reference
+		// Global: same pool entry
+		expect(child.stores.get('glob')!.poolId).toBe(
+			parent.stores.get('glob')!.poolId,
+		);
 		expect(child.stores.get('glob')!.store).toBe(
 			parent.stores.get('glob')!.store,
 		);
 
-		// Private: independent snapshot
+		// Private: new pool entry with snapshot value
+		expect(child.stores.get('priv')!.poolId).not.toBe(
+			parent.stores.get('priv')!.poolId,
+		);
 		expect(child.stores.get('priv')!.store).not.toBe(
 			parent.stores.get('priv')!.store,
 		);
@@ -94,6 +137,9 @@ describe('createStoreCompiler – copy()', () => {
 		});
 
 		// Inherit: most restrictive of inherit + private = private → snapshot
+		expect(child.stores.get('inh')!.poolId).not.toBe(
+			parent.stores.get('inh')!.poolId,
+		);
 		expect(child.stores.get('inh')!.store).not.toBe(
 			parent.stores.get('inh')!.store,
 		);
@@ -103,17 +149,23 @@ describe('createStoreCompiler – copy()', () => {
 		const parent = await buildResult();
 		const child = parent.copy('inherit');
 
-		// Global: same reference
-		expect(child.stores.get('glob')!.store).toBe(
-			parent.stores.get('glob')!.store,
+		// Global: same pool entry
+		expect(child.stores.get('glob')!.poolId).toBe(
+			parent.stores.get('glob')!.poolId,
 		);
 
-		// Inherit: most restrictive of inherit + inherit = inherit → same ref
+		// Inherit: same pool entry
+		expect(child.stores.get('inh')!.poolId).toBe(
+			parent.stores.get('inh')!.poolId,
+		);
 		expect(child.stores.get('inh')!.store).toBe(
 			parent.stores.get('inh')!.store,
 		);
 
-		// Private: most restrictive of private + inherit = private → snapshot
+		// Private: new pool entry
+		expect(child.stores.get('priv')!.poolId).not.toBe(
+			parent.stores.get('priv')!.poolId,
+		);
 		expect(child.stores.get('priv')!.store).not.toBe(
 			parent.stores.get('priv')!.store,
 		);
@@ -123,19 +175,19 @@ describe('createStoreCompiler – copy()', () => {
 		const parent = await buildResult();
 		const child = parent.copy('global');
 
-		// Global: same reference
-		expect(child.stores.get('glob')!.store).toBe(
-			parent.stores.get('glob')!.store,
+		// Global: same pool entry
+		expect(child.stores.get('glob')!.poolId).toBe(
+			parent.stores.get('glob')!.poolId,
 		);
 
-		// Inherit: most restrictive of inherit + global = inherit → same ref
-		expect(child.stores.get('inh')!.store).toBe(
-			parent.stores.get('inh')!.store,
+		// Inherit: same pool entry
+		expect(child.stores.get('inh')!.poolId).toBe(
+			parent.stores.get('inh')!.poolId,
 		);
 
-		// Private: most restrictive of private + global = private → snapshot
-		expect(child.stores.get('priv')!.store).not.toBe(
-			parent.stores.get('priv')!.store,
+		// Private: new pool entry
+		expect(child.stores.get('priv')!.poolId).not.toBe(
+			parent.stores.get('priv')!.poolId,
 		);
 	});
 
@@ -173,6 +225,12 @@ describe('createStoreCompiler – copy()', () => {
 		expect(child.stores.get('inh')!.sharing).toBe('inherit');
 		expect(child.stores.get('glob')!.sharing).toBe('global');
 	});
+
+	it('copy shares the same pool instance', async () => {
+		const parent = await buildResult();
+		const child = parent.copy('private');
+		expect(child.pool).toBe(parent.pool);
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -181,11 +239,16 @@ describe('createStoreCompiler – copy()', () => {
 
 describe('createStoreCompiler – existing stores', () => {
 	it('reuses stores from existing StoreResult', async () => {
+		const pool = new StorePool();
+
 		// Parent compiles and produces a result
-		const parent = await compile(createStoreCompiler(), (api) => {
-			const s = api.registerStore('counter', 0);
-			s.set(() => 42);
-		});
+		const parent = await compile(
+			createStoreCompiler(createEmptyStoreResult(pool)),
+			(api) => {
+				const s = api.registerStore('counter', 0);
+				s.set(() => 42);
+			},
+		);
 
 		// Copy for child
 		const copied = parent.copy('inherit');
@@ -204,9 +267,14 @@ describe('createStoreCompiler – existing stores', () => {
 	});
 
 	it('creates fresh stores for names not in existing', async () => {
-		const parent = await compile(createStoreCompiler(), (api) => {
-			api.registerStore('counter', 0);
-		});
+		const pool = new StorePool();
+
+		const parent = await compile(
+			createStoreCompiler(createEmptyStoreResult(pool)),
+			(api) => {
+				api.registerStore('counter', 0);
+			},
+		);
 
 		const copied = parent.copy('inherit');
 
@@ -220,6 +288,24 @@ describe('createStoreCompiler – existing stores', () => {
 
 		expect(child.stores.get('newStore')!.store.get()).toBe('fresh');
 	});
+
+	it('throws when seeded sharing does not match registration', async () => {
+		const pool = new StorePool();
+		const parent = await compile(
+			createStoreCompiler(createEmptyStoreResult(pool)),
+			(api) => {
+				api.registerStore('counter', 0, 'inherit');
+			},
+		);
+
+		await expect(
+			compile(createStoreCompiler(parent), (api) => {
+				api.registerStore('counter', 0, 'private');
+			}),
+		).rejects.toThrow(
+			'Store "counter" was seeded with sharing "inherit" but registered with "private"',
+		);
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -228,8 +314,12 @@ describe('createStoreCompiler – existing stores', () => {
 
 describe('createStoreCompiler – combine with core', () => {
 	it('extension sees both CoreAPI and StoreAPI', async () => {
+		const pool = new StorePool();
 		const result = await compile(
-			combine(createCoreCompiler(), createStoreCompiler()),
+			combine(
+				createCoreCompiler(),
+				createStoreCompiler(createEmptyStoreResult(pool)),
+			),
 			(api: CoreAPI & StoreAPI) => {
 				api.registerStore('items', [] as string[]);
 				api.on('prompt', (params) => params);
@@ -251,11 +341,16 @@ describe('createStoreCompiler – combine with core', () => {
 
 describe('compileAll – store compiler', () => {
 	it('compiles 0 extensions to empty stores', async () => {
-		const result = await compileAll(createStoreCompiler(), []);
+		const pool = new StorePool();
+		const result = await compileAll(
+			createStoreCompiler(createEmptyStoreResult(pool)),
+			[],
+		);
 		expect(result.stores.size).toBe(0);
 	});
 
 	it('compiles N extensions, unions all stores', async () => {
+		const pool = new StorePool();
 		const ext1 = (api: StoreAPI) => {
 			api.registerStore('todos', [] as string[]);
 		};
@@ -266,7 +361,10 @@ describe('compileAll – store compiler', () => {
 			api.registerStore('config', {});
 		};
 
-		const result = await compileAll(createStoreCompiler(), [ext1, ext2, ext3]);
+		const result = await compileAll(
+			createStoreCompiler(createEmptyStoreResult(pool)),
+			[ext1, ext2, ext3],
+		);
 
 		expect(result.stores.size).toBe(3);
 		expect(result.stores.has('todos')).toBe(true);
@@ -275,6 +373,7 @@ describe('compileAll – store compiler', () => {
 	});
 
 	it('compileAll with combined compiler merges both middleware and stores', async () => {
+		const pool = new StorePool();
 		const ext1 = (api: CoreAPI & StoreAPI) => {
 			api.registerStore('todos', [] as string[]);
 			api.on('prompt', () => {
@@ -287,7 +386,10 @@ describe('compileAll – store compiler', () => {
 		};
 
 		const result = await compileAll(
-			combine(createCoreCompiler(), createStoreCompiler()),
+			combine(
+				createCoreCompiler(),
+				createStoreCompiler(createEmptyStoreResult(pool)),
+			),
 			[ext1, ext2],
 		);
 

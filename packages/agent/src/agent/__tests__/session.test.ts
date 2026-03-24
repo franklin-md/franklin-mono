@@ -8,7 +8,7 @@ import {
 	type AgentProtocol,
 } from '@franklin/mini-acp';
 import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
-import { SessionManager } from '../session/index.js';
+import { emptyCtx, mergeCtx, SessionManager } from '../session/index.js';
 import type { Session } from '../session/types.js';
 
 // ---------------------------------------------------------------------------
@@ -43,6 +43,25 @@ function getCtx(session: Session) {
 	return session.tracker.get();
 }
 
+function setSystemPrompt(session: Session, systemPrompt: string) {
+	const ctx = getCtx(session);
+	session.tracker.apply(
+		mergeCtx(ctx, {
+			history: {
+				systemPrompt,
+				messages: ctx.history.messages,
+			},
+		}),
+	);
+}
+
+function setConfig(
+	session: Session,
+	config: NonNullable<ReturnType<typeof getCtx>['config']>,
+) {
+	session.tracker.apply(mergeCtx(getCtx(session), { config }));
+}
+
 // ---------------------------------------------------------------------------
 // Test extensions
 // ---------------------------------------------------------------------------
@@ -62,6 +81,53 @@ function sharedCounterExtension(): Extension<CoreAPI & StoreAPI> {
 // ---------------------------------------------------------------------------
 // SessionManager
 // ---------------------------------------------------------------------------
+
+describe('ctx utils', () => {
+	it('emptyCtx returns isolated empty histories', () => {
+		const first = emptyCtx();
+		const second = emptyCtx();
+
+		first.history.messages.push({
+			role: 'user',
+			content: [{ type: 'text', text: 'hello' }],
+		});
+
+		expect(first.history.messages).toHaveLength(1);
+		expect(second.history.messages).toEqual([]);
+	});
+
+	it('mergeCtx clones history and config', () => {
+		const base: Parameters<typeof mergeCtx>[0] = {
+			history: {
+				systemPrompt: 'parent prompt',
+				messages: [
+					{
+						role: 'user' as const,
+						content: [{ type: 'text' as const, text: 'hello' }],
+					},
+				],
+			},
+			config: {
+				model: 'gpt-test',
+				reasoning: 'high' as const,
+			},
+		};
+
+		const merged = mergeCtx(base);
+
+		base.history.messages.push({
+			role: 'assistant',
+			content: [{ type: 'text', text: 'hi' }],
+		});
+		base.config!.model = 'changed';
+
+		expect(merged.history.messages).toHaveLength(1);
+		expect(merged.config).toEqual({
+			model: 'gpt-test',
+			reasoning: 'high',
+		});
+	});
+});
 
 describe('SessionManager', () => {
 	const disposables: { dispose: () => Promise<void> }[] = [];
@@ -108,27 +174,13 @@ describe('SessionManager', () => {
 			expect(c2.get()).toBe(0);
 		});
 
-		it('passes systemPrompt through to setContext', async () => {
-			const manager = new SessionManager(createTestTransport, [
-				counterExtension(),
-			]);
-
-			const session = track(
-				await manager.new({ systemPrompt: 'You are helpful' }),
-			);
-
-			// The ctx extension should have captured the system prompt
-			const ctx = getCtx(session);
-			expect(ctx.history.systemPrompt).toBe('You are helpful');
-		});
-
 		it('ctx extension shadows initial context', async () => {
 			const manager = new SessionManager(createTestTransport, []);
 
-			const session = track(await manager.new({ systemPrompt: 'test' }));
+			const session = track(await manager.new());
 			const ctx = getCtx(session);
 
-			expect(ctx.history.systemPrompt).toBe('test');
+			expect(ctx.history.systemPrompt).toBe('');
 			expect(ctx.history.messages).toEqual([]);
 			expect(ctx.tools).toEqual([]);
 		});
@@ -200,9 +252,8 @@ describe('SessionManager', () => {
 		it('starts a fresh conversation (no history from parent)', async () => {
 			const manager = new SessionManager(createTestTransport, []);
 
-			const parent = track(
-				await manager.new({ systemPrompt: 'parent prompt' }),
-			);
+			const parent = track(await manager.new());
+			setSystemPrompt(parent, 'parent prompt');
 
 			const child = track(await manager.child(parent.sessionId));
 			const childCtx = getCtx(child);
@@ -237,29 +288,45 @@ describe('SessionManager', () => {
 		it('inherits parent systemPrompt by default', async () => {
 			const manager = new SessionManager(createTestTransport, []);
 
-			const parent = track(
-				await manager.new({ systemPrompt: 'parent prompt' }),
-			);
+			const parent = track(await manager.new());
+			setSystemPrompt(parent, 'parent prompt');
 			const forked = track(await manager.fork(parent.sessionId));
 
 			const forkedCtx = getCtx(forked);
 			expect(forkedCtx.history.systemPrompt).toBe('parent prompt');
 		});
 
-		it('allows overriding systemPrompt on fork', async () => {
+		it('clones parent history and config on fork', async () => {
 			const manager = new SessionManager(createTestTransport, []);
 
-			const parent = track(
-				await manager.new({ systemPrompt: 'parent prompt' }),
-			);
-			const forked = track(
-				await manager.fork(parent.sessionId, {
-					systemPrompt: 'forked prompt',
-				}),
-			);
+			const parent = track(await manager.new());
+			setSystemPrompt(parent, 'parent prompt');
+			parent.tracker.append({
+				role: 'user',
+				content: [{ type: 'text', text: 'hello' }],
+			});
+			setConfig(parent, { model: 'parent-model', reasoning: 'high' });
+
+			const forked = track(await manager.fork(parent.sessionId));
+
+			parent.tracker.append({
+				role: 'assistant',
+				content: [{ type: 'text', text: 'later' }],
+			});
+			setConfig(parent, { model: 'changed-model', reasoning: 'low' });
 
 			const forkedCtx = getCtx(forked);
-			expect(forkedCtx.history.systemPrompt).toBe('forked prompt');
+			expect(forkedCtx.history.systemPrompt).toBe('parent prompt');
+			expect(forkedCtx.history.messages).toEqual([
+				{
+					role: 'user',
+					content: [{ type: 'text', text: 'hello' }],
+				},
+			]);
+			expect(forkedCtx.config).toEqual({
+				model: 'parent-model',
+				reasoning: 'high',
+			});
 		});
 	});
 
@@ -292,7 +359,8 @@ describe('SessionManager', () => {
 
 			const manager = new SessionManager(trackingTransport, []);
 
-			const session = track(await manager.new({ systemPrompt: 'test' }));
+			const session = track(await manager.new());
+			setSystemPrompt(session, 'test');
 
 			// Manually populate the tracker with messages
 			// (simulating what would happen after actual prompt/update cycles)

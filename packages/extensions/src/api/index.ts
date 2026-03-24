@@ -30,4 +30,12 @@ export { shouldSnapshot } from './store/index.js';
 export type { StoreKey, StoreValueType } from './store/index.js';
 export { storeKey } from './store/index.js';
 export type { StoreResult, StoreEntry } from './store/index.js';
-export { createStoreResult, createStore } from './store/index.js';
+export type { Persister } from '@franklin/lib';
+export {
+	createEmptyStoreResult,
+	createStoreResult,
+	hydrateStores,
+	createStore,
+} from './store/index.js';
+export { StorePool } from './store/index.js';
+export type { StoreSnapshot, PoolStoreSnapshot } from './store/index.js';

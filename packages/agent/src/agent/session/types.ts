@@ -8,7 +8,3 @@ export type Session = {
 	agent: Agent;
 	tracker: CtxTracker;
 };
-
-export type SessionOptions = {
-	systemPrompt?: string;
-};

@@ -11,7 +11,7 @@ import { todoExtension } from '../todo/extension.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type StubOverrides = { [K in keyof MiniACPClient]?: (...args: any[]) => any };
 
 function stubClient(overrides: StubOverrides = {}): MiniACPClient {

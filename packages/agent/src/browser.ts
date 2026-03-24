@@ -14,17 +14,26 @@ export type { AgentSpec } from './environment.js';
 export type { AgentCommands } from './types.js';
 
 // Agent — typed handle unifying commands, extension stores, and lifecycle
-export { createAgent, SessionManager } from './agent/index.js';
-export type { Agent, Session, SessionOptions, SpawnFn } from './agent/index.js';
+export { createAgent, SessionManager, emptyCtx, mergeCtx } from './agent/index.js';
+export type {
+	Agent,
+	Session,
+	SpawnFn,
+	PersistenceOptions,
+} from './agent/index.js';
 
 // Persistence
 export {
 	SessionMap,
 	snapshotSession,
 	hydrateStores,
-	createFilePersister,
+	Debouncer,
+	createFileSessionPersister,
+	createFilePoolPersister,
+	createFilePersistence,
 } from './agent/index.js';
 export type {
+	OnRestore,
 	Persister,
 	SessionSnapshot,
 	StoreSnapshot,
@@ -48,6 +57,7 @@ export {
 	storeKey,
 	conversationKey,
 	todoKey,
+	StorePool,
 } from '@franklin/extensions';
 export type {
 	Extension,

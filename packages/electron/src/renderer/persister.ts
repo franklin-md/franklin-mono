@@ -1,12 +1,25 @@
-import { createFilePersister } from '@franklin/agent';
-import type { Persister } from '@franklin/agent';
+import { createFilePersistence } from '@franklin/agent';
+import type { SessionSnapshot, Persister } from '@franklin/agent';
+import type { PoolStoreSnapshot } from '@franklin/extensions';
 
 /**
- * Creates a Persister for Electron renderer environments.
+ * Creates persistence for Electron renderer environments.
  *
  * File I/O is bridged to the main process via the preload's
  * `window.__franklinBridge.persist` API.
  */
-export function createElectronPersister(dir: string): Persister {
-	return createFilePersister(dir, window.__franklinBridge.persist);
+export function createElectronPersistence(dir: string): {
+	session: Persister<SessionSnapshot>;
+	pool: Persister<PoolStoreSnapshot>;
+} {
+	return {
+		session: createFilePersistence<SessionSnapshot>(
+			`${dir}/sessions`,
+			window.__franklinBridge.persist,
+		),
+		pool: createFilePersistence<PoolStoreSnapshot>(
+			`${dir}/store`,
+			window.__franklinBridge.persist,
+		),
+	};
 }

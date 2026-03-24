@@ -13,6 +13,7 @@ import {
 	compileAll,
 	combine,
 	createCoreCompiler,
+	createEmptyStoreResult,
 	createStoreCompiler,
 	apply,
 } from '@franklin/extensions';
@@ -27,15 +28,18 @@ import type { Agent } from './types.js';
  * middleware produces a `toolExecute` handler for the protocol to call.
  *
  * For child agents, pass `existingStores` from `parent.stores.copy('private')`
- * to inherit state per store sharing semantics.
+ * to inherit state per store sharing semantics. When omitted, the agent
+ * compiles against a fresh empty store result with its own pool.
  */
 export async function createAgent(
 	extensions: Extension<CoreAPI & StoreAPI>[],
 	transport: ClientProtocol,
 	existingStores?: StoreResult,
 ): Promise<Agent> {
+	const seed = existingStores ?? createEmptyStoreResult();
+
 	const result = await compileAll(
-		combine(createCoreCompiler(), createStoreCompiler(existingStores)),
+		combine(createCoreCompiler(), createStoreCompiler(seed)),
 		extensions,
 	);
 

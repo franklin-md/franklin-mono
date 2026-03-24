@@ -9,7 +9,12 @@ import {
 	type AgentProtocol,
 	type AgentBinding,
 } from '@franklin/mini-acp';
-import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
+import {
+	createEmptyStoreResult,
+	type Extension,
+	type CoreAPI,
+	type StoreAPI,
+} from '@franklin/extensions';
 import { createAgent } from '../create.js';
 
 // ---------------------------------------------------------------------------
@@ -169,5 +174,30 @@ describe('createAgent', () => {
 				content: [{ type: 'text', text: 'Hello!' }],
 			}),
 		});
+	});
+
+	it('reuses stores from an existing StoreResult seed', async () => {
+		const ext: Extension<CoreAPI & StoreAPI> = (api) => {
+			const store = api.registerStore('items', [] as string[], 'inherit');
+			if (store.get().length === 0) {
+				store.set((items) => {
+					items.push('seeded');
+				});
+			}
+		};
+
+		const { clientTransport: parentTransport } = createTestTransport();
+		const parent = track(await createAgent([ext], parentTransport));
+
+		const { clientTransport: childTransport } = createTestTransport();
+		const child = track(
+			await createAgent([ext], childTransport, parent.stores.copy('inherit')),
+		);
+
+		expect(child.stores.stores.get('items')!.store.get()).toEqual(['seeded']);
+		expect(child.stores.stores.get('items')!.poolId).toBe(
+			parent.stores.stores.get('items')!.poolId,
+		);
+		expect(child.stores.pool).toBe(parent.stores.pool);
 	});
 });

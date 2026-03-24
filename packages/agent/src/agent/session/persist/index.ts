@@ -1,18 +1,25 @@
 // Types
 export type {
 	Persister,
+	PersistedCtx,
 	SessionSnapshot,
 	StoreSnapshot,
 	FileSystemOps,
 } from './types.js';
 
 // Snapshot utilities
-export { snapshotSession, hydrateStores } from './snapshot.js';
+export { snapshotSession } from './snapshot.js';
 
 // Session map
 export { SessionMap } from './session-map.js';
-export type { RestoreFactory } from './session-map.js';
+export type { OnRestore } from './session-map.js';
+
+// Debouncer
+export { Debouncer } from '@franklin/lib';
 
 // Concrete persisters
-export { createFilePersister } from './file-persister.js';
-export { DebouncedPersister } from './debounced-persister.js';
+export {
+	createFileSessionPersister,
+	createFilePoolPersister,
+} from './file-persister.js';
+export { createFilePersistence } from '@franklin/lib';

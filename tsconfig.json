@@ -1,6 +1,7 @@
 {
 	"files": [],
 	"references": [
+		{ "path": "./packages/lib/core" },
 		{ "path": "./packages/lib/transport" },
 		{ "path": "./packages/agent" },
 		{ "path": "./packages/extensions" },

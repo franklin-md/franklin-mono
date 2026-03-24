@@ -1,56 +1,31 @@
-import type { Persister, SessionSnapshot, FileSystemOps } from './types.js';
+import type { PoolStoreSnapshot } from '@franklin/extensions';
+import {
+	createFilePersistence,
+	type FileSystemOps,
+	type Persister,
+} from '@franklin/lib';
+import type { SessionSnapshot } from './types.js';
 
 /**
- * Creates a Persister that stores each session as a JSON file.
+ * Creates a session-only Persister backed by JSON files.
  *
- * Parameterized by `FileSystemOps` so the same logic works in Node
- * (fs/promises) and Electron (IPC bridge to main process).
- *
- * Layout: `{dir}/{sessionId}.json`
+ * Layout: `{dir}/sessions/{sessionId}.json`
  */
-export function createFilePersister(dir: string, fs: FileSystemOps): Persister {
-	let dirCreated = false;
+export function createFileSessionPersister(
+	dir: string,
+	fs: FileSystemOps,
+): Persister<SessionSnapshot> {
+	return createFilePersistence<SessionSnapshot>(`${dir}/sessions`, fs);
+}
 
-	async function ensureDir(): Promise<void> {
-		if (dirCreated) return;
-		await fs.mkdir(dir);
-		dirCreated = true;
-	}
-
-	function filePath(id: string): string {
-		return `${dir}/${id}.json`;
-	}
-
-	return {
-		async save(id, snapshot) {
-			await ensureDir();
-			await fs.writeFile(filePath(id), JSON.stringify(snapshot));
-		},
-
-		async load() {
-			let entries: string[];
-			try {
-				entries = await fs.readDir(dir);
-			} catch {
-				// Directory doesn't exist yet — nothing to load
-				return [];
-			}
-
-			const snapshots: SessionSnapshot[] = [];
-			for (const entry of entries) {
-				if (!entry.endsWith('.json')) continue;
-				const raw = await fs.readFile(`${dir}/${entry}`);
-				snapshots.push(JSON.parse(raw) as SessionSnapshot);
-			}
-			return snapshots;
-		},
-
-		async delete(id) {
-			try {
-				await fs.deleteFile(filePath(id));
-			} catch {
-				// Already gone — not an error
-			}
-		},
-	};
+/**
+ * Creates a pool-store persister backed by JSON files.
+ *
+ * Layout: `{dir}/store/{poolId}.json`
+ */
+export function createFilePoolPersister(
+	dir: string,
+	fs: FileSystemOps,
+): Persister<PoolStoreSnapshot> {
+	return createFilePersistence<PoolStoreSnapshot>(`${dir}/store`, fs);
 }

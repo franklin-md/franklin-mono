@@ -1,5 +1,5 @@
 {
-	"extends": "../../tsconfig.base.json",
+	"extends": "../../../tsconfig.base.json",
 	"compilerOptions": {
 		"rootDir": "./src",
 		"outDir": "./dist",
@@ -7,6 +7,5 @@
 		"declaration": true,
 		"declarationMap": true
 	},
-	"include": ["src/**/*.ts"],
-	"references": [{ "path": "../lib/core" }, { "path": "../mini-acp" }]
+	"include": ["src/**/*.ts"]
 }

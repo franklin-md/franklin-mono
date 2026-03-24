@@ -1,20 +1,29 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDuplexPair } from '@franklin/transport';
+import type { Persister } from '@franklin/lib';
 import {
 	createAgentConnection,
 	type MiniACPClient,
 	type ClientProtocol,
 	type AgentProtocol,
 } from '@franklin/mini-acp';
-import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
-import { SessionManager } from '../session/index.js';
+import {
+	StorePool,
+	hydrateStores,
+	type Extension,
+	type CoreAPI,
+	type StoreAPI,
+	type PoolStoreSnapshot,
+} from '@franklin/extensions';
+import { mergeCtx, SessionManager } from '../session/index.js';
 import type { Session } from '../session/types.js';
-import { snapshotSession, hydrateStores } from '../session/persist/snapshot.js';
-import { SessionMap } from '../session/persist/session-map.js';
-import { createFilePersister } from '../session/persist/file-persister.js';
+import { snapshotSession } from '../session/persist/snapshot.js';
+import {
+	createFileSessionPersister,
+	createFilePoolPersister,
+} from '../session/persist/file-persister.js';
 import type {
-	Persister,
 	SessionSnapshot,
 	FileSystemOps,
 } from '../session/persist/types.js';
@@ -49,6 +58,18 @@ function createTestTransport(): ClientProtocol {
 
 function getCtx(session: Session) {
 	return session.tracker.get();
+}
+
+function setSystemPrompt(session: Session, systemPrompt: string) {
+	const ctx = getCtx(session);
+	session.tracker.apply(
+		mergeCtx(ctx, {
+			history: {
+				systemPrompt,
+				messages: ctx.history.messages,
+			},
+		}),
+	);
 }
 
 function counterExtension(): Extension<CoreAPI & StoreAPI> {
@@ -87,7 +108,7 @@ function createMockFs(): FileSystemOps & {
 	};
 }
 
-function createMockPersister(): Persister & {
+function createMockPersister(): Persister<SessionSnapshot> & {
 	saved: Map<string, SessionSnapshot>;
 } {
 	const saved = new Map<string, SessionSnapshot>();
@@ -97,12 +118,36 @@ function createMockPersister(): Persister & {
 			saved.set(id, snapshot);
 		},
 		async load() {
-			return [...saved.values()];
+			return new Map(saved);
 		},
 		async delete(id) {
 			saved.delete(id);
 		},
 	};
+}
+
+function createMockPoolPersister(): Persister<PoolStoreSnapshot> & {
+	savedStores: Map<string, PoolStoreSnapshot>;
+} {
+	const savedStores = new Map<string, PoolStoreSnapshot>();
+	return {
+		savedStores,
+		async save(poolId, data) {
+			savedStores.set(poolId, data);
+		},
+		async load() {
+			return new Map(savedStores);
+		},
+		async delete(poolId) {
+			savedStores.delete(poolId);
+		},
+	};
+}
+
+function createMockPersistence() {
+	const session = createMockPersister();
+	const pool = createMockPoolPersister();
+	return { session, pool };
 }
 
 // ---------------------------------------------------------------------------
@@ -131,13 +176,12 @@ describe('Persistence', () => {
 	// -----------------------------------------------------------------------
 
 	describe('snapshotSession', () => {
-		it('extracts sessionId, systemPrompt, messages, and stores', async () => {
+		it('extracts sessionId, ctx, and store refs', async () => {
 			const manager = new SessionManager(createTestTransport, [
 				counterExtension(),
 			]);
-			const session = track(
-				await manager.new({ systemPrompt: 'You are helpful' }),
-			);
+			const session = track(await manager.new());
+			setSystemPrompt(session, 'You are helpful');
 
 			// Mutate the store
 			session.agent.stores.stores.get('counter')!.store.set(() => 42);
@@ -147,19 +191,26 @@ describe('Persistence', () => {
 				role: 'user',
 				content: [{ type: 'text', text: 'hello' }],
 			});
+			session.tracker.apply({
+				config: { model: 'test-model', reasoning: 'high' },
+			});
 
 			const snapshot = snapshotSession(session);
 
 			expect(snapshot.sessionId).toBe(session.sessionId);
-			expect(snapshot.systemPrompt).toBe('You are helpful');
-			expect(snapshot.messages).toHaveLength(1);
-			expect(snapshot.messages[0]).toEqual({
+			expect(snapshot.ctx.history.systemPrompt).toBe('You are helpful');
+			expect(snapshot.ctx.history.messages).toHaveLength(1);
+			expect(snapshot.ctx.history.messages[0]).toEqual({
 				role: 'user',
 				content: [{ type: 'text', text: 'hello' }],
 			});
-			expect(snapshot.stores).toEqual({
-				counter: { value: 42, sharing: 'private' },
+			expect(snapshot.ctx.config).toEqual({
+				model: 'test-model',
+				reasoning: 'high',
 			});
+			// Store snapshot now contains poolId + sharing, not value
+			expect(snapshot.stores['counter']?.poolId).toBeDefined();
+			expect(snapshot.stores['counter']?.sharing).toBe('private');
 		});
 	});
 
@@ -168,21 +219,85 @@ describe('Persistence', () => {
 	// -----------------------------------------------------------------------
 
 	describe('hydrateStores', () => {
-		it('rebuilds stores from snapshot data', () => {
-			const result = hydrateStores({
-				counter: { value: 10, sharing: 'private' },
-				name: { value: 'test', sharing: 'global' },
-			});
+		it('rebuilds stores from pool references', () => {
+			const pool = new StorePool();
+
+			// Pre-populate the pool
+			const counter = pool.create(10, 'private');
+			const name = pool.create('test', 'global');
+
+			const result = hydrateStores(
+				{
+					counter: { poolId: counter.poolId, sharing: 'private' },
+					name: { poolId: name.poolId, sharing: 'global' },
+				},
+				pool,
+			);
 
 			expect(result.stores.size).toBe(2);
 
-			const counter = result.stores.get('counter')!;
-			expect(counter.store.get()).toBe(10);
-			expect(counter.sharing).toBe('private');
+			const counterEntry = result.stores.get('counter')!;
+			expect(counterEntry.store.get()).toBe(10);
+			expect(counterEntry.sharing).toBe('private');
+			expect(counterEntry.poolId).toBe(counter.poolId);
 
-			const name = result.stores.get('name')!;
-			expect(name.store.get()).toBe('test');
-			expect(name.sharing).toBe('global');
+			const nameEntry = result.stores.get('name')!;
+			expect(nameEntry.store.get()).toBe('test');
+			expect(nameEntry.sharing).toBe('global');
+			expect(nameEntry.poolId).toBe(name.poolId);
+		});
+
+		it('hydrated stores are live pool references', () => {
+			const pool = new StorePool();
+			const { poolId, store } = pool.create(0, 'global');
+
+			const result = hydrateStores(
+				{ shared: { poolId, sharing: 'global' } },
+				pool,
+			);
+
+			// Mutate via original pool store
+			store.set(() => 99);
+
+			// Hydrated store should reflect the change
+			expect(result.stores.get('shared')!.store.get()).toBe(99);
+		});
+	});
+
+	describe('StorePool (auto-persist)', () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it('persists newly created entries', async () => {
+			const persister = createMockPoolPersister();
+			const pool = new StorePool(persister);
+			const { poolId } = pool.create(1, 'private');
+
+			await vi.advanceTimersByTimeAsync(0);
+
+			expect(persister.savedStores.get(poolId)).toEqual({
+				value: 1,
+				sharing: 'private',
+			});
+		});
+
+		it('persists direct store mutations without session tracker changes', async () => {
+			const persister = createMockPoolPersister();
+			const pool = new StorePool(persister);
+			const { poolId, store } = pool.create(1, 'private');
+
+			store.set(() => 2);
+			await vi.advanceTimersByTimeAsync(0);
+
+			expect(persister.savedStores.get(poolId)).toEqual({
+				value: 2,
+				sharing: 'private',
+			});
 		});
 	});
 
@@ -190,65 +305,78 @@ describe('Persistence', () => {
 	// SessionMap
 	// -----------------------------------------------------------------------
 
-	describe('SessionMap', () => {
-		it('eagerly persists on persist() call', async () => {
-			const persister = createMockPersister();
+	describe('SessionMap (auto-persist)', () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it('auto-persists session and stores on creation', async () => {
+			const persistence = createMockPersistence();
 			const manager = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
-				persister,
+				persistence,
 			);
 
 			const session = track(await manager.new());
+			await vi.advanceTimersByTimeAsync(500);
 
-			expect(persister.saved.has(session.sessionId)).toBe(true);
-			const snapshot = persister.saved.get(session.sessionId)!;
-			expect(snapshot.stores.counter.value).toBe(0);
+			// Session snapshot saved
+			expect(persistence.session.saved.has(session.sessionId)).toBe(true);
+			const snapshot = persistence.session.saved.get(session.sessionId)!;
+			expect(snapshot.stores['counter']?.poolId).toBeDefined();
+
+			// Store value saved separately via pool persister
+			const poolId = snapshot.stores['counter']!.poolId;
+			expect(persistence.pool.savedStores.has(poolId)).toBe(true);
+			expect(persistence.pool.savedStores.get(poolId)!.value).toBe(0);
 		});
 
-		it('persists after fork', async () => {
-			const persister = createMockPersister();
+		it('auto-persists after fork', async () => {
+			const persistence = createMockPersistence();
 			const manager = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
-				persister,
+				persistence,
 			);
 
 			const parent = track(await manager.new());
 			parent.agent.stores.stores.get('counter')!.store.set(() => 7);
 
 			const forked = track(await manager.fork(parent.sessionId));
+			await vi.advanceTimersByTimeAsync(500);
 
-			expect(persister.saved.has(forked.sessionId)).toBe(true);
-			const snapshot = persister.saved.get(forked.sessionId)!;
-			expect(snapshot.stores.counter.value).toBe(7);
+			expect(persistence.session.saved.has(forked.sessionId)).toBe(true);
+			const snapshot = persistence.session.saved.get(forked.sessionId)!;
+			const poolId = snapshot.stores['counter']!.poolId;
+			expect(persistence.pool.savedStores.get(poolId)!.value).toBe(7);
 		});
 
-		it('persists after child', async () => {
-			const persister = createMockPersister();
+		it('auto-persists after child', async () => {
+			const persistence = createMockPersistence();
 			const manager = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
-				persister,
+				persistence,
 			);
 
 			const parent = track(await manager.new());
 			const child = track(await manager.child(parent.sessionId));
+			await vi.advanceTimersByTimeAsync(500);
 
-			expect(persister.saved.has(child.sessionId)).toBe(true);
+			expect(persistence.session.saved.has(child.sessionId)).toBe(true);
 		});
 
-		it('persists after rewind', async () => {
-			const persister = createMockPersister();
-			const manager = new SessionManager(
-				createTestTransport,
-				[],
-				persister,
-			);
+		it('auto-persists on tracker change (rewind)', async () => {
+			const persistence = createMockPersistence();
+			const manager = new SessionManager(createTestTransport, [], persistence);
 
-			const session = track(
-				await manager.new({ systemPrompt: 'test' }),
-			);
+			const session = track(await manager.new());
+			setSystemPrompt(session, 'test');
 			session.tracker.append({
 				role: 'user',
 				content: [{ type: 'text', text: 'hello' }],
@@ -259,65 +387,76 @@ describe('Persistence', () => {
 			});
 
 			await manager.rewind(session.sessionId, 1);
+			await vi.advanceTimersByTimeAsync(500);
 
-			const snapshot = persister.saved.get(session.sessionId)!;
-			expect(snapshot.messages).toHaveLength(1);
+			const snapshot = persistence.session.saved.get(session.sessionId)!;
+			expect(snapshot.ctx.history.messages).toHaveLength(1);
 		});
 	});
 
 	// -----------------------------------------------------------------------
-	// createFilePersister
+	// createFileSessionPersister
 	// -----------------------------------------------------------------------
 
-	describe('createFilePersister', () => {
+	describe('createFileSessionPersister', () => {
 		it('saves and loads session snapshots', async () => {
 			const mockFs = createMockFs();
-			const persister = createFilePersister('/data/sessions', mockFs);
+			const persister = createFileSessionPersister('/data', mockFs);
 
 			const snapshot: SessionSnapshot = {
 				sessionId: 'abc-123',
-				systemPrompt: 'You are helpful',
-				messages: [
-					{ role: 'user', content: [{ type: 'text', text: 'hi' }] },
-				],
+				ctx: {
+					history: {
+						systemPrompt: 'You are helpful',
+						messages: [
+							{ role: 'user', content: [{ type: 'text', text: 'hi' }] },
+						],
+					},
+				},
 				stores: {
-					counter: { value: 5, sharing: 'private' },
+					counter: { poolId: 'pool-1', sharing: 'private' },
 				},
 			};
 
 			await persister.save('abc-123', snapshot);
 
-			// File should exist
+			// File should exist in sessions subdirectory
 			expect(mockFs.files.has('/data/sessions/abc-123.json')).toBe(true);
 
 			// Load should return the snapshot
 			const loaded = await persister.load();
-			expect(loaded).toHaveLength(1);
-			expect(loaded[0].sessionId).toBe('abc-123');
-			expect(loaded[0].systemPrompt).toBe('You are helpful');
-			expect(loaded[0].stores.counter.value).toBe(5);
+			expect(loaded.size).toBe(1);
+			expect(loaded.get('abc-123')!.sessionId).toBe('abc-123');
+			expect(loaded.get('abc-123')!.ctx.history.systemPrompt).toBe(
+				'You are helpful',
+			);
+			expect(loaded.get('abc-123')!.stores['counter']?.poolId).toBe('pool-1');
 		});
 
-		it('returns empty array when directory does not exist', async () => {
+		it('returns an empty map when sessions directory does not exist', async () => {
 			const mockFs = createMockFs();
 			// Override readDir to throw ENOENT
 			mockFs.readDir = async () => {
 				throw new Error('ENOENT');
 			};
-			const persister = createFilePersister('/data/sessions', mockFs);
+			const persister = createFileSessionPersister('/data', mockFs);
 
 			const loaded = await persister.load();
-			expect(loaded).toEqual([]);
+			expect(loaded).toEqual(new Map());
 		});
 
-		it('delete removes the file', async () => {
+		it('delete removes the session file', async () => {
 			const mockFs = createMockFs();
-			const persister = createFilePersister('/data/sessions', mockFs);
+			const persister = createFileSessionPersister('/data', mockFs);
 
 			const snapshot: SessionSnapshot = {
 				sessionId: 'abc-123',
-				systemPrompt: '',
-				messages: [],
+				ctx: {
+					history: {
+						systemPrompt: '',
+						messages: [],
+					},
+				},
 				stores: {},
 			};
 
@@ -330,7 +469,7 @@ describe('Persistence', () => {
 
 		it('delete does not throw when file is missing', async () => {
 			const mockFs = createMockFs();
-			const persister = createFilePersister('/data/sessions', mockFs);
+			const persister = createFileSessionPersister('/data', mockFs);
 
 			// Should not throw
 			await persister.delete('nonexistent');
@@ -338,21 +477,75 @@ describe('Persistence', () => {
 
 		it('skips non-json files during load', async () => {
 			const mockFs = createMockFs();
-			const persister = createFilePersister('/data/sessions', mockFs);
+			const persister = createFileSessionPersister('/data', mockFs);
 
 			// Add a non-json file
 			mockFs.files.set('/data/sessions/.DS_Store', 'junk');
 
 			const snapshot: SessionSnapshot = {
 				sessionId: 'abc-123',
-				systemPrompt: '',
-				messages: [],
+				ctx: {
+					history: {
+						systemPrompt: '',
+						messages: [],
+					},
+				},
 				stores: {},
 			};
 			await persister.save('abc-123', snapshot);
 
 			const loaded = await persister.load();
-			expect(loaded).toHaveLength(1);
+			expect(loaded.size).toBe(1);
+		});
+	});
+
+	// -----------------------------------------------------------------------
+	// createFilePoolPersister
+	// -----------------------------------------------------------------------
+
+	describe('createFilePoolPersister', () => {
+		it('saves and loads store pool entries', async () => {
+			const mockFs = createMockFs();
+			const persister = createFilePoolPersister('/data', mockFs);
+
+			await persister.save('pool-1', { value: 42, sharing: 'private' });
+			await persister.save('pool-2', {
+				value: 'hello',
+				sharing: 'global',
+			});
+
+			// Files should exist in store subdirectory
+			expect(mockFs.files.has('/data/store/pool-1.json')).toBe(true);
+			expect(mockFs.files.has('/data/store/pool-2.json')).toBe(true);
+
+			// Load all stores
+			const stores = await persister.load();
+			expect(stores.get('pool-1')!.value).toBe(42);
+			expect(stores.get('pool-1')!.sharing).toBe('private');
+			expect(stores.get('pool-2')!.value).toBe('hello');
+			expect(stores.get('pool-2')!.sharing).toBe('global');
+		});
+
+		it('deletes store files', async () => {
+			const mockFs = createMockFs();
+			const persister = createFilePoolPersister('/data', mockFs);
+
+			await persister.save('pool-1', { value: 0, sharing: 'private' });
+			expect(mockFs.files.has('/data/store/pool-1.json')).toBe(true);
+
+			await persister.delete('pool-1');
+			expect(mockFs.files.has('/data/store/pool-1.json')).toBe(false);
+		});
+
+		it('returns an empty map when the store directory does not exist', async () => {
+			const mockFs = createMockFs();
+			mockFs.readDir = async () => {
+				throw new Error('ENOENT');
+			};
+			const persister = createFilePoolPersister('/data', mockFs);
+
+			const stores = await persister.load();
+			expect(stores).toEqual(new Map());
 		});
 	});
 
@@ -361,40 +554,47 @@ describe('Persistence', () => {
 	// -----------------------------------------------------------------------
 
 	describe('SessionManager.restore', () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
 		it('restores sessions with correct state', async () => {
-			const persister = createMockPersister();
+			const persistence = createMockPersistence();
 
 			// Create a session and persist it
 			const manager1 = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
-				persister,
+				persistence,
 			);
-			const session = track(
-				await manager1.new({ systemPrompt: 'You are helpful' }),
-			);
+			const session = track(await manager1.new());
+			setSystemPrompt(session, 'You are helpful');
 
 			// Mutate store and add messages
 			session.agent.stores.stores.get('counter')!.store.set(() => 42);
+			session.tracker.apply({
+				config: { model: 'test-model', reasoning: 'high' },
+			});
 			session.tracker.append({
 				role: 'user',
 				content: [{ type: 'text', text: 'hello' }],
 			});
 
-			// Re-persist with updated state
-			const snapshot = snapshotSession(session);
-			await persister.save(session.sessionId, snapshot);
+			// Flush debounced saves for both the session snapshot and pool entry
+			await vi.advanceTimersByTimeAsync(500);
 
 			// Create a new manager and restore
 			const manager2 = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
-				persister,
+				persistence,
 			);
-			const restored = await manager2.restore();
-
-			expect(restored).toHaveLength(1);
-			const restoredSession = track(restored[0]);
+			await manager2.restore();
+			const restoredSession = track(manager2.get(session.sessionId));
 
 			// Verify sessionId is preserved
 			expect(restoredSession.sessionId).toBe(session.sessionId);
@@ -403,34 +603,37 @@ describe('Persistence', () => {
 			const ctx = getCtx(restoredSession);
 			expect(ctx.history.systemPrompt).toBe('You are helpful');
 			expect(ctx.history.messages).toHaveLength(1);
+			expect(ctx.config).toEqual({
+				model: 'test-model',
+				reasoning: 'high',
+			});
 
 			// Verify store value is restored
-			const counter =
-				restoredSession.agent.stores.stores.get('counter')!.store;
+			const counter = restoredSession.agent.stores.stores.get('counter')!.store;
 			expect(counter.get()).toBe(42);
 		});
 
 		it('restores multiple sessions', async () => {
-			const persister = createMockPersister();
+			const persistence = createMockPersistence();
 
 			const manager1 = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
-				persister,
+				persistence,
 			);
-			const s1 = track(await manager1.new({ systemPrompt: 'session 1' }));
-			const s2 = track(await manager1.new({ systemPrompt: 'session 2' }));
+			const s1 = track(await manager1.new());
+			const s2 = track(await manager1.new());
+			setSystemPrompt(s1, 'session 1');
+			setSystemPrompt(s2, 'session 2');
+			await vi.advanceTimersByTimeAsync(500);
 
 			// Restore into a new manager
 			const manager2 = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
-				persister,
+				persistence,
 			);
-			const restored = await manager2.restore();
-
-			expect(restored).toHaveLength(2);
-			restored.forEach((s) => track(s));
+			await manager2.restore();
 
 			// Both sessions should be retrievable
 			const r1 = manager2.get(s1.sessionId);
@@ -439,10 +642,53 @@ describe('Persistence', () => {
 			expect(getCtx(r2).history.systemPrompt).toBe('session 2');
 		});
 
-		it('returns empty array when no persister configured', async () => {
+		it('is a no-op when no persister configured', async () => {
 			const manager = new SessionManager(createTestTransport, []);
-			const restored = await manager.restore();
-			expect(restored).toEqual([]);
+			await expect(manager.restore()).resolves.toBeUndefined();
+		});
+
+		it('shared stores maintain identity across restore', async () => {
+			const persistence = createMockPersistence();
+
+			// Create two sessions that share a global store
+			const globalExt: Extension<CoreAPI & StoreAPI> = (api) => {
+				api.registerStore<number>('shared', 0, 'global');
+			};
+
+			const manager1 = new SessionManager(
+				createTestTransport,
+				[globalExt],
+				persistence,
+			);
+			const s1 = track(await manager1.new());
+			const s2 = track(await manager1.child(s1.sessionId));
+
+			// Verify they share the same store pre-restore
+			const s1Store = s1.agent.stores.stores.get('shared')!;
+			const s2Store = s2.agent.stores.stores.get('shared')!;
+			expect(s1Store.poolId).toBe(s2Store.poolId);
+			expect(s1Store.store).toBe(s2Store.store);
+
+			// Mutate the shared store and flush debounced pool persistence
+			s1Store.store.set(() => 42);
+			await vi.advanceTimersByTimeAsync(500);
+
+			// Restore into a new manager
+			const manager2 = new SessionManager(
+				createTestTransport,
+				[globalExt],
+				persistence,
+			);
+			await manager2.restore();
+
+			// Verify shared store identity is preserved across restore
+			const r1 = track(manager2.get(s1.sessionId));
+			const r2 = track(manager2.get(s2.sessionId));
+			const r1Store = r1.agent.stores.stores.get('shared')!;
+			const r2Store = r2.agent.stores.stores.get('shared')!;
+			expect(r1Store.poolId).toBe(r2Store.poolId);
+			expect(r1Store.store).toBe(r2Store.store);
+			expect(r1Store.store.get()).toBe(42);
 		});
 	});
 });

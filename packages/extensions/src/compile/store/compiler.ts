@@ -1,8 +1,10 @@
 import type { Store } from '../../api/store/types.js';
 import type { StoreAPI } from '../../api/store/api.js';
 import type { StoreResult, StoreEntry } from '../../api/store/result.js';
-import { createStoreResult } from '../../api/store/result.js';
-import { createStore } from '../../api/store/create.js';
+import {
+	createEmptyStoreResult,
+	createStoreResult,
+} from '../../api/store/result.js';
 import type { Sharing } from '../../api/store/sharing.js';
 import type { Compiler } from '../types.js';
 
@@ -11,16 +13,31 @@ import type { Compiler } from '../types.js';
  *
  * The store compiler handles `registerStore(name, initial, sharing?)` calls
  * from extensions and produces a `StoreResult` — a flat map of name → store
- * with copy semantics for child agent spawning.
+ * backed by the seed result's shared pool.
  *
- * When `existing` is provided (from a parent agent's `StoreResult.copy()`),
- * stores that already exist in the parent are reused rather than created
- * fresh. This is how child agents inherit state.
+ * If the seed already contains a store with the registered name, the
+ * compiler reuses that store entry. Otherwise it creates a fresh pool entry
+ * in the seed's pool.
  */
 export function createStoreCompiler(
-	existing?: StoreResult,
+	seed: StoreResult = createEmptyStoreResult(),
 ): Compiler<StoreAPI, StoreResult> {
 	const entries = new Map<string, StoreEntry>();
+	const pool = seed.pool;
+
+	function getSeededEntry<T>(
+		name: string,
+		sharing: Sharing,
+	): { poolId: string; store: Store<T> } | undefined {
+		const existing = seed.stores.get(name);
+		if (!existing) return undefined;
+		if (existing.sharing !== sharing) {
+			throw new Error(
+				`Store "${name}" was seeded with sharing "${existing.sharing}" but registered with "${sharing}"`,
+			);
+		}
+		return { poolId: existing.poolId, store: existing.store as Store<T> };
+	}
 
 	const api: StoreAPI = {
 		registerStore<T>(
@@ -28,18 +45,17 @@ export function createStoreCompiler(
 			initial: T,
 			sharing: Sharing = 'private',
 		): Store<T> {
-			// TODO: Should we allow registering the same name? Could this not be a way of extension state sharing?
 			if (entries.has(name)) {
 				throw new Error(`Store "${name}" is already registered`);
 			}
 
-			// If a parent provided this store (via copy), reuse it.
-			const existingEntry = existing?.stores.get(name);
-			const store = existingEntry
-				? (existingEntry.store as Store<T>)
-				: createStore(initial);
-
-			entries.set(name, { store: store as Store<unknown>, sharing });
+			const { poolId, store } =
+				getSeededEntry<T>(name, sharing) ?? pool.create(initial, sharing);
+			entries.set(name, {
+				poolId,
+				store,
+				sharing,
+			});
 			return store;
 		},
 	};
@@ -47,7 +63,7 @@ export function createStoreCompiler(
 	return {
 		api,
 		async build() {
-			return createStoreResult(entries);
+			return createStoreResult(entries, pool);
 		},
 	};
 }

@@ -15,6 +15,7 @@
 		"sourceMap": true,
 		"inlineSources": true,
 		"paths": {
+			"@franklin/lib": ["packages/lib/core/src/index.ts"],
 			"@franklin/transport": ["packages/lib/transport/src/index.ts"],
 			"@franklin/agent": ["packages/agent/src/index.ts"],
 			"@franklin/agent/browser": ["packages/agent/src/browser.ts"],

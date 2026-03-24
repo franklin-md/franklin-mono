@@ -1,12 +1,8 @@
-import type { CtxTracker } from '@franklin/mini-acp';
-import type { Agent } from '../../types.js';
 import type { Session } from '../types.js';
 import type { Persister, SessionSnapshot } from './types.js';
 import { snapshotSession } from './snapshot.js';
 
-export type RestoreFactory = (
-	snapshot: SessionSnapshot,
-) => Promise<{ agent: Agent; tracker: CtxTracker }>;
+export type OnRestore = (snapshot: SessionSnapshot) => Promise<void>;
 
 /**
  * Session storage with auto-persistence via CtxTracker onChange.
@@ -14,7 +10,7 @@ export type RestoreFactory = (
 export class SessionMap {
 	private sessions = new Map<string, Session>();
 
-	constructor(private readonly persister?: Persister) {}
+	constructor(private readonly persister?: Persister<SessionSnapshot>) {}
 
 	get(id: string): Session {
 		const session = this.sessions.get(id);
@@ -29,27 +25,22 @@ export class SessionMap {
 	}
 
 	/**
-	 * Register a new session. If `id` is provided (e.g. during restore),
-	 * uses that instead of generating a new UUID.
+	 * Register a live session.
 	 *
 	 * When a persister is configured, wires the tracker's onChange to
-	 * auto-persist the session on every ctx mutation.
+	 * auto-persist the session snapshot.
 	 */
-	register(agent: Agent, tracker: CtxTracker, id?: string): Session {
-		const sessionId = id ?? crypto.randomUUID();
-		const session: Session = { sessionId, agent, tracker };
-		this.sessions.set(sessionId, session);
+	register(session: Session): void {
+		this.sessions.set(session.sessionId, session);
 
 		if (this.persister) {
-			const persister = this.persister;
-			tracker.onChange = () => {
-				void persister.save(sessionId, snapshotSession(session));
+			const persist = () => {
+				void this.persister!.save(session.sessionId, snapshotSession(session));
 			};
+			session.tracker.onChange = persist;
 			// Persist initial state so session survives a crash before first prompt
-			void persister.save(sessionId, snapshotSession(session));
+			persist();
 		}
-
-		return session;
 	}
 
 	// -----------------------------------------------------------------------
@@ -62,17 +53,11 @@ export class SessionMap {
 	 * extension compilation, and agent initialization — this layer handles
 	 * registration and persistence wiring.
 	 */
-	async restore(factory: RestoreFactory): Promise<Session[]> {
+	async restore(factory: OnRestore): Promise<void> {
 		const snapshots = await this.loadAll();
-		const restored: Session[] = [];
-
 		for (const snapshot of snapshots) {
-			const { agent, tracker } = await factory(snapshot);
-			const session = this.register(agent, tracker, snapshot.sessionId);
-			restored.push(session);
+			await factory(snapshot);
 		}
-
-		return restored;
 	}
 
 	// -----------------------------------------------------------------------
@@ -85,6 +70,7 @@ export class SessionMap {
 			session.tracker.onChange = undefined;
 		}
 		this.sessions.delete(id);
+
 		if (this.persister) {
 			await this.persister.delete(id);
 		}
@@ -92,6 +78,19 @@ export class SessionMap {
 
 	private async loadAll(): Promise<SessionSnapshot[]> {
 		if (!this.persister) return [];
-		return this.persister.load();
+		return [...(await this.persister.load()).values()];
+	}
+
+	/**
+	 * Collect all pool IDs referenced by live sessions.
+	 */
+	collectPoolIds(): Set<string> {
+		const ids = new Set<string>();
+		for (const session of this.sessions.values()) {
+			for (const [_name, entry] of session.agent.stores.stores) {
+				ids.add(entry.poolId);
+			}
+		}
+		return ids;
 	}
 }
