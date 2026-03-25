@@ -1,5 +1,5 @@
 // Framework
-export { NodeFramework, type SpawnOptions } from './framework.js';
+export { NodeFramework } from './framework.js';
 
 // Filesystem
 export { createNodeFilesystem } from './filesystem.js';

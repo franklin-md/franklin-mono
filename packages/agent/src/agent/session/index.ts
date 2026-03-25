@@ -19,6 +19,7 @@ import { ctxExtension } from './ctx-extension.js';
 import { SessionMap } from './session-map.js';
 import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
 import type { SpawnFn, Session } from './types.js';
+import type { FranklinExtension } from '../../app.js';
 
 export type PersistenceOptions = {
 	session: Persister<SessionSnapshot>;
@@ -45,7 +46,7 @@ export class SessionManager {
 
 	constructor(
 		private readonly spawn: SpawnFn,
-		private readonly extensions: Extension<CoreAPI & StoreAPI>[],
+		private readonly extensions: FranklinExtension[],
 		persistence?: PersistenceOptions,
 	) {
 		const delayMs = persistence?.delayMs ?? 500;
