@@ -1,15 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { compile, combine } from '../../types.js';
-import { createSandboxCompiler } from '../compiler.js';
+import { createEnvironmentCompiler } from '../compiler.js';
 import { createCoreCompiler } from '../../core/compiler.js';
 import { createStoreCompiler } from '../../store/compiler.js';
 import { createEmptyStoreResult } from '../../../api/store/registry/result.js';
-import type { Sandbox } from '../../../api/sandbox/types.js';
+import type { Environment } from '../../../api/environment/types.js';
 import { StoreRegistry } from '../../../api/store/registry/index.js';
 
-function mockSandbox(cwd = '/test'): Sandbox {
+function mockEnvironment(): Environment {
 	return {
-		cwd,
+		cwd: '/tmp/test',
 		fs: {
 			readFile: vi.fn(),
 			writeFile: vi.fn(),
@@ -21,65 +21,61 @@ function mockSandbox(cwd = '/test'): Sandbox {
 			glob: vi.fn(),
 			deleteFile: vi.fn(),
 		},
-		terminal: {
-			exec: vi.fn(),
-		},
 	};
 }
 
-describe('createSandboxCompiler', () => {
-	it('build returns the sandbox in the result', async () => {
-		const sandbox = mockSandbox('/my/cwd');
-		const result = await compile(createSandboxCompiler(sandbox), () => {});
+describe('createEnvironmentCompiler', () => {
+	it('build returns the environment in the result', async () => {
+		const env = mockEnvironment();
+		const result = await compile(createEnvironmentCompiler(env), () => {});
 
-		expect(result.sandbox).toBe(sandbox);
-		expect(result.sandbox.cwd).toBe('/my/cwd');
+		expect(result.environment).toBe(env);
 	});
 
-	it('getSandbox() returns the sandbox to extensions', async () => {
-		const sandbox = mockSandbox();
-		let received: Sandbox | undefined;
+	it('getEnvironment() returns the environment to extensions', async () => {
+		const env = mockEnvironment();
+		let received: Environment | undefined;
 
-		await compile(createSandboxCompiler(sandbox), (api) => {
-			received = api.getSandbox();
+		await compile(createEnvironmentCompiler(env), (api) => {
+			received = api.getEnvironment();
 		});
 
-		expect(received).toBe(sandbox);
+		expect(received).toBe(env);
 	});
 
 	it('combines with core compiler', async () => {
-		const sandbox = mockSandbox();
+		const env = mockEnvironment();
 		const compiler = combine(
 			createCoreCompiler(),
-			createSandboxCompiler(sandbox),
+			createEnvironmentCompiler(env),
 		);
 
 		const result = await compile(compiler, (api) => {
-			// Extension sees both CoreAPI and SandboxAPI
-			expect(api.getSandbox()).toBe(sandbox);
+			// Extension sees both CoreAPI and EnvironmentAPI
+			expect(api.getEnvironment()).toBe(env);
 			api.on('initialize', () => undefined);
 		});
 
-		expect(result.sandbox).toBe(sandbox);
+		expect(result.environment).toBe(env);
 		expect(result.client).toBeDefined();
 	});
 
 	it('combines with core + store compilers', async () => {
-		const sandbox = mockSandbox();
+		const env = mockEnvironment();
 		const registry = new StoreRegistry();
 		const seed = createEmptyStoreResult(registry);
 		const compiler = combine(
 			combine(createCoreCompiler(), createStoreCompiler(seed)),
-			createSandboxCompiler(sandbox),
+			createEnvironmentCompiler(env),
 		);
 
 		const result = await compile(compiler, (api) => {
 			const full = api;
-			expect(full.getSandbox()).toBe(sandbox);
+			expect(full.getEnvironment()).toBe(env);
 			full.registerStore('test', 42);
 		});
 
-		expect(result.sandbox).toBe(sandbox);
+		expect(result.environment).toBe(env);
 		expect(result.stores.has('test')).toBe(true);
 	});
 });

@@ -43,8 +43,6 @@ export type {
 	SessionSnapshot,
 	StoreSnapshot,
 	Filesystem,
-	FileSystemOps,
-	PersistenceFilesystem,
 } from './agent/index.js';
 
 // Re-export from @franklin/extensions for convenience

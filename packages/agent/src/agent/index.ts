@@ -20,6 +20,4 @@ export type {
 	SessionSnapshot,
 	StoreSnapshot,
 	Filesystem,
-	FileSystemOps,
-	PersistenceFilesystem,
 } from './session/persist/index.js';

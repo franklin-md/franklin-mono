@@ -13,10 +13,8 @@ export type {
 	ClientMiddleware,
 	ServerMiddleware,
 	FullMiddleware,
-	SandboxAPI,
-	Sandbox,
-	Filesystem,
-	Terminal,
+	EnvironmentAPI,
+	Environment,
 	StoreAPI,
 	ReadonlyStore,
 	Store,
@@ -44,14 +42,14 @@ export type {
 	StoreSnapshot,
 } from './api/index.js';
 export type { Compiler } from './compile/index.js';
-export type { SandboxResult } from './compile/index.js';
+export type { EnvironmentResult } from './compile/index.js';
 export {
 	compile,
 	combine,
 	compileAll,
 	createCoreCompiler,
 	createStoreCompiler,
-	createSandboxCompiler,
+	createEnvironmentCompiler,
 } from './compile/index.js';
 export type { Extension, MaybePromise } from './types/index.js';
 export { reduceExtensions } from './types/index.js';

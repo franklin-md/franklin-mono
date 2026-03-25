@@ -13,7 +13,7 @@ export interface Filesystem {
 	exists(path: string): Promise<boolean>;
 	glob(
 		pattern: string,
-		options: { cwd: string; ignore?: string[]; limit?: number },
+		options: { cwd?: string; ignore?: string[]; limit?: number },
 	): Promise<string[]>;
 	deleteFile(path: string): Promise<void>;
 }

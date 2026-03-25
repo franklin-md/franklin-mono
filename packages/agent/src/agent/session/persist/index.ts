@@ -5,8 +5,6 @@ export type {
 	SessionSnapshot,
 	StoreSnapshot,
 	Filesystem,
-	FileSystemOps,
-	PersistenceFilesystem,
 } from './types.js';
 
 // Snapshot utilities
