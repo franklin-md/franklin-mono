@@ -1,10 +1,6 @@
 import { useMemo } from 'react';
 
-import {
-	createStatusControl,
-	statusKey,
-	type Session,
-} from '@franklin/agent/browser';
+import { createStatusControl, statusKey } from '@franklin/agent/browser';
 import { useAgentState } from '@franklin/react';
 
 import { SidebarItem } from './sidebar-item.js';
@@ -14,15 +10,17 @@ function truncateId(id: string): string {
 }
 
 export function AgentSidebarItem({
-	session,
+	sessionId,
 	active,
 	onSelect,
+	onDelete,
 }: {
-	session: Session;
+	sessionId: string;
 	active: boolean;
 	onSelect: (sessionId: string) => void;
+	onDelete: (sessionId: string) => void;
 }) {
-	const statusStore = useAgentState(session.agent, statusKey);
+	const statusStore = useAgentState(statusKey);
 	const status = statusStore.get();
 	const control = useMemo(
 		() => createStatusControl(statusStore),
@@ -31,13 +29,14 @@ export function AgentSidebarItem({
 
 	return (
 		<SidebarItem
-			name={truncateId(session.sessionId)}
+			name={truncateId(sessionId)}
 			status={status}
 			active={active}
 			onClick={() => {
 				control.markRead();
-				onSelect(session.sessionId);
+				onSelect(sessionId);
 			}}
+			onDelete={() => onDelete(sessionId)}
 		/>
 	);
 }

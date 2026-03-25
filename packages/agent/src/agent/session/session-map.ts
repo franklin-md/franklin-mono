@@ -39,6 +39,31 @@ export class SessionMap {
 	}
 
 	/**
+	 * Remove a session by ID.
+	 *
+	 * Disposes the agent, detaches the tracker's auto-persist hook,
+	 * removes the persisted snapshot, and notifies listeners.
+	 */
+	async remove(id: string): Promise<void> {
+		const session = this.sessions.get(id);
+		if (!session) return;
+
+		// Detach auto-persist so dispose doesn't trigger a save
+		session.tracker.onChange = undefined;
+
+		await session.agent.dispose();
+		this.sessions.delete(id);
+
+		if (this.persister) {
+			await this.persister.delete(id);
+		}
+
+		// TODO: garbage-collect orphaned store pool entries
+
+		this.notify();
+	}
+
+	/**
 	 * Register a live session.
 	 *
 	 * When a persister is configured, wires the tracker's onChange to

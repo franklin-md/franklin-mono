@@ -121,6 +121,14 @@ export class SessionManager {
 	}
 
 	/**
+	 * Remove a session — disposes the agent, removes from the map,
+	 * and deletes the persisted snapshot.
+	 */
+	async remove(sessionId: string): Promise<void> {
+		await this.sessions.remove(sessionId);
+	}
+
+	/**
 	 * Retrieve a session by ID. Throws if not found.
 	 */
 	get(sessionId: string): Session {

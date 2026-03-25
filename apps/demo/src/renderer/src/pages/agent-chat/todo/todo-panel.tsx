@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { createTodoControl, todoKey } from '@franklin/agent/browser';
-import { useAgent, useAgentState } from '@franklin/react';
+import { useAgentState } from '@franklin/react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,8 +10,7 @@ import { TodoAddForm } from './todo-add-form.js';
 import { TodoItem } from './todo-item.js';
 
 export function TodoPanel() {
-	const agent = useAgent();
-	const store = useAgentState(agent, todoKey);
+	const store = useAgentState(todoKey);
 	const todos = store.get();
 
 	const control = useMemo(() => createTodoControl(store), [store]);

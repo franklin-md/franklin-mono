@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import type { Agent } from '@franklin/agent/browser';
-import { useSessionManager, useSessions } from '@franklin/react';
+import { AgentProvider, useSessionManager, useSessions } from '@franklin/react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -30,6 +30,26 @@ export function AgentSidebar({
 		[onSelectAgent],
 	);
 
+	const handleDeleteAgent = useCallback(
+		async (sessionId: string) => {
+			await manager.remove(sessionId);
+
+			// If we just deleted the active session, select another agent
+			// TODO: refactor selection logic more generally
+			if (currentAgentId === sessionId) {
+				const remaining = sessions.filter((s) => s.sessionId !== sessionId);
+				if (remaining.length > 0) {
+					const next = remaining[0]!;
+					setCurrentAgentId(next.sessionId);
+					onSelectAgent(next.sessionId, next.agent);
+				} else {
+					setCurrentAgentId(null);
+				}
+			}
+		},
+		[manager, currentAgentId, sessions, onSelectAgent],
+	);
+
 	return (
 		<div className="flex w-60 flex-col border-r">
 			<div className="flex items-center justify-between border-b px-4 py-3">
@@ -51,14 +71,16 @@ export function AgentSidebar({
 						</p>
 					) : (
 						sessions.map((session) => (
-							<AgentSidebarItem
-								key={session.sessionId}
-								session={session}
-								active={session.sessionId === currentAgentId}
-								onSelect={(sessionId) =>
-									handleSelectAgent(sessionId, session.agent)
-								}
-							/>
+							<AgentProvider key={session.sessionId} agent={session.agent}>
+								<AgentSidebarItem
+									sessionId={session.sessionId}
+									active={session.sessionId === currentAgentId}
+									onSelect={(sessionId) =>
+										handleSelectAgent(sessionId, session.agent)
+									}
+									onDelete={(sessionId) => void handleDeleteAgent(sessionId)}
+								/>
+							</AgentProvider>
 						))
 					)}
 				</div>

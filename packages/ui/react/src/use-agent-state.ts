@@ -1,11 +1,8 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
-import type {
-	Agent,
-	ReadonlyStore,
-	Store,
-	StoreKey,
-} from '@franklin/agent/browser';
+import type { ReadonlyStore, Store, StoreKey } from '@franklin/agent/browser';
+
+import { useAgent } from './agent-context.js';
 
 // ---------------------------------------------------------------------------
 // useAgentState
@@ -14,36 +11,31 @@ import type {
 /**
  * Subscribe to a specific agent extension store by name.
  *
- * Looks up the store in `agent.stores` via the compiled StoreResult.
+ * Pulls the agent from the nearest `<AgentProvider>` via `useAgent()`.
  * Re-renders **only** when that store's value changes — other stores
  * updating will not cause a re-render.
  *
  * @example
  * ```tsx
- * const agent = useAgent();
- * const todos = useAgentState(agent, todoKey);                // Store<Todo[]>
- * const count = useAgentState(agent, todoKey, t => t.length); // ReadonlyStore<number>
+ * const todos = useAgentState(todoKey);                // Store<Todo[]>
+ * const count = useAgentState(todoKey, t => t.length); // ReadonlyStore<number>
  * ```
  */
 
 // StoreKey + selector → ReadonlyStore<S>
 export function useAgentState<T, S>(
-	agent: Agent,
 	key: StoreKey<string, T>,
 	selector: (value: T) => S,
 ): ReadonlyStore<S>;
 
 // StoreKey alone → Store<T>
-export function useAgentState<T>(
-	agent: Agent,
-	key: StoreKey<string, T>,
-): Store<T>;
+export function useAgentState<T>(key: StoreKey<string, T>): Store<T>;
 
 export function useAgentState(
-	agent: Agent,
 	storeName: string,
 	selector?: (value: unknown) => unknown,
 ): unknown {
+	const agent = useAgent();
 	const entry = agent.stores.get(storeName);
 
 	if (!entry) {

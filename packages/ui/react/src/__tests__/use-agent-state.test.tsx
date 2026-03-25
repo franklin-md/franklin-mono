@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import type { ReactNode } from 'react';
 
 import { useAgentState } from '../use-agent-state.js';
+import { AgentProvider } from '../agent-context.js';
 import { createStore, storeKey } from '@franklin/extensions';
 import type { Agent } from '@franklin/agent/browser';
 import type { Store, StoreResult, StoreEntry } from '@franklin/extensions';
@@ -15,7 +17,9 @@ import type { Store, StoreResult, StoreEntry } from '@franklin/extensions';
  */
 function makeAgent(entries: Map<string, StoreEntry>): Agent {
 	return {
-		stores: { stores: entries } as unknown as StoreResult,
+		stores: {
+			get: (name: string) => entries.get(name),
+		} as unknown as StoreResult,
 	} as Agent;
 }
 
@@ -37,6 +41,13 @@ function makeAgentWithStore<T>(
 	return { agent: makeAgent(entries), store };
 }
 
+/** Wrapper that provides an agent via context for useAgentState. */
+function agentWrapper(agent: Agent) {
+	return function Wrapper({ children }: { children: ReactNode }) {
+		return <AgentProvider agent={agent}>{children}</AgentProvider>;
+	};
+}
+
 const counterKey = storeKey<'counter', number>('counter');
 const todosKey = storeKey<'todos', string[]>('todos');
 
@@ -47,21 +58,27 @@ const todosKey = storeKey<'todos', string[]>('todos');
 describe('useAgentState – basic reads', () => {
 	it('returns the current store value', () => {
 		const { agent } = makeAgentWithStore('counter', 42);
-		const { result } = renderHook(() => useAgentState(agent, counterKey));
+		const { result } = renderHook(() => useAgentState(counterKey), {
+			wrapper: agentWrapper(agent),
+		});
 		expect(result.current.get()).toBe(42);
 	});
 
 	it('returns a store with set() when no selector is provided', () => {
 		const { agent } = makeAgentWithStore('counter', 0);
-		const { result } = renderHook(() => useAgentState(agent, counterKey));
+		const { result } = renderHook(() => useAgentState(counterKey), {
+			wrapper: agentWrapper(agent),
+		});
 		expect(typeof result.current.set).toBe('function');
 	});
 
 	it('throws when the store does not exist', () => {
 		const agent = makeAgent(new Map());
-		expect(() => renderHook(() => useAgentState(agent, counterKey))).toThrow(
-			'useAgentState: no store named "counter" on agent',
-		);
+		expect(() =>
+			renderHook(() => useAgentState(counterKey), {
+				wrapper: agentWrapper(agent),
+			}),
+		).toThrow('useAgentState: no store named "counter" on agent');
 	});
 });
 
@@ -72,7 +89,9 @@ describe('useAgentState – basic reads', () => {
 describe('useAgentState – reactivity via underlying store', () => {
 	it('re-renders when the underlying store is mutated directly', () => {
 		const { agent, store } = makeAgentWithStore('counter', 0);
-		const { result } = renderHook(() => useAgentState(agent, counterKey));
+		const { result } = renderHook(() => useAgentState(counterKey), {
+			wrapper: agentWrapper(agent),
+		});
 
 		expect(result.current.get()).toBe(0);
 
@@ -85,7 +104,9 @@ describe('useAgentState – reactivity via underlying store', () => {
 
 	it('re-renders when mutated via the returned set()', () => {
 		const { agent } = makeAgentWithStore('counter', 0);
-		const { result } = renderHook(() => useAgentState(agent, counterKey));
+		const { result } = renderHook(() => useAgentState(counterKey), {
+			wrapper: agentWrapper(agent),
+		});
 
 		act(() => {
 			result.current.set(() => 5);
@@ -98,10 +119,13 @@ describe('useAgentState – reactivity via underlying store', () => {
 		const { agent, store } = makeAgentWithStore('counter', 0);
 		const renderCount = { value: 0 };
 
-		renderHook(() => {
-			renderCount.value++;
-			return useAgentState(agent, counterKey);
-		});
+		renderHook(
+			() => {
+				renderCount.value++;
+				return useAgentState(counterKey);
+			},
+			{ wrapper: agentWrapper(agent) },
+		);
 
 		const before = renderCount.value;
 
@@ -122,10 +146,13 @@ describe('useAgentState – reactivity via underlying store', () => {
 		const { agent, store } = makeAgentWithStore('todos', ['a', 'b']);
 		const renderCount = { value: 0 };
 
-		const { result } = renderHook(() => {
-			renderCount.value++;
-			return useAgentState(agent, todosKey);
-		});
+		const { result } = renderHook(
+			() => {
+				renderCount.value++;
+				return useAgentState(todosKey);
+			},
+			{ wrapper: agentWrapper(agent) },
+		);
 
 		const before = renderCount.value;
 
@@ -148,24 +175,27 @@ describe('useAgentState – reactivity via underlying store', () => {
 describe('useAgentState – selector', () => {
 	it('derives a value from the store', () => {
 		const { agent } = makeAgentWithStore('todos', ['a', 'b', 'c']);
-		const { result } = renderHook(() =>
-			useAgentState(agent, todosKey, (t) => t.length),
+		const { result } = renderHook(
+			() => useAgentState(todosKey, (t) => t.length),
+			{ wrapper: agentWrapper(agent) },
 		);
 		expect(result.current.get()).toBe(3);
 	});
 
 	it('does not expose set() when a selector is provided', () => {
 		const { agent } = makeAgentWithStore('todos', ['a']);
-		const { result } = renderHook(() =>
-			useAgentState(agent, todosKey, (t) => t.length),
+		const { result } = renderHook(
+			() => useAgentState(todosKey, (t) => t.length),
+			{ wrapper: agentWrapper(agent) },
 		);
 		expect('set' in result.current).toBe(false);
 	});
 
 	it('re-renders when selected value changes', () => {
 		const { agent, store } = makeAgentWithStore('todos', ['a', 'b']);
-		const { result } = renderHook(() =>
-			useAgentState(agent, todosKey, (t) => t.length),
+		const { result } = renderHook(
+			() => useAgentState(todosKey, (t) => t.length),
+			{ wrapper: agentWrapper(agent) },
 		);
 
 		expect(result.current.get()).toBe(2);
@@ -184,10 +214,13 @@ describe('useAgentState – selector', () => {
 		const renderCount = { value: 0 };
 
 		// Selector returns length — a primitive that can be compared with Object.is
-		renderHook(() => {
-			renderCount.value++;
-			return useAgentState(agent, todosKey, (t) => t.length);
-		});
+		renderHook(
+			() => {
+				renderCount.value++;
+				return useAgentState(todosKey, (t) => t.length);
+			},
+			{ wrapper: agentWrapper(agent) },
+		);
 
 		const before = renderCount.value;
 
@@ -225,7 +258,9 @@ describe('useAgentState – selector', () => {
 describe('useAgentState – returned subscribe()', () => {
 	it('subscribe fires when store changes (no selector)', () => {
 		const { agent, store } = makeAgentWithStore('counter', 0);
-		const { result } = renderHook(() => useAgentState(agent, counterKey));
+		const { result } = renderHook(() => useAgentState(counterKey), {
+			wrapper: agentWrapper(agent),
+		});
 
 		const values: unknown[] = [];
 		result.current.subscribe((v) => values.push(v));
@@ -239,7 +274,9 @@ describe('useAgentState – returned subscribe()', () => {
 
 	it('unsubscribe stops notifications', () => {
 		const { agent, store } = makeAgentWithStore('counter', 0);
-		const { result } = renderHook(() => useAgentState(agent, counterKey));
+		const { result } = renderHook(() => useAgentState(counterKey), {
+			wrapper: agentWrapper(agent),
+		});
 
 		const values: unknown[] = [];
 		const unsub = result.current.subscribe((v) => values.push(v));
@@ -262,8 +299,9 @@ describe('useAgentState – returned subscribe()', () => {
 	 */
 	it('BUG: subscribe with selector passes raw value, not selected value', () => {
 		const { agent, store } = makeAgentWithStore('todos', ['a', 'b']);
-		const { result } = renderHook(() =>
-			useAgentState(agent, todosKey, (t) => t.length),
+		const { result } = renderHook(
+			() => useAgentState(todosKey, (t) => t.length),
+			{ wrapper: agentWrapper(agent) },
 		);
 
 		const receivedValues: unknown[] = [];
@@ -292,7 +330,9 @@ describe('useAgentState – returned subscribe()', () => {
 describe('useAgentState – get() semantics', () => {
 	it('get() returns the React-synchronized value', () => {
 		const { agent, store } = makeAgentWithStore('counter', 0);
-		const { result } = renderHook(() => useAgentState(agent, counterKey));
+		const { result } = renderHook(() => useAgentState(counterKey), {
+			wrapper: agentWrapper(agent),
+		});
 
 		act(() => {
 			store.set(() => 42);
@@ -304,8 +344,9 @@ describe('useAgentState – get() semantics', () => {
 
 	it('get() with selector returns the derived value', () => {
 		const { agent, store } = makeAgentWithStore('todos', ['x']);
-		const { result } = renderHook(() =>
-			useAgentState(agent, todosKey, (t) => t.join(',')),
+		const { result } = renderHook(
+			() => useAgentState(todosKey, (t) => t.join(',')),
+			{ wrapper: agentWrapper(agent) },
 		);
 
 		expect(result.current.get()).toBe('x');
@@ -335,10 +376,13 @@ describe('useAgentState – store isolation', () => {
 		const agent = makeAgent(entries);
 
 		const renderCount = { value: 0 };
-		renderHook(() => {
-			renderCount.value++;
-			return useAgentState(agent, counterKey);
-		});
+		renderHook(
+			() => {
+				renderCount.value++;
+				return useAgentState(counterKey);
+			},
+			{ wrapper: agentWrapper(agent) },
+		);
 
 		const before = renderCount.value;
 
@@ -364,7 +408,9 @@ describe('useAgentState – edge cases', () => {
 		const agent = makeAgent(entries);
 		const maybeKey = storeKey<'maybe', string | undefined>('maybe');
 
-		const { result } = renderHook(() => useAgentState(agent, maybeKey));
+		const { result } = renderHook(() => useAgentState(maybeKey), {
+			wrapper: agentWrapper(agent),
+		});
 		expect(result.current.get()).toBeUndefined();
 	});
 
@@ -376,7 +422,9 @@ describe('useAgentState – edge cases', () => {
 		const agent = makeAgent(entries);
 		const nullableKey = storeKey<'nullable', string | null>('nullable');
 
-		const { result } = renderHook(() => useAgentState(agent, nullableKey));
+		const { result } = renderHook(() => useAgentState(nullableKey), {
+			wrapper: agentWrapper(agent),
+		});
 		expect(result.current.get()).toBeNull();
 	});
 
@@ -393,8 +441,9 @@ describe('useAgentState – edge cases', () => {
 		const agent = makeAgent(entries);
 		const complexKey = storeKey<'complex', State>('complex');
 
-		const { result } = renderHook(() =>
-			useAgentState(agent, complexKey, (s) => s.items.length),
+		const { result } = renderHook(
+			() => useAgentState(complexKey, (s) => s.items.length),
+			{ wrapper: agentWrapper(agent) },
 		);
 
 		expect(result.current.get()).toBe(1);
@@ -428,9 +477,9 @@ describe('useAgentState – edge cases', () => {
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
 		expect(() =>
-			renderHook(() =>
-				useAgentState(agent, todosKey, (t) => ({ count: t.length })),
-			),
+			renderHook(() => useAgentState(todosKey, (t) => ({ count: t.length })), {
+				wrapper: agentWrapper(agent),
+			}),
 		).toThrow('Maximum update depth exceeded');
 
 		spy.mockRestore();
@@ -438,7 +487,9 @@ describe('useAgentState – edge cases', () => {
 
 	it('rapid successive updates converge to the final value', () => {
 		const { agent, store } = makeAgentWithStore('counter', 0);
-		const { result } = renderHook(() => useAgentState(agent, counterKey));
+		const { result } = renderHook(() => useAgentState(counterKey), {
+			wrapper: agentWrapper(agent),
+		});
 
 		act(() => {
 			for (let i = 1; i <= 100; i++) {
@@ -462,10 +513,13 @@ describe('useAgentState – selector stability', () => {
 		const selectLength = (t: string[]) => t.length;
 		const renderCount = { value: 0 };
 
-		renderHook(() => {
-			renderCount.value++;
-			return useAgentState(agent, todosKey, selectLength);
-		});
+		renderHook(
+			() => {
+				renderCount.value++;
+				return useAgentState(todosKey, selectLength);
+			},
+			{ wrapper: agentWrapper(agent) },
+		);
 
 		const before = renderCount.value;
 
@@ -490,7 +544,9 @@ describe('useAgentState – selector stability', () => {
 describe('useAgentState – concurrent mutation paths', () => {
 	it('hook.set and store.set both write to the same store', () => {
 		const { agent, store } = makeAgentWithStore('counter', 0);
-		const { result } = renderHook(() => useAgentState(agent, counterKey));
+		const { result } = renderHook(() => useAgentState(counterKey), {
+			wrapper: agentWrapper(agent),
+		});
 
 		act(() => {
 			result.current.set(() => 10);
@@ -505,7 +561,9 @@ describe('useAgentState – concurrent mutation paths', () => {
 
 	it('external subscribe + hook both observe the same updates', () => {
 		const { agent, store } = makeAgentWithStore('counter', 0);
-		const { result } = renderHook(() => useAgentState(agent, counterKey));
+		const { result } = renderHook(() => useAgentState(counterKey), {
+			wrapper: agentWrapper(agent),
+		});
 
 		const externalValues: number[] = [];
 		store.subscribe((v) => externalValues.push(v));

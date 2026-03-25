@@ -329,6 +329,45 @@ describe('Persistence', () => {
 			expect(persistence.session.saved.has(child.sessionId)).toBe(true);
 		});
 
+		it('remove deletes session from list and persistence', async () => {
+			const persistence = createMockPersistence();
+			const manager = new SessionManager(
+				createTestTransport,
+				[counterExtension()],
+				persistence,
+			);
+
+			const session = track(await manager.new());
+			await vi.advanceTimersByTimeAsync(500);
+
+			// Verify session exists before removal
+			expect(manager.list()).toHaveLength(1);
+			expect(persistence.session.saved.has(session.sessionId)).toBe(true);
+
+			// Track listener notifications
+			const listener = vi.fn();
+			manager.subscribe(listener);
+
+			await manager.remove(session.sessionId);
+
+			// Session gone from live list
+			expect(manager.list()).toHaveLength(0);
+
+			// Persisted snapshot deleted
+			expect(persistence.session.saved.has(session.sessionId)).toBe(false);
+
+			// Listeners notified
+			expect(listener).toHaveBeenCalled();
+		});
+
+		it('remove is a no-op for unknown session IDs', async () => {
+			const persistence = createMockPersistence();
+			const manager = new SessionManager(createTestTransport, [], persistence);
+
+			// Should not throw
+			await manager.remove('nonexistent');
+		});
+
 		it('auto-persists on tracker change (rewind)', async () => {
 			const persistence = createMockPersistence();
 			const manager = new SessionManager(createTestTransport, [], persistence);
