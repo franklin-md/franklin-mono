@@ -11,5 +11,5 @@ export {
 } from './protocol/index.js';
 
 // Binding (connecting)
-export { bindClient, bindServer, type Binding } from './binding/index.js';
+export { bindClient, bindServer, type PeerBinding } from './binding/index.js';
 export { RpcError } from './errors.js';

@@ -7,10 +7,21 @@ import {
 	type MiniACPClient,
 	type ClientProtocol,
 	type AgentProtocol,
-	type AgentConnection,
+	type AgentBinding,
 } from '@franklin/mini-acp';
-import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
+import {
+	createEmptyStoreResult,
+	StorePool as StoreRegistry,
+	type Extension,
+	type CoreAPI,
+	type StoreAPI,
+} from '@franklin/extensions';
 import { createAgent } from '../create.js';
+
+function emptyStores() {
+	const registry = new StoreRegistry();
+	return createEmptyStoreResult(registry);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -23,7 +34,7 @@ import { createAgent } from '../create.js';
  */
 function createTestTransport(overrides: Partial<MiniACPClient> = {}): {
 	clientTransport: ClientProtocol;
-	agentConnection: AgentConnection;
+	agentConnection: AgentBinding;
 } {
 	const { a, b } = createDuplexPair();
 	const clientTransport = a as unknown as ClientProtocol;
@@ -40,12 +51,13 @@ function createTestTransport(overrides: Partial<MiniACPClient> = {}): {
 			yield { type: 'turnEnd' as const };
 		},
 		async cancel() {
-			return { type: 'turnEnd' as const };
+			return;
 		},
 		...overrides,
 	};
 
-	const agentConnection = createAgentConnection(agentTransport, handlers);
+	const agentConnection = createAgentConnection(agentTransport);
+	agentConnection.bind(handlers);
 	return { clientTransport, agentConnection };
 }
 
@@ -70,7 +82,7 @@ describe('createAgent', () => {
 
 	it('exposes command methods at the top level', async () => {
 		const { clientTransport } = createTestTransport();
-		const agent = track(await createAgent([], clientTransport));
+		const agent = track(await createAgent([], clientTransport, emptyStores()));
 
 		expect(typeof agent.prompt).toBe('function');
 		expect(typeof agent.cancel).toBe('function');
@@ -80,14 +92,14 @@ describe('createAgent', () => {
 
 	it('exposes dispose', async () => {
 		const { clientTransport } = createTestTransport();
-		const agent = track(await createAgent([], clientTransport));
+		const agent = track(await createAgent([], clientTransport, emptyStores()));
 
 		expect(typeof agent.dispose).toBe('function');
 	});
 
 	it('toolExecute returns error for unknown tools', async () => {
 		const { clientTransport, agentConnection } = createTestTransport();
-		track(await createAgent([], clientTransport));
+		track(await createAgent([], clientTransport, emptyStores()));
 
 		const result = await agentConnection.remote.toolExecute({
 			call: {
@@ -111,10 +123,12 @@ describe('createAgent', () => {
 		};
 
 		const { clientTransport } = createTestTransport();
-		const agent = track(await createAgent([ext], clientTransport));
+		const agent = track(
+			await createAgent([ext], clientTransport, emptyStores()),
+		);
 
-		expect(agent.stores.stores.get('items')).toBeDefined();
-		expect(agent.stores.stores.get('items')!.store.get()).toEqual([]);
+		expect(agent.stores.get('items')).toBeDefined();
+		expect(agent.stores.get('items')!.store.get()).toEqual([]);
 	});
 
 	it('wraps client methods with extension middleware', async () => {
@@ -128,7 +142,9 @@ describe('createAgent', () => {
 		};
 
 		const { clientTransport } = createTestTransport();
-		const agent = track(await createAgent([ext], clientTransport));
+		const agent = track(
+			await createAgent([ext], clientTransport, emptyStores()),
+		);
 
 		// prompt is an async generator — iterate it to drain
 		const stream = agent.prompt({
@@ -154,7 +170,7 @@ describe('createAgent', () => {
 		};
 
 		const { clientTransport, agentConnection } = createTestTransport();
-		track(await createAgent([ext], clientTransport));
+		track(await createAgent([ext], clientTransport, emptyStores()));
 
 		const result = await agentConnection.remote.toolExecute({
 			call: { type: 'toolCall', id: '1', name: 'greet', arguments: {} },
@@ -168,5 +184,31 @@ describe('createAgent', () => {
 				content: [{ type: 'text', text: 'Hello!' }],
 			}),
 		});
+	});
+
+	it('reuses stores from an existing StoreResult seed', async () => {
+		const ext: Extension<CoreAPI & StoreAPI> = (api) => {
+			const store = api.registerStore('items', [] as string[], 'shared');
+			if (store.get().length === 0) {
+				store.set((items) => {
+					items.push('seeded');
+				});
+			}
+		};
+
+		const { clientTransport: parentTransport } = createTestTransport();
+		const parent = track(
+			await createAgent([ext], parentTransport, emptyStores()),
+		);
+
+		const { clientTransport: childTransport } = createTestTransport();
+		const child = track(
+			await createAgent([ext], childTransport, parent.stores.share()),
+		);
+
+		expect(child.stores.get('items')!.store.get()).toEqual(['seeded']);
+		expect(child.stores.get('items')!.ref).toBe(
+			parent.stores.get('items')!.ref,
+		);
 	});
 });

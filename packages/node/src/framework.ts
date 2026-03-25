@@ -3,12 +3,11 @@ import type { Model } from '@mariozechner/pi-ai';
 import type { StreamFn } from '@mariozechner/pi-agent-core';
 import { createDuplexPair } from '@franklin/transport';
 import {
-	createPiFactory,
-	createSessionAdapter,
+	createPiAdapter,
 	createAgentConnection,
+	createSessionAdapter,
 	type ClientProtocol,
 	type AgentProtocol,
-	type AgentConnection,
 } from '@franklin/mini-acp';
 
 // ---------------------------------------------------------------------------
@@ -38,22 +37,27 @@ export interface SpawnOptions {
 export class NodeFramework {
 	spawn(options?: SpawnOptions): ClientProtocol {
 		const model = options?.model ?? defaultModel();
-		const factory = createPiFactory({ model, streamFn: options?.streamFn });
 
 		// TODO: Type this correctly, it is already correct but message type is painful
 		const { a, b } = createDuplexPair();
 		const clientDuplex = a as unknown as ClientProtocol;
 		const agentDuplex = b as unknown as AgentProtocol;
 
-		// Build handlers first, then pass to createAgentConnection.
-		// getClient() is only called on first prompt, so agentBinding is
-		// always set before it's accessed.
-		// eslint-disable-next-line prefer-const -- assigned after handlers, used in handler closures
-		let agentBinding!: AgentConnection;
+		// Phase 1: get the remote proxy (toolExecute) without needing handlers yet
+		const { remote, bind } = createAgentConnection(agentDuplex);
 
-		const handlers = createSessionAdapter(factory, () => agentBinding.remote);
+		// Build handlers that capture the proxy directly — no forward-declaration needed
+		const handlers = createSessionAdapter((ctx) =>
+			createPiAdapter({
+				client: remote,
+				model,
+				ctx,
+				streamFn: options?.streamFn,
+			}),
+		);
 
-		agentBinding = createAgentConnection(agentDuplex, handlers);
+		// Phase 2: bind handlers and start dispatching
+		bind(handlers);
 
 		return clientDuplex;
 	}

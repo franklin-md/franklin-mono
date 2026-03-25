@@ -25,12 +25,13 @@
 	},
 	"scripts": {
 		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc -b tsconfig.json --pretty false",
+		"typecheck": "tsc --noEmit -p tsconfig.main.json --pretty false && tsc --noEmit -p tsconfig.preload.json --pretty false && tsc --noEmit -p tsconfig.renderer.json --pretty false",
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
 		"@agentclientprotocol/sdk": "^0.16.1",
 		"@franklin/agent": "*",
+		"@franklin/lib": "*",
 		"@franklin/node": "*",
 		"@franklin/mini-acp": "*",
 		"@franklin/transport": "*"

@@ -3,10 +3,12 @@ import { createCoreCompiler } from '../../compile/core/compiler.js';
 import { createStoreCompiler } from '../../compile/store/compiler.js';
 import { compile, combine } from '../../compile/types.js';
 import { apply } from '../../api/core/middleware/apply.js';
+import { createEmptyStoreResult } from '../../api/store/registry/result.js';
 import type { MiniACPClient, Chunk, Update } from '@franklin/mini-acp';
 import { conversationExtension } from '../conversation/extension.js';
 import type { ConversationTurn } from '../conversation/types.js';
 import type { StoreResult } from '../../api/index.js';
+import { StoreRegistry } from '../../api/store/registry/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -30,8 +32,8 @@ async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
 	return items;
 }
 
-function getStore(result: StoreResult): ConversationTurn[] {
-	return result.stores.get('conversation')!.store.get() as ConversationTurn[];
+function getStore(stores: StoreResult): ConversationTurn[] {
+	return stores.get('conversation')!.store.get() as ConversationTurn[];
 }
 
 // ---------------------------------------------------------------------------
@@ -40,7 +42,9 @@ function getStore(result: StoreResult): ConversationTurn[] {
 
 describe('conversationExtension', () => {
 	function compileConversation() {
-		const compiler = combine(createCoreCompiler(), createStoreCompiler());
+		const registry = new StoreRegistry();
+		const seed = createEmptyStoreResult(registry);
+		const compiler = combine(createCoreCompiler(), createStoreCompiler(seed));
 		return compile(compiler, conversationExtension());
 	}
 
@@ -59,7 +63,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result);
+		const turns = getStore(result.stores);
 		expect(turns).toHaveLength(1);
 		expect(turns[0]!.messages).toHaveLength(1);
 		expect(turns[0]!.messages[0]!.role).toBe('user');
@@ -98,7 +102,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result);
+		const turns = getStore(result.stores);
 		expect(turns).toHaveLength(1);
 		// user message + one coalesced assistant message
 		expect(turns[0]!.messages).toHaveLength(2);
@@ -140,7 +144,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result);
+		const turns = getStore(result.stores);
 		const messages = turns[0]!.messages;
 		// user + one assistant message with mixed content
 		expect(messages).toHaveLength(2);
@@ -184,7 +188,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result);
+		const turns = getStore(result.stores);
 		const messages = turns[0]!.messages;
 		// user + two separate assistant messages
 		expect(messages).toHaveLength(3);
@@ -226,7 +230,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result);
+		const turns = getStore(result.stores);
 		const messages = turns[0]!.messages;
 		// user + assistant with toolCall content
 		expect(messages).toHaveLength(2);
@@ -261,7 +265,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result);
+		const turns = getStore(result.stores);
 		expect(turns).toHaveLength(2);
 	});
 });

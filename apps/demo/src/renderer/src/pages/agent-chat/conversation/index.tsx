@@ -6,7 +6,7 @@ import { PromptInput } from './prompt-input.js';
 
 export function ConversationPanel() {
 	const agent = useAgent();
-	const conversation = useAgentState(agent, conversationKey);
+	const conversation = useAgentState(conversationKey);
 
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">

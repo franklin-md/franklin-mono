@@ -13,6 +13,7 @@
 	},
 	"scripts": {
 		"build": "tsc -b",
+		"build:check": "node ./scripts/build-check.mjs",
 		"clean": "tsc -b --clean",
 		"lint": "eslint . --cache --max-warnings=0",
 		"lint:fix": "npm run lint -- --fix",

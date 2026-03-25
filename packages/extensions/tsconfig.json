@@ -8,5 +8,5 @@
 		"declarationMap": true
 	},
 	"include": ["src/**/*.ts"],
-	"references": [{ "path": "../mini-acp" }]
+	"references": [{ "path": "../lib/core" }, { "path": "../mini-acp" }]
 }

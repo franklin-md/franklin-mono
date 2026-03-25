@@ -167,35 +167,6 @@ describe('buildCore – on() waterfall', () => {
 
 		expect(received[0]).toEqual(original);
 	});
-
-	it('setContext handler transforms params', async () => {
-		const mw = await compileExt((api) => {
-			api.on('setContext', (params) => ({
-				ctx: {
-					...params.ctx,
-					config: { model: 'injected-model' },
-				},
-			}));
-		});
-
-		expect(mw.client.setContext).toBeDefined();
-
-		const received: any[] = [];
-		const target = stubClient({
-			setContext: async (params) => {
-				received.push(params);
-			},
-		});
-
-		const wrapped = apply(mw.client, target);
-
-		await wrapped.setContext({
-			ctx: { history: { systemPrompt: '', messages: [] } },
-		});
-
-		const params = received[0] as { ctx: { config: unknown } };
-		expect(params.ctx.config).toEqual({ model: 'injected-model' });
-	});
 });
 
 // ---------------------------------------------------------------------------

@@ -26,13 +26,14 @@ import type { Agent } from './types.js';
  * (tool execution). The client is wrapped with middleware; the server
  * middleware produces a `toolExecute` handler for the protocol to call.
  *
- * For child agents, pass `existingStores` from `parent.stores.copy('private')`
- * to inherit state per store sharing semantics.
+ * For child agents, pass `existingStores` from `parent.stores.share()`
+ * to inherit state per store sharing semantics. When omitted, the agent
+ * compiles against a fresh empty store result with its own pool.
  */
 export async function createAgent(
 	extensions: Extension<CoreAPI & StoreAPI>[],
 	transport: ClientProtocol,
-	existingStores?: StoreResult,
+	existingStores: StoreResult,
 ): Promise<Agent> {
 	const result = await compileAll(
 		combine(createCoreCompiler(), createStoreCompiler(existingStores)),
@@ -55,14 +56,15 @@ export async function createAgent(
 	};
 	// Wrap outgoing commands with client middleware
 	const wrappedAgent = apply(result.server, defaultAgent);
-	const connection = createClientConnection(transport, wrappedAgent);
-	const wrappedClient = apply(result.client, connection.remote);
+	const { remote, bind } = createClientConnection(transport);
+	bind(wrappedAgent);
+	const wrappedClient = apply(result.client, remote);
 
 	const controller = new AbortController();
 
 	return {
 		...wrappedClient,
-		stores: result,
+		stores: result.stores,
 		dispose: async () => {
 			controller.abort();
 		},

@@ -1,3 +1,4 @@
+import type { Filesystem } from '@franklin/lib';
 import type { ToolDefinition as SerializedToolDefinition } from '@franklin/mini-acp';
 import {
 	type Duplex,
@@ -16,6 +17,9 @@ interface FranklinBridge {
 		on: (callback: (packet: unknown) => void) => () => void;
 		invoke: (packet: unknown) => void;
 	};
+	app: {
+		getStorage: () => Promise<string>;
+	};
 	agent: {
 		spawn: () => Promise<string>;
 		kill: (agentId: string) => Promise<void>;
@@ -28,6 +32,7 @@ interface FranklinBridge {
 		) => Promise<unknown>;
 		stop: (mcpId: string) => Promise<void>;
 	};
+	filesystem: Filesystem;
 }
 
 declare global {

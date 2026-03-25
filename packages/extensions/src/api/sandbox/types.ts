@@ -1,16 +1,6 @@
-export interface Filesystem {
-	readFile(path: string): Promise<Buffer>;
-	writeFile(path: string, content: string | Buffer): Promise<void>;
-	mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
-	access(path: string): Promise<void>;
-	stat(path: string): Promise<{ isFile(): boolean; isDirectory(): boolean }>;
-	readdir(path: string): Promise<string[]>;
-	exists(path: string): Promise<boolean>;
-	glob(
-		pattern: string,
-		options: { cwd: string; ignore?: string[]; limit?: number },
-	): Promise<string[]>;
-}
+import type { Filesystem as CoreFilesystem } from '@franklin/lib';
+
+export type { Filesystem } from '@franklin/lib';
 
 export interface Terminal {
 	exec(
@@ -27,6 +17,6 @@ export interface Terminal {
 
 export interface Sandbox {
 	readonly cwd: string;
-	readonly fs: Filesystem;
+	readonly fs: CoreFilesystem;
 	readonly terminal: Terminal;
 }

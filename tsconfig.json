@@ -1,10 +1,11 @@
 {
 	"files": [],
 	"references": [
+		{ "path": "./packages/lib/core" },
 		{ "path": "./packages/lib/transport" },
 		{ "path": "./packages/agent" },
 		{ "path": "./packages/extensions" },
-{ "path": "./packages/mini-acp" },
+		{ "path": "./packages/mini-acp" },
 		{ "path": "./packages/node" },
 		{ "path": "./packages/electron" },
 		{ "path": "./packages/ui/react" },

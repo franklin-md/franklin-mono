@@ -12,4 +12,11 @@ export {
 } from './todo/index.js';
 export type { Todo, TodoControl } from './todo/index.js';
 
+export {
+	statusExtension,
+	createStatusControl,
+	statusKey,
+} from './status/index.js';
+export type { StatusState, StatusControl } from './status/index.js';
+
 export { spawnExtension } from './spawn/index.js';

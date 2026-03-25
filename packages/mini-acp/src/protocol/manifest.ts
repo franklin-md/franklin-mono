@@ -1,4 +1,9 @@
-import { defineManifest, request, event } from '@franklin/transport';
+import {
+	defineManifest,
+	request,
+	event,
+	notification,
+} from '@franklin/transport';
 
 import type { MuClient, MuAgent } from './types.js';
 
@@ -7,7 +12,7 @@ export const muManifest = defineManifest<MuClient, MuAgent>({
 		initialize: request(),
 		setContext: request(),
 		prompt: event(),
-		cancel: request(),
+		cancel: notification(),
 	},
 	client: {
 		toolExecute: request(),
