@@ -1,10 +1,11 @@
 import path from 'node:path';
-import { app, ipcMain } from 'electron';
+import os from 'node:os';
+import { ipcMain } from 'electron';
 
 import { APP_GET_STORAGE } from '../../shared/channels.js';
 
 function getStoragePath(): string {
-	return path.join(app.getPath('userData'), 'storage');
+	return path.join(os.homedir(), '.franklin');
 }
 
 export class AppRelay {
