@@ -1,4 +1,4 @@
-import type { Agent, AgentCommands } from '@franklin/agent';
+import type { AgentCommands } from '@franklin/agent';
 import type { LLMConfig } from '@franklin/mini-acp';
 
 import type { AuthStore } from './store.js';

@@ -16,5 +16,6 @@ export { AuthStore, DEFAULT_AUTH_PATH } from './store.js';
 // Login
 export { loginOAuth, setApiKey } from './login.js';
 
-// Agent integration
+// Agent configuration
 export { configureAgent } from './client.js';
+

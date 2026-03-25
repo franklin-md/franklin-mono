@@ -70,12 +70,13 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 		// Only resolve the API key when using the real stream function (not a test mock).
 		getApiKey: streamFn
 			? undefined
-			: (provider: string) => {
-					const key = process.env[`${provider.toUpperCase()}_API_KEY`];
-					if (!key) {
-						throw new Error(`Missing API key for provider: ${provider}`);
-					}
-					return key;
+			: (_: string) => {
+					// const key = process.env[`${provider.toUpperCase()}_API_KEY`];
+					// if (!key) {
+					// 	throw new Error(`Missing API key for provider: ${provider}`);
+					// }
+					// return key;
+					return ctx.config?.apiKey
 				},
 		streamFn,
 	});

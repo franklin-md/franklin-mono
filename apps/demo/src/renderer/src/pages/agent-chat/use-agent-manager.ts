@@ -7,6 +7,7 @@ import {
 } from '@franklin/agent/browser';
 import type { Agent } from '@franklin/agent/browser';
 import { ElectronFramework } from '@franklin/electron/renderer';
+import { AuthStore, configureAgent } from '@franklin/auth';
 
 export interface SpawnResult {
 	agent: Agent;
@@ -23,15 +24,18 @@ export function useAgentManager(): GroupFactory {
 		frameworkRef.current = new ElectronFramework();
 	}
 
-	return useCallback((): GroupSpawnPoint => {
+	return useCallback(
+		(): GroupSpawnPoint => {
 		const framework = frameworkRef.current;
 		if (!framework) {
 			throw new Error('ElectronFramework not initialized');
 		}
 
 		return async (): Promise<SpawnResult> => {
+			const authStore = new AuthStore();
 			const transport = await framework.spawn();
 			const agent = await createAgent(extensions, transport);
+			await configureAgent(agent, authStore, { provider: 'anthropic', model: 'claude-opus-4-6' });
 			await agent.setContext({
 				ctx: { tools: [], history: { systemPrompt: '', messages: [] } },
 			});
