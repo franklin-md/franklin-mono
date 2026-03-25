@@ -51,7 +51,9 @@ export type {
 export {
 	conversationExtension,
 	todoExtension,
+	statusExtension,
 	createTodoControl,
+	createStatusControl,
 	formatTodos,
 	spawnExtension,
 	compile,
@@ -64,6 +66,7 @@ export {
 	storeKey,
 	conversationKey,
 	todoKey,
+	statusKey,
 	StorePool,
 } from '@franklin/extensions';
 export type {
@@ -82,6 +85,8 @@ export type {
 	ConversationTurn,
 	Todo,
 	TodoControl,
+	StatusState,
+	StatusControl,
 } from '@franklin/extensions';
 
 // Re-export key mini-acp types so consumers don't need to depend on it directly

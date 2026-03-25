@@ -64,7 +64,10 @@ export {
 	conversationKey,
 	todoExtension,
 	todoKey,
+	statusExtension,
+	statusKey,
 	createTodoControl,
+	createStatusControl,
 	formatTodos,
 	spawnExtension,
 } from './extensions/index.js';
@@ -72,5 +75,7 @@ export type {
 	ConversationTurn,
 	Todo,
 	TodoControl,
+	StatusState,
+	StatusControl,
 } from './extensions/index.js';
 export { bridgePiToolDefinition } from './api/sandbox/bridge.js';

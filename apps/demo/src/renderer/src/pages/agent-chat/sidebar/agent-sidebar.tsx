@@ -5,11 +5,7 @@ import { useSessionManager, useSessions } from '@franklin/react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { SidebarItem } from './sidebar-item.js';
-
-function truncateId(id: string): string {
-	return id.slice(0, 8);
-}
+import { AgentSidebarItem } from './agent-sidebar-item.js';
 
 export function AgentSidebar({
 	onSelectAgent,
@@ -55,12 +51,12 @@ export function AgentSidebar({
 						</p>
 					) : (
 						sessions.map((session) => (
-							<SidebarItem
+							<AgentSidebarItem
 								key={session.sessionId}
-								name={truncateId(session.sessionId)}
+								session={session}
 								active={session.sessionId === currentAgentId}
-								onClick={() =>
-									handleSelectAgent(session.sessionId, session.agent)
+								onSelect={(sessionId) =>
+									handleSelectAgent(sessionId, session.agent)
 								}
 							/>
 						))

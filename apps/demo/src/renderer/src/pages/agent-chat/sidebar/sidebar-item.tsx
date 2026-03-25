@@ -1,11 +1,16 @@
+import type { StatusState } from '@franklin/agent/browser';
+
 import { cn } from '@/lib/utils';
+import { StatusDot } from './status-dot.js';
 
 export function SidebarItem({
 	name,
+	status,
 	active,
 	onClick,
 }: {
 	name: string;
+	status: StatusState;
 	active: boolean;
 	onClick: () => void;
 }) {
@@ -20,7 +25,10 @@ export function SidebarItem({
 					: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
 			)}
 		>
-			{name}
+			<span className="flex items-center gap-2">
+				<StatusDot status={status} />
+				<span>{name}</span>
+			</span>
 		</button>
 	);
 }
