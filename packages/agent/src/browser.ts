@@ -8,9 +8,12 @@ export { SessionManager } from './agent/session/index.js';
 export type { Session } from './agent/session/types.js';
 export type { Agent, AgentCommands } from './types.js';
 
-export type { Framework } from './framework.js';
 export {
-	FranklinApp,
+	type FranklinApp,
 	type FranklinExtensionApi,
 	type FranklinExtension,
-} from './app.js';
+} from './app/types.js';
+
+export { createApp } from './app/create.js';
+
+export { type Platform } from './platform.js';

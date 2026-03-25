@@ -1,13 +1,7 @@
 import { CtxTracker } from '@franklin/mini-acp';
 import { DebouncedPersister } from '@franklin/lib';
 import type { Persister } from '@franklin/lib';
-import type {
-	Extension,
-	CoreAPI,
-	StoreAPI,
-	StoreResult,
-	StoreSnapshot,
-} from '@franklin/extensions';
+import type { StoreResult, StoreSnapshot } from '@franklin/extensions';
 import {
 	createEmptyStoreResult,
 	createStoreResult,
@@ -19,7 +13,7 @@ import { ctxExtension } from './ctx-extension.js';
 import { SessionMap } from './session-map.js';
 import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
 import type { SpawnFn, Session } from './types.js';
-import type { FranklinExtension } from '../../app.js';
+import type { FranklinExtension } from '../../app/types.js';
 
 export type PersistenceOptions = {
 	session: Persister<SessionSnapshot>;

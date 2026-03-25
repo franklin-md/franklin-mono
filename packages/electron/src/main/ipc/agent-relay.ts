@@ -1,5 +1,4 @@
 import { Multiplexer, connect, debugStream } from '@franklin/transport';
-import type { NodeFramework } from '@franklin/node';
 import type { WebContents } from 'electron';
 import { ipcMain } from 'electron';
 import { randomUUID } from 'node:crypto';
@@ -16,6 +15,7 @@ import type {
 	ServerSendMux,
 } from '../../shared/types.js';
 import type { AgentProtocol, ClientProtocol } from '@franklin/mini-acp';
+import type { Platform } from '@franklin/agent';
 
 /**
  * Bridges renderer <-> in-process agents over Electron IPC.
@@ -29,7 +29,7 @@ export class AgentRelay {
 
 	constructor(
 		webContents: WebContents,
-		private readonly framework: NodeFramework,
+		private readonly platform: Platform,
 	) {
 		const ipcMux = createMainIpcMux<ServerReceiveMux, ServerSendMux>(
 			webContents,
@@ -46,7 +46,7 @@ export class AgentRelay {
 	 */
 	async spawn(): Promise<string> {
 		const agentId = randomUUID();
-		const transport: ClientProtocol = this.framework.spawn();
+		const transport: ClientProtocol = await this.platform.spawn();
 
 		// Per-agent slice of the shared IPC stream
 		const ipcStream: AgentProtocol = this.agentMux.channel(agentId);
