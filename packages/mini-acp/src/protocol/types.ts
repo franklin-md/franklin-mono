@@ -1,4 +1,4 @@
-import type { TurnClient, TurnAgent } from '../base/types.js';
+import type { TurnClient, TurnServer } from '../base/types.js';
 import type { Ctx } from '../types/context.js';
 import type { Protocol, ReadType, WriteType } from '@franklin/transport';
 
@@ -13,7 +13,7 @@ export interface MuClient extends TurnClient {
 	setContext(params: AgentCtx): Promise<InitializeResult>;
 }
 
-export type MuAgent = TurnAgent;
+export type MuAgent = TurnServer;
 
 export type ClientProtocol = Protocol<MuClient, MuAgent>;
 export type AgentProtocol = Protocol<MuAgent, MuClient>;

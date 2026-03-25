@@ -1,4 +1,5 @@
-import type { SerializedToolDefinition } from '@franklin/local-mcp';
+import type { Filesystem } from '@franklin/lib';
+import type { ToolDefinition as SerializedToolDefinition } from '@franklin/mini-acp';
 import {
 	type Duplex,
 	type MuxPacket,
@@ -18,6 +19,9 @@ interface FranklinBridge {
 		on: (callback: (packet: unknown) => void) => () => void;
 		invoke: (packet: unknown) => void;
 	};
+	app: {
+		getStorage: () => Promise<string>;
+	};
 	agent: {
 		spawn: () => Promise<string>;
 		kill: (agentId: string) => Promise<void>;
@@ -31,7 +35,8 @@ interface FranklinBridge {
 		stop: (mcpId: string) => Promise<void>;
 	};
 	/** Present when `initializeMain` was called with an `AuthStore`. */
-	auth?: AuthBridge;
+	auth: AuthBridge;
+	filesystem: Filesystem;
 }
 
 declare global {

@@ -1,82 +1,26 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import type { Agent } from '@franklin/agent/browser';
+import { AgentProvider, useSessionManager, useSessions } from '@franklin/react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-import { SidebarGroup } from './sidebar-group.js';
-
-interface SpawnResult {
-	agent: Agent;
-}
-
-interface AgentEntry {
-	id: string;
-	name: string;
-	agent: Agent;
-}
-
-interface GroupData {
-	id: string;
-	name: string;
-	spawn: () => Promise<SpawnResult>;
-	agents: AgentEntry[];
-}
+import { AgentSidebarItem } from './agent-sidebar-item.js';
 
 export function AgentSidebar({
-	factory,
 	onSelectAgent,
 }: {
-	factory: () => () => Promise<SpawnResult>;
 	onSelectAgent: (agentId: string, agent: Agent) => void;
 }) {
-	const [groups, setGroups] = useState<GroupData[]>([]);
+	const manager = useSessionManager();
+	const sessions = useSessions();
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
 
-	const groupCounterRef = useRef(0);
-	const agentCounterRef = useRef(0);
-	const groupsRef = useRef(groups);
-	groupsRef.current = groups;
-
-	const handleCreateGroup = useCallback(() => {
-		groupCounterRef.current += 1;
-		const spawn = factory();
-		setGroups((prev) => [
-			...prev,
-			{
-				id: crypto.randomUUID(),
-				name: `Group ${String(groupCounterRef.current)}`,
-				spawn,
-				agents: [],
-			},
-		]);
-	}, [factory]);
-
-	const handleSpawnAgent = useCallback(
-		async (groupId: string) => {
-			const group = groupsRef.current.find((g) => g.id === groupId);
-			if (!group) return;
-
-			const { agent } = await group.spawn();
-			agentCounterRef.current += 1;
-			const entry: AgentEntry = {
-				id: crypto.randomUUID(),
-				name: `Agent ${String(agentCounterRef.current)}`,
-				agent,
-			};
-
-			setGroups((prev) =>
-				prev.map((g) =>
-					g.id === groupId ? { ...g, agents: [...g.agents, entry] } : g,
-				),
-			);
-
-			setCurrentAgentId(entry.id);
-			onSelectAgent(entry.id, agent);
-		},
-		[onSelectAgent],
-	);
+	const handleSpawnAgent = useCallback(async () => {
+		const session = await manager.new();
+		setCurrentAgentId(session.sessionId);
+		onSelectAgent(session.sessionId, session.agent);
+	}, [manager, onSelectAgent]);
 
 	const handleSelectAgent = useCallback(
 		(agentId: string, agent: Agent) => {
@@ -86,31 +30,57 @@ export function AgentSidebar({
 		[onSelectAgent],
 	);
 
+	const handleDeleteAgent = useCallback(
+		async (sessionId: string) => {
+			await manager.remove(sessionId);
+
+			// If we just deleted the active session, select another agent
+			// TODO: refactor selection logic more generally
+			if (currentAgentId === sessionId) {
+				const remaining = sessions.filter((s) => s.sessionId !== sessionId);
+				if (remaining.length > 0) {
+					const next = remaining[0]!;
+					setCurrentAgentId(next.sessionId);
+					onSelectAgent(next.sessionId, next.agent);
+				} else {
+					setCurrentAgentId(null);
+				}
+			}
+		},
+		[manager, currentAgentId, sessions, onSelectAgent],
+	);
+
 	return (
 		<div className="flex w-60 flex-col border-r">
 			<div className="flex items-center justify-between border-b px-4 py-3">
 				<span className="text-sm font-semibold">Agents</span>
-				<Button variant="ghost" size="sm" onClick={handleCreateGroup}>
-					+ Group
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={() => void handleSpawnAgent()}
+				>
+					+ Agent
 				</Button>
 			</div>
 
 			<ScrollArea className="flex-1">
 				<div className="p-2">
-					{groups.length === 0 ? (
+					{sessions.length === 0 ? (
 						<p className="py-8 text-center text-xs text-muted-foreground">
-							No groups yet.
+							No agents yet.
 						</p>
 					) : (
-						groups.map((group) => (
-							<SidebarGroup
-								key={group.id}
-								name={group.name}
-								agents={group.agents}
-								currentAgentId={currentAgentId}
-								onSpawnAgent={() => void handleSpawnAgent(group.id)}
-								onSelectAgent={handleSelectAgent}
-							/>
+						sessions.map((session) => (
+							<AgentProvider key={session.sessionId} agent={session.agent}>
+								<AgentSidebarItem
+									sessionId={session.sessionId}
+									active={session.sessionId === currentAgentId}
+									onSelect={(sessionId) =>
+										handleSelectAgent(sessionId, session.agent)
+									}
+									onDelete={(sessionId) => void handleDeleteAgent(sessionId)}
+								/>
+							</AgentProvider>
 						))
 					)}
 				</div>

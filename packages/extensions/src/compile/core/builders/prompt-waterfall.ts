@@ -24,25 +24,15 @@ async function* iteratePromptWithObservers(
 		StreamObserverEvent,
 		StreamObserverHandler<StreamObserverEvent>[]
 	>,
-): AsyncGenerator<Chunk | Update, TurnEnd, void> {
-	const iterator = stream[Symbol.asyncIterator]();
-	for (;;) {
-		const result = await iterator.next();
-		const event = result.value;
+): AsyncGenerator<Chunk | Update | TurnEnd> {
+	for await (const result of stream) {
 		// Notify observers — guard against undefined event (generator
 		// that returns void instead of TurnEnd) and empty observer map
-		if (observers && observers.size > 0 && event) {
-			await notifyObservers(observers, event);
+		if (observers && observers.size > 0) {
+			await notifyObservers(observers, result);
 		}
 
-		// Yield case
-		if (!result.done) {
-			yield event as Chunk | Update;
-		}
-		// Return case
-		else {
-			return event as TurnEnd;
-		}
+		yield result;
 	}
 }
 

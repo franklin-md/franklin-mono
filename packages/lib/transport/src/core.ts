@@ -67,7 +67,7 @@ export {
 	type ServerOf,
 	type ClientOf,
 	type ProtocolManifest,
-	type Binding,
+	type PeerBinding,
 } from './jsonrpc/index.js';
 
 // Config types (browser-safe — pure interfaces, no Node runtime deps)

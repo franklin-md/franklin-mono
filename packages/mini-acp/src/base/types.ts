@@ -10,11 +10,12 @@ export type CancelParams = Record<string, never>;
 
 // Agent side (client calls agent)
 export interface TurnClient {
+	// TODO: Add TURN START
 	prompt(params: PromptParams): AsyncIterable<Chunk | Update | TurnEnd>;
-	cancel(params: CancelParams): Promise<TurnEnd>;
+	cancel(params: CancelParams): Promise<void>;
 }
 
 // Client side (agent calls client — reverse RPC)
-export interface TurnAgent {
+export interface TurnServer {
 	toolExecute: ToolExecuteHandler;
 }

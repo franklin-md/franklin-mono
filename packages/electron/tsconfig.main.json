@@ -14,6 +14,6 @@
 		{ "path": "../agent" },
 		{ "path": "../auth" },
 		{ "path": "../node" },
-		{ "path": "../local-mcp" }
+		{ "path": "../mini-acp" }
 	]
 }

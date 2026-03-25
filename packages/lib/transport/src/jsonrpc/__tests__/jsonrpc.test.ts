@@ -265,23 +265,26 @@ function createPair(options?: {
 	client?: Partial<ClientApi>;
 }) {
 	const { a, b } = createUnlockedPair<JsonRpcMessage>();
-	const client = bindClient({
+	const clientBinding = bindClient({
 		duplex: a as TestProtocol,
 		manifest,
-		handlers: {
-			...defaultClientHandlers,
-			...options?.client,
-		},
 	});
-	const server = bindServer({
+	const clientClose = clientBinding.bind({
+		...defaultClientHandlers,
+		...options?.client,
+	});
+	const serverBinding = bindServer({
 		duplex: b as Protocol<ClientApi, ServerApi>,
 		manifest,
-		handlers: {
-			...defaultServerHandlers,
-			...options?.server,
-		},
 	});
-	return { client, server };
+	const serverClose = serverBinding.bind({
+		...defaultServerHandlers,
+		...options?.server,
+	});
+	return {
+		client: { remote: clientBinding.remote, close: clientClose.close },
+		server: { remote: serverBinding.remote, close: serverClose.close },
+	};
 }
 
 async function collect<T>(iterable: AsyncIterable<T>): Promise<T[]> {
@@ -594,24 +597,29 @@ function createInterceptedPair(options?: {
 		},
 	};
 
-	const client = bindClient({
+	const clientBinding = bindClient({
 		duplex: a as TestProtocol,
 		manifest,
-		handlers: {
-			...defaultClientHandlers,
-			...options?.client,
-		},
 	});
-	const server = bindServer({
+	const clientClose = clientBinding.bind({
+		...defaultClientHandlers,
+		...options?.client,
+	});
+	const serverBinding = bindServer({
 		duplex: b as Protocol<ClientApi, ServerApi>,
 		manifest,
-		handlers: {
-			...defaultServerHandlers,
-			...options?.server,
-		},
+	});
+	const serverClose = serverBinding.bind({
+		...defaultServerHandlers,
+		...options?.server,
 	});
 
-	return { client, server, clientToServer, serverToClient };
+	return {
+		client: { remote: clientBinding.remote, close: clientClose.close },
+		server: { remote: serverBinding.remote, close: serverClose.close },
+		clientToServer,
+		serverToClient,
+	};
 }
 
 describe('stream wire protocol', () => {

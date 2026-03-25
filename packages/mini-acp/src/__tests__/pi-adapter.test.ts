@@ -12,7 +12,7 @@ import { createAssistantMessageEventStream } from '@mariozechner/pi-ai';
 import type { StreamFn } from '@mariozechner/pi-agent-core';
 
 import { createPiAdapter } from '../base/pi/adapter.js';
-import type { TurnAgent } from '../base/types.js';
+import type { TurnServer } from '../base/types.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { Ctx } from '../types/context.js';
 
@@ -176,7 +176,7 @@ async function collect(
 
 describe('createPiAdapter', () => {
 	it('simple text response — emits chunks, update, turnEnd', async () => {
-		const client: TurnAgent = {
+		const client: TurnServer = {
 			toolExecute: vi.fn(),
 		};
 
@@ -222,7 +222,7 @@ describe('createPiAdapter', () => {
 
 	it('tool call flow — agent calls tool via BaseClient, then responds', async () => {
 		const toolCallId = 'tc-001';
-		const client: TurnAgent = {
+		const client: TurnServer = {
 			toolExecute: vi.fn().mockResolvedValue({
 				toolCallId,
 				content: [{ type: 'text', text: '42' }],
@@ -281,7 +281,7 @@ describe('createPiAdapter', () => {
 
 		// Should contain a toolCall chunk
 		const toolChunks = events.filter(
-			(e) => e.type === 'chunk' && e.content.type === 'toolCall',
+			(e) => e.type === 'update' && e.message.content[0]?.type === 'toolCall',
 		);
 		expect(toolChunks.length).toBeGreaterThanOrEqual(1);
 
@@ -299,7 +299,7 @@ describe('createPiAdapter', () => {
 	});
 
 	it('cancel — returns turnEnd with error', async () => {
-		const client: TurnAgent = {
+		const client: TurnServer = {
 			toolExecute: vi.fn(),
 		};
 

@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { Filesystem } from '@franklin/lib';
 
 import {
 	IPC_STREAM,
@@ -17,6 +18,16 @@ import {
 	AUTH_OAUTH_ON_AUTH,
 	AUTH_OAUTH_ON_PROGRESS,
 	AUTH_OAUTH_ON_PROMPT,
+	APP_GET_STORAGE,
+	FILESYSTEM_READ_FILE,
+	FILESYSTEM_WRITE_FILE,
+	FILESYSTEM_READ_DIR,
+	FILESYSTEM_DELETE_FILE,
+	FILESYSTEM_MKDIR,
+	FILESYSTEM_ACCESS,
+	FILESYSTEM_STAT,
+	FILESYSTEM_EXISTS,
+	FILESYSTEM_GLOB,
 } from '../shared/channels.js';
 
 // ---------------------------------------------------------------------------
@@ -136,6 +147,63 @@ const auth = {
 		ipcRenderer.on(AUTH_OAUTH_ON_PROMPT, handler);
 		return () => ipcRenderer.removeListener(AUTH_OAUTH_ON_PROMPT, handler);
 	},
+}
+// App (request/response over invoke)
+// ---------------------------------------------------------------------------
+
+const appBridge = {
+	getStorage: (): Promise<string> =>
+		ipcRenderer.invoke(APP_GET_STORAGE) as Promise<string>,
+};
+
+// ---------------------------------------------------------------------------
+// Filesystem (file I/O bridged to main process)
+// ---------------------------------------------------------------------------
+
+type SerializedFileStat = {
+	isFile: boolean;
+	isDirectory: boolean;
+};
+
+const filesystem: Filesystem = {
+	async readFile(path) {
+		const data = (await ipcRenderer.invoke(FILESYSTEM_READ_FILE, path)) as
+			| Uint8Array
+			| ArrayBuffer;
+		return data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+	},
+
+	writeFile: (path, data) =>
+		ipcRenderer.invoke(FILESYSTEM_WRITE_FILE, path, data) as Promise<void>,
+
+	mkdir: (path, options) =>
+		ipcRenderer.invoke(FILESYSTEM_MKDIR, path, options) as Promise<void>,
+
+	access: (path) =>
+		ipcRenderer.invoke(FILESYSTEM_ACCESS, path) as Promise<void>,
+
+	async stat(path) {
+		const data = (await ipcRenderer.invoke(
+			FILESYSTEM_STAT,
+			path,
+		)) as SerializedFileStat;
+		return {
+			isFile: () => data.isFile,
+			isDirectory: () => data.isDirectory,
+		};
+	},
+
+	readdir: (path) =>
+		ipcRenderer.invoke(FILESYSTEM_READ_DIR, path) as Promise<string[]>,
+
+	exists: (path) =>
+		ipcRenderer.invoke(FILESYSTEM_EXISTS, path) as Promise<boolean>,
+
+	glob: (pattern, options) =>
+		ipcRenderer.invoke(FILESYSTEM_GLOB, pattern, options) as Promise<string[]>,
+
+	deleteFile: (path) =>
+		ipcRenderer.invoke(FILESYSTEM_DELETE_FILE, path) as Promise<void>,
 };
 
 // ---------------------------------------------------------------------------
@@ -144,7 +212,9 @@ const auth = {
 
 contextBridge.exposeInMainWorld('__franklinBridge', {
 	ipcStream,
+	app: appBridge,
 	agent,
 	mcp,
 	auth,
+	filesystem,
 });

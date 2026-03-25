@@ -3,41 +3,58 @@ export type {
 	CoreEvent,
 	CoreEventHandler,
 	CoreEventMap,
-	StreamObserverEvent,
-	StreamObserverHandler,
-	StreamObserverParamsMap,
 	ExtensionToolDefinition,
+	ToolDefinition,
+	AnyToolDefinition,
+	SerializedToolDefinition,
+	ContentBlockResult,
 	MethodMiddleware,
 	Middleware,
 	ClientMiddleware,
 	ServerMiddleware,
 	FullMiddleware,
+	SandboxAPI,
+	Sandbox,
+	Filesystem,
+	Terminal,
 	StoreAPI,
 	ReadonlyStore,
 	Store,
 	Sharing,
+	ForkMode,
 	StoreResult,
-	StoreEntry,
 	StoreKey,
 	StoreValueType,
 } from './api/index.js';
 export { compose, composeMethod, passThrough } from './api/index.js';
+export { isContentBlockResult } from './api/index.js';
+export { serializeTool, toJsonSchema } from './api/index.js';
 export { apply } from './api/index.js';
 export {
-	shouldSnapshot,
+	createEmptyStoreResult,
 	createStoreResult,
 	createStore,
 	storeKey,
 } from './api/index.js';
+export { StorePool } from './api/index.js';
+export type {
+	Persister,
+	StoreEntry,
+	StoreMapping,
+	StoreSnapshot,
+} from './api/index.js';
 export type { Compiler } from './compile/index.js';
+export type { SandboxResult } from './compile/index.js';
 export {
 	compile,
 	combine,
 	compileAll,
 	createCoreCompiler,
 	createStoreCompiler,
+	createSandboxCompiler,
 } from './compile/index.js';
 export type { Extension, MaybePromise } from './types/index.js';
+export { reduceExtensions } from './types/index.js';
 
 // ---------------------------------------------------------------------------
 // Built-in extensions
@@ -47,7 +64,10 @@ export {
 	conversationKey,
 	todoExtension,
 	todoKey,
+	statusExtension,
+	statusKey,
 	createTodoControl,
+	createStatusControl,
 	formatTodos,
 	spawnExtension,
 } from './extensions/index.js';
@@ -55,4 +75,6 @@ export type {
 	ConversationTurn,
 	Todo,
 	TodoControl,
+	StatusState,
+	StatusControl,
 } from './extensions/index.js';

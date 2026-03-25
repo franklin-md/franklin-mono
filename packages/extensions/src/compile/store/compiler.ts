@@ -1,26 +1,30 @@
 import type { Store } from '../../api/store/types.js';
 import type { StoreAPI } from '../../api/store/api.js';
-import type { StoreResult, StoreEntry } from '../../api/store/result.js';
-import { createStoreResult } from '../../api/store/result.js';
-import { createStore } from '../../api/store/create.js';
 import type { Sharing } from '../../api/store/sharing.js';
 import type { Compiler } from '../types.js';
+import type { StoreMapping } from '../../api/store/registry/mapping.js';
+import {
+	type StoreResult,
+	createStoreResult,
+} from '../../api/store/registry/result.js';
+
+export type StoreCompilerResult = { stores: StoreResult };
 
 /**
  * Create a fresh store compiler instance.
  *
  * The store compiler handles `registerStore(name, initial, sharing?)` calls
  * from extensions and produces a `StoreResult` — a flat map of name → store
- * with copy semantics for child agent spawning.
+ * backed by the seed result's shared registry.
  *
- * When `existing` is provided (from a parent agent's `StoreResult.copy()`),
- * stores that already exist in the parent are reused rather than created
- * fresh. This is how child agents inherit state.
+ * If the seed already contains a store with the registered name, the
+ * compiler reuses that store entry. Otherwise it creates a fresh pool entry
+ * in the seed's registry.
  */
 export function createStoreCompiler(
-	existing?: StoreResult,
-): Compiler<StoreAPI, StoreResult> {
-	const entries = new Map<string, StoreEntry>();
+	seed: StoreResult,
+): Compiler<StoreAPI, StoreCompilerResult> {
+	const mapping: StoreMapping = {};
 
 	const api: StoreAPI = {
 		registerStore<T>(
@@ -28,26 +32,21 @@ export function createStoreCompiler(
 			initial: T,
 			sharing: Sharing = 'private',
 		): Store<T> {
-			// TODO: Should we allow registering the same name? Could this not be a way of extension state sharing?
-			if (entries.has(name)) {
+			if (name in mapping) {
 				throw new Error(`Store "${name}" is already registered`);
 			}
 
-			// If a parent provided this store (via copy), reuse it.
-			const existingEntry = existing?.stores.get(name);
-			const store = existingEntry
-				? (existingEntry.store as Store<T>)
-				: createStore(initial);
-
-			entries.set(name, { store: store as Store<unknown>, sharing });
-			return store;
+			const existing = seed.get(name);
+			const entry = existing ?? seed.registry.create(initial, sharing);
+			mapping[name] = entry.ref;
+			return entry.store as Store<T>;
 		},
 	};
 
 	return {
 		api,
 		async build() {
-			return createStoreResult(entries);
+			return { stores: createStoreResult(seed.registry, mapping) };
 		},
 	};
 }

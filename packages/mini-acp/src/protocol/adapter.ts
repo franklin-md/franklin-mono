@@ -1,41 +1,29 @@
 // ---------------------------------------------------------------------------
-// Session adapter — lifts a single-turn BaseAgent factory into a full
-// MiniACPClient with session management (initialize, setContext, multi-turn).
+// Session adapter — wraps a TurnClient as a full MiniACPClient with
+// session management (initialize, setContext, ctx tracking).
 // ---------------------------------------------------------------------------
 
-import type { TurnClient, TurnAgent } from '../base/types.js';
-import type { Ctx } from '../types/context.js';
+import type { TurnClient } from '../base/types.js';
+import type { Chunk, Update, TurnEnd } from '../types/stream.js';
 import type { MuClient, InitializeResult } from './types.js';
+import { CtxTracker } from './ctx-tracker.js';
+import type { Ctx } from '../types/context.js';
 
 /**
- * Factory that creates a single-turn agent (TurnClient) from context and
- * a reverse-RPC client handle.
- */
-export type BaseAgentFactory = (ctx: Ctx, client: TurnAgent) => TurnClient;
-
-/**
- * Wraps a BaseAgentFactory as a full MiniACPClient with session management.
+ * Wraps a lazily-created TurnClient as a full MiniACPClient.
  *
- * The adapter manages context state and agent lifecycle:
+ * The adapter manages context tracking and agent lifecycle:
  * - `initialize()` acknowledges session start
- * - `setContext()` merges partial context and invalidates the current agent
- * - `prompt()` lazily creates an agent via the factory, then delegates
+ * - `setContext()` applies partial ctx to the tracker and invalidates the agent
+ * - `prompt()` lazily creates the agent, tracks user + response messages
  * - `cancel()` forwards to the current agent (if any)
  *
- * @param factory - Creates a TurnClient from context + reverse-RPC client
- * @param getClient - Lazy accessor for the reverse-RPC client (TurnAgent).
- *   Called on first prompt, not at construction time, so it's safe to pass
- *   a getter that references a binding created after this adapter.
  */
 export function createSessionAdapter(
-	factory: BaseAgentFactory,
-	getClient: () => TurnAgent,
+	getAgent: (ctx: Ctx) => TurnClient,
 ): MuClient {
-	const ctx: Ctx = {
-		history: { systemPrompt: '', messages: [] },
-		tools: [],
-	};
-	let agent: TurnClient | null = null;
+	const tracker = new CtxTracker();
+	let currentTurn: TurnClient | null = null;
 
 	const ack: InitializeResult = {};
 
@@ -45,30 +33,35 @@ export function createSessionAdapter(
 		},
 
 		async setContext({ ctx: partial }) {
-			if (partial.history) ctx.history = partial.history;
-			if (partial.tools) ctx.tools = partial.tools;
-			if (partial.config) ctx.config = partial.config;
+			// TODO: We should reject a setContext if there is a turn in progress.
+			tracker.apply(partial);
 			// Invalidate agent so next prompt uses new context
-			agent = null;
+			currentTurn = null;
 			return ack;
 		},
 
-		prompt(params) {
-			if (!agent) {
-				agent = factory(ctx, getClient());
+		async *prompt(params): AsyncGenerator<Chunk | Update | TurnEnd> {
+			// TODO: We should reject a prompt if there is a turn in progress.
+			currentTurn = getAgent(tracker.get());
+
+			tracker.append(params.message);
+			for await (const event of currentTurn.prompt(params)) {
+				if (event.type === 'update') {
+					tracker.append(event.message);
+				}
+
+				yield event;
 			}
-			return agent.prompt(params);
+
+			currentTurn = null;
 		},
 
 		async cancel(params) {
-			if (!agent) {
-				return {
-					type: 'turnEnd' as const,
-					stopReason: 'refusal',
-					stopMessage: 'No active prompt',
-				};
+			if (!currentTurn) {
+				// TODO: Raise error or silently drop
+				return;
 			}
-			return agent.cancel(params);
+			return currentTurn.cancel(params);
 		},
 	};
 }

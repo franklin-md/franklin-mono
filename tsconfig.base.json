@@ -15,11 +15,11 @@
 		"sourceMap": true,
 		"inlineSources": true,
 		"paths": {
+			"@franklin/lib": ["packages/lib/core/src/index.ts"],
 			"@franklin/transport": ["packages/lib/transport/src/index.ts"],
 			"@franklin/agent": ["packages/agent/src/index.ts"],
 			"@franklin/agent/browser": ["packages/agent/src/browser.ts"],
 			"@franklin/extensions": ["packages/extensions/src/index.ts"],
-			"@franklin/local-mcp": ["packages/local-mcp/src/index.ts"],
 			"@franklin/auth": ["packages/auth/src/index.ts"],
 			"@franklin/auth/browser": ["packages/auth/src/browser.ts"],
 			"@franklin/auth/react": ["packages/auth/src/react/index.ts"],

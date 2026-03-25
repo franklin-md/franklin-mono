@@ -1,17 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
-import { z } from 'zod';
 import { createCoreCompiler } from '../../compile/core/compiler.js';
 import { createStoreCompiler } from '../../compile/store/compiler.js';
 import { compile, combine } from '../../compile/types.js';
 import { apply } from '../../api/core/middleware/apply.js';
+import { createEmptyStoreResult } from '../../api/store/registry/result.js';
 import type { MiniACPClient } from '@franklin/mini-acp';
 import { todoExtension } from '../todo/extension.js';
+import { StoreRegistry } from '../../api/store/registry/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type StubOverrides = { [K in keyof MiniACPClient]?: (...args: any[]) => any };
 
 function stubClient(overrides: StubOverrides = {}): MiniACPClient {
@@ -36,7 +36,9 @@ async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
 
 describe('todoExtension', () => {
 	function compileWithTodo() {
-		const compiler = combine(createCoreCompiler(), createStoreCompiler());
+		const registry = new StoreRegistry();
+		const seed = createEmptyStoreResult(registry);
+		const compiler = combine(createCoreCompiler(), createStoreCompiler(seed));
 		return compile(compiler, todoExtension());
 	}
 

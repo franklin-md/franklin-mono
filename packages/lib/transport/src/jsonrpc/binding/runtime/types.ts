@@ -6,20 +6,25 @@ import type { Duplex } from '../../../streams/types.js';
 export type RuntimeMethodKind = 'request' | 'notification' | 'event';
 export type RuntimeSideManifest = Record<string, { kind: RuntimeMethodKind }>;
 
-export interface Binding<TRemote extends RpcMethods<TRemote>> {
-	remote: TRemote;
-	close(): Promise<void>;
-}
-
-export interface BindPeerOptions<
+/**
+ * Two-phase binding: the remote proxy is available immediately.
+ * Call `bind(handlers)` to provide local handlers and start dispatching.
+ */
+export interface PeerBinding<
 	TRemote extends RpcMethods<TRemote>,
 	TLocal extends RpcMethods<TLocal>,
 > {
+	readonly remote: TRemote;
+	bind(
+		handlers: TLocal,
+		onError?: (error: unknown) => void,
+	): { close(): Promise<void> };
+}
+
+export interface PeerBindingOptions {
 	duplex: Duplex<JsonRpcMessage>;
 	remoteManifest: RuntimeSideManifest;
 	localManifest: RuntimeSideManifest;
-	handlers: TLocal;
-	onError?: (error: unknown) => void;
 }
 
 export interface PendingRequest {

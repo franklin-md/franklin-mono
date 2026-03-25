@@ -38,7 +38,6 @@ export type {
 // Base protocol
 export type { BaseAgent, BaseClient } from './base/index.js';
 export { createPiAdapter, type PiAdapterOptions } from './base/index.js';
-export { createPiFactory, type PiFactoryOptions } from './base/index.js';
 export {
 	fromPiUserContent,
 	fromPiAssistantContent,
@@ -62,8 +61,8 @@ export type {
 	AgentCtx,
 	InitializeParams,
 	InitializeResult,
-	ClientConnection,
-	AgentConnection,
+	ClientBinding,
+	AgentBinding,
 } from './protocol/index.js';
 
 export { miniACPManifest } from './protocol/index.js';
@@ -71,5 +70,5 @@ export {
 	createClientConnection,
 	createAgentConnection,
 	createSessionAdapter,
-	type BaseAgentFactory,
+	CtxTracker,
 } from './protocol/index.js';

@@ -27,3 +27,15 @@ export const AUTH_PROMPT_RESPONSE = 'franklin:auth:promptResponse';
 export const AUTH_OAUTH_ON_AUTH = 'franklin:auth:oauth:onAuth';
 export const AUTH_OAUTH_ON_PROGRESS = 'franklin:auth:oauth:onProgress';
 export const AUTH_OAUTH_ON_PROMPT = 'franklin:auth:oauth:onPrompt';
+export const APP_GET_STORAGE = 'franklin:app:getStorage';
+
+// Filesystem channels (file I/O bridged to main process)
+export const FILESYSTEM_READ_FILE = 'franklin:filesystem:readFile';
+export const FILESYSTEM_WRITE_FILE = 'franklin:filesystem:writeFile';
+export const FILESYSTEM_READ_DIR = 'franklin:filesystem:readDir';
+export const FILESYSTEM_DELETE_FILE = 'franklin:filesystem:deleteFile';
+export const FILESYSTEM_MKDIR = 'franklin:filesystem:mkdir';
+export const FILESYSTEM_ACCESS = 'franklin:filesystem:access';
+export const FILESYSTEM_STAT = 'franklin:filesystem:stat';
+export const FILESYSTEM_EXISTS = 'franklin:filesystem:exists';
+export const FILESYSTEM_GLOB = 'franklin:filesystem:glob';

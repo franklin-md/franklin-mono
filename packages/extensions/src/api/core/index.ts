@@ -9,6 +9,14 @@ export type {
 } from './events.js';
 export type { ExtensionToolDefinition } from './tool.js';
 export type {
+	ToolDefinition,
+	AnyToolDefinition,
+	SerializedToolDefinition,
+} from './tools/index.js';
+export { serializeTool, toJsonSchema } from './tools/index.js';
+export type { ContentBlockResult } from './content-block.js';
+export { isContentBlockResult } from './content-block.js';
+export type {
 	MethodMiddleware,
 	Middleware,
 	ClientMiddleware,

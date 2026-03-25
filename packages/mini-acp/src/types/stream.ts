@@ -11,18 +11,26 @@ export type TurnStart = {
 	type: 'turnStart';
 };
 
-export type Update = {
-	type: 'update';
-	message: Message;
-};
-
+// Part of an Update
 export type Chunk = {
 	type: 'chunk';
+	// TODO
+	// Not sure we even need messageId...... all messages are for the same turn.
+	// Maybe Chunk and Update should both be scoped by TurnId?
 	messageId: string;
 	role: Message['role'];
 	content: Content;
 };
 
+// The entirety of the update.
+// Should always be equal to sum of all chunks in the update.
+
+export type Update = {
+	type: 'update';
+	message: Message;
+};
+
+// TODO: Start to define all the codes.
 export type TurnEnd = {
 	type: 'turnEnd';
 	// https://agentclientprotocol.com/protocol/prompt-turn#stop-reasons

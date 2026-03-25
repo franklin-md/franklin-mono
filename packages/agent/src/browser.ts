@@ -14,14 +14,46 @@ export type { AgentSpec } from './environment.js';
 export type { AgentCommands } from './types.js';
 
 // Agent — typed handle unifying commands, extension stores, and lifecycle
-export { createAgent } from './agent/index.js';
-export type { Agent } from './agent/index.js';
+export {
+	createAgent,
+	SessionManager,
+	emptyCtx,
+	mergeCtx,
+} from './agent/index.js';
+export type {
+	Agent,
+	Session,
+	SpawnFn,
+	PersistenceOptions,
+} from './agent/index.js';
+
+// Persistence
+export {
+	SessionMap,
+	snapshotSession,
+	Debouncer,
+	createPersistence,
+	createFileSessionPersister,
+	createFilePoolPersister,
+	createFilePersistence,
+} from './agent/index.js';
+export type {
+	OnRestore,
+	Persister,
+	SessionSnapshot,
+	StoreSnapshot,
+	Filesystem,
+	FileSystemOps,
+	PersistenceFilesystem,
+} from './agent/index.js';
 
 // Re-export from @franklin/extensions for convenience
 export {
 	conversationExtension,
 	todoExtension,
+	statusExtension,
 	createTodoControl,
+	createStatusControl,
 	formatTodos,
 	spawnExtension,
 	compile,
@@ -34,6 +66,8 @@ export {
 	storeKey,
 	conversationKey,
 	todoKey,
+	statusKey,
+	StorePool,
 } from '@franklin/extensions';
 export type {
 	Extension,
@@ -51,6 +85,8 @@ export type {
 	ConversationTurn,
 	Todo,
 	TodoControl,
+	StatusState,
+	StatusControl,
 } from '@franklin/extensions';
 
 // Re-export key mini-acp types so consumers don't need to depend on it directly

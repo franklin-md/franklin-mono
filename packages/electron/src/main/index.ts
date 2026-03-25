@@ -2,8 +2,10 @@ import type { AuthStore } from '@franklin/auth';
 import type { NodeFramework } from '@franklin/node';
 import type { WebContents } from 'electron';
 
+import { AppRelay } from './ipc/app-relay.js';
 import { AgentRelay } from './ipc/agent-relay.js';
 import { AuthRelay } from './ipc/auth-relay.js';
+import { FilesystemRelay } from './ipc/filesystem-relay.js';
 
 // ---------------------------------------------------------------------------
 // MainHandle — returned by initializeMain for lifecycle management
@@ -30,16 +32,22 @@ export function initializeMain(
 	framework: NodeFramework,
 	authStore?: AuthStore,
 ): MainHandle {
+	const appRelay = new AppRelay();
 	const agentRelay = new AgentRelay(webContents, framework);
 	const authRelay = authStore ? new AuthRelay(webContents, authStore) : null;
+	const filesystemRelay = new FilesystemRelay();
 
 	return {
 		dispose: async () => {
+			appRelay.dispose();
 			await agentRelay.dispose();
 			authRelay?.dispose();
+			filesystemRelay.dispose();
 		},
 	};
 }
 
+export type { AppRelay } from './ipc/app-relay.js';
 export type { AgentRelay } from './ipc/agent-relay.js';
 export type { AuthRelay } from './ipc/auth-relay.js';
+export type { FilesystemRelay } from './ipc/filesystem-relay.js';
