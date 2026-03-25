@@ -29,7 +29,7 @@ export class FilesystemRelay {
 		ipcMain.handle(
 			FILESYSTEM_WRITE_FILE,
 			(_event, path: string, data: string | Uint8Array) =>
-				fs.writeFile(path, typeof data === 'string' ? data : Buffer.from(data)),
+				fs.writeFile(path, data),
 		);
 
 		ipcMain.handle(FILESYSTEM_ACCESS, (_event, path: string) =>

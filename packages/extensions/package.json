@@ -26,7 +26,6 @@
 		"@agentclientprotocol/sdk": "^0.16.1",
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
-		"@mariozechner/pi-coding-agent": "^0.62.0",
 		"immer": "^10.2.0"
 	}
 }

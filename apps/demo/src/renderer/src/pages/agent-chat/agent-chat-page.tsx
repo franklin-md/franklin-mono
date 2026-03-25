@@ -29,11 +29,11 @@ export function AgentChatPage() {
 
 	useEffect(() => {
 		void createElectronPersistence().then(async (persistence) => {
-				const mgr = new SessionManager(
-					() => framework.spawn(),
-					[conversationExtension(), todoExtension(), statusExtension()],
-					persistence,
-				);
+			const mgr = new SessionManager(
+				() => framework.spawn(),
+				[conversationExtension(), todoExtension(), statusExtension()],
+				persistence,
+			);
 			await mgr.restore();
 			setManager(mgr);
 		});

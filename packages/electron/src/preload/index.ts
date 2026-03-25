@@ -85,15 +85,11 @@ const filesystem: Filesystem = {
 		const data = (await ipcRenderer.invoke(FILESYSTEM_READ_FILE, path)) as
 			| Uint8Array
 			| ArrayBuffer;
-		return data instanceof ArrayBuffer ? Buffer.from(data) : Buffer.from(data);
+		return data instanceof ArrayBuffer ? new Uint8Array(data) : data;
 	},
 
 	writeFile: (path, data) =>
-		ipcRenderer.invoke(
-			FILESYSTEM_WRITE_FILE,
-			path,
-			typeof data === 'string' ? data : Buffer.from(data),
-		) as Promise<void>,
+		ipcRenderer.invoke(FILESYSTEM_WRITE_FILE, path, data) as Promise<void>,
 
 	mkdir: (path, options) =>
 		ipcRenderer.invoke(FILESYSTEM_MKDIR, path, options) as Promise<void>,

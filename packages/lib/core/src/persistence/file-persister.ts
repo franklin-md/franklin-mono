@@ -38,7 +38,9 @@ export function createFilePersistence<T>(
 				if (!entry.endsWith('.json')) continue;
 				const id = entry.slice(0, -'.json'.length);
 				const raw = await fs.readFile(`${dir}/${entry}`);
-				snapshots.set(id, JSON.parse(raw.toString('utf-8')) as T);
+				const text =
+					typeof raw === 'string' ? raw : new TextDecoder().decode(raw);
+				snapshots.set(id, JSON.parse(text) as T);
 			}
 			return snapshots;
 		},

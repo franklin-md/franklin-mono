@@ -83,10 +83,13 @@ function createMockFs(): Filesystem & {
 		readFile: async (path) => {
 			const content = files.get(path);
 			if (content === undefined) throw new Error(`ENOENT: ${path}`);
-			return Buffer.from(content, 'utf-8');
+			return new TextEncoder().encode(content);
 		},
 		writeFile: async (path, data) => {
-			files.set(path, typeof data === 'string' ? data : data.toString('utf-8'));
+			files.set(
+				path,
+				typeof data === 'string' ? data : new TextDecoder().decode(data),
+			);
 		},
 		access: async (path) => {
 			if (!files.has(path)) throw new Error(`ENOENT: ${path}`);

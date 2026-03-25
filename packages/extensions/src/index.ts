@@ -78,4 +78,3 @@ export type {
 	StatusState,
 	StatusControl,
 } from './extensions/index.js';
-export { bridgePiToolDefinition } from './api/sandbox/bridge.js';
