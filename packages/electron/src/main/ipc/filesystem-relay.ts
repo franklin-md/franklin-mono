@@ -1,14 +1,5 @@
-import {
-	access,
-	glob,
-	mkdir,
-	readdir,
-	readFile,
-	stat,
-	unlink,
-	writeFile,
-} from 'node:fs/promises';
 import { ipcMain } from 'electron';
+import { createNodeFilesystem } from '@franklin/node';
 
 import {
 	FILESYSTEM_READ_FILE,
@@ -29,20 +20,25 @@ import {
  */
 export class FilesystemRelay {
 	constructor() {
+		const fs = createNodeFilesystem();
+
 		ipcMain.handle(FILESYSTEM_READ_FILE, (_event, path: string) =>
-			readFile(path),
+			fs.readFile(path),
 		);
 
 		ipcMain.handle(
 			FILESYSTEM_WRITE_FILE,
 			(_event, path: string, data: string | Uint8Array) =>
-				writeFile(path, data),
+				fs.writeFile(path, typeof data === 'string' ? data : Buffer.from(data)),
 		);
 
-		ipcMain.handle(FILESYSTEM_ACCESS, (_event, path: string) => access(path));
+		ipcMain.handle(FILESYSTEM_ACCESS, (_event, path: string) =>
+			fs.access(path),
+		);
 
+		// Serialize FileStat methods to plain booleans for IPC transport.
 		ipcMain.handle(FILESYSTEM_STAT, async (_event, path: string) => {
-			const stats = await stat(path);
+			const stats = await fs.stat(path);
 			return {
 				isFile: stats.isFile(),
 				isDirectory: stats.isDirectory(),
@@ -50,45 +46,30 @@ export class FilesystemRelay {
 		});
 
 		ipcMain.handle(FILESYSTEM_READ_DIR, (_event, path: string) =>
-			readdir(path),
+			fs.readdir(path),
 		);
 
-		ipcMain.handle(FILESYSTEM_EXISTS, async (_event, path: string) => {
-			try {
-				await access(path);
-				return true;
-			} catch {
-				return false;
-			}
-		});
+		ipcMain.handle(FILESYSTEM_EXISTS, (_event, path: string) =>
+			fs.exists(path),
+		);
 
 		ipcMain.handle(
 			FILESYSTEM_GLOB,
-			async (
+			(
 				_event,
 				pattern: string,
 				options: { cwd: string; ignore?: string[]; limit?: number },
-			) => {
-				const results: string[] = [];
-				for await (const entry of glob(pattern, {
-					cwd: options.cwd,
-					exclude: options.ignore,
-				})) {
-					results.push(entry);
-					if (options.limit && results.length >= options.limit) break;
-				}
-				return results;
-			},
+			) => fs.glob(pattern, options),
 		);
 
 		ipcMain.handle(FILESYSTEM_DELETE_FILE, (_event, path: string) =>
-			unlink(path),
+			fs.deleteFile(path),
 		);
 
 		ipcMain.handle(
 			FILESYSTEM_MKDIR,
 			(_event, path: string, options?: { recursive?: boolean }) =>
-				mkdir(path, options).then(() => {}),
+				fs.mkdir(path, options),
 		);
 	}
 

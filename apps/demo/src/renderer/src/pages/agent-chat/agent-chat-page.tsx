@@ -23,17 +23,20 @@ interface SelectedAgent {
 
 export function AgentChatPage() {
 	const [framework] = useState(() => new ElectronFramework());
-	const [manager] = useState(
-		() =>
-			new SessionManager(
-				() => framework.spawn(),
-				[conversationExtension(), todoExtension()],
-				createElectronPersistence(),
-			),
-	);
+	const [manager, setManager] = useState<SessionManager | null>(null);
 	const [selected, setSelected] = useState<SelectedAgent | null>(null);
 
 	useEffect(() => {
+		void createElectronPersistence().then(async (persistence) => {
+			const mgr = new SessionManager(
+				() => framework.spawn(),
+				[conversationExtension(), todoExtension()],
+				persistence,
+			);
+			await mgr.restore();
+			setManager(mgr);
+		});
+
 		return () => {
 			void framework.dispose();
 		};
@@ -42,6 +45,14 @@ export function AgentChatPage() {
 	const handleSelectAgent = useCallback((id: string, agent: Agent) => {
 		setSelected({ id, agent });
 	}, []);
+
+	if (!manager) {
+		return (
+			<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+				Loading…
+			</div>
+		);
+	}
 
 	return (
 		<SessionManagerProvider manager={manager}>

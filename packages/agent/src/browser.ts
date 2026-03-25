@@ -31,8 +31,8 @@ export type {
 export {
 	SessionMap,
 	snapshotSession,
-	hydrateStores,
 	Debouncer,
+	createPersistence,
 	createFileSessionPersister,
 	createFilePoolPersister,
 	createFilePersistence,

@@ -9,6 +9,7 @@ export type OnRestore = (snapshot: SessionSnapshot) => Promise<void>;
  */
 export class SessionMap {
 	private sessions = new Map<string, Session>();
+	private listeners = new Set<() => void>();
 
 	constructor(private readonly persister?: Persister<SessionSnapshot>) {}
 
@@ -24,6 +25,19 @@ export class SessionMap {
 		return this.sessions.has(id);
 	}
 
+	/** Return all live sessions. */
+	list(): Session[] {
+		return [...this.sessions.values()];
+	}
+
+	/** Subscribe to session list changes. Returns an unsubscribe function. */
+	subscribe(listener: () => void): () => void {
+		this.listeners.add(listener);
+		return () => {
+			this.listeners.delete(listener);
+		};
+	}
+
 	/**
 	 * Register a live session.
 	 *
@@ -32,6 +46,7 @@ export class SessionMap {
 	 */
 	register(session: Session): void {
 		this.sessions.set(session.sessionId, session);
+		this.notify();
 
 		if (this.persister) {
 			const persist = () => {
@@ -67,5 +82,11 @@ export class SessionMap {
 	private async loadAll(): Promise<SessionSnapshot[]> {
 		if (!this.persister) return [];
 		return [...(await this.persister.load()).values()];
+	}
+
+	private notify(): void {
+		for (const listener of this.listeners) {
+			listener();
+		}
 	}
 }

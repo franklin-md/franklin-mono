@@ -21,6 +21,7 @@ export type {
 	ReadonlyStore,
 	Store,
 	Sharing,
+	ForkMode,
 	StoreResult,
 	StoreKey,
 	StoreValueType,
@@ -31,11 +32,11 @@ export { serializeTool, toJsonSchema } from './api/index.js';
 export { apply } from './api/index.js';
 export {
 	createEmptyStoreResult,
+	createStoreResult,
 	createStore,
 	storeKey,
 } from './api/index.js';
 export { StorePool } from './api/index.js';
-export { hydrateStores } from './api/index.js';
 export type {
 	Persister,
 	StoreEntry,

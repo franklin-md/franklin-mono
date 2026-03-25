@@ -11,5 +11,8 @@ export {
 	codexAgentSpec,
 } from './agents/index.js';
 
+// Filesystem
+export { createNodeFilesystem } from './filesystem.js';
+
 // Persistence
 export { createNodePersistence } from './persister.js';

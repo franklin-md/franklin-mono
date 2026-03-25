@@ -471,7 +471,7 @@ describe('Persistence', () => {
 			await persister.save('pool-2', {
 				ref: 'pool-2',
 				value: 'hello',
-				sharing: 'inherit',
+				sharing: 'shared',
 			});
 
 			// Files should exist in store subdirectory
@@ -483,7 +483,7 @@ describe('Persistence', () => {
 			expect(stores.get('pool-1')!.value).toBe(42);
 			expect(stores.get('pool-1')!.sharing).toBe('private');
 			expect(stores.get('pool-2')!.value).toBe('hello');
-			expect(stores.get('pool-2')!.sharing).toBe('inherit');
+			expect(stores.get('pool-2')!.sharing).toBe('shared');
 		});
 
 		it('deletes store files', async () => {
@@ -616,7 +616,7 @@ describe('Persistence', () => {
 
 			// Create two sessions that share an inherited store
 			const globalExt: Extension<CoreAPI & StoreAPI> = (api) => {
-				api.registerStore<number>('shared', 0, 'inherit');
+				api.registerStore<number>('shared', 0, 'shared');
 			};
 
 			const manager1 = new SessionManager(

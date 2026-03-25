@@ -74,7 +74,7 @@ function counterExtension(): Extension<CoreAPI & StoreAPI> {
 
 function sharedCounterExtension(): Extension<CoreAPI & StoreAPI> {
 	return (api) => {
-		api.registerStore<number>('counter', 0, 'global');
+		api.registerStore<number>('counter', 0, 'shared');
 	};
 }
 
@@ -210,7 +210,7 @@ describe('SessionManager', () => {
 	});
 
 	describe('child', () => {
-		it('creates a child with copied private stores', async () => {
+		it('creates a child with fresh private stores', async () => {
 			const manager = new SessionManager(createTestTransport, [
 				counterExtension(),
 			]);
@@ -222,10 +222,10 @@ describe('SessionManager', () => {
 			const child = track(await manager.child(parent.sessionId));
 			const childCounter = child.agent.stores.get('counter')!.store;
 
-			// Child starts with a snapshot of parent's state
-			expect(childCounter.get()).toBe(10);
+			// Child starts fresh (private stores are not copied)
+			expect(childCounter.get()).toBe(0);
 
-			// But mutations are independent
+			// Mutations are independent
 			childCounter.set(() => 99);
 			expect(parentCounter.get()).toBe(10);
 			expect(childCounter.get()).toBe(99);

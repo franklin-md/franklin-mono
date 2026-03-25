@@ -8,11 +8,11 @@ export {
 	SessionMap,
 	snapshotSession,
 	Debouncer,
+	createPersistence,
 	createFileSessionPersister,
 	createFilePoolPersister,
 	createFilePersistence,
 } from './session/persist/index.js';
-export { hydrateStores } from '@franklin/extensions';
 export type {
 	OnRestore,
 	PersistedCtx,

@@ -21,7 +21,7 @@ function makeAgent(entries: Map<string, StoreEntry>): Agent {
 
 function entry(
 	store: Store<unknown>,
-	sharing: 'private' | 'global' | 'inherit' = 'private',
+	sharing: 'shared' | 'private' = 'private',
 ): StoreEntry {
 	return { ref: crypto.randomUUID(), store, sharing };
 }

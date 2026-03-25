@@ -7,6 +7,23 @@ import {
 import type { SessionSnapshot } from './types.js';
 
 /**
+ * Creates file-backed persistence for sessions and pool stores.
+ *
+ * Layout:
+ *   {dir}/sessions/{sessionId}.json
+ *   {dir}/store/{ref}.json
+ */
+export function createPersistence(
+	dir: string,
+	fs: PersistenceFilesystem,
+): { session: Persister<SessionSnapshot>; pool: Persister<StoreSnapshot> } {
+	return {
+		session: createFilePersistence<SessionSnapshot>(`${dir}/sessions`, fs),
+		pool: createFilePersistence<StoreSnapshot>(`${dir}/store`, fs),
+	};
+}
+
+/**
  * Creates a session-only Persister backed by JSON files.
  *
  * Layout: `{dir}/sessions/{sessionId}.json`

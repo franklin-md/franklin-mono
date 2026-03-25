@@ -10,7 +10,7 @@ import type {
 } from '@franklin/extensions';
 import {
 	createEmptyStoreResult,
-	hydrateStores,
+	createStoreResult,
 	StorePool as StoreRegistry,
 } from '@franklin/extensions';
 import { createAgent } from '../create.js';
@@ -81,18 +81,18 @@ export class SessionManager {
 	async fork(sessionId: string): Promise<Session> {
 		const parent = this.get(sessionId);
 		const parentCtx = mergeCtx(parent.tracker.get());
-		const copiedStores = parent.agent.stores.share();
+		const copiedStores = parent.agent.stores.share('copy');
 
 		return this.createAndInit(parentCtx, copiedStores);
 	}
 
 	/**
-	 * Create a child session — copies stores from parent but starts
-	 * a fresh conversation (no history injection).
+	 * Create a child session — shares shared stores from parent but starts
+	 * a fresh conversation (private stores reset to initial).
 	 */
 	async child(sessionId: string): Promise<Session> {
 		const parent = this.get(sessionId);
-		const copiedStores = parent.agent.stores.share();
+		const copiedStores = parent.agent.stores.share('fresh');
 		const ctx = mergeCtx(emptyCtx(), {
 			config: parent.tracker.get().config,
 		});
@@ -127,13 +127,23 @@ export class SessionManager {
 		return this.sessions.get(sessionId);
 	}
 
+	/** Return all live sessions. */
+	list(): Session[] {
+		return this.sessions.list();
+	}
+
+	/** Subscribe to session list changes. Returns an unsubscribe function. */
+	subscribe(listener: () => void): () => void {
+		return this.sessions.subscribe(listener);
+	}
+
 	/**
 	 * Restore all sessions from the persister.
 	 *
 	 * Two-phase restore:
 	 *   1. Restore pool entries from persistent storage
-	 *   2. Load session snapshots → hydrate each by wiring store refs
-	 *      to the now-live pool entries, then compile extensions and
+	 *   2. Load session snapshots -> rebuild each StoreResult from the
+	 *      persisted name -> ref mapping, then compile extensions and
 	 *      replay context.
 	 *   3. GC orphaned pool entries (abnormal shutdown recovery) —
 	 *      the pool handles its own persister deletion.
@@ -141,14 +151,14 @@ export class SessionManager {
 	async restore(): Promise<void> {
 		if (!this.persister) return;
 
-		// Phase 1: hydrate the store pool
+		// Phase 1: restore the store pool
 		await this.registry.restore();
 
 		// Phase 2: restore sessions
 		await this.sessions.restore(async (snapshot) => {
 			await this.createAndInit(
 				snapshot.ctx,
-				hydrateStores(snapshot.stores, this.registry),
+				createStoreResult(this.registry, snapshot.stores),
 				snapshot.sessionId,
 			);
 		});

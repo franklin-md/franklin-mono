@@ -25,16 +25,16 @@ export type { SandboxAPI } from './sandbox/index.js';
 export type { Sandbox, Filesystem, Terminal } from './sandbox/index.js';
 export type { StoreAPI } from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';
-export type { Sharing } from './store/index.js';
+export type { Sharing, ForkMode } from './store/index.js';
 export type { StoreKey, StoreValueType } from './store/index.js';
 export { storeKey } from './store/index.js';
 export type { StoreResult } from './store/index.js';
 export type { Persister } from '@franklin/lib';
 export {
 	createEmptyStoreResult,
+	createStoreResult,
 	createStore,
 } from './store/index.js';
 export { StorePool } from './store/index.js';
-export { hydrateStores } from './store/index.js';
 export type { StoreEntry, StoreMapping } from './store/index.js';
 export type { StoreSnapshot } from './store/index.js';

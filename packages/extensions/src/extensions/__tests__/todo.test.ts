@@ -38,10 +38,7 @@ describe('todoExtension', () => {
 	function compileWithTodo() {
 		const registry = new StoreRegistry();
 		const seed = createEmptyStoreResult(registry);
-		const compiler = combine(
-			createCoreCompiler(),
-			createStoreCompiler(seed),
-		);
+		const compiler = combine(createCoreCompiler(), createStoreCompiler(seed));
 		return compile(compiler, todoExtension());
 	}
 

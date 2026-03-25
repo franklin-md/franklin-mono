@@ -5,3 +5,4 @@ export {
 	SessionManagerProvider,
 	useSessionManager,
 } from './session-manager-context.js';
+export { useSessions } from './use-sessions.js';

@@ -21,6 +21,7 @@ export { Debouncer } from '@franklin/lib';
 
 // Concrete persisters
 export {
+	createPersistence,
 	createFileSessionPersister,
 	createFilePoolPersister,
 } from './file-persister.js';

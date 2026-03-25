@@ -188,7 +188,7 @@ describe('createAgent', () => {
 
 	it('reuses stores from an existing StoreResult seed', async () => {
 		const ext: Extension<CoreAPI & StoreAPI> = (api) => {
-			const store = api.registerStore('items', [] as string[], 'inherit');
+			const store = api.registerStore('items', [] as string[], 'shared');
 			if (store.get().length === 0) {
 				store.set((items) => {
 					items.push('seeded');

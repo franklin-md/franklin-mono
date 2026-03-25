@@ -1,9 +1,12 @@
 import type { Store } from '../../api/store/types.js';
 import type { StoreAPI } from '../../api/store/api.js';
-import { StoreResult } from '../../api/store/registry/result.js';
 import type { Sharing } from '../../api/store/sharing.js';
 import type { Compiler } from '../types.js';
-import type { StoreMapping } from '../../api/store/registry/types.js';
+import type { StoreMapping } from '../../api/store/registry/mapping.js';
+import {
+	type StoreResult,
+	createStoreResult,
+} from '../../api/store/registry/result.js';
 
 export type StoreCompilerResult = { stores: StoreResult };
 
@@ -27,7 +30,6 @@ export function createStoreCompiler(
 		registerStore<T>(
 			name: string,
 			initial: T,
-			// TODO: Get this working
 			sharing: Sharing = 'private',
 		): Store<T> {
 			if (name in mapping) {
@@ -44,7 +46,7 @@ export function createStoreCompiler(
 	return {
 		api,
 		async build() {
-			return { stores: new StoreResult(seed.registry, mapping) };
+			return { stores: createStoreResult(seed.registry, mapping) };
 		},
 	};
 }
