@@ -1,5 +1,6 @@
 import { createPersistence } from '@franklin/agent';
-import type { Persister, SessionSnapshot } from '@franklin/agent';
+import type { SessionSnapshot } from '@franklin/agent';
+import type { Persister } from '@franklin/lib';
 import type { StoreSnapshot } from '@franklin/extensions';
 
 import { createNodeFilesystem } from './filesystem.js';

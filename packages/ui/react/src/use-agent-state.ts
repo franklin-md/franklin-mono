@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
-import type { ReadonlyStore, Store, StoreKey } from '@franklin/agent/browser';
+import type { ReadonlyStore, Store, StoreKey } from '@franklin/extensions';
 
 import { useAgent } from './agent-context.js';
 

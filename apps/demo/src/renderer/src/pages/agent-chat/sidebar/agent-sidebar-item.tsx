@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { createStatusControl, statusKey } from '@franklin/agent/browser';
+import { createStatusControl, statusKey } from '@franklin/extensions';
 import { useAgentState } from '@franklin/react';
 
 import { SidebarItem } from './sidebar-item.js';

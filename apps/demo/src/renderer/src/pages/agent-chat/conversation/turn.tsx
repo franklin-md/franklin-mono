@@ -1,4 +1,4 @@
-import type { ConversationTurn } from '@franklin/agent/browser';
+import type { ConversationTurn } from '@franklin/extensions';
 
 import { UserBubble } from './user-bubble.js';
 import { AssistantBubble } from './assistant-bubble.js';

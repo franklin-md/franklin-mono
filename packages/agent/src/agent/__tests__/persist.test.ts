@@ -15,14 +15,16 @@ import {
 	type StoreAPI,
 	type StoreSnapshot,
 } from '@franklin/extensions';
-import { mergeCtx, SessionManager } from '../session/index.js';
+import type { Filesystem } from '@franklin/lib';
+import { SessionManager } from '../session/index.js';
+import { mergeCtx } from '../session/ctx.js';
 import type { Session } from '../session/types.js';
 import { snapshotSession } from '../session/persist/snapshot.js';
 import {
 	createFileSessionPersister,
 	createFilePoolPersister,
 } from '../session/persist/file-persister.js';
-import type { SessionSnapshot, Filesystem } from '../session/persist/types.js';
+import type { SessionSnapshot } from '../session/persist/types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

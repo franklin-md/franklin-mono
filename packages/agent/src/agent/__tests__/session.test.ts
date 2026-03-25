@@ -8,7 +8,8 @@ import {
 	type AgentProtocol,
 } from '@franklin/mini-acp';
 import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
-import { emptyCtx, mergeCtx, SessionManager } from '../session/index.js';
+import { SessionManager } from '../session/index.js';
+import { emptyCtx, mergeCtx } from '../session/ctx.js';
 import type { Session } from '../session/types.js';
 
 // ---------------------------------------------------------------------------

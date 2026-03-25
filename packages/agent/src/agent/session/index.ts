@@ -20,9 +20,6 @@ import { SessionMap } from './session-map.js';
 import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
 import type { SpawnFn, Session } from './types.js';
 
-export { emptyCtx, mergeCtx };
-export type { Session, SpawnFn };
-
 export type PersistenceOptions = {
 	session: Persister<SessionSnapshot>;
 	pool: Persister<StoreSnapshot>;

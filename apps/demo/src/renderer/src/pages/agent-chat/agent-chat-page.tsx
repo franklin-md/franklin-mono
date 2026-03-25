@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { SessionManager } from '@franklin/agent/browser';
+import type { Agent } from '@franklin/agent/browser';
 import {
-	SessionManager,
 	conversationExtension,
 	statusExtension,
 	todoExtension,
-} from '@franklin/agent/browser';
-import type { Agent } from '@franklin/agent/browser';
+} from '@franklin/extensions';
 import { AgentProvider, SessionManagerProvider } from '@franklin/react';
 import {
 	ElectronFramework,

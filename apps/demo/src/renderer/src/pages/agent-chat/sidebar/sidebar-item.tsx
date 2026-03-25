@@ -1,4 +1,4 @@
-import type { StatusState } from '@franklin/agent/browser';
+import type { StatusState } from '@franklin/extensions';
 
 import { DeleteButton } from '@/components/delete-button.js';
 import { cn } from '@/lib/utils';

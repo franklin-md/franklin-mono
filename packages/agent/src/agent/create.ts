@@ -16,7 +16,7 @@ import {
 	createStoreCompiler,
 	apply,
 } from '@franklin/extensions';
-import type { Agent } from './types.js';
+import type { Agent } from '../types.js';
 
 /**
  * Create a typed agent by compiling extensions and wrapping a mini-acp client.

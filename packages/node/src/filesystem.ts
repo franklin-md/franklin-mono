@@ -8,7 +8,7 @@ import {
 	unlink,
 	writeFile,
 } from 'node:fs/promises';
-import type { Filesystem } from '@franklin/agent';
+import type { Filesystem } from '@franklin/lib';
 
 /**
  * Creates a `Filesystem` implementation backed by Node.js `fs/promises`.

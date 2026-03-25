@@ -50,4 +50,5 @@ See README.md
 - **Node ≥ 22** required.
 - **Vitest** for testing — test files use `__tests__/*.test.ts` convention.
 - **TypeScript project references** — root `tsconfig.json` references all packages; each package has its own `tsconfig.json` extending `tsconfig.base.json`. **Always build with `tsc -b`** (or `npm run build`). Never run bare `tsc` — it ignores `outDir`/`rootDir` from project references and emits build artifacts into `src/`.
-- **Nesting** - prefer small files with single exported methods, with implementation in a series of files in a folder.
+- **Nesting** - prefer small files with single exported methods, with implementation in a series of files in a folder. Do not barallel exports from subfolders.
+- **Exports** - Only export methods from packages if they are actually to be consumed. Do not re-export from other packages either.

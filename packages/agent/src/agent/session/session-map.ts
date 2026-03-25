@@ -1,5 +1,6 @@
+import type { Persister } from '@franklin/lib';
 import type { Session } from './types.js';
-import type { Persister, SessionSnapshot } from './persist/types.js';
+import type { SessionSnapshot } from './persist/types.js';
 import { snapshotSession } from './persist/snapshot.js';
 
 export type OnRestore = (snapshot: SessionSnapshot) => Promise<void>;
