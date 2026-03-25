@@ -13,7 +13,7 @@ import { todoKey } from './key.js';
  */
 export function todoExtension(): Extension<CoreAPI & StoreAPI> {
 	return (api) => {
-		const store = api.registerStore(todoKey, [], 'private');
+		const store = api.registerStore(todoKey, [], 'shared');
 		const control = createTodoControl(store);
 
 		api.registerTool({

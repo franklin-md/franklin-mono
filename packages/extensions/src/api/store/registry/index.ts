@@ -61,10 +61,12 @@ export class StoreRegistry {
 	 */
 	private persist(entry: StoreEntry): void {
 		if (!this.persister) return;
-		void this.persister.save(entry.ref, {
-			...entry,
+		const snapshot: StoreSnapshot = {
+			ref: entry.ref,
+			sharing: entry.sharing,
 			value: entry.store.get(),
-		} as StoreSnapshot);
+		};
+		void this.persister.save(entry.ref, snapshot);
 	}
 
 	private add(entry: StoreEntry): void {

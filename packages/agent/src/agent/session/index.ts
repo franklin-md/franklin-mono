@@ -80,7 +80,7 @@ export class SessionManager {
 	 */
 	async fork(sessionId: string): Promise<Session> {
 		const parent = this.get(sessionId);
-		const parentCtx = mergeCtx(parent.tracker.get());
+		const parentCtx = mergeCtx(emptyCtx(), parent.tracker.get());
 		const copiedStores = parent.agent.stores.share('copy');
 
 		return this.createAndInit(parentCtx, copiedStores);
