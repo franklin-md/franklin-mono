@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import type { Agent } from '@franklin/agent/browser';
-import { AgentProvider, useSessionManager, useSessions } from '@franklin/react';
+import { AgentProvider, useApp, useSessions } from '@franklin/react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -12,7 +12,7 @@ export function AgentSidebar({
 }: {
 	onSelectAgent: (agentId: string, agent: Agent) => void;
 }) {
-	const manager = useSessionManager();
+	const manager = useApp().agents;
 	const sessions = useSessions();
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
 

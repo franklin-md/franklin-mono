@@ -3,13 +3,15 @@ import {
 	type FranklinApp,
 	type FranklinExtension,
 } from '../browser.js';
+import { createPersistence } from '../agent/session/persist/file-persister.js';
 import type { Platform } from '../platform.js';
 
-export function createApp(
+export async function createApp(
 	extensions: FranklinExtension[],
 	platform: Platform,
-): FranklinApp {
-	return {
-		agents: new SessionManager(platform.spawn, extensions),
-	};
+): Promise<FranklinApp> {
+	const persistence = createPersistence('.', platform.filesystem);
+	const agents = new SessionManager(platform.spawn, extensions, persistence);
+	await agents.restore();
+	return { agents };
 }

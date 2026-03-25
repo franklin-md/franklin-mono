@@ -1,50 +1,16 @@
+import type { Platform } from '@franklin/agent';
 import type { WebContents } from 'electron';
 
-import { AppRelay } from './ipc/app-relay.js';
-import { AgentRelay } from './ipc/agent-relay.js';
-import { FilesystemRelay } from './ipc/filesystem-relay.js';
-import type { Platform } from '@franklin/agent';
-
-// ---------------------------------------------------------------------------
-// MainHandle — returned by initializeMain for lifecycle management
-// ---------------------------------------------------------------------------
+import { bindMain } from './ipc/bind/index.js';
+import { schema } from '../shared/schema.js';
 
 export interface MainHandle {
 	dispose(): Promise<void>;
 }
 
-// ---------------------------------------------------------------------------
-// initializeMain — wire IPC relays for a BrowserWindow
-// ---------------------------------------------------------------------------
-
-/**
- * Initializes the main-process side of `@franklin/electron` for a window.
- *
- * Sets up IPC handlers for framework and agent relay communication
- * between the renderer and agent subprocesses. Returns a handle to dispose
- * all resources. MCP tool relay is no longer needed — extension tools
- * are handled in-channel.
- *
- * @param webContents - The window's webContents to send/receive IPC messages.
- * @param framework - A NodeFramework instance for provisioning environments.
- */
 export function initializeMain(
 	webContents: WebContents,
 	platform: Platform,
 ): MainHandle {
-	const appRelay = new AppRelay();
-	const agentRelay = new AgentRelay(webContents, platform);
-	const filesystemRelay = new FilesystemRelay();
-
-	return {
-		dispose: async () => {
-			appRelay.dispose();
-			await agentRelay.dispose();
-			filesystemRelay.dispose();
-		},
-	};
+	return bindMain('franklin', schema, platform, webContents);
 }
-
-export type { AppRelay } from './ipc/app-relay.js';
-export type { AgentRelay } from './ipc/agent-relay.js';
-export type { FilesystemRelay } from './ipc/filesystem-relay.js';

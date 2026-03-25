@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { app, BrowserWindow } from 'electron';
 import { initializeMain } from '@franklin/electron/main';
+import { createFolderScopedFilesystem } from '@franklin/lib';
 import { createNodePlatform } from '@franklin/node';
 
 import type { MainHandle } from '@franklin/electron/main';
@@ -22,7 +23,14 @@ function createWindow(): void {
 		},
 	});
 
-	const platform = createNodePlatform();
+	const nodePlatform = createNodePlatform();
+	const platform = {
+		...nodePlatform,
+		filesystem: createFolderScopedFilesystem(
+			path.join(app.getPath('home'), '.franklin'),
+			nodePlatform.filesystem,
+		),
+	};
 	handle = initializeMain(mainWindow.webContents, platform);
 
 	mainWindow.on('closed', () => {

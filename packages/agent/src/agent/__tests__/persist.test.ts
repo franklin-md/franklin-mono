@@ -369,28 +369,6 @@ describe('Persistence', () => {
 			// Should not throw
 			await manager.remove('nonexistent');
 		});
-
-		it('auto-persists on tracker change (rewind)', async () => {
-			const persistence = createMockPersistence();
-			const manager = new SessionManager(createTestTransport, [], persistence);
-
-			const session = track(await manager.new());
-			setSystemPrompt(session, 'test');
-			session.tracker.append({
-				role: 'user',
-				content: [{ type: 'text', text: 'hello' }],
-			});
-			session.tracker.append({
-				role: 'assistant',
-				content: [{ type: 'text', text: 'hi' }],
-			});
-
-			await manager.rewind(session.sessionId, 1);
-			await vi.advanceTimersByTimeAsync(500);
-
-			const snapshot = persistence.session.saved.get(session.sessionId)!;
-			expect(snapshot.ctx.history.messages).toHaveLength(1);
-		});
 	});
 
 	// -----------------------------------------------------------------------

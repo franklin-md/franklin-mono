@@ -1,21 +1,28 @@
-// IPC data bus (single bidirectional channel for all multiplexed traffic)
-export const IPC_STREAM = 'ipc-stream';
+export interface ChannelNamespace {
+	getIpcStreamChannel(): string;
+	getMethodChannel(path: readonly string[]): string;
+	getTransportConnectChannel(path: readonly string[]): string;
+	getTransportKillChannel(path: readonly string[]): string;
+	getTransportStreamChannel(path: readonly string[]): string;
+}
 
-// Level 1 stream names (demuxed from the shared IPC_STREAM channel)
-export const AGENT_STREAM = 'agent-transport';
+function getChannel(
+	name: string,
+	path: readonly string[],
+	suffix?: string,
+): string {
+	return suffix == null
+		? [name, ...path].join(':')
+		: [name, ...path, suffix].join(':');
+}
 
-// IPC invoke channels (request/response)
-export const AGENT_SPAWN = 'franklin:agent:spawn';
-export const AGENT_KILL = 'franklin:agent:kill';
-export const APP_GET_STORAGE = 'franklin:app:getStorage';
+export function createChannels(name: string): ChannelNamespace {
+	return {
+		getMethodChannel: (path) => getChannel(name, path),
 
-// Filesystem channels (file I/O bridged to main process)
-export const FILESYSTEM_READ_FILE = 'franklin:filesystem:readFile';
-export const FILESYSTEM_WRITE_FILE = 'franklin:filesystem:writeFile';
-export const FILESYSTEM_READ_DIR = 'franklin:filesystem:readDir';
-export const FILESYSTEM_DELETE_FILE = 'franklin:filesystem:deleteFile';
-export const FILESYSTEM_MKDIR = 'franklin:filesystem:mkdir';
-export const FILESYSTEM_ACCESS = 'franklin:filesystem:access';
-export const FILESYSTEM_STAT = 'franklin:filesystem:stat';
-export const FILESYSTEM_EXISTS = 'franklin:filesystem:exists';
-export const FILESYSTEM_GLOB = 'franklin:filesystem:glob';
+		getIpcStreamChannel: () => getChannel(name, [], 'ipc-stream'),
+		getTransportConnectChannel: (path) => getChannel(name, path, 'connect'),
+		getTransportKillChannel: (path) => getChannel(name, path, 'kill'),
+		getTransportStreamChannel: (path) => getChannel(name, path, 'stream'),
+	};
+}

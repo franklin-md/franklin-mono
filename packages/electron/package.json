@@ -32,7 +32,6 @@
 		"@agentclientprotocol/sdk": "^0.16.1",
 		"@franklin/agent": "*",
 		"@franklin/lib": "*",
-		"@franklin/node": "*",
 		"@franklin/mini-acp": "*",
 		"@franklin/transport": "*"
 	},
