@@ -28,7 +28,7 @@ export function createPersistence(
  *
  * Layout: `{dir}/sessions/{sessionId}.json`
  */
-export function createFileSessionPersister(
+export function createSessionPersister(
 	dir: string,
 	fs: Filesystem,
 ): Persister<SessionSnapshot> {
@@ -40,7 +40,7 @@ export function createFileSessionPersister(
  *
  * Layout: `{dir}/store/{ref}.json`
  */
-export function createFilePoolPersister(
+export function createStorePersister(
 	dir: string,
 	fs: Filesystem,
 ): Persister<StoreSnapshot> {

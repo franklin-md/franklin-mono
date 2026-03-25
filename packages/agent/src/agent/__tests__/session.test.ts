@@ -9,7 +9,7 @@ import {
 } from '@franklin/mini-acp';
 import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
 import { SessionManager } from '../session/index.js';
-import { emptyCtx, mergeCtx } from '../session/ctx.js';
+import { emptyCtx, mergeCtx } from '../session/context/utils.js';
 import type { Session } from '../session/types.js';
 
 // ---------------------------------------------------------------------------

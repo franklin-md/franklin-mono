@@ -1,4 +1,4 @@
-import type { PersistedCtx } from './persist/types.js';
+import type { PersistedCtx } from '../persist/types.js';
 
 function cloneHistory(
 	history: PersistedCtx['history'],
