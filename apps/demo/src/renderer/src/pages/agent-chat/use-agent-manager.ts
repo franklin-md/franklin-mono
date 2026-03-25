@@ -6,8 +6,7 @@ import {
 	todoExtension,
 } from '@franklin/agent/browser';
 import type { Agent } from '@franklin/agent/browser';
-import { ElectronFramework } from '@franklin/electron/renderer';
-import { AuthStore, configureAgent } from '@franklin/auth';
+import { ElectronAuthStore, ElectronFramework } from '@franklin/electron/renderer';
 
 export interface SpawnResult {
 	agent: Agent;
@@ -32,13 +31,22 @@ export function useAgentManager(): GroupFactory {
 		}
 
 		return async (): Promise<SpawnResult> => {
-			const authStore = new AuthStore();
+			const authBridge = window.__franklinBridge.auth;
+			if (!authBridge) throw new Error('Auth bridge not available');
+			const authStore = new ElectronAuthStore(authBridge);
+			await authStore.initialize();
+			const apiKey = await authStore.getApiKey('anthropic');
 			const transport = await framework.spawn();
 			const agent = await createAgent(extensions, transport);
-			await configureAgent(agent, authStore, { provider: 'anthropic', model: 'claude-opus-4-6' });
 			await agent.setContext({
-				ctx: { tools: [], history: { systemPrompt: '', messages: [] } },
+				ctx: {
+					config: { provider: 'anthropic', model: 'claude-opus-4-6', ...(apiKey !== undefined && { apiKey }) },
+					tools: [],
+					history: { systemPrompt: '', messages: [] },
+				},
 			});
+
+			console.log('[spawn] done');
 			return { agent };
 		};
 	}, []);

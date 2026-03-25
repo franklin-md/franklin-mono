@@ -1,3 +1,5 @@
+import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
+import type { OAuthCredentials, OAuthProviderId } from '@mariozechner/pi-ai/oauth';
 import type { ApiKeyEntry, AuthEntry, AuthFile, IAuthStore, OAuthEntry, OAuthLoginCallbacks } from '@franklin/auth';
 
 // ---------------------------------------------------------------------------
@@ -103,6 +105,23 @@ export class ElectronAuthStore implements IAuthStore {
 
 		this.cache = { ...this.cache, [provider]: nextEntry };
 		void this.bridge.setEntry(provider, nextEntry);
+	}
+
+	async getApiKey(provider: string): Promise<string | undefined> {
+		const entry = this.cache[provider];
+		if (!entry) return undefined;
+
+		if (entry.oauth) {
+			const credMap: Record<string, OAuthCredentials> = {
+				[provider]: entry.oauth.credentials,
+			};
+			const result = await getOAuthApiKey(provider as OAuthProviderId, credMap);
+			if (!result) return undefined;
+			this.setOAuthEntry(provider, { type: 'oauth', credentials: result.newCredentials });
+			return result.apiKey;
+		}
+
+		return entry.apiKey?.key;
 	}
 
 	removeOAuthEntry(provider: string): void {

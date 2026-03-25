@@ -16,7 +16,7 @@ import {
 // ---------------------------------------------------------------------------
 
 function defaultModel(): Model<string> {
-	return getModel('openrouter', 'z-ai/glm-5');
+	return getModel('anthropic','claude-opus-4-6');
 }
 
 // ---------------------------------------------------------------------------

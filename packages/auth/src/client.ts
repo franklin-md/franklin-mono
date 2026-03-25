@@ -1,7 +1,9 @@
 import type { AgentCommands } from '@franklin/agent';
 import type { LLMConfig } from '@franklin/mini-acp';
 
-import type { AuthStore } from './store.js';
+interface ApiKeyStore {
+	getApiKey(provider: string): Promise<string | undefined>;
+}
 
 // ---------------------------------------------------------------------------
 // Agent configuration
@@ -27,7 +29,7 @@ import type { AuthStore } from './store.js';
  */
 export async function configureAgent(
 	agent: AgentCommands,
-	store: AuthStore,
+	store: ApiKeyStore,
 	config: {
 		provider: string;
 		model?: string;

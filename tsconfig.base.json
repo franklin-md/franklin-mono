@@ -21,6 +21,7 @@
 			"@franklin/extensions": ["packages/extensions/src/index.ts"],
 			"@franklin/local-mcp": ["packages/local-mcp/src/index.ts"],
 			"@franklin/auth": ["packages/auth/src/index.ts"],
+			"@franklin/auth/browser": ["packages/auth/src/browser.ts"],
 			"@franklin/auth/react": ["packages/auth/src/react/index.ts"],
 			"@franklin/mini-acp": ["packages/mini-acp/src/index.ts"],
 			"@franklin/node": ["packages/node/src/index.ts"],

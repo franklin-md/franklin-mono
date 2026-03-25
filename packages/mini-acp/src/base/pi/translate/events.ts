@@ -38,7 +38,7 @@ export function fromAgentEvent(
 			return {
 				type: 'turnEnd',
 				stopReason,
-				stopMessage: turnEnd.stopReason,
+				stopMessage: turnEnd.errorMessage,
 			};
 		}
 		// Streaming deltas → chunks
