@@ -1,5 +1,4 @@
 import type { Filesystem } from '@franklin/lib';
-import type { ToolDefinition as SerializedToolDefinition } from '@franklin/mini-acp';
 import {
 	type Duplex,
 	type MuxPacket,
@@ -24,14 +23,7 @@ interface FranklinBridge {
 		spawn: () => Promise<string>;
 		kill: (agentId: string) => Promise<void>;
 	};
-	mcp: {
-		start: (
-			mcpId: string,
-			name: string,
-			tools: SerializedToolDefinition[],
-		) => Promise<unknown>;
-		stop: (mcpId: string) => Promise<void>;
-	};
+
 	filesystem: Filesystem;
 }
 

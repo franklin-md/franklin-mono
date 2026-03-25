@@ -5,8 +5,6 @@ import {
 	IPC_STREAM,
 	AGENT_SPAWN,
 	AGENT_KILL,
-	MCP_START,
-	MCP_STOP,
 	APP_GET_STORAGE,
 	FILESYSTEM_READ_FILE,
 	FILESYSTEM_WRITE_FILE,
@@ -48,18 +46,6 @@ const agent = {
 
 	kill: (agentId: string): Promise<void> =>
 		ipcRenderer.invoke(AGENT_KILL, agentId) as Promise<void>,
-};
-
-// ---------------------------------------------------------------------------
-// MCP lifecycle (request/response over invoke)
-// ---------------------------------------------------------------------------
-
-const mcp = {
-	start: (mcpId: string, name: string, tools: unknown): Promise<unknown> =>
-		ipcRenderer.invoke(MCP_START, mcpId, name, tools) as Promise<unknown>,
-
-	stop: (mcpId: string): Promise<void> =>
-		ipcRenderer.invoke(MCP_STOP, mcpId) as Promise<void>,
 };
 
 // ---------------------------------------------------------------------------
@@ -129,6 +115,5 @@ contextBridge.exposeInMainWorld('__franklinBridge', {
 	ipcStream,
 	app: appBridge,
 	agent,
-	mcp,
 	filesystem,
 });
