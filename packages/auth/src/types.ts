@@ -1,4 +1,8 @@
-import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
+import type {
+	OAuthCredentials,
+	OAuthLoginCallbacks,
+	OAuthProviderId,
+} from '@mariozechner/pi-ai/oauth';
 
 export type {
 	OAuthCredentials,
@@ -30,18 +34,35 @@ export type AuthEntry = {
 /** Shape of the on-disk auth file. Keyed by provider ID (e.g. `"anthropic"`). */
 export type AuthFile = Record<string, AuthEntry>;
 
+export type AuthChangeListener = (
+	provider: string,
+	authKey: string | undefined,
+) => void | Promise<void>;
+
 /**
  * Minimal auth-store interface used by UI components.
  * Both the Node.js `AuthStore` and the Electron renderer proxy satisfy this.
  */
 export interface IAuthStore {
-	load(): AuthFile;
-	setApiKeyEntry(provider: string, entry: ApiKeyEntry): void;
-	removeApiKeyEntry(provider: string): void;
+	load(): Promise<AuthFile>;
+	getEntry(provider: string): Promise<AuthEntry | undefined>;
+	getApiKey(provider: string): Promise<string | undefined>;
 
-	setOAuthEntry(provider: string, entry: OAuthEntry): void;
-	removeOAuthEntry(provider: string): void;
+	setApiKeyEntry(provider: string, entry: ApiKeyEntry): Promise<void>;
+	removeApiKeyEntry(provider: string): Promise<void>;
 
-	setEntry(provider: string, entry: AuthEntry): void;
-	removeEntry(provider: string): void;
+	setOAuthEntry(provider: string, entry: OAuthEntry): Promise<void>;
+	removeOAuthEntry(provider: string): Promise<void>;
+
+	setEntry(provider: string, entry: AuthEntry): Promise<void>;
+	removeEntry(provider: string): Promise<void>;
+}
+
+export interface IAuthManager extends IAuthStore {
+	onAuthChange(listener: AuthChangeListener): () => void;
+	loginOAuth(
+		provider: OAuthProviderId,
+		callbacks: OAuthLoginCallbacks,
+	): Promise<void>;
+	setApiKey(provider: string, key: string): Promise<void>;
 }

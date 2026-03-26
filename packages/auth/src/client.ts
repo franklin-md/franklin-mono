@@ -1,5 +1,4 @@
-import type { AgentCommands } from '@franklin/agent';
-import type { LLMConfig } from '@franklin/mini-acp';
+import type { MiniACPClient, LLMConfig } from '@franklin/mini-acp';
 
 interface ApiKeyStore {
 	getApiKey(provider: string): Promise<string | undefined>;
@@ -19,16 +18,16 @@ interface ApiKeyStore {
  *
  * @example
  * ```ts
- * const store = new AuthStore();
- * await loginOAuth('anthropic', store, callbacks);
+ * const authManager = new AuthManager();
+ * await loginOAuth('anthropic', authManager, callbacks);
  *
  * const agent = ...; // Agent
- * await configureAgent(agent, store, { provider: 'anthropic', model: 'claude-opus-4-6' });
+ * await configureAgent(agent, authManager, { provider: 'anthropic', model: 'claude-opus-4-6' });
  * await agent.prompt({ message: ... });
  * ```
  */
 export async function configureAgent(
-	agent: AgentCommands,
+	agent: MiniACPClient,
 	store: ApiKeyStore,
 	config: {
 		provider: string;

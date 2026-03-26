@@ -15,7 +15,70 @@ import {
 	type StoreAPI,
 	type StoreSnapshot,
 } from '@franklin/extensions';
+import type { IAuthManager } from '@franklin/auth';
 import { mergeCtx, SessionManager } from '../session/index.js';
+
+function mockAuthManager(): IAuthManager {
+	return {
+		load: async () => ({}),
+		getEntry: async () => undefined,
+		getApiKey: async () => undefined,
+		setEntry: async () => {},
+		removeEntry: async () => {},
+		setApiKeyEntry: async () => {},
+		removeApiKeyEntry: async () => {},
+		setOAuthEntry: async () => {},
+		removeOAuthEntry: async () => {},
+		loginOAuth: async () => {},
+		setApiKey: async () => {},
+		onAuthChange: () => () => {},
+	};
+}
+
+function createMutableAuthManager(
+	initialKeys: Record<string, string | undefined> = {},
+) {
+	const keys = { ...initialKeys };
+
+	const store: IAuthManager & {
+		setKey(provider: string, key: string | undefined): void;
+	} = {
+		load: async () =>
+			Object.fromEntries(
+				Object.entries(keys)
+					.filter(([, key]) => key !== undefined)
+					.map(([provider, key]) => [
+						provider,
+						{ apiKey: { type: 'apiKey' as const, key: key! } },
+					]),
+			),
+		getEntry: async (provider: string) => {
+			const key = keys[provider];
+			return key === undefined
+				? undefined
+				: {
+						apiKey: { type: 'apiKey' as const, key },
+					};
+		},
+		getApiKey: async (provider: string) => keys[provider],
+		setEntry: async () => {},
+		removeEntry: async () => {},
+		setApiKeyEntry: async () => {},
+		removeApiKeyEntry: async () => {},
+		setOAuthEntry: async () => {},
+		removeOAuthEntry: async () => {},
+		loginOAuth: async () => {},
+		setApiKey: async (provider: string, key: string) => {
+			keys[provider] = key;
+		},
+		onAuthChange: () => () => {},
+		setKey(provider: string, key: string | undefined) {
+			keys[provider] = key;
+		},
+	};
+
+	return store;
+}
 import type { Session } from '../session/types.js';
 import { snapshotSession } from '../session/persist/snapshot.js';
 import {
@@ -41,7 +104,7 @@ function createTestTransport(): ClientProtocol {
 			return {};
 		},
 		async *prompt() {
-			yield { type: 'turnEnd' as const };
+			yield { type: 'turnEnd', stopReason: 'end_turn' as const };
 		},
 		async cancel() {
 			return;
@@ -185,10 +248,12 @@ describe('Persistence', () => {
 
 	describe('snapshotSession', () => {
 		it('extracts sessionId, ctx, and store refs', async () => {
-			const manager = new SessionManager(createTestTransport, [
-				counterExtension(),
-			]);
-			const session = track(await manager.new());
+			const manager = new SessionManager(
+				createTestTransport,
+				[counterExtension()],
+				mockAuthManager(),
+			);
+			const session = track(await manager.new({}));
 			setSystemPrompt(session, 'You are helpful');
 
 			// Mutate the store
@@ -275,10 +340,11 @@ describe('Persistence', () => {
 			const manager = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
+				mockAuthManager(),
 				persistence,
 			);
 
-			const session = track(await manager.new());
+			const session = track(await manager.new({}));
 			await vi.advanceTimersByTimeAsync(500);
 
 			// Session snapshot saved
@@ -299,10 +365,11 @@ describe('Persistence', () => {
 			const manager = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
+				mockAuthManager(),
 				persistence,
 			);
 
-			const parent = track(await manager.new());
+			const parent = track(await manager.new({}));
 			parent.agent.stores.get('counter')!.store.set(() => 7);
 
 			const forked = track(await manager.fork(parent.sessionId));
@@ -319,10 +386,11 @@ describe('Persistence', () => {
 			const manager = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
+				mockAuthManager(),
 				persistence,
 			);
 
-			const parent = track(await manager.new());
+			const parent = track(await manager.new({}));
 			const child = track(await manager.child(parent.sessionId));
 			await vi.advanceTimersByTimeAsync(500);
 
@@ -334,10 +402,11 @@ describe('Persistence', () => {
 			const manager = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
+				mockAuthManager(),
 				persistence,
 			);
 
-			const session = track(await manager.new());
+			const session = track(await manager.new({}));
 			await vi.advanceTimersByTimeAsync(500);
 
 			// Verify session exists before removal
@@ -362,7 +431,12 @@ describe('Persistence', () => {
 
 		it('remove is a no-op for unknown session IDs', async () => {
 			const persistence = createMockPersistence();
-			const manager = new SessionManager(createTestTransport, [], persistence);
+			const manager = new SessionManager(
+				createTestTransport,
+				[],
+				mockAuthManager(),
+				persistence,
+			);
 
 			// Should not throw
 			await manager.remove('nonexistent');
@@ -370,9 +444,14 @@ describe('Persistence', () => {
 
 		it('auto-persists on tracker change (rewind)', async () => {
 			const persistence = createMockPersistence();
-			const manager = new SessionManager(createTestTransport, [], persistence);
+			const manager = new SessionManager(
+				createTestTransport,
+				[],
+				mockAuthManager(),
+				persistence,
+			);
 
-			const session = track(await manager.new());
+			const session = track(await manager.new({}));
 			setSystemPrompt(session, 'test');
 			session.tracker.append({
 				role: 'user',
@@ -575,9 +654,10 @@ describe('Persistence', () => {
 			const manager1 = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
+				mockAuthManager(),
 				persistence,
 			);
-			const session = track(await manager1.new());
+			const session = track(await manager1.new({}));
 			setSystemPrompt(session, 'You are helpful');
 
 			// Mutate store and add messages
@@ -597,6 +677,7 @@ describe('Persistence', () => {
 			const manager2 = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
+				mockAuthManager(),
 				persistence,
 			);
 			await manager2.restore();
@@ -625,10 +706,11 @@ describe('Persistence', () => {
 			const manager1 = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
+				mockAuthManager(),
 				persistence,
 			);
-			const s1 = track(await manager1.new());
-			const s2 = track(await manager1.new());
+			const s1 = track(await manager1.new({}));
+			const s2 = track(await manager1.new({}));
 			setSystemPrompt(s1, 'session 1');
 			setSystemPrompt(s2, 'session 2');
 			await vi.advanceTimersByTimeAsync(500);
@@ -637,6 +719,7 @@ describe('Persistence', () => {
 			const manager2 = new SessionManager(
 				createTestTransport,
 				[counterExtension()],
+				mockAuthManager(),
 				persistence,
 			);
 			await manager2.restore();
@@ -648,8 +731,52 @@ describe('Persistence', () => {
 			expect(getCtx(r2).history.systemPrompt).toBe('session 2');
 		});
 
+		it('restores config from defaults and refreshes apiKey from auth', async () => {
+			const persistence = createMockPersistence();
+			const authStore = createMutableAuthManager({ anthropic: 'sk-fresh' });
+
+			persistence.session.saved.set('restored-session', {
+				sessionId: 'restored-session',
+				ctx: {
+					history: {
+						systemPrompt: 'restored prompt',
+						messages: [],
+					},
+					config: {
+						reasoning: 'high',
+					},
+				},
+				stores: {},
+			});
+
+			const manager = new SessionManager(
+				createTestTransport,
+				[],
+				authStore,
+				persistence,
+				{
+					provider: 'anthropic',
+					model: 'claude-opus-4-6',
+				},
+			);
+
+			await manager.restore();
+			const session = track(manager.get('restored-session'));
+
+			expect(getCtx(session).config).toEqual({
+				provider: 'anthropic',
+				model: 'claude-opus-4-6',
+				reasoning: 'high',
+				apiKey: 'sk-fresh',
+			});
+		});
+
 		it('is a no-op when no persister configured', async () => {
-			const manager = new SessionManager(createTestTransport, []);
+			const manager = new SessionManager(
+				createTestTransport,
+				[],
+				mockAuthManager(),
+			);
 			await expect(manager.restore()).resolves.toBeUndefined();
 		});
 
@@ -664,9 +791,10 @@ describe('Persistence', () => {
 			const manager1 = new SessionManager(
 				createTestTransport,
 				[globalExt],
+				mockAuthManager(),
 				persistence,
 			);
-			const s1 = track(await manager1.new());
+			const s1 = track(await manager1.new({}));
 			const s2 = track(await manager1.child(s1.sessionId));
 
 			// Verify they share the same store pre-restore
@@ -683,6 +811,7 @@ describe('Persistence', () => {
 			const manager2 = new SessionManager(
 				createTestTransport,
 				[globalExt],
+				mockAuthManager(),
 				persistence,
 			);
 			await manager2.restore();

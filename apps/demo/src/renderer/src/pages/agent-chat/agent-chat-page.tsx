@@ -16,6 +16,7 @@ import {
 import { AgentSidebar } from './sidebar/index.js';
 import { ConversationPanel } from './conversation/index.js';
 import { TodoPanel } from './todo/index.js';
+import { initializeSharedAuthManager } from '@/lib/auth-store.js';
 
 interface SelectedAgent {
 	id: string;
@@ -29,9 +30,13 @@ export function AgentChatPage() {
 
 	useEffect(() => {
 		void createElectronPersistence().then(async (persistence) => {
+			const authManager = await initializeSharedAuthManager();
+			if (!authManager) return;
+
 			const mgr = new SessionManager(
 				() => framework.spawn(),
 				[conversationExtension(), todoExtension(), statusExtension()],
+				authManager,
 				persistence,
 			);
 			await mgr.restore();

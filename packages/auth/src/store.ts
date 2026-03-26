@@ -34,7 +34,7 @@ export class AuthStore {
 	// Low-level persistence
 	// -------------------------------------------------------------------------
 
-	load(): AuthFile {
+	async load(): Promise<AuthFile> {
 		if (!existsSync(this.filePath)) return {};
 		try {
 			return JSON.parse(readFileSync(this.filePath, 'utf-8')) as AuthFile;
@@ -52,12 +52,12 @@ export class AuthStore {
 	// Entry management
 	// -------------------------------------------------------------------------
 
-	getEntry(provider: string): AuthEntry | undefined {
-		return this.load()[provider];
+	async getEntry(provider: string): Promise<AuthEntry | undefined> {
+		return (await this.load())[provider];
 	}
 
-	setApiKeyEntry(provider: string, entry: ApiKeyEntry): void {
-		const data = this.load();
+	async setApiKeyEntry(provider: string, entry: ApiKeyEntry): Promise<void> {
+		const data = await this.load();
 		if (data[provider]) {
 			data[provider].apiKey = entry;
 		} else {
@@ -66,8 +66,8 @@ export class AuthStore {
 		this.save(data);
 	}
 
-	setOAuthEntry(provider: string, entry: OAuthEntry): void {
-		const data = this.load();
+	async setOAuthEntry(provider: string, entry: OAuthEntry): Promise<void> {
+		const data = await this.load();
 		if (data[provider]) {
 			data[provider].oauth = entry;
 		} else {
@@ -76,14 +76,14 @@ export class AuthStore {
 		this.save(data);
 	}
 
-	setEntry(provider: string, entry: AuthEntry): void {
-		const data = this.load();
+	async setEntry(provider: string, entry: AuthEntry): Promise<void> {
+		const data = await this.load();
 		data[provider] = entry;
 		this.save(data);
 	}
 
-	removeApiKeyEntry(provider: string): void {
-		const data = this.load();
+	async removeApiKeyEntry(provider: string): Promise<void> {
+		const data = await this.load();
 		if (data[provider]) {
 			delete data[provider].apiKey;
 			if (Object.keys(data[provider]).length === 0) delete data[provider];
@@ -91,8 +91,8 @@ export class AuthStore {
 		}
 	}
 
-	removeOAuthEntry(provider: string): void {
-		const data = this.load();
+	async removeOAuthEntry(provider: string): Promise<void> {
+		const data = await this.load();
 		if (data[provider]) {
 			delete data[provider].oauth;
 			if (Object.keys(data[provider]).length === 0) delete data[provider];
@@ -100,8 +100,8 @@ export class AuthStore {
 		}
 	}
 
-	removeEntry(provider: string): void {
-		const data = this.load();
+	async removeEntry(provider: string): Promise<void> {
+		const data = await this.load();
 		delete data[provider];
 		this.save(data);
 	}
@@ -121,7 +121,7 @@ export class AuthStore {
 	 * Returns `undefined` when no credentials are stored for the provider.
 	 */
 	async getApiKey(provider: string): Promise<string | undefined> {
-		const entry = this.getEntry(provider);
+		const entry = await this.getEntry(provider);
 		if (!entry) return undefined;
 
 		// OAuth takes precedence, user can always clear them if they wish
@@ -135,7 +135,7 @@ export class AuthStore {
 			if (!result) return undefined;
 
 			// Always persist newCredentials — getOAuthApiKey may have refreshed the token.
-			this.setOAuthEntry(provider, {
+			await this.setOAuthEntry(provider, {
 				type: 'oauth',
 				credentials: result.newCredentials,
 			});

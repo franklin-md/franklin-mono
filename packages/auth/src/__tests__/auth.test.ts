@@ -10,10 +10,11 @@ vi.mock('@mariozechner/pi-ai/oauth', () => ({
 }));
 
 import { getOAuthApiKey, getOAuthProvider } from '@mariozechner/pi-ai/oauth';
-import type { Agent } from '@franklin/agent';
+import type { MiniACPClient } from '@franklin/mini-acp';
 
 import { configureAgent } from '../client.js';
 import { loginOAuth, setApiKey } from '../login.js';
+import { AuthManager } from '../manager.js';
 import { AuthStore } from '../store.js';
 import type { AuthFile, OAuthCredentials } from '../types.js';
 
@@ -35,7 +36,7 @@ function makeCredentials(
 	};
 }
 
-function makeAgent(overrides: Partial<Agent> = {}): Agent {
+function makeAgent(overrides: Partial<MiniACPClient> = {}): MiniACPClient {
 	return {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async () => {}),
@@ -43,18 +44,9 @@ function makeAgent(overrides: Partial<Agent> = {}): Agent {
 		prompt: vi.fn(async function* () {
 			return { type: 'turnEnd' as const };
 		}),
-		cancel: vi.fn(async () => ({ type: 'turnEnd' as const })),
-		toolExecute: vi.fn(async () => ({
-			toolCallId: '1',
-			content: [],
-			isError: false,
-		})),
-		stores: {} as Agent['stores'],
-		dispose: vi.fn(async () => {}),
-		signal: new AbortController().signal,
-		closed: Promise.resolve(),
+		cancel: vi.fn(async () => {}),
 		...overrides,
-	} as unknown as Agent;
+	} as unknown as MiniACPClient;
 }
 
 function apiKeyStoreEntry(key: string) {
@@ -80,11 +72,13 @@ function readAuthFile(path: string): AuthFile {
 let tempDir: string;
 let authPath: string;
 let store: AuthStore;
+let manager: AuthManager;
 
 beforeEach(() => {
 	tempDir = mkdtempSync(join(tmpdir(), 'franklin-auth-test-'));
 	authPath = join(tempDir, 'auth.json');
 	store = new AuthStore(authPath);
+	manager = new AuthManager(store);
 	vi.clearAllMocks();
 });
 
@@ -97,44 +91,50 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('AuthStore.load()', () => {
-	it('returns empty object when the auth file does not exist', () => {
-		expect(store.load()).toEqual({});
+	it('returns empty object when the auth file does not exist', async () => {
+		await expect(store.load()).resolves.toEqual({});
 	});
 
-	it('returns empty object when the auth file contains invalid JSON', () => {
+	it('returns empty object when the auth file contains invalid JSON', async () => {
 		const badPath = join(tempDir, 'bad.json');
 		writeFileSync(badPath, 'not-json', 'utf-8');
 		const badStore = new AuthStore(badPath);
-		expect(badStore.load()).toEqual({});
+		await expect(badStore.load()).resolves.toEqual({});
 	});
 });
 
 describe('AuthStore.setEntry() / getEntry()', () => {
-	it('round-trips an apiKey entry', () => {
-		store.setEntry('openai', apiKeyStoreEntry('sk-test'));
-		expect(store.getEntry('openai')).toEqual(apiKeyStoreEntry('sk-test'));
+	it('round-trips an apiKey entry', async () => {
+		await store.setEntry('openai', apiKeyStoreEntry('sk-test'));
+		await expect(store.getEntry('openai')).resolves.toEqual(
+			apiKeyStoreEntry('sk-test'),
+		);
 	});
 
-	it('round-trips an OAuth entry', () => {
+	it('round-trips an OAuth entry', async () => {
 		const creds = makeCredentials();
-		store.setEntry('anthropic', oauthStoreEntry(creds));
-		expect(store.getEntry('anthropic')).toEqual(oauthStoreEntry(creds));
+		await store.setEntry('anthropic', oauthStoreEntry(creds));
+		await expect(store.getEntry('anthropic')).resolves.toEqual(
+			oauthStoreEntry(creds),
+		);
 	});
 
-	it('returns undefined for an unknown provider', () => {
-		expect(store.getEntry('unknown-provider')).toBeUndefined();
+	it('returns undefined for an unknown provider', async () => {
+		await expect(store.getEntry('unknown-provider')).resolves.toBeUndefined();
 	});
 
-	it('creates the parent directory when it does not exist', () => {
+	it('creates the parent directory when it does not exist', async () => {
 		const nested = join(tempDir, 'deep', 'nested', 'auth.json');
 		const nestedStore = new AuthStore(nested);
-		nestedStore.setEntry('openai', apiKeyStoreEntry('sk-x'));
-		expect(nestedStore.getEntry('openai')).toEqual(apiKeyStoreEntry('sk-x'));
+		await nestedStore.setEntry('openai', apiKeyStoreEntry('sk-x'));
+		await expect(nestedStore.getEntry('openai')).resolves.toEqual(
+			apiKeyStoreEntry('sk-x'),
+		);
 	});
 
-	it('persists multiple providers without clobbering', () => {
-		store.setEntry('openai', apiKeyStoreEntry('sk-openai'));
-		store.setEntry('anthropic', apiKeyStoreEntry('sk-anthropic'));
+	it('persists multiple providers without clobbering', async () => {
+		await store.setEntry('openai', apiKeyStoreEntry('sk-openai'));
+		await store.setEntry('anthropic', apiKeyStoreEntry('sk-anthropic'));
 
 		const file = readAuthFile(authPath);
 		expect(Object.keys(file)).toHaveLength(2);
@@ -142,32 +142,35 @@ describe('AuthStore.setEntry() / getEntry()', () => {
 		expect(file['anthropic']).toEqual(apiKeyStoreEntry('sk-anthropic'));
 	});
 
-	it('overwrites an existing entry for the same provider', () => {
-		store.setEntry('openai', apiKeyStoreEntry('old-key'));
-		store.setEntry('openai', apiKeyStoreEntry('new-key'));
-		expect(store.getEntry('openai')).toEqual(apiKeyStoreEntry('new-key'));
+	it('overwrites an existing entry for the same provider', async () => {
+		await store.setEntry('openai', apiKeyStoreEntry('old-key'));
+		await store.setEntry('openai', apiKeyStoreEntry('new-key'));
+		await expect(store.getEntry('openai')).resolves.toEqual(
+			apiKeyStoreEntry('new-key'),
+		);
 	});
 });
 
 describe('AuthStore.removeEntry()', () => {
-	it('removes an existing entry', () => {
-		store.setEntry('openai', apiKeyStoreEntry('sk-test'));
-		store.removeEntry('openai');
-		expect(store.getEntry('openai')).toBeUndefined();
+	it('removes an existing entry', async () => {
+		await store.setEntry('openai', apiKeyStoreEntry('sk-test'));
+		await store.removeEntry('openai');
+		await expect(store.getEntry('openai')).resolves.toBeUndefined();
 	});
 
-	it('is a no-op for an entry that does not exist', () => {
-		// Should not throw
-		expect(() => store.removeEntry('nonexistent')).not.toThrow();
+	it('is a no-op for an entry that does not exist', async () => {
+		await expect(store.removeEntry('nonexistent')).resolves.toBeUndefined();
 	});
 
-	it('leaves other entries intact', () => {
-		store.setEntry('openai', apiKeyStoreEntry('sk-openai'));
-		store.setEntry('anthropic', apiKeyStoreEntry('sk-anthropic'));
-		store.removeEntry('openai');
+	it('leaves other entries intact', async () => {
+		await store.setEntry('openai', apiKeyStoreEntry('sk-openai'));
+		await store.setEntry('anthropic', apiKeyStoreEntry('sk-anthropic'));
+		await store.removeEntry('openai');
 
-		expect(store.getEntry('openai')).toBeUndefined();
-		expect(store.getEntry('anthropic')).toEqual(apiKeyStoreEntry('sk-anthropic'));
+		await expect(store.getEntry('openai')).resolves.toBeUndefined();
+		await expect(store.getEntry('anthropic')).resolves.toEqual(
+			apiKeyStoreEntry('sk-anthropic'),
+		);
 	});
 });
 
@@ -181,13 +184,13 @@ describe('AuthStore.getApiKey()', () => {
 	});
 
 	it('returns the key directly for an apiKey entry', async () => {
-		store.setEntry('openai', apiKeyStoreEntry('sk-direct'));
+		await store.setEntry('openai', apiKeyStoreEntry('sk-direct'));
 		await expect(store.getApiKey('openai')).resolves.toBe('sk-direct');
 	});
 
 	it('calls getOAuthApiKey for an OAuth entry', async () => {
 		const creds = makeCredentials();
-		store.setEntry('anthropic', oauthStoreEntry(creds));
+		await store.setEntry('anthropic', oauthStoreEntry(creds));
 
 		mockGetOAuthApiKey.mockResolvedValueOnce({
 			newCredentials: creds,
@@ -211,7 +214,7 @@ describe('AuthStore.getApiKey()', () => {
 			access: 'new-access',
 			expires: Date.now() + 3_600_000,
 		});
-		store.setEntry('anthropic', oauthStoreEntry(oldCreds));
+		await store.setEntry('anthropic', oauthStoreEntry(oldCreds));
 
 		mockGetOAuthApiKey.mockResolvedValueOnce({
 			newCredentials: newCreds,
@@ -220,14 +223,14 @@ describe('AuthStore.getApiKey()', () => {
 
 		await store.getApiKey('anthropic');
 
-		const stored = store.getEntry('anthropic');
+		const stored = await store.getEntry('anthropic');
 		expect(stored).toEqual(oauthStoreEntry(newCreds));
 	});
 
 	it('always persists newCredentials returned by getOAuthApiKey', async () => {
 		const creds = makeCredentials();
 		const updatedCreds = { ...creds, someField: 'extra' };
-		store.setEntry('anthropic', oauthStoreEntry(creds));
+		await store.setEntry('anthropic', oauthStoreEntry(creds));
 
 		mockGetOAuthApiKey.mockResolvedValueOnce({
 			newCredentials: updatedCreds,
@@ -237,12 +240,14 @@ describe('AuthStore.getApiKey()', () => {
 		await store.getApiKey('anthropic');
 
 		// Returned newCredentials are written back regardless
-		expect(store.getEntry('anthropic')).toEqual(oauthStoreEntry(updatedCreds));
+		await expect(store.getEntry('anthropic')).resolves.toEqual(
+			oauthStoreEntry(updatedCreds),
+		);
 	});
 
 	it('returns undefined when getOAuthApiKey returns null', async () => {
 		const creds = makeCredentials();
-		store.setEntry('anthropic', oauthStoreEntry(creds));
+		await store.setEntry('anthropic', oauthStoreEntry(creds));
 		mockGetOAuthApiKey.mockResolvedValueOnce(null);
 
 		await expect(store.getApiKey('anthropic')).resolves.toBeUndefined();
@@ -265,7 +270,7 @@ describe('loginOAuth()', () => {
 		const mockLogin = vi.fn(async () => creds);
 		mockGetOAuthProvider.mockReturnValue({ login: mockLogin } as any);
 
-		await loginOAuth('anthropic', store, callbacks);
+		await loginOAuth('anthropic', manager, callbacks);
 
 		expect(mockGetOAuthProvider).toHaveBeenCalledWith('anthropic');
 		expect(mockLogin).toHaveBeenCalledWith(callbacks);
@@ -277,16 +282,18 @@ describe('loginOAuth()', () => {
 			login: vi.fn(async () => creds),
 		} as any);
 
-		await loginOAuth('anthropic', store, callbacks);
+		await loginOAuth('anthropic', manager, callbacks);
 
-		expect(store.getEntry('anthropic')).toEqual(oauthStoreEntry(creds));
+		await expect(store.getEntry('anthropic')).resolves.toEqual(
+			oauthStoreEntry(creds),
+		);
 	});
 
 	it('throws when the provider is not registered in pi-ai', async () => {
 		mockGetOAuthProvider.mockReturnValue(undefined as any);
 
 		await expect(
-			loginOAuth('unknown-provider', store, callbacks),
+			loginOAuth('unknown-provider', manager, callbacks),
 		).rejects.toThrow('Unknown OAuth provider: "unknown-provider"');
 	});
 
@@ -297,10 +304,10 @@ describe('loginOAuth()', () => {
 			}),
 		} as any);
 
-		await expect(loginOAuth('anthropic', store, callbacks)).rejects.toThrow(
+		await expect(loginOAuth('anthropic', manager, callbacks)).rejects.toThrow(
 			'Login failed',
 		);
-		expect(store.getEntry('anthropic')).toBeUndefined();
+		await expect(store.getEntry('anthropic')).resolves.toBeUndefined();
 	});
 });
 
@@ -309,25 +316,71 @@ describe('loginOAuth()', () => {
 // ---------------------------------------------------------------------------
 
 describe('setApiKey()', () => {
-	it('stores the key as an apiKey entry', () => {
-		setApiKey('openai', 'sk-test-key', store);
-		expect(store.getEntry('openai')).toEqual(apiKeyStoreEntry('sk-test-key'));
+	it('stores the key as an apiKey entry', async () => {
+		await setApiKey('openai', 'sk-test-key', manager);
+		await expect(store.getEntry('openai')).resolves.toEqual(
+			apiKeyStoreEntry('sk-test-key'),
+		);
 	});
 
-	it('overwrites an existing entry for the same provider', () => {
-		setApiKey('openai', 'sk-old', store);
-		setApiKey('openai', 'sk-new', store);
-		expect(store.getEntry('openai')).toEqual(apiKeyStoreEntry('sk-new'));
+	it('overwrites an existing entry for the same provider', async () => {
+		await setApiKey('openai', 'sk-old', manager);
+		await setApiKey('openai', 'sk-new', manager);
+		await expect(store.getEntry('openai')).resolves.toEqual(
+			apiKeyStoreEntry('sk-new'),
+		);
 	});
 
-	it('preserves an existing OAuth entry when adding an apiKey entry', () => {
+	it('preserves an existing OAuth entry when adding an apiKey entry', async () => {
 		const credentials = makeCredentials();
-		store.setEntry('anthropic', oauthStoreEntry(credentials));
-		setApiKey('anthropic', 'sk-direct', store);
-		expect(store.getEntry('anthropic')).toEqual({
+		await store.setEntry('anthropic', oauthStoreEntry(credentials));
+		await setApiKey('anthropic', 'sk-direct', manager);
+		await expect(store.getEntry('anthropic')).resolves.toEqual({
 			oauth: { type: 'oauth', credentials },
 			apiKey: { type: 'apiKey', key: 'sk-direct' },
 		});
+	});
+});
+
+describe('AuthManager.onAuthChange()', () => {
+	it('notifies listeners when an api key is saved', async () => {
+		const listener = vi.fn(async () => {});
+		manager.onAuthChange(listener);
+
+		await manager.setApiKey('anthropic', 'sk-test');
+
+		expect(listener).toHaveBeenCalledWith('anthropic', 'sk-test');
+	});
+
+	it('notifies listeners when a provider entry is removed', async () => {
+		const listener = vi.fn(async () => {});
+		manager.onAuthChange(listener);
+		await manager.setApiKey('anthropic', 'sk-test');
+
+		await manager.removeEntry('anthropic');
+
+		expect(listener).toHaveBeenLastCalledWith('anthropic', undefined);
+	});
+
+	it('notifies listeners after oauth login persists credentials', async () => {
+		const creds = makeCredentials();
+		const listener = vi.fn(async () => {});
+		manager.onAuthChange(listener);
+		mockGetOAuthProvider.mockReturnValue({
+			login: vi.fn(async () => creds),
+		} as any);
+		mockGetOAuthApiKey.mockResolvedValueOnce({
+			newCredentials: creds,
+			apiKey: 'oauth-api-key',
+		});
+
+		await manager.loginOAuth('anthropic', {
+			onAuth: vi.fn(),
+			onPrompt: vi.fn(async () => ''),
+			onProgress: vi.fn(),
+		});
+
+		expect(listener).toHaveBeenCalledWith('anthropic', 'oauth-api-key');
 	});
 });
 
@@ -337,7 +390,7 @@ describe('setApiKey()', () => {
 
 describe('configureAgent()', () => {
 	it('calls setContext with provider and resolved apiKey', async () => {
-		store.setEntry('anthropic', apiKeyStoreEntry('sk-anth'));
+		await store.setEntry('anthropic', apiKeyStoreEntry('sk-anth'));
 		const agent = makeAgent();
 
 		await configureAgent(agent, store, { provider: 'anthropic' });
@@ -353,7 +406,7 @@ describe('configureAgent()', () => {
 	});
 
 	it('includes model in the config when provided', async () => {
-		store.setEntry('anthropic', apiKeyStoreEntry('sk-anth'));
+		await store.setEntry('anthropic', apiKeyStoreEntry('sk-anth'));
 		const agent = makeAgent();
 
 		await configureAgent(agent, store, {
@@ -388,7 +441,7 @@ describe('configureAgent()', () => {
 
 	it('resolves an OAuth token and passes the apiKey to setContext', async () => {
 		const creds = makeCredentials();
-		store.setEntry('github-copilot', oauthStoreEntry(creds));
+		await store.setEntry('github-copilot', oauthStoreEntry(creds));
 
 		mockGetOAuthApiKey.mockResolvedValueOnce({
 			newCredentials: creds,
@@ -414,7 +467,7 @@ describe('configureAgent()', () => {
 			access: 'fresh-access',
 			expires: Date.now() + 3_600_000,
 		});
-		store.setEntry('anthropic', oauthStoreEntry(expiredCreds));
+		await store.setEntry('anthropic', oauthStoreEntry(expiredCreds));
 
 		mockGetOAuthApiKey.mockResolvedValueOnce({
 			newCredentials: freshCreds,
@@ -425,7 +478,9 @@ describe('configureAgent()', () => {
 		await configureAgent(agent, store, { provider: 'anthropic' });
 
 		// Credentials persisted
-		expect(store.getEntry('anthropic')).toEqual(oauthStoreEntry(freshCreds));
+		await expect(store.getEntry('anthropic')).resolves.toEqual(
+			oauthStoreEntry(freshCreds),
+		);
 
 		// setContext received the fresh key
 		expect(vi.mocked(agent.setContext)).toHaveBeenCalledWith({

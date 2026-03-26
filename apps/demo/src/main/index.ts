@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { app, BrowserWindow } from 'electron';
-import { AuthStore } from '@franklin/auth';
+import { AuthManager } from '@franklin/auth';
 import { initializeMain } from '@franklin/electron/main';
 import { NodeFramework } from '@franklin/node';
 
@@ -24,8 +24,8 @@ function createWindow(): void {
 	});
 
 	const framework = new NodeFramework();
-	const authStore = new AuthStore();
-	handle = initializeMain(mainWindow.webContents, framework, authStore);
+	const authManager = new AuthManager();
+	handle = initializeMain(mainWindow.webContents, framework, authManager);
 
 	mainWindow.on('closed', () => {
 		void handle?.dispose();

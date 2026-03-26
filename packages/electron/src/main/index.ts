@@ -1,4 +1,4 @@
-import type { AuthStore } from '@franklin/auth';
+import type { IAuthManager } from '@franklin/auth';
 import type { NodeFramework } from '@franklin/node';
 import type { WebContents } from 'electron';
 
@@ -24,17 +24,19 @@ export interface MainHandle {
  *
  * @param webContents - The window's webContents to send/receive IPC messages.
  * @param framework - A NodeFramework instance for provisioning environments.
- * @param authStore - Optional AuthStore; when provided, enables the auth IPC
- *   bridge so the renderer can use `<AuthProvider>` / `<AuthButton>`.
+ * @param authManager - Optional auth manager; when provided, enables the auth
+ *   IPC bridge so the renderer can use `<AuthProvider>` / `<AuthButton>`.
  */
 export function initializeMain(
 	webContents: WebContents,
 	framework: NodeFramework,
-	authStore?: AuthStore,
+	authManager?: IAuthManager,
 ): MainHandle {
 	const appRelay = new AppRelay();
 	const agentRelay = new AgentRelay(webContents, framework);
-	const authRelay = authStore ? new AuthRelay(webContents, authStore) : null;
+	const authRelay = authManager
+		? new AuthRelay(webContents, authManager)
+		: null;
 	const filesystemRelay = new FilesystemRelay();
 
 	return {

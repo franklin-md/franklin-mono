@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import type { AuthFile } from '../types.js';
+import type { AuthFile } from '@franklin/auth';
+
 import { ApiKeyPanel } from './api-key-panel.js';
 import { useAuthStore } from './auth-context.js';
 import type { OAuthLoginFn, OAuthProviderMeta } from './oauth-panel.js';
@@ -36,12 +37,31 @@ export function AuthModal({
 }) {
 	const store = useAuthStore();
 	const [tab, setTab] = useState<Tab>('oauth');
-	const [savedEntries, setSavedEntries] = useState<AuthFile>(() => store.load());
+	const [savedEntries, setSavedEntries] = useState<AuthFile>({});
+
+	useEffect(() => {
+		let cancelled = false;
+
+		async function loadEntries() {
+			const entries = await store.load();
+			if (!cancelled) {
+				setSavedEntries(entries);
+				onEntriesChange?.(entries);
+			}
+		}
+
+		void loadEntries();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [store, onEntriesChange]);
 
 	const handleUpdate = useCallback(() => {
-		const entries = store.load();
-		setSavedEntries(entries);
-		onEntriesChange?.(entries);
+		return store.load().then((entries) => {
+			setSavedEntries(entries);
+			onEntriesChange?.(entries);
+		});
 	}, [store, onEntriesChange]);
 
 	return (
@@ -64,7 +84,14 @@ export function AuthModal({
 						marginBottom: 16,
 					}}
 				>
-					<h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
+					<h2
+						style={{
+							margin: 0,
+							fontSize: 18,
+							fontWeight: 600,
+							color: '#1a1a1a',
+						}}
+					>
 						Authentication
 					</h2>
 					<button

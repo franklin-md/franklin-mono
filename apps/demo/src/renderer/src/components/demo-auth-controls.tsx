@@ -1,34 +1,34 @@
 import { useEffect, useState } from 'react';
 
-import {
-	AuthButton,
-	AuthProvider,
-	type OAuthLoginFn,
-	type OAuthProviderMeta,
-} from '@franklin/auth/react';
-import { ElectronAuthStore, createIpcLoginOAuth } from '@franklin/electron/renderer';
+import { ElectronAuthManager } from '@franklin/electron/renderer';
+import { AuthButton } from './ui/auth-button.js';
+import { AuthProvider } from './ui/auth-context.js';
+import type { OAuthLoginFn, OAuthProviderMeta } from './ui/oauth-panel.js';
+import { initializeSharedAuthManager } from '@/lib/auth-store.js';
 
 export function DemoAuthControls() {
 	const authBridge = window.__franklinBridge.auth ?? null;
-	const [store] = useState(() =>
-		authBridge ? new ElectronAuthStore(authBridge) : null,
-	);
+	const [manager, setManager] = useState<ElectronAuthManager | null>(null);
 	const [providers, setProviders] = useState<OAuthProviderMeta[]>([]);
-	const [apiKeyProviders, setApiKeyProviders] = useState<OAuthProviderMeta[]>([]);
+	const [apiKeyProviders, setApiKeyProviders] = useState<OAuthProviderMeta[]>(
+		[],
+	);
 	const [isReady, setIsReady] = useState(false);
 
 	useEffect(() => {
-		if (!authBridge || !store) return;
+		if (!authBridge) return;
 
 		const effectBridge = authBridge;
-		const effectStore = store;
 		let cancelled = false;
 
 		async function loadAuthState() {
-			await effectStore.initialize();
+			const effectManager = await initializeSharedAuthManager();
+			if (!effectManager || cancelled) return;
+
 			const nextProviders = await effectBridge.getProviders();
 			const nextApiKeyProviders = await effectBridge.getCanonicalProviders();
 			if (cancelled) return;
+			setManager(effectManager);
 			setProviders(nextProviders);
 			setApiKeyProviders(
 				nextApiKeyProviders.map((providerId) => ({
@@ -44,19 +44,18 @@ export function DemoAuthControls() {
 		return () => {
 			cancelled = true;
 		};
-	}, [authBridge, store]);
+	}, [authBridge]);
 
-	if (!authBridge || !store || !isReady) {
+	if (!authBridge || !manager || !isReady) {
 		return null;
 	}
 
 	const readyBridge = authBridge;
-	const readyStore = store;
+	const readyManager = manager;
 
 	const loginWithRefresh: OAuthLoginFn = async (providerId, callbacks) => {
-		const loginOAuth = createIpcLoginOAuth(readyBridge);
-		await loginOAuth(providerId, callbacks);
-		await readyStore.refresh();
+		await readyManager.loginOAuth(providerId, callbacks);
+		await readyManager.refresh();
 	};
 
 	const openExternal = async (url: string) => {
@@ -64,7 +63,7 @@ export function DemoAuthControls() {
 	};
 
 	return (
-		<AuthProvider store={readyStore}>
+		<AuthProvider store={readyManager}>
 			<AuthButton
 				oauthProviders={providers}
 				apiKeyProviders={apiKeyProviders}

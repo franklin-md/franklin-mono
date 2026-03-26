@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react';
 
-import type { OAuthLoginCallbacks } from '@mariozechner/pi-ai/oauth';
+import type { OAuthLoginCallbacks, AuthFile } from '@franklin/auth';
 
-import type { AuthFile } from '../types.js';
 import { useAuthStore } from './auth-context.js';
 
 // ---------------------------------------------------------------------------
@@ -62,7 +61,7 @@ export function OAuthPanel({
 	onOpenUrl,
 }: {
 	savedEntries: AuthFile;
-	onUpdate: () => void;
+	onUpdate: () => Promise<void>;
 	providers: OAuthProviderMeta[];
 	onLogin: OAuthLoginFn;
 	onOpenUrl?: (url: string) => void | Promise<void>;
@@ -110,7 +109,7 @@ export function OAuthPanel({
 		try {
 			await onLogin(provider.id, callbacks);
 			setFlowState({ phase: 'success' });
-			onUpdate();
+			await onUpdate();
 		} catch (err) {
 			setFlowState({
 				phase: 'error',
@@ -167,7 +166,9 @@ export function OAuthPanel({
 								background: isActive ? '#f8f9fa' : '#fff',
 							}}
 						>
-							<span style={{ flex: 1, fontWeight: 500 }}>{provider.name}</span>
+							<span style={{ flex: 1, fontWeight: 500, color: '#1a1a1a' }}>
+								{provider.name}
+							</span>
 
 							{isSignedIn && !isActive && (
 								<span style={{ fontSize: 13, color: '#2e7d32' }}>
@@ -188,8 +189,10 @@ export function OAuthPanel({
 							{isSignedIn && (
 								<button
 									onClick={() => {
-										store.removeOAuthEntry(provider.id);
-										onUpdate();
+										void (async () => {
+											await store.removeOAuthEntry(provider.id);
+											await onUpdate();
+										})();
 									}}
 									disabled={flowRunning}
 									style={btnStyle(flowRunning, true)}
@@ -337,7 +340,11 @@ function OAuthFlowView({
 // Micro style helpers
 // ---------------------------------------------------------------------------
 
-const statusText: React.CSSProperties = { margin: 0, fontSize: 13, color: '#555' };
+const statusText: React.CSSProperties = {
+	margin: 0,
+	fontSize: 13,
+	color: '#555',
+};
 
 const inputStyle: React.CSSProperties = {
 	flex: 1,

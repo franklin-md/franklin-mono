@@ -1,5 +1,8 @@
-import { loginOAuth } from '@franklin/auth';
-import type { AuthEntry, AuthStore } from '@franklin/auth';
+import type {
+	AuthEntry,
+	AuthChangeListener,
+	IAuthManager,
+} from '@franklin/auth';
 import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import type { OAuthLoginCallbacks } from '@mariozechner/pi-ai/oauth';
@@ -8,9 +11,11 @@ import type { WebContents } from 'electron';
 
 import {
 	AUTH_GET_CANONICAL_PROVIDERS,
+	AUTH_GET_API_KEY,
 	AUTH_GET_PROVIDERS,
 	AUTH_LOAD,
 	AUTH_OPEN_EXTERNAL,
+	AUTH_ON_CHANGE,
 	AUTH_OAUTH_ON_AUTH,
 	AUTH_OAUTH_ON_PROGRESS,
 	AUTH_OAUTH_ON_PROMPT,
@@ -25,7 +30,7 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
- * Bridges renderer auth UI <-> main-process `AuthStore` over Electron IPC.
+ * Bridges renderer auth UI <-> main-process auth manager over Electron IPC.
  *
  * - Exposes simple CRUD operations (load / setEntry / removeEntry) as invoke handlers.
  * - Runs the full OAuth login flow in-process, forwarding each callback step
@@ -35,31 +40,42 @@ import {
 export class AuthRelay {
 	/** Resolvers waiting for a promptResponse keyed by flowId. */
 	private readonly promptResolvers = new Map<string, (value: string) => void>();
+	private readonly unsubscribeAuthChange: () => void;
 
 	constructor(
 		private readonly webContents: WebContents,
-		private readonly store: AuthStore,
+		private readonly manager: IAuthManager,
 	) {
+		const authChangeListener: AuthChangeListener = (provider, authKey) => {
+			this.webContents.send(AUTH_ON_CHANGE, provider, authKey);
+		};
+		this.unsubscribeAuthChange = this.manager.onAuthChange(authChangeListener);
+
 		ipcMain.handle(AUTH_GET_PROVIDERS, () =>
 			getOAuthProviders().map((p) => ({ id: p.id, name: p.name })),
 		);
 		ipcMain.handle(AUTH_GET_CANONICAL_PROVIDERS, () => getProviders());
 
-		ipcMain.handle(AUTH_LOAD, () => store.load());
+		ipcMain.handle(AUTH_LOAD, () => this.manager.load());
+		ipcMain.handle(AUTH_GET_API_KEY, (_e, provider: string) =>
+			this.manager.getApiKey(provider),
+		);
 
-		ipcMain.handle(AUTH_SET_ENTRY, (_e, provider: string, entry: AuthEntry) => {
-			store.setEntry(provider, entry);
-		});
+		ipcMain.handle(AUTH_SET_ENTRY, (_e, provider: string, entry: AuthEntry) =>
+			this.manager.setEntry(provider, entry),
+		);
 
-		ipcMain.handle(AUTH_REMOVE_ENTRY, (_e, provider: string) => {
-			store.removeEntry(provider);
-		});
+		ipcMain.handle(AUTH_REMOVE_ENTRY, (_e, provider: string) =>
+			this.manager.removeEntry(provider),
+		);
 
 		// Long-running invoke: resolves only when the OAuth flow completes.
 		ipcMain.handle(AUTH_START_LOGIN, (_e, provider: string, flowId: string) =>
 			this.runOAuthFlow(provider, flowId),
 		);
-		ipcMain.handle(AUTH_OPEN_EXTERNAL, (_e, url: string) => shell.openExternal(url));
+		ipcMain.handle(AUTH_OPEN_EXTERNAL, (_e, url: string) =>
+			shell.openExternal(url),
+		);
 
 		ipcMain.on(AUTH_PROMPT_RESPONSE, (_e, flowId: string, value: string) => {
 			this.promptResolvers.get(flowId)?.(value);
@@ -86,7 +102,7 @@ export class AuthRelay {
 		};
 
 		try {
-			await loginOAuth(provider, this.store, callbacks);
+			await this.manager.loginOAuth(provider as any, callbacks);
 			return { success: true };
 		} catch (err) {
 			return {
@@ -99,9 +115,11 @@ export class AuthRelay {
 	}
 
 	dispose(): void {
+		this.unsubscribeAuthChange();
 		ipcMain.removeHandler(AUTH_GET_PROVIDERS);
 		ipcMain.removeHandler(AUTH_GET_CANONICAL_PROVIDERS);
 		ipcMain.removeHandler(AUTH_LOAD);
+		ipcMain.removeHandler(AUTH_GET_API_KEY);
 		ipcMain.removeHandler(AUTH_SET_ENTRY);
 		ipcMain.removeHandler(AUTH_REMOVE_ENTRY);
 		ipcMain.removeHandler(AUTH_START_LOGIN);

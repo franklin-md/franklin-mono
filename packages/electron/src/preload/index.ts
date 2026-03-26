@@ -9,8 +9,10 @@ import {
 	MCP_STOP,
 	AUTH_GET_PROVIDERS,
 	AUTH_GET_CANONICAL_PROVIDERS,
+	AUTH_GET_API_KEY,
 	AUTH_LOAD,
 	AUTH_OPEN_EXTERNAL,
+	AUTH_ON_CHANGE,
 	AUTH_SET_ENTRY,
 	AUTH_REMOVE_ENTRY,
 	AUTH_START_LOGIN,
@@ -87,6 +89,11 @@ const auth = {
 
 	load: (): Promise<unknown> => ipcRenderer.invoke(AUTH_LOAD),
 
+	getApiKey: (provider: string): Promise<string | undefined> =>
+		ipcRenderer.invoke(AUTH_GET_API_KEY, provider) as Promise<
+			string | undefined
+		>,
+
 	setEntry: (provider: string, entry: unknown): Promise<void> =>
 		ipcRenderer.invoke(AUTH_SET_ENTRY, provider, entry) as Promise<void>,
 
@@ -143,11 +150,30 @@ const auth = {
 			flowId: string,
 			prompt: unknown,
 		) =>
-			cb(flowId, prompt as { message: string; placeholder?: string; allowEmpty?: boolean });
+			cb(
+				flowId,
+				prompt as {
+					message: string;
+					placeholder?: string;
+					allowEmpty?: boolean;
+				},
+			);
 		ipcRenderer.on(AUTH_OAUTH_ON_PROMPT, handler);
 		return () => ipcRenderer.removeListener(AUTH_OAUTH_ON_PROMPT, handler);
 	},
-}
+
+	onAuthChange: (
+		cb: (provider: string, authKey: string | undefined) => void,
+	) => {
+		const handler = (
+			_e: Electron.IpcRendererEvent,
+			provider: string,
+			authKey: string | undefined,
+		) => cb(provider, authKey);
+		ipcRenderer.on(AUTH_ON_CHANGE, handler);
+		return () => ipcRenderer.removeListener(AUTH_ON_CHANGE, handler);
+	},
+};
 // App (request/response over invoke)
 // ---------------------------------------------------------------------------
 

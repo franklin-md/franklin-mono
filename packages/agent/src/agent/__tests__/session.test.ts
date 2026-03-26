@@ -8,8 +8,90 @@ import {
 	type AgentProtocol,
 } from '@franklin/mini-acp';
 import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
+import type { IAuthManager } from '@franklin/auth';
 import { emptyCtx, mergeCtx, SessionManager } from '../session/index.js';
 import type { Session } from '../session/types.js';
+
+function mockAuthManager(): IAuthManager {
+	return {
+		load: async () => ({}),
+		getEntry: async () => undefined,
+		getApiKey: async () => undefined,
+		setEntry: async () => {},
+		removeEntry: async () => {},
+		setApiKeyEntry: async () => {},
+		removeApiKeyEntry: async () => {},
+		setOAuthEntry: async () => {},
+		removeOAuthEntry: async () => {},
+		loginOAuth: async () => {},
+		setApiKey: async () => {},
+		onAuthChange: () => () => {},
+	};
+}
+
+function createMutableAuthManager(
+	initialKeys: Record<string, string | undefined> = {},
+) {
+	const keys = { ...initialKeys };
+	const listeners = new Set<
+		(provider: string, authKey: string | undefined) => void | Promise<void>
+	>();
+
+	const store: IAuthManager & {
+		setKey(provider: string, key: string | undefined): void;
+		emitChange(provider: string): Promise<void>;
+	} = {
+		load: async () =>
+			Object.fromEntries(
+				Object.entries(keys)
+					.filter(([, key]) => key !== undefined)
+					.map(([provider, key]) => [
+						provider,
+						{ apiKey: { type: 'apiKey' as const, key: key! } },
+					]),
+			),
+		getEntry: async (provider: string) => {
+			const key = keys[provider];
+			return key === undefined
+				? undefined
+				: {
+						apiKey: { type: 'apiKey' as const, key },
+					};
+		},
+		getApiKey: async (provider: string) => keys[provider],
+		setEntry: async () => {},
+		removeEntry: async () => {},
+		setApiKeyEntry: async () => {},
+		removeApiKeyEntry: async () => {},
+		setOAuthEntry: async () => {},
+		removeOAuthEntry: async () => {},
+		loginOAuth: async () => {},
+		setApiKey: async (provider: string, key: string) => {
+			keys[provider] = key;
+		},
+		onAuthChange(
+			listener: (
+				provider: string,
+				authKey: string | undefined,
+			) => void | Promise<void>,
+		) {
+			listeners.add(listener);
+			return () => {
+				listeners.delete(listener);
+			};
+		},
+		setKey(provider: string, key: string | undefined) {
+			keys[provider] = key;
+		},
+		async emitChange(provider: string) {
+			for (const listener of listeners) {
+				await listener(provider, keys[provider]);
+			}
+		},
+	};
+
+	return store;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -28,7 +110,7 @@ function createTestTransport(): ClientProtocol {
 			return {};
 		},
 		async *prompt() {
-			yield { type: 'turnEnd' as const };
+			yield { type: 'turnEnd', stopReason: 'end_turn' as const };
 		},
 		async cancel() {
 			return;
@@ -148,11 +230,13 @@ describe('SessionManager', () => {
 
 	describe('new', () => {
 		it('creates a session with a unique ID and agent', async () => {
-			const manager = new SessionManager(createTestTransport, [
-				counterExtension(),
-			]);
+			const manager = new SessionManager(
+				createTestTransport,
+				[counterExtension()],
+				mockAuthManager(),
+			);
 
-			const session = track(await manager.new());
+			const session = track(await manager.new({}));
 
 			expect(typeof session.sessionId).toBe('string');
 			expect(session.sessionId.length).toBeGreaterThan(0);
@@ -160,12 +244,14 @@ describe('SessionManager', () => {
 		});
 
 		it('creates independent sessions with separate stores', async () => {
-			const manager = new SessionManager(createTestTransport, [
-				counterExtension(),
-			]);
+			const manager = new SessionManager(
+				createTestTransport,
+				[counterExtension()],
+				mockAuthManager(),
+			);
 
-			const s1 = track(await manager.new());
-			const s2 = track(await manager.new());
+			const s1 = track(await manager.new({}));
+			const s2 = track(await manager.new({}));
 
 			const c1 = s1.agent.stores.get('counter')!.store;
 			const c2 = s2.agent.stores.get('counter')!.store;
@@ -175,33 +261,97 @@ describe('SessionManager', () => {
 		});
 
 		it('ctx extension shadows initial context', async () => {
-			const manager = new SessionManager(createTestTransport, []);
+			const manager = new SessionManager(
+				createTestTransport,
+				[],
+				mockAuthManager(),
+			);
 
-			const session = track(await manager.new());
+			const session = track(await manager.new({}));
 			const ctx = getCtx(session);
 
 			expect(ctx.history.systemPrompt).toBe('');
 			expect(ctx.history.messages).toEqual([]);
 			expect(ctx.tools).toEqual([]);
 		});
+
+			it('invalidates existing session api keys when auth changes', async () => {
+			const setContextCalls: Array<{
+				ctx: { config?: Record<string, unknown> };
+			}> = [];
+			const authManager = createMutableAuthManager({ anthropic: 'sk-initial' });
+
+			function trackingTransport(): ClientProtocol {
+				const { a, b } = createDuplexPair();
+				const clientTransport = a as unknown as ClientProtocol;
+				const agentTransport = b as unknown as AgentProtocol;
+
+				createAgentConnection(agentTransport).bind({
+					async initialize() {
+						return {};
+					},
+					async setContext(params) {
+						setContextCalls.push(
+							params as { ctx: { config?: Record<string, unknown> } },
+						);
+						return {};
+					},
+					async *prompt() {
+						yield { type: 'turnEnd', stopReason: 'end_turn' as const };
+					},
+					async cancel() {
+						return;
+					},
+				});
+				return clientTransport;
+			}
+
+			const manager = new SessionManager(trackingTransport, [], authManager);
+			const session = track(
+				await manager.new({
+					provider: 'anthropic',
+					model: 'claude-opus-4-6',
+					reasoning: 'high',
+				}),
+			);
+
+			authManager.setKey('anthropic', undefined);
+			await authManager.emitChange('anthropic');
+
+			expect(setContextCalls).toHaveLength(2);
+			expect(setContextCalls[1]!.ctx.config).toEqual({
+				provider: 'anthropic',
+				model: 'claude-opus-4-6',
+				reasoning: 'high',
+			});
+			expect(getCtx(session).config).toEqual({
+				provider: 'anthropic',
+				model: 'claude-opus-4-6',
+				reasoning: 'high',
+			});
+		});
 	});
 
 	describe('get', () => {
 		it('retrieves a session by ID', async () => {
-			const manager = new SessionManager(createTestTransport, [
-				counterExtension(),
-			]);
+			const manager = new SessionManager(
+				createTestTransport,
+				[counterExtension()],
+				mockAuthManager(),
+			);
 
-			const session = track(await manager.new());
+			const session = track(await manager.new({}));
 			const retrieved = manager.get(session.sessionId);
 
 			expect(retrieved).toBe(session);
 		});
 
 		it('throws for unknown session ID', () => {
-			const manager = new SessionManager(createTestTransport, [
-				counterExtension(),
-			]);
+			const manager = new SessionManager(
+				createTestTransport,
+				[counterExtension()],
+				mockAuthManager(),
+			);
 
 			expect(() => manager.get('nonexistent')).toThrow(
 				'Session nonexistent not found',
@@ -211,11 +361,13 @@ describe('SessionManager', () => {
 
 	describe('child', () => {
 		it('creates a child with fresh private stores', async () => {
-			const manager = new SessionManager(createTestTransport, [
-				counterExtension(),
-			]);
+			const manager = new SessionManager(
+				createTestTransport,
+				[counterExtension()],
+				mockAuthManager(),
+			);
 
-			const parent = track(await manager.new());
+			const parent = track(await manager.new({}));
 			const parentCounter = parent.agent.stores.get('counter')!.store;
 			parentCounter.set(() => 10);
 
@@ -232,11 +384,13 @@ describe('SessionManager', () => {
 		});
 
 		it('shares global stores between parent and child', async () => {
-			const manager = new SessionManager(createTestTransport, [
-				sharedCounterExtension(),
-			]);
+			const manager = new SessionManager(
+				createTestTransport,
+				[sharedCounterExtension()],
+				mockAuthManager(),
+			);
 
-			const parent = track(await manager.new());
+			const parent = track(await manager.new({}));
 			const child = track(await manager.child(parent.sessionId));
 
 			const parentCounter = parent.agent.stores.get('counter')!.store;
@@ -250,9 +404,13 @@ describe('SessionManager', () => {
 		});
 
 		it('starts a fresh conversation (no history from parent)', async () => {
-			const manager = new SessionManager(createTestTransport, []);
+			const manager = new SessionManager(
+				createTestTransport,
+				[],
+				mockAuthManager(),
+			);
 
-			const parent = track(await manager.new());
+			const parent = track(await manager.new({}));
 			setSystemPrompt(parent, 'parent prompt');
 
 			const child = track(await manager.child(parent.sessionId));
@@ -266,11 +424,13 @@ describe('SessionManager', () => {
 
 	describe('fork', () => {
 		it('creates a fork with copied stores', async () => {
-			const manager = new SessionManager(createTestTransport, [
-				counterExtension(),
-			]);
+			const manager = new SessionManager(
+				createTestTransport,
+				[counterExtension()],
+				mockAuthManager(),
+			);
 
-			const parent = track(await manager.new());
+			const parent = track(await manager.new({}));
 			const parentCounter = parent.agent.stores.get('counter')!.store;
 			parentCounter.set(() => 5);
 
@@ -286,9 +446,13 @@ describe('SessionManager', () => {
 		});
 
 		it('inherits parent systemPrompt by default', async () => {
-			const manager = new SessionManager(createTestTransport, []);
+			const manager = new SessionManager(
+				createTestTransport,
+				[],
+				mockAuthManager(),
+			);
 
-			const parent = track(await manager.new());
+			const parent = track(await manager.new({}));
 			setSystemPrompt(parent, 'parent prompt');
 			const forked = track(await manager.fork(parent.sessionId));
 
@@ -297,9 +461,13 @@ describe('SessionManager', () => {
 		});
 
 		it('clones parent history and config on fork', async () => {
-			const manager = new SessionManager(createTestTransport, []);
+			const manager = new SessionManager(
+				createTestTransport,
+				[],
+				mockAuthManager(),
+			);
 
-			const parent = track(await manager.new());
+			const parent = track(await manager.new({}));
 			setSystemPrompt(parent, 'parent prompt');
 			parent.tracker.append({
 				role: 'user',
@@ -348,7 +516,7 @@ describe('SessionManager', () => {
 						return {};
 					},
 					async *prompt() {
-						yield { type: 'turnEnd' as const };
+						yield { type: 'turnEnd', stopReason: 'end_turn' as const };
 					},
 					async cancel() {
 						return;
@@ -357,9 +525,13 @@ describe('SessionManager', () => {
 				return clientTransport;
 			}
 
-			const manager = new SessionManager(trackingTransport, []);
+			const manager = new SessionManager(
+				trackingTransport,
+				[],
+				mockAuthManager(),
+			);
 
-			const session = track(await manager.new());
+			const session = track(await manager.new({}));
 			setSystemPrompt(session, 'test');
 
 			// Manually populate the tracker with messages

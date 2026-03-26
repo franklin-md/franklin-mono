@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 
-import type { IAuthStore } from '../types.js';
+import type { IAuthStore } from '@franklin/auth';
 
 const AuthStoreContext = createContext<IAuthStore | null>(null);
 
@@ -8,7 +8,7 @@ const AuthStoreContext = createContext<IAuthStore | null>(null);
  * Provides an auth store to all descendant auth components.
  *
  * Accepts any `IAuthStore` implementation — the Node.js `AuthStore` for
- * direct use, or `ElectronAuthStore` from `@franklin/electron/renderer` in
+ * direct use, or `ElectronAuthManager` from `@franklin/electron/renderer` in
  * an Electron renderer process.
  */
 export function AuthProvider({

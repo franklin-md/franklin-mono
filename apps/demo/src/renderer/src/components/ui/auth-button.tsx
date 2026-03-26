@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import type { AuthFile } from '../types.js';
+import type { AuthFile } from '@franklin/auth';
+
 import { useAuthStore } from './auth-context.js';
 import { AuthModal } from './auth-modal.js';
 import type { OAuthLoginFn, OAuthProviderMeta } from './oauth-panel.js';
@@ -58,8 +59,25 @@ export function AuthButton({
 }) {
 	const store = useAuthStore();
 	const [open, setOpen] = useState(false);
-	const [providerCount, setProviderCount] = useState(() => Object.keys(store.load()).length);
+	const [providerCount, setProviderCount] = useState(0);
 	const isSignedIn = providerCount > 0;
+
+	useEffect(() => {
+		let cancelled = false;
+
+		async function loadProviderCount() {
+			const entries = await store.load();
+			if (!cancelled) {
+				setProviderCount(Object.keys(entries).length);
+			}
+		}
+
+		void loadProviderCount();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [store]);
 
 	function handleEntriesChange(entries: AuthFile) {
 		setProviderCount(Object.keys(entries).length);

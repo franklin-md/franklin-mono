@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
-import type { AuthFile, ApiKeyEntry } from '../types.js';
+import type { AuthFile, ApiKeyEntry } from '@franklin/auth';
+
 import { useAuthStore } from './auth-context.js';
 import type { OAuthProviderMeta } from './oauth-panel.js';
 
@@ -51,7 +52,7 @@ export function ApiKeyPanel({
 	providers,
 }: {
 	savedEntries: AuthFile;
-	onUpdate: () => void;
+	onUpdate: () => Promise<void>;
 	providers: OAuthProviderMeta[];
 }) {
 	const store = useAuthStore();
@@ -66,11 +67,14 @@ export function ApiKeyPanel({
 		}
 	}, [provider, providers]);
 
-	const apiKeyEntries = Object.entries(savedEntries).filter(
-		([, entry]) => Boolean(entry.apiKey),
-	) as [string, AuthFile[string] & { apiKey: { type: 'apiKey'; key: string } }][];
+	const apiKeyEntries = Object.entries(savedEntries).filter(([, entry]) =>
+		Boolean(entry.apiKey),
+	) as [
+		string,
+		AuthFile[string] & { apiKey: { type: 'apiKey'; key: string } },
+	][];
 
-	function handleSubmit(e: FormEvent) {
+	async function handleSubmit(e: FormEvent) {
 		e.preventDefault();
 		if (!provider.trim()) {
 			setError('Provider name is required');
@@ -81,16 +85,16 @@ export function ApiKeyPanel({
 			return;
 		}
 		const entry: ApiKeyEntry = { type: 'apiKey', key: key.trim() };
-		store.setApiKeyEntry(provider.trim(), entry);
+		await store.setApiKeyEntry(provider.trim(), entry);
 		setProvider('');
 		setKey('');
 		setError(null);
-		onUpdate();
+		await onUpdate();
 	}
 
-	function handleRemove(providerId: string) {
-		store.removeApiKeyEntry(providerId);
-		onUpdate();
+	async function handleRemove(providerId: string) {
+		await store.removeApiKeyEntry(providerId);
+		await onUpdate();
 	}
 
 	return (
@@ -117,7 +121,7 @@ export function ApiKeyPanel({
 								<td style={tdStyle}>
 									<button
 										onClick={() => {
-											handleRemove(id);
+											void handleRemove(id);
 										}}
 										style={{
 											border: '1px solid #ccc',
@@ -145,7 +149,14 @@ export function ApiKeyPanel({
 					paddingTop: apiKeyEntries.length > 0 ? 12 : 0,
 				}}
 			>
-				<p style={{ margin: '0 0 10px', fontWeight: 500, fontSize: 14 }}>
+				<p
+					style={{
+						margin: '0 0 10px',
+						fontWeight: 500,
+						fontSize: 14,
+						color: '#1a1a1a',
+					}}
+				>
 					Add API Key
 				</p>
 				<form
@@ -212,8 +223,9 @@ const thStyle: React.CSSProperties = {
 	textAlign: 'left',
 	padding: '6px 8px',
 	fontWeight: 600,
+	color: '#1a1a1a',
 };
-const tdStyle: React.CSSProperties = { padding: '8px 8px' };
+const tdStyle: React.CSSProperties = { padding: '8px 8px', color: '#1a1a1a' };
 const inputStyle: React.CSSProperties = {
 	padding: '7px 10px',
 	border: '1px solid #ccc',
@@ -221,4 +233,5 @@ const inputStyle: React.CSSProperties = {
 	fontSize: 13,
 	width: '100%',
 	boxSizing: 'border-box',
+	color: '#1a1a1a',
 };

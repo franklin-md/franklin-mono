@@ -1,6 +1,12 @@
-import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
-import type { OAuthCredentials, OAuthProviderId } from '@mariozechner/pi-ai/oauth';
-import type { ApiKeyEntry, AuthEntry, AuthFile, IAuthStore, OAuthEntry, OAuthLoginCallbacks } from '@franklin/auth';
+import type {
+	ApiKeyEntry,
+	AuthChangeListener,
+	AuthEntry,
+	AuthFile,
+	IAuthManager,
+	OAuthEntry,
+	OAuthLoginCallbacks,
+} from '@franklin/auth';
 
 // ---------------------------------------------------------------------------
 // AuthBridge — matches the auth slice exposed by the preload
@@ -10,135 +16,136 @@ export interface AuthBridge {
 	getProviders(): Promise<Array<{ id: string; name: string }>>;
 	getCanonicalProviders(): Promise<string[]>;
 	load(): Promise<AuthFile>;
+	getApiKey(provider: string): Promise<string | undefined>;
 	setEntry(provider: string, entry: AuthEntry): Promise<void>;
 	removeEntry(provider: string): Promise<void>;
 	openExternal(url: string): Promise<void>;
 
-	startLogin(provider: string, flowId: string): Promise<{ success: boolean; error?: string }>;
+	startLogin(
+		provider: string,
+		flowId: string,
+	): Promise<{ success: boolean; error?: string }>;
 	sendPromptResponse(flowId: string, value: string): void;
-	onOAuthAuth(cb: (flowId: string, info: { url: string; instructions?: string }) => void): () => void;
+	onOAuthAuth(
+		cb: (flowId: string, info: { url: string; instructions?: string }) => void,
+	): () => void;
 	onOAuthProgress(cb: (flowId: string, message: string) => void): () => void;
-	onOAuthPrompt(cb: (flowId: string, prompt: { message: string; placeholder?: string; allowEmpty?: boolean }) => void): () => void;
+	onOAuthPrompt(
+		cb: (
+			flowId: string,
+			prompt: { message: string; placeholder?: string; allowEmpty?: boolean },
+		) => void,
+	): () => void;
+	onAuthChange(
+		cb: (provider: string, authKey: string | undefined) => void,
+	): () => void;
 }
 
 // ---------------------------------------------------------------------------
-// ElectronAuthStore
+// ElectronAuthManager
 // ---------------------------------------------------------------------------
 
 /**
- * Renderer-side implementation of `IAuthStore` that proxies all reads and
+ * Renderer-side implementation of `IAuthManager` that proxies all reads and
  * writes to the main process via the auth IPC bridge.
- *
- * State is loaded once on `initialize()` and kept in a local cache that is
- * updated optimistically on every mutation — no disk reads happen during renders.
  *
  * @example
  * ```ts
- * const store = new ElectronAuthStore(window.__franklinBridge.auth);
- * await store.initialize();
- * // pass to <AuthProvider store={store}>
+ * const manager = new ElectronAuthManager(window.__franklinBridge.auth);
+ * await manager.initialize();
+ * // pass to <AuthProvider store={manager}>
  * ```
  */
-export class ElectronAuthStore implements IAuthStore {
-	private cache: AuthFile = {};
-
+export class ElectronAuthManager implements IAuthManager {
 	constructor(private readonly bridge: AuthBridge) {}
 
 	/** Load initial state from main. Must be called before passing to `<AuthProvider>`. */
 	async initialize(): Promise<void> {
-		this.cache = await this.bridge.load();
+		return;
 	}
 
 	async refresh(): Promise<void> {
-		this.cache = await this.bridge.load();
+		return;
 	}
 
-	/** Synchronous read from the local cache — never hits disk. */
-	load(): AuthFile {
-		return this.cache;
+	async load(): Promise<AuthFile> {
+		return this.bridge.load();
 	}
 
-	setEntry(provider: string, entry: AuthEntry): void {
-		this.cache = { ...this.cache, [provider]: entry };
-		void this.bridge.setEntry(provider, entry);
+	async getEntry(provider: string): Promise<AuthEntry | undefined> {
+		return (await this.bridge.load())[provider];
 	}
 
-	removeEntry(provider: string): void {
-		const next = { ...this.cache };
-		// eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-		delete next[provider];
-		this.cache = next;
-		void this.bridge.removeEntry(provider);
+	async setEntry(provider: string, entry: AuthEntry): Promise<void> {
+		await this.bridge.setEntry(provider, entry);
 	}
-	setApiKeyEntry(provider: string, entry: ApiKeyEntry): void {
+
+	async removeEntry(provider: string): Promise<void> {
+		await this.bridge.removeEntry(provider);
+	}
+
+	async setApiKeyEntry(provider: string, entry: ApiKeyEntry): Promise<void> {
 		const nextEntry: AuthEntry = {
-			...(this.cache[provider] ?? {}),
+			...((await this.getEntry(provider)) ?? {}),
 			apiKey: entry,
 		};
-
-		this.cache = { ...this.cache, [provider]: nextEntry };
-		void this.bridge.setEntry(provider, nextEntry);
+		await this.bridge.setEntry(provider, nextEntry);
 	}
 
-	removeApiKeyEntry(provider: string): void {
-		const current = this.cache[provider];
+	async removeApiKeyEntry(provider: string): Promise<void> {
+		const current = await this.getEntry(provider);
 		if (!current) return;
 
 		const { apiKey: _apiKey, ...rest } = current;
 		if (Object.keys(rest).length === 0) {
-			const next = { ...this.cache };
-			delete next[provider];
-			this.cache = next;
-			void this.bridge.removeEntry(provider);
+			await this.bridge.removeEntry(provider);
 			return;
 		}
 
-		this.cache = { ...this.cache, [provider]: rest };
-		void this.bridge.setEntry(provider, rest);
+		await this.bridge.setEntry(provider, rest);
 	}
 
-	setOAuthEntry(provider: string, entry: OAuthEntry): void {
+	async setOAuthEntry(provider: string, entry: OAuthEntry): Promise<void> {
 		const nextEntry: AuthEntry = {
-			...(this.cache[provider] ?? {}),
+			...((await this.getEntry(provider)) ?? {}),
 			oauth: entry,
 		};
-
-		this.cache = { ...this.cache, [provider]: nextEntry };
-		void this.bridge.setEntry(provider, nextEntry);
+		await this.bridge.setEntry(provider, nextEntry);
 	}
 
 	async getApiKey(provider: string): Promise<string | undefined> {
-		const entry = this.cache[provider];
-		if (!entry) return undefined;
-
-		if (entry.oauth) {
-			const credMap: Record<string, OAuthCredentials> = {
-				[provider]: entry.oauth.credentials,
-			};
-			const result = await getOAuthApiKey(provider as OAuthProviderId, credMap);
-			if (!result) return undefined;
-			this.setOAuthEntry(provider, { type: 'oauth', credentials: result.newCredentials });
-			return result.apiKey;
-		}
-
-		return entry.apiKey?.key;
+		return this.bridge.getApiKey(provider);
 	}
 
-	removeOAuthEntry(provider: string): void {
-		const current = this.cache[provider];
+	async loginOAuth(
+		provider: string,
+		callbacks: OAuthLoginCallbacks,
+	): Promise<void> {
+		const loginOAuth = createIpcLoginOAuth(this.bridge);
+		await loginOAuth(provider, callbacks);
+	}
+
+	async setApiKey(provider: string, key: string): Promise<void> {
+		await this.setApiKeyEntry(provider, { type: 'apiKey', key });
+	}
+
+	async removeOAuthEntry(provider: string): Promise<void> {
+		const current = await this.getEntry(provider);
 		if (!current) return;
 
 		const { oauth: _oauth, ...rest } = current;
 		if (Object.keys(rest).length === 0) {
-			const next = { ...this.cache };
-			delete next[provider];
-			this.cache = next;
-			void this.bridge.removeEntry(provider);
+			await this.bridge.removeEntry(provider);
 			return;
 		}
 
-		this.cache = { ...this.cache, [provider]: rest };
-		void this.bridge.setEntry(provider, rest);
+		await this.bridge.setEntry(provider, rest);
+	}
+
+	onAuthChange(listener: AuthChangeListener): () => void {
+		return this.bridge.onAuthChange((provider, authKey) => {
+			void listener(provider, authKey);
+		});
 	}
 }
 
