@@ -100,6 +100,7 @@ describe('bindMain', () => {
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
+					getProvider: async () => ({ login: async () => {} }),
 				},
 			},
 			createWebContents(1),
@@ -129,6 +130,7 @@ describe('bindMain', () => {
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
+					getProvider: async () => ({ login: async () => {} }),
 				},
 			},
 			createWebContents(1),
@@ -163,6 +165,7 @@ describe('bindMain', () => {
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
+					getProvider: async () => ({ login: async () => {} }),
 				},
 			},
 			createWebContents(1),

@@ -1,4 +1,3 @@
-import { getOAuthProvider } from '@mariozechner/pi-ai/oauth';
 import type {
 	OAuthLoginCallbacks,
 	OAuthProviderId,
@@ -87,11 +86,7 @@ export class AuthManager implements IAuthManager {
 		provider: OAuthProviderId,
 		callbacks: OAuthLoginCallbacks,
 	): Promise<void> {
-		const oauthProvider = getOAuthProvider(provider);
-		if (!oauthProvider) {
-			throw new Error(`Unknown OAuth provider: "${provider}"`);
-		}
-
+		const oauthProvider = await this.platform.ai.getProvider(provider);
 		const credentials = await oauthProvider.login(callbacks);
 		await this.store.setOAuthEntry(provider, {
 			type: 'oauth',

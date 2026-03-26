@@ -1,6 +1,12 @@
 import type { ClientProtocol } from '@franklin/mini-acp';
 
-import { handle, method, proxy, transport } from './descriptors/factories.js';
+import {
+	handle,
+	lease,
+	method,
+	proxy,
+	transport,
+} from './descriptors/factories.js';
 import type { PreloadBridgeOf } from './api.js';
 import type { Platform } from '@franklin/agent/browser';
 
@@ -22,6 +28,11 @@ export const schema = proxy({
 	ai: proxy({
 		getOAuthProviders: method(),
 		getApiKeyProviders: method(),
+		getProvider: lease(
+			proxy({
+				login: method(),
+			}),
+		),
 	}),
 	filesystem: proxy({
 		readFile: method(),
