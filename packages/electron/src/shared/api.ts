@@ -1,12 +1,12 @@
 import type {
+	AnyShape,
 	Descriptor,
-	DuplexDescriptor,
-	HandleMemberDescriptor,
-	LeaseDescriptor,
-	LeaseInnerDescriptor,
 	MethodDescriptor,
-	ProxyDescriptor,
-} from './descriptors/types.js';
+	NamespaceDescriptor,
+	ResourceDescriptor,
+	ResourceInnerDescriptor,
+	StreamDescriptor,
+} from '@franklin/lib/proxy';
 
 export interface IpcStreamBridge {
 	on: (callback: (packet: unknown) => void) => () => void;
@@ -18,54 +18,49 @@ interface BasePreloadLeaseBridge<TArgs extends unknown[] = unknown[]> {
 	kill: (id: string) => Promise<void>;
 }
 
-type PreloadLeaseNode<TShape extends Record<string, HandleMemberDescriptor>> = {
-	[K in keyof TShape]: TShape[K] extends MethodDescriptor<infer TArgs, infer TResult>
+type PreloadLeaseNode<TShape extends AnyShape> = {
+	[K in keyof TShape]: TShape[K] extends MethodDescriptor<
+		infer TArgs,
+		infer TResult
+	>
 		? (id: string, ...args: TArgs) => Promise<TResult>
-		: TShape[K] extends ProxyDescriptor<any, infer TChildShape>
-			? TChildShape extends Record<string, HandleMemberDescriptor>
-				? PreloadLeaseNode<TChildShape>
-				: never
+		: TShape[K] extends NamespaceDescriptor<any, infer TChildShape>
+			? PreloadLeaseNode<TChildShape>
 			: never;
 };
 
-type PreloadLeasePayload<TInner extends LeaseInnerDescriptor> =
-	TInner extends ProxyDescriptor<any, infer TShape>
-		? TShape extends Record<string, HandleMemberDescriptor>
-			? { proxy: PreloadLeaseNode<TShape> }
-			: never
+type PreloadLeasePayload<TInner extends ResourceInnerDescriptor> =
+	TInner extends NamespaceDescriptor<any, infer TShape>
+		? { proxy: PreloadLeaseNode<TShape> }
 		: {};
 
 export type PreloadLeaseBridge<
 	TArgs extends unknown[] = unknown[],
-	TInner extends LeaseInnerDescriptor = LeaseInnerDescriptor,
+	TInner extends ResourceInnerDescriptor = ResourceInnerDescriptor,
 > = BasePreloadLeaseBridge<TArgs> & PreloadLeasePayload<TInner>;
 
-export type PreloadTransportBridge<
-	TArgs extends unknown[] = unknown[],
-> = PreloadLeaseBridge<TArgs, DuplexDescriptor<any>>;
+export type PreloadTransportBridge<TArgs extends unknown[] = unknown[]> =
+	PreloadLeaseBridge<TArgs, StreamDescriptor<any, any>>;
 
 export type PreloadHandleBridge<
 	TArgs extends unknown[] = unknown[],
-	TShape extends Record<string, HandleMemberDescriptor> = Record<
-		string,
-		HandleMemberDescriptor
-	>,
-> = PreloadLeaseBridge<TArgs, ProxyDescriptor<any, TShape>>;
+	TShape extends AnyShape = AnyShape,
+> = PreloadLeaseBridge<TArgs, NamespaceDescriptor<any, TShape>>;
 
 type PreloadValue<TDescriptor extends Descriptor> =
 	TDescriptor extends MethodDescriptor<infer TArgs, infer TResult>
 		? (...args: TArgs) => Promise<TResult>
-		: TDescriptor extends LeaseDescriptor<infer TArgs, infer TInner>
+		: TDescriptor extends ResourceDescriptor<infer TArgs, infer TInner>
 			? PreloadLeaseBridge<TArgs, TInner>
-			: TDescriptor extends ProxyDescriptor<any, infer TShape>
+			: TDescriptor extends NamespaceDescriptor<any, infer TShape>
 				? PreloadNode<TShape>
 				: never;
 
-type PreloadNode<TShape extends Record<string, Descriptor>> = {
+type PreloadNode<TShape extends AnyShape> = {
 	[K in keyof TShape]: PreloadValue<TShape[K]>;
 };
 
-export type PreloadBridgeOf<TSchema extends ProxyDescriptor<any, any>> =
-	TSchema extends ProxyDescriptor<any, infer TShape>
+export type PreloadBridgeOf<TSchema extends NamespaceDescriptor<any, any>> =
+	TSchema extends NamespaceDescriptor<any, infer TShape>
 		? PreloadNode<TShape>
 		: never;

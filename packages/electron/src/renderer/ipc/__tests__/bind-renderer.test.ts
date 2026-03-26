@@ -1,3 +1,5 @@
+import type { Platform } from '@franklin/agent/browser';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FranklinPreloadBridge } from '../../../shared/schema.js';
 
@@ -51,6 +53,17 @@ describe('bindRenderer', () => {
 					},
 				},
 			},
+			ai: {
+				getOAuthProviders: vi.fn(async () => []),
+				getApiKeyProviders: vi.fn(async () => []),
+				getProvider: {
+					connect: vi.fn(async () => 'provider-1'),
+					kill: vi.fn(async () => {}),
+					proxy: {
+						login: vi.fn(async (_id: string) => ({}) as any),
+					},
+				},
+			},
 			filesystem: {
 				readFile: vi.fn(async () => new Uint8Array()),
 				writeFile: vi.fn(async () => {}),
@@ -73,10 +86,13 @@ describe('bindRenderer', () => {
 		};
 
 		const { bindRenderer } = await import('../bind/index.js');
-		const { releaseLease } = await import('../bind/lease.js');
 		const { schema } = await import('../../../shared/schema.js');
 
-		const bridge = bindRenderer('franklin', schema, rawBridge);
+		const bridge = bindRenderer(
+			'franklin',
+			schema,
+			rawBridge,
+		) as unknown as Platform;
 
 		const transport = await bridge.spawn();
 		await transport.writable.getWriter().write({ type: 'ping' } as never);
@@ -90,14 +106,20 @@ describe('bindRenderer', () => {
 		expect(rawBridge.spawn.kill).toHaveBeenCalledWith('agent-1');
 
 		const environment = await bridge.environment();
-		await expect(environment.filesystem.exists('/tmp')).resolves.toBe(true);
+		await expect(environment.filesystem!.exists('/tmp')).resolves.toBe(true);
 		expect(rawBridge.environment.connect).toHaveBeenCalledTimes(1);
-		expect(rawBridge.environment.proxy.filesystem.exists).toHaveBeenCalledWith(
+		const filesystemProxy = rawBridge.environment.proxy as unknown as {
+			filesystem: {
+				exists: ReturnType<typeof vi.fn>;
+			};
+		};
+		expect(filesystemProxy.filesystem.exists).toHaveBeenCalledWith(
 			'env-1',
 			'/tmp',
 		);
 
-		await releaseLease(environment);
+		// dispose() replaces the old releaseLease() pattern
+		await (environment as unknown as { dispose(): Promise<void> }).dispose();
 		expect(rawBridge.environment.kill).toHaveBeenCalledWith('env-1');
 	});
 });

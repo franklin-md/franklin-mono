@@ -1,16 +1,15 @@
 import { ipcRenderer } from 'electron';
-
 import {
-	isDuplexDescriptor,
-	isLeaseDescriptor,
 	isMethodDescriptor,
-	isProxyDescriptor,
-} from '../shared/descriptors/detect.js';
+	isNamespaceDescriptor,
+	isResourceDescriptor,
+	isStreamDescriptor,
+} from '@franklin/lib/proxy';
 import type {
+	AnyShape,
 	Descriptor,
-	HandleMemberDescriptor,
-	ProxyDescriptor,
-} from '../shared/descriptors/types.js';
+	NamespaceDescriptor,
+} from '@franklin/lib/proxy';
 import { createChannels } from '../shared/channels.js';
 import type { IpcStreamBridge, PreloadBridgeOf } from '../shared/api.js';
 
@@ -41,18 +40,18 @@ export function createIpcStreamBridge(channel: string): IpcStreamBridge {
 }
 
 function bindMembers(
-	shape: Record<string, Descriptor | HandleMemberDescriptor>,
+	shape: AnyShape,
 	context: BindContext,
 ): Record<string, unknown> {
 	const channels = createChannels(context.name);
 	const node: Record<string, unknown> = {};
 
 	for (const [key, descriptor] of Object.entries(shape) as Array<
-		[string, Descriptor | HandleMemberDescriptor]
+		[string, Descriptor]
 	>) {
-		if (isProxyDescriptor(descriptor)) {
+		if (isNamespaceDescriptor(descriptor)) {
 			node[key] = bindMembers(
-				descriptor.shape as Record<string, Descriptor | HandleMemberDescriptor>,
+				descriptor.shape,
 				context.kind === 'root'
 					? { kind: 'root', name: context.name, path: [...context.path, key] }
 					: {
@@ -87,7 +86,7 @@ function bindMembers(
 		}
 
 		const nextPath = [...context.path, key];
-		if (isLeaseDescriptor(descriptor)) {
+		if (isResourceDescriptor(descriptor)) {
 			const leaseBridge: Record<string, unknown> = {
 				connect: (...args: unknown[]) =>
 					ipcRenderer.invoke(
@@ -102,14 +101,14 @@ function bindMembers(
 			};
 			node[key] = leaseBridge;
 
-			if (isProxyDescriptor(descriptor.inner)) {
+			if (isNamespaceDescriptor(descriptor.inner)) {
 				leaseBridge.proxy = bindMembers(descriptor.inner.shape, {
 					kind: 'lease',
 					name: context.name,
 					leasePath: nextPath,
 					memberPath: [],
 				});
-			} else if (!isDuplexDescriptor(descriptor.inner)) {
+			} else if (!isStreamDescriptor(descriptor.inner)) {
 				throw new Error(`Unsupported leased value at ${nextPath.join('.')}`);
 			}
 		}
@@ -118,11 +117,11 @@ function bindMembers(
 	return node;
 }
 
-export function bindPreload<TSchema extends ProxyDescriptor<any, any>>(
+export function bindPreload<TSchema extends NamespaceDescriptor<any, any>>(
 	name: string,
 	schema: TSchema,
 ): PreloadBridgeOf<TSchema> {
-	return bindMembers(schema.shape, {
+	return bindMembers(schema.shape as AnyShape, {
 		kind: 'root',
 		name,
 		path: [],

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-
 import {
-	isDuplexDescriptor,
-	isLeaseDescriptor,
-	isProxyDescriptor,
-} from '../descriptors/detect.js';
+	isHandleDescriptor,
+	isNamespaceDescriptor,
+	isTransportDescriptor,
+} from '@franklin/lib/proxy';
+
 import { createChannels } from '../channels.js';
 import { schema } from '../schema.js';
 
@@ -37,14 +37,13 @@ describe('schema', () => {
 		expect(channels.getIpcStreamChannel()).toBe('franklin:ipc-stream');
 	});
 
-	it('captures environment and spawn as lease descriptors', () => {
+	it('captures environment and spawn as core resource descriptors', () => {
 		const spawn = schema.shape['spawn'];
 		const environment = schema.shape['environment'];
 		expect(spawn).toBeDefined();
 		expect(environment).toBeDefined();
-		expect(isLeaseDescriptor(spawn!)).toBe(true);
-		expect(isLeaseDescriptor(environment!)).toBe(true);
-		expect(isDuplexDescriptor(spawn!.inner)).toBe(true);
-		expect(isProxyDescriptor(environment!.inner)).toBe(true);
+		expect(isTransportDescriptor(spawn!)).toBe(true);
+		expect(isHandleDescriptor(environment!)).toBe(true);
+		expect(isNamespaceDescriptor(schema)).toBe(true);
 	});
 });

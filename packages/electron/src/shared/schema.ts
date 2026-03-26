@@ -1,40 +1,44 @@
 import type { ClientProtocol } from '@franklin/mini-acp';
+import { method, namespace, resource, transport } from '@franklin/lib/proxy';
+import type { ResourceDescriptor } from '@franklin/lib/proxy';
 
-import {
-	handle,
-	lease,
-	method,
-	proxy,
-	transport,
-} from './descriptors/factories.js';
 import type { PreloadBridgeOf } from './api.js';
-import type { Platform } from '@franklin/agent/browser';
 
-export const schema = proxy({
-	spawn: transport<() => Promise<ClientProtocol>>(),
-	environment: handle<Platform['environment']>({
-		filesystem: proxy({
-			readFile: method(),
-			writeFile: method(),
-			mkdir: method(),
-			access: method(),
-			stat: method(),
-			readdir: method(),
-			exists: method(),
-			glob: method(),
-			deleteFile: method(),
-		}),
+const environmentHandle = namespace({
+	filesystem: namespace({
+		readFile: method(),
+		writeFile: method(),
+		mkdir: method(),
+		access: method(),
+		stat: method(),
+		readdir: method(),
+		exists: method(),
+		glob: method(),
+		deleteFile: method(),
 	}),
-	ai: proxy({
+});
+
+const providerHandle = namespace({
+	login: method(),
+});
+
+const environmentResource: ResourceDescriptor<[], typeof environmentHandle> =
+	resource(environmentHandle);
+
+const providerResource: ResourceDescriptor<
+	[id: string],
+	typeof providerHandle
+> = resource(providerHandle);
+
+export const schema = namespace({
+	spawn: transport<() => Promise<ClientProtocol>>(),
+	environment: environmentResource,
+	ai: namespace({
 		getOAuthProviders: method(),
 		getApiKeyProviders: method(),
-		getProvider: lease(
-			proxy({
-				login: method(),
-			}),
-		),
+		getProvider: providerResource,
 	}),
-	filesystem: proxy({
+	filesystem: namespace({
 		readFile: method(),
 		writeFile: method(),
 		mkdir: method(),
