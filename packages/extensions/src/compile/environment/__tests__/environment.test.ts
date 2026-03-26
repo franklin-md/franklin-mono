@@ -9,8 +9,7 @@ import { StoreRegistry } from '../../../api/store/registry/index.js';
 
 function mockEnvironment(): Environment {
 	return {
-		cwd: '/tmp/test',
-		fs: {
+		filesystem: {
 			readFile: vi.fn(),
 			writeFile: vi.fn(),
 			mkdir: vi.fn(),
