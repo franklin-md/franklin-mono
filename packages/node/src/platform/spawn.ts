@@ -1,4 +1,4 @@
-import { createDuplexPair } from '@franklin/transport';
+import { createDuplexPair, debugStream } from '@franklin/transport';
 import {
 	createPiAdapter,
 	createAgentConnection,
@@ -9,7 +9,7 @@ import {
 import { getModel, type Model } from '@mariozechner/pi-ai';
 
 function defaultModel(): Model<string> {
-	return getModel('openrouter', 'z-ai/glm-5');
+	return getModel('anthropic', 'claude-opus-4-6');
 }
 
 export function spawn(): ClientProtocol {
@@ -20,7 +20,9 @@ export function spawn(): ClientProtocol {
 	const agentDuplex = b as unknown as AgentProtocol;
 
 	// Phase 1: get the remote proxy (toolExecute) without needing handlers yet
-	const { remote, bind } = createAgentConnection(agentDuplex);
+	const { remote, bind } = createAgentConnection(
+		debugStream(agentDuplex, 'agent'),
+	);
 
 	// Build handlers that capture the proxy directly — no forward-declaration needed
 	const handlers = createSessionAdapter((ctx) =>

@@ -40,6 +40,7 @@ export interface PiAdapterOptions {
 	/** BaseClient for reverse RPC (tool execution) */
 	client: TurnServer;
 	/** Pre-resolved pi-ai Model */
+	// TODO: Do not pre-resolve, instead take the LLMConfig in ctx and resolve from that
 	model: Model<string>;
 	/** Agent context (history, tools, config) */
 	ctx: Ctx;
@@ -76,7 +77,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 					// 	throw new Error(`Missing API key for provider: ${provider}`);
 					// }
 					// return key;
-					return ctx.config?.apiKey
+					return ctx.config?.apiKey;
 				},
 		streamFn,
 	});

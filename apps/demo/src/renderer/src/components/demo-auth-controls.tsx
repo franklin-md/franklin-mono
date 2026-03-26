@@ -39,7 +39,7 @@ export function DemoAuthControls() {
 	};
 
 	const openExternal = async (url: string) => {
-		window.open(url, '_blank');
+		await window.__franklinAuth.openExternal(url);
 	};
 
 	return (
