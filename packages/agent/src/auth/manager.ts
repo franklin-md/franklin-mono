@@ -18,9 +18,11 @@ import type { Platform } from '@franklin/agent';
 export class AuthManager implements IAuthManager {
 	private readonly listeners = new Set<AuthChangeListener>();
 	private readonly store: AuthStore;
+	private readonly platform: Platform;
 
-	constructor(private readonly platform: Platform) {
+	constructor(platform: Platform) {
 		this.store = new AuthStore(platform);
+		this.platform = platform;
 	}
 
 	onAuthChange(listener: AuthChangeListener): () => void {
@@ -28,6 +30,15 @@ export class AuthManager implements IAuthManager {
 		return () => {
 			this.listeners.delete(listener);
 		};
+	}
+
+	// TODO Right place?
+	async getOAuthProviders(): Promise<{ id: string; name: string }[]> {
+		return await this.platform.ai.getOAuthProviders();
+	}
+
+	async getApiKeyProviders(): Promise<string[]> {
+		return await this.platform.ai.getApiKeyProviders();
 	}
 
 	async load(): Promise<AuthFile> {

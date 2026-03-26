@@ -19,6 +19,10 @@ export const schema = proxy({
 			deleteFile: method(),
 		}),
 	}),
+	ai: proxy({
+		getOAuthProviders: method(),
+		getApiKeyProviders: method(),
+	}),
 	filesystem: proxy({
 		readFile: method(),
 		writeFile: method(),

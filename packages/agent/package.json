@@ -31,7 +31,6 @@
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
 		"@franklin/transport": "*",
-		"@franklin/auth": "*",
 		"zod": "^4.0.0"
 	}
 }

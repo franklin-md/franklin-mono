@@ -19,7 +19,6 @@
 	},
 	"dependencies": {
 		"@franklin/agent": "*",
-		"@franklin/auth": "*",
 		"@franklin/electron": "*",
 		"@franklin/extensions": "*",
 		"@franklin/lib": "*",

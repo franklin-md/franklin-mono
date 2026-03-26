@@ -1,6 +1,8 @@
 import type { Platform } from '@franklin/agent/browser';
 import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
+import { getProviders } from '@mariozechner/pi-ai';
+import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 
 export function createNodePlatform(): Platform {
 	const filesystem = createNodeFilesystem();
@@ -8,6 +10,12 @@ export function createNodePlatform(): Platform {
 
 	return {
 		spawn: async () => spawn(),
+		ai: {
+			getOAuthProviders: async () => {
+				return getOAuthProviders().map((p) => ({ id: p.id, name: p.name }));
+			},
+			getApiKeyProviders: async () => getProviders(),
+		},
 		environment: async () => {
 			environment ??= { filesystem };
 			return environment;
