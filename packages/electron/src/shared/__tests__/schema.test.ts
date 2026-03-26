@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { isHandleDescriptor } from '../descriptors/detect.js';
+import {
+	isDuplexDescriptor,
+	isLeaseDescriptor,
+	isProxyDescriptor,
+} from '../descriptors/detect.js';
 import { createChannels } from '../channels.js';
 import { schema } from '../schema.js';
 
@@ -15,7 +19,7 @@ describe('schema', () => {
 			'franklin:spawn:connect',
 		);
 		expect(channels.getLeaseKillChannel(['spawn'])).toBe('franklin:spawn:kill');
-		expect(channels.getTransportStreamChannel(['spawn'])).toBe(
+		expect(channels.getDuplexStreamChannel(['spawn'])).toBe(
 			'franklin:spawn:stream',
 		);
 		expect(channels.getLeaseConnectChannel(['environment'])).toBe(
@@ -25,17 +29,22 @@ describe('schema', () => {
 			'franklin:environment:kill',
 		);
 		expect(
-			channels.getHandleMethodChannel(
+			channels.getLeaseMethodChannel(
 				['environment'],
 				['filesystem', 'readFile'],
 			),
-		).toBe('franklin:environment:handle:filesystem:readFile');
+		).toBe('franklin:environment:lease:filesystem:readFile');
 		expect(channels.getIpcStreamChannel()).toBe('franklin:ipc-stream');
 	});
 
-	it('captures environment as a handle descriptor', () => {
+	it('captures environment and spawn as lease descriptors', () => {
+		const spawn = schema.shape['spawn'];
 		const environment = schema.shape['environment'];
+		expect(spawn).toBeDefined();
 		expect(environment).toBeDefined();
-		expect(isHandleDescriptor(environment!)).toBe(true);
+		expect(isLeaseDescriptor(spawn!)).toBe(true);
+		expect(isLeaseDescriptor(environment!)).toBe(true);
+		expect(isDuplexDescriptor(spawn!.inner)).toBe(true);
+		expect(isProxyDescriptor(environment!.inner)).toBe(true);
 	});
 });

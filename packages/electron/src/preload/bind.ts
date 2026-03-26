@@ -1,17 +1,16 @@
 import { ipcRenderer } from 'electron';
 
 import {
-	isHandleDescriptor,
+	isDuplexDescriptor,
+	isLeaseDescriptor,
 	isMethodDescriptor,
 	isProxyDescriptor,
-	isTransportDescriptor,
 } from '../shared/descriptors/detect.js';
 import type {
 	Descriptor,
 	HandleMemberDescriptor,
 	ProxyDescriptor,
 } from '../shared/descriptors/types.js';
-import { deserializeProxy } from '../shared/descriptors/serde.js';
 import { createChannels } from '../shared/channels.js';
 import type { IpcStreamBridge, PreloadBridgeOf } from '../shared/api.js';
 
@@ -20,7 +19,7 @@ type BindContext =
 	| {
 			kind: 'lease';
 			name: string;
-			handlePath: string[];
+			leasePath: string[];
 			memberPath: string[];
 	  };
 
@@ -59,7 +58,7 @@ function bindMembers(
 					: {
 							kind: 'lease',
 							name: context.name,
-							handlePath: context.handlePath,
+							leasePath: context.leasePath,
 							memberPath: [...context.memberPath, key],
 						},
 			);
@@ -70,38 +69,26 @@ function bindMembers(
 			const channel =
 				context.kind === 'root'
 					? channels.getMethodChannel([...context.path, key])
-					: channels.getHandleMethodChannel(context.handlePath, [
+					: channels.getLeaseMethodChannel(context.leasePath, [
 							...context.memberPath,
 							key,
 						]);
 			node[key] =
 				context.kind === 'root'
-					? async (...invokeArgs: unknown[]) => {
-							const result = await ipcRenderer.invoke(channel, ...invokeArgs);
-							return descriptor.returns
-								? deserializeProxy(result, descriptor.returns)
-								: result;
-						}
-					: async (id: string, ...invokeArgs: unknown[]) => {
-							const result = await ipcRenderer.invoke(
-								channel,
-								id,
-								...invokeArgs,
-							);
-							return descriptor.returns
-								? deserializeProxy(result, descriptor.returns)
-								: result;
-						};
+					? (...invokeArgs: unknown[]) =>
+							ipcRenderer.invoke(channel, ...invokeArgs)
+					: (id: string, ...invokeArgs: unknown[]) =>
+							ipcRenderer.invoke(channel, id, ...invokeArgs);
 			continue;
 		}
 
 		if (context.kind !== 'root') {
-			throw new Error(`Unsupported descriptor inside handle at ${key}`);
+			throw new Error(`Unsupported descriptor inside leased proxy at ${key}`);
 		}
 
 		const nextPath = [...context.path, key];
-		if (isTransportDescriptor(descriptor)) {
-			node[key] = {
+		if (isLeaseDescriptor(descriptor)) {
+			const leaseBridge: Record<string, unknown> = {
 				connect: (...args: unknown[]) =>
 					ipcRenderer.invoke(
 						channels.getLeaseConnectChannel(nextPath),
@@ -113,28 +100,18 @@ function bindMembers(
 						id,
 					) as Promise<void>,
 			};
-			continue;
-		}
+			node[key] = leaseBridge;
 
-		if (isHandleDescriptor(descriptor)) {
-			node[key] = {
-				connect: (...args: unknown[]) =>
-					ipcRenderer.invoke(
-						channels.getLeaseConnectChannel(nextPath),
-						...args,
-					) as Promise<string>,
-				kill: (id: string) =>
-					ipcRenderer.invoke(
-						channels.getLeaseKillChannel(nextPath),
-						id,
-					) as Promise<void>,
-				proxy: bindMembers(descriptor.shape, {
+			if (isProxyDescriptor(descriptor.inner)) {
+				leaseBridge.proxy = bindMembers(descriptor.inner.shape, {
 					kind: 'lease',
 					name: context.name,
-					handlePath: nextPath,
+					leasePath: nextPath,
 					memberPath: [],
-				}),
-			};
+				});
+			} else if (!isDuplexDescriptor(descriptor.inner)) {
+				throw new Error(`Unsupported leased value at ${nextPath.join('.')}`);
+			}
 		}
 	}
 

@@ -33,8 +33,8 @@ function createFilesystem(label: string): Filesystem {
 		mkdir: async () => {},
 		access: async () => {},
 		stat: async () => ({
-			isFile: () => label === 'a',
-			isDirectory: () => label !== 'a',
+			isFile: label === 'a',
+			isDirectory: label !== 'a',
 		}),
 		readdir: async () => [],
 		exists: async () => label === 'a',
@@ -128,7 +128,7 @@ describe('bindMain', () => {
 
 		const channels = createChannels('franklin');
 		const id = await invoke(channels.getLeaseConnectChannel(['environment']));
-		const exists = channels.getHandleMethodChannel(
+		const exists = channels.getLeaseMethodChannel(
 			['environment'],
 			['filesystem', 'exists'],
 		);

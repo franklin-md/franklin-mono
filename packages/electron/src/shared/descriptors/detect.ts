@@ -1,37 +1,61 @@
 import type {
 	Descriptor,
+	DuplexDescriptor,
 	HandleDescriptor,
+	LeaseDescriptor,
+	LeaseInnerDescriptor,
 	MethodDescriptor,
 	ProxyDescriptor,
 	TransportDescriptor,
 } from './types.js';
 import {
-	HANDLE_DESCRIPTOR,
+	DUPLEX_DESCRIPTOR,
+	LEASE_DESCRIPTOR,
 	METHOD_DESCRIPTOR,
 	PROXY_DESCRIPTOR,
-	TRANSPORT_DESCRIPTOR,
 } from './types.js';
 
+function hasKind(descriptor: unknown, kind: symbol): boolean {
+	return (
+		typeof descriptor === 'object' &&
+		descriptor !== null &&
+		'kind' in descriptor &&
+		(descriptor as { kind: symbol }).kind === kind
+	);
+}
+
 export function isMethodDescriptor(
-	descriptor: Descriptor,
+	descriptor: Descriptor | LeaseInnerDescriptor | unknown,
 ): descriptor is MethodDescriptor<any, any> {
-	return descriptor.kind === METHOD_DESCRIPTOR;
+	return hasKind(descriptor, METHOD_DESCRIPTOR);
 }
 
-export function isTransportDescriptor(
-	descriptor: Descriptor,
-): descriptor is TransportDescriptor<any, any> {
-	return descriptor.kind === TRANSPORT_DESCRIPTOR;
+export function isLeaseDescriptor(
+	descriptor: Descriptor | unknown,
+): descriptor is LeaseDescriptor<any, any> {
+	return hasKind(descriptor, LEASE_DESCRIPTOR);
 }
 
-export function isHandleDescriptor(
-	descriptor: Descriptor,
-): descriptor is HandleDescriptor<any, any, any> {
-	return descriptor.kind === HANDLE_DESCRIPTOR;
+export function isDuplexDescriptor(
+	descriptor: LeaseInnerDescriptor | unknown,
+): descriptor is DuplexDescriptor<any> {
+	return hasKind(descriptor, DUPLEX_DESCRIPTOR);
 }
 
 export function isProxyDescriptor(
-	descriptor: Descriptor,
+	descriptor: Descriptor | LeaseInnerDescriptor | unknown,
 ): descriptor is ProxyDescriptor<any, any> {
-	return descriptor.kind === PROXY_DESCRIPTOR;
+	return hasKind(descriptor, PROXY_DESCRIPTOR);
+}
+
+export function isTransportDescriptor(
+	descriptor: Descriptor | unknown,
+): descriptor is TransportDescriptor<any, any> {
+	return isLeaseDescriptor(descriptor) && isDuplexDescriptor(descriptor.inner);
+}
+
+export function isHandleDescriptor(
+	descriptor: Descriptor | unknown,
+): descriptor is HandleDescriptor<any, any, any> {
+	return isLeaseDescriptor(descriptor) && isProxyDescriptor(descriptor.inner);
 }

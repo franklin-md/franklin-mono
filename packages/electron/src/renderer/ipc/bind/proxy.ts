@@ -1,8 +1,8 @@
 import {
-	isHandleDescriptor,
+	isDuplexDescriptor,
+	isLeaseDescriptor,
 	isMethodDescriptor,
 	isProxyDescriptor,
-	isTransportDescriptor,
 } from '../../../shared/descriptors/detect.js';
 import type {
 	Descriptor,
@@ -11,7 +11,7 @@ import type {
 } from '../../../shared/descriptors/types.js';
 import type {
 	PreloadHandleBridge,
-	PreloadTransportBridge,
+	PreloadLeaseBridge,
 } from '../../../shared/api.js';
 import { attachLease } from './lease.js';
 import { bindTransport } from './transport.js';
@@ -63,32 +63,29 @@ function bindMembers(
 		}
 
 		if (context.kind !== 'root') {
-			throw new Error(`Unsupported descriptor inside handle at ${key}`);
+			throw new Error(`Unsupported descriptor inside leased proxy at ${key}`);
 		}
 
 		const nextPath = [...context.path, key];
-		if (isTransportDescriptor(descriptor)) {
-			node[key] = bindTransport(
-				context.name,
-				nextPath,
-				rawValue as PreloadTransportBridge<any>,
-			);
-			continue;
-		}
-
-		if (isHandleDescriptor(descriptor)) {
-			node[key] = async (...args: unknown[]) => {
-				const rawHandle = rawValue as PreloadHandleBridge<any, any>;
-				const id = await rawHandle.connect(...args);
-				const bound = bindMembers(
-					descriptor.shape,
-					rawHandle.proxy as Record<string, unknown>,
-					{ kind: 'lease', id },
-				);
-				return attachLease(bound, async () => {
-					await rawHandle.kill(id);
-				});
-			};
+		if (isLeaseDescriptor(descriptor)) {
+			node[key] = isDuplexDescriptor(descriptor.inner)
+				? bindTransport(
+						context.name,
+						nextPath,
+						rawValue as PreloadLeaseBridge<any, any>,
+					)
+				: async (...args: unknown[]) => {
+						const rawLease = rawValue as PreloadHandleBridge<any, any>;
+						const id = await rawLease.connect(...args);
+						const bound = bindMembers(
+							descriptor.inner.shape,
+							rawLease.proxy as Record<string, unknown>,
+							{ kind: 'lease', id },
+						);
+						return attachLease(bound, async () => {
+							await rawLease.kill(id);
+						});
+					};
 		}
 	}
 

@@ -24,12 +24,15 @@ function createWindow(): void {
 	});
 
 	const nodePlatform = createNodePlatform();
+	const environmentFilesystem = createFolderScopedFilesystem(
+		path.join(app.getPath('home'), '.franklin'),
+		nodePlatform.filesystem,
+	);
+	const environment = { filesystem: environmentFilesystem };
 	const platform = {
 		...nodePlatform,
-		filesystem: createFolderScopedFilesystem(
-			path.join(app.getPath('home'), '.franklin'),
-			nodePlatform.filesystem,
-		),
+		environment: async () => environment,
+		filesystem: environmentFilesystem,
 	};
 	handle = initializeMain(mainWindow.webContents, platform);
 

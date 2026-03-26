@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { ipcMain } from 'electron';
 
 import { createChannels } from '../../../shared/channels.js';
-import { closeLease } from './bound-window.js';
-import type { BoundLease, BoundWindow } from './types.js';
+import { closeLease } from './registry/leases.js';
+import type { BindingContext, BoundLease } from './types.js';
 
 export type LeaseFactory = (
 	id: string,
@@ -13,7 +13,7 @@ export type LeaseFactory = (
 
 export function registerLeaseLifecycle(
 	name: string,
-	binding: BoundWindow,
+	context: BindingContext,
 	path: string[],
 	createLease: LeaseFactory,
 ): Array<() => void> {
@@ -24,12 +24,12 @@ export function registerLeaseLifecycle(
 	ipcMain.handle(connectChannel, async (_event, ...args: unknown[]) => {
 		const id = randomUUID();
 		const lease = await createLease(id, ...args);
-		binding.leases.set(id, lease);
+		context.leases.set(id, lease);
 		return id;
 	});
 
 	ipcMain.handle(killChannel, async (_event, id: string) => {
-		await closeLease(binding, id);
+		await closeLease(context, id);
 	});
 
 	return [

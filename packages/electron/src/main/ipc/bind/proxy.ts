@@ -1,8 +1,8 @@
 import {
-	isHandleDescriptor,
+	isDuplexDescriptor,
+	isLeaseDescriptor,
 	isMethodDescriptor,
 	isProxyDescriptor,
-	isTransportDescriptor,
 } from '../../../shared/descriptors/detect.js';
 import type {
 	Descriptor,
@@ -11,11 +11,11 @@ import type {
 import { registerHandleHandler } from './handle.js';
 import { registerMethodHandler } from './method.js';
 import { registerTransportHandler } from './transport.js';
-import type { BoundWindow } from './types.js';
+import type { BindingContext } from './types.js';
 
 export function registerProxyHandlers(
 	name: string,
-	binding: BoundWindow,
+	context: BindingContext,
 	path: string[],
 	schema: ProxyDescriptor<unknown, any>,
 ): Array<() => void> {
@@ -28,26 +28,21 @@ export function registerProxyHandlers(
 
 		if (isProxyDescriptor(descriptor)) {
 			unregister.push(
-				...registerProxyHandlers(name, binding, nextPath, descriptor),
+				...registerProxyHandlers(name, context, nextPath, descriptor),
 			);
 			continue;
 		}
 
 		if (isMethodDescriptor(descriptor)) {
-			unregister.push(
-				registerMethodHandler(name, binding, nextPath, descriptor),
-			);
+			unregister.push(registerMethodHandler(name, context, nextPath));
 			continue;
 		}
 
-		if (isTransportDescriptor(descriptor)) {
-			unregister.push(...registerTransportHandler(name, binding, nextPath));
-			continue;
-		}
-
-		if (isHandleDescriptor(descriptor)) {
+		if (isLeaseDescriptor(descriptor)) {
 			unregister.push(
-				...registerHandleHandler(name, binding, nextPath, descriptor),
+				...(isDuplexDescriptor(descriptor.inner)
+					? registerTransportHandler(name, context, nextPath)
+					: registerHandleHandler(name, context, nextPath, descriptor.inner)),
 			);
 		}
 	}

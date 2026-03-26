@@ -1,7 +1,7 @@
 import type { WebContents } from 'electron';
 
 import type { ProxyDescriptor } from '../../../shared/descriptors/types.js';
-import { createBoundWindow } from './bound-window.js';
+import { createBindingContext } from './context.js';
 import { registerProxyHandlers } from './proxy.js';
 import type { MainBindingHandle } from './types.js';
 
@@ -18,10 +18,10 @@ export function bindMain<T>(
 		previous.dispose().catch(console.error);
 	}
 
-	const binding = createBoundWindow(name, webContents, impl);
+	const context = createBindingContext(name, webContents, impl);
 	const unregister = registerProxyHandlers(
 		name,
-		binding,
+		context,
 		[],
 		schema as ProxyDescriptor<unknown, any>,
 	);
@@ -32,7 +32,7 @@ export function bindMain<T>(
 			activeBindings.delete(name);
 
 			for (const fn of unregister) fn();
-			await binding.dispose();
+			await context.dispose();
 		},
 	};
 

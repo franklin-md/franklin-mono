@@ -5,7 +5,7 @@ export interface BoundLease {
 	readonly close: () => Promise<void>;
 }
 
-export interface BoundWindow {
+export interface BindingContext {
 	readonly impl: unknown;
 	readonly rootMux: Multiplexer<unknown, unknown>;
 	readonly leases: Map<string, BoundLease>;

@@ -6,39 +6,41 @@ import {
 	isProxyDescriptor,
 } from '../../../shared/descriptors/detect.js';
 import type {
-	HandleDescriptor,
 	HandleMemberDescriptor,
+	ProxyDescriptor,
 } from '../../../shared/descriptors/types.js';
-import { serializeProxy } from '../../../shared/descriptors/serde.js';
-import {
-	createBoundLease,
-	getBoundLease,
-	getValueAtPath,
-} from './bound-window.js';
+import { getValueAtPath } from './lookup.js';
 import { registerLeaseLifecycle } from './lease.js';
-import type { BoundWindow } from './types.js';
+import { createBoundLease, getBoundLease } from './registry/leases.js';
+import type { BindingContext } from './types.js';
 
 export function registerHandleHandler(
 	name: string,
-	binding: BoundWindow,
+	context: BindingContext,
 	path: string[],
-	descriptor: HandleDescriptor<any, any, any>,
+	descriptor: ProxyDescriptor<any, any>,
 ): Array<() => void> {
 	return [
-		...registerLeaseLifecycle(name, binding, path, async (_id, ...args) => {
-			const createHandle = getValueAtPath(binding.impl, path) as (
+		...registerLeaseLifecycle(name, context, path, async (_id, ...args) => {
+			const createHandle = getValueAtPath(context.impl, path) as (
 				...connectArgs: unknown[]
 			) => Promise<unknown>;
 			const value = await createHandle(...args);
 			return createBoundLease(value);
 		}),
-		...registerHandleMembers(name, binding, path, [], descriptor.shape),
+		...registerHandleMembers(
+			name,
+			context,
+			path,
+			[],
+			descriptor.shape as Record<string, HandleMemberDescriptor>,
+		),
 	];
 }
 
 function registerHandleMembers(
 	name: string,
-	binding: BoundWindow,
+	context: BindingContext,
 	handlePath: string[],
 	memberPath: string[],
 	shape: Record<string, HandleMemberDescriptor>,
@@ -55,7 +57,7 @@ function registerHandleMembers(
 			unregister.push(
 				...registerHandleMembers(
 					name,
-					binding,
+					context,
 					handlePath,
 					nextMemberPath,
 					descriptor.shape as Record<string, HandleMemberDescriptor>,
@@ -66,18 +68,18 @@ function registerHandleMembers(
 
 		if (!isMethodDescriptor(descriptor)) {
 			throw new Error(
-				`Unsupported descriptor inside handle at ${[...handlePath, ...nextMemberPath].join('.')}`,
+				`Unsupported descriptor inside leased proxy at ${[...handlePath, ...nextMemberPath].join('.')}`,
 			);
 		}
 
-		const methodChannel = channels.getHandleMethodChannel(
+		const methodChannel = channels.getLeaseMethodChannel(
 			handlePath,
 			nextMemberPath,
 		);
 		ipcMain.handle(
 			methodChannel,
 			async (_event, id: string, ...args: unknown[]) => {
-				const lease = getBoundLease(binding, id);
+				const lease = getBoundLease(context, id);
 				if (!lease) {
 					throw new Error(`No lease registered for ${id}`);
 				}
@@ -85,10 +87,7 @@ function registerHandleMembers(
 				const method = getValueAtPath(lease.value, nextMemberPath) as (
 					...methodArgs: unknown[]
 				) => Promise<unknown>;
-				const result = await method(...args);
-				return descriptor.returns
-					? await serializeProxy(result, descriptor.returns)
-					: result;
+				return await method(...args);
 			},
 		);
 

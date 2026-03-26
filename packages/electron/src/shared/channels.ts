@@ -3,9 +3,9 @@ export interface ChannelNamespace {
 	getMethodChannel(path: readonly string[]): string;
 	getLeaseConnectChannel(path: readonly string[]): string;
 	getLeaseKillChannel(path: readonly string[]): string;
-	getTransportStreamChannel(path: readonly string[]): string;
-	getHandleMethodChannel(
-		handlePath: readonly string[],
+	getDuplexStreamChannel(path: readonly string[]): string;
+	getLeaseMethodChannel(
+		leasePath: readonly string[],
 		memberPath: readonly string[],
 	): string;
 }
@@ -27,8 +27,8 @@ export function createChannels(name: string): ChannelNamespace {
 		getIpcStreamChannel: () => getChannel(name, [], 'ipc-stream'),
 		getLeaseConnectChannel: (path) => getChannel(name, path, 'connect'),
 		getLeaseKillChannel: (path) => getChannel(name, path, 'kill'),
-		getTransportStreamChannel: (path) => getChannel(name, path, 'stream'),
-		getHandleMethodChannel: (handlePath, memberPath) =>
-			getChannel(name, [...handlePath, 'handle', ...memberPath]),
+		getDuplexStreamChannel: (path) => getChannel(name, path, 'stream'),
+		getLeaseMethodChannel: (leasePath, memberPath) =>
+			getChannel(name, [...leasePath, 'lease', ...memberPath]),
 	};
 }

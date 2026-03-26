@@ -1,16 +1,16 @@
 import type { Duplex } from '@franklin/transport';
 
 import { createChannels } from '../../../shared/channels.js';
-import type { PreloadTransportBridge } from '../../../shared/api.js';
+import type { PreloadLeaseBridge } from '../../../shared/api.js';
 import { createIpcStream } from '../stream.js';
 
 export function bindTransport(
 	name: string,
 	path: string[],
-	rawTransport: PreloadTransportBridge<any>,
+	rawTransport: PreloadLeaseBridge<any, any>,
 ): (...args: unknown[]) => Promise<Duplex<unknown, unknown>> {
 	const channels = createChannels(name);
-	const streamChannel = channels.getTransportStreamChannel(path);
+	const streamChannel = channels.getDuplexStreamChannel(path);
 
 	return async (...args: unknown[]) => {
 		const id = await rawTransport.connect(...args);

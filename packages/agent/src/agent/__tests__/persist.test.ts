@@ -97,8 +97,8 @@ function createMockFs(): Filesystem & {
 			if (!files.has(path)) throw new Error(`ENOENT: ${path}`);
 		},
 		stat: async () => ({
-			isFile: () => true,
-			isDirectory: () => false,
+			isFile: true,
+			isDirectory: false,
 		}),
 		readdir: async (path) => {
 			const entries: string[] = [];
