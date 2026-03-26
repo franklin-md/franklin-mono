@@ -5,7 +5,6 @@
 		{ "path": "./packages/lib/transport" },
 		{ "path": "./packages/agent" },
 		{ "path": "./packages/extensions" },
-		{ "path": "./packages/auth" },
 		{ "path": "./packages/mini-acp" },
 		{ "path": "./packages/node" },
 		{ "path": "./packages/electron" },

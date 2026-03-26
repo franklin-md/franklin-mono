@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 
-import type { OAuthLoginCallbacks, AuthFile } from '@franklin/auth';
+import type { OAuthLoginCallbacks, AuthFile } from '@franklin/agent';
 
 import { useAuthStore } from './auth-context.js';
 

@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { app, BrowserWindow } from 'electron';
-import { AuthManager } from '@franklin/auth';
 import { initializeMain } from '@franklin/electron/main';
 import { createFolderScopedFilesystem } from '@franklin/lib';
 import { createNodePlatform } from '@franklin/node';

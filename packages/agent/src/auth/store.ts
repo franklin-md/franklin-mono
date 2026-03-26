@@ -1,20 +1,15 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
-
 import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
-import type {
-	OAuthCredentials,
-	OAuthProviderId,
-} from '@mariozechner/pi-ai/oauth';
+import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
 import type { ApiKeyEntry, AuthEntry, AuthFile, OAuthEntry } from './types.js';
+import type { Platform } from '@franklin/agent';
+import type { Filesystem } from '@franklin/lib';
 
 // ---------------------------------------------------------------------------
 // Default location
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_AUTH_PATH = join(homedir(), '.franklin', 'auth.json');
+export const DEFAULT_AUTH_PATH = 'auth.json';
 
 // ---------------------------------------------------------------------------
 // AuthStore
@@ -28,24 +23,31 @@ export const DEFAULT_AUTH_PATH = join(homedir(), '.franklin', 'auth.json');
  * filesystem directly so that concurrent processes always see fresh data.
  */
 export class AuthStore {
-	constructor(readonly filePath: string = DEFAULT_AUTH_PATH) {}
+	private readonly filesystem: Filesystem;
+	constructor(platform: Platform) {
+		this.filesystem = platform.filesystem;
+	}
 
 	// -------------------------------------------------------------------------
 	// Low-level persistence
 	// -------------------------------------------------------------------------
 
 	async load(): Promise<AuthFile> {
-		if (!existsSync(this.filePath)) return {};
-		try {
-			return JSON.parse(readFileSync(this.filePath, 'utf-8')) as AuthFile;
-		} catch {
-			return {};
-		}
+		return this.filesystem
+			.readFile(DEFAULT_AUTH_PATH)
+			.then((data) => {
+				// TODO: Ensure that this is utf-8?
+				return JSON.parse(data.toString()) as AuthFile;
+			})
+			.catch(() => ({}));
 	}
 
+	// TODO: async
 	save(data: AuthFile): void {
-		mkdirSync(dirname(this.filePath), { recursive: true });
-		writeFileSync(this.filePath, JSON.stringify(data, null, 2), 'utf-8');
+		void this.filesystem.writeFile(
+			DEFAULT_AUTH_PATH,
+			JSON.stringify(data, null, 2),
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -131,7 +133,7 @@ export class AuthStore {
 				[provider]: entry.oauth.credentials,
 			};
 
-			const result = await getOAuthApiKey(provider as OAuthProviderId, credMap);
+			const result = await getOAuthApiKey(provider, credMap);
 			if (!result) return undefined;
 
 			// Always persist newCredentials — getOAuthApiKey may have refreshed the token.

@@ -12,7 +12,6 @@ import { createElectronPlatform } from '@franklin/electron/renderer';
 import { AgentSidebar } from './sidebar/index.js';
 import { ConversationPanel } from './conversation/index.js';
 import { TodoPanel } from './todo/index.js';
-import { initializeSharedAuthManager } from '@/lib/auth-store.js';
 
 const platform = createElectronPlatform();
 const extensions = [

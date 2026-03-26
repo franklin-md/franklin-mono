@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { AuthFile } from '@franklin/auth';
+import type { AuthFile } from '@franklin/agent/browser';
 
 import { ApiKeyPanel } from './api-key-panel.js';
 import { useAuthStore } from './auth-context.js';

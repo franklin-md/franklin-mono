@@ -15,13 +15,11 @@ import {
 	sameConfig,
 	type ConfigOptions,
 } from './config.js';
-import { emptyCtx, mergeCtx } from './ctx.js';
-import { ctxExtension } from './ctx-extension.js';
 import { SessionMap } from './session-map.js';
 import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
 import type { SpawnFn, Session } from './types.js';
 import type { FranklinExtension } from '../../app/types.js';
-import type { IAuthManager } from '@franklin/auth';
+import { AuthManager } from '../../auth/manager.js';
 
 export type PersistenceOptions = {
 	session: Persister<SessionSnapshot>;
@@ -45,14 +43,14 @@ export type PersistenceOptions = {
 export class SessionManager {
 	private readonly sessions: SessionMap;
 	private readonly registry: StoreRegistry;
-	private readonly authManager: IAuthManager;
+	private readonly authManager: AuthManager;
 	private readonly persister?: Persister<SessionSnapshot>;
 	private defaultConfig: ConfigOptions;
 
 	constructor(
 		private readonly spawn: SpawnFn,
 		private readonly extensions: FranklinExtension[],
-		authManager: IAuthManager,
+		authManager: AuthManager,
 		persistence?: PersistenceOptions,
 		configOptions?: ConfigOptions,
 	) {

@@ -20,8 +20,9 @@ function getChannel(
 		: [name, ...path, suffix].join(':');
 }
 
+export function createChannels(name: string): ChannelNamespace {
 	return {
-
+		getMethodChannel: (path) => getChannel(name, path, 'method'),
 		getIpcStreamChannel: () => getChannel(name, [], 'ipc-stream'),
 		getLeaseConnectChannel: (path) => getChannel(name, path, 'connect'),
 		getLeaseKillChannel: (path) => getChannel(name, path, 'kill'),

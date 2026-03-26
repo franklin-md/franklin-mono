@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
-import type { AuthFile, ApiKeyEntry } from '@franklin/auth';
+import type { AuthFile, ApiKeyEntry } from '@franklin/agent/browser';
 
 import { useAuthStore } from './auth-context.js';
 import type { OAuthProviderMeta } from './oauth-panel.js';

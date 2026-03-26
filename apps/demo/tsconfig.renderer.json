@@ -24,8 +24,5 @@
 		}
 	},
 	"include": ["src/renderer/src/**/*.ts", "src/renderer/src/**/*.tsx"],
-	"references": [
-		{ "path": "../../packages/auth" },
-		{ "path": "../../packages/electron/tsconfig.renderer.json" }
-	]
+	"references": [{ "path": "../../packages/electron/tsconfig.renderer.json" }]
 }

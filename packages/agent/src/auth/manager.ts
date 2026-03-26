@@ -4,7 +4,6 @@ import type {
 	OAuthProviderId,
 } from '@mariozechner/pi-ai/oauth';
 
-import { AuthStore } from './store.js';
 import type {
 	ApiKeyEntry,
 	AuthChangeListener,
@@ -13,11 +12,16 @@ import type {
 	IAuthManager,
 	OAuthEntry,
 } from './types.js';
+import { AuthStore } from './store.js';
+import type { Platform } from '@franklin/agent';
 
 export class AuthManager implements IAuthManager {
 	private readonly listeners = new Set<AuthChangeListener>();
+	private readonly store: AuthStore;
 
-	constructor(private readonly store: AuthStore = new AuthStore()) {}
+	constructor(private readonly platform: Platform) {
+		this.store = new AuthStore(platform);
+	}
 
 	onAuthChange(listener: AuthChangeListener): () => void {
 		this.listeners.add(listener);

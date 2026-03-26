@@ -12,7 +12,6 @@
 		{ "path": "../lib/core" },
 		{ "path": "../lib/transport" },
 		{ "path": "../mini-acp" },
-		{ "path": "../extensions" },
-		{ "path": "../auth" }
+		{ "path": "../extensions" }
 	]
 }
