@@ -1,9 +1,14 @@
-import type { Duplex, Multiplexer } from '@franklin/transport';
+import type { Multiplexer } from '@franklin/transport';
+
+export interface BoundLease {
+	readonly value: unknown;
+	readonly close: () => Promise<void>;
+}
 
 export interface BoundWindow {
 	readonly impl: unknown;
 	readonly rootMux: Multiplexer<unknown, unknown>;
-	readonly tunnels: Map<string, Duplex<unknown, unknown>>;
+	readonly leases: Map<string, BoundLease>;
 	readonly dispose: () => Promise<void>;
 }
 

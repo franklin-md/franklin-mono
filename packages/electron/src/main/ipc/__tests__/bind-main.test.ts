@@ -1,5 +1,6 @@
 import type { Filesystem } from '@franklin/lib';
 import type { Duplex } from '@franklin/transport';
+import type { ClientProtocol } from '@franklin/mini-acp';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -44,7 +45,7 @@ function createFilesystem(label: string): Filesystem {
 
 function createTransportSpy(): {
 	close: ReturnType<typeof vi.fn>;
-	transport: Duplex<unknown, unknown>;
+	transport: ClientProtocol;
 } {
 	const close = vi.fn(async () => {});
 	return {
@@ -53,7 +54,7 @@ function createTransportSpy(): {
 			readable: new ReadableStream(),
 			writable: new WritableStream(),
 			close,
-		},
+		} as unknown as ClientProtocol,
 	};
 }
 
@@ -94,6 +95,7 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => createTransportSpy().transport,
+				environment: async () => ({ filesystem: createFilesystem('b') }),
 				filesystem: createFilesystem('a'),
 			},
 			createWebContents(1),
@@ -104,6 +106,35 @@ describe('bindMain', () => {
 			'exists',
 		]);
 		await expect(invoke(channel, '/test')).resolves.toBe(true);
+
+		await handle.dispose();
+	});
+
+	it('dispatches handle-backed method calls for leased objects', async () => {
+		const { bindMain } = await import('../bind/index.js');
+		const { schema } = await import('../../../shared/schema.js');
+		const { createChannels } = await import('../../../shared/channels.js');
+
+		const handle = bindMain(
+			'franklin',
+			schema,
+			{
+				spawn: async () => createTransportSpy().transport,
+				environment: async () => ({ filesystem: createFilesystem('b') }),
+				filesystem: createFilesystem('a'),
+			},
+			createWebContents(1),
+		);
+
+		const channels = createChannels('franklin');
+		const id = await invoke(channels.getLeaseConnectChannel(['environment']));
+		const exists = channels.getHandleMethodChannel(
+			['environment'],
+			['filesystem', 'exists'],
+		);
+
+		await expect(invoke(exists, id, '/test')).resolves.toBe(false);
+		await invoke(channels.getLeaseKillChannel(['environment']), id);
 
 		await handle.dispose();
 	});
@@ -119,14 +150,15 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => transportSpy.transport,
+				environment: async () => ({ filesystem: createFilesystem('b') }),
 				filesystem: createFilesystem('a'),
 			},
 			createWebContents(1),
 		);
 
 		const channels = createChannels('franklin');
-		const connectChannel = channels.getTransportConnectChannel(['spawn']);
-		const killChannel = channels.getTransportKillChannel(['spawn']);
+		const connectChannel = channels.getLeaseConnectChannel(['spawn']);
+		const killChannel = channels.getLeaseKillChannel(['spawn']);
 		const id = await invoke(connectChannel);
 
 		await invoke(killChannel, id);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+	isHandleDescriptor,
 	isMethodDescriptor,
 	isProxyDescriptor,
 } from '../descriptors/detect.js';
@@ -15,16 +16,32 @@ describe('schema', () => {
 		expect(channels.getMethodChannel(['filesystem', 'readFile'])).toBe(
 			'franklin:filesystem:readFile',
 		);
-		expect(channels.getTransportConnectChannel(['spawn'])).toBe(
+		expect(channels.getLeaseConnectChannel(['spawn'])).toBe(
 			'franklin:spawn:connect',
 		);
-		expect(channels.getTransportKillChannel(['spawn'])).toBe(
-			'franklin:spawn:kill',
-		);
+		expect(channels.getLeaseKillChannel(['spawn'])).toBe('franklin:spawn:kill');
 		expect(channels.getTransportStreamChannel(['spawn'])).toBe(
 			'franklin:spawn:stream',
 		);
+		expect(channels.getLeaseConnectChannel(['environment'])).toBe(
+			'franklin:environment:connect',
+		);
+		expect(channels.getLeaseKillChannel(['environment'])).toBe(
+			'franklin:environment:kill',
+		);
+		expect(
+			channels.getHandleMethodChannel(
+				['environment'],
+				['filesystem', 'readFile'],
+			),
+		).toBe('franklin:environment:handle:filesystem:readFile');
 		expect(channels.getIpcStreamChannel()).toBe('franklin:ipc-stream');
+	});
+
+	it('captures environment as a handle descriptor', () => {
+		const environment = schema.shape['environment'];
+		expect(environment).toBeDefined();
+		expect(isHandleDescriptor(environment!)).toBe(true);
 	});
 
 	it('serializes and deserializes proxy return values via ResultShape', async () => {

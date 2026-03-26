@@ -9,7 +9,7 @@ const activeBindings = new Map<string, MainBindingHandle>();
 
 export function bindMain<T>(
 	name: string,
-	schema: ProxyDescriptor<T>,
+	schema: ProxyDescriptor<T, any>,
 	impl: T,
 	webContents: WebContents,
 ): MainBindingHandle {
@@ -23,7 +23,7 @@ export function bindMain<T>(
 		name,
 		binding,
 		[],
-		schema as ProxyDescriptor<unknown>,
+		schema as ProxyDescriptor<unknown, any>,
 	);
 
 	const handle: MainBindingHandle = {

@@ -1,4 +1,4 @@
-import type { Platform } from '@franklin/agent';
+import type { Platform } from '@franklin/agent/browser';
 import type { WebContents } from 'electron';
 
 import { bindMain } from './ipc/bind/index.js';

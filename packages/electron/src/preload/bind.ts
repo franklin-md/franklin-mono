@@ -1,14 +1,28 @@
 import { ipcRenderer } from 'electron';
 
 import {
+	isHandleDescriptor,
 	isMethodDescriptor,
 	isProxyDescriptor,
 	isTransportDescriptor,
 } from '../shared/descriptors/detect.js';
-import type { ProxyDescriptor } from '../shared/descriptors/types.js';
+import type {
+	Descriptor,
+	HandleMemberDescriptor,
+	ProxyDescriptor,
+} from '../shared/descriptors/types.js';
 import { deserializeProxy } from '../shared/descriptors/serde.js';
 import { createChannels } from '../shared/channels.js';
 import type { IpcStreamBridge, PreloadBridgeOf } from '../shared/api.js';
+
+type BindContext =
+	| { kind: 'root'; name: string; path: string[] }
+	| {
+			kind: 'lease';
+			name: string;
+			handlePath: string[];
+			memberPath: string[];
+	  };
 
 export function createIpcStreamBridge(channel: string): IpcStreamBridge {
 	return {
@@ -27,45 +41,99 @@ export function createIpcStreamBridge(channel: string): IpcStreamBridge {
 	};
 }
 
-function bindNode(
-	name: string,
-	path: string[],
-	schema: ProxyDescriptor<unknown>,
+function bindMembers(
+	shape: Record<string, Descriptor | HandleMemberDescriptor>,
+	context: BindContext,
 ): Record<string, unknown> {
-	const channels = createChannels(name);
+	const channels = createChannels(context.name);
 	const node: Record<string, unknown> = {};
 
-	for (const [key, descriptor] of Object.entries(schema.shape)) {
-		const nextPath = [...path, key];
-
+	for (const [key, descriptor] of Object.entries(shape) as Array<
+		[string, Descriptor | HandleMemberDescriptor]
+	>) {
 		if (isProxyDescriptor(descriptor)) {
-			node[key] = bindNode(name, nextPath, descriptor);
+			node[key] = bindMembers(
+				descriptor.shape as Record<string, Descriptor | HandleMemberDescriptor>,
+				context.kind === 'root'
+					? { kind: 'root', name: context.name, path: [...context.path, key] }
+					: {
+							kind: 'lease',
+							name: context.name,
+							handlePath: context.handlePath,
+							memberPath: [...context.memberPath, key],
+						},
+			);
 			continue;
 		}
 
 		if (isMethodDescriptor(descriptor)) {
-			const channel = channels.getMethodChannel(nextPath);
-			node[key] = async (...args: unknown[]) => {
-				const result = await ipcRenderer.invoke(channel, ...args);
-				return descriptor.returns
-					? deserializeProxy(result, descriptor.returns)
-					: result;
-			};
+			const channel =
+				context.kind === 'root'
+					? channels.getMethodChannel([...context.path, key])
+					: channels.getHandleMethodChannel(context.handlePath, [
+							...context.memberPath,
+							key,
+						]);
+			node[key] =
+				context.kind === 'root'
+					? async (...invokeArgs: unknown[]) => {
+							const result = await ipcRenderer.invoke(channel, ...invokeArgs);
+							return descriptor.returns
+								? deserializeProxy(result, descriptor.returns)
+								: result;
+						}
+					: async (id: string, ...invokeArgs: unknown[]) => {
+							const result = await ipcRenderer.invoke(
+								channel,
+								id,
+								...invokeArgs,
+							);
+							return descriptor.returns
+								? deserializeProxy(result, descriptor.returns)
+								: result;
+						};
 			continue;
 		}
 
+		if (context.kind !== 'root') {
+			throw new Error(`Unsupported descriptor inside handle at ${key}`);
+		}
+
+		const nextPath = [...context.path, key];
 		if (isTransportDescriptor(descriptor)) {
 			node[key] = {
 				connect: (...args: unknown[]) =>
 					ipcRenderer.invoke(
-						channels.getTransportConnectChannel(nextPath),
+						channels.getLeaseConnectChannel(nextPath),
 						...args,
 					) as Promise<string>,
 				kill: (id: string) =>
 					ipcRenderer.invoke(
-						channels.getTransportKillChannel(nextPath),
+						channels.getLeaseKillChannel(nextPath),
 						id,
 					) as Promise<void>,
+			};
+			continue;
+		}
+
+		if (isHandleDescriptor(descriptor)) {
+			node[key] = {
+				connect: (...args: unknown[]) =>
+					ipcRenderer.invoke(
+						channels.getLeaseConnectChannel(nextPath),
+						...args,
+					) as Promise<string>,
+				kill: (id: string) =>
+					ipcRenderer.invoke(
+						channels.getLeaseKillChannel(nextPath),
+						id,
+					) as Promise<void>,
+				proxy: bindMembers(descriptor.shape, {
+					kind: 'lease',
+					name: context.name,
+					handlePath: nextPath,
+					memberPath: [],
+				}),
 			};
 		}
 	}
@@ -73,13 +141,13 @@ function bindNode(
 	return node;
 }
 
-export function bindPreload<T>(
+export function bindPreload<TSchema extends ProxyDescriptor<any, any>>(
 	name: string,
-	schema: ProxyDescriptor<T>,
-): PreloadBridgeOf<T> {
-	return bindNode(
+	schema: TSchema,
+): PreloadBridgeOf<TSchema> {
+	return bindMembers(schema.shape, {
+		kind: 'root',
 		name,
-		[],
-		schema as ProxyDescriptor<unknown>,
-	) as PreloadBridgeOf<T>;
+		path: [],
+	}) as PreloadBridgeOf<TSchema>;
 }

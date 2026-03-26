@@ -1,11 +1,24 @@
 import type { ClientProtocol } from '@franklin/mini-acp';
 
-import { method, proxy, transport } from './descriptors/factories.js';
+import { handle, method, proxy, transport } from './descriptors/factories.js';
 import type { PreloadBridgeOf } from './api.js';
-import type { Platform } from '@franklin/agent';
+import type { Platform } from '@franklin/agent/browser';
 
-export const schema = proxy<Platform>({
+export const schema = proxy({
 	spawn: transport<() => Promise<ClientProtocol>>(),
+	environment: handle<Platform['environment']>({
+		filesystem: proxy({
+			readFile: method(),
+			writeFile: method(),
+			mkdir: method(),
+			access: method(),
+			stat: method({ returns: { isFile: true, isDirectory: true } }),
+			readdir: method(),
+			exists: method(),
+			glob: method(),
+			deleteFile: method(),
+		}),
+	}),
 	filesystem: proxy({
 		readFile: method(),
 		writeFile: method(),
@@ -19,4 +32,4 @@ export const schema = proxy<Platform>({
 	}),
 });
 
-export type FranklinPreloadBridge = PreloadBridgeOf<Platform>;
+export type FranklinPreloadBridge = PreloadBridgeOf<typeof schema>;

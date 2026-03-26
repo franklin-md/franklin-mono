@@ -1,10 +1,12 @@
 import type {
 	Descriptor,
+	HandleDescriptor,
 	MethodDescriptor,
 	ProxyDescriptor,
 	TransportDescriptor,
 } from './types.js';
 import {
+	HANDLE_DESCRIPTOR,
 	METHOD_DESCRIPTOR,
 	PROXY_DESCRIPTOR,
 	TRANSPORT_DESCRIPTOR,
@@ -22,8 +24,14 @@ export function isTransportDescriptor(
 	return descriptor.kind === TRANSPORT_DESCRIPTOR;
 }
 
+export function isHandleDescriptor(
+	descriptor: Descriptor,
+): descriptor is HandleDescriptor<any, any, any> {
+	return descriptor.kind === HANDLE_DESCRIPTOR;
+}
+
 export function isProxyDescriptor(
 	descriptor: Descriptor,
-): descriptor is ProxyDescriptor<any> {
+): descriptor is ProxyDescriptor<any, any> {
 	return descriptor.kind === PROXY_DESCRIPTOR;
 }

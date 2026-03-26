@@ -1,9 +1,8 @@
-import type { Duplex } from '@franklin/transport';
 import type { WebContents } from 'electron';
 
 import { createChannels } from '../../../shared/channels.js';
 import { createMainIpcMux } from '../stream.js';
-import type { BoundWindow } from './types.js';
+import type { BoundLease, BoundWindow } from './types.js';
 
 export function getValueAtPath(target: unknown, path: string[]): unknown {
 	let current = target as Record<string, unknown>;
@@ -19,15 +18,53 @@ export function getValueAtPath(target: unknown, path: string[]): unknown {
 	return current;
 }
 
-export async function closeTunnel(
+function createLeaseRelease(value: unknown): () => Promise<void> {
+	const maybeDisposable = value as {
+		dispose?: () => Promise<void> | void;
+		close?: () => Promise<void> | void;
+	};
+
+	if (typeof maybeDisposable.dispose === 'function') {
+		return async () => {
+			await maybeDisposable.dispose?.();
+		};
+	}
+
+	if (typeof maybeDisposable.close === 'function') {
+		return async () => {
+			await maybeDisposable.close?.();
+		};
+	}
+
+	return async () => {};
+}
+
+export function createBoundLease(
+	value: unknown,
+	close: () => Promise<void> = createLeaseRelease(value),
+): BoundLease {
+	return {
+		value,
+		close,
+	};
+}
+
+export function getBoundLease(
+	binding: BoundWindow,
+	id: string,
+): BoundLease | undefined {
+	return binding.leases.get(id);
+}
+
+export async function closeLease(
 	binding: BoundWindow,
 	id: string,
 ): Promise<void> {
-	const tunnel = binding.tunnels.get(id);
-	if (!tunnel) return;
+	const lease = binding.leases.get(id);
+	if (!lease) return;
 
-	binding.tunnels.delete(id);
-	await tunnel.close();
+	binding.leases.delete(id);
+	await lease.close();
 }
 
 export function createBoundWindow(
@@ -40,14 +77,14 @@ export function createBoundWindow(
 		webContents,
 		channels.getIpcStreamChannel(),
 	);
-	const tunnels = new Map<string, Duplex<unknown, unknown>>();
+	const leases = new Map<string, BoundLease>();
 	const binding: BoundWindow = {
 		impl,
 		rootMux,
-		tunnels,
+		leases,
 		dispose: async () => {
-			const tunnelIds = [...tunnels.keys()];
-			await Promise.allSettled(tunnelIds.map((id) => closeTunnel(binding, id)));
+			const leaseIds = [...leases.keys()];
+			await Promise.allSettled(leaseIds.map((id) => closeLease(binding, id)));
 
 			await rootMux.close();
 		},
