@@ -1,24 +1,11 @@
 import { useCallback, useState } from 'react';
 
 import type { Agent } from '@franklin/agent/browser';
-import {
-	conversationExtension,
-	statusExtension,
-	todoExtension,
-} from '@franklin/extensions';
-import { AgentProvider, FranklinProvider } from '@franklin/react';
-import { createElectronPlatform } from '@franklin/electron/renderer';
+import { AgentProvider } from '@franklin/react';
 
 import { AgentSidebar } from './sidebar/index.js';
 import { ConversationPanel } from './conversation/index.js';
 import { TodoPanel } from './todo/index.js';
-
-const platform = createElectronPlatform();
-const extensions = [
-	conversationExtension(),
-	todoExtension(),
-	statusExtension(),
-];
 
 interface SelectedAgent {
 	id: string;
@@ -33,31 +20,21 @@ export function AgentChatPage() {
 	}, []);
 
 	return (
-		<FranklinProvider
-			extensions={extensions}
-			platform={platform}
-			fallback={
-				<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-					Loading…
-				</div>
-			}
-		>
-			<div className="flex flex-1 overflow-hidden">
-				<AgentSidebar onSelectAgent={handleSelectAgent} />
+		<div className="flex flex-1 overflow-hidden">
+			<AgentSidebar onSelectAgent={handleSelectAgent} />
 
-				{selected ? (
-					<AgentProvider key={selected.id} agent={selected.agent}>
-						<div className="flex flex-1 overflow-hidden">
-							<ConversationPanel />
-							<TodoPanel />
-						</div>
-					</AgentProvider>
-				) : (
-					<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-						Spawn an agent to start.
+			{selected ? (
+				<AgentProvider key={selected.id} agent={selected.agent}>
+					<div className="flex flex-1 overflow-hidden">
+						<ConversationPanel />
+						<TodoPanel />
 					</div>
-				)}
-			</div>
-		</FranklinProvider>
+				</AgentProvider>
+			) : (
+				<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+					Spawn an agent to start.
+				</div>
+			)}
+		</div>
 	);
 }

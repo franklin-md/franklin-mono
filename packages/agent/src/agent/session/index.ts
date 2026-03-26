@@ -10,10 +10,16 @@ import {
 import { createAgent } from '../create.js';
 import { emptyCtx, mergeCtx } from './context/utils.js';
 import { ctxExtension } from './context/extension.js';
+import {
+	createResolvedConfig,
+	sameConfig,
+	type ConfigOptions,
+} from './config.js';
 import { SessionMap } from './session-map.js';
 import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
 import type { SpawnFn, Session } from './types.js';
 import type { FranklinExtension } from '../../app/types.js';
+import type { IAuthManager } from '../../auth/types.js';
 
 export type PersistenceOptions = {
 	session: Persister<SessionSnapshot>;
@@ -33,15 +39,20 @@ export type PersistenceOptions = {
  * the pool persists its own store entries via a debounced
  * `Persister<StoreSnapshot>`.
  */
+
 export class SessionManager {
 	private readonly sessions: SessionMap;
 	private readonly registry: StoreRegistry;
+	private readonly authManager: IAuthManager;
 	private readonly persister?: Persister<SessionSnapshot>;
+	private defaultConfig: ConfigOptions;
 
 	constructor(
 		private readonly spawn: SpawnFn,
 		private readonly extensions: FranklinExtension[],
+		authManager: IAuthManager,
 		persistence?: PersistenceOptions,
+		configOptions?: ConfigOptions,
 	) {
 		const delayMs = persistence?.delayMs ?? 500;
 
@@ -55,15 +66,26 @@ export class SessionManager {
 		this.registry = new StoreRegistry(poolPersister);
 		this.persister = sessionPersister;
 		this.sessions = new SessionMap(sessionPersister);
+		this.authManager = authManager;
+		this.defaultConfig = { ...configOptions };
+
+		this.authManager.onAuthChange(
+			async (provider: string, authKey: string | undefined) => {
+				await this.syncSessionsForProvider(provider, authKey);
+			},
+		);
 	}
 
 	/**
 	 * Create a brand new session with no parent state.
 	 */
-	async new(): Promise<Session> {
+	async new(configOptions: ConfigOptions | undefined): Promise<Session> {
 		// TODO: Create a fresh store result with the registry
 		const seed = createEmptyStoreResult(this.registry);
-		return this.createAndInit(emptyCtx(), seed);
+		const config = await this.resolveConfig(configOptions);
+		const emptyCtxWithAuth = mergeCtx(emptyCtx(), config ? { config } : {});
+
+		return this.createAndInit(emptyCtxWithAuth, seed);
 	}
 
 	/**
@@ -147,8 +169,10 @@ export class SessionManager {
 
 		// Phase 2: restore sessions
 		await this.sessions.restore(async (snapshot) => {
+			const config = await this.resolveConfig(snapshot.ctx.config);
+			const restoredCtx = mergeCtx(snapshot.ctx, config ? { config } : {});
 			await this.createAndInit(
-				snapshot.ctx,
+				restoredCtx,
 				createStoreResult(this.registry, snapshot.stores),
 				snapshot.sessionId,
 			);
@@ -169,10 +193,12 @@ export class SessionManager {
 	): Promise<Session> {
 		const transport = await this.spawn();
 		const tracker = new CtxTracker();
-
 		// Append ctxExtension at the tail so it sees final transformed params
-		const extensions = [...this.extensions, ctxExtension(tracker)];
-		const agent = await createAgent(extensions, transport, existingStores);
+		const agent = await createAgent(
+			[...this.extensions, ctxExtension(tracker)],
+			transport,
+			existingStores,
+		);
 		await agent.initialize({});
 		await agent.setContext({
 			ctx: {
@@ -189,5 +215,43 @@ export class SessionManager {
 		};
 		this.sessions.register(session);
 		return session;
+	}
+
+	private async resolveConfig(
+		configOptions: ConfigOptions | undefined,
+	): Promise<PersistedCtx['config']> {
+		const config = { ...this.defaultConfig, ...configOptions };
+		const provider =
+			config.provider ?? Object.keys(await this.authManager.load())[0];
+		const apiKey = provider
+			? await this.authManager.getApiKey(provider)
+			: undefined;
+
+		return createResolvedConfig(config, provider, apiKey);
+	}
+
+	private async syncSessionsForProvider(
+		provider: string,
+		authKey: string | undefined,
+	): Promise<void> {
+		const updates: Promise<unknown>[] = [];
+
+		for (const session of this.sessions.list()) {
+			const currentConfig = session.tracker.get().config;
+			if (currentConfig?.provider !== provider) continue;
+
+			const nextConfig = createResolvedConfig(currentConfig, provider, authKey);
+			if (!nextConfig || sameConfig(currentConfig, nextConfig)) continue;
+
+			updates.push(
+				session.agent.setContext({
+					ctx: {
+						config: nextConfig,
+					},
+				}),
+			);
+		}
+
+		await Promise.all(updates);
 	}
 }

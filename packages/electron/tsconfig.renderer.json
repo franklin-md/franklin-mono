@@ -13,7 +13,6 @@
 		{ "path": "../lib/core" },
 		{ "path": "../lib/transport" },
 		{ "path": "../mini-acp" },
-		{ "path": "../agent" },
-		{ "path": "../mini-acp" }
+		{ "path": "../agent" }
 	]
 }

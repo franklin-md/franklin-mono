@@ -97,6 +97,11 @@ describe('bindMain', () => {
 				spawn: async () => createTransportSpy().transport,
 				environment: async () => ({ filesystem: createFilesystem('b') }),
 				filesystem: createFilesystem('a'),
+				ai: {
+					getOAuthProviders: async () => [],
+					getApiKeyProviders: async () => [],
+					getProvider: async () => ({ login: async () => {} }),
+				},
 			},
 			createWebContents(1),
 		);
@@ -122,6 +127,11 @@ describe('bindMain', () => {
 				spawn: async () => createTransportSpy().transport,
 				environment: async () => ({ filesystem: createFilesystem('b') }),
 				filesystem: createFilesystem('a'),
+				ai: {
+					getOAuthProviders: async () => [],
+					getApiKeyProviders: async () => [],
+					getProvider: async () => ({ login: async () => {} }),
+				},
 			},
 			createWebContents(1),
 		);
@@ -152,6 +162,11 @@ describe('bindMain', () => {
 				spawn: async () => transportSpy.transport,
 				environment: async () => ({ filesystem: createFilesystem('b') }),
 				filesystem: createFilesystem('a'),
+				ai: {
+					getOAuthProviders: async () => [],
+					getApiKeyProviders: async () => [],
+					getProvider: async () => ({ login: async () => {} }),
+				},
 			},
 			createWebContents(1),
 		);

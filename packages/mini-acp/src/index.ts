@@ -24,12 +24,15 @@ export type {
 	ToolCall,
 	ToolResult,
 	ToolExecuteHandler,
-	// Stream
 	TurnStart,
 	Update,
 	Chunk,
 	TurnEnd,
 	StreamEvent,
+	// Errors
+	AuthError,
+	OAuthError,
+	APIKeyError,
 } from './types/index.js';
 
 // Base protocol

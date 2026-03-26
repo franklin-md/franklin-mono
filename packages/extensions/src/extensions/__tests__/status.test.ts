@@ -68,7 +68,7 @@ describe('statusExtension', () => {
 
 	it('moves to unread when the turn ends', async () => {
 		const result = await compileWithStatus();
-		const turnEnd: TurnEnd = { type: 'turnEnd' };
+		const turnEnd: TurnEnd = { type: 'turnEnd', stopReason: 'end_turn' };
 		const target = stubClient({
 			prompt: async function* () {
 				yield turnEnd;

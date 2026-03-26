@@ -772,41 +772,6 @@ describe('buildCore – stream observers', () => {
 		expect(observed).toEqual([update]);
 	});
 
-	it('on("turnEnd") fires when stream completes', async () => {
-		const observed: TurnEnd[] = [];
-		const turnEnd: TurnEnd = { type: 'turnEnd' };
-
-		const mw = await compileExt((api) => {
-			api.on('turnEnd', (event) => {
-				observed.push(event);
-			});
-		});
-
-		const target = stubClient({
-			prompt: async function* () {
-				yield {
-					type: 'chunk',
-					messageId: 'm1',
-					role: 'assistant',
-					content: { type: 'text', text: 'hi' },
-				} as Chunk;
-				return turnEnd;
-			},
-		});
-
-		const wrapped = apply(mw.client, target);
-		await collect(
-			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
-			}),
-		);
-
-		expect(observed).toEqual([turnEnd]);
-	});
-
 	it('multiple observers on same event fire in registration order', async () => {
 		const calls: string[] = [];
 

@@ -23,6 +23,7 @@ import type {
 	TurnEnd,
 	Update,
 } from '../../types/stream.js';
+
 import {
 	bridgeTool,
 	fromAgentEvent,
@@ -39,6 +40,7 @@ export interface PiAdapterOptions {
 	/** BaseClient for reverse RPC (tool execution) */
 	client: TurnServer;
 	/** Pre-resolved pi-ai Model */
+	// TODO: Do not pre-resolve, instead take the LLMConfig in ctx and resolve from that
 	model: Model<string>;
 	/** Agent context (history, tools, config) */
 	ctx: Ctx;
@@ -66,13 +68,17 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 			messages: piMessages,
 		},
 		// TODO: Lets not hard code this. I think solution should be to pass this from ctx?
-		getApiKey: (provider: string) => {
-			const key = process.env[`${provider.toUpperCase()}_API_KEY`];
-			if (!key) {
-				throw new Error(`Missing API key for provider: ${provider}`);
-			}
-			return key;
-		},
+		// Only resolve the API key when using the real stream function (not a test mock).
+		getApiKey: streamFn
+			? undefined
+			: (_: string) => {
+					// const key = process.env[`${provider.toUpperCase()}_API_KEY`];
+					// if (!key) {
+					// 	throw new Error(`Missing API key for provider: ${provider}`);
+					// }
+					// return key;
+					return ctx.config?.apiKey;
+				},
 		streamFn,
 	});
 
@@ -103,12 +109,12 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 					void writer.close();
 				})
 				.catch((err: unknown) => {
+					const msg =
+						err instanceof Error ? err.message : String(err ?? 'unknown error');
 					void writer.write({
 						type: 'turnEnd',
-						error: {
-							code: -1,
-							message: err instanceof Error ? err.message : String(err),
-						},
+						stopReason: 'refusal',
+						stopMessage: msg,
 					});
 					void writer.close();
 				});

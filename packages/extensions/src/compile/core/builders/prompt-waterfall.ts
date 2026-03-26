@@ -6,13 +6,13 @@ import type {
 } from '../../../api/core/events.js';
 import type { MethodMiddleware } from '../../../api/core/middleware/types.js';
 
-async function notifyObservers(
+function notifyObservers(
 	observers: ReadonlyMap<
 		StreamObserverEvent,
 		StreamObserverHandler<StreamObserverEvent>[]
 	>,
 	event: Chunk | Update | TurnEnd,
-): Promise<void> {
+): void {
 	const fns = observers.get(event.type);
 	if (!fns) return;
 	for (const fn of fns) fn(event);
@@ -29,7 +29,7 @@ async function* iteratePromptWithObservers(
 		// Notify observers — guard against undefined event (generator
 		// that returns void instead of TurnEnd) and empty observer map
 		if (observers && observers.size > 0) {
-			await notifyObservers(observers, result);
+			notifyObservers(observers, result);
 		}
 
 		yield result;
