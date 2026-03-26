@@ -1,7 +1,7 @@
 import type { StoreSnapshot } from '@franklin/extensions';
 import {
 	createFilePersistence,
-	type PersistenceFilesystem,
+	type Filesystem,
 	type Persister,
 } from '@franklin/lib';
 import type { SessionSnapshot } from './types.js';
@@ -15,7 +15,7 @@ import type { SessionSnapshot } from './types.js';
  */
 export function createPersistence(
 	dir: string,
-	fs: PersistenceFilesystem,
+	fs: Filesystem,
 ): { session: Persister<SessionSnapshot>; pool: Persister<StoreSnapshot> } {
 	return {
 		session: createFilePersistence<SessionSnapshot>(`${dir}/sessions`, fs),
@@ -28,9 +28,9 @@ export function createPersistence(
  *
  * Layout: `{dir}/sessions/{sessionId}.json`
  */
-export function createFileSessionPersister(
+export function createSessionPersister(
 	dir: string,
-	fs: PersistenceFilesystem,
+	fs: Filesystem,
 ): Persister<SessionSnapshot> {
 	return createFilePersistence<SessionSnapshot>(`${dir}/sessions`, fs);
 }
@@ -40,9 +40,9 @@ export function createFileSessionPersister(
  *
  * Layout: `{dir}/store/{ref}.json`
  */
-export function createFilePoolPersister(
+export function createStorePersister(
 	dir: string,
-	fs: PersistenceFilesystem,
+	fs: Filesystem,
 ): Persister<StoreSnapshot> {
 	return createFilePersistence<StoreSnapshot>(`${dir}/store`, fs);
 }

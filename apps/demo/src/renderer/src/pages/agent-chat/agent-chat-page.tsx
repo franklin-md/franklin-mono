@@ -1,22 +1,25 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
+import type { Agent } from '@franklin/agent/browser';
 import {
-	SessionManager,
 	conversationExtension,
 	statusExtension,
 	todoExtension,
-} from '@franklin/agent/browser';
-import type { Agent } from '@franklin/agent/browser';
-import { AgentProvider, SessionManagerProvider } from '@franklin/react';
-import {
-	ElectronFramework,
-	createElectronPersistence,
-} from '@franklin/electron/renderer';
+} from '@franklin/extensions';
+import { AgentProvider, FranklinProvider } from '@franklin/react';
+import { createElectronPlatform } from '@franklin/electron/renderer';
 
 import { AgentSidebar } from './sidebar/index.js';
 import { ConversationPanel } from './conversation/index.js';
 import { TodoPanel } from './todo/index.js';
 import { initializeSharedAuthManager } from '@/lib/auth-store.js';
+
+const platform = createElectronPlatform();
+const extensions = [
+	conversationExtension(),
+	todoExtension(),
+	statusExtension(),
+];
 
 interface SelectedAgent {
 	id: string;
@@ -24,44 +27,22 @@ interface SelectedAgent {
 }
 
 export function AgentChatPage() {
-	const [framework] = useState(() => new ElectronFramework());
-	const [manager, setManager] = useState<SessionManager | null>(null);
 	const [selected, setSelected] = useState<SelectedAgent | null>(null);
-
-	useEffect(() => {
-		void createElectronPersistence().then(async (persistence) => {
-			const authManager = await initializeSharedAuthManager();
-			if (!authManager) return;
-
-			const mgr = new SessionManager(
-				() => framework.spawn(),
-				[conversationExtension(), todoExtension(), statusExtension()],
-				authManager,
-				persistence,
-			);
-			await mgr.restore();
-			setManager(mgr);
-		});
-
-		return () => {
-			void framework.dispose();
-		};
-	}, [framework]);
 
 	const handleSelectAgent = useCallback((id: string, agent: Agent) => {
 		setSelected({ id, agent });
 	}, []);
 
-	if (!manager) {
-		return (
-			<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-				Loading…
-			</div>
-		);
-	}
-
 	return (
-		<SessionManagerProvider manager={manager}>
+		<FranklinProvider
+			extensions={extensions}
+			platform={platform}
+			fallback={
+				<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+					Loading…
+				</div>
+			}
+		>
 			<div className="flex flex-1 overflow-hidden">
 				<AgentSidebar onSelectAgent={handleSelectAgent} />
 
@@ -78,6 +59,6 @@ export function AgentChatPage() {
 					</div>
 				)}
 			</div>
-		</SessionManagerProvider>
+		</FranklinProvider>
 	);
 }

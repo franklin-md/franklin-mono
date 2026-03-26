@@ -22,6 +22,7 @@ export class DebouncedPersister<T> implements Persister<T> {
 	}
 
 	save(id: string, snapshot: T): Promise<void> {
+		// Last write wins
 		this.debouncer.schedule(id, snapshot);
 		return Promise.resolve();
 	}

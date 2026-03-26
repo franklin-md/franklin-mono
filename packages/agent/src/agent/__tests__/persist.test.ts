@@ -15,6 +15,9 @@ import {
 	type StoreAPI,
 	type StoreSnapshot,
 } from '@franklin/extensions';
+import type { Filesystem } from '@franklin/lib';
+import { SessionManager } from '../session/index.js';
+import { mergeCtx } from '../session/context/utils.js';
 import type { IAuthManager } from '@franklin/auth';
 import { mergeCtx, SessionManager } from '../session/index.js';
 
@@ -82,10 +85,10 @@ function createMutableAuthManager(
 import type { Session } from '../session/types.js';
 import { snapshotSession } from '../session/persist/snapshot.js';
 import {
-	createFileSessionPersister,
-	createFilePoolPersister,
+	createSessionPersister,
+	createStorePersister,
 } from '../session/persist/file-persister.js';
-import type { SessionSnapshot, Filesystem } from '../session/persist/types.js';
+import type { SessionSnapshot } from '../session/persist/types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -158,8 +161,8 @@ function createMockFs(): Filesystem & {
 			if (!files.has(path)) throw new Error(`ENOENT: ${path}`);
 		},
 		stat: async () => ({
-			isFile: () => true,
-			isDirectory: () => false,
+			isFile: true,
+			isDirectory: false,
 		}),
 		readdir: async (path) => {
 			const entries: string[] = [];
@@ -477,7 +480,7 @@ describe('Persistence', () => {
 	describe('createFileSessionPersister', () => {
 		it('saves and loads session snapshots', async () => {
 			const mockFs = createMockFs();
-			const persister = createFileSessionPersister('/data', mockFs);
+			const persister = createSessionPersister('/data', mockFs);
 
 			const snapshot: SessionSnapshot = {
 				sessionId: 'abc-123',
@@ -515,7 +518,7 @@ describe('Persistence', () => {
 			mockFs.readdir = async () => {
 				throw new Error('ENOENT');
 			};
-			const persister = createFileSessionPersister('/data', mockFs);
+			const persister = createSessionPersister('/data', mockFs);
 
 			const loaded = await persister.load();
 			expect(loaded).toEqual(new Map());
@@ -523,7 +526,7 @@ describe('Persistence', () => {
 
 		it('delete removes the session file', async () => {
 			const mockFs = createMockFs();
-			const persister = createFileSessionPersister('/data', mockFs);
+			const persister = createSessionPersister('/data', mockFs);
 
 			const snapshot: SessionSnapshot = {
 				sessionId: 'abc-123',
@@ -545,7 +548,7 @@ describe('Persistence', () => {
 
 		it('delete does not throw when file is missing', async () => {
 			const mockFs = createMockFs();
-			const persister = createFileSessionPersister('/data', mockFs);
+			const persister = createSessionPersister('/data', mockFs);
 
 			// Should not throw
 			await persister.delete('nonexistent');
@@ -553,7 +556,7 @@ describe('Persistence', () => {
 
 		it('skips non-json files during load', async () => {
 			const mockFs = createMockFs();
-			const persister = createFileSessionPersister('/data', mockFs);
+			const persister = createSessionPersister('/data', mockFs);
 
 			// Add a non-json file
 			mockFs.files.set('/data/sessions/.DS_Store', 'junk');
@@ -582,7 +585,7 @@ describe('Persistence', () => {
 	describe('createFilePoolPersister', () => {
 		it('saves and loads store pool entries', async () => {
 			const mockFs = createMockFs();
-			const persister = createFilePoolPersister('/data', mockFs);
+			const persister = createStorePersister('/data', mockFs);
 
 			await persister.save('pool-1', {
 				ref: 'pool-1',
@@ -609,7 +612,7 @@ describe('Persistence', () => {
 
 		it('deletes store files', async () => {
 			const mockFs = createMockFs();
-			const persister = createFilePoolPersister('/data', mockFs);
+			const persister = createStorePersister('/data', mockFs);
 
 			await persister.save('pool-1', {
 				ref: 'pool-1',
@@ -627,7 +630,7 @@ describe('Persistence', () => {
 			mockFs.readdir = async () => {
 				throw new Error('ENOENT');
 			};
-			const persister = createFilePoolPersister('/data', mockFs);
+			const persister = createStorePersister('/data', mockFs);
 
 			const stores = await persister.load();
 			expect(stores).toEqual(new Map());

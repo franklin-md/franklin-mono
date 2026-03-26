@@ -34,7 +34,6 @@
 		"@mariozechner/pi-ai": "^0.61.0",
 		"@franklin/auth": "*",
 		"@franklin/lib": "*",
-		"@franklin/node": "*",
 		"@franklin/mini-acp": "*",
 		"@franklin/transport": "*"
 	},

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { createTodoControl, todoKey } from '@franklin/agent/browser';
+import { createTodoControl, todoKey } from '@franklin/extensions';
 import { useAgentState } from '@franklin/react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

@@ -1,19 +1,15 @@
 import { CtxTracker } from '@franklin/mini-acp';
 import { DebouncedPersister } from '@franklin/lib';
 import type { Persister } from '@franklin/lib';
-import type {
-	Extension,
-	CoreAPI,
-	StoreAPI,
-	StoreResult,
-	StoreSnapshot,
-} from '@franklin/extensions';
+import type { StoreResult, StoreSnapshot } from '@franklin/extensions';
 import {
 	createEmptyStoreResult,
 	createStoreResult,
 	StorePool as StoreRegistry,
 } from '@franklin/extensions';
 import { createAgent } from '../create.js';
+import { emptyCtx, mergeCtx } from './context/utils.js';
+import { ctxExtension } from './context/extension.js';
 import {
 	createResolvedConfig,
 	sameConfig,
@@ -24,10 +20,8 @@ import { ctxExtension } from './ctx-extension.js';
 import { SessionMap } from './session-map.js';
 import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
 import type { SpawnFn, Session } from './types.js';
+import type { FranklinExtension } from '../../app/types.js';
 import type { IAuthManager } from '@franklin/auth';
-
-export { emptyCtx, mergeCtx };
-export type { Session, SpawnFn };
 
 export type PersistenceOptions = {
 	session: Persister<SessionSnapshot>;
@@ -57,7 +51,7 @@ export class SessionManager {
 
 	constructor(
 		private readonly spawn: SpawnFn,
-		private readonly extensions: Extension<CoreAPI & StoreAPI>[],
+		private readonly extensions: FranklinExtension[],
 		authManager: IAuthManager,
 		persistence?: PersistenceOptions,
 		configOptions?: ConfigOptions,
@@ -122,25 +116,16 @@ export class SessionManager {
 		return this.createAndInit(ctx, copiedStores);
 	}
 
-	/**
-	 * Rewind a session to a given message index — truncates the
-	 * shadowed Ctx and resets the agent's context in-place.
-	 */
-	async rewind(sessionId: string, messageIndex: number): Promise<void> {
-		const session = this.get(sessionId);
-		const ctx = session.tracker.get();
+	/* TODO: Reimplemnt rewind. It's harder than originally thought as you would want 
+  the conversation UI to go back in time. This is probably why Pi embeds the 
+  state in the session tree.
 
-		await session.agent.setContext({
-			ctx: {
-				history: {
-					systemPrompt: ctx.history.systemPrompt,
-					messages: ctx.history.messages.slice(0, messageIndex),
-				},
-				tools: ctx.tools,
-				config: ctx.config,
-			},
-		});
-	}
+  I wonder if the solution is to expose on registerState some kind of `commit` method that 
+  embeds into a parallel session tree, and then a method for reconstructing the store 
+  with the semantics that it is a patch of the events. It would be interesting if the 
+  persister would actually be the one to save a patch, and then we may get the entire behaviour for free?
+  
+  */
 
 	/**
 	 * Remove a session — disposes the agent, removes from the map,

@@ -2,7 +2,7 @@ import { useCallback, useRef, useSyncExternalStore } from 'react';
 
 import type { Session } from '@franklin/agent/browser';
 
-import { useSessionManager } from './session-manager-context.js';
+import { useApp } from './franklin-context.js';
 
 function hasSameOrderedSessions(prev: Session[], next: Session[]): boolean {
 	if (prev.length !== next.length) {
@@ -19,14 +19,14 @@ function hasSameOrderedSessions(prev: Session[], next: Session[]): boolean {
 }
 
 /**
- * Subscribe to the session list on the nearest `<SessionManagerProvider>`.
+ * Subscribe to the session list on the nearest `<FranklinProvider>`.
  *
  * Returns the current `Session[]` and re-renders only when sessions are
  * added or removed — mutations within a session (stores, history) do not
  * trigger re-renders here.
  */
 export function useSessions(): Session[] {
-	const manager = useSessionManager();
+	const manager = useApp().agents;
 	const snapshotRef = useRef<Session[] | null>(null);
 
 	const subscribe = useCallback(

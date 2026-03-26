@@ -1,6 +1,6 @@
 import type { Session } from '../types.js';
 import type { SessionSnapshot } from './types.js';
-import { cloneCtx } from '../ctx.js';
+import { cloneCtx } from '../context/utils.js';
 import type { StoreMapping } from '@franklin/extensions';
 
 // ---------------------------------------------------------------------------

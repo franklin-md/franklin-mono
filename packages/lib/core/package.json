@@ -21,5 +21,8 @@
 		"build": "tsc -b tsconfig.json",
 		"typecheck": "tsc --noEmit -p tsconfig.json",
 		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"ignore": "^7.0.5"
 	}
 }

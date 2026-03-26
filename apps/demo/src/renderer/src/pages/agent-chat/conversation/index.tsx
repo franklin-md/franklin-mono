@@ -1,4 +1,4 @@
-import { conversationKey } from '@franklin/agent/browser';
+import { conversationKey } from '@franklin/extensions';
 import { useAgent, useAgentState } from '@franklin/react';
 
 import { ConversationView } from './conversation-view.js';

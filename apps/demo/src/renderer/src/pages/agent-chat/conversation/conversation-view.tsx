@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import type { ConversationTurn } from '@franklin/agent/browser';
+import type { ConversationTurn } from '@franklin/extensions';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 

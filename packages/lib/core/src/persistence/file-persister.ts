@@ -1,5 +1,10 @@
-import type { PersistenceFilesystem } from './file-system.js';
+import type { Filesystem } from '../filesystem/types.js';
 import type { Persister } from './persister.js';
+
+type PersistenceFilesystem = Pick<
+	Filesystem,
+	'readFile' | 'writeFile' | 'readdir' | 'deleteFile' | 'mkdir'
+>;
 
 /**
  * Creates a JSON-file-backed persister for a single snapshot directory.

@@ -1,4 +1,4 @@
-import type { StatusState } from '@franklin/agent/browser';
+import type { StatusState } from '@franklin/extensions';
 
 import { cn } from '@/lib/utils';
 

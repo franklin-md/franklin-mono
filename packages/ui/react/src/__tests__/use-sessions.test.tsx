@@ -3,8 +3,13 @@ import type { ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import type { Agent, Session, SessionManager } from '@franklin/agent/browser';
-import { SessionManagerProvider } from '../session-manager-context.js';
+import type {
+	Agent,
+	FranklinApp,
+	Session,
+	SessionManager,
+} from '@franklin/agent/browser';
+import { AppContext } from '../franklin-context.js';
 import { useSessions } from '../use-sessions.js';
 
 function makeSession(sessionId: string): Session {
@@ -47,12 +52,11 @@ class FakeSessionManager {
 }
 
 function makeWrapper(manager: FakeSessionManager) {
+	const app = {
+		agents: manager as unknown as SessionManager,
+	} as FranklinApp;
 	return function Wrapper({ children }: { children: ReactNode }) {
-		return (
-			<SessionManagerProvider manager={manager as unknown as SessionManager}>
-				{children}
-			</SessionManagerProvider>
-		);
+		return <AppContext.Provider value={app}>{children}</AppContext.Provider>;
 	};
 }
 

@@ -2,7 +2,8 @@ import path from 'node:path';
 import { app, BrowserWindow } from 'electron';
 import { AuthManager } from '@franklin/auth';
 import { initializeMain } from '@franklin/electron/main';
-import { NodeFramework } from '@franklin/node';
+import { createFolderScopedFilesystem } from '@franklin/lib';
+import { createNodePlatform } from '@franklin/node';
 
 import type { MainHandle } from '@franklin/electron/main';
 
@@ -23,9 +24,18 @@ function createWindow(): void {
 		},
 	});
 
-	const framework = new NodeFramework();
-	const authManager = new AuthManager();
-	handle = initializeMain(mainWindow.webContents, framework, authManager);
+	const nodePlatform = createNodePlatform();
+	const environmentFilesystem = createFolderScopedFilesystem(
+		path.join(app.getPath('home'), '.franklin'),
+		nodePlatform.filesystem,
+	);
+	const environment = { filesystem: environmentFilesystem };
+	const platform = {
+		...nodePlatform,
+		environment: async () => environment,
+		filesystem: environmentFilesystem,
+	};
+	handle = initializeMain(mainWindow.webContents, platform);
 
 	mainWindow.on('closed', () => {
 		void handle?.dispose();

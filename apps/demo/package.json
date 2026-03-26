@@ -22,6 +22,7 @@
 		"@franklin/auth": "*",
 		"@franklin/electron": "*",
 		"@franklin/extensions": "*",
+		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
 		"@franklin/node": "*",
 		"@franklin/transport": "*",
