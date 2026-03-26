@@ -19,7 +19,7 @@ import { SessionMap } from './session-map.js';
 import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
 import type { SpawnFn, Session } from './types.js';
 import type { FranklinExtension } from '../../app/types.js';
-import { AuthManager } from '../../auth/manager.js';
+import type { IAuthManager } from '../../auth/types.js';
 
 export type PersistenceOptions = {
 	session: Persister<SessionSnapshot>;
@@ -43,14 +43,14 @@ export type PersistenceOptions = {
 export class SessionManager {
 	private readonly sessions: SessionMap;
 	private readonly registry: StoreRegistry;
-	private readonly authManager: AuthManager;
+	private readonly authManager: IAuthManager;
 	private readonly persister?: Persister<SessionSnapshot>;
 	private defaultConfig: ConfigOptions;
 
 	constructor(
 		private readonly spawn: SpawnFn,
 		private readonly extensions: FranklinExtension[],
-		authManager: AuthManager,
+		authManager: IAuthManager,
 		persistence?: PersistenceOptions,
 		configOptions?: ConfigOptions,
 	) {

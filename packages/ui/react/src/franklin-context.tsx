@@ -13,6 +13,7 @@ import type {
 	FranklinExtension,
 	Platform,
 } from '@franklin/agent/browser';
+import type { IAuthManager } from 'packages/agent/src/auth/types.js';
 
 // ---------------------------------------------------------------------------
 // Context
@@ -35,11 +36,13 @@ export const AppContext = createContext<FranklinApp | null>(null);
 export function FranklinProvider({
 	extensions,
 	platform,
+	auth,
 	fallback,
 	children,
 }: {
 	extensions: FranklinExtension[];
 	platform: Platform;
+	auth: IAuthManager;
 	fallback?: ReactNode;
 	children: ReactNode;
 }) {
@@ -53,7 +56,7 @@ export function FranklinProvider({
 
 		void (async () => {
 			try {
-				created = await createApp(extensions, platform);
+				created = await createApp(extensions, platform, auth);
 				if (cancelledRef.current) {
 					await Promise.allSettled(
 						created.agents.list().map((s) => s.agent.dispose()),

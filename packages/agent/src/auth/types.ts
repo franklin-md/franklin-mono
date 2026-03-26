@@ -65,4 +65,6 @@ export interface IAuthManager extends IAuthStore {
 		callbacks: OAuthLoginCallbacks,
 	): Promise<void>;
 	setApiKey(provider: string, key: string): Promise<void>;
+	getOAuthProviders(): Promise<{ id: string; name: string }[]>;
+	getApiKeyProviders(): Promise<string[]>;
 }

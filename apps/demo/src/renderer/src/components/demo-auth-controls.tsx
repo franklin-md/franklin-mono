@@ -10,7 +10,7 @@ export function DemoAuthControls() {
 		[],
 	);
 
-	// TODO: Refactor. This is a hook with an initial and promise and should be a state that is initial until promise resolves once, then becomes the resolved value.
+	// TODO: Refactor. This is a hook with an initial and promise and should be a state that is initial until promise resolves once, then
 	useEffect(() => {
 		let cancelled = false;
 

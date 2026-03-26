@@ -8,11 +8,13 @@ import {
 
 import type { FranklinPreloadBridge } from '../../shared/schema.js';
 import type { IpcStreamBridge } from '../../shared/api.js';
+import type { AuthBridge } from './auth-store.js';
 
 declare global {
 	interface Window {
 		__franklinBridge: FranklinPreloadBridge;
 		__franklinIpcStream: IpcStreamBridge;
+		__franklinAuth: AuthBridge;
 	}
 }
 
