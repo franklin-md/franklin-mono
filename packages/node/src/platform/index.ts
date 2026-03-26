@@ -8,8 +8,13 @@ export function createNodePlatform(): Platform {
 	const filesystem = createNodeFilesystem();
 	let environment: Awaited<ReturnType<Platform['environment']>> | null = null;
 
+	const noop = async () => {};
+
 	return {
-		spawn: async () => spawn(),
+		spawn: async () => {
+			const transport = spawn();
+			return Object.assign(transport, { dispose: () => transport.close() });
+		},
 		ai: {
 			getOAuthProviders: async () => {
 				return getOAuthProviders().map((p) => ({ id: p.id, name: p.name }));
@@ -20,11 +25,14 @@ export function createNodePlatform(): Platform {
 				if (!provider) {
 					throw new Error(`Provider ${id} not found`);
 				}
-				return provider;
+				return Object.assign(
+					{ login: (...args: Parameters<typeof provider.login>) => provider.login(...args) } as Pick<typeof provider, 'login'>,
+					{ dispose: noop },
+				);
 			},
 		},
 		environment: async () => {
-			environment ??= { filesystem };
+			environment ??= Object.assign({ filesystem }, { dispose: noop });
 			return environment;
 		},
 		filesystem,

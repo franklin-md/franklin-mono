@@ -26,34 +26,34 @@ function bindDescriptor(
 		if (!runtime.bindMethod) {
 			throw new UnsupportedDescriptorError('method', path);
 		}
-		return runtime.bindMethod(path, descriptor);
+		return runtime.bindMethod(path);
 	}
 
 	if (isNotificationDescriptor(descriptor)) {
 		if (!runtime.bindNotification) {
 			throw new UnsupportedDescriptorError('notification', path);
 		}
-		return runtime.bindNotification(path, descriptor);
+		return runtime.bindNotification(path);
 	}
 
 	if (isEventDescriptor(descriptor)) {
 		if (!runtime.bindEvent) {
 			throw new UnsupportedDescriptorError('event', path);
 		}
-		return runtime.bindEvent(path, descriptor);
+		return runtime.bindEvent(path);
 	}
 
 	if (isStreamDescriptor(descriptor)) {
 		if (!runtime.bindStream) {
 			throw new UnsupportedDescriptorError('stream', path);
 		}
-		return runtime.bindStream(path, descriptor);
+		return runtime.bindStream(path);
 	}
 
 	if (isNamespaceDescriptor(descriptor)) {
 		const shape = descriptor.shape as AnyShape;
 		if (runtime.bindNamespace) {
-			return runtime.bindNamespace(path, descriptor, () =>
+			return runtime.bindNamespace(path, () =>
 				buildNamespace(shape, path, runtime),
 			);
 		}

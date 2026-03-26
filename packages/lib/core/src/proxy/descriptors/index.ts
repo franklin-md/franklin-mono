@@ -14,8 +14,6 @@ export type {
 	NamespaceDescriptor,
 	ResourceDescriptor,
 	ResourceInnerDescriptor,
-	TransportDescriptor,
-	HandleDescriptor,
 	Descriptor,
 	AnyShape,
 } from './types.js';
@@ -26,9 +24,8 @@ export {
 	stream,
 	namespace,
 	resource,
-	transport,
-	handle,
 } from './factories.js';
+export type { NamespaceShape } from './factories.js';
 export {
 	isMethodDescriptor,
 	isNotificationDescriptor,
@@ -36,6 +33,4 @@ export {
 	isStreamDescriptor,
 	isNamespaceDescriptor,
 	isResourceDescriptor,
-	isTransportDescriptor,
-	isHandleDescriptor,
 } from './detect.js';

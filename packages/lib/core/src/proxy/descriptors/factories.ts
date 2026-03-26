@@ -1,16 +1,13 @@
 import type { InferNamespaceValue } from './infer.js';
 import type {
-	AnyShape,
 	Descriptor,
 	EventDescriptor,
-	HandleDescriptor,
 	MethodDescriptor,
 	NamespaceDescriptor,
 	NotificationDescriptor,
 	ResourceDescriptor,
 	ResourceInnerDescriptor,
 	StreamDescriptor,
-	TransportDescriptor,
 } from './types.js';
 import {
 	EVENT_KIND,
@@ -24,13 +21,49 @@ import {
 type AnyAsyncMethod = (...args: any[]) => Promise<any>;
 type AnyNotificationMethod = (...args: any[]) => Promise<void>;
 type AnyEventMethod = (...args: any[]) => AsyncIterable<any>;
-type HandleShape<T> = {
-	[K in keyof T]: T[K] extends AnyAsyncMethod
-		? MethodDescriptor<Parameters<T[K]>, Awaited<ReturnType<T[K]>>>
-		: T[K] extends object
-			? NamespaceDescriptor<T[K], HandleShape<T[K]>>
-			: never;
+type StreamLike<TRead = unknown, TWrite = TRead> = {
+	readonly readable: ReadableStream<TRead>;
+	readonly writable: WritableStream<TWrite>;
+	readonly close: () => Promise<void>;
 };
+type DisposableLike = { dispose(): Promise<void> };
+type StripDisposable<T> = T extends DisposableLike ? Omit<T, 'dispose'> : T;
+
+type HasNeverMember<TShape> =
+	true extends {
+		[K in keyof TShape]: [TShape[K]] extends [never] ? true : false;
+	}[keyof TShape]
+		? true
+		: false;
+
+type NamespaceObjectDescriptor<T extends object> =
+	HasNeverMember<NamespaceShape<T>> extends true
+		? never
+		: NamespaceDescriptor<T, NamespaceShape<T>>;
+
+type ResourceMethodDescriptor<TArgs extends unknown[], TResult> =
+	TResult extends StreamLike<infer TRead, infer TWrite>
+		? ResourceDescriptor<TArgs, StreamDescriptor<TRead, TWrite>>
+		: StripDisposable<TResult> extends infer TInner
+			? TInner extends object
+				? NamespaceObjectDescriptor<TInner> extends infer TDescriptor
+					? TDescriptor extends NamespaceDescriptor<any, any>
+						? ResourceDescriptor<TArgs, TDescriptor>
+						: never
+					: never
+				: never
+			: never;
+
+type NamespaceMemberDescriptor<T> =
+	T extends (...args: infer A) => AsyncIterable<infer I>
+		? EventDescriptor<A, I>
+		: T extends (...args: infer A) => Promise<void>
+			? MethodDescriptor<A, void> | NotificationDescriptor<A>
+			: T extends (...args: infer A) => Promise<infer R>
+				? MethodDescriptor<A, R> | ResourceMethodDescriptor<A, R>
+				: T extends object
+					? NamespaceObjectDescriptor<T>
+					: never;
 
 export function method<TMethod extends AnyAsyncMethod>(): MethodDescriptor<
 	Parameters<TMethod>,
@@ -61,24 +94,16 @@ export function stream<TRead = unknown, TWrite = TRead>(): StreamDescriptor<
 	return { kind: STREAM_KIND };
 }
 
-type NamespaceShape<T> = {
-	[K in keyof T]: T[K] extends (...args: infer A) => AsyncIterable<infer I>
-		? EventDescriptor<A, I>
-		: T[K] extends (...args: infer A) => Promise<void>
-			? MethodDescriptor<A, void> | NotificationDescriptor<A>
-			: T[K] extends (...args: infer A) => Promise<infer R>
-				? MethodDescriptor<A, R>
-				: T[K] extends object
-					? NamespaceDescriptor<T[K], NamespaceShape<T[K]>>
-					: never;
+export type NamespaceShape<T> = {
+	[K in keyof T]: NamespaceMemberDescriptor<T[K]>;
 };
 
-export function namespace<T>(
-	shape: NamespaceShape<T>,
-): NamespaceDescriptor<T, NamespaceShape<T>>;
 export function namespace<TShape extends Record<string, Descriptor>>(
 	shape: TShape,
 ): NamespaceDescriptor<InferNamespaceValue<TShape>, TShape>;
+export function namespace<T>(
+	shape: NamespaceShape<T>,
+): NamespaceDescriptor<T, NamespaceShape<T>>;
 export function namespace(
 	shape: Record<string, Descriptor>,
 ): NamespaceDescriptor<any, any> {
@@ -90,36 +115,4 @@ export function resource<
 	TInner extends ResourceInnerDescriptor = ResourceInnerDescriptor,
 >(inner: TInner): ResourceDescriptor<TArgs, TInner> {
 	return { kind: RESOURCE_KIND, inner };
-}
-
-// Convenience: resource(stream()) — lease over a bidirectional duplex
-export function transport<
-	TMethod extends (...args: any[]) => Promise<any>,
->(): TransportDescriptor<
-	Parameters<TMethod>,
-	Awaited<ReturnType<TMethod>> extends { readable: ReadableStream<infer R> }
-		? R
-		: unknown,
-	Awaited<ReturnType<TMethod>> extends { writable: WritableStream<infer W> }
-		? W
-		: unknown
-> {
-	return resource(stream());
-}
-
-// Convenience: resource(namespace(shape)) — lease over a proxy object
-export function handle<TMethod extends AnyAsyncMethod>(
-	shape: HandleShape<Awaited<ReturnType<TMethod>>>,
-): HandleDescriptor<
-	Parameters<TMethod>,
-	Awaited<ReturnType<TMethod>>,
-	HandleShape<Awaited<ReturnType<TMethod>>>
->;
-export function handle<
-	TArgs extends unknown[],
-	TValue,
-	TShape extends AnyShape,
->(shape: TShape): HandleDescriptor<TArgs, TValue, TShape>;
-export function handle(shape: AnyShape): HandleDescriptor<any, any> {
-	return resource(namespace(shape));
 }

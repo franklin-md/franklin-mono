@@ -25,8 +25,6 @@ export {
 	stream,
 	namespace,
 	resource,
-	transport,
-	handle,
 	// Type guards
 	isMethodDescriptor,
 	isNotificationDescriptor,
@@ -34,8 +32,6 @@ export {
 	isStreamDescriptor,
 	isNamespaceDescriptor,
 	isResourceDescriptor,
-	isTransportDescriptor,
-	isHandleDescriptor,
 } from './proxy/index.js';
 export type {
 	MethodDescriptor,
@@ -45,8 +41,6 @@ export type {
 	NamespaceDescriptor,
 	ResourceDescriptor,
 	ResourceInnerDescriptor,
-	TransportDescriptor,
-	HandleDescriptor,
 	Descriptor,
 	AnyShape,
 } from './proxy/index.js';

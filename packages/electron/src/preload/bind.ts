@@ -5,13 +5,11 @@ import {
 	isResourceDescriptor,
 	isStreamDescriptor,
 } from '@franklin/lib/proxy';
-import type {
-	AnyShape,
-	Descriptor,
-	NamespaceDescriptor,
-} from '@franklin/lib/proxy';
+import type { AnyShape, NamespaceDescriptor } from '@franklin/lib/proxy';
 import { createChannels } from '../shared/channels.js';
 import type { IpcStreamBridge, PreloadBridgeOf } from '../shared/api.js';
+
+// TODO: Refactor and clean up.
 
 type BindContext =
 	| { kind: 'root'; name: string; path: string[] }
@@ -22,6 +20,8 @@ type BindContext =
 			memberPath: string[];
 	  };
 
+// TODO: This is to support the tranport runtime. But just like lease it should go into the
+// bind context type and into the single recursion method
 export function createIpcStreamBridge(channel: string): IpcStreamBridge {
 	return {
 		on: (callback: (packet: unknown) => void) => {
@@ -46,9 +46,7 @@ function bindMembers(
 	const channels = createChannels(context.name);
 	const node: Record<string, unknown> = {};
 
-	for (const [key, descriptor] of Object.entries(shape) as Array<
-		[string, Descriptor]
-	>) {
+	for (const [key, descriptor] of Object.entries(shape)) {
 		if (isNamespaceDescriptor(descriptor)) {
 			node[key] = bindMembers(
 				descriptor.shape,

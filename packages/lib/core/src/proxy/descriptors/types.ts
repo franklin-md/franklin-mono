@@ -56,16 +56,3 @@ export type Descriptor =
 	| ResourceDescriptor<any, any>;
 
 export type AnyShape = Record<string, Descriptor>;
-
-// Convenience aliases for lease-style resource subtypes
-export type TransportDescriptor<
-	TArgs extends unknown[] = unknown[],
-	TRead = unknown,
-	TWrite = TRead,
-> = ResourceDescriptor<TArgs, StreamDescriptor<TRead, TWrite>>;
-
-export type HandleDescriptor<
-	TArgs extends unknown[] = unknown[],
-	TValue = unknown,
-	TShape extends AnyShape = AnyShape,
-> = ResourceDescriptor<TArgs, NamespaceDescriptor<TValue, TShape>>;

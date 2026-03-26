@@ -17,7 +17,7 @@ export function AgentSidebar({
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
 
 	const handleSpawnAgent = useCallback(async () => {
-		const session = await manager.new({provider: 'anthropic'});
+		const session = await manager.new({ provider: 'anthropic' });
 		setCurrentAgentId(session.sessionId);
 		onSelectAgent(session.sessionId, session.agent);
 	}, [manager, onSelectAgent]);

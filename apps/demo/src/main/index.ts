@@ -28,7 +28,10 @@ function createWindow(): void {
 		path.join(app.getPath('home'), '.franklin'),
 		nodePlatform.filesystem,
 	);
-	const environment = { filesystem: environmentFilesystem };
+	const environment = Object.assign(
+		{ filesystem: environmentFilesystem },
+		{ dispose: async () => {} },
+	);
 	const platform = {
 		...nodePlatform,
 		environment: async () => environment,

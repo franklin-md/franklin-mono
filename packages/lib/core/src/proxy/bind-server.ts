@@ -38,7 +38,7 @@ function registerDescriptor(
 		const handler = getValueAtPath(impl, path) as (
 			...args: unknown[]
 		) => Promise<unknown>;
-		return [runtime.registerMethod(path, descriptor, handler)];
+		return [runtime.registerMethod(path, handler)];
 	}
 
 	if (isNotificationDescriptor(descriptor)) {
@@ -48,7 +48,7 @@ function registerDescriptor(
 		const handler = getValueAtPath(impl, path) as (
 			...args: unknown[]
 		) => Promise<void>;
-		return [runtime.registerNotification(path, descriptor, handler)];
+		return [runtime.registerNotification(path, handler)];
 	}
 
 	if (isEventDescriptor(descriptor)) {
@@ -58,7 +58,7 @@ function registerDescriptor(
 		const handler = getValueAtPath(impl, path) as (
 			...args: unknown[]
 		) => AsyncIterable<unknown>;
-		return [runtime.registerEvent(path, descriptor, handler)];
+		return [runtime.registerEvent(path, handler)];
 	}
 
 	if (isStreamDescriptor(descriptor)) {
@@ -66,7 +66,7 @@ function registerDescriptor(
 			throw new UnsupportedDescriptorError('stream', path);
 		}
 		const factory = getValueAtPath(impl, path) as () => unknown;
-		return [runtime.registerStream(path, descriptor, factory)];
+		return [runtime.registerStream(path, factory)];
 	}
 
 	if (isNamespaceDescriptor(descriptor)) {

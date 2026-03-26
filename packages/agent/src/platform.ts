@@ -8,16 +8,21 @@ type ProviderMeta = {
 	id: string;
 	name: string;
 };
+
+type Disposable = { dispose(): Promise<void> };
+
 export interface Platform {
-	spawn: () => Promise<ClientProtocol>;
-	environment: () => Promise<Environment>;
+	spawn: () => Promise<ClientProtocol & Disposable>;
+	environment: () => Promise<Environment & Disposable>;
 
 	// TODO: Are these the right names?
 	ai: {
 		getOAuthProviders: () => Promise<ProviderMeta[]>;
 		getApiKeyProviders: () => Promise<string[]>;
 		// TODO: do we need more?
-		getProvider: (id: string) => Promise<Pick<OAuthProviderInterface, 'login'>>;
+		getProvider: (
+			id: string,
+		) => Promise<Pick<OAuthProviderInterface, 'login'> & Disposable>;
 	};
 
 	filesystem: Filesystem;

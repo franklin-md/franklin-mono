@@ -32,6 +32,8 @@ export type ProxyType<D extends Descriptor> =
 							? (
 									...args: TArgs
 								) => Promise<
-									ProxyType<TInner & Descriptor> & { dispose(): Promise<void> }
+									ProxyType<
+										TInner extends Descriptor ? TInner : never
+									> & { dispose(): Promise<void> }
 								>
 							: never;

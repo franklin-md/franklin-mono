@@ -1,5 +1,4 @@
-import type { ClientProtocol } from '@franklin/mini-acp';
-import { method, namespace, resource, transport } from '@franklin/lib/proxy';
+import { method, namespace, resource, stream } from '@franklin/lib/proxy';
 import type { ResourceDescriptor } from '@franklin/lib/proxy';
 
 import type { PreloadBridgeOf } from './api.js';
@@ -31,7 +30,7 @@ const providerResource: ResourceDescriptor<
 > = resource(providerHandle);
 
 export const schema = namespace({
-	spawn: transport<() => Promise<ClientProtocol>>(),
+	spawn: resource(stream()),
 	environment: environmentResource,
 	ai: namespace({
 		getOAuthProviders: method(),

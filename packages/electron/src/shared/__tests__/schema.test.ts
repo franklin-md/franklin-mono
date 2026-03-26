@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-	isHandleDescriptor,
 	isNamespaceDescriptor,
-	isTransportDescriptor,
+	isResourceDescriptor,
+	isStreamDescriptor,
 } from '@franklin/lib/proxy';
 
 import { createChannels } from '../channels.js';
@@ -38,12 +38,17 @@ describe('schema', () => {
 	});
 
 	it('captures environment and spawn as core resource descriptors', () => {
-		const spawn = schema.shape['spawn'];
-		const environment = schema.shape['environment'];
+		const spawn = schema.shape.spawn;
+		const environment = schema.shape.environment;
 		expect(spawn).toBeDefined();
 		expect(environment).toBeDefined();
-		expect(isTransportDescriptor(spawn!)).toBe(true);
-		expect(isHandleDescriptor(environment!)).toBe(true);
+		expect(isResourceDescriptor(spawn) && isStreamDescriptor(spawn.inner)).toBe(
+			true,
+		);
+		expect(
+			isResourceDescriptor(environment) &&
+				isNamespaceDescriptor(environment.inner),
+		).toBe(true);
 		expect(isNamespaceDescriptor(schema)).toBe(true);
 	});
 });

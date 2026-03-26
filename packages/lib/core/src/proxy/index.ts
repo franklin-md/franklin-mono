@@ -13,8 +13,6 @@ export {
 	stream,
 	namespace,
 	resource,
-	transport,
-	handle,
 	// Type guards
 	isMethodDescriptor,
 	isNotificationDescriptor,
@@ -22,8 +20,6 @@ export {
 	isStreamDescriptor,
 	isNamespaceDescriptor,
 	isResourceDescriptor,
-	isTransportDescriptor,
-	isHandleDescriptor,
 } from './descriptors/index.js';
 export type {
 	// Descriptor types
@@ -34,8 +30,6 @@ export type {
 	NamespaceDescriptor,
 	ResourceDescriptor,
 	ResourceInnerDescriptor,
-	TransportDescriptor,
-	HandleDescriptor,
 	Descriptor,
 	AnyShape,
 } from './descriptors/index.js';

@@ -21,11 +21,7 @@ describe('bindServer', () => {
 
 		const binding = bindServer(method(), handler as never, runtime);
 
-		expect(runtime.registerMethod).toHaveBeenCalledWith(
-			[],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
-			handler,
-		);
+		expect(runtime.registerMethod).toHaveBeenCalledWith([], handler);
 		expect(typeof binding.dispose).toBe('function');
 	});
 
@@ -42,11 +38,7 @@ describe('bindServer', () => {
 			runtime,
 		);
 
-		expect(runtime.registerMethod).toHaveBeenCalledWith(
-			['add'],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
-			handler,
-		);
+		expect(runtime.registerMethod).toHaveBeenCalledWith(['add'], handler);
 	});
 
 	it('registers notification handlers', () => {
@@ -64,7 +56,6 @@ describe('bindServer', () => {
 
 		expect(runtime.registerNotification).toHaveBeenCalledWith(
 			['ping'],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
 			handler,
 		);
 	});
@@ -84,11 +75,7 @@ describe('bindServer', () => {
 			runtime,
 		);
 
-		expect(runtime.registerEvent).toHaveBeenCalledWith(
-			['logs'],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
-			handler,
-		);
+		expect(runtime.registerEvent).toHaveBeenCalledWith(['logs'], handler);
 	});
 
 	it('recurses into namespace descriptors', () => {
@@ -110,7 +97,6 @@ describe('bindServer', () => {
 
 		expect(runtime.registerMethod).toHaveBeenCalledWith(
 			['fs', 'exists'],
-			expect.any(Object),
 			handler,
 		);
 	});
@@ -195,7 +181,6 @@ describe('bindServer', () => {
 
 		expect(runtime.registerMethod).toHaveBeenCalledWith(
 			['a', 'b', 'c'],
-			expect.any(Object),
 			handler,
 		);
 	});

@@ -39,7 +39,6 @@ export class JsonRpcServerRuntime implements IServerRuntime {
 
 	registerMethod(
 		path: string[],
-		_descriptor: unknown,
 		handler: (...args: unknown[]) => Promise<unknown>,
 	): () => void {
 		const name = path.join('/');
@@ -51,7 +50,6 @@ export class JsonRpcServerRuntime implements IServerRuntime {
 
 	registerNotification(
 		path: string[],
-		_descriptor: unknown,
 		handler: (...args: unknown[]) => Promise<void>,
 	): () => void {
 		const name = path.join('/');
@@ -63,7 +61,6 @@ export class JsonRpcServerRuntime implements IServerRuntime {
 
 	registerEvent(
 		path: string[],
-		_descriptor: unknown,
 		handler: (...args: unknown[]) => AsyncIterable<unknown>,
 	): () => void {
 		const name = path.join('/');

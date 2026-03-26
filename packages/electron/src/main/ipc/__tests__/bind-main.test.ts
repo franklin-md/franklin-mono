@@ -1,5 +1,4 @@
 import type { Filesystem } from '@franklin/lib';
-import type { Duplex } from '@franklin/transport';
 import type { ClientProtocol } from '@franklin/mini-acp';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -26,6 +25,8 @@ vi.mock('electron', () => ({
 	},
 }));
 
+const noop = async () => {};
+
 function createFilesystem(label: string): Filesystem {
 	return {
 		readFile: async () => new Uint8Array([label.length]),
@@ -45,7 +46,7 @@ function createFilesystem(label: string): Filesystem {
 
 function createTransportSpy(): {
 	close: ReturnType<typeof vi.fn>;
-	transport: ClientProtocol;
+	transport: ClientProtocol & { dispose(): Promise<void> };
 } {
 	const close = vi.fn(async () => {});
 	return {
@@ -54,7 +55,8 @@ function createTransportSpy(): {
 			readable: new ReadableStream(),
 			writable: new WritableStream(),
 			close,
-		} as unknown as ClientProtocol,
+			dispose: close,
+		} as unknown as ClientProtocol & { dispose(): Promise<void> },
 	};
 }
 
@@ -68,6 +70,7 @@ function createWebContents(id: number) {
 function createProvider() {
 	return {
 		login: async () => ({}) as any,
+		dispose: noop,
 	};
 }
 
@@ -101,7 +104,11 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => createTransportSpy().transport,
-				environment: async () => ({ filesystem: createFilesystem('b') }),
+				environment: async () =>
+					Object.assign(
+						{ filesystem: createFilesystem('b') },
+						{ dispose: noop },
+					),
 				filesystem: createFilesystem('a'),
 				ai: {
 					getOAuthProviders: async () => [],
@@ -131,7 +138,11 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => createTransportSpy().transport,
-				environment: async () => ({ filesystem: createFilesystem('b') }),
+				environment: async () =>
+					Object.assign(
+						{ filesystem: createFilesystem('b') },
+						{ dispose: noop },
+					),
 				filesystem: createFilesystem('a'),
 				ai: {
 					getOAuthProviders: async () => [],
@@ -166,7 +177,11 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => transportSpy.transport,
-				environment: async () => ({ filesystem: createFilesystem('b') }),
+				environment: async () =>
+					Object.assign(
+						{ filesystem: createFilesystem('b') },
+						{ dispose: noop },
+					),
 				filesystem: createFilesystem('a'),
 				ai: {
 					getOAuthProviders: async () => [],

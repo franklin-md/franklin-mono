@@ -102,11 +102,12 @@ describe('bindRenderer', () => {
 			data: { type: 'ping' },
 		});
 
+		expect(typeof transport.dispose).toBe('function');
 		await transport.close();
 		expect(rawBridge.spawn.kill).toHaveBeenCalledWith('agent-1');
 
 		const environment = await bridge.environment();
-		await expect(environment.filesystem!.exists('/tmp')).resolves.toBe(true);
+		await expect(environment.filesystem.exists('/tmp')).resolves.toBe(true);
 		expect(rawBridge.environment.connect).toHaveBeenCalledTimes(1);
 		const filesystemProxy = rawBridge.environment.proxy as unknown as {
 			filesystem: {
@@ -118,8 +119,8 @@ describe('bindRenderer', () => {
 			'/tmp',
 		);
 
-		// dispose() replaces the old releaseLease() pattern
-		await (environment as unknown as { dispose(): Promise<void> }).dispose();
+		expect(typeof environment.dispose).toBe('function');
+		await environment.dispose();
 		expect(rawBridge.environment.kill).toHaveBeenCalledWith('env-1');
 	});
 });
