@@ -22,8 +22,8 @@ export function createNodeFilesystem(): Filesystem {
 		async stat(path) {
 			const stats = await stat(path);
 			return {
-				isFile: () => stats.isFile(),
-				isDirectory: () => stats.isDirectory(),
+				isFile: stats.isFile(),
+				isDirectory: stats.isDirectory(),
 			};
 		},
 		readdir: (path) => readdir(path),

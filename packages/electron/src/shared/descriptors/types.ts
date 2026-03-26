@@ -8,21 +8,11 @@ export const TRANSPORT_DESCRIPTOR = Symbol('franklin.ipc.transport');
 export const HANDLE_DESCRIPTOR = Symbol('franklin.ipc.handle');
 export const PROXY_DESCRIPTOR = Symbol('franklin.ipc.proxy');
 
-/**
- * Describes how to serialize/deserialize a proxy return value.
- * `true` marks a callable leaf (call to serialize, wrap as function to deserialize).
- * Nested objects describe recursive structure.
- */
-export interface ResultShape {
-	[key: string]: ResultShape | true;
-}
-
 export interface MethodDescriptor<
 	TArgs extends unknown[] = unknown[],
 	TResult = unknown,
 > {
 	readonly kind: typeof METHOD_DESCRIPTOR;
-	readonly returns?: ResultShape;
 }
 
 export interface TransportDescriptor<
@@ -93,7 +83,3 @@ export type HandleShape<T> = {
 		? MethodDescriptor<Parameters<T[K]>, Awaited<ReturnType<T[K]>>>
 		: ProxyDescriptor<T[K], any>;
 };
-
-export interface MethodOptions {
-	returns?: ResultShape;
-}

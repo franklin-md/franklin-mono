@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-	isHandleDescriptor,
-	isMethodDescriptor,
-	isProxyDescriptor,
-} from '../descriptors/detect.js';
-import { serializeProxy, deserializeProxy } from '../descriptors/serde.js';
+import { isHandleDescriptor } from '../descriptors/detect.js';
 import { createChannels } from '../channels.js';
 import { schema } from '../schema.js';
 
@@ -42,33 +37,5 @@ describe('schema', () => {
 		const environment = schema.shape['environment'];
 		expect(environment).toBeDefined();
 		expect(isHandleDescriptor(environment!)).toBe(true);
-	});
-
-	it('serializes and deserializes proxy return values via ResultShape', async () => {
-		const filesystem = schema.shape['filesystem'];
-		if (!filesystem || !isProxyDescriptor(filesystem)) {
-			throw new Error('filesystem descriptor missing');
-		}
-
-		const stat = filesystem.shape['stat'];
-		if (!stat || !isMethodDescriptor(stat) || !stat.returns) {
-			throw new Error('stat descriptor is missing returns shape');
-		}
-
-		const serialized = await serializeProxy(
-			{ isFile: () => true, isDirectory: () => false },
-			stat.returns,
-		);
-		expect(serialized).toEqual({
-			isFile: true,
-			isDirectory: false,
-		});
-
-		const deserialized = deserializeProxy(serialized, stat.returns) as {
-			isFile: () => boolean;
-			isDirectory: () => boolean;
-		};
-		expect(deserialized.isFile()).toBe(true);
-		expect(deserialized.isDirectory()).toBe(false);
 	});
 });

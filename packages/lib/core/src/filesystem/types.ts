@@ -1,6 +1,6 @@
 export interface FileStat {
-	isFile(): boolean;
-	isDirectory(): boolean;
+	isFile: boolean;
+	isDirectory: boolean;
 }
 
 export interface Filesystem {

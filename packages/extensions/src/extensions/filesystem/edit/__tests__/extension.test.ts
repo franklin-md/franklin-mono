@@ -24,8 +24,8 @@ function mockEnvironment(files: Record<string, string> = {}): Environment {
 			mkdir: vi.fn(async () => {}),
 			access: vi.fn(async () => {}),
 			stat: vi.fn(async () => ({
-				isFile: () => true,
-				isDirectory: () => false,
+				isFile: true,
+				isDirectory: false,
 			})),
 			readdir: vi.fn(async () => []),
 			exists: vi.fn(async (path: string) => store.has(path)),

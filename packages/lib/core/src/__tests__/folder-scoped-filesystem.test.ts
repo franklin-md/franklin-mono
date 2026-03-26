@@ -9,8 +9,8 @@ function mockFilesystem(): Filesystem {
 		mkdir: vi.fn().mockResolvedValue(undefined),
 		access: vi.fn().mockResolvedValue(undefined),
 		stat: vi.fn().mockResolvedValue({
-			isFile: () => true,
-			isDirectory: () => false,
+			isFile: true,
+			isDirectory: false,
 		}),
 		readdir: vi.fn().mockResolvedValue([]),
 		exists: vi.fn().mockResolvedValue(true),

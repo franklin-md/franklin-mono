@@ -42,8 +42,8 @@ describe('bindRenderer', () => {
 						mkdir: vi.fn(async () => {}),
 						access: vi.fn(async () => {}),
 						stat: vi.fn(async () => ({
-							isFile: () => true,
-							isDirectory: () => false,
+							isFile: true,
+							isDirectory: false,
 						})),
 						readdir: vi.fn(async () => []),
 						glob: vi.fn(async () => []),
@@ -57,8 +57,8 @@ describe('bindRenderer', () => {
 				mkdir: vi.fn(async () => {}),
 				access: vi.fn(async () => {}),
 				stat: vi.fn(async () => ({
-					isFile: () => true,
-					isDirectory: () => false,
+					isFile: true,
+					isDirectory: false,
 				})),
 				readdir: vi.fn(async () => []),
 				exists: vi.fn(async () => true),
