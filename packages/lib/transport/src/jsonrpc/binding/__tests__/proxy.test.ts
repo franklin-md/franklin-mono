@@ -1,41 +1,25 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ClientBindingState } from '../runtime/types.js';
-import { createRemoteProxy } from '../runtime/client/proxy.js';
+import { method, notification, event, namespace } from '@franklin/lib';
+import { bindClient } from '@franklin/lib';
+import { JsonRpcProxyRuntime } from '../runtime/client/runtime.js';
 
-function createClientState(
-	overrides?: Partial<ClientBindingState>,
-): ClientBindingState {
-	return {
-		send: vi.fn(),
-		pendingRequests: new Map(),
-		pendingStreams: new Map(),
-		...overrides,
-	};
-}
+const descriptor = namespace({
+	add: method<(params: { a: number; b: number }) => Promise<number>>(),
+	greet: notification<(params: { msg: string }) => Promise<void>>(),
+	events: event<(params: { topic: string }) => AsyncIterable<string>>(),
+});
 
-interface TestRemote {
-	add(params: { a: number; b: number }): Promise<number>;
-	greet(params: { msg: string }): Promise<void>;
-	events(params: { topic: string }): AsyncIterable<string>;
-}
-
-const remoteManifest = {
-	add: { kind: 'request' as const },
-	greet: { kind: 'notification' as const },
-	events: { kind: 'event' as const },
-};
-
-describe('createRemoteProxy', () => {
+describe('JsonRpcProxyRuntime', () => {
 	describe('request methods', () => {
 		it('sends a JSON-RPC request with incrementing ids', () => {
-			const state = createClientState();
-			const proxy = createRemoteProxy<TestRemote>(state, remoteManifest);
+			const send = vi.fn();
+			const runtime = new JsonRpcProxyRuntime(send);
+			const proxy = bindClient(descriptor, runtime);
 
 			void proxy.add({ a: 1, b: 2 });
 			void proxy.add({ a: 3, b: 4 });
 
-			const calls = (state.send as ReturnType<typeof vi.fn>).mock
-				.calls as unknown[][];
+			const calls = send.mock.calls as unknown[][];
 			expect(calls[0]![0]).toMatchObject({
 				jsonrpc: '2.0',
 				id: 0,
@@ -50,21 +34,13 @@ describe('createRemoteProxy', () => {
 			});
 		});
 
-		it('tracks pending requests', () => {
-			const state = createClientState();
-			const proxy = createRemoteProxy<TestRemote>(state, remoteManifest);
-
-			void proxy.add({ a: 1, b: 2 });
-
-			expect(state.pendingRequests.has(0)).toBe(true);
-		});
-
-		it('resolves when pending request is resolved', async () => {
-			const state = createClientState();
-			const proxy = createRemoteProxy<TestRemote>(state, remoteManifest);
+		it('resolves when response arrives', async () => {
+			const send = vi.fn();
+			const runtime = new JsonRpcProxyRuntime(send);
+			const proxy = bindClient(descriptor, runtime);
 
 			const promise = proxy.add({ a: 1, b: 2 });
-			state.pendingRequests.get(0)?.resolve(42);
+			runtime.handleMessage({ jsonrpc: '2.0', id: 0, result: 42 });
 
 			await expect(promise).resolves.toBe(42);
 		});
@@ -72,12 +48,13 @@ describe('createRemoteProxy', () => {
 
 	describe('notification methods', () => {
 		it('sends a JSON-RPC notification with no id', () => {
-			const state = createClientState();
-			const proxy = createRemoteProxy<TestRemote>(state, remoteManifest);
+			const send = vi.fn();
+			const runtime = new JsonRpcProxyRuntime(send);
+			const proxy = bindClient(descriptor, runtime);
 
 			void proxy.greet({ msg: 'hi' });
 
-			expect(state.send).toHaveBeenCalledWith({
+			expect(send).toHaveBeenCalledWith({
 				jsonrpc: '2.0',
 				method: 'greet',
 				params: { msg: 'hi' },
@@ -85,32 +62,25 @@ describe('createRemoteProxy', () => {
 		});
 
 		it('resolves immediately', async () => {
-			const state = createClientState();
-			const proxy = createRemoteProxy<TestRemote>(state, remoteManifest);
+			const send = vi.fn();
+			const runtime = new JsonRpcProxyRuntime(send);
+			const proxy = bindClient(descriptor, runtime);
 
 			await expect(proxy.greet({ msg: 'hi' })).resolves.toBeUndefined();
-		});
-
-		it('does not track pending requests', () => {
-			const state = createClientState();
-			const proxy = createRemoteProxy<TestRemote>(state, remoteManifest);
-
-			void proxy.greet({ msg: 'hi' });
-
-			expect(state.pendingRequests.size).toBe(0);
 		});
 	});
 
 	describe('event methods', () => {
 		it('sends a JSON-RPC request and returns an async iterable', () => {
-			const state = createClientState();
-			const proxy = createRemoteProxy<TestRemote>(state, remoteManifest);
+			const send = vi.fn();
+			const runtime = new JsonRpcProxyRuntime(send);
+			const proxy = bindClient(descriptor, runtime);
 
 			const iterable = proxy.events({ topic: 'test' });
 
 			expect(iterable).toBeDefined();
 			expect(Symbol.asyncIterator in iterable).toBe(true);
-			expect(state.send).toHaveBeenCalledWith({
+			expect(send).toHaveBeenCalledWith({
 				jsonrpc: '2.0',
 				id: 0,
 				method: 'events',
@@ -118,29 +88,73 @@ describe('createRemoteProxy', () => {
 			});
 		});
 
-		it('tracks the stream in pendingStreams', () => {
-			const state = createClientState();
-			const proxy = createRemoteProxy<TestRemote>(state, remoteManifest);
+		it('receives stream updates and completes', async () => {
+			const send = vi.fn();
+			const runtime = new JsonRpcProxyRuntime(send);
+			const proxy = bindClient(descriptor, runtime);
 
-			proxy.events({ topic: 'test' });
+			const iterable = proxy.events({ topic: 'test' });
+			const iterator = iterable[Symbol.asyncIterator]();
 
-			expect(state.pendingStreams.has(0)).toBe(true);
+			runtime.handleMessage({
+				jsonrpc: '2.0',
+				method: 'events/update',
+				params: { requestId: 0, body: 'chunk1' },
+			});
+			runtime.handleMessage({
+				jsonrpc: '2.0',
+				id: 0,
+				result: null,
+			});
+
+			const first = await iterator.next();
+			expect(first.value).toBe('chunk1');
+
+			const done = await iterator.next();
+			expect(done.done).toBe(true);
 		});
 
 		it('sends cancel notification when iterator.return() is called', async () => {
-			const state = createClientState();
-			const proxy = createRemoteProxy<TestRemote>(state, remoteManifest);
+			const send = vi.fn();
+			const runtime = new JsonRpcProxyRuntime(send);
+			const proxy = bindClient(descriptor, runtime);
 
 			const iterable = proxy.events({ topic: 'test' });
 			const iterator = iterable[Symbol.asyncIterator]();
 			await iterator.return?.();
 
-			const calls = (state.send as ReturnType<typeof vi.fn>).mock
-				.calls as Array<[{ method: string; params: unknown }]>;
+			const calls = send.mock.calls as Array<
+				[{ method: string; params: unknown }]
+			>;
 			const cancelCall = calls.find((c) => c[0].method === '$/stream/cancel');
 			expect(cancelCall).toBeDefined();
 			expect(cancelCall![0].params).toEqual({ requestId: 0 });
-			expect(state.pendingStreams.has(0)).toBe(false);
+		});
+	});
+
+	describe('handleMessage', () => {
+		it('returns false for unmatched messages', () => {
+			const runtime = new JsonRpcProxyRuntime(vi.fn());
+			bindClient(descriptor, runtime);
+
+			const handled = runtime.handleMessage({
+				jsonrpc: '2.0',
+				method: 'unknown',
+				params: {},
+			});
+			expect(handled).toBe(false);
+		});
+	});
+
+	describe('close', () => {
+		it('rejects pending requests', async () => {
+			const runtime = new JsonRpcProxyRuntime(vi.fn());
+			const proxy = bindClient(descriptor, runtime);
+
+			const promise = proxy.add({ a: 1, b: 2 });
+			runtime.close();
+
+			await expect(promise).rejects.toThrow('Connection closed');
 		});
 	});
 });

@@ -6,7 +6,7 @@ import type {
 	ClientProtocol,
 	AgentProtocol,
 } from './types.js';
-import { muManifest } from './manifest.js';
+import { muServerDescriptor, muClientDescriptor } from './manifest.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,7 +27,11 @@ export type AgentBinding = PeerBinding<MuAgent, MuClient>;
  * and start message dispatch.
  */
 export function createClientConnection(duplex: ClientProtocol): ClientBinding {
-	return bindClient({ duplex, manifest: muManifest });
+	return bindClient({
+		duplex,
+		server: muServerDescriptor,
+		client: muClientDescriptor,
+	});
 }
 
 // ---------------------------------------------------------------------------
@@ -42,5 +46,9 @@ export function createClientConnection(duplex: ClientProtocol): ClientBinding {
  * setContext, prompt, cancel) and start message dispatch.
  */
 export function createAgentConnection(duplex: AgentProtocol): AgentBinding {
-	return bindServer({ duplex, manifest: muManifest });
+	return bindServer({
+		duplex,
+		server: muServerDescriptor,
+		client: muClientDescriptor,
+	});
 }

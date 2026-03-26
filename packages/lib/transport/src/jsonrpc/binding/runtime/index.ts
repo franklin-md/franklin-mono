@@ -1,26 +1,28 @@
+import {
+	bindClient as proxyBindClient,
+	bindServer as proxyBindServer,
+	type Descriptor,
+	type ProxyType,
+} from '@franklin/lib';
 import { isRequest } from '../../types.js';
 import { RpcError } from '../../errors.js';
 import { observe } from '../../../streams/readable/observe.js';
 import { callable } from '../../../streams/writable/callable.js';
-import type { RpcMethods } from '../../protocol/method-types.js';
+import type { Duplex } from '../../../streams/types.js';
+import type { JsonRpcMessage } from '../../types.js';
 
-import type { PeerBinding, PeerBindingOptions } from './types.js';
-import { createServerBinding } from './server/server.js';
-import { createClientBinding } from './client/client.js';
+import type { PeerBinding } from './types.js';
+import { JsonRpcProxyRuntime } from './client/runtime.js';
+import { JsonRpcServerRuntime } from './server/runtime.js';
 
 export type {
 	PeerBinding,
-	PeerBindingOptions,
-	ClientBinding,
 	ClientBindingState,
-	RuntimeMethodKind,
-	RuntimeSideManifest,
-	ServerBinding,
 	ServerBindingState,
 } from './types.js';
 
-export { createServerBinding } from './server/server.js';
-export { createClientBinding } from './client/client.js';
+export { JsonRpcProxyRuntime } from './client/runtime.js';
+export { JsonRpcServerRuntime } from './server/runtime.js';
 
 /**
  * Create a two-phase peer binding.
@@ -32,44 +34,48 @@ export { createClientBinding } from './client/client.js';
  * messages. Returns a close handle.
  */
 export function createPeerBinding<
-	TRemote extends RpcMethods<TRemote>,
-	TLocal extends RpcMethods<TLocal>,
+	TRemoteDesc extends Descriptor,
+	TLocalDesc extends Descriptor,
 >({
 	duplex,
-	remoteManifest,
-	localManifest,
-}: PeerBindingOptions): PeerBinding<TRemote, TLocal> {
+	remoteDescriptor,
+	localDescriptor,
+}: {
+	duplex: Duplex<JsonRpcMessage>;
+	remoteDescriptor: TRemoteDesc;
+	localDescriptor: TLocalDesc;
+}): PeerBinding<ProxyType<TRemoteDesc>, ProxyType<TLocalDesc>> {
 	const send = callable(duplex.writable);
 
-	const client = createClientBinding<TRemote>({
-		manifest: remoteManifest,
-		send,
-	});
+	const clientRuntime = new JsonRpcProxyRuntime(send);
+	const remote = proxyBindClient(
+		remoteDescriptor,
+		clientRuntime,
+	) as ProxyType<TRemoteDesc>;
 
 	let bound = false;
 
 	return {
-		remote: client.remote,
+		remote,
 
 		bind(
-			handlers: TLocal,
+			handlers: ProxyType<TLocalDesc>,
 			onError?: (error: unknown) => void,
 		): { close(): Promise<void> } {
 			if (bound) throw new Error('Already bound');
 			bound = true;
 
-			const server = createServerBinding({
-				manifest: localManifest,
-				handlers,
+			const serverRuntime = new JsonRpcServerRuntime(
 				send,
-				onError: onError ?? console.error,
-			});
+				onError ?? console.error,
+			);
+			proxyBindServer(localDescriptor, handlers, serverRuntime);
 
 			const observer = observe(duplex.readable);
 
 			observer.subscribe((msg) => {
-				if (client.handleMessage(msg)) return;
-				if (server.handleMessage(msg)) return;
+				if (clientRuntime.handleMessage(msg)) return;
+				if (serverRuntime.handleMessage(msg)) return;
 				if (isRequest(msg)) {
 					send({
 						jsonrpc: '2.0',
@@ -82,8 +88,8 @@ export function createPeerBinding<
 			return {
 				async close() {
 					observer.dispose();
-					client.close();
-					server.close();
+					clientRuntime.close();
+					serverRuntime.close();
 					await duplex.close();
 				},
 			};

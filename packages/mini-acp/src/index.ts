@@ -54,8 +54,6 @@ export type {
 	MiniACPClient,
 	MiniACPAgent,
 	MiniACPProtocol,
-	MiniACPAgentSide,
-	MiniACPClientSide,
 	ClientProtocol,
 	AgentProtocol,
 	AgentCtx,
@@ -65,7 +63,10 @@ export type {
 	AgentBinding,
 } from './protocol/index.js';
 
-export { miniACPManifest } from './protocol/index.js';
+export {
+	miniACPServerDescriptor,
+	miniACPClientDescriptor,
+} from './protocol/index.js';
 export {
 	createClientConnection,
 	createAgentConnection,

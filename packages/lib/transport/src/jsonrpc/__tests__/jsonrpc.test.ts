@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { method, notification, event, namespace } from '@franklin/lib';
 import type { Duplex } from '../../streams/types.js';
 
 import type { JsonRpcMessage } from '../types.js';
@@ -11,13 +12,6 @@ import {
 } from '../types.js';
 import { RpcError } from '../errors.js';
 import { bindClient, bindServer } from '../binding/index.js';
-import {
-	defineManifest,
-	event,
-	type Protocol,
-	request,
-	notification,
-} from '../protocol/index.js';
 
 function createUnlockedPair<T>(): {
 	a: Duplex<T>;
@@ -191,7 +185,24 @@ interface StreamChunk {
 	text: string;
 }
 
-interface ServerApi {
+const serverDescriptor = namespace({
+	add: method<(params: { a: number; b: number }) => Promise<number>>(),
+	fail: method<(params: Record<string, never>) => Promise<never>>(),
+	ping: notification<(params: { msg: string }) => Promise<void>>(),
+	delayed: method<(params: { ms: number; value: string }) => Promise<string>>(),
+	echo: method<(params: { n: number }) => Promise<number>>(),
+	prompt: event<(params: { message: string }) => AsyncIterable<StreamChunk>>(),
+	failStream:
+		event<(params: Record<string, never>) => AsyncIterable<StreamChunk>>(),
+	hang: method<(params: Record<string, never>) => Promise<never>>(),
+});
+
+const clientDescriptor = namespace({
+	greet: method<(params: { name: string }) => Promise<string>>(),
+	clientPing: notification<(params: { msg: string }) => Promise<void>>(),
+});
+
+type ServerApi = {
 	add(params: { a: number; b: number }): Promise<number>;
 	fail(params: Record<string, never>): Promise<never>;
 	ping(params: { msg: string }): Promise<void>;
@@ -200,31 +211,12 @@ interface ServerApi {
 	prompt(params: { message: string }): AsyncIterable<StreamChunk>;
 	failStream(params: Record<string, never>): AsyncIterable<StreamChunk>;
 	hang(params: Record<string, never>): Promise<never>;
-}
+};
 
-interface ClientApi {
+type ClientApi = {
 	greet(params: { name: string }): Promise<string>;
 	clientPing(params: { msg: string }): Promise<void>;
-}
-
-type TestProtocol = Protocol<ServerApi, ClientApi>;
-
-const manifest = defineManifest<ServerApi, ClientApi>({
-	server: {
-		add: request(),
-		fail: request(),
-		ping: notification(),
-		delayed: request(),
-		echo: request(),
-		prompt: event(),
-		failStream: event(),
-		hang: request(),
-	},
-	client: {
-		greet: request(),
-		clientPing: notification(),
-	},
-});
+};
 
 const defaultServerHandlers: ServerApi = {
 	async add({ a, b }) {
@@ -266,16 +258,18 @@ function createPair(options?: {
 }) {
 	const { a, b } = createUnlockedPair<JsonRpcMessage>();
 	const clientBinding = bindClient({
-		duplex: a as TestProtocol,
-		manifest,
+		duplex: a,
+		server: serverDescriptor,
+		client: clientDescriptor,
 	});
 	const clientClose = clientBinding.bind({
 		...defaultClientHandlers,
 		...options?.client,
 	});
 	const serverBinding = bindServer({
-		duplex: b as Protocol<ClientApi, ServerApi>,
-		manifest,
+		duplex: b,
+		server: serverDescriptor,
+		client: clientDescriptor,
 	});
 	const serverClose = serverBinding.bind({
 		...defaultServerHandlers,
@@ -598,16 +592,18 @@ function createInterceptedPair(options?: {
 	};
 
 	const clientBinding = bindClient({
-		duplex: a as TestProtocol,
-		manifest,
+		duplex: a,
+		server: serverDescriptor,
+		client: clientDescriptor,
 	});
 	const clientClose = clientBinding.bind({
 		...defaultClientHandlers,
 		...options?.client,
 	});
 	const serverBinding = bindServer({
-		duplex: b as Protocol<ClientApi, ServerApi>,
-		manifest,
+		duplex: b,
+		server: serverDescriptor,
+		client: clientDescriptor,
 	});
 	const serverClose = serverBinding.bind({
 		...defaultServerHandlers,
