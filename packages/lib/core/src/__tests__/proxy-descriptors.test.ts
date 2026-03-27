@@ -6,7 +6,7 @@ import {
 	stream,
 	namespace,
 	resource,
-} from '../proxy/descriptors/factories.js';
+} from '../proxy/descriptors/factories/index.js';
 import type { NamespaceShape } from '../proxy/index.js';
 import {
 	isMethodDescriptor,
@@ -23,7 +23,7 @@ import {
 	STREAM_KIND,
 	NAMESPACE_KIND,
 	RESOURCE_KIND,
-} from '../proxy/descriptors/types.js';
+} from '../proxy/descriptors/types/index.js';
 
 describe('descriptor factories', () => {
 	it('method() creates a MethodDescriptor', () => {

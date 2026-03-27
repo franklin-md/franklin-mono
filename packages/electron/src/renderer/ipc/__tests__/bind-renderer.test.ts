@@ -13,7 +13,7 @@ function createStreamBridge(): {
 	packets: unknown[];
 	push: (packet: unknown) => void;
 } {
-	const observers = new Set<IpcStreamObserver<unknown>>();
+	const observers = new Set<IpcStreamObserver>();
 	const packets: unknown[] = [];
 	const close = vi.fn(async () => {
 		for (const observer of observers) {

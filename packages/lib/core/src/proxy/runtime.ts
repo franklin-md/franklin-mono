@@ -1,4 +1,4 @@
-import type { ResourceDescriptor } from './descriptors/types.js';
+import type { ResourceDescriptor } from './descriptors/types/index.js';
 
 export interface ProxyRuntime {
 	bindMethod?(path: string[]): (...args: unknown[]) => Promise<unknown>;

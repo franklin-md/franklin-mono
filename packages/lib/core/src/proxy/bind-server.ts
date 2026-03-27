@@ -6,7 +6,7 @@ import {
 	isResourceDescriptor,
 	isStreamDescriptor,
 } from './descriptors/detect.js';
-import type { AnyShape, Descriptor } from './descriptors/types.js';
+import type { AnyShape, Descriptor } from './descriptors/types/index.js';
 import type { ProxyType } from './types.js';
 import type { ServerRuntime } from './runtime.js';
 import { getValueAtPath } from './lookup.js';

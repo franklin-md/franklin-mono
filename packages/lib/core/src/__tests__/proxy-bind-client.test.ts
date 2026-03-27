@@ -6,7 +6,7 @@ import {
 	namespace,
 	resource,
 	stream,
-} from '../proxy/descriptors/factories.js';
+} from '../proxy/descriptors/factories/index.js';
 import {
 	bindClient,
 	UnsupportedDescriptorError,

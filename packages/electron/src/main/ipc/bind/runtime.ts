@@ -167,7 +167,7 @@ export function createServerRuntime(
 				return closePromise;
 			};
 
-			const remoteTransport = createMainIpcStream(
+			const remoteTransport = createMainIpcStream<any, any>(
 				context.webContents,
 				channels.getStreamChannel(path),
 				async () => {

@@ -6,7 +6,7 @@ import type {
 	NotificationDescriptor,
 	ResourceDescriptor,
 	StreamDescriptor,
-} from './descriptors/types.js';
+} from './descriptors/types/index.js';
 
 /**
  * The core D -> I type function.
@@ -32,8 +32,8 @@ export type ProxyType<D extends Descriptor> =
 							? (
 									...args: TArgs
 								) => Promise<
-									ProxyType<
-										TInner extends Descriptor ? TInner : never
-									> & { dispose(): Promise<void> }
+									ProxyType<TInner extends Descriptor ? TInner : never> & {
+										dispose(): Promise<void>;
+									}
 								>
 							: never;

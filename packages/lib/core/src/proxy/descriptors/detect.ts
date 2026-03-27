@@ -5,7 +5,7 @@ import type {
 	NotificationDescriptor,
 	ResourceDescriptor,
 	StreamDescriptor,
-} from './types.js';
+} from './types/index.js';
 import {
 	EVENT_KIND,
 	METHOD_KIND,
@@ -13,7 +13,7 @@ import {
 	NOTIFICATION_KIND,
 	RESOURCE_KIND,
 	STREAM_KIND,
-} from './types.js';
+} from './types/index.js';
 
 function hasKind(descriptor: unknown, kind: symbol): boolean {
 	return (
