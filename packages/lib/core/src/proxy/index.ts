@@ -28,6 +28,7 @@ export type {
 	EventDescriptor,
 	StreamDescriptor,
 	NamespaceDescriptor,
+	NamespaceShape,
 	ResourceDescriptor,
 	ResourceInnerDescriptor,
 	Descriptor,

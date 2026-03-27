@@ -67,13 +67,6 @@ function createWebContents(id: number) {
 	} as any;
 }
 
-function createProvider() {
-	return {
-		login: async () => ({}) as any,
-		dispose: noop,
-	};
-}
-
 function invoke(channel: string, ...args: unknown[]) {
 	const handler = handleMap.get(channel);
 	if (!handler) {
@@ -113,7 +106,6 @@ describe('bindMain', () => {
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
-					getProvider: async () => createProvider(),
 				},
 			},
 			createWebContents(1),
@@ -147,7 +139,6 @@ describe('bindMain', () => {
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
-					getProvider: async () => createProvider(),
 				},
 			},
 			createWebContents(1),
@@ -186,7 +177,6 @@ describe('bindMain', () => {
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
-					getProvider: async () => createProvider(),
 				},
 			},
 			createWebContents(1),

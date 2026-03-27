@@ -86,13 +86,7 @@ export class AuthManager implements IAuthManager {
 		provider: OAuthProviderId,
 		callbacks: OAuthLoginCallbacks,
 	): Promise<void> {
-		const oauthProvider = await this.platform.ai.getProvider(provider);
-		const credentials = await oauthProvider.login(callbacks);
-		await this.store.setOAuthEntry(provider, {
-			type: 'oauth',
-			credentials,
-		});
-		await this.notify(provider);
+		// TODO: Implement
 	}
 
 	async setApiKey(provider: string, key: string): Promise<void> {
