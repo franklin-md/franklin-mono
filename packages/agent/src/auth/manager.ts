@@ -1,6 +1,7 @@
-import type {
-	OAuthLoginCallbacks,
-	OAuthProviderId,
+import {
+	getOAuthProvider,
+	type OAuthLoginCallbacks,
+	type OAuthProviderId,
 } from '@mariozechner/pi-ai/oauth';
 
 import type {
@@ -86,7 +87,17 @@ export class AuthManager implements IAuthManager {
 		provider: OAuthProviderId,
 		callbacks: OAuthLoginCallbacks,
 	): Promise<void> {
-		// TODO: Implement
+		// Rely on platform to do this.
+		const oauthProvider = getOAuthProvider(provider);
+		if (!oauthProvider) {
+			throw new Error(`OAuth provider "${provider}" not found`);
+		}
+		const credentials = await oauthProvider.login(callbacks);
+		await this.store.setOAuthEntry(provider, {
+			type: 'oauth',
+			credentials,
+		});
+		await this.notify(provider);
 	}
 
 	async setApiKey(provider: string, key: string): Promise<void> {

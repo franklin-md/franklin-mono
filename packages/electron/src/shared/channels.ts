@@ -20,11 +20,11 @@ export const AUTH_OAUTH_ON_PROMPT = 'franklin:auth:oauth:onPrompt';
 export const APP_GET_STORAGE = 'franklin:app:getStorage';
 
 export interface ChannelNamespace {
-	getIpcStreamChannel(): string;
 	getMethodChannel(path: readonly string[]): string;
 	getLeaseConnectChannel(path: readonly string[]): string;
 	getLeaseKillChannel(path: readonly string[]): string;
-	getDuplexStreamChannel(path: readonly string[]): string;
+	getStreamChannel(path: readonly string[]): string;
+	getLeaseStreamChannel(path: readonly string[], id: string): string;
 	getLeaseMethodChannel(
 		leasePath: readonly string[],
 		memberPath: readonly string[],
@@ -44,10 +44,11 @@ function getChannel(
 export function createChannels(name: string): ChannelNamespace {
 	return {
 		getMethodChannel: (path) => getChannel(name, path),
-		getIpcStreamChannel: () => getChannel(name, [], 'ipc-stream'),
 		getLeaseConnectChannel: (path) => getChannel(name, path, 'connect'),
 		getLeaseKillChannel: (path) => getChannel(name, path, 'kill'),
-		getDuplexStreamChannel: (path) => getChannel(name, path, 'stream'),
+		getStreamChannel: (path) => getChannel(name, path, 'stream'),
+		getLeaseStreamChannel: (path, id) =>
+			getChannel(name, [...path, 'lease', id, 'stream']),
 		getLeaseMethodChannel: (leasePath, memberPath) =>
 			getChannel(name, [...leasePath, 'lease', ...memberPath]),
 	};

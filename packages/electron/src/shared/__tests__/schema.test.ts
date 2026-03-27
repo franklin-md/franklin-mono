@@ -19,8 +19,9 @@ describe('schema', () => {
 			'franklin:spawn:connect',
 		);
 		expect(channels.getLeaseKillChannel(['spawn'])).toBe('franklin:spawn:kill');
-		expect(channels.getDuplexStreamChannel(['spawn'])).toBe(
-			'franklin:spawn:stream',
+		expect(channels.getStreamChannel(['spawn'])).toBe('franklin:spawn:stream');
+		expect(channels.getLeaseStreamChannel(['spawn'], 'agent-1')).toBe(
+			'franklin:spawn:lease:agent-1:stream',
 		);
 		expect(channels.getLeaseConnectChannel(['environment'])).toBe(
 			'franklin:environment:connect',
@@ -34,7 +35,6 @@ describe('schema', () => {
 				['filesystem', 'readFile'],
 			),
 		).toBe('franklin:environment:lease:filesystem:readFile');
-		expect(channels.getIpcStreamChannel()).toBe('franklin:ipc-stream');
 	});
 
 	it('captures environment and spawn as core resource descriptors', () => {

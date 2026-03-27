@@ -7,13 +7,13 @@ import {
 import type { ResourceDescriptor, ProxyRuntime } from '@franklin/lib/proxy';
 import type {
 	PreloadHandleBridge,
-	PreloadLeaseBridge,
+	PreloadResourceBridge,
+	PreloadStreamBridge,
+	PreloadTransportBridge,
 } from '../../../shared/api.js';
 import { createIpcStream } from '../stream.js';
-import type { ChannelNamespace } from '../../../shared/channels.js';
 
 export function createClientRuntime(
-	channels: ChannelNamespace,
 	bridge: Record<string, unknown>,
 ): ProxyRuntime {
 	return {
@@ -23,23 +23,33 @@ export function createClientRuntime(
 			) => Promise<unknown>;
 		},
 
+		bindStream(path: string[]): unknown {
+			return createIpcStream(
+				getValueAtPath(bridge, path) as PreloadStreamBridge<any, any>,
+			);
+		},
+
 		bindResource(
 			path: string[],
 			descriptor: ResourceDescriptor<any, any>,
 		): (...args: unknown[]) => Promise<unknown> {
-			const rawLease = getValueAtPath(bridge, path) as PreloadLeaseBridge<
+			const rawResource = getValueAtPath(bridge, path) as PreloadResourceBridge<
 				any,
 				any
 			>;
 
 			if (isStreamDescriptor(descriptor.inner)) {
-				const streamChannel = channels.getDuplexStreamChannel(path);
+				const transportBridge = rawResource as PreloadTransportBridge<any>;
 				return async (...args: unknown[]) => {
-					const id = await rawLease.connect(...args);
-					const inner = createIpcStream(`${streamChannel}:${id}`);
+					const id = await transportBridge.connect(...args);
+					const inner = createIpcStream(
+						transportBridge.stream(id),
+						async () => {
+							await transportBridge.kill(id);
+						},
+					);
 					const dispose = async () => {
 						await inner.close();
-						await rawLease.kill(id);
 					};
 					return {
 						readable: inner.readable,
@@ -51,17 +61,17 @@ export function createClientRuntime(
 			}
 
 			if (isNamespaceDescriptor(descriptor.inner)) {
-				const handleBridge = rawLease as PreloadHandleBridge<any, any>;
+				const handleBridge = rawResource as PreloadHandleBridge<any, any>;
 				return async (...args: unknown[]) => {
 					const id = await handleBridge.connect(...args);
 					const leaseRuntime = createLeaseRuntime(
 						handleBridge.proxy as Record<string, unknown>,
 						id,
 					);
-					const bound = bindClient(
-						descriptor.inner,
-						leaseRuntime,
-					) as Record<string, unknown>;
+					const bound = bindClient(descriptor.inner, leaseRuntime) as Record<
+						string,
+						unknown
+					>;
 					return Object.assign(bound, {
 						dispose: async () => {
 							await handleBridge.kill(id);

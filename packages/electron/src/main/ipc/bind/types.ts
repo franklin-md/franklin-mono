@@ -1,4 +1,4 @@
-import type { Multiplexer } from '@franklin/transport';
+import type { WebContents } from 'electron';
 
 export interface BoundLease {
 	readonly value: unknown;
@@ -6,9 +6,9 @@ export interface BoundLease {
 }
 
 export interface BindingContext {
-	readonly impl: unknown;
-	readonly rootMux: Multiplexer<unknown, unknown>;
+	readonly webContents: WebContents;
 	readonly leases: Map<string, BoundLease>;
+	readonly disposables: Set<() => Promise<void>>;
 	readonly dispose: () => Promise<void>;
 }
 

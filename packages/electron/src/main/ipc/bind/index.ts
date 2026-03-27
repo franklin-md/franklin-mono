@@ -19,7 +19,7 @@ export function bindMain<D extends Descriptor>(
 		previous.dispose().catch(console.error);
 	}
 
-	const context = createBindingContext(name, webContents, impl);
+	const context = createBindingContext(webContents);
 	const channels = createChannels(name);
 	const runtime = createServerRuntime(channels, context);
 	const binding = bindServer(schema, impl, runtime);

@@ -17,6 +17,7 @@ import { connect } from '@franklin/transport';
 import type { Duplex } from '@franklin/transport';
 
 import type { ChannelNamespace } from '../../../shared/channels.js';
+import { createMainIpcStream } from '../stream.js';
 import { createBoundLease, closeLease } from './registry/leases.js';
 import type { BindingContext, BoundLease } from './types.js';
 
@@ -52,14 +53,18 @@ export function createServerRuntime(
 		path: string[],
 		factory: (...args: unknown[]) => Promise<unknown>,
 	): Array<() => void> {
-		const streamChannel = channels.getDuplexStreamChannel(path);
-
 		return registerLeaseLifecycle(path, async (id, ...args) => {
 			const localTransport = (await factory(...args)) as Duplex<
 				unknown,
 				unknown
 			>;
-			const remoteTransport = context.rootMux.channel(`${streamChannel}:${id}`);
+			const remoteTransport = createMainIpcStream(
+				context.webContents,
+				channels.getLeaseStreamChannel(path, id),
+				async () => {
+					await closeLease(context, id);
+				},
+			);
 			const tunnel = connect(localTransport, remoteTransport);
 
 			return createBoundLease(localTransport, async () => {
@@ -143,6 +148,39 @@ export function createServerRuntime(
 				return await handler(...args);
 			});
 			return () => ipcMain.removeHandler(channel);
+		},
+
+		registerStream(path: string[], factory: () => unknown): () => void {
+			const localTransport = factory() as Duplex<unknown, unknown>;
+			let tunnel: Duplex<unknown, unknown> | null = null;
+			let closePromise: Promise<void> | null = null;
+
+			const closeStream = async () => {
+				if (closePromise) {
+					return closePromise;
+				}
+
+				closePromise = (async () => {
+					await tunnel?.close();
+				})();
+
+				return closePromise;
+			};
+
+			const remoteTransport = createMainIpcStream(
+				context.webContents,
+				channels.getStreamChannel(path),
+				async () => {
+					await closeStream();
+				},
+			);
+			tunnel = connect(localTransport, remoteTransport);
+			context.disposables.add(closeStream);
+
+			return () => {
+				context.disposables.delete(closeStream);
+				void closeStream();
+			};
 		},
 
 		registerResource(

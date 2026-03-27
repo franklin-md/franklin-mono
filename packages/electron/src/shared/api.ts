@@ -8,50 +8,78 @@ import type {
 	StreamDescriptor,
 } from '@franklin/lib/proxy';
 
-export interface IpcStreamBridge {
-	on: (callback: (packet: unknown) => void) => () => void;
-	invoke: (packet: unknown) => void;
+export interface IpcStreamObserver<T = unknown> {
+	next: (packet: T) => void;
+	close: () => void;
 }
 
-interface BasePreloadLeaseBridge<TArgs extends unknown[] = unknown[]> {
+export type IpcStreamMessage<T = unknown> =
+	| { kind: 'data'; data: T }
+	| { kind: 'close' };
+
+export function isIpcStreamMessage(
+	value: unknown,
+): value is IpcStreamMessage<unknown> {
+	if (typeof value !== 'object' || value == null) {
+		return false;
+	}
+
+	const kind = (value as { kind?: unknown }).kind;
+	return kind === 'data' || kind === 'close';
+}
+
+export interface PreloadStreamBridge<TRead = unknown, TWrite = TRead> {
+	subscribe: (observer: IpcStreamObserver<TRead>) => () => void;
+	send: (packet: TWrite) => void;
+	close: () => Promise<void>;
+}
+
+interface BasePreloadResourceBridge<TArgs extends unknown[] = unknown[]> {
 	connect: (...args: TArgs) => Promise<string>;
 	kill: (id: string) => Promise<void>;
 }
 
-type PreloadLeaseNode<TShape extends AnyShape> = {
+type PreloadHandleNode<TShape extends AnyShape> = {
 	[K in keyof TShape]: TShape[K] extends MethodDescriptor<
 		infer TArgs,
 		infer TResult
 	>
 		? (id: string, ...args: TArgs) => Promise<TResult>
 		: TShape[K] extends NamespaceDescriptor<any, infer TChildShape>
-			? PreloadLeaseNode<TChildShape>
+			? PreloadHandleNode<TChildShape>
 			: never;
 };
 
-type PreloadLeasePayload<TInner extends ResourceInnerDescriptor> =
+type PreloadResourcePayload<TInner extends ResourceInnerDescriptor> =
 	TInner extends NamespaceDescriptor<any, infer TShape>
-		? { proxy: PreloadLeaseNode<TShape> }
-		: Record<string, never>;
+		? { proxy: PreloadHandleNode<TShape> }
+		: TInner extends StreamDescriptor<infer TRead, infer TWrite>
+			? { stream: (id: string) => PreloadStreamBridge<TRead, TWrite> }
+			: Record<string, never>;
 
-export type PreloadLeaseBridge<
+export type PreloadResourceBridge<
 	TArgs extends unknown[] = unknown[],
 	TInner extends ResourceInnerDescriptor = ResourceInnerDescriptor,
-> = BasePreloadLeaseBridge<TArgs> & PreloadLeasePayload<TInner>;
+> = BasePreloadResourceBridge<TArgs> & PreloadResourcePayload<TInner>;
 
-export type PreloadTransportBridge<TArgs extends unknown[] = unknown[]> =
-	PreloadLeaseBridge<TArgs, StreamDescriptor<any, any>>;
+export type PreloadTransportBridge<
+	TArgs extends unknown[] = unknown[],
+	TRead = unknown,
+	TWrite = TRead,
+> = PreloadResourceBridge<TArgs, StreamDescriptor<TRead, TWrite>>;
 
 export type PreloadHandleBridge<
 	TArgs extends unknown[] = unknown[],
 	TShape extends AnyShape = AnyShape,
-> = PreloadLeaseBridge<TArgs, NamespaceDescriptor<any, TShape>>;
+> = PreloadResourceBridge<TArgs, NamespaceDescriptor<any, TShape>>;
 
 export type PreloadBridgeOf<D extends Descriptor> =
 	D extends MethodDescriptor<infer TArgs, infer TResult>
 		? (...args: TArgs) => Promise<TResult>
-		: D extends ResourceDescriptor<infer TArgs, infer TInner>
-			? PreloadLeaseBridge<TArgs, TInner>
-			: D extends NamespaceDescriptor<any, infer TShape>
-				? { [K in keyof TShape]: PreloadBridgeOf<TShape[K]> }
-				: never;
+		: D extends StreamDescriptor<infer TRead, infer TWrite>
+			? PreloadStreamBridge<TRead, TWrite>
+			: D extends ResourceDescriptor<infer TArgs, infer TInner>
+				? PreloadResourceBridge<TArgs, TInner>
+				: D extends NamespaceDescriptor<any, infer TShape>
+					? { [K in keyof TShape]: PreloadBridgeOf<TShape[K]> }
+					: never;

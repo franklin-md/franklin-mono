@@ -67,6 +67,12 @@ function createWebContents(id: number) {
 	} as any;
 }
 
+function emit(channel: string, packet: unknown, senderId = 1) {
+	for (const listener of listenerMap.get(channel) ?? []) {
+		listener({ sender: { id: senderId } }, packet);
+	}
+}
+
 function invoke(channel: string, ...args: unknown[]) {
 	const handler = handleMap.get(channel);
 	if (!handler) {
@@ -153,6 +159,74 @@ describe('bindMain', () => {
 
 		await expect(invoke(exists, id, '/test')).resolves.toBe(false);
 		await invoke(channels.getLeaseKillChannel(['environment']), id);
+
+		await handle.dispose();
+	});
+
+	it('binds direct stream descriptors to per-path IPC channels', async () => {
+		const { bindMain } = await import('../bind/index.js');
+		const { createChannels } = await import('../../../shared/channels.js');
+		const { namespace, stream } = await import('@franklin/lib/proxy');
+
+		let emitLocal: (chunk: unknown) => void = (_chunk: unknown) => {
+			throw new Error('stream not initialized');
+		};
+		let closeLocal = () => {};
+		const written: unknown[] = [];
+		const close = vi.fn(async () => {
+			try {
+				closeLocal();
+			} catch {}
+		});
+		const webContents = createWebContents(1);
+
+		const handle = bindMain(
+			'franklin',
+			namespace({
+				logs: stream(),
+			}),
+			{
+				logs: () =>
+					({
+						readable: new ReadableStream({
+							start(nextController) {
+								emitLocal = (chunk: unknown) => {
+									nextController.enqueue(chunk as never);
+								};
+								closeLocal = () => {
+									nextController.close();
+								};
+							},
+						}),
+						writable: new WritableStream({
+							write(chunk) {
+								written.push(chunk);
+							},
+						}),
+						close,
+					}) as ClientProtocol,
+			} as never,
+			webContents,
+		);
+
+		const channel = createChannels('franklin').getStreamChannel(['logs']);
+		emit(channel, { kind: 'data', data: { type: 'ping' } });
+		await Promise.resolve();
+		await Promise.resolve();
+		expect(written).toContainEqual({ type: 'ping' });
+
+		emitLocal({ type: 'pong' } as never);
+		await Promise.resolve();
+		await Promise.resolve();
+		expect(webContents.send).toHaveBeenCalledWith(channel, {
+			kind: 'data',
+			data: { type: 'pong' },
+		});
+
+		emit(channel, { kind: 'close' });
+		await vi.waitFor(() => {
+			expect(close).toHaveBeenCalledTimes(1);
+		});
 
 		await handle.dispose();
 	});

@@ -2,6 +2,48 @@ import type { Platform } from '@franklin/agent/browser';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FranklinPreloadBridge } from '../../../shared/schema.js';
+import type {
+	IpcStreamObserver,
+	PreloadStreamBridge,
+} from '../../../shared/api.js';
+
+function createStreamBridge(): {
+	close: ReturnType<typeof vi.fn>;
+	bridge: PreloadStreamBridge;
+	packets: unknown[];
+	push: (packet: unknown) => void;
+} {
+	const observers = new Set<IpcStreamObserver<unknown>>();
+	const packets: unknown[] = [];
+	const close = vi.fn(async () => {
+		for (const observer of observers) {
+			observer.close();
+		}
+		observers.clear();
+	});
+
+	return {
+		close,
+		packets,
+		bridge: {
+			subscribe: (observer) => {
+				observers.add(observer);
+				return () => {
+					observers.delete(observer);
+				};
+			},
+			send: (packet: unknown) => {
+				packets.push(packet);
+			},
+			close,
+		},
+		push: (packet: unknown) => {
+			for (const observer of observers) {
+				observer.next(packet);
+			}
+		},
+	};
+}
 
 describe('bindRenderer', () => {
 	beforeEach(() => {
@@ -13,25 +55,12 @@ describe('bindRenderer', () => {
 	});
 
 	it('hydrates transport leaves into renderer-side duplexes', async () => {
-		const packets: unknown[] = [];
-		const listeners = new Set<(packet: unknown) => void>();
-
-		const ipcStream = {
-			on: (callback: (packet: unknown) => void) => {
-				listeners.add(callback);
-				return () => {
-					listeners.delete(callback);
-				};
-			},
-			invoke: (packet: unknown) => {
-				packets.push(packet);
-			},
-		};
-
+		const spawnStream = createStreamBridge();
 		const rawBridge = {
 			spawn: {
 				connect: vi.fn(async () => 'agent-1'),
 				kill: vi.fn(async () => {}),
+				stream: vi.fn(() => spawnStream.bridge),
 			},
 			environment: {
 				connect: vi.fn(async () => 'env-1'),
@@ -82,7 +111,6 @@ describe('bindRenderer', () => {
 
 		(globalThis as { window?: unknown }).window = {
 			__franklinBridge: rawBridge,
-			__franklinIpcStream: ipcStream,
 		};
 
 		const { bindRenderer } = await import('../bind/index.js');
@@ -97,13 +125,12 @@ describe('bindRenderer', () => {
 		const transport = await bridge.spawn();
 		await transport.writable.getWriter().write({ type: 'ping' } as never);
 		expect(rawBridge.spawn.connect).toHaveBeenCalledTimes(1);
-		expect(packets).toContainEqual({
-			id: 'franklin:spawn:stream:agent-1',
-			data: { type: 'ping' },
-		});
+		expect(rawBridge.spawn.stream).toHaveBeenCalledWith('agent-1');
+		expect(spawnStream.packets).toContainEqual({ type: 'ping' });
 
 		expect(typeof transport.dispose).toBe('function');
 		await transport.close();
+		expect(spawnStream.close).toHaveBeenCalledTimes(1);
 		expect(rawBridge.spawn.kill).toHaveBeenCalledWith('agent-1');
 
 		const environment = await bridge.environment();
@@ -122,5 +149,47 @@ describe('bindRenderer', () => {
 		expect(typeof environment.dispose).toBe('function');
 		await environment.dispose();
 		expect(rawBridge.environment.kill).toHaveBeenCalledWith('env-1');
+	});
+
+	it('hydrates direct stream descriptors into renderer-side duplexes', async () => {
+		const directStream = createStreamBridge();
+		const rawBridge = {
+			logs: directStream.bridge,
+		};
+
+		(globalThis as { window?: unknown }).window = {
+			__franklinBridge: rawBridge,
+		};
+
+		const { bindRenderer } = await import('../bind/index.js');
+		const { namespace, stream } = await import('@franklin/lib/proxy');
+		const directSchema = namespace({
+			logs: stream<{ type: string }>(),
+		});
+
+		const bridge = bindRenderer(
+			'franklin',
+			directSchema,
+			rawBridge as never,
+		) as {
+			logs: {
+				readable: ReadableStream<{ type: string }>;
+				writable: WritableStream<{ type: string }>;
+				close: () => Promise<void>;
+			};
+		};
+
+		await bridge.logs.writable.getWriter().write({ type: 'ping' });
+		expect(directStream.packets).toContainEqual({ type: 'ping' });
+
+		const reader = bridge.logs.readable.getReader();
+		directStream.push({ type: 'pong' });
+		await expect(reader.read()).resolves.toEqual({
+			value: { type: 'pong' },
+			done: false,
+		});
+
+		await bridge.logs.close();
+		expect(directStream.close).toHaveBeenCalledTimes(1);
 	});
 });

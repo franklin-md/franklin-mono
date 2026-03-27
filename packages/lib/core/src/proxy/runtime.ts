@@ -36,6 +36,7 @@ export interface ServerRuntime {
 		handler: (...args: unknown[]) => AsyncIterable<unknown>,
 	): () => void;
 
+	// TODO: factor should be (...args: unknown[]) => Duplex<R, W>
 	registerStream?(path: string[], factory: () => unknown): () => void;
 
 	registerResource?(
