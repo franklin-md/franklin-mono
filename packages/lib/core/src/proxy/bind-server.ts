@@ -86,6 +86,8 @@ function registerDescriptor(
 	throw new Error(`Unknown descriptor at path: ${path.join('.')}`);
 }
 
+// TODO: move to a new folder. This is exact same idea as buildNamespace but in reverse
+// TODO: I wonder if we can test these as inverses of eachother?
 function registerNamespace(
 	shape: AnyShape,
 	path: string[],

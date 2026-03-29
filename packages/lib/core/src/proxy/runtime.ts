@@ -9,11 +9,6 @@ export interface ProxyRuntime {
 
 	bindStream?(path: string[]): unknown;
 
-	bindNamespace?(
-		path: string[],
-		buildMembers: () => Record<string, unknown>,
-	): Record<string, unknown>;
-
 	bindResource?(
 		path: string[],
 		descriptor: ResourceDescriptor<any, any>,
@@ -39,6 +34,8 @@ export interface ServerRuntime {
 	// TODO: factor should be (...args: unknown[]) => Duplex<R, W>
 	registerStream?(path: string[], factory: () => unknown): () => void;
 
+	// TODO: We may be able to break this down by providing in bind-server and bind-client
+	// in a similar way to how we've done for namespace
 	registerResource?(
 		path: string[],
 		descriptor: ResourceDescriptor<any, any>,

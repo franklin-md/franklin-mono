@@ -52,11 +52,6 @@ function bindDescriptor(
 
 	if (isNamespaceDescriptor(descriptor)) {
 		const shape = descriptor.shape as AnyShape;
-		if (runtime.bindNamespace) {
-			return runtime.bindNamespace(path, () =>
-				buildNamespace(shape, path, runtime),
-			);
-		}
 		return buildNamespace(shape, path, runtime);
 	}
 
@@ -70,6 +65,7 @@ function bindDescriptor(
 	throw new Error(`Unknown descriptor at path: ${path.join('.')}`);
 }
 
+// TODO: move to a new folder
 function buildNamespace(
 	shape: AnyShape,
 	path: string[],
