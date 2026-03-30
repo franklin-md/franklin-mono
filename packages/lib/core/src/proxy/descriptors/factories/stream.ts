@@ -7,4 +7,3 @@ export function stream<TRead = unknown, TWrite = TRead>(): StreamDescriptor<
 > {
 	return { kind: STREAM_KIND };
 }
-

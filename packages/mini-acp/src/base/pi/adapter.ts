@@ -108,9 +108,9 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 				.then(() => {
 					void writer.close();
 				})
-				.catch((err: unknown) => {
-					const msg =
-						err instanceof Error ? err.message : String(err ?? 'unknown error');
+				.catch(() => {
+					// TODO: proper error message formatting on catch(err)
+					const msg = 'An error occurred while prompting the agent';
 					void writer.write({
 						type: 'turnEnd',
 						stopReason: 'refusal',

@@ -6,4 +6,3 @@ export interface MethodDescriptor<
 > {
 	readonly kind: typeof METHOD_KIND;
 }
-

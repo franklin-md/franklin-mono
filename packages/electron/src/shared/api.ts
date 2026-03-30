@@ -17,9 +17,7 @@ export type IpcStreamMessage<T = unknown> =
 	| { kind: 'data'; data: T }
 	| { kind: 'close' };
 
-export function isIpcStreamMessage(
-	value: unknown,
-): value is IpcStreamMessage {
+export function isIpcStreamMessage(value: unknown): value is IpcStreamMessage {
 	if (typeof value !== 'object' || value == null) {
 		return false;
 	}
