@@ -88,7 +88,7 @@ describe('editExtension', () => {
 		};
 
 		const { apply } = await import('../../../../api/core/middleware/apply.js');
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+		 
 		const wrapped = apply(result.client, target as any);
 		await wrapped.setContext({ ctx: {} });
 

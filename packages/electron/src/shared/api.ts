@@ -19,7 +19,7 @@ export type IpcStreamMessage<T = unknown> =
 
 export function isIpcStreamMessage(
 	value: unknown,
-): value is IpcStreamMessage<unknown> {
+): value is IpcStreamMessage {
 	if (typeof value !== 'object' || value == null) {
 		return false;
 	}
