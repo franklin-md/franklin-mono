@@ -7,9 +7,7 @@ import type { Filesystem } from '@franklin/lib';
 import { createFolderScopedFilesystem } from '@franklin/lib';
 import { globExtension } from '../extension.js';
 
-function mockFilesystem(
-	files: Record<string, string[]> = {},
-): Filesystem {
+function mockFilesystem(files: Record<string, string[]> = {}): Filesystem {
 	return {
 		readFile: vi.fn(),
 		writeFile: vi.fn(),
@@ -78,10 +76,8 @@ describe('globExtension', () => {
 			})),
 		};
 
-		const { apply } = await import(
-			'../../../../api/core/middleware/apply.js'
-		);
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+		const { apply } = await import('../../../../api/core/middleware/apply.js');
+
 		const wrapped = apply(result.client, target as any);
 		await wrapped.setContext({ ctx: {} });
 
