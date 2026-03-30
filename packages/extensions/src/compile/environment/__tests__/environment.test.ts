@@ -20,6 +20,11 @@ function mockEnvironment(): Environment {
 			glob: vi.fn(),
 			deleteFile: vi.fn(),
 		},
+		config: vi.fn(async () => ({
+			cwd: '/tmp',
+			permissions: { allowRead: ['**'], allowWrite: ['**'] },
+		})),
+		reconfigure: vi.fn(async () => {}),
 	};
 }
 

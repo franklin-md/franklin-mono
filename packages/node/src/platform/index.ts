@@ -1,14 +1,22 @@
 import type { Platform } from '@franklin/agent/browser';
+import type { EnvironmentConfig } from '@franklin/extensions';
 import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
+import { EnvironmentFilesystem } from './environment-filesystem.js';
 import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
+import { createFolderScopedFilesystem } from '@franklin/lib';
+import os from 'node:os';
 
-export function createNodePlatform(): Platform {
-	const filesystem = createNodeFilesystem();
-	let environment: Awaited<ReturnType<Platform['environment']>> | null = null;
+type Args = {
+	appDir?: string;
+};
 
-	const noop = async () => {};
+export function createNodePlatform(args: Args = {}): Platform {
+	const filesystem = createFolderScopedFilesystem(
+		args.appDir ?? os.homedir(),
+		createNodeFilesystem(),
+	);
 
 	return {
 		spawn: async () => {
@@ -21,9 +29,23 @@ export function createNodePlatform(): Platform {
 			},
 			getApiKeyProviders: async () => getProviders(),
 		},
-		environment: async () => {
-			environment ??= Object.assign({ filesystem }, { dispose: noop });
-			return environment;
+		environment: async (config: EnvironmentConfig) => {
+			const envFs = new EnvironmentFilesystem(filesystem, config);
+			return {
+				filesystem: envFs,
+				async config() {
+					return envFs.config;
+				},
+				async reconfigure(partial: Partial<EnvironmentConfig>) {
+					if (partial.cwd !== undefined) {
+						envFs.setCwd(partial.cwd);
+					}
+					if (partial.permissions !== undefined) {
+						envFs.setPermissions(partial.permissions);
+					}
+				},
+				dispose: async () => {},
+			};
 		},
 		filesystem,
 		// TODO: Sandbox
