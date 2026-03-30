@@ -20,13 +20,15 @@ export function globExtension(): Extension<CoreAPI & EnvironmentAPI> {
 				pattern: z
 					.string()
 					.or(z.array(z.string()))
-					.describe('The glob pattern to match files against (REQUIRED).'),
+					.describe(
+						'The glob pattern (or list of patterns) to match files against (REQUIRED).',
+					),
 				options: z.object({
 					root_dir: z
 						.string()
 						.optional()
 						.describe(
-							'The directory to search in. (OPTIONAL, defaults to current working directory',
+							'The directory to search in. (OPTIONAL, defaults to current working directory)',
 						),
 					exclude: z
 						.array(z.string())
