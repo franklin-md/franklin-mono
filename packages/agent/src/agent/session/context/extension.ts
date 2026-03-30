@@ -1,5 +1,6 @@
 import type { CtxTracker } from '@franklin/mini-acp';
-import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
+import type { Extension } from '@franklin/extensions';
+import type { FranklinExtensionApi } from '@franklin/agent/browser';
 
 /**
  * Tail extension that shadows the agent's Ctx state via a CtxTracker.
@@ -17,7 +18,7 @@ import type { Extension, CoreAPI, StoreAPI } from '@franklin/extensions';
 // TODO: Maybe we put the tracker on the front side too? I think we might not even want to expose setContext as a command to the client at all!
 export function ctxExtension(
 	tracker: CtxTracker,
-): Extension<CoreAPI & StoreAPI> {
+): Extension<FranklinExtensionApi> {
 	return (api) => {
 		api.on('setContext', (params) => {
 			tracker.apply(params.ctx);

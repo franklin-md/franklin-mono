@@ -4,7 +4,10 @@
  * Keep this limited to renderer-safe APIs consumed across the repo.
  */
 
-export { SessionManager } from './agent/session/index.js';
+export {
+	SessionManager,
+	type EnvironmentFactory,
+} from './agent/session/index.js';
 export { AuthManager } from './auth/manager.js';
 export type {
 	AuthFile,

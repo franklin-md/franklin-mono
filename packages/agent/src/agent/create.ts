@@ -3,20 +3,17 @@ import {
 	createClientConnection,
 	type ClientProtocol,
 } from '@franklin/mini-acp';
-import type {
-	Extension,
-	CoreAPI,
-	StoreAPI,
-	StoreResult,
-} from '@franklin/extensions';
+import type { Extension, StoreResult, Environment } from '@franklin/extensions';
 import {
 	compileAll,
 	combine,
 	createCoreCompiler,
 	createStoreCompiler,
+	createEnvironmentCompiler,
 	apply,
 } from '@franklin/extensions';
 import type { Agent } from '../types.js';
+import type { FranklinExtensionApi } from '../app/types.js';
 
 /**
  * Create a typed agent by compiling extensions and wrapping a mini-acp client.
@@ -31,12 +28,16 @@ import type { Agent } from '../types.js';
  * compiles against a fresh empty store result with its own pool.
  */
 export async function createAgent(
-	extensions: Extension<CoreAPI & StoreAPI>[],
+	extensions: Extension<FranklinExtensionApi>[],
 	transport: ClientProtocol,
 	existingStores: StoreResult,
+	environment: Environment,
 ): Promise<Agent> {
 	const result = await compileAll(
-		combine(createCoreCompiler(), createStoreCompiler(existingStores)),
+		combine(
+			combine(createCoreCompiler(), createStoreCompiler(existingStores)),
+			createEnvironmentCompiler(environment),
+		),
 		extensions,
 	);
 

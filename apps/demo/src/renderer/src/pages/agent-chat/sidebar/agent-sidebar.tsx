@@ -17,7 +17,14 @@ export function AgentSidebar({
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
 
 	const handleSpawnAgent = useCallback(async () => {
-		const session = await manager.new({ provider: 'anthropic' });
+		const session = await manager.new(
+			{ provider: 'anthropic' },
+			{
+				// For now we just hard-code this until we have UI component to set.
+				cwd: '/tmp',
+				permissions: { allowRead: ['**'], allowWrite: ['**'] },
+			},
+		);
 		setCurrentAgentId(session.sessionId);
 		onSelectAgent(session.sessionId, session.agent);
 	}, [manager, onSelectAgent]);

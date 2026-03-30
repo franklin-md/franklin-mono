@@ -30,7 +30,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 			getApiKeyProviders: async () => getProviders(),
 		},
 		environment: async (config: EnvironmentConfig) => {
-			const envFs = new EnvironmentFilesystem(filesystem, config);
+			const envFs = new EnvironmentFilesystem(createNodeFilesystem(), config);
 			return {
 				filesystem: envFs,
 				async config() {
