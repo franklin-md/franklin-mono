@@ -1,11 +1,10 @@
 {
+	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
-		"target": "ES2023",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
 		"lib": ["ES2023", "DOM", "DOM.Iterable"],
 		"jsx": "react-jsx",
-		"strict": true,
 		"noUncheckedIndexedAccess": true,
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
@@ -18,11 +17,13 @@
 		"declarationMap": true,
 		"rootDir": "./src/renderer/src",
 		"outDir": "./dist/renderer",
-		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/renderer/src/*"]
+			"@/*": ["./apps/demo/src/renderer/src/*"]
 		}
 	},
 	"include": ["src/renderer/src/**/*.ts", "src/renderer/src/**/*.tsx"],
-	"references": [{ "path": "../../packages/electron/tsconfig.renderer.json" }]
+	"references": [
+		{ "path": "../../packages/electron/tsconfig.renderer.json" },
+		{ "path": "../../packages/ui/react" }
+	]
 }

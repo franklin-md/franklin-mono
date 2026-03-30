@@ -57,9 +57,9 @@ export async function createAgent(
 	};
 	// Wrap outgoing commands with client middleware
 	const wrappedAgent = apply(result.server, defaultAgent);
-	const { remote, bind } = createClientConnection(transport);
-	bind(wrappedAgent);
-	const wrappedClient = apply(result.client, remote);
+	const connection = createClientConnection(transport);
+	connection.bind(wrappedAgent);
+	const wrappedClient = apply(result.client, connection.remote);
 
 	const controller = new AbortController();
 

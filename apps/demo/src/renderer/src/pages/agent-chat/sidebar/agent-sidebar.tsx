@@ -45,8 +45,8 @@ export function AgentSidebar({
 			// TODO: refactor selection logic more generally
 			if (currentAgentId === sessionId) {
 				const remaining = sessions.filter((s) => s.sessionId !== sessionId);
-				if (remaining.length > 0) {
-					const next = remaining[0]!;
+				const [next] = remaining;
+				if (next) {
 					setCurrentAgentId(next.sessionId);
 					onSelectAgent(next.sessionId, next.agent);
 				} else {

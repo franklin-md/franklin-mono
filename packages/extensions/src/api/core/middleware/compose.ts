@@ -20,7 +20,12 @@ function composeMiddleware<T>(
 	const mwRec = mw as Record<string, MethodMiddleware<any>>;
 
 	for (const key of Object.keys(accRec)) {
-		result[key] = composeMethod(accRec[key]!, mwRec[key]!);
+		const left = accRec[key];
+		const right = mwRec[key];
+		if (!left || !right) {
+			throw new Error(`Missing middleware for "${key}"`);
+		}
+		result[key] = composeMethod(left, right);
 	}
 
 	return result as Middleware<T>;

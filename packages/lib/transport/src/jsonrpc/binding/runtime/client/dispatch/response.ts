@@ -1,5 +1,5 @@
 import { RpcError } from '../../../../errors.js';
-import type { JsonRpcErrorPayload, JsonRpcMessage } from '../../../../types.js';
+import type { JsonRpcMessage } from '../../../../types.js';
 
 interface PendingResponseHandlers<TPending> {
 	onError: (pending: TPending, error: RpcError) => void;
@@ -15,7 +15,7 @@ export function handlePendingResponse<TPending>(
 	if (!pending) return false;
 	pendingById.delete(msg.id);
 	if ('error' in msg) {
-		const { code, message, data } = msg.error as JsonRpcErrorPayload;
+		const { code, message, data } = msg.error;
 		handlers.onError(pending, new RpcError(code, message, data));
 	} else {
 		handlers.onResult(pending, (msg as { result: unknown }).result);

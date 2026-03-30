@@ -4,8 +4,9 @@ import { createStoreCompiler } from '../../compile/store/compiler.js';
 import { compile, combine } from '../../compile/types.js';
 import { apply } from '../../api/core/middleware/apply.js';
 import { createEmptyStoreResult } from '../../api/store/registry/result.js';
-import type { MiniACPClient } from '@franklin/mini-acp';
+import type { MiniACPClient, ToolResult } from '@franklin/mini-acp';
 import { todoExtension } from '../todo/extension.js';
+import type { Todo } from '../todo/types.js';
 import { StoreRegistry } from '../../api/store/registry/index.js';
 
 // ---------------------------------------------------------------------------
@@ -13,13 +14,17 @@ import { StoreRegistry } from '../../api/store/registry/index.js';
 // ---------------------------------------------------------------------------
 
 type StubOverrides = { [K in keyof MiniACPClient]?: (...args: any[]) => any };
+type PromptParams = Parameters<MiniACPClient['prompt']>[0];
+type SetContextParams = Parameters<MiniACPClient['setContext']>[0];
 
 function stubClient(overrides: StubOverrides = {}): MiniACPClient {
 	return {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async () => {}),
-		prompt: vi.fn(async function* () {}),
-		cancel: vi.fn(async () => ({ type: 'turn_end' as const, turn: 'end' })),
+		prompt: vi.fn(async function* () {
+			yield* [];
+		}),
+		cancel: vi.fn(async () => {}),
 		...overrides,
 	} as unknown as MiniACPClient;
 }
@@ -28,6 +33,14 @@ async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
 	const items: T[] = [];
 	for await (const item of iter) items.push(item);
 	return items;
+}
+
+function getToolResultText(result: ToolResult): string {
+	const [content] = result.content;
+	if (!content || content.type !== 'text') {
+		throw new Error('Expected a text tool result');
+	}
+	return content.text;
 }
 
 // ---------------------------------------------------------------------------
@@ -45,9 +58,9 @@ describe('todoExtension', () => {
 	it('registers 3 tools into setContext', async () => {
 		const result = await compileWithTodo();
 
-		const received: any[] = [];
+		const received: SetContextParams[] = [];
 		const target = stubClient({
-			setContext: async (params) => {
+			setContext: async (params: SetContextParams) => {
 				received.push(params);
 			},
 		});
@@ -81,9 +94,7 @@ describe('todoExtension', () => {
 		);
 
 		expect(addResult.toolCallId).toBe('c1');
-		const parsed = JSON.parse(
-			(addResult.content[0] as { type: string; text: string }).text,
-		);
+		const parsed = JSON.parse(getToolResultText(addResult)) as { id: string };
 		expect(parsed.id).toBeDefined();
 	});
 
@@ -104,9 +115,7 @@ describe('todoExtension', () => {
 			next,
 		);
 
-		const { id } = JSON.parse(
-			(addResult.content[0] as { type: string; text: string }).text,
-		);
+		const { id } = JSON.parse(getToolResultText(addResult)) as { id: string };
 
 		// Complete it
 		await result.server.toolExecute(
@@ -134,11 +143,11 @@ describe('todoExtension', () => {
 			next,
 		);
 
-		const todos = JSON.parse(
-			(listResult.content[0] as { type: string; text: string }).text,
+		const todos = (
+			JSON.parse(getToolResultText(listResult)) as { todos: Todo[] }
 		).todos;
 		expect(todos).toHaveLength(1);
-		expect(todos[0].completed).toBe(true);
+		expect(todos[0]?.completed).toBe(true);
 	});
 
 	it('injects formatted todos into prompt params', async () => {
@@ -158,10 +167,11 @@ describe('todoExtension', () => {
 		);
 
 		// Now call prompt — todos should be prepended
-		const received: any[] = [];
+		const received: PromptParams[] = [];
 		const target = stubClient({
-			prompt: async function* (params) {
+			prompt: async function* (params: PromptParams) {
 				received.push(params);
+				yield* [];
 			},
 		});
 
@@ -188,10 +198,11 @@ describe('todoExtension', () => {
 	it('no injection when todo list is empty', async () => {
 		const result = await compileWithTodo();
 
-		const received: any[] = [];
+		const received: PromptParams[] = [];
 		const target = stubClient({
-			prompt: async function* (params) {
+			prompt: async function* (params: PromptParams) {
 				received.push(params);
+				yield* [];
 			},
 		});
 
@@ -230,8 +241,11 @@ describe('todoExtension', () => {
 
 		const todoStore = result.stores.get('todo');
 		expect(todoStore).toBeDefined();
-		const todos = todoStore!.store.get();
+		if (!todoStore) {
+			throw new Error('Expected todo store to exist');
+		}
+		const todos = todoStore.store.get() as Todo[];
 		expect(todos).toHaveLength(1);
-		expect((todos as any[])[0].text).toBe('Test store');
+		expect(todos[0]?.text).toBe('Test store');
 	});
 });

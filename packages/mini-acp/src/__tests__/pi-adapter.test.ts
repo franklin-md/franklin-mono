@@ -9,6 +9,7 @@ import type {
 	Model,
 } from '@mariozechner/pi-ai';
 import { createAssistantMessageEventStream } from '@mariozechner/pi-ai';
+import { Agent as PiCoreAgent } from '@mariozechner/pi-agent-core';
 import type { StreamFn } from '@mariozechner/pi-agent-core';
 
 import { createPiAdapter } from '../base/pi/adapter.js';
@@ -148,6 +149,12 @@ function createMockStreamFn(responses: AssistantMessage[]): StreamFn {
 	}) as unknown as StreamFn;
 }
 
+function createRejectedStreamFn(error: unknown): StreamFn {
+	return (() => {
+		throw error;
+	}) as unknown as StreamFn;
+}
+
 /** Minimal context: system prompt, no history, optionally tools */
 function makeCtx(tools: Ctx['tools'] = []): Ctx {
 	return {
@@ -196,7 +203,7 @@ describe('createPiAdapter', () => {
 		// Should have chunks, an update, and turnEnd as the last event
 		expect(events[events.length - 1]).toMatchObject({
 			type: 'turnEnd',
-			stopReason: 'stop',
+			stopReason: 'end_turn',
 		});
 
 		// Find text chunks
@@ -276,7 +283,7 @@ describe('createPiAdapter', () => {
 		// Should have turnEnd as the last event
 		expect(events[events.length - 1]).toMatchObject({
 			type: 'turnEnd',
-			stopReason: 'stop',
+			stopReason: 'end_turn',
 		});
 
 		// Should contain a toolCall chunk
@@ -298,24 +305,83 @@ describe('createPiAdapter', () => {
 		expect(finalText).toBeDefined();
 	});
 
-	it('cancel — returns turnEnd with error', async () => {
+	it('cancel aborts the underlying pi agent', async () => {
+		const client: TurnServer = {
+			toolExecute: vi.fn(),
+		};
+		const abortSpy = vi
+			.spyOn(PiCoreAgent.prototype, 'abort')
+			.mockImplementation(() => {});
+
+		try {
+			const adapter = createPiAdapter({
+				client,
+				model: mockModel,
+				ctx: makeCtx(),
+				streamFn: createMockStreamFn([textAssistantMessage('ignored')]),
+			});
+
+			await expect(adapter.cancel({})).resolves.toBeUndefined();
+			expect(abortSpy).toHaveBeenCalledTimes(1);
+		} finally {
+			abortSpy.mockRestore();
+		}
+	});
+
+	it('formats refusal stop messages without falling back to object stringification', async () => {
 		const client: TurnServer = {
 			toolExecute: vi.fn(),
 		};
 
-		const adapter = createPiAdapter({
+		const numericAdapter = createPiAdapter({
 			client,
 			model: mockModel,
 			ctx: makeCtx(),
-			streamFn: createMockStreamFn([textAssistantMessage('ignored')]),
+			streamFn: createRejectedStreamFn(404),
+		});
+		const numericEvents = await collect(
+			numericAdapter.prompt({
+				message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+			}),
+		);
+		expect(numericEvents[numericEvents.length - 1]).toMatchObject({
+			type: 'turnEnd',
+			stopReason: 'refusal',
+			stopMessage: '404',
 		});
 
-		const result = await adapter.cancel({});
-
-		expect(result).toEqual({
+		const objectAdapter = createPiAdapter({
+			client,
+			model: mockModel,
+			ctx: makeCtx(),
+			streamFn: createRejectedStreamFn({ message: 'timeout' }),
+		});
+		const objectEvents = await collect(
+			objectAdapter.prompt({
+				message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+			}),
+		);
+		expect(objectEvents[objectEvents.length - 1]).toMatchObject({
 			type: 'turnEnd',
-			stopReason: 'aborted',
-			stopMessage: 'Turn was aborted by the user',
+			stopReason: 'refusal',
+			stopMessage: 'timeout',
+		});
+
+		const opaqueObjectAdapter = createPiAdapter({
+			client,
+			model: mockModel,
+			ctx: makeCtx(),
+			streamFn: createRejectedStreamFn({ code: 500 }),
+		});
+		const opaqueObjectEvents = await collect(
+			opaqueObjectAdapter.prompt({
+				message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+			}),
+		);
+		expect(opaqueObjectEvents[opaqueObjectEvents.length - 1]).toMatchObject({
+			type: 'turnEnd',
+			stopReason: 'refusal',
+			stopMessage: 'unknown error',
 		});
 	});
 });

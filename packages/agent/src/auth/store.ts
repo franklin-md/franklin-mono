@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-dynamic-delete */
+
 import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
@@ -86,18 +88,24 @@ export class AuthStore {
 
 	async removeApiKeyEntry(provider: string): Promise<void> {
 		const data = await this.load();
-		if (data[provider]) {
-			delete data[provider].apiKey;
-			if (Object.keys(data[provider]).length === 0) delete data[provider];
+		const current = data[provider];
+		if (current) {
+			delete current.apiKey;
+			if (Object.keys(current).length === 0) {
+				delete data[provider];
+			}
 			this.save(data);
 		}
 	}
 
 	async removeOAuthEntry(provider: string): Promise<void> {
 		const data = await this.load();
-		if (data[provider]) {
-			delete data[provider].oauth;
-			if (Object.keys(data[provider]).length === 0) delete data[provider];
+		const current = data[provider];
+		if (current) {
+			delete current.oauth;
+			if (Object.keys(current).length === 0) {
+				delete data[provider];
+			}
 			this.save(data);
 		}
 	}
