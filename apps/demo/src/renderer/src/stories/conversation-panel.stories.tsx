@@ -1,0 +1,73 @@
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { fn } from 'storybook/test';
+
+import { ConversationPanel } from '../pages/agent-chat/conversation/conversation-panel.js';
+import { ConversationProvider } from '../pages/agent-chat/conversation/conversation-context.js';
+import { emptyConversation, multiTurn } from './fixtures.js';
+
+const meta = {
+	title: 'Conversation/ConversationPanel',
+	component: ConversationPanel,
+	decorators: [
+		(Story, context) => (
+			<ConversationProvider
+				value={{
+					turns: context.args.turns ?? multiTurn,
+					onSend: context.args.onSend ?? fn(),
+					sending: context.args.sending ?? false,
+				}}
+			>
+				<div style={{ height: '600px', display: 'flex' }}>
+					<Story />
+				</div>
+			</ConversationProvider>
+		),
+	],
+} satisfies Meta<
+	typeof ConversationPanel & {
+		turns: typeof multiTurn;
+		onSend: () => Promise<void>;
+		sending: boolean;
+	}
+>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+
+export const Empty: Story = {
+	decorators: [
+		(Story) => (
+			<ConversationProvider
+				value={{
+					turns: emptyConversation,
+					onSend: fn(),
+					sending: false,
+				}}
+			>
+				<div style={{ height: '600px', display: 'flex' }}>
+					<Story />
+				</div>
+			</ConversationProvider>
+		),
+	],
+};
+
+export const Sending: Story = {
+	decorators: [
+		(Story) => (
+			<ConversationProvider
+				value={{
+					turns: multiTurn,
+					onSend: fn(),
+					sending: true,
+				}}
+			>
+				<div style={{ height: '600px', display: 'flex' }}>
+					<Story />
+				</div>
+			</ConversationProvider>
+		),
+	],
+};

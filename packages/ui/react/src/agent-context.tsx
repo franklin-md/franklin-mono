@@ -1,10 +1,6 @@
-import { createContext, useContext, type ReactNode } from 'react';
-
 import type { Agent } from '@franklin/agent/browser';
 
-// ---------------------------------------------------------------------------
-// Context
-// ---------------------------------------------------------------------------
+import { createSimpleContext } from './create-simple-context.js';
 
 /**
  * Stores the agent directly (not in a ref). When the selected agent changes
@@ -13,27 +9,7 @@ import type { Agent } from '@franklin/agent/browser';
  * in useAgentState are independent of the context and do NOT cause re-renders
  * here.
  */
-const AgentContext = createContext<Agent | null>(null);
-
-// ---------------------------------------------------------------------------
-// Provider
-// ---------------------------------------------------------------------------
-
-export function AgentProvider({
-	agent,
-	children,
-}: {
-	agent: Agent;
-	children: ReactNode;
-}) {
-	return (
-		<AgentContext.Provider value={agent}>{children}</AgentContext.Provider>
-	);
-}
-
-// ---------------------------------------------------------------------------
-// useAgent — returns the agent for commands, re-renders only on agent switch
-// ---------------------------------------------------------------------------
+const [AgentProviderInner, useAgent] = createSimpleContext<Agent>('Agent');
 
 /**
  * Returns the agent from the nearest `<AgentProvider>`.
@@ -42,10 +18,14 @@ export function AgentProvider({
  * a different agent). Store updates within the same agent do NOT trigger
  * re-renders — use `useAgentState(agent, storeName)` for reactive store reads.
  */
-export function useAgent(): Agent {
-	const agent = useContext(AgentContext);
-	if (!agent) {
-		throw new Error('useAgent must be used inside an <AgentProvider>');
-	}
-	return agent;
+export { useAgent };
+
+export function AgentProvider({
+	agent,
+	children,
+}: {
+	agent: Agent;
+	children: React.ReactNode;
+}) {
+	return <AgentProviderInner value={agent}>{children}</AgentProviderInner>;
 }
