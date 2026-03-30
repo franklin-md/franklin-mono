@@ -69,6 +69,7 @@ export {
 	createStatusControl,
 	formatTodos,
 	spawnExtension,
+	globExtension,
 } from './extensions/index.js';
 export type {
 	ConversationTurn,

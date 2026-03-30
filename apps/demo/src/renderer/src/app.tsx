@@ -10,6 +10,7 @@ import {
 	conversationExtension,
 	todoExtension,
 	statusExtension,
+	globExtension,
 } from '@franklin/extensions';
 
 const platform = createElectronPlatform();
@@ -17,6 +18,7 @@ const extensions = [
 	conversationExtension(),
 	todoExtension(),
 	statusExtension(),
+	globExtension(),
 ];
 
 const auth = new ElectronAuthManager(window.__franklinAuth);

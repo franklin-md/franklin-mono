@@ -6,7 +6,6 @@
 
 export {
 	SessionManager,
-	type EnvironmentFactory,
 } from './agent/session/index.js';
 export { AuthManager } from './auth/manager.js';
 export type {
