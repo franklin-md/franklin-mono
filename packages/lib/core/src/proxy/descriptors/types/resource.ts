@@ -16,5 +16,6 @@ export interface ResourceDescriptor<
 }
 
 export type DisposableLike = { dispose(): Promise<void> };
-export type StripDisposable<T> = T extends DisposableLike ? Omit<T, 'dispose'> : T;
-
+export type StripDisposable<T> = T extends DisposableLike
+	? Omit<T, 'dispose'>
+	: T;

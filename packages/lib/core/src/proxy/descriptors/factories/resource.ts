@@ -10,4 +10,3 @@ export function resource<
 >(inner: TInner): ResourceDescriptor<TArgs, TInner> {
 	return { kind: RESOURCE_KIND, inner };
 }
-

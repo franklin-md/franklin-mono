@@ -9,4 +9,3 @@ export type StreamLike<TRead = unknown, TWrite = TRead> = {
 	readonly writable: WritableStream<TWrite>;
 	readonly close: () => Promise<void>;
 };
-
