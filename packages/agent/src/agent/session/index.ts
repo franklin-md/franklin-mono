@@ -4,7 +4,6 @@ import type { Persister } from '@franklin/lib';
 import type {
 	StoreResult,
 	StoreSnapshot,
-	Environment,
 	EnvironmentConfig,
 } from '@franklin/extensions';
 import {
@@ -25,11 +24,7 @@ import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
 import type { SpawnFn, Session } from './types.js';
 import type { FranklinExtension } from '../../app/types.js';
 import type { IAuthManager } from '../../auth/types.js';
-
-type Disposable = { dispose(): Promise<void> };
-export type EnvironmentFactory = (
-	config: EnvironmentConfig,
-) => Promise<Environment & Disposable>;
+import type { Platform } from '@franklin/agent';
 
 export type PersistenceOptions = {
 	session: Persister<SessionSnapshot>;
@@ -57,14 +52,14 @@ export class SessionManager {
 	private readonly persister?: Persister<SessionSnapshot>;
 	// TODO: Maybe we rename? Do we need this given that no SessionManager is created from anything other than {}?
 	private readonly defaultConfig: ConfigOptions = {};
-	private readonly createEnvironment: EnvironmentFactory;
+	private readonly createEnvironment: Platform['environment'];
 
 	// TODO: Take in just Platform.
 	constructor(
 		private readonly spawn: SpawnFn,
 		private readonly extensions: FranklinExtension[],
 		authManager: IAuthManager,
-		createEnvironment: EnvironmentFactory,
+		createEnvironment: Platform['environment'],
 		persistence?: PersistenceOptions,
 	) {
 		const delayMs = persistence?.delayMs ?? 500;
