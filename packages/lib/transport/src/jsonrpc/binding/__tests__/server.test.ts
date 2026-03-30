@@ -1,19 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createServerBinding } from '../runtime/server/server.js';
+import {
+	method,
+	notification,
+	event,
+	namespace,
+	bindServer,
+} from '@franklin/lib';
+import { JsonRpcServerRuntime } from '../runtime/server/runtime.js';
 
-interface ServerApi {
-	add(params: { a: number; b: number }): Promise<number>;
-	notify(params: { msg: string }): Promise<void>;
-	events(params: { topic: string }): AsyncIterable<string>;
-}
+const descriptor = namespace({
+	add: method<(params: { a: number; b: number }) => Promise<number>>(),
+	notify: notification<(params: { msg: string }) => Promise<void>>(),
+	events: event<(params: { topic: string }) => AsyncIterable<string>>(),
+});
 
-const manifest = {
-	add: { kind: 'request' as const },
-	notify: { kind: 'notification' as const },
-	events: { kind: 'event' as const },
-};
-
-function createHandlers(overrides?: Partial<ServerApi>): ServerApi {
+function createHandlers() {
 	return {
 		add: vi.fn(async ({ a, b }: { a: number; b: number }) => a + b),
 		notify: vi.fn(async () => {}),
@@ -21,34 +22,24 @@ function createHandlers(overrides?: Partial<ServerApi>): ServerApi {
 			yield 'a';
 			yield 'b';
 		}),
-		...overrides,
 	};
 }
 
-describe('createServerBinding', () => {
-	it('returns an object with handleMessage and close', () => {
-		const binding = createServerBinding({
-			manifest,
-			handlers: createHandlers(),
-			send: vi.fn(),
-			onError: vi.fn(),
-		});
-		expect(typeof binding.handleMessage).toBe('function');
-		expect(typeof binding.close).toBe('function');
+describe('JsonRpcServerRuntime', () => {
+	it('returns handleMessage and close', () => {
+		const runtime = new JsonRpcServerRuntime(vi.fn(), vi.fn());
+		bindServer(descriptor, createHandlers(), runtime);
+		expect(typeof runtime.handleMessage).toBe('function');
+		expect(typeof runtime.close).toBe('function');
 	});
 
 	describe('handleMessage', () => {
 		it('dispatches request messages to handlers', async () => {
 			const send = vi.fn();
-			const handlers = createHandlers();
-			const binding = createServerBinding({
-				manifest,
-				handlers,
-				send,
-				onError: vi.fn(),
-			});
+			const runtime = new JsonRpcServerRuntime(send, vi.fn());
+			bindServer(descriptor, createHandlers(), runtime);
 
-			const handled = binding.handleMessage({
+			const handled = runtime.handleMessage({
 				jsonrpc: '2.0',
 				id: 1,
 				method: 'add',
@@ -67,14 +58,10 @@ describe('createServerBinding', () => {
 
 		it('dispatches notification messages to handlers', async () => {
 			const handlers = createHandlers();
-			const binding = createServerBinding({
-				manifest,
-				handlers,
-				send: vi.fn(),
-				onError: vi.fn(),
-			});
+			const runtime = new JsonRpcServerRuntime(vi.fn(), vi.fn());
+			bindServer(descriptor, handlers, runtime);
 
-			const handled = binding.handleMessage({
+			const handled = runtime.handleMessage({
 				jsonrpc: '2.0',
 				method: 'notify',
 				params: { msg: 'hi' },
@@ -88,14 +75,10 @@ describe('createServerBinding', () => {
 
 		it('dispatches stream requests and sends updates', async () => {
 			const send = vi.fn();
-			const binding = createServerBinding({
-				manifest,
-				handlers: createHandlers(),
-				send,
-				onError: vi.fn(),
-			});
+			const runtime = new JsonRpcServerRuntime(send, vi.fn());
+			bindServer(descriptor, createHandlers(), runtime);
 
-			const handled = binding.handleMessage({
+			const handled = runtime.handleMessage({
 				jsonrpc: '2.0',
 				id: 5,
 				method: 'events',
@@ -122,28 +105,29 @@ describe('createServerBinding', () => {
 		});
 
 		it('handles stream cancel notifications', () => {
-			const binding = createServerBinding({
-				manifest,
-				handlers: createHandlers({
+			const runtime = new JsonRpcServerRuntime(vi.fn(), vi.fn());
+			bindServer(
+				descriptor,
+				{
+					...createHandlers(),
 					events: async function* () {
-						yield 'start'; // eslint requires at least one yield
-						await new Promise(() => {}); // Block forever
+						yield 'start';
+						await new Promise(() => {}); // block forever
 					},
-				}),
-				send: vi.fn(),
-				onError: vi.fn(),
-			});
+				},
+				runtime,
+			);
 
-			// Start a stream to populate activeStreams
-			binding.handleMessage({
+			// Start a stream
+			runtime.handleMessage({
 				jsonrpc: '2.0',
 				id: 10,
 				method: 'events',
 				params: { topic: 'test' },
 			});
 
-			// Cancel it — internal activeStreams should have the iterator
-			const handled = binding.handleMessage({
+			// Cancel it
+			const handled = runtime.handleMessage({
 				jsonrpc: '2.0',
 				method: '$/stream/cancel',
 				params: { requestId: 10 },
@@ -152,14 +136,10 @@ describe('createServerBinding', () => {
 		});
 
 		it('returns false for unmatched messages', () => {
-			const binding = createServerBinding({
-				manifest,
-				handlers: createHandlers(),
-				send: vi.fn(),
-				onError: vi.fn(),
-			});
+			const runtime = new JsonRpcServerRuntime(vi.fn(), vi.fn());
+			bindServer(descriptor, createHandlers(), runtime);
 
-			const handled = binding.handleMessage({
+			const handled = runtime.handleMessage({
 				jsonrpc: '2.0',
 				id: 1,
 				result: 42,
@@ -175,30 +155,29 @@ describe('createServerBinding', () => {
 				resolve = r;
 			});
 
-			const binding = createServerBinding({
-				manifest,
-				handlers: createHandlers({
+			const runtime = new JsonRpcServerRuntime(vi.fn(), vi.fn());
+			bindServer(
+				descriptor,
+				{
+					...createHandlers(),
 					events: async function* () {
 						yield 'first';
-						await blocked; // hang until closed
+						await blocked;
 					},
-				}),
-				send: vi.fn(),
-				onError: vi.fn(),
-			});
+				},
+				runtime,
+			);
 
-			binding.handleMessage({
+			runtime.handleMessage({
 				jsonrpc: '2.0',
 				id: 1,
 				method: 'events',
 				params: { topic: 'test' },
 			});
 
-			// Let the first yield process
 			await vi.waitFor(() => {});
-
-			binding.close();
-			resolve(); // unblock so the test can complete
+			runtime.close();
+			resolve();
 		});
 	});
 });

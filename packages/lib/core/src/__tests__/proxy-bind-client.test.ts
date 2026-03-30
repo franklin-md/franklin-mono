@@ -6,7 +6,7 @@ import {
 	namespace,
 	resource,
 	stream,
-} from '../proxy/descriptors/factories.js';
+} from '../proxy/descriptors/factories/index.js';
 import {
 	bindClient,
 	UnsupportedDescriptorError,
@@ -22,10 +22,7 @@ describe('bindClient', () => {
 
 		const result = bindClient(method(), runtime);
 
-		expect(runtime.bindMethod).toHaveBeenCalledWith(
-			[],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
-		);
+		expect(runtime.bindMethod).toHaveBeenCalledWith([]);
 		expect(result).toBe(stub);
 	});
 
@@ -37,10 +34,7 @@ describe('bindClient', () => {
 
 		const proxy = bindClient(namespace({ add: method() }), runtime);
 
-		expect(runtime.bindMethod).toHaveBeenCalledWith(
-			['add'],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
-		);
+		expect(runtime.bindMethod).toHaveBeenCalledWith(['add']);
 		expect(proxy.add).toBe(stub);
 	});
 
@@ -52,10 +46,7 @@ describe('bindClient', () => {
 
 		const proxy = bindClient(namespace({ ping: notification() }), runtime);
 
-		expect(runtime.bindNotification).toHaveBeenCalledWith(
-			['ping'],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
-		);
+		expect(runtime.bindNotification).toHaveBeenCalledWith(['ping']);
 		expect(proxy.ping).toBe(stub);
 	});
 
@@ -69,10 +60,7 @@ describe('bindClient', () => {
 
 		const proxy = bindClient(namespace({ logs: event() }), runtime);
 
-		expect(runtime.bindEvent).toHaveBeenCalledWith(
-			['logs'],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
-		);
+		expect(runtime.bindEvent).toHaveBeenCalledWith(['logs']);
 		expect(proxy.logs).toBe(stub);
 	});
 
@@ -91,10 +79,7 @@ describe('bindClient', () => {
 			runtime,
 		);
 
-		expect(runtime.bindMethod).toHaveBeenCalledWith(
-			['fs', 'exists'],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
-		);
+		expect(runtime.bindMethod).toHaveBeenCalledWith(['fs', 'exists']);
 		expect((proxy.fs as Record<string, unknown>).exists).toBe(stub);
 	});
 
@@ -168,10 +153,7 @@ describe('bindClient', () => {
 			runtime,
 		);
 
-		expect(runtime.bindMethod).toHaveBeenCalledWith(
-			['a', 'b', 'c'],
-			expect.any(Object),
-		);
+		expect(runtime.bindMethod).toHaveBeenCalledWith(['a', 'b', 'c']);
 		const a = proxy.a as Record<string, unknown>;
 		const b = a.b as Record<string, unknown>;
 		expect(b.c).toBe(stub);

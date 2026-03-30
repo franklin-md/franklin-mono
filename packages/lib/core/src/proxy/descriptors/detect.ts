@@ -1,13 +1,11 @@
 import type {
 	EventDescriptor,
-	HandleDescriptor,
 	MethodDescriptor,
 	NamespaceDescriptor,
 	NotificationDescriptor,
 	ResourceDescriptor,
 	StreamDescriptor,
-	TransportDescriptor,
-} from './types.js';
+} from './types/index.js';
 import {
 	EVENT_KIND,
 	METHOD_KIND,
@@ -15,7 +13,7 @@ import {
 	NOTIFICATION_KIND,
 	RESOURCE_KIND,
 	STREAM_KIND,
-} from './types.js';
+} from './types/index.js';
 
 function hasKind(descriptor: unknown, kind: symbol): boolean {
 	return (
@@ -60,22 +58,4 @@ export function isResourceDescriptor(
 	descriptor: unknown,
 ): descriptor is ResourceDescriptor<any, any> {
 	return hasKind(descriptor, RESOURCE_KIND);
-}
-
-// TODO: Get rid of
-
-export function isTransportDescriptor(
-	descriptor: unknown,
-): descriptor is TransportDescriptor<any, any, any> {
-	return (
-		isResourceDescriptor(descriptor) && isStreamDescriptor(descriptor.inner)
-	);
-}
-
-export function isHandleDescriptor(
-	descriptor: unknown,
-): descriptor is HandleDescriptor<any, any, any> {
-	return (
-		isResourceDescriptor(descriptor) && isNamespaceDescriptor(descriptor.inner)
-	);
 }

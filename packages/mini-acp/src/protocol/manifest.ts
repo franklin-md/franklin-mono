@@ -1,20 +1,14 @@
-import {
-	defineManifest,
-	request,
-	event,
-	notification,
-} from '@franklin/transport';
+import { method, event, notification, namespace } from '@franklin/lib';
 
 import type { MuClient, MuAgent } from './types.js';
 
-export const muManifest = defineManifest<MuClient, MuAgent>({
-	server: {
-		initialize: request(),
-		setContext: request(),
-		prompt: event(),
-		cancel: notification(),
-	},
-	client: {
-		toolExecute: request(),
-	},
+export const muServerDescriptor = namespace<MuClient>({
+	initialize: method(),
+	setContext: method(),
+	prompt: event(),
+	cancel: notification(),
+});
+
+export const muClientDescriptor = namespace<MuAgent>({
+	toolExecute: method(),
 });

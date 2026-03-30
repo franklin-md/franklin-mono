@@ -1,6 +1,7 @@
 export interface Duplex<R, W = R> {
 	readonly readable: ReadableStream<R>;
 	readonly writable: WritableStream<W>;
+	// TODO: Rename to dispose
 	readonly close: () => Promise<void>;
 }
 

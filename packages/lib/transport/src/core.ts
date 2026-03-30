@@ -59,14 +59,9 @@ export {
 	RpcError,
 	bindClient,
 	bindServer,
-	defineManifest,
-	request,
-	notification,
-	event,
-	type Protocol,
-	type ServerOf,
-	type ClientOf,
-	type ProtocolManifest,
+	JsonRpcProxyRuntime,
+	JsonRpcServerRuntime,
+	type JsonRpcMessage,
 	type PeerBinding,
 } from './jsonrpc/index.js';
 

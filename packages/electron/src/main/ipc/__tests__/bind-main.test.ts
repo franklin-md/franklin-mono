@@ -1,5 +1,4 @@
 import type { Filesystem } from '@franklin/lib';
-import type { Duplex } from '@franklin/transport';
 import type { ClientProtocol } from '@franklin/mini-acp';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -26,6 +25,8 @@ vi.mock('electron', () => ({
 	},
 }));
 
+const noop = async () => {};
+
 function createFilesystem(label: string): Filesystem {
 	return {
 		readFile: async () => new Uint8Array([label.length]),
@@ -45,7 +46,7 @@ function createFilesystem(label: string): Filesystem {
 
 function createTransportSpy(): {
 	close: ReturnType<typeof vi.fn>;
-	transport: ClientProtocol;
+	transport: ClientProtocol & { dispose(): Promise<void> };
 } {
 	const close = vi.fn(async () => {});
 	return {
@@ -54,7 +55,8 @@ function createTransportSpy(): {
 			readable: new ReadableStream(),
 			writable: new WritableStream(),
 			close,
-		} as unknown as ClientProtocol,
+			dispose: close,
+		} as unknown as ClientProtocol & { dispose(): Promise<void> },
 	};
 }
 
@@ -63,6 +65,12 @@ function createWebContents(id: number) {
 		id,
 		send: vi.fn(),
 	} as any;
+}
+
+function emit(channel: string, packet: unknown, senderId = 1) {
+	for (const listener of listenerMap.get(channel) ?? []) {
+		listener({ sender: { id: senderId } }, packet);
+	}
 }
 
 function invoke(channel: string, ...args: unknown[]) {
@@ -95,12 +103,15 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => createTransportSpy().transport,
-				environment: async () => ({ filesystem: createFilesystem('b') }),
+				environment: async () =>
+					Object.assign(
+						{ filesystem: createFilesystem('b') },
+						{ dispose: noop },
+					),
 				filesystem: createFilesystem('a'),
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
-					getProvider: async () => ({ login: async () => {} }),
 				},
 			},
 			createWebContents(1),
@@ -125,12 +136,15 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => createTransportSpy().transport,
-				environment: async () => ({ filesystem: createFilesystem('b') }),
+				environment: async () =>
+					Object.assign(
+						{ filesystem: createFilesystem('b') },
+						{ dispose: noop },
+					),
 				filesystem: createFilesystem('a'),
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
-					getProvider: async () => ({ login: async () => {} }),
 				},
 			},
 			createWebContents(1),
@@ -149,6 +163,74 @@ describe('bindMain', () => {
 		await handle.dispose();
 	});
 
+	it('binds direct stream descriptors to per-path IPC channels', async () => {
+		const { bindMain } = await import('../bind/index.js');
+		const { createChannels } = await import('../../../shared/channels.js');
+		const { namespace, stream } = await import('@franklin/lib/proxy');
+
+		let emitLocal: (chunk: unknown) => void = (_chunk: unknown) => {
+			throw new Error('stream not initialized');
+		};
+		let closeLocal = () => {};
+		const written: unknown[] = [];
+		const close = vi.fn(async () => {
+			try {
+				closeLocal();
+			} catch {}
+		});
+		const webContents = createWebContents(1);
+
+		const handle = bindMain(
+			'franklin',
+			namespace({
+				logs: stream(),
+			}),
+			{
+				logs: () =>
+					({
+						readable: new ReadableStream({
+							start(nextController) {
+								emitLocal = (chunk: unknown) => {
+									nextController.enqueue(chunk as never);
+								};
+								closeLocal = () => {
+									nextController.close();
+								};
+							},
+						}),
+						writable: new WritableStream({
+							write(chunk) {
+								written.push(chunk);
+							},
+						}),
+						close,
+					}) as ClientProtocol,
+			} as never,
+			webContents,
+		);
+
+		const channel = createChannels('franklin').getStreamChannel(['logs']);
+		emit(channel, { kind: 'data', data: { type: 'ping' } });
+		await Promise.resolve();
+		await Promise.resolve();
+		expect(written).toContainEqual({ type: 'ping' });
+
+		emitLocal({ type: 'pong' } as never);
+		await Promise.resolve();
+		await Promise.resolve();
+		expect(webContents.send).toHaveBeenCalledWith(channel, {
+			kind: 'data',
+			data: { type: 'pong' },
+		});
+
+		emit(channel, { kind: 'close' });
+		await vi.waitFor(() => {
+			expect(close).toHaveBeenCalledTimes(1);
+		});
+
+		await handle.dispose();
+	});
+
 	it('closes active transports when the renderer kills them', async () => {
 		const { bindMain } = await import('../bind/index.js');
 		const { schema } = await import('../../../shared/schema.js');
@@ -160,12 +242,15 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => transportSpy.transport,
-				environment: async () => ({ filesystem: createFilesystem('b') }),
+				environment: async () =>
+					Object.assign(
+						{ filesystem: createFilesystem('b') },
+						{ dispose: noop },
+					),
 				filesystem: createFilesystem('a'),
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
-					getProvider: async () => ({ login: async () => {} }),
 				},
 			},
 			createWebContents(1),

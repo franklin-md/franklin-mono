@@ -1,18 +1,12 @@
+import type { Descriptor, ProxyType } from '@franklin/lib';
 import type { Duplex } from '../../streams/types.js';
+import type { JsonRpcMessage } from '../types.js';
 
 import { createPeerBinding } from './runtime/index.js';
 import type { PeerBinding } from './runtime/index.js';
-import type { Protocol } from '../protocol/messages.js';
-import type { ProtocolManifest } from '../protocol/manifest.js';
-import type { RpcMethods } from '../protocol/method-types.js';
-import type { JsonRpcMessage } from '../types.js';
 
-export type {
-	PeerBinding,
-	ClientBinding,
-	ServerBinding,
-} from './runtime/index.js';
-export { createClientBinding, createServerBinding } from './runtime/index.js';
+export type { PeerBinding } from './runtime/index.js';
+export { JsonRpcProxyRuntime, JsonRpcServerRuntime } from './runtime/index.js';
 
 /**
  * Bind as the client (calling the server).
@@ -21,16 +15,17 @@ export { createClientBinding, createServerBinding } from './runtime/index.js';
  * provide client-side handlers and start message dispatch.
  */
 export function bindClient<
-	TServer extends RpcMethods<TServer>,
-	TClient extends RpcMethods<TClient>,
+	TServerDesc extends Descriptor,
+	TClientDesc extends Descriptor,
 >(options: {
-	duplex: Protocol<TServer, TClient>;
-	manifest: ProtocolManifest<TServer, TClient>;
-}): PeerBinding<TServer, TClient> {
-	return createPeerBinding<TServer, TClient>({
-		duplex: options.duplex as Duplex<JsonRpcMessage>,
-		remoteManifest: options.manifest.server,
-		localManifest: options.manifest.client,
+	duplex: Duplex<JsonRpcMessage>;
+	server: TServerDesc;
+	client: TClientDesc;
+}): PeerBinding<ProxyType<TServerDesc>, ProxyType<TClientDesc>> {
+	return createPeerBinding({
+		duplex: options.duplex,
+		remoteDescriptor: options.server,
+		localDescriptor: options.client,
 	});
 }
 
@@ -41,15 +36,16 @@ export function bindClient<
  * provide server-side handlers and start message dispatch.
  */
 export function bindServer<
-	TServer extends RpcMethods<TServer>,
-	TClient extends RpcMethods<TClient>,
+	TServerDesc extends Descriptor,
+	TClientDesc extends Descriptor,
 >(options: {
-	duplex: Protocol<TClient, TServer>;
-	manifest: ProtocolManifest<TServer, TClient>;
-}): PeerBinding<TClient, TServer> {
-	return createPeerBinding<TClient, TServer>({
-		duplex: options.duplex as Duplex<JsonRpcMessage>,
-		remoteManifest: options.manifest.client,
-		localManifest: options.manifest.server,
+	duplex: Duplex<JsonRpcMessage>;
+	server: TServerDesc;
+	client: TClientDesc;
+}): PeerBinding<ProxyType<TClientDesc>, ProxyType<TServerDesc>> {
+	return createPeerBinding({
+		duplex: options.duplex,
+		remoteDescriptor: options.client,
+		localDescriptor: options.server,
 	});
 }

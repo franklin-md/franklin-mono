@@ -6,7 +6,7 @@ import {
 	isResourceDescriptor,
 	isStreamDescriptor,
 } from './descriptors/detect.js';
-import type { AnyShape, Descriptor } from './descriptors/types.js';
+import type { AnyShape, Descriptor } from './descriptors/types/index.js';
 import type { ProxyType } from './types.js';
 import type { ProxyRuntime } from './runtime.js';
 
@@ -26,37 +26,32 @@ function bindDescriptor(
 		if (!runtime.bindMethod) {
 			throw new UnsupportedDescriptorError('method', path);
 		}
-		return runtime.bindMethod(path, descriptor);
+		return runtime.bindMethod(path);
 	}
 
 	if (isNotificationDescriptor(descriptor)) {
 		if (!runtime.bindNotification) {
 			throw new UnsupportedDescriptorError('notification', path);
 		}
-		return runtime.bindNotification(path, descriptor);
+		return runtime.bindNotification(path);
 	}
 
 	if (isEventDescriptor(descriptor)) {
 		if (!runtime.bindEvent) {
 			throw new UnsupportedDescriptorError('event', path);
 		}
-		return runtime.bindEvent(path, descriptor);
+		return runtime.bindEvent(path);
 	}
 
 	if (isStreamDescriptor(descriptor)) {
 		if (!runtime.bindStream) {
 			throw new UnsupportedDescriptorError('stream', path);
 		}
-		return runtime.bindStream(path, descriptor);
+		return runtime.bindStream(path);
 	}
 
 	if (isNamespaceDescriptor(descriptor)) {
 		const shape = descriptor.shape as AnyShape;
-		if (runtime.bindNamespace) {
-			return runtime.bindNamespace(path, descriptor, () =>
-				buildNamespace(shape, path, runtime),
-			);
-		}
 		return buildNamespace(shape, path, runtime);
 	}
 
@@ -70,6 +65,7 @@ function bindDescriptor(
 	throw new Error(`Unknown descriptor at path: ${path.join('.')}`);
 }
 
+// TODO: move to a new folder
 function buildNamespace(
 	shape: AnyShape,
 	path: string[],

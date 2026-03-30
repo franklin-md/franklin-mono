@@ -1,6 +1,6 @@
 import type { TurnClient, TurnServer } from '../base/types.js';
 import type { Ctx } from '../types/context.js';
-import type { Protocol, ReadType, WriteType } from '@franklin/transport';
+import type { JsonRpcMessage, Duplex } from '@franklin/transport';
 
 export type AgentCtx = { ctx: Partial<Ctx> };
 export type InitializeParams = Record<string, never>;
@@ -15,10 +15,8 @@ export interface MuClient extends TurnClient {
 
 export type MuAgent = TurnServer;
 
-export type ClientProtocol = Protocol<MuClient, MuAgent>;
-export type AgentProtocol = Protocol<MuAgent, MuClient>;
-
-export type MuClientWrite = WriteType<ClientProtocol>;
-export type MuClientReceive = ReadType<ClientProtocol>;
+// TODO: Can we regain the types again?
+export type ClientProtocol = Duplex<JsonRpcMessage>;
+export type AgentProtocol = Duplex<JsonRpcMessage>;
 
 export type MuProtocol = ClientProtocol;

@@ -9,6 +9,10 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./proxy": {
+			"types": "./dist/proxy/index.d.ts",
+			"import": "./dist/proxy/index.js"
 		}
 	},
 	"files": [

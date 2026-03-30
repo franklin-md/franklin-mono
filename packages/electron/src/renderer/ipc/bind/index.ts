@@ -1,19 +1,14 @@
-import type {
-	ProxyDescriptor,
-	ProxyValue,
-} from '../../../shared/descriptors/types.js';
+import { bindClient } from '@franklin/lib/proxy';
+import type { Descriptor, ProxyType } from '@franklin/lib/proxy';
 import type { PreloadBridgeOf } from '../../../shared/api.js';
-import { bindProxy } from './proxy.js';
+import { createClientRuntime } from './runtime.js';
 
-export function bindRenderer<TSchema extends ProxyDescriptor<any, any>>(
+export function bindRenderer<D extends Descriptor>(
 	name: string,
-	schema: TSchema,
-	bridge: PreloadBridgeOf<TSchema>,
-): ProxyValue<TSchema> {
-	return bindProxy(
-		name,
-		[],
-		schema as ProxyDescriptor<unknown, any>,
-		bridge as Record<string, unknown>,
-	) as ProxyValue<TSchema>;
+	schema: D,
+	bridge: PreloadBridgeOf<D>,
+): ProxyType<D> {
+	void name;
+	const runtime = createClientRuntime(bridge as Record<string, unknown>);
+	return bindClient(schema, runtime);
 }

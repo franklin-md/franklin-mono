@@ -1,43 +1,102 @@
-import {
-	type Duplex,
-	type MuxPacket,
-	Multiplexer,
-	fromCallable,
-	fromObserver,
-} from '@franklin/transport';
+import type { Duplex } from '@franklin/transport';
 
 import type { FranklinPreloadBridge } from '../../shared/schema.js';
-import type { IpcStreamBridge } from '../../shared/api.js';
+import type { PreloadStreamBridge } from '../../shared/api.js';
 import type { AuthBridge } from './auth-store.js';
 
 declare global {
 	interface Window {
 		__franklinBridge: FranklinPreloadBridge;
-		__franklinIpcStream: IpcStreamBridge;
 		__franklinAuth: AuthBridge;
 	}
 }
-
-let rootMux: Multiplexer<unknown, unknown> | null = null;
 
 export function getPreloadBridge(): FranklinPreloadBridge {
 	return window.__franklinBridge;
 }
 
-function getRootMux(): Multiplexer<unknown, unknown> {
-	if (rootMux) return rootMux;
+export function createIpcStream<R, W = R>(
+	bridge: PreloadStreamBridge<R, W>,
+	onClose?: () => Promise<void>,
+): Duplex<R, W> {
+	let controller: ReadableStreamDefaultController<R> | null = null;
+	let unsubscribe: (() => void) | null = null;
+	let closePromise: Promise<void> | null = null;
+	let closed = false;
 
-	const { on, invoke } = window.__franklinIpcStream;
-	const transport: Duplex<MuxPacket<unknown>, MuxPacket<unknown>> = {
-		readable: fromObserver(on) as ReadableStream<MuxPacket<unknown>>,
-		writable: fromCallable(invoke) as WritableStream<MuxPacket<unknown>>,
-		close: async () => {},
+	const detach = () => {
+		if (unsubscribe == null) return;
+		unsubscribe();
+		unsubscribe = null;
 	};
 
-	rootMux = new Multiplexer(transport);
-	return rootMux;
-}
+	const closeReadable = () => {
+		if (controller == null) return;
+		try {
+			controller.close();
+		} catch {}
+	};
 
-export function createIpcStream<R, W = R>(streamName: string): Duplex<R, W> {
-	return getRootMux().channel(streamName) as Duplex<R, W>;
+	const closeStream = (
+		notifyPeer: boolean,
+		releaseLease: boolean,
+	): Promise<void> => {
+		if (closePromise) {
+			return closePromise;
+		}
+
+		closePromise = (async () => {
+			if (closed) return;
+			closed = true;
+			detach();
+			closeReadable();
+			if (notifyPeer) {
+				await bridge.close();
+			}
+			if (releaseLease) {
+				await onClose?.();
+			}
+		})();
+
+		return closePromise;
+	};
+
+	const readable = new ReadableStream<R>({
+		start(nextController) {
+			controller = nextController;
+			unsubscribe = bridge.subscribe({
+				next: (packet) => {
+					if (closed) return;
+					nextController.enqueue(packet);
+				},
+				close: () => {
+					void closeStream(false, true);
+				},
+			});
+		},
+		cancel() {
+			return closeStream(true, true);
+		},
+	});
+
+	const writable = new WritableStream<W>({
+		write(packet) {
+			if (closed) {
+				throw new Error('IPC stream is closed');
+			}
+			bridge.send(packet);
+		},
+		close() {
+			return closeStream(true, true);
+		},
+		abort() {
+			return closeStream(true, true);
+		},
+	});
+
+	return {
+		readable,
+		writable,
+		close: () => closeStream(true, true),
+	};
 }

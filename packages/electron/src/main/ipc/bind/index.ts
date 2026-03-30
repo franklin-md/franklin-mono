@@ -1,16 +1,17 @@
 import type { WebContents } from 'electron';
-
-import type { ProxyDescriptor } from '../../../shared/descriptors/types.js';
+import { bindServer } from '@franklin/lib/proxy';
+import type { Descriptor, ProxyType } from '@franklin/lib/proxy';
+import { createChannels } from '../../../shared/channels.js';
 import { createBindingContext } from './context.js';
-import { registerProxyHandlers } from './proxy.js';
+import { createServerRuntime } from './runtime.js';
 import type { MainBindingHandle } from './types.js';
 
 const activeBindings = new Map<string, MainBindingHandle>();
 
-export function bindMain<T>(
+export function bindMain<D extends Descriptor>(
 	name: string,
-	schema: ProxyDescriptor<T, any>,
-	impl: T,
+	schema: D,
+	impl: ProxyType<D>,
 	webContents: WebContents,
 ): MainBindingHandle {
 	const previous = activeBindings.get(name);
@@ -18,20 +19,17 @@ export function bindMain<T>(
 		previous.dispose().catch(console.error);
 	}
 
-	const context = createBindingContext(name, webContents, impl);
-	const unregister = registerProxyHandlers(
-		name,
-		context,
-		[],
-		schema as ProxyDescriptor<unknown, any>,
-	);
+	const context = createBindingContext(webContents);
+	const channels = createChannels(name);
+	const runtime = createServerRuntime(channels, context);
+	const binding = bindServer(schema, impl, runtime);
 
 	const handle: MainBindingHandle = {
 		dispose: async () => {
 			if (activeBindings.get(name) !== handle) return;
 			activeBindings.delete(name);
 
-			for (const fn of unregister) fn();
+			binding.dispose();
 			await context.dispose();
 		},
 	};

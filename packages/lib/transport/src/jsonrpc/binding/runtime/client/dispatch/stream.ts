@@ -1,26 +1,16 @@
 import type { JsonRpcMessage } from '../../../../types.js';
 import { isStreamUpdateNotification } from '../../../../types.js';
-import { RpcError } from '../../../../errors.js';
 import type { ClientBindingState } from '../../types.js';
+import { handlePendingResponse } from './response.js';
 
 export function handleResponseForStream(
 	state: ClientBindingState,
 	msg: JsonRpcMessage & { id: number },
 ): boolean {
-	const stream = state.pendingStreams.get(msg.id);
-	if (!stream) return false;
-	state.pendingStreams.delete(msg.id);
-	if ('error' in msg) {
-		const error = msg.error as {
-			code: number;
-			message: string;
-			data?: unknown;
-		};
-		stream.fail(new RpcError(error.code, error.message, error.data));
-	} else {
-		stream.complete();
-	}
-	return true;
+	return handlePendingResponse(state.pendingStreams, msg, {
+		onError: (stream, error) => stream.fail(error),
+		onResult: (stream) => stream.complete(),
+	});
 }
 
 export function handleStreamUpdateNotification(

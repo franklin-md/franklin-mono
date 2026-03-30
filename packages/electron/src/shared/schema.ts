@@ -1,50 +1,33 @@
-import type { ClientProtocol } from '@franklin/mini-acp';
-
-import {
-	handle,
-	lease,
-	method,
-	proxy,
-	transport,
-} from './descriptors/factories.js';
-import type { PreloadBridgeOf } from './api.js';
 import type { Platform } from '@franklin/agent/browser';
+import { method, namespace, resource, stream } from '@franklin/lib/proxy';
+import type { NamespaceShape } from '@franklin/lib/proxy';
 
-export const schema = proxy({
-	spawn: transport<() => Promise<ClientProtocol>>(),
-	environment: handle<Platform['environment']>({
-		filesystem: proxy({
-			readFile: method(),
-			writeFile: method(),
-			mkdir: method(),
-			access: method(),
-			stat: method(),
-			readdir: method(),
-			exists: method(),
-			glob: method(),
-			deleteFile: method(),
+import type { PreloadBridgeOf } from './api.js';
+
+const filesystem = namespace({
+	readFile: method(),
+	writeFile: method(),
+	mkdir: method(),
+	access: method(),
+	stat: method(),
+	readdir: method(),
+	exists: method(),
+	glob: method(),
+	deleteFile: method(),
+});
+
+export const schema = namespace({
+	spawn: resource(stream()),
+	environment: resource(
+		namespace({
+			filesystem: filesystem,
 		}),
-	}),
-	ai: proxy({
+	),
+	ai: namespace({
 		getOAuthProviders: method(),
 		getApiKeyProviders: method(),
-		getProvider: lease(
-			proxy({
-				login: method(),
-			}),
-		),
 	}),
-	filesystem: proxy({
-		readFile: method(),
-		writeFile: method(),
-		mkdir: method(),
-		access: method(),
-		stat: method(),
-		readdir: method(),
-		exists: method(),
-		glob: method(),
-		deleteFile: method(),
-	}),
-});
+	filesystem: filesystem,
+} satisfies NamespaceShape<Platform>);
 
 export type FranklinPreloadBridge = PreloadBridgeOf<typeof schema>;

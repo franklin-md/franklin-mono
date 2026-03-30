@@ -5,7 +5,7 @@ export {
 	STREAM_KIND,
 	NAMESPACE_KIND,
 	RESOURCE_KIND,
-} from './types.js';
+} from './types/index.js';
 export type {
 	MethodDescriptor,
 	NotificationDescriptor,
@@ -14,11 +14,9 @@ export type {
 	NamespaceDescriptor,
 	ResourceDescriptor,
 	ResourceInnerDescriptor,
-	TransportDescriptor,
-	HandleDescriptor,
 	Descriptor,
 	AnyShape,
-} from './types.js';
+} from './types/index.js';
 export {
 	method,
 	notification,
@@ -26,9 +24,8 @@ export {
 	stream,
 	namespace,
 	resource,
-	transport,
-	handle,
-} from './factories.js';
+} from './factories/index.js';
+export type { NamespaceShape } from './factories/index.js';
 export {
 	isMethodDescriptor,
 	isNotificationDescriptor,
@@ -36,6 +33,4 @@ export {
 	isStreamDescriptor,
 	isNamespaceDescriptor,
 	isResourceDescriptor,
-	isTransportDescriptor,
-	isHandleDescriptor,
 } from './detect.js';

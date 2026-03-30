@@ -6,9 +6,8 @@ import {
 	stream,
 	namespace,
 	resource,
-	transport,
-	handle,
-} from '../proxy/descriptors/factories.js';
+} from '../proxy/descriptors/factories/index.js';
+import type { NamespaceShape } from '../proxy/index.js';
 import {
 	isMethodDescriptor,
 	isNotificationDescriptor,
@@ -16,8 +15,6 @@ import {
 	isStreamDescriptor,
 	isNamespaceDescriptor,
 	isResourceDescriptor,
-	isTransportDescriptor,
-	isHandleDescriptor,
 } from '../proxy/descriptors/detect.js';
 import {
 	METHOD_KIND,
@@ -26,7 +23,7 @@ import {
 	STREAM_KIND,
 	NAMESPACE_KIND,
 	RESOURCE_KIND,
-} from '../proxy/descriptors/types.js';
+} from '../proxy/descriptors/types/index.js';
 
 describe('descriptor factories', () => {
 	it('method() creates a MethodDescriptor', () => {
@@ -63,16 +60,52 @@ describe('descriptor factories', () => {
 		expect(d.inner).toBe(inner);
 	});
 
-	it('transport() creates a ResourceDescriptor<StreamDescriptor>', () => {
-		const d = transport();
+	it('resource(stream()) creates a ResourceDescriptor<StreamDescriptor>', () => {
+		const d = resource(stream());
 		expect(d.kind).toBe(RESOURCE_KIND);
 		expect(d.inner.kind).toBe(STREAM_KIND);
 	});
 
-	it('handle() creates a ResourceDescriptor<NamespaceDescriptor>', () => {
-		const d = handle({ foo: method() });
+	it('resource(namespace()) creates a ResourceDescriptor<NamespaceDescriptor>', () => {
+		const d = resource(namespace({ foo: method() }));
 		expect(d.kind).toBe(RESOURCE_KIND);
 		expect(d.inner.kind).toBe(NAMESPACE_KIND);
+	});
+
+	it('supports resource-backed members in NamespaceShape', () => {
+		type Disposable = { dispose(): Promise<void> };
+		type StreamHandle = {
+			readonly readable: ReadableStream<string>;
+			readonly writable: WritableStream<string>;
+			readonly close: () => Promise<void>;
+		};
+		type ExampleApi = {
+			spawn: () => Promise<StreamHandle & Disposable>;
+			environment: () => Promise<
+				{
+					filesystem: {
+						exists(path: string): Promise<boolean>;
+					};
+				} & Disposable
+			>;
+			bytes: () => Promise<Uint8Array>;
+		};
+
+		const d = namespace({
+			spawn: resource(stream<string>()),
+			environment: resource(
+				namespace({
+					filesystem: namespace({
+						exists: method<(path: string) => Promise<boolean>>(),
+					}),
+				}),
+			),
+			bytes: method<() => Promise<Uint8Array>>(),
+		} satisfies NamespaceShape<ExampleApi>);
+
+		expect(d.shape.spawn.kind).toBe(RESOURCE_KIND);
+		expect(d.shape.environment.kind).toBe(RESOURCE_KIND);
+		expect(d.shape.bytes.kind).toBe(METHOD_KIND);
 	});
 });
 
@@ -106,18 +139,6 @@ describe('descriptor type guards', () => {
 	it('isResourceDescriptor', () => {
 		expect(isResourceDescriptor(resource(stream()))).toBe(true);
 		expect(isResourceDescriptor(method())).toBe(false);
-	});
-
-	it('isTransportDescriptor', () => {
-		expect(isTransportDescriptor(transport())).toBe(true);
-		expect(isTransportDescriptor(handle({}))).toBe(false);
-		expect(isTransportDescriptor(method())).toBe(false);
-	});
-
-	it('isHandleDescriptor', () => {
-		expect(isHandleDescriptor(handle({ foo: method() }))).toBe(true);
-		expect(isHandleDescriptor(transport())).toBe(false);
-		expect(isHandleDescriptor(method())).toBe(false);
 	});
 
 	it('rejects non-objects', () => {

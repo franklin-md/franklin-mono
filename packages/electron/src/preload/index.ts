@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-import { bindPreload, createIpcStreamBridge } from './bind.js';
+import { bindPreload } from './bind.js';
 import { schema } from '../shared/schema.js';
 import {
 	AUTH_LOAD,
@@ -15,20 +15,12 @@ import {
 	AUTH_PROMPT_RESPONSE,
 	AUTH_REMOVE_ENTRY,
 	AUTH_START_LOGIN,
-	createChannels,
 	AUTH_GET_PROVIDERS,
 } from '../shared/channels.js';
-
-const channels = createChannels('franklin');
 
 contextBridge.exposeInMainWorld(
 	'__franklinBridge',
 	bindPreload('franklin', schema),
-);
-
-contextBridge.exposeInMainWorld(
-	'__franklinIpcStream',
-	createIpcStreamBridge(channels.getIpcStreamChannel()),
 );
 
 const auth = {

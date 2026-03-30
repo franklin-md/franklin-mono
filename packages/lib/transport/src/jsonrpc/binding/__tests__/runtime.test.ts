@@ -1,31 +1,21 @@
 import { describe, expect, it } from 'vitest';
+import { method, notification, namespace } from '@franklin/lib';
 import type { Duplex } from '../../../streams/types.js';
 import type { JsonRpcMessage } from '../../types.js';
 import { isResponse } from '../../types.js';
 import { bindServer } from '../index.js';
-import {
-	defineManifest,
-	type Protocol,
-	request,
-	notification,
-} from '../../protocol/index.js';
 
-interface ServerApi {
-	add(params: { a: number; b: number }): Promise<number>;
-	notify(params: { msg: string }): Promise<void>;
-}
-
-interface ClientApi {
-	ping(params: { msg: string }): Promise<void>;
-}
-
-const manifest = defineManifest<ServerApi, ClientApi>({
-	server: { add: request(), notify: notification() },
-	client: { ping: notification() },
+const serverDescriptor = namespace({
+	add: method<(params: { a: number; b: number }) => Promise<number>>(),
+	notify: notification<(params: { msg: string }) => Promise<void>>(),
 });
 
-const serverHandlers: ServerApi = {
-	async add({ a, b }) {
+const clientDescriptor = namespace({
+	ping: notification<(params: { msg: string }) => Promise<void>>(),
+});
+
+const serverHandlers = {
+	async add({ a, b }: { a: number; b: number }) {
 		return a + b;
 	},
 	async notify() {},
@@ -36,7 +26,7 @@ const serverHandlers: ServerApi = {
  * and a collector for inspecting outgoing messages.
  */
 function createServerWithRawWire(options?: {
-	handlers?: Partial<ServerApi>;
+	handlers?: Partial<typeof serverHandlers>;
 	onError?: (error: unknown) => void;
 }) {
 	let injectController!: ReadableStreamDefaultController<JsonRpcMessage>;
@@ -66,8 +56,9 @@ function createServerWithRawWire(options?: {
 	};
 
 	const { bind } = bindServer({
-		duplex: duplex as Protocol<ClientApi, ServerApi>,
-		manifest,
+		duplex,
+		server: serverDescriptor,
+		client: clientDescriptor,
 	});
 
 	const handle = bind(
@@ -135,7 +126,6 @@ describe('notification error handling', () => {
 			onError: (err) => errors.push(err),
 		});
 
-		// Send a notification to the server's `notify` handler (which throws)
 		inject.enqueue({
 			jsonrpc: '2.0',
 			method: 'notify',
@@ -157,10 +147,9 @@ describe('notification error handling', () => {
 					throw new Error('boom');
 				},
 			},
-			onError: () => {}, // suppress
+			onError: () => {},
 		});
 
-		// Send a notification that throws
 		inject.enqueue({
 			jsonrpc: '2.0',
 			method: 'notify',
@@ -169,7 +158,6 @@ describe('notification error handling', () => {
 
 		await new Promise((r) => setTimeout(r, 20));
 
-		// Connection should still work — send a valid request
 		inject.enqueue({
 			jsonrpc: '2.0',
 			id: 1,
