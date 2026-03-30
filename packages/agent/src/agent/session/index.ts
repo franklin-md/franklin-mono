@@ -1,7 +1,11 @@
 import { CtxTracker } from '@franklin/mini-acp';
 import { DebouncedPersister } from '@franklin/lib';
 import type { Persister } from '@franklin/lib';
-import type { StoreResult, StoreSnapshot } from '@franklin/extensions';
+import type {
+	StoreResult,
+	StoreSnapshot,
+	EnvironmentConfig,
+} from '@franklin/extensions';
 import {
 	createEmptyStoreResult,
 	createStoreResult,
@@ -20,6 +24,7 @@ import type { PersistedCtx, SessionSnapshot } from './persist/types.js';
 import type { SpawnFn, Session } from './types.js';
 import type { FranklinExtension } from '../../app/types.js';
 import type { IAuthManager } from '../../auth/types.js';
+import type { Platform } from '@franklin/agent';
 
 export type PersistenceOptions = {
 	session: Persister<SessionSnapshot>;
@@ -45,14 +50,17 @@ export class SessionManager {
 	private readonly registry: StoreRegistry;
 	private readonly authManager: IAuthManager;
 	private readonly persister?: Persister<SessionSnapshot>;
-	private defaultConfig: ConfigOptions;
+	// TODO: Maybe we rename? Do we need this given that no SessionManager is created from anything other than {}?
+	private readonly defaultConfig: ConfigOptions = {};
+	private readonly createEnvironment: Platform['environment'];
 
+	// TODO: Take in just Platform.
 	constructor(
 		private readonly spawn: SpawnFn,
 		private readonly extensions: FranklinExtension[],
 		authManager: IAuthManager,
+		createEnvironment: Platform['environment'],
 		persistence?: PersistenceOptions,
-		configOptions?: ConfigOptions,
 	) {
 		const delayMs = persistence?.delayMs ?? 500;
 
@@ -67,7 +75,7 @@ export class SessionManager {
 		this.persister = sessionPersister;
 		this.sessions = new SessionMap(sessionPersister);
 		this.authManager = authManager;
-		this.defaultConfig = { ...configOptions };
+		this.createEnvironment = createEnvironment;
 
 		this.authManager.onAuthChange(
 			async (provider: string, authKey: string | undefined) => {
@@ -79,13 +87,16 @@ export class SessionManager {
 	/**
 	 * Create a brand new session with no parent state.
 	 */
-	async new(configOptions: ConfigOptions | undefined): Promise<Session> {
+	async new(
+		configOptions: ConfigOptions | undefined,
+		environmentConfig: EnvironmentConfig,
+	): Promise<Session> {
 		// TODO: Create a fresh store result with the registry
 		const seed = createEmptyStoreResult(this.registry);
 		const config = await this.resolveConfig(configOptions);
 		const emptyCtxWithAuth = mergeCtx(emptyCtx(), config ? { config } : {});
 
-		return this.createAndInit(emptyCtxWithAuth, seed);
+		return this.createAndInit(emptyCtxWithAuth, seed, environmentConfig);
 	}
 
 	/**
@@ -96,8 +107,9 @@ export class SessionManager {
 		const parent = this.get(sessionId);
 		const parentCtx = mergeCtx(emptyCtx(), parent.tracker.get());
 		const copiedStores = parent.agent.stores.share('copy');
+		const envConfig = await parent.environment.config();
 
-		return this.createAndInit(parentCtx, copiedStores);
+		return this.createAndInit(parentCtx, copiedStores, envConfig);
 	}
 
 	/**
@@ -110,8 +122,9 @@ export class SessionManager {
 		const ctx = mergeCtx(emptyCtx(), {
 			config: parent.tracker.get().config,
 		});
+		const envConfig = await parent.environment.config();
 
-		return this.createAndInit(ctx, copiedStores);
+		return this.createAndInit(ctx, copiedStores, envConfig);
 	}
 
 	/* TODO: Reimplemnt rewind. It's harder than originally thought as you would want 
@@ -171,9 +184,11 @@ export class SessionManager {
 		await this.sessions.restore(async (snapshot) => {
 			const config = await this.resolveConfig(snapshot.ctx.config);
 			const restoredCtx = mergeCtx(snapshot.ctx, config ? { config } : {});
+
 			await this.createAndInit(
 				restoredCtx,
 				createStoreResult(this.registry, snapshot.stores),
+				snapshot.environmentConfig,
 				snapshot.sessionId,
 			);
 		});
@@ -189,15 +204,20 @@ export class SessionManager {
 	private async createAndInit(
 		ctx: PersistedCtx,
 		existingStores: StoreResult,
+		environmentConfig: EnvironmentConfig,
 		sessionId?: string,
 	): Promise<Session> {
 		const transport = await this.spawn();
 		const tracker = new CtxTracker();
+
+		const environment = await this.createEnvironment(environmentConfig);
+
 		// Append ctxExtension at the tail so it sees final transformed params
 		const agent = await createAgent(
 			[...this.extensions, ctxExtension(tracker)],
 			transport,
 			existingStores,
+			environment,
 		);
 		await agent.initialize({});
 		await agent.setContext({
@@ -212,6 +232,7 @@ export class SessionManager {
 			sessionId: sessionId ?? crypto.randomUUID(),
 			agent,
 			tracker,
+			environment,
 		};
 		this.sessions.register(session);
 		return session;

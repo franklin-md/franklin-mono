@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { app, BrowserWindow } from 'electron';
 import { initializeMain } from '@franklin/electron/main';
-import { createFolderScopedFilesystem } from '@franklin/lib';
 import { createNodePlatform } from '@franklin/node';
 
 import type { MainHandle } from '@franklin/electron/main';
@@ -23,20 +22,9 @@ function createWindow(): void {
 		},
 	});
 
-	const nodePlatform = createNodePlatform();
-	const environmentFilesystem = createFolderScopedFilesystem(
-		path.join(app.getPath('home'), '.franklin'),
-		nodePlatform.filesystem,
-	);
-	const environment = Object.assign(
-		{ filesystem: environmentFilesystem },
-		{ dispose: async () => {} },
-	);
-	const platform = {
-		...nodePlatform,
-		environment: async () => environment,
-		filesystem: environmentFilesystem,
-	};
+	const franklinHome = path.join(app.getPath('home'), '.franklin');
+	const platform = createNodePlatform({ appDir: franklinHome });
+
 	handle = initializeMain(mainWindow.webContents, platform);
 
 	mainWindow.on('closed', () => {

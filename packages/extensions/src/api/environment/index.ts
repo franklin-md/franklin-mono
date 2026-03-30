@@ -1,2 +1,2 @@
-export type { Environment } from './types.js';
+export type { Environment, EnvironmentConfig } from './types.js';
 export type { EnvironmentAPI } from './api.js';

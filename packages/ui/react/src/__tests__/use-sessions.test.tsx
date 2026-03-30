@@ -17,6 +17,7 @@ function makeSession(sessionId: string): Session {
 		sessionId,
 		agent: {} as Agent,
 		tracker: {} as Session['tracker'],
+		environment: {} as Session['environment'],
 	};
 }
 

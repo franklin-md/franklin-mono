@@ -13,7 +13,9 @@ import type { StoreMapping } from '@franklin/extensions';
  * Store values are NOT inlined — instead each store is referenced by its
  * pool ID. The pool itself is persisted separately.
  */
-export function snapshotSession(session: Session): SessionSnapshot {
+export async function snapshotSession(
+	session: Session,
+): Promise<SessionSnapshot> {
 	const ctx = session.tracker.get();
 	const stores: StoreMapping = {};
 
@@ -21,9 +23,12 @@ export function snapshotSession(session: Session): SessionSnapshot {
 		stores[name] = entry.ref;
 	}
 
+	const environmentConfig = await session.environment.config();
+
 	return {
 		sessionId: session.sessionId,
 		ctx: cloneCtx(ctx),
 		stores,
+		environmentConfig,
 	};
 }

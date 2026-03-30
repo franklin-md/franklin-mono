@@ -28,6 +28,20 @@ vi.mock('electron', () => ({
 
 const noop = async () => {};
 
+function createEnvironment(label: string) {
+	return Object.assign(
+		{
+			filesystem: createFilesystem(label),
+			config: async () => ({
+				cwd: '/tmp',
+				permissions: { allowRead: ['**'], allowWrite: ['**'] },
+			}),
+			reconfigure: noop,
+		},
+		{ dispose: noop },
+	);
+}
+
 function createFilesystem(label: string): Filesystem {
 	return {
 		readFile: async () => new Uint8Array([label.length]),
@@ -104,11 +118,7 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => createTransportSpy().transport,
-				environment: async () =>
-					Object.assign(
-						{ filesystem: createFilesystem('b') },
-						{ dispose: noop },
-					),
+				environment: async () => createEnvironment('b'),
 				filesystem: createFilesystem('a'),
 				ai: {
 					getOAuthProviders: async () => [],
@@ -137,11 +147,7 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => createTransportSpy().transport,
-				environment: async () =>
-					Object.assign(
-						{ filesystem: createFilesystem('b') },
-						{ dispose: noop },
-					),
+				environment: async () => createEnvironment('b'),
 				filesystem: createFilesystem('a'),
 				ai: {
 					getOAuthProviders: async () => [],
@@ -245,11 +251,7 @@ describe('bindMain', () => {
 			schema,
 			{
 				spawn: async () => transportSpy.transport,
-				environment: async () =>
-					Object.assign(
-						{ filesystem: createFilesystem('b') },
-						{ dispose: noop },
-					),
+				environment: async () => createEnvironment('b'),
 				filesystem: createFilesystem('a'),
 				ai: {
 					getOAuthProviders: async () => [],

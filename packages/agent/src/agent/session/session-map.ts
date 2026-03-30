@@ -77,7 +77,9 @@ export class SessionMap {
 		if (this.persister) {
 			const persister = this.persister;
 			const persist = () => {
-				void persister.save(session.sessionId, snapshotSession(session));
+				void snapshotSession(session).then((snapshot) =>
+					persister.save(session.sessionId, snapshot),
+				);
 			};
 			session.tracker.onChange = persist;
 			// Persist initial state so session survives a crash before first prompt
@@ -108,6 +110,7 @@ export class SessionMap {
 
 	private async loadAll(): Promise<SessionSnapshot[]> {
 		if (!this.persister) return [];
+		// TODO: Backwards compatibility for old snapshots? I.e. if we make snapshots have an extra field, maybe we should default?
 		return [...(await this.persister.load()).values()];
 	}
 

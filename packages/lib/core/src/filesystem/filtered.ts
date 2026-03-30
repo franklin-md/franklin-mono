@@ -11,7 +11,7 @@ import type { Filesystem } from './types.js';
  * Patterns are matched against absolute paths. To allow everything
  * under a directory, use e.g. `/project/**`.
  */
-export interface FilesystemFilter {
+export interface FilesystemPermissions {
 	/** Gitignore-style patterns for paths that may be read. */
 	allowRead: string[];
 	/** Gitignore-style patterns for paths that may be written. */
@@ -32,7 +32,7 @@ function createMatcher(patterns: string[]): (filePath: string) => boolean {
  * Expects absolute paths (compose after `createFolderScopedFilesystem`).
  */
 export function createFilteredFilesystem(
-	filter: FilesystemFilter,
+	filter: FilesystemPermissions,
 	inner: Filesystem,
 ): Filesystem {
 	const isReadable = createMatcher(filter.allowRead);

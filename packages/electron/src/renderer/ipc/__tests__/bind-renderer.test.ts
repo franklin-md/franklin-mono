@@ -133,7 +133,10 @@ describe('bindRenderer', () => {
 		expect(spawnStream.close).toHaveBeenCalledTimes(1);
 		expect(rawBridge.spawn.kill).toHaveBeenCalledWith('agent-1');
 
-		const environment = await bridge.environment();
+		const environment = await bridge.environment({
+			cwd: '/tmp',
+			permissions: { allowRead: ['**'], allowWrite: ['**'] },
+		});
 		await expect(environment.filesystem.exists('/tmp')).resolves.toBe(true);
 		expect(rawBridge.environment.connect).toHaveBeenCalledTimes(1);
 		const filesystemProxy = rawBridge.environment.proxy as unknown as {
