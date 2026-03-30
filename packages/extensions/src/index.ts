@@ -15,6 +15,7 @@ export type {
 	FullMiddleware,
 	EnvironmentAPI,
 	Environment,
+	EnvironmentConfig,
 	StoreAPI,
 	ReadonlyStore,
 	Store,

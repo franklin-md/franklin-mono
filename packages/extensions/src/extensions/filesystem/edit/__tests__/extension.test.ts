@@ -33,6 +33,11 @@ function mockEnvironment(files: Record<string, string> = {}): Environment {
 			glob: vi.fn(async () => []),
 			deleteFile: vi.fn(async () => {}),
 		},
+		config: vi.fn(async () => ({
+			cwd: '/tmp',
+			permissions: { allowRead: ['**'], allowWrite: ['**'] },
+		})),
+		reconfigure: vi.fn(async () => {}),
 	};
 }
 

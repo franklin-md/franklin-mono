@@ -21,6 +21,8 @@ export const schema = namespace({
 	environment: resource(
 		namespace({
 			filesystem: filesystem,
+			config: method(),
+			reconfigure: method(),
 		}),
 	),
 	ai: namespace({

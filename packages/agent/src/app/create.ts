@@ -18,6 +18,7 @@ export async function createApp(
 		platform.spawn,
 		extensions,
 		auth,
+		platform.environment,
 		persistence,
 	);
 	await agents.restore();

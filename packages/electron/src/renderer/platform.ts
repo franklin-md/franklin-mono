@@ -8,22 +8,11 @@ let platform: Platform | null = null;
 
 export function createElectronPlatform(): Platform {
 	if (!platform) {
-		const bound = bindRenderer(
+		platform = bindRenderer(
 			'franklin',
 			schema,
 			getPreloadBridge(),
 		) as unknown as Platform;
-		let environment: Awaited<ReturnType<Platform['environment']>> | null = null;
-
-		platform = {
-			...bound,
-			environment: async () => {
-				if (!environment) {
-					environment = await bound.environment();
-				}
-				return environment;
-			},
-		};
 	}
 
 	return platform;
