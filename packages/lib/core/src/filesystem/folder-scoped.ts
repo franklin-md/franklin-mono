@@ -51,7 +51,7 @@ export function createFolderScopedFilesystem(
 		async glob(pattern, options) {
 			return inner.glob(pattern, {
 				...options,
-				cwd: options.cwd ? resolve(options.cwd) : cwd,
+				root_dir: options.root_dir ? resolve(options.root_dir) : cwd,
 			});
 		},
 

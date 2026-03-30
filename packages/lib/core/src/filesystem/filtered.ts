@@ -99,9 +99,9 @@ export function createFilteredFilesystem(
 
 		async glob(pattern, options) {
 			const results = await inner.glob(pattern, options);
-			// Glob results are relative to options.cwd — make absolute to check
+			// Glob results are relative to options.root_dir — make absolute to check
 			return results.filter((entry) => {
-				const abs = path.resolve(options.cwd ?? '.', entry);
+				const abs = path.resolve(options.root_dir ?? '.', entry);
 				const rel = abs.slice(1);
 				return isReadable(rel);
 			});

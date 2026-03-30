@@ -38,7 +38,7 @@ export function createNodeFilesystem(): Filesystem {
 		async glob(pattern, options) {
 			const results: string[] = [];
 			for await (const entry of glob(pattern, {
-				cwd: options.cwd,
+				cwd: options.root_dir,
 				exclude: options.ignore,
 			})) {
 				results.push(entry);

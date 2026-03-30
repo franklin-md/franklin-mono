@@ -224,7 +224,7 @@ describe('createFilteredFilesystem', () => {
 				inner,
 			);
 
-			const results = await fs.glob('**/*', { cwd: '/project' });
+			const results = await fs.glob('**/*', { root_dir: '/project' });
 			expect(results).toEqual(['src/index.ts', 'src/util.ts']);
 		});
 	});

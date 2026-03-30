@@ -123,21 +123,21 @@ describe('createFolderScopedFilesystem', () => {
 	});
 
 	describe('glob', () => {
-		it('resolves glob cwd against scoped root', async () => {
+		it('resolves glob root_dir against scoped root', async () => {
 			const fs = createFolderScopedFilesystem('/project', inner);
-			await fs.glob('**/*.ts', { cwd: 'src' });
+			await fs.glob('**/*.ts', { root_dir: 'src' });
 
 			expect(inner.glob).toHaveBeenCalledWith('**/*.ts', {
-				cwd: '/project/src',
+				root_dir: '/project/src',
 			});
 		});
 
-		it('resolves glob cwd of . to root', async () => {
+		it('defaults root_dir to cwd when not specified', async () => {
 			const fs = createFolderScopedFilesystem('/project', inner);
-			await fs.glob('*.json', { cwd: '.' });
+			await fs.glob('*.json', {});
 
 			expect(inner.glob).toHaveBeenCalledWith('*.json', {
-				cwd: '/project',
+				root_dir: '/project',
 			});
 		});
 	});

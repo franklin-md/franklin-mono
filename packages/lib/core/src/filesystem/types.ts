@@ -12,8 +12,8 @@ export interface Filesystem {
 	readdir(path: string): Promise<string[]>;
 	exists(path: string): Promise<boolean>;
 	glob(
-		pattern: string,
-		options: { cwd?: string; ignore?: string[]; limit?: number },
+		pattern: string | string[],
+		options: { root_dir?: string; ignore?: string[]; limit?: number },
 	): Promise<string[]>;
 	deleteFile(path: string): Promise<void>;
 }
