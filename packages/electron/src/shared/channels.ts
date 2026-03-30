@@ -1,14 +1,55 @@
-// IPC data bus (single bidirectional channel for all multiplexed traffic)
-export const IPC_STREAM = 'ipc-stream';
+// Auth — invoke channels (renderer → main)
+export const AUTH_GET_PROVIDERS = 'franklin:auth:getProviders';
+export const AUTH_GET_CANONICAL_PROVIDERS =
+	'franklin:auth:getCanonicalProviders';
+export const AUTH_LOAD = 'franklin:auth:load';
+export const AUTH_GET_API_KEY = 'franklin:auth:getApiKey';
+export const AUTH_SET_ENTRY = 'franklin:auth:setEntry';
+export const AUTH_REMOVE_ENTRY = 'franklin:auth:removeEntry';
+export const AUTH_START_LOGIN = 'franklin:auth:startLogin';
+export const AUTH_OPEN_EXTERNAL = 'franklin:auth:openExternal';
 
-// Level 1 stream names (demuxed from the shared IPC_STREAM channel)
-export const AGENT_STREAM = 'agent-transport';
-export const MCP_STREAM = 'mcp-transport';
+// Auth — one-way send (renderer → main)
+export const AUTH_PROMPT_RESPONSE = 'franklin:auth:promptResponse';
 
-// IPC invoke channels (request/response)
-export const ENV_PROVISION = 'franklin:env:provision';
-export const ENV_DISPOSE = 'franklin:env:dispose';
-export const AGENT_SPAWN = 'franklin:agent:spawn';
-export const AGENT_KILL = 'franklin:agent:kill';
-export const MCP_START = 'franklin:mcp:start';
-export const MCP_STOP = 'franklin:mcp:stop';
+// Auth — main → renderer push events (within an active OAuth flow)
+export const AUTH_ON_CHANGE = 'franklin:auth:onChange';
+export const AUTH_OAUTH_ON_AUTH = 'franklin:auth:oauth:onAuth';
+export const AUTH_OAUTH_ON_PROGRESS = 'franklin:auth:oauth:onProgress';
+export const AUTH_OAUTH_ON_PROMPT = 'franklin:auth:oauth:onPrompt';
+export const APP_GET_STORAGE = 'franklin:app:getStorage';
+
+export interface ChannelNamespace {
+	getMethodChannel(path: readonly string[]): string;
+	getLeaseConnectChannel(path: readonly string[]): string;
+	getLeaseKillChannel(path: readonly string[]): string;
+	getStreamChannel(path: readonly string[]): string;
+	getLeaseStreamChannel(path: readonly string[], id: string): string;
+	getLeaseMethodChannel(
+		leasePath: readonly string[],
+		memberPath: readonly string[],
+	): string;
+}
+
+function getChannel(
+	name: string,
+	path: readonly string[],
+	suffix?: string,
+): string {
+	return suffix == null
+		? [name, ...path].join(':')
+		: [name, ...path, suffix].join(':');
+}
+
+export function createChannels(name: string): ChannelNamespace {
+	return {
+		getMethodChannel: (path) => getChannel(name, path),
+		getLeaseConnectChannel: (path) => getChannel(name, path, 'connect'),
+		getLeaseKillChannel: (path) => getChannel(name, path, 'kill'),
+		getStreamChannel: (path) => getChannel(name, path, 'stream'),
+		getLeaseStreamChannel: (path, id) =>
+			getChannel(name, [...path, 'lease', id, 'stream']),
+		getLeaseMethodChannel: (leasePath, memberPath) =>
+			getChannel(name, [...leasePath, 'lease', ...memberPath]),
+	};
+}

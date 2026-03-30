@@ -1,38 +1,40 @@
-import { useAgentSession } from './use-agent-session.js';
+import { useCallback, useState } from 'react';
+
+import type { Agent } from '@franklin/agent/browser';
+import { AgentProvider } from '@franklin/react';
+
+import { AgentSidebar } from './sidebar/index.js';
 import { ConversationPanel } from './conversation/index.js';
 import { TodoPanel } from './todo/index.js';
 
+interface SelectedAgent {
+	id: string;
+	agent: Agent;
+}
+
 export function AgentChatPage() {
-	const { commands, sessionId, todoExt, conversationExt, status, error } =
-		useAgentSession();
+	const [selected, setSelected] = useState<SelectedAgent | null>(null);
 
-	if (status === 'loading') {
-		return (
-			<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-				Starting agent...
-			</div>
-		);
-	}
-
-	if (status === 'error') {
-		return (
-			<div className="flex flex-1 items-center justify-center text-sm text-destructive">
-				Failed to start agent: {error}
-			</div>
-		);
-	}
-
-	// sessionId is always defined when status is 'ready'
-	if (!sessionId) return null;
+	const handleSelectAgent = useCallback((id: string, agent: Agent) => {
+		setSelected({ id, agent });
+	}, []);
 
 	return (
 		<div className="flex flex-1 overflow-hidden">
-			<ConversationPanel
-				conversationExt={conversationExt}
-				commands={commands}
-				sessionId={sessionId}
-			/>
-			<TodoPanel todoExt={todoExt} />
+			<AgentSidebar onSelectAgent={handleSelectAgent} />
+
+			{selected ? (
+				<AgentProvider key={selected.id} agent={selected.agent}>
+					<div className="flex flex-1 overflow-hidden">
+						<ConversationPanel />
+						<TodoPanel />
+					</div>
+				</AgentProvider>
+			) : (
+				<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+					Spawn an agent to start.
+				</div>
+			)}
 		</div>
 	);
 }

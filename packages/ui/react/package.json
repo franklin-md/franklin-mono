@@ -18,12 +18,18 @@
 	],
 	"scripts": {
 		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc --noEmit -p tsconfig.json"
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@franklin/agent": "*"
+		"@franklin/agent": "*",
+		"@franklin/extensions": "*"
 	},
 	"peerDependencies": {
 		"react": "^18.3.1 || ^19.0.0"
+	},
+	"devDependencies": {
+		"@testing-library/react": "^15.0.7",
+		"jsdom": "^28.1.0"
 	}
 }

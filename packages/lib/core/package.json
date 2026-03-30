@@ -1,0 +1,32 @@
+{
+	"name": "@franklin/lib",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./proxy": {
+			"types": "./dist/proxy/index.d.ts",
+			"import": "./dist/proxy/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "tsc -b tsconfig.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"ignore": "^7.0.5"
+	}
+}

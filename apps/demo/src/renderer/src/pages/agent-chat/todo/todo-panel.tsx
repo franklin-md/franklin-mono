@@ -1,6 +1,7 @@
-import type { TodoExtension } from '@franklin/agent/browser';
-import { createTodoControl } from '@franklin/agent/browser';
-import { useStore } from '@franklin/react';
+import { useMemo } from 'react';
+
+import { createTodoControl, todoKey } from '@franklin/extensions';
+import { useAgentState } from '@franklin/react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,9 +9,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { TodoAddForm } from './todo-add-form.js';
 import { TodoItem } from './todo-item.js';
 
-export function TodoPanel({ todoExt }: { todoExt: TodoExtension }) {
-	const reactStore = useStore(todoExt.todos);
-	const control = createTodoControl(reactStore);
+export function TodoPanel() {
+	const store = useAgentState(todoKey);
+	const todos = store.get();
+
+	const control = useMemo(() => createTodoControl(store), [store]);
 
 	return (
 		<Card className="flex w-80 flex-col overflow-hidden rounded-none border-y-0 border-r-0 shadow-none">
@@ -24,13 +27,13 @@ export function TodoPanel({ todoExt }: { todoExt: TodoExtension }) {
 						<TodoAddForm onAdd={control.addTodo} />
 					</div>
 
-					{control.todos().length === 0 ? (
+					{todos.length === 0 ? (
 						<p className="py-8 text-center text-sm text-muted-foreground">
 							No todos yet.
 						</p>
 					) : (
 						<ul className="flex flex-col gap-2">
-							{control.todos().map((todo) => (
+							{todos.map((todo) => (
 								<TodoItem
 									key={todo.id}
 									todo={todo}

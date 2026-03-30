@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
-import type { Store } from '@franklin/agent/browser';
+import type { Store } from '@franklin/extensions';
 
 // Same interface but works instantly within React.
 export function useStore<T>(store: Store<T>): Store<T> {
@@ -16,7 +16,7 @@ export function useStore<T>(store: Store<T>): Store<T> {
 		[store],
 	);
 
-	const unsubscribe = useCallback(
+	const subscribe = useCallback(
 		(listener: (value: T) => void) => {
 			return store.subscribe(listener);
 		},
@@ -25,7 +25,7 @@ export function useStore<T>(store: Store<T>): Store<T> {
 
 	return {
 		get: () => value,
-		subscribe: unsubscribe,
+		subscribe,
 		set,
 	};
 }

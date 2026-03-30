@@ -1,0 +1,44 @@
+import type { ResourceDescriptor } from './descriptors/types/index.js';
+
+export interface ProxyRuntime {
+	bindMethod?(path: string[]): (...args: unknown[]) => Promise<unknown>;
+
+	bindNotification?(path: string[]): (...args: unknown[]) => Promise<void>;
+
+	bindEvent?(path: string[]): (...args: unknown[]) => AsyncIterable<unknown>;
+
+	bindStream?(path: string[]): unknown;
+
+	bindResource?(
+		path: string[],
+		descriptor: ResourceDescriptor<any, any>,
+	): (...args: unknown[]) => Promise<unknown>;
+}
+
+export interface ServerRuntime {
+	registerMethod?(
+		path: string[],
+		handler: (...args: unknown[]) => Promise<unknown>,
+	): () => void;
+
+	registerNotification?(
+		path: string[],
+		handler: (...args: unknown[]) => Promise<void>,
+	): () => void;
+
+	registerEvent?(
+		path: string[],
+		handler: (...args: unknown[]) => AsyncIterable<unknown>,
+	): () => void;
+
+	// TODO: factor should be (...args: unknown[]) => Duplex<R, W>
+	registerStream?(path: string[], factory: () => unknown): () => void;
+
+	// TODO: We may be able to break this down by providing in bind-server and bind-client
+	// in a similar way to how we've done for namespace
+	registerResource?(
+		path: string[],
+		descriptor: ResourceDescriptor<any, any>,
+		factory: (...args: unknown[]) => Promise<unknown>,
+	): Array<() => void>;
+}

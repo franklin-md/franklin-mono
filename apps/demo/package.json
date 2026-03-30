@@ -18,11 +18,12 @@
 		"build-storybook": "storybook build"
 	},
 	"dependencies": {
-		"@agentclientprotocol/sdk": "^0.16.1",
 		"@franklin/agent": "*",
 		"@franklin/electron": "*",
+		"@franklin/extensions": "*",
+		"@franklin/lib": "*",
+		"@franklin/mini-acp": "*",
 		"@franklin/node": "*",
-		"@franklin/local-mcp": "*",
 		"@franklin/transport": "*",
 		"@franklin/react": "*",
 		"react": "^18.3.1",

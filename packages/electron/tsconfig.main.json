@@ -10,8 +10,9 @@
 	"include": ["src/main/**/*.ts", "src/shared/**/*.ts"],
 	"references": [
 		{ "path": "../lib/transport" },
+		{ "path": "../mini-acp" },
 		{ "path": "../agent" },
 		{ "path": "../node" },
-		{ "path": "../local-mcp" }
+		{ "path": "../mini-acp" }
 	]
 }

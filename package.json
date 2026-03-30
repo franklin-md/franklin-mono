@@ -12,13 +12,15 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"build": "npm run build --workspaces --if-present",
+		"build": "tsc -b",
+		"build:check": "node ./scripts/build-check.mjs",
 		"clean": "tsc -b --clean",
 		"lint": "eslint . --cache --max-warnings=0",
 		"lint:fix": "npm run lint -- --fix",
 		"typecheck": "npm run typecheck --workspaces --if-present",
 		"test": "npm run test --workspaces --if-present",
 		"test:integration": "FRANKLIN_RUN_CODEX_INTEGRATION=1 npm run test --workspaces --if-present",
+		"check": "npm run format:check && npm run lint && npm run build",
 		"format": "prettier --write .",
 		"format:check": "prettier --check ."
 	},
@@ -31,6 +33,7 @@
 		"eslint-plugin-storybook": "^10.2.19",
 		"globals": "^17.4.0",
 		"prettier": "^3.8.1",
+		"tsx": "^4.21.0",
 		"typescript": "^5.8.3",
 		"typescript-eslint": "^8.57.0",
 		"vitest": "^4.0.18"

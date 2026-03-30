@@ -10,8 +10,9 @@
 	},
 	"include": ["src/renderer/**/*.ts", "src/shared/**/*.ts"],
 	"references": [
+		{ "path": "../lib/core" },
 		{ "path": "../lib/transport" },
-		{ "path": "../agent" },
-		{ "path": "../local-mcp" }
+		{ "path": "../mini-acp" },
+		{ "path": "../agent" }
 	]
 }
