@@ -7,7 +7,7 @@ import type { Compiler } from '../../types.js';
 import type { Extension } from '../../../types/extension.js';
 import type { FullMiddleware } from '../../../api/core/middleware/types.js';
 import { apply } from '../../../api/core/middleware/apply.js';
-import type { MiniACPClient, Chunk, Update, TurnEnd } from '@franklin/mini-acp';
+import type { MiniACPClient, Chunk, Update } from '@franklin/mini-acp';
 
 // ---------------------------------------------------------------------------
 // Helpers

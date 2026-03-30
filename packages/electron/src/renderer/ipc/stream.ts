@@ -34,7 +34,9 @@ export function createIpcStream<R, W = R>(
 		if (controller == null) return;
 		try {
 			controller.close();
-		} catch {}
+		} catch {
+			// ReadableStream controllers throw if already closed.
+		}
 	};
 
 	const closeStream = (

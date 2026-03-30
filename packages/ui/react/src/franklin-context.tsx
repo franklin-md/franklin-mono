@@ -11,9 +11,9 @@ import { createApp } from '@franklin/agent/browser';
 import type {
 	FranklinApp,
 	FranklinExtension,
+	IAuthManager,
 	Platform,
 } from '@franklin/agent/browser';
-import type { IAuthManager } from 'packages/agent/src/auth/types.js';
 
 // ---------------------------------------------------------------------------
 // Context

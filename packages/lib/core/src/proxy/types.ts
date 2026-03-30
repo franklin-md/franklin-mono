@@ -29,9 +29,7 @@ export type ProxyType<D extends Descriptor> =
 					: D extends NamespaceDescriptor<unknown, infer TShape>
 						? { [K in keyof TShape]: ProxyType<TShape[K]> }
 						: D extends ResourceDescriptor<infer TArgs, infer TInner>
-							? (
-									...args: TArgs
-								) => Promise<
+							? (...args: TArgs) => Promise<
 									ProxyType<TInner extends Descriptor ? TInner : never> & {
 										dispose(): Promise<void>;
 									}

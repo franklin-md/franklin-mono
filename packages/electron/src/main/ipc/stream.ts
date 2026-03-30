@@ -26,7 +26,9 @@ export function createMainIpcStream<R, W = R>(
 		if (controller == null) return;
 		try {
 			controller.close();
-		} catch {}
+		} catch {
+			// ReadableStream controllers throw if already closed.
+		}
 	};
 
 	const closeStream = (notifyPeer: boolean): Promise<void> => {

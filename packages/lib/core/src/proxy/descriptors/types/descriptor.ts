@@ -14,4 +14,3 @@ export type Descriptor =
 	| ResourceDescriptor<any, any>;
 
 export type AnyShape = Record<string, Descriptor>;
-

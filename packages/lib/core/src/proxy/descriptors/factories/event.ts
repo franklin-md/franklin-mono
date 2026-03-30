@@ -5,8 +5,9 @@ type AnyEventMethod = (...args: any[]) => AsyncIterable<any>;
 
 export function event<TMethod extends AnyEventMethod>(): EventDescriptor<
 	Parameters<TMethod>,
-	Awaited<ReturnType<TMethod>> extends AsyncIterable<infer TItem> ? TItem : never
+	Awaited<ReturnType<TMethod>> extends AsyncIterable<infer TItem>
+		? TItem
+		: never
 > {
 	return { kind: EVENT_KIND };
 }
-

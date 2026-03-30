@@ -1,3 +1,4 @@
+import type { WebContents } from 'electron';
 import type { Filesystem } from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
 
@@ -60,11 +61,11 @@ function createTransportSpy(): {
 	};
 }
 
-function createWebContents(id: number) {
+function createWebContents(id: number): WebContents {
 	return {
 		id,
 		send: vi.fn(),
-	} as any;
+	} as unknown as WebContents;
 }
 
 function emit(channel: string, packet: unknown, senderId = 1) {
@@ -176,7 +177,9 @@ describe('bindMain', () => {
 		const close = vi.fn(async () => {
 			try {
 				closeLocal();
-			} catch {}
+			} catch {
+				// The stream may already be closed during disposal races.
+			}
 		});
 		const webContents = createWebContents(1);
 

@@ -6,4 +6,3 @@ export interface EventDescriptor<
 > {
 	readonly kind: typeof EVENT_KIND;
 }
-
