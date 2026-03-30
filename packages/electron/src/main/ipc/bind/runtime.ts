@@ -125,10 +125,23 @@ export function createServerRuntime(
 					if (!lease) {
 						throw new Error(`No lease registered for ${id}`);
 					}
-					const method = getValueAtPath(lease.value, nextMemberPath) as (
-						...methodArgs: unknown[]
-					) => Promise<unknown>;
-					return await method(...args);
+					const getParent = (path: string[]) => {
+						const parentPath = path.slice(0, -1);
+						return parentPath.length > 0
+							? getValueAtPath(lease.value, parentPath)
+							: lease.value;
+					};
+					const getMethodName = (path: string[]) => {
+						return path[path.length - 1] as string;
+					};
+					// The method needs to use the parent object to call the method (in the case of `this` being used)
+
+					const parent = getParent(nextMemberPath);
+					const methodName = getMethodName(nextMemberPath);
+					const method = (
+						parent as Record<string, (...a: unknown[]) => Promise<unknown>>
+					)[methodName] as (...a: unknown[]) => Promise<unknown>;
+					return await method.call(parent, ...args);
 				},
 			);
 

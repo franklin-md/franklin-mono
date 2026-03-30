@@ -170,6 +170,87 @@ describe('bindMain', () => {
 		await handle.dispose();
 	});
 
+	it('preserves this-binding for class-based leased resource methods', async () => {
+		const { bindMain } = await import('../bind/index.js');
+		const { schema } = await import('../../../shared/schema.js');
+		const { createChannels } = await import('../../../shared/channels.js');
+
+		// A class whose methods rely on `this` to access instance state.
+		class StatefulFilesystem {
+			private label: string;
+			constructor(label: string) {
+				this.label = label;
+			}
+			async exists() {
+				return this.label === 'a';
+			}
+			async readFile() {
+				return new Uint8Array([this.label.length]);
+			}
+			async writeFile() {}
+			async mkdir() {}
+			async access() {}
+			async stat() {
+				return {
+					isFile: this.label === 'a',
+					isDirectory: this.label !== 'a',
+				};
+			}
+			async readdir() {
+				return [];
+			}
+			async glob() {
+				return [];
+			}
+			async deleteFile() {}
+		}
+
+		const handle = bindMain(
+			'franklin',
+			schema,
+			{
+				spawn: async () => createTransportSpy().transport,
+				environment: async () => {
+					const fs = new StatefulFilesystem('a');
+					return Object.assign(
+						{
+							filesystem: fs,
+							config: async () => ({
+								cwd: '/tmp',
+								permissions: {
+									allowRead: ['**'],
+									allowWrite: ['**'],
+								},
+							}),
+							reconfigure: noop,
+						},
+						{ dispose: noop },
+					);
+				},
+				filesystem: createFilesystem('a'),
+				ai: {
+					getOAuthProviders: async () => [],
+					getApiKeyProviders: async () => [],
+				},
+			},
+			createWebContents(1),
+		);
+
+		const channels = createChannels('franklin');
+		const id = await invoke(channels.getLeaseConnectChannel(['environment']));
+		const exists = channels.getLeaseMethodChannel(
+			['environment'],
+			['filesystem', 'exists'],
+		);
+
+		// This will throw "Cannot read properties of undefined (reading 'label')"
+		// because getValueAtPath extracts the method without binding `this`.
+		await expect(invoke(exists, id, '/test')).resolves.toBe(true);
+		await invoke(channels.getLeaseKillChannel(['environment']), id);
+
+		await handle.dispose();
+	});
+
 	it('binds direct stream descriptors to per-path IPC channels', async () => {
 		const { bindMain } = await import('../bind/index.js');
 		const { createChannels } = await import('../../../shared/channels.js');
