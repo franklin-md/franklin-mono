@@ -7,7 +7,6 @@ import type {
 	ThinkingContent as PiThinkingContent,
 	ImageContent as PiImageContent,
 	ToolCall as PiToolCall,
-	AssistantMessage as PiAssistantMessage,
 	StopReason as PiStopReason,
 } from '@mariozechner/pi-ai';
 

@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import type { Extension } from '../../types/extension.js';
-import type { CoreAPI } from '../../api/core/api.js';
 
 /**
  * Extension that registers a `spawn` tool allowing the agent

@@ -1,5 +1,5 @@
 import { RpcError } from '../../../../errors.js';
-import type { JsonRpcErrorPayload, JsonRpcMessage } from '../../../../types.js';
+import type { JsonRpcMessage } from '../../../../types.js';
 
 interface PendingResponseHandlers<TPending> {
 	onError: (pending: TPending, error: RpcError) => void;

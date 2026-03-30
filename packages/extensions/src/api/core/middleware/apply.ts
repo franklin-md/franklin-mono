@@ -16,8 +16,12 @@ export function apply<T extends object>(
 		const targetFn = tgt[key];
 
 		if (typeof targetFn === 'function') {
+			const middlewareFn = mw[key];
+			if (!middlewareFn) {
+				throw new Error(`Missing middleware for "${key}"`);
+			}
 			result[key] = (params: unknown) =>
-				mw[key]!(params, (p: unknown) =>
+				middlewareFn(params, (p: unknown) =>
 					(targetFn as (p: unknown) => unknown)(p),
 				);
 		} else {

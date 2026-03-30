@@ -5,7 +5,10 @@ import type {
 } from '@franklin/agent';
 import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
-import type { OAuthLoginCallbacks } from '@mariozechner/pi-ai/oauth';
+import type {
+	OAuthLoginCallbacks,
+	OAuthProviderId,
+} from '@mariozechner/pi-ai/oauth';
 import { ipcMain, shell } from 'electron';
 import type { WebContents } from 'electron';
 
@@ -83,7 +86,7 @@ export class AuthRelay {
 	}
 
 	private async runOAuthFlow(
-		provider: string,
+		provider: OAuthProviderId,
 		flowId: string,
 	): Promise<{ success: boolean; error?: string }> {
 		const callbacks: OAuthLoginCallbacks = {
@@ -102,7 +105,7 @@ export class AuthRelay {
 		};
 
 		try {
-			await this.manager.loginOAuth(provider as any, callbacks);
+			await this.manager.loginOAuth(provider, callbacks);
 			return { success: true };
 		} catch (err) {
 			return {

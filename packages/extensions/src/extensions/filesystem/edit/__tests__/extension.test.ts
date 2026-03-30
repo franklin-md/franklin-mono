@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import type { MiniACPClient } from '@franklin/mini-acp';
 import { compile, combine } from '../../../../compile/types.js';
 import { createCoreCompiler } from '../../../../compile/core/compiler.js';
 import { createEnvironmentCompiler } from '../../../../compile/environment/compiler.js';
@@ -74,22 +75,24 @@ describe('editExtension', () => {
 		const env = mockEnvironment();
 		const result = await compileEdit(env);
 
-		const received: unknown[] = [];
-		const target = {
-			initialize: vi.fn(async () => {}),
-			setContext: vi.fn(async (params: unknown) => {
-				received.push(params);
+		const received: Array<Parameters<MiniACPClient['setContext']>[0]> = [];
+		const target: MiniACPClient = {
+			initialize: vi.fn(async () => ({})),
+			setContext: vi.fn(
+				async (params: Parameters<MiniACPClient['setContext']>[0]) => {
+					received.push(params);
+					return {};
+				},
+			),
+			prompt: vi.fn(async function* () {
+				yield* [];
 			}),
-			prompt: vi.fn(async function* () {}),
-			cancel: vi.fn(async () => ({
-				type: 'turn_end' as const,
-				turn: 'end',
-			})),
+			cancel: vi.fn(async () => {}),
 		};
 
 		const { apply } = await import('../../../../api/core/middleware/apply.js');
-		 
-		const wrapped = apply(result.client, target as any);
+
+		const wrapped = apply(result.client, target);
 		await wrapped.setContext({ ctx: {} });
 
 		const ctx = received[0] as {

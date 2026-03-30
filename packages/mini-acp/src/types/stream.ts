@@ -1,6 +1,5 @@
 import type { Content } from './content.js';
 import type { Message } from './message.js';
-import type { AuthError } from './errors.js';
 import type { StopReason } from './stop_reason.js';
 
 // ---------------------------------------------------------------------------

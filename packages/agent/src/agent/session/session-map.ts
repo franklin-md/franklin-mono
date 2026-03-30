@@ -75,8 +75,9 @@ export class SessionMap {
 		this.notify();
 
 		if (this.persister) {
+			const persister = this.persister;
 			const persist = () => {
-				void this.persister!.save(session.sessionId, snapshotSession(session));
+				void persister.save(session.sessionId, snapshotSession(session));
 			};
 			session.tracker.onChange = persist;
 			// Persist initial state so session survives a crash before first prompt

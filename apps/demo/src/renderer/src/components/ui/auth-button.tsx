@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { AuthFile } from '@franklin/agent';
+import type { AuthFile } from '@franklin/agent/browser';
 
 import { useAuthStore } from './auth-context.js';
 import { AuthModal } from './auth-modal.js';

@@ -16,7 +16,10 @@
 		"declaration": true,
 		"declarationMap": true,
 		"rootDir": "./src/renderer/src",
-		"outDir": "./dist/renderer"
+		"outDir": "./dist/renderer",
+		"paths": {
+			"@/*": ["./apps/demo/src/renderer/src/*"]
+		}
 	},
 	"include": ["src/renderer/src/**/*.ts", "src/renderer/src/**/*.tsx"],
 	"references": [

@@ -20,21 +20,19 @@ export function spawn(): ClientProtocol {
 	const agentDuplex = b as unknown as AgentProtocol;
 
 	// Phase 1: get the remote proxy (toolExecute) without needing handlers yet
-	const { remote, bind } = createAgentConnection(
-		debugStream(agentDuplex, 'agent'),
-	);
+	const connection = createAgentConnection(debugStream(agentDuplex, 'agent'));
 
 	// Build handlers that capture the proxy directly — no forward-declaration needed
 	const handlers = createSessionAdapter((ctx) =>
 		createPiAdapter({
-			client: remote,
+			client: connection.remote,
 			model,
 			ctx,
 		}),
 	);
 
 	// Phase 2: bind handlers and start dispatching
-	bind(handlers);
+	connection.bind(handlers);
 
 	return clientDuplex;
 }
