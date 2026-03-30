@@ -8,4 +8,3 @@ export function notification<
 >(): NotificationDescriptor<Parameters<TMethod>> {
 	return { kind: NOTIFICATION_KIND };
 }
-

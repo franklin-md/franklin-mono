@@ -9,4 +9,3 @@ export function method<TMethod extends AnyAsyncMethod>(): MethodDescriptor<
 > {
 	return { kind: METHOD_KIND };
 }
-

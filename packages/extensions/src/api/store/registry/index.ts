@@ -25,9 +25,9 @@ export class StoreRegistry {
 	/**
 	 * Create a new pool entry with a fresh UUID.
 	 */
-	create<T>(initial: T, sharing: Sharing): StoreEntry {
+	create(initial: unknown, sharing: Sharing): StoreEntry {
 		const ref = crypto.randomUUID();
-		const store: Store<T> = new BaseStore(initial);
+		const store: Store<unknown> = new BaseStore(initial);
 		const entry: StoreEntry = { ref, sharing, store };
 		this.add(entry);
 		this.persist(entry);

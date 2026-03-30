@@ -33,25 +33,24 @@ type ResourceMethodDescriptor<TArgs extends unknown[], TResult> =
 				: never
 			: never;
 
-type NamespaceMemberDescriptor<T> =
-	T extends (...args: infer A) => AsyncIterable<infer I>
-		? EventDescriptor<A, I>
-		: T extends (...args: infer A) => Promise<void>
-			? MethodDescriptor<A, void> | NotificationDescriptor<A>
-			: T extends (...args: infer A) => Promise<infer R>
-				? MethodDescriptor<A, R> | ResourceMethodDescriptor<A, R>
-				: T extends object
-					? NamespaceObjectDescriptor<T>
-					: never;
+type NamespaceMemberDescriptor<T> = T extends (
+	...args: infer A
+) => AsyncIterable<infer I>
+	? EventDescriptor<A, I>
+	: T extends (...args: infer A) => Promise<void>
+		? MethodDescriptor<A, void> | NotificationDescriptor<A>
+		: T extends (...args: infer A) => Promise<infer R>
+			? MethodDescriptor<A, R> | ResourceMethodDescriptor<A, R>
+			: T extends object
+				? NamespaceObjectDescriptor<T>
+				: never;
 
 export type NamespaceShape<T> = {
 	[K in keyof T]: NamespaceMemberDescriptor<T[K]>;
 };
 
-type HasNeverMember<TShape> =
-	true extends {
-		[K in keyof TShape]: [TShape[K]] extends [never] ? true : false;
-	}[keyof TShape]
-		? true
-		: false;
-
+type HasNeverMember<TShape> = true extends {
+	[K in keyof TShape]: [TShape[K]] extends [never] ? true : false;
+}[keyof TShape]
+	? true
+	: false;

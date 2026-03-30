@@ -73,7 +73,7 @@ function bindDescriptor(
 
 	if (isNamespaceDescriptor(descriptor)) {
 		return bindMembers(
-			descriptor.shape,
+			descriptor.shape as AnyShape,
 			context.kind === 'root'
 				? { kind: 'root', channels, path: [...context.path, key] }
 				: {
@@ -132,7 +132,7 @@ function bindDescriptor(
 	};
 
 	if (isNamespaceDescriptor(descriptor.inner)) {
-		resourceBridge.proxy = bindMembers(descriptor.inner.shape, {
+		resourceBridge.proxy = bindMembers(descriptor.inner.shape as AnyShape, {
 			kind: 'lease',
 			channels,
 			leasePath: nextPath,

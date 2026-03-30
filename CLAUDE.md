@@ -20,26 +20,50 @@ npm run format:check     # check only
 npm run test             # runs vitest in each workspace
 
 # Test a single package
-npm run test -w franklin
-npm run test -w @franklin/tui
+npm run test -w @franklin/agent
+npm run test -w @franklin/mini-acp
 
 # Run a single test file
-npx vitest run packages/franklin/src/__tests__/spawn.test.ts
+npx vitest run packages/agent/src/__tests__/spawn.test.ts
 
 # Typecheck a single package
-npm run typecheck -w franklin
+npm run typecheck -w @franklin/agent
 
-# Run TUI in dev mode (with mock adapter)
-npm run dev -w @franklin/tui   # tsx src/index.tsx --mock
+# Run demo app in dev mode (Electron)
+npm run dev -w @franklin/demo
 ```
 
 You should lint, build and format always. And test where appropriate.
 
 ## Architecture
 
-Franklin is a middleware stack for ACP-compliant coding agents. It builds on the [Agent Client Protocol (ACP)](https://agentclientprotocol.com) for wire communication and adds middleware layers (history, modules, permissions) on top.
+Franklin is an extension runtime for minimal agent loops.
 
-See README.md
+### Packages (bottom-up)
+
+- `@franklin/lib` — foundational library
+  - Proxy descriptor algebra
+  - Filesystem abstractions
+  - Persistence utilities
+- `@franklin/transport` — communication layer
+  - Stream algebra and transports (stdio, HTTP, in-memory)
+  - JSON-RPC bindings
+- `@franklin/mini-acp` — agent protocol
+  - Stateful but unpersisted agents
+  - Externalized tool execution (client owns tools via reverse RPC)
+  - Context tracking and streaming turns
+- `@franklin/extensions` — plugin system
+  - Tool registration, lifecycle event handlers, reactive stores
+  - Compiles extensions into client + server middleware
+  - Built-in extensions: conversation, todos, status, spawn, file editing
+- `@franklin/agent` — application SDK
+  - Session management (create, fork, child, restore)
+  - File-based persistence
+  - Auth management
+- `@franklin/node` — Node.js platform bindings
+- `@franklin/electron` — Electron platform bindings (main/renderer IPC)
+- `@franklin/react` — React hooks and provider
+- `@franklin/demo` — Electron demo app
 
 ## Code conventions
 
