@@ -76,7 +76,7 @@ describe('createEnvironmentCompiler', () => {
 		const result = await compile(compiler, (api) => {
 			const full = api;
 			expect(full.getEnvironment()).toBe(env);
-			full.registerStore('test', 42);
+			full.registerStore('test', 42, 'private');
 		});
 
 		expect(result.environment).toBe(env);
