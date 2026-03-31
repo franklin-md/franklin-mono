@@ -4,6 +4,7 @@ export interface FileStat {
 }
 
 export interface Filesystem {
+	resolve(...paths: string[]): Promise<string>;
 	readFile(path: string): Promise<Uint8Array>;
 	writeFile(path: string, content: string | Uint8Array): Promise<void>;
 	mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;

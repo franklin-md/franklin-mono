@@ -19,6 +19,7 @@ function mockEnvironment(): Environment {
 			exists: vi.fn(),
 			glob: vi.fn(),
 			deleteFile: vi.fn(),
+			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 		},
 		config: vi.fn(async () => ({
 			cwd: '/tmp',
@@ -76,7 +77,7 @@ describe('createEnvironmentCompiler', () => {
 		const result = await compile(compiler, (api) => {
 			const full = api;
 			expect(full.getEnvironment()).toBe(env);
-			full.registerStore('test', 42);
+			full.registerStore('test', 42, 'private');
 		});
 
 		expect(result.environment).toBe(env);

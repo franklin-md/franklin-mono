@@ -39,8 +39,10 @@ export class StoreResult {
 				}
 				case 'private': {
 					if (mode === 'copy') {
-						const data = entry.store.get();
-						const newEntry = this.registry.create(data, entry.sharing);
+						const newEntry = this.registry.create(
+							entry.sharing,
+							entry.store.get(),
+						);
 						newMapping[name] = newEntry.ref;
 					}
 					// 'fresh': omit — child's registerStore creates from initial

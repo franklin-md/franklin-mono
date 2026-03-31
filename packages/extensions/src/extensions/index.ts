@@ -22,3 +22,9 @@ export type { StatusState, StatusControl } from './status/index.js';
 export { spawnExtension } from './spawn/index.js';
 
 export { globExtension } from './filesystem/glob/extension.js';
+
+export { readExtension } from './filesystem/read/extension.js';
+
+export { writeExtension } from './filesystem/write/extension.js';
+
+export { editExtension } from './filesystem/edit/extension.js';
