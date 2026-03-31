@@ -41,6 +41,14 @@ export class BaseStore<T> implements Store<T> {
 		};
 	}
 
+	setInitial(value: T): void {
+		if (this.current !== undefined) return;
+		this.current = value;
+		for (const listener of this.listeners) {
+			listener(value);
+		}
+	}
+
 	isInitialized(): boolean {
 		return this.current !== undefined;
 	}

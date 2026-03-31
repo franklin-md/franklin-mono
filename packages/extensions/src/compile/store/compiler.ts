@@ -4,6 +4,8 @@ import type { Sharing } from '../../api/store/sharing.js';
 import type { Compiler } from '../types.js';
 import type { StoreMapping } from '../../api/store/registry/mapping.js';
 import { castDraft } from 'immer';
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import { BaseStore } from '../../api/store/base.js';
 import {
 	type StoreResult,
 	createStoreResult,
@@ -33,7 +35,6 @@ export function createStoreCompiler(
 
 	function resolve<T>(name: string, initial?: T, sharing?: Sharing): Store<T> {
 		const isCreator = sharing !== undefined;
-		const wasMapped = name in mapping;
 
 		// Phase 1: Ensure the store exists and is mapped
 		let ref = mapping[name];
@@ -44,7 +45,6 @@ export function createStoreCompiler(
 			} else {
 				const created = seed.registry.create(
 					isCreator ? sharing : 'private',
-					isCreator ? initial : undefined,
 				);
 				ref = created.ref;
 			}
@@ -59,10 +59,7 @@ export function createStoreCompiler(
 				throw new Error(`Store "${name}" has multiple initializers`);
 			}
 			entry.sharing = sharing;
-			// When useStore ran first, it created a blank entry — initialize it now
-			if (wasMapped && initial !== undefined) {
-				(entry.store as Store<T>).set(() => castDraft(initial));
-			}
+			(entry.store as BaseStore<T>).setInitial(castDraft(initial) as T);
 			creators.add(name);
 		}
 

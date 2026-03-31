@@ -32,6 +32,28 @@ describe('BaseStore', () => {
 		});
 	});
 
+	describe('setInitial()', () => {
+		it('initializes an uninitialized store', () => {
+			const store = new BaseStore<number>();
+			store.setInitial(42);
+			expect(store.get()).toBe(42);
+		});
+
+		it('no-op when store is already initialized', () => {
+			const store = new BaseStore(99);
+			store.setInitial(0);
+			expect(store.get()).toBe(99);
+		});
+
+		it('notifies listeners when initializing', () => {
+			const store = new BaseStore<number>();
+			const values: number[] = [];
+			store.subscribe((v) => values.push(v));
+			store.setInitial(42);
+			expect(values).toEqual([42]);
+		});
+	});
+
 	describe('set()', () => {
 		it('replacement producer replaces root value', () => {
 			const store = new BaseStore('original');
