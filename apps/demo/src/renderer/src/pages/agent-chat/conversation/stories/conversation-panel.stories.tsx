@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn } from 'storybook/test';
 
-import { ConversationPanel } from './conversation-panel.js';
-import { ConversationProvider } from './conversation-context.js';
-import { emptyConversation, multiTurn } from './fixtures.js';
+import { ConversationPanel } from '../conversation-panel.js';
+import { ConversationProvider } from '../conversation-context.js';
+import { emptyConversation, multiTurn } from '../fixtures.js';
 
 const meta = {
 	title: 'Conversation/ConversationPanel',

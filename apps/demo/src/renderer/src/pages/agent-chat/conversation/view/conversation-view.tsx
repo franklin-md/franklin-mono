@@ -4,7 +4,7 @@ import type { ConversationTurn } from '@franklin/extensions';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-import { Turn } from './turn.js';
+import { Turn } from '../turn/turn.js';
 
 export function ConversationView({ turns }: { turns: ConversationTurn[] }) {
 	const bottomRef = useRef<HTMLDivElement>(null);

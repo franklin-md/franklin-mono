@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Turn } from './turn.js';
-import { simpleTurn, thinkingTurn, toolCallTurn } from './fixtures.js';
+import { Turn } from '../turn/turn.js';
+import { simpleTurn, thinkingTurn, toolCallTurn } from '../fixtures.js';
 
 const meta = {
 	title: 'Conversation/Turn',

@@ -1,7 +1,7 @@
 import type { ConversationTurn } from '@franklin/extensions';
 
-import { UserBubble } from './user-bubble.js';
-import { AssistantBubble } from './assistant-bubble.js';
+import { UserBubble } from './body/user-bubble.js';
+import { AssistantBubble } from './body/assistant-bubble.js';
 
 export function Turn({ turn }: { turn: ConversationTurn }) {
 	return (

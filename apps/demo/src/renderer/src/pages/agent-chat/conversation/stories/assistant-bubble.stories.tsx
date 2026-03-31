@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { AssistantBubble } from './assistant-bubble.js';
+import { AssistantBubble } from '../turn/body/assistant-bubble.js';
 import {
 	assistantTextMessage,
 	assistantThinkingMessage,
 	assistantToolCallMessage,
 	assistantMultiBlockMessage,
-} from './fixtures.js';
+} from '../fixtures.js';
 
 const meta = {
 	title: 'Conversation/AssistantBubble',

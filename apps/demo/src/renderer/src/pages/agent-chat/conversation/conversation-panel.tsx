@@ -1,6 +1,6 @@
 import { useConversation } from './conversation-context.js';
-import { ConversationView } from './conversation-view.js';
-import { PromptInput } from './prompt-input.js';
+import { ConversationView } from './view/conversation-view.js';
+import { PromptInput } from './input/prompt-input.js';
 
 export function ConversationPanel() {
 	const { turns, onSend, sending } = useConversation();

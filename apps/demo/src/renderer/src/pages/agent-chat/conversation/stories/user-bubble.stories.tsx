@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { UserBubble } from './user-bubble.js';
-import { userTextMessage } from './fixtures.js';
+import { UserBubble } from '../turn/body/user-bubble.js';
+import { userTextMessage } from '../fixtures.js';
 
 const meta = {
 	title: 'Conversation/UserBubble',
