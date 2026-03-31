@@ -43,7 +43,9 @@ export function createStoreCompiler(
 			if (seeded) {
 				ref = seeded.ref;
 			} else {
-				const created = seed.registry.create(isCreator ? sharing : 'private');
+				const created = seed.registry.create(
+					isCreator ? sharing : 'private',
+				);
 				ref = created.ref;
 			}
 			mapping[name] = ref;
