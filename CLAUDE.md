@@ -68,6 +68,7 @@ Franklin is an extension runtime for minimal agent loops.
 ## Code conventions
 
 ### Code Style
+
 - **ESM only** — all packages use `"type": "module"`. Imports must include `.js` extensions.
 - **Type imports** — use `import type` (enforced by eslint: `consistent-type-imports`, `no-import-type-side-effects`).
 - **Exhaustive switches** — `switch-exhaustiveness-check` is enabled; no default case allowed on exhaustive switches.
@@ -80,4 +81,5 @@ Franklin is an extension runtime for minimal agent loops.
 - **Comments** - Avoid introducing lots of method or class docstrings. We should maintain the docstrings for exported package code, but want to avoid introducing potentially stale comments on library code. However, existing comments within implementation bodies (like todos) are very important to preserve across edits, and any potential resolutions should be flagged.
 
 ### UI
+
 - **Ring over border** — prefer `ring` (or `ring-1`, `ring-inset`) over `border` for component outlines. Borders change element size and push layout; ring is an inset outline with no layout impact.

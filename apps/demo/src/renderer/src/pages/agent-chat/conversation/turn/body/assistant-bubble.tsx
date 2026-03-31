@@ -1,10 +1,12 @@
 import type { AssistantContent, AssistantMessage } from '@franklin/mini-acp';
 
-import { Card } from '@/components/ui/card';
+import { TextBlock } from './blocks/text-block.js';
+import { ThinkingBlock } from './blocks/thinking-block.js';
+import { ToolCallBlock } from './blocks/tool-call-block.js';
 
 /**
  * Groups adjacent content blocks by type so that consecutive text/thinking
- * chunks render as a single bubble instead of one bubble per chunk.
+ * chunks render as a single block instead of one per chunk.
  */
 type Group =
 	| { kind: 'text'; text: string }
@@ -53,29 +55,11 @@ export function AssistantBubble({ message }: { message: AssistantMessage }) {
 			{groups.map((group, i) => {
 				switch (group.kind) {
 					case 'text':
-						return (
-							<div key={i} className="text-sm whitespace-pre-wrap">
-								{group.text}
-							</div>
-						);
+						return <TextBlock key={i} text={group.text} />;
 					case 'toolCall':
-						return (
-							<Card
-								key={i}
-								className="flex-row items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground shadow-none"
-							>
-								<span>{group.name}</span>
-							</Card>
-						);
+						return <ToolCallBlock key={i} name={group.name} />;
 					case 'thinking':
-						return (
-							<div
-								key={i}
-								className="text-sm text-muted-foreground/60 italic whitespace-pre-wrap"
-							>
-								{group.text}
-							</div>
-						);
+						return <ThinkingBlock key={i} text={group.text} />;
 					case 'image':
 						return null;
 				}
