@@ -3,9 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ConversationView } from '../pages/agent-chat/conversation/conversation-view.js';
 import {
 	emptyConversation,
-	singleTurn,
+	singleTurnSequence,
 	multiTurn,
-	thinkingTurn,
+	thinkingTurnSequence,
 } from './fixtures.js';
 
 const meta = {
@@ -21,7 +21,7 @@ export const Empty: Story = {
 };
 
 export const SingleTurn: Story = {
-	args: { turns: singleTurn },
+	args: { turns: singleTurnSequence },
 };
 
 export const MultiTurn: Story = {
@@ -29,5 +29,5 @@ export const MultiTurn: Story = {
 };
 
 export const WithThinking: Story = {
-	args: { turns: thinkingTurn },
+	args: { turns: thinkingTurnSequence },
 };

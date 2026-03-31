@@ -9,13 +9,9 @@ const meta = {
 	title: 'Conversation/ConversationPanel',
 	component: ConversationPanel,
 	decorators: [
-		(Story, context) => (
+		(Story) => (
 			<ConversationProvider
-				value={{
-					turns: context.args.turns ?? multiTurn,
-					onSend: context.args.onSend ?? fn(),
-					sending: context.args.sending ?? false,
-				}}
+				value={{ turns: multiTurn, onSend: fn(), sending: false }}
 			>
 				<div style={{ height: '600px', display: 'flex' }}>
 					<Story />
@@ -23,13 +19,7 @@ const meta = {
 			</ConversationProvider>
 		),
 	],
-} satisfies Meta<
-	typeof ConversationPanel & {
-		turns: typeof multiTurn;
-		onSend: () => Promise<void>;
-		sending: boolean;
-	}
->;
+} satisfies Meta<typeof ConversationPanel>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -40,11 +30,7 @@ export const Empty: Story = {
 	decorators: [
 		(Story) => (
 			<ConversationProvider
-				value={{
-					turns: emptyConversation,
-					onSend: fn(),
-					sending: false,
-				}}
+				value={{ turns: emptyConversation, onSend: fn(), sending: false }}
 			>
 				<div style={{ height: '600px', display: 'flex' }}>
 					<Story />
@@ -58,11 +44,7 @@ export const Sending: Story = {
 	decorators: [
 		(Story) => (
 			<ConversationProvider
-				value={{
-					turns: multiTurn,
-					onSend: fn(),
-					sending: true,
-				}}
+				value={{ turns: multiTurn, onSend: fn(), sending: true }}
 			>
 				<div style={{ height: '600px', display: 'flex' }}>
 					<Story />

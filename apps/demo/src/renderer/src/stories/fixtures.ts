@@ -63,16 +63,44 @@ export const assistantMultiBlockMessage: AssistantMessage = {
 };
 
 // ---------------------------------------------------------------------------
-// Turns
+// Individual turns (for single-turn stories)
 // ---------------------------------------------------------------------------
 
-export const singleTurn: ConversationTurn[] = [
-	{
-		id: 'turn-1',
-		timestamp: Date.now(),
-		messages: [userTextMessage, assistantTextMessage],
-	},
-];
+export const simpleTurn: ConversationTurn = {
+	id: 'turn-1',
+	timestamp: Date.now(),
+	messages: [userTextMessage, assistantTextMessage],
+};
+
+export const thinkingTurn: ConversationTurn = {
+	id: 'turn-1',
+	timestamp: Date.now(),
+	messages: [
+		{
+			role: 'user',
+			content: [{ type: 'text', text: 'What is the meaning of life?' }],
+		},
+		assistantThinkingMessage,
+	],
+};
+
+export const toolCallTurn: ConversationTurn = {
+	id: 'turn-3',
+	timestamp: Date.now(),
+	messages: [
+		{
+			role: 'user',
+			content: [{ type: 'text', text: 'Now run the tests please.' }],
+		},
+		assistantMultiBlockMessage,
+	],
+};
+
+// ---------------------------------------------------------------------------
+// Turn sequences (for multi-turn stories)
+// ---------------------------------------------------------------------------
+
+export const singleTurnSequence: ConversationTurn[] = [simpleTurn];
 
 export const multiTurn: ConversationTurn[] = [
 	{
@@ -93,31 +121,9 @@ export const multiTurn: ConversationTurn[] = [
 			assistantToolCallMessage,
 		],
 	},
-	{
-		id: 'turn-3',
-		timestamp: Date.now(),
-		messages: [
-			{
-				role: 'user',
-				content: [{ type: 'text', text: 'Now run the tests please.' }],
-			},
-			assistantMultiBlockMessage,
-		],
-	},
+	toolCallTurn,
 ];
 
-export const thinkingTurn: ConversationTurn[] = [
-	{
-		id: 'turn-1',
-		timestamp: Date.now(),
-		messages: [
-			{
-				role: 'user',
-				content: [{ type: 'text', text: 'What is the meaning of life?' }],
-			},
-			assistantThinkingMessage,
-		],
-	},
-];
+export const thinkingTurnSequence: ConversationTurn[] = [thinkingTurn];
 
 export const emptyConversation: ConversationTurn[] = [];

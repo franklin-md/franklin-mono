@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import { Turn } from '../pages/agent-chat/conversation/turn.js';
-import { singleTurn, thinkingTurn, multiTurn } from './fixtures.js';
+import { simpleTurn, thinkingTurn, toolCallTurn } from './fixtures.js';
 
 const meta = {
 	title: 'Conversation/Turn',
@@ -12,13 +12,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const SimpleExchange: Story = {
-	args: { turn: singleTurn[0] },
+	args: { turn: simpleTurn },
 };
 
 export const WithThinking: Story = {
-	args: { turn: thinkingTurn[0] },
+	args: { turn: thinkingTurn },
 };
 
 export const WithToolCalls: Story = {
-	args: { turn: multiTurn[2] },
+	args: { turn: toolCallTurn },
 };
