@@ -54,26 +54,26 @@ export function AssistantBubble({ message }: { message: AssistantMessage }) {
 				switch (group.kind) {
 					case 'text':
 						return (
-							<div key={i} className="flex justify-start">
-								<div className="max-w-[80%] rounded-lg bg-muted px-3 py-2 text-sm whitespace-pre-wrap">
-									{group.text}
-								</div>
+							<div key={i} className="text-sm whitespace-pre-wrap">
+								{group.text}
 							</div>
 						);
 					case 'toolCall':
 						return (
-							<div key={i} className="flex justify-start">
-								<Card className="flex-row items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground shadow-none">
-									<span>{group.name}</span>
-								</Card>
-							</div>
+							<Card
+								key={i}
+								className="flex-row items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground shadow-none"
+							>
+								<span>{group.name}</span>
+							</Card>
 						);
 					case 'thinking':
 						return (
-							<div key={i} className="flex justify-start">
-								<div className="max-w-[80%] rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground/60 italic whitespace-pre-wrap">
-									{group.text}
-								</div>
+							<div
+								key={i}
+								className="text-sm text-muted-foreground/60 italic whitespace-pre-wrap"
+							>
+								{group.text}
 							</div>
 						);
 					case 'image':

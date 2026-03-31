@@ -15,7 +15,7 @@ export function ConversationView({ turns }: { turns: ConversationTurn[] }) {
 
 	return (
 		<ScrollArea className="flex-1 p-4">
-			<div className="flex flex-col gap-4">
+			<div className="mx-auto flex max-w-prose flex-col gap-10 pt-6">
 				{turns.length === 0 && (
 					<p className="py-8 text-center text-sm text-muted-foreground">
 						Send a message to start the conversation.

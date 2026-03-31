@@ -5,7 +5,7 @@ import { AssistantBubble } from './body/assistant-bubble.js';
 
 export function Turn({ turn }: { turn: ConversationTurn }) {
 	return (
-		<div className="flex flex-col gap-2">
+		<div className="flex flex-col gap-4">
 			{turn.messages.map((message, i) => {
 				switch (message.role) {
 					case 'user':
