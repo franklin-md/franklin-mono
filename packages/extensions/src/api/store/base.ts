@@ -1,4 +1,4 @@
-import type { Draft } from 'immer';
+import type { Producer } from 'immer';
 import { produce } from 'immer';
 
 import type { Store } from './types.js';
@@ -8,19 +8,25 @@ import type { Store } from './types.js';
  * listener notification on change.
  */
 export class BaseStore<T> implements Store<T> {
-	protected current: T;
+	protected current?: T;
 	protected listeners = new Set<(value: T) => void>();
 
-	constructor(initial: T) {
+	constructor(initial?: T) {
 		this.current = initial;
 	}
 
 	get(): T {
+		if (this.current === undefined) throw new Error('Store is not initialized');
 		return this.current;
 	}
 
-	set(recipe: (draft: Draft<T>) => void): void {
-		const next = produce(this.current, recipe);
+	set(recipe: Producer<T>): void {
+		const next = produce<T>(this.current as T, recipe);
+		// Undefined Case
+		if (next === undefined) {
+			throw new Error('Store cannot be set to undefined');
+		}
+		// No Changes Case
 		if (Object.is(this.current, next)) return;
 		this.current = next;
 		for (const listener of this.listeners) {
@@ -33,5 +39,9 @@ export class BaseStore<T> implements Store<T> {
 		return () => {
 			this.listeners.delete(listener);
 		};
+	}
+
+	isInitialized(): boolean {
+		return this.current !== undefined;
 	}
 }
