@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { AssistantBubble } from '../pages/agent-chat/conversation/assistant-bubble.js';
+import { AssistantBubble } from './assistant-bubble.js';
 import {
 	assistantTextMessage,
 	assistantThinkingMessage,

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn } from 'storybook/test';
 
-import { PromptInput } from '../pages/agent-chat/conversation/prompt-input.js';
+import { PromptInput } from './prompt-input.js';
 
 const meta = {
 	title: 'Conversation/PromptInput',

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn } from 'storybook/test';
 
-import { ConversationPanel } from '../pages/agent-chat/conversation/conversation-panel.js';
-import { ConversationProvider } from '../pages/agent-chat/conversation/conversation-context.js';
+import { ConversationPanel } from './conversation-panel.js';
+import { ConversationProvider } from './conversation-context.js';
 import { emptyConversation, multiTurn } from './fixtures.js';
 
 const meta = {

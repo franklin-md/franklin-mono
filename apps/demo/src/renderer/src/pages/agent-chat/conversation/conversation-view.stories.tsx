@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { ConversationView } from '../pages/agent-chat/conversation/conversation-view.js';
+import { ConversationView } from './conversation-view.js';
 import {
 	emptyConversation,
 	singleTurnSequence,

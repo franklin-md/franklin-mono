@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Turn } from '../pages/agent-chat/conversation/turn.js';
+import { Turn } from './turn.js';
 import { simpleTurn, thinkingTurn, toolCallTurn } from './fixtures.js';
 
 const meta = {

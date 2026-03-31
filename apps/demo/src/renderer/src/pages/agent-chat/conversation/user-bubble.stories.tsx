@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { UserBubble } from '../pages/agent-chat/conversation/user-bubble.js';
+import { UserBubble } from './user-bubble.js';
 import { userTextMessage } from './fixtures.js';
 
 const meta = {
