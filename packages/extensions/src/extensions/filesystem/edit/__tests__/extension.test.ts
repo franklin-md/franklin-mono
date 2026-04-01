@@ -77,13 +77,13 @@ async function executeTool(
 	);
 }
 
-async function simulateRead(
+function simulateRead(
 	result: Awaited<ReturnType<typeof compileEdit>>,
 	path: string,
 	content: string,
 ) {
 	const bytes = new TextEncoder().encode(content);
-	const fileHash = await sha256Hex(bytes);
+	const fileHash = sha256Hex(bytes);
 	const storeEntry = result.stores.get('last_read');
 	(storeEntry!.store as Store<Record<string, string>>).set((draft) => {
 		draft[path] = fileHash;
@@ -136,7 +136,7 @@ describe('editExtension', () => {
 			'test.txt': 'hello world',
 		});
 		const result = await compileEdit(env);
-		await simulateRead(result, 'test.txt', 'hello world');
+		simulateRead(result, 'test.txt', 'hello world');
 		const toolResult = await executeTool(result, {
 			path: 'test.txt',
 			old_text: 'world',
@@ -159,7 +159,7 @@ describe('editExtension', () => {
 			'test.txt': 'hello world',
 		});
 		const result = await compileEdit(env);
-		await simulateRead(result, 'test.txt', 'hello world');
+		simulateRead(result, 'test.txt', 'hello world');
 
 		await expect(
 			executeTool(result, {
@@ -175,7 +175,7 @@ describe('editExtension', () => {
 			'test.txt': 'ab ab ab',
 		});
 		const result = await compileEdit(env);
-		await simulateRead(result, 'test.txt', 'ab ab ab');
+		simulateRead(result, 'test.txt', 'ab ab ab');
 
 		await expect(
 			executeTool(result, {
@@ -204,7 +204,7 @@ describe('editExtension', () => {
 			'bom.txt': '\uFEFFhello world',
 		});
 		const result = await compileEdit(env);
-		await simulateRead(result, 'bom.txt', '\uFEFFhello world');
+		simulateRead(result, 'bom.txt', '\uFEFFhello world');
 		await executeTool(result, {
 			path: 'bom.txt',
 			old_text: 'world',
@@ -222,7 +222,7 @@ describe('editExtension', () => {
 			'crlf.txt': 'line1\r\nline2\r\nline3',
 		});
 		const result = await compileEdit(env);
-		await simulateRead(result, 'crlf.txt', 'line1\r\nline2\r\nline3');
+		simulateRead(result, 'crlf.txt', 'line1\r\nline2\r\nline3');
 		await executeTool(result, {
 			path: 'crlf.txt',
 			old_text: 'line2',
@@ -240,7 +240,7 @@ describe('editExtension', () => {
 			'quotes.txt': 'it\u2019s a test',
 		});
 		const result = await compileEdit(env);
-		await simulateRead(result, 'quotes.txt', 'it\u2019s a test');
+		simulateRead(result, 'quotes.txt', 'it\u2019s a test');
 		const toolResult = await executeTool(result, {
 			path: 'quotes.txt',
 			old_text: "it's a test",
@@ -256,7 +256,7 @@ describe('editExtension', () => {
 			'same.txt': 'hello world',
 		});
 		const result = await compileEdit(env);
-		await simulateRead(result, 'same.txt', 'hello world');
+		simulateRead(result, 'same.txt', 'hello world');
 
 		await expect(
 			executeTool(result, {

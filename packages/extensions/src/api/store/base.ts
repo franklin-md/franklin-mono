@@ -10,16 +10,14 @@ import type { Store } from './types.js';
 export class BaseStore<T> implements Store<T> {
 	protected current?: T;
 	protected listeners = new Set<(value: T) => void>();
-	private _initialized: boolean;
 
 	constructor(initial?: T) {
-		this._initialized = arguments.length > 0;
 		this.current = initial;
 	}
 
 	get(): T {
-		if (!this._initialized) throw new Error('Store is not initialized');
-		return this.current as T;
+		if (this.current === undefined) throw new Error('Store is not initialized');
+		return this.current;
 	}
 
 	set(recipe: Producer<T>): void {
@@ -44,8 +42,7 @@ export class BaseStore<T> implements Store<T> {
 	}
 
 	setInitial(value: T): void {
-		if (this._initialized) return;
-		this._initialized = true;
+		if (this.current !== undefined) return;
 		this.current = value;
 		for (const listener of this.listeners) {
 			listener(value);
@@ -53,6 +50,6 @@ export class BaseStore<T> implements Store<T> {
 	}
 
 	isInitialized(): boolean {
-		return this._initialized;
+		return this.current !== undefined;
 	}
 }
