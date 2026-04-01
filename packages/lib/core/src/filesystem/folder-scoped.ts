@@ -10,6 +10,8 @@ export function createFolderScopedFilesystem(
 	cwd: string,
 	inner: Filesystem,
 ): Filesystem {
+	if (!cwd.startsWith('/')) throw new Error('cwd must be an absolute path');
+
 	return {
 		resolve(...paths: string[]) {
 			return inner.resolve(cwd, ...paths);

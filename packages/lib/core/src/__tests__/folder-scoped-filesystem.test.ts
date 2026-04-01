@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFolderScopedFilesystem } from '../filesystem/folder-scoped.js';
 import type { Filesystem } from '../filesystem/types.js';
@@ -16,7 +17,7 @@ function mockFilesystem(): Filesystem {
 		exists: vi.fn().mockResolvedValue(true),
 		glob: vi.fn().mockResolvedValue([]),
 		deleteFile: vi.fn().mockResolvedValue(undefined),
-		resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
+		resolve: vi.fn(async (...paths: string[]) => path.resolve(...paths)),
 	};
 }
 
