@@ -36,11 +36,7 @@ export function useHighlightedCode(
 			const h = await highlighter;
 			if (cancelledRef.current) return;
 
-			if (
-				!h
-					.getLoadedLanguages()
-					.includes(language as BundledLanguage)
-			) {
+			if (!h.getLoadedLanguages().includes(language as BundledLanguage)) {
 				try {
 					await h.loadLanguage(language as BundledLanguage);
 				} catch {
@@ -51,12 +47,13 @@ export function useHighlightedCode(
 			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- mutated in cleanup
 			if (cancelledRef.current) return;
 
-			const result = (
-				h as HighlighterGeneric<never, never>
-			).codeToTokens(deferred, {
-				lang: language,
-				themes: { light: 'github-light', dark: 'github-dark' },
-			});
+			const result = (h as HighlighterGeneric<never, never>).codeToTokens(
+				deferred,
+				{
+					lang: language,
+					themes: { light: 'github-light', dark: 'github-dark' },
+				},
+			);
 			setLines(toTokens(result.tokens));
 		})();
 

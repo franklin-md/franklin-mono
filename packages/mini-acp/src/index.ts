@@ -29,6 +29,7 @@ export type {
 	Chunk,
 	TurnEnd,
 	StreamEvent,
+	StopReason,
 	// Errors
 	AuthError,
 	OAuthError,

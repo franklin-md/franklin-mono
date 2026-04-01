@@ -1,7 +1,7 @@
 import type { UserMessage } from '@franklin/mini-acp';
 
-export function UserBubble({ message }: { message: UserMessage }) {
-	const text = message.content
+export function UserBubble({ prompt }: { prompt: UserMessage }) {
+	const text = prompt.content
 		.filter((b): b is { type: 'text'; text: string } => b.type === 'text')
 		.map((b) => b.text)
 		.join('');

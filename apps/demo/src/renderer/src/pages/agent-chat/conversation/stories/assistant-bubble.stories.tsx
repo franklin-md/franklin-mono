@@ -2,14 +2,14 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import { AssistantBubble } from '../turn/body/assistant-bubble.js';
 import {
-	assistantTextMessage,
-	assistantThinkingMessage,
-	assistantToolCallMessage,
-	assistantMultiBlockMessage,
-	assistantMarkdownMessage,
-	assistantCodeBlockMessage,
-	assistantMathMessage,
-	assistantKitchenSinkMessage,
+	assistantTextResponse,
+	assistantThinkingResponse,
+	assistantToolCallResponse,
+	assistantMultiBlockResponse,
+	assistantMarkdownResponse,
+	assistantCodeBlockResponse,
+	assistantMathResponse,
+	assistantKitchenSinkResponse,
 } from '../fixtures.js';
 
 const meta = {
@@ -21,33 +21,33 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const TextOnly: Story = {
-	args: { message: assistantTextMessage },
+	args: { response: assistantTextResponse },
 };
 
 export const WithThinking: Story = {
-	args: { message: assistantThinkingMessage },
+	args: { response: assistantThinkingResponse },
 };
 
 export const WithToolCall: Story = {
-	args: { message: assistantToolCallMessage },
+	args: { response: assistantToolCallResponse },
 };
 
 export const MultiBlock: Story = {
-	args: { message: assistantMultiBlockMessage },
+	args: { response: assistantMultiBlockResponse },
 };
 
 export const Markdown: Story = {
-	args: { message: assistantMarkdownMessage },
+	args: { response: assistantMarkdownResponse },
 };
 
 export const CodeBlocks: Story = {
-	args: { message: assistantCodeBlockMessage },
+	args: { response: assistantCodeBlockResponse },
 };
 
 export const MathExpressions: Story = {
-	args: { message: assistantMathMessage },
+	args: { response: assistantMathResponse },
 };
 
 export const KitchenSink: Story = {
-	args: { message: assistantKitchenSinkMessage },
+	args: { response: assistantKitchenSinkResponse },
 };

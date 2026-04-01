@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import { UserBubble } from '../turn/body/user-bubble.js';
-import { userTextMessage } from '../fixtures.js';
+import { userTextPrompt } from '../fixtures.js';
 
 const meta = {
 	title: 'Conversation/UserBubble',
@@ -12,12 +12,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: { message: userTextMessage },
+	args: { prompt: userTextPrompt },
 };
 
 export const LongMessage: Story = {
 	args: {
-		message: {
+		prompt: {
 			role: 'user',
 			content: [
 				{
@@ -31,7 +31,7 @@ export const LongMessage: Story = {
 
 export const MultipleTextBlocks: Story = {
 	args: {
-		message: {
+		prompt: {
 			role: 'user',
 			content: [
 				{ type: 'text', text: 'First block. ' },

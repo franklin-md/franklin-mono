@@ -1,76 +1,80 @@
-import type { ConversationTurn } from '@franklin/extensions';
-import type { UserMessage, AssistantMessage } from '@franklin/mini-acp';
+import type { ConversationTurn, AssistantTurn } from '@franklin/extensions';
+import type { UserMessage } from '@franklin/mini-acp';
 
 // ---------------------------------------------------------------------------
-// Individual messages
+// Individual prompts and responses
 // ---------------------------------------------------------------------------
 
-export const userTextMessage: UserMessage = {
+export const userTextPrompt: UserMessage = {
 	role: 'user',
 	content: [{ type: 'text', text: 'Hello, can you help me with something?' }],
 };
 
-export const assistantTextMessage: AssistantMessage = {
-	role: 'assistant',
-	content: [
+export const assistantTextResponse: AssistantTurn = {
+	blocks: [
 		{
-			type: 'text',
+			kind: 'text',
 			text: "Of course! I'd be happy to help. What do you need?",
 		},
 	],
 };
 
-export const assistantThinkingMessage: AssistantMessage = {
-	role: 'assistant',
-	content: [
+export const assistantThinkingResponse: AssistantTurn = {
+	blocks: [
 		{
-			type: 'thinking',
+			kind: 'thinking',
 			text: 'The user is asking for help. Let me consider what they might need...',
 		},
-		{ type: 'text', text: 'Sure, what can I help you with?' },
+		{ kind: 'text', text: 'Sure, what can I help you with?' },
 	],
 };
 
-export const assistantToolCallMessage: AssistantMessage = {
-	role: 'assistant',
-	content: [
-		{ type: 'text', text: 'Let me look that up for you.' },
+export const assistantToolCallResponse: AssistantTurn = {
+	blocks: [
+		{ kind: 'text', text: 'Let me look that up for you.' },
 		{
-			type: 'toolCall',
-			id: 'tc_001',
-			name: 'file_search',
-			arguments: { query: 'readme' },
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tc_001',
+				name: 'file_search',
+				arguments: { query: 'readme' },
+			},
+			result: [{ type: 'text', text: 'Found: README.md' }],
 		},
-		{ type: 'text', text: 'I found the file you were looking for.' },
+		{ kind: 'text', text: 'I found the file you were looking for.' },
 	],
 };
 
-export const assistantMultiBlockMessage: AssistantMessage = {
-	role: 'assistant',
-	content: [
-		{ type: 'thinking', text: 'Analyzing the request...' },
-		{ type: 'text', text: 'Here is the first part of my answer.' },
-		{ type: 'text', text: 'And here is the continuation.' },
+export const assistantMultiBlockResponse: AssistantTurn = {
+	blocks: [
+		{ kind: 'thinking', text: 'Analyzing the request...' },
 		{
-			type: 'toolCall',
-			id: 'tc_002',
-			name: 'run_tests',
-			arguments: { suite: 'unit' },
+			kind: 'text',
+			text: 'Here is the first part of my answer. And here is the continuation.',
 		},
-		{ type: 'thinking', text: 'Tests passed. Summarizing results...' },
-		{ type: 'text', text: 'All 42 tests passed.' },
+		{
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tc_002',
+				name: 'run_tests',
+				arguments: { suite: 'unit' },
+			},
+		},
+		{ kind: 'thinking', text: 'Tests passed. Summarizing results...' },
+		{ kind: 'text', text: 'All 42 tests passed.' },
 	],
 };
 
 // ---------------------------------------------------------------------------
-// Markdown-rich messages
+// Markdown-rich responses
 // ---------------------------------------------------------------------------
 
-export const assistantMarkdownMessage: AssistantMessage = {
-	role: 'assistant',
-	content: [
+export const assistantMarkdownResponse: AssistantTurn = {
+	blocks: [
 		{
-			type: 'text',
+			kind: 'text',
 			text: `I've reviewed the codebase and here's what I found.
 
 ## Architecture Overview
@@ -116,11 +120,10 @@ Want me to dig into any of these areas specifically?`,
 	],
 };
 
-export const assistantCodeBlockMessage: AssistantMessage = {
-	role: 'assistant',
-	content: [
+export const assistantCodeBlockResponse: AssistantTurn = {
+	blocks: [
 		{
-			type: 'text',
+			kind: 'text',
 			text: `Here's how to implement the retry logic. The key is separating the **policy** (when to retry) from the **mechanism** (how to retry).
 
 ### The retry wrapper
@@ -224,11 +227,10 @@ A few things to note:
 	],
 };
 
-export const assistantMathMessage: AssistantMessage = {
-	role: 'assistant',
-	content: [
+export const assistantMathResponse: AssistantTurn = {
+	blocks: [
 		{
-			type: 'text',
+			kind: 'text',
 			text: `## Gradient Descent Explained
 
 The core idea is simple: to minimize a function $f(\\mathbf{x})$, repeatedly take steps in the direction of steepest descent.
@@ -308,15 +310,14 @@ The loss landscape of neural networks is highly non-convex, so none of these con
 	],
 };
 
-export const assistantKitchenSinkMessage: AssistantMessage = {
-	role: 'assistant',
-	content: [
+export const assistantKitchenSinkResponse: AssistantTurn = {
+	blocks: [
 		{
-			type: 'thinking',
+			kind: 'thinking',
 			text: 'The user wants to understand the full data pipeline. Let me trace through the code and explain each stage with concrete examples. I should cover the transform, validation, and persistence layers, and show how errors propagate.',
 		},
 		{
-			type: 'text',
+			kind: 'text',
 			text: `## Data Pipeline Walkthrough
 
 I traced through the entire ingestion flow. Here's how a record moves from the API boundary to the database.
@@ -344,13 +345,17 @@ type CreateEvent = z.infer<typeof CreateEventSchema>;
 Valid events are enriched before storage. The key transform is computing the \`sessionId\` from the user's recent activity window:`,
 		},
 		{
-			type: 'toolCall',
-			id: 'tc_010',
-			name: 'file_search',
-			arguments: { path: 'src/pipeline/transform.ts' },
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tc_010',
+				name: 'file_search',
+				arguments: { path: 'src/pipeline/transform.ts' },
+			},
+			result: [{ type: 'text', text: 'Found: src/pipeline/transform.ts' }],
 		},
 		{
-			type: 'text',
+			kind: 'text',
 			text: `Found the transform logic. Here's the core:
 
 \`\`\`typescript
@@ -445,31 +450,28 @@ Want me to implement the circuit breaker, or should we tackle the rebalancing fi
 export const simpleTurn: ConversationTurn = {
 	id: 'turn-1',
 	timestamp: Date.now(),
-	messages: [userTextMessage, assistantTextMessage],
+	prompt: userTextPrompt,
+	response: assistantTextResponse,
 };
 
 export const thinkingTurn: ConversationTurn = {
 	id: 'turn-1',
 	timestamp: Date.now(),
-	messages: [
-		{
-			role: 'user',
-			content: [{ type: 'text', text: 'What is the meaning of life?' }],
-		},
-		assistantThinkingMessage,
-	],
+	prompt: {
+		role: 'user',
+		content: [{ type: 'text', text: 'What is the meaning of life?' }],
+	},
+	response: assistantThinkingResponse,
 };
 
 export const toolCallTurn: ConversationTurn = {
 	id: 'turn-3',
 	timestamp: Date.now(),
-	messages: [
-		{
-			role: 'user',
-			content: [{ type: 'text', text: 'Now run the tests please.' }],
-		},
-		assistantMultiBlockMessage,
-	],
+	prompt: {
+		role: 'user',
+		content: [{ type: 'text', text: 'Now run the tests please.' }],
+	},
+	response: assistantMultiBlockResponse,
 };
 
 // ---------------------------------------------------------------------------
@@ -482,20 +484,17 @@ export const multiTurn: ConversationTurn[] = [
 	{
 		id: 'turn-1',
 		timestamp: Date.now() - 60_000,
-		messages: [userTextMessage, assistantTextMessage],
+		prompt: userTextPrompt,
+		response: assistantTextResponse,
 	},
 	{
 		id: 'turn-2',
 		timestamp: Date.now() - 30_000,
-		messages: [
-			{
-				role: 'user',
-				content: [
-					{ type: 'text', text: 'Can you search for the README file?' },
-				],
-			},
-			assistantToolCallMessage,
-		],
+		prompt: {
+			role: 'user',
+			content: [{ type: 'text', text: 'Can you search for the README file?' }],
+		},
+		response: assistantToolCallResponse,
 	},
 	toolCallTurn,
 ];
@@ -506,50 +505,44 @@ export const markdownConversation: ConversationTurn[] = [
 	{
 		id: 'turn-md-1',
 		timestamp: Date.now() - 120_000,
-		messages: [
-			{
-				role: 'user',
-				content: [
-					{
-						type: 'text',
-						text: 'Can you explain how the retry logic works and show me some code?',
-					},
-				],
-			},
-			assistantCodeBlockMessage,
-		],
+		prompt: {
+			role: 'user',
+			content: [
+				{
+					type: 'text',
+					text: 'Can you explain how the retry logic works and show me some code?',
+				},
+			],
+		},
+		response: assistantCodeBlockResponse,
 	},
 	{
 		id: 'turn-md-2',
 		timestamp: Date.now() - 60_000,
-		messages: [
-			{
-				role: 'user',
-				content: [
-					{
-						type: 'text',
-						text: 'Nice. Now walk me through the data pipeline — I want to understand the full flow from API to database.',
-					},
-				],
-			},
-			assistantKitchenSinkMessage,
-		],
+		prompt: {
+			role: 'user',
+			content: [
+				{
+					type: 'text',
+					text: 'Nice. Now walk me through the data pipeline — I want to understand the full flow from API to database.',
+				},
+			],
+		},
+		response: assistantKitchenSinkResponse,
 	},
 	{
 		id: 'turn-md-3',
 		timestamp: Date.now(),
-		messages: [
-			{
-				role: 'user',
-				content: [
-					{
-						type: 'text',
-						text: "Let's go with the circuit breaker. Also, can you explain the math behind the consistent hashing?",
-					},
-				],
-			},
-			assistantMathMessage,
-		],
+		prompt: {
+			role: 'user',
+			content: [
+				{
+					type: 'text',
+					text: "Let's go with the circuit breaker. Also, can you explain the math behind the consistent hashing?",
+				},
+			],
+		},
+		response: assistantMathResponse,
 	},
 ];
 
