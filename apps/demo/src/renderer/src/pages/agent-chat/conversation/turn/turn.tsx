@@ -7,7 +7,7 @@ export function Turn({ turn }: { turn: ConversationTurn }) {
 	return (
 		<div className="flex flex-col gap-4">
 			<UserBubble prompt={turn.prompt} />
-			{turn.response && <AssistantBubble response={turn.response} />}
+			<AssistantBubble response={turn.response} />
 		</div>
 	);
 }

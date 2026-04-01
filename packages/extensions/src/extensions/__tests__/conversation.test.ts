@@ -105,7 +105,7 @@ describe('conversationExtension', () => {
 
 		const turns = getStore(result.stores);
 		expect(turns).toHaveLength(1);
-		const blocks = turns[0]!.response!.blocks;
+		const blocks = turns[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({ kind: 'text', text: 'hello world' });
 	});
@@ -144,7 +144,7 @@ describe('conversationExtension', () => {
 		);
 
 		const turns = getStore(result.stores);
-		const blocks = turns[0]!.response!.blocks;
+		const blocks = turns[0]!.response.blocks;
 		expect(blocks).toHaveLength(2);
 		expect(blocks[0]).toEqual({ kind: 'thinking', text: 'reasoning...' });
 		expect(blocks[1]).toEqual({ kind: 'text', text: 'visible' });
@@ -180,7 +180,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const blocks = getStore(result.stores)[0]!.response!.blocks;
+		const blocks = getStore(result.stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({ kind: 'thinking', text: 'first second' });
 	});
@@ -220,7 +220,7 @@ describe('conversationExtension', () => {
 		);
 
 		const turns = getStore(result.stores);
-		const blocks = turns[0]!.response!.blocks;
+		const blocks = turns[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
 			kind: 'toolUse',
@@ -278,7 +278,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const blocks = getStore(result.stores)[0]!.response!.blocks;
+		const blocks = getStore(result.stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
 			kind: 'toolUse',
@@ -316,7 +316,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const blocks = getStore(result.stores)[0]!.response!.blocks;
+		const blocks = getStore(result.stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
 			kind: 'turnEnd',
@@ -350,7 +350,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const blocks = getStore(result.stores)[0]!.response!.blocks;
+		const blocks = getStore(result.stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
 			kind: 'turnEnd',
@@ -430,7 +430,7 @@ describe('conversationExtension', () => {
 			text: 'read /foo',
 		});
 
-		const blocks = turn.response!.blocks;
+		const blocks = turn.response.blocks;
 		expect(blocks).toHaveLength(4);
 		expect(blocks[0]).toEqual({ kind: 'text', text: 'Let me check' });
 		expect(blocks[1]).toEqual({
