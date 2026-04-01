@@ -56,6 +56,7 @@ function createFilesystem(label: string): Filesystem {
 		exists: async () => label === 'a',
 		glob: async () => [],
 		deleteFile: async () => {},
+		resolve: async (...paths: string[]) => paths[paths.length - 1]!,
 	};
 }
 
@@ -203,6 +204,9 @@ describe('bindMain', () => {
 				return [];
 			}
 			async deleteFile() {}
+			async resolve(...paths: string[]) {
+				return paths[paths.length - 1]!;
+			}
 		}
 
 		const handle = bindMain(

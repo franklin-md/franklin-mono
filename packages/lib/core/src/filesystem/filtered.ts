@@ -62,6 +62,11 @@ export function createFilteredFilesystem(
 	}
 
 	return {
+		async resolve(...paths) {
+			const absPath = await inner.resolve(...paths);
+			assertReadable(absPath);
+			return absPath;
+		},
 		async readFile(p) {
 			assertReadable(p);
 			return inner.readFile(p);

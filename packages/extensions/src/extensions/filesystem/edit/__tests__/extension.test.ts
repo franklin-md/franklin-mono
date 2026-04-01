@@ -1,8 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
+import { sha256Hex } from '../../hash.js';
 import type { MiniACPClient } from '@franklin/mini-acp';
 import { compile, combine } from '../../../../compile/types.js';
 import { createCoreCompiler } from '../../../../compile/core/compiler.js';
 import { createEnvironmentCompiler } from '../../../../compile/environment/compiler.js';
+import { createStoreCompiler } from '../../../../compile/store/compiler.js';
+import {
+	StorePool,
+	createEmptyStoreResult,
+} from '../../../../api/store/index.js';
+import type { Store } from '../../../../api/store/types.js';
 import type { Environment } from '../../../../api/environment/types.js';
 import { editExtension } from '../extension.js';
 
@@ -32,6 +39,7 @@ function mockEnvironment(files: Record<string, string> = {}): Environment {
 			exists: vi.fn(async (path: string) => store.has(path)),
 			glob: vi.fn(async () => []),
 			deleteFile: vi.fn(async () => {}),
+			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 		},
 		config: vi.fn(async () => ({
 			cwd: '/tmp',
@@ -43,7 +51,10 @@ function mockEnvironment(files: Record<string, string> = {}): Environment {
 
 function compileEdit(env: Environment) {
 	const compiler = combine(
-		createCoreCompiler(),
+		combine(
+			createCoreCompiler(),
+			createStoreCompiler(createEmptyStoreResult(new StorePool())),
+		),
 		createEnvironmentCompiler(env),
 	);
 	return compile(compiler, editExtension());
@@ -64,6 +75,19 @@ async function executeTool(
 		},
 		vi.fn(),
 	);
+}
+
+function simulateRead(
+	result: Awaited<ReturnType<typeof compileEdit>>,
+	path: string,
+	content: string,
+) {
+	const bytes = new TextEncoder().encode(content);
+	const fileHash = sha256Hex(bytes);
+	const storeEntry = result.stores.get('last_read');
+	(storeEntry!.store as Store<Record<string, string>>).set((draft) => {
+		draft[path] = fileHash;
+	});
 }
 
 function getResultText(result: {
@@ -112,6 +136,7 @@ describe('editExtension', () => {
 			'test.txt': 'hello world',
 		});
 		const result = await compileEdit(env);
+		simulateRead(result, 'test.txt', 'hello world');
 		const toolResult = await executeTool(result, {
 			path: 'test.txt',
 			old_text: 'world',
@@ -134,6 +159,7 @@ describe('editExtension', () => {
 			'test.txt': 'hello world',
 		});
 		const result = await compileEdit(env);
+		simulateRead(result, 'test.txt', 'hello world');
 
 		await expect(
 			executeTool(result, {
@@ -149,6 +175,7 @@ describe('editExtension', () => {
 			'test.txt': 'ab ab ab',
 		});
 		const result = await compileEdit(env);
+		simulateRead(result, 'test.txt', 'ab ab ab');
 
 		await expect(
 			executeTool(result, {
@@ -177,6 +204,7 @@ describe('editExtension', () => {
 			'bom.txt': '\uFEFFhello world',
 		});
 		const result = await compileEdit(env);
+		simulateRead(result, 'bom.txt', '\uFEFFhello world');
 		await executeTool(result, {
 			path: 'bom.txt',
 			old_text: 'world',
@@ -194,6 +222,7 @@ describe('editExtension', () => {
 			'crlf.txt': 'line1\r\nline2\r\nline3',
 		});
 		const result = await compileEdit(env);
+		simulateRead(result, 'crlf.txt', 'line1\r\nline2\r\nline3');
 		await executeTool(result, {
 			path: 'crlf.txt',
 			old_text: 'line2',
@@ -211,6 +240,7 @@ describe('editExtension', () => {
 			'quotes.txt': 'it\u2019s a test',
 		});
 		const result = await compileEdit(env);
+		simulateRead(result, 'quotes.txt', 'it\u2019s a test');
 		const toolResult = await executeTool(result, {
 			path: 'quotes.txt',
 			old_text: "it's a test",
@@ -226,6 +256,7 @@ describe('editExtension', () => {
 			'same.txt': 'hello world',
 		});
 		const result = await compileEdit(env);
+		simulateRead(result, 'same.txt', 'hello world');
 
 		await expect(
 			executeTool(result, {

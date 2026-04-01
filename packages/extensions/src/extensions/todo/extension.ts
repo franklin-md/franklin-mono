@@ -5,6 +5,11 @@ import type { StoreAPI } from '../../api/store/api.js';
 import { formatTodos } from './format.js';
 import { createTodoControl } from './control.js';
 import { todoKey } from './key.js';
+import {
+	addTodoDescription,
+	completeTodoDescription,
+	listTodosDescription,
+} from '../system_prompts.js';
 
 /**
  * Extension that gives agents persistent task memory via tools
@@ -18,7 +23,7 @@ export function todoExtension(): Extension<CoreAPI & StoreAPI> {
 
 		api.registerTool({
 			name: 'add_todo',
-			description: 'Add a new todo item',
+			description: addTodoDescription,
 			schema: z.object({ text: z.string() }),
 			async execute(params: { text: string }) {
 				const todo = control.addTodo(params.text);
@@ -28,7 +33,7 @@ export function todoExtension(): Extension<CoreAPI & StoreAPI> {
 
 		api.registerTool({
 			name: 'complete_todo',
-			description: 'Mark a todo item as completed',
+			description: completeTodoDescription,
 			schema: z.object({ id: z.string() }),
 			async execute(params: { id: string }) {
 				control.setStatus(params.id, true);
@@ -38,7 +43,7 @@ export function todoExtension(): Extension<CoreAPI & StoreAPI> {
 
 		api.registerTool({
 			name: 'list_todos',
-			description: 'List all todo items',
+			description: listTodosDescription,
 			schema: z.object({}),
 			async execute() {
 				return { todos: control.todos() };

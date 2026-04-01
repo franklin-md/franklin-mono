@@ -5,6 +5,7 @@ import type { NamespaceShape } from '@franklin/lib/proxy';
 import type { PreloadBridgeOf } from './api.js';
 
 const filesystem = namespace({
+	resolve: method(),
 	readFile: method(),
 	writeFile: method(),
 	mkdir: method(),

@@ -1,7 +1,6 @@
 import type { Persister } from '@franklin/lib';
 
 import { BaseStore } from '../base.js';
-import type { Store } from '../types.js';
 import type { StoreSnapshot } from './snapshot.js';
 import type { Sharing } from '../sharing.js';
 import type { StoreEntry } from './types.js';
@@ -25,9 +24,9 @@ export class StoreRegistry {
 	/**
 	 * Create a new pool entry with a fresh UUID.
 	 */
-	create(initial: unknown, sharing: Sharing): StoreEntry {
+	create(sharing: Sharing, initial?: unknown): StoreEntry {
 		const ref = crypto.randomUUID();
-		const store: Store<unknown> = new BaseStore(initial);
+		const store = new BaseStore(initial);
 		const entry: StoreEntry = { ref, sharing, store };
 		this.add(entry);
 		this.persist(entry);
@@ -61,6 +60,7 @@ export class StoreRegistry {
 	 */
 	private persist(entry: StoreEntry): void {
 		if (!this.persister) return;
+		if (!(entry.store as BaseStore<unknown>).isInitialized()) return;
 		const snapshot: StoreSnapshot = {
 			ref: entry.ref,
 			sharing: entry.sharing,

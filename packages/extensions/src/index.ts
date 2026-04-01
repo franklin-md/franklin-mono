@@ -70,6 +70,9 @@ export {
 	formatTodos,
 	spawnExtension,
 	globExtension,
+	editExtension,
+	writeExtension,
+	readExtension,
 } from './extensions/index.js';
 export type {
 	ConversationTurn,

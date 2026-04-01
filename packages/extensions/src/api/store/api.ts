@@ -8,7 +8,10 @@ export interface StoreAPI {
 	registerStore<X extends string, T>(
 		key: StoreKey<X, T>,
 		initial: T,
-		sharing?: Sharing,
+		sharing: Sharing,
 	): Store<T>;
-	registerStore<T>(name: string, initial: T, sharing?: Sharing): Store<T>;
+	registerStore<T>(name: string, initial: T, sharing: Sharing): Store<T>;
+
+	useStore<X extends string, T>(key: StoreKey<X, T>): Store<T>;
+	useStore<T>(name: string): Store<T>;
 }

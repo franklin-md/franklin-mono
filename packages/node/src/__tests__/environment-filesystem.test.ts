@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { resolve as pathResolve } from 'node:path';
 import type { Filesystem } from '@franklin/lib';
 import { EnvironmentFilesystem } from '../platform/environment-filesystem.js';
 
@@ -13,6 +14,9 @@ function mockFilesystem(): Filesystem {
 		exists: vi.fn().mockResolvedValue(true),
 		glob: vi.fn().mockResolvedValue([]),
 		deleteFile: vi.fn().mockResolvedValue(undefined),
+		resolve: vi.fn(async (...paths: string[]) =>
+			pathResolve(...(paths as [string, ...string[]])),
+		),
 	};
 }
 

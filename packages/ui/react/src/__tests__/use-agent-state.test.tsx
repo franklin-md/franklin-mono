@@ -400,20 +400,6 @@ describe('useAgentState – store isolation', () => {
 // ---------------------------------------------------------------------------
 
 describe('useAgentState – edge cases', () => {
-	it('handles a store whose value is undefined', () => {
-		const store = createStore<string | undefined>(undefined);
-		const entries = new Map<string, StoreEntry>([
-			['maybe', entry(store as Store<unknown>)],
-		]);
-		const agent = makeAgent(entries);
-		const maybeKey = storeKey<'maybe', string | undefined>('maybe');
-
-		const { result } = renderHook(() => useAgentState(maybeKey), {
-			wrapper: agentWrapper(agent),
-		});
-		expect(result.current.get()).toBeUndefined();
-	});
-
 	it('handles a store whose value is null', () => {
 		const store = createStore<string | null>(null);
 		const entries = new Map<string, StoreEntry>([

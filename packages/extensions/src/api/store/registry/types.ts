@@ -1,5 +1,5 @@
-import type { Sharing } from '../sharing.js';
 import type { Store } from '../types.js';
+import type { Sharing } from '../sharing.js';
 
 export type StoreMetadata = {
 	ref: string;

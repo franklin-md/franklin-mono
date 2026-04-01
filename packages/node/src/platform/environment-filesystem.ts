@@ -40,6 +40,9 @@ export class EnvironmentFilesystem implements Filesystem {
 		this.current = buildChain(this.inner, this._config);
 	}
 
+	resolve(...paths: string[]): Promise<string> {
+		return this.current.resolve(...paths);
+	}
 	readFile(path: string): Promise<Uint8Array> {
 		return this.current.readFile(path);
 	}
