@@ -206,3 +206,8 @@
 		margin-bottom: 0;
 	}
 }
+
+/* Shiki dual-theme: swap to dark token colors when .dark is active */
+.dark .shiki span {
+	color: var(--shiki-dark) !important;
+}

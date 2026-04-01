@@ -1,8 +1,8 @@
 import type { AssistantContent, AssistantMessage } from '@franklin/mini-acp';
 
-import { TextBlock } from './blocks/text-block.js';
-import { ThinkingBlock } from './blocks/thinking-block.js';
-import { ToolCallBlock } from './blocks/tool-call-block.js';
+import { TextBlock } from './blocks/text/text.js';
+import { ThinkingBlock } from './blocks/thinking.js';
+import { ToolCallBlock } from './blocks/tool-call.js';
 
 /**
  * Groups adjacent content blocks by type so that consecutive text/thinking
