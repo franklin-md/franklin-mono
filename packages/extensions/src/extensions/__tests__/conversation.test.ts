@@ -4,7 +4,7 @@ import { createStoreCompiler } from '../../compile/store/compiler.js';
 import { compile, combine } from '../../compile/types.js';
 import { apply } from '../../api/core/middleware/apply.js';
 import { createEmptyStoreResult } from '../../api/store/registry/result.js';
-import type { MiniACPClient, Chunk, Update } from '@franklin/mini-acp';
+import type { MiniACPClient, Chunk, Update, TurnEnd } from '@franklin/mini-acp';
 import { conversationExtension } from '../conversation/extension.js';
 import type { ConversationTurn } from '../conversation/types.js';
 import type { StoreResult } from '../../api/index.js';
@@ -48,7 +48,7 @@ describe('conversationExtension', () => {
 		return compile(compiler, conversationExtension());
 	}
 
-	it('records user message on prompt', async () => {
+	it('records user prompt on prompt', async () => {
 		const result = await compileConversation();
 
 		const target = stubClient();
@@ -65,11 +65,12 @@ describe('conversationExtension', () => {
 
 		const turns = getStore(result.stores);
 		expect(turns).toHaveLength(1);
-		expect(turns[0]!.messages).toHaveLength(1);
-		expect(turns[0]!.messages[0]!.role).toBe('user');
+		expect(turns[0]!.prompt.role).toBe('user');
+		expect(turns[0]!.prompt.content).toEqual([{ type: 'text', text: 'hello' }]);
+		expect(turns[0]!.response).toBeNull();
 	});
 
-	it('coalesces text chunks by messageId into one assistant message', async () => {
+	it('coalesces adjacent text chunks into one text block', async () => {
 		const result = await compileConversation();
 
 		const chunk1: Chunk = {
@@ -104,14 +105,12 @@ describe('conversationExtension', () => {
 
 		const turns = getStore(result.stores);
 		expect(turns).toHaveLength(1);
-		// user message + one coalesced assistant message
-		expect(turns[0]!.messages).toHaveLength(2);
-		const assistantMsg = turns[0]!.messages[1]!;
-		expect(assistantMsg.role).toBe('assistant');
-		expect(assistantMsg.content).toHaveLength(2);
+		const blocks = turns[0]!.response.blocks;
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toEqual({ kind: 'text', text: 'hello world' });
 	});
 
-	it('coalesces thinking and text chunks into the same assistant message', async () => {
+	it('creates separate blocks for thinking then text', async () => {
 		const result = await compileConversation();
 
 		const thinkingChunk: Chunk = {
@@ -145,36 +144,29 @@ describe('conversationExtension', () => {
 		);
 
 		const turns = getStore(result.stores);
-		const messages = turns[0]!.messages;
-		// user + one assistant message with mixed content
-		expect(messages).toHaveLength(2);
-		const assistantMsg = messages[1]!;
-		expect(assistantMsg.role).toBe('assistant');
-		expect(assistantMsg.content).toHaveLength(2);
-		expect(assistantMsg.content[0]!.type).toBe('thinking');
-		expect(assistantMsg.content[1]!.type).toBe('text');
+		const blocks = turns[0]!.response.blocks;
+		expect(blocks).toHaveLength(2);
+		expect(blocks[0]).toEqual({ kind: 'thinking', text: 'reasoning...' });
+		expect(blocks[1]).toEqual({ kind: 'text', text: 'visible' });
 	});
 
-	it('different messageIds create separate assistant messages', async () => {
+	it('coalesces adjacent thinking chunks', async () => {
 		const result = await compileConversation();
-
-		const chunk1: Chunk = {
-			type: 'chunk',
-			messageId: 'm1',
-			role: 'assistant',
-			content: { type: 'text', text: 'first' },
-		};
-		const chunk2: Chunk = {
-			type: 'chunk',
-			messageId: 'm2',
-			role: 'assistant',
-			content: { type: 'text', text: 'second' },
-		};
 
 		const target = stubClient({
 			prompt: async function* () {
-				yield chunk1;
-				yield chunk2;
+				yield {
+					type: 'chunk',
+					messageId: 'm1',
+					role: 'assistant',
+					content: { type: 'thinking', text: 'first ' },
+				} satisfies Chunk;
+				yield {
+					type: 'chunk',
+					messageId: 'm1',
+					role: 'assistant',
+					content: { type: 'thinking', text: 'second' },
+				} satisfies Chunk;
 			},
 		});
 
@@ -188,15 +180,12 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result.stores);
-		const messages = turns[0]!.messages;
-		// user + two separate assistant messages
-		expect(messages).toHaveLength(3);
-		expect(messages[1]!.role).toBe('assistant');
-		expect(messages[2]!.role).toBe('assistant');
+		const blocks = getStore(result.stores)[0]!.response.blocks;
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toEqual({ kind: 'thinking', text: 'first second' });
 	});
 
-	it('records toolCall chunks as content within assistant message', async () => {
+	it('records tool call from update as toolUse block', async () => {
 		const result = await compileConversation();
 
 		const toolUpdate: Update = {
@@ -231,12 +220,238 @@ describe('conversationExtension', () => {
 		);
 
 		const turns = getStore(result.stores);
-		const messages = turns[0]!.messages;
-		// user + assistant with toolCall content
-		expect(messages).toHaveLength(2);
-		const assistantMsg = messages[1]!;
-		expect(assistantMsg.role).toBe('assistant');
-		expect(assistantMsg.content[0]!.type).toBe('toolCall');
+		const blocks = turns[0]!.response.blocks;
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toEqual({
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'read_file',
+				arguments: { path: '/foo' },
+			},
+			result: undefined,
+		});
+	});
+
+	it('pairs tool result with matching tool call', async () => {
+		const result = await compileConversation();
+
+		const toolCallUpdate: Update = {
+			type: 'update',
+			message: {
+				role: 'assistant',
+				content: [
+					{
+						type: 'toolCall',
+						id: 'tc1',
+						name: 'read_file',
+						arguments: { path: '/foo' },
+					},
+				],
+			},
+		};
+
+		const toolResultUpdate: Update = {
+			type: 'update',
+			message: {
+				role: 'toolResult',
+				toolCallId: 'tc1',
+				content: [{ type: 'text', text: 'file contents here' }],
+			},
+		};
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield toolCallUpdate;
+				yield toolResultUpdate;
+			},
+		});
+
+		const wrapped = apply(result.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		const blocks = getStore(result.stores)[0]!.response.blocks;
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toEqual({
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'read_file',
+				arguments: { path: '/foo' },
+			},
+			result: [{ type: 'text', text: 'file contents here' }],
+		});
+	});
+
+	it('records turnEnd block', async () => {
+		const result = await compileConversation();
+
+		const turnEnd: TurnEnd = {
+			type: 'turnEnd',
+			stopReason: 'end_turn',
+		};
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield turnEnd;
+			},
+		});
+
+		const wrapped = apply(result.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		const blocks = getStore(result.stores)[0]!.response.blocks;
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toEqual({
+			kind: 'turnEnd',
+			stopReason: 'end_turn',
+			stopMessage: undefined,
+		});
+	});
+
+	it('records turnEnd with error info', async () => {
+		const result = await compileConversation();
+
+		const turnEnd: TurnEnd = {
+			type: 'turnEnd',
+			stopReason: 'refusal',
+			stopMessage: 'Missing API key',
+		};
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield turnEnd;
+			},
+		});
+
+		const wrapped = apply(result.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		const blocks = getStore(result.stores)[0]!.response.blocks;
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toEqual({
+			kind: 'turnEnd',
+			stopReason: 'refusal',
+			stopMessage: 'Missing API key',
+		});
+	});
+
+	it('full turn: text chunks + tool call + tool result + more text + turnEnd', async () => {
+		const result = await compileConversation();
+
+		const target = stubClient({
+			prompt: async function* () {
+				// Stream some text
+				yield {
+					type: 'chunk',
+					messageId: 'm1',
+					role: 'assistant',
+					content: { type: 'text', text: 'Let me check' },
+				} satisfies Chunk;
+
+				// Tool call
+				yield {
+					type: 'update',
+					message: {
+						role: 'assistant',
+						content: [
+							{
+								type: 'toolCall',
+								id: 'tc1',
+								name: 'read_file',
+								arguments: { path: '/foo' },
+							},
+						],
+					},
+				} satisfies Update;
+
+				// Tool result
+				yield {
+					type: 'update',
+					message: {
+						role: 'toolResult',
+						toolCallId: 'tc1',
+						content: [{ type: 'text', text: 'contents' }],
+					},
+				} satisfies Update;
+
+				// More text after tool
+				yield {
+					type: 'chunk',
+					messageId: 'm2',
+					role: 'assistant',
+					content: { type: 'text', text: 'Here is the result' },
+				} satisfies Chunk;
+
+				// Turn end
+				yield {
+					type: 'turnEnd',
+					stopReason: 'end_turn',
+				} satisfies TurnEnd;
+			},
+		});
+
+		const wrapped = apply(result.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'read /foo' }],
+				},
+			}),
+		);
+
+		const turn = getStore(result.stores)[0]!;
+		expect(turn.prompt.content[0]).toEqual({
+			type: 'text',
+			text: 'read /foo',
+		});
+
+		const blocks = turn.response.blocks;
+		expect(blocks).toHaveLength(4);
+		expect(blocks[0]).toEqual({ kind: 'text', text: 'Let me check' });
+		expect(blocks[1]).toEqual({
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'read_file',
+				arguments: { path: '/foo' },
+			},
+			result: [{ type: 'text', text: 'contents' }],
+		});
+		expect(blocks[2]).toEqual({
+			kind: 'text',
+			text: 'Here is the result',
+		});
+		expect(blocks[3]).toEqual({
+			kind: 'turnEnd',
+			stopReason: 'end_turn',
+			stopMessage: undefined,
+		});
 	});
 
 	it('multiple turns from multiple prompt calls', async () => {
@@ -245,7 +460,6 @@ describe('conversationExtension', () => {
 		const target = stubClient();
 		const wrapped = apply(result.client, target);
 
-		// First prompt
 		await collect(
 			wrapped.prompt({
 				message: {
@@ -255,7 +469,6 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		// Second prompt
 		await collect(
 			wrapped.prompt({
 				message: {
@@ -267,5 +480,13 @@ describe('conversationExtension', () => {
 
 		const turns = getStore(result.stores);
 		expect(turns).toHaveLength(2);
+		expect(turns[0]!.prompt.content[0]).toEqual({
+			type: 'text',
+			text: 'first',
+		});
+		expect(turns[1]!.prompt.content[0]).toEqual({
+			type: 'text',
+			text: 'second',
+		});
 	});
 });

@@ -10,7 +10,7 @@ import type {
 import type { AgentEvent } from '@mariozechner/pi-agent-core';
 
 import { fromPiMessage } from './message.js';
-import { fromPiStopReason } from './content.js';
+import { fromPiStopReason, fromPiToolResultContent } from './content.js';
 import type { StreamEvent } from 'packages/mini-acp/src/types/stream.js';
 // ---------------------------------------------------------------------------
 // AgentEvent → StreamEvent
@@ -57,11 +57,28 @@ export function fromAgentEvent(
 			return null;
 		}
 
-		// Tool execution — routed through reverse RPC (BaseClient), not streamed
+		// Tool execution lifecycle — emit result as an Update so downstream
+		// consumers (e.g. conversation extension) can pair it with the call.
 		case 'tool_execution_start':
 		case 'tool_execution_update':
-		case 'tool_execution_end':
 			return null;
+		case 'tool_execution_end': {
+			// event.result is AgentToolResult (typed as any in AgentEvent)
+			// with shape { content: (TextContent | ImageContent)[], details: T }
+			const resultContent = (
+				event.result as {
+					content: Parameters<typeof fromPiToolResultContent>[0][];
+				}
+			).content;
+			return {
+				type: 'update',
+				message: {
+					role: 'toolResult' as const,
+					toolCallId: event.toolCallId,
+					content: resultContent.map(fromPiToolResultContent),
+				},
+			};
+		}
 	}
 }
 

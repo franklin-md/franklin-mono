@@ -4,7 +4,7 @@ import type { ConversationTurn } from '@franklin/extensions';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-import { Turn } from './turn.js';
+import { Turn } from '../turn/turn.js';
 
 export function ConversationView({ turns }: { turns: ConversationTurn[] }) {
 	const bottomRef = useRef<HTMLDivElement>(null);
@@ -15,7 +15,7 @@ export function ConversationView({ turns }: { turns: ConversationTurn[] }) {
 
 	return (
 		<ScrollArea className="flex-1 p-4">
-			<div className="flex flex-col gap-4">
+			<div className="mx-auto flex max-w-prose flex-col gap-10 pt-6">
 				{turns.length === 0 && (
 					<p className="py-8 text-center text-sm text-muted-foreground">
 						Send a message to start the conversation.

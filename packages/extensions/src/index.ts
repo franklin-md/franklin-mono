@@ -76,6 +76,12 @@ export {
 } from './extensions/index.js';
 export type {
 	ConversationTurn,
+	AssistantTurn,
+	AssistantBlock,
+	TextBlock,
+	ThinkingBlock,
+	ToolUseBlock,
+	TurnEndBlock,
 	Todo,
 	TodoControl,
 	StatusState,

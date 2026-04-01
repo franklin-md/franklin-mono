@@ -2,7 +2,15 @@ export {
 	conversationExtension,
 	conversationKey,
 } from './conversation/index.js';
-export type { ConversationTurn } from './conversation/index.js';
+export type {
+	ConversationTurn,
+	AssistantTurn,
+	AssistantBlock,
+	TextBlock,
+	ThinkingBlock,
+	ToolUseBlock,
+	TurnEndBlock,
+} from './conversation/index.js';
 
 export {
 	todoExtension,

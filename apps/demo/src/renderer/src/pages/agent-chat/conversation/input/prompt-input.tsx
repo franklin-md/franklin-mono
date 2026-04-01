@@ -1,30 +1,22 @@
 import { useState } from 'react';
 
-import type { AgentCommands } from '@franklin/agent/browser';
-
 import { Button } from '@/components/ui/button';
 
-export function PromptInput({ commands }: { commands: AgentCommands }) {
+export function PromptInput({
+	onSend,
+	sending,
+}: {
+	onSend: (text: string) => Promise<void>;
+	sending: boolean;
+}) {
 	const [input, setInput] = useState('');
-	const [sending, setSending] = useState(false);
 
 	async function handleSend() {
 		const text = input.trim();
 		if (!text || sending) return;
 
 		setInput('');
-		setSending(true);
-		try {
-			const stream = commands.prompt({
-				message: { role: 'user', content: [{ type: 'text', text }] },
-			});
-			// Drain the async iterable to completion
-			for await (const _event of stream) {
-				// Events are handled by conversation extension via observers
-			}
-		} finally {
-			setSending(false);
-		}
+		await onSend(text);
 	}
 
 	function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
