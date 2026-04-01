@@ -1,9 +1,6 @@
-export async function sha256Hex(data: Uint8Array): Promise<string> {
-	const hashBuffer = await globalThis.crypto.subtle.digest(
-		'SHA-256',
-		data.buffer as ArrayBuffer,
-	);
-	return Array.from(new Uint8Array(hashBuffer))
-		.map((b) => b.toString(16).padStart(2, '0'))
-		.join('');
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
+
+export function sha256Hex(data: Uint8Array): string {
+	return bytesToHex(sha256(data));
 }

@@ -4,6 +4,7 @@ import type {
 	EnvironmentAPI,
 	StoreAPI,
 } from 'packages/extensions/src/api/index.js';
+import { writeFileDescription } from '../../system_prompts.js';
 import { z } from 'zod';
 
 const schema = z.object({
@@ -26,11 +27,7 @@ export function writeExtension(): Extension<
 
 		api.registerTool({
 			name: 'write_file',
-			description:
-				'Writes a file to the local filesystem.' +
-				'This tool will overwrite the existing file if there is one at the provided path.' +
-				'Prefer the Edit tool for modifying existing files, if the tool exists – it only sends the diff.' +
-				'Only use emojis if the user explicitly requests it. Avoid writing emojis to files unless asked.',
+			description: writeFileDescription,
 			schema,
 			async execute({ path, content }: WriteInput) {
 				await fs.writeFile(path, content);

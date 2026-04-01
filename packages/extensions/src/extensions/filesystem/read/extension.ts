@@ -1,7 +1,10 @@
 import type { EnvironmentAPI, Extension } from '@franklin/extensions';
 import type { CoreAPI } from '../../../api/core/api.js';
 import type { StoreAPI } from '../../../api/store/api.js';
+import { fileKey } from '../edit/key.js';
+
 import { sha256Hex } from '../hash.js';
+import { readFileDescription } from '../../system_prompts.js';
 import { z } from 'zod';
 
 const schema = z.object({
@@ -28,20 +31,18 @@ export function readExtension(): Extension<
 	CoreAPI & EnvironmentAPI & StoreAPI
 > {
 	return (api) => {
-		const store = api.useStore<Record<string, string>>('last_read');
+		const store = api.useStore(fileKey);
 		const fs = api.getEnvironment().filesystem;
 
 		api.registerTool({
 			name: 'read_file',
-			description:
-				'Tool used to read the contents of the specified file on the available filesystem.' +
-				'This tool can only read files, not directories. ',
+			description: readFileDescription,
 			schema,
 			async execute({ path, limit, offset }: ReadInput) {
 				const bytes = await fs.readFile(path);
 				const absPath = await fs.resolve(path);
 
-				const hash = await sha256Hex(bytes);
+				const hash = sha256Hex(bytes);
 				store.set((draft) => {
 					draft[absPath] = hash;
 				});
