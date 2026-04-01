@@ -7,7 +7,7 @@ There are two kinds of handles in the system:
 
 **EnvironmentHandle** — a handle to a provisioned environment. The environment is the place where agents exist and execute. Today, an environment is a working directory on the user's OS. In the future, it could be a Docker container, a cloud VM, a git worktree. Environments have their own lifecycle — they are provisioned before agents are spawned and may outlive any single agent. Multiple agents can share an environment.
 
-**AgentTransport** — a handle to a running agent. This is the communication line between the application and the agent. One transport per agent. The transport is a bidirectional stream of ACP messages. It is the primitive that crosses boundaries — it can be bridged across IPC (e.g., Electron main↔renderer), piped through relays, or connected directly in-memory for testing.
+**MiniACPProtocol** — a handle to a running agent. This is the communication line between the application and the agent. One transport per agent. The transport is a bidirectional stream of ACP messages. It is the primitive that crosses boundaries — it can be bridged across IPC (e.g., Electron main↔renderer), piped through relays, or connected directly in-memory for testing.
 
 ### Flow
 
@@ -16,7 +16,7 @@ There are two kinds of handles in the system:
 │  provision() │────▶│  EnvironmentHandle  │────▶│   spawn()    │
 └─────────────┘     └────────────────────┘     └──────┬───────┘
                                                       │
-                                                AgentTransport
+                                                MiniACPProtocol
                                                       │
                                                 ┌─────▼───────┐
                                                 │  connect()   │

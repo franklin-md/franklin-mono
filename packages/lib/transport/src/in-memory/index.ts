@@ -1,12 +1,6 @@
-import { connect } from '../streams/duplex/connect.js';
 import type { Duplex } from '../streams/types.js';
 
-export interface MemoryPipePair<A, B = A> {
-	server: Duplex<A, B>;
-	client: Duplex<B, A>;
-	close: () => Promise<void>;
-}
-
+// This is a pipe where you can put stuff in and take it out
 export function createMemoryStream<A, B = A>(): Duplex<A, B> {
 	const stream = new TransformStream<B, A>();
 
@@ -19,19 +13,30 @@ export function createMemoryStream<A, B = A>(): Duplex<A, B> {
 	};
 }
 
-export function createMemoryPipes<A = Uint8Array, B = A>(): MemoryPipePair<
-	A,
-	B
-> {
-	const server = createMemoryStream<A, B>();
-	const client = createMemoryStream<B, A>();
-	const joined = connect(server, client);
+/**
+ * Creates two Duplexes connected back-to-back without locking any streams.
+ *
+ * Writing to `a.writable` appears on `b.readable`, and vice versa.
+ * Neither side's streams are locked — callers can freely attach readers,
+ * writers, or pipe them into other abstractions (e.g. SDK connections).
+ */
+export function createDuplexPair<A, B = A>(): {
+	a: Duplex<A, B>;
+	b: Duplex<B, A>;
+} {
+	const aToB = createMemoryStream<B>(); // a writes B, b reads B
+	const bToA = createMemoryStream<A>(); // b writes A, a reads A
 
 	return {
-		server,
-		client,
-		close: async () => {
-			await joined.close();
+		a: {
+			readable: bToA.readable,
+			writable: aToB.writable,
+			close: () => aToB.close(),
+		},
+		b: {
+			readable: aToB.readable,
+			writable: bToA.writable,
+			close: () => bToA.close(),
 		},
 	};
 }

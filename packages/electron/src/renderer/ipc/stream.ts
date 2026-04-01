@@ -1,72 +1,104 @@
-import type { SerializedToolDefinition } from '@franklin/local-mcp';
-import {
-	type Duplex,
-	type MuxPacket,
-	Multiplexer,
-	fromObserver,
-	fromCallable,
-} from '@franklin/transport';
+import type { Duplex } from '@franklin/transport';
 
-// ---------------------------------------------------------------------------
-// Bridge type — matches what the preload exposes
-// ---------------------------------------------------------------------------
-
-interface FranklinBridge {
-	ipcStream: {
-		on: (callback: (packet: unknown) => void) => () => void;
-		invoke: (packet: unknown) => void;
-	};
-	framework: {
-		provision: (opts?: unknown) => Promise<string>;
-		dispose: (envId: string) => Promise<void>;
-	};
-	agent: {
-		spawn: (envId: string, name: string) => Promise<string>;
-		kill: (agentId: string) => Promise<void>;
-	};
-	mcp: {
-		start: (
-			mcpId: string,
-			name: string,
-			tools: SerializedToolDefinition[],
-		) => Promise<unknown>;
-		stop: (mcpId: string) => Promise<void>;
-	};
-}
+import type { FranklinPreloadBridge } from '../../shared/schema.js';
+import type { PreloadStreamBridge } from '../../shared/api.js';
+import type { AuthBridge } from './auth-store.js';
 
 declare global {
 	interface Window {
-		__franklinBridge: FranklinBridge;
+		__franklinBridge: FranklinPreloadBridge;
+		__franklinAuth: AuthBridge;
 	}
 }
 
-export type { FranklinBridge };
-
-// ---------------------------------------------------------------------------
-// Lazy singleton for the Level 0 multiplexer
-// ---------------------------------------------------------------------------
-
-let mux: Multiplexer<unknown> | null = null;
-
-function getMux(): Multiplexer<unknown> {
-	if (!mux) {
-		const { on, invoke } = window.__franklinBridge.ipcStream;
-		const transport: Duplex<MuxPacket<unknown>> = {
-			readable: fromObserver(on) as ReadableStream<MuxPacket<unknown>>,
-			writable: fromCallable(invoke) as WritableStream<MuxPacket<unknown>>,
-			close: async () => {},
-		};
-		mux = new Multiplexer(transport);
-	}
-	return mux;
+export function getPreloadBridge(): FranklinPreloadBridge {
+	return window.__franklinBridge;
 }
 
-/**
- * Creates a Duplex stream backed by Electron IPC (renderer-process side).
- *
- * Level 1 demux: reads from the shared IPC channel and returns a named
- * stream (e.g. "agent-transport" or "mcp-transport").
- */
-export function createIpcStream<R, W = R>(streamName: string): Duplex<R, W> {
-	return getMux().channel(streamName) as Duplex<R, W>;
+export function createIpcStream<R, W = R>(
+	bridge: PreloadStreamBridge<R, W>,
+	onClose?: () => Promise<void>,
+): Duplex<R, W> {
+	let controller: ReadableStreamDefaultController<R> | null = null;
+	let unsubscribe: (() => void) | null = null;
+	let closePromise: Promise<void> | null = null;
+	let closed = false;
+
+	const detach = () => {
+		if (unsubscribe == null) return;
+		unsubscribe();
+		unsubscribe = null;
+	};
+
+	const closeReadable = () => {
+		if (controller == null) return;
+		try {
+			controller.close();
+		} catch {
+			// ReadableStream controllers throw if already closed.
+		}
+	};
+
+	const closeStream = (
+		notifyPeer: boolean,
+		releaseLease: boolean,
+	): Promise<void> => {
+		if (closePromise) {
+			return closePromise;
+		}
+
+		closePromise = (async () => {
+			if (closed) return;
+			closed = true;
+			detach();
+			closeReadable();
+			if (notifyPeer) {
+				await bridge.close();
+			}
+			if (releaseLease) {
+				await onClose?.();
+			}
+		})();
+
+		return closePromise;
+	};
+
+	const readable = new ReadableStream<R>({
+		start(nextController) {
+			controller = nextController;
+			unsubscribe = bridge.subscribe({
+				next: (packet) => {
+					if (closed) return;
+					nextController.enqueue(packet);
+				},
+				close: () => {
+					void closeStream(false, true);
+				},
+			});
+		},
+		cancel() {
+			return closeStream(true, true);
+		},
+	});
+
+	const writable = new WritableStream<W>({
+		write(packet) {
+			if (closed) {
+				throw new Error('IPC stream is closed');
+			}
+			bridge.send(packet);
+		},
+		close() {
+			return closeStream(true, true);
+		},
+		abort() {
+			return closeStream(true, true);
+		},
+	});
+
+	return {
+		readable,
+		writable,
+		close: () => closeStream(true, true),
+	};
 }

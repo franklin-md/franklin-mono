@@ -9,5 +9,5 @@
 		"jsx": "react-jsx"
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],
-	"references": [{ "path": "../../agent" }]
+	"references": [{ "path": "../../agent" }, { "path": "../../extensions" }]
 }

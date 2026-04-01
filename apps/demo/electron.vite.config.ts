@@ -65,10 +65,6 @@ export default defineConfig({
 					find: /^@franklin\/transport$/,
 					replacement: '@franklin/transport/core',
 				},
-				{
-					find: /^@franklin\/local-mcp$/,
-					replacement: '@franklin/local-mcp/browser',
-				},
 			],
 		},
 	},

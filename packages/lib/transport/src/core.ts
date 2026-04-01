@@ -6,7 +6,13 @@
  */
 
 // Stream algebra
-export type { Duplex, Observer } from './streams/types.js';
+export type {
+	Duplex,
+	ReadType,
+	WriteType,
+	Middleware,
+	Observer,
+} from './streams/types.js';
 // eslint-disable-next-line @typescript-eslint/no-deprecated -- backwards compat re-export
 export type { Stream } from './streams/types.js';
 export { pump } from './streams/readable/pump.js';
@@ -29,6 +35,11 @@ export {
 export { serve } from './streams/duplex/serve.js';
 export { emptyDuplex } from './streams/duplex/empty.js';
 export { debugStream } from './streams/duplex/debug.js';
+export {
+	intercept,
+	type InterceptHandlers,
+	type Handler,
+} from './streams/duplex/intercept.js';
 
 // Codecs
 export { mapStream, ndjsonCodec, type Codec } from './codec/index.js';
@@ -37,12 +48,22 @@ export { mapStream, ndjsonCodec, type Codec } from './codec/index.js';
 export { createNdjsonDecoder, encodeNdjsonLine } from './streams/ndjson.js';
 
 // In-memory (no Node deps)
-export { createMemoryPipes } from './in-memory/index.js';
-export type { MemoryPipePair } from './in-memory/index.js';
+export { createMemoryStream, createDuplexPair } from './in-memory/index.js';
 
 // Multiplexing
 export { Multiplexer } from './multiplex/index.js';
 export type { MuxPacket } from './multiplex/index.js';
+
+// JSON-RPC
+export {
+	RpcError,
+	bindClient,
+	bindServer,
+	JsonRpcProxyRuntime,
+	JsonRpcServerRuntime,
+	type JsonRpcMessage,
+	type PeerBinding,
+} from './jsonrpc/index.js';
 
 // Config types (browser-safe — pure interfaces, no Node runtime deps)
 export type { StdioPipeOptions } from './stdio/types.js';

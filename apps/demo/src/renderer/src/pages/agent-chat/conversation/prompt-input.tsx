@@ -4,13 +4,7 @@ import type { AgentCommands } from '@franklin/agent/browser';
 
 import { Button } from '@/components/ui/button';
 
-export function PromptInput({
-	commands,
-	sessionId,
-}: {
-	commands: AgentCommands;
-	sessionId: string;
-}) {
+export function PromptInput({ commands }: { commands: AgentCommands }) {
 	const [input, setInput] = useState('');
 	const [sending, setSending] = useState(false);
 
@@ -21,10 +15,13 @@ export function PromptInput({
 		setInput('');
 		setSending(true);
 		try {
-			await commands.prompt({
-				sessionId,
-				prompt: [{ type: 'text', text }],
+			const stream = commands.prompt({
+				message: { role: 'user', content: [{ type: 'text', text }] },
 			});
+			// Drain the async iterable to completion
+			for await (const _event of stream) {
+				// Events are handled by conversation extension via observers
+			}
 		} finally {
 			setSending(false);
 		}

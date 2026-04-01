@@ -2,18 +2,6 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Launch TUI",
-			"type": "node",
-			"request": "launch",
-			"cwd": "${workspaceFolder}/apps/tui",
-			"program": "${workspaceFolder}/apps/tui/dist/index.js",
-			"console": "integratedTerminal",
-			"preLaunchTask": "build",
-			"sourceMaps": true,
-			"outFiles": ["${workspaceFolder}/apps/tui/dist/**/*.js"],
-			"skipFiles": ["<node_internals>/**"]
-		},
-		{
 			"name": "Run Integration Tests",
 			"type": "node",
 			"request": "launch",
@@ -29,7 +17,8 @@
 			"request": "launch",
 			"cwd": "${workspaceFolder}",
 			"preLaunchTask": "build",
-			"command": "npm run dev:debug -w @franklin/demo"
+			"command": "npm run dev:debug -w @franklin/demo",
+			"envFile": "${workspaceFolder}/.env"
 		},
 		{
 			"name": "Demo: Attach Main",
@@ -43,7 +32,8 @@
 			"resolveSourceMapLocations": [
 				"${workspaceFolder}/apps/demo/**",
 				"${workspaceFolder}/packages/**",
-				"!**/node_modules/**"
+				"!**/node_modules/**",
+				"${workspaceFolder}/node_modules/@mariozechner/pi-agent-core/**"
 			]
 		},
 		{

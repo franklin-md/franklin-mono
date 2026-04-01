@@ -1,3 +1,7 @@
+// NOTE: This implements the same request-response correlation pattern as
+// bridge() and jsonrpc/connection. See BridgeRequest/BridgeResponse for
+// the generalized version of this pattern.
+
 import type { Duplex } from '../streams/types.js';
 import { createNdjsonDecoder, encodeNdjsonLine } from '../streams/ndjson.js';
 import type { HttpJsonServer } from './index.js';

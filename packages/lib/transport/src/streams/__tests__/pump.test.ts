@@ -8,7 +8,9 @@ describe('pump', () => {
 		const writer = stream.writable.getWriter();
 
 		const received: string[] = [];
-		const done = pump(stream.readable, (v: string) => received.push(v));
+		const done = pump(stream.readable, (v: string) => {
+			received.push(v);
+		});
 
 		await writer.write('a');
 		await writer.write('b');
@@ -47,7 +49,9 @@ describe('pump', () => {
 		});
 
 		const received: string[] = [];
-		await pump(stream, (v) => received.push(v));
+		await pump(stream, (v) => {
+			received.push(v);
+		});
 
 		expect(received).toEqual([]);
 	});

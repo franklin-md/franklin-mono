@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { app, BrowserWindow } from 'electron';
 import { initializeMain } from '@franklin/electron/main';
-import { NodeFramework, createDefaultRegistry } from '@franklin/node';
+import { createNodePlatform } from '@franklin/node';
 
 import type { MainHandle } from '@franklin/electron/main';
 
@@ -22,8 +22,10 @@ function createWindow(): void {
 		},
 	});
 
-	const framework = new NodeFramework(createDefaultRegistry());
-	handle = initializeMain(mainWindow.webContents, framework);
+	const franklinHome = path.join(app.getPath('home'), '.franklin');
+	const platform = createNodePlatform({ appDir: franklinHome });
+
+	handle = initializeMain(mainWindow.webContents, platform);
 
 	mainWindow.on('closed', () => {
 		void handle?.dispose();

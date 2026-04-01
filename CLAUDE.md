@@ -20,26 +20,50 @@ npm run format:check     # check only
 npm run test             # runs vitest in each workspace
 
 # Test a single package
-npm run test -w franklin
-npm run test -w @franklin/tui
+npm run test -w @franklin/agent
+npm run test -w @franklin/mini-acp
 
 # Run a single test file
-npx vitest run packages/franklin/src/__tests__/spawn.test.ts
+npx vitest run packages/agent/src/__tests__/spawn.test.ts
 
 # Typecheck a single package
-npm run typecheck -w franklin
+npm run typecheck -w @franklin/agent
 
-# Run TUI in dev mode (with mock adapter)
-npm run dev -w @franklin/tui   # tsx src/index.tsx --mock
+# Run demo app in dev mode (Electron)
+npm run dev -w @franklin/demo
 ```
 
 You should lint, build and format always. And test where appropriate.
 
 ## Architecture
 
-Franklin is a middleware stack for ACP-compliant coding agents. It builds on the [Agent Client Protocol (ACP)](https://agentclientprotocol.com) for wire communication and adds middleware layers (history, modules, permissions) on top.
+Franklin is an extension runtime for minimal agent loops.
 
-See README.md
+### Packages (bottom-up)
+
+- `@franklin/lib` — foundational library
+  - Proxy descriptor algebra
+  - Filesystem abstractions
+  - Persistence utilities
+- `@franklin/transport` — communication layer
+  - Stream algebra and transports (stdio, HTTP, in-memory)
+  - JSON-RPC bindings
+- `@franklin/mini-acp` — agent protocol
+  - Stateful but unpersisted agents
+  - Externalized tool execution (client owns tools via reverse RPC)
+  - Context tracking and streaming turns
+- `@franklin/extensions` — plugin system
+  - Tool registration, lifecycle event handlers, reactive stores
+  - Compiles extensions into client + server middleware
+  - Built-in extensions: conversation, todos, status, spawn, file editing
+- `@franklin/agent` — application SDK
+  - Session management (create, fork, child, restore)
+  - File-based persistence
+  - Auth management
+- `@franklin/node` — Node.js platform bindings
+- `@franklin/electron` — Electron platform bindings (main/renderer IPC)
+- `@franklin/react` — React hooks and provider
+- `@franklin/demo` — Electron demo app
 
 ## Code conventions
 
@@ -50,4 +74,6 @@ See README.md
 - **Node ≥ 22** required.
 - **Vitest** for testing — test files use `__tests__/*.test.ts` convention.
 - **TypeScript project references** — root `tsconfig.json` references all packages; each package has its own `tsconfig.json` extending `tsconfig.base.json`. **Always build with `tsc -b`** (or `npm run build`). Never run bare `tsc` — it ignores `outDir`/`rootDir` from project references and emits build artifacts into `src/`.
-- **Nesting** - prefer small files with single exported methods, with implementation in a series of files in a folder.
+- **Nesting** - prefer small files with single exported methods, with implementation in a series of files in a folder. Do not barallel exports from subfolders.
+- **Exports** - Only export methods from packages if they are actually to be consumed. Do not re-export from other packages either.
+- **Comments** - Avoid introducing lots of method or class docstrings. We should maintain the docstrings for exported package code, but want to avoid introducing potentially stale comments on library code. However, existing comments within implementation bodies (like todos) are very important to preserve across edits, and any potential resolutions should be flagged.
