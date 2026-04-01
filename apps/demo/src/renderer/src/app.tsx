@@ -10,6 +10,9 @@ import {
 	conversationExtension,
 	todoExtension,
 	statusExtension,
+	readExtension,
+	writeExtension,
+	editExtension,
 	globExtension,
 } from '@franklin/extensions';
 
@@ -18,6 +21,9 @@ const extensions = [
 	conversationExtension(),
 	todoExtension(),
 	statusExtension(),
+	readExtension(),
+	writeExtension(),
+	editExtension(),
 	globExtension(),
 ];
 

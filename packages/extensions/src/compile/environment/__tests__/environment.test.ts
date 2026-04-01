@@ -19,6 +19,7 @@ function mockEnvironment(): Environment {
 			exists: vi.fn(),
 			glob: vi.fn(),
 			deleteFile: vi.fn(),
+			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 		},
 		config: vi.fn(async () => ({
 			cwd: '/tmp',

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { Extension } from '../../../types/extension.js';
 import type { CoreAPI } from '../../../api/core/api.js';
 import type { EnvironmentAPI } from '../../../api/environment/api.js';
+import { globDescription } from '../../system_prompts.js';
 
 const schema = z.object({
 	pattern: z
@@ -40,13 +41,7 @@ export function globExtension(): Extension<CoreAPI & EnvironmentAPI> {
 
 		api.registerTool({
 			name: 'glob',
-			description:
-				'Fast file pattern matching tool that returns paths of files matching a glob pattern. ' +
-				'Use this to find files by name or extension (e.g. "**/*.ts", "src/**/*.test.js", "package.json"). ' +
-				'Returns matching file paths as a list. ' +
-				'Supports standard glob syntax: * (any characters in a segment), ** (any nested directories), ' +
-				'? (single character), {a,b} (alternatives), [abc] (character classes). ' +
-				'Use this tool when you need to discover files by name pattern — for searching file *contents*, use a different tool.',
+			description: globDescription,
 			schema,
 			async execute({ pattern, options }: GlobInput) {
 				const files = await env.filesystem.glob(pattern, {

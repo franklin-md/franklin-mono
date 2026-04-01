@@ -9,12 +9,14 @@ import {
 	writeFile,
 } from 'node:fs/promises';
 import type { Filesystem } from '@franklin/lib';
+import { resolve } from 'node:path';
 
 /**
  * Creates a `Filesystem` implementation backed by Node.js `fs/promises`.
  */
 export function createNodeFilesystem(): Filesystem {
 	return {
+		resolve: async (...paths) => resolve(...paths),
 		readFile: (path) => readFile(path),
 		writeFile: (path, data) => writeFile(path, data),
 		mkdir: (path, options) => mkdir(path, options).then(() => undefined),

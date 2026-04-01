@@ -16,6 +16,7 @@ function mockFilesystem(): Filesystem {
 		exists: vi.fn().mockResolvedValue(true),
 		glob: vi.fn().mockResolvedValue([]),
 		deleteFile: vi.fn().mockResolvedValue(undefined),
+		resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 	};
 }
 
