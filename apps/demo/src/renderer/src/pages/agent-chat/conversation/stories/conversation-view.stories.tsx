@@ -6,6 +6,7 @@ import {
 	singleTurnSequence,
 	multiTurn,
 	thinkingTurnSequence,
+	markdownConversation,
 } from '../fixtures.js';
 
 const meta = {
@@ -30,4 +31,8 @@ export const MultiTurn: Story = {
 
 export const WithThinking: Story = {
 	args: { turns: thinkingTurnSequence },
+};
+
+export const RichMarkdown: Story = {
+	args: { turns: markdownConversation },
 };

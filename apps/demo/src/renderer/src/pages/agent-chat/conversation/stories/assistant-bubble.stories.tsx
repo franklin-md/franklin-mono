@@ -6,6 +6,10 @@ import {
 	assistantThinkingMessage,
 	assistantToolCallMessage,
 	assistantMultiBlockMessage,
+	assistantMarkdownMessage,
+	assistantCodeBlockMessage,
+	assistantMathMessage,
+	assistantKitchenSinkMessage,
 } from '../fixtures.js';
 
 const meta = {
@@ -30,4 +34,20 @@ export const WithToolCall: Story = {
 
 export const MultiBlock: Story = {
 	args: { message: assistantMultiBlockMessage },
+};
+
+export const Markdown: Story = {
+	args: { message: assistantMarkdownMessage },
+};
+
+export const CodeBlocks: Story = {
+	args: { message: assistantCodeBlockMessage },
+};
+
+export const MathExpressions: Story = {
+	args: { message: assistantMathMessage },
+};
+
+export const KitchenSink: Story = {
+	args: { message: assistantKitchenSinkMessage },
 };

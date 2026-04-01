@@ -1,7 +1,12 @@
 @import 'tailwindcss';
-@import 'highlight.js/styles/github-dark.css';
+@import 'katex/dist/katex.min.css';
+@import 'streamdown/styles.css';
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/geist-mono';
+
+@source "../../../../../node_modules/streamdown/dist/*.js";
+@source "../../../../../node_modules/@streamdown/code/dist/*.js";
+@source "../../../../../node_modules/@streamdown/math/dist/*.js";
 
 @custom-variant dark (&:is(.dark *));
 
