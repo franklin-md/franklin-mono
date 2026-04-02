@@ -45,7 +45,10 @@ function mockEnvironment(
 		},
 		terminal: { exec: vi.fn() },
 		config: vi.fn(async () => ({
-			fsConfig: { cwd: '/tmp', permissions: { allowRead: ['**'], allowWrite: ['**'] } },
+			fsConfig: {
+				cwd: '/tmp',
+				permissions: { allowRead: ['**'], allowWrite: ['**'] },
+			},
 			netConfig: { allowedDomains: [], deniedDomains: [] },
 		})),
 		reconfigure: vi.fn(async () => {}),

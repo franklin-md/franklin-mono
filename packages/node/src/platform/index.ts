@@ -31,7 +31,10 @@ export function createNodePlatform(args: Args = {}): Platform {
 			getApiKeyProviders: async () => getProviders(),
 		},
 		environment: async (config: EnvironmentConfig) => {
-			const envFs = new EnvironmentFilesystem(createNodeFilesystem(), config.fsConfig);
+			const envFs = new EnvironmentFilesystem(
+				createNodeFilesystem(),
+				config.fsConfig,
+			);
 			const envT = new SandboxedTerminal(config);
 			return {
 				filesystem: envFs,
@@ -41,24 +44,17 @@ export function createNodePlatform(args: Args = {}): Platform {
 					return {
 						fsConfig: envFs.config,
 						netConfig: envT.getNetworkConfig(),
-					}
+					};
 				},
-				
+
 				async reconfigure(partial: Partial<EnvironmentConfig>) {
 					if (partial.fsConfig) {
 						// set terminal
 						envT.setFilesystemConfig(partial.fsConfig);
-						
 						// set filesystem
-						if (partial.fsConfig.cwd !== undefined) {
-							const to_set = partial.fsConfig.cwd;
-							envFs.setCwd(to_set);
-						}
-
-						if (partial.fsConfig.permissions !== undefined) {
-							envFs.setPermissions(partial.fsConfig.permissions);
-						}
-					};
+						envFs.setCwd(partial.fsConfig.cwd);
+						envFs.setPermissions(partial.fsConfig.permissions);
+					}
 					if (partial.netConfig) {
 						// set terminal only
 						envT.setNetworkConfig(partial.netConfig);

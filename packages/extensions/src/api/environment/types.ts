@@ -1,15 +1,19 @@
-import type { Filesystem, FilesystemPermissions, NetworkPermissions, Terminal } from '@franklin/lib';
-
+import type {
+	Filesystem,
+	FilesystemPermissions,
+	NetworkPermissions,
+	Terminal,
+} from '@franklin/lib';
 
 export interface FilesystemConfig {
 	cwd: string;
 	permissions: FilesystemPermissions;
 }
 
-export interface NetworkConfig extends NetworkPermissions {};
+export type NetworkConfig = NetworkPermissions;
 
 export interface EnvironmentConfig {
-	fsConfig: FilesystemConfig,
+	fsConfig: FilesystemConfig;
 	netConfig: NetworkConfig;
 }
 

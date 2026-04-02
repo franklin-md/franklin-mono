@@ -1,4 +1,4 @@
 export interface NetworkPermissions {
-    allowedDomains: string[],
-    deniedDomains: string[], 
+	allowedDomains: string[];
+	deniedDomains: string[];
 }

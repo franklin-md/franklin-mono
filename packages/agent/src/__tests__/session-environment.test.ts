@@ -100,7 +100,10 @@ function createTestManager(envFactory: EnvironmentFactory) {
 }
 
 const defaultConfig: EnvironmentConfig = {
-	fsConfig: { cwd: '/project', permissions: { allowRead: ['**'], allowWrite: ['**'] } },
+	fsConfig: {
+		cwd: '/project',
+		permissions: { allowRead: ['**'], allowWrite: ['**'] },
+	},
 	netConfig: { allowedDomains: [], deniedDomains: [] },
 };
 

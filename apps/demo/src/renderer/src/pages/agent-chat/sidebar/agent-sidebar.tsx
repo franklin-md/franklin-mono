@@ -26,8 +26,11 @@ export function AgentSidebar({
 		const session = await manager.new({
 			core: { llmConfig: settings.get().defaultLLMConfig ?? {} },
 			env: {
-				cwd: '/tmp',
-				permissions: { allowRead: ['**'], allowWrite: ['**'] },
+				fsConfig: {
+					cwd: '/tmp',
+					permissions: { allowRead: ['**'], allowWrite: ['**'] },
+				},
+				netConfig: { allowedDomains: [], deniedDomains: [] },
 			},
 		});
 		setCurrentAgentId(session.sessionId);

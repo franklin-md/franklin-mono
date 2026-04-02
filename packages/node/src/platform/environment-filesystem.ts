@@ -34,7 +34,7 @@ export class EnvironmentFilesystem implements Filesystem {
 		this._config.cwd = cwd;
 		this.current = buildChain(this.inner, this._config);
 	}
-	
+
 	setPermissions(permissions: FilesystemPermissions): void {
 		this._config.permissions = { ...permissions };
 		this.current = buildChain(this.inner, this._config);
