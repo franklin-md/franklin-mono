@@ -69,6 +69,7 @@ Franklin is an extension runtime for minimal agent loops.
 
 ### Code Style
 
+- **File Names** - Prefer lower-kebab-case. For example `stop-reasons.ts`. Omit the name of the folder from the file-name, i.e prefer `block/text.ts` to `block/block-text.ts`
 - **ESM only** — all packages use `"type": "module"`. Imports must include `.js` extensions.
 - **Type imports** — use `import type` (enforced by eslint: `consistent-type-imports`, `no-import-type-side-effects`).
 - **Exhaustive switches** — `switch-exhaustiveness-check` is enabled; no default case allowed on exhaustive switches.

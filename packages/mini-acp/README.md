@@ -40,7 +40,7 @@ Below, we explain the reasons why Mini-ACP was developed, including mention of p
 - [ ] Secure by design (the application is in charge of the security model)
 
 
-## Protocol Specification Draft 1.0
+## Protocol at a Glance
 
 ### State Machine
 
@@ -258,6 +258,71 @@ The agent SHOULD attempt to stop the current turn. However, the protocol makes n
 #### Shutdown
 
 There is no explicit shutdown phase in the protocol. Session teardown is delegated to the underlying transport. Closing the transport connection implicitly terminates any active turn and releases resources on both sides.
+
+
+## Spec Table
+
+Each row is a testable assertion over a protocol transcript. IDs are semantic so new points can be added without reordering.
+
+### Initialization
+
+| ID | Description | Level |
+|----|-------------|-------|
+| `init-send-exists` | `initialize` send must exist | MUST |
+| `init-receive-exists` | Agent must respond to `initialize` | MUST |
+| `init-is-first` | `initialize` must be the first message sent | MUST |
+| `init-exactly-once` | `initialize` must be sent exactly once | MUST |
+
+### Context Setup
+
+| ID | Description | Level |
+|----|-------------|-------|
+| `ctx-before-first-prompt` | `setContext` must precede the first `prompt` | MUST |
+| `ctx-receive-exists` | Agent must respond to each `setContext` | MUST |
+| `ctx-after-init` | `setContext` must not be sent before `initialize` completes | MUST |
+
+### Turn Lifecycle
+
+| ID | Description | Level |
+|----|-------------|-------|
+| `turn-ends-with-turn-end` | Every `prompt` must eventually be followed by a `turnEnd` | MUST |
+| `no-overlapping-prompts` | `prompt` must not be sent while a turn is active | MUST |
+| `prompt-after-init` | `prompt` must not be sent before `initialize` completes | MUST |
+| `turn-end-is-terminal` | No stream events (`chunk`, `update`) after `turnEnd` within a turn | MUST |
+
+### Stream Events
+
+| ID | Description | Level |
+|----|-------------|-------|
+| `one-turn-end-per-turn` | Every turn has exactly one `turnEnd` | MUST |
+| `stop-reason-valid` | `turnEnd.stopReason` must be one of: `end_turn`, `max_tokens`, `refusal`, `cancelled` | MUST |
+| `chunk-has-message-id` | Every `chunk` has a `messageId` and `role` | MUST |
+| `update-has-message` | Every `update` contains a complete `message` | MUST |
+| `chunks-precede-update` | All `chunk`s for a `messageId` precede the corresponding `update` | MUST |
+
+### Tool Execution
+
+| ID | Description | Level |
+|----|-------------|-------|
+| `tool-result-follows-execute` | Every `toolExecute` receive is followed by a `toolResult` send | MUST |
+| `tool-result-id-matches` | `toolResult.toolCallId` must match the preceding `toolExecute`'s `call.id` | MUST |
+| `tool-execute-during-turn` | `toolExecute` only occurs during an active turn | MUST |
+| `tool-name-in-context` | Invoked tool name must exist in a prior `setContext` tools array | MUST |
+
+### Message Content
+
+| ID | Description | Level |
+|----|-------------|-------|
+| `user-content-types` | User messages may only contain `text` and `image` content blocks | MUST |
+| `assistant-content-types` | Assistant messages may only contain `text`, `thinking`, `image`, `toolCall` blocks | MUST |
+| `tool-result-content-types` | `toolResult` messages may only contain `text` and `image` content blocks | MUST |
+
+### Cancellation
+
+| ID | Description | Level |
+|----|-------------|-------|
+| `cancel-during-active-turn` | `cancel` must only be sent during an active turn | MUST |
+| `cancel-stop-reason` | After `cancel`, the turn should end with `stopReason: "cancelled"` | SHOULD |
 
 
 ## Support for other Standards

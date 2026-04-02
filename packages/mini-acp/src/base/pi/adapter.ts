@@ -40,7 +40,7 @@ export interface PiAdapterOptions {
 	/** BaseClient for reverse RPC (tool execution) */
 	client: TurnServer;
 	/** Pre-resolved pi-ai Model */
-	// TODO: Do not pre-resolve, instead take the LLMConfig in ctx and resolve from that
+	// TODO: FRA-62: Do not pre-resolve, instead take the LLMConfig in ctx and resolve from that
 	model: Model<string>;
 	/** Agent context (history, tools, config) */
 	ctx: Ctx;

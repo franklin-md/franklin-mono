@@ -42,8 +42,6 @@
 	],
 
 	"jestrunner.vitestDebugOptions": {
-		"env": {
-			"FRANKLIN_RUN_CODEX_INTEGRATION": "1"
-		}
+		"envFile": "${workspaceFolder}/.env"
 	}
 }

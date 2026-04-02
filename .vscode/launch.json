@@ -2,12 +2,12 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Run Integration Tests",
+			"name": "Run Tests",
 			"type": "node",
 			"request": "launch",
 			"cwd": "${workspaceFolder}",
 			"runtimeExecutable": "npm",
-			"runtimeArgs": ["run", "test:integration"],
+			"runtimeArgs": ["run", "test"],
 			"console": "integratedTerminal",
 			"skipFiles": ["<node_internals>/**"]
 		},
