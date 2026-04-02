@@ -1,6 +1,6 @@
 import type { Content } from './content.js';
 import type { Message } from './message.js';
-import type { StopReason } from './stop_reason.js';
+import type { StopReason } from './stop-reason.js';
 
 // ---------------------------------------------------------------------------
 // Stream events — emitted during a prompt turn

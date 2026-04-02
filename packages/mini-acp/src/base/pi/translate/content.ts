@@ -16,7 +16,7 @@ import type {
 	ToolResultContent,
 } from '../../../types/content.js';
 
-import type { StopReason } from '../../../types/stop_reason.js';
+import type { StopReason } from '../../../types/stop-reason.js';
 // ---------------------------------------------------------------------------
 // pi-ai → mini-acp (per-role, returning narrowed types)
 // ---------------------------------------------------------------------------
