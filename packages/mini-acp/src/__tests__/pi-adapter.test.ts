@@ -6,7 +6,6 @@ import { describe, expect, it, vi } from 'vitest';
 import type {
 	AssistantMessage,
 	AssistantMessageEvent,
-	Model,
 } from '@mariozechner/pi-ai';
 import { createAssistantMessageEventStream } from '@mariozechner/pi-ai';
 import { Agent as PiCoreAgent } from '@mariozechner/pi-agent-core';
@@ -68,20 +67,6 @@ function toolCallAssistantMessage(
 		timestamp: Date.now(),
 	};
 }
-
-/** A fake Model object that satisfies the type. Never actually used for API calls. */
-const mockModel: Model<string> = {
-	id: 'mock-model',
-	name: 'Mock',
-	api: 'anthropic-messages',
-	provider: 'anthropic',
-	baseUrl: 'http://localhost',
-	reasoning: false,
-	input: ['text'],
-	cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-	contextWindow: 100000,
-	maxTokens: 4096,
-};
 
 /**
  * Create a mock streamFn that returns a scripted sequence of assistant messages.
@@ -155,14 +140,18 @@ function createRejectedStreamFn(error: unknown): StreamFn {
 	}) as unknown as StreamFn;
 }
 
-/** Minimal context: system prompt, no history, optionally tools */
-function makeCtx(tools: Ctx['tools'] = []): Ctx {
+/** Minimal context: system prompt, no history, optionally tools and config */
+function makeCtx(tools: Ctx['tools'] = [], config?: Ctx['config']): Ctx {
 	return {
 		history: {
 			systemPrompt: 'You are a test agent.',
 			messages: [],
 		},
 		tools,
+		config: config ?? {
+			provider: 'openrouter',
+			model: 'openrouter/free',
+		},
 	};
 }
 
@@ -189,7 +178,6 @@ describe('createPiAdapter', () => {
 
 		const adapter = createPiAdapter({
 			client,
-			model: mockModel,
 			ctx: makeCtx(),
 			streamFn: createMockStreamFn([textAssistantMessage('Hello world')]),
 		});
@@ -250,7 +238,6 @@ describe('createPiAdapter', () => {
 		// First response: tool call. Second response: text with result.
 		const adapter = createPiAdapter({
 			client,
-			model: mockModel,
 			ctx,
 			streamFn: createMockStreamFn([
 				toolCallAssistantMessage(toolCallId, 'calculate', {
@@ -305,6 +292,64 @@ describe('createPiAdapter', () => {
 		expect(finalText).toBeDefined();
 	});
 
+	it('resolves the model from ctx.config before prompting', async () => {
+		const client: TurnServer = {
+			toolExecute: vi.fn(),
+		};
+		const streamFn = vi.fn(
+			createMockStreamFn([textAssistantMessage('Configured model')]),
+		);
+
+		const adapter = createPiAdapter({
+			client,
+			ctx: makeCtx([], {
+				provider: 'openrouter',
+				model: 'openrouter/free',
+			}),
+			streamFn,
+		});
+
+		await collect(
+			adapter.prompt({
+				message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+			}),
+		);
+
+		expect(streamFn).toHaveBeenCalled();
+		expect(streamFn.mock.calls[0]?.[0]).toMatchObject({
+			provider: 'openrouter',
+			id: 'openrouter/free',
+		});
+	});
+
+	it('throws when provider is omitted', () => {
+		const client: TurnServer = {
+			toolExecute: vi.fn(),
+		};
+
+		expect(() =>
+			createPiAdapter({
+				client,
+				ctx: makeCtx([], { model: 'openrouter/free' }),
+				streamFn: createMockStreamFn([textAssistantMessage('ignored')]),
+			}),
+		).toThrow('Missing provider in ctx.config');
+	});
+
+	it('throws when model is omitted', () => {
+		const client: TurnServer = {
+			toolExecute: vi.fn(),
+		};
+
+		expect(() =>
+			createPiAdapter({
+				client,
+				ctx: makeCtx([], { provider: 'openrouter' }),
+				streamFn: createMockStreamFn([textAssistantMessage('ignored')]),
+			}),
+		).toThrow('Missing model in ctx.config');
+	});
+
 	it('cancel aborts the underlying pi agent', async () => {
 		const client: TurnServer = {
 			toolExecute: vi.fn(),
@@ -316,7 +361,6 @@ describe('createPiAdapter', () => {
 		try {
 			const adapter = createPiAdapter({
 				client,
-				model: mockModel,
 				ctx: makeCtx(),
 				streamFn: createMockStreamFn([textAssistantMessage('ignored')]),
 			});
@@ -335,7 +379,6 @@ describe('createPiAdapter', () => {
 
 		const numericAdapter = createPiAdapter({
 			client,
-			model: mockModel,
 			ctx: makeCtx(),
 			streamFn: createRejectedStreamFn(404),
 		});
@@ -352,7 +395,6 @@ describe('createPiAdapter', () => {
 
 		const objectAdapter = createPiAdapter({
 			client,
-			model: mockModel,
 			ctx: makeCtx(),
 			streamFn: createRejectedStreamFn({ message: 'timeout' }),
 		});
@@ -369,7 +411,6 @@ describe('createPiAdapter', () => {
 
 		const opaqueObjectAdapter = createPiAdapter({
 			client,
-			model: mockModel,
 			ctx: makeCtx(),
 			streamFn: createRejectedStreamFn({ code: 500 }),
 		});

@@ -14,6 +14,11 @@ import { prompt } from '../actions/prompt.js';
 import { waitFor } from '../actions/wait-for.js';
 import { failingTool } from '../fixtures/tools/failing.js';
 import { echoTool } from '../fixtures/tools/echo.js';
+import {
+	VALID_LLM_CONFIG_PLACEHOLDER,
+	createValidLLMConfig,
+	withLLMConfig,
+} from '../../__tests__/utils/llm-config.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -399,6 +404,67 @@ describe('action factories', () => {
 				tools: [],
 			},
 		});
+	});
+
+	it('setContext() accepts config', () => {
+		const action = setContext({
+			config: { provider: 'openrouter', model: 'openrouter/free' },
+		});
+		expect(action).toEqual({
+			type: 'setContext',
+			ctx: {
+				history: {
+					systemPrompt: 'You are a test agent.',
+					messages: [],
+				},
+				tools: [],
+				config: {
+					provider: 'openrouter',
+					model: 'openrouter/free',
+				},
+			},
+		});
+	});
+});
+
+describe('llm config helpers', () => {
+	it('withLLMConfig replaces only placeholder configs in setContext actions', () => {
+		const fixtures = withLLMConfig(
+			[
+				{
+					name: 'placeholder',
+					actions: [
+						initialize(),
+						setContext({ config: VALID_LLM_CONFIG_PLACEHOLDER }),
+					],
+				},
+				{
+					name: 'explicit-invalid',
+					actions: [
+						initialize(),
+						setContext({
+							config: { provider: 'broken', model: 'nope', apiKey: 'bad' },
+						}),
+					],
+				},
+			],
+			createValidLLMConfig('secret'),
+		);
+
+		expect(fixtures[0]!.actions[1]).toEqual(
+			setContext({
+				config: {
+					provider: 'openrouter',
+					model: 'openrouter/free',
+					apiKey: 'secret',
+				},
+			}),
+		);
+		expect(fixtures[1]!.actions[1]).toEqual(
+			setContext({
+				config: { provider: 'broken', model: 'nope', apiKey: 'bad' },
+			}),
+		);
 	});
 });
 

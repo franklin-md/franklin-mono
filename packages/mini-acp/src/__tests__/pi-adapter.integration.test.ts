@@ -3,29 +3,30 @@
 //
 // Requires OPENROUTER_API_KEY in env or in .env at project root.
 // Skips when no key is available.
-// Uses anthropic/claude-haiku-4.5 on OpenRouter to verify the full adapter loop.
+// Uses z-ai/glm-5 on OpenRouter to verify the full adapter loop.
 // ---------------------------------------------------------------------------
 
 import { expect, it } from 'vitest';
-import { getModel } from '@mariozechner/pi-ai';
 
 import { createPiAdapter } from '../base/pi/adapter.js';
 import type { TurnServer } from '../base/types.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { Ctx } from '../types/context.js';
 import { describeIfKey } from './utils/describe-if-key.js';
+import { createValidLLMConfig } from './utils/llm-config.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeCtx(tools: Ctx['tools'] = []): Ctx {
+function makeCtx(tools: Ctx['tools'] = [], config?: Ctx['config']): Ctx {
 	return {
 		history: {
 			systemPrompt: 'You are a helpful assistant. Be very brief.',
 			messages: [],
 		},
 		tools,
+		...(config ? { config } : {}),
 	};
 }
 
@@ -45,9 +46,9 @@ async function collect(
 
 describeIfKey(
 	'OPENROUTER_API_KEY',
-	'Pi Adapter — integration (OpenRouter, Claude Haiku 4.5)',
-	() => {
-		const model = getModel('openrouter', 'z-ai/glm-5');
+	'Pi Adapter — integration (OpenRouter, z-ai/glm-5)',
+	(apiKey) => {
+		const config = createValidLLMConfig(apiKey, { model: 'z-ai/glm-5' });
 
 		it('simple text prompt returns a coherent response', async () => {
 			const client: TurnServer = {
@@ -58,8 +59,7 @@ describeIfKey(
 
 			const adapter = createPiAdapter({
 				client,
-				model,
-				ctx: makeCtx(),
+				ctx: makeCtx([], config),
 			});
 
 			const events = await collect(
@@ -131,8 +131,7 @@ describeIfKey(
 
 			const adapter = createPiAdapter({
 				client,
-				model,
-				ctx,
+				ctx: makeCtx(ctx.tools, config),
 			});
 
 			const events = await collect(
