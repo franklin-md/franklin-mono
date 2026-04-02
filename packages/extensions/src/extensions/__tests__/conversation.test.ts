@@ -67,7 +67,7 @@ describe('conversationExtension', () => {
 		expect(turns).toHaveLength(1);
 		expect(turns[0]!.prompt.role).toBe('user');
 		expect(turns[0]!.prompt.content).toEqual([{ type: 'text', text: 'hello' }]);
-		expect(turns[0]!.response).toBeNull();
+		expect(turns[0]!.response).toEqual({ blocks: [] });
 	});
 
 	it('coalesces adjacent text chunks into one text block', async () => {
