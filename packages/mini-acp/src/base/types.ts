@@ -1,4 +1,4 @@
-import type { Chunk, TurnEnd, Update } from '../types/stream.js';
+import type { Chunk, TurnEnd, TurnStart, Update } from '../types/stream.js';
 import type { ToolExecuteHandler } from '../types/tool.js';
 import type { UserMessage } from '../types/message.js';
 
@@ -10,8 +10,9 @@ export type CancelParams = Record<string, never>;
 
 // Agent side (client calls agent)
 export interface TurnClient {
-	// TODO: Add TURN START
-	prompt(params: PromptParams): AsyncIterable<Chunk | Update | TurnEnd>;
+	prompt(
+		params: PromptParams,
+	): AsyncIterable<TurnStart | Chunk | Update | TurnEnd>;
 	cancel(params: CancelParams): Promise<void>;
 }
 

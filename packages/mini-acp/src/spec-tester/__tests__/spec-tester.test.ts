@@ -99,6 +99,7 @@ describe('execute', () => {
 			'send:setContext',
 			'receive:setContext',
 			'send:prompt',
+			'receive:turnStart',
 			'receive:turnEnd',
 		]);
 	});
@@ -122,6 +123,7 @@ describe('execute', () => {
 			'send:setContext',
 			'receive:setContext',
 			'send:prompt',
+			'receive:turnStart',
 			'receive:toolExecute',
 			'send:toolResult',
 			'receive:update',
@@ -181,6 +183,7 @@ describe('execute', () => {
 			'send:setContext',
 			'receive:setContext',
 			'send:prompt',
+			'receive:turnStart',
 			'receive:turnEnd',
 		]);
 	});
