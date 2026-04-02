@@ -1,8 +1,6 @@
 import { createDuplexPair, debugStream } from '@franklin/transport';
 import {
-	createPiAdapter,
-	createAgentConnection,
-	createSessionAdapter,
+	createPiAgentFactory,
 	type ClientProtocol,
 	type AgentProtocol,
 } from '@franklin/mini-acp';
@@ -19,20 +17,9 @@ export function spawn(): ClientProtocol {
 	const clientDuplex = a as unknown as ClientProtocol;
 	const agentDuplex = b as unknown as AgentProtocol;
 
-	// Phase 1: get the remote proxy (toolExecute) without needing handlers yet
-	const connection = createAgentConnection(debugStream(agentDuplex, 'agent'));
-
-	// Build handlers that capture the proxy directly — no forward-declaration needed
-	const handlers = createSessionAdapter((ctx) =>
-		createPiAdapter({
-			client: connection.remote,
-			model,
-			ctx,
-		}),
+	createPiAgentFactory(model)(
+		debugStream(agentDuplex, 'agent') as AgentProtocol,
 	);
-
-	// Phase 2: bind handlers and start dispatching
-	connection.bind(handlers);
 
 	return clientDuplex;
 }

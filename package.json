@@ -18,8 +18,10 @@
 		"lint": "eslint . --cache --max-warnings=0",
 		"lint:fix": "npm run lint -- --fix",
 		"typecheck": "npm run typecheck --workspaces --if-present",
-		"test": "npm run test --workspaces --if-present",
-		"test:integration": "FRANKLIN_RUN_CODEX_INTEGRATION=1 npm run test --workspaces --if-present",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:changed": "vitest run --changed",
+		"test:integration": "FRANKLIN_RUN_CODEX_INTEGRATION=1 vitest run",
 		"check": "npm run format:check && npm run lint && npm run build",
 		"format": "prettier --write .",
 		"format:check": "prettier --check ."

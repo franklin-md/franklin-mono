@@ -42,6 +42,7 @@ export function createSessionAdapter(
 
 		async *prompt(params): AsyncGenerator<Chunk | Update | TurnEnd> {
 			// TODO: We should reject a prompt if there is a turn in progress.
+			// TODO: Turn this into a testable spec point.
 			currentTurn = getAgent(tracker.get());
 
 			tracker.append(params.message);

@@ -39,6 +39,7 @@ export type {
 // Base protocol
 export type { BaseAgent, BaseClient } from './base/index.js';
 export { createPiAdapter, type PiAdapterOptions } from './base/index.js';
+export { createPiAgentFactory } from './base/index.js';
 export {
 	fromPiUserContent,
 	fromPiAssistantContent,

@@ -74,11 +74,19 @@ describe('useAgentState – basic reads', () => {
 
 	it('throws when the store does not exist', () => {
 		const agent = makeAgent(new Map());
+		// Suppress React dev-mode re-throw via jsdom event dispatch (writes to stderr)
+		const onError = (e: { preventDefault(): void }) => e.preventDefault();
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const g = globalThis as any;
+		g.addEventListener('error', onError);
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 		expect(() =>
 			renderHook(() => useAgentState(counterKey), {
 				wrapper: agentWrapper(agent),
 			}),
 		).toThrow('useAgentState: no store named "counter" on agent');
+		spy.mockRestore();
+		g.removeEventListener('error', onError);
 	});
 });
 
@@ -459,7 +467,11 @@ describe('useAgentState – edge cases', () => {
 	it('BUG: selector returning a new object reference causes infinite loop', () => {
 		const { agent } = makeAgentWithStore('todos', ['a', 'b']);
 
-		// Suppress React error boundary noise in test output
+		// Suppress React dev-mode re-throw via jsdom event dispatch (writes to stderr)
+		const onError = (e: { preventDefault(): void }) => e.preventDefault();
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const g = globalThis as any;
+		g.addEventListener('error', onError);
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
 		expect(() =>
@@ -469,6 +481,7 @@ describe('useAgentState – edge cases', () => {
 		).toThrow('Maximum update depth exceeded');
 
 		spy.mockRestore();
+		g.removeEventListener('error', onError);
 	});
 
 	it('rapid successive updates converge to the final value', () => {
