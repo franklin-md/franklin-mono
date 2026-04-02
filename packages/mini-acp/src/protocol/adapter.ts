@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import type { TurnClient } from '../base/types.js';
-import type { Chunk, TurnStart, Update, TurnEnd } from '../types/stream.js';
+import type { StreamEvent } from '../types/stream.js';
 import type { MuClient, InitializeResult } from './types.js';
 import { CtxTracker } from './ctx-tracker.js';
 import type { Ctx } from '../types/context.js';
@@ -40,14 +40,10 @@ export function createSessionAdapter(
 			return ack;
 		},
 
-		async *prompt(
-			params,
-		): AsyncGenerator<TurnStart | Chunk | Update | TurnEnd> {
+		async *prompt(params): AsyncGenerator<StreamEvent> {
 			// TODO: We should reject a prompt if there is a turn in progress.
 			// TODO: Turn this into a testable spec point.
 			currentTurn = getAgent(tracker.get());
-
-			yield { type: 'turnStart' };
 
 			tracker.append(params.message);
 			for await (const event of currentTurn.prompt(params)) {

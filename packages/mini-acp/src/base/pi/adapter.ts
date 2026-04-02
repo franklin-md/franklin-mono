@@ -17,12 +17,7 @@ import type {
 	CancelParams,
 } from '../types.js';
 import type { Ctx } from '../../types/context.js';
-import type {
-	Chunk,
-	StreamEvent,
-	TurnEnd,
-	Update,
-} from '../../types/stream.js';
+import type { StreamEvent } from '../../types/stream.js';
 
 import {
 	bridgeTool,
@@ -83,9 +78,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 	});
 
 	return {
-		async *prompt(
-			params: PromptParams,
-		): AsyncGenerator<Chunk | Update | TurnEnd> {
+		async *prompt(params: PromptParams): AsyncGenerator<StreamEvent> {
 			const messageId = crypto.randomUUID();
 
 			const { readable, writable } = createMemoryStream<StreamEvent>();
@@ -119,15 +112,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 					void writer.close();
 				});
 
-			for await (const event of readable) {
-				if (
-					event.type === 'chunk' ||
-					event.type === 'update' ||
-					event.type === 'turnEnd'
-				) {
-					yield event;
-				}
-			}
+			yield* readable;
 
 			unsub();
 		},

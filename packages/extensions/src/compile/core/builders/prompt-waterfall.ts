@@ -1,4 +1,4 @@
-import type { MiniACPClient, Chunk, Update, TurnEnd } from '@franklin/mini-acp';
+import type { MiniACPClient, StreamEvent } from '@franklin/mini-acp';
 import type {
 	CoreEventHandler,
 	StreamObserverEvent,
@@ -11,7 +11,7 @@ function notifyObservers(
 		StreamObserverEvent,
 		StreamObserverHandler<StreamObserverEvent>[]
 	>,
-	event: Chunk | Update | TurnEnd,
+	event: StreamEvent,
 ): void {
 	const fns = observers.get(event.type);
 	if (!fns) return;
@@ -24,7 +24,7 @@ async function* iteratePromptWithObservers(
 		StreamObserverEvent,
 		StreamObserverHandler<StreamObserverEvent>[]
 	>,
-): AsyncGenerator<Chunk | Update | TurnEnd> {
+): AsyncGenerator<StreamEvent> {
 	for await (const result of stream) {
 		// Notify observers — guard against undefined event (generator
 		// that returns void instead of TurnEnd) and empty observer map
