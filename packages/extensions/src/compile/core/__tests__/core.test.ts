@@ -7,7 +7,13 @@ import type { Compiler } from '../../types.js';
 import type { Extension } from '../../../types/extension.js';
 import type { FullMiddleware } from '../../../api/core/middleware/types.js';
 import { apply } from '../../../api/core/middleware/apply.js';
-import type { MiniACPClient, Chunk, Update } from '@franklin/mini-acp';
+import type {
+	MiniACPAgent,
+	MiniACPClient,
+	Chunk,
+	ToolExecuteParams,
+	Update,
+} from '@franklin/mini-acp';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -31,6 +37,20 @@ function stubClient(overrides: StubOverrides = {}): MiniACPClient {
 		cancel: vi.fn(async () => ({ type: 'turn_end' as const, turn: 'end' })),
 		...overrides,
 	} as unknown as MiniACPClient;
+}
+
+type AgentStubOverrides = {
+	[K in keyof MiniACPAgent]?: (...args: Parameters<MiniACPAgent[K]>) => any;
+};
+
+function stubAgent(overrides: AgentStubOverrides = {}): MiniACPAgent {
+	return {
+		toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
+			toolCallId: call.id,
+			content: [{ type: 'text' as const, text: 'ok' }],
+		})),
+		...overrides,
+	} as unknown as MiniACPAgent;
 }
 
 /** Collect all items from an AsyncIterable. */
@@ -745,6 +765,7 @@ describe('buildCore – stream observers', () => {
 		};
 		const update: Update = {
 			type: 'update',
+			messageId: 'm1',
 			message: {
 				role: 'assistant',
 				content: [{ type: 'text', text: 'hello world' }],
@@ -897,5 +918,79 @@ describe('buildCore – stream observers', () => {
 		);
 
 		expect(events).toEqual([chunk]);
+	});
+});
+
+describe('buildCore – tool observers', () => {
+	it('on("toolCall") and on("toolResult") fire for delegated tool execution', async () => {
+		const calls: Array<{ name: string }> = [];
+		const results: Array<{ toolCallId: string; callName: string }> = [];
+
+		const mw = await compileExt((api) => {
+			api.on('toolCall', (event) => {
+				calls.push({ name: event.call.name });
+			});
+			api.on('toolResult', (event) => {
+				results.push({
+					toolCallId: event.toolCallId,
+					callName: event.call.name,
+				});
+			});
+		});
+
+		const target = stubAgent({
+			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
+				toolCallId: call.id,
+				content: [{ type: 'text' as const, text: 'from-next' }],
+			})),
+		});
+
+		const wrapped = apply(mw.server, target);
+		const result = await wrapped.toolExecute({
+			call: {
+				type: 'toolCall',
+				id: 'call-1',
+				name: 'lookup',
+				arguments: { value: 1 },
+			},
+		});
+
+		expect(result.toolCallId).toBe('call-1');
+		expect(calls).toEqual([{ name: 'lookup' }]);
+		expect(results).toEqual([{ toolCallId: 'call-1', callName: 'lookup' }]);
+	});
+
+	it('tool observers fire for extension-registered tools', async () => {
+		const calls: string[] = [];
+		const results: string[] = [];
+
+		const mw = await compileExt((api) => {
+			api.registerTool({
+				name: 'myTool',
+				description: 'A test tool',
+				schema: z.object({ input: z.string() }),
+				execute: async ({ input }) => ({ result: input.toUpperCase() }),
+			});
+			api.on('toolCall', (event) => {
+				calls.push(event.call.id);
+			});
+			api.on('toolResult', (event) => {
+				results.push(event.toolCallId);
+			});
+		});
+
+		const wrapped = apply(mw.server, stubAgent());
+		const result = await wrapped.toolExecute({
+			call: {
+				type: 'toolCall',
+				id: 'call-2',
+				name: 'myTool',
+				arguments: { input: 'hello' },
+			},
+		});
+
+		expect(result.toolCallId).toBe('call-2');
+		expect(calls).toEqual(['call-2']);
+		expect(results).toEqual(['call-2']);
 	});
 });

@@ -22,6 +22,7 @@ export type {
 	ToolDefinition,
 	ToolCall,
 	ToolResult,
+	ToolExecuteParams,
 	ToolExecuteHandler,
 } from './tool.js';
 

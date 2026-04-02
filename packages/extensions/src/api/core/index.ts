@@ -6,6 +6,9 @@ export type {
 	StreamObserverEvent,
 	StreamObserverHandler,
 	StreamObserverParamsMap,
+	ToolObserverEvent,
+	ToolObserverHandler,
+	ToolObserverParamsMap,
 } from './events.js';
 export type { ExtensionToolDefinition } from './tool.js';
 export type {

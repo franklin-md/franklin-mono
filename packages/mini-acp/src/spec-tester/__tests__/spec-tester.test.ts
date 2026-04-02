@@ -49,6 +49,7 @@ const toolCallingTurn = (remote: MuAgent): TurnClient => ({
 		});
 		yield {
 			type: 'update',
+			messageId: 'mock-msg-1',
 			message: {
 				role: 'assistant',
 				content: [

@@ -4,6 +4,8 @@ import type {
 	CoreEventHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
+	ToolObserverEvent,
+	ToolObserverHandler,
 } from '../../api/core/events.js';
 import type { ExtensionToolDefinition } from '../../api/core/tool.js';
 import type { FullMiddleware } from '../../api/core/middleware/types.js';
@@ -17,6 +19,7 @@ import {
 } from './builders/index.js';
 
 const STREAM_OBSERVER_EVENTS = new Set<string>(['chunk', 'update', 'turnEnd']);
+const TOOL_OBSERVER_EVENTS = new Set<string>(['toolCall', 'toolResult']);
 
 function addEventHandler<K extends string, H>(
 	map: Map<K, H[]>,
@@ -45,6 +48,10 @@ export function createCoreCompiler(): Compiler<CoreAPI, FullMiddleware> {
 		StreamObserverEvent,
 		StreamObserverHandler<StreamObserverEvent>[]
 	>();
+	const toolObservers = new Map<
+		ToolObserverEvent,
+		ToolObserverHandler<ToolObserverEvent>[]
+	>();
 	const tools: ExtensionToolDefinition[] = [];
 
 	const api: CoreAPI = {
@@ -54,6 +61,12 @@ export function createCoreCompiler(): Compiler<CoreAPI, FullMiddleware> {
 					observers,
 					event as StreamObserverEvent,
 					handler as StreamObserverHandler<StreamObserverEvent>,
+				);
+			} else if (TOOL_OBSERVER_EVENTS.has(event)) {
+				addEventHandler(
+					toolObservers,
+					event as ToolObserverEvent,
+					handler as ToolObserverHandler<ToolObserverEvent>,
 				);
 			} else {
 				addEventHandler(
@@ -117,7 +130,9 @@ export function createCoreCompiler(): Compiler<CoreAPI, FullMiddleware> {
 			// ----- ServerMiddleware -----
 			const server: FullMiddleware['server'] = {
 				toolExecute:
-					tools.length > 0 ? buildToolExecuteMiddleware(tools) : passThrough(),
+					tools.length > 0 || toolObservers.size > 0
+						? buildToolExecuteMiddleware(tools, toolObservers)
+						: passThrough(),
 			};
 
 			return { client, server };

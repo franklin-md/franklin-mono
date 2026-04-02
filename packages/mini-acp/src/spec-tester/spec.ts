@@ -210,6 +210,19 @@ const chunkHasMessageId: SpecPoint = {
 	},
 };
 
+const updateHasMessageId: SpecPoint = {
+	id: 'update-has-message-id',
+	description: 'Every update has a non-empty messageId',
+	test: (t) => {
+		const updates = receives(t, 'update');
+		if (updates.length === 0) return 'skip';
+		for (const e of updates) {
+			if (!e.params.messageId || e.params.messageId.length === 0) return 'fail';
+		}
+		return 'pass';
+	},
+};
+
 const updateHasMessage: SpecPoint = {
 	id: 'update-has-message',
 	description: 'Every update contains a complete message',
@@ -218,6 +231,25 @@ const updateHasMessage: SpecPoint = {
 		if (updates.length === 0) return 'skip';
 		for (const e of updates) {
 			if (e.params.message.content.length === 0) return 'fail';
+		}
+		return 'pass';
+	},
+};
+
+const chunkHasMatchingUpdate: SpecPoint = {
+	id: 'chunk-has-matching-update',
+	description:
+		'Every chunk messageId must have a corresponding update with the same messageId',
+	test: (t) => {
+		const chunks = receives(t, 'chunk');
+		if (chunks.length === 0) return 'skip';
+
+		const updateMsgIds = new Set(
+			receives(t, 'update').map((e) => e.params.messageId),
+		);
+
+		for (const c of chunks) {
+			if (!updateMsgIds.has(c.params.messageId)) return 'fail';
 		}
 		return 'pass';
 	},
@@ -236,16 +268,66 @@ const chunksPrecedeUpdate: SpecPoint = {
 				if (closed.has(e.params.messageId)) return 'fail';
 			}
 			if (match(e, 'receive', 'update')) {
-				// Close all messageIds that were open before this update
-				// Since Update doesn't carry messageId, we close all preceding chunk messageIds
-				for (const prev of t) {
-					if (prev === e) break;
-					if (match(prev, 'receive', 'chunk')) {
-						closed.add(prev.params.messageId);
-					}
-				}
+				closed.add(e.params.messageId);
 			}
 		}
+		return 'pass';
+	},
+};
+
+const updateMessageMatchesChunks: SpecPoint = {
+	id: 'update-message-matches-chunks',
+	description:
+		'If chunks exist for a messageId, the update text/thinking content is their concatenation',
+	test: (t) => {
+		const updates = receives(t, 'update');
+		const chunks = receives(t, 'chunk');
+		if (updates.length === 0 || chunks.length === 0) return 'skip';
+
+		// Group chunks by messageId
+		const chunksByMsgId = new Map<string, Array<(typeof chunks)[number]>>();
+		for (const c of chunks) {
+			const id = c.params.messageId;
+			const arr = chunksByMsgId.get(id);
+			if (arr) {
+				arr.push(c);
+			} else {
+				chunksByMsgId.set(id, [c]);
+			}
+		}
+
+		for (const u of updates) {
+			const msgChunks = chunksByMsgId.get(u.params.messageId);
+			if (!msgChunks || msgChunks.length === 0) continue;
+
+			// Concatenate text chunk deltas
+			const chunkedText = msgChunks
+				.filter((c) => c.params.content.type === 'text')
+				.map((c) => (c.params.content as { text: string }).text)
+				.join('');
+
+			const updateText = u.params.message.content
+				.filter((b) => b.type === 'text')
+				.map((b) => (b as { text: string }).text)
+				.join('');
+
+			if (chunkedText.length > 0 && chunkedText !== updateText) return 'fail';
+
+			// Concatenate thinking chunk deltas
+			const chunkedThinking = msgChunks
+				.filter((c) => c.params.content.type === 'thinking')
+				.map((c) => (c.params.content as { text: string }).text)
+				.join('');
+
+			const updateThinking = u.params.message.content
+				.filter((b) => b.type === 'thinking')
+				.map((b) => (b as { text: string }).text)
+				.join('');
+
+			if (chunkedThinking.length > 0 && chunkedThinking !== updateThinking)
+				return 'fail';
+		}
+
 		return 'pass';
 	},
 };
@@ -351,13 +433,13 @@ const userContentTypes: SpecPoint = {
 const assistantContentTypes: SpecPoint = {
 	id: 'assistant-content-types',
 	description:
-		'Assistant messages may only contain text, thinking, image, toolCall blocks',
+		'Assistant stream updates may only contain text, thinking, image blocks',
 	test: (t) => {
 		const assistantUpdates = receives(t, 'update').filter(
 			(e) => e.params.message.role === 'assistant',
 		);
 		if (assistantUpdates.length === 0) return 'skip';
-		const allowed = new Set(['text', 'thinking', 'image', 'toolCall']);
+		const allowed = new Set(['text', 'thinking', 'image']);
 		for (const e of assistantUpdates) {
 			for (const block of e.params.message.content) {
 				if (!allowed.has(block.type)) return 'fail';
@@ -444,8 +526,11 @@ export const specPoints: SpecPoint[] = [
 	oneTurnEndPerTurn,
 	stopReasonValid,
 	chunkHasMessageId,
+	updateHasMessageId,
 	updateHasMessage,
+	chunkHasMatchingUpdate,
 	chunksPrecedeUpdate,
+	updateMessageMatchesChunks,
 	// Tool Execution
 	toolResultFollowsExecute,
 	toolResultIdMatches,
