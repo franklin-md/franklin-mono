@@ -22,7 +22,7 @@ export { isContentBlockResult } from './core/index.js';
 export { serializeTool, toJsonSchema } from './core/index.js';
 export { apply } from './core/index.js';
 export type { EnvironmentAPI } from './environment/index.js';
-export type { Environment, EnvironmentConfig } from './environment/index.js';
+export type { Environment, FilesystemConfig, NetworkConfig, EnvironmentConfig } from './environment/index.js';
 export type { StoreAPI } from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';
 export type { Sharing, ForkMode } from './store/index.js';

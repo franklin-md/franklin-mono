@@ -35,6 +35,7 @@ function mockEnvironment(config: EnvironmentConfig): Environment {
 			deleteFile: vi.fn(),
 			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 		},
+		terminal: { exec: vi.fn() },
 		config: vi.fn(async () => ({ ...config })),
 		reconfigure: vi.fn(async () => {}),
 	};
@@ -88,8 +89,8 @@ function createMockSpawn() {
 }
 
 const defaultConfig: EnvironmentConfig = {
-	cwd: '/project',
-	permissions: { allowRead: ['**'], allowWrite: ['**'] },
+	fsConfig: { cwd: '/project', permissions: { allowRead: ['**'], allowWrite: ['**'] } },
+	netConfig: { allowedDomains: [], deniedDomains: [] },
 };
 
 // ---------------------------------------------------------------------------

@@ -17,11 +17,16 @@ const filesystem = namespace({
 	deleteFile: method(),
 });
 
+const terminal = namespace({
+	exec: method(),
+})
+
 export const schema = namespace({
 	spawn: resource(stream()),
 	environment: resource(
 		namespace({
 			filesystem: filesystem,
+			terminal: terminal,
 			config: method(),
 			reconfigure: method(),
 		}),
