@@ -38,7 +38,7 @@ export function fromAgentEvent(
 			return {
 				type: 'turnEnd',
 				stopReason,
-				stopMessage: turnEnd.errorMessage,
+				stopMessage: sanitizeStopMessage(turnEnd.errorMessage),
 			};
 		}
 		// Streaming deltas → chunks
@@ -80,6 +80,18 @@ export function fromAgentEvent(
 			};
 		}
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Error message sanitization
+// ---------------------------------------------------------------------------
+
+// pi-agent-core may naively stringify non-Error thrown values, producing
+// '[object Object]' for opaque objects. Replace with a generic fallback.
+function sanitizeStopMessage(msg: string | undefined): string | undefined {
+	if (!msg) return msg;
+	if (msg === '[object Object]') return 'unknown error';
+	return msg;
 }
 
 // ---------------------------------------------------------------------------

@@ -4,10 +4,14 @@ import { z } from 'zod';
 import type { AnyToolDefinition } from './types.js';
 
 /**
- * Converts a Zod schema to JSON Schema using Zod's built-in conversion.
+ * Converts a Zod schema to a JSON Schema suitable for tool inputSchema.
+ * Strips the $schema meta-field (it's not required by the agents, and implementations
+ * (like pi-ai) get confused when there are additional fields like schemas
  */
-export function toJsonSchema(schema: z.ZodType): Record<string, unknown> {
-	return z.toJSONSchema(schema) as Record<string, unknown>;
+export function toToolInputSchema(schema: z.ZodType): Record<string, unknown> {
+	const jsonSchema = z.toJSONSchema(schema) as Record<string, unknown>;
+	delete jsonSchema.$schema;
+	return jsonSchema;
 }
 
 export function serializeTool(
@@ -16,6 +20,6 @@ export function serializeTool(
 	return {
 		name: tool.name,
 		description: tool.description,
-		inputSchema: toJsonSchema(tool.schema),
+		inputSchema: toToolInputSchema(tool.schema),
 	};
 }
