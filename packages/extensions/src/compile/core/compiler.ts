@@ -64,6 +64,7 @@ export function createCoreCompiler(): Compiler<CoreAPI, FullMiddleware> {
 			}
 		},
 		registerTool(tool) {
+			// TODO: Should we prohibit double registration?
 			tools.push(tool);
 		},
 	};

@@ -5,6 +5,6 @@ import { confirmSpec } from '../spec-tester/confirm.js';
 import { describeIfKey } from './utils/describe-if-key.js';
 
 describeIfKey('OPENROUTER_API_KEY', 'pi-adapter spec confirmation', () => {
-	const model = getModel('openrouter', 'z-ai/glm-5');
+	const model = getModel('openrouter', 'openrouter/free');
 	confirmSpec(createPiAgentFactory(model), { timeoutMs: 60_000 });
 });
