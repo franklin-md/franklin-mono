@@ -21,8 +21,15 @@ export function AgentSidebar({
 			{ provider: 'anthropic' },
 			{
 				// For now we just hard-code this until we have UI component to set.
-				cwd: '/tmp',
-				permissions: { allowRead: ['**'], allowWrite: ['**'] },
+				// Permissions can be both global and relative to the cwd.
+				// TODO: what do we do with SYMLINKS? e.g. /tmp/ is a symlink on Macos
+				// Sandboxing removes symlinks anyway for cwd, but not on the permissions
+
+				fsConfig: {
+					cwd: '/private/tmp',
+					permissions: { allowRead: ['**'], allowWrite: ['**'] },
+				},
+				netConfig: { allowedDomains: [], deniedDomains: [] },
 			},
 		);
 		setCurrentAgentId(session.sessionId);

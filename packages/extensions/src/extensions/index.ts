@@ -36,3 +36,5 @@ export { readExtension } from './filesystem/read/extension.js';
 export { writeExtension } from './filesystem/write/extension.js';
 
 export { editExtension } from './filesystem/edit/extension.js';
+
+export { bashExtension } from './terminal/extension.js';

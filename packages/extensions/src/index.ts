@@ -75,6 +75,7 @@ export {
 	editExtension,
 	writeExtension,
 	readExtension,
+	bashExtension,
 } from './extensions/index.js';
 export type {
 	ConversationTurn,

@@ -19,7 +19,7 @@ const filesystem = namespace({
 
 const terminal = namespace({
 	exec: method(),
-})
+});
 
 export const schema = namespace({
 	spawn: resource(stream()),

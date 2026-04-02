@@ -14,6 +14,7 @@ import {
 	writeExtension,
 	editExtension,
 	globExtension,
+	bashExtension,
 } from '@franklin/extensions';
 
 const platform = createElectronPlatform();
@@ -25,6 +26,7 @@ const extensions = [
 	writeExtension(),
 	editExtension(),
 	globExtension(),
+	bashExtension(),
 ];
 
 const auth = new ElectronAuthManager(window.__franklinAuth);
