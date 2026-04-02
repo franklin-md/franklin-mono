@@ -134,8 +134,8 @@ describe('bindRenderer', () => {
 		expect(rawBridge.spawn.kill).toHaveBeenCalledWith('agent-1');
 
 		const environment = await bridge.environment({
-			cwd: '/tmp',
-			permissions: { allowRead: ['**'], allowWrite: ['**'] },
+			fsConfig: { cwd: '/tmp', permissions: { allowRead: ['**'], allowWrite: ['**'] } },
+			netConfig: { allowedDomains: [], deniedDomains: [] },
 		});
 		await expect(environment.filesystem.exists('/tmp')).resolves.toBe(true);
 		expect(rawBridge.environment.connect).toHaveBeenCalledTimes(1);

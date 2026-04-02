@@ -18,6 +18,8 @@ export type {
 	EnvironmentAPI,
 	Environment,
 	EnvironmentConfig,
+	FilesystemConfig,
+	NetworkConfig,
 	StoreAPI,
 	ReadonlyStore,
 	Store,

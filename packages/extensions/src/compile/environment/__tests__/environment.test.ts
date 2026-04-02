@@ -21,9 +21,10 @@ function mockEnvironment(): Environment & { dispose(): Promise<void> } {
 			deleteFile: vi.fn(),
 			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 		},
+		terminal: { exec: vi.fn() },
 		config: vi.fn(async () => ({
-			cwd: '/tmp',
-			permissions: { allowRead: ['**'], allowWrite: ['**'] },
+			fsConfig: { cwd: '/tmp', permissions: { allowRead: ['**'], allowWrite: ['**'] } },
+			netConfig: { allowedDomains: [], deniedDomains: [] },
 		})),
 		reconfigure: vi.fn(async () => {}),
 		dispose: vi.fn(async () => {}),
