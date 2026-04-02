@@ -64,7 +64,10 @@ describe('debug', () => {
 		await writer.write('data');
 		await reader.read();
 
-		expect(spy).toHaveBeenCalledWith('[my-label] readable:', JSON.stringify('data', null, 2));
+		expect(spy).toHaveBeenCalledWith(
+			'[my-label] readable:',
+			JSON.stringify('data', null, 2),
+		);
 
 		reader.releaseLock();
 		await writer.close();
@@ -82,7 +85,10 @@ describe('debug', () => {
 		await new Promise((r) => setTimeout(r, 0));
 		await reader.read();
 
-		expect(spy).toHaveBeenCalledWith('[my-label] writable:', JSON.stringify('data', null, 2));
+		expect(spy).toHaveBeenCalledWith(
+			'[my-label] writable:',
+			JSON.stringify('data', null, 2),
+		);
 
 		reader.releaseLock();
 		await wWriter.close();
@@ -99,7 +105,10 @@ describe('debug', () => {
 		await writer.write(42);
 		await reader.read();
 
-		expect(spy).toHaveBeenCalledWith('[debug] readable:', JSON.stringify(42, null, 2));
+		expect(spy).toHaveBeenCalledWith(
+			'[debug] readable:',
+			JSON.stringify(42, null, 2),
+		);
 
 		reader.releaseLock();
 		await writer.close();
