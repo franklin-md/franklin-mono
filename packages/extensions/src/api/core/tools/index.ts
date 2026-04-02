@@ -3,4 +3,4 @@ export type {
 	AnyToolDefinition,
 	SerializedToolDefinition,
 } from './types.js';
-export { serializeTool, toJsonSchema } from './serialize.js';
+export { serializeTool, toToolInputSchema } from './serialize.js';

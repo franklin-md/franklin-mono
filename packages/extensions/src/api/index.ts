@@ -19,7 +19,7 @@ export type {
 } from './core/index.js';
 export { compose, composeMethod, passThrough } from './core/index.js';
 export { isContentBlockResult } from './core/index.js';
-export { serializeTool, toJsonSchema } from './core/index.js';
+export { serializeTool, toToolInputSchema } from './core/index.js';
 export { apply } from './core/index.js';
 export type { EnvironmentAPI } from './environment/index.js';
 export type { Environment, EnvironmentConfig } from './environment/index.js';

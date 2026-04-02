@@ -13,7 +13,7 @@ export type {
 	AnyToolDefinition,
 	SerializedToolDefinition,
 } from './tools/index.js';
-export { serializeTool, toJsonSchema } from './tools/index.js';
+export { serializeTool, toToolInputSchema } from './tools/index.js';
 export type { ContentBlockResult } from './content-block.js';
 export { isContentBlockResult } from './content-block.js';
 export type {
