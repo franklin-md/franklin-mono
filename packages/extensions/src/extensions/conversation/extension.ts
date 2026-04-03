@@ -3,6 +3,8 @@ import type { CoreAPI } from '../../api/core/api.js';
 import type { StoreAPI } from '../../api/store/api.js';
 import { conversationKey } from './key.js';
 import { handleChunk } from './handlers/chunk.js';
+import { handleToolCall } from './handlers/tool-call.js';
+import { handleToolResult } from './handlers/tool-result.js';
 import { handleUpdate } from './handlers/update.js';
 import { handleTurnEnd } from './handlers/turn-end.js';
 import { createConversationControl } from './controls.js';
@@ -14,7 +16,8 @@ import { createConversationControl } from './controls.js';
  * text, thinking, toolUse, turnEnd).
  *
  * Listens to `prompt` (to record user messages), `chunk` (to stream text/thinking),
- * `update` (to record tool calls and tool results), and `turnEnd` (to record stop reasons).
+ * `update` (to reconcile authoritative assistant messages), `toolCall`/`toolResult`
+ * (to record tool usage), and `turnEnd` (to record stop reasons).
  */
 export function conversationExtension(): Extension<CoreAPI & StoreAPI> {
 	return (api) => {
@@ -38,6 +41,14 @@ export function conversationExtension(): Extension<CoreAPI & StoreAPI> {
 
 		api.on('update', (event) => {
 			control.modifyCurrentTurn((turn) => handleUpdate(turn, event));
+		});
+
+		api.on('toolCall', (event) => {
+			control.modifyCurrentTurn((turn) => handleToolCall(turn, event));
+		});
+
+		api.on('toolResult', (event) => {
+			control.modifyCurrentTurn((turn) => handleToolResult(turn, event));
 		});
 
 		api.on('turnEnd', (event) => {

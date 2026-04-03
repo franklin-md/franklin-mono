@@ -23,6 +23,7 @@ export type {
 	ToolDefinition,
 	ToolCall,
 	ToolResult,
+	ToolExecuteParams,
 	ToolExecuteHandler,
 	TurnStart,
 	Update,

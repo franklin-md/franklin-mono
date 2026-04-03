@@ -3,15 +3,24 @@
 //
 // Requires OPENROUTER_API_KEY in env or in .env at project root.
 // Skips when no key is available.
-// Uses z-ai/glm-5 on OpenRouter to verify the full adapter loop.
+// Uses the spec-tester fixture DSL against the real Pi agent factory so
+// integration coverage exercises the same transport/session path as spec
+// confirmation, while still allowing scenario-specific assertions.
 // ---------------------------------------------------------------------------
 
 import { expect, it } from 'vitest';
 
-import { createPiAdapter } from '../base/pi/adapter.js';
-import type { TurnServer } from '../base/types.js';
-import type { StreamEvent } from '../types/stream.js';
-import type { Ctx } from '../types/context.js';
+import { createPiAgentFactory } from '../base/pi/factory.js';
+import { initialize } from '../spec-tester/actions/initialize.js';
+import { prompt } from '../spec-tester/actions/prompt.js';
+import { setContext } from '../spec-tester/actions/set-context.js';
+import { execute } from '../spec-tester/execute/index.js';
+import type {
+	Fixture,
+	ToolSpec,
+	Transcript,
+	TranscriptEntry,
+} from '../spec-tester/types.js';
 import { describeIfKey } from './utils/describe-if-key.js';
 import { createValidLLMConfig } from './utils/llm-config.js';
 
@@ -19,25 +28,37 @@ import { createValidLLMConfig } from './utils/llm-config.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeCtx(tools: Ctx['tools'] = [], config?: Ctx['config']): Ctx {
-	return {
-		history: {
-			systemPrompt: 'You are a helpful assistant. Be very brief.',
-			messages: [],
-		},
-		tools,
-		...(config ? { config } : {}),
-	};
+function receives<M extends TranscriptEntry['method']>(
+	transcript: Transcript,
+	method: M,
+): Array<Extract<TranscriptEntry, { direction: 'receive'; method: M }>> {
+	return transcript.filter(
+		(
+			entry,
+		): entry is Extract<TranscriptEntry, { direction: 'receive'; method: M }> =>
+			entry.direction === 'receive' && entry.method === method,
+	);
 }
 
-async function collect(
-	stream: AsyncIterable<StreamEvent>,
-): Promise<StreamEvent[]> {
-	const events: StreamEvent[] = [];
-	for await (const e of stream) {
-		events.push(e);
-	}
-	return events;
+function sends<M extends TranscriptEntry['method']>(
+	transcript: Transcript,
+	method: M,
+): Array<Extract<TranscriptEntry, { direction: 'send'; method: M }>> {
+	return transcript.filter(
+		(
+			entry,
+		): entry is Extract<TranscriptEntry, { direction: 'send'; method: M }> =>
+			entry.direction === 'send' && entry.method === method,
+	);
+}
+
+function assistantText(transcript: Transcript): string {
+	return receives(transcript, 'update')
+		.filter((entry) => entry.params.message.role === 'assistant')
+		.flatMap((entry) => entry.params.message.content)
+		.filter((block) => block.type === 'text')
+		.map((block) => block.text)
+		.join('');
 }
 
 // ---------------------------------------------------------------------------
@@ -49,70 +70,40 @@ describeIfKey(
 	'Pi Adapter — integration (OpenRouter, z-ai/glm-5)',
 	(apiKey) => {
 		const config = createValidLLMConfig(apiKey, { model: 'z-ai/glm-5' });
+		const factory = createPiAgentFactory();
 
 		it('simple text prompt returns a coherent response', async () => {
-			const client: TurnServer = {
-				toolExecute: async () => {
-					throw new Error('toolExecute should not be called');
-				},
+			const fixture: Fixture = {
+				name: 'integration-simple-text',
+				actions: [
+					initialize(),
+					setContext({
+						systemPrompt: 'You are a helpful assistant. Be very brief.',
+						config,
+					}),
+					prompt('What is 2+2? Reply with just the number.'),
+				],
 			};
 
-			const adapter = createPiAdapter({
-				client,
-				ctx: makeCtx([], config),
-			});
+			const transcript = await execute(fixture, factory);
 
-			const events = await collect(
-				adapter.prompt({
-					message: {
-						role: 'user',
-						content: [
-							{
-								type: 'text',
-								text: 'What is 2+2? Reply with just the number.',
-							},
-						],
-					},
-				}),
+			const turnEnds = receives(transcript, 'turnEnd');
+			expect(turnEnds).toHaveLength(1);
+			expect(turnEnds[0]!.params.stopReason).toBe('end_turn');
+
+			const chunks = receives(transcript, 'chunk').filter(
+				(entry) => entry.params.content.type === 'text',
 			);
+			expect(chunks.length).toBeGreaterThan(0);
 
-			// Basic structure: chunks ... update ... turnEnd
-
-			const turnEnd = events[events.length - 1]!;
-			expect(turnEnd.type).toBe('turnEnd');
-			expect((turnEnd as { error?: unknown }).error).toBeUndefined();
-
-			// Should have at least one text chunk
-			const textChunks = events.filter(
-				(e) => e.type === 'chunk' && e.content.type === 'text',
-			);
-			expect(textChunks.length).toBeGreaterThan(0);
-
-			// The combined text should contain "4"
-			const allText = textChunks
-				.map((e) =>
-					e.type === 'chunk' && e.content.type === 'text' ? e.content.text : '',
-				)
-				.join('');
-			expect(allText).toContain('4');
-
-			// Should have an update event with the complete assistant message
-			const updates = events.filter((e) => e.type === 'update');
-			expect(updates.length).toBe(1);
+			const updates = receives(transcript, 'update');
+			expect(updates).toHaveLength(1);
+			expect(assistantText(transcript)).toContain('4');
 		}, 30_000);
 
 		it('tool call flow — model calls a tool, gets result, responds', async () => {
-			const client: TurnServer = {
-				toolExecute: async ({ call }) => ({
-					toolCallId: call.id,
-					content: [
-						{ type: 'text', text: JSON.stringify({ result: 'Paris' }) },
-					],
-				}),
-			};
-
-			const ctx = makeCtx([
-				{
+			const lookupCapital: ToolSpec = {
+				definition: {
 					name: 'lookup_capital',
 					description:
 						'Look up the capital city of a country. Returns JSON with the capital.',
@@ -127,47 +118,55 @@ describeIfKey(
 						required: ['country'],
 					},
 				},
-			]);
-
-			const adapter = createPiAdapter({
-				client,
-				ctx: makeCtx(ctx.tools, config),
-			});
-
-			const events = await collect(
-				adapter.prompt({
-					message: {
-						role: 'user',
-						content: [
-							{
-								type: 'text',
-								text: 'What is the capital of France? Use the lookup_capital tool to find out.',
-							},
-						],
-					},
+				handler: (call) => ({
+					toolCallId: call.id,
+					content: [
+						{ type: 'text', text: JSON.stringify({ result: 'Paris' }) },
+					],
 				}),
+			};
+
+			const fixture: Fixture = {
+				name: 'integration-tool-call',
+				tools: [lookupCapital],
+				actions: [
+					initialize(),
+					setContext({
+						systemPrompt: 'You are a helpful assistant. Be very brief.',
+						config,
+					}),
+					prompt(
+						'What is the capital of France? Use the lookup_capital tool to find out.',
+					),
+				],
+			};
+
+			const transcript = await execute(fixture, factory);
+
+			const turnEnds = receives(transcript, 'turnEnd');
+			expect(turnEnds).toHaveLength(1);
+			expect(turnEnds[0]!.params.stopReason).toBe('end_turn');
+
+			const toolExecutes = receives(transcript, 'toolExecute');
+			expect(toolExecutes).toHaveLength(1);
+			expect(toolExecutes[0]!.params.call.name).toBe('lookup_capital');
+
+			const toolResults = sends(transcript, 'toolResult');
+			expect(toolResults).toHaveLength(1);
+			expect(toolResults[0]!.params.toolCallId).toBe(
+				toolExecutes[0]!.params.call.id,
 			);
 
-			const turnEnd = events[events.length - 1]!;
-			expect(turnEnd.type).toBe('turnEnd');
-			expect((turnEnd as { error?: unknown }).error).toBeUndefined();
-
-			// Should have a toolCall chunk
-			const toolChunks = events.filter(
-				(e) => e.type === 'update' && e.message.content[0]?.type === 'toolCall',
+			const toolUpdates = receives(transcript, 'update').filter(
+				(entry) =>
+					entry.params.message.role === 'assistant' &&
+					entry.params.message.content.some(
+						(block) => block.type === 'toolCall',
+					),
 			);
-			expect(toolChunks.length).toBeGreaterThanOrEqual(1);
+			expect(toolUpdates).toHaveLength(0);
 
-			// Final text should mention Paris
-			const textChunks = events.filter(
-				(e) => e.type === 'chunk' && e.content.type === 'text',
-			);
-			const allText = textChunks
-				.map((e) =>
-					e.type === 'chunk' && e.content.type === 'text' ? e.content.text : '',
-				)
-				.join('');
-			expect(allText.toLowerCase()).toContain('paris');
+			expect(assistantText(transcript).toLowerCase()).toContain('paris');
 		}, 60_000);
 	},
 );

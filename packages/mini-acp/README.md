@@ -180,11 +180,12 @@ Chunk {
 }
 ```
 
-**`Update`** — a complete message, emitted when a logical message is finished. This is the authoritative form — it represents the full message that the preceding chunks were building towards:
+**`Update`** — a complete assistant message, emitted when a logical message is finished. This is the authoritative form — it represents the full message that the preceding chunks were building towards. The `messageId` ties the update to its chunks: if chunks were emitted for this `messageId`, the message content MUST be the concatenation of those chunk deltas (grouped by content type). Streamed updates carry assistant text/thinking/image content only; tool calls and tool results do not appear as stream events.
 ```
 Update {
-  type:    "update"
-  message: Message     // The complete message (assistant or toolResult)
+  type:      "update"
+  messageId: string        // Must match the messageId of any preceding chunks
+  message:   Message       // The complete assistant message
 }
 ```
 
@@ -202,15 +203,16 @@ A typical stream for a simple text response:
 TurnStart { "turnStart" }
 Chunk { "chunk", messageId: "m1", role: "assistant", content: { type: "text", text: "Hello" } }
 Chunk { "chunk", messageId: "m1", role: "assistant", content: { type: "text", text: " world" } }
-Update { "update", message: { role: "assistant", content: [{ type: "text", text: "Hello world" }] } }
+Update { "update", messageId: "m1", message: { role: "assistant", content: [{ type: "text", text: "Hello world" }] } }
 TurnEnd { "turnEnd", stopReason: "end_turn" }
 ```
 
+The `Update` message text `"Hello world"` is exactly the concatenation of the two chunk deltas `"Hello"` + `" world"`. Every chunk's `messageId` (`"m1"`) matches the update's `messageId`, and no chunks for `"m1"` appear after the update.
 - [ ] Usage information (token counts, cost) is not currently included in `TurnEnd`. This is a known gap.
 
 #### Tool Execution
 
-When the LLM decides to invoke a tool, the agent sends an `Update` with a `toolCall` content block in the stream **and** initiates a reverse RPC call to the client:
+When the LLM decides to invoke a tool, the agent initiates a reverse RPC call to the client:
 
 ```
 Agent ──── toolExecute({ call: ToolCall }) ────► Client
@@ -233,7 +235,7 @@ ToolResult {
 }
 ```
 
-A single `prompt` call may trigger multiple tool executions. The agent's internal LLM loop continues after each tool result — cycling through `(LLM call → tool call → tool result → LLM call)` — until the LLM produces a final response or a stop condition is reached. The entire sequence streams over a single prompt response.
+A single `prompt` call may trigger multiple tool executions. The agent's internal LLM loop continues after each tool result — cycling through `(LLM call → tool call → tool result → LLM call)` — until the LLM produces a final response or a stop condition is reached. The entire sequence is part of a single prompt turn, but tool calls/results flow through reverse RPC rather than the prompt stream.
 
 #### Turn End
 
@@ -305,8 +307,11 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 | `one-turn-end-per-turn` | Every turn has exactly one `turnEnd` | MUST |
 | `stop-reason-valid` | `turnEnd.stopReason` must be one of: `end_turn`, `max_tokens`, `refusal`, `cancelled` | MUST |
 | `chunk-has-message-id` | Every `chunk` has a `messageId` and `role` | MUST |
+| `update-has-message-id` | Every `update` has a non-empty `messageId` | MUST |
 | `update-has-message` | Every `update` contains a complete `message` | MUST |
+| `chunk-has-matching-update` | Every chunk `messageId` must have a corresponding `update` with the same `messageId` | MUST |
 | `chunks-precede-update` | All `chunk`s for a `messageId` precede the corresponding `update` | MUST |
+| `update-message-matches-chunks` | If chunks exist for a `messageId`, the update message content is their concatenation | MUST |
 
 ### Tool Execution
 
@@ -322,7 +327,7 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 | ID | Description | Level |
 |----|-------------|-------|
 | `user-content-types` | User messages may only contain `text` and `image` content blocks | MUST |
-| `assistant-content-types` | Assistant messages may only contain `text`, `thinking`, `image`, `toolCall` blocks | MUST |
+| `assistant-content-types` | Assistant stream updates may only contain `text`, `thinking`, `image` blocks | MUST |
 | `tool-result-content-types` | `toolResult` messages may only contain `text` and `image` content blocks | MUST |
 
 ### Cancellation

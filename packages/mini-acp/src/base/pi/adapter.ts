@@ -77,15 +77,20 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 
 	return {
 		async *prompt(params: PromptParams): AsyncGenerator<StreamEvent> {
-			const messageId = crypto.randomUUID();
+			let currentMessageId = crypto.randomUUID();
 
 			const { readable, writable } = createMemoryStream<StreamEvent>();
 			const writer = writable.getWriter();
 
 			// Subscribe to agent events and translate to StreamEvents
 			const unsub = piAgent.subscribe((event: AgentEvent) => {
+				// Each new LLM message gets a fresh messageId so that
+				// chunks and their corresponding update share the same id.
+				if (event.type === 'message_start') {
+					currentMessageId = crypto.randomUUID();
+				}
 				// TODO: The assistant message may have a stopReason of 'error'
-				const streamEvent = fromAgentEvent(event, messageId);
+				const streamEvent = fromAgentEvent(event, currentMessageId);
 				if (streamEvent) {
 					void writer.write(streamEvent);
 				}

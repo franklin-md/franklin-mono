@@ -10,7 +10,7 @@ import type {
 import type { AgentEvent } from '@mariozechner/pi-agent-core';
 
 import { fromPiMessage } from './message.js';
-import { fromPiStopReason, fromPiToolResultContent } from './content.js';
+import { fromPiStopReason } from './content.js';
 import type { StreamEvent } from 'packages/mini-acp/src/types/stream.js';
 // ---------------------------------------------------------------------------
 // AgentEvent → StreamEvent
@@ -50,36 +50,28 @@ export function fromAgentEvent(
 		case 'message_end': {
 			const piMsg = event.message as PiMessage;
 			if (piMsg.role === 'assistant') {
+				const message = fromPiMessage(piMsg);
+				if (message.role !== 'assistant') return null;
+				const content = message.content.filter(
+					(block) => block.type !== 'toolCall',
+				);
+				if (content.length === 0) return null;
 				return {
 					type: 'update',
-					message: fromPiMessage(piMsg),
+					messageId,
+					message: {
+						...message,
+						content,
+					},
 				};
 			}
 			return null;
 		}
 
-		// Tool execution lifecycle — emit result as an Update so downstream
-		// consumers (e.g. conversation extension) can pair it with the call.
 		case 'tool_execution_start':
 		case 'tool_execution_update':
+		case 'tool_execution_end':
 			return null;
-		case 'tool_execution_end': {
-			// event.result is AgentToolResult (typed as any in AgentEvent)
-			// with shape { content: (TextContent | ImageContent)[], details: T }
-			const resultContent = (
-				event.result as {
-					content: Parameters<typeof fromPiToolResultContent>[0][];
-				}
-			).content;
-			return {
-				type: 'update',
-				message: {
-					role: 'toolResult' as const,
-					toolCallId: event.toolCallId,
-					content: resultContent.map(fromPiToolResultContent),
-				},
-			};
-		}
 	}
 }
 
@@ -119,22 +111,8 @@ function fromAssistantMessageEvent(
 				role: 'assistant',
 				content: { type: 'thinking', text: event.delta },
 			};
-		// TODO: how does this interact with toolcall_delta? Should we defer to that instead?
 		case 'toolcall_end':
-			return {
-				type: 'update',
-				message: {
-					role: 'assistant',
-					content: [
-						{
-							type: 'toolCall',
-							id: event.toolCall.id,
-							name: event.toolCall.name,
-							arguments: event.toolCall.arguments,
-						},
-					],
-				},
-			};
+			return null;
 		// Events we don't translate — lifecycle/structure handled elsewhere
 		// Called at start of message (but before first chunk)
 		case 'start':

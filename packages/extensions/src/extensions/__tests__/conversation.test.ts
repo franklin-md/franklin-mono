@@ -1,10 +1,18 @@
+/* eslint-disable require-yield */
 import { describe, it, expect, vi } from 'vitest';
 import { createCoreCompiler } from '../../compile/core/compiler.js';
 import { createStoreCompiler } from '../../compile/store/compiler.js';
 import { compile, combine } from '../../compile/types.js';
 import { apply } from '../../api/core/middleware/apply.js';
 import { createEmptyStoreResult } from '../../api/store/registry/result.js';
-import type { MiniACPClient, Chunk, Update, TurnEnd } from '@franklin/mini-acp';
+import type {
+	MiniACPAgent,
+	MiniACPClient,
+	Chunk,
+	ToolExecuteParams,
+	Update,
+	TurnEnd,
+} from '@franklin/mini-acp';
 import { conversationExtension } from '../conversation/extension.js';
 import type { ConversationTurn } from '../conversation/types.js';
 import type { StoreResult } from '../../api/index.js';
@@ -24,6 +32,20 @@ function stubClient(overrides: StubOverrides = {}): MiniACPClient {
 		cancel: vi.fn(async () => ({ type: 'turn_end' as const, turn: 'end' })),
 		...overrides,
 	} as unknown as MiniACPClient;
+}
+
+type AgentStubOverrides = {
+	[K in keyof MiniACPAgent]?: (...args: Parameters<MiniACPAgent[K]>) => any;
+};
+
+function stubAgent(overrides: AgentStubOverrides = {}): MiniACPAgent {
+	return {
+		toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
+			toolCallId: call.id,
+			content: [{ type: 'text' as const, text: 'ok' }],
+		})),
+		...overrides,
+	} as unknown as MiniACPAgent;
 }
 
 async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
@@ -185,27 +207,22 @@ describe('conversationExtension', () => {
 		expect(blocks[0]).toEqual({ kind: 'thinking', text: 'first second' });
 	});
 
-	it('records tool call from update as toolUse block', async () => {
+	it('records tool call from toolExecute as toolUse block', async () => {
 		const result = await compileConversation();
 
-		const toolUpdate: Update = {
-			type: 'update',
-			message: {
-				role: 'assistant',
-				content: [
-					{
+		const agent = stubAgent();
+		const wrappedAgent = apply(result.server, agent);
+
+		const target = stubClient({
+			prompt: async function* () {
+				await wrappedAgent.toolExecute({
+					call: {
 						type: 'toolCall',
 						id: 'tc1',
 						name: 'read_file',
 						arguments: { path: '/foo' },
 					},
-				],
-			},
-		};
-
-		const target = stubClient({
-			prompt: async function* () {
-				yield toolUpdate;
+				});
 			},
 		});
 
@@ -230,41 +247,30 @@ describe('conversationExtension', () => {
 				name: 'read_file',
 				arguments: { path: '/foo' },
 			},
-			result: undefined,
+			result: [{ type: 'text', text: 'ok' }],
 		});
 	});
 
 	it('pairs tool result with matching tool call', async () => {
 		const result = await compileConversation();
+		const agent = stubAgent({
+			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
+				toolCallId: call.id,
+				content: [{ type: 'text' as const, text: 'file contents here' }],
+			})),
+		});
+		const wrappedAgent = apply(result.server, agent);
 
-		const toolCallUpdate: Update = {
-			type: 'update',
-			message: {
-				role: 'assistant',
-				content: [
-					{
+		const target = stubClient({
+			prompt: async function* () {
+				await wrappedAgent.toolExecute({
+					call: {
 						type: 'toolCall',
 						id: 'tc1',
 						name: 'read_file',
 						arguments: { path: '/foo' },
 					},
-				],
-			},
-		};
-
-		const toolResultUpdate: Update = {
-			type: 'update',
-			message: {
-				role: 'toolResult',
-				toolCallId: 'tc1',
-				content: [{ type: 'text', text: 'file contents here' }],
-			},
-		};
-
-		const target = stubClient({
-			prompt: async function* () {
-				yield toolCallUpdate;
-				yield toolResultUpdate;
+				});
 			},
 		});
 
@@ -290,6 +296,36 @@ describe('conversationExtension', () => {
 			},
 			result: [{ type: 'text', text: 'file contents here' }],
 		});
+	});
+
+	it('ignores update (no-op until reconciliation is implemented)', async () => {
+		const result = await compileConversation();
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield {
+					type: 'update',
+					messageId: 'm1',
+					message: {
+						role: 'assistant',
+						content: [{ type: 'text', text: 'final only' }],
+					},
+				} satisfies Update;
+			},
+		});
+
+		const wrapped = apply(result.client, target);
+		await collect(
+			wrapped.prompt({
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			}),
+		);
+
+		const blocks = getStore(result.stores)[0]!.response.blocks;
+		expect(blocks).toHaveLength(0);
 	});
 
 	it('records turnEnd block', async () => {
@@ -361,6 +397,13 @@ describe('conversationExtension', () => {
 
 	it('full turn: text chunks + tool call + tool result + more text + turnEnd', async () => {
 		const result = await compileConversation();
+		const agent = stubAgent({
+			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
+				toolCallId: call.id,
+				content: [{ type: 'text' as const, text: 'contents' }],
+			})),
+		});
+		const wrappedAgent = apply(result.server, agent);
 
 		const target = stubClient({
 			prompt: async function* () {
@@ -372,31 +415,14 @@ describe('conversationExtension', () => {
 					content: { type: 'text', text: 'Let me check' },
 				} satisfies Chunk;
 
-				// Tool call
-				yield {
-					type: 'update',
-					message: {
-						role: 'assistant',
-						content: [
-							{
-								type: 'toolCall',
-								id: 'tc1',
-								name: 'read_file',
-								arguments: { path: '/foo' },
-							},
-						],
+				await wrappedAgent.toolExecute({
+					call: {
+						type: 'toolCall',
+						id: 'tc1',
+						name: 'read_file',
+						arguments: { path: '/foo' },
 					},
-				} satisfies Update;
-
-				// Tool result
-				yield {
-					type: 'update',
-					message: {
-						role: 'toolResult',
-						toolCallId: 'tc1',
-						content: [{ type: 'text', text: 'contents' }],
-					},
-				} satisfies Update;
+				});
 
 				// More text after tool
 				yield {

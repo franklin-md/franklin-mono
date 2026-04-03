@@ -4,6 +4,9 @@ import type {
 	Chunk,
 	Update,
 	TurnEnd,
+	ToolCall,
+	ToolExecuteParams,
+	ToolResult,
 } from '@franklin/mini-acp';
 import type { MaybePromise } from '../../types/shared.js';
 
@@ -37,4 +40,19 @@ export type StreamObserverParamsMap = {
 
 export type StreamObserverHandler<K extends StreamObserverEvent> = (
 	event: StreamObserverParamsMap[K],
+) => void;
+
+// ---------------------------------------------------------------------------
+// Tool observer events — fire-and-forget side effects on tool execution
+// ---------------------------------------------------------------------------
+
+export type ToolObserverEvent = 'toolCall' | 'toolResult';
+
+export type ToolObserverParamsMap = {
+	toolCall: ToolExecuteParams;
+	toolResult: ToolResult & { call: ToolCall };
+};
+
+export type ToolObserverHandler<K extends ToolObserverEvent> = (
+	event: ToolObserverParamsMap[K],
 ) => void;
