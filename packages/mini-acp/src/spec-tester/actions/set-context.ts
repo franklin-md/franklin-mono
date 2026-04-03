@@ -7,6 +7,7 @@ export function setContext(opts?: {
 	systemPrompt?: string;
 	messages?: Message[];
 	tools?: ToolSpec[];
+	config?: Ctx['config'];
 }): Action {
 	const ctx: Partial<Ctx> = {
 		history: {
@@ -14,6 +15,7 @@ export function setContext(opts?: {
 			messages: opts?.messages ?? [],
 		},
 		tools: (opts?.tools ?? []).map((t) => t.definition),
+		...(opts?.config ? { config: opts.config } : {}),
 	};
 	return { type: 'setContext', ctx };
 }

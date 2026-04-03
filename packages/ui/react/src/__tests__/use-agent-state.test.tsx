@@ -48,6 +48,37 @@ function agentWrapper(agent: Agent) {
 	};
 }
 
+type RenderErrorEvent = {
+	preventDefault(): void;
+};
+
+type RenderErrorTarget = {
+	addEventListener(
+		type: 'error',
+		listener: (event: RenderErrorEvent) => void,
+	): void;
+	removeEventListener(
+		type: 'error',
+		listener: (event: RenderErrorEvent) => void,
+	): void;
+};
+
+function withSuppressedRenderErrors<T>(run: () => T): T {
+	const errorTarget = globalThis as unknown as RenderErrorTarget;
+	const onError = (event: RenderErrorEvent) => event.preventDefault();
+	errorTarget.addEventListener('error', onError);
+	const consoleErrorSpy = vi
+		.spyOn(console, 'error')
+		.mockImplementation(() => {});
+
+	try {
+		return run();
+	} finally {
+		consoleErrorSpy.mockRestore();
+		errorTarget.removeEventListener('error', onError);
+	}
+}
+
 const counterKey = storeKey<'counter', number>('counter');
 const todosKey = storeKey<'todos', string[]>('todos');
 
@@ -74,21 +105,13 @@ describe('useAgentState – basic reads', () => {
 
 	it('throws when the store does not exist', () => {
 		const agent = makeAgent(new Map());
-		// Suppress React dev-mode re-throw via jsdom event dispatch (writes to stderr)
-		const onError = (e: { preventDefault(): void }) => e.preventDefault();
-		const g = globalThis as unknown as {
-			addEventListener: (type: string, fn: typeof onError) => void;
-			removeEventListener: (type: string, fn: typeof onError) => void;
-		};
-		g.addEventListener('error', onError);
-		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 		expect(() =>
-			renderHook(() => useAgentState(counterKey), {
-				wrapper: agentWrapper(agent),
-			}),
+			withSuppressedRenderErrors(() =>
+				renderHook(() => useAgentState(counterKey), {
+					wrapper: agentWrapper(agent),
+				}),
+			),
 		).toThrow('useAgentState: no store named "counter" on agent');
-		spy.mockRestore();
-		g.removeEventListener('error', onError);
 	});
 });
 
@@ -469,23 +492,16 @@ describe('useAgentState – edge cases', () => {
 	it('BUG: selector returning a new object reference causes infinite loop', () => {
 		const { agent } = makeAgentWithStore('todos', ['a', 'b']);
 
-		// Suppress React dev-mode re-throw via jsdom event dispatch (writes to stderr)
-		const onError = (e: { preventDefault(): void }) => e.preventDefault();
-		const g = globalThis as unknown as {
-			addEventListener: (type: string, fn: typeof onError) => void;
-			removeEventListener: (type: string, fn: typeof onError) => void;
-		};
-		g.addEventListener('error', onError);
-		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
 		expect(() =>
-			renderHook(() => useAgentState(todosKey, (t) => ({ count: t.length })), {
-				wrapper: agentWrapper(agent),
-			}),
+			withSuppressedRenderErrors(() =>
+				renderHook(
+					() => useAgentState(todosKey, (t) => ({ count: t.length })),
+					{
+						wrapper: agentWrapper(agent),
+					},
+				),
+			),
 		).toThrow('Maximum update depth exceeded');
-
-		spy.mockRestore();
-		g.removeEventListener('error', onError);
 	});
 
 	it('rapid successive updates converge to the final value', () => {
