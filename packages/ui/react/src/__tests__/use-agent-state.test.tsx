@@ -76,8 +76,10 @@ describe('useAgentState – basic reads', () => {
 		const agent = makeAgent(new Map());
 		// Suppress React dev-mode re-throw via jsdom event dispatch (writes to stderr)
 		const onError = (e: { preventDefault(): void }) => e.preventDefault();
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const g = globalThis as any;
+		const g = globalThis as unknown as {
+			addEventListener: (type: string, fn: typeof onError) => void;
+			removeEventListener: (type: string, fn: typeof onError) => void;
+		};
 		g.addEventListener('error', onError);
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 		expect(() =>
@@ -469,8 +471,10 @@ describe('useAgentState – edge cases', () => {
 
 		// Suppress React dev-mode re-throw via jsdom event dispatch (writes to stderr)
 		const onError = (e: { preventDefault(): void }) => e.preventDefault();
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const g = globalThis as any;
+		const g = globalThis as unknown as {
+			addEventListener: (type: string, fn: typeof onError) => void;
+			removeEventListener: (type: string, fn: typeof onError) => void;
+		};
 		g.addEventListener('error', onError);
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
