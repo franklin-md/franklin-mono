@@ -36,4 +36,9 @@ export type {
 
 export type { AuthError, OAuthError, APIKeyError } from './errors.js';
 
-export { StopCode, type StopCategory, stopCategory } from './stop-code.js';
+export {
+	StopCode,
+	type StopCategory,
+	stopCategory,
+	VALID_STOP_CODES,
+} from './stop-code.js';

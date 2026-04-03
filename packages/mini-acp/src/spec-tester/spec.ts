@@ -10,6 +10,7 @@ import { sends, receives } from './assertions/filters.js';
 import { match } from './assertions/match.js';
 import { initCompletedIndex } from './assertions/init.js';
 import { isTurnActiveAt, turns } from './assertions/turn-state.js';
+import { StopCode, VALID_STOP_CODES } from '../types/stop-code.js';
 
 // ---------------------------------------------------------------------------
 // Initialization
@@ -198,16 +199,14 @@ const oneTurnEndPerTurn: SpecPoint = {
 	},
 };
 
-const stopReasonValid: SpecPoint = {
-	id: 'stop-reason-valid',
-	description:
-		'turnEnd.stopReason must be one of: end_turn, max_tokens, refusal, cancelled',
+const stopCodeValid: SpecPoint = {
+	id: 'stop-code-valid',
+	description: 'turnEnd.stopCode must be a valid StopCode enum value',
 	test: (t) => {
 		const turnEnds = receives(t, 'turnEnd');
 		if (turnEnds.length === 0) return 'skip';
-		const valid = new Set(['end_turn', 'max_tokens', 'refusal', 'cancelled']);
 		for (const e of turnEnds) {
-			if (!valid.has(e.params.stopReason)) return 'fail';
+			if (!VALID_STOP_CODES.has(e.params.stopCode)) return 'fail';
 		}
 		return 'pass';
 	},
@@ -501,9 +500,10 @@ const cancelDuringActiveTurn: SpecPoint = {
 	},
 };
 
-const cancelStopReason: SpecPoint = {
-	id: 'cancel-stop-reason',
-	description: 'After cancel, the turn should end with stopReason: "cancelled"',
+const cancelStopCode: SpecPoint = {
+	id: 'cancel-stop-code',
+	description:
+		'After cancel, the turn should end with stopCode: Cancelled (101)',
 	test: (t) => {
 		const cancels = sends(t, 'cancel');
 		if (cancels.length === 0) return 'skip';
@@ -514,7 +514,7 @@ const cancelStopReason: SpecPoint = {
 				.find((e) => match(e, 'receive', 'turnEnd'));
 			if (!turnEnd) return 'skip';
 			if (!match(turnEnd, 'receive', 'turnEnd')) return 'fail';
-			if (turnEnd.params.stopReason !== 'cancelled') return 'fail';
+			if (turnEnd.params.stopCode !== StopCode.Cancelled) return 'fail';
 		}
 		return 'pass';
 	},
@@ -542,7 +542,7 @@ export const specPoints: SpecPoint[] = [
 	turnEndIsTerminal,
 	// Stream Events
 	oneTurnEndPerTurn,
-	stopReasonValid,
+	stopCodeValid,
 	chunkHasMessageId,
 	updateHasMessageId,
 	updateHasMessage,
@@ -560,5 +560,5 @@ export const specPoints: SpecPoint[] = [
 	toolResultContentTypes,
 	// Cancellation
 	cancelDuringActiveTurn,
-	cancelStopReason,
+	cancelStopCode,
 ];
