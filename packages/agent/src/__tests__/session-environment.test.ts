@@ -4,7 +4,11 @@ import {
 	createSessionAdapter,
 	createAgentConnection,
 } from '@franklin/mini-acp';
-import type { Environment, EnvironmentConfig } from '@franklin/extensions';
+import type {
+	Environment,
+	EnvironmentConfig,
+	EnvironmentFactory,
+} from '@franklin/extensions';
 import { SessionManager } from '../agent/session/index.js';
 import { snapshotSession } from '../agent/session/persist/snapshot.js';
 import type { IAuthManager } from '../auth/types.js';
@@ -39,10 +43,6 @@ function mockEnvironment(config: EnvironmentConfig): Environment {
 		reconfigure: vi.fn(async () => {}),
 	};
 }
-
-type EnvironmentFactory = (
-	config: EnvironmentConfig,
-) => Promise<Environment & { dispose(): Promise<void> }>;
 
 function mockEnvironmentFactory(): {
 	factory: EnvironmentFactory;

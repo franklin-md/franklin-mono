@@ -1,6 +1,6 @@
 import type { Filesystem } from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
-import type { Environment, EnvironmentConfig } from '@franklin/extensions';
+import type { EnvironmentFactory } from '@franklin/extensions';
 
 // TODO: Is this right?
 type ProviderMeta = {
@@ -12,7 +12,7 @@ type Disposable = { dispose(): Promise<void> };
 
 export interface Platform {
 	spawn: () => Promise<ClientProtocol & Disposable>;
-	environment: (config: EnvironmentConfig) => Promise<Environment & Disposable>;
+	environment: EnvironmentFactory;
 
 	// TODO: Are these the right names?
 	ai: {

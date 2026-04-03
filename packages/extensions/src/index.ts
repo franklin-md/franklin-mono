@@ -54,6 +54,7 @@ export {
 } from './compile/index.js';
 export type { Extension, MaybePromise } from './types/index.js';
 export { reduceExtensions } from './types/index.js';
+export type { EnvironmentFactory } from './runtime-system/index.js';
 
 // ---------------------------------------------------------------------------
 // Built-in extensions

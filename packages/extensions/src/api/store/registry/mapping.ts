@@ -1,2 +1,2 @@
-/** Maps store name (extension key) -> ref (pool UUID). */
-export type StoreMapping = Record<string, string>;
+// Re-export from canonical location
+export type { StoreMapping } from '../../../state/store.js';
