@@ -43,41 +43,51 @@ export interface PiAdapterOptions {
 
 export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 	const { client, ctx, streamFn } = options;
-	const model = resolveModel(ctx.config);
 
-	// Bridge tool definitions to pi AgentTools that call client.toolExecute
-	const handler = client.toolExecute.bind(client);
-	const piTools = ctx.tools.map((def) => bridgeTool(def, handler));
-
-	// Convert history messages to pi-ai format
-	const piMessages = ctx.history.messages.map(toPiMessage);
-
-	// Create the pi Agent
-	const piAgent = new PiCoreAgent({
-		initialState: {
-			systemPrompt: ctx.history.systemPrompt,
-			model,
-			thinkingLevel: ctx.config?.reasoning ?? 'off',
-			tools: piTools,
-			messages: piMessages,
-		},
-		// TODO: Lets not hard code this. I think solution should be to pass this from ctx?
-		// Only resolve the API key when using the real stream function (not a test mock).
-		getApiKey: streamFn
-			? undefined
-			: (_: string) => {
-					// const key = process.env[`${provider.toUpperCase()}_API_KEY`];
-					// if (!key) {
-					// 	throw new Error(`Missing API key for provider: ${provider}`);
-					// }
-					// return key;
-					return ctx.config?.apiKey;
-				},
-		streamFn,
-	});
+	let piAgent: PiCoreAgent | null = null;
 
 	return {
 		async *prompt(params: PromptParams): AsyncGenerator<StreamEvent> {
+			// Resolve model lazily at prompt time so unresolvable configs
+			// produce a clean turnStart → turnEnd sequence.
+			const resolved = resolveModel(ctx.config);
+			if (!resolved.ok) {
+				yield { type: 'turnStart' };
+				yield resolved.turnEnd;
+				return;
+			}
+
+			// Bridge tool definitions to pi AgentTools that call client.toolExecute
+			const handler = client.toolExecute.bind(client);
+			const piTools = ctx.tools.map((def) => bridgeTool(def, handler));
+
+			// Convert history messages to pi-ai format
+			const piMessages = ctx.history.messages.map(toPiMessage);
+
+			// Create the pi Agent
+			piAgent = new PiCoreAgent({
+				initialState: {
+					systemPrompt: ctx.history.systemPrompt,
+					model: resolved.model,
+					thinkingLevel: ctx.config?.reasoning ?? 'off',
+					tools: piTools,
+					messages: piMessages,
+				},
+				// TODO: Lets not hard code this. I think solution should be to pass this from ctx?
+				// Only resolve the API key when using the real stream function (not a test mock).
+				getApiKey: streamFn
+					? undefined
+					: (_: string) => {
+							// const key = process.env[`${provider.toUpperCase()}_API_KEY`];
+							// if (!key) {
+							// 	throw new Error(`Missing API key for provider: ${provider}`);
+							// }
+							// return key;
+							return ctx.config?.apiKey;
+						},
+				streamFn,
+			});
+
 			let currentMessageId = crypto.randomUUID();
 
 			const { readable, writable } = createMemoryStream<StreamEvent>();
@@ -122,6 +132,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 		},
 
 		async cancel(_params: CancelParams): Promise<void> {
+			if (!piAgent) return;
 			piAgent.abort();
 			// TODO: Ensure that aborting causes prompt to:
 			// a) not hang

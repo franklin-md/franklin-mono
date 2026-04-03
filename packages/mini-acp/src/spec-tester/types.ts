@@ -44,12 +44,12 @@ export type TranscriptEntry =
 export type Transcript = TranscriptEntry[];
 
 // ---------------------------------------------------------------------------
-// Spec
+// Expectations
 // ---------------------------------------------------------------------------
 
 export type SpecResult = 'pass' | 'fail' | 'skip';
 
-export type SpecPoint = {
+export type Expectation = {
 	id: string;
 	description: string;
 	test: (transcript: Transcript) => SpecResult;
@@ -79,6 +79,15 @@ export type Fixture = {
 	name: string;
 	actions: Action[];
 	tools?: ToolSpec[];
+};
+
+// ---------------------------------------------------------------------------
+// Fixture expectations — a fixture paired with additional expectations
+// ---------------------------------------------------------------------------
+
+export type FixtureExpectation = {
+	fixture: Fixture;
+	expectations: Expectation[];
 };
 
 // ---------------------------------------------------------------------------

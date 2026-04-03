@@ -6,9 +6,8 @@ import type { TurnClient } from '../../base/types.js';
 import type { MuAgent } from '../../protocol/types.js';
 import type { StreamEvent } from '../../types/stream.js';
 import { StopCode } from '../../types/stop-code.js';
-import type { AgentFactory, SpecPoint, TranscriptEntry } from '../types.js';
+import type { AgentFactory, TranscriptEntry } from '../types.js';
 import { execute } from '../execute/index.js';
-import { runSuite } from '../suite.js';
 import { initialize } from '../actions/initialize.js';
 import { setContext } from '../actions/set-context.js';
 import { prompt } from '../actions/prompt.js';
@@ -437,29 +436,39 @@ describe('action factories', () => {
 
 describe('llm config helpers', () => {
 	it('withLLMConfig replaces only placeholder configs in setContext actions', () => {
-		const fixtures = withLLMConfig(
+		const entries = withLLMConfig(
 			[
 				{
-					name: 'placeholder',
-					actions: [
-						initialize(),
-						setContext({ config: VALID_LLM_CONFIG_PLACEHOLDER }),
-					],
+					fixture: {
+						name: 'placeholder',
+						actions: [
+							initialize(),
+							setContext({ config: VALID_LLM_CONFIG_PLACEHOLDER }),
+						],
+					},
+					expectations: [],
 				},
 				{
-					name: 'explicit-invalid',
-					actions: [
-						initialize(),
-						setContext({
-							config: { provider: 'broken', model: 'nope', apiKey: 'bad' },
-						}),
-					],
+					fixture: {
+						name: 'explicit-invalid',
+						actions: [
+							initialize(),
+							setContext({
+								config: {
+									provider: 'broken',
+									model: 'nope',
+									apiKey: 'bad',
+								},
+							}),
+						],
+					},
+					expectations: [],
 				},
 			],
 			createValidLLMConfig('secret'),
 		);
 
-		expect(fixtures[0]!.actions[1]).toEqual(
+		expect(entries[0]!.fixture.actions[1]).toEqual(
 			setContext({
 				config: {
 					provider: 'openrouter',
@@ -468,74 +477,10 @@ describe('llm config helpers', () => {
 				},
 			}),
 		);
-		expect(fixtures[1]!.actions[1]).toEqual(
+		expect(entries[1]!.fixture.actions[1]).toEqual(
 			setContext({
 				config: { provider: 'broken', model: 'nope', apiKey: 'bad' },
 			}),
 		);
-	});
-});
-
-// ---------------------------------------------------------------------------
-// runSuite
-// ---------------------------------------------------------------------------
-
-describe('runSuite', () => {
-	it('empty specs produce empty spec results per fixture', async () => {
-		const result = await runSuite(
-			[{ name: 'init-only', actions: [initialize()] }],
-			[],
-			createMockFactory(noopTurn),
-		);
-
-		expect(result.fixtures).toHaveLength(1);
-		expect(result.fixtures[0]!.fixture).toBe('init-only');
-		expect(result.fixtures[0]!.specs).toEqual([]);
-		expect(result.fixtures[0]!.transcript.length).toBeGreaterThan(0);
-	});
-
-	it('evaluates spec points against each fixture transcript', async () => {
-		const specs: SpecPoint[] = [
-			{
-				id: 'INIT-1',
-				description: 'initialize send must exist',
-				test: (t) =>
-					t.some(
-						(e: TranscriptEntry) =>
-							e.direction === 'send' && e.method === 'initialize',
-					)
-						? 'pass'
-						: 'fail',
-			},
-			{
-				id: 'TOOL-1',
-				description: 'toolExecute must have been preceded by prompt',
-				test: (t) => {
-					const hasToolExec = t.some(
-						(e: TranscriptEntry) => e.method === 'toolExecute',
-					);
-					if (!hasToolExec) return 'skip';
-					const promptIdx = t.findIndex(
-						(e: TranscriptEntry) =>
-							e.direction === 'send' && e.method === 'prompt',
-					);
-					const toolIdx = t.findIndex(
-						(e: TranscriptEntry) => e.method === 'toolExecute',
-					);
-					return promptIdx < toolIdx ? 'pass' : 'fail';
-				},
-			},
-		];
-
-		const result = await runSuite(
-			[{ name: 'init-only', actions: [initialize()] }],
-			specs,
-			createMockFactory(noopTurn),
-		);
-
-		expect(result.fixtures[0]!.specs).toEqual([
-			{ specId: 'INIT-1', result: 'pass' },
-			{ specId: 'TOOL-1', result: 'skip' },
-		]);
 	});
 });
