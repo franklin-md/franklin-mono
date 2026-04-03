@@ -116,8 +116,11 @@ describe('execute', () => {
 		const transcript = await execute(
 			{
 				name: 'tool-call',
-				tools: [echoTool('greet')],
-				actions: [initialize(), setContext(), prompt('Greet the world')],
+				actions: [
+					initialize(),
+					setContext({ tools: [echoTool('greet')] }),
+					prompt('Greet the world'),
+				],
 			},
 			createMockFactory(toolCallingTurn),
 		);
@@ -154,10 +157,9 @@ describe('execute', () => {
 		const transcript = await execute(
 			{
 				name: 'waitFor-test',
-				tools: [echoTool('greet')],
 				actions: [
 					initialize(),
-					setContext(),
+					setContext({ tools: [echoTool('greet')] }),
 					prompt('Greet'),
 					waitFor((e: TranscriptEntry) => e.method === 'toolExecute'),
 				],
@@ -242,13 +244,12 @@ describe('execute', () => {
 		).rejects.toThrow('tool handler must be specified');
 	});
 
-	it('fixture-level tools are merged into setContext', async () => {
+	it('tools in setContext are sent as definitions on the wire', async () => {
 		const tool = echoTool('myTool');
 		const transcript = await execute(
 			{
-				name: 'tool-merge',
-				tools: [tool],
-				actions: [initialize(), setContext(), prompt('Hello')],
+				name: 'tool-in-setContext',
+				actions: [initialize(), setContext({ tools: [tool] }), prompt('Hello')],
 			},
 			createMockFactory(noopTurn),
 		);
@@ -302,8 +303,11 @@ describe('tool spec helpers', () => {
 		const transcript = await execute(
 			{
 				name: 'failing-tool-test',
-				tools: [tool],
-				actions: [initialize(), setContext(), prompt('Use the tool')],
+				actions: [
+					initialize(),
+					setContext({ tools: [tool] }),
+					prompt('Use the tool'),
+				],
 			},
 			createMockFactory(
 				(remote: MuAgent): TurnClient => ({
@@ -355,17 +359,11 @@ describe('action factories', () => {
 		});
 	});
 
-	it('setContext() provides sensible defaults', () => {
+	it('setContext() with no args produces empty partial', () => {
 		const action = setContext();
 		expect(action).toEqual({
 			type: 'setContext',
-			ctx: {
-				history: {
-					systemPrompt: 'You are a test agent.',
-					messages: [],
-				},
-				tools: [],
-			},
+			ctx: {},
 		});
 	});
 
@@ -382,7 +380,7 @@ describe('action factories', () => {
 					systemPrompt: 'Custom prompt',
 					messages: [],
 				},
-				tools: [tool.definition],
+				tools: [tool],
 			},
 		});
 	});
@@ -408,7 +406,6 @@ describe('action factories', () => {
 						},
 					],
 				},
-				tools: [],
 			},
 		});
 	});
@@ -420,11 +417,6 @@ describe('action factories', () => {
 		expect(action).toEqual({
 			type: 'setContext',
 			ctx: {
-				history: {
-					systemPrompt: 'You are a test agent.',
-					messages: [],
-				},
-				tools: [],
 				config: {
 					provider: 'openrouter',
 					model: 'openrouter/free',

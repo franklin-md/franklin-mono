@@ -129,11 +129,11 @@ describeIfKey(
 
 			const fixture: Fixture = {
 				name: 'integration-tool-call',
-				tools: [lookupCapital],
 				actions: [
 					initialize(),
 					setContext({
 						systemPrompt: 'You are a helpful assistant. Be very brief.',
+						tools: [lookupCapital],
 						config,
 					}),
 					prompt(
