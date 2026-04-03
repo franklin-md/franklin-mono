@@ -45,9 +45,7 @@ export function buildToolExecuteMiddleware(
 					content: [
 						{
 							type: 'text' as const,
-							text: JSON.stringify(
-								await tool.execute(params.call.arguments),
-							),
+							text: JSON.stringify(await tool.execute(params.call.arguments)),
 						},
 					],
 				}
