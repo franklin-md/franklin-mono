@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { MiniACPClient, TurnEnd } from '@franklin/mini-acp';
+import { StopCode } from '@franklin/mini-acp';
 import { createCoreCompiler } from '../../compile/core/compiler.js';
 import { createStoreCompiler } from '../../compile/store/compiler.js';
 import { compile, combine } from '../../compile/types.js';
@@ -68,7 +69,7 @@ describe('statusExtension', () => {
 
 	it('moves to unread when the turn ends', async () => {
 		const result = await compileWithStatus();
-		const turnEnd: TurnEnd = { type: 'turnEnd', stopReason: 'end_turn' };
+		const turnEnd: TurnEnd = { type: 'turnEnd', stopCode: StopCode.Finished };
 		const target = stubClient({
 			prompt: async function* () {
 				yield turnEnd;

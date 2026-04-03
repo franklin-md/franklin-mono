@@ -5,6 +5,7 @@ import { createSessionAdapter } from '../../protocol/adapter.js';
 import type { TurnClient } from '../../base/types.js';
 import type { MuAgent } from '../../protocol/types.js';
 import type { StreamEvent } from '../../types/stream.js';
+import { StopCode } from '../../types/stop-code.js';
 import type { AgentFactory, SpecPoint, TranscriptEntry } from '../types.js';
 import { execute } from '../execute/index.js';
 import { runSuite } from '../suite.js';
@@ -38,7 +39,7 @@ function createMockFactory(
 const noopTurn = (_remote: MuAgent): TurnClient => ({
 	async *prompt(): AsyncGenerator<StreamEvent> {
 		yield { type: 'turnStart' };
-		yield { type: 'turnEnd', stopReason: 'end_turn' };
+		yield { type: 'turnEnd', stopCode: StopCode.Finished };
 	},
 	async cancel() {},
 });
@@ -67,7 +68,7 @@ const toolCallingTurn = (remote: MuAgent): TurnClient => ({
 				],
 			},
 		};
-		yield { type: 'turnEnd', stopReason: 'end_turn' };
+		yield { type: 'turnEnd', stopCode: StopCode.Finished };
 	},
 	async cancel() {},
 });
@@ -317,7 +318,7 @@ describe('tool spec helpers', () => {
 								arguments: {},
 							},
 						});
-						yield { type: 'turnEnd', stopReason: 'end_turn' };
+						yield { type: 'turnEnd', stopCode: StopCode.Finished };
 					},
 					async cancel() {},
 				}),

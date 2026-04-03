@@ -17,6 +17,7 @@ import type {
 } from '../types.js';
 import type { Ctx } from '../../types/context.js';
 import type { StreamEvent } from '../../types/stream.js';
+import { StopCode } from '../../types/stop-code.js';
 
 import {
 	bridgeTool,
@@ -89,7 +90,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 				if (event.type === 'message_start') {
 					currentMessageId = crypto.randomUUID();
 				}
-				// TODO: The assistant message may have a stopReason of 'error'
+				// TODO: The assistant message may have a stopReason of 'error' (Pi-level)
 				const streamEvent = fromAgentEvent(event, currentMessageId);
 				if (streamEvent) {
 					void writer.write(streamEvent);
@@ -109,7 +110,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 					const msg = 'An error occurred while prompting the agent';
 					void writer.write({
 						type: 'turnEnd',
-						stopReason: 'refusal',
+						stopCode: StopCode.LlmError,
 						stopMessage: msg,
 					});
 					void writer.close();

@@ -9,6 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { expect, it } from 'vitest';
+import { StopCode } from '../types/stop-code.js';
 
 import { createPiAgentFactory } from '../base/pi/factory.js';
 import { initialize } from '../spec-tester/actions/initialize.js';
@@ -89,7 +90,7 @@ describeIfKey(
 
 			const turnEnds = receives(transcript, 'turnEnd');
 			expect(turnEnds).toHaveLength(1);
-			expect(turnEnds[0]!.params.stopReason).toBe('end_turn');
+			expect(turnEnds[0]!.params.stopCode).toBe(StopCode.Finished);
 
 			const chunks = receives(transcript, 'chunk').filter(
 				(entry) => entry.params.content.type === 'text',
@@ -145,7 +146,7 @@ describeIfKey(
 
 			const turnEnds = receives(transcript, 'turnEnd');
 			expect(turnEnds).toHaveLength(1);
-			expect(turnEnds[0]!.params.stopReason).toBe('end_turn');
+			expect(turnEnds[0]!.params.stopCode).toBe(StopCode.Finished);
 
 			const toolExecutes = receives(transcript, 'toolExecute');
 			expect(toolExecutes).toHaveLength(1);

@@ -30,12 +30,15 @@ export type {
 	Chunk,
 	TurnEnd,
 	StreamEvent,
-	StopReason,
 	// Errors
 	AuthError,
 	OAuthError,
 	APIKeyError,
+	// Stop codes
+	StopCategory,
 } from './types/index.js';
+
+export { StopCode, stopCategory } from './types/index.js';
 
 // Base protocol
 export type { BaseAgent, BaseClient } from './base/index.js';

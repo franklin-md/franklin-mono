@@ -16,7 +16,7 @@ import type {
 	ToolResultContent,
 } from '../../../types/content.js';
 
-import type { StopReason } from '../../../types/stop-reason.js';
+import { StopCode } from '../../../types/stop-code.js';
 // ---------------------------------------------------------------------------
 // pi-ai → mini-acp (per-role, returning narrowed types)
 // ---------------------------------------------------------------------------
@@ -108,16 +108,16 @@ export function toPiToolResultContent(
 	}
 }
 
-export function fromPiStopReason(reason: PiStopReason): StopReason | null {
+export function fromPiStopReason(reason: PiStopReason): StopCode | null {
 	switch (reason) {
 		case 'stop':
-			return 'end_turn';
+			return StopCode.Finished;
 		case 'length':
-			return 'max_tokens';
+			return StopCode.MaxTokens;
 		case 'error':
-			return 'refusal';
+			return StopCode.LlmError;
 		case 'aborted':
-			return 'cancelled';
+			return StopCode.Cancelled;
 		case 'toolUse':
 			return null;
 	}

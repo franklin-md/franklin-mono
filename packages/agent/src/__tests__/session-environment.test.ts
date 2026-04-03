@@ -3,6 +3,7 @@ import { createDuplexPair, type JsonRpcMessage } from '@franklin/transport';
 import {
 	createSessionAdapter,
 	createAgentConnection,
+	StopCode,
 } from '@franklin/mini-acp';
 import type { Environment, EnvironmentConfig } from '@franklin/extensions';
 import { SessionManager } from '../agent/session/index.js';
@@ -70,7 +71,7 @@ function createMockSpawn() {
 			async *prompt() {
 				yield {
 					type: 'turnEnd' as const,
-					stopReason: 'end_turn' as const,
+					stopCode: StopCode.Finished,
 				};
 			},
 			async cancel() {},
