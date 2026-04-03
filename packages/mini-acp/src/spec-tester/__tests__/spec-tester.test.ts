@@ -4,7 +4,7 @@ import { createAgentConnection } from '../../protocol/connection.js';
 import { createSessionAdapter } from '../../protocol/adapter.js';
 import type { TurnClient } from '../../base/types.js';
 import type { MuAgent } from '../../protocol/types.js';
-import type { Chunk, TurnEnd, Update } from '../../types/stream.js';
+import type { StreamEvent } from '../../types/stream.js';
 import type { AgentFactory, SpecPoint, TranscriptEntry } from '../types.js';
 import { execute } from '../execute/index.js';
 import { runSuite } from '../suite.js';
@@ -36,14 +36,16 @@ function createMockFactory(
 }
 
 const noopTurn = (_remote: MuAgent): TurnClient => ({
-	async *prompt(): AsyncGenerator<Chunk | Update | TurnEnd> {
+	async *prompt(): AsyncGenerator<StreamEvent> {
+		yield { type: 'turnStart' };
 		yield { type: 'turnEnd', stopReason: 'end_turn' };
 	},
 	async cancel() {},
 });
 
 const toolCallingTurn = (remote: MuAgent): TurnClient => ({
-	async *prompt(): AsyncGenerator<Chunk | Update | TurnEnd> {
+	async *prompt(): AsyncGenerator<StreamEvent> {
+		yield { type: 'turnStart' };
 		const result = await remote.toolExecute({
 			call: {
 				type: 'toolCall',
@@ -104,6 +106,7 @@ describe('execute', () => {
 			'send:setContext',
 			'receive:setContext',
 			'send:prompt',
+			'receive:turnStart',
 			'receive:turnEnd',
 		]);
 	});
@@ -127,6 +130,7 @@ describe('execute', () => {
 			'send:setContext',
 			'receive:setContext',
 			'send:prompt',
+			'receive:turnStart',
 			'receive:toolExecute',
 			'send:toolResult',
 			'receive:update',
@@ -186,6 +190,7 @@ describe('execute', () => {
 			'send:setContext',
 			'receive:setContext',
 			'send:prompt',
+			'receive:turnStart',
 			'receive:turnEnd',
 		]);
 	});
@@ -301,7 +306,8 @@ describe('tool spec helpers', () => {
 			},
 			createMockFactory(
 				(remote: MuAgent): TurnClient => ({
-					async *prompt(): AsyncGenerator<Chunk | Update | TurnEnd> {
+					async *prompt(): AsyncGenerator<StreamEvent> {
+						yield { type: 'turnStart' };
 						await remote.toolExecute({
 							call: {
 								type: 'toolCall',

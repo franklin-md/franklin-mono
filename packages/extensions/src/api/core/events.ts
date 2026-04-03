@@ -1,4 +1,10 @@
-import type { MiniACPClient, Chunk, Update, TurnEnd } from '@franklin/mini-acp';
+import type {
+	MiniACPClient,
+	TurnStart,
+	Chunk,
+	Update,
+	TurnEnd,
+} from '@franklin/mini-acp';
 import type { MaybePromise } from '../../types/shared.js';
 
 // ---------------------------------------------------------------------------
@@ -20,9 +26,10 @@ export type CoreEventMap = {
 // Stream observer events — fire-and-forget side effects on response stream
 // ---------------------------------------------------------------------------
 
-export type StreamObserverEvent = 'chunk' | 'update' | 'turnEnd';
+export type StreamObserverEvent = 'turnStart' | 'chunk' | 'update' | 'turnEnd';
 
 export type StreamObserverParamsMap = {
+	turnStart: TurnStart;
 	chunk: Chunk;
 	update: Update;
 	turnEnd: TurnEnd;
