@@ -10,13 +10,17 @@ import { createClientConnection } from '../../protocol/connection.js';
 import type { ToolCall, ToolResult } from '../../types/tool.js';
 import type { Ctx } from '../../types/context.js';
 import type { UserMessage } from '../../types/message.js';
-import type { Fixture, AgentFactory, TranscriptEntry } from '../types.js';
+import type {
+	AgentFactory,
+	SetContextPayload,
+	TranscriptEntry,
+} from '../types.js';
 
 const DEFAULT_WAIT_TIMEOUT_MS = 5000;
 
 export type ExecutionContext = ReturnType<typeof createContext>;
 
-export function createContext(fixture: Fixture, factory: AgentFactory) {
+export function createContext(factory: AgentFactory) {
 	const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
 	const transcript: TranscriptEntry[] = [];
 	const backgroundPromises: Promise<void>[] = [];
@@ -29,14 +33,11 @@ export function createContext(fixture: Fixture, factory: AgentFactory) {
 		onEntry?.(entry);
 	}
 
-	// Derive tool handlers from fixture.tools
+	// Tool handlers registered dynamically via setContext actions
 	const toolHandlers: Record<
 		string,
 		(call: ToolCall) => ToolResult | Promise<ToolResult>
 	> = {};
-	for (const t of fixture.tools ?? []) {
-		toolHandlers[t.definition.name] = t.handler;
-	}
 
 	const connection = createClientConnection(clientSide);
 
@@ -51,7 +52,7 @@ export function createContext(fixture: Fixture, factory: AgentFactory) {
 			const handler = toolHandlers[call.name];
 			if (!handler) {
 				throw new Error(
-					`A tool handler must be specified in the fixture for tool: ${call.name}`,
+					`A tool handler must be specified in setContext for tool: ${call.name}`,
 				);
 			}
 
@@ -63,9 +64,6 @@ export function createContext(fixture: Fixture, factory: AgentFactory) {
 
 	factory(agentSide);
 
-	// Fixture-level tool definitions (for merging into setContext)
-	const fixtureToolDefs = (fixture.tools ?? []).map((t) => t.definition);
-
 	// -----------------------------------------------------------------------
 	// Actions
 	// -----------------------------------------------------------------------
@@ -76,12 +74,19 @@ export function createContext(fixture: Fixture, factory: AgentFactory) {
 		record({ direction: 'receive', method: 'initialize', params: {} });
 	}
 
-	async function setContext(ctx: Partial<Ctx>): Promise<void> {
-		const merged = { ...ctx };
-		if (fixtureToolDefs.length > 0) {
-			merged.tools = [...(merged.tools ?? []), ...fixtureToolDefs];
+	async function setContext(payload: SetContextPayload): Promise<void> {
+		// Split ToolSpecs into definitions (for the wire) and handlers (local)
+		const ctx: Partial<Ctx> = {};
+		if (payload.history) ctx.history = payload.history;
+		if (payload.config) ctx.config = payload.config;
+		if (payload.tools) {
+			ctx.tools = payload.tools.map((t) => t.definition);
+			for (const t of payload.tools) {
+				toolHandlers[t.definition.name] = t.handler;
+			}
 		}
-		const params = { ctx: merged };
+
+		const params = { ctx };
 		record({ direction: 'send', method: 'setContext', params });
 		await connection.remote.setContext(params);
 		record({ direction: 'receive', method: 'setContext', params: {} });
