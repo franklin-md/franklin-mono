@@ -59,9 +59,18 @@ export type SpecPoint = {
 // Fixture DSL
 // ---------------------------------------------------------------------------
 
+export type ToolSpec = {
+	definition: ToolDefinition;
+	handler: (call: ToolCall) => ToolResult | Promise<ToolResult>;
+};
+
+export type SetContextPayload = Partial<
+	Omit<Ctx, 'tools'> & { tools: ToolSpec[] }
+>;
+
 export type Action =
 	| { type: 'initialize' }
-	| { type: 'setContext'; ctx: Partial<Ctx> }
+	| { type: 'setContext'; ctx: SetContextPayload }
 	| { type: 'prompt'; message: UserMessage }
 	| { type: 'cancel' }
 	| {
@@ -70,15 +79,9 @@ export type Action =
 			timeoutMs?: number;
 	  };
 
-export type ToolSpec = {
-	definition: ToolDefinition;
-	handler: (call: ToolCall) => ToolResult | Promise<ToolResult>;
-};
-
 export type Fixture = {
 	name: string;
 	actions: Action[];
-	tools?: ToolSpec[];
 };
 
 // ---------------------------------------------------------------------------

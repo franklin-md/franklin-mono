@@ -7,10 +7,12 @@ import { echoTool } from './tools/echo.js';
 
 export const toolCall: Fixture = {
 	name: 'tool-call',
-	tools: [echoTool('greet')],
 	actions: [
 		initialize(),
-		setContext({ config: VALID_LLM_CONFIG_PLACEHOLDER }),
+		setContext({
+			tools: [echoTool('greet')],
+			config: VALID_LLM_CONFIG_PLACEHOLDER,
+		}),
 		prompt('Greet the world'),
 	],
 };
