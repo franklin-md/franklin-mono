@@ -16,7 +16,7 @@ export type {
 	AuthEntry,
 } from './auth/types.js';
 export type { Session } from './agent/session/types.js';
-export type { Agent, AgentCommands } from './types.js';
+export type { SessionState, SessionRuntime, SessionAPI } from './types.js';
 
 export {
 	type FranklinApp,

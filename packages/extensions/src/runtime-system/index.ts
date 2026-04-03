@@ -1,7 +1,16 @@
-export type { RuntimeSystem } from './types.js';
+export type {
+	RuntimeSystem,
+	InferState,
+	InferAPI,
+	InferRuntime,
+	CombineSystems,
+} from './types.js';
 export { createRuntime } from './types.js';
-export { createEnvironmentSystem } from './environment.js';
+export {
+	createEnvironmentSystem,
+	type EnvironmentSystem,
+} from './environment.js';
 export type { EnvironmentFactory } from './environment.js';
-export { createStoreSystem } from './store.js';
-export { createCoreSystem } from './core.js';
+export { createStoreSystem, type StoreSystem } from './store.js';
+export { createCoreSystem, type CoreSystem } from './core.js';
 export { combine } from './combine.js';

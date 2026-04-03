@@ -1,3 +1,4 @@
+import { CtxTracker } from '@franklin/mini-acp';
 import type { CoreAPI } from '../../api/core/api.js';
 import type {
 	CoreEvent,
@@ -9,30 +10,17 @@ import type {
 } from '../../api/core/events.js';
 import type { ExtensionToolDefinition } from '../../api/core/tool.js';
 import type { FullMiddleware } from '../../api/core/middleware/types.js';
-import { passThrough } from '../../api/core/middleware/pass-through.js';
 import type { Compiler } from '../types.js';
 import {
-	buildAsyncWaterfall,
-	buildPromptWaterfall,
-	buildToolExecuteMiddleware,
-	buildToolInjector,
-} from './builders/index.js';
-
-const STREAM_OBSERVER_EVENTS = new Set<string>(['chunk', 'update', 'turnEnd']);
-const TOOL_OBSERVER_EVENTS = new Set<string>(['toolCall', 'toolResult']);
-
-function addEventHandler<K extends string, H>(
-	map: Map<K, H[]>,
-	key: K,
-	handler: H,
-): void {
-	let list = map.get(key);
-	if (!list) {
-		list = [];
-		map.set(key, list);
-	}
-	list.push(handler);
-}
+	STREAM_OBSERVER_EVENTS,
+	TOOL_OBSERVER_EVENTS,
+	addEventHandler,
+	buildMiddleware,
+} from './middleware.js';
+import { createRawClient, wrapClient, type SpawnResult } from './connect.js';
+import { seedTracker, initializeRawClient } from './seed.js';
+import { createCoreRuntime, type CoreRuntime } from '../../runtime/core.js';
+import type { CoreState } from '../../state/core.js';
 
 /**
  * Create a fresh core compiler instance.
@@ -41,8 +29,20 @@ function addEventHandler<K extends string, H>(
  * - Event handlers (on/prompt/setContext/initialize/cancel) → ClientMiddleware
  * - Stream observers (on/chunk/update/turnEnd) → dispatched from prompt stream
  * - Tool registration → ServerMiddleware + tool injection into setContext
+ *
+ * When transport and state are provided, build() connects to the agent
+ * process and returns a CoreRuntime. Without them, build() returns raw
+ * FullMiddleware (useful for unit-testing middleware in isolation).
  */
-export function createCoreCompiler(): Compiler<CoreAPI, FullMiddleware> {
+export function createCoreCompiler(
+	transport: SpawnResult,
+	state: CoreState,
+): Compiler<CoreAPI, CoreRuntime>;
+export function createCoreCompiler(): Compiler<CoreAPI, FullMiddleware>;
+export function createCoreCompiler(
+	transport?: SpawnResult,
+	state?: CoreState,
+): Compiler<CoreAPI, CoreRuntime | FullMiddleware> {
 	const handlers = new Map<CoreEvent, CoreEventHandler<CoreEvent>[]>();
 	const observers = new Map<
 		StreamObserverEvent,
@@ -85,57 +85,29 @@ export function createCoreCompiler(): Compiler<CoreAPI, FullMiddleware> {
 	return {
 		api,
 		async build() {
-			// ----- ClientMiddleware -----
-			// Start with passThrough for every method, then overwrite with
-			// registered handlers. This ensures client is always complete.
-			const client: FullMiddleware['client'] = {
-				initialize: passThrough(),
-				setContext: passThrough(),
-				prompt: passThrough(),
-				cancel: passThrough(),
-			};
+			const middleware = buildMiddleware(
+				handlers,
+				observers,
+				toolObservers,
+				tools,
+			);
 
-			for (const [key, fns] of handlers) {
-				if (key === 'prompt') {
-					client.prompt = buildPromptWaterfall(
-						fns as CoreEventHandler<'prompt'>[],
-						observers,
-					);
-				} else if (key === 'setContext') {
-					client.setContext = buildAsyncWaterfall<'setContext'>(
-						fns as CoreEventHandler<'setContext'>[],
-					);
-				} else if (key === 'initialize') {
-					client.initialize = buildAsyncWaterfall<'initialize'>(
-						fns as CoreEventHandler<'initialize'>[],
-					);
-				} else {
-					client.cancel = buildAsyncWaterfall<'cancel'>(
-						fns as CoreEventHandler<'cancel'>[],
-					);
-				}
+			if (!transport || !state) {
+				return middleware;
 			}
 
-			// If observers exist but no prompt handler was registered,
-			// still need to build a prompt waterfall to dispatch observers.
-			if (observers.size > 0 && !handlers.has('prompt')) {
-				client.prompt = buildPromptWaterfall([], observers);
-			}
+			// 1. Create and seed tracker with initial state
+			const tracker = new CtxTracker();
+			seedTracker(tracker, state.core);
 
-			// Append tool definitions to context via setContext middleware
-			if (tools.length > 0) {
-				client.setContext = buildToolInjector(tools, client.setContext);
-			}
+			// 2. Create raw client and initialize agent process
+			const rawClient = createRawClient(transport, middleware.server);
+			await initializeRawClient(rawClient, state.core);
 
-			// ----- ServerMiddleware -----
-			const server: FullMiddleware['server'] = {
-				toolExecute:
-					tools.length > 0 || toolObservers.size > 0
-						? buildToolExecuteMiddleware(tools, toolObservers)
-						: passThrough(),
-			};
+			// 3. Wrap with tracker + client middleware for ongoing operations
+			const client = wrapClient(rawClient, tracker, middleware.client);
 
-			return { client, server };
+			return createCoreRuntime(client, tracker, transport);
 		},
 	};
 }

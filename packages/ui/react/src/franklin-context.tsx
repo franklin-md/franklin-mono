@@ -59,7 +59,7 @@ export function FranklinProvider({
 				created = await createApp(extensions, platform, auth);
 				if (cancelledRef.current) {
 					await Promise.allSettled(
-						created.agents.list().map((s) => s.agent.dispose()),
+						created.agents.list().map((s) => s.runtime.dispose()),
 					);
 				} else {
 					setApp(created);
@@ -75,7 +75,7 @@ export function FranklinProvider({
 			cancelledRef.current = true;
 			if (created) {
 				void Promise.allSettled(
-					created.agents.list().map((s) => s.agent.dispose()),
+					created.agents.list().map((s) => s.runtime.dispose()),
 				);
 			}
 		};

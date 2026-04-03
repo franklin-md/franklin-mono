@@ -10,8 +10,7 @@ import {
 	type StoreResult,
 	createStoreResult,
 } from '../../api/store/registry/result.js';
-
-export type StoreCompilerResult = { stores: StoreResult };
+import { createStoreRuntime, type StoreRuntime } from '../../runtime/store.js';
 
 /**
  * Create a fresh store compiler instance.
@@ -29,7 +28,7 @@ export type StoreCompilerResult = { stores: StoreResult };
  */
 export function createStoreCompiler(
 	seed: StoreResult,
-): Compiler<StoreAPI, StoreCompilerResult> {
+): Compiler<StoreAPI, StoreRuntime> {
 	const mapping: StoreMapping = {};
 	const creators = new Set<string>();
 
@@ -83,7 +82,8 @@ export function createStoreCompiler(
 					);
 				}
 			}
-			return { stores: createStoreResult(seed.registry, mapping) };
+			const stores = createStoreResult(seed.registry, mapping);
+			return createStoreRuntime(stores);
 		},
 	};
 }

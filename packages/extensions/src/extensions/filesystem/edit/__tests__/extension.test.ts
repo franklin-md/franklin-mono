@@ -13,7 +13,9 @@ import type { Store } from '../../../../api/store/types.js';
 import type { Environment } from '../../../../api/environment/types.js';
 import { editExtension } from '../extension.js';
 
-function mockEnvironment(files: Record<string, string> = {}): Environment {
+function mockEnvironment(
+	files: Record<string, string> = {},
+): Environment & { dispose(): Promise<void> } {
 	const store = new Map<string, string>(Object.entries(files));
 	return {
 		filesystem: {
@@ -46,10 +48,11 @@ function mockEnvironment(files: Record<string, string> = {}): Environment {
 			permissions: { allowRead: ['**'], allowWrite: ['**'] },
 		})),
 		reconfigure: vi.fn(async () => {}),
+		dispose: vi.fn(async () => {}),
 	};
 }
 
-function compileEdit(env: Environment) {
+function compileEdit(env: Environment & { dispose(): Promise<void> }) {
 	const compiler = combine(
 		combine(
 			createCoreCompiler(),

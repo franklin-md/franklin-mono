@@ -7,8 +7,7 @@ export type EnvironmentRuntime = RuntimeBase<EnvironmentState> & {
 };
 
 export function createEnvironmentRuntime(
-	environment: Environment,
-	disposable: { dispose(): Promise<void> },
+	environment: Environment & { dispose(): Promise<void> },
 ): EnvironmentRuntime {
 	return {
 		environment,
@@ -22,7 +21,7 @@ export function createEnvironmentRuntime(
 			return { env: { ...(await environment.config()) } };
 		},
 		async dispose(): Promise<void> {
-			await disposable.dispose();
+			await environment.dispose();
 		},
 	};
 }

@@ -7,7 +7,7 @@ import { createEmptyStoreResult } from '../../../api/store/registry/result.js';
 import type { Environment } from '../../../api/environment/types.js';
 import { StoreRegistry } from '../../../api/store/registry/index.js';
 
-function mockEnvironment(): Environment {
+function mockEnvironment(): Environment & { dispose(): Promise<void> } {
 	return {
 		filesystem: {
 			readFile: vi.fn(),
@@ -26,6 +26,7 @@ function mockEnvironment(): Environment {
 			permissions: { allowRead: ['**'], allowWrite: ['**'] },
 		})),
 		reconfigure: vi.fn(async () => {}),
+		dispose: vi.fn(async () => {}),
 	};
 }
 

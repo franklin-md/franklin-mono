@@ -49,33 +49,26 @@ export class SessionManager {
 	private readonly sessions: SessionMap;
 	private readonly registry: StoreRegistry;
 	private readonly authManager: IAuthManager;
-	private readonly persister?: Persister<SessionSnapshot>;
-	// TODO: Maybe we rename? Do we need this given that no SessionManager is created from anything other than {}?
-	private readonly defaultConfig: ConfigOptions = {};
-	private readonly createEnvironment: Platform['environment'];
 
-	// TODO: Take in just Platform.
 	constructor(
-		private readonly spawn: SpawnFn,
+		private readonly system: RuntimeSystem<
+			SessionState,
+			FranklinExtensionApi,
+			SessionRuntime
+		>,
 		private readonly extensions: FranklinExtension[],
 		authManager: IAuthManager,
-		createEnvironment: Platform['environment'],
-		persistence?: PersistenceOptions,
+		registry: StoreRegistry,
+		persistence?: { session?: Persister<SessionSnapshot>; delayMs?: number },
 	) {
 		const delayMs = persistence?.delayMs ?? 500;
-
 		const sessionPersister = persistence?.session
 			? new DebouncedPersister(persistence.session, delayMs)
 			: undefined;
-		const poolPersister = persistence?.pool
-			? new DebouncedPersister(persistence.pool, delayMs)
-			: undefined;
 
-		this.registry = new StoreRegistry(poolPersister);
-		this.persister = sessionPersister;
+		this.registry = registry;
 		this.sessions = new SessionMap(sessionPersister);
 		this.authManager = authManager;
-		this.createEnvironment = createEnvironment;
 
 		this.authManager.onAuthChange(
 			async (provider: string, authKey: string | undefined) => {
@@ -85,31 +78,26 @@ export class SessionManager {
 	}
 
 	/**
-	 * Create a brand new session with no parent state.
+	 * Create a brand new session. Accepts a partial state that is
+	 * merged over the system's empty state.
 	 */
-	async new(
-		configOptions: ConfigOptions | undefined,
-		environmentConfig: EnvironmentConfig,
-	): Promise<Session> {
-		// TODO: Create a fresh store result with the registry
-		const seed = createEmptyStoreResult(this.registry);
-		const config = await this.resolveConfig(configOptions);
-		const emptyCtxWithAuth = mergeCtx(emptyCtx(), config ? { config } : {});
-
-		return this.createAndInit(emptyCtxWithAuth, seed, environmentConfig);
+	async new(overrides?: PartialState): Promise<Session> {
+		const empty = this.system.emptyState();
+		const state: SessionState = {
+			core: { ...empty.core, ...overrides?.core },
+			store: overrides?.store ?? empty.store,
+			env: { ...empty.env, ...overrides?.env },
+		};
+		return this.createSession(state);
 	}
 
 	/**
 	 * Fork from an existing session — copies stores AND injects
-	 * the parent's full Ctx into the new agent's context.
+	 * the parent's full history into the new session.
 	 */
 	async fork(sessionId: string): Promise<Session> {
-		const parent = this.get(sessionId);
-		const parentCtx = mergeCtx(emptyCtx(), parent.tracker.get());
-		const copiedStores = parent.agent.stores.share('copy');
-		const envConfig = await parent.environment.config();
-
-		return this.createAndInit(parentCtx, copiedStores, envConfig);
+		const forkedState = await this.get(sessionId).runtime.fork();
+		return this.createSession(forkedState);
 	}
 
 	/**
@@ -117,29 +105,16 @@ export class SessionManager {
 	 * a fresh conversation (private stores reset to initial).
 	 */
 	async child(sessionId: string): Promise<Session> {
-		const parent = this.get(sessionId);
-		const copiedStores = parent.agent.stores.share('fresh');
-		const ctx = mergeCtx(emptyCtx(), {
-			config: parent.tracker.get().config,
-		});
-		const envConfig = await parent.environment.config();
-
-		return this.createAndInit(ctx, copiedStores, envConfig);
+		const childState = await this.get(sessionId).runtime.child();
+		return this.createSession(childState);
 	}
 
-	/* TODO: Reimplemnt rewind. It's harder than originally thought as you would want 
-  the conversation UI to go back in time. This is probably why Pi embeds the 
-  state in the session tree.
-
-  I wonder if the solution is to expose on registerState some kind of `commit` method that 
-  embeds into a parallel session tree, and then a method for reconstructing the store 
-  with the semantics that it is a patch of the events. It would be interesting if the 
-  persister would actually be the one to save a patch, and then we may get the entire behaviour for free?
-  
-  */
+	/* TODO: Reimplement rewind. It's harder than originally thought as you would want
+	the conversation UI to go back in time. This is probably why Pi embeds the
+	state in the session tree. */
 
 	/**
-	 * Remove a session — disposes the agent, removes from the map,
+	 * Remove a session — disposes the runtime, removes from the map,
 	 * and deletes the persisted snapshot.
 	 */
 	async remove(sessionId: string): Promise<void> {
@@ -168,71 +143,34 @@ export class SessionManager {
 	 *
 	 * Two-phase restore:
 	 *   1. Restore pool entries from persistent storage
-	 *   2. Load session snapshots -> rebuild each StoreResult from the
-	 *      persisted name -> ref mapping, then compile extensions and
-	 *      replay context.
-	 *   3. GC orphaned pool entries (abnormal shutdown recovery) —
-	 *      the pool handles its own persister deletion.
+	 *   2. Load session snapshots → create runtimes → inject auth
 	 */
 	async restore(): Promise<void> {
-		if (!this.persister) return;
-
 		// Phase 1: restore the store pool
 		await this.registry.restore();
 
 		// Phase 2: restore sessions
 		await this.sessions.restore(async (snapshot) => {
-			const config = await this.resolveConfig(snapshot.ctx.config);
-			const restoredCtx = mergeCtx(snapshot.ctx, config ? { config } : {});
-
-			await this.createAndInit(
-				restoredCtx,
-				createStoreResult(this.registry, snapshot.stores),
-				snapshot.environmentConfig,
-				snapshot.sessionId,
-			);
+			await this.createSession(snapshot.state, snapshot.sessionId);
 		});
 
-		// Phase 3: GC orphaned pool entries (abnormal shutdown recovery)
-		// TODO: Do should we clean any unreferred stores?
+		// TODO: GC orphaned pool entries (abnormal shutdown recovery)
 	}
 
 	// -----------------------------------------------------------------------
 	// Internal helpers
 	// -----------------------------------------------------------------------
 
-	private async createAndInit(
-		ctx: PersistedCtx,
-		existingStores: StoreResult,
-		environmentConfig: EnvironmentConfig,
+	private async createSession(
+		state: SessionState,
 		sessionId?: string,
 	): Promise<Session> {
-		const transport = await this.spawn();
-		const tracker = new CtxTracker();
-
-		const environment = await this.createEnvironment(environmentConfig);
-
-		// Append ctxExtension at the tail so it sees final transformed params
-		const agent = await createAgent(
-			[...this.extensions, ctxExtension(tracker)],
-			transport,
-			existingStores,
-			environment,
-		);
-		await agent.initialize({});
-		await agent.setContext({
-			ctx: {
-				history: ctx.history,
-				tools: [],
-				config: ctx.config,
-			},
-		});
+		const runtime = await createRuntime(this.system, state, this.extensions);
+		await this.injectAuth(runtime, state.core.llmConfig);
 
 		const session: Session = {
 			sessionId: sessionId ?? crypto.randomUUID(),
-			agent,
-			tracker,
-			environment,
+			runtime,
 		};
 		this.sessions.register(session);
 		return session;

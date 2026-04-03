@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import type { Agent } from '@franklin/agent/browser';
+import type { SessionRuntime } from '@franklin/agent/browser';
 import { AgentProvider } from '@franklin/react';
 
 import { AgentSidebar } from './sidebar/index.js';
@@ -10,13 +10,13 @@ import { TodoPanel } from './todo/index.js';
 
 interface SelectedAgent {
 	id: string;
-	agent: Agent;
+	agent: SessionRuntime;
 }
 
 export function AgentChatPage() {
 	const [selected, setSelected] = useState<SelectedAgent | null>(null);
 
-	const handleSelectAgent = useCallback((id: string, agent: Agent) => {
+	const handleSelectAgent = useCallback((id: string, agent: SessionRuntime) => {
 		setSelected({ id, agent });
 	}, []);
 

@@ -4,7 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type {
-	Agent,
+	SessionRuntime,
 	FranklinApp,
 	Session,
 	SessionManager,
@@ -15,9 +15,7 @@ import { useSessions } from '../use-sessions.js';
 function makeSession(sessionId: string): Session {
 	return {
 		sessionId,
-		agent: {} as Agent,
-		tracker: {} as Session['tracker'],
-		environment: {} as Session['environment'],
+		runtime: {} as SessionRuntime,
 	};
 }
 
