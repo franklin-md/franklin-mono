@@ -7,7 +7,7 @@
 
 import type { Ctx } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
-import type { Chunk, Update, TurnEnd } from '../types/stream.js';
+import type { Chunk, TurnStart, Update, TurnEnd } from '../types/stream.js';
 import type { ToolCall, ToolDefinition, ToolResult } from '../types/tool.js';
 import type { AgentProtocol } from '../protocol/types.js';
 
@@ -21,6 +21,7 @@ export type TranscriptEntry =
 	| { direction: 'send'; method: 'prompt'; params: { message: UserMessage } }
 	| { direction: 'send'; method: 'cancel'; params: Record<string, never> }
 	| { direction: 'send'; method: 'toolResult'; params: ToolResult }
+	| { direction: 'receive'; method: 'turnStart'; params: TurnStart }
 	| { direction: 'receive'; method: 'chunk'; params: Chunk }
 	| { direction: 'receive'; method: 'update'; params: Update }
 	| { direction: 'receive'; method: 'turnEnd'; params: TurnEnd }

@@ -7,7 +7,6 @@
 
 import { Agent as PiCoreAgent } from '@mariozechner/pi-agent-core';
 import type { AgentEvent } from '@mariozechner/pi-agent-core';
-import type { Model } from '@mariozechner/pi-ai';
 import type { StreamFn } from '@mariozechner/pi-agent-core';
 
 import type {
@@ -17,12 +16,7 @@ import type {
 	CancelParams,
 } from '../types.js';
 import type { Ctx } from '../../types/context.js';
-import type {
-	Chunk,
-	StreamEvent,
-	TurnEnd,
-	Update,
-} from '../../types/stream.js';
+import type { StreamEvent } from '../../types/stream.js';
 
 import {
 	bridgeTool,
@@ -31,6 +25,7 @@ import {
 	toPiUserMessage,
 } from './translate/index.js';
 import { createMemoryStream } from '@franklin/transport';
+import { resolveModel } from './model-resolve.js';
 
 // ---------------------------------------------------------------------------
 // Adapter factory
@@ -39,9 +34,6 @@ import { createMemoryStream } from '@franklin/transport';
 export interface PiAdapterOptions {
 	/** BaseClient for reverse RPC (tool execution) */
 	client: TurnServer;
-	/** Pre-resolved pi-ai Model */
-	// TODO: FRA-62: Do not pre-resolve, instead take the LLMConfig in ctx and resolve from that
-	model: Model<string>;
 	/** Agent context (history, tools, config) */
 	ctx: Ctx;
 	/** Custom stream function — inject for testing without real LLM calls */
@@ -49,7 +41,8 @@ export interface PiAdapterOptions {
 }
 
 export function createPiAdapter(options: PiAdapterOptions): TurnClient {
-	const { client, model, ctx, streamFn } = options;
+	const { client, ctx, streamFn } = options;
+	const model = resolveModel(ctx.config);
 
 	// Bridge tool definitions to pi AgentTools that call client.toolExecute
 	const handler = client.toolExecute.bind(client);
@@ -83,9 +76,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 	});
 
 	return {
-		async *prompt(
-			params: PromptParams,
-		): AsyncGenerator<Chunk | Update | TurnEnd> {
+		async *prompt(params: PromptParams): AsyncGenerator<StreamEvent> {
 			let currentMessageId = crypto.randomUUID();
 
 			const { readable, writable } = createMemoryStream<StreamEvent>();
@@ -124,15 +115,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 					void writer.close();
 				});
 
-			for await (const event of readable) {
-				if (
-					event.type === 'chunk' ||
-					event.type === 'update' ||
-					event.type === 'turnEnd'
-				) {
-					yield event;
-				}
-			}
+			yield* readable;
 
 			unsub();
 		},

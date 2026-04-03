@@ -163,6 +163,23 @@ const turnEndIsTerminal: SpecPoint = {
 	},
 };
 
+const turnStartsWithTurnStart: SpecPoint = {
+	id: 'turn-starts-with-turn-start',
+	description: 'The first stream event after every prompt must be a turnStart',
+	test: (t) => {
+		const prompts = sends(t, 'prompt');
+		if (prompts.length === 0) return 'skip';
+		for (const p of prompts) {
+			const pIdx = t.indexOf(p);
+			const nextReceive = t
+				.slice(pIdx + 1)
+				.find((e) => e.direction === 'receive');
+			if (!nextReceive || nextReceive.method !== 'turnStart') return 'fail';
+		}
+		return 'pass';
+	},
+};
+
 // ---------------------------------------------------------------------------
 // Stream Events
 // ---------------------------------------------------------------------------
@@ -518,6 +535,7 @@ export const specPoints: SpecPoint[] = [
 	ctxReceiveExists,
 	ctxAfterInit,
 	// Turn Lifecycle
+	turnStartsWithTurnStart,
 	turnEndsWithTurnEnd,
 	noOverlappingPrompts,
 	promptAfterInit,

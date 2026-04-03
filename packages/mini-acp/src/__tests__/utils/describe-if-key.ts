@@ -34,7 +34,7 @@ function parseKeyFromDotEnv(
 	return undefined;
 }
 
-export function getKeyFromEnv(keyName: string): string | undefined {
+function getKeyFromEnv(keyName: string): string | undefined {
 	const fromProcessEnv = process.env[keyName];
 	if (fromProcessEnv) {
 		return fromProcessEnv;
@@ -51,8 +51,15 @@ export function getKeyFromEnv(keyName: string): string | undefined {
 export function describeIfKey(
 	keyName: string,
 	name: string,
-	fn: () => void,
+	fn: (apiKey: string) => void,
 ): void {
-	const describeSuite = getKeyFromEnv(keyName) ? describe : describe.skip;
-	describeSuite(name, fn);
+	const apiKey = getKeyFromEnv(keyName);
+	if (!apiKey) {
+		describe.skip(name, () => {});
+		return;
+	}
+
+	describe(name, () => {
+		fn(apiKey);
+	});
 }

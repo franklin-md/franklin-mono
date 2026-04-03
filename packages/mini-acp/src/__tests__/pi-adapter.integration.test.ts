@@ -9,7 +9,6 @@
 // ---------------------------------------------------------------------------
 
 import { expect, it } from 'vitest';
-import { getModel } from '@mariozechner/pi-ai';
 
 import { createPiAgentFactory } from '../base/pi/factory.js';
 import { initialize } from '../spec-tester/actions/initialize.js';
@@ -23,6 +22,7 @@ import type {
 	TranscriptEntry,
 } from '../spec-tester/types.js';
 import { describeIfKey } from './utils/describe-if-key.js';
+import { createValidLLMConfig } from './utils/llm-config.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -67,10 +67,10 @@ function assistantText(transcript: Transcript): string {
 
 describeIfKey(
 	'OPENROUTER_API_KEY',
-	'Pi Adapter — integration (OpenRouter, Claude Haiku 4.5)',
-	() => {
-		const model = getModel('openrouter', 'z-ai/glm-5');
-		const factory = createPiAgentFactory(model);
+	'Pi Adapter — integration (OpenRouter, z-ai/glm-5)',
+	(apiKey) => {
+		const config = createValidLLMConfig(apiKey, { model: 'z-ai/glm-5' });
+		const factory = createPiAgentFactory();
 
 		it('simple text prompt returns a coherent response', async () => {
 			const fixture: Fixture = {
@@ -79,6 +79,7 @@ describeIfKey(
 					initialize(),
 					setContext({
 						systemPrompt: 'You are a helpful assistant. Be very brief.',
+						config,
 					}),
 					prompt('What is 2+2? Reply with just the number.'),
 				],
@@ -132,6 +133,7 @@ describeIfKey(
 					initialize(),
 					setContext({
 						systemPrompt: 'You are a helpful assistant. Be very brief.',
+						config,
 					}),
 					prompt(
 						'What is the capital of France? Use the lookup_capital tool to find out.',

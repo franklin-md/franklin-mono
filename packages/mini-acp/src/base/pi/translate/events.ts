@@ -22,6 +22,7 @@ export function fromAgentEvent(
 ): StreamEvent | null {
 	switch (event.type) {
 		case 'agent_start':
+			return { type: 'turnStart' };
 		case 'turn_start':
 		case 'turn_end': // turn_end in Pi is just one trip round the agent loop.
 		case 'message_start':

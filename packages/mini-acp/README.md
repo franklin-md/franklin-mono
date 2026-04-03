@@ -161,7 +161,14 @@ Content block types:
 
 #### Stream Events
 
-The prompt stream emits a sequence of `StreamEvent` values. There are three event types:
+The prompt stream emits a sequence of `StreamEvent` values. There are four event types:
+
+**`TurnStart`** — signals the turn has begun. This is always the first event emitted after a `prompt`:
+```
+TurnStart {
+  type: "turnStart"
+}
+```
 
 **`Chunk`** — a streaming delta, emitted as tokens arrive from the LLM:
 ```
@@ -193,6 +200,7 @@ TurnEnd {
 
 A typical stream for a simple text response:
 ```
+TurnStart { "turnStart" }
 Chunk { "chunk", messageId: "m1", role: "assistant", content: { type: "text", text: "Hello" } }
 Chunk { "chunk", messageId: "m1", role: "assistant", content: { type: "text", text: " world" } }
 Update { "update", messageId: "m1", message: { role: "assistant", content: [{ type: "text", text: "Hello world" }] } }
@@ -200,8 +208,6 @@ TurnEnd { "turnEnd", stopReason: "end_turn" }
 ```
 
 The `Update` message text `"Hello world"` is exactly the concatenation of the two chunk deltas `"Hello"` + `" world"`. Every chunk's `messageId` (`"m1"`) matches the update's `messageId`, and no chunks for `"m1"` appear after the update.
-
-- [ ] `TurnStart` is defined in the type system but not yet emitted. It may be added in a future revision to provide turn-level metadata.
 - [ ] Usage information (token counts, cost) is not currently included in `TurnEnd`. This is a known gap.
 
 #### Tool Execution
@@ -288,6 +294,7 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 
 | ID | Description | Level |
 |----|-------------|-------|
+| `turn-starts-with-turn-start` | The first stream event after every `prompt` must be a `turnStart` | MUST |
 | `turn-ends-with-turn-end` | Every `prompt` must eventually be followed by a `turnEnd` | MUST |
 | `no-overlapping-prompts` | `prompt` must not be sent while a turn is active | MUST |
 | `prompt-after-init` | `prompt` must not be sent before `initialize` completes | MUST |

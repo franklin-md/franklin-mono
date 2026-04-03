@@ -4,7 +4,7 @@ import { createAgentConnection } from '../../protocol/connection.js';
 import { createSessionAdapter } from '../../protocol/adapter.js';
 import type { TurnClient } from '../../base/types.js';
 import type { MuAgent } from '../../protocol/types.js';
-import type { Chunk, TurnEnd, Update } from '../../types/stream.js';
+import type { StreamEvent } from '../../types/stream.js';
 import type { AgentFactory, SpecPoint, TranscriptEntry } from '../types.js';
 import { execute } from '../execute/index.js';
 import { runSuite } from '../suite.js';
@@ -14,6 +14,11 @@ import { prompt } from '../actions/prompt.js';
 import { waitFor } from '../actions/wait-for.js';
 import { failingTool } from '../fixtures/tools/failing.js';
 import { echoTool } from '../fixtures/tools/echo.js';
+import {
+	VALID_LLM_CONFIG_PLACEHOLDER,
+	createValidLLMConfig,
+	withLLMConfig,
+} from '../../__tests__/utils/llm-config.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -31,14 +36,16 @@ function createMockFactory(
 }
 
 const noopTurn = (_remote: MuAgent): TurnClient => ({
-	async *prompt(): AsyncGenerator<Chunk | Update | TurnEnd> {
+	async *prompt(): AsyncGenerator<StreamEvent> {
+		yield { type: 'turnStart' };
 		yield { type: 'turnEnd', stopReason: 'end_turn' };
 	},
 	async cancel() {},
 });
 
 const toolCallingTurn = (remote: MuAgent): TurnClient => ({
-	async *prompt(): AsyncGenerator<Chunk | Update | TurnEnd> {
+	async *prompt(): AsyncGenerator<StreamEvent> {
+		yield { type: 'turnStart' };
 		const result = await remote.toolExecute({
 			call: {
 				type: 'toolCall',
@@ -100,6 +107,7 @@ describe('execute', () => {
 			'send:setContext',
 			'receive:setContext',
 			'send:prompt',
+			'receive:turnStart',
 			'receive:turnEnd',
 		]);
 	});
@@ -123,6 +131,7 @@ describe('execute', () => {
 			'send:setContext',
 			'receive:setContext',
 			'send:prompt',
+			'receive:turnStart',
 			'receive:toolExecute',
 			'send:toolResult',
 			'receive:update',
@@ -182,6 +191,7 @@ describe('execute', () => {
 			'send:setContext',
 			'receive:setContext',
 			'send:prompt',
+			'receive:turnStart',
 			'receive:turnEnd',
 		]);
 	});
@@ -297,7 +307,8 @@ describe('tool spec helpers', () => {
 			},
 			createMockFactory(
 				(remote: MuAgent): TurnClient => ({
-					async *prompt(): AsyncGenerator<Chunk | Update | TurnEnd> {
+					async *prompt(): AsyncGenerator<StreamEvent> {
+						yield { type: 'turnStart' };
 						await remote.toolExecute({
 							call: {
 								type: 'toolCall',
@@ -400,6 +411,67 @@ describe('action factories', () => {
 				tools: [],
 			},
 		});
+	});
+
+	it('setContext() accepts config', () => {
+		const action = setContext({
+			config: { provider: 'openrouter', model: 'openrouter/free' },
+		});
+		expect(action).toEqual({
+			type: 'setContext',
+			ctx: {
+				history: {
+					systemPrompt: 'You are a test agent.',
+					messages: [],
+				},
+				tools: [],
+				config: {
+					provider: 'openrouter',
+					model: 'openrouter/free',
+				},
+			},
+		});
+	});
+});
+
+describe('llm config helpers', () => {
+	it('withLLMConfig replaces only placeholder configs in setContext actions', () => {
+		const fixtures = withLLMConfig(
+			[
+				{
+					name: 'placeholder',
+					actions: [
+						initialize(),
+						setContext({ config: VALID_LLM_CONFIG_PLACEHOLDER }),
+					],
+				},
+				{
+					name: 'explicit-invalid',
+					actions: [
+						initialize(),
+						setContext({
+							config: { provider: 'broken', model: 'nope', apiKey: 'bad' },
+						}),
+					],
+				},
+			],
+			createValidLLMConfig('secret'),
+		);
+
+		expect(fixtures[0]!.actions[1]).toEqual(
+			setContext({
+				config: {
+					provider: 'openrouter',
+					model: 'openrouter/free',
+					apiKey: 'secret',
+				},
+			}),
+		);
+		expect(fixtures[1]!.actions[1]).toEqual(
+			setContext({
+				config: { provider: 'broken', model: 'nope', apiKey: 'bad' },
+			}),
+		);
 	});
 });
 

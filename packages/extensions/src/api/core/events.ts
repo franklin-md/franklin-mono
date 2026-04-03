@@ -1,5 +1,6 @@
 import type {
 	MiniACPClient,
+	TurnStart,
 	Chunk,
 	Update,
 	TurnEnd,
@@ -28,9 +29,10 @@ export type CoreEventMap = {
 // Stream observer events — fire-and-forget side effects on response stream
 // ---------------------------------------------------------------------------
 
-export type StreamObserverEvent = 'chunk' | 'update' | 'turnEnd';
+export type StreamObserverEvent = 'turnStart' | 'chunk' | 'update' | 'turnEnd';
 
 export type StreamObserverParamsMap = {
+	turnStart: TurnStart;
 	chunk: Chunk;
 	update: Update;
 	turnEnd: TurnEnd;

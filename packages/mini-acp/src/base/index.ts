@@ -3,7 +3,7 @@ export type {
 	TurnServer as BaseClient,
 } from './types.js';
 export { createPiAdapter, type PiAdapterOptions } from './pi/adapter.js';
-export { createPiAgentFactory } from './pi/factory.js';
+export { bindPiAgent } from './pi/agent.js';
 export {
 	fromPiUserContent,
 	fromPiAssistantContent,
