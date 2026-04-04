@@ -18,7 +18,9 @@ export function AgentSidebar({
 
 	const handleSpawnAgent = useCallback(async () => {
 		const session = await manager.new({
-			core: { llmConfig: { provider: 'anthropic' } },
+			core: {
+				llmConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
+			},
 			// For now we just hard-code this until we have UI component to set.
 			env: {
 				cwd: '/tmp',
