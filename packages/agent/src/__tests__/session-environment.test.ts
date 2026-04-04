@@ -13,7 +13,7 @@ import {
 	createCoreSystem,
 	createStoreSystem,
 	createEnvironmentSystem,
-	combineSystems,
+	systems,
 	StorePool,
 } from '@franklin/extensions';
 import { SessionManager } from '../agent/session/index.js';
@@ -92,13 +92,10 @@ function createTestManager(envFactory: EnvironmentFactory) {
 	const spawn = createMockSpawn();
 	const registry = new StorePool();
 
-	const system = combineSystems(
-		createCoreSystem(spawn),
-		combineSystems(
-			createStoreSystem(registry),
-			createEnvironmentSystem(envFactory),
-		),
-	);
+	const system = systems(createCoreSystem(spawn))
+		.add(createStoreSystem(registry))
+		.add(createEnvironmentSystem(envFactory))
+		.done();
 
 	return new SessionManager(system, [], mockAuthManager());
 }

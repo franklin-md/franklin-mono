@@ -3,7 +3,7 @@ import {
 	createCoreSystem,
 	createStoreSystem,
 	createEnvironmentSystem,
-	combineSystems,
+	systems,
 } from '@franklin/extensions';
 import {
 	SessionManager,
@@ -20,13 +20,10 @@ export async function createApp(
 ): Promise<FranklinApp> {
 	const registry = new StoreRegistry();
 
-	const system = combineSystems(
-		createCoreSystem(platform.spawn),
-		combineSystems(
-			createStoreSystem(registry),
-			createEnvironmentSystem(platform.environment),
-		),
-	);
+	const system = systems(createCoreSystem(platform.spawn))
+		.add(createStoreSystem(registry))
+		.add(createEnvironmentSystem(platform.environment))
+		.done();
 
 	const agents = new SessionManager(system, extensions, auth);
 	return { agents, auth };
