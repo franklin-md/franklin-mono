@@ -109,11 +109,11 @@ function stubRawClient(): MiniACPClient & {
 	return {
 		initializeCalls,
 		setContextCalls,
-		initialize: vi.fn(async (params) => {
-			initializeCalls.push(params);
+		initialize: vi.fn(async () => {
+			initializeCalls.push({});
 		}),
-		setContext: vi.fn(async (params) => {
-			setContextCalls.push(params);
+		setContext: vi.fn(async (ctx) => {
+			setContextCalls.push(ctx);
 		}),
 		prompt: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => ({
@@ -149,16 +149,14 @@ describe('initializeRawClient', () => {
 
 		expect(client.setContextCalls).toHaveLength(1);
 		const ctxParam = client.setContextCalls[0] as {
-			ctx: {
-				history: { systemPrompt: string; messages: unknown[] };
-				tools: unknown[];
-				config: { model: string };
-			};
+			history: { systemPrompt: string; messages: unknown[] };
+			tools: unknown[];
+			config: { model: string };
 		};
-		expect(ctxParam.ctx.history.systemPrompt).toBe('You are helpful');
-		expect(ctxParam.ctx.history.messages).toHaveLength(1);
-		expect(ctxParam.ctx.tools).toEqual([]);
-		expect(ctxParam.ctx.config.model).toBe('test-model');
+		expect(ctxParam.history.systemPrompt).toBe('You are helpful');
+		expect(ctxParam.history.messages).toHaveLength(1);
+		expect(ctxParam.tools).toEqual([]);
+		expect(ctxParam.config.model).toBe('test-model');
 	});
 
 	it('copies messages so raw client does not share references', async () => {
@@ -177,10 +175,10 @@ describe('initializeRawClient', () => {
 		await initializeRawClient(client, core);
 
 		const ctxParam = client.setContextCalls[0] as {
-			ctx: { history: { messages: unknown[] } };
+			history: { messages: unknown[] };
 		};
-		expect(ctxParam.ctx.history.messages).not.toBe(messages);
-		expect(ctxParam.ctx.history.messages).toEqual(messages);
+		expect(ctxParam.history.messages).not.toBe(messages);
+		expect(ctxParam.history.messages).toEqual(messages);
 	});
 
 	it('copies llmConfig so raw client does not share references', async () => {
@@ -194,10 +192,10 @@ describe('initializeRawClient', () => {
 		await initializeRawClient(client, core);
 
 		const ctxParam = client.setContextCalls[0] as {
-			ctx: { config: unknown };
+			config: unknown;
 		};
-		expect(ctxParam.ctx.config).not.toBe(llmConfig);
-		expect(ctxParam.ctx.config).toEqual(llmConfig);
+		expect(ctxParam.config).not.toBe(llmConfig);
+		expect(ctxParam.config).toEqual(llmConfig);
 	});
 });
 
@@ -226,8 +224,7 @@ describe('seed integration', () => {
 		await initializeRawClient(client, core);
 
 		const trackerCtx = tracker.get();
-		const clientCtx = (client.setContextCalls[0] as { ctx: typeof trackerCtx })
-			.ctx;
+		const clientCtx = client.setContextCalls[0] as typeof trackerCtx;
 
 		expect(trackerCtx.history.systemPrompt).toBe(
 			clientCtx.history.systemPrompt,

@@ -14,7 +14,7 @@ import {
 	createStoreSystem,
 	createEnvironmentSystem,
 	combineSystems,
-	StorePool as StoreRegistry,
+	StorePool,
 } from '@franklin/extensions';
 import { SessionManager } from '../agent/session/index.js';
 import type { IAuthManager } from '../auth/types.js';
@@ -90,7 +90,7 @@ function createMockSpawn() {
 
 function createTestManager(envFactory: EnvironmentFactory) {
 	const spawn = createMockSpawn();
-	const registry = new StoreRegistry();
+	const registry = new StorePool();
 
 	const system = combineSystems(
 		createCoreSystem(spawn),
@@ -100,7 +100,7 @@ function createTestManager(envFactory: EnvironmentFactory) {
 		),
 	);
 
-	return new SessionManager(system, [], mockAuthManager(), registry);
+	return new SessionManager(system, [], mockAuthManager());
 }
 
 const defaultConfig: EnvironmentConfig = {

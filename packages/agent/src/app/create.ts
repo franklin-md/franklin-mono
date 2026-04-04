@@ -1,4 +1,3 @@
-import { DebouncedPersister } from '@franklin/lib';
 import {
 	StorePool as StoreRegistry,
 	createCoreSystem,
@@ -11,7 +10,6 @@ import {
 	type FranklinApp,
 	type FranklinExtension,
 } from '../browser.js';
-import { createPersistence } from '../agent/session/persist/file-persister.js';
 import type { Platform } from '../platform.js';
 import type { IAuthManager } from '../auth/types.js';
 
@@ -20,9 +18,7 @@ export async function createApp(
 	platform: Platform,
 	auth: IAuthManager,
 ): Promise<FranklinApp> {
-	const persistence = createPersistence('.', platform.filesystem);
-	const poolPersister = new DebouncedPersister(persistence.pool, 500);
-	const registry = new StoreRegistry(poolPersister);
+	const registry = new StoreRegistry();
 
 	const system = combineSystems(
 		createCoreSystem(platform.spawn),
@@ -32,9 +28,6 @@ export async function createApp(
 		),
 	);
 
-	const agents = new SessionManager(system, extensions, auth, registry, {
-		session: persistence.session,
-	});
-	await agents.restore();
+	const agents = new SessionManager(system, extensions, auth);
 	return { agents, auth };
 }

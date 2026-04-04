@@ -9,12 +9,8 @@ import { Agent as PiCoreAgent } from '@mariozechner/pi-agent-core';
 import type { AgentEvent } from '@mariozechner/pi-agent-core';
 import type { StreamFn } from '@mariozechner/pi-agent-core';
 
-import type {
-	TurnClient,
-	TurnServer,
-	PromptParams,
-	CancelParams,
-} from '../types.js';
+import type { TurnClient, TurnServer } from '../types.js';
+import type { UserMessage } from '../../types/message.js';
 import type { Ctx } from '../../types/context.js';
 import type { StreamEvent } from '../../types/stream.js';
 
@@ -76,7 +72,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 	});
 
 	return {
-		async *prompt(params: PromptParams): AsyncGenerator<StreamEvent> {
+		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
 			let currentMessageId = crypto.randomUUID();
 
 			const { readable, writable } = createMemoryStream<StreamEvent>();
@@ -98,7 +94,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 
 			// Drive the agent loop — this runs until the agent is done
 			// (potentially multiple LLM turns with tool calls in between)
-			const piMessage = toPiUserMessage(params.message);
+			const piMessage = toPiUserMessage(message);
 			piAgent
 				.prompt(piMessage)
 				.then(() => {
@@ -120,7 +116,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 			unsub();
 		},
 
-		async cancel(_params: CancelParams): Promise<void> {
+		async cancel(): Promise<void> {
 			piAgent.abort();
 			// TODO: Ensure that aborting causes prompt to:
 			// a) not hang

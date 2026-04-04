@@ -42,5 +42,5 @@ export async function configureAgent(
 		...(apiKey !== undefined && { apiKey }),
 	};
 
-	await agent.setContext({ ctx: { config: llmConfig } });
+	await agent.setContext({ config: llmConfig });
 }

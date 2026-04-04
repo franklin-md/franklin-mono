@@ -54,14 +54,14 @@ export function trackClient(
 		initialize: client.initialize.bind(client),
 		cancel: client.cancel.bind(client),
 
-		async setContext(params) {
-			tracker.apply(params.ctx);
-			return client.setContext(params);
+		async setContext(ctx) {
+			tracker.apply(ctx);
+			return client.setContext(ctx);
 		},
 
-		async *prompt(params): AsyncIterable<StreamEvent> {
-			tracker.append(params.message);
-			for await (const event of client.prompt(params)) {
+		async *prompt(message): AsyncIterable<StreamEvent> {
+			tracker.append(message);
+			for await (const event of client.prompt(message)) {
 				if (event.type === 'update') {
 					tracker.append(event.message);
 				}

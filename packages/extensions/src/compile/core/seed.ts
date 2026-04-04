@@ -28,15 +28,13 @@ export async function initializeRawClient(
 	rawClient: MiniACPClient,
 	core: CoreState['core'],
 ): Promise<void> {
-	await rawClient.initialize({});
+	await rawClient.initialize();
 	await rawClient.setContext({
-		ctx: {
-			history: {
-				systemPrompt: core.history.systemPrompt,
-				messages: [...core.history.messages],
-			},
-			tools: [],
-			config: { ...core.llmConfig },
+		history: {
+			systemPrompt: core.history.systemPrompt,
+			messages: [...core.history.messages],
 		},
+		tools: [],
+		config: { ...core.llmConfig },
 	});
 }

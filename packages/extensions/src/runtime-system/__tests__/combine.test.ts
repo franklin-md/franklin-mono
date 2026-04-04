@@ -299,10 +299,8 @@ describe('combine — three systems (nested)', () => {
 
 		const events = await collect(
 			runtime.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 

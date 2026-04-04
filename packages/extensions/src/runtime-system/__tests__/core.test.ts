@@ -91,10 +91,8 @@ describe('createCoreSystem', () => {
 
 		const events = await collect(
 			runtime.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -132,10 +130,8 @@ describe('createCoreSystem', () => {
 
 		await collect(
 			runtime.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
