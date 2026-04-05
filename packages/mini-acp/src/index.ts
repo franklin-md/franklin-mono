@@ -62,9 +62,6 @@ export type {
 	MiniACPProtocol,
 	ClientProtocol,
 	AgentProtocol,
-	AgentCtx,
-	InitializeParams,
-	InitializeResult,
 	ClientBinding,
 	AgentBinding,
 } from './protocol/index.js';

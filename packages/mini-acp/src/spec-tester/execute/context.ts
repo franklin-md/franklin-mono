@@ -70,7 +70,7 @@ export function createContext(factory: AgentFactory) {
 
 	async function initialize(): Promise<void> {
 		record({ direction: 'send', method: 'initialize', params: {} });
-		await connection.remote.initialize({});
+		await connection.remote.initialize();
 		record({ direction: 'receive', method: 'initialize', params: {} });
 	}
 
@@ -86,21 +86,19 @@ export function createContext(factory: AgentFactory) {
 			}
 		}
 
-		const params = { ctx };
-		record({ direction: 'send', method: 'setContext', params });
-		await connection.remote.setContext(params);
+		record({ direction: 'send', method: 'setContext', params: ctx });
+		await connection.remote.setContext(ctx);
 		record({ direction: 'receive', method: 'setContext', params: {} });
 	}
 
 	function prompt(message: UserMessage): void {
-		const params = { message };
-		record({ direction: 'send', method: 'prompt', params });
-		backgroundPromises.push(consume(connection.remote.prompt(params)));
+		record({ direction: 'send', method: 'prompt', params: message });
+		backgroundPromises.push(consume(connection.remote.prompt(message)));
 	}
 
 	function cancel(): void {
 		record({ direction: 'send', method: 'cancel', params: {} });
-		void connection.remote.cancel({});
+		void connection.remote.cancel();
 	}
 
 	async function waitFor(

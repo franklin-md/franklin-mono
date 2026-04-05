@@ -35,6 +35,6 @@ export {
 	createStoreResult,
 	createStore,
 } from './store/index.js';
-export { StorePool } from './store/index.js';
+export { StoreRegistry } from './store/index.js';
 export type { StoreEntry, StoreMapping } from './store/index.js';
 export type { StoreSnapshot } from './store/index.js';

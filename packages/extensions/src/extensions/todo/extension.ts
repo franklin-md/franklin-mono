@@ -50,17 +50,15 @@ export function todoExtension(): Extension<CoreAPI & StoreAPI> {
 			},
 		});
 
-		api.on('prompt', (params) => {
+		api.on('prompt', (message) => {
 			const formatted = formatTodos(store.get());
 			if (!formatted) return undefined;
 			return {
-				message: {
-					...params.message,
-					content: [
-						{ type: 'text' as const, text: formatted },
-						...params.message.content,
-					],
-				},
+				...message,
+				content: [
+					{ type: 'text' as const, text: formatted },
+					...message.content,
+				],
 			};
 		});
 	};

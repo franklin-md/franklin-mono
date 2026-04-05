@@ -24,12 +24,12 @@ export function conversationExtension(): Extension<CoreAPI & StoreAPI> {
 		const store = api.registerStore(conversationKey, [], 'private');
 		const control = createConversationControl(store);
 
-		api.on('prompt', (params) => {
+		api.on('prompt', (message) => {
 			store.set((draft) => {
 				draft.push({
 					id: crypto.randomUUID(),
 					timestamp: Date.now(),
-					prompt: { ...params.message },
+					prompt: { ...message },
 					response: { blocks: [] },
 				});
 			});

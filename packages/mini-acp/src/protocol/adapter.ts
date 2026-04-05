@@ -5,9 +5,10 @@
 
 import type { TurnClient } from '../base/types.js';
 import type { StreamEvent } from '../types/stream.js';
-import type { MuClient, InitializeResult } from './types.js';
+import type { MuClient } from './types.js';
 import { CtxTracker } from './ctx-tracker.js';
 import type { Ctx } from '../types/context.js';
+import type { UserMessage } from '../types/message.js';
 
 /**
  * Wraps a lazily-created TurnClient as a full MiniACPClient.
@@ -25,28 +26,23 @@ export function createSessionAdapter(
 	const tracker = new CtxTracker();
 	let currentTurn: TurnClient | null = null;
 
-	const ack: InitializeResult = {};
-
 	return {
-		async initialize() {
-			return ack;
-		},
+		async initialize() {},
 
-		async setContext({ ctx: partial }) {
+		async setContext(ctx: Partial<Ctx>) {
 			// TODO: We should reject a setContext if there is a turn in progress.
-			tracker.apply(partial);
+			tracker.apply(ctx);
 			// Invalidate agent so next prompt uses new context
 			currentTurn = null;
-			return ack;
 		},
 
-		async *prompt(params): AsyncGenerator<StreamEvent> {
+		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
 			// TODO: We should reject a prompt if there is a turn in progress.
 			// TODO: Turn this into a testable spec point.
 			currentTurn = getAgent(tracker.get());
 
-			tracker.append(params.message);
-			for await (const event of currentTurn.prompt(params)) {
+			tracker.append(message);
+			for await (const event of currentTurn.prompt(message)) {
 				if (event.type === 'update') {
 					tracker.append(event.message);
 				}
@@ -57,12 +53,12 @@ export function createSessionAdapter(
 			currentTurn = null;
 		},
 
-		async cancel(params) {
+		async cancel() {
 			if (!currentTurn) {
 				// TODO: Raise error or silently drop
 				return;
 			}
-			return currentTurn.cancel(params);
+			return currentTurn.cancel();
 		},
 	};
 }

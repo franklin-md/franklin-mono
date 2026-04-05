@@ -66,10 +66,9 @@ describe('todoExtension', () => {
 		});
 
 		const wrapped = apply(result.client, target);
-		await wrapped.setContext({ ctx: {} });
+		await wrapped.setContext({});
 
-		const tools = (received[0] as { ctx: { tools: { name: string }[] } }).ctx
-			.tools;
+		const tools = (received[0] as { tools: { name: string }[] }).tools;
 		expect(tools).toHaveLength(3);
 		expect(tools.map((t) => t.name).sort()).toEqual([
 			'add_todo',
@@ -178,21 +177,19 @@ describe('todoExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hello' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hello' }],
 			}),
 		);
 
 		const params = received[0] as {
-			message: { content: { type: string; text: string }[] };
+			content: { type: string; text: string }[];
 		};
 		// First content block should be the todos injection
-		expect(params.message.content[0]?.text).toContain('<todos>');
-		expect(params.message.content[0]?.text).toContain('Buy milk');
+		expect(params.content[0]?.text).toContain('<todos>');
+		expect(params.content[0]?.text).toContain('Buy milk');
 		// Original content preserved
-		expect(params.message.content[1]?.text).toBe('hello');
+		expect(params.content[1]?.text).toBe('hello');
 	});
 
 	it('no injection when todo list is empty', async () => {
@@ -209,18 +206,16 @@ describe('todoExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hello' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hello' }],
 			}),
 		);
 
 		const params = received[0] as {
-			message: { content: { type: string; text: string }[] };
+			content: { type: string; text: string }[];
 		};
-		expect(params.message.content).toHaveLength(1);
-		expect(params.message.content[0]?.text).toBe('hello');
+		expect(params.content).toHaveLength(1);
+		expect(params.content[0]?.text).toBe('hello');
 	});
 
 	it('stores todos in a store accessible via StoreResult', async () => {

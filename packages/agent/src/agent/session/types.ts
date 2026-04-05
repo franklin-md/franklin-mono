@@ -1,15 +1,11 @@
-import type { ClientProtocol, CtxTracker } from '@franklin/mini-acp';
-import type { Environment } from '@franklin/extensions';
-import type { Agent } from '../../types.js';
+import type { RuntimeBase } from '@franklin/extensions';
 
-export type SpawnFn = () => ClientProtocol | Promise<ClientProtocol>;
-
-//TODO: Should we move the listeners in here?
-export type Session = {
+export type Session<RT extends RuntimeBase<any>> = {
 	sessionId: string;
-	// TODO: Might this make sense to move into Agent?
-	tracker: CtxTracker;
+	runtime: RT;
+};
 
-	agent: Agent;
-	environment: Environment;
+export type SessionSnapshot<S> = {
+	sessionId: string;
+	state: S;
 };

@@ -6,14 +6,16 @@ import { createCoreCompiler } from '../../../../compile/core/compiler.js';
 import { createEnvironmentCompiler } from '../../../../compile/environment/compiler.js';
 import { createStoreCompiler } from '../../../../compile/store/compiler.js';
 import {
-	StorePool,
+	StoreRegistry,
 	createEmptyStoreResult,
 } from '../../../../api/store/index.js';
 import type { Store } from '../../../../api/store/types.js';
 import type { Environment } from '../../../../api/environment/types.js';
 import { editExtension } from '../extension.js';
 
-function mockEnvironment(files: Record<string, string> = {}): Environment {
+function mockEnvironment(
+	files: Record<string, string> = {},
+): Environment & { dispose(): Promise<void> } {
 	const store = new Map<string, string>(Object.entries(files));
 	return {
 		filesystem: {
@@ -46,14 +48,15 @@ function mockEnvironment(files: Record<string, string> = {}): Environment {
 			permissions: { allowRead: ['**'], allowWrite: ['**'] },
 		})),
 		reconfigure: vi.fn(async () => {}),
+		dispose: vi.fn(async () => {}),
 	};
 }
 
-function compileEdit(env: Environment) {
+function compileEdit(env: Environment & { dispose(): Promise<void> }) {
 	const compiler = combine(
 		combine(
 			createCoreCompiler(),
-			createStoreCompiler(createEmptyStoreResult(new StorePool())),
+			createStoreCompiler(createEmptyStoreResult(new StoreRegistry())),
 		),
 		createEnvironmentCompiler(env),
 	);
@@ -106,11 +109,10 @@ describe('editExtension', () => {
 
 		const received: Array<Parameters<MiniACPClient['setContext']>[0]> = [];
 		const target: MiniACPClient = {
-			initialize: vi.fn(async () => ({})),
+			initialize: vi.fn(async () => {}),
 			setContext: vi.fn(
 				async (params: Parameters<MiniACPClient['setContext']>[0]) => {
 					received.push(params);
-					return {};
 				},
 			),
 			prompt: vi.fn(async function* () {
@@ -122,13 +124,11 @@ describe('editExtension', () => {
 		const { apply } = await import('../../../../api/core/middleware/apply.js');
 
 		const wrapped = apply(result.client, target);
-		await wrapped.setContext({ ctx: {} });
+		await wrapped.setContext({});
 
-		const ctx = received[0] as {
-			ctx: { tools: { name: string }[] };
-		};
-		expect(ctx.ctx.tools).toHaveLength(1);
-		expect(ctx.ctx.tools[0]!.name).toBe('edit_file');
+		const ctx = received[0] as { tools: { name: string }[] };
+		expect(ctx.tools).toHaveLength(1);
+		expect(ctx.tools[0]!.name).toBe('edit_file');
 	});
 
 	it('performs a successful edit', async () => {

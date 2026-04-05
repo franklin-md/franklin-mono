@@ -1,21 +1,28 @@
-import type { MiniACPClient } from '@franklin/mini-acp';
-import type { StoreResult } from '@franklin/extensions';
+import type {
+	CoreSystem,
+	StoreSystem,
+	EnvironmentSystem,
+	CombineSystems,
+	InferState,
+	InferAPI,
+	InferRuntime,
+} from '@franklin/extensions';
 
-/**
- * The commands available on an agent — mirrors MiniACPClient.
- */
-export type AgentCommands = MiniACPClient;
+/** The combined system: combine(core, combine(store, env)). */
+type FullSystem = CombineSystems<
+	CoreSystem,
+	CombineSystems<StoreSystem, EnvironmentSystem>
+>;
 
-/**
- * A running agent: commands + tool execution + stores + lifecycle.
- *
- * - Commands (`initialize`, `setContext`, `prompt`, `cancel`) are wrapped
- *   with extension middleware.
- * - `toolExecute` handles tool calls from the protocol, with extension-
- *   registered tools short-circuiting before reaching the default handler.
- * - Stores are accessed via `agent.stores.get(name)`.
- */
-export type Agent = AgentCommands & {
-	stores: StoreResult;
-	dispose: () => Promise<void>;
-};
+// ---------------------------------------------------------------------------
+// Derived types — all flow from the concrete system types
+// ---------------------------------------------------------------------------
+
+/** Combined state — persisted without secrets. */
+export type FranklinState = InferState<FullSystem>;
+
+/** Combined extension API surface. */
+export type FranklinAPI = InferAPI<FullSystem>;
+
+/** Combined runtime — the live running session. */
+export type FranklinRuntime = InferRuntime<FullSystem>;

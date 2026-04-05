@@ -237,6 +237,16 @@ ToolResult {
 
 A single `prompt` call may trigger multiple tool executions. The agent's internal LLM loop continues after each tool result — cycling through `(LLM call → tool call → tool result → LLM call)` — until the LLM produces a final response or a stop condition is reached. The entire sequence is part of a single prompt turn, but tool calls/results flow through reverse RPC rather than the prompt stream.
 
+##### Tool Error Semantics
+
+There are two ways a tool execution can fail, and they have different protocol-level consequences:
+
+1. **In-band error** (`isError: true` on `ToolResult`): The tool ran and produced an error result. The agent loop **continues** — the LLM sees the error content and decides how to proceed (retry, ask the user, or give up). This is the preferred mechanism for signalling tool failures.
+
+2. **Thrown exception** (JSON-RPC error response): The `toolExecute` handler itself throws. This propagates as a protocol-level failure and typically **ends the turn** with `stopReason: "refusal"`.
+
+Client-side `toolExecute` implementations SHOULD catch their own exceptions and return a `ToolResult` with `isError: true` and descriptive content, rather than allowing exceptions to propagate. Exceptions as results preserve agent control flow; exceptions as exceptions alter it.
+
 #### Turn End
 
 The turn ends when the agent emits a `TurnEnd` event and closes the stream. The `stopCode` is an integer indicating why:
@@ -382,6 +392,6 @@ Forking a session is creating a new agent connection and calling `setContext` wi
 - [ ] Is it expensive to send full history on fork?
 - [ ] Mid turn notification / ctx changing
   - [ ] May need to relax tool response type
-- [x] Error semantics spelled out (StopCode integer enum with categories)
+- [x] Error semantics spelled out (StopCode integer enum with categories; see Tool Error Semantics)
 - [ ] Spell out authentication model, but feels like apikey can really be enough
 - [ ] 

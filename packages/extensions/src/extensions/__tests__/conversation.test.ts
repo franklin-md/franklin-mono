@@ -79,10 +79,8 @@ describe('conversationExtension', () => {
 
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hello' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hello' }],
 			}),
 		);
 
@@ -119,10 +117,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -159,10 +155,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -196,10 +190,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -230,10 +222,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -249,6 +239,53 @@ describe('conversationExtension', () => {
 				arguments: { path: '/foo' },
 			},
 			result: [{ type: 'text', text: 'ok' }],
+		});
+	});
+
+	it('records isError from tool result on toolUse block', async () => {
+		const result = await compileConversation();
+		const agent = stubAgent({
+			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
+				toolCallId: call.id,
+				content: [{ type: 'text' as const, text: 'Permission denied' }],
+				isError: true,
+			})),
+		});
+		const wrappedAgent = apply(result.server, agent);
+
+		const target = stubClient({
+			prompt: async function* () {
+				await wrappedAgent.toolExecute({
+					call: {
+						type: 'toolCall',
+						id: 'tc1',
+						name: 'write_file',
+						arguments: { path: '/etc/passwd' },
+					},
+				});
+			},
+		});
+
+		const wrapped = apply(result.client, target);
+		await collect(
+			wrapped.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const blocks = getStore(result.stores)[0]!.response.blocks;
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toEqual({
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'write_file',
+				arguments: { path: '/etc/passwd' },
+			},
+			result: [{ type: 'text', text: 'Permission denied' }],
+			isError: true,
 		});
 	});
 
@@ -278,10 +315,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -318,10 +353,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -346,10 +379,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -380,10 +411,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -444,10 +473,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'read /foo' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'read /foo' }],
 			}),
 		);
 
@@ -489,19 +516,15 @@ describe('conversationExtension', () => {
 
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'first' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'first' }],
 			}),
 		);
 
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'second' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'second' }],
 			}),
 		);
 
