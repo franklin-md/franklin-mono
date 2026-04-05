@@ -24,8 +24,8 @@ export function ToolUseBlock({
 		<Chrome
 			block={block}
 			status={status}
-			summary={entry.summary({ block, status })}
-			expanded={entry.expanded?.({ block, status })}
+			summary={entry.summary({ block, status, args: block.call.arguments })}
+			expanded={entry.expanded?.({ block, status, args: block.call.arguments })}
 		/>
 	);
 }
@@ -46,8 +46,12 @@ export function createToolUseBlock(
 			<Chrome
 				block={block}
 				status={status}
-				summary={entry.summary({ block, status })}
-				expanded={entry.expanded?.({ block, status })}
+				summary={entry.summary({ block, status, args: block.call.arguments })}
+				expanded={entry.expanded?.({
+					block,
+					status,
+					args: block.call.arguments,
+				})}
 			/>
 		);
 	}

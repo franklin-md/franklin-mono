@@ -80,7 +80,9 @@ describe('resolveToolRenderer', () => {
 			kind: 'toolUse',
 			call: { type: 'toolCall', id: '1', name: 'grep', arguments: {} },
 		};
-		expect(entry.summary({ block, status: 'success' })).toBe('grep');
+		expect(
+			entry.summary({ block, status: 'success', args: block.call.arguments }),
+		).toBe('grep');
 	});
 
 	it('prefers exact match over *', () => {

@@ -3,14 +3,15 @@ import type { ToolUseBlock } from '@franklin/extensions';
 
 export type ToolStatus = 'in-progress' | 'success' | 'error';
 
-export type ToolRenderProps = {
+export type ToolRenderProps<T = any> = {
 	block: ToolUseBlock;
 	status: ToolStatus;
+	args: T;
 };
 
-export type ToolRendererEntry = {
-	summary: (props: ToolRenderProps) => ReactNode;
-	expanded?: (props: ToolRenderProps) => ReactNode;
+export type ToolRendererEntry<T = any> = {
+	summary: (props: ToolRenderProps<T>) => ReactNode;
+	expanded?: (props: ToolRenderProps<T>) => ReactNode;
 };
 
 export type ToolRendererRegistry = ReadonlyMap<string, ToolRendererEntry>;
