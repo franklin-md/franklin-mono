@@ -30,6 +30,6 @@ export {
 	type FranklinExtension,
 } from './app/types.js';
 
-export { createApp } from './app/create.js';
+export { createApp, type AppOptions } from './app/create.js';
 
 export { type Platform } from './platform.js';

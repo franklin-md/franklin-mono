@@ -12,4 +12,5 @@ export type FranklinApp = {
 		FranklinRuntime
 	>;
 	readonly auth: IAuthManager;
+	restore(): Promise<void>;
 };

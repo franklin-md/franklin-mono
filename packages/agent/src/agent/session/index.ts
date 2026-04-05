@@ -52,6 +52,18 @@ export class SessionManager<
 		return this.createSession(childState);
 	}
 
+	/**
+	 * Restore sessions from persisted storage.
+	 *
+	 * Delegates to the session registry's restore, providing a hydrate
+	 * callback that rebuilds a live runtime from each snapshot's state.
+	 */
+	async restore(): Promise<void> {
+		await this.sessions.restore(async (snapshot) =>
+			createRuntime(this.system, snapshot.state, this.extensions),
+		);
+	}
+
 	/* TODO: Reimplement rewind. It's harder than originally thought as you would want
 	the conversation UI to go back in time. This is probably why Pi embeds the
 	state in the session tree. */

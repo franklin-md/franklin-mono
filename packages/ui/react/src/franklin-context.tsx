@@ -56,7 +56,15 @@ export function FranklinProvider({
 
 		void (async () => {
 			try {
-				created = await createApp(extensions, platform, auth);
+				// TODO: Make this user specifiable?
+				created = await createApp({
+					extensions,
+					platform,
+					auth,
+					persistDir: '~/.franklin',
+				});
+				// TODO: Should we make this optional?
+				await created.restore();
 				if (cancelledRef.current) {
 					await Promise.allSettled(
 						created.agents.list().map((s) => s.runtime.dispose()),
