@@ -24,5 +24,13 @@ export function mergeRuntimes<
 		fork: async () => ({ ...(await rt1.fork()), ...(await rt2.fork()) }),
 		child: async () => ({ ...(await rt1.child()), ...(await rt2.child()) }),
 		dispose: () => Promise.all([rt1.dispose(), rt2.dispose()]).then(() => {}),
+		subscribe: (listener: () => void) => {
+			const unsub1 = rt1.subscribe(listener);
+			const unsub2 = rt2.subscribe(listener);
+			return () => {
+				unsub1();
+				unsub2();
+			};
+		},
 	} as CR;
 }

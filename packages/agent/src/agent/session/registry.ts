@@ -16,6 +16,7 @@ export class SessionRegistry<
 > {
 	private sessions = new Map<string, Session<RT>>();
 	private listeners = new Set<() => void>();
+	private unsubs = new Map<string, () => void>();
 
 	constructor(private readonly persister?: Persister<SessionSnapshot<S>>) {}
 
@@ -48,6 +49,7 @@ export class SessionRegistry<
 	register(session: Session<RT>, snapshot: SessionSnapshot<S>): void {
 		this.sessions.set(session.sessionId, session);
 		this.persist(snapshot);
+		this.watch(session);
 		this.notify();
 	}
 
@@ -59,6 +61,8 @@ export class SessionRegistry<
 		const session = this.sessions.get(id);
 		if (!session) return;
 
+		this.unsubs.get(id)?.();
+		this.unsubs.delete(id);
 		await session.runtime.dispose();
 		this.sessions.delete(id);
 		void this.persister?.delete(id);
@@ -81,7 +85,9 @@ export class SessionRegistry<
 		const data = await this.persister.load();
 		for (const [id, snapshot] of data) {
 			const runtime = await hydrate(snapshot);
-			this.sessions.set(id, { sessionId: id, runtime });
+			const session: Session<RT> = { sessionId: id, runtime };
+			this.sessions.set(id, session);
+			this.watch(session);
 		}
 		if (data.size > 0) this.notify();
 	}
@@ -89,6 +95,20 @@ export class SessionRegistry<
 	private persist(snapshot: SessionSnapshot<S>): void {
 		if (!this.persister) return;
 		void this.persister.save(snapshot.sessionId, snapshot);
+	}
+
+	/**
+	 * Subscribe to a session's runtime changes and re-persist the
+	 * full session snapshot whenever state settles (turn end, config change).
+	 */
+	private watch(session: Session<RT>): void {
+		if (!this.persister) return;
+		const unsub = session.runtime.subscribe(() => {
+			void session.runtime.state().then((state) => {
+				this.persist({ sessionId: session.sessionId, state });
+			});
+		});
+		this.unsubs.set(session.sessionId, unsub);
 	}
 
 	private notify(): void {

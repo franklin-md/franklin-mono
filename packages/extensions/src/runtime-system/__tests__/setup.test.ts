@@ -30,6 +30,7 @@ function createTestSystem(): RuntimeSystem<TestState, TestAPI, TestRuntime> {
 						fork: async () => ({ value: val }),
 						child: async () => ({ value: 0 }),
 						dispose: async () => {},
+						subscribe: () => () => {},
 					};
 				},
 			};

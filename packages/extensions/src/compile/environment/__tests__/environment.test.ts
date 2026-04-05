@@ -35,7 +35,8 @@ describe('createEnvironmentCompiler', () => {
 		const env = mockEnvironment();
 		const result = await compile(createEnvironmentCompiler(env), () => {});
 
-		expect(result.environment).toBe(env);
+		expect(result.environment.filesystem).toBe(env.filesystem);
+		expect(await result.environment.config()).toEqual(await env.config());
 	});
 
 	it('getEnvironment() returns the environment to extensions', async () => {
@@ -62,7 +63,7 @@ describe('createEnvironmentCompiler', () => {
 			api.on('initialize', () => undefined);
 		});
 
-		expect(result.environment).toBe(env);
+		expect(result.environment.filesystem).toBe(env.filesystem);
 		expect(result.client).toBeDefined();
 	});
 
@@ -81,7 +82,7 @@ describe('createEnvironmentCompiler', () => {
 			full.registerStore('test', 42, 'private');
 		});
 
-		expect(result.environment).toBe(env);
+		expect(result.environment.filesystem).toBe(env.filesystem);
 		expect(result.stores.has('test')).toBe(true);
 	});
 });

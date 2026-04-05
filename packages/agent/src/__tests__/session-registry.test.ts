@@ -22,6 +22,7 @@ function mockRuntime(): TestRuntime {
 		fork: vi.fn(async () => ({ value: '' })),
 		child: vi.fn(async () => ({ value: '' })),
 		dispose: vi.fn(async () => {}),
+		subscribe: vi.fn(() => () => {}),
 	};
 }
 

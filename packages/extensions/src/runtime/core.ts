@@ -1,17 +1,29 @@
 import type { CtxTracker, MiniACPClient } from '@franklin/mini-acp';
+import { createObserver } from '@franklin/lib';
 import type { RuntimeBase } from './types.js';
 import type { CoreState } from '../state/core.js';
 
+async function* notifyAfter<T>(
+	stream: AsyncIterable<T>,
+	notify: () => void,
+): AsyncIterable<T> {
+	try {
+		yield* stream;
+	} finally {
+		notify();
+	}
+}
+
 export type CoreRuntime = RuntimeBase<CoreState> &
-	Pick<MiniACPClient, 'initialize' | 'setContext' | 'prompt' | 'cancel'> & {
-		subscribe(listener: () => void): () => void;
-	};
+	Pick<MiniACPClient, 'initialize' | 'setContext' | 'prompt' | 'cancel'>;
 
 export function createCoreRuntime(
 	client: MiniACPClient,
 	tracker: CtxTracker,
 	transport: { dispose(): Promise<void> },
 ): CoreRuntime {
+	const observer = createObserver();
+
 	function snapshotLLMConfig(): CoreState['core']['llmConfig'] {
 		const cfg = tracker.get().config;
 		if (!cfg) return {};
@@ -24,8 +36,21 @@ export function createCoreRuntime(
 
 	return {
 		initialize: client.initialize.bind(client),
-		setContext: client.setContext.bind(client),
-		prompt: client.prompt.bind(client),
+
+		// Notify after setContext completes — config/history may have changed.
+		async setContext(ctx) {
+			await client.setContext(ctx);
+			observer.notify();
+		},
+
+		// Notify after prompt completes (turn end), not per-chunk.
+		// Originally wired to tracker.onChange which fired per-chunk on every
+		// append. Moved to turn-end because persisting incomplete responses
+		// mid-stream isn't useful — they can't be resumed.
+		prompt(message) {
+			return notifyAfter(client.prompt(message), () => observer.notify());
+		},
+
 		cancel: client.cancel.bind(client),
 
 		async state(): Promise<CoreState> {
@@ -63,11 +88,6 @@ export function createCoreRuntime(
 		async dispose(): Promise<void> {
 			await transport.dispose();
 		},
-		subscribe(listener: () => void): () => void {
-			tracker.onChange = listener;
-			return () => {
-				if (tracker.onChange === listener) tracker.onChange = undefined;
-			};
-		},
+		subscribe: (listener: () => void) => observer.subscribe(listener),
 	};
 }

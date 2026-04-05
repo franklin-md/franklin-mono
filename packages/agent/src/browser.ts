@@ -25,11 +25,9 @@ export type { FranklinState, FranklinRuntime, FranklinAPI } from './types.js';
 export type Session = GenericSession<_RT>;
 
 export {
-	type FranklinApp,
+	FranklinApp,
 	type FranklinExtensionApi,
 	type FranklinExtension,
-} from './app/types.js';
-
-export { createApp, type AppOptions } from './app/create.js';
+} from './app/index.js';
 
 export { type Platform } from './platform.js';

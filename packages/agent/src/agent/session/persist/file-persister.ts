@@ -1,6 +1,7 @@
 import type { StoreSnapshot } from '@franklin/extensions';
 import {
 	createFilePersistence,
+	DebouncedPersister,
 	type Filesystem,
 	type Persister,
 } from '@franklin/lib';
@@ -18,7 +19,10 @@ export function createPersistence<S>(
 	fs: Filesystem,
 ): { session: Persister<SessionSnapshot<S>>; store: Persister<StoreSnapshot> } {
 	return {
-		session: createFilePersistence<SessionSnapshot<S>>(`${dir}/sessions`, fs),
+		session: new DebouncedPersister(
+			createFilePersistence<SessionSnapshot<S>>(`${dir}/sessions`, fs),
+			500,
+		),
 		store: createFilePersistence<StoreSnapshot>(`${dir}/store`, fs),
 	};
 }

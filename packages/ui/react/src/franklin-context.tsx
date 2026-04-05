@@ -7,13 +7,8 @@ import {
 	type ReactNode,
 } from 'react';
 
-import { createApp } from '@franklin/agent/browser';
-import type {
-	FranklinApp,
-	FranklinExtension,
-	IAuthManager,
-	Platform,
-} from '@franklin/agent/browser';
+import { FranklinApp, type FranklinExtension } from '@franklin/agent/browser';
+import type { IAuthManager, Platform } from '@franklin/agent/browser';
 
 // ---------------------------------------------------------------------------
 // Context
@@ -57,14 +52,14 @@ export function FranklinProvider({
 		void (async () => {
 			try {
 				// TODO: Make this user specifiable?
-				created = await createApp({
+				created = new FranklinApp({
 					extensions,
 					platform,
 					auth,
-					persistDir: '~/.franklin',
+					persistDir: '.',
 				});
 				// TODO: Should we make this optional?
-				await created.restore();
+				await created.start();
 				if (cancelledRef.current) {
 					await Promise.allSettled(
 						created.agents.list().map((s) => s.runtime.dispose()),
