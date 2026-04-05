@@ -5,6 +5,7 @@
  */
 
 export { SessionManager } from './agent/session/index.js';
+export { SessionRegistry } from './agent/session/registry.js';
 export { AuthManager } from './auth/manager.js';
 export type {
 	AuthFile,

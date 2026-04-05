@@ -42,18 +42,15 @@ export type {
 	StoreMapping,
 	StoreSnapshot,
 } from './api/index.js';
-export type { Compiler, CompilerBuilder } from './compile/index.js';
+export type { Compiler } from './compile/index.js';
 export {
 	compile,
 	combine,
 	compileAll,
-	compilers,
 	createCoreCompiler,
 	createStoreCompiler,
 	createEnvironmentCompiler,
 } from './compile/index.js';
-export type { Builder } from './builder.js';
-export { builder } from './builder.js';
 export type { Extension, MaybePromise } from './types/index.js';
 export { reduceExtensions } from './types/index.js';
 // ---------------------------------------------------------------------------
@@ -75,6 +72,7 @@ export { createEnvironmentSystem } from './runtime-system/index.js';
 export type { EnvironmentSystem } from './runtime-system/index.js';
 export type { EnvironmentFactory } from './runtime-system/index.js';
 export { combine as combineSystems } from './runtime-system/index.js';
+export { withSetup } from './runtime-system/index.js';
 export { systems } from './runtime-system/index.js';
 export type { SystemBuilder } from './runtime-system/index.js';
 

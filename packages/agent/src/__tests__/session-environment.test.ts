@@ -17,19 +17,11 @@ import {
 	StorePool,
 } from '@franklin/extensions';
 import { SessionManager } from '../agent/session/index.js';
-import type { IAuthManager } from '../auth/types.js';
+import { SessionRegistry } from '../agent/session/registry.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function mockAuthManager(): IAuthManager {
-	return {
-		load: vi.fn(async () => ({})),
-		getApiKey: vi.fn(async () => undefined),
-		onAuthChange: vi.fn(() => () => {}),
-	} as unknown as IAuthManager;
-}
 
 function mockEnvironment(config: EnvironmentConfig): Environment {
 	return {
@@ -97,7 +89,7 @@ function createTestManager(envFactory: EnvironmentFactory) {
 		.add(createEnvironmentSystem(envFactory))
 		.done();
 
-	return new SessionManager(system, [], mockAuthManager());
+	return new SessionManager(new SessionRegistry(), system, []);
 }
 
 const defaultConfig: EnvironmentConfig = {

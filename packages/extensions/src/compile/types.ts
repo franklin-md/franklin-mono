@@ -59,19 +59,3 @@ export function combine<A1, R1, A2, R2>(
 		},
 	};
 }
-
-// ---------------------------------------------------------------------------
-// CompilerBuilder — typed builder for heterogeneous compiler composition
-// ---------------------------------------------------------------------------
-
-export interface CompilerBuilder<A, R> {
-	add<A2, R2>(c: Compiler<A2, R2>): CompilerBuilder<A & A2, R & R2>;
-	done(): Compiler<A, R>;
-}
-
-export function compilers<A, R>(c: Compiler<A, R>): CompilerBuilder<A, R> {
-	return {
-		add: <A2, R2>(c2: Compiler<A2, R2>) => compilers(combine(c, c2)),
-		done: () => c,
-	};
-}

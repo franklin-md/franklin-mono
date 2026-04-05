@@ -1,13 +1,12 @@
-import type { RuntimeSystem, CoreState } from '@franklin/extensions';
+import type { RuntimeSystem } from '@franklin/extensions';
 import { createRuntime } from '@franklin/extensions';
-import { SessionMap } from './session-map.js';
+import type { SessionRegistry } from './registry.js';
 import type { Session } from './types.js';
 import type { SessionState, SessionRuntime } from '../../types.js';
 import type {
 	FranklinExtension,
 	FranklinExtensionApi,
 } from '../../app/types.js';
-import type { IAuthManager } from '../../auth/types.js';
 
 /** Two-level partial for session creation overrides. */
 type PartialState = {
@@ -20,29 +19,18 @@ type PartialState = {
  * Manages agent sessions — a thin orchestrator over the RuntimeSystem.
  *
  * Each lifecycle method delegates to a shared `createSession` that
- * calls `createRuntime`, injects auth, registers, and returns a Session.
+ * calls `createRuntime`, registers, and returns a Session.
  */
 export class SessionManager {
-	private readonly sessions = new SessionMap();
-	private readonly authManager: IAuthManager;
-
 	constructor(
+		private readonly sessions: SessionRegistry,
 		private readonly system: RuntimeSystem<
 			SessionState,
 			FranklinExtensionApi,
 			SessionRuntime
 		>,
 		private readonly extensions: FranklinExtension[],
-		authManager: IAuthManager,
-	) {
-		this.authManager = authManager;
-
-		this.authManager.onAuthChange(
-			async (provider: string, authKey: string | undefined) => {
-				await this.syncSessionsForProvider(provider, authKey);
-			},
-		);
-	}
+	) {}
 
 	/**
 	 * Create a brand new session. Accepts a partial state that is
@@ -81,7 +69,7 @@ export class SessionManager {
 	state in the session tree. */
 
 	/**
-	 * Remove a session — disposes the runtime and removes from the map.
+	 * Remove a session — disposes the runtime and removes from the registry.
 	 */
 	async remove(sessionId: string): Promise<void> {
 		await this.sessions.remove(sessionId);
@@ -113,53 +101,10 @@ export class SessionManager {
 		sessionId?: string,
 	): Promise<Session> {
 		const runtime = await createRuntime(this.system, state, this.extensions);
-		await this.injectAuth(runtime, state.core.llmConfig);
 
-		const session: Session = {
-			sessionId: sessionId ?? crypto.randomUUID(),
-			runtime,
-		};
-		this.sessions.register(session);
+		const id = sessionId ?? crypto.randomUUID();
+		const session: Session = { sessionId: id, runtime };
+		this.sessions.register(session, { sessionId: id, state });
 		return session;
-	}
-
-	private async injectAuth(
-		runtime: SessionRuntime,
-		llmConfig: CoreState['core']['llmConfig'],
-	): Promise<void> {
-		const provider =
-			llmConfig.provider ?? Object.keys(await this.authManager.load())[0];
-		if (!provider) return;
-
-		const apiKey = await this.authManager.getApiKey(provider);
-		if (!apiKey) return;
-
-		await runtime.setContext({
-			config: { ...llmConfig, provider, apiKey },
-		});
-	}
-
-	private async syncSessionsForProvider(
-		provider: string,
-		authKey: string | undefined,
-	): Promise<void> {
-		const updates: Promise<unknown>[] = [];
-
-		for (const session of this.sessions.list()) {
-			const state = await session.runtime.state();
-			if (state.core.llmConfig.provider !== provider) continue;
-
-			updates.push(
-				session.runtime.setContext({
-					config: {
-						...state.core.llmConfig,
-						provider,
-						apiKey: authKey,
-					},
-				}),
-			);
-		}
-
-		await Promise.all(updates);
 	}
 }
