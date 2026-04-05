@@ -15,6 +15,7 @@ export type ToolUseBlock = {
 	kind: 'toolUse';
 	call: ToolCallContent;
 	result?: ToolResultContent[];
+	isError?: boolean;
 };
 export type TurnEndBlock = {
 	kind: 'turnEnd';

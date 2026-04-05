@@ -241,6 +241,53 @@ describe('conversationExtension', () => {
 		});
 	});
 
+	it('records isError from tool result on toolUse block', async () => {
+		const result = await compileConversation();
+		const agent = stubAgent({
+			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
+				toolCallId: call.id,
+				content: [{ type: 'text' as const, text: 'Permission denied' }],
+				isError: true,
+			})),
+		});
+		const wrappedAgent = apply(result.server, agent);
+
+		const target = stubClient({
+			prompt: async function* () {
+				await wrappedAgent.toolExecute({
+					call: {
+						type: 'toolCall',
+						id: 'tc1',
+						name: 'write_file',
+						arguments: { path: '/etc/passwd' },
+					},
+				});
+			},
+		});
+
+		const wrapped = apply(result.client, target);
+		await collect(
+			wrapped.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const blocks = getStore(result.stores)[0]!.response.blocks;
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toEqual({
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'write_file',
+				arguments: { path: '/etc/passwd' },
+			},
+			result: [{ type: 'text', text: 'Permission denied' }],
+			isError: true,
+		});
+	});
+
 	it('pairs tool result with matching tool call', async () => {
 		const result = await compileConversation();
 		const agent = stubAgent({
