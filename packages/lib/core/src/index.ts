@@ -8,6 +8,7 @@ export type { Persister } from './persistence/persister.js';
 export { createFilePersistence } from './persistence/file-persister.js';
 export { DebouncedPersister } from './persistence/debounced-persister.js';
 export { Debouncer } from './utils/debouncer.js';
+export type { DeepPartial } from './typing/deep-partial.js';
 
 // Proxy algebra
 export {

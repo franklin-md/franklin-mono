@@ -14,6 +14,7 @@ import { SessionRegistry } from '../agent/session/registry.js';
 import { withAuth, syncAuth } from '../auth/with-auth.js';
 import type { Platform } from '../platform.js';
 import type { IAuthManager } from '../auth/types.js';
+import type { FranklinState, FranklinRuntime } from '../types.js';
 
 export async function createApp(
 	extensions: FranklinExtension[],
@@ -21,7 +22,7 @@ export async function createApp(
 	auth: IAuthManager,
 ): Promise<FranklinApp> {
 	const storeRegistry = new StoreRegistry();
-	const sessionRegistry = new SessionRegistry();
+	const sessionRegistry = new SessionRegistry<FranklinState, FranklinRuntime>();
 
 	const coreSystem = withAuth(createCoreSystem(platform.spawn), auth);
 

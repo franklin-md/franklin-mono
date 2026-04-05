@@ -1,8 +1,7 @@
 import type { Persister } from '@franklin/lib';
+import type { RuntimeBase } from '@franklin/extensions';
 
-import type { SessionRuntime } from '../../types.js';
-import type { Session } from './types.js';
-import type { SessionSnapshot } from './persist/types.js';
+import type { Session, SessionSnapshot } from './types.js';
 
 /**
  * Central registry of live sessions with opt-in persistence.
@@ -11,13 +10,16 @@ import type { SessionSnapshot } from './persist/types.js';
  * persister, the registry owns its own persistence lifecycle —
  * `restore()` hydrates from disk, and mutations persist automatically.
  */
-export class SessionRegistry {
-	private sessions = new Map<string, Session>();
+export class SessionRegistry<
+	S extends Record<string, unknown>,
+	RT extends RuntimeBase<S>,
+> {
+	private sessions = new Map<string, Session<RT>>();
 	private listeners = new Set<() => void>();
 
-	constructor(private readonly persister?: Persister<SessionSnapshot>) {}
+	constructor(private readonly persister?: Persister<SessionSnapshot<S>>) {}
 
-	get(id: string): Session {
+	get(id: string): Session<RT> {
 		const session = this.sessions.get(id);
 		if (!session) {
 			throw new Error(`Session ${id} not found`);
@@ -30,7 +32,7 @@ export class SessionRegistry {
 	}
 
 	/** Return all live sessions. */
-	list(): Session[] {
+	list(): Session<RT>[] {
 		return [...this.sessions.values()];
 	}
 
@@ -43,7 +45,7 @@ export class SessionRegistry {
 	}
 
 	/** Register a live session, persisting its state snapshot. */
-	register(session: Session, snapshot: SessionSnapshot): void {
+	register(session: Session<RT>, snapshot: SessionSnapshot<S>): void {
 		this.sessions.set(session.sessionId, session);
 		this.persist(snapshot);
 		this.notify();
@@ -66,14 +68,14 @@ export class SessionRegistry {
 	/**
 	 * Hydrate the registry from persisted storage.
 	 *
-	 * Requires a `hydrate` callback that rebuilds a live SessionRuntime
+	 * Requires a `hydrate` callback that rebuilds a live runtime
 	 * from a snapshot — the registry owns the load/iterate loop but the
 	 * caller owns the knowledge of how to create runtimes.
 	 *
 	 * No-op when no persister is configured.
 	 */
 	async restore(
-		hydrate: (snapshot: SessionSnapshot) => Promise<SessionRuntime>,
+		hydrate: (snapshot: SessionSnapshot<S>) => Promise<RT>,
 	): Promise<void> {
 		if (!this.persister) return;
 		const data = await this.persister.load();
@@ -84,7 +86,7 @@ export class SessionRegistry {
 		if (data.size > 0) this.notify();
 	}
 
-	private persist(snapshot: SessionSnapshot): void {
+	private persist(snapshot: SessionSnapshot<S>): void {
 		if (!this.persister) return;
 		void this.persister.save(snapshot.sessionId, snapshot);
 	}

@@ -4,7 +4,7 @@ import {
 	type Filesystem,
 	type Persister,
 } from '@franklin/lib';
-import type { SessionSnapshot } from './types.js';
+import type { SessionSnapshot } from '../types.js';
 
 /**
  * Creates file-backed persistence for sessions and pool stores.
@@ -13,12 +13,12 @@ import type { SessionSnapshot } from './types.js';
  *   {dir}/sessions/{sessionId}.json
  *   {dir}/store/{ref}.json
  */
-export function createPersistence(
+export function createPersistence<S>(
 	dir: string,
 	fs: Filesystem,
-): { session: Persister<SessionSnapshot>; pool: Persister<StoreSnapshot> } {
+): { session: Persister<SessionSnapshot<S>>; pool: Persister<StoreSnapshot> } {
 	return {
-		session: createFilePersistence<SessionSnapshot>(`${dir}/sessions`, fs),
+		session: createFilePersistence<SessionSnapshot<S>>(`${dir}/sessions`, fs),
 		pool: createFilePersistence<StoreSnapshot>(`${dir}/store`, fs),
 	};
 }
@@ -28,11 +28,11 @@ export function createPersistence(
  *
  * Layout: `{dir}/sessions/{sessionId}.json`
  */
-export function createSessionPersister(
+export function createSessionPersister<S>(
 	dir: string,
 	fs: Filesystem,
-): Persister<SessionSnapshot> {
-	return createFilePersistence<SessionSnapshot>(`${dir}/sessions`, fs);
+): Persister<SessionSnapshot<S>> {
+	return createFilePersistence<SessionSnapshot<S>>(`${dir}/sessions`, fs);
 }
 
 /**

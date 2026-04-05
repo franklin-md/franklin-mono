@@ -4,10 +4,9 @@ import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type {
-	SessionRuntime,
+	FranklinRuntime,
 	FranklinApp,
 	Session,
-	SessionManager,
 } from '@franklin/agent/browser';
 import { AppContext } from '../franklin-context.js';
 import { useSessions } from '../use-sessions.js';
@@ -15,7 +14,7 @@ import { useSessions } from '../use-sessions.js';
 function makeSession(sessionId: string): Session {
 	return {
 		sessionId,
-		runtime: {} as SessionRuntime,
+		runtime: {} as FranklinRuntime,
 	};
 }
 
@@ -52,7 +51,7 @@ class FakeSessionManager {
 
 function makeWrapper(manager: FakeSessionManager) {
 	const app = {
-		agents: manager as unknown as SessionManager,
+		agents: manager as unknown as FranklinApp['agents'],
 	} as FranklinApp;
 	return function Wrapper({ children }: { children: ReactNode }) {
 		return <AppContext.Provider value={app}>{children}</AppContext.Provider>;

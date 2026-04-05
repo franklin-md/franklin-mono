@@ -1,39 +1,46 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Persister } from '@franklin/lib';
+import type { RuntimeBase } from '@franklin/extensions';
 import { SessionRegistry } from '../agent/session/registry.js';
-import type { SessionSnapshot } from '../agent/session/persist/types.js';
-import type { SessionRuntime } from '../types.js';
+import type { SessionSnapshot } from '../agent/session/types.js';
+
+// ---------------------------------------------------------------------------
+// Test types — minimal state + runtime for exercising the generic registry
+// ---------------------------------------------------------------------------
+
+type TestState = { value: string };
+type TestRuntime = RuntimeBase<TestState>;
+type TestSnapshot = SessionSnapshot<TestState>;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function mockRuntime(): SessionRuntime {
+function mockRuntime(): TestRuntime {
 	return {
+		state: vi.fn(async () => ({ value: '' })),
+		fork: vi.fn(async () => ({ value: '' })),
+		child: vi.fn(async () => ({ value: '' })),
 		dispose: vi.fn(async () => {}),
-	} as unknown as SessionRuntime;
+	};
 }
 
 function mockSnapshot(sessionId: string): {
-	snapshot: SessionSnapshot;
-	runtime: SessionRuntime;
+	snapshot: TestSnapshot;
+	runtime: TestRuntime;
 } {
 	const runtime = mockRuntime();
-	const snapshot: SessionSnapshot = {
+	const snapshot: TestSnapshot = {
 		sessionId,
-		state: {
-			core: {},
-			store: {},
-			env: {},
-		} as unknown as SessionSnapshot['state'],
+		state: { value: 'test' },
 	};
 	return { snapshot, runtime };
 }
 
-function mockPersister(): Persister<SessionSnapshot> {
-	const store = new Map<string, SessionSnapshot>();
+function mockPersister(): Persister<TestSnapshot> {
+	const store = new Map<string, TestSnapshot>();
 	return {
-		save: vi.fn(async (key: string, value: SessionSnapshot) => {
+		save: vi.fn(async (key: string, value: TestSnapshot) => {
 			store.set(key, value);
 		}),
 		load: vi.fn(async () => new Map(store)),
@@ -50,7 +57,7 @@ function mockPersister(): Persister<SessionSnapshot> {
 describe('SessionRegistry', () => {
 	describe('in-memory operations (no persister)', () => {
 		it('register and get', () => {
-			const registry = new SessionRegistry();
+			const registry = new SessionRegistry<TestState, TestRuntime>();
 			const runtime = mockRuntime();
 			const { snapshot } = mockSnapshot('s1');
 
@@ -60,7 +67,7 @@ describe('SessionRegistry', () => {
 		});
 
 		it('has returns true for registered, false otherwise', () => {
-			const registry = new SessionRegistry();
+			const registry = new SessionRegistry<TestState, TestRuntime>();
 			const { snapshot } = mockSnapshot('s1');
 
 			expect(registry.has('s1')).toBe(false);
@@ -69,12 +76,12 @@ describe('SessionRegistry', () => {
 		});
 
 		it('get throws for unknown session', () => {
-			const registry = new SessionRegistry();
+			const registry = new SessionRegistry<TestState, TestRuntime>();
 			expect(() => registry.get('nope')).toThrow('Session nope not found');
 		});
 
 		it('list returns all sessions', () => {
-			const registry = new SessionRegistry();
+			const registry = new SessionRegistry<TestState, TestRuntime>();
 			const { snapshot: s1 } = mockSnapshot('a');
 			const { snapshot: s2 } = mockSnapshot('b');
 
@@ -85,7 +92,7 @@ describe('SessionRegistry', () => {
 		});
 
 		it('remove disposes runtime and deletes session', async () => {
-			const registry = new SessionRegistry();
+			const registry = new SessionRegistry<TestState, TestRuntime>();
 			const runtime = mockRuntime();
 			const { snapshot } = mockSnapshot('s1');
 
@@ -97,14 +104,14 @@ describe('SessionRegistry', () => {
 		});
 
 		it('remove is a no-op for unknown ids', async () => {
-			const registry = new SessionRegistry();
+			const registry = new SessionRegistry<TestState, TestRuntime>();
 			await expect(registry.remove('nope')).resolves.toBeUndefined();
 		});
 	});
 
 	describe('change notifications', () => {
 		it('register notifies listeners', () => {
-			const registry = new SessionRegistry();
+			const registry = new SessionRegistry<TestState, TestRuntime>();
 			const listener = vi.fn();
 			registry.subscribe(listener);
 
@@ -115,7 +122,7 @@ describe('SessionRegistry', () => {
 		});
 
 		it('remove notifies listeners', async () => {
-			const registry = new SessionRegistry();
+			const registry = new SessionRegistry<TestState, TestRuntime>();
 			const { snapshot } = mockSnapshot('s1');
 			registry.register({ sessionId: 's1', runtime: mockRuntime() }, snapshot);
 
@@ -127,7 +134,7 @@ describe('SessionRegistry', () => {
 		});
 
 		it('unsubscribe stops notifications', () => {
-			const registry = new SessionRegistry();
+			const registry = new SessionRegistry<TestState, TestRuntime>();
 			const listener = vi.fn();
 			const unsub = registry.subscribe(listener);
 			unsub();
@@ -163,13 +170,9 @@ describe('SessionRegistry', () => {
 
 		it('restore hydrates sessions from persister', async () => {
 			const persister = mockPersister();
-			const snapshot: SessionSnapshot = {
+			const snapshot: TestSnapshot = {
 				sessionId: 'restored-1',
-				state: {
-					core: {},
-					store: {},
-					env: {},
-				} as unknown as SessionSnapshot['state'],
+				state: { value: 'restored' },
 			};
 			await persister.save('restored-1', snapshot);
 
@@ -184,13 +187,9 @@ describe('SessionRegistry', () => {
 
 		it('restore passes snapshot to hydrate callback', async () => {
 			const persister = mockPersister();
-			const snapshot: SessionSnapshot = {
+			const snapshot: TestSnapshot = {
 				sessionId: 'x',
-				state: {
-					core: { llmConfig: { model: 'test' } },
-					store: {},
-					env: {},
-				} as unknown as SessionSnapshot['state'],
+				state: { value: 'check' },
 			};
 			await persister.save('x', snapshot);
 
@@ -206,7 +205,7 @@ describe('SessionRegistry', () => {
 			const persister = mockPersister();
 			await persister.save('a', {
 				sessionId: 'a',
-				state: {} as unknown as SessionSnapshot['state'],
+				state: { value: '' },
 			});
 
 			const registry = new SessionRegistry(persister);
@@ -219,7 +218,7 @@ describe('SessionRegistry', () => {
 		});
 
 		it('restore is a no-op without persister', async () => {
-			const registry = new SessionRegistry();
+			const registry = new SessionRegistry<TestState, TestRuntime>();
 			await expect(
 				registry.restore(async () => mockRuntime()),
 			).resolves.toBeUndefined();

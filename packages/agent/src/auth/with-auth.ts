@@ -1,6 +1,7 @@
 import type { CoreSystem, CoreRuntime, CoreState } from '@franklin/extensions';
 import { withSetup } from '@franklin/extensions';
 import type { SessionRegistry } from '../agent/session/registry.js';
+import type { FranklinState, FranklinRuntime } from '../types.js';
 import type { IAuthManager } from './types.js';
 
 /**
@@ -41,7 +42,10 @@ export function withAuth(system: CoreSystem, auth: IAuthManager): CoreSystem {
  * Wire up live credential sync: when a provider's key changes,
  * push the new key to all sessions using that provider.
  */
-export function syncAuth(sessions: SessionRegistry, auth: IAuthManager): void {
+export function syncAuth(
+	sessions: SessionRegistry<FranklinState, FranklinRuntime>,
+	auth: IAuthManager,
+): void {
 	auth.onAuthChange(async (provider, authKey) => {
 		const updates: Promise<unknown>[] = [];
 

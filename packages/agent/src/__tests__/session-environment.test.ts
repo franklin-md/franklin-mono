@@ -8,6 +8,8 @@ import type {
 	Environment,
 	EnvironmentConfig,
 	EnvironmentFactory,
+	InferState,
+	InferRuntime,
 } from '@franklin/extensions';
 import {
 	createCoreSystem,
@@ -89,7 +91,10 @@ function createTestManager(envFactory: EnvironmentFactory) {
 		.add(createEnvironmentSystem(envFactory))
 		.done();
 
-	return new SessionManager(new SessionRegistry(), system, []);
+	type S = InferState<typeof system>;
+	type RT = InferRuntime<typeof system>;
+
+	return new SessionManager(new SessionRegistry<S, RT>(), system, []);
 }
 
 const defaultConfig: EnvironmentConfig = {

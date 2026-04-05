@@ -75,6 +75,7 @@ export { combine as combineSystems } from './runtime-system/index.js';
 export { withSetup } from './runtime-system/index.js';
 export { systems } from './runtime-system/index.js';
 export type { SystemBuilder } from './runtime-system/index.js';
+export { resolveState } from './runtime-system/index.js';
 
 // ---------------------------------------------------------------------------
 // Runtime

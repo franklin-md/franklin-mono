@@ -19,10 +19,10 @@ type FullSystem = CombineSystems<
 // ---------------------------------------------------------------------------
 
 /** Combined state — persisted without secrets. */
-export type SessionState = InferState<FullSystem>;
+export type FranklinState = InferState<FullSystem>;
 
 /** Combined extension API surface. */
-export type SessionAPI = InferAPI<FullSystem>;
+export type FranklinAPI = InferAPI<FullSystem>;
 
 /** Combined runtime — the live running session. */
-export type SessionRuntime = InferRuntime<FullSystem>;
+export type FranklinRuntime = InferRuntime<FullSystem>;

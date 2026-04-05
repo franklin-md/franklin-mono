@@ -1,4 +1,4 @@
-import type { SessionRuntime } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent/browser';
 
 import { createSimpleContext } from './create-simple-context.js';
 
@@ -10,7 +10,7 @@ import { createSimpleContext } from './create-simple-context.js';
  * here.
  */
 const [AgentProviderInner, useAgent] =
-	createSimpleContext<SessionRuntime>('Agent');
+	createSimpleContext<FranklinRuntime>('Agent');
 
 /**
  * Returns the session runtime from the nearest `<AgentProvider>`.
@@ -25,7 +25,7 @@ export function AgentProvider({
 	agent,
 	children,
 }: {
-	agent: SessionRuntime;
+	agent: FranklinRuntime;
 	children: React.ReactNode;
 }) {
 	return <AgentProviderInner value={agent}>{children}</AgentProviderInner>;

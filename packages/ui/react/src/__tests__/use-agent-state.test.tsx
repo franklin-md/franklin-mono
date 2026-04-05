@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { useAgentState } from '../use-agent-state.js';
 import { AgentProvider } from '../agent-context.js';
 import { createStore, storeKey } from '@franklin/extensions';
-import type { SessionRuntime } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent/browser';
 import type { Store, StoreResult, StoreEntry } from '@franklin/extensions';
 
 // ---------------------------------------------------------------------------
@@ -15,12 +15,12 @@ import type { Store, StoreResult, StoreEntry } from '@franklin/extensions';
 /**
  * Build a minimal Agent stub with only the `.stores` field populated.
  */
-function makeAgent(entries: Map<string, StoreEntry>): SessionRuntime {
+function makeAgent(entries: Map<string, StoreEntry>): FranklinRuntime {
 	return {
 		stores: {
 			get: (name: string) => entries.get(name),
 		} as unknown as StoreResult,
-	} as SessionRuntime;
+	} as FranklinRuntime;
 }
 
 function entry(
@@ -33,7 +33,7 @@ function entry(
 function makeAgentWithStore<T>(
 	name: string,
 	initial: T,
-): { agent: SessionRuntime; store: Store<T> } {
+): { agent: FranklinRuntime; store: Store<T> } {
 	const store = createStore(initial);
 	const entries = new Map<string, StoreEntry>([
 		[name, entry(store as Store<unknown>)],
@@ -42,7 +42,7 @@ function makeAgentWithStore<T>(
 }
 
 /** Wrapper that provides an agent via context for useAgentState. */
-function agentWrapper(agent: SessionRuntime) {
+function agentWrapper(agent: FranklinRuntime) {
 	return function Wrapper({ children }: { children: ReactNode }) {
 		return <AgentProvider agent={agent}>{children}</AgentProvider>;
 	};

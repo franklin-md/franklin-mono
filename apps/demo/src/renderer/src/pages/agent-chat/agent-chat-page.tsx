@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import type { SessionRuntime } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent/browser';
 import { AgentProvider } from '@franklin/react';
 
 import { AgentSidebar } from './sidebar/index.js';
@@ -10,15 +10,18 @@ import { TodoPanel } from './todo/index.js';
 
 interface SelectedAgent {
 	id: string;
-	agent: SessionRuntime;
+	agent: FranklinRuntime;
 }
 
 export function AgentChatPage() {
 	const [selected, setSelected] = useState<SelectedAgent | null>(null);
 
-	const handleSelectAgent = useCallback((id: string, agent: SessionRuntime) => {
-		setSelected({ id, agent });
-	}, []);
+	const handleSelectAgent = useCallback(
+		(id: string, agent: FranklinRuntime) => {
+			setSelected({ id, agent });
+		},
+		[],
+	);
 
 	return (
 		<div className="flex flex-1 overflow-hidden">

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import type { SessionRuntime } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent/browser';
 import { AgentProvider, useApp, useSessions } from '@franklin/react';
 
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { AgentSidebarItem } from './agent-sidebar-item.js';
 export function AgentSidebar({
 	onSelectAgent,
 }: {
-	onSelectAgent: (agentId: string, agent: SessionRuntime) => void;
+	onSelectAgent: (agentId: string, agent: FranklinRuntime) => void;
 }) {
 	const manager = useApp().agents;
 	const sessions = useSessions();
@@ -32,7 +32,7 @@ export function AgentSidebar({
 	}, [manager, onSelectAgent]);
 
 	const handleSelectAgent = useCallback(
-		(agentId: string, agent: SessionRuntime) => {
+		(agentId: string, agent: FranklinRuntime) => {
 			setCurrentAgentId(agentId);
 			onSelectAgent(agentId, agent);
 		},

@@ -17,3 +17,4 @@ export { combine } from './combine.js';
 export { withSetup } from './setup.js';
 export { systems } from './builder.js';
 export type { SystemBuilder } from './builder.js';
+export { resolveState } from './resolve.js';

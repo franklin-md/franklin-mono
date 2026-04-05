@@ -1,6 +1,11 @@
-import type { SessionRuntime } from '../../types.js';
+import type { RuntimeBase } from '@franklin/extensions';
 
-export type Session = {
+export type Session<RT extends RuntimeBase<any>> = {
 	sessionId: string;
-	runtime: SessionRuntime;
+	runtime: RT;
+};
+
+export type SessionSnapshot<S> = {
+	sessionId: string;
+	state: S;
 };

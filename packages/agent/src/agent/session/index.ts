@@ -1,19 +1,12 @@
-import type { RuntimeSystem } from '@franklin/extensions';
-import { createRuntime } from '@franklin/extensions';
+import type { DeepPartial } from '@franklin/lib';
+import type {
+	RuntimeSystem,
+	RuntimeBase,
+	Extension,
+} from '@franklin/extensions';
+import { createRuntime, resolveState } from '@franklin/extensions';
 import type { SessionRegistry } from './registry.js';
 import type { Session } from './types.js';
-import type { SessionState, SessionRuntime } from '../../types.js';
-import type {
-	FranklinExtension,
-	FranklinExtensionApi,
-} from '../../app/types.js';
-
-/** Two-level partial for session creation overrides. */
-type PartialState = {
-	core?: Partial<SessionState['core']>;
-	store?: SessionState['store'];
-	env?: Partial<SessionState['env']>;
-};
 
 /**
  * Manages agent sessions — a thin orchestrator over the RuntimeSystem.
@@ -21,28 +14,23 @@ type PartialState = {
  * Each lifecycle method delegates to a shared `createSession` that
  * calls `createRuntime`, registers, and returns a Session.
  */
-export class SessionManager {
+export class SessionManager<
+	S extends Record<string, unknown>,
+	API,
+	RT extends RuntimeBase<S>,
+> {
 	constructor(
-		private readonly sessions: SessionRegistry,
-		private readonly system: RuntimeSystem<
-			SessionState,
-			FranklinExtensionApi,
-			SessionRuntime
-		>,
-		private readonly extensions: FranklinExtension[],
+		private readonly sessions: SessionRegistry<S, RT>,
+		private readonly system: RuntimeSystem<S, API, RT>,
+		private readonly extensions: Extension<API>[],
 	) {}
 
 	/**
-	 * Create a brand new session. Accepts a partial state that is
-	 * merged over the system's empty state.
+	 * Create a brand new session. Accepts a deep partial of the state
+	 * that is merged over the system's empty state.
 	 */
-	async new(overrides?: PartialState): Promise<Session> {
-		const empty = this.system.emptyState();
-		const state: SessionState = {
-			core: { ...empty.core, ...overrides?.core },
-			store: overrides?.store ?? empty.store,
-			env: { ...empty.env, ...overrides?.env },
-		};
+	async new(overrides?: DeepPartial<S>): Promise<Session<RT>> {
+		const state = resolveState(this.system.emptyState(), overrides);
 		return this.createSession(state);
 	}
 
@@ -50,7 +38,7 @@ export class SessionManager {
 	 * Fork from an existing session — copies stores AND injects
 	 * the parent's full history into the new session.
 	 */
-	async fork(sessionId: string): Promise<Session> {
+	async fork(sessionId: string): Promise<Session<RT>> {
 		const forkedState = await this.get(sessionId).runtime.fork();
 		return this.createSession(forkedState);
 	}
@@ -59,7 +47,7 @@ export class SessionManager {
 	 * Create a child session — shares shared stores from parent but starts
 	 * a fresh conversation (private stores reset to initial).
 	 */
-	async child(sessionId: string): Promise<Session> {
+	async child(sessionId: string): Promise<Session<RT>> {
 		const childState = await this.get(sessionId).runtime.child();
 		return this.createSession(childState);
 	}
@@ -78,12 +66,12 @@ export class SessionManager {
 	/**
 	 * Retrieve a session by ID. Throws if not found.
 	 */
-	get(sessionId: string): Session {
+	get(sessionId: string): Session<RT> {
 		return this.sessions.get(sessionId);
 	}
 
 	/** Return all live sessions. */
-	list(): Session[] {
+	list(): Session<RT>[] {
 		return this.sessions.list();
 	}
 
@@ -97,13 +85,13 @@ export class SessionManager {
 	// -----------------------------------------------------------------------
 
 	private async createSession(
-		state: SessionState,
+		state: S,
 		sessionId?: string,
-	): Promise<Session> {
+	): Promise<Session<RT>> {
 		const runtime = await createRuntime(this.system, state, this.extensions);
 
 		const id = sessionId ?? crypto.randomUUID();
-		const session: Session = { sessionId: id, runtime };
+		const session: Session<RT> = { sessionId: id, runtime };
 		this.sessions.register(session, { sessionId: id, state });
 		return session;
 	}
