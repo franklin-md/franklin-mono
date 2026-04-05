@@ -258,9 +258,9 @@ describe('execute', () => {
 			(e: TranscriptEntry) =>
 				e.direction === 'send' && e.method === 'setContext',
 		) as TranscriptEntry & {
-			params: { ctx: { tools?: { name: string }[] } };
+			params: { tools?: { name: string }[] };
 		};
-		expect(setCtxEntry.params.ctx.tools).toEqual([tool.definition]);
+		expect(setCtxEntry.params.tools).toEqual([tool.definition]);
 	});
 });
 

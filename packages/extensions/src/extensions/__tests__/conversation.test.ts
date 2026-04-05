@@ -78,10 +78,8 @@ describe('conversationExtension', () => {
 
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hello' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hello' }],
 			}),
 		);
 
@@ -118,10 +116,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -158,10 +154,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -195,10 +189,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -229,10 +221,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -277,10 +267,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -317,10 +305,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -345,10 +331,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -379,10 +363,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -443,10 +425,8 @@ describe('conversationExtension', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'read /foo' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'read /foo' }],
 			}),
 		);
 
@@ -488,19 +468,15 @@ describe('conversationExtension', () => {
 
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'first' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'first' }],
 			}),
 		);
 
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'second' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'second' }],
 			}),
 		);
 

@@ -68,13 +68,11 @@ describe('buildCore – on() waterfall', () => {
 	it('single prompt handler transforms params', async () => {
 		const mw = await compileExt((api) => {
 			api.on('prompt', (params) => ({
-				message: {
-					...params.message,
-					content: [
-						...params.message.content,
-						{ type: 'text' as const, text: ' [injected]' },
-					],
-				},
+				...params,
+				content: [
+					...params.content,
+					{ type: 'text' as const, text: ' [injected]' },
+				],
 			}));
 		});
 
@@ -91,16 +89,12 @@ describe('buildCore – on() waterfall', () => {
 		const wrapped = apply(mw.client, target);
 
 		const originalContent = [{ type: 'text' as const, text: 'hello' }];
-		await collect(
-			wrapped.prompt({
-				message: { role: 'user', content: originalContent },
-			}),
-		);
+		await collect(wrapped.prompt({ role: 'user', content: originalContent }));
 
 		// The handler appended ' [injected]', so target should see 2 content blocks
-		const params = received[0] as { message: { content: { text: string }[] } };
-		expect(params.message.content).toHaveLength(2);
-		expect(params.message.content[1]?.text).toBe(' [injected]');
+		const params = received[0] as { content: { text: string }[] };
+		expect(params.content).toHaveLength(2);
+		expect(params.content[1]?.text).toBe(' [injected]');
 	});
 
 	it('multiple prompt handlers chain as waterfall', async () => {
@@ -110,29 +104,25 @@ describe('buildCore – on() waterfall', () => {
 			api.on('prompt', (params) => {
 				calls.push('h1');
 				return {
-					message: {
-						...params.message,
-						content: [
-							{
-								type: 'text' as const,
-								text: `h1(${(params.message.content[0] as { type: string; text: string }).text})`,
-							},
-						],
-					},
+					...params,
+					content: [
+						{
+							type: 'text' as const,
+							text: `h1(${(params.content[0] as { type: string; text: string }).text})`,
+						},
+					],
 				};
 			});
 			api.on('prompt', (params) => {
 				calls.push('h2');
 				return {
-					message: {
-						...params.message,
-						content: [
-							{
-								type: 'text' as const,
-								text: `h2(${(params.message.content[0] as { type: string; text: string }).text})`,
-							},
-						],
-					},
+					...params,
+					content: [
+						{
+							type: 'text' as const,
+							text: `h2(${(params.content[0] as { type: string; text: string }).text})`,
+						},
+					],
 				};
 			});
 		});
@@ -148,17 +138,15 @@ describe('buildCore – on() waterfall', () => {
 
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'x' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'x' }],
 			}),
 		);
 
 		expect(calls).toEqual(['h1', 'h2']);
 		// h2 sees h1's output, so the final text is h2(h1(x))
-		const params = received[0] as { message: { content: { text: string }[] } };
-		expect(params.message.content[0]?.text).toBe('h2(h1(x))');
+		const params = received[0] as { content: { text: string }[] };
+		expect(params.content[0]?.text).toBe('h2(h1(x))');
 	});
 
 	it('handler returning void passes through unchanged', async () => {
@@ -178,10 +166,8 @@ describe('buildCore – on() waterfall', () => {
 		const wrapped = apply(mw.client, target);
 
 		const original = {
-			message: {
-				role: 'user' as const,
-				content: [{ type: 'text' as const, text: 'hello' }],
-			},
+			role: 'user' as const,
+			content: [{ type: 'text' as const, text: 'hello' }],
 		};
 		await collect(wrapped.prompt(original));
 
@@ -280,23 +266,19 @@ describe('buildCore – registerTool()', () => {
 		const wrapped = apply(mw.client, target);
 
 		await wrapped.setContext({
-			ctx: {
-				tools: [
-					{
-						name: 'existing',
-						description: 'existing tool',
-						inputSchema: {},
-					},
-				],
-			},
+			tools: [
+				{
+					name: 'existing',
+					description: 'existing tool',
+					inputSchema: {},
+				},
+			],
 		});
 
 		const ctxParams = received[0] as {
-			ctx: {
-				tools: { name: string; description: string; inputSchema: unknown }[];
-			};
+			tools: { name: string; description: string; inputSchema: unknown }[];
 		};
-		const tools = ctxParams.ctx.tools;
+		const tools = ctxParams.tools;
 		expect(tools).toHaveLength(2);
 		expect(tools[0]?.name).toBe('existing');
 		expect(tools[1]?.name).toBe('myTool');
@@ -318,13 +300,13 @@ describe('buildCore – registerTool()', () => {
 
 		const wrapped = apply(mw.client, target);
 
-		await wrapped.setContext({ ctx: {} });
+		await wrapped.setContext({});
 
 		const ctxParams = received[0] as {
-			ctx: { tools: { name: string }[] };
+			tools: { name: string }[];
 		};
-		expect(ctxParams.ctx.tools).toHaveLength(1);
-		expect(ctxParams.ctx.tools[0]?.name).toBe('myTool');
+		expect(ctxParams.tools).toHaveLength(1);
+		expect(ctxParams.tools[0]?.name).toBe('myTool');
 	});
 });
 
@@ -517,13 +499,11 @@ describe('combine', () => {
 			combine(createCoreCompiler(), createTagCompiler()),
 			(api) => {
 				api.on('prompt', (params) => ({
-					message: {
-						...params.message,
-						content: [
-							{ type: 'text' as const, text: 'injected' },
-							...params.message.content,
-						],
-					},
+					...params,
+					content: [
+						{ type: 'text' as const, text: 'injected' },
+						...params.content,
+					],
 				}));
 				api.tag('my-ext');
 			},
@@ -585,15 +565,13 @@ describe('compileAll', () => {
 			api.on('prompt', (params) => {
 				calls.push('ext1');
 				return {
-					message: {
-						...params.message,
-						content: [
-							{
-								type: 'text' as const,
-								text: `ext1(${(params.message.content[0] as { text: string }).text})`,
-							},
-						],
-					},
+					...params,
+					content: [
+						{
+							type: 'text' as const,
+							text: `ext1(${(params.content[0] as { text: string }).text})`,
+						},
+					],
 				};
 			});
 		};
@@ -602,15 +580,13 @@ describe('compileAll', () => {
 			api.on('prompt', (params) => {
 				calls.push('ext2');
 				return {
-					message: {
-						...params.message,
-						content: [
-							{
-								type: 'text' as const,
-								text: `ext2(${(params.message.content[0] as { text: string }).text})`,
-							},
-						],
-					},
+					...params,
+					content: [
+						{
+							type: 'text' as const,
+							text: `ext2(${(params.content[0] as { text: string }).text})`,
+						},
+					],
 				};
 			});
 		};
@@ -627,16 +603,14 @@ describe('compileAll', () => {
 		const wrapped = apply(result.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'x' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'x' }],
 			}),
 		);
 
 		expect(calls).toEqual(['ext1', 'ext2']);
-		const params = received[0] as { message: { content: { text: string }[] } };
-		expect(params.message.content[0]?.text).toBe('ext2(ext1(x))');
+		const params = received[0] as { content: { text: string }[] };
+		expect(params.content[0]?.text).toBe('ext2(ext1(x))');
 	});
 
 	it('compileAll merges server middleware from multiple extensions', async () => {
@@ -735,10 +709,8 @@ describe('buildCore – stream observers', () => {
 		const wrapped = apply(mw.client, target);
 		const events = await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -782,10 +754,8 @@ describe('buildCore – stream observers', () => {
 		const wrapped = apply(mw.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -819,10 +789,8 @@ describe('buildCore – stream observers', () => {
 		const wrapped = apply(mw.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -837,13 +805,11 @@ describe('buildCore – stream observers', () => {
 			api.on('prompt', (params) => {
 				promptCalls.push('handler');
 				return {
-					message: {
-						...params.message,
-						content: [
-							...params.message.content,
-							{ type: 'text' as const, text: ' [injected]' },
-						],
-					},
+					...params,
+					content: [
+						...params.content,
+						{ type: 'text' as const, text: ' [injected]' },
+					],
 				};
 			});
 			api.on('chunk', (event) => {
@@ -869,10 +835,8 @@ describe('buildCore – stream observers', () => {
 		const wrapped = apply(mw.client, target);
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 
@@ -880,8 +844,7 @@ describe('buildCore – stream observers', () => {
 		expect(promptCalls).toEqual(['handler']);
 		// Params were transformed
 		expect(
-			(received[0] as { message: { content: { text: string }[] } }).message
-				.content,
+			(received[0] as { content: { text: string }[] }).content,
 		).toHaveLength(2);
 		// Observer saw the chunk
 		expect(observed).toEqual([chunk]);
@@ -910,10 +873,8 @@ describe('buildCore – stream observers', () => {
 		const wrapped = apply(mw.client, target);
 		const events = await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
 			}),
 		);
 

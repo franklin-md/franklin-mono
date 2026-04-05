@@ -413,7 +413,7 @@ const toolNameInContext: SpecPoint = {
 		const currentTools = new Set<string>();
 		for (const e of t) {
 			if (match(e, 'send', 'setContext')) {
-				const tools = e.params.ctx.tools;
+				const tools = e.params.tools;
 				if (tools) {
 					currentTools.clear();
 					for (const tool of tools) currentTools.add(tool.name);
@@ -439,7 +439,7 @@ const userContentTypes: SpecPoint = {
 		if (prompts.length === 0) return 'skip';
 		const allowed = new Set(['text', 'image']);
 		for (const e of prompts) {
-			for (const block of e.params.message.content) {
+			for (const block of e.params.content) {
 				if (!allowed.has(block.type)) return 'fail';
 			}
 		}

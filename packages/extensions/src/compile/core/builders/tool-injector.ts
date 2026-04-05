@@ -18,10 +18,8 @@ export function buildToolInjector(
 		next,
 	) => {
 		return next({
-			ctx: {
-				...params.ctx,
-				tools: [...(params.ctx.tools ?? []), ...serialized],
-			},
+			...params,
+			tools: [...(params.tools ?? []), ...serialized],
 		});
 	};
 

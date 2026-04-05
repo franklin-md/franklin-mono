@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import type { Agent } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent/browser';
 import { AgentProvider, useApp, useSessions } from '@franklin/react';
 
 import { Button } from '@/components/ui/button';
@@ -10,27 +10,29 @@ import { AgentSidebarItem } from './agent-sidebar-item.js';
 export function AgentSidebar({
 	onSelectAgent,
 }: {
-	onSelectAgent: (agentId: string, agent: Agent) => void;
+	onSelectAgent: (agentId: string, agent: FranklinRuntime) => void;
 }) {
 	const manager = useApp().agents;
 	const sessions = useSessions();
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
 
 	const handleSpawnAgent = useCallback(async () => {
-		const session = await manager.new(
-			{ provider: 'anthropic' },
-			{
-				// For now we just hard-code this until we have UI component to set.
+		const session = await manager.new({
+			core: {
+				llmConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
+			},
+			// For now we just hard-code this until we have UI component to set.
+			env: {
 				cwd: '/tmp',
 				permissions: { allowRead: ['**'], allowWrite: ['**'] },
 			},
-		);
+		});
 		setCurrentAgentId(session.sessionId);
-		onSelectAgent(session.sessionId, session.agent);
+		onSelectAgent(session.sessionId, session.runtime);
 	}, [manager, onSelectAgent]);
 
 	const handleSelectAgent = useCallback(
-		(agentId: string, agent: Agent) => {
+		(agentId: string, agent: FranklinRuntime) => {
 			setCurrentAgentId(agentId);
 			onSelectAgent(agentId, agent);
 		},
@@ -48,7 +50,7 @@ export function AgentSidebar({
 				const [next] = remaining;
 				if (next) {
 					setCurrentAgentId(next.sessionId);
-					onSelectAgent(next.sessionId, next.agent);
+					onSelectAgent(next.sessionId, next.runtime);
 				} else {
 					setCurrentAgentId(null);
 				}
@@ -78,12 +80,12 @@ export function AgentSidebar({
 						</p>
 					) : (
 						sessions.map((session) => (
-							<AgentProvider key={session.sessionId} agent={session.agent}>
+							<AgentProvider key={session.sessionId} agent={session.runtime}>
 								<AgentSidebarItem
 									sessionId={session.sessionId}
 									active={session.sessionId === currentAgentId}
 									onSelect={(sessionId) =>
-										handleSelectAgent(sessionId, session.agent)
+										handleSelectAgent(sessionId, session.runtime)
 									}
 									onDelete={(sessionId) => void handleDeleteAgent(sessionId)}
 								/>

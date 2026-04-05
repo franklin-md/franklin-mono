@@ -56,10 +56,8 @@ describe('statusExtension', () => {
 
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hello' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hello' }],
 			}),
 		);
 
@@ -78,10 +76,8 @@ describe('statusExtension', () => {
 
 		await collect(
 			wrapped.prompt({
-				message: {
-					role: 'user',
-					content: [{ type: 'text', text: 'hello' }],
-				},
+				role: 'user',
+				content: [{ type: 'text', text: 'hello' }],
 			}),
 		);
 

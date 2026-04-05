@@ -17,8 +17,8 @@ import type { AgentProtocol } from '../protocol/types.js';
 
 export type TranscriptEntry =
 	| { direction: 'send'; method: 'initialize'; params: Record<string, never> }
-	| { direction: 'send'; method: 'setContext'; params: { ctx: Partial<Ctx> } }
-	| { direction: 'send'; method: 'prompt'; params: { message: UserMessage } }
+	| { direction: 'send'; method: 'setContext'; params: Partial<Ctx> }
+	| { direction: 'send'; method: 'prompt'; params: UserMessage }
 	| { direction: 'send'; method: 'cancel'; params: Record<string, never> }
 	| { direction: 'send'; method: 'toolResult'; params: ToolResult }
 	| { direction: 'receive'; method: 'turnStart'; params: TurnStart }

@@ -4,22 +4,26 @@ import {
 	createSessionAdapter,
 	createAgentConnection,
 } from '@franklin/mini-acp';
-import type { Environment, EnvironmentConfig } from '@franklin/extensions';
+import type {
+	Environment,
+	EnvironmentConfig,
+	EnvironmentFactory,
+	InferState,
+	InferRuntime,
+} from '@franklin/extensions';
+import {
+	createCoreSystem,
+	createStoreSystem,
+	createEnvironmentSystem,
+	systems,
+	StoreRegistry,
+} from '@franklin/extensions';
 import { SessionManager } from '../agent/session/index.js';
-import { snapshotSession } from '../agent/session/persist/snapshot.js';
-import type { IAuthManager } from '../auth/types.js';
+import { SessionRegistry } from '../agent/session/registry.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function mockAuthManager(): IAuthManager {
-	return {
-		load: vi.fn(async () => ({})),
-		getApiKey: vi.fn(async () => undefined),
-		onAuthChange: vi.fn(() => () => {}),
-	} as unknown as IAuthManager;
-}
 
 function mockEnvironment(config: EnvironmentConfig): Environment {
 	return {
@@ -40,10 +44,6 @@ function mockEnvironment(config: EnvironmentConfig): Environment {
 	};
 }
 
-type EnvironmentFactory = (
-	config: EnvironmentConfig,
-) => Promise<Environment & { dispose(): Promise<void> }>;
-
 function mockEnvironmentFactory(): {
 	factory: EnvironmentFactory;
 	created: Array<{ config: EnvironmentConfig; env: Environment }>;
@@ -57,11 +57,6 @@ function mockEnvironmentFactory(): {
 	return { factory, created };
 }
 
-/**
- * Spawn function that creates an in-memory transport pair with a
- * no-op session adapter on the agent side. The client side is returned
- * as the "transport" the SessionManager will use.
- */
 function createMockSpawn() {
 	return async () => {
 		const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
@@ -87,6 +82,21 @@ function createMockSpawn() {
 	};
 }
 
+function createTestManager(envFactory: EnvironmentFactory) {
+	const spawn = createMockSpawn();
+	const registry = new StoreRegistry();
+
+	const system = systems(createCoreSystem(spawn))
+		.add(createStoreSystem(registry))
+		.add(createEnvironmentSystem(envFactory))
+		.done();
+
+	type S = InferState<typeof system>;
+	type RT = InferRuntime<typeof system>;
+
+	return new SessionManager(new SessionRegistry<S, RT>(), system, []);
+}
+
 const defaultConfig: EnvironmentConfig = {
 	cwd: '/project',
 	permissions: { allowRead: ['**'], allowWrite: ['**'] },
@@ -99,81 +109,55 @@ const defaultConfig: EnvironmentConfig = {
 describe('SessionManager — environment wiring', () => {
 	it('new() calls the environment factory with the provided config', async () => {
 		const { factory, created } = mockEnvironmentFactory();
-		const manager = new SessionManager(
-			createMockSpawn(),
-			[],
-			mockAuthManager(),
-			factory,
-		);
+		const manager = createTestManager(factory);
 
-		await manager.new(undefined, defaultConfig);
+		await manager.new({ env: defaultConfig });
 
 		expect(created).toHaveLength(1);
 		expect(created[0]!.config).toEqual(defaultConfig);
 	});
 
-	it('session exposes the created environment', async () => {
+	it('session exposes the created environment via runtime', async () => {
 		const { factory } = mockEnvironmentFactory();
-		const manager = new SessionManager(
-			createMockSpawn(),
-			[],
-			mockAuthManager(),
-			factory,
-		);
+		const manager = createTestManager(factory);
 
-		const session = await manager.new(undefined, defaultConfig);
+		const session = await manager.new({ env: defaultConfig });
 
-		expect(session.environment).toBeDefined();
-		expect(session.environment.filesystem).toBeDefined();
-		const envConfig = await session.environment.config();
+		expect(session.runtime.environment).toBeDefined();
+		expect(session.runtime.environment.filesystem).toBeDefined();
+		const envConfig = await session.runtime.environment.config();
 		expect(envConfig).toEqual(defaultConfig);
 	});
 
 	it('fork inherits the parent environment config', async () => {
 		const { factory, created } = mockEnvironmentFactory();
-		const manager = new SessionManager(
-			createMockSpawn(),
-			[],
-			mockAuthManager(),
-			factory,
-		);
+		const manager = createTestManager(factory);
 
-		const parent = await manager.new(undefined, defaultConfig);
+		const parent = await manager.new({ env: defaultConfig });
 		await manager.fork(parent.sessionId);
 
 		expect(created).toHaveLength(2);
-		// The child should have received the same config as the parent
 		expect(created[1]!.config).toEqual(defaultConfig);
 	});
 
 	it('child inherits the parent environment config', async () => {
 		const { factory, created } = mockEnvironmentFactory();
-		const manager = new SessionManager(
-			createMockSpawn(),
-			[],
-			mockAuthManager(),
-			factory,
-		);
+		const manager = createTestManager(factory);
 
-		const parent = await manager.new(undefined, defaultConfig);
+		const parent = await manager.new({ env: defaultConfig });
 		await manager.child(parent.sessionId);
 
 		expect(created).toHaveLength(2);
 		expect(created[1]!.config).toEqual(defaultConfig);
 	});
 
-	it('snapshotSession captures environmentConfig from environment.config()', async () => {
+	it('runtime.state() captures environment config', async () => {
 		const { factory } = mockEnvironmentFactory();
-		const manager = new SessionManager(
-			createMockSpawn(),
-			[],
-			mockAuthManager(),
-			factory,
-		);
+		const manager = createTestManager(factory);
 
-		const session = await manager.new(undefined, defaultConfig);
-		const snapshot = await snapshotSession(session);
+		const session = await manager.new({ env: defaultConfig });
+		const state = await session.runtime.state();
 
-		expect(snapshot.environmentConfig).toEqual(defaultConfig);
+		expect(state.env).toEqual(defaultConfig);
 	});
 });

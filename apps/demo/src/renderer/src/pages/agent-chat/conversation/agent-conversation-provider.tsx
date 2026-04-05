@@ -26,10 +26,8 @@ export function AgentConversationProvider({
 			setSending(true);
 			try {
 				const stream = agent.prompt({
-					message: {
-						role: 'user',
-						content: [{ type: 'text', text }],
-					},
+					role: 'user',
+					content: [{ type: 'text', text }],
 				});
 				// Drain — events handled by conversation extension via observers
 				for await (const _event of stream) {

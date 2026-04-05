@@ -4,9 +4,6 @@ export type {
 	MuProtocol as MiniACPProtocol,
 	ClientProtocol,
 	AgentProtocol,
-	AgentCtx,
-	InitializeParams,
-	InitializeResult,
 } from './types.js';
 
 export {
