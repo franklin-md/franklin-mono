@@ -1,5 +1,6 @@
 import type { ConversationTurn, AssistantTurn } from '@franklin/extensions';
 import type { UserMessage } from '@franklin/mini-acp';
+import { StopCode } from '@franklin/mini-acp';
 
 // ---------------------------------------------------------------------------
 // Individual prompts and responses
@@ -547,3 +548,60 @@ export const markdownConversation: ConversationTurn[] = [
 ];
 
 export const emptyConversation: ConversationTurn[] = [];
+
+// ---------------------------------------------------------------------------
+// TurnEnd responses
+// ---------------------------------------------------------------------------
+
+export const assistantFinishedResponse: AssistantTurn = {
+	blocks: [
+		{ kind: 'text', text: 'Here you go — all done!' },
+		{ kind: 'turnEnd', stopCode: StopCode.Finished },
+	],
+};
+
+export const assistantCancelledResponse: AssistantTurn = {
+	blocks: [
+		{ kind: 'text', text: 'Sure, let me start by—' },
+		{ kind: 'turnEnd', stopCode: StopCode.Cancelled },
+	],
+};
+
+export const assistantMaxTokensResponse: AssistantTurn = {
+	blocks: [
+		{
+			kind: 'text',
+			text: 'The architecture of the system is divided into several layers. First, the transport layer handles raw communication over multiple protocols including stdio, HTTP, and in-memory streams. Second, the protocol layer defines the session lifecycle with initialize, set context, prompt, and cancel operations. Third, the application layer orchestrates sessions and extensions through middleware composition. Each layer has its own error handling strategy and',
+		},
+		{ kind: 'turnEnd', stopCode: StopCode.MaxTokens },
+	],
+};
+
+export const assistantConfigErrorResponse: AssistantTurn = {
+	blocks: [
+		{
+			kind: 'turnEnd',
+			stopCode: StopCode.ProviderNotSpecified,
+			stopMessage: 'No provider specified in config — set ctx.config.provider',
+		},
+	],
+};
+
+export const assistantProviderErrorResponse: AssistantTurn = {
+	blocks: [
+		{
+			kind: 'turnEnd',
+			stopCode: StopCode.ProviderError,
+			stopMessage: 'Anthropic API returned 529: API is temporarily overloaded',
+		},
+	],
+};
+
+export const assistantGenericErrorResponse: AssistantTurn = {
+	blocks: [
+		{
+			kind: 'turnEnd',
+			stopCode: StopCode.LlmError,
+		},
+	],
+};
