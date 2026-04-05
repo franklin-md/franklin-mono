@@ -5,23 +5,24 @@
 // IDs match the Spec Table in README.md.
 // ---------------------------------------------------------------------------
 
-import type { SpecPoint } from './types.js';
+import type { Expectation } from './types.js';
 import { sends, receives } from './assertions/filters.js';
 import { match } from './assertions/match.js';
 import { initCompletedIndex } from './assertions/init.js';
 import { isTurnActiveAt, turns } from './assertions/turn-state.js';
+import { StopCode, VALID_STOP_CODES } from '../types/stop-code.js';
 
 // ---------------------------------------------------------------------------
 // Initialization
 // ---------------------------------------------------------------------------
 
-const initSendExists: SpecPoint = {
+const initSendExists: Expectation = {
 	id: 'init-send-exists',
 	description: 'initialize send must exist',
 	test: (t) => (sends(t, 'initialize').length > 0 ? 'pass' : 'fail'),
 };
 
-const initReceiveExists: SpecPoint = {
+const initReceiveExists: Expectation = {
 	id: 'init-receive-exists',
 	description: 'Agent must respond to initialize',
 	test: (t) => {
@@ -30,7 +31,7 @@ const initReceiveExists: SpecPoint = {
 	},
 };
 
-const initIsFirst: SpecPoint = {
+const initIsFirst: Expectation = {
 	id: 'init-is-first',
 	description: 'initialize must be the first message sent',
 	test: (t) => {
@@ -40,7 +41,7 @@ const initIsFirst: SpecPoint = {
 	},
 };
 
-const initExactlyOnce: SpecPoint = {
+const initExactlyOnce: Expectation = {
 	id: 'init-exactly-once',
 	description: 'initialize must be sent exactly once',
 	test: (t) => (sends(t, 'initialize').length === 1 ? 'pass' : 'fail'),
@@ -50,7 +51,7 @@ const initExactlyOnce: SpecPoint = {
 // Context Setup
 // ---------------------------------------------------------------------------
 
-const ctxBeforeFirstPrompt: SpecPoint = {
+const ctxBeforeFirstPrompt: Expectation = {
 	id: 'ctx-before-first-prompt',
 	description: 'setContext must precede the first prompt',
 	test: (t) => {
@@ -61,7 +62,7 @@ const ctxBeforeFirstPrompt: SpecPoint = {
 	},
 };
 
-const ctxReceiveExists: SpecPoint = {
+const ctxReceiveExists: Expectation = {
 	id: 'ctx-receive-exists',
 	description: 'Agent must respond to each setContext',
 	test: (t) => {
@@ -71,7 +72,7 @@ const ctxReceiveExists: SpecPoint = {
 	},
 };
 
-const ctxAfterInit: SpecPoint = {
+const ctxAfterInit: Expectation = {
 	id: 'ctx-after-init',
 	description: 'setContext must not be sent before initialize completes',
 	test: (t) => {
@@ -90,7 +91,7 @@ const ctxAfterInit: SpecPoint = {
 // Turn Lifecycle
 // ---------------------------------------------------------------------------
 
-const turnEndsWithTurnEnd: SpecPoint = {
+const turnEndsWithTurnEnd: Expectation = {
 	id: 'turn-ends-with-turn-end',
 	description: 'Every prompt must eventually be followed by a turnEnd',
 	test: (t) => {
@@ -107,7 +108,7 @@ const turnEndsWithTurnEnd: SpecPoint = {
 	},
 };
 
-const noOverlappingPrompts: SpecPoint = {
+const noOverlappingPrompts: Expectation = {
 	id: 'no-overlapping-prompts',
 	description: 'prompt must not be sent while a turn is active',
 	test: (t) => {
@@ -127,7 +128,7 @@ const noOverlappingPrompts: SpecPoint = {
 	},
 };
 
-const promptAfterInit: SpecPoint = {
+const promptAfterInit: Expectation = {
 	id: 'prompt-after-init',
 	description: 'prompt must not be sent before initialize completes',
 	test: (t) => {
@@ -142,7 +143,7 @@ const promptAfterInit: SpecPoint = {
 	},
 };
 
-const turnEndIsTerminal: SpecPoint = {
+const turnEndIsTerminal: Expectation = {
 	id: 'turn-end-is-terminal',
 	description: 'No stream events (chunk, update) after turnEnd within a turn',
 	test: (t) => {
@@ -163,7 +164,7 @@ const turnEndIsTerminal: SpecPoint = {
 	},
 };
 
-const turnStartsWithTurnStart: SpecPoint = {
+const turnStartsWithTurnStart: Expectation = {
 	id: 'turn-starts-with-turn-start',
 	description: 'The first stream event after every prompt must be a turnStart',
 	test: (t) => {
@@ -184,7 +185,7 @@ const turnStartsWithTurnStart: SpecPoint = {
 // Stream Events
 // ---------------------------------------------------------------------------
 
-const oneTurnEndPerTurn: SpecPoint = {
+const oneTurnEndPerTurn: Expectation = {
 	id: 'one-turn-end-per-turn',
 	description: 'Every turn has exactly one turnEnd',
 	test: (t) => {
@@ -198,22 +199,20 @@ const oneTurnEndPerTurn: SpecPoint = {
 	},
 };
 
-const stopReasonValid: SpecPoint = {
-	id: 'stop-reason-valid',
-	description:
-		'turnEnd.stopReason must be one of: end_turn, max_tokens, refusal, cancelled',
+const stopCodeValid: Expectation = {
+	id: 'stop-code-valid',
+	description: 'turnEnd.stopCode must be a valid StopCode enum value',
 	test: (t) => {
 		const turnEnds = receives(t, 'turnEnd');
 		if (turnEnds.length === 0) return 'skip';
-		const valid = new Set(['end_turn', 'max_tokens', 'refusal', 'cancelled']);
 		for (const e of turnEnds) {
-			if (!valid.has(e.params.stopReason)) return 'fail';
+			if (!VALID_STOP_CODES.has(e.params.stopCode)) return 'fail';
 		}
 		return 'pass';
 	},
 };
 
-const chunkHasMessageId: SpecPoint = {
+const chunkHasMessageId: Expectation = {
 	id: 'chunk-has-message-id',
 	description: 'Every chunk has a messageId and role',
 	test: (t) => {
@@ -227,7 +226,7 @@ const chunkHasMessageId: SpecPoint = {
 	},
 };
 
-const updateHasMessageId: SpecPoint = {
+const updateHasMessageId: Expectation = {
 	id: 'update-has-message-id',
 	description: 'Every update has a non-empty messageId',
 	test: (t) => {
@@ -240,7 +239,7 @@ const updateHasMessageId: SpecPoint = {
 	},
 };
 
-const updateHasMessage: SpecPoint = {
+const updateHasMessage: Expectation = {
 	id: 'update-has-message',
 	description: 'Every update contains a complete message',
 	test: (t) => {
@@ -253,7 +252,7 @@ const updateHasMessage: SpecPoint = {
 	},
 };
 
-const chunkHasMatchingUpdate: SpecPoint = {
+const chunkHasMatchingUpdate: Expectation = {
 	id: 'chunk-has-matching-update',
 	description:
 		'Every chunk messageId must have a corresponding update with the same messageId',
@@ -272,7 +271,7 @@ const chunkHasMatchingUpdate: SpecPoint = {
 	},
 };
 
-const chunksPrecedeUpdate: SpecPoint = {
+const chunksPrecedeUpdate: Expectation = {
 	id: 'chunks-precede-update',
 	description: 'All chunks for a messageId precede the corresponding update',
 	test: (t) => {
@@ -292,7 +291,7 @@ const chunksPrecedeUpdate: SpecPoint = {
 	},
 };
 
-const updateMessageMatchesChunks: SpecPoint = {
+const updateMessageMatchesChunks: Expectation = {
 	id: 'update-message-matches-chunks',
 	description:
 		'If chunks exist for a messageId, the update text/thinking content is their concatenation',
@@ -353,7 +352,7 @@ const updateMessageMatchesChunks: SpecPoint = {
 // Tool Execution
 // ---------------------------------------------------------------------------
 
-const toolResultFollowsExecute: SpecPoint = {
+const toolResultFollowsExecute: Expectation = {
 	id: 'tool-result-follows-execute',
 	description: 'Every toolExecute receive is followed by a toolResult send',
 	test: (t) => {
@@ -370,7 +369,7 @@ const toolResultFollowsExecute: SpecPoint = {
 	},
 };
 
-const toolResultIdMatches: SpecPoint = {
+const toolResultIdMatches: Expectation = {
 	id: 'tool-result-id-matches',
 	description:
 		"toolResult.toolCallId must match the preceding toolExecute's call.id",
@@ -390,7 +389,7 @@ const toolResultIdMatches: SpecPoint = {
 	},
 };
 
-const toolExecuteDuringTurn: SpecPoint = {
+const toolExecuteDuringTurn: Expectation = {
 	id: 'tool-execute-during-turn',
 	description: 'toolExecute only occurs during an active turn',
 	test: (t) => {
@@ -404,7 +403,7 @@ const toolExecuteDuringTurn: SpecPoint = {
 	},
 };
 
-const toolNameInContext: SpecPoint = {
+const toolNameInContext: Expectation = {
 	id: 'tool-name-in-context',
 	description: 'Invoked tool name must exist in a prior setContext tools array',
 	test: (t) => {
@@ -431,7 +430,7 @@ const toolNameInContext: SpecPoint = {
 // Message Content
 // ---------------------------------------------------------------------------
 
-const userContentTypes: SpecPoint = {
+const userContentTypes: Expectation = {
 	id: 'user-content-types',
 	description: 'User messages may only contain text and image content blocks',
 	test: (t) => {
@@ -447,7 +446,7 @@ const userContentTypes: SpecPoint = {
 	},
 };
 
-const assistantContentTypes: SpecPoint = {
+const assistantContentTypes: Expectation = {
 	id: 'assistant-content-types',
 	description:
 		'Assistant stream updates may only contain text, thinking, image blocks',
@@ -466,7 +465,7 @@ const assistantContentTypes: SpecPoint = {
 	},
 };
 
-const toolResultContentTypes: SpecPoint = {
+const toolResultContentTypes: Expectation = {
 	id: 'tool-result-content-types',
 	description:
 		'toolResult messages may only contain text and image content blocks',
@@ -487,7 +486,7 @@ const toolResultContentTypes: SpecPoint = {
 // Cancellation
 // ---------------------------------------------------------------------------
 
-const cancelDuringActiveTurn: SpecPoint = {
+const cancelDuringActiveTurn: Expectation = {
 	id: 'cancel-during-active-turn',
 	description: 'cancel must only be sent during an active turn',
 	test: (t) => {
@@ -501,9 +500,10 @@ const cancelDuringActiveTurn: SpecPoint = {
 	},
 };
 
-const cancelStopReason: SpecPoint = {
-	id: 'cancel-stop-reason',
-	description: 'After cancel, the turn should end with stopReason: "cancelled"',
+const cancelStopCode: Expectation = {
+	id: 'cancel-stop-code',
+	description:
+		'After cancel, the turn should end with stopCode: Cancelled (101)',
 	test: (t) => {
 		const cancels = sends(t, 'cancel');
 		if (cancels.length === 0) return 'skip';
@@ -514,7 +514,7 @@ const cancelStopReason: SpecPoint = {
 				.find((e) => match(e, 'receive', 'turnEnd'));
 			if (!turnEnd) return 'skip';
 			if (!match(turnEnd, 'receive', 'turnEnd')) return 'fail';
-			if (turnEnd.params.stopReason !== 'cancelled') return 'fail';
+			if (turnEnd.params.stopCode !== StopCode.Cancelled) return 'fail';
 		}
 		return 'pass';
 	},
@@ -524,7 +524,7 @@ const cancelStopReason: SpecPoint = {
 // Export
 // ---------------------------------------------------------------------------
 
-export const specPoints: SpecPoint[] = [
+export const specPoints: Expectation[] = [
 	// Initialization
 	initSendExists,
 	initReceiveExists,
@@ -542,7 +542,7 @@ export const specPoints: SpecPoint[] = [
 	turnEndIsTerminal,
 	// Stream Events
 	oneTurnEndPerTurn,
-	stopReasonValid,
+	stopCodeValid,
 	chunkHasMessageId,
 	updateHasMessageId,
 	updateHasMessage,
@@ -560,5 +560,5 @@ export const specPoints: SpecPoint[] = [
 	toolResultContentTypes,
 	// Cancellation
 	cancelDuringActiveTurn,
-	cancelStopReason,
+	cancelStopCode,
 ];

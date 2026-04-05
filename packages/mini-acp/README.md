@@ -192,9 +192,9 @@ Update {
 **`TurnEnd`** — signals the turn is complete:
 ```
 TurnEnd {
-  type:        "turnEnd"
-  stopReason:  StopReason    // end_turn | max_tokens | refusal | cancelled
-  stopMessage?: string       // Optional human-readable detail
+  type:         "turnEnd"
+  stopCode:     StopCode      // Integer code indicating why the turn ended
+  stopMessage?: string        // Optional human-readable detail
 }
 ```
 
@@ -204,7 +204,7 @@ TurnStart { "turnStart" }
 Chunk { "chunk", messageId: "m1", role: "assistant", content: { type: "text", text: "Hello" } }
 Chunk { "chunk", messageId: "m1", role: "assistant", content: { type: "text", text: " world" } }
 Update { "update", messageId: "m1", message: { role: "assistant", content: [{ type: "text", text: "Hello world" }] } }
-TurnEnd { "turnEnd", stopReason: "end_turn" }
+TurnEnd { "turnEnd", stopCode: 1000 }
 ```
 
 The `Update` message text `"Hello world"` is exactly the concatenation of the two chunk deltas `"Hello"` + `" world"`. Every chunk's `messageId` (`"m1"`) matches the update's `messageId`, and no chunks for `"m1"` appear after the update.
@@ -249,14 +249,21 @@ Client-side `toolExecute` implementations SHOULD catch their own exceptions and 
 
 #### Turn End
 
-The turn ends when the agent emits a `TurnEnd` event and closes the stream. The `stopReason` indicates why:
+The turn ends when the agent emits a `TurnEnd` event and closes the stream. The `stopCode` is an integer indicating why:
 
-| StopReason   | Meaning                                   |
-| ------------ | ----------------------------------------- |
-| `end_turn`   | The agent completed its response normally |
-| `max_tokens` | The LLM's token limit was reached         |
-| `refusal`    | The LLM or provider refused or errored    |
-| `cancelled`  | The client requested cancellation         |
+| Code | Name                   | Category   | Meaning                                          |
+| ---- | ---------------------- | ---------- | ------------------------------------------------ |
+| 1000 | `Finished`             | finished   | The agent completed its response normally         |
+| 1001 | `Cancelled`            | finished   | The client requested cancellation                 |
+| 2000 | `LlmError`             | llm_error  | Generic / unclassified LLM error                  |
+| 2100 | `ProviderNotSpecified` | llm_error  | No provider in LLMConfig                          |
+| 2101 | `ProviderNotFound`     | llm_error  | Provider string does not match any known provider |
+| 2102 | `ModelNotSpecified`    | llm_error  | No model in LLMConfig                             |
+| 2103 | `ModelNotFound`        | llm_error  | Model not available for the given provider        |
+| 2200 | `ProviderError`        | llm_error  | Provider runtime error (rate limit, ban, etc.)    |
+| 2300 | `MaxTokens`            | llm_error  | The LLM's token limit was reached                 |
+
+Codes are grouped by range: 1xxx = `finished` (the turn completed), 2xxx = `llm_error` (the turn could not complete). Sub-ranges (21xx, 22xx, 23xx) group related error types. The category is derived from the code, never stored separately.
 
 After `TurnEnd`, the agent's context has been implicitly updated with all messages produced during the turn (the user message, assistant messages, tool calls, and tool results).
 
@@ -271,7 +278,7 @@ Client ──── cancel({}) ────► Agent (notification, no response)
 The agent SHOULD attempt to stop the current turn. However, the protocol makes no guarantees about the timeliness or completeness of cancellation. Specifically:
 
 - In-flight tool executions MAY or MAY NOT complete before the turn ends.
-- The agent SHOULD eventually emit a `TurnEnd` with `stopReason: "cancelled"`, but the timing is #unspecified.
+- The agent SHOULD eventually emit a `TurnEnd` with `stopCode: Cancelled (1001)`, but the timing is #unspecified.
 - The client MUST NOT assume the stream has ended until the stream is actually terminated (i.e., the terminal response is received).
 
 #### Shutdown
@@ -315,7 +322,7 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 | ID | Description | Level |
 |----|-------------|-------|
 | `one-turn-end-per-turn` | Every turn has exactly one `turnEnd` | MUST |
-| `stop-reason-valid` | `turnEnd.stopReason` must be one of: `end_turn`, `max_tokens`, `refusal`, `cancelled` | MUST |
+| `stop-code-valid` | `turnEnd.stopCode` must be a valid `StopCode` enum value | MUST |
 | `chunk-has-message-id` | Every `chunk` has a `messageId` and `role` | MUST |
 | `update-has-message-id` | Every `update` has a non-empty `messageId` | MUST |
 | `update-has-message` | Every `update` contains a complete `message` | MUST |
@@ -345,7 +352,7 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 | ID | Description | Level |
 |----|-------------|-------|
 | `cancel-during-active-turn` | `cancel` must only be sent during an active turn | MUST |
-| `cancel-stop-reason` | After `cancel`, the turn should end with `stopReason: "cancelled"` | SHOULD |
+| `cancel-stop-code` | After `cancel`, the turn should end with `stopCode: Cancelled (1001)` | SHOULD |
 
 
 ## Support for other Standards
@@ -385,6 +392,6 @@ Forking a session is creating a new agent connection and calling `setContext` wi
 - [ ] Is it expensive to send full history on fork?
 - [ ] Mid turn notification / ctx changing
   - [ ] May need to relax tool response type
-- [x] Error semantics spelled out (see Tool Error Semantics)
+- [x] Error semantics spelled out (StopCode integer enum with categories; see Tool Error Semantics)
 - [ ] Spell out authentication model, but feels like apikey can really be enough
 - [ ] 

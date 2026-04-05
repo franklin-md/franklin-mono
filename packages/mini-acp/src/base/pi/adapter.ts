@@ -13,6 +13,7 @@ import type { TurnClient, TurnServer } from '../types.js';
 import type { UserMessage } from '../../types/message.js';
 import type { Ctx } from '../../types/context.js';
 import type { StreamEvent } from '../../types/stream.js';
+import { StopCode } from '../../types/stop-code.js';
 
 import {
 	bridgeTool,
@@ -38,41 +39,50 @@ export interface PiAdapterOptions {
 
 export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 	const { client, ctx, streamFn } = options;
-	const model = resolveModel(ctx.config);
 
-	// Bridge tool definitions to pi AgentTools that call client.toolExecute
-	const handler = client.toolExecute.bind(client);
-	const piTools = ctx.tools.map((def) => bridgeTool(def, handler));
-
-	// Convert history messages to pi-ai format
-	const piMessages = ctx.history.messages.map(toPiMessage);
-
-	// Create the pi Agent
-	const piAgent = new PiCoreAgent({
-		initialState: {
-			systemPrompt: ctx.history.systemPrompt,
-			model,
-			thinkingLevel: ctx.config?.reasoning ?? 'off',
-			tools: piTools,
-			messages: piMessages,
-		},
-		// TODO: Lets not hard code this. I think solution should be to pass this from ctx?
-		// Only resolve the API key when using the real stream function (not a test mock).
-		getApiKey: streamFn
-			? undefined
-			: (_: string) => {
-					// const key = process.env[`${provider.toUpperCase()}_API_KEY`];
-					// if (!key) {
-					// 	throw new Error(`Missing API key for provider: ${provider}`);
-					// }
-					// return key;
-					return ctx.config?.apiKey;
-				},
-		streamFn,
-	});
+	let piAgent: PiCoreAgent | null = null;
 
 	return {
 		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
+			// Resolve model lazily at prompt time so unresolvable configs
+			// produce a clean turnStart → turnEnd sequence.
+			const resolved = resolveModel(ctx.config);
+			if (!resolved.ok) {
+				yield { type: 'turnStart' };
+				yield resolved.turnEnd;
+				return;
+			}
+
+			// Bridge tool definitions to pi AgentTools that call client.toolExecute
+			const handler = client.toolExecute.bind(client);
+			const piTools = ctx.tools.map((def) => bridgeTool(def, handler));
+
+			// Convert history messages to pi-ai format
+			const piMessages = ctx.history.messages.map(toPiMessage);
+
+			// Create the pi Agent
+			piAgent = new PiCoreAgent({
+				initialState: {
+					systemPrompt: ctx.history.systemPrompt,
+					model: resolved.model,
+					thinkingLevel: ctx.config?.reasoning ?? 'off',
+					tools: piTools,
+					messages: piMessages,
+				},
+				// TODO: Lets not hard code this. I think solution should be to pass this from ctx?
+				// Only resolve the API key when using the real stream function (not a test mock).
+				getApiKey: streamFn
+					? undefined
+					: (_: string) => {
+							// const key = process.env[`${provider.toUpperCase()}_API_KEY`];
+							// if (!key) {
+							// 	throw new Error(`Missing API key for provider: ${provider}`);
+							// }
+							// return key;
+							return ctx.config?.apiKey;
+						},
+				streamFn,
+			});
 			let currentMessageId = crypto.randomUUID();
 
 			const { readable, writable } = createMemoryStream<StreamEvent>();
@@ -85,7 +95,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 				if (event.type === 'message_start') {
 					currentMessageId = crypto.randomUUID();
 				}
-				// TODO: The assistant message may have a stopReason of 'error'
+				// TODO: The assistant message may have a stopReason of 'error' (Pi-level)
 				const streamEvent = fromAgentEvent(event, currentMessageId);
 				if (streamEvent) {
 					void writer.write(streamEvent);
@@ -105,7 +115,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 					const msg = 'An error occurred while prompting the agent';
 					void writer.write({
 						type: 'turnEnd',
-						stopReason: 'refusal',
+						stopCode: StopCode.LlmError,
 						stopMessage: msg,
 					});
 					void writer.close();
@@ -117,6 +127,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 		},
 
 		async cancel(): Promise<void> {
+			if (!piAgent) return;
 			piAgent.abort();
 			// TODO: Ensure that aborting causes prompt to:
 			// a) not hang

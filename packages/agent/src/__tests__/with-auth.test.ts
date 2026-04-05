@@ -5,6 +5,7 @@ import { createDuplexPair, type JsonRpcMessage } from '@franklin/transport';
 import {
 	createSessionAdapter,
 	createAgentConnection,
+	StopCode,
 } from '@franklin/mini-acp';
 import { loginAgent, withAuth, syncAuth } from '../auth/with-auth.js';
 import type { AuthChangeListener, IAuthManager } from '../auth/types.js';
@@ -60,7 +61,7 @@ function createMockSpawn() {
 			async *prompt() {
 				yield {
 					type: 'turnEnd' as const,
-					stopReason: 'end_turn' as const,
+					stopCode: StopCode.Finished,
 				};
 			},
 			async cancel() {},

@@ -28,17 +28,16 @@ export function fromAgentEvent(
 		case 'message_start':
 			return null;
 
-		// The agent_end may emit the stopReason = error because of no APIKey for example
 		case 'agent_end': {
 			// agent_end in Pi represents the end of one full turn of the agent
 			// The last message sent will be a `turn_end` message with reasons
 			const turnEnd = event.messages.at(-1) as PiAssistantMessage;
-			const stopReason = fromPiStopReason(turnEnd.stopReason);
-			if (stopReason === null)
-				throw new Error('stopReason should never be undefined');
+			const stopCode = fromPiStopReason(turnEnd.stopReason);
+			if (stopCode === null)
+				throw new Error('stopCode should never be null at agent_end');
 			return {
 				type: 'turnEnd',
-				stopReason,
+				stopCode,
 				stopMessage: sanitizeStopMessage(turnEnd.errorMessage),
 			};
 		}

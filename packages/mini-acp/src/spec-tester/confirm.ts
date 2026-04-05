@@ -2,12 +2,17 @@ import { describe, expect, beforeAll, it } from 'vitest';
 
 import { execute } from './execute/index.js';
 import { specPoints } from './spec.js';
-import { allFixtures } from './fixtures/index.js';
-import type { AgentFactory, Fixture, SpecPoint, Transcript } from './types.js';
+import { allFixtureExpectations } from './fixtures/index.js';
+import type {
+	AgentFactory,
+	Expectation,
+	FixtureExpectation,
+	Transcript,
+} from './types.js';
 
 export interface ConfirmOptions {
-	fixtures?: Fixture[];
-	specs?: SpecPoint[];
+	entries?: FixtureExpectation[];
+	specs?: Expectation[];
 	timeoutMs?: number;
 }
 
@@ -17,11 +22,11 @@ export function confirmSpec(
 	factory: AgentFactory,
 	options?: ConfirmOptions,
 ): void {
-	const fixtures = options?.fixtures ?? allFixtures;
+	const entries = options?.entries ?? allFixtureExpectations;
 	const specs = options?.specs ?? specPoints;
 	const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-	for (const fixture of fixtures) {
+	for (const { fixture, expectations } of entries) {
 		describe(fixture.name, () => {
 			let transcript: Transcript;
 
@@ -29,9 +34,19 @@ export function confirmSpec(
 				transcript = await execute(fixture, factory);
 			}, timeoutMs);
 
+			// Protocol invariant spec points
 			for (const spec of specs) {
 				it(spec.description, () => {
 					const result = spec.test(transcript);
+					if (result === 'skip') return;
+					expect(result).toBe('pass');
+				});
+			}
+
+			// Fixture-specific expectations
+			for (const expectation of expectations) {
+				it(expectation.description, () => {
+					const result = expectation.test(transcript);
 					if (result === 'skip') return;
 					expect(result).toBe('pass');
 				});

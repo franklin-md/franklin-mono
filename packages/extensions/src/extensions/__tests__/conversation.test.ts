@@ -13,6 +13,7 @@ import type {
 	Update,
 	TurnEnd,
 } from '@franklin/mini-acp';
+import { StopCode } from '@franklin/mini-acp';
 import { conversationExtension } from '../conversation/extension.js';
 import type { ConversationTurn } from '../conversation/types.js';
 import type { StoreResult } from '../../api/index.js';
@@ -366,7 +367,7 @@ describe('conversationExtension', () => {
 
 		const turnEnd: TurnEnd = {
 			type: 'turnEnd',
-			stopReason: 'end_turn',
+			stopCode: StopCode.Finished,
 		};
 
 		const target = stubClient({
@@ -387,7 +388,7 @@ describe('conversationExtension', () => {
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
 			kind: 'turnEnd',
-			stopReason: 'end_turn',
+			stopCode: StopCode.Finished,
 			stopMessage: undefined,
 		});
 	});
@@ -397,7 +398,7 @@ describe('conversationExtension', () => {
 
 		const turnEnd: TurnEnd = {
 			type: 'turnEnd',
-			stopReason: 'refusal',
+			stopCode: StopCode.LlmError,
 			stopMessage: 'Missing API key',
 		};
 
@@ -419,7 +420,7 @@ describe('conversationExtension', () => {
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
 			kind: 'turnEnd',
-			stopReason: 'refusal',
+			stopCode: StopCode.LlmError,
 			stopMessage: 'Missing API key',
 		});
 	});
@@ -464,7 +465,7 @@ describe('conversationExtension', () => {
 				// Turn end
 				yield {
 					type: 'turnEnd',
-					stopReason: 'end_turn',
+					stopCode: StopCode.Finished,
 				} satisfies TurnEnd;
 			},
 		});
@@ -502,7 +503,7 @@ describe('conversationExtension', () => {
 		});
 		expect(blocks[3]).toEqual({
 			kind: 'turnEnd',
-			stopReason: 'end_turn',
+			stopCode: StopCode.Finished,
 			stopMessage: undefined,
 		});
 	});

@@ -5,6 +5,7 @@ import { createDuplexPair, type JsonRpcMessage } from '@franklin/transport';
 import {
 	createSessionAdapter,
 	createAgentConnection,
+	StopCode,
 	type Update,
 	type StreamEvent,
 } from '@franklin/mini-acp';
@@ -31,7 +32,7 @@ function createMockSpawn() {
 				} satisfies Update;
 				yield {
 					type: 'turnEnd' as const,
-					stopReason: 'end_turn' as const,
+					stopCode: StopCode.Finished,
 				};
 			},
 			async cancel() {},

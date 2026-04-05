@@ -2,20 +2,17 @@ export type {
 	TranscriptEntry,
 	Transcript,
 	SpecResult,
-	SpecPoint,
+	Expectation,
+	FixtureExpectation,
 	Action,
 	Fixture,
 	AgentFactory,
-	CellResult,
-	FixtureResult,
-	SuiteResult,
 } from './types.js';
 
 export { execute } from './execute/index.js';
-export { runSuite } from './suite.js';
 export { specPoints } from './spec.js';
 export { confirmSpec, type ConfirmOptions } from './confirm.js';
-export { allFixtures } from './fixtures/index.js';
+export { allFixtureExpectations } from './fixtures/index.js';
 
 // Actions
 export { initialize } from './actions/initialize.js';

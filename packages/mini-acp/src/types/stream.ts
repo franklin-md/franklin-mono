@@ -1,6 +1,6 @@
 import type { Content } from './content.js';
 import type { Message } from './message.js';
-import type { StopReason } from './stop-reason.js';
+import type { StopCode } from './stop-code.js';
 
 // ---------------------------------------------------------------------------
 // Stream events — emitted during a prompt turn
@@ -30,11 +30,9 @@ export type Update = {
 	message: Message;
 };
 
-// TODO: Start to define all the codes.
 export type TurnEnd = {
 	type: 'turnEnd';
-	// https://agentclientprotocol.com/protocol/prompt-turn#stop-reasons
-	stopReason: StopReason;
+	stopCode: StopCode;
 	stopMessage?: string;
 };
 
