@@ -161,7 +161,6 @@ describe('Conversation', () => {
 						result: [{ type: 'text', text: 'file contents' }],
 					},
 					{ kind: 'thinking', text: 'hmm' },
-					{ kind: 'turnEnd', stopReason: 'end_turn' },
 				],
 			},
 		},
