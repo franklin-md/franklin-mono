@@ -12,12 +12,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: { prompt: userTextPrompt },
+	args: { message: userTextPrompt },
 };
 
 export const LongMessage: Story = {
 	args: {
-		prompt: {
+		message: {
 			role: 'user',
 			content: [
 				{
@@ -31,7 +31,7 @@ export const LongMessage: Story = {
 
 export const MultipleTextBlocks: Story = {
 	args: {
-		prompt: {
+		message: {
 			role: 'user',
 			content: [
 				{ type: 'text', text: 'First block. ' },
