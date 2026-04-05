@@ -1,9 +1,11 @@
 import type { ExtensionToolDefinition } from './tool.js';
+import type { ToolSpec } from './tool-spec.js';
 import type {
 	CoreEventHandler,
 	StreamObserverHandler,
 	ToolObserverHandler,
 } from './events.js';
+import type { MaybePromise } from '../../types/shared.js';
 
 export interface CoreAPI {
 	// Request events — waterfall transform on outgoing requests
@@ -25,5 +27,12 @@ export interface CoreAPI {
 
 	registerTool<TInput, TOutput>(
 		tool: ExtensionToolDefinition<TInput, TOutput>,
+	): void;
+
+	registerTool<TArgs, TOutput>(
+		spec: ToolSpec<string, TArgs>,
+		tool: {
+			execute(params: TArgs): MaybePromise<TOutput>;
+		},
 	): void;
 }

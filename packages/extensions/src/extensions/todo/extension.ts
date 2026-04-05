@@ -1,15 +1,10 @@
-import { z } from 'zod';
 import type { Extension } from '../../types/extension.js';
 import type { CoreAPI } from '../../api/core/api.js';
 import type { StoreAPI } from '../../api/store/api.js';
 import { formatTodos } from './format.js';
 import { createTodoControl } from './control.js';
 import { todoKey } from './key.js';
-import {
-	addTodoDescription,
-	completeTodoDescription,
-	listTodosDescription,
-} from '../system_prompts.js';
+import { addTodoSpec, completeTodoSpec, listTodosSpec } from './tools.js';
 
 /**
  * Extension that gives agents persistent task memory via tools
@@ -21,30 +16,21 @@ export function todoExtension(): Extension<CoreAPI & StoreAPI> {
 		const store = api.registerStore(todoKey, [], 'shared');
 		const control = createTodoControl(store);
 
-		api.registerTool({
-			name: 'add_todo',
-			description: addTodoDescription,
-			schema: z.object({ text: z.string() }),
-			async execute(params: { text: string }) {
-				const todo = control.addTodo(params.text);
+		api.registerTool(addTodoSpec, {
+			async execute({ text }) {
+				const todo = control.addTodo(text);
 				return { id: todo.id };
 			},
 		});
 
-		api.registerTool({
-			name: 'complete_todo',
-			description: completeTodoDescription,
-			schema: z.object({ id: z.string() }),
-			async execute(params: { id: string }) {
-				control.setStatus(params.id, true);
+		api.registerTool(completeTodoSpec, {
+			async execute({ id }) {
+				control.setStatus(id, true);
 				return { ok: true };
 			},
 		});
 
-		api.registerTool({
-			name: 'list_todos',
-			description: listTodosDescription,
-			schema: z.object({}),
+		api.registerTool(listTodosSpec, {
 			async execute() {
 				return { todos: control.todos() };
 			},

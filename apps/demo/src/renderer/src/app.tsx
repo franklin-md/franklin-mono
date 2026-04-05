@@ -17,15 +17,16 @@ import {
 } from '@franklin/extensions';
 
 const platform = createElectronPlatform();
-const extensions = [
-	conversationExtension(),
-	todoExtension(),
-	statusExtension(),
-	readExtension(),
-	writeExtension(),
-	editExtension(),
-	globExtension(),
+const extensionBundles = [
+	conversationExtension,
+	todoExtension,
+	statusExtension,
+	readExtension,
+	writeExtension,
+	editExtension,
+	globExtension,
 ];
+const extensions = extensionBundles.map((bundle) => bundle.extension);
 
 const auth = new ElectronAuthManager(window.__franklinAuth);
 

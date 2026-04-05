@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { createTodoControl, todoKey } from '@franklin/extensions';
+import { createTodoControl, todoExtension } from '@franklin/extensions';
 import { useAgentState } from '@franklin/react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { TodoAddForm } from './todo-add-form.js';
 import { TodoItem } from './todo-item.js';
 
 export function TodoPanel() {
-	const store = useAgentState(todoKey);
+	const store = useAgentState(todoExtension.keys.todo);
 	const todos = store.get();
 
 	const control = useMemo(() => createTodoControl(store), [store]);

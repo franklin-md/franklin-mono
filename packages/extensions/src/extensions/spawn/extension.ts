@@ -1,6 +1,5 @@
-import { z } from 'zod';
 import type { Extension } from '../../types/extension.js';
-import { spawnDescription } from '../system_prompts.js';
+import { spawnSpec } from './tools.js';
 
 /**
  * Extension that registers a `spawn` tool allowing the agent
@@ -8,10 +7,7 @@ import { spawnDescription } from '../system_prompts.js';
  */
 export function spawnExtension(spawn: () => Promise<void>): Extension {
 	return (api) => {
-		api.registerTool({
-			name: 'spawn',
-			description: spawnDescription,
-			schema: z.object({}),
+		api.registerTool(spawnSpec, {
 			async execute() {
 				await spawn();
 				return { ok: true };
