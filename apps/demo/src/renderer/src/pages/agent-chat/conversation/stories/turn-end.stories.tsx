@@ -1,43 +1,43 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { AssistantBubble } from '../turn/body/assistant-bubble.js';
+import { ConversationView } from '../view/conversation-view.js';
 import {
-	assistantFinishedResponse,
-	assistantCancelledResponse,
-	assistantMaxTokensResponse,
-	assistantConfigErrorResponse,
-	assistantProviderErrorResponse,
-	assistantGenericErrorResponse,
+	finishedTurn,
+	cancelledTurn,
+	maxTokensTurn,
+	configErrorTurn,
+	providerErrorTurn,
+	genericErrorTurn,
 } from '../fixtures.js';
 
 const meta = {
 	title: 'Conversation/TurnEnd',
-	component: AssistantBubble,
-} satisfies Meta<typeof AssistantBubble>;
+	component: ConversationView,
+} satisfies Meta<typeof ConversationView>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Finished: Story = {
-	args: { response: assistantFinishedResponse },
+	args: { turns: [finishedTurn] },
 };
 
 export const Cancelled: Story = {
-	args: { response: assistantCancelledResponse },
+	args: { turns: [cancelledTurn] },
 };
 
 export const MaxTokens: Story = {
-	args: { response: assistantMaxTokensResponse },
+	args: { turns: [maxTokensTurn] },
 };
 
 export const ConfigError: Story = {
-	args: { response: assistantConfigErrorResponse },
+	args: { turns: [configErrorTurn] },
 };
 
 export const ProviderError: Story = {
-	args: { response: assistantProviderErrorResponse },
+	args: { turns: [providerErrorTurn] },
 };
 
 export const GenericError: Story = {
-	args: { response: assistantGenericErrorResponse },
+	args: { turns: [genericErrorTurn] },
 };
