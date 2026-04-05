@@ -4,3 +4,23 @@ export { AgentProvider, useAgent } from './agent-context.js';
 export { useAgentState } from './use-agent-state.js';
 export { FranklinProvider, useApp } from './franklin-context.js';
 export { useSessions } from './use-sessions.js';
+
+export { Conversation } from './conversation/conversation.js';
+export type { ConversationComponents } from './conversation/types.js';
+
+export { computeToolStatus } from './conversation/tools/status.js';
+export {
+	createToolRendererRegistry,
+	resolveToolRenderer,
+} from './conversation/tools/registry.js';
+export {
+	ToolUseBlock,
+	createToolUseBlock,
+} from './conversation/tools/tool-use.js';
+export type {
+	ToolStatus,
+	ToolRenderProps,
+	ToolRendererEntry,
+	ToolRendererRegistry,
+	ResolvedToolRender,
+} from './conversation/tools/types.js';
