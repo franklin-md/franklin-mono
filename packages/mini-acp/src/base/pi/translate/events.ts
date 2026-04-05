@@ -10,7 +10,7 @@ import type {
 import type { AgentEvent } from '@mariozechner/pi-agent-core';
 
 import { fromPiMessage } from './message.js';
-import { fromPiStopReason } from './content.js';
+import { narrowPiStopCode } from './error.js';
 import type { StreamEvent } from 'packages/mini-acp/src/types/stream.js';
 // ---------------------------------------------------------------------------
 // AgentEvent → StreamEvent
@@ -32,13 +32,14 @@ export function fromAgentEvent(
 			// agent_end in Pi represents the end of one full turn of the agent
 			// The last message sent will be a `turn_end` message with reasons
 			const turnEnd = event.messages.at(-1) as PiAssistantMessage;
-			const stopCode = fromPiStopReason(turnEnd.stopReason);
+			const stopMessage = sanitizeStopMessage(turnEnd.errorMessage);
+			const stopCode = narrowPiStopCode(turnEnd.stopReason, stopMessage);
 			if (stopCode === null)
 				throw new Error('stopCode should never be null at agent_end');
 			return {
 				type: 'turnEnd',
 				stopCode,
-				stopMessage: sanitizeStopMessage(turnEnd.errorMessage),
+				stopMessage,
 			};
 		}
 		// Streaming deltas → chunks

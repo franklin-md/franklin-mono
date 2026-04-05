@@ -22,7 +22,7 @@ import {
 	toPiUserMessage,
 } from './translate/index.js';
 import { createMemoryStream } from '@franklin/transport';
-import { resolveModel } from './model-resolve.js';
+import { resolveConfig } from './resolve-config.js';
 
 // ---------------------------------------------------------------------------
 // Adapter factory
@@ -46,7 +46,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
 			// Resolve model lazily at prompt time so unresolvable configs
 			// produce a clean turnStart → turnEnd sequence.
-			const resolved = resolveModel(ctx.config);
+			const resolved = resolveConfig(ctx.config);
 			if (!resolved.ok) {
 				yield { type: 'turnStart' };
 				yield resolved.turnEnd;

@@ -10,6 +10,8 @@ import { missingProvider } from './missing-provider.js';
 import { unknownProvider } from './unknown-provider.js';
 import { missingModel } from './missing-model.js';
 import { unknownModel } from './unknown-model.js';
+import { missingAuthKey } from './missing-auth-key.js';
+import { invalidAuthKey } from './invalid-auth-key.js';
 
 function fe(
 	fixture: Fixture,
@@ -27,4 +29,6 @@ export const allFixtureExpectations: FixtureExpectation[] = [
 	fe(unknownProvider, expectStopCode(StopCode.ProviderNotFound)),
 	fe(missingModel, expectStopCode(StopCode.ModelNotSpecified)),
 	fe(unknownModel, expectStopCode(StopCode.ModelNotFound)),
+	fe(missingAuthKey, expectStopCode(StopCode.AuthKeyNotSpecified)),
+	fe(invalidAuthKey, expectStopCode(StopCode.AuthKeyInvalid)),
 ];
