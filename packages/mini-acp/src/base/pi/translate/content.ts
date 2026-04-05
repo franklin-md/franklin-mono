@@ -7,7 +7,6 @@ import type {
 	ThinkingContent as PiThinkingContent,
 	ImageContent as PiImageContent,
 	ToolCall as PiToolCall,
-	StopReason as PiStopReason,
 } from '@mariozechner/pi-ai';
 
 import type {
@@ -15,8 +14,6 @@ import type {
 	AssistantContent,
 	ToolResultContent,
 } from '../../../types/content.js';
-
-import { StopCode } from '../../../types/stop-code.js';
 // ---------------------------------------------------------------------------
 // pi-ai → mini-acp (per-role, returning narrowed types)
 // ---------------------------------------------------------------------------
@@ -105,20 +102,5 @@ export function toPiToolResultContent(
 			return { type: 'text', text: c.text };
 		case 'image':
 			return { type: 'image', data: c.data, mimeType: c.mimeType };
-	}
-}
-
-export function fromPiStopReason(reason: PiStopReason): StopCode | null {
-	switch (reason) {
-		case 'stop':
-			return StopCode.Finished;
-		case 'length':
-			return StopCode.MaxTokens;
-		case 'error':
-			return StopCode.LlmError;
-		case 'aborted':
-			return StopCode.Cancelled;
-		case 'toolUse':
-			return null;
 	}
 }
