@@ -12,10 +12,8 @@ export function writeExtension(): Extension<
 	return (api) => {
 		const fs = api.getEnvironment().filesystem;
 
-		api.registerTool(writeFileSpec, {
-			async execute({ path, content }) {
-				await fs.writeFile(path, content);
-			},
+		api.registerTool(writeFileSpec, async ({ path, content }) => {
+			await fs.writeFile(path, content);
 		});
 	};
 }

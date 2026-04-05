@@ -15,20 +15,18 @@ export function readExtension(): Extension<
 		const store = api.useStore(fileKey);
 		const fs = api.getEnvironment().filesystem;
 
-		api.registerTool(readFileSpec, {
-			async execute({ path, limit, offset }) {
-				const bytes = await fs.readFile(path);
-				const absPath = await fs.resolve(path);
+		api.registerTool(readFileSpec, async ({ path, limit, offset }) => {
+			const bytes = await fs.readFile(path);
+			const absPath = await fs.resolve(path);
 
-				const hash = sha256Hex(bytes);
-				store.set((draft) => {
-					draft[absPath] = hash;
-				});
+			const hash = sha256Hex(bytes);
+			store.set((draft) => {
+				draft[absPath] = hash;
+			});
 
-				const lines = new TextDecoder().decode(bytes).split('\n');
-				const start = (offset ?? 1) - 1;
-				return lines.slice(start, start + limit).join('\n');
-			},
+			const lines = new TextDecoder().decode(bytes).split('\n');
+			const start = (offset ?? 1) - 1;
+			return lines.slice(start, start + limit).join('\n');
 		});
 	};
 }

@@ -31,8 +31,6 @@ export interface CoreAPI {
 
 	registerTool<TArgs, TOutput>(
 		spec: ToolSpec<string, TArgs>,
-		tool: {
-			execute(params: TArgs): MaybePromise<TOutput>;
-		},
+		execute: (params: TArgs) => MaybePromise<TOutput>,
 	): void;
 }

@@ -7,16 +7,14 @@ export function globExtension(): Extension<CoreAPI & EnvironmentAPI> {
 	return (api) => {
 		const env = api.getEnvironment();
 
-		api.registerTool(globSpec, {
-			async execute({ pattern, options }) {
-				const files = await env.filesystem.glob(pattern, {
-					root_dir: options.root_dir,
-					ignore: options.exclude,
-					limit: options.limit,
-				});
+		api.registerTool(globSpec, async ({ pattern, options }) => {
+			const files = await env.filesystem.glob(pattern, {
+				root_dir: options.root_dir,
+				ignore: options.exclude,
+				limit: options.limit,
+			});
 
-				return { files };
-			},
+			return { files };
 		});
 	};
 }

@@ -79,16 +79,16 @@ export function createCoreCompiler(
 		},
 		registerTool(
 			specOrTool: ToolSpec | ExtensionToolDefinition,
-			rest?: { execute: (params: any) => any },
+			execute?: (params: any) => any,
 		) {
 			// TODO: Should we prohibit double registration?
-			if (rest) {
+			if (execute) {
 				const spec = specOrTool as ToolSpec;
 				tools.push({
 					name: spec.name,
 					description: spec.description,
 					schema: spec.schema,
-					execute: rest.execute,
+					execute,
 				});
 			} else {
 				tools.push(specOrTool as ExtensionToolDefinition);

@@ -32,8 +32,9 @@ export function editExtension(): Extension<
 		const env = api.getEnvironment();
 		// The store is private to ONE agent; it keeps track of the agent's "seen" files.
 		const store = api.registerStore(fileKey, {}, 'private');
-		api.registerTool(editFileSpec, {
-			async execute({ path, old_text, new_text, replace_all }) {
+		api.registerTool(
+			editFileSpec,
+			async ({ path, old_text, new_text, replace_all }) => {
 				// 1. Read + decode
 				let bytes: Uint8Array;
 				try {
@@ -113,6 +114,6 @@ export function editExtension(): Extension<
 
 				return { message: `Successfully edited ${path}.` };
 			},
-		});
+		);
 	};
 }

@@ -7,11 +7,9 @@ import { spawnSpec } from './tools.js';
  */
 export function spawnExtension(spawn: () => Promise<void>): Extension {
 	return (api) => {
-		api.registerTool(spawnSpec, {
-			async execute() {
-				await spawn();
-				return { ok: true };
-			},
+		api.registerTool(spawnSpec, async () => {
+			await spawn();
+			return { ok: true };
 		});
 	};
 }

@@ -328,9 +328,7 @@ describe('buildCore – registerTool() spec overload', () => {
 		}));
 
 		const mw = await compileExt((api) => {
-			api.registerTool(spec, {
-				execute: executeFn,
-			});
+			api.registerTool(spec, executeFn);
 		});
 
 		// Tool executes correctly via server middleware
