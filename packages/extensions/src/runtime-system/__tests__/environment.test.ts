@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createEnvironmentSystem } from '../environment.js';
-import { createRuntime } from '../types.js';
+import { createRuntime } from '../create.js';
 import type {
 	Environment,
 	EnvironmentConfig,

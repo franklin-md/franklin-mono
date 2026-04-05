@@ -1,5 +1,5 @@
 import {
-	StorePool as StoreRegistry,
+	StoreRegistry,
 	createCoreSystem,
 	createStoreSystem,
 	createEnvironmentSystem,

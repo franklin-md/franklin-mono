@@ -5,7 +5,7 @@ export type {
 	InferRuntime,
 	CombineSystems,
 } from './types.js';
-export { createRuntime } from './types.js';
+export { createRuntime } from './create.js';
 export {
 	createEnvironmentSystem,
 	type EnvironmentSystem,

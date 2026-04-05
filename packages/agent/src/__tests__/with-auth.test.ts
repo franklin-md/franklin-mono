@@ -6,8 +6,10 @@ import {
 	createSessionAdapter,
 	createAgentConnection,
 } from '@franklin/mini-acp';
-import { loginAgent, withAuth } from '../auth/with-auth.js';
-import type { IAuthManager } from '../auth/types.js';
+import { loginAgent, withAuth, syncAuth } from '../auth/with-auth.js';
+import type { AuthChangeListener, IAuthManager } from '../auth/types.js';
+import { SessionRegistry } from '../agent/session/registry.js';
+import type { FranklinState, FranklinRuntime } from '../types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -175,9 +177,114 @@ describe('withAuth', () => {
 
 		const runtime = await compiler.build();
 
-		// The runtime should have had setContext called during build
-		// We can verify by checking the tracker state indirectly —
-		// the runtime is live and authenticated
+		// TODO: We can't easily inspect that setContext was called on the
+		// real runtime (it's behind the CtxTracker), so we just verify
+		// that auth was invoked during the build step.
 		expect(runtime.setContext).toBeDefined();
+		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// syncAuth
+// ---------------------------------------------------------------------------
+
+function mockFranklinRuntime(provider?: string): FranklinRuntime {
+	return {
+		setContext: vi.fn(async () => {}),
+		state: vi.fn(async () => ({
+			core: {
+				history: { systemPrompt: '', messages: [] },
+				llmConfig: { provider },
+			},
+			store: {},
+			environment: {},
+		})),
+		fork: vi.fn(async () => ({
+			core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+			store: {},
+			environment: {},
+		})),
+		child: vi.fn(async () => ({
+			core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+			store: {},
+			environment: {},
+		})),
+		dispose: vi.fn(async () => {}),
+		prompt: vi.fn(async function* () {}),
+		cancel: vi.fn(async () => {}),
+		subscribe: vi.fn(() => () => {}),
+		initialize: vi.fn(async () => ({})),
+	} as unknown as FranklinRuntime;
+}
+
+describe('syncAuth', () => {
+	function setup() {
+		let captured: AuthChangeListener | undefined;
+		const auth = mockAuthManager();
+		(auth.onAuthChange as ReturnType<typeof vi.fn>).mockImplementation(
+			(listener: AuthChangeListener) => {
+				captured = listener;
+				return () => {};
+			},
+		);
+		const sessions = new SessionRegistry<FranklinState, FranklinRuntime>();
+
+		syncAuth(sessions, auth);
+
+		function fireAuthChange(provider: string, key: string | undefined) {
+			return captured!(provider, key);
+		}
+
+		return { sessions, fireAuthChange };
+	}
+
+	it('pushes new key to sessions matching the provider', async () => {
+		const { sessions, fireAuthChange } = setup();
+		const runtime = mockFranklinRuntime('anthropic');
+		sessions.register(
+			{ sessionId: 's1', runtime },
+			{ sessionId: 's1', state: await runtime.state() },
+		);
+
+		await fireAuthChange('anthropic', 'sk-new');
+
+		expect(runtime.setContext).toHaveBeenCalledWith({
+			config: { provider: 'anthropic', apiKey: 'sk-new' },
+		});
+	});
+
+	it('skips sessions that use a different provider', async () => {
+		const { sessions, fireAuthChange } = setup();
+		const runtime = mockFranklinRuntime('openai');
+		sessions.register(
+			{ sessionId: 's1', runtime },
+			{ sessionId: 's1', state: await runtime.state() },
+		);
+
+		await fireAuthChange('anthropic', 'sk-new');
+
+		expect(runtime.setContext).not.toHaveBeenCalled();
+	});
+
+	it('passes undefined apiKey on key revocation', async () => {
+		const { sessions, fireAuthChange } = setup();
+		const runtime = mockFranklinRuntime('anthropic');
+		sessions.register(
+			{ sessionId: 's1', runtime },
+			{ sessionId: 's1', state: await runtime.state() },
+		);
+
+		await fireAuthChange('anthropic', undefined);
+
+		expect(runtime.setContext).toHaveBeenCalledWith({
+			config: { provider: 'anthropic', apiKey: undefined },
+		});
+	});
+
+	it('no-ops when session list is empty', async () => {
+		const { fireAuthChange } = setup();
+		// Should not throw
+		await fireAuthChange('anthropic', 'sk-new');
 	});
 });

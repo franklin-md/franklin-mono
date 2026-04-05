@@ -35,7 +35,7 @@ export {
 	createStore,
 	storeKey,
 } from './api/index.js';
-export { StorePool } from './api/index.js';
+export { StoreRegistry } from './api/index.js';
 export type {
 	Persister,
 	StoreEntry,

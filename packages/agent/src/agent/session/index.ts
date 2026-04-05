@@ -84,13 +84,10 @@ export class SessionManager<
 	// Internal helpers
 	// -----------------------------------------------------------------------
 
-	private async createSession(
-		state: S,
-		sessionId?: string,
-	): Promise<Session<RT>> {
+	private async createSession(state: S): Promise<Session<RT>> {
 		const runtime = await createRuntime(this.system, state, this.extensions);
 
-		const id = sessionId ?? crypto.randomUUID();
+		const id = crypto.randomUUID();
 		const session: Session<RT> = { sessionId: id, runtime };
 		this.sessions.register(session, { sessionId: id, state });
 		return session;

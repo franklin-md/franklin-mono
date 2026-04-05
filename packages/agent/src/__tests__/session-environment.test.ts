@@ -16,7 +16,7 @@ import {
 	createStoreSystem,
 	createEnvironmentSystem,
 	systems,
-	StorePool,
+	StoreRegistry,
 } from '@franklin/extensions';
 import { SessionManager } from '../agent/session/index.js';
 import { SessionRegistry } from '../agent/session/registry.js';
@@ -84,7 +84,7 @@ function createMockSpawn() {
 
 function createTestManager(envFactory: EnvironmentFactory) {
 	const spawn = createMockSpawn();
-	const registry = new StorePool();
+	const registry = new StoreRegistry();
 
 	const system = systems(createCoreSystem(spawn))
 		.add(createStoreSystem(registry))

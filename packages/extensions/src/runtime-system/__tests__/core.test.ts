@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createCoreSystem } from '../core.js';
-import { createRuntime } from '../types.js';
+import { createRuntime } from '../create.js';
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/transport';
 import {
 	createSessionAdapter,

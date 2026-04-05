@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createStoreSystem } from '../store.js';
-import { createRuntime } from '../types.js';
+import { createRuntime } from '../create.js';
 import { StoreRegistry } from '../../api/store/registry/index.js';
 
 // ---------------------------------------------------------------------------

@@ -24,8 +24,10 @@ export function combine<
 		},
 
 		async createCompiler(state: CS): Promise<Compiler<CA, CR>> {
-			const c1 = await sys1.createCompiler(state as S1);
-			const c2 = await sys2.createCompiler(state as S2);
+			const [c1, c2] = await Promise.all([
+				sys1.createCompiler(state as S1),
+				sys2.createCompiler(state as S2),
+			]);
 
 			return {
 				api: { ...c1.api, ...c2.api } as CA,

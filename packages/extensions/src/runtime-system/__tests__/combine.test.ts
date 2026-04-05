@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { combine } from '../combine.js';
-import { createRuntime } from '../types.js';
+import { createRuntime } from '../create.js';
 import { createEnvironmentSystem } from '../environment.js';
 import { createStoreSystem } from '../store.js';
 import { createCoreSystem } from '../core.js';

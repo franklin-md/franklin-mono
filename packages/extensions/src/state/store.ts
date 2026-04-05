@@ -1,4 +1,4 @@
-/** Maps store name (extension key) -> ref (pool UUID). */
+/** Maps store name (extension key) -> ref (registry UUID). */
 export type StoreMapping = Record<string, string>;
 
 export type StoreState = {

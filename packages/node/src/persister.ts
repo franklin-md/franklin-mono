@@ -13,7 +13,7 @@ import { createNodeFilesystem } from './platform/filesystem.js';
  */
 export function createNodePersistence(dir: string): {
 	session: Persister<SessionSnapshot<FranklinState>>;
-	pool: Persister<StoreSnapshot>;
+	store: Persister<StoreSnapshot>;
 } {
 	return createPersistence<FranklinState>(dir, createNodeFilesystem());
 }

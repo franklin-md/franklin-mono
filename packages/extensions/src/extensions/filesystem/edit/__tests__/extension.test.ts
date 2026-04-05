@@ -6,7 +6,7 @@ import { createCoreCompiler } from '../../../../compile/core/compiler.js';
 import { createEnvironmentCompiler } from '../../../../compile/environment/compiler.js';
 import { createStoreCompiler } from '../../../../compile/store/compiler.js';
 import {
-	StorePool,
+	StoreRegistry,
 	createEmptyStoreResult,
 } from '../../../../api/store/index.js';
 import type { Store } from '../../../../api/store/types.js';
@@ -56,7 +56,7 @@ function compileEdit(env: Environment & { dispose(): Promise<void> }) {
 	const compiler = combine(
 		combine(
 			createCoreCompiler(),
-			createStoreCompiler(createEmptyStoreResult(new StorePool())),
+			createStoreCompiler(createEmptyStoreResult(new StoreRegistry())),
 		),
 		createEnvironmentCompiler(env),
 	);
