@@ -8,6 +8,7 @@ export function handleToolResult(
 	for (const block of turn.response.blocks) {
 		if (block.kind === 'toolUse' && block.call.id === event.toolCallId) {
 			block.result = event.content;
+			block.isError = event.isError;
 			return;
 		}
 	}
@@ -16,5 +17,6 @@ export function handleToolResult(
 		kind: 'toolUse',
 		call: event.call,
 		result: event.content,
+		isError: event.isError,
 	});
 }
