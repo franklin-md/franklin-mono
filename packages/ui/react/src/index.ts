@@ -9,17 +9,24 @@ export { useSessions } from './use-sessions.js';
 // Conversation — headless turn/block rendering
 // ---------------------------------------------------------------------------
 export { Conversation } from './conversation/conversation.js';
-export { computeToolStatus } from './conversation/status.js';
+export type { ConversationComponents } from './conversation/types.js';
+
+// ---------------------------------------------------------------------------
+// Conversation / Tools — renderer registry and status
+// ---------------------------------------------------------------------------
+export { computeToolStatus } from './conversation/tools/status.js';
 export {
 	createToolRendererRegistry,
 	resolveToolRenderer,
-} from './conversation/registry.js';
-export { createToolUseBlock } from './conversation/tool-use.js';
+} from './conversation/tools/registry.js';
+export {
+	ToolUseBlock,
+	createToolUseBlock,
+} from './conversation/tools/tool-use.js';
 export type {
 	ToolStatus,
 	ToolRenderProps,
 	ToolRendererEntry,
 	ToolRendererRegistry,
 	ResolvedToolRender,
-	BlockComponents,
-} from './conversation/types.js';
+} from './conversation/tools/types.js';

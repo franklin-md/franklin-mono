@@ -1,14 +1,14 @@
 import type { AssistantBlock } from '@franklin/extensions';
 
-import type { BlockComponents } from './types.js';
-import { computeToolStatus } from './status.js';
+import type { ConversationComponents } from './types.js';
+import { computeToolStatus } from './tools/status.js';
 
 export function BlockDispatch({
 	block,
 	components,
 }: {
 	block: AssistantBlock;
-	components: BlockComponents;
+	components: ConversationComponents;
 }) {
 	switch (block.kind) {
 		case 'text':

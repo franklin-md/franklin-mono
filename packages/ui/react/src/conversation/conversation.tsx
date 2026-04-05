@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 import type { ConversationTurn } from '@franklin/extensions';
 
-import type { BlockComponents } from './types.js';
+import type { ConversationComponents } from './types.js';
 import { BlockDispatch } from './block-dispatch.js';
 
 type ConversationProps = {
 	turns: ConversationTurn[];
-	components: BlockComponents;
+	components: ConversationComponents;
 };
 
 const Identity = ({ children }: { children: ReactNode }) => <>{children}</>;
