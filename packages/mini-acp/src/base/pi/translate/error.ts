@@ -20,10 +20,6 @@ export function narrowPiStopCode(
 	}
 }
 
-export function fromPiStopReason(reason: PiStopReason): StopCode | null {
-	return narrowPiStopCode(reason);
-}
-
 function narrowPiErrorStopCode(errorMessage?: string): StopCode {
 	const message = errorMessage ?? '';
 	const lower = message.toLowerCase();
