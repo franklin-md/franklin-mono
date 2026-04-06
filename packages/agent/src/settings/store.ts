@@ -4,12 +4,19 @@ import type { Filesystem } from '@franklin/lib';
 import type { AppSettings } from './types.js';
 
 export const DEFAULT_SETTINGS_PATH = 'settings.json';
+export const DEFAULT_APP_SETTINGS: AppSettings = {
+	defaultLLMConfig: {
+		provider: 'openai-codex',
+		model: 'gpt-5.4',
+		reasoning: 'medium',
+	},
+};
 
 export type SettingsStore = Store<AppSettings>;
 
-/** Create an in-memory settings store with default (empty) state. */
+/** Create an in-memory settings store with app defaults. */
 export function createSettings(): SettingsStore {
-	return createStore<AppSettings>({});
+	return createStore(DEFAULT_APP_SETTINGS);
 }
 
 /** Load persisted settings from disk into the store. */
@@ -20,9 +27,12 @@ export async function loadSettings(
 	const data = await filesystem
 		.readFile(DEFAULT_SETTINGS_PATH)
 		.then((raw) => JSON.parse(new TextDecoder().decode(raw)) as AppSettings)
-		.catch(() => ({}));
+		.catch(() => ({}) as AppSettings);
 
-	store.set(() => data);
+	store.set(() => ({
+		...DEFAULT_APP_SETTINGS,
+		...data,
+	}));
 }
 
 /** Subscribe to the store and persist every change to disk. */

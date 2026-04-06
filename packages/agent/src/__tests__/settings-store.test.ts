@@ -6,6 +6,7 @@ import {
 	loadSettings,
 	addPersistOnChange,
 	DEFAULT_SETTINGS_PATH,
+	DEFAULT_APP_SETTINGS,
 } from '../settings/store.js';
 
 // ---------------------------------------------------------------------------
@@ -35,9 +36,9 @@ function mockFilesystem(stored?: AppSettings): Filesystem {
 // ---------------------------------------------------------------------------
 
 describe('createSettings', () => {
-	it('creates a store with empty initial state', () => {
+	it('creates a store with default llm config', () => {
 		const store = createSettings();
-		expect(store.get()).toEqual({});
+		expect(store.get()).toEqual(DEFAULT_APP_SETTINGS);
 	});
 });
 
@@ -59,13 +60,22 @@ describe('loadSettings', () => {
 		expect(fs.readFile).toHaveBeenCalledWith(DEFAULT_SETTINGS_PATH);
 	});
 
-	it('keeps empty state when no file exists', async () => {
+	it('keeps default state when no file exists', async () => {
 		const fs = mockFilesystem(); // readFile throws
 		const store = createSettings();
 
 		await loadSettings(store, fs);
 
-		expect(store.get()).toEqual({});
+		expect(store.get()).toEqual(DEFAULT_APP_SETTINGS);
+	});
+
+	it('applies defaults when the stored file is empty', async () => {
+		const fs = mockFilesystem({});
+		const store = createSettings();
+
+		await loadSettings(store, fs);
+
+		expect(store.get()).toEqual(DEFAULT_APP_SETTINGS);
 	});
 });
 
@@ -131,7 +141,7 @@ describe('settings store reactivity', () => {
 		const listener = vi.fn();
 		store.subscribe(listener);
 
-		// Set same empty object — Immer returns same reference
+		// Returning the same draft keeps the store value unchanged.
 		store.set((draft) => draft);
 
 		expect(listener).not.toHaveBeenCalled();
