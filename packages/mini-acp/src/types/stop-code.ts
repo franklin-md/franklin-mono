@@ -19,6 +19,8 @@ export enum StopCode {
 	ProviderNotFound = 2101,
 	ModelNotSpecified = 2102,
 	ModelNotFound = 2103,
+	AuthKeyNotSpecified = 2104,
+	AuthKeyInvalid = 2105,
 
 	// 22xx — provider runtime errors
 	ProviderError = 2200,

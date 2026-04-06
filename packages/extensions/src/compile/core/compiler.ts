@@ -9,6 +9,7 @@ import type {
 	ToolObserverHandler,
 } from '../../api/core/events.js';
 import type { ExtensionToolDefinition } from '../../api/core/tool.js';
+import type { ToolSpec } from '../../api/core/tool-spec.js';
 import type { FullMiddleware } from '../../api/core/middleware/types.js';
 import type { Compiler } from '../types.js';
 import {
@@ -76,9 +77,22 @@ export function createCoreCompiler(
 				);
 			}
 		},
-		registerTool(tool) {
+		registerTool(
+			specOrTool: ToolSpec | ExtensionToolDefinition,
+			execute?: (params: any) => any,
+		) {
 			// TODO: Should we prohibit double registration?
-			tools.push(tool);
+			if (execute) {
+				const spec = specOrTool as ToolSpec;
+				tools.push({
+					name: spec.name,
+					description: spec.description,
+					schema: spec.schema,
+					execute,
+				});
+			} else {
+				tools.push(specOrTool as ExtensionToolDefinition);
+			}
 		},
 	};
 

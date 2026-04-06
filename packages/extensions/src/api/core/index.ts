@@ -8,6 +8,8 @@ export type {
 	StreamObserverParamsMap,
 } from './events.js';
 export type { ExtensionToolDefinition } from './tool.js';
+export type { ToolSpec, ToolArgs } from './tool-spec.js';
+export { toolSpec } from './tool-spec.js';
 export type {
 	ToolDefinition,
 	AnyToolDefinition,

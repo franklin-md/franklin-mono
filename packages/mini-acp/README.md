@@ -260,6 +260,8 @@ The turn ends when the agent emits a `TurnEnd` event and closes the stream. The 
 | 2101 | `ProviderNotFound`     | llm_error  | Provider string does not match any known provider |
 | 2102 | `ModelNotSpecified`    | llm_error  | No model in LLMConfig                             |
 | 2103 | `ModelNotFound`        | llm_error  | Model not available for the given provider        |
+| 2104 | `AuthKeyNotSpecified`  | llm_error  | No auth key in LLMConfig                          |
+| 2105 | `AuthKeyInvalid`       | llm_error  | Auth key present but rejected by provider         |
 | 2200 | `ProviderError`        | llm_error  | Provider runtime error (rate limit, ban, etc.)    |
 | 2300 | `MaxTokens`            | llm_error  | The LLM's token limit was reached                 |
 

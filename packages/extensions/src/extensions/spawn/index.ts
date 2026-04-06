@@ -1,1 +1,1 @@
-export { spawnExtension } from './extension.js';
+export { createSpawnExtension } from './bundle.js';

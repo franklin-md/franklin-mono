@@ -84,3 +84,8 @@ Franklin is an extension runtime for minimal agent loops.
 ### UI
 
 - **Ring over border** — prefer `ring` (or `ring-1`, `ring-inset`) over `border` for component outlines. Borders change element size and push layout; ring is an inset outline with no layout impact.
+
+### Project Notes
+
+- Mini-ACP:
+  - Whenever you make a change related to the spec, you must read the README.md in the file and adjust it if necessary. That is the single source of truth on the spec.
