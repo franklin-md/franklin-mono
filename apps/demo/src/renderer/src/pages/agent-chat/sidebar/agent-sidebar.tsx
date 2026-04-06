@@ -1,7 +1,12 @@
 import { useCallback, useState } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import { AgentProvider, useApp, useSessions } from '@franklin/react';
+import {
+	AgentProvider,
+	useApp,
+	useSessions,
+	useSettings,
+} from '@franklin/react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,15 +18,13 @@ export function AgentSidebar({
 	onSelectAgent: (agentId: string, agent: FranklinRuntime) => void;
 }) {
 	const manager = useApp().agents;
+	const settings = useSettings();
 	const sessions = useSessions();
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
 
 	const handleSpawnAgent = useCallback(async () => {
 		const session = await manager.new({
-			core: {
-				llmConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
-			},
-			// For now we just hard-code this until we have UI component to set.
+			core: { llmConfig: settings.get().defaultLLMConfig ?? {} },
 			env: {
 				cwd: '/tmp',
 				permissions: { allowRead: ['**'], allowWrite: ['**'] },
@@ -29,7 +32,7 @@ export function AgentSidebar({
 		});
 		setCurrentAgentId(session.sessionId);
 		onSelectAgent(session.sessionId, session.runtime);
-	}, [manager, onSelectAgent]);
+	}, [manager, settings, onSelectAgent]);
 
 	const handleSelectAgent = useCallback(
 		(agentId: string, agent: FranklinRuntime) => {
