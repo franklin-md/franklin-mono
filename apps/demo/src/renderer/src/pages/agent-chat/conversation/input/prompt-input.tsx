@@ -1,6 +1,8 @@
+import { CornerDownLeft } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button.js';
+import { TextareaGroup } from '@/components/ui/textarea-group.js';
 
 export function PromptInput({
 	onSend,
@@ -19,33 +21,28 @@ export function PromptInput({
 		await onSend(text);
 	}
 
-	function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-		if (e.key === 'Enter' && !e.shiftKey) {
-			e.preventDefault();
-			void handleSend();
-		}
-	}
-
 	return (
-		<div className="border-t p-3">
-			<div className="flex gap-2">
-				<textarea
-					className="flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-					placeholder="Type a message..."
-					rows={2}
-					value={input}
-					onChange={(e) => setInput(e.target.value)}
-					onKeyDown={handleKeyDown}
-					disabled={sending}
-				/>
-				<Button
-					className="self-end"
-					onClick={() => void handleSend()}
-					disabled={!input.trim() || sending}
-				>
-					Send
-				</Button>
-			</div>
+		<div className="p-3">
+			<TextareaGroup
+				value={input}
+				onChange={setInput}
+				onSubmit={() => void handleSend()}
+				placeholder="Type a message..."
+				disabled={sending}
+				buttonBar={
+					<>
+						<div className="flex items-center gap-2" />
+						<Button
+							onClick={() => void handleSend()}
+							disabled={!input.trim() || sending}
+							className="gap-1.5 font-mono text-xs font-semibold disabled:opacity-40"
+						>
+							<CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2.5} />
+							Enter
+						</Button>
+					</>
+				}
+			/>
 		</div>
 	);
 }
