@@ -19,6 +19,9 @@ export type {
 	AuthChangeListener,
 	AuthEntry,
 } from './auth/types.js';
+export type { SettingsStore } from './settings/store.js';
+export type { AppSettings } from './settings/types.js';
+export { getLLMConfig, setLLMConfig } from './settings/llm-config.js';
 export type { FranklinState, FranklinRuntime, FranklinAPI } from './types.js';
 
 /** Concrete session type for the Franklin app layer. */

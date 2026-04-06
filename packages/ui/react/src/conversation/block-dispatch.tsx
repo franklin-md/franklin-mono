@@ -20,6 +20,6 @@ export function BlockDispatch({
 				<components.ToolUse block={block} status={computeToolStatus(block)} />
 			);
 		case 'turnEnd':
-			return null;
+			return components.TurnEnd ? <components.TurnEnd block={block} /> : null;
 	}
 }

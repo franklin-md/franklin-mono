@@ -5,6 +5,7 @@ export { useAgentState } from './use-agent-state.js';
 export { FranklinProvider, useApp } from './franklin-context.js';
 export { useSessions } from './use-sessions.js';
 export { useMergeRefs } from './use-merge-refs.js';
+export { useSettings } from './use-settings.js';
 
 // ---------------------------------------------------------------------------
 // Conversation — headless turn/block rendering
@@ -17,6 +18,7 @@ export type { ConversationComponents } from './conversation/types.js';
 // ---------------------------------------------------------------------------
 export { computeToolStatus } from './conversation/tools/status.js';
 export {
+	createToolRenderer,
 	createToolRendererRegistry,
 	resolveToolRenderer,
 } from './conversation/tools/registry.js';
@@ -27,7 +29,22 @@ export {
 export type {
 	ToolStatus,
 	ToolRenderProps,
+	ToolRendererBinding,
 	ToolRendererEntry,
+	ToolRendererRegistryEntries,
 	ToolRendererRegistry,
 	ResolvedToolRender,
 } from './conversation/tools/types.js';
+
+// ---------------------------------------------------------------------------
+// Conversation / TurnEnd — renderer registry
+// ---------------------------------------------------------------------------
+export { resolveTurnEndRenderer } from './conversation/turn-end/registry.js';
+export {
+	TurnEndBlock,
+	createTurnEndBlock,
+} from './conversation/turn-end/turn-end.js';
+export type {
+	TurnEndRenderer,
+	TurnEndRendererRegistry,
+} from './conversation/turn-end/types.js';
