@@ -1,13 +1,27 @@
-import type { ToolRendererEntry, ToolRendererRegistry } from './types.js';
+import type { ToolArgs, ToolSpec } from '@franklin/extensions';
+
+import type {
+	ToolRendererBinding,
+	ToolRendererEntry,
+	ToolRendererRegistry,
+	ToolRendererRegistryEntries,
+} from './types.js';
 
 const fallbackRenderer: ToolRendererEntry = {
 	summary: ({ block }) => block.call.name,
 };
 
+export function createToolRenderer<S extends ToolSpec>(
+	spec: S,
+	entry: ToolRendererEntry<ToolArgs<S>>,
+): ToolRendererBinding<S> {
+	return [spec.name, entry];
+}
+
 export function createToolRendererRegistry(
-	entries: Record<string, ToolRendererEntry>,
+	entries: ToolRendererRegistryEntries,
 ): ToolRendererRegistry {
-	return new Map(Object.entries(entries));
+	return new Map(entries);
 }
 
 export function resolveToolRenderer(

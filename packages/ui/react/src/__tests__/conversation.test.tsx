@@ -1,10 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, expectTypeOf, vi } from 'vitest';
 import { render } from '@testing-library/react';
-import type { ConversationTurn, ToolUseBlock } from '@franklin/extensions';
+import type {
+	ConversationTurn,
+	ToolSpec,
+	ToolUseBlock,
+} from '@franklin/extensions';
 
 import { Conversation } from '../conversation/conversation.js';
 import { computeToolStatus } from '../conversation/tools/status.js';
 import {
+	createToolRenderer,
 	createToolRendererRegistry,
 	resolveToolRenderer,
 } from '../conversation/tools/registry.js';
@@ -18,6 +23,19 @@ import type {
 	ToolRendererEntry,
 	ToolStatus,
 } from '../conversation/tools/types.js';
+
+const readFileSpec = {
+	name: 'read_file',
+	description: 'Read file',
+	schema: undefined as never,
+} as ToolSpec<
+	'read_file',
+	{
+		path: string;
+		limit: number;
+		offset?: number | undefined;
+	}
+>;
 
 // ---------------------------------------------------------------------------
 // computeToolStatus
@@ -64,17 +82,24 @@ describe('resolveToolRenderer', () => {
 	};
 
 	it('resolves an exact match', () => {
-		const reg = createToolRendererRegistry({ read: readRenderer });
+		const reg = createToolRendererRegistry([['read', readRenderer]]);
 		expect(resolveToolRenderer(reg, 'read')).toBe(readRenderer);
 	});
 
+	it('accepts bindings created from tool specs', () => {
+		const reg = createToolRendererRegistry([
+			createToolRenderer(readFileSpec, readRenderer),
+		]);
+		expect(resolveToolRenderer(reg, 'read_file')).toBe(readRenderer);
+	});
+
 	it('falls back to * when no exact match', () => {
-		const reg = createToolRendererRegistry({ '*': fallback });
+		const reg = createToolRendererRegistry([['*', fallback]]);
 		expect(resolveToolRenderer(reg, 'unknown')).toBe(fallback);
 	});
 
 	it('uses built-in fallback when no * entry', () => {
-		const reg = createToolRendererRegistry({});
+		const reg = createToolRendererRegistry([]);
 		const entry = resolveToolRenderer(reg, 'unknown');
 		const block: ToolUseBlock = {
 			kind: 'toolUse',
@@ -86,11 +111,28 @@ describe('resolveToolRenderer', () => {
 	});
 
 	it('prefers exact match over *', () => {
-		const reg = createToolRendererRegistry({
-			read: readRenderer,
-			'*': fallback,
-		});
+		const reg = createToolRendererRegistry([
+			['read', readRenderer],
+			['*', fallback],
+		]);
 		expect(resolveToolRenderer(reg, 'read')).toBe(readRenderer);
+	});
+});
+
+describe('createToolRenderer', () => {
+	it('infers renderer args from the tool spec', () => {
+		const renderer = createToolRenderer(readFileSpec, {
+			summary: ({ args }) => args.path,
+		});
+
+		expectTypeOf(renderer[0]).toEqualTypeOf<'read_file'>();
+		expectTypeOf(renderer[1]).toEqualTypeOf<
+			ToolRendererEntry<{
+				path: string;
+				limit: number;
+				offset?: number | undefined;
+			}>
+		>();
 	});
 });
 
@@ -322,12 +364,15 @@ describe('ToolUseBlock', () => {
 	it('resolves renderer and passes to Chrome', () => {
 		const captured: ResolvedToolRender[] = [];
 
-		const registry = createToolRendererRegistry({
-			read: {
-				summary: ({ block }) => `summary:${block.call.name}`,
-				expanded: ({ block }) => `expanded:${block.call.name}`,
-			},
-		});
+		const registry = createToolRendererRegistry([
+			[
+				'read',
+				{
+					summary: ({ block }) => `summary:${block.call.name}`,
+					expanded: ({ block }) => `expanded:${block.call.name}`,
+				},
+			],
+		]);
 
 		function Chrome(props: ResolvedToolRender) {
 			captured.push(props);
@@ -360,11 +405,14 @@ describe('ToolUseBlock', () => {
 	it('falls back to * renderer for unknown tools', () => {
 		const captured: ResolvedToolRender[] = [];
 
-		const registry = createToolRendererRegistry({
-			'*': {
-				summary: ({ block }) => `fallback:${block.call.name}`,
-			},
-		});
+		const registry = createToolRendererRegistry([
+			[
+				'*',
+				{
+					summary: ({ block }) => `fallback:${block.call.name}`,
+				},
+			],
+		]);
 
 		function Chrome(props: ResolvedToolRender) {
 			captured.push(props);
@@ -399,9 +447,9 @@ describe('ToolUseBlock', () => {
 	it('passes undefined expanded when renderer has no expanded', () => {
 		const captured: ResolvedToolRender[] = [];
 
-		const registry = createToolRendererRegistry({
-			read: { summary: () => 'summary' },
-		});
+		const registry = createToolRendererRegistry([
+			['read', { summary: () => 'summary' }],
+		]);
 
 		function Chrome(props: ResolvedToolRender) {
 			captured.push(props);
@@ -435,11 +483,14 @@ describe('createToolUseBlock', () => {
 	it('returns a component that resolves registry and passes to Chrome', () => {
 		const captured: ResolvedToolRender[] = [];
 
-		const registry = createToolRendererRegistry({
-			read: {
-				summary: ({ block }) => `summary:${block.call.name}`,
-			},
-		});
+		const registry = createToolRendererRegistry([
+			[
+				'read',
+				{
+					summary: ({ block }) => `summary:${block.call.name}`,
+				},
+			],
+		]);
 
 		function Chrome(props: ResolvedToolRender) {
 			captured.push(props);
