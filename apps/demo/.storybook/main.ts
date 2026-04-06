@@ -20,6 +20,10 @@ const config: StorybookConfig = {
 			...config.resolve,
 			alias: {
 				'@': `${dirname(fileURLToPath(import.meta.url))}/../src/renderer/src`,
+				// Remap barrel imports to browser-safe subpaths so Storybook
+				// never pulls in Node-only transitive dependencies (e.g. node:child_process).
+				// Mirrors the alias in electron.vite.config.ts renderer config.
+				'@franklin/transport': '@franklin/transport/core',
 			},
 		};
 		return config;

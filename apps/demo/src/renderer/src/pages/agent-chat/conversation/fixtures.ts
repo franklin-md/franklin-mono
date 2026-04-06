@@ -1,5 +1,6 @@
 import type { ConversationTurn, AssistantTurn } from '@franklin/extensions';
 import type { UserMessage } from '@franklin/mini-acp';
+import { StopCode } from '@franklin/mini-acp';
 
 // ---------------------------------------------------------------------------
 // Individual prompts and responses
@@ -547,3 +548,110 @@ export const markdownConversation: ConversationTurn[] = [
 ];
 
 export const emptyConversation: ConversationTurn[] = [];
+
+// ---------------------------------------------------------------------------
+// TurnEnd turns
+// ---------------------------------------------------------------------------
+
+export const finishedTurn: ConversationTurn = {
+	id: 'turn-finished',
+	timestamp: Date.now(),
+	prompt: {
+		role: 'user',
+		content: [{ type: 'text', text: 'Can you summarize that for me?' }],
+	},
+	response: {
+		blocks: [
+			{ kind: 'text', text: 'Here you go — all done!' },
+			{ kind: 'turnEnd', stopCode: StopCode.Finished },
+		],
+	},
+};
+
+export const cancelledTurn: ConversationTurn = {
+	id: 'turn-cancelled',
+	timestamp: Date.now(),
+	prompt: {
+		role: 'user',
+		content: [{ type: 'text', text: 'Explain the architecture in detail.' }],
+	},
+	response: {
+		blocks: [
+			{ kind: 'text', text: 'Sure, let me start by—' },
+			{ kind: 'turnEnd', stopCode: StopCode.Cancelled },
+		],
+	},
+};
+
+export const maxTokensTurn: ConversationTurn = {
+	id: 'turn-max-tokens',
+	timestamp: Date.now(),
+	prompt: {
+		role: 'user',
+		content: [{ type: 'text', text: 'Describe the full system architecture.' }],
+	},
+	response: {
+		blocks: [
+			{
+				kind: 'text',
+				text: 'The architecture of the system is divided into several layers. First, the transport layer handles raw communication over multiple protocols including stdio, HTTP, and in-memory streams. Second, the protocol layer defines the session lifecycle with initialize, set context, prompt, and cancel operations. Third, the application layer orchestrates sessions and extensions through middleware composition. Each layer has its own error handling strategy and',
+			},
+			{ kind: 'turnEnd', stopCode: StopCode.MaxTokens },
+		],
+	},
+};
+
+export const configErrorTurn: ConversationTurn = {
+	id: 'turn-config-error',
+	timestamp: Date.now(),
+	prompt: {
+		role: 'user',
+		content: [{ type: 'text', text: 'What is the meaning of life?' }],
+	},
+	response: {
+		blocks: [
+			{
+				kind: 'turnEnd',
+				stopCode: StopCode.ProviderNotSpecified,
+				stopMessage:
+					'No provider specified in config — set ctx.config.provider',
+			},
+		],
+	},
+};
+
+export const providerErrorTurn: ConversationTurn = {
+	id: 'turn-provider-error',
+	timestamp: Date.now(),
+	prompt: {
+		role: 'user',
+		content: [{ type: 'text', text: 'Tell me a joke.' }],
+	},
+	response: {
+		blocks: [
+			{
+				kind: 'turnEnd',
+				stopCode: StopCode.ProviderError,
+				stopMessage:
+					'Anthropic API returned 529: API is temporarily overloaded',
+			},
+		],
+	},
+};
+
+export const genericErrorTurn: ConversationTurn = {
+	id: 'turn-generic-error',
+	timestamp: Date.now(),
+	prompt: {
+		role: 'user',
+		content: [{ type: 'text', text: 'Help me with this code.' }],
+	},
+	response: {
+		blocks: [
+			{
+				kind: 'turnEnd',
+				stopCode: StopCode.LlmError,
+			},
+		],
+	},
+};

@@ -30,3 +30,16 @@ export type {
 	ToolRendererRegistry,
 	ResolvedToolRender,
 } from './conversation/tools/types.js';
+
+// ---------------------------------------------------------------------------
+// Conversation / TurnEnd — renderer registry
+// ---------------------------------------------------------------------------
+export { resolveTurnEndRenderer } from './conversation/turn-end/registry.js';
+export {
+	TurnEndBlock,
+	createTurnEndBlock,
+} from './conversation/turn-end/turn-end.js';
+export type {
+	TurnEndRenderer,
+	TurnEndRendererRegistry,
+} from './conversation/turn-end/types.js';

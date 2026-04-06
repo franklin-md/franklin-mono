@@ -1,14 +1,21 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 
 import type { ConversationTurn } from '@franklin/extensions';
-import { Conversation, type ConversationComponents } from '@franklin/react';
+import {
+	Conversation,
+	createTurnEndBlock,
+	type ConversationComponents,
+} from '@franklin/react';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { TextBlock } from '../turn/body/blocks/text/text.js';
 import { ThinkingBlock } from '../turn/body/blocks/thinking.js';
+import { defaultRegistry } from '../turn/body/blocks/turn-end/registry.js';
 import { UserBubble } from '../turn/body/user-bubble.js';
 import { ToolUse } from '../tools/tool-use.js';
+
+const TurnEnd = createTurnEndBlock(defaultRegistry);
 
 const TurnChrome = ({ children }: { children: ReactNode }) => (
 	<div className="flex flex-col gap-4">{children}</div>
@@ -22,6 +29,7 @@ const components: ConversationComponents = {
 	Text: TextBlock,
 	Thinking: ThinkingBlock,
 	ToolUse,
+	TurnEnd,
 	UserMessage: UserBubble,
 	Turn: TurnChrome,
 	AssistantMessage: AssistantChrome,
