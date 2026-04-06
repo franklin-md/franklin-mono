@@ -1,9 +1,7 @@
-import { z } from 'zod';
 import type { Extension } from '../../../types/extension.js';
 import type { CoreAPI } from '../../../api/core/api.js';
 import type { EnvironmentAPI } from '../../../api/environment/api.js';
 import { sha256Hex } from '../hash.js';
-import { editFileDescription } from '../../system_prompts.js';
 import { decode } from './text/encoding.js';
 import {
 	detectLineEnding,
@@ -14,22 +12,7 @@ import { findUnique } from './match/find-unique.js';
 import { applyReplacement } from './replace.js';
 import type { StoreAPI } from 'packages/extensions/src/api/index.js';
 import { fileKey } from './key.js';
-
-const schema = z.object({
-	path: z.string().describe('Path to the file to edit (relative or absolute)'),
-	old_text: z
-		.string()
-		.describe('Exact text to find and replace (must match file content)'),
-	new_text: z.string().describe('New text to replace the old text with'),
-	replace_all: z
-		.boolean()
-		.optional()
-		.describe(
-			'If true, replace all occurrences of old_text. If false or omitted, the text must appear exactly once.',
-		),
-});
-
-type EditInput = z.infer<typeof schema>;
+import { editFileSpec } from './tools.js';
 
 /**
  * Extension that registers an `edit_file` tool for precise,
@@ -49,11 +32,9 @@ export function editExtension(): Extension<
 		const env = api.getEnvironment();
 		// The store is private to ONE agent; it keeps track of the agent's "seen" files.
 		const store = api.registerStore(fileKey, {}, 'private');
-		api.registerTool({
-			name: 'edit_file',
-			description: editFileDescription,
-			schema: schema,
-			async execute({ path, old_text, new_text, replace_all }: EditInput) {
+		api.registerTool(
+			editFileSpec,
+			async ({ path, old_text, new_text, replace_all }) => {
 				// 1. Read + decode
 				let bytes: Uint8Array;
 				try {
@@ -133,6 +114,6 @@ export function editExtension(): Extension<
 
 				return { message: `Successfully edited ${path}.` };
 			},
-		});
+		);
 	};
 }

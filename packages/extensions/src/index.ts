@@ -4,6 +4,8 @@ export type {
 	CoreEventHandler,
 	CoreEventMap,
 	ExtensionToolDefinition,
+	ToolSpec,
+	ToolArgs,
 	ToolDefinition,
 	AnyToolDefinition,
 	SerializedToolDefinition,
@@ -27,6 +29,7 @@ export type {
 } from './api/index.js';
 export { compose, composeMethod, passThrough } from './api/index.js';
 export { isContentBlockResult } from './api/index.js';
+export { toolSpec } from './api/index.js';
 export { serializeTool, toToolInputSchema } from './api/index.js';
 export { apply } from './api/index.js';
 export {
@@ -52,6 +55,8 @@ export {
 	createEnvironmentCompiler,
 } from './compile/index.js';
 export type { Extension, MaybePromise } from './types/index.js';
+export type { ExtensionBundle } from './bundle/index.js';
+export { createBundle } from './bundle/index.js';
 export { reduceExtensions } from './types/index.js';
 // ---------------------------------------------------------------------------
 // Runtime system
@@ -101,20 +106,17 @@ export { emptyEnvironmentState } from './state/index.js';
 // ---------------------------------------------------------------------------
 export {
 	conversationExtension,
-	conversationKey,
 	todoExtension,
-	todoKey,
 	statusExtension,
-	statusKey,
-	createTodoControl,
-	createStatusControl,
-	formatTodos,
-	spawnExtension,
+	createSpawnExtension,
 	globExtension,
 	editExtension,
 	writeExtension,
 	readExtension,
 } from './extensions/index.js';
+
+export { createTodoControl, createStatusControl } from './extensions/index.js';
+
 export type {
 	ConversationTurn,
 	AssistantTurn,
@@ -123,8 +125,6 @@ export type {
 	ThinkingBlock,
 	ToolUseBlock,
 	TurnEndBlock,
-	Todo,
-	TodoControl,
-	StatusState,
-	StatusControl,
-} from './extensions/index.js';
+} from './extensions/conversation/types.js';
+export type { Todo, TodoControl } from './extensions/todo/types.js';
+export type { StatusState, StatusControl } from './extensions/status/types.js';

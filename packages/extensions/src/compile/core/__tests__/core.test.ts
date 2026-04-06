@@ -311,6 +311,64 @@ describe('buildCore – registerTool()', () => {
 });
 
 // ---------------------------------------------------------------------------
+// registerTool() — spec-based overload
+// ---------------------------------------------------------------------------
+
+describe('buildCore – registerTool() spec overload', () => {
+	it('spec-based registration produces same middleware as inline', async () => {
+		const { toolSpec } = await import('../../../api/core/tool-spec.js');
+
+		const spec = toolSpec(
+			'specTool',
+			'Doubles a number',
+			z.object({ value: z.number() }),
+		);
+		const executeFn = vi.fn(async (params: { value: number }) => ({
+			doubled: params.value * 2,
+		}));
+
+		const mw = await compileExt((api) => {
+			api.registerTool(spec, executeFn);
+		});
+
+		// Tool executes correctly via server middleware
+		const next = vi.fn();
+		const result = await mw.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'call-spec',
+					name: 'specTool',
+					arguments: { value: 5 },
+				},
+			},
+			next,
+		);
+
+		expect(executeFn).toHaveBeenCalledWith({ value: 5 });
+		expect(result.content[0]).toEqual({
+			type: 'text',
+			text: JSON.stringify({ doubled: 10 }),
+		});
+		expect(next).not.toHaveBeenCalled();
+
+		// Tool is injected into setContext
+		const received: any[] = [];
+		const target = stubClient({
+			setContext: async (params) => {
+				received.push(params);
+			},
+		});
+		const wrapped = apply(mw.client, target);
+		await wrapped.setContext({});
+
+		const ctxParams = received[0] as { tools: { name: string }[] };
+		expect(ctxParams.tools).toHaveLength(1);
+		expect(ctxParams.tools[0]?.name).toBe('specTool');
+	});
+});
+
+// ---------------------------------------------------------------------------
 // Empty extension
 // ---------------------------------------------------------------------------
 

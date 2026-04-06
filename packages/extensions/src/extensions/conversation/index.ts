@@ -1,11 +1,2 @@
-export { conversationExtension } from './extension.js';
-export { conversationKey } from './key.js';
-export type {
-	ConversationTurn,
-	AssistantTurn,
-	AssistantBlock,
-	TextBlock,
-	ThinkingBlock,
-	ToolUseBlock,
-	TurnEndBlock,
-} from './types.js';
+export { conversationExtension } from './bundle.js';
+export { createConversationControl } from './controls.js';

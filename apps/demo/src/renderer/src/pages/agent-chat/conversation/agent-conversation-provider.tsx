@@ -1,6 +1,6 @@
 import { useCallback, useState, type ReactNode } from 'react';
 
-import { conversationKey } from '@franklin/extensions';
+import { conversationExtension } from '@franklin/extensions';
 import { useAgent, useAgentState } from '@franklin/react';
 
 import { ConversationProvider } from './conversation-context.js';
@@ -18,7 +18,7 @@ export function AgentConversationProvider({
 	children: ReactNode;
 }) {
 	const agent = useAgent();
-	const conversation = useAgentState(conversationKey);
+	const conversation = useAgentState(conversationExtension.keys.conversation);
 	const [sending, setSending] = useState(false);
 
 	const onSend = useCallback(

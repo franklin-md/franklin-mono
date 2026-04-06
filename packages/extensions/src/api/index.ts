@@ -7,6 +7,8 @@ export type {
 	StreamObserverHandler,
 	StreamObserverParamsMap,
 	ExtensionToolDefinition,
+	ToolSpec,
+	ToolArgs,
 	ToolDefinition,
 	AnyToolDefinition,
 	SerializedToolDefinition,
@@ -19,6 +21,7 @@ export type {
 } from './core/index.js';
 export { compose, composeMethod, passThrough } from './core/index.js';
 export { isContentBlockResult } from './core/index.js';
+export { toolSpec } from './core/index.js';
 export { serializeTool, toToolInputSchema } from './core/index.js';
 export { apply } from './core/index.js';
 export type { EnvironmentAPI } from './environment/index.js';

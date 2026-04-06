@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { createStatusControl, statusKey } from '@franklin/extensions';
+import { createStatusControl, statusExtension } from '@franklin/extensions';
 import { useAgentState } from '@franklin/react';
 
 import { SidebarItem } from './sidebar-item.js';
@@ -20,7 +20,7 @@ export function AgentSidebarItem({
 	onSelect: (sessionId: string) => void;
 	onDelete: (sessionId: string) => void;
 }) {
-	const statusStore = useAgentState(statusKey);
+	const statusStore = useAgentState(statusExtension.keys.status);
 	const status = statusStore.get();
 	const control = useMemo(
 		() => createStatusControl(statusStore),
