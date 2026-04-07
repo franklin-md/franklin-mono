@@ -4,7 +4,6 @@ import type { FranklinRuntime } from '@franklin/agent/browser';
 import { AgentProvider } from '@franklin/react';
 
 import { AgentSidebar } from './sidebar/index.js';
-import { AgentConversationProvider } from './conversation/agent-conversation-provider.js';
 import { ConversationPanel } from './conversation/index.js';
 import { TodoPanel } from './todo/index.js';
 
@@ -30,9 +29,7 @@ export function AgentChatPage() {
 			{selected ? (
 				<AgentProvider key={selected.id} agent={selected.agent}>
 					<div className="flex flex-1 overflow-hidden">
-						<AgentConversationProvider>
-							<ConversationPanel />
-						</AgentConversationProvider>
+						<ConversationPanel />
 						<TodoPanel />
 					</div>
 				</AgentProvider>

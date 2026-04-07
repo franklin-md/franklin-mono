@@ -13,6 +13,16 @@ export type ThinkingLevel =
 	| 'high'
 	| 'xhigh';
 
+/** Ordered list of all thinking levels, from off to maximum. */
+export const THINKING_LEVELS: readonly ThinkingLevel[] = [
+	'off',
+	'minimal',
+	'low',
+	'medium',
+	'high',
+	'xhigh',
+] as const;
+
 export type LLMConfig = {
 	model?: string;
 	provider?: string;

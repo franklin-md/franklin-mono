@@ -130,7 +130,17 @@ LLMConfig {
 }
 ```
 
-`setContext` performs a **shallow field replacement**: each top-level field present in the partial replaces the corresponding field in the agent's current context. Fields not included in the partial are left unchanged. This allows the client to update tools without resending the full history, or change the model without touching the conversation.
+`setContext` applies a partial update to the agent's current `Ctx`. Top-level
+fields not included in the payload are left unchanged. When a field is
+included, update behavior depends on that field:
+
+- `history` replaces the current history wholesale.
+- `tools` replaces the current tool list wholesale.
+- `config` merges by property. Provided properties overwrite existing values;
+  omitted properties are preserved.
+
+For example, sending `{ config: { reasoning: 'high' } }` updates only
+`reasoning` and preserves the current `model`, `provider`, and `apiKey`.
 
 
 ### Phase 3: Prompt

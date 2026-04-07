@@ -5,6 +5,17 @@ export { useAgentState } from './use-agent-state.js';
 export { FranklinProvider, useApp } from './franklin-context.js';
 export { useSessions } from './use-sessions.js';
 export { useSettings } from './use-settings.js';
+export { useThinkingLevel } from './use-thinking-level.js';
+export type { UseThinkingLevel } from './use-thinking-level.js';
+export { useModelSelection } from './use-model-selection.js';
+export type { UseModelSelection } from './use-model-selection.js';
+export { useConversationTurns } from './use-conversation-turns.js';
+export { Prompt } from './prompt/prompt.js';
+export { PromptText } from './prompt/text.js';
+export { PromptSend } from './prompt/send.js';
+export { PromptControls } from './prompt/controls.js';
+export { usePrompt } from './prompt/context.js';
+export type { PromptContextValue } from './prompt/context.js';
 
 // ---------------------------------------------------------------------------
 // Conversation — headless turn/block rendering
