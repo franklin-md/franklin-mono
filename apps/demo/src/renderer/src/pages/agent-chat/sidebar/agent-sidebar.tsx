@@ -63,12 +63,13 @@ export function AgentSidebar({
 	);
 
 	return (
-		<div className="flex w-60 flex-col border-r">
-			<div className="flex items-center justify-between border-b px-4 py-3">
+		<div className="flex w-64 flex-col overflow-hidden border-r border-border bg-muted">
+			<div className="flex items-center justify-between px-4 py-3.5">
 				<span className="text-sm font-semibold">Agents</span>
 				<Button
 					variant="ghost"
 					size="sm"
+					className="rounded-full bg-background/70 px-2.5 text-[11px] text-muted-foreground hover:bg-background hover:text-foreground"
 					onClick={() => void handleSpawnAgent()}
 				>
 					+ Agent
@@ -76,7 +77,7 @@ export function AgentSidebar({
 			</div>
 
 			<ScrollArea className="flex-1">
-				<div className="p-2">
+				<div className="px-3 pb-3">
 					{sessions.length === 0 ? (
 						<p className="py-8 text-center text-xs text-muted-foreground">
 							No agents yet.

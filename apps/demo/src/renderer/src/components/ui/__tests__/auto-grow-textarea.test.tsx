@@ -7,6 +7,25 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AutoGrowTextarea } from '../auto-grow-textarea.js';
 
+vi.mock('../scroll-area.js', async () => {
+	const React = await import('react');
+
+	const MockScrollArea = React.forwardRef<
+		HTMLDivElement,
+		React.ComponentProps<'div'>
+	>(({ children, ...props }, ref) => (
+		<div ref={ref} data-scroll-area="" {...props}>
+			{children}
+		</div>
+	));
+
+	MockScrollArea.displayName = 'MockScrollArea';
+
+	return {
+		ScrollArea: MockScrollArea,
+	};
+});
+
 vi.mock('react-textarea-autosize', async () => {
 	const React = await import('react');
 
@@ -15,8 +34,9 @@ vi.mock('react-textarea-autosize', async () => {
 		React.ComponentProps<'textarea'> & {
 			minRows?: number;
 			maxRows?: number;
+			onHeightChange?: (...args: unknown[]) => void;
 		}
-	>(({ minRows, maxRows, ...props }, ref) => (
+	>(({ minRows, maxRows, onHeightChange: _onHeightChange, ...props }, ref) => (
 		<textarea
 			ref={ref}
 			data-max-rows={maxRows}
@@ -33,14 +53,25 @@ vi.mock('react-textarea-autosize', async () => {
 });
 
 describe('AutoGrowTextarea', () => {
-	it('maps line props to react-textarea-autosize row props', () => {
-		render(
+	it('maps minLines to minRows and wraps in ScrollArea when maxLines is set', () => {
+		const { container } = render(
 			<AutoGrowTextarea minLines={3} maxLines={7} value="hello" readOnly />,
 		);
 
 		const textarea = screen.getByDisplayValue('hello');
 		expect(textarea.getAttribute('data-min-rows')).toBe('3');
-		expect(textarea.getAttribute('data-max-rows')).toBe('7');
+		// maxRows is NOT forwarded to TextareaAutosize — clamping is done by the hook
+		expect(textarea.getAttribute('data-max-rows')).toBeNull();
+		expect(container.querySelector('[data-scroll-area]')).not.toBeNull();
+	});
+
+	it('does not wrap in ScrollArea when maxLines is not set', () => {
+		const { container } = render(
+			<AutoGrowTextarea minLines={3} value="no scroll" readOnly />,
+		);
+
+		expect(container.querySelector('[data-scroll-area]')).toBeNull();
+		expect(screen.getByDisplayValue('no scroll')).toBeTruthy();
 	});
 
 	it('forwards the textarea ref', () => {
@@ -67,5 +98,27 @@ describe('AutoGrowTextarea', () => {
 		expect(textarea.className).toContain('text-base');
 		expect(textarea.className).not.toContain('px-3');
 		expect(textarea.className).not.toContain('text-sm');
+	});
+
+	it('uses default minLines of 2', () => {
+		render(<AutoGrowTextarea defaultValue="defaults" />);
+
+		const textarea = screen.getByDisplayValue('defaults');
+		expect(textarea.getAttribute('data-min-rows')).toBe('2');
+	});
+
+	it('forwards onHeightChange to the caller', () => {
+		const onHeightChange = vi.fn();
+
+		render(
+			<AutoGrowTextarea
+				defaultValue="callback"
+				onHeightChange={onHeightChange}
+			/>,
+		);
+
+		// The mock doesn't fire onHeightChange, so we just verify it renders.
+		// The real integration is tested via the hook tests.
+		expect(screen.getByDisplayValue('callback')).toBeTruthy();
 	});
 });

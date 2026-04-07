@@ -38,12 +38,12 @@ export function TextareaGroup({
 	return (
 		<div
 			className={cn(
-				'flex flex-col rounded-md ring-1 ring-inset ring-border bg-background focus-within:ring-2 focus-within:ring-ring',
+				'flex flex-col gap-3 overflow-hidden rounded-xl bg-muted shadow-sm ring-1 ring-inset ring-ring/70 transition-colors focus-within:ring-ring dark:bg-white/[0.08]',
 				className,
 			)}
 		>
 			<AutoGrowTextarea
-				className="flex-1 bg-transparent px-3 pt-2.5 pb-1 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0"
+				className="flex-1 bg-transparent px-4 pt-4 pb-0 text-sm leading-6 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0"
 				minLines={minLines}
 				maxLines={maxLines}
 				value={value}
@@ -52,7 +52,7 @@ export function TextareaGroup({
 				placeholder={placeholder}
 				disabled={disabled}
 			/>
-			<div className="flex items-center justify-between px-2 pb-2">
+			<div className="flex items-center justify-between pl-4 pr-3 pb-3">
 				{buttonBar}
 			</div>
 		</div>

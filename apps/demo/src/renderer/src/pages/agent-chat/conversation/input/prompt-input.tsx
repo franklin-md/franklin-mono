@@ -7,11 +7,13 @@ import { TextareaGroup } from '@/components/ui/textarea-group.js';
 export function PromptInput({
 	onSend,
 	sending,
+	defaultValue = '',
 }: {
 	onSend: (text: string) => Promise<void>;
 	sending: boolean;
+	defaultValue?: string;
 }) {
-	const [input, setInput] = useState('');
+	const [input, setInput] = useState(defaultValue);
 
 	async function handleSend() {
 		const text = input.trim();
@@ -22,7 +24,7 @@ export function PromptInput({
 	}
 
 	return (
-		<div className="p-3">
+		<div className="px-4 pb-4 pt-2">
 			<TextareaGroup
 				value={input}
 				onChange={setInput}
@@ -33,11 +35,13 @@ export function PromptInput({
 					<>
 						<div className="flex items-center gap-2" />
 						<Button
+							variant="ghost"
+							size="sm"
 							onClick={() => void handleSend()}
 							disabled={!input.trim() || sending}
-							className="gap-1.5 font-mono text-xs font-semibold disabled:opacity-40"
+							className="h-8 gap-1.5 rounded-lg bg-background/80 px-3 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground ring-1 ring-inset ring-ring/40 shadow-sm transition-colors hover:bg-background hover:text-foreground disabled:opacity-35"
 						>
-							<CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2.5} />
+							<CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2.4} />
 							Enter
 						</Button>
 					</>
