@@ -14,8 +14,9 @@ type Args = {
 };
 
 export function createNodePlatform(args: Args = {}): Platform {
+	const appDir = args.appDir ?? os.homedir();
 	const filesystem = createFolderScopedFilesystem(
-		args.appDir ?? os.homedir(),
+		appDir,
 		createNodeFilesystem(),
 	);
 
@@ -35,7 +36,8 @@ export function createNodePlatform(args: Args = {}): Platform {
 				createNodeFilesystem(),
 				config.fsConfig,
 			);
-			const envT = new SandboxedTerminal(config);
+			const envT = new SandboxedTerminal(appDir, config);
+			await envT.initialize();
 			return {
 				filesystem: envFs,
 				terminal: envT,
@@ -50,14 +52,14 @@ export function createNodePlatform(args: Args = {}): Platform {
 				async reconfigure(partial: Partial<EnvironmentConfig>) {
 					if (partial.fsConfig) {
 						// set terminal
-						envT.setFilesystemConfig(partial.fsConfig);
+						await envT.setFilesystemConfig(partial.fsConfig);
 						// set filesystem
 						envFs.setCwd(partial.fsConfig.cwd);
 						envFs.setPermissions(partial.fsConfig.permissions);
 					}
 					if (partial.netConfig) {
 						// set terminal only
-						envT.setNetworkConfig(partial.netConfig);
+						await envT.setNetworkConfig(partial.netConfig);
 					}
 				},
 				dispose: async () => {},

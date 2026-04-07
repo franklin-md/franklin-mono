@@ -13,45 +13,38 @@ import { once } from 'events';
 
 export class SandboxedTerminal implements Terminal {
 	private _cwd: string;
+	private _app_dir: string;
 	private _config: SandboxRuntimeConfig;
 
-	setCwd(cwd: string) {
-		this._cwd = cwd;
-		this._config.filesystem.denyWrite = [
-			'.env',
-			`${cwd}/auth.json`,
-			`${cwd}/sessions`,
-			`${cwd}/store`,
-		];
-	}
-
-	setNetworkConfig(config: NetworkConfig) {
+	async setNetworkConfig(config: NetworkConfig) {
 		this._config.network = { ...config };
+		await SandboxManager.initialize(this._config);
 	}
 
 	getNetworkConfig() {
 		return this._config.network as NetworkConfig;
 	}
 
-	setFilesystemConfig(config: Partial<FilesystemConfig>) {
+	async setFilesystemConfig(config: Partial<FilesystemConfig>) {
 		if (config.cwd) {
-			this.setCwd(config.cwd);
+			this._cwd = config.cwd;
 		}
 		if (config.permissions) {
-			const cwd = this._cwd;
 			this._config.filesystem.allowRead = config.permissions.allowRead;
 			this._config.filesystem.allowWrite = config.permissions.allowWrite;
 			this._config.filesystem.denyWrite = [
-				'.env',
-				`${cwd}/auth.json`,
-				`${cwd}/sessions`,
-				`${cwd}/store`,
+				`${this._app_dir}/auth.json`,
+				`${this._app_dir}/sessions`,
+				`${this._app_dir}/store`,
 			];
 		}
+		await SandboxManager.initialize(this._config);
 	}
 
-	constructor(config: EnvironmentConfig) {
-		const cwd = config.fsConfig.cwd;
+	constructor(app_dir: string, config: EnvironmentConfig) {
+		this._cwd = config.fsConfig.cwd;
+		this._app_dir = app_dir;
+
 		this._config = {
 			network: { ...config.netConfig },
 			filesystem: {
@@ -59,20 +52,19 @@ export class SandboxedTerminal implements Terminal {
 				allowRead: config.fsConfig.permissions.allowRead,
 				allowWrite: config.fsConfig.permissions.allowWrite,
 				denyWrite: [
-					'.env',
-					`${cwd}/auth.json`,
-					`${cwd}/sessions`,
-					`${cwd}/store`,
+					`${this._app_dir}/auth.json`,
+					`${this._app_dir}/sessions`,
+					`${this._app_dir}/store`,
 				],
 			},
 		};
-		this._cwd = cwd;
+	}
+	async initialize() {
+		// Initialize the sandbox (starts proxy servers, etc.)
+		await SandboxManager.initialize(this._config);
 	}
 
 	async exec({ cmd, timeout }: TerminalInput) {
-		// Initialize the sandbox (starts proxy servers, etc.)
-		await SandboxManager.initialize(this._config);
-
 		// Wrap a command with sandbox restrictions
 		//TODO: block command if it calls sudo
 		const sandboxedCommand = await SandboxManager.wrapWithSandbox(cmd);
