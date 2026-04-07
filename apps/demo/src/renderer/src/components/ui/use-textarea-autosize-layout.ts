@@ -1,3 +1,4 @@
+import type { Ref, RefCallback } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
 import { useMergeRefs } from '@franklin/react';
@@ -11,11 +12,11 @@ export type TextareaAutosizeHeightMeta = {
 export type UseTextareaAutosizeLayoutOptions = {
 	minRows?: number;
 	maxRows?: number;
-	ref?: React.Ref<HTMLTextAreaElement>;
+	ref?: Ref<HTMLTextAreaElement>;
 };
 
 export type UseTextareaAutosizeLayoutResult = {
-	textareaRef: React.RefCallback<HTMLTextAreaElement>;
+	textareaRef: RefCallback<HTMLTextAreaElement>;
 	minRows: number;
 	maxRows: number | undefined;
 	measuredHeight: number | null;
