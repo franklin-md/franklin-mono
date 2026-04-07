@@ -14,6 +14,7 @@ import {
 	writeExtension,
 	editExtension,
 	globExtension,
+	bashExtension,
 } from '@franklin/extensions';
 
 const platform = createElectronPlatform();
@@ -25,6 +26,7 @@ const extensionBundles = [
 	writeExtension,
 	editExtension,
 	globExtension,
+	bashExtension,
 ];
 const extensions = extensionBundles.map((bundle) => bundle.extension);
 

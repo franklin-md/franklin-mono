@@ -18,6 +18,8 @@ export type {
 	EnvironmentAPI,
 	Environment,
 	EnvironmentConfig,
+	FilesystemConfig,
+	NetworkConfig,
 	StoreAPI,
 	ReadonlyStore,
 	Store,
@@ -113,6 +115,7 @@ export {
 	editExtension,
 	writeExtension,
 	readExtension,
+	bashExtension,
 } from './extensions/index.js';
 
 export { createTodoControl, createStatusControl } from './extensions/index.js';

@@ -1,7 +1,6 @@
-import { useCallback, useSyncExternalStore } from 'react';
-
 import type { ReadonlyStore, Store, StoreKey } from '@franklin/extensions';
 
+import { useStore } from '../utils/use-store.js';
 import { useAgent } from './agent-context.js';
 
 // ---------------------------------------------------------------------------
@@ -42,37 +41,9 @@ export function useAgentState(
 		throw new Error(`useAgentState: no store named "${storeName}" on agent`);
 	}
 
-	const store = entry.store;
-
-	const subscribe = useCallback(
-		(cb: () => void) => store.subscribe(cb),
-		[store],
-	);
-
-	const getSnapshot = useCallback(() => {
-		const value = store.get();
-		return selector ? selector(value) : value;
-	}, [store, selector]);
-
-	const value = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-
-	const subscribeTyped = useCallback(
-		(listener: (value: unknown) => void) => {
-			return store.subscribe(listener);
-		},
-		[store],
-	);
-
-	if (selector) {
-		return { get: () => value, subscribe: subscribeTyped };
+	// Is this allowed? This is conditionally calling the hook? (although in both branches it is called.)
+	if (selector !== undefined) {
+		return useStore(entry.store, selector);
 	}
-
-	const set = useCallback(
-		(...args: Parameters<typeof store.set>) => {
-			store.set(...args);
-		},
-		[store],
-	);
-
-	return { get: () => value, subscribe: subscribeTyped, set };
+	return useStore(entry.store);
 }

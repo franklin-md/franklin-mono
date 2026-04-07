@@ -67,6 +67,7 @@ function mockEnvironmentFactory(): EnvironmentFactory {
 			deleteFile: vi.fn(),
 			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 		},
+		terminal: { exec: vi.fn() },
 		config: vi.fn(async () => ({ ...config })),
 		reconfigure: vi.fn(async () => {}),
 		dispose: vi.fn(async () => {}),
@@ -119,7 +120,13 @@ describe('SessionManager.restore', () => {
 
 		// Create a session so a snapshot is persisted
 		const session = await manager.new({
-			env: { cwd: '/test', permissions: { allowRead: ['**'], allowWrite: [] } },
+			env: {
+				fsConfig: {
+					cwd: '/test',
+					permissions: { allowRead: ['**'], allowWrite: [] },
+				},
+				netConfig: { allowedDomains: [], deniedDomains: [] },
+			},
 		});
 		const originalId = session.sessionId;
 
@@ -147,7 +154,13 @@ describe('SessionManager.restore', () => {
 		const { manager } = createTestSetup({ sessionPersister });
 
 		await manager.new({
-			env: { cwd: '/test', permissions: { allowRead: ['**'], allowWrite: [] } },
+			env: {
+				fsConfig: {
+					cwd: '/test',
+					permissions: { allowRead: ['**'], allowWrite: [] },
+				},
+				netConfig: { allowedDomains: [], deniedDomains: [] },
+			},
 		});
 
 		const { manager: restored } = createTestSetup({ sessionPersister });

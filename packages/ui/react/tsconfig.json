@@ -6,7 +6,8 @@
 		"composite": true,
 		"declaration": true,
 		"declarationMap": true,
-		"jsx": "react-jsx"
+		"jsx": "react-jsx",
+		"lib": ["ES2023", "DOM"]
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],
 	"references": [{ "path": "../../agent" }, { "path": "../../extensions" }]
