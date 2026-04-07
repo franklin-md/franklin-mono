@@ -11,8 +11,7 @@ import type { ConversationTurn } from '@franklin/extensions';
 import type { FranklinRuntime } from '@franklin/agent/browser';
 import type { ThinkingLevel } from '@franklin/mini-acp';
 import { conversationExtension } from '@franklin/extensions';
-import { AgentProvider } from '@franklin/react';
-import { AppContext } from '@franklin/react/browser';
+import { AgentProvider, AppContext } from '@franklin/react';
 
 // ---------------------------------------------------------------------------
 // createMockStore — minimal reactive store

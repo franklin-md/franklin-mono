@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 
-import type { ThinkingLevel } from '@franklin/mini-acp';
-import { THINKING_LEVELS } from '@franklin/mini-acp';
+import { THINKING_LEVELS, type ThinkingLevel } from '@franklin/mini-acp';
 import { getLLMConfig, setLLMConfig } from '@franklin/agent/browser';
 
 import { useRuntimeSync } from './use-runtime-sync.js';

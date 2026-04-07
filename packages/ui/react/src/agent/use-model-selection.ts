@@ -2,8 +2,8 @@ import { useCallback, useMemo, useRef } from 'react';
 
 import { getLLMConfig, setLLMConfig } from '@franklin/agent/browser';
 
-import { useSettings } from './use-settings.js';
 import { useRuntimeSync } from './use-runtime-sync.js';
+import { useSettings } from './use-settings.js';
 
 // ---------------------------------------------------------------------------
 // useModelSelection
@@ -48,7 +48,7 @@ export function useModelSelection(): UseModelSelection {
 			};
 		},
 		apply: async (runtime, { provider, model }) => {
-			settingsRef.current.set((draft) => {
+			settingsRef.current.set((draft: ReturnType<typeof settings.get>) => {
 				draft.defaultLLMConfig = {
 					...draft.defaultLLMConfig,
 					provider,

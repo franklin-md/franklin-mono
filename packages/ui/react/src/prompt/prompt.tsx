@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 
-import { useAgent } from '../agent-context.js';
+import { useAgent } from '../agent/agent-context.js';
 
 import { PromptProvider } from './context.js';
 

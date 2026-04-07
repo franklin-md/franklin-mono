@@ -6,8 +6,8 @@ import type { ConversationTurn } from '@franklin/extensions';
 import { conversationExtension } from '@franklin/extensions';
 import type { FranklinRuntime } from '@franklin/agent/browser';
 
-import { AgentProvider } from '../agent-context.js';
-import { useConversationTurns } from '../use-conversation-turns.js';
+import { AgentProvider } from '../agent/agent-context.js';
+import { useConversationTurns } from '../conversation/use-conversation-turns.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

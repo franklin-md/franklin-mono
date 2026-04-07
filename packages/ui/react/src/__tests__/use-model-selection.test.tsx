@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
 
-import { AgentProvider } from '../agent-context.js';
-import { AppContext } from '../franklin-context.js';
-import { useModelSelection } from '../use-model-selection.js';
+import { AgentProvider } from '../agent/agent-context.js';
+import { AppContext } from '../agent/franklin-context.js';
+import { useModelSelection } from '../agent/use-model-selection.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

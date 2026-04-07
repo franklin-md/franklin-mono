@@ -5,8 +5,8 @@ import type { ReactNode } from 'react';
 import type { ThinkingLevel } from '@franklin/mini-acp';
 import type { FranklinRuntime } from '@franklin/agent/browser';
 
-import { AgentProvider } from '../agent-context.js';
-import { useThinkingLevel } from '../use-thinking-level.js';
+import { AgentProvider } from '../agent/agent-context.js';
+import { useThinkingLevel } from '../agent/use-thinking-level.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

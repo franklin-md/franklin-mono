@@ -1,7 +1,10 @@
-import type { ConversationTurn, Store } from '@franklin/extensions';
-import { conversationExtension } from '@franklin/extensions';
+import {
+	conversationExtension,
+	type ConversationTurn,
+	type Store,
+} from '@franklin/extensions';
 
-import { useAgentState } from './use-agent-state.js';
+import { useAgentState } from '../agent/use-agent-state.js';
 
 /**
  * Returns a reactive store of the active agent's conversation turns.

@@ -11,7 +11,7 @@ import type { ReactNode } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
 
-import { AgentProvider } from '../agent-context.js';
+import { AgentProvider } from '../agent/agent-context.js';
 import { usePrompt } from '../prompt/context.js';
 import { Prompt } from '../prompt/prompt.js';
 import { PromptText } from '../prompt/text.js';
@@ -77,9 +77,10 @@ describe('PromptText', () => {
 			</TestHarness>,
 		);
 
-		const textarea = screen.getByTestId('input') as unknown as {
-			value: string;
-		};
+		const textarea = screen.getByTestId('input');
+		if (!(textarea instanceof HTMLTextAreaElement)) {
+			throw new TypeError('Expected a textarea');
+		}
 		expect(textarea.value).toBe('');
 
 		fireEvent.change(textarea, { target: { value: 'hello' } });
@@ -97,9 +98,10 @@ describe('PromptText', () => {
 			</TestHarness>,
 		);
 
-		const textarea = screen.getByTestId('input') as unknown as {
-			value: string;
-		};
+		const textarea = screen.getByTestId('input');
+		if (!(textarea instanceof HTMLTextAreaElement)) {
+			throw new TypeError('Expected a textarea');
+		}
 		fireEvent.change(textarea, { target: { value: 'hello' } });
 		fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
 
@@ -152,7 +154,10 @@ describe('PromptSend', () => {
 			</TestHarness>,
 		);
 
-		const btn = screen.getByTestId('send') as unknown as { disabled: boolean };
+		const btn = screen.getByTestId('send');
+		if (!(btn instanceof HTMLButtonElement)) {
+			throw new TypeError('Expected a button');
+		}
 		expect(btn.disabled).toBe(true);
 	});
 
@@ -174,7 +179,10 @@ describe('PromptSend', () => {
 			target: { value: 'hello' },
 		});
 
-		const btn = screen.getByTestId('send') as unknown as { disabled: boolean };
+		const btn = screen.getByTestId('send');
+		if (!(btn instanceof HTMLButtonElement)) {
+			throw new TypeError('Expected a button');
+		}
 		expect(btn.disabled).toBe(false);
 	});
 

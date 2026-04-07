@@ -1,4 +1,4 @@
-import { createSimpleContext } from '../create-simple-context.js';
+import { createSimpleContext } from '../utils/create-simple-context.js';
 
 export interface PromptContextValue {
 	readonly input: string;
