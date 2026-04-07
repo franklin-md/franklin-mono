@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import { createSimpleContext } from '../create-simple-context.js';
+import { createSimpleContext } from '../utils/create-simple-context.js';
 
 describe('createSimpleContext', () => {
 	it('provides and consumes a value', () => {

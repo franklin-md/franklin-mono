@@ -8,8 +8,8 @@ import type {
 	FranklinApp,
 	Session,
 } from '@franklin/agent/browser';
-import { AppContext } from '../franklin-context.js';
-import { useSessions } from '../use-sessions.js';
+import { AppContext } from '../agent/franklin-context.js';
+import { useSessions } from '../agent/use-sessions.js';
 
 function makeSession(sessionId: string): Session {
 	return {

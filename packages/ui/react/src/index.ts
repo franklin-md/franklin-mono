@@ -1,10 +1,17 @@
-export { createSimpleContext } from './create-simple-context.js';
-export { useStore } from './use-store.js';
-export { AgentProvider, useAgent } from './agent-context.js';
-export { useAgentState } from './use-agent-state.js';
-export { FranklinProvider, useApp } from './franklin-context.js';
-export { useSessions } from './use-sessions.js';
-export { useSettings } from './use-settings.js';
+export { createSimpleContext } from './utils/create-simple-context.js';
+export { useStore } from './utils/use-store.js';
+export { AgentProvider, useAgent } from './agent/agent-context.js';
+export { useAgentState } from './agent/use-agent-state.js';
+export { FranklinProvider, useApp } from './agent/franklin-context.js';
+export { useSessions } from './agent/use-sessions.js';
+export { useMergeRefs } from './utils/use-merge-refs.js';
+export { useSettings } from './agent/use-settings.js';
+export {
+	useTextareaAutosizeLayout,
+	type TextareaAutosizeHeightMeta,
+	type UseTextareaAutosizeLayoutOptions,
+	type UseTextareaAutosizeLayoutResult,
+} from './dom/use-textarea-autosize-layout.js';
 
 // ---------------------------------------------------------------------------
 // Conversation — headless turn/block rendering
