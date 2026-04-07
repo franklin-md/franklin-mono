@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import { useAgentState } from '../use-agent-state.js';
-import { AgentProvider } from '../agent-context.js';
+import { useAgentState } from '../agent/use-agent-state.js';
+import { AgentProvider } from '../agent/agent-context.js';
 import { createStore, storeKey } from '@franklin/extensions';
 import type { FranklinRuntime } from '@franklin/agent/browser';
 import type { Store, StoreResult, StoreEntry } from '@franklin/extensions';
@@ -322,15 +322,7 @@ describe('useAgentState – returned subscribe()', () => {
 		expect(values).toEqual([]);
 	});
 
-	/**
-	 * BUG: When a selector is provided, the returned ReadonlyStore<S>.subscribe()
-	 * should fire with the SELECTED (derived) value, but the current implementation
-	 * subscribes to the raw store and passes the raw T value to the listener.
-	 *
-	 * Expected: listener receives `S` (the selector output)
-	 * Actual: listener receives `T` (the raw store value)
-	 */
-	it('BUG: subscribe with selector passes raw value, not selected value', () => {
+	it('subscribe with selector passes the selected value', () => {
 		const { agent, store } = makeAgentWithStore('todos', ['a', 'b']);
 		const { result } = renderHook(
 			() => useAgentState(todosKey, (t) => t.length),
@@ -346,13 +338,7 @@ describe('useAgentState – returned subscribe()', () => {
 			});
 		});
 
-		// What we'd EXPECT from ReadonlyStore<number>:
-		// expect(receivedValues).toEqual([3]);
-
-		// What ACTUALLY happens — the raw array is passed:
-		expect(receivedValues[0]).toEqual(['a', 'b', 'c']);
-		// The listener receives the raw T (string[]) instead of S (number).
-		// This is a type-safety and correctness bug.
+		expect(receivedValues).toEqual([3]);
 	});
 });
 

@@ -3,7 +3,7 @@ import { createRef } from 'react';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useMergeRefs } from '../use-merge-refs.js';
+import { useMergeRefs } from '../utils/use-merge-refs.js';
 
 describe('useMergeRefs', () => {
 	it('updates a callback ref', () => {

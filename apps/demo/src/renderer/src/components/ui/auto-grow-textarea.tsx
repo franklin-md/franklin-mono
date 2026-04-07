@@ -3,11 +3,12 @@ import { forwardRef } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import type { TextareaAutosizeProps } from 'react-textarea-autosize';
 
+import { useTextareaAutosizeLayout } from '@franklin/react';
+
 import { cn } from '@/lib/utils';
 
 import { ScrollArea } from './scroll-area.js';
 import { textareaClassName } from './textarea.js';
-import { useTextareaAutosizeLayout } from './use-textarea-autosize-layout.js';
 
 type AutoGrowTextareaProps = Omit<
 	TextareaAutosizeProps,

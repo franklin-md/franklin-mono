@@ -1,7 +1,7 @@
 import type { Ref, RefCallback } from 'react';
 import { useCallback, useRef, useState } from 'react';
 
-import { useMergeRefs } from '@franklin/react';
+import { useMergeRefs } from '../utils/use-merge-refs.js';
 
 // --- Types ---------------------------------------------------------------
 

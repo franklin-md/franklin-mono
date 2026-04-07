@@ -5,7 +5,7 @@ import { createRef } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useTextareaAutosizeLayout } from '../use-textarea-autosize-layout.js';
+import { useTextareaAutosizeLayout } from '../dom/use-textarea-autosize-layout.js';
 
 // Stub getComputedStyle so getTextareaChromeHeight works in jsdom.
 function stubComputedStyle(overrides: Record<string, string> = {}) {

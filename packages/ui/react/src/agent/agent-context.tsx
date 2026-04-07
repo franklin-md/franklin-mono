@@ -1,6 +1,6 @@
 import type { FranklinRuntime } from '@franklin/agent/browser';
 
-import { createSimpleContext } from './create-simple-context.js';
+import { createSimpleContext } from '../utils/create-simple-context.js';
 
 /**
  * Stores the runtime directly (not in a ref). When the selected runtime changes
