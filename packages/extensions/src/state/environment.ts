@@ -6,6 +6,12 @@ export type EnvironmentState = {
 
 export function emptyEnvironmentState(): EnvironmentState {
 	return {
-		env: { cwd: '.', permissions: { allowRead: [], allowWrite: [] } },
+		env: {
+			fsConfig: {
+				cwd: '.',
+				permissions: { allowRead: [], allowWrite: [] },
+			},
+			netConfig: { allowedDomains: [], deniedDomains: [] },
+		},
 	};
 }

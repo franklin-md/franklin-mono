@@ -67,6 +67,7 @@ describe('bindRenderer', () => {
 				kill: vi.fn(async () => {}),
 				proxy: {
 					filesystem: {
+						resolve: vi.fn(async () => '/tmp'),
 						exists: vi.fn(async (_id: string, _path: string) => true),
 						readFile: vi.fn(async () => new Uint8Array()),
 						writeFile: vi.fn(async () => {}),
@@ -80,6 +81,21 @@ describe('bindRenderer', () => {
 						glob: vi.fn(async () => []),
 						deleteFile: vi.fn(async () => {}),
 					},
+					terminal: {
+						exec: vi.fn(async () => ({
+							exit_code: 0,
+							stdout: '',
+							stderr: '',
+						})),
+					},
+					config: vi.fn(async () => ({
+						fsConfig: {
+							cwd: '/tmp',
+							permissions: { allowRead: ['**'], allowWrite: ['**'] },
+						},
+						netConfig: { allowedDomains: [], deniedDomains: [] },
+					})),
+					reconfigure: vi.fn(async () => {}),
 				},
 			},
 			ai: {

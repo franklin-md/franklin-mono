@@ -23,8 +23,11 @@ import {
 // ---------------------------------------------------------------------------
 
 const defaultEnvConfig: EnvironmentConfig = {
-	cwd: '/project',
-	permissions: { allowRead: ['**'], allowWrite: ['**'] },
+	fsConfig: {
+		cwd: '/project',
+		permissions: { allowRead: ['**'], allowWrite: ['**'] },
+	},
+	netConfig: { allowedDomains: [], deniedDomains: [] },
 };
 
 function mockEnvironment(config: EnvironmentConfig): Environment {
@@ -41,6 +44,7 @@ function mockEnvironment(config: EnvironmentConfig): Environment {
 			deleteFile: vi.fn(),
 			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 		},
+		terminal: { exec: vi.fn() },
 		config: vi.fn(async () => ({ ...config })),
 		reconfigure: vi.fn(async () => {}),
 	};
@@ -130,7 +134,7 @@ describe('combine — two systems', () => {
 		const empty = system.emptyState();
 		expect(empty.store).toEqual({});
 		expect(empty.env).toBeDefined();
-		expect(empty.env.cwd).toBeDefined();
+		expect(empty.env.fsConfig.cwd).toBeDefined();
 	});
 
 	it('state returns keyed state from both systems', async () => {
