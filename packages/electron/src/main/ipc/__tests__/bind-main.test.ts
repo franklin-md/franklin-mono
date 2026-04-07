@@ -32,9 +32,15 @@ function createEnvironment(label: string) {
 	return Object.assign(
 		{
 			filesystem: createFilesystem(label),
+			terminal: {
+				exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
+			},
 			config: async () => ({
-				cwd: '/tmp',
-				permissions: { allowRead: ['**'], allowWrite: ['**'] },
+				fsConfig: {
+					cwd: '/tmp',
+					permissions: { allowRead: ['**'], allowWrite: ['**'] },
+				},
+				netConfig: { allowedDomains: [], deniedDomains: [] },
 			}),
 			reconfigure: noop,
 		},
@@ -219,12 +225,15 @@ describe('bindMain', () => {
 					return Object.assign(
 						{
 							filesystem: fs,
+							terminal: {
+								exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
+							},
 							config: async () => ({
-								cwd: '/tmp',
-								permissions: {
-									allowRead: ['**'],
-									allowWrite: ['**'],
+								fsConfig: {
+									cwd: '/tmp',
+									permissions: { allowRead: ['**'], allowWrite: ['**'] },
 								},
+								netConfig: { allowedDomains: [], deniedDomains: [] },
 							}),
 							reconfigure: noop,
 						},

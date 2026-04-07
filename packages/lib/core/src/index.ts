@@ -1,4 +1,6 @@
 export type { FileStat, Filesystem } from './filesystem/index.js';
+export type { Terminal, TerminalInput } from './terminal/index.js';
+export type { NetworkPermissions } from './network/index.js';
 export {
 	createFolderScopedFilesystem,
 	createFilteredFilesystem,

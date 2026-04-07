@@ -12,9 +12,9 @@ export function createEnvironmentRuntime(
 ): EnvironmentRuntime {
 	const observer = createObserver();
 
-	// Wrap the environment to intercept reconfigure and notify subscribers.
 	const observed: typeof environment = {
 		filesystem: environment.filesystem,
+		terminal: environment.terminal,
 		config: () => environment.config(),
 		async reconfigure(config) {
 			await environment.reconfigure(config);

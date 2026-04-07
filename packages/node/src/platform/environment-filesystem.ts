@@ -3,7 +3,7 @@ import {
 	createFolderScopedFilesystem,
 	createFilteredFilesystem,
 } from '@franklin/lib';
-import type { EnvironmentConfig } from '@franklin/extensions';
+import type { FilesystemConfig } from '@franklin/extensions';
 
 /**
  * A mutable Filesystem that composes cwd scoping and permissions filtering.
@@ -16,17 +16,17 @@ import type { EnvironmentConfig } from '@franklin/extensions';
  * returns the current state.
  */
 export class EnvironmentFilesystem implements Filesystem {
-	private _config: EnvironmentConfig;
+	private _config: FilesystemConfig;
 	private inner: Filesystem;
 	private current: Filesystem;
 
-	constructor(inner: Filesystem, config: EnvironmentConfig) {
+	constructor(inner: Filesystem, config: FilesystemConfig) {
 		this.inner = inner;
 		this._config = { ...config, permissions: { ...config.permissions } };
 		this.current = buildChain(inner, this._config);
 	}
 
-	get config(): EnvironmentConfig {
+	get config(): FilesystemConfig {
 		return this._config;
 	}
 
@@ -83,7 +83,7 @@ export class EnvironmentFilesystem implements Filesystem {
 	}
 }
 
-function buildChain(inner: Filesystem, config: EnvironmentConfig): Filesystem {
+function buildChain(inner: Filesystem, config: FilesystemConfig): Filesystem {
 	const filtered = createFilteredFilesystem(config.permissions, inner);
 	return createFolderScopedFilesystem(config.cwd, filtered);
 }
