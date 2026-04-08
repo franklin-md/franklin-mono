@@ -30,12 +30,32 @@ export async function loginAgent(
 
 /**
  * Wrap a core system so that every compiled runtime is automatically
- * authenticated at build time.
+ * authenticated at build time and on provider changes.
+ *
+ * Two behaviors:
+ * 1. **Initial login** — resolves the apiKey for the configured provider
+ *    when the runtime is first built.
+ * 2. **Auto-auth** — intercepts `setContext` calls. When a provider is
+ *    specified without an apiKey, resolves the key from the auth
+ *    manager before passing through.
  */
 export function withAuth(system: CoreSystem, auth: IAuthManager): CoreSystem {
-	return withSetup(system, (runtime, state) =>
-		loginAgent(runtime, state, auth),
-	);
+	return withSetup(system, async (runtime, state) => {
+		// Install setContext wrapper to auto-resolve auth when provider is set.
+		const originalSetContext = runtime.setContext.bind(runtime);
+		runtime.setContext = async (ctx) => {
+			if (ctx.config?.provider && !ctx.config.apiKey) {
+				const apiKey = await auth.getApiKey(ctx.config.provider);
+				if (apiKey) {
+					ctx = { ...ctx, config: { ...ctx.config, apiKey } };
+				}
+			}
+			return originalSetContext(ctx);
+		};
+
+		// Initial login — resolves credentials for the starting provider.
+		await loginAgent(runtime, state, auth);
+	});
 }
 
 /**

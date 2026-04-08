@@ -7,10 +7,6 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
-		},
-		"./browser": {
-			"types": "./dist/browser.d.ts",
-			"import": "./dist/browser.js"
 		}
 	},
 	"files": [
@@ -23,7 +19,8 @@
 	},
 	"dependencies": {
 		"@franklin/agent": "*",
-		"@franklin/extensions": "*"
+		"@franklin/extensions": "*",
+		"@radix-ui/react-slot": "^1.1.1"
 	},
 	"peerDependencies": {
 		"react": "^18.3.1 || ^19.0.0"

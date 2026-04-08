@@ -3,7 +3,7 @@ node_modules/
 **/out/
 *.tsbuildinfo
 .eslintcache
-
+**/storybook-static/
 
 # Agent Folders
 .context/

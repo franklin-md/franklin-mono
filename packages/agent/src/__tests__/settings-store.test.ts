@@ -70,7 +70,7 @@ describe('loadSettings', () => {
 	});
 
 	it('applies defaults when the stored file is empty', async () => {
-		const fs = mockFilesystem({});
+		const fs = mockFilesystem({} as AppSettings);
 		const store = createSettings();
 
 		await loadSettings(store, fs);

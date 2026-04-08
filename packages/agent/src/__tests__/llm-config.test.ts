@@ -84,7 +84,7 @@ describe('setLLMConfig', () => {
 		const runtime = mockRuntime({
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
-			reasoning: 'medium',
+			reasoning: 'high',
 		});
 
 		await setLLMConfig(runtime, { model: 'claude-opus-4' });
@@ -93,8 +93,31 @@ describe('setLLMConfig', () => {
 			config: {
 				provider: 'anthropic',
 				model: 'claude-opus-4',
-				reasoning: 'medium',
+				reasoning: 'high',
 			},
 		});
+	});
+
+	// Regression: setLLMConfig reads from state() which strips apiKey via
+	// snapshotLLMConfig. The config it sends to setContext therefore omits
+	// apiKey and relies on config being merged by property so the existing key
+	// is preserved. This test documents the payload shape; tracker-level merge
+	// behavior is covered in ctx-tracker.test.ts.
+	it('does not include apiKey in the setContext payload (state snapshots redact it)', async () => {
+		const runtime = mockRuntime({
+			provider: 'anthropic',
+			model: 'claude-sonnet-4-5',
+			reasoning: 'high',
+		});
+
+		await setLLMConfig(runtime, { reasoning: 'high' });
+
+		const call = (runtime.setContext as ReturnType<typeof vi.fn>).mock
+			.calls[0]![0] as { config: Record<string, unknown> };
+
+		// apiKey must not be present — snapshotLLMConfig strips it
+		expect(call.config).not.toHaveProperty('apiKey');
+		// But the update is applied
+		expect(call.config.reasoning).toBe('high');
 	});
 });

@@ -1,3 +1,6 @@
+// Values
+export { THINKING_LEVELS } from './types/context.js';
+
 // Types
 export type {
 	// Content

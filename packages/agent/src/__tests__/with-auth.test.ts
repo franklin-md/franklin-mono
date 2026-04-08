@@ -184,6 +184,136 @@ describe('withAuth', () => {
 		expect(runtime.setContext).toBeDefined();
 		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
 	});
+
+	it('resolves apiKey when provider changes via setContext', async () => {
+		const spawn = createMockSpawn();
+		const base = createCoreSystem(spawn);
+		const auth = mockAuthManager({
+			anthropic: 'sk-anthropic',
+			'openai-codex': 'sk-openai',
+		});
+
+		const decorated = withAuth(base, auth);
+		const compiler = await decorated.createCompiler({
+			core: {
+				history: { systemPrompt: '', messages: [] },
+				llmConfig: { provider: 'anthropic' },
+			},
+		});
+		const runtime = await compiler.build();
+
+		// Clear the initial login call
+		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
+
+		// Switch provider — should auto-resolve the new apiKey
+		await runtime.setContext({
+			config: { provider: 'openai-codex', model: 'gpt-5.4' },
+		});
+
+		expect(auth.getApiKey).toHaveBeenCalledWith('openai-codex');
+
+		// Verify the runtime now has the new provider's config
+		const state = await runtime.state();
+		expect(state.core.llmConfig.provider).toBe('openai-codex');
+	});
+
+	it('resolves auth even when provider is unchanged', async () => {
+		const spawn = createMockSpawn();
+		const base = createCoreSystem(spawn);
+		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
+
+		const decorated = withAuth(base, auth);
+		const compiler = await decorated.createCompiler({
+			core: {
+				history: { systemPrompt: '', messages: [] },
+				llmConfig: { provider: 'anthropic' },
+			},
+		});
+		const runtime = await compiler.build();
+		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
+
+		// Same provider, different model — still resolves apiKey
+		await runtime.setContext({
+			config: { provider: 'anthropic', model: 'claude-opus-4-6' },
+		});
+
+		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
+	});
+
+	it('does not overwrite an explicit apiKey in setContext', async () => {
+		const spawn = createMockSpawn();
+		const base = createCoreSystem(spawn);
+		const auth = mockAuthManager({
+			anthropic: 'sk-anthropic',
+			'openai-codex': 'sk-openai',
+		});
+
+		const decorated = withAuth(base, auth);
+		const compiler = await decorated.createCompiler({
+			core: {
+				history: { systemPrompt: '', messages: [] },
+				llmConfig: { provider: 'anthropic' },
+			},
+		});
+		const runtime = await compiler.build();
+		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
+
+		// Provider change WITH explicit apiKey — should not resolve
+		await runtime.setContext({
+			config: { provider: 'openai-codex', apiKey: 'sk-explicit' },
+		});
+
+		expect(auth.getApiKey).not.toHaveBeenCalled();
+	});
+
+	it('passes through when no apiKey exists for the new provider', async () => {
+		const spawn = createMockSpawn();
+		const base = createCoreSystem(spawn);
+		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
+
+		const decorated = withAuth(base, auth);
+		const compiler = await decorated.createCompiler({
+			core: {
+				history: { systemPrompt: '', messages: [] },
+				llmConfig: { provider: 'anthropic' },
+			},
+		});
+		const runtime = await compiler.build();
+		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
+
+		// Switch to a provider with no stored key — should pass through without apiKey
+		await runtime.setContext({
+			config: { provider: 'openrouter', model: 'deepseek-r1' },
+		});
+
+		expect(auth.getApiKey).toHaveBeenCalledWith('openrouter');
+
+		const state = await runtime.state();
+		expect(state.core.llmConfig.provider).toBe('openrouter');
+	});
+
+	it('skips auth resolution for non-config setContext calls', async () => {
+		const spawn = createMockSpawn();
+		const base = createCoreSystem(spawn);
+		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
+
+		const decorated = withAuth(base, auth);
+		const compiler = await decorated.createCompiler({
+			core: {
+				history: { systemPrompt: '', messages: [] },
+				llmConfig: { provider: 'anthropic' },
+			},
+		});
+		const runtime = await compiler.build();
+		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
+
+		// setContext with only history — no config at all
+		await runtime.setContext({
+			history: { systemPrompt: 'new prompt', messages: [] },
+		});
+
+		expect(auth.getApiKey).not.toHaveBeenCalled();
+	});
 });
 
 // ---------------------------------------------------------------------------

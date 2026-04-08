@@ -24,7 +24,7 @@ export function AgentSidebar({
 
 	const handleSpawnAgent = useCallback(async () => {
 		const session = await manager.new({
-			core: { llmConfig: settings.get().defaultLLMConfig ?? {} },
+			core: { llmConfig: settings.get().defaultLLMConfig },
 			env: {
 				fsConfig: {
 					cwd: '/tmp',
