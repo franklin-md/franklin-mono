@@ -3,30 +3,35 @@ import { cpSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const isWatch = process.argv.includes('--watch');
-const copyToVault = process.argv.includes('--vault');
+const pluginDirArg = process.argv.find((value) =>
+	value.startsWith('--plugin-dir='),
+);
+const pluginDir = pluginDirArg?.slice('--plugin-dir='.length);
 
 const rootDir = import.meta.dirname;
 const distDir = resolve(rootDir, 'dist');
-const vaultPluginDir = resolve(
-	'/Users/afv/Obsidian/.obsidian/plugins/franklin',
-);
 
 function copyStaticFiles(targetDir) {
 	mkdirSync(targetDir, { recursive: true });
 	cpSync(
 		resolve(rootDir, 'manifest.json'),
 		resolve(targetDir, 'manifest.json'),
+		{ force: true },
 	);
-	cpSync(resolve(rootDir, 'styles.css'), resolve(targetDir, 'styles.css'));
+	cpSync(resolve(rootDir, 'styles.css'), resolve(targetDir, 'styles.css'), {
+		force: true,
+	});
 }
 
 function syncToVault() {
-	if (!copyToVault) {
+	if (!pluginDir) {
 		return;
 	}
 
-	copyStaticFiles(vaultPluginDir);
-	cpSync(resolve(distDir, 'main.js'), resolve(vaultPluginDir, 'main.js'));
+	copyStaticFiles(pluginDir);
+	cpSync(resolve(distDir, 'main.js'), resolve(pluginDir, 'main.js'), {
+		force: true,
+	});
 }
 
 const buildOptions = {
