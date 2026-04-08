@@ -1,0 +1,9 @@
+{
+	"id": "franklin",
+	"name": "Franklin",
+	"version": "0.0.1",
+	"minAppVersion": "1.5.0",
+	"description": "Franklin placeholder plugin shell for Obsidian",
+	"author": "Franklin",
+	"isDesktopOnly": true
+}
