@@ -1,42 +1,28 @@
 import type { ComponentType } from 'react';
-import {
-	Anthropic,
-	Claude,
-	Codex,
-	Gemini,
-	MiniMax,
-	Moonshot,
-	OpenAI,
-	OpenRouter,
-	Qwen,
-	Xiaomi,
-	type IconProps,
-	XAI,
-	ZAI,
-} from '@franklin/react';
+import { Icons, type IconProps } from '@franklin/react';
 
 import type { CatalogModel } from './models/catalog.js';
 
 type IconComponent = ComponentType<IconProps>;
 
 const PROVIDER_ICONS: Record<string, IconComponent> = {
-	anthropic: Anthropic,
-	'openai-codex': OpenAI,
-	openrouter: OpenRouter,
+	anthropic: Icons.Anthropic,
+	'openai-codex': Icons.OpenAI,
+	openrouter: Icons.OpenRouter,
 };
 
 function resolveModelIconComponent(model: CatalogModel): IconComponent | null {
-	if (model.provider === 'anthropic') return Claude;
-	if (model.provider === 'openai-codex') return OpenAI;
+	if (model.provider === 'anthropic') return Icons.Claude;
+	if (model.provider === 'openai-codex') return Icons.OpenAI;
 	if (model.provider !== 'openrouter') return null;
 
-	if (model.id.startsWith('z-ai/glm')) return ZAI;
-	if (model.id.startsWith('google/')) return Gemini;
-	if (model.id.startsWith('moonshotai/kimi')) return Moonshot;
-	if (model.id.startsWith('minimax/')) return MiniMax;
-	if (model.id.startsWith('qwen/')) return Qwen;
-	if (model.id.startsWith('xiaomi/mimo')) return Xiaomi;
-	if (model.id.startsWith('x-ai/')) return XAI;
+	if (model.id.startsWith('z-ai/glm')) return Icons.ZAI;
+	if (model.id.startsWith('google/')) return Icons.Gemini;
+	if (model.id.startsWith('moonshotai/kimi')) return Icons.Moonshot;
+	if (model.id.startsWith('minimax/')) return Icons.MiniMax;
+	if (model.id.startsWith('qwen/')) return Icons.Qwen;
+	if (model.id.startsWith('xiaomi/mimo')) return Icons.Xiaomi;
+	if (model.id.startsWith('x-ai/')) return Icons.XAI;
 
 	return null;
 }

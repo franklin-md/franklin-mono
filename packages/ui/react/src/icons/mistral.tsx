@@ -1,36 +1,23 @@
-import { memo } from 'react';
+import { createIcon } from './create-icon.js';
 
-import type { IconProps } from './types.js';
-
-export const Mistral = memo<IconProps>(function Mistral({
-	size = '1em',
-	...props
-}) {
-	return (
-		<svg
-			height={size}
-			viewBox="0 0 24 24"
-			width={size}
-			xmlns="http://www.w3.org/2000/svg"
-			{...props}
-		>
-			<path
-				fill="gold"
-				d="M3.428 3.4h3.429v3.428H3.428V3.4zm13.714 0h3.43v3.428h-3.43V3.4z"
-			/>
-			<path
-				fill="#FFAF00"
-				d="M3.428 6.828h6.857v3.429H3.429V6.828zm10.286 0h6.857v3.429h-6.857V6.828z"
-			/>
-			<path fill="#FF8205" d="M3.428 10.258h17.144v3.428H3.428v-3.428z" />
-			<path
-				fill="#FA500F"
-				d="M3.428 13.686h3.429v3.428H3.428v-3.428zm6.858 0h3.429v3.428h-3.429v-3.428zm6.856 0h3.43v3.428h-3.43v-3.428z"
-			/>
-			<path
-				fill="#E10500"
-				d="M0 17.114h10.286v3.429H0v-3.429zm13.714 0H24v3.429H13.714v-3.429z"
-			/>
-		</svg>
-	);
-});
+export const Mistral = createIcon('Mistral', () => (
+	<>
+		<path
+			fill="gold"
+			d="M3.428 3.4h3.429v3.428H3.428V3.4zm13.714 0h3.43v3.428h-3.43V3.4z"
+		/>
+		<path
+			fill="#FFAF00"
+			d="M3.428 6.828h6.857v3.429H3.429V6.828zm10.286 0h6.857v3.429h-6.857V6.828z"
+		/>
+		<path fill="#FF8205" d="M3.428 10.258h17.144v3.428H3.428v-3.428z" />
+		<path
+			fill="#FA500F"
+			d="M3.428 13.686h3.429v3.428H3.428v-3.428zm6.858 0h3.429v3.428h-3.429v-3.428zm6.856 0h3.43v3.428h-3.43v-3.428z"
+		/>
+		<path
+			fill="#E10500"
+			d="M0 17.114h10.286v3.429H0v-3.429zm13.714 0H24v3.429H13.714v-3.429z"
+		/>
+	</>
+));
