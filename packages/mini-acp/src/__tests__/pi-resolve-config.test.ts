@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { resolveConfig } from '../base/pi/resolve-config.js';
 import { StopCode } from '../types/stop-code.js';
-import { OPENROUTER_APP_TITLE } from '../base/pi/model/headers.js';
+import {
+	OPENROUTER_APP_CATEGORY,
+	OPENROUTER_APP_TITLE,
+} from '../base/pi/model/headers.js';
 import { OPENROUTER_APP_URL } from '../base/pi/model/headers.js';
 
 describe('resolveConfig', () => {
@@ -30,6 +33,7 @@ describe('resolveConfig', () => {
 		expect(result.ok && result.model.headers).toMatchObject({
 			'HTTP-Referer': OPENROUTER_APP_URL,
 			'X-OpenRouter-Title': OPENROUTER_APP_TITLE,
+			'X-OpenRouter-Categories': OPENROUTER_APP_CATEGORY.join(','),
 		});
 	});
 
