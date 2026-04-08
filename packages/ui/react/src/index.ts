@@ -71,3 +71,23 @@ export type {
 	TurnEndRenderer,
 	TurnEndRendererRegistry,
 } from './conversation/turn-end/types.js';
+
+// ---------------------------------------------------------------------------
+// Icons — AI provider and model brand icons (sourced from lobehub/lobe-icons)
+// ---------------------------------------------------------------------------
+export type { IconProps } from './icons/types.js';
+export { Anthropic } from './icons/anthropic.js';
+export { Claude } from './icons/claude.js';
+export { Cohere } from './icons/cohere.js';
+export { DeepSeek } from './icons/deepseek.js';
+export { Gemini } from './icons/gemini.js';
+export { Google } from './icons/google.js';
+export { Groq } from './icons/groq.js';
+export { Meta } from './icons/meta.js';
+export { Mistral } from './icons/mistral.js';
+export { Ollama } from './icons/ollama.js';
+export { OpenAI } from './icons/openai.js';
+export { OpenRouter } from './icons/openrouter.js';
+export { Perplexity } from './icons/perplexity.js';
+export { Qwen } from './icons/qwen.js';
+export { XAI } from './icons/xai.js';

@@ -80,7 +80,7 @@ describe('setLLMConfig', () => {
 		const runtime = mockRuntime({
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
-			reasoning: 'medium',
+			reasoning: 'high',
 		});
 
 		await setLLMConfig(runtime, { model: 'claude-opus-4' });
@@ -89,7 +89,7 @@ describe('setLLMConfig', () => {
 			config: {
 				provider: 'anthropic',
 				model: 'claude-opus-4',
-				reasoning: 'medium',
+				reasoning: 'high',
 			},
 		});
 	});
@@ -103,7 +103,7 @@ describe('setLLMConfig', () => {
 		const runtime = mockRuntime({
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
-			reasoning: 'medium',
+			reasoning: 'high',
 		});
 
 		await setLLMConfig(runtime, { reasoning: 'high' });

@@ -5,14 +5,7 @@ import type { ThinkingLevel } from '@franklin/mini-acp';
 import { ThinkingToggle } from '../input/thinking-toggle.js';
 import { MockAgentDecorator } from './mock-agent.js';
 
-const LEVELS: ThinkingLevel[] = [
-	'off',
-	'minimal',
-	'low',
-	'medium',
-	'high',
-	'xhigh',
-];
+const LEVELS: ThinkingLevel[] = ['off', 'low', 'medium', 'high', 'xhigh'];
 
 const meta = {
 	title: 'Conversation/ThinkingToggle',

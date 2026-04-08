@@ -109,7 +109,6 @@ describe('useThinkingLevel – initialization', () => {
 
 		expect(result.current.levels).toEqual([
 			'off',
-			'minimal',
 			'low',
 			'medium',
 			'high',
@@ -197,7 +196,7 @@ describe('useThinkingLevel – cycleLevel', () => {
 
 		const seen: ThinkingLevel[] = [result.current.level];
 
-		for (let i = 0; i < 6; i++) {
+		for (let i = 0; i < 5; i++) {
 			await act(async () => {
 				await result.current.cycleLevel();
 			});
@@ -206,7 +205,6 @@ describe('useThinkingLevel – cycleLevel', () => {
 
 		expect(seen).toEqual([
 			'off',
-			'minimal',
 			'low',
 			'medium',
 			'high',

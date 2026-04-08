@@ -64,7 +64,7 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
 			apiKey: 'sk-secret',
-			reasoning: 'medium',
+			reasoning: 'high',
 		});
 
 		tracker.apply({ config: { reasoning: 'high' } });
@@ -152,7 +152,7 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
 			apiKey: 'sk-secret',
-			reasoning: 'medium',
+			reasoning: 'high',
 		});
 
 		// Step 1: Auth refreshes the key
@@ -178,7 +178,7 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
 			apiKey: 'sk-secret',
-			reasoning: 'medium',
+			reasoning: 'high',
 		});
 
 		// This is what setLLMConfig does: reads snapshot (no apiKey), spreads update
