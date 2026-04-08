@@ -176,13 +176,13 @@ describe('useModelSelection – setModel', () => {
 		});
 
 		await act(async () => {
-			await result.current.setModel('openrouter', 'deepseek/deepseek-r1');
+			await result.current.setModel('openrouter', 'z-ai/glm-5.1');
 		});
 
 		expect(app.settings.get().defaultLLMConfig).toEqual(
 			expect.objectContaining({
 				provider: 'openrouter',
-				model: 'deepseek/deepseek-r1',
+				model: 'z-ai/glm-5.1',
 			}),
 		);
 	});

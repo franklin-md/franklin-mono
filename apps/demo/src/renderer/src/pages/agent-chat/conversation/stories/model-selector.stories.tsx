@@ -37,7 +37,7 @@ export const OpenAICodex: Story = {
 export const OpenRouter: Story = {
 	decorators: [
 		(Story) => (
-			<MockAgentDecorator provider="openrouter" model="qwen/qwen3-coder:free">
+			<MockAgentDecorator provider="openrouter" model="z-ai/glm-5.1">
 				<div className="flex min-h-[500px] items-end p-4">
 					<Story />
 				</div>

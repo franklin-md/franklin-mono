@@ -77,17 +77,25 @@ export type {
 // ---------------------------------------------------------------------------
 export type { IconProps } from './icons/types.js';
 export { Anthropic } from './icons/anthropic.js';
+export { ChatGLM } from './icons/chatglm.js';
 export { Claude } from './icons/claude.js';
+export { Codex } from './icons/codex.js';
 export { Cohere } from './icons/cohere.js';
 export { DeepSeek } from './icons/deepseek.js';
 export { Gemini } from './icons/gemini.js';
 export { Google } from './icons/google.js';
 export { Groq } from './icons/groq.js';
+export { Kimi } from './icons/kimi.js';
 export { Meta } from './icons/meta.js';
+export { MiniMax } from './icons/minimax.js';
 export { Mistral } from './icons/mistral.js';
+export { Moonshot } from './icons/moonshot.js';
 export { Ollama } from './icons/ollama.js';
 export { OpenAI } from './icons/openai.js';
 export { OpenRouter } from './icons/openrouter.js';
 export { Perplexity } from './icons/perplexity.js';
 export { Qwen } from './icons/qwen.js';
+export { Xiaomi } from './icons/xiaomi.js';
+export { XiaomiMiMo } from './icons/xiaomi-mimo.js';
 export { XAI } from './icons/xai.js';
+export { ZAI } from './icons/zai.js';

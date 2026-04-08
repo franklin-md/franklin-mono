@@ -17,7 +17,7 @@ import {
 
 import type { CatalogModel } from '../models/catalog.js';
 import { MODEL_CATALOG } from '../models/catalog.js';
-import { ProviderIcon } from '../provider-icons.js';
+import { ModelIcon } from '../provider-icons.js';
 import { ProviderSection } from './provider-section.js';
 
 export function ModelSelector() {
@@ -52,10 +52,7 @@ export function ModelSelector() {
 					className="h-auto gap-1.5 px-2 py-1 text-xs text-muted-foreground"
 				>
 					{selectedEntry && (
-						<ProviderIcon
-							provider={selectedEntry.provider}
-							className="h-3.5 w-3.5"
-						/>
+						<ModelIcon model={selectedEntry} className="h-3.5 w-3.5" />
 					)}
 					<span className="max-w-[140px] truncate">
 						{selectedEntry?.name ?? 'Select model'}
