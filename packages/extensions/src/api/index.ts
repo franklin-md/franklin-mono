@@ -30,7 +30,9 @@ export type {
 	FilesystemConfig,
 	NetworkConfig,
 	EnvironmentConfig,
+	WebAPI,
 } from './environment/index.js';
+
 export type { StoreAPI } from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';
 export type { Sharing, ForkMode } from './store/index.js';

@@ -20,6 +20,7 @@ export type {
 	EnvironmentConfig,
 	FilesystemConfig,
 	NetworkConfig,
+	WebAPI,
 	StoreAPI,
 	ReadonlyStore,
 	Store,
@@ -116,6 +117,7 @@ export {
 	writeExtension,
 	readExtension,
 	bashExtension,
+	createWebFetchExtension,
 } from './extensions/index.js';
 
 export { createTodoControl, createStatusControl } from './extensions/index.js';
@@ -131,3 +133,9 @@ export type {
 } from './extensions/conversation/types.js';
 export type { Todo, TodoControl } from './extensions/todo/types.js';
 export type { StatusState, StatusControl } from './extensions/status/types.js';
+export { DEFAULT_WEB_FETCH_OPTIONS } from './extensions/web-fetch/types.js';
+export type { WebFetchExtensionOptions } from './extensions/web-fetch/types.js';
+export type {
+	WebFetchProcessedResult,
+	ResolvedWebFetchExtensionOptions,
+} from './extensions/web-fetch/types.js';
