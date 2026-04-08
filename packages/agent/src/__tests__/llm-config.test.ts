@@ -7,7 +7,11 @@ import { getLLMConfig, setLLMConfig } from '../settings/llm-config.js';
 // ---------------------------------------------------------------------------
 
 function mockRuntime(
-	llmConfig: { provider?: string; model?: string; reasoning?: string } = {},
+	llmConfig: {
+		provider?: string;
+		model?: string;
+		reasoning?: string;
+	} = {},
 ): CoreRuntime {
 	return {
 		state: vi.fn(async () => ({

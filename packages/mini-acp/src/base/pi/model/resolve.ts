@@ -5,9 +5,10 @@ import {
 	type Model,
 } from '@mariozechner/pi-ai';
 
-import type { Ctx } from '../../types/context.js';
-import { StopCode } from '../../types/stop-code.js';
-import type { TurnEnd } from '../../types/stream.js';
+import type { Ctx } from '../../../types/context.js';
+import { StopCode } from '../../../types/stop-code.js';
+import type { TurnEnd } from '../../../types/stream.js';
+import { withOpenRouterHeaders } from './headers.js';
 
 export type ResolveSuccess = { ok: true; model: Model<string> };
 export type ResolveFailure = { ok: false; turnEnd: TurnEnd };
@@ -50,5 +51,8 @@ export function resolveModel(config: Ctx['config']): ResolveResult {
 		);
 	}
 
-	return { ok: true, model: model as Model<string> };
+	return {
+		ok: true,
+		model: withOpenRouterHeaders(config, model as Model<string>),
+	};
 }

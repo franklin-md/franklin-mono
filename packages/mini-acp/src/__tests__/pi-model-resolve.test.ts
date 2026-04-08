@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveModel } from '../base/pi/model-resolve.js';
+import { resolveModel } from '../base/pi/model/resolve.js';
 import { StopCode } from '../types/stop-code.js';
 
 describe('resolveModel', () => {
@@ -13,6 +13,19 @@ describe('resolveModel', () => {
 		expect(result.ok && result.model).toMatchObject({
 			provider: 'openrouter',
 			id: 'openrouter/free',
+		});
+	});
+
+	it('adds hardcoded OpenRouter attribution headers for OpenRouter models', () => {
+		const result = resolveModel({
+			provider: 'openrouter',
+			model: 'openrouter/free',
+		});
+
+		expect(result.ok).toBe(true);
+		expect(result.ok && result.model.headers).toMatchObject({
+			'HTTP-Referer': 'https://franklin.app',
+			'X-OpenRouter-Title': 'Franklin',
 		});
 	});
 

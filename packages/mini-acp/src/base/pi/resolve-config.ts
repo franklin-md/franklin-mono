@@ -1,7 +1,7 @@
 import type { Ctx } from '../../types/context.js';
 import { StopCode } from '../../types/stop-code.js';
-import type { ResolveResult } from './model-resolve.js';
-import { resolveModel } from './model-resolve.js';
+import type { ResolveResult } from './model/resolve.js';
+import { resolveModel } from './model/resolve.js';
 
 export function resolveConfig(config: Ctx['config']): ResolveResult {
 	const modelResult = resolveModel(config);

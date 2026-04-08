@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { resolveConfig } from '../base/pi/resolve-config.js';
 import { StopCode } from '../types/stop-code.js';
+import { OPENROUTER_APP_TITLE } from '../base/pi/model/headers.js';
+import { OPENROUTER_APP_URL } from '../base/pi/model/headers.js';
 
 describe('resolveConfig', () => {
 	it('returns the model when config is fully valid', () => {
@@ -14,6 +16,20 @@ describe('resolveConfig', () => {
 		expect(result.ok && result.model).toMatchObject({
 			provider: 'openrouter',
 			id: 'openrouter/free',
+		});
+	});
+
+	it('adds hardcoded OpenRouter attribution headers on the resolved model', () => {
+		const result = resolveConfig({
+			provider: 'openrouter',
+			model: 'openrouter/free',
+			apiKey: 'sk-test-key',
+		});
+
+		expect(result.ok).toBe(true);
+		expect(result.ok && result.model.headers).toMatchObject({
+			'HTTP-Referer': OPENROUTER_APP_URL,
+			'X-OpenRouter-Title': OPENROUTER_APP_TITLE,
 		});
 	});
 
