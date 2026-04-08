@@ -65,7 +65,10 @@ Franklin is an extension runtime for minimal agent loops.
 - `@franklin/react` — React hooks and provider
 - `@franklin/demo` — Electron demo app
 
-## Code conventions
+## Workflow Conventions
+
+### Project Management:
+- **Use of Linear** - we use linear to keep track of tickets. When starting work from a particular ticket, also pull in the project description, comments, related issues etc to gain a comprehensive understanding of the: the problem, a consistent methodology for implementing problems of that class.
 
 ### Code Style
 
