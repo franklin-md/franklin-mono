@@ -7,7 +7,7 @@ export function bindPiAgent(transport: AgentProtocol): void {
 	const connection = createAgentConnection(transport);
 	connection.bind(
 		createSessionAdapter(
-			(ctx, server) => createPiAdapter({ server, ctx }),
+			(ctx, server) => createPiAdapter({ ctx, server }),
 			connection.remote,
 		),
 	);

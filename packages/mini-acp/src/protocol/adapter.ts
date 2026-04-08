@@ -11,27 +11,23 @@ import type { Ctx } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import { trackAgent, trackTurn } from './tracking.js';
 
-const noopServer: TurnServer = {
-	toolExecute: () => Promise.reject(new Error('no tool server')),
-};
-
 /**
  * Wraps a lazily-created TurnClient as a full MiniACPClient.
  *
  * The adapter manages context tracking and agent lifecycle:
  * - `initialize()` acknowledges session start
  * - `setContext()` applies partial ctx to the tracker and invalidates the agent
- * - `prompt()` lazily creates the agent, tracks user + response messages
- * - `cancel()` forwards to the current agent (if any)
+ * - `prompt()` lazily creates the turn client, tracks user + response messages
+ * - `cancel()` forwards to the current turn client (if any)
  *
  */
 export function createSessionAdapter(
-	getAgent: (ctx: Ctx, server: TurnServer) => TurnClient,
-	server?: TurnServer,
+	createTurnClient: (ctx: Ctx, server: TurnServer) => TurnClient,
+	server: TurnServer,
 ): MuClient {
 	const tracker = new CtxTracker();
 	let currentTurn: TurnClient | null = null;
-	const trackedServer = server ? trackAgent(tracker, server) : noopServer;
+	const trackedServer = trackAgent(tracker, server);
 
 	return {
 		async initialize() {},
@@ -46,7 +42,10 @@ export function createSessionAdapter(
 		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
 			// TODO: We should reject a prompt if there is a turn in progress.
 			// TODO: Turn this into a testable spec point.
-			currentTurn = trackTurn(tracker, getAgent(tracker.get(), trackedServer));
+			currentTurn = trackTurn(
+				tracker,
+				createTurnClient(tracker.get(), trackedServer),
+			);
 			yield* currentTurn.prompt(message);
 			currentTurn = null;
 		},

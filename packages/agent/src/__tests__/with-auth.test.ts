@@ -56,18 +56,21 @@ function mockCoreRuntime(): CoreRuntime {
 function createMockSpawn() {
 	return async () => {
 		const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
+		const connection = createAgentConnection(agentSide);
 
-		const adapter = createSessionAdapter((_ctx) => ({
-			async *prompt() {
-				yield {
-					type: 'turnEnd' as const,
-					stopCode: StopCode.Finished,
-				};
-			},
-			async cancel() {},
-		}));
-		const { bind } = createAgentConnection(agentSide);
-		bind(adapter);
+		const adapter = createSessionAdapter(
+			(_ctx) => ({
+				async *prompt() {
+					yield {
+						type: 'turnEnd' as const,
+						stopCode: StopCode.Finished,
+					};
+				},
+				async cancel() {},
+			}),
+			connection.remote,
+		);
+		connection.bind(adapter);
 
 		return {
 			...clientSide,
