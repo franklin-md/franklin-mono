@@ -1,10 +1,11 @@
-import type { CtxTracker } from '@franklin/mini-acp';
 import {
+	trackAgent,
+	trackClient,
 	createClientConnection,
+	type CtxTracker,
 	type ClientProtocol,
 	type MiniACPClient,
 	type MiniACPAgent,
-	type StreamEvent,
 } from '@franklin/mini-acp';
 import { apply } from '../../api/core/middleware/apply.js';
 import type { FullMiddleware } from '../../api/core/middleware/types.js';
@@ -21,15 +22,17 @@ const defaultAgent: MiniACPAgent = {
 
 /**
  * Create a raw client connection to the transport and bind
- * the server middleware. Returns the raw (unwrapped) client.
+ * the server middleware. Wraps the agent binding with trackAgent
+ * so the client-side tracker sees tool calls and results.
  */
 export function createRawClient(
 	transport: ClientProtocol,
 	serverMiddleware: FullMiddleware['server'],
+	tracker: CtxTracker,
 ): MiniACPClient {
 	const wrappedAgent = apply(serverMiddleware, defaultAgent);
 	const connection = createClientConnection(transport);
-	connection.bind(wrappedAgent);
+	connection.bind(trackAgent(tracker, wrappedAgent));
 	return connection.remote;
 }
 
@@ -42,31 +45,5 @@ export function wrapClient(
 	tracker: CtxTracker,
 	clientMiddleware: FullMiddleware['client'],
 ): MiniACPClient {
-	const tracked = trackClient(rawClient, tracker);
-	return apply(clientMiddleware, tracked);
-}
-
-export function trackClient(
-	client: MiniACPClient,
-	tracker: CtxTracker,
-): MiniACPClient {
-	return {
-		initialize: client.initialize.bind(client),
-		cancel: client.cancel.bind(client),
-
-		async setContext(ctx) {
-			tracker.apply(ctx);
-			return client.setContext(ctx);
-		},
-
-		async *prompt(message): AsyncIterable<StreamEvent> {
-			tracker.append(message);
-			for await (const event of client.prompt(message)) {
-				if (event.type === 'update') {
-					tracker.append(event.message);
-				}
-				yield event;
-			}
-		},
-	};
+	return apply(clientMiddleware, trackClient(tracker, rawClient));
 }

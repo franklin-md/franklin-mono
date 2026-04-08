@@ -115,7 +115,7 @@ export function createCoreCompiler(
 			seedTracker(tracker, state.core);
 
 			// 2. Create raw client and initialize agent process
-			const rawClient = createRawClient(transport, middleware.server);
+			const rawClient = createRawClient(transport, middleware.server, tracker);
 			await initializeRawClient(rawClient, state.core);
 
 			// 3. Wrap with tracker + client middleware for ongoing operations
