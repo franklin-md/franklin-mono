@@ -18,6 +18,7 @@ Take a Linear issue from specification to tested, production-ready code. This sk
 These rules apply to this skill and ALL agents it spawns. Violations are unacceptable.
 
 ### Bash: ALLOWED
+
 - Running tests (`npm run test`, `npx vitest`, etc.)
 - Running linters and formatters (`npm run lint`, `npm run format`, `npm run build`, etc.)
 - Running type checkers (`npm run typecheck`, `tsc --noEmit`, etc.)
@@ -26,6 +27,7 @@ These rules apply to this skill and ALL agents it spawns. Violations are unaccep
 - Build commands (`npm run build`, etc.)
 
 ### Bash: NEVER ALLOWED
+
 - `git commit`, `git push`, `git pull`, `git fetch`
 - `git reset`, `git checkout .`, `git restore`, `git clean`, `git stash`
 - `git rebase`, `git merge`, `git cherry-pick`
@@ -41,12 +43,14 @@ These rules apply to this skill and ALL agents it spawns. Violations are unaccep
 Launch these tasks **in parallel**:
 
 ### Agent 1: Linear & Context Setup
+
 - Fetch the Linear issue details (title, description, comments, attachments, labels)
 - If there are images in the issue description or comments, extract and view them
 - Note the issue ID for branch naming (format: `fra-XXX-kebab-case-description`)
 - Update Linear issue status to "In Progress"
 
 ### Agent 2: Project Environment Analysis
+
 - Read all CLAUDE.md files in the current worktree
 - Confirm TypeScript/Node.js project with Vitest for testing, ESLint + Prettier for lint/format
 - Identify test patterns: `__tests__/*.test.ts` convention, vitest
@@ -54,7 +58,8 @@ Launch these tasks **in parallel**:
 - Verify LSP configuration is appropriate
 
 ### Agent 3: Codebase Structure Scan
-- Map the high-level package structure (packages/*)
+
+- Map the high-level package structure (packages/\*)
 - Identify key architectural patterns (bottom-up: lib → transport → mini-acp → extensions → agent)
 - Find the main entry points and module boundaries
 - Catalog existing test locations and patterns
@@ -71,12 +76,14 @@ Using the Linear issue spec and Phase 1 context, launch **two sequential passes*
 ### Pass 1: Specification Grounding (parallel agents)
 
 **Agent A: Spec-to-Code Mapping**
+
 - Read the full issue spec (description, comments, acceptance criteria)
 - Search the codebase for every entity, component, function, and concept mentioned in the spec
 - For each, note: current behavior, file location, dependencies
 - Identify any ambiguities or gaps between the spec and existing code
 
 **Agent B: Dependency & Impact Tracing**
+
 - For each file/component identified in Agent A's work, trace:
   - What imports it (consumers)
   - What it imports (dependencies)
@@ -84,6 +91,7 @@ Using the Linear issue spec and Phase 1 context, launch **two sequential passes*
 - Build a mental model of the blast radius of changes
 
 ### Pass 2: Change Location Mapping
+
 - Using combined output from Pass 1, determine the **exact files and functions** that need modification
 - Categorize changes:
   - **New code**: files/functions to create
@@ -101,11 +109,13 @@ Using the Linear issue spec and Phase 1 context, launch **two sequential passes*
 Before presenting the plan, analyze refactoring opportunities:
 
 **Agent R1: Code Duplication Analysis**
+
 - Search for duplicated logic across the files identified for change
 - Identify opportunities to extract shared utilities
 - Note any copy-paste patterns that should be consolidated
 
 **Agent R2: Structure & Organization Analysis**
+
 - Check if any files are too large and should be split
 - Identify misplaced code (functions in wrong modules)
 - Look for naming inconsistencies
@@ -149,12 +159,15 @@ Execute the approved plan using test-driven development:
    - Keep tests passing throughout
 
 ### After all steps complete:
+
 - Run the full set of affected tests (not the entire suite)
 - Run linters and formatters (`npm run build && npm run lint && npm run format`)
 - Fix any issues
 
 ### User Checkpoints During Implementation
+
 **Stop and ask before:**
+
 - Breaking API changes
 - Deleting files or significant code
 - Schema or interface changes affecting other packages
@@ -167,6 +180,7 @@ Execute the approved plan using test-driven development:
 Launch these **in parallel**:
 
 ### Agent T1: Behavior Change Inventory
+
 - Analyze the full diff of all changes made
 - Catalog every behavior change:
   - New behaviors added
@@ -176,6 +190,7 @@ Launch these **in parallel**:
 - For each, note whether it was explicitly requested in the spec or is a consequence
 
 ### Agent T2: Affected Test Discovery
+
 - Use import/dependency tracing to find ALL existing tests that touch changed code
 - Run these tests to confirm they still pass
 - If any fail, categorize:
@@ -183,6 +198,7 @@ Launch these **in parallel**:
   - **Unexpected failure** (regression) → needs investigation
 
 ### Agent T3: Coverage Gap Analysis
+
 - Compare the behavior change inventory against existing test coverage
 - Identify behaviors that are:
   - **Covered**: existing tests verify this behavior
@@ -215,11 +231,13 @@ Present to the user:
 ## Phase 7: Execute Testing Plan
 
 ### For each test in the approved plan:
+
 1. Write the test
 2. Run it—confirm expected result (pass for coverage tests, initially fail then fix for regression tests)
 3. If a test reveals an actual bug, flag it to the user immediately
 
 ### After all tests:
+
 - Run the full affected test suite
 - Run `npm run build && npm run lint && npm run format`
 - Confirm everything is green
@@ -229,6 +247,7 @@ Present to the user:
 ## Phase 8: Final Quality Pass
 
 ### Present a summary:
+
 1. **What was implemented**: Brief description tied to the original spec
 2. **Files changed**: List with brief descriptions of changes
 3. **Test coverage**: New and updated tests

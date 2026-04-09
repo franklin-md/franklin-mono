@@ -35,8 +35,6 @@ File searching (use Glob instead of find/ls)
 Content searching (use Grep instead of grep/rg) if available.
 `;
 
-export const spawnDescription = 'Spawn a new agent';
-
 export const addTodoDescription = 'Add a new todo item';
 
 export const completeTodoDescription = 'Mark a todo item as completed';

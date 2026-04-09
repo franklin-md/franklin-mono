@@ -23,7 +23,7 @@ export function AgentSidebar({
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
 
 	const handleSpawnAgent = useCallback(async () => {
-		const session = await manager.new({
+		const session = await manager['new']({
 			core: { llmConfig: settings.get().defaultLLMConfig },
 			env: {
 				fsConfig: {
@@ -33,8 +33,8 @@ export function AgentSidebar({
 				netConfig: { allowedDomains: [], deniedDomains: [] },
 			},
 		});
-		setCurrentAgentId(session.sessionId);
-		onSelectAgent(session.sessionId, session.runtime);
+		setCurrentAgentId(session.session.id);
+		onSelectAgent(session.session.id, session);
 	}, [manager, settings, onSelectAgent]);
 
 	const handleSelectAgent = useCallback(
@@ -52,11 +52,11 @@ export function AgentSidebar({
 			// If we just deleted the active session, select another agent
 			// TODO: refactor selection logic more generally
 			if (currentAgentId === sessionId) {
-				const remaining = sessions.filter((s) => s.sessionId !== sessionId);
+				const remaining = sessions.filter((s) => s.session.id !== sessionId);
 				const [next] = remaining;
 				if (next) {
-					setCurrentAgentId(next.sessionId);
-					onSelectAgent(next.sessionId, next.runtime);
+					setCurrentAgentId(next.session.id);
+					onSelectAgent(next.session.id, next);
 				} else {
 					setCurrentAgentId(null);
 				}
@@ -87,12 +87,12 @@ export function AgentSidebar({
 						</p>
 					) : (
 						sessions.map((session) => (
-							<AgentProvider key={session.sessionId} agent={session.runtime}>
+							<AgentProvider key={session.session.id} agent={session}>
 								<AgentSidebarItem
-									sessionId={session.sessionId}
-									active={session.sessionId === currentAgentId}
+									sessionId={session.session.id}
+									active={session.session.id === currentAgentId}
 									onSelect={(sessionId) =>
-										handleSelectAgent(sessionId, session.runtime)
+										handleSelectAgent(sessionId, session)
 									}
 									onDelete={(sessionId) => void handleDeleteAgent(sessionId)}
 								/>

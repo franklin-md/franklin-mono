@@ -61,9 +61,7 @@ export function FranklinProvider({
 				// TODO: Should we make this optional?
 				await created.start();
 				if (cancelledRef.current) {
-					await Promise.allSettled(
-						created.agents.list().map((s) => s.runtime.dispose()),
-					);
+					// TODO: We probably want app.dispose().
 				} else {
 					setApp(created);
 				}
@@ -77,9 +75,7 @@ export function FranklinProvider({
 		return () => {
 			cancelledRef.current = true;
 			if (created) {
-				void Promise.allSettled(
-					created.agents.list().map((s) => s.runtime.dispose()),
-				);
+				// TODO: We probably want app.dispose().
 			}
 		};
 	}, [extensions, platform]);

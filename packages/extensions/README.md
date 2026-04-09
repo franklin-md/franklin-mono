@@ -2,6 +2,17 @@
 
 Plugin system for Franklin's agent runtime. Extensions register tools, lifecycle handlers, and reactive stores that are compiled into client + server middleware.
 
+## APIs
+An API is intended to solve a particular class of problems. Implemented so far:
+- **CoreAPI**: Extends a minimal agent loop with tools and context management.
+- **StoreAPI**: Allows sharing state between agent-agent and agent-app
+- **EnvironmentAPI**: Localizes agent actions within a sandboxed environement.
+- **SessionAPI**: Let's the agent know it's position within an agent orchestration tree, and perform actions relative to it.
+
+## Extension Algebra [TODO after reading about tagless style article]
+- [ ] Extensions, APis, Compilers, Runtimes, RuntimeSystems
+
+
 ## Extension Authoring Rules
 
 These are architectural invariants, not conventions. They should eventually become ESLint rules.

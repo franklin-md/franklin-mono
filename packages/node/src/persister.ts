@@ -1,5 +1,5 @@
 import { createPersistence } from '@franklin/agent';
-import type { SessionSnapshot, FranklinState } from '@franklin/agent';
+import type { FranklinState } from '@franklin/agent';
 import type { Persister } from '@franklin/lib';
 import type { StoreSnapshot } from '@franklin/extensions';
 
@@ -12,7 +12,7 @@ import { createNodeFilesystem } from './platform/filesystem.js';
  * `createNodeFilesystem`.
  */
 export function createNodePersistence(dir: string): {
-	session: Persister<SessionSnapshot<FranklinState>>;
+	session: Persister<FranklinState>;
 	store: Persister<StoreSnapshot>;
 } {
 	return createPersistence<FranklinState>(dir, createNodeFilesystem());

@@ -9,8 +9,7 @@ import {
 } from '@franklin/mini-acp';
 import { loginAgent, withAuth, syncAuth } from '../auth/with-auth.js';
 import type { AuthChangeListener, IAuthManager } from '../auth/types.js';
-import { SessionRegistry } from '../agent/session/registry.js';
-import type { FranklinState, FranklinRuntime } from '../types.js';
+import type { FranklinRuntime } from '../types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -359,24 +358,26 @@ describe('syncAuth', () => {
 				return () => {};
 			},
 		);
-		const sessions = new SessionRegistry<FranklinState, FranklinRuntime>();
 
-		syncAuth(sessions, auth);
+		const runtimes: FranklinRuntime[] = [];
+
+		syncAuth(() => [...runtimes], auth);
 
 		function fireAuthChange(provider: string, key: string | undefined) {
 			return captured!(provider, key);
 		}
 
-		return { sessions, fireAuthChange };
+		function addRuntime(runtime: FranklinRuntime) {
+			runtimes.push(runtime);
+		}
+
+		return { addRuntime, fireAuthChange };
 	}
 
 	it('pushes new key to sessions matching the provider', async () => {
-		const { sessions, fireAuthChange } = setup();
+		const { addRuntime, fireAuthChange } = setup();
 		const runtime = mockFranklinRuntime('anthropic');
-		sessions.register(
-			{ sessionId: 's1', runtime },
-			{ sessionId: 's1', state: await runtime.state() },
-		);
+		addRuntime(runtime);
 
 		await fireAuthChange('anthropic', 'sk-new');
 
@@ -386,12 +387,9 @@ describe('syncAuth', () => {
 	});
 
 	it('skips sessions that use a different provider', async () => {
-		const { sessions, fireAuthChange } = setup();
+		const { addRuntime, fireAuthChange } = setup();
 		const runtime = mockFranklinRuntime('openai');
-		sessions.register(
-			{ sessionId: 's1', runtime },
-			{ sessionId: 's1', state: await runtime.state() },
-		);
+		addRuntime(runtime);
 
 		await fireAuthChange('anthropic', 'sk-new');
 
@@ -399,12 +397,9 @@ describe('syncAuth', () => {
 	});
 
 	it('passes undefined apiKey on key revocation', async () => {
-		const { sessions, fireAuthChange } = setup();
+		const { addRuntime, fireAuthChange } = setup();
 		const runtime = mockFranklinRuntime('anthropic');
-		sessions.register(
-			{ sessionId: 's1', runtime },
-			{ sessionId: 's1', state: await runtime.state() },
-		);
+		addRuntime(runtime);
 
 		await fireAuthChange('anthropic', undefined);
 

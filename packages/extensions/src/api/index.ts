@@ -46,3 +46,9 @@ export {
 export { StoreRegistry } from './store/index.js';
 export type { StoreEntry, StoreMapping } from './store/index.js';
 export type { StoreSnapshot } from './store/index.js';
+export type {
+	SessionAPI,
+	SessionRuntime,
+	SessionTree,
+} from './session/index.js';
+export { SessionCollection } from './session/index.js';

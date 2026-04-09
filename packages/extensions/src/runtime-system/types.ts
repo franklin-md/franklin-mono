@@ -11,6 +11,11 @@ export type RuntimeSystem<
 	createCompiler(state: S): Promise<Compiler<API, RT>>;
 };
 
+export type SessionSpawn<
+	S extends Record<string, unknown>,
+	RT extends RuntimeBase<S>,
+> = (state: S) => Promise<RT>;
+
 // ---------------------------------------------------------------------------
 // Inference helpers — extract type parameters from a RuntimeSystem or Runtime
 // ---------------------------------------------------------------------------
