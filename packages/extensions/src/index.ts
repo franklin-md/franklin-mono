@@ -15,6 +15,7 @@ export type {
 	ClientMiddleware,
 	ServerMiddleware,
 	FullMiddleware,
+	DependencyAPI,
 	EnvironmentAPI,
 	Environment,
 	EnvironmentConfig,
@@ -76,6 +77,8 @@ export { createCoreSystem } from './runtime-system/index.js';
 export type { CoreSystem } from './runtime-system/index.js';
 export { createStoreSystem } from './runtime-system/index.js';
 export type { StoreSystem } from './runtime-system/index.js';
+export { createDependencySystem } from './runtime-system/index.js';
+export type { DependencySystem } from './runtime-system/index.js';
 export { createEnvironmentSystem } from './runtime-system/index.js';
 export type { EnvironmentSystem } from './runtime-system/index.js';
 export type { EnvironmentFactory } from './runtime-system/index.js';

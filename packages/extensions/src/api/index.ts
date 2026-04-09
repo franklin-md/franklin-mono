@@ -24,6 +24,7 @@ export { isContentBlockResult } from './core/index.js';
 export { toolSpec } from './core/index.js';
 export { serializeTool, toToolInputSchema } from './core/index.js';
 export { apply } from './core/index.js';
+export type { DependencyAPI } from './dependency/index.js';
 export type { EnvironmentAPI } from './environment/index.js';
 export type {
 	Environment,
