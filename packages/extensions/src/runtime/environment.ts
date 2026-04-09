@@ -15,6 +15,7 @@ export function createEnvironmentRuntime(
 	const observed: typeof environment = {
 		filesystem: environment.filesystem,
 		terminal: environment.terminal,
+		web: environment.web,
 		config: () => environment.config(),
 		async reconfigure(config) {
 			await environment.reconfigure(config);

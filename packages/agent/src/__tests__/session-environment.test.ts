@@ -41,6 +41,7 @@ function mockEnvironment(config: EnvironmentConfig): Environment {
 			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 		},
 		terminal: { exec: vi.fn() },
+		web: { fetch: vi.fn() },
 		config: vi.fn(async () => ({ ...config })),
 		reconfigure: vi.fn(async () => {}),
 	};

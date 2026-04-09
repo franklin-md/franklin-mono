@@ -68,6 +68,7 @@ function mockEnvironmentFactory(): EnvironmentFactory {
 			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 		},
 		terminal: { exec: vi.fn() },
+		web: { fetch: vi.fn() },
 		config: vi.fn(async () => ({ ...config })),
 		reconfigure: vi.fn(async () => {}),
 		dispose: vi.fn(async () => {}),

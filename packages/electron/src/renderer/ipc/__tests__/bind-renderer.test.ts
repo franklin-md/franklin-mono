@@ -88,6 +88,20 @@ describe('bindRenderer', () => {
 							stderr: '',
 						})),
 					},
+					web: {
+						fetch: vi.fn(async () => ({
+							requestedUrl: 'https://example.com',
+							finalUrl: 'https://example.com',
+							status: 200,
+							statusText: 'OK',
+							contentType: 'text/plain',
+							kind: 'text',
+							text: '',
+							truncated: false,
+							isError: false,
+							cacheable: true,
+						})),
+					},
 					config: vi.fn(async () => ({
 						fsConfig: {
 							cwd: '/tmp',

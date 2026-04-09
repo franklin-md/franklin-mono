@@ -32,8 +32,13 @@ File reading (use Read instead of cat/head/tail)
 File editing (use Edit instead of sed/awk)
 File writing (use Write instead of echo >)
 File searching (use Glob instead of find/ls)
-Content searching (use Grep instead of grep/rg) if available.
 `;
+
+export const webFetchDescription = `Fetch a public web page or text document over HTTP/HTTPS.
+Use this when current knowledge is insufficient and you need the latest page contents.
+Returns cleaned, truncated text from public pages. All content fetched will be capped at 1 GB.
+This tool cannot log in, click, run JavaScript, use cookies, or access private browser sessions.
+It may fail on client-rendered pages, protected sites, PDFs, or unsupported content types.`;
 
 export const spawnDescription = 'Spawn a new agent';
 

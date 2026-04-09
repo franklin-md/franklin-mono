@@ -1,4 +1,4 @@
-import type { UserContent } from '@franklin/mini-acp';
+import type { ToolResultContent } from '@franklin/mini-acp';
 
 /**
  * Structured content-block result for tools that produce
@@ -8,7 +8,8 @@ import type { UserContent } from '@franklin/mini-acp';
  * wrapping in buildToolExecuteMiddleware.
  */
 export interface ContentBlockResult {
-	content: Array<UserContent>;
+	content: ToolResultContent[];
+	isError?: boolean;
 }
 
 export function isContentBlockResult(

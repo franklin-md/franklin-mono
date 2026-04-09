@@ -26,6 +26,7 @@
 		"@agentclientprotocol/sdk": "^0.16.1",
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
+		"@mozilla/readability": "^0.6.0",
 		"@noble/hashes": "^2.0.1",
 		"immer": "^10.2.0"
 	}
