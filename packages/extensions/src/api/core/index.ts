@@ -7,7 +7,12 @@ export type {
 	StreamObserverHandler,
 	StreamObserverParamsMap,
 } from './events.js';
-export type { ExtensionToolDefinition } from './tool.js';
+export type {
+	ExtensionToolDefinition,
+	ToolOutput,
+	ToolExecuteReturn,
+} from './tool.js';
+export { resolveToolOutput } from './tool.js';
 export type { ToolSpec, ToolArgs } from './tool-spec.js';
 export { toolSpec } from './tool-spec.js';
 export type {
@@ -16,8 +21,6 @@ export type {
 	SerializedToolDefinition,
 } from './tools/index.js';
 export { serializeTool, toToolInputSchema } from './tools/index.js';
-export type { ContentBlockResult } from './content-block.js';
-export { isContentBlockResult } from './content-block.js';
 export type {
 	MethodMiddleware,
 	Middleware,

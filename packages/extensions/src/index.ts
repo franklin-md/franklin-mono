@@ -9,7 +9,8 @@ export type {
 	ToolDefinition,
 	AnyToolDefinition,
 	SerializedToolDefinition,
-	ContentBlockResult,
+	ToolOutput,
+	ToolExecuteReturn,
 	MethodMiddleware,
 	Middleware,
 	ClientMiddleware,
@@ -31,7 +32,7 @@ export type {
 	StoreValueType,
 } from './api/index.js';
 export { compose, composeMethod, passThrough } from './api/index.js';
-export { isContentBlockResult } from './api/index.js';
+export { resolveToolOutput } from './api/index.js';
 export { toolSpec } from './api/index.js';
 export { serializeTool, toToolInputSchema } from './api/index.js';
 export { apply } from './api/index.js';

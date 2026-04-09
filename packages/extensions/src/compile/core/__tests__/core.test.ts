@@ -14,6 +14,7 @@ import type {
 	ToolExecuteParams,
 	Update,
 } from '@franklin/mini-acp';
+import { resolveToolOutput } from '../../../api/core/tool.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -184,9 +185,9 @@ describe('buildCore – registerTool()', () => {
 		name: 'myTool',
 		description: 'A test tool',
 		schema: z.object({ input: z.string() }),
-		execute: vi.fn(async (params: { input: string }) => ({
-			result: params.input.toUpperCase(),
-		})),
+		execute: vi.fn(async (params: { input: string }) =>
+			params.input.toUpperCase(),
+		),
 	};
 
 	it('short-circuits toolExecute for matching tool', async () => {
@@ -218,7 +219,7 @@ describe('buildCore – registerTool()', () => {
 		expect(result.toolCallId).toBe('call-1');
 		expect(result.content[0]).toEqual({
 			type: 'text',
-			text: JSON.stringify({ result: 'HELLO' }),
+			text: 'HELLO',
 		});
 		expect(next).not.toHaveBeenCalled();
 	});
@@ -247,6 +248,114 @@ describe('buildCore – registerTool()', () => {
 
 		expect(next).toHaveBeenCalled();
 		expect(result.toolCallId).toBe('other-call');
+	});
+
+	it('catches tool execute errors and returns isError result', async () => {
+		const error = new Error('tool exploded');
+		const failingTool = {
+			name: 'failTool',
+			description: 'A tool that throws',
+			schema: z.object({}),
+			execute: vi.fn(async () => {
+				throw error;
+			}),
+		};
+
+		const mw = await compileExt((api) => {
+			api.registerTool(failingTool);
+		});
+
+		const next = vi.fn();
+
+		const result = await mw.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'call-fail',
+					name: 'failTool',
+					arguments: {},
+				},
+			},
+			next,
+		);
+
+		expect(result.toolCallId).toBe('call-fail');
+		expect(result.isError).toBe(true);
+		expect(result.content[0]).toEqual({
+			type: 'text',
+			text: 'Error: tool exploded',
+		});
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it('catches non-Error throws and returns isError result', async () => {
+		const failingTool = {
+			name: 'failTool',
+			description: 'A tool that throws a string',
+			schema: z.object({}),
+			execute: vi.fn(async () => {
+				// eslint-disable-next-line @typescript-eslint/only-throw-error
+				throw 'raw string error';
+			}),
+		};
+
+		const mw = await compileExt((api) => {
+			api.registerTool(failingTool);
+		});
+
+		const next = vi.fn();
+
+		const result = await mw.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'call-fail-2',
+					name: 'failTool',
+					arguments: {},
+				},
+			},
+			next,
+		);
+
+		expect(result.toolCallId).toBe('call-fail-2');
+		expect(result.isError).toBe(true);
+		expect(result.content[0]).toEqual({
+			type: 'text',
+			text: 'raw string error',
+		});
+	});
+
+	it('still notifies toolResult observer when tool throws', async () => {
+		const results: Array<{ toolCallId: string; isError?: boolean }> = [];
+
+		const mw = await compileExt((api) => {
+			api.registerTool({
+				name: 'failTool',
+				description: 'throws',
+				schema: z.object({}),
+				execute: async () => {
+					throw new Error('boom');
+				},
+			});
+			api.on('toolResult', (event) => {
+				results.push({
+					toolCallId: event.toolCallId,
+					isError: event.isError,
+				});
+			});
+		});
+
+		const wrapped = apply(mw.server, stubAgent());
+		await wrapped.toolExecute({
+			call: {
+				type: 'toolCall',
+				id: 'call-obs',
+				name: 'failTool',
+				arguments: {},
+			},
+		});
+
+		expect(results).toEqual([{ toolCallId: 'call-obs', isError: true }]);
 	});
 
 	it('injects tool definitions into setContext', async () => {
@@ -323,9 +432,9 @@ describe('buildCore – registerTool() spec overload', () => {
 			'Doubles a number',
 			z.object({ value: z.number() }),
 		);
-		const executeFn = vi.fn(async (params: { value: number }) => ({
-			doubled: params.value * 2,
-		}));
+		const executeFn = vi.fn(async (params: { value: number }) =>
+			JSON.stringify({ doubled: params.value * 2 }),
+		);
 
 		const mw = await compileExt((api) => {
 			api.registerTool(spec, executeFn);
@@ -677,7 +786,7 @@ describe('compileAll', () => {
 				name: 'tool1',
 				description: 'Tool 1',
 				schema: z.object({}),
-				execute: async () => ({ result: 'tool1' }),
+				execute: async () => 'tool1',
 			});
 		};
 
@@ -686,7 +795,7 @@ describe('compileAll', () => {
 				name: 'tool2',
 				description: 'Tool 2',
 				schema: z.object({}),
-				execute: async () => ({ result: 'tool2' }),
+				execute: async () => 'tool2',
 			});
 		};
 
@@ -988,7 +1097,7 @@ describe('buildCore – tool observers', () => {
 				name: 'myTool',
 				description: 'A test tool',
 				schema: z.object({ input: z.string() }),
-				execute: async ({ input }) => ({ result: input.toUpperCase() }),
+				execute: async ({ input }) => input.toUpperCase(),
 			});
 			api.on('toolCall', (event) => {
 				calls.push(event.call.id);
@@ -1011,5 +1120,63 @@ describe('buildCore – tool observers', () => {
 		expect(result.toolCallId).toBe('call-2');
 		expect(calls).toEqual(['call-2']);
 		expect(results).toEqual(['call-2']);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// resolveToolOutput
+// ---------------------------------------------------------------------------
+
+describe('resolveToolOutput', () => {
+	it('converts a string to ToolOutput', () => {
+		const result = resolveToolOutput('hello');
+		expect(result).toEqual({
+			content: [{ type: 'text', text: 'hello' }],
+		});
+	});
+
+	it('passes through a ToolOutput unchanged', () => {
+		const output = {
+			content: [{ type: 'text' as const, text: 'already structured' }],
+			isError: true,
+		};
+		const result = resolveToolOutput(output);
+		expect(result).toBe(output);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// registerTool — ToolOutput passthrough (isError)
+// ---------------------------------------------------------------------------
+
+describe('buildCore – registerTool() ToolOutput passthrough', () => {
+	it('preserves isError when execute returns a full ToolOutput', async () => {
+		const mw = await compileExt((api) => {
+			api.registerTool({
+				name: 'errorTool',
+				description: 'Returns an error ToolOutput',
+				schema: z.object({}),
+				execute: async () => ({
+					content: [{ type: 'text' as const, text: 'bad input' }],
+					isError: true,
+				}),
+			});
+		});
+
+		const next = vi.fn();
+		const result = await mw.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'call-err',
+					name: 'errorTool',
+					arguments: {},
+				},
+			},
+			next,
+		);
+
+		expect(result.isError).toBe(true);
+		expect(result.content[0]).toEqual({ type: 'text', text: 'bad input' });
 	});
 });

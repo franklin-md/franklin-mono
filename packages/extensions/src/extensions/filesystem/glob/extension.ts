@@ -14,7 +14,7 @@ export function globExtension(): Extension<CoreAPI & EnvironmentAPI> {
 				limit: options.limit,
 			});
 
-			return { files };
+			return JSON.stringify({ files });
 		});
 	};
 }

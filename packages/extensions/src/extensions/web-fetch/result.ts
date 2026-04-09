@@ -1,10 +1,10 @@
-import type { ContentBlockResult } from '../../api/core/content-block.js';
+import type { ToolOutput } from '../../api/core/tool.js';
 import type { WebFetchProcessedResult } from './types.js';
 
 export function toContentResult(
 	entry: WebFetchProcessedResult,
 	cached: boolean,
-): ContentBlockResult {
+): ToolOutput {
 	return {
 		content: [
 			{
