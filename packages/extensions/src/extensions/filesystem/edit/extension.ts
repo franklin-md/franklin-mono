@@ -112,7 +112,7 @@ export function editExtension(): Extension<
 				const final = bom + restoreLineEndings(replaced, ending);
 				await env.filesystem.writeFile(path, final);
 
-				return { message: `Successfully edited ${path}.` };
+				return `Successfully edited ${path}.`;
 			},
 		);
 	};

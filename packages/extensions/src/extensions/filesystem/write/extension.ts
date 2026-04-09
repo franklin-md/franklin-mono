@@ -14,6 +14,7 @@ export function writeExtension(): Extension<
 
 		api.registerTool(writeFileSpec, async ({ path, content }) => {
 			await fs.writeFile(path, content);
+			return 'ok';
 		});
 	};
 }

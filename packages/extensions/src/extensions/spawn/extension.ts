@@ -9,7 +9,7 @@ export function spawnExtension(spawn: () => Promise<void>): Extension {
 	return (api) => {
 		api.registerTool(spawnSpec, async () => {
 			await spawn();
-			return { ok: true };
+			return JSON.stringify({ ok: true });
 		});
 	};
 }
