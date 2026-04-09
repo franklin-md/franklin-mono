@@ -118,7 +118,7 @@ describe('createDependencySystem', () => {
 		const result = await compile(compiler, (api) => {
 			const capturedSettings = api.getSettings();
 			api.registerTool(spec, ({ key }) => ({
-				value: capturedSettings.get(key),
+				content: [{ type: 'text' as const, text: capturedSettings.get(key) }],
 			}));
 		});
 
@@ -139,7 +139,7 @@ describe('createDependencySystem', () => {
 		expect(toolResult.toolCallId).toBe('call-1');
 		expect(toolResult.content[0]).toEqual({
 			type: 'text',
-			text: JSON.stringify({ value: 'medium' }),
+			text: 'medium',
 		});
 		expect(next).not.toHaveBeenCalled();
 	});
