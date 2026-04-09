@@ -16,6 +16,5 @@ export type WebFetchResponse = {
 export type WebFetchRequest = {
 	url: string;
 	timeoutMs?: number;
-	maxResponseBytes?: number;
 	maxRedirects?: number;
 };
