@@ -73,6 +73,7 @@ Capture task: $ARGUMENTS
      - `parentId` for sub-issue hierarchies if applicable
 
 ## Notes
+
 - NEVER create issues without user approval — always propose first
 - NEVER use AskUserQuestion — communicate proposals and get feedback via chat messages
 - Use haiku subagents for codebase research to keep costs low and speed high
