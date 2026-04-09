@@ -9,6 +9,7 @@
 		{ "path": "./packages/node" },
 		{ "path": "./packages/electron" },
 		{ "path": "./packages/ui/react" },
-		{ "path": "./apps/demo" }
+		{ "path": "./apps/demo" },
+		{ "path": "./apps/obsidian" }
 	]
 }

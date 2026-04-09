@@ -1,0 +1,19 @@
+{
+	"name": "@franklin/obsidian",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "tsc -b tsconfig.json",
+		"typecheck": "tsc -b tsconfig.json --pretty false",
+		"bundle": "node ./esbuild.config.mjs",
+		"dev": "node ./esbuild.config.mjs --watch"
+	},
+	"devDependencies": {
+		"esbuild": "^0.25.9",
+		"obsidian": "^1.8.10"
+	}
+}
