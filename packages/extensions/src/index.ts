@@ -134,8 +134,7 @@ export type {
 export type { Todo, TodoControl } from './extensions/todo/types.js';
 export type { StatusState, StatusControl } from './extensions/status/types.js';
 export { DEFAULT_WEB_FETCH_OPTIONS } from './extensions/web-fetch/types.js';
-export type { WebFetchExtensionOptions } from './extensions/web-fetch/types.js';
 export type {
 	WebFetchProcessedResult,
-	ResolvedWebFetchExtensionOptions,
+	WebFetchExtensionOptions,
 } from './extensions/web-fetch/types.js';

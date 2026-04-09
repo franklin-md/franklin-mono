@@ -1,4 +1,4 @@
-import type { WebFetchResponse } from "@franklin/lib";
+import type { WebFetchResponse } from '@franklin/lib';
 
 export interface WebFetchExtensionOptions {
 	timeoutMs: number;
@@ -17,6 +17,12 @@ export type WebFetchCacheEntry = WebFetchResponse & {
 
 export type WebFetchCache = Record<string, WebFetchCacheEntry>;
 
+export type WebFetchProcessedResult = {
+	kind: 'pdf' | 'html' | 'text' | 'http_error' | 'error';
+	content: string;
+	isError: boolean;
+	truncated: boolean;
+};
 
 export const DEFAULT_WEB_FETCH_OPTIONS: WebFetchExtensionOptions = {
 	timeoutMs: 8000,

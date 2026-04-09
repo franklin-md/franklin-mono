@@ -3,7 +3,7 @@ import type { EnvironmentAPI } from '../../api/environment/api.js';
 import type { StoreAPI } from '../../api/store/api.js';
 import type { Extension } from '../../types/extension.js';
 import { readFromCache, writeToCache } from './cache.js';
-import { normalizeUrl } from './normalize.js';
+import { normalizeUrl } from './utils.js';
 import { toContentResult } from './result.js';
 import { fetchUrlSpec } from './tools.js';
 import {
@@ -11,11 +11,11 @@ import {
 	type WebFetchExtensionOptions,
 } from './types.js';
 import { webFetchCacheKey } from './key.js';
+import { processWebResponse } from './process.js';
 
 export function webFetchExtension(
 	options: Partial<WebFetchExtensionOptions>,
 ): Extension<CoreAPI & EnvironmentAPI & StoreAPI> {
-
 	const resolved = resolveWebFetchOptions(options);
 
 	return (api) => {
@@ -40,35 +40,29 @@ export function webFetchExtension(
 				};
 			}
 
-				const now = Date.now();
-				const cached = readFromCache(store, normalizedUrl, resolved, now);
-				if (cached) {
-					// TODO: process for LLM
-					return toContentResult(cached, true);
+			const now = Date.now();
+			const cached = readFromCache(store, normalizedUrl, resolved, now);
+			if (cached) {
+				const processed = processWebResponse(cached, resolved);
+				return toContentResult(processed, true);
+			}
+
+			try {
+				const response = await web.fetch({
+					url: normalizedUrl,
+					timeoutMs: resolved.timeoutMs,
+					maxRedirects: resolved.maxRedirects,
+				});
+				// We process the response, and if it is an error of any
+				// kind, we DO NOT cache it
+				const processed = processWebResponse(response, resolved);
+				if (!processed.isError) {
+					const _ = writeToCache(store, normalizedUrl, response, resolved, now);
 				}
 
-				try {
-					const response = await web.fetch({
-						url: normalizedUrl,
-						timeoutMs: resolved.timeoutMs,
-						maxRedirects: resolved.maxRedirects,
-					});
-					
-					if (response.body) {
-						const entry = writeToCache(
-							store,
-							normalizedUrl,
-							response,
-							resolved,
-							now,
-						);
-						// TODO: process for LLM
-						return toContentResult(entry, false);
-					}
-					// TODO: process for LLM
-					return toContentResult(response, false);
-				} catch (error) {
-					const message = error instanceof Error ? error.message : String(error);
+				return toContentResult(processed, false);
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
 				return {
 					content: [
 						{

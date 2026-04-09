@@ -18,7 +18,7 @@ import {
 	createWebFetchExtension,
 } from '@franklin/extensions';
 
-const webFetchExtension = createWebFetchExtension();
+const webFetchExtension = createWebFetchExtension({});
 const platform = createElectronPlatform();
 const extensionBundles = [
 	conversationExtension,

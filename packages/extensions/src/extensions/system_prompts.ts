@@ -36,7 +36,7 @@ File searching (use Glob instead of find/ls)
 
 export const webFetchDescription = `Fetch a public web page or text document over HTTP/HTTPS.
 Use this when current knowledge is insufficient and you need the latest page contents.
-Returns cleaned, truncated text from public pages. You can optionally lower or raise the raw response cap with \`maxResponseBytes\` if a page is unusually large; the default is 5 MB.
+Returns cleaned, truncated text from public pages. All content fetched will be capped at 1 GB.
 This tool cannot log in, click, run JavaScript, use cookies, or access private browser sessions.
 It may fail on client-rendered pages, protected sites, PDFs, or unsupported content types.`;
 

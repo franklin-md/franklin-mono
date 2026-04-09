@@ -1,11 +1,8 @@
 import type { ContentBlockResult } from '../../api/core/content-block.js';
-import type {
-	WebFetchCacheEntry,
-	WebFetchProcessedResult,
-} from './types.js';
+import type { WebFetchProcessedResult } from './types.js';
 
 export function toContentResult(
-	entry: WebFetchCacheEntry | WebFetchProcessedResult,
+	entry: WebFetchProcessedResult,
 	cached: boolean,
 ): ContentBlockResult {
 	return {
@@ -20,22 +17,15 @@ export function toContentResult(
 }
 
 export function formatResult(
-	entry: WebFetchCacheEntry | WebFetchProcessedResult,
+	entry: WebFetchProcessedResult,
 	cached: boolean,
 ): string {
 	const lines = [
-		`URL: ${entry.requestedUrl}`,
-		`Final URL: ${entry.finalUrl}`,
-		`Status: ${entry.status} ${entry.statusText}`,
-		`Content-Type: ${entry.contentType ?? 'unknown'}`,
 		`Kind: ${entry.kind}`,
 		`Cached: ${cached ? 'yes' : 'no'}`,
 		`Truncated: ${entry.truncated ? 'yes' : 'no'}`,
+		`Content: ${entry.content}`,
 	];
 
-	if (entry.title) {
-		lines.push(`Title: ${entry.title}`);
-	}
-
-	return `${lines.join('\n')}\n\n${entry.text}`;
+	return lines.join('\n');
 }

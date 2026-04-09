@@ -1,4 +1,3 @@
-
 export function isPrivateHost(host: string): boolean {
 	// Handle IPv6 bracket notation: [::1] -> ::1
 	const stripped =
@@ -35,7 +34,9 @@ export function isPrivateHost(host: string): boolean {
 	);
 }
 
-export function parseIPv4(host: string): [number, number, number, number] | null {
+export function parseIPv4(
+	host: string,
+): [number, number, number, number] | null {
 	const parts = host.split('.');
 	if (parts.length !== 4) return null;
 	const nums = parts.map(Number);

@@ -28,7 +28,7 @@ export function readFromCache(
 
 export function writeToCache(
 	store: Store<WebFetchCache>,
-	url: string,
+	normalizedUrl: string,
 	response: WebFetchResponse,
 	options: WebFetchExtensionOptions,
 	now: number,
@@ -37,14 +37,15 @@ export function writeToCache(
 
 	store.set((draft) => {
 		pruneDraft(draft, options, now);
-		draft[url] = {
+		const entry: WebFetchCacheEntry = {
 			...response,
 			storedAt: now,
 			expiresAt: now + options.cacheTtlMs,
 			lastAccessedAt: now,
-		} satisfies WebFetchCacheEntry;
+		};
+		draft[normalizedUrl] = entry;
 		pruneDraft(draft, options, now);
-		cached = { ...draft[url] };
+		cached = entry;
 	});
 
 	return cached;

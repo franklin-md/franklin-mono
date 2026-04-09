@@ -18,4 +18,4 @@ export type WebFetchRequest = {
 	timeoutMs?: number;
 	maxResponseBytes?: number;
 	maxRedirects?: number;
-}
+};

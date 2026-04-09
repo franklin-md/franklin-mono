@@ -4,7 +4,7 @@ import type {
 	NetworkPermissions,
 	Terminal,
 	WebFetchResponse,
-	WebFetchRequest
+	WebFetchRequest,
 } from '@franklin/lib';
 
 export interface FilesystemConfig {

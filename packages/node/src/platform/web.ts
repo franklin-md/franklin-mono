@@ -1,12 +1,6 @@
 import { DEFAULT_WEB_FETCH_OPTIONS } from '@franklin/extensions';
-import type {
-	NetworkConfig,
-	WebAPI,
-} from '@franklin/extensions';
-import type {
-	WebFetchRequest,
-	WebFetchResponse,
-} from '@franklin/lib';
+import type { NetworkConfig, WebAPI } from '@franklin/extensions';
+import type { WebFetchRequest, WebFetchResponse } from '@franklin/lib';
 import { isPrivateHost, matchesDomain } from './utils.js';
 
 const DEFAULT_USER_AGENT =
@@ -52,7 +46,7 @@ export class EnvironmentWeb implements WebAPI {
 				contentType: response.headers.get('content-type') ?? undefined,
 				headers: Object.fromEntries(response.headers.entries()),
 				body,
-			}
+			};
 		} catch (error) {
 			if (this.isAbortError(error)) {
 				throw new Error(this.timeoutMessage(normalized.timeoutMs), {
@@ -84,7 +78,8 @@ export class EnvironmentWeb implements WebAPI {
 		return {
 			url,
 			timeoutMs: request.timeoutMs ?? DEFAULT_WEB_FETCH_OPTIONS.timeoutMs,
-			maxRedirects: request.maxRedirects ?? DEFAULT_WEB_FETCH_OPTIONS.maxRedirects,
+			maxRedirects:
+				request.maxRedirects ?? DEFAULT_WEB_FETCH_OPTIONS.maxRedirects,
 		};
 	}
 
@@ -113,7 +108,9 @@ export class EnvironmentWeb implements WebAPI {
 		// allowed domain then it assumes all domains are allowed.
 		if (
 			this.config.allowedDomains.length > 0 &&
-			!this.config.allowedDomains.some((pattern) => matchesDomain(pattern, host))
+			!this.config.allowedDomains.some((pattern) =>
+				matchesDomain(pattern, host),
+			)
 		) {
 			throw new Error(`Network access denied for host "${host}"`);
 		}
@@ -171,7 +168,10 @@ export class EnvironmentWeb implements WebAPI {
 		let truncated = false;
 
 		for (;;) {
-			const { value, done } = (await reader.read()) as { value: Uint8Array; done: boolean };
+			const { value, done } = (await reader.read()) as {
+				value: Uint8Array;
+				done: boolean;
+			};
 			if (done) break;
 
 			if (total + value.byteLength > MAX_RESPONSE_BYTES) {

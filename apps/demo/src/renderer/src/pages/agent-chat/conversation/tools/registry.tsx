@@ -23,7 +23,7 @@ import { createToolRendererRegistry } from '@franklin/react';
 
 import { iconEntry, toolEntry } from './entry.js';
 
-const webFetchExtension = createWebFetchExtension();
+const webFetchExtension = createWebFetchExtension({});
 
 export const toolRegistry = createToolRendererRegistry([
 	toolEntry(readExtension.tools.readFile, FileText, 'Read file', (a) => a.path),
@@ -37,21 +37,14 @@ export const toolRegistry = createToolRendererRegistry([
 	toolEntry(globExtension.tools.glob, FolderSearch, 'Search files', (a) =>
 		Array.isArray(a.pattern) ? a.pattern.join(', ') : a.pattern,
 	),
-	toolEntry(
-		webFetchExtension.tools.fetchUrl,
-		Globe,
-		'Fetch web page',
-		(a) => {
-			try {
-				const url = new URL(a.url);
-				return a.maxResponseBytes
-					? `${url.hostname} · ${Math.round(a.maxResponseBytes / 1024)} KB cap`
-					: url.hostname;
-			} catch {
-				return a.url;
-			}
-		},
-	),
+	toolEntry(webFetchExtension.tools.fetchUrl, Globe, 'Fetch web page', (a) => {
+		try {
+			const url = new URL(a.url);
+			return url.hostname;
+		} catch {
+			return a.url;
+		}
+	}),
 	['spawn', iconEntry(GitBranch, 'Spawn agent')],
 	toolEntry(todoExtension.tools.addTodo, ListPlus, 'Add todo', (a) => a.text),
 	toolEntry(todoExtension.tools.completeTodo, ListChecks, 'Complete todo'),

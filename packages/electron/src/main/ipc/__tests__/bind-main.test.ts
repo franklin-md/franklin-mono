@@ -35,20 +35,20 @@ function createEnvironment(label: string) {
 			terminal: {
 				exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 			},
-				web: {
-					fetch: async () => ({
-						requestedUrl: 'https://example.com',
-						finalUrl: 'https://example.com',
-						status: 200,
-						statusText: 'OK',
-						contentType: 'text/plain',
-						kind: 'text',
-						text: '',
-						truncated: false,
-						isError: false,
-						cacheable: true,
-					}),
-				},
+			web: {
+				fetch: async () => ({
+					requestedUrl: 'https://example.com',
+					finalUrl: 'https://example.com',
+					status: 200,
+					statusText: 'OK',
+					contentType: 'text/plain',
+					kind: 'text',
+					text: '',
+					truncated: false,
+					isError: false,
+					cacheable: true,
+				}),
+			},
 			config: async () => ({
 				fsConfig: {
 					cwd: '/tmp',
@@ -242,20 +242,20 @@ describe('bindMain', () => {
 							terminal: {
 								exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 							},
-								web: {
-									fetch: async () => ({
-										requestedUrl: 'https://example.com',
-										finalUrl: 'https://example.com',
-										status: 200,
-										statusText: 'OK',
-										contentType: 'text/plain',
-										kind: 'text',
-										text: '',
-										truncated: false,
-										isError: false,
-										cacheable: true,
-									}),
-								},
+							web: {
+								fetch: async () => ({
+									requestedUrl: 'https://example.com',
+									finalUrl: 'https://example.com',
+									status: 200,
+									statusText: 'OK',
+									contentType: 'text/plain',
+									kind: 'text',
+									text: '',
+									truncated: false,
+									isError: false,
+									cacheable: true,
+								}),
+							},
 							config: async () => ({
 								fsConfig: {
 									cwd: '/tmp',
