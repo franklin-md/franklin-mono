@@ -7,6 +7,7 @@ export type {
 	SessionSpawn,
 } from './types.js';
 export { createRuntime } from './create.js';
+export { createDependencySystem, type DependencySystem } from './dependency.js';
 export {
 	createEnvironmentSystem,
 	type EnvironmentSystem,

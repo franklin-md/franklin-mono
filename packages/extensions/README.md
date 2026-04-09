@@ -33,12 +33,16 @@ function createMyExtension(db: Database): Extension {
 
 **Right** — dependency through API:
 ```typescript
-// A RuntimeSystem introduces the dependency as part of its API
-const myExtension: Extension<DatabaseAPI & CoreAPI> = (api) => {
-  const db = api.getDatabase(); // dependency from DatabaseAPI
+const databaseSystem = createDependencySystem('Database', db);
+
+const myExtension: Extension<DependencyAPI<'Database', Database> & CoreAPI> = (api) => {
+  const db = api.getDatabase(); // dependency from DependencyAPI
   api.registerTool(querySpec, (params) => db.query(params));
 };
 ```
+
+For app-level singleton services, prefer `createDependencySystem(...)` over
+hand-rolling a one-method API family.
 
 ### 2. Don't call API methods within tool execution closures
 
