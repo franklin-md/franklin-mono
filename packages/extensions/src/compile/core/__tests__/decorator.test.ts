@@ -34,12 +34,12 @@ function stubClient(): MiniACPClient {
 // ---------------------------------------------------------------------------
 
 describe('applyDecorators', () => {
-	it('applies agent decorators forward (first = innermost)', async () => {
+	it('applies server decorators forward (first = innermost)', async () => {
 		const calls: string[] = [];
 
 		const inner: ProtocolDecorator = {
 			name: 'inner',
-			async agent(a) {
+			async server(a) {
 				return {
 					toolExecute: async (params) => {
 						calls.push('inner');
@@ -54,7 +54,7 @@ describe('applyDecorators', () => {
 
 		const outer: ProtocolDecorator = {
 			name: 'outer',
-			async agent(a) {
+			async server(a) {
 				return {
 					toolExecute: async (params) => {
 						calls.push('outer');
@@ -67,10 +67,10 @@ describe('applyDecorators', () => {
 			},
 		};
 
-		const base = { agent: stubAgent(), client: stubClient() };
+		const base = { server: stubAgent(), client: stubClient() };
 		const result = await applyDecorators([inner, outer], base);
 
-		await result.agent.toolExecute({
+		await result.server.toolExecute({
 			call: { type: 'toolCall', id: 'c1', name: 'test', arguments: {} },
 		});
 
@@ -83,7 +83,7 @@ describe('applyDecorators', () => {
 
 		const layerA: ProtocolDecorator = {
 			name: 'A',
-			async agent(a) {
+			async server(a) {
 				return a;
 			},
 			async client(c) {
@@ -101,7 +101,7 @@ describe('applyDecorators', () => {
 
 		const layerB: ProtocolDecorator = {
 			name: 'B',
-			async agent(a) {
+			async server(a) {
 				return a;
 			},
 			async client(c) {
@@ -117,9 +117,9 @@ describe('applyDecorators', () => {
 			},
 		};
 
-		const base = { agent: stubAgent(), client: stubClient() };
+		const base = { server: stubAgent(), client: stubClient() };
 		// Stack [A, B]:
-		//   Agent: B(A(base)) → B outermost
+		//   Server: B(A(base)) → B outermost
 		//   Client reversed: A(B(base)) → A outermost
 		const result = await applyDecorators([layerA, layerB], base);
 
@@ -132,7 +132,7 @@ describe('applyDecorators', () => {
 	it('async client decorator can call methods on inner client during setup', async () => {
 		const setContextCalls: unknown[] = [];
 		const base = {
-			agent: stubAgent(),
+			server: stubAgent(),
 			client: {
 				...stubClient(),
 				setContext: vi.fn(async (ctx: unknown) => {
@@ -143,7 +143,7 @@ describe('applyDecorators', () => {
 
 		const decorator: ProtocolDecorator = {
 			name: 'seeder',
-			async agent(a) {
+			async server(a) {
 				return a;
 			},
 			async client(c) {
@@ -167,7 +167,7 @@ describe('applyDecorators', () => {
 
 		const first: ProtocolDecorator = {
 			name: 'first',
-			async agent(a) {
+			async server(a) {
 				return a;
 			},
 			async client(c) {
@@ -178,7 +178,7 @@ describe('applyDecorators', () => {
 
 		const second: ProtocolDecorator = {
 			name: 'second',
-			async agent(a) {
+			async server(a) {
 				return a;
 			},
 			async client(c) {
@@ -187,7 +187,7 @@ describe('applyDecorators', () => {
 			},
 		};
 
-		const base = { agent: stubAgent(), client: stubClient() };
+		const base = { server: stubAgent(), client: stubClient() };
 		// Stack [first, second] → client reversed → second.client runs first
 		await applyDecorators([first, second], base);
 
@@ -195,20 +195,20 @@ describe('applyDecorators', () => {
 	});
 
 	it('empty stack returns base unchanged', async () => {
-		const base = { agent: stubAgent(), client: stubClient() };
+		const base = { server: stubAgent(), client: stubClient() };
 		const result = await applyDecorators([], base);
 
-		expect(result.agent).toBe(base.agent);
+		expect(result.server).toBe(base.server);
 		expect(result.client).toBe(base.client);
 	});
 
-	it('onAgentReady fires after agent wrapping, before client wrapping', async () => {
+	it('onServerReady fires after server wrapping, before client wrapping', async () => {
 		const order: string[] = [];
 
 		const decorator: ProtocolDecorator = {
 			name: 'test',
-			async agent(a) {
-				order.push('agent-wrap');
+			async server(a) {
+				order.push('server-wrap');
 				return a;
 			},
 			async client(c) {
@@ -217,11 +217,11 @@ describe('applyDecorators', () => {
 			},
 		};
 
-		const base = { agent: stubAgent(), client: stubClient() };
+		const base = { server: stubAgent(), client: stubClient() };
 		await applyDecorators([decorator], base, async () => {
-			order.push('onAgentReady');
+			order.push('onServerReady');
 		});
 
-		expect(order).toEqual(['agent-wrap', 'onAgentReady', 'client-wrap']);
+		expect(order).toEqual(['server-wrap', 'onServerReady', 'client-wrap']);
 	});
 });

@@ -12,8 +12,8 @@ export function createTrackerDecorator(state: CoreState): {
 		tracker,
 		decorator: {
 			name: 'tracker',
-			async agent(a) {
-				return trackAgent(tracker, a);
+			async server(s) {
+				return trackAgent(tracker, s);
 			},
 			async client(c) {
 				const core = state.core;

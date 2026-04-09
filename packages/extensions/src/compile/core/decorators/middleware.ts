@@ -7,8 +7,8 @@ export function createMiddlewareDecorator(
 ): ProtocolDecorator {
 	return {
 		name: 'middleware',
-		async agent(a) {
-			return apply(mw.server, a);
+		async server(s) {
+			return apply(mw.server, s);
 		},
 		async client(c) {
 			return apply(mw.client, c);
