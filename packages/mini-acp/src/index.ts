@@ -78,4 +78,7 @@ export {
 	createAgentConnection,
 	createSessionAdapter,
 	CtxTracker,
+	trackAgent,
+	trackTurn,
+	trackClient,
 } from './protocol/index.js';

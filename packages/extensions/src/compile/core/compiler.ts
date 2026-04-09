@@ -1,4 +1,4 @@
-import { CtxTracker } from '@franklin/mini-acp';
+import type { ClientProtocol } from '@franklin/mini-acp';
 import type { CoreAPI } from '../../api/core/api.js';
 import type {
 	CoreEvent,
@@ -18,10 +18,11 @@ import {
 	addEventHandler,
 	buildMiddleware,
 } from './middleware.js';
-import { createRawClient, wrapClient, type SpawnResult } from './connect.js';
-import { seedTracker, initializeRawClient } from './seed.js';
-import { createCoreRuntime, type CoreRuntime } from '../../runtime/core.js';
+import { buildCoreRuntime } from './build.js';
+import type { CoreRuntime } from '../../runtime/core.js';
 import type { CoreState } from '../../state/core.js';
+
+export type SpawnResult = ClientProtocol & { dispose(): Promise<void> };
 
 /**
  * Create a fresh core compiler instance.
@@ -110,18 +111,7 @@ export function createCoreCompiler(
 				return middleware;
 			}
 
-			// 1. Create and seed tracker with initial state
-			const tracker = new CtxTracker();
-			seedTracker(tracker, state.core);
-
-			// 2. Create raw client and initialize agent process
-			const rawClient = createRawClient(transport, middleware.server);
-			await initializeRawClient(rawClient, state.core);
-
-			// 3. Wrap with tracker + client middleware for ongoing operations
-			const client = wrapClient(rawClient, tracker, middleware.client);
-
-			return createCoreRuntime(client, tracker, transport);
+			return buildCoreRuntime(transport, state, middleware);
 		},
 	};
 }

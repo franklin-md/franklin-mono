@@ -11,7 +11,7 @@
 import { expect, it } from 'vitest';
 import { StopCode } from '../types/stop-code.js';
 
-import { createPiAgentFactory } from '../base/pi/factory.js';
+import { bindPiAgent } from '../base/pi/agent.js';
 import { initialize } from '../spec-tester/actions/initialize.js';
 import { prompt } from '../spec-tester/actions/prompt.js';
 import { setContext } from '../spec-tester/actions/set-context.js';
@@ -71,7 +71,7 @@ describeIfKey(
 	'Pi Adapter — integration (OpenRouter, z-ai/glm-5)',
 	(apiKey) => {
 		const config = createValidLLMConfig(apiKey, { model: 'z-ai/glm-5' });
-		const factory = createPiAgentFactory();
+		const factory = bindPiAgent;
 
 		it('simple text prompt returns a coherent response', async () => {
 			const fixture: Fixture = {

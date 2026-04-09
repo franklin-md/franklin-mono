@@ -21,3 +21,5 @@ export {
 export { createSessionAdapter } from './adapter.js';
 
 export { CtxTracker } from './ctx-tracker.js';
+
+export { trackAgent, trackTurn, trackClient } from './tracking.js';

@@ -6,8 +6,9 @@ import { createPiAdapter } from './adapter.js';
 export function bindPiAgent(transport: AgentProtocol): void {
 	const connection = createAgentConnection(transport);
 	connection.bind(
-		createSessionAdapter((ctx) =>
-			createPiAdapter({ client: connection.remote, ctx }),
+		createSessionAdapter(
+			(ctx, server) => createPiAdapter({ ctx, server }),
+			connection.remote,
 		),
 	);
 }
