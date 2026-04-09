@@ -26,11 +26,14 @@ import {
 
 /** Create a factory that binds a mock agent using createSessionAdapter. */
 function createMockFactory(
-	makeTurn: (remote: MuAgent) => TurnClient,
+	createTurnClient: (remote: MuAgent) => TurnClient,
 ): AgentFactory {
 	return (transport) => {
 		const conn = createAgentConnection(transport);
-		const adapter = createSessionAdapter((_ctx) => makeTurn(conn.remote));
+		const adapter = createSessionAdapter(
+			(_ctx) => createTurnClient(conn.remote),
+			conn.remote,
+		);
 		conn.bind(adapter);
 	};
 }

@@ -21,12 +21,17 @@ const terminal = namespace({
 	exec: method(),
 });
 
+const web = namespace({
+	fetch: method(),
+});
+
 export const schema = namespace({
 	spawn: resource(stream()),
 	environment: resource(
 		namespace({
 			filesystem: filesystem,
 			terminal: terminal,
+			web: web,
 			config: method(),
 			reconfigure: method(),
 		}),

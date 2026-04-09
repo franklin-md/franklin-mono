@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
-// Pi Adapter — wraps pi-agent-core's Agent as a BaseAgent
+// Pi Adapter — wraps pi-agent-core's Agent as a TurnClient
 //
-// Takes a BaseClient (for reverse RPC tool execution) and returns a BaseAgent.
-// Tool calls from the pi agent loop are routed through client.toolExecute().
+// Takes a TurnServer (for reverse RPC tool execution) and returns a TurnClient.
+// Tool calls from the pi agent loop are routed through server.toolExecute().
 // ---------------------------------------------------------------------------
 
 import { Agent as PiCoreAgent } from '@mariozechner/pi-agent-core';
@@ -29,8 +29,8 @@ import { resolveConfig } from './resolve-config.js';
 // ---------------------------------------------------------------------------
 
 export interface PiAdapterOptions {
-	/** BaseClient for reverse RPC (tool execution) */
-	client: TurnServer;
+	/** TurnServer for reverse RPC (tool execution) */
+	server: TurnServer;
 	/** Agent context (history, tools, config) */
 	ctx: Ctx;
 	/** Custom stream function — inject for testing without real LLM calls */
@@ -38,7 +38,7 @@ export interface PiAdapterOptions {
 }
 
 export function createPiAdapter(options: PiAdapterOptions): TurnClient {
-	const { client, ctx, streamFn } = options;
+	const { server, ctx, streamFn } = options;
 
 	let piAgent: PiCoreAgent | null = null;
 
@@ -53,8 +53,8 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 				return;
 			}
 
-			// Bridge tool definitions to pi AgentTools that call client.toolExecute
-			const handler = client.toolExecute.bind(client);
+			// Bridge tool definitions to pi AgentTools that call server.toolExecute
+			const handler = server.toolExecute.bind(server);
 			const piTools = ctx.tools.map((def) => bridgeTool(def, handler));
 
 			// Convert history messages to pi-ai format

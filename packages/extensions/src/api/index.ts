@@ -7,12 +7,13 @@ export type {
 	StreamObserverHandler,
 	StreamObserverParamsMap,
 	ExtensionToolDefinition,
+	ToolOutput,
+	ToolExecuteReturn,
 	ToolSpec,
 	ToolArgs,
 	ToolDefinition,
 	AnyToolDefinition,
 	SerializedToolDefinition,
-	ContentBlockResult,
 	MethodMiddleware,
 	Middleware,
 	ClientMiddleware,
@@ -20,7 +21,7 @@ export type {
 	FullMiddleware,
 } from './core/index.js';
 export { compose, composeMethod, passThrough } from './core/index.js';
-export { isContentBlockResult } from './core/index.js';
+export { resolveToolOutput } from './core/index.js';
 export { toolSpec } from './core/index.js';
 export { serializeTool, toToolInputSchema } from './core/index.js';
 export { apply } from './core/index.js';
@@ -30,7 +31,9 @@ export type {
 	FilesystemConfig,
 	NetworkConfig,
 	EnvironmentConfig,
+	WebAPI,
 } from './environment/index.js';
+
 export type { StoreAPI } from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';
 export type { Sharing, ForkMode } from './store/index.js';

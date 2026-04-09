@@ -3,6 +3,7 @@ import type { EnvironmentConfig } from '@franklin/extensions';
 import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { EnvironmentFilesystem } from './environment-filesystem.js';
+import { EnvironmentWeb } from './web.js';
 import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import { createFolderScopedFilesystem } from '@franklin/lib';
@@ -37,10 +38,12 @@ export function createNodePlatform(args: Args = {}): Platform {
 				config.fsConfig,
 			);
 			const envT = new SandboxedTerminal(appDir, config);
+			const envW = new EnvironmentWeb(config.netConfig);
 			await envT.initialize();
 			return {
 				filesystem: envFs,
 				terminal: envT,
+				web: envW,
 
 				async config() {
 					return {
@@ -60,6 +63,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 					if (partial.netConfig) {
 						// set terminal only
 						await envT.setNetworkConfig(partial.netConfig);
+						envW.setConfig(partial.netConfig);
 					}
 				},
 				dispose: async () => {},

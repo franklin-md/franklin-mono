@@ -1,4 +1,4 @@
-import type { ExtensionToolDefinition } from './tool.js';
+import type { ExtensionToolDefinition, ToolExecuteReturn } from './tool.js';
 import type { ToolSpec } from './tool-spec.js';
 import type {
 	CoreEventHandler,
@@ -25,12 +25,10 @@ export interface CoreAPI {
 	on(event: 'toolCall', handler: ToolObserverHandler<'toolCall'>): void;
 	on(event: 'toolResult', handler: ToolObserverHandler<'toolResult'>): void;
 
-	registerTool<TInput, TOutput>(
-		tool: ExtensionToolDefinition<TInput, TOutput>,
-	): void;
+	registerTool<TInput>(tool: ExtensionToolDefinition<TInput>): void;
 
-	registerTool<TArgs, TOutput>(
+	registerTool<TArgs>(
 		spec: ToolSpec<string, TArgs>,
-		execute: (params: TArgs) => MaybePromise<TOutput>,
+		execute: (params: TArgs) => MaybePromise<ToolExecuteReturn>,
 	): void;
 }

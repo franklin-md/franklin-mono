@@ -5,6 +5,7 @@ import type {
 	ToolObserverParamsMap,
 } from '../../../api/core/events.js';
 import type { ExtensionToolDefinition } from '../../../api/core/tool.js';
+import { resolveToolOutput } from '../../../api/core/tool.js';
 import type { MethodMiddleware } from '../../../api/core/middleware/types.js';
 
 function notifyObservers<K extends ToolObserverEvent>(
@@ -40,15 +41,7 @@ export function buildToolExecuteMiddleware(
 
 		const tool = tools.find((t) => t.name === params.call.name);
 		const result = tool
-			? {
-					toolCallId: params.call.id,
-					content: [
-						{
-							type: 'text' as const,
-							text: JSON.stringify(await tool.execute(params.call.arguments)),
-						},
-					],
-				}
+			? await toToolResult(tool, params.call.id, params.call.arguments)
 			: await next(params);
 
 		if (observers && observers.size > 0) {
@@ -60,4 +53,32 @@ export function buildToolExecuteMiddleware(
 
 		return result;
 	};
+}
+
+async function toToolResult(
+	tool: ExtensionToolDefinition,
+	toolCallId: string,
+	args: Record<string, unknown>,
+) {
+	try {
+		const raw = await tool.execute(args);
+		const output = resolveToolOutput(raw);
+		return {
+			toolCallId,
+			content: output.content,
+			isError: output.isError,
+		};
+	} catch (error) {
+		return {
+			toolCallId,
+			content: [
+				{
+					type: 'text' as const,
+					text:
+						error instanceof Error ? `Error: ${error.message}` : String(error),
+				},
+			],
+			isError: true,
+		};
+	}
 }

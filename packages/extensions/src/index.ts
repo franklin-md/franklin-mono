@@ -9,7 +9,8 @@ export type {
 	ToolDefinition,
 	AnyToolDefinition,
 	SerializedToolDefinition,
-	ContentBlockResult,
+	ToolOutput,
+	ToolExecuteReturn,
 	MethodMiddleware,
 	Middleware,
 	ClientMiddleware,
@@ -20,6 +21,7 @@ export type {
 	EnvironmentConfig,
 	FilesystemConfig,
 	NetworkConfig,
+	WebAPI,
 	StoreAPI,
 	ReadonlyStore,
 	Store,
@@ -32,7 +34,7 @@ export type {
 } from './api/index.js';
 export { SessionCollection } from './api/index.js';
 export { compose, composeMethod, passThrough } from './api/index.js';
-export { isContentBlockResult } from './api/index.js';
+export { resolveToolOutput } from './api/index.js';
 export { toolSpec } from './api/index.js';
 export { serializeTool, toToolInputSchema } from './api/index.js';
 export { apply } from './api/index.js';
@@ -124,6 +126,7 @@ export {
 	writeExtension,
 	readExtension,
 	bashExtension,
+	createWebFetchExtension,
 } from './extensions/index.js';
 
 export { createTodoControl, createStatusControl } from './extensions/index.js';
@@ -139,3 +142,8 @@ export type {
 } from './extensions/conversation/types.js';
 export type { Todo, TodoControl } from './extensions/todo/types.js';
 export type { StatusState, StatusControl } from './extensions/status/types.js';
+export { DEFAULT_WEB_FETCH_OPTIONS } from './extensions/web-fetch/types.js';
+export type {
+	WebFetchProcessedResult,
+	WebFetchExtensionOptions,
+} from './extensions/web-fetch/types.js';

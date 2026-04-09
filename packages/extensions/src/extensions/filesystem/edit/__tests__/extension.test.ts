@@ -44,6 +44,7 @@ function mockEnvironment(
 			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
 		},
 		terminal: { exec: vi.fn() },
+		web: { fetch: vi.fn() },
 		config: vi.fn(async () => ({
 			fsConfig: {
 				cwd: '/tmp',
@@ -158,49 +159,49 @@ describe('editExtension', () => {
 		);
 	});
 
-	it('throws when old_text is not found', async () => {
+	it('returns isError when old_text is not found', async () => {
 		const env = mockEnvironment({
 			'test.txt': 'hello world',
 		});
 		const result = await compileEdit(env);
 		simulateRead(result, 'test.txt', 'hello world');
 
-		await expect(
-			executeTool(result, {
-				path: 'test.txt',
-				old_text: 'missing text',
-				new_text: 'replacement',
-			}),
-		).rejects.toThrow('Could not find');
+		const toolResult = await executeTool(result, {
+			path: 'test.txt',
+			old_text: 'missing text',
+			new_text: 'replacement',
+		});
+		expect(toolResult.isError).toBe(true);
+		expect(getResultText(toolResult)).toContain('Could not find');
 	});
 
-	it('throws when old_text matches multiple times', async () => {
+	it('returns isError when old_text matches multiple times', async () => {
 		const env = mockEnvironment({
 			'test.txt': 'ab ab ab',
 		});
 		const result = await compileEdit(env);
 		simulateRead(result, 'test.txt', 'ab ab ab');
 
-		await expect(
-			executeTool(result, {
-				path: 'test.txt',
-				old_text: 'ab',
-				new_text: 'cd',
-			}),
-		).rejects.toThrow('unique');
+		const toolResult = await executeTool(result, {
+			path: 'test.txt',
+			old_text: 'ab',
+			new_text: 'cd',
+		});
+		expect(toolResult.isError).toBe(true);
+		expect(getResultText(toolResult)).toContain('unique');
 	});
 
-	it('throws when file does not exist', async () => {
+	it('returns isError when file does not exist', async () => {
 		const env = mockEnvironment({});
 		const result = await compileEdit(env);
 
-		await expect(
-			executeTool(result, {
-				path: 'missing.txt',
-				old_text: 'x',
-				new_text: 'y',
-			}),
-		).rejects.toThrow('File not found');
+		const toolResult = await executeTool(result, {
+			path: 'missing.txt',
+			old_text: 'x',
+			new_text: 'y',
+		});
+		expect(toolResult.isError).toBe(true);
+		expect(getResultText(toolResult)).toContain('File not found');
 	});
 
 	it('preserves BOM on write', async () => {
@@ -255,19 +256,19 @@ describe('editExtension', () => {
 		expect(env.filesystem.writeFile).toHaveBeenCalled();
 	});
 
-	it('throws when replacement produces identical content', async () => {
+	it('returns isError when replacement produces identical content', async () => {
 		const env = mockEnvironment({
 			'same.txt': 'hello world',
 		});
 		const result = await compileEdit(env);
 		simulateRead(result, 'same.txt', 'hello world');
 
-		await expect(
-			executeTool(result, {
-				path: 'same.txt',
-				old_text: 'hello',
-				new_text: 'hello',
-			}),
-		).rejects.toThrow('No changes');
+		const toolResult = await executeTool(result, {
+			path: 'same.txt',
+			old_text: 'hello',
+			new_text: 'hello',
+		});
+		expect(toolResult.isError).toBe(true);
+		expect(getResultText(toolResult)).toContain('No changes');
 	});
 });
