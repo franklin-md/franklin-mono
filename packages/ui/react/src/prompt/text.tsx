@@ -10,7 +10,7 @@ import { usePrompt } from './context.js';
  * Props are merged onto the child via Radix Slot (event handlers compose).
  */
 export function PromptText({ children }: { children: ReactElement }) {
-	const { input, setInput, send, sending } = usePrompt();
+	const { input, setInput, send, cancel, sending } = usePrompt();
 
 	// Slot's TS types are HTMLAttributes<HTMLElement> which lacks textarea-specific
 	// props like `value` and `disabled`. Cast through unknown — Slot merges all
@@ -28,6 +28,10 @@ export function PromptText({ children }: { children: ReactElement }) {
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
 				send();
+			}
+			if (e.key === 'Escape' && sending) {
+				e.preventDefault();
+				cancel();
 			}
 		},
 		disabled: sending,

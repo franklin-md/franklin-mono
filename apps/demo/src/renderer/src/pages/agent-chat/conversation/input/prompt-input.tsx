@@ -55,7 +55,7 @@ export function PromptInput() {
 											className="h-3 w-3 fill-current"
 											strokeWidth={2.4}
 										/>
-										Stop
+										Esc
 									</Button>
 								}
 							/>
