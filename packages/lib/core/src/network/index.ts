@@ -18,7 +18,9 @@ export type WebFetchResponse = {
 // for maximum freedom on top of our safety model
 export type WebFetchRequest = {
 	url: string;
+	method: 'GET' | 'POST';
 	timeoutMs?: number;
 	maxRedirects?: number;
 	headers?: Record<string, string>;
+	body?: Uint8Array;
 };

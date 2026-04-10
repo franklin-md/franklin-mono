@@ -17,9 +17,11 @@ const MAX_RESPONSE_BYTES = 1024 * 1024 * 1024; // 1 GB
 
 type NormalizedRequest = {
 	url: URL;
+	method: 'GET' | 'POST';
 	timeoutMs: number;
 	maxRedirects: number;
 	headers: Record<string, string>;
+	body?: Uint8Array;
 };
 
 export class EnvironmentWeb implements WebAPI {
@@ -92,10 +94,12 @@ export class EnvironmentWeb implements WebAPI {
 
 		return {
 			url,
+			method: request.method,
 			timeoutMs: request.timeoutMs ?? DEFAULT_WEB_FETCH_OPTIONS.timeoutMs,
 			maxRedirects:
 				request.maxRedirects ?? DEFAULT_WEB_FETCH_OPTIONS.maxRedirects,
 			headers,
+			body: request.body,
 		};
 	}
 
@@ -127,9 +131,7 @@ export class EnvironmentWeb implements WebAPI {
 		// (e.g. http://192.168.1.1/). DNS-based fronting via CDN hostnames that
 		// resolve to private IPs cannot be caught here.
 		if (isPrivateHost(host)) {
-			throw new Error(
-				`Network access denied for host "${host}"`,
-			);
+			throw new Error(`Network access denied for host "${host}"`);
 		}
 
 		// TODO: I do not particularly like this default behaviour that if there is no
@@ -153,11 +155,12 @@ export class EnvironmentWeb implements WebAPI {
 		for (let i = 0; i <= request.maxRedirects; i++) {
 			this.assertAllowed(currentUrl);
 			const response = await fetch(currentUrl, {
-				method: 'GET',
+				method: request.method,
 				redirect: 'manual',
 				signal: controller.signal,
 				credentials: 'omit',
 				headers: request.headers,
+				body: request.body,
 			});
 
 			if (!REDIRECT_STATUS_CODES.has(response.status)) {

@@ -50,6 +50,7 @@ export function webFetchExtension(
 			try {
 				const response = await web.fetch({
 					url: normalizedUrl,
+					method: 'GET',
 					timeoutMs: resolved.timeoutMs,
 					maxRedirects: resolved.maxRedirects,
 				});

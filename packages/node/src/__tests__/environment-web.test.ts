@@ -30,7 +30,7 @@ describe('EnvironmentWeb', () => {
 		const web = new EnvironmentWeb(createConfig());
 
 		await expect(
-			web.fetch({ url: 'http://localhost:11434/api/tags' }),
+			web.fetch({ url: 'http://localhost:11434/api/tags', method: 'GET' }),
 		).rejects.toThrow('Network access denied for host "localhost"');
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
@@ -43,6 +43,7 @@ describe('EnvironmentWeb', () => {
 
 		const response = await web.fetch({
 			url: 'http://localhost:11434/api/tags',
+			method: 'GET',
 		});
 
 		expect(response.status).toBe(200);
@@ -56,10 +57,10 @@ describe('EnvironmentWeb', () => {
 		);
 
 		await expect(
-			web.fetch({ url: 'http://127.0.0.1:11434/api/tags' }),
+			web.fetch({ url: 'http://127.0.0.1:11434/api/tags', method: 'GET' }),
 		).resolves.toMatchObject({ status: 200 });
 		await expect(
-			web.fetch({ url: 'http://[::1]:11434/api/tags' }),
+			web.fetch({ url: 'http://[::1]:11434/api/tags', method: 'GET' }),
 		).resolves.toMatchObject({ status: 200 });
 	});
 
@@ -70,10 +71,10 @@ describe('EnvironmentWeb', () => {
 		);
 
 		await expect(
-			web.fetch({ url: 'http://localhost:11434/api/tags' }),
+			web.fetch({ url: 'http://localhost:11434/api/tags', method: 'GET' }),
 		).resolves.toMatchObject({ status: 200 });
 		await expect(
-			web.fetch({ url: 'http://localhost:11435/api/tags' }),
+			web.fetch({ url: 'http://localhost:11435/api/tags', method: 'GET' }),
 		).rejects.toThrow('Network access denied for host "localhost"');
 	});
 
@@ -83,10 +84,8 @@ describe('EnvironmentWeb', () => {
 		);
 
 		await expect(
-			web.fetch({ url: 'http://192.168.1.10:8080/' }),
-		).rejects.toThrow(
-			'Network access denied for host "192.168.1.10": private addresses are not permitted',
-		);
+			web.fetch({ url: 'http://192.168.1.10:8080/', method: 'GET' }),
+		).rejects.toThrow('Network access denied for host "192.168.1.10"');
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
@@ -99,13 +98,13 @@ describe('EnvironmentWeb', () => {
 		);
 
 		await expect(
-			web.fetch({ url: 'http://localhost:9229/json/version' }),
+			web.fetch({ url: 'http://localhost:9229/json/version', method: 'GET' }),
 		).rejects.toThrow('Network access denied for host "localhost"');
 		await expect(
-			web.fetch({ url: 'http://127.0.0.1:9229/json/version' }),
+			web.fetch({ url: 'http://127.0.0.1:9229/json/version', method: 'GET' }),
 		).rejects.toThrow('Network access denied for host "127.0.0.1"');
 		await expect(
-			web.fetch({ url: 'http://[::1]:9229/json/version' }),
+			web.fetch({ url: 'http://[::1]:9229/json/version', method: 'GET' }),
 		).rejects.toThrow('Network access denied for host "::1"');
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
@@ -119,9 +118,9 @@ describe('EnvironmentWeb', () => {
 		);
 		const web = new EnvironmentWeb(createConfig());
 
-		await expect(web.fetch({ url: 'https://example.com/' })).rejects.toThrow(
-			'Network access denied for host "localhost"',
-		);
+		await expect(
+			web.fetch({ url: 'https://example.com/', method: 'GET' }),
+		).rejects.toThrow('Network access denied for host "localhost"');
 		expect(fetchMock).toHaveBeenCalledOnce();
 	});
 
@@ -138,9 +137,37 @@ describe('EnvironmentWeb', () => {
 			createConfig({ allowedDomains: ['example.com', 'localhost:11434'] }),
 		);
 
-		const response = await web.fetch({ url: 'https://example.com/' });
+		const response = await web.fetch({
+			url: 'https://example.com/',
+			method: 'GET',
+		});
 
 		expect(response.status).toBe(200);
 		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('passes explicit POST requests through to fetch', async () => {
+		fetchMock.mockResolvedValue(okResponse());
+		const web = new EnvironmentWeb(createConfig());
+		const body = new TextEncoder().encode('{"hello":"world"}');
+
+		await web.fetch({
+			url: 'https://example.com/search',
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body,
+		});
+
+		expect(fetchMock).toHaveBeenCalledWith(
+			new URL('https://example.com/search'),
+			expect.objectContaining({
+				method: 'POST',
+				body,
+				headers: expect.objectContaining({
+					'user-agent': expect.any(String),
+					'content-type': 'application/json',
+				}),
+			}),
+		);
 	});
 });

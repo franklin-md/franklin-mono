@@ -1,15 +1,14 @@
 import type { CoreAPI } from '../../../api/core/api.js';
 import type { EnvironmentAPI } from '../../../api/environment/api.js';
 import type { Extension } from '../../../types/extension.js';
-import { decodeBody, normalizeContentType } from '../utils.js';
-import { parseDdgLite } from './parse.js';
 import { toSearchError, toSearchResult } from './result.js';
 import { searchWebSpec } from './tools.js';
+import { searchWithDdg } from './ddg.js';
+import { searchWithExa } from './exa.js';
 import {
 	resolveWebSearchOptions,
 	type WebSearchExtensionOptions,
 } from './types.js';
-import { pickUserAgent } from './user-agents.js';
 
 export function webSearchExtension(
 	options: Partial<WebSearchExtensionOptions>,
@@ -20,55 +19,27 @@ export function webSearchExtension(
 		const web = api.getEnvironment().web;
 
 		api.registerTool(searchWebSpec, async ({ query }) => {
-			const url = `https://duckduckgo.com/lite?q=${encodeURIComponent(query)}`;
-
-			let lastError: unknown;
-			for (let attempt = 0; attempt < resolved.maxRetries; attempt++) {
-				if (attempt > 0) {
-					await sleep(randomDelay(resolved.retryDelayMsRange));
-				}
-
+			try {
+				const results = await searchWithExa(web, query, resolved);
+				return toSearchResult(query, results);
+			} catch (exaError) {
 				try {
-					const response = await web.fetch({
-						url,
-						timeoutMs: resolved.timeoutMs,
-						maxRedirects: resolved.maxRedirects,
-						headers: { 'User-Agent': pickUserAgent() },
-					});
-
-					if (response.status < 200 || response.status >= 300) {
-						lastError = new Error(
-							`HTTP ${response.status} ${response.statusText}`,
-						);
-						continue;
-					}
-
-					if (normalizeContentType(response.contentType) !== 'text/html') {
-						return toSearchError(
-							query,
-							new Error(
-								"Unsupported content type: ${response.contentType ?? 'unknown",
-							),
-						);
-					}
-
-					const html = decodeBody(response.body);
-					const results = parseDdgLite(html, resolved.maxResults);
+					const results = await searchWithDdg(web, query, resolved);
 					return toSearchResult(query, results);
-				} catch (error) {
-					lastError = error;
+				} catch (ddgError) {
+					return toSearchError(query, combineSearchErrors(exaError, ddgError));
 				}
 			}
-
-			return toSearchError(query, lastError ?? new Error('Unknown error'));
 		});
 	};
 }
 
-function randomDelay([min, max]: [number, number]): number {
-	return min + Math.floor(Math.random() * Math.max(0, max - min));
-}
-
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
+function combineSearchErrors(exaError: unknown, ddgError: unknown): Error {
+	const exaMessage =
+		exaError instanceof Error ? exaError.message : String(exaError);
+	const ddgMessage =
+		ddgError instanceof Error ? ddgError.message : String(ddgError);
+	return new Error(
+		`Exa MCP failed: ${exaMessage}. DuckDuckGo fallback failed: ${ddgMessage}`,
+	);
 }

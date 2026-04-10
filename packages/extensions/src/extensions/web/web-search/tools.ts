@@ -9,6 +9,8 @@ export const searchWebSpec = toolSpec(
 		query: z
 			.string()
 			.min(1)
-			.describe('Search query string to run through DuckDuckGo.'),
+			.describe(
+				'Search query string to run through the configured web search providers.',
+			),
 	}),
 );
