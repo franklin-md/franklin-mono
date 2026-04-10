@@ -3,6 +3,9 @@ export function normalizeUrl(rawUrl: string): string {
 	if (!['http:', 'https:'].includes(url.protocol)) {
 		throw new Error('Only HTTP and HTTPS URLs are supported');
 	}
+	if (url.protocol === 'http:') {
+		url.protocol = 'https:';
+	}
 	url.hash = '';
 	return url.toString();
 }
