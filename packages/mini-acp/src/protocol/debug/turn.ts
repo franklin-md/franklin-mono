@@ -8,31 +8,30 @@ import {
 	renderStreamEvent,
 	renderThrown,
 } from './render.js';
-import { line } from './style.js';
+import { logLines } from './style.js';
 
 export function debugTurn(turn: TurnClient, label: string): TurnClient {
 	return {
 		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
-			console.log(line(label, renderPrompt(message)));
+			logLines(label, renderPrompt(message));
 
 			try {
 				for await (const event of turn.prompt(message)) {
-					const formatted = renderStreamEvent(event);
-					if (formatted !== null) console.log(line(label, formatted));
+					logLines(label, renderStreamEvent(event));
 					yield event;
 				}
 			} catch (error) {
-				console.log(line(label, renderThrown('prompt', error)));
+				logLines(label, renderThrown('prompt', error, 2));
 				throw error;
 			}
 		},
 		async cancel() {
-			console.log(line(label, renderCancel()));
+			logLines(label, renderCancel());
 
 			try {
 				await turn.cancel();
 			} catch (error) {
-				console.log(line(label, renderThrown('cancel', error)));
+				logLines(label, renderThrown('cancel', error));
 				throw error;
 			}
 		},

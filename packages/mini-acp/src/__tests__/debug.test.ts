@@ -6,7 +6,10 @@ import type { StreamEvent } from '../types/stream.js';
 import type { ToolExecuteParams } from '../types/tool.js';
 import { StopCode } from '../types/stop-code.js';
 
+const ANSI_BOLD = '\x1b[1m';
 const ANSI_DIM = '\x1b[2m';
+const ANSI_GREEN = '\x1b[32m';
+const ANSI_BLUE = '\x1b[34m';
 const ANSI_RED = '\x1b[31m';
 const ANSI_YELLOW = '\x1b[33m';
 const ANSI_CYAN = '\x1b[36m';
@@ -69,12 +72,19 @@ describe('debugMiniACP', () => {
 		]);
 
 		expect(spy.mock.calls).toEqual([
-			['[mini] initialize'],
-			['[mini] setContext systemPrompt messages=0 tools=0'],
-			['[mini] prompt user: hello'],
-			['[mini] turnStart'],
-			['[mini] turnEnd Finished (1000)'],
-			['[mini] cancel'],
+			[`[mini] ${ANSI_BOLD}initialize${ANSI_RESET}`],
+			[
+				`[mini] ${ANSI_BOLD}setContext${ANSI_RESET} systemPrompt messages=0 tools=0`,
+			],
+			[`[mini] ${ANSI_BOLD}prompt${ANSI_RESET}`],
+			[`[mini]   ${ANSI_BOLD}user${ANSI_RESET}`],
+			[`[mini]     ${ANSI_BOLD}message${ANSI_RESET} hello`],
+			[`[mini]   ${ANSI_BOLD}assistant${ANSI_RESET}`],
+			[`[mini]     ${ANSI_BOLD}turnStart${ANSI_RESET}`],
+			[
+				`[mini]     ${ANSI_BOLD}turnEnd${ANSI_RESET} ${ANSI_GREEN}Finished (1000)${ANSI_RESET}`,
+			],
+			[`[mini] ${ANSI_BOLD}cancel${ANSI_RESET}`],
 		]);
 
 		spy.mockRestore();
@@ -118,13 +128,17 @@ describe('debugMiniACP', () => {
 
 		expect(yielded).toHaveLength(4);
 		expect(spy.mock.calls).toEqual([
-			['[mini] prompt user: hi'],
-			['[mini] turnStart'],
+			[`[mini] ${ANSI_BOLD}prompt${ANSI_RESET}`],
+			[`[mini]   ${ANSI_BOLD}user${ANSI_RESET}`],
+			[`[mini]     ${ANSI_BOLD}message${ANSI_RESET} hi`],
+			[`[mini]   ${ANSI_BOLD}assistant${ANSI_RESET}`],
+			[`[mini]     ${ANSI_BOLD}turnStart${ANSI_RESET}`],
 			[
-				`[mini] update assistant: Hello world | ${ANSI_DIM}reasoning trace${ANSI_RESET}`,
+				`[mini]     ${ANSI_BOLD}reasoning${ANSI_RESET} ${ANSI_DIM}reasoning trace${ANSI_RESET}`,
 			],
+			[`[mini]     ${ANSI_BOLD}message${ANSI_RESET} Hello world`],
 			[
-				`[mini] ${ANSI_RED}turnEnd ProviderError (2200): provider exploded${ANSI_RESET}`,
+				`[mini]     ${ANSI_BOLD}turnEnd${ANSI_RESET} ${ANSI_RED}ProviderError (2200)${ANSI_RESET}: provider exploded`,
 			],
 		]);
 
@@ -151,9 +165,11 @@ describe('debugMiniACP', () => {
 		});
 		expect(spy.mock.calls).toEqual([
 			[
-				`[mini] ${ANSI_YELLOW}toolExecute lookup_capital {"country":"France"}${ANSI_RESET}`,
+				`[mini]     ${ANSI_YELLOW}${ANSI_BOLD}toolExecute${ANSI_RESET}${ANSI_YELLOW} lookup_capital {"country":"France"}${ANSI_RESET}`,
 			],
-			[`[mini] ${ANSI_CYAN}toolResult lookup_capital result${ANSI_RESET}`],
+			[
+				`[mini]     ${ANSI_CYAN}${ANSI_BOLD}toolResult${ANSI_RESET}${ANSI_CYAN} lookup_capital result${ANSI_RESET}`,
+			],
 		]);
 
 		spy.mockRestore();
@@ -181,9 +197,11 @@ describe('debugMiniACP', () => {
 
 		expect(spy.mock.calls).toEqual([
 			[
-				`[mini] ${ANSI_YELLOW}toolExecute write_file {"path":"a.ts"}${ANSI_RESET}`,
+				`[mini]     ${ANSI_YELLOW}${ANSI_BOLD}toolExecute${ANSI_RESET}${ANSI_YELLOW} write_file {"path":"a.ts"}${ANSI_RESET}`,
 			],
-			[`[mini] ${ANSI_RED}toolError write_file permission denied${ANSI_RESET}`],
+			[
+				`[mini]     ${ANSI_RED}${ANSI_BOLD}toolError${ANSI_RESET}${ANSI_RED} write_file permission denied${ANSI_RESET}`,
+			],
 		]);
 
 		spy.mockRestore();
@@ -210,8 +228,12 @@ describe('debugMiniACP', () => {
 		).rejects.toThrow('boom');
 
 		expect(spy.mock.calls).toEqual([
-			[`[mini] ${ANSI_YELLOW}toolExecute explode {}${ANSI_RESET}`],
-			[`[mini] ${ANSI_RED}toolExecute explode error boom${ANSI_RESET}`],
+			[
+				`[mini]     ${ANSI_YELLOW}${ANSI_BOLD}toolExecute${ANSI_RESET}${ANSI_YELLOW} explode {}${ANSI_RESET}`,
+			],
+			[
+				`[mini]     ${ANSI_RED}${ANSI_BOLD}toolExecute explode error${ANSI_RESET}${ANSI_RED} boom${ANSI_RESET}`,
+			],
 		]);
 
 		spy.mockRestore();
@@ -228,8 +250,38 @@ describe('debugMiniACP', () => {
 			}),
 		);
 
-		expect(spy).toHaveBeenCalledWith('[debug] prompt user: hello');
-		expect(spy).toHaveBeenCalledWith('[debug] turnStart');
+		expect(spy).toHaveBeenCalledWith(`[debug] ${ANSI_BOLD}prompt${ANSI_RESET}`);
+		expect(spy).toHaveBeenCalledWith(`[debug]   ${ANSI_BOLD}user${ANSI_RESET}`);
+		expect(spy).toHaveBeenCalledWith(
+			`[debug]     ${ANSI_BOLD}message${ANSI_RESET} hello`,
+		);
+		expect(spy).toHaveBeenCalledWith(
+			`[debug]   ${ANSI_BOLD}assistant${ANSI_RESET}`,
+		);
+		expect(spy).toHaveBeenCalledWith(
+			`[debug]     ${ANSI_BOLD}turnStart${ANSI_RESET}`,
+		);
+
+		spy.mockRestore();
+	});
+
+	it('colors cancelled turnEnd in blue', async () => {
+		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+		const debugged = debugMiniACP(
+			mockClient([{ type: 'turnEnd', stopCode: StopCode.Cancelled }]),
+			'mini',
+		);
+
+		await drain(
+			debugged.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hello' }],
+			}),
+		);
+
+		expect(spy).toHaveBeenCalledWith(
+			`[mini]     ${ANSI_BOLD}turnEnd${ANSI_RESET} ${ANSI_BLUE}Cancelled (1001)${ANSI_RESET}`,
+		);
 
 		spy.mockRestore();
 	});
