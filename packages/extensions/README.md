@@ -8,6 +8,7 @@ An API is intended to solve a particular class of problems. Implemented so far:
 - **StoreAPI**: Allows sharing state between agent-agent and agent-app
 - **EnvironmentAPI**: Localizes agent actions within a sandboxed environement.
 - **SessionAPI**: Let's the agent know it's position within an agent orchestration tree, and perform actions relative to it.
+- **DependencyAPI<Name,T>**: Simple way for an extension to depend on an app-provided global resource, such as authentication, secrets or the app-level environment.
 
 ## Extension Algebra [TODO after reading about tagless style article]
 - [ ] Extensions, APis, Compilers, Runtimes, RuntimeSystems

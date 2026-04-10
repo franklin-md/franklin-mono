@@ -1,11 +1,3 @@
-export type SessionDetails = {
-	id: string;
-};
+import type { EmptyState } from './empty.js';
 
-export type SessionState = {
-	session: SessionDetails;
-};
-
-export function freshSessionState(): SessionState {
-	return { session: { id: crypto.randomUUID() } };
-}
+export type SessionState = EmptyState;

@@ -39,10 +39,6 @@ export class SessionTree<
 		return this._emptyState();
 	}
 
-	get(sessionId: string): Session<RT> | undefined {
-		return this.collection.get(sessionId);
-	}
-
 	private async add(state: S): Promise<RT> {
 		const id = crypto.randomUUID();
 		const runtime = await this.spawnFn(state);
@@ -72,6 +68,10 @@ export class SessionTree<
 		}
 		const forkState = await existing.runtime.fork();
 		return this.add(forkState);
+	}
+
+	get(sessionId: string): Session<RT> | undefined {
+		return this.collection.get(sessionId);
 	}
 
 	async remove(sessionId: string): Promise<void> {

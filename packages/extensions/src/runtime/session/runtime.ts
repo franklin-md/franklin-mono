@@ -1,4 +1,4 @@
-import type { SessionDetails, SessionState } from '../../state/session.js';
+import type { SessionState } from '../../state/session.js';
 import type { RuntimeBase } from '../types.js';
 
 export type SessionRuntime = RuntimeBase<SessionState> & {
