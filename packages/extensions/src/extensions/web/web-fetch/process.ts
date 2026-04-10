@@ -78,11 +78,11 @@ function extractHtml(
 		const normalized = normalizeExtractedText(rawText);
 
 		const full_normalized =
-			`<<<<EXTERNAL_UNTRUSTED_CONTENT>>>>\n`+
+			`<<<<EXTERNAL_UNTRUSTED_CONTENT>>>>\n` +
 			`TITLE: ${title !== '' ? title : '[empty title]'}\n` +
-			(normalized !== '' ? normalized : '[empty body]') + 
+			(normalized !== '' ? normalized : '[empty body]') +
 			`\n<<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>>`;
-		
+
 		const { text, truncated } = truncateText(
 			full_normalized,
 			options.maxOutputChars,
@@ -109,7 +109,10 @@ function extractPlainText(
 ): WebFetchProcessedResult {
 	const normalized = normalizeExtractedText(decodeBody(response.body));
 	const { text, truncated } = truncateText(normalized, options.maxOutputChars);
-	const wrapped = `<<<<EXTERNAL_UNTRUSTED_CONTENT>>>>\n` + text + `\n<<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>>`;
+	const wrapped =
+		`<<<<EXTERNAL_UNTRUSTED_CONTENT>>>>\n` +
+		text +
+		`\n<<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>>`;
 	return {
 		kind: 'text',
 		content: text.length > 0 ? wrapped : '[empty response]',
