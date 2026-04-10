@@ -76,6 +76,7 @@ export {
 export {
 	createClientConnection,
 	createAgentConnection,
+	debugMiniACP,
 	createSessionAdapter,
 	CtxTracker,
 	trackAgent,
