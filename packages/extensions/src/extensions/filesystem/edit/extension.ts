@@ -11,7 +11,8 @@ import {
 import { findUnique } from './match/find-unique.js';
 import { applyReplacement } from './replace.js';
 import type { StoreAPI } from 'packages/extensions/src/api/index.js';
-import { fileKey } from './key.js';
+import { fileKey } from '../common/key.js';
+import { createFileControl } from '../common/control.js';
 import { editFileSpec } from './tools.js';
 
 /**
@@ -32,6 +33,7 @@ export function editExtension(): Extension<
 		const env = api.getEnvironment();
 		// The store is private to ONE agent; it keeps track of the agent's "seen" files.
 		const store = api.registerStore(fileKey, {}, 'private');
+		const file = createFileControl(store);
 		api.registerTool(
 			editFileSpec,
 			async ({ path, old_text, new_text, replace_all }) => {
@@ -111,6 +113,9 @@ export function editExtension(): Extension<
 				// 5. Restore encoding + write
 				const final = bom + restoreLineEndings(replaced, ending);
 				await env.filesystem.writeFile(path, final);
+
+				// 6. Refresh the read hash so consecutive edits don't require a re-read
+				await file.markFileRead(env.filesystem, path, final);
 
 				return `Successfully edited ${path}.`;
 			},
