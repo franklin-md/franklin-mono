@@ -25,12 +25,11 @@ export function PromptText({ children }: { children: ReactElement }) {
 			shiftKey: boolean;
 			preventDefault(): void;
 		}) => {
-			if (e.key === 'Enter' && !e.shiftKey) {
+			if (e.key === 'Enter' && !e.shiftKey && !sending) {
 				e.preventDefault();
 				send();
 			}
 		},
-		disabled: sending,
 	} as unknown as React.HTMLAttributes<HTMLElement>;
 
 	return <Slot {...slotProps}>{children}</Slot>;
