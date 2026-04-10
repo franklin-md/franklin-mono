@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
-import { Slot } from '@radix-ui/react-slot';
 
 import { usePrompt } from './context.js';
+import { PromptCancel } from './cancel.js';
+import { PromptSend } from './send.js';
 
 export interface PromptAgentControlProps {
 	readonly send: ReactElement;
@@ -12,24 +13,12 @@ export interface PromptAgentControlProps {
  * Headless switcher that renders either a send or cancel control
  * based on whether the agent is currently processing a turn.
  *
- * When idle, renders the `send` element with `onClick` and `disabled` injected.
- * When sending, renders the `cancel` element with `onClick` injected.
+ * When idle, renders the `send` element wrapped in `PromptSend`.
+ * When sending, renders the `cancel` element wrapped in `PromptCancel`.
  */
 export function PromptAgentControl({ send, cancel }: PromptAgentControlProps) {
-	const { send: sendFn, cancel: cancelFn, canSend, sending } = usePrompt();
+	const { sending } = usePrompt();
 
-	if (sending) {
-		const cancelProps = {
-			onClick: cancelFn,
-		} as unknown as React.HTMLAttributes<HTMLElement>;
-
-		return <Slot {...cancelProps}>{cancel}</Slot>;
-	}
-
-	const sendProps = {
-		onClick: sendFn,
-		disabled: !canSend,
-	} as unknown as React.HTMLAttributes<HTMLElement>;
-
-	return <Slot {...sendProps}>{send}</Slot>;
+	if (sending) return <PromptCancel>{cancel}</PromptCancel>;
+	return <PromptSend>{send}</PromptSend>;
 }
