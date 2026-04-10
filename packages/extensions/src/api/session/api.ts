@@ -1,5 +1,10 @@
-import type { SessionRuntime } from '../../runtime/session/runtime.js';
+import type { RuntimeSystem } from '../../runtime-system/types.js';
+import type { SessionRuntime } from '../../runtime/index.js';
+import type { Session } from '../../runtime/session/types.js';
 
-export type SessionAPI = {
-	getSession(): SessionRuntime;
+export type SessionAPI<RTS extends RuntimeSystem<any, any, any>> = {
+	session: {
+		createChild(): Promise<Session<SessionRuntime<RTS>>>;
+		createFork(): Promise<Session<SessionRuntime<RTS>>>;
+	};
 };

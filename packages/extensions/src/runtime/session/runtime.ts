@@ -1,12 +1,14 @@
-import type { SessionState } from '../../state/session.js';
-import type { RuntimeBase } from '../types.js';
+import type {
+	InferRuntime,
+	RuntimeSystem,
+} from '../../runtime-system/types.js';
+import type { Session } from './types.js';
 
-export type SessionRuntime = RuntimeBase<SessionState> & {
-	// TODO: we should rename fork and child in runtimebase because. Maybe it becomes:
-	// {state:{get,fork,child}}?
-	// Then we can avoid naming conflicts with this SessionRuntime interface.
-	session: {
-		child(): Promise<SessionRuntime>;
-		fork(): Promise<SessionRuntime>;
+// TODO: Can we make this alias transparent using Simplify?
+export type SessionRuntime<RTS extends RuntimeSystem<any, any, any>> =
+	InferRuntime<RTS> & {
+		session: {
+			child(): Promise<Session<SessionRuntime<RTS>>>;
+			fork(): Promise<Session<SessionRuntime<RTS>>>;
+		};
 	};
-};

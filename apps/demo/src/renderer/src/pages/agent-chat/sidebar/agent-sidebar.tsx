@@ -23,18 +23,20 @@ export function AgentSidebar({
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
 
 	const handleSpawnAgent = useCallback(async () => {
-		const session = await manager['new']({
-			core: { llmConfig: settings.get().defaultLLMConfig },
-			env: {
-				fsConfig: {
-					cwd: '/tmp',
-					permissions: { allowRead: ['**'], allowWrite: ['**'] },
+		const session = await manager.create({
+			overrides: {
+				core: { llmConfig: settings.get().defaultLLMConfig },
+				env: {
+					fsConfig: {
+						cwd: '/tmp',
+						permissions: { allowRead: ['**'], allowWrite: ['**'] },
+					},
+					netConfig: { allowedDomains: [], deniedDomains: [] },
 				},
-				netConfig: { allowedDomains: [], deniedDomains: [] },
 			},
 		});
-		setCurrentAgentId(session.session.id);
-		onSelectAgent(session.session.id, session);
+		setCurrentAgentId(session.id);
+		onSelectAgent(session.id, session.runtime);
 	}, [manager, settings, onSelectAgent]);
 
 	const handleSelectAgent = useCallback(
@@ -52,11 +54,11 @@ export function AgentSidebar({
 			// If we just deleted the active session, select another agent
 			// TODO: refactor selection logic more generally
 			if (currentAgentId === sessionId) {
-				const remaining = sessions.filter((s) => s.session.id !== sessionId);
+				const remaining = sessions.filter((s) => s.id !== sessionId);
 				const [next] = remaining;
 				if (next) {
-					setCurrentAgentId(next.session.id);
-					onSelectAgent(next.session.id, next);
+					setCurrentAgentId(next.id);
+					onSelectAgent(next.id, next.runtime);
 				} else {
 					setCurrentAgentId(null);
 				}
@@ -87,12 +89,12 @@ export function AgentSidebar({
 						</p>
 					) : (
 						sessions.map((session) => (
-							<AgentProvider key={session.session.id} agent={session}>
+							<AgentProvider key={session.id} agent={session.runtime}>
 								<AgentSidebarItem
-									sessionId={session.session.id}
-									active={session.session.id === currentAgentId}
+									sessionId={session.id}
+									active={session.id === currentAgentId}
 									onSelect={(sessionId) =>
-										handleSelectAgent(sessionId, session)
+										handleSelectAgent(sessionId, session.runtime)
 									}
 									onDelete={(sessionId) => void handleDeleteAgent(sessionId)}
 								/>

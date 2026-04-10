@@ -1,220 +1,209 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createSessionSystem } from '../session.js';
 import { createRuntime } from '../create.js';
-import { freshSessionState } from '../../state/session.js';
+import { SessionCollection } from '../../runtime/session/collection.js';
+import { createSessionManager } from '../../runtime/session/manager.js';
 import type { SessionRuntime } from '../../runtime/session/runtime.js';
-import type { SessionTree } from '../../runtime/session/tree.js';
 import type { RuntimeBase } from '../../runtime/types.js';
 import type { MergedRuntime } from '../../runtime/combine.js';
-import type { SessionState } from '../../state/session.js';
+import type { EmptyState } from '../../state/empty.js';
+import type { RuntimeSystem } from '../types.js';
+import type { Compiler } from '../../compile/types.js';
+import type { SessionCreate } from '../../runtime/session/types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function mockTree() {
-	return {
-		get: vi.fn((_id: string) => undefined),
-		emptyState: vi.fn(() => freshSessionState()),
-		add: vi.fn(async (state: SessionState) => ({
-			id: state.session.id,
-			runtime: createMockRuntime(state.session.id),
-		})),
-		create: vi.fn(async () => ({
-			id: 'new-session',
-			runtime: createMockRuntime('new-session'),
-		})),
-		spawn: vi.fn(async (_parentId: string) => ({
-			id: 'child-spawned',
-			runtime: createMockRuntime('child-spawned'),
-		})),
-		fork: vi.fn(async (_id: string) => ({
-			id: 'forked',
-			runtime: createMockRuntime('forked'),
-		})),
-		remove: vi.fn(async (_id: string) => {}),
-		list: vi.fn(() => []),
-	} as unknown as SessionTree<SessionState, SessionRuntime>;
-}
+type TestState = { value: string };
+type TestRuntime = RuntimeBase<TestState>;
+type TestSystem = RuntimeSystem<TestState, Record<string, never>, TestRuntime>;
 
-function createMockRuntime(id: string): SessionRuntime {
+function createTestSystem(): TestSystem {
 	return {
-		session: {
-			child: vi.fn(async () => createMockRuntime('child-of-' + id)),
-			fork: vi.fn(async () => createMockRuntime('fork-of-' + id)),
+		emptyState: () => ({ value: 'root' }),
+		async createCompiler(
+			state: TestState,
+		): Promise<Compiler<Record<string, never>, TestRuntime>> {
+			return {
+				api: {},
+				async build(): Promise<TestRuntime> {
+					return {
+						state: vi.fn(async () => state),
+						fork: vi.fn(async () => state),
+						child: vi.fn(async () => state),
+						dispose: vi.fn(async () => {}),
+						subscribe: vi.fn(() => () => {}),
+					};
+				},
+			};
 		},
-		state: vi.fn(async () => ({ session: { id } })),
-		fork: vi.fn(async () => ({ session: { id } })),
-		child: vi.fn(async () => freshSessionState()),
-		dispose: vi.fn(async () => {}),
-		subscribe: vi.fn(() => () => {}),
 	};
 }
 
-// ---------------------------------------------------------------------------
-// freshSessionState
-// ---------------------------------------------------------------------------
+type TestSessionRuntime = SessionRuntime<TestSystem>;
 
-describe('freshSessionState', () => {
-	it('generates a unique id each call', () => {
-		const s1 = freshSessionState();
-		const s2 = freshSessionState();
-
-		expect(s1.session.id).toBeTruthy();
-		expect(s2.session.id).toBeTruthy();
-		expect(s1.session.id).not.toBe(s2.session.id);
-	});
-});
+function createTestManager() {
+	const collection = new SessionCollection<TestSessionRuntime>();
+	const system = createTestSystem();
+	return {
+		manager: createSessionManager({ system, collection, extensions: [] }),
+		collection,
+	};
+}
 
 // ---------------------------------------------------------------------------
 // createSessionSystem
 // ---------------------------------------------------------------------------
 
 describe('createSessionSystem', () => {
-	it('emptyState returns a fresh state with random id', () => {
-		const system = createSessionSystem(mockTree());
-		const s1 = system.emptyState();
-		const s2 = system.emptyState();
+	it('emptyState delegates to the base system', () => {
+		const { manager } = createTestManager();
+		const system = createTestSystem();
+		const sessionSystem = createSessionSystem(
+			system,
+			'test-id',
+			manager.create,
+		);
 
-		expect(s1.session.id).toBeTruthy();
-		expect(s1.session.id).not.toBe(s2.session.id);
+		const state = sessionSystem.emptyState();
+		expect(state).toEqual({ value: 'root' });
 	});
 
-	it('create returns a runtime with session.child and session.fork', async () => {
-		const tree = mockTree();
-		const system = createSessionSystem(tree);
-
-		const runtime = await createRuntime(
+	it('builds a runtime with session.child and session.fork', async () => {
+		const { manager } = createTestManager();
+		const system = createTestSystem();
+		const sessionSystem = createSessionSystem(
 			system,
-			{ session: { id: 'sess-1' } },
-			[],
+			'test-id',
+			manager.create,
 		);
+
+		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
 
 		expect(runtime.session).toBeDefined();
 		expect(runtime.session.child).toBeTypeOf('function');
 		expect(runtime.session.fork).toBeTypeOf('function');
 	});
 
-	it('extensions access the runtime via getSession', async () => {
-		const system = createSessionSystem(mockTree());
+	it('extensions access session via api.session', async () => {
+		const { manager } = createTestManager();
+		const system = createTestSystem();
+		const sessionSystem = createSessionSystem(
+			system,
+			'test-id',
+			manager.create,
+		);
 
-		let received: SessionRuntime | undefined;
-		await createRuntime(system, { session: { id: 'sess-1' } }, [
+		let receivedChild: (() => Promise<unknown>) | undefined;
+		let receivedFork: (() => Promise<unknown>) | undefined;
+
+		await createRuntime(sessionSystem, { value: 'test' }, [
 			(api) => {
-				received = api.getSession();
+				receivedChild = api.session.createChild;
+				receivedFork = api.session.createFork;
 			},
 		]);
 
-		expect(received).toBeDefined();
-		expect(received!.session.child).toBeTypeOf('function');
-		expect(received!.session.fork).toBeTypeOf('function');
-		// The runtime IS the handle — it has lifecycle methods too
-		expect(received!.state).toBeTypeOf('function');
-		expect(received!.dispose).toBeTypeOf('function');
+		expect(receivedChild).toBeTypeOf('function');
+		expect(receivedFork).toBeTypeOf('function');
 	});
 
-	it('session.child delegates to tree.spawn with id', async () => {
-		const tree = mockTree();
-		const system = createSessionSystem(tree);
-
-		const runtime = await createRuntime(
+	it('preserves base runtime methods', async () => {
+		const { manager } = createTestManager();
+		const system = createTestSystem();
+		const sessionSystem = createSessionSystem(
 			system,
-			{ session: { id: 'parent-1' } },
-			[],
+			'test-id',
+			manager.create,
 		);
 
-		await runtime.session.child();
+		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
 
-		expect(tree.child).toHaveBeenCalledWith('parent-1');
-	});
-
-	it('state returns the session state', async () => {
-		const system = createSessionSystem(mockTree());
-
-		const runtime = await createRuntime(
-			system,
-			{ session: { id: 'sess-1' } },
-			[],
-		);
-
-		expect(await runtime.state()).toEqual({
-			session: { id: 'sess-1' },
-		});
-	});
-
-	it('fork returns a fresh identity with random id', async () => {
-		const system = createSessionSystem(mockTree());
-
-		const runtime = await createRuntime(
-			system,
-			{ session: { id: 'sess-1' } },
-			[],
-		);
-
-		const forkState = await runtime.fork();
-		expect(forkState.session.id).toBeTruthy();
-		expect(forkState.session.id).not.toBe('sess-1');
-	});
-
-	it('child returns a fresh identity with random id', async () => {
-		const system = createSessionSystem(mockTree());
-
-		const runtime = await createRuntime(
-			system,
-			{ session: { id: 'sess-1' } },
-			[],
-		);
-
-		const childState = await runtime.child();
-		expect(childState.session.id).toBeTruthy();
-		expect(childState.session.id).not.toBe('sess-1');
+		expect(await runtime.state()).toEqual({ value: 'test' });
+		expect(await runtime.fork()).toEqual({ value: 'test' });
+		expect(await runtime.child()).toEqual({ value: 'test' });
 	});
 
 	it('dispose is safe to call', async () => {
-		const system = createSessionSystem(mockTree());
-
-		const runtime = await createRuntime(
+		const { manager } = createTestManager();
+		const system = createTestSystem();
+		const sessionSystem = createSessionSystem(
 			system,
-			{ session: { id: 'sess-1' } },
-			[],
+			'test-id',
+			manager.create,
 		);
+
+		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
 
 		await expect(runtime.dispose()).resolves.toBeUndefined();
 	});
 
 	it('subscribe returns an unsubscribe function', async () => {
-		const system = createSessionSystem(mockTree());
-
-		const runtime = await createRuntime(
+		const { manager } = createTestManager();
+		const system = createTestSystem();
+		const sessionSystem = createSessionSystem(
 			system,
-			{ session: { id: 'sess-1' } },
-			[],
+			'test-id',
+			manager.create,
 		);
+
+		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
 
 		const unsub = runtime.subscribe(() => {});
 		expect(unsub).toBeTypeOf('function');
 		unsub();
 	});
+
+	it('session.child delegates to the create function', async () => {
+		const system = createTestSystem();
+		const createSpy = vi.fn<SessionCreate<TestSystem>>().mockResolvedValue({
+			id: 'child-id',
+			runtime: {} as TestSessionRuntime,
+		});
+		const sessionSystem = createSessionSystem(system, 'test-id', createSpy);
+		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
+		await runtime.session.child();
+
+		expect(createSpy).toHaveBeenCalledWith({ from: 'test-id', mode: 'child' });
+	});
+
+	it('session.fork delegates to the create function', async () => {
+		const system = createTestSystem();
+		const createSpy = vi.fn<SessionCreate<TestSystem>>().mockResolvedValue({
+			id: 'fork-id',
+			runtime: {} as TestSessionRuntime,
+		});
+		const sessionSystem = createSessionSystem(system, 'test-id', createSpy);
+		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
+		await runtime.session.fork();
+
+		expect(createSpy).toHaveBeenCalledWith({ from: 'test-id', mode: 'fork' });
+	});
 });
 
 // ---------------------------------------------------------------------------
-// Type-level: combined runtimes are subtypes of their parts
+// Type-level: combined runtimes preserve SessionRuntime subtyping
 // ---------------------------------------------------------------------------
 
 describe('SessionRuntime subtyping', () => {
 	it('MergedRuntime with SessionRuntime is assignable to SessionRuntime', () => {
-		// Compile-time check: a combined runtime preserves SessionRuntime subtyping
+		type MinimalSystem = RuntimeSystem<
+			EmptyState,
+			Record<never, never>,
+			RuntimeBase<EmptyState>
+		>;
 		type FakeState = { fake: { value: string } };
 		type FakeRuntime = RuntimeBase<FakeState> & { doFake(): void };
 		type Combined = MergedRuntime<
-			SessionState,
+			EmptyState,
 			FakeState,
-			SessionRuntime,
+			SessionRuntime<MinimalSystem>,
 			FakeRuntime
 		>;
 
 		// This assignment must compile — Combined extends SessionRuntime
-		const _check: SessionRuntime = {} as Combined;
+		const _check: SessionRuntime<MinimalSystem> = {} as Combined;
 		expect(_check).toBeDefined();
 	});
 });

@@ -53,6 +53,12 @@ export type { StoreSnapshot } from './store/index.js';
 export type {
 	SessionAPI,
 	SessionRuntime,
-	SessionTree,
+	Session,
+	SessionCreate,
+	SessionCreateInput,
 } from './session/index.js';
-export { SessionCollection } from './session/index.js';
+export {
+	SessionCollection,
+	SessionManager,
+	createSessionManager,
+} from './session/index.js';

@@ -3,12 +3,9 @@ import {
 	createCoreSystem,
 	createStoreSystem,
 	createEnvironmentSystem,
-	SessionTree,
-	createRuntime,
 	systems,
-	createSessionSystem,
-	type RuntimeSystem,
 	SessionCollection,
+	createSessionManager,
 } from '@franklin/extensions';
 import { PersistedSessionCollection } from '../agent/session/registry.js';
 import { createPersistence } from '../agent/session/persist/file-persister.js';
@@ -23,16 +20,15 @@ import type { Platform } from '../platform.js';
 import type { IAuthManager } from '../auth/types.js';
 import type {
 	FranklinState,
-	FranklinAPI,
 	FranklinRuntime,
 	FranklinExtension,
 } from '../types.js';
+import { createAgents, type Agents } from './agents.js';
 
 export class FranklinApp {
 	readonly auth: IAuthManager;
 	readonly settings: SettingsStore;
-	// TODO: Maybe rename?
-	readonly agents: SessionTree<FranklinState, FranklinRuntime>;
+	readonly agents: Agents;
 
 	private readonly platform: Platform;
 	private readonly storeRegistry: StoreRegistry;
@@ -53,26 +49,26 @@ export class FranklinApp {
 			: undefined;
 
 		this.storeRegistry = new StoreRegistry(persistence?.store);
-		const registry = persistence?.session
+		const collection = persistence?.session
 			? new PersistedSessionCollection<FranklinState, FranklinRuntime>(
 					persistence.session,
 				)
 			: new SessionCollection<FranklinRuntime>();
 
-		const coreSystem = withAuth(createCoreSystem(platform.spawn), auth);
+		// Static base system — shared across all sessions
+		const baseSystem = systems(withAuth(createCoreSystem(platform.spawn), auth))
+			.add(createStoreSystem(this.storeRegistry))
+			.add(createEnvironmentSystem(platform.environment))
+			.done();
 
-		this.agents = new SessionTree<FranklinState, FranklinRuntime>({
-			collection: registry,
-			emptyState: () => system.emptyState(),
-			spawn: (state) => createRuntime(system, state, extensions),
-			getId: (state) => state.session.id,
+		// Session manager — wraps base system, handles per-session session system internally
+		const manager = createSessionManager({
+			system: baseSystem,
+			collection,
+			extensions,
 		});
-		const system: RuntimeSystem<FranklinState, FranklinAPI, FranklinRuntime> =
-			systems(coreSystem)
-				.add(createStoreSystem(this.storeRegistry))
-				.add(createEnvironmentSystem(platform.environment))
-				.add(createSessionSystem(this.agents))
-				.done();
+
+		this.agents = createAgents(manager.create, collection);
 	}
 
 	async start(): Promise<void> {
@@ -83,7 +79,5 @@ export class FranklinApp {
 			this.auth,
 		);
 		await this.storeRegistry.restore();
-
-		/*
 	}
 }

@@ -11,24 +11,28 @@ This document captures design decisions for:
 ### Agent Orchestration
 
 #### Agent Ownership
-- **Collection for global set of agents**  
+
+- **Collection for global set of agents**
 - All agent references are handles whose lifecycle does not need to be managed.
 
 #### Creating Agents from other Agents:
+
 Every runtime has a way to get a 'child' and 'fork' state, used to construct a new runtime and therefore agent from. This means agents may be used to seed other agents, creating an **implicit tree like structure**:
+
 - `child` semantics create a "Parent-Child" edge
 - `fork` semantics create a "Sibling" relation (common parent)
 
-
 #### Creating Agents from scratch:
+
 - [ ] There is a root to this tree that is not an agent (is just a state)
-  - [ ] `new` operation 
+  - [ ] `new` operation
 
 #### Grouping Agents
+
 - [ ] Motivation: Seperated environements (Conductor example), group level shared store
 
-
 ##### Persistence
+
 A bi-product of fact that Agent RuntimeSystem algebra have serializable state that can be used to also restore themselves
 
 ##### TODO

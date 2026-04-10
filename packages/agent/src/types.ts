@@ -3,29 +3,37 @@ import type {
 	StoreSystem,
 	EnvironmentSystem,
 	CombineSystems,
-	InferState,
-	InferAPI,
-	InferRuntime,
 	SessionSystem,
+	InferState,
+	InferRuntime,
+	InferAPI,
 } from '@franklin/extensions';
 
-/** The combined system: combine(core, combine(store, env)). */
-type FullSystem = CombineSystems<
+// ---------------------------------------------------------------------------
+// Base system = core + store + env (static, shared across sessions)
+// ---------------------------------------------------------------------------
+
+export type BaseSystem = CombineSystems<
 	CoreSystem,
-	CombineSystems<StoreSystem, CombineSystems<EnvironmentSystem, SessionSystem>>
+	CombineSystems<StoreSystem, EnvironmentSystem>
 >;
 
 // ---------------------------------------------------------------------------
-// Derived types — all flow from the concrete system types
+// Full types — session system is combined dynamically per session.
+//
+// FranklinRuntime is self-referential (session.child returns FranklinRuntime).
+// We split this into a non-recursive base type + a recursive interface,
+// because TypeScript allows self-referential interfaces but not type aliases.
 // ---------------------------------------------------------------------------
 
+export type FranklinSystem = SessionSystem<BaseSystem>;
+
+export type FranklinRuntime = InferRuntime<FranklinSystem>;
+
 /** Combined state — persisted without secrets. */
-export type FranklinState = InferState<FullSystem>;
+export type FranklinState = InferState<FranklinSystem>;
 
 /** Combined extension API surface. */
-export type FranklinAPI = InferAPI<FullSystem>;
+export type FranklinAPI = InferAPI<FranklinSystem>;
 
 export type FranklinExtension = (api: FranklinAPI) => void;
-
-/** Combined runtime — the live running session. */
-export type FranklinRuntime = InferRuntime<FullSystem>;

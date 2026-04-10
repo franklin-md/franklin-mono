@@ -1,19 +1,22 @@
 import { useCallback, useRef, useSyncExternalStore } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { Session } from '@franklin/extensions';
 
 import { useApp } from './franklin-context.js';
 
-function sameRuntimes(
-	prev: FranklinRuntime[],
-	next: FranklinRuntime[],
+function sameSessions(
+	prev: Session<FranklinRuntime>[],
+	next: Session<FranklinRuntime>[],
 ): boolean {
 	if (prev.length !== next.length) {
 		return false;
 	}
 
 	for (let i = 0; i < prev.length; i++) {
-		if (prev[i] !== next[i]) {
+		const p = prev[i];
+		const n = next[i];
+		if (p?.id !== n?.id || p?.runtime !== n?.runtime) {
 			return false;
 		}
 	}
@@ -28,9 +31,9 @@ function sameRuntimes(
  * added or removed — mutations within a session (stores, history) do not
  * trigger re-renders here.
  */
-export function useSessions(): FranklinRuntime[] {
+export function useSessions(): Session<FranklinRuntime>[] {
 	const manager = useApp().agents;
-	const snapshotRef = useRef<FranklinRuntime[] | null>(null);
+	const snapshotRef = useRef<Session<FranklinRuntime>[] | null>(null);
 
 	const subscribe = useCallback(
 		(cb: () => void) => manager.subscribe(cb),
@@ -38,12 +41,12 @@ export function useSessions(): FranklinRuntime[] {
 	);
 
 	const getSnapshot = useCallback(() => {
-		const next = manager.list().map((session) => session.runtime);
+		const next = manager.list();
 		const prev = snapshotRef.current;
 
 		// agents.list() returns a fresh array on every call. Reuse the previous
 		// snapshot when the runtime references are stable.
-		if (prev && sameRuntimes(prev, next)) {
+		if (prev && sameSessions(prev, next)) {
 			return prev;
 		}
 

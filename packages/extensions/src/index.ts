@@ -32,8 +32,15 @@ export type {
 	StoreKey,
 	StoreValueType,
 	SessionAPI,
+	Session,
+	SessionCreate,
+	SessionCreateInput,
 } from './api/index.js';
-export { SessionCollection } from './api/index.js';
+export {
+	SessionCollection,
+	SessionManager,
+	createSessionManager,
+} from './api/index.js';
 export { compose, composeMethod, passThrough } from './api/index.js';
 export { resolveToolOutput } from './api/index.js';
 export { toolSpec } from './api/index.js';
@@ -74,7 +81,6 @@ export type {
 	InferAPI,
 	InferRuntime,
 	CombineSystems,
-	SessionSpawn,
 } from './runtime-system/index.js';
 export { createRuntime } from './runtime-system/index.js';
 export { createCoreSystem } from './runtime-system/index.js';
@@ -88,7 +94,6 @@ export type { EnvironmentSystem } from './runtime-system/index.js';
 export type { EnvironmentFactory } from './runtime-system/index.js';
 export { createSessionSystem } from './runtime-system/index.js';
 export type { SessionSystem } from './runtime-system/index.js';
-export { SessionTree, createSessionTree } from './runtime-system/index.js';
 export { combine as combineSystems } from './runtime-system/index.js';
 export { withSetup } from './runtime-system/index.js';
 export { systems } from './runtime-system/index.js';
@@ -114,8 +119,9 @@ export type { StoreState } from './state/index.js';
 export { emptyStoreState } from './state/index.js';
 export type { EnvironmentState } from './state/index.js';
 export { emptyEnvironmentState } from './state/index.js';
-export type { SessionState, SessionDetails } from './state/index.js';
-export { freshSessionState } from './state/index.js';
+export type { SessionState } from './state/index.js';
+export type { EmptyState } from './state/index.js';
+export { emptyState } from './state/index.js';
 
 // ---------------------------------------------------------------------------
 // Built-in extensions
