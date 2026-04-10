@@ -67,3 +67,5 @@ export type { ProxyRuntime, ServerRuntime } from './proxy/index.js';
 export { bindClient, UnsupportedDescriptorError } from './proxy/index.js';
 export { bindServer } from './proxy/index.js';
 export { getValueAtPath } from './proxy/index.js';
+export { wait } from './utils/async/wait.js';
+export { randomDelay } from './utils/random.js';

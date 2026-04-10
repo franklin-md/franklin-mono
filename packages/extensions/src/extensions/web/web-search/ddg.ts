@@ -1,3 +1,4 @@
+import { wait, randomDelay } from '@franklin/lib';
 import type { WebAPI } from '../../../api/environment/types.js';
 import { decodeBody, normalizeContentType } from '../utils.js';
 import { parseDdgLite } from './parse.js';
@@ -14,7 +15,7 @@ export async function searchWithDdg(
 	let lastError: unknown;
 	for (let attempt = 0; attempt < options.maxRetries; attempt++) {
 		if (attempt > 0) {
-			await sleep(randomDelay(options.retryDelayMsRange));
+			await wait(randomDelay(options.retryDelayMsRange));
 		}
 
 		try {
@@ -45,12 +46,4 @@ export async function searchWithDdg(
 	}
 
 	throw lastError instanceof Error ? lastError : new Error('Unknown error');
-}
-
-function randomDelay([min, max]: [number, number]): number {
-	return min + Math.floor(Math.random() * Math.max(0, max - min));
-}
-
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
 }
