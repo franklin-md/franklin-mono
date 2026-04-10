@@ -136,6 +136,7 @@ export {
 	readExtension,
 	bashExtension,
 	createWebFetchExtension,
+	spawnExtension,
 } from './extensions/index.js';
 
 export { createTodoControl, createStatusControl } from './extensions/index.js';

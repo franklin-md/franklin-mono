@@ -12,3 +12,4 @@ export { writeExtension } from './filesystem/write/bundle.js';
 export { editExtension } from './filesystem/edit/bundle.js';
 export { bashExtension } from './terminal/bundle.js';
 export { createWebFetchExtension } from './web-fetch/bundle.js';
+export { spawnExtension } from './spawn/bundle.js';

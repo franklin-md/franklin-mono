@@ -51,11 +51,19 @@ export class SessionManager<RTS extends RuntimeSystem<any, any, any>> {
 
 			state = resolveState(state, input?.overrides);
 
-			const fullSystem = createSessionSystem(this.system, id, this.create);
-			const runtime = await createRuntime(fullSystem, state, this.extensions);
-			this.collection.set(id, runtime);
-			return { id, runtime };
+			const session = await this.realize(id, state);
+			this.collection.set(id, session.runtime);
+			return session;
 		};
+	}
+
+	async realize(
+		id: string,
+		state: InferState<RTS>,
+	): Promise<Session<SessionRuntime<RTS>>> {
+		const fullSystem = createSessionSystem(this.system, id, this.create);
+		const runtime = await createRuntime(fullSystem, state, this.extensions);
+		return { id, runtime };
 	}
 }
 
