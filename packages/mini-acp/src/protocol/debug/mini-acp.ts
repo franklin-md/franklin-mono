@@ -3,12 +3,6 @@ import type { MuAgent, MuClient } from '../types.js';
 import { debugAgent } from './agent.js';
 import { debugClient } from './client.js';
 
-let nextId = 1;
-
-function getNextLabel(type: 'agent' | 'client'): string {
-	return `${type}-${nextId++}`;
-}
-
 /**
  * Decorates a Mini-ACP client or agent with minimal, colored protocol logging.
  */
@@ -18,8 +12,7 @@ export function debugMiniACP(
 	endpoint: MuClient | MuAgent,
 	label?: string,
 ): MuClient | MuAgent {
-	const finalLabel =
-		label ?? getNextLabel(isMuClient(endpoint) ? 'client' : 'agent');
+	const finalLabel = label ?? 'debug';
 	return isMuClient(endpoint)
 		? debugClient(endpoint, finalLabel)
 		: debugAgent(endpoint, finalLabel);
