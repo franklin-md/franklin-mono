@@ -8,6 +8,27 @@ describe('normalizeUrl', () => {
 		);
 	});
 
+	it('keeps localhost on http', () => {
+		expect(normalizeUrl('http://localhost:3000/path')).toBe(
+			'http://localhost:3000/path',
+		);
+	});
+
+	it('keeps literal loopback IPs on http', () => {
+		expect(normalizeUrl('http://127.0.0.1:11434/path')).toBe(
+			'http://127.0.0.1:11434/path',
+		);
+		expect(normalizeUrl('http://[::1]:11434/path')).toBe(
+			'http://[::1]:11434/path',
+		);
+	});
+
+	it('keeps other non-public hosts on http', () => {
+		expect(normalizeUrl('http://192.168.1.10:8080/path')).toBe(
+			'http://192.168.1.10:8080/path',
+		);
+	});
+
 	it('leaves https unchanged', () => {
 		expect(normalizeUrl('https://example.com/path')).toBe(
 			'https://example.com/path',

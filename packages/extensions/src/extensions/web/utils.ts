@@ -3,11 +3,63 @@ export function normalizeUrl(rawUrl: string): string {
 	if (!['http:', 'https:'].includes(url.protocol)) {
 		throw new Error('Only HTTP and HTTPS URLs are supported');
 	}
-	if (url.protocol === 'http:') {
+	if (url.protocol === 'http:' && isPublicHost(url.hostname)) {
 		url.protocol = 'https:';
 	}
 	url.hash = '';
 	return url.toString();
+}
+
+function isPublicHost(host: string): boolean {
+	const normalized = normalizeHost(host);
+
+	if (
+		normalized === 'localhost' ||
+		normalized === '0.0.0.0' ||
+		normalized === '::' ||
+		normalized === '::1'
+	) {
+		return false;
+	}
+
+	const ipv4 = parseIPv4(normalized);
+	if (ipv4 !== null) {
+		const [a, b] = ipv4;
+		return !(
+			a === 0 ||
+			a === 10 ||
+			a === 127 ||
+			(a === 100 && b >= 64 && b <= 127) ||
+			(a === 169 && b === 254) ||
+			(a === 172 && b >= 16 && b <= 31) ||
+			(a === 192 && b === 168)
+		);
+	}
+
+	return !(
+		normalized.startsWith('fe80:') ||
+		normalized.startsWith('fc') ||
+		normalized.startsWith('fd')
+	);
+}
+
+function normalizeHost(host: string): string {
+	if (host.startsWith('[') && host.endsWith(']')) {
+		return host.slice(1, -1).toLowerCase();
+	}
+	return host.toLowerCase();
+}
+
+function parseIPv4(host: string): [number, number, number, number] | null {
+	const parts = host.split('.');
+	if (parts.length !== 4) return null;
+
+	const nums = parts.map(Number);
+	if (nums.some((n) => isNaN(n) || n < 0 || n > 255 || !Number.isInteger(n))) {
+		return null;
+	}
+
+	return nums as [number, number, number, number];
 }
 
 export function normalizeExtractedText(text: string): string {

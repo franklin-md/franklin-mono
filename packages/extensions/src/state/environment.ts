@@ -1,3 +1,4 @@
+import { DEFAULT_NETWORK_CONFIG } from '../api/environment/defaults.js';
 import type { EnvironmentConfig } from '../api/environment/types.js';
 
 export type EnvironmentState = {
@@ -11,7 +12,10 @@ export function emptyEnvironmentState(): EnvironmentState {
 				cwd: '.',
 				permissions: { allowRead: [], allowWrite: [] },
 			},
-			netConfig: { allowedDomains: [], deniedDomains: [] },
+			netConfig: {
+				allowedDomains: [...DEFAULT_NETWORK_CONFIG.allowedDomains],
+				deniedDomains: [...DEFAULT_NETWORK_CONFIG.deniedDomains],
+			},
 		},
 	};
 }

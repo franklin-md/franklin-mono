@@ -1,7 +1,5 @@
 export function isPrivateHost(host: string): boolean {
-	// Handle IPv6 bracket notation: [::1] -> ::1
-	const stripped =
-		host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host;
+	const stripped = normalizeHost(host);
 
 	if (
 		stripped === 'localhost' ||
@@ -34,6 +32,15 @@ export function isPrivateHost(host: string): boolean {
 	);
 }
 
+export function isLoopbackHost(host: string): boolean {
+	const normalized = normalizeHost(host);
+	return (
+		normalized === 'localhost' ||
+		normalized === '127.0.0.1' ||
+		normalized === '::1'
+	);
+}
+
 export function parseIPv4(
 	host: string,
 ): [number, number, number, number] | null {
@@ -44,6 +51,14 @@ export function parseIPv4(
 		return null;
 	}
 	return nums as [number, number, number, number];
+}
+
+export function normalizeHost(host: string): string {
+	if (host.startsWith('[') && host.endsWith(']')) {
+		return host.slice(1, -1).toLowerCase();
+	}
+
+	return host.toLowerCase();
 }
 
 export function matchesDomain(pattern: string, host: string): boolean {
@@ -58,4 +73,34 @@ export function matchesDomain(pattern: string, host: string): boolean {
 	}
 
 	return host === normalized || host.endsWith(`.${normalized}`);
+}
+
+export function matchesUrlPattern(pattern: string, url: URL): boolean {
+	const normalizedPattern = pattern.trim().toLowerCase();
+	const hostname = normalizeHost(url.hostname);
+	if (matchesDomain(normalizedPattern, hostname)) {
+		return true;
+	}
+
+	if (normalizedPattern === '' || normalizedPattern === '*') {
+		return true;
+	}
+
+	const exactHost = formatHostPatternTarget(hostname, url.port);
+	return normalizedPattern === exactHost;
+}
+
+function formatHostPatternTarget(host: string, port: string): string {
+	if (port === '') {
+		if (host.includes(':')) {
+			return `[${host}]`;
+		}
+		return host;
+	}
+
+	if (host.includes(':')) {
+		return `[${host}]:${port}`;
+	}
+
+	return `${host}:${port}`;
 }
