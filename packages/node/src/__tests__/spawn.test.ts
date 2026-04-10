@@ -75,8 +75,8 @@ describe('spawn', () => {
 		expect(miniACP.debugMiniACP).toHaveBeenCalledWith(session, 'agent');
 		expect(bind).toHaveBeenCalledWith({ endpoint: session, label: 'agent' });
 
-		const [createTurnClient, server] =
-			vi.mocked(miniACP.createSessionAdapter).mock.calls[0]!;
+		const [createTurnClient, server] = vi.mocked(miniACP.createSessionAdapter)
+			.mock.calls[0]!;
 		const ctx = {
 			history: { systemPrompt: '', messages: [] },
 			tools: [],
