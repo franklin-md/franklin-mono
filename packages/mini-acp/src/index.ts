@@ -76,8 +76,6 @@ export {
 export {
 	createClientConnection,
 	createAgentConnection,
-	bindDebugPiAgent,
-	debugBinding,
 	debugMiniACP,
 	createSessionAdapter,
 	CtxTracker,
