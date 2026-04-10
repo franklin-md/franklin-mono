@@ -6,6 +6,7 @@ export interface PromptContextValue {
 	readonly sending: boolean;
 	readonly canSend: boolean;
 	readonly send: () => void;
+	readonly cancel: () => void;
 }
 
 export const [PromptProvider, usePrompt] =
