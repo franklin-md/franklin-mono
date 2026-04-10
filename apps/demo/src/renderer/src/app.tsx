@@ -16,9 +16,11 @@ import {
 	globExtension,
 	bashExtension,
 	createWebFetchExtension,
+	createWebSearchExtension,
 } from '@franklin/extensions';
 
 const webFetchExtension = createWebFetchExtension({});
+const webSearchExtension = createWebSearchExtension({});
 const platform = createElectronPlatform();
 const extensionBundles = [
 	conversationExtension,
@@ -30,6 +32,7 @@ const extensionBundles = [
 	globExtension,
 	bashExtension,
 	webFetchExtension,
+	webSearchExtension,
 ];
 const extensions = extensionBundles.map((bundle) => bundle.extension);
 

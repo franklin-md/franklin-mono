@@ -23,6 +23,10 @@ export function normalizeExtractedText(text: string): string {
 	);
 }
 
+export function singleLine(text: string | null): string {
+	return (text ?? '').replace(/\s+/g, ' ').trim();
+}
+
 export function truncateText(
 	text: string,
 	maxOutputChars: number,

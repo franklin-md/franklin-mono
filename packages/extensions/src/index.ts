@@ -122,6 +122,7 @@ export {
 	readExtension,
 	bashExtension,
 	createWebFetchExtension,
+	createWebSearchExtension,
 } from './extensions/index.js';
 
 export { createTodoControl, createStatusControl } from './extensions/index.js';
@@ -137,8 +138,10 @@ export type {
 } from './extensions/conversation/types.js';
 export type { Todo, TodoControl } from './extensions/todo/types.js';
 export type { StatusState, StatusControl } from './extensions/status/types.js';
-export { DEFAULT_WEB_FETCH_OPTIONS } from './extensions/web-fetch/types.js';
+export { DEFAULT_WEB_FETCH_OPTIONS } from './extensions/web/web-fetch/types.js';
 export type {
 	WebFetchProcessedResult,
 	WebFetchExtensionOptions,
-} from './extensions/web-fetch/types.js';
+} from './extensions/web/web-fetch/types.js';
+export { DEFAULT_WEB_SEARCH_OPTIONS } from './extensions/web/web-search/types.js';
+export type { WebSearchResult } from './extensions/web/web-search/types.js';

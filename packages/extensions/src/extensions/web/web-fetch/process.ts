@@ -7,7 +7,7 @@ import {
 	toErrorMessage,
 	normalizeContentType,
 	startsWithAscii,
-} from './utils.js';
+} from '../utils.js';
 import type {
 	WebFetchExtensionOptions,
 	WebFetchProcessedResult,

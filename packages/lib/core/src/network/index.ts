@@ -13,8 +13,12 @@ export type WebFetchResponse = {
 	body: Uint8Array;
 };
 
+// I think eventually we want this to have exactly
+// the same configuration parameters as a Node.js fetch
+// for maximum freedom on top of our safety model
 export type WebFetchRequest = {
 	url: string;
 	timeoutMs?: number;
 	maxRedirects?: number;
+	headers?: Record<string, string>;
 };

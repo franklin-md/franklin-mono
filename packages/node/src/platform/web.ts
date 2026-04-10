@@ -14,6 +14,7 @@ type NormalizedRequest = {
 	url: URL;
 	timeoutMs: number;
 	maxRedirects: number;
+	headers: Record<string, string>;
 };
 
 export class EnvironmentWeb implements WebAPI {
@@ -75,11 +76,21 @@ export class EnvironmentWeb implements WebAPI {
 			throw new Error('Only HTTP and HTTPS URLs are supported');
 		}
 
+		const headers: Record<string, string> = {
+			'user-agent': DEFAULT_USER_AGENT,
+		};
+		if (request.headers) {
+			for (const [key, value] of Object.entries(request.headers)) {
+				headers[key.toLowerCase()] = value;
+			}
+		}
+
 		return {
 			url,
 			timeoutMs: request.timeoutMs ?? DEFAULT_WEB_FETCH_OPTIONS.timeoutMs,
 			maxRedirects:
 				request.maxRedirects ?? DEFAULT_WEB_FETCH_OPTIONS.maxRedirects,
+			headers,
 		};
 	}
 
@@ -129,9 +140,7 @@ export class EnvironmentWeb implements WebAPI {
 				redirect: 'manual',
 				signal: controller.signal,
 				credentials: 'omit',
-				headers: {
-					'user-agent': DEFAULT_USER_AGENT,
-				},
+				headers: request.headers,
 			});
 
 			if (!REDIRECT_STATUS_CODES.has(response.status)) {
