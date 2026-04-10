@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeUrl } from '../../utils.js';
+import { normalizeUrl } from '@franklin/lib';
 
 describe('normalizeUrl', () => {
 	it('upgrades http to https', () => {

@@ -3,7 +3,7 @@ import type { EnvironmentAPI } from '../../../api/environment/api.js';
 import type { StoreAPI } from '../../../api/store/api.js';
 import type { Extension } from '../../../types/extension.js';
 import { readFromCache, writeToCache } from './cache.js';
-import { normalizeUrl } from '../utils.js';
+import { normalizeUrl } from '@franklin/lib';
 import { toContentResult } from './result.js';
 import { fetchUrlSpec } from './tools.js';
 import {

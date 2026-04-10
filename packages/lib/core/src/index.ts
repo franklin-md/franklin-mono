@@ -17,7 +17,15 @@ export { Debouncer } from './utils/debouncer.js';
 export { createObserver } from './utils/observer.js';
 export type { Observer } from './utils/observer.js';
 export type { DeepPartial } from './typing/deep-partial.js';
-
+export {
+	normalizeUrl,
+	isPrivateHost,
+	isLoopbackHost,
+	parseIPv4,
+	normalizeHost,
+	matchesDomain,
+	matchesUrlPattern,
+} from './network/utils.js';
 // Proxy algebra
 export {
 	// Kind symbols

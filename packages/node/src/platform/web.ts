@@ -6,7 +6,7 @@ import {
 	isPrivateHost,
 	matchesUrlPattern,
 	normalizeHost,
-} from './utils.js';
+} from '@franklin/lib';
 
 const DEFAULT_USER_AGENT =
 	'Mozilla/5.0 (compatible; Franklin/0.0; +https://franklin.local)';

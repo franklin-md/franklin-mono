@@ -33,10 +33,7 @@ export function toSearchResult(
 	};
 }
 
-export function toSearchError(
-	query: string,
-	error: unknown,
-): ToolOutput {
+export function toSearchError(query: string, error: unknown): ToolOutput {
 	const message = error instanceof Error ? error.message : String(error);
 	return {
 		content: [

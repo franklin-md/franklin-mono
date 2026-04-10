@@ -1,3 +1,15 @@
+export function normalizeUrl(rawUrl: string): string {
+	const url = new URL(rawUrl);
+	if (!['http:', 'https:'].includes(url.protocol)) {
+		throw new Error('Only HTTP and HTTPS URLs are supported');
+	}
+	if (url.protocol === 'http:' && !isPrivateHost(url.hostname)) {
+		url.protocol = 'https:';
+	}
+	url.hash = '';
+	return url.toString();
+}
+
 export function isPrivateHost(host: string): boolean {
 	const stripped = normalizeHost(host);
 
