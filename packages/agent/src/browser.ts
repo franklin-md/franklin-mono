@@ -1,4 +1,4 @@
-export { PersistedSessionCollection as SessionRegistry } from './agent/session/registry.js';
+export { PersistedSessionCollection as SessionRegistry } from './agent/session/persisted-session-collection.js';
 export { AuthManager } from './auth/manager.js';
 export type {
 	AuthFile,

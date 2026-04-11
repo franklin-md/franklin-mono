@@ -8,7 +8,7 @@ import {
 	createSessionManager,
 } from '@franklin/extensions';
 import type { SessionManager } from '@franklin/extensions';
-import { PersistedSessionCollection } from '../agent/session/registry.js';
+import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { createPersistence } from '../agent/session/persist/file-persister.js';
 import { withAuth, syncAuth } from '../auth/with-auth.js';
 import {

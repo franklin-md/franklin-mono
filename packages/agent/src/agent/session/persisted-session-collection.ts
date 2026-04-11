@@ -16,7 +16,6 @@ import {
  * The tree operates on the registry as if it were a plain collection —
  * persistence is a transparent side-effect.
  */
-// TODO: rename file to persisted-session-collection.ts
 export class PersistedSessionCollection<
 	S extends SessionState,
 	RT extends RuntimeBase<S>,
