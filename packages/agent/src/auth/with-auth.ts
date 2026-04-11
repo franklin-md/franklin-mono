@@ -1,7 +1,6 @@
 import type { CoreSystem, CoreRuntime, CoreState } from '@franklin/extensions';
 import { withSetup } from '@franklin/extensions';
-import type { SessionRegistry } from '../agent/session/registry.js';
-import type { FranklinState, FranklinRuntime } from '../types.js';
+import type { FranklinRuntime } from '../types.js';
 import type { IAuthManager } from './types.js';
 
 /**
@@ -63,18 +62,18 @@ export function withAuth(system: CoreSystem, auth: IAuthManager): CoreSystem {
  * push the new key to all sessions using that provider.
  */
 export function syncAuth(
-	sessions: SessionRegistry<FranklinState, FranklinRuntime>,
+	getSessions: () => FranklinRuntime[],
 	auth: IAuthManager,
 ): void {
 	auth.onAuthChange(async (provider, authKey) => {
 		const updates: Promise<unknown>[] = [];
 
-		for (const session of sessions.list()) {
-			const state = await session.runtime.state();
+		for (const runtime of getSessions()) {
+			const state = await runtime.state();
 			if (state.core.llmConfig.provider !== provider) continue;
 
 			updates.push(
-				session.runtime.setContext({
+				runtime.setContext({
 					config: {
 						...state.core.llmConfig,
 						provider,

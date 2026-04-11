@@ -31,12 +31,21 @@ export type {
 	StoreResult,
 	StoreKey,
 	StoreValueType,
+	SessionAPI,
+	Session,
+	SessionCreate,
+	SessionCreateInput,
 } from './api/index.js';
 export {
 	compose,
 	composeMethod,
 	passThrough,
 	DEFAULT_NETWORK_CONFIG,
+} from './api/index.js';
+export {
+	SessionCollection,
+	SessionManager,
+	createSessionManager,
 } from './api/index.js';
 export { resolveToolOutput } from './api/index.js';
 export { toolSpec } from './api/index.js';
@@ -88,6 +97,8 @@ export type { DependencySystem } from './runtime-system/index.js';
 export { createEnvironmentSystem } from './runtime-system/index.js';
 export type { EnvironmentSystem } from './runtime-system/index.js';
 export type { EnvironmentFactory } from './runtime-system/index.js';
+export { createSessionSystem } from './runtime-system/index.js';
+export type { SessionSystem } from './runtime-system/index.js';
 export { combine as combineSystems } from './runtime-system/index.js';
 export { withSetup } from './runtime-system/index.js';
 export { systems } from './runtime-system/index.js';
@@ -102,6 +113,7 @@ export type { MergedRuntime } from './runtime/index.js';
 export type { CoreRuntime } from './runtime/index.js';
 export type { StoreRuntime } from './runtime/index.js';
 export type { EnvironmentRuntime } from './runtime/index.js';
+export type { SessionRuntime } from './runtime/index.js';
 
 // ---------------------------------------------------------------------------
 // State
@@ -112,6 +124,9 @@ export type { StoreState } from './state/index.js';
 export { emptyStoreState } from './state/index.js';
 export type { EnvironmentState } from './state/index.js';
 export { emptyEnvironmentState } from './state/index.js';
+export type { SessionState } from './state/index.js';
+export type { EmptyState } from './state/index.js';
+export { emptyState } from './state/index.js';
 
 // ---------------------------------------------------------------------------
 // Built-in extensions
@@ -120,7 +135,6 @@ export {
 	conversationExtension,
 	todoExtension,
 	statusExtension,
-	createSpawnExtension,
 	globExtension,
 	editExtension,
 	writeExtension,
@@ -128,6 +142,7 @@ export {
 	bashExtension,
 	createWebFetchExtension,
 	createWebSearchExtension,
+	spawnExtension,
 } from './extensions/index.js';
 
 export { createTodoControl, createStatusControl } from './extensions/index.js';

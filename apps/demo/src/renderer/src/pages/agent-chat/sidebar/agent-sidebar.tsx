@@ -7,7 +7,6 @@ import {
 	useSessions,
 	useSettings,
 } from '@franklin/react';
-import { DEFAULT_NETWORK_CONFIG } from '@franklin/extensions';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,21 +23,21 @@ export function AgentSidebar({
 	const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
 
 	const handleSpawnAgent = useCallback(async () => {
-		const session = await manager.new({
-			core: { llmConfig: settings.get().defaultLLMConfig },
-			env: {
-				fsConfig: {
-					cwd: '/tmp',
-					permissions: { allowRead: ['**'], allowWrite: ['**'] },
-				},
-				netConfig: {
-					allowedDomains: [...DEFAULT_NETWORK_CONFIG.allowedDomains],
-					deniedDomains: [...DEFAULT_NETWORK_CONFIG.deniedDomains],
+		const session = await manager.create({
+			overrides: {
+				core: { llmConfig: settings.get().defaultLLMConfig },
+				env: {
+					fsConfig: {
+						cwd: '/tmp',
+						permissions: { allowRead: ['**'], allowWrite: ['**'] },
+					},
+
+					netConfig: { allowedDomains: [], deniedDomains: [] },
 				},
 			},
 		});
-		setCurrentAgentId(session.sessionId);
-		onSelectAgent(session.sessionId, session.runtime);
+		setCurrentAgentId(session.id);
+		onSelectAgent(session.id, session.runtime);
 	}, [manager, settings, onSelectAgent]);
 
 	const handleSelectAgent = useCallback(
@@ -56,11 +55,11 @@ export function AgentSidebar({
 			// If we just deleted the active session, select another agent
 			// TODO: refactor selection logic more generally
 			if (currentAgentId === sessionId) {
-				const remaining = sessions.filter((s) => s.sessionId !== sessionId);
+				const remaining = sessions.filter((s) => s.id !== sessionId);
 				const [next] = remaining;
 				if (next) {
-					setCurrentAgentId(next.sessionId);
-					onSelectAgent(next.sessionId, next.runtime);
+					setCurrentAgentId(next.id);
+					onSelectAgent(next.id, next.runtime);
 				} else {
 					setCurrentAgentId(null);
 				}
@@ -91,10 +90,10 @@ export function AgentSidebar({
 						</p>
 					) : (
 						sessions.map((session) => (
-							<AgentProvider key={session.sessionId} agent={session.runtime}>
+							<AgentProvider key={session.id} agent={session.runtime}>
 								<AgentSidebarItem
-									sessionId={session.sessionId}
-									active={session.sessionId === currentAgentId}
+									sessionId={session.id}
+									active={session.id === currentAgentId}
 									onSelect={(sessionId) =>
 										handleSelectAgent(sessionId, session.runtime)
 									}

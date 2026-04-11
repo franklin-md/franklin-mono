@@ -1,53 +1,31 @@
 import type { DependencyAPI } from '../api/dependency/api.js';
 import type { Compiler } from '../compile/types.js';
-import type { RuntimeBase } from '../runtime/types.js';
+import { emptyRuntime, type EmptyRuntime } from '../runtime/empty.js';
+import { emptyState, type EmptyState } from '../state/empty.js';
 import type { RuntimeSystem } from './types.js';
 
-type DependencyState = Record<never, never>;
-type DependencyRuntime = RuntimeBase<DependencyState>;
-
 export type DependencySystem<Name extends string, T> = RuntimeSystem<
-	DependencyState,
+	EmptyState,
 	DependencyAPI<Name, T>,
-	DependencyRuntime
+	EmptyRuntime
 >;
-
-function createDependencyRuntime(): DependencyRuntime {
-	return {
-		async state(): Promise<DependencyState> {
-			return {};
-		},
-		async fork(): Promise<DependencyState> {
-			return {};
-		},
-		async child(): Promise<DependencyState> {
-			return {};
-		},
-		async dispose(): Promise<void> {},
-		subscribe(): () => void {
-			return () => {};
-		},
-	};
-}
 
 export function createDependencySystem<Name extends string, T>(
 	name: Name,
 	dependency: T,
 ): DependencySystem<Name, T> {
 	return {
-		emptyState(): DependencyState {
-			return {};
-		},
+		emptyState: emptyState,
 
 		async createCompiler(): Promise<
-			Compiler<DependencyAPI<Name, T>, DependencyRuntime>
+			Compiler<DependencyAPI<Name, T>, EmptyRuntime>
 		> {
 			return {
 				api: {
 					[`get${name}`]: () => dependency,
 				} as DependencyAPI<Name, T>,
-				async build(): Promise<DependencyRuntime> {
-					return createDependencyRuntime();
+				async build(): Promise<EmptyRuntime> {
+					return emptyRuntime();
 				},
 			};
 		},

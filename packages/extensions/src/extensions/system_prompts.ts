@@ -46,10 +46,11 @@ Results are returned as title + URL + snippet. This tool does NOT fetch the cont
 after picking a result, use fetch_url to retrieve the page body.
 Keep queries concise and specific for better results.`;
 
-export const spawnDescription = 'Spawn a new agent';
-
 export const addTodoDescription = 'Add a new todo item';
 
 export const completeTodoDescription = 'Mark a todo item as completed';
 
 export const listTodosDescription = 'List all todo items';
+
+export const spawnDescription =
+	'Spawn a child agent to perform a task. The child runs to completion and returns its final response.';

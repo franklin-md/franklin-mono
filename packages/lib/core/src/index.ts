@@ -26,6 +26,8 @@ export {
 	matchesDomain,
 	matchesUrlPattern,
 } from './network/utils.js';
+export type { Simplify } from './typing/simplify.js';
+
 // Proxy algebra
 export {
 	// Kind symbols

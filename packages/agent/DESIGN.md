@@ -8,96 +8,44 @@ This document captures design decisions for:
 
 ## Systems
 
+### Agent Orchestration
+
+#### Agent Ownership
+
+- **Collection for global set of agents**
+- All agent references are handles whose lifecycle does not need to be managed.
+
+#### Creating Agents from other Agents:
+
+Every runtime has a way to get a 'child' and 'fork' state, used to construct a new runtime and therefore agent from. This means agents may be used to seed other agents, creating an **implicit tree like structure**:
+
+- `child` semantics create a "Parent-Child" edge
+- `fork` semantics create a "Sibling" relation (common parent)
+
+#### Creating Agents from scratch:
+
+- [ ] There is a root to this tree that is not an agent (is just a state)
+  - [ ] `new` operation
+
+#### Grouping Agents
+
+- [ ] Motivation: Seperated environements (Conductor example), group level shared store
+
+##### Persistence
+
+A bi-product of fact that Agent RuntimeSystem algebra have serializable state that can be used to also restore themselves
+
+##### TODO
+
+- Orchestration = User interacting with an agent (simple) + agent interacting with another agent (achieved through tools As If the agent were a user - same interface)
+  - Interaction defintions (state sharing vs driving)
+
 ### Agent Tools (FRA-129)
 
-The "Task" system is also relevant here as an execution model for agents, but can be considered later.
+Concerned with having agent's orchestrate each-other. We focus on the "Agent-Management-as-a-tool", with the question of actual Agent Management being the responsibility of "Agent Orchestration"
 
-#### AgentSystem
-
-The agent-as-tool capability is implemented as a new `RuntimeSystem<AgentState, AgentAPI, AgentRuntime>`, following the same pattern as `CoreSystem`, `StoreSystem`, and `EnvironmentSystem`.
-
-##### Why a new system?
-
-The spawn extension needs access to session management (creating child sessions, prompting them, extracting results). Per Extension Rule 1, this dependency must flow through the API. That means a system must introduce it.
-
-The existing `spawnExtension` in `packages/extensions/src/extensions/spawn/` is dead code — it uses closure capture and should be removed.
-
-##### AgentState
-
-```typescript
-type AgentState = {
-	agent: {
-		sessionId: string;
-		isChild: boolean;
-	};
-};
-```
-
-- `sessionId` — identifies the current session. The API methods are scoped to this session.
-- `isChild` — set to `true` by `AgentRuntime.child()`. Used for recursion control.
-
-##### AgentAPI
-
-```typescript
-type AgentAPI = {
-	getAgent(): AgentHandle;
-};
-```
-
-`getAgent()` returns a handle object with agent-scoped methods. The handle is the thing extensions capture in closures — not the API itself.
-
-##### AgentHandle ≈ AgentRuntime
-
-The type returned by `api.getAgent()` should be the same type (or a subset) as `AgentRuntime`. This means the runtime and the API-exposed handle share an interface:
-
-```typescript
-type AgentHandle = {
-	spawn(config: SpawnConfig): Promise<SpawnResult>;
-	// Future: cancel, sendMessage, etc.
-};
-```
-
-The runtime implements this interface with the actual session management wiring. The API exposes it. Extensions consume it without knowing the implementation.
-
-##### Dependency injection — interface, not SessionManager
-
-`createAgentSystem` should **not** take `SessionManager` directly. It takes an interface:
-
-```typescript
-type AgentBackend = {
-	spawnChild(parentId: string, config: SpawnConfig): Promise<SpawnResult>;
-};
-
-function createAgentSystem(
-	backend: AgentBackend,
-): RuntimeSystem<AgentState, AgentAPI, AgentRuntime>;
-```
-
-Then an adapter translates `SessionManager` into `AgentBackend`:
-
-```typescript
-function sessionManagerAsAgentBackend(sm: SessionManager): AgentBackend {
-	return {
-		async spawnChild(parentId, config) {
-			// SessionManager.child() + runtime.prompt() + result extraction
-		},
-	};
-}
-```
-
-This keeps the system decoupled from the concrete session management implementation.
-
-##### Child semantics
-
-`AgentRuntime.child()` produces:
-
-```typescript
-{ agent: { sessionId: <new-child-id>, isChild: true } }
-```
-
-##### Recursion control
-
-The `AgentSystem` compiler checks `state.agent.isChild`. If true, `getAgent()` returns a handle without `spawn` (or the system simply doesn't expose `getAgent()` at all). The spawn extension calls `api.getAgent()` and conditionally registers the tool based on whether spawn is available. No depth counters needed.
+- **One-shot agents** are spawned, prompted and disposed in a single tool call (referred to as "Agent-as-a-tool")
+- **Async agent management**, where the lifetime of the agent may persist beyond a single tool call and might even be interacted with across multiple turns, is not yet considered. But we believe this is another case of a more general "Task System", considered later.
 
 #### Agent Creation
 
@@ -126,13 +74,7 @@ Frontmatter schema: `name`, `description`, `tools` (list), `model` (optional), `
 
 ##### Context Inheritance
 
-Semantics are inherited from `child` semantics of runtimes. Franklin's child inheritance maps to:
-
-| API                  | Child semantics                                                                                        |
-| -------------------- | ------------------------------------------------------------------------------------------------------ |
-| **CoreState**        | Fresh history, same config (model/provider), same tools (by default). Overrides allowed at spawn time. |
-| **EnvironmentState** | Same environment (cwd, platform)                                                                       |
-| **AgentState**       | New sessionId, `isChild: true`                                                                         |
+Semantics are inherited from `child` semantics of runtimes.
 
 Tools are inherited by default — restriction is opt-in, not the default. This matches the majority of harnesses (Claude Code's `general-purpose` type gets all tools).
 
@@ -152,13 +94,13 @@ Approaches observed:
 
 > **Outstanding question:** Why restrict tool permissions at all? Is a prompt not sufficient? For agent-as-tool (sync, brief), prompt-only restriction is probably fine. For agent-as-task (async, long-running, unsupervised), prompt-only breaks down because the LLM can ignore instructions. Pragmatic answer: **don't build permission restriction into v1**. Start with "child inherits all parent extensions." Add selective filtering later if needed.
 
-> **Deferred question:** Does the tool registration mechanism need a rethink to support permissions? Options: (a) filter at `setContext` time in `buildToolInjector`, (b) compile different extension lists per session type, (c) CtxTracker-like live component. Option (b) is the natural fit — the AgentSystem controls what the child gets via its `child()` semantics.
+> **Deferred question:** Does the tool registration mechanism need a rethink to support permissions? Options: (a) filter at `setContext` time in `buildToolInjector`, (b) compile different extension lists per session type, (c) CtxTracker-like live component. Option (b) is the natural fit — the SessionSystem controls what the child gets via its `child()` semantics.
 
 ###### Recursion Control / Tool Restriction on the AgentSpawn Tool
 
 No harness uses a depth counter. Every one uses tool/permission restriction.
 
-The decision is binary: does the child get the spawn tool or not? That's a tool permission decision. Implementation: the `AgentSystem` compiler checks `state.agent.isChild` and conditionally exposes (or omits) the spawn capability from `AgentAPI.getAgent()`. Extensions that depend on `getAgent().spawn` simply don't register the tool when it's unavailable.
+The decision is binary: does the child get the spawn tool or not? That's a tool permission decision. Implementation: the `SessionSystem` compiler checks `state.agent.isChild` and conditionally exposes (or omits) the spawn capability from `SessionAPI.getSession()`. Extensions that depend on `getSession().spawn` simply don't register the tool when it's unavailable.
 
 ---
 

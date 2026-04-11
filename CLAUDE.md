@@ -91,5 +91,7 @@ Franklin is an extension runtime for minimal agent loops.
 
 ### Project Notes
 
+**Whenever starting work in a package, make sure to read it's README.md**
+
 - Mini-ACP:
   - Whenever you make a change related to the spec, you must read the README.md in the file and adjust it if necessary. That is the single source of truth on the spec.

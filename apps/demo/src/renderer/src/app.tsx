@@ -17,6 +17,7 @@ import {
 	bashExtension,
 	createWebFetchExtension,
 	createWebSearchExtension,
+	spawnExtension,
 } from '@franklin/extensions';
 
 const webFetchExtension = createWebFetchExtension({});
@@ -33,6 +34,7 @@ const extensionBundles = [
 	bashExtension,
 	webFetchExtension,
 	webSearchExtension,
+	spawnExtension,
 ];
 const extensions = extensionBundles.map((bundle) => bundle.extension);
 
