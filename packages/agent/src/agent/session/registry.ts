@@ -2,6 +2,7 @@ import type { Persister } from '@franklin/lib';
 import {
 	SessionCollection,
 	type RuntimeBase,
+	type Session,
 	type SessionState,
 } from '@franklin/extensions';
 
@@ -45,16 +46,18 @@ export class PersistedSessionCollection<
 	 * Hydrate the registry from persisted storage.
 	 *
 	 * Requires a `hydrate` callback that rebuilds a live runtime
-	 * from state. The callback should call `tree.add(state, id)`
-	 * which will in turn call `registry.set` — triggering persistence
-	 * watching automatically.
+	 * from persisted state. The callback returns a Session; this
+	 * method owns storing it in the collection via `this.set`.
 	 *
-	 * No-op when no persister is configured.
+	 * No-op when no persisted sessions exist.
 	 */
-	async restore(hydrate: (state: S) => Promise<RT>): Promise<void> {
+	async restore(
+		hydrate: (id: string, state: S) => Promise<Session<RT>>,
+	): Promise<void> {
 		const data = await this.persister.load();
-		for (const [_id, state] of data) {
-			await hydrate(state);
+		for (const [id, state] of data) {
+			const session = await hydrate(id, state);
+			this.set(session.id, session.runtime);
 		}
 	}
 

@@ -33,7 +33,7 @@ describe('collect', () => {
 					content: [{ type: 'text', text: 'two' }],
 				},
 			},
-			{ type: 'turnEnd', stopCode: StopCode.Completed },
+			{ type: 'turnEnd', stopCode: StopCode.Finished },
 		];
 
 		const result = await collect(stream(events));
@@ -50,7 +50,7 @@ describe('collect', () => {
 		]);
 		expect(result.turnEnd).toEqual({
 			type: 'turnEnd',
-			stopCode: StopCode.Completed,
+			stopCode: StopCode.Finished,
 		});
 	});
 });

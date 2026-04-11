@@ -7,6 +7,7 @@ import {
 	SessionCollection,
 	createSessionManager,
 } from '@franklin/extensions';
+import type { SessionManager } from '@franklin/extensions';
 import { PersistedSessionCollection } from '../agent/session/registry.js';
 import { createPersistence } from '../agent/session/persist/file-persister.js';
 import { withAuth, syncAuth } from '../auth/with-auth.js';
@@ -19,6 +20,7 @@ import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
 import type { IAuthManager } from '../auth/types.js';
 import type {
+	BaseSystem,
 	FranklinState,
 	FranklinRuntime,
 	FranklinExtension,
@@ -32,6 +34,11 @@ export class FranklinApp {
 
 	private readonly platform: Platform;
 	private readonly storeRegistry: StoreRegistry;
+	private readonly manager: SessionManager<BaseSystem>;
+	private readonly persistedCollection?: PersistedSessionCollection<
+		FranklinState,
+		FranklinRuntime
+	>;
 
 	constructor(opts: {
 		extensions: FranklinExtension[];
@@ -55,6 +62,10 @@ export class FranklinApp {
 				)
 			: new SessionCollection<FranklinRuntime>();
 
+		if (collection instanceof PersistedSessionCollection) {
+			this.persistedCollection = collection;
+		}
+
 		// Static base system — shared across all sessions
 		const baseSystem = systems(withAuth(createCoreSystem(platform.spawn), auth))
 			.add(createStoreSystem(this.storeRegistry))
@@ -62,13 +73,13 @@ export class FranklinApp {
 			.done();
 
 		// Session manager — wraps base system, handles per-session session system internally
-		const manager = createSessionManager({
+		this.manager = createSessionManager({
 			system: baseSystem,
 			collection,
 			extensions,
 		});
 
-		this.agents = createAgents(manager.create, collection);
+		this.agents = createAgents(this.manager.create, collection);
 	}
 
 	async start(): Promise<void> {
@@ -79,5 +90,12 @@ export class FranklinApp {
 			this.auth,
 		);
 		await this.storeRegistry.restore();
+
+		// Rehydrate persisted sessions
+		if (this.persistedCollection) {
+			await this.persistedCollection.restore((id, state) =>
+				this.manager.materialize(id, state),
+			);
+		}
 	}
 }

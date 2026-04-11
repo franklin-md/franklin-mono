@@ -14,7 +14,7 @@ import {
 } from '../../runtime-system/session.js';
 import { createRuntime } from '../../runtime-system/create.js';
 import { resolveState } from '../../runtime-system/resolve.js';
-import type { Session, SessionCreate, SessionCreateInput } from './types.js';
+import type { Session, SessionCreateInput } from './types.js';
 
 type SessionManagerOptions<RTS extends RuntimeSystem<any, any, any>> = {
 	system: RTS;
@@ -23,8 +23,6 @@ type SessionManagerOptions<RTS extends RuntimeSystem<any, any, any>> = {
 };
 
 export class SessionManager<RTS extends RuntimeSystem<any, any, any>> {
-	readonly create: SessionCreate<RTS>;
-
 	private readonly system: RTS;
 	private readonly collection: SessionCollection<SessionRuntime<RTS>>;
 	private readonly extensions: Extension<InferAPI<RTS> & SessionAPI<RTS>>[];
@@ -33,37 +31,54 @@ export class SessionManager<RTS extends RuntimeSystem<any, any, any>> {
 		this.system = opts.system;
 		this.collection = opts.collection;
 		this.extensions = opts.extensions;
-
-		this.create = async (
-			input?: SessionCreateInput<SessionSystem<RTS>>,
-		): Promise<Session<SessionRuntime<RTS>>> => {
-			const id = crypto.randomUUID();
-
-			let state: InferState<RTS>;
-			if (input?.from) {
-				const source = this.collection.get(input.from);
-				if (!source) throw new Error(`Session ${input.from} not found`);
-				const rt: RuntimeBase<InferState<RTS>> = source.runtime;
-				state = input.mode === 'fork' ? await rt.fork() : await rt.child();
-			} else {
-				state = this.system.emptyState();
-			}
-
-			state = resolveState(state, input?.overrides);
-
-			const session = await this.realize(id, state);
-			this.collection.set(id, session.runtime);
-			return session;
-		};
 	}
 
-	async realize(
+	async create(
+		input?: SessionCreateInput<SessionSystem<RTS>>,
+	): Promise<Session<SessionRuntime<RTS>>> {
+		const id = crypto.randomUUID();
+
+		const session = await this.materialize(
+			id,
+			await this.createState(input ?? {}),
+		);
+
+		this.collection.set(id, session.runtime);
+
+		return session;
+	}
+
+	async remove(id: string) {
+		return this.collection.remove(id);
+	}
+
+	async materialize(
 		id: string,
 		state: InferState<RTS>,
 	): Promise<Session<SessionRuntime<RTS>>> {
-		const fullSystem = createSessionSystem(this.system, id, this.create);
+		const fullSystem = createSessionSystem(
+			this.system,
+			id,
+			this.create.bind(this),
+			this.remove.bind(this),
+		);
 		const runtime = await createRuntime(fullSystem, state, this.extensions);
 		return { id, runtime };
+	}
+
+	private async createState(options: SessionCreateInput<SessionSystem<RTS>>) {
+		let state: InferState<RTS>;
+		if (options.from) {
+			const source = this.collection.get(options.from);
+			if (!source) throw new Error(`Session ${options.from} not found`);
+			const rt: RuntimeBase<InferState<RTS>> = source.runtime;
+			state = options.mode === 'fork' ? await rt.fork() : await rt.child();
+		} else {
+			state = this.system.emptyState();
+		}
+
+		state = resolveState(state, options.overrides);
+		return state;
 	}
 }
 

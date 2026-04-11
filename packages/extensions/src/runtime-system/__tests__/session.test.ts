@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createSessionSystem } from '../session.js';
+import { createSessionSystem, type SessionSystem } from '../session.js';
 import { createRuntime } from '../create.js';
 import { SessionCollection } from '../../runtime/session/collection.js';
 import { createSessionManager } from '../../runtime/session/manager.js';
@@ -52,6 +52,15 @@ function createTestManager() {
 	};
 }
 
+function createTestSessionSystem(
+	system: TestSystem,
+	id: string,
+	create: SessionCreate<SessionSystem<TestSystem>>,
+	remove: (id: string) => Promise<boolean> = vi.fn(async () => true),
+) {
+	return createSessionSystem(system, id, create, remove);
+}
+
 // ---------------------------------------------------------------------------
 // createSessionSystem
 // ---------------------------------------------------------------------------
@@ -60,7 +69,7 @@ describe('createSessionSystem', () => {
 	it('emptyState delegates to the base system', () => {
 		const { manager } = createTestManager();
 		const system = createTestSystem();
-		const sessionSystem = createSessionSystem(
+		const sessionSystem = createTestSessionSystem(
 			system,
 			'test-id',
 			manager.create,
@@ -70,10 +79,10 @@ describe('createSessionSystem', () => {
 		expect(state).toEqual({ value: 'root' });
 	});
 
-	it('builds a runtime with session.child and session.fork', async () => {
+	it('builds a runtime with session.child, session.fork, and session.removeSelf', async () => {
 		const { manager } = createTestManager();
 		const system = createTestSystem();
-		const sessionSystem = createSessionSystem(
+		const sessionSystem = createTestSessionSystem(
 			system,
 			'test-id',
 			manager.create,
@@ -84,12 +93,13 @@ describe('createSessionSystem', () => {
 		expect(runtime.session).toBeDefined();
 		expect(runtime.session.child).toBeTypeOf('function');
 		expect(runtime.session.fork).toBeTypeOf('function');
+		expect(runtime.session.removeSelf).toBeTypeOf('function');
 	});
 
 	it('extensions access session via api.session', async () => {
 		const { manager } = createTestManager();
 		const system = createTestSystem();
-		const sessionSystem = createSessionSystem(
+		const sessionSystem = createTestSessionSystem(
 			system,
 			'test-id',
 			manager.create,
@@ -97,22 +107,58 @@ describe('createSessionSystem', () => {
 
 		let receivedChild: (() => Promise<unknown>) | undefined;
 		let receivedFork: (() => Promise<unknown>) | undefined;
+		let receivedRemoveSelf: (() => Promise<boolean>) | undefined;
 
 		await createRuntime(sessionSystem, { value: 'test' }, [
 			(api) => {
 				receivedChild = api.session.createChild;
 				receivedFork = api.session.createFork;
+				receivedRemoveSelf = api.session.removeSelf;
 			},
 		]);
 
 		expect(receivedChild).toBeTypeOf('function');
 		expect(receivedFork).toBeTypeOf('function');
+		expect(receivedRemoveSelf).toBeTypeOf('function');
+	});
+
+	it('session API methods can be called after extraction', async () => {
+		const system = createTestSystem();
+		const createSpy = vi
+			.fn<SessionCreate<SessionSystem<TestSystem>>>()
+			.mockResolvedValue({
+				id: 'child-id',
+				runtime: {} as TestSessionRuntime,
+			});
+		const remove = vi.fn(async () => true);
+		const sessionSystem = createTestSessionSystem(
+			system,
+			'test-id',
+			createSpy,
+			remove,
+		);
+
+		let createChild: (() => Promise<unknown>) | undefined;
+		let removeCurrent: (() => Promise<boolean>) | undefined;
+
+		await createRuntime(sessionSystem, { value: 'test' }, [
+			(api) => {
+				createChild = api.session.createChild;
+				removeCurrent = api.session.removeSelf;
+			},
+		]);
+
+		await createChild?.();
+		await removeCurrent?.();
+
+		expect(createSpy).toHaveBeenCalledWith({ from: 'test-id', mode: 'child' });
+		expect(remove).toHaveBeenCalledWith('test-id');
 	});
 
 	it('preserves base runtime methods', async () => {
 		const { manager } = createTestManager();
 		const system = createTestSystem();
-		const sessionSystem = createSessionSystem(
+		const sessionSystem = createTestSessionSystem(
 			system,
 			'test-id',
 			manager.create,
@@ -128,7 +174,7 @@ describe('createSessionSystem', () => {
 	it('dispose is safe to call', async () => {
 		const { manager } = createTestManager();
 		const system = createTestSystem();
-		const sessionSystem = createSessionSystem(
+		const sessionSystem = createTestSessionSystem(
 			system,
 			'test-id',
 			manager.create,
@@ -142,7 +188,7 @@ describe('createSessionSystem', () => {
 	it('subscribe returns an unsubscribe function', async () => {
 		const { manager } = createTestManager();
 		const system = createTestSystem();
-		const sessionSystem = createSessionSystem(
+		const sessionSystem = createTestSessionSystem(
 			system,
 			'test-id',
 			manager.create,
@@ -157,11 +203,13 @@ describe('createSessionSystem', () => {
 
 	it('session.child delegates to the create function', async () => {
 		const system = createTestSystem();
-		const createSpy = vi.fn<SessionCreate<TestSystem>>().mockResolvedValue({
-			id: 'child-id',
-			runtime: {} as TestSessionRuntime,
-		});
-		const sessionSystem = createSessionSystem(system, 'test-id', createSpy);
+		const createSpy = vi
+			.fn<SessionCreate<SessionSystem<TestSystem>>>()
+			.mockResolvedValue({
+				id: 'child-id',
+				runtime: {} as TestSessionRuntime,
+			});
+		const sessionSystem = createTestSessionSystem(system, 'test-id', createSpy);
 		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
 		await runtime.session.child();
 
@@ -170,15 +218,34 @@ describe('createSessionSystem', () => {
 
 	it('session.fork delegates to the create function', async () => {
 		const system = createTestSystem();
-		const createSpy = vi.fn<SessionCreate<TestSystem>>().mockResolvedValue({
-			id: 'fork-id',
-			runtime: {} as TestSessionRuntime,
-		});
-		const sessionSystem = createSessionSystem(system, 'test-id', createSpy);
+		const createSpy = vi
+			.fn<SessionCreate<SessionSystem<TestSystem>>>()
+			.mockResolvedValue({
+				id: 'fork-id',
+				runtime: {} as TestSessionRuntime,
+			});
+		const sessionSystem = createTestSessionSystem(system, 'test-id', createSpy);
 		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
 		await runtime.session.fork();
 
 		expect(createSpy).toHaveBeenCalledWith({ from: 'test-id', mode: 'fork' });
+	});
+
+	it('session.removeSelf delegates to the remove function', async () => {
+		const system = createTestSystem();
+		const createSpy = vi.fn<SessionCreate<SessionSystem<TestSystem>>>();
+		const remove = vi.fn(async () => true);
+		const sessionSystem = createTestSessionSystem(
+			system,
+			'test-id',
+			createSpy,
+			remove,
+		);
+		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
+
+		await expect(runtime.session.removeSelf()).resolves.toBe(true);
+
+		expect(remove).toHaveBeenCalledWith('test-id');
 	});
 });
 

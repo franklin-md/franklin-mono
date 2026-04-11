@@ -8,7 +8,8 @@ import type { Session } from './types.js';
 export type SessionRuntime<RTS extends RuntimeSystem<any, any, any>> =
 	InferRuntime<RTS> & {
 		session: {
-			child(): Promise<Session<SessionRuntime<RTS>>>;
-			fork(): Promise<Session<SessionRuntime<RTS>>>;
+			child: () => Promise<Session<SessionRuntime<RTS>>>;
+			fork: () => Promise<Session<SessionRuntime<RTS>>>;
+			removeSelf: () => Promise<boolean>;
 		};
 	};

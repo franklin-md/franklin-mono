@@ -67,6 +67,17 @@ describe('SessionManager', () => {
 		expect(sessions[0]!.id).not.toBe(sessions[1]!.id);
 	});
 
+	it('removeSelf removes the current session from the collection', async () => {
+		const { manager, collection } = createManagerAndCollection();
+
+		const session = await manager.create();
+
+		expect(collection.has(session.id)).toBe(true);
+		await expect(session.runtime.session.removeSelf()).resolves.toBe(true);
+		expect(collection.has(session.id)).toBe(false);
+		await expect(session.runtime.session.removeSelf()).resolves.toBe(false);
+	});
+
 	it('creates a child session by deriving state from parent', async () => {
 		const { manager, collection } = createManagerAndCollection();
 

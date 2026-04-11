@@ -16,7 +16,8 @@ export type SessionSystem<RTS extends RuntimeSystem<any, any, any>> =
 export function createSessionSystem<RTS extends RuntimeSystem<any, any, any>>(
 	system: RTS,
 	id: string,
-	create: SessionCreate<RTS>,
+	create: SessionCreate<SessionSystem<RTS>>,
+	remove: (id: string) => Promise<boolean>,
 ): SessionSystem<RTS> {
 	return {
 		emptyState: () => system.emptyState(),
@@ -25,6 +26,7 @@ export function createSessionSystem<RTS extends RuntimeSystem<any, any, any>>(
 			const baseCompiler = await system.createCompiler(state);
 			const createChild = () => create({ from: id, mode: 'child' });
 			const createFork = () => create({ from: id, mode: 'fork' });
+			const removeSelf = () => remove(id);
 
 			return {
 				api: {
@@ -32,6 +34,7 @@ export function createSessionSystem<RTS extends RuntimeSystem<any, any, any>>(
 					session: {
 						createChild,
 						createFork,
+						removeSelf,
 					},
 				},
 				async build() {
@@ -41,10 +44,11 @@ export function createSessionSystem<RTS extends RuntimeSystem<any, any, any>>(
 						session: {
 							child: createChild,
 							fork: createFork,
+							removeSelf,
 						},
 					};
 				},
 			};
 		},
-	} as SessionSystem<RTS>;
+	};
 }

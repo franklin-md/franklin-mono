@@ -7,9 +7,5 @@ export const spawnSpec = toolSpec(
 	spawnDescription,
 	z.object({
 		prompt: z.string().describe('The task to give the child agent'),
-		system_prompt: z
-			.string()
-			.optional()
-			.describe('Optional system prompt for the child'),
 	}),
 );
