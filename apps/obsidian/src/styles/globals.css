@@ -1,0 +1,22 @@
+/*
+ * CSS entry point for the Obsidian plugin.
+ *
+ * Combines:
+ * - Tailwind theme + utilities (no preflight — Obsidian's base styles preserved)
+ * - variables.css: Obsidian CSS vars → intermediate vars
+ * - theme.css: intermediate vars → Tailwind tokens (shadcn compatible)
+ *
+ * Specificity strategy:
+ * - Utilities imported without @layer so they're unlayered (equal footing with
+ *   Obsidian's unlayered styles; source order wins — plugin CSS loads last)
+ * - postcss-prefix-selector wraps every selector with .franklin, bumping
+ *   specificity to 0,2,0 minimum — beats Obsidian's typical 0,1,0
+ */
+
+@import 'tailwindcss/theme';
+@import 'tailwindcss/utilities';
+
+@import './variables.css';
+@import './theme.css';
+
+@source "../**/*.{ts,tsx}";
