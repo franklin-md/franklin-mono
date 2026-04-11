@@ -79,7 +79,10 @@ export class FranklinApp {
 			extensions,
 		});
 
-		this.agents = createAgents(this.manager.create, collection);
+		this.agents = createAgents(
+			this.manager.create.bind(this.manager),
+			collection,
+		);
 	}
 
 	async start(): Promise<void> {

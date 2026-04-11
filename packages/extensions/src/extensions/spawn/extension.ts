@@ -14,9 +14,6 @@ export function spawnExtension(): Extension<CoreAPI & SessionAPI<CoreSystem>> {
 		api.registerTool(spawnSpec, async ({ prompt }) => {
 			const child = await createChild();
 			try {
-				await child.runtime.setContext({
-					history: { systemPrompt: '', messages: [] },
-				});
 				const stream = child.runtime.prompt({
 					role: 'user',
 					content: [{ type: 'text', text: prompt }],
