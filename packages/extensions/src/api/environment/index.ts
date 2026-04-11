@@ -6,3 +6,4 @@ export type {
 	WebAPI,
 } from './types.js';
 export type { EnvironmentAPI } from './api.js';
+export { DEFAULT_NETWORK_CONFIG } from './defaults.js';

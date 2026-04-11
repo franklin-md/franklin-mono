@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { toolSpec } from '../../api/core/tool-spec.js';
-import { webFetchDescription } from '../system_prompts.js';
+import { toolSpec } from '../../../api/core/tool-spec.js';
+import { webFetchDescription } from '../../system_prompts.js';
 
 export const fetchUrlSpec = toolSpec(
 	'fetch_url',

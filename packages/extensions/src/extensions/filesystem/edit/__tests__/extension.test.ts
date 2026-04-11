@@ -256,6 +256,34 @@ describe('editExtension', () => {
 		expect(env.filesystem.writeFile).toHaveBeenCalled();
 	});
 
+	it('allows consecutive edits without re-reading the file', async () => {
+		const env = mockEnvironment({
+			'test.txt': 'aaa bbb ccc',
+		});
+		const result = await compileEdit(env);
+		simulateRead(result, 'test.txt', 'aaa bbb ccc');
+
+		// First edit
+		const first = await executeTool(result, {
+			path: 'test.txt',
+			old_text: 'aaa',
+			new_text: 'xxx',
+		});
+		expect(first.isError).toBeUndefined();
+
+		// Second edit — should succeed without a re-read
+		const second = await executeTool(result, {
+			path: 'test.txt',
+			old_text: 'bbb',
+			new_text: 'yyy',
+		});
+		expect(second.isError).toBeUndefined();
+		expect(env.filesystem.writeFile).toHaveBeenLastCalledWith(
+			'test.txt',
+			'xxx yyy ccc',
+		);
+	});
+
 	it('returns isError when replacement produces identical content', async () => {
 		const env = mockEnvironment({
 			'same.txt': 'hello world',

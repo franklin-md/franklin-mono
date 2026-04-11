@@ -34,6 +34,7 @@ export type {
 	EnvironmentConfig,
 	WebAPI,
 } from './environment/index.js';
+export { DEFAULT_NETWORK_CONFIG } from './environment/index.js';
 
 export type { StoreAPI } from './store/index.js';
 export type { ReadonlyStore, Store } from './store/index.js';

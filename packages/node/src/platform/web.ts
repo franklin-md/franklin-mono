@@ -1,7 +1,12 @@
 import { DEFAULT_WEB_FETCH_OPTIONS } from '@franklin/extensions';
 import type { NetworkConfig, WebAPI } from '@franklin/extensions';
 import type { WebFetchRequest, WebFetchResponse } from '@franklin/lib';
-import { isPrivateHost, matchesDomain } from './utils.js';
+import {
+	isLoopbackHost,
+	isPrivateHost,
+	matchesUrlPattern,
+	normalizeHost,
+} from '@franklin/lib';
 
 const DEFAULT_USER_AGENT =
 	'Mozilla/5.0 (compatible; Franklin/0.0; +https://franklin.local)';
@@ -12,8 +17,11 @@ const MAX_RESPONSE_BYTES = 1024 * 1024 * 1024; // 1 GB
 
 type NormalizedRequest = {
 	url: URL;
+	method: 'GET' | 'POST';
 	timeoutMs: number;
 	maxRedirects: number;
+	headers: Record<string, string>;
+	body?: Uint8Array;
 };
 
 export class EnvironmentWeb implements WebAPI {
@@ -75,32 +83,54 @@ export class EnvironmentWeb implements WebAPI {
 			throw new Error('Only HTTP and HTTPS URLs are supported');
 		}
 
+		const headers: Record<string, string> = {
+			'user-agent': DEFAULT_USER_AGENT,
+		};
+		if (request.headers) {
+			for (const [key, value] of Object.entries(request.headers)) {
+				headers[key.toLowerCase()] = value;
+			}
+		}
+
 		return {
 			url,
+			method: request.method,
 			timeoutMs: request.timeoutMs ?? DEFAULT_WEB_FETCH_OPTIONS.timeoutMs,
 			maxRedirects:
 				request.maxRedirects ?? DEFAULT_WEB_FETCH_OPTIONS.maxRedirects,
+			headers,
+			body: request.body,
 		};
 	}
 
 	private assertAllowed(url: URL): void {
-		const host = url.hostname.toLowerCase();
-
-		// Block private/loopback/link-local addresses to prevent SSRF.
-		// This provides partial mitigation against domain fronting via IP literals
-		// (e.g. http://127.0.0.1/, http://192.168.1.1/). DNS-based fronting via
-		// CDN hostnames that resolve to private IPs cannot be caught here.
-		if (isPrivateHost(host)) {
-			throw new Error(
-				`Network access denied for host "${host}": private and loopback addresses are not permitted`,
-			);
-		}
+		const host = normalizeHost(url.hostname);
 
 		const denied = this.config.deniedDomains.some((pattern) =>
-			matchesDomain(pattern, host),
+			matchesUrlPattern(pattern, url),
 		);
 		// TODO: create user request flow for explicit domain approval
 		if (denied) {
+			throw new Error(`Network access denied for host "${host}"`);
+		}
+
+		if (isLoopbackHost(host)) {
+			const allowed = this.config.allowedDomains.some((pattern) =>
+				matchesUrlPattern(pattern, url),
+			);
+			if (!allowed) {
+				throw new Error(
+					`Network access denied for host "${host}": loopback addresses must be explicitly allowlisted`,
+				);
+			}
+			return;
+		}
+
+		// Block private/link-local addresses to prevent SSRF.
+		// This provides partial mitigation against domain fronting via IP literals
+		// (e.g. http://192.168.1.1/). DNS-based fronting via CDN hostnames that
+		// resolve to private IPs cannot be caught here.
+		if (isPrivateHost(host)) {
 			throw new Error(`Network access denied for host "${host}"`);
 		}
 
@@ -109,7 +139,7 @@ export class EnvironmentWeb implements WebAPI {
 		if (
 			this.config.allowedDomains.length > 0 &&
 			!this.config.allowedDomains.some((pattern) =>
-				matchesDomain(pattern, host),
+				matchesUrlPattern(pattern, url),
 			)
 		) {
 			throw new Error(`Network access denied for host "${host}"`);
@@ -125,13 +155,12 @@ export class EnvironmentWeb implements WebAPI {
 		for (let i = 0; i <= request.maxRedirects; i++) {
 			this.assertAllowed(currentUrl);
 			const response = await fetch(currentUrl, {
-				method: 'GET',
+				method: request.method,
 				redirect: 'manual',
 				signal: controller.signal,
 				credentials: 'omit',
-				headers: {
-					'user-agent': DEFAULT_USER_AGENT,
-				},
+				headers: request.headers,
+				body: request.body,
 			});
 
 			if (!REDIRECT_STATUS_CODES.has(response.status)) {

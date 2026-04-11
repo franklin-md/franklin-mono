@@ -1,9 +1,9 @@
-import type { CoreAPI } from '../../api/core/api.js';
-import type { EnvironmentAPI } from '../../api/environment/api.js';
-import type { StoreAPI } from '../../api/store/api.js';
-import type { Extension } from '../../types/extension.js';
+import type { CoreAPI } from '../../../api/core/api.js';
+import type { EnvironmentAPI } from '../../../api/environment/api.js';
+import type { StoreAPI } from '../../../api/store/api.js';
+import type { Extension } from '../../../types/extension.js';
 import { readFromCache, writeToCache } from './cache.js';
-import { normalizeUrl } from './utils.js';
+import { normalizeUrl } from '@franklin/lib';
 import { toContentResult } from './result.js';
 import { fetchUrlSpec } from './tools.js';
 import {
@@ -50,6 +50,7 @@ export function webFetchExtension(
 			try {
 				const response = await web.fetch({
 					url: normalizedUrl,
+					method: 'GET',
 					timeoutMs: resolved.timeoutMs,
 					maxRedirects: resolved.maxRedirects,
 				});

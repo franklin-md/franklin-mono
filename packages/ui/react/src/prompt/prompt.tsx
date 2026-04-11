@@ -41,8 +41,13 @@ export function Prompt({ children }: { children: React.ReactNode }) {
 		})();
 	}, [agent, sending]);
 
+	const cancel = useCallback(() => {
+		if (!sending) return;
+		void agent.cancel();
+	}, [agent, sending]);
+
 	return (
-		<PromptProvider value={{ input, setInput, sending, canSend, send }}>
+		<PromptProvider value={{ input, setInput, sending, canSend, send, cancel }}>
 			{children}
 		</PromptProvider>
 	);

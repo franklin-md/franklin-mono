@@ -40,6 +40,12 @@ Returns cleaned, truncated text from public pages. All content fetched will be c
 This tool cannot log in, click, run JavaScript, use cookies, or access private browser sessions.
 It may fail on client-rendered pages, protected sites, PDFs, or unsupported content types.`;
 
+export const webSearchDescription = `Run a web search and return the top results as a list of links.
+Use this when you need to discover relevant pages on the open web for a topic.
+Results are returned as title + URL + snippet. This tool does NOT fetch the contents of the linked pages —
+after picking a result, use fetch_url to retrieve the page body.
+Keep queries concise and specific for better results.`;
+
 export const addTodoDescription = 'Add a new todo item';
 
 export const completeTodoDescription = 'Mark a todo item as completed';

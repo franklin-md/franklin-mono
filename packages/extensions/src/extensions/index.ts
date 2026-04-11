@@ -11,5 +11,7 @@ export { readExtension } from './filesystem/read/bundle.js';
 export { writeExtension } from './filesystem/write/bundle.js';
 export { editExtension } from './filesystem/edit/bundle.js';
 export { bashExtension } from './terminal/bundle.js';
+export { createWebFetchExtension } from './web/web-fetch/bundle.js';
+export { createWebSearchExtension } from './web/web-search/bundle.js';
 export { createWebFetchExtension } from './web-fetch/bundle.js';
 export { spawnExtension } from './spawn/bundle.js';

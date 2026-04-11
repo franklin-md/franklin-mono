@@ -24,10 +24,15 @@ export {
 	type UseTextareaAutosizeLayoutOptions,
 	type UseTextareaAutosizeLayoutResult,
 } from './dom/use-textarea-autosize-layout.js';
+export { PromptProvider, usePrompt } from './prompt/context.js';
+export type { PromptContextValue } from './prompt/context.js';
 export { Prompt } from './prompt/prompt.js';
 export { PromptControls } from './prompt/controls.js';
 export { PromptText } from './prompt/text.js';
 export { PromptSend } from './prompt/send.js';
+export { PromptCancel } from './prompt/cancel.js';
+export { PromptAgentControl } from './prompt/agent-control.js';
+export type { PromptAgentControlProps } from './prompt/agent-control.js';
 
 // ---------------------------------------------------------------------------
 // Conversation — headless turn/block rendering

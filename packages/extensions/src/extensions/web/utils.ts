@@ -1,12 +1,3 @@
-export function normalizeUrl(rawUrl: string): string {
-	const url = new URL(rawUrl);
-	if (!['http:', 'https:'].includes(url.protocol)) {
-		throw new Error('Only HTTP and HTTPS URLs are supported');
-	}
-	url.hash = '';
-	return url.toString();
-}
-
 export function normalizeExtractedText(text: string): string {
 	return (
 		text
@@ -18,6 +9,10 @@ export function normalizeExtractedText(text: string): string {
 			.replace(/\n{3,}/g, '\n\n')
 			.trim()
 	);
+}
+
+export function singleLine(text: string | null): string {
+	return (text ?? '').replace(/\s+/g, ' ').trim();
 }
 
 export function truncateText(
