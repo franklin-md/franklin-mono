@@ -1,5 +1,4 @@
 import type {
-	AnyShape,
 	Descriptor,
 	MethodDescriptor,
 	NamespaceDescriptor,
@@ -32,44 +31,22 @@ export interface PreloadStreamBridge<TRead = unknown, TWrite = TRead> {
 	close: () => Promise<void>;
 }
 
-interface BasePreloadResourceBridge<TArgs extends unknown[] = unknown[]> {
-	connect: (...args: TArgs) => Promise<string>;
-	kill: (id: string) => Promise<void>;
-}
-
-type PreloadHandleNode<TShape extends AnyShape> = {
-	[K in keyof TShape]: TShape[K] extends MethodDescriptor<
-		infer TArgs,
-		infer TResult
-	>
-		? (id: string, ...args: TArgs) => Promise<TResult>
-		: TShape[K] extends NamespaceDescriptor<any, infer TChildShape>
-			? PreloadHandleNode<TChildShape>
-			: never;
-};
-
-type PreloadResourcePayload<TInner extends ResourceInnerDescriptor> =
-	TInner extends NamespaceDescriptor<any, infer TShape>
-		? { proxy: PreloadHandleNode<TShape> }
-		: TInner extends StreamDescriptor<infer TRead, infer TWrite>
-			? { stream: (id: string) => PreloadStreamBridge<TRead, TWrite> }
-			: Record<string, never>;
-
-export type PreloadResourceBridge<
+/**
+ * Uniform resource bridge shape. Resources always expose:
+ * - `connect` / `kill` for lifecycle
+ * - `inner(id)` returning a sub-bridge with the SAME recursive shape
+ *
+ * No `proxy` vs `stream` distinction — the sub-bridge returned by `inner`
+ * uses the same type algebra as the top-level bridge.
+ */
+export interface PreloadResourceBridge<
 	TArgs extends unknown[] = unknown[],
 	TInner extends ResourceInnerDescriptor = ResourceInnerDescriptor,
-> = BasePreloadResourceBridge<TArgs> & PreloadResourcePayload<TInner>;
-
-export type PreloadTransportBridge<
-	TArgs extends unknown[] = unknown[],
-	TRead = unknown,
-	TWrite = TRead,
-> = PreloadResourceBridge<TArgs, StreamDescriptor<TRead, TWrite>>;
-
-export type PreloadHandleBridge<
-	TArgs extends unknown[] = unknown[],
-	TShape extends AnyShape = AnyShape,
-> = PreloadResourceBridge<TArgs, NamespaceDescriptor<any, TShape>>;
+> {
+	connect: (...args: TArgs) => Promise<string>;
+	kill: (id: string) => Promise<void>;
+	inner: (id: string) => PreloadBridgeOf<TInner>;
+}
 
 export type PreloadBridgeOf<D extends Descriptor> =
 	D extends MethodDescriptor<infer TArgs, infer TResult>

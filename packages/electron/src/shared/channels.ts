@@ -1,4 +1,4 @@
-// Auth — invoke channels (renderer → main)
+// Auth -- invoke channels (renderer -> main)
 export const AUTH_GET_PROVIDERS = 'franklin:auth:getProviders';
 export const AUTH_GET_CANONICAL_PROVIDERS =
 	'franklin:auth:getCanonicalProviders';
@@ -9,47 +9,51 @@ export const AUTH_REMOVE_ENTRY = 'franklin:auth:removeEntry';
 export const AUTH_START_LOGIN = 'franklin:auth:startLogin';
 export const AUTH_OPEN_EXTERNAL = 'franklin:auth:openExternal';
 
-// Auth — one-way send (renderer → main)
+// Auth -- one-way send (renderer -> main)
 export const AUTH_PROMPT_RESPONSE = 'franklin:auth:promptResponse';
 
-// Auth — main → renderer push events (within an active OAuth flow)
+// Auth -- main -> renderer push events (within an active OAuth flow)
 export const AUTH_ON_CHANGE = 'franklin:auth:onChange';
 export const AUTH_OAUTH_ON_AUTH = 'franklin:auth:oauth:onAuth';
 export const AUTH_OAUTH_ON_PROGRESS = 'franklin:auth:oauth:onProgress';
 export const AUTH_OAUTH_ON_PROMPT = 'franklin:auth:oauth:onPrompt';
 export const APP_GET_STORAGE = 'franklin:app:getStorage';
 
-export interface ChannelNamespace {
-	getMethodChannel(path: readonly string[]): string;
-	getLeaseConnectChannel(path: readonly string[]): string;
-	getLeaseKillChannel(path: readonly string[]): string;
-	getStreamChannel(path: readonly string[]): string;
-	getLeaseStreamChannel(path: readonly string[], id: string): string;
-	getLeaseMethodChannel(
-		leasePath: readonly string[],
-		memberPath: readonly string[],
-	): string;
+// ---------------------------------------------------------------------------
+// Recursive channel scope -- self-similar at every nesting level
+// ---------------------------------------------------------------------------
+
+/**
+ * A channel scope provides deterministic channel names at a given depth.
+ * At a resource boundary, `resource(path).inner()` returns a new scope
+ * with the same interface but narrower channel prefix.
+ */
+export interface ChannelScope {
+	method(path: readonly string[]): string;
+	stream(path: readonly string[]): string;
+	resource(path: readonly string[]): ResourceScope;
 }
 
-function getChannel(
-	name: string,
-	path: readonly string[],
-	suffix?: string,
-): string {
-	return suffix == null
-		? [name, ...path].join(':')
-		: [name, ...path, suffix].join(':');
+export interface ResourceScope {
+	readonly connect: string;
+	readonly kill: string;
+	inner(): ChannelScope;
 }
 
-export function createChannels(name: string): ChannelNamespace {
+export function createScope(prefix: string): ChannelScope {
 	return {
-		getMethodChannel: (path) => getChannel(name, path),
-		getLeaseConnectChannel: (path) => getChannel(name, path, 'connect'),
-		getLeaseKillChannel: (path) => getChannel(name, path, 'kill'),
-		getStreamChannel: (path) => getChannel(name, path, 'stream'),
-		getLeaseStreamChannel: (path, id) =>
-			getChannel(name, [...path, 'lease', id, 'stream']),
-		getLeaseMethodChannel: (leasePath, memberPath) =>
-			getChannel(name, [...leasePath, 'lease', ...memberPath]),
+		method: (path) => [prefix, ...path].join(':'),
+		stream: (path) => [prefix, ...path, 'stream'].join(':'),
+		resource: (path) => {
+			const base = [prefix, ...path].join(':');
+			const leaseBase = `${base}:lease`;
+			return {
+				connect: `${base}:connect`,
+				kill: `${base}:kill`,
+				inner(): ChannelScope {
+					return createScope(leaseBase);
+				},
+			};
+		},
 	};
 }

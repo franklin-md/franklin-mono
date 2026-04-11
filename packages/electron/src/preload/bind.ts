@@ -11,23 +11,17 @@ import type {
 	NamespaceDescriptor,
 } from '@franklin/lib/proxy';
 
-import type { ChannelNamespace } from '../shared/channels.js';
-import { createChannels } from '../shared/channels.js';
+import type { ChannelScope, ResourceScope } from '../shared/channels.js';
+import { createScope } from '../shared/channels.js';
 import {
 	isIpcStreamMessage,
 	type PreloadBridgeOf,
 	type PreloadStreamBridge,
-	type PreloadTransportBridge,
 } from '../shared/api.js';
 
-type BindContext =
-	| { kind: 'root'; channels: ChannelNamespace; path: string[] }
-	| {
-			kind: 'lease';
-			channels: ChannelNamespace;
-			leasePath: string[];
-			memberPath: string[];
-	  };
+// ---------------------------------------------------------------------------
+// Stream bridge -- wraps a single IPC channel as a subscribe/send/close triple
+// ---------------------------------------------------------------------------
 
 function createIpcStreamBridge(channel: string): PreloadStreamBridge {
 	return {
@@ -64,114 +58,99 @@ function createIpcStreamBridge(channel: string): PreloadStreamBridge {
 	};
 }
 
-function bindDescriptor(
-	key: string,
+// ---------------------------------------------------------------------------
+// Recursive bridge builder
+// ---------------------------------------------------------------------------
+
+function buildBridge(
 	descriptor: Descriptor,
-	context: BindContext,
+	path: readonly string[],
+	scope: ChannelScope,
 ): unknown {
-	const { channels } = context;
-
-	if (isNamespaceDescriptor(descriptor)) {
-		return bindMembers(
-			descriptor.shape as AnyShape,
-			context.kind === 'root'
-				? { kind: 'root', channels, path: [...context.path, key] }
-				: {
-						kind: 'lease',
-						channels,
-						leasePath: context.leasePath,
-						memberPath: [...context.memberPath, key],
-					},
-		);
-	}
-
 	if (isMethodDescriptor(descriptor)) {
-		const channel =
-			context.kind === 'root'
-				? channels.getMethodChannel([...context.path, key])
-				: channels.getLeaseMethodChannel(context.leasePath, [
-						...context.memberPath,
-						key,
-					]);
-		return context.kind === 'root'
-			? (...invokeArgs: unknown[]) => ipcRenderer.invoke(channel, ...invokeArgs)
-			: (id: string, ...invokeArgs: unknown[]) =>
-					ipcRenderer.invoke(channel, id, ...invokeArgs);
+		const channel = scope.method(path);
+		return (...args: unknown[]) => ipcRenderer.invoke(channel, ...args);
 	}
 
 	if (isStreamDescriptor(descriptor)) {
-		if (context.kind !== 'root') {
-			throw new Error(`Unsupported descriptor inside leased proxy at ${key}`);
+		return createIpcStreamBridge(scope.stream(path));
+	}
+
+	if (isNamespaceDescriptor(descriptor)) {
+		const shape = descriptor.shape as AnyShape;
+		const node: Record<string, unknown> = {};
+		for (const [key, child] of Object.entries(shape)) {
+			node[key] = buildBridge(child, [...path, key], scope);
 		}
-
-		return createIpcStreamBridge(
-			channels.getStreamChannel([...context.path, key]),
-		);
+		return node;
 	}
 
-	if (!isResourceDescriptor(descriptor)) {
-		throw new Error(`Unknown descriptor at ${key}`);
+	if (isResourceDescriptor(descriptor)) {
+		const res = scope.resource(path);
+		return buildResourceBridge(descriptor.inner as Descriptor, res);
 	}
 
-	if (context.kind !== 'root') {
-		throw new Error(`Unsupported descriptor inside leased proxy at ${key}`);
-	}
+	throw new Error(`Unknown descriptor at ${(path as string[]).join('.')}`);
+}
 
-	const nextPath = [...context.path, key];
-	const resourceBridge: Record<string, unknown> = {
+function buildResourceBridge(
+	innerDescriptor: Descriptor,
+	res: ResourceScope,
+): unknown {
+	const innerScope = res.inner();
+	return {
 		connect: (...args: unknown[]) =>
-			ipcRenderer.invoke(
-				channels.getLeaseConnectChannel(nextPath),
-				...args,
-			) as Promise<string>,
-		kill: (id: string) =>
-			ipcRenderer.invoke(
-				channels.getLeaseKillChannel(nextPath),
-				id,
-			) as Promise<void>,
+			ipcRenderer.invoke(res.connect, ...args) as Promise<string>,
+		kill: (id: string) => ipcRenderer.invoke(res.kill, id) as Promise<void>,
+		inner: (id: string) =>
+			buildInnerBridge(innerDescriptor, [], innerScope, id),
 	};
-
-	if (isNamespaceDescriptor(descriptor.inner)) {
-		resourceBridge.proxy = bindMembers(descriptor.inner.shape as AnyShape, {
-			kind: 'lease',
-			channels,
-			leasePath: nextPath,
-			memberPath: [],
-		});
-		return resourceBridge;
-	}
-
-	if (isStreamDescriptor(descriptor.inner)) {
-		(resourceBridge as unknown as PreloadTransportBridge).stream = (
-			id: string,
-		) => createIpcStreamBridge(channels.getLeaseStreamChannel(nextPath, id));
-		return resourceBridge;
-	}
-
-	throw new Error(`Unsupported leased value at ${nextPath.join('.')}`);
 }
 
-function bindMembers(
-	shape: AnyShape,
-	context: BindContext,
-): Record<string, unknown> {
-	const node: Record<string, unknown> = {};
-
-	for (const [key, descriptor] of Object.entries(shape)) {
-		node[key] = bindDescriptor(key, descriptor, context);
+/**
+ * Build a sub-bridge for a resource instance. Methods are curried with the
+ * lease ID (ID is the first IPC argument). Streams use per-instance channels.
+ */
+function buildInnerBridge(
+	descriptor: Descriptor,
+	path: readonly string[],
+	scope: ChannelScope,
+	id: string,
+): unknown {
+	if (isMethodDescriptor(descriptor)) {
+		const channel = scope.method(path);
+		return (...args: unknown[]) => ipcRenderer.invoke(channel, id, ...args);
 	}
 
-	return node;
+	if (isStreamDescriptor(descriptor)) {
+		// Per-instance stream: static channel + ':' + instance ID
+		return createIpcStreamBridge(`${scope.stream(path)}:${id}`);
+	}
+
+	if (isNamespaceDescriptor(descriptor)) {
+		const shape = descriptor.shape as AnyShape;
+		const node: Record<string, unknown> = {};
+		for (const [key, child] of Object.entries(shape)) {
+			node[key] = buildInnerBridge(child, [...path, key], scope, id);
+		}
+		return node;
+	}
+
+	if (isResourceDescriptor(descriptor)) {
+		throw new Error('Nested resources inside resources are not yet supported');
+	}
+
+	throw new Error(`Unknown descriptor at ${(path as string[]).join('.')}`);
 }
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 export function bindPreload<TSchema extends NamespaceDescriptor<any, any>>(
 	name: string,
 	schema: TSchema,
 ): PreloadBridgeOf<TSchema> {
-	const channels = createChannels(name);
-	return bindMembers(schema.shape as AnyShape, {
-		kind: 'root',
-		channels,
-		path: [],
-	}) as PreloadBridgeOf<TSchema>;
+	const scope = createScope(name);
+	return buildBridge(schema, [], scope) as PreloadBridgeOf<TSchema>;
 }

@@ -5,36 +5,36 @@ import {
 	isStreamDescriptor,
 } from '@franklin/lib/proxy';
 
-import { createChannels } from '../channels.js';
+import { createScope } from '../channels.js';
 import { schema } from '../schema.js';
 
 describe('schema', () => {
 	it('derives stable channel names from key paths', () => {
-		const channels = createChannels('franklin');
+		const scope = createScope('franklin');
 
-		expect(channels.getMethodChannel(['filesystem', 'readFile'])).toBe(
+		expect(scope.method(['filesystem', 'readFile'])).toBe(
 			'franklin:filesystem:readFile',
 		);
-		expect(channels.getLeaseConnectChannel(['spawn'])).toBe(
-			'franklin:spawn:connect',
+
+		const spawn = scope.resource(['spawn']);
+		expect(spawn.connect).toBe('franklin:spawn:connect');
+		expect(spawn.kill).toBe('franklin:spawn:kill');
+		expect(scope.stream(['spawn'])).toBe('franklin:spawn:stream');
+
+		const spawnInner = spawn.inner();
+		// Per-instance stream channel is computed by convention: stream + ':' + id
+		expect(`${spawnInner.stream([])}:agent-1`).toBe(
+			'franklin:spawn:lease:stream:agent-1',
 		);
-		expect(channels.getLeaseKillChannel(['spawn'])).toBe('franklin:spawn:kill');
-		expect(channels.getStreamChannel(['spawn'])).toBe('franklin:spawn:stream');
-		expect(channels.getLeaseStreamChannel(['spawn'], 'agent-1')).toBe(
-			'franklin:spawn:lease:agent-1:stream',
+
+		const env = scope.resource(['environment']);
+		expect(env.connect).toBe('franklin:environment:connect');
+		expect(env.kill).toBe('franklin:environment:kill');
+
+		const envInner = env.inner();
+		expect(envInner.method(['filesystem', 'readFile'])).toBe(
+			'franklin:environment:lease:filesystem:readFile',
 		);
-		expect(channels.getLeaseConnectChannel(['environment'])).toBe(
-			'franklin:environment:connect',
-		);
-		expect(channels.getLeaseKillChannel(['environment'])).toBe(
-			'franklin:environment:kill',
-		);
-		expect(
-			channels.getLeaseMethodChannel(
-				['environment'],
-				['filesystem', 'readFile'],
-			),
-		).toBe('franklin:environment:lease:filesystem:readFile');
 	});
 
 	it('captures environment and spawn as core resource descriptors', () => {

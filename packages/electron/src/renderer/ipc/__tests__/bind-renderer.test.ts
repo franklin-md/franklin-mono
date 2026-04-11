@@ -56,19 +56,20 @@ describe('bindRenderer', () => {
 
 	it('hydrates transport leaves into renderer-side duplexes', async () => {
 		const spawnStream = createStreamBridge();
+		const existsFn = vi.fn(async (_path: string) => true);
 		const rawBridge = {
 			spawn: {
 				connect: vi.fn(async () => 'agent-1'),
 				kill: vi.fn(async () => {}),
-				stream: vi.fn(() => spawnStream.bridge),
+				inner: vi.fn((_id: string) => spawnStream.bridge),
 			},
 			environment: {
 				connect: vi.fn(async () => 'env-1'),
 				kill: vi.fn(async () => {}),
-				proxy: {
+				inner: vi.fn((_id: string) => ({
 					filesystem: {
 						resolve: vi.fn(async () => '/tmp'),
-						exists: vi.fn(async (_id: string, _path: string) => true),
+						exists: existsFn,
 						readFile: vi.fn(async () => new Uint8Array()),
 						writeFile: vi.fn(async () => {}),
 						mkdir: vi.fn(async () => {}),
@@ -110,18 +111,11 @@ describe('bindRenderer', () => {
 						netConfig: { allowedDomains: [], deniedDomains: [] },
 					})),
 					reconfigure: vi.fn(async () => {}),
-				},
+				})),
 			},
 			ai: {
 				getOAuthProviders: vi.fn(async () => []),
 				getApiKeyProviders: vi.fn(async () => []),
-				getProvider: {
-					connect: vi.fn(async () => 'provider-1'),
-					kill: vi.fn(async () => {}),
-					proxy: {
-						login: vi.fn(async (_id: string) => ({}) as any),
-					},
-				},
 			},
 			filesystem: {
 				readFile: vi.fn(async () => new Uint8Array()),
@@ -155,12 +149,11 @@ describe('bindRenderer', () => {
 		const transport = await bridge.spawn();
 		await transport.writable.getWriter().write({ type: 'ping' } as never);
 		expect(rawBridge.spawn.connect).toHaveBeenCalledTimes(1);
-		expect(rawBridge.spawn.stream).toHaveBeenCalledWith('agent-1');
+		expect(rawBridge.spawn.inner).toHaveBeenCalledWith('agent-1');
 		expect(spawnStream.packets).toContainEqual({ type: 'ping' });
 
 		expect(typeof transport.dispose).toBe('function');
-		await transport.close();
-		expect(spawnStream.close).toHaveBeenCalledTimes(1);
+		await transport.dispose();
 		expect(rawBridge.spawn.kill).toHaveBeenCalledWith('agent-1');
 
 		const environment = await bridge.environment({
@@ -172,15 +165,8 @@ describe('bindRenderer', () => {
 		});
 		await expect(environment.filesystem.exists('/tmp')).resolves.toBe(true);
 		expect(rawBridge.environment.connect).toHaveBeenCalledTimes(1);
-		const filesystemProxy = rawBridge.environment.proxy as unknown as {
-			filesystem: {
-				exists: ReturnType<typeof vi.fn>;
-			};
-		};
-		expect(filesystemProxy.filesystem.exists).toHaveBeenCalledWith(
-			'env-1',
-			'/tmp',
-		);
+		expect(rawBridge.environment.inner).toHaveBeenCalledWith('env-1');
+		expect(existsFn).toHaveBeenCalledWith('/tmp');
 
 		expect(typeof environment.dispose).toBe('function');
 		await environment.dispose();

@@ -1,4 +1,20 @@
-import type { ResourceDescriptor } from './descriptors/types/index.js';
+export interface ResourceBinding {
+	connect(...args: unknown[]): Promise<string>;
+	kill(id: string): Promise<void>;
+	inner(id: string): ProxyRuntime;
+}
+
+export interface ServerResourceBinding {
+	readonly unregister: Array<() => void>;
+	inner(): ServerRuntime;
+}
+
+export interface ResourceHandle {
+	connect(...args: unknown[]): Promise<string>;
+	kill(id: string): Promise<void>;
+	get(id: string): unknown;
+	onConnect(hook: (id: string, value: unknown) => void): () => void;
+}
 
 export interface ProxyRuntime {
 	bindMethod?(path: string[]): (...args: unknown[]) => Promise<unknown>;
@@ -9,36 +25,29 @@ export interface ProxyRuntime {
 
 	bindStream?(path: string[]): unknown;
 
-	bindResource?(
-		path: string[],
-		descriptor: ResourceDescriptor<any, any>,
-	): (...args: unknown[]) => Promise<unknown>;
+	bindResource?(path: string[]): ResourceBinding;
 }
 
 export interface ServerRuntime {
-	registerMethod?(
-		path: string[],
-		handler: (...args: unknown[]) => Promise<unknown>,
-	): () => void;
+	registerMethod?(path: string[], handler?: MethodHandler): () => void;
 
 	registerNotification?(
 		path: string[],
-		handler: (...args: unknown[]) => Promise<void>,
+		handler?: NotificationHandler,
 	): () => void;
 
-	registerEvent?(
-		path: string[],
-		handler: (...args: unknown[]) => AsyncIterable<unknown>,
-	): () => void;
+	registerEvent?(path: string[], handler?: EventHandler): () => void;
 
-	// TODO: factor should be (...args: unknown[]) => Duplex<R, W>
-	registerStream?(path: string[], factory: () => unknown): () => void;
+	// TODO: factory should be (...args: unknown[]) => Duplex<R, W>
+	registerStream?(path: string[], factory?: StreamFactory): () => void;
 
-	// TODO: We may be able to break this down by providing in bind-server and bind-client
-	// in a similar way to how we've done for namespace
 	registerResource?(
 		path: string[],
-		descriptor: ResourceDescriptor<any, any>,
-		factory: (...args: unknown[]) => Promise<unknown>,
-	): Array<() => void>;
+		handle: ResourceHandle,
+	): ServerResourceBinding;
 }
+
+export type MethodHandler = (...args: unknown[]) => Promise<unknown>;
+export type NotificationHandler = (...args: unknown[]) => Promise<void>;
+export type EventHandler = (...args: unknown[]) => AsyncIterable<unknown>;
+export type StreamFactory = () => unknown;

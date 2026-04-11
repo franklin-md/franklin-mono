@@ -7,9 +7,9 @@ import {
 	resource,
 	stream,
 } from '../proxy/descriptors/factories/index.js';
-import { bindServer } from '../proxy/bind-server.js';
-import { UnsupportedDescriptorError } from '../proxy/bind-client.js';
-import type { ServerRuntime } from '../proxy/runtime.js';
+import { bindServer } from '../proxy/bind/server.js';
+import { UnsupportedDescriptorError } from '../proxy/bind/client.js';
+import type { ResourceHandle, ServerRuntime } from '../proxy/runtime.js';
 
 describe('bindServer', () => {
 	it('registers a single method handler directly', () => {
@@ -101,11 +101,103 @@ describe('bindServer', () => {
 		);
 	});
 
-	it('registers resource handlers', () => {
-		const unregisters = [vi.fn(), vi.fn()];
-		const factory = vi.fn().mockResolvedValue({});
+	it('registers resource(stream) via registerResource and recurses into inner', () => {
+		const unregisterStream = vi.fn();
+		const unregisterResource = vi.fn();
+		const resourceRuntime: ServerRuntime = {
+			registerStream: vi.fn().mockReturnValue(unregisterStream),
+		};
 		const runtime: ServerRuntime = {
-			registerResource: vi.fn().mockReturnValue(unregisters),
+			registerResource: vi.fn().mockReturnValue({
+				unregister: [unregisterResource],
+				inner: vi.fn().mockReturnValue(resourceRuntime),
+			}),
+		};
+
+		const factory = vi.fn().mockResolvedValue({});
+
+		bindServer(
+			namespace({ spawn: resource(stream()) }),
+			{ spawn: factory } as never,
+			runtime,
+		);
+
+		// registerResource receives a ResourceHandle, not the raw factory
+		expect(runtime.registerResource).toHaveBeenCalledWith(
+			['spawn'],
+			expect.objectContaining({
+				connect: expect.any(Function),
+				kill: expect.any(Function),
+				get: expect.any(Function),
+				onConnect: expect.any(Function),
+			}),
+		);
+		const binding = (runtime.registerResource as ReturnType<typeof vi.fn>).mock
+			.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
+		expect(binding.inner).toHaveBeenCalled();
+		// The inner descriptor (stream) should be registered on the resource runtime
+		// without a handler -- the resource runtime dispatches internally
+		expect(resourceRuntime.registerStream).toHaveBeenCalledWith([], undefined);
+	});
+
+	it('registers resource(namespace) via registerResource and recurses into inner members', () => {
+		const unregisterMethod = vi.fn();
+		const unregisterResource = vi.fn();
+		const resourceRuntime: ServerRuntime = {
+			registerMethod: vi.fn().mockReturnValue(unregisterMethod),
+		};
+		const runtime: ServerRuntime = {
+			registerResource: vi.fn().mockReturnValue({
+				unregister: [unregisterResource],
+				inner: vi.fn().mockReturnValue(resourceRuntime),
+			}),
+		};
+
+		const doThingHandler = vi.fn().mockResolvedValue(42);
+
+		bindServer(
+			namespace({ handle: resource(namespace({ doThing: method() })) }),
+			{ handle: doThingHandler } as never,
+			runtime,
+		);
+
+		// registerResource receives a ResourceHandle, not the raw factory
+		expect(runtime.registerResource).toHaveBeenCalledWith(
+			['handle'],
+			expect.objectContaining({
+				connect: expect.any(Function),
+				kill: expect.any(Function),
+				get: expect.any(Function),
+				onConnect: expect.any(Function),
+			}),
+		);
+		const binding = (runtime.registerResource as ReturnType<typeof vi.fn>).mock
+			.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
+		expect(binding.inner).toHaveBeenCalled();
+		// The inner method should be registered on the resource runtime
+		// without a handler -- the resource runtime dispatches to instances
+		expect(resourceRuntime.registerMethod).toHaveBeenCalledWith(
+			['doThing'],
+			undefined,
+		);
+	});
+
+	it('resource handle delegates to the underlying factory on connect', async () => {
+		const resourceValue = { data: 42 };
+		const factory = vi.fn().mockResolvedValue(resourceValue);
+		let capturedHandle: ResourceHandle | undefined;
+
+		const resourceRuntime: ServerRuntime = {
+			registerStream: vi.fn().mockReturnValue(vi.fn()),
+		};
+		const runtime: ServerRuntime = {
+			registerResource: vi.fn().mockImplementation((_path, handle) => {
+				capturedHandle = handle as ResourceHandle;
+				return {
+					unregister: [],
+					inner: vi.fn().mockReturnValue(resourceRuntime),
+				};
+			}),
 		};
 
 		bindServer(
@@ -114,11 +206,70 @@ describe('bindServer', () => {
 			runtime,
 		);
 
-		expect(runtime.registerResource).toHaveBeenCalledWith(
-			['spawn'],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
-			factory,
+		expect(capturedHandle).toBeDefined();
+		const id = await capturedHandle!.connect('arg1', 'arg2');
+		expect(factory).toHaveBeenCalledWith('arg1', 'arg2');
+		expect(typeof id).toBe('string');
+		expect(capturedHandle!.get(id)).toBe(resourceValue);
+	});
+
+	it('resource handle fires onConnect hooks', async () => {
+		const resourceValue = { data: 42 };
+		const factory = vi.fn().mockResolvedValue(resourceValue);
+		let capturedHandle: ResourceHandle | undefined;
+
+		const resourceRuntime: ServerRuntime = {
+			registerStream: vi.fn().mockReturnValue(vi.fn()),
+		};
+		const runtime: ServerRuntime = {
+			registerResource: vi.fn().mockImplementation((_path, handle) => {
+				capturedHandle = handle as ResourceHandle;
+				return {
+					unregister: [],
+					inner: vi.fn().mockReturnValue(resourceRuntime),
+				};
+			}),
+		};
+
+		bindServer(
+			namespace({ spawn: resource(stream()) }),
+			{ spawn: factory } as never,
+			runtime,
 		);
+
+		const hook = vi.fn();
+		capturedHandle!.onConnect(hook);
+		const id = await capturedHandle!.connect();
+		expect(hook).toHaveBeenCalledWith(id, resourceValue);
+	});
+
+	it('resource handle kills instances and calls dispose', async () => {
+		const dispose = vi.fn();
+		const factory = vi.fn().mockResolvedValue({ dispose });
+		let capturedHandle: ResourceHandle | undefined;
+
+		const resourceRuntime: ServerRuntime = {
+			registerStream: vi.fn().mockReturnValue(vi.fn()),
+		};
+		const runtime: ServerRuntime = {
+			registerResource: vi.fn().mockImplementation((_path, handle) => {
+				capturedHandle = handle as ResourceHandle;
+				return {
+					unregister: [],
+					inner: vi.fn().mockReturnValue(resourceRuntime),
+				};
+			}),
+		};
+
+		bindServer(
+			namespace({ spawn: resource(stream()) }),
+			{ spawn: factory } as never,
+			runtime,
+		);
+
+		const id = await capturedHandle!.connect();
+		await capturedHandle!.kill(id);
+		expect(dispose).toHaveBeenCalledOnce();
 	});
 
 	it('dispose calls all unregister functions', () => {
@@ -146,7 +297,7 @@ describe('bindServer', () => {
 		expect(unregister1).not.toHaveBeenCalled();
 		expect(unregister2).not.toHaveBeenCalled();
 
-		binding.dispose();
+		void binding.dispose();
 
 		expect(unregister1).toHaveBeenCalledOnce();
 		expect(unregister2).toHaveBeenCalledOnce();

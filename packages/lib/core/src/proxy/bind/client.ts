@@ -5,19 +5,19 @@ import {
 	isNotificationDescriptor,
 	isResourceDescriptor,
 	isStreamDescriptor,
-} from './descriptors/detect.js';
-import type { AnyShape, Descriptor } from './descriptors/types/index.js';
-import type { ProxyType } from './types.js';
-import type { ProxyRuntime } from './runtime.js';
+} from '../descriptors/detect.js';
+import type { AnyShape, Descriptor } from '../descriptors/types/index.js';
+import type { ProxyType } from '../types.js';
+import type { ProxyRuntime } from '../runtime.js';
 
 export function bindClient<D extends Descriptor>(
 	descriptor: D,
 	runtime: ProxyRuntime,
 ): ProxyType<D> {
-	return bindDescriptor(descriptor, [], runtime) as ProxyType<D>;
+	return buildDescriptor(descriptor, [], runtime) as ProxyType<D>;
 }
 
-function bindDescriptor(
+function buildDescriptor(
 	descriptor: Descriptor,
 	path: string[],
 	runtime: ProxyRuntime,
@@ -52,34 +52,37 @@ function bindDescriptor(
 
 	if (isNamespaceDescriptor(descriptor)) {
 		const shape = descriptor.shape as AnyShape;
-		return buildNamespace(shape, path, runtime);
+		const result: Record<string, unknown> = {};
+		for (const key of Object.keys(shape)) {
+			const child = shape[key];
+			if (!child) continue;
+			result[key] = buildDescriptor(child, [...path, key], runtime);
+		}
+		return result;
 	}
 
 	if (isResourceDescriptor(descriptor)) {
 		if (!runtime.bindResource) {
 			throw new UnsupportedDescriptorError('resource', path);
 		}
-		return runtime.bindResource(path, descriptor);
+		const binding = runtime.bindResource(path);
+		return async (...args: unknown[]) => {
+			const id = await binding.connect(...args);
+			const innerRuntime = binding.inner(id);
+			const inner = buildDescriptor(
+				descriptor.inner as Descriptor,
+				[],
+				innerRuntime,
+			);
+			return Object.assign(inner as object, {
+				dispose: async () => {
+					await binding.kill(id);
+				},
+			});
+		};
 	}
 
 	throw new Error(`Unknown descriptor at path: ${path.join('.')}`);
-}
-
-// TODO: move to a new folder
-function buildNamespace(
-	shape: AnyShape,
-	path: string[],
-	runtime: ProxyRuntime,
-): Record<string, unknown> {
-	const result: Record<string, unknown> = {};
-
-	for (const key of Object.keys(shape)) {
-		const descriptor = shape[key];
-		if (!descriptor) continue;
-		result[key] = bindDescriptor(descriptor, [...path, key], runtime);
-	}
-
-	return result;
 }
 
 export class UnsupportedDescriptorError extends Error {

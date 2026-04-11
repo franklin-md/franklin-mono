@@ -132,7 +132,7 @@ describe('bindMain', () => {
 	it('dispatches invoke handlers for a bound window', async () => {
 		const { bindMain } = await import('../bind/index.js');
 		const { schema } = await import('../../../shared/schema.js');
-		const { createChannels } = await import('../../../shared/channels.js');
+		const { createScope } = await import('../../../shared/channels.js');
 
 		const handle = bindMain(
 			'franklin',
@@ -149,10 +149,8 @@ describe('bindMain', () => {
 			createWebContents(1),
 		);
 
-		const channel = createChannels('franklin').getMethodChannel([
-			'filesystem',
-			'exists',
-		]);
+		const scope = createScope('franklin');
+		const channel = scope.method(['filesystem', 'exists']);
 		await expect(invoke(channel, '/test')).resolves.toBe(true);
 
 		await handle.dispose();
@@ -161,7 +159,7 @@ describe('bindMain', () => {
 	it('dispatches handle-backed method calls for leased objects', async () => {
 		const { bindMain } = await import('../bind/index.js');
 		const { schema } = await import('../../../shared/schema.js');
-		const { createChannels } = await import('../../../shared/channels.js');
+		const { createScope } = await import('../../../shared/channels.js');
 
 		const handle = bindMain(
 			'franklin',
@@ -178,15 +176,15 @@ describe('bindMain', () => {
 			createWebContents(1),
 		);
 
-		const channels = createChannels('franklin');
-		const id = await invoke(channels.getLeaseConnectChannel(['environment']));
-		const exists = channels.getLeaseMethodChannel(
-			['environment'],
-			['filesystem', 'exists'],
-		);
+		const scope = createScope('franklin');
+		const envRes = scope.resource(['environment']);
+		const envInner = envRes.inner();
+
+		const id = await invoke(envRes.connect);
+		const exists = envInner.method(['filesystem', 'exists']);
 
 		await expect(invoke(exists, id, '/test')).resolves.toBe(false);
-		await invoke(channels.getLeaseKillChannel(['environment']), id);
+		await invoke(envRes.kill, id);
 
 		await handle.dispose();
 	});
@@ -194,7 +192,7 @@ describe('bindMain', () => {
 	it('preserves this-binding for class-based leased resource methods', async () => {
 		const { bindMain } = await import('../bind/index.js');
 		const { schema } = await import('../../../shared/schema.js');
-		const { createChannels } = await import('../../../shared/channels.js');
+		const { createScope } = await import('../../../shared/channels.js');
 
 		// A class whose methods rely on `this` to access instance state.
 		class StatefulFilesystem {
@@ -277,24 +275,24 @@ describe('bindMain', () => {
 			createWebContents(1),
 		);
 
-		const channels = createChannels('franklin');
-		const id = await invoke(channels.getLeaseConnectChannel(['environment']));
-		const exists = channels.getLeaseMethodChannel(
-			['environment'],
-			['filesystem', 'exists'],
-		);
+		const scope = createScope('franklin');
+		const envRes = scope.resource(['environment']);
+		const envInner = envRes.inner();
+
+		const id = await invoke(envRes.connect);
+		const exists = envInner.method(['filesystem', 'exists']);
 
 		// This will throw "Cannot read properties of undefined (reading 'label')"
 		// because getValueAtPath extracts the method without binding `this`.
 		await expect(invoke(exists, id, '/test')).resolves.toBe(true);
-		await invoke(channels.getLeaseKillChannel(['environment']), id);
+		await invoke(envRes.kill, id);
 
 		await handle.dispose();
 	});
 
 	it('binds direct stream descriptors to per-path IPC channels', async () => {
 		const { bindMain } = await import('../bind/index.js');
-		const { createChannels } = await import('../../../shared/channels.js');
+		const { createScope } = await import('../../../shared/channels.js');
 		const { namespace, stream } = await import('@franklin/lib/proxy');
 
 		let emitLocal: (chunk: unknown) => void = (_chunk: unknown) => {
@@ -340,7 +338,8 @@ describe('bindMain', () => {
 			webContents,
 		);
 
-		const channel = createChannels('franklin').getStreamChannel(['logs']);
+		const scope = createScope('franklin');
+		const channel = scope.stream(['logs']);
 		emit(channel, { kind: 'data', data: { type: 'ping' } });
 		await Promise.resolve();
 		await Promise.resolve();
@@ -365,7 +364,7 @@ describe('bindMain', () => {
 	it('closes active transports when the renderer kills them', async () => {
 		const { bindMain } = await import('../bind/index.js');
 		const { schema } = await import('../../../shared/schema.js');
-		const { createChannels } = await import('../../../shared/channels.js');
+		const { createScope } = await import('../../../shared/channels.js');
 
 		const transportSpy = createTransportSpy();
 		const handle = bindMain(
@@ -383,12 +382,11 @@ describe('bindMain', () => {
 			createWebContents(1),
 		);
 
-		const channels = createChannels('franklin');
-		const connectChannel = channels.getLeaseConnectChannel(['spawn']);
-		const killChannel = channels.getLeaseKillChannel(['spawn']);
-		const id = await invoke(connectChannel);
+		const scope = createScope('franklin');
+		const spawnRes = scope.resource(['spawn']);
 
-		await invoke(killChannel, id);
+		const id = await invoke(spawnRes.connect);
+		await invoke(spawnRes.kill, id);
 
 		expect(transportSpy.close).toHaveBeenCalledTimes(1);
 

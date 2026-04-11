@@ -1,10 +1,12 @@
 import type { WebContents } from 'electron';
 import { bindServer } from '@franklin/lib/proxy';
 import type { Descriptor, ProxyType } from '@franklin/lib/proxy';
-import { createChannels } from '../../../shared/channels.js';
-import { createBindingContext } from './context.js';
+import { createScope } from '../../../shared/channels.js';
 import { createServerRuntime } from './runtime.js';
-import type { MainBindingHandle } from './types.js';
+
+export interface MainBindingHandle {
+	dispose(): Promise<void>;
+}
 
 const activeBindings = new Map<string, MainBindingHandle>();
 
@@ -19,23 +21,18 @@ export function bindMain<D extends Descriptor>(
 		previous.dispose().catch(console.error);
 	}
 
-	const context = createBindingContext(webContents);
-	const channels = createChannels(name);
-	const runtime = createServerRuntime(channels, context);
+	const scope = createScope(name);
+	const runtime = createServerRuntime(scope, webContents);
 	const binding = bindServer(schema, impl, runtime);
 
 	const handle: MainBindingHandle = {
 		dispose: async () => {
 			if (activeBindings.get(name) !== handle) return;
 			activeBindings.delete(name);
-
-			binding.dispose();
-			await context.dispose();
+			await binding.dispose();
 		},
 	};
 
 	activeBindings.set(name, handle);
 	return handle;
 }
-
-export type { MainBindingHandle } from './types.js';

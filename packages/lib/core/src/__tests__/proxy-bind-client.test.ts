@@ -10,7 +10,7 @@ import {
 import {
 	bindClient,
 	UnsupportedDescriptorError,
-} from '../proxy/bind-client.js';
+} from '../proxy/bind/client.js';
 import type { ProxyRuntime } from '../proxy/runtime.js';
 
 describe('bindClient', () => {
@@ -83,25 +83,97 @@ describe('bindClient', () => {
 		expect((proxy.fs as Record<string, unknown>).exists).toBe(stub);
 	});
 
-	it('binds resource descriptors via runtime.bindResource', () => {
-		const innerProxy = { doThing: vi.fn() };
-		const factory = vi.fn().mockResolvedValue(innerProxy);
+	it('binds resource(stream) by calling bindResource and recursing into inner', async () => {
+		const streamValue = { readable: 'r', writable: 'w', close: vi.fn() };
+		const resourceRuntime: ProxyRuntime = {
+			bindStream: vi.fn().mockReturnValue(streamValue),
+		};
 		const runtime: ProxyRuntime = {
-			bindResource: vi.fn().mockReturnValue(factory),
+			bindResource: vi.fn().mockReturnValue({
+				connect: vi.fn().mockResolvedValue('res-1'),
+				kill: vi.fn().mockResolvedValue(undefined),
+				inner: vi.fn().mockReturnValue(resourceRuntime),
+			}),
 		};
 
 		const proxy = bindClient(
-			namespace({
-				spawn: resource(stream()),
-			}),
+			namespace({ spawn: resource<[string]>(stream()) }),
 			runtime,
 		);
 
-		expect(runtime.bindResource).toHaveBeenCalledWith(
-			['spawn'],
-			expect.objectContaining({ kind: expect.any(Symbol) }),
+		expect(runtime.bindResource).toHaveBeenCalledWith(['spawn']);
+		expect(typeof proxy.spawn).toBe('function');
+
+		const instance = await (
+			proxy.spawn as (...args: unknown[]) => Promise<unknown>
+		)('arg1');
+		const binding = (runtime.bindResource as ReturnType<typeof vi.fn>).mock
+			.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
+		expect(binding.connect).toHaveBeenCalledWith('arg1');
+		expect(binding.inner).toHaveBeenCalledWith('res-1');
+		expect(resourceRuntime.bindStream).toHaveBeenCalledWith([]);
+		expect(instance).toEqual(
+			expect.objectContaining({
+				readable: 'r',
+				writable: 'w',
+				dispose: expect.any(Function),
+			}),
 		);
-		expect(proxy.spawn).toBe(factory);
+	});
+
+	it('binds resource(namespace) by calling bindResource and recursing into inner members', async () => {
+		const methodStub = vi.fn().mockResolvedValue(42);
+		const resourceRuntime: ProxyRuntime = {
+			bindMethod: vi.fn().mockReturnValue(methodStub),
+		};
+		const runtime: ProxyRuntime = {
+			bindResource: vi.fn().mockReturnValue({
+				connect: vi.fn().mockResolvedValue('res-2'),
+				kill: vi.fn().mockResolvedValue(undefined),
+				inner: vi.fn().mockReturnValue(resourceRuntime),
+			}),
+		};
+
+		const proxy = bindClient(
+			namespace({ handle: resource(namespace({ doThing: method() })) }),
+			runtime,
+		);
+
+		expect(runtime.bindResource).toHaveBeenCalledWith(['handle']);
+
+		const instance = (await (
+			proxy.handle as (...args: unknown[]) => Promise<unknown>
+		)()) as Record<string, unknown>;
+		const binding = (runtime.bindResource as ReturnType<typeof vi.fn>).mock
+			.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
+		expect(binding.connect).toHaveBeenCalledWith();
+		expect(binding.inner).toHaveBeenCalledWith('res-2');
+		expect(resourceRuntime.bindMethod).toHaveBeenCalledWith(['doThing']);
+		expect(instance.doThing).toBe(methodStub);
+		expect(typeof instance.dispose).toBe('function');
+	});
+
+	it('dispose on resource calls binding.kill', async () => {
+		const kill = vi.fn().mockResolvedValue(undefined);
+		const resourceRuntime: ProxyRuntime = {
+			bindStream: vi
+				.fn()
+				.mockReturnValue({ readable: 'r', writable: 'w', close: vi.fn() }),
+		};
+		const runtime: ProxyRuntime = {
+			bindResource: vi.fn().mockReturnValue({
+				connect: vi.fn().mockResolvedValue('res-3'),
+				kill,
+				inner: vi.fn().mockReturnValue(resourceRuntime),
+			}),
+		};
+
+		const factory = bindClient(resource(stream()), runtime) as (
+			...args: unknown[]
+		) => Promise<Record<string, unknown>>;
+		const instance = await factory();
+		await (instance.dispose as () => Promise<void>)();
+		expect(kill).toHaveBeenCalledWith('res-3');
 	});
 
 	it('throws UnsupportedDescriptorError when runtime lacks method', () => {
