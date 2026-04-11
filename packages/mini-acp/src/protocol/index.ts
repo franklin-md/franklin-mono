@@ -17,6 +17,7 @@ export {
 	type ClientBinding,
 	type AgentBinding,
 } from './connection.js';
+export { debugMiniACP } from './debug.js';
 
 export { createSessionAdapter } from './adapter.js';
 
