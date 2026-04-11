@@ -7,7 +7,6 @@ import {
 	useSessions,
 	useSettings,
 } from '@franklin/react';
-import { DEFAULT_NETWORK_CONFIG } from '@franklin/extensions';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,8 +32,8 @@ export function AgentSidebar({
 						permissions: { allowRead: ['**'], allowWrite: ['**'] },
 					},
 
-				netConfig: { allowedDomains: [], deniedDomains: [] },
-                }
+					netConfig: { allowedDomains: [], deniedDomains: [] },
+				},
 			},
 		});
 		setCurrentAgentId(session.id);
