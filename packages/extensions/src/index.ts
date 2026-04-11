@@ -32,7 +32,12 @@ export type {
 	StoreKey,
 	StoreValueType,
 } from './api/index.js';
-export { compose, composeMethod, passThrough } from './api/index.js';
+export {
+	compose,
+	composeMethod,
+	passThrough,
+	DEFAULT_NETWORK_CONFIG,
+} from './api/index.js';
 export { resolveToolOutput } from './api/index.js';
 export { toolSpec } from './api/index.js';
 export { serializeTool, toToolInputSchema } from './api/index.js';
@@ -122,6 +127,7 @@ export {
 	readExtension,
 	bashExtension,
 	createWebFetchExtension,
+	createWebSearchExtension,
 } from './extensions/index.js';
 
 export { createTodoControl, createStatusControl } from './extensions/index.js';
@@ -137,8 +143,10 @@ export type {
 } from './extensions/conversation/types.js';
 export type { Todo, TodoControl } from './extensions/todo/types.js';
 export type { StatusState, StatusControl } from './extensions/status/types.js';
-export { DEFAULT_WEB_FETCH_OPTIONS } from './extensions/web-fetch/types.js';
+export { DEFAULT_WEB_FETCH_OPTIONS } from './extensions/web/web-fetch/types.js';
 export type {
 	WebFetchProcessedResult,
 	WebFetchExtensionOptions,
-} from './extensions/web-fetch/types.js';
+} from './extensions/web/web-fetch/types.js';
+export { DEFAULT_WEB_SEARCH_OPTIONS } from './extensions/web/web-search/types.js';
+export type { WebSearchResult } from './extensions/web/web-search/types.js';

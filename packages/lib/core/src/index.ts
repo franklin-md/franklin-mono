@@ -17,7 +17,15 @@ export { Debouncer } from './utils/debouncer.js';
 export { createObserver } from './utils/observer.js';
 export type { Observer } from './utils/observer.js';
 export type { DeepPartial } from './typing/deep-partial.js';
-
+export {
+	normalizeUrl,
+	isPrivateHost,
+	isLoopbackHost,
+	parseIPv4,
+	normalizeHost,
+	matchesDomain,
+	matchesUrlPattern,
+} from './network/utils.js';
 // Proxy algebra
 export {
 	// Kind symbols
@@ -59,3 +67,5 @@ export type { ProxyRuntime, ServerRuntime } from './proxy/index.js';
 export { bindClient, UnsupportedDescriptorError } from './proxy/index.js';
 export { bindServer } from './proxy/index.js';
 export { getValueAtPath } from './proxy/index.js';
+export { wait } from './utils/async/wait.js';
+export { randomDelay } from './utils/random.js';

@@ -2,7 +2,6 @@ import type { WebFetchResponse } from '@franklin/lib';
 
 export interface WebFetchExtensionOptions {
 	timeoutMs: number;
-	maxResponseBytes: number;
 	maxRedirects: number;
 	cacheTtlMs: number;
 	cacheMaxEntries: number;
@@ -26,7 +25,6 @@ export type WebFetchProcessedResult = {
 
 export const DEFAULT_WEB_FETCH_OPTIONS: WebFetchExtensionOptions = {
 	timeoutMs: 8000,
-	maxResponseBytes: 5_000_000,
 	maxRedirects: 5,
 	cacheTtlMs: 15 * 60 * 1000,
 	cacheMaxEntries: 20,
@@ -38,8 +36,6 @@ export function resolveWebFetchOptions(
 ): WebFetchExtensionOptions {
 	return {
 		timeoutMs: options.timeoutMs ?? DEFAULT_WEB_FETCH_OPTIONS.timeoutMs,
-		maxResponseBytes:
-			options.maxResponseBytes ?? DEFAULT_WEB_FETCH_OPTIONS.maxResponseBytes,
 		maxRedirects:
 			options.maxRedirects ?? DEFAULT_WEB_FETCH_OPTIONS.maxRedirects,
 		cacheTtlMs: options.cacheTtlMs ?? DEFAULT_WEB_FETCH_OPTIONS.cacheTtlMs,
