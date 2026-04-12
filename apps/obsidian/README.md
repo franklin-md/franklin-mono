@@ -48,7 +48,14 @@ vault plugin directory, for example:
 /path/to/YourVault/.obsidian/plugins/franklin
 ```
 
-You can also have the bundle script copy files for you:
+You can also have the bundle script copy files for you by passing the vault
+directory:
+
+```bash
+npm run bundle -- --vault-dir=/path/to/YourVault
+```
+
+Or pass the plugin directory explicitly:
 
 ```bash
 npm run bundle -- --plugin-dir=/path/to/YourVault/.obsidian/plugins/franklin
@@ -69,8 +76,14 @@ npm run dev
 
 That watches and rebuilds `src/main.ts` into `dist/`.
 
-If you pass `--plugin-dir=...`, the same command also copies the plugin files
-into that directory after each successful rebuild:
+If you pass `--vault-dir=...`, the same command also copies the plugin files
+into that vault after each successful rebuild:
+
+```bash
+npm run dev -- --vault-dir=/path/to/YourVault
+```
+
+You can also pass the plugin directory explicitly:
 
 ```bash
 npm run dev -- --plugin-dir=/path/to/YourVault/.obsidian/plugins/franklin
@@ -85,6 +98,6 @@ After each rebuild, reload the plugin inside Obsidian to pick up the latest code
 
 ## Notes
 
-- This package currently uses plain TypeScript and Obsidian APIs only.
-- `styles.css` is intentionally empty right now.
+- This package currently uses React, Tailwind, and Obsidian APIs.
+- `styles.css` is generated from `src/styles/globals.css`.
 - `dist/` is generated output and should not be edited by hand.

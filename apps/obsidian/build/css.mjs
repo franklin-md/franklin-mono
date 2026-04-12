@@ -1,10 +1,34 @@
 import postcss from 'postcss';
 import tailwindcss from '@tailwindcss/postcss';
 import prefixSelector from 'postcss-prefix-selector';
-import { mkdirSync, readFileSync, writeFileSync, watch as fsWatch } from 'node:fs';
+import {
+	mkdirSync,
+	readFileSync,
+	writeFileSync,
+	watch as fsWatch,
+} from 'node:fs';
 import { resolve } from 'node:path';
 
 const FRANKLIN_PREFIX = '.franklin';
+const TAILWIND_PREFIX = '--tw-';
+
+const stripGlobalTailwindAtRules = {
+	postcssPlugin: 'strip-global-tailwind-at-rules',
+	AtRule(rule) {
+		if (rule.name === 'property' && rule.params.startsWith(TAILWIND_PREFIX)) {
+			rule.remove();
+			return;
+		}
+
+		if (rule.name === 'layer' && rule.params.trim() === 'properties') {
+			if (rule.nodes?.length) {
+				rule.replaceWith(...rule.nodes);
+			} else {
+				rule.remove();
+			}
+		}
+	},
+};
 
 const processor = postcss([
 	tailwindcss(),
@@ -18,6 +42,7 @@ const processor = postcss([
 			return `${prefix} ${selector}`;
 		},
 	}),
+	stripGlobalTailwindAtRules,
 ]);
 
 export async function buildCSS(rootDir, distDir) {

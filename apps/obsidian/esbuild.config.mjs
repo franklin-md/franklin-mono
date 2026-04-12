@@ -7,6 +7,8 @@ import { copyManifest, syncToVault } from './build/sync.mjs';
 const isWatch = process.argv.includes('--watch');
 const vaultDirArg = process.argv.find((v) => v.startsWith('--vault-dir='));
 const vaultDir = vaultDirArg?.slice('--vault-dir='.length);
+const pluginDirArg = process.argv.find((v) => v.startsWith('--plugin-dir='));
+const explicitPluginDir = pluginDirArg?.slice('--plugin-dir='.length);
 
 const rootDir = import.meta.dirname;
 const distDir = resolve(rootDir, 'dist');
@@ -14,9 +16,11 @@ const distDir = resolve(rootDir, 'dist');
 const manifest = JSON.parse(
 	readFileSync(resolve(rootDir, 'manifest.json'), 'utf-8'),
 );
-const pluginDir = vaultDir
-	? resolve(vaultDir, '.obsidian', 'plugins', manifest.id)
-	: undefined;
+const pluginDir =
+	explicitPluginDir ??
+	(vaultDir
+		? resolve(vaultDir, '.obsidian', 'plugins', manifest.id)
+		: undefined);
 
 async function rebuild() {
 	await buildCSS(rootDir, distDir);

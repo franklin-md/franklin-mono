@@ -12,7 +12,9 @@ export function copyManifest(rootDir, distDir) {
 
 export function syncToVault(distDir, pluginDir) {
 	if (!pluginDir) {
-		console.log('No --vault-dir specified, skipping vault sync');
+		console.log(
+			'No --vault-dir or --plugin-dir specified, skipping vault sync',
+		);
 		return;
 	}
 	console.log(`Syncing to vault plugin dir: ${pluginDir}`);
