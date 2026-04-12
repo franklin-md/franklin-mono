@@ -10,25 +10,6 @@ import {
 import { resolve } from 'node:path';
 
 const FRANKLIN_PREFIX = '.franklin';
-const TAILWIND_PREFIX = '--tw-';
-
-const stripGlobalTailwindAtRules = {
-	postcssPlugin: 'strip-global-tailwind-at-rules',
-	AtRule(rule) {
-		if (rule.name === 'property' && rule.params.startsWith(TAILWIND_PREFIX)) {
-			rule.remove();
-			return;
-		}
-
-		if (rule.name === 'layer' && rule.params.trim() === 'properties') {
-			if (rule.nodes?.length) {
-				rule.replaceWith(...rule.nodes);
-			} else {
-				rule.remove();
-			}
-		}
-	},
-};
 
 const processor = postcss([
 	tailwindcss(),
@@ -42,7 +23,6 @@ const processor = postcss([
 			return `${prefix} ${selector}`;
 		},
 	}),
-	stripGlobalTailwindAtRules,
 ]);
 
 export async function buildCSS(rootDir, distDir) {
