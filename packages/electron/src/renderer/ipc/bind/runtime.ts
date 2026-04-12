@@ -4,6 +4,7 @@ import type {
 	MethodHandler,
 } from '@franklin/lib/proxy';
 import type { FranklinIpcRuntime } from '../../../shared/api.js';
+import { createPaths } from '../../../shared/paths.js';
 import { createIpcStream } from '../stream.js';
 
 /**
@@ -17,26 +18,28 @@ export function createClientRuntime(
 	ipc: FranklinIpcRuntime,
 	path: string,
 ): ProxyRuntime {
+	const paths = createPaths(path);
 	return {
 		bindNamespace(key: string): ProxyRuntime {
-			return createClientRuntime(ipc, path ? `${path}:${key}` : key);
+			return createClientRuntime(ipc, paths.forNamespace(key));
 		},
 
 		bindMethod(): MethodHandler {
-			return (...args: unknown[]) => ipc.invoke(path, ...args);
+			return (...args: unknown[]) => ipc.invoke(paths.forMethod(), ...args);
 		},
 
 		bindStream(): unknown {
-			return createIpcStream(ipc, `${path}:stream`);
+			return createIpcStream(ipc, paths.forStream());
 		},
 
 		bindResource(): ResourceBinding {
 			return {
 				connect: (...args: unknown[]) =>
-					ipc.invoke(`${path}:connect`, ...args) as Promise<string>,
-				kill: (id: string) => ipc.invoke(`${path}:kill`, id) as Promise<void>,
+					ipc.invoke(paths.forConnect(), ...args) as Promise<string>,
+				kill: (id: string) =>
+					ipc.invoke(paths.forKill(), id) as Promise<void>,
 				inner(id: string): ProxyRuntime {
-					return createClientRuntime(ipc, `${path}:lease:${id}`);
+					return createClientRuntime(ipc, paths.forLease(id));
 				},
 			};
 		},

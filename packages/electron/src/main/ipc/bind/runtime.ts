@@ -10,6 +10,7 @@ import { connect } from '@franklin/transport';
 import type { Duplex } from '@franklin/transport';
 
 import { createMainIpcStream } from '../stream.js';
+import { createPaths } from '../../../shared/paths.js';
 
 interface IpcTransportConnection {
 	close(): Promise<void>;
@@ -67,13 +68,14 @@ export function createServerRuntime(
 	webContents: WebContents,
 	options?: RuntimeOptions,
 ): ServerRuntime {
+	const paths = createPaths(prefix);
 	return {
 		registerNamespace(key: string): ServerRuntime {
-			return createServerRuntime(`${prefix}:${key}`, webContents, options);
+			return createServerRuntime(paths.forNamespace(key), webContents, options);
 		},
 
 		registerMethod(handler: MethodHandler): () => void {
-			const channel = prefix;
+			const channel = paths.forMethod();
 			ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
 				return await handler(...args);
 			});
@@ -82,7 +84,7 @@ export function createServerRuntime(
 
 		// TODO: rename to registerTransport when stream() descriptor is renamed
 		registerStream(transport: unknown): () => void {
-			const channel = `${prefix}:stream`;
+			const channel = paths.forStream();
 			const connection = connectIpcTransport(
 				webContents,
 				channel,
@@ -104,8 +106,8 @@ export function createServerRuntime(
 		},
 
 		registerResource(lifecycle: ResourceLifecycle): ServerResourceBinding {
-			const connectChannel = `${prefix}:connect`;
-			const killChannel = `${prefix}:kill`;
+			const connectChannel = paths.forConnect();
+			const killChannel = paths.forKill();
 
 			ipcMain.handle(connectChannel, async (_event, ...args: unknown[]) => {
 				return await lifecycle.connect(...args);
@@ -120,7 +122,7 @@ export function createServerRuntime(
 					() => ipcMain.removeHandler(killChannel),
 				],
 				create(id: string): ServerRuntime {
-					return createServerRuntime(`${prefix}:lease:${id}`, webContents, {
+					return createServerRuntime(paths.forLease(id), webContents, {
 						onStreamRemoteClose: () => lifecycle.kill(id),
 					});
 				},
