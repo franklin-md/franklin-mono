@@ -13,40 +13,59 @@ import {
 } from '../proxy/bind/client.js';
 import type { ProxyRuntime } from '../proxy/runtime.js';
 
+function createMockRuntime(
+	overrides: Partial<ProxyRuntime> = {},
+): ProxyRuntime {
+	return {
+		bindNamespace: vi
+			.fn()
+			.mockImplementation(() => createMockRuntime(overrides)),
+		...overrides,
+	};
+}
+
 describe('bindClient', () => {
 	it('binds a single method descriptor directly', () => {
 		const stub = vi.fn().mockResolvedValue(42);
-		const runtime: ProxyRuntime = {
+		const runtime = createMockRuntime({
 			bindMethod: vi.fn().mockReturnValue(stub),
-		};
+		});
 
 		const result = bindClient(method(), runtime);
 
-		expect(runtime.bindMethod).toHaveBeenCalledWith([]);
+		expect(runtime.bindMethod).toHaveBeenCalled();
 		expect(result).toBe(stub);
 	});
 
 	it('binds a namespace with method members', () => {
 		const stub = vi.fn().mockResolvedValue(42);
-		const runtime: ProxyRuntime = {
+		const childRuntime = createMockRuntime({
 			bindMethod: vi.fn().mockReturnValue(stub),
-		};
+		});
+		const runtime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(childRuntime),
+		});
 
 		const proxy = bindClient(namespace({ add: method() }), runtime);
 
-		expect(runtime.bindMethod).toHaveBeenCalledWith(['add']);
+		expect(runtime.bindNamespace).toHaveBeenCalledWith('add');
+		expect(childRuntime.bindMethod).toHaveBeenCalled();
 		expect(proxy.add).toBe(stub);
 	});
 
 	it('binds notification descriptors via runtime.bindNotification', () => {
 		const stub = vi.fn().mockResolvedValue(undefined);
-		const runtime: ProxyRuntime = {
+		const childRuntime = createMockRuntime({
 			bindNotification: vi.fn().mockReturnValue(stub),
-		};
+		});
+		const runtime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(childRuntime),
+		});
 
 		const proxy = bindClient(namespace({ ping: notification() }), runtime);
 
-		expect(runtime.bindNotification).toHaveBeenCalledWith(['ping']);
+		expect(runtime.bindNamespace).toHaveBeenCalledWith('ping');
+		expect(childRuntime.bindNotification).toHaveBeenCalled();
 		expect(proxy.ping).toBe(stub);
 	});
 
@@ -54,21 +73,31 @@ describe('bindClient', () => {
 		const stub = async function* () {
 			yield 1;
 		};
-		const runtime: ProxyRuntime = {
+		const childRuntime = createMockRuntime({
 			bindEvent: vi.fn().mockReturnValue(stub),
-		};
+		});
+		const runtime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(childRuntime),
+		});
 
 		const proxy = bindClient(namespace({ logs: event() }), runtime);
 
-		expect(runtime.bindEvent).toHaveBeenCalledWith(['logs']);
+		expect(runtime.bindNamespace).toHaveBeenCalledWith('logs');
+		expect(childRuntime.bindEvent).toHaveBeenCalled();
 		expect(proxy.logs).toBe(stub);
 	});
 
 	it('recurses into namespace descriptors', () => {
 		const stub = vi.fn().mockResolvedValue(true);
-		const runtime: ProxyRuntime = {
+		const existsRuntime = createMockRuntime({
 			bindMethod: vi.fn().mockReturnValue(stub),
-		};
+		});
+		const fsRuntime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(existsRuntime),
+		});
+		const runtime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(fsRuntime),
+		});
 
 		const proxy = bindClient(
 			namespace({
@@ -79,39 +108,45 @@ describe('bindClient', () => {
 			runtime,
 		);
 
-		expect(runtime.bindMethod).toHaveBeenCalledWith(['fs', 'exists']);
+		expect(runtime.bindNamespace).toHaveBeenCalledWith('fs');
+		expect(fsRuntime.bindNamespace).toHaveBeenCalledWith('exists');
+		expect(existsRuntime.bindMethod).toHaveBeenCalled();
 		expect((proxy.fs as Record<string, unknown>).exists).toBe(stub);
 	});
 
 	it('binds resource(stream) by calling bindResource and recursing into inner', async () => {
 		const streamValue = { readable: 'r', writable: 'w', close: vi.fn() };
-		const resourceRuntime: ProxyRuntime = {
+		const resourceInnerRuntime = createMockRuntime({
 			bindStream: vi.fn().mockReturnValue(streamValue),
-		};
-		const runtime: ProxyRuntime = {
+		});
+		const spawnRuntime = createMockRuntime({
 			bindResource: vi.fn().mockReturnValue({
 				connect: vi.fn().mockResolvedValue('res-1'),
 				kill: vi.fn().mockResolvedValue(undefined),
-				inner: vi.fn().mockReturnValue(resourceRuntime),
+				inner: vi.fn().mockReturnValue(resourceInnerRuntime),
 			}),
-		};
+		});
+		const runtime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(spawnRuntime),
+		});
 
 		const proxy = bindClient(
 			namespace({ spawn: resource<[string]>(stream()) }),
 			runtime,
 		);
 
-		expect(runtime.bindResource).toHaveBeenCalledWith(['spawn']);
+		expect(runtime.bindNamespace).toHaveBeenCalledWith('spawn');
+		expect(spawnRuntime.bindResource).toHaveBeenCalled();
 		expect(typeof proxy.spawn).toBe('function');
 
 		const instance = await (
 			proxy.spawn as (...args: unknown[]) => Promise<unknown>
 		)('arg1');
-		const binding = (runtime.bindResource as ReturnType<typeof vi.fn>).mock
+		const binding = (spawnRuntime.bindResource as ReturnType<typeof vi.fn>).mock
 			.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
 		expect(binding.connect).toHaveBeenCalledWith('arg1');
 		expect(binding.inner).toHaveBeenCalledWith('res-1');
-		expect(resourceRuntime.bindStream).toHaveBeenCalledWith([]);
+		expect(resourceInnerRuntime.bindStream).toHaveBeenCalled();
 		expect(instance).toEqual(
 			expect.objectContaining({
 				readable: 'r',
@@ -123,50 +158,58 @@ describe('bindClient', () => {
 
 	it('binds resource(namespace) by calling bindResource and recursing into inner members', async () => {
 		const methodStub = vi.fn().mockResolvedValue(42);
-		const resourceRuntime: ProxyRuntime = {
+		const doThingRuntime = createMockRuntime({
 			bindMethod: vi.fn().mockReturnValue(methodStub),
-		};
-		const runtime: ProxyRuntime = {
+		});
+		const resourceInnerRuntime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(doThingRuntime),
+		});
+		const handleRuntime = createMockRuntime({
 			bindResource: vi.fn().mockReturnValue({
 				connect: vi.fn().mockResolvedValue('res-2'),
 				kill: vi.fn().mockResolvedValue(undefined),
-				inner: vi.fn().mockReturnValue(resourceRuntime),
+				inner: vi.fn().mockReturnValue(resourceInnerRuntime),
 			}),
-		};
+		});
+		const runtime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(handleRuntime),
+		});
 
 		const proxy = bindClient(
 			namespace({ handle: resource(namespace({ doThing: method() })) }),
 			runtime,
 		);
 
-		expect(runtime.bindResource).toHaveBeenCalledWith(['handle']);
+		expect(runtime.bindNamespace).toHaveBeenCalledWith('handle');
+		expect(handleRuntime.bindResource).toHaveBeenCalled();
 
 		const instance = (await (
 			proxy.handle as (...args: unknown[]) => Promise<unknown>
 		)()) as Record<string, unknown>;
-		const binding = (runtime.bindResource as ReturnType<typeof vi.fn>).mock
-			.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
+		const binding = (handleRuntime.bindResource as ReturnType<typeof vi.fn>)
+			.mock.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
 		expect(binding.connect).toHaveBeenCalledWith();
 		expect(binding.inner).toHaveBeenCalledWith('res-2');
-		expect(resourceRuntime.bindMethod).toHaveBeenCalledWith(['doThing']);
+		expect(resourceInnerRuntime.bindNamespace).toHaveBeenCalledWith('doThing');
+		expect(doThingRuntime.bindMethod).toHaveBeenCalled();
 		expect(instance.doThing).toBe(methodStub);
 		expect(typeof instance.dispose).toBe('function');
 	});
 
 	it('dispose on resource calls binding.kill', async () => {
 		const kill = vi.fn().mockResolvedValue(undefined);
-		const resourceRuntime: ProxyRuntime = {
+		const resourceInnerRuntime = createMockRuntime({
 			bindStream: vi
 				.fn()
 				.mockReturnValue({ readable: 'r', writable: 'w', close: vi.fn() }),
-		};
-		const runtime: ProxyRuntime = {
+		});
+		const runtime = createMockRuntime({
 			bindResource: vi.fn().mockReturnValue({
 				connect: vi.fn().mockResolvedValue('res-3'),
 				kill,
-				inner: vi.fn().mockReturnValue(resourceRuntime),
+				inner: vi.fn().mockReturnValue(resourceInnerRuntime),
 			}),
-		};
+		});
 
 		const factory = bindClient(resource(stream()), runtime) as (
 			...args: unknown[]
@@ -177,7 +220,7 @@ describe('bindClient', () => {
 	});
 
 	it('throws UnsupportedDescriptorError when runtime lacks method', () => {
-		const runtime: ProxyRuntime = {};
+		const runtime = createMockRuntime();
 
 		expect(() => bindClient(method(), runtime)).toThrow(
 			UnsupportedDescriptorError,
@@ -185,7 +228,7 @@ describe('bindClient', () => {
 	});
 
 	it('throws UnsupportedDescriptorError for unsupported notification', () => {
-		const runtime: ProxyRuntime = {};
+		const runtime = createMockRuntime();
 
 		expect(() => bindClient(notification(), runtime)).toThrow(
 			UnsupportedDescriptorError,
@@ -193,7 +236,7 @@ describe('bindClient', () => {
 	});
 
 	it('throws UnsupportedDescriptorError for unsupported event', () => {
-		const runtime: ProxyRuntime = {};
+		const runtime = createMockRuntime();
 
 		expect(() => bindClient(event(), runtime)).toThrow(
 			UnsupportedDescriptorError,
@@ -201,7 +244,7 @@ describe('bindClient', () => {
 	});
 
 	it('throws UnsupportedDescriptorError for unsupported resource', () => {
-		const runtime: ProxyRuntime = {};
+		const runtime = createMockRuntime();
 
 		expect(() => bindClient(resource(stream()), runtime)).toThrow(
 			UnsupportedDescriptorError,
@@ -210,9 +253,18 @@ describe('bindClient', () => {
 
 	it('handles deeply nested namespaces', () => {
 		const stub = vi.fn().mockResolvedValue('data');
-		const runtime: ProxyRuntime = {
+		const cRuntime = createMockRuntime({
 			bindMethod: vi.fn().mockReturnValue(stub),
-		};
+		});
+		const bRuntime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(cRuntime),
+		});
+		const aRuntime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(bRuntime),
+		});
+		const runtime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(aRuntime),
+		});
 
 		const proxy = bindClient(
 			namespace({
@@ -225,7 +277,10 @@ describe('bindClient', () => {
 			runtime,
 		);
 
-		expect(runtime.bindMethod).toHaveBeenCalledWith(['a', 'b', 'c']);
+		expect(runtime.bindNamespace).toHaveBeenCalledWith('a');
+		expect(aRuntime.bindNamespace).toHaveBeenCalledWith('b');
+		expect(bRuntime.bindNamespace).toHaveBeenCalledWith('c');
+		expect(cRuntime.bindMethod).toHaveBeenCalled();
 		const a = proxy.a as Record<string, unknown>;
 		const b = a.b as Record<string, unknown>;
 		expect(b.c).toBe(stub);
@@ -237,11 +292,21 @@ describe('bindClient', () => {
 		const eventStub = async function* () {
 			yield 1;
 		};
-		const runtime: ProxyRuntime = {
+		const getRuntime = createMockRuntime({
 			bindMethod: vi.fn().mockReturnValue(methodStub),
+		});
+		const pingRuntime = createMockRuntime({
 			bindNotification: vi.fn().mockReturnValue(notifStub),
+		});
+		const logsRuntime = createMockRuntime({
 			bindEvent: vi.fn().mockReturnValue(eventStub),
-		};
+		});
+		let nsCount = 0;
+		const runtime = createMockRuntime({
+			bindNamespace: vi.fn().mockImplementation(() => {
+				return [getRuntime, pingRuntime, logsRuntime][nsCount++];
+			}),
+		});
 
 		const proxy = bindClient(
 			namespace({

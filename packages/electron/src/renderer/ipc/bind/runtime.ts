@@ -1,43 +1,42 @@
-import { getValueAtPath } from '@franklin/lib/proxy';
-import type { ProxyRuntime, ResourceBinding } from '@franklin/lib/proxy';
 import type {
-	PreloadResourceBridge,
-	PreloadStreamBridge,
-} from '../../../shared/api.js';
+	ProxyRuntime,
+	ResourceBinding,
+	MethodHandler,
+} from '@franklin/lib/proxy';
+import type { FranklinIpcRuntime } from '../../../shared/api.js';
 import { createIpcStream } from '../stream.js';
 
 /**
- * A single recursive function: bridge → ProxyRuntime.
+ * Cursor-based proxy runtime over a scoped IPC runtime.
  *
- * At every level (top-level or inside a resource), the bridge has the same
- * recursive shape — methods are functions, streams are PreloadStreamBridge,
- * resources are { connect, kill, inner(id) → sub-bridge }.
- *
- * No type dispatch on descriptor inner types anywhere.
+ * Mirrors the server-side `createServerRuntime(prefix, webContents)` —
+ * both are prefix cursors, one registers handlers at channels, the other
+ * invokes them. `bindNamespace(key)` appends `:key` to the path.
  */
 export function createClientRuntime(
-	bridge: Record<string, unknown>,
+	ipc: FranklinIpcRuntime,
+	path: string,
 ): ProxyRuntime {
 	return {
-		bindMethod(path: string[]): (...args: unknown[]) => Promise<unknown> {
-			return getValueAtPath(bridge, path) as (
-				...args: unknown[]
-			) => Promise<unknown>;
+		bindNamespace(key: string): ProxyRuntime {
+			return createClientRuntime(ipc, path ? `${path}:${key}` : key);
 		},
 
-		bindStream(path: string[]): unknown {
-			return createIpcStream(
-				getValueAtPath(bridge, path) as PreloadStreamBridge<any, any>,
-			);
+		bindMethod(): MethodHandler {
+			return (...args: unknown[]) => ipc.invoke(path, ...args);
 		},
 
-		bindResource(path: string[]): ResourceBinding {
-			const res = getValueAtPath(bridge, path) as PreloadResourceBridge;
+		bindStream(): unknown {
+			return createIpcStream(ipc, `${path}:stream`);
+		},
+
+		bindResource(): ResourceBinding {
 			return {
-				connect: (...args: unknown[]) => res.connect(...args),
-				kill: (id: string) => res.kill(id),
+				connect: (...args: unknown[]) =>
+					ipc.invoke(`${path}:connect`, ...args) as Promise<string>,
+				kill: (id: string) => ipc.invoke(`${path}:kill`, id) as Promise<void>,
 				inner(id: string): ProxyRuntime {
-					return createClientRuntime(res.inner(id) as Record<string, unknown>);
+					return createClientRuntime(ipc, `${path}:lease:${id}`);
 				},
 			};
 		},

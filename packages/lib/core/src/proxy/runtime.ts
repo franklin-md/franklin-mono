@@ -6,48 +6,46 @@ export interface ResourceBinding {
 
 export interface ServerResourceBinding {
 	readonly unregister: Array<() => void>;
-	inner(): ServerRuntime;
+	create(id: string): ServerRuntime;
 }
 
-export interface ResourceHandle {
+export interface ResourceLifecycle {
 	connect(...args: unknown[]): Promise<string>;
 	kill(id: string): Promise<void>;
-	get(id: string): unknown;
-	onConnect(hook: (id: string, value: unknown) => void): () => void;
 }
 
 export interface ProxyRuntime {
-	bindMethod?(path: string[]): (...args: unknown[]) => Promise<unknown>;
+	bindNamespace(key: string): ProxyRuntime;
 
-	bindNotification?(path: string[]): (...args: unknown[]) => Promise<void>;
+	bindMethod?(): MethodHandler;
 
-	bindEvent?(path: string[]): (...args: unknown[]) => AsyncIterable<unknown>;
+	bindNotification?(): NotificationHandler;
 
-	bindStream?(path: string[]): unknown;
+	bindEvent?(): EventHandler;
 
-	bindResource?(path: string[]): ResourceBinding;
+	bindStream?(): unknown;
+
+	bindResource?(): ResourceBinding;
 }
 
 export interface ServerRuntime {
-	registerMethod?(path: string[], handler?: MethodHandler): () => void;
+	registerNamespace(key: string): ServerRuntime;
 
-	registerNotification?(
-		path: string[],
-		handler?: NotificationHandler,
-	): () => void;
+	registerMethod?(handler: MethodHandler): () => void;
 
-	registerEvent?(path: string[], handler?: EventHandler): () => void;
+	registerNotification?(handler: NotificationHandler): () => void;
 
-	// TODO: factory should be (...args: unknown[]) => Duplex<R, W>
-	registerStream?(path: string[], factory?: StreamFactory): () => void;
+	registerEvent?(handler: EventHandler): () => void;
 
-	registerResource?(
-		path: string[],
-		handle: ResourceHandle,
-	): ServerResourceBinding;
+	// TODO: rename to registerTransport when stream() descriptor is renamed
+	registerStream?(transport: unknown): () => void;
+
+	registerResource?(lifecycle: ResourceLifecycle): ServerResourceBinding;
 }
 
+// TODO: move these into types.ts and have the ProxyType in terms of these
+// TODO: These should be generic but default to unknown
+// TODO: we should use these elsewhere in the typing of Proxy and Impl etc
 export type MethodHandler = (...args: unknown[]) => Promise<unknown>;
 export type NotificationHandler = (...args: unknown[]) => Promise<void>;
 export type EventHandler = (...args: unknown[]) => AsyncIterable<unknown>;
-export type StreamFactory = () => unknown;

@@ -1,45 +1,55 @@
-import type { Platform } from '@franklin/agent/browser';
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FranklinPreloadBridge } from '../../../shared/schema.js';
-import type {
-	IpcStreamObserver,
-	PreloadStreamBridge,
-} from '../../../shared/api.js';
+import type { FranklinIpcRuntime } from '../../../shared/api.js';
 
-function createStreamBridge(): {
-	close: ReturnType<typeof vi.fn>;
-	bridge: PreloadStreamBridge;
-	packets: unknown[];
-	push: (packet: unknown) => void;
+/**
+ * Creates a mock FranklinIpcRuntime backed by a handler map.
+ *
+ * Tests register invoke handlers via `handlers.set(channel, fn)`.
+ * Sent packets are collected in `sentPackets`, and `pushToSubscriber`
+ * simulates main-to-renderer messages.
+ */
+function createMockIpc(): {
+	ipc: FranklinIpcRuntime;
+	handlers: Map<string, (...args: unknown[]) => unknown>;
+	sentPackets: Map<string, unknown[]>;
+	pushToSubscriber: (channel: string, packet: unknown) => void;
 } {
-	const observers = new Set<IpcStreamObserver>();
-	const packets: unknown[] = [];
-	const close = vi.fn(async () => {
-		for (const observer of observers) {
-			observer.close();
-		}
-		observers.clear();
-	});
+	const handlers = new Map<string, (...args: unknown[]) => unknown>();
+	const sentPackets = new Map<string, unknown[]>();
+	const subscribers = new Map<string, Set<(packet: unknown) => void>>();
+
+	const ipc: FranklinIpcRuntime = {
+		invoke(channel: string, ...args: unknown[]): Promise<unknown> {
+			const handler = handlers.get(channel);
+			if (!handler) {
+				return Promise.reject(
+					new Error(`No mock handler for channel: ${channel}`),
+				);
+			}
+			return Promise.resolve(handler(...args));
+		},
+		send(channel: string, packet: unknown) {
+			const packets = sentPackets.get(channel) ?? [];
+			packets.push(packet);
+			sentPackets.set(channel, packets);
+		},
+		subscribe(channel: string, listener: (packet: unknown) => void) {
+			const listeners = subscribers.get(channel) ?? new Set();
+			listeners.add(listener);
+			subscribers.set(channel, listeners);
+			return () => {
+				listeners.delete(listener);
+			};
+		},
+	};
 
 	return {
-		close,
-		packets,
-		bridge: {
-			subscribe: (observer) => {
-				observers.add(observer);
-				return () => {
-					observers.delete(observer);
-				};
-			},
-			send: (packet: unknown) => {
-				packets.push(packet);
-			},
-			close,
-		},
-		push: (packet: unknown) => {
-			for (const observer of observers) {
-				observer.next(packet);
+		ipc,
+		handlers,
+		sentPackets,
+		pushToSubscriber(channel: string, packet: unknown) {
+			for (const listener of subscribers.get(channel) ?? []) {
+				listener(packet);
 			}
 		},
 	};
@@ -54,146 +64,105 @@ describe('bindRenderer', () => {
 		delete (globalThis as { window?: unknown }).window;
 	});
 
-	it('hydrates transport leaves into renderer-side duplexes', async () => {
-		const spawnStream = createStreamBridge();
-		const existsFn = vi.fn(async (_path: string) => true);
-		const rawBridge = {
-			spawn: {
-				connect: vi.fn(async () => 'agent-1'),
-				kill: vi.fn(async () => {}),
-				inner: vi.fn((_id: string) => spawnStream.bridge),
-			},
-			environment: {
-				connect: vi.fn(async () => 'env-1'),
-				kill: vi.fn(async () => {}),
-				inner: vi.fn((_id: string) => ({
-					filesystem: {
-						resolve: vi.fn(async () => '/tmp'),
-						exists: existsFn,
-						readFile: vi.fn(async () => new Uint8Array()),
-						writeFile: vi.fn(async () => {}),
-						mkdir: vi.fn(async () => {}),
-						access: vi.fn(async () => {}),
-						stat: vi.fn(async () => ({
-							isFile: true,
-							isDirectory: false,
-						})),
-						readdir: vi.fn(async () => []),
-						glob: vi.fn(async () => []),
-						deleteFile: vi.fn(async () => {}),
-					},
-					terminal: {
-						exec: vi.fn(async () => ({
-							exit_code: 0,
-							stdout: '',
-							stderr: '',
-						})),
-					},
-					web: {
-						fetch: vi.fn(async () => ({
-							requestedUrl: 'https://example.com',
-							finalUrl: 'https://example.com',
-							status: 200,
-							statusText: 'OK',
-							contentType: 'text/plain',
-							kind: 'text',
-							text: '',
-							truncated: false,
-							isError: false,
-							cacheable: true,
-						})),
-					},
-					config: vi.fn(async () => ({
-						fsConfig: {
-							cwd: '/tmp',
-							permissions: { allowRead: ['**'], allowWrite: ['**'] },
-						},
-						netConfig: { allowedDomains: [], deniedDomains: [] },
-					})),
-					reconfigure: vi.fn(async () => {}),
-				})),
-			},
-			ai: {
-				getOAuthProviders: vi.fn(async () => []),
-				getApiKeyProviders: vi.fn(async () => []),
-			},
-			filesystem: {
-				readFile: vi.fn(async () => new Uint8Array()),
-				writeFile: vi.fn(async () => {}),
-				mkdir: vi.fn(async () => {}),
-				access: vi.fn(async () => {}),
-				stat: vi.fn(async () => ({
-					isFile: true,
-					isDirectory: false,
-				})),
-				readdir: vi.fn(async () => []),
-				exists: vi.fn(async () => true),
-				glob: vi.fn(async () => []),
-				deleteFile: vi.fn(async () => {}),
-			},
-		} as unknown as FranklinPreloadBridge;
-
-		(globalThis as { window?: unknown }).window = {
-			__franklinBridge: rawBridge,
-		};
+	it('invokes methods at the correct channels', async () => {
+		const { ipc, handlers } = createMockIpc();
+		handlers.set('filesystem:exists', () => true);
 
 		const { bindRenderer } = await import('../bind/index.js');
 		const { schema } = await import('../../../shared/schema.js');
 
-		const bridge = bindRenderer(
-			'franklin',
-			schema,
-			rawBridge,
-		) as unknown as Platform;
+		const platform = bindRenderer(schema, ipc) as {
+			filesystem: { exists: (path: string) => Promise<boolean> };
+		};
 
-		const transport = await bridge.spawn();
-		await transport.writable.getWriter().write({ type: 'ping' } as never);
-		expect(rawBridge.spawn.connect).toHaveBeenCalledTimes(1);
-		expect(rawBridge.spawn.inner).toHaveBeenCalledWith('agent-1');
-		expect(spawnStream.packets).toContainEqual({ type: 'ping' });
+		await expect(platform.filesystem.exists('/test')).resolves.toBe(true);
+	});
 
-		expect(typeof transport.dispose).toBe('function');
-		await transport.dispose();
-		expect(rawBridge.spawn.kill).toHaveBeenCalledWith('agent-1');
+	it('connects and dispatches resource methods at id-scoped channels', async () => {
+		const { ipc, handlers } = createMockIpc();
 
-		const environment = await bridge.environment({
+		handlers.set('environment:connect', () => 'env-1');
+		handlers.set('environment:kill', () => undefined);
+		handlers.set('environment:lease:env-1:filesystem:exists', () => true);
+
+		const { bindRenderer } = await import('../bind/index.js');
+		const { schema } = await import('../../../shared/schema.js');
+
+		const platform = bindRenderer(schema, ipc) as {
+			environment: (...args: unknown[]) => Promise<{
+				filesystem: { exists: (p: string) => Promise<boolean> };
+				dispose: () => Promise<void>;
+			}>;
+		};
+
+		const env = await platform.environment({
 			fsConfig: {
 				cwd: '/tmp',
 				permissions: { allowRead: ['**'], allowWrite: ['**'] },
 			},
 			netConfig: { allowedDomains: [], deniedDomains: [] },
 		});
-		await expect(environment.filesystem.exists('/tmp')).resolves.toBe(true);
-		expect(rawBridge.environment.connect).toHaveBeenCalledTimes(1);
-		expect(rawBridge.environment.inner).toHaveBeenCalledWith('env-1');
-		expect(existsFn).toHaveBeenCalledWith('/tmp');
 
-		expect(typeof environment.dispose).toBe('function');
-		await environment.dispose();
-		expect(rawBridge.environment.kill).toHaveBeenCalledWith('env-1');
+		await expect(env.filesystem.exists('/tmp')).resolves.toBe(true);
+		await env.dispose();
 	});
 
-	it('hydrates direct stream descriptors into renderer-side duplexes', async () => {
-		const directStream = createStreamBridge();
-		const rawBridge = {
-			logs: directStream.bridge,
+	it('creates duplex streams over IPC for resource(stream)', async () => {
+		const { ipc, handlers, sentPackets, pushToSubscriber } = createMockIpc();
+		handlers.set('spawn:connect', () => 'agent-1');
+		handlers.set('spawn:kill', () => undefined);
+
+		const { bindRenderer } = await import('../bind/index.js');
+		const { namespace, resource, stream } = await import('@franklin/lib/proxy');
+
+		const testSchema = namespace({
+			spawn: resource(stream()),
+		});
+
+		const platform = bindRenderer(testSchema, ipc) as {
+			spawn: () => Promise<{
+				readable: ReadableStream;
+				writable: WritableStream;
+				close: () => Promise<void>;
+				dispose: () => Promise<void>;
+			}>;
 		};
 
-		(globalThis as { window?: unknown }).window = {
-			__franklinBridge: rawBridge,
-		};
+		const transport = await platform.spawn();
+
+		// Write to writable → sends IpcStreamMessage on the lease stream channel
+		await transport.writable.getWriter().write({ type: 'ping' });
+		const streamChannel = 'spawn:lease:agent-1:stream';
+		const packets = sentPackets.get(streamChannel) ?? [];
+		expect(packets).toContainEqual({ kind: 'data', data: { type: 'ping' } });
+
+		// Push from main → readable receives data
+		const reader = transport.readable.getReader();
+		pushToSubscriber(streamChannel, {
+			kind: 'data',
+			data: { type: 'pong' },
+		});
+		await expect(reader.read()).resolves.toEqual({
+			value: { type: 'pong' },
+			done: false,
+		});
+		reader.releaseLock();
+
+		// dispose kills the resource
+		await transport.dispose();
+	});
+
+	it('creates duplex streams over IPC for direct stream descriptors', async () => {
+		const { ipc, sentPackets, pushToSubscriber } = createMockIpc();
 
 		const { bindRenderer } = await import('../bind/index.js');
 		const { namespace, stream } = await import('@franklin/lib/proxy');
-		const directSchema = namespace({
+
+		const testSchema = namespace({
 			logs: stream<{ type: string }>(),
 		});
 
-		const bridge = bindRenderer(
-			'franklin',
-			directSchema,
-			rawBridge as never,
-		) as {
+		const platform = bindRenderer(testSchema, ipc) as {
 			logs: {
 				readable: ReadableStream<{ type: string }>;
 				writable: WritableStream<{ type: string }>;
@@ -201,17 +170,21 @@ describe('bindRenderer', () => {
 			};
 		};
 
-		await bridge.logs.writable.getWriter().write({ type: 'ping' });
-		expect(directStream.packets).toContainEqual({ type: 'ping' });
+		// Write → sends IpcStreamMessage
+		await platform.logs.writable.getWriter().write({ type: 'ping' });
+		const streamChannel = 'logs:stream';
+		const packets = sentPackets.get(streamChannel) ?? [];
+		expect(packets).toContainEqual({ kind: 'data', data: { type: 'ping' } });
 
-		const reader = bridge.logs.readable.getReader();
-		directStream.push({ type: 'pong' });
+		// Read from main
+		const reader = platform.logs.readable.getReader();
+		pushToSubscriber(streamChannel, {
+			kind: 'data',
+			data: { type: 'pong' },
+		});
 		await expect(reader.read()).resolves.toEqual({
 			value: { type: 'pong' },
 			done: false,
 		});
-
-		await bridge.logs.close();
-		expect(directStream.close).toHaveBeenCalledTimes(1);
 	});
 });

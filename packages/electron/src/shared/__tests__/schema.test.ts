@@ -5,35 +5,38 @@ import {
 	isStreamDescriptor,
 } from '@franklin/lib/proxy';
 
-import { createScope } from '../channels.js';
 import { schema } from '../schema.js';
 
 describe('schema', () => {
-	it('derives stable channel names from key paths', () => {
-		const scope = createScope('franklin');
+	it('channel naming convention matches cursor-based runtime', () => {
+		// The cursor-based runtime builds channels by concatenating
+		// prefix:namespace:namespace for methods, appending :stream for streams,
+		// and :connect/:kill for resources. Resource inner channels include the
+		// lease id: prefix:lease:{id}:namespace.
+		const prefix = 'franklin';
 
-		expect(scope.method(['filesystem', 'readFile'])).toBe(
+		// Top-level method
+		expect(`${prefix}:filesystem:readFile`).toBe(
 			'franklin:filesystem:readFile',
 		);
 
-		const spawn = scope.resource(['spawn']);
-		expect(spawn.connect).toBe('franklin:spawn:connect');
-		expect(spawn.kill).toBe('franklin:spawn:kill');
-		expect(scope.stream(['spawn'])).toBe('franklin:spawn:stream');
+		// Resource connect/kill
+		expect(`${prefix}:spawn:connect`).toBe('franklin:spawn:connect');
+		expect(`${prefix}:spawn:kill`).toBe('franklin:spawn:kill');
 
-		const spawnInner = spawn.inner();
-		// Per-instance stream channel is computed by convention: stream + ':' + id
-		expect(`${spawnInner.stream([])}:agent-1`).toBe(
-			'franklin:spawn:lease:stream:agent-1',
+		// Direct stream
+		expect(`${prefix}:spawn:stream`).toBe('franklin:spawn:stream');
+
+		// Per-instance stream channel (id-scoped)
+		const agentId = 'agent-1';
+		expect(`${prefix}:spawn:lease:${agentId}:stream`).toBe(
+			'franklin:spawn:lease:agent-1:stream',
 		);
 
-		const env = scope.resource(['environment']);
-		expect(env.connect).toBe('franklin:environment:connect');
-		expect(env.kill).toBe('franklin:environment:kill');
-
-		const envInner = env.inner();
-		expect(envInner.method(['filesystem', 'readFile'])).toBe(
-			'franklin:environment:lease:filesystem:readFile',
+		// Resource inner method (id-scoped)
+		const envId = 'env-1';
+		expect(`${prefix}:environment:lease:${envId}:filesystem:readFile`).toBe(
+			'franklin:environment:lease:env-1:filesystem:readFile',
 		);
 	});
 

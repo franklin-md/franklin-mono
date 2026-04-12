@@ -1,7 +1,6 @@
 import type { WebContents } from 'electron';
 import { bindServer } from '@franklin/lib/proxy';
 import type { Descriptor, ProxyType } from '@franklin/lib/proxy';
-import { createScope } from '../../../shared/channels.js';
 import { createServerRuntime } from './runtime.js';
 
 export interface MainBindingHandle {
@@ -21,8 +20,7 @@ export function bindMain<D extends Descriptor>(
 		previous.dispose().catch(console.error);
 	}
 
-	const scope = createScope(name);
-	const runtime = createServerRuntime(scope, webContents);
+	const runtime = createServerRuntime(name, webContents);
 	const binding = bindServer(schema, impl, runtime);
 
 	const handle: MainBindingHandle = {

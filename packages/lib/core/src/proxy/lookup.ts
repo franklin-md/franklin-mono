@@ -1,3 +1,4 @@
+// TODO: I think this disappears.
 export function getValueAtPath(target: unknown, path: string[]): unknown {
 	let current: unknown = target;
 	for (const key of path) {

@@ -1,4 +1,9 @@
-import type { ProxyRuntime } from '@franklin/lib';
+import type {
+	ProxyRuntime,
+	MethodHandler,
+	NotificationHandler,
+	EventHandler,
+} from '@franklin/lib';
 import type { JsonRpcMessage } from '../../../types.js';
 import { isResponse } from '../../../types.js';
 import { AsyncEventQueue } from '../../event-queue.js';
@@ -22,7 +27,7 @@ export class JsonRpcProxyRuntime implements ProxyRuntime {
 		};
 	}
 
-	bindMethod(path: string[]): (...args: unknown[]) => Promise<unknown> {
+	bindMethod(path: string[]): MethodHandler {
 		const methodName = path.join('/');
 		return (params: unknown) => {
 			const id = this.nextId++;
@@ -38,7 +43,7 @@ export class JsonRpcProxyRuntime implements ProxyRuntime {
 		};
 	}
 
-	bindNotification(path: string[]): (...args: unknown[]) => Promise<void> {
+	bindNotification(path: string[]): NotificationHandler {
 		const methodName = path.join('/');
 		return (params: unknown) => {
 			this.state.send({ jsonrpc: '2.0', method: methodName, params });
@@ -46,7 +51,7 @@ export class JsonRpcProxyRuntime implements ProxyRuntime {
 		};
 	}
 
-	bindEvent(path: string[]): (...args: unknown[]) => AsyncIterable<unknown> {
+	bindEvent(path: string[]): EventHandler {
 		const methodName = path.join('/');
 		return (params: unknown) => {
 			const id = this.nextId++;

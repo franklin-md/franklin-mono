@@ -2,8 +2,6 @@ import type { Platform } from '@franklin/agent/browser';
 import { method, namespace, resource, stream } from '@franklin/lib/proxy';
 import type { NamespaceShape } from '@franklin/lib/proxy';
 
-import type { PreloadBridgeOf } from './api.js';
-
 const filesystem = namespace({
 	resolve: method(),
 	readFile: method(),
@@ -42,5 +40,3 @@ export const schema = namespace({
 	}),
 	filesystem: filesystem,
 } satisfies NamespaceShape<Platform>);
-
-export type FranklinPreloadBridge = PreloadBridgeOf<typeof schema>;

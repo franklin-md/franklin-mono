@@ -55,7 +55,15 @@ export type {
 	AnyShape,
 } from './proxy/index.js';
 export type { ProxyType } from './proxy/index.js';
-export type { ProxyRuntime, ServerRuntime } from './proxy/index.js';
+export type {
+	ProxyRuntime,
+	ServerRuntime,
+	ResourceBinding,
+	ServerResourceBinding,
+	ResourceLifecycle,
+	MethodHandler,
+	NotificationHandler,
+	EventHandler,
+} from './proxy/index.js';
 export { bindClient, UnsupportedDescriptorError } from './proxy/index.js';
 export { bindServer } from './proxy/index.js';
-export { getValueAtPath } from './proxy/index.js';

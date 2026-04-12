@@ -8,6 +8,7 @@ function createClientState(
 ): ClientBindingState {
 	return {
 		send: vi.fn(),
+		nextId: 0,
 		pendingRequests: new Map(),
 		pendingStreams: new Map(),
 		...overrides,

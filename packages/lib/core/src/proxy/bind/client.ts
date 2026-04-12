@@ -14,40 +14,39 @@ export function bindClient<D extends Descriptor>(
 	descriptor: D,
 	runtime: ProxyRuntime,
 ): ProxyType<D> {
-	return buildDescriptor(descriptor, [], runtime) as ProxyType<D>;
+	return buildDescriptor(descriptor, runtime) as ProxyType<D>;
 }
 
 function buildDescriptor(
 	descriptor: Descriptor,
-	path: string[],
 	runtime: ProxyRuntime,
 ): unknown {
 	if (isMethodDescriptor(descriptor)) {
 		if (!runtime.bindMethod) {
-			throw new UnsupportedDescriptorError('method', path);
+			throw new UnsupportedDescriptorError('method');
 		}
-		return runtime.bindMethod(path);
+		return runtime.bindMethod();
 	}
 
 	if (isNotificationDescriptor(descriptor)) {
 		if (!runtime.bindNotification) {
-			throw new UnsupportedDescriptorError('notification', path);
+			throw new UnsupportedDescriptorError('notification');
 		}
-		return runtime.bindNotification(path);
+		return runtime.bindNotification();
 	}
 
 	if (isEventDescriptor(descriptor)) {
 		if (!runtime.bindEvent) {
-			throw new UnsupportedDescriptorError('event', path);
+			throw new UnsupportedDescriptorError('event');
 		}
-		return runtime.bindEvent(path);
+		return runtime.bindEvent();
 	}
 
 	if (isStreamDescriptor(descriptor)) {
 		if (!runtime.bindStream) {
-			throw new UnsupportedDescriptorError('stream', path);
+			throw new UnsupportedDescriptorError('stream');
 		}
-		return runtime.bindStream(path);
+		return runtime.bindStream();
 	}
 
 	if (isNamespaceDescriptor(descriptor)) {
@@ -56,22 +55,21 @@ function buildDescriptor(
 		for (const key of Object.keys(shape)) {
 			const child = shape[key];
 			if (!child) continue;
-			result[key] = buildDescriptor(child, [...path, key], runtime);
+			result[key] = buildDescriptor(child, runtime.bindNamespace(key));
 		}
 		return result;
 	}
 
 	if (isResourceDescriptor(descriptor)) {
 		if (!runtime.bindResource) {
-			throw new UnsupportedDescriptorError('resource', path);
+			throw new UnsupportedDescriptorError('resource');
 		}
-		const binding = runtime.bindResource(path);
+		const binding = runtime.bindResource();
 		return async (...args: unknown[]) => {
 			const id = await binding.connect(...args);
 			const innerRuntime = binding.inner(id);
 			const inner = buildDescriptor(
 				descriptor.inner as Descriptor,
-				[],
 				innerRuntime,
 			);
 			return Object.assign(inner as object, {
@@ -82,14 +80,12 @@ function buildDescriptor(
 		};
 	}
 
-	throw new Error(`Unknown descriptor at path: ${path.join('.')}`);
+	throw new Error('Unknown descriptor kind');
 }
 
 export class UnsupportedDescriptorError extends Error {
-	constructor(kind: string, path: string[]) {
-		super(
-			`Runtime does not support "${kind}" descriptors (at ${path.join('.')})`,
-		);
+	constructor(kind: string) {
+		super(`Runtime does not support "${kind}" descriptors`);
 		this.name = 'UnsupportedDescriptorError';
 	}
 }

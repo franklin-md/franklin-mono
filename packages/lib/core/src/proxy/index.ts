@@ -41,12 +41,10 @@ export type {
 	ServerRuntime,
 	ResourceBinding,
 	ServerResourceBinding,
-	ResourceHandle,
+	ResourceLifecycle,
 	MethodHandler,
 	NotificationHandler,
 	EventHandler,
-	StreamFactory,
 } from './runtime.js';
 export { bindClient, UnsupportedDescriptorError } from './bind/client.js';
 export { bindServer } from './bind/server.js';
-export { getValueAtPath } from './lookup.js';

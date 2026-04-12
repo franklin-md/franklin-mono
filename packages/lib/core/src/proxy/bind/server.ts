@@ -8,7 +8,14 @@ import {
 } from '../descriptors/detect.js';
 import type { AnyShape, Descriptor } from '../descriptors/types/index.js';
 import type { ProxyType } from '../types.js';
-import type { ResourceHandle, ServerRuntime } from '../runtime.js';
+import type {
+	EventHandler,
+	MethodHandler,
+	NotificationHandler,
+	ResourceLifecycle,
+	ServerResourceBinding,
+	ServerRuntime,
+} from '../runtime.js';
 import { UnsupportedDescriptorError } from './client.js';
 import type { ResourceContext } from './context.js';
 import { createResourceContext } from './context.js';
@@ -19,10 +26,10 @@ export function bindServer<D extends Descriptor>(
 	runtime: ServerRuntime,
 ): { dispose(): Promise<void> } {
 	const contexts: ResourceContext[] = [];
-	const unregister = registerDescriptor(
+	const unregister = bindNode(
 		descriptor,
-		[],
-		impl,
+		impl as unknown,
+		undefined,
 		runtime,
 		contexts,
 	);
@@ -34,108 +41,71 @@ export function bindServer<D extends Descriptor>(
 	};
 }
 
-function createHandle(factory: (...args: unknown[]) => Promise<unknown>): {
-	handle: ResourceHandle;
-	context: ResourceContext;
-} {
-	const context = createResourceContext();
-	const hooks: Array<(id: string, value: unknown) => void> = [];
-
-	const handle: ResourceHandle = {
-		async connect(...args: unknown[]) {
-			const id = await context.create(factory, ...args);
-			const value = context.get(id);
-			for (const hook of hooks) hook(id, value);
-			return id;
-		},
-		kill: (id: string) => context.kill(id),
-		get: (id: string) => context.get(id),
-		onConnect(hook: (id: string, value: unknown) => void) {
-			hooks.push(hook);
-			return () => {
-				const idx = hooks.indexOf(hook);
-				if (idx >= 0) hooks.splice(idx, 1);
-			};
-		},
-	};
-
-	return { handle, context };
-}
-
 /**
  * Walk the descriptor tree and register handlers on the runtime.
  *
- * `impl` is the resolved value at the current level -- for leaf descriptors
- * it IS the handler. For namespace it's the object containing child handlers.
- * For resource inner descriptors, `impl` is undefined because the actual
- * values are created by the factory at connect time; the resource runtime
- * handles dispatch internally.
+ * At each level we carry the current implementation `value` and its `parent`
+ * (for preserving `this`-binding on method calls). Namespace traversal
+ * advances both cursors: the value descends into `value[key]` and the
+ * runtime descends via `runtime.registerNamespace(key)`.
  */
-function registerDescriptor(
+function bindNode(
 	descriptor: Descriptor,
-	path: string[],
-	impl: unknown,
+	value: unknown,
+	parent: unknown,
 	runtime: ServerRuntime,
-	contexts: Array<{ dispose(): Promise<void> }>,
+	contexts: ResourceContext[],
 ): Array<() => void> {
 	if (isMethodDescriptor(descriptor)) {
 		if (!runtime.registerMethod) {
-			throw new UnsupportedDescriptorError('method', path);
+			throw new UnsupportedDescriptorError('method');
 		}
 		return [
-			runtime.registerMethod(
-				path,
-				impl as (...args: unknown[]) => Promise<unknown>,
-			),
+			runtime.registerMethod(async (...args: unknown[]) => {
+				return await (value as MethodHandler).call(parent, ...args);
+			}),
 		];
 	}
 
 	if (isNotificationDescriptor(descriptor)) {
 		if (!runtime.registerNotification) {
-			throw new UnsupportedDescriptorError('notification', path);
+			throw new UnsupportedDescriptorError('notification');
 		}
 		return [
-			runtime.registerNotification(
-				path,
-				impl as (...args: unknown[]) => Promise<void>,
-			),
+			runtime.registerNotification(async (...args: unknown[]) => {
+				await (value as NotificationHandler).call(parent, ...args);
+			}),
 		];
 	}
 
 	if (isEventDescriptor(descriptor)) {
 		if (!runtime.registerEvent) {
-			throw new UnsupportedDescriptorError('event', path);
+			throw new UnsupportedDescriptorError('event');
 		}
 		return [
-			runtime.registerEvent(
-				path,
-				impl as (...args: unknown[]) => AsyncIterable<unknown>,
-			),
+			runtime.registerEvent((...args: unknown[]) => {
+				return (value as EventHandler).call(parent, ...args);
+			}),
 		];
 	}
 
 	if (isStreamDescriptor(descriptor)) {
 		if (!runtime.registerStream) {
-			throw new UnsupportedDescriptorError('stream', path);
+			throw new UnsupportedDescriptorError('stream');
 		}
-		return [runtime.registerStream(path, impl as () => unknown)];
+		return [runtime.registerStream(value)];
 	}
 
 	if (isNamespaceDescriptor(descriptor)) {
 		const shape = descriptor.shape as AnyShape;
-		const implObj = impl as Record<string, unknown> | undefined;
 		const unregister: Array<() => void> = [];
 		for (const key of Object.keys(shape)) {
 			const child = shape[key];
 			if (!child) continue;
+			const childRuntime = runtime.registerNamespace(key);
+			const childValue = (value as Record<string, unknown>)[key];
 			unregister.push(
-				...registerDescriptor(
-					child,
-					[...path, key],
-					implObj?.[key],
-					runtime,
-					contexts,
-				),
+				...bindNode(child, childValue, value, childRuntime, contexts),
 			);
 		}
 		return unregister;
@@ -143,22 +113,43 @@ function registerDescriptor(
 
 	if (isResourceDescriptor(descriptor)) {
 		if (!runtime.registerResource) {
-			throw new UnsupportedDescriptorError('resource', path);
+			throw new UnsupportedDescriptorError('resource');
 		}
-		const factory = impl as (...args: unknown[]) => Promise<unknown>;
-		const { handle, context } = createHandle(factory);
-		contexts.push(context);
-		const binding = runtime.registerResource(path, handle);
-		const innerRuntime = binding.inner();
-		const innerUnregister = registerDescriptor(
-			descriptor.inner as Descriptor,
-			[],
-			undefined,
-			innerRuntime,
-			contexts,
-		);
-		return [...binding.unregister, ...innerUnregister];
+		const resourceContext = createResourceContext();
+		contexts.push(resourceContext);
+
+		// Mutable ref allows lifecycle.connect to capture the transport
+		// binding before registerResource returns (connect is only called
+		// asynchronously, so the ref is guaranteed to be populated).
+		const ref: { binding: ServerResourceBinding | null } = { binding: null };
+
+		const lifecycle: ResourceLifecycle = {
+			async connect(...args: unknown[]): Promise<string> {
+				const id = crypto.randomUUID();
+				const instance = await (value as MethodHandler).call(parent, ...args);
+				// Deferred binding: bind inner descriptor per-instance
+				if (!ref.binding) {
+					throw new Error('Resource binding not initialized');
+				}
+				const innerRuntime = ref.binding.create(id);
+				const innerUnregister = bindNode(
+					descriptor.inner as Descriptor,
+					instance,
+					undefined,
+					innerRuntime,
+					contexts,
+				);
+				resourceContext.store(id, instance, () => {
+					for (const fn of innerUnregister) fn();
+				});
+				return id;
+			},
+			kill: (id: string) => resourceContext.kill(id),
+		};
+
+		ref.binding = runtime.registerResource(lifecycle);
+		return [...ref.binding.unregister];
 	}
 
-	throw new Error(`Unknown descriptor at path: ${path.join('.')}`);
+	throw new Error('Unknown descriptor kind');
 }

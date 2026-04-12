@@ -1,139 +1,130 @@
 import { ipcMain } from 'electron';
 import type { WebContents } from 'electron';
-import { getValueAtPath } from '@franklin/lib/proxy';
 import type {
 	ServerRuntime,
 	ServerResourceBinding,
-	ResourceHandle,
+	ResourceLifecycle,
 	MethodHandler,
-	StreamFactory,
 } from '@franklin/lib/proxy';
 import { connect } from '@franklin/transport';
 import type { Duplex } from '@franklin/transport';
 
-import type { ChannelScope } from '../../../shared/channels.js';
 import { createMainIpcStream } from '../stream.js';
 
-export function createServerRuntime(
-	scope: ChannelScope,
+interface IpcTransportConnection {
+	close(): Promise<void>;
+	closeRemote(): Promise<void>;
+}
+
+interface RuntimeOptions {
+	onStreamRemoteClose?: () => Promise<void> | void;
+}
+
+function connectIpcTransport(
 	webContents: WebContents,
+	channel: string,
+	localTransport: Duplex<unknown, unknown>,
+	onRemoteClose?: () => Promise<void> | void,
+): IpcTransportConnection {
+	let tunnel: Duplex<unknown, unknown> | null = null;
+	let remoteTransport: Duplex<unknown, unknown> | null = null;
+	let closeTunnelPromise: Promise<void> | null = null;
+	let closeRemotePromise: Promise<void> | null = null;
+
+	const close = async () => {
+		if (closeTunnelPromise) return closeTunnelPromise;
+		closeTunnelPromise = (async () => {
+			await tunnel?.close();
+		})();
+		return closeTunnelPromise;
+	};
+
+	const closeRemote = async () => {
+		if (closeRemotePromise) return closeRemotePromise;
+		closeRemotePromise = (async () => {
+			await remoteTransport?.close();
+		})();
+		return closeRemotePromise;
+	};
+
+	remoteTransport = createMainIpcStream(webContents, channel, async () => {
+		await closeRemote();
+		if (onRemoteClose) {
+			// Resource-scoped: let the lifecycle kill handle local transport close
+			await onRemoteClose();
+		} else {
+			// Direct stream: close the tunnel (which closes the local transport)
+			await close();
+		}
+	});
+	tunnel = connect(localTransport, remoteTransport);
+
+	return { close, closeRemote };
+}
+
+export function createServerRuntime(
+	prefix: string,
+	webContents: WebContents,
+	options?: RuntimeOptions,
 ): ServerRuntime {
 	return {
-		registerMethod(path: string[], handler?: MethodHandler): () => void {
-			if (!handler) {
-				throw new Error(
-					`registerMethod requires a handler at ${path.join('.')}`,
-				);
-			}
-			const channel = scope.method(path);
+		registerNamespace(key: string): ServerRuntime {
+			return createServerRuntime(`${prefix}:${key}`, webContents, options);
+		},
+
+		registerMethod(handler: MethodHandler): () => void {
+			const channel = prefix;
 			ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
 				return await handler(...args);
 			});
 			return () => ipcMain.removeHandler(channel);
 		},
 
-		registerStream(path: string[], factory?: StreamFactory): () => void {
-			if (!factory) {
-				throw new Error(
-					`registerStream requires a factory at ${path.join('.')}`,
-				);
-			}
-			const localTransport = factory() as Duplex<unknown, unknown>;
-			let tunnel: Duplex<unknown, unknown> | null = null;
-			let closePromise: Promise<void> | null = null;
-
-			const closeStream = async () => {
-				if (closePromise) return closePromise;
-				closePromise = (async () => {
-					await tunnel?.close();
-				})();
-				return closePromise;
-			};
-
-			const remoteTransport = createMainIpcStream(
+		// TODO: rename to registerTransport when stream() descriptor is renamed
+		registerStream(transport: unknown): () => void {
+			const channel = `${prefix}:stream`;
+			const connection = connectIpcTransport(
 				webContents,
-				scope.stream(path),
-				async () => {
-					await closeStream();
-				},
+				channel,
+				transport as Duplex<unknown, unknown>,
+				options?.onStreamRemoteClose,
 			);
-			tunnel = connect(localTransport, remoteTransport);
 
+			// For resource-scoped streams, only close the IPC side on
+			// unregister. The resource lifecycle (kill) handles the local
+			// transport close via inferDispose.
+			if (options?.onStreamRemoteClose) {
+				return () => {
+					void connection.closeRemote();
+				};
+			}
 			return () => {
-				void closeStream();
+				void connection.close();
 			};
 		},
 
-		registerResource(
-			path: string[],
-			handle: ResourceHandle,
-		): ServerResourceBinding {
-			const res = scope.resource(path);
-			const innerScope = res.inner();
+		registerResource(lifecycle: ResourceLifecycle): ServerResourceBinding {
+			const connectChannel = `${prefix}:connect`;
+			const killChannel = `${prefix}:kill`;
 
-			ipcMain.handle(res.connect, async (_event, ...args: unknown[]) => {
-				return await handle.connect(...args);
+			ipcMain.handle(connectChannel, async (_event, ...args: unknown[]) => {
+				return await lifecycle.connect(...args);
 			});
-			ipcMain.handle(res.kill, async (_event, id: string) => {
-				await handle.kill(id);
+			ipcMain.handle(killChannel, async (_event, id: string) => {
+				await lifecycle.kill(id);
 			});
 
 			return {
 				unregister: [
-					() => ipcMain.removeHandler(res.connect),
-					() => ipcMain.removeHandler(res.kill),
+					() => ipcMain.removeHandler(connectChannel),
+					() => ipcMain.removeHandler(killChannel),
 				],
-				inner(): ServerRuntime {
-					return createResourceInnerRuntime(innerScope, handle, webContents);
+				create(id: string): ServerRuntime {
+					return createServerRuntime(`${prefix}:lease:${id}`, webContents, {
+						onStreamRemoteClose: () => lifecycle.kill(id),
+					});
 				},
 			};
-		},
-	};
-}
-
-function createResourceInnerRuntime(
-	scope: ChannelScope,
-	handle: ResourceHandle,
-	webContents: WebContents,
-): ServerRuntime {
-	return {
-		registerMethod(path: string[]): () => void {
-			const channel = scope.method(path);
-			ipcMain.handle(
-				channel,
-				async (_event, id: string, ...args: unknown[]) => {
-					const instance = handle.get(id);
-					const parent =
-						path.length > 1
-							? getValueAtPath(instance, path.slice(0, -1))
-							: instance;
-					const methodName = path[path.length - 1] as string;
-					const method = (
-						parent as Record<string, (...a: unknown[]) => Promise<unknown>>
-					)[methodName] as (...a: unknown[]) => Promise<unknown>;
-					return await method.call(parent, ...args);
-				},
-			);
-			return () => ipcMain.removeHandler(channel);
-		},
-
-		registerStream(path: string[]): () => void {
-			const unsub = handle.onConnect((id, value) => {
-				const localTransport = (
-					path.length > 0 ? getValueAtPath(value, path) : value
-				) as Duplex<unknown, unknown>;
-				// Per-instance stream channel: static channel + ':' + instance ID
-				const channel = `${scope.stream(path)}:${id}`;
-				const remoteTransport = createMainIpcStream(
-					webContents,
-					channel,
-					async () => {
-						await handle.kill(id);
-					},
-				);
-				connect(localTransport, remoteTransport);
-			});
-			return unsub;
 		},
 	};
 }

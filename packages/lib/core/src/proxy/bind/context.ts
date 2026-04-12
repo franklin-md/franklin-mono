@@ -1,20 +1,11 @@
-import { randomUUID } from 'node:crypto';
-
-export interface ResourceContext {
-	create(
-		factory: (...args: unknown[]) => Promise<unknown>,
-		...args: unknown[]
-	): Promise<string>;
-	get(id: string): unknown;
-	kill(id: string): Promise<void>;
-	dispose(): Promise<void>;
-}
-
 interface StoredInstance {
 	readonly value: unknown;
 	readonly dispose: () => Promise<void>;
+	readonly onKill?: () => void;
 }
 
+// TODO: Get rid of. The dispose of resource is called, and if it has a transport
+// The implementation should wire that up automatically (transport doesnt have close)
 function inferDispose(value: unknown): () => Promise<void> {
 	const maybeDisposable = value as {
 		dispose?: () => Promise<void> | void;
@@ -36,35 +27,37 @@ function inferDispose(value: unknown): () => Promise<void> {
 	return async () => {};
 }
 
+export interface ResourceContext {
+	store(id: string, instance: unknown, onKill?: () => void): void;
+	kill(id: string): Promise<void>;
+	dispose(): Promise<void>;
+}
+
 export function createResourceContext(): ResourceContext {
 	const instances = new Map<string, StoredInstance>();
 
+	const kill = async (id: string) => {
+		const entry = instances.get(id);
+		if (!entry) return;
+		instances.delete(id);
+		entry.onKill?.();
+		await entry.dispose();
+	};
+
 	return {
-		async create(factory, ...args) {
-			const id = randomUUID();
-			const value = await factory(...args);
-			instances.set(id, { value, dispose: inferDispose(value) });
-			return id;
+		store(id, instance, onKill) {
+			instances.set(id, {
+				value: instance,
+				dispose: inferDispose(instance),
+				onKill,
+			});
 		},
 
-		get(id) {
-			const entry = instances.get(id);
-			if (!entry) {
-				throw new Error(`No resource instance for id "${id}"`);
-			}
-			return entry.value;
-		},
-
-		async kill(id) {
-			const entry = instances.get(id);
-			if (!entry) return;
-			instances.delete(id);
-			await entry.dispose();
-		},
+		kill,
 
 		async dispose() {
 			const ids = [...instances.keys()];
-			await Promise.allSettled(ids.map((id) => this.kill(id)));
+			await Promise.allSettled(ids.map((id) => kill(id)));
 		},
 	};
 }

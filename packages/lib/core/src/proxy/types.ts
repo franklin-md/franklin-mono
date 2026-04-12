@@ -24,6 +24,7 @@ export type ProxyType<D extends Descriptor> =
 					? {
 							readable: ReadableStream<R>;
 							writable: WritableStream<W>;
+							// TODO: Should not have.
 							close: () => Promise<void>;
 						}
 					: D extends NamespaceDescriptor<unknown, infer TShape>
