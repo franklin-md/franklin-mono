@@ -1,40 +1,34 @@
 import { context } from 'esbuild';
-import { cpSync, mkdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { buildCSS, watchStyles } from './build/css.mjs';
+import { copyManifest, syncToVault } from './build/sync.mjs';
 
 const isWatch = process.argv.includes('--watch');
-const pluginDirArg = process.argv.find((value) =>
-	value.startsWith('--plugin-dir='),
-);
-const pluginDir = pluginDirArg?.slice('--plugin-dir='.length);
+const vaultDirArg = process.argv.find((v) => v.startsWith('--vault-dir='));
+const vaultDir = vaultDirArg?.slice('--vault-dir='.length);
+const pluginDirArg = process.argv.find((v) => v.startsWith('--plugin-dir='));
+const explicitPluginDir = pluginDirArg?.slice('--plugin-dir='.length);
 
 const rootDir = import.meta.dirname;
 const distDir = resolve(rootDir, 'dist');
 
-function copyStaticFiles(targetDir) {
-	mkdirSync(targetDir, { recursive: true });
-	cpSync(
-		resolve(rootDir, 'manifest.json'),
-		resolve(targetDir, 'manifest.json'),
-		{ force: true },
-	);
-	cpSync(resolve(rootDir, 'styles.css'), resolve(targetDir, 'styles.css'), {
-		force: true,
-	});
+const manifest = JSON.parse(
+	readFileSync(resolve(rootDir, 'manifest.json'), 'utf-8'),
+);
+const pluginDir =
+	explicitPluginDir ??
+	(vaultDir
+		? resolve(vaultDir, '.obsidian', 'plugins', manifest.id)
+		: undefined);
+
+async function rebuild() {
+	await buildCSS(rootDir, distDir);
+	copyManifest(rootDir, distDir);
+	syncToVault(distDir, pluginDir);
 }
 
-function syncToVault() {
-	if (!pluginDir) {
-		return;
-	}
-
-	copyStaticFiles(pluginDir);
-	cpSync(resolve(distDir, 'main.js'), resolve(pluginDir, 'main.js'), {
-		force: true,
-	});
-}
-
-const buildOptions = {
+const buildContext = await context({
 	entryPoints: [resolve(rootDir, 'src/main.ts')],
 	bundle: true,
 	format: 'cjs',
@@ -46,24 +40,30 @@ const buildOptions = {
 	logLevel: 'info',
 	plugins: [
 		{
-			name: 'copy-obsidian-assets',
+			name: 'obsidian-assets',
 			setup(build) {
-				build.onEnd((result) => {
+				build.onEnd(async (result) => {
 					if (result.errors.length > 0) {
 						return;
 					}
-
-					copyStaticFiles(distDir);
-					syncToVault();
+					await rebuild();
 				});
 			},
 		},
 	],
-};
-
-const buildContext = await context(buildOptions);
+});
 
 if (isWatch) {
+	watchStyles(rootDir, async () => {
+		try {
+			await buildCSS(rootDir, distDir);
+			syncToVault(distDir, pluginDir);
+			console.log('CSS rebuilt (style change)');
+		} catch (err) {
+			console.error('CSS rebuild failed:', err.message);
+		}
+	});
+
 	await buildContext.watch();
 	console.log('Watching Obsidian bundle for changes');
 } else {
