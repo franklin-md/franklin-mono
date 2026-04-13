@@ -2,12 +2,10 @@ import type { Duplex } from '@franklin/transport';
 
 import type { FranklinIpcRuntime } from '../../shared/api.js';
 import { isIpcStreamMessage } from '../../shared/api.js';
-import type { AuthBridge } from './auth-store.js';
 
 declare global {
 	interface Window {
 		__franklinIpc: FranklinIpcRuntime;
-		__franklinAuth: AuthBridge;
 	}
 }
 

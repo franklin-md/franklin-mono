@@ -8,14 +8,16 @@ import {
 	StopCode,
 } from '@franklin/mini-acp';
 import { loginAgent, withAuth, syncAuth } from '../auth/with-auth.js';
-import type { AuthChangeListener, IAuthManager } from '../auth/types.js';
+import type { AppAuth, AuthChangeListener } from '../auth/types.js';
 import type { FranklinRuntime } from '../types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function mockAuthManager(providers: Record<string, string> = {}): IAuthManager {
+function mockAuthManager(
+	providers: Record<string, string> = {},
+): Pick<AppAuth, 'load' | 'getApiKey' | 'onAuthChange'> {
 	return {
 		load: vi.fn(async () => {
 			const entries: Record<
@@ -29,7 +31,7 @@ function mockAuthManager(providers: Record<string, string> = {}): IAuthManager {
 		}),
 		getApiKey: vi.fn(async (provider: string) => providers[provider]),
 		onAuthChange: vi.fn(() => () => {}),
-	} as unknown as IAuthManager;
+	};
 }
 
 function mockCoreRuntime(): CoreRuntime {

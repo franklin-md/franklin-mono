@@ -1,16 +1,11 @@
-export { PersistedSessionCollection as SessionRegistry } from './agent/session/persisted-session-collection.js';
 export { AuthManager } from './auth/manager.js';
+export { loginOAuth } from './auth/login.js';
 export type {
 	AuthFile,
 	ApiKeyEntry,
 	OAuthLoginCallbacks,
-	IAuthManager,
-	OAuthEntry,
-	AuthChangeListener,
-	AuthEntry,
 } from './auth/types.js';
 export type { SettingsStore } from './settings/store.js';
-export type { AppSettings } from './settings/types.js';
 export { getLLMConfig, setLLMConfig } from './settings/llm-config.js';
 export type {
 	FranklinState,

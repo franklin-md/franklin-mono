@@ -3,6 +3,7 @@ import {
 	method,
 	notification,
 	event,
+	on,
 	namespace,
 	resource,
 	stream,
@@ -14,6 +15,7 @@ import type { ResourceFactory } from '../proxy/resource.js';
 import type { EventHandler } from '../proxy/types.js';
 import type { NotificationHandler } from '../proxy/types.js';
 import type { MethodHandler } from '../proxy/types.js';
+import type { OnHandler } from '../proxy/types.js';
 
 function createMockRuntime(
 	overrides: Partial<ServerRuntime> = {},
@@ -167,6 +169,32 @@ describe('bindServer', () => {
 		const registered = (childRuntime.registerEvent as ReturnType<typeof vi.fn>)
 			.mock.calls[0]![0] as EventHandler;
 		expect(registered()).toBeInstanceOf(Object);
+	});
+
+	it('registers on handlers', () => {
+		const unregister = vi.fn();
+		const unsubscribe = vi.fn();
+		const handler = vi.fn().mockReturnValue(unsubscribe);
+		const childRuntime = createMockRuntime({
+			registerOn: vi.fn().mockReturnValue(unregister),
+		});
+		const runtime = createMockRuntime({
+			registerNamespace: vi.fn().mockReturnValue(childRuntime),
+		});
+
+		bindServer(
+			namespace({ status: on() }),
+			{ status: handler } as never,
+			runtime,
+		);
+
+		expect(runtime.registerNamespace).toHaveBeenCalledWith('status');
+		expect(childRuntime.registerOn).toHaveBeenCalledWith(expect.any(Function));
+		const registered = (childRuntime.registerOn as ReturnType<typeof vi.fn>)
+			.mock.calls[0]![0] as OnHandler;
+		const callback = vi.fn();
+		expect(registered(callback)).toBe(unsubscribe);
+		expect(handler).toHaveBeenCalledWith(callback);
 	});
 
 	it('recurses into namespace descriptors', async () => {

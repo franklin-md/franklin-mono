@@ -96,6 +96,28 @@ function createTransportSpy(): {
 	};
 }
 
+function createAuth() {
+	return {
+		load: async () => ({}),
+		getApiKey: async () => undefined,
+		setApiKeyEntry: async () => {},
+		removeApiKeyEntry: async () => {},
+		removeOAuthEntry: async () => {},
+		openExternal: async () => {},
+		onAuthChange: () => () => {},
+		flow: async () => ({
+			onAuth: () => () => {},
+			onProgress: () => () => {},
+			onPrompt: () => () => {},
+			respond: async () => {},
+			login: async () => {},
+			dispose: async () => {},
+		}),
+		getOAuthProviders: async () => [],
+		getApiKeyProviders: async () => [],
+	};
+}
+
 function createWebContents(id: number): WebContents {
 	return {
 		id,
@@ -144,6 +166,7 @@ describe('bindMain', () => {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
+				auth: createAuth(),
 			},
 			createWebContents(1),
 		);
@@ -151,6 +174,38 @@ describe('bindMain', () => {
 		// Cursor-based channels: prefix:namespace:namespace
 		const channel = 'franklin:filesystem:exists';
 		await expect(invoke(channel, '/test')).resolves.toBe(true);
+
+		await handle.dispose();
+	}, 15_000);
+
+	it('binds on descriptors to subscribe and unsubscribe channels', async () => {
+		const { bindMain } = await import('../bind/index.js');
+		const { namespace, on } = await import('@franklin/lib/proxy');
+
+		const unsubscribe = vi.fn();
+		const webContents = createWebContents(1);
+		const handle = bindMain(
+			'franklin',
+			namespace({
+				status: on<string>(),
+			}),
+			{
+				status: (callback: (value: string) => void) => {
+					callback('ready');
+					return unsubscribe;
+				},
+			} as never,
+			webContents,
+		);
+
+		emit('franklin:status:on:subscribe', 'sub-1');
+		expect(webContents.send).toHaveBeenCalledWith(
+			'franklin:status:on:sub-1',
+			'ready',
+		);
+
+		emit('franklin:status:on:unsubscribe', 'sub-1');
+		expect(unsubscribe).toHaveBeenCalledTimes(1);
 
 		await handle.dispose();
 	});
@@ -170,6 +225,7 @@ describe('bindMain', () => {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
+				auth: createAuth(),
 			},
 			createWebContents(1),
 		);
@@ -268,6 +324,7 @@ describe('bindMain', () => {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
+				auth: createAuth(),
 			},
 			createWebContents(1),
 		);
@@ -444,6 +501,7 @@ describe('bindMain', () => {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
+				auth: createAuth(),
 			},
 			createWebContents(1),
 		);

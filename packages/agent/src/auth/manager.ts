@@ -1,28 +1,37 @@
 import {
 	getOAuthProvider,
 	type OAuthLoginCallbacks,
-	type OAuthProviderId,
 } from '@mariozechner/pi-ai/oauth';
+import type { Filesystem } from '@franklin/lib';
 
 import type {
 	ApiKeyEntry,
 	AuthChangeListener,
-	AuthEntry,
 	AuthFile,
-	IAuthManager,
-	OAuthEntry,
+	IAuthFlow,
 } from './types.js';
 import { AuthStore } from './store.js';
-import type { Platform } from '@franklin/agent';
+import { OAuthFlow } from './oauth-flow.js';
 
-export class AuthManager implements IAuthManager {
+interface AuthDependencies {
+	filesystem: Filesystem;
+	ai: {
+		getOAuthProviders(): Promise<{ id: string; name: string }[]>;
+		getApiKeyProviders(): Promise<string[]>;
+	};
+	openExternal(url: string): Promise<void>;
+}
+
+export class AuthManager {
 	private readonly listeners = new Set<AuthChangeListener>();
 	private readonly store: AuthStore;
-	private readonly platform: Platform;
+	private readonly ai: AuthDependencies['ai'];
+	private readonly openExternalFn: AuthDependencies['openExternal'];
 
-	constructor(platform: Platform) {
-		this.store = new AuthStore(platform);
-		this.platform = platform;
+	constructor(deps: AuthDependencies) {
+		this.store = new AuthStore(deps.filesystem);
+		this.ai = deps.ai;
+		this.openExternalFn = (url) => deps.openExternal(url);
 	}
 
 	onAuthChange(listener: AuthChangeListener): () => void {
@@ -34,19 +43,23 @@ export class AuthManager implements IAuthManager {
 
 	// TODO Right place?
 	async getOAuthProviders(): Promise<{ id: string; name: string }[]> {
-		return await this.platform.ai.getOAuthProviders();
+		return await this.ai.getOAuthProviders();
 	}
 
 	async getApiKeyProviders(): Promise<string[]> {
-		return await this.platform.ai.getApiKeyProviders();
+		return await this.ai.getApiKeyProviders();
+	}
+
+	async flow(provider: string): Promise<IAuthFlow> {
+		return new OAuthFlow((callbacks) => this.loginOAuth(provider, callbacks));
+	}
+
+	async openExternal(url: string): Promise<void> {
+		await this.openExternalFn(url);
 	}
 
 	async load(): Promise<AuthFile> {
 		return this.store.load();
-	}
-
-	async getEntry(provider: string): Promise<AuthEntry | undefined> {
-		return this.store.getEntry(provider);
 	}
 
 	async getApiKey(provider: string): Promise<string | undefined> {
@@ -63,28 +76,13 @@ export class AuthManager implements IAuthManager {
 		await this.notify(provider);
 	}
 
-	async setOAuthEntry(provider: string, entry: OAuthEntry): Promise<void> {
-		await this.store.setOAuthEntry(provider, entry);
-		await this.notify(provider);
-	}
-
 	async removeOAuthEntry(provider: string): Promise<void> {
 		await this.store.removeOAuthEntry(provider);
 		await this.notify(provider);
 	}
 
-	async setEntry(provider: string, entry: AuthEntry): Promise<void> {
-		await this.store.setEntry(provider, entry);
-		await this.notify(provider);
-	}
-
-	async removeEntry(provider: string): Promise<void> {
-		await this.store.removeEntry(provider);
-		await this.notify(provider);
-	}
-
-	async loginOAuth(
-		provider: OAuthProviderId,
+	private async loginOAuth(
+		provider: string,
 		callbacks: OAuthLoginCallbacks,
 	): Promise<void> {
 		// Rely on platform to do this.
@@ -98,10 +96,6 @@ export class AuthManager implements IAuthManager {
 			credentials,
 		});
 		await this.notify(provider);
-	}
-
-	async setApiKey(provider: string, key: string): Promise<void> {
-		await this.setApiKeyEntry(provider, { type: 'apiKey', key });
 	}
 
 	private async notify(provider: string): Promise<void> {

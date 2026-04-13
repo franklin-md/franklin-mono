@@ -1,7 +1,11 @@
 import { ipcMain } from 'electron';
 import type { WebContents } from 'electron';
-import type { ServerRuntime, MethodHandler } from '@franklin/lib/proxy';
-import type { ResourceFactory } from '@franklin/lib/proxy';
+import type {
+	ServerRuntime,
+	MethodHandler,
+	OnHandler,
+	ResourceFactory,
+} from '@franklin/lib/proxy';
 import { connect } from '@franklin/transport';
 import type { Duplex } from '@franklin/transport';
 
@@ -76,6 +80,38 @@ export function createServerRuntime(
 				return await handler(...args);
 			});
 			return () => ipcMain.removeHandler(channel);
+		},
+
+		registerOn(handler: OnHandler): () => void {
+			const subscribeChannel = paths.forOnSubscribe();
+			const unsubscribeChannel = paths.forOnUnsubscribe();
+			const subscriptions = new Map<string, () => void>();
+
+			const onSubscribe = (event: Electron.IpcMainEvent, id: string) => {
+				const push = (data: unknown) => {
+					webContents.send(paths.forOnEvent(id), data);
+				};
+				const unsub = handler(push);
+				subscriptions.set(id, unsub);
+			};
+
+			const onUnsubscribe = (event: Electron.IpcMainEvent, id: string) => {
+				const unsub = subscriptions.get(id);
+				if (unsub) {
+					unsub();
+					subscriptions.delete(id);
+				}
+			};
+
+			ipcMain.on(subscribeChannel, onSubscribe);
+			ipcMain.on(unsubscribeChannel, onUnsubscribe);
+
+			return () => {
+				for (const unsub of subscriptions.values()) unsub();
+				subscriptions.clear();
+				ipcMain.removeListener(subscribeChannel, onSubscribe);
+				ipcMain.removeListener(unsubscribeChannel, onUnsubscribe);
+			};
 		},
 
 		// TODO: rename to registerTransport when stream() descriptor is renamed

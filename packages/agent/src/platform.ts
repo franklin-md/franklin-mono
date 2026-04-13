@@ -1,6 +1,7 @@
 import type { Filesystem } from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { EnvironmentFactory } from '@franklin/extensions';
+import type { IAuthManager } from './auth/types.js';
 
 // TODO: Is this right?
 type ProviderMeta = {
@@ -21,6 +22,7 @@ export interface Platform {
 	};
 
 	filesystem: Filesystem;
+	auth: IAuthManager;
 
 	// TODO: Sandbox
 }

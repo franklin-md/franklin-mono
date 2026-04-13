@@ -1,4 +1,4 @@
-import type { Platform } from '@franklin/agent/browser';
+import { AuthManager, type Platform } from '@franklin/agent/browser';
 import type { EnvironmentConfig } from '@franklin/extensions';
 import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
@@ -9,6 +9,7 @@ import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import { createFolderScopedFilesystem } from '@franklin/lib';
 import os from 'node:os';
 import { SandboxedTerminal } from './sandboxed-terminal.js';
+import { openExternal } from './open-external.js';
 
 type Args = {
 	appDir?: string;
@@ -20,18 +21,20 @@ export function createNodePlatform(args: Args = {}): Platform {
 		appDir,
 		createNodeFilesystem(),
 	);
+	const ai = {
+		getOAuthProviders: async () => {
+			return getOAuthProviders().map((p) => ({ id: p.id, name: p.name }));
+		},
+		getApiKeyProviders: async () => getProviders(),
+	};
+	const auth = new AuthManager({ filesystem, ai, openExternal });
 
 	return {
 		spawn: async () => {
 			const transport = spawn();
 			return Object.assign(transport, { dispose: () => transport.close() });
 		},
-		ai: {
-			getOAuthProviders: async () => {
-				return getOAuthProviders().map((p) => ({ id: p.id, name: p.name }));
-			},
-			getApiKeyProviders: async () => getProviders(),
-		},
+		ai,
 		environment: async (config: EnvironmentConfig) => {
 			const envFs = new EnvironmentFilesystem(
 				createNodeFilesystem(),
@@ -70,6 +73,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 			};
 		},
 		filesystem,
+		auth,
 		// TODO: Sandbox
 	};
 }

@@ -1,7 +1,9 @@
 import type { CoreSystem, CoreRuntime, CoreState } from '@franklin/extensions';
 import { withSetup } from '@franklin/extensions';
 import type { FranklinRuntime } from '../types.js';
-import type { IAuthManager } from './types.js';
+import type { AppAuth } from './types.js';
+
+type RuntimeAuth = Pick<AppAuth, 'load' | 'getApiKey' | 'onAuthChange'>;
 
 /**
  * Authenticate a single runtime against the auth manager.
@@ -13,7 +15,7 @@ import type { IAuthManager } from './types.js';
 export async function loginAgent(
 	runtime: CoreRuntime,
 	state: CoreState,
-	auth: IAuthManager,
+	auth: RuntimeAuth,
 ): Promise<void> {
 	const provider =
 		state.core.llmConfig.provider ?? Object.keys(await auth.load())[0];
@@ -38,7 +40,7 @@ export async function loginAgent(
  *    specified without an apiKey, resolves the key from the auth
  *    manager before passing through.
  */
-export function withAuth(system: CoreSystem, auth: IAuthManager): CoreSystem {
+export function withAuth(system: CoreSystem, auth: RuntimeAuth): CoreSystem {
 	return withSetup(system, async (runtime, state) => {
 		// Install setContext wrapper to auto-resolve auth when provider is set.
 		const originalSetContext = runtime.setContext.bind(runtime);
@@ -63,7 +65,7 @@ export function withAuth(system: CoreSystem, auth: IAuthManager): CoreSystem {
  */
 export function syncAuth(
 	getSessions: () => FranklinRuntime[],
-	auth: IAuthManager,
+	auth: RuntimeAuth,
 ): void {
 	auth.onAuthChange(async (provider, authKey) => {
 		const updates: Promise<unknown>[] = [];

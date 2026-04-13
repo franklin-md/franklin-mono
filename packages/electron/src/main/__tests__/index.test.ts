@@ -18,11 +18,29 @@ vi.mock('electron', () => ({
 	},
 }));
 
-vi.mock('../ipc/auth-relay.js', () => ({
-	AuthRelay: vi.fn(),
-}));
-
 const noop = async () => {};
+
+function createAuth() {
+	return {
+		load: async () => ({}),
+		getApiKey: async () => undefined,
+		setApiKeyEntry: async () => {},
+		removeApiKeyEntry: async () => {},
+		removeOAuthEntry: async () => {},
+		openExternal: async () => {},
+		onAuthChange: () => () => {},
+		flow: async () => ({
+			onAuth: () => () => {},
+			onProgress: () => () => {},
+			onPrompt: () => () => {},
+			respond: async () => {},
+			login: async () => {},
+			dispose: async () => {},
+		}),
+		getOAuthProviders: async () => [],
+		getApiKeyProviders: async () => [],
+	};
+}
 
 function createFilesystem(): Filesystem {
 	return {
@@ -94,6 +112,7 @@ describe('initializeMain', () => {
 				getOAuthProviders: async () => [],
 				getApiKeyProviders: async () => [],
 			},
+			auth: createAuth(),
 		};
 
 		const handle = initializeMain(
@@ -107,8 +126,14 @@ describe('initializeMain', () => {
 		expect(
 			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:spawn:connect`),
 		).toBe(true);
+		expect(
+			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:auth:getApiKey`),
+		).toBe(true);
+		expect(
+			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:auth:flow:connect`),
+		).toBe(true);
 		expect(handleMap.has('franklin:filesystem:readFile')).toBe(false);
 
 		await handle.dispose();
-	});
+	}, 15_000);
 });

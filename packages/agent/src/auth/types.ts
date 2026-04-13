@@ -1,14 +1,6 @@
-import type {
-	OAuthCredentials,
-	OAuthLoginCallbacks,
-	OAuthProviderId,
-} from '@mariozechner/pi-ai/oauth';
+import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
-export type {
-	OAuthCredentials,
-	OAuthLoginCallbacks,
-	OAuthProviderId,
-} from '@mariozechner/pi-ai/oauth';
+export type { OAuthLoginCallbacks } from '@mariozechner/pi-ai/oauth';
 
 // ---------------------------------------------------------------------------
 // Stored credential entries
@@ -39,32 +31,41 @@ export type AuthChangeListener = (
 	authKey: string | undefined,
 ) => void | Promise<void>;
 
-/**
- * Minimal auth-store interface used by UI components.
- * Both the Node.js `AuthStore` and the Electron renderer proxy satisfy this.
- */
-export interface IAuthStore {
-	load(): Promise<AuthFile>;
-	getEntry(provider: string): Promise<AuthEntry | undefined>;
-	getApiKey(provider: string): Promise<string | undefined>;
+export type OAuthAuthInfo = {
+	url: string;
+	instructions?: string;
+};
 
+export type OAuthPrompt = {
+	message: string;
+	placeholder?: string;
+	allowEmpty?: boolean;
+};
+
+export interface IAuthFlow {
+	onAuth(listener: (info: OAuthAuthInfo) => void): () => void;
+	onProgress(listener: (message: string) => void): () => void;
+	onPrompt(listener: (prompt: OAuthPrompt) => void): () => void;
+	respond(value: string): Promise<void>;
+	login(): Promise<void>;
+	dispose(): Promise<void>;
+}
+
+/**
+ * App-facing auth surface.
+ *
+ * The Node.js app owns a concrete `AuthManager`, while the Electron renderer
+ * talks to this same surface through the platform proxy.
+ */
+export type AppAuth = {
+	load(): Promise<AuthFile>;
+	getApiKey(provider: string): Promise<string | undefined>;
 	setApiKeyEntry(provider: string, entry: ApiKeyEntry): Promise<void>;
 	removeApiKeyEntry(provider: string): Promise<void>;
-
-	setOAuthEntry(provider: string, entry: OAuthEntry): Promise<void>;
 	removeOAuthEntry(provider: string): Promise<void>;
-
-	setEntry(provider: string, entry: AuthEntry): Promise<void>;
-	removeEntry(provider: string): Promise<void>;
-}
-
-export interface IAuthManager extends IAuthStore {
 	onAuthChange(listener: AuthChangeListener): () => void;
-	loginOAuth(
-		provider: OAuthProviderId,
-		callbacks: OAuthLoginCallbacks,
-	): Promise<void>;
-	setApiKey(provider: string, key: string): Promise<void>;
+	flow(provider: string): Promise<IAuthFlow>;
+	openExternal(url: string): Promise<void>;
 	getOAuthProviders(): Promise<{ id: string; name: string }[]>;
 	getApiKeyProviders(): Promise<string[]>;
-}
+};

@@ -18,7 +18,6 @@ import {
 } from '../settings/store.js';
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
-import type { IAuthManager } from '../auth/types.js';
 import type {
 	BaseSystem,
 	FranklinState,
@@ -28,7 +27,7 @@ import type {
 import { createAgents, type Agents } from './agents.js';
 
 export class FranklinApp {
-	readonly auth: IAuthManager;
+	readonly auth: Platform['auth'];
 	readonly settings: SettingsStore;
 	readonly agents: Agents;
 
@@ -43,11 +42,10 @@ export class FranklinApp {
 	constructor(opts: {
 		extensions: FranklinExtension[];
 		platform: Platform;
-		auth: IAuthManager;
 		persistDir?: string;
 	}) {
-		const { extensions, platform, auth, persistDir } = opts;
-		this.auth = auth;
+		const { extensions, platform, persistDir } = opts;
+		this.auth = platform.auth;
 		this.platform = platform;
 		this.settings = createSettings();
 
@@ -67,7 +65,9 @@ export class FranklinApp {
 		}
 
 		// Static base system — shared across all sessions
-		const baseSystem = systems(withAuth(createCoreSystem(platform.spawn), auth))
+		const baseSystem = systems(
+			withAuth(createCoreSystem(platform.spawn), this.auth),
+		)
 			.add(createStoreSystem(this.storeRegistry))
 			.add(createEnvironmentSystem(platform.environment))
 			.done();

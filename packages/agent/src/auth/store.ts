@@ -3,19 +3,21 @@
 import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
-import type { ApiKeyEntry, AuthEntry, AuthFile, OAuthEntry } from './types.js';
-import type { Platform } from '@franklin/agent';
 import type { Filesystem } from '@franklin/lib';
+import type { ApiKeyEntry, AuthFile, OAuthEntry } from './types.js';
 
 // ---------------------------------------------------------------------------
 // Default location
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_AUTH_PATH = 'auth.json';
+const DEFAULT_AUTH_PATH = 'auth.json';
 
 // ---------------------------------------------------------------------------
 // AuthStore
 // ---------------------------------------------------------------------------
+
+// TODO: AuthStore should follow a similar pattern to SessionCollection, i.e.
+// In memory concrete type with a decorator class that adds persistence.
 
 /**
  * File-based credential store.
@@ -26,8 +28,8 @@ export const DEFAULT_AUTH_PATH = 'auth.json';
  */
 export class AuthStore {
 	private readonly filesystem: Filesystem;
-	constructor(platform: Platform) {
-		this.filesystem = platform.filesystem;
+	constructor(filesystem: Filesystem) {
+		this.filesystem = filesystem;
 	}
 
 	// -------------------------------------------------------------------------
@@ -44,9 +46,8 @@ export class AuthStore {
 			.catch(() => ({}));
 	}
 
-	// TODO: async
-	save(data: AuthFile): void {
-		void this.filesystem.writeFile(
+	private async save(data: AuthFile): Promise<void> {
+		await this.filesystem.writeFile(
 			DEFAULT_AUTH_PATH,
 			JSON.stringify(data, null, 2),
 		);
@@ -56,10 +57,6 @@ export class AuthStore {
 	// Entry management
 	// -------------------------------------------------------------------------
 
-	async getEntry(provider: string): Promise<AuthEntry | undefined> {
-		return (await this.load())[provider];
-	}
-
 	async setApiKeyEntry(provider: string, entry: ApiKeyEntry): Promise<void> {
 		const data = await this.load();
 		if (data[provider]) {
@@ -67,7 +64,7 @@ export class AuthStore {
 		} else {
 			data[provider] = { apiKey: entry };
 		}
-		this.save(data);
+		await this.save(data);
 	}
 
 	async setOAuthEntry(provider: string, entry: OAuthEntry): Promise<void> {
@@ -77,13 +74,7 @@ export class AuthStore {
 		} else {
 			data[provider] = { oauth: entry };
 		}
-		this.save(data);
-	}
-
-	async setEntry(provider: string, entry: AuthEntry): Promise<void> {
-		const data = await this.load();
-		data[provider] = entry;
-		this.save(data);
+		await this.save(data);
 	}
 
 	async removeApiKeyEntry(provider: string): Promise<void> {
@@ -94,7 +85,7 @@ export class AuthStore {
 			if (Object.keys(current).length === 0) {
 				delete data[provider];
 			}
-			this.save(data);
+			await this.save(data);
 		}
 	}
 
@@ -106,14 +97,8 @@ export class AuthStore {
 			if (Object.keys(current).length === 0) {
 				delete data[provider];
 			}
-			this.save(data);
+			await this.save(data);
 		}
-	}
-
-	async removeEntry(provider: string): Promise<void> {
-		const data = await this.load();
-		delete data[provider];
-		this.save(data);
 	}
 
 	// -------------------------------------------------------------------------
@@ -131,7 +116,7 @@ export class AuthStore {
 	 * Returns `undefined` when no credentials are stored for the provider.
 	 */
 	async getApiKey(provider: string): Promise<string | undefined> {
-		const entry = await this.getEntry(provider);
+		const entry = (await this.load())[provider];
 		if (!entry) return undefined;
 
 		// OAuth takes precedence, user can always clear them if they wish

@@ -78,6 +78,38 @@ describe('bindRenderer', () => {
 		await expect(platform.filesystem.exists('/test')).resolves.toBe(true);
 	});
 
+	it('subscribes to on descriptors over scoped IPC channels', async () => {
+		const { ipc, sentPackets, pushToSubscriber } = createMockIpc();
+
+		const { bindRenderer } = await import('../bind/index.js');
+		const { namespace, on } = await import('@franklin/lib/proxy');
+
+		const platform = bindRenderer(
+			namespace({
+				status: on<string>(),
+			}),
+			ipc,
+		) as {
+			status: (callback: (value: string) => void) => () => void;
+		};
+
+		const received: string[] = [];
+		const unsubscribe = platform.status((value) => {
+			received.push(value);
+		});
+
+		const subscriptionId = (sentPackets.get('status:on:subscribe') ?? [])[0] as
+			| string
+			| undefined;
+		expect(subscriptionId).toBeDefined();
+
+		pushToSubscriber(`status:on:${subscriptionId}`, 'ready');
+		expect(received).toEqual(['ready']);
+
+		unsubscribe();
+		expect(sentPackets.get('status:on:unsubscribe')).toEqual([subscriptionId]);
+	});
+
 	it('connects and dispatches resource methods at id-scoped channels', async () => {
 		const { ipc, handlers } = createMockIpc();
 

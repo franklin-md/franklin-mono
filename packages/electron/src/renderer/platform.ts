@@ -7,10 +7,7 @@ let platform: Platform | null = null;
 
 export function createElectronPlatform(): Platform {
 	if (!platform) {
-		platform = bindRenderer(
-			schema,
-			window.__franklinIpc,
-		) as unknown as Platform;
+		platform = bindRenderer(schema, window.__franklinIpc) as Platform;
 	}
 
 	return platform;

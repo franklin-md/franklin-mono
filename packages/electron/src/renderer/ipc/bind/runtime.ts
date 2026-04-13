@@ -2,6 +2,7 @@ import type {
 	ProxyRuntime,
 	ResourceBinding,
 	MethodHandler,
+	OnHandler,
 	Transport,
 } from '@franklin/lib/proxy';
 import type { FranklinIpcRuntime } from '../../../shared/api.js';
@@ -27,6 +28,18 @@ export function createClientRuntime(
 
 		bindMethod(): MethodHandler {
 			return (...args: unknown[]) => ipc.invoke(paths.forMethod(), ...args);
+		},
+
+		bindOn(): OnHandler {
+			return (callback: (data: unknown) => void) => {
+				const id = crypto.randomUUID();
+				const unsubIpc = ipc.subscribe(paths.forOnEvent(id), callback);
+				ipc.send(paths.forOnSubscribe(), id);
+				return () => {
+					unsubIpc();
+					ipc.send(paths.forOnUnsubscribe(), id);
+				};
+			};
 		},
 
 		bindTransport(): Transport {
