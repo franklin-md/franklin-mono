@@ -10,13 +10,10 @@ export function buildResource(
 ): (...args: unknown[]) => Promise<unknown> {
 	const binding = requireCapability(runtime, 'bindResource', 'resource')();
 	return async (...args: unknown[]) => {
-		const id = await binding.connect(...args);
-		const innerRuntime = binding.inner(id);
-		const inner = buildDescriptor(descriptor.inner as Descriptor, innerRuntime);
+		const handle = await binding(...args);
+		const inner = buildDescriptor(descriptor.inner as Descriptor, handle);
 		return Object.assign(inner as object, {
-			dispose: async () => {
-				await binding.kill(id);
-			},
+			dispose: () => handle.dispose(),
 		});
 	};
 }

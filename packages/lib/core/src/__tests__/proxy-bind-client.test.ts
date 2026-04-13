@@ -114,15 +114,15 @@ describe('bindClient', () => {
 
 	it('binds resource(stream) by calling bindResource and recursing into inner', async () => {
 		const streamValue = { readable: 'r', writable: 'w', close: vi.fn() };
+		const dispose = vi.fn().mockResolvedValue(undefined);
 		const resourceInnerRuntime = createMockRuntime({
 			bindTransport: vi.fn().mockReturnValue(streamValue),
 		});
+		const binding = vi
+			.fn()
+			.mockResolvedValue(Object.assign(resourceInnerRuntime, { dispose }));
 		const spawnRuntime = createMockRuntime({
-			bindResource: vi.fn().mockReturnValue({
-				connect: vi.fn().mockResolvedValue('res-1'),
-				kill: vi.fn().mockResolvedValue(undefined),
-				inner: vi.fn().mockReturnValue(resourceInnerRuntime),
-			}),
+			bindResource: vi.fn().mockReturnValue(binding),
 		});
 		const runtime = createMockRuntime({
 			bindNamespace: vi.fn().mockReturnValue(spawnRuntime),
@@ -140,10 +140,7 @@ describe('bindClient', () => {
 		const instance = await (
 			proxy.spawn as (...args: unknown[]) => Promise<unknown>
 		)('arg1');
-		const binding = (spawnRuntime.bindResource as ReturnType<typeof vi.fn>).mock
-			.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
-		expect(binding.connect).toHaveBeenCalledWith('arg1');
-		expect(binding.inner).toHaveBeenCalledWith('res-1');
+		expect(binding).toHaveBeenCalledWith('arg1');
 		expect(resourceInnerRuntime.bindTransport).toHaveBeenCalled();
 		expect(instance).toEqual(
 			expect.objectContaining({
@@ -156,18 +153,18 @@ describe('bindClient', () => {
 
 	it('binds resource(namespace) by calling bindResource and recursing into inner members', async () => {
 		const methodStub = vi.fn().mockResolvedValue(42);
+		const dispose = vi.fn().mockResolvedValue(undefined);
 		const doThingRuntime = createMockRuntime({
 			bindMethod: vi.fn().mockReturnValue(methodStub),
 		});
 		const resourceInnerRuntime = createMockRuntime({
 			bindNamespace: vi.fn().mockReturnValue(doThingRuntime),
 		});
+		const binding = vi
+			.fn()
+			.mockResolvedValue(Object.assign(resourceInnerRuntime, { dispose }));
 		const handleRuntime = createMockRuntime({
-			bindResource: vi.fn().mockReturnValue({
-				connect: vi.fn().mockResolvedValue('res-2'),
-				kill: vi.fn().mockResolvedValue(undefined),
-				inner: vi.fn().mockReturnValue(resourceInnerRuntime),
-			}),
+			bindResource: vi.fn().mockReturnValue(binding),
 		});
 		const runtime = createMockRuntime({
 			bindNamespace: vi.fn().mockReturnValue(handleRuntime),
@@ -184,29 +181,25 @@ describe('bindClient', () => {
 		const instance = (await (
 			proxy.handle as (...args: unknown[]) => Promise<unknown>
 		)()) as Record<string, unknown>;
-		const binding = (handleRuntime.bindResource as ReturnType<typeof vi.fn>)
-			.mock.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
-		expect(binding.connect).toHaveBeenCalledWith();
-		expect(binding.inner).toHaveBeenCalledWith('res-2');
+		expect(binding).toHaveBeenCalledWith();
 		expect(resourceInnerRuntime.bindNamespace).toHaveBeenCalledWith('doThing');
 		expect(doThingRuntime.bindMethod).toHaveBeenCalled();
 		expect(instance.doThing).toBe(methodStub);
 		expect(typeof instance.dispose).toBe('function');
 	});
 
-	it('dispose on resource calls binding.kill', async () => {
-		const kill = vi.fn().mockResolvedValue(undefined);
+	it('dispose on resource calls handle dispose', async () => {
+		const dispose = vi.fn().mockResolvedValue(undefined);
 		const resourceInnerRuntime = createMockRuntime({
 			bindTransport: vi
 				.fn()
 				.mockReturnValue({ readable: 'r', writable: 'w', close: vi.fn() }),
 		});
+		const binding = vi
+			.fn()
+			.mockResolvedValue(Object.assign(resourceInnerRuntime, { dispose }));
 		const runtime = createMockRuntime({
-			bindResource: vi.fn().mockReturnValue({
-				connect: vi.fn().mockResolvedValue('res-3'),
-				kill,
-				inner: vi.fn().mockReturnValue(resourceInnerRuntime),
-			}),
+			bindResource: vi.fn().mockReturnValue(binding),
 		});
 
 		const factory = bindClient(resource(stream()), runtime) as (
@@ -214,7 +207,7 @@ describe('bindClient', () => {
 		) => Promise<Record<string, unknown>>;
 		const instance = await factory();
 		await (instance.dispose as () => Promise<void>)();
-		expect(kill).toHaveBeenCalledWith('res-3');
+		expect(dispose).toHaveBeenCalledOnce();
 	});
 
 	it('throws UnsupportedDescriptorError when runtime lacks method', () => {

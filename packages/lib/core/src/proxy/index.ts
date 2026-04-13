@@ -36,13 +36,12 @@ export type {
 } from './descriptors/index.js';
 
 export type { ProxyType } from './types.js';
+export type { ProxyRuntime, ServerRuntime } from './runtime.js';
 export type {
-	ProxyRuntime,
-	ServerRuntime,
 	ResourceBinding,
-	ServerResourceBinding,
-	ResourceLifecycle,
-} from './runtime.js';
+	ResourceFactory,
+	ResourceInstance,
+} from './resource.js';
 export type {
 	MethodHandler,
 	NotificationHandler,

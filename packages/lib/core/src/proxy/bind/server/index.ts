@@ -12,7 +12,6 @@ import type {
 	ProxyType,
 	Transport,
 } from '../../types.js';
-import type { ResourceContext } from '../context.js';
 import { requireCapability } from '../require.js';
 import { bindNamespace } from './namespace.js';
 import { bindResource } from './resource.js';
@@ -22,18 +21,10 @@ export function bindServer<D extends Descriptor>(
 	impl: ProxyType<D>,
 	runtime: ServerRuntime,
 ): { dispose(): Promise<void> } {
-	const contexts: ResourceContext[] = [];
-	const unregister = bindNode(
-		descriptor,
-		impl as unknown,
-		undefined,
-		runtime,
-		contexts,
-	);
+	const cleanup = bindNode(descriptor, impl as unknown, undefined, runtime);
 	return {
 		async dispose() {
-			for (const fn of unregister) fn();
-			await Promise.allSettled(contexts.map((c) => c.dispose()));
+			await Promise.allSettled(cleanup.map((fn) => Promise.resolve(fn())));
 		},
 	};
 }
@@ -51,8 +42,7 @@ export function bindNode(
 	value: unknown,
 	parent: unknown,
 	runtime: ServerRuntime,
-	contexts: ResourceContext[],
-): Array<() => void> {
+): Array<() => void | Promise<void>> {
 	switch (descriptorKind(descriptor)) {
 		case 'method':
 			return [
@@ -97,7 +87,6 @@ export function bindNode(
 				descriptor as NamespaceDescriptor<any, any>,
 				value,
 				runtime,
-				contexts,
 			);
 		case 'resource':
 			return bindResource(
@@ -105,7 +94,6 @@ export function bindNode(
 				value,
 				parent,
 				runtime,
-				contexts,
 			);
 	}
 }

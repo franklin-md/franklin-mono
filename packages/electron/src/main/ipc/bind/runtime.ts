@@ -1,11 +1,7 @@
 import { ipcMain } from 'electron';
 import type { WebContents } from 'electron';
-import type {
-	ServerRuntime,
-	ServerResourceBinding,
-	ResourceLifecycle,
-	MethodHandler,
-} from '@franklin/lib/proxy';
+import type { ServerRuntime, MethodHandler } from '@franklin/lib/proxy';
+import type { ResourceFactory } from '@franklin/lib/proxy';
 import { connect } from '@franklin/transport';
 import type { Duplex } from '@franklin/transport';
 
@@ -105,27 +101,47 @@ export function createServerRuntime(
 			};
 		},
 
-		registerResource(lifecycle: ResourceLifecycle): ServerResourceBinding {
+		registerResource(factory: ResourceFactory): () => Promise<void> {
 			const connectChannel = paths.forConnect();
 			const killChannel = paths.forKill();
 
+			const instances = new Map<
+				string,
+				{ unbind: Array<() => void>; dispose(): Promise<void> }
+			>();
+
+			const kill = async (id: string) => {
+				const entry = instances.get(id);
+				if (!entry) return;
+				instances.delete(id);
+				for (const fn of entry.unbind) fn();
+				await entry.dispose();
+			};
+
 			ipcMain.handle(connectChannel, async (_event, ...args: unknown[]) => {
-				return await lifecycle.connect(...args);
-			});
-			ipcMain.handle(killChannel, async (_event, id: string) => {
-				await lifecycle.kill(id);
+				const id = crypto.randomUUID();
+				const instance = await factory(...args);
+				const innerRuntime = createServerRuntime(
+					paths.forLease(id),
+					webContents,
+					{ onStreamRemoteClose: () => kill(id) },
+				);
+				const unbind = instance.bind(innerRuntime);
+				instances.set(id, {
+					unbind,
+					dispose: () => instance.dispose(),
+				});
+				return id;
 			});
 
-			return {
-				unregister: [
-					() => ipcMain.removeHandler(connectChannel),
-					() => ipcMain.removeHandler(killChannel),
-				],
-				create(id: string): ServerRuntime {
-					return createServerRuntime(paths.forLease(id), webContents, {
-						onStreamRemoteClose: () => lifecycle.kill(id),
-					});
-				},
+			ipcMain.handle(killChannel, async (_event, id: string) => {
+				await kill(id);
+			});
+
+			return async () => {
+				await Promise.allSettled([...instances.keys()].map((id) => kill(id)));
+				ipcMain.removeHandler(connectChannel);
+				ipcMain.removeHandler(killChannel);
 			};
 		},
 	};

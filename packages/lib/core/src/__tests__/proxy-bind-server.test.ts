@@ -9,7 +9,8 @@ import {
 } from '../proxy/descriptors/factories/index.js';
 import { bindServer } from '../proxy/bind/server/index.js';
 import { UnsupportedDescriptorError } from '../proxy/bind/error.js';
-import type { ResourceLifecycle, ServerRuntime } from '../proxy/runtime.js';
+import type { ServerRuntime } from '../proxy/runtime.js';
+import type { ResourceFactory } from '../proxy/resource.js';
 import type { EventHandler } from '../proxy/types.js';
 import type { NotificationHandler } from '../proxy/types.js';
 import type { MethodHandler } from '../proxy/types.js';
@@ -24,6 +25,52 @@ function createMockRuntime(
 		...overrides,
 	};
 	return self;
+}
+
+/**
+ * Helper that mocks registerResource by capturing the factory and simulating
+ * what a real runtime does: call factory(), bind the instance, track it.
+ */
+function createResourceMockRuntime(innerRuntime: ServerRuntime) {
+	const instances = new Map<
+		string,
+		{ unbind: Array<() => void>; dispose(): Promise<void> }
+	>();
+	let capturedFactory: ResourceFactory | undefined;
+
+	const spawnRuntime = createMockRuntime({
+		registerResource: vi.fn().mockImplementation((factory: ResourceFactory) => {
+			capturedFactory = factory;
+			return async () => {
+				await Promise.allSettled([...instances.keys()].map((id) => kill(id)));
+			};
+		}),
+	});
+
+	const connect = async (...args: unknown[]) => {
+		const id = crypto.randomUUID();
+		const instance = await capturedFactory!(...args);
+		const unbind = instance.bind(innerRuntime);
+		instances.set(id, { unbind, dispose: () => instance.dispose() });
+		return id;
+	};
+
+	const kill = async (id: string) => {
+		const entry = instances.get(id);
+		if (!entry) return;
+		instances.delete(id);
+		for (const fn of entry.unbind) fn();
+		await entry.dispose();
+	};
+
+	return {
+		spawnRuntime,
+		get factory() {
+			return capturedFactory;
+		},
+		connect,
+		kill,
+	};
 }
 
 describe('bindServer', () => {
@@ -157,23 +204,13 @@ describe('bindServer', () => {
 	});
 
 	it('registers resource(stream) via registerResource and defers inner binding to connect', async () => {
-		const unregisterResource = vi.fn();
 		const unregisterTransport = vi.fn();
 		const innerRuntime = createMockRuntime({
 			registerTransport: vi.fn().mockReturnValue(unregisterTransport),
 		});
-		let capturedLifecycle: ResourceLifecycle | undefined;
-		const spawnRuntime = createMockRuntime({
-			registerResource: vi.fn().mockImplementation((lifecycle) => {
-				capturedLifecycle = lifecycle as ResourceLifecycle;
-				return {
-					unregister: [unregisterResource],
-					create: vi.fn().mockReturnValue(innerRuntime),
-				};
-			}),
-		});
+		const mock = createResourceMockRuntime(innerRuntime);
 		const runtime = createMockRuntime({
-			registerNamespace: vi.fn().mockReturnValue(spawnRuntime),
+			registerNamespace: vi.fn().mockReturnValue(mock.spawnRuntime),
 		});
 
 		const transportValue = { readable: 'r', writable: 'w', close: vi.fn() };
@@ -186,25 +223,21 @@ describe('bindServer', () => {
 		);
 
 		expect(runtime.registerNamespace).toHaveBeenCalledWith('spawn');
-		expect(spawnRuntime.registerResource).toHaveBeenCalledWith(
-			expect.objectContaining({
-				connect: expect.any(Function),
-				kill: expect.any(Function),
-			}),
+		expect(mock.spawnRuntime.registerResource).toHaveBeenCalledWith(
+			expect.any(Function),
 		);
 
 		// Inner stream is NOT registered yet (deferred)
 		expect(innerRuntime.registerTransport).not.toHaveBeenCalled();
 
 		// On connect, inner binding fires
-		const id = await capturedLifecycle!.connect('arg1');
+		const id = await mock.connect('arg1');
 		expect(factory).toHaveBeenCalledWith('arg1');
 		expect(typeof id).toBe('string');
 		expect(innerRuntime.registerTransport).toHaveBeenCalledWith(transportValue);
 	});
 
 	it('registers resource(namespace) and defers inner method binding to connect', async () => {
-		const unregisterResource = vi.fn();
 		const unregisterMethod = vi.fn();
 		const innerMethodRuntime = createMockRuntime({
 			registerMethod: vi.fn().mockReturnValue(unregisterMethod),
@@ -212,18 +245,9 @@ describe('bindServer', () => {
 		const innerRuntime = createMockRuntime({
 			registerNamespace: vi.fn().mockReturnValue(innerMethodRuntime),
 		});
-		let capturedLifecycle: ResourceLifecycle | undefined;
-		const spawnRuntime = createMockRuntime({
-			registerResource: vi.fn().mockImplementation((lifecycle) => {
-				capturedLifecycle = lifecycle as ResourceLifecycle;
-				return {
-					unregister: [unregisterResource],
-					create: vi.fn().mockReturnValue(innerRuntime),
-				};
-			}),
-		});
+		const mock = createResourceMockRuntime(innerRuntime);
 		const runtime = createMockRuntime({
-			registerNamespace: vi.fn().mockReturnValue(spawnRuntime),
+			registerNamespace: vi.fn().mockReturnValue(mock.spawnRuntime),
 		});
 
 		const resourceValue = { data: 42 };
@@ -238,18 +262,15 @@ describe('bindServer', () => {
 		);
 
 		expect(runtime.registerNamespace).toHaveBeenCalledWith('handle');
-		expect(spawnRuntime.registerResource).toHaveBeenCalledWith(
-			expect.objectContaining({
-				connect: expect.any(Function),
-				kill: expect.any(Function),
-			}),
+		expect(mock.spawnRuntime.registerResource).toHaveBeenCalledWith(
+			expect.any(Function),
 		);
 
 		// Inner methods are NOT registered yet
 		expect(innerRuntime.registerNamespace).not.toHaveBeenCalled();
 
 		// On connect, inner binding fires
-		const id = await capturedLifecycle!.connect();
+		const id = await mock.connect();
 		expect(typeof id).toBe('string');
 		expect(innerRuntime.registerNamespace).toHaveBeenCalledWith('doThing');
 		expect(innerMethodRuntime.registerMethod).toHaveBeenCalledWith(
@@ -266,22 +287,13 @@ describe('bindServer', () => {
 	it('resource lifecycle kills instances and calls dispose', async () => {
 		const dispose = vi.fn();
 		const factory = vi.fn().mockResolvedValue({ dispose });
-		let capturedLifecycle: ResourceLifecycle | undefined;
 
 		const innerRuntime = createMockRuntime({
 			registerTransport: vi.fn().mockReturnValue(vi.fn()),
 		});
-		const spawnRuntime = createMockRuntime({
-			registerResource: vi.fn().mockImplementation((lifecycle) => {
-				capturedLifecycle = lifecycle as ResourceLifecycle;
-				return {
-					unregister: [],
-					create: vi.fn().mockReturnValue(innerRuntime),
-				};
-			}),
-		});
+		const mock = createResourceMockRuntime(innerRuntime);
 		const runtime = createMockRuntime({
-			registerNamespace: vi.fn().mockReturnValue(spawnRuntime),
+			registerNamespace: vi.fn().mockReturnValue(mock.spawnRuntime),
 		});
 
 		bindServer(
@@ -290,30 +302,21 @@ describe('bindServer', () => {
 			runtime,
 		);
 
-		const id = await capturedLifecycle!.connect();
-		await capturedLifecycle!.kill(id);
+		const id = await mock.connect();
+		await mock.kill(id);
 		expect(dispose).toHaveBeenCalledOnce();
 	});
 
 	it('resource kill unregisters inner bindings', async () => {
 		const innerUnregister = vi.fn();
 		const factory = vi.fn().mockResolvedValue({ readable: 'r', writable: 'w' });
-		let capturedLifecycle: ResourceLifecycle | undefined;
 
 		const innerRuntime = createMockRuntime({
 			registerTransport: vi.fn().mockReturnValue(innerUnregister),
 		});
-		const spawnRuntime = createMockRuntime({
-			registerResource: vi.fn().mockImplementation((lifecycle) => {
-				capturedLifecycle = lifecycle as ResourceLifecycle;
-				return {
-					unregister: [],
-					create: vi.fn().mockReturnValue(innerRuntime),
-				};
-			}),
-		});
+		const mock = createResourceMockRuntime(innerRuntime);
 		const runtime = createMockRuntime({
-			registerNamespace: vi.fn().mockReturnValue(spawnRuntime),
+			registerNamespace: vi.fn().mockReturnValue(mock.spawnRuntime),
 		});
 
 		bindServer(
@@ -322,10 +325,10 @@ describe('bindServer', () => {
 			runtime,
 		);
 
-		const id = await capturedLifecycle!.connect();
+		const id = await mock.connect();
 		expect(innerUnregister).not.toHaveBeenCalled();
 
-		await capturedLifecycle!.kill(id);
+		await mock.kill(id);
 		expect(innerUnregister).toHaveBeenCalledOnce();
 	});
 
