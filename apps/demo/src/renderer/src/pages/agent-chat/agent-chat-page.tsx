@@ -1,43 +1,37 @@
-import { useCallback, useState } from 'react';
-
-import type { FranklinRuntime } from '@franklin/agent/browser';
-import { AgentProvider } from '@franklin/react';
+import { AgentProvider, AgentsProvider, useAgents } from '@franklin/react';
 
 import { AgentSidebar } from './sidebar/index.js';
 import { ConversationPanel } from './conversation/index.js';
 import { TodoPanel } from './todo/index.js';
 
-interface SelectedAgent {
-	id: string;
-	agent: FranklinRuntime;
+export function AgentChatPage() {
+	return (
+		<AgentsProvider>
+			<div className="flex flex-1 overflow-hidden">
+				<AgentSidebar />
+				<ActiveAgent />
+			</div>
+		</AgentsProvider>
+	);
 }
 
-export function AgentChatPage() {
-	const [selected, setSelected] = useState<SelectedAgent | null>(null);
+function ActiveAgent() {
+	const { activeSession } = useAgents();
 
-	const handleSelectAgent = useCallback(
-		(id: string, agent: FranklinRuntime) => {
-			setSelected({ id, agent });
-		},
-		[],
-	);
+	if (!activeSession) {
+		return (
+			<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+				Spawn an agent to start.
+			</div>
+		);
+	}
 
 	return (
-		<div className="flex flex-1 overflow-hidden">
-			<AgentSidebar onSelectAgent={handleSelectAgent} />
-
-			{selected ? (
-				<AgentProvider key={selected.id} agent={selected.agent}>
-					<div className="flex flex-1 overflow-hidden">
-						<ConversationPanel />
-						<TodoPanel />
-					</div>
-				</AgentProvider>
-			) : (
-				<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-					Spawn an agent to start.
-				</div>
-			)}
-		</div>
+		<AgentProvider key={activeSession.id} agent={activeSession.runtime}>
+			<div className="flex flex-1 overflow-hidden">
+				<ConversationPanel />
+				<TodoPanel />
+			</div>
+		</AgentProvider>
 	);
 }
