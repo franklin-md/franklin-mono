@@ -13,6 +13,9 @@ export type { StreamDescriptor, StreamLike } from './stream.js';
 export { NAMESPACE_KIND } from './namespace.js';
 export type { NamespaceDescriptor, NamespaceShape } from './namespace.js';
 
+export { ON_KIND } from './on.js';
+export type { OnDescriptor } from './on.js';
+
 export { RESOURCE_KIND } from './resource.js';
 export type {
 	ResourceDescriptor,

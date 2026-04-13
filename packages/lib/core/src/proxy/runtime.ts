@@ -2,6 +2,7 @@ import type {
 	MethodHandler,
 	NotificationHandler,
 	EventHandler,
+	OnHandler,
 	Transport,
 } from './types.js';
 import type { ResourceBinding, ResourceFactory } from './resource.js';
@@ -16,6 +17,8 @@ export interface ServerRuntime {
 	registerNotification?(handler: NotificationHandler): () => void;
 
 	registerEvent?(handler: EventHandler): () => void;
+
+	registerOn?(handler: OnHandler): () => void;
 
 	// TODO: rename to registerTransport when stream() descriptor is renamed
 	registerTransport?(transport: Transport): () => void;
@@ -32,6 +35,8 @@ export interface ProxyRuntime {
 	bindNotification?(): NotificationHandler;
 
 	bindEvent?(): EventHandler;
+
+	bindOn?(): OnHandler;
 
 	bindTransport?(): Transport;
 

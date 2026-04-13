@@ -9,6 +9,7 @@ import type {
 	EventHandler,
 	MethodHandler,
 	NotificationHandler,
+	OnHandler,
 	ProxyType,
 	Transport,
 } from '../../types.js';
@@ -72,6 +73,16 @@ export function bindNode(
 					'event',
 				)((...args: unknown[]) => {
 					return (value as EventHandler).call(parent, ...args);
+				}),
+			];
+		case 'on':
+			return [
+				requireCapability(
+					runtime,
+					'registerOn',
+					'on',
+				)((callback: (data: unknown) => void) => {
+					return (value as OnHandler).call(parent, callback);
 				}),
 			];
 		case 'stream':

@@ -2,6 +2,7 @@ import type { AnyShape } from './descriptor.js';
 import type { EventDescriptor } from './event.js';
 import type { MethodDescriptor } from './method.js';
 import type { NotificationDescriptor } from './notification.js';
+import type { OnDescriptor } from './on.js';
 import type { ResourceDescriptor, StripDisposable } from './resource.js';
 import type { StreamDescriptor, StreamLike } from './stream.js';
 
@@ -41,9 +42,11 @@ type NamespaceMemberDescriptor<T> = T extends (
 		? MethodDescriptor<A, void> | NotificationDescriptor<A>
 		: T extends (...args: infer A) => Promise<infer R>
 			? MethodDescriptor<A, R> | ResourceMethodDescriptor<A, R>
-			: T extends object
-				? NamespaceObjectDescriptor<T>
-				: never;
+			: T extends (callback: (data: infer D) => void) => () => void
+				? OnDescriptor<D>
+				: T extends object
+					? NamespaceObjectDescriptor<T>
+					: never;
 
 export type NamespaceShape<T> = {
 	[K in keyof T]: NamespaceMemberDescriptor<T[K]>;

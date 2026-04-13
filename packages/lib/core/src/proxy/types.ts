@@ -4,6 +4,7 @@ import type {
 	MethodDescriptor,
 	NamespaceDescriptor,
 	NotificationDescriptor,
+	OnDescriptor,
 	ResourceDescriptor,
 	StreamDescriptor,
 } from './descriptors/types/index.js';
@@ -20,17 +21,19 @@ export type ProxyType<D extends Descriptor> =
 			? NotificationHandler<TArgs>
 			: D extends EventDescriptor<infer TArgs, infer TItem>
 				? EventHandler<TArgs, TItem>
-				: D extends StreamDescriptor<infer R, infer W>
-					? Transport<R, W>
-					: D extends NamespaceDescriptor<unknown, infer TShape>
-						? { [K in keyof TShape]: ProxyType<TShape[K]> }
-						: D extends ResourceDescriptor<infer TArgs, infer TInner>
-							? (...args: TArgs) => Promise<
-									ProxyType<TInner extends Descriptor ? TInner : never> & {
-										dispose(): Promise<void>;
-									}
-								>
-							: never;
+				: D extends OnDescriptor<infer TData>
+					? OnHandler<TData>
+					: D extends StreamDescriptor<infer R, infer W>
+						? Transport<R, W>
+						: D extends NamespaceDescriptor<unknown, infer TShape>
+							? { [K in keyof TShape]: ProxyType<TShape[K]> }
+							: D extends ResourceDescriptor<infer TArgs, infer TInner>
+								? (...args: TArgs) => Promise<
+										ProxyType<TInner extends Descriptor ? TInner : never> & {
+											dispose(): Promise<void>;
+										}
+									>
+								: never;
 
 export type MethodHandler<
 	TArgs extends unknown[] = unknown[],
@@ -43,6 +46,10 @@ export type EventHandler<
 	TArgs extends unknown[] = unknown[],
 	TItem = unknown,
 > = (...args: TArgs) => AsyncIterable<TItem>;
+// TODO: consider whether unsubscribe should return Promise<void> for async cleanup
+export type OnHandler<TData = unknown> = (
+	callback: (data: TData) => void,
+) => () => void;
 export type Transport<TRead = unknown, TWrite = TRead> = {
 	readable: ReadableStream<TRead>;
 	writable: WritableStream<TWrite>;
