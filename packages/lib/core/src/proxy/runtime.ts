@@ -1,6 +1,3 @@
-// TODO: Feels like this is not right.
-// Connect should actually return the ProxyRuntime + a dispose function.
-
 import type {
 	MethodHandler,
 	NotificationHandler,
@@ -8,6 +5,8 @@ import type {
 	Transport,
 } from './types.js';
 
+// TODO: Feels like this is not right.
+// Connect should actually return the ProxyRuntime + a dispose function.
 // Internally this comues out to the same flow,
 export interface ResourceBinding {
 	connect(...args: unknown[]): Promise<string>;

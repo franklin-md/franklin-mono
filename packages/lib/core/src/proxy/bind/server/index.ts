@@ -86,10 +86,12 @@ export function bindNode(
 			];
 		case 'stream':
 			return [
-					requireCapability(runtime, 'registerTransport', 'stream')(
-						value as Transport,
-					),
-				];
+				requireCapability(
+					runtime,
+					'registerTransport',
+					'stream',
+				)(value as Transport),
+			];
 		case 'namespace':
 			return bindNamespace(
 				descriptor as NamespaceDescriptor<any, any>,

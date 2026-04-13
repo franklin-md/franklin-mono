@@ -1,34 +1,10 @@
 interface StoredInstance {
-	readonly value: unknown;
+	readonly unbind: () => void;
 	readonly dispose: () => Promise<void>;
-	readonly onKill?: () => void;
-}
-
-// TODO: Get rid of. The dispose of resource is called, and if it has a transport
-// The implementation should wire that up automatically (transport doesnt have close)
-function inferDispose(value: unknown): () => Promise<void> {
-	const maybeDisposable = value as {
-		dispose?: () => Promise<void> | void;
-		close?: () => Promise<void> | void;
-	};
-
-	if (typeof maybeDisposable.dispose === 'function') {
-		return async () => {
-			await maybeDisposable.dispose?.();
-		};
-	}
-
-	if (typeof maybeDisposable.close === 'function') {
-		return async () => {
-			await maybeDisposable.close?.();
-		};
-	}
-
-	return async () => {};
 }
 
 export interface ResourceContext {
-	store(id: string, instance: unknown, onKill?: () => void): void;
+	store(id: string, unbind: () => void, dispose: () => Promise<void>): void;
 	kill(id: string): Promise<void>;
 	dispose(): Promise<void>;
 }
@@ -40,17 +16,13 @@ export function createResourceContext(): ResourceContext {
 		const entry = instances.get(id);
 		if (!entry) return;
 		instances.delete(id);
-		entry.onKill?.();
+		entry.unbind();
 		await entry.dispose();
 	};
 
 	return {
-		store(id, instance, onKill) {
-			instances.set(id, {
-				value: instance,
-				dispose: inferDispose(instance),
-				onKill,
-			});
+		store(id, unbind, dispose) {
+			instances.set(id, { unbind, dispose });
 		},
 
 		kill,
