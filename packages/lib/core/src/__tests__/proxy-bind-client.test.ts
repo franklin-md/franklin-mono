@@ -7,10 +7,8 @@ import {
 	resource,
 	stream,
 } from '../proxy/descriptors/factories/index.js';
-import {
-	bindClient,
-	UnsupportedDescriptorError,
-} from '../proxy/bind/client.js';
+import { bindClient } from '../proxy/bind/client/index.js';
+import { UnsupportedDescriptorError } from '../proxy/bind/error.js';
 import type { ProxyRuntime } from '../proxy/runtime.js';
 
 function createMockRuntime(

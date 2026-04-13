@@ -7,8 +7,8 @@ import {
 	resource,
 	stream,
 } from '../proxy/descriptors/factories/index.js';
-import { bindServer } from '../proxy/bind/server.js';
-import { UnsupportedDescriptorError } from '../proxy/bind/client.js';
+import { bindServer } from '../proxy/bind/server/index.js';
+import { UnsupportedDescriptorError } from '../proxy/bind/error.js';
 import type {
 	EventHandler,
 	MethodHandler,

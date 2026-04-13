@@ -46,5 +46,6 @@ export type {
 	NotificationHandler,
 	EventHandler,
 } from './runtime.js';
-export { bindClient, UnsupportedDescriptorError } from './bind/client.js';
-export { bindServer } from './bind/server.js';
+export { bindClient } from './bind/client/index.js';
+export { bindServer } from './bind/server/index.js';
+export { UnsupportedDescriptorError } from './bind/error.js';

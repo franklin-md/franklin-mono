@@ -36,8 +36,7 @@ export function createClientRuntime(
 			return {
 				connect: (...args: unknown[]) =>
 					ipc.invoke(paths.forConnect(), ...args) as Promise<string>,
-				kill: (id: string) =>
-					ipc.invoke(paths.forKill(), id) as Promise<void>,
+				kill: (id: string) => ipc.invoke(paths.forKill(), id) as Promise<void>,
 				inner(id: string): ProxyRuntime {
 					return createClientRuntime(ipc, paths.forLease(id));
 				},
