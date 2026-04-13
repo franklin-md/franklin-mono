@@ -29,7 +29,7 @@ export function buildDescriptor(
 		case 'event':
 			return requireCapability(runtime, 'bindEvent', 'event')();
 		case 'stream':
-			return requireCapability(runtime, 'bindStream', 'stream')();
+			return requireCapability(runtime, 'bindTransport', 'stream')();
 		case 'namespace':
 			return buildNamespace(
 				descriptor as NamespaceDescriptor<any, any>,

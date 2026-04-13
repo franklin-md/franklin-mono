@@ -29,7 +29,7 @@ export function createClientRuntime(
 			return (...args: unknown[]) => ipc.invoke(paths.forMethod(), ...args);
 		},
 
-		bindStream(): Transport {
+		bindTransport(): Transport {
 			return createIpcStream(ipc, paths.forStream());
 		},
 

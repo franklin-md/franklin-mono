@@ -115,7 +115,7 @@ describe('bindClient', () => {
 	it('binds resource(stream) by calling bindResource and recursing into inner', async () => {
 		const streamValue = { readable: 'r', writable: 'w', close: vi.fn() };
 		const resourceInnerRuntime = createMockRuntime({
-			bindStream: vi.fn().mockReturnValue(streamValue),
+			bindTransport: vi.fn().mockReturnValue(streamValue),
 		});
 		const spawnRuntime = createMockRuntime({
 			bindResource: vi.fn().mockReturnValue({
@@ -144,7 +144,7 @@ describe('bindClient', () => {
 			.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
 		expect(binding.connect).toHaveBeenCalledWith('arg1');
 		expect(binding.inner).toHaveBeenCalledWith('res-1');
-		expect(resourceInnerRuntime.bindStream).toHaveBeenCalled();
+		expect(resourceInnerRuntime.bindTransport).toHaveBeenCalled();
 		expect(instance).toEqual(
 			expect.objectContaining({
 				readable: 'r',
@@ -197,7 +197,7 @@ describe('bindClient', () => {
 	it('dispose on resource calls binding.kill', async () => {
 		const kill = vi.fn().mockResolvedValue(undefined);
 		const resourceInnerRuntime = createMockRuntime({
-			bindStream: vi
+			bindTransport: vi
 				.fn()
 				.mockReturnValue({ readable: 'r', writable: 'w', close: vi.fn() }),
 		});

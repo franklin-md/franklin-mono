@@ -82,7 +82,7 @@ export function bindNode(
 				}),
 			];
 		case 'stream':
-			return [requireCapability(runtime, 'registerStream', 'stream')(value)];
+			return [requireCapability(runtime, 'registerTransport', 'stream')(value)];
 		case 'namespace':
 			return bindNamespace(
 				descriptor as NamespaceDescriptor<any, any>,

@@ -83,7 +83,7 @@ export function createServerRuntime(
 		},
 
 		// TODO: rename to registerTransport when stream() descriptor is renamed
-		registerStream(transport: unknown): () => void {
+		registerTransport(transport: unknown): () => void {
 			const channel = paths.forStream();
 			const connection = connectIpcTransport(
 				webContents,

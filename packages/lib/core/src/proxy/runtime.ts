@@ -35,7 +35,7 @@ export interface ServerRuntime {
 	registerEvent?(handler: EventHandler): () => void;
 
 	// TODO: rename to registerTransport when stream() descriptor is renamed
-	registerStream?(transport: Transport): () => void;
+	registerTransport?(transport: Transport): () => void;
 
 	registerResource?(lifecycle: ResourceLifecycle): ServerResourceBinding;
 }
@@ -49,7 +49,7 @@ export interface ProxyRuntime {
 
 	bindEvent?(): EventHandler;
 
-	bindStream?(): Transport;
+	bindTransport?(): Transport;
 
 	bindResource?(): ResourceBinding;
 }
