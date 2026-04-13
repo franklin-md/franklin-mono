@@ -65,7 +65,6 @@ export type AppAuth = {
 	removeOAuthEntry(provider: string): Promise<void>;
 	onAuthChange(listener: AuthChangeListener): () => void;
 	flow(provider: string): Promise<IAuthFlow>;
-	openExternal(url: string): Promise<void>;
 	getOAuthProviders(): Promise<{ id: string; name: string }[]>;
 	getApiKeyProviders(): Promise<string[]>;
 };

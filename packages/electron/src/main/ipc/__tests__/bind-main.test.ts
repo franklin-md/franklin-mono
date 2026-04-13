@@ -103,7 +103,6 @@ function createAuth() {
 		setApiKeyEntry: async () => {},
 		removeApiKeyEntry: async () => {},
 		removeOAuthEntry: async () => {},
-		openExternal: async () => {},
 		onAuthChange: () => () => {},
 		flow: async () => ({
 			onAuth: () => () => {},
@@ -167,6 +166,7 @@ describe('bindMain', () => {
 					getApiKeyProviders: async () => [],
 				},
 				auth: createAuth(),
+				openExternal: async () => {},
 			},
 			createWebContents(1),
 		);
@@ -226,6 +226,7 @@ describe('bindMain', () => {
 					getApiKeyProviders: async () => [],
 				},
 				auth: createAuth(),
+				openExternal: async () => {},
 			},
 			createWebContents(1),
 		);
@@ -325,6 +326,7 @@ describe('bindMain', () => {
 					getApiKeyProviders: async () => [],
 				},
 				auth: createAuth(),
+				openExternal: async () => {},
 			},
 			createWebContents(1),
 		);
@@ -502,6 +504,7 @@ describe('bindMain', () => {
 					getApiKeyProviders: async () => [],
 				},
 				auth: createAuth(),
+				openExternal: async () => {},
 			},
 			createWebContents(1),
 		);

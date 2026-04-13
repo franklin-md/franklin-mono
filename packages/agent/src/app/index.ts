@@ -30,8 +30,8 @@ export class FranklinApp {
 	readonly auth: Platform['auth'];
 	readonly settings: SettingsStore;
 	readonly agents: Agents;
+	readonly platform: Platform;
 
-	private readonly platform: Platform;
 	private readonly storeRegistry: StoreRegistry;
 	private readonly manager: SessionManager<BaseSystem>;
 	private readonly persistedCollection?: PersistedSessionCollection<

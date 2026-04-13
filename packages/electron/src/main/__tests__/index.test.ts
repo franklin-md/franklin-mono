@@ -27,7 +27,6 @@ function createAuth() {
 		setApiKeyEntry: async () => {},
 		removeApiKeyEntry: async () => {},
 		removeOAuthEntry: async () => {},
-		openExternal: async () => {},
 		onAuthChange: () => () => {},
 		flow: async () => ({
 			onAuth: () => () => {},
@@ -113,6 +112,7 @@ describe('initializeMain', () => {
 				getApiKeyProviders: async () => [],
 			},
 			auth: createAuth(),
+			openExternal: async () => {},
 		};
 
 		const handle = initializeMain(
@@ -131,6 +131,9 @@ describe('initializeMain', () => {
 		).toBe(true);
 		expect(
 			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:auth:flow:connect`),
+		).toBe(true);
+		expect(
+			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:openExternal`),
 		).toBe(true);
 		expect(handleMap.has('franklin:filesystem:readFile')).toBe(false);
 

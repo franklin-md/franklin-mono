@@ -39,7 +39,6 @@ const auth = namespace({
 	setApiKeyEntry: method(),
 	removeApiKeyEntry: method(),
 	removeOAuthEntry: method(),
-	openExternal: method(),
 	onAuthChange: on(),
 	flow: resource(authFlow),
 });
@@ -61,4 +60,5 @@ export const schema = namespace({
 	}),
 	auth: auth,
 	filesystem: filesystem,
+	openExternal: method(),
 } satisfies NamespaceShape<Platform>);

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { loginOAuth } from '@franklin/agent/browser';
-import { AuthButton } from './ui/auth-button.js';
+import { useApp } from '@franklin/react';
 import { useAuthStore } from './ui/auth-context.js';
+import { AuthButton } from './ui/auth-button.js';
 import type { OAuthLoginFn, OAuthProviderMeta } from './ui/oauth-panel.js';
 
 export function DemoAuthControls() {
+	const app = useApp();
 	const auth = useAuthStore();
 	const [oauthProviders, setOauthProviders] = useState<OAuthProviderMeta[]>([]);
 	const [apiKeyProviders, setApiKeyProviders] = useState<OAuthProviderMeta[]>(
@@ -44,7 +46,7 @@ export function DemoAuthControls() {
 			oauthProviders={oauthProviders}
 			apiKeyProviders={apiKeyProviders}
 			onLogin={loginWithRefresh}
-			onOpenUrl={(url) => auth.openExternal(url)}
+			onOpenUrl={(url) => app.platform.openExternal(url)}
 		/>
 	);
 }

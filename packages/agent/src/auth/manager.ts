@@ -19,19 +19,16 @@ interface AuthDependencies {
 		getOAuthProviders(): Promise<{ id: string; name: string }[]>;
 		getApiKeyProviders(): Promise<string[]>;
 	};
-	openExternal(url: string): Promise<void>;
 }
 
 export class AuthManager {
 	private readonly listeners = new Set<AuthChangeListener>();
 	private readonly store: AuthStore;
 	private readonly ai: AuthDependencies['ai'];
-	private readonly openExternalFn: AuthDependencies['openExternal'];
 
 	constructor(deps: AuthDependencies) {
 		this.store = new AuthStore(deps.filesystem);
 		this.ai = deps.ai;
-		this.openExternalFn = (url) => deps.openExternal(url);
 	}
 
 	onAuthChange(listener: AuthChangeListener): () => void {
@@ -52,10 +49,6 @@ export class AuthManager {
 
 	async flow(provider: string): Promise<IAuthFlow> {
 		return new OAuthFlow((callbacks) => this.loginOAuth(provider, callbacks));
-	}
-
-	async openExternal(url: string): Promise<void> {
-		await this.openExternalFn(url);
 	}
 
 	async load(): Promise<AuthFile> {

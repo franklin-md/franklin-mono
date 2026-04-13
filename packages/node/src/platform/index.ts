@@ -27,7 +27,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 		},
 		getApiKeyProviders: async () => getProviders(),
 	};
-	const auth = new AuthManager({ filesystem, ai, openExternal });
+	const auth = new AuthManager({ filesystem, ai });
 
 	return {
 		spawn: async () => {
@@ -74,6 +74,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 		},
 		filesystem,
 		auth,
+		openExternal,
 		// TODO: Sandbox
 	};
 }

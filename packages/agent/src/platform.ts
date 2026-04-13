@@ -1,7 +1,7 @@
 import type { Filesystem } from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { EnvironmentFactory } from '@franklin/extensions';
-import type { IAuthManager } from './auth/types.js';
+import type { AppAuth } from './auth/types.js';
 
 // TODO: Is this right?
 type ProviderMeta = {
@@ -22,7 +22,9 @@ export interface Platform {
 	};
 
 	filesystem: Filesystem;
-	auth: IAuthManager;
+	auth: AppAuth;
+	// TODO: Group filesystem, openExternal, and similar host APIs under `os`.
+	openExternal(url: string): Promise<void>;
 
 	// TODO: Sandbox
 }
