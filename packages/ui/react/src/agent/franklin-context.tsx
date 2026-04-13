@@ -61,7 +61,7 @@ export function FranklinProvider({
 				// TODO: Should we make this optional?
 				await created.start();
 				if (cancelledRef.current) {
-					// TODO: We probably want app.dispose().
+					// TODO FRA-154: We probably want app.dispose().
 				} else {
 					setApp(created);
 				}
@@ -75,7 +75,7 @@ export function FranklinProvider({
 		return () => {
 			cancelledRef.current = true;
 			if (created) {
-				// TODO: We probably want app.dispose().
+				// TODO FRA-154: We probably want app.dispose().
 			}
 		};
 	}, [extensions, platform]);

@@ -7,11 +7,14 @@ import type { MuAgent } from '../../protocol/types.js';
 import type { StreamEvent } from '../../types/stream.js';
 import { StopCode } from '../../types/stop-code.js';
 import type { AgentFactory, TranscriptEntry } from '../types.js';
+import { confirmSpec } from '../confirm.js';
 import { execute } from '../execute/index.js';
 import { initialize } from '../actions/initialize.js';
 import { setContext } from '../actions/set-context.js';
 import { prompt } from '../actions/prompt.js';
 import { waitFor } from '../actions/wait-for.js';
+import { overlappingPrompts } from '../fixtures/overlapping-prompts.js';
+import { overlappingPromptsExpectation } from '../fixtures/index.js';
 import { failingTool } from '../fixtures/tools/failing.js';
 import { echoTool } from '../fixtures/tools/echo.js';
 import {
@@ -74,6 +77,29 @@ const toolCallingTurn = (remote: MuAgent): TurnClient => ({
 	},
 	async cancel() {},
 });
+
+function createCancellableBlockingTurn(): TurnClient {
+	let release: (() => void) | null = null;
+	let cancelled = false;
+	const done = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+
+	return {
+		async *prompt(): AsyncGenerator<StreamEvent> {
+			yield { type: 'turnStart' };
+			await done;
+			yield {
+				type: 'turnEnd',
+				stopCode: cancelled ? StopCode.Cancelled : StopCode.Finished,
+			};
+		},
+		async cancel() {
+			cancelled = true;
+			release?.();
+		},
+	};
+}
 
 // ---------------------------------------------------------------------------
 // execute
@@ -233,18 +259,25 @@ describe('execute', () => {
 		expect(transcript.length).toBeGreaterThan(0);
 	});
 
-	it('unknown tool throws a fixture authoring error', async () => {
-		// Agent calls 'greet' but no tools registered on fixture — this is a
-		// fixture mistake, not a protocol error, so execute should reject.
-		await expect(
-			execute(
-				{
-					name: 'unknown-tool',
-					actions: [initialize(), setContext(), prompt('Greet')],
-				},
-				createMockFactory(toolCallingTurn),
-			),
-		).rejects.toThrow('tool handler must be specified');
+	it('unknown tool is recorded as a prompt error in the transcript', async () => {
+		const transcript = await execute(
+			{
+				name: 'unknown-tool',
+				actions: [initialize(), setContext(), prompt('Greet')],
+			},
+			createMockFactory(toolCallingTurn),
+		);
+
+		expect(transcript).toContainEqual(
+			expect.objectContaining({
+				direction: 'receive',
+				method: 'error',
+				params: expect.objectContaining({
+					operation: 'prompt',
+					message: expect.stringContaining('tool handler must be specified'),
+				}),
+			}),
+		);
 	});
 
 	it('tools in setContext are sent as definitions on the wire', async () => {
@@ -265,6 +298,41 @@ describe('execute', () => {
 		};
 		expect(setCtxEntry.params.tools).toEqual([tool.definition]);
 	});
+
+	it('overlapping prompts are captured as transcript errors and the first turn can still finish', async () => {
+		const transcript = await execute(
+			overlappingPrompts,
+			createMockFactory(() => createCancellableBlockingTurn()),
+		);
+
+		expect(transcript).toContainEqual(
+			expect.objectContaining({
+				direction: 'receive',
+				method: 'error',
+				params: expect.objectContaining({
+					operation: 'prompt',
+					message: expect.stringContaining('already in progress'),
+				}),
+			}),
+		);
+		expect(transcript).toContainEqual(
+			expect.objectContaining({
+				direction: 'receive',
+				method: 'turnEnd',
+				params: expect.objectContaining({ stopCode: StopCode.Cancelled }),
+			}),
+		);
+	});
+});
+
+describe('confirmSpec', () => {
+	confirmSpec(
+		createMockFactory(() => createCancellableBlockingTurn()),
+		{
+			entries: [overlappingPromptsExpectation],
+			timeoutMs: 5_000,
+		},
+	);
 });
 
 // ---------------------------------------------------------------------------

@@ -20,7 +20,10 @@ export { setContext } from './actions/set-context.js';
 export { prompt } from './actions/prompt.js';
 export { cancel } from './actions/cancel.js';
 export { waitFor } from './actions/wait-for.js';
+export { expectProtocolError } from './expectations/protocol-error.js';
+export { expectStopCode } from './expectations/stop-code.js';
 // Pre-built fixtures
 export { initOnly } from './fixtures/init-only.js';
+export { overlappingPrompts } from './fixtures/overlapping-prompts.js';
 export { simplePrompt } from './fixtures/simple-prompt.js';
 export { toolCall } from './fixtures/tool-call.js';

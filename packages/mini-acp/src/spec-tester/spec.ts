@@ -9,7 +9,13 @@ import type { Expectation } from './types.js';
 import { sends, receives } from './assertions/filters.js';
 import { match } from './assertions/match.js';
 import { initCompletedIndex } from './assertions/init.js';
-import { isTurnActiveAt, turns } from './assertions/turn-state.js';
+import {
+	isTurnActiveAt,
+	nextReceiveAfter,
+	promptIsRejected,
+	promptStartsTurn,
+	turns,
+} from './assertions/turn-state.js';
 import { StopCode, VALID_STOP_CODES } from '../types/stop-code.js';
 
 // ---------------------------------------------------------------------------
@@ -93,12 +99,14 @@ const ctxAfterInit: Expectation = {
 
 const turnEndsWithTurnEnd: Expectation = {
 	id: 'turn-ends-with-turn-end',
-	description: 'Every prompt must eventually be followed by a turnEnd',
+	description:
+		'Every prompt that starts a turn must eventually be followed by a turnEnd',
 	test: (t) => {
 		const prompts = sends(t, 'prompt');
 		if (prompts.length === 0) return 'skip';
 		for (const p of prompts) {
 			const pIdx = t.indexOf(p);
+			if (!promptStartsTurn(t, pIdx)) continue;
 			const hasTurnEnd = t
 				.slice(pIdx)
 				.some((e) => match(e, 'receive', 'turnEnd'));
@@ -110,18 +118,21 @@ const turnEndsWithTurnEnd: Expectation = {
 
 const noOverlappingPrompts: Expectation = {
 	id: 'no-overlapping-prompts',
-	description: 'prompt must not be sent while a turn is active',
+	description:
+		'prompt sent during an active turn must be rejected and must not start a second turn',
 	test: (t) => {
 		const prompts = sends(t, 'prompt');
 		if (prompts.length < 2) return 'skip';
-		let active = false;
-		for (const e of t) {
-			if (match(e, 'send', 'prompt')) {
-				if (active) return 'fail';
-				active = true;
-			}
-			if (match(e, 'receive', 'turnEnd')) {
-				active = false;
+		for (const promptEntry of prompts) {
+			const pIdx = t.indexOf(promptEntry);
+			if (!isTurnActiveAt(t, pIdx)) continue;
+			if (!promptIsRejected(t, pIdx)) return 'fail';
+
+			for (let i = pIdx + 1; i < t.length; i++) {
+				const e = t[i];
+				if (!e || e.direction !== 'receive') continue;
+				if (e.method === 'turnEnd') break;
+				if (e.method === 'turnStart') return 'fail';
 			}
 		}
 		return 'pass';
@@ -166,15 +177,15 @@ const turnEndIsTerminal: Expectation = {
 
 const turnStartsWithTurnStart: Expectation = {
 	id: 'turn-starts-with-turn-start',
-	description: 'The first stream event after every prompt must be a turnStart',
+	description:
+		'The first stream event after every prompt sent while idle must be a turnStart',
 	test: (t) => {
 		const prompts = sends(t, 'prompt');
 		if (prompts.length === 0) return 'skip';
 		for (const p of prompts) {
 			const pIdx = t.indexOf(p);
-			const nextReceive = t
-				.slice(pIdx + 1)
-				.find((e) => e.direction === 'receive');
+			if (isTurnActiveAt(t, pIdx)) continue;
+			const nextReceive = nextReceiveAfter(t, pIdx);
 			if (!nextReceive || nextReceive.method !== 'turnStart') return 'fail';
 		}
 		return 'pass';
