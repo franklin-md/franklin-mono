@@ -46,11 +46,7 @@ export class FranklinApp {
 		persistDir?: string;
 	}) {
 		const { extensions, platform, persistDir } = opts;
-		this.auth = new AuthManager({
-			filesystem: platform.filesystem,
-			ai: platform.ai,
-			createFlow: (provider) => platform.createFlow(provider),
-		});
+		this.auth = new AuthManager(platform);
 		this.platform = platform;
 		this.settings = createSettings();
 

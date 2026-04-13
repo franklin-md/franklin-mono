@@ -3,6 +3,7 @@ import type { Filesystem } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthManager } from '../auth/manager.js';
 import { OAuthFlow } from '../auth/oauth-flow.js';
+import type { Platform } from '../platform.js';
 
 function createFilesystem(): Filesystem {
 	const files = new Map<string, Buffer>();
@@ -34,20 +35,39 @@ function createFilesystem(): Filesystem {
 	};
 }
 
+function createPlatform(
+	filesystem: Filesystem,
+	createFlow: Platform['createFlow'],
+): Platform {
+	return {
+		spawn: vi.fn(async () => {
+			throw new Error('not implemented');
+		}),
+		environment: vi.fn(async () => {
+			throw new Error('not implemented');
+		}),
+		filesystem,
+		ai: {
+			getOAuthProviders: async () => [],
+			getApiKeyProviders: async () => [],
+		},
+		createFlow,
+		openExternal: vi.fn(async () => {}),
+	};
+}
+
 describe('AuthManager', () => {
 	it('returns OAuth credentials from the platform flow without persisting them', async () => {
 		const filesystem = createFilesystem();
 		const credentials = {
 			accessToken: 'token',
 		} as unknown as OAuthCredentials;
-		const auth = new AuthManager({
-			filesystem,
-			ai: {
-				getOAuthProviders: async () => [],
-				getApiKeyProviders: async () => [],
-			},
-			createFlow: async () => new OAuthFlow(async () => credentials),
-		});
+		const auth = new AuthManager(
+			createPlatform(
+				filesystem,
+				async () => new OAuthFlow(async () => credentials),
+			),
+		);
 
 		const flow = await auth.flow('anthropic');
 		await expect(flow.login()).resolves.toBe(credentials);
@@ -60,14 +80,12 @@ describe('AuthManager', () => {
 		const credentials = {
 			accessToken: 'token',
 		} as unknown as OAuthCredentials;
-		const auth = new AuthManager({
-			filesystem,
-			ai: {
-				getOAuthProviders: async () => [],
-				getApiKeyProviders: async () => [],
-			},
-			createFlow: async () => new OAuthFlow(async () => credentials),
-		});
+		const auth = new AuthManager(
+			createPlatform(
+				filesystem,
+				async () => new OAuthFlow(async () => credentials),
+			),
+		);
 
 		await auth.setOAuthEntry('anthropic', {
 			type: 'oauth',
@@ -85,15 +103,12 @@ describe('AuthManager', () => {
 	});
 
 	it('emits auth change events for store mutations', async () => {
-		const auth = new AuthManager({
-			filesystem: createFilesystem(),
-			ai: {
-				getOAuthProviders: async () => [],
-				getApiKeyProviders: async () => [],
-			},
-			createFlow: async () =>
-				new OAuthFlow(async () => ({}) as OAuthCredentials),
-		});
+		const auth = new AuthManager(
+			createPlatform(
+				createFilesystem(),
+				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
+			),
+		);
 		const listener = vi.fn();
 		auth.onAuthChange(listener);
 

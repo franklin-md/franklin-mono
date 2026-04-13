@@ -1,5 +1,4 @@
 export { AuthManager } from './auth/manager.js';
-export { loginOAuth } from './auth/login.js';
 export { OAuthFlow } from './auth/oauth-flow.js';
 export type {
 	ApiKeyEntry,

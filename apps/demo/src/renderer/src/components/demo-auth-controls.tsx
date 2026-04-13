@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { loginOAuth } from '@franklin/agent/browser';
 import { useApp } from '@franklin/react';
 import { useAuthStore } from './ui/auth-context.js';
 import { AuthButton } from './ui/auth-button.js';
@@ -38,7 +37,7 @@ export function DemoAuthControls() {
 	}, [auth]);
 
 	const loginWithRefresh: OAuthLoginFn = async (providerId, callbacks) => {
-		await loginOAuth(providerId, auth, callbacks);
+		await auth.loginOAuth(providerId, callbacks);
 	};
 
 	return (

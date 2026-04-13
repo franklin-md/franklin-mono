@@ -1,3 +1,5 @@
+import type { OAuthLoginCallbacks } from '@mariozechner/pi-ai/oauth';
+
 import type {
 	ApiKeyEntry,
 	AuthChangeListener,
@@ -8,18 +10,12 @@ import type { OAuthFlow } from './oauth-flow.js';
 import type { Platform } from '../platform.js';
 import { AuthStore } from './store.js';
 
-type AuthDependencies = Pick<Platform, 'ai' | 'createFlow' | 'filesystem'>;
-
 export class AuthManager {
 	private readonly listeners = new Set<AuthChangeListener>();
 	private readonly store: AuthStore;
-	private readonly ai: AuthDependencies['ai'];
-	private readonly createFlowFn: AuthDependencies['createFlow'];
 
-	constructor(deps: AuthDependencies) {
-		this.store = new AuthStore(deps.filesystem);
-		this.ai = deps.ai;
-		this.createFlowFn = deps.createFlow;
+	constructor(private readonly platform: Platform) {
+		this.store = new AuthStore(platform.filesystem);
 		this.store.onChange(async (provider, entry) => {
 			for (const listener of this.listeners) {
 				await listener(provider, entry);
@@ -36,15 +32,46 @@ export class AuthManager {
 
 	// TODO Right place?
 	async getOAuthProviders(): Promise<{ id: string; name: string }[]> {
-		return await this.ai.getOAuthProviders();
+		return await this.platform.ai.getOAuthProviders();
 	}
 
 	async getApiKeyProviders(): Promise<string[]> {
-		return await this.ai.getApiKeyProviders();
+		return await this.platform.ai.getApiKeyProviders();
 	}
 
 	async flow(provider: string): Promise<OAuthFlow> {
-		return this.createFlowFn(provider);
+		return this.platform.createFlow(provider);
+	}
+
+	async loginOAuth(
+		provider: string,
+		callbacks: OAuthLoginCallbacks,
+	): Promise<void> {
+		const flow = await this.flow(provider);
+		const unsubAuth = flow.onAuth((info) => {
+			callbacks.onAuth(info);
+		});
+		const unsubProgress = flow.onProgress((message) => {
+			callbacks.onProgress?.(message);
+		});
+		const unsubPrompt = flow.onPrompt((prompt) => {
+			void callbacks.onPrompt(prompt).then((value) => {
+				return flow.respond(value);
+			});
+		});
+
+		try {
+			const credentials = await flow.login();
+			await this.setOAuthEntry(provider, {
+				type: 'oauth',
+				credentials,
+			});
+		} finally {
+			unsubAuth();
+			unsubProgress();
+			unsubPrompt();
+			await flow.dispose();
+		}
 	}
 
 	async load(): Promise<AuthFile> {
