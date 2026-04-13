@@ -2,6 +2,7 @@ import type {
 	ProxyRuntime,
 	ResourceBinding,
 	MethodHandler,
+	Transport,
 } from '@franklin/lib/proxy';
 import type { FranklinIpcRuntime } from '../../../shared/api.js';
 import { createPaths } from '../../../shared/paths.js';
@@ -28,7 +29,7 @@ export function createClientRuntime(
 			return (...args: unknown[]) => ipc.invoke(paths.forMethod(), ...args);
 		},
 
-		bindStream(): unknown {
+		bindStream(): Transport {
 			return createIpcStream(ipc, paths.forStream());
 		},
 

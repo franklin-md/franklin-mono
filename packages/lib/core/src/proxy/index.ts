@@ -42,10 +42,13 @@ export type {
 	ResourceBinding,
 	ServerResourceBinding,
 	ResourceLifecycle,
+} from './runtime.js';
+export type {
 	MethodHandler,
 	NotificationHandler,
 	EventHandler,
-} from './runtime.js';
+	Transport,
+} from './types.js';
 export { bindClient } from './bind/client/index.js';
 export { bindServer } from './bind/server/index.js';
 export { UnsupportedDescriptorError } from './bind/error.js';

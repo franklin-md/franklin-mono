@@ -9,13 +9,10 @@ import {
 } from '../proxy/descriptors/factories/index.js';
 import { bindServer } from '../proxy/bind/server/index.js';
 import { UnsupportedDescriptorError } from '../proxy/bind/error.js';
-import type {
-	EventHandler,
-	MethodHandler,
-	NotificationHandler,
-	ResourceLifecycle,
-	ServerRuntime,
-} from '../proxy/runtime.js';
+import type { ResourceLifecycle, ServerRuntime } from '../proxy/runtime.js';
+import type { EventHandler } from '../proxy/types.js';
+import type { NotificationHandler } from '../proxy/types.js';
+import type { MethodHandler } from '../proxy/types.js';
 
 function createMockRuntime(
 	overrides: Partial<ServerRuntime> = {},

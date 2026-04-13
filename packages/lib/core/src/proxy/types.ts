@@ -14,19 +14,14 @@ import type {
  */
 export type ProxyType<D extends Descriptor> =
 	D extends MethodDescriptor<infer TArgs, infer TResult>
-		? (...args: TArgs) => Promise<TResult>
+		? MethodHandler<TArgs, TResult>
 		: // TODO: I think Notification may just get delted (as its a method of void and is fire and foreget only if the caller doesn't bother awaiting)
 			D extends NotificationDescriptor<infer TArgs>
-			? (...args: TArgs) => Promise<void>
+			? NotificationHandler<TArgs>
 			: D extends EventDescriptor<infer TArgs, infer TItem>
-				? (...args: TArgs) => AsyncIterable<TItem>
+				? EventHandler<TArgs, TItem>
 				: D extends StreamDescriptor<infer R, infer W>
-					? {
-							readable: ReadableStream<R>;
-							writable: WritableStream<W>;
-							// TODO: Should not have.
-							close: () => Promise<void>;
-						}
+					? Transport<R, W>
 					: D extends NamespaceDescriptor<unknown, infer TShape>
 						? { [K in keyof TShape]: ProxyType<TShape[K]> }
 						: D extends ResourceDescriptor<infer TArgs, infer TInner>
@@ -36,3 +31,21 @@ export type ProxyType<D extends Descriptor> =
 									}
 								>
 							: never;
+
+// TODO: move these into types.ts and have the ProxyType in terms of these
+// TODO: These should be generic but default to unknown
+// TODO: we should use these elsewhere in the typing of Proxy and Impl etc
+
+export type MethodHandler<TArgs = unknown, TResult = unknown> = (
+	...args: TArgs[]
+) => Promise<TResult>;
+export type NotificationHandler<TArgs = unknown> = (
+	...args: TArgs[]
+) => Promise<void>;
+export type EventHandler<TArgs = unknown, TItem = unknown> = (
+	...args: TArgs[]
+) => AsyncIterable<TItem>;
+export type Transport<TRead = unknown, TWrite = TRead> = {
+	readable: ReadableStream<TRead>;
+	writable: WritableStream<TWrite>;
+};

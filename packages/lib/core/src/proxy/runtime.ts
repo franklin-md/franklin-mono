@@ -1,3 +1,14 @@
+// TODO: Feels like this is not right.
+// Connect should actually return the ProxyRuntime + a dispose function.
+
+import type {
+	MethodHandler,
+	NotificationHandler,
+	EventHandler,
+	Transport,
+} from './types.js';
+
+// Internally this comues out to the same flow,
 export interface ResourceBinding {
 	connect(...args: unknown[]): Promise<string>;
 	kill(id: string): Promise<void>;
@@ -14,20 +25,6 @@ export interface ResourceLifecycle {
 	kill(id: string): Promise<void>;
 }
 
-export interface ProxyRuntime {
-	bindNamespace(key: string): ProxyRuntime;
-
-	bindMethod?(): MethodHandler;
-
-	bindNotification?(): NotificationHandler;
-
-	bindEvent?(): EventHandler;
-
-	bindStream?(): unknown;
-
-	bindResource?(): ResourceBinding;
-}
-
 export interface ServerRuntime {
 	registerNamespace(key: string): ServerRuntime;
 
@@ -38,14 +35,21 @@ export interface ServerRuntime {
 	registerEvent?(handler: EventHandler): () => void;
 
 	// TODO: rename to registerTransport when stream() descriptor is renamed
-	registerStream?(transport: unknown): () => void;
+	registerStream?(transport: Transport): () => void;
 
 	registerResource?(lifecycle: ResourceLifecycle): ServerResourceBinding;
 }
 
-// TODO: move these into types.ts and have the ProxyType in terms of these
-// TODO: These should be generic but default to unknown
-// TODO: we should use these elsewhere in the typing of Proxy and Impl etc
-export type MethodHandler = (...args: unknown[]) => Promise<unknown>;
-export type NotificationHandler = (...args: unknown[]) => Promise<void>;
-export type EventHandler = (...args: unknown[]) => AsyncIterable<unknown>;
+export interface ProxyRuntime {
+	bindNamespace(key: string): ProxyRuntime;
+
+	bindMethod?(): MethodHandler;
+
+	bindNotification?(): NotificationHandler;
+
+	bindEvent?(): EventHandler;
+
+	bindStream?(): Transport;
+
+	bindResource?(): ResourceBinding;
+}

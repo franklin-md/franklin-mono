@@ -17,7 +17,7 @@ export function bindClient<D extends Descriptor>(
 	return buildDescriptor(descriptor, runtime) as ProxyType<D>;
 }
 
-function buildDescriptor(
+export function buildDescriptor(
 	descriptor: Descriptor,
 	runtime: ProxyRuntime,
 ): unknown {
@@ -34,13 +34,8 @@ function buildDescriptor(
 			return buildNamespace(
 				descriptor as NamespaceDescriptor<any, any>,
 				runtime,
-				buildDescriptor,
 			);
 		case 'resource':
-			return buildResource(
-				descriptor as ResourceDescriptor<any, any>,
-				runtime,
-				buildDescriptor,
-			);
+			return buildResource(descriptor as ResourceDescriptor<any, any>, runtime);
 	}
 }
