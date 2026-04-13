@@ -9,21 +9,21 @@
 	"scripts": {
 		"build": "tsc -b tsconfig.json",
 		"typecheck": "tsc -b tsconfig.json --pretty false",
-		"bundle": "node ./esbuild.config.mjs",
-		"dev": "node ./esbuild.config.mjs --watch"
+		"bundle": "node ./build/bundle.mjs",
+		"dev": "node ./build/bundle.mjs --watch"
 	},
 	"dependencies": {
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1"
 	},
 	"devDependencies": {
-		"@tailwindcss/postcss": "^4.1.4",
+		"@tailwindcss/vite": "^4.1.4",
 		"@types/react": "^18.3.20",
 		"@types/react-dom": "^18.3.7",
-		"esbuild": "^0.25.9",
+		"@vitejs/plugin-react": "^4.5.2",
 		"obsidian": "^1.8.10",
-		"postcss": "^8.5.3",
 		"postcss-prefix-selector": "^2.1.0",
-		"tailwindcss": "^4.1.4"
+		"tailwindcss": "^4.1.4",
+		"vite": "^6.3.5"
 	}
 }

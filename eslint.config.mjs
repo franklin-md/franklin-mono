@@ -15,6 +15,7 @@ export default tseslint.config(
 			'**/*.d.ts',
 			'**/*.tsbuildinfo',
 			'**/vitest.config.ts',
+			'**/vite.config.ts',
 			'**/electron.vite.config.ts',
 			'**/out/**',
 		],
