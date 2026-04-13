@@ -1,11 +1,11 @@
-import { AuthManager, type Platform } from '@franklin/agent/browser';
+import { OAuthFlow, type Platform } from '@franklin/agent/browser';
 import type { EnvironmentConfig } from '@franklin/extensions';
 import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { EnvironmentFilesystem } from './environment-filesystem.js';
 import { EnvironmentWeb } from './web.js';
 import { getProviders } from '@mariozechner/pi-ai';
-import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
+import { getOAuthProvider, getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import { createFolderScopedFilesystem } from '@franklin/lib';
 import os from 'node:os';
 import { SandboxedTerminal } from './sandboxed-terminal.js';
@@ -27,7 +27,6 @@ export function createNodePlatform(args: Args = {}): Platform {
 		},
 		getApiKeyProviders: async () => getProviders(),
 	};
-	const auth = new AuthManager({ filesystem, ai });
 
 	return {
 		spawn: async () => {
@@ -35,6 +34,13 @@ export function createNodePlatform(args: Args = {}): Platform {
 			return Object.assign(transport, { dispose: () => transport.close() });
 		},
 		ai,
+		createFlow: async (providerId: string) => {
+			const provider = getOAuthProvider(providerId);
+			if (!provider) {
+				throw new Error(`OAuth provider "${providerId}" not found`);
+			}
+			return new OAuthFlow((callbacks) => provider.login(callbacks));
+		},
 		environment: async (config: EnvironmentConfig) => {
 			const envFs = new EnvironmentFilesystem(
 				createNodeFilesystem(),
@@ -73,7 +79,6 @@ export function createNodePlatform(args: Args = {}): Platform {
 			};
 		},
 		filesystem,
-		auth,
 		openExternal,
 		// TODO: Sandbox
 	};

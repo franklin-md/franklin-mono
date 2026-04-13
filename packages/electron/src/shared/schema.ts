@@ -31,20 +31,9 @@ const authFlow = namespace({
 	login: method(),
 });
 
-const auth = namespace({
-	getOAuthProviders: method(),
-	getApiKeyProviders: method(),
-	load: method(),
-	getApiKey: method(),
-	setApiKeyEntry: method(),
-	removeApiKeyEntry: method(),
-	removeOAuthEntry: method(),
-	onAuthChange: on(),
-	flow: resource(authFlow),
-});
-
 export const schema = namespace({
 	spawn: resource(stream()),
+	createFlow: resource(authFlow),
 	environment: resource(
 		namespace({
 			filesystem: filesystem,
@@ -58,7 +47,6 @@ export const schema = namespace({
 		getOAuthProviders: method(),
 		getApiKeyProviders: method(),
 	}),
-	auth: auth,
 	filesystem: filesystem,
 	openExternal: method(),
 } satisfies NamespaceShape<Platform>);

@@ -3,7 +3,7 @@ import { createObserver } from '@franklin/lib';
 
 import type { IAuthFlow, OAuthAuthInfo, OAuthPrompt } from './types.js';
 
-export class OAuthFlow implements IAuthFlow {
+export class OAuthFlow<TResult = void> implements IAuthFlow<TResult> {
 	private authObserver = createObserver<[OAuthAuthInfo]>();
 	private progressObserver = createObserver<[string]>();
 	private promptObserver = createObserver<[OAuthPrompt]>();
@@ -13,12 +13,12 @@ export class OAuthFlow implements IAuthFlow {
 				reject(error: Error): void;
 		  }
 		| undefined;
-	private loginPromise: Promise<void> | null = null;
+	private loginPromise: Promise<TResult> | null = null;
 	private started = false;
 	private disposed = false;
 
 	constructor(
-		private readonly run: (callbacks: OAuthLoginCallbacks) => Promise<void>,
+		private readonly run: (callbacks: OAuthLoginCallbacks) => Promise<TResult>,
 	) {}
 
 	onAuth(listener: (info: OAuthAuthInfo) => void): () => void {
@@ -43,7 +43,7 @@ export class OAuthFlow implements IAuthFlow {
 		promptState.resolve(value);
 	}
 
-	async login(): Promise<void> {
+	async login(): Promise<TResult> {
 		if (this.disposed) {
 			throw new Error('OAuth flow has been disposed');
 		}

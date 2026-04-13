@@ -1,7 +1,7 @@
 import type { Filesystem } from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { EnvironmentFactory } from '@franklin/extensions';
-import type { AppAuth } from './auth/types.js';
+import type { PlatformAuthFlow } from './auth/types.js';
 
 // TODO: Is this right?
 type ProviderMeta = {
@@ -21,8 +21,8 @@ export interface Platform {
 		getApiKeyProviders: () => Promise<string[]>;
 	};
 
+	createFlow(provider: string): Promise<PlatformAuthFlow>;
 	filesystem: Filesystem;
-	auth: AppAuth;
 	// TODO: Group filesystem, openExternal, and similar host APIs under `os`.
 	openExternal(url: string): Promise<void>;
 

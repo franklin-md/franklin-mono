@@ -1,34 +1,30 @@
-import {
-	getOAuthProvider,
-	type OAuthLoginCallbacks,
-} from '@mariozechner/pi-ai/oauth';
-import type { Filesystem } from '@franklin/lib';
-
 import type {
 	ApiKeyEntry,
+	AppAuth,
 	AuthChangeListener,
 	AuthFile,
 	IAuthFlow,
 } from './types.js';
+import type { Platform } from '../platform.js';
 import { AuthStore } from './store.js';
-import { OAuthFlow } from './oauth-flow.js';
 
-interface AuthDependencies {
-	filesystem: Filesystem;
-	ai: {
-		getOAuthProviders(): Promise<{ id: string; name: string }[]>;
-		getApiKeyProviders(): Promise<string[]>;
-	};
-}
+type AuthDependencies = Pick<Platform, 'ai' | 'createFlow' | 'filesystem'>;
 
-export class AuthManager {
+export class AuthManager implements AppAuth {
 	private readonly listeners = new Set<AuthChangeListener>();
 	private readonly store: AuthStore;
 	private readonly ai: AuthDependencies['ai'];
+	private readonly createFlowFn: AuthDependencies['createFlow'];
 
 	constructor(deps: AuthDependencies) {
 		this.store = new AuthStore(deps.filesystem);
 		this.ai = deps.ai;
+		this.createFlowFn = deps.createFlow;
+		this.store.onChange(async (provider) => {
+			for (const listener of this.listeners) {
+				await listener(provider);
+			}
+		});
 	}
 
 	onAuthChange(listener: AuthChangeListener): () => void {
@@ -48,7 +44,21 @@ export class AuthManager {
 	}
 
 	async flow(provider: string): Promise<IAuthFlow> {
-		return new OAuthFlow((callbacks) => this.loginOAuth(provider, callbacks));
+		const flow = await this.createFlowFn(provider);
+		return {
+			onAuth: (listener) => flow.onAuth(listener),
+			onProgress: (listener) => flow.onProgress(listener),
+			onPrompt: (listener) => flow.onPrompt(listener),
+			respond: (value) => flow.respond(value),
+			login: async () => {
+				const credentials = await flow.login();
+				await this.store.setOAuthEntry(provider, {
+					type: 'oauth',
+					credentials,
+				});
+			},
+			dispose: () => flow.dispose(),
+		};
 	}
 
 	async load(): Promise<AuthFile> {
@@ -61,40 +71,13 @@ export class AuthManager {
 
 	async setApiKeyEntry(provider: string, entry: ApiKeyEntry): Promise<void> {
 		await this.store.setApiKeyEntry(provider, entry);
-		await this.notify(provider);
 	}
 
 	async removeApiKeyEntry(provider: string): Promise<void> {
 		await this.store.removeApiKeyEntry(provider);
-		await this.notify(provider);
 	}
 
 	async removeOAuthEntry(provider: string): Promise<void> {
 		await this.store.removeOAuthEntry(provider);
-		await this.notify(provider);
-	}
-
-	private async loginOAuth(
-		provider: string,
-		callbacks: OAuthLoginCallbacks,
-	): Promise<void> {
-		// Rely on platform to do this.
-		const oauthProvider = getOAuthProvider(provider);
-		if (!oauthProvider) {
-			throw new Error(`OAuth provider "${provider}" not found`);
-		}
-		const credentials = await oauthProvider.login(callbacks);
-		await this.store.setOAuthEntry(provider, {
-			type: 'oauth',
-			credentials,
-		});
-		await this.notify(provider);
-	}
-
-	private async notify(provider: string): Promise<void> {
-		const authKey = await this.store.getApiKey(provider);
-		for (const listener of this.listeners) {
-			await listener(provider, authKey);
-		}
 	}
 }

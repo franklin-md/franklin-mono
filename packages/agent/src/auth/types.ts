@@ -26,10 +26,7 @@ export type AuthEntry = {
 /** Shape of the on-disk auth file. Keyed by provider ID (e.g. `"anthropic"`). */
 export type AuthFile = Record<string, AuthEntry>;
 
-export type AuthChangeListener = (
-	provider: string,
-	authKey: string | undefined,
-) => void | Promise<void>;
+export type AuthChangeListener = (provider: string) => void | Promise<void>;
 
 export type OAuthAuthInfo = {
 	url: string;
@@ -42,22 +39,21 @@ export type OAuthPrompt = {
 	allowEmpty?: boolean;
 };
 
-export interface IAuthFlow {
+export interface IAuthFlow<TResult = void> {
 	onAuth(listener: (info: OAuthAuthInfo) => void): () => void;
 	onProgress(listener: (message: string) => void): () => void;
 	onPrompt(listener: (prompt: OAuthPrompt) => void): () => void;
 	respond(value: string): Promise<void>;
-	login(): Promise<void>;
+	login(): Promise<TResult>;
 	dispose(): Promise<void>;
 }
 
+export type PlatformAuthFlow = IAuthFlow<OAuthCredentials>;
+
 /**
  * App-facing auth surface.
- *
- * The Node.js app owns a concrete `AuthManager`, while the Electron renderer
- * talks to this same surface through the platform proxy.
  */
-export type AppAuth = {
+export interface AppAuth {
 	load(): Promise<AuthFile>;
 	getApiKey(provider: string): Promise<string | undefined>;
 	setApiKeyEntry(provider: string, entry: ApiKeyEntry): Promise<void>;
@@ -67,4 +63,4 @@ export type AppAuth = {
 	flow(provider: string): Promise<IAuthFlow>;
 	getOAuthProviders(): Promise<{ id: string; name: string }[]>;
 	getApiKeyProviders(): Promise<string[]>;
-};
+}

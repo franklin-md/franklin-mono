@@ -67,7 +67,8 @@ export function syncAuth(
 	getSessions: () => FranklinRuntime[],
 	auth: RuntimeAuth,
 ): void {
-	auth.onAuthChange(async (provider, authKey) => {
+	auth.onAuthChange(async (provider) => {
+		const authKey = await auth.getApiKey(provider);
 		const updates: Promise<unknown>[] = [];
 
 		for (const runtime of getSessions()) {

@@ -20,24 +20,14 @@ vi.mock('electron', () => ({
 
 const noop = async () => {};
 
-function createAuth() {
+async function createFlow() {
 	return {
-		load: async () => ({}),
-		getApiKey: async () => undefined,
-		setApiKeyEntry: async () => {},
-		removeApiKeyEntry: async () => {},
-		removeOAuthEntry: async () => {},
-		onAuthChange: () => () => {},
-		flow: async () => ({
-			onAuth: () => () => {},
-			onProgress: () => () => {},
-			onPrompt: () => () => {},
-			respond: async () => {},
-			login: async () => {},
-			dispose: async () => {},
-		}),
-		getOAuthProviders: async () => [],
-		getApiKeyProviders: async () => [],
+		onAuth: () => () => {},
+		onProgress: () => () => {},
+		onPrompt: () => () => {},
+		respond: async () => {},
+		login: async () => ({}),
+		dispose: async () => {},
 	};
 }
 
@@ -111,7 +101,7 @@ describe('initializeMain', () => {
 				getOAuthProviders: async () => [],
 				getApiKeyProviders: async () => [],
 			},
-			auth: createAuth(),
+			createFlow,
 			openExternal: async () => {},
 		};
 
@@ -127,10 +117,10 @@ describe('initializeMain', () => {
 			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:spawn:connect`),
 		).toBe(true);
 		expect(
-			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:auth:getApiKey`),
+			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:ai:getOAuthProviders`),
 		).toBe(true);
 		expect(
-			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:auth:flow:connect`),
+			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:createFlow:connect`),
 		).toBe(true);
 		expect(
 			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:openExternal`),

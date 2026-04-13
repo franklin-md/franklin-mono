@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
 	isNamespaceDescriptor,
-	isOnDescriptor,
 	isResourceDescriptor,
 	isStreamDescriptor,
 } from '@franklin/lib/proxy';
@@ -40,34 +39,32 @@ describe('schema', () => {
 			'franklin:environment:lease:env-1:filesystem:readFile',
 		);
 
-		// Auth flow resource and on() subscription channels
-		expect(`${prefix}:auth:flow:connect`).toBe('franklin:auth:flow:connect');
-		expect(`${prefix}:auth:onAuthChange:on:subscribe`).toBe(
-			'franklin:auth:onAuthChange:on:subscribe',
-		);
+		// OAuth flow resource channels
+		expect(`${prefix}:createFlow:connect`).toBe('franklin:createFlow:connect');
 		const flowId = 'flow-1';
-		expect(`${prefix}:auth:flow:lease:${flowId}:onProgress:on:subscribe`).toBe(
-			'franklin:auth:flow:lease:flow-1:onProgress:on:subscribe',
+		expect(`${prefix}:createFlow:lease:${flowId}:onProgress:on:subscribe`).toBe(
+			'franklin:createFlow:lease:flow-1:onProgress:on:subscribe',
 		);
 	});
 
-	it('captures environment, spawn, and auth flow as proxy descriptors', () => {
+	it('captures environment, spawn, and createFlow as proxy descriptors', () => {
 		const spawn = schema.shape.spawn;
+		const createFlow = schema.shape.createFlow;
 		const environment = schema.shape.environment;
-		const auth = schema.shape.auth;
 		expect(spawn).toBeDefined();
+		expect(createFlow).toBeDefined();
 		expect(environment).toBeDefined();
-		expect(auth).toBeDefined();
 		expect(isResourceDescriptor(spawn) && isStreamDescriptor(spawn.inner)).toBe(
 			true,
 		);
 		expect(
+			isResourceDescriptor(createFlow) &&
+				isNamespaceDescriptor(createFlow.inner),
+		).toBe(true);
+		expect(
 			isResourceDescriptor(environment) &&
 				isNamespaceDescriptor(environment.inner),
 		).toBe(true);
-		expect(isNamespaceDescriptor(auth)).toBe(true);
-		expect(isOnDescriptor(auth.shape.onAuthChange)).toBe(true);
-		expect(isResourceDescriptor(auth.shape.flow)).toBe(true);
 		expect(isNamespaceDescriptor(schema)).toBe(true);
 	});
 });

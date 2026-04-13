@@ -18,6 +18,8 @@ import {
 } from '../settings/store.js';
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
+import { AuthManager } from '../auth/manager.js';
+import type { AppAuth } from '../auth/types.js';
 import type {
 	BaseSystem,
 	FranklinState,
@@ -27,7 +29,7 @@ import type {
 import { createAgents, type Agents } from './agents.js';
 
 export class FranklinApp {
-	readonly auth: Platform['auth'];
+	readonly auth: AppAuth;
 	readonly settings: SettingsStore;
 	readonly agents: Agents;
 	readonly platform: Platform;
@@ -45,7 +47,11 @@ export class FranklinApp {
 		persistDir?: string;
 	}) {
 		const { extensions, platform, persistDir } = opts;
-		this.auth = platform.auth;
+		this.auth = new AuthManager({
+			filesystem: platform.filesystem,
+			ai: platform.ai,
+			createFlow: (provider) => platform.createFlow(provider),
+		});
 		this.platform = platform;
 		this.settings = createSettings();
 

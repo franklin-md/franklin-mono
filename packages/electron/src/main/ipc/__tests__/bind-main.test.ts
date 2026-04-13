@@ -96,24 +96,14 @@ function createTransportSpy(): {
 	};
 }
 
-function createAuth() {
+async function createFlow() {
 	return {
-		load: async () => ({}),
-		getApiKey: async () => undefined,
-		setApiKeyEntry: async () => {},
-		removeApiKeyEntry: async () => {},
-		removeOAuthEntry: async () => {},
-		onAuthChange: () => () => {},
-		flow: async () => ({
-			onAuth: () => () => {},
-			onProgress: () => () => {},
-			onPrompt: () => () => {},
-			respond: async () => {},
-			login: async () => {},
-			dispose: async () => {},
-		}),
-		getOAuthProviders: async () => [],
-		getApiKeyProviders: async () => [],
+		onAuth: () => () => {},
+		onProgress: () => () => {},
+		onPrompt: () => () => {},
+		respond: async () => {},
+		login: async () => ({}),
+		dispose: async () => {},
 	};
 }
 
@@ -165,7 +155,7 @@ describe('bindMain', () => {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				auth: createAuth(),
+				createFlow,
 				openExternal: async () => {},
 			},
 			createWebContents(1),
@@ -225,7 +215,7 @@ describe('bindMain', () => {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				auth: createAuth(),
+				createFlow,
 				openExternal: async () => {},
 			},
 			createWebContents(1),
@@ -325,7 +315,7 @@ describe('bindMain', () => {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				auth: createAuth(),
+				createFlow,
 				openExternal: async () => {},
 			},
 			createWebContents(1),
@@ -503,7 +493,7 @@ describe('bindMain', () => {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				auth: createAuth(),
+				createFlow,
 				openExternal: async () => {},
 			},
 			createWebContents(1),

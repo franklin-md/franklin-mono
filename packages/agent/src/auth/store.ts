@@ -12,6 +12,8 @@ import type { ApiKeyEntry, AuthFile, OAuthEntry } from './types.js';
 
 const DEFAULT_AUTH_PATH = 'auth.json';
 
+type AuthStoreChangeListener = (provider: string) => void | Promise<void>;
+
 // ---------------------------------------------------------------------------
 // AuthStore
 // ---------------------------------------------------------------------------
@@ -28,8 +30,17 @@ const DEFAULT_AUTH_PATH = 'auth.json';
  */
 export class AuthStore {
 	private readonly filesystem: Filesystem;
+	private readonly listeners = new Set<AuthStoreChangeListener>();
+
 	constructor(filesystem: Filesystem) {
 		this.filesystem = filesystem;
+	}
+
+	onChange(listener: AuthStoreChangeListener): () => void {
+		this.listeners.add(listener);
+		return () => {
+			this.listeners.delete(listener);
+		};
 	}
 
 	// -------------------------------------------------------------------------
@@ -65,6 +76,7 @@ export class AuthStore {
 			data[provider] = { apiKey: entry };
 		}
 		await this.save(data);
+		await this.notify(provider);
 	}
 
 	async setOAuthEntry(provider: string, entry: OAuthEntry): Promise<void> {
@@ -75,6 +87,7 @@ export class AuthStore {
 			data[provider] = { oauth: entry };
 		}
 		await this.save(data);
+		await this.notify(provider);
 	}
 
 	async removeApiKeyEntry(provider: string): Promise<void> {
@@ -86,6 +99,7 @@ export class AuthStore {
 				delete data[provider];
 			}
 			await this.save(data);
+			await this.notify(provider);
 		}
 	}
 
@@ -98,6 +112,7 @@ export class AuthStore {
 				delete data[provider];
 			}
 			await this.save(data);
+			await this.notify(provider);
 		}
 	}
 
@@ -129,15 +144,26 @@ export class AuthStore {
 			const result = await getOAuthApiKey(provider, credMap);
 			if (!result) return undefined;
 
-			// Always persist newCredentials — getOAuthApiKey may have refreshed the token.
-			await this.setOAuthEntry(provider, {
-				type: 'oauth',
-				credentials: result.newCredentials,
-			});
+			if (!sameCredentials(entry.oauth.credentials, result.newCredentials)) {
+				await this.setOAuthEntry(provider, {
+					type: 'oauth',
+					credentials: result.newCredentials,
+				});
+			}
 
 			return result.apiKey;
 		}
 
 		return entry.apiKey?.key;
 	}
+
+	private async notify(provider: string): Promise<void> {
+		for (const listener of this.listeners) {
+			await listener(provider);
+		}
+	}
+}
+
+function sameCredentials(a: OAuthCredentials, b: OAuthCredentials): boolean {
+	return JSON.stringify(a) === JSON.stringify(b);
 }

@@ -16,7 +16,7 @@ import type { FranklinRuntime } from '../types.js';
 // ---------------------------------------------------------------------------
 
 function mockAuthManager(
-	providers: Record<string, string> = {},
+	providers: Record<string, string | undefined> = {},
 ): Pick<AppAuth, 'load' | 'getApiKey' | 'onAuthChange'> {
 	return {
 		load: vi.fn(async () => {
@@ -25,7 +25,8 @@ function mockAuthManager(
 				{ apiKey?: { type: 'apiKey'; key: string } }
 			> = {};
 			for (const p of Object.keys(providers)) {
-				entries[p] = { apiKey: { type: 'apiKey', key: providers[p]! } };
+				if (!providers[p]) continue;
+				entries[p] = { apiKey: { type: 'apiKey', key: providers[p] } };
 			}
 			return entries;
 		}),
@@ -356,7 +357,8 @@ function mockFranklinRuntime(provider?: string): FranklinRuntime {
 describe('syncAuth', () => {
 	function setup() {
 		let captured: AuthChangeListener | undefined;
-		const auth = mockAuthManager();
+		const providers: Record<string, string | undefined> = {};
+		const auth = mockAuthManager(providers);
 		(auth.onAuthChange as ReturnType<typeof vi.fn>).mockImplementation(
 			(listener: AuthChangeListener) => {
 				captured = listener;
@@ -369,7 +371,8 @@ describe('syncAuth', () => {
 		syncAuth(() => [...runtimes], auth);
 
 		function fireAuthChange(provider: string, key: string | undefined) {
-			return captured!(provider, key);
+			providers[provider] = key;
+			return captured!(provider);
 		}
 
 		function addRuntime(runtime: FranklinRuntime) {
