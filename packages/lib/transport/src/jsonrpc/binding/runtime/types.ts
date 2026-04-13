@@ -30,6 +30,7 @@ export interface ServerBindingState {
 
 export interface ClientBindingState {
 	send: (message: JsonRpcMessage) => void;
+	nextId: number;
 	pendingRequests: Map<number, PendingRequest>;
 	pendingStreams: Map<number, AsyncEventQueue<unknown>>;
 }

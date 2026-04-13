@@ -20,12 +20,17 @@ type RegisteredHandler =
 
 export class JsonRpcServerRuntime implements IServerRuntime {
 	private readonly state: ServerBindingState;
-	private readonly handlers = new Map<string, RegisteredHandler>();
+	private readonly handlers: Map<string, RegisteredHandler>;
+	private readonly prefix: string;
 
 	constructor(
 		send: (message: JsonRpcMessage) => void,
 		onError: (error: unknown) => void,
+		prefix?: string,
+		handlers?: Map<string, RegisteredHandler>,
 	) {
+		this.prefix = prefix ?? '';
+		this.handlers = handlers ?? new Map();
 		this.state = {
 			send,
 			onError,
@@ -33,24 +38,34 @@ export class JsonRpcServerRuntime implements IServerRuntime {
 		};
 	}
 
-	registerMethod(path: string[], handler: MethodHandler): () => void {
-		const name = path.join('/');
+	registerNamespace(key: string): IServerRuntime {
+		const childPrefix = this.prefix ? `${this.prefix}/${key}` : key;
+		return new JsonRpcServerRuntime(
+			this.state.send,
+			this.state.onError,
+			childPrefix,
+			this.handlers,
+		);
+	}
+
+	registerMethod(handler: MethodHandler): () => void {
+		const name = this.prefix;
 		this.handlers.set(name, { kind: 'request', handler });
 		return () => {
 			this.handlers.delete(name);
 		};
 	}
 
-	registerNotification(path: string[], handler: NotificationHandler): () => void {
-		const name = path.join('/');
+	registerNotification(handler: NotificationHandler): () => void {
+		const name = this.prefix;
 		this.handlers.set(name, { kind: 'notification', handler });
 		return () => {
 			this.handlers.delete(name);
 		};
 	}
 
-	registerEvent(path: string[], handler: EventHandler): () => void {
-		const name = path.join('/');
+	registerEvent(handler: EventHandler): () => void {
+		const name = this.prefix;
 		this.handlers.set(name, { kind: 'event', handler });
 		return () => {
 			this.handlers.delete(name);
