@@ -9,6 +9,9 @@ import type { ServerRuntime } from '../../runtime.js';
 import { requireCapability } from '../require.js';
 import { bindNode } from './index.js';
 
+// TODO(FRA-156): Remove once Duplex.close is renamed to dispose
+type CloseableLike = { close(): Promise<void> };
+
 export function bindResource(
 	descriptor: ResourceDescriptor<any, any>,
 	value: unknown,
@@ -24,6 +27,7 @@ export function bindResource(
 	const factory: ResourceFactory = async (...args: unknown[]) => {
 		const instance = await (value as MethodHandler).call(parent, ...args);
 		const disposable = instance as DisposableLike;
+		const closeable = instance as CloseableLike;
 		return {
 			bind(innerRuntime: ServerRuntime) {
 				return bindNode(
@@ -36,6 +40,8 @@ export function bindResource(
 			dispose:
 				typeof disposable.dispose === 'function'
 					? () => disposable.dispose()
+					: typeof closeable.close === 'function'
+						? () => closeable.close()
 					: async () => {},
 		};
 	};

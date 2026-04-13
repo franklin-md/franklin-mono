@@ -307,6 +307,33 @@ describe('bindServer', () => {
 		expect(dispose).toHaveBeenCalledOnce();
 	});
 
+	it('resource lifecycle closes stream-like instances without dispose', async () => {
+		const close = vi.fn();
+		const factory = vi.fn().mockResolvedValue({
+			readable: 'r',
+			writable: 'w',
+			close,
+		});
+
+		const innerRuntime = createMockRuntime({
+			registerTransport: vi.fn().mockReturnValue(vi.fn()),
+		});
+		const mock = createResourceMockRuntime(innerRuntime);
+		const runtime = createMockRuntime({
+			registerNamespace: vi.fn().mockReturnValue(mock.spawnRuntime),
+		});
+
+		bindServer(
+			namespace({ spawn: resource(stream()) }),
+			{ spawn: factory } as never,
+			runtime,
+		);
+
+		const id = await mock.connect();
+		await mock.kill(id);
+		expect(close).toHaveBeenCalledOnce();
+	});
+
 	it('resource kill unregisters inner bindings', async () => {
 		const innerUnregister = vi.fn();
 		const factory = vi.fn().mockResolvedValue({ readable: 'r', writable: 'w' });

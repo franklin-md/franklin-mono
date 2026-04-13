@@ -32,10 +32,6 @@ export type ProxyType<D extends Descriptor> =
 								>
 							: never;
 
-// TODO: move these into types.ts and have the ProxyType in terms of these
-// TODO: These should be generic but default to unknown
-// TODO: we should use these elsewhere in the typing of Proxy and Impl etc
-
 export type MethodHandler<
 	TArgs extends unknown[] = unknown[],
 	TResult = unknown,

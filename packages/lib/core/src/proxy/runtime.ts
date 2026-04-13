@@ -6,7 +6,9 @@ import type {
 } from './types.js';
 import type { ResourceBinding, ResourceFactory } from './resource.js';
 
+// TODO: registerNamespace etc should be optional too
 export interface ServerRuntime {
+	// The key for the field within the namespace
 	registerNamespace(key: string): ServerRuntime;
 
 	registerMethod?(handler: MethodHandler): () => void;
@@ -22,6 +24,7 @@ export interface ServerRuntime {
 }
 
 export interface ProxyRuntime {
+	// The key for the field within the namespace
 	bindNamespace(key: string): ProxyRuntime;
 
 	bindMethod?(): MethodHandler;
