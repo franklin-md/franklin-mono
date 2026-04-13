@@ -47,9 +47,8 @@ describe('initializeMain', () => {
 
 	it('registers platform proxy handlers under the shared proxy namespace', async () => {
 		const { initializeMain } = await import('../index.js');
-		const { FRANKLIN_PROXY_CHANNEL_NAMESPACE } = await import(
-			'../../shared/channels.js'
-		);
+		const { FRANKLIN_PROXY_CHANNEL_NAMESPACE } =
+			await import('../../shared/channels.js');
 
 		const platform = {
 			spawn: async () => ({

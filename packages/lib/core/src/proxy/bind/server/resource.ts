@@ -42,7 +42,7 @@ export function bindResource(
 					? () => disposable.dispose()
 					: typeof closeable.close === 'function'
 						? () => closeable.close()
-					: async () => {},
+						: async () => {},
 		};
 	};
 

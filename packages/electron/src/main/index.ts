@@ -15,5 +15,10 @@ export function initializeMain(
 	platform: Platform,
 ): MainHandle {
 	new AuthRelay(webContents, new AuthManager(platform));
-	return bindMain(FRANKLIN_PROXY_CHANNEL_NAMESPACE, schema, platform, webContents);
+	return bindMain(
+		FRANKLIN_PROXY_CHANNEL_NAMESPACE,
+		schema,
+		platform,
+		webContents,
+	);
 }
