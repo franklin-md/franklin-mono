@@ -1,9 +1,9 @@
 import {
+	Bot,
 	FileText,
 	FilePlus,
 	Pencil,
 	FolderSearch,
-	GitBranch,
 	Globe,
 	ListPlus,
 	ListChecks,
@@ -45,7 +45,7 @@ export const toolRegistry = createToolRendererRegistry([
 			return a.url;
 		}
 	}),
-	['spawn', iconEntry(GitBranch, 'Spawn agent')],
+	['spawn', iconEntry(Bot, 'Spawn agent')],
 	toolEntry(todoExtension.tools.addTodo, ListPlus, 'Add todo', (a) => a.text),
 	toolEntry(todoExtension.tools.completeTodo, ListChecks, 'Complete todo'),
 	toolEntry(todoExtension.tools.listTodos, List, 'List todos'),

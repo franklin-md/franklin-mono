@@ -1,16 +1,22 @@
 import { useCallback, useRef, useSyncExternalStore } from 'react';
 
-import type { Session } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { Session } from '@franklin/extensions';
 
 import { useApp } from './franklin-context.js';
 
-function hasSameOrderedSessions(prev: Session[], next: Session[]): boolean {
+function sameSessions(
+	prev: Session<FranklinRuntime>[],
+	next: Session<FranklinRuntime>[],
+): boolean {
 	if (prev.length !== next.length) {
 		return false;
 	}
 
 	for (let i = 0; i < prev.length; i++) {
-		if (prev[i] !== next[i]) {
+		const p = prev[i];
+		const n = next[i];
+		if (p?.id !== n?.id || p?.runtime !== n?.runtime) {
 			return false;
 		}
 	}
@@ -25,26 +31,22 @@ function hasSameOrderedSessions(prev: Session[], next: Session[]): boolean {
  * added or removed — mutations within a session (stores, history) do not
  * trigger re-renders here.
  */
-export function useSessions(): Session[] {
+export function useSessions(): Session<FranklinRuntime>[] {
 	const manager = useApp().agents;
-	const snapshotRef = useRef<Session[] | null>(null);
+	const snapshotRef = useRef<Session<FranklinRuntime>[] | null>(null);
 
 	const subscribe = useCallback(
 		(cb: () => void) => manager.subscribe(cb),
 		[manager],
 	);
 
-	// Stable Snapshots. Manager.list() returns a fresh array on every call
-	// But if the elements have not changed (i.e. same set of references), we can return the previous snapshot.
-
 	const getSnapshot = useCallback(() => {
 		const next = manager.list();
 		const prev = snapshotRef.current;
 
-		// SessionManager.list() returns a fresh array on every call, even when
-		// the ordered session list itself has not changed. useSyncExternalStore
-		// requires getSnapshot() to reuse the previous reference in that case.
-		if (prev && hasSameOrderedSessions(prev, next)) {
+		// agents.list() returns a fresh array on every call. Reuse the previous
+		// snapshot when the runtime references are stable.
+		if (prev && sameSessions(prev, next)) {
 			return prev;
 		}
 

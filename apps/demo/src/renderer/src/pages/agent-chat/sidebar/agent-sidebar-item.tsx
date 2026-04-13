@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import { createStatusControl, statusExtension } from '@franklin/extensions';
 import { useAgentState } from '@franklin/react';
+import type { AgentItemProps } from '@franklin/react';
 
 import { SidebarItem } from './sidebar-item.js';
 
@@ -11,15 +12,10 @@ function truncateId(id: string): string {
 
 export function AgentSidebarItem({
 	sessionId,
-	active,
+	isActive,
 	onSelect,
-	onDelete,
-}: {
-	sessionId: string;
-	active: boolean;
-	onSelect: (sessionId: string) => void;
-	onDelete: (sessionId: string) => void;
-}) {
+	onRemove,
+}: AgentItemProps) {
 	const statusStore = useAgentState(statusExtension.keys.status);
 	const status = statusStore.get();
 	const control = useMemo(
@@ -31,12 +27,12 @@ export function AgentSidebarItem({
 		<SidebarItem
 			name={truncateId(sessionId)}
 			status={status}
-			active={active}
+			active={isActive}
 			onClick={() => {
 				control.markRead();
-				onSelect(sessionId);
+				onSelect();
 			}}
-			onDelete={() => onDelete(sessionId)}
+			onDelete={onRemove}
 		/>
 	);
 }

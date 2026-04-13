@@ -1,3 +1,4 @@
+import type { Simplify } from '@franklin/lib';
 import type { RuntimeBase } from './types.js';
 
 export type MergedRuntime<
@@ -5,9 +6,11 @@ export type MergedRuntime<
 	S2,
 	RT1 extends RuntimeBase<S1>,
 	RT2 extends RuntimeBase<S2>,
-> = RuntimeBase<S1 & S2> &
-	Omit<RT1, keyof RuntimeBase<S1>> &
-	Omit<RT2, keyof RuntimeBase<S2>>;
+> = Simplify<
+	RuntimeBase<S1 & S2> &
+		Omit<RT1, keyof RuntimeBase<S1>> &
+		Omit<RT2, keyof RuntimeBase<S2>>
+>;
 
 export function mergeRuntimes<
 	S1,
@@ -15,8 +18,6 @@ export function mergeRuntimes<
 	S2,
 	RT2 extends RuntimeBase<S2>,
 >(rt1: RT1, rt2: RT2): MergedRuntime<S1, S2, RT1, RT2> {
-	type CR = MergedRuntime<S1, S2, RT1, RT2>;
-
 	return {
 		...rt1,
 		...rt2,
@@ -32,5 +33,5 @@ export function mergeRuntimes<
 				unsub2();
 			};
 		},
-	} as CR;
+	};
 }

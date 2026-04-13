@@ -8,6 +8,16 @@ export {
 } from './agent/franklin-context.js';
 export { useAgentState } from './agent/use-agent-state.js';
 export { useSessions } from './agent/use-sessions.js';
+export {
+	AgentsProvider,
+	useAgents,
+	type AgentsControl,
+} from './agent/agents-context.js';
+export {
+	AgentList,
+	type AgentListComponents,
+	type AgentItemProps,
+} from './agent/agent-list.js';
 export { useSettings } from './agent/use-settings.js';
 export {
 	useModelSelection,

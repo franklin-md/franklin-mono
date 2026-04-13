@@ -6,7 +6,8 @@
 		"lib": ["ES2023", "DOM"],
 		"composite": true,
 		"declaration": true,
-		"declarationMap": true
+		"declarationMap": true,
+		"jsx": "react-jsx"
 	},
-	"include": ["src/**/*.ts"]
+	"include": ["src/**/*.ts", "src/**/*.tsx"]
 }

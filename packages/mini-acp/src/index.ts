@@ -76,9 +76,14 @@ export {
 export {
 	createClientConnection,
 	createAgentConnection,
+	debugMiniACP,
 	createSessionAdapter,
 	CtxTracker,
 	trackAgent,
 	trackTurn,
 	trackClient,
 } from './protocol/index.js';
+
+// Utils
+export type { CollectResult } from './utils/collect.js';
+export { collect } from './utils/collect.js';

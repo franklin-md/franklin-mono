@@ -1,0 +1,65 @@
+/*
+ * Obsidian → Franklin token bridge
+ *
+ * Maps Obsidian's CSS custom properties to the intermediate variable names
+ * used by the shared Franklin UI. These are the same var names that the demo
+ * app defines in :root — but here they resolve to Obsidian theme values
+ * so the UI automatically adapts to light/dark and community themes.
+ *
+ * Scoped to .franklin so we never pollute the global namespace.
+ * The view mounts its React root inside a container with this class.
+ *
+ * Reference: https://docs.obsidian.md/Reference/CSS+variables/CSS+variables
+ */
+
+.franklin {
+	/* ── Backgrounds ────────────────────────────────────────── */
+	--background: var(--background-primary);
+	--foreground: var(--text-normal);
+
+	--card: var(--background-primary);
+	--card-foreground: var(--text-normal);
+
+	--popover: var(--background-primary);
+	--popover-foreground: var(--text-normal);
+
+	--secondary: var(--background-secondary);
+	--secondary-foreground: var(--text-normal);
+
+	--muted: var(--background-secondary);
+	--muted-foreground: var(--text-muted);
+
+	--accent: var(--background-primary-alt);
+	--accent-foreground: var(--text-normal);
+
+	/* ── Interactive / primary ──────────────────────────────── */
+	--primary: var(--interactive-accent);
+	--primary-foreground: var(--text-on-accent);
+
+	--destructive: var(--background-modifier-error);
+
+	/* ── Borders & inputs ──────────────────────────────────── */
+	--border: var(--background-modifier-border);
+	--input: var(--background-modifier-border);
+	--ring: var(--interactive-accent);
+
+	/* ── Charts (map to Obsidian's semantic accent colors) ── */
+	--chart-1: var(--color-red);
+	--chart-2: var(--color-blue);
+	--chart-3: var(--color-green);
+	--chart-4: var(--color-yellow);
+	--chart-5: var(--color-purple);
+
+	/* ── Sidebar (reuse primary/secondary) ─────────────────── */
+	--sidebar: var(--background-secondary);
+	--sidebar-foreground: var(--text-normal);
+	--sidebar-primary: var(--interactive-accent);
+	--sidebar-primary-foreground: var(--text-on-accent);
+	--sidebar-accent: var(--background-secondary-alt);
+	--sidebar-accent-foreground: var(--text-normal);
+	--sidebar-border: var(--background-modifier-border);
+	--sidebar-ring: var(--interactive-accent);
+
+	/* ── Radius ─────────────────────────────────────────────── */
+	--radius: var(--radius-m);
+}

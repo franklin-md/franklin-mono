@@ -1,3 +1,4 @@
+import type { Simplify } from '@franklin/lib';
 import type { Compiler } from '../compile/types.js';
 import type { RuntimeBase } from '../runtime/types.js';
 import type { MergedRuntime } from '../runtime/combine.js';
@@ -15,18 +16,37 @@ export type RuntimeSystem<
 // Inference helpers — extract type parameters from a RuntimeSystem or Runtime
 // ---------------------------------------------------------------------------
 
-export type InferState<T> =
-	T extends RuntimeSystem<infer S, any, any>
-		? S
+type InferSystem<T> =
+	T extends RuntimeSystem<
+		infer S extends Record<string, unknown>,
+		infer API,
+		infer RT
+	>
+		? RT extends RuntimeBase<S>
+			? {
+					state: S;
+					api: API;
+					runtime: RT;
+				}
+			: never
 		: T extends RuntimeBase<infer S>
-			? S
+			? {
+					state: S;
+					api: never;
+					runtime: T;
+				}
 			: never;
 
-export type InferAPI<T> =
-	T extends RuntimeSystem<any, infer A, any> ? A : never;
+export type InferCompiler<T> = Compiler<
+	InferSystem<T>['api'],
+	InferSystem<T>['runtime']
+>;
 
-export type InferRuntime<T> =
-	T extends RuntimeSystem<any, any, infer RT> ? RT : never;
+export type InferState<T> = Simplify<InferSystem<T>['state']>;
+
+export type InferAPI<T> = Simplify<InferSystem<T>['api']>;
+
+export type InferRuntime<T> = InferSystem<T>['runtime'];
 
 // ---------------------------------------------------------------------------
 // Type-level combine — mirrors the value-level `combine` function

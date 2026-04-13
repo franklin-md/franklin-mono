@@ -19,3 +19,4 @@ export { withSetup } from './setup.js';
 export { systems } from './builder.js';
 export type { SystemBuilder } from './builder.js';
 export { resolveState } from './resolve.js';
+export { createSessionSystem, type SessionSystem } from './session.js';

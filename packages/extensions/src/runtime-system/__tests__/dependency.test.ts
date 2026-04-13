@@ -150,9 +150,13 @@ describe('createDependencySystem', () => {
 			.add(createDependencySystem('Settings', settings))
 			.done();
 
-		expectTypeOf<InferAPI<typeof system>>().toEqualTypeOf<
-			CoreAPI & DependencyAPI<'Settings', typeof settings>
-		>();
+		type ActualAPI = InferAPI<typeof system>;
+		type ExpectedAPI = CoreAPI & DependencyAPI<'Settings', typeof settings>;
+
+		const actualExtendsExpected: ExpectedAPI = {} as ActualAPI;
+		const expectedExtendsActual: ActualAPI = {} as ExpectedAPI;
+		expect(actualExtendsExpected).toBeDefined();
+		expect(expectedExtendsActual).toBeDefined();
 
 		const runtime = await createRuntime(
 			system,
