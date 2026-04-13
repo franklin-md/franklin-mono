@@ -8,7 +8,8 @@ import {
 	StopCode,
 } from '@franklin/mini-acp';
 import { loginAgent, withAuth, syncAuth } from '../auth/with-auth.js';
-import type { AppAuth, AuthChangeListener } from '../auth/types.js';
+import type { AuthManager } from '../auth/manager.js';
+import type { AuthChangeListener, AuthEntry } from '../auth/types.js';
 import type { FranklinRuntime } from '../types.js';
 
 // ---------------------------------------------------------------------------
@@ -17,7 +18,7 @@ import type { FranklinRuntime } from '../types.js';
 
 function mockAuthManager(
 	providers: Record<string, string | undefined> = {},
-): Pick<AppAuth, 'load' | 'getApiKey' | 'onAuthChange'> {
+): Pick<AuthManager, 'load' | 'getApiKey' | 'onAuthChange'> {
 	return {
 		load: vi.fn(async () => {
 			const entries: Record<
@@ -370,28 +371,38 @@ describe('syncAuth', () => {
 
 		syncAuth(() => [...runtimes], auth);
 
-		function fireAuthChange(provider: string, key: string | undefined) {
+		function fireAuthChange(
+			provider: string,
+			entry: AuthEntry | undefined,
+			key = entry?.apiKey?.key,
+		) {
 			providers[provider] = key;
-			return captured!(provider);
+			return captured!(provider, entry);
 		}
 
 		function addRuntime(runtime: FranklinRuntime) {
 			runtimes.push(runtime);
 		}
 
-		return { addRuntime, fireAuthChange };
+		return { addRuntime, auth, fireAuthChange };
 	}
 
 	it('pushes new key to sessions matching the provider', async () => {
-		const { addRuntime, fireAuthChange } = setup();
+		const { addRuntime, auth, fireAuthChange } = setup();
 		const runtime = mockFranklinRuntime('anthropic');
 		addRuntime(runtime);
 
-		await fireAuthChange('anthropic', 'sk-new');
+		await fireAuthChange('anthropic', {
+			apiKey: {
+				type: 'apiKey',
+				key: 'sk-new',
+			},
+		});
 
 		expect(runtime.setContext).toHaveBeenCalledWith({
 			config: { provider: 'anthropic', apiKey: 'sk-new' },
 		});
+		expect(auth.getApiKey).not.toHaveBeenCalled();
 	});
 
 	it('skips sessions that use a different provider', async () => {
@@ -399,9 +410,36 @@ describe('syncAuth', () => {
 		const runtime = mockFranklinRuntime('openai');
 		addRuntime(runtime);
 
-		await fireAuthChange('anthropic', 'sk-new');
+		await fireAuthChange('anthropic', {
+			apiKey: {
+				type: 'apiKey',
+				key: 'sk-new',
+			},
+		});
 
 		expect(runtime.setContext).not.toHaveBeenCalled();
+	});
+
+	it('resolves OAuth entries through auth.getApiKey', async () => {
+		const { addRuntime, auth, fireAuthChange } = setup();
+		const runtime = mockFranklinRuntime('anthropic');
+		addRuntime(runtime);
+
+		await fireAuthChange(
+			'anthropic',
+			{
+				oauth: {
+					type: 'oauth',
+					credentials: {} as never,
+				},
+			},
+			'sk-oauth',
+		);
+
+		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
+		expect(runtime.setContext).toHaveBeenCalledWith({
+			config: { provider: 'anthropic', apiKey: 'sk-oauth' },
+		});
 	});
 
 	it('passes undefined apiKey on key revocation', async () => {
@@ -419,6 +457,11 @@ describe('syncAuth', () => {
 	it('no-ops when session list is empty', async () => {
 		const { fireAuthChange } = setup();
 		// Should not throw
-		await fireAuthChange('anthropic', 'sk-new');
+		await fireAuthChange('anthropic', {
+			apiKey: {
+				type: 'apiKey',
+				key: 'sk-new',
+			},
+		});
 	});
 });

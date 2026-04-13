@@ -1,9 +1,14 @@
-import type { OAuthLoginCallbacks } from '@mariozechner/pi-ai/oauth';
+import type {
+	OAuthCredentials,
+	OAuthLoginCallbacks,
+} from '@mariozechner/pi-ai/oauth';
 import { createObserver } from '@franklin/lib';
 
-import type { IAuthFlow, OAuthAuthInfo, OAuthPrompt } from './types.js';
+import type { OAuthAuthInfo, OAuthPrompt } from './types.js';
 
-export class OAuthFlow<TResult = void> implements IAuthFlow<TResult> {
+// TODO: This interactive flow primitive is fairly general and may belong in a
+// core auth folder rather than under the agent auth manager.
+export class OAuthFlow {
 	private authObserver = createObserver<[OAuthAuthInfo]>();
 	private progressObserver = createObserver<[string]>();
 	private promptObserver = createObserver<[OAuthPrompt]>();
@@ -13,12 +18,14 @@ export class OAuthFlow<TResult = void> implements IAuthFlow<TResult> {
 				reject(error: Error): void;
 		  }
 		| undefined;
-	private loginPromise: Promise<TResult> | null = null;
+	private loginPromise: Promise<OAuthCredentials> | null = null;
 	private started = false;
 	private disposed = false;
 
 	constructor(
-		private readonly run: (callbacks: OAuthLoginCallbacks) => Promise<TResult>,
+		private readonly run: (
+			callbacks: OAuthLoginCallbacks,
+		) => Promise<OAuthCredentials>,
 	) {}
 
 	onAuth(listener: (info: OAuthAuthInfo) => void): () => void {
@@ -43,7 +50,7 @@ export class OAuthFlow<TResult = void> implements IAuthFlow<TResult> {
 		promptState.resolve(value);
 	}
 
-	async login(): Promise<TResult> {
+	async login(): Promise<OAuthCredentials> {
 		if (this.disposed) {
 			throw new Error('OAuth flow has been disposed');
 		}

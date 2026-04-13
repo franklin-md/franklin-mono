@@ -2,11 +2,14 @@ export { AuthManager } from './auth/manager.js';
 export { loginOAuth } from './auth/login.js';
 export { OAuthFlow } from './auth/oauth-flow.js';
 export type {
-	AppAuth,
-	AuthFile,
 	ApiKeyEntry,
+	AuthChangeListener,
+	AuthEntry,
+	AuthFile,
 	OAuthLoginCallbacks,
-	PlatformAuthFlow,
+	OAuthAuthInfo,
+	OAuthEntry,
+	OAuthPrompt,
 } from './auth/types.js';
 export type { SettingsStore } from './settings/store.js';
 export { getLLMConfig, setLLMConfig } from './settings/llm-config.js';

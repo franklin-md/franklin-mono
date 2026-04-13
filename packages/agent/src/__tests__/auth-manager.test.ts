@@ -2,6 +2,7 @@ import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 import type { Filesystem } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthManager } from '../auth/manager.js';
+import { OAuthFlow } from '../auth/oauth-flow.js';
 
 function createFilesystem(): Filesystem {
 	const files = new Map<string, Buffer>();
@@ -34,7 +35,7 @@ function createFilesystem(): Filesystem {
 }
 
 describe('AuthManager', () => {
-	it('persists OAuth credentials returned by the platform flow', async () => {
+	it('returns OAuth credentials from the platform flow without persisting them', async () => {
 		const filesystem = createFilesystem();
 		const credentials = {
 			accessToken: 'token',
@@ -45,18 +46,33 @@ describe('AuthManager', () => {
 				getOAuthProviders: async () => [],
 				getApiKeyProviders: async () => [],
 			},
-			createFlow: async () => ({
-				onAuth: () => () => {},
-				onProgress: () => () => {},
-				onPrompt: () => () => {},
-				respond: async () => {},
-				login: async () => credentials,
-				dispose: async () => {},
-			}),
+			createFlow: async () => new OAuthFlow(async () => credentials),
 		});
 
 		const flow = await auth.flow('anthropic');
-		await flow.login();
+		await expect(flow.login()).resolves.toBe(credentials);
+
+		await expect(auth.load()).resolves.toEqual({});
+	});
+
+	it('persists OAuth entries explicitly', async () => {
+		const filesystem = createFilesystem();
+		const credentials = {
+			accessToken: 'token',
+		} as unknown as OAuthCredentials;
+		const auth = new AuthManager({
+			filesystem,
+			ai: {
+				getOAuthProviders: async () => [],
+				getApiKeyProviders: async () => [],
+			},
+			createFlow: async () => new OAuthFlow(async () => credentials),
+		});
+
+		await auth.setOAuthEntry('anthropic', {
+			type: 'oauth',
+			credentials,
+		});
 
 		await expect(auth.load()).resolves.toEqual({
 			anthropic: {
@@ -75,14 +91,8 @@ describe('AuthManager', () => {
 				getOAuthProviders: async () => [],
 				getApiKeyProviders: async () => [],
 			},
-			createFlow: async () => ({
-				onAuth: () => () => {},
-				onProgress: () => () => {},
-				onPrompt: () => () => {},
-				respond: async () => {},
-				login: async () => ({}) as OAuthCredentials,
-				dispose: async () => {},
-			}),
+			createFlow: async () =>
+				new OAuthFlow(async () => ({}) as OAuthCredentials),
 		});
 		const listener = vi.fn();
 		auth.onAuthChange(listener);
@@ -92,6 +102,11 @@ describe('AuthManager', () => {
 			key: 'sk-test',
 		});
 
-		expect(listener).toHaveBeenCalledWith('anthropic');
+		expect(listener).toHaveBeenCalledWith('anthropic', {
+			apiKey: {
+				type: 'apiKey',
+				key: 'sk-test',
+			},
+		});
 	});
 });

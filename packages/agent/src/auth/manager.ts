@@ -1,16 +1,16 @@
 import type {
 	ApiKeyEntry,
-	AppAuth,
 	AuthChangeListener,
 	AuthFile,
-	IAuthFlow,
+	OAuthEntry,
 } from './types.js';
+import type { OAuthFlow } from './oauth-flow.js';
 import type { Platform } from '../platform.js';
 import { AuthStore } from './store.js';
 
 type AuthDependencies = Pick<Platform, 'ai' | 'createFlow' | 'filesystem'>;
 
-export class AuthManager implements AppAuth {
+export class AuthManager {
 	private readonly listeners = new Set<AuthChangeListener>();
 	private readonly store: AuthStore;
 	private readonly ai: AuthDependencies['ai'];
@@ -20,9 +20,9 @@ export class AuthManager implements AppAuth {
 		this.store = new AuthStore(deps.filesystem);
 		this.ai = deps.ai;
 		this.createFlowFn = deps.createFlow;
-		this.store.onChange(async (provider) => {
+		this.store.onChange(async (provider, entry) => {
 			for (const listener of this.listeners) {
-				await listener(provider);
+				await listener(provider, entry);
 			}
 		});
 	}
@@ -43,22 +43,8 @@ export class AuthManager implements AppAuth {
 		return await this.ai.getApiKeyProviders();
 	}
 
-	async flow(provider: string): Promise<IAuthFlow> {
-		const flow = await this.createFlowFn(provider);
-		return {
-			onAuth: (listener) => flow.onAuth(listener),
-			onProgress: (listener) => flow.onProgress(listener),
-			onPrompt: (listener) => flow.onPrompt(listener),
-			respond: (value) => flow.respond(value),
-			login: async () => {
-				const credentials = await flow.login();
-				await this.store.setOAuthEntry(provider, {
-					type: 'oauth',
-					credentials,
-				});
-			},
-			dispose: () => flow.dispose(),
-		};
+	async flow(provider: string): Promise<OAuthFlow> {
+		return this.createFlowFn(provider);
 	}
 
 	async load(): Promise<AuthFile> {
@@ -71,6 +57,10 @@ export class AuthManager implements AppAuth {
 
 	async setApiKeyEntry(provider: string, entry: ApiKeyEntry): Promise<void> {
 		await this.store.setApiKeyEntry(provider, entry);
+	}
+
+	async setOAuthEntry(provider: string, entry: OAuthEntry): Promise<void> {
+		await this.store.setOAuthEntry(provider, entry);
 	}
 
 	async removeApiKeyEntry(provider: string): Promise<void> {

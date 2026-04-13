@@ -1,63 +1,34 @@
+import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 import { describe, expect, it, vi } from 'vitest';
 
 import { loginOAuth } from '../auth/login.js';
-import type { AppAuth, IAuthFlow } from '../auth/types.js';
+import { OAuthFlow } from '../auth/oauth-flow.js';
+import type { AuthManager } from '../auth/manager.js';
 
-function createFlow(): IAuthFlow {
-	let onAuth:
-		| ((info: { url: string; instructions?: string }) => void)
-		| undefined;
-	let onProgress: ((message: string) => void) | undefined;
-	let onPrompt:
-		| ((prompt: {
-				message: string;
-				placeholder?: string;
-				allowEmpty?: boolean;
-		  }) => void)
-		| undefined;
-	let resolvePrompt = () => {};
-	const promptResolved = new Promise<void>((resolve) => {
-		resolvePrompt = resolve;
+function createFlow() {
+	const credentials = {
+		accessToken: 'token',
+	} as unknown as OAuthCredentials;
+	const flow = new OAuthFlow(async (callbacks) => {
+		callbacks.onProgress?.('Waiting for browser');
+		callbacks.onAuth({ url: 'https://example.com/auth' });
+		await callbacks.onPrompt({ message: 'Enter code' });
+		return credentials;
 	});
 
-	return {
-		onAuth(callback) {
-			onAuth = callback;
-			return () => {
-				onAuth = undefined;
-			};
-		},
-		onProgress(callback) {
-			onProgress = callback;
-			return () => {
-				onProgress = undefined;
-			};
-		},
-		onPrompt(callback) {
-			onPrompt = callback;
-			return () => {
-				onPrompt = undefined;
-			};
-		},
-		respond: vi.fn(async () => {
-			resolvePrompt();
-		}),
-		login: vi.fn(async () => {
-			onProgress?.('Waiting for browser');
-			onAuth?.({ url: 'https://example.com/auth' });
-			onPrompt?.({ message: 'Enter code' });
-			await promptResolved;
-		}),
-		dispose: vi.fn(async () => {}),
-	};
+	return { credentials, flow };
 }
 
 describe('loginOAuth', () => {
-	it('drives the auth flow resource and disposes it when finished', async () => {
-		const flow = createFlow();
+	it('drives the auth flow resource, persists credentials, and disposes it when finished', async () => {
+		const { credentials, flow } = createFlow();
 		const manager = {
 			flow: vi.fn(async () => flow),
-		} satisfies Pick<AppAuth, 'flow'>;
+			setOAuthEntry: vi.fn(async () => {}),
+		} satisfies Pick<AuthManager, 'flow' | 'setOAuthEntry'>;
+		const loginSpy = vi.spyOn(flow, 'login');
+		const respondSpy = vi.spyOn(flow, 'respond');
+		const disposeSpy = vi.spyOn(flow, 'dispose');
 		const onAuth = vi.fn();
 		const onProgress = vi.fn();
 		const onPrompt = vi.fn(async () => '1234');
@@ -69,13 +40,17 @@ describe('loginOAuth', () => {
 		});
 
 		expect(manager.flow).toHaveBeenCalledWith('anthropic');
-		expect(flow.login).toHaveBeenCalledTimes(1);
+		expect(loginSpy).toHaveBeenCalledTimes(1);
 		expect(onProgress).toHaveBeenCalledWith('Waiting for browser');
 		expect(onAuth).toHaveBeenCalledWith({
 			url: 'https://example.com/auth',
 		});
 		expect(onPrompt).toHaveBeenCalledWith({ message: 'Enter code' });
-		expect(flow.respond).toHaveBeenCalledWith('1234');
-		expect(flow.dispose).toHaveBeenCalledTimes(1);
+		expect(respondSpy).toHaveBeenCalledWith('1234');
+		expect(manager.setOAuthEntry).toHaveBeenCalledWith('anthropic', {
+			type: 'oauth',
+			credentials,
+		});
+		expect(disposeSpy).toHaveBeenCalledTimes(1);
 	});
 });

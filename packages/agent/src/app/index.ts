@@ -19,7 +19,6 @@ import {
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
 import { AuthManager } from '../auth/manager.js';
-import type { AppAuth } from '../auth/types.js';
 import type {
 	BaseSystem,
 	FranklinState,
@@ -29,7 +28,7 @@ import type {
 import { createAgents, type Agents } from './agents.js';
 
 export class FranklinApp {
-	readonly auth: AppAuth;
+	readonly auth: AuthManager;
 	readonly settings: SettingsStore;
 	readonly agents: Agents;
 	readonly platform: Platform;

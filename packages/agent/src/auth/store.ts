@@ -4,7 +4,7 @@ import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
 import type { Filesystem } from '@franklin/lib';
-import type { ApiKeyEntry, AuthFile, OAuthEntry } from './types.js';
+import type { ApiKeyEntry, AuthEntry, AuthFile, OAuthEntry } from './types.js';
 
 // ---------------------------------------------------------------------------
 // Default location
@@ -12,7 +12,10 @@ import type { ApiKeyEntry, AuthFile, OAuthEntry } from './types.js';
 
 const DEFAULT_AUTH_PATH = 'auth.json';
 
-type AuthStoreChangeListener = (provider: string) => void | Promise<void>;
+type AuthStoreChangeListener = (
+	provider: string,
+	entry: AuthEntry | undefined,
+) => void | Promise<void>;
 
 // ---------------------------------------------------------------------------
 // AuthStore
@@ -76,7 +79,7 @@ export class AuthStore {
 			data[provider] = { apiKey: entry };
 		}
 		await this.save(data);
-		await this.notify(provider);
+		await this.notify(provider, data[provider]);
 	}
 
 	async setOAuthEntry(provider: string, entry: OAuthEntry): Promise<void> {
@@ -87,7 +90,7 @@ export class AuthStore {
 			data[provider] = { oauth: entry };
 		}
 		await this.save(data);
-		await this.notify(provider);
+		await this.notify(provider, data[provider]);
 	}
 
 	async removeApiKeyEntry(provider: string): Promise<void> {
@@ -99,7 +102,7 @@ export class AuthStore {
 				delete data[provider];
 			}
 			await this.save(data);
-			await this.notify(provider);
+			await this.notify(provider, data[provider]);
 		}
 	}
 
@@ -112,7 +115,7 @@ export class AuthStore {
 				delete data[provider];
 			}
 			await this.save(data);
-			await this.notify(provider);
+			await this.notify(provider, data[provider]);
 		}
 	}
 
@@ -157,9 +160,12 @@ export class AuthStore {
 		return entry.apiKey?.key;
 	}
 
-	private async notify(provider: string): Promise<void> {
+	private async notify(
+		provider: string,
+		entry: AuthEntry | undefined,
+	): Promise<void> {
 		for (const listener of this.listeners) {
-			await listener(provider);
+			await listener(provider, entry);
 		}
 	}
 }
