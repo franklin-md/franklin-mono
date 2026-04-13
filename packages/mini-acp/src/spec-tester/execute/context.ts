@@ -5,6 +5,7 @@
 
 import { createDuplexPair } from '@franklin/transport';
 import type { JsonRpcMessage } from '@franklin/transport';
+import { RpcError } from '@franklin/transport';
 
 import { createClientConnection } from '../../protocol/connection.js';
 import type { ToolCall, ToolResult } from '../../types/tool.js';
@@ -14,6 +15,7 @@ import type {
 	AgentFactory,
 	SetContextPayload,
 	TranscriptEntry,
+	TranscriptErrorOperation,
 } from '../types.js';
 
 const DEFAULT_WAIT_TIMEOUT_MS = 5000;
@@ -31,6 +33,35 @@ export function createContext(factory: AgentFactory) {
 	function record(entry: TranscriptEntry) {
 		transcript.push(entry);
 		onEntry?.(entry);
+	}
+
+	function recordError(
+		operation: TranscriptErrorOperation,
+		error: unknown,
+	): void {
+		record({
+			direction: 'receive',
+			method: 'error',
+			params: {
+				operation,
+				message: error instanceof Error ? error.message : String(error),
+				...(error instanceof RpcError && {
+					code: error.code,
+					data: error.data,
+				}),
+			},
+		});
+	}
+
+	async function withRecordedError(
+		operation: TranscriptErrorOperation,
+		run: () => Promise<void>,
+	): Promise<void> {
+		try {
+			await run();
+		} catch (error) {
+			recordError(operation, error);
+		}
 	}
 
 	// Tool handlers registered dynamically via setContext actions
@@ -70,8 +101,10 @@ export function createContext(factory: AgentFactory) {
 
 	async function initialize(): Promise<void> {
 		record({ direction: 'send', method: 'initialize', params: {} });
-		await connection.remote.initialize();
-		record({ direction: 'receive', method: 'initialize', params: {} });
+		await withRecordedError('initialize', async () => {
+			await connection.remote.initialize();
+			record({ direction: 'receive', method: 'initialize', params: {} });
+		});
 	}
 
 	async function setContext(payload: SetContextPayload): Promise<void> {
@@ -87,13 +120,17 @@ export function createContext(factory: AgentFactory) {
 		}
 
 		record({ direction: 'send', method: 'setContext', params: ctx });
-		await connection.remote.setContext(ctx);
-		record({ direction: 'receive', method: 'setContext', params: {} });
+		await withRecordedError('setContext', async () => {
+			await connection.remote.setContext(ctx);
+			record({ direction: 'receive', method: 'setContext', params: {} });
+		});
 	}
 
 	function prompt(message: UserMessage): void {
 		record({ direction: 'send', method: 'prompt', params: message });
-		backgroundPromises.push(consume(connection.remote.prompt(message)));
+		backgroundPromises.push(
+			consume('prompt', connection.remote.prompt(message)),
+		);
 	}
 
 	function cancel(): void {
@@ -131,14 +168,19 @@ export function createContext(factory: AgentFactory) {
 	// Internal
 	// -----------------------------------------------------------------------
 
-	async function consume(iter: AsyncIterable<{ type: string }>): Promise<void> {
-		for await (const event of iter) {
-			record({
-				direction: 'receive',
-				method: event.type,
-				params: event,
-			} as TranscriptEntry);
-		}
+	async function consume(
+		operation: TranscriptErrorOperation,
+		iter: AsyncIterable<{ type: string }>,
+	): Promise<void> {
+		await withRecordedError(operation, async () => {
+			for await (const event of iter) {
+				record({
+					direction: 'receive',
+					method: event.type,
+					params: event,
+				} as TranscriptEntry);
+			}
+		});
 	}
 
 	return { transcript, initialize, setContext, prompt, cancel, waitFor, drain };

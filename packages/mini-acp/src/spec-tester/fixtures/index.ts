@@ -1,8 +1,10 @@
 import type { Fixture, FixtureExpectation, Expectation } from '../types.js';
 import { StopCode } from '../../types/stop-code.js';
 import { expectStopCode } from '../expectations/stop-code.js';
+import { expectProtocolError } from '../expectations/protocol-error.js';
 
 import { initOnly } from './init-only.js';
+import { overlappingPrompts } from './overlapping-prompts.js';
 import { simplePrompt } from './simple-prompt.js';
 import { reasoningPrompt } from './reasoning-prompt.js';
 import { toolCall } from './tool-call.js';
@@ -24,6 +26,11 @@ export const allFixtureExpectations: FixtureExpectation[] = [
 	fe(initOnly),
 	fe(simplePrompt),
 	fe(reasoningPrompt),
+	fe(
+		overlappingPrompts,
+		expectProtocolError('prompt', /already in progress/i),
+		expectStopCode(StopCode.Cancelled),
+	),
 	fe(toolCall),
 	fe(missingProvider, expectStopCode(StopCode.ProviderNotSpecified)),
 	fe(unknownProvider, expectStopCode(StopCode.ProviderNotFound)),

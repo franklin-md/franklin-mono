@@ -14,7 +14,7 @@ import { setContext } from '../actions/set-context.js';
 import { prompt } from '../actions/prompt.js';
 import { waitFor } from '../actions/wait-for.js';
 import { overlappingPrompts } from '../fixtures/overlapping-prompts.js';
-import { overlappingPromptsExpectation } from '../fixtures/index.js';
+import { allFixtureExpectations } from '../fixtures/index.js';
 import { failingTool } from '../fixtures/tools/failing.js';
 import { echoTool } from '../fixtures/tools/echo.js';
 import {
@@ -99,6 +99,14 @@ function createCancellableBlockingTurn(): TurnClient {
 			release?.();
 		},
 	};
+}
+
+const overlappingPromptsEntry = allFixtureExpectations.find(
+	(entry) => entry.fixture.name === overlappingPrompts.name,
+);
+
+if (!overlappingPromptsEntry) {
+	throw new Error('Expected overlapping-prompts fixture expectation');
 }
 
 // ---------------------------------------------------------------------------
@@ -329,7 +337,7 @@ describe('confirmSpec', () => {
 	confirmSpec(
 		createMockFactory(() => createCancellableBlockingTurn()),
 		{
-			entries: [overlappingPromptsExpectation],
+			entries: [overlappingPromptsEntry],
 			timeoutMs: 5_000,
 		},
 	);
