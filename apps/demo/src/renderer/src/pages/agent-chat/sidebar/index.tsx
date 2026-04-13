@@ -1,1 +1,1 @@
-export { AgentSidebar } from './agent-sidebar.js';
+export { AgentSidebar } from '@franklin/ui';

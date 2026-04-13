@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { ConversationView } from '../view/conversation-view.js';
+import { ConversationView } from '@franklin/ui';
 import {
 	finishedTurn,
 	cancelledTurn,

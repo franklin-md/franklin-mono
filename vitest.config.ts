@@ -7,6 +7,7 @@ export default defineConfig({
 			'packages/lib/*/vitest.config.ts',
 			'packages/ui/*/vitest.config.ts',
 			'apps/*/vitest.config.ts',
+			'apps/shared/*/vitest.config.ts',
 		],
 	},
 });

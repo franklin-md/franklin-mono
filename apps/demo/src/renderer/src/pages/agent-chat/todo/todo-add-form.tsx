@@ -1,8 +1,7 @@
 import { Plus } from 'lucide-react';
 import { useRef, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button, Input } from '@franklin/ui';
 
 export function TodoAddForm({ onAdd }: { onAdd: (text: string) => void }) {
 	const [text, setText] = useState('');

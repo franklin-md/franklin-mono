@@ -29,7 +29,8 @@
 				"packages/electron/src/renderer/index.ts"
 			],
 			"@franklin/react": ["packages/ui/react/src/index.ts"],
-			"@franklin/react/browser": ["packages/ui/react/src/browser.ts"]
+			"@franklin/react/browser": ["packages/ui/react/src/browser.ts"],
+			"@franklin/ui": ["apps/shared/ui/src/index.ts"]
 		}
 	}
 }

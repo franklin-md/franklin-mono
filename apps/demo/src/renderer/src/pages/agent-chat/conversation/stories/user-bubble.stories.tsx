@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { UserBubble } from '../turn/body/user-bubble.js';
+import { UserBubble } from '@franklin/ui';
 import { userTextPrompt } from '../fixtures.js';
 
 const meta = {

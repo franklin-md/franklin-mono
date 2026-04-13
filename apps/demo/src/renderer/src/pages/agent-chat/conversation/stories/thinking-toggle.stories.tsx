@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import type { ThinkingLevel } from '@franklin/mini-acp';
 
-import { ThinkingToggle } from '../input/thinking-toggle.js';
+import { ThinkingToggle } from '@franklin/ui';
 import { MockAgentDecorator } from './mock-agent.js';
 
 const LEVELS: ThinkingLevel[] = ['off', 'low', 'medium', 'high', 'xhigh'];

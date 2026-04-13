@@ -1,0 +1,46 @@
+{
+	"name": "@franklin/ui",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./styles/*": "./src/styles/*"
+	},
+	"scripts": {
+		"build": "tsc -b tsconfig.json",
+		"typecheck": "tsc -b tsconfig.json --pretty false",
+		"test": "vitest run --passWithNoTests"
+	},
+	"dependencies": {
+		"@franklin/extensions": "*",
+		"@franklin/mini-acp": "*",
+		"@franklin/react": "*",
+		"@radix-ui/react-popover": "^1.1.15",
+		"@radix-ui/react-scroll-area": "^1.2.3",
+		"@radix-ui/react-slot": "^1.2.0",
+		"@radix-ui/react-tabs": "^1.1.12",
+		"@streamdown/code": "^1.1.1",
+		"@streamdown/math": "^1.0.2",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"cmdk": "^1.1.1",
+		"katex": "^0.16.44",
+		"lucide-react": "^0.511.0",
+		"react-textarea-autosize": "^8.5.9",
+		"shiki": "^3.4.2",
+		"streamdown": "^2.5.0",
+		"tailwind-merge": "^3.3.0"
+	},
+	"peerDependencies": {
+		"react": "^18.3.1 || ^19.0.0",
+		"react-dom": "^18.3.1 || ^19.0.0"
+	},
+	"devDependencies": {
+		"@testing-library/react": "^15.0.7",
+		"jsdom": "^28.1.0"
+	}
+}

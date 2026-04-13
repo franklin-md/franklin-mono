@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { ModelSelector } from '../input/model-selector/model-selector.js';
+import { ModelSelector } from '@franklin/ui';
 import { MockAgentDecorator } from './mock-agent.js';
 
 const meta = {

@@ -2,9 +2,7 @@ import type { Todo } from '@franklin/extensions';
 import { Check, Pencil, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Badge, Button, Input } from '@franklin/ui';
 
 export function TodoItem({
 	todo,
