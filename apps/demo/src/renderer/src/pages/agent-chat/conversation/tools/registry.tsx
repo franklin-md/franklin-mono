@@ -21,7 +21,7 @@ import {
 } from '@franklin/extensions';
 import { createToolRendererRegistry } from '@franklin/react';
 
-import { iconEntry, toolEntry } from './entry.js';
+import { iconEntry, toolEntry } from '@franklin/ui';
 
 const webFetchExtension = createWebFetchExtension({});
 

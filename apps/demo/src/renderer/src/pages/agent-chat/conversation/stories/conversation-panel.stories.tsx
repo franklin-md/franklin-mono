@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { ConversationPanel } from '../conversation-panel.js';
+import { ConversationPanel } from '@franklin/ui';
 import { emptyConversation, multiTurn } from '../fixtures.js';
 import { MockAgentDecorator } from './mock-agent.js';
 

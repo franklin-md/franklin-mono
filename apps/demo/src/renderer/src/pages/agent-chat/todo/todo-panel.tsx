@@ -3,8 +3,13 @@ import { useMemo } from 'react';
 import { createTodoControl, todoExtension } from '@franklin/extensions';
 import { useAgentState } from '@franklin/react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+	ScrollArea,
+} from '@franklin/ui';
 
 import { TodoAddForm } from './todo-add-form.js';
 import { TodoItem } from './todo-item.js';

@@ -27,6 +27,7 @@
 		"@franklin/mini-acp": "*",
 		"@franklin/node": "*",
 		"@franklin/react": "*",
+		"@franklin/ui": "*",
 		"@franklin/transport": "*",
 		"@radix-ui/react-popover": "^1.1.15",
 		"cmdk": "^1.1.1",

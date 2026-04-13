@@ -6,7 +6,8 @@
 		"packages/*",
 		"packages/lib/*",
 		"packages/ui/*",
-		"apps/*"
+		"apps/*",
+		"apps/shared/*"
 	],
 	"engines": {
 		"node": ">=22"

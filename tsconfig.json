@@ -10,6 +10,7 @@
 		{ "path": "./packages/electron" },
 		{ "path": "./packages/ui/react" },
 		{ "path": "./apps/demo" },
-		{ "path": "./apps/obsidian" }
+		{ "path": "./apps/obsidian" },
+		{ "path": "./apps/shared/ui" }
 	]
 }

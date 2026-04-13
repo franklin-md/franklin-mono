@@ -24,6 +24,7 @@
 	"include": ["src/renderer/src/**/*.ts", "src/renderer/src/**/*.tsx"],
 	"references": [
 		{ "path": "../../packages/electron/tsconfig.renderer.json" },
-		{ "path": "../../packages/ui/react" }
+		{ "path": "../../packages/ui/react" },
+		{ "path": "../shared/ui" }
 	]
 }
