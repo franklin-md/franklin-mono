@@ -5,10 +5,13 @@ import type {
 } from '../../descriptors/types/index.js';
 import { descriptorKind } from '../../descriptors/kind.js';
 import type { ServerRuntime } from '../../runtime.js';
-import type { EventHandler } from '../../types.js';
-import type { NotificationHandler } from '../../types.js';
-import type { MethodHandler } from '../../types.js';
-import type { ProxyType } from '../../types.js';
+import type {
+	EventHandler,
+	MethodHandler,
+	NotificationHandler,
+	ProxyType,
+	Transport,
+} from '../../types.js';
 import type { ResourceContext } from '../context.js';
 import { requireCapability } from '../require.js';
 import { bindNamespace } from './namespace.js';
@@ -82,7 +85,11 @@ export function bindNode(
 				}),
 			];
 		case 'stream':
-			return [requireCapability(runtime, 'registerTransport', 'stream')(value)];
+			return [
+					requireCapability(runtime, 'registerTransport', 'stream')(
+						value as Transport,
+					),
+				];
 		case 'namespace':
 			return bindNamespace(
 				descriptor as NamespaceDescriptor<any, any>,

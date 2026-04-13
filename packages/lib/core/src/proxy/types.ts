@@ -36,15 +36,17 @@ export type ProxyType<D extends Descriptor> =
 // TODO: These should be generic but default to unknown
 // TODO: we should use these elsewhere in the typing of Proxy and Impl etc
 
-export type MethodHandler<TArgs = unknown, TResult = unknown> = (
-	...args: TArgs[]
-) => Promise<TResult>;
-export type NotificationHandler<TArgs = unknown> = (
-	...args: TArgs[]
+export type MethodHandler<
+	TArgs extends unknown[] = unknown[],
+	TResult = unknown,
+> = (...args: TArgs) => Promise<TResult>;
+export type NotificationHandler<TArgs extends unknown[] = unknown[]> = (
+	...args: TArgs
 ) => Promise<void>;
-export type EventHandler<TArgs = unknown, TItem = unknown> = (
-	...args: TArgs[]
-) => AsyncIterable<TItem>;
+export type EventHandler<
+	TArgs extends unknown[] = unknown[],
+	TItem = unknown,
+> = (...args: TArgs) => AsyncIterable<TItem>;
 export type Transport<TRead = unknown, TWrite = TRead> = {
 	readable: ReadableStream<TRead>;
 	writable: WritableStream<TWrite>;
