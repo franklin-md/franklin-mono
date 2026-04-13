@@ -5,6 +5,7 @@
 @import '@fontsource-variable/geist-mono';
 @import '@franklin/ui/styles/theme-tokens.css';
 
+@source "../../../../../node_modules/@franklin/ui";
 @source "../../../../../node_modules/streamdown/dist/*.js";
 @source "../../../../../node_modules/@streamdown/code/dist/*.js";
 @source "../../../../../node_modules/@streamdown/math/dist/*.js";
