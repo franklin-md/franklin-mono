@@ -1,4 +1,9 @@
-import type { ServerRuntime as IServerRuntime } from '@franklin/lib';
+import type {
+	ServerRuntime as IServerRuntime,
+	MethodHandler,
+	NotificationHandler,
+	EventHandler,
+} from '@franklin/lib';
 import type { JsonRpcMessage } from '../../../types.js';
 import {
 	isRequest,
@@ -9,27 +14,23 @@ import type { ServerBindingState } from '../types.js';
 import { toErrorPayload } from '../util.js';
 
 type RegisteredHandler =
-	| {
-			kind: 'request';
-			handler: (...args: unknown[]) => Promise<unknown>;
-	  }
-	| {
-			kind: 'notification';
-			handler: (...args: unknown[]) => Promise<void>;
-	  }
-	| {
-			kind: 'event';
-			handler: (...args: unknown[]) => AsyncIterable<unknown>;
-	  };
+	| { kind: 'request'; handler: MethodHandler }
+	| { kind: 'notification'; handler: NotificationHandler }
+	| { kind: 'event'; handler: EventHandler };
 
 export class JsonRpcServerRuntime implements IServerRuntime {
 	private readonly state: ServerBindingState;
-	private readonly handlers = new Map<string, RegisteredHandler>();
+	private readonly handlers: Map<string, RegisteredHandler>;
+	private readonly prefix: string;
 
 	constructor(
 		send: (message: JsonRpcMessage) => void,
 		onError: (error: unknown) => void,
+		prefix?: string,
+		handlers?: Map<string, RegisteredHandler>,
 	) {
+		this.prefix = prefix ?? '';
+		this.handlers = handlers ?? new Map();
 		this.state = {
 			send,
 			onError,
@@ -37,33 +38,34 @@ export class JsonRpcServerRuntime implements IServerRuntime {
 		};
 	}
 
-	registerMethod(
-		path: string[],
-		handler: (...args: unknown[]) => Promise<unknown>,
-	): () => void {
-		const name = path.join('/');
+	registerNamespace(key: string): IServerRuntime {
+		const childPrefix = this.prefix ? `${this.prefix}/${key}` : key;
+		return new JsonRpcServerRuntime(
+			this.state.send,
+			this.state.onError,
+			childPrefix,
+			this.handlers,
+		);
+	}
+
+	registerMethod(handler: MethodHandler): () => void {
+		const name = this.prefix;
 		this.handlers.set(name, { kind: 'request', handler });
 		return () => {
 			this.handlers.delete(name);
 		};
 	}
 
-	registerNotification(
-		path: string[],
-		handler: (...args: unknown[]) => Promise<void>,
-	): () => void {
-		const name = path.join('/');
+	registerNotification(handler: NotificationHandler): () => void {
+		const name = this.prefix;
 		this.handlers.set(name, { kind: 'notification', handler });
 		return () => {
 			this.handlers.delete(name);
 		};
 	}
 
-	registerEvent(
-		path: string[],
-		handler: (...args: unknown[]) => AsyncIterable<unknown>,
-	): () => void {
-		const name = path.join('/');
+	registerEvent(handler: EventHandler): () => void {
+		const name = this.prefix;
 		this.handlers.set(name, { kind: 'event', handler });
 		return () => {
 			this.handlers.delete(name);
@@ -119,7 +121,7 @@ export class JsonRpcServerRuntime implements IServerRuntime {
 	private dispatchRequest(
 		id: number,
 		params: unknown,
-		handler: (...args: unknown[]) => Promise<unknown>,
+		handler: MethodHandler,
 	): void {
 		void Promise.resolve(handler(params)).then(
 			(result) => this.state.send({ jsonrpc: '2.0', id, result }),
@@ -136,7 +138,7 @@ export class JsonRpcServerRuntime implements IServerRuntime {
 		requestId: number,
 		method: string,
 		params: unknown,
-		handler: (...args: unknown[]) => AsyncIterable<unknown>,
+		handler: EventHandler,
 	): void {
 		const iterator = handler(params)[Symbol.asyncIterator]();
 		this.state.activeStreams.set(requestId, iterator);

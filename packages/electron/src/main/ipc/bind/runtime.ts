@@ -1,215 +1,148 @@
-import { randomUUID } from 'node:crypto';
-
 import { ipcMain } from 'electron';
-import {
-	isMethodDescriptor,
-	isNamespaceDescriptor,
-	isStreamDescriptor,
-	getValueAtPath,
-} from '@franklin/lib/proxy';
-import type {
-	AnyShape,
-	NamespaceDescriptor,
-	ResourceDescriptor,
-	ServerRuntime,
-} from '@franklin/lib/proxy';
+import type { WebContents } from 'electron';
+import type { ServerRuntime, MethodHandler } from '@franklin/lib/proxy';
+import type { ResourceFactory } from '@franklin/lib/proxy';
 import { connect } from '@franklin/transport';
 import type { Duplex } from '@franklin/transport';
 
-import type { ChannelNamespace } from '../../../shared/channels.js';
 import { createMainIpcStream } from '../stream.js';
-import { createBoundLease, closeLease } from './registry/leases.js';
-import type { BindingContext, BoundLease } from './types.js';
+import { createPaths } from '../../../shared/paths.js';
+
+interface IpcTransportConnection {
+	close(): Promise<void>;
+	closeRemote(): Promise<void>;
+}
+
+interface RuntimeOptions {
+	onStreamRemoteClose?: () => Promise<void> | void;
+}
+
+function connectIpcTransport(
+	webContents: WebContents,
+	channel: string,
+	localTransport: Duplex<unknown, unknown>,
+	onRemoteClose?: () => Promise<void> | void,
+): IpcTransportConnection {
+	let tunnel: Duplex<unknown, unknown> | null = null;
+	let remoteTransport: Duplex<unknown, unknown> | null = null;
+	let closeTunnelPromise: Promise<void> | null = null;
+	let closeRemotePromise: Promise<void> | null = null;
+
+	const close = async () => {
+		if (closeTunnelPromise) return closeTunnelPromise;
+		closeTunnelPromise = (async () => {
+			await tunnel?.close();
+		})();
+		return closeTunnelPromise;
+	};
+
+	const closeRemote = async () => {
+		if (closeRemotePromise) return closeRemotePromise;
+		closeRemotePromise = (async () => {
+			await remoteTransport?.close();
+		})();
+		return closeRemotePromise;
+	};
+
+	remoteTransport = createMainIpcStream(webContents, channel, async () => {
+		await closeRemote();
+		if (onRemoteClose) {
+			// Resource-scoped: let the lifecycle kill handle local transport close
+			await onRemoteClose();
+		} else {
+			// Direct stream: close the tunnel (which closes the local transport)
+			await close();
+		}
+	});
+	tunnel = connect(localTransport, remoteTransport);
+
+	return { close, closeRemote };
+}
 
 export function createServerRuntime(
-	channels: ChannelNamespace,
-	context: BindingContext,
+	prefix: string,
+	webContents: WebContents,
+	options?: RuntimeOptions,
 ): ServerRuntime {
-	function registerLeaseLifecycle(
-		path: string[],
-		createLease: (id: string, ...args: unknown[]) => Promise<BoundLease>,
-	): Array<() => void> {
-		const connectChannel = channels.getLeaseConnectChannel(path);
-		const killChannel = channels.getLeaseKillChannel(path);
-
-		ipcMain.handle(connectChannel, async (_event, ...args: unknown[]) => {
-			const id = randomUUID();
-			const lease = await createLease(id, ...args);
-			context.leases.set(id, lease);
-			return id;
-		});
-
-		ipcMain.handle(killChannel, async (_event, id: string) => {
-			await closeLease(context, id);
-		});
-
-		return [
-			() => ipcMain.removeHandler(connectChannel),
-			() => ipcMain.removeHandler(killChannel),
-		];
-	}
-
-	function registerTransport(
-		path: string[],
-		factory: (...args: unknown[]) => Promise<unknown>,
-	): Array<() => void> {
-		return registerLeaseLifecycle(path, async (id, ...args) => {
-			const localTransport = (await factory(...args)) as Duplex<
-				unknown,
-				unknown
-			>;
-			const remoteTransport = createMainIpcStream(
-				context.webContents,
-				channels.getLeaseStreamChannel(path, id),
-				async () => {
-					await closeLease(context, id);
-				},
-			);
-			const tunnel = connect(localTransport, remoteTransport);
-
-			return createBoundLease(localTransport, async () => {
-				await tunnel.close();
-			});
-		});
-	}
-
-	function registerHandle(
-		path: string[],
-		inner: NamespaceDescriptor<any, any>,
-		factory: (...args: unknown[]) => Promise<unknown>,
-	): Array<() => void> {
-		return [
-			...registerLeaseLifecycle(path, async (_id, ...args) => {
-				const value = await factory(...args);
-				return createBoundLease(value);
-			}),
-			...registerHandleMembers(path, [], inner.shape as AnyShape),
-		];
-	}
-
-	function registerHandleMembers(
-		handlePath: string[],
-		memberPath: string[],
-		shape: AnyShape,
-	): Array<() => void> {
-		const unregister: Array<() => void> = [];
-
-		for (const [key, descriptor] of Object.entries(shape)) {
-			const nextMemberPath = [...memberPath, key];
-
-			if (isNamespaceDescriptor(descriptor)) {
-				unregister.push(
-					...registerHandleMembers(
-						handlePath,
-						nextMemberPath,
-						descriptor.shape as AnyShape,
-					),
-				);
-				continue;
-			}
-
-			if (!isMethodDescriptor(descriptor)) {
-				throw new Error(
-					`Unsupported descriptor inside leased proxy at ${[...handlePath, ...nextMemberPath].join('.')}`,
-				);
-			}
-
-			const methodChannel = channels.getLeaseMethodChannel(
-				handlePath,
-				nextMemberPath,
-			);
-			ipcMain.handle(
-				methodChannel,
-				async (_event, id: string, ...args: unknown[]) => {
-					const lease = context.leases.get(id);
-					if (!lease) {
-						throw new Error(`No lease registered for ${id}`);
-					}
-					const getParent = (path: string[]) => {
-						const parentPath = path.slice(0, -1);
-						return parentPath.length > 0
-							? getValueAtPath(lease.value, parentPath)
-							: lease.value;
-					};
-					const getMethodName = (path: string[]) => {
-						return path[path.length - 1] as string;
-					};
-					// The method needs to use the parent object to call the method (in the case of `this` being used)
-
-					const parent = getParent(nextMemberPath);
-					const methodName = getMethodName(nextMemberPath);
-					const method = (
-						parent as Record<string, (...a: unknown[]) => Promise<unknown>>
-					)[methodName] as (...a: unknown[]) => Promise<unknown>;
-					return await method.call(parent, ...args);
-				},
-			);
-
-			unregister.push(() => ipcMain.removeHandler(methodChannel));
-		}
-
-		return unregister;
-	}
-
+	const paths = createPaths(prefix);
 	return {
-		registerMethod(
-			path: string[],
-			handler: (...args: unknown[]) => Promise<unknown>,
-		): () => void {
-			const channel = channels.getMethodChannel(path);
+		registerNamespace(key: string): ServerRuntime {
+			return createServerRuntime(paths.forNamespace(key), webContents, options);
+		},
+
+		registerMethod(handler: MethodHandler): () => void {
+			const channel = paths.forMethod();
 			ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
 				return await handler(...args);
 			});
 			return () => ipcMain.removeHandler(channel);
 		},
 
-		registerStream(path: string[], factory: () => unknown): () => void {
-			const localTransport = factory() as Duplex<unknown, unknown>;
-			let tunnel: Duplex<unknown, unknown> | null = null;
-			let closePromise: Promise<void> | null = null;
-
-			const closeStream = async () => {
-				if (closePromise) {
-					return closePromise;
-				}
-
-				closePromise = (async () => {
-					await tunnel?.close();
-				})();
-
-				return closePromise;
-			};
-
-			const remoteTransport = createMainIpcStream<any, any>(
-				context.webContents,
-				channels.getStreamChannel(path),
-				async () => {
-					await closeStream();
-				},
+		// TODO: rename to registerTransport when stream() descriptor is renamed
+		registerTransport(transport: unknown): () => void {
+			const channel = paths.forStream();
+			const connection = connectIpcTransport(
+				webContents,
+				channel,
+				transport as Duplex<unknown, unknown>,
+				options?.onStreamRemoteClose,
 			);
-			tunnel = connect(localTransport, remoteTransport);
-			context.disposables.add(closeStream);
 
+			// For resource-scoped streams, only close the IPC side on
+			// unregister. The resource lifecycle (kill) handles the local
+			// transport close via inferDispose.
+			if (options?.onStreamRemoteClose) {
+				return () => {
+					void connection.closeRemote();
+				};
+			}
 			return () => {
-				context.disposables.delete(closeStream);
-				void closeStream();
+				void connection.close();
 			};
 		},
 
-		registerResource(
-			path: string[],
-			descriptor: ResourceDescriptor<any, any>,
-			factory: (...args: unknown[]) => Promise<unknown>,
-		): Array<() => void> {
-			if (isStreamDescriptor(descriptor.inner)) {
-				return registerTransport(path, factory);
-			}
-			if (isNamespaceDescriptor(descriptor.inner)) {
-				return registerHandle(path, descriptor.inner, factory);
-			}
-			throw new Error(
-				`Unsupported resource inner descriptor at ${path.join('.')}`,
-			);
+		registerResource(factory: ResourceFactory): () => Promise<void> {
+			const connectChannel = paths.forConnect();
+			const killChannel = paths.forKill();
+
+			const instances = new Map<
+				string,
+				{ unbind: Array<() => void>; dispose(): Promise<void> }
+			>();
+
+			const kill = async (id: string) => {
+				const entry = instances.get(id);
+				if (!entry) return;
+				instances.delete(id);
+				for (const fn of entry.unbind) fn();
+				await entry.dispose();
+			};
+
+			ipcMain.handle(connectChannel, async (_event, ...args: unknown[]) => {
+				const id = crypto.randomUUID();
+				const instance = await factory(...args);
+				const innerRuntime = createServerRuntime(
+					paths.forLease(id),
+					webContents,
+					{ onStreamRemoteClose: () => kill(id) },
+				);
+				const unbind = instance.bind(innerRuntime);
+				instances.set(id, {
+					unbind,
+					dispose: () => instance.dispose(),
+				});
+				return id;
+			});
+
+			ipcMain.handle(killChannel, async (_event, id: string) => {
+				await kill(id);
+			});
+
+			return async () => {
+				await Promise.allSettled([...instances.keys()].map((id) => kill(id)));
+				ipcMain.removeHandler(connectChannel);
+				ipcMain.removeHandler(killChannel);
+			};
 		},
 	};
 }

@@ -37,6 +37,17 @@ export type {
 
 export type { ProxyType } from './types.js';
 export type { ProxyRuntime, ServerRuntime } from './runtime.js';
-export { bindClient, UnsupportedDescriptorError } from './bind-client.js';
-export { bindServer } from './bind-server.js';
-export { getValueAtPath } from './lookup.js';
+export type {
+	ResourceBinding,
+	ResourceFactory,
+	ResourceInstance,
+} from './resource.js';
+export type {
+	MethodHandler,
+	NotificationHandler,
+	EventHandler,
+	Transport,
+} from './types.js';
+export { bindClient } from './bind/client/index.js';
+export { bindServer } from './bind/server/index.js';
+export { UnsupportedDescriptorError } from './bind/error.js';

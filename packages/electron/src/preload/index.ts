@@ -1,7 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-import { bindPreload } from './bind.js';
-import { schema } from '../shared/schema.js';
+import { bindPreloadIpc } from './bind.js';
 import {
 	AUTH_LOAD,
 	AUTH_GET_CANONICAL_PROVIDERS,
@@ -16,11 +15,12 @@ import {
 	AUTH_REMOVE_ENTRY,
 	AUTH_START_LOGIN,
 	AUTH_GET_PROVIDERS,
+	FRANKLIN_PROXY_CHANNEL_NAMESPACE,
 } from '../shared/channels.js';
 
 contextBridge.exposeInMainWorld(
-	'__franklinBridge',
-	bindPreload('franklin', schema),
+	'__franklinIpc',
+	bindPreloadIpc(FRANKLIN_PROXY_CHANNEL_NAMESPACE),
 );
 
 const auth = {

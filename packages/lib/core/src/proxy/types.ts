@@ -14,18 +14,14 @@ import type {
  */
 export type ProxyType<D extends Descriptor> =
 	D extends MethodDescriptor<infer TArgs, infer TResult>
-		? (...args: TArgs) => Promise<TResult>
+		? MethodHandler<TArgs, TResult>
 		: // TODO: I think Notification may just get delted (as its a method of void and is fire and foreget only if the caller doesn't bother awaiting)
 			D extends NotificationDescriptor<infer TArgs>
-			? (...args: TArgs) => Promise<void>
+			? NotificationHandler<TArgs>
 			: D extends EventDescriptor<infer TArgs, infer TItem>
-				? (...args: TArgs) => AsyncIterable<TItem>
+				? EventHandler<TArgs, TItem>
 				: D extends StreamDescriptor<infer R, infer W>
-					? {
-							readable: ReadableStream<R>;
-							writable: WritableStream<W>;
-							close: () => Promise<void>;
-						}
+					? Transport<R, W>
 					: D extends NamespaceDescriptor<unknown, infer TShape>
 						? { [K in keyof TShape]: ProxyType<TShape[K]> }
 						: D extends ResourceDescriptor<infer TArgs, infer TInner>
@@ -35,3 +31,19 @@ export type ProxyType<D extends Descriptor> =
 									}
 								>
 							: never;
+
+export type MethodHandler<
+	TArgs extends unknown[] = unknown[],
+	TResult = unknown,
+> = (...args: TArgs) => Promise<TResult>;
+export type NotificationHandler<TArgs extends unknown[] = unknown[]> = (
+	...args: TArgs
+) => Promise<void>;
+export type EventHandler<
+	TArgs extends unknown[] = unknown[],
+	TItem = unknown,
+> = (...args: TArgs) => AsyncIterable<TItem>;
+export type Transport<TRead = unknown, TWrite = TRead> = {
+	readable: ReadableStream<TRead>;
+	writable: WritableStream<TWrite>;
+};

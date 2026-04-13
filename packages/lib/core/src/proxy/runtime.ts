@@ -1,44 +1,39 @@
-import type { ResourceDescriptor } from './descriptors/types/index.js';
+import type {
+	MethodHandler,
+	NotificationHandler,
+	EventHandler,
+	Transport,
+} from './types.js';
+import type { ResourceBinding, ResourceFactory } from './resource.js';
 
-export interface ProxyRuntime {
-	bindMethod?(path: string[]): (...args: unknown[]) => Promise<unknown>;
+// TODO: registerNamespace etc should be optional too
+export interface ServerRuntime {
+	// The key for the field within the namespace
+	registerNamespace(key: string): ServerRuntime;
 
-	bindNotification?(path: string[]): (...args: unknown[]) => Promise<void>;
+	registerMethod?(handler: MethodHandler): () => void;
 
-	bindEvent?(path: string[]): (...args: unknown[]) => AsyncIterable<unknown>;
+	registerNotification?(handler: NotificationHandler): () => void;
 
-	bindStream?(path: string[]): unknown;
+	registerEvent?(handler: EventHandler): () => void;
 
-	bindResource?(
-		path: string[],
-		descriptor: ResourceDescriptor<any, any>,
-	): (...args: unknown[]) => Promise<unknown>;
+	// TODO: rename to registerTransport when stream() descriptor is renamed
+	registerTransport?(transport: Transport): () => void;
+
+	registerResource?(factory: ResourceFactory): () => Promise<void>;
 }
 
-export interface ServerRuntime {
-	registerMethod?(
-		path: string[],
-		handler: (...args: unknown[]) => Promise<unknown>,
-	): () => void;
+export interface ProxyRuntime {
+	// The key for the field within the namespace
+	bindNamespace(key: string): ProxyRuntime;
 
-	registerNotification?(
-		path: string[],
-		handler: (...args: unknown[]) => Promise<void>,
-	): () => void;
+	bindMethod?(): MethodHandler;
 
-	registerEvent?(
-		path: string[],
-		handler: (...args: unknown[]) => AsyncIterable<unknown>,
-	): () => void;
+	bindNotification?(): NotificationHandler;
 
-	// TODO: factor should be (...args: unknown[]) => Duplex<R, W>
-	registerStream?(path: string[], factory: () => unknown): () => void;
+	bindEvent?(): EventHandler;
 
-	// TODO: We may be able to break this down by providing in bind-server and bind-client
-	// in a similar way to how we've done for namespace
-	registerResource?(
-		path: string[],
-		descriptor: ResourceDescriptor<any, any>,
-		factory: (...args: unknown[]) => Promise<unknown>,
-	): Array<() => void>;
+	bindTransport?(): Transport;
+
+	bindResource?(): ResourceBinding;
 }

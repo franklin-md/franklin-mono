@@ -34,3 +34,5 @@ export {
 	isNamespaceDescriptor,
 	isResourceDescriptor,
 } from './detect.js';
+export { descriptorKind } from './kind.js';
+export type { DescriptorKind } from './kind.js';

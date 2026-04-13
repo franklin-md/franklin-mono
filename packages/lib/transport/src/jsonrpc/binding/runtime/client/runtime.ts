@@ -1,4 +1,9 @@
-import type { ProxyRuntime } from '@franklin/lib';
+import type {
+	ProxyRuntime,
+	MethodHandler,
+	NotificationHandler,
+	EventHandler,
+} from '@franklin/lib';
 import type { JsonRpcMessage } from '../../../types.js';
 import { isResponse } from '../../../types.js';
 import { AsyncEventQueue } from '../../event-queue.js';
@@ -11,21 +16,32 @@ import {
 import { closePending } from '../util.js';
 
 export class JsonRpcProxyRuntime implements ProxyRuntime {
-	private nextId = 0;
 	private readonly state: ClientBindingState;
+	private readonly prefix: string;
 
-	constructor(send: (message: JsonRpcMessage) => void) {
-		this.state = {
+	constructor(
+		send: (message: JsonRpcMessage) => void,
+		prefix?: string,
+		state?: ClientBindingState,
+	) {
+		this.prefix = prefix ?? '';
+		this.state = state ?? {
 			send,
+			nextId: 0,
 			pendingRequests: new Map<number, PendingRequest>(),
 			pendingStreams: new Map<number, AsyncEventQueue<unknown>>(),
 		};
 	}
 
-	bindMethod(path: string[]): (...args: unknown[]) => Promise<unknown> {
-		const methodName = path.join('/');
+	bindNamespace(key: string): ProxyRuntime {
+		const childPrefix = this.prefix ? `${this.prefix}/${key}` : key;
+		return new JsonRpcProxyRuntime(this.state.send, childPrefix, this.state);
+	}
+
+	bindMethod(): MethodHandler {
+		const methodName = this.prefix;
 		return (params: unknown) => {
-			const id = this.nextId++;
+			const id = this.state.nextId++;
 			return new Promise<unknown>((resolve, reject) => {
 				this.state.pendingRequests.set(id, { resolve, reject });
 				this.state.send({
@@ -38,18 +54,18 @@ export class JsonRpcProxyRuntime implements ProxyRuntime {
 		};
 	}
 
-	bindNotification(path: string[]): (...args: unknown[]) => Promise<void> {
-		const methodName = path.join('/');
+	bindNotification(): NotificationHandler {
+		const methodName = this.prefix;
 		return (params: unknown) => {
 			this.state.send({ jsonrpc: '2.0', method: methodName, params });
 			return Promise.resolve();
 		};
 	}
 
-	bindEvent(path: string[]): (...args: unknown[]) => AsyncIterable<unknown> {
-		const methodName = path.join('/');
+	bindEvent(): EventHandler {
+		const methodName = this.prefix;
 		return (params: unknown) => {
-			const id = this.nextId++;
+			const id = this.state.nextId++;
 			// TODO: Do we actually want this stream cancel mechanism?
 			const queue = new AsyncEventQueue<unknown>(() => {
 				this.state.send({

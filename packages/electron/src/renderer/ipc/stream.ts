@@ -1,22 +1,26 @@
 import type { Duplex } from '@franklin/transport';
 
-import type { FranklinPreloadBridge } from '../../shared/schema.js';
-import type { PreloadStreamBridge } from '../../shared/api.js';
+import type { FranklinIpcRuntime } from '../../shared/api.js';
+import { isIpcStreamMessage } from '../../shared/api.js';
 import type { AuthBridge } from './auth-store.js';
 
 declare global {
 	interface Window {
-		__franklinBridge: FranklinPreloadBridge;
+		__franklinIpc: FranklinIpcRuntime;
 		__franklinAuth: AuthBridge;
 	}
 }
 
-export function getPreloadBridge(): FranklinPreloadBridge {
-	return window.__franklinBridge;
-}
-
+/**
+ * Creates a renderer-side duplex stream over IPC.
+ *
+ * Uses `ipc.subscribe(channel)` for the readable side and
+ * `ipc.send(channel, packet)` for the writable side, following
+ * the `IpcStreamMessage` protocol ({ kind: 'data', data } | { kind: 'close' }).
+ */
 export function createIpcStream<R, W = R>(
-	bridge: PreloadStreamBridge<R, W>,
+	ipc: FranklinIpcRuntime,
+	channel: string,
 	onClose?: () => Promise<void>,
 ): Duplex<R, W> {
 	let controller: ReadableStreamDefaultController<R> | null = null;
@@ -53,7 +57,7 @@ export function createIpcStream<R, W = R>(
 			detach();
 			closeReadable();
 			if (notifyPeer) {
-				await bridge.close();
+				ipc.send(channel, { kind: 'close' });
 			}
 			if (releaseLease) {
 				await onClose?.();
@@ -66,14 +70,14 @@ export function createIpcStream<R, W = R>(
 	const readable = new ReadableStream<R>({
 		start(nextController) {
 			controller = nextController;
-			unsubscribe = bridge.subscribe({
-				next: (packet) => {
-					if (closed) return;
-					nextController.enqueue(packet);
-				},
-				close: () => {
+			unsubscribe = ipc.subscribe(channel, (packet: unknown) => {
+				if (closed) return;
+				if (!isIpcStreamMessage(packet)) return;
+				if (packet.kind === 'close') {
 					void closeStream(false, true);
-				},
+				} else {
+					nextController.enqueue(packet.data as R);
+				}
 			});
 		},
 		cancel() {
@@ -86,7 +90,7 @@ export function createIpcStream<R, W = R>(
 			if (closed) {
 				throw new Error('IPC stream is closed');
 			}
-			bridge.send(packet);
+			ipc.send(channel, { kind: 'data', data: packet });
 		},
 		close() {
 			return closeStream(true, true);
