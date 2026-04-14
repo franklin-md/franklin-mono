@@ -7,13 +7,13 @@ import {
 	StoreRegistry,
 	createEmptyStoreResult,
 } from '../../../../api/store/index.js';
-import type { Environment } from '../../../../api/environment/types.js';
+import type { ReconfigurableEnvironment } from '../../../../api/environment/types.js';
 import { editExtension } from '../../edit/extension.js';
 import { writeExtension } from '../extension.js';
 
 function mockEnvironment(
 	files: Record<string, string> = {},
-): Environment & { dispose(): Promise<void> } {
+): ReconfigurableEnvironment {
 	const store = new Map<string, string>(Object.entries(files));
 	return {
 		filesystem: {
@@ -55,7 +55,7 @@ function mockEnvironment(
 	};
 }
 
-function compileWriteAndEdit(env: Environment & { dispose(): Promise<void> }) {
+function compileWriteAndEdit(env: ReconfigurableEnvironment) {
 	const compiler = combine(
 		combine(
 			createCoreCompiler(),

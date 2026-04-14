@@ -4,10 +4,10 @@ import { createEnvironmentCompiler } from '../compiler.js';
 import { createCoreCompiler } from '../../core/compiler.js';
 import { createStoreCompiler } from '../../store/compiler.js';
 import { createEmptyStoreResult } from '../../../api/store/registry/result.js';
-import type { Environment } from '../../../api/environment/types.js';
+import type { ReconfigurableEnvironment } from '../../../api/environment/types.js';
 import { StoreRegistry } from '../../../api/store/registry/index.js';
 
-function mockEnvironment(): Environment & { dispose(): Promise<void> } {
+function mockEnvironment(): ReconfigurableEnvironment {
 	return {
 		filesystem: {
 			readFile: vi.fn(),
@@ -46,7 +46,7 @@ describe('createEnvironmentCompiler', () => {
 
 	it('getEnvironment() returns the environment to extensions', async () => {
 		const env = mockEnvironment();
-		let received: Environment | undefined;
+		let received: ReconfigurableEnvironment | undefined;
 
 		await compile(createEnvironmentCompiler(env), (api) => {
 			received = api.getEnvironment();
