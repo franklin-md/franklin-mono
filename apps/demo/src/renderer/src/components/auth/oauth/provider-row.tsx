@@ -2,18 +2,24 @@ import type { ComponentType } from 'react';
 
 import { cn, Button } from '@franklin/ui';
 import { Icons, type IconProps } from '@franklin/react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 
-import type { FlowState, OAuthProviderMeta } from './types.js';
+import type { OAuthProviderMeta } from './types.js';
 import { OAuthFlowView } from './flow-view.js';
+import { useOAuthFlow } from './hook.js';
 
 // ---------------------------------------------------------------------------
-// Provider → icon mapping
+// Provider → icon + display-name mapping
 // ---------------------------------------------------------------------------
 
 const PROVIDER_ICONS: Record<string, ComponentType<IconProps>> = {
 	anthropic: Icons.Anthropic,
-	'openai-codex': Icons.Codex,
+	'openai-codex': Icons.OpenAI,
+};
+
+const PROVIDER_LABELS: Record<string, string> = {
+	anthropic: 'Anthropic',
+	'openai-codex': 'ChatGPT',
 };
 
 // ---------------------------------------------------------------------------
@@ -23,50 +29,50 @@ const PROVIDER_ICONS: Record<string, ComponentType<IconProps>> = {
 export function ProviderRow({
 	provider,
 	isSignedIn,
-	flowState,
-	isActive,
-	onLogin,
-	onRemove,
-	onDismiss,
+	onUpdate,
 }: {
 	provider: OAuthProviderMeta;
 	isSignedIn: boolean;
-	flowState: FlowState;
-	isActive: boolean;
-	onLogin: (provider: OAuthProviderMeta) => void;
-	onRemove: (providerId: string) => void;
-	onDismiss: () => void;
+	onUpdate: () => Promise<void>;
 }) {
+	const { flowState, login, remove, dismiss } = useOAuthFlow(
+		provider.id,
+		onUpdate,
+	);
+
 	const Icon = PROVIDER_ICONS[provider.id];
 	const flowDone =
-		isActive && (flowState.phase === 'success' || flowState.phase === 'error');
-	const flowRunning = isActive && !flowDone && flowState.phase !== 'idle';
+		flowState.phase === 'success' || flowState.phase === 'error';
+	const flowRunning = !flowDone && flowState.phase !== 'idle';
 
 	return (
 		<div className="overflow-hidden rounded-md ring-1 ring-border">
 			<div className="flex items-center gap-3 px-3.5 py-2.5">
-				{/* Provider icon — full colour when signed in, muted when not */}
 				{Icon && (
-					<div
-						className={cn(
-							'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
-							isSignedIn
-								? 'bg-primary/10 ring-1 ring-primary/30'
-								: 'opacity-40 grayscale',
+					<div className="relative shrink-0">
+						<div
+							className={cn(
+								'flex h-8 w-8 items-center justify-center rounded-md bg-white text-black',
+							)}
+						>
+							<Icon size={18} />
+						</div>
+						{isSignedIn && (
+							<div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-green-500 ring-2 ring-background">
+								<Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+							</div>
 						)}
-					>
-						<Icon size={18} />
 					</div>
 				)}
 
 				<span className="flex-1 text-sm font-medium text-foreground">
-					{provider.name}
+					{PROVIDER_LABELS[provider.id] ?? provider.name}
 				</span>
 
 				<Button
 					size="sm"
 					onClick={() => {
-						onLogin(provider);
+						void login();
 					}}
 					disabled={flowRunning}
 				>
@@ -80,9 +86,7 @@ export function ProviderRow({
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={() => {
-							onRemove(provider.id);
-						}}
+						onClick={remove}
 						disabled={flowRunning}
 					>
 						Remove
@@ -90,8 +94,8 @@ export function ProviderRow({
 				)}
 			</div>
 
-			{isActive && flowState.phase !== 'idle' && (
-				<OAuthFlowView state={flowState} onDismiss={onDismiss} />
+			{flowState.phase !== 'idle' && (
+				<OAuthFlowView state={flowState} onDismiss={dismiss} />
 			)}
 		</div>
 	);
