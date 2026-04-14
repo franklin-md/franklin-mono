@@ -14,7 +14,7 @@ import { createSettings } from '../settings/store.js';
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
 import { AuthManager } from '../auth/manager.js';
-import { restoreAll } from '../store/restorable.js';
+import { restoreAll } from './restorable.js';
 import type {
 	BaseSystem,
 	FranklinState,
