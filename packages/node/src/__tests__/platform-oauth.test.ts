@@ -15,6 +15,36 @@ describe('createNodePlatform OAuth adapter', () => {
 		vi.clearAllMocks();
 	});
 
+	it('does not expose manual code input for callback-server providers', async () => {
+		const oauth = await import('@mariozechner/pi-ai/oauth');
+
+		vi.mocked(oauth.getOAuthProvider).mockReturnValue({
+			id: 'anthropic',
+			name: 'Anthropic',
+			login: async (callbacks) => {
+				callbacks.onAuth({ url: 'https://example.com/auth' });
+				expect(callbacks.onManualCodeInput).toBeUndefined();
+				return {
+					access: 'access-token',
+					refresh: 'refresh-token',
+					expires: Date.now() + 60_000,
+				};
+			},
+			refreshToken: vi.fn(),
+			getApiKey: vi.fn(() => 'api-key'),
+			usesCallbackServer: true,
+		});
+
+		const { createNodePlatform } = await import('../platform/index.js');
+		const platform = createNodePlatform({ appDir: '/tmp' });
+		const flow = await platform.createFlow('anthropic');
+
+		await expect(flow.login()).resolves.toMatchObject({
+			access: 'access-token',
+			refresh: 'refresh-token',
+		});
+	});
+
 	it('rejects provider fallback to manual prompt input outside OAuthFlow', async () => {
 		const oauth = await import('@mariozechner/pi-ai/oauth');
 

@@ -19,11 +19,9 @@ function toProviderOAuthLoginCallbacks(
 	callbacks: OAuthLoginCallbacks,
 ): ProviderOAuthLoginCallbacks {
 	return {
-		...callbacks,
+		onAuth: callbacks.onAuth,
+		onProgress: callbacks.onProgress,
 		onPrompt: async () => {
-			throw unsupportedManualOAuthFallbackError();
-		},
-		onManualCodeInput: async () => {
 			throw unsupportedManualOAuthFallbackError();
 		},
 	};
