@@ -21,6 +21,9 @@ function toProviderOAuthLoginCallbacks(
 	return {
 		onAuth: callbacks.onAuth,
 		onProgress: callbacks.onProgress,
+		// TODO(FRA-161): Add a manual-code fallback for callback-server providers.
+		// If the local OAuth callback never arrives, provider.login() can remain
+		// pending because Franklin no longer exposes onManualCodeInput.
 		onPrompt: async () => {
 			throw unsupportedManualOAuthFallbackError();
 		},
