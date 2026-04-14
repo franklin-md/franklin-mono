@@ -1,1 +1,3 @@
-export { defaultToolRegistry as toolRegistry } from '@franklin/ui';
+import { defaultToolRegistry } from '@franklin/ui';
+
+export const toolRegistry = defaultToolRegistry;
