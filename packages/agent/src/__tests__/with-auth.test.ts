@@ -15,10 +15,7 @@ import type { AuthEntry } from '../auth/types.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-type AuthListener = (
-	provider: string,
-	entry: AuthEntry | undefined,
-) => void;
+type AuthListener = (provider: string, entry: AuthEntry | undefined) => void;
 
 function mockAuthManager(
 	providers: Record<string, string | undefined> = {},
