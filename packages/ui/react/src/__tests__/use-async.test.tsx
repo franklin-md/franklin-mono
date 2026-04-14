@@ -111,9 +111,7 @@ describe('useAsync', () => {
 	it('does not re-fetch when an inline fn changes identity but deps are stable', async () => {
 		const fn = vi.fn(async () => 'value');
 
-		const { result, rerender } = renderHook(
-			() => useAsync(() => fn(), []),
-		);
+		const { result, rerender } = renderHook(() => useAsync(() => fn(), []));
 
 		await act(async () => {});
 		expect(result.current).toBe('value');

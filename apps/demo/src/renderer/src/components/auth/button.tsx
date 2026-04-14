@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 
 import type { AuthEntries } from '@franklin/agent/browser';
-import { Button } from '@franklin/ui';
+import { Button, Dialog, DialogTrigger } from '@franklin/ui';
 
 import { useAuthManager } from './context.js';
-import { AuthModal } from './modal.js';
+import { AuthModalContent } from './modal.js';
 
 // ---------------------------------------------------------------------------
 // PersonIcon — minimal inline SVG, no external dependencies
@@ -30,19 +30,18 @@ function PersonIcon() {
 // ---------------------------------------------------------------------------
 
 /**
- * A sign-in button for the top-right corner of an application.
+ * A sign-in button that opens the auth modal via Radix DialogTrigger.
  *
  * - Shows "Sign in" when no credentials are saved.
  * - Shows the number of configured providers when credentials exist.
- * - Opens `<AuthModal>` on click.
  *
  * Must be rendered inside an `<AuthProvider>`.
  */
 export function AuthButton() {
 	const auth = useAuthManager();
-	const [open, setOpen] = useState(false);
-	const [providerCount, setProviderCount] = useState(0);
-	const isSignedIn = providerCount > 0;
+	const [providerCount, setProviderCount] = useState(
+		() => Object.keys(auth.entries()).length,
+	);
 
 	useEffect(() => {
 		setProviderCount(Object.keys(auth.entries()).length);
@@ -52,32 +51,20 @@ export function AuthButton() {
 		setProviderCount(Object.keys(entries).length);
 	}
 
-	function handleClose() {
-		setOpen(false);
-	}
+	const isSignedIn = providerCount > 0;
 
 	return (
-		<>
-			<Button
-				variant="outline"
-				size="sm"
-				className="gap-1.5 rounded-full"
-				onClick={() => {
-					setOpen(true);
-				}}
-			>
-				<PersonIcon />
-				{isSignedIn
-					? `${providerCount} provider${providerCount > 1 ? 's' : ''}`
-					: 'Sign in'}
-			</Button>
+		<Dialog>
+			<DialogTrigger asChild>
+				<Button variant="outline" size="sm" className="gap-1.5 rounded-full">
+					<PersonIcon />
+					{isSignedIn
+						? `${providerCount} provider${providerCount > 1 ? 's' : ''}`
+						: 'Sign in'}
+				</Button>
+			</DialogTrigger>
 
-			{open && (
-				<AuthModal
-					onClose={handleClose}
-					onEntriesChange={handleEntriesChange}
-				/>
-			)}
-		</>
+			<AuthModalContent onEntriesChange={handleEntriesChange} />
+		</Dialog>
 	);
 }

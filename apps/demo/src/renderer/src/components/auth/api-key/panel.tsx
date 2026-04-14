@@ -12,41 +12,16 @@ import {
 } from '@franklin/ui';
 import { useAsync } from '@franklin/react';
 
-import { useAuthManager } from './context.js';
-import type { OAuthProviderMeta } from './oauth-panel.js';
+import { useAuthManager } from '../context.js';
 
-// ---------------------------------------------------------------------------
-// MaskedKey — show/hide the stored key
-// ---------------------------------------------------------------------------
-
-function MaskedKey({ value }: { value: string }) {
-	const [revealed, setRevealed] = useState(false);
-	const masked = `${value.slice(0, 4)}${'•'.repeat(Math.min(20, Math.max(0, value.length - 4)))}`;
-
-	return (
-		<span className="font-mono text-sm">
-			{revealed ? value : masked}
-			<button
-				onClick={() => {
-					setRevealed((r) => !r);
-				}}
-				className="ml-1.5 cursor-pointer text-xs text-primary hover:underline"
-			>
-				{revealed ? 'Hide' : 'Show'}
-			</button>
-		</span>
-	);
-}
-
-// ---------------------------------------------------------------------------
-// ApiKeyPanel
-// ---------------------------------------------------------------------------
+/** Provider descriptor used within the API-key panel. */
+type ProviderMeta = { id: string; name: string };
 
 /**
- * Displays all stored API-key entries and provides a form to add new ones.
+ * Displays stored API-key entries and a form to add new ones.
  *
  * `savedEntries` is owned by the parent — the panel never reads from disk.
- * `onUpdate` is called after any mutation so the parent can reload and re-pass entries.
+ * `onUpdate` is called after any mutation so the parent can reload.
  */
 export function ApiKeyPanel({
 	savedEntries,
@@ -57,7 +32,7 @@ export function ApiKeyPanel({
 }) {
 	const auth = useAuthManager();
 	const providers = useAsync(
-		async (): Promise<OAuthProviderMeta[]> =>
+		async (): Promise<ProviderMeta[]> =>
 			(await auth.getApiKeyProviders()).map((id) => ({ id, name: id })),
 		[],
 		[auth],
@@ -75,10 +50,7 @@ export function ApiKeyPanel({
 
 	const apiKeyEntries = Object.entries(savedEntries).filter(([, entry]) =>
 		Boolean(entry.apiKey),
-	) as [
-		string,
-		AuthEntries[string] & { apiKey: { type: 'apiKey'; key: string } },
-	][];
+	) as [string, AuthEntries[string] & { apiKey: ApiKeyEntry }][];
 
 	async function handleSubmit(e: FormEvent) {
 		e.preventDefault();
@@ -105,7 +77,7 @@ export function ApiKeyPanel({
 
 	return (
 		<div className="flex flex-col gap-4">
-			{/* Existing keys table */}
+			{/* Existing keys */}
 			{apiKeyEntries.length > 0 && (
 				<table className="w-full border-collapse text-sm">
 					<thead>
@@ -113,19 +85,13 @@ export function ApiKeyPanel({
 							<th className="px-2 py-1.5 text-left font-semibold text-foreground">
 								Provider
 							</th>
-							<th className="px-2 py-1.5 text-left font-semibold text-foreground">
-								Key
-							</th>
 							<th className="w-[60px] px-2 py-1.5"></th>
 						</tr>
 					</thead>
 					<tbody>
-						{apiKeyEntries.map(([id, entry]) => (
+						{apiKeyEntries.map(([id]) => (
 							<tr key={id} className="border-b border-border/50">
 								<td className="px-2 py-2 text-foreground">{id}</td>
-								<td className="px-2 py-2">
-									<MaskedKey value={entry.apiKey.key} />
-								</td>
 								<td className="px-2 py-2">
 									<Button
 										variant="outline"
@@ -153,7 +119,12 @@ export function ApiKeyPanel({
 				<p className="mb-2.5 text-sm font-medium text-foreground">
 					Add API Key
 				</p>
-				<form onSubmit={handleSubmit} className="flex flex-col gap-2">
+				<form
+					onSubmit={(e) => {
+						void handleSubmit(e);
+					}}
+					className="flex flex-col gap-2"
+				>
 					<Select
 						value={provider}
 						onValueChange={(value) => {

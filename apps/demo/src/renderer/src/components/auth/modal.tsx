@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { AuthEntries } from '@franklin/agent/browser';
 import {
-	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
@@ -12,26 +11,24 @@ import {
 	TabsTrigger,
 } from '@franklin/ui';
 
-import { ApiKeyPanel } from './api-key-panel.js';
+import { ApiKeyPanel } from './api-key/panel.js';
 import { useAuthManager } from './context.js';
-import { OAuthPanel } from './oauth-panel.js';
+import { OAuthPanel } from './oauth/panel.js';
 
 /**
- * Full-screen overlay modal for authentication.
+ * The content portion of the auth dialog (rendered inside a `<Dialog>` root
+ * owned by `AuthButton`).
  *
  * Shows two tabs:
- * - **OAuth Providers**: list of OAuth providers with sign-in buttons and inline flow
- * - **API Keys**: manage stored API keys for any provider
+ * - **OAuth Providers**: list of OAuth providers with sign-in buttons
+ * - **API Keys**: manage stored API keys
  *
- * `onClose` is called when the user dismisses the modal (backdrop click or × button).
- * `onEntriesChange` is called with the latest entries after any mutation so the
- * caller (e.g. `AuthButton`) can update its own derived state without re-reading disk.
+ * `onEntriesChange` is called with the latest entries after any mutation so
+ * the caller (e.g. `AuthButton`) can update its own derived state.
  */
-export function AuthModal({
-	onClose,
+export function AuthModalContent({
 	onEntriesChange,
 }: {
-	onClose: () => void;
 	onEntriesChange?: (entries: AuthEntries) => void;
 }) {
 	const auth = useAuthManager();
@@ -50,44 +47,37 @@ export function AuthModal({
 	}, [auth, onEntriesChange]);
 
 	return (
-		<Dialog
-			open
-			onOpenChange={(open) => {
-				if (!open) onClose();
-			}}
-		>
-			<DialogContent className="w-[500px]">
-				<DialogHeader>
-					<DialogTitle>Authentication</DialogTitle>
-				</DialogHeader>
+		<DialogContent className="w-[500px]">
+			<DialogHeader>
+				<DialogTitle>Authentication</DialogTitle>
+			</DialogHeader>
 
-				<Tabs defaultValue="oauth">
-					<TabsList className="w-full">
-						<TabsTrigger value="oauth" className="flex-1">
-							OAuth Providers
-						</TabsTrigger>
-						<TabsTrigger value="apiKeys" className="flex-1">
-							API Keys
-						</TabsTrigger>
-					</TabsList>
+			<Tabs defaultValue="oauth">
+				<TabsList className="w-full">
+					<TabsTrigger value="oauth" className="flex-1">
+						OAuth Providers
+					</TabsTrigger>
+					<TabsTrigger value="apiKeys" className="flex-1">
+						API Keys
+					</TabsTrigger>
+				</TabsList>
 
-					{/* Both panels stay mounted so an in-progress OAuth flow is never lost */}
-					<TabsContent
-						value="oauth"
-						forceMount
-						className="data-[state=inactive]:hidden"
-					>
-						<OAuthPanel savedEntries={savedEntries} onUpdate={handleUpdate} />
-					</TabsContent>
-					<TabsContent
-						value="apiKeys"
-						forceMount
-						className="data-[state=inactive]:hidden"
-					>
-						<ApiKeyPanel savedEntries={savedEntries} onUpdate={handleUpdate} />
-					</TabsContent>
-				</Tabs>
-			</DialogContent>
-		</Dialog>
+				{/* Both panels stay mounted so an in-progress OAuth flow is never lost */}
+				<TabsContent
+					value="oauth"
+					forceMount
+					className="data-[state=inactive]:hidden"
+				>
+					<OAuthPanel savedEntries={savedEntries} onUpdate={handleUpdate} />
+				</TabsContent>
+				<TabsContent
+					value="apiKeys"
+					forceMount
+					className="data-[state=inactive]:hidden"
+				>
+					<ApiKeyPanel savedEntries={savedEntries} onUpdate={handleUpdate} />
+				</TabsContent>
+			</Tabs>
+		</DialogContent>
 	);
 }
