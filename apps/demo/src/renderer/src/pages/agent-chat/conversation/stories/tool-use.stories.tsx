@@ -87,6 +87,10 @@ const fetchInvalidBlock = toolBlock('fetch_url', {
 	url: 'not-a-valid-url',
 });
 
+const webSearchBlock = toolBlock('search_web', {
+	query: 'vitest snapshot testing best practices',
+});
+
 const unknownBlock = toolBlock('some_custom_tool', {
 	query: 'hello',
 });
@@ -145,6 +149,10 @@ export const WriteMarkdownFile: Story = {
 
 export const WebFetchInvalidUrl: Story = {
 	args: { block: fetchInvalidBlock, status: 'error' },
+};
+
+export const WebSearch: Story = {
+	args: { block: webSearchBlock, status: 'success' },
 };
 
 export const UnknownTool: Story = {

@@ -1,6 +1,9 @@
 import { Globe } from 'lucide-react';
 
-import { createWebFetchExtension } from '@franklin/extensions';
+import {
+	createWebFetchExtension,
+	createWebSearchExtension,
+} from '@franklin/extensions';
 import {
 	createToolRenderer,
 	type ToolRendererRegistryEntries,
@@ -8,9 +11,11 @@ import {
 
 import { Favicon } from '../../../components/favicon.js';
 import { displayUrl } from '../../../lib/display-url.js';
-import { ToolSummary, ToolSummaryDetail } from '../summary.js';
+import { toolEntry } from '../entry.js';
+import { ToolSummaryDetail } from '../summary.js';
 
 const webFetchExtension = createWebFetchExtension({});
+const webSearchExtension = createWebSearchExtension({});
 
 export const webToolRenderers = [
 	createToolRenderer(webFetchExtension.tools.fetchUrl, {
@@ -18,14 +23,15 @@ export const webToolRenderers = [
 			const { hostname, path } = displayUrl(args.url);
 
 			return (
-				<ToolSummary
-					icon={Globe}
-					leading={<Favicon hostname={hostname} />}
-					label={hostname}
-				>
+				<>
+					<Favicon hostname={hostname} />
+					<span className="shrink-0">{hostname}</span>
 					{path && <ToolSummaryDetail>{path}</ToolSummaryDetail>}
-				</ToolSummary>
+				</>
 			);
 		},
 	}),
+	toolEntry(webSearchExtension.tools.searchWeb, Globe, 'Search', (args) => (
+		<ToolSummaryDetail>{args.query}</ToolSummaryDetail>
+	)),
 ] satisfies ToolRendererRegistryEntries;
