@@ -13,7 +13,7 @@ import {
 } from '@franklin/ui';
 
 import { ApiKeyPanel } from './api-key-panel.js';
-import { useAuthManager } from './auth-context.js';
+import { useAuthManager } from './context.js';
 import { OAuthPanel } from './oauth-panel.js';
 
 /**

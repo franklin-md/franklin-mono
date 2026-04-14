@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@franklin/ui';
 import { AgentChatPage } from '@/pages/agent-chat/agent-chat-page.js';
-import { DemoAuthControls } from '@/components/demo-auth-controls.js';
+import { AuthButton } from '@/components/auth/button.js';
 import { FranklinProvider } from '@franklin/react';
 import { createElectronPlatform } from '@franklin/electron/renderer';
 import {
@@ -52,7 +52,7 @@ export function App() {
 						<h1 className="text-lg font-semibold tracking-tight">
 							Franklin — Demo
 						</h1>
-						<DemoAuthControls />
+						<AuthButton />
 					</div>
 				</header>
 

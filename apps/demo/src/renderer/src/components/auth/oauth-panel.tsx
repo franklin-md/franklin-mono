@@ -5,7 +5,7 @@ import { Button } from '@franklin/ui';
 import { useApp, useAsync } from '@franklin/react';
 import { Loader2 } from 'lucide-react';
 
-import { useAuthManager } from './auth-context.js';
+import { useAuthManager } from './context.js';
 
 // ---------------------------------------------------------------------------
 // Public types

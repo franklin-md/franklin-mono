@@ -12,7 +12,7 @@ import {
 } from '@franklin/ui';
 import { useAsync } from '@franklin/react';
 
-import { useAuthManager } from './auth-context.js';
+import { useAuthManager } from './context.js';
 import type { OAuthProviderMeta } from './oauth-panel.js';
 
 // ---------------------------------------------------------------------------

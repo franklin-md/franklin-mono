@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import type { AuthEntries } from '@franklin/agent/browser';
 import { Button } from '@franklin/ui';
 
-import { useAuthManager } from './auth-context.js';
-import { AuthModal } from './auth-modal.js';
+import { useAuthManager } from './context.js';
+import { AuthModal } from './modal.js';
 
 // ---------------------------------------------------------------------------
 // PersonIcon — minimal inline SVG, no external dependencies
