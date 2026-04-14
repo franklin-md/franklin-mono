@@ -26,6 +26,17 @@ export {
 	CommandList,
 	CommandSeparator,
 } from './primitives/command.js';
+export {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogOverlay,
+	DialogPortal,
+	DialogTitle,
+	DialogTrigger,
+} from './primitives/dialog.js';
 export { DeleteButton } from './primitives/delete-button.js';
 export { Input } from './primitives/input.js';
 export {

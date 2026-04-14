@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
 import type { AuthEntries, ApiKeyEntry } from '@franklin/agent/browser';
+import { Button, Input } from '@franklin/ui';
 
 import { useAuthStore } from './auth-context.js';
 import type { OAuthProviderMeta } from './oauth-panel.js';
@@ -14,21 +15,13 @@ function MaskedKey({ value }: { value: string }) {
 	const masked = `${value.slice(0, 4)}${'•'.repeat(Math.min(20, Math.max(0, value.length - 4)))}`;
 
 	return (
-		<span style={{ fontFamily: 'monospace', fontSize: 13 }}>
+		<span className="font-mono text-sm">
 			{revealed ? value : masked}
 			<button
 				onClick={() => {
 					setRevealed((r) => !r);
 				}}
-				style={{
-					marginLeft: 6,
-					border: 'none',
-					background: 'none',
-					color: '#1a73e8',
-					cursor: 'pointer',
-					fontSize: 12,
-					padding: 0,
-				}}
+				className="ml-1.5 cursor-pointer text-xs text-primary hover:underline"
 			>
 				{revealed ? 'Hide' : 'Show'}
 			</button>
@@ -98,43 +91,39 @@ export function ApiKeyPanel({
 	}
 
 	return (
-		<div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+		<div className="flex flex-col gap-4">
 			{/* Existing keys table */}
 			{apiKeyEntries.length > 0 && (
-				<table
-					style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}
-				>
+				<table className="w-full border-collapse text-sm">
 					<thead>
-						<tr style={{ borderBottom: '1px solid #e0e0e0' }}>
-							<th style={thStyle}>Provider</th>
-							<th style={thStyle}>Key</th>
-							<th style={{ ...thStyle, width: 60 }}></th>
+						<tr className="border-b border-border">
+							<th className="px-2 py-1.5 text-left font-semibold text-foreground">
+								Provider
+							</th>
+							<th className="px-2 py-1.5 text-left font-semibold text-foreground">
+								Key
+							</th>
+							<th className="w-[60px] px-2 py-1.5"></th>
 						</tr>
 					</thead>
 					<tbody>
 						{apiKeyEntries.map(([id, entry]) => (
-							<tr key={id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-								<td style={tdStyle}>{id}</td>
-								<td style={tdStyle}>
+							<tr key={id} className="border-b border-border/50">
+								<td className="px-2 py-2 text-foreground">{id}</td>
+								<td className="px-2 py-2">
 									<MaskedKey value={entry.apiKey.key} />
 								</td>
-								<td style={tdStyle}>
-									<button
+								<td className="px-2 py-2">
+									<Button
+										variant="outline"
+										size="sm"
+										className="text-destructive"
 										onClick={() => {
 											void handleRemove(id);
 										}}
-										style={{
-											border: '1px solid #ccc',
-											background: '#fff',
-											color: '#c62828',
-											borderRadius: 4,
-											padding: '3px 8px',
-											cursor: 'pointer',
-											fontSize: 12,
-										}}
 									>
 										Remove
-									</button>
+									</Button>
 								</td>
 							</tr>
 						))}
@@ -144,32 +133,21 @@ export function ApiKeyPanel({
 
 			{/* Add key form */}
 			<div
-				style={{
-					borderTop: apiKeyEntries.length > 0 ? '1px solid #e0e0e0' : 'none',
-					paddingTop: apiKeyEntries.length > 0 ? 12 : 0,
-				}}
+				className={
+					apiKeyEntries.length > 0 ? 'border-t border-border pt-3' : ''
+				}
 			>
-				<p
-					style={{
-						margin: '0 0 10px',
-						fontWeight: 500,
-						fontSize: 14,
-						color: '#1a1a1a',
-					}}
-				>
+				<p className="mb-2.5 text-sm font-medium text-foreground">
 					Add API Key
 				</p>
-				<form
-					onSubmit={handleSubmit}
-					style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-				>
+				<form onSubmit={handleSubmit} className="flex flex-col gap-2">
 					<select
 						value={provider}
 						onChange={(e) => {
 							setProvider(e.currentTarget.value);
 							setError(null);
 						}}
-						style={inputStyle}
+						className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 					>
 						<option value="" disabled>
 							Select a provider
@@ -180,7 +158,7 @@ export function ApiKeyPanel({
 							</option>
 						))}
 					</select>
-					<input
+					<Input
 						type="password"
 						placeholder="API Key"
 						value={key}
@@ -188,50 +166,15 @@ export function ApiKeyPanel({
 							setKey(e.currentTarget.value);
 							setError(null);
 						}}
-						style={inputStyle}
 					/>
-					{error && (
-						<p style={{ margin: 0, fontSize: 12, color: '#c62828' }}>{error}</p>
-					)}
+					{error && <p className="text-xs text-destructive">{error}</p>}
 					<div>
-						<button
-							type="submit"
-							style={{
-								padding: '7px 16px',
-								background: '#1a73e8',
-								color: '#fff',
-								border: 'none',
-								borderRadius: 4,
-								fontSize: 13,
-								cursor: 'pointer',
-							}}
-						>
+						<Button type="submit" size="sm">
 							Save
-						</button>
+						</Button>
 					</div>
 				</form>
 			</div>
 		</div>
 	);
 }
-
-// ---------------------------------------------------------------------------
-// Style constants
-// ---------------------------------------------------------------------------
-
-const thStyle: React.CSSProperties = {
-	textAlign: 'left',
-	padding: '6px 8px',
-	fontWeight: 600,
-	color: '#1a1a1a',
-};
-const tdStyle: React.CSSProperties = { padding: '8px 8px', color: '#1a1a1a' };
-const inputStyle: React.CSSProperties = {
-	padding: '7px 10px',
-	border: '1px solid #ccc',
-	borderRadius: 4,
-	fontSize: 13,
-	width: '100%',
-	boxSizing: 'border-box',
-	color: '#1a1a1a',
-};

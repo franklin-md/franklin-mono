@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import type { AuthEntries } from '@franklin/agent/browser';
+import { Button } from '@franklin/ui';
 
 import { useAuthStore } from './auth-context.js';
 import { AuthModal } from './auth-modal.js';
@@ -30,21 +31,13 @@ function PersonIcon() {
 // ---------------------------------------------------------------------------
 
 /**
- * A Google-style sign-in button for the top-right corner of an application.
+ * A sign-in button for the top-right corner of an application.
  *
  * - Shows "Sign in" when no credentials are saved.
  * - Shows the number of configured providers when credentials exist.
  * - Opens `<AuthModal>` on click.
  *
  * Must be rendered inside an `<AuthProvider>`.
- *
- * @example
- * ```tsx
- * // In your app layout:
- * <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 1000 }}>
- *   <AuthButton />
- * </div>
- * ```
  */
 export function AuthButton({
 	oauthProviders,
@@ -76,38 +69,19 @@ export function AuthButton({
 
 	return (
 		<>
-			<button
+			<Button
+				variant="outline"
+				size="sm"
+				className="gap-1.5 rounded-full"
 				onClick={() => {
 					setOpen(true);
-				}}
-				style={{
-					display: 'inline-flex',
-					alignItems: 'center',
-					gap: 7,
-					padding: '7px 16px',
-					borderRadius: 20,
-					border: '1px solid #dadce0',
-					background: '#fff',
-					color: '#3c4043',
-					fontSize: 14,
-					fontWeight: 500,
-					cursor: 'pointer',
-					boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-					transition: 'box-shadow 0.15s',
-					whiteSpace: 'nowrap',
-				}}
-				onMouseEnter={(e) => {
-					e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.18)';
-				}}
-				onMouseLeave={(e) => {
-					e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
 				}}
 			>
 				<PersonIcon />
 				{isSignedIn
 					? `${providerCount} provider${providerCount > 1 ? 's' : ''}`
 					: 'Sign in'}
-			</button>
+			</Button>
 
 			{open && (
 				<AuthModal

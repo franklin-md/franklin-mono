@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import type { OAuthLoginCallbacks, AuthEntries } from '@franklin/agent/browser';
+import { Button } from '@franklin/ui';
 
 import { useAuthStore } from './auth-context.js';
 
@@ -102,9 +103,9 @@ export function OAuthPanel({
 	}
 
 	return (
-		<div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+		<div className="flex flex-col gap-3">
 			{providers.length === 0 && (
-				<p style={{ color: '#888', margin: 0 }}>
+				<p className="text-sm text-muted-foreground">
 					No OAuth providers registered.
 				</p>
 			)}
@@ -119,43 +120,33 @@ export function OAuthPanel({
 				return (
 					<div
 						key={provider.id}
-						style={{
-							borderRadius: 6,
-							border: '1px solid #e0e0e0',
-							overflow: 'hidden',
-						}}
+						className="overflow-hidden rounded-md ring-1 ring-border"
 					>
-						<div
-							style={{
-								display: 'flex',
-								alignItems: 'center',
-								gap: 10,
-								padding: '10px 14px',
-								background: isActive ? '#f8f9fa' : '#fff',
-							}}
-						>
-							<span style={{ flex: 1, fontWeight: 500, color: '#1a1a1a' }}>
+						<div className="flex items-center gap-2.5 px-3.5 py-2.5">
+							<span className="flex-1 text-sm font-medium text-foreground">
 								{provider.name}
 							</span>
 
 							{isSignedIn && !isActive && (
-								<span style={{ fontSize: 13, color: '#2e7d32' }}>
-									✓ Signed in
+								<span className="text-xs text-green-700">
+									&#10003; Signed in
 								</span>
 							)}
 
-							<button
+							<Button
+								size="sm"
 								onClick={() => {
 									void startLogin(provider);
 								}}
 								disabled={flowRunning}
-								style={btnStyle(flowRunning)}
 							>
 								{isSignedIn ? 'Re-authenticate' : 'Sign in'}
-							</button>
+							</Button>
 
 							{isSignedIn && (
-								<button
+								<Button
+									variant="outline"
+									size="sm"
 									onClick={() => {
 										void (async () => {
 											store.removeOAuthEntry(provider.id);
@@ -163,10 +154,9 @@ export function OAuthPanel({
 										})();
 									}}
 									disabled={flowRunning}
-									style={btnStyle(flowRunning, true)}
 								>
 									Remove
-								</button>
+								</Button>
 							)}
 						</div>
 
@@ -198,24 +188,18 @@ function OAuthFlowView({
 	onOpenUrl?: (url: string) => void | Promise<void>;
 }) {
 	return (
-		<div
-			style={{
-				padding: '12px 14px',
-				borderTop: '1px solid #e0e0e0',
-				background: '#fafafa',
-			}}
-		>
+		<div className="border-t border-border bg-muted/50 px-3.5 py-3">
 			{state.phase === 'starting' && (
-				<p style={statusText}>Starting login flow…</p>
+				<p className="text-sm text-muted-foreground">Starting login flow…</p>
 			)}
 
 			{state.phase === 'in-progress' && (
-				<p style={statusText}>{state.message}</p>
+				<p className="text-sm text-muted-foreground">{state.message}</p>
 			)}
 
 			{state.phase === 'auth' && (
 				<div>
-					<p style={{ margin: '0 0 8px', fontSize: 13 }}>
+					<p className="mb-2 text-sm">
 						Open the following URL to complete authentication:
 					</p>
 					<a
@@ -225,12 +209,12 @@ function OAuthFlowView({
 							event.preventDefault();
 							void onOpenUrl(state.url);
 						}}
-						style={{ fontSize: 12, wordBreak: 'break-all', color: '#1a73e8' }}
+						className="break-all text-xs text-primary underline"
 					>
 						{state.url}
 					</a>
 					{state.instructions && (
-						<p style={{ marginTop: 8, fontSize: 13, color: '#555' }}>
+						<p className="mt-2 text-sm text-muted-foreground">
 							{state.instructions}
 						</p>
 					)}
@@ -238,49 +222,26 @@ function OAuthFlowView({
 			)}
 
 			{state.phase === 'success' && (
-				<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-					<span style={{ color: '#2e7d32', fontSize: 13 }}>
-						✓ Successfully signed in!
+				<div className="flex items-center gap-2">
+					<span className="text-sm text-green-700">
+						&#10003; Successfully signed in!
 					</span>
-					<button onClick={onDismiss} style={btnStyle(false, true)}>
+					<Button variant="outline" size="sm" onClick={onDismiss}>
 						Dismiss
-					</button>
+					</Button>
 				</div>
 			)}
 
 			{state.phase === 'error' && (
 				<div>
-					<p style={{ color: '#c62828', fontSize: 13, margin: '0 0 8px' }}>
+					<p className="mb-2 text-sm text-destructive">
 						Error: {state.message}
 					</p>
-					<button onClick={onDismiss} style={btnStyle(false, true)}>
+					<Button variant="outline" size="sm" onClick={onDismiss}>
 						Dismiss
-					</button>
+					</Button>
 				</div>
 			)}
 		</div>
 	);
-}
-
-// ---------------------------------------------------------------------------
-// Micro style helpers
-// ---------------------------------------------------------------------------
-
-const statusText: React.CSSProperties = {
-	margin: 0,
-	fontSize: 13,
-	color: '#555',
-};
-
-function btnStyle(disabled: boolean, secondary = false): React.CSSProperties {
-	return {
-		padding: '6px 12px',
-		fontSize: 13,
-		borderRadius: 4,
-		border: secondary ? '1px solid #ccc' : 'none',
-		background: disabled ? '#e0e0e0' : secondary ? '#fff' : '#1a73e8',
-		color: disabled ? '#aaa' : secondary ? '#444' : '#fff',
-		cursor: disabled ? 'not-allowed' : 'pointer',
-		whiteSpace: 'nowrap',
-	};
 }
