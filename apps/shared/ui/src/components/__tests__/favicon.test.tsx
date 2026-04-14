@@ -8,23 +8,26 @@ import { Favicon } from '../favicon.js';
 describe('Favicon', () => {
 	it('renders an img with the correct src', () => {
 		const { container } = render(<Favicon hostname="example.com" />);
-		const img = container.querySelector('img')!;
-		expect(img.getAttribute('src')).toBe(
+		const img = container.querySelector('img');
+		expect(img).not.toBeNull();
+		expect(img?.getAttribute('src')).toBe(
 			'https://www.google.com/s2/favicons?domain=example.com&sz=16',
 		);
 	});
 
 	it('has empty alt text for decorative purpose', () => {
 		const { container } = render(<Favicon hostname="example.com" />);
-		const img = container.querySelector('img')!;
-		expect(img.getAttribute('alt')).toBe('');
+		const img = container.querySelector('img');
+		expect(img).not.toBeNull();
+		expect(img?.getAttribute('alt')).toBe('');
 	});
 
 	it('applies custom className', () => {
 		const { container } = render(
 			<Favicon hostname="example.com" className="custom-class" />,
 		);
-		const img = container.querySelector('img')!;
-		expect(img.className).toContain('custom-class');
+		const img = container.querySelector('img');
+		expect(img).not.toBeNull();
+		expect(img?.className).toContain('custom-class');
 	});
 });
