@@ -39,7 +39,13 @@ export { textareaClassName } from './primitives/textarea.js';
 export { AutoGrowTextarea } from './components/auto-grow-textarea.js';
 export { DeleteButton } from './components/delete-button.js';
 export { FileBadge, type FileBadgeProps } from './components/file-badge.js';
-export { FileIcon, type FileIconProps } from './components/file-icon.js';
+export {
+	EXT_ICONS,
+	FILENAME_ICONS,
+	FileIcon,
+	type FileIconProps,
+	type IconEntry,
+} from './components/file-icon.js';
 export {
 	TextareaGroup,
 	type TextareaGroupProps,
@@ -67,7 +73,15 @@ export { UserBubble } from './conversation/turn/user-bubble.js';
 export { CopyButton } from './conversation/turn/text/chrome/copy.js';
 export { ToolCardChrome } from './conversation/tools/chrome.js';
 export { StatusIcon } from './conversation/tools/status-icon.js';
+export {
+	ToolSummary,
+	ToolSummaryDetail,
+} from './conversation/tools/summary.js';
 export { iconEntry, toolEntry } from './conversation/tools/entry.js';
+export {
+	defaultToolRegistry,
+	defaultToolRenderers,
+} from './conversation/tools/registry/index.js';
 export { defaultRegistry as defaultTurnEndRegistry } from './conversation/turn/turn-end/registry.js';
 
 // sidebar
