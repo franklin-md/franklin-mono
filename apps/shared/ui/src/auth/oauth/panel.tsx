@@ -1,7 +1,7 @@
-import type { AuthEntries } from '@franklin/agent/browser';
 import { useAsync } from '@franklin/react';
 
 import { useAuthManager } from '../context.js';
+import type { AuthPanelProps } from '../types.js';
 
 import type { OAuthProviderMeta } from './types.js';
 import { ProviderRow } from './provider-row.js';
@@ -9,18 +9,7 @@ import { ProviderRow } from './provider-row.js';
 // Only surface these providers in the OAuth UI.
 const ALLOWED_PROVIDERS = new Set(['anthropic', 'openai-codex']);
 
-/**
- * Lists OAuth providers (filtered to Anthropic + OpenAI Codex) and allows
- * the user to sign in. Clicking "Sign in" starts the OAuth flow and
- * automatically opens the browser.
- */
-export function OAuthPanel({
-	savedEntries,
-	onUpdate,
-}: {
-	savedEntries: AuthEntries;
-	onUpdate: () => Promise<void>;
-}) {
+export function OAuthPanel({ savedEntries, onUpdate }: AuthPanelProps) {
 	const auth = useAuthManager();
 
 	const providers = useAsync(

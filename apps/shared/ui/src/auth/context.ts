@@ -1,7 +1,7 @@
 import { useApp } from '@franklin/react';
 import type { AuthManager } from '@franklin/agent/browser';
 
-/** Returns the nearest store from `<AuthProvider>`. Throws if not inside one. */
+/** Returns the `AuthManager` from the nearest `FranklinProvider`. */
 export function useAuthManager(): AuthManager {
 	return useApp().auth;
 }

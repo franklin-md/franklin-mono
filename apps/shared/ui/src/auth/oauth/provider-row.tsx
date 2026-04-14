@@ -1,8 +1,10 @@
 import type { ComponentType } from 'react';
 
-import { cn, Button } from '@franklin/ui';
 import { Icons, type IconProps } from '@franklin/react';
 import { Loader2, Check } from 'lucide-react';
+
+import { cn } from '../../lib/cn.js';
+import { Button } from '../../primitives/button.js';
 
 import type { OAuthProviderMeta } from './types.js';
 import { OAuthFlowView } from './flow-view.js';
@@ -41,8 +43,7 @@ export function ProviderRow({
 	);
 
 	const Icon = PROVIDER_ICONS[provider.id];
-	const flowDone =
-		flowState.phase === 'success' || flowState.phase === 'error';
+	const flowDone = flowState.phase === 'success' || flowState.phase === 'error';
 	const flowRunning = !flowDone && flowState.phase !== 'idle';
 
 	return (

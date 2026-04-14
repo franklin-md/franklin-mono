@@ -89,6 +89,12 @@ export { StatusIcon } from './conversation/tools/status-icon.js';
 export { iconEntry, toolEntry } from './conversation/tools/entry.js';
 export { defaultRegistry as defaultTurnEndRegistry } from './conversation/turn/turn-end/registry.js';
 
+// auth
+export { AuthModalContent } from './auth/modal.js';
+export { useAuthManager } from './auth/context.js';
+export { apiKeyPanel, oauthPanel } from './auth/panels.js';
+export type { AuthPanelDescriptor, AuthPanelProps } from './auth/types.js';
+
 // sidebar
 export { AgentSidebar } from './sidebar/agent-sidebar.js';
 export { AgentSidebarItem } from './sidebar/agent-sidebar-item.js';

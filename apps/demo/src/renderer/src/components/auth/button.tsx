@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
 
 import type { AuthEntries } from '@franklin/agent/browser';
-import { Button, Dialog, DialogTrigger } from '@franklin/ui';
-
-import { useAuthManager } from './context.js';
-import { AuthModalContent } from './modal.js';
+import {
+	Button,
+	Dialog,
+	DialogTrigger,
+	AuthModalContent,
+	useAuthManager,
+	oauthPanel,
+	apiKeyPanel,
+} from '@franklin/ui';
 
 // ---------------------------------------------------------------------------
 // PersonIcon — minimal inline SVG, no external dependencies
@@ -29,14 +34,6 @@ function PersonIcon() {
 // AuthButton
 // ---------------------------------------------------------------------------
 
-/**
- * A sign-in button that opens the auth modal via Radix DialogTrigger.
- *
- * - Shows "Sign in" when no credentials are saved.
- * - Shows the number of configured providers when credentials exist.
- *
- * Must be rendered inside an `<AuthProvider>`.
- */
 export function AuthButton() {
 	const auth = useAuthManager();
 	const [providerCount, setProviderCount] = useState(
@@ -64,7 +61,10 @@ export function AuthButton() {
 				</Button>
 			</DialogTrigger>
 
-			<AuthModalContent onEntriesChange={handleEntriesChange} />
+			<AuthModalContent
+				panels={[oauthPanel, apiKeyPanel]}
+				onEntriesChange={handleEntriesChange}
+			/>
 		</Dialog>
 	);
 }

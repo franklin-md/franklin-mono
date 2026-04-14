@@ -1,35 +1,23 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
-import type { AuthEntries, ApiKeyEntry } from '@franklin/agent/browser';
+import type { ApiKeyEntry } from '@franklin/agent/browser';
+import { useAsync } from '@franklin/react';
+
+import { Button } from '../../primitives/button.js';
+import { Input } from '../../primitives/input.js';
 import {
-	Button,
-	Input,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@franklin/ui';
-import { useAsync } from '@franklin/react';
-
+} from '../../primitives/select.js';
 import { useAuthManager } from '../context.js';
+import type { AuthPanelProps } from '../types.js';
 
-/** Provider descriptor used within the API-key panel. */
 type ProviderMeta = { id: string; name: string };
 
-/**
- * Displays stored API-key entries and a form to add new ones.
- *
- * `savedEntries` is owned by the parent — the panel never reads from disk.
- * `onUpdate` is called after any mutation so the parent can reload.
- */
-export function ApiKeyPanel({
-	savedEntries,
-	onUpdate,
-}: {
-	savedEntries: AuthEntries;
-	onUpdate: () => Promise<void>;
-}) {
+export function ApiKeyPanel({ savedEntries, onUpdate }: AuthPanelProps) {
 	const auth = useAuthManager();
 	const providers = useAsync(
 		async (): Promise<ProviderMeta[]> =>
@@ -50,7 +38,7 @@ export function ApiKeyPanel({
 
 	const apiKeyEntries = Object.entries(savedEntries).filter(([, entry]) =>
 		Boolean(entry.apiKey),
-	) as [string, AuthEntries[string] & { apiKey: ApiKeyEntry }][];
+	) as [string, { apiKey: ApiKeyEntry }][];
 
 	async function handleSubmit(e: FormEvent) {
 		e.preventDefault();
@@ -77,7 +65,6 @@ export function ApiKeyPanel({
 
 	return (
 		<div className="flex flex-col gap-4">
-			{/* Existing keys */}
 			{apiKeyEntries.length > 0 && (
 				<table className="w-full border-collapse text-sm">
 					<thead>
@@ -110,7 +97,6 @@ export function ApiKeyPanel({
 				</table>
 			)}
 
-			{/* Add key form */}
 			<div
 				className={
 					apiKeyEntries.length > 0 ? 'border-t border-border pt-3' : ''

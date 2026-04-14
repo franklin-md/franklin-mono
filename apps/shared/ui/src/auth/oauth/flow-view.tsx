@@ -1,5 +1,6 @@
-import { Button } from '@franklin/ui';
 import { Loader2 } from 'lucide-react';
+
+import { Button } from '../../primitives/button.js';
 
 import type { FlowState } from './types.js';
 
