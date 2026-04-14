@@ -14,7 +14,6 @@ import {
 
 import { ApiKeyPanel } from './api-key-panel.js';
 import { useAuthManager } from './auth-context.js';
-import type { OAuthProviderMeta } from './oauth-panel.js';
 import { OAuthPanel } from './oauth-panel.js';
 
 /**
@@ -31,13 +30,9 @@ import { OAuthPanel } from './oauth-panel.js';
 export function AuthModal({
 	onClose,
 	onEntriesChange,
-	oauthProviders,
-	apiKeyProviders,
 }: {
 	onClose: () => void;
 	onEntriesChange?: (entries: AuthEntries) => void;
-	oauthProviders: OAuthProviderMeta[];
-	apiKeyProviders: OAuthProviderMeta[];
 }) {
 	const auth = useAuthManager();
 	const [savedEntries, setSavedEntries] = useState<AuthEntries>({});
@@ -82,22 +77,14 @@ export function AuthModal({
 						forceMount
 						className="data-[state=inactive]:hidden"
 					>
-						<OAuthPanel
-							savedEntries={savedEntries}
-							onUpdate={handleUpdate}
-							providers={oauthProviders}
-						/>
+						<OAuthPanel savedEntries={savedEntries} onUpdate={handleUpdate} />
 					</TabsContent>
 					<TabsContent
 						value="apiKeys"
 						forceMount
 						className="data-[state=inactive]:hidden"
 					>
-						<ApiKeyPanel
-							savedEntries={savedEntries}
-							onUpdate={handleUpdate}
-							providers={apiKeyProviders}
-						/>
+						<ApiKeyPanel savedEntries={savedEntries} onUpdate={handleUpdate} />
 					</TabsContent>
 				</Tabs>
 			</DialogContent>

@@ -10,6 +10,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@franklin/ui';
+import { useAsync } from '@franklin/react';
 
 import { useAuthManager } from './auth-context.js';
 import type { OAuthProviderMeta } from './oauth-panel.js';
@@ -50,13 +51,17 @@ function MaskedKey({ value }: { value: string }) {
 export function ApiKeyPanel({
 	savedEntries,
 	onUpdate,
-	providers,
 }: {
 	savedEntries: AuthEntries;
 	onUpdate: () => Promise<void>;
-	providers: OAuthProviderMeta[];
 }) {
 	const auth = useAuthManager();
+	const providers = useAsync(
+		async (): Promise<OAuthProviderMeta[]> =>
+			(await auth.getApiKeyProviders()).map((id) => ({ id, name: id })),
+		[],
+		[auth],
+	);
 
 	const [provider, setProvider] = useState(providers[0]?.id ?? '');
 	const [key, setKey] = useState('');

@@ -5,7 +5,6 @@ import { Button } from '@franklin/ui';
 
 import { useAuthManager } from './auth-context.js';
 import { AuthModal } from './auth-modal.js';
-import type { OAuthProviderMeta } from './oauth-panel.js';
 
 // ---------------------------------------------------------------------------
 // PersonIcon — minimal inline SVG, no external dependencies
@@ -39,13 +38,7 @@ function PersonIcon() {
  *
  * Must be rendered inside an `<AuthProvider>`.
  */
-export function AuthButton({
-	oauthProviders,
-	apiKeyProviders,
-}: {
-	oauthProviders: OAuthProviderMeta[];
-	apiKeyProviders: OAuthProviderMeta[];
-}) {
+export function AuthButton() {
 	const auth = useAuthManager();
 	const [open, setOpen] = useState(false);
 	const [providerCount, setProviderCount] = useState(0);
@@ -83,8 +76,6 @@ export function AuthButton({
 				<AuthModal
 					onClose={handleClose}
 					onEntriesChange={handleEntriesChange}
-					oauthProviders={oauthProviders}
-					apiKeyProviders={apiKeyProviders}
 				/>
 			)}
 		</>

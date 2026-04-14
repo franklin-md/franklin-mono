@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import type { OAuthLoginCallbacks, AuthEntries } from '@franklin/agent/browser';
 import { Button } from '@franklin/ui';
-import { useApp } from '@franklin/react';
+import { useApp, useAsync } from '@franklin/react';
 import { Loader2 } from 'lucide-react';
 
 import { useAuthManager } from './auth-context.js';
@@ -40,14 +40,13 @@ type FlowState =
 export function OAuthPanel({
 	savedEntries,
 	onUpdate,
-	providers,
 }: {
 	savedEntries: AuthEntries;
 	onUpdate: () => Promise<void>;
-	providers: OAuthProviderMeta[];
 }) {
 	const auth = useAuthManager();
 	const app = useApp();
+	const providers = useAsync(() => auth.getOAuthProviders(), [], [auth]);
 
 	const [activeProvider, setActiveProvider] = useState<string | null>(null);
 	const [flowState, setFlowState] = useState<FlowState>({ phase: 'idle' });
