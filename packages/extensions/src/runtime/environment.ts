@@ -1,18 +1,18 @@
 import { createObserver } from '@franklin/lib';
-import type { Environment } from '../api/environment/types.js';
+import type { ReconfigurableEnvironment } from '../api/environment/types.js';
 import type { RuntimeBase } from './types.js';
 import type { EnvironmentState } from '../state/environment.js';
 
 export type EnvironmentRuntime = RuntimeBase<EnvironmentState> & {
-	readonly environment: Environment;
+	readonly environment: ReconfigurableEnvironment;
 };
 
 export function createEnvironmentRuntime(
-	environment: Environment & { dispose(): Promise<void> },
+	environment: ReconfigurableEnvironment,
 ): EnvironmentRuntime {
 	const observer = createObserver();
 
-	const observed: typeof environment = {
+	const observed: ReconfigurableEnvironment = {
 		filesystem: environment.filesystem,
 		terminal: environment.terminal,
 		web: environment.web,

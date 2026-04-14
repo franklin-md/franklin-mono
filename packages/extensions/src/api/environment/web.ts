@@ -1,5 +1,3 @@
-import { DEFAULT_WEB_FETCH_OPTIONS } from '@franklin/extensions';
-import type { NetworkConfig, WebAPI } from '@franklin/extensions';
 import type { WebFetchRequest, WebFetchResponse } from '@franklin/lib';
 import {
 	isLoopbackHost,
@@ -7,6 +5,8 @@ import {
 	matchesUrlPattern,
 	normalizeHost,
 } from '@franklin/lib';
+import { DEFAULT_WEB_FETCH_OPTIONS } from '../../extensions/web/web-fetch/types.js';
+import type { NetworkConfig, WebAPI } from './types.js';
 
 const DEFAULT_USER_AGENT =
 	'Mozilla/5.0 (compatible; Franklin/0.0; +https://franklin.local)';
@@ -24,14 +24,14 @@ type NormalizedRequest = {
 	body?: Uint8Array;
 };
 
+export function createWeb(config: NetworkConfig): EnvironmentWeb {
+	return new EnvironmentWeb(config);
+}
+
 export class EnvironmentWeb implements WebAPI {
 	private config: NetworkConfig;
 
 	constructor(config: NetworkConfig) {
-		this.config = config;
-	}
-
-	setConfig(config: NetworkConfig): void {
 		this.config = config;
 	}
 
@@ -52,7 +52,7 @@ export class EnvironmentWeb implements WebAPI {
 				status: response.status,
 				statusText: response.statusText,
 				contentType: response.headers.get('content-type') ?? undefined,
-				headers: Object.fromEntries(response.headers.entries()),
+				headers: headersToRecord(response.headers),
 				body,
 			};
 		} catch (error) {
@@ -160,7 +160,7 @@ export class EnvironmentWeb implements WebAPI {
 				signal: controller.signal,
 				credentials: 'omit',
 				headers: request.headers,
-				body: request.body,
+				body: request.body as globalThis.BodyInit | undefined,
 			});
 
 			if (!REDIRECT_STATUS_CODES.has(response.status)) {
@@ -242,4 +242,12 @@ export class EnvironmentWeb implements WebAPI {
 	private timeoutMessage(timeoutMs: number): string {
 		return `Request timed out after ${timeoutMs}ms`;
 	}
+}
+
+function headersToRecord(headers: Headers): Record<string, string> {
+	const result: Record<string, string> = {};
+	headers.forEach((value, key) => {
+		result[key] = value;
+	});
+	return result;
 }

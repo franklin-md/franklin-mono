@@ -3,12 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { compile, combine } from '../../../../compile/types.js';
 import { createCoreCompiler } from '../../../../compile/core/compiler.js';
 import { createEnvironmentCompiler } from '../../../../compile/environment/compiler.js';
-import type { Environment } from '../../../../api/environment/types.js';
+import type { ReconfigurableEnvironment } from '../../../../api/environment/types.js';
 import { webSearchExtension } from '../extension.js';
 
 function mockEnvironment(
-	fetchImpl: NonNullable<Environment['web']>['fetch'],
-): Environment & { dispose(): Promise<void> } {
+	fetchImpl: NonNullable<ReconfigurableEnvironment['web']>['fetch'],
+): ReconfigurableEnvironment {
 	return {
 		filesystem: {
 			readFile: vi.fn(),
@@ -36,7 +36,7 @@ function mockEnvironment(
 	};
 }
 
-function compileSearch(env: Environment & { dispose(): Promise<void> }) {
+function compileSearch(env: ReconfigurableEnvironment) {
 	const compiler = combine(
 		createCoreCompiler(),
 		createEnvironmentCompiler(env),

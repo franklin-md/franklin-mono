@@ -27,6 +27,10 @@ export interface Environment {
 	readonly filesystem: Filesystem;
 	readonly terminal: Terminal;
 	readonly web: WebAPI;
+}
+
+export interface ReconfigurableEnvironment extends Environment {
 	config(): Promise<EnvironmentConfig>;
 	reconfigure(config: Partial<EnvironmentConfig>): Promise<void>;
+	dispose(): Promise<void>;
 }

@@ -1,4 +1,4 @@
-import type { Environment } from '../../api/environment/types.js';
+import type { ReconfigurableEnvironment } from '../../api/environment/types.js';
 import type { EnvironmentAPI } from '../../api/environment/api.js';
 import type { Compiler } from '../types.js';
 import {
@@ -15,7 +15,7 @@ import {
  * `api.getEnvironment()`, they don't contribute to it.
  */
 export function createEnvironmentCompiler(
-	environment: Environment & { dispose(): Promise<void> },
+	environment: ReconfigurableEnvironment,
 ): Compiler<EnvironmentAPI, EnvironmentRuntime> {
 	return {
 		api: {

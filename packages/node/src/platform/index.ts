@@ -1,9 +1,12 @@
 import type { Platform } from '@franklin/agent/browser';
 import type { EnvironmentConfig } from '@franklin/extensions';
+import {
+	createReconfigurableEnvironment,
+	configureFilesystem,
+	createWeb,
+} from '@franklin/extensions';
 import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
-import { EnvironmentFilesystem } from './environment-filesystem.js';
-import { EnvironmentWeb } from './web.js';
 import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import { createFolderScopedFilesystem } from '@franklin/lib';
@@ -37,43 +40,26 @@ export function createNodePlatform(args: Args = {}): Platform {
 		},
 		ai,
 		createFlow: createOAuthFlow,
-		environment: async (config: EnvironmentConfig) => {
-			const envFs = new EnvironmentFilesystem(
-				createNodeFilesystem(),
-				config.fsConfig,
-			);
-			const envT = new SandboxedTerminal(appDir, config);
-			const envW = new EnvironmentWeb(config.netConfig);
-			await envT.initialize();
-			return {
-				filesystem: envFs,
-				terminal: envT,
-				web: envW,
-
-				async config() {
-					return {
-						fsConfig: envFs.config,
-						netConfig: envT.getNetworkConfig(),
-					};
-				},
-
-				async reconfigure(partial: Partial<EnvironmentConfig>) {
-					if (partial.fsConfig) {
-						// set terminal
-						await envT.setFilesystemConfig(partial.fsConfig);
-						// set filesystem
-						envFs.setCwd(partial.fsConfig.cwd);
-						envFs.setPermissions(partial.fsConfig.permissions);
+		environment: (config: EnvironmentConfig) =>
+			createReconfigurableEnvironment({
+				config,
+				configureFilesystem: async (fsConfig) =>
+					configureFilesystem(createNodeFilesystem(), fsConfig),
+				configureTerminal: async (
+					cfg,
+					previous: SandboxedTerminal | undefined,
+				) => {
+					if (previous) {
+						await previous.setFilesystemConfig(cfg.fsConfig);
+						await previous.setNetworkConfig(cfg.netConfig);
+						return previous;
 					}
-					if (partial.netConfig) {
-						// set terminal only
-						await envT.setNetworkConfig(partial.netConfig);
-						envW.setConfig(partial.netConfig);
-					}
+					const terminal = new SandboxedTerminal(appDir, cfg);
+					await terminal.initialize();
+					return terminal;
 				},
-				dispose: async () => {},
-			};
-		},
+				configureWeb: async (netConfig) => createWeb(netConfig),
+			}),
 		filesystem,
 		openExternal,
 		// TODO: Sandbox
