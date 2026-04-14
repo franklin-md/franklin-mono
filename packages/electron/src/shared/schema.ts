@@ -26,8 +26,6 @@ const web = namespace({
 const authFlow = namespace({
 	onAuth: on(),
 	onProgress: on(),
-	onPrompt: on(),
-	respond: method(),
 	login: method(),
 });
 

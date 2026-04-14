@@ -1,7 +1,5 @@
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
-export type { OAuthLoginCallbacks } from '@mariozechner/pi-ai/oauth';
-
 // ---------------------------------------------------------------------------
 // Stored credential entries
 // ---------------------------------------------------------------------------
@@ -31,8 +29,7 @@ export type OAuthAuthInfo = {
 	instructions?: string;
 };
 
-export type OAuthPrompt = {
-	message: string;
-	placeholder?: string;
-	allowEmpty?: boolean;
+export type OAuthLoginCallbacks = {
+	onAuth: (info: OAuthAuthInfo) => void;
+	onProgress?: (message: string) => void;
 };

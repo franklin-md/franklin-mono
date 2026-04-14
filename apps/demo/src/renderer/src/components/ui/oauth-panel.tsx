@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 
 import type { OAuthLoginCallbacks, AuthEntries } from '@franklin/agent/browser';
 
@@ -31,12 +31,6 @@ type FlowState =
 	| { phase: 'starting' }
 	| { phase: 'in-progress'; message: string }
 	| { phase: 'auth'; url: string; instructions?: string }
-	| {
-			phase: 'prompt';
-			message: string;
-			placeholder?: string;
-			allowEmpty?: boolean;
-	  }
 	| { phase: 'success' }
 	| { phase: 'error'; message: string };
 
@@ -70,14 +64,10 @@ export function OAuthPanel({
 
 	const [activeProvider, setActiveProvider] = useState<string | null>(null);
 	const [flowState, setFlowState] = useState<FlowState>({ phase: 'idle' });
-	const [promptInput, setPromptInput] = useState('');
-	const promptResolveRef = useRef<((value: string) => void) | null>(null);
 
 	async function startLogin(provider: OAuthProviderMeta) {
 		setActiveProvider(provider.id);
 		setFlowState({ phase: 'starting' });
-		setPromptInput('');
-		promptResolveRef.current = null;
 
 		const callbacks: OAuthLoginCallbacks = {
 			onAuth: (info) => {
@@ -87,21 +77,9 @@ export function OAuthPanel({
 					instructions: info.instructions,
 				});
 			},
-			onPrompt: async (prompt) => {
-				setFlowState({
-					phase: 'prompt',
-					message: prompt.message,
-					placeholder: prompt.placeholder,
-					allowEmpty: prompt.allowEmpty,
-				});
-				return new Promise<string>((resolve) => {
-					promptResolveRef.current = resolve;
-				});
-			},
 			onProgress: (message) => {
-				// Don't overwrite a prompt step — the flow is still waiting for user input.
 				setFlowState((prev) =>
-					prev.phase === 'prompt' ? prev : { phase: 'in-progress', message },
+					prev.phase === 'auth' ? prev : { phase: 'in-progress', message },
 				);
 			},
 		};
@@ -118,19 +96,9 @@ export function OAuthPanel({
 		}
 	}
 
-	function handlePromptSubmit() {
-		if (promptResolveRef.current) {
-			promptResolveRef.current(promptInput);
-			promptResolveRef.current = null;
-		}
-		setFlowState({ phase: 'in-progress', message: 'Processing...' });
-		setPromptInput('');
-	}
-
 	function dismissFlow() {
 		setActiveProvider(null);
 		setFlowState({ phase: 'idle' });
-		promptResolveRef.current = null;
 	}
 
 	return (
@@ -205,9 +173,6 @@ export function OAuthPanel({
 						{isActive && flowState.phase !== 'idle' && (
 							<OAuthFlowView
 								state={flowState}
-								promptInput={promptInput}
-								onPromptChange={setPromptInput}
-								onPromptSubmit={handlePromptSubmit}
 								onDismiss={dismissFlow}
 								onOpenUrl={onOpenUrl}
 							/>
@@ -225,16 +190,10 @@ export function OAuthPanel({
 
 function OAuthFlowView({
 	state,
-	promptInput,
-	onPromptChange,
-	onPromptSubmit,
 	onDismiss,
 	onOpenUrl,
 }: {
 	state: FlowState;
-	promptInput: string;
-	onPromptChange: (value: string) => void;
-	onPromptSubmit: () => void;
 	onDismiss: () => void;
 	onOpenUrl?: (url: string) => void | Promise<void>;
 }) {
@@ -278,39 +237,6 @@ function OAuthFlowView({
 				</div>
 			)}
 
-			{state.phase === 'prompt' && (
-				<div>
-					<p style={{ margin: '0 0 8px', fontSize: 13 }}>{state.message}</p>
-					<div style={{ display: 'flex', gap: 8 }}>
-						<input
-							autoFocus
-							type="text"
-							placeholder={state.placeholder ?? 'Enter code'}
-							value={promptInput}
-							onChange={(e) => {
-								onPromptChange(e.currentTarget.value);
-							}}
-							onKeyDown={(e) => {
-								if (
-									e.key === 'Enter' &&
-									(promptInput.trim() || state.allowEmpty)
-								) {
-									onPromptSubmit();
-								}
-							}}
-							style={inputStyle}
-						/>
-						<button
-							onClick={onPromptSubmit}
-							disabled={!promptInput.trim() && !state.allowEmpty}
-							style={btnStyle(!promptInput.trim() && !state.allowEmpty)}
-						>
-							Submit
-						</button>
-					</div>
-				</div>
-			)}
-
 			{state.phase === 'success' && (
 				<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 					<span style={{ color: '#2e7d32', fontSize: 13 }}>
@@ -344,14 +270,6 @@ const statusText: React.CSSProperties = {
 	margin: 0,
 	fontSize: 13,
 	color: '#555',
-};
-
-const inputStyle: React.CSSProperties = {
-	flex: 1,
-	padding: '6px 10px',
-	border: '1px solid #ccc',
-	borderRadius: 4,
-	fontSize: 13,
 };
 
 function btnStyle(disabled: boolean, secondary = false): React.CSSProperties {

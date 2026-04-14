@@ -99,8 +99,6 @@ async function createFlow() {
 	return {
 		onAuth: () => () => {},
 		onProgress: () => () => {},
-		onPrompt: () => () => {},
-		respond: async () => {},
 		login: async () => ({}),
 		dispose: async () => {},
 	};
