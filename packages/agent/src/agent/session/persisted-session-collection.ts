@@ -25,6 +25,7 @@ export class PersistedSessionCollection<
 		this.subscribe((event) => {
 			if (event.action === 'add') {
 				this.persist(event.id, event.runtime);
+				// TODO: unsub is leaked — relies on runtime.dispose() to clean up subscribers
 				event.runtime.subscribe(() => this.persist(event.id, event.runtime));
 			} else {
 				void this.persister.delete(event.id);

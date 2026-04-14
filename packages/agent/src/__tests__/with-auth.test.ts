@@ -15,15 +15,15 @@ import type { AuthEntry } from '../auth/types.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-type AuthChangeListener = (
+type AuthListener = (
 	provider: string,
 	entry: AuthEntry | undefined,
-) => void | Promise<void>;
+) => void;
 
 function mockAuthManager(
 	providers: Record<string, string | undefined> = {},
-): AuthManager & { _listeners: AuthChangeListener[] } {
-	const listeners: AuthChangeListener[] = [];
+): AuthManager & { _listeners: AuthListener[] } {
+	const listeners: AuthListener[] = [];
 	return {
 		_listeners: listeners,
 		entries: vi.fn(() => {
@@ -38,14 +38,14 @@ function mockAuthManager(
 			return result;
 		}),
 		getApiKey: vi.fn(async (provider: string) => providers[provider]),
-		onAuthChange: vi.fn((listener: AuthChangeListener) => {
+		onAuthChange: vi.fn((listener: AuthListener) => {
 			listeners.push(listener);
 			return () => {
 				const idx = listeners.indexOf(listener);
 				if (idx >= 0) listeners.splice(idx, 1);
 			};
 		}),
-	} as unknown as AuthManager & { _listeners: AuthChangeListener[] };
+	} as unknown as AuthManager & { _listeners: AuthListener[] };
 }
 
 function mockCoreRuntime(): CoreRuntime {
@@ -368,18 +368,18 @@ describe('withAuth live sync', () => {
 
 		// Simulate credential change
 		providers.anthropic = 'sk-new';
-		await auth._listeners[0]!('anthropic', {
+		auth._listeners[0]!('anthropic', {
 			apiKey: { type: 'apiKey', key: 'sk-new' },
 		});
-
-		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
-		expect(setContextSpy).toHaveBeenCalledWith(
-			expect.objectContaining({
-				config: expect.objectContaining({
-					provider: 'anthropic',
-					apiKey: 'sk-new',
+		await vi.waitFor(() =>
+			expect(setContextSpy).toHaveBeenCalledWith(
+				expect.objectContaining({
+					config: expect.objectContaining({
+						provider: 'anthropic',
+						apiKey: 'sk-new',
+					}),
 				}),
-			}),
+			),
 		);
 	});
 
@@ -393,9 +393,10 @@ describe('withAuth live sync', () => {
 
 		// Fire change for a provider this runtime doesn't use
 		providers.openai = 'sk-openai';
-		await auth._listeners[0]!('openai', {
+		auth._listeners[0]!('openai', {
 			apiKey: { type: 'apiKey', key: 'sk-openai' },
 		});
+		await new Promise((r) => setTimeout(r, 50));
 
 		// getApiKey should not have been called — runtime's provider doesn't match
 		expect(auth.getApiKey).not.toHaveBeenCalled();
@@ -412,16 +413,16 @@ describe('withAuth live sync', () => {
 		const setContextSpy = vi.spyOn(runtime, 'setContext');
 
 		providers.anthropic = undefined;
-		await auth._listeners[0]!('anthropic', undefined);
-
-		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
-		expect(setContextSpy).toHaveBeenCalledWith(
-			expect.objectContaining({
-				config: expect.objectContaining({
-					provider: 'anthropic',
-					apiKey: undefined,
+		auth._listeners[0]!('anthropic', undefined);
+		await vi.waitFor(() =>
+			expect(setContextSpy).toHaveBeenCalledWith(
+				expect.objectContaining({
+					config: expect.objectContaining({
+						provider: 'anthropic',
+						apiKey: undefined,
+					}),
 				}),
-			}),
+			),
 		);
 	});
 

@@ -28,14 +28,9 @@ export class AuthManager {
 	}
 
 	onAuthChange(
-		listener: (
-			provider: string,
-			entry: AuthEntry | undefined,
-		) => void | Promise<void>,
+		listener: (provider: string, entry: AuthEntry | undefined) => void,
 	): () => void {
-		return this.observer.subscribe((provider, entry) => {
-			void listener(provider, entry);
-		});
+		return this.observer.subscribe(listener);
 	}
 
 	// -------------------------------------------------------------------------

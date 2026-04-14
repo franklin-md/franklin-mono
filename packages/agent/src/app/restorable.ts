@@ -1,4 +1,4 @@
-export interface Restorable {
+interface Restorable {
 	restore(): Promise<void>;
 }
 
