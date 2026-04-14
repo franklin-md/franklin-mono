@@ -1,4 +1,4 @@
-import { OAuthFlow, type Platform } from '@franklin/agent/browser';
+import type { Platform } from '@franklin/agent/browser';
 import type { EnvironmentConfig } from '@franklin/extensions';
 import {
 	createReconfigurableEnvironment,
@@ -8,11 +8,12 @@ import {
 import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { getProviders } from '@mariozechner/pi-ai';
-import { getOAuthProvider, getOAuthProviders } from '@mariozechner/pi-ai/oauth';
+import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import { createFolderScopedFilesystem } from '@franklin/lib';
 import os from 'node:os';
 import { SandboxedTerminal } from './sandboxed-terminal.js';
 import { openExternal } from './open-external.js';
+import { createOAuthFlow } from './auth/create-flow.js';
 
 type Args = {
 	appDir?: string;
@@ -26,7 +27,9 @@ export function createNodePlatform(args: Args = {}): Platform {
 	);
 	const ai = {
 		getOAuthProviders: async () => {
-			return getOAuthProviders().map((p) => ({ id: p.id, name: p.name }));
+			return getOAuthProviders()
+				.filter((provider) => provider.usesCallbackServer === true)
+				.map((provider) => ({ id: provider.id, name: provider.name }));
 		},
 		getApiKeyProviders: async () => getProviders(),
 	};
@@ -36,13 +39,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 			return spawn();
 		},
 		ai,
-		createFlow: async (providerId: string) => {
-			const provider = getOAuthProvider(providerId);
-			if (!provider) {
-				throw new Error(`OAuth provider "${providerId}" not found`);
-			}
-			return new OAuthFlow((callbacks) => provider.login(callbacks));
-		},
+		createFlow: createOAuthFlow,
 		environment: (config: EnvironmentConfig) =>
 			createReconfigurableEnvironment({
 				config,

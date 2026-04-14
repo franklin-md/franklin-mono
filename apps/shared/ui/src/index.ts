@@ -1,8 +1,8 @@
 // lib
 export { cn } from './lib/cn.js';
+export { displayUrl, faviconUrl } from './lib/display-url.js';
 
-// primitives
-export { AutoGrowTextarea } from './primitives/auto-grow-textarea.js';
+// primitives (shadcn/radix base components)
 export { Badge, badgeVariants, type BadgeProps } from './primitives/badge.js';
 export {
 	Button,
@@ -26,7 +26,6 @@ export {
 	CommandList,
 	CommandSeparator,
 } from './primitives/command.js';
-export { DeleteButton } from './primitives/delete-button.js';
 export { Input } from './primitives/input.js';
 export {
 	Popover,
@@ -36,10 +35,23 @@ export {
 export { ScrollArea, ScrollBar } from './primitives/scroll-area.js';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './primitives/tabs.js';
 export { textareaClassName } from './primitives/textarea.js';
+
+// components (derived, application-specific)
+export { AutoGrowTextarea } from './components/auto-grow-textarea.js';
+export { DeleteButton } from './components/delete-button.js';
+export { Favicon, type FaviconProps } from './components/favicon.js';
+export { FileBadge, type FileBadgeProps } from './components/file-badge.js';
+export {
+	EXT_ICONS,
+	FILENAME_ICONS,
+	FileIcon,
+	type FileIconProps,
+	type IconEntry,
+} from './components/file-icon.js';
 export {
 	TextareaGroup,
 	type TextareaGroupProps,
-} from './primitives/textarea-group.js';
+} from './components/textarea-group.js';
 
 // conversation
 export {
@@ -63,7 +75,15 @@ export { UserBubble } from './conversation/turn/user-bubble.js';
 export { CopyButton } from './conversation/turn/text/chrome/copy.js';
 export { ToolCardChrome } from './conversation/tools/chrome.js';
 export { StatusIcon } from './conversation/tools/status-icon.js';
+export {
+	ToolSummary,
+	ToolSummaryDetail,
+} from './conversation/tools/summary.js';
 export { iconEntry, toolEntry } from './conversation/tools/entry.js';
+export {
+	defaultToolRegistry,
+	defaultToolRenderers,
+} from './conversation/tools/registry/index.js';
 export { defaultRegistry as defaultTurnEndRegistry } from './conversation/turn/turn-end/registry.js';
 
 // sidebar

@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 
 import { cn } from '../lib/cn.js';
-import { Button } from './button.js';
+import { Button } from '../primitives/button.js';
 
 export function DeleteButton({
 	onClick,

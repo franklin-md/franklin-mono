@@ -6,9 +6,9 @@ import {
 	PromptText,
 } from '@franklin/react';
 
-import { AutoGrowTextarea } from '../../primitives/auto-grow-textarea.js';
+import { AutoGrowTextarea } from '../../components/auto-grow-textarea.js';
 import { Button } from '../../primitives/button.js';
-import { TextareaGroup } from '../../primitives/textarea-group.js';
+import { TextareaGroup } from '../../components/textarea-group.js';
 
 import { ModelSelector } from './model-selector/selector.js';
 import { ThinkingToggle } from './thinking-toggle.js';
