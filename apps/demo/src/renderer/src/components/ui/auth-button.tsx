@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import type { AuthEntries } from '@franklin/agent/browser';
 import { Button } from '@franklin/ui';
 
-import { useAuthStore } from './auth-context.js';
+import { useAuthManager } from './auth-context.js';
 import { AuthModal } from './auth-modal.js';
-import type { OAuthLoginFn, OAuthProviderMeta } from './oauth-panel.js';
+import type { OAuthProviderMeta } from './oauth-panel.js';
 
 // ---------------------------------------------------------------------------
 // PersonIcon — minimal inline SVG, no external dependencies
@@ -42,22 +42,18 @@ function PersonIcon() {
 export function AuthButton({
 	oauthProviders,
 	apiKeyProviders,
-	onLogin,
-	onOpenUrl,
 }: {
 	oauthProviders: OAuthProviderMeta[];
 	apiKeyProviders: OAuthProviderMeta[];
-	onLogin: OAuthLoginFn;
-	onOpenUrl?: (url: string) => void | Promise<void>;
 }) {
-	const store = useAuthStore();
+	const auth = useAuthManager();
 	const [open, setOpen] = useState(false);
 	const [providerCount, setProviderCount] = useState(0);
 	const isSignedIn = providerCount > 0;
 
 	useEffect(() => {
-		setProviderCount(Object.keys(store.entries()).length);
-	}, [store]);
+		setProviderCount(Object.keys(auth.entries()).length);
+	}, [auth]);
 
 	function handleEntriesChange(entries: AuthEntries) {
 		setProviderCount(Object.keys(entries).length);
@@ -89,8 +85,6 @@ export function AuthButton({
 					onEntriesChange={handleEntriesChange}
 					oauthProviders={oauthProviders}
 					apiKeyProviders={apiKeyProviders}
-					onLogin={onLogin}
-					onOpenUrl={onOpenUrl}
 				/>
 			)}
 		</>

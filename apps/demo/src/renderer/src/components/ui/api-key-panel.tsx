@@ -1,9 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
 import type { AuthEntries, ApiKeyEntry } from '@franklin/agent/browser';
-import { Button, Input } from '@franklin/ui';
+import {
+	Button,
+	Input,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@franklin/ui';
 
-import { useAuthStore } from './auth-context.js';
+import { useAuthManager } from './auth-context.js';
 import type { OAuthProviderMeta } from './oauth-panel.js';
 
 // ---------------------------------------------------------------------------
@@ -48,7 +56,7 @@ export function ApiKeyPanel({
 	onUpdate: () => Promise<void>;
 	providers: OAuthProviderMeta[];
 }) {
-	const store = useAuthStore();
+	const auth = useAuthManager();
 
 	const [provider, setProvider] = useState(providers[0]?.id ?? '');
 	const [key, setKey] = useState('');
@@ -78,7 +86,7 @@ export function ApiKeyPanel({
 			return;
 		}
 		const entry: ApiKeyEntry = { type: 'apiKey', key: key.trim() };
-		store.setApiKeyEntry(provider.trim(), entry);
+		auth.setApiKeyEntry(provider.trim(), entry);
 		setProvider('');
 		setKey('');
 		setError(null);
@@ -86,7 +94,7 @@ export function ApiKeyPanel({
 	}
 
 	async function handleRemove(providerId: string) {
-		store.removeApiKeyEntry(providerId);
+		auth.removeApiKeyEntry(providerId);
 		await onUpdate();
 	}
 
@@ -141,23 +149,24 @@ export function ApiKeyPanel({
 					Add API Key
 				</p>
 				<form onSubmit={handleSubmit} className="flex flex-col gap-2">
-					<select
+					<Select
 						value={provider}
-						onChange={(e) => {
-							setProvider(e.currentTarget.value);
+						onValueChange={(value) => {
+							setProvider(value);
 							setError(null);
 						}}
-						className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 					>
-						<option value="" disabled>
-							Select a provider
-						</option>
-						{providers.map((providerOption) => (
-							<option key={providerOption.id} value={providerOption.id}>
-								{providerOption.name}
-							</option>
-						))}
-					</select>
+						<SelectTrigger>
+							<SelectValue placeholder="Select a provider" />
+						</SelectTrigger>
+						<SelectContent>
+							{providers.map((providerOption) => (
+								<SelectItem key={providerOption.id} value={providerOption.id}>
+									{providerOption.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 					<Input
 						type="password"
 						placeholder="API Key"

@@ -45,6 +45,18 @@ export {
 	PopoverTrigger,
 } from './primitives/popover.js';
 export { ScrollArea, ScrollBar } from './primitives/scroll-area.js';
+export {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectScrollDownButton,
+	SelectScrollUpButton,
+	SelectSeparator,
+	SelectTrigger,
+	SelectValue,
+} from './primitives/select.js';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './primitives/tabs.js';
 export { textareaClassName } from './primitives/textarea.js';
 export {

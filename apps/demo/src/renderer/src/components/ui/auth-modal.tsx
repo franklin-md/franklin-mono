@@ -13,8 +13,8 @@ import {
 } from '@franklin/ui';
 
 import { ApiKeyPanel } from './api-key-panel.js';
-import { useAuthStore } from './auth-context.js';
-import type { OAuthLoginFn, OAuthProviderMeta } from './oauth-panel.js';
+import { useAuthManager } from './auth-context.js';
+import type { OAuthProviderMeta } from './oauth-panel.js';
 import { OAuthPanel } from './oauth-panel.js';
 
 /**
@@ -33,30 +33,26 @@ export function AuthModal({
 	onEntriesChange,
 	oauthProviders,
 	apiKeyProviders,
-	onLogin,
-	onOpenUrl,
 }: {
 	onClose: () => void;
 	onEntriesChange?: (entries: AuthEntries) => void;
 	oauthProviders: OAuthProviderMeta[];
 	apiKeyProviders: OAuthProviderMeta[];
-	onLogin: OAuthLoginFn;
-	onOpenUrl?: (url: string) => void | Promise<void>;
 }) {
-	const store = useAuthStore();
+	const auth = useAuthManager();
 	const [savedEntries, setSavedEntries] = useState<AuthEntries>({});
 
 	useEffect(() => {
-		const entries = store.entries();
+		const entries = auth.entries();
 		setSavedEntries(entries);
 		onEntriesChange?.(entries);
-	}, [store, onEntriesChange]);
+	}, [auth, onEntriesChange]);
 
 	const handleUpdate = useCallback(async () => {
-		const entries = store.entries();
+		const entries = auth.entries();
 		setSavedEntries(entries);
 		onEntriesChange?.(entries);
-	}, [store, onEntriesChange]);
+	}, [auth, onEntriesChange]);
 
 	return (
 		<Dialog
@@ -90,8 +86,6 @@ export function AuthModal({
 							savedEntries={savedEntries}
 							onUpdate={handleUpdate}
 							providers={oauthProviders}
-							onLogin={onLogin}
-							onOpenUrl={onOpenUrl}
 						/>
 					</TabsContent>
 					<TabsContent

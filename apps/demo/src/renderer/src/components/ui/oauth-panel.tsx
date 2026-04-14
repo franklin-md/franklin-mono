@@ -2,8 +2,10 @@ import { useState } from 'react';
 
 import type { OAuthLoginCallbacks, AuthEntries } from '@franklin/agent/browser';
 import { Button } from '@franklin/ui';
+import { useApp } from '@franklin/react';
+import { Loader2 } from 'lucide-react';
 
-import { useAuthStore } from './auth-context.js';
+import { useAuthManager } from './auth-context.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -11,17 +13,6 @@ import { useAuthStore } from './auth-context.js';
 
 /** Minimal provider descriptor — id + display name. */
 export type OAuthProviderMeta = { id: string; name: string };
-
-/**
- * Initiates the OAuth login flow for a provider.
- *
- * Implementations call the callbacks as the flow progresses and resolve
- * when authentication completes, or reject on failure.
- */
-export type OAuthLoginFn = (
-	providerId: string,
-	callbacks: OAuthLoginCallbacks,
-) => Promise<void>;
 
 // ---------------------------------------------------------------------------
 // Flow state machine
@@ -31,7 +22,7 @@ type FlowState =
 	| { phase: 'idle' }
 	| { phase: 'starting' }
 	| { phase: 'in-progress'; message: string }
-	| { phase: 'auth'; url: string; instructions?: string }
+	| { phase: 'waiting' }
 	| { phase: 'success' }
 	| { phase: 'error'; message: string };
 
@@ -42,26 +33,21 @@ type FlowState =
 /**
  * Lists OAuth providers and allows the user to sign in.
  *
- * `providers` and `onLogin` are injected so this component has no Node.js
- * dependencies — it works in any renderer environment (Node, Electron, etc.).
- *
- * `savedEntries` is owned by the parent — the panel never reads from disk.
- * `onUpdate` is called after any mutation so the parent can reload and re-pass entries.
+ * Clicking "Sign in" starts the OAuth flow and automatically opens the
+ * browser via `platform.openExternal`. The button shows a loading spinner
+ * while waiting for the user to complete authentication in the browser.
  */
 export function OAuthPanel({
 	savedEntries,
 	onUpdate,
 	providers,
-	onLogin,
-	onOpenUrl,
 }: {
 	savedEntries: AuthEntries;
 	onUpdate: () => Promise<void>;
 	providers: OAuthProviderMeta[];
-	onLogin: OAuthLoginFn;
-	onOpenUrl?: (url: string) => void | Promise<void>;
 }) {
-	const store = useAuthStore();
+	const auth = useAuthManager();
+	const app = useApp();
 
 	const [activeProvider, setActiveProvider] = useState<string | null>(null);
 	const [flowState, setFlowState] = useState<FlowState>({ phase: 'idle' });
@@ -72,21 +58,18 @@ export function OAuthPanel({
 
 		const callbacks: OAuthLoginCallbacks = {
 			onAuth: (info) => {
-				setFlowState({
-					phase: 'auth',
-					url: info.url,
-					instructions: info.instructions,
-				});
+				void app.platform.openExternal(info.url);
+				setFlowState({ phase: 'waiting' });
 			},
 			onProgress: (message) => {
 				setFlowState((prev) =>
-					prev.phase === 'auth' ? prev : { phase: 'in-progress', message },
+					prev.phase === 'waiting' ? prev : { phase: 'in-progress', message },
 				);
 			},
 		};
 
 		try {
-			await onLogin(provider.id, callbacks);
+			await auth.loginOAuth(provider.id, callbacks);
 			setFlowState({ phase: 'success' });
 			await onUpdate();
 		} catch (err) {
@@ -140,6 +123,9 @@ export function OAuthPanel({
 								}}
 								disabled={flowRunning}
 							>
+								{flowRunning && (
+									<Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+								)}
 								{isSignedIn ? 'Re-authenticate' : 'Sign in'}
 							</Button>
 
@@ -149,7 +135,7 @@ export function OAuthPanel({
 									size="sm"
 									onClick={() => {
 										void (async () => {
-											store.removeOAuthEntry(provider.id);
+											auth.removeOAuthEntry(provider.id);
 											await onUpdate();
 										})();
 									}}
@@ -161,11 +147,7 @@ export function OAuthPanel({
 						</div>
 
 						{isActive && flowState.phase !== 'idle' && (
-							<OAuthFlowView
-								state={flowState}
-								onDismiss={dismissFlow}
-								onOpenUrl={onOpenUrl}
-							/>
+							<OAuthFlowView state={flowState} onDismiss={dismissFlow} />
 						)}
 					</div>
 				);
@@ -181,11 +163,9 @@ export function OAuthPanel({
 function OAuthFlowView({
 	state,
 	onDismiss,
-	onOpenUrl,
 }: {
 	state: FlowState;
 	onDismiss: () => void;
-	onOpenUrl?: (url: string) => void | Promise<void>;
 }) {
 	return (
 		<div className="border-t border-border bg-muted/50 px-3.5 py-3">
@@ -197,27 +177,12 @@ function OAuthFlowView({
 				<p className="text-sm text-muted-foreground">{state.message}</p>
 			)}
 
-			{state.phase === 'auth' && (
-				<div>
-					<p className="mb-2 text-sm">
-						Open the following URL to complete authentication:
+			{state.phase === 'waiting' && (
+				<div className="flex items-center gap-2">
+					<Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+					<p className="text-sm text-muted-foreground">
+						Waiting for authentication… Browser opened.
 					</p>
-					<a
-						href={state.url}
-						onClick={(event) => {
-							if (!onOpenUrl) return;
-							event.preventDefault();
-							void onOpenUrl(state.url);
-						}}
-						className="break-all text-xs text-primary underline"
-					>
-						{state.url}
-					</a>
-					{state.instructions && (
-						<p className="mt-2 text-sm text-muted-foreground">
-							{state.instructions}
-						</p>
-					)}
 				</div>
 			)}
 
