@@ -10,7 +10,7 @@ function IconGrid() {
 					key={`file:${name}`}
 					className="flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5 text-sm"
 				>
-					<FileIcon filename={name} className="h-4 w-4" />
+					<FileIcon filename={name} className="h-4 w-4" withBrandColor />
 					<span className="truncate font-mono text-xs">{name}</span>
 				</div>
 			))}
@@ -19,7 +19,11 @@ function IconGrid() {
 					key={`ext:${ext}`}
 					className="flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5 text-sm"
 				>
-					<FileIcon filename={`file.${ext}`} className="h-4 w-4" />
+					<FileIcon
+						filename={`file.${ext}`}
+						className="h-4 w-4"
+						withBrandColor
+					/>
 					<span className="truncate font-mono text-xs">.{ext}</span>
 				</div>
 			))}
