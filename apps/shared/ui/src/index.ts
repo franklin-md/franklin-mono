@@ -26,6 +26,17 @@ export {
 	CommandList,
 	CommandSeparator,
 } from './primitives/command.js';
+export {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogOverlay,
+	DialogPortal,
+	DialogTitle,
+	DialogTrigger,
+} from './primitives/dialog.js';
 export { Input } from './primitives/input.js';
 export {
 	Popover,
@@ -33,6 +44,18 @@ export {
 	PopoverTrigger,
 } from './primitives/popover.js';
 export { ScrollArea, ScrollBar } from './primitives/scroll-area.js';
+export {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectScrollDownButton,
+	SelectScrollUpButton,
+	SelectSeparator,
+	SelectTrigger,
+	SelectValue,
+} from './primitives/select.js';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './primitives/tabs.js';
 export { textareaClassName } from './primitives/textarea.js';
 
@@ -85,6 +108,12 @@ export {
 	defaultToolRenderers,
 } from './conversation/tools/registry/index.js';
 export { defaultRegistry as defaultTurnEndRegistry } from './conversation/turn/turn-end/registry.js';
+
+// auth
+export { AuthModalContent } from './auth/modal.js';
+export { useAuthManager } from './auth/context.js';
+export { apiKeyPanel, oauthPanel } from './auth/panels.js';
+export type { AuthPanelDescriptor, AuthPanelProps } from './auth/types.js';
 
 // sidebar
 export { AgentSidebar } from './sidebar/agent-sidebar.js';
