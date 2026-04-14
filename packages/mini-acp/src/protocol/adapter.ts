@@ -33,26 +33,35 @@ export function createSessionAdapter(
 		async initialize() {},
 
 		async setContext(ctx: Partial<Ctx>) {
-			// TODO: We should reject a setContext if there is a turn in progress.
+			// TODO FRA-76: We should reject a setContext if there is a turn in progress.
 			tracker.apply(ctx);
 			// Invalidate agent so next prompt uses new context
 			currentTurn = null;
 		},
 
 		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
-			// TODO: We should reject a prompt if there is a turn in progress.
-			// TODO: Turn this into a testable spec point.
-			currentTurn = trackTurn(
+			if (currentTurn) {
+				throw new Error('Cannot prompt while a turn is already in progress');
+			}
+
+			const turn = trackTurn(
 				tracker,
 				createTurnClient(tracker.get(), trackedServer),
 			);
-			yield* currentTurn.prompt(message);
-			currentTurn = null;
+			currentTurn = turn;
+
+			try {
+				yield* turn.prompt(message);
+			} finally {
+				if (currentTurn === turn) {
+					currentTurn = null;
+				}
+			}
 		},
 
 		async cancel() {
 			if (!currentTurn) {
-				// TODO: Raise error or silently drop
+				// TODO FRA-157: Raise error or silently drop
 				return;
 			}
 			return currentTurn.cancel();

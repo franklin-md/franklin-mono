@@ -65,7 +65,7 @@ Below, we explain the reasons why Mini-ACP was developed, including mention of p
 
 Transitions:
 - `setContext` MAY be called any number of times in the `Ready` state.
-- `prompt` transitions from `Ready` to `Turning`. A new `prompt` MUST NOT be sent while a turn is active.
+- `prompt` transitions from `Ready` to `Turning`. A new `prompt` MUST NOT start a new turn while a turn is active; if one is sent during `Turning`, it MUST be rejected and the current turn continues unchanged.
 - `TurnEnd` or stream termination transitions from `Turning` back to `Ready`.
 - `cancel` MAY be sent during `Turning`. See [Cancellation](#cancellation).
 - `setContext` during `Turning` is currently #unspecified.
@@ -323,9 +323,9 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 
 | ID | Description | Level |
 |----|-------------|-------|
-| `turn-starts-with-turn-start` | The first stream event after every `prompt` must be a `turnStart` | MUST |
-| `turn-ends-with-turn-end` | Every `prompt` must eventually be followed by a `turnEnd` | MUST |
-| `no-overlapping-prompts` | `prompt` must not be sent while a turn is active | MUST |
+| `turn-starts-with-turn-start` | The first stream event after every `prompt` sent while idle must be a `turnStart` | MUST |
+| `turn-ends-with-turn-end` | Every `prompt` that starts a turn must eventually be followed by a `turnEnd` | MUST |
+| `no-overlapping-prompts` | A `prompt` sent during an active turn must be rejected and must not start a second turn | MUST |
 | `prompt-after-init` | `prompt` must not be sent before `initialize` completes | MUST |
 | `turn-end-is-terminal` | No stream events (`chunk`, `update`) after `turnEnd` within a turn | MUST |
 

@@ -15,6 +15,12 @@ import type { AgentProtocol } from '../protocol/types.js';
 // Transcript
 // ---------------------------------------------------------------------------
 
+export type TranscriptErrorOperation =
+	| 'initialize'
+	| 'setContext'
+	| 'prompt'
+	| 'cancel';
+
 export type TranscriptEntry =
 	| { direction: 'send'; method: 'initialize'; params: Record<string, never> }
 	| { direction: 'send'; method: 'setContext'; params: Partial<Ctx> }
@@ -39,6 +45,16 @@ export type TranscriptEntry =
 			direction: 'receive';
 			method: 'setContext';
 			params: Record<string, never>;
+	  }
+	| {
+			direction: 'receive';
+			method: 'error';
+			params: {
+				operation: TranscriptErrorOperation;
+				message: string;
+				code?: number;
+				data?: unknown;
+			};
 	  };
 
 export type Transcript = TranscriptEntry[];
