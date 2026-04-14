@@ -37,7 +37,12 @@ export type {
 export { DEFAULT_NETWORK_CONFIG } from './environment/index.js';
 
 export type { StoreAPI } from './store/index.js';
-export type { ReadonlyStore, Store } from './store/index.js';
+export type {
+	ReadonlyStore,
+	Store,
+	PersistedStore,
+	PersistedStoreAdapter,
+} from './store/index.js';
 export type { Sharing, ForkMode } from './store/index.js';
 export type { StoreKey, StoreValueType } from './store/index.js';
 export { storeKey } from './store/index.js';
@@ -47,6 +52,7 @@ export {
 	createEmptyStoreResult,
 	createStoreResult,
 	createStore,
+	createPersistedStore,
 } from './store/index.js';
 export { StoreRegistry } from './store/index.js';
 export type { StoreEntry, StoreMapping } from './store/index.js';
@@ -57,6 +63,7 @@ export type {
 	Session,
 	SessionCreate,
 	SessionCreateInput,
+	SessionEvent,
 } from './session/index.js';
 export {
 	SessionCollection,

@@ -339,7 +339,10 @@ describe('withAuth', () => {
 // ---------------------------------------------------------------------------
 
 describe('withAuth live sync', () => {
-	async function buildRuntime(provider: string, auth: ReturnType<typeof mockAuthManager>) {
+	async function buildRuntime(
+		provider: string,
+		auth: ReturnType<typeof mockAuthManager>,
+	) {
 		const spawn = createMockSpawn();
 		const base = createCoreSystem(spawn);
 		const decorated = withAuth(base, auth);
@@ -353,7 +356,9 @@ describe('withAuth live sync', () => {
 	}
 
 	it('pushes new key when provider credentials change', async () => {
-		const providers: Record<string, string | undefined> = { anthropic: 'sk-old' };
+		const providers: Record<string, string | undefined> = {
+			anthropic: 'sk-old',
+		};
 		const auth = mockAuthManager(providers);
 		const runtime = await buildRuntime('anthropic', auth);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
@@ -363,32 +368,43 @@ describe('withAuth live sync', () => {
 
 		// Simulate credential change
 		providers.anthropic = 'sk-new';
-		await auth._listeners[0]!('anthropic', { apiKey: { type: 'apiKey', key: 'sk-new' } });
+		await auth._listeners[0]!('anthropic', {
+			apiKey: { type: 'apiKey', key: 'sk-new' },
+		});
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
 		expect(setContextSpy).toHaveBeenCalledWith(
 			expect.objectContaining({
-				config: expect.objectContaining({ provider: 'anthropic', apiKey: 'sk-new' }),
+				config: expect.objectContaining({
+					provider: 'anthropic',
+					apiKey: 'sk-new',
+				}),
 			}),
 		);
 	});
 
 	it('ignores changes for a different provider', async () => {
-		const providers: Record<string, string | undefined> = { anthropic: 'sk-anthropic' };
+		const providers: Record<string, string | undefined> = {
+			anthropic: 'sk-anthropic',
+		};
 		const auth = mockAuthManager(providers);
 		await buildRuntime('anthropic', auth);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Fire change for a provider this runtime doesn't use
 		providers.openai = 'sk-openai';
-		await auth._listeners[0]!('openai', { apiKey: { type: 'apiKey', key: 'sk-openai' } });
+		await auth._listeners[0]!('openai', {
+			apiKey: { type: 'apiKey', key: 'sk-openai' },
+		});
 
 		// getApiKey should not have been called — runtime's provider doesn't match
 		expect(auth.getApiKey).not.toHaveBeenCalled();
 	});
 
 	it('pushes undefined apiKey on key revocation', async () => {
-		const providers: Record<string, string | undefined> = { anthropic: 'sk-old' };
+		const providers: Record<string, string | undefined> = {
+			anthropic: 'sk-old',
+		};
 		const auth = mockAuthManager(providers);
 		const runtime = await buildRuntime('anthropic', auth);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
@@ -401,7 +417,10 @@ describe('withAuth live sync', () => {
 		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
 		expect(setContextSpy).toHaveBeenCalledWith(
 			expect.objectContaining({
-				config: expect.objectContaining({ provider: 'anthropic', apiKey: undefined }),
+				config: expect.objectContaining({
+					provider: 'anthropic',
+					apiKey: undefined,
+				}),
 			}),
 		);
 	});

@@ -10,6 +10,7 @@ export type {
 	OAuthPrompt,
 } from './auth/types.js';
 export type { SettingsStore } from './settings/store.js';
+export type { AppSettings } from './settings/types.js';
 export { getLLMConfig, setLLMConfig } from './settings/llm-config.js';
 export type {
 	FranklinState,

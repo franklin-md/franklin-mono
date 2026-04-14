@@ -2,6 +2,7 @@ import type {
 	SessionCollection,
 	Session,
 	SessionCreate,
+	SessionEvent,
 } from '@franklin/extensions';
 import type { FranklinRuntime, FranklinSystem } from '../types.js';
 
@@ -10,7 +11,9 @@ export type Agents = {
 	get(id: string): Session<FranklinRuntime> | undefined;
 	list(): Session<FranklinRuntime>[];
 	remove(id: string): Promise<boolean>;
-	subscribe(listener: () => void): () => void;
+	subscribe(
+		listener: (event: SessionEvent<FranklinRuntime>) => void,
+	): () => void;
 };
 
 export function createAgents(

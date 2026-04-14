@@ -4,21 +4,17 @@ import {
 	createStoreSystem,
 	createEnvironmentSystem,
 	systems,
-	SessionCollection,
 	createSessionManager,
 } from '@franklin/extensions';
 import type { SessionManager } from '@franklin/extensions';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { createPersistence } from '../agent/session/persist/file-persister.js';
 import { withAuth } from '../auth/with-auth.js';
-import {
-	createSettings,
-	loadSettings,
-	addPersistOnChange,
-} from '../settings/store.js';
+import { createSettings } from '../settings/store.js';
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
 import { AuthManager } from '../auth/manager.js';
+import { restoreAll } from '../store/restorable.js';
 import type {
 	BaseSystem,
 	FranklinState,
@@ -35,7 +31,7 @@ export class FranklinApp {
 
 	private readonly storeRegistry: StoreRegistry;
 	private readonly manager: SessionManager<BaseSystem>;
-	private readonly persistedCollection?: PersistedSessionCollection<
+	private readonly collection: PersistedSessionCollection<
 		FranklinState,
 		FranklinRuntime
 	>;
@@ -43,27 +39,23 @@ export class FranklinApp {
 	constructor(opts: {
 		extensions: FranklinExtension[];
 		platform: Platform;
-		persistDir?: string;
+		persistDir: string;
 	}) {
 		const { extensions, platform, persistDir } = opts;
 		this.auth = new AuthManager(platform);
 		this.platform = platform;
-		this.settings = createSettings();
+		this.settings = createSettings(platform.filesystem);
 
-		const persistence = persistDir
-			? createPersistence<FranklinState>(persistDir, platform.filesystem)
-			: undefined;
+		const persistence = createPersistence<FranklinState>(
+			persistDir,
+			platform.filesystem,
+		);
 
-		this.storeRegistry = new StoreRegistry(persistence?.store);
-		const collection = persistence?.session
-			? new PersistedSessionCollection<FranklinState, FranklinRuntime>(
-					persistence.session,
-				)
-			: new SessionCollection<FranklinRuntime>();
-
-		if (collection instanceof PersistedSessionCollection) {
-			this.persistedCollection = collection;
-		}
+		this.storeRegistry = new StoreRegistry(persistence.store);
+		this.collection = new PersistedSessionCollection<
+			FranklinState,
+			FranklinRuntime
+		>(persistence.session);
 
 		// Static base system — shared across all sessions
 		const baseSystem = systems(
@@ -76,27 +68,20 @@ export class FranklinApp {
 		// Session manager — wraps base system, handles per-session session system internally
 		this.manager = createSessionManager({
 			system: baseSystem,
-			collection,
+			collection: this.collection,
 			extensions,
 		});
 
 		this.agents = createAgents(
 			this.manager.create.bind(this.manager),
-			collection,
+			this.collection,
 		);
 	}
 
 	async start(): Promise<void> {
-		await this.auth.restore();
-		await loadSettings(this.settings, this.platform.filesystem);
-		addPersistOnChange(this.settings, this.platform.filesystem);
-		await this.storeRegistry.restore();
-
-		// Rehydrate persisted sessions
-		if (this.persistedCollection) {
-			await this.persistedCollection.restore((id, state) =>
-				this.manager.materialize(id, state),
-			);
-		}
+		await restoreAll(this.auth, this.settings, this.storeRegistry);
+		await this.collection.restore((id, state) =>
+			this.manager.materialize(id, state),
+		);
 	}
 }

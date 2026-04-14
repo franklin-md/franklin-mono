@@ -3,6 +3,7 @@ import type { Filesystem } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthManager } from '../auth/manager.js';
 import { OAuthFlow } from '../auth/oauth-flow.js';
+import { DEFAULT_AUTH_PATH } from '../auth/store.js';
 import type { Platform } from '../platform.js';
 
 function createFilesystem(): Filesystem {
@@ -102,6 +103,67 @@ describe('AuthManager', () => {
 		});
 	});
 
+	it('restores persisted entries without writing them back during hydration', async () => {
+		const filesystem = createFilesystem();
+		await filesystem.writeFile(
+			DEFAULT_AUTH_PATH,
+			JSON.stringify({
+				anthropic: {
+					apiKey: {
+						type: 'apiKey',
+						key: 'sk-test',
+					},
+				},
+			}),
+		);
+		vi.mocked(filesystem.writeFile).mockClear();
+		const auth = new AuthManager(
+			createPlatform(
+				filesystem,
+				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
+			),
+		);
+
+		await auth.restore();
+
+		expect(auth.entries()).toEqual({
+			anthropic: {
+				apiKey: {
+					type: 'apiKey',
+					key: 'sk-test',
+				},
+			},
+		});
+		expect(filesystem.writeFile).not.toHaveBeenCalled();
+	});
+
+	it('does not emit auth change events during restore', async () => {
+		const filesystem = createFilesystem();
+		await filesystem.writeFile(
+			DEFAULT_AUTH_PATH,
+			JSON.stringify({
+				anthropic: {
+					apiKey: {
+						type: 'apiKey',
+						key: 'sk-test',
+					},
+				},
+			}),
+		);
+		const auth = new AuthManager(
+			createPlatform(
+				filesystem,
+				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
+			),
+		);
+		const listener = vi.fn();
+		auth.onAuthChange(listener);
+
+		await auth.restore();
+
+		expect(listener).not.toHaveBeenCalled();
+	});
+
 	it('emits auth change events for store mutations', async () => {
 		const auth = new AuthManager(
 			createPlatform(
@@ -123,5 +185,26 @@ describe('AuthManager', () => {
 				key: 'sk-test',
 			},
 		});
+	});
+
+	it('emits provider removals as undefined entries', async () => {
+		const auth = new AuthManager(
+			createPlatform(
+				createFilesystem(),
+				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
+			),
+		);
+		const listener = vi.fn();
+		auth.onAuthChange(listener);
+
+		auth.setApiKeyEntry('anthropic', {
+			type: 'apiKey',
+			key: 'sk-test',
+		});
+		listener.mockClear();
+
+		auth.removeApiKeyEntry('anthropic');
+
+		expect(listener).toHaveBeenCalledWith('anthropic', undefined);
 	});
 });

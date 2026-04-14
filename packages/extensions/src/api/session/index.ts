@@ -4,6 +4,7 @@ export type {
 	Session,
 	SessionCreate,
 	SessionCreateInput,
+	SessionEvent,
 } from '../../runtime/session/types.js';
 export { SessionCollection } from '../../runtime/session/collection.js';
 export {

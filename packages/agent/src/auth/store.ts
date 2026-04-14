@@ -1,75 +1,39 @@
-/* eslint-disable @typescript-eslint/no-dynamic-delete */
-
-import { createObserver } from '@franklin/lib';
+import {
+	createPersistedStore,
+	createStore,
+	type PersistedStore,
+} from '@franklin/extensions';
 import type { Filesystem } from '@franklin/lib';
-
-import type { AuthEntries, AuthEntry } from './types.js';
+import type { AuthEntries } from './types.js';
 
 // ---------------------------------------------------------------------------
 // Default location
 // ---------------------------------------------------------------------------
 
-const DEFAULT_AUTH_PATH = 'auth.json';
+export const DEFAULT_AUTH_PATH = 'auth.json';
 
-// ---------------------------------------------------------------------------
-// AuthEntriesStore (in-memory)
-// ---------------------------------------------------------------------------
+export type AuthStore = PersistedStore<AuthEntries>;
 
-export class AuthEntriesStore {
-	private readonly data: Record<string, AuthEntry> = {};
-	private readonly observer = createObserver<[string, AuthEntry | undefined]>();
-
-	get(provider: string): AuthEntry | undefined {
-		return this.data[provider];
-	}
-
-	set(provider: string, entry: AuthEntry): void {
-		this.data[provider] = entry;
-		this.observer.notify(provider, entry);
-	}
-
-	remove(provider: string): void {
-		if (!(provider in this.data)) return;
-		delete this.data[provider];
-		this.observer.notify(provider, undefined);
-	}
-
-	entries(): AuthEntries {
-		return { ...this.data };
-	}
-
-	subscribe(
-		listener: (provider: string, entry: AuthEntry | undefined) => void,
-	): () => void {
-		return this.observer.subscribe(listener);
-	}
+export function createAuthStore(filesystem: Filesystem): AuthStore {
+	return createPersistedStore(createStore<AuthEntries>({}), {
+		async restore(): Promise<AuthEntries> {
+			return await filesystem
+				.readFile(DEFAULT_AUTH_PATH)
+				.then(
+					(data) => JSON.parse(new TextDecoder().decode(data)) as AuthEntries,
+				)
+				.catch(() => ({}));
+		},
+		async persist(value): Promise<void> {
+			await filesystem.writeFile(
+				DEFAULT_AUTH_PATH,
+				JSON.stringify(value, null, 2),
+			);
+		},
+		isEqual: areAuthEntriesEqual,
+	});
 }
 
-// ---------------------------------------------------------------------------
-// PersistedAuthEntriesStore (decorator)
-// ---------------------------------------------------------------------------
-
-export class PersistedAuthEntriesStore extends AuthEntriesStore {
-	constructor(private readonly filesystem: Filesystem) {
-		super();
-		super.subscribe(() => void this.persist());
-	}
-
-	async restore(): Promise<void> {
-		const raw = await this.filesystem
-			.readFile(DEFAULT_AUTH_PATH)
-			.then((data) => JSON.parse(data.toString()) as AuthEntries)
-			.catch(() => ({}));
-
-		for (const [provider, entry] of Object.entries(raw)) {
-			super.set(provider, entry);
-		}
-	}
-
-	private async persist(): Promise<void> {
-		await this.filesystem.writeFile(
-			DEFAULT_AUTH_PATH,
-			JSON.stringify(this.entries(), null, 2),
-		);
-	}
+function areAuthEntriesEqual(left: AuthEntries, right: AuthEntries): boolean {
+	return JSON.stringify(left) === JSON.stringify(right);
 }

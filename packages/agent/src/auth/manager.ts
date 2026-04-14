@@ -1,4 +1,5 @@
 import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
+import { createObserver } from '@franklin/lib';
 import type {
 	OAuthCredentials,
 	OAuthLoginCallbacks,
@@ -12,13 +13,14 @@ import type {
 } from './types.js';
 import type { OAuthFlow } from './oauth-flow.js';
 import type { Platform } from '../platform.js';
-import { PersistedAuthEntriesStore } from './store.js';
+import { createAuthStore, type AuthStore } from './store.js';
 
 export class AuthManager {
-	private readonly store: PersistedAuthEntriesStore;
+	private readonly store: AuthStore;
+	private readonly observer = createObserver<[string, AuthEntry | undefined]>();
 
 	constructor(private readonly platform: Platform) {
-		this.store = new PersistedAuthEntriesStore(platform.filesystem);
+		this.store = createAuthStore(platform.filesystem);
 	}
 
 	async restore(): Promise<void> {
@@ -31,7 +33,7 @@ export class AuthManager {
 			entry: AuthEntry | undefined,
 		) => void | Promise<void>,
 	): () => void {
-		return this.store.subscribe((provider, entry) => {
+		return this.observer.subscribe((provider, entry) => {
 			void listener(provider, entry);
 		});
 	}
@@ -92,38 +94,50 @@ export class AuthManager {
 	// -------------------------------------------------------------------------
 
 	entries(): AuthEntries {
-		return this.store.entries();
+		return { ...this.store.get() };
 	}
 
 	setApiKeyEntry(provider: string, entry: ApiKeyEntry): void {
-		const current = this.store.get(provider);
-		this.store.set(provider, { ...current, apiKey: entry });
+		const next = {
+			...(this.getEntry(provider) ?? {}),
+			apiKey: entry,
+		};
+		this.updateEntry(provider, () => next);
+		this.notifyChange(provider, next);
 	}
 
 	setOAuthEntry(provider: string, entry: OAuthEntry): void {
-		const current = this.store.get(provider);
-		this.store.set(provider, { ...current, oauth: entry });
+		const next = {
+			...(this.getEntry(provider) ?? {}),
+			oauth: entry,
+		};
+		this.updateEntry(provider, () => next);
+		this.notifyChange(provider, next);
 	}
 
 	removeApiKeyEntry(provider: string): void {
-		const current = this.store.get(provider);
+		const current = this.getEntry(provider);
 		if (!current) return;
 		const { apiKey: _, ...rest } = current;
 		if (Object.keys(rest).length === 0) {
-			this.store.remove(provider);
+			this.removeEntry(provider);
+			this.notifyChange(provider, undefined);
 		} else {
-			this.store.set(provider, rest);
+			this.updateEntry(provider, () => rest);
+			this.notifyChange(provider, rest);
 		}
 	}
 
 	removeOAuthEntry(provider: string): void {
-		const current = this.store.get(provider);
+		const current = this.getEntry(provider);
 		if (!current) return;
 		const { oauth: _, ...rest } = current;
 		if (Object.keys(rest).length === 0) {
-			this.store.remove(provider);
+			this.removeEntry(provider);
+			this.notifyChange(provider, undefined);
 		} else {
-			this.store.set(provider, rest);
+			this.updateEntry(provider, () => rest);
+			this.notifyChange(provider, rest);
 		}
 	}
 
@@ -132,7 +146,7 @@ export class AuthManager {
 	// -------------------------------------------------------------------------
 
 	async getApiKey(provider: string): Promise<string | undefined> {
-		const entry = this.store.get(provider);
+		const entry = this.getEntry(provider);
 		if (!entry) return undefined;
 
 		if (entry.oauth) {
@@ -154,6 +168,32 @@ export class AuthManager {
 		}
 
 		return entry.apiKey?.key;
+	}
+
+	private getEntry(provider: string): AuthEntry | undefined {
+		return this.store.get()[provider];
+	}
+
+	private updateEntry(
+		provider: string,
+		recipe: (current: AuthEntry | undefined) => AuthEntry,
+	): void {
+		this.store.set((entries) => ({
+			...entries,
+			[provider]: recipe(entries[provider]),
+		}));
+	}
+
+	private removeEntry(provider: string): void {
+		this.store.set((entries) => {
+			if (!(provider in entries)) return entries;
+			const { [provider]: _, ...rest } = entries;
+			return rest;
+		});
+	}
+
+	private notifyChange(provider: string, entry: AuthEntry | undefined): void {
+		this.observer.notify(provider, entry);
 	}
 }
 
