@@ -1,6 +1,6 @@
 import type { StatusState } from '@franklin/extensions';
 
-import { DeleteButton } from '../primitives/delete-button.js';
+import { DeleteButton } from '../components/delete-button.js';
 import { cn } from '../lib/cn.js';
 import { StatusDot } from './status-dot.js';
 
