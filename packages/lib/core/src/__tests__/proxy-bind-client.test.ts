@@ -3,6 +3,7 @@ import {
 	method,
 	notification,
 	event,
+	on,
 	namespace,
 	resource,
 	stream,
@@ -83,6 +84,22 @@ describe('bindClient', () => {
 		expect(runtime.bindNamespace).toHaveBeenCalledWith('logs');
 		expect(childRuntime.bindEvent).toHaveBeenCalled();
 		expect(proxy.logs).toBe(stub);
+	});
+
+	it('binds on descriptors via runtime.bindOn', () => {
+		const stub = vi.fn().mockReturnValue(() => {});
+		const childRuntime = createMockRuntime({
+			bindOn: vi.fn().mockReturnValue(stub),
+		});
+		const runtime = createMockRuntime({
+			bindNamespace: vi.fn().mockReturnValue(childRuntime),
+		});
+
+		const proxy = bindClient(namespace({ status: on() }), runtime);
+
+		expect(runtime.bindNamespace).toHaveBeenCalledWith('status');
+		expect(childRuntime.bindOn).toHaveBeenCalled();
+		expect(proxy.status).toBe(stub);
 	});
 
 	it('recurses into namespace descriptors', () => {
@@ -232,6 +249,12 @@ describe('bindClient', () => {
 		expect(() => bindClient(event(), runtime)).toThrow(
 			UnsupportedDescriptorError,
 		);
+	});
+
+	it('throws UnsupportedDescriptorError for unsupported on', () => {
+		const runtime = createMockRuntime();
+
+		expect(() => bindClient(on(), runtime)).toThrow(UnsupportedDescriptorError);
 	});
 
 	it('throws UnsupportedDescriptorError for unsupported resource', () => {

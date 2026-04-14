@@ -11,6 +11,10 @@ export type Session<RT extends RuntimeBase<any>> = {
 	runtime: RT;
 };
 
+export type SessionEvent<RT extends RuntimeBase<any>> =
+	| { action: 'add'; id: string; runtime: RT }
+	| { action: 'remove'; id: string; runtime: RT };
+
 export type SessionCreateInput<RTS extends RuntimeSystem<any, any, any>> = {
 	from?: string;
 	mode?: 'child' | 'fork';

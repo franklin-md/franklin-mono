@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { AuthFile } from '@franklin/agent/browser';
+import type { AuthEntries } from '@franklin/agent/browser';
 
 import { ApiKeyPanel } from './api-key-panel.js';
 import { useAuthStore } from './auth-context.js';
@@ -29,7 +29,7 @@ export function AuthModal({
 	onOpenUrl,
 }: {
 	onClose: () => void;
-	onEntriesChange?: (entries: AuthFile) => void;
+	onEntriesChange?: (entries: AuthEntries) => void;
 	oauthProviders: OAuthProviderMeta[];
 	apiKeyProviders: OAuthProviderMeta[];
 	onLogin: OAuthLoginFn;
@@ -37,31 +37,18 @@ export function AuthModal({
 }) {
 	const store = useAuthStore();
 	const [tab, setTab] = useState<Tab>('oauth');
-	const [savedEntries, setSavedEntries] = useState<AuthFile>({});
+	const [savedEntries, setSavedEntries] = useState<AuthEntries>({});
 
 	useEffect(() => {
-		let cancelled = false;
-
-		async function loadEntries() {
-			const entries = await store.load();
-			if (!cancelled) {
-				setSavedEntries(entries);
-				onEntriesChange?.(entries);
-			}
-		}
-
-		void loadEntries();
-
-		return () => {
-			cancelled = true;
-		};
+		const entries = store.entries();
+		setSavedEntries(entries);
+		onEntriesChange?.(entries);
 	}, [store, onEntriesChange]);
 
-	const handleUpdate = useCallback(() => {
-		return store.load().then((entries) => {
-			setSavedEntries(entries);
-			onEntriesChange?.(entries);
-		});
+	const handleUpdate = useCallback(async () => {
+		const entries = store.entries();
+		setSavedEntries(entries);
+		onEntriesChange?.(entries);
 	}, [store, onEntriesChange]);
 
 	return (

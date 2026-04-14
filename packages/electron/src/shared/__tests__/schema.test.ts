@@ -38,16 +38,29 @@ describe('schema', () => {
 		expect(`${prefix}:environment:lease:${envId}:filesystem:readFile`).toBe(
 			'franklin:environment:lease:env-1:filesystem:readFile',
 		);
+
+		// OAuth flow resource channels
+		expect(`${prefix}:createFlow:connect`).toBe('franklin:createFlow:connect');
+		const flowId = 'flow-1';
+		expect(`${prefix}:createFlow:lease:${flowId}:onProgress:on:subscribe`).toBe(
+			'franklin:createFlow:lease:flow-1:onProgress:on:subscribe',
+		);
 	});
 
-	it('captures environment and spawn as core resource descriptors', () => {
+	it('captures environment, spawn, and createFlow as proxy descriptors', () => {
 		const spawn = schema.shape.spawn;
+		const createFlow = schema.shape.createFlow;
 		const environment = schema.shape.environment;
 		expect(spawn).toBeDefined();
+		expect(createFlow).toBeDefined();
 		expect(environment).toBeDefined();
 		expect(isResourceDescriptor(spawn) && isStreamDescriptor(spawn.inner)).toBe(
 			true,
 		);
+		expect(
+			isResourceDescriptor(createFlow) &&
+				isNamespaceDescriptor(createFlow.inner),
+		).toBe(true);
 		expect(
 			isResourceDescriptor(environment) &&
 				isNamespaceDescriptor(environment.inner),

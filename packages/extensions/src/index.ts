@@ -26,6 +26,8 @@ export type {
 	StoreAPI,
 	ReadonlyStore,
 	Store,
+	PersistedStore,
+	PersistedStoreAdapter,
 	Sharing,
 	ForkMode,
 	StoreResult,
@@ -35,6 +37,7 @@ export type {
 	Session,
 	SessionCreate,
 	SessionCreateInput,
+	SessionEvent,
 } from './api/index.js';
 export {
 	compose,
@@ -55,6 +58,7 @@ export {
 	createEmptyStoreResult,
 	createStoreResult,
 	createStore,
+	createPersistedStore,
 	storeKey,
 } from './api/index.js';
 export { StoreRegistry } from './api/index.js';

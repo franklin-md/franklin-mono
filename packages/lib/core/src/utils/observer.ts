@@ -1,6 +1,6 @@
-export type Observer = {
-	notify(): void;
-	subscribe(listener: () => void): () => void;
+export type Observer<TArgs extends unknown[] = []> = {
+	notify(...args: TArgs): void;
+	subscribe(listener: (...args: TArgs) => void): () => void;
 };
 
 /**
@@ -9,14 +9,16 @@ export type Observer = {
  * Use `notify()` internally where state changes, and expose
  * `subscribe` to consumers who need to react.
  */
-export function createObserver(): Observer {
-	const listeners = new Set<() => void>();
+export function createObserver<
+	TArgs extends unknown[] = [],
+>(): Observer<TArgs> {
+	const listeners = new Set<(...args: TArgs) => void>();
 
 	return {
-		notify() {
-			for (const l of listeners) l();
+		notify(...args) {
+			for (const listener of listeners) listener(...args);
 		},
-		subscribe(listener: () => void): () => void {
+		subscribe(listener) {
 			listeners.add(listener);
 			return () => {
 				listeners.delete(listener);

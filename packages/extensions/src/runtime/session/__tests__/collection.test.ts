@@ -50,15 +50,26 @@ describe('SessionCollection', () => {
 		]);
 	});
 
-	it('notifies subscribers on set and remove', async () => {
+	it('notifies subscribers with add/remove events', async () => {
 		const collection = new SessionCollection<TestRuntime>();
 		const listener = vi.fn();
+		const rt = mockRuntime();
 
 		collection.subscribe(listener);
-		collection.set('session-1', mockRuntime());
+		collection.set('session-1', rt);
 		await collection.remove('session-1');
 
 		expect(listener).toHaveBeenCalledTimes(2);
+		expect(listener).toHaveBeenNthCalledWith(1, {
+			action: 'add',
+			id: 'session-1',
+			runtime: rt,
+		});
+		expect(listener).toHaveBeenNthCalledWith(2, {
+			action: 'remove',
+			id: 'session-1',
+			runtime: rt,
+		});
 	});
 
 	it('stops notifying after unsubscribe', async () => {
@@ -83,6 +94,25 @@ describe('SessionCollection', () => {
 
 		expect(rt.dispose).toHaveBeenCalledOnce();
 		expect(collection.has('session-1')).toBe(false);
+	});
+
+	it('fires remove event before dispose', async () => {
+		const collection = new SessionCollection<TestRuntime>();
+		const rt = mockRuntime();
+		let disposedAtNotify = false;
+
+		collection.subscribe((event) => {
+			if (event.action === 'remove') {
+				disposedAtNotify =
+					(rt.dispose as ReturnType<typeof vi.fn>).mock.calls.length > 0;
+			}
+		});
+
+		collection.set('session-1', rt);
+		await collection.remove('session-1');
+
+		expect(disposedAtNotify).toBe(false);
+		expect(rt.dispose).toHaveBeenCalledOnce();
 	});
 
 	it('does not call dispose when removing a missing entry', async () => {

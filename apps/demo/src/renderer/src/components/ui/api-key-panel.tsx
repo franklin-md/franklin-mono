@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
-import type { AuthFile, ApiKeyEntry } from '@franklin/agent/browser';
+import type { AuthEntries, ApiKeyEntry } from '@franklin/agent/browser';
 
 import { useAuthStore } from './auth-context.js';
 import type { OAuthProviderMeta } from './oauth-panel.js';
@@ -51,7 +51,7 @@ export function ApiKeyPanel({
 	onUpdate,
 	providers,
 }: {
-	savedEntries: AuthFile;
+	savedEntries: AuthEntries;
 	onUpdate: () => Promise<void>;
 	providers: OAuthProviderMeta[];
 }) {
@@ -71,7 +71,7 @@ export function ApiKeyPanel({
 		Boolean(entry.apiKey),
 	) as [
 		string,
-		AuthFile[string] & { apiKey: { type: 'apiKey'; key: string } },
+		AuthEntries[string] & { apiKey: { type: 'apiKey'; key: string } },
 	][];
 
 	async function handleSubmit(e: FormEvent) {
@@ -85,7 +85,7 @@ export function ApiKeyPanel({
 			return;
 		}
 		const entry: ApiKeyEntry = { type: 'apiKey', key: key.trim() };
-		await store.setApiKeyEntry(provider.trim(), entry);
+		store.setApiKeyEntry(provider.trim(), entry);
 		setProvider('');
 		setKey('');
 		setError(null);
@@ -93,7 +93,7 @@ export function ApiKeyPanel({
 	}
 
 	async function handleRemove(providerId: string) {
-		await store.removeApiKeyEntry(providerId);
+		store.removeApiKeyEntry(providerId);
 		await onUpdate();
 	}
 

@@ -69,7 +69,9 @@ Franklin is an extension runtime for minimal agent loops.
 
 ### Project Management:
 
-- **Use of Linear** - we use linear to keep track of tickets. When starting work from a particular ticket, also pull in the project description, comments, related issues etc to gain a comprehensive understanding of the: the problem, a consistent methodology for implementing problems of that class.
+- **Use of Linear**: We use linear to keep track of tickets.
+  - **Comprehensive Context**: When starting work from a particular ticket, also pull in the project description, comments, related issues etc to gain a comprehensive understanding of the: the problem, a consistent methodology for implementing problems of that class.
+  - **Introduced TODOs**: Any new todos introduced during a pull request should ideally also have the linear ticket issue. If not, they should at least be flagged during automated review.
 - **AI to build complicated tickets** - some tickets may be underspecified, primarily because they require a little exploration of the design space. As you implement such tickets, you may come across situations where a key architectural design choice must be made. Pausing to ask the user for input where you think it's needed is preferred to you making the decision, especially for long and complicated tasks.
 
 ### Code Style

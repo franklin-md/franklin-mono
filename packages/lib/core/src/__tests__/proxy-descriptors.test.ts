@@ -3,6 +3,7 @@ import {
 	method,
 	notification,
 	event,
+	on,
 	stream,
 	namespace,
 	resource,
@@ -12,6 +13,7 @@ import {
 	isMethodDescriptor,
 	isNotificationDescriptor,
 	isEventDescriptor,
+	isOnDescriptor,
 	isStreamDescriptor,
 	isNamespaceDescriptor,
 	isResourceDescriptor,
@@ -20,6 +22,7 @@ import {
 	METHOD_KIND,
 	NOTIFICATION_KIND,
 	EVENT_KIND,
+	ON_KIND,
 	STREAM_KIND,
 	NAMESPACE_KIND,
 	RESOURCE_KIND,
@@ -39,6 +42,11 @@ describe('descriptor factories', () => {
 	it('event() creates an EventDescriptor', () => {
 		const d = event();
 		expect(d.kind).toBe(EVENT_KIND);
+	});
+
+	it('on() creates an OnDescriptor', () => {
+		const d = on();
+		expect(d.kind).toBe(ON_KIND);
 	});
 
 	it('stream() creates a StreamDescriptor', () => {
@@ -124,6 +132,11 @@ describe('descriptor type guards', () => {
 	it('isEventDescriptor', () => {
 		expect(isEventDescriptor(event())).toBe(true);
 		expect(isEventDescriptor(method())).toBe(false);
+	});
+
+	it('isOnDescriptor', () => {
+		expect(isOnDescriptor(on())).toBe(true);
+		expect(isOnDescriptor(method())).toBe(false);
 	});
 
 	it('isStreamDescriptor', () => {

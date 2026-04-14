@@ -28,6 +28,8 @@ export function buildDescriptor(
 			return requireCapability(runtime, 'bindNotification', 'notification')();
 		case 'event':
 			return requireCapability(runtime, 'bindEvent', 'event')();
+		case 'on':
+			return requireCapability(runtime, 'bindOn', 'on')();
 		case 'stream':
 			return requireCapability(runtime, 'bindTransport', 'stream')();
 		case 'namespace':

@@ -1,13 +1,13 @@
-export { PersistedSessionCollection as SessionRegistry } from './agent/session/persisted-session-collection.js';
 export { AuthManager } from './auth/manager.js';
+export { OAuthFlow } from './auth/oauth-flow.js';
 export type {
-	AuthFile,
 	ApiKeyEntry,
-	OAuthLoginCallbacks,
-	IAuthManager,
-	OAuthEntry,
-	AuthChangeListener,
+	AuthEntries,
 	AuthEntry,
+	OAuthLoginCallbacks,
+	OAuthAuthInfo,
+	OAuthEntry,
+	OAuthPrompt,
 } from './auth/types.js';
 export type { SettingsStore } from './settings/store.js';
 export type { AppSettings } from './settings/types.js';

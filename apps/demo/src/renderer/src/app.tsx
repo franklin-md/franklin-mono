@@ -2,10 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@franklin/ui';
 import { AgentChatPage } from '@/pages/agent-chat/agent-chat-page.js';
 import { DemoAuthControls } from '@/components/demo-auth-controls.js';
 import { FranklinProvider } from '@franklin/react';
-import {
-	createElectronPlatform,
-	ElectronAuthManager,
-} from '@franklin/electron/renderer';
+import { createElectronPlatform } from '@franklin/electron/renderer';
 import {
 	conversationExtension,
 	todoExtension,
@@ -38,12 +35,9 @@ const extensionBundles = [
 ];
 const extensions = extensionBundles.map((bundle) => bundle.extension);
 
-const auth = new ElectronAuthManager(window.__franklinAuth);
-
 export function App() {
 	return (
 		<FranklinProvider
-			auth={auth}
 			extensions={extensions}
 			platform={platform}
 			fallback={

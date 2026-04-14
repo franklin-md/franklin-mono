@@ -1,5 +1,5 @@
 import type { Platform } from '@franklin/agent/browser';
-import { method, namespace, resource, stream } from '@franklin/lib/proxy';
+import { method, namespace, on, resource, stream } from '@franklin/lib/proxy';
 import type { NamespaceShape } from '@franklin/lib/proxy';
 
 const filesystem = namespace({
@@ -23,8 +23,17 @@ const web = namespace({
 	fetch: method(),
 });
 
+const authFlow = namespace({
+	onAuth: on(),
+	onProgress: on(),
+	onPrompt: on(),
+	respond: method(),
+	login: method(),
+});
+
 export const schema = namespace({
 	spawn: resource(stream()),
+	createFlow: resource(authFlow),
 	environment: resource(
 		namespace({
 			filesystem: filesystem,
@@ -39,4 +48,5 @@ export const schema = namespace({
 		getApiKeyProviders: method(),
 	}),
 	filesystem: filesystem,
+	openExternal: method(),
 } satisfies NamespaceShape<Platform>);

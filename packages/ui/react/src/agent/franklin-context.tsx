@@ -8,7 +8,7 @@ import {
 } from 'react';
 
 import { FranklinApp, type FranklinExtension } from '@franklin/agent/browser';
-import type { IAuthManager, Platform } from '@franklin/agent/browser';
+import type { Platform } from '@franklin/agent/browser';
 
 // ---------------------------------------------------------------------------
 // Context
@@ -31,13 +31,11 @@ export const AppContext = createContext<FranklinApp | null>(null);
 export function FranklinProvider({
 	extensions,
 	platform,
-	auth,
 	fallback,
 	children,
 }: {
 	extensions: FranklinExtension[];
 	platform: Platform;
-	auth: IAuthManager;
 	fallback?: ReactNode;
 	children: ReactNode;
 }) {
@@ -55,7 +53,6 @@ export function FranklinProvider({
 				created = new FranklinApp({
 					extensions,
 					platform,
-					auth,
 					persistDir: '.',
 				});
 				// TODO: Should we make this optional?

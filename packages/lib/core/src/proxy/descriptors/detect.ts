@@ -3,6 +3,7 @@ import type {
 	MethodDescriptor,
 	NamespaceDescriptor,
 	NotificationDescriptor,
+	OnDescriptor,
 	ResourceDescriptor,
 	StreamDescriptor,
 } from './types/index.js';
@@ -11,6 +12,7 @@ import {
 	METHOD_KIND,
 	NAMESPACE_KIND,
 	NOTIFICATION_KIND,
+	ON_KIND,
 	RESOURCE_KIND,
 	STREAM_KIND,
 } from './types/index.js';
@@ -52,6 +54,12 @@ export function isNamespaceDescriptor(
 	descriptor: unknown,
 ): descriptor is NamespaceDescriptor<any, any> {
 	return hasKind(descriptor, NAMESPACE_KIND);
+}
+
+export function isOnDescriptor(
+	descriptor: unknown,
+): descriptor is OnDescriptor<any> {
+	return hasKind(descriptor, ON_KIND);
 }
 
 export function isResourceDescriptor(

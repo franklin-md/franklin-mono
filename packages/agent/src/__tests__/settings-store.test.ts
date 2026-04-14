@@ -3,8 +3,6 @@ import type { Filesystem } from '@franklin/lib';
 import type { AppSettings } from '../settings/types.js';
 import {
 	createSettings,
-	loadSettings,
-	addPersistOnChange,
 	DEFAULT_SETTINGS_PATH,
 	DEFAULT_APP_SETTINGS,
 } from '../settings/store.js';
@@ -37,57 +35,57 @@ function mockFilesystem(stored?: AppSettings): Filesystem {
 
 describe('createSettings', () => {
 	it('creates a store with default llm config', () => {
-		const store = createSettings();
+		const store = createSettings(mockFilesystem());
 		expect(store.get()).toEqual(DEFAULT_APP_SETTINGS);
 	});
 });
 
 // ---------------------------------------------------------------------------
-// loadSettings
+// restore
 // ---------------------------------------------------------------------------
 
-describe('loadSettings', () => {
+describe('settings.restore', () => {
 	it('hydrates the store from disk', async () => {
 		const stored: AppSettings = {
 			defaultLLMConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
 		};
 		const fs = mockFilesystem(stored);
-		const store = createSettings();
+		const store = createSettings(fs);
 
-		await loadSettings(store, fs);
+		await store.restore();
 
 		expect(store.get()).toEqual(stored);
 		expect(fs.readFile).toHaveBeenCalledWith(DEFAULT_SETTINGS_PATH);
+		expect(fs.writeFile).not.toHaveBeenCalled();
 	});
 
 	it('keeps default state when no file exists', async () => {
 		const fs = mockFilesystem(); // readFile throws
-		const store = createSettings();
+		const store = createSettings(fs);
 
-		await loadSettings(store, fs);
+		await store.restore();
 
 		expect(store.get()).toEqual(DEFAULT_APP_SETTINGS);
 	});
 
 	it('applies defaults when the stored file is empty', async () => {
 		const fs = mockFilesystem({} as AppSettings);
-		const store = createSettings();
+		const store = createSettings(fs);
 
-		await loadSettings(store, fs);
+		await store.restore();
 
 		expect(store.get()).toEqual(DEFAULT_APP_SETTINGS);
 	});
 });
 
 // ---------------------------------------------------------------------------
-// addPersistOnChange
+// persistence
 // ---------------------------------------------------------------------------
 
-describe('addPersistOnChange', () => {
+describe('settings persistence', () => {
 	it('writes to disk on every store change', () => {
 		const fs = mockFilesystem();
-		const store = createSettings();
-		addPersistOnChange(store, fs);
+		const store = createSettings(fs);
 
 		store.set(() => ({
 			defaultLLMConfig: { provider: 'openai', model: 'gpt-4o' },
@@ -99,18 +97,21 @@ describe('addPersistOnChange', () => {
 		);
 	});
 
-	it('returns an unsubscribe function', () => {
+	it('supports manual persistence', async () => {
 		const fs = mockFilesystem();
-		const store = createSettings();
-		const unsub = addPersistOnChange(store, fs);
-
-		unsub();
+		const store = createSettings(fs);
 
 		store.set(() => ({
 			defaultLLMConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
 		}));
+		vi.mocked(fs.writeFile).mockClear();
 
-		expect(fs.writeFile).not.toHaveBeenCalled();
+		await store.persist();
+
+		expect(fs.writeFile).toHaveBeenCalledWith(
+			DEFAULT_SETTINGS_PATH,
+			expect.stringContaining('"anthropic"'),
+		);
 	});
 });
 
@@ -120,7 +121,7 @@ describe('addPersistOnChange', () => {
 
 describe('settings store reactivity', () => {
 	it('notifies subscribers on set', () => {
-		const store = createSettings();
+		const store = createSettings(mockFilesystem());
 		const listener = vi.fn();
 		store.subscribe(listener);
 
@@ -137,7 +138,7 @@ describe('settings store reactivity', () => {
 	});
 
 	it('does not notify when value is unchanged', () => {
-		const store = createSettings();
+		const store = createSettings(mockFilesystem());
 		const listener = vi.fn();
 		store.subscribe(listener);
 
