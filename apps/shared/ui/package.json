@@ -30,6 +30,7 @@
 		"cmdk": "^1.1.1",
 		"katex": "^0.16.44",
 		"lucide-react": "^0.511.0",
+		"material-file-icons": "^2.4.0",
 		"react-textarea-autosize": "^8.5.9",
 		"shiki": "^3.4.2",
 		"streamdown": "^2.5.0",

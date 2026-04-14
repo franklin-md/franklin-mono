@@ -1,8 +1,7 @@
 // lib
 export { cn } from './lib/cn.js';
 
-// primitives
-export { AutoGrowTextarea } from './primitives/auto-grow-textarea.js';
+// primitives (shadcn/radix base components)
 export { Badge, badgeVariants, type BadgeProps } from './primitives/badge.js';
 export {
 	Button,
@@ -26,7 +25,6 @@ export {
 	CommandList,
 	CommandSeparator,
 } from './primitives/command.js';
-export { DeleteButton } from './primitives/delete-button.js';
 export { Input } from './primitives/input.js';
 export {
 	Popover,
@@ -36,10 +34,16 @@ export {
 export { ScrollArea, ScrollBar } from './primitives/scroll-area.js';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './primitives/tabs.js';
 export { textareaClassName } from './primitives/textarea.js';
+
+// components (derived, application-specific)
+export { AutoGrowTextarea } from './components/auto-grow-textarea.js';
+export { DeleteButton } from './components/delete-button.js';
+export { FileBadge, type FileBadgeProps } from './components/file-badge.js';
+export { FileIcon, type FileIconProps } from './components/file-icon.js';
 export {
 	TextareaGroup,
 	type TextareaGroupProps,
-} from './primitives/textarea-group.js';
+} from './components/textarea-group.js';
 
 // conversation
 export {
