@@ -52,16 +52,7 @@ export class AuthEntriesStore {
 export class PersistedAuthEntriesStore extends AuthEntriesStore {
 	constructor(private readonly filesystem: Filesystem) {
 		super();
-	}
-
-	override set(provider: string, entry: AuthEntry): void {
-		super.set(provider, entry);
-		void this.persist();
-	}
-
-	override remove(provider: string): void {
-		super.remove(provider);
-		void this.persist();
+		super.subscribe(() => void this.persist());
 	}
 
 	async restore(): Promise<void> {

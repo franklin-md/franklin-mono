@@ -7,19 +7,25 @@ import {
 	createAgentConnection,
 	StopCode,
 } from '@franklin/mini-acp';
-import { loginAgent, withAuth, syncAuth } from '../auth/with-auth.js';
+import { loginAgent, withAuth } from '../auth/with-auth.js';
 import type { AuthManager } from '../auth/manager.js';
 import type { AuthEntry } from '../auth/types.js';
-import type { FranklinRuntime } from '../types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
+type AuthChangeListener = (
+	provider: string,
+	entry: AuthEntry | undefined,
+) => void | Promise<void>;
+
 function mockAuthManager(
 	providers: Record<string, string | undefined> = {},
-): AuthManager {
+): AuthManager & { _listeners: AuthChangeListener[] } {
+	const listeners: AuthChangeListener[] = [];
 	return {
+		_listeners: listeners,
 		entries: vi.fn(() => {
 			const result: Record<
 				string,
@@ -32,8 +38,14 @@ function mockAuthManager(
 			return result;
 		}),
 		getApiKey: vi.fn(async (provider: string) => providers[provider]),
-		onAuthChange: vi.fn(() => () => {}),
-	} as unknown as AuthManager;
+		onAuthChange: vi.fn((listener: AuthChangeListener) => {
+			listeners.push(listener);
+			return () => {
+				const idx = listeners.indexOf(listener);
+				if (idx >= 0) listeners.splice(idx, 1);
+			};
+		}),
+	} as unknown as AuthManager & { _listeners: AuthChangeListener[] };
 }
 
 function mockCoreRuntime(): CoreRuntime {
@@ -323,149 +335,86 @@ describe('withAuth', () => {
 });
 
 // ---------------------------------------------------------------------------
-// syncAuth
+// withAuth — live credential sync
 // ---------------------------------------------------------------------------
 
-function mockFranklinRuntime(provider?: string): FranklinRuntime {
-	return {
-		setContext: vi.fn(async () => {}),
-		state: vi.fn(async () => ({
+describe('withAuth live sync', () => {
+	async function buildRuntime(provider: string, auth: ReturnType<typeof mockAuthManager>) {
+		const spawn = createMockSpawn();
+		const base = createCoreSystem(spawn);
+		const decorated = withAuth(base, auth);
+		const compiler = await decorated.createCompiler({
 			core: {
 				history: { systemPrompt: '', messages: [] },
 				llmConfig: { provider },
 			},
-			store: {},
-			environment: {},
-		})),
-		fork: vi.fn(async () => ({
-			core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
-			store: {},
-			environment: {},
-		})),
-		child: vi.fn(async () => ({
-			core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
-			store: {},
-			environment: {},
-		})),
-		dispose: vi.fn(async () => {}),
-		prompt: vi.fn(async function* () {}),
-		cancel: vi.fn(async () => {}),
-		subscribe: vi.fn(() => () => {}),
-		initialize: vi.fn(async () => ({})),
-	} as unknown as FranklinRuntime;
-}
-
-describe('syncAuth', () => {
-	function setup() {
-		type Listener = (
-			provider: string,
-			entry: AuthEntry | undefined,
-		) => void | Promise<void>;
-		let captured: Listener | undefined;
-		const providers: Record<string, string | undefined> = {};
-		const auth = mockAuthManager(providers);
-		(auth.onAuthChange as ReturnType<typeof vi.fn>).mockImplementation(
-			(listener: Listener) => {
-				captured = listener;
-				return () => {};
-			},
-		);
-
-		const runtimes: FranklinRuntime[] = [];
-
-		syncAuth(() => [...runtimes], auth);
-
-		async function fireAuthChange(
-			provider: string,
-			entry: AuthEntry | undefined,
-			key = entry?.apiKey?.key,
-		): Promise<void> {
-			providers[provider] = key;
-			await captured!(provider, entry);
-		}
-
-		function addRuntime(runtime: FranklinRuntime) {
-			runtimes.push(runtime);
-		}
-
-		return { addRuntime, auth, fireAuthChange };
+		});
+		return await compiler.build();
 	}
 
-	it('pushes new key to sessions matching the provider', async () => {
-		const { addRuntime, auth, fireAuthChange } = setup();
-		const runtime = mockFranklinRuntime('anthropic');
-		addRuntime(runtime);
+	it('pushes new key when provider credentials change', async () => {
+		const providers: Record<string, string | undefined> = { anthropic: 'sk-old' };
+		const auth = mockAuthManager(providers);
+		const runtime = await buildRuntime('anthropic', auth);
+		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
-		await fireAuthChange('anthropic', {
-			apiKey: {
-				type: 'apiKey',
-				key: 'sk-new',
-			},
-		});
+		// Spy on setContext to capture the resolved call
+		const setContextSpy = vi.spyOn(runtime, 'setContext');
 
-		expect(runtime.setContext).toHaveBeenCalledWith({
-			config: { provider: 'anthropic', apiKey: 'sk-new' },
-		});
+		// Simulate credential change
+		providers.anthropic = 'sk-new';
+		await auth._listeners[0]!('anthropic', { apiKey: { type: 'apiKey', key: 'sk-new' } });
+
 		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
-	});
-
-	it('skips sessions that use a different provider', async () => {
-		const { addRuntime, fireAuthChange } = setup();
-		const runtime = mockFranklinRuntime('openai');
-		addRuntime(runtime);
-
-		await fireAuthChange('anthropic', {
-			apiKey: {
-				type: 'apiKey',
-				key: 'sk-new',
-			},
-		});
-
-		expect(runtime.setContext).not.toHaveBeenCalled();
-	});
-
-	it('resolves OAuth entries through auth.getApiKey', async () => {
-		const { addRuntime, auth, fireAuthChange } = setup();
-		const runtime = mockFranklinRuntime('anthropic');
-		addRuntime(runtime);
-
-		await fireAuthChange(
-			'anthropic',
-			{
-				oauth: {
-					type: 'oauth',
-					credentials: {} as never,
-				},
-			},
-			'sk-oauth',
+		expect(setContextSpy).toHaveBeenCalledWith(
+			expect.objectContaining({
+				config: expect.objectContaining({ provider: 'anthropic', apiKey: 'sk-new' }),
+			}),
 		);
+	});
+
+	it('ignores changes for a different provider', async () => {
+		const providers: Record<string, string | undefined> = { anthropic: 'sk-anthropic' };
+		const auth = mockAuthManager(providers);
+		await buildRuntime('anthropic', auth);
+		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
+
+		// Fire change for a provider this runtime doesn't use
+		providers.openai = 'sk-openai';
+		await auth._listeners[0]!('openai', { apiKey: { type: 'apiKey', key: 'sk-openai' } });
+
+		// getApiKey should not have been called — runtime's provider doesn't match
+		expect(auth.getApiKey).not.toHaveBeenCalled();
+	});
+
+	it('pushes undefined apiKey on key revocation', async () => {
+		const providers: Record<string, string | undefined> = { anthropic: 'sk-old' };
+		const auth = mockAuthManager(providers);
+		const runtime = await buildRuntime('anthropic', auth);
+		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
+
+		const setContextSpy = vi.spyOn(runtime, 'setContext');
+
+		providers.anthropic = undefined;
+		await auth._listeners[0]!('anthropic', undefined);
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
-		expect(runtime.setContext).toHaveBeenCalledWith({
-			config: { provider: 'anthropic', apiKey: 'sk-oauth' },
-		});
+		expect(setContextSpy).toHaveBeenCalledWith(
+			expect.objectContaining({
+				config: expect.objectContaining({ provider: 'anthropic', apiKey: undefined }),
+			}),
+		);
 	});
 
-	it('passes undefined apiKey on key revocation', async () => {
-		const { addRuntime, fireAuthChange } = setup();
-		const runtime = mockFranklinRuntime('anthropic');
-		addRuntime(runtime);
+	it('unsubscribes from auth changes on dispose', async () => {
+		const auth = mockAuthManager({ anthropic: 'sk-test' });
+		const runtime = await buildRuntime('anthropic', auth);
 
-		await fireAuthChange('anthropic', undefined);
+		expect(auth._listeners).toHaveLength(1);
 
-		expect(runtime.setContext).toHaveBeenCalledWith({
-			config: { provider: 'anthropic', apiKey: undefined },
-		});
-	});
+		// Dispose may throw due to transport stream state in tests — that's fine.
+		await runtime.dispose().catch(() => {});
 
-	it('no-ops when session list is empty', async () => {
-		const { fireAuthChange } = setup();
-		// Should not throw
-		await fireAuthChange('anthropic', {
-			apiKey: {
-				type: 'apiKey',
-				key: 'sk-new',
-			},
-		});
+		expect(auth._listeners).toHaveLength(0);
 	});
 });

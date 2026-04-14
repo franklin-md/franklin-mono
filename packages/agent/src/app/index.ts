@@ -10,7 +10,7 @@ import {
 import type { SessionManager } from '@franklin/extensions';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { createPersistence } from '../agent/session/persist/file-persister.js';
-import { withAuth, syncAuth } from '../auth/with-auth.js';
+import { withAuth } from '../auth/with-auth.js';
 import {
 	createSettings,
 	loadSettings,
@@ -90,10 +90,6 @@ export class FranklinApp {
 		await this.auth.restore();
 		await loadSettings(this.settings, this.platform.filesystem);
 		addPersistOnChange(this.settings, this.platform.filesystem);
-		syncAuth(
-			() => this.agents.list().map((session) => session.runtime),
-			this.auth,
-		);
 		await this.storeRegistry.restore();
 
 		// Rehydrate persisted sessions

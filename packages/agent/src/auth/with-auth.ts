@@ -1,6 +1,5 @@
 import type { CoreSystem, CoreRuntime, CoreState } from '@franklin/extensions';
 import { withSetup } from '@franklin/extensions';
-import type { FranklinRuntime } from '../types.js';
 import type { AuthManager } from './manager.js';
 
 /**
@@ -29,14 +28,17 @@ export async function loginAgent(
 
 /**
  * Wrap a core system so that every compiled runtime is automatically
- * authenticated at build time and on provider changes.
+ * authenticated at build time and kept in sync with credential changes.
  *
- * Two behaviors:
+ * Three behaviors:
  * 1. **Initial login** — resolves the apiKey for the configured provider
  *    when the runtime is first built.
  * 2. **Auto-auth** — intercepts `setContext` calls. When a provider is
  *    specified without an apiKey, resolves the key from the auth
  *    manager before passing through.
+ * 3. **Live sync** — subscribes to credential changes and pushes new
+ *    keys to the runtime when its provider's credentials change.
+ *    Unsubscribes on dispose.
  */
 export function withAuth(system: CoreSystem, auth: AuthManager): CoreSystem {
 	return withSetup(system, async (runtime, state) => {
@@ -54,36 +56,27 @@ export function withAuth(system: CoreSystem, auth: AuthManager): CoreSystem {
 
 		// Initial login — resolves credentials for the starting provider.
 		await loginAgent(runtime, state, auth);
-	});
-}
 
-/**
- * Wire up live credential sync: when a provider's key changes,
- * push the new key to all sessions using that provider.
- */
-export function syncAuth(
-	getSessions: () => FranklinRuntime[],
-	auth: AuthManager,
-): void {
-	auth.onAuthChange(async (provider) => {
-		const authKey = await auth.getApiKey(provider);
-		const updates: Promise<unknown>[] = [];
+		// Live credential sync — push new keys when this runtime's provider changes.
+		const unsubscribe = auth.onAuthChange(async (provider) => {
+			const currentState = await runtime.state();
+			if (currentState.core.llmConfig.provider !== provider) return;
 
-		for (const runtime of getSessions()) {
-			const state = await runtime.state();
-			if (state.core.llmConfig.provider !== provider) continue;
+			const apiKey = await auth.getApiKey(provider);
+			await runtime.setContext({
+				config: {
+					...currentState.core.llmConfig,
+					provider,
+					apiKey,
+				},
+			});
+		});
 
-			updates.push(
-				runtime.setContext({
-					config: {
-						...state.core.llmConfig,
-						provider,
-						apiKey: authKey,
-					},
-				}),
-			);
-		}
-
-		await Promise.all(updates);
+		// Clean up subscription on dispose.
+		const originalDispose = runtime.dispose.bind(runtime);
+		runtime.dispose = async () => {
+			unsubscribe();
+			return originalDispose();
+		};
 	});
 }
