@@ -84,7 +84,7 @@ export function bridge<Req, Res>(): Bridge<Req, Res> {
 		duplex: {
 			readable,
 			writable,
-			close: async () => {
+			dispose: async () => {
 				for (const [, entry] of pending) {
 					entry.reject(new Error('Bridge disposed'));
 				}

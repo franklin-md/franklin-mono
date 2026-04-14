@@ -130,7 +130,7 @@ describe('bindClient', () => {
 	});
 
 	it('binds resource(stream) by calling bindResource and recursing into inner', async () => {
-		const streamValue = { readable: 'r', writable: 'w', close: vi.fn() };
+		const streamValue = { readable: 'r', writable: 'w', dispose: vi.fn() };
 		const dispose = vi.fn().mockResolvedValue(undefined);
 		const resourceInnerRuntime = createMockRuntime({
 			bindTransport: vi.fn().mockReturnValue(streamValue),
@@ -205,12 +205,14 @@ describe('bindClient', () => {
 		expect(typeof instance.dispose).toBe('function');
 	});
 
-	it('dispose on resource calls handle dispose', async () => {
+	it('dispose on resource delegates to handle.dispose (server-side cleanup)', async () => {
 		const dispose = vi.fn().mockResolvedValue(undefined);
 		const resourceInnerRuntime = createMockRuntime({
-			bindTransport: vi
-				.fn()
-				.mockReturnValue({ readable: 'r', writable: 'w', close: vi.fn() }),
+			bindTransport: vi.fn().mockReturnValue({
+				readable: 'r',
+				writable: 'w',
+				dispose: vi.fn(),
+			}),
 		});
 		const binding = vi
 			.fn()
@@ -224,6 +226,34 @@ describe('bindClient', () => {
 		) => Promise<Record<string, unknown>>;
 		const instance = await factory();
 		await (instance.dispose as () => Promise<void>)();
+		expect(dispose).toHaveBeenCalledOnce();
+	});
+
+	it('dispose on resource is idempotent', async () => {
+		const dispose = vi.fn().mockResolvedValue(undefined);
+		const resourceInnerRuntime = createMockRuntime({
+			bindTransport: vi.fn().mockReturnValue({
+				readable: 'r',
+				writable: 'w',
+				dispose: vi.fn(),
+			}),
+		});
+		const binding = vi
+			.fn()
+			.mockResolvedValue(Object.assign(resourceInnerRuntime, { dispose }));
+		const runtime = createMockRuntime({
+			bindResource: vi.fn().mockReturnValue(binding),
+		});
+
+		const factory = bindClient(resource(stream()), runtime) as (
+			...args: unknown[]
+		) => Promise<Record<string, unknown>>;
+		const instance = await factory();
+		const first = (instance.dispose as () => Promise<void>)();
+		const second = (instance.dispose as () => Promise<void>)();
+
+		expect(first).toBe(second);
+		await first;
 		expect(dispose).toHaveBeenCalledOnce();
 	});
 

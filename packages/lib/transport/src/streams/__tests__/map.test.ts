@@ -21,7 +21,7 @@ function createMemoryDuplex<T>(): {
 	const duplex: Duplex<T> = {
 		readable: input.readable,
 		writable: output.writable,
-		close: async () => {},
+		dispose: async () => {},
 	};
 
 	return {

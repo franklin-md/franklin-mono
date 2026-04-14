@@ -13,12 +13,12 @@ function createPair<T>(): { a: Duplex<T>; b: Duplex<T> } {
 		a: {
 			readable: bToA.readable,
 			writable: aToB.writable,
-			close: async () => {},
+			dispose: async () => {},
 		},
 		b: {
 			readable: aToB.readable,
 			writable: bToA.writable,
-			close: async () => {},
+			dispose: async () => {},
 		},
 	};
 }
@@ -125,7 +125,7 @@ describe('Multiplexer', () => {
 		await writer.write('before');
 		await new Promise((r) => setTimeout(r, 0));
 
-		await chanB.close();
+		await chanB.dispose();
 		await new Promise((r) => setTimeout(r, 0));
 
 		expect(received).toEqual(['before']);

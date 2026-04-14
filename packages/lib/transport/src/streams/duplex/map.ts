@@ -34,6 +34,6 @@ export function map<Raw, Typed>(
 	return {
 		readable,
 		writable,
-		close: () => duplex.close(),
+		dispose: () => duplex.dispose(),
 	};
 }

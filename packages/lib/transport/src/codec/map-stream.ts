@@ -34,6 +34,6 @@ export function mapStream<Raw, Typed>(
 	return {
 		readable,
 		writable,
-		close: () => stream.close(),
+		dispose: () => stream.dispose(),
 	};
 }

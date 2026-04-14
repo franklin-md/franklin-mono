@@ -21,7 +21,7 @@ describe('bridge', () => {
 
 		reader.releaseLock();
 		writer.releaseLock();
-		await duplex.close();
+		await duplex.dispose();
 	});
 
 	it('correlates multiple concurrent requests', async () => {
@@ -47,7 +47,7 @@ describe('bridge', () => {
 
 		reader.releaseLock();
 		writer.releaseLock();
-		await duplex.close();
+		await duplex.dispose();
 	});
 
 	it('handler rejects when an error response arrives', async () => {
@@ -64,14 +64,14 @@ describe('bridge', () => {
 
 		reader.releaseLock();
 		writer.releaseLock();
-		await duplex.close();
+		await duplex.dispose();
 	});
 
-	it('close rejects all pending requests', async () => {
+	it('dispose rejects all pending requests', async () => {
 		const { handler, duplex } = bridge<string, string>();
 
 		const response = handler('orphan');
-		await duplex.close();
+		await duplex.dispose();
 
 		await expect(response).rejects.toThrow('Bridge disposed');
 	});

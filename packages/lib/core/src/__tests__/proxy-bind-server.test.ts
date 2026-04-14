@@ -241,7 +241,7 @@ describe('bindServer', () => {
 			registerNamespace: vi.fn().mockReturnValue(mock.spawnRuntime),
 		});
 
-		const transportValue = { readable: 'r', writable: 'w', close: vi.fn() };
+		const transportValue = { readable: 'r', writable: 'w', dispose: vi.fn() };
 		const factory = vi.fn().mockResolvedValue(transportValue);
 
 		bindServer(
@@ -335,12 +335,12 @@ describe('bindServer', () => {
 		expect(dispose).toHaveBeenCalledOnce();
 	});
 
-	it('resource lifecycle closes stream-like instances without dispose', async () => {
-		const close = vi.fn();
+	it('resource lifecycle disposes stream-like instances', async () => {
+		const dispose = vi.fn();
 		const factory = vi.fn().mockResolvedValue({
 			readable: 'r',
 			writable: 'w',
-			close,
+			dispose,
 		});
 
 		const innerRuntime = createMockRuntime({
@@ -359,7 +359,7 @@ describe('bindServer', () => {
 
 		const id = await mock.connect();
 		await mock.kill(id);
-		expect(close).toHaveBeenCalledOnce();
+		expect(dispose).toHaveBeenCalledOnce();
 	});
 
 	it('resource kill unregisters inner bindings', async () => {

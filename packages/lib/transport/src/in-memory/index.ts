@@ -7,7 +7,7 @@ export function createMemoryStream<A, B = A>(): Duplex<A, B> {
 	return {
 		readable: stream.readable,
 		writable: stream.writable,
-		close: async () => {
+		dispose: async () => {
 			await stream.writable.close();
 		},
 	};
@@ -31,12 +31,12 @@ export function createDuplexPair<A, B = A>(): {
 		a: {
 			readable: bToA.readable,
 			writable: aToB.writable,
-			close: () => aToB.close(),
+			dispose: () => aToB.dispose(),
 		},
 		b: {
 			readable: aToB.readable,
 			writable: bToA.writable,
-			close: () => bToA.close(),
+			dispose: () => bToA.dispose(),
 		},
 	};
 }

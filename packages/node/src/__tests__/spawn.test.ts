@@ -4,7 +4,7 @@ function createMockDuplex() {
 	return {
 		readable: new ReadableStream(),
 		writable: new WritableStream(),
-		close: vi.fn(async () => {}),
+		dispose: vi.fn(async () => {}),
 	};
 }
 

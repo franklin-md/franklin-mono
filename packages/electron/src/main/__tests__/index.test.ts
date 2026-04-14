@@ -61,7 +61,6 @@ describe('initializeMain', () => {
 			spawn: async () => ({
 				readable: new ReadableStream(),
 				writable: new WritableStream(),
-				close: noop,
 				dispose: noop,
 			}),
 			environment: async () =>

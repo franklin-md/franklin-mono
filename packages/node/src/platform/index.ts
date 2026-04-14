@@ -30,8 +30,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 
 	return {
 		spawn: async () => {
-			const transport = spawn();
-			return Object.assign(transport, { dispose: () => transport.close() });
+			return spawn();
 		},
 		ai,
 		createFlow: async (providerId: string) => {

@@ -155,7 +155,6 @@ describe('bindRenderer', () => {
 			spawn: () => Promise<{
 				readable: ReadableStream;
 				writable: WritableStream;
-				close: () => Promise<void>;
 				dispose: () => Promise<void>;
 			}>;
 		};
@@ -198,7 +197,7 @@ describe('bindRenderer', () => {
 			logs: {
 				readable: ReadableStream<{ type: string }>;
 				writable: WritableStream<{ type: string }>;
-				close: () => Promise<void>;
+				dispose: () => Promise<void>;
 			};
 		};
 

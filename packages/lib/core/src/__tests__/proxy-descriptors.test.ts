@@ -85,7 +85,7 @@ describe('descriptor factories', () => {
 		type StreamHandle = {
 			readonly readable: ReadableStream<string>;
 			readonly writable: WritableStream<string>;
-			readonly close: () => Promise<void>;
+			readonly dispose: () => Promise<void>;
 		};
 		type ExampleApi = {
 			spawn: () => Promise<StreamHandle & Disposable>;

@@ -93,6 +93,6 @@ export function createMainIpcStream<R, W = R>(
 	return {
 		readable,
 		writable,
-		close: () => closeStream(true),
+		dispose: () => closeStream(true),
 	};
 }
