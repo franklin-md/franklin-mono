@@ -1,5 +1,6 @@
 // lib
 export { cn } from './lib/cn.js';
+export { displayUrl, faviconUrl } from './lib/display-url.js';
 
 // primitives (shadcn/radix base components)
 export { Badge, badgeVariants, type BadgeProps } from './primitives/badge.js';
@@ -38,6 +39,7 @@ export { textareaClassName } from './primitives/textarea.js';
 // components (derived, application-specific)
 export { AutoGrowTextarea } from './components/auto-grow-textarea.js';
 export { DeleteButton } from './components/delete-button.js';
+export { Favicon, type FaviconProps } from './components/favicon.js';
 export { FileBadge, type FileBadgeProps } from './components/file-badge.js';
 export {
 	EXT_ICONS,
