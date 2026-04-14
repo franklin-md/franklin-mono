@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AuthManager } from '../auth/manager.js';
 import { OAuthFlow } from '../auth/oauth-flow.js';
+import type { OAuthLoginCallbacks } from '../auth/types.js';
 import type { Platform } from '../platform.js';
 
 function createFilesystem(): Filesystem {
@@ -57,16 +58,20 @@ function createPlatform(
 	};
 }
 
-function createFlow() {
+function createFlow(
+	run?: (callbacks: OAuthLoginCallbacks) => Promise<OAuthCredentials>,
+) {
 	const credentials = {
 		accessToken: 'token',
 	} as unknown as OAuthCredentials;
-	const flow = new OAuthFlow(async (callbacks) => {
-		callbacks.onProgress?.('Waiting for browser');
-		callbacks.onAuth({ url: 'https://example.com/auth' });
-		await callbacks.onPrompt({ message: 'Enter code' });
-		return credentials;
-	});
+	const flow = new OAuthFlow(
+		run ??
+			(async (callbacks) => {
+				callbacks.onProgress?.('Waiting for browser');
+				callbacks.onAuth({ url: 'https://example.com/auth' });
+				return credentials;
+			}),
+	);
 
 	return { credentials, flow };
 }
@@ -81,16 +86,13 @@ describe('AuthManager.loginOAuth', () => {
 		);
 		const auth = new AuthManager(platform);
 		const loginSpy = vi.spyOn(flow, 'login');
-		const respondSpy = vi.spyOn(flow, 'respond');
 		const disposeSpy = vi.spyOn(flow, 'dispose');
 		const onAuth = vi.fn();
 		const onProgress = vi.fn();
-		const onPrompt = vi.fn(async () => '1234');
 
 		await auth.loginOAuth('anthropic', {
 			onAuth,
 			onProgress,
-			onPrompt,
 		});
 
 		expect(platform.createFlow).toHaveBeenCalledWith('anthropic');
@@ -99,8 +101,6 @@ describe('AuthManager.loginOAuth', () => {
 		expect(onAuth).toHaveBeenCalledWith({
 			url: 'https://example.com/auth',
 		});
-		expect(onPrompt).toHaveBeenCalledWith({ message: 'Enter code' });
-		expect(respondSpy).toHaveBeenCalledWith('1234');
 		expect(auth.entries()).toEqual({
 			anthropic: {
 				oauth: {

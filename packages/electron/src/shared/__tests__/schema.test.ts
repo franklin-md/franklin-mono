@@ -61,6 +61,17 @@ describe('schema', () => {
 			isResourceDescriptor(createFlow) &&
 				isNamespaceDescriptor(createFlow.inner),
 		).toBe(true);
+		if (
+			!isResourceDescriptor(createFlow) ||
+			!isNamespaceDescriptor(createFlow.inner)
+		) {
+			throw new Error('Expected createFlow to be a namespace resource');
+		}
+		expect(createFlow.inner.shape.onAuth).toBeDefined();
+		expect(createFlow.inner.shape.onProgress).toBeDefined();
+		expect(createFlow.inner.shape.login).toBeDefined();
+		expect('onPrompt' in createFlow.inner.shape).toBe(false);
+		expect('respond' in createFlow.inner.shape).toBe(false);
 		expect(
 			isResourceDescriptor(environment) &&
 				isNamespaceDescriptor(environment.inner),

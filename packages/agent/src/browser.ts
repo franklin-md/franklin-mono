@@ -7,7 +7,6 @@ export type {
 	OAuthLoginCallbacks,
 	OAuthAuthInfo,
 	OAuthEntry,
-	OAuthPrompt,
 } from './auth/types.js';
 export type { SettingsStore } from './settings/store.js';
 export type { AppSettings } from './settings/types.js';

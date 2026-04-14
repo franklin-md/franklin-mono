@@ -1,14 +1,12 @@
 import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
 import { createObserver } from '@franklin/lib';
-import type {
-	OAuthCredentials,
-	OAuthLoginCallbacks,
-} from '@mariozechner/pi-ai/oauth';
+import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
 import type {
 	ApiKeyEntry,
 	AuthEntries,
 	AuthEntry,
+	OAuthLoginCallbacks,
 	OAuthEntry,
 } from './types.js';
 import type { OAuthFlow } from './oauth-flow.js';
@@ -64,11 +62,6 @@ export class AuthManager {
 		const unsubProgress = flow.onProgress((message) => {
 			callbacks.onProgress?.(message);
 		});
-		const unsubPrompt = flow.onPrompt((prompt) => {
-			void callbacks.onPrompt(prompt).then((value) => {
-				return flow.respond(value);
-			});
-		});
 
 		try {
 			const credentials = await flow.login();
@@ -79,7 +72,6 @@ export class AuthManager {
 		} finally {
 			unsubAuth();
 			unsubProgress();
-			unsubPrompt();
 			await flow.dispose();
 		}
 	}
