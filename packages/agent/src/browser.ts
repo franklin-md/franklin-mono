@@ -2,9 +2,8 @@ export { AuthManager } from './auth/manager.js';
 export { OAuthFlow } from './auth/oauth-flow.js';
 export type {
 	ApiKeyEntry,
-	AuthChangeListener,
+	AuthEntries,
 	AuthEntry,
-	AuthFile,
 	OAuthLoginCallbacks,
 	OAuthAuthInfo,
 	OAuthEntry,

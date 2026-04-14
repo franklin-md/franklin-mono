@@ -23,13 +23,8 @@ export type AuthEntry = {
 	apiKey?: ApiKeyEntry;
 };
 
-/** Shape of the on-disk auth file. Keyed by provider ID (e.g. `"anthropic"`). */
-export type AuthFile = Record<string, AuthEntry>;
-
-export type AuthChangeListener = (
-	provider: string,
-	entry: AuthEntry | undefined,
-) => void | Promise<void>;
+/** Credential map keyed by provider ID (e.g. `"anthropic"`). */
+export type AuthEntries = Record<string, AuthEntry>;
 
 export type OAuthAuthInfo = {
 	url: string;

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 
-import type { OAuthLoginCallbacks, AuthFile } from '@franklin/agent/browser';
+import type { OAuthLoginCallbacks, AuthEntries } from '@franklin/agent/browser';
 
 import { useAuthStore } from './auth-context.js';
 
@@ -60,7 +60,7 @@ export function OAuthPanel({
 	onLogin,
 	onOpenUrl,
 }: {
-	savedEntries: AuthFile;
+	savedEntries: AuthEntries;
 	onUpdate: () => Promise<void>;
 	providers: OAuthProviderMeta[];
 	onLogin: OAuthLoginFn;
@@ -190,7 +190,7 @@ export function OAuthPanel({
 								<button
 									onClick={() => {
 										void (async () => {
-											await store.removeOAuthEntry(provider.id);
+											store.removeOAuthEntry(provider.id);
 											await onUpdate();
 										})();
 									}}

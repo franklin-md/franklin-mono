@@ -72,7 +72,7 @@ describe('AuthManager', () => {
 		const flow = await auth.flow('anthropic');
 		await expect(flow.login()).resolves.toBe(credentials);
 
-		await expect(auth.load()).resolves.toEqual({});
+		expect(auth.entries()).toEqual({});
 	});
 
 	it('persists OAuth entries explicitly', async () => {
@@ -87,12 +87,12 @@ describe('AuthManager', () => {
 			),
 		);
 
-		await auth.setOAuthEntry('anthropic', {
+		auth.setOAuthEntry('anthropic', {
 			type: 'oauth',
 			credentials,
 		});
 
-		await expect(auth.load()).resolves.toEqual({
+		expect(auth.entries()).toEqual({
 			anthropic: {
 				oauth: {
 					type: 'oauth',
@@ -112,7 +112,7 @@ describe('AuthManager', () => {
 		const listener = vi.fn();
 		auth.onAuthChange(listener);
 
-		await auth.setApiKeyEntry('anthropic', {
+		auth.setApiKeyEntry('anthropic', {
 			type: 'apiKey',
 			key: 'sk-test',
 		});

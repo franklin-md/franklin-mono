@@ -87,6 +87,7 @@ export class FranklinApp {
 	}
 
 	async start(): Promise<void> {
+		await this.auth.restore();
 		await loadSettings(this.settings, this.platform.filesystem);
 		addPersistOnChange(this.settings, this.platform.filesystem);
 		syncAuth(

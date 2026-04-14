@@ -9,7 +9,7 @@ import {
 } from '@franklin/mini-acp';
 import { loginAgent, withAuth, syncAuth } from '../auth/with-auth.js';
 import type { AuthManager } from '../auth/manager.js';
-import type { AuthChangeListener, AuthEntry } from '../auth/types.js';
+import type { AuthEntry } from '../auth/types.js';
 import type { FranklinRuntime } from '../types.js';
 
 // ---------------------------------------------------------------------------
@@ -18,22 +18,22 @@ import type { FranklinRuntime } from '../types.js';
 
 function mockAuthManager(
 	providers: Record<string, string | undefined> = {},
-): Pick<AuthManager, 'load' | 'getApiKey' | 'onAuthChange'> {
+): AuthManager {
 	return {
-		load: vi.fn(async () => {
-			const entries: Record<
+		entries: vi.fn(() => {
+			const result: Record<
 				string,
 				{ apiKey?: { type: 'apiKey'; key: string } }
 			> = {};
 			for (const p of Object.keys(providers)) {
 				if (!providers[p]) continue;
-				entries[p] = { apiKey: { type: 'apiKey', key: providers[p] } };
+				result[p] = { apiKey: { type: 'apiKey', key: providers[p] } };
 			}
-			return entries;
+			return result;
 		}),
 		getApiKey: vi.fn(async (provider: string) => providers[provider]),
 		onAuthChange: vi.fn(() => () => {}),
-	};
+	} as unknown as AuthManager;
 }
 
 function mockCoreRuntime(): CoreRuntime {
@@ -357,11 +357,15 @@ function mockFranklinRuntime(provider?: string): FranklinRuntime {
 
 describe('syncAuth', () => {
 	function setup() {
-		let captured: AuthChangeListener | undefined;
+		type Listener = (
+			provider: string,
+			entry: AuthEntry | undefined,
+		) => void | Promise<void>;
+		let captured: Listener | undefined;
 		const providers: Record<string, string | undefined> = {};
 		const auth = mockAuthManager(providers);
 		(auth.onAuthChange as ReturnType<typeof vi.fn>).mockImplementation(
-			(listener: AuthChangeListener) => {
+			(listener: Listener) => {
 				captured = listener;
 				return () => {};
 			},
@@ -371,13 +375,13 @@ describe('syncAuth', () => {
 
 		syncAuth(() => [...runtimes], auth);
 
-		function fireAuthChange(
+		async function fireAuthChange(
 			provider: string,
 			entry: AuthEntry | undefined,
 			key = entry?.apiKey?.key,
-		) {
+		): Promise<void> {
 			providers[provider] = key;
-			return captured!(provider, entry);
+			await captured!(provider, entry);
 		}
 
 		function addRuntime(runtime: FranklinRuntime) {
@@ -402,7 +406,7 @@ describe('syncAuth', () => {
 		expect(runtime.setContext).toHaveBeenCalledWith({
 			config: { provider: 'anthropic', apiKey: 'sk-new' },
 		});
-		expect(auth.getApiKey).not.toHaveBeenCalled();
+		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
 	});
 
 	it('skips sessions that use a different provider', async () => {

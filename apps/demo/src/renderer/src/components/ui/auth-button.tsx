@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { AuthFile } from '@franklin/agent/browser';
+import type { AuthEntries } from '@franklin/agent/browser';
 
 import { useAuthStore } from './auth-context.js';
 import { AuthModal } from './auth-modal.js';
@@ -63,23 +63,10 @@ export function AuthButton({
 	const isSignedIn = providerCount > 0;
 
 	useEffect(() => {
-		let cancelled = false;
-
-		async function loadProviderCount() {
-			const entries = await store.load();
-			if (!cancelled) {
-				setProviderCount(Object.keys(entries).length);
-			}
-		}
-
-		void loadProviderCount();
-
-		return () => {
-			cancelled = true;
-		};
+		setProviderCount(Object.keys(store.entries()).length);
 	}, [store]);
 
-	function handleEntriesChange(entries: AuthFile) {
+	function handleEntriesChange(entries: AuthEntries) {
 		setProviderCount(Object.keys(entries).length);
 	}
 

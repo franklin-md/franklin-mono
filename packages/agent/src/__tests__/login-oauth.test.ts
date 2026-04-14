@@ -101,7 +101,7 @@ describe('AuthManager.loginOAuth', () => {
 		});
 		expect(onPrompt).toHaveBeenCalledWith({ message: 'Enter code' });
 		expect(respondSpy).toHaveBeenCalledWith('1234');
-		await expect(auth.load()).resolves.toEqual({
+		expect(auth.entries()).toEqual({
 			anthropic: {
 				oauth: {
 					type: 'oauth',

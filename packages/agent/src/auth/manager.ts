@@ -1,36 +1,45 @@
-import type { OAuthLoginCallbacks } from '@mariozechner/pi-ai/oauth';
+import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
+import type {
+	OAuthCredentials,
+	OAuthLoginCallbacks,
+} from '@mariozechner/pi-ai/oauth';
 
 import type {
 	ApiKeyEntry,
-	AuthChangeListener,
-	AuthFile,
+	AuthEntries,
+	AuthEntry,
 	OAuthEntry,
 } from './types.js';
 import type { OAuthFlow } from './oauth-flow.js';
 import type { Platform } from '../platform.js';
-import { AuthStore } from './store.js';
+import { PersistedAuthEntriesStore } from './store.js';
 
 export class AuthManager {
-	private readonly listeners = new Set<AuthChangeListener>();
-	private readonly store: AuthStore;
+	private readonly store: PersistedAuthEntriesStore;
 
 	constructor(private readonly platform: Platform) {
-		this.store = new AuthStore(platform.filesystem);
-		this.store.onChange(async (provider, entry) => {
-			for (const listener of this.listeners) {
-				await listener(provider, entry);
-			}
+		this.store = new PersistedAuthEntriesStore(platform.filesystem);
+	}
+
+	async restore(): Promise<void> {
+		await this.store.restore();
+	}
+
+	onAuthChange(
+		listener: (
+			provider: string,
+			entry: AuthEntry | undefined,
+		) => void | Promise<void>,
+	): () => void {
+		return this.store.subscribe((provider, entry) => {
+			void listener(provider, entry);
 		});
 	}
 
-	onAuthChange(listener: AuthChangeListener): () => void {
-		this.listeners.add(listener);
-		return () => {
-			this.listeners.delete(listener);
-		};
-	}
+	// -------------------------------------------------------------------------
+	// Provider discovery
+	// -------------------------------------------------------------------------
 
-	// TODO Right place?
 	async getOAuthProviders(): Promise<{ id: string; name: string }[]> {
 		return await this.platform.ai.getOAuthProviders();
 	}
@@ -38,6 +47,10 @@ export class AuthManager {
 	async getApiKeyProviders(): Promise<string[]> {
 		return await this.platform.ai.getApiKeyProviders();
 	}
+
+	// -------------------------------------------------------------------------
+	// OAuth flow
+	// -------------------------------------------------------------------------
 
 	async flow(provider: string): Promise<OAuthFlow> {
 		return this.platform.createFlow(provider);
@@ -62,7 +75,7 @@ export class AuthManager {
 
 		try {
 			const credentials = await flow.login();
-			await this.setOAuthEntry(provider, {
+			this.setOAuthEntry(provider, {
 				type: 'oauth',
 				credentials,
 			});
@@ -74,27 +87,76 @@ export class AuthManager {
 		}
 	}
 
-	async load(): Promise<AuthFile> {
-		return this.store.load();
+	// -------------------------------------------------------------------------
+	// Entry management
+	// -------------------------------------------------------------------------
+
+	entries(): AuthEntries {
+		return this.store.entries();
 	}
+
+	setApiKeyEntry(provider: string, entry: ApiKeyEntry): void {
+		const current = this.store.get(provider);
+		this.store.set(provider, { ...current, apiKey: entry });
+	}
+
+	setOAuthEntry(provider: string, entry: OAuthEntry): void {
+		const current = this.store.get(provider);
+		this.store.set(provider, { ...current, oauth: entry });
+	}
+
+	removeApiKeyEntry(provider: string): void {
+		const current = this.store.get(provider);
+		if (!current) return;
+		const { apiKey: _, ...rest } = current;
+		if (Object.keys(rest).length === 0) {
+			this.store.remove(provider);
+		} else {
+			this.store.set(provider, rest);
+		}
+	}
+
+	removeOAuthEntry(provider: string): void {
+		const current = this.store.get(provider);
+		if (!current) return;
+		const { oauth: _, ...rest } = current;
+		if (Object.keys(rest).length === 0) {
+			this.store.remove(provider);
+		} else {
+			this.store.set(provider, rest);
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// API key resolution
+	// -------------------------------------------------------------------------
 
 	async getApiKey(provider: string): Promise<string | undefined> {
-		return this.store.getApiKey(provider);
-	}
+		const entry = this.store.get(provider);
+		if (!entry) return undefined;
 
-	async setApiKeyEntry(provider: string, entry: ApiKeyEntry): Promise<void> {
-		await this.store.setApiKeyEntry(provider, entry);
-	}
+		if (entry.oauth) {
+			const credMap: Record<string, OAuthCredentials> = {
+				[provider]: entry.oauth.credentials,
+			};
 
-	async setOAuthEntry(provider: string, entry: OAuthEntry): Promise<void> {
-		await this.store.setOAuthEntry(provider, entry);
-	}
+			const result = await getOAuthApiKey(provider, credMap);
+			if (!result) return undefined;
 
-	async removeApiKeyEntry(provider: string): Promise<void> {
-		await this.store.removeApiKeyEntry(provider);
-	}
+			if (!sameCredentials(entry.oauth.credentials, result.newCredentials)) {
+				this.setOAuthEntry(provider, {
+					type: 'oauth',
+					credentials: result.newCredentials,
+				});
+			}
 
-	async removeOAuthEntry(provider: string): Promise<void> {
-		await this.store.removeOAuthEntry(provider);
+			return result.apiKey;
+		}
+
+		return entry.apiKey?.key;
 	}
+}
+
+function sameCredentials(a: OAuthCredentials, b: OAuthCredentials): boolean {
+	return JSON.stringify(a) === JSON.stringify(b);
 }
