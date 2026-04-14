@@ -46,4 +46,5 @@ export type EventHandler<
 export type Transport<TRead = unknown, TWrite = TRead> = {
 	readable: ReadableStream<TRead>;
 	writable: WritableStream<TWrite>;
+	dispose(): Promise<void>;
 };
