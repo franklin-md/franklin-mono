@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { createEnvironmentSystem } from '../environment.js';
 import { createRuntime } from '../create.js';
 import type {
-	Environment,
+	ReconfigurableEnvironment,
 	EnvironmentConfig,
 } from '../../api/environment/types.js';
 
@@ -18,7 +18,7 @@ const defaultConfig: EnvironmentConfig = {
 	netConfig: { allowedDomains: [], deniedDomains: [] },
 };
 
-function mockEnvironment(config: EnvironmentConfig): Environment {
+function mockEnvironment(config: EnvironmentConfig): ReconfigurableEnvironment {
 	return {
 		filesystem: {
 			readFile: vi.fn(),
@@ -36,15 +36,16 @@ function mockEnvironment(config: EnvironmentConfig): Environment {
 		web: { fetch: vi.fn() },
 		config: vi.fn(async () => ({ ...config })),
 		reconfigure: vi.fn(async () => {}),
+		dispose: vi.fn(async () => {}),
 	};
 }
 
 function mockFactory() {
 	const disposes: ReturnType<typeof vi.fn>[] = [];
 	const factory = async (config: EnvironmentConfig) => {
-		const dispose = vi.fn(async () => {});
-		disposes.push(dispose);
-		return { ...mockEnvironment(config), dispose };
+		const env = mockEnvironment(config);
+		disposes.push(env.dispose as ReturnType<typeof vi.fn>);
+		return env;
 	};
 	return { factory, disposes };
 }
@@ -68,7 +69,7 @@ describe('createEnvironmentSystem', () => {
 		const { factory } = mockFactory();
 		const system = createEnvironmentSystem(factory);
 
-		let received: Environment | undefined;
+		let received: ReconfigurableEnvironment | undefined;
 		await createRuntime(system, { env: defaultConfig }, [
 			(api) => {
 				received = api.getEnvironment();

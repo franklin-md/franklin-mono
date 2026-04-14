@@ -7,7 +7,7 @@ import { createCoreSystem } from '../core.js';
 import { StoreRegistry } from '../../api/store/registry/index.js';
 import type {
 	EnvironmentConfig,
-	Environment,
+	ReconfigurableEnvironment,
 } from '../../api/environment/types.js';
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/transport';
 import {
@@ -30,7 +30,7 @@ const defaultEnvConfig: EnvironmentConfig = {
 	netConfig: { allowedDomains: [], deniedDomains: [] },
 };
 
-function mockEnvironment(config: EnvironmentConfig): Environment {
+function mockEnvironment(config: EnvironmentConfig): ReconfigurableEnvironment {
 	return {
 		filesystem: {
 			readFile: vi.fn(),
@@ -48,14 +48,12 @@ function mockEnvironment(config: EnvironmentConfig): Environment {
 		web: { fetch: vi.fn() },
 		config: vi.fn(async () => ({ ...config })),
 		reconfigure: vi.fn(async () => {}),
+		dispose: vi.fn(async () => {}),
 	};
 }
 
 function mockEnvFactory() {
-	return async (config: EnvironmentConfig) => ({
-		...mockEnvironment(config),
-		dispose: vi.fn(async () => {}),
-	});
+	return async (config: EnvironmentConfig) => mockEnvironment(config);
 }
 
 function createMockSpawn() {

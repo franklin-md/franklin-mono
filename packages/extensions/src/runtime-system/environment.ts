@@ -1,6 +1,6 @@
 import type {
 	EnvironmentConfig,
-	Environment,
+	ReconfigurableEnvironment,
 } from '../api/environment/types.js';
 import type { EnvironmentAPI } from '../api/environment/api.js';
 import type { Compiler } from '../compile/types.js';
@@ -14,7 +14,7 @@ import {
 
 export type EnvironmentFactory = (
 	config: EnvironmentConfig,
-) => Promise<Environment & { dispose(): Promise<void> }>;
+) => Promise<ReconfigurableEnvironment>;
 
 export type EnvironmentSystem = RuntimeSystem<
 	EnvironmentState,

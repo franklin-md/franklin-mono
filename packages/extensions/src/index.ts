@@ -19,6 +19,7 @@ export type {
 	DependencyAPI,
 	EnvironmentAPI,
 	Environment,
+	ReconfigurableEnvironment,
 	EnvironmentConfig,
 	FilesystemConfig,
 	NetworkConfig,
@@ -39,11 +40,15 @@ export type {
 	SessionCreateInput,
 	SessionEvent,
 } from './api/index.js';
+export type { ConfigureOptions } from './api/index.js';
 export {
 	compose,
 	composeMethod,
 	passThrough,
 	DEFAULT_NETWORK_CONFIG,
+	createReconfigurableEnvironment,
+	configureFilesystem,
+	createWeb,
 } from './api/index.js';
 export {
 	SessionCollection,

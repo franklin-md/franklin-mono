@@ -7,8 +7,8 @@ import { useTextareaAutosizeLayout } from '@franklin/react';
 
 import { cn } from '../lib/cn.js';
 
-import { ScrollArea } from './scroll-area.js';
-import { textareaClassName } from './textarea.js';
+import { ScrollArea } from '../primitives/scroll-area.js';
+import { textareaClassName } from '../primitives/textarea.js';
 
 type AutoGrowTextareaProps = Omit<
 	TextareaAutosizeProps,

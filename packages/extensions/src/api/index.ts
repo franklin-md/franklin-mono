@@ -29,12 +29,19 @@ export type { DependencyAPI } from './dependency/index.js';
 export type { EnvironmentAPI } from './environment/index.js';
 export type {
 	Environment,
+	ReconfigurableEnvironment,
 	FilesystemConfig,
 	NetworkConfig,
 	EnvironmentConfig,
 	WebAPI,
 } from './environment/index.js';
-export { DEFAULT_NETWORK_CONFIG } from './environment/index.js';
+export type { ConfigureOptions } from './environment/index.js';
+export {
+	DEFAULT_NETWORK_CONFIG,
+	createReconfigurableEnvironment,
+	configureFilesystem,
+	createWeb,
+} from './environment/index.js';
 
 export type { StoreAPI } from './store/index.js';
 export type {

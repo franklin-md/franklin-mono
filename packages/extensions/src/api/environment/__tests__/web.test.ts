@@ -1,6 +1,6 @@
 import type { NetworkConfig } from '@franklin/extensions';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { EnvironmentWeb } from '../platform/web.js';
+import { createWeb } from '../web.js';
 
 function createConfig(overrides: Partial<NetworkConfig> = {}): NetworkConfig {
 	return {
@@ -14,7 +14,7 @@ function okResponse(): Response {
 	return new Response('ok', { status: 200 });
 }
 
-describe('EnvironmentWeb', () => {
+describe('createWeb', () => {
 	const fetchMock = vi.fn<typeof fetch>();
 
 	beforeEach(() => {
@@ -27,7 +27,7 @@ describe('EnvironmentWeb', () => {
 	});
 
 	it('denies localhost when it is not explicitly allowlisted', async () => {
-		const web = new EnvironmentWeb(createConfig());
+		const web = createWeb(createConfig());
 
 		await expect(
 			web.fetch({ url: 'http://localhost:11434/api/tags', method: 'GET' }),
@@ -37,9 +37,7 @@ describe('EnvironmentWeb', () => {
 
 	it('allows explicit localhost loopback access', async () => {
 		fetchMock.mockResolvedValue(okResponse());
-		const web = new EnvironmentWeb(
-			createConfig({ allowedDomains: ['localhost'] }),
-		);
+		const web = createWeb(createConfig({ allowedDomains: ['localhost'] }));
 
 		const response = await web.fetch({
 			url: 'http://localhost:11434/api/tags',
@@ -52,7 +50,7 @@ describe('EnvironmentWeb', () => {
 
 	it('allows explicit literal loopback IP access', async () => {
 		fetchMock.mockImplementation(async () => okResponse());
-		const web = new EnvironmentWeb(
+		const web = createWeb(
 			createConfig({ allowedDomains: ['127.0.0.1', '::1'] }),
 		);
 
@@ -66,7 +64,7 @@ describe('EnvironmentWeb', () => {
 
 	it('supports exact host-port allowlist entries for loopback', async () => {
 		fetchMock.mockImplementation(async () => okResponse());
-		const web = new EnvironmentWeb(
+		const web = createWeb(
 			createConfig({ allowedDomains: ['localhost:11434'] }),
 		);
 
@@ -79,9 +77,7 @@ describe('EnvironmentWeb', () => {
 	});
 
 	it('keeps denying non-loopback private hosts even when allowlisted', async () => {
-		const web = new EnvironmentWeb(
-			createConfig({ allowedDomains: ['192.168.1.10'] }),
-		);
+		const web = createWeb(createConfig({ allowedDomains: ['192.168.1.10'] }));
 
 		await expect(
 			web.fetch({ url: 'http://192.168.1.10:8080/', method: 'GET' }),
@@ -90,7 +86,7 @@ describe('EnvironmentWeb', () => {
 	});
 
 	it('blocks denied loopback debug ports even when the host is allowlisted', async () => {
-		const web = new EnvironmentWeb(
+		const web = createWeb(
 			createConfig({
 				allowedDomains: ['localhost', '127.0.0.1', '::1'],
 				deniedDomains: ['localhost:9229', '127.0.0.1:9229', '[::1]:9229'],
@@ -116,7 +112,7 @@ describe('EnvironmentWeb', () => {
 				headers: { location: 'http://localhost:11434/api/tags' },
 			}),
 		);
-		const web = new EnvironmentWeb(createConfig());
+		const web = createWeb(createConfig());
 
 		await expect(
 			web.fetch({ url: 'https://example.com/', method: 'GET' }),
@@ -133,7 +129,7 @@ describe('EnvironmentWeb', () => {
 				}),
 			)
 			.mockResolvedValueOnce(okResponse());
-		const web = new EnvironmentWeb(
+		const web = createWeb(
 			createConfig({ allowedDomains: ['example.com', 'localhost:11434'] }),
 		);
 
@@ -148,7 +144,7 @@ describe('EnvironmentWeb', () => {
 
 	it('passes explicit POST requests through to fetch', async () => {
 		fetchMock.mockResolvedValue(okResponse());
-		const web = new EnvironmentWeb(createConfig());
+		const web = createWeb(createConfig());
 		const body = new TextEncoder().encode('{"hello":"world"}');
 
 		await web.fetch({
