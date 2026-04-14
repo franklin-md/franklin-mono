@@ -14,7 +14,7 @@ function createMemoryDuplex<T>(): {
 	const duplex: Duplex<T> = {
 		readable: input.readable,
 		writable: output.writable,
-		close: async () => {},
+		dispose: async () => {},
 	};
 
 	return {
@@ -115,20 +115,20 @@ describe('debug', () => {
 		spy.mockRestore();
 	});
 
-	it('delegates close to the underlying duplex', async () => {
-		const closeFn = vi.fn().mockResolvedValue(undefined);
+	it('delegates dispose to the underlying duplex', async () => {
+		const disposeFn = vi.fn().mockResolvedValue(undefined);
 		const input = new TransformStream<string>();
 		const output = new TransformStream<string>();
 
 		const duplex: Duplex<string> = {
 			readable: input.readable,
 			writable: output.writable,
-			close: closeFn,
+			dispose: disposeFn,
 		};
 
 		const wrapped = debugStream(duplex, 'test');
-		await wrapped.close();
+		await wrapped.dispose();
 
-		expect(closeFn).toHaveBeenCalledOnce();
+		expect(disposeFn).toHaveBeenCalledOnce();
 	});
 });

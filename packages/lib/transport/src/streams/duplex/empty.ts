@@ -6,6 +6,6 @@ export function emptyDuplex<R, W = R>(): Duplex<R, W> {
 	return {
 		readable: emptyReadable<R>(),
 		writable: emptyWritable<W>(),
-		close: async () => {},
+		dispose: async () => {},
 	};
 }

@@ -34,7 +34,7 @@ export class StdioPipe implements Duplex<Uint8Array> {
 		this.writable = writable;
 	}
 
-	async close(): Promise<void> {
+	async dispose(): Promise<void> {
 		if (this.process.exitCode !== null || this.process.killed) return;
 
 		const exited = new Promise<void>((resolve) => {

@@ -31,7 +31,7 @@ function connectIpcTransport(
 	const close = async () => {
 		if (closeTunnelPromise) return closeTunnelPromise;
 		closeTunnelPromise = (async () => {
-			await tunnel?.close();
+			await tunnel?.dispose();
 		})();
 		return closeTunnelPromise;
 	};
@@ -39,7 +39,7 @@ function connectIpcTransport(
 	const closeRemote = async () => {
 		if (closeRemotePromise) return closeRemotePromise;
 		closeRemotePromise = (async () => {
-			await remoteTransport?.close();
+			await remoteTransport?.dispose();
 		})();
 		return closeRemotePromise;
 	};

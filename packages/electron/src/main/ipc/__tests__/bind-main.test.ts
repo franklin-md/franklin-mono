@@ -81,17 +81,16 @@ function createFilesystem(label: string): Filesystem {
 }
 
 function createTransportSpy(): {
-	close: ReturnType<typeof vi.fn>;
+	dispose: ReturnType<typeof vi.fn>;
 	transport: ClientProtocol & { dispose(): Promise<void> };
 } {
-	const close = vi.fn(async () => {});
+	const dispose = vi.fn(async () => {});
 	return {
-		close,
+		dispose,
 		transport: {
 			readable: new ReadableStream(),
 			writable: new WritableStream(),
-			close,
-			dispose: close,
+			dispose,
 		} as unknown as ClientProtocol & { dispose(): Promise<void> },
 	};
 }
@@ -293,7 +292,7 @@ describe('bindMain', () => {
 		};
 		let closeLocal = () => {};
 		const written: unknown[] = [];
-		const close = vi.fn(async () => {
+		const dispose = vi.fn(async () => {
 			try {
 				closeLocal();
 			} catch {
@@ -324,7 +323,7 @@ describe('bindMain', () => {
 							written.push(chunk);
 						},
 					}),
-					close,
+					dispose,
 				} as ClientProtocol,
 			} as never,
 			webContents,
@@ -347,7 +346,7 @@ describe('bindMain', () => {
 
 		emit(channel, { kind: 'close' });
 		await vi.waitFor(() => {
-			expect(close).toHaveBeenCalledTimes(1);
+			expect(dispose).toHaveBeenCalledTimes(1);
 		});
 
 		await handle.dispose();
@@ -362,7 +361,7 @@ describe('bindMain', () => {
 		};
 		let closeLocal = () => {};
 		const written: unknown[] = [];
-		const close = vi.fn(async () => {
+		const dispose = vi.fn(async () => {
 			try {
 				closeLocal();
 			} catch {
@@ -394,7 +393,7 @@ describe('bindMain', () => {
 								written.push(chunk);
 							},
 						}),
-						close,
+						dispose,
 					}) as ClientProtocol,
 			} as never,
 			webContents,
@@ -422,7 +421,7 @@ describe('bindMain', () => {
 
 		emit(channel, { kind: 'close' });
 		await vi.waitFor(() => {
-			expect(close).toHaveBeenCalledTimes(1);
+			expect(dispose).toHaveBeenCalledTimes(1);
 		});
 
 		await handle.dispose();
@@ -454,7 +453,7 @@ describe('bindMain', () => {
 		const id = await invoke(connectChannel);
 		await invoke(killChannel, id);
 
-		expect(transportSpy.close).toHaveBeenCalledTimes(1);
+		expect(transportSpy.dispose).toHaveBeenCalledTimes(1);
 
 		await handle.dispose();
 	});

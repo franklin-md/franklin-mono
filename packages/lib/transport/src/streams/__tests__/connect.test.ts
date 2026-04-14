@@ -14,7 +14,7 @@ function createTestDuplex<R, W = R>() {
 	const duplex: Duplex<R, W> = {
 		readable: readSide.readable,
 		writable: writeSide.writable,
-		close: async () => {},
+		dispose: async () => {},
 	};
 
 	return {
@@ -39,7 +39,7 @@ describe('connect', () => {
 
 		a.push.releaseLock();
 		b.pull.releaseLock();
-		await connection.close();
+		await connection.dispose();
 	});
 
 	it('pipes b.readable → a.writable', async () => {
@@ -54,17 +54,17 @@ describe('connect', () => {
 
 		b.push.releaseLock();
 		a.pull.releaseLock();
-		await connection.close();
+		await connection.dispose();
 	});
 
-	it('close stops the pump', async () => {
+	it('dispose stops the pump', async () => {
 		const a = createTestDuplex<string, number>();
 		const b = createTestDuplex<number, string>();
 		const connection = connect(a.duplex, b.duplex);
 
-		await connection.close();
+		await connection.dispose();
 
-		// After close, writing to a should not propagate to b.
+		// After dispose, writing to a should not propagate to b.
 		// The pull reader may see done or an error depending on abort timing.
 		const result = await b.pull
 			.read()
@@ -74,12 +74,12 @@ describe('connect', () => {
 		b.pull.releaseLock();
 	});
 
-	it('close is idempotent', async () => {
+	it('dispose is idempotent', async () => {
 		const a = createTestDuplex<string>();
 		const b = createTestDuplex<string>();
 		const connection = connect(a.duplex, b.duplex);
 
-		await connection.close();
-		await connection.close();
+		await connection.dispose();
+		await connection.dispose();
 	});
 });

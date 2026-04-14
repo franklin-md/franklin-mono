@@ -74,7 +74,7 @@ function createMockSpawn() {
 		return {
 			...clientSide,
 			dispose: async () => {
-				await clientSide.close();
+				await clientSide.dispose();
 			},
 		};
 	};

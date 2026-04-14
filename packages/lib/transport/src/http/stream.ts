@@ -70,7 +70,7 @@ export function asStream(server: HttpJsonServer): Duplex<Uint8Array> {
 	return {
 		readable,
 		writable,
-		close: async () => {
+		dispose: async () => {
 			for (const [, entry] of pending) {
 				entry.reject(new Error('Callback server pipe disposed'));
 			}

@@ -63,9 +63,9 @@ export function intercept<R, W = R>(
 	return {
 		readable,
 		writable,
-		close: async () => {
+		dispose: async () => {
 			innerWriter.releaseLock();
-			await inner.close();
+			await inner.dispose();
 		},
 	};
 }

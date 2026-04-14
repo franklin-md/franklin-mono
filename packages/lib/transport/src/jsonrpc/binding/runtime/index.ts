@@ -90,7 +90,7 @@ export function createPeerBinding<
 					observer.dispose();
 					clientRuntime.close();
 					serverRuntime.close();
-					await duplex.close();
+					await duplex.dispose();
 				},
 			};
 		},

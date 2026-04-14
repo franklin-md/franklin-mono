@@ -46,7 +46,7 @@ function createUnlockedPair<T>(): {
 	const a: Duplex<T> = {
 		readable: readableA,
 		writable: writableA,
-		close: async () => {
+		dispose: async () => {
 			try {
 				controllerA.close();
 			} catch {
@@ -57,7 +57,7 @@ function createUnlockedPair<T>(): {
 	const b: Duplex<T> = {
 		readable: readableB,
 		writable: writableB,
-		close: async () => {
+		dispose: async () => {
 			try {
 				controllerB.close();
 			} catch {
@@ -70,8 +70,8 @@ function createUnlockedPair<T>(): {
 		a,
 		b,
 		close: async () => {
-			await a.close();
-			await b.close();
+			await a.dispose();
+			await b.dispose();
 		},
 	};
 }
@@ -571,7 +571,7 @@ function createInterceptedPair(options?: {
 	const a: Duplex<JsonRpcMessage> = {
 		readable: readableA,
 		writable: writableA,
-		close: async () => {
+		dispose: async () => {
 			try {
 				controllerA.close();
 			} catch {
@@ -582,7 +582,7 @@ function createInterceptedPair(options?: {
 	const b: Duplex<JsonRpcMessage> = {
 		readable: readableB,
 		writable: writableB,
-		close: async () => {
+		dispose: async () => {
 			try {
 				controllerB.close();
 			} catch {

@@ -37,8 +37,8 @@ describe('emptyDuplex', () => {
 		await writer.close();
 	});
 
-	it('close is a no-op', async () => {
+	it('dispose is a no-op', async () => {
 		const duplex = emptyDuplex<string>();
-		await duplex.close();
+		await duplex.dispose();
 	});
 });

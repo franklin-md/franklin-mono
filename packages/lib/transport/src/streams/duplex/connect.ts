@@ -6,7 +6,7 @@ import type { Duplex } from '../types.js';
  *   a.readable → b.writable
  *   b.readable → a.writable
  *
- * Returns a Duplex whose close() cancels both directions
+ * Returns a Duplex whose dispose() cancels both directions
  * and cleanly closes the destination writables.
  */
 export function connect<A, B>(a: Duplex<A, B>, b: Duplex<B, A>): Duplex<A, B> {
@@ -18,10 +18,10 @@ export function connect<A, B>(a: Duplex<A, B>, b: Duplex<B, A>): Duplex<A, B> {
 	return {
 		readable: a.readable,
 		writable: a.writable,
-		close: async () => {
+		dispose: async () => {
 			abort.abort();
 			await Promise.allSettled([aToB, bToA]);
-			await Promise.allSettled([a.close(), b.close()]);
+			await Promise.allSettled([a.dispose(), b.dispose()]);
 		},
 	};
 }

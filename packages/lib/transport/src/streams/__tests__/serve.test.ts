@@ -28,9 +28,9 @@ function createBridgeServePair<Req, Res>(
 		{
 			readable: toServer.readable,
 			writable: toClient.writable,
-			close: async () => {
-				await toServer.close();
-				await toClient.close();
+			dispose: async () => {
+				await toServer.dispose();
+				await toClient.dispose();
 			},
 		},
 		handler,
@@ -39,9 +39,9 @@ function createBridgeServePair<Req, Res>(
 	return {
 		call,
 		close: async () => {
-			await callerDuplex.close();
-			await toServer.close().catch(() => {});
-			await toClient.close().catch(() => {});
+			await callerDuplex.dispose();
+			await toServer.dispose().catch(() => {});
+			await toClient.dispose().catch(() => {});
 		},
 	};
 }
@@ -83,7 +83,7 @@ describe('serve', () => {
 		const duplex = {
 			readable: new ReadableStream<BridgeRequest<string>>(),
 			writable: new WritableStream<BridgeResponse<string>>(),
-			close: async () => {},
+			dispose: async () => {},
 		};
 
 		// First serve() locks the writable via callable()

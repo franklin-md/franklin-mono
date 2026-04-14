@@ -65,12 +65,12 @@ describe('createDuplexPair', () => {
 		readerB.releaseLock();
 	});
 
-	it('close signals EOF on the other side', async () => {
+	it('dispose signals EOF on the other side', async () => {
 		const { a, b } = createDuplexPair<string>();
 
 		const reader = b.readable.getReader();
 
-		await a.close();
+		await a.dispose();
 
 		const result = await reader.read();
 		expect(result.done).toBe(true);

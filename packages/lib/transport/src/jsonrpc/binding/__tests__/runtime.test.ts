@@ -46,7 +46,7 @@ function createServerWithRawWire(options?: {
 	const duplex: Duplex<JsonRpcMessage> = {
 		readable,
 		writable,
-		close: async () => {
+		dispose: async () => {
 			try {
 				injectController.close();
 			} catch {

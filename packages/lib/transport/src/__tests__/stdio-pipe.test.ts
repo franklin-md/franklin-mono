@@ -8,7 +8,7 @@ describe('StdioPipe', () => {
 	afterEach(async () => {
 		while (pipes.length > 0) {
 			const p = pipes.pop();
-			if (p) await p.close();
+			if (p) await p.dispose();
 		}
 	});
 
@@ -22,9 +22,9 @@ describe('StdioPipe', () => {
 
 	it('dispose kills the subprocess', async () => {
 		const p = new StdioPipe({ command: 'cat' });
-		await p.close();
+		await p.dispose();
 		// Calling dispose again is a no-op
-		await p.close();
+		await p.dispose();
 	});
 
 	it('round-trips bytes through cat', async () => {

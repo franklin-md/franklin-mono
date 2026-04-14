@@ -113,7 +113,7 @@ describe('bindClient', () => {
 	});
 
 	it('binds resource(stream) by calling bindResource and recursing into inner', async () => {
-		const streamValue = { readable: 'r', writable: 'w', close: vi.fn() };
+		const streamValue = { readable: 'r', writable: 'w', dispose: vi.fn() };
 		const dispose = vi.fn().mockResolvedValue(undefined);
 		const resourceInnerRuntime = createMockRuntime({
 			bindTransport: vi.fn().mockReturnValue(streamValue),
@@ -191,9 +191,11 @@ describe('bindClient', () => {
 	it('dispose on resource calls handle dispose', async () => {
 		const dispose = vi.fn().mockResolvedValue(undefined);
 		const resourceInnerRuntime = createMockRuntime({
-			bindTransport: vi
-				.fn()
-				.mockReturnValue({ readable: 'r', writable: 'w', close: vi.fn() }),
+			bindTransport: vi.fn().mockReturnValue({
+				readable: 'r',
+				writable: 'w',
+				dispose: vi.fn(),
+			}),
 		});
 		const binding = vi
 			.fn()

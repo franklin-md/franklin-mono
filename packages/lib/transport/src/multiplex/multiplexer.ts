@@ -50,7 +50,7 @@ export class Multiplexer<R, W = R> {
 		return {
 			readable,
 			writable,
-			close: async () => {
+			dispose: async () => {
 				unsubscribe();
 				try {
 					readableController.close();
@@ -63,6 +63,6 @@ export class Multiplexer<R, W = R> {
 
 	async close(): Promise<void> {
 		this.observer.dispose();
-		await this.transport.close();
+		await this.transport.dispose();
 	}
 }
