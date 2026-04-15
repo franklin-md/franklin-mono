@@ -1,0 +1,13 @@
+/*
+ * Shared markdown / code / math presentation layer for Franklin UI.
+ *
+ * Bundles the third-party stylesheet requirements for the Streamdown-based
+ * text renderer and Tailwind source scanning for the renderer packages.
+ */
+
+@import 'katex/dist/katex.min.css';
+@import 'streamdown/styles.css';
+
+@source "../../../../../../node_modules/streamdown/dist/*.js";
+@source "../../../../../../node_modules/@streamdown/code/dist/*.js";
+@source "../../../../../../node_modules/@streamdown/math/dist/*.js";

@@ -1,0 +1,24 @@
+{
+	"extends": "../../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"composite": true,
+		"declaration": true,
+		"declarationMap": true,
+		"jsx": "react-jsx",
+		"lib": ["ES2023", "DOM"]
+	},
+	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"exclude": [
+		"src/**/*.stories.ts",
+		"src/**/*.stories.tsx",
+		"src/storybook/**"
+	],
+	"references": [
+		{ "path": "../../../packages/agent" },
+		{ "path": "../../../packages/extensions" },
+		{ "path": "../../../packages/mini-acp" },
+		{ "path": "../../../packages/ui/react" }
+	]
+}

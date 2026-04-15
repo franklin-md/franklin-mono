@@ -25,6 +25,7 @@ In your app stylesheet:
 ```css
 @import 'tailwindcss';
 @import '@franklin/ui/styles/theme-tokens.css';
+@import '@franklin/ui/styles/utilities/prose-content.css';
 
 @source '../src/**/*.{ts,tsx}';
 @source '../node_modules/@franklin/ui';
@@ -33,8 +34,8 @@ In your app stylesheet:
 Notes:
 
 - `@source` paths are relative to the stylesheet that declares them.
-- Use the package path in `node_modules`, not a repo-internal path like
-  `apps/shared/ui/src`. That keeps consumers stable if this package moves.
+- Add a `@source` for `@franklin/ui` anywhere you consume the shared
+  components, otherwise Tailwind will not emit the classes used by the package.
 - If your app imports Tailwind in a different form, for example
   `tailwindcss/theme` plus `tailwindcss/utilities`, the same `@source` rule
   still applies.
@@ -42,8 +43,10 @@ Notes:
 ### Theme Variables
 
 `@franklin/ui/styles/theme-tokens.css` maps app-defined CSS variables onto
-Tailwind tokens used by the components. Your app still needs to define the
-underlying variables, for example:
+Tailwind tokens used by the components.
+`@franklin/ui/styles/utilities/prose-content.css` provides the shared
+rendered-text styling used by the conversation UI. Your app still needs to
+define the underlying variables, for example:
 
 ```css
 :root {
@@ -78,9 +81,38 @@ Font variables are app-owned:
 }
 ```
 
+### Franklin Theme
+
+If you want the default Franklin palette and typography, import:
+
+```css
+@import '@franklin/ui/styles/franklin.css';
+```
+
+`franklin.css` composes the shared token mapping, shared markdown/rendered-text
+styles, and the default Franklin light/dark theme. `franklin-theme.css` is the
+Franklin theme layer for apps that want to compose the pieces manually.
+
+### Utility Styles
+
+If you use the shared Streamdown-based text renderer without the full Franklin
+theme bundle, import the utility bundle:
+
+```css
+@import '@franklin/ui/styles/utilities/index.css';
+```
+
+`styles/utilities/index.css` composes the shared prose/content styles together
+with the KaTeX and Streamdown integration in `styles/utilities/markdown.css`.
+Import `styles/utilities/prose-content.css` directly when you only want the
+shared prose/code styles without the third-party markdown layer.
+
 ## Minimal Consumer Checklist
 
 - Import components from `@franklin/ui`.
 - Import `@franklin/ui/styles/theme-tokens.css`.
 - Add `@source '../node_modules/@franklin/ui';` to the app stylesheet.
+- Import `@franklin/ui/styles/utilities/prose-content.css` or
+  `@franklin/ui/styles/utilities/index.css` if you render shared conversation
+  text.
 - Define the CSS variables consumed by `theme-tokens.css`.

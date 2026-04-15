@@ -1,0 +1,31 @@
+{
+	"extends": "../../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": ".",
+		"target": "ES2023",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["ES2023", "DOM"],
+		"strict": true,
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"jsx": "react-jsx",
+		"composite": true,
+		"noEmit": true
+	},
+	"include": [
+		".storybook/**/*.ts",
+		".storybook/**/*.tsx",
+		"src/**/*.ts",
+		"src/**/*.tsx"
+	],
+	"exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/__tests__/**"],
+	"references": [
+		{ "path": "../../../packages/agent" },
+		{ "path": "../../../packages/extensions" },
+		{ "path": "../../../packages/mini-acp" },
+		{ "path": "../../../packages/ui/react" }
+	]
+}
