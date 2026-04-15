@@ -1,6 +1,18 @@
 import { FranklinApp } from '@franklin/agent/browser';
 import type { Platform } from '@franklin/agent/browser';
-import { conversationExtension } from '@franklin/extensions';
+import {
+	conversationExtension,
+	todoExtension,
+	statusExtension,
+	readExtension,
+	writeExtension,
+	editExtension,
+	globExtension,
+	bashExtension,
+	createWebFetchExtension,
+	createWebSearchExtension,
+	spawnExtension,
+} from '@franklin/extensions';
 import type { AbsolutePath } from '@franklin/lib';
 import { joinAbsolute, toAbsolutePath } from '@franklin/lib';
 import type { Plugin } from 'obsidian';
@@ -17,7 +29,22 @@ export interface ObsidianAppResult {
 	vaultRoot: AbsolutePath;
 }
 
-const extensions = [conversationExtension.extension];
+const webFetchExtension = createWebFetchExtension({});
+const webSearchExtension = createWebSearchExtension({});
+const extensionBundles = [
+	conversationExtension,
+	todoExtension,
+	statusExtension,
+	readExtension,
+	writeExtension,
+	editExtension,
+	globExtension,
+	bashExtension,
+	webFetchExtension,
+	webSearchExtension,
+	spawnExtension,
+];
+const extensions = extensionBundles.map((bundle) => bundle.extension);
 
 export async function createFranklinApp(
 	plugin: Plugin,

@@ -1,4 +1,5 @@
 import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
+import { PortalContainerProvider } from '@franklin/ui';
 import { ItemView } from 'obsidian';
 import type { WorkspaceLeaf } from 'obsidian';
 import { createRoot } from 'react-dom/client';
@@ -41,7 +42,9 @@ export class FranklinView extends ItemView {
 		const root = createRoot(this.contentEl);
 		this.root = root;
 		root.render(
-			<ObsidianApp app={this.options.app} runtime={this.options.runtime} />,
+			<PortalContainerProvider value={this.contentEl}>
+				<ObsidianApp app={this.options.app} runtime={this.options.runtime} />
+			</PortalContainerProvider>,
 		);
 	}
 
