@@ -8,17 +8,18 @@ const js = createJsBuilder(args);
 const css = createCssBuilder(args);
 const runSync = () => sync(args);
 
+await Promise.all([js.build(), css.build()]);
+runSync();
+
 // ── Single build ────────────────────────────────────────────
 if (!args.isWatch) {
-	await Promise.all([js.build(), css.build()]);
-	runSync();
 	process.exit(0);
 }
 
 // ── Watch mode ──────────────────────────────────────────────
 console.log('Starting watch mode…');
 
-js.watch(runSync);
+await js.watch(runSync, { skipInitialOnEnd: true });
 css.watch(runSync);
 
 console.log('Watching for changes…');
