@@ -116,7 +116,7 @@ After each rebuild, reload the plugin inside Obsidian to pick up the latest code
 ## Notes
 
 - The plugin renders a single Franklin conversation window inside an Obsidian view.
-- Franklin application state is stored in `<plugin-dir>/.franklin`.
+- Franklin application state is stored in the plugin directory itself (`<plugin-dir>/`).
 - This package uses React, Tailwind, and Obsidian APIs.
 - `styles.css` is generated from `src/styles/globals.css`.
 - `dist/` is generated output and should not be edited by hand.

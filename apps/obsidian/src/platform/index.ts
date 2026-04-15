@@ -7,7 +7,6 @@ import {
 } from '@franklin/extensions';
 
 import type { App } from 'obsidian';
-import { createStubTerminal } from './stubs.js';
 import { createNodeFilesystem, createNodePlatform } from '@franklin/node';
 import { createObsidianFilesystem } from './filesystem/obsidian.js';
 
@@ -24,7 +23,17 @@ export function createObsidianPlatform(app: App): Platform {
 						createObsidianFilesystem(app.vault, createNodeFilesystem()),
 						fsConfig,
 					),
-				configureTerminal: async () => createStubTerminal(),
+				configureTerminal: async () => {
+					return {
+						exec: async () => {
+							return {
+								exit_code: 0,
+								stdout: 'Terminal is not available in Obsidian',
+								stderr: '',
+							};
+						},
+					};
+				},
 				configureWeb: async (netConfig) => createWeb(netConfig),
 			}),
 	};
