@@ -8,6 +8,7 @@ import {
 } from '@franklin/lib';
 import type { FilePersistence } from './types.js';
 
+// TODO: Would be nice to get rid of these or at least move to their store.ts files.
 /**
  * Creates file-backed persistence for sessions and stores.
  *

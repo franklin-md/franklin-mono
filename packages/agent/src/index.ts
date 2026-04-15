@@ -1,3 +1,3 @@
 export * from './browser.js';
 
-export { createPersistence } from './storage/index.js';
+export { createPersistence } from './storage/persistence.js';

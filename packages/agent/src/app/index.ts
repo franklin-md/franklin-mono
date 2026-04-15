@@ -10,7 +10,7 @@ import type { AbsolutePath } from '@franklin/lib';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { withAuth } from '../auth/with-auth.js';
 import { AuthManager } from '../auth/manager.js';
-import { createStorage } from '../storage/index.js';
+import { createStorage } from '../storage/create-storage.js';
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
 import type {
