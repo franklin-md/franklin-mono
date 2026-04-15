@@ -14,7 +14,9 @@ export default tseslint.config(
 			'**/node_modules/**',
 			'**/*.d.ts',
 			'**/*.tsbuildinfo',
+			'**/storybook-static/**',
 			'**/vitest.config.ts',
+			'vitest.aliases.ts',
 			'**/vite.config.ts',
 			'**/electron.vite.config.ts',
 			'**/out/**',
@@ -111,7 +113,8 @@ export default tseslint.config(
 			'@typescript-eslint/unbound-method': 'off',
 			'vitest/expect-expect': 'off',
 		},
-	}, // Prevent Electron renderer code from importing the full @franklin/agent
+	},
+	// Prevent Electron renderer code from importing the full @franklin/agent
 	// barrel, which pulls in Node.js-only dependencies (StdioTransport, spawn).
 	// Renderer code must use @franklin/agent/browser instead.
 	{

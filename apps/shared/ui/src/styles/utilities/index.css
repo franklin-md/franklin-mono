@@ -1,0 +1,8 @@
+/*
+ * Shared Franklin utility style bundle.
+ *
+ * Composes the prose/content rules with the external markdown renderer styles.
+ */
+
+@import './prose-content.css';
+@import './markdown.css';

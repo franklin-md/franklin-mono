@@ -9,7 +9,7 @@
 	},
 	"include": ["src/main/**/*.ts"],
 	"references": [
-		{ "path": "../../packages/lib/transport" },
+		{ "path": "../../packages/lib" },
 		{ "path": "../../packages/agent" },
 		{ "path": "../../packages/node" },
 		{ "path": "../../packages/electron/tsconfig.main.json" }

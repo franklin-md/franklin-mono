@@ -30,7 +30,6 @@
 		"@franklin/extensions": "*",
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
-		"@franklin/transport": "*",
 		"zod": "^4.0.0"
 	}
 }

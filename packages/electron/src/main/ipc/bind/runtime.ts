@@ -6,8 +6,8 @@ import type {
 	OnHandler,
 	ResourceFactory,
 } from '@franklin/lib/proxy';
-import { connect } from '@franklin/transport';
-import type { Duplex } from '@franklin/transport';
+import { connect } from '@franklin/lib/transport';
+import type { Duplex } from '@franklin/lib/transport';
 
 import { createMainIpcStream } from '../stream.js';
 import { createPaths } from '../../../shared/paths.js';

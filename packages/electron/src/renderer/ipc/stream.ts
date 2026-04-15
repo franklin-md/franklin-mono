@@ -1,4 +1,4 @@
-import type { Duplex } from '@franklin/transport';
+import type { Duplex } from '@franklin/lib/transport';
 
 import type { FranklinIpcRuntime } from '../../shared/api.js';
 import { isIpcStreamMessage } from '../../shared/api.js';

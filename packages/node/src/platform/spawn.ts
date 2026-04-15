@@ -1,4 +1,4 @@
-import { createDuplexPair } from '@franklin/transport';
+import { createDuplexPair } from '@franklin/lib/transport';
 import {
 	type ClientProtocol,
 	type AgentProtocol,

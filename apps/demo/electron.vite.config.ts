@@ -59,12 +59,6 @@ export default defineConfig({
 					find: '@',
 					replacement: resolve(__dirname, 'src/renderer/src'),
 				},
-				// Remap barrel imports to browser-safe subpaths so renderer
-				// code never pulls in Node-only transitive dependencies.
-				{
-					find: /^@franklin\/transport$/,
-					replacement: '@franklin/transport/core',
-				},
 			],
 		},
 	},

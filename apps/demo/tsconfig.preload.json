@@ -10,7 +10,7 @@
 	},
 	"include": ["src/preload/**/*.ts"],
 	"references": [
-		{ "path": "../../packages/lib/transport" },
+		{ "path": "../../packages/lib" },
 		{ "path": "../../packages/electron/tsconfig.preload.json" }
 	]
 }

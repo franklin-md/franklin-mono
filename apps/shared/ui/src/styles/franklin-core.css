@@ -1,0 +1,12 @@
+/*
+ * Shared Franklin UI style bundle without an opinionated theme.
+ *
+ * Includes the token mapping, utility styles, and Tailwind source scanning for
+ * the shared UI package. Consumers provide their own semantic variables or
+ * layer `franklin-theme.css` on top.
+ */
+
+@import './theme-tokens.css';
+@import './utilities/index.css';
+
+@source "../**/*.{ts,tsx}";

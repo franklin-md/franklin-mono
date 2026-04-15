@@ -3,8 +3,8 @@
  *
  * Combines:
  * - Tailwind theme + utilities (no preflight — Obsidian's base styles preserved)
- * - variables.css: Obsidian CSS vars → intermediate vars
- * - theme.css: intermediate vars → Tailwind tokens (shadcn compatible)
+ * - variables.css: Obsidian CSS vars → Franklin semantic vars
+ * - theme.css: Franklin core styles + Obsidian font overrides
  *
  * Specificity strategy:
  * - Utilities imported without @layer so they're unlayered (equal footing with

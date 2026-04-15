@@ -10,7 +10,7 @@ import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
 } from '../../api/environment/types.js';
-import { createDuplexPair, type JsonRpcMessage } from '@franklin/transport';
+import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
 	createSessionAdapter,
 	createAgentConnection,
