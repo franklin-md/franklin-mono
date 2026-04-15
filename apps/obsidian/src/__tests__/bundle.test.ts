@@ -45,4 +45,17 @@ describe('obsidian bundle', () => {
 	it('produces dist/manifest.json', () => {
 		expect(existsSync(resolve(dist, 'manifest.json'))).toBe(true);
 	});
+
+	it('bundles node_modules into main.js instead of leaving external requires', () => {
+		const js = readFileSync(resolve(dist, 'main.js'), 'utf8');
+
+		// React and ReactDOM should be inlined — no external require calls for them
+		expect(js).not.toMatch(/require\(["']react["']\)/);
+		expect(js).not.toMatch(/require\(["']react-dom["']\)/);
+		expect(js).not.toMatch(/require\(["']react-dom\/client["']\)/);
+		expect(js).not.toMatch(/require\(["']react\/jsx-runtime["']\)/);
+
+		// Externals that Obsidian provides should still be require() calls
+		expect(js).toMatch(/require\(["']obsidian["']\)/);
+	});
 });

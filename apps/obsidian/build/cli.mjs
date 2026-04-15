@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
  * @property {string}  srcDir    — source directory
  * @property {string}  distDir   — output directory
  * @property {boolean} isWatch   — true when --watch is passed
+ * @property {boolean} isProd    — true when --prod is passed
  * @property {string}  [pluginDir] — resolved Obsidian vault plugin directory
  */
 
@@ -20,6 +21,7 @@ export function parseBuildArgs() {
 	const srcDir = resolve(rootDir, 'src');
 	const distDir = resolve(rootDir, 'dist');
 	const isWatch = process.argv.includes('--watch');
+	const isProd = process.argv.includes('--prod');
 
 	const vaultDirArg = process.argv.find((v) => v.startsWith('--vault-dir='));
 	const vaultDir = vaultDirArg?.slice('--vault-dir='.length);
@@ -29,7 +31,7 @@ export function parseBuildArgs() {
 
 	const pluginDir = resolvePluginDir({ rootDir, vaultDir, pluginDirExplicit });
 
-	return { rootDir, srcDir, distDir, isWatch, pluginDir };
+	return { rootDir, srcDir, distDir, isWatch, isProd, pluginDir };
 }
 
 /**

@@ -7,7 +7,7 @@ import esbuild from 'esbuild';
  * @param {import('../cli.mjs').BuildArgs} args
  * @returns {{ build: () => Promise<void>, watch: (onEnd: () => void) => Promise<void> }}
  */
-export function createJsBuilder({ srcDir, distDir }) {
+export function createJsBuilder({ srcDir, distDir, isProd }) {
 	const options = {
 		entryPoints: [resolve(srcDir, 'main.ts')],
 		bundle: true,
@@ -16,9 +16,13 @@ export function createJsBuilder({ srcDir, distDir }) {
 		platform: 'node',
 		target: 'es2022',
 		jsx: 'automatic',
-		sourcemap: true,
+		sourcemap: !isProd,
+		minify: isProd,
 		logLevel: 'info',
 		external: ['obsidian', 'electron', '@codemirror/*', '@lezer/*'],
+		define: {
+			'process.env.NODE_ENV': isProd ? '"production"' : '"development"',
+		},
 	};
 
 	return {

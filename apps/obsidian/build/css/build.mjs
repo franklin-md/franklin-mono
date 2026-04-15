@@ -10,10 +10,10 @@ import { franklinPrefix } from './prefix.mjs';
  * @param {import('../cli.mjs').BuildArgs} args
  * @returns {{ build: () => Promise<void>, watch: (onEnd: () => void) => void }}
  */
-export function createCssBuilder({ srcDir, distDir, isWatch }) {
+export function createCssBuilder({ srcDir, distDir, isWatch, isProd }) {
 	const cssEntry = resolve(srcDir, 'styles/globals.css');
 	const processor = postcss([
-		tailwindcss({ optimize: !isWatch }),
+		tailwindcss({ optimize: isProd || !isWatch }),
 		franklinPrefix(),
 	]);
 
