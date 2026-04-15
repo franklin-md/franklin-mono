@@ -10,7 +10,12 @@ export function emptyEnvironmentState(): EnvironmentState {
 		env: {
 			fsConfig: {
 				cwd: '.',
-				permissions: { allowRead: [], allowWrite: [] },
+				permissions: {
+					allowRead: [],
+					denyRead: [],
+					allowWrite: [],
+					denyWrite: [],
+				},
 			},
 			netConfig: {
 				allowedDomains: [...DEFAULT_NETWORK_CONFIG.allowedDomains],

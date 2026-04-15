@@ -23,7 +23,12 @@ export function AgentSidebar() {
 				env: {
 					fsConfig: {
 						cwd: '/tmp',
-						permissions: { allowRead: ['**'], allowWrite: ['**'] },
+						permissions: {
+							denyRead: ['/'],
+							allowRead: ['/tmp'],
+							allowWrite: [],
+							denyWrite: [],
+						},
 					},
 					netConfig: { allowedDomains: [], deniedDomains: [] },
 				},

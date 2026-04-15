@@ -3,19 +3,27 @@ import ignore from 'ignore';
 import type { Filesystem } from './types.js';
 
 /**
- * Configuration for filesystem access filtering.
+ * Configuration for filesystem access filtering. This follows
+ * the Anthropic Runtime Sandbox model:
  *
- * Both reads and writes are **deny-default**: a path must match
- * an allow pattern to be accessible. Patterns use gitignore syntax.
+ * Read:
+ * - default allow;
+ * - deny-then-allow;
+ *
+ * Write:
+ * - default deny;
+ * - allow-then-deny;
  *
  * Patterns are matched against absolute paths. To allow everything
  * under a directory, use e.g. `/project/**`.
  */
 export interface FilesystemPermissions {
 	/** Gitignore-style patterns for paths that may be read. */
+	denyRead: string[];
 	allowRead: string[];
 	/** Gitignore-style patterns for paths that may be written. */
 	allowWrite: string[];
+	denyWrite: string[];
 }
 
 function createMatcher(patterns: string[]): (filePath: string) => boolean {
@@ -35,20 +43,46 @@ export function createFilteredFilesystem(
 	filter: FilesystemPermissions,
 	inner: Filesystem,
 ): Filesystem {
-	const isReadable = createMatcher(filter.allowRead);
-	const isWritable = createMatcher(filter.allowWrite);
+	const isReadAllowed = createMatcher(filter.allowRead);
+	const isReadDenied = createMatcher(filter.denyRead);
+	const isWriteAllowed = createMatcher(filter.allowWrite);
+	const isWriteDenied = createMatcher(filter.denyWrite);
 
-	function assertReadable(absolutePath: string): void {
+	function isReadable(absolutePath: string): boolean {
 		// Strip leading slash for ignore matching (it expects relative paths)
 		const rel = absolutePath.slice(1);
-		if (!isReadable(rel)) {
+
+		// Read is deny-then-allow, default allow
+		if (isReadAllowed(rel)) {
+			return true;
+		}
+		if (isReadDenied(rel)) {
+			return false;
+		}
+		return true;
+	}
+
+	function isWritable(absolutePath: string): boolean {
+		const rel = absolutePath.slice(1);
+
+		// Write is allow-then-deny, default deny
+		if (isWriteDenied(rel)) {
+			return false;
+		}
+		if (isWriteAllowed(rel)) {
+			return true;
+		}
+		return false;
+	}
+
+	function assertReadable(absolutePath: string): void {
+		if (!isReadable(absolutePath)) {
 			throw new Error(`Read access denied: ${absolutePath}`);
 		}
 	}
 
 	function assertWritable(absolutePath: string): void {
-		const rel = absolutePath.slice(1);
-		if (!isWritable(rel)) {
+		if (!isWritable(absolutePath)) {
 			throw new Error(`Write access denied: ${absolutePath}`);
 		}
 	}

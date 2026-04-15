@@ -11,7 +11,8 @@ import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import { createFolderScopedFilesystem } from '@franklin/lib';
 import os from 'node:os';
-import { SandboxedTerminal } from './sandboxed-terminal.js';
+import { SandboxedTerminal } from './anthropic/sandboxed-terminal.js';
+import { withAnthropicProtected } from './anthropic/protected.js';
 import { openExternal } from './open-external.js';
 import { createOAuthFlow } from './auth/create-flow.js';
 
@@ -44,7 +45,10 @@ export function createNodePlatform(args: Args = {}): Platform {
 			createReconfigurableEnvironment({
 				config,
 				configureFilesystem: async (fsConfig) =>
-					configureFilesystem(createNodeFilesystem(), fsConfig),
+					configureFilesystem(
+						createNodeFilesystem(),
+						withAnthropicProtected(fsConfig),
+					),
 				configureTerminal: async (
 					cfg,
 					previous: SandboxedTerminal | undefined,
@@ -54,7 +58,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 						await previous.setNetworkConfig(cfg.netConfig);
 						return previous;
 					}
-					const terminal = new SandboxedTerminal(appDir, cfg);
+					const terminal = new SandboxedTerminal(cfg);
 					await terminal.initialize();
 					return terminal;
 				},

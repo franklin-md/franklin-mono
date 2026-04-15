@@ -25,7 +25,12 @@ import {
 const defaultEnvConfig: EnvironmentConfig = {
 	fsConfig: {
 		cwd: '/project',
-		permissions: { allowRead: ['**'], allowWrite: ['**'] },
+		permissions: {
+			allowRead: ['**'],
+			denyRead: [],
+			allowWrite: ['**'],
+			denyWrite: [],
+		},
 	},
 	netConfig: { allowedDomains: [], deniedDomains: [] },
 };

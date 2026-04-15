@@ -130,7 +130,12 @@ describe('bindRenderer', () => {
 		const env = await platform.environment({
 			fsConfig: {
 				cwd: '/tmp',
-				permissions: { allowRead: ['**'], allowWrite: ['**'] },
+				permissions: {
+					allowRead: ['**'],
+					denyRead: [],
+					allowWrite: ['**'],
+					denyWrite: [],
+				},
 			},
 			netConfig: { allowedDomains: [], deniedDomains: [] },
 		});
