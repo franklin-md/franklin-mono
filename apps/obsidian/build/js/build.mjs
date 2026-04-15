@@ -7,6 +7,12 @@ import esbuild from 'esbuild';
  * @param {import('../cli.mjs').BuildArgs} args
  * @returns {{ build: () => Promise<void>, watch: (onEnd: () => void) => Promise<void> }}
  */
+// Although Franklin expects to transition to open-source soon, it is currently
+// closed-source. Full obfuscation is not performed because Obsidian's developer
+// policies prohibit plugins from obfuscating code to hide their purpose. We
+// limit production builds to standard minification (identifier mangling, syntax
+// compaction, whitespace removal) which is permitted.
+// See: https://docs.obsidian.md/Developer+policies
 export function createJsBuilder({ srcDir, distDir, isProd }) {
 	const options = {
 		entryPoints: [resolve(srcDir, 'main.ts')],
