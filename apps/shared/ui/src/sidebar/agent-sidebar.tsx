@@ -22,10 +22,10 @@ export function AgentSidebar() {
 				core: { llmConfig: settings.get().defaultLLMConfig },
 				env: {
 					fsConfig: {
-						cwd: '/private/tmp',
+						cwd: '/tmp',
 						permissions: {
 							denyRead: ['/'],
-							allowRead: ['/private/tmp'],
+							allowRead: ['/tmp'],
 							allowWrite: [],
 							denyWrite: [],
 						},
