@@ -1,5 +1,5 @@
-// Core (browser-safe) — re-export everything
-export * from './core.js';
+// Browser-safe transport surface
+export * from './index.js';
 
 // Node-only transports
 export { StdioPipe } from './stdio/index.js';

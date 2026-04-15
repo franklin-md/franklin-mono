@@ -3,7 +3,7 @@ import type {
 	MethodHandler,
 	NotificationHandler,
 	EventHandler,
-} from '@franklin/lib';
+} from '../../../../../proxy/index.js';
 import type { JsonRpcMessage } from '../../../types.js';
 import {
 	isRequest,

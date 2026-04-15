@@ -1,4 +1,4 @@
-import type { Descriptor, ProxyType } from '@franklin/lib';
+import type { Descriptor, ProxyType } from '../../../proxy/index.js';
 import type { Duplex } from '../../streams/types.js';
 import type { JsonRpcMessage } from '../types.js';
 
@@ -14,7 +14,7 @@ export { JsonRpcProxyRuntime, JsonRpcServerRuntime } from './runtime/index.js';
  * Returns `remote` (server proxy) immediately. Call `bind(handlers)` to
  * provide client-side handlers and start message dispatch.
  */
-export function bindClient<
+export function bindJsonRpcClient<
 	TServerDesc extends Descriptor,
 	TClientDesc extends Descriptor,
 >(options: {
@@ -35,7 +35,7 @@ export function bindClient<
  * Returns `remote` (client proxy) immediately. Call `bind(handlers)` to
  * provide server-side handlers and start message dispatch.
  */
-export function bindServer<
+export function bindJsonRpcServer<
 	TServerDesc extends Descriptor,
 	TClientDesc extends Descriptor,
 >(options: {

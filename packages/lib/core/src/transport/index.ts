@@ -1,8 +1,8 @@
 /**
- * Core entrypoint for @franklin/transport.
+ * Browser-safe transport surface for @franklin/lib/transport.
  *
- * Contains only browser-safe APIs with zero Node.js transitive dependencies.
- * The full barrel (index.ts) re-exports core plus Node-only transports.
+ * Contains only APIs with zero Node.js transitive dependencies.
+ * The node barrel (node.ts) re-exports this file plus Node-only transports.
  */
 
 // Stream algebra
@@ -57,8 +57,8 @@ export type { MuxPacket } from './multiplex/index.js';
 // JSON-RPC
 export {
 	RpcError,
-	bindClient,
-	bindServer,
+	bindJsonRpcClient,
+	bindJsonRpcServer,
 	JsonRpcProxyRuntime,
 	JsonRpcServerRuntime,
 	type JsonRpcMessage,

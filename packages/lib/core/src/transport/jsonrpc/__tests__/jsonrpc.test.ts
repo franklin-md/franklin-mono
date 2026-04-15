@@ -11,7 +11,7 @@ import {
 	isStreamUpdateNotification,
 } from '../types.js';
 import { RpcError } from '../errors.js';
-import { bindClient, bindServer } from '../binding/index.js';
+import { bindJsonRpcClient, bindJsonRpcServer } from '../binding/index.js';
 
 function createUnlockedPair<T>(): {
 	a: Duplex<T>;
@@ -257,7 +257,7 @@ function createPair(options?: {
 	client?: Partial<ClientApi>;
 }) {
 	const { a, b } = createUnlockedPair<JsonRpcMessage>();
-	const clientBinding = bindClient({
+	const clientBinding = bindJsonRpcClient({
 		duplex: a,
 		server: serverDescriptor,
 		client: clientDescriptor,
@@ -266,7 +266,7 @@ function createPair(options?: {
 		...defaultClientHandlers,
 		...options?.client,
 	});
-	const serverBinding = bindServer({
+	const serverBinding = bindJsonRpcServer({
 		duplex: b,
 		server: serverDescriptor,
 		client: clientDescriptor,
@@ -591,7 +591,7 @@ function createInterceptedPair(options?: {
 		},
 	};
 
-	const clientBinding = bindClient({
+	const clientBinding = bindJsonRpcClient({
 		duplex: a,
 		server: serverDescriptor,
 		client: clientDescriptor,
@@ -600,7 +600,7 @@ function createInterceptedPair(options?: {
 		...defaultClientHandlers,
 		...options?.client,
 	});
-	const serverBinding = bindServer({
+	const serverBinding = bindJsonRpcServer({
 		duplex: b,
 		server: serverDescriptor,
 		client: clientDescriptor,
