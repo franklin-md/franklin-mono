@@ -1,16 +1,21 @@
 import { Notice, Plugin } from 'obsidian';
+import type { FranklinApp } from '@franklin/agent/browser';
 
 import { createFranklinApp } from './app/app.js';
 import { getDefaultAgent } from './app/agent.js';
 import { DiffController } from './diff/diff-controller.js';
+import { FranklinSettingTab } from './settings.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
 
 export default class FranklinPlugin extends Plugin {
 	private diffController!: DiffController;
+	franklinApp: FranklinApp | null = null;
 
 	async onload() {
 		this.diffController = new DiffController(this);
 		this.diffController.onload();
+
+		this.addSettingTab(new FranklinSettingTab(this.app, this));
 
 		createFranklinApp(this)
 			.then(({ app, vaultRoot }) =>
@@ -20,6 +25,8 @@ export default class FranklinPlugin extends Plugin {
 				})),
 			)
 			.then(({ app, runtime }) => {
+				this.franklinApp = app;
+
 				this.registerView(VIEW_TYPE, (leaf) => {
 					return new FranklinView(leaf, { app, runtime });
 				});
@@ -39,6 +46,7 @@ export default class FranklinPlugin extends Plugin {
 				console.log('Franklin plugin loaded');
 			})
 			.catch((err: unknown) => {
+				console.error(err);
 				new Notice(
 					`Franklin failed to load: ${err instanceof Error ? err.message : String(err)}`,
 				);
@@ -47,6 +55,7 @@ export default class FranklinPlugin extends Plugin {
 
 	onunload() {
 		this.diffController.onunload();
+		this.franklinApp = null;
 		console.log('Franklin plugin unloaded');
 	}
 

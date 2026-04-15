@@ -17,6 +17,20 @@ describe('obsidian bundle', () => {
 		expect(existsSync(resolve(dist, 'main.js'))).toBe(true);
 	});
 
+	it('bundles a single copy of @franklin/react context modules', () => {
+		const js = readFileSync(resolve(dist, 'main.js'), 'utf8');
+
+		expect(js).toContain(
+			'../../packages/ui/react/src/agent/franklin-context.tsx',
+		);
+		expect(js).not.toContain(
+			'../../packages/ui/react/dist/agent/franklin-context.js',
+		);
+		expect(js).not.toContain(
+			'../../packages/ui/react/dist/agent/agent-context.js',
+		);
+	});
+
 	it('produces dist/styles.css with Tailwind utilities', () => {
 		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
 
