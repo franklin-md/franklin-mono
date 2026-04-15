@@ -9,22 +9,14 @@ import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
-import { createFolderScopedFilesystem } from '@franklin/lib';
+import type { AbsolutePath } from '@franklin/lib';
 import os from 'node:os';
 import { SandboxedTerminal } from './sandboxed-terminal.js';
 import { openExternal } from './open-external.js';
 import { createOAuthFlow } from './auth/create-flow.js';
 
-type Args = {
-	appDir?: string;
-};
-
-export function createNodePlatform(args: Args = {}): Platform {
-	const appDir = args.appDir ?? os.homedir();
-	const filesystem = createFolderScopedFilesystem(
-		appDir,
-		createNodeFilesystem(),
-	);
+export function createNodePlatform(): Platform {
+	const filesystem = createNodeFilesystem();
 	const ai = {
 		getOAuthProviders: async () => {
 			return getOAuthProviders()
@@ -54,13 +46,16 @@ export function createNodePlatform(args: Args = {}): Platform {
 						await previous.setNetworkConfig(cfg.netConfig);
 						return previous;
 					}
-					const terminal = new SandboxedTerminal(appDir, cfg);
+					// TODO: SandboxedTerminal needs appDir for deny-write paths.
+					// This should come from the session/agent context, not the platform.
+					const terminal = new SandboxedTerminal('/' as AbsolutePath, cfg);
 					await terminal.initialize();
 					return terminal;
 				},
 				configureWeb: async (netConfig) => createWeb(netConfig),
 			}),
 		filesystem,
+		getHome: async () => os.homedir(),
 		openExternal,
 		// TODO: Sandbox
 	};

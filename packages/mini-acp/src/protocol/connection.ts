@@ -1,4 +1,8 @@
-import { bindClient, bindServer, type PeerBinding } from '@franklin/transport';
+import {
+	bindJsonRpcClient,
+	bindJsonRpcServer,
+	type PeerBinding,
+} from '@franklin/lib/transport';
 
 import type {
 	MuClient,
@@ -27,7 +31,7 @@ export type AgentBinding = PeerBinding<MuAgent, MuClient>;
  * and start message dispatch.
  */
 export function createClientConnection(duplex: ClientProtocol): ClientBinding {
-	return bindClient({
+	return bindJsonRpcClient({
 		duplex,
 		server: muServerDescriptor,
 		client: muClientDescriptor,
@@ -46,7 +50,7 @@ export function createClientConnection(duplex: ClientProtocol): ClientBinding {
  * setContext, prompt, cancel) and start message dispatch.
  */
 export function createAgentConnection(duplex: AgentProtocol): AgentBinding {
-	return bindServer({
+	return bindJsonRpcServer({
 		duplex,
 		server: muServerDescriptor,
 		client: muClientDescriptor,

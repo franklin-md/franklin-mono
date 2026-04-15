@@ -11,11 +11,15 @@
 		"./styles/*": "./src/styles/*"
 	},
 	"scripts": {
-		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc -b tsconfig.json --pretty false",
-		"test": "vitest run --passWithNoTests"
+		"build": "tsc -b tsconfig.build.json",
+		"typecheck": "tsc -b tsconfig.build.json --pretty false",
+		"test": "vitest run --passWithNoTests",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build"
 	},
 	"dependencies": {
+		"@fontsource-variable/geist-mono": "^5.2.7",
+		"@fontsource-variable/inter": "^5.2.8",
 		"@franklin/extensions": "*",
 		"@franklin/mini-acp": "*",
 		"@franklin/react": "*",
@@ -43,7 +47,14 @@
 		"react-dom": "^18.3.1 || ^19.0.0"
 	},
 	"devDependencies": {
+		"@storybook/addon-docs": "^10.2.19",
+		"@storybook/react-vite": "^10.2.19",
+		"@tailwindcss/vite": "^4.1.4",
 		"@testing-library/react": "^15.0.7",
-		"jsdom": "^28.1.0"
+		"@types/react": "^18.3.0",
+		"@types/react-dom": "^18.3.0",
+		"jsdom": "^28.1.0",
+		"storybook": "^10.2.19",
+		"tailwindcss": "^4.1.4"
 	}
 }

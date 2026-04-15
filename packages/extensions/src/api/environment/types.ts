@@ -1,4 +1,5 @@
 import type {
+	AbsolutePath,
 	Filesystem,
 	FilesystemPermissions,
 	NetworkPermissions,
@@ -8,7 +9,7 @@ import type {
 } from '@franklin/lib';
 
 export interface FilesystemConfig {
-	cwd: string;
+	cwd: AbsolutePath;
 	permissions: FilesystemPermissions;
 }
 

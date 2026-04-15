@@ -1,11 +1,11 @@
 /*
- * Tailwind theme tokens.
+ * Shared Franklin UI styles with Obsidian-specific theme bindings.
  *
- * Imports the shared token mapping from @franklin/ui, then overrides
- * font declarations to use Obsidian's theme fonts.
+ * Imports the shared non-theme Franklin bundle, then overrides the font
+ * declarations so the UI follows the active Obsidian theme.
  */
 
-@import '@franklin/ui/styles/theme-tokens.css';
+@import '@franklin/ui/styles/franklin-core.css';
 
 @theme inline {
 	/* ── Fonts — use Obsidian's theme fonts ───────────────── */
