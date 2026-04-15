@@ -1,14 +1,18 @@
 import type { Platform } from '@franklin/agent/browser';
 import { Plugin } from 'obsidian';
 
+import { DiffController } from './diff/diff-controller.js';
 import { createObsidianPlatform } from './platform/index.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
 
 export default class FranklinPlugin extends Plugin {
 	platform!: Platform;
+	private diffController!: DiffController;
 
 	async onload() {
 		this.platform = createObsidianPlatform(this.app);
+		this.diffController = new DiffController(this);
+		this.diffController.onload();
 
 		this.registerView(VIEW_TYPE, (leaf) => {
 			return new FranklinView(leaf);
@@ -30,6 +34,7 @@ export default class FranklinPlugin extends Plugin {
 	}
 
 	onunload() {
+		this.diffController.onunload();
 		console.log('Franklin placeholder plugin unloaded');
 	}
 

@@ -43,6 +43,9 @@
 	},
 	"dependencies": {
 		"@anthropic-ai/sandbox-runtime": "^0.0.46",
+		"@codemirror/commands": "github:codemirror/commands",
+		"@codemirror/state": "github:codemirror/state",
+		"diff": "^9.0.0",
 		"jsdom": "^29.0.2"
 	}
 }
