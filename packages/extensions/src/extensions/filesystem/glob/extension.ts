@@ -8,8 +8,11 @@ export function globExtension(): Extension<CoreAPI & EnvironmentAPI> {
 		const env = api.getEnvironment();
 
 		api.registerTool(globSpec, async ({ pattern, options }) => {
+			const rootDir = options.root_dir
+				? await env.filesystem.resolve(options.root_dir)
+				: undefined;
 			const files = await env.filesystem.glob(pattern, {
-				root_dir: options.root_dir,
+				root_dir: rootDir,
 				ignore: options.exclude,
 				limit: options.limit,
 			});

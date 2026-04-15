@@ -2,6 +2,8 @@ import type { SessionState, StoreSnapshot } from '@franklin/extensions';
 import {
 	createFilePersistence,
 	DebouncedPersister,
+	joinAbsolute,
+	type AbsolutePath,
 	type Filesystem,
 	type Persister,
 } from '@franklin/lib';
@@ -15,14 +17,17 @@ import {
  *   {dir}/store/{ref}.json
  */
 export function createPersistence<S extends SessionState>(
-	dir: string,
+	dir: AbsolutePath,
 	fs: Filesystem,
 ): { session: Persister<S>; store: Persister<StoreSnapshot> } {
 	return {
 		session: new DebouncedPersister(
-			createFilePersistence<S>(`${dir}/sessions`, fs),
+			createFilePersistence<S>(joinAbsolute(dir, 'sessions'), fs),
 			500,
 		),
-		store: createFilePersistence<StoreSnapshot>(`${dir}/store`, fs),
+		store: createFilePersistence<StoreSnapshot>(
+			joinAbsolute(dir, 'store'),
+			fs,
+		),
 	};
 }

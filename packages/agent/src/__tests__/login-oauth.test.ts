@@ -1,5 +1,5 @@
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
-import type { Filesystem } from '@franklin/lib';
+import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AuthManager } from '../auth/manager.js';
@@ -33,7 +33,9 @@ function createFilesystem(): Filesystem {
 		deleteFile: vi.fn(async (path: string) => {
 			files.delete(path);
 		}),
-		resolve: vi.fn(async (...paths: string[]) => paths.join('/')),
+		resolve: vi.fn(
+			async (...paths: string[]) => paths.join('/') as AbsolutePath,
+		),
 	};
 }
 

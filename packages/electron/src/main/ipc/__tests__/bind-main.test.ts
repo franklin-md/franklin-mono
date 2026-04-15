@@ -1,5 +1,5 @@
 import type { WebContents } from 'electron';
-import type { Filesystem } from '@franklin/lib';
+import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -51,7 +51,7 @@ function createEnvironment(label: string) {
 			},
 			config: async () => ({
 				fsConfig: {
-					cwd: '/tmp',
+					cwd: '/tmp' as AbsolutePath,
 					permissions: { allowRead: ['**'], allowWrite: ['**'] },
 				},
 				netConfig: { allowedDomains: [], deniedDomains: [] },
@@ -76,7 +76,8 @@ function createFilesystem(label: string): Filesystem {
 		exists: async () => label === 'a',
 		glob: async () => [],
 		deleteFile: async () => {},
-		resolve: async (...paths: string[]) => paths[paths.length - 1]!,
+		resolve: async (...paths: string[]) =>
+			paths[paths.length - 1]! as AbsolutePath,
 	};
 }
 
@@ -264,7 +265,7 @@ describe('bindMain', () => {
 			}
 			async deleteFile() {}
 			async resolve(...paths: string[]) {
-				return paths[paths.length - 1]!;
+				return paths[paths.length - 1]! as AbsolutePath;
 			}
 		}
 
@@ -297,7 +298,7 @@ describe('bindMain', () => {
 							},
 							config: async () => ({
 								fsConfig: {
-									cwd: '/tmp',
+									cwd: '/tmp' as AbsolutePath,
 									permissions: { allowRead: ['**'], allowWrite: ['**'] },
 								},
 								netConfig: { allowedDomains: [], deniedDomains: [] },

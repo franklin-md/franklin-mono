@@ -1,5 +1,5 @@
 import type { WebContents } from 'electron';
-import type { Filesystem } from '@franklin/lib';
+import type { AbsolutePath, Filesystem } from '@franklin/lib';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -40,7 +40,8 @@ function createFilesystem(): Filesystem {
 		exists: async () => true,
 		glob: async () => [],
 		deleteFile: noop,
-		resolve: async (...paths: string[]) => paths[paths.length - 1]!,
+		resolve: async (...paths: string[]) =>
+			paths[paths.length - 1]! as AbsolutePath,
 	};
 }
 
@@ -84,7 +85,7 @@ describe('initializeMain', () => {
 						},
 						config: async () => ({
 							fsConfig: {
-								cwd: '/tmp',
+								cwd: '/tmp' as AbsolutePath,
 								permissions: { allowRead: ['**'], allowWrite: ['**'] },
 							},
 							netConfig: { allowedDomains: [], deniedDomains: [] },

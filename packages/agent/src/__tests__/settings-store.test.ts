@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { Filesystem } from '@franklin/lib';
+import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import type { AppSettings } from '../settings/types.js';
 import {
 	createSettings,

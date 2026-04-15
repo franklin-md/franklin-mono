@@ -16,7 +16,8 @@ export function writeExtension(): Extension<
 		const file = createFileControl(api.useStore(fileKey));
 
 		api.registerTool(writeFileSpec, async ({ path, content }) => {
-			await fs.writeFile(path, content);
+			const absPath = await fs.resolve(path);
+			await fs.writeFile(absPath, content);
 			await file.markFileRead(fs, path, content);
 			return 'ok';
 		});

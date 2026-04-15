@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import ignore from 'ignore';
-import type { Filesystem } from './types.js';
+import { toAbsolutePath } from './types.js';
+import type { AbsolutePath, Filesystem } from './types.js';
 
 /**
  * Configuration for filesystem access filtering.
@@ -38,7 +39,7 @@ export function createFilteredFilesystem(
 	const isReadable = createMatcher(filter.allowRead);
 	const isWritable = createMatcher(filter.allowWrite);
 
-	function assertReadable(absolutePath: string): void {
+	function assertReadable(absolutePath: AbsolutePath): void {
 		// Strip leading slash for ignore matching (it expects relative paths)
 		const rel = absolutePath.slice(1);
 		if (!isReadable(rel)) {
@@ -46,16 +47,16 @@ export function createFilteredFilesystem(
 		}
 	}
 
-	function assertWritable(absolutePath: string): void {
+	function assertWritable(absolutePath: AbsolutePath): void {
 		const rel = absolutePath.slice(1);
 		if (!isWritable(rel)) {
 			throw new Error(`Write access denied: ${absolutePath}`);
 		}
 	}
 
-	function filterReadable(dir: string, entries: string[]): string[] {
+	function filterReadable(dir: AbsolutePath, entries: string[]): string[] {
 		return entries.filter((entry) => {
-			const abs = path.join(dir, entry);
+			const abs = toAbsolutePath(path.join(dir, entry));
 			const rel = abs.slice(1);
 			return isReadable(rel);
 		});
@@ -106,7 +107,9 @@ export function createFilteredFilesystem(
 			const results = await inner.glob(pattern, options);
 			// Glob results are relative to options.root_dir — make absolute to check
 			return results.filter((entry) => {
-				const abs = path.resolve(options.root_dir ?? '.', entry);
+				const abs = toAbsolutePath(
+					path.resolve(options.root_dir ?? '.', entry),
+				);
 				const rel = abs.slice(1);
 				return isReadable(rel);
 			});

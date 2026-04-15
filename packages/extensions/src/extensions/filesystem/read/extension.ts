@@ -15,7 +15,8 @@ export function readExtension(): Extension<
 		const file = createFileControl(api.useStore(fileKey));
 
 		api.registerTool(readFileSpec, async ({ path, limit, offset }) => {
-			const bytes = await fs.readFile(path);
+			const absPath = await fs.resolve(path);
+			const bytes = await fs.readFile(absPath);
 			await file.markFileRead(fs, path, bytes);
 
 			const lines = new TextDecoder().decode(bytes).split('\n');

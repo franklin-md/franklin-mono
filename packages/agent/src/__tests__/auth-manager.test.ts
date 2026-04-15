@@ -1,5 +1,5 @@
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
-import type { Filesystem } from '@franklin/lib';
+import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthManager } from '../auth/manager.js';
 import { OAuthFlow } from '../auth/oauth-flow.js';
@@ -32,7 +32,9 @@ function createFilesystem(): Filesystem {
 		deleteFile: vi.fn(async (path: string) => {
 			files.delete(path);
 		}),
-		resolve: vi.fn(async (...paths: string[]) => paths.join('/')),
+		resolve: vi.fn(
+			async (...paths: string[]) => paths.join('/') as AbsolutePath,
+		),
 	};
 }
 
@@ -106,7 +108,7 @@ describe('AuthManager', () => {
 	it('restores persisted entries without writing them back during hydration', async () => {
 		const filesystem = createFilesystem();
 		await filesystem.writeFile(
-			DEFAULT_AUTH_PATH,
+			DEFAULT_AUTH_PATH as AbsolutePath,
 			JSON.stringify({
 				anthropic: {
 					apiKey: {
@@ -140,7 +142,7 @@ describe('AuthManager', () => {
 	it('does not emit auth change events during restore', async () => {
 		const filesystem = createFilesystem();
 		await filesystem.writeFile(
-			DEFAULT_AUTH_PATH,
+			DEFAULT_AUTH_PATH as AbsolutePath,
 			JSON.stringify({
 				anthropic: {
 					apiKey: {
