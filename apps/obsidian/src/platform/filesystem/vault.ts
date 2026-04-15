@@ -1,9 +1,10 @@
 import path from 'node:path';
 
 import { encode } from '@franklin/lib';
-import type { Filesystem, FileStat } from '@franklin/lib';
+import type { AbsolutePath, Filesystem, FileStat } from '@franklin/lib';
 import { type Vault, normalizePath } from 'obsidian';
 
+import { getVaultAbsolutePath } from '../../utils/obsidian/path.js';
 import { isFile, isFolder } from '../../utils/obsidian/type-guards.js';
 
 function toArrayBuffer(data: string | Uint8Array): ArrayBuffer {
@@ -13,49 +14,52 @@ function toArrayBuffer(data: string | Uint8Array): ArrayBuffer {
 	return copy;
 }
 
-function assertFilePath(path: string): string {
-	const normalized = normalizePath(path);
-	if (normalized === '') throw new Error(`EISDIR: ${path}`);
-	return normalized;
+function toVaultPath(vaultRoot: string, absolutePath: AbsolutePath): string {
+	return normalizePath(path.relative(vaultRoot, absolutePath));
 }
 
-export function createVaultFilesystem(vault: Vault): Filesystem {
-	return {
-		async resolve(...paths) {
-			return normalizePath(path.posix.join(...paths));
-		},
+function assertFilePath(vaultPath: string): string {
+	if (vaultPath === '') throw new Error(`EISDIR: ${vaultPath}`);
+	return vaultPath;
+}
 
-		async readFile(path) {
-			const normalized = assertFilePath(path);
-			const file = vault.getFileByPath(normalized);
-			if (!file) throw new Error(`ENOENT: ${path}`);
+export type VaultFilesystem = Omit<Filesystem, 'resolve' | 'glob'>;
+
+export function createVaultFilesystem(vault: Vault): VaultFilesystem {
+	const vaultRoot = getVaultAbsolutePath(vault);
+
+	return {
+		async readFile(p) {
+			const vaultPath = assertFilePath(toVaultPath(vaultRoot, p));
+			const file = vault.getFileByPath(vaultPath);
+			if (!file) throw new Error(`ENOENT: ${p}`);
 			return new Uint8Array(await vault.readBinary(file));
 		},
 
-		async writeFile(path, content) {
-			const normalized = assertFilePath(path);
-			const existing = vault.getAbstractFileByPath(normalized);
+		async writeFile(p, content) {
+			const vaultPath = assertFilePath(toVaultPath(vaultRoot, p));
+			const existing = vault.getAbstractFileByPath(vaultPath);
 			const data = toArrayBuffer(content);
 
 			if (!existing) {
-				await vault.createBinary(normalized, data);
+				await vault.createBinary(vaultPath, data);
 				return;
 			}
 
-			if (!isFile(existing)) throw new Error(`EISDIR: ${path}`);
+			if (!isFile(existing)) throw new Error(`EISDIR: ${p}`);
 			await vault.modifyBinary(existing, data);
 		},
 
-		async mkdir(path, options) {
-			const normalized = normalizePath(path);
-			if (normalized === '') return;
+		async mkdir(p, options) {
+			const vaultPath = toVaultPath(vaultRoot, p);
+			if (vaultPath === '') return;
 
 			if (!options?.recursive) {
-				await vault.createFolder(normalized);
+				await vault.createFolder(vaultPath);
 				return;
 			}
 
-			const parts = normalized.split('/');
+			const parts = vaultPath.split('/');
 			let current = '';
 			for (const part of parts) {
 				current = current ? `${current}/${part}` : part;
@@ -68,47 +72,43 @@ export function createVaultFilesystem(vault: Vault): Filesystem {
 			}
 		},
 
-		async access(path) {
-			if (!(await this.exists(path))) throw new Error(`ENOENT: ${path}`);
+		async access(p) {
+			if (!(await this.exists(p))) throw new Error(`ENOENT: ${p}`);
 		},
 
-		async stat(path): Promise<FileStat> {
-			const normalized = normalizePath(path);
-			if (normalized === '') {
+		async stat(p): Promise<FileStat> {
+			const vaultPath = toVaultPath(vaultRoot, p);
+			if (vaultPath === '') {
 				return { isFile: false, isDirectory: true };
 			}
 
-			const file = vault.getAbstractFileByPath(normalized);
-			if (!file) throw new Error(`ENOENT: ${path}`);
+			const file = vault.getAbstractFileByPath(vaultPath);
+			if (!file) throw new Error(`ENOENT: ${p}`);
 			return {
 				isFile: isFile(file),
 				isDirectory: isFolder(file),
 			};
 		},
 
-		async readdir(path) {
-			const normalized = normalizePath(path);
+		async readdir(p) {
+			const vaultPath = toVaultPath(vaultRoot, p);
 			const folder =
-				normalized === '' ? vault.getRoot() : vault.getFolderByPath(normalized);
-			if (!folder) throw new Error(`ENOENT: ${path}`);
+				vaultPath === '' ? vault.getRoot() : vault.getFolderByPath(vaultPath);
+			if (!folder) throw new Error(`ENOENT: ${p}`);
 			return folder.children.map((child) => child.name);
 		},
 
-		async exists(path) {
-			const normalized = normalizePath(path);
-			if (normalized === '') return true;
-			return vault.getAbstractFileByPath(normalized) !== null;
+		async exists(p) {
+			const vaultPath = toVaultPath(vaultRoot, p);
+			if (vaultPath === '') return true;
+			return vault.getAbstractFileByPath(vaultPath) !== null;
 		},
 
-		async glob() {
-			throw new Error('Visible vault filesystem does not implement glob');
-		},
-
-		async deleteFile(path) {
-			const normalized = assertFilePath(path);
-			const file = vault.getAbstractFileByPath(normalized);
-			if (!file) throw new Error(`ENOENT: ${path}`);
-			if (!isFile(file)) throw new Error(`EISDIR: ${path}`);
+		async deleteFile(p) {
+			const vaultPath = assertFilePath(toVaultPath(vaultRoot, p));
+			const file = vault.getAbstractFileByPath(vaultPath);
+			if (!file) throw new Error(`ENOENT: ${p}`);
+			if (!isFile(file)) throw new Error(`EISDIR: ${p}`);
 			await vault.delete(file);
 		},
 	};

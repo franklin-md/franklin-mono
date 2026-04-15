@@ -13,8 +13,11 @@
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],
 	"references": [
-		{ "path": "../../packages/lib/core" },
+		{ "path": "../../packages/lib" },
 		{ "path": "../../packages/extensions" },
-		{ "path": "../../packages/agent" }
+		{ "path": "../../packages/agent" },
+		{ "path": "../../packages/node" },
+		{ "path": "../../packages/ui/react" },
+		{ "path": "../shared/ui" }
 	]
 }

@@ -7,7 +7,8 @@ import {
 	type TFolder,
 	type TAbstractFile,
 } from 'obsidian';
-import type { Filesystem } from '@franklin/lib';
+import { toAbsolutePath } from '@franklin/lib';
+import type { AbsolutePath, Filesystem } from '@franklin/lib';
 
 import { createObsidianFilesystem } from '../platform/filesystem/obsidian.js';
 import {
@@ -95,8 +96,9 @@ function createMockVault(options?: {
 
 function mockHostFs(): Filesystem {
 	return {
-		resolve: vi.fn(async (...paths: string[]) =>
-			path.resolve(...(paths as [string, ...string[]])),
+		resolve: vi.fn(
+			async (...paths: string[]) =>
+				path.resolve(...(paths as [string, ...string[]])) as AbsolutePath,
 		),
 		readFile: vi.fn().mockResolvedValue(new Uint8Array()),
 		writeFile: vi.fn().mockResolvedValue(undefined),
@@ -113,35 +115,31 @@ function mockHostFs(): Filesystem {
 describe('createObsidianPathPolicy', () => {
 	it('routes visible vault paths to the vault backend', () => {
 		const policy = createObsidianPathPolicy('/vault', '.obsidian');
-		expect(policy.classifyPath('/vault/notes/hello.md')).toEqual({
-			kind: 'vault',
-			path: 'notes/hello.md',
-		});
+		expect(
+			policy.classifyPath(toAbsolutePath('/vault/notes/hello.md')),
+		).toEqual({ kind: 'vault' });
 	});
 
 	it('routes hidden paths inside the vault to the backup backend', () => {
 		const policy = createObsidianPathPolicy('/vault', '.obsidian');
-		expect(policy.classifyPath('/vault/.hidden/secret.txt')).toEqual({
-			kind: 'backup',
-			path: '/vault/.hidden/secret.txt',
-		});
+		expect(
+			policy.classifyPath(toAbsolutePath('/vault/.hidden/secret.txt')),
+		).toEqual({ kind: 'backup' });
 	});
 
 	it('routes config paths to the backup backend even when configDir is not hidden', () => {
 		const policy = createObsidianPathPolicy('/vault', 'config');
 		expect(
-			policy.classifyPath('/vault/config/plugins/franklin/data.json'),
-		).toEqual({
-			kind: 'backup',
-			path: '/vault/config/plugins/franklin/data.json',
-		});
+			policy.classifyPath(
+				toAbsolutePath('/vault/config/plugins/franklin/data.json'),
+			),
+		).toEqual({ kind: 'backup' });
 	});
 
 	it('routes outside-vault paths to the backup backend', () => {
 		const policy = createObsidianPathPolicy('/vault', '.obsidian');
-		expect(policy.classifyPath('/tmp/data.json')).toEqual({
+		expect(policy.classifyPath(toAbsolutePath('/tmp/data.json'))).toEqual({
 			kind: 'backup',
-			path: '/tmp/data.json',
 		});
 	});
 
@@ -153,11 +151,10 @@ describe('createObsidianPathPolicy', () => {
 		const policy = createObsidianPathPolicyFromVault(vault);
 
 		expect(
-			policy.classifyPath('/vault/config/plugins/franklin/data.json'),
-		).toEqual({
-			kind: 'backup',
-			path: '/vault/config/plugins/franklin/data.json',
-		});
+			policy.classifyPath(
+				toAbsolutePath('/vault/config/plugins/franklin/data.json'),
+			),
+		).toEqual({ kind: 'backup' });
 	});
 });
 
@@ -182,7 +179,7 @@ describe('createVisibleVaultFilesystem', () => {
 		vi.mocked(vault.readBinary).mockResolvedValue(content.buffer);
 		const fs = createVaultFilesystem(vault);
 
-		const result = await fs.readFile('notes/hello.md');
+		const result = await fs.readFile(toAbsolutePath('/vault/notes/hello.md'));
 
 		expect(vault.readBinary).toHaveBeenCalledWith(noteFile);
 		expect(result).toEqual(content);
@@ -191,7 +188,7 @@ describe('createVisibleVaultFilesystem', () => {
 	it('modifies an existing visible file through Vault.modifyBinary', async () => {
 		const fs = createVaultFilesystem(vault);
 
-		await fs.writeFile('notes/hello.md', 'updated');
+		await fs.writeFile(toAbsolutePath('/vault/notes/hello.md'), 'updated');
 
 		expect(vault.modifyBinary).toHaveBeenCalledWith(
 			noteFile,
@@ -203,7 +200,7 @@ describe('createVisibleVaultFilesystem', () => {
 	it('creates a new visible file through Vault.createBinary', async () => {
 		const fs = createVaultFilesystem(vault);
 
-		await fs.writeFile('notes/new.md', 'new file');
+		await fs.writeFile(toAbsolutePath('/vault/notes/new.md'), 'new file');
 
 		expect(vault.createBinary).toHaveBeenCalledWith(
 			'notes/new.md',
@@ -215,7 +212,9 @@ describe('createVisibleVaultFilesystem', () => {
 	it('creates folders recursively through Vault.createFolder', async () => {
 		const fs = createVaultFilesystem(vault);
 
-		await fs.mkdir('notes/sub/folder', { recursive: true });
+		await fs.mkdir(toAbsolutePath('/vault/notes/sub/folder'), {
+			recursive: true,
+		});
 
 		expect(vault.createFolder).toHaveBeenCalledWith('notes/sub');
 		expect(vault.createFolder).toHaveBeenCalledWith('notes/sub/folder');
@@ -224,7 +223,7 @@ describe('createVisibleVaultFilesystem', () => {
 
 	it('returns root as a directory in stat', async () => {
 		const fs = createVaultFilesystem(vault);
-		await expect(fs.stat('')).resolves.toEqual({
+		await expect(fs.stat(toAbsolutePath('/vault'))).resolves.toEqual({
 			isFile: false,
 			isDirectory: true,
 		});
@@ -232,23 +231,27 @@ describe('createVisibleVaultFilesystem', () => {
 
 	it('lists folder contents through the vault tree', async () => {
 		const fs = createVaultFilesystem(vault);
-		await expect(fs.readdir('notes')).resolves.toEqual(['hello.md']);
+		await expect(fs.readdir(toAbsolutePath('/vault/notes'))).resolves.toEqual([
+			'hello.md',
+		]);
 	});
 
 	it('reports root exists', async () => {
 		const fs = createVaultFilesystem(vault);
-		await expect(fs.exists('')).resolves.toBe(true);
+		await expect(fs.exists(toAbsolutePath('/vault'))).resolves.toBe(true);
 	});
 
 	it('deletes files through Vault.delete', async () => {
 		const fs = createVaultFilesystem(vault);
-		await fs.deleteFile('notes/hello.md');
+		await fs.deleteFile(toAbsolutePath('/vault/notes/hello.md'));
 		expect(vault.delete).toHaveBeenCalledWith(noteFile);
 	});
 
 	it('rejects deleting a folder through deleteFile', async () => {
 		const fs = createVaultFilesystem(vault);
-		await expect(fs.deleteFile('notes')).rejects.toThrow('EISDIR');
+		await expect(fs.deleteFile(toAbsolutePath('/vault/notes'))).rejects.toThrow(
+			'EISDIR',
+		);
 	});
 });
 
@@ -281,7 +284,7 @@ describe('createObsidianFilesystem', () => {
 		vi.mocked(vault.readBinary).mockResolvedValue(content.buffer);
 		const fs = createObsidianFilesystem(vault, hostFs);
 
-		const result = await fs.readFile('/vault/notes/hello.md');
+		const result = await fs.readFile(toAbsolutePath('/vault/notes/hello.md'));
 
 		expect(vault.readBinary).toHaveBeenCalledWith(noteFile);
 		expect(hostFs.readFile).not.toHaveBeenCalled();
@@ -290,7 +293,9 @@ describe('createObsidianFilesystem', () => {
 
 	it('routes config directory reads through the backup filesystem', async () => {
 		const fs = createObsidianFilesystem(vault, hostFs);
-		await fs.readFile('/vault/.obsidian/plugins/franklin/data.json');
+		await fs.readFile(
+			toAbsolutePath('/vault/.obsidian/plugins/franklin/data.json'),
+		);
 		expect(hostFs.readFile).toHaveBeenCalledWith(
 			'/vault/.obsidian/plugins/franklin/data.json',
 		);
@@ -298,7 +303,7 @@ describe('createObsidianFilesystem', () => {
 
 	it('routes hidden in-vault writes through the backup filesystem', async () => {
 		const fs = createObsidianFilesystem(vault, hostFs);
-		await fs.writeFile('/vault/.hidden/cache.json', 'secret');
+		await fs.writeFile(toAbsolutePath('/vault/.hidden/cache.json'), 'secret');
 		expect(hostFs.writeFile).toHaveBeenCalledWith(
 			'/vault/.hidden/cache.json',
 			'secret',
@@ -307,7 +312,7 @@ describe('createObsidianFilesystem', () => {
 
 	it('routes visible writes through the visible vault backend', async () => {
 		const fs = createObsidianFilesystem(vault, hostFs);
-		await fs.writeFile('/vault/notes/new.md', 'visible');
+		await fs.writeFile(toAbsolutePath('/vault/notes/new.md'), 'visible');
 		expect(vault.createBinary).toHaveBeenCalledWith(
 			'notes/new.md',
 			expect.any(ArrayBuffer),
@@ -317,19 +322,23 @@ describe('createObsidianFilesystem', () => {
 
 	it('routes vault root readdir through the visible vault backend', async () => {
 		const fs = createObsidianFilesystem(vault, hostFs);
-		await expect(fs.readdir('/vault')).resolves.toEqual(['notes']);
+		await expect(fs.readdir(toAbsolutePath('/vault'))).resolves.toEqual([
+			'notes',
+		]);
 		expect(hostFs.readdir).not.toHaveBeenCalled();
 	});
 
 	it('routes outside-vault stat through the backup filesystem', async () => {
 		const fs = createObsidianFilesystem(vault, hostFs);
-		await fs.stat('/tmp/file.txt');
+		await fs.stat(toAbsolutePath('/tmp/file.txt'));
 		expect(hostFs.stat).toHaveBeenCalledWith('/tmp/file.txt');
 	});
 
 	it('routes visible exists through the visible vault backend', async () => {
 		const fs = createObsidianFilesystem(vault, hostFs);
-		await expect(fs.exists('/vault/notes/hello.md')).resolves.toBe(true);
+		await expect(
+			fs.exists(toAbsolutePath('/vault/notes/hello.md')),
+		).resolves.toBe(true);
 		expect(hostFs.exists).not.toHaveBeenCalled();
 	});
 
@@ -338,7 +347,7 @@ describe('createObsidianFilesystem', () => {
 		const fs = createObsidianFilesystem(vault, hostFs);
 
 		const result = await fs.glob('*.md', {
-			root_dir: '/vault/notes',
+			root_dir: toAbsolutePath('/vault/notes'),
 			limit: 10,
 		});
 
@@ -351,7 +360,7 @@ describe('createObsidianFilesystem', () => {
 
 	it('routes config directory delete through the backup filesystem', async () => {
 		const fs = createObsidianFilesystem(vault, hostFs);
-		await fs.deleteFile('/vault/.obsidian/workspace.json');
+		await fs.deleteFile(toAbsolutePath('/vault/.obsidian/workspace.json'));
 		expect(hostFs.deleteFile).toHaveBeenCalledWith(
 			'/vault/.obsidian/workspace.json',
 		);

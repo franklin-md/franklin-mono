@@ -1,3 +1,1 @@
-export type ObsidianPathTarget =
-	| { kind: 'vault'; path: string }
-	| { kind: 'backup'; path: string };
+export type ObsidianPathTarget = { kind: 'vault' } | { kind: 'backup' };

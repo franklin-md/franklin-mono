@@ -1,12 +1,13 @@
 import path from 'node:path';
+import type { AbsolutePath } from '@franklin/lib';
 import { normalizePath } from 'obsidian';
 import type { Vault } from 'obsidian';
 
 import { getVaultAbsolutePath } from '../../utils/obsidian/path.js';
-import type { ObsidianPathTarget } from './types';
+import type { ObsidianPathTarget } from './types.js';
 
 export type ObsidianPathPolicy = {
-	classifyPath(absolutePath: string): ObsidianPathTarget;
+	classifyPath(absolutePath: AbsolutePath): ObsidianPathTarget;
 };
 
 function isWithinRoot(root: string, candidate: string): boolean {
@@ -34,36 +35,26 @@ export function createObsidianPathPolicy(
 	);
 
 	return {
-		classifyPath(absolutePath: string): ObsidianPathTarget {
-			if (!path.isAbsolute(absolutePath)) {
-				return { kind: 'backup', path: absolutePath };
-			}
-
+		classifyPath(absolutePath: AbsolutePath): ObsidianPathTarget {
 			const normalizedAbsolutePath = path.normalize(absolutePath);
 			if (!isWithinRoot(normalizedVaultRoot, normalizedAbsolutePath)) {
-				return { kind: 'backup', path: normalizedAbsolutePath };
+				return { kind: 'backup' };
 			}
 
 			if (isWithinRoot(normalizedConfigRoot, normalizedAbsolutePath)) {
-				return { kind: 'backup', path: normalizedAbsolutePath };
+				return { kind: 'backup' };
 			}
 
 			const relativePath = path.relative(
 				normalizedVaultRoot,
 				normalizedAbsolutePath,
 			);
-			if (relativePath === '') {
-				return { kind: 'vault', path: '' };
-			}
 
 			if (hasHiddenSegment(relativePath)) {
-				return { kind: 'backup', path: normalizedAbsolutePath };
+				return { kind: 'backup' };
 			}
 
-			return {
-				kind: 'vault',
-				path: normalizePath(relativePath),
-			};
+			return { kind: 'vault' };
 		},
 	};
 }
