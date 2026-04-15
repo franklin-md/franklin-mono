@@ -24,29 +24,25 @@ In your app stylesheet:
 
 ```css
 @import 'tailwindcss';
-@import '@franklin/ui/styles/theme-tokens.css';
-@import '@franklin/ui/styles/utilities/prose-content.css';
-
-@source '../src/**/*.{ts,tsx}';
-@source '../node_modules/@franklin/ui';
+@import '@franklin/ui/styles/franklin-core.css';
 ```
 
 Notes:
 
 - `@source` paths are relative to the stylesheet that declares them.
-- Add a `@source` for `@franklin/ui` anywhere you consume the shared
-  components, otherwise Tailwind will not emit the classes used by the package.
+- `franklin-core.css` already scans the `@franklin/ui` source tree, so
+  consumers only need to add `@source` rules for their own app code when
+  Tailwind cannot discover them automatically.
 - If your app imports Tailwind in a different form, for example
   `tailwindcss/theme` plus `tailwindcss/utilities`, the same `@source` rule
   still applies.
 
 ### Theme Variables
 
-`@franklin/ui/styles/theme-tokens.css` maps app-defined CSS variables onto
-Tailwind tokens used by the components.
-`@franklin/ui/styles/utilities/prose-content.css` provides the shared
-rendered-text styling used by the conversation UI. Your app still needs to
-define the underlying variables, for example:
+`@franklin/ui/styles/franklin-core.css` bundles the shared token mapping,
+prose/content styles, markdown utility styles, and package `@source` scanning.
+Your app still needs to define the semantic CSS variables it consumes, for
+example:
 
 ```css
 :root {
@@ -86,12 +82,15 @@ Font variables are app-owned:
 If you want the default Franklin palette and typography, import:
 
 ```css
-@import '@franklin/ui/styles/franklin.css';
+@import '@franklin/ui/styles/franklin-core.css';
+@import '@franklin/ui/styles/franklin-theme.css';
 ```
 
-`franklin.css` composes the shared token mapping, shared markdown/rendered-text
-styles, and the default Franklin light/dark theme. `franklin-theme.css` is the
-Franklin theme layer for apps that want to compose the pieces manually.
+That is the default-theme composition used by the demo app and Storybook.
+
+For host-integrated surfaces such as Obsidian, import `franklin-core.css` and
+map the host theme variables onto Franklin's semantic variables instead of
+importing `franklin-theme.css`.
 
 ### Utility Styles
 
@@ -105,14 +104,14 @@ theme bundle, import the utility bundle:
 `styles/utilities/index.css` composes the shared prose/content styles together
 with the KaTeX and Streamdown integration in `styles/utilities/markdown.css`.
 Import `styles/utilities/prose-content.css` directly when you only want the
-shared prose/code styles without the third-party markdown layer.
+shared prose/code styles without the third-party markdown layer. These utility
+files do not scan `@franklin/ui`; `franklin-core.css` is the shared entry point
+that owns package `@source` scanning.
 
 ## Minimal Consumer Checklist
 
 - Import components from `@franklin/ui`.
-- Import `@franklin/ui/styles/theme-tokens.css`.
-- Add `@source '../node_modules/@franklin/ui';` to the app stylesheet.
-- Import `@franklin/ui/styles/utilities/prose-content.css` or
-  `@franklin/ui/styles/utilities/index.css` if you render shared conversation
-  text.
-- Define the CSS variables consumed by `theme-tokens.css`.
+- Import `@franklin/ui/styles/franklin-core.css`.
+- Import `@franklin/ui/styles/franklin-theme.css` if you want Franklin's
+  default theme, or define/map the semantic variables yourself.
+- Define the CSS variables consumed by `franklin-core.css`.
