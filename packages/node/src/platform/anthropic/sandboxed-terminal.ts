@@ -69,6 +69,7 @@ export class SandboxedTerminal implements Terminal {
 	}
 
 	async exec({ cmd, timeout }: TerminalInput) {
+		
 		// Wrap a command with sandbox restrictions
 		const sandboxedCommand = await SandboxManager.wrapWithSandbox(cmd);
 
