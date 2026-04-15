@@ -2,7 +2,6 @@ import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
 import { createObserver } from '@franklin/lib';
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
-import type { AbsolutePath } from '@franklin/lib';
 import type {
 	ApiKeyEntry,
 	AuthEntries,
@@ -12,18 +11,15 @@ import type {
 } from './types.js';
 import type { OAuthFlow } from './oauth-flow.js';
 import type { Platform } from '../platform.js';
-import { createAuthStore, type AuthStore } from './store.js';
+import type { AuthStore } from './store.js';
 
 export class AuthManager {
-	private readonly store: AuthStore;
 	private readonly observer = createObserver<[string, AuthEntry | undefined]>();
 
 	constructor(
 		private readonly platform: Platform,
-		appDir: AbsolutePath,
-	) {
-		this.store = createAuthStore(platform.filesystem, appDir);
-	}
+		private readonly store: AuthStore,
+	) {}
 
 	async restore(): Promise<void> {
 		await this.store.restore();

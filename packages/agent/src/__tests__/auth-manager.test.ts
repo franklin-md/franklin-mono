@@ -3,7 +3,7 @@ import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthManager } from '../auth/manager.js';
 import { OAuthFlow } from '../auth/oauth-flow.js';
-import { DEFAULT_AUTH_FILE } from '../auth/store.js';
+import { createAuthStore, DEFAULT_AUTH_FILE } from '../auth/store.js';
 import { joinAbsolute } from '@franklin/lib';
 import type { Platform } from '../platform.js';
 
@@ -75,7 +75,7 @@ describe('AuthManager', () => {
 				filesystem,
 				async () => new OAuthFlow(async () => credentials),
 			),
-			TEST_APP_DIR,
+			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 
 		const flow = await auth.flow('anthropic');
@@ -94,7 +94,7 @@ describe('AuthManager', () => {
 				filesystem,
 				async () => new OAuthFlow(async () => credentials),
 			),
-			TEST_APP_DIR,
+			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 
 		auth.setOAuthEntry('anthropic', {
@@ -131,7 +131,7 @@ describe('AuthManager', () => {
 				filesystem,
 				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
 			),
-			TEST_APP_DIR,
+			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 
 		await auth.restore();
@@ -165,7 +165,7 @@ describe('AuthManager', () => {
 				filesystem,
 				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
 			),
-			TEST_APP_DIR,
+			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 		const listener = vi.fn();
 		auth.onAuthChange(listener);
@@ -176,12 +176,13 @@ describe('AuthManager', () => {
 	});
 
 	it('emits auth change events for store mutations', async () => {
+		const filesystem = createFilesystem();
 		const auth = new AuthManager(
 			createPlatform(
-				createFilesystem(),
+				filesystem,
 				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
 			),
-			TEST_APP_DIR,
+			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 		const listener = vi.fn();
 		auth.onAuthChange(listener);
@@ -200,12 +201,13 @@ describe('AuthManager', () => {
 	});
 
 	it('emits provider removals as undefined entries', async () => {
+		const filesystem = createFilesystem();
 		const auth = new AuthManager(
 			createPlatform(
-				createFilesystem(),
+				filesystem,
 				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
 			),
-			TEST_APP_DIR,
+			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 		const listener = vi.fn();
 		auth.onAuthChange(listener);

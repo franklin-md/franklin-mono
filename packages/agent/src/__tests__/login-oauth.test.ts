@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AuthManager } from '../auth/manager.js';
 import { OAuthFlow } from '../auth/oauth-flow.js';
+import { createAuthStore } from '../auth/store.js';
 import type { OAuthLoginCallbacks } from '../auth/types.js';
 import type { Platform } from '../platform.js';
 
@@ -87,7 +88,10 @@ describe('AuthManager.loginOAuth', () => {
 			filesystem,
 			vi.fn(async () => flow),
 		);
-		const auth = new AuthManager(platform, '/test/app' as AbsolutePath);
+		const auth = new AuthManager(
+			platform,
+			createAuthStore(filesystem, '/test/app' as AbsolutePath),
+		);
 		const loginSpy = vi.spyOn(flow, 'login');
 		const disposeSpy = vi.spyOn(flow, 'dispose');
 		const onAuth = vi.fn();
