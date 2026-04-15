@@ -3,7 +3,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { FileIcon } from '../file-icon.js';
+import { FileIcon } from '../../src/components/file-icon.js';
 
 describe('FileIcon', () => {
 	it('inherits text color by default for react-icons entries', () => {

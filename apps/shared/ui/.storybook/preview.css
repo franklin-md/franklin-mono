@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+@import '../src/styles/franklin-core.css';
+@import '../src/styles/franklin-theme.css';
+
+@source "../src/**/*.{ts,tsx}";

@@ -3,7 +3,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { Favicon } from '../favicon.js';
+import { Favicon } from '../../src/components/favicon.js';
 
 describe('Favicon', () => {
 	it('renders an img with the correct src', () => {

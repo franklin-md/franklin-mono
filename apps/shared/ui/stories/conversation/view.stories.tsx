@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { ConversationView } from '@franklin/ui';
 import {
 	emptyConversation,
-	singleTurnSequence,
-	multiTurn,
-	thinkingTurnSequence,
 	markdownConversation,
+	multiTurn,
+	singleTurnSequence,
+	thinkingTurnSequence,
 } from '../fixtures.js';
+import { ConversationView } from '../../src/conversation/view.js';
 
 const meta = {
 	title: 'Conversation/ConversationView',

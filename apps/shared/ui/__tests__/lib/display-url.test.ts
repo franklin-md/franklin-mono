@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { displayUrl, faviconUrl } from '../display-url.js';
+import { displayUrl, faviconUrl } from '../../src/lib/display-url.js';
 
 describe('displayUrl', () => {
 	it('extracts hostname and path from a valid URL', () => {

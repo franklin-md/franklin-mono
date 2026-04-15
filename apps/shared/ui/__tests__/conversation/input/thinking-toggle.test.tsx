@@ -8,7 +8,7 @@ import type { ThinkingLevel } from '@franklin/mini-acp';
 import type { FranklinRuntime } from '@franklin/agent/browser';
 import { AgentProvider } from '@franklin/react';
 
-import { ThinkingToggle } from '../thinking-toggle.js';
+import { ThinkingToggle } from '../../../src/conversation/input/thinking-toggle.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
