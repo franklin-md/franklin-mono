@@ -35,7 +35,7 @@ export function computeHunks(oldContent: string, newContent: string): Hunk[] {
 	let i = 0;
 	while (i < changes.length) {
 		const c = changes[i];
-		if (c === undefined) break;
+		if (!c) break;
 		if (!c.added && !c.removed) {
 			newPos += c.value.length;
 			oldPos += c.value.length;
@@ -55,8 +55,7 @@ export function computeHunks(oldContent: string, newContent: string): Hunk[] {
 
 		while (i < changes.length) {
 			const ch = changes[i];
-			if (ch === undefined) break;
-			if (!ch.added && !ch.removed) break;
+			if (!ch || (!ch.added && !ch.removed)) break;
 			const lines = splitChunk(ch.value);
 			if (ch.removed) {
 				removedLines.push(...lines);
