@@ -152,7 +152,7 @@ describe('settings store reactivity', () => {
 		store.subscribe(listener);
 
 		// Returning the same draft keeps the store value unchanged.
-		store.set((draft) => draft);
+		store.set((draft: AppSettings) => draft);
 
 		expect(listener).not.toHaveBeenCalled();
 	});
