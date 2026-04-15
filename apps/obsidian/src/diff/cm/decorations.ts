@@ -1,14 +1,10 @@
-import type { EditorState, Text } from '@codemirror/state';
-import { type Range, StateField } from '@codemirror/state';
-import {
-	Decoration,
-	type DecorationSet,
-	EditorView,
-	ViewPlugin,
-} from '@codemirror/view';
+import type { EditorState, Range, Text } from '@codemirror/state';
+import { StateField } from '@codemirror/state';
+import type { DecorationSet } from '@codemirror/view';
+import { Decoration, EditorView, ViewPlugin } from '@codemirror/view';
 import type { Hunk } from '../compute-hunks.js';
 import { diffField, setHoveredHunkEffect } from './diff-field.js';
-import { DiffHunkWidget } from './react-widgets.js';
+import { DiffHunkActionsWidget, DiffHunkWidget } from './react-widgets.js';
 
 function buildDecorations(state: EditorState): DecorationSet {
 	const ds = state.field(diffField, false);
@@ -28,18 +24,25 @@ function buildDecorations(state: EditorState): DecorationSet {
 	for (const hunk of visible) {
 		addAddedLineDecorations(decorations, state.doc, hunk);
 
-		const shouldRenderWidget =
-			hunk.removedLines.length > 0 || hoveredHunkId === hunk.id;
-		if (!shouldRenderWidget) continue;
+		if (hunk.removedLines.length > 0) {
+			const { pos, side } = resolveAnchorPosition(state.doc, hunk);
+			decorations.push(
+				Decoration.widget({
+					widget: new DiffHunkWidget(hunk),
+					block: true,
+					side,
+				}).range(pos),
+			);
+		}
 
-		const { pos, side } = resolveAnchorPosition(state.doc, hunk);
-		decorations.push(
-			Decoration.widget({
-				widget: new DiffHunkWidget(hunk, hoveredHunkId === hunk.id),
-				block: true,
-				side,
-			}).range(pos),
-		);
+		if (hoveredHunkId === hunk.id) {
+			decorations.push(
+				Decoration.widget({
+					widget: new DiffHunkActionsWidget(hunk),
+					side: 1,
+				}).range(resolveActionPosition(state.doc, hunk, visible)),
+			);
+		}
 	}
 
 	return Decoration.set(decorations, true);
@@ -107,6 +110,43 @@ function resolveAnchorPosition(
 		return { pos: line.to, side: 1 };
 	}
 	return { pos: line.from, side: -1 };
+}
+
+function resolveActionPosition(
+	doc: Text,
+	hunk: Hunk,
+	visibleHunks: Hunk[],
+): number {
+	if (doc.length === 0) return 0;
+
+	if (hunk.addedLines.length > 0) {
+		const nextLine = doc.lineAt(Math.min(hunk.newTo, doc.length));
+		if (!isLineInAnotherHunk(doc, nextLine.from, hunk, visibleHunks)) {
+			return nextLine.from;
+		}
+
+		return doc.lineAt(Math.max(hunk.newTo - 1, hunk.newFrom)).from;
+	}
+
+	const lineNumber = clampLineNumber(hunk.anchor.lineIndex + 1, doc.lines);
+	return doc.line(lineNumber).from;
+}
+
+function isLineInAnotherHunk(
+	doc: Text,
+	pos: number,
+	currentHunk: Hunk,
+	hunks: Hunk[],
+): boolean {
+	return hunks.some((hunk) => {
+		if (hunk.id === currentHunk.id) return false;
+		if (hunk.addedLines.length > 0 && pos >= hunk.newFrom && pos < hunk.newTo) {
+			return true;
+		}
+		if (hunk.removedLines.length === 0) return false;
+
+		return pos === doc.lineAt(resolveAnchorPosition(doc, hunk).pos).from;
+	});
 }
 
 function clampLineNumber(lineNumber: number, maxLines: number): number {

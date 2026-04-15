@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import type { EditorView } from '@codemirror/view';
 import { WidgetType } from '@codemirror/view';
 import type { Hunk } from '../compute-hunks.js';
@@ -14,8 +15,10 @@ import {
 
 type HunkWidgetProps = {
 	hunk: Hunk;
-	showActions: boolean;
-	onHoverChange: (isHovered: boolean) => void;
+};
+
+type HunkActionsWidgetProps = {
+	hunkId: string;
 	onAccept: () => void;
 	onReject: () => void;
 };
@@ -29,21 +32,15 @@ type ToolbarWidgetProps = {
 export class DiffHunkWidget extends WidgetType {
 	private root: Root | null = null;
 
-	constructor(
-		private readonly hunk: Hunk,
-		private readonly showActions: boolean,
-	) {
+	constructor(private readonly hunk: Hunk) {
 		super();
 	}
 
 	eq(other: DiffHunkWidget): boolean {
-		return (
-			other.showActions === this.showActions &&
-			areHunksEqual(this.hunk, other.hunk)
-		);
+		return areHunksEqual(this.hunk, other.hunk);
 	}
 
-	toDOM(view: EditorView): HTMLElement {
+	toDOM(_view: EditorView): HTMLElement {
 		const dom = document.createElement('div');
 		dom.className = 'diff-plugin-widget-host';
 		dom.dataset.diffHunkId = this.hunk.id;
@@ -53,12 +50,72 @@ export class DiffHunkWidget extends WidgetType {
 		this.root.render(
 			createElement(HunkWidget, {
 				hunk: this.hunk,
-				showActions: this.showActions,
-				onHoverChange: (isHovered) => {
-					view.dispatch({
-						effects: setHoveredHunkEffect.of(isHovered ? this.hunk.id : null),
-					});
-				},
+			}),
+		);
+
+		return dom;
+	}
+
+	destroy(_dom: HTMLElement): void {
+		this.root?.unmount();
+		this.root = null;
+	}
+
+	ignoreEvent(): boolean {
+		return false;
+	}
+}
+
+function HunkWidget({ hunk }: HunkWidgetProps) {
+	const hasRemovedLines = hunk.removedLines.length > 0;
+
+	return createElement(
+		'section',
+		{
+			className: 'diff-plugin-widget',
+			'data-diff-hunk-id': hunk.id,
+			onMouseDown: stopReactMouseEvent,
+		},
+		hasRemovedLines
+			? createElement(
+					'div',
+					{ className: 'diff-plugin-removed-block' },
+					...hunk.removedLines.map((line, index) =>
+						createElement(
+							'div',
+							{
+								key: `${hunk.id}:${index}`,
+								className: 'diff-plugin-removed-line',
+							},
+							line.length === 0 ? '\u200b' : line,
+						),
+					),
+				)
+			: null,
+	);
+}
+
+export class DiffHunkActionsWidget extends WidgetType {
+	private root: Root | null = null;
+
+	constructor(private readonly hunk: Hunk) {
+		super();
+	}
+
+	eq(other: DiffHunkActionsWidget): boolean {
+		return areHunksEqual(this.hunk, other.hunk);
+	}
+
+	toDOM(view: EditorView): HTMLElement {
+		const dom = document.createElement('span');
+		dom.className = 'diff-plugin-actions-host';
+		dom.dataset.diffHunkId = this.hunk.id;
+		dom.addEventListener('mousedown', stopMouseEvent);
+
+		this.root = createRoot(dom);
+		this.root.render(
+			createElement(HunkActionsWidget, {
+				hunkId: this.hunk.id,
 				onAccept: () => {
 					view.dispatch({ effects: acceptHunkEffect.of(this.hunk.id) });
 				},
@@ -81,66 +138,34 @@ export class DiffHunkWidget extends WidgetType {
 	}
 }
 
-function HunkWidget({
-	hunk,
-	showActions,
-	onHoverChange,
+function HunkActionsWidget({
+	hunkId,
 	onAccept,
 	onReject,
-}: HunkWidgetProps) {
-	const hasRemovedLines = hunk.removedLines.length > 0;
-
+}: HunkActionsWidgetProps) {
 	return createElement(
-		'section',
-		{
-			className: 'diff-plugin-widget',
-			'data-diff-hunk-id': hunk.id,
-			onMouseEnter: () => onHoverChange(true),
-			onMouseLeave: () => onHoverChange(false),
-			onMouseDown: stopReactMouseEvent,
-		},
-		showActions
-			? createElement(
-					'div',
-					{ className: 'diff-plugin-actions' },
-					createElement(
-						'button',
-						{
-							type: 'button',
-							className: 'diff-plugin-btn',
-							onMouseDown: stopReactMouseEvent,
-							onClick: onAccept,
-						},
-						'Accept',
-					),
-					createElement(
-						'button',
-						{
-							type: 'button',
-							className: 'diff-plugin-btn',
-							onMouseDown: stopReactMouseEvent,
-							onClick: onReject,
-						},
-						'Reject',
-					),
-				)
-			: null,
-		hasRemovedLines
-			? createElement(
-					'div',
-					{ className: 'diff-plugin-removed-block' },
-					...hunk.removedLines.map((line, index) =>
-						createElement(
-							'div',
-							{
-								key: `${hunk.id}:${index}`,
-								className: 'diff-plugin-removed-line',
-							},
-							line.length === 0 ? '\u200b' : line,
-						),
-					),
-				)
-			: null,
+		'span',
+		{ className: 'diff-plugin-actions', 'data-diff-hunk-id': hunkId },
+		createElement(
+			'button',
+			{
+				type: 'button',
+				className: 'diff-plugin-btn diff-plugin-btn-accept',
+				onMouseDown: stopReactMouseEvent,
+				onClick: onAccept,
+			},
+			'Accept',
+		),
+		createElement(
+			'button',
+			{
+				type: 'button',
+				className: 'diff-plugin-btn diff-plugin-btn-reject',
+				onMouseDown: stopReactMouseEvent,
+				onClick: onReject,
+			},
+			'Reject',
+		),
 	);
 }
 

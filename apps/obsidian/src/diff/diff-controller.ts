@@ -229,17 +229,6 @@ export class DiffController {
 			count.className = 'diff-plugin-header-count';
 			container.appendChild(count);
 
-			const reject = document.createElement('button');
-			reject.type = 'button';
-			reject.className = 'diff-plugin-header-btn diff-plugin-header-reject';
-			reject.textContent = 'Reject All';
-			reject.onclick = (event) => {
-				event.preventDefault();
-				event.stopPropagation();
-				rejectAllHunks(view);
-			};
-			container.appendChild(reject);
-
 			const accept = document.createElement('button');
 			accept.type = 'button';
 			accept.className = 'diff-plugin-header-btn diff-plugin-header-accept';
@@ -250,6 +239,17 @@ export class DiffController {
 				acceptAllHunks(view);
 			};
 			container.appendChild(accept);
+
+			const reject = document.createElement('button');
+			reject.type = 'button';
+			reject.className = 'diff-plugin-header-btn diff-plugin-header-reject';
+			reject.textContent = 'Reject All';
+			reject.onclick = (event) => {
+				event.preventDefault();
+				event.stopPropagation();
+				rejectAllHunks(view);
+			};
+			container.appendChild(reject);
 
 			actionsEl.insertBefore(container, actionsEl.firstChild);
 

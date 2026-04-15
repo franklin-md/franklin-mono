@@ -1,7 +1,8 @@
 import type { EditorState, Transaction } from '@codemirror/state';
 import { StateField, StateEffect } from '@codemirror/state';
 import { invertedEffects } from '@codemirror/commands';
-import { computeHunks, type Hunk } from '../compute-hunks.js';
+import type { Hunk } from '../compute-hunks.js';
+import { computeHunks } from '../compute-hunks.js';
 
 export type HunkStatus = 'pending' | 'accepted' | 'rejected';
 
