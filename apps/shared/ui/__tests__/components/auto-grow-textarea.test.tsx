@@ -5,9 +5,9 @@ import { createRef } from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AutoGrowTextarea } from '../auto-grow-textarea.js';
+import { AutoGrowTextarea } from '../../src/components/auto-grow-textarea.js';
 
-vi.mock('../../primitives/scroll-area.js', async () => {
+vi.mock('../../src/primitives/scroll-area.js', async () => {
 	const React = await import('react');
 
 	const MockScrollArea = React.forwardRef<

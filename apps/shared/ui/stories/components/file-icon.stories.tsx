@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { EXT_ICONS, FILENAME_ICONS, FileIcon } from './file-icon.js';
+import {
+	EXT_ICONS,
+	FILENAME_ICONS,
+	FileIcon,
+} from '../../src/components/file-icon.js';
 
 function IconGrid() {
 	return (

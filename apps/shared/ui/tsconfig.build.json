@@ -10,11 +10,7 @@
 		"lib": ["ES2023", "DOM"]
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],
-	"exclude": [
-		"src/**/*.stories.ts",
-		"src/**/*.stories.tsx",
-		"src/storybook/**"
-	],
+	"exclude": [],
 	"references": [
 		{ "path": "../../../packages/agent" },
 		{ "path": "../../../packages/extensions" },

@@ -7,8 +7,8 @@ import {
 	genericErrorTurn,
 	maxTokensTurn,
 	providerErrorTurn,
-} from '../storybook/fixtures.js';
-import { ConversationView } from './view.js';
+} from '../fixtures.js';
+import { ConversationView } from '../../src/conversation/view.js';
 
 const meta = {
 	title: 'Conversation/TurnEnd',

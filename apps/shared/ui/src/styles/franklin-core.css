@@ -10,7 +10,3 @@
 @import './utilities/index.css';
 
 @source "../**/*.{ts,tsx}";
-@source not "../**/*.stories.{ts,tsx}";
-@source not "../**/*.test.{ts,tsx}";
-@source not "../**/__tests__/**/*.{ts,tsx}";
-@source not "../storybook/**/*.{ts,tsx}";

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { SidebarItem } from './sidebar-item.js';
+import { SidebarItem } from '../../src/sidebar/sidebar-item.js';
 
 const meta = {
 	title: 'Sidebar/SidebarItem',

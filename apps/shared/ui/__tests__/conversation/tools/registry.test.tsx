@@ -14,7 +14,7 @@ import {
 import { resolveToolRenderer } from '@franklin/react';
 import { describe, expect, it } from 'vitest';
 
-import { defaultToolRegistry } from '../registry/index.js';
+import { defaultToolRegistry } from '../../../src/conversation/tools/registry/index.js';
 
 function createBlock(
 	name: string,

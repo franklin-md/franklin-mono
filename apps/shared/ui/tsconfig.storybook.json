@@ -13,15 +13,20 @@
 		"skipLibCheck": true,
 		"jsx": "react-jsx",
 		"composite": true,
-		"noEmit": true
+		"outDir": "./dist/storybook",
+		"declaration": true,
+		"declarationMap": true
 	},
 	"include": [
 		".storybook/**/*.ts",
 		".storybook/**/*.tsx",
+		"stories/**/*.ts",
+		"stories/**/*.tsx",
+		"__tests__/**/*.ts",
+		"__tests__/**/*.tsx",
 		"src/**/*.ts",
 		"src/**/*.tsx"
 	],
-	"exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/__tests__/**"],
 	"references": [
 		{ "path": "../../../packages/agent" },
 		{ "path": "../../../packages/extensions" },

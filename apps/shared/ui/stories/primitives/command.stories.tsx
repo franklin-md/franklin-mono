@@ -8,7 +8,7 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from './command.js';
+} from '../../src/primitives/command.js';
 
 function CommandPalette() {
 	return (

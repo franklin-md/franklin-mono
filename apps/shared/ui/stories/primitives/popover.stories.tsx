@@ -1,7 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Button } from './button.js';
-import { Popover, PopoverContent, PopoverTrigger } from './popover.js';
+import { Button } from '../../src/primitives/button.js';
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from '../../src/primitives/popover.js';
 
 function PopoverDemo() {
 	return (

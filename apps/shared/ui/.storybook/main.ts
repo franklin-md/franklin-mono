@@ -7,7 +7,7 @@ function getAbsolutePath(value: string) {
 }
 
 const config: StorybookConfig = {
-	stories: ['../src/**/*.stories.@(ts|tsx)'],
+	stories: ['../stories/**/*.stories.@(ts|tsx)'],
 	addons: [getAbsolutePath('@storybook/addon-docs')],
 	framework: getAbsolutePath('@storybook/react-vite'),
 	viteFinal: async (config) => {
