@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import type { AbsolutePath } from '@franklin/lib';
 import { combine } from '../combine.js';
 import { createRuntime } from '../create.js';
 import { createEnvironmentSystem } from '../environment.js';
@@ -24,7 +25,7 @@ import {
 
 const defaultEnvConfig: EnvironmentConfig = {
 	fsConfig: {
-		cwd: '/project',
+		cwd: '/project' as AbsolutePath,
 		permissions: { allowRead: ['**'], allowWrite: ['**'] },
 	},
 	netConfig: { allowedDomains: [], deniedDomains: [] },
@@ -42,7 +43,9 @@ function mockEnvironment(config: EnvironmentConfig): ReconfigurableEnvironment {
 			exists: vi.fn(),
 			glob: vi.fn(),
 			deleteFile: vi.fn(),
-			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
+			resolve: vi.fn(
+				async (...paths: string[]) => paths[paths.length - 1]! as AbsolutePath,
+			),
 		},
 		terminal: { exec: vi.fn() },
 		web: { fetch: vi.fn() },

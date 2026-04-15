@@ -3,10 +3,11 @@ import {
 	createStore,
 	type PersistedStore,
 } from '@franklin/extensions';
-import type { Filesystem } from '@franklin/lib';
+import type { AbsolutePath, Filesystem } from '@franklin/lib';
+import { joinAbsolute } from '@franklin/lib';
 import type { AppSettings } from './types.js';
 
-export const DEFAULT_SETTINGS_PATH = 'settings.json';
+export const DEFAULT_SETTINGS_FILE = 'settings.json';
 export const DEFAULT_APP_SETTINGS: AppSettings = {
 	defaultLLMConfig: {
 		provider: 'openai-codex',
@@ -17,11 +18,16 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 
 export type SettingsStore = PersistedStore<AppSettings>;
 
-export function createSettings(filesystem: Filesystem): SettingsStore {
+export function createSettings(
+	filesystem: Filesystem,
+	appDir: AbsolutePath,
+): SettingsStore {
+	const path = joinAbsolute(appDir, DEFAULT_SETTINGS_FILE);
+
 	return createPersistedStore(createStore(DEFAULT_APP_SETTINGS), {
 		async restore(): Promise<AppSettings> {
 			const data = await filesystem
-				.readFile(DEFAULT_SETTINGS_PATH)
+				.readFile(path)
 				.then((raw) => JSON.parse(new TextDecoder().decode(raw)) as AppSettings)
 				.catch(() => ({}) as AppSettings);
 
@@ -31,10 +37,7 @@ export function createSettings(filesystem: Filesystem): SettingsStore {
 			};
 		},
 		async persist(value): Promise<void> {
-			await filesystem.writeFile(
-				DEFAULT_SETTINGS_PATH,
-				JSON.stringify(value, null, 2),
-			);
+			await filesystem.writeFile(path, JSON.stringify(value, null, 2));
 		},
 		isEqual: areSettingsEqual,
 	});

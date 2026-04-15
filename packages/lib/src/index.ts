@@ -1,3 +1,5 @@
+export type { AbsolutePath } from './paths/index.js';
+export { toAbsolutePath, joinAbsolute, posixJoin } from './paths/index.js';
 export type { FileStat, Filesystem } from './filesystem/index.js';
 export type { Terminal, TerminalInput } from './terminal/index.js';
 export type {

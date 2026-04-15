@@ -3,7 +3,8 @@ import {
 	type SandboxRuntimeConfig,
 } from '@anthropic-ai/sandbox-runtime';
 import { spawn } from 'child_process';
-import type { Terminal, TerminalInput } from '@franklin/lib';
+import type { AbsolutePath, Terminal, TerminalInput } from '@franklin/lib';
+import { joinAbsolute } from '@franklin/lib';
 import type {
 	NetworkConfig,
 	FilesystemConfig,
@@ -13,7 +14,7 @@ import { once } from 'events';
 
 export class SandboxedTerminal implements Terminal {
 	private _cwd: string;
-	private _app_dir: string;
+	private _app_dir: AbsolutePath;
 	private _config: SandboxRuntimeConfig;
 
 	async setNetworkConfig(config: NetworkConfig) {
@@ -25,6 +26,14 @@ export class SandboxedTerminal implements Terminal {
 		return this._config.network as NetworkConfig;
 	}
 
+	private _denyWritePaths(): string[] {
+		return [
+			joinAbsolute(this._app_dir, 'auth.json'),
+			joinAbsolute(this._app_dir, 'sessions'),
+			joinAbsolute(this._app_dir, 'store'),
+		];
+	}
+
 	async setFilesystemConfig(config: Partial<FilesystemConfig>) {
 		if (config.cwd) {
 			this._cwd = config.cwd;
@@ -32,16 +41,12 @@ export class SandboxedTerminal implements Terminal {
 		if (config.permissions) {
 			this._config.filesystem.allowRead = config.permissions.allowRead;
 			this._config.filesystem.allowWrite = config.permissions.allowWrite;
-			this._config.filesystem.denyWrite = [
-				`${this._app_dir}/auth.json`,
-				`${this._app_dir}/sessions`,
-				`${this._app_dir}/store`,
-			];
+			this._config.filesystem.denyWrite = this._denyWritePaths();
 		}
 		await SandboxManager.initialize(this._config);
 	}
 
-	constructor(app_dir: string, config: EnvironmentConfig) {
+	constructor(app_dir: AbsolutePath, config: EnvironmentConfig) {
 		this._cwd = config.fsConfig.cwd;
 		this._app_dir = app_dir;
 
@@ -51,11 +56,7 @@ export class SandboxedTerminal implements Terminal {
 				denyRead: ['/'],
 				allowRead: config.fsConfig.permissions.allowRead,
 				allowWrite: config.fsConfig.permissions.allowWrite,
-				denyWrite: [
-					`${this._app_dir}/auth.json`,
-					`${this._app_dir}/sessions`,
-					`${this._app_dir}/store`,
-				],
+				denyWrite: this._denyWritePaths(),
 			},
 		};
 	}

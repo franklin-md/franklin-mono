@@ -20,7 +20,7 @@ export function createFileControl(store: Store<FileRecord>) {
 					? typeof content === 'string'
 						? new TextEncoder().encode(content)
 						: content
-					: await fs.readFile(path);
+					: await fs.readFile(absPath);
 			const hash = sha256Hex(bytes);
 			store.set((draft: FileRecord) => {
 				draft[absPath] = hash;

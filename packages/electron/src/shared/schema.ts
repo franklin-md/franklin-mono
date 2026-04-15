@@ -46,5 +46,6 @@ export const schema = namespace({
 		getApiKeyProviders: method(),
 	}),
 	filesystem: filesystem,
+	getHome: method(),
 	openExternal: method(),
 } satisfies NamespaceShape<Platform>);

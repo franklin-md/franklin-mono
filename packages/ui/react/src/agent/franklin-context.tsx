@@ -9,6 +9,7 @@ import {
 
 import { FranklinApp, type FranklinExtension } from '@franklin/agent/browser';
 import type { Platform } from '@franklin/agent/browser';
+import { toAbsolutePath, joinAbsolute } from '@franklin/lib';
 
 // ---------------------------------------------------------------------------
 // Context
@@ -49,11 +50,13 @@ export function FranklinProvider({
 
 		void (async () => {
 			try {
-				// TODO: Make this user specifiable?
+				const home = await platform.getHome();
+				const appDir = joinAbsolute(toAbsolutePath(home), '.franklin');
+
 				created = new FranklinApp({
 					extensions,
 					platform,
-					persistDir: '.',
+					appDir,
 				});
 				// TODO: Should we make this optional?
 				await created.start();

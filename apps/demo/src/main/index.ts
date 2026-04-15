@@ -22,8 +22,7 @@ function createWindow(): void {
 		},
 	});
 
-	const franklinHome = path.join(app.getPath('home'), '.franklin');
-	const platform = createNodePlatform({ appDir: franklinHome });
+	const platform = createNodePlatform();
 
 	handle = initializeMain(mainWindow.webContents, platform);
 

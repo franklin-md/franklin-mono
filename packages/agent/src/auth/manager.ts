@@ -11,15 +11,15 @@ import type {
 } from './types.js';
 import type { OAuthFlow } from './oauth-flow.js';
 import type { Platform } from '../platform.js';
-import { createAuthStore, type AuthStore } from './store.js';
+import type { AuthStore } from './store.js';
 
 export class AuthManager {
-	private readonly store: AuthStore;
 	private readonly observer = createObserver<[string, AuthEntry | undefined]>();
 
-	constructor(private readonly platform: Platform) {
-		this.store = createAuthStore(platform.filesystem);
-	}
+	constructor(
+		private readonly platform: Platform,
+		private readonly store: AuthStore,
+	) {}
 
 	async restore(): Promise<void> {
 		await this.store.restore();
