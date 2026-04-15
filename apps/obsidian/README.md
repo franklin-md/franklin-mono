@@ -2,8 +2,9 @@
 
 This package is the current Obsidian placeholder plugin for Franklin.
 
-It does not depend on any Franklin runtime packages yet. The plugin just
-registers a view and opens a minimal placeholder panel inside Obsidian.
+It depends on the workspace package `@franklin/ui` for shared theme tokens but
+does not depend on any Franklin runtime packages yet. The plugin just registers
+a view and opens a minimal placeholder panel inside Obsidian.
 
 ## Requirements
 

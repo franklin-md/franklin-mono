@@ -19,7 +19,7 @@ if (!args.isWatch) {
 // ── Watch mode ──────────────────────────────────────────────
 console.log('Starting watch mode…');
 
-await js.watch(runSync, { skipInitialOnEnd: true });
+await js.watch(runSync);
 css.watch(runSync);
 
 console.log('Watching for changes…');
