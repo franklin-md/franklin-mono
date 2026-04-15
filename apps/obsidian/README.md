@@ -2,8 +2,9 @@
 
 This package is the current Obsidian placeholder plugin for Franklin.
 
-It does not depend on any Franklin runtime packages yet. The plugin just
-registers a view and opens a minimal placeholder panel inside Obsidian.
+It depends on the workspace package `@franklin/ui` for shared theme tokens but
+does not depend on any Franklin runtime packages yet. The plugin just registers
+a view and opens a minimal placeholder panel inside Obsidian.
 
 ## Requirements
 
@@ -27,13 +28,19 @@ TypeScript build:
 npm run build
 ```
 
-Bundle the plugin into `dist/`:
+Bundle the plugin into `dist/` (dev — sourcemaps, no minification):
 
 ```bash
 npm run bundle
 ```
 
-That writes:
+Production bundle (minified, no sourcemaps, `NODE_ENV=production`):
+
+```bash
+npm run bundle:prod
+```
+
+Both write:
 
 - `dist/main.js`
 - `dist/manifest.json`
@@ -95,6 +102,16 @@ That does two things:
 - copies `main.js`, `manifest.json`, and `styles.css` into the configured vault plugin directory
 
 After each rebuild, reload the plugin inside Obsidian to pick up the latest code.
+
+## Build Matrix
+
+| Script          | Mode | Watch | Sourcemaps | Minified | CSS optimized |
+| --------------- | ---- | ----- | ---------- | -------- | ------------- |
+| `bundle`        | dev  | no    | yes        | no       | yes           |
+| `bundle:prod`   | prod | no    | no         | yes      | yes           |
+| `dev`           | dev  | yes   | yes        | no       | no            |
+
+`--vault-dir` and `--plugin-dir` flags work with all three scripts.
 
 ## Notes
 
