@@ -11,7 +11,6 @@
 	"references": [
 		{ "path": "../agent" },
 		{ "path": "../lib/core" },
-		{ "path": "../lib/transport" },
 		{ "path": "../mini-acp" }
 	]
 }

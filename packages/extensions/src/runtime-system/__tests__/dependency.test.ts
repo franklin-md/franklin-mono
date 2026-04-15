@@ -1,6 +1,6 @@
 import { describe, it, expect, expectTypeOf, vi } from 'vitest';
 import { z } from 'zod';
-import { createDuplexPair, type JsonRpcMessage } from '@franklin/transport';
+import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
 	createAgentConnection,
 	createSessionAdapter,

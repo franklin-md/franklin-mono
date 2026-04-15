@@ -21,7 +21,7 @@ import {
 	toPiMessage,
 	toPiUserMessage,
 } from './translate/index.js';
-import { createMemoryStream } from '@franklin/transport';
+import { createMemoryStream } from '@franklin/lib/transport';
 import { resolveConfig } from './resolve-config.js';
 
 // ---------------------------------------------------------------------------

@@ -13,6 +13,14 @@
 		"./proxy": {
 			"types": "./dist/proxy/index.d.ts",
 			"import": "./dist/proxy/index.js"
+		},
+		"./transport": {
+			"types": "./dist/transport/index.d.ts",
+			"import": "./dist/transport/index.js"
+		},
+		"./transport/node": {
+			"types": "./dist/transport/node.d.ts",
+			"import": "./dist/transport/node.js"
 		}
 	},
 	"files": [

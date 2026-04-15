@@ -27,7 +27,6 @@
 		"@franklin/agent": "*",
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
-		"@franklin/transport": "*",
 		"@mariozechner/pi-ai": "*",
 		"@mariozechner/pi-agent-core": "*"
 	}
