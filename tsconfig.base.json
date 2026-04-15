@@ -15,12 +15,10 @@
 		"sourceMap": true,
 		"inlineSources": true,
 		"paths": {
-			"@franklin/lib": ["packages/lib/core/src/index.ts"],
-			"@franklin/lib/proxy": ["packages/lib/core/src/proxy/index.ts"],
-			"@franklin/lib/transport": ["packages/lib/core/src/transport/index.ts"],
-			"@franklin/lib/transport/node": [
-				"packages/lib/core/src/transport/node.ts"
-			],
+			"@franklin/lib": ["packages/lib/src/index.ts"],
+			"@franklin/lib/proxy": ["packages/lib/src/proxy/index.ts"],
+			"@franklin/lib/transport": ["packages/lib/src/transport/index.ts"],
+			"@franklin/lib/transport/node": ["packages/lib/src/transport/node.ts"],
 			"@franklin/agent": ["packages/agent/src/index.ts"],
 			"@franklin/agent/browser": ["packages/agent/src/browser.ts"],
 			"@franklin/extensions": ["packages/extensions/src/index.ts"],

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { CoreRuntime, CoreState } from '@franklin/extensions';
 import { createCoreSystem } from '@franklin/extensions';
-import { createDuplexPair, type JsonRpcMessage } from '@franklin/transport';
+import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
 	createSessionAdapter,
 	createAgentConnection,
