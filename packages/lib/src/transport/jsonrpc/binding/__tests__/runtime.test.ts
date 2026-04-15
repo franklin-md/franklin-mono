@@ -3,7 +3,7 @@ import { method, notification, namespace } from '@franklin/lib';
 import type { Duplex } from '../../../streams/types.js';
 import type { JsonRpcMessage } from '../../types.js';
 import { isResponse } from '../../types.js';
-import { bindServer } from '../index.js';
+import { bindJsonRpcServer } from '../index.js';
 
 const serverDescriptor = namespace({
 	add: method<(params: { a: number; b: number }) => Promise<number>>(),
@@ -55,7 +55,7 @@ function createServerWithRawWire(options?: {
 		},
 	};
 
-	const { bind } = bindServer({
+	const { bind } = bindJsonRpcServer({
 		duplex,
 		server: serverDescriptor,
 		client: clientDescriptor,

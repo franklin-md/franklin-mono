@@ -16,6 +16,7 @@ export default tseslint.config(
 			'**/*.tsbuildinfo',
 			'**/storybook-static/**',
 			'**/vitest.config.ts',
+			'vitest.aliases.ts',
 			'**/vite.config.ts',
 			'**/electron.vite.config.ts',
 			'**/out/**',

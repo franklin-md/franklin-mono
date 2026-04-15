@@ -1,4 +1,4 @@
-import type { Duplex } from '@franklin/transport';
+import type { Duplex } from '@franklin/lib/transport';
 import { ipcMain, type WebContents } from 'electron';
 
 import { isIpcStreamMessage, type IpcStreamMessage } from '../../shared/api.js';

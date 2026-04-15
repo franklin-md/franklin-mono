@@ -1,20 +1,10 @@
 import { configDefaults, defineConfig } from 'vitest/config';
-import path from 'node:path';
+
+import { franklinVitestAliases } from '../../vitest.aliases';
 
 export default defineConfig({
 	resolve: {
-		alias: {
-			'@franklin/lib': path.resolve(__dirname, '../lib/core/src/index.ts'),
-			'@franklin/extensions': path.resolve(
-				__dirname,
-				'../extensions/src/index.ts',
-			),
-			'@franklin/mini-acp': path.resolve(__dirname, '../mini-acp/src/index.ts'),
-			'@franklin/transport': path.resolve(
-				__dirname,
-				'../lib/transport/src/core.ts',
-			),
-		},
+		alias: franklinVitestAliases(),
 	},
 	test: {
 		exclude: [...configDefaults.exclude, 'dist/**'],

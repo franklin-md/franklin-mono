@@ -3,7 +3,7 @@ import {
 	bindServer as proxyBindServer,
 	type Descriptor,
 	type ProxyType,
-} from '@franklin/lib';
+} from '../../../../proxy/index.js';
 import { isRequest } from '../../types.js';
 import { RpcError } from '../../errors.js';
 import { observe } from '../../../streams/readable/observe.js';
