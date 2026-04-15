@@ -1,4 +1,5 @@
 import type { EnvironmentAPI, Extension } from '@franklin/extensions';
+import { decode } from '@franklin/lib';
 import type { CoreAPI } from '../../../api/core/api.js';
 import type { StoreAPI } from '../../../api/store/api.js';
 import { fileKey } from '../common/key.js';
@@ -18,7 +19,7 @@ export function readExtension(): Extension<
 			const bytes = await fs.readFile(path);
 			await file.markFileRead(fs, path, bytes);
 
-			const lines = new TextDecoder().decode(bytes).split('\n');
+			const lines = decode(bytes).split('\n');
 			const start = (offset ?? 1) - 1;
 			return lines.slice(start, start + limit).join('\n');
 		});

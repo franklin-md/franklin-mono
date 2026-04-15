@@ -33,12 +33,12 @@ export function normalizeContentType(contentType?: string): string | undefined {
 	return contentType?.split(';', 1)[0]?.trim().toLowerCase();
 }
 
-export function decodeBody(body: Uint8Array): string {
-	return new TextDecoder().decode(body);
-}
+import { decode } from '@franklin/lib';
+
+export { decode as decodeBody } from '@franklin/lib';
 
 export function startsWithAscii(body: Uint8Array, prefix: string): boolean {
-	return decodeBody(body.slice(0, prefix.length)) === prefix;
+	return decode(body.slice(0, prefix.length)) === prefix;
 }
 
 export function toErrorMessage(error: unknown): string {

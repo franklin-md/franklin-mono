@@ -1,3 +1,4 @@
+import { encode } from '@franklin/lib';
 import type { Filesystem } from '@franklin/lib';
 import type { Store } from '../../../api/store/types.js';
 import { sha256Hex } from '../hash.js';
@@ -18,7 +19,7 @@ export function createFileControl(store: Store<FileRecord>) {
 			const bytes =
 				content !== undefined
 					? typeof content === 'string'
-						? new TextEncoder().encode(content)
+						? encode(content)
 						: content
 					: await fs.readFile(path);
 			const hash = sha256Hex(bytes);

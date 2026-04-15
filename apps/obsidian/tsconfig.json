@@ -1,13 +1,20 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
+		"module": "ESNext",
+		"moduleResolution": "bundler",
 		"rootDir": "./src",
 		"outDir": "./dist",
-		"lib": ["ES2023", "DOM"],
+		"lib": ["ES2023", "DOM", "DOM.Iterable"],
 		"composite": true,
 		"declaration": true,
 		"declarationMap": true,
 		"jsx": "react-jsx"
 	},
-	"include": ["src/**/*.ts", "src/**/*.tsx"]
+	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"references": [
+		{ "path": "../../packages/lib/core" },
+		{ "path": "../../packages/extensions" },
+		{ "path": "../../packages/agent" }
+	]
 }

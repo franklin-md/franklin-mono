@@ -3,6 +3,7 @@ import {
 	createStore,
 	type PersistedStore,
 } from '@franklin/extensions';
+import { decode } from '@franklin/lib';
 import type { Filesystem } from '@franklin/lib';
 import type { AppSettings } from './types.js';
 
@@ -22,7 +23,7 @@ export function createSettings(filesystem: Filesystem): SettingsStore {
 		async restore(): Promise<AppSettings> {
 			const data = await filesystem
 				.readFile(DEFAULT_SETTINGS_PATH)
-				.then((raw) => JSON.parse(new TextDecoder().decode(raw)) as AppSettings)
+				.then((raw) => JSON.parse(decode(raw)) as AppSettings)
 				.catch(() => ({}) as AppSettings);
 
 			return {

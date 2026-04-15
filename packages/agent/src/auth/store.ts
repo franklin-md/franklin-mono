@@ -3,6 +3,7 @@ import {
 	createStore,
 	type PersistedStore,
 } from '@franklin/extensions';
+import { decode } from '@franklin/lib';
 import type { Filesystem } from '@franklin/lib';
 import type { AuthEntries } from './types.js';
 
@@ -19,9 +20,7 @@ export function createAuthStore(filesystem: Filesystem): AuthStore {
 		async restore(): Promise<AuthEntries> {
 			return await filesystem
 				.readFile(DEFAULT_AUTH_PATH)
-				.then(
-					(data) => JSON.parse(new TextDecoder().decode(data)) as AuthEntries,
-				)
+				.then((data) => JSON.parse(decode(data)) as AuthEntries)
 				.catch(() => ({}));
 		},
 		async persist(value): Promise<void> {

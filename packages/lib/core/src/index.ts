@@ -8,8 +8,10 @@ export type {
 export {
 	createFolderScopedFilesystem,
 	createFilteredFilesystem,
+	createRoutedFilesystem,
 } from './filesystem/index.js';
 export type { FilesystemPermissions } from './filesystem/index.js';
+export type { FilesystemRoute } from './filesystem/index.js';
 export type { Persister } from './persistence/persister.js';
 export { createFilePersistence } from './persistence/file-persister.js';
 export { DebouncedPersister } from './persistence/debounced-persister.js';
@@ -85,3 +87,4 @@ export { bindClient, UnsupportedDescriptorError } from './proxy/index.js';
 export { bindServer } from './proxy/index.js';
 export { wait } from './utils/async/wait.js';
 export { randomDelay } from './utils/random.js';
+export { encode, decode } from './utils/bytes.js';

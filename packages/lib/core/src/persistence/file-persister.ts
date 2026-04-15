@@ -1,4 +1,5 @@
 import type { Filesystem } from '../filesystem/types.js';
+import { decode } from '../utils/bytes.js';
 import type { Persister } from './persister.js';
 
 type PersistenceFilesystem = Pick<
@@ -43,8 +44,7 @@ export function createFilePersistence<T>(
 				if (!entry.endsWith('.json')) continue;
 				const id = entry.slice(0, -'.json'.length);
 				const raw = await fs.readFile(`${dir}/${entry}`);
-				const text =
-					typeof raw === 'string' ? raw : new TextDecoder().decode(raw);
+				const text = typeof raw === 'string' ? raw : decode(raw);
 				snapshots.set(id, JSON.parse(text) as T);
 			}
 			return snapshots;

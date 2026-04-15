@@ -1,9 +1,15 @@
+import type { Platform } from '@franklin/agent/browser';
 import { Plugin } from 'obsidian';
 
+import { createObsidianPlatform } from './platform/index.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
 
 export default class FranklinPlugin extends Plugin {
+	platform!: Platform;
+
 	async onload() {
+		this.platform = createObsidianPlatform(this.app);
+
 		this.registerView(VIEW_TYPE, (leaf) => {
 			return new FranklinView(leaf);
 		});
