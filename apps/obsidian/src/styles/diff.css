@@ -1,0 +1,147 @@
+.diff-plugin-widget-host {
+	pointer-events: auto;
+	margin: 0;
+	font: inherit;
+}
+
+.diff-plugin-header-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-right: 6px;
+	padding-right: 6px;
+	border-right: 1px solid var(--background-modifier-border);
+}
+
+.diff-plugin-header-count {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	padding: 0 4px;
+}
+
+.diff-plugin-header-btn {
+	appearance: none;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	font-family: var(--font-interface);
+	padding: 2px 10px;
+	border-radius: 4px;
+	cursor: pointer;
+	line-height: 1.2;
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease;
+}
+
+.diff-plugin-header-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.diff-plugin-header-accept {
+	background: rgba(46, 160, 67, 0.85);
+	border-color: rgba(46, 160, 67, 1);
+	color: #fff;
+}
+
+.diff-plugin-header-accept:hover {
+	background: rgba(46, 160, 67, 1);
+}
+
+.diff-plugin-header-reject {
+	background: rgba(248, 81, 73, 0.12);
+	border-color: rgba(248, 81, 73, 0.55);
+	color: var(--text-normal);
+}
+
+.diff-plugin-header-reject:hover {
+	background: rgba(248, 81, 73, 0.22);
+}
+
+.diff-plugin-widget {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	font: inherit;
+}
+
+.diff-plugin-actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 4px;
+	padding: 0 0 2px;
+	font: inherit;
+}
+
+.diff-plugin-actions-separator {
+	width: 1px;
+	height: 14px;
+	margin: 0 2px;
+	background: var(--background-modifier-border);
+}
+
+.diff-plugin-btn {
+	appearance: none;
+	padding: 0 6px;
+	min-height: 22px;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	font: inherit;
+	transition:
+		background-color 120ms ease,
+		color 120ms ease;
+}
+
+.diff-plugin-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.diff-plugin-btn-all {
+	color: var(--text-faint);
+}
+
+.diff-plugin-removed-block {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	padding: 1px 0;
+	border-left: 2px solid rgba(248, 81, 73, 0.42);
+	background: rgba(248, 81, 73, 0.06);
+	font: inherit;
+}
+
+.diff-plugin-removed-line {
+	padding: 0 8px;
+	color: color-mix(in srgb, var(--text-normal) 86%, rgba(248, 81, 73, 0.95));
+	font: inherit;
+	white-space: pre-wrap;
+}
+
+.diff-plugin-removed-line::before {
+	content: '- ';
+	color: rgba(248, 81, 73, 0.9);
+}
+
+.diff-plugin-added-line {
+	background: rgba(46, 160, 67, 0.1) !important;
+	border-left: 2px solid transparent;
+}
+
+.diff-plugin-added-first {
+	border-top: 1px solid rgba(46, 160, 67, 0.18);
+}
+
+.diff-plugin-added-last {
+	border-bottom: 1px solid rgba(46, 160, 67, 0.18);
+}
+
+.diff-plugin-added-line.diff-plugin-added-first,
+.diff-plugin-added-line:not(.diff-plugin-added-first) {
+	border-left-color: rgba(46, 160, 67, 0.42);
+}
