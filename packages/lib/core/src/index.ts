@@ -8,10 +8,8 @@ export type {
 export {
 	createFolderScopedFilesystem,
 	createFilteredFilesystem,
-	createRoutedFilesystem,
 } from './filesystem/index.js';
 export type { FilesystemPermissions } from './filesystem/index.js';
-export type { FilesystemRoute } from './filesystem/index.js';
 export type { Persister } from './persistence/persister.js';
 export { createFilePersistence } from './persistence/file-persister.js';
 export { DebouncedPersister } from './persistence/debounced-persister.js';

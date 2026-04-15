@@ -10,8 +10,11 @@ import {
 import type { Filesystem } from '@franklin/lib';
 
 import { createObsidianFilesystem } from '../platform/filesystem/obsidian.js';
-import { createObsidianPathPolicy } from '../platform/filesystem/path-policy.js';
-import { createVisibleVaultFilesystem } from '../platform/filesystem/vault-visible.js';
+import {
+	createObsidianPathPolicy,
+	createObsidianPathPolicyFromVault,
+} from '../platform/filesystem/path-policy.js';
+import { createVaultFilesystem } from '../platform/filesystem/vault.js';
 
 function makeFile(path: string): TFile {
 	const name = path.split('/').pop() ?? path;
@@ -112,8 +115,7 @@ describe('createObsidianPathPolicy', () => {
 		const policy = createObsidianPathPolicy('/vault', '.obsidian');
 		expect(policy.classifyPath('/vault/notes/hello.md')).toEqual({
 			kind: 'vault',
-			absolutePath: '/vault/notes/hello.md',
-			relativePath: 'notes/hello.md',
+			path: 'notes/hello.md',
 		});
 	});
 
@@ -121,7 +123,7 @@ describe('createObsidianPathPolicy', () => {
 		const policy = createObsidianPathPolicy('/vault', '.obsidian');
 		expect(policy.classifyPath('/vault/.hidden/secret.txt')).toEqual({
 			kind: 'backup',
-			absolutePath: '/vault/.hidden/secret.txt',
+			path: '/vault/.hidden/secret.txt',
 		});
 	});
 
@@ -131,7 +133,7 @@ describe('createObsidianPathPolicy', () => {
 			policy.classifyPath('/vault/config/plugins/franklin/data.json'),
 		).toEqual({
 			kind: 'backup',
-			absolutePath: '/vault/config/plugins/franklin/data.json',
+			path: '/vault/config/plugins/franklin/data.json',
 		});
 	});
 
@@ -139,7 +141,22 @@ describe('createObsidianPathPolicy', () => {
 		const policy = createObsidianPathPolicy('/vault', '.obsidian');
 		expect(policy.classifyPath('/tmp/data.json')).toEqual({
 			kind: 'backup',
-			absolutePath: '/tmp/data.json',
+			path: '/tmp/data.json',
+		});
+	});
+
+	it('creates a policy from the vault adapter and configDir', () => {
+		const vault = createMockVault({
+			basePath: '/vault',
+			configDir: 'config',
+		});
+		const policy = createObsidianPathPolicyFromVault(vault);
+
+		expect(
+			policy.classifyPath('/vault/config/plugins/franklin/data.json'),
+		).toEqual({
+			kind: 'backup',
+			path: '/vault/config/plugins/franklin/data.json',
 		});
 	});
 });
@@ -163,7 +180,7 @@ describe('createVisibleVaultFilesystem', () => {
 	it('reads binary content via Vault.readBinary', async () => {
 		const content = new TextEncoder().encode('hello world');
 		vi.mocked(vault.readBinary).mockResolvedValue(content.buffer);
-		const fs = createVisibleVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault);
 
 		const result = await fs.readFile('notes/hello.md');
 
@@ -172,7 +189,7 @@ describe('createVisibleVaultFilesystem', () => {
 	});
 
 	it('modifies an existing visible file through Vault.modifyBinary', async () => {
-		const fs = createVisibleVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault);
 
 		await fs.writeFile('notes/hello.md', 'updated');
 
@@ -184,7 +201,7 @@ describe('createVisibleVaultFilesystem', () => {
 	});
 
 	it('creates a new visible file through Vault.createBinary', async () => {
-		const fs = createVisibleVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault);
 
 		await fs.writeFile('notes/new.md', 'new file');
 
@@ -196,7 +213,7 @@ describe('createVisibleVaultFilesystem', () => {
 	});
 
 	it('creates folders recursively through Vault.createFolder', async () => {
-		const fs = createVisibleVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault);
 
 		await fs.mkdir('notes/sub/folder', { recursive: true });
 
@@ -206,7 +223,7 @@ describe('createVisibleVaultFilesystem', () => {
 	});
 
 	it('returns root as a directory in stat', async () => {
-		const fs = createVisibleVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault);
 		await expect(fs.stat('')).resolves.toEqual({
 			isFile: false,
 			isDirectory: true,
@@ -214,23 +231,23 @@ describe('createVisibleVaultFilesystem', () => {
 	});
 
 	it('lists folder contents through the vault tree', async () => {
-		const fs = createVisibleVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault);
 		await expect(fs.readdir('notes')).resolves.toEqual(['hello.md']);
 	});
 
 	it('reports root exists', async () => {
-		const fs = createVisibleVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault);
 		await expect(fs.exists('')).resolves.toBe(true);
 	});
 
 	it('deletes files through Vault.delete', async () => {
-		const fs = createVisibleVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault);
 		await fs.deleteFile('notes/hello.md');
 		expect(vault.delete).toHaveBeenCalledWith(noteFile);
 	});
 
 	it('rejects deleting a folder through deleteFile', async () => {
-		const fs = createVisibleVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault);
 		await expect(fs.deleteFile('notes')).rejects.toThrow('EISDIR');
 	});
 });
