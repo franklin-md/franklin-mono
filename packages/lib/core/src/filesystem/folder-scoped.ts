@@ -1,60 +1,31 @@
-import type { Filesystem } from './types.js';
+import type { AbsolutePath, Filesystem } from './types.js';
 
 /**
  * Creates a `Filesystem` where relative paths resolve against `cwd`.
  *
- * This is purely about path resolution — no access control.
+ * Only `resolve` and `glob` need wrapping — all other methods already
+ * receive `AbsolutePath` arguments and delegate directly.
+ *
  * Compose with `createFilteredFilesystem` for security policies.
  */
 export function createFolderScopedFilesystem(
-	cwd: string,
+	cwd: AbsolutePath,
 	inner: Filesystem,
 ): Filesystem {
-	if (!cwd.startsWith('/')) throw new Error('cwd must be an absolute path');
-
 	return {
-		resolve(...paths: string[]) {
-			return inner.resolve(cwd, ...paths);
-		},
-		async readFile(p) {
-			return inner.readFile(await inner.resolve(cwd, p));
-		},
-
-		async writeFile(p, content) {
-			return inner.writeFile(await inner.resolve(cwd, p), content);
-		},
-
-		async mkdir(p, options) {
-			return inner.mkdir(await inner.resolve(cwd, p), options);
-		},
-
-		async access(p) {
-			return inner.access(await inner.resolve(cwd, p));
-		},
-
-		async stat(p) {
-			return inner.stat(await inner.resolve(cwd, p));
-		},
-
-		async readdir(p) {
-			return inner.readdir(await inner.resolve(cwd, p));
-		},
-
-		async exists(p) {
-			return inner.exists(await inner.resolve(cwd, p));
-		},
-
-		async glob(pattern, options) {
-			return inner.glob(pattern, {
+		resolve: (...paths) => inner.resolve(cwd, ...paths),
+		readFile: (p) => inner.readFile(p),
+		writeFile: (p, content) => inner.writeFile(p, content),
+		mkdir: (p, options) => inner.mkdir(p, options),
+		access: (p) => inner.access(p),
+		stat: (p) => inner.stat(p),
+		readdir: (p) => inner.readdir(p),
+		exists: (p) => inner.exists(p),
+		glob: (pattern, options) =>
+			inner.glob(pattern, {
 				...options,
-				root_dir: options.root_dir
-					? await inner.resolve(cwd, options.root_dir)
-					: cwd,
-			});
-		},
-
-		async deleteFile(p) {
-			return inner.deleteFile(await inner.resolve(cwd, p));
-		},
+				root_dir: options.root_dir ?? cwd,
+			}),
+		deleteFile: (p) => inner.deleteFile(p),
 	};
 }

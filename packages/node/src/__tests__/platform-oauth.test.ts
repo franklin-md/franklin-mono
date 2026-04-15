@@ -1,4 +1,3 @@
-import type { AbsolutePath } from '@franklin/lib';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@mariozechner/pi-ai', () => ({
@@ -37,7 +36,7 @@ describe('createNodePlatform OAuth adapter', () => {
 		});
 
 		const { createNodePlatform } = await import('../platform/index.js');
-		const platform = createNodePlatform({ appDir: '/tmp' as AbsolutePath });
+		const platform = createNodePlatform();
 		const flow = await platform.createFlow('anthropic');
 
 		await expect(flow.login()).resolves.toMatchObject({
@@ -67,7 +66,7 @@ describe('createNodePlatform OAuth adapter', () => {
 		});
 
 		const { createNodePlatform } = await import('../platform/index.js');
-		const platform = createNodePlatform({ appDir: '/tmp' as AbsolutePath });
+		const platform = createNodePlatform();
 		const flow = await platform.createFlow('anthropic');
 
 		await expect(flow.login()).rejects.toThrow(

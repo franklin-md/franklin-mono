@@ -8,6 +8,7 @@ import {
 } from '@franklin/extensions';
 import type { SessionManager } from '@franklin/extensions';
 import type { AbsolutePath } from '@franklin/lib';
+import { joinAbsolute } from '@franklin/lib';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { createPersistence } from '../agent/session/persist/file-persister.js';
 import { withAuth } from '../auth/with-auth.js';
@@ -40,15 +41,15 @@ export class FranklinApp {
 	constructor(opts: {
 		extensions: FranklinExtension[];
 		platform: Platform;
-		persistDir: AbsolutePath;
+		appDir: AbsolutePath;
 	}) {
-		const { extensions, platform, persistDir } = opts;
-		this.auth = new AuthManager(platform);
+		const { extensions, platform, appDir } = opts;
+		this.auth = new AuthManager(platform, appDir);
 		this.platform = platform;
-		this.settings = createSettings(platform.filesystem);
+		this.settings = createSettings(platform.filesystem, appDir);
 
 		const persistence = createPersistence<FranklinState>(
-			persistDir,
+			appDir,
 			platform.filesystem,
 		);
 

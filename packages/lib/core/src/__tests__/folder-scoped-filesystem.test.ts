@@ -30,80 +30,49 @@ describe('createFolderScopedFilesystem', () => {
 		inner = mockFilesystem();
 	});
 
-	// The AbsolutePath branded type now enforces absolute paths at compile time,
-	// so there is no runtime check to test.
-
-	describe('path resolution', () => {
-		it('resolves relative paths against cwd', async () => {
+	describe('resolve scopes to cwd', () => {
+		it('prepends cwd to relative paths', async () => {
 			const fs = createFolderScopedFilesystem(
 				'/project' as AbsolutePath,
 				inner,
 			);
-			await fs.readFile('./src/index.ts' as AbsolutePath);
+			await fs.resolve('src/index.ts');
 
-			expect(inner.readFile).toHaveBeenCalledWith('/project/src/index.ts');
+			expect(inner.resolve).toHaveBeenCalledWith('/project', 'src/index.ts');
 		});
 
-		it('resolves bare filenames against cwd', async () => {
+		it('prepends cwd to bare filenames', async () => {
 			const fs = createFolderScopedFilesystem(
 				'/project' as AbsolutePath,
 				inner,
 			);
-			await fs.readFile('file.txt' as AbsolutePath);
+			await fs.resolve('file.txt');
 
-			expect(inner.readFile).toHaveBeenCalledWith('/project/file.txt');
-		});
-
-		it('normalizes .. within cwd', async () => {
-			const fs = createFolderScopedFilesystem(
-				'/project' as AbsolutePath,
-				inner,
-			);
-			await fs.readFile('src/../file.txt' as AbsolutePath);
-
-			expect(inner.readFile).toHaveBeenCalledWith('/project/file.txt');
-		});
-
-		it('resolves . to cwd itself', async () => {
-			const fs = createFolderScopedFilesystem(
-				'/project' as AbsolutePath,
-				inner,
-			);
-			await fs.readdir('.' as AbsolutePath);
-
-			expect(inner.readdir).toHaveBeenCalledWith('/project');
-		});
-
-		it('resolves absolute paths as-is', async () => {
-			const fs = createFolderScopedFilesystem(
-				'/project' as AbsolutePath,
-				inner,
-			);
-			await fs.readFile('/usr/share/data.txt' as AbsolutePath);
-
-			expect(inner.readFile).toHaveBeenCalledWith('/usr/share/data.txt');
-		});
-
-		it('resolves .. that escapes cwd', async () => {
-			const fs = createFolderScopedFilesystem(
-				'/project' as AbsolutePath,
-				inner,
-			);
-			await fs.readFile('../other/file.txt' as AbsolutePath);
-
-			expect(inner.readFile).toHaveBeenCalledWith('/other/file.txt');
+			expect(inner.resolve).toHaveBeenCalledWith('/project', 'file.txt');
 		});
 	});
 
-	describe('delegates all operations', () => {
+	describe('passthrough — methods delegate directly to inner', () => {
+		it('readFile', async () => {
+			const fs = createFolderScopedFilesystem(
+				'/project' as AbsolutePath,
+				inner,
+			);
+			const absPath = '/project/src/index.ts' as AbsolutePath;
+			await fs.readFile(absPath);
+
+			expect(inner.readFile).toHaveBeenCalledWith(absPath);
+		});
+
 		it('writeFile', async () => {
 			const fs = createFolderScopedFilesystem(
 				'/project' as AbsolutePath,
 				inner,
 			);
-			await fs.writeFile('out.txt' as AbsolutePath, 'data');
+			const absPath = '/project/out.txt' as AbsolutePath;
+			await fs.writeFile(absPath, 'data');
 
-			expect(inner.writeFile).toHaveBeenCalledWith('/project/out.txt', 'data');
+			expect(inner.writeFile).toHaveBeenCalledWith(absPath, 'data');
 		});
 
 		it('mkdir', async () => {
@@ -111,9 +80,10 @@ describe('createFolderScopedFilesystem', () => {
 				'/project' as AbsolutePath,
 				inner,
 			);
-			await fs.mkdir('dist' as AbsolutePath, { recursive: true });
+			const absPath = '/project/dist' as AbsolutePath;
+			await fs.mkdir(absPath, { recursive: true });
 
-			expect(inner.mkdir).toHaveBeenCalledWith('/project/dist', {
+			expect(inner.mkdir).toHaveBeenCalledWith(absPath, {
 				recursive: true,
 			});
 		});
@@ -123,9 +93,10 @@ describe('createFolderScopedFilesystem', () => {
 				'/project' as AbsolutePath,
 				inner,
 			);
-			await fs.access('package.json' as AbsolutePath);
+			const absPath = '/project/package.json' as AbsolutePath;
+			await fs.access(absPath);
 
-			expect(inner.access).toHaveBeenCalledWith('/project/package.json');
+			expect(inner.access).toHaveBeenCalledWith(absPath);
 		});
 
 		it('stat', async () => {
@@ -133,9 +104,10 @@ describe('createFolderScopedFilesystem', () => {
 				'/project' as AbsolutePath,
 				inner,
 			);
-			await fs.stat('src' as AbsolutePath);
+			const absPath = '/project/src' as AbsolutePath;
+			await fs.stat(absPath);
 
-			expect(inner.stat).toHaveBeenCalledWith('/project/src');
+			expect(inner.stat).toHaveBeenCalledWith(absPath);
 		});
 
 		it('exists', async () => {
@@ -143,9 +115,21 @@ describe('createFolderScopedFilesystem', () => {
 				'/project' as AbsolutePath,
 				inner,
 			);
-			await fs.exists('config.json' as AbsolutePath);
+			const absPath = '/project/config.json' as AbsolutePath;
+			await fs.exists(absPath);
 
-			expect(inner.exists).toHaveBeenCalledWith('/project/config.json');
+			expect(inner.exists).toHaveBeenCalledWith(absPath);
+		});
+
+		it('readdir', async () => {
+			const fs = createFolderScopedFilesystem(
+				'/project' as AbsolutePath,
+				inner,
+			);
+			const absPath = '/project' as AbsolutePath;
+			await fs.readdir(absPath);
+
+			expect(inner.readdir).toHaveBeenCalledWith(absPath);
 		});
 
 		it('deleteFile', async () => {
@@ -153,9 +137,10 @@ describe('createFolderScopedFilesystem', () => {
 				'/project' as AbsolutePath,
 				inner,
 			);
-			await fs.deleteFile('tmp/old.log' as AbsolutePath);
+			const absPath = '/project/tmp/old.log' as AbsolutePath;
+			await fs.deleteFile(absPath);
 
-			expect(inner.deleteFile).toHaveBeenCalledWith('/project/tmp/old.log');
+			expect(inner.deleteFile).toHaveBeenCalledWith(absPath);
 		});
 	});
 
@@ -165,7 +150,7 @@ describe('createFolderScopedFilesystem', () => {
 				'/project' as AbsolutePath,
 				inner,
 			);
-			await fs.glob('**/*.ts', { root_dir: 'src' as AbsolutePath });
+			await fs.glob('**/*.ts', { root_dir: '/project/src' as AbsolutePath });
 
 			expect(inner.glob).toHaveBeenCalledWith('**/*.ts', {
 				root_dir: '/project/src',

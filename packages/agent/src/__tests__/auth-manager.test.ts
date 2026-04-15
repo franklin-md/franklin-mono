@@ -3,7 +3,8 @@ import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthManager } from '../auth/manager.js';
 import { OAuthFlow } from '../auth/oauth-flow.js';
-import { DEFAULT_AUTH_PATH } from '../auth/store.js';
+import { DEFAULT_AUTH_FILE } from '../auth/store.js';
+import { joinAbsolute } from '@franklin/lib';
 import type { Platform } from '../platform.js';
 
 function createFilesystem(): Filesystem {
@@ -55,9 +56,13 @@ function createPlatform(
 			getApiKeyProviders: async () => [],
 		},
 		createFlow,
+		getHome: vi.fn(async () => '/home/test'),
 		openExternal: vi.fn(async () => {}),
 	};
 }
+
+const TEST_APP_DIR = '/test/app' as AbsolutePath;
+const TEST_AUTH_PATH = joinAbsolute(TEST_APP_DIR, DEFAULT_AUTH_FILE);
 
 describe('AuthManager', () => {
 	it('returns OAuth credentials from the platform flow without persisting them', async () => {
@@ -70,6 +75,7 @@ describe('AuthManager', () => {
 				filesystem,
 				async () => new OAuthFlow(async () => credentials),
 			),
+			TEST_APP_DIR,
 		);
 
 		const flow = await auth.flow('anthropic');
@@ -88,6 +94,7 @@ describe('AuthManager', () => {
 				filesystem,
 				async () => new OAuthFlow(async () => credentials),
 			),
+			TEST_APP_DIR,
 		);
 
 		auth.setOAuthEntry('anthropic', {
@@ -108,7 +115,7 @@ describe('AuthManager', () => {
 	it('restores persisted entries without writing them back during hydration', async () => {
 		const filesystem = createFilesystem();
 		await filesystem.writeFile(
-			DEFAULT_AUTH_PATH as AbsolutePath,
+			TEST_AUTH_PATH,
 			JSON.stringify({
 				anthropic: {
 					apiKey: {
@@ -124,6 +131,7 @@ describe('AuthManager', () => {
 				filesystem,
 				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
 			),
+			TEST_APP_DIR,
 		);
 
 		await auth.restore();
@@ -142,7 +150,7 @@ describe('AuthManager', () => {
 	it('does not emit auth change events during restore', async () => {
 		const filesystem = createFilesystem();
 		await filesystem.writeFile(
-			DEFAULT_AUTH_PATH as AbsolutePath,
+			TEST_AUTH_PATH,
 			JSON.stringify({
 				anthropic: {
 					apiKey: {
@@ -157,6 +165,7 @@ describe('AuthManager', () => {
 				filesystem,
 				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
 			),
+			TEST_APP_DIR,
 		);
 		const listener = vi.fn();
 		auth.onAuthChange(listener);
@@ -172,6 +181,7 @@ describe('AuthManager', () => {
 				createFilesystem(),
 				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
 			),
+			TEST_APP_DIR,
 		);
 		const listener = vi.fn();
 		auth.onAuthChange(listener);
@@ -195,6 +205,7 @@ describe('AuthManager', () => {
 				createFilesystem(),
 				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
 			),
+			TEST_APP_DIR,
 		);
 		const listener = vi.fn();
 		auth.onAuthChange(listener);

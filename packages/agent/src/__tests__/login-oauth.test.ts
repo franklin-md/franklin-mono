@@ -56,6 +56,7 @@ function createPlatform(
 			getApiKeyProviders: async () => [],
 		},
 		createFlow,
+		getHome: vi.fn(async () => '/home/test'),
 		openExternal: vi.fn(async () => {}),
 	};
 }
@@ -86,7 +87,7 @@ describe('AuthManager.loginOAuth', () => {
 			filesystem,
 			vi.fn(async () => flow),
 		);
-		const auth = new AuthManager(platform);
+		const auth = new AuthManager(platform, '/test/app' as AbsolutePath);
 		const loginSpy = vi.spyOn(flow, 'login');
 		const disposeSpy = vi.spyOn(flow, 'dispose');
 		const onAuth = vi.fn();

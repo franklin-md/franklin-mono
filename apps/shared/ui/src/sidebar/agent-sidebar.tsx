@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import { AgentList, useAgents, useSettings } from '@franklin/react';
+import type { AbsolutePath } from '@franklin/lib';
 
 import { Button } from '../primitives/button.js';
 import { ScrollArea } from '../primitives/scroll-area.js';
@@ -22,7 +23,7 @@ export function AgentSidebar() {
 				core: { llmConfig: settings.get().defaultLLMConfig },
 				env: {
 					fsConfig: {
-						cwd: '/tmp',
+						cwd: '/tmp' as AbsolutePath,
 						permissions: { allowRead: ['**'], allowWrite: ['**'] },
 					},
 					netConfig: { allowedDomains: [], deniedDomains: [] },

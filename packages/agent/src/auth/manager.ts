@@ -2,6 +2,7 @@ import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
 import { createObserver } from '@franklin/lib';
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
+import type { AbsolutePath } from '@franklin/lib';
 import type {
 	ApiKeyEntry,
 	AuthEntries,
@@ -17,8 +18,11 @@ export class AuthManager {
 	private readonly store: AuthStore;
 	private readonly observer = createObserver<[string, AuthEntry | undefined]>();
 
-	constructor(private readonly platform: Platform) {
-		this.store = createAuthStore(platform.filesystem);
+	constructor(
+		private readonly platform: Platform,
+		appDir: AbsolutePath,
+	) {
+		this.store = createAuthStore(platform.filesystem, appDir);
 	}
 
 	async restore(): Promise<void> {

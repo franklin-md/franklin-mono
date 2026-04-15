@@ -1,7 +1,7 @@
-import * as path from 'node:path';
 import ignore from 'ignore';
-import { toAbsolutePath } from './types.js';
-import type { AbsolutePath, Filesystem } from './types.js';
+import { toAbsolutePath, posixJoin } from '../paths/index.js';
+import type { AbsolutePath } from '../paths/index.js';
+import type { Filesystem } from './types.js';
 
 /**
  * Configuration for filesystem access filtering.
@@ -56,7 +56,7 @@ export function createFilteredFilesystem(
 
 	function filterReadable(dir: AbsolutePath, entries: string[]): string[] {
 		return entries.filter((entry) => {
-			const abs = toAbsolutePath(path.join(dir, entry));
+			const abs = toAbsolutePath(posixJoin(dir, entry));
 			const rel = abs.slice(1);
 			return isReadable(rel);
 		});
@@ -107,9 +107,7 @@ export function createFilteredFilesystem(
 			const results = await inner.glob(pattern, options);
 			// Glob results are relative to options.root_dir — make absolute to check
 			return results.filter((entry) => {
-				const abs = toAbsolutePath(
-					path.resolve(options.root_dir ?? '.', entry),
-				);
+				const abs = toAbsolutePath(posixJoin(options.root_dir ?? '/', entry));
 				const rel = abs.slice(1);
 				return isReadable(rel);
 			});

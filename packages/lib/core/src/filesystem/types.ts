@@ -1,20 +1,28 @@
+import type { AbsolutePath } from '../paths/index.js';
+
+// ---------------------------------------------------------------------------
+// Filesystem
+// ---------------------------------------------------------------------------
+
+export type { AbsolutePath };
+
 export interface FileStat {
 	isFile: boolean;
 	isDirectory: boolean;
 }
 
 export interface Filesystem {
-	resolve(...paths: string[]): Promise<string>;
-	readFile(path: string): Promise<Uint8Array>;
-	writeFile(path: string, content: string | Uint8Array): Promise<void>;
-	mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
-	access(path: string): Promise<void>;
-	stat(path: string): Promise<FileStat>;
-	readdir(path: string): Promise<string[]>;
-	exists(path: string): Promise<boolean>;
+	resolve(...paths: string[]): Promise<AbsolutePath>;
+	readFile(path: AbsolutePath): Promise<Uint8Array>;
+	writeFile(path: AbsolutePath, content: string | Uint8Array): Promise<void>;
+	mkdir(path: AbsolutePath, options?: { recursive?: boolean }): Promise<void>;
+	access(path: AbsolutePath): Promise<void>;
+	stat(path: AbsolutePath): Promise<FileStat>;
+	readdir(path: AbsolutePath): Promise<string[]>;
+	exists(path: AbsolutePath): Promise<boolean>;
 	glob(
 		pattern: string | string[],
-		options: { root_dir?: string; ignore?: string[]; limit?: number },
+		options: { root_dir?: AbsolutePath; ignore?: string[]; limit?: number },
 	): Promise<string[]>;
-	deleteFile(path: string): Promise<void>;
+	deleteFile(path: AbsolutePath): Promise<void>;
 }

@@ -25,9 +25,6 @@ export function createPersistence<S extends SessionState>(
 			createFilePersistence<S>(joinAbsolute(dir, 'sessions'), fs),
 			500,
 		),
-		store: createFilePersistence<StoreSnapshot>(
-			joinAbsolute(dir, 'store'),
-			fs,
-		),
+		store: createFilePersistence<StoreSnapshot>(joinAbsolute(dir, 'store'), fs),
 	};
 }

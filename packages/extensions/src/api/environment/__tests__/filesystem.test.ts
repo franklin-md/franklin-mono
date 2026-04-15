@@ -28,33 +28,29 @@ describe('configureFilesystem', () => {
 		inner = mockFilesystem();
 	});
 
-	describe('cwd scoping', () => {
+	describe('resolve scopes to cwd', () => {
 		it('resolves relative paths against cwd', async () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
 				permissions: { allowRead: ['**'], allowWrite: ['**'] },
 			});
 
-			await fs.readFile('src/index.ts' as AbsolutePath);
-			expect(inner.readFile).toHaveBeenCalledWith('/project/src/index.ts');
+			const resolved = await fs.resolve('src/index.ts');
+			expect(resolved).toBe('/project/src/index.ts');
 		});
 
-		it('produces a new filesystem with different cwd when rebuilt', async () => {
+		it('produces different resolved paths with different cwd', async () => {
 			const fsA = configureFilesystem(inner, {
 				cwd: '/project-a' as AbsolutePath,
 				permissions: { allowRead: ['**'], allowWrite: ['**'] },
 			});
-
-			await fsA.readFile('file.txt' as AbsolutePath);
-			expect(inner.readFile).toHaveBeenCalledWith('/project-a/file.txt');
+			expect(await fsA.resolve('file.txt')).toBe('/project-a/file.txt');
 
 			const fsB = configureFilesystem(inner, {
 				cwd: '/project-b' as AbsolutePath,
 				permissions: { allowRead: ['**'], allowWrite: ['**'] },
 			});
-
-			await fsB.readFile('file.txt' as AbsolutePath);
-			expect(inner.readFile).toHaveBeenCalledWith('/project-b/file.txt');
+			expect(await fsB.resolve('file.txt')).toBe('/project-b/file.txt');
 		});
 	});
 
@@ -76,9 +72,9 @@ describe('configureFilesystem', () => {
 				permissions: { allowRead: [], allowWrite: [] },
 			});
 
-			await expect(fs.readFile('src/index.ts' as AbsolutePath)).rejects.toThrow(
-				'Read access denied',
-			);
+			await expect(
+				fs.readFile('/project/src/index.ts' as AbsolutePath),
+			).rejects.toThrow('Read access denied');
 		});
 
 		it('produces a new filesystem with different permissions when rebuilt', async () => {
@@ -87,16 +83,16 @@ describe('configureFilesystem', () => {
 				permissions: { allowRead: [], allowWrite: [] },
 			});
 
-			await expect(fsA.readFile('file.txt' as AbsolutePath)).rejects.toThrow(
-				'Read access denied',
-			);
+			await expect(
+				fsA.readFile('/project/file.txt' as AbsolutePath),
+			).rejects.toThrow('Read access denied');
 
 			const fsB = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
 				permissions: { allowRead: ['**'], allowWrite: ['**'] },
 			});
 
-			await fsB.readFile('file.txt' as AbsolutePath);
+			await fsB.readFile('/project/file.txt' as AbsolutePath);
 			expect(inner.readFile).toHaveBeenCalledWith('/project/file.txt');
 		});
 	});
@@ -108,7 +104,7 @@ describe('configureFilesystem', () => {
 				permissions: { allowRead: ['**'], allowWrite: ['project/**'] },
 			});
 
-			await fs.writeFile('out.txt' as AbsolutePath, 'data');
+			await fs.writeFile('/project/out.txt' as AbsolutePath, 'data');
 			expect(inner.writeFile).toHaveBeenCalledWith('/project/out.txt', 'data');
 		});
 
@@ -118,7 +114,7 @@ describe('configureFilesystem', () => {
 				permissions: { allowRead: ['**'], allowWrite: ['project/**'] },
 			});
 
-			await fs.mkdir('dist' as AbsolutePath, { recursive: true });
+			await fs.mkdir('/project/dist' as AbsolutePath, { recursive: true });
 			expect(inner.mkdir).toHaveBeenCalledWith('/project/dist', {
 				recursive: true,
 			});
@@ -130,7 +126,7 @@ describe('configureFilesystem', () => {
 				permissions: { allowRead: ['project/**'], allowWrite: [] },
 			});
 
-			await fs.stat('src' as AbsolutePath);
+			await fs.stat('/project/src' as AbsolutePath);
 			expect(inner.stat).toHaveBeenCalledWith('/project/src');
 		});
 
@@ -140,7 +136,7 @@ describe('configureFilesystem', () => {
 				permissions: { allowRead: ['**'], allowWrite: ['project/**'] },
 			});
 
-			await fs.deleteFile('tmp/old.log' as AbsolutePath);
+			await fs.deleteFile('/project/tmp/old.log' as AbsolutePath);
 			expect(inner.deleteFile).toHaveBeenCalledWith('/project/tmp/old.log');
 		});
 	});

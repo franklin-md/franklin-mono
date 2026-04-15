@@ -23,6 +23,7 @@ export interface Platform {
 
 	createFlow(provider: string): Promise<OAuthFlow>;
 	filesystem: Filesystem;
+	getHome(): Promise<string>;
 	// TODO: Group filesystem, openExternal, and similar host APIs under `os`.
 	openExternal(url: string): Promise<void>;
 
