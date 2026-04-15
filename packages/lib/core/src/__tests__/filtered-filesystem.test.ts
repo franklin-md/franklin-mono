@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFilteredFilesystem } from '../filesystem/filtered.js';
 import type { AbsolutePath, Filesystem } from '../filesystem/types.js';
+import { posixJoin, toAbsolutePath } from '../paths/index.js';
 
 function mockFilesystem(): Filesystem {
 	return {
@@ -16,9 +17,13 @@ function mockFilesystem(): Filesystem {
 		exists: vi.fn().mockResolvedValue(true),
 		glob: vi.fn().mockResolvedValue([]),
 		deleteFile: vi.fn().mockResolvedValue(undefined),
-		resolve: vi.fn(
-			async (...paths: string[]) => paths[paths.length - 1]! as AbsolutePath,
-		),
+		resolve: vi.fn(async (...paths: string[]) => {
+			const [base, ...rest] = paths;
+			if (base?.startsWith('/')) {
+				return toAbsolutePath(posixJoin(base, ...rest));
+			}
+			return paths[paths.length - 1]! as AbsolutePath;
+		}),
 	};
 }
 
@@ -230,6 +235,33 @@ describe('createFilteredFilesystem', () => {
 			const results = await fs.glob('**/*', {
 				root_dir: '/project' as AbsolutePath,
 			});
+			expect(results).toEqual(['src/index.ts', 'src/util.ts']);
+		});
+
+		it('resolves glob results against cwd when root_dir is omitted', async () => {
+			vi.mocked(inner.glob).mockResolvedValue([
+				'src/index.ts',
+				'.env',
+				'src/util.ts',
+			]);
+			vi.mocked(inner.resolve).mockImplementation(
+				async (...paths: string[]) => {
+					if (paths[0] === '.' && paths[1]) {
+						return toAbsolutePath(posixJoin('/project', paths[1]));
+					}
+					return paths[paths.length - 1]! as AbsolutePath;
+				},
+			);
+
+			const fs = createFilteredFilesystem(
+				{
+					allowRead: ['project/**', '!project/.env'],
+					allowWrite: [],
+				},
+				inner,
+			);
+
+			const results = await fs.glob('**/*', {});
 			expect(results).toEqual(['src/index.ts', 'src/util.ts']);
 		});
 	});

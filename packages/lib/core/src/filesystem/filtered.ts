@@ -105,12 +105,14 @@ export function createFilteredFilesystem(
 
 		async glob(pattern, options) {
 			const results = await inner.glob(pattern, options);
-			// Glob results are relative to options.root_dir — make absolute to check
-			return results.filter((entry) => {
-				const abs = toAbsolutePath(posixJoin(options.root_dir ?? '/', entry));
-				const rel = abs.slice(1);
-				return isReadable(rel);
-			});
+			// Glob results are relative to options.root_dir or the inner cwd.
+			const visible = await Promise.all(
+				results.map(async (entry) => {
+					const abs = await inner.resolve(options.root_dir ?? '.', entry);
+					return isReadable(abs.slice(1)) ? entry : undefined;
+				}),
+			);
+			return visible.filter((entry): entry is string => entry !== undefined);
 		},
 
 		async deleteFile(p) {
