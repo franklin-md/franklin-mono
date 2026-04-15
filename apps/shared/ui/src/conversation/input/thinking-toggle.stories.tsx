@@ -2,10 +2,10 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import type { ThinkingLevel } from '@franklin/mini-acp';
 
-import { ThinkingToggle } from '@franklin/ui';
-import { MockAgentDecorator } from './mock-agent.js';
+import { MockAgentDecorator } from '../../storybook/mock-agent.js';
+import { ThinkingToggle } from './thinking-toggle.js';
 
-const LEVELS: ThinkingLevel[] = ['off', 'low', 'medium', 'high', 'xhigh'];
+const levels: ThinkingLevel[] = ['off', 'low', 'medium', 'high', 'xhigh'];
 
 const meta = {
 	title: 'Conversation/ThinkingToggle',
@@ -34,18 +34,14 @@ export const StartAtHigh: Story = {
 	],
 };
 
-function AllLevelsGallery() {
-	return (
+export const Gallery: Story = {
+	render: () => (
 		<div className="flex items-center gap-2">
-			{LEVELS.map((level) => (
+			{levels.map((level) => (
 				<MockAgentDecorator key={level} reasoning={level}>
 					<ThinkingToggle />
 				</MockAgentDecorator>
 			))}
 		</div>
-	);
-}
-
-export const Gallery: Story = {
-	render: () => <AllLevelsGallery />,
+	),
 };

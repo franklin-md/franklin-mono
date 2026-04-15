@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { EXT_ICONS, FILENAME_ICONS, FileIcon } from '@franklin/ui';
+import { EXT_ICONS, FILENAME_ICONS, FileIcon } from './file-icon.js';
 
 function IconGrid() {
 	return (
-		<div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3 p-4">
+		<div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
 			{Object.entries(FILENAME_ICONS).map(([name]) => (
 				<div
 					key={`file:${name}`}
@@ -38,7 +38,7 @@ function IconGrid() {
 }
 
 const meta = {
-	title: 'Conversation/FileIconGrid',
+	title: 'Components/FileIcon',
 	component: IconGrid,
 } satisfies Meta<typeof IconGrid>;
 

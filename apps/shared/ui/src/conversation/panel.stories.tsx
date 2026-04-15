@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { ConversationPanel } from '@franklin/ui';
-import { emptyConversation, multiTurn } from '../fixtures.js';
-import { MockAgentDecorator } from './mock-agent.js';
+import { emptyConversation, multiTurn } from '../storybook/fixtures.js';
+import { MockAgentDecorator } from '../storybook/mock-agent.js';
+import { ConversationPanel } from './panel.js';
 
 const meta = {
 	title: 'Conversation/ConversationPanel',
@@ -10,7 +10,7 @@ const meta = {
 	decorators: [
 		(Story) => (
 			<MockAgentDecorator turns={multiTurn}>
-				<div style={{ height: '600px', display: 'flex' }}>
+				<div className="flex h-[600px]">
 					<Story />
 				</div>
 			</MockAgentDecorator>
@@ -27,7 +27,7 @@ export const Empty: Story = {
 	decorators: [
 		(Story) => (
 			<MockAgentDecorator turns={emptyConversation}>
-				<div style={{ height: '600px', display: 'flex' }}>
+				<div className="flex h-[600px]">
 					<Story />
 				</div>
 			</MockAgentDecorator>

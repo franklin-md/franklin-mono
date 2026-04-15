@@ -1,25 +1,15 @@
-/**
- * Lightweight mock AgentProvider for Storybook stories.
- *
- * Provides just enough of the agent runtime for headless hooks
- * (useThinkingLevel, useModelSelection, useConversationTurns)
- * and the Prompt compound component to function.
- */
 import type { ReactNode } from 'react';
 
-import type { ConversationTurn } from '@franklin/extensions';
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { ThinkingLevel } from '@franklin/mini-acp';
+import type { ConversationTurn } from '@franklin/extensions';
 import { conversationExtension } from '@franklin/extensions';
+import type { ThinkingLevel } from '@franklin/mini-acp';
 import { AgentProvider, AppContext } from '@franklin/react';
-
-// ---------------------------------------------------------------------------
-// createMockStore — minimal reactive store
-// ---------------------------------------------------------------------------
 
 function createMockStore<T>(initial: T) {
 	let value = initial;
-	const listeners = new Set<(v: T) => void>();
+	const listeners = new Set<(next: T) => void>();
+
 	return {
 		ref: 'mock-ref',
 		sharing: 'private' as const,
@@ -27,10 +17,15 @@ function createMockStore<T>(initial: T) {
 			get: () => value,
 			set: (recipe: (draft: T) => T | undefined) => {
 				const result = recipe(value);
-				if (result !== undefined) value = result;
-				for (const l of listeners) l(value);
+				if (result !== undefined) {
+					value = result;
+				}
+
+				for (const listener of listeners) {
+					listener(value);
+				}
 			},
-			subscribe: (listener: (v: T) => void) => {
+			subscribe: (listener: (next: T) => void) => {
 				listeners.add(listener);
 				return () => {
 					listeners.delete(listener);
@@ -39,10 +34,6 @@ function createMockStore<T>(initial: T) {
 		},
 	};
 }
-
-// ---------------------------------------------------------------------------
-// createMockRuntime
-// ---------------------------------------------------------------------------
 
 export function createMockRuntime(opts?: {
 	turns?: ConversationTurn[];
@@ -85,10 +76,6 @@ export function createMockRuntime(opts?: {
 	} as unknown as FranklinRuntime;
 }
 
-// ---------------------------------------------------------------------------
-// createMockApp — minimal FranklinApp for AppContext
-// ---------------------------------------------------------------------------
-
 function createMockApp() {
 	const settingsStore = createMockStore({
 		defaultLLMConfig: {
@@ -102,10 +89,6 @@ function createMockApp() {
 		agents: { list: () => [] },
 	};
 }
-
-// ---------------------------------------------------------------------------
-// MockAgentDecorator
-// ---------------------------------------------------------------------------
 
 export function MockAgentDecorator({
 	children,

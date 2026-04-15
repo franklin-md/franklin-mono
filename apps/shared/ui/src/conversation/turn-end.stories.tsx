@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { ConversationView } from '@franklin/ui';
 import {
-	finishedTurn,
 	cancelledTurn,
-	maxTokensTurn,
 	configErrorTurn,
-	providerErrorTurn,
+	finishedTurn,
 	genericErrorTurn,
-} from '../fixtures.js';
+	maxTokensTurn,
+	providerErrorTurn,
+} from '../storybook/fixtures.js';
+import { ConversationView } from './view.js';
 
 const meta = {
 	title: 'Conversation/TurnEnd',

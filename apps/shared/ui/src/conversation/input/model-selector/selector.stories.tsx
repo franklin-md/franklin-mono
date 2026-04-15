@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { ModelSelector } from '@franklin/ui';
-import { MockAgentDecorator } from './mock-agent.js';
+import { MockAgentDecorator } from '../../../storybook/mock-agent.js';
+import { ModelSelector } from './selector.js';
 
 const meta = {
 	title: 'Conversation/ModelSelector',

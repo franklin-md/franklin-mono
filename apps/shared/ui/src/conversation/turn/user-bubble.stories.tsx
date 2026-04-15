@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { UserBubble } from '@franklin/ui';
-import { userTextPrompt } from '../fixtures.js';
+import { userTextPrompt } from '../../storybook/fixtures.js';
+import { UserBubble } from './user-bubble.js';
 
 const meta = {
 	title: 'Conversation/UserBubble',
@@ -22,7 +22,7 @@ export const LongMessage: Story = {
 			content: [
 				{
 					type: 'text',
-					text: 'This is a much longer message that should demonstrate how the bubble handles wrapping. It contains enough text to ensure that the max-width constraint kicks in and the text wraps to multiple lines within the bubble component.',
+					text: 'This is a much longer message that demonstrates wrapping within the bubble, including enough content to hit the component width constraints and show the default spacing.',
 				},
 			],
 		},
