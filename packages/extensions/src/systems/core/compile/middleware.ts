@@ -1,5 +1,5 @@
 import type {
-	CoreEventHandler,
+	CancelHandler,
 	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
@@ -37,7 +37,7 @@ export function addEventHandler<K extends string, H>(
 }
 
 export function buildMiddleware(
-	cancelHandlers: CoreEventHandler<'cancel'>[],
+	cancelHandlers: CancelHandler[],
 	promptHandlers: PromptHandler[],
 	observers: Map<
 		StreamObserverEvent,
@@ -58,7 +58,7 @@ export function buildMiddleware(
 	};
 
 	if (cancelHandlers.length > 0) {
-		client.cancel = buildAsyncWaterfall<'cancel'>(cancelHandlers);
+		client.cancel = buildAsyncWaterfall(cancelHandlers);
 	}
 
 	if (promptHandlers.length > 0 || observers.size > 0) {

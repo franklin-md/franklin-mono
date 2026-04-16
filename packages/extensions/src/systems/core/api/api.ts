@@ -1,7 +1,7 @@
 import type { ExtensionToolDefinition, ToolExecuteReturn } from './tool.js';
 import type { ToolSpec } from './tool-spec.js';
 import type {
-	CoreEventHandler,
+	CancelHandler,
 	PromptHandler,
 	StreamObserverHandler,
 	ToolObserverHandler,
@@ -11,7 +11,7 @@ import type { MaybePromise } from '../../../algebra/types/shared.js';
 export interface CoreAPI {
 	// Request events — prompt contributions plus cancellation handling.
 	on(event: 'prompt', handler: PromptHandler): void;
-	on(event: 'cancel', handler: CoreEventHandler<'cancel'>): void;
+	on(event: 'cancel', handler: CancelHandler): void;
 
 	// Stream observer events — fire-and-forget on response stream
 	on(event: 'chunk', handler: StreamObserverHandler<'chunk'>): void;

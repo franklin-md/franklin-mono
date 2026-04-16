@@ -1,7 +1,7 @@
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { CoreAPI } from '../api/api.js';
 import type {
-	CoreEventHandler,
+	CancelHandler,
 	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
@@ -45,7 +45,7 @@ export function createCoreCompiler(
 	transport?: SpawnResult,
 	state?: CoreState,
 ): Compiler<CoreAPI, CoreRuntime | FullMiddleware> {
-	const cancelHandlers: CoreEventHandler<'cancel'>[] = [];
+	const cancelHandlers: CancelHandler[] = [];
 	const promptHandlers: PromptHandler[] = [];
 	const observers = new Map<
 		StreamObserverEvent,
@@ -74,7 +74,7 @@ export function createCoreCompiler(
 			} else if (event === 'prompt') {
 				promptHandlers.push(handler as PromptHandler);
 			} else {
-				cancelHandlers.push(handler as CoreEventHandler<'cancel'>);
+				cancelHandlers.push(handler as CancelHandler);
 			}
 		},
 		registerTool(

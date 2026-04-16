@@ -17,12 +17,12 @@ import type { PromptContext } from './prompt-context.js';
 // tracker decorator and tool injector respectively.
 // ---------------------------------------------------------------------------
 
-export type CoreEvent = 'prompt' | 'cancel';
-
-export type CoreEventHandler<K extends CoreEvent> = (
+type CoreEventHandler<K extends keyof MiniACPClient> = (
 	params: Parameters<MiniACPClient[K]>[0],
 	// eslint-disable-next-line @typescript-eslint/no-invalid-void-type
 ) => MaybePromise<Parameters<MiniACPClient[K]>[0] | void>;
+
+export type CancelHandler = CoreEventHandler<'cancel'>;
 
 export type PromptHandler = (ctx: PromptContext) => MaybePromise<void>;
 
