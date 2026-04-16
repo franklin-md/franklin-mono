@@ -11,6 +11,9 @@ node_modules/
 .cursor/debug*
 .playwright-mcp
 
+# Obsidian workspace state
+**/.obsidian/workspace.json
+
 # Secrets
 .env
 .env.local
