@@ -1,5 +1,5 @@
 import { wait, randomDelay } from '@franklin/lib';
-import type { WebAPI } from '../../../api/environment/types.js';
+import type { WebAPI } from '../../../systems/environment/api/types.js';
 import { decodeBody, normalizeContentType } from '../utils.js';
 import { parseDdgLite } from './parse.js';
 import type { WebSearchExtensionOptions, WebSearchResult } from './types.js';

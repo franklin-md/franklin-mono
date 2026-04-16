@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import type { AbsolutePath } from '@franklin/lib';
-import { compile, combine } from '../../../../compile/types.js';
-import { createCoreCompiler } from '../../../../compile/core/compiler.js';
-import { createEnvironmentCompiler } from '../../../../compile/environment/compiler.js';
-import type { ReconfigurableEnvironment } from '../../../../api/environment/types.js';
+import { compile } from '../../../../algebra/compiler/compile.js';
+import { combine } from '../../../../algebra/compiler/combine.js';
+import { createCoreCompiler } from '../../../../systems/core/compile/compiler.js';
+import { createEnvironmentCompiler } from '../../../../systems/environment/compile/compiler.js';
+import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { webSearchExtension } from '../extension.js';
 
 function mockEnvironment(

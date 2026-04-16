@@ -1,10 +1,10 @@
 import type { Message, TurnEnd } from '@franklin/mini-acp';
 import { collect, stopCategory } from '@franklin/mini-acp';
-import type { CoreAPI } from '../../api/core/api.js';
-import type { ToolExecuteReturn } from '../../api/core/tool.js';
-import type { SessionAPI } from '../../api/session/api.js';
-import type { CoreSystem } from '../../runtime-system/core.js';
-import type { Extension } from '../../types/extension.js';
+import type { CoreAPI } from '../../systems/core/api/api.js';
+import type { ToolExecuteReturn } from '../../systems/core/api/tool.js';
+import type { SessionAPI } from '../../systems/sessions/api/api.js';
+import type { CoreSystem } from '../../systems/core/system.js';
+import type { Extension } from '../../algebra/types/extension.js';
 import { spawnSpec } from './tools.js';
 
 export function spawnExtension(): Extension<CoreAPI & SessionAPI<CoreSystem>> {

@@ -1,5 +1,5 @@
 import { encode } from '@franklin/lib';
-import type { WebAPI } from '../../../api/environment/types.js';
+import type { WebAPI } from '../../../systems/environment/api/types.js';
 import { decodeBody } from '../utils.js';
 import type { WebSearchExtensionOptions, WebSearchResult } from './types.js';
 

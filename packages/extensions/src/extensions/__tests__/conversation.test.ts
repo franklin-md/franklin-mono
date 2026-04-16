@@ -1,10 +1,11 @@
 /* eslint-disable require-yield */
 import { describe, it, expect, vi } from 'vitest';
-import { createCoreCompiler } from '../../compile/core/compiler.js';
-import { createStoreCompiler } from '../../compile/store/compiler.js';
-import { compile, combine } from '../../compile/types.js';
-import { apply } from '../../api/core/middleware/apply.js';
-import { createEmptyStoreResult } from '../../api/store/registry/result.js';
+import { createCoreCompiler } from '../../systems/core/compile/compiler.js';
+import { createStoreCompiler } from '../../systems/store/compile/compiler.js';
+import { compile } from '../../algebra/compiler/compile.js';
+import { combine } from '../../algebra/compiler/combine.js';
+import { apply } from '../../systems/core/api/middleware/apply.js';
+import { createEmptyStoreResult } from '../../systems/store/api/registry/result.js';
 import type {
 	MiniACPAgent,
 	MiniACPClient,
@@ -16,8 +17,8 @@ import type {
 import { StopCode } from '@franklin/mini-acp';
 import { conversationExtension } from '../conversation/extension.js';
 import type { ConversationTurn } from '../conversation/types.js';
-import type { StoreResult } from '../../api/index.js';
-import { StoreRegistry } from '../../api/store/registry/index.js';
+import type { StoreResult } from '../../systems/store/api/registry/result.js';
+import { StoreRegistry } from '../../systems/store/api/registry/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

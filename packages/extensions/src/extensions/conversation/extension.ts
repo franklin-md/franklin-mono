@@ -1,6 +1,6 @@
-import type { Extension } from '../../types/extension.js';
-import type { CoreAPI } from '../../api/core/api.js';
-import type { StoreAPI } from '../../api/store/api.js';
+import type { Extension } from '../../algebra/types/extension.js';
+import type { CoreAPI } from '../../systems/core/api/api.js';
+import type { StoreAPI } from '../../systems/store/api/api.js';
 import { conversationKey } from './key.js';
 import { handleChunk } from './handlers/chunk.js';
 import { handleToolCall } from './handlers/tool-call.js';

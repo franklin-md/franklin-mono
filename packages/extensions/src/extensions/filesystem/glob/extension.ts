@@ -1,6 +1,6 @@
-import type { Extension } from '../../../types/extension.js';
-import type { CoreAPI } from '../../../api/core/api.js';
-import type { EnvironmentAPI } from '../../../api/environment/api.js';
+import type { Extension } from '../../../algebra/types/extension.js';
+import type { CoreAPI } from '../../../systems/core/api/api.js';
+import type { EnvironmentAPI } from '../../../systems/environment/api/api.js';
 import { globSpec } from './tools.js';
 
 export function globExtension(): Extension<CoreAPI & EnvironmentAPI> {

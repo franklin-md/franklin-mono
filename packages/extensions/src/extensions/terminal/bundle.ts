@@ -1,4 +1,4 @@
-import { createBundle } from '../../bundle/create.js';
+import { createBundle } from '../../algebra/bundle/create.js';
 import { bashExtension as buildBashExtension } from './extension.js';
 import { bashSpec } from './tools.js';
 

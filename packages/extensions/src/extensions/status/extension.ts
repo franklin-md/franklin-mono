@@ -1,6 +1,6 @@
-import type { Extension } from '../../types/extension.js';
-import type { CoreAPI } from '../../api/core/api.js';
-import type { StoreAPI } from '../../api/store/api.js';
+import type { Extension } from '../../algebra/types/extension.js';
+import type { CoreAPI } from '../../systems/core/api/api.js';
+import type { StoreAPI } from '../../systems/store/api/api.js';
 import { createStatusControl } from './control.js';
 import { statusKey } from './key.js';
 
