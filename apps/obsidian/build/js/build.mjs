@@ -18,6 +18,7 @@ export function createJsBuilder({ srcDir, distDir, isProd }) {
 		entryPoints: [resolve(srcDir, 'main.ts')],
 		bundle: true,
 		outfile: resolve(distDir, 'main.js'),
+		tsconfig: resolve(srcDir, '../../../tsconfig.base.json'),
 		format: 'cjs',
 		platform: 'node',
 		target: 'es2022',
@@ -40,6 +41,7 @@ export function createJsBuilder({ srcDir, distDir, isProd }) {
 			const ctx = await esbuild.context({
 				...options,
 				plugins: [
+					...(options.plugins ?? []),
 					{
 						name: 'on-end',
 						setup(build) {

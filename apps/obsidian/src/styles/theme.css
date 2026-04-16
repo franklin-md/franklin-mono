@@ -9,6 +9,6 @@
 
 @theme inline {
 	/* ── Fonts — use Obsidian's theme fonts ───────────────── */
-	--font-sans: var(--font-interface-theme);
-	--font-mono: var(--font-monospace-theme);
+	--font-sans: var(--font-interface);
+	--font-mono: var(--font-monospace);
 }

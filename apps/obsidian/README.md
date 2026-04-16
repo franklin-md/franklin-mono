@@ -1,10 +1,10 @@
 # Obsidian Plugin
 
-This package is the current Obsidian placeholder plugin for Franklin.
+This package contains the Obsidian Franklin agent window.
 
-It depends on the workspace package `@franklin/ui` for shared theme tokens but
-does not depend on any Franklin runtime packages yet. The plugin just registers
-a view and opens a minimal placeholder panel inside Obsidian.
+It depends on Franklin workspace packages for shared UI, agent runtime, and
+platform bindings. The plugin currently registers a view and wires Obsidian
+filesystem/platform integration inside the plugin runtime.
 
 ## Requirements
 
@@ -71,7 +71,7 @@ npm run bundle -- --plugin-dir=/path/to/YourVault/.obsidian/plugins/franklin
 Then in Obsidian:
 
 1. Enable the `Franklin` community plugin.
-2. Click the ribbon icon, or run `Open Franklin Placeholder` from the command palette.
+2. Click the ribbon icon, or run `Open Franklin` from the command palette.
 
 ## Develop
 
@@ -115,6 +115,8 @@ After each rebuild, reload the plugin inside Obsidian to pick up the latest code
 
 ## Notes
 
-- This package currently uses React, Tailwind, and Obsidian APIs.
+- The plugin renders a single Franklin conversation window inside an Obsidian view.
+- Franklin application state is stored in the plugin directory itself (`<plugin-dir>/`).
+- This package uses React, Tailwind, and Obsidian APIs.
 - `styles.css` is generated from `src/styles/globals.css`.
 - `dist/` is generated output and should not be edited by hand.

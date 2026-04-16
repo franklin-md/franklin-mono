@@ -1,6 +1,10 @@
 // lib
 export { cn } from './lib/cn.js';
 export { displayUrl, faviconUrl } from './lib/display-url.js';
+export {
+	PortalContainerProvider,
+	usePortalContainer,
+} from './lib/portal-container.js';
 
 // primitives (shadcn/radix base components)
 export { Badge, badgeVariants, type BadgeProps } from './primitives/badge.js';

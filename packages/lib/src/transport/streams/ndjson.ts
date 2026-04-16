@@ -1,4 +1,4 @@
-const encoder = new TextEncoder();
+import { encode } from '@franklin/lib';
 
 export interface NdjsonDecoder<T> {
 	write(chunk: Uint8Array): T[];
@@ -6,7 +6,7 @@ export interface NdjsonDecoder<T> {
 }
 
 export function encodeNdjsonLine(value: unknown): Uint8Array {
-	return encoder.encode(JSON.stringify(value) + '\n');
+	return encode(JSON.stringify(value) + '\n');
 }
 
 export function createNdjsonDecoder<T>(): NdjsonDecoder<T> {

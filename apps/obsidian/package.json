@@ -14,11 +14,17 @@
 		"dev": "node ./build/bundle.mjs --watch"
 	},
 	"dependencies": {
+		"@franklin/agent": "*",
+		"@franklin/extensions": "*",
+		"@franklin/lib": "*",
+		"@franklin/node": "*",
+		"@franklin/react": "*",
+		"@franklin/ui": "*",
+		"lucide-react": "^0.511.0",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1"
 	},
 	"devDependencies": {
-		"@franklin/ui": "*",
 		"@tailwindcss/postcss": "^4.1.4",
 		"@types/react": "^18.3.20",
 		"@types/react-dom": "^18.3.7",

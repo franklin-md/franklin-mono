@@ -1,37 +1,59 @@
-import { Plugin } from 'obsidian';
+import { Notice, Plugin } from 'obsidian';
+import type { FranklinApp } from '@franklin/agent/browser';
 
+import { createFranklinApp } from './app/app.js';
+import { getDefaultAgent } from './app/agent.js';
 import { DiffController } from './diff/diff-controller.js';
+import { FranklinSettingTab } from './settings.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
 
 export default class FranklinPlugin extends Plugin {
 	private diffController!: DiffController;
+	franklinApp: FranklinApp | null = null;
 
 	async onload() {
 		this.diffController = new DiffController(this);
 		this.diffController.onload();
 
-		this.registerView(VIEW_TYPE, (leaf) => {
-			return new FranklinView(leaf);
-		});
+		this.addSettingTab(new FranklinSettingTab(this.app, this));
 
-		this.addRibbonIcon('bot', 'Open Franklin Placeholder', () => {
-			void this.activateView();
-		});
+		createFranklinApp(this)
+			.then(({ app, vaultRoot }) =>
+				getDefaultAgent(app, vaultRoot).then((runtime) => ({
+					app,
+					runtime,
+				})),
+			)
+			.then(({ app, runtime }) => {
+				this.franklinApp = app;
 
-		this.addCommand({
-			id: 'open-franklin-placeholder',
-			name: 'Open Franklin Placeholder',
-			callback: () => {
-				void this.activateView();
-			},
-		});
+				this.registerView(VIEW_TYPE, (leaf) => {
+					return new FranklinView(leaf, { app, runtime });
+				});
 
-		console.log('Franklin placeholder plugin loaded');
+				this.addRibbonIcon('bot', 'Open Franklin', () => {
+					void this.activateView();
+				});
+
+				this.addCommand({
+					id: 'open-franklin',
+					name: 'Open Franklin',
+					callback: () => {
+						void this.activateView();
+					},
+				});
+			})
+			.catch((err: unknown) => {
+				console.error(err);
+				new Notice(
+					`Franklin failed to load: ${err instanceof Error ? err.message : String(err)}`,
+				);
+			});
 	}
 
 	onunload() {
 		this.diffController.onunload();
-		console.log('Franklin placeholder plugin unloaded');
+		this.franklinApp = null;
 	}
 
 	private async activateView() {
