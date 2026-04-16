@@ -12,6 +12,7 @@ export interface FileStat {
 }
 
 export interface Filesystem {
+	/** Resolves path segments into a canonical slash-separated `AbsolutePath`. */
 	resolve(...paths: string[]): Promise<AbsolutePath>;
 	readFile(path: AbsolutePath): Promise<Uint8Array>;
 	writeFile(path: AbsolutePath, content: string | Uint8Array): Promise<void>;
@@ -20,6 +21,7 @@ export interface Filesystem {
 	stat(path: AbsolutePath): Promise<FileStat>;
 	readdir(path: AbsolutePath): Promise<string[]>;
 	exists(path: AbsolutePath): Promise<boolean>;
+	/** Returns slash-separated relative paths rooted at `options.root_dir`. */
 	glob(
 		pattern: string | string[],
 		options: { root_dir?: AbsolutePath; ignore?: string[]; limit?: number },

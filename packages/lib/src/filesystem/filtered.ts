@@ -1,5 +1,5 @@
 import ignore from 'ignore';
-import { toAbsolutePath, posixJoin } from '../paths/index.js';
+import { joinAbsolute } from '../paths/index.js';
 import type { AbsolutePath } from '../paths/index.js';
 import type { Filesystem } from './types.js';
 
@@ -41,7 +41,6 @@ export function createFilteredFilesystem(
 	const isWritable = createMatcher(filter.allowWrite);
 
 	function assertReadable(absolutePath: AbsolutePath): void {
-		// Strip leading slash for ignore matching (it expects relative paths)
 		const rel = absolutePath.slice(1);
 		if (!isReadable(rel)) {
 			throw new Error(`Read access denied: ${absolutePath}`);
@@ -57,7 +56,7 @@ export function createFilteredFilesystem(
 
 	function filterReadable(dir: AbsolutePath, entries: string[]): string[] {
 		return entries.filter((entry) => {
-			const abs = toAbsolutePath(posixJoin(dir, entry));
+			const abs = joinAbsolute(dir, entry);
 			const rel = abs.slice(1);
 			return isReadable(rel);
 		});
