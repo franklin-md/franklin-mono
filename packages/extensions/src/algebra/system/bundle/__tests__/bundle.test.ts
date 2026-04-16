@@ -1,11 +1,11 @@
 import { describe, it, expect, expectTypeOf } from 'vitest';
 import { z } from 'zod';
 import { createBundle } from '../create.js';
-import { storeKey } from '../../../systems/store/api/key.js';
-import { toolSpec } from '../../../systems/core/api/tool-spec.js';
-import type { Extension } from '../../types/extension.js';
-import type { StoreKey } from '../../../systems/store/api/key.js';
-import type { ToolSpec } from '../../../systems/core/api/tool-spec.js';
+import { storeKey } from '../../../../systems/store/api/key.js';
+import { toolSpec } from '../../../../systems/core/api/tool-spec.js';
+import type { Extension } from '../../../types/extension.js';
+import type { StoreKey } from '../../../../systems/store/api/key.js';
+import type { ToolSpec } from '../../../../systems/core/api/tool-spec.js';
 
 describe('createBundle', () => {
 	const myKey = storeKey<'items', string[]>('items');

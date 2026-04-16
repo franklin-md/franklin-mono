@@ -1,4 +1,4 @@
-import { createBundle } from '../../algebra/bundle/create.js';
+import { createBundle } from '../../algebra/system/bundle/create.js';
 import { statusExtension as buildStatusExtension } from './extension.js';
 import { statusKey } from './key.js';
 

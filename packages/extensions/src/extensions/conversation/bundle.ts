@@ -1,4 +1,4 @@
-import { createBundle } from '../../algebra/bundle/index.js';
+import { createBundle } from '../../algebra/system/bundle/index.js';
 import { conversationExtension as buildConversationExtension } from './extension.js';
 import { conversationKey } from './key.js';
 

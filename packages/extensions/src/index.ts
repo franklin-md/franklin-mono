@@ -85,8 +85,8 @@ export { createCoreCompiler } from './systems/core/compile/index.js';
 export { createStoreCompiler } from './systems/store/compile/index.js';
 export { createEnvironmentCompiler } from './systems/environment/compile/index.js';
 export type { Extension, MaybePromise } from './algebra/types/index.js';
-export type { ExtensionBundle } from './algebra/bundle/index.js';
-export { createBundle } from './algebra/bundle/index.js';
+export type { ExtensionBundle } from './algebra/system/bundle/index.js';
+export { createBundle } from './algebra/system/bundle/index.js';
 export { reduceExtensions } from './algebra/types/index.js';
 // ---------------------------------------------------------------------------
 // Runtime system
