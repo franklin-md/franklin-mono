@@ -1,1 +1,1 @@
-export { writeExtension } from './bundle.js';
+export { writeExtension } from './extension.js';

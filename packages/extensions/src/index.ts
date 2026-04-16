@@ -145,13 +145,9 @@ export {
 	conversationExtension,
 	todoExtension,
 	statusExtension,
-	globExtension,
-	editExtension,
-	writeExtension,
-	readExtension,
+	filesystemExtension,
 	bashExtension,
-	createWebFetchExtension,
-	createWebSearchExtension,
+	createWebExtension,
 	spawnExtension,
 } from './extensions/index.js';
 
@@ -174,4 +170,8 @@ export type {
 	WebFetchExtensionOptions,
 } from './extensions/web/web-fetch/types.js';
 export { DEFAULT_WEB_SEARCH_OPTIONS } from './extensions/web/web-search/types.js';
-export type { WebSearchResult } from './extensions/web/web-search/types.js';
+export type {
+	WebExtensionOptions,
+	WebSearchExtensionOptions,
+	WebSearchResult,
+} from './extensions/web/index.js';

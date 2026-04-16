@@ -1,1 +1,1 @@
-export { editExtension } from './bundle.js';
+export { editExtension } from './extension.js';

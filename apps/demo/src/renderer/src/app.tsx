@@ -7,30 +7,21 @@ import {
 	conversationExtension,
 	todoExtension,
 	statusExtension,
-	readExtension,
-	writeExtension,
-	editExtension,
-	globExtension,
+	filesystemExtension,
 	bashExtension,
-	createWebFetchExtension,
-	createWebSearchExtension,
+	createWebExtension,
 	spawnExtension,
 } from '@franklin/extensions';
 
-const webFetchExtension = createWebFetchExtension({});
-const webSearchExtension = createWebSearchExtension({});
+const webExtension = createWebExtension({});
 const platform = createElectronPlatform();
 const extensionBundles = [
 	conversationExtension,
 	todoExtension,
 	statusExtension,
-	readExtension,
-	writeExtension,
-	editExtension,
-	globExtension,
+	filesystemExtension,
 	bashExtension,
-	webFetchExtension,
-	webSearchExtension,
+	webExtension,
 	spawnExtension,
 ];
 const extensions = extensionBundles.map((bundle) => bundle.extension);

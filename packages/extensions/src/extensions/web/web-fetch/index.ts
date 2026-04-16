@@ -1,4 +1,4 @@
-export { createWebFetchExtension } from './bundle.js';
+export { webFetchExtension } from './extension.js';
 export type {
 	WebFetchExtensionOptions,
 	WebFetchProcessedResult,
