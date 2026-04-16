@@ -1,6 +1,6 @@
 import type {
-	CoreEvent,
 	CoreEventHandler,
+	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
 	ToolObserverEvent,
@@ -37,7 +37,8 @@ export function addEventHandler<K extends string, H>(
 }
 
 export function buildMiddleware(
-	handlers: Map<CoreEvent, CoreEventHandler<CoreEvent>[]>,
+	cancelHandlers: CoreEventHandler<'cancel'>[],
+	promptHandlers: PromptHandler[],
 	observers: Map<
 		StreamObserverEvent,
 		StreamObserverHandler<StreamObserverEvent>[]
@@ -56,29 +57,12 @@ export function buildMiddleware(
 		cancel: passThrough(),
 	};
 
-	for (const [key, fns] of handlers) {
-		if (key === 'prompt') {
-			client.prompt = buildPromptWaterfall(
-				fns as CoreEventHandler<'prompt'>[],
-				observers,
-			);
-		} else if (key === 'setContext') {
-			client.setContext = buildAsyncWaterfall<'setContext'>(
-				fns as CoreEventHandler<'setContext'>[],
-			);
-		} else if (key === 'initialize') {
-			client.initialize = buildAsyncWaterfall<'initialize'>(
-				fns as CoreEventHandler<'initialize'>[],
-			);
-		} else {
-			client.cancel = buildAsyncWaterfall<'cancel'>(
-				fns as CoreEventHandler<'cancel'>[],
-			);
-		}
+	if (cancelHandlers.length > 0) {
+		client.cancel = buildAsyncWaterfall<'cancel'>(cancelHandlers);
 	}
 
-	if (observers.size > 0 && !handlers.has('prompt')) {
-		client.prompt = buildPromptWaterfall([], observers);
+	if (promptHandlers.length > 0 || observers.size > 0) {
+		client.prompt = buildPromptWaterfall(promptHandlers, observers);
 	}
 
 	if (tools.length > 0) {
