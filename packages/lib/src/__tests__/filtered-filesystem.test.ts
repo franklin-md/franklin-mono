@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFilteredFilesystem } from '../filesystem/filtered.js';
 import type { AbsolutePath, Filesystem } from '../filesystem/types.js';
-import { posixJoin, toAbsolutePath } from '../paths/index.js';
+import { join, toAbsolutePath } from '../paths/index.js';
 
 function mockFilesystem(): Filesystem {
 	return {
@@ -20,7 +20,7 @@ function mockFilesystem(): Filesystem {
 		resolve: vi.fn(async (...paths: string[]) => {
 			const [base, ...rest] = paths;
 			if (base?.startsWith('/')) {
-				return toAbsolutePath(posixJoin(base, ...rest));
+				return toAbsolutePath(join(base, ...rest));
 			}
 			return paths[paths.length - 1]! as AbsolutePath;
 		}),
@@ -278,7 +278,7 @@ describe('createFilteredFilesystem', () => {
 			vi.mocked(inner.resolve).mockImplementation(
 				async (...paths: string[]) => {
 					if (paths[0] === '.' && paths[1]) {
-						return toAbsolutePath(posixJoin('/project', paths[1]));
+						return toAbsolutePath(join('/project', paths[1]));
 					}
 					return paths[paths.length - 1]! as AbsolutePath;
 				},

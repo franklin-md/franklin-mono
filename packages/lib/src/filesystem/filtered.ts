@@ -1,5 +1,5 @@
 import ignore from 'ignore';
-import { toAbsolutePath, posixJoin } from '../paths/index.js';
+import { join, toAbsolutePath } from '../paths/index.js';
 import type { AbsolutePath } from '../paths/index.js';
 import type { Filesystem } from './types.js';
 
@@ -91,7 +91,7 @@ export function createFilteredFilesystem(
 
 	function filterReadable(dir: AbsolutePath, entries: string[]): string[] {
 		return entries.filter((entry) => {
-			const abs = toAbsolutePath(posixJoin(dir, entry));
+			const abs = toAbsolutePath(join(dir, entry));
 			return isReadable(abs);
 		});
 	}
