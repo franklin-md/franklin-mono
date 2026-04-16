@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createFilteredFilesystem } from '../filesystem/filtered.js';
+import {
+	createFilteredFilesystem,
+	FILESYSTEM_DEFAULT_PERMISSIONS,
+	FILESYSTEM_DENY_ALL,
+	FILESYSTEM_READ_ONLY,
+} from '../filesystem/filtered.js';
 import type { AbsolutePath, Filesystem } from '../filesystem/types.js';
 import { joinAbsolute } from '../paths/index.js';
 
@@ -27,13 +32,6 @@ function mockFilesystem(): Filesystem {
 	};
 }
 
-const empty = {
-	allowRead: [],
-	denyRead: [],
-	allowWrite: [],
-	denyWrite: [],
-};
-
 describe('createFilteredFilesystem', () => {
 	let inner: Filesystem;
 
@@ -43,15 +41,40 @@ describe('createFilteredFilesystem', () => {
 
 	describe('default policy', () => {
 		it('allows reads when no patterns match (default-allow)', async () => {
-			const fs = createFilteredFilesystem(empty, inner);
+			const fs = createFilteredFilesystem(
+				FILESYSTEM_DEFAULT_PERMISSIONS,
+				inner,
+			);
 
 			await fs.readFile('/project/file.txt' as AbsolutePath);
 			expect(inner.readFile).toHaveBeenCalledWith('/project/file.txt');
 		});
 
 		it('blocks writes when no patterns match (default-deny)', async () => {
-			const fs = createFilteredFilesystem(empty, inner);
+			const fs = createFilteredFilesystem(
+				FILESYSTEM_DEFAULT_PERMISSIONS,
+				inner,
+			);
 
+			await expect(
+				fs.writeFile('/project/file.txt' as AbsolutePath, 'data'),
+			).rejects.toThrow('Write access denied');
+		});
+		it('FILESYSTEM_DENY_ALL blocks both reads and writes', async () => {
+			const fs = createFilteredFilesystem(FILESYSTEM_DENY_ALL, inner);
+
+			await expect(
+				fs.readFile('/project/file.txt' as AbsolutePath),
+			).rejects.toThrow('Read access denied');
+			await expect(
+				fs.writeFile('/project/file.txt' as AbsolutePath, 'data'),
+			).rejects.toThrow('Write access denied');
+		});
+
+		it('FILESYSTEM_READ_ONLY keeps default read/write behavior', async () => {
+			const fs = createFilteredFilesystem(FILESYSTEM_READ_ONLY, inner);
+
+			await fs.readFile('/project/file.txt' as AbsolutePath);
 			await expect(
 				fs.writeFile('/project/file.txt' as AbsolutePath, 'data'),
 			).rejects.toThrow('Write access denied');
@@ -61,7 +84,7 @@ describe('createFilteredFilesystem', () => {
 	describe('read access', () => {
 		it('blocks reads matching denyRead pattern', async () => {
 			const fs = createFilteredFilesystem(
-				{ ...empty, denyRead: ['secret/**'] },
+				{ ...FILESYSTEM_DEFAULT_PERMISSIONS, denyRead: ['secret/**'] },
 				inner,
 			);
 
@@ -73,7 +96,7 @@ describe('createFilteredFilesystem', () => {
 		it('allowRead overrides denyRead (allow wins)', async () => {
 			const fs = createFilteredFilesystem(
 				{
-					...empty,
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					allowRead: ['project/src/**'],
 					denyRead: ['project/**'],
 				},
@@ -87,7 +110,7 @@ describe('createFilteredFilesystem', () => {
 		it('denyRead blocks paths outside allowRead', async () => {
 			const fs = createFilteredFilesystem(
 				{
-					...empty,
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					allowRead: ['project/**'],
 					denyRead: ['etc/**'],
 				},
@@ -101,7 +124,10 @@ describe('createFilteredFilesystem', () => {
 
 		it('allows reads with ** wildcard', async () => {
 			const fs = createFilteredFilesystem(
-				{ ...empty, allowRead: ['**'] },
+				{
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
+					allowRead: ['**'],
+				},
 				inner,
 			);
 
@@ -113,7 +139,7 @@ describe('createFilteredFilesystem', () => {
 	describe('write access', () => {
 		it('allows writes matching allowWrite pattern', async () => {
 			const fs = createFilteredFilesystem(
-				{ ...empty, allowWrite: ['project/**'] },
+				{ ...FILESYSTEM_DEFAULT_PERMISSIONS, allowWrite: ['project/**'] },
 				inner,
 			);
 
@@ -126,7 +152,7 @@ describe('createFilteredFilesystem', () => {
 
 		it('blocks writes not matching allowWrite pattern', async () => {
 			const fs = createFilteredFilesystem(
-				{ ...empty, allowWrite: ['project/**'] },
+				{ ...FILESYSTEM_DEFAULT_PERMISSIONS, allowWrite: ['project/**'] },
 				inner,
 			);
 
@@ -138,7 +164,7 @@ describe('createFilteredFilesystem', () => {
 		it('denyWrite overrides allowWrite (deny wins)', async () => {
 			const fs = createFilteredFilesystem(
 				{
-					...empty,
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					allowWrite: ['project/**'],
 					denyWrite: ['project/secrets/**'],
 				},
@@ -152,7 +178,7 @@ describe('createFilteredFilesystem', () => {
 
 		it('blocks mkdir outside allowed paths', async () => {
 			const fs = createFilteredFilesystem(
-				{ ...empty, allowWrite: ['project/**'] },
+				{ ...FILESYSTEM_DEFAULT_PERMISSIONS, allowWrite: ['project/**'] },
 				inner,
 			);
 
@@ -163,7 +189,7 @@ describe('createFilteredFilesystem', () => {
 
 		it('blocks deleteFile outside allowed paths', async () => {
 			const fs = createFilteredFilesystem(
-				{ ...empty, allowWrite: ['project/**'] },
+				{ ...FILESYSTEM_DEFAULT_PERMISSIONS, allowWrite: ['project/**'] },
 				inner,
 			);
 
@@ -177,7 +203,7 @@ describe('createFilteredFilesystem', () => {
 		it('blocks .env files listed in denyRead', async () => {
 			const fs = createFilteredFilesystem(
 				{
-					...empty,
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					denyRead: ['**/.env', '**/.env.*'],
 				},
 				inner,
@@ -191,7 +217,7 @@ describe('createFilteredFilesystem', () => {
 		it('blocks .env.local via denyRead', async () => {
 			const fs = createFilteredFilesystem(
 				{
-					...empty,
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					denyRead: ['**/.env.*'],
 				},
 				inner,
@@ -205,7 +231,7 @@ describe('createFilteredFilesystem', () => {
 		it('allows non-env files in same directory', async () => {
 			const fs = createFilteredFilesystem(
 				{
-					...empty,
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					denyRead: ['**/.env', '**/.env.*'],
 				},
 				inner,
@@ -227,7 +253,7 @@ describe('createFilteredFilesystem', () => {
 
 			const fs = createFilteredFilesystem(
 				{
-					...empty,
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					denyRead: ['**/.env', '**/.env.*'],
 				},
 				inner,
@@ -240,7 +266,10 @@ describe('createFilteredFilesystem', () => {
 		it('returns all entries when all are readable', async () => {
 			vi.mocked(inner.readdir).mockResolvedValue(['a.ts', 'b.ts', 'c.ts']);
 
-			const fs = createFilteredFilesystem(empty, inner);
+			const fs = createFilteredFilesystem(
+				FILESYSTEM_DEFAULT_PERMISSIONS,
+				inner,
+			);
 
 			const entries = await fs.readdir('/project' as AbsolutePath);
 			expect(entries).toEqual(['a.ts', 'b.ts', 'c.ts']);
@@ -257,7 +286,7 @@ describe('createFilteredFilesystem', () => {
 
 			const fs = createFilteredFilesystem(
 				{
-					...empty,
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					denyRead: ['**/.env'],
 				},
 				inner,
@@ -286,7 +315,7 @@ describe('createFilteredFilesystem', () => {
 
 			const fs = createFilteredFilesystem(
 				{
-					...empty,
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					denyRead: ['**/.env'],
 				},
 				inner,
@@ -300,7 +329,7 @@ describe('createFilteredFilesystem', () => {
 	describe('stat, access, exists respect read policy', () => {
 		it('stat blocked for denied paths', async () => {
 			const fs = createFilteredFilesystem(
-				{ ...empty, denyRead: ['secret/**'] },
+				{ ...FILESYSTEM_DEFAULT_PERMISSIONS, denyRead: ['secret/**'] },
 				inner,
 			);
 
@@ -311,7 +340,7 @@ describe('createFilteredFilesystem', () => {
 
 		it('access blocked for denied paths', async () => {
 			const fs = createFilteredFilesystem(
-				{ ...empty, denyRead: ['secret/**'] },
+				{ ...FILESYSTEM_DEFAULT_PERMISSIONS, denyRead: ['secret/**'] },
 				inner,
 			);
 
@@ -322,7 +351,7 @@ describe('createFilteredFilesystem', () => {
 
 		it('exists blocked for denied paths', async () => {
 			const fs = createFilteredFilesystem(
-				{ ...empty, denyRead: ['secret/**'] },
+				{ ...FILESYSTEM_DEFAULT_PERMISSIONS, denyRead: ['secret/**'] },
 				inner,
 			);
 

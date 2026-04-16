@@ -28,6 +28,34 @@ export interface FilesystemPermissions {
 	denyWrite: string[];
 }
 
+// Empty lists mean "use the default policy": reads are allowed, writes denied.
+export const FILESYSTEM_DEFAULT_PERMISSIONS: FilesystemPermissions = {
+	allowRead: [],
+	denyRead: [],
+	allowWrite: [],
+	denyWrite: [],
+};
+
+export const FILESYSTEM_ALLOW_ALL: FilesystemPermissions = {
+	allowRead: ['**'],
+	denyRead: [],
+	allowWrite: ['**'],
+	denyWrite: [],
+};
+
+// Writes already fail closed by default, so deny-all only needs to deny reads.
+export const FILESYSTEM_DENY_ALL: FilesystemPermissions = {
+	allowRead: [],
+	denyRead: ['**'],
+	allowWrite: [],
+	denyWrite: [],
+};
+
+// Read-only is the same as the default filesystem policy.
+export const FILESYSTEM_READ_ONLY: FilesystemPermissions = {
+	...FILESYSTEM_DEFAULT_PERMISSIONS,
+};
+
 function createMatcher(patterns: string[]): (filePath: string) => boolean {
 	const ig = ignore().add(patterns);
 	return (filePath: string) => ig.ignores(filePath);

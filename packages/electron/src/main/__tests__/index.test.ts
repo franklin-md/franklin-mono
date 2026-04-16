@@ -1,5 +1,9 @@
 import type { WebContents } from 'electron';
-import type { AbsolutePath, Filesystem } from '@franklin/lib';
+import {
+	FILESYSTEM_ALLOW_ALL,
+	type AbsolutePath,
+	type Filesystem,
+} from '@franklin/lib';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -86,12 +90,7 @@ describe('initializeMain', () => {
 						config: async () => ({
 							fsConfig: {
 								cwd: '/tmp' as AbsolutePath,
-								permissions: {
-									allowRead: ['**'],
-									denyRead: [],
-									allowWrite: ['**'],
-									denyWrite: [],
-								},
+								permissions: FILESYSTEM_ALLOW_ALL,
 							},
 							netConfig: { allowedDomains: [], deniedDomains: [] },
 						}),

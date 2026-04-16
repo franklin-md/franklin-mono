@@ -1,4 +1,4 @@
-import type { AbsolutePath } from '@franklin/lib';
+import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FranklinIpcRuntime } from '../../../shared/api.js';
 
@@ -131,12 +131,7 @@ describe('bindRenderer', () => {
 		const env = await platform.environment({
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,
-				permissions: {
-					allowRead: ['**'],
-					denyRead: [],
-					allowWrite: ['**'],
-					denyWrite: [],
-				},
+				permissions: FILESYSTEM_ALLOW_ALL,
 			},
 			netConfig: { allowedDomains: [], deniedDomains: [] },
 		});
