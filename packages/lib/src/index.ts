@@ -13,7 +13,6 @@ export {
 	FILESYSTEM_ALLOW_ALL,
 	FILESYSTEM_DEFAULT_PERMISSIONS,
 	FILESYSTEM_DENY_ALL,
-	FILESYSTEM_READ_ONLY,
 } from './filesystem/index.js';
 export type { FilesystemPermissions } from './filesystem/index.js';
 export type { Persister } from './persistence/persister.js';

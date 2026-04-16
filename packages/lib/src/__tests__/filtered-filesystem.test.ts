@@ -3,7 +3,6 @@ import {
 	createFilteredFilesystem,
 	FILESYSTEM_DEFAULT_PERMISSIONS,
 	FILESYSTEM_DENY_ALL,
-	FILESYSTEM_READ_ONLY,
 } from '../filesystem/filtered.js';
 import type { AbsolutePath, Filesystem } from '../filesystem/types.js';
 import { joinAbsolute } from '../paths/index.js';
@@ -71,8 +70,8 @@ describe('createFilteredFilesystem', () => {
 			).rejects.toThrow('Write access denied');
 		});
 
-		it('FILESYSTEM_READ_ONLY keeps default read/write behavior', async () => {
-			const fs = createFilteredFilesystem(FILESYSTEM_READ_ONLY, inner);
+		it('FILESYSTEM_DEFAULT_PERMISSIONS keeps default read/write behavior', async () => {
+			const fs = createFilteredFilesystem(FILESYSTEM_DEFAULT_PERMISSIONS, inner);
 
 			await fs.readFile('/project/file.txt' as AbsolutePath);
 			await expect(

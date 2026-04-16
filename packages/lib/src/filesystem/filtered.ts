@@ -51,11 +51,6 @@ export const FILESYSTEM_DENY_ALL: FilesystemPermissions = {
 	denyWrite: [],
 };
 
-// Read-only is the same as the default filesystem policy.
-export const FILESYSTEM_READ_ONLY: FilesystemPermissions = {
-	...FILESYSTEM_DEFAULT_PERMISSIONS,
-};
-
 function createMatcher(patterns: string[]): (filePath: string) => boolean {
 	const ig = ignore().add(patterns);
 	return (filePath: string) => ig.ignores(filePath);
