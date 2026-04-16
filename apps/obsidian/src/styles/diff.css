@@ -1,4 +1,7 @@
 .diff-plugin-widget-host {
+	position: relative;
+	z-index: 2;
+	overflow: visible;
 	pointer-events: auto;
 	margin: 0;
 	font: inherit;
@@ -40,13 +43,15 @@
 }
 
 .diff-plugin-header-accept {
-	background: rgba(46, 160, 67, 0.85);
-	border-color: rgba(46, 160, 67, 1);
-	color: #fff;
+	background: rgba(46, 160, 67, 0.16);
+	border-color: rgba(46, 160, 67, 0.38);
+	color: color-mix(in srgb, var(--text-normal) 76%, rgba(46, 160, 67, 1));
 }
 
 .diff-plugin-header-accept:hover {
-	background: rgba(46, 160, 67, 1);
+	background: rgba(46, 160, 67, 0.22);
+	border-color: rgba(46, 160, 67, 0.5);
+	color: color-mix(in srgb, var(--text-normal) 70%, rgba(46, 160, 67, 1));
 }
 
 .diff-plugin-header-reject {
@@ -60,19 +65,36 @@
 }
 
 .diff-plugin-widget {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
+	display: block;
+	position: relative;
+	font: inherit;
+}
+
+.cm-line:has(.diff-plugin-actions-host) {
+	position: relative;
+}
+
+.diff-plugin-actions-host {
+	display: inline;
+	width: 0;
+	height: 0;
+	overflow: visible;
 	font: inherit;
 }
 
 .diff-plugin-actions {
+	position: absolute;
+	top: 0;
+	right: 0;
+	z-index: 20;
 	display: flex;
 	align-items: center;
 	justify-content: flex-end;
 	gap: 4px;
-	padding: 0 0 2px;
+	height: 1lh;
+	padding: 0;
 	font: inherit;
+	pointer-events: auto;
 }
 
 .diff-plugin-actions-separator {
@@ -84,16 +106,20 @@
 
 .diff-plugin-btn {
 	appearance: none;
-	padding: 0 6px;
-	min-height: 22px;
-	border: 0;
+	box-sizing: border-box;
+	height: 1lh;
+	min-height: 0;
+	padding: 0 8px;
+	border: 1px solid transparent;
 	border-radius: 4px;
 	background: transparent;
 	color: var(--text-muted);
 	cursor: pointer;
 	font: inherit;
+	line-height: calc(1lh - 2px);
 	transition:
 		background-color 120ms ease,
+		border-color 120ms ease,
 		color 120ms ease;
 }
 
@@ -102,7 +128,34 @@
 	color: var(--text-normal);
 }
 
+.diff-plugin-btn-accept {
+	background: rgba(46, 160, 67, 0.16);
+	border-color: rgba(46, 160, 67, 0.38);
+	color: color-mix(in srgb, var(--text-normal) 76%, rgba(46, 160, 67, 1));
+}
+
+.diff-plugin-btn-accept:hover {
+	background: rgba(46, 160, 67, 0.22);
+	border-color: rgba(46, 160, 67, 0.5);
+	color: color-mix(in srgb, var(--text-normal) 70%, rgba(46, 160, 67, 1));
+}
+
+.diff-plugin-btn-reject {
+	background: var(--background-primary);
+	border-color: var(--background-modifier-border);
+	color: var(--text-muted);
+}
+
+.diff-plugin-btn-reject:hover {
+	background: var(--background-modifier-hover);
+	border-color: var(--background-modifier-border-hover);
+	color: var(--text-normal);
+}
+
 .diff-plugin-btn-all {
+	height: auto;
+	min-height: 22px;
+	line-height: inherit;
 	color: var(--text-faint);
 }
 

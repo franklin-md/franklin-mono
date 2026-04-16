@@ -36,7 +36,7 @@ describe('createNodePlatform OAuth adapter', () => {
 		});
 
 		const { createNodePlatform } = await import('../platform/index.js');
-		const platform = createNodePlatform({ appDir: '/tmp' });
+		const platform = createNodePlatform();
 		const flow = await platform.createFlow('anthropic');
 
 		await expect(flow.login()).resolves.toMatchObject({
@@ -66,7 +66,7 @@ describe('createNodePlatform OAuth adapter', () => {
 		});
 
 		const { createNodePlatform } = await import('../platform/index.js');
-		const platform = createNodePlatform({ appDir: '/tmp' });
+		const platform = createNodePlatform();
 		const flow = await platform.createFlow('anthropic');
 
 		await expect(flow.login()).rejects.toThrow(

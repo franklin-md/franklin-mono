@@ -9,7 +9,7 @@ import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
-import { createFolderScopedFilesystem } from '@franklin/lib';
+import type { AbsolutePath } from '@franklin/lib';
 import os from 'node:os';
 import { SandboxedTerminal } from './anthropic/sandboxed-terminal.js';
 import { withAnthropicProtected } from './anthropic/protected.js';
@@ -17,15 +17,12 @@ import { openExternal } from './open-external.js';
 import { createOAuthFlow } from './auth/create-flow.js';
 
 type Args = {
-	appDir?: string;
+	appDir?: AbsolutePath;
 };
 
 export function createNodePlatform(args: Args = {}): Platform {
-	const appDir = args.appDir ?? os.homedir();
-	const filesystem = createFolderScopedFilesystem(
-		appDir,
-		createNodeFilesystem(),
-	);
+	const appDir = args.appDir ?? (os.homedir() as AbsolutePath);
+	const filesystem = createNodeFilesystem();
 	const ai = {
 		getOAuthProviders: async () => {
 			return getOAuthProviders()
@@ -58,13 +55,14 @@ export function createNodePlatform(args: Args = {}): Platform {
 						await previous.setNetworkConfig(cfg.netConfig);
 						return previous;
 					}
-					const terminal = new SandboxedTerminal(cfg);
+					const terminal = new SandboxedTerminal(appDir, cfg);
 					await terminal.initialize();
 					return terminal;
 				},
 				configureWeb: async (netConfig) => createWeb(netConfig),
 			}),
 		filesystem,
+		getHome: async () => os.homedir(),
 		openExternal,
 		// TODO: Sandbox
 	};

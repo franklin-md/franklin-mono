@@ -3,8 +3,8 @@
 // and provides recording primitives for the action loop.
 // ---------------------------------------------------------------------------
 
-import { createDuplexPair } from '@franklin/transport';
-import type { JsonRpcMessage } from '@franklin/transport';
+import { createDuplexPair } from '@franklin/lib/transport';
+import type { JsonRpcMessage } from '@franklin/lib/transport';
 
 import { createClientConnection } from '../../protocol/connection.js';
 import type { ToolCall, ToolResult } from '../../types/tool.js';

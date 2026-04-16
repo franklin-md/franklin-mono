@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import type { AbsolutePath } from '@franklin/lib';
 import { compileAll, combine } from '../../../../compile/types.js';
 import { createCoreCompiler } from '../../../../compile/core/compiler.js';
 import { createEnvironmentCompiler } from '../../../../compile/environment/compiler.js';
@@ -39,13 +40,15 @@ function mockEnvironment(
 			exists: vi.fn(async (path: string) => store.has(path)),
 			glob: vi.fn(async () => []),
 			deleteFile: vi.fn(async () => {}),
-			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
+			resolve: vi.fn(
+				async (...paths: string[]) => paths[paths.length - 1]! as AbsolutePath,
+			),
 		},
 		terminal: { exec: vi.fn() },
 		web: { fetch: vi.fn() },
 		config: vi.fn(async () => ({
 			fsConfig: {
-				cwd: '/tmp',
+				cwd: '/tmp' as AbsolutePath,
 				permissions: {
 					allowRead: ['**'],
 					denyRead: [],

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
+import type { AbsolutePath } from '@franklin/lib';
 import { compile, combine } from '../../../../compile/types.js';
 import { createCoreCompiler } from '../../../../compile/core/compiler.js';
 import { createEnvironmentCompiler } from '../../../../compile/environment/compiler.js';
@@ -26,7 +27,7 @@ function mockEnvironment(
 		web: { fetch: vi.fn(fetchImpl) },
 		config: vi.fn(async () => ({
 			fsConfig: {
-				cwd: '/tmp',
+				cwd: '/tmp' as AbsolutePath,
 				permissions: {
 					allowRead: ['**'],
 					denyRead: [],

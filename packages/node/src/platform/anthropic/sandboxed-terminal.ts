@@ -4,7 +4,8 @@ import {
 } from '@anthropic-ai/sandbox-runtime';
 import { spawn } from 'child_process';
 import { delimiter } from 'path';
-import type { Terminal, TerminalInput } from '@franklin/lib';
+import type { AbsolutePath, Terminal, TerminalInput } from '@franklin/lib';
+import { joinAbsolute } from '@franklin/lib';
 import type {
 	NetworkConfig,
 	FilesystemConfig,
@@ -14,6 +15,7 @@ import { once } from 'events';
 
 export class SandboxedTerminal implements Terminal {
 	private _cwd: string;
+	private _app_dir: AbsolutePath;
 	private _config: SandboxRuntimeConfig;
 	private _paths: string[];
 
@@ -32,6 +34,14 @@ export class SandboxedTerminal implements Terminal {
 		return this._config.network as NetworkConfig;
 	}
 
+	private _denyWritePaths(): string[] {
+		return [
+			joinAbsolute(this._app_dir, 'auth.json'),
+			joinAbsolute(this._app_dir, 'sessions'),
+			joinAbsolute(this._app_dir, 'store'),
+		];
+	}
+
 	async setFilesystemConfig(config: Partial<FilesystemConfig>) {
 		if (config.cwd) {
 			this._cwd = config.cwd;
@@ -43,13 +53,17 @@ export class SandboxedTerminal implements Terminal {
 			];
 			this._config.filesystem.denyRead = config.permissions.denyRead;
 			this._config.filesystem.allowWrite = config.permissions.allowWrite;
-			this._config.filesystem.denyWrite = config.permissions.denyWrite;
+			this._config.filesystem.denyWrite = [
+				...config.permissions.denyWrite,
+				...this._denyWritePaths(),
+			];
 		}
 		await SandboxManager.initialize(this._config);
 	}
 
-	constructor(config: EnvironmentConfig) {
+	constructor(app_dir: AbsolutePath, config: EnvironmentConfig) {
 		this._cwd = config.fsConfig.cwd;
+		this._app_dir = app_dir;
 		// Paths to executables
 		this._paths = this.getPathsFromEnv();
 
@@ -59,7 +73,10 @@ export class SandboxedTerminal implements Terminal {
 				denyRead: config.fsConfig.permissions.denyRead,
 				allowRead: [...config.fsConfig.permissions.allowRead, ...this._paths],
 				allowWrite: config.fsConfig.permissions.allowWrite,
-				denyWrite: config.fsConfig.permissions.denyWrite,
+				denyWrite: [
+					...config.fsConfig.permissions.denyWrite,
+					...this._denyWritePaths(),
+				],
 			},
 		};
 	}

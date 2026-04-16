@@ -43,11 +43,9 @@ Franklin is an extension runtime for minimal agent loops.
 
 - `@franklin/lib` — foundational library
   - Proxy descriptor algebra
+  - Transport streams and JSON-RPC bindings
   - Filesystem abstractions
   - Persistence utilities
-- `@franklin/transport` — communication layer
-  - Stream algebra and transports (stdio, HTTP, in-memory)
-  - JSON-RPC bindings
 - `@franklin/mini-acp` — agent protocol
   - Stateful but unpersisted agents
   - Externalized tool execution (client owns tools via reverse RPC)

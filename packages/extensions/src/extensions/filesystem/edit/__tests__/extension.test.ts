@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import type { AbsolutePath } from '@franklin/lib';
 import { sha256Hex } from '../../hash.js';
 import type { MiniACPClient } from '@franklin/mini-acp';
 import { compile, combine } from '../../../../compile/types.js';
@@ -41,13 +42,15 @@ function mockEnvironment(
 			exists: vi.fn(async (path: string) => store.has(path)),
 			glob: vi.fn(async () => []),
 			deleteFile: vi.fn(async () => {}),
-			resolve: vi.fn(async (...paths: string[]) => paths[paths.length - 1]!),
+			resolve: vi.fn(
+				async (...paths: string[]) => paths[paths.length - 1]! as AbsolutePath,
+			),
 		},
 		terminal: { exec: vi.fn() },
 		web: { fetch: vi.fn() },
 		config: vi.fn(async () => ({
 			fsConfig: {
-				cwd: '/tmp',
+				cwd: '/tmp' as AbsolutePath,
 				permissions: {
 					allowRead: ['**'],
 					denyRead: [],

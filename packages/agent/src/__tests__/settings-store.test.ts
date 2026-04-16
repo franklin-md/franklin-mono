@@ -1,15 +1,19 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { Filesystem } from '@franklin/lib';
+import type { AbsolutePath, Filesystem } from '@franklin/lib';
+import { joinAbsolute } from '@franklin/lib';
 import type { AppSettings } from '../settings/types.js';
 import {
 	createSettings,
-	DEFAULT_SETTINGS_PATH,
+	DEFAULT_SETTINGS_FILE,
 	DEFAULT_APP_SETTINGS,
 } from '../settings/store.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const TEST_APP_DIR = '/test/app' as AbsolutePath;
+const SETTINGS_PATH = joinAbsolute(TEST_APP_DIR, DEFAULT_SETTINGS_FILE);
 
 function mockFilesystem(stored?: AppSettings): Filesystem {
 	return {
@@ -18,7 +22,9 @@ function mockFilesystem(stored?: AppSettings): Filesystem {
 			return new TextEncoder().encode(JSON.stringify(stored));
 		}),
 		writeFile: vi.fn(async () => {}),
-		resolve: vi.fn(),
+		resolve: vi.fn(
+			async (...paths: string[]) => paths.join('/') as AbsolutePath,
+		),
 		mkdir: vi.fn(),
 		access: vi.fn(),
 		stat: vi.fn(),
@@ -35,7 +41,7 @@ function mockFilesystem(stored?: AppSettings): Filesystem {
 
 describe('createSettings', () => {
 	it('creates a store with default llm config', () => {
-		const store = createSettings(mockFilesystem());
+		const store = createSettings(mockFilesystem(), TEST_APP_DIR);
 		expect(store.get()).toEqual(DEFAULT_APP_SETTINGS);
 	});
 });
@@ -50,18 +56,18 @@ describe('settings.restore', () => {
 			defaultLLMConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
 		};
 		const fs = mockFilesystem(stored);
-		const store = createSettings(fs);
+		const store = createSettings(fs, TEST_APP_DIR);
 
 		await store.restore();
 
 		expect(store.get()).toEqual(stored);
-		expect(fs.readFile).toHaveBeenCalledWith(DEFAULT_SETTINGS_PATH);
+		expect(fs.readFile).toHaveBeenCalledWith(SETTINGS_PATH);
 		expect(fs.writeFile).not.toHaveBeenCalled();
 	});
 
 	it('keeps default state when no file exists', async () => {
 		const fs = mockFilesystem(); // readFile throws
-		const store = createSettings(fs);
+		const store = createSettings(fs, TEST_APP_DIR);
 
 		await store.restore();
 
@@ -70,7 +76,7 @@ describe('settings.restore', () => {
 
 	it('applies defaults when the stored file is empty', async () => {
 		const fs = mockFilesystem({} as AppSettings);
-		const store = createSettings(fs);
+		const store = createSettings(fs, TEST_APP_DIR);
 
 		await store.restore();
 
@@ -83,23 +89,26 @@ describe('settings.restore', () => {
 // ---------------------------------------------------------------------------
 
 describe('settings persistence', () => {
-	it('writes to disk on every store change', () => {
+	it('writes to disk on every store change', async () => {
 		const fs = mockFilesystem();
-		const store = createSettings(fs);
+		const store = createSettings(fs, TEST_APP_DIR);
 
 		store.set(() => ({
 			defaultLLMConfig: { provider: 'openai', model: 'gpt-4o' },
 		}));
 
-		expect(fs.writeFile).toHaveBeenCalledWith(
-			DEFAULT_SETTINGS_PATH,
-			expect.stringContaining('"openai"'),
-		);
+		// persist is triggered asynchronously via the store subscription
+		await vi.waitFor(() => {
+			expect(fs.writeFile).toHaveBeenCalledWith(
+				SETTINGS_PATH,
+				expect.stringContaining('"openai"'),
+			);
+		});
 	});
 
 	it('supports manual persistence', async () => {
 		const fs = mockFilesystem();
-		const store = createSettings(fs);
+		const store = createSettings(fs, TEST_APP_DIR);
 
 		store.set(() => ({
 			defaultLLMConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
@@ -109,7 +118,7 @@ describe('settings persistence', () => {
 		await store.persist();
 
 		expect(fs.writeFile).toHaveBeenCalledWith(
-			DEFAULT_SETTINGS_PATH,
+			SETTINGS_PATH,
 			expect.stringContaining('"anthropic"'),
 		);
 	});
@@ -121,7 +130,7 @@ describe('settings persistence', () => {
 
 describe('settings store reactivity', () => {
 	it('notifies subscribers on set', () => {
-		const store = createSettings(mockFilesystem());
+		const store = createSettings(mockFilesystem(), TEST_APP_DIR);
 		const listener = vi.fn();
 		store.subscribe(listener);
 
@@ -138,12 +147,12 @@ describe('settings store reactivity', () => {
 	});
 
 	it('does not notify when value is unchanged', () => {
-		const store = createSettings(mockFilesystem());
+		const store = createSettings(mockFilesystem(), TEST_APP_DIR);
 		const listener = vi.fn();
 		store.subscribe(listener);
 
 		// Returning the same draft keeps the store value unchanged.
-		store.set((draft) => draft);
+		store.set((draft: AppSettings) => draft);
 
 		expect(listener).not.toHaveBeenCalled();
 	});

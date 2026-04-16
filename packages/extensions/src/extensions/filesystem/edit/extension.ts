@@ -38,9 +38,10 @@ export function editExtension(): Extension<
 			editFileSpec,
 			async ({ path, old_text, new_text, replace_all }) => {
 				// 1. Read + decode
+				const absPath = await env.filesystem.resolve(path);
 				let bytes: Uint8Array;
 				try {
-					bytes = await env.filesystem.readFile(path);
+					bytes = await env.filesystem.readFile(absPath);
 				} catch {
 					const message = `File not found: ${path}`;
 					console.error(`[edit_file] ${message}`);
@@ -48,7 +49,6 @@ export function editExtension(): Extension<
 				}
 
 				const hash = sha256Hex(bytes);
-				const absPath = await env.filesystem.resolve(path);
 
 				const fileRecord = store.get()[absPath];
 				if (fileRecord === undefined) {
@@ -112,7 +112,7 @@ export function editExtension(): Extension<
 
 				// 5. Restore encoding + write
 				const final = bom + restoreLineEndings(replaced, ending);
-				await env.filesystem.writeFile(path, final);
+				await env.filesystem.writeFile(absPath, final);
 
 				// 6. Refresh the read hash so consecutive edits don't require a re-read
 				await file.markFileRead(env.filesystem, path, final);

@@ -1,23 +1,25 @@
-import { build } from 'vite';
+import { parseBuildArgs } from './cli.mjs';
+import { createCssBuilder } from './css/build.mjs';
+import { createJsBuilder } from './js/build.mjs';
+import { sync } from './sync.mjs';
 
-const isWatch = process.argv.includes('--watch');
+const args = parseBuildArgs();
+const js = createJsBuilder(args);
+const css = createCssBuilder(args);
+const runSync = () => sync(args);
 
-const vaultDirArg = process.argv.find((v) => v.startsWith('--vault-dir='));
-if (vaultDirArg) {
-	process.env.OBSIDIAN_VAULT_DIR = vaultDirArg.slice('--vault-dir='.length);
+await Promise.all([js.build(), css.build()]);
+runSync();
+
+// ── Single build ────────────────────────────────────────────
+if (!args.isWatch) {
+	process.exit(0);
 }
 
-const pluginDirArg = process.argv.find((v) => v.startsWith('--plugin-dir='));
-if (pluginDirArg) {
-	process.env.OBSIDIAN_PLUGIN_DIR = pluginDirArg.slice('--plugin-dir='.length);
-}
+// ── Watch mode ──────────────────────────────────────────────
+console.log('Starting watch mode…');
 
-await build({
-	build: {
-		watch: isWatch ? {} : null,
-	},
-});
+await js.watch(runSync);
+css.watch(runSync);
 
-if (isWatch) {
-	console.log('Watching Obsidian bundle for changes');
-}
+console.log('Watching for changes…');

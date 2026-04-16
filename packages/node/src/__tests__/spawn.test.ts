@@ -8,7 +8,7 @@ function createMockDuplex() {
 	};
 }
 
-vi.mock('@franklin/transport', () => ({
+vi.mock('@franklin/lib/transport', () => ({
 	createDuplexPair: vi.fn(),
 }));
 
@@ -29,7 +29,7 @@ describe('spawn', () => {
 	});
 
 	it('debug-wraps both the agent session and reverse RPC server', async () => {
-		const transport = await import('@franklin/transport');
+		const transport = await import('@franklin/lib/transport');
 		const miniACP = await import('@franklin/mini-acp');
 
 		const clientDuplex = createMockDuplex();

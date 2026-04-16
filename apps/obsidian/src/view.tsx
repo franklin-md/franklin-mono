@@ -4,7 +4,6 @@ import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 
 import { Placeholder } from './components/placeholder.js';
-import './styles/globals.css';
 
 export const VIEW_TYPE = 'franklin-view';
 

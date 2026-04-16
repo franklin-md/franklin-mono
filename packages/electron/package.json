@@ -33,8 +33,7 @@
 		"@franklin/agent": "*",
 		"@mariozechner/pi-ai": "^0.61.0",
 		"@franklin/lib": "*",
-		"@franklin/mini-acp": "*",
-		"@franklin/transport": "*"
+		"@franklin/mini-acp": "*"
 	},
 	"devDependencies": {
 		"electron": "^36.3.2"

@@ -10,8 +10,7 @@
 	"include": ["src/**/*.ts"],
 	"references": [
 		{ "path": "../agent" },
-		{ "path": "../lib/core" },
-		{ "path": "../lib/transport" },
+		{ "path": "../lib" },
 		{ "path": "../mini-acp" }
 	]
 }
