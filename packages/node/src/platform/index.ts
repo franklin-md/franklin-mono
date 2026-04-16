@@ -11,11 +11,17 @@ import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import { toAbsolutePath, type AbsolutePath } from '@franklin/lib';
 import os from 'node:os';
-import { SandboxedTerminal } from './sandboxed-terminal.js';
+import { SandboxedTerminal } from './anthropic/sandboxed-terminal.js';
+import { withAnthropicProtected } from './anthropic/protected.js';
 import { openExternal } from './open-external.js';
 import { createOAuthFlow } from './auth/create-flow.js';
 
-export function createNodePlatform(): Platform {
+type Args = {
+	appDir?: AbsolutePath;
+};
+
+export function createNodePlatform(args: Args = {}): Platform {
+	const appDir = args.appDir ?? (os.homedir() as AbsolutePath);
 	const filesystem = createNodeFilesystem();
 	const ai = {
 		getOAuthProviders: async () => {
@@ -36,7 +42,10 @@ export function createNodePlatform(): Platform {
 			createReconfigurableEnvironment({
 				config,
 				configureFilesystem: async (fsConfig) =>
-					configureFilesystem(createNodeFilesystem(), fsConfig),
+					configureFilesystem(
+						createNodeFilesystem(),
+						withAnthropicProtected(fsConfig),
+					),
 				configureTerminal: async (
 					cfg,
 					previous: SandboxedTerminal | undefined,
@@ -46,9 +55,7 @@ export function createNodePlatform(): Platform {
 						await previous.setNetworkConfig(cfg.netConfig);
 						return previous;
 					}
-					// TODO: SandboxedTerminal needs appDir for deny-write paths.
-					// This should come from the session/agent context, not the platform.
-					const terminal = new SandboxedTerminal('/' as AbsolutePath, cfg);
+					const terminal = new SandboxedTerminal(appDir, cfg);
 					await terminal.initialize();
 					return terminal;
 				},

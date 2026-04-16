@@ -1,6 +1,7 @@
 import type { EnvironmentAPI, Extension } from '@franklin/extensions';
-import type { CoreAPI } from '../../../api/core/api.js';
-import type { StoreAPI } from '../../../api/store/api.js';
+import { decode } from '@franklin/lib';
+import type { CoreAPI } from '../../../systems/core/index.js';
+import type { StoreAPI } from '../../../systems/store/index.js';
 import { fileKey } from '../common/key.js';
 import { createFileControl } from '../common/control.js';
 import { readFileSpec } from './tools.js';
@@ -19,7 +20,7 @@ export function readExtension(): Extension<
 			const bytes = await fs.readFile(absPath);
 			await file.markFileRead(fs, path, bytes);
 
-			const lines = new TextDecoder().decode(bytes).split('\n');
+			const lines = decode(bytes).split('\n');
 			const start = (offset ?? 1) - 1;
 			return lines.slice(start, start + limit).join('\n');
 		});

@@ -1,4 +1,5 @@
-import type { WebAPI } from '../../../api/environment/types.js';
+import { encode } from '@franklin/lib';
+import type { WebAPI } from '../../../systems/environment/api/types.js';
 import { decodeBody } from '../utils.js';
 import type { WebSearchExtensionOptions, WebSearchResult } from './types.js';
 
@@ -35,7 +36,7 @@ export async function searchWithExa(
 			'Content-Type': 'application/json',
 			Accept: 'application/json, text/event-stream',
 		},
-		body: new TextEncoder().encode(
+		body: encode(
 			JSON.stringify({
 				jsonrpc: '2.0',
 				id: 1,

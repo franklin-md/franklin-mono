@@ -1,6 +1,6 @@
-import type { CoreAPI } from '../../../api/core/api.js';
-import type { EnvironmentAPI } from '../../../api/environment/api.js';
-import type { Extension } from '../../../types/extension.js';
+import type { CoreAPI } from '../../../systems/core/index.js';
+import type { EnvironmentAPI } from '../../../systems/environment/index.js';
+import type { Extension } from '../../../algebra/types/index.js';
 import { toSearchError, toSearchResult } from './result.js';
 import { searchWebSpec } from './tools.js';
 import { searchWithDdg } from './ddg.js';

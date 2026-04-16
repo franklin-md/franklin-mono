@@ -1,4 +1,4 @@
-import type { ToolOutput } from '../../../api/core/tool.js';
+import type { ToolOutput } from '../../../systems/core/api/tool.js';
 import type { WebFetchProcessedResult } from './types.js';
 
 export function toContentResult(

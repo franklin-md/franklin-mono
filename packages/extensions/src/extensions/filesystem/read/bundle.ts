@@ -1,4 +1,4 @@
-import { createBundle } from '../../../bundle/create.js';
+import { createBundle } from '../../../algebra/system/bundle/index.js';
 import { readExtension as buildReadExtension } from './extension.js';
 import { readFileSpec } from './tools.js';
 

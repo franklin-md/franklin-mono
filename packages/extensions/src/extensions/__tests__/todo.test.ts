@@ -1,13 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createCoreCompiler } from '../../compile/core/compiler.js';
-import { createStoreCompiler } from '../../compile/store/compiler.js';
-import { compile, combine } from '../../compile/types.js';
-import { apply } from '../../api/core/middleware/apply.js';
-import { createEmptyStoreResult } from '../../api/store/registry/result.js';
+import { createCoreCompiler } from '../../systems/core/compile/compiler.js';
+import { createStoreCompiler } from '../../systems/store/compile/compiler.js';
+import { compile } from '../../algebra/compiler/compile.js';
+import { combine } from '../../algebra/compiler/combine.js';
+import { apply } from '../../systems/core/api/middleware/apply.js';
+import { createEmptyStoreResult } from '../../systems/store/api/registry/result.js';
 import type { MiniACPClient, ToolResult } from '@franklin/mini-acp';
 import { todoExtension } from '../todo/extension.js';
 import type { Todo } from '../todo/types.js';
-import { StoreRegistry } from '../../api/store/registry/index.js';
+import { StoreRegistry } from '../../systems/store/api/registry/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
