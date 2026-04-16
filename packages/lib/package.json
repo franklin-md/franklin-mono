@@ -35,6 +35,7 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"ignore": "^7.0.5"
+		"ignore": "^7.0.5",
+		"pathe": "^2.0.3"
 	}
 }

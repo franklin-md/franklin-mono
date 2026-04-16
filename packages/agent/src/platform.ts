@@ -1,4 +1,4 @@
-import type { Filesystem } from '@franklin/lib';
+import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { EnvironmentFactory } from '@franklin/extensions';
 import type { OAuthFlow } from './auth/oauth-flow.js';
@@ -23,7 +23,7 @@ export interface Platform {
 
 	createFlow(provider: string): Promise<OAuthFlow>;
 	filesystem: Filesystem;
-	getHome(): Promise<string>;
+	getHome(): Promise<AbsolutePath>;
 	// TODO: Group filesystem, openExternal, and similar host APIs under `os`.
 	openExternal(url: string): Promise<void>;
 

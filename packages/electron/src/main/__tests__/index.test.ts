@@ -105,7 +105,7 @@ describe('initializeMain', () => {
 				getApiKeyProviders: async () => [],
 			},
 			createFlow,
-			getHome: async () => '/home/test',
+			getHome: async () => '/home/test' as AbsolutePath,
 			openExternal: async () => {},
 		};
 

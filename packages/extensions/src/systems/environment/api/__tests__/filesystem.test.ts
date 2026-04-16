@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolve as pathResolve } from 'node:path';
-import type { AbsolutePath, Filesystem } from '@franklin/lib';
+import {
+	toAbsolutePath,
+	type AbsolutePath,
+	type Filesystem,
+} from '@franklin/lib';
 import { configureFilesystem } from '../filesystem.js';
 
 function mockFilesystem(): Filesystem {
@@ -14,9 +18,8 @@ function mockFilesystem(): Filesystem {
 		exists: vi.fn().mockResolvedValue(true),
 		glob: vi.fn().mockResolvedValue([]),
 		deleteFile: vi.fn().mockResolvedValue(undefined),
-		resolve: vi.fn(
-			async (...paths: string[]) =>
-				pathResolve(...(paths as [string, ...string[]])) as AbsolutePath,
+		resolve: vi.fn(async (...paths: string[]) =>
+			toAbsolutePath(pathResolve(...(paths as [string, ...string[]]))),
 		),
 	};
 }

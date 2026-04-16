@@ -2,6 +2,7 @@ import path from 'node:path';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFolderScopedFilesystem } from '../filesystem/folder-scoped.js';
 import type { AbsolutePath, Filesystem } from '../filesystem/types.js';
+import { toAbsolutePath } from '../paths/index.js';
 
 function mockFilesystem(): Filesystem {
 	return {
@@ -17,8 +18,8 @@ function mockFilesystem(): Filesystem {
 		exists: vi.fn().mockResolvedValue(true),
 		glob: vi.fn().mockResolvedValue([]),
 		deleteFile: vi.fn().mockResolvedValue(undefined),
-		resolve: vi.fn(
-			async (...paths: string[]) => path.resolve(...paths) as AbsolutePath,
+		resolve: vi.fn(async (...paths: string[]) =>
+			toAbsolutePath(path.resolve(...paths)),
 		),
 	};
 }

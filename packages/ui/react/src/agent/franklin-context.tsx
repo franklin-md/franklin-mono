@@ -9,7 +9,7 @@ import {
 
 import { FranklinApp, type FranklinExtension } from '@franklin/agent/browser';
 import type { Platform } from '@franklin/agent/browser';
-import { toAbsolutePath, joinAbsolute } from '@franklin/lib';
+import { joinAbsolute } from '@franklin/lib';
 
 // ---------------------------------------------------------------------------
 // Context
@@ -51,7 +51,7 @@ export function FranklinProvider({
 		void (async () => {
 			try {
 				const home = await platform.getHome();
-				const appDir = joinAbsolute(toAbsolutePath(home), '.franklin');
+				const appDir = joinAbsolute(home, '.franklin');
 
 				created = new FranklinApp({
 					extensions,

@@ -1,5 +1,5 @@
 import ignore from 'ignore';
-import { toAbsolutePath, posixJoin } from '../paths/index.js';
+import { joinAbsolute } from '../paths/index.js';
 import type { AbsolutePath } from '../paths/index.js';
 import type { Filesystem } from './types.js';
 
@@ -15,8 +15,9 @@ import type { Filesystem } from './types.js';
  * - default deny;
  * - allow-then-deny;
  *
- * Patterns are matched against absolute paths. To allow everything
- * under a directory, use e.g. `/project/**`.
+ * Patterns are matched against slash-separated paths relative to the
+ * absolute root. To allow everything under a directory, use
+ * `project/**`.
  */
 export interface FilesystemPermissions {
 	/** Gitignore-style patterns for paths that may be read. */
@@ -91,7 +92,7 @@ export function createFilteredFilesystem(
 
 	function filterReadable(dir: AbsolutePath, entries: string[]): string[] {
 		return entries.filter((entry) => {
-			const abs = toAbsolutePath(posixJoin(dir, entry));
+			const abs = joinAbsolute(dir, entry);
 			return isReadable(abs);
 		});
 	}
