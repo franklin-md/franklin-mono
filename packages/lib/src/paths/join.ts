@@ -1,11 +1,11 @@
-import { join } from 'pathe';
+import { join as patheJoin } from 'pathe';
 
 /**
- * Pure posix-style path join backed by `pathe`.
+ * Slash-normalizing path join backed by `pathe`.
  *
  * Concatenates segments with `/`, then normalises the result
  * (collapses `//`, resolves `.` and `..`).
  */
-export function posixJoin(...segments: string[]): string {
-	return join(...segments);
+export function join(...segments: string[]): string {
+	return patheJoin(...segments);
 }

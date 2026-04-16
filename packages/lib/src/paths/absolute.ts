@@ -1,4 +1,4 @@
-import { posixJoin } from './join.js';
+import { join } from './join.js';
 
 // ---------------------------------------------------------------------------
 // Branded absolute-path type
@@ -18,5 +18,5 @@ export function joinAbsolute(
 	base: AbsolutePath,
 	...segments: string[]
 ): AbsolutePath {
-	return posixJoin(base, ...segments) as AbsolutePath;
+	return join(base, ...segments) as AbsolutePath;
 }
