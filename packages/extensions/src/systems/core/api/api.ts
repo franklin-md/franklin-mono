@@ -9,10 +9,6 @@ import type { MaybePromise } from '../../../algebra/types/shared.js';
 
 export interface CoreAPI {
 	// Request events — waterfall transform on outgoing requests
-	// TODO: I think we should remove these 2
-	on(event: 'initialize', handler: CoreEventHandler<'initialize'>): void;
-	on(event: 'setContext', handler: CoreEventHandler<'setContext'>): void;
-
 	on(event: 'prompt', handler: CoreEventHandler<'prompt'>): void;
 	on(event: 'cancel', handler: CoreEventHandler<'cancel'>): void;
 

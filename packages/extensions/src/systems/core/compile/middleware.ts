@@ -62,14 +62,6 @@ export function buildMiddleware(
 				fns as CoreEventHandler<'prompt'>[],
 				observers,
 			);
-		} else if (key === 'setContext') {
-			client.setContext = buildAsyncWaterfall<'setContext'>(
-				fns as CoreEventHandler<'setContext'>[],
-			);
-		} else if (key === 'initialize') {
-			client.initialize = buildAsyncWaterfall<'initialize'>(
-				fns as CoreEventHandler<'initialize'>[],
-			);
 		} else {
 			client.cancel = buildAsyncWaterfall<'cancel'>(
 				fns as CoreEventHandler<'cancel'>[],
