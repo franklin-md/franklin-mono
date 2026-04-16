@@ -3,7 +3,7 @@ import type { App } from 'obsidian';
 
 import type FranklinPlugin from './main.js';
 
-// TODO: Create an AuthStore adapter over Obsidian's SecretStorage API
+// TODO(FRA-192): Create an AuthStore adapter over Obsidian's SecretStorage API
 //       (app.secretStorage.setSecret/getSecret) for secure OS-keychain storage
 //       instead of persisting to auth.json on disk.
 

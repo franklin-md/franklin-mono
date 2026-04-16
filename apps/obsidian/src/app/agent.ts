@@ -5,7 +5,7 @@ export async function getDefaultAgent(
 	app: FranklinApp,
 	vaultRoot: AbsolutePath,
 ): Promise<FranklinRuntime> {
-	// TODO: Recycle?
+	// TODO(FRA-191): Recycle persisted session instead of always creating fresh
 	const session = await app.agents.create({
 		overrides: {
 			core: { llmConfig: app.settings.get().defaultLLMConfig },

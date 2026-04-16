@@ -36,14 +36,12 @@ export default class FranklinPlugin extends Plugin {
 				});
 
 				this.addCommand({
-					id: 'open-franklin-placeholder',
+					id: 'open-franklin',
 					name: 'Open Franklin',
 					callback: () => {
 						void this.activateView();
 					},
 				});
-
-				console.log('Franklin plugin loaded');
 			})
 			.catch((err: unknown) => {
 				console.error(err);
@@ -56,7 +54,6 @@ export default class FranklinPlugin extends Plugin {
 	onunload() {
 		this.diffController.onunload();
 		this.franklinApp = null;
-		console.log('Franklin plugin unloaded');
 	}
 
 	private async activateView() {

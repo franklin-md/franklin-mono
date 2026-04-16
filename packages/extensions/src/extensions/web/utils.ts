@@ -1,3 +1,5 @@
+import { decode } from '@franklin/lib';
+
 export function normalizeExtractedText(text: string): string {
 	return (
 		text
@@ -32,8 +34,6 @@ export function truncateText(
 export function normalizeContentType(contentType?: string): string | undefined {
 	return contentType?.split(';', 1)[0]?.trim().toLowerCase();
 }
-
-import { decode } from '@franklin/lib';
 
 export { decode as decodeBody } from '@franklin/lib';
 

@@ -11,7 +11,7 @@ export default defineConfig({
 	resolve: {
 		alias: [
 			...franklinVitestAliases(),
-			// TODO: Build out the full obsidian mock package
+			// TODO(FRA-193): Build out the full obsidian mock package
 			{
 				find: /^obsidian$/,
 				replacement: path.resolve(__dirname, 'src/mocks/obsidian/index.ts'),

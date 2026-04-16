@@ -34,7 +34,7 @@ describe('obsidian bundle', () => {
 	it('produces dist/styles.css with Tailwind utilities', () => {
 		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
 
-		// Utilities used in placeholder.tsx should be present
+		// Tailwind utilities used in the app components should be present
 		expect(css).toContain('flex');
 		expect(css).toContain('gap-4');
 		expect(css).toContain('rounded-lg');
