@@ -6,10 +6,7 @@ import type { StoreMapping } from '../api/registry/mapping.js';
 import { castDraft } from 'immer';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { BaseStore } from '../api/base.js';
-import {
-	type StoreResult,
-	createStoreResult,
-} from '../api/registry/result.js';
+import { type StoreResult, createStoreResult } from '../api/registry/result.js';
 import { createStoreRuntime, type StoreRuntime } from '../runtime.js';
 
 /**

@@ -17,7 +17,11 @@ export type {
 	ServerMiddleware,
 	FullMiddleware,
 } from './systems/core/api/index.js';
-export { compose, composeMethod, passThrough } from './systems/core/api/index.js';
+export {
+	compose,
+	composeMethod,
+	passThrough,
+} from './systems/core/api/index.js';
 export { resolveToolOutput } from './systems/core/api/index.js';
 export { toolSpec } from './systems/core/api/index.js';
 export { serializeTool, toToolInputSchema } from './systems/core/api/index.js';
@@ -75,10 +79,7 @@ export {
 	createSessionManager,
 } from './systems/sessions/api/index.js';
 export type { Compiler } from './algebra/compiler/types.js';
-export {
-	compile,
-	compileAll,
-} from './algebra/compiler/compile.js';
+export { compile, compileAll } from './algebra/compiler/compile.js';
 export { combine } from './algebra/compiler/combine.js';
 export { createCoreCompiler } from './systems/core/compile/index.js';
 export { createStoreCompiler } from './systems/store/compile/index.js';
@@ -113,7 +114,7 @@ export { combine as combineSystems } from './algebra/system/combine.js';
 export { withSetup } from './algebra/system/setup.js';
 export { systems } from './algebra/system/builder.js';
 export type { SystemBuilder } from './algebra/system/builder.js';
-export { resolveState } from './algebra/system/resolve.js';
+export { resolveState } from './algebra/state/resolve.js';
 
 // ---------------------------------------------------------------------------
 // Runtime

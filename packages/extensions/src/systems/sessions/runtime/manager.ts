@@ -8,12 +8,9 @@ import type { Extension } from '../../../algebra/types/extension.js';
 import type { SessionCollection } from './collection.js';
 import type { SessionRuntime } from './runtime.js';
 import type { RuntimeBase } from '../../../algebra/runtime/types.js';
-import {
-	createSessionSystem,
-	type SessionSystem,
-} from '../system.js';
+import { createSessionSystem, type SessionSystem } from '../system.js';
 import { createRuntime } from '../../../algebra/system/create.js';
-import { resolveState } from '../../../algebra/system/resolve.js';
+import { resolveState } from '../../../algebra/state/resolve.js';
 import type { Session, SessionCreateInput } from './types.js';
 
 type SessionManagerOptions<RTS extends RuntimeSystem<any, any, any>> = {

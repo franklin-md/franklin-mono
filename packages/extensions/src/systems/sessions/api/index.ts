@@ -7,7 +7,4 @@ export type {
 	SessionEvent,
 } from '../runtime/types.js';
 export { SessionCollection } from '../runtime/collection.js';
-export {
-	SessionManager,
-	createSessionManager,
-} from '../runtime/manager.js';
+export { SessionManager, createSessionManager } from '../runtime/manager.js';

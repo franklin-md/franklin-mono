@@ -1,5 +1,9 @@
 import type { SessionAPI } from './api/api.js';
-import type { InferAPI, InferState, RuntimeSystem } from '../../algebra/system/types.js';
+import type {
+	InferAPI,
+	InferState,
+	RuntimeSystem,
+} from '../../algebra/system/types.js';
 import type { SessionRuntime } from './runtime/runtime.js';
 import type { SessionCreate } from './runtime/types.js';
 
