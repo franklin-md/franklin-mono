@@ -57,7 +57,7 @@ function createPlatform(
 			getApiKeyProviders: async () => [],
 		},
 		createFlow,
-		getHome: vi.fn(async () => '/home/test'),
+		getHome: vi.fn(async () => '/home/test' as AbsolutePath),
 		openExternal: vi.fn(async () => {}),
 	};
 }

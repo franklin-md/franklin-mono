@@ -9,7 +9,7 @@ import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
-import type { AbsolutePath } from '@franklin/lib';
+import { toAbsolutePath, type AbsolutePath } from '@franklin/lib';
 import os from 'node:os';
 import { SandboxedTerminal } from './sandboxed-terminal.js';
 import { openExternal } from './open-external.js';
@@ -55,7 +55,7 @@ export function createNodePlatform(): Platform {
 				configureWeb: async (netConfig) => createWeb(netConfig),
 			}),
 		filesystem,
-		getHome: async () => os.homedir(),
+		getHome: async () => toAbsolutePath(os.homedir()),
 		openExternal,
 		// TODO: Sandbox
 	};

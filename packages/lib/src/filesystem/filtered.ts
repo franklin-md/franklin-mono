@@ -9,8 +9,9 @@ import type { Filesystem } from './types.js';
  * Both reads and writes are **deny-default**: a path must match
  * an allow pattern to be accessible. Patterns use gitignore syntax.
  *
- * Patterns are matched against absolute paths. To allow everything
- * under a directory, use e.g. `/project/**`.
+ * Patterns are matched against slash-separated paths relative to the
+ * absolute root. To allow everything under a directory, use
+ * `project/**`.
  */
 export interface FilesystemPermissions {
 	/** Gitignore-style patterns for paths that may be read. */
