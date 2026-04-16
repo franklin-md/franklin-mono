@@ -1,1 +1,1 @@
-export { globExtension } from './bundle.js';
+export { globExtension } from './extension.js';

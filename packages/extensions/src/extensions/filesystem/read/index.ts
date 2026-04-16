@@ -1,1 +1,1 @@
-export { readExtension } from './bundle.js';
+export { readExtension } from './extension.js';

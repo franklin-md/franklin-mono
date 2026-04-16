@@ -3,12 +3,9 @@
 import { render, screen } from '@testing-library/react';
 import {
 	bashExtension,
-	createWebFetchExtension,
-	editExtension,
-	globExtension,
-	readExtension,
+	createWebExtension,
+	filesystemExtension,
 	todoExtension,
-	writeExtension,
 	type ToolUseBlock,
 } from '@franklin/extensions';
 import { resolveToolRenderer } from '@franklin/react';
@@ -45,7 +42,7 @@ function renderSummary(name: string, args: Record<string, unknown>) {
 describe('defaultToolRegistry', () => {
 	describe('file tools', () => {
 		it('renders read with file badge', () => {
-			renderSummary(readExtension.tools.readFile.name, {
+			renderSummary(filesystemExtension.tools.readFile.name, {
 				path: 'src/conversation/tool-use.tsx',
 			});
 			expect(screen.getByText('Read')).toBeTruthy();
@@ -53,7 +50,7 @@ describe('defaultToolRegistry', () => {
 		});
 
 		it('renders write with file badge', () => {
-			renderSummary(writeExtension.tools.writeFile.name, {
+			renderSummary(filesystemExtension.tools.writeFile.name, {
 				path: 'src/new-file.ts',
 				content: '',
 			});
@@ -62,7 +59,7 @@ describe('defaultToolRegistry', () => {
 		});
 
 		it('renders edit with file badge', () => {
-			renderSummary(editExtension.tools.editFile.name, {
+			renderSummary(filesystemExtension.tools.editFile.name, {
 				path: 'src/index.ts',
 			});
 			expect(screen.getByText('Edit')).toBeTruthy();
@@ -70,7 +67,7 @@ describe('defaultToolRegistry', () => {
 		});
 
 		it('renders glob with pattern detail', () => {
-			renderSummary(globExtension.tools.glob.name, {
+			renderSummary(filesystemExtension.tools.glob.name, {
 				pattern: '**/*.tsx',
 			});
 			expect(screen.getByText('Search files')).toBeTruthy();
@@ -89,11 +86,19 @@ describe('defaultToolRegistry', () => {
 
 	describe('web tools', () => {
 		it('renders with hostname and path', () => {
-			renderSummary(createWebFetchExtension({}).tools.fetchUrl.name, {
+			renderSummary(createWebExtension({}).tools.fetchUrl.name, {
 				url: 'https://example.com/docs/getting-started',
 			});
 			expect(screen.getByText('example.com')).toBeTruthy();
 			expect(screen.getByText('/docs/getting-started')).toBeTruthy();
+		});
+
+		it('renders search with query text', () => {
+			renderSummary(createWebExtension({}).tools.searchWeb.name, {
+				query: 'example query',
+			});
+			expect(screen.getByText('Search')).toBeTruthy();
+			expect(screen.getByText('example query')).toBeTruthy();
 		});
 	});
 

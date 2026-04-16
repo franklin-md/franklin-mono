@@ -4,13 +4,9 @@ import {
 	conversationExtension,
 	todoExtension,
 	statusExtension,
-	readExtension,
-	writeExtension,
-	editExtension,
-	globExtension,
+	filesystemExtension,
 	bashExtension,
-	createWebFetchExtension,
-	createWebSearchExtension,
+	createWebExtension,
 	spawnExtension,
 } from '@franklin/extensions';
 import type { AbsolutePath } from '@franklin/lib';
@@ -29,19 +25,14 @@ export interface ObsidianAppResult {
 	vaultRoot: AbsolutePath;
 }
 
-const webFetchExtension = createWebFetchExtension({});
-const webSearchExtension = createWebSearchExtension({});
+const webExtension = createWebExtension({});
 const extensionBundles = [
 	conversationExtension,
 	todoExtension,
 	statusExtension,
-	readExtension,
-	writeExtension,
-	editExtension,
-	globExtension,
+	filesystemExtension,
 	bashExtension,
-	webFetchExtension,
-	webSearchExtension,
+	webExtension,
 	spawnExtension,
 ];
 const extensions = extensionBundles.map((bundle) => bundle.extension);
