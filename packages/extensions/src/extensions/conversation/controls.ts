@@ -1,4 +1,4 @@
-import type { Store } from '../../api/store/types.js';
+import type { Store } from '../../systems/store/api/types.js';
 import type { ConversationTurn } from './types.js';
 
 export function createConversationControl(store: Store<ConversationTurn[]>) {

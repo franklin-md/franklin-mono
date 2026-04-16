@@ -2,16 +2,17 @@ import { describe, it, expect, vi } from 'vitest';
 import type { AbsolutePath } from '@franklin/lib';
 import { sha256Hex } from '../../hash.js';
 import type { MiniACPClient } from '@franklin/mini-acp';
-import { compile, combine } from '../../../../compile/types.js';
-import { createCoreCompiler } from '../../../../compile/core/compiler.js';
-import { createEnvironmentCompiler } from '../../../../compile/environment/compiler.js';
-import { createStoreCompiler } from '../../../../compile/store/compiler.js';
+import { compile } from '../../../../algebra/compiler/compile.js';
+import { combine } from '../../../../algebra/compiler/combine.js';
+import { createCoreCompiler } from '../../../../systems/core/compile/compiler.js';
+import { createEnvironmentCompiler } from '../../../../systems/environment/compile/compiler.js';
+import { createStoreCompiler } from '../../../../systems/store/compile/compiler.js';
 import {
 	StoreRegistry,
 	createEmptyStoreResult,
-} from '../../../../api/store/index.js';
-import type { Store } from '../../../../api/store/types.js';
-import type { ReconfigurableEnvironment } from '../../../../api/environment/types.js';
+} from '../../../../systems/store/api/index.js';
+import type { Store } from '../../../../systems/store/api/types.js';
+import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { editExtension } from '../extension.js';
 
 function mockEnvironment(
@@ -134,7 +135,8 @@ describe('editExtension', () => {
 			cancel: vi.fn(async () => {}),
 		};
 
-		const { apply } = await import('../../../../api/core/middleware/apply.js');
+		const { apply } =
+			await import('../../../../systems/core/api/middleware/apply.js');
 
 		const wrapped = apply(result.client, target);
 		await wrapped.setContext({});

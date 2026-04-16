@@ -1,14 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { AbsolutePath } from '@franklin/lib';
-import { compileAll, combine } from '../../../../compile/types.js';
-import { createCoreCompiler } from '../../../../compile/core/compiler.js';
-import { createEnvironmentCompiler } from '../../../../compile/environment/compiler.js';
-import { createStoreCompiler } from '../../../../compile/store/compiler.js';
+import { compileAll } from '../../../../algebra/compiler/compile.js';
+import { combine } from '../../../../algebra/compiler/combine.js';
+import { createCoreCompiler } from '../../../../systems/core/compile/compiler.js';
+import { createEnvironmentCompiler } from '../../../../systems/environment/compile/compiler.js';
+import { createStoreCompiler } from '../../../../systems/store/compile/compiler.js';
 import {
 	StoreRegistry,
 	createEmptyStoreResult,
-} from '../../../../api/store/index.js';
-import type { ReconfigurableEnvironment } from '../../../../api/environment/types.js';
+} from '../../../../systems/store/api/index.js';
+import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { editExtension } from '../../edit/extension.js';
 import { writeExtension } from '../extension.js';
 

@@ -1,2 +1,6 @@
 export { createWebFetchExtension } from './bundle.js';
-export type { WebFetchExtensionOptions } from './types.js';
+export type {
+	WebFetchExtensionOptions,
+	WebFetchProcessedResult,
+} from './types.js';
+export { DEFAULT_WEB_FETCH_OPTIONS } from './types.js';
