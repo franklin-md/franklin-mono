@@ -71,7 +71,10 @@ describe('createFilteredFilesystem', () => {
 		});
 
 		it('FILESYSTEM_DEFAULT_PERMISSIONS keeps default read/write behavior', async () => {
-			const fs = createFilteredFilesystem(FILESYSTEM_DEFAULT_PERMISSIONS, inner);
+			const fs = createFilteredFilesystem(
+				FILESYSTEM_DEFAULT_PERMISSIONS,
+				inner,
+			);
 
 			await fs.readFile('/project/file.txt' as AbsolutePath);
 			await expect(
