@@ -2,6 +2,7 @@ import type { ExtensionToolDefinition, ToolExecuteReturn } from './tool.js';
 import type { ToolSpec } from './tool-spec.js';
 import type {
 	CoreEventHandler,
+	PromptHandler,
 	StreamObserverHandler,
 	ToolObserverHandler,
 } from './events.js';
@@ -13,7 +14,8 @@ export interface CoreAPI {
 	on(event: 'initialize', handler: CoreEventHandler<'initialize'>): void;
 	on(event: 'setContext', handler: CoreEventHandler<'setContext'>): void;
 
-	on(event: 'prompt', handler: CoreEventHandler<'prompt'>): void;
+	// Prompt handlers contribute content against the original request.
+	on(event: 'prompt', handler: PromptHandler): void;
 	on(event: 'cancel', handler: CoreEventHandler<'cancel'>): void;
 
 	// Stream observer events — fire-and-forget on response stream

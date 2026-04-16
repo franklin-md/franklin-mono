@@ -3,6 +3,8 @@ export type {
 	CoreEvent,
 	CoreEventHandler,
 	CoreEventMap,
+	PromptContext,
+	PromptHandler,
 	ExtensionToolDefinition,
 	ToolSpec,
 	ToolArgs,

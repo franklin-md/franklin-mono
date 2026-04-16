@@ -1,8 +1,10 @@
 export type { CoreAPI } from './api.js';
+export type { PromptContext } from './prompt-context.js';
 export type {
 	CoreEvent,
 	CoreEventHandler,
 	CoreEventMap,
+	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
 	StreamObserverParamsMap,
