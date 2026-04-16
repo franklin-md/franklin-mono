@@ -3,6 +3,7 @@ import {
 	type SandboxRuntimeConfig,
 } from '@anthropic-ai/sandbox-runtime';
 import { spawn } from 'child_process';
+import { delimiter } from 'path';
 import type { AbsolutePath, Terminal, TerminalInput } from '@franklin/lib';
 import { joinAbsolute } from '@franklin/lib';
 import type {
@@ -16,6 +17,13 @@ export class SandboxedTerminal implements Terminal {
 	private _cwd: string;
 	private _app_dir: AbsolutePath;
 	private _config: SandboxRuntimeConfig;
+	private _paths: string[];
+
+	private getPathsFromEnv() {
+		return (process.env.PATH ?? '')
+			.split(delimiter)
+			.filter((path) => path.length > 0);
+	}
 
 	async setNetworkConfig(config: NetworkConfig) {
 		this._config.network = { ...config };
@@ -39,9 +47,16 @@ export class SandboxedTerminal implements Terminal {
 			this._cwd = config.cwd;
 		}
 		if (config.permissions) {
-			this._config.filesystem.allowRead = config.permissions.allowRead;
+			this._config.filesystem.allowRead = [
+				...config.permissions.allowRead,
+				...this._paths,
+			];
+			this._config.filesystem.denyRead = config.permissions.denyRead;
 			this._config.filesystem.allowWrite = config.permissions.allowWrite;
-			this._config.filesystem.denyWrite = this._denyWritePaths();
+			this._config.filesystem.denyWrite = [
+				...config.permissions.denyWrite,
+				...this._denyWritePaths(),
+			];
 		}
 		await SandboxManager.initialize(this._config);
 	}
@@ -49,14 +64,19 @@ export class SandboxedTerminal implements Terminal {
 	constructor(app_dir: AbsolutePath, config: EnvironmentConfig) {
 		this._cwd = config.fsConfig.cwd;
 		this._app_dir = app_dir;
+		// Paths to executables
+		this._paths = this.getPathsFromEnv();
 
 		this._config = {
 			network: { ...config.netConfig },
 			filesystem: {
-				denyRead: ['/'],
-				allowRead: config.fsConfig.permissions.allowRead,
+				denyRead: config.fsConfig.permissions.denyRead,
+				allowRead: [...config.fsConfig.permissions.allowRead, ...this._paths],
 				allowWrite: config.fsConfig.permissions.allowWrite,
-				denyWrite: this._denyWritePaths(),
+				denyWrite: [
+					...config.fsConfig.permissions.denyWrite,
+					...this._denyWritePaths(),
+				],
 			},
 		};
 	}
@@ -67,8 +87,11 @@ export class SandboxedTerminal implements Terminal {
 
 	async exec({ cmd, timeout }: TerminalInput) {
 		// Wrap a command with sandbox restrictions
-		//TODO: block command if it calls sudo
-		const sandboxedCommand = await SandboxManager.wrapWithSandbox(cmd);
+		const sandboxedCommand = await SandboxManager.wrapWithSandbox(
+			cmd,
+			undefined,
+			this._config,
+		);
 
 		// Execute the sandboxed command
 		// TODO: we should have a way of managing environment variables

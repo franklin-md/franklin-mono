@@ -29,7 +29,12 @@ function mockEnvironment(): ReconfigurableEnvironment {
 		config: vi.fn(async () => ({
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,
-				permissions: { allowRead: ['**'], allowWrite: ['**'] },
+				permissions: {
+					allowRead: ['**'],
+					denyRead: [],
+					allowWrite: ['**'],
+					denyWrite: [],
+				},
 			},
 			netConfig: { allowedDomains: [], deniedDomains: [] },
 		})),

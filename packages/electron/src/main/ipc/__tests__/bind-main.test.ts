@@ -52,7 +52,12 @@ function createEnvironment(label: string) {
 			config: async () => ({
 				fsConfig: {
 					cwd: '/tmp' as AbsolutePath,
-					permissions: { allowRead: ['**'], allowWrite: ['**'] },
+					permissions: {
+						allowRead: ['**'],
+						denyRead: [],
+						allowWrite: ['**'],
+						denyWrite: [],
+					},
 				},
 				netConfig: { allowedDomains: [], deniedDomains: [] },
 			}),
@@ -301,7 +306,12 @@ describe('bindMain', () => {
 							config: async () => ({
 								fsConfig: {
 									cwd: '/tmp' as AbsolutePath,
-									permissions: { allowRead: ['**'], allowWrite: ['**'] },
+									permissions: {
+										allowRead: ['**'],
+										denyRead: [],
+										allowWrite: ['**'],
+										denyWrite: [],
+									},
 								},
 								netConfig: { allowedDomains: [], deniedDomains: [] },
 							}),

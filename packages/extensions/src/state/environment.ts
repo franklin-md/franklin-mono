@@ -12,7 +12,12 @@ export function emptyEnvironmentState(): EnvironmentState {
 			fsConfig: {
 				// Placeholder — always overwritten when the environment is configured.
 				cwd: '/' as AbsolutePath,
-				permissions: { allowRead: [], allowWrite: [] },
+				permissions: {
+					allowRead: [],
+					denyRead: [],
+					allowWrite: [],
+					denyWrite: [],
+				},
 			},
 			netConfig: {
 				allowedDomains: [...DEFAULT_NETWORK_CONFIG.allowedDomains],

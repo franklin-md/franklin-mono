@@ -14,7 +14,12 @@ import type {
 const defaultConfig: EnvironmentConfig = {
 	fsConfig: {
 		cwd: '/project' as AbsolutePath,
-		permissions: { allowRead: ['**'], allowWrite: ['**'] },
+		permissions: {
+			allowRead: ['**'],
+			denyRead: [],
+			allowWrite: ['**'],
+			denyWrite: [],
+		},
 	},
 	netConfig: { allowedDomains: [], deniedDomains: [] },
 };

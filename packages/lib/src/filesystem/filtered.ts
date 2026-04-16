@@ -4,19 +4,27 @@ import type { AbsolutePath } from '../paths/index.js';
 import type { Filesystem } from './types.js';
 
 /**
- * Configuration for filesystem access filtering.
+ * Configuration for filesystem access filtering. This follows
+ * the Anthropic Runtime Sandbox model:
  *
- * Both reads and writes are **deny-default**: a path must match
- * an allow pattern to be accessible. Patterns use gitignore syntax.
+ * Read:
+ * - default allow;
+ * - deny-then-allow;
+ *
+ * Write:
+ * - default deny;
+ * - allow-then-deny;
  *
  * Patterns are matched against absolute paths. To allow everything
  * under a directory, use e.g. `/project/**`.
  */
 export interface FilesystemPermissions {
 	/** Gitignore-style patterns for paths that may be read. */
+	denyRead: string[];
 	allowRead: string[];
 	/** Gitignore-style patterns for paths that may be written. */
 	allowWrite: string[];
+	denyWrite: string[];
 }
 
 function createMatcher(patterns: string[]): (filePath: string) => boolean {
@@ -25,10 +33,11 @@ function createMatcher(patterns: string[]): (filePath: string) => boolean {
 }
 
 /**
- * Creates a `Filesystem` that enforces deny-default access control.
+ * Creates a `Filesystem` that enforces filesystem access control.
  *
- * Paths not matching an allow pattern are rejected. `readdir` and
- * `glob` results are filtered to only include allowed entries.
+ * Reads are default-allow with deny-then-allow precedence. Writes are
+ * default-deny with allow-then-deny precedence. `readdir` and `glob`
+ * results are filtered to only include readable entries.
  *
  * Expects absolute paths (compose after `createFolderScopedFilesystem`).
  */
@@ -36,20 +45,46 @@ export function createFilteredFilesystem(
 	filter: FilesystemPermissions,
 	inner: Filesystem,
 ): Filesystem {
-	const isReadable = createMatcher(filter.allowRead);
-	const isWritable = createMatcher(filter.allowWrite);
+	const isReadAllowed = createMatcher(filter.allowRead);
+	const isReadDenied = createMatcher(filter.denyRead);
+	const isWriteAllowed = createMatcher(filter.allowWrite);
+	const isWriteDenied = createMatcher(filter.denyWrite);
 
-	function assertReadable(absolutePath: AbsolutePath): void {
+	function isReadable(absolutePath: AbsolutePath): boolean {
 		// Strip leading slash for ignore matching (it expects relative paths)
 		const rel = absolutePath.slice(1);
-		if (!isReadable(rel)) {
+
+		// Read is deny-then-allow, default allow
+		if (isReadAllowed(rel)) {
+			return true;
+		}
+		if (isReadDenied(rel)) {
+			return false;
+		}
+		return true;
+	}
+
+	function isWritable(absolutePath: AbsolutePath): boolean {
+		const rel = absolutePath.slice(1);
+
+		// Write is allow-then-deny, default deny
+		if (isWriteDenied(rel)) {
+			return false;
+		}
+		if (isWriteAllowed(rel)) {
+			return true;
+		}
+		return false;
+	}
+
+	function assertReadable(absolutePath: AbsolutePath): void {
+		if (!isReadable(absolutePath)) {
 			throw new Error(`Read access denied: ${absolutePath}`);
 		}
 	}
 
 	function assertWritable(absolutePath: AbsolutePath): void {
-		const rel = absolutePath.slice(1);
-		if (!isWritable(rel)) {
+		if (!isWritable(absolutePath)) {
 			throw new Error(`Write access denied: ${absolutePath}`);
 		}
 	}
@@ -57,8 +92,7 @@ export function createFilteredFilesystem(
 	function filterReadable(dir: AbsolutePath, entries: string[]): string[] {
 		return entries.filter((entry) => {
 			const abs = toAbsolutePath(posixJoin(dir, entry));
-			const rel = abs.slice(1);
-			return isReadable(rel);
+			return isReadable(abs);
 		});
 	}
 
@@ -109,7 +143,7 @@ export function createFilteredFilesystem(
 			const visible = await Promise.all(
 				results.map(async (entry) => {
 					const abs = await inner.resolve(options.root_dir ?? '.', entry);
-					return isReadable(abs.slice(1)) ? entry : undefined;
+					return isReadable(abs) ? entry : undefined;
 				}),
 			);
 			return visible.filter((entry): entry is string => entry !== undefined);

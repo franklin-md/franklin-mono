@@ -134,8 +134,6 @@ export class EnvironmentWeb implements WebAPI {
 			throw new Error(`Network access denied for host "${host}"`);
 		}
 
-		// TODO: I do not particularly like this default behaviour that if there is no
-		// allowed domain then it assumes all domains are allowed.
 		if (
 			this.config.allowedDomains.length > 0 &&
 			!this.config.allowedDomains.some((pattern) =>
