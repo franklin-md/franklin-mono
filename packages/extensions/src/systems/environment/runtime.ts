@@ -1,6 +1,6 @@
 import { createObserver } from '@franklin/lib';
 import type { ReconfigurableEnvironment } from './api/types.js';
-import type { RuntimeBase } from '../../algebra/runtime/types.js';
+import type { RuntimeBase } from '../../algebra/runtime/index.js';
 import type { EnvironmentState } from './state.js';
 
 export type EnvironmentRuntime = RuntimeBase<EnvironmentState> & {

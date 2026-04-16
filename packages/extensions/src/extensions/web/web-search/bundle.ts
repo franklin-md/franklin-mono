@@ -1,4 +1,4 @@
-import { createBundle } from '../../../algebra/bundle/create.js';
+import { createBundle } from '../../../algebra/bundle/index.js';
 import { webSearchExtension as buildWebSearchExtension } from './extension.js';
 import { searchWebSpec } from './tools.js';
 import type { WebSearchExtensionOptions } from './types.js';

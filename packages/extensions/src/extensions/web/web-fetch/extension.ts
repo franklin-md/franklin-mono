@@ -1,7 +1,7 @@
-import type { CoreAPI } from '../../../systems/core/api/api.js';
-import type { EnvironmentAPI } from '../../../systems/environment/api/api.js';
-import type { StoreAPI } from '../../../systems/store/api/api.js';
-import type { Extension } from '../../../algebra/types/extension.js';
+import type { CoreAPI } from '../../../systems/core/index.js';
+import type { EnvironmentAPI } from '../../../systems/environment/index.js';
+import type { StoreAPI } from '../../../systems/store/index.js';
+import type { Extension } from '../../../algebra/types/index.js';
 import { readFromCache, writeToCache } from './cache.js';
 import { normalizeUrl } from '@franklin/lib';
 import { toContentResult } from './result.js';

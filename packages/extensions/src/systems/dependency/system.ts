@@ -1,8 +1,8 @@
 import type { DependencyAPI } from './api.js';
-import type { Compiler } from '../../algebra/compiler/types.js';
-import { emptyRuntime, type EmptyRuntime } from '../empty/runtime.js';
-import { emptyState, type EmptyState } from '../empty/state.js';
-import type { RuntimeSystem } from '../../algebra/system/types.js';
+import type { Compiler } from '../../algebra/compiler/index.js';
+import { emptyRuntime, type EmptyRuntime } from '../empty/index.js';
+import { emptyState, type EmptyState } from '../empty/index.js';
+import type { RuntimeSystem } from '../../algebra/system/index.js';
 
 export type DependencySystem<Name extends string, T> = RuntimeSystem<
 	EmptyState,

@@ -1,8 +1,8 @@
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { CoreAPI } from './api/api.js';
 import { createCoreCompiler } from './compile/compiler.js';
-import type { Compiler } from '../../algebra/compiler/types.js';
-import type { RuntimeSystem } from '../../algebra/system/types.js';
+import type { Compiler } from '../../algebra/compiler/index.js';
+import type { RuntimeSystem } from '../../algebra/system/index.js';
 import type { CoreState } from './state.js';
 import { emptyCoreState } from './state.js';
 import type { CoreRuntime } from './runtime.js';

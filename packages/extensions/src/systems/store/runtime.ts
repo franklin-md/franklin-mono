@@ -1,5 +1,5 @@
 import type { StoreResult } from './api/registry/result.js';
-import type { RuntimeBase } from '../../algebra/runtime/types.js';
+import type { RuntimeBase } from '../../algebra/runtime/index.js';
 import type { StoreState, StoreMapping } from './state.js';
 
 export type StoreRuntime = RuntimeBase<StoreState> & {

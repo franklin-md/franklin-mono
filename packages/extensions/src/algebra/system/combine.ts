@@ -1,5 +1,5 @@
-import type { Compiler } from '../compiler/types.js';
-import { mergeRuntimes } from '../runtime/combine.js';
+import type { Compiler } from '../compiler/index.js';
+import { mergeRuntimes } from '../runtime/index.js';
 import type {
 	CombineSystems,
 	InferAPI,

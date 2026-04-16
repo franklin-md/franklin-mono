@@ -1,7 +1,7 @@
 import type { Simplify } from '@franklin/lib';
-import type { Compiler } from '../compiler/types.js';
-import type { RuntimeBase } from '../runtime/types.js';
-import type { MergedRuntime } from '../runtime/combine.js';
+import type { Compiler } from '../compiler/index.js';
+import type { RuntimeBase } from '../runtime/index.js';
+import type { MergedRuntime } from '../runtime/index.js';
 
 export type RuntimeSystem<
 	S extends Record<string, unknown>,

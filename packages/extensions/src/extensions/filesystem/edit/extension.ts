@@ -1,6 +1,6 @@
-import type { Extension } from '../../../algebra/types/extension.js';
-import type { CoreAPI } from '../../../systems/core/api/api.js';
-import type { EnvironmentAPI } from '../../../systems/environment/api/api.js';
+import type { Extension } from '../../../algebra/types/index.js';
+import type { CoreAPI } from '../../../systems/core/index.js';
+import type { EnvironmentAPI } from '../../../systems/environment/index.js';
 import { sha256Hex } from '../hash.js';
 import { decode } from './text/encoding.js';
 import {
@@ -10,7 +10,7 @@ import {
 } from './text/line-endings.js';
 import { findUnique } from './match/find-unique.js';
 import { applyReplacement } from './replace.js';
-import type { StoreAPI } from '../../../systems/store/api/api.js';
+import type { StoreAPI } from '../../../systems/store/index.js';
 import { fileKey } from '../common/key.js';
 import { createFileControl } from '../common/control.js';
 import { editFileSpec } from './tools.js';

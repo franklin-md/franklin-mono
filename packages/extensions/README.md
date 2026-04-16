@@ -10,9 +10,19 @@ An API is intended to solve a particular class of problems. Implemented so far:
 - **SessionAPI**: Let's the agent know it's position within an agent orchestration tree, and perform actions relative to it.
 - **DependencyAPI<Name,T>**: Simple way for an extension to depend on an app-provided global resource, such as authentication, secrets or the app-level environment.
 
+
 ## Extension Algebra [TODO after reading about tagless style article]
 - [ ] Extensions, APis, Compilers, Runtimes, RuntimeSystems
+  - [ ] Mention of algebraic properties like associativity, composition, commutativity etc
 
+
+### Agent Composition Strategies
+There are many places where you could plausibly compose simpler mechanics to create a specific agent behaviour. These solutions are largely functionally equivalent, so the choice is more of a complexity management decision. Here are some emergent patterns we have discovered and documented so far:
+- **RuntimeSystem decoration for enforcing universal behaviour**:
+  - *It may be easier to express the behaviour as a transformation over the Runtime as oppposed to using the API*
+  - Examples:
+    - `withAuth` decorates CoreSytem so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials
+    - [ ] `withAgentsMd`
 
 ## Extension Authoring Rules
 

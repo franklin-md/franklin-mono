@@ -1,6 +1,6 @@
-import { compileAll } from '../compiler/compile.js';
-import type { Extension } from '../types/extension.js';
-import type { RuntimeBase } from '../runtime/types.js';
+import { compileAll } from '../compiler/index.js';
+import type { Extension } from '../types/index.js';
+import type { RuntimeBase } from '../runtime/index.js';
 import type { RuntimeSystem } from './types.js';
 
 export async function createRuntime<

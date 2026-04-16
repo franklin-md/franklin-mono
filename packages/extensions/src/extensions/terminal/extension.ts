@@ -1,6 +1,6 @@
-import type { CoreAPI } from '../../systems/core/api/index.js';
-import type { EnvironmentAPI } from '../../systems/environment/api/index.js';
-import type { Extension } from '../../algebra/types/extension.js';
+import type { CoreAPI } from '../../systems/core/index.js';
+import type { EnvironmentAPI } from '../../systems/environment/index.js';
+import type { Extension } from '../../algebra/types/index.js';
 import { bashSpec } from './tools.js';
 
 export function bashExtension(): Extension<CoreAPI & EnvironmentAPI> {

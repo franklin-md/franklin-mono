@@ -1,4 +1,4 @@
-import { createBundle } from '../../../algebra/bundle/create.js';
+import { createBundle } from '../../../algebra/bundle/index.js';
 import { globExtension as buildGlobExtension } from './extension.js';
 import { globSpec } from './tools.js';
 

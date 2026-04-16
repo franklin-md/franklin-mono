@@ -3,7 +3,7 @@ import type {
 	InferAPI,
 	InferState,
 	RuntimeSystem,
-} from '../../algebra/system/types.js';
+} from '../../algebra/system/index.js';
 import type { SessionRuntime } from './runtime/runtime.js';
 import type { SessionCreate } from './runtime/types.js';
 

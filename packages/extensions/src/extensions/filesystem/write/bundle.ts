@@ -1,4 +1,4 @@
-import { createBundle } from '../../../algebra/bundle/create.js';
+import { createBundle } from '../../../algebra/bundle/index.js';
 import { fileKey } from '../common/key.js';
 import { writeExtension as buildWriteExtension } from './extension.js';
 import { writeFileSpec } from './tools.js';

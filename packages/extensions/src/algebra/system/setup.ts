@@ -1,4 +1,4 @@
-import type { RuntimeBase } from '../runtime/types.js';
+import type { RuntimeBase } from '../runtime/index.js';
 import type { RuntimeSystem } from './types.js';
 
 /**

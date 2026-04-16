@@ -1,7 +1,7 @@
 import type {
 	InferRuntime,
 	RuntimeSystem,
-} from '../../../algebra/system/types.js';
+} from '../../../algebra/system/index.js';
 import type { Session } from './types.js';
 
 // TODO: Can we make this alias transparent using Simplify?

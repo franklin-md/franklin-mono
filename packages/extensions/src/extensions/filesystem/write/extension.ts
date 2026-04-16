@@ -1,7 +1,7 @@
 import type { Extension } from '@franklin/extensions';
-import type { CoreAPI } from '../../../systems/core/api/api.js';
-import type { EnvironmentAPI } from '../../../systems/environment/api/api.js';
-import type { StoreAPI } from '../../../systems/store/api/api.js';
+import type { CoreAPI } from '../../../systems/core/index.js';
+import type { EnvironmentAPI } from '../../../systems/environment/index.js';
+import type { StoreAPI } from '../../../systems/store/index.js';
 import { fileKey } from '../common/key.js';
 import { createFileControl } from '../common/control.js';
 import { writeFileSpec } from './tools.js';

@@ -1,6 +1,6 @@
 import type { CtxTracker, MiniACPClient } from '@franklin/mini-acp';
 import { createObserver } from '@franklin/lib';
-import type { RuntimeBase } from '../../algebra/runtime/types.js';
+import type { RuntimeBase } from '../../algebra/runtime/index.js';
 import type { CoreState } from './state.js';
 
 async function* notifyAfter<T>(

@@ -3,8 +3,8 @@ import type {
 	ReconfigurableEnvironment,
 } from './api/types.js';
 import type { EnvironmentAPI } from './api/api.js';
-import type { Compiler } from '../../algebra/compiler/types.js';
-import type { RuntimeSystem } from '../../algebra/system/types.js';
+import type { Compiler } from '../../algebra/compiler/index.js';
+import type { RuntimeSystem } from '../../algebra/system/index.js';
 import type { EnvironmentState } from './state.js';
 import { emptyEnvironmentState } from './state.js';
 import {
