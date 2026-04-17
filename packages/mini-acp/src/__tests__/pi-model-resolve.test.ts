@@ -49,8 +49,8 @@ describe('resolveModel', () => {
 		);
 	});
 
-	it('returns ProviderNotSpecified when config is omitted', () => {
-		const result = resolveModel(undefined);
+	it('returns ProviderNotSpecified when config has no provider', () => {
+		const result = resolveModel({});
 		expect(result.ok).toBe(false);
 		expect(!result.ok && result.turnEnd.stopCode).toBe(
 			StopCode.ProviderNotSpecified,

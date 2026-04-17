@@ -1,6 +1,6 @@
 import type { Model } from '@mariozechner/pi-ai';
 
-import type { Ctx } from '../../../types/context.js';
+import type { LLMConfig } from '../../../types/context.js';
 
 export const OPENROUTER_APP_URL = 'https://franklin.md';
 export const OPENROUTER_APP_TITLE = 'Franklin';
@@ -9,10 +9,10 @@ export const OPENROUTER_APP_TITLE = 'Franklin';
 export const OPENROUTER_APP_CATEGORY = ['personal-agent', 'general-chat'];
 
 export function withOpenRouterHeaders(
-	config: Ctx['config'],
+	config: LLMConfig,
 	model: Model<string>,
 ): Model<string> {
-	if (config?.provider !== 'openrouter') {
+	if (config.provider !== 'openrouter') {
 		return model;
 	}
 

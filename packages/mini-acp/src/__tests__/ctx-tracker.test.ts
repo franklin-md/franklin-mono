@@ -21,14 +21,6 @@ function seededTracker(config: LLMConfig = {}): CtxTracker {
 // ---------------------------------------------------------------------------
 
 describe('CtxTracker.apply – field replacement', () => {
-	it('replaces history wholesale', () => {
-		const tracker = seededTracker();
-		tracker.apply({
-			history: { systemPrompt: 'new prompt', messages: [] },
-		});
-		expect(tracker.get().history.systemPrompt).toBe('new prompt');
-	});
-
 	it('replaces tools wholesale', () => {
 		const tracker = seededTracker();
 		tracker.apply({
@@ -44,13 +36,120 @@ describe('CtxTracker.apply – field replacement', () => {
 		expect(tracker.get().tools[0]!.name).toBe('read');
 	});
 
+	it('clears tools when an empty array is provided', () => {
+		const tracker = seededTracker();
+		tracker.apply({
+			tools: [
+				{
+					name: 'read',
+					description: 'Read a file',
+					inputSchema: { type: 'object' },
+				},
+			],
+		});
+		expect(tracker.get().tools).toHaveLength(1);
+
+		tracker.apply({ tools: [] });
+		expect(tracker.get().tools).toHaveLength(0);
+	});
+
 	it('does not touch fields not present in the partial', () => {
 		const tracker = seededTracker({ provider: 'anthropic', apiKey: 'sk-123' });
 		tracker.apply({
 			history: { systemPrompt: 'updated', messages: [] },
 		});
-		expect(tracker.get().config?.provider).toBe('anthropic');
-		expect(tracker.get().config?.apiKey).toBe('sk-123');
+		expect(tracker.get().config.provider).toBe('anthropic');
+		expect(tracker.get().config.apiKey).toBe('sk-123');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// History partial merge
+// ---------------------------------------------------------------------------
+
+describe('CtxTracker.apply – history merges by property', () => {
+	it('replaces both systemPrompt and messages when both are provided', () => {
+		const tracker = seededTracker();
+		tracker.append({
+			role: 'user',
+			content: [{ type: 'text', text: 'old' }],
+		});
+
+		tracker.apply({
+			history: {
+				systemPrompt: 'new prompt',
+				messages: [{ role: 'user', content: [{ type: 'text', text: 'new' }] }],
+			},
+		});
+
+		expect(tracker.get().history.systemPrompt).toBe('new prompt');
+		expect(tracker.get().history.messages).toHaveLength(1);
+		expect(tracker.get().history.messages[0]).toEqual({
+			role: 'user',
+			content: [{ type: 'text', text: 'new' }],
+		});
+	});
+
+	it('updates systemPrompt without touching messages', () => {
+		const tracker = seededTracker();
+		tracker.append({
+			role: 'user',
+			content: [{ type: 'text', text: 'preserved' }],
+		});
+
+		tracker.apply({ history: { systemPrompt: 'updated prompt' } });
+
+		expect(tracker.get().history.systemPrompt).toBe('updated prompt');
+		expect(tracker.get().history.messages).toHaveLength(1);
+		expect(tracker.get().history.messages[0]).toEqual({
+			role: 'user',
+			content: [{ type: 'text', text: 'preserved' }],
+		});
+	});
+
+	it('replaces messages without touching systemPrompt', () => {
+		const tracker = seededTracker();
+		const replacement = [
+			{
+				role: 'user' as const,
+				content: [{ type: 'text' as const, text: 'a' }],
+			},
+			{
+				role: 'user' as const,
+				content: [{ type: 'text' as const, text: 'b' }],
+			},
+		];
+
+		tracker.apply({ history: { messages: replacement } });
+
+		expect(tracker.get().history.systemPrompt).toBe('test');
+		expect(tracker.get().history.messages).toHaveLength(2);
+	});
+
+	it('replaces messages with an empty array when explicitly provided', () => {
+		const tracker = seededTracker();
+		tracker.append({
+			role: 'user',
+			content: [{ type: 'text', text: 'will be cleared' }],
+		});
+
+		tracker.apply({ history: { messages: [] } });
+
+		expect(tracker.get().history.messages).toHaveLength(0);
+		expect(tracker.get().history.systemPrompt).toBe('test');
+	});
+
+	it('leaves history untouched when history is omitted', () => {
+		const tracker = seededTracker();
+		tracker.append({
+			role: 'user',
+			content: [{ type: 'text', text: 'keep' }],
+		});
+
+		tracker.apply({ config: { reasoning: 'high' } });
+
+		expect(tracker.get().history.systemPrompt).toBe('test');
+		expect(tracker.get().history.messages).toHaveLength(1);
 	});
 });
 
@@ -70,10 +169,10 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 		tracker.apply({ config: { reasoning: 'high' } });
 
 		const config = tracker.get().config;
-		expect(config?.reasoning).toBe('high');
-		expect(config?.apiKey).toBe('sk-secret');
-		expect(config?.provider).toBe('anthropic');
-		expect(config?.model).toBe('claude-sonnet-4-5');
+		expect(config.reasoning).toBe('high');
+		expect(config.apiKey).toBe('sk-secret');
+		expect(config.provider).toBe('anthropic');
+		expect(config.model).toBe('claude-sonnet-4-5');
 	});
 
 	it('preserves apiKey when only model is updated', () => {
@@ -85,8 +184,8 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 
 		tracker.apply({ config: { model: 'claude-opus-4' } });
 
-		expect(tracker.get().config?.model).toBe('claude-opus-4');
-		expect(tracker.get().config?.apiKey).toBe('sk-secret');
+		expect(tracker.get().config.model).toBe('claude-opus-4');
+		expect(tracker.get().config.apiKey).toBe('sk-secret');
 	});
 
 	it('preserves reasoning when only apiKey is updated', () => {
@@ -97,9 +196,9 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 
 		tracker.apply({ config: { apiKey: 'sk-new' } });
 
-		expect(tracker.get().config?.apiKey).toBe('sk-new');
-		expect(tracker.get().config?.reasoning).toBe('high');
-		expect(tracker.get().config?.provider).toBe('anthropic');
+		expect(tracker.get().config.apiKey).toBe('sk-new');
+		expect(tracker.get().config.reasoning).toBe('high');
+		expect(tracker.get().config.provider).toBe('anthropic');
 	});
 
 	it('overwrites a field when explicitly set to a new value', () => {
@@ -118,9 +217,9 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 		});
 
 		const config = tracker.get().config;
-		expect(config?.provider).toBe('openai');
-		expect(config?.model).toBe('gpt-4o');
-		expect(config?.apiKey).toBe('sk-new');
+		expect(config.provider).toBe('openai');
+		expect(config.model).toBe('gpt-4o');
+		expect(config.apiKey).toBe('sk-new');
 	});
 
 	it('allows setting a field to undefined (explicit clear)', () => {
@@ -132,19 +231,18 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 
 		tracker.apply({ config: { reasoning: undefined } });
 
-		expect(tracker.get().config?.reasoning).toBeUndefined();
-		expect(tracker.get().config?.apiKey).toBe('sk-secret');
-		expect(tracker.get().config?.provider).toBe('anthropic');
+		expect(tracker.get().config.reasoning).toBeUndefined();
+		expect(tracker.get().config.apiKey).toBe('sk-secret');
+		expect(tracker.get().config.provider).toBe('anthropic');
 	});
 
-	it('merges into an initially undefined config', () => {
+	it('starts with an empty config and merges patches into it', () => {
 		const tracker = new CtxTracker();
-		// Initial state has no config
-		expect(tracker.get().config).toBeUndefined();
+		expect(tracker.get().config).toEqual({});
 
 		tracker.apply({ config: { reasoning: 'low' } });
 
-		expect(tracker.get().config?.reasoning).toBe('low');
+		expect(tracker.get().config.reasoning).toBe('low');
 	});
 
 	it('survives multiple sequential partial updates', () => {
@@ -182,10 +280,11 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 		});
 
 		// This is what setLLMConfig does: reads snapshot (no apiKey), spreads update
+		const current = tracker.get().config;
 		const snapshot = {
-			provider: tracker.get().config?.provider,
-			model: tracker.get().config?.model,
-			reasoning: tracker.get().config?.reasoning,
+			provider: current.provider,
+			model: current.model,
+			reasoning: current.reasoning,
 			// apiKey deliberately omitted — this is what snapshotLLMConfig does
 		};
 
@@ -194,8 +293,8 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 		});
 
 		// The apiKey must survive
-		expect(tracker.get().config?.apiKey).toBe('sk-secret');
-		expect(tracker.get().config?.reasoning).toBe('high');
+		expect(tracker.get().config.apiKey).toBe('sk-secret');
+		expect(tracker.get().config.reasoning).toBe('high');
 	});
 });
 

@@ -16,7 +16,15 @@ export type {
 	ToolResultMessage,
 } from './message.js';
 
-export type { Ctx, History, LLMConfig, ThinkingLevel } from './context.js';
+export type {
+	Ctx,
+	CtxPatch,
+	History,
+	HistoryPatch,
+	LLMConfig,
+	LLMConfigPatch,
+	ThinkingLevel,
+} from './context.js';
 
 export type {
 	ToolDefinition,

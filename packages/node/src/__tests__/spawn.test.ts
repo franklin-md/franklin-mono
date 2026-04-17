@@ -80,6 +80,7 @@ describe('spawn', () => {
 		const ctx = {
 			history: { systemPrompt: '', messages: [] },
 			tools: [],
+			config: {},
 		};
 		const turnServer = {
 			toolExecute: vi.fn(async () => ({ toolCallId: 'tool-2', content: [] })),

@@ -5,7 +5,7 @@ import {
 	type Model,
 } from '@mariozechner/pi-ai';
 
-import type { Ctx } from '../../../types/context.js';
+import type { LLMConfig } from '../../../types/context.js';
 import { StopCode } from '../../../types/stop-code.js';
 import type { TurnEnd } from '../../../types/stream.js';
 import { withOpenRouterHeaders } from './headers.js';
@@ -22,8 +22,8 @@ function isKnownProvider(provider: string): provider is KnownProvider {
 	return getProviders().includes(provider as KnownProvider);
 }
 
-export function resolveModel(config: Ctx['config']): ResolveResult {
-	const provider = config?.provider;
+export function resolveModel(config: LLMConfig): ResolveResult {
+	const provider = config.provider;
 	if (!provider) {
 		return fail(
 			StopCode.ProviderNotSpecified,

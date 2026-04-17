@@ -381,7 +381,6 @@ describe('action factories', () => {
 			ctx: {
 				history: {
 					systemPrompt: 'Custom prompt',
-					messages: [],
 				},
 				tools: [tool],
 			},
@@ -401,13 +400,28 @@ describe('action factories', () => {
 			type: 'setContext',
 			ctx: {
 				history: {
-					systemPrompt: 'You are a test agent.',
 					messages: [
 						{
 							role: 'user',
 							content: [{ type: 'text', text: 'previous message' }],
 						},
 					],
+				},
+			},
+		});
+	});
+
+	it('setContext() accepts both systemPrompt and messages', () => {
+		const action = setContext({
+			systemPrompt: 'You are a test agent.',
+			messages: [],
+		});
+		expect(action).toEqual({
+			type: 'setContext',
+			ctx: {
+				history: {
+					systemPrompt: 'You are a test agent.',
+					messages: [],
 				},
 			},
 		});

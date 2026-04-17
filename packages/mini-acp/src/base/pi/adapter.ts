@@ -65,7 +65,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 				initialState: {
 					systemPrompt: ctx.history.systemPrompt,
 					model: resolved.model,
-					thinkingLevel: ctx.config?.reasoning ?? 'off',
+					thinkingLevel: ctx.config.reasoning ?? 'off',
 					tools: piTools,
 					messages: piMessages,
 				},
@@ -79,7 +79,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 							// 	throw new Error(`Missing API key for provider: ${provider}`);
 							// }
 							// return key;
-							return ctx.config?.apiKey;
+							return ctx.config.apiKey;
 						},
 				streamFn,
 			});

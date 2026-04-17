@@ -39,5 +39,25 @@ export type History = {
 export type Ctx = {
 	history: History;
 	tools: ToolDefinition[];
-	config?: LLMConfig;
+	config: LLMConfig;
+};
+
+// ---------------------------------------------------------------------------
+// Ctx patch — the shape accepted at the `setContext` boundary
+//
+// Top-level fields are optional (omitted fields are left unchanged). Present
+// fields merge into the current Ctx per-type:
+// - history merges by property (systemPrompt/messages each replace when set)
+// - tools replaces the list wholesale
+// - config merges by property
+// ---------------------------------------------------------------------------
+
+export type HistoryPatch = Partial<History>;
+
+export type LLMConfigPatch = Partial<LLMConfig>;
+
+export type CtxPatch = {
+	history?: HistoryPatch;
+	tools?: ToolDefinition[];
+	config?: LLMConfigPatch;
 };

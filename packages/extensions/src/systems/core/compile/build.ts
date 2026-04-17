@@ -31,7 +31,7 @@ export async function buildCoreRuntime(
 
 	if (systemPromptHandlers.length > 0) {
 		const assembler = buildSystemPromptAssembler(systemPromptHandlers);
-		stack.push(createSystemPromptDecorator(assembler, tracker));
+		stack.push(createSystemPromptDecorator(assembler));
 	}
 
 	stack.push(createTrackerDecorator(state, tracker));

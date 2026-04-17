@@ -7,7 +7,7 @@ import type { TurnClient, TurnServer } from '../base/types.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { MuClient } from './types.js';
 import { CtxTracker } from './ctx-tracker.js';
-import type { Ctx } from '../types/context.js';
+import type { Ctx, CtxPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import { trackAgent, trackTurn } from './tracking.js';
 
@@ -32,7 +32,7 @@ export function createSessionAdapter(
 	return {
 		async initialize() {},
 
-		async setContext(ctx: Partial<Ctx>) {
+		async setContext(ctx: CtxPatch) {
 			// TODO: We should reject a setContext if there is a turn in progress.
 			tracker.apply(ctx);
 			// Invalidate agent so next prompt uses new context
