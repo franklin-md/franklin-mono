@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolve as pathResolve } from 'node:path';
 import {
+	FILESYSTEM_ALLOW_ALL,
+	FILESYSTEM_DEFAULT_PERMISSIONS,
 	toAbsolutePath,
 	type AbsolutePath,
 	type Filesystem,
@@ -31,18 +33,11 @@ describe('configureFilesystem', () => {
 		inner = mockFilesystem();
 	});
 
-	const allowAll = {
-		allowRead: ['**'],
-		denyRead: [],
-		allowWrite: ['**'],
-		denyWrite: [],
-	};
-
 	describe('cwd scoping', () => {
 		it('resolves relative paths against cwd', async () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
-				permissions: allowAll,
+				permissions: FILESYSTEM_ALLOW_ALL,
 			});
 
 			const resolved = await fs.resolve('src/index.ts');
@@ -52,13 +47,13 @@ describe('configureFilesystem', () => {
 		it('produces different resolved paths with different cwd', async () => {
 			const fsA = configureFilesystem(inner, {
 				cwd: '/project-a' as AbsolutePath,
-				permissions: allowAll,
+				permissions: FILESYSTEM_ALLOW_ALL,
 			});
 			expect(await fsA.resolve('file.txt')).toBe('/project-a/file.txt');
 
 			const fsB = configureFilesystem(inner, {
 				cwd: '/project-b' as AbsolutePath,
-				permissions: allowAll,
+				permissions: FILESYSTEM_ALLOW_ALL,
 			});
 			expect(await fsB.resolve('file.txt')).toBe('/project-b/file.txt');
 		});
@@ -69,10 +64,9 @@ describe('configureFilesystem', () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
 				permissions: {
+					...FILESYSTEM_ALLOW_ALL,
 					allowRead: ['project/**'],
 					denyRead: ['etc/**'],
-					allowWrite: ['**'],
-					denyWrite: [],
 				},
 			});
 
@@ -85,10 +79,9 @@ describe('configureFilesystem', () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
 				permissions: {
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					allowRead: ['project/src/**'],
 					denyRead: ['project/**'],
-					allowWrite: [],
-					denyWrite: [],
 				},
 			});
 
@@ -99,12 +92,7 @@ describe('configureFilesystem', () => {
 		it('reads default-allow when no patterns match', async () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
-				permissions: {
-					allowRead: [],
-					denyRead: [],
-					allowWrite: [],
-					denyWrite: [],
-				},
+				permissions: FILESYSTEM_DEFAULT_PERMISSIONS,
 			});
 
 			await fs.readFile('/project/src/index.ts' as AbsolutePath);
@@ -114,12 +102,7 @@ describe('configureFilesystem', () => {
 		it('writes default-deny when no patterns match', async () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
-				permissions: {
-					allowRead: [],
-					denyRead: [],
-					allowWrite: [],
-					denyWrite: [],
-				},
+				permissions: FILESYSTEM_DEFAULT_PERMISSIONS,
 			});
 
 			await expect(
@@ -131,8 +114,7 @@ describe('configureFilesystem', () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
 				permissions: {
-					allowRead: [],
-					denyRead: [],
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					allowWrite: ['project/**'],
 					denyWrite: ['project/secrets/**'],
 				},
@@ -146,12 +128,7 @@ describe('configureFilesystem', () => {
 		it('produces a new filesystem with different permissions when rebuilt', async () => {
 			const fsA = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
-				permissions: {
-					allowRead: [],
-					denyRead: [],
-					allowWrite: [],
-					denyWrite: [],
-				},
+				permissions: FILESYSTEM_DEFAULT_PERMISSIONS,
 			});
 
 			await expect(
@@ -160,7 +137,7 @@ describe('configureFilesystem', () => {
 
 			const fsB = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
-				permissions: allowAll,
+				permissions: FILESYSTEM_ALLOW_ALL,
 			});
 
 			await fsB.writeFile('/project/file.txt' as AbsolutePath, 'data');
@@ -173,10 +150,8 @@ describe('configureFilesystem', () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
 				permissions: {
-					allowRead: ['**'],
-					denyRead: [],
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					allowWrite: ['project/**'],
-					denyWrite: [],
 				},
 			});
 
@@ -188,10 +163,8 @@ describe('configureFilesystem', () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
 				permissions: {
-					allowRead: ['**'],
-					denyRead: [],
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					allowWrite: ['project/**'],
-					denyWrite: [],
 				},
 			});
 
@@ -205,10 +178,8 @@ describe('configureFilesystem', () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
 				permissions: {
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					allowRead: ['project/**'],
-					denyRead: [],
-					allowWrite: [],
-					denyWrite: [],
 				},
 			});
 
@@ -220,10 +191,8 @@ describe('configureFilesystem', () => {
 			const fs = configureFilesystem(inner, {
 				cwd: '/project' as AbsolutePath,
 				permissions: {
-					allowRead: ['**'],
-					denyRead: [],
+					...FILESYSTEM_DEFAULT_PERMISSIONS,
 					allowWrite: ['project/**'],
-					denyWrite: [],
 				},
 			});
 

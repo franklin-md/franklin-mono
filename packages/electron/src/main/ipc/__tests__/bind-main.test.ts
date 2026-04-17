@@ -1,5 +1,9 @@
 import type { WebContents } from 'electron';
-import type { AbsolutePath, Filesystem } from '@franklin/lib';
+import {
+	FILESYSTEM_ALLOW_ALL,
+	type AbsolutePath,
+	type Filesystem,
+} from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -52,12 +56,7 @@ function createEnvironment(label: string) {
 			config: async () => ({
 				fsConfig: {
 					cwd: '/tmp' as AbsolutePath,
-					permissions: {
-						allowRead: ['**'],
-						denyRead: [],
-						allowWrite: ['**'],
-						denyWrite: [],
-					},
+					permissions: FILESYSTEM_ALLOW_ALL,
 				},
 				netConfig: { allowedDomains: [], deniedDomains: [] },
 			}),
@@ -306,12 +305,7 @@ describe('bindMain', () => {
 							config: async () => ({
 								fsConfig: {
 									cwd: '/tmp' as AbsolutePath,
-									permissions: {
-										allowRead: ['**'],
-										denyRead: [],
-										allowWrite: ['**'],
-										denyWrite: [],
-									},
+									permissions: FILESYSTEM_ALLOW_ALL,
 								},
 								netConfig: { allowedDomains: [], deniedDomains: [] },
 							}),
