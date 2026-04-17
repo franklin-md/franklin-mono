@@ -63,19 +63,15 @@ async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
 }
 
 // ---------------------------------------------------------------------------
-// on() — waterfall tests
+// on() — prompt handler tests
 // ---------------------------------------------------------------------------
 
-describe('buildCore – on() waterfall', () => {
+describe('buildCore – prompt handlers', () => {
 	it('single prompt handler transforms params', async () => {
 		const mw = await compileExt((api) => {
-			api.on('prompt', (params) => ({
-				...params,
-				content: [
-					...params.content,
-					{ type: 'text' as const, text: ' [injected]' },
-				],
-			}));
+			api.on('prompt', (ctx) => {
+				ctx.appendContent({ type: 'text', text: ' [injected]' });
+			});
 		});
 
 		expect(mw.client).toBeDefined();
@@ -99,33 +95,24 @@ describe('buildCore – on() waterfall', () => {
 		expect(params.content[1]?.text).toBe(' [injected]');
 	});
 
-	it('multiple prompt handlers chain as waterfall', async () => {
+	it('multiple prompt handlers compose content against the original request', async () => {
 		const calls: string[] = [];
+		const seenInputs: string[] = [];
 
 		const mw = await compileExt((api) => {
-			api.on('prompt', (params) => {
+			api.on('prompt', (ctx) => {
 				calls.push('h1');
-				return {
-					...params,
-					content: [
-						{
-							type: 'text' as const,
-							text: `h1(${(params.content[0] as { type: string; text: string }).text})`,
-						},
-					],
-				};
+				seenInputs.push(
+					(ctx.request.content[0] as { type: string; text: string }).text,
+				);
+				ctx.prependContent({ type: 'text', text: 'h1' });
 			});
-			api.on('prompt', (params) => {
+			api.on('prompt', (ctx) => {
 				calls.push('h2');
-				return {
-					...params,
-					content: [
-						{
-							type: 'text' as const,
-							text: `h2(${(params.content[0] as { type: string; text: string }).text})`,
-						},
-					],
-				};
+				seenInputs.push(
+					(ctx.request.content[0] as { type: string; text: string }).text,
+				);
+				ctx.prependContent({ type: 'text', text: 'h2' });
 			});
 		});
 
@@ -146,15 +133,17 @@ describe('buildCore – on() waterfall', () => {
 		);
 
 		expect(calls).toEqual(['h1', 'h2']);
-		// h2 sees h1's output, so the final text is h2(h1(x))
+		expect(seenInputs).toEqual(['x', 'x']);
 		const params = received[0] as { content: { text: string }[] };
-		expect(params.content[0]?.text).toBe('h2(h1(x))');
+		expect(params.content.map((item) => item.text)).toEqual(['h1', 'h2', 'x']);
 	});
 
 	it('handler returning void passes through unchanged', async () => {
+		let seenRequest: unknown;
+
 		const mw = await compileExt((api) => {
-			api.on('prompt', () => {
-				// side-effect only, no return
+			api.on('prompt', (ctx) => {
+				seenRequest = ctx.request;
 			});
 		});
 
@@ -173,7 +162,8 @@ describe('buildCore – on() waterfall', () => {
 		};
 		await collect(wrapped.prompt(original));
 
-		expect(received[0]).toEqual(original);
+		expect(seenRequest).toBe(original);
+		expect(received[0]).toBe(original);
 	});
 });
 
@@ -666,13 +656,9 @@ describe('combine', () => {
 		const result = await compile(
 			combine(createCoreCompiler(), createTagCompiler()),
 			(api) => {
-				api.on('prompt', (params) => ({
-					...params,
-					content: [
-						{ type: 'text' as const, text: 'injected' },
-						...params.content,
-					],
-				}));
+				api.on('prompt', (ctx) => {
+					ctx.prependContent({ type: 'text', text: 'injected' });
+				});
 				api.tag('my-ext');
 			},
 		);
@@ -726,36 +712,20 @@ describe('compileAll', () => {
 		expect(result.client.prompt).toBeDefined();
 	});
 
-	it('compiles N extensions, waterfalls chain across extensions', async () => {
+	it('compiles N extensions, prompt contributions compose across extensions', async () => {
 		const calls: string[] = [];
 
 		const ext1: Extension = (api) => {
-			api.on('prompt', (params) => {
+			api.on('prompt', (ctx) => {
 				calls.push('ext1');
-				return {
-					...params,
-					content: [
-						{
-							type: 'text' as const,
-							text: `ext1(${(params.content[0] as { text: string }).text})`,
-						},
-					],
-				};
+				ctx.prependContent({ type: 'text', text: 'ext1' });
 			});
 		};
 
 		const ext2: Extension = (api) => {
-			api.on('prompt', (params) => {
+			api.on('prompt', (ctx) => {
 				calls.push('ext2');
-				return {
-					...params,
-					content: [
-						{
-							type: 'text' as const,
-							text: `ext2(${(params.content[0] as { text: string }).text})`,
-						},
-					],
-				};
+				ctx.prependContent({ type: 'text', text: 'ext2' });
 			});
 		};
 
@@ -778,7 +748,11 @@ describe('compileAll', () => {
 
 		expect(calls).toEqual(['ext1', 'ext2']);
 		const params = received[0] as { content: { text: string }[] };
-		expect(params.content[0]?.text).toBe('ext2(ext1(x))');
+		expect(params.content.map((item) => item.text)).toEqual([
+			'ext1',
+			'ext2',
+			'x',
+		]);
 	});
 
 	it('compileAll merges server middleware from multiple extensions', async () => {
@@ -970,15 +944,9 @@ describe('buildCore – stream observers', () => {
 		const promptCalls: string[] = [];
 
 		const mw = await compileExt((api) => {
-			api.on('prompt', (params) => {
+			api.on('prompt', (ctx) => {
 				promptCalls.push('handler');
-				return {
-					...params,
-					content: [
-						...params.content,
-						{ type: 'text' as const, text: ' [injected]' },
-					],
-				};
+				ctx.appendContent({ type: 'text', text: ' [injected]' });
 			});
 			api.on('chunk', (event) => {
 				observed.push(event);

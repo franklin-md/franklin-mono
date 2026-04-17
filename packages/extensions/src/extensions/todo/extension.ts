@@ -30,16 +30,11 @@ export function todoExtension(): Extension<CoreAPI & StoreAPI> {
 			JSON.stringify({ todos: control.todos() }),
 		);
 
-		api.on('prompt', (message) => {
+		api.on('prompt', (ctx) => {
 			const formatted = formatTodos(store.get());
-			if (!formatted) return undefined;
-			return {
-				...message,
-				content: [
-					{ type: 'text' as const, text: formatted },
-					...message.content,
-				],
-			};
+			if (formatted) {
+				ctx.prependContent({ type: 'text', text: formatted });
+			}
 		});
 	};
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { AbsolutePath } from '@franklin/lib';
+import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
 import { createEnvironmentSystem } from '../system.js';
 import { createRuntime } from '../../../algebra/system/create.js';
 import type {
@@ -14,12 +14,7 @@ import type {
 const defaultConfig: EnvironmentConfig = {
 	fsConfig: {
 		cwd: '/project' as AbsolutePath,
-		permissions: {
-			allowRead: ['**'],
-			denyRead: [],
-			allowWrite: ['**'],
-			denyWrite: [],
-		},
+		permissions: FILESYSTEM_ALLOW_ALL,
 	},
 	netConfig: { allowedDomains: [], deniedDomains: [] },
 };

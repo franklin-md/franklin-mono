@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { AbsolutePath } from '@franklin/lib';
+import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
 import { combine } from '../combine.js';
 import { createRuntime } from '../create.js';
 import { createEnvironmentSystem } from '../../../systems/environment/system.js';
@@ -26,12 +26,7 @@ import {
 const defaultEnvConfig: EnvironmentConfig = {
 	fsConfig: {
 		cwd: '/project' as AbsolutePath,
-		permissions: {
-			allowRead: ['**'],
-			denyRead: [],
-			allowWrite: ['**'],
-			denyWrite: [],
-		},
+		permissions: FILESYSTEM_ALLOW_ALL,
 	},
 	netConfig: { allowedDomains: [], deniedDomains: [] },
 };

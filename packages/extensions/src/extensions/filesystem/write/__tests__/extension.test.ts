@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { AbsolutePath } from '@franklin/lib';
+import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
 import { compileAll } from '../../../../algebra/compiler/compile.js';
 import { combine } from '../../../../algebra/compiler/combine.js';
 import { createCoreCompiler } from '../../../../systems/core/compile/compiler.js';
@@ -50,12 +50,7 @@ function mockEnvironment(
 		config: vi.fn(async () => ({
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,
-				permissions: {
-					allowRead: ['**'],
-					denyRead: [],
-					allowWrite: ['**'],
-					denyWrite: [],
-				},
+				permissions: FILESYSTEM_ALLOW_ALL,
 			},
 			netConfig: { allowedDomains: [], deniedDomains: [] },
 		})),

@@ -10,6 +10,9 @@ export type {
 export {
 	createFolderScopedFilesystem,
 	createFilteredFilesystem,
+	FILESYSTEM_ALLOW_ALL,
+	FILESYSTEM_DEFAULT_PERMISSIONS,
+	FILESYSTEM_DENY_ALL,
 } from './filesystem/index.js';
 export type { FilesystemPermissions } from './filesystem/index.js';
 export type { Persister } from './persistence/persister.js';

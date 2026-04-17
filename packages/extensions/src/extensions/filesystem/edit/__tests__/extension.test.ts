@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { AbsolutePath } from '@franklin/lib';
+import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
 import { sha256Hex } from '../../hash.js';
 import type { MiniACPClient } from '@franklin/mini-acp';
 import { compile } from '../../../../algebra/compiler/compile.js';
@@ -52,12 +52,7 @@ function mockEnvironment(
 		config: vi.fn(async () => ({
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,
-				permissions: {
-					allowRead: ['**'],
-					denyRead: [],
-					allowWrite: ['**'],
-					denyWrite: [],
-				},
+				permissions: FILESYSTEM_ALLOW_ALL,
 			},
 			netConfig: { allowedDomains: [], deniedDomains: [] },
 		})),
