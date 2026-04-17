@@ -1,13 +1,14 @@
 import { FranklinApp } from '@franklin/agent/browser';
-import type { Platform } from '@franklin/agent/browser';
+import type { FranklinExtension, Platform } from '@franklin/agent/browser';
 import {
-	conversationExtension,
-	todoExtension,
-	statusExtension,
-	filesystemExtension,
 	bashExtension,
+	conversationExtension,
 	createWebExtension,
+	filesystemExtension,
+	instructionsExtension,
 	spawnExtension,
+	statusExtension,
+	todoExtension,
 } from '@franklin/extensions';
 import type { AbsolutePath } from '@franklin/lib';
 import { toAbsolutePath } from '@franklin/lib';
@@ -30,12 +31,15 @@ const extensionBundles = [
 	conversationExtension,
 	todoExtension,
 	statusExtension,
+	instructionsExtension,
 	filesystemExtension,
 	bashExtension,
 	webExtension,
 	spawnExtension,
 ];
-const extensions = extensionBundles.map((bundle) => bundle.extension);
+const extensions = extensionBundles.map(
+	(bundle: { extension: FranklinExtension }) => bundle.extension,
+);
 
 export async function createFranklinApp(
 	plugin: Plugin,

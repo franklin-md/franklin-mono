@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AbsolutePath, Filesystem } from '@franklin/lib';
 
-import { createClaudeSpec } from '../claude.js';
+import { createClaudeSpec } from '../specs/claude.js';
 
 function makeFs(files: Record<string, string>): Filesystem {
 	const encoder = new TextEncoder();

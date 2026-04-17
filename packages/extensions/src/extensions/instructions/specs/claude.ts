@@ -1,8 +1,8 @@
 import type { AbsolutePath } from '@franklin/lib';
 
-import type { InstructionSpec } from './types.js';
-import { walkUp } from './discovery/walk-up.js';
-import { probe } from './discovery/probe.js';
+import type { InstructionSpec } from '../types.js';
+import { walkUp } from '../discovery/walk-up.js';
+import { probe } from '../discovery/probe.js';
 
 // Paths probed relative to each directory visited during the upward walk.
 // Order mirrors Claude Code's concatenation rule ("CLAUDE.local.md below

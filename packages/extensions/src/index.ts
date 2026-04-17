@@ -144,6 +144,7 @@ export {
 	bashExtension,
 	createWebExtension,
 	spawnExtension,
+	instructionsExtension,
 } from './extensions/index.js';
 
 export { createTodoControl, createStatusControl } from './extensions/index.js';
@@ -171,8 +172,6 @@ export type {
 	WebSearchResult,
 } from './extensions/web/index.js';
 export type {
-	InstructionFile,
-	InstructionScope,
 	InstructionSpec,
 	InstructionsManager,
 } from './extensions/instructions/types.js';

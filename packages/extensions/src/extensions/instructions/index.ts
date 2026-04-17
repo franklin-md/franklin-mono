@@ -1,3 +1,4 @@
+export { instructionsExtension } from './bundle.js';
 export type { InstructionSpec, InstructionsManager } from './types.js';
-export { createClaudeSpec } from './claude.js';
-export type { ClaudeSpecArgs } from './claude.js';
+export { createClaudeSpec } from './specs/claude.js';
+export type { ClaudeSpecArgs } from './specs/claude.js';
