@@ -179,3 +179,9 @@ export type {
 	WebSearchExtensionOptions,
 	WebSearchResult,
 } from './extensions/web/index.js';
+export type {
+	InstructionFile,
+	InstructionScope,
+	InstructionSpec,
+	InstructionsManager,
+} from './extensions/instructions/types.js';
