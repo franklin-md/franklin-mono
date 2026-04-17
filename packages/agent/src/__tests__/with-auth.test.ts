@@ -56,13 +56,13 @@ function mockCoreRuntime(): CoreRuntime {
 		cancel: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
 		state: vi.fn(async () => ({
-			core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+			core: { messages: [], llmConfig: {} },
 		})),
 		fork: vi.fn(async () => ({
-			core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+			core: { messages: [], llmConfig: {} },
 		})),
 		child: vi.fn(async () => ({
-			core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+			core: { messages: [], llmConfig: {} },
 		})),
 		dispose: vi.fn(async () => {}),
 	} as unknown as CoreRuntime;
@@ -136,7 +136,7 @@ describe('reconnectAgent', () => {
 		const auth = mockAuthManager({ anthropic: 'sk-test-123' });
 		const state: CoreState = {
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { provider: 'anthropic' },
 			},
 		};
@@ -154,7 +154,7 @@ describe('reconnectAgent', () => {
 		const auth = mockAuthManager({ anthropic: 'sk-test-123' });
 		const state: CoreState = {
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: {},
 			},
 		};
@@ -189,7 +189,7 @@ describe('withAuth', () => {
 		const decorated = withAuth(base, auth);
 		const compiler = await decorated.createCompiler({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { provider: 'anthropic' },
 			},
 		});
@@ -214,7 +214,7 @@ describe('withAuth', () => {
 		const decorated = withAuth(base, auth);
 		const compiler = await decorated.createCompiler({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { provider: 'anthropic' },
 			},
 		});
@@ -241,7 +241,7 @@ describe('withAuth', () => {
 		const decorated = withAuth(base, auth);
 		const compiler = await decorated.createCompiler({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { provider: 'anthropic' },
 			},
 		});
@@ -268,7 +268,7 @@ describe('withAuth', () => {
 		const decorated = withAuth(base, auth);
 		const compiler = await decorated.createCompiler({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { provider: 'anthropic' },
 			},
 		});
@@ -292,7 +292,7 @@ describe('withAuth', () => {
 		const decorated = withAuth(base, auth);
 		const compiler = await decorated.createCompiler({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { provider: 'anthropic' },
 			},
 		});
@@ -326,7 +326,7 @@ describe('withAuth live sync', () => {
 		const decorated = withAuth(base, auth);
 		const compiler = await decorated.createCompiler({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { provider },
 			},
 		});

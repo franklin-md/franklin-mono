@@ -19,6 +19,10 @@ import type { SystemPromptAssembler } from '../builders/system-prompt.js';
  * stale prompt until the next change. This should effectively never
  * happen in practice.
  *
+ * `lastSent` inits to `''`, matching the tracker's seeded systemPrompt.
+ * If any handler contributes content, the first turn dispatches setContext
+ * with the freshly assembled prompt.
+ *
  * TODO: once mini-ACP treats `history` as a partial merge
  * (see .context/partial-history-proposal.md), drop the tracker read and
  * send only { history: { systemPrompt: assembled } }.
@@ -26,11 +30,8 @@ import type { SystemPromptAssembler } from '../builders/system-prompt.js';
 export function createSystemPromptDecorator(
 	assembler: SystemPromptAssembler,
 	tracker: CtxTracker,
-	basePrompt: string,
 ): ProtocolDecorator {
-	// The tracker decorator seeds the agent with basePrompt at boot, so
-	// there's no need to re-send it on the first matching turn.
-	let lastSent: string = basePrompt;
+	let lastSent: string = '';
 
 	return {
 		name: 'system-prompt',

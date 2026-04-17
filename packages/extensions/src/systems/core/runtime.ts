@@ -56,10 +56,7 @@ export function createCoreRuntime(
 			const ctx = tracker.get();
 			return {
 				core: {
-					history: {
-						systemPrompt: ctx.history.systemPrompt,
-						messages: [...ctx.history.messages],
-					},
+					messages: [...ctx.history.messages],
 					llmConfig: snapshotLLMConfig(),
 				},
 			};
@@ -68,10 +65,7 @@ export function createCoreRuntime(
 			const ctx = tracker.get();
 			return {
 				core: {
-					history: {
-						systemPrompt: ctx.history.systemPrompt,
-						messages: [...ctx.history.messages],
-					},
+					messages: [...ctx.history.messages],
 					llmConfig: snapshotLLMConfig(),
 				},
 			};
@@ -79,7 +73,7 @@ export function createCoreRuntime(
 		async child(): Promise<CoreState> {
 			return {
 				core: {
-					history: { systemPrompt: '', messages: [] },
+					messages: [],
 					llmConfig: snapshotLLMConfig(),
 				},
 			};

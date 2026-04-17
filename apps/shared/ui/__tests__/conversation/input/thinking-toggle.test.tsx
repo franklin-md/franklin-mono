@@ -18,7 +18,7 @@ function makeMockRuntime(reasoning: ThinkingLevel): FranklinRuntime {
 	return {
 		state: vi.fn(async () => ({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { reasoning },
 			},
 		})),

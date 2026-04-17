@@ -1,14 +1,14 @@
-import type { History, LLMConfig } from '@franklin/mini-acp';
+import type { LLMConfig, Message } from '@franklin/mini-acp';
 
 export type CoreState = {
 	core: {
-		history: History;
+		messages: Message[];
 		llmConfig: Omit<LLMConfig, 'apiKey'>;
 	};
 };
 
 export function emptyCoreState(): CoreState {
 	return {
-		core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+		core: { messages: [], llmConfig: {} },
 	};
 }

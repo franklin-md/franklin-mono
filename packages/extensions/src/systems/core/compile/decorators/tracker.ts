@@ -16,11 +16,12 @@ export function createTrackerDecorator(
 			// I..e something that is in an initial boot up sequence Prior to the decorators?
 			const core = state.core;
 
-			// Seed tracker with initial state
+			// Seed tracker with initial state. systemPrompt is always '' —
+			// handlers own it via the system-prompt decorator.
 			tracker.apply({
 				history: {
-					systemPrompt: core.history.systemPrompt,
-					messages: [...core.history.messages],
+					systemPrompt: '',
+					messages: [...core.messages],
 				},
 				tools: [],
 				config: { ...core.llmConfig },
@@ -29,8 +30,8 @@ export function createTrackerDecorator(
 			// Mirror initial state to server process
 			await c.setContext({
 				history: {
-					systemPrompt: core.history.systemPrompt,
-					messages: [...core.history.messages],
+					systemPrompt: '',
+					messages: [...core.messages],
 				},
 				tools: [],
 				config: { ...core.llmConfig },

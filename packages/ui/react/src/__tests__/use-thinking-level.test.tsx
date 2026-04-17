@@ -34,7 +34,7 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 	const runtime = {
 		state: vi.fn(async () => ({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { reasoning },
 			},
 		})),
@@ -82,7 +82,7 @@ describe('useThinkingLevel – initialization', () => {
 		const runtime = {
 			state: vi.fn(async () => ({
 				core: {
-					history: { systemPrompt: '', messages: [] },
+					messages: [],
 					llmConfig: {},
 				},
 			})),
@@ -228,7 +228,7 @@ describe('useThinkingLevel – reactivity', () => {
 		// Simulate external config change
 		(runtime.state as ReturnType<typeof vi.fn>).mockResolvedValue({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { reasoning: 'xhigh' },
 			},
 		});

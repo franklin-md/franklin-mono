@@ -6,23 +6,24 @@ import {
 	createSessionAdapter,
 	createAgentConnection,
 	StopCode,
+	type Ctx,
 	type Update,
 	type StreamEvent,
 } from '@franklin/mini-acp';
 import type { CoreAPI } from '../api/api.js';
-import type { CoreState } from '../state.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createMockSpawn() {
+function createMockSpawn(onPrompt?: (ctx: Ctx) => void) {
 	return async () => {
 		const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
 		const connection = createAgentConnection(agentSide);
 
-		const adapter = createSessionAdapter(
-			(_ctx) => ({
+		const adapter = createSessionAdapter((ctx) => {
+			onPrompt?.(ctx);
+			return {
 				async *prompt() {
 					yield {
 						type: 'update' as const,
@@ -38,9 +39,8 @@ function createMockSpawn() {
 					};
 				},
 				async cancel() {},
-			}),
-			connection.remote,
-		);
+			};
+		}, connection.remote);
 		connection.bind(adapter);
 
 		return {
@@ -49,11 +49,6 @@ function createMockSpawn() {
 		};
 	};
 }
-
-const emptyHistory: CoreState['core']['history'] = {
-	systemPrompt: '',
-	messages: [],
-};
 
 async function collect(
 	iter: AsyncIterable<StreamEvent>,
@@ -73,7 +68,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { history: emptyHistory, llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {} } },
 			[],
 		);
 
@@ -89,7 +84,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { history: emptyHistory, llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {} } },
 			[],
 		);
 
@@ -106,19 +101,18 @@ describe('createCoreSystem', () => {
 		await runtime.dispose();
 	});
 
-	it('state returns keyed core state with history', async () => {
+	it('state returns keyed core state with messages', async () => {
 		const system = createCoreSystem(createMockSpawn());
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { history: emptyHistory, llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {} } },
 			[],
 		);
 
 		const state = await runtime.state();
 		expect(state.core).toBeDefined();
-		expect(state.core.history).toBeDefined();
-		expect(state.core.history.messages).toEqual([]);
+		expect(state.core.messages).toEqual([]);
 
 		await runtime.dispose();
 	});
@@ -128,7 +122,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { history: emptyHistory, llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {} } },
 			[],
 		);
 
@@ -140,7 +134,7 @@ describe('createCoreSystem', () => {
 		);
 
 		const state = await runtime.state();
-		expect(state.core.history.messages.length).toBeGreaterThanOrEqual(2);
+		expect(state.core.messages.length).toBeGreaterThanOrEqual(2);
 
 		await runtime.dispose();
 	});
@@ -152,7 +146,7 @@ describe('createCoreSystem', () => {
 			system,
 			{
 				core: {
-					history: emptyHistory,
+					messages: [],
 					llmConfig: {
 						model: 'test-model',
 						provider: 'test-provider',
@@ -176,7 +170,7 @@ describe('createCoreSystem', () => {
 			system,
 			{
 				core: {
-					history: emptyHistory,
+					messages: [],
 					llmConfig: {
 						model: 'test-model',
 						provider: 'test-provider',
@@ -192,22 +186,19 @@ describe('createCoreSystem', () => {
 		await runtime.dispose();
 	});
 
-	it('fork clones history and config', async () => {
+	it('fork clones messages and config', async () => {
 		const system = createCoreSystem(createMockSpawn());
 
 		const runtime = await createRuntime(
 			system,
 			{
 				core: {
-					history: {
-						systemPrompt: 'You are helpful',
-						messages: [
-							{
-								role: 'user',
-								content: [{ type: 'text', text: 'hello' }],
-							},
-						],
-					},
+					messages: [
+						{
+							role: 'user',
+							content: [{ type: 'text', text: 'hello' }],
+						},
+					],
 					llmConfig: { model: 'test' },
 				},
 			},
@@ -215,32 +206,28 @@ describe('createCoreSystem', () => {
 		);
 
 		const forked = await runtime.fork();
-		expect(forked.core.history.systemPrompt).toBe('You are helpful');
-		expect(forked.core.history.messages).toHaveLength(1);
+		expect(forked.core.messages).toHaveLength(1);
 		expect(forked.core.llmConfig.model).toBe('test');
 
 		const state = await runtime.state();
-		expect(forked.core.history.messages).not.toBe(state.core.history.messages);
+		expect(forked.core.messages).not.toBe(state.core.messages);
 
 		await runtime.dispose();
 	});
 
-	it('child returns empty history with same config', async () => {
+	it('child returns empty messages with same config', async () => {
 		const system = createCoreSystem(createMockSpawn());
 
 		const runtime = await createRuntime(
 			system,
 			{
 				core: {
-					history: {
-						systemPrompt: 'You are helpful',
-						messages: [
-							{
-								role: 'user',
-								content: [{ type: 'text', text: 'hello' }],
-							},
-						],
-					},
+					messages: [
+						{
+							role: 'user',
+							content: [{ type: 'text', text: 'hello' }],
+						},
+					],
 					llmConfig: { model: 'test' },
 				},
 			},
@@ -248,7 +235,7 @@ describe('createCoreSystem', () => {
 		);
 
 		const childState = await runtime.child();
-		expect(childState.core.history.messages).toHaveLength(0);
+		expect(childState.core.messages).toHaveLength(0);
 		expect(childState.core.llmConfig.model).toBe('test');
 
 		await runtime.dispose();
@@ -259,7 +246,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { history: emptyHistory, llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {} } },
 			[],
 		);
 
@@ -271,7 +258,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { history: emptyHistory, llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {} } },
 			[
 				(api: CoreAPI) => {
 					api.on('prompt', (_params) => {
@@ -286,23 +273,27 @@ describe('createCoreSystem', () => {
 		await runtime.dispose();
 	});
 
-	it('emptyState returns empty history with no config', () => {
+	it('emptyState returns empty messages with no config', () => {
 		const system = createCoreSystem(createMockSpawn());
 		const empty = system.emptyState();
 
-		expect(empty.core.history.systemPrompt).toBe('');
-		expect(empty.core.history.messages).toEqual([]);
+		expect(empty.core.messages).toEqual([]);
 		expect(empty.core.llmConfig).toEqual({});
 	});
 
 	it('systemPrompt handler assembles system prompt before first turn', async () => {
-		const system = createCoreSystem(createMockSpawn());
+		let capturedCtx: Ctx | undefined;
+		const system = createCoreSystem(
+			createMockSpawn((ctx) => {
+				capturedCtx = ctx;
+			}),
+		);
 
 		const runtime = await createRuntime(
 			system,
 			{
 				core: {
-					history: { systemPrompt: 'You are helpful', messages: [] },
+					messages: [],
 					llmConfig: {},
 				},
 			},
@@ -322,22 +313,24 @@ describe('createCoreSystem', () => {
 			}),
 		);
 
-		const state = await runtime.state();
-		expect(state.core.history.systemPrompt).toBe(
-			'You are helpful\n\nTool guidelines here.',
-		);
+		expect(capturedCtx!.history.systemPrompt).toBe('Tool guidelines here.');
 
 		await runtime.dispose();
 	});
 
 	it('multiple systemPrompt handlers compose in registration order', async () => {
-		const system = createCoreSystem(createMockSpawn());
+		let capturedCtx: Ctx | undefined;
+		const system = createCoreSystem(
+			createMockSpawn((ctx) => {
+				capturedCtx = ctx;
+			}),
+		);
 
 		const runtime = await createRuntime(
 			system,
 			{
 				core: {
-					history: { systemPrompt: 'base', messages: [] },
+					messages: [],
 					llmConfig: {},
 				},
 			},
@@ -360,8 +353,7 @@ describe('createCoreSystem', () => {
 			}),
 		);
 
-		const state = await runtime.state();
-		expect(state.core.history.systemPrompt).toBe('base\n\nfirst\n\nsecond');
+		expect(capturedCtx!.history.systemPrompt).toBe('first\n\nsecond');
 
 		await runtime.dispose();
 	});
