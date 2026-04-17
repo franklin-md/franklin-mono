@@ -12,7 +12,7 @@ export function FileBadge({ path, className }: FileBadgeProps) {
 
 	return (
 		<Badge
-			variant="secondary"
+			variant="plain"
 			className={cn('min-w-0 gap-1 px-1.5 font-normal', className)}
 		>
 			<FileIcon filename={name} className="h-3 w-3" />

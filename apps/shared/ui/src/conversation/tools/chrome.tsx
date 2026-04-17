@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import type { ResolvedToolRender } from '@franklin/react';
 
 import { cn } from '../../lib/cn.js';
+import { Button } from '../../primitives/button.js';
 
 import { StatusIcon } from './status-icon.js';
 
@@ -17,17 +18,19 @@ export function ToolCardChrome({
 
 	return (
 		<div className="text-xs">
-			<button
+			<Button
 				type="button"
+				variant="ghost"
 				className={cn(
-					'flex w-full items-center gap-2 px-1 py-1',
+					'h-auto w-full appearance-none justify-start gap-2 rounded-md border-0 bg-transparent px-1 py-1 text-left text-xs font-normal text-muted-foreground shadow-none disabled:opacity-100',
 					hasExpanded ? 'cursor-pointer' : 'cursor-default',
 				)}
 				onClick={() => hasExpanded && setOpen((o) => !o)}
 				disabled={!hasExpanded}
+				aria-expanded={hasExpanded ? open : undefined}
 			>
 				<StatusIcon status={status} />
-				<span className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-muted-foreground">
+				<span className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
 					{summary}
 				</span>
 				{hasExpanded && (
@@ -38,7 +41,7 @@ export function ToolCardChrome({
 						)}
 					/>
 				)}
-			</button>
+			</Button>
 			{open && hasExpanded && (
 				<div className="px-1 pb-1 pt-0.5 text-muted-foreground">{expanded}</div>
 			)}
