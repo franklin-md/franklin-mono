@@ -1,5 +1,6 @@
 import type { SessionAPI } from './api/api.js';
 import type {
+	BaseRuntimeSystem,
 	InferAPI,
 	InferState,
 	RuntimeSystem,
@@ -10,14 +11,13 @@ import type { SessionCreate } from './runtime/types.js';
 // A form of composition. Similar to CombineSystems — wraps a base system
 // with session capabilities (child/fork). Recursive: child/fork produce
 // runtimes that themselves have session capabilities via the manager.
-export type SessionSystem<RTS extends RuntimeSystem<any, any, any>> =
-	RuntimeSystem<
-		InferState<RTS>,
-		InferAPI<RTS> & SessionAPI<RTS>,
-		SessionRuntime<RTS>
-	>;
+export type SessionSystem<RTS extends BaseRuntimeSystem> = RuntimeSystem<
+	InferState<RTS>,
+	InferAPI<RTS> & SessionAPI<RTS>,
+	SessionRuntime<RTS>
+>;
 
-export function createSessionSystem<RTS extends RuntimeSystem<any, any, any>>(
+export function createSessionSystem<RTS extends BaseRuntimeSystem>(
 	system: RTS,
 	id: string,
 	create: SessionCreate<SessionSystem<RTS>>,

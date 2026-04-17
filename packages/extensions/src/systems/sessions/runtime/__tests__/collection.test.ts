@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SessionCollection } from '../collection.js';
-import type { RuntimeBase } from '../../../../algebra/runtime/types.js';
+import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
 import type { EmptyState } from '../../../empty/state.js';
 
-type TestRuntime = RuntimeBase<EmptyState>;
+type TestRuntime = BaseRuntime<EmptyState>;
 
 function mockRuntime(): TestRuntime {
 	return {

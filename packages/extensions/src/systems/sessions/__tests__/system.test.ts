@@ -4,8 +4,8 @@ import { createRuntime } from '../../../algebra/system/create.js';
 import { SessionCollection } from '../runtime/collection.js';
 import { createSessionManager } from '../runtime/manager.js';
 import type { SessionRuntime } from '../runtime/runtime.js';
-import type { RuntimeBase } from '../../../algebra/runtime/types.js';
-import type { MergedRuntime } from '../../../algebra/runtime/combine.js';
+import type { BaseRuntime } from '../../../algebra/runtime/types.js';
+import type { CombinedRuntime } from '../../../algebra/runtime/combine.js';
 import type { EmptyState } from '../../empty/state.js';
 import type { RuntimeSystem } from '../../../algebra/system/types.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
@@ -16,7 +16,7 @@ import type { SessionCreate } from '../runtime/types.js';
 // ---------------------------------------------------------------------------
 
 type TestState = { value: string };
-type TestRuntime = RuntimeBase<TestState>;
+type TestRuntime = BaseRuntime<TestState>;
 type TestSystem = RuntimeSystem<TestState, Record<string, never>, TestRuntime>;
 
 function createTestSystem(): TestSystem {
@@ -254,15 +254,15 @@ describe('createSessionSystem', () => {
 // ---------------------------------------------------------------------------
 
 describe('SessionRuntime subtyping', () => {
-	it('MergedRuntime with SessionRuntime is assignable to SessionRuntime', () => {
+	it('CombinedRuntime with SessionRuntime is assignable to SessionRuntime', () => {
 		type MinimalSystem = RuntimeSystem<
 			EmptyState,
 			Record<never, never>,
-			RuntimeBase<EmptyState>
+			BaseRuntime<EmptyState>
 		>;
 		type FakeState = { fake: { value: string } };
-		type FakeRuntime = RuntimeBase<FakeState> & { doFake(): void };
-		type Combined = MergedRuntime<
+		type FakeRuntime = BaseRuntime<FakeState> & { doFake(): void };
+		type Combined = CombinedRuntime<
 			EmptyState,
 			FakeState,
 			SessionRuntime<MinimalSystem>,

@@ -1,8 +1,8 @@
 import { createObserver } from '@franklin/lib';
-import type { RuntimeBase } from '../../../algebra/runtime/types.js';
+import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import type { Session, SessionEvent } from './types.js';
 
-export class SessionCollection<RT extends RuntimeBase<any>> {
+export class SessionCollection<RT extends BaseRuntime<any>> {
 	private readonly sessions = new Map<string, Session<RT>>();
 	private readonly observer = createObserver<[SessionEvent<RT>]>();
 

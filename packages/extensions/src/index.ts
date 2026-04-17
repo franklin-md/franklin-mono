@@ -78,6 +78,7 @@ export {
 	SessionManager,
 	createSessionManager,
 } from './systems/sessions/api/index.js';
+export type { BaseAPI } from './algebra/api/types.js';
 export type { Compiler } from './algebra/compiler/types.js';
 export { compile, compileAll } from './algebra/compiler/compile.js';
 export { combine } from './algebra/compiler/combine.js';
@@ -91,12 +92,15 @@ export { reduceExtensions } from './algebra/types/index.js';
 // ---------------------------------------------------------------------------
 // Runtime system
 // ---------------------------------------------------------------------------
+export type { BaseState } from './algebra/state/types.js';
 export type {
+	BaseRuntimeSystem,
 	RuntimeSystem,
 	InferState,
 	InferAPI,
 	InferRuntime,
 	CombineSystems,
+	CombinableSystem,
 } from './algebra/system/types.js';
 export { createRuntime } from './algebra/system/create.js';
 export { createCoreSystem } from './systems/core/system.js';
@@ -119,8 +123,8 @@ export { resolveState } from './algebra/state/resolve.js';
 // ---------------------------------------------------------------------------
 // Runtime
 // ---------------------------------------------------------------------------
-export type { RuntimeBase } from './algebra/runtime/types.js';
-export type { MergedRuntime } from './algebra/runtime/combine.js';
+export type { BaseRuntime } from './algebra/runtime/types.js';
+export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { CoreRuntime } from './systems/core/runtime.js';
 export type { StoreRuntime } from './systems/store/runtime.js';
 export type { EnvironmentRuntime } from './systems/environment/runtime.js';

@@ -1,10 +1,12 @@
 export type {
+	BaseRuntimeSystem,
 	RuntimeSystem,
 	InferCompiler,
 	InferState,
 	InferAPI,
 	InferRuntime,
 	CombineSystems,
+	CombinableSystem,
 } from './types.js';
 export { createRuntime } from './create.js';
 export { combine } from './combine.js';

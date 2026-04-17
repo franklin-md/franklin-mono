@@ -1,23 +1,32 @@
 import type { Simplify } from '@franklin/lib';
-import type { RuntimeBase } from './types.js';
+import type { BaseRuntime } from './types.js';
 
-export type MergedRuntime<
-	S1,
-	S2,
-	RT1 extends RuntimeBase<S1>,
-	RT2 extends RuntimeBase<S2>,
-> = Simplify<
-	RuntimeBase<S1 & S2> &
-		Omit<RT1, keyof RuntimeBase<S1>> &
-		Omit<RT2, keyof RuntimeBase<S2>>
+type RuntimeExtras<S, RT extends BaseRuntime<S>> = Omit<
+	RT,
+	keyof BaseRuntime<S>
 >;
 
-export function mergeRuntimes<
+/**
+ * Runtime produced by `combineRuntimes`. Recomposes the lifecycle members
+ * of `BaseRuntime<S1 & S2>` and merges the extra surface areas of both
+ * runtimes. Overlap between the extras is prevented at composition sites
+ * (via the API-level overlap guard on `combine()`), not in this type.
+ */
+export type CombinedRuntime<
 	S1,
-	RT1 extends RuntimeBase<S1>,
 	S2,
-	RT2 extends RuntimeBase<S2>,
->(rt1: RT1, rt2: RT2): MergedRuntime<S1, S2, RT1, RT2> {
+	RT1 extends BaseRuntime<S1>,
+	RT2 extends BaseRuntime<S2>,
+> = Simplify<
+	BaseRuntime<S1 & S2> & RuntimeExtras<S1, RT1> & RuntimeExtras<S2, RT2>
+>;
+
+export function combineRuntimes<
+	S1,
+	RT1 extends BaseRuntime<S1>,
+	S2,
+	RT2 extends BaseRuntime<S2>,
+>(rt1: RT1, rt2: RT2): CombinedRuntime<S1, S2, RT1, RT2> {
 	return {
 		...rt1,
 		...rt2,

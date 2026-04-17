@@ -1,3 +1,3 @@
-export type { RuntimeBase } from './types.js';
-export type { MergedRuntime } from './combine.js';
-export { mergeRuntimes } from './combine.js';
+export type { BaseRuntime } from './types.js';
+export type { CombinedRuntime } from './combine.js';
+export { combineRuntimes } from './combine.js';
