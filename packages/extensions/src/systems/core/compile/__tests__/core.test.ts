@@ -7,7 +7,7 @@ import { combine } from '../../../../algebra/compiler/combine.js';
 import type { Compiler } from '../../../../algebra/compiler/types.js';
 import type { Extension } from '../../../../algebra/types/extension.js';
 import type { FullMiddleware } from '../../api/middleware/types.js';
-import { apply } from '../../api/middleware/apply.js';
+import { apply } from '@franklin/lib/middleware';
 import type {
 	MiniACPAgent,
 	MiniACPClient,

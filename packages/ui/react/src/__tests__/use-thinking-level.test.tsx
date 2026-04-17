@@ -18,7 +18,7 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 	runtime: FranklinRuntime;
 	/** The vi.fn() backing runtime.subscribe — use for assertions. */
 	subscribeSpy: ReturnType<typeof vi.fn>;
-	/** Simulate a runtime notification (e.g. setContext completed). */
+	/** Simulate a runtime notification (e.g. setLLMConfig completed). */
 	notify: () => void;
 } {
 	let reasoning: ThinkingLevel | undefined = initialReasoning;
@@ -38,14 +38,12 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 				llmConfig: { reasoning },
 			},
 		})),
-		setContext: vi.fn(
-			async (ctx: { config?: { reasoning?: ThinkingLevel } }) => {
-				if (ctx.config?.reasoning !== undefined) {
-					reasoning = ctx.config.reasoning;
-				}
-				for (const l of listeners) l();
-			},
-		),
+		setLLMConfig: vi.fn(async (config: { reasoning?: ThinkingLevel }) => {
+			if (config.reasoning !== undefined) {
+				reasoning = config.reasoning;
+			}
+			for (const l of listeners) l();
+		}),
 		subscribe: subscribeSpy,
 	} as unknown as FranklinRuntime;
 
@@ -89,7 +87,7 @@ describe('useThinkingLevel – initialization', () => {
 				},
 			})),
 			subscribe: vi.fn(() => () => {}),
-			setContext: vi.fn(async () => {}),
+			setLLMConfig: vi.fn(async () => {}),
 		} as unknown as FranklinRuntime;
 
 		const { result } = renderHook(() => useThinkingLevel(), {
@@ -122,7 +120,7 @@ describe('useThinkingLevel – initialization', () => {
 // ---------------------------------------------------------------------------
 
 describe('useThinkingLevel – setLevel', () => {
-	it('updates the level optimistically and calls setContext', async () => {
+	it('updates the level optimistically and calls setLLMConfig', async () => {
 		const { runtime } = makeMockRuntime('medium');
 		const { result } = renderHook(() => useThinkingLevel(), {
 			wrapper: agentWrapper(runtime),
@@ -137,10 +135,8 @@ describe('useThinkingLevel – setLevel', () => {
 		});
 
 		expect(result.current.level).toBe('high');
-		expect(runtime.setContext).toHaveBeenCalledWith(
-			expect.objectContaining({
-				config: expect.objectContaining({ reasoning: 'high' }),
-			}),
+		expect(runtime.setLLMConfig).toHaveBeenCalledWith(
+			expect.objectContaining({ reasoning: 'high' }),
 		);
 	});
 });

@@ -3,6 +3,8 @@ export type {
 	CancelHandler,
 	PromptContext,
 	PromptHandler,
+	SystemPromptContext,
+	SystemPromptHandler,
 	ExtensionToolDefinition,
 	ToolSpec,
 	ToolArgs,
@@ -11,21 +13,10 @@ export type {
 	SerializedToolDefinition,
 	ToolOutput,
 	ToolExecuteReturn,
-	MethodMiddleware,
-	Middleware,
-	ClientMiddleware,
-	ServerMiddleware,
-	FullMiddleware,
-} from './systems/core/api/index.js';
-export {
-	compose,
-	composeMethod,
-	passThrough,
 } from './systems/core/api/index.js';
 export { resolveToolOutput } from './systems/core/api/index.js';
 export { toolSpec } from './systems/core/api/index.js';
 export { serializeTool, toToolInputSchema } from './systems/core/api/index.js';
-export { apply } from './systems/core/api/index.js';
 export type { DependencyAPI } from './systems/dependency/index.js';
 export type { EnvironmentAPI } from './systems/environment/api/index.js';
 export type {

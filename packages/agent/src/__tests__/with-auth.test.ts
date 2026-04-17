@@ -7,7 +7,11 @@ import {
 	createAgentConnection,
 	StopCode,
 } from '@franklin/mini-acp';
-import { loginAgent, withAuth } from '../auth/with-auth.js';
+import {
+	authenticateAgent,
+	reconnectAgent,
+	withAuth,
+} from '../auth/with-auth.js';
 import type { AuthManager } from '../auth/manager.js';
 import type { AuthEntry } from '../auth/types.js';
 
@@ -47,8 +51,7 @@ function mockAuthManager(
 
 function mockCoreRuntime(): CoreRuntime {
 	return {
-		setContext: vi.fn(async () => {}),
-		initialize: vi.fn(async () => ({})),
+		setLLMConfig: vi.fn(async () => {}),
 		prompt: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
@@ -94,11 +97,41 @@ function createMockSpawn() {
 }
 
 // ---------------------------------------------------------------------------
-// loginAgent
+// authenticateAgent
 // ---------------------------------------------------------------------------
 
-describe('loginAgent', () => {
-	it('calls setContext with resolved provider and key', async () => {
+describe('authenticateAgent', () => {
+	it('calls setLLMConfig with the provider and resolved key', async () => {
+		const runtime = mockCoreRuntime();
+		const auth = mockAuthManager({ anthropic: 'sk-test-123' });
+
+		await authenticateAgent(runtime, 'anthropic', auth);
+
+		expect(runtime.setLLMConfig).toHaveBeenCalledWith({
+			provider: 'anthropic',
+			apiKey: 'sk-test-123',
+		});
+	});
+
+	it('pushes undefined apiKey when provider has no stored key', async () => {
+		const runtime = mockCoreRuntime();
+		const auth = mockAuthManager({});
+
+		await authenticateAgent(runtime, 'anthropic', auth);
+
+		expect(runtime.setLLMConfig).toHaveBeenCalledWith({
+			provider: 'anthropic',
+			apiKey: undefined,
+		});
+	});
+});
+
+// ---------------------------------------------------------------------------
+// reconnectAgent
+// ---------------------------------------------------------------------------
+
+describe('reconnectAgent', () => {
+	it('authenticates using the provider from state', async () => {
 		const runtime = mockCoreRuntime();
 		const auth = mockAuthManager({ anthropic: 'sk-test-123' });
 		const state: CoreState = {
@@ -108,16 +141,17 @@ describe('loginAgent', () => {
 			},
 		};
 
-		await loginAgent(runtime, state, auth);
+		await reconnectAgent(runtime, state, auth);
 
-		expect(runtime.setContext).toHaveBeenCalledWith({
-			config: { provider: 'anthropic', apiKey: 'sk-test-123' },
+		expect(runtime.setLLMConfig).toHaveBeenCalledWith({
+			provider: 'anthropic',
+			apiKey: 'sk-test-123',
 		});
 	});
 
-	it('falls back to first stored provider when none specified', async () => {
+	it('no-ops when state has no provider', async () => {
 		const runtime = mockCoreRuntime();
-		const auth = mockAuthManager({ openai: 'sk-openai' });
+		const auth = mockAuthManager({ anthropic: 'sk-test-123' });
 		const state: CoreState = {
 			core: {
 				history: { systemPrompt: '', messages: [] },
@@ -125,41 +159,10 @@ describe('loginAgent', () => {
 			},
 		};
 
-		await loginAgent(runtime, state, auth);
+		await reconnectAgent(runtime, state, auth);
 
-		expect(runtime.setContext).toHaveBeenCalledWith({
-			config: { provider: 'openai', apiKey: 'sk-openai' },
-		});
-	});
-
-	it('no-ops when no providers are stored', async () => {
-		const runtime = mockCoreRuntime();
-		const auth = mockAuthManager({});
-		const state: CoreState = {
-			core: {
-				history: { systemPrompt: '', messages: [] },
-				llmConfig: {},
-			},
-		};
-
-		await loginAgent(runtime, state, auth);
-
-		expect(runtime.setContext).not.toHaveBeenCalled();
-	});
-
-	it('no-ops when provider exists but has no key', async () => {
-		const runtime = mockCoreRuntime();
-		const auth = mockAuthManager({});
-		const state: CoreState = {
-			core: {
-				history: { systemPrompt: '', messages: [] },
-				llmConfig: { provider: 'anthropic' },
-			},
-		};
-
-		await loginAgent(runtime, state, auth);
-
-		expect(runtime.setContext).not.toHaveBeenCalled();
+		expect(runtime.setLLMConfig).not.toHaveBeenCalled();
+		expect(auth.getApiKey).not.toHaveBeenCalled();
 	});
 });
 
@@ -193,14 +196,14 @@ describe('withAuth', () => {
 
 		const runtime = await compiler.build();
 
-		// TODO: We can't easily inspect that setContext was called on the
+		// TODO: We can't easily inspect that setLLMConfig was called on the
 		// real runtime (it's behind the CtxTracker), so we just verify
 		// that auth was invoked during the build step.
-		expect(runtime.setContext).toBeDefined();
+		expect(runtime.setLLMConfig).toBeDefined();
 		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
 	});
 
-	it('resolves apiKey when provider changes via setContext', async () => {
+	it('resolves apiKey when provider changes via setLLMConfig', async () => {
 		const spawn = createMockSpawn();
 		const base = createCoreSystem(spawn);
 		const auth = mockAuthManager({
@@ -221,9 +224,7 @@ describe('withAuth', () => {
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Switch provider — should auto-resolve the new apiKey
-		await runtime.setContext({
-			config: { provider: 'openai-codex', model: 'gpt-5.4' },
-		});
+		await runtime.setLLMConfig({ provider: 'openai-codex', model: 'gpt-5.4' });
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('openai-codex');
 
@@ -248,14 +249,15 @@ describe('withAuth', () => {
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Same provider, different model — still resolves apiKey
-		await runtime.setContext({
-			config: { provider: 'anthropic', model: 'claude-opus-4-6' },
+		await runtime.setLLMConfig({
+			provider: 'anthropic',
+			model: 'claude-opus-4-6',
 		});
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
 	});
 
-	it('does not overwrite an explicit apiKey in setContext', async () => {
+	it('does not overwrite an explicit apiKey in setLLMConfig', async () => {
 		const spawn = createMockSpawn();
 		const base = createCoreSystem(spawn);
 		const auth = mockAuthManager({
@@ -274,8 +276,9 @@ describe('withAuth', () => {
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Provider change WITH explicit apiKey — should not resolve
-		await runtime.setContext({
-			config: { provider: 'openai-codex', apiKey: 'sk-explicit' },
+		await runtime.setLLMConfig({
+			provider: 'openai-codex',
+			apiKey: 'sk-explicit',
 		});
 
 		expect(auth.getApiKey).not.toHaveBeenCalled();
@@ -297,37 +300,15 @@ describe('withAuth', () => {
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Switch to a provider with no stored key — should pass through without apiKey
-		await runtime.setContext({
-			config: { provider: 'openrouter', model: 'deepseek-r1' },
+		await runtime.setLLMConfig({
+			provider: 'openrouter',
+			model: 'deepseek-r1',
 		});
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('openrouter');
 
 		const state = await runtime.state();
 		expect(state.core.llmConfig.provider).toBe('openrouter');
-	});
-
-	it('skips auth resolution for non-config setContext calls', async () => {
-		const spawn = createMockSpawn();
-		const base = createCoreSystem(spawn);
-		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
-
-		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				history: { systemPrompt: '', messages: [] },
-				llmConfig: { provider: 'anthropic' },
-			},
-		});
-		const runtime = await compiler.build();
-		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
-
-		// setContext with only history — no config at all
-		await runtime.setContext({
-			history: { systemPrompt: 'new prompt', messages: [] },
-		});
-
-		expect(auth.getApiKey).not.toHaveBeenCalled();
 	});
 });
 
@@ -360,8 +341,8 @@ describe('withAuth live sync', () => {
 		const runtime = await buildRuntime('anthropic', auth);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
-		// Spy on setContext to capture the resolved call
-		const setContextSpy = vi.spyOn(runtime, 'setContext');
+		// Spy on setLLMConfig to capture the resolved call
+		const setLLMConfigSpy = vi.spyOn(runtime, 'setLLMConfig');
 
 		// Simulate credential change
 		providers.anthropic = 'sk-new';
@@ -369,12 +350,10 @@ describe('withAuth live sync', () => {
 			apiKey: { type: 'apiKey', key: 'sk-new' },
 		});
 		await vi.waitFor(() =>
-			expect(setContextSpy).toHaveBeenCalledWith(
+			expect(setLLMConfigSpy).toHaveBeenCalledWith(
 				expect.objectContaining({
-					config: expect.objectContaining({
-						provider: 'anthropic',
-						apiKey: 'sk-new',
-					}),
+					provider: 'anthropic',
+					apiKey: 'sk-new',
 				}),
 			),
 		);
@@ -407,17 +386,15 @@ describe('withAuth live sync', () => {
 		const runtime = await buildRuntime('anthropic', auth);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
-		const setContextSpy = vi.spyOn(runtime, 'setContext');
+		const setLLMConfigSpy = vi.spyOn(runtime, 'setLLMConfig');
 
 		providers.anthropic = undefined;
 		auth._listeners[0]!('anthropic', undefined);
 		await vi.waitFor(() =>
-			expect(setContextSpy).toHaveBeenCalledWith(
+			expect(setLLMConfigSpy).toHaveBeenCalledWith(
 				expect.objectContaining({
-					config: expect.objectContaining({
-						provider: 'anthropic',
-						apiKey: undefined,
-					}),
+					provider: 'anthropic',
+					apiKey: undefined,
 				}),
 			),
 		);

@@ -1,7 +1,7 @@
 import type { MiniACPClient } from '@franklin/mini-acp';
 import { serializeTool } from '../../api/tools/index.js';
 import type { ExtensionToolDefinition } from '../../api/tool.js';
-import type { MethodMiddleware } from '../../api/middleware/types.js';
+import type { MethodMiddleware } from '@franklin/lib/middleware';
 
 /**
  * Build a setContext middleware that injects serialized tool definitions

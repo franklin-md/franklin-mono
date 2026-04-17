@@ -1,38 +1,56 @@
-import { createClientConnection } from '@franklin/mini-acp';
+import { createClientConnection, CtxTracker } from '@franklin/mini-acp';
 import type { FullMiddleware } from '../api/middleware/types.js';
+import type { SystemPromptHandler } from '../api/handlers.js';
 import { createCoreRuntime, type CoreRuntime } from '../runtime.js';
 import type { CoreState } from '../state.js';
-import { applyDecorators } from './decorator.js';
+import { applyDecorators, type ProtocolDecorator } from './decorator.js';
 import { createMiddlewareDecorator } from './decorators/middleware.js';
 import { createTrackerDecorator } from './decorators/tracker.js';
+import { createSystemPromptDecorator } from './decorators/system-prompt.js';
+import { buildSystemPromptAssembler } from './builders/system-prompt.js';
 import { fallbackServer } from './fallback.js';
 import type { SpawnResult } from './compiler.js';
 
 /**
  * Connect to an agent transport and apply the decorator pipeline.
  *
- * Pipeline: transport ←→ [tracker] ←→ [middleware] ←→ app
+ * Pipeline: transport ←→ [tracker] ←→ [system-prompt?] ←→ [middleware] ←→ app
  */
 export async function buildCoreRuntime(
 	transport: SpawnResult,
 	state: CoreState,
 	middleware: FullMiddleware,
+	systemPromptHandlers: SystemPromptHandler[],
 ): Promise<CoreRuntime> {
 	const connection = createClientConnection(transport);
 	const rawClient = connection.remote;
 
-	const { decorator: trackerDecorator, tracker } =
-		createTrackerDecorator(state);
+	const tracker = new CtxTracker();
 
-	// Stack ordered innermost → outermost (for server side).
+	const stack: ProtocolDecorator[] = [createMiddlewareDecorator(middleware)];
+
+	if (systemPromptHandlers.length > 0) {
+		// TODO: FRA-214 We don't want there to be a base prompt anymore
+		const basePrompt = state.core.history.systemPrompt;
+		const assembler = buildSystemPromptAssembler(
+			systemPromptHandlers,
+			basePrompt,
+		);
+		stack.push(createSystemPromptDecorator(assembler, tracker, basePrompt));
+	}
+
+	stack.push(createTrackerDecorator(state, tracker));
+
 	const { client } = await applyDecorators(
-		[createMiddlewareDecorator(middleware), trackerDecorator],
+		stack,
 		{ server: fallbackServer, client: rawClient },
 		async (server) => {
 			connection.bind(server);
 			await rawClient.initialize();
+			// TODO: maybe we should run initial setContext here?
 		},
 	);
 
+	// TODO: Is it possible to avoid passing in tracker?
 	return createCoreRuntime(client, tracker, transport);
 }

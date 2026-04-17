@@ -78,7 +78,7 @@ describe('createCoreSystem', () => {
 		);
 
 		expect(runtime.prompt).toBeDefined();
-		expect(runtime.setContext).toBeDefined();
+		expect(runtime.setLLMConfig).toBeDefined();
 		expect(runtime.cancel).toBeDefined();
 
 		await runtime.dispose();
@@ -293,5 +293,76 @@ describe('createCoreSystem', () => {
 		expect(empty.core.history.systemPrompt).toBe('');
 		expect(empty.core.history.messages).toEqual([]);
 		expect(empty.core.llmConfig).toEqual({});
+	});
+
+	it('systemPrompt handler assembles system prompt before first turn', async () => {
+		const system = createCoreSystem(createMockSpawn());
+
+		const runtime = await createRuntime(
+			system,
+			{
+				core: {
+					history: { systemPrompt: 'You are helpful', messages: [] },
+					llmConfig: {},
+				},
+			},
+			[
+				(api: CoreAPI) => {
+					api.on('systemPrompt', (ctx) => {
+						ctx.setPart('Tool guidelines here.');
+					});
+				},
+			],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const state = await runtime.state();
+		expect(state.core.history.systemPrompt).toBe(
+			'You are helpful\n\nTool guidelines here.',
+		);
+
+		await runtime.dispose();
+	});
+
+	it('multiple systemPrompt handlers compose in registration order', async () => {
+		const system = createCoreSystem(createMockSpawn());
+
+		const runtime = await createRuntime(
+			system,
+			{
+				core: {
+					history: { systemPrompt: 'base', messages: [] },
+					llmConfig: {},
+				},
+			},
+			[
+				(api: CoreAPI) => {
+					api.on('systemPrompt', (ctx) => {
+						ctx.setPart('first');
+					});
+					api.on('systemPrompt', (ctx) => {
+						ctx.setPart('second');
+					});
+				},
+			],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const state = await runtime.state();
+		expect(state.core.history.systemPrompt).toBe('base\n\nfirst\n\nsecond');
+
+		await runtime.dispose();
 	});
 });

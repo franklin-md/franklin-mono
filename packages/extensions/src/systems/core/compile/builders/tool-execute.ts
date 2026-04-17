@@ -3,10 +3,10 @@ import type {
 	ToolObserverEvent,
 	ToolObserverHandler,
 	ToolObserverParamsMap,
-} from '../../api/events.js';
+} from '../../api/handlers.js';
 import type { ExtensionToolDefinition } from '../../api/tool.js';
 import { resolveToolOutput } from '../../api/tool.js';
-import type { MethodMiddleware } from '../../api/middleware/types.js';
+import type { MethodMiddleware } from '@franklin/lib/middleware';
 
 function notifyObservers<K extends ToolObserverEvent>(
 	observers: ReadonlyMap<

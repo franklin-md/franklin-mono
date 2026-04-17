@@ -4,14 +4,18 @@ import type {
 	CancelHandler,
 	PromptHandler,
 	StreamObserverHandler,
+	SystemPromptHandler,
 	ToolObserverHandler,
-} from './events.js';
+} from './handlers.js';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
 
 export interface CoreAPI {
 	// Request events — prompt contributions plus cancellation handling.
 	on(event: 'prompt', handler: PromptHandler): void;
 	on(event: 'cancel', handler: CancelHandler): void;
+
+	// System prompt — handler redefines its own fragment via SystemPromptContext
+	on(event: 'systemPrompt', handler: SystemPromptHandler): void;
 
 	// Stream observer events — fire-and-forget on response stream
 	on(event: 'chunk', handler: StreamObserverHandler<'chunk'>): void;

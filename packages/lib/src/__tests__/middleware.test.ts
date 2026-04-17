@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { apply } from '../apply.js';
-import { compose, composeMethod } from '../compose.js';
-import { passThrough } from '../pass-through.js';
-import type { Middleware, MethodMiddleware } from '../types.js';
+import { apply } from '../middleware/apply.js';
+import { compose, composeMethod } from '../middleware/compose.js';
+import { passThrough } from '../middleware/pass-through.js';
+import type { Middleware, MethodMiddleware } from '../middleware/types.js';
 
 // ---------------------------------------------------------------------------
 // Minimal protocol-like interfaces for testing

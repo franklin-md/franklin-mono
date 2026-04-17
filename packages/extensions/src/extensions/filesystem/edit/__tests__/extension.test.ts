@@ -130,8 +130,7 @@ describe('editExtension', () => {
 			cancel: vi.fn(async () => {}),
 		};
 
-		const { apply } =
-			await import('../../../../systems/core/api/middleware/apply.js');
+		const { apply } = await import('@franklin/lib/middleware');
 
 		const wrapped = apply(result.client, target);
 		await wrapped.setContext({});
