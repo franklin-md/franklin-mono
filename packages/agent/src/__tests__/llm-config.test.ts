@@ -16,7 +16,7 @@ function mockRuntime(
 	return {
 		state: vi.fn(async () => ({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig,
 			},
 		})),
@@ -25,10 +25,10 @@ function mockRuntime(
 		cancel: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
 		fork: vi.fn(async () => ({
-			core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+			core: { messages: [], llmConfig: {} },
 		})),
 		child: vi.fn(async () => ({
-			core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+			core: { messages: [], llmConfig: {} },
 		})),
 		dispose: vi.fn(async () => {}),
 	} as unknown as CoreRuntime;

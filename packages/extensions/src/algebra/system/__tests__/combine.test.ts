@@ -226,7 +226,7 @@ describe('combine — three systems (nested)', () => {
 		const runtime = await createRuntime(
 			system,
 			{
-				core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+				core: { messages: [], llmConfig: {} },
 				store: {},
 				env: defaultEnvConfig,
 			},
@@ -272,7 +272,7 @@ describe('combine — three systems (nested)', () => {
 		const runtime = await createRuntime(
 			system,
 			{
-				core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+				core: { messages: [], llmConfig: {} },
 				store: {},
 				env: defaultEnvConfig,
 			},
@@ -281,7 +281,7 @@ describe('combine — three systems (nested)', () => {
 
 		const state = await runtime.state();
 		expect(state.core).toBeDefined();
-		expect(state.core.history).toBeDefined();
+		expect(state.core.messages).toBeDefined();
 		expect(state.store).toBeDefined();
 		expect(state.env).toBeDefined();
 
@@ -300,7 +300,7 @@ describe('combine — three systems (nested)', () => {
 		const runtime = await createRuntime(
 			system,
 			{
-				core: { history: { systemPrompt: '', messages: [] }, llmConfig: {} },
+				core: { messages: [], llmConfig: {} },
 				store: {},
 				env: defaultEnvConfig,
 			},
@@ -332,15 +332,12 @@ describe('combine — three systems (nested)', () => {
 			system,
 			{
 				core: {
-					history: {
-						systemPrompt: 'test',
-						messages: [
-							{
-								role: 'user',
-								content: [{ type: 'text', text: 'hello' }],
-							},
-						],
-					},
+					messages: [
+						{
+							role: 'user',
+							content: [{ type: 'text', text: 'hello' }],
+						},
+					],
 					llmConfig: { model: 'gpt-4' },
 				},
 				store: {},
@@ -354,7 +351,7 @@ describe('combine — three systems (nested)', () => {
 		);
 
 		const forked = await runtime.fork();
-		expect(forked.core.history.messages).toHaveLength(1);
+		expect(forked.core.messages).toHaveLength(1);
 		expect(forked.core.llmConfig.model).toBe('gpt-4');
 		expect(forked.store).toBeDefined();
 		expect(forked.env).toEqual(defaultEnvConfig);

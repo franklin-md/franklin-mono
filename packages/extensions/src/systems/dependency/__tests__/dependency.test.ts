@@ -23,7 +23,6 @@ import {
 	type InferAPI,
 } from '../../../index.js';
 import { createDependencySystem as createDependencySystemFromRuntimeSystemIndex } from '../system.js';
-import type { CoreState } from '../../../systems/core/state.js';
 
 function createMockSpawn() {
 	return async () => {
@@ -58,11 +57,6 @@ function createMockSpawn() {
 		};
 	};
 }
-
-const emptyHistory: CoreState['core']['history'] = {
-	systemPrompt: '',
-	messages: [],
-};
 
 describe('createDependencySystem', () => {
 	it('is exported from the public surfaces', () => {
@@ -161,7 +155,7 @@ describe('createDependencySystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { history: emptyHistory, llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {} } },
 			[
 				(api) => {
 					expect(api.getSettings()).toBe(settings);
@@ -170,13 +164,13 @@ describe('createDependencySystem', () => {
 		);
 
 		expect(await runtime.state()).toEqual({
-			core: { history: emptyHistory, llmConfig: {} },
+			core: { messages: [], llmConfig: {} },
 		});
 		expect(await runtime.fork()).toEqual({
-			core: { history: emptyHistory, llmConfig: {} },
+			core: { messages: [], llmConfig: {} },
 		});
 		expect(await runtime.child()).toEqual({
-			core: { history: emptyHistory, llmConfig: {} },
+			core: { messages: [], llmConfig: {} },
 		});
 
 		await runtime.dispose();

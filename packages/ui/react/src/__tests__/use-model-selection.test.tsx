@@ -25,7 +25,7 @@ function makeMockRuntime(opts?: { provider?: string; model?: string }): {
 	const runtime = {
 		state: vi.fn(async () => ({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { provider, model },
 			},
 		})),

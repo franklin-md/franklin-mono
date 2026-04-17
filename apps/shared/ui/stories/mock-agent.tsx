@@ -57,7 +57,7 @@ export function createMockRuntime(opts?: {
 	return {
 		state: async () => ({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: { reasoning, provider, model },
 			},
 		}),

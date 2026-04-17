@@ -30,13 +30,8 @@ export async function buildCoreRuntime(
 	const stack: ProtocolDecorator[] = [createMiddlewareDecorator(middleware)];
 
 	if (systemPromptHandlers.length > 0) {
-		// TODO: FRA-214 We don't want there to be a base prompt anymore
-		const basePrompt = state.core.history.systemPrompt;
-		const assembler = buildSystemPromptAssembler(
-			systemPromptHandlers,
-			basePrompt,
-		);
-		stack.push(createSystemPromptDecorator(assembler, tracker, basePrompt));
+		const assembler = buildSystemPromptAssembler(systemPromptHandlers);
+		stack.push(createSystemPromptDecorator(assembler, tracker));
 	}
 
 	stack.push(createTrackerDecorator(state, tracker));

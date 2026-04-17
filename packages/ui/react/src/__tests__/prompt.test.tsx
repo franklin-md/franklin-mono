@@ -38,7 +38,7 @@ function makeMockRuntime(): {
 	const runtime = {
 		state: vi.fn(async () => ({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: {},
 			},
 		})),
@@ -69,7 +69,7 @@ function makePendingRuntime(): {
 	const runtime = {
 		state: vi.fn(async () => ({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: {},
 			},
 		})),
@@ -106,7 +106,7 @@ function makeHangingRuntime(): {
 	const runtime = {
 		state: vi.fn(async () => ({
 			core: {
-				history: { systemPrompt: '', messages: [] },
+				messages: [],
 				llmConfig: {},
 			},
 		})),
