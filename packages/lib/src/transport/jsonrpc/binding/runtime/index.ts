@@ -45,7 +45,13 @@ export function createPeerBinding<
 	remoteDescriptor: TRemoteDesc;
 	localDescriptor: TLocalDesc;
 }): PeerBinding<ProxyType<TRemoteDesc>, ProxyType<TLocalDesc>> {
-	const send = callable(duplex.writable);
+	const write = callable(duplex.writable);
+	const send = (message: JsonRpcMessage) => {
+		// Local in-memory duplexes preserve object identity. Clone at the RPC
+		// boundary so local bindings keep the same by-value semantics as a
+		// serialized wire transport.
+		write(structuredClone(message));
+	};
 
 	const clientRuntime = new JsonRpcProxyRuntime(send);
 	const remote = proxyBindClient(
