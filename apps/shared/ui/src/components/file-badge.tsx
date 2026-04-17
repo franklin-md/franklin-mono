@@ -12,8 +12,11 @@ export function FileBadge({ path, className }: FileBadgeProps) {
 
 	return (
 		<Badge
-			variant="plain"
-			className={cn('min-w-0 gap-1 px-1.5 font-normal', className)}
+			variant="outline"
+			className={cn(
+				'min-w-0 gap-1 border-0 bg-transparent px-1.5 font-normal text-current shadow-none',
+				className,
+			)}
 		>
 			<FileIcon filename={name} className="h-3 w-3" />
 			<span className="truncate">{name}</span>
