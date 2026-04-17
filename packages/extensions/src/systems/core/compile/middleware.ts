@@ -9,8 +9,8 @@ import type {
 import type { ExtensionToolDefinition } from '../api/tool.js';
 import type { FullMiddleware } from '../api/middleware/types.js';
 import { passThrough } from '../api/middleware/pass-through.js';
+import { buildWaterfall } from '../api/middleware/waterfall.js';
 import {
-	buildAsyncWaterfall,
 	buildPromptWaterfall,
 	buildToolExecuteMiddleware,
 	buildToolInjector,
@@ -58,7 +58,7 @@ export function buildMiddleware(
 	};
 
 	if (cancelHandlers.length > 0) {
-		client.cancel = buildAsyncWaterfall(cancelHandlers);
+		client.cancel = buildWaterfall(cancelHandlers);
 	}
 
 	if (promptHandlers.length > 0 || observers.size > 0) {
