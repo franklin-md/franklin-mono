@@ -3,10 +3,17 @@ import type { AbsolutePath, Filesystem } from '@franklin/lib';
 
 import { createClaudeSpec } from '../specs/claude.js';
 
-function makeFs(files: Record<string, string>): Filesystem {
+function makeFs(
+	files: Record<string, string>,
+	options: { existsErrors?: Record<string, Error> } = {},
+): Filesystem {
 	const encoder = new TextEncoder();
 	return {
-		exists: async (p) => Object.prototype.hasOwnProperty.call(files, p),
+		exists: async (p) => {
+			const error = options.existsErrors?.[p];
+			if (error) throw error;
+			return Object.prototype.hasOwnProperty.call(files, p);
+		},
 		readFile: async (p) => {
 			if (!(p in files)) throw new Error(`ENOENT: ${p}`);
 			return encoder.encode(files[p]);
@@ -106,5 +113,22 @@ describe('createClaudeSpec', () => {
 		});
 		const files = await spec.collect(fs, '/p' as AbsolutePath);
 		expect(files).toEqual(['/p/CLAUDE.md', '/CLAUDE.md']);
+	});
+
+	it('skips unreadable ancestor probes instead of failing discovery', async () => {
+		const spec = createClaudeSpec();
+		const fs = makeFs(
+			{
+				'/project/CLAUDE.md': 'project-level',
+			},
+			{
+				existsErrors: {
+					'/CLAUDE.md': new Error('Read access denied: /CLAUDE.md'),
+				},
+			},
+		);
+
+		const files = await spec.collect(fs, '/project' as AbsolutePath);
+		expect(files).toEqual(['/project/CLAUDE.md']);
 	});
 });

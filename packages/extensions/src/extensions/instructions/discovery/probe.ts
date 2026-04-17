@@ -9,7 +9,13 @@ export async function probe(
 	const results: AbsolutePath[] = [];
 	for (const probe of probes) {
 		const probedPath = joinAbsolute(path, probe);
-		if (!(await fs.exists(probedPath))) continue;
+		let exists = false;
+		try {
+			exists = await fs.exists(probedPath);
+		} catch {
+			continue;
+		}
+		if (!exists) continue;
 		results.push(probedPath);
 	}
 	return results;
