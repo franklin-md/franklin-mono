@@ -5,7 +5,7 @@
 // ordered as seen from the CLIENT side.
 // ---------------------------------------------------------------------------
 
-import type { Ctx } from '../types/context.js';
+import type { CtxPatch, HistoryPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import type { Chunk, TurnStart, Update, TurnEnd } from '../types/stream.js';
 import type { ToolCall, ToolDefinition, ToolResult } from '../types/tool.js';
@@ -17,7 +17,7 @@ import type { AgentProtocol } from '../protocol/types.js';
 
 export type TranscriptEntry =
 	| { direction: 'send'; method: 'initialize'; params: Record<string, never> }
-	| { direction: 'send'; method: 'setContext'; params: Partial<Ctx> }
+	| { direction: 'send'; method: 'setContext'; params: CtxPatch }
 	| { direction: 'send'; method: 'prompt'; params: UserMessage }
 	| { direction: 'send'; method: 'cancel'; params: Record<string, never> }
 	| { direction: 'send'; method: 'toolResult'; params: ToolResult }
@@ -64,9 +64,10 @@ export type ToolSpec = {
 	handler: (call: ToolCall) => ToolResult | Promise<ToolResult>;
 };
 
-export type SetContextPayload = Partial<
-	Omit<Ctx, 'tools'> & { tools: ToolSpec[] }
->;
+export type SetContextPayload = Omit<CtxPatch, 'tools' | 'history'> & {
+	history?: HistoryPatch;
+	tools?: ToolSpec[];
+};
 
 export type Action =
 	| { type: 'initialize' }

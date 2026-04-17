@@ -19,8 +19,11 @@ export type {
 	ToolResultMessage,
 	// Context
 	Ctx,
+	CtxPatch,
 	History,
+	HistoryPatch,
 	LLMConfig,
+	LLMConfigPatch,
 	ThinkingLevel,
 	// Tools
 	ToolDefinition,

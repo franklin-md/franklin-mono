@@ -1,12 +1,12 @@
 import type { TurnClient, TurnServer } from '../base/types.js';
-import type { Ctx } from '../types/context.js';
+import type { CtxPatch } from '../types/context.js';
 import type { JsonRpcMessage, Duplex } from '@franklin/lib/transport';
 
 // Agent side (client calls agent)
 export interface MuClient extends TurnClient {
 	// Session management
 	initialize(): Promise<void>;
-	setContext(ctx: Partial<Ctx>): Promise<void>;
+	setContext(ctx: CtxPatch): Promise<void>;
 }
 
 export type MuAgent = TurnServer;

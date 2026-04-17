@@ -21,14 +21,6 @@ function seededTracker(config: LLMConfig = {}): CtxTracker {
 // ---------------------------------------------------------------------------
 
 describe('CtxTracker.apply – field replacement', () => {
-	it('replaces history wholesale', () => {
-		const tracker = seededTracker();
-		tracker.apply({
-			history: { systemPrompt: 'new prompt', messages: [] },
-		});
-		expect(tracker.get().history.systemPrompt).toBe('new prompt');
-	});
-
 	it('replaces tools wholesale', () => {
 		const tracker = seededTracker();
 		tracker.apply({
@@ -51,6 +43,96 @@ describe('CtxTracker.apply – field replacement', () => {
 		});
 		expect(tracker.get().config?.provider).toBe('anthropic');
 		expect(tracker.get().config?.apiKey).toBe('sk-123');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// History partial merge
+// ---------------------------------------------------------------------------
+
+describe('CtxTracker.apply – history merges by property', () => {
+	it('replaces both systemPrompt and messages when both are provided', () => {
+		const tracker = seededTracker();
+		tracker.append({
+			role: 'user',
+			content: [{ type: 'text', text: 'old' }],
+		});
+
+		tracker.apply({
+			history: {
+				systemPrompt: 'new prompt',
+				messages: [{ role: 'user', content: [{ type: 'text', text: 'new' }] }],
+			},
+		});
+
+		expect(tracker.get().history.systemPrompt).toBe('new prompt');
+		expect(tracker.get().history.messages).toHaveLength(1);
+		expect(tracker.get().history.messages[0]).toEqual({
+			role: 'user',
+			content: [{ type: 'text', text: 'new' }],
+		});
+	});
+
+	it('updates systemPrompt without touching messages', () => {
+		const tracker = seededTracker();
+		tracker.append({
+			role: 'user',
+			content: [{ type: 'text', text: 'preserved' }],
+		});
+
+		tracker.apply({ history: { systemPrompt: 'updated prompt' } });
+
+		expect(tracker.get().history.systemPrompt).toBe('updated prompt');
+		expect(tracker.get().history.messages).toHaveLength(1);
+		expect(tracker.get().history.messages[0]).toEqual({
+			role: 'user',
+			content: [{ type: 'text', text: 'preserved' }],
+		});
+	});
+
+	it('replaces messages without touching systemPrompt', () => {
+		const tracker = seededTracker();
+		const replacement = [
+			{
+				role: 'user' as const,
+				content: [{ type: 'text' as const, text: 'a' }],
+			},
+			{
+				role: 'user' as const,
+				content: [{ type: 'text' as const, text: 'b' }],
+			},
+		];
+
+		tracker.apply({ history: { messages: replacement } });
+
+		expect(tracker.get().history.systemPrompt).toBe('test');
+		expect(tracker.get().history.messages).toHaveLength(2);
+	});
+
+	it('replaces messages with an empty array when explicitly provided', () => {
+		const tracker = seededTracker();
+		tracker.append({
+			role: 'user',
+			content: [{ type: 'text', text: 'will be cleared' }],
+		});
+
+		tracker.apply({ history: { messages: [] } });
+
+		expect(tracker.get().history.messages).toHaveLength(0);
+		expect(tracker.get().history.systemPrompt).toBe('test');
+	});
+
+	it('leaves history untouched when history is omitted', () => {
+		const tracker = seededTracker();
+		tracker.append({
+			role: 'user',
+			content: [{ type: 'text', text: 'keep' }],
+		});
+
+		tracker.apply({ config: { reasoning: 'high' } });
+
+		expect(tracker.get().history.systemPrompt).toBe('test');
+		expect(tracker.get().history.messages).toHaveLength(1);
 	});
 });
 
