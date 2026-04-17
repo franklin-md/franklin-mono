@@ -1,4 +1,4 @@
-import type { CtxTracker, MiniACPClient } from '@franklin/mini-acp';
+import type { CtxTracker, LLMConfig, MiniACPClient } from '@franklin/mini-acp';
 import { createObserver } from '@franklin/lib';
 import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { CoreState } from './state.js';
@@ -15,7 +15,9 @@ async function* notifyAfter<T>(
 }
 
 export type CoreRuntime = BaseRuntime<CoreState> &
-	Pick<MiniACPClient, 'initialize' | 'setContext' | 'prompt' | 'cancel'>;
+	Pick<MiniACPClient, 'prompt' | 'cancel'> & {
+		setLLMConfig(config: Partial<LLMConfig>): Promise<void>;
+	};
 
 export function createCoreRuntime(
 	client: MiniACPClient,
@@ -35,11 +37,8 @@ export function createCoreRuntime(
 	}
 
 	return {
-		initialize: client.initialize.bind(client),
-
-		// Notify after setContext completes — config/history may have changed.
-		async setContext(ctx) {
-			await client.setContext(ctx);
+		async setLLMConfig(config) {
+			await client.setContext({ config });
 			observer.notify();
 		},
 

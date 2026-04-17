@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from 'react';
 
-import { getLLMConfig, setLLMConfig } from '@franklin/agent/browser';
+import { getLLMConfig } from '@franklin/agent/browser';
 
 import { useRuntimeSync } from './use-runtime-sync.js';
 import { useSettings } from './use-settings.js';
@@ -55,7 +55,7 @@ export function useModelSelection(): UseModelSelection {
 					model,
 				};
 			});
-			await setLLMConfig(runtime, { provider, model });
+			await runtime.setLLMConfig({ provider, model });
 		},
 		initial,
 	});

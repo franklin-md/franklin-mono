@@ -3,27 +3,34 @@ import { withSetup } from '@franklin/extensions';
 import type { AuthManager } from './manager.js';
 
 /**
- * Authenticate a single runtime against the auth manager.
+ * Push the stored credentials for `provider` into the runtime.
  *
- * Resolves the provider from `llmConfig` (falling back to the first
- * stored provider), fetches the API key, and pushes credentials into
- * the runtime via `setContext`.
+ * Fetches the API key from the auth manager and calls `setLLMConfig`
+ * with the resolved `{ provider, apiKey }`. If no key is stored,
+ * `apiKey` is passed through as `undefined` — this is how revocation
+ * propagates to the runtime.
  */
-export async function loginAgent(
+export async function authenticateAgent(
+	runtime: CoreRuntime,
+	provider: string,
+	auth: AuthManager,
+): Promise<void> {
+	const apiKey = await auth.getApiKey(provider);
+	await runtime.setLLMConfig({ provider, apiKey });
+}
+
+/**
+ * Reconnect a runtime to the auth manager using the provider
+ * configured in its state. No-ops if the state has no provider set.
+ */
+export async function reconnectAgent(
 	runtime: CoreRuntime,
 	state: CoreState,
 	auth: AuthManager,
 ): Promise<void> {
-	const provider =
-		state.core.llmConfig.provider ?? Object.keys(auth.entries())[0];
+	const provider = state.core.llmConfig.provider;
 	if (!provider) return;
-
-	const apiKey = await auth.getApiKey(provider);
-	if (!apiKey) return;
-
-	await runtime.setContext({
-		config: { ...state.core.llmConfig, provider, apiKey },
-	});
+	await authenticateAgent(runtime, provider, auth);
 }
 
 /**
@@ -33,7 +40,7 @@ export async function loginAgent(
  * Three behaviors:
  * 1. **Initial login** — resolves the apiKey for the configured provider
  *    when the runtime is first built.
- * 2. **Auto-auth** — intercepts `setContext` calls. When a provider is
+ * 2. **Auto-auth** — intercepts `setLLMConfig` calls. When a provider is
  *    specified without an apiKey, resolves the key from the auth
  *    manager before passing through.
  * 3. **Live sync** — subscribes to credential changes and pushes new
@@ -42,35 +49,28 @@ export async function loginAgent(
  */
 export function withAuth(system: CoreSystem, auth: AuthManager): CoreSystem {
 	return withSetup(system, async (runtime, state) => {
-		// Install setContext wrapper to auto-resolve auth when provider is set.
-		const originalSetContext = runtime.setContext.bind(runtime);
-		runtime.setContext = async (ctx) => {
-			if (ctx.config?.provider && !ctx.config.apiKey) {
-				const apiKey = await auth.getApiKey(ctx.config.provider);
+		// Install setLLMConfig wrapper to auto-resolve auth when provider is set.
+		const originalSetLLMConfig = runtime.setLLMConfig.bind(runtime);
+		runtime.setLLMConfig = async (config) => {
+			if (config.provider && !config.apiKey) {
+				const apiKey = await auth.getApiKey(config.provider);
 				if (apiKey) {
-					ctx = { ...ctx, config: { ...ctx.config, apiKey } };
+					config = { ...config, apiKey };
 				}
 			}
-			return originalSetContext(ctx);
+			return originalSetLLMConfig(config);
 		};
 
-		// Initial login — resolves credentials for the starting provider.
-		await loginAgent(runtime, state, auth);
+		// Initial login — resolves credentials for the configured provider,
+		// or no-ops if none is set.
+		await reconnectAgent(runtime, state, auth);
 
 		// Live credential sync — push new keys when this runtime's provider changes.
 		const unsubscribe = auth.onAuthChange((provider) => {
 			void (async () => {
 				const currentState = await runtime.state();
 				if (currentState.core.llmConfig.provider !== provider) return;
-
-				const apiKey = await auth.getApiKey(provider);
-				await runtime.setContext({
-					config: {
-						...currentState.core.llmConfig,
-						provider,
-						apiKey,
-					},
-				});
+				await authenticateAgent(runtime, provider, auth);
 			})();
 		});
 
