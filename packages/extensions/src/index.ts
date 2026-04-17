@@ -46,7 +46,7 @@ export type { Sharing, ForkMode } from './systems/store/api/index.js';
 export type { StoreKey, StoreValueType } from './systems/store/api/index.js';
 export { storeKey } from './systems/store/api/index.js';
 export type { StoreResult } from './systems/store/api/index.js';
-export type { Persister } from '@franklin/lib';
+export type { MapFilePersister, RestoreResult, Issue } from '@franklin/lib';
 export {
 	createEmptyStoreResult,
 	createStoreResult,

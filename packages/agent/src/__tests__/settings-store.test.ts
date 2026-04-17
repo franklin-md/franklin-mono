@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import { joinAbsolute } from '@franklin/lib';
-import type { AppSettings } from '../settings/types.js';
+import type { AppSettings } from '../settings/schema.js';
 import {
 	createSettings,
 	DEFAULT_SETTINGS_FILE,
@@ -18,8 +18,9 @@ const SETTINGS_PATH = joinAbsolute(TEST_APP_DIR, DEFAULT_SETTINGS_FILE);
 function mockFilesystem(stored?: AppSettings): Filesystem {
 	return {
 		readFile: vi.fn(async () => {
-			if (!stored) throw new Error('ENOENT');
-			return new TextEncoder().encode(JSON.stringify(stored));
+			if (stored === undefined) throw new Error('ENOENT');
+			const envelope = { version: 1, data: stored };
+			return new TextEncoder().encode(JSON.stringify(envelope));
 		}),
 		writeFile: vi.fn(async () => {}),
 		resolve: vi.fn(
@@ -29,7 +30,7 @@ function mockFilesystem(stored?: AppSettings): Filesystem {
 		access: vi.fn(),
 		stat: vi.fn(),
 		readdir: vi.fn(),
-		exists: vi.fn(),
+		exists: vi.fn(async () => stored !== undefined),
 		glob: vi.fn(),
 		deleteFile: vi.fn(),
 	} as unknown as Filesystem;

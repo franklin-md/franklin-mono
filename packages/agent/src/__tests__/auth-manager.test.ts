@@ -117,10 +117,13 @@ describe('AuthManager', () => {
 		await filesystem.writeFile(
 			TEST_AUTH_PATH,
 			JSON.stringify({
-				anthropic: {
-					apiKey: {
-						type: 'apiKey',
-						key: 'sk-test',
+				version: 1,
+				data: {
+					anthropic: {
+						apiKey: {
+							type: 'apiKey',
+							key: 'sk-test',
+						},
 					},
 				},
 			}),
@@ -152,10 +155,13 @@ describe('AuthManager', () => {
 		await filesystem.writeFile(
 			TEST_AUTH_PATH,
 			JSON.stringify({
-				anthropic: {
-					apiKey: {
-						type: 'apiKey',
-						key: 'sk-test',
+				version: 1,
+				data: {
+					anthropic: {
+						apiKey: {
+							type: 'apiKey',
+							key: 'sk-test',
+						},
 					},
 				},
 			}),

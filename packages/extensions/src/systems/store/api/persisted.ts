@@ -1,13 +1,14 @@
 import type { Producer } from 'immer';
+import type { Issue, RestoreResult } from '@franklin/lib';
 import type { Store } from './types.js';
 
 export interface PersistedStore<T> extends Store<T> {
-	restore(): Promise<void>;
+	restore(): Promise<RestoreResult>;
 	persist(): Promise<void>;
 }
 
 export type PersistedStoreAdapter<T> = {
-	restore(): Promise<T>;
+	restore(): Promise<{ value: T; issues: Issue[] }>;
 	persist(value: T): Promise<void>;
 	isEqual?: (left: T, right: T) => boolean;
 };
@@ -37,17 +38,18 @@ class BasePersistedStore<T> implements PersistedStore<T> {
 		return this.store.subscribe(listener);
 	}
 
-	async restore(): Promise<void> {
-		const next = await this.adapter.restore();
+	async restore(): Promise<RestoreResult> {
+		const { value, issues } = await this.adapter.restore();
 		const isEqual = this.adapter.isEqual ?? Object.is;
-		if (isEqual(this.store.get(), next)) return;
+		if (isEqual(this.store.get(), value)) return { issues };
 
 		this.isRestoring = true;
 		try {
-			this.store.set((() => next) as Producer<T>);
+			this.store.set((() => value) as Producer<T>);
 		} finally {
 			this.isRestoring = false;
 		}
+		return { issues };
 	}
 
 	async persist(): Promise<void> {

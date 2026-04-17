@@ -1,6 +1,6 @@
 import { createPersistence } from '@franklin/agent';
 import type { FranklinState } from '@franklin/agent';
-import type { AbsolutePath, Persister } from '@franklin/lib';
+import type { AbsolutePath, MapFilePersister } from '@franklin/lib';
 import type { StoreSnapshot } from '@franklin/extensions';
 
 import { createNodeFilesystem } from './platform/filesystem.js';
@@ -12,8 +12,8 @@ import { createNodeFilesystem } from './platform/filesystem.js';
  * `createNodeFilesystem`.
  */
 export function createNodePersistence(dir: AbsolutePath): {
-	session: Persister<FranklinState>;
-	store: Persister<StoreSnapshot>;
+	session: MapFilePersister<FranklinState>;
+	store: MapFilePersister<StoreSnapshot>;
 } {
 	return createPersistence<FranklinState>(dir, createNodeFilesystem());
 }

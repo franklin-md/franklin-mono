@@ -1,4 +1,4 @@
-import type { Persister } from '@franklin/lib';
+import type { MapFilePersister, RestoreResult } from '@franklin/lib';
 
 import { BaseStore } from '../base.js';
 import type { StoreSnapshot } from './snapshot.js';
@@ -19,7 +19,7 @@ import type { StoreEntry } from './types.js';
 export class StoreRegistry {
 	private entries = new Map<string, StoreEntry>();
 
-	constructor(private readonly persister?: Persister<StoreSnapshot>) {}
+	constructor(private readonly persister?: MapFilePersister<StoreSnapshot>) {}
 
 	/**
 	 * Create a new registry entry with a fresh UUID.
@@ -46,12 +46,13 @@ export class StoreRegistry {
 	 * Hydrate the registry from persisted storage.
 	 * No-op when no persister is configured.
 	 */
-	async restore(): Promise<void> {
-		if (!this.persister) return;
-		const data = await this.persister.load();
-		for (const [ref, { value, sharing }] of data) {
+	async restore(): Promise<RestoreResult> {
+		if (!this.persister) return { issues: [] };
+		const { values, issues } = await this.persister.load();
+		for (const [ref, { value, sharing }] of values) {
 			this.add({ ref, sharing, store: new BaseStore(value) });
 		}
+		return { issues };
 	}
 
 	/**

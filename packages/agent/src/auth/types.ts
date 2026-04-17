@@ -1,7 +1,8 @@
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
 // ---------------------------------------------------------------------------
-// Stored credential entries
+// Stored credential entries — domain shapes. The persistence schema lives in
+// ./schema.ts and reconciles against these types.
 // ---------------------------------------------------------------------------
 
 /** OAuth credentials entry — stored after a successful login flow. */
@@ -23,6 +24,10 @@ export type AuthEntry = {
 
 /** Credential map keyed by provider ID (e.g. `"anthropic"`). */
 export type AuthEntries = Record<string, AuthEntry>;
+
+// ---------------------------------------------------------------------------
+// Flow callbacks
+// ---------------------------------------------------------------------------
 
 export type OAuthAuthInfo = {
 	url: string;
