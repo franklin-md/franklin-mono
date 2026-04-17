@@ -294,4 +294,69 @@ describe('createCoreSystem', () => {
 		expect(empty.core.history.messages).toEqual([]);
 		expect(empty.core.llmConfig).toEqual({});
 	});
+
+	it('contributeSystemPrompt assembles system prompt before first turn', async () => {
+		const system = createCoreSystem(createMockSpawn());
+
+		const runtime = await createRuntime(
+			system,
+			{
+				core: {
+					history: { systemPrompt: 'You are helpful', messages: [] },
+					llmConfig: {},
+				},
+			},
+			[
+				(api: CoreAPI) => {
+					api.contributeSystemPrompt(() => 'Tool guidelines here.');
+				},
+			],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const state = await runtime.state();
+		expect(state.core.history.systemPrompt).toBe(
+			'You are helpful\n\nTool guidelines here.',
+		);
+
+		await runtime.dispose();
+	});
+
+	it('multiple contributeSystemPrompt calls compose in registration order', async () => {
+		const system = createCoreSystem(createMockSpawn());
+
+		const runtime = await createRuntime(
+			system,
+			{
+				core: {
+					history: { systemPrompt: 'base', messages: [] },
+					llmConfig: {},
+				},
+			},
+			[
+				(api: CoreAPI) => {
+					api.contributeSystemPrompt(() => 'first');
+					api.contributeSystemPrompt(() => 'second');
+				},
+			],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const state = await runtime.state();
+		expect(state.core.history.systemPrompt).toBe('base\n\nfirst\n\nsecond');
+
+		await runtime.dispose();
+	});
 });

@@ -6,7 +6,8 @@ export type {
 	StreamObserverEvent,
 	StreamObserverHandler,
 	StreamObserverParamsMap,
-} from './events.js';
+	SystemPromptContribution,
+} from './handlers.js';
 export type {
 	ExtensionToolDefinition,
 	ToolOutput,

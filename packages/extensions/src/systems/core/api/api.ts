@@ -4,8 +4,9 @@ import type {
 	CancelHandler,
 	PromptHandler,
 	StreamObserverHandler,
+	SystemPromptContribution,
 	ToolObserverHandler,
-} from './events.js';
+} from './handlers.js';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
 
 export interface CoreAPI {
@@ -21,6 +22,8 @@ export interface CoreAPI {
 	// Tool observer events — fire-and-forget on tool execution lifecycle
 	on(event: 'toolCall', handler: ToolObserverHandler<'toolCall'>): void;
 	on(event: 'toolResult', handler: ToolObserverHandler<'toolResult'>): void;
+
+	contributeSystemPrompt(fn: SystemPromptContribution): void;
 
 	registerTool<TInput>(tool: ExtensionToolDefinition<TInput>): void;
 

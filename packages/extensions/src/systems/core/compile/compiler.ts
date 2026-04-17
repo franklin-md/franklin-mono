@@ -5,9 +5,10 @@ import type {
 	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
+	SystemPromptContribution,
 	ToolObserverEvent,
 	ToolObserverHandler,
-} from '../api/events.js';
+} from '../api/handlers.js';
 import type { ExtensionToolDefinition } from '../api/tool.js';
 import type { ToolSpec } from '../api/tool-spec.js';
 import type { FullMiddleware } from '../api/middleware/types.js';
@@ -31,6 +32,7 @@ export type SpawnResult = ClientProtocol & { dispose(): Promise<void> };
  * - Request handlers (prompt/cancel) → ClientMiddleware
  * - Stream observers (on/chunk/update/turnEnd) → dispatched from prompt stream
  * - Tool registration → ServerMiddleware + tool injection into setContext
+ * - System prompt contributions → evaluated before each turn via decorator
  *
  * When transport and state are provided, build() connects to the agent
  * process and returns a CoreRuntime. Without them, build() returns raw
@@ -56,6 +58,7 @@ export function createCoreCompiler(
 		ToolObserverHandler<ToolObserverEvent>[]
 	>();
 	const tools: ExtensionToolDefinition[] = [];
+	const contributions: SystemPromptContribution[] = [];
 
 	const api: CoreAPI = {
 		on(event: string, handler: (...args: any[]) => any) {
@@ -76,6 +79,9 @@ export function createCoreCompiler(
 			} else {
 				cancelHandlers.push(handler as CancelHandler);
 			}
+		},
+		contributeSystemPrompt(fn: SystemPromptContribution) {
+			contributions.push(fn);
 		},
 		registerTool(
 			specOrTool: ToolSpec | ExtensionToolDefinition,
@@ -111,7 +117,7 @@ export function createCoreCompiler(
 				return middleware;
 			}
 
-			return buildCoreRuntime(transport, state, middleware);
+			return buildCoreRuntime(transport, state, middleware, contributions);
 		},
 	};
 }

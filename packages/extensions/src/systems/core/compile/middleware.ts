@@ -5,7 +5,7 @@ import type {
 	StreamObserverHandler,
 	ToolObserverEvent,
 	ToolObserverHandler,
-} from '../api/events.js';
+} from '../api/handlers.js';
 import type { ExtensionToolDefinition } from '../api/tool.js';
 import type { FullMiddleware } from '../api/middleware/types.js';
 import { passThrough, buildWaterfall } from '@franklin/lib/middleware';

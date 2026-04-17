@@ -3,6 +3,7 @@ export type {
 	CancelHandler,
 	PromptContext,
 	PromptHandler,
+	SystemPromptContribution,
 	ExtensionToolDefinition,
 	ToolSpec,
 	ToolArgs,

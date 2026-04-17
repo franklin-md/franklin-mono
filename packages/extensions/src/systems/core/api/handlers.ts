@@ -26,6 +26,8 @@ export type CancelHandler = CoreEventHandler<'cancel'>;
 
 export type PromptHandler = (ctx: PromptContext) => MaybePromise<void>;
 
+export type SystemPromptContribution = () => MaybePromise<string | undefined>;
+
 // ---------------------------------------------------------------------------
 // Stream observer events — fire-and-forget side effects on response stream
 // ---------------------------------------------------------------------------
