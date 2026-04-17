@@ -90,7 +90,8 @@ The algorithm is parameterized by:
 - **Collection Strategy**: How do instruction files get discovered?
   - How do you distinguish an instruction file from a regular file?
   - How do you find folders that may have instruction files in them?
-- ## **Precedence Strategy**:
+
+## **Precedence Strategy**:
 
 ##### Collection Algorithms:
 
@@ -107,7 +108,7 @@ Common strategies include:
     - cwd
     - `~`
 
-##### Precedence and Scoping Algorithms
+##### Scoping Algorithms
 
 Instruction files may be:
 
@@ -123,6 +124,7 @@ It is for this reason that **multiple instruction files even for the same standa
   - May consider a **classification of instructions** by personal, project, and global.
 - How the content of these paths gets converted to the final prompt
   - **Combine All** with flexibility in how each individual prompt is rendered.
+	  - Instruct later concatenations to be treated as overrides of earlier.
   - **Highest Priority wins**
 - Any additional processing on that prompt:
   - **Optional Truncation**
@@ -137,6 +139,36 @@ During a session, the contents of the resolved instructions may change. The syst
 - **Never refreshed**
   - Edits to instructions only get effectively picked up on session created after those edits.
 - **Refreshed only on Compaction**
+
+###### Claude.md notes
+
+- [Location and Scope of CLAUDE.md files](https://code.claude.com/docs/en/memory#choose-where-to-put-claude-md-files)
+  - Instruction files above cwd are loaded automatically
+  - Instructions files in sub-directories load **only when a file is read from there**.
+  - [Walking algorithm](https://code.claude.com/docs/en/memory#how-claude-md-files-load):
+    - Walk up and find `CLAUDE.md` and `CLAUDE.local.md`
+    - At each level, concatenate the `CLAUDE.local.md` below the `CLAUDE.md`
+  - [Claude Rules](https://code.claude.com/docs/en/memory#organize-rules-with-claude/rules/)
+    - [ ] A separate walking mechanism (front matter defines conditional activation)
+- System Prompt Construction:
+  - "All discovered files are concatenated into context rather than overriding each other."
+  - `@ Syntax`:
+    - Expanded and loaded in when the CLAUDE.md is.
+    - This is the suggested way to pull in AGENTS.md
+  - HTML Block comments are stripped (so are used as "maintainer notes")
+
+##### Codex's Agents.md notes
+- **Never Refreshes**
+- Discovery:
+	- Global:
+		- Searches `~/.codex` unless you provide a different home (`CODEX_HOME`)
+		- First checks for `AGENTS.override.md` then `AGENTS.md`, taking the first non-empty. Only file is taken from this level
+	- Project:
+		- Walk-Down from Project root to CWD (defaulting to project root = cwd if no project dir can be found (i.e. no git repo))
+		- Checks for  `AGENTS.override.md` then `AGENTS.md`, only taking 1 per directory.
+- Merge:
+	- "Codex concatenates files from the root down, joining them with blank lines. Files closer to your current directory override earlier guidance because they appear later in the combined prompt."
+	- Truncatation mechanism, at 32kb by default
 
 ### Agent Orchestration
 
