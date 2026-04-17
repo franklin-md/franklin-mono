@@ -3,9 +3,9 @@ import type { UserContent, UserMessage } from '@franklin/mini-acp';
 export interface PromptContext {
 	readonly request: Readonly<UserMessage>;
 
-	// TODO: Support an optional priority number (default 0) to order prepends.
+	// TODO(FRA-215): Support an optional priority number (default 0) to order prepends.
 	prependContent(content: UserContent): void;
-	// TODO: Support an optional priority number (default 0) to order appends.
+	// TODO(FRA-215): Support an optional priority number (default 0) to order appends.
 	appendContent(content: UserContent): void;
 
 	asPrompt(): UserMessage;
