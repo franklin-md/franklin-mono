@@ -1,10 +1,11 @@
 import type { MiniACPClient, StreamEvent } from '@franklin/mini-acp';
 import type {
-	CoreEventHandler,
+	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
 } from '../../api/events.js';
 import type { MethodMiddleware } from '../../api/middleware/types.js';
+import { createPromptContext } from '../../api/prompt-context.js';
 
 function notifyObservers(
 	observers: ReadonlyMap<
@@ -37,28 +38,26 @@ async function* iteratePromptWithObservers(
 }
 
 /**
- * Build a MethodMiddleware for prompt (returns AsyncIterable, not Promise).
- * Uses an async generator so the return type stays AsyncIterable.
+ * Build prompt middleware (returns AsyncIterable, not Promise).
+ * Prompt handlers contribute content through PromptContext, then the final
+ * request is passed to the downstream client.
  *
  * When observers are provided, manually iterates the stream and dispatches
  * events to matching observers. Without observers, uses yield* (fast path).
  */
 export function buildPromptWaterfall(
-	handlers: CoreEventHandler<'prompt'>[],
+	handlers: PromptHandler[],
 	observers?: ReadonlyMap<
 		StreamObserverEvent,
 		StreamObserverHandler<StreamObserverEvent>[]
 	>,
 ): MethodMiddleware<MiniACPClient['prompt']> {
 	return async function* (params, next) {
-		// Waterfall the params of prompt
-		let p = params;
+		const ctx = createPromptContext(params);
 		for (const handler of handlers) {
-			const result = await handler(p);
-			if (result !== undefined) p = result;
+			await handler(ctx);
 		}
-		// Now wrap the iterator you get back when you call prompt
-		// And notify the observers if they are provided
-		return yield* iteratePromptWithObservers(next(p), observers);
+
+		return yield* iteratePromptWithObservers(next(ctx.asPrompt()), observers);
 	};
 }

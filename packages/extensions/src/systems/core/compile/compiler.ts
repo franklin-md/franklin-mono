@@ -1,8 +1,8 @@
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { CoreAPI } from '../api/api.js';
 import type {
-	CoreEvent,
-	CoreEventHandler,
+	CancelHandler,
+	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
 	ToolObserverEvent,
@@ -28,7 +28,7 @@ export type SpawnResult = ClientProtocol & { dispose(): Promise<void> };
  * Create a fresh core compiler instance.
  *
  * The core compiler handles:
- * - Event handlers (on/prompt/setContext/initialize/cancel) → ClientMiddleware
+ * - Request handlers (prompt/cancel) → ClientMiddleware
  * - Stream observers (on/chunk/update/turnEnd) → dispatched from prompt stream
  * - Tool registration → ServerMiddleware + tool injection into setContext
  *
@@ -45,7 +45,8 @@ export function createCoreCompiler(
 	transport?: SpawnResult,
 	state?: CoreState,
 ): Compiler<CoreAPI, CoreRuntime | FullMiddleware> {
-	const handlers = new Map<CoreEvent, CoreEventHandler<CoreEvent>[]>();
+	const cancelHandlers: CancelHandler[] = [];
+	const promptHandlers: PromptHandler[] = [];
 	const observers = new Map<
 		StreamObserverEvent,
 		StreamObserverHandler<StreamObserverEvent>[]
@@ -70,12 +71,10 @@ export function createCoreCompiler(
 					event as ToolObserverEvent,
 					handler as ToolObserverHandler<ToolObserverEvent>,
 				);
+			} else if (event === 'prompt') {
+				promptHandlers.push(handler as PromptHandler);
 			} else {
-				addEventHandler(
-					handlers,
-					event as CoreEvent,
-					handler as CoreEventHandler<CoreEvent>,
-				);
+				cancelHandlers.push(handler as CancelHandler);
 			}
 		},
 		registerTool(
@@ -101,7 +100,8 @@ export function createCoreCompiler(
 		api,
 		async build() {
 			const middleware = buildMiddleware(
-				handlers,
+				cancelHandlers,
+				promptHandlers,
 				observers,
 				toolObservers,
 				tools,

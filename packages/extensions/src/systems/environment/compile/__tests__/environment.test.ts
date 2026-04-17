@@ -69,7 +69,7 @@ describe('createEnvironmentCompiler', () => {
 		const result = await compile(compiler, (api) => {
 			// Extension sees both CoreAPI and EnvironmentAPI
 			expect(api.getEnvironment()).toBe(env);
-			api.on('initialize', () => undefined);
+			api.on('prompt', () => undefined);
 		});
 
 		expect(result.environment.filesystem).toBe(env.filesystem);

@@ -9,21 +9,22 @@ import type {
 	ToolResult,
 } from '@franklin/mini-acp';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
+import type { PromptContext } from './prompt-context.js';
 
 // ---------------------------------------------------------------------------
-// Core events — derived 1:1 from MiniACPClient methods
+// Core events — the subset of MiniACPClient methods exposed to extensions.
+// initialize and setContext are infrastructure concerns handled by the
+// tracker decorator and tool injector respectively.
 // ---------------------------------------------------------------------------
 
-export type CoreEvent = keyof MiniACPClient;
-
-export type CoreEventHandler<K extends CoreEvent> = (
+type CoreEventHandler<K extends keyof MiniACPClient> = (
 	params: Parameters<MiniACPClient[K]>[0],
 	// eslint-disable-next-line @typescript-eslint/no-invalid-void-type
 ) => MaybePromise<Parameters<MiniACPClient[K]>[0] | void>;
 
-export type CoreEventMap = {
-	[K in CoreEvent]: CoreEventHandler<K>;
-};
+export type CancelHandler = CoreEventHandler<'cancel'>;
+
+export type PromptHandler = (ctx: PromptContext) => MaybePromise<void>;
 
 // ---------------------------------------------------------------------------
 // Stream observer events — fire-and-forget side effects on response stream

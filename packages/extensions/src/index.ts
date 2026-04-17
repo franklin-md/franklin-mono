@@ -1,8 +1,8 @@
 export type {
 	CoreAPI,
-	CoreEvent,
-	CoreEventHandler,
-	CoreEventMap,
+	CancelHandler,
+	PromptContext,
+	PromptHandler,
 	ExtensionToolDefinition,
 	ToolSpec,
 	ToolArgs,
