@@ -21,38 +21,40 @@ import type { Filesystem } from './types.js';
  */
 export interface FilesystemPermissions {
 	/** Gitignore-style patterns for paths that may be read. */
-	denyRead: string[];
-	allowRead: string[];
+	denyRead: readonly string[];
+	allowRead: readonly string[];
 	/** Gitignore-style patterns for paths that may be written. */
-	allowWrite: string[];
-	denyWrite: string[];
+	allowWrite: readonly string[];
+	denyWrite: readonly string[];
 }
 
 // Empty lists mean "use the default policy": reads are allowed, writes denied.
-export const FILESYSTEM_DEFAULT_PERMISSIONS: FilesystemPermissions = {
+export const FILESYSTEM_DEFAULT_PERMISSIONS = {
 	allowRead: [],
 	denyRead: [],
 	allowWrite: [],
 	denyWrite: [],
-};
+} as const satisfies FilesystemPermissions;
 
-export const FILESYSTEM_ALLOW_ALL: FilesystemPermissions = {
+export const FILESYSTEM_ALLOW_ALL = {
 	allowRead: ['**'],
 	denyRead: [],
 	allowWrite: ['**'],
 	denyWrite: [],
-};
+} as const satisfies FilesystemPermissions;
 
 // Writes already fail closed by default, so deny-all only needs to deny reads.
-export const FILESYSTEM_DENY_ALL: FilesystemPermissions = {
+export const FILESYSTEM_DENY_ALL = {
 	allowRead: [],
 	denyRead: ['**'],
 	allowWrite: [],
 	denyWrite: [],
-};
+} as const satisfies FilesystemPermissions;
 
-function createMatcher(patterns: string[]): (filePath: string) => boolean {
-	const ig = ignore().add(patterns);
+function createMatcher(
+	patterns: readonly string[],
+): (filePath: string) => boolean {
+	const ig = ignore().add([...patterns]);
 	return (filePath: string) => ig.ignores(filePath);
 }
 

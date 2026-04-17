@@ -51,8 +51,8 @@ export class SandboxedTerminal implements Terminal {
 				...config.permissions.allowRead,
 				...this._paths,
 			];
-			this._config.filesystem.denyRead = config.permissions.denyRead;
-			this._config.filesystem.allowWrite = config.permissions.allowWrite;
+			this._config.filesystem.denyRead = [...config.permissions.denyRead];
+			this._config.filesystem.allowWrite = [...config.permissions.allowWrite];
 			this._config.filesystem.denyWrite = [
 				...config.permissions.denyWrite,
 				...this._denyWritePaths(),
@@ -70,9 +70,9 @@ export class SandboxedTerminal implements Terminal {
 		this._config = {
 			network: { ...config.netConfig },
 			filesystem: {
-				denyRead: config.fsConfig.permissions.denyRead,
+				denyRead: [...config.fsConfig.permissions.denyRead],
 				allowRead: [...config.fsConfig.permissions.allowRead, ...this._paths],
-				allowWrite: config.fsConfig.permissions.allowWrite,
+				allowWrite: [...config.fsConfig.permissions.allowWrite],
 				denyWrite: [
 					...config.fsConfig.permissions.denyWrite,
 					...this._denyWritePaths(),
