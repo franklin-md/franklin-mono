@@ -13,9 +13,11 @@ import type { Message } from '../types/message.js';
  * `tools` replaces the list wholesale.
  */
 function applySetContext(ctx: Ctx, partial: CtxPatch): void {
-	if (partial.history) ctx.history = { ...ctx.history, ...partial.history };
-	if (partial.tools) ctx.tools = partial.tools;
-	if (partial.config) ctx.config = { ...ctx.config, ...partial.config };
+	if (partial.history !== undefined)
+		ctx.history = { ...ctx.history, ...partial.history };
+	if (partial.tools !== undefined) ctx.tools = partial.tools;
+	if (partial.config !== undefined)
+		ctx.config = { ...ctx.config, ...partial.config };
 }
 
 /**

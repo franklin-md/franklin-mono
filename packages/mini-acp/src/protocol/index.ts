@@ -7,7 +7,7 @@ export type {
 } from './types.js';
 
 export {
-	muClientDescriptor as miniACPServerDescriptor,
+	muServerDescriptor as miniACPServerDescriptor,
 	muClientDescriptor as miniACPClientDescriptor,
 } from './manifest.js';
 

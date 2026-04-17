@@ -1,4 +1,4 @@
-import type { CtxTracker, MiniACPClient } from '@franklin/mini-acp';
+import type { MiniACPClient } from '@franklin/mini-acp';
 import type { ProtocolDecorator } from '../decorator.js';
 import type { SystemPromptAssembler } from '../builders/system-prompt.js';
 
@@ -18,20 +18,11 @@ import type { SystemPromptAssembler } from '../builders/system-prompt.js';
  * a successful `prompt`; the agent would run that one turn against a
  * stale prompt until the next change. This should effectively never
  * happen in practice.
- *
- * `lastSent` inits to `''`, matching the tracker's seeded systemPrompt.
- * If any handler contributes content, the first turn dispatches setContext
- * with the freshly assembled prompt.
- *
- * TODO: once mini-ACP treats `history` as a partial merge
- * (see .context/partial-history-proposal.md), drop the tracker read and
- * send only { history: { systemPrompt: assembled } }.
  */
 export function createSystemPromptDecorator(
 	assembler: SystemPromptAssembler,
-	tracker: CtxTracker,
 ): ProtocolDecorator {
-	let lastSent: string = '';
+	let lastSent = '';
 
 	return {
 		name: 'system-prompt',
@@ -45,10 +36,7 @@ export function createSystemPromptDecorator(
 					const assembled = await assembler.assemble();
 					if (assembled !== lastSent) {
 						await c.setContext({
-							history: {
-								systemPrompt: assembled,
-								messages: tracker.get().history.messages,
-							},
+							history: { systemPrompt: assembled },
 						});
 						lastSent = assembled;
 					}

@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from 'vitest';
-import { CtxTracker } from '@franklin/mini-acp';
 import type {
 	MiniACPAgent,
 	MiniACPClient,
@@ -12,15 +11,6 @@ import type { SystemPromptHandler } from '../../api/handlers.js';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function seededTracker(systemPrompt = ''): CtxTracker {
-	const tracker = new CtxTracker();
-	tracker.apply({
-		history: { systemPrompt, messages: [] },
-		tools: [],
-	});
-	return tracker;
-}
 
 function stubClient(overrides: Partial<MiniACPClient> = {}): MiniACPClient {
 	return {
@@ -51,10 +41,9 @@ async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
 function wire(
 	handlers: SystemPromptHandler[],
 	inner: MiniACPClient,
-	tracker: CtxTracker,
 ): Promise<MiniACPClient> {
 	const assembler = buildSystemPromptAssembler(handlers);
-	const decorator = createSystemPromptDecorator(assembler, tracker);
+	const decorator = createSystemPromptDecorator(assembler);
 	return decorator.client(inner);
 }
 
@@ -64,7 +53,6 @@ function wire(
 
 describe('createSystemPromptDecorator', () => {
 	it('calls setContext with assembled prompt before first prompt', async () => {
-		const tracker = seededTracker();
 		const inner = stubClient();
 		const wrapped = await wire(
 			[
@@ -72,7 +60,6 @@ describe('createSystemPromptDecorator', () => {
 				(ctx) => ctx.setPart('extension B'),
 			],
 			inner,
-			tracker,
 		);
 
 		await collect(
@@ -80,18 +67,14 @@ describe('createSystemPromptDecorator', () => {
 		);
 
 		expect(inner.setContext).toHaveBeenCalledWith({
-			history: {
-				systemPrompt: 'extension A\n\nextension B',
-				messages: [],
-			},
+			history: { systemPrompt: 'extension A\n\nextension B' },
 		});
 		expect(inner.prompt).toHaveBeenCalled();
 	});
 
 	it('does not call setContext when handlers produce the same result', async () => {
-		const tracker = seededTracker();
 		const inner = stubClient();
-		const wrapped = await wire([(ctx) => ctx.setPart('extra')], inner, tracker);
+		const wrapped = await wire([(ctx) => ctx.setPart('extra')], inner);
 
 		await collect(
 			wrapped.prompt({ role: 'user', content: [{ type: 'text', text: '1' }] }),
@@ -105,10 +88,9 @@ describe('createSystemPromptDecorator', () => {
 	});
 
 	it('calls setContext again when a handler changes its fragment', async () => {
-		const tracker = seededTracker();
 		const inner = stubClient();
 		let value = 'v1';
-		const wrapped = await wire([(ctx) => ctx.setPart(value)], inner, tracker);
+		const wrapped = await wire([(ctx) => ctx.setPart(value)], inner);
 
 		await collect(
 			wrapped.prompt({ role: 'user', content: [{ type: 'text', text: '1' }] }),
@@ -121,15 +103,11 @@ describe('createSystemPromptDecorator', () => {
 		);
 		expect(inner.setContext).toHaveBeenCalledTimes(2);
 		expect(inner.setContext).toHaveBeenLastCalledWith({
-			history: {
-				systemPrompt: 'v2',
-				messages: [],
-			},
+			history: { systemPrompt: 'v2' },
 		});
 	});
 
 	it('handler that does not setPart leaves its fragment unchanged across turns', async () => {
-		const tracker = seededTracker();
 		const inner = stubClient();
 		let turn = 0;
 		const wrapped = await wire(
@@ -139,7 +117,6 @@ describe('createSystemPromptDecorator', () => {
 				},
 			],
 			inner,
-			tracker,
 		);
 
 		await collect(
@@ -147,7 +124,7 @@ describe('createSystemPromptDecorator', () => {
 		);
 		expect(inner.setContext).toHaveBeenCalledTimes(1);
 		expect(inner.setContext).toHaveBeenLastCalledWith({
-			history: { systemPrompt: 'sticky', messages: [] },
+			history: { systemPrompt: 'sticky' },
 		});
 
 		turn = 1;
@@ -159,7 +136,6 @@ describe('createSystemPromptDecorator', () => {
 	});
 
 	it('handler that never calls setPart is excluded from assembly', async () => {
-		const tracker = seededTracker();
 		const inner = stubClient();
 		const wrapped = await wire(
 			[
@@ -169,7 +145,6 @@ describe('createSystemPromptDecorator', () => {
 				(ctx) => ctx.setPart('present'),
 			],
 			inner,
-			tracker,
 		);
 
 		await collect(
@@ -177,17 +152,13 @@ describe('createSystemPromptDecorator', () => {
 		);
 
 		expect(inner.setContext).toHaveBeenCalledWith({
-			history: {
-				systemPrompt: 'present',
-				messages: [],
-			},
+			history: { systemPrompt: 'present' },
 		});
 	});
 
 	it('does not call setContext when there are no handlers', async () => {
-		const tracker = seededTracker();
 		const inner = stubClient();
-		const wrapped = await wire([], inner, tracker);
+		const wrapped = await wire([], inner);
 
 		await collect(
 			wrapped.prompt({ role: 'user', content: [{ type: 'text', text: 'hi' }] }),
@@ -197,30 +168,21 @@ describe('createSystemPromptDecorator', () => {
 		expect(inner.setContext).not.toHaveBeenCalled();
 	});
 
-	it('preserves existing tracked messages in setContext call', async () => {
-		const tracker = seededTracker();
-		tracker.append({
-			role: 'user',
-			content: [{ type: 'text', text: 'previous' }],
-		});
-
+	it('does not send messages in the patch', async () => {
 		const inner = stubClient();
-		const wrapped = await wire([(ctx) => ctx.setPart('extra')], inner, tracker);
+		const wrapped = await wire([(ctx) => ctx.setPart('extra')], inner);
 
 		await collect(
 			wrapped.prompt({ role: 'user', content: [{ type: 'text', text: 'hi' }] }),
 		);
 
 		const setContextArg = vi.mocked(inner.setContext).mock.calls[0]![0];
-		expect(setContextArg.history!.messages).toHaveLength(1);
-		expect(setContextArg.history!.messages[0]).toEqual({
-			role: 'user',
-			content: [{ type: 'text', text: 'previous' }],
+		expect(setContextArg.history).toEqual({
+			systemPrompt: 'extra',
 		});
 	});
 
 	it('awaits async handlers', async () => {
-		const tracker = seededTracker();
 		const inner = stubClient();
 		const wrapped = await wire(
 			[
@@ -230,7 +192,6 @@ describe('createSystemPromptDecorator', () => {
 				},
 			],
 			inner,
-			tracker,
 		);
 
 		await collect(
@@ -238,39 +199,28 @@ describe('createSystemPromptDecorator', () => {
 		);
 
 		expect(inner.setContext).toHaveBeenCalledWith({
-			history: {
-				systemPrompt: 'async-value',
-				messages: [],
-			},
+			history: { systemPrompt: 'async-value' },
 		});
 	});
 
 	it('server side is a passthrough', async () => {
 		const assembler = buildSystemPromptAssembler([]);
-		const decorator = createSystemPromptDecorator(assembler, seededTracker());
+		const decorator = createSystemPromptDecorator(assembler);
 		const agent = stubAgent();
 		const result = await decorator.server(agent);
 		expect(result).toBe(agent);
 	});
 
-	it('dispatches setContext with only the assembled fragment', async () => {
-		const tracker = seededTracker();
+	it('a handler still dispatches setContext from an empty starting prompt', async () => {
 		const inner = stubClient();
-		const wrapped = await wire(
-			[(ctx) => ctx.setPart('only-fragment')],
-			inner,
-			tracker,
-		);
+		const wrapped = await wire([(ctx) => ctx.setPart('only-fragment')], inner);
 
 		await collect(
 			wrapped.prompt({ role: 'user', content: [{ type: 'text', text: 'hi' }] }),
 		);
 
 		expect(inner.setContext).toHaveBeenCalledWith({
-			history: {
-				systemPrompt: 'only-fragment',
-				messages: [],
-			},
+			history: { systemPrompt: 'only-fragment' },
 		});
 	});
 });

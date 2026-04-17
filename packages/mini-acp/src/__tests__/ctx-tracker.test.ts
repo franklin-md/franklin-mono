@@ -36,6 +36,23 @@ describe('CtxTracker.apply – field replacement', () => {
 		expect(tracker.get().tools[0]!.name).toBe('read');
 	});
 
+	it('clears tools when an empty array is provided', () => {
+		const tracker = seededTracker();
+		tracker.apply({
+			tools: [
+				{
+					name: 'read',
+					description: 'Read a file',
+					inputSchema: { type: 'object' },
+				},
+			],
+		});
+		expect(tracker.get().tools).toHaveLength(1);
+
+		tracker.apply({ tools: [] });
+		expect(tracker.get().tools).toHaveLength(0);
+	});
+
 	it('does not touch fields not present in the partial', () => {
 		const tracker = seededTracker({ provider: 'anthropic', apiKey: 'sk-123' });
 		tracker.apply({

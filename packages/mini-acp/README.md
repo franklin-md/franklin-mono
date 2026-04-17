@@ -331,6 +331,9 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 | `ctx-before-first-prompt` | `setContext` must precede the first `prompt` | MUST |
 | `ctx-receive-exists` | Agent must respond to each `setContext` | MUST |
 | `ctx-after-init` | `setContext` must not be sent before `initialize` completes | MUST |
+| `ctx-history-merges-by-property` | When `history` is present in a patch, each subfield (`systemPrompt`, `messages`) replaces only when set; omitted subfields are preserved | MUST |
+| `ctx-tools-replaces-wholesale` | When `tools` is present in a patch, it replaces the current tool list wholesale (including when set to `[]`, which clears all tools) | MUST |
+| `ctx-config-merges-by-property` | When `config` is present in a patch, each subfield replaces only when set; omitted subfields are preserved | MUST |
 
 ### Turn Lifecycle
 

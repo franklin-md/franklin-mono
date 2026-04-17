@@ -3,12 +3,12 @@ import { buildSystemPromptAssembler } from '../system-prompt.js';
 import type { SystemPromptHandler } from '../../../api/handlers.js';
 
 describe('buildSystemPromptAssembler', () => {
-	it('returns empty string when no handlers are registered', async () => {
+	it('returns an empty prompt when no handlers are registered', async () => {
 		const assembler = buildSystemPromptAssembler([]);
 		expect(await assembler.assemble()).toBe('');
 	});
 
-	it('returns a single fragment when only one handler contributes', async () => {
+	it('returns the handler fragment when only one handler contributes', async () => {
 		const assembler = buildSystemPromptAssembler([
 			(ctx) => ctx.setPart('only'),
 		]);
