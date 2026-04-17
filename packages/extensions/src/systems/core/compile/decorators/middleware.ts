@@ -1,5 +1,5 @@
 import type { FullMiddleware } from '../../api/middleware/types.js';
-import { apply } from '../../api/middleware/apply.js';
+import { apply } from '@franklin/lib/middleware';
 import type { ProtocolDecorator } from '../decorator.js';
 
 export function createMiddlewareDecorator(

@@ -5,7 +5,7 @@ import { createCoreCompiler } from '../../systems/core/compile/compiler.js';
 import { createStoreCompiler } from '../../systems/store/compile/compiler.js';
 import { compile } from '../../algebra/compiler/compile.js';
 import { combine } from '../../algebra/compiler/combine.js';
-import { apply } from '../../systems/core/api/middleware/apply.js';
+import { apply } from '@franklin/lib/middleware';
 import { createEmptyStoreResult } from '../../systems/store/api/registry/result.js';
 import { StoreRegistry } from '../../systems/store/api/registry/index.js';
 import type { Store } from '../../systems/store/api/types.js';

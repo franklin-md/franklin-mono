@@ -3,7 +3,7 @@ import type { MiniACPClient } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { compile } from '../../../algebra/compiler/compile.js';
 import { combine } from '../../../algebra/compiler/combine.js';
-import { apply } from '../../../systems/core/api/middleware/apply.js';
+import { apply } from '@franklin/lib/middleware';
 import { createCoreCompiler } from '../../../systems/core/compile/compiler.js';
 import { createEnvironmentCompiler } from '../../../systems/environment/compile/compiler.js';
 import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';

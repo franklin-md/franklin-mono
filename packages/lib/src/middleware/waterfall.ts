@@ -1,10 +1,9 @@
-import type { MaybePromise } from '../../../../algebra/types/shared.js';
 import type { MethodMiddleware } from './types.js';
 
 type WaterfallHandler<T> = (
 	params: T,
 	// eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-) => MaybePromise<T | void>;
+) => T | void | Promise<T | void>;
 
 /**
  * Runs handlers as a waterfall: each handler sees the params produced by the

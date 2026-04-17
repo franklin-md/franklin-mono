@@ -3,8 +3,8 @@ import type {
 	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
-} from '../../api/events.js';
-import type { MethodMiddleware } from '../../api/middleware/types.js';
+} from '../../api/handlers.js';
+import type { MethodMiddleware } from '@franklin/lib/middleware';
 import { createPromptContext } from '../../api/prompt-context.js';
 
 function notifyObservers(

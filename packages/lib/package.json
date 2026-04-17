@@ -21,6 +21,10 @@
 		"./transport/node": {
 			"types": "./dist/transport/node.d.ts",
 			"import": "./dist/transport/node.js"
+		},
+		"./middleware": {
+			"types": "./dist/middleware/index.d.ts",
+			"import": "./dist/middleware/index.js"
 		}
 	},
 	"files": [

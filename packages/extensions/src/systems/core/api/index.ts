@@ -1,12 +1,14 @@
 export type { CoreAPI } from './api.js';
 export type { PromptContext } from './prompt-context.js';
+export type { SystemPromptContext } from './system-prompt-context.js';
 export type {
 	CancelHandler,
 	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
 	StreamObserverParamsMap,
-} from './events.js';
+	SystemPromptHandler,
+} from './handlers.js';
 export type {
 	ExtensionToolDefinition,
 	ToolOutput,
@@ -22,11 +24,7 @@ export type {
 } from './tools/index.js';
 export { serializeTool, toToolInputSchema } from './tools/index.js';
 export type {
-	MethodMiddleware,
-	Middleware,
 	ClientMiddleware,
 	ServerMiddleware,
 	FullMiddleware,
 } from './middleware/index.js';
-export { compose, composeMethod, passThrough } from './middleware/index.js';
-export { apply } from './middleware/index.js';
