@@ -10,6 +10,7 @@ import type {
 } from '@franklin/mini-acp';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
 import type { PromptContext } from './prompt-context.js';
+import type { SystemPromptContext } from './system-prompt-context.js';
 
 // ---------------------------------------------------------------------------
 // Core events — the subset of MiniACPClient methods exposed to extensions.
@@ -26,7 +27,9 @@ export type CancelHandler = CoreEventHandler<'cancel'>;
 
 export type PromptHandler = (ctx: PromptContext) => MaybePromise<void>;
 
-export type SystemPromptContribution = () => MaybePromise<string | undefined>;
+export type SystemPromptHandler = (
+	ctx: SystemPromptContext,
+) => MaybePromise<void>;
 
 // ---------------------------------------------------------------------------
 // Stream observer events — fire-and-forget side effects on response stream

@@ -295,7 +295,7 @@ describe('createCoreSystem', () => {
 		expect(empty.core.llmConfig).toEqual({});
 	});
 
-	it('contributeSystemPrompt assembles system prompt before first turn', async () => {
+	it('systemPrompt handler assembles system prompt before first turn', async () => {
 		const system = createCoreSystem(createMockSpawn());
 
 		const runtime = await createRuntime(
@@ -308,7 +308,9 @@ describe('createCoreSystem', () => {
 			},
 			[
 				(api: CoreAPI) => {
-					api.contributeSystemPrompt(() => 'Tool guidelines here.');
+					api.on('systemPrompt', (ctx) => {
+						ctx.setPart('Tool guidelines here.');
+					});
 				},
 			],
 		);
@@ -328,7 +330,7 @@ describe('createCoreSystem', () => {
 		await runtime.dispose();
 	});
 
-	it('multiple contributeSystemPrompt calls compose in registration order', async () => {
+	it('multiple systemPrompt handlers compose in registration order', async () => {
 		const system = createCoreSystem(createMockSpawn());
 
 		const runtime = await createRuntime(
@@ -341,8 +343,12 @@ describe('createCoreSystem', () => {
 			},
 			[
 				(api: CoreAPI) => {
-					api.contributeSystemPrompt(() => 'first');
-					api.contributeSystemPrompt(() => 'second');
+					api.on('systemPrompt', (ctx) => {
+						ctx.setPart('first');
+					});
+					api.on('systemPrompt', (ctx) => {
+						ctx.setPart('second');
+					});
 				},
 			],
 		);

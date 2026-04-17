@@ -4,7 +4,7 @@ import type {
 	CancelHandler,
 	PromptHandler,
 	StreamObserverHandler,
-	SystemPromptContribution,
+	SystemPromptHandler,
 	ToolObserverHandler,
 } from './handlers.js';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
@@ -14,6 +14,9 @@ export interface CoreAPI {
 	on(event: 'prompt', handler: PromptHandler): void;
 	on(event: 'cancel', handler: CancelHandler): void;
 
+	// System prompt — handler redefines its own fragment via SystemPromptContext
+	on(event: 'systemPrompt', handler: SystemPromptHandler): void;
+
 	// Stream observer events — fire-and-forget on response stream
 	on(event: 'chunk', handler: StreamObserverHandler<'chunk'>): void;
 	on(event: 'update', handler: StreamObserverHandler<'update'>): void;
@@ -22,8 +25,6 @@ export interface CoreAPI {
 	// Tool observer events — fire-and-forget on tool execution lifecycle
 	on(event: 'toolCall', handler: ToolObserverHandler<'toolCall'>): void;
 	on(event: 'toolResult', handler: ToolObserverHandler<'toolResult'>): void;
-
-	contributeSystemPrompt(fn: SystemPromptContribution): void;
 
 	registerTool<TInput>(tool: ExtensionToolDefinition<TInput>): void;
 

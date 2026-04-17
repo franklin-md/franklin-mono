@@ -1,12 +1,13 @@
 export type { CoreAPI } from './api.js';
 export type { PromptContext } from './prompt-context.js';
+export type { SystemPromptContext } from './system-prompt-context.js';
 export type {
 	CancelHandler,
 	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
 	StreamObserverParamsMap,
-	SystemPromptContribution,
+	SystemPromptHandler,
 } from './handlers.js';
 export type {
 	ExtensionToolDefinition,
