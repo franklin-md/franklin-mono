@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { withSetup } from '../setup.js';
 import type { RuntimeSystem } from '../types.js';
-import type { RuntimeBase } from '../../runtime/types.js';
+import type { BaseRuntime } from '../../runtime/types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -9,7 +9,7 @@ import type { RuntimeBase } from '../../runtime/types.js';
 
 type TestState = { value: number };
 type TestAPI = { register(n: number): void };
-type TestRuntime = RuntimeBase<TestState> & { getValue(): number };
+type TestRuntime = BaseRuntime<TestState> & { getValue(): number };
 
 function createTestSystem(): RuntimeSystem<TestState, TestAPI, TestRuntime> {
 	return {

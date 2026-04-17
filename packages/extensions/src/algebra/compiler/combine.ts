@@ -1,3 +1,5 @@
+import type { AssertNoOverlap } from '@franklin/lib';
+import type { BaseAPI } from '../api/index.js';
 import type { Compiler } from './types.js';
 
 /**
@@ -6,9 +8,9 @@ import type { Compiler } from './types.js';
  *
  * Each compiler collects independently; the extension sees the merged API.
  */
-export function combine<A1, R1, A2, R2>(
+export function combine<A1 extends BaseAPI, R1, A2 extends BaseAPI, R2>(
 	c1: Compiler<A1, R1>,
-	c2: Compiler<A2, R2>,
+	c2: Compiler<A2, R2> & AssertNoOverlap<A1, A2>,
 ): Compiler<A1 & A2, R1 & R2> {
 	return {
 		api: { ...c1.api, ...c2.api },

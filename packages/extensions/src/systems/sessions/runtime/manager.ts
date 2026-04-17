@@ -1,25 +1,25 @@
 import type {
+	BaseRuntimeSystem,
 	InferAPI,
 	InferState,
-	RuntimeSystem,
 } from '../../../algebra/system/types.js';
 import type { SessionAPI } from '../api/api.js';
 import type { Extension } from '../../../algebra/types/extension.js';
 import type { SessionCollection } from './collection.js';
 import type { SessionRuntime } from './runtime.js';
-import type { RuntimeBase } from '../../../algebra/runtime/types.js';
+import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import { createSessionSystem, type SessionSystem } from '../system.js';
 import { createRuntime } from '../../../algebra/system/create.js';
 import { resolveState } from '../../../algebra/state/resolve.js';
 import type { Session, SessionCreateInput } from './types.js';
 
-type SessionManagerOptions<RTS extends RuntimeSystem<any, any, any>> = {
+type SessionManagerOptions<RTS extends BaseRuntimeSystem> = {
 	system: RTS;
 	collection: SessionCollection<SessionRuntime<RTS>>;
 	extensions: Extension<InferAPI<RTS> & SessionAPI<RTS>>[];
 };
 
-export class SessionManager<RTS extends RuntimeSystem<any, any, any>> {
+export class SessionManager<RTS extends BaseRuntimeSystem> {
 	private readonly system: RTS;
 	private readonly collection: SessionCollection<SessionRuntime<RTS>>;
 	private readonly extensions: Extension<InferAPI<RTS> & SessionAPI<RTS>>[];
@@ -68,7 +68,7 @@ export class SessionManager<RTS extends RuntimeSystem<any, any, any>> {
 		if (options.from) {
 			const source = this.collection.get(options.from);
 			if (!source) throw new Error(`Session ${options.from} not found`);
-			const rt: RuntimeBase<InferState<RTS>> = source.runtime;
+			const rt: BaseRuntime<InferState<RTS>> = source.runtime;
 			state = options.mode === 'fork' ? await rt.fork() : await rt.child();
 		} else {
 			state = this.system.emptyState();
@@ -79,7 +79,7 @@ export class SessionManager<RTS extends RuntimeSystem<any, any, any>> {
 	}
 }
 
-export function createSessionManager<RTS extends RuntimeSystem<any, any, any>>(
+export function createSessionManager<RTS extends BaseRuntimeSystem>(
 	opts: SessionManagerOptions<RTS>,
 ): SessionManager<RTS> {
 	return new SessionManager(opts);

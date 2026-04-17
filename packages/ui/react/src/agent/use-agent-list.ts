@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import type { Agents, FranklinRuntime } from '@franklin/agent/browser';
-import type { RuntimeBase, Session } from '@franklin/extensions';
+import type { BaseRuntime, Session } from '@franklin/extensions';
 
 import { useApp } from './franklin-context.js';
 import { useSessions } from './use-sessions.js';
 
-export type AgentsControl<RT extends RuntimeBase<any> = FranklinRuntime> = {
+export type AgentsControl<RT extends BaseRuntime<any> = FranklinRuntime> = {
 	sessions: Session<RT>[];
 	activeSessionId: string | null;
 	activeSession: Session<RT> | undefined;

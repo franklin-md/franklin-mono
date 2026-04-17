@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { SessionCollection } from '../runtime/collection.js';
 import { createSessionManager } from '../runtime/manager.js';
 import type { SessionRuntime } from '../runtime/runtime.js';
-import type { RuntimeBase } from '../../../algebra/runtime/types.js';
+import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import type { RuntimeSystem } from '../../../algebra/system/types.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 
@@ -10,7 +10,7 @@ type TestState = {
 	value: string;
 };
 
-type TestRuntime = RuntimeBase<TestState>;
+type TestRuntime = BaseRuntime<TestState>;
 type TestSystem = RuntimeSystem<TestState, Record<string, never>, TestRuntime>;
 
 function createTestSystem(empty: TestState = { value: 'root' }): TestSystem {
@@ -168,7 +168,7 @@ describe('SessionManager', () => {
 				change: string;
 			};
 		};
-		type NestedRuntime = RuntimeBase<NestedState>;
+		type NestedRuntime = BaseRuntime<NestedState>;
 		type NestedSystem = RuntimeSystem<
 			NestedState,
 			Record<string, never>,

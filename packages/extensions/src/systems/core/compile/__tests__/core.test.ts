@@ -603,38 +603,6 @@ describe('combine', () => {
 		expect(rightResult).toEqual({ aCount: 1, bCount: 1, cCount: 1 });
 	});
 
-	it('each compiler collects independently', async () => {
-		const createCounter = (
-			name: string,
-		): Compiler<{ inc(): void }, Record<string, number>> => {
-			let count = 0;
-			return {
-				api: {
-					inc() {
-						count++;
-					},
-				},
-				async build() {
-					return { [name]: count };
-				},
-			};
-		};
-
-		// Two compilers with same API shape but different collectors
-		const result = await compile(
-			combine(createCounter('first'), createCounter('second')),
-			(api) => {
-				// The merged API has a single `inc` — the second compiler's wins
-				// because of object spread order in combine
-				api.inc();
-			},
-		);
-
-		// Second compiler's inc is called (spread overwrites), first sees 0
-		expect(result.first).toBe(0);
-		expect(result.second).toBe(1);
-	});
-
 	it('combines core compiler with a custom compiler', async () => {
 		const createTagCompiler = (): Compiler<
 			{ tag(t: string): void },

@@ -1,4 +1,6 @@
-import type { RuntimeBase } from '../runtime/index.js';
+import type { BaseAPI } from '../api/index.js';
+import type { BaseRuntime } from '../runtime/index.js';
+import type { BaseState } from '../state/index.js';
 import type { RuntimeSystem } from './types.js';
 
 /**
@@ -10,9 +12,9 @@ import type { RuntimeSystem } from './types.js';
  * runtime, receiving both the live runtime and the state that seeded it.
  */
 export function withSetup<
-	S extends Record<string, unknown>,
-	API,
-	RT extends RuntimeBase<S>,
+	S extends BaseState,
+	API extends BaseAPI,
+	RT extends BaseRuntime<S>,
 >(
 	system: RuntimeSystem<S, API, RT>,
 	setup: (runtime: RT, state: S) => Promise<void>,

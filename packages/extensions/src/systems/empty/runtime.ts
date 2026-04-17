@@ -1,7 +1,7 @@
 import type { EmptyState } from './state.js';
-import type { RuntimeBase } from '../../algebra/runtime/types.js';
+import type { BaseRuntime } from '../../algebra/runtime/types.js';
 
-export type EmptyRuntime = RuntimeBase<EmptyState>;
+export type EmptyRuntime = BaseRuntime<EmptyState>;
 
 export function emptyRuntime(): EmptyRuntime {
 	return {

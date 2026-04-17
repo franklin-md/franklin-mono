@@ -1,7 +1,7 @@
 import type { Persister } from '@franklin/lib';
 import {
 	SessionCollection,
-	type RuntimeBase,
+	type BaseRuntime,
 	type Session,
 	type SessionState,
 } from '@franklin/extensions';
@@ -18,7 +18,7 @@ import {
  */
 export class PersistedSessionCollection<
 	S extends SessionState,
-	RT extends RuntimeBase<S>,
+	RT extends BaseRuntime<S>,
 > extends SessionCollection<RT> {
 	constructor(private readonly persister: Persister<S>) {
 		super();

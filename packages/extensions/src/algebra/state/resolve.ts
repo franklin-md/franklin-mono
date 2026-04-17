@@ -1,13 +1,11 @@
 import type { DeepPartial } from '@franklin/lib';
+import type { BaseState } from './types.js';
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+function isPlainObject(value: unknown): value is BaseState {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function deepMerge(
-	base: Record<string, unknown>,
-	overrides: Record<string, unknown>,
-): Record<string, unknown> {
+function deepMerge(base: BaseState, overrides: BaseState): BaseState {
 	const result = { ...base };
 	for (const key of Object.keys(overrides)) {
 		const overVal = overrides[key];
@@ -22,10 +20,10 @@ function deepMerge(
 	return result;
 }
 
-export function resolveState<S extends Record<string, unknown>>(
+export function resolveState<S extends BaseState>(
 	base: S,
 	overrides?: DeepPartial<S>,
 ): S {
 	if (!overrides) return base;
-	return deepMerge(base, overrides as Record<string, unknown>) as S;
+	return deepMerge(base, overrides as BaseState) as S;
 }
