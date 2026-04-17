@@ -8,3 +8,4 @@ export { filesystemExtension } from './filesystem/index.js';
 export { bashExtension } from './terminal/index.js';
 export { createWebExtension } from './web/index.js';
 export { spawnExtension } from './spawn/index.js';
+export { instructionsExtension } from './instructions/index.js';
