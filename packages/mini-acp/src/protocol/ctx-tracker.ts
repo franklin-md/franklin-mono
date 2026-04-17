@@ -1,4 +1,4 @@
-import type { Ctx } from '../types/context.js';
+import type { Ctx, CtxPatch } from '../types/context.js';
 import type { Message } from '../types/message.js';
 
 // ---------------------------------------------------------------------------
@@ -8,13 +8,12 @@ import type { Message } from '../types/message.js';
 /**
  * Apply a partial context update.
  *
- * `history` and `tools` are replaced wholesale (they are self-contained).
- * `config` merges by property so callers can update individual fields
- * (e.g. `{ reasoning: 'high' }`) without wiping fields they don't mention
- * (e.g. `apiKey`).
+ * `history` and `config` merge by property: any subfield present in the
+ * patch replaces the current value; omitted subfields are preserved.
+ * `tools` replaces the list wholesale.
  */
-function applySetContext(ctx: Ctx, partial: Partial<Ctx>): void {
-	if (partial.history) ctx.history = partial.history;
+function applySetContext(ctx: Ctx, partial: CtxPatch): void {
+	if (partial.history) ctx.history = { ...ctx.history, ...partial.history };
 	if (partial.tools) ctx.tools = partial.tools;
 	if (partial.config) ctx.config = { ...ctx.config, ...partial.config };
 }
@@ -41,11 +40,12 @@ export class CtxTracker {
 	private ctx: Ctx = {
 		history: { systemPrompt: '', messages: [] },
 		tools: [],
+		config: {},
 	};
 
 	onChange?: () => void;
 
-	apply(partial: Partial<Ctx>): void {
+	apply(partial: CtxPatch): void {
 		applySetContext(this.ctx, partial);
 		this.onChange?.();
 	}

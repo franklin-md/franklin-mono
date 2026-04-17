@@ -39,7 +39,7 @@ export type History = {
 export type Ctx = {
 	history: History;
 	tools: ToolDefinition[];
-	config?: LLMConfig;
+	config: LLMConfig;
 };
 
 // ---------------------------------------------------------------------------

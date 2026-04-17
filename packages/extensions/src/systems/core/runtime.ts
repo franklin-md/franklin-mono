@@ -28,7 +28,6 @@ export function createCoreRuntime(
 
 	function snapshotLLMConfig(): CoreState['core']['llmConfig'] {
 		const cfg = tracker.get().config;
-		if (!cfg) return {};
 		return {
 			model: cfg.model,
 			provider: cfg.provider,

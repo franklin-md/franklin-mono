@@ -99,9 +99,15 @@ The `Ctx` type represents the full state needed to drive an agent turn:
 Ctx {
   history: History
   tools:   ToolDefinition[]
-  config?: LLMConfig
+  config:  LLMConfig
 }
 ```
+
+`Ctx` is always fully present on the agent. Immediately after `initialize`,
+`history.messages` and `tools` are empty and `config` is an empty object;
+`setContext` fills them in. Partial updates are expressed at the `setContext`
+boundary via `CtxPatch` (below), not by making top-level fields optional on
+`Ctx` itself.
 
 **`History`** — the conversation state:
 ```
@@ -120,7 +126,9 @@ ToolDefinition {
 }
 ```
 
-**`LLMConfig`** — optional model configuration:
+**`LLMConfig`** — model configuration. Individual fields are optional so that
+`setContext` can fill them in incrementally; a turn will fail at prompt time
+if required fields (provider, model, apiKey) are still unset.
 ```
 LLMConfig {
   model?:     string         // Model identifier
@@ -130,17 +138,22 @@ LLMConfig {
 }
 ```
 
-`setContext` applies a partial update to the agent's current `Ctx`. Top-level
-fields not included in the payload are left unchanged. When a field is
-included, update behavior depends on that field:
+`setContext` accepts a `CtxPatch` and applies it to the agent's current `Ctx`.
+Top-level fields omitted from the patch are left unchanged. When a top-level
+field is present, update behavior depends on that field:
 
-- `history` replaces the current history wholesale.
+- `history` merges by property. Each subfield (`systemPrompt`, `messages`)
+  replaces the current value only when present in the patch; omitted subfields
+  are preserved. `messages` is still replaced as a whole array when provided —
+  there are no append/splice semantics at this boundary.
 - `tools` replaces the current tool list wholesale.
-- `config` merges by property. Provided properties overwrite existing values;
-  omitted properties are preserved.
+- `config` merges by property. Each subfield replaces the current value only
+  when present in the patch; omitted subfields are preserved.
 
-For example, sending `{ config: { reasoning: 'high' } }` updates only
-`reasoning` and preserves the current `model`, `provider`, and `apiKey`.
+For example, sending `{ history: { systemPrompt: '...' } }` updates only the
+system prompt and preserves the current `messages`. Similarly,
+`{ config: { reasoning: 'high' } }` updates only `reasoning` and preserves
+the current `model`, `provider`, and `apiKey`.
 
 
 ### Phase 3: Prompt
