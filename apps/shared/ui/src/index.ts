@@ -65,6 +65,10 @@ export { textareaClassName } from './primitives/textarea.js';
 
 // components (derived, application-specific)
 export { AutoGrowTextarea } from './components/auto-grow-textarea.js';
+export {
+	CopyRuntimeStateButton,
+	type CopyRuntimeStateButtonProps,
+} from './components/copy-runtime-state-button.js';
 export { DeleteButton } from './components/delete-button.js';
 export { Favicon, type FaviconProps } from './components/favicon.js';
 export { FileBadge, type FileBadgeProps } from './components/file-badge.js';

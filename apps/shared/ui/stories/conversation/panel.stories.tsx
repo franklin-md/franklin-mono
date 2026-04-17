@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import { emptyConversation, multiTurn } from '../fixtures.js';
 import { MockAgentDecorator } from '../mock-agent.js';
+import { CopyRuntimeStateButton } from '../../src/components/copy-runtime-state-button.js';
 import { ConversationPanel } from '../../src/conversation/panel.js';
 
 const meta = {
@@ -33,4 +34,10 @@ export const Empty: Story = {
 			</MockAgentDecorator>
 		),
 	],
+};
+
+export const WithControlAccessory: Story = {
+	args: {
+		additionalControls: [<CopyRuntimeStateButton key="debug" />],
+	},
 };

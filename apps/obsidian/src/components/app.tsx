@@ -2,7 +2,6 @@ import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
 import { AgentProvider, AppContext } from '@franklin/react';
 
 import { ConversationPanel } from './conversation.js';
-import { CopyStateButton } from './copy-state-button.js';
 
 export function ObsidianApp({
 	app,
@@ -24,7 +23,6 @@ export function ObsidianApp({
 								Obsidian agent window
 							</p>
 						</div>
-						{process.env.NODE_ENV === 'development' && <CopyStateButton />}
 					</header>
 					<ConversationPanel />
 				</div>

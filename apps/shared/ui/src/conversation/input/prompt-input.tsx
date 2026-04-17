@@ -1,3 +1,5 @@
+import { Children, type ReactNode } from 'react';
+
 import { CornerDownLeft, Square } from 'lucide-react';
 
 import {
@@ -13,7 +15,11 @@ import { TextareaGroup } from '../../components/textarea-group.js';
 import { ModelSelector } from './model-selector/selector.js';
 import { ThinkingToggle } from './thinking-toggle.js';
 
-export function PromptInput() {
+export interface PromptInputProps {
+	additionalControls?: ReactNode[];
+}
+
+export function PromptInput({ additionalControls }: PromptInputProps) {
 	return (
 		<div className="px-4 pb-4 pt-2">
 			<TextareaGroup
@@ -33,6 +39,7 @@ export function PromptInput() {
 							<div className="flex items-center gap-2">
 								<ModelSelector />
 								<ThinkingToggle />
+								{Children.toArray(additionalControls)}
 							</div>
 							<PromptAgentControl
 								send={
