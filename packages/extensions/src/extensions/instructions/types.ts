@@ -9,24 +9,12 @@ import type { AbsolutePath, Filesystem } from '@franklin/lib';
 // for the conceptual model and the collect/resolve split.
 // ---------------------------------------------------------------------------
 
-export type InstructionScope = 'global' | 'project' | 'directory';
-
-export interface InstructionFile {
-	readonly path: AbsolutePath;
-	readonly content: string;
-	/** The spec that produced this file (e.g. `"agents.md"`, `"claude.md"`). */
-	readonly spec: string;
-	readonly scope: InstructionScope;
-	/** Distance from `cwd` when discovered: 0 = cwd, 1 = parent, ... */
-	readonly depth: number;
-}
-
 export interface InstructionSpec {
 	readonly name: string;
-	collect(fs: Filesystem, cwd: AbsolutePath): Promise<InstructionFile[]>;
+	collect(fs: Filesystem, cwd: AbsolutePath): Promise<AbsolutePath[]>;
 }
 
 export interface InstructionsManager {
 	readonly specs: readonly InstructionSpec[];
-	resolve(files: InstructionFile[]): string;
+	resolve(files: AbsolutePath[]): string;
 }

@@ -124,7 +124,7 @@ It is for this reason that **multiple instruction files even for the same standa
   - May consider a **classification of instructions** by personal, project, and global.
 - How the content of these paths gets converted to the final prompt
   - **Combine All** with flexibility in how each individual prompt is rendered.
-	  - Instruct later concatenations to be treated as overrides of earlier.
+    - Instruct later concatenations to be treated as overrides of earlier.
   - **Highest Priority wins**
 - Any additional processing on that prompt:
   - **Optional Truncation**
@@ -158,17 +158,18 @@ During a session, the contents of the resolved instructions may change. The syst
   - HTML Block comments are stripped (so are used as "maintainer notes")
 
 ##### Codex's Agents.md notes
+
 - **Never Refreshes**
 - Discovery:
-	- Global:
-		- Searches `~/.codex` unless you provide a different home (`CODEX_HOME`)
-		- First checks for `AGENTS.override.md` then `AGENTS.md`, taking the first non-empty. Only file is taken from this level
-	- Project:
-		- Walk-Down from Project root to CWD (defaulting to project root = cwd if no project dir can be found (i.e. no git repo))
-		- Checks for  `AGENTS.override.md` then `AGENTS.md`, only taking 1 per directory.
+  - Global:
+    - Searches `~/.codex` unless you provide a different home (`CODEX_HOME`)
+    - First checks for `AGENTS.override.md` then `AGENTS.md`, taking the first non-empty. Only file is taken from this level
+  - Project:
+    - Walk-Down from Project root to CWD (defaulting to project root = cwd if no project dir can be found (i.e. no git repo))
+    - Checks for `AGENTS.override.md` then `AGENTS.md`, only taking 1 per directory.
 - Merge:
-	- "Codex concatenates files from the root down, joining them with blank lines. Files closer to your current directory override earlier guidance because they appear later in the combined prompt."
-	- Truncatation mechanism, at 32kb by default
+  - "Codex concatenates files from the root down, joining them with blank lines. Files closer to your current directory override earlier guidance because they appear later in the combined prompt."
+  - Truncatation mechanism, at 32kb by default
 
 ### Agent Orchestration
 
