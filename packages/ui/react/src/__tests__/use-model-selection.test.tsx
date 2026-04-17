@@ -29,7 +29,7 @@ function makeMockRuntime(opts?: { provider?: string; model?: string }): {
 				llmConfig: { provider, model },
 			},
 		})),
-		setContext: vi.fn(async () => {
+		setLLMConfig: vi.fn(async () => {
 			for (const l of listeners) l();
 		}),
 		subscribe: vi.fn((listener: Listener) => {
@@ -127,7 +127,7 @@ describe('useModelSelection – initialization', () => {
 });
 
 describe('useModelSelection – setModel', () => {
-	it('updates optimistically and calls setContext', async () => {
+	it('updates optimistically and calls setLLMConfig', async () => {
 		const { runtime } = makeMockRuntime({
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
@@ -148,14 +148,12 @@ describe('useModelSelection – setModel', () => {
 		expect(result.current.provider).toBe('openai-codex');
 		expect(result.current.model).toBe('gpt-5.4');
 
-		// setLLMConfig is async (reads state then calls setContext)
+		// setLLMConfig is async; it delegates to runtime.setLLMConfig.
 		await waitFor(() => {
-			expect(runtime.setContext).toHaveBeenCalledWith(
+			expect(runtime.setLLMConfig).toHaveBeenCalledWith(
 				expect.objectContaining({
-					config: expect.objectContaining({
-						provider: 'openai-codex',
-						model: 'gpt-5.4',
-					}),
+					provider: 'openai-codex',
+					model: 'gpt-5.4',
 				}),
 			);
 		});

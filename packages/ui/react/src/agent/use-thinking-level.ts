@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 import type { ThinkingLevel } from '@franklin/mini-acp';
-import { getLLMConfig, setLLMConfig } from '@franklin/agent/browser';
+import { getLLMConfig } from '@franklin/agent/browser';
 
 import { useRuntimeSync } from './use-runtime-sync.js';
 
@@ -44,7 +44,7 @@ export function useThinkingLevel(): UseThinkingLevel {
 			return config.reasoning ?? 'medium';
 		},
 		apply: async (runtime, level) => {
-			await setLLMConfig(runtime, { reasoning: level });
+			await runtime.setLLMConfig({ reasoning: level });
 		},
 		initial: 'medium',
 	});

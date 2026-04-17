@@ -78,7 +78,7 @@ describe('createCoreSystem', () => {
 		);
 
 		expect(runtime.prompt).toBeDefined();
-		expect(runtime.setContext).toBeDefined();
+		expect(runtime.setLLMConfig).toBeDefined();
 		expect(runtime.cancel).toBeDefined();
 
 		await runtime.dispose();

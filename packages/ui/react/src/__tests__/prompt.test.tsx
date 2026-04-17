@@ -42,7 +42,6 @@ function makeMockRuntime(): {
 				llmConfig: {},
 			},
 		})),
-		setContext: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
 		prompt: promptSpy,
 		cancel: cancelSpy,
@@ -74,7 +73,6 @@ function makePendingRuntime(): {
 				llmConfig: {},
 			},
 		})),
-		setContext: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
 		// eslint-disable-next-line require-yield -- intentionally hangs to keep sending=true
 		prompt: vi.fn(async function* () {
@@ -112,7 +110,6 @@ function makeHangingRuntime(): {
 				llmConfig: {},
 			},
 		})),
-		setContext: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
 		prompt: promptSpy,
 	} as unknown as FranklinRuntime;
