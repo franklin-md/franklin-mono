@@ -4,7 +4,7 @@ import type {
 	StreamObserverEvent,
 	StreamObserverHandler,
 } from '../../api/events.js';
-import type { MethodMiddleware } from '../../api/middleware/types.js';
+import type { MethodMiddleware } from '@franklin/lib/middleware';
 
 function notifyObservers(
 	observers: ReadonlyMap<

@@ -1,6 +1,6 @@
 import type { MiniACPClient } from '@franklin/mini-acp';
 import type { CoreEvent, CoreEventHandler } from '../../api/events.js';
-import type { MethodMiddleware } from '../../api/middleware/types.js';
+import type { MethodMiddleware } from '@franklin/lib/middleware';
 
 /**
  * Build a MethodMiddleware for Promise-returning methods (initialize, setContext, cancel).

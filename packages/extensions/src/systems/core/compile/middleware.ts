@@ -8,7 +8,7 @@ import type {
 } from '../api/events.js';
 import type { ExtensionToolDefinition } from '../api/tool.js';
 import type { FullMiddleware } from '../api/middleware/types.js';
-import { passThrough } from '../api/middleware/pass-through.js';
+import { passThrough } from '@franklin/lib/middleware';
 import {
 	buildAsyncWaterfall,
 	buildPromptWaterfall,

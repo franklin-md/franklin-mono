@@ -22,11 +22,7 @@ export type {
 } from './tools/index.js';
 export { serializeTool, toToolInputSchema } from './tools/index.js';
 export type {
-	MethodMiddleware,
-	Middleware,
 	ClientMiddleware,
 	ServerMiddleware,
 	FullMiddleware,
 } from './middleware/index.js';
-export { compose, composeMethod, passThrough } from './middleware/index.js';
-export { apply } from './middleware/index.js';
