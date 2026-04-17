@@ -1,7 +1,7 @@
-import type { Simplify } from '@franklin/lib';
+import type { AssertNoOverlap, Simplify } from '@franklin/lib';
 import type { BaseRuntime } from './types.js';
 
-type RuntimeExtras<S, RT extends BaseRuntime<S>> = Omit<
+export type RuntimeExtras<S, RT extends BaseRuntime<S>> = Omit<
 	RT,
 	keyof BaseRuntime<S>
 >;
@@ -10,7 +10,7 @@ type RuntimeExtras<S, RT extends BaseRuntime<S>> = Omit<
  * Runtime produced by `combineRuntimes`. Recomposes the lifecycle members
  * of `BaseRuntime<S1 & S2>` and merges the extra surface areas of both
  * runtimes. Overlap between the extras is prevented at composition sites
- * (via the API-level overlap guard on `combine()`), not in this type.
+ * (via the guards on `combine()` / `combineRuntimes()`), not in this type.
  */
 export type CombinedRuntime<
 	S1,
@@ -26,7 +26,10 @@ export function combineRuntimes<
 	RT1 extends BaseRuntime<S1>,
 	S2,
 	RT2 extends BaseRuntime<S2>,
->(rt1: RT1, rt2: RT2): CombinedRuntime<S1, S2, RT1, RT2> {
+>(
+	rt1: RT1,
+	rt2: RT2 & AssertNoOverlap<RuntimeExtras<S1, RT1>, RuntimeExtras<S2, RT2>>,
+): CombinedRuntime<S1, S2, RT1, RT2> {
 	return {
 		...rt1,
 		...rt2,

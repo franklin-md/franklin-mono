@@ -1,5 +1,6 @@
 import { combine } from '../combine.js';
 import { systems } from '../builder.js';
+import { combineRuntimes } from '../../runtime/combine.js';
 import type { BaseAPI } from '../../api/types.js';
 import type { BaseRuntime } from '../../runtime/types.js';
 import type { BaseState } from '../../state/types.js';
@@ -8,7 +9,8 @@ import type { CombinableSystem, RuntimeSystem } from '../types.js';
 type StubSystem<
 	S extends BaseState,
 	API extends BaseAPI = Record<never, never>,
-> = RuntimeSystem<S, API, BaseRuntime<S>>;
+	RT extends BaseRuntime<S> = BaseRuntime<S>,
+> = RuntimeSystem<S, API, RT>;
 
 type _ExpectNever<T extends never> = T;
 
@@ -89,3 +91,64 @@ const _invalidApiCombine = combine(
 const _invalidApiBuilder =
 	// @ts-expect-error overlapping API keys should be rejected in SystemBuilder.add()
 	systems(_sysWithApiA).add(_sysWithApiC);
+
+// ---------------------------------------------------------------------------
+// Runtime overlap
+// ---------------------------------------------------------------------------
+
+type RuntimeA = BaseRuntime<{ runtimeA: { value: string } }> & {
+	run(): string;
+};
+type RuntimeB = BaseRuntime<{ runtimeB: { value: number } }> & {
+	inspect(): number;
+};
+type RuntimeC = BaseRuntime<{ runtimeC: { value: boolean } }> & {
+	run(): number;
+};
+
+const _sysWithRuntimeA = null as unknown as StubSystem<
+	{ runtimeA: { value: string } },
+	Record<never, never>,
+	RuntimeA
+>;
+const _sysWithRuntimeB = null as unknown as StubSystem<
+	{ runtimeB: { value: number } },
+	Record<never, never>,
+	RuntimeB
+>;
+const _sysWithRuntimeC = null as unknown as StubSystem<
+	{ runtimeC: { value: boolean } },
+	Record<never, never>,
+	RuntimeC
+>;
+
+const _combinedDisjointRuntime = combine(_sysWithRuntimeA, _sysWithRuntimeB);
+void _combinedDisjointRuntime;
+
+type _CombinableRejectsRuntimeOverlap = _ExpectNever<
+	CombinableSystem<typeof _sysWithRuntimeA, typeof _sysWithRuntimeC>
+>;
+
+const _invalidRuntimeCombine = combine(
+	_sysWithRuntimeA,
+	// @ts-expect-error overlapping runtime keys should be rejected at combine() call sites
+	_sysWithRuntimeC,
+);
+
+const _invalidRuntimeBuilder =
+	// @ts-expect-error overlapping runtime keys should be rejected in SystemBuilder.add()
+	systems(_sysWithRuntimeA).add(_sysWithRuntimeC);
+
+const _runtimeA = null as unknown as RuntimeA;
+const _runtimeB = null as unknown as RuntimeB;
+const _runtimeC = null as unknown as RuntimeC;
+
+const _combinedRuntime = combineRuntimes(_runtimeA, _runtimeB);
+void _combinedRuntime;
+
+const _invalidCombinedRuntime = combineRuntimes(
+	_runtimeA,
+	// @ts-expect-error overlapping runtime keys should be rejected in combineRuntimes()
+	_runtimeC,
+);
+void _invalidCombinedRuntime;

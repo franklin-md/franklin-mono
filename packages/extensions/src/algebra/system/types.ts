@@ -60,12 +60,18 @@ export type InferAPI<T> = Simplify<InferSystem<T>['api']>;
 
 export type InferRuntime<T> = InferSystem<T>['runtime'];
 
+type RuntimeExtrasOf<Sys extends BaseRuntimeSystem> = Omit<
+	InferRuntime<Sys>,
+	keyof BaseRuntime<InferState<Sys>>
+>;
+
 // ---------------------------------------------------------------------------
 // Type-level combine — mirrors the value-level `combine` function.
 //
-// Overlap between state or API keys is rejected via `CombinableSystem` on
-// the second operand of `combine()` / `SystemBuilder.add()`, so this type
-// is the plain composition without an embedded guard.
+// Overlap between state, API, or runtime-extra keys is rejected via
+// `CombinableSystem` on the second operand of `combine()` /
+// `SystemBuilder.add()`, so this type is the plain composition without an
+// embedded guard.
 // ---------------------------------------------------------------------------
 
 export type CombineSystems<
@@ -85,13 +91,15 @@ export type CombineSystems<
 /**
  * Type-level predicate asserting that `B` can legally be combined with `A`.
  *
- * Reduces to `unknown` when their top-level state and API keys are disjoint
- * (so `Sys2 & CombinableSystem<Sys1, Sys2>` is just `Sys2`) and to `never`
- * when they overlap (collapsing the intersection). Thread it onto the
- * second operand of a combine-style op to put the error at the call site.
+ * Reduces to `unknown` when their top-level state keys, API keys, and
+ * runtime-only keys are disjoint (so `Sys2 & CombinableSystem<Sys1, Sys2>`
+ * is just `Sys2`) and to `never` when they overlap (collapsing the
+ * intersection). Thread it onto the second operand of a combine-style op to
+ * put the error at the call site.
  */
 export type CombinableSystem<
 	A extends BaseRuntimeSystem,
 	B extends BaseRuntimeSystem,
 > = AssertNoOverlap<InferState<A>, InferState<B>> &
-	AssertNoOverlap<InferAPI<A>, InferAPI<B>>;
+	AssertNoOverlap<InferAPI<A>, InferAPI<B>> &
+	AssertNoOverlap<RuntimeExtrasOf<A>, RuntimeExtrasOf<B>>;
