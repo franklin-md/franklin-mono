@@ -21,4 +21,4 @@ export type {
 export { FranklinApp } from './app/index.js';
 export type { Agents } from './app/agents.js';
 
-export { type Platform } from './platform.js';
+export { type Platform, type OperatingSystem } from './platform.js';

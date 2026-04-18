@@ -45,7 +45,10 @@ export const schema = namespace({
 		getOAuthProviders: method(),
 		getApiKeyProviders: method(),
 	}),
-	filesystem: filesystem,
-	getHome: method(),
-	openExternal: method(),
+	os: namespace({
+		terminal: terminal,
+		filesystem: filesystem,
+		getHome: method(),
+		openExternal: method(),
+	}),
 } satisfies NamespaceShape<Platform>);

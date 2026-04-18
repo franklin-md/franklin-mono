@@ -21,7 +21,7 @@ export function useOAuthFlow(
 
 		const callbacks: OAuthLoginCallbacks = {
 			onAuth: (info) => {
-				void app.platform.openExternal(info.url);
+				void app.platform.os.openExternal(info.url);
 				setFlowState({ phase: 'waiting' });
 			},
 			onProgress: (message) => {

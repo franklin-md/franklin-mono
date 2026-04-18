@@ -152,20 +152,25 @@ describe('bindMain', () => {
 			{
 				spawn: async () => createTransportSpy().transport,
 				environment: async () => createEnvironment('b'),
-				filesystem: createFilesystem('a'),
+				os: {
+					terminal: {
+						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
+					},
+					filesystem: createFilesystem('a'),
+					getHome: async () => '/home/test' as AbsolutePath,
+					openExternal: async () => {},
+				},
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
 				createFlow,
-				getHome: async () => '/home/test' as AbsolutePath,
-				openExternal: async () => {},
 			},
 			createWebContents(1),
 		);
 
 		// Cursor-based channels: prefix:namespace:namespace
-		const channel = 'franklin:filesystem:exists';
+		const channel = 'franklin:os:filesystem:exists';
 		await expect(invoke(channel, '/test')).resolves.toBe(true);
 
 		await handle.dispose();
@@ -213,14 +218,19 @@ describe('bindMain', () => {
 			{
 				spawn: async () => createTransportSpy().transport,
 				environment: async () => createEnvironment('b'),
-				filesystem: createFilesystem('a'),
+				os: {
+					terminal: {
+						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
+					},
+					filesystem: createFilesystem('a'),
+					getHome: async () => '/home/test' as AbsolutePath,
+					openExternal: async () => {},
+				},
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
 				createFlow,
-				getHome: async () => '/home/test' as AbsolutePath,
-				openExternal: async () => {},
 			},
 			createWebContents(1),
 		);
@@ -314,14 +324,19 @@ describe('bindMain', () => {
 						{ dispose: noop },
 					);
 				},
-				filesystem: createFilesystem('a'),
+				os: {
+					terminal: {
+						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
+					},
+					filesystem: createFilesystem('a'),
+					getHome: async () => '/home/test' as AbsolutePath,
+					openExternal: async () => {},
+				},
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
 				createFlow,
-				getHome: async () => '/home/test' as AbsolutePath,
-				openExternal: async () => {},
 			},
 			createWebContents(1),
 		);
@@ -493,14 +508,19 @@ describe('bindMain', () => {
 			{
 				spawn: async () => transportSpy.transport,
 				environment: async () => createEnvironment('b'),
-				filesystem: createFilesystem('a'),
+				os: {
+					terminal: {
+						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
+					},
+					filesystem: createFilesystem('a'),
+					getHome: async () => '/home/test' as AbsolutePath,
+					openExternal: async () => {},
+				},
 				ai: {
 					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
 				createFlow,
-				getHome: async () => '/home/test' as AbsolutePath,
-				openExternal: async () => {},
 			},
 			createWebContents(1),
 		);

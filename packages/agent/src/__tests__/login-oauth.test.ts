@@ -51,14 +51,23 @@ function createPlatform(
 		environment: vi.fn(async () => {
 			throw new Error('not implemented');
 		}),
-		filesystem,
+		os: {
+			terminal: {
+				exec: vi.fn(async () => ({
+					exit_code: 0,
+					stdout: '',
+					stderr: '',
+				})),
+			},
+			filesystem,
+			getHome: vi.fn(async () => '/home/test' as AbsolutePath),
+			openExternal: vi.fn(async () => {}),
+		},
 		ai: {
 			getOAuthProviders: async () => [],
 			getApiKeyProviders: async () => [],
 		},
 		createFlow,
-		getHome: vi.fn(async () => '/home/test' as AbsolutePath),
-		openExternal: vi.fn(async () => {}),
 	};
 }
 

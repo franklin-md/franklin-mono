@@ -1,4 +1,4 @@
-import type { AbsolutePath, Filesystem } from '@franklin/lib';
+import type { AbsolutePath, Filesystem, Terminal } from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { EnvironmentFactory } from '@franklin/extensions';
 import type { OAuthFlow } from './auth/oauth-flow.js';
@@ -11,6 +11,13 @@ type ProviderMeta = {
 
 type Disposable = { dispose(): Promise<void> };
 
+export interface OperatingSystem {
+	terminal: Terminal;
+	filesystem: Filesystem;
+	getHome(): Promise<AbsolutePath>;
+	openExternal(url: string): Promise<void>;
+}
+
 export interface Platform {
 	spawn: () => Promise<ClientProtocol & Disposable>;
 	environment: EnvironmentFactory;
@@ -22,10 +29,7 @@ export interface Platform {
 	};
 
 	createFlow(provider: string): Promise<OAuthFlow>;
-	filesystem: Filesystem;
-	getHome(): Promise<AbsolutePath>;
-	// TODO: Group filesystem, openExternal, and similar host APIs under `os`.
-	openExternal(url: string): Promise<void>;
+	os: OperatingSystem;
 
 	// TODO: Sandbox
 }

@@ -67,16 +67,16 @@ describe('bindRenderer', () => {
 
 	it('invokes methods at the correct channels', async () => {
 		const { ipc, handlers } = createMockIpc();
-		handlers.set('filesystem:exists', () => true);
+		handlers.set('os:filesystem:exists', () => true);
 
 		const { bindRenderer } = await import('../bind/index.js');
 		const { schema } = await import('../../../shared/schema.js');
 
 		const platform = bindRenderer(schema, ipc) as {
-			filesystem: { exists: (path: string) => Promise<boolean> };
+			os: { filesystem: { exists: (path: string) => Promise<boolean> } };
 		};
 
-		await expect(platform.filesystem.exists('/test')).resolves.toBe(true);
+		await expect(platform.os.filesystem.exists('/test')).resolves.toBe(true);
 	});
 
 	it('subscribes to on descriptors over scoped IPC channels', async () => {
