@@ -32,8 +32,8 @@ export function useModelSelection(): UseModelSelection {
 	settingsRef.current = settings;
 
 	const initial = {
-		provider: defaults.provider ?? '',
-		model: defaults.model ?? '',
+		provider: defaults.provider,
+		model: defaults.model,
 	};
 
 	const { value, set } = useRuntimeSync<{
