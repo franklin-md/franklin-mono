@@ -10,12 +10,18 @@ export type {
 export {
 	createFolderScopedFilesystem,
 	createFilteredFilesystem,
+	createObservableFilesystem,
 	FILESYSTEM_ALLOW_ALL,
 	FILESYSTEM_DEFAULT_PERMISSIONS,
 	FILESYSTEM_DENY_ALL,
 	MemoryFilesystem,
 } from './filesystem/index.js';
-export type { FilesystemPermissions } from './filesystem/index.js';
+export type {
+	FilesystemObservables,
+	FilesystemPermissions,
+	ObservableFilesystem,
+	WriteListener,
+} from './filesystem/index.js';
 export type {
 	Codec,
 	DecodeIssue,
