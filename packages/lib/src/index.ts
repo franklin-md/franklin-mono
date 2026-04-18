@@ -13,11 +13,31 @@ export {
 	FILESYSTEM_ALLOW_ALL,
 	FILESYSTEM_DEFAULT_PERMISSIONS,
 	FILESYSTEM_DENY_ALL,
+	MemoryFilesystem,
 } from './filesystem/index.js';
 export type { FilesystemPermissions } from './filesystem/index.js';
-export type { Persister } from './persistence/persister.js';
-export { createFilePersistence } from './persistence/file-persister.js';
-export { DebouncedPersister } from './persistence/debounced-persister.js';
+export type {
+	Codec,
+	DecodeIssue,
+	DecodeResult,
+} from './persistence/codec/types.js';
+export { rawCodec } from './persistence/codec/raw.js';
+export { zodCodec } from './persistence/codec/zod.js';
+export { versioned } from './persistence/codec/versioned.js';
+export type { Issue } from './persistence/issue/types.js';
+export { hydrateFailedIssue } from './persistence/issue/factory.js';
+export type { RestoreResult } from './persistence/types.js';
+export type {
+	SingleFilePersister,
+	SingleLoadResult,
+} from './persistence/single/types.js';
+export { createSingleFilePersister } from './persistence/single/create.js';
+export type {
+	MapFilePersister,
+	MapLoadResult,
+} from './persistence/map/types.js';
+export { createMapFilePersister } from './persistence/map/create.js';
+export { DebouncedPersister } from './persistence/map/debounced.js';
 export { Debouncer } from './utils/debouncer.js';
 export { createObserver } from './utils/observer.js';
 export type { Observer } from './utils/observer.js';

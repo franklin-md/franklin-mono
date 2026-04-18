@@ -7,3 +7,4 @@ export {
 	FILESYSTEM_DENY_ALL,
 } from './filtered.js';
 export type { FilesystemPermissions } from './filtered.js';
+export { MemoryFilesystem } from './memory.js';

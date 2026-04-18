@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import { joinAbsolute } from '@franklin/lib';
-import type { AppSettings } from '../settings/types.js';
+import type { AppSettings } from '../settings/schema.js';
 import {
 	createSettings,
 	DEFAULT_SETTINGS_FILE,
@@ -18,8 +18,9 @@ const SETTINGS_PATH = joinAbsolute(TEST_APP_DIR, DEFAULT_SETTINGS_FILE);
 function mockFilesystem(stored?: AppSettings): Filesystem {
 	return {
 		readFile: vi.fn(async () => {
-			if (!stored) throw new Error('ENOENT');
-			return new TextEncoder().encode(JSON.stringify(stored));
+			if (stored === undefined) throw new Error('ENOENT');
+			const envelope = { version: 1, data: stored };
+			return new TextEncoder().encode(JSON.stringify(envelope));
 		}),
 		writeFile: vi.fn(async () => {}),
 		resolve: vi.fn(
@@ -29,7 +30,7 @@ function mockFilesystem(stored?: AppSettings): Filesystem {
 		access: vi.fn(),
 		stat: vi.fn(),
 		readdir: vi.fn(),
-		exists: vi.fn(),
+		exists: vi.fn(async () => stored !== undefined),
 		glob: vi.fn(),
 		deleteFile: vi.fn(),
 	} as unknown as Filesystem;
@@ -53,7 +54,11 @@ describe('createSettings', () => {
 describe('settings.restore', () => {
 	it('hydrates the store from disk', async () => {
 		const stored: AppSettings = {
-			defaultLLMConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
+			defaultLLMConfig: {
+				provider: 'anthropic',
+				model: 'claude-sonnet-4-5',
+				reasoning: 'high',
+			},
 		};
 		const fs = mockFilesystem(stored);
 		const store = createSettings(fs, TEST_APP_DIR);
@@ -63,6 +68,26 @@ describe('settings.restore', () => {
 		expect(store.get()).toEqual(stored);
 		expect(fs.readFile).toHaveBeenCalledWith(SETTINGS_PATH);
 		expect(fs.writeFile).not.toHaveBeenCalled();
+	});
+
+	it('partial disk data: missing fields filled from schema defaults', async () => {
+		const fs = mockFilesystem({
+			defaultLLMConfig: {
+				provider: 'anthropic',
+				model: 'claude-sonnet-4-5',
+			} as AppSettings['defaultLLMConfig'],
+		});
+		const store = createSettings(fs, TEST_APP_DIR);
+
+		await store.restore();
+
+		expect(store.get()).toEqual({
+			defaultLLMConfig: {
+				provider: 'anthropic',
+				model: 'claude-sonnet-4-5',
+				reasoning: 'medium',
+			},
+		});
 	});
 
 	it('keeps default state when no file exists', async () => {
@@ -94,7 +119,11 @@ describe('settings persistence', () => {
 		const store = createSettings(fs, TEST_APP_DIR);
 
 		store.set(() => ({
-			defaultLLMConfig: { provider: 'openai', model: 'gpt-4o' },
+			defaultLLMConfig: {
+				provider: 'openai',
+				model: 'gpt-4o',
+				reasoning: 'medium',
+			},
 		}));
 
 		// persist is triggered asynchronously via the store subscription
@@ -111,7 +140,11 @@ describe('settings persistence', () => {
 		const store = createSettings(fs, TEST_APP_DIR);
 
 		store.set(() => ({
-			defaultLLMConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
+			defaultLLMConfig: {
+				provider: 'anthropic',
+				model: 'claude-sonnet-4-5',
+				reasoning: 'medium',
+			},
 		}));
 		vi.mocked(fs.writeFile).mockClear();
 
@@ -135,13 +168,21 @@ describe('settings store reactivity', () => {
 		store.subscribe(listener);
 
 		store.set(() => ({
-			defaultLLMConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
+			defaultLLMConfig: {
+				provider: 'anthropic',
+				model: 'claude-sonnet-4-5',
+				reasoning: 'medium',
+			},
 		}));
 
 		expect(listener).toHaveBeenCalledTimes(1);
 		expect(listener).toHaveBeenCalledWith(
 			expect.objectContaining({
-				defaultLLMConfig: { provider: 'anthropic', model: 'claude-sonnet-4-5' },
+				defaultLLMConfig: {
+					provider: 'anthropic',
+					model: 'claude-sonnet-4-5',
+					reasoning: 'medium',
+				},
 			}),
 		);
 	});

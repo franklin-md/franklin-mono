@@ -3,28 +3,30 @@ import {
 	createStore,
 	type PersistedStore,
 } from '@franklin/extensions';
-import type { AbsolutePath, Filesystem } from '@franklin/lib';
-import { joinAbsolute } from '@franklin/lib';
+import type { AbsolutePath, Codec, Filesystem } from '@franklin/lib';
+import { createSingleFilePersister, joinAbsolute } from '@franklin/lib';
 
 export function createJsonStore<T extends object>(
 	filesystem: Filesystem,
 	appDir: AbsolutePath,
-	opts: { file: string; defaults: T },
+	opts: { file: string; defaults: T; codec: Codec<T> },
 ): PersistedStore<T> {
 	const path = joinAbsolute(appDir, opts.file);
-	const { defaults } = opts;
+	const { defaults, codec } = opts;
+	const persister = createSingleFilePersister<T>(filesystem, path, codec);
 
 	return createPersistedStore(createStore(defaults), {
-		async restore(): Promise<T> {
-			const data = await filesystem
-				.readFile(path)
-				.then((raw) => JSON.parse(new TextDecoder().decode(raw)) as Partial<T>)
-				.catch(() => ({}) as Partial<T>);
-
-			return { ...defaults, ...data };
+		async restore() {
+			// `value ?? defaults` only fires on unrecoverable decode failures
+			// (corrupt JSON, envelope invalid, version ahead, type error).
+			// Routine minor evolution — missing fields, unknown fields —
+			// is handled inside the codec's zod schema via .default() /
+			// non-strict objects, so those paths return a valid `value`.
+			const { value, issues } = await persister.load();
+			return { value: value ?? defaults, issues };
 		},
 		async persist(value): Promise<void> {
-			await filesystem.writeFile(path, JSON.stringify(value, null, 2));
+			await persister.save(value);
 		},
 		isEqual(left: T, right: T): boolean {
 			return JSON.stringify(left) === JSON.stringify(right);

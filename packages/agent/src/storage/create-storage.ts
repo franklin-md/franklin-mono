@@ -1,6 +1,6 @@
 import { StoreRegistry } from '@franklin/extensions';
-import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import type { SessionState } from '@franklin/extensions';
+import type { AbsolutePath, Filesystem, RestoreResult } from '@franklin/lib';
 import { createAuthStore } from './auth.js';
 import { createPersistence } from './persistence.js';
 import { createSettingsStore } from './settings.js';
@@ -21,10 +21,13 @@ export function createStorage<S extends SessionState>(
 		auth,
 		sessions,
 		stores,
-		async restore(): Promise<void> {
-			await settings.restore();
-			await auth.restore();
-			await stores.restore();
+		async restore(): Promise<RestoreResult> {
+			const [a, b, c] = await Promise.all([
+				settings.restore(),
+				auth.restore(),
+				stores.restore(),
+			]);
+			return { issues: [...a.issues, ...b.issues, ...c.issues] };
 		},
 	};
 }

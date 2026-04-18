@@ -1,30 +1,49 @@
 import type { SessionState, StoreSnapshot } from '@franklin/extensions';
 import {
-	createFilePersistence,
+	createMapFilePersister,
 	DebouncedPersister,
 	joinAbsolute,
+	rawCodec,
+	versioned,
 	type AbsolutePath,
 	type Filesystem,
 } from '@franklin/lib';
 import type { FilePersistence } from './types.js';
 
-// TODO: Would be nice to get rid of these or at least move to their store.ts files.
 /**
  * Creates file-backed persistence for sessions and stores.
  *
  * Layout:
  *   {dir}/sessions/{sessionId}.json
  *   {dir}/store/{ref}.json
+ *
+ * Session state and store values are extension-composed / arbitrary, so
+ * they use `rawCodec` (envelope only, no validation). Future work can
+ * tighten these to proper zod schemas without a disk-format migration.
  */
 export function createPersistence<S extends SessionState>(
 	dir: AbsolutePath,
 	fs: Filesystem,
 ): FilePersistence<S> {
+	const sessionCodec = versioned().version(1, rawCodec<S>()).build();
+	const storeCodec = versioned().version(1, rawCodec<StoreSnapshot>()).build();
+
 	return {
 		session: new DebouncedPersister(
-			createFilePersistence<S>(joinAbsolute(dir, 'sessions'), fs),
+			createMapFilePersister<S>(
+				fs,
+				joinAbsolute(dir, 'sessions'),
+				sessionCodec,
+			),
 			500,
 		),
-		store: createFilePersistence<StoreSnapshot>(joinAbsolute(dir, 'store'), fs),
+		store: new DebouncedPersister(
+			createMapFilePersister<StoreSnapshot>(
+				fs,
+				joinAbsolute(dir, 'store'),
+				storeCodec,
+			),
+			500,
+		),
 	};
 }

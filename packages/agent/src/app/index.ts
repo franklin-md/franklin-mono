@@ -6,7 +6,7 @@ import {
 	createSessionManager,
 } from '@franklin/extensions';
 import type { SessionManager } from '@franklin/extensions';
-import type { AbsolutePath } from '@franklin/lib';
+import type { AbsolutePath, RestoreResult } from '@franklin/lib';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { withAuth } from '../auth/with-auth.js';
 import { AuthManager } from '../auth/manager.js';
@@ -32,7 +32,7 @@ export class FranklinApp {
 		FranklinState,
 		FranklinRuntime
 	>;
-	private readonly restoreStorage: () => Promise<void>;
+	private readonly restoreStorage: () => Promise<RestoreResult>;
 
 	constructor(opts: {
 		extensions: FranklinExtension[];
@@ -73,10 +73,13 @@ export class FranklinApp {
 		);
 	}
 
-	async start(): Promise<void> {
-		await this.restoreStorage();
-		await this.collection.restore((id, state) =>
+	async start(): Promise<RestoreResult> {
+		const storageResult = await this.restoreStorage();
+		const collectionResult = await this.collection.restore((id, state) =>
 			this.manager.materialize(id, state),
 		);
+		return {
+			issues: [...storageResult.issues, ...collectionResult.issues],
+		};
 	}
 }
