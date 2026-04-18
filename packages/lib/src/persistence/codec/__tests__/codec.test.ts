@@ -27,6 +27,40 @@ describe('zodCodec', () => {
 	});
 });
 
+describe('zodCodec composes with versioned() for minor evolution', () => {
+	it('missing fields fill from schema defaults (no version bump needed)', () => {
+		const V1 = z.object({
+			theme: z.string().default('dark'),
+			font: z.string().default('Inter'),
+		});
+		const codec = versioned().version(1, zodCodec(V1)).build();
+
+		expect(codec.decode({ version: 1, data: {} })).toEqual({
+			ok: true,
+			value: { theme: 'dark', font: 'Inter' },
+		});
+		expect(codec.decode({ version: 1, data: { theme: 'light' } })).toEqual({
+			ok: true,
+			value: { theme: 'light', font: 'Inter' },
+		});
+	});
+
+	it('unknown fields drop without surfacing an issue', () => {
+		const V1 = z.object({ theme: z.string().default('dark') });
+		const codec = versioned().version(1, zodCodec(V1)).build();
+
+		expect(
+			codec.decode({
+				version: 1,
+				data: { theme: 'light', retiredFlag: true },
+			}),
+		).toEqual({
+			ok: true,
+			value: { theme: 'light' },
+		});
+	});
+});
+
 describe('rawCodec', () => {
 	const codec = rawCodec<{ foo: string }>();
 

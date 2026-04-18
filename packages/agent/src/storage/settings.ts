@@ -15,5 +15,3 @@ export function createSettingsStore(
 		codec: appSettingsCodec,
 	});
 }
-
-export { DEFAULT_APP_SETTINGS } from '../settings/schema.js';

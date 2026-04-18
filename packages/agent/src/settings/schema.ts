@@ -15,34 +15,29 @@ const ThinkingLevel = z.enum([
 	'xhigh',
 ]);
 
-const AppSettingsV1 = z
-	.object({
-		defaultLLMConfig: z
-			.object({
-				model: z.string().optional(),
-				provider: z.string().optional(),
-				reasoning: ThinkingLevel.optional(),
-			})
-			.strict(),
-	})
-	.strict();
-
-type AppSettingsV1T = z.infer<typeof AppSettingsV1>;
+// Defaults live inside the schema so minor evolution (adding an optional
+// field, dropping a retired one) stays a non-event: zod fills missing
+// fields during decode, unknown fields drop silently. Version bumps are
+// reserved for structural changes that need a real migration.
+const AppSettingsV1 = z.object({
+	defaultLLMConfig: z
+		.object({
+			provider: z.string().default('openai-codex'),
+			model: z.string().default('gpt-5.4'),
+			reasoning: ThinkingLevel.default('medium'),
+		})
+		.prefault({}),
+});
 
 // ---------------------------------------------------------------------------
 // Public surface
 // ---------------------------------------------------------------------------
 
-/** Latest version — external consumers see this type. */
-export type AppSettings = AppSettingsV1T;
+/** Latest version — external consumers see this fully-hydrated type. */
+export type AppSettings = z.infer<typeof AppSettingsV1>;
 
-export const DEFAULT_APP_SETTINGS: AppSettings = {
-	defaultLLMConfig: {
-		provider: 'openai-codex',
-		model: 'gpt-5.4',
-		reasoning: 'medium',
-	},
-};
+/** Canonical defaults, reconstructed from the schema. */
+export const DEFAULT_APP_SETTINGS: AppSettings = AppSettingsV1.parse({});
 
 export const appSettingsCodec: Codec<AppSettings> = versioned()
 	.version(1, zodCodec(AppSettingsV1))

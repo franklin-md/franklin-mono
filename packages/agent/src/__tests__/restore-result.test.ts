@@ -58,6 +58,61 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 		expect(kinds).toEqual(['corrupt-json', 'version-ahead']);
 	});
 
+	it('minor schema evolution: partial settings on disk hydrate with defaults, no issues', async () => {
+		// Simulates a user whose settings file predates a schema field addition.
+		// The stored envelope omits `reasoning`; restore should fill it from
+		// schema defaults without surfacing an issue.
+		const fs = new MemoryFilesystem();
+		fs.seed(
+			joinAbsolute(APP_DIR, DEFAULT_SETTINGS_FILE),
+			JSON.stringify({
+				version: 1,
+				data: {
+					defaultLLMConfig: {
+						provider: 'anthropic',
+						model: 'claude-sonnet-4-5',
+					},
+				},
+			}),
+		);
+		const storage = createStorage<FranklinState>(fs, APP_DIR);
+
+		const result = await storage.restore();
+		expect(result.issues).toEqual([]);
+		expect(storage.settings.get()).toEqual({
+			defaultLLMConfig: {
+				provider: 'anthropic',
+				model: 'claude-sonnet-4-5',
+				reasoning: 'medium',
+			},
+		});
+	});
+
+	it('auth entries with unknown fields load cleanly (record tolerance)', async () => {
+		const fs = new MemoryFilesystem();
+		fs.seed(
+			joinAbsolute(APP_DIR, DEFAULT_AUTH_FILE),
+			JSON.stringify({
+				version: 1,
+				data: {
+					anthropic: {
+						apiKey: { type: 'apiKey', key: 'sk-test' },
+						retiredField: 'should-be-dropped',
+					},
+				},
+			}),
+		);
+		const storage = createStorage<FranklinState>(fs, APP_DIR);
+
+		const result = await storage.restore();
+		expect(result.issues).toEqual([]);
+		expect(storage.auth.get()).toEqual({
+			anthropic: {
+				apiKey: { type: 'apiKey', key: 'sk-test' },
+			},
+		});
+	});
+
 	it('one corrupt store entry does not abort restore of other entries', async () => {
 		const fs = new MemoryFilesystem();
 		const storeDir = joinAbsolute(APP_DIR, 'store');

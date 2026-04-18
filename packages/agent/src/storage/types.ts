@@ -10,16 +10,17 @@ import type { AppSettings } from '../settings/schema.js';
 
 export type SettingsStore = PersistedStore<AppSettings>;
 export type AuthStore = PersistedStore<AuthEntries>;
+export type SessionPersistence<S extends SessionState> = MapFilePersister<S>;
 
 export interface Storage<S extends SessionState> {
 	readonly settings: SettingsStore;
 	readonly auth: AuthStore;
-	readonly sessions: MapFilePersister<S>;
+	readonly sessions: SessionPersistence<S>;
 	readonly stores: StoreRegistry;
 	restore(): Promise<RestoreResult>;
 }
 
 export interface FilePersistence<S extends SessionState> {
-	readonly session: MapFilePersister<S>;
+	readonly session: SessionPersistence<S>;
 	readonly store: MapFilePersister<StoreSnapshot>;
 }
