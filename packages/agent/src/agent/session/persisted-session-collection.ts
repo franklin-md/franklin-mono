@@ -1,10 +1,12 @@
-import type { Persister } from '@franklin/lib';
+import type { Issue, RestoreResult } from '@franklin/lib';
+import { hydrateFailedIssue } from '@franklin/lib';
 import {
 	SessionCollection,
 	type BaseRuntime,
 	type Session,
 	type SessionState,
 } from '@franklin/extensions';
+import type { SessionPersistence } from '../../storage/types.js';
 
 /**
  * PersistedSessionCollection = SessionCollection + Persistence.
@@ -20,7 +22,7 @@ export class PersistedSessionCollection<
 	S extends SessionState,
 	RT extends BaseRuntime<S>,
 > extends SessionCollection<RT> {
-	constructor(private readonly persister: Persister<S>) {
+	constructor(private readonly persister: SessionPersistence<S>) {
 		super();
 		this.subscribe((event) => {
 			if (event.action === 'add') {
@@ -35,12 +37,18 @@ export class PersistedSessionCollection<
 
 	async restore(
 		hydrate: (id: string, state: S) => Promise<Session<RT>>,
-	): Promise<void> {
-		const data = await this.persister.load();
-		for (const [id, state] of data) {
-			const session = await hydrate(id, state);
-			this.set(session.id, session.runtime);
+	): Promise<RestoreResult> {
+		const { values, issues } = await this.persister.load();
+		const runtimeIssues: Issue[] = [];
+		for (const [id, state] of values) {
+			try {
+				const session = await hydrate(id, state);
+				this.set(session.id, session.runtime);
+			} catch (err) {
+				runtimeIssues.push(hydrateFailedIssue(id, err));
+			}
 		}
+		return { issues: [...issues, ...runtimeIssues] };
 	}
 
 	private persist(sessionId: string, runtime: RT): void {

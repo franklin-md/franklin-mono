@@ -25,6 +25,7 @@ export { rawCodec } from './persistence/codec/raw.js';
 export { zodCodec } from './persistence/codec/zod.js';
 export { versioned } from './persistence/codec/versioned.js';
 export type { Issue } from './persistence/issue/types.js';
+export { hydrateFailedIssue } from './persistence/issue/factory.js';
 export type { RestoreResult } from './persistence/types.js';
 export type {
 	SingleFilePersister,

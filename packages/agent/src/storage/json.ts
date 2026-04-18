@@ -17,6 +17,11 @@ export function createJsonStore<T extends object>(
 
 	return createPersistedStore(createStore(defaults), {
 		async restore() {
+			// `value ?? defaults` only fires on unrecoverable decode failures
+			// (corrupt JSON, envelope invalid, version ahead, type error).
+			// Routine minor evolution — missing fields, unknown fields —
+			// is handled inside the codec's zod schema via .default() /
+			// non-strict objects, so those paths return a valid `value`.
 			const { value, issues } = await persister.load();
 			return { value: value ?? defaults, issues };
 		},
