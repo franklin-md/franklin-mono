@@ -1,0 +1,14 @@
+- [Location and Scope of CLAUDE.md files](https://code.claude.com/docs/en/memory#choose-where-to-put-claude-md-files)
+    - Instruction files above cwd are loaded automatically
+    - Instructions files in sub-directories load **only when a file is read from there**.
+    - [Walking algorithm](https://code.claude.com/docs/en/memory#how-claude-md-files-load):
+        - Walk up and find `CLAUDE.md` and `CLAUDE.local.md`
+        - At each level, concatenate the `CLAUDE.local.md` below the `CLAUDE.md`
+    - [Claude Rules](https://code.claude.com/docs/en/memory#organize-rules-with-claude/rules/)
+        - [ ] A separate walking mechanism (front matter defines conditional activation)
+- System Prompt Construction:
+    - "All discovered files are concatenated into context rather than overriding each other."
+    - `@ Syntax`:
+        - Expanded and loaded in when the CLAUDE.md is.
+        - This is the suggested way to pull in AGENTS.md
+    - HTML Block comments are stripped (so are used as "maintainer notes")

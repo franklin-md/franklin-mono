@@ -1,26 +1,22 @@
 - [ ] TODO:
-  - [ ] Turn this into a folder which is an Obsidian Vault
-  - [ ] Set up publishing
-    - [ ] Move franklin.md to Square Space
-    - [ ] Setup docs.franklin.md as this vault
-  - [ ] Add some basic plugins to the vault:
-    - [ ] Outliner
-    - [ ] Dark Theme
-  - [ ] Atomize notes etc
-  - [ ] Put reference to franklin.md in WELCOME.md
-  - [ ] Add a couple of
+    - [ ] Set up publishing
+        - [ ] Move franklin.md to Square Space
+        - [ ] Setup docs.franklin.md as this vault
+    - [ ] Atomize notes etc
+    - [ ] Put reference to franklin.md in WELCOME.md
+    - [ ] Add a couple of
 
 # Agent System Design
 
 This document captures design decisions for:
 
 - Single Harness Behaviour:
-  - Tool Systems:
-    - Agent Tools (FRA-129)
-  - Prompt Systems
-    - Agents.md
+    - Tool Systems:
+        - Agent Tools (FRA-129)
+    - Prompt Systems:
+        - Agents.md
 - Multi Agent Behaviour:
-  - [ ] Agent Orchestration
+    - [ ] Agent Orchestration
 
 ---
 
@@ -33,16 +29,16 @@ Part of [[User-Defined Agent Extensions]].
 It is common for a user to want the agent to load the same prompt into it's system context on each session. The user would **define their prompt as a markdown file somewhere within their project's filesystem** and then **expect this to be loaded automatically in each conversation**. Examples of common project instructions across coding and personal agents include:
 
 - Behaviour Cues and Instructions
-  - Build/test/lint commands
-  - Workflows
+    - Build/test/lint commands
+    - Workflows
 - Project Context:
-  - Structure
-  - Code style conventions and naming patterns
-  - PR/commit conventions
-  - Security-sensitive areas to avoid
+    - Structure
+    - Code style conventions and naming patterns
+    - PR/commit conventions
+    - Security-sensitive areas to avoid
 - Known **gotchas**
 - Identity and Personality
-  - [ ] Soul?
+    - [ ] Soul?
 
 In order to support this, the agent harness must:
 
@@ -54,18 +50,18 @@ In order to support this, the agent harness must:
 This UX support was re-implemented in 2024/2025 by each application providing agent implementations with slight variations:
 
 - **In Name**:
-  - .cursorrules
-  - CLAUDE.md
-  - GEMINI.md
-  - AGENTS.md
+    - .cursorrules
+    - CLAUDE.md
+    - GEMINI.md
+    - AGENTS.md
 - **In Location**:
-  - Resolved within
-    - `./.claude`
-    - `./.github`
-    - `.`
+    - Resolved within
+        - `./.claude`
+        - `./.github`
+        - `.`
 - **In Format**:
-  - Markdown text only
-  - Markdown + YAML frontmatter (to support additional mechanisms like conditional activation)
+    - Markdown text only
+    - Markdown + YAML frontmatter (to support additional mechanisms like conditional activation)
 
 In order to support **portability of project instructions across applications**, there was an ecosystem-wide standardization towards a common convention:
 
@@ -88,8 +84,8 @@ However, this mechanism is focused on **user-defined** not **agent-defined** con
 The algorithm is parameterized by:
 
 - **Collection Strategy**: How do instruction files get discovered?
-  - How do you distinguish an instruction file from a regular file?
-  - How do you find folders that may have instruction files in them?
+    - How do you distinguish an instruction file from a regular file?
+    - How do you find folders that may have instruction files in them?
 
 ## **Precedence Strategy**:
 
@@ -100,13 +96,13 @@ The algorithm is parameterized by:
 Common strategies include:
 
 - **Walk Up**:
-  - Start from current working directory
-  - Find files matching name conventions like `AGENTS.md` or sub-folder conventions like `.github/copilot-instructions.md` along the way
-  - Can stop at root OR stop at a defined boundary (like git project root)
+    - Start from current working directory
+    - Find files matching name conventions like `AGENTS.md` or sub-folder conventions like `.github/copilot-instructions.md` along the way
+    - Can stop at root OR stop at a defined boundary (like git project root)
 - **Fixed Paths**:
-  - Search from only a specific set of folders like:
-    - cwd
-    - `~`
+    - Search from only a specific set of folders like:
+        - cwd
+        - `~`
 
 ##### Scoping Algorithms
 
@@ -121,13 +117,13 @@ It is for this reason that **multiple instruction files even for the same standa
 `select: (paths[]) -> string` may decide:
 
 - Order paths by precedent
-  - May consider a **classification of instructions** by personal, project, and global.
+    - May consider a **classification of instructions** by personal, project, and global.
 - How the content of these paths gets converted to the final prompt
-  - **Combine All** with flexibility in how each individual prompt is rendered.
-    - Instruct later concatenations to be treated as overrides of earlier.
-  - **Highest Priority wins**
+    - **Combine All** with flexibility in how each individual prompt is rendered.
+        - Instruct later concatenations to be treated as overrides of earlier.
+    - **Highest Priority wins**
 - Any additional processing on that prompt:
-  - **Optional Truncation**
+    - **Optional Truncation**
 
 For selecting across multiple standards, the hybrid algorithm must also figure out how to **prioritize standards**. For example, if the user has project level AGENTS.md and CLAUDE.md, which of these must be used for a non Codex and Claude Code harness?
 
@@ -137,39 +133,24 @@ During a session, the contents of the resolved instructions may change. The syst
 
 - **Automatically refreshed** on next turn
 - **Never refreshed**
-  - Edits to instructions only get effectively picked up on session created after those edits.
+    - Edits to instructions only get effectively picked up on session created after those edits.
 - **Refreshed only on Compaction**
 
-###### Claude.md notes
-
-- [Location and Scope of CLAUDE.md files](https://code.claude.com/docs/en/memory#choose-where-to-put-claude-md-files)
-  - Instruction files above cwd are loaded automatically
-  - Instructions files in sub-directories load **only when a file is read from there**.
-  - [Walking algorithm](https://code.claude.com/docs/en/memory#how-claude-md-files-load):
-    - Walk up and find `CLAUDE.md` and `CLAUDE.local.md`
-    - At each level, concatenate the `CLAUDE.local.md` below the `CLAUDE.md`
-  - [Claude Rules](https://code.claude.com/docs/en/memory#organize-rules-with-claude/rules/)
-    - [ ] A separate walking mechanism (front matter defines conditional activation)
-- System Prompt Construction:
-  - "All discovered files are concatenated into context rather than overriding each other."
-  - `@ Syntax`:
-    - Expanded and loaded in when the CLAUDE.md is.
-    - This is the suggested way to pull in AGENTS.md
-  - HTML Block comments are stripped (so are used as "maintainer notes")
+[[Claude.md notes]]
 
 ##### Codex's Agents.md notes
 
 - **Never Refreshes**
 - Discovery:
-  - Global:
-    - Searches `~/.codex` unless you provide a different home (`CODEX_HOME`)
-    - First checks for `AGENTS.override.md` then `AGENTS.md`, taking the first non-empty. Only file is taken from this level
-  - Project:
-    - Walk-Down from Project root to CWD (defaulting to project root = cwd if no project dir can be found (i.e. no git repo))
-    - Checks for `AGENTS.override.md` then `AGENTS.md`, only taking 1 per directory.
+    - Global:
+        - Searches `~/.codex` unless you provide a different home (`CODEX_HOME`)
+        - First checks for `AGENTS.override.md` then `AGENTS.md`, taking the first non-empty. Only file is taken from this level
+    - Project:
+        - Walk-Down from Project root to CWD (defaulting to project root = cwd if no project dir can be found (i.e. no git repo))
+        - Checks for `AGENTS.override.md` then `AGENTS.md`, only taking 1 per directory.
 - Merge:
-  - "Codex concatenates files from the root down, joining them with blank lines. Files closer to your current directory override earlier guidance because they appear later in the combined prompt."
-  - Truncatation mechanism, at 32kb by default
+    - "Codex concatenates files from the root down, joining them with blank lines. Files closer to your current directory override earlier guidance because they appear later in the combined prompt."
+    - Truncatation mechanism, at 32kb by default
 
 ### Agent Orchestration
 
@@ -188,7 +169,7 @@ Every runtime has a way to get a 'child' and 'fork' state, used to construct a n
 #### Creating Agents from scratch:
 
 - [ ] There is a root to this tree that is not an agent (is just a state)
-  - [ ] `new` operation
+    - [ ] `new` operation
 
 #### Grouping Agents
 
@@ -201,7 +182,7 @@ A bi-product of fact that Agent RuntimeSystem algebra have serializable state th
 ##### TODO
 
 - Orchestration = User interacting with an agent (simple) + agent interacting with another agent (achieved through tools As If the agent were a user - same interface)
-  - Interaction defintions (state sharing vs driving)
+    - Interaction defintions (state sharing vs driving)
 
 ### Agent Tools (FRA-129)
 
@@ -243,8 +224,9 @@ Tools are inherited by default — restriction is opt-in, not the default. This 
 
 ##### Tool Restriction
 
-i) **Requires mechanism for tools be enabled and disabled** (as of April 8th 2026, all registered tools are enabled, this needs to get solved seperately)
-ii) **Specification strategy**: usually by name, as part of an explicit or implicit permissions algebra.
+1. **Requires mechanism for tools be enabled and disabled** (as of April 8th 2026, all registered tools are enabled, this needs to get solved seperately)
+2. **Specification strategy**: usually by name, as part of an explicit or implicit permissions algebra.
+
 Approaches observed:
 
 | Approach                                     | Used by                |
@@ -312,8 +294,8 @@ For agent-as-task (async): the task handle needs to expose `cancel()`, which is 
 
 ### Agent Coordination
 
-**Filesystem as IPC**: Claw Code's pattern (`.clawd-agents/<id>.{json,md}`). Relevant if Franklin goes multi-process. Not needed for in-process agent-as-tool.
-**Notification Bridge** Goose's pattern for forwarding child events to parent. In Franklin: can a `toolExecute` handler emit progress events while still running? If Mini-ACP's streaming model supports nesting, this is free. If not, needs protocol work.
+- **Filesystem as IPC**: Claw Code's pattern (`.clawd-agents/<id>.{json,md}`). Relevant if Franklin goes multi-process. Not needed for in-process agent-as-tool.
+- **Notification Bridge**: Goose's pattern for forwarding child events to parent. In Franklin: can a `toolExecute` handler emit progress events while still running? If Mini-ACP's streaming model supports nesting, this is free. If not, needs protocol work.
 
 ### Task System
 
