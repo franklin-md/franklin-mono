@@ -8,3 +8,9 @@ export {
 } from './filtered.js';
 export type { FilesystemPermissions } from './filtered.js';
 export { MemoryFilesystem } from './memory.js';
+export { createObservableFilesystem } from './observable/create.js';
+export type {
+	FilesystemObservables,
+	ObservableFilesystem,
+	WriteListener,
+} from './observable/types.js';
