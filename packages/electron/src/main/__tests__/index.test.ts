@@ -98,14 +98,19 @@ describe('initializeMain', () => {
 					},
 					{ dispose: noop },
 				),
-			filesystem: createFilesystem(),
+			os: {
+				terminal: {
+					exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
+				},
+				filesystem: createFilesystem(),
+				getHome: async () => '/home/test' as AbsolutePath,
+				openExternal: async () => {},
+			},
 			ai: {
 				getOAuthProviders: async () => [],
 				getApiKeyProviders: async () => [],
 			},
 			createFlow,
-			getHome: async () => '/home/test' as AbsolutePath,
-			openExternal: async () => {},
 		};
 
 		const handle = initializeMain(
@@ -114,7 +119,9 @@ describe('initializeMain', () => {
 		);
 
 		expect(
-			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:filesystem:readFile`),
+			handleMap.has(
+				`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:os:filesystem:readFile`,
+			),
 		).toBe(true);
 		expect(
 			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:spawn:connect`),
@@ -126,7 +133,7 @@ describe('initializeMain', () => {
 			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:createFlow:connect`),
 		).toBe(true);
 		expect(
-			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:openExternal`),
+			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:os:openExternal`),
 		).toBe(true);
 		expect(handleMap.has('franklin:filesystem:readFile')).toBe(false);
 

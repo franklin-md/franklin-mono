@@ -40,7 +40,10 @@ export class FranklinApp {
 		appDir: AbsolutePath;
 	}) {
 		const { extensions, platform, appDir } = opts;
-		const storage = createStorage<FranklinState>(platform.filesystem, appDir);
+		const storage = createStorage<FranklinState>(
+			platform.os.filesystem,
+			appDir,
+		);
 
 		this.auth = new AuthManager(platform, storage.auth);
 		this.platform = platform;

@@ -15,6 +15,7 @@ import { SandboxedTerminal } from './anthropic/sandboxed-terminal.js';
 import { withAnthropicProtected } from './anthropic/protected.js';
 import { openExternal } from './open-external.js';
 import { createOAuthFlow } from './auth/create-flow.js';
+import { UnrestrictedTerminal } from './unrestricted-terminal.js';
 
 type Args = {
 	appDir?: AbsolutePath;
@@ -61,9 +62,11 @@ export function createNodePlatform(args: Args = {}): Platform {
 				},
 				configureWeb: async (netConfig) => createWeb(netConfig),
 			}),
-		filesystem,
-		getHome: async () => toAbsolutePath(os.homedir()),
-		openExternal,
-		// TODO: Sandbox
+		os: {
+			terminal: new UnrestrictedTerminal(process.cwd()),
+			filesystem,
+			getHome: async () => toAbsolutePath(os.homedir()),
+			openExternal,
+		},
 	};
 }
