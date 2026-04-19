@@ -6,7 +6,7 @@ import { createSessionManager } from '../runtime/manager.js';
 import type { SessionRuntime } from '../runtime/runtime.js';
 import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import type { CombinedRuntime } from '../../../algebra/runtime/combine.js';
-import type { EmptyState } from '../../identity/state.js';
+import type { EmptyState } from '../../empty/state.js';
 import type { RuntimeSystem } from '../../../algebra/system/types.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { SessionCreate } from '../runtime/types.js';

@@ -57,7 +57,6 @@ export { StoreRegistry } from './systems/store/api/index.js';
 export type { StoreEntry, StoreMapping } from './systems/store/api/index.js';
 export type { StoreSnapshot } from './systems/store/api/index.js';
 export type {
-	SessionAPI,
 	SessionRuntime,
 	Session,
 	SessionCreate,
@@ -71,7 +70,7 @@ export {
 } from './systems/sessions/api/index.js';
 export type { BaseAPI } from './algebra/api/types.js';
 export type { Compiler } from './algebra/compiler/types.js';
-export { compile, compileAll } from './algebra/compiler/compile.js';
+export { compile, compile as compileAll } from './algebra/compiler/compile.js';
 export { combine } from './algebra/compiler/combine.js';
 export { createCoreCompiler } from './systems/core/compile/index.js';
 export { createStoreCompiler } from './systems/store/compile/index.js';
