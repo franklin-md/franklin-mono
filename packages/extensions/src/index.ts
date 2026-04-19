@@ -1,9 +1,9 @@
 export type {
 	CoreAPI,
 	CancelHandler,
-	PromptContext,
+	Prompt,
 	PromptHandler,
-	SystemPromptContext,
+	SystemPrompt,
 	SystemPromptHandler,
 	ExtensionToolDefinition,
 	ToolSpec,

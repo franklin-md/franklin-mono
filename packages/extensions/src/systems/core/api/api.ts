@@ -7,10 +7,8 @@ import type {
 	SystemPromptHandler,
 	ToolObserverHandler,
 } from './handlers.js';
-import type {
-	MaybePromise,
-	WithContext,
-} from '../../../algebra/types/index.js';
+import type { MaybePromise } from '../../../algebra/types/index.js';
+import type { WithContext } from '../compile/registrar/types.js';
 import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import type { CoreRuntime } from '../runtime.js';
 

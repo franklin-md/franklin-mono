@@ -1,5 +1,5 @@
 import type { SystemPromptHandler } from '../../api/handlers.js';
-import type { SystemPromptContext } from '../../api/system-prompt-context.js';
+import type { SystemPrompt } from '../../api/system-prompt.js';
 
 export interface SystemPromptAssembler {
 	/**
@@ -24,12 +24,12 @@ export function buildSystemPromptAssembler(
 	return {
 		async assemble() {
 			for (const [index, handler] of handlers.entries()) {
-				const ctx: SystemPromptContext = {
+				const systemPrompt: SystemPrompt = {
 					setPart(content) {
 						fragments[index] = content;
 					},
 				};
-				await handler(ctx);
+				await handler(systemPrompt);
 			}
 			const parts: string[] = [];
 			for (const fragment of fragments) {

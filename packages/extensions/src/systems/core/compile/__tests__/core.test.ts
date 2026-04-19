@@ -1,26 +1,11 @@
 /* eslint-disable require-yield */
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
-import type { CoreAPI } from '../../api/api.js';
-import type {
-	CancelHandler,
-	PromptHandler,
-	SystemPromptHandler,
-	StreamObserverEvent,
-	StreamObserverHandler,
-	ToolObserverEvent,
-	ToolObserverHandler,
-} from '../../api/handlers.js';
-import type { ExtensionToolDefinition } from '../../api/tool.js';
-import type { ToolSpec } from '../../api/tool-spec.js';
 import type { Extension } from '../../../../algebra/types/extension.js';
 import type { FullMiddleware } from '../../api/middleware/types.js';
-import {
-	STREAM_OBSERVER_EVENTS,
-	TOOL_OBSERVER_EVENTS,
-	addEventHandler,
-	buildMiddleware,
-} from '../middleware.js';
+import { buildMiddleware } from '../middleware.js';
+import { createCoreRegistrar } from '../registrar/index.js';
+import type { CoreRuntime } from '../../runtime.js';
 import { apply } from '@franklin/lib/middleware';
 import type {
 	MiniACPAgent,
@@ -42,70 +27,10 @@ import { resolveToolOutput } from '../../api/tool.js';
  * these tests exercise middleware composition and don't touch it.
  */
 async function compileExt(ext: Extension): Promise<FullMiddleware> {
-	const cancelHandlers: CancelHandler[] = [];
-	const promptHandlers: PromptHandler[] = [];
-	const systemPromptHandlers: SystemPromptHandler[] = [];
-	const observers = new Map<
-		StreamObserverEvent,
-		StreamObserverHandler<StreamObserverEvent>[]
-	>();
-	const toolObservers = new Map<
-		ToolObserverEvent,
-		ToolObserverHandler<ToolObserverEvent>[]
-	>();
-	const tools: ExtensionToolDefinition[] = [];
-
-	const stubCtx = undefined as never;
-	const api: CoreAPI = {
-		on(event: string, handler: (...args: any[]) => any) {
-			if (STREAM_OBSERVER_EVENTS.has(event)) {
-				addEventHandler(
-					observers,
-					event as StreamObserverEvent,
-					((e: any) =>
-						handler(e, stubCtx)) as StreamObserverHandler<StreamObserverEvent>,
-				);
-			} else if (TOOL_OBSERVER_EVENTS.has(event)) {
-				addEventHandler(
-					toolObservers,
-					event as ToolObserverEvent,
-					((e: any) =>
-						handler(e, stubCtx)) as ToolObserverHandler<ToolObserverEvent>,
-				);
-			} else if (event === 'prompt') {
-				promptHandlers.push((c) => handler(c, stubCtx));
-			} else if (event === 'systemPrompt') {
-				systemPromptHandlers.push((c) => handler(c, stubCtx));
-			} else {
-				cancelHandlers.push((p) => handler(p, stubCtx));
-			}
-		},
-		registerTool(
-			specOrTool: ToolSpec | ExtensionToolDefinition,
-			execute?: (params: any, ctx: any) => any,
-		) {
-			if (execute) {
-				const spec = specOrTool as ToolSpec;
-				tools.push({
-					name: spec.name,
-					description: spec.description,
-					schema: spec.schema,
-					execute,
-				});
-			} else {
-				tools.push(specOrTool as ExtensionToolDefinition);
-			}
-		},
-	};
+	const stubCtx = undefined as unknown as CoreRuntime;
+	const { api, registered } = createCoreRegistrar<CoreRuntime>();
 	ext(api);
-	return buildMiddleware(
-		cancelHandlers,
-		promptHandlers,
-		observers,
-		toolObservers,
-		tools,
-		() => stubCtx,
-	);
+	return buildMiddleware(registered, () => stubCtx);
 }
 
 /** Create a minimal MiniACPClient stub for testing with apply(). */

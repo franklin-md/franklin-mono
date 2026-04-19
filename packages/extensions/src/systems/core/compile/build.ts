@@ -1,40 +1,34 @@
 import { createClientConnection, CtxTracker } from '@franklin/mini-acp';
-import type { FullMiddleware } from '../api/middleware/types.js';
-import type { SystemPromptHandler } from '../api/handlers.js';
 import { createCoreRuntime, type CoreRuntime } from '../runtime.js';
 import type { CoreState } from '../state.js';
 import { applyDecorators, type ProtocolDecorator } from './decorator.js';
-import { createMiddlewareDecorator } from './decorators/middleware.js';
 import { createTrackerDecorator } from './decorators/tracker.js';
-import { createSystemPromptDecorator } from './decorators/system-prompt.js';
-import { buildSystemPromptAssembler } from './builders/system-prompt.js';
 import { fallbackServer } from './fallback.js';
 import type { SpawnResult } from './compiler.js';
 
 /**
  * Connect to an agent transport and apply the decorator pipeline.
  *
- * Pipeline: transport ←→ [tracker] ←→ [system-prompt?] ←→ [middleware] ←→ app
+ * `extensionDecorators` is the stack composed by `composeDecorators`
+ * (middleware, system prompt, …); the tracker decorator is appended
+ * here since it's transport infrastructure, not extension data.
+ *
+ * Pipeline: transport ←→ [tracker] ←→ [extension stack…] ←→ app
  */
 export async function buildCoreRuntime(
 	transport: SpawnResult,
 	state: CoreState,
-	middleware: FullMiddleware,
-	systemPromptHandlers: SystemPromptHandler[],
+	extensionDecorators: readonly ProtocolDecorator[],
 ): Promise<CoreRuntime> {
 	const connection = createClientConnection(transport);
 	const rawClient = connection.remote;
 
 	const tracker = new CtxTracker();
 
-	const stack: ProtocolDecorator[] = [createMiddlewareDecorator(middleware)];
-
-	if (systemPromptHandlers.length > 0) {
-		const assembler = buildSystemPromptAssembler(systemPromptHandlers);
-		stack.push(createSystemPromptDecorator(assembler));
-	}
-
-	stack.push(createTrackerDecorator(state, tracker));
+	const stack: ProtocolDecorator[] = [
+		...extensionDecorators,
+		createTrackerDecorator(state, tracker),
+	];
 
 	const { client } = await applyDecorators(
 		stack,

@@ -1,4 +1,4 @@
-export interface SystemPromptContext {
+export interface SystemPrompt {
 	/**
 	 * Set (or replace) this handler's fragment of the system prompt.
 	 *

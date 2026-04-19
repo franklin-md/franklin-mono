@@ -2,36 +2,45 @@ import { describe, it, expect } from 'vitest';
 import { buildSystemPromptAssembler } from '../system-prompt.js';
 import type { SystemPromptHandler } from '../../../api/handlers.js';
 
+const noCtx = () => undefined as never;
+
 describe('buildSystemPromptAssembler', () => {
 	it('returns an empty prompt when no handlers are registered', async () => {
-		const assembler = buildSystemPromptAssembler([]);
+		const assembler = buildSystemPromptAssembler([], noCtx);
 		expect(await assembler.assemble()).toBe('');
 	});
 
 	it('returns the handler fragment when only one handler contributes', async () => {
-		const assembler = buildSystemPromptAssembler([
-			(ctx) => ctx.setPart('only'),
-		]);
+		const assembler = buildSystemPromptAssembler(
+			[(ctx) => ctx.setPart('only')],
+			noCtx,
+		);
 		expect(await assembler.assemble()).toBe('only');
 	});
 
 	it('concatenates fragments in handler registration order', async () => {
-		const assembler = buildSystemPromptAssembler([
-			(ctx) => ctx.setPart('first'),
-			(ctx) => ctx.setPart('second'),
-			(ctx) => ctx.setPart('third'),
-		]);
+		const assembler = buildSystemPromptAssembler(
+			[
+				(ctx) => ctx.setPart('first'),
+				(ctx) => ctx.setPart('second'),
+				(ctx) => ctx.setPart('third'),
+			],
+			noCtx,
+		);
 		expect(await assembler.assemble()).toBe('first\n\nsecond\n\nthird');
 	});
 
 	it('skips handlers that never call setPart', async () => {
-		const assembler = buildSystemPromptAssembler([
-			(ctx) => ctx.setPart('a'),
-			() => {
-				/* no setPart */
-			},
-			(ctx) => ctx.setPart('c'),
-		]);
+		const assembler = buildSystemPromptAssembler(
+			[
+				(ctx) => ctx.setPart('a'),
+				() => {
+					/* no setPart */
+				},
+				(ctx) => ctx.setPart('c'),
+			],
+			noCtx,
+		);
 		expect(await assembler.assemble()).toBe('a\n\nc');
 	});
 
@@ -41,7 +50,7 @@ describe('buildSystemPromptAssembler', () => {
 			if (turn === 0) ctx.setPart('sticky');
 			// subsequent turns: no setPart
 		};
-		const assembler = buildSystemPromptAssembler([handler]);
+		const assembler = buildSystemPromptAssembler([handler], noCtx);
 
 		expect(await assembler.assemble()).toBe('sticky');
 		turn = 1;
@@ -53,7 +62,7 @@ describe('buildSystemPromptAssembler', () => {
 		const handler: SystemPromptHandler = (ctx) => {
 			ctx.setPart(turn === 0 ? 'v1' : 'v2');
 		};
-		const assembler = buildSystemPromptAssembler([handler]);
+		const assembler = buildSystemPromptAssembler([handler], noCtx);
 
 		expect(await assembler.assemble()).toBe('v1');
 		turn = 1;
@@ -65,7 +74,7 @@ describe('buildSystemPromptAssembler', () => {
 		const handler: SystemPromptHandler = (ctx) => {
 			ctx.setPart(turn === 0 ? 'visible' : '');
 		};
-		const assembler = buildSystemPromptAssembler([handler]);
+		const assembler = buildSystemPromptAssembler([handler], noCtx);
 
 		expect(await assembler.assemble()).toBe('visible');
 		turn = 1;
@@ -74,18 +83,21 @@ describe('buildSystemPromptAssembler', () => {
 
 	it('awaits async handlers in order', async () => {
 		const order: string[] = [];
-		const assembler = buildSystemPromptAssembler([
-			async (ctx) => {
-				await Promise.resolve();
-				order.push('a');
-				ctx.setPart('a');
-			},
-			async (ctx) => {
-				await Promise.resolve();
-				order.push('b');
-				ctx.setPart('b');
-			},
-		]);
+		const assembler = buildSystemPromptAssembler(
+			[
+				async (ctx) => {
+					await Promise.resolve();
+					order.push('a');
+					ctx.setPart('a');
+				},
+				async (ctx) => {
+					await Promise.resolve();
+					order.push('b');
+					ctx.setPart('b');
+				},
+			],
+			noCtx,
+		);
 
 		expect(await assembler.assemble()).toBe('a\n\nb');
 		expect(order).toEqual(['a', 'b']);
@@ -93,14 +105,17 @@ describe('buildSystemPromptAssembler', () => {
 
 	it('keeps fragment slots independent — handler A unset does not clobber handler B', async () => {
 		let turn = 0;
-		const assembler = buildSystemPromptAssembler([
-			(ctx) => {
-				if (turn === 0) ctx.setPart('A');
-			},
-			(ctx) => {
-				ctx.setPart(turn === 0 ? 'B1' : 'B2');
-			},
-		]);
+		const assembler = buildSystemPromptAssembler(
+			[
+				(ctx) => {
+					if (turn === 0) ctx.setPart('A');
+				},
+				(ctx) => {
+					ctx.setPart(turn === 0 ? 'B1' : 'B2');
+				},
+			],
+			noCtx,
+		);
 
 		expect(await assembler.assemble()).toBe('A\n\nB1');
 		turn = 1;

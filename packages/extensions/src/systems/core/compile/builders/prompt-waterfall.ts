@@ -5,7 +5,7 @@ import type {
 	StreamObserverHandler,
 } from '../../api/handlers.js';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
-import { createPromptContext } from '../../api/prompt-context.js';
+import { createPrompt } from '../../api/prompt.js';
 
 function notifyObservers(
 	observers: ReadonlyMap<
@@ -39,7 +39,7 @@ async function* iteratePromptWithObservers(
 
 /**
  * Build prompt middleware (returns AsyncIterable, not Promise).
- * Prompt handlers contribute content through PromptContext, then the final
+ * Prompt handlers contribute content through Prompt, then the final
  * request is passed to the downstream client.
  *
  * When observers are provided, manually iterates the stream and dispatches
@@ -53,11 +53,14 @@ export function buildPromptWaterfall(
 	>,
 ): MethodMiddleware<MiniACPClient['prompt']> {
 	return async function* (params, next) {
-		const ctx = createPromptContext(params);
+		const prompt = createPrompt(params);
 		for (const handler of handlers) {
-			await handler(ctx);
+			await handler(prompt);
 		}
 
-		return yield* iteratePromptWithObservers(next(ctx.asPrompt()), observers);
+		return yield* iteratePromptWithObservers(
+			next(prompt.asPrompt()),
+			observers,
+		);
 	};
 }
