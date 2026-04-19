@@ -10,10 +10,8 @@ import type { EnvironmentRuntime } from '../systems/environment/runtime.js';
 import type { ReconfigurableEnvironment } from '../systems/environment/api/types.js';
 import type { CoreAPI } from '../systems/core/api/api.js';
 import type { FullMiddleware } from '../systems/core/api/middleware/types.js';
-import {
-	assemble,
-	createCoreRegistrar,
-} from '../systems/core/compile/registrar/index.js';
+import { createCoreRegistrar } from '../systems/core/compile/registrar/index.js';
+import { buildMiddleware } from '../systems/core/compile/middleware.js';
 import type { BaseRuntime } from '../algebra/runtime/types.js';
 import type { Extension } from '../algebra/types/extension.js';
 
@@ -37,7 +35,7 @@ export function compileCoreExt<
 ): { middleware: FullMiddleware } {
 	const { api, registered } = createCoreRegistrar<Ctx>();
 	ext(api);
-	const { middleware } = assemble(registered, getCtx);
+	const middleware = buildMiddleware(registered, getCtx);
 	return { middleware };
 }
 
@@ -80,7 +78,7 @@ export async function compileCoreWithStore(
 		{ store: {} },
 	);
 
-	const { middleware } = assemble(registered, getCtx);
+	const middleware = buildMiddleware(registered, getCtx);
 	return { middleware, stores: cell.stores };
 }
 
@@ -132,7 +130,7 @@ export async function compileCoreWithStoreAndEnv(
 		{ store: {}, ...emptyEnvironmentState() },
 	)) as StoreRuntime & EnvironmentRuntime;
 
-	const { middleware } = assemble(registered, getCtx);
+	const middleware = buildMiddleware(registered, getCtx);
 	return { middleware, ctx: cell.ctx };
 }
 
@@ -162,6 +160,6 @@ export async function compileCoreWithEnv(
 		emptyEnvironmentState(),
 	);
 
-	const { middleware } = assemble(registered, getCtx);
+	const middleware = buildMiddleware(registered, getCtx);
 	return { middleware, ctx: cell.ctx };
 }

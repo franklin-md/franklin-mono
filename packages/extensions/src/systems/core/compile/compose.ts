@@ -4,13 +4,15 @@ import type { ProtocolDecorator } from './decorator.js';
 import { createMiddlewareDecorator } from './decorators/middleware.js';
 import { createSystemPromptDecorator } from './decorators/system-prompt.js';
 import { buildMiddleware } from './middleware.js';
+import { bindHandlers } from './registrar/bind.js';
 import type { CoreRegistrar } from './registrar/types.js';
 
 /**
  * Turn a `CoreRegistrar` into the ordered `ProtocolDecorator` stack
  * `buildCoreRuntime` applies to the transport. Each concern (middleware,
  * system prompt, …) becomes its own decorator; runtime binding happens
- * here via `getCtx`, threaded down into each builder.
+ * here via `bindHandlers`/`bindTool`, so each builder's signature stays
+ * runtime-agnostic.
  */
 export function composeDecorators<Runtime extends BaseRuntime<unknown>>(
 	registered: CoreRegistrar<Runtime>,
@@ -21,10 +23,9 @@ export function composeDecorators<Runtime extends BaseRuntime<unknown>>(
 	];
 
 	if (registered.systemPrompt.length > 0) {
+		const handlers = bindHandlers(registered.systemPrompt, getCtx);
 		stack.push(
-			createSystemPromptDecorator(
-				buildSystemPromptAssembler(registered.systemPrompt, getCtx),
-			),
+			createSystemPromptDecorator(buildSystemPromptAssembler(handlers)),
 		);
 	}
 

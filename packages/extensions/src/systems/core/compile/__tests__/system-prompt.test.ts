@@ -42,10 +42,7 @@ function wire(
 	handlers: SystemPromptHandler[],
 	inner: MiniACPClient,
 ): Promise<MiniACPClient> {
-	const assembler = buildSystemPromptAssembler(
-		handlers,
-		() => undefined as never,
-	);
+	const assembler = buildSystemPromptAssembler(handlers);
 	const decorator = createSystemPromptDecorator(assembler);
 	return decorator.client(inner);
 }
@@ -207,7 +204,7 @@ describe('createSystemPromptDecorator', () => {
 	});
 
 	it('server side is a passthrough', async () => {
-		const assembler = buildSystemPromptAssembler([], () => undefined as never);
+		const assembler = buildSystemPromptAssembler([]);
 		const decorator = createSystemPromptDecorator(assembler);
 		const agent = stubAgent();
 		const result = await decorator.server(agent);

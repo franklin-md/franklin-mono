@@ -1,4 +1,3 @@
-import type { CancelHandler } from '../api/handlers.js';
 import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import type { FullMiddleware } from '../api/middleware/types.js';
 import { passThrough, buildWaterfall } from '@franklin/lib/middleware';
@@ -6,45 +5,31 @@ import {
 	buildPromptWaterfall,
 	buildToolExecuteMiddleware,
 	buildToolInjector,
+	hasAnyStreamObserver,
 	hasAnyToolObserver,
 	type StreamObservers,
 	type ToolObservers,
 } from './builders/index.js';
-import type { CoreRegistrar, WithContext } from './registrar/types.js';
-
-function streamObservers<R extends BaseRuntime<unknown>>(
-	r: CoreRegistrar<R>,
-): StreamObservers<R> {
-	return {
-		turnStart: r.turnStart,
-		chunk: r.chunk,
-		update: r.update,
-		turnEnd: r.turnEnd,
-	};
-}
-
-function toolObservers<R extends BaseRuntime<unknown>>(
-	r: CoreRegistrar<R>,
-): ToolObservers<R> {
-	return { toolCall: r.toolCall, toolResult: r.toolResult };
-}
-
-function bindCancel<R>(
-	raws: WithContext<CancelHandler, R>[],
-	getCtx: () => R,
-): CancelHandler[] {
-	return raws.map(
-		(h) =>
-			((params: Parameters<CancelHandler>[0]) =>
-				h(params, getCtx())) as CancelHandler,
-	);
-}
+import { bindHandlers, bindTool } from './registrar/bind.js';
+import type { CoreRegistrar } from './registrar/types.js';
 
 export function buildMiddleware<Runtime extends BaseRuntime<unknown>>(
 	registered: CoreRegistrar<Runtime>,
 	getCtx: () => Runtime,
 ): FullMiddleware {
-	const tObservers = toolObservers(registered);
+	const cancel = bindHandlers(registered.cancel, getCtx);
+	const prompt = bindHandlers(registered.prompt, getCtx);
+	const streamObs: StreamObservers = {
+		turnStart: bindHandlers(registered.turnStart, getCtx),
+		chunk: bindHandlers(registered.chunk, getCtx),
+		update: bindHandlers(registered.update, getCtx),
+		turnEnd: bindHandlers(registered.turnEnd, getCtx),
+	};
+	const toolObs: ToolObservers = {
+		toolCall: bindHandlers(registered.toolCall, getCtx),
+		toolResult: bindHandlers(registered.toolResult, getCtx),
+	};
+	const tools = registered.tools.map((t) => bindTool(t, getCtx));
 
 	const client: FullMiddleware['client'] = {
 		initialize: passThrough(),
@@ -53,32 +38,22 @@ export function buildMiddleware<Runtime extends BaseRuntime<unknown>>(
 		cancel: passThrough(),
 	};
 
-	if (registered.cancel.length > 0) {
-		client.cancel = buildWaterfall(bindCancel(registered.cancel, getCtx));
+	if (cancel.length > 0) {
+		client.cancel = buildWaterfall(cancel);
 	}
 
-	if (
-		registered.prompt.length > 0 ||
-		registered.turnStart.length > 0 ||
-		registered.chunk.length > 0 ||
-		registered.update.length > 0 ||
-		registered.turnEnd.length > 0
-	) {
-		client.prompt = buildPromptWaterfall(
-			registered.prompt,
-			streamObservers(registered),
-			getCtx,
-		);
+	if (prompt.length > 0 || hasAnyStreamObserver(streamObs)) {
+		client.prompt = buildPromptWaterfall(prompt, streamObs);
 	}
 
-	if (registered.tools.length > 0) {
-		client.setContext = buildToolInjector(registered.tools, client.setContext);
+	if (tools.length > 0) {
+		client.setContext = buildToolInjector(tools, client.setContext);
 	}
 
 	const server: FullMiddleware['server'] = {
 		toolExecute:
-			registered.tools.length > 0 || hasAnyToolObserver(tObservers)
-				? buildToolExecuteMiddleware(registered.tools, tObservers, getCtx)
+			tools.length > 0 || hasAnyToolObserver(toolObs)
+				? buildToolExecuteMiddleware(tools, toolObs)
 				: passThrough(),
 	};
 
