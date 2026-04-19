@@ -68,19 +68,12 @@ describe('createEnvironmentSystem', () => {
 		expect(runtime.environment.filesystem).toBeDefined();
 	});
 
-	it('extensions can access the environment via getEnvironment', async () => {
+	it('runtime exposes the environment to handlers', async () => {
 		const { factory } = mockFactory();
 		const system = createEnvironmentSystem(factory);
 
-		let received: ReconfigurableEnvironment | undefined;
-		await createRuntime(system, { env: defaultConfig }, [
-			(api) => {
-				received = api.getEnvironment();
-			},
-		]);
-
-		expect(received).toBeDefined();
-		expect(received!.filesystem).toBeDefined();
+		const runtime = await createRuntime(system, { env: defaultConfig }, []);
+		expect(runtime.environment.filesystem).toBeDefined();
 	});
 
 	it('state returns the environment config', async () => {

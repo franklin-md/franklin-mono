@@ -1,11 +1,7 @@
 /* eslint-disable require-yield */
 import { describe, it, expect, vi } from 'vitest';
-import { createCoreCompiler } from '../../systems/core/compile/compiler.js';
-import { createStoreCompiler } from '../../systems/store/compile/compiler.js';
-import { compile } from '../../algebra/compiler/compile.js';
-import { combine } from '../../algebra/compiler/combine.js';
 import { apply } from '@franklin/lib/middleware';
-import { createEmptyStoreResult } from '../../systems/store/api/registry/result.js';
+import type { StoreRuntime } from '../../systems/store/runtime.js';
 import type {
 	MiniACPAgent,
 	MiniACPClient,
@@ -15,10 +11,10 @@ import type {
 	TurnEnd,
 } from '@franklin/mini-acp';
 import { StopCode } from '@franklin/mini-acp';
+import { compileCoreWithStore } from '../../testing/compile-ext.js';
 import { conversationExtension } from '../conversation/extension.js';
+import { conversationKey } from '../conversation/key.js';
 import type { ConversationTurn } from '../conversation/types.js';
-import type { StoreResult } from '../../systems/store/api/registry/result.js';
-import { StoreRegistry } from '../../systems/store/api/registry/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -56,8 +52,12 @@ async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
 	return items;
 }
 
-function getStore(stores: StoreResult): ConversationTurn[] {
-	return stores.get('conversation')!.store.get() as ConversationTurn[];
+function getTurns(stores: StoreRuntime): ConversationTurn[] {
+	return stores.getStore(conversationKey).get();
+}
+
+function compileConversation() {
+	return compileCoreWithStore(conversationExtension());
 }
 
 // ---------------------------------------------------------------------------
@@ -65,18 +65,11 @@ function getStore(stores: StoreResult): ConversationTurn[] {
 // ---------------------------------------------------------------------------
 
 describe('conversationExtension', () => {
-	function compileConversation() {
-		const registry = new StoreRegistry();
-		const seed = createEmptyStoreResult(registry);
-		const compiler = combine(createCoreCompiler(), createStoreCompiler(seed));
-		return compile(compiler, conversationExtension());
-	}
-
 	it('records user prompt on prompt', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 
 		const target = stubClient();
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 
 		await collect(
 			wrapped.prompt({
@@ -85,7 +78,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result.stores);
+		const turns = getTurns(stores);
 		expect(turns).toHaveLength(1);
 		expect(turns[0]!.prompt.role).toBe('user');
 		expect(turns[0]!.prompt.content).toEqual([{ type: 'text', text: 'hello' }]);
@@ -93,7 +86,7 @@ describe('conversationExtension', () => {
 	});
 
 	it('coalesces adjacent text chunks into one text block', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 
 		const chunk1: Chunk = {
 			type: 'chunk',
@@ -115,7 +108,7 @@ describe('conversationExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -123,7 +116,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result.stores);
+		const turns = getTurns(stores);
 		expect(turns).toHaveLength(1);
 		const blocks = turns[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
@@ -131,7 +124,7 @@ describe('conversationExtension', () => {
 	});
 
 	it('creates separate blocks for thinking then text', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 
 		const thinkingChunk: Chunk = {
 			type: 'chunk',
@@ -153,7 +146,7 @@ describe('conversationExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -161,7 +154,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result.stores);
+		const turns = getTurns(stores);
 		const blocks = turns[0]!.response.blocks;
 		expect(blocks).toHaveLength(2);
 		expect(blocks[0]).toEqual({ kind: 'thinking', text: 'reasoning...' });
@@ -169,7 +162,7 @@ describe('conversationExtension', () => {
 	});
 
 	it('coalesces adjacent thinking chunks', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 
 		const target = stubClient({
 			prompt: async function* () {
@@ -188,7 +181,7 @@ describe('conversationExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -196,16 +189,16 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const blocks = getStore(result.stores)[0]!.response.blocks;
+		const blocks = getTurns(stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({ kind: 'thinking', text: 'first second' });
 	});
 
 	it('records tool call from toolExecute as toolUse block', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 
 		const agent = stubAgent();
-		const wrappedAgent = apply(result.server, agent);
+		const wrappedAgent = apply(middleware.server, agent);
 
 		const target = stubClient({
 			prompt: async function* () {
@@ -220,7 +213,7 @@ describe('conversationExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -228,7 +221,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result.stores);
+		const turns = getTurns(stores);
 		const blocks = turns[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
@@ -244,7 +237,7 @@ describe('conversationExtension', () => {
 	});
 
 	it('records isError from tool result on toolUse block', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 		const agent = stubAgent({
 			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
 				toolCallId: call.id,
@@ -252,7 +245,7 @@ describe('conversationExtension', () => {
 				isError: true,
 			})),
 		});
-		const wrappedAgent = apply(result.server, agent);
+		const wrappedAgent = apply(middleware.server, agent);
 
 		const target = stubClient({
 			prompt: async function* () {
@@ -267,7 +260,7 @@ describe('conversationExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -275,7 +268,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const blocks = getStore(result.stores)[0]!.response.blocks;
+		const blocks = getTurns(stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
 			kind: 'toolUse',
@@ -291,14 +284,14 @@ describe('conversationExtension', () => {
 	});
 
 	it('pairs tool result with matching tool call', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 		const agent = stubAgent({
 			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
 				toolCallId: call.id,
 				content: [{ type: 'text' as const, text: 'file contents here' }],
 			})),
 		});
-		const wrappedAgent = apply(result.server, agent);
+		const wrappedAgent = apply(middleware.server, agent);
 
 		const target = stubClient({
 			prompt: async function* () {
@@ -313,7 +306,7 @@ describe('conversationExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -321,7 +314,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const blocks = getStore(result.stores)[0]!.response.blocks;
+		const blocks = getTurns(stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
 			kind: 'toolUse',
@@ -336,7 +329,7 @@ describe('conversationExtension', () => {
 	});
 
 	it('ignores update (no-op until reconciliation is implemented)', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 
 		const target = stubClient({
 			prompt: async function* () {
@@ -351,7 +344,7 @@ describe('conversationExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -359,12 +352,12 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const blocks = getStore(result.stores)[0]!.response.blocks;
+		const blocks = getTurns(stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(0);
 	});
 
 	it('records turnEnd block', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 
 		const turnEnd: TurnEnd = {
 			type: 'turnEnd',
@@ -377,7 +370,7 @@ describe('conversationExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -385,7 +378,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const blocks = getStore(result.stores)[0]!.response.blocks;
+		const blocks = getTurns(stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
 			kind: 'turnEnd',
@@ -395,7 +388,7 @@ describe('conversationExtension', () => {
 	});
 
 	it('records turnEnd with error info', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 
 		const turnEnd: TurnEnd = {
 			type: 'turnEnd',
@@ -409,7 +402,7 @@ describe('conversationExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -417,7 +410,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const blocks = getStore(result.stores)[0]!.response.blocks;
+		const blocks = getTurns(stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
 		expect(blocks[0]).toEqual({
 			kind: 'turnEnd',
@@ -427,18 +420,17 @@ describe('conversationExtension', () => {
 	});
 
 	it('full turn: text chunks + tool call + tool result + more text + turnEnd', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 		const agent = stubAgent({
 			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
 				toolCallId: call.id,
 				content: [{ type: 'text' as const, text: 'contents' }],
 			})),
 		});
-		const wrappedAgent = apply(result.server, agent);
+		const wrappedAgent = apply(middleware.server, agent);
 
 		const target = stubClient({
 			prompt: async function* () {
-				// Stream some text
 				yield {
 					type: 'chunk',
 					messageId: 'm1',
@@ -455,7 +447,6 @@ describe('conversationExtension', () => {
 					},
 				});
 
-				// More text after tool
 				yield {
 					type: 'chunk',
 					messageId: 'm2',
@@ -463,7 +454,6 @@ describe('conversationExtension', () => {
 					content: { type: 'text', text: 'Here is the result' },
 				} satisfies Chunk;
 
-				// Turn end
 				yield {
 					type: 'turnEnd',
 					stopCode: StopCode.Finished,
@@ -471,7 +461,7 @@ describe('conversationExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -479,7 +469,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turn = getStore(result.stores)[0]!;
+		const turn = getTurns(stores)[0]!;
 		expect(turn.prompt.content[0]).toEqual({
 			type: 'text',
 			text: 'read /foo',
@@ -510,10 +500,10 @@ describe('conversationExtension', () => {
 	});
 
 	it('multiple turns from multiple prompt calls', async () => {
-		const result = await compileConversation();
+		const { middleware, stores } = await compileConversation();
 
 		const target = stubClient();
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 
 		await collect(
 			wrapped.prompt({
@@ -529,7 +519,7 @@ describe('conversationExtension', () => {
 			}),
 		);
 
-		const turns = getStore(result.stores);
+		const turns = getTurns(stores);
 		expect(turns).toHaveLength(2);
 		expect(turns[0]!.prompt.content[0]).toEqual({
 			type: 'text',

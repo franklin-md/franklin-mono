@@ -1,13 +1,12 @@
 import type { Extension } from '../../../algebra/types/index.js';
 import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentAPI } from '../../../systems/environment/index.js';
+import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import { globSpec } from './tools.js';
 
-export function globExtension(): Extension<CoreAPI & EnvironmentAPI> {
+export function globExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
 	return (api) => {
-		const env = api.getEnvironment();
-
-		api.registerTool(globSpec, async ({ pattern, options }) => {
+		api.registerTool(globSpec, async ({ pattern, options }, ctx) => {
+			const env = ctx.environment;
 			const rootDir = options.root_dir
 				? await env.filesystem.resolve(options.root_dir)
 				: undefined;

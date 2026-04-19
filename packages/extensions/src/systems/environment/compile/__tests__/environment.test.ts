@@ -3,11 +3,10 @@ import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
 import { compile } from '../../../../algebra/compiler/compile.js';
 import { combine } from '../../../../algebra/compiler/combine.js';
 import { createEnvironmentCompiler } from '../compiler.js';
-import { createCoreCompiler } from '../../../core/compile/compiler.js';
 import { createStoreCompiler } from '../../../store/compile/compiler.js';
-import { createEmptyStoreResult } from '../../../store/api/registry/result.js';
-import type { ReconfigurableEnvironment } from '../../api/types.js';
 import { StoreRegistry } from '../../../store/api/registry/index.js';
+import { emptyEnvironmentState } from '../../state.js';
+import type { ReconfigurableEnvironment } from '../../api/types.js';
 
 function mockEnvironment(): ReconfigurableEnvironment {
 	return {
@@ -40,58 +39,34 @@ function mockEnvironment(): ReconfigurableEnvironment {
 }
 
 describe('createEnvironmentCompiler', () => {
-	it('build returns the environment in the result', async () => {
+	it('build returns a runtime that exposes the environment', async () => {
 		const env = mockEnvironment();
-		const result = await compile(createEnvironmentCompiler(env), () => {});
+		const result = await compile(
+			createEnvironmentCompiler(env),
+			() => {},
+			emptyEnvironmentState(),
+		);
 
 		expect(result.environment.filesystem).toBe(env.filesystem);
 		expect(await result.environment.config()).toEqual(await env.config());
 	});
 
-	it('getEnvironment() returns the environment to extensions', async () => {
-		const env = mockEnvironment();
-		let received: ReconfigurableEnvironment | undefined;
-
-		await compile(createEnvironmentCompiler(env), (api) => {
-			received = api.getEnvironment();
-		});
-
-		expect(received).toBe(env);
-	});
-
-	it('combines with core compiler', async () => {
+	it('combines with a store compiler', async () => {
 		const env = mockEnvironment();
 		const compiler = combine(
-			createCoreCompiler(),
 			createEnvironmentCompiler(env),
+			createStoreCompiler(new StoreRegistry()),
 		);
 
-		const result = await compile(compiler, (api) => {
-			// Extension sees both CoreAPI and EnvironmentAPI
-			expect(api.getEnvironment()).toBe(env);
-			api.on('prompt', () => undefined);
-		});
-
-		expect(result.environment.filesystem).toBe(env.filesystem);
-		expect(result.client).toBeDefined();
-	});
-
-	it('combines with core + store compilers', async () => {
-		const env = mockEnvironment();
-		const registry = new StoreRegistry();
-		const seed = createEmptyStoreResult(registry);
-		const compiler = combine(
-			combine(createCoreCompiler(), createStoreCompiler(seed)),
-			createEnvironmentCompiler(env),
+		const result = await compile(
+			compiler,
+			(api) => {
+				api.registerStore('test', 42, 'private');
+			},
+			{ ...emptyEnvironmentState(), store: {} },
 		);
 
-		const result = await compile(compiler, (api) => {
-			const full = api;
-			expect(full.getEnvironment()).toBe(env);
-			full.registerStore('test', 42, 'private');
-		});
-
 		expect(result.environment.filesystem).toBe(env.filesystem);
-		expect(result.stores.has('test')).toBe(true);
+		expect(result.getStore<number>('test').get()).toBe(42);
 	});
 });

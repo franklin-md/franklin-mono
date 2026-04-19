@@ -1,37 +1,45 @@
 import type { BaseAPI } from '../api/index.js';
+import type { Compiler } from '../compiler/index.js';
 import type { BaseRuntime } from '../runtime/index.js';
 import type { BaseState } from '../state/index.js';
 import type { RuntimeSystem } from './types.js';
 
 /**
- * Decorate a RuntimeSystem with a post-build setup callback.
+ * Compiler-level decorator: run `setup` after build returns Runtime.
  *
- * The returned system has the same type signature — callers (including
- * `combine` / `systems`) cannot tell it apart from the original. The
- * `setup` function runs after the compiler's `build()` produces a
- * runtime, receiving both the live runtime and the state that seeded it.
+ * Pure `Compiler => Compiler` functor — `build` is decorated to call
+ * `setup(runtime, state)` after the inner build. State is available
+ * because it now lives in `build`.
+ */
+export function withSetupCompiler<API, S, Runtime>(
+	inner: Compiler<API, S, Runtime>,
+	setup: (runtime: Runtime, state: S) => Promise<void>,
+): Compiler<API, S, Runtime> {
+	return {
+		api: inner.api,
+		async build(state, getRuntime) {
+			const runtime = await inner.build(state, getRuntime);
+			await setup(runtime, state);
+			return runtime;
+		},
+	};
+}
+
+/**
+ * System-level convenience: lift `withSetupCompiler` through `RuntimeSystem`.
  */
 export function withSetup<
 	S extends BaseState,
 	API extends BaseAPI,
-	RT extends BaseRuntime<S>,
+	Runtime extends BaseRuntime<S>,
 >(
-	system: RuntimeSystem<S, API, RT>,
-	setup: (runtime: RT, state: S) => Promise<void>,
-): RuntimeSystem<S, API, RT> {
+	system: RuntimeSystem<S, API, Runtime>,
+	setup: (runtime: Runtime, state: S) => Promise<void>,
+): RuntimeSystem<S, API, Runtime> {
 	return {
 		emptyState: () => system.emptyState(),
-
-		async createCompiler(state: S) {
-			const compiler = await system.createCompiler(state);
-			return {
-				api: compiler.api,
-				async build() {
-					const runtime = await compiler.build();
-					await setup(runtime, state);
-					return runtime;
-				},
-			};
+		createCompiler() {
+			return withSetupCompiler(system.createCompiler(), setup);
 		},
 	};
 }

@@ -1,46 +1,31 @@
-import type { Compiler } from '../compiler/index.js';
-import { combineRuntimes } from '../runtime/index.js';
+import { combine as combineCompilers } from '../compiler/combine.js';
 import type {
 	BaseRuntimeSystem,
 	CombinableSystem,
 	CombineSystems,
-	InferAPI,
 	InferCompiler,
-	InferRuntime,
-	InferState,
 } from './types.js';
 
+/**
+ * Combine two `RuntimeSystem`s by merging their empty states and delegating
+ * compiler composition to the compiler-level `combine`.
+ */
 export function combine<
 	RTS1 extends BaseRuntimeSystem,
-	RTS2 extends BaseRuntimeSystem,
->(
-	sys1: RTS1,
-	sys2: RTS2 & CombinableSystem<RTS1, RTS2>,
-): CombineSystems<RTS1, RTS2> {
-	type CS = InferState<CombineSystems<RTS1, RTS2>>;
-	type CA = InferAPI<CombineSystems<RTS1, RTS2>>;
-	type CR = InferRuntime<CombineSystems<RTS1, RTS2>>;
+	RTS2 extends BaseRuntimeSystem & CombinableSystem<RTS1, RTS2>,
+>(sys1: RTS1, sys2: RTS2): CombineSystems<RTS1, RTS2> {
 	return {
-		emptyState(): CS {
+		emptyState() {
 			return {
 				...sys1.emptyState(),
 				...sys2.emptyState(),
-			};
+			} as never;
 		},
 
-		async createCompiler(state: CS): Promise<Compiler<CA, CR>> {
-			const [c1, c2] = await Promise.all([
-				sys1.createCompiler(state) as Promise<InferCompiler<RTS1>>,
-				sys2.createCompiler(state) as Promise<InferCompiler<RTS2>>,
-			]);
-
-			return {
-				api: { ...c1.api, ...c2.api } as CA,
-				async build(): Promise<CR> {
-					const [rt1, rt2] = await Promise.all([c1.build(), c2.build()]);
-					return combineRuntimes(rt1, rt2) as CR;
-				},
-			};
+		createCompiler() {
+			const c1 = sys1.createCompiler() as InferCompiler<RTS1>;
+			const c2 = sys2.createCompiler() as InferCompiler<RTS2>;
+			return combineCompilers(c1, c2);
 		},
 	};
 }

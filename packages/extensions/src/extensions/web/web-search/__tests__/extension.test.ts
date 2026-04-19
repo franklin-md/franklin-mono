@@ -1,10 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
-import { compile } from '../../../../algebra/compiler/compile.js';
-import { combine } from '../../../../algebra/compiler/combine.js';
-import { createCoreCompiler } from '../../../../systems/core/compile/compiler.js';
-import { createEnvironmentCompiler } from '../../../../systems/environment/compile/compiler.js';
+import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { webSearchExtension } from '../extension.js';
 
@@ -39,18 +36,13 @@ function mockEnvironment(
 }
 
 function compileSearch(env: ReconfigurableEnvironment) {
-	const compiler = combine(
-		createCoreCompiler(),
-		createEnvironmentCompiler(env),
-	);
-	return compile(compiler, webSearchExtension({ maxRetries: 1 }));
+	return compileCoreWithEnv(webSearchExtension({ maxRetries: 1 }), env);
 }
 
-async function executeSearch(
-	result: Awaited<ReturnType<typeof compileSearch>>,
-	query: string,
-) {
-	return result.server.toolExecute(
+type Compiled = Awaited<ReturnType<typeof compileSearch>>;
+
+async function executeSearch(compiled: Compiled, query: string) {
+	return compiled.middleware.server.toolExecute(
 		{
 			call: {
 				type: 'toolCall',
@@ -103,9 +95,9 @@ describe('webSearchExtension', () => {
 				'application/json',
 			),
 		);
-		const result = await compileSearch(env);
+		const compiled = await compileSearch(env);
 
-		const toolResult = await executeSearch(result, 'example');
+		const toolResult = await executeSearch(compiled, 'example');
 		const fetchMock = env.web.fetch as ReturnType<typeof vi.fn>;
 
 		expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -131,18 +123,18 @@ describe('webSearchExtension', () => {
 				.mockResolvedValueOnce(
 					textResponse(
 						`
-						<html><body><table>
-							<tr><td><a class="result-link" href="https://fallback.test/">Fallback</a></td></tr>
-							<tr><td class="result-snippet">Fallback snippet.</td></tr>
-						</table></body></html>
-						`,
+							<html><body><table>
+								<tr><td><a class="result-link" href="https://fallback.test/">Fallback</a></td></tr>
+								<tr><td class="result-snippet">Fallback snippet.</td></tr>
+							</table></body></html>
+							`,
 						'text/html',
 					),
 				),
 		);
-		const result = await compileSearch(env);
+		const compiled = await compileSearch(env);
 
-		const toolResult = await executeSearch(result, 'fallback example');
+		const toolResult = await executeSearch(compiled, 'fallback example');
 		const fetchMock = env.web.fetch as ReturnType<typeof vi.fn>;
 
 		expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -175,9 +167,9 @@ describe('webSearchExtension', () => {
 				})
 				.mockResolvedValueOnce(textResponse('not html', 'application/json')),
 		);
-		const result = await compileSearch(env);
+		const compiled = await compileSearch(env);
 
-		const toolResult = await executeSearch(result, 'broken');
+		const toolResult = await executeSearch(compiled, 'broken');
 
 		expect(toolResult.isError).toBe(true);
 		expect(getResultText(toolResult)).toContain('Exa MCP failed:');

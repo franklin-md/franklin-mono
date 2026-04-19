@@ -1,6 +1,7 @@
 import type { EmptyState } from './state.js';
 import type { BaseRuntime } from '../../algebra/runtime/types.js';
 
+// TODO: Rename to IdentityRuntime
 export type EmptyRuntime = BaseRuntime<EmptyState>;
 
 export function emptyRuntime(): EmptyRuntime {

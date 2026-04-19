@@ -1,14 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
-import { compileAll } from '../../../../algebra/compiler/compile.js';
-import { combine } from '../../../../algebra/compiler/combine.js';
-import { createCoreCompiler } from '../../../../systems/core/compile/compiler.js';
-import { createEnvironmentCompiler } from '../../../../systems/environment/compile/compiler.js';
-import { createStoreCompiler } from '../../../../systems/store/compile/compiler.js';
-import {
-	StoreRegistry,
-	createEmptyStoreResult,
-} from '../../../../systems/store/api/index.js';
+import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { editExtension } from '../../edit/extension.js';
 import { writeExtension } from '../extension.js';
@@ -60,23 +52,21 @@ function mockEnvironment(
 }
 
 function compileWriteAndEdit(env: ReconfigurableEnvironment) {
-	const compiler = combine(
-		combine(
-			createCoreCompiler(),
-			createStoreCompiler(createEmptyStoreResult(new StoreRegistry())),
-		),
-		createEnvironmentCompiler(env),
-	);
 	// editExtension owns the store; writeExtension uses it
-	return compileAll(compiler, [editExtension(), writeExtension()]);
+	return compileCoreWithStoreAndEnv((api) => {
+		editExtension()(api);
+		writeExtension()(api);
+	}, env);
 }
 
+type Compiled = Awaited<ReturnType<typeof compileWriteAndEdit>>;
+
 async function executeTool(
-	result: Awaited<ReturnType<typeof compileWriteAndEdit>>,
+	compiled: Compiled,
 	name: string,
 	args: Record<string, unknown>,
 ) {
-	return result.server.toolExecute(
+	return compiled.middleware.server.toolExecute(
 		{
 			call: {
 				type: 'toolCall',
@@ -101,16 +91,14 @@ function getResultText(result: {
 describe('writeExtension', () => {
 	it('allows editing a file after writing it without a prior read', async () => {
 		const env = mockEnvironment({});
-		const result = await compileWriteAndEdit(env);
+		const compiled = await compileWriteAndEdit(env);
 
-		// Write a new file
-		await executeTool(result, 'write_file', {
+		await executeTool(compiled, 'write_file', {
 			path: 'new.txt',
 			content: 'hello world',
 		});
 
-		// Edit the file without calling read_file first
-		const editResult = await executeTool(result, 'edit_file', {
+		const editResult = await executeTool(compiled, 'edit_file', {
 			path: 'new.txt',
 			old_text: 'hello',
 			new_text: 'goodbye',
@@ -126,20 +114,18 @@ describe('writeExtension', () => {
 
 	it('allows consecutive writes followed by an edit', async () => {
 		const env = mockEnvironment({});
-		const result = await compileWriteAndEdit(env);
+		const compiled = await compileWriteAndEdit(env);
 
-		// Write, then overwrite
-		await executeTool(result, 'write_file', {
+		await executeTool(compiled, 'write_file', {
 			path: 'file.txt',
 			content: 'first version',
 		});
-		await executeTool(result, 'write_file', {
+		await executeTool(compiled, 'write_file', {
 			path: 'file.txt',
 			content: 'second version',
 		});
 
-		// Edit should work against the latest written content
-		const editResult = await executeTool(result, 'edit_file', {
+		const editResult = await executeTool(compiled, 'edit_file', {
 			path: 'file.txt',
 			old_text: 'second',
 			new_text: 'final',

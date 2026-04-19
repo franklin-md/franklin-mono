@@ -1,9 +1,19 @@
 import type { StoreResult } from './api/registry/result.js';
 import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { StoreState, StoreMapping } from './state.js';
+import type { Store } from './api/types.js';
+import type { StoreKey } from './api/key.js';
 
+/**
+ * Store capabilities exposed to handlers at stage 1.
+ *
+ * `getStore(key)` is the only way to obtain a handle. Handles are never
+ * captured at registration time. Returns the live `Store<T>` whose
+ * value type is inferred from the `StoreKey`.
+ */
 export type StoreRuntime = BaseRuntime<StoreState> & {
-	readonly stores: StoreResult;
+	getStore<X extends string, T>(key: StoreKey<X, T>): Store<T>;
+	getStore<T>(name: string): Store<T>;
 };
 
 function extractMapping(stores: StoreResult): StoreMapping {
@@ -16,7 +26,13 @@ function extractMapping(stores: StoreResult): StoreMapping {
 
 export function createStoreRuntime(stores: StoreResult): StoreRuntime {
 	return {
-		stores,
+		getStore<T>(nameOrKey: string): Store<T> {
+			const entry = stores.get(nameOrKey);
+			if (!entry) {
+				throw new Error(`Store "${nameOrKey}" was not registered`);
+			}
+			return entry.store as Store<T>;
+		},
 		async state(): Promise<StoreState> {
 			return { store: extractMapping(stores) };
 		},

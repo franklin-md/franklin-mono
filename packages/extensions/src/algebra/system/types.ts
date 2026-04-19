@@ -4,41 +4,38 @@ import type { Compiler } from '../compiler/index.js';
 import type { BaseRuntime, CombinedRuntime } from '../runtime/index.js';
 import type { BaseState } from '../state/index.js';
 
+/**
+ * A `RuntimeSystem` exposes a fresh `Compiler` per `createCompiler()` —
+ * no state needed yet; state is threaded in at `build` time. The
+ * compiler's `Runtime` type is what handlers receive via `ctx.runtime`
+ * and what `compileAll` eventually ties via the Y-combinator.
+ */
 export type RuntimeSystem<
 	S extends BaseState,
 	API extends BaseAPI,
-	RT extends BaseRuntime<S>,
+	Runtime extends BaseRuntime<S>,
 > = {
 	emptyState(): S;
-	createCompiler(state: S): Promise<Compiler<API, RT>>;
+	createCompiler(): Compiler<API, S, Runtime>;
 };
 
-/**
- * Type-erased `RuntimeSystem` for use in generic constraints.
- *
- * Equivalent to `RuntimeSystem<any, any, any>` — use it when a signature
- * accepts "any runtime system" without caring about its specific state,
- * API, or runtime shape. Prefer this over the raw triple-any so the
- * constraint has a single source of truth if `RuntimeSystem` ever grows
- * another type parameter.
- */
 export type BaseRuntimeSystem = RuntimeSystem<any, any, any>;
 
 // ---------------------------------------------------------------------------
-// Inference helpers — extract type parameters from a RuntimeSystem or Runtime
+// Inference helpers
 // ---------------------------------------------------------------------------
 
 type InferSystem<T> =
 	T extends RuntimeSystem<
 		infer S extends BaseState,
 		infer API extends BaseAPI,
-		infer RT
+		infer Runtime
 	>
-		? RT extends BaseRuntime<S>
+		? Runtime extends BaseRuntime<S>
 			? {
 					state: S;
 					api: API;
-					runtime: RT;
+					runtime: Runtime;
 				}
 			: never
 		: T extends BaseRuntime<infer S>
@@ -51,6 +48,7 @@ type InferSystem<T> =
 
 export type InferCompiler<T> = Compiler<
 	InferSystem<T>['api'],
+	InferSystem<T>['state'],
 	InferSystem<T>['runtime']
 >;
 
@@ -64,15 +62,6 @@ type RuntimeExtrasOf<Sys extends BaseRuntimeSystem> = Omit<
 	InferRuntime<Sys>,
 	keyof BaseRuntime<InferState<Sys>>
 >;
-
-// ---------------------------------------------------------------------------
-// Type-level combine — mirrors the value-level `combine` function.
-//
-// Overlap between state, API, or runtime-extra keys is rejected via
-// `CombinableSystem` on the second operand of `combine()` /
-// `SystemBuilder.add()`, so this type is the plain composition without an
-// embedded guard.
-// ---------------------------------------------------------------------------
 
 export type CombineSystems<
 	Sys1 extends BaseRuntimeSystem,
@@ -88,15 +77,6 @@ export type CombineSystems<
 	>
 >;
 
-/**
- * Type-level predicate asserting that `B` can legally be combined with `A`.
- *
- * Reduces to `unknown` when their top-level state keys, API keys, and
- * runtime-only keys are disjoint (so `Sys2 & CombinableSystem<Sys1, Sys2>`
- * is just `Sys2`) and to `never` when they overlap (collapsing the
- * intersection). Thread it onto the second operand of a combine-style op to
- * put the error at the call site.
- */
 export type CombinableSystem<
 	A extends BaseRuntimeSystem,
 	B extends BaseRuntimeSystem,

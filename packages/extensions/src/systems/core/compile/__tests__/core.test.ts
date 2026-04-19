@@ -1,12 +1,26 @@
 /* eslint-disable require-yield */
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
-import { createCoreCompiler } from '../compiler.js';
-import { compile, compileAll } from '../../../../algebra/compiler/compile.js';
-import { combine } from '../../../../algebra/compiler/combine.js';
-import type { Compiler } from '../../../../algebra/compiler/types.js';
+import type { CoreAPI } from '../../api/api.js';
+import type {
+	CancelHandler,
+	PromptHandler,
+	SystemPromptHandler,
+	StreamObserverEvent,
+	StreamObserverHandler,
+	ToolObserverEvent,
+	ToolObserverHandler,
+} from '../../api/handlers.js';
+import type { BoundTool, ExtensionToolDefinition } from '../../api/tool.js';
+import type { ToolSpec } from '../../api/tool-spec.js';
 import type { Extension } from '../../../../algebra/types/extension.js';
 import type { FullMiddleware } from '../../api/middleware/types.js';
+import {
+	STREAM_OBSERVER_EVENTS,
+	TOOL_OBSERVER_EVENTS,
+	addEventHandler,
+	buildMiddleware,
+} from '../middleware.js';
 import { apply } from '@franklin/lib/middleware';
 import type {
 	MiniACPAgent,
@@ -21,9 +35,82 @@ import { resolveToolOutput } from '../../api/tool.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Compile a single CoreAPI extension into FullMiddleware. */
+/**
+ * Build middleware directly from a single CoreAPI extension, without going
+ * through the full Core compiler (which requires a transport and builds a
+ * full CoreRuntime). Handlers receive `undefined` as their runtime/ctx —
+ * these tests exercise middleware composition and don't touch it.
+ */
 async function compileExt(ext: Extension): Promise<FullMiddleware> {
-	return compile(createCoreCompiler(), ext);
+	const cancelHandlers: CancelHandler[] = [];
+	const promptHandlers: PromptHandler[] = [];
+	const systemPromptHandlers: SystemPromptHandler[] = [];
+	const observers = new Map<
+		StreamObserverEvent,
+		StreamObserverHandler<StreamObserverEvent>[]
+	>();
+	const toolObservers = new Map<
+		ToolObserverEvent,
+		ToolObserverHandler<ToolObserverEvent>[]
+	>();
+	const tools: BoundTool[] = [];
+
+	const stubCtx = undefined as never;
+	const api: CoreAPI = {
+		on(event: string, handler: (...args: any[]) => any) {
+			if (STREAM_OBSERVER_EVENTS.has(event)) {
+				addEventHandler(
+					observers,
+					event as StreamObserverEvent,
+					((e: any) =>
+						handler(e, stubCtx)) as StreamObserverHandler<StreamObserverEvent>,
+				);
+			} else if (TOOL_OBSERVER_EVENTS.has(event)) {
+				addEventHandler(
+					toolObservers,
+					event as ToolObserverEvent,
+					((e: any) =>
+						handler(e, stubCtx)) as ToolObserverHandler<ToolObserverEvent>,
+				);
+			} else if (event === 'prompt') {
+				promptHandlers.push((c) => handler(c, stubCtx));
+			} else if (event === 'systemPrompt') {
+				systemPromptHandlers.push((c) => handler(c, stubCtx));
+			} else {
+				cancelHandlers.push((p) => handler(p, stubCtx));
+			}
+		},
+		registerTool(
+			specOrTool: ToolSpec | ExtensionToolDefinition,
+			execute?: (params: any, ctx: any) => any,
+		) {
+			if (execute) {
+				const spec = specOrTool as ToolSpec;
+				tools.push({
+					name: spec.name,
+					description: spec.description,
+					schema: spec.schema,
+					execute: (args) => execute(args, stubCtx),
+				});
+			} else {
+				const def = specOrTool as ExtensionToolDefinition;
+				tools.push({
+					name: def.name,
+					description: def.description,
+					schema: def.schema,
+					execute: (args) => def.execute(args, stubCtx),
+				});
+			}
+		},
+	};
+	ext(api);
+	return buildMiddleware(
+		cancelHandlers,
+		promptHandlers,
+		observers,
+		toolObservers,
+		tools,
+	);
 }
 
 /** Create a minimal MiniACPClient stub for testing with apply(). */
@@ -89,7 +176,6 @@ describe('buildCore – prompt handlers', () => {
 		const originalContent = [{ type: 'text' as const, text: 'hello' }];
 		await collect(wrapped.prompt({ role: 'user', content: originalContent }));
 
-		// The handler appended ' [injected]', so target should see 2 content blocks
 		const params = received[0] as { content: { text: string }[] };
 		expect(params.content).toHaveLength(2);
 		expect(params.content[1]?.text).toBe(' [injected]');
@@ -206,7 +292,10 @@ describe('buildCore – registerTool()', () => {
 			next,
 		);
 
-		expect(testTool.execute).toHaveBeenCalledWith({ input: 'hello' });
+		expect(testTool.execute).toHaveBeenCalledWith(
+			{ input: 'hello' },
+			undefined,
+		);
 		expect(result.toolCallId).toBe('call-1');
 		expect(result.content[0]).toEqual({
 			type: 'text',
@@ -431,7 +520,6 @@ describe('buildCore – registerTool() spec overload', () => {
 			api.registerTool(spec, executeFn);
 		});
 
-		// Tool executes correctly via server middleware
 		const next = vi.fn();
 		const result = await mw.server.toolExecute(
 			{
@@ -445,14 +533,13 @@ describe('buildCore – registerTool() spec overload', () => {
 			next,
 		);
 
-		expect(executeFn).toHaveBeenCalledWith({ value: 5 });
+		expect(executeFn).toHaveBeenCalledWith({ value: 5 }, undefined);
 		expect(result.content[0]).toEqual({
 			type: 'text',
 			text: JSON.stringify({ doubled: 10 }),
 		});
 		expect(next).not.toHaveBeenCalled();
 
-		// Tool is injected into setContext
 		const received: any[] = [];
 		const target = stubClient({
 			setContext: async (params) => {
@@ -478,7 +565,6 @@ describe('buildCore – empty extension', () => {
 			// no registrations
 		});
 
-		// Both client and server are always populated (with passthrough defaults)
 		expect(mw.client).toBeDefined();
 		expect(mw.client.prompt).toBeDefined();
 		expect(mw.client.setContext).toBeDefined();
@@ -486,299 +572,6 @@ describe('buildCore – empty extension', () => {
 		expect(mw.client.cancel).toBeDefined();
 		expect(mw.server).toBeDefined();
 		expect(mw.server.toolExecute).toBeDefined();
-	});
-});
-
-// ---------------------------------------------------------------------------
-// combine()
-// ---------------------------------------------------------------------------
-
-describe('combine', () => {
-	it('merges APIs from two compilers', async () => {
-		const createA = (): Compiler<
-			{ greet(n: string): void },
-			{ greeted: string[] }
-		> => {
-			const names: string[] = [];
-			return {
-				api: {
-					greet: (n) => {
-						names.push(n);
-					},
-				},
-				async build() {
-					return { greeted: names };
-				},
-			};
-		};
-
-		const createB = (): Compiler<
-			{ log(m: string): void },
-			{ logged: string[] }
-		> => {
-			const msgs: string[] = [];
-			return {
-				api: {
-					log: (m) => {
-						msgs.push(m);
-					},
-				},
-				async build() {
-					return { logged: msgs };
-				},
-			};
-		};
-
-		const result = await compile(combine(createA(), createB()), (api) => {
-			api.greet('alice');
-			api.log('hello');
-		});
-
-		expect(result.greeted).toEqual(['alice']);
-		expect(result.logged).toEqual(['hello']);
-	});
-
-	it('is associative — combine(combine(a,b),c) ≡ combine(a,combine(b,c))', async () => {
-		const createA = (): Compiler<{ a(): void }, { aCount: number }> => {
-			let count = 0;
-			return {
-				api: {
-					a() {
-						count++;
-					},
-				},
-				async build() {
-					return { aCount: count };
-				},
-			};
-		};
-
-		const createB = (): Compiler<{ b(): void }, { bCount: number }> => {
-			let count = 0;
-			return {
-				api: {
-					b() {
-						count++;
-					},
-				},
-				async build() {
-					return { bCount: count };
-				},
-			};
-		};
-
-		const createC = (): Compiler<{ c(): void }, { cCount: number }> => {
-			let count = 0;
-			return {
-				api: {
-					c() {
-						count++;
-					},
-				},
-				async build() {
-					return { cCount: count };
-				},
-			};
-		};
-
-		const ext = (api: { a(): void; b(): void; c(): void }) => {
-			api.a();
-			api.b();
-			api.c();
-		};
-
-		// Left-associated: combine(combine(a, b), c)
-		const leftResult = await compile(
-			combine(combine(createA(), createB()), createC()),
-			ext,
-		);
-
-		// Right-associated: combine(a, combine(b, c))
-		const rightResult = await compile(
-			combine(createA(), combine(createB(), createC())),
-			ext,
-		);
-
-		expect(leftResult).toEqual({ aCount: 1, bCount: 1, cCount: 1 });
-		expect(rightResult).toEqual({ aCount: 1, bCount: 1, cCount: 1 });
-	});
-
-	it('combines core compiler with a custom compiler', async () => {
-		const createTagCompiler = (): Compiler<
-			{ tag(t: string): void },
-			{ tags: string[] }
-		> => {
-			const tags: string[] = [];
-			return {
-				api: {
-					tag(t) {
-						tags.push(t);
-					},
-				},
-				async build() {
-					return { tags };
-				},
-			};
-		};
-
-		const result = await compile(
-			combine(createCoreCompiler(), createTagCompiler()),
-			(api) => {
-				api.on('prompt', (ctx) => {
-					ctx.prependContent({ type: 'text', text: 'injected' });
-				});
-				api.tag('my-ext');
-			},
-		);
-
-		// Core compiler produced middleware
-		expect(result.client).toBeDefined();
-		expect(result.client.prompt).toBeDefined();
-
-		// Tag compiler produced tags
-		expect(result.tags).toEqual(['my-ext']);
-	});
-
-	it('empty compilers combine to empty result', async () => {
-		const createEmpty = (): Compiler<object, object> => ({
-			api: {},
-			async build() {
-				return {};
-			},
-		});
-
-		const result = await compile(
-			combine(createEmpty(), createEmpty()),
-			() => {},
-		);
-		expect(result).toEqual({});
-	});
-});
-
-// ---------------------------------------------------------------------------
-// compileAll
-// ---------------------------------------------------------------------------
-
-describe('compileAll', () => {
-	it('compiles 0 extensions to passthrough result', async () => {
-		const result = await compileAll(createCoreCompiler(), []);
-
-		expect(result.client).toBeDefined();
-		expect(result.server).toBeDefined();
-	});
-
-	it('compiles 1 extension same as compile', async () => {
-		const ext: Extension = (api) => {
-			api.on('prompt', () => {
-				/* side effect */
-			});
-		};
-
-		const result = await compileAll(createCoreCompiler(), [ext]);
-
-		expect(result.client).toBeDefined();
-		expect(result.client.prompt).toBeDefined();
-	});
-
-	it('compiles N extensions, prompt contributions compose across extensions', async () => {
-		const calls: string[] = [];
-
-		const ext1: Extension = (api) => {
-			api.on('prompt', (ctx) => {
-				calls.push('ext1');
-				ctx.prependContent({ type: 'text', text: 'ext1' });
-			});
-		};
-
-		const ext2: Extension = (api) => {
-			api.on('prompt', (ctx) => {
-				calls.push('ext2');
-				ctx.prependContent({ type: 'text', text: 'ext2' });
-			});
-		};
-
-		const result = await compileAll(createCoreCompiler(), [ext1, ext2]);
-
-		const received: any[] = [];
-		const target = stubClient({
-			prompt: async function* (params) {
-				received.push(params);
-			},
-		});
-
-		const wrapped = apply(result.client, target);
-		await collect(
-			wrapped.prompt({
-				role: 'user',
-				content: [{ type: 'text', text: 'x' }],
-			}),
-		);
-
-		expect(calls).toEqual(['ext1', 'ext2']);
-		const params = received[0] as { content: { text: string }[] };
-		expect(params.content.map((item) => item.text)).toEqual([
-			'ext1',
-			'ext2',
-			'x',
-		]);
-	});
-
-	it('compileAll merges server middleware from multiple extensions', async () => {
-		const ext1: Extension = (api) => {
-			api.registerTool({
-				name: 'tool1',
-				description: 'Tool 1',
-				schema: z.object({}),
-				execute: async () => 'tool1',
-			});
-		};
-
-		const ext2: Extension = (api) => {
-			api.registerTool({
-				name: 'tool2',
-				description: 'Tool 2',
-				schema: z.object({}),
-				execute: async () => 'tool2',
-			});
-		};
-
-		const result = await compileAll(createCoreCompiler(), [ext1, ext2]);
-
-		expect(result.server).toBeDefined();
-
-		// tool1 should short-circuit
-		const next = vi.fn(async () => ({
-			toolCallId: 'fallback',
-			content: [{ type: 'text' as const, text: 'fallback' }],
-		}));
-
-		const r1 = await result.server.toolExecute(
-			{
-				call: {
-					type: 'toolCall',
-					id: 'c1',
-					name: 'tool1',
-					arguments: {},
-				},
-			},
-			next,
-		);
-		expect(r1.toolCallId).toBe('c1');
-		expect(next).not.toHaveBeenCalled();
-
-		// tool2 should also short-circuit
-		const r2 = await result.server.toolExecute(
-			{
-				call: {
-					type: 'toolCall',
-					id: 'c2',
-					name: 'tool2',
-					arguments: {},
-				},
-			},
-			next,
-		);
-		expect(r2.toolCallId).toBe('c2');
 	});
 });
 
@@ -824,9 +617,7 @@ describe('buildCore – stream observers', () => {
 			}),
 		);
 
-		// Observer saw both chunks
 		expect(observed).toEqual([chunk1, chunk2]);
-		// Events still pass through
 		expect(events).toEqual([chunk1, chunk2]);
 	});
 
@@ -869,7 +660,6 @@ describe('buildCore – stream observers', () => {
 			}),
 		);
 
-		// Only update was observed, not chunk
 		expect(observed).toEqual([update]);
 	});
 
@@ -944,13 +734,10 @@ describe('buildCore – stream observers', () => {
 			}),
 		);
 
-		// Prompt handler ran
 		expect(promptCalls).toEqual(['handler']);
-		// Params were transformed
 		expect(
 			(received[0] as { content: { text: string }[] }).content,
 		).toHaveLength(2);
-		// Observer saw the chunk
 		expect(observed).toEqual([chunk]);
 	});
 

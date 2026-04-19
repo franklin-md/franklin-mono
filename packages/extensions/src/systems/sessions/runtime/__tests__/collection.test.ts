@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SessionCollection } from '../collection.js';
 import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
-import type { EmptyState } from '../../../empty/state.js';
+import type { EmptyState } from '../../../identity/state.js';
 
 type TestRuntime = BaseRuntime<EmptyState>;
 

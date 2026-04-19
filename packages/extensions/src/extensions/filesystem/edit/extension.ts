@@ -1,6 +1,6 @@
 import type { Extension } from '../../../algebra/types/index.js';
 import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentAPI } from '../../../systems/environment/index.js';
+import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import { sha256Hex } from '../hash.js';
 import { decode } from './text/encoding.js';
 import {
@@ -11,6 +11,7 @@ import {
 import { findUnique } from './match/find-unique.js';
 import { applyReplacement } from './replace.js';
 import type { StoreAPI } from '../../../systems/store/index.js';
+import type { StoreRuntime } from '../../../systems/store/runtime.js';
 import { fileKey } from '../common/key.js';
 import { createFileControl } from '../common/control.js';
 import { editFileSpec } from './tools.js';
@@ -27,16 +28,17 @@ import { editFileSpec } from './tools.js';
  * Platform-agnostic: reads/writes via the Environment filesystem.
  */
 export function editExtension(): Extension<
-	CoreAPI & EnvironmentAPI & StoreAPI
+	CoreAPI<EnvironmentRuntime & StoreRuntime> & StoreAPI
 > {
 	return (api) => {
-		const env = api.getEnvironment();
 		// The store is private to ONE agent; it keeps track of the agent's "seen" files.
-		const store = api.registerStore(fileKey, {}, 'private');
-		const file = createFileControl(store);
+		api.registerStore(fileKey, {}, 'private');
 		api.registerTool(
 			editFileSpec,
-			async ({ path, old_text, new_text, replace_all }) => {
+			async ({ path, old_text, new_text, replace_all }, ctx) => {
+				const env = ctx.environment;
+				const store = ctx.getStore(fileKey);
+				const file = createFileControl(store);
 				// 1. Read + decode
 				const absPath = await env.filesystem.resolve(path);
 				let bytes: Uint8Array;

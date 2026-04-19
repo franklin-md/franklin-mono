@@ -17,7 +17,7 @@ describe('createStoreSystem', () => {
 			},
 		]);
 
-		expect(runtime.stores.get('count')?.store.get()).toBe(0);
+		expect(runtime.getStore<number>('count').get()).toBe(0);
 	});
 
 	it('state returns store mapping keyed under "store"', async () => {
@@ -45,7 +45,7 @@ describe('createStoreSystem', () => {
 			},
 		]);
 
-		runtime.stores.get('data')!.store.set(() => 99);
+		runtime.getStore<number>('data').set(() => 99);
 
 		const forked = await runtime.fork();
 
@@ -90,7 +90,7 @@ describe('createStoreSystem', () => {
 			},
 		]);
 
-		expect(runtime2.stores.get('count')?.store.get()).toBe(42);
+		expect(runtime2.getStore<number>('count').get()).toBe(42);
 	});
 
 	it('emptyState returns empty keyed mapping', () => {

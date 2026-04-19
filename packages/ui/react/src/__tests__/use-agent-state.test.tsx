@@ -6,7 +6,7 @@ import { useAgentState } from '../agent/use-agent-state.js';
 import { AgentProvider } from '../agent/agent-context.js';
 import { createStore, storeKey } from '@franklin/extensions';
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { Store, StoreResult, StoreEntry } from '@franklin/extensions';
+import type { Store, StoreEntry } from '@franklin/extensions';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -17,10 +17,14 @@ import type { Store, StoreResult, StoreEntry } from '@franklin/extensions';
  */
 function makeAgent(entries: Map<string, StoreEntry>): FranklinRuntime {
 	return {
-		stores: {
-			get: (name: string) => entries.get(name),
-		} as unknown as StoreResult,
-	} as FranklinRuntime;
+		getStore: (name: string) => {
+			const entry = entries.get(name);
+			if (!entry) {
+				throw new Error(`useAgentState: no store named "${name}" on agent`);
+			}
+			return entry.store;
+		},
+	} as unknown as FranklinRuntime;
 }
 
 function entry(
