@@ -11,7 +11,6 @@ export type {
 } from './handlers.js';
 export type {
 	ExtensionToolDefinition,
-	BoundTool,
 	ToolOutput,
 	ToolExecuteReturn,
 } from './tool.js';

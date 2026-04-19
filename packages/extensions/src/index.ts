@@ -17,7 +17,7 @@ export type {
 export { resolveToolOutput } from './systems/core/api/index.js';
 export { toolSpec } from './systems/core/api/index.js';
 export { serializeTool, toToolInputSchema } from './systems/core/api/index.js';
-export type { DependencyAPI } from './systems/dependency/index.js';
+export type { DependencyRuntime } from './systems/dependency/index.js';
 export type { EnvironmentAPI } from './systems/environment/api/index.js';
 export type {
 	Environment,

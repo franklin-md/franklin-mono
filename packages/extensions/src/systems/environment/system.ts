@@ -22,19 +22,26 @@ export type EnvironmentSystem = RuntimeSystem<
 	EnvironmentRuntime
 >;
 
+/**
+ * Environment constructs the env at **build** time. The api surface is
+ * empty — `getEnvironment()` is gone; extensions access env via
+ * `ctx.runtime.environment.*`.
+ */
 export function createEnvironmentSystem(
 	factory: EnvironmentFactory,
 ): EnvironmentSystem {
 	return {
 		emptyState: emptyEnvironmentState,
 
-		async createCompiler(
-			state: EnvironmentState,
-		): Promise<Compiler<EnvironmentAPI, EnvironmentRuntime>> {
-			const env = await factory(state.env);
+		createCompiler(): Compiler<
+			EnvironmentAPI,
+			EnvironmentState,
+			EnvironmentRuntime
+		> {
 			return {
-				api: { getEnvironment: () => env },
-				async build() {
+				api: {},
+				async build(state) {
+					const env = await factory(state.env);
 					return createEnvironmentRuntime(env);
 				},
 			};

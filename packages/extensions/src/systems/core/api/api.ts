@@ -11,6 +11,7 @@ import type {
 	MaybePromise,
 	WithContext,
 } from '../../../algebra/types/index.js';
+import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import type { CoreRuntime } from '../runtime.js';
 
 /**
@@ -26,7 +27,7 @@ import type { CoreRuntime } from '../runtime.js';
  * argument — no wrapper object. Extensions read capabilities via
  * `runtime.environment`, `runtime.session`, `runtime.getStore(key)`, etc.
  */
-export interface CoreAPI<Runtime = CoreRuntime> {
+export interface CoreAPI<Runtime extends BaseRuntime<unknown> = CoreRuntime> {
 	on(event: 'prompt', handler: WithContext<PromptHandler, Runtime>): void;
 	on(event: 'cancel', handler: WithContext<CancelHandler, Runtime>): void;
 

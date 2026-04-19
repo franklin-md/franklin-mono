@@ -11,7 +11,7 @@ import type {
 	ToolObserverEvent,
 	ToolObserverHandler,
 } from '../../api/handlers.js';
-import type { BoundTool, ExtensionToolDefinition } from '../../api/tool.js';
+import type { ExtensionToolDefinition } from '../../api/tool.js';
 import type { ToolSpec } from '../../api/tool-spec.js';
 import type { Extension } from '../../../../algebra/types/extension.js';
 import type { FullMiddleware } from '../../api/middleware/types.js';
@@ -53,7 +53,7 @@ async function compileExt(ext: Extension): Promise<FullMiddleware> {
 		ToolObserverEvent,
 		ToolObserverHandler<ToolObserverEvent>[]
 	>();
-	const tools: BoundTool[] = [];
+	const tools: ExtensionToolDefinition[] = [];
 
 	const stubCtx = undefined as never;
 	const api: CoreAPI = {
@@ -90,16 +90,10 @@ async function compileExt(ext: Extension): Promise<FullMiddleware> {
 					name: spec.name,
 					description: spec.description,
 					schema: spec.schema,
-					execute: (args) => execute(args, stubCtx),
+					execute,
 				});
 			} else {
-				const def = specOrTool as ExtensionToolDefinition;
-				tools.push({
-					name: def.name,
-					description: def.description,
-					schema: def.schema,
-					execute: (args) => def.execute(args, stubCtx),
-				});
+				tools.push(specOrTool as ExtensionToolDefinition);
 			}
 		},
 	};
@@ -110,6 +104,7 @@ async function compileExt(ext: Extension): Promise<FullMiddleware> {
 		observers,
 		toolObservers,
 		tools,
+		() => stubCtx,
 	);
 }
 

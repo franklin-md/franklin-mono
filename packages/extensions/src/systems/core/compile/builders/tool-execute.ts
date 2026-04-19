@@ -6,6 +6,7 @@ import type {
 } from '../../api/handlers.js';
 import type { ExtensionToolDefinition } from '../../api/tool.js';
 import { resolveToolOutput } from '../../api/tool.js';
+import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
 
 function notifyObservers<K extends ToolObserverEvent>(
@@ -27,8 +28,9 @@ function notifyObservers<K extends ToolObserverEvent>(
  *
  * When observers are provided, notifies them before and after execution.
  */
-export function buildToolExecuteMiddleware(
-	tools: ExtensionToolDefinition[],
+export function buildToolExecuteMiddleware<Ctx extends BaseRuntime<unknown>>(
+	tools: ExtensionToolDefinition<unknown, Ctx>[],
+	getCtx: () => Ctx,
 	observers?: ReadonlyMap<
 		ToolObserverEvent,
 		ToolObserverHandler<ToolObserverEvent>[]
@@ -41,7 +43,7 @@ export function buildToolExecuteMiddleware(
 
 		const tool = tools.find((t) => t.name === params.call.name);
 		const result = tool
-			? await toToolResult(tool, params.call.id, params.call.arguments)
+			? await toToolResult(tool, params.call.id, params.call.arguments, getCtx)
 			: await next(params);
 
 		if (observers && observers.size > 0) {
@@ -55,13 +57,14 @@ export function buildToolExecuteMiddleware(
 	};
 }
 
-async function toToolResult(
-	tool: ExtensionToolDefinition,
+async function toToolResult<Ctx extends BaseRuntime<unknown>>(
+	tool: ExtensionToolDefinition<unknown, Ctx>,
 	toolCallId: string,
 	args: Record<string, unknown>,
+	getCtx: () => Ctx,
 ) {
 	try {
-		const raw = await tool.execute(args);
+		const raw = await tool.execute(args, getCtx());
 		const output = resolveToolOutput(raw);
 		return {
 			toolCallId,
