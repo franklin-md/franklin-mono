@@ -68,7 +68,10 @@ export class SessionManager<RTS extends BaseRuntimeSystem> {
 			const source = this.collection.get(options.from);
 			if (!source) throw new Error(`Session ${options.from} not found`);
 			const rt: BaseRuntime<InferState<RTS>> = source.runtime;
-			state = options.mode === 'fork' ? await rt.fork() : await rt.child();
+			state =
+				options.mode === 'fork'
+					? await rt.state.fork()
+					: await rt.state.child();
 		} else {
 			state = this.system.emptyState();
 		}

@@ -52,6 +52,8 @@ export class PersistedSessionCollection<
 	}
 
 	private persist(sessionId: string, runtime: RT): void {
-		void runtime.state().then((state) => this.persister.save(sessionId, state));
+		void runtime.state
+			.get()
+			.then((state) => this.persister.save(sessionId, state));
 	}
 }

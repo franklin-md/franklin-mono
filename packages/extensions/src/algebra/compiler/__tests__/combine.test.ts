@@ -38,9 +38,11 @@ function createCounterCompiler(): Compiler<
 				getCount() {
 					return count;
 				},
-				state: vi.fn(async () => ({ count })),
-				fork: vi.fn(async () => ({ count })),
-				child: vi.fn(async () => ({ count })),
+				state: {
+					get: vi.fn(async () => ({ count })),
+					fork: vi.fn(async () => ({ count })),
+					child: vi.fn(async () => ({ count })),
+				},
 				dispose: vi.fn(async () => {}),
 				subscribe: vi.fn(() => () => {}),
 			};
@@ -62,8 +64,8 @@ describe('compiler combine identity laws', () => {
 
 		expect(combinedRuntime.label).toBe(baselineRuntime.label);
 		expect(combinedRuntime.getCount()).toBe(baselineRuntime.getCount());
-		await expect(combinedRuntime.state()).resolves.toEqual(
-			await baselineRuntime.state(),
+		await expect(combinedRuntime.state.get()).resolves.toEqual(
+			await baselineRuntime.state.get(),
 		);
 	});
 
@@ -80,8 +82,8 @@ describe('compiler combine identity laws', () => {
 
 		expect(combinedRuntime.label).toBe(baselineRuntime.label);
 		expect(combinedRuntime.getCount()).toBe(baselineRuntime.getCount());
-		await expect(combinedRuntime.state()).resolves.toEqual(
-			await baselineRuntime.state(),
+		await expect(combinedRuntime.state.get()).resolves.toEqual(
+			await baselineRuntime.state.get(),
 		);
 	});
 });

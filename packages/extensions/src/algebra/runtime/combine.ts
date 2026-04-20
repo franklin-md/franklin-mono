@@ -7,10 +7,10 @@ export type RuntimeExtras<S, RT extends BaseRuntime<S>> = Omit<
 >;
 
 /**
- * Runtime produced by `combineRuntimes`. Recomposes the lifecycle members
- * of `BaseRuntime<S1 & S2>` and merges the extra surface areas of both
- * runtimes. Overlap between the extras is prevented at composition sites
- * (via the guards on `combine()` / `combineRuntimes()`), not in this type.
+ * Runtime produced by `combineRuntimes`. Recomposes the lifecycle members of
+ * `BaseRuntime<S1 & S2>` and merges the extra surface areas of both runtimes.
+ * Overlap between the extras is prevented at composition sites (via the
+ * guards on `combine()` / `combineRuntimes()`), not in this type.
  */
 export type CombinedRuntime<
 	S1,
@@ -33,9 +33,20 @@ export function combineRuntimes<
 	return {
 		...rt1,
 		...rt2,
-		state: async () => ({ ...(await rt1.state()), ...(await rt2.state()) }),
-		fork: async () => ({ ...(await rt1.fork()), ...(await rt2.fork()) }),
-		child: async () => ({ ...(await rt1.child()), ...(await rt2.child()) }),
+		state: {
+			get: async () => ({
+				...(await rt1.state.get()),
+				...(await rt2.state.get()),
+			}),
+			fork: async () => ({
+				...(await rt1.state.fork()),
+				...(await rt2.state.fork()),
+			}),
+			child: async () => ({
+				...(await rt1.state.child()),
+				...(await rt2.state.child()),
+			}),
+		},
 		dispose: () => Promise.all([rt1.dispose(), rt2.dispose()]).then(() => {}),
 		subscribe: (listener: () => void) => {
 			const unsub1 = rt1.subscribe(listener);

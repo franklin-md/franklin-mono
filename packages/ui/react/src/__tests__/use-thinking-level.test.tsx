@@ -32,12 +32,14 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 	});
 
 	const runtime = {
-		state: vi.fn(async () => ({
-			core: {
-				messages: [],
-				llmConfig: { reasoning },
-			},
-		})),
+		state: {
+			get: vi.fn(async () => ({
+				core: {
+					messages: [],
+					llmConfig: { reasoning },
+				},
+			})),
+		},
 		setLLMConfig: vi.fn(async (config: { reasoning?: ThinkingLevel }) => {
 			if (config.reasoning !== undefined) {
 				reasoning = config.reasoning;
@@ -80,12 +82,14 @@ describe('useThinkingLevel – initialization', () => {
 
 	it('defaults to medium when runtime has no reasoning set', async () => {
 		const runtime = {
-			state: vi.fn(async () => ({
-				core: {
-					messages: [],
-					llmConfig: {},
-				},
-			})),
+			state: {
+				get: vi.fn(async () => ({
+					core: {
+						messages: [],
+						llmConfig: {},
+					},
+				})),
+			},
 			subscribe: vi.fn(() => () => {}),
 			setLLMConfig: vi.fn(async () => {}),
 		} as unknown as FranklinRuntime;
@@ -226,7 +230,7 @@ describe('useThinkingLevel – reactivity', () => {
 		});
 
 		// Simulate external config change
-		(runtime.state as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(runtime.state.get as ReturnType<typeof vi.fn>).mockResolvedValue({
 			core: {
 				messages: [],
 				llmConfig: { reasoning: 'xhigh' },

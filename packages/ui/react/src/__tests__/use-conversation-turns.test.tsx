@@ -29,7 +29,9 @@ function makeMockRuntime(turns: ConversationTurn[]): FranklinRuntime {
 	};
 
 	return {
-		state: vi.fn(async () => ({})),
+		state: {
+			get: vi.fn(async () => ({})),
+		},
 		subscribe: vi.fn(() => () => {}),
 		getStore: (name: string) => {
 			if (name === conversationKey) return store;
