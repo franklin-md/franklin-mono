@@ -3,8 +3,10 @@ import { assembleRuntime, type CoreRuntime } from '../runtime.js';
 import type { CoreState } from '../state.js';
 import { bootRuntime } from './boot.js';
 import type { SpawnResult } from './compiler.js';
-import { composeProtocol, type ProtocolDecorator } from './decorator.js';
+import { compose } from './decorators/compose.js';
+import { connect } from './decorators/connect.js';
 import { createTrackerDecorator } from './decorators/tracker.js';
+import type { ProtocolDecorator } from './decorators/types.js';
 import { fallbackServer } from './fallback.js';
 import { createResources } from './resources.js';
 
@@ -16,15 +18,11 @@ export async function createCoreRuntime(
 ): Promise<CoreRuntime> {
 	const { connection, tracker } = createResources(transport);
 
-	const stack: ProtocolDecorator[] = [
+	const decorator = compose([
 		...extensionDecorators,
 		createTrackerDecorator(tracker),
-	];
-	const { client } = await composeProtocol({
-		stack,
-		connection,
-		fallbackServer,
-	});
+	]);
+	const { client } = await connect({ decorator, connection, fallbackServer });
 
 	await bootRuntime({ client, state, tools });
 

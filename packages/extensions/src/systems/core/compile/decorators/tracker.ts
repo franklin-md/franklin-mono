@@ -1,5 +1,5 @@
 import { type CtxTracker, trackAgent, trackClient } from '@franklin/mini-acp';
-import type { ProtocolDecorator } from '../decorator.js';
+import type { ProtocolDecorator } from './types.js';
 
 export function createTrackerDecorator(tracker: CtxTracker): ProtocolDecorator {
 	return {

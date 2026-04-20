@@ -1,6 +1,6 @@
 import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import { buildSystemPromptAssembler } from './builders/system-prompt.js';
-import type { ProtocolDecorator } from './decorator.js';
+import type { ProtocolDecorator } from './decorators/types.js';
 import { createMiddlewareDecorator } from './decorators/middleware.js';
 import { createSystemPromptDecorator } from './decorators/system-prompt.js';
 import { buildMiddleware } from './middleware.js';
