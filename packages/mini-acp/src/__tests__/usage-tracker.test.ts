@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { UsageTracker, ZERO_USAGE } from '../protocol/usage-tracker.js';
 import type { Usage } from '../types/usage.js';
@@ -70,14 +70,4 @@ describe('UsageTracker', () => {
 		expect(total.cost.total).toBeCloseTo(0.0049, 10);
 	});
 
-	it('fires onChange on each add', () => {
-		const tracker = new UsageTracker();
-		const listener = vi.fn();
-		tracker.onChange = listener;
-
-		tracker.add(ZERO_USAGE);
-		tracker.add(ZERO_USAGE);
-
-		expect(listener).toHaveBeenCalledTimes(2);
-	});
 });

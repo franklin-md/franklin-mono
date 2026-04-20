@@ -24,4 +24,10 @@ export { createSessionAdapter } from './adapter.js';
 export { CtxTracker } from './ctx-tracker.js';
 export { UsageTracker, ZERO_USAGE } from './usage-tracker.js';
 
-export { trackAgent, trackTurn, trackClient, trackUsage } from './tracking.js';
+export {
+	trackAgent,
+	trackTurn,
+	trackClient,
+	trackUsage,
+	decorateTurn,
+} from './tracking.js';

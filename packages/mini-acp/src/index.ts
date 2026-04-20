@@ -90,6 +90,7 @@ export {
 	trackTurn,
 	trackClient,
 	trackUsage,
+	decorateTurn,
 } from './protocol/index.js';
 
 // Utils
