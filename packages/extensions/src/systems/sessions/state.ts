@@ -1,3 +1,3 @@
-import type { EmptyState } from '../empty/state.js';
+import type { IdentityState } from '../identity/state.js';
 
-export type SessionState = EmptyState;
+export type SessionState = IdentityState;

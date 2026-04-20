@@ -1,3 +1,3 @@
-import type { EmptyAPI } from '../../empty/api.js';
+import type { IdentityAPI } from '../../identity/api.js';
 
-export type EnvironmentAPI = EmptyAPI;
+export type EnvironmentAPI = IdentityAPI;

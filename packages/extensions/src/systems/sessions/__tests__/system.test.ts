@@ -6,7 +6,7 @@ import { createSessionManager } from '../runtime/manager.js';
 import type { SessionRuntime } from '../runtime/runtime.js';
 import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import type { CombinedRuntime } from '../../../algebra/runtime/combine.js';
-import type { EmptyState } from '../../empty/state.js';
+import type { IdentityState } from '../../identity/state.js';
 import type { RuntimeSystem } from '../../../algebra/system/types.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { SessionCreate } from '../runtime/types.js';
@@ -215,14 +215,14 @@ describe('createSessionSystem', () => {
 describe('SessionRuntime subtyping', () => {
 	it('CombinedRuntime with SessionRuntime is assignable to SessionRuntime', () => {
 		type MinimalSystem = RuntimeSystem<
-			EmptyState,
+			IdentityState,
 			Record<never, never>,
-			BaseRuntime<EmptyState>
+			BaseRuntime<IdentityState>
 		>;
 		type FakeState = { fake: { value: string } };
 		type FakeRuntime = BaseRuntime<FakeState> & { doFake(): void };
 		type Combined = CombinedRuntime<
-			EmptyState,
+			IdentityState,
 			FakeState,
 			SessionRuntime<MinimalSystem>,
 			FakeRuntime
