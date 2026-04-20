@@ -14,6 +14,11 @@ import type { SpawnResult } from './compiler.js';
  * here since it's transport infrastructure, not extension data.
  *
  * Pipeline: transport ←→ [tracker] ←→ [extension stack…] ←→ app
+ *
+ * After decorator wrapping completes, an explicit bootstrap `setContext`
+ * seeds the agent with the initial ctx. Routing it through the fully
+ * wrapped client means any middleware (e.g. tool injection) sees the
+ * bootstrap, and `trackClient` mirrors it into the tracker.
  */
 export async function buildCoreRuntime(
 	transport: SpawnResult,
@@ -27,7 +32,7 @@ export async function buildCoreRuntime(
 
 	const stack: ProtocolDecorator[] = [
 		...extensionDecorators,
-		createTrackerDecorator(state, tracker),
+		createTrackerDecorator(tracker),
 	];
 
 	const { client } = await applyDecorators(
@@ -36,9 +41,17 @@ export async function buildCoreRuntime(
 		async (server) => {
 			connection.bind(server);
 			await rawClient.initialize();
-			// TODO: maybe we should run initial setContext here?
 		},
 	);
+
+	// Seed agent + tracker with initial state. systemPrompt is always '' —
+	// handlers own it via the system-prompt decorator.
+	const core = state.core;
+	await client.setContext({
+		history: { systemPrompt: '', messages: [...core.messages] },
+		tools: [],
+		config: { ...core.llmConfig },
+	});
 
 	// TODO: Is it possible to avoid passing in tracker?
 	return createCoreRuntime(client, tracker, transport);
