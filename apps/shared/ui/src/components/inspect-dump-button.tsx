@@ -1,23 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { inspectRuntime } from '@franklin/extensions';
 import { useAgent } from '@franklin/react';
 import { Bug, Check } from 'lucide-react';
 
 import { Button, type ButtonProps } from '../primitives/button.js';
 
-export interface CopyRuntimeStateButtonProps {
+export interface InspectDumpButtonProps {
 	onCopied?: () => void;
 	onCopyError?: (error: unknown) => void;
 	successDurationMs?: number;
 	buttonProps?: Pick<ButtonProps, 'className' | 'size' | 'variant'>;
 }
 
-export function CopyRuntimeStateButton({
+export function InspectDumpButton({
 	onCopied,
 	onCopyError,
 	successDurationMs = 2000,
 	buttonProps,
-}: CopyRuntimeStateButtonProps) {
+}: InspectDumpButtonProps) {
 	const runtime = useAgent();
 	const [copied, setCopied] = useState(false);
 	const timeoutRef = useRef(0);
@@ -27,10 +28,9 @@ export function CopyRuntimeStateButton({
 	const handleClick = useCallback(() => {
 		if (copied) return;
 
-		void runtime
-			.state()
-			.then((state) =>
-				navigator.clipboard.writeText(JSON.stringify(state, null, 2)),
+		void inspectRuntime(runtime)
+			.then((dump) =>
+				navigator.clipboard.writeText(JSON.stringify(dump, null, 2)),
 			)
 			.then(() => {
 				setCopied(true);
@@ -51,8 +51,8 @@ export function CopyRuntimeStateButton({
 			size={buttonProps?.size ?? 'icon'}
 			className={buttonProps?.className ?? 'h-8 w-8'}
 			onClick={handleClick}
-			title={copied ? 'Runtime state copied' : 'Copy runtime state'}
-			aria-label={copied ? 'Runtime state copied' : 'Copy runtime state'}
+			title={copied ? 'Inspect dump copied' : 'Copy inspect dump'}
+			aria-label={copied ? 'Inspect dump copied' : 'Copy inspect dump'}
 		>
 			{copied ? <Check className="h-4 w-4" /> : <Bug className="h-4 w-4" />}
 		</Button>

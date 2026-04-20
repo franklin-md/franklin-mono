@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { z } from 'zod';
 import { createCoreSystem } from '../system.js';
 import { createRuntime } from '../../../algebra/system/create.js';
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
@@ -322,6 +323,42 @@ describe('createCoreSystem', () => {
 		);
 
 		expect(capturedCtx!.history.systemPrompt).toBe('Tool guidelines here.');
+
+		await runtime.dispose();
+	});
+
+	it('registered tools reach the agent at bootstrap', async () => {
+		let capturedCtx: Ctx | undefined;
+		const system = createCoreSystem(
+			createMockSpawn((ctx) => {
+				capturedCtx = ctx;
+			}),
+		);
+
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {} } },
+			[
+				(api: CoreAPI) => {
+					api.registerTool({
+						name: 'my_tool',
+						description: 'does things',
+						schema: z.object({ x: z.string() }),
+						execute: async () => 'ok',
+					});
+				},
+			],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		expect(capturedCtx!.tools).toHaveLength(1);
+		expect(capturedCtx!.tools[0]?.name).toBe('my_tool');
 
 		await runtime.dispose();
 	});

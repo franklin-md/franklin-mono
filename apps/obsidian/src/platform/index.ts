@@ -20,7 +20,7 @@ export function createObsidianPlatform(app: App): Platform {
 				config,
 				configureFilesystem: async (fsConfig) =>
 					configureFilesystem(
-						createObsidianFilesystem(app.vault, createNodeFilesystem()),
+						createObsidianFilesystem(app, createNodeFilesystem()),
 						fsConfig,
 					),
 				configureTerminal: async () => {

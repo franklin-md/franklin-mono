@@ -1,4 +1,5 @@
 import type {
+	Ctx,
 	CtxTracker,
 	LLMConfig,
 	MiniACPClient,
@@ -23,9 +24,17 @@ async function* notifyAfter<T>(
 export type CoreRuntime = BaseRuntime<CoreState> &
 	Pick<MiniACPClient, 'prompt' | 'cancel'> & {
 		setLLMConfig(config: Partial<LLMConfig>): Promise<void>;
+		/**
+		 * Full last-sent context snapshot (systemPrompt, messages, tools,
+		 * config). Distinct from `state()`, which is the persistable shape
+		 * and deliberately omits the compiled system prompt and tools —
+		 * those are recomputed by handlers on fork. `context()` is the
+		 * debug/inspection view of what the agent actually saw last.
+		 */
+		context(): Ctx;
 	};
 
-export function createCoreRuntime(
+export function assembleRuntime(
 	client: MiniACPClient,
 	tracker: CtxTracker,
 	usageTracker: UsageTracker,
@@ -57,6 +66,10 @@ export function createCoreRuntime(
 		},
 
 		cancel: client.cancel.bind(client),
+
+		context(): Ctx {
+			return tracker.get();
+		},
 
 		async state(): Promise<CoreState> {
 			const ctx = tracker.get();

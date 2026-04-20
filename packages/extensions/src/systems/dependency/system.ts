@@ -1,12 +1,12 @@
 import type { Compiler } from '../../algebra/compiler/index.js';
 import type { RuntimeSystem } from '../../algebra/system/index.js';
-import { emptyAPI, type EmptyAPI } from '../empty/index.js';
-import { emptyState, type EmptyState } from '../empty/index.js';
+import { identityAPI, type IdentityAPI } from '../identity/api.js';
+import { identityState, type IdentityState } from '../identity/state.js';
 import { createDependencyRuntime, type DependencyRuntime } from './runtime.js';
 
 export type DependencySystem<Name extends string, T> = RuntimeSystem<
-	EmptyState,
-	EmptyAPI,
+	IdentityState,
+	IdentityAPI,
 	DependencyRuntime<Name, T>
 >;
 
@@ -15,14 +15,14 @@ export function createDependencySystem<Name extends string, T>(
 	dependency: T,
 ): DependencySystem<Name, T> {
 	return {
-		emptyState,
+		emptyState: identityState,
 		createCompiler(): Compiler<
-			EmptyAPI,
-			EmptyState,
+			IdentityAPI,
+			IdentityState,
 			DependencyRuntime<Name, T>
 		> {
 			return {
-				api: emptyAPI(),
+				api: identityAPI(),
 				async build() {
 					return createDependencyRuntime(name, dependency);
 				},

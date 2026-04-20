@@ -12,7 +12,6 @@ import type { Todo } from '../todo/types.js';
 
 type StubOverrides = { [K in keyof MiniACPClient]?: (...args: any[]) => any };
 type PromptParams = Parameters<MiniACPClient['prompt']>[0];
-type SetContextParams = Parameters<MiniACPClient['setContext']>[0];
 
 function stubClient(overrides: StubOverrides = {}): MiniACPClient {
 	return {
@@ -49,20 +48,9 @@ describe('todoExtension', () => {
 		return compileCoreWithStore(todoExtension());
 	}
 
-	it('registers 3 tools into setContext', async () => {
-		const { middleware } = await compileWithTodo();
+	it('registers 3 tools', async () => {
+		const { tools } = await compileWithTodo();
 
-		const received: SetContextParams[] = [];
-		const target = stubClient({
-			setContext: async (params: SetContextParams) => {
-				received.push(params);
-			},
-		});
-
-		const wrapped = apply(middleware.client, target);
-		await wrapped.setContext({});
-
-		const tools = (received[0] as { tools: { name: string }[] }).tools;
 		expect(tools).toHaveLength(3);
 		expect(tools.map((t) => t.name).sort()).toEqual([
 			'add_todo',

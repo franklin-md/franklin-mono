@@ -1,11 +1,11 @@
 import type { BaseRuntime } from '../../algebra/runtime/types.js';
-import type { EmptyState } from '../empty/index.js';
-import { emptyRuntime } from '../empty/index.js';
+import type { IdentityState } from '../identity/state.js';
+import { identityRuntime } from '../identity/runtime.js';
 
 export type DependencyRuntime<
 	Name extends string,
 	T,
-> = BaseRuntime<EmptyState> & {
+> = BaseRuntime<IdentityState> & {
 	readonly [K in Name]: T;
 };
 
@@ -14,7 +14,7 @@ export function createDependencyRuntime<Name extends string, T>(
 	dependency: T,
 ): DependencyRuntime<Name, T> {
 	return {
-		...emptyRuntime(),
+		...identityRuntime(),
 		[name]: dependency,
 	} as DependencyRuntime<Name, T>;
 }

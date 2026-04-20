@@ -2,8 +2,9 @@ import type { ClientProtocol } from '@franklin/mini-acp';
 import type { CoreAPI } from '../api/api.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
-import { buildCoreRuntime } from './build.js';
+import { serializeTool } from '../api/tools/index.js';
 import { composeDecorators } from './compose.js';
+import { createCoreRuntime } from './create.js';
 import { createCoreRegistrar } from './registrar/index.js';
 import type { CoreRuntime } from '../runtime.js';
 import type { CoreState } from '../state.js';
@@ -21,7 +22,11 @@ export type SpawnFn = () => MaybePromise<SpawnResult>;
  * eventual fully-tied Runtime). `spawn()` is invoked here so the transport
  * lifecycle is scoped to the runtime it powers — callers that never build
  * never pay for a transport. `composeDecorators` turns the registrar plus
- * `getRuntime` into the decorator stack `buildCoreRuntime` applies.
+ * `getRuntime` into the decorator stack `createCoreRuntime` applies.
+ *
+ * Registered tools are serialized once here and threaded into the boot
+ * phase inside `createCoreRuntime` — the agent receives the session's
+ * full tool list at startup, independent of any app-side setContext call.
  *
  * No mutable runtime cell — `getRuntime` IS the binding mechanism,
  * threaded through each builder at decorator-construction time.
@@ -36,7 +41,13 @@ export function createCoreCompiler<Runtime extends CoreRuntime = CoreRuntime>(
 		async build(state, getRuntime): Promise<Runtime> {
 			const transport = await spawn();
 			const decorators = composeDecorators(registered, getRuntime);
-			const runtime = await buildCoreRuntime(transport, state, decorators);
+			const serializedTools = registered.tools.map(serializeTool);
+			const runtime = await createCoreRuntime(
+				transport,
+				state,
+				decorators,
+				serializedTools,
+			);
 			return runtime as Runtime;
 		},
 	};

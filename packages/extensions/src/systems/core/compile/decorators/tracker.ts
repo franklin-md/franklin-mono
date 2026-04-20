@@ -1,42 +1,13 @@
 import { type CtxTracker, trackAgent, trackClient } from '@franklin/mini-acp';
-import type { ProtocolDecorator } from '../decorator.js';
-import type { CoreState } from '../../state.js';
+import type { ProtocolDecorator } from './types.js';
 
-export function createTrackerDecorator(
-	state: CoreState,
-	tracker: CtxTracker,
-): ProtocolDecorator {
+export function createTrackerDecorator(tracker: CtxTracker): ProtocolDecorator {
 	return {
 		name: 'tracker',
 		async server(s) {
 			return trackAgent(tracker, s);
 		},
 		async client(c) {
-			// TODO: I wonder if its possible to move this out of the decorator?
-			// I..e something that is in an initial boot up sequence Prior to the decorators?
-			const core = state.core;
-
-			// Seed tracker with initial state. systemPrompt is always '' —
-			// handlers own it via the system-prompt decorator.
-			tracker.apply({
-				history: {
-					systemPrompt: '',
-					messages: [...core.messages],
-				},
-				tools: [],
-				config: { ...core.llmConfig },
-			});
-
-			// Mirror initial state to server process
-			await c.setContext({
-				history: {
-					systemPrompt: '',
-					messages: [...core.messages],
-				},
-				tools: [],
-				config: { ...core.llmConfig },
-			});
-
 			return trackClient(tracker, c);
 		},
 	};

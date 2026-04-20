@@ -5,6 +5,10 @@ import type { Extension } from '../../../../algebra/types/extension.js';
 import type { FullMiddleware } from '../../api/middleware/types.js';
 import { buildMiddleware } from '../middleware.js';
 import { createCoreRegistrar } from '../registrar/index.js';
+import {
+	serializeTool,
+	type SerializedToolDefinition,
+} from '../../api/tools/index.js';
 import type { CoreRuntime } from '../../runtime.js';
 import { apply } from '@franklin/lib/middleware';
 import type {
@@ -25,12 +29,20 @@ import { resolveToolOutput } from '../../api/tool.js';
  * through the full Core compiler (which requires a transport and builds a
  * full CoreRuntime). Handlers receive `undefined` as their runtime/ctx —
  * these tests exercise middleware composition and don't touch it.
+ *
+ * Also returns the serialized tools that the compiler would thread into
+ * the bootstrap setContext, so tests can assert on the tool surface
+ * without booting a full runtime.
  */
-async function compileExt(ext: Extension): Promise<FullMiddleware> {
+async function compileExt(
+	ext: Extension,
+): Promise<FullMiddleware & { tools: SerializedToolDefinition[] }> {
 	const stubCtx = undefined as unknown as CoreRuntime;
 	const { api, registered } = createCoreRegistrar<CoreRuntime>();
 	ext(api);
-	return buildMiddleware(registered, () => stubCtx);
+	const middleware = buildMiddleware(registered, () => stubCtx);
+	const tools = registered.tools.map(serializeTool);
+	return { ...middleware, tools };
 }
 
 /** Create a minimal MiniACPClient stub for testing with apply(). */
@@ -358,44 +370,18 @@ describe('buildCore – registerTool()', () => {
 		expect(results).toEqual([{ toolCallId: 'call-obs', isError: true }]);
 	});
 
-	it('injects tool definitions into setContext', async () => {
-		const mw = await compileExt((api) => {
+	it('exposes registered tools as serialized definitions', async () => {
+		const { tools } = await compileExt((api) => {
 			api.registerTool(testTool);
 		});
 
-		expect(mw.client.setContext).toBeDefined();
-
-		const received: any[] = [];
-		const target = stubClient({
-			setContext: async (params) => {
-				received.push(params);
-			},
-		});
-
-		const wrapped = apply(mw.client, target);
-
-		await wrapped.setContext({
-			tools: [
-				{
-					name: 'existing',
-					description: 'existing tool',
-					inputSchema: {},
-				},
-			],
-		});
-
-		const ctxParams = received[0] as {
-			tools: { name: string; description: string; inputSchema: unknown }[];
-		};
-		const tools = ctxParams.tools;
-		expect(tools).toHaveLength(2);
-		expect(tools[0]?.name).toBe('existing');
-		expect(tools[1]?.name).toBe('myTool');
-		expect(tools[1]?.description).toBe('A test tool');
-		expect(tools[1]?.inputSchema).toBeDefined();
+		expect(tools).toHaveLength(1);
+		expect(tools[0]?.name).toBe('myTool');
+		expect(tools[0]?.description).toBe('A test tool');
+		expect(tools[0]?.inputSchema).toBeDefined();
 	});
 
-	it('injects tools even when ctx.tools is undefined', async () => {
+	it('leaves client setContext as pass-through (no tool injection)', async () => {
 		const mw = await compileExt((api) => {
 			api.registerTool(testTool);
 		});
@@ -408,14 +394,9 @@ describe('buildCore – registerTool()', () => {
 		});
 
 		const wrapped = apply(mw.client, target);
+		await wrapped.setContext({ config: { model: 'x' } });
 
-		await wrapped.setContext({});
-
-		const ctxParams = received[0] as {
-			tools: { name: string }[];
-		};
-		expect(ctxParams.tools).toHaveLength(1);
-		expect(ctxParams.tools[0]?.name).toBe('myTool');
+		expect(received[0]).toEqual({ config: { model: 'x' } });
 	});
 });
 
@@ -460,18 +441,8 @@ describe('buildCore – registerTool() spec overload', () => {
 		});
 		expect(next).not.toHaveBeenCalled();
 
-		const received: any[] = [];
-		const target = stubClient({
-			setContext: async (params) => {
-				received.push(params);
-			},
-		});
-		const wrapped = apply(mw.client, target);
-		await wrapped.setContext({});
-
-		const ctxParams = received[0] as { tools: { name: string }[] };
-		expect(ctxParams.tools).toHaveLength(1);
-		expect(ctxParams.tools[0]?.name).toBe('specTool');
+		expect(mw.tools).toHaveLength(1);
+		expect(mw.tools[0]?.name).toBe('specTool');
 	});
 });
 

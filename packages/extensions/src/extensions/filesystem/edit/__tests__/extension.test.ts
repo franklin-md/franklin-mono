@@ -1,8 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
 import { sha256Hex } from '../../hash.js';
-import type { MiniACPClient } from '@franklin/mini-acp';
-import { apply } from '@franklin/lib/middleware';
 import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { fileKey } from '../../common/key.js';
@@ -97,26 +95,8 @@ describe('editExtension', () => {
 		const env = mockEnvironment();
 		const compiled = await compileEdit(env);
 
-		const received: Array<Parameters<MiniACPClient['setContext']>[0]> = [];
-		const target: MiniACPClient = {
-			initialize: vi.fn(async () => {}),
-			setContext: vi.fn(
-				async (params: Parameters<MiniACPClient['setContext']>[0]) => {
-					received.push(params);
-				},
-			),
-			prompt: vi.fn(async function* () {
-				yield* [];
-			}),
-			cancel: vi.fn(async () => {}),
-		};
-
-		const wrapped = apply(compiled.middleware.client, target);
-		await wrapped.setContext({});
-
-		const ctx = received[0] as { tools: { name: string }[] };
-		expect(ctx.tools).toHaveLength(1);
-		expect(ctx.tools[0]!.name).toBe('edit_file');
+		expect(compiled.tools).toHaveLength(1);
+		expect(compiled.tools[0]!.name).toBe('edit_file');
 	});
 
 	it('performs a successful edit', async () => {
