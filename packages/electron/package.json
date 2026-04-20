@@ -36,7 +36,7 @@
 		"@franklin/mini-acp": "*"
 	},
 	"devDependencies": {
-		"electron": "^36.3.2"
+		"electron": "^39.8.5"
 	},
 	"peerDependencies": {
 		"electron": ">=30"
