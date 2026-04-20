@@ -10,4 +10,3 @@ export {
 	hasAnyToolObserver,
 } from './tool-execute.js';
 export type { ToolObservers } from './tool-execute.js';
-export { buildToolInjector } from './tool-injector.js';

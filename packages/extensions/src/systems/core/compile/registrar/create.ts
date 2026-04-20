@@ -4,6 +4,22 @@ import type { ToolSpec } from '../../api/tool-spec.js';
 import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
 import type { CoreRegistrar } from './types.js';
 
+function normalizeTool<Runtime extends BaseRuntime<unknown>>(
+	specOrTool: ToolSpec | ExtensionToolDefinition<unknown, Runtime>,
+	execute?: (params: any, runtime: Runtime) => any,
+): ExtensionToolDefinition<unknown, Runtime> {
+	if (!execute) {
+		return specOrTool as ExtensionToolDefinition<unknown, Runtime>;
+	}
+	const spec = specOrTool as ToolSpec;
+	return {
+		name: spec.name,
+		description: spec.description,
+		schema: spec.schema,
+		execute,
+	};
+}
+
 /**
  * Create an empty `CoreRegistrar` together with the `api` surface that
  * mutates it. Registration is pure accumulation — nothing here touches
@@ -37,19 +53,7 @@ export function createCoreRegistrar<Runtime extends BaseRuntime<unknown>>(): {
 			specOrTool: ToolSpec | ExtensionToolDefinition<unknown, Runtime>,
 			execute?: (params: any, runtime: Runtime) => any,
 		) {
-			if (execute) {
-				const spec = specOrTool as ToolSpec;
-				registered.tools.push({
-					name: spec.name,
-					description: spec.description,
-					schema: spec.schema,
-					execute,
-				});
-			} else {
-				registered.tools.push(
-					specOrTool as ExtensionToolDefinition<unknown, Runtime>,
-				);
-			}
+			registered.tools.push(normalizeTool(specOrTool, execute));
 		},
 	};
 

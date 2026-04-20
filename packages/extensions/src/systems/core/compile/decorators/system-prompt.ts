@@ -1,5 +1,5 @@
 import type { MiniACPClient } from '@franklin/mini-acp';
-import type { ProtocolDecorator } from '../decorator.js';
+import type { ProtocolDecorator } from './types.js';
 import type { SystemPromptAssembler } from '../builders/system-prompt.js';
 
 /**

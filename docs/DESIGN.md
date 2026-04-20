@@ -239,7 +239,7 @@ Approaches observed:
 
 > **Outstanding question:** Why restrict tool permissions at all? Is a prompt not sufficient? For agent-as-tool (sync, brief), prompt-only restriction is probably fine. For agent-as-task (async, long-running, unsupervised), prompt-only breaks down because the LLM can ignore instructions. Pragmatic answer: **don't build permission restriction into v1**. Start with "child inherits all parent extensions." Add selective filtering later if needed.
 
-> **Deferred question:** Does the tool registration mechanism need a rethink to support permissions? Options: (a) filter at `setContext` time in `buildToolInjector`, (b) compile different extension lists per session type, (c) CtxTracker-like live component. Option (b) is the natural fit — the SessionSystem controls what the child gets via its `child()` semantics.
+> **Deferred question:** Does the tool registration mechanism need a rethink to support permissions? Options: (a) filter registered tools at bootstrap time before serialization, (b) compile different extension lists per session type, (c) CtxTracker-like live component. Option (b) is the natural fit — the SessionSystem controls what the child gets via its `child()` semantics.
 
 ###### Recursion Control / Tool Restriction on the AgentSpawn Tool
 

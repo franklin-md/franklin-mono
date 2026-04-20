@@ -4,7 +4,6 @@ import { passThrough, buildWaterfall } from '@franklin/lib/middleware';
 import {
 	buildPromptWaterfall,
 	buildToolExecuteMiddleware,
-	buildToolInjector,
 	hasAnyStreamObserver,
 	hasAnyToolObserver,
 	type StreamObservers,
@@ -44,10 +43,6 @@ export function buildMiddleware<Runtime extends BaseRuntime<unknown>>(
 
 	if (prompt.length > 0 || hasAnyStreamObserver(streamObs)) {
 		client.prompt = buildPromptWaterfall(prompt, streamObs);
-	}
-
-	if (tools.length > 0) {
-		client.setContext = buildToolInjector(tools, client.setContext);
 	}
 
 	const server: FullMiddleware['server'] = {
