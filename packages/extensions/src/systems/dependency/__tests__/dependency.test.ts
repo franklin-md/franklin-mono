@@ -32,9 +32,9 @@ describe('createDependencySystem', () => {
 
 		expectTypeOf(runtime.settings).toEqualTypeOf<typeof settings>();
 		expect(runtime.settings).toBe(settings);
-		expect(await runtime.state()).toEqual({});
-		expect(await runtime.fork()).toEqual({});
-		expect(await runtime.child()).toEqual({});
+		expect(await runtime.state.get()).toEqual({});
+		expect(await runtime.state.fork()).toEqual({});
+		expect(await runtime.state.child()).toEqual({});
 
 		const unsubscribe = runtime.subscribe(() => {});
 		unsubscribe();

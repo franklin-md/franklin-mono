@@ -114,7 +114,7 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core).toBeDefined();
 		expect(state.core.messages).toEqual([]);
 
@@ -137,7 +137,7 @@ describe('createCoreSystem', () => {
 			}),
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.messages.length).toBeGreaterThanOrEqual(2);
 
 		await runtime.dispose();
@@ -161,7 +161,7 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.llmConfig.model).toBe('test-model');
 		expect(state.core.llmConfig.provider).toBe('test-provider');
 
@@ -186,7 +186,7 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect('apiKey' in state.core.llmConfig).toBe(false);
 
 		await runtime.dispose();
@@ -212,11 +212,11 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const forked = await runtime.fork();
+		const forked = await runtime.state.fork();
 		expect(forked.core.messages).toHaveLength(1);
 		expect(forked.core.llmConfig.model).toBe('test');
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(forked.core.messages).not.toBe(state.core.messages);
 
 		await runtime.dispose();
@@ -242,7 +242,7 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const childState = await runtime.child();
+		const childState = await runtime.state.child();
 		expect(childState.core.messages).toHaveLength(0);
 		expect(childState.core.llmConfig.model).toBe('test');
 
@@ -423,7 +423,7 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.usage).toEqual(seededUsage);
 
 		await runtime.dispose();
@@ -453,7 +453,7 @@ describe('createCoreSystem', () => {
 			}),
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.usage.tokens).toEqual({
 			input: 60,
 			output: 25,
@@ -465,7 +465,7 @@ describe('createCoreSystem', () => {
 		await runtime.dispose();
 	});
 
-	it('fork snapshots accumulated usage', async () => {
+	it('fork resets usage to ZERO_USAGE while preserving messages', async () => {
 		const turnUsage: Usage = {
 			tokens: { input: 10, output: 5, cacheRead: 0, cacheWrite: 0, total: 15 },
 			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
@@ -485,8 +485,12 @@ describe('createCoreSystem', () => {
 			}),
 		);
 
-		const forked = await runtime.fork();
-		expect(forked.core.usage).toEqual(turnUsage);
+		const forked = await runtime.state.fork();
+		expect(forked.core.usage).toEqual(ZERO_USAGE);
+		expect(forked.core.messages.length).toBeGreaterThan(0);
+
+		const state = await runtime.state.get();
+		expect(state.core.usage).toEqual(turnUsage);
 
 		await runtime.dispose();
 	});
@@ -511,7 +515,7 @@ describe('createCoreSystem', () => {
 			}),
 		);
 
-		const childState = await runtime.child();
+		const childState = await runtime.state.child();
 		expect(childState.core.usage).toEqual(ZERO_USAGE);
 
 		await runtime.dispose();

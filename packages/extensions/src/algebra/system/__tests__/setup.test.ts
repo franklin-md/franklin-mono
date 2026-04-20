@@ -27,9 +27,11 @@ function createTestSystem(): RuntimeSystem<TestState, TestAPI, TestRuntime> {
 					const val = registered ?? state.value;
 					return {
 						getValue: () => val,
-						state: async () => ({ value: val }),
-						fork: async () => ({ value: val }),
-						child: async () => ({ value: 0 }),
+						state: {
+							get: async () => ({ value: val }),
+							fork: async () => ({ value: val }),
+							child: async () => ({ value: 0 }),
+						},
 						dispose: async () => {},
 						subscribe: () => () => {},
 					};

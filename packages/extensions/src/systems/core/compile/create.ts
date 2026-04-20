@@ -1,13 +1,12 @@
 import type { ToolDefinition as SerializedToolDefinition } from '@franklin/mini-acp';
 import { assembleRuntime, type CoreRuntime } from '../runtime.js';
 import type { CoreState } from '../state.js';
-import { bootRuntime } from './boot.js';
+import { createAgentClient } from './agent-client.js';
 import type { SpawnResult } from './compiler.js';
 import { compose } from './decorators/compose.js';
-import { connect } from './decorators/connect.js';
 import { createTrackerDecorator } from './decorators/tracker.js';
+import { createUsageTrackerDecorator } from './decorators/usage-tracker.js';
 import type { ProtocolDecorator } from './decorators/types.js';
-import { fallbackServer } from './fallback.js';
 import { createResources } from './resources.js';
 
 export async function createCoreRuntime(
@@ -16,15 +15,20 @@ export async function createCoreRuntime(
 	extensionDecorators: readonly ProtocolDecorator[],
 	tools: readonly SerializedToolDefinition[],
 ): Promise<CoreRuntime> {
-	const { connection, tracker } = createResources(transport);
+	const { tracker, usageTracker, stateHandle } = createResources(state);
 
 	const decorator = compose([
 		...extensionDecorators,
 		createTrackerDecorator(tracker),
+		createUsageTrackerDecorator(usageTracker),
 	]);
-	const { client } = await connect({ decorator, connection, fallbackServer });
 
-	await bootRuntime({ client, state, tools });
+	const client = await createAgentClient({
+		transport,
+		decorator,
+		state,
+		tools,
+	});
 
-	return assembleRuntime(client, tracker, transport);
+	return assembleRuntime(client, tracker, stateHandle);
 }

@@ -79,7 +79,7 @@ describe('createStoreCompiler', () => {
 				api.registerStore('private_k', 100, 'private');
 			});
 
-			const forked = await runtime.fork();
+			const forked = await runtime.state.fork();
 			expect(forked.store).toBeDefined();
 			expect(forked.store.shared_k).toBeDefined();
 			expect(forked.store.private_k).toBeDefined();
@@ -91,7 +91,7 @@ describe('createStoreCompiler', () => {
 				api.registerStore('private_k', 1, 'private');
 			});
 
-			const childState = await runtime.child();
+			const childState = await runtime.state.child();
 			expect(childState.store.shared_k).toBeDefined();
 			expect(childState.store.private_k).toBeUndefined();
 		});
@@ -110,7 +110,7 @@ describe('createStoreCompiler', () => {
 				{ store: {} },
 			);
 
-			const parentState = await parent.state();
+			const parentState = await parent.state.get();
 
 			const child = await compile(
 				createStoreCompiler(registry),
@@ -135,7 +135,7 @@ describe('createStoreCompiler', () => {
 
 			// Mutate in the parent before sharing (simulate real usage)
 			parent.getStore<number>('todos').set(() => 99);
-			const snapshot = await parent.state();
+			const snapshot = await parent.state.get();
 
 			const child = await compile(
 				createStoreCompiler(registry),

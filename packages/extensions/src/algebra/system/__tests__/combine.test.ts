@@ -142,9 +142,11 @@ function createValueSystem(): RuntimeSystem<
 						currentValue() {
 							return value;
 						},
-						state: vi.fn(async () => ({ value })),
-						fork: vi.fn(async () => ({ value })),
-						child: vi.fn(async () => ({ value })),
+						state: {
+							get: vi.fn(async () => ({ value })),
+							fork: vi.fn(async () => ({ value })),
+							child: vi.fn(async () => ({ value })),
+						},
 						dispose: vi.fn(async () => {}),
 						subscribe: vi.fn(() => () => {}),
 					};
@@ -209,7 +211,7 @@ describe('combine — two systems', () => {
 			],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.store).toBeDefined();
 		expect(Object.keys(state.store)).toContain('x');
 		expect(state.env).toEqual(defaultEnvConfig);
@@ -255,7 +257,7 @@ describe('combine — two systems', () => {
 			],
 		);
 
-		const forked = await runtime.fork();
+		const forked = await runtime.state.fork();
 		expect(forked.store).toBeDefined();
 		expect(forked.env).toBeDefined();
 		expect(Object.keys(forked.store)).toContain('data');
@@ -329,7 +331,7 @@ describe('combine — three systems (nested)', () => {
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core).toBeDefined();
 		expect(state.core.messages).toBeDefined();
 		expect(state.store).toBeDefined();
@@ -401,7 +403,7 @@ describe('combine — three systems (nested)', () => {
 			],
 		);
 
-		const forked = await runtime.fork();
+		const forked = await runtime.state.fork();
 		expect(forked.core.messages).toHaveLength(1);
 		expect(forked.core.llmConfig.model).toBe('gpt-4');
 		expect(forked.store).toBeDefined();
@@ -436,8 +438,8 @@ describe('combine — identity laws', () => {
 
 		expect(combinedRuntime.label).toBe(baselineRuntime.label);
 		expect(combinedRuntime.currentValue()).toBe(baselineRuntime.currentValue());
-		await expect(combinedRuntime.state()).resolves.toEqual(
-			await baselineRuntime.state(),
+		await expect(combinedRuntime.state.get()).resolves.toEqual(
+			await baselineRuntime.state.get(),
 		);
 
 		await Promise.all([baselineRuntime.dispose(), combinedRuntime.dispose()]);
@@ -467,8 +469,8 @@ describe('combine — identity laws', () => {
 
 		expect(combinedRuntime.label).toBe(baselineRuntime.label);
 		expect(combinedRuntime.currentValue()).toBe(baselineRuntime.currentValue());
-		await expect(combinedRuntime.state()).resolves.toEqual(
-			await baselineRuntime.state(),
+		await expect(combinedRuntime.state.get()).resolves.toEqual(
+			await baselineRuntime.state.get(),
 		);
 
 		await Promise.all([baselineRuntime.dispose(), combinedRuntime.dispose()]);

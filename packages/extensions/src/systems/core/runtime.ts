@@ -3,11 +3,9 @@ import type {
 	CtxTracker,
 	LLMConfig,
 	MiniACPClient,
-	UsageTracker,
 } from '@franklin/mini-acp';
-import { ZERO_USAGE } from '@franklin/mini-acp';
 import { createObserver } from '@franklin/lib';
-import type { BaseRuntime } from '../../algebra/runtime/index.js';
+import type { BaseRuntime, StateHandle } from '../../algebra/runtime/index.js';
 import type { CoreState } from './state.js';
 
 async function* notifyAfter<T>(
@@ -26,7 +24,7 @@ export type CoreRuntime = BaseRuntime<CoreState> &
 		setLLMConfig(config: Partial<LLMConfig>): Promise<void>;
 		/**
 		 * Full last-sent context snapshot (systemPrompt, messages, tools,
-		 * config). Distinct from `state()`, which is the persistable shape
+		 * config). Distinct from `state.get()`, which is the persistable shape
 		 * and deliberately omits the compiled system prompt and tools —
 		 * those are recomputed by handlers on fork. `context()` is the
 		 * debug/inspection view of what the agent actually saw last.
@@ -35,21 +33,11 @@ export type CoreRuntime = BaseRuntime<CoreState> &
 	};
 
 export function assembleRuntime(
-	client: MiniACPClient,
+	client: MiniACPClient & { dispose(): Promise<void> },
 	tracker: CtxTracker,
-	usageTracker: UsageTracker,
-	transport: { dispose(): Promise<void> },
+	state: StateHandle<CoreState>,
 ): CoreRuntime {
 	const observer = createObserver();
-
-	function snapshotLLMConfig(): CoreState['core']['llmConfig'] {
-		const cfg = tracker.get().config;
-		return {
-			model: cfg.model,
-			provider: cfg.provider,
-			reasoning: cfg.reasoning,
-		};
-	}
 
 	return {
 		async setLLMConfig(config) {
@@ -71,37 +59,10 @@ export function assembleRuntime(
 			return tracker.get();
 		},
 
-		async state(): Promise<CoreState> {
-			const ctx = tracker.get();
-			return {
-				core: {
-					messages: [...ctx.history.messages],
-					llmConfig: snapshotLLMConfig(),
-					usage: usageTracker.get(),
-				},
-			};
-		},
-		async fork(): Promise<CoreState> {
-			const ctx = tracker.get();
-			return {
-				core: {
-					messages: [...ctx.history.messages],
-					llmConfig: snapshotLLMConfig(),
-					usage: usageTracker.get(),
-				},
-			};
-		},
-		async child(): Promise<CoreState> {
-			return {
-				core: {
-					messages: [],
-					llmConfig: snapshotLLMConfig(),
-					usage: ZERO_USAGE,
-				},
-			};
-		},
+		state,
+
 		async dispose(): Promise<void> {
-			await transport.dispose();
+			await client.dispose();
 		},
 		subscribe: (listener: () => void) => observer.subscribe(listener),
 	};

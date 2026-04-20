@@ -1,23 +1,29 @@
-import type {
-	ClientBinding,
-	MiniACPAgent,
-	MiniACPClient,
-} from '@franklin/mini-acp';
+import { createClientConnection, type MiniACPClient } from '@franklin/mini-acp';
 import type { ProtocolDecorator } from './types.js';
+import type { SpawnResult } from '../compiler.js';
+import { fallbackServer } from '../fallback.js';
 
 type ConnectInput = {
 	readonly decorator: ProtocolDecorator;
-	readonly connection: ClientBinding;
-	readonly fallbackServer: MiniACPAgent;
+	readonly transport: SpawnResult;
 };
+
+type ReturnType = MiniACPClient & { dispose(): Promise<void> };
 
 export async function connect({
 	decorator,
-	connection,
-	fallbackServer,
-}: ConnectInput): Promise<{ client: MiniACPClient }> {
+	transport,
+}: ConnectInput): Promise<ReturnType> {
+	const connection = createClientConnection(transport);
+
 	const server = await decorator.server(fallbackServer);
 	connection.bind(server);
 	const client = await decorator.client(connection.remote);
-	return { client };
+
+	return {
+		...client,
+		dispose: async () => {
+			await transport.dispose();
+		},
+	};
 }
