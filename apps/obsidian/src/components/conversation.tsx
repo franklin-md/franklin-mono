@@ -1,7 +1,7 @@
 import { createToolUseBlock } from '@franklin/react';
 import {
 	ConversationPanel as SharedConversationPanel,
-	CopyRuntimeStateButton,
+	InspectDumpButton,
 	ToolCardChrome,
 	defaultToolRegistry,
 } from '@franklin/ui';
@@ -16,9 +16,9 @@ export function ConversationPanel() {
 			additionalControls={
 				process.env.NODE_ENV === 'development'
 					? [
-							<CopyRuntimeStateButton
+							<InspectDumpButton
 								key="debug"
-								onCopied={() => new Notice('Runtime state copied to clipboard')}
+								onCopied={() => new Notice('Inspect dump copied to clipboard')}
 							/>,
 						]
 					: undefined
