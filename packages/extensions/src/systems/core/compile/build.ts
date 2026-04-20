@@ -1,4 +1,8 @@
-import { createClientConnection, CtxTracker } from '@franklin/mini-acp';
+import {
+	createClientConnection,
+	CtxTracker,
+	type ToolDefinition as SerializedToolDefinition,
+} from '@franklin/mini-acp';
 import { createCoreRuntime, type CoreRuntime } from '../runtime.js';
 import type { CoreState } from '../state.js';
 import { applyDecorators, type ProtocolDecorator } from './decorator.js';
@@ -16,14 +20,15 @@ import type { SpawnResult } from './compiler.js';
  * Pipeline: transport ←→ [tracker] ←→ [extension stack…] ←→ app
  *
  * After decorator wrapping completes, an explicit bootstrap `setContext`
- * seeds the agent with the initial ctx. Routing it through the fully
- * wrapped client means any middleware (e.g. tool injection) sees the
- * bootstrap, and `trackClient` mirrors it into the tracker.
+ * seeds the agent with the initial ctx — history, extension-registered
+ * tools, and LLM config. The tool list is authoritative for the session:
+ * it is set once here and never mutated by the extension layer after.
  */
 export async function buildCoreRuntime(
 	transport: SpawnResult,
 	state: CoreState,
 	extensionDecorators: readonly ProtocolDecorator[],
+	tools: readonly SerializedToolDefinition[],
 ): Promise<CoreRuntime> {
 	const connection = createClientConnection(transport);
 	const rawClient = connection.remote;
@@ -49,7 +54,7 @@ export async function buildCoreRuntime(
 	const core = state.core;
 	await client.setContext({
 		history: { systemPrompt: '', messages: [...core.messages] },
-		tools: [],
+		tools: [...tools],
 		config: { ...core.llmConfig },
 	});
 
