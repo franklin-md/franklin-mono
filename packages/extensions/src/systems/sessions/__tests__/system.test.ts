@@ -27,9 +27,11 @@ function createTestSystem(): TestSystem {
 				api: {},
 				async build(state) {
 					return {
-						state: vi.fn(async () => state),
-						fork: vi.fn(async () => state),
-						child: vi.fn(async () => state),
+						state: {
+							get: vi.fn(async () => state),
+							fork: vi.fn(async () => state),
+							child: vi.fn(async () => state),
+						},
 						dispose: vi.fn(async () => {}),
 						subscribe: vi.fn(() => () => {}),
 					};
@@ -125,9 +127,9 @@ describe('createSessionSystem', () => {
 
 		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
 
-		expect(await runtime.state()).toEqual({ value: 'test' });
-		expect(await runtime.fork()).toEqual({ value: 'test' });
-		expect(await runtime.child()).toEqual({ value: 'test' });
+		expect(await runtime.state.get()).toEqual({ value: 'test' });
+		expect(await runtime.state.fork()).toEqual({ value: 'test' });
+		expect(await runtime.state.child()).toEqual({ value: 'test' });
 	});
 
 	it('dispose is safe to call', async () => {

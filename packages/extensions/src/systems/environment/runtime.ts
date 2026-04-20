@@ -26,14 +26,16 @@ export function createEnvironmentRuntime(
 
 	return {
 		environment: observed,
-		async state(): Promise<EnvironmentState> {
-			return { env: { ...(await observed.config()) } };
-		},
-		async fork(): Promise<EnvironmentState> {
-			return { env: { ...(await observed.config()) } };
-		},
-		async child(): Promise<EnvironmentState> {
-			return { env: { ...(await observed.config()) } };
+		state: {
+			async get(): Promise<EnvironmentState> {
+				return { env: { ...(await observed.config()) } };
+			},
+			async fork(): Promise<EnvironmentState> {
+				return { env: { ...(await observed.config()) } };
+			},
+			async child(): Promise<EnvironmentState> {
+				return { env: { ...(await observed.config()) } };
+			},
 		},
 		async dispose(): Promise<void> {
 			await observed.dispose();

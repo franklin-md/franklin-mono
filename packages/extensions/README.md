@@ -15,7 +15,7 @@ An API is intended to solve a particular class of problems. Implemented so far:
 
 Franklin models extension composition across three related surfaces:
 - **Compiler**: compile-time registration surface plus runtime builder.
-- **Runtime**: lifecycle surface (`state`, `fork`, `child`, `dispose`, `subscribe`) plus system-specific capabilities.
+- **Runtime**: lifecycle surface (`state.get`, `state.fork`, `state.child`, `dispose`, `subscribe`) plus system-specific capabilities.
 - **RuntimeSystem**: a factory for `emptyState()` and fresh compilers.
 
 `combine(...)` merges these surfaces by product:

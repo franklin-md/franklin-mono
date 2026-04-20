@@ -7,9 +7,11 @@ type TestRuntime = BaseRuntime<IdentityState>;
 
 function mockRuntime(): TestRuntime {
 	return {
-		state: vi.fn(async () => ({})),
-		fork: vi.fn(async () => ({})),
-		child: vi.fn(async () => ({})),
+		state: {
+			get: vi.fn(async () => ({})),
+			fork: vi.fn(async () => ({})),
+			child: vi.fn(async () => ({})),
+		},
 		dispose: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
 	};

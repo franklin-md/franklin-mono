@@ -68,7 +68,7 @@ export function withAuth(system: CoreSystem, auth: AuthManager): CoreSystem {
 		// Live credential sync — push new keys when this runtime's provider changes.
 		const unsubscribe = auth.onAuthChange((provider) => {
 			void (async () => {
-				const currentState = await runtime.state();
+				const currentState = await runtime.state.get();
 				if (currentState.core.llmConfig.provider !== provider) return;
 				await authenticateAgent(runtime, provider, auth);
 			})();

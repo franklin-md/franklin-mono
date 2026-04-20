@@ -33,14 +33,16 @@ export function createStoreRuntime(stores: StoreResult): StoreRuntime {
 			}
 			return entry.store as Store<T>;
 		},
-		async state(): Promise<StoreState> {
-			return { store: extractMapping(stores) };
-		},
-		async fork(): Promise<StoreState> {
-			return { store: extractMapping(stores.share('copy')) };
-		},
-		async child(): Promise<StoreState> {
-			return { store: extractMapping(stores.share('fresh')) };
+		state: {
+			async get(): Promise<StoreState> {
+				return { store: extractMapping(stores) };
+			},
+			async fork(): Promise<StoreState> {
+				return { store: extractMapping(stores.share('copy')) };
+			},
+			async child(): Promise<StoreState> {
+				return { store: extractMapping(stores.share('fresh')) };
+			},
 		},
 		async dispose(): Promise<void> {
 			// Registry owns store data; nothing to dispose

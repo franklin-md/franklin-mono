@@ -5,10 +5,12 @@ import type { CoreRuntime } from '../runtime.js';
 
 function stubRuntime(state: Record<string, unknown>, ctx: Ctx): CoreRuntime {
 	return {
-		state: async () => state,
+		state: {
+			get: async () => state,
+			fork: async () => ({}) as never,
+			child: async () => ({}) as never,
+		},
 		context: () => ctx,
-		fork: async () => ({}) as never,
-		child: async () => ({}) as never,
 		dispose: async () => {},
 		subscribe: () => () => {},
 		prompt: () => {

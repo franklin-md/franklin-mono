@@ -24,7 +24,7 @@ export type CoreRuntime = BaseRuntime<CoreState> &
 		setLLMConfig(config: Partial<LLMConfig>): Promise<void>;
 		/**
 		 * Full last-sent context snapshot (systemPrompt, messages, tools,
-		 * config). Distinct from `state()`, which is the persistable shape
+		 * config). Distinct from `state.get()`, which is the persistable shape
 		 * and deliberately omits the compiled system prompt and tools —
 		 * those are recomputed by handlers on fork. `context()` is the
 		 * debug/inspection view of what the agent actually saw last.
@@ -48,6 +48,15 @@ export function assembleRuntime(
 		};
 	}
 
+	function snapshotState(messages: CoreState['core']['messages']): CoreState {
+		return {
+			core: {
+				messages,
+				llmConfig: snapshotLLMConfig(),
+			},
+		};
+	}
+
 	return {
 		async setLLMConfig(config) {
 			await client.setContext({ config });
@@ -68,31 +77,16 @@ export function assembleRuntime(
 			return tracker.get();
 		},
 
-		async state(): Promise<CoreState> {
-			const ctx = tracker.get();
-			return {
-				core: {
-					messages: [...ctx.history.messages],
-					llmConfig: snapshotLLMConfig(),
-				},
-			};
-		},
-		async fork(): Promise<CoreState> {
-			const ctx = tracker.get();
-			return {
-				core: {
-					messages: [...ctx.history.messages],
-					llmConfig: snapshotLLMConfig(),
-				},
-			};
-		},
-		async child(): Promise<CoreState> {
-			return {
-				core: {
-					messages: [],
-					llmConfig: snapshotLLMConfig(),
-				},
-			};
+		state: {
+			async get(): Promise<CoreState> {
+				return snapshotState([...tracker.get().history.messages]);
+			},
+			async fork(): Promise<CoreState> {
+				return snapshotState([...tracker.get().history.messages]);
+			},
+			async child(): Promise<CoreState> {
+				return snapshotState([]);
+			},
 		},
 		async dispose(): Promise<void> {
 			await transport.dispose();

@@ -5,6 +5,6 @@ import type { CoreRuntime } from '@franklin/extensions';
 export async function getLLMConfig(
 	runtime: CoreRuntime,
 ): Promise<Omit<LLMConfig, 'apiKey'>> {
-	const state = await runtime.state();
+	const state = await runtime.state.get();
 	return state.core.llmConfig;
 }

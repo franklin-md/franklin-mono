@@ -119,7 +119,7 @@ export { resolveState } from './algebra/state/resolve.js';
 // ---------------------------------------------------------------------------
 // Runtime
 // ---------------------------------------------------------------------------
-export type { BaseRuntime } from './algebra/runtime/types.js';
+export type { BaseRuntime, StateHandle } from './algebra/runtime/types.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { CoreRuntime } from './systems/core/runtime.js';
 export { inspectRuntime } from './systems/core/inspect.js';

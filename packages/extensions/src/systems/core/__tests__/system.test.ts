@@ -111,7 +111,7 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core).toBeDefined();
 		expect(state.core.messages).toEqual([]);
 
@@ -134,7 +134,7 @@ describe('createCoreSystem', () => {
 			}),
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.messages.length).toBeGreaterThanOrEqual(2);
 
 		await runtime.dispose();
@@ -157,7 +157,7 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.llmConfig.model).toBe('test-model');
 		expect(state.core.llmConfig.provider).toBe('test-provider');
 
@@ -181,7 +181,7 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect('apiKey' in state.core.llmConfig).toBe(false);
 
 		await runtime.dispose();
@@ -206,11 +206,11 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const forked = await runtime.fork();
+		const forked = await runtime.state.fork();
 		expect(forked.core.messages).toHaveLength(1);
 		expect(forked.core.llmConfig.model).toBe('test');
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(forked.core.messages).not.toBe(state.core.messages);
 
 		await runtime.dispose();
@@ -235,7 +235,7 @@ describe('createCoreSystem', () => {
 			[],
 		);
 
-		const childState = await runtime.child();
+		const childState = await runtime.state.child();
 		expect(childState.core.messages).toHaveLength(0);
 		expect(childState.core.llmConfig.model).toBe('test');
 

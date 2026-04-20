@@ -55,15 +55,17 @@ function mockCoreRuntime(): CoreRuntime {
 		prompt: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
-		state: vi.fn(async () => ({
-			core: { messages: [], llmConfig: {} },
-		})),
-		fork: vi.fn(async () => ({
-			core: { messages: [], llmConfig: {} },
-		})),
-		child: vi.fn(async () => ({
-			core: { messages: [], llmConfig: {} },
-		})),
+		state: {
+			get: vi.fn(async () => ({
+				core: { messages: [], llmConfig: {} },
+			})),
+			fork: vi.fn(async () => ({
+				core: { messages: [], llmConfig: {} },
+			})),
+			child: vi.fn(async () => ({
+				core: { messages: [], llmConfig: {} },
+			})),
+		},
 		dispose: vi.fn(async () => {}),
 	} as unknown as CoreRuntime;
 }
@@ -234,7 +236,7 @@ describe('withAuth', () => {
 		expect(auth.getApiKey).toHaveBeenCalledWith('openai-codex');
 
 		// Verify the runtime now has the new provider's config
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.llmConfig.provider).toBe('openai-codex');
 	});
 
@@ -321,7 +323,7 @@ describe('withAuth', () => {
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('openrouter');
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.llmConfig.provider).toBe('openrouter');
 	});
 });
