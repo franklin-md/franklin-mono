@@ -1,6 +1,6 @@
 import {
 	ConversationPanel as SharedConversationPanel,
-	CopyRuntimeStateButton,
+	InspectDumpButton,
 } from '@franklin/ui';
 
 import { ToolUse } from './tools/tool-use.js';
@@ -11,7 +11,7 @@ export function ConversationPanel() {
 			toolUse={ToolUse}
 			additionalControls={
 				process.env.NODE_ENV === 'development'
-					? [<CopyRuntimeStateButton key="debug" />]
+					? [<InspectDumpButton key="debug" />]
 					: undefined
 			}
 		/>

@@ -122,6 +122,7 @@ export { resolveState } from './algebra/state/resolve.js';
 export type { BaseRuntime } from './algebra/runtime/types.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { CoreRuntime } from './systems/core/runtime.js';
+export { inspectRuntime } from './systems/core/inspect.js';
 export type { StoreRuntime } from './systems/store/runtime.js';
 export type { EnvironmentRuntime } from './systems/environment/runtime.js';
 export type { IdentityRuntime } from './systems/identity/runtime.js';
