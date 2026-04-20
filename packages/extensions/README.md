@@ -11,9 +11,36 @@ An API is intended to solve a particular class of problems. Implemented so far:
 - **DependencyRuntime<Name,T>**: Simple way for an extension to depend on an app-provided global resource (authentication, secrets, app-level environment). The dependency lands on the runtime as a field keyed by `Name`, so handlers read it via `ctx.<name>`.
 
 
-## Extension Algebra [TODO after reading about tagless style article]
-- [ ] Extensions, APis, Compilers, Runtimes, RuntimeSystems
-  - [ ] Mention of algebraic properties like associativity, composition, commutativity etc
+## Extension Algebra
+
+Franklin models extension composition across three related surfaces:
+- **Compiler**: compile-time registration surface plus runtime builder.
+- **Runtime**: lifecycle surface (`state`, `fork`, `child`, `dispose`, `subscribe`) plus system-specific capabilities.
+- **RuntimeSystem**: a factory for `emptyState()` and fresh compilers.
+
+`combine(...)` merges these surfaces by product:
+- API members are merged by object spread.
+- State is merged by object spread.
+- Runtime lifecycle is recomposed while runtime extras are merged.
+
+This composition is intentionally **partial**:
+- it is only defined when the two operands have disjoint state keys
+- it is only defined when the two operands have disjoint API keys
+- it is only defined when the two operands have disjoint runtime-extra keys
+
+The neutral element for this composition is the `Identity*` family:
+- `IdentityAPI`
+- `IdentityState`
+- `IdentityRuntime`
+- `identityCompiler()`
+- `identitySystem()`
+
+The important laws for the current algebra surface are:
+- **Left identity**: combining identity on the left preserves the other operand.
+- **Right identity**: combining identity on the right preserves the other operand.
+- **Associativity**: intended for valid disjoint compositions, so regrouping does not change the resulting merged surface.
+
+Left/right identity is tested explicitly for compiler, runtime, and runtime-system composition.
 
 
 ### Agent Composition Strategies
