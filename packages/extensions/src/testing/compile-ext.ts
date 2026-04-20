@@ -24,7 +24,7 @@ import type { Extension } from '../algebra/types/extension.js';
  * instead.
  *
  * `systemPrompt` handlers registered by the extension are not fired —
- * they belong to the transport path (`buildCoreRuntime`) which these
+ * they belong to the transport path (`createCoreRuntime`) which these
  * helpers deliberately skip. The registrar's `on('systemPrompt', ...)`
  * accepts them silently; tests that need systemPrompt behaviour must
  * use a full runtime.

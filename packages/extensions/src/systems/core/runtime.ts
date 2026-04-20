@@ -19,7 +19,7 @@ export type CoreRuntime = BaseRuntime<CoreState> &
 		setLLMConfig(config: Partial<LLMConfig>): Promise<void>;
 	};
 
-export function createCoreRuntime(
+export function assembleRuntime(
 	client: MiniACPClient,
 	tracker: CtxTracker,
 	transport: { dispose(): Promise<void> },

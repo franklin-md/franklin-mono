@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import type {
+	ClientBinding,
 	MiniACPAgent,
 	MiniACPClient,
 	ToolExecuteParams,
 } from '@franklin/mini-acp';
-import { applyDecorators } from '../decorator.js';
+import { composeProtocol } from '../decorator.js';
 import type { ProtocolDecorator } from '../decorator.js';
 
 // ---------------------------------------------------------------------------
@@ -29,11 +30,30 @@ function stubClient(): MiniACPClient {
 	} as unknown as MiniACPClient;
 }
 
+/**
+ * In-memory `ClientBinding` stub that records which server is bound
+ * and exposes the client proxy as the base raw client.
+ */
+function stubConnection(client: MiniACPClient = stubClient()): {
+	binding: ClientBinding;
+	boundServer: { current: MiniACPAgent | null };
+} {
+	const boundServer: { current: MiniACPAgent | null } = { current: null };
+	const binding: ClientBinding = {
+		remote: client,
+		bind(server) {
+			boundServer.current = server;
+			return { close: async () => {} };
+		},
+	};
+	return { binding, boundServer };
+}
+
 // ---------------------------------------------------------------------------
-// applyDecorators — wrapping order
+// composeProtocol — wrapping order + transport binding
 // ---------------------------------------------------------------------------
 
-describe('applyDecorators', () => {
+describe('composeProtocol', () => {
 	it('applies server decorators forward (first = innermost)', async () => {
 		const calls: string[] = [];
 
@@ -67,10 +87,14 @@ describe('applyDecorators', () => {
 			},
 		};
 
-		const base = { server: stubAgent(), client: stubClient() };
-		const result = await applyDecorators([inner, outer], base);
+		const { binding, boundServer } = stubConnection();
+		await composeProtocol({
+			stack: [inner, outer],
+			connection: binding,
+			fallbackServer: stubAgent(),
+		});
 
-		await result.server.toolExecute({
+		await boundServer.current?.toolExecute({
 			call: { type: 'toolCall', id: 'c1', name: 'test', arguments: {} },
 		});
 
@@ -117,13 +141,17 @@ describe('applyDecorators', () => {
 			},
 		};
 
-		const base = { server: stubAgent(), client: stubClient() };
+		const { binding } = stubConnection();
 		// Stack [A, B]:
 		//   Server: B(A(base)) → B outermost
 		//   Client reversed: A(B(base)) → A outermost
-		const result = await applyDecorators([layerA, layerB], base);
+		const { client } = await composeProtocol({
+			stack: [layerA, layerB],
+			connection: binding,
+			fallbackServer: stubAgent(),
+		});
 
-		await result.client.setContext({});
+		await client.setContext({});
 
 		// A is outermost on client side, sees call first
 		expect(calls).toEqual(['A', 'B']);
@@ -131,15 +159,12 @@ describe('applyDecorators', () => {
 
 	it('async client decorator can call methods on inner client during setup', async () => {
 		const setContextCalls: unknown[] = [];
-		const base = {
-			server: stubAgent(),
-			client: {
-				...stubClient(),
-				setContext: vi.fn(async (ctx: unknown) => {
-					setContextCalls.push(ctx);
-				}),
-			} as unknown as MiniACPClient,
-		};
+		const client = {
+			...stubClient(),
+			setContext: vi.fn(async (ctx: unknown) => {
+				setContextCalls.push(ctx);
+			}),
+		} as unknown as MiniACPClient;
 
 		const decorator: ProtocolDecorator = {
 			name: 'seeder',
@@ -153,7 +178,12 @@ describe('applyDecorators', () => {
 			},
 		};
 
-		await applyDecorators([decorator], base);
+		const { binding } = stubConnection(client);
+		await composeProtocol({
+			stack: [decorator],
+			connection: binding,
+			fallbackServer: stubAgent(),
+		});
 
 		expect(setContextCalls).toHaveLength(1);
 		expect(setContextCalls[0]).toEqual({
@@ -187,23 +217,35 @@ describe('applyDecorators', () => {
 			},
 		};
 
-		const base = { server: stubAgent(), client: stubClient() };
+		const { binding } = stubConnection();
 		// Stack [first, second] → client reversed → second.client runs first
-		await applyDecorators([first, second], base);
+		await composeProtocol({
+			stack: [first, second],
+			connection: binding,
+			fallbackServer: stubAgent(),
+		});
 
 		expect(order).toEqual(['second-setup', 'first-setup']);
 	});
 
-	it('empty stack returns base unchanged', async () => {
-		const base = { server: stubAgent(), client: stubClient() };
-		const result = await applyDecorators([], base);
+	it('empty stack binds fallback and returns raw client unchanged', async () => {
+		const rawClient = stubClient();
+		const fallback = stubAgent();
+		const { binding, boundServer } = stubConnection(rawClient);
 
-		expect(result.server).toBe(base.server);
-		expect(result.client).toBe(base.client);
+		const { client } = await composeProtocol({
+			stack: [],
+			connection: binding,
+			fallbackServer: fallback,
+		});
+
+		expect(client).toBe(rawClient);
+		expect(boundServer.current).toBe(fallback);
 	});
 
-	it('onServerReady fires after server wrapping, before client wrapping', async () => {
+	it('binds the fully-composed server to the connection before wrapping clients', async () => {
 		const order: string[] = [];
+		const rawClient = stubClient();
 
 		const decorator: ProtocolDecorator = {
 			name: 'test',
@@ -217,11 +259,20 @@ describe('applyDecorators', () => {
 			},
 		};
 
-		const base = { server: stubAgent(), client: stubClient() };
-		await applyDecorators([decorator], base, async () => {
-			order.push('onServerReady');
+		const binding: ClientBinding = {
+			remote: rawClient,
+			bind() {
+				order.push('bind');
+				return { close: async () => {} };
+			},
+		};
+
+		await composeProtocol({
+			stack: [decorator],
+			connection: binding,
+			fallbackServer: stubAgent(),
 		});
 
-		expect(order).toEqual(['server-wrap', 'onServerReady', 'client-wrap']);
+		expect(order).toEqual(['server-wrap', 'bind', 'client-wrap']);
 	});
 });
