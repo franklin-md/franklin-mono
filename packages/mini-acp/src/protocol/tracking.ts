@@ -1,15 +1,17 @@
 // ---------------------------------------------------------------------------
-// Ctx tracking decorators — composable wrappers that record protocol
-// messages into a shared CtxTracker.
+// Tracking decorators — composable wrappers that record protocol events
+// into shared trackers.
 //
-// trackAgent  — wraps MuAgent  (toolExecute: tool call + result)
-// trackTurn   — wraps TurnClient (prompt: user message + assistant updates)
-// trackClient — wraps MuClient  (trackTurn + setContext)
+// trackAgent  — wraps MuAgent    (toolExecute: tool call + result → CtxTracker)
+// trackTurn   — wraps TurnClient (prompt: user message + assistant updates → CtxTracker)
+// trackClient — wraps MuClient   (trackTurn + setContext → CtxTracker)
+// trackUsage  — wraps TurnClient (turnEnd usage → UsageTracker)
 // ---------------------------------------------------------------------------
 
 import type { TurnClient } from '../base/types.js';
 import type { MuClient, MuAgent } from './types.js';
 import type { CtxTracker } from './ctx-tracker.js';
+import type { UsageTracker } from './usage-tracker.js';
 import type { StreamEvent } from '../types/stream.js';
 
 /**
@@ -64,5 +66,26 @@ export function trackClient(tracker: CtxTracker, client: MuClient): MuClient {
 			tracker.apply(ctx);
 			return client.setContext(ctx);
 		},
+	};
+}
+
+/**
+ * Decorates a TurnClient to record turn usage into the tracker.
+ * No-op for turnEnd events without a `usage` field (pre-LLM errors).
+ */
+export function trackUsage(
+	tracker: UsageTracker,
+	turn: TurnClient,
+): TurnClient {
+	return {
+		async *prompt(message): AsyncGenerator<StreamEvent> {
+			for await (const event of turn.prompt(message)) {
+				if (event.type === 'turnEnd' && event.usage) {
+					tracker.add(event.usage);
+				}
+				yield event;
+			}
+		},
+		cancel: turn.cancel.bind(turn),
 	};
 }

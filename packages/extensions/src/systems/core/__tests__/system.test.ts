@@ -6,9 +6,11 @@ import {
 	createSessionAdapter,
 	createAgentConnection,
 	StopCode,
+	ZERO_USAGE,
 	type Ctx,
 	type Update,
 	type StreamEvent,
+	type Usage,
 } from '@franklin/mini-acp';
 import type { CoreAPI } from '../api/api.js';
 
@@ -16,7 +18,7 @@ import type { CoreAPI } from '../api/api.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createMockSpawn(onPrompt?: (ctx: Ctx) => void) {
+function createMockSpawn(onPrompt?: (ctx: Ctx) => void, turnUsage?: Usage) {
 	return async () => {
 		const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
 		const connection = createAgentConnection(agentSide);
@@ -36,6 +38,7 @@ function createMockSpawn(onPrompt?: (ctx: Ctx) => void) {
 					yield {
 						type: 'turnEnd' as const,
 						stopCode: StopCode.Finished,
+						...(turnUsage ? { usage: turnUsage } : {}),
 					};
 				},
 				async cancel() {},
@@ -68,7 +71,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[],
 		);
 
@@ -84,7 +87,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[],
 		);
 
@@ -106,7 +109,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[],
 		);
 
@@ -122,7 +125,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[],
 		);
 
@@ -151,6 +154,7 @@ describe('createCoreSystem', () => {
 						model: 'test-model',
 						provider: 'test-provider',
 					},
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
@@ -175,6 +179,7 @@ describe('createCoreSystem', () => {
 						model: 'test-model',
 						provider: 'test-provider',
 					},
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
@@ -200,6 +205,7 @@ describe('createCoreSystem', () => {
 						},
 					],
 					llmConfig: { model: 'test' },
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
@@ -229,6 +235,7 @@ describe('createCoreSystem', () => {
 						},
 					],
 					llmConfig: { model: 'test' },
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
@@ -246,7 +253,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[],
 		);
 
@@ -258,7 +265,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[
 				(api: CoreAPI) => {
 					api.on('prompt', (_params) => {
@@ -295,6 +302,7 @@ describe('createCoreSystem', () => {
 				core: {
 					messages: [],
 					llmConfig: {},
+					usage: ZERO_USAGE,
 				},
 			},
 			[
@@ -332,6 +340,7 @@ describe('createCoreSystem', () => {
 				core: {
 					messages: [],
 					llmConfig: {},
+					usage: ZERO_USAGE,
 				},
 			},
 			[
@@ -354,6 +363,119 @@ describe('createCoreSystem', () => {
 		);
 
 		expect(capturedCtx!.history.systemPrompt).toBe('first\n\nsecond');
+
+		await runtime.dispose();
+	});
+
+	// -------------------------------------------------------------------------
+	// Usage accumulation — UsageTracker wired through CoreState
+	// -------------------------------------------------------------------------
+
+	it('state returns seeded usage when no prompt has run', async () => {
+		const seededUsage: Usage = {
+			tokens: { input: 50, output: 20, cacheRead: 0, cacheWrite: 0, total: 70 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const system = createCoreSystem(createMockSpawn());
+
+		const runtime = await createRuntime(
+			system,
+			{
+				core: { messages: [], llmConfig: {}, usage: seededUsage },
+			},
+			[],
+		);
+
+		const state = await runtime.state();
+		expect(state.core.usage).toEqual(seededUsage);
+
+		await runtime.dispose();
+	});
+
+	it('state accumulates turnEnd usage on top of seeded value', async () => {
+		const seeded: Usage = {
+			tokens: { input: 50, output: 20, cacheRead: 0, cacheWrite: 0, total: 70 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const turnUsage: Usage = {
+			tokens: { input: 10, output: 5, cacheRead: 2, cacheWrite: 1, total: 18 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const system = createCoreSystem(createMockSpawn(undefined, turnUsage));
+
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: seeded } },
+			[],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const state = await runtime.state();
+		expect(state.core.usage.tokens).toEqual({
+			input: 60,
+			output: 25,
+			cacheRead: 2,
+			cacheWrite: 1,
+			total: 88,
+		});
+
+		await runtime.dispose();
+	});
+
+	it('fork snapshots accumulated usage', async () => {
+		const turnUsage: Usage = {
+			tokens: { input: 10, output: 5, cacheRead: 0, cacheWrite: 0, total: 15 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const system = createCoreSystem(createMockSpawn(undefined, turnUsage));
+
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
+			[],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const forked = await runtime.fork();
+		expect(forked.core.usage).toEqual(turnUsage);
+
+		await runtime.dispose();
+	});
+
+	it('child returns ZERO_USAGE regardless of parent accumulation', async () => {
+		const turnUsage: Usage = {
+			tokens: { input: 10, output: 5, cacheRead: 0, cacheWrite: 0, total: 15 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const system = createCoreSystem(createMockSpawn(undefined, turnUsage));
+
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
+			[],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const childState = await runtime.child();
+		expect(childState.core.usage).toEqual(ZERO_USAGE);
 
 		await runtime.dispose();
 	});

@@ -1,4 +1,10 @@
-import type { CtxTracker, LLMConfig, MiniACPClient } from '@franklin/mini-acp';
+import type {
+	CtxTracker,
+	LLMConfig,
+	MiniACPClient,
+	UsageTracker,
+} from '@franklin/mini-acp';
+import { ZERO_USAGE } from '@franklin/mini-acp';
 import { createObserver } from '@franklin/lib';
 import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { CoreState } from './state.js';
@@ -22,6 +28,7 @@ export type CoreRuntime = BaseRuntime<CoreState> &
 export function createCoreRuntime(
 	client: MiniACPClient,
 	tracker: CtxTracker,
+	usageTracker: UsageTracker,
 	transport: { dispose(): Promise<void> },
 ): CoreRuntime {
 	const observer = createObserver();
@@ -57,6 +64,7 @@ export function createCoreRuntime(
 				core: {
 					messages: [...ctx.history.messages],
 					llmConfig: snapshotLLMConfig(),
+					usage: usageTracker.get(),
 				},
 			};
 		},
@@ -66,6 +74,7 @@ export function createCoreRuntime(
 				core: {
 					messages: [...ctx.history.messages],
 					llmConfig: snapshotLLMConfig(),
+					usage: usageTracker.get(),
 				},
 			};
 		},
@@ -74,6 +83,7 @@ export function createCoreRuntime(
 				core: {
 					messages: [],
 					llmConfig: snapshotLLMConfig(),
+					usage: ZERO_USAGE,
 				},
 			};
 		},

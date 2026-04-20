@@ -1,8 +1,13 @@
-import { createClientConnection, CtxTracker } from '@franklin/mini-acp';
+import {
+	createClientConnection,
+	CtxTracker,
+	UsageTracker,
+} from '@franklin/mini-acp';
 import { createCoreRuntime, type CoreRuntime } from '../runtime.js';
 import type { CoreState } from '../state.js';
 import { applyDecorators, type ProtocolDecorator } from './decorator.js';
 import { createTrackerDecorator } from './decorators/tracker.js';
+import { createUsageTrackerDecorator } from './decorators/usage-tracker.js';
 import { fallbackServer } from './fallback.js';
 import type { SpawnResult } from './compiler.js';
 
@@ -24,10 +29,12 @@ export async function buildCoreRuntime(
 	const rawClient = connection.remote;
 
 	const tracker = new CtxTracker();
+	const usageTracker = new UsageTracker();
 
 	const stack: ProtocolDecorator[] = [
 		...extensionDecorators,
 		createTrackerDecorator(state, tracker),
+		createUsageTrackerDecorator(state, usageTracker),
 	];
 
 	const { client } = await applyDecorators(
@@ -41,5 +48,5 @@ export async function buildCoreRuntime(
 	);
 
 	// TODO: Is it possible to avoid passing in tracker?
-	return createCoreRuntime(client, tracker, transport);
+	return createCoreRuntime(client, tracker, usageTracker, transport);
 }

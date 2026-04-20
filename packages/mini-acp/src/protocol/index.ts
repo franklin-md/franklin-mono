@@ -22,5 +22,6 @@ export { debugMiniACP } from './debug.js';
 export { createSessionAdapter } from './adapter.js';
 
 export { CtxTracker } from './ctx-tracker.js';
+export { UsageTracker, ZERO_USAGE } from './usage-tracker.js';
 
-export { trackAgent, trackTurn, trackClient } from './tracking.js';
+export { trackAgent, trackTurn, trackClient, trackUsage } from './tracking.js';
