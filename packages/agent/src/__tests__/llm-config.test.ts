@@ -14,22 +14,24 @@ function mockRuntime(
 	} = {},
 ): CoreRuntime {
 	return {
-		state: vi.fn(async () => ({
-			core: {
-				messages: [],
-				llmConfig,
-			},
-		})),
+		state: {
+			get: vi.fn(async () => ({
+				core: {
+					messages: [],
+					llmConfig,
+				},
+			})),
+			fork: vi.fn(async () => ({
+				core: { messages: [], llmConfig: {} },
+			})),
+			child: vi.fn(async () => ({
+				core: { messages: [], llmConfig: {} },
+			})),
+		},
 		setLLMConfig: vi.fn(async () => {}),
 		prompt: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
-		fork: vi.fn(async () => ({
-			core: { messages: [], llmConfig: {} },
-		})),
-		child: vi.fn(async () => ({
-			core: { messages: [], llmConfig: {} },
-		})),
 		dispose: vi.fn(async () => {}),
 	} as unknown as CoreRuntime;
 }
