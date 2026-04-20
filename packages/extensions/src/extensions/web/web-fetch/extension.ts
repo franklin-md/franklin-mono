@@ -1,6 +1,7 @@
 import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentAPI } from '../../../systems/environment/index.js';
+import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import type { StoreAPI } from '../../../systems/store/index.js';
+import type { StoreRuntime } from '../../../systems/store/runtime.js';
 import type { Extension } from '../../../algebra/types/index.js';
 import { readFromCache, writeToCache } from './cache.js';
 import { normalizeUrl } from '@franklin/lib';
@@ -15,14 +16,15 @@ import { processWebResponse } from './process.js';
 
 export function webFetchExtension(
 	options: Partial<WebFetchExtensionOptions>,
-): Extension<CoreAPI & EnvironmentAPI & StoreAPI> {
+): Extension<CoreAPI<EnvironmentRuntime & StoreRuntime> & StoreAPI> {
 	const resolved = resolveWebFetchOptions(options);
 
 	return (api) => {
-		const store = api.registerStore(webFetchCacheKey, {}, 'shared');
-		const web = api.getEnvironment().web;
+		api.registerStore(webFetchCacheKey, {}, 'shared');
 
-		api.registerTool(fetchUrlSpec, async ({ url }) => {
+		api.registerTool(fetchUrlSpec, async ({ url }, ctx) => {
+			const web = ctx.environment.web;
+			const store = ctx.getStore(webFetchCacheKey);
 			let normalizedUrl: string;
 			try {
 				normalizedUrl = normalizeUrl(url);

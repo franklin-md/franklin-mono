@@ -1,27 +1,24 @@
-import type { ClientProtocol } from '@franklin/mini-acp';
 import type { CoreAPI } from './api/api.js';
-import { createCoreCompiler } from './compile/compiler.js';
-import type { Compiler } from '../../algebra/compiler/index.js';
+import { createCoreCompiler, type SpawnFn } from './compile/compiler.js';
 import type { RuntimeSystem } from '../../algebra/system/index.js';
 import type { CoreState } from './state.js';
 import { emptyCoreState } from './state.js';
 import type { CoreRuntime } from './runtime.js';
 
-type SpawnFn = () =>
-	| (ClientProtocol & { dispose(): Promise<void> })
-	| Promise<ClientProtocol & { dispose(): Promise<void> }>;
+/**
+ * `CoreSystem<Runtime>` parameterises Core by the eventual fully-tied
+ * Runtime that handlers receive. `Runtime extends CoreRuntime` ensures
+ * Runtime at least exposes Core's surface; the assembler names the
+ * combined Runtime explicitly when composing with other systems.
+ */
+export type CoreSystem<Runtime extends CoreRuntime = CoreRuntime> =
+	RuntimeSystem<CoreState, CoreAPI<Runtime>, Runtime>;
 
-export type CoreSystem = RuntimeSystem<CoreState, CoreAPI, CoreRuntime>;
-
-export function createCoreSystem(spawn: SpawnFn): CoreSystem {
+export function createCoreSystem<Runtime extends CoreRuntime = CoreRuntime>(
+	spawn: SpawnFn,
+): CoreSystem<Runtime> {
 	return {
 		emptyState: emptyCoreState,
-
-		async createCompiler(
-			state: CoreState,
-		): Promise<Compiler<CoreAPI, CoreRuntime>> {
-			const transport = await spawn();
-			return createCoreCompiler(transport, state);
-		},
+		createCompiler: () => createCoreCompiler<Runtime>(spawn),
 	};
 }

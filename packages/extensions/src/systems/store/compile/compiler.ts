@@ -1,4 +1,3 @@
-import type { Store } from '../api/types.js';
 import type { StoreAPI } from '../api/api.js';
 import type { Sharing } from '../api/sharing.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
@@ -6,79 +5,69 @@ import type { StoreMapping } from '../api/registry/mapping.js';
 import { castDraft } from 'immer';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { BaseStore } from '../api/base.js';
-import { type StoreResult, createStoreResult } from '../api/registry/result.js';
+import {
+	createStoreResult,
+	createEmptyStoreResult,
+} from '../api/registry/result.js';
 import { createStoreRuntime, type StoreRuntime } from '../runtime.js';
+import type { StoreRegistry } from '../api/registry/index.js';
+import type { StoreState } from '../state.js';
+
+type Registration = {
+	name: string;
+	initial: unknown;
+	sharing: Sharing;
+};
 
 /**
- * Create a fresh store compiler instance.
+ * Store compiler — registrations are pure writes captured as data.
+ * At build time, stores are materialised from seed + registrations;
+ * handlers access them at stage 1 via `runtime.getStore(key)`.
  *
- * Extensions interact via two methods:
- * - `registerStore(name, initial, sharing)` — declares a store with an
- *   initial value and sharing mode. Exactly one extension should register
- *   each store name; duplicates throw.
- * - `useStore(name)` — attaches to a store registered (or to-be-registered)
- *   by another extension. Order-independent: works whether the creator
- *   has already run or not.
- *
- * At build time the compiler validates that every store has been
- * initialised — either by a `registerStore` call or by the seed.
+ * No proxies, no cells, no `useStore` — simplest possible story.
  */
 export function createStoreCompiler(
-	seed: StoreResult,
-): Compiler<StoreAPI, StoreRuntime> {
-	const mapping: StoreMapping = {};
-	const creators = new Set<string>();
-
-	function resolve<T>(name: string, initial?: T, sharing?: Sharing): Store<T> {
-		const isCreator = sharing !== undefined;
-
-		// Phase 1: Ensure the store exists and is mapped
-		let ref = mapping[name];
-		if (ref === undefined) {
-			const seeded = seed.get(name);
-			if (seeded) {
-				ref = seeded.ref;
-			} else {
-				const created = seed.registry.create(isCreator ? sharing : 'private');
-				ref = created.ref;
-			}
-			mapping[name] = ref;
-		}
-
-		const entry = seed.registry.get(ref);
-
-		// Phase 2: Apply creator metadata
-		if (isCreator) {
-			if (creators.has(name)) {
-				throw new Error(`Store "${name}" has multiple initializers`);
-			}
-			entry.sharing = sharing;
-			(entry.store as BaseStore<T>).setInitial(castDraft(initial) as T);
-			creators.add(name);
-		}
-
-		return entry.store as Store<T>;
-	}
+	registry: StoreRegistry,
+): Compiler<StoreAPI, StoreState, StoreRuntime> {
+	const registrations: Registration[] = [];
 
 	const api: StoreAPI = {
-		registerStore<T>(name: string, initial: T, sharing: Sharing): Store<T> {
-			return resolve(name, initial, sharing);
-		},
-		useStore<T>(name: string): Store<T> {
-			return resolve<T>(name);
+		registerStore(name: string, initial: unknown, sharing: Sharing): void {
+			registrations.push({ name, initial, sharing });
 		},
 	};
 
 	return {
 		api,
-		async build() {
-			for (const name of Object.keys(mapping)) {
-				if (!creators.has(name) && !seed.has(name)) {
-					throw new Error(
-						`Store "${name}" was registered but never initialized`,
-					);
+		async build(state) {
+			const seedMapping = state.store;
+			const hasEntries = Object.keys(seedMapping).length > 0;
+			const seed = hasEntries
+				? createStoreResult(registry, seedMapping)
+				: createEmptyStoreResult(registry);
+
+			const mapping: StoreMapping = {};
+			const seen = new Set<string>();
+
+			for (const { name, initial, sharing } of registrations) {
+				if (seen.has(name)) {
+					throw new Error(`Store "${name}" has multiple initializers`);
 				}
+				seen.add(name);
+
+				let ref = mapping[name];
+				if (ref === undefined) {
+					const seeded = seed.get(name);
+					ref = seeded ? seeded.ref : seed.registry.create(sharing).ref;
+					mapping[name] = ref;
+				}
+				const entry = seed.registry.get(ref);
+				entry.sharing = sharing;
+				// TODO: can we avoid this?
+				// TODO: Is BaseStore actually base type? OR is it concrete?
+				(entry.store as BaseStore<unknown>).setInitial(castDraft(initial));
 			}
+
 			const stores = createStoreResult(seed.registry, mapping);
 			return createStoreRuntime(stores);
 		},

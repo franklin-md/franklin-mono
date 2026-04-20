@@ -1,4 +1,3 @@
-export type { SessionAPI } from './api.js';
 export type { SessionRuntime } from '../runtime/runtime.js';
 export type {
 	Session,

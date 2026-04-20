@@ -5,59 +5,56 @@ import type {
 	StreamObserverHandler,
 } from '../../api/handlers.js';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
-import { createPromptContext } from '../../api/prompt-context.js';
+import { createPrompt } from '../../api/prompt.js';
 
-function notifyObservers(
-	observers: ReadonlyMap<
-		StreamObserverEvent,
-		StreamObserverHandler<StreamObserverEvent>[]
-	>,
-	event: StreamEvent,
-): void {
-	const fns = observers.get(event.type);
-	if (!fns) return;
-	for (const fn of fns) fn(event);
+export type StreamObservers = {
+	[K in StreamObserverEvent]: StreamObserverHandler<K>[];
+};
+
+export function hasAnyStreamObserver(observers: StreamObservers): boolean {
+	return (
+		observers.turnStart.length > 0 ||
+		observers.chunk.length > 0 ||
+		observers.update.length > 0 ||
+		observers.turnEnd.length > 0
+	);
 }
 
 async function* iteratePromptWithObservers(
 	stream: ReturnType<MiniACPClient['prompt']>,
-	observers?: ReadonlyMap<
-		StreamObserverEvent,
-		StreamObserverHandler<StreamObserverEvent>[]
-	>,
+	observers: StreamObservers,
 ): AsyncGenerator<StreamEvent> {
 	for await (const result of stream) {
-		// Notify observers — guard against undefined event (generator
-		// that returns void instead of TurnEnd) and empty observer map
-		if (observers && observers.size > 0) {
-			notifyObservers(observers, result);
-		}
-
+		const fns = observers[result.type];
+		for (const fn of fns) (fn as (e: typeof result) => void)(result);
 		yield result;
 	}
 }
 
 /**
  * Build prompt middleware (returns AsyncIterable, not Promise).
- * Prompt handlers contribute content through PromptContext, then the final
+ * Prompt handlers contribute content through Prompt, then the final
  * request is passed to the downstream client.
  *
- * When observers are provided, manually iterates the stream and dispatches
- * events to matching observers. Without observers, uses yield* (fast path).
+ * When any stream observer is registered, manually iterates the stream
+ * and dispatches events to matching observers. Without observers, uses
+ * yield* (fast path).
  */
 export function buildPromptWaterfall(
 	handlers: PromptHandler[],
-	observers?: ReadonlyMap<
-		StreamObserverEvent,
-		StreamObserverHandler<StreamObserverEvent>[]
-	>,
+	observers: StreamObservers,
 ): MethodMiddleware<MiniACPClient['prompt']> {
+	const observed = hasAnyStreamObserver(observers);
 	return async function* (params, next) {
-		const ctx = createPromptContext(params);
+		const prompt = createPrompt(params);
 		for (const handler of handlers) {
-			await handler(ctx);
+			await handler(prompt);
 		}
 
-		return yield* iteratePromptWithObservers(next(ctx.asPrompt()), observers);
+		const downstream = next(prompt.asPrompt());
+		if (observed) {
+			return yield* iteratePromptWithObservers(downstream, observers);
+		}
+		return yield* downstream;
 	};
 }

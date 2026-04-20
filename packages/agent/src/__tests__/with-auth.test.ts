@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { CoreRuntime, CoreState } from '@franklin/extensions';
-import { createCoreSystem } from '@franklin/extensions';
+import { createCoreSystem, createRuntime } from '@franklin/extensions';
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
 	createSessionAdapter,
@@ -187,14 +187,16 @@ describe('withAuth', () => {
 		const auth = mockAuthManager({ anthropic: 'sk-build-test' });
 
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider: 'anthropic' },
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'anthropic' },
+				},
 			},
-		});
-
-		const runtime = await compiler.build();
+			[],
+		);
 
 		// TODO: We can't easily inspect that setLLMConfig was called on the
 		// real runtime (it's behind the CtxTracker), so we just verify
@@ -212,13 +214,16 @@ describe('withAuth', () => {
 		});
 
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider: 'anthropic' },
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'anthropic' },
+				},
 			},
-		});
-		const runtime = await compiler.build();
+			[],
+		);
 
 		// Clear the initial login call
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
@@ -239,13 +244,16 @@ describe('withAuth', () => {
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider: 'anthropic' },
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'anthropic' },
+				},
 			},
-		});
-		const runtime = await compiler.build();
+			[],
+		);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Same provider, different model — still resolves apiKey
@@ -266,13 +274,16 @@ describe('withAuth', () => {
 		});
 
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider: 'anthropic' },
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'anthropic' },
+				},
 			},
-		});
-		const runtime = await compiler.build();
+			[],
+		);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Provider change WITH explicit apiKey — should not resolve
@@ -290,13 +301,16 @@ describe('withAuth', () => {
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider: 'anthropic' },
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'anthropic' },
+				},
 			},
-		});
-		const runtime = await compiler.build();
+			[],
+		);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Switch to a provider with no stored key — should pass through without apiKey
@@ -324,13 +338,16 @@ describe('withAuth live sync', () => {
 		const spawn = createMockSpawn();
 		const base = createCoreSystem(spawn);
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider },
+		return createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider },
+				},
 			},
-		});
-		return await compiler.build();
+			[],
+		);
 	}
 
 	it('pushes new key when provider credentials change', async () => {

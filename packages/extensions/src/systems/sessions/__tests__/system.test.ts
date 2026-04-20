@@ -22,12 +22,10 @@ type TestSystem = RuntimeSystem<TestState, Record<string, never>, TestRuntime>;
 function createTestSystem(): TestSystem {
 	return {
 		emptyState: () => ({ value: 'root' }),
-		async createCompiler(
-			state: TestState,
-		): Promise<Compiler<Record<string, never>, TestRuntime>> {
+		createCompiler(): Compiler<Record<string, never>, TestState, TestRuntime> {
 			return {
 				api: {},
-				async build(): Promise<TestRuntime> {
+				async build(state) {
 					return {
 						state: vi.fn(async () => state),
 						fork: vi.fn(async () => state),
@@ -96,7 +94,7 @@ describe('createSessionSystem', () => {
 		expect(runtime.session.removeSelf).toBeTypeOf('function');
 	});
 
-	it('extensions access session via api.session', async () => {
+	it('does not expose session ops on the api surface (registration-time)', async () => {
 		const { manager } = createTestManager();
 		const system = createTestSystem();
 		const sessionSystem = createTestSessionSystem(
@@ -105,54 +103,15 @@ describe('createSessionSystem', () => {
 			manager.create,
 		);
 
-		let receivedChild: (() => Promise<unknown>) | undefined;
-		let receivedFork: (() => Promise<unknown>) | undefined;
-		let receivedRemoveSelf: (() => Promise<boolean>) | undefined;
-
+		// Session ops are stage-1 capabilities — they live on the runtime, not
+		// on the registration api. Extensions reach them via ctx.runtime.session.*.
 		await createRuntime(sessionSystem, { value: 'test' }, [
 			(api) => {
-				receivedChild = api.session.createChild;
-				receivedFork = api.session.createFork;
-				receivedRemoveSelf = api.session.removeSelf;
+				expect(
+					(api as unknown as { session?: unknown }).session,
+				).toBeUndefined();
 			},
 		]);
-
-		expect(receivedChild).toBeTypeOf('function');
-		expect(receivedFork).toBeTypeOf('function');
-		expect(receivedRemoveSelf).toBeTypeOf('function');
-	});
-
-	it('session API methods can be called after extraction', async () => {
-		const system = createTestSystem();
-		const createSpy = vi
-			.fn<SessionCreate<SessionSystem<TestSystem>>>()
-			.mockResolvedValue({
-				id: 'child-id',
-				runtime: {} as TestSessionRuntime,
-			});
-		const remove = vi.fn(async () => true);
-		const sessionSystem = createTestSessionSystem(
-			system,
-			'test-id',
-			createSpy,
-			remove,
-		);
-
-		let createChild: (() => Promise<unknown>) | undefined;
-		let removeCurrent: (() => Promise<boolean>) | undefined;
-
-		await createRuntime(sessionSystem, { value: 'test' }, [
-			(api) => {
-				createChild = api.session.createChild;
-				removeCurrent = api.session.removeSelf;
-			},
-		]);
-
-		await createChild?.();
-		await removeCurrent?.();
-
-		expect(createSpy).toHaveBeenCalledWith({ from: 'test-id', mode: 'child' });
-		expect(remove).toHaveBeenCalledWith('test-id');
 	});
 
 	it('preserves base runtime methods', async () => {

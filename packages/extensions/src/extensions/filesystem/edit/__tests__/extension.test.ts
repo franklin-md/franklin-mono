@@ -2,17 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
 import { sha256Hex } from '../../hash.js';
 import type { MiniACPClient } from '@franklin/mini-acp';
-import { compile } from '../../../../algebra/compiler/compile.js';
-import { combine } from '../../../../algebra/compiler/combine.js';
-import { createCoreCompiler } from '../../../../systems/core/compile/compiler.js';
-import { createEnvironmentCompiler } from '../../../../systems/environment/compile/compiler.js';
-import { createStoreCompiler } from '../../../../systems/store/compile/compiler.js';
-import {
-	StoreRegistry,
-	createEmptyStoreResult,
-} from '../../../../systems/store/api/index.js';
-import type { Store } from '../../../../systems/store/api/types.js';
+import { apply } from '@franklin/lib/middleware';
+import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
+import { fileKey } from '../../common/key.js';
 import { editExtension } from '../extension.js';
 
 function mockEnvironment(
@@ -62,21 +55,13 @@ function mockEnvironment(
 }
 
 function compileEdit(env: ReconfigurableEnvironment) {
-	const compiler = combine(
-		combine(
-			createCoreCompiler(),
-			createStoreCompiler(createEmptyStoreResult(new StoreRegistry())),
-		),
-		createEnvironmentCompiler(env),
-	);
-	return compile(compiler, editExtension());
+	return compileCoreWithStoreAndEnv(editExtension(), env);
 }
 
-async function executeTool(
-	result: Awaited<ReturnType<typeof compileEdit>>,
-	args: Record<string, unknown>,
-) {
-	return result.server.toolExecute(
+type Compiled = Awaited<ReturnType<typeof compileEdit>>;
+
+async function executeTool(compiled: Compiled, args: Record<string, unknown>) {
+	return compiled.middleware.server.toolExecute(
 		{
 			call: {
 				type: 'toolCall',
@@ -89,15 +74,11 @@ async function executeTool(
 	);
 }
 
-function simulateRead(
-	result: Awaited<ReturnType<typeof compileEdit>>,
-	path: string,
-	content: string,
-) {
+function simulateRead(compiled: Compiled, path: string, content: string) {
 	const bytes = new TextEncoder().encode(content);
 	const fileHash = sha256Hex(bytes);
-	const storeEntry = result.stores.get('last_read');
-	(storeEntry!.store as Store<Record<string, string>>).set((draft) => {
+	const store = compiled.ctx.getStore(fileKey);
+	store.set((draft) => {
 		draft[path] = fileHash;
 	});
 }
@@ -114,7 +95,7 @@ function getResultText(result: {
 describe('editExtension', () => {
 	it('registers the edit_file tool', async () => {
 		const env = mockEnvironment();
-		const result = await compileEdit(env);
+		const compiled = await compileEdit(env);
 
 		const received: Array<Parameters<MiniACPClient['setContext']>[0]> = [];
 		const target: MiniACPClient = {
@@ -130,9 +111,7 @@ describe('editExtension', () => {
 			cancel: vi.fn(async () => {}),
 		};
 
-		const { apply } = await import('@franklin/lib/middleware');
-
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(compiled.middleware.client, target);
 		await wrapped.setContext({});
 
 		const ctx = received[0] as { tools: { name: string }[] };
@@ -144,9 +123,9 @@ describe('editExtension', () => {
 		const env = mockEnvironment({
 			'test.txt': 'hello world',
 		});
-		const result = await compileEdit(env);
-		simulateRead(result, 'test.txt', 'hello world');
-		const toolResult = await executeTool(result, {
+		const compiled = await compileEdit(env);
+		simulateRead(compiled, 'test.txt', 'hello world');
+		const toolResult = await executeTool(compiled, {
 			path: 'test.txt',
 			old_text: 'world',
 			new_text: 'there',
@@ -156,7 +135,6 @@ describe('editExtension', () => {
 		const text = getResultText(toolResult);
 		expect(text).toContain('test.txt');
 
-		// Verify the file was written with the replacement
 		expect(env.filesystem.writeFile).toHaveBeenCalledWith(
 			'test.txt',
 			'hello there',
@@ -167,10 +145,10 @@ describe('editExtension', () => {
 		const env = mockEnvironment({
 			'test.txt': 'hello world',
 		});
-		const result = await compileEdit(env);
-		simulateRead(result, 'test.txt', 'hello world');
+		const compiled = await compileEdit(env);
+		simulateRead(compiled, 'test.txt', 'hello world');
 
-		const toolResult = await executeTool(result, {
+		const toolResult = await executeTool(compiled, {
 			path: 'test.txt',
 			old_text: 'missing text',
 			new_text: 'replacement',
@@ -183,10 +161,10 @@ describe('editExtension', () => {
 		const env = mockEnvironment({
 			'test.txt': 'ab ab ab',
 		});
-		const result = await compileEdit(env);
-		simulateRead(result, 'test.txt', 'ab ab ab');
+		const compiled = await compileEdit(env);
+		simulateRead(compiled, 'test.txt', 'ab ab ab');
 
-		const toolResult = await executeTool(result, {
+		const toolResult = await executeTool(compiled, {
 			path: 'test.txt',
 			old_text: 'ab',
 			new_text: 'cd',
@@ -197,9 +175,9 @@ describe('editExtension', () => {
 
 	it('returns isError when file does not exist', async () => {
 		const env = mockEnvironment({});
-		const result = await compileEdit(env);
+		const compiled = await compileEdit(env);
 
-		const toolResult = await executeTool(result, {
+		const toolResult = await executeTool(compiled, {
 			path: 'missing.txt',
 			old_text: 'x',
 			new_text: 'y',
@@ -212,9 +190,9 @@ describe('editExtension', () => {
 		const env = mockEnvironment({
 			'bom.txt': '\uFEFFhello world',
 		});
-		const result = await compileEdit(env);
-		simulateRead(result, 'bom.txt', '\uFEFFhello world');
-		await executeTool(result, {
+		const compiled = await compileEdit(env);
+		simulateRead(compiled, 'bom.txt', '\uFEFFhello world');
+		await executeTool(compiled, {
 			path: 'bom.txt',
 			old_text: 'world',
 			new_text: 'there',
@@ -230,9 +208,9 @@ describe('editExtension', () => {
 		const env = mockEnvironment({
 			'crlf.txt': 'line1\r\nline2\r\nline3',
 		});
-		const result = await compileEdit(env);
-		simulateRead(result, 'crlf.txt', 'line1\r\nline2\r\nline3');
-		await executeTool(result, {
+		const compiled = await compileEdit(env);
+		simulateRead(compiled, 'crlf.txt', 'line1\r\nline2\r\nline3');
+		await executeTool(compiled, {
 			path: 'crlf.txt',
 			old_text: 'line2',
 			new_text: 'replaced',
@@ -248,9 +226,9 @@ describe('editExtension', () => {
 		const env = mockEnvironment({
 			'quotes.txt': 'it\u2019s a test',
 		});
-		const result = await compileEdit(env);
-		simulateRead(result, 'quotes.txt', 'it\u2019s a test');
-		const toolResult = await executeTool(result, {
+		const compiled = await compileEdit(env);
+		simulateRead(compiled, 'quotes.txt', 'it\u2019s a test');
+		const toolResult = await executeTool(compiled, {
 			path: 'quotes.txt',
 			old_text: "it's a test",
 			new_text: 'replaced',
@@ -264,19 +242,17 @@ describe('editExtension', () => {
 		const env = mockEnvironment({
 			'test.txt': 'aaa bbb ccc',
 		});
-		const result = await compileEdit(env);
-		simulateRead(result, 'test.txt', 'aaa bbb ccc');
+		const compiled = await compileEdit(env);
+		simulateRead(compiled, 'test.txt', 'aaa bbb ccc');
 
-		// First edit
-		const first = await executeTool(result, {
+		const first = await executeTool(compiled, {
 			path: 'test.txt',
 			old_text: 'aaa',
 			new_text: 'xxx',
 		});
 		expect(first.isError).toBeUndefined();
 
-		// Second edit — should succeed without a re-read
-		const second = await executeTool(result, {
+		const second = await executeTool(compiled, {
 			path: 'test.txt',
 			old_text: 'bbb',
 			new_text: 'yyy',
@@ -292,10 +268,10 @@ describe('editExtension', () => {
 		const env = mockEnvironment({
 			'same.txt': 'hello world',
 		});
-		const result = await compileEdit(env);
-		simulateRead(result, 'same.txt', 'hello world');
+		const compiled = await compileEdit(env);
+		simulateRead(compiled, 'same.txt', 'hello world');
 
-		const toolResult = await executeTool(result, {
+		const toolResult = await executeTool(compiled, {
 			path: 'same.txt',
 			old_text: 'hello',
 			new_text: 'hello',

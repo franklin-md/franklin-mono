@@ -1,9 +1,9 @@
 export type {
 	CoreAPI,
 	CancelHandler,
-	PromptContext,
+	Prompt,
 	PromptHandler,
-	SystemPromptContext,
+	SystemPrompt,
 	SystemPromptHandler,
 	ExtensionToolDefinition,
 	ToolSpec,
@@ -17,7 +17,7 @@ export type {
 export { resolveToolOutput } from './systems/core/api/index.js';
 export { toolSpec } from './systems/core/api/index.js';
 export { serializeTool, toToolInputSchema } from './systems/core/api/index.js';
-export type { DependencyAPI } from './systems/dependency/index.js';
+export type { DependencyRuntime } from './systems/dependency/index.js';
 export type { EnvironmentAPI } from './systems/environment/api/index.js';
 export type {
 	Environment,
@@ -57,7 +57,6 @@ export { StoreRegistry } from './systems/store/api/index.js';
 export type { StoreEntry, StoreMapping } from './systems/store/api/index.js';
 export type { StoreSnapshot } from './systems/store/api/index.js';
 export type {
-	SessionAPI,
 	SessionRuntime,
 	Session,
 	SessionCreate,

@@ -118,13 +118,11 @@ describe('combine — two systems', () => {
 			[
 				(api) => {
 					api.registerStore('count', 0, 'private');
-					const env = api.getEnvironment();
-					expect(env.filesystem).toBeDefined();
 				},
 			],
 		);
 
-		expect(runtime.stores.get('count')?.store.get()).toBe(0);
+		expect(runtime.getStore<number>('count').get()).toBe(0);
 		expect(runtime.environment).toBeDefined();
 
 		await runtime.dispose();
@@ -233,13 +231,12 @@ describe('combine — three systems (nested)', () => {
 			[
 				(api) => {
 					api.registerStore('notes', '', 'private');
-					api.getEnvironment();
 				},
 			],
 		);
 
 		expect(runtime.prompt).toBeDefined();
-		expect(runtime.stores.get('notes')).toBeDefined();
+		expect(runtime.getStore<string>('notes')).toBeDefined();
 		expect(runtime.environment).toBeDefined();
 
 		await runtime.dispose();

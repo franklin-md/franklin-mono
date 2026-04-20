@@ -1,30 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { createEmptyStoreResult } from '../../api/registry/result.js';
 import { StoreRegistry } from '../../api/registry/index.js';
 import { compile } from '../../../../algebra/compiler/compile.js';
 import { createStoreCompiler } from '../compiler.js';
 import type { StoreAPI } from '../../api/api.js';
 import type { Extension } from '../../../../algebra/types/extension.js';
+import type { StoreMapping } from '../../api/registry/mapping.js';
 
-function freshSeed() {
-	return createEmptyStoreResult(new StoreRegistry());
-}
-
-async function compileStore(ext: Extension<StoreAPI>) {
-	return compile(createStoreCompiler(freshSeed()), ext);
+function compileStore(ext: Extension<StoreAPI>, seed: StoreMapping = {}) {
+	return compile(createStoreCompiler(new StoreRegistry()), ext, {
+		store: seed,
+	});
 }
 
 describe('createStoreCompiler', () => {
 	describe('registerStore', () => {
-		it('creates a store with initial value', async () => {
-			const result = await compileStore((api) => {
+		it('creates a store with the declared initial value', async () => {
+			const runtime = await compileStore((api) => {
 				api.registerStore('count', 42, 'private');
 			});
 
-			expect(result.stores.get('count')?.store.get()).toBe(42);
+			expect(runtime.getStore<number>('count').get()).toBe(42);
 		});
 
-		it('throws on duplicate creators', async () => {
+		it('supports multiple stores', async () => {
+			const runtime = await compileStore((api) => {
+				api.registerStore('a', 1, 'private');
+				api.registerStore('b', 'hello', 'shared');
+			});
+
+			expect(runtime.getStore<number>('a').get()).toBe(1);
+			expect(runtime.getStore<string>('b').get()).toBe('hello');
+		});
+
+		it('throws on duplicate registrations of the same name', async () => {
 			await expect(
 				compileStore((api) => {
 					api.registerStore('count', 1, 'private');
@@ -34,120 +42,110 @@ describe('createStoreCompiler', () => {
 		});
 	});
 
-	describe('useStore', () => {
-		it('returns the same store instance as registerStore', async () => {
-			await compileStore((api) => {
-				const created = api.registerStore('x', 0, 'private');
-				const used = api.useStore<number>('x');
-				expect(created).toBe(used);
-			});
+	describe('getStore (runtime)', () => {
+		it('throws when looking up an unregistered store', async () => {
+			const runtime = await compileStore(() => {});
+			expect(() => runtime.getStore<number>('missing')).toThrow(
+				'Store "missing" was not registered',
+			);
 		});
 
-		it('works when consumer runs before creator', async () => {
-			await compileStore((api) => {
-				const used = api.useStore<number>('x');
-				const created = api.registerStore('x', 99, 'private');
-				expect(used).toBe(created);
-				expect(used.get()).toBe(99);
+		it('returns the same handle for repeated lookups', async () => {
+			const runtime = await compileStore((api) => {
+				api.registerStore('x', 0, 'private');
 			});
+
+			const a = runtime.getStore<number>('x');
+			const b = runtime.getStore<number>('x');
+			expect(a).toBe(b);
 		});
 
-		it('mutations from creator are visible to consumer', async () => {
-			await compileStore((api) => {
-				const store = api.registerStore('counter', 0, 'private');
-				store.set(() => 42);
-				const used = api.useStore<number>('counter');
-				expect(used.get()).toBe(42);
-			});
-		});
-
-		it('preserves sharing from creator', async () => {
-			const result = await compileStore((api) => {
-				api.registerStore('data', 1, 'shared');
-				api.useStore<number>('data');
+		it('mutations through the handle persist', async () => {
+			const runtime = await compileStore((api) => {
+				api.registerStore('counter', 0, 'private');
 			});
 
-			expect(result.stores.get('data')?.sharing).toBe('shared');
-		});
+			const store = runtime.getStore<number>('counter');
+			store.set(() => 42);
 
-		it('subscriber fires when creator initializes after consumer', async () => {
-			const values: number[] = [];
-
-			await compileStore((api) => {
-				const store = api.useStore<number>('x');
-				store.subscribe((v) => values.push(v));
-				api.registerStore('x', 42, 'private');
-			});
-
-			expect(values).toContain(42);
+			expect(runtime.getStore<number>('counter').get()).toBe(42);
 		});
 	});
 
-	describe('build validation', () => {
-		it('throws when a store is used but never initialized', async () => {
-			await expect(
-				compileStore((api) => {
-					api.useStore<number>('orphan');
-				}),
-			).rejects.toThrow('Store "orphan" was registered but never initialized');
+	describe('fork / child', () => {
+		it('fork preserves shared stores and copies private ones', async () => {
+			const runtime = await compileStore((api) => {
+				api.registerStore('shared_k', 'SHARED', 'shared');
+				api.registerStore('private_k', 100, 'private');
+			});
+
+			const forked = await runtime.fork();
+			expect(forked.store).toBeDefined();
+			expect(forked.store.shared_k).toBeDefined();
+			expect(forked.store.private_k).toBeDefined();
+		});
+
+		it('child drops private stores, keeps shared refs', async () => {
+			const runtime = await compileStore((api) => {
+				api.registerStore('shared_k', 'S', 'shared');
+				api.registerStore('private_k', 1, 'private');
+			});
+
+			const childState = await runtime.child();
+			expect(childState.store.shared_k).toBeDefined();
+			expect(childState.store.private_k).toBeUndefined();
 		});
 	});
 
 	describe('seed interaction', () => {
-		it('useStore picks up seeded store without needing registerStore', async () => {
-			const parentResult = await compileStore((api) => {
-				api.registerStore('seeded', 99, 'shared');
-			});
-
-			const childResult = await compile(
-				createStoreCompiler(parentResult.stores),
+		it('stores initialised from the seed state preserve their value', async () => {
+			// Parent and child must share a registry for refs in the seed mapping
+			// to resolve — the registry is the backing store for all entries.
+			const registry = new StoreRegistry();
+			const parent = await compile(
+				createStoreCompiler(registry),
 				(api) => {
-					const store = api.useStore<number>('seeded');
-					expect(store.get()).toBe(99);
+					api.registerStore('seeded', 99, 'shared');
 				},
+				{ store: {} },
 			);
 
-			expect(childResult.stores.get('seeded')?.store.get()).toBe(99);
+			const parentState = await parent.state();
+
+			const child = await compile(
+				createStoreCompiler(registry),
+				(api) => {
+					api.registerStore('seeded', 0, 'shared');
+				},
+				{ store: parentState.store },
+			);
+
+			expect(child.getStore<number>('seeded').get()).toBe(99);
 		});
 
-		it('registerStore picks up seeded store', async () => {
-			const parentResult = await compileStore((api) => {
-				api.registerStore('seeded', 99, 'shared');
-			});
-
-			const childResult = await compile(
-				createStoreCompiler(parentResult.stores),
+		it('overwriting initial in a new compile does not clobber seeded value', async () => {
+			const registry = new StoreRegistry();
+			const parent = await compile(
+				createStoreCompiler(registry),
 				(api) => {
-					const store = api.registerStore('seeded', 0, 'shared');
-					expect(store.get()).toBe(99);
+					api.registerStore('todos', 0, 'shared');
 				},
+				{ store: {} },
 			);
 
-			expect(childResult.stores.get('seeded')?.store.get()).toBe(99);
-		});
+			// Mutate in the parent before sharing (simulate real usage)
+			parent.getStore<number>('todos').set(() => 99);
+			const snapshot = await parent.state();
 
-		it('seeded value preserved regardless of useStore/registerStore order', async () => {
-			// Parent creates store with initial 0, then mutates it to 99
-			const parentResult = await compileStore((api) => {
-				const store = api.registerStore('todos', 0, 'shared');
-				store.set(() => 99);
-			});
-
-			// Child runs same extensions — useStore BEFORE registerStore
-			// (simulates extension B consuming before extension A registers)
-			const childResult = await compile(
-				createStoreCompiler(parentResult.stores),
+			const child = await compile(
+				createStoreCompiler(registry),
 				(api) => {
-					const consumed = api.useStore<number>('todos');
-					const created = api.registerStore('todos', 0, 'shared');
-
-					// Both should see the seeded value, not the initial 0
-					expect(consumed.get()).toBe(99);
-					expect(created.get()).toBe(99);
+					api.registerStore('todos', 0, 'shared');
 				},
+				{ store: snapshot.store },
 			);
 
-			expect(childResult.stores.get('todos')?.store.get()).toBe(99);
+			expect(child.getStore<number>('todos').get()).toBe(99);
 		});
 	});
 });

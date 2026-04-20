@@ -8,7 +8,7 @@ An API is intended to solve a particular class of problems. Implemented so far:
 - **StoreAPI**: Allows sharing state between agent-agent and agent-app
 - **EnvironmentAPI**: Localizes agent actions within a sandboxed environement.
 - **SessionAPI**: Let's the agent know it's position within an agent orchestration tree, and perform actions relative to it.
-- **DependencyAPI<Name,T>**: Simple way for an extension to depend on an app-provided global resource, such as authentication, secrets or the app-level environment.
+- **DependencyRuntime<Name,T>**: Simple way for an extension to depend on an app-provided global resource (authentication, secrets, app-level environment). The dependency lands on the runtime as a field keyed by `Name`, so handlers read it via `ctx.<name>`.
 
 
 ## Extension Algebra [TODO after reading about tagless style article]
@@ -28,32 +28,30 @@ There are many places where you could plausibly compose simpler mechanics to cre
 
 These are architectural invariants, not conventions. They should eventually become ESLint rules.
 
-### 1. Dependencies flow through the API
+### 1. Dependencies flow through the runtime
 
-Extensions must not capture external dependencies via closure. All dependencies are provided through the API mechanism — i.e., through the `api` object passed to the extension function body. If a dependency is needed, it must be introduced as part of a `RuntimeSystem`'s API type.
+Extensions must not capture external dependencies via closure. App-level singletons (auth, database, settings) are surfaced as fields on the runtime by `createDependencySystem(...)` and read inside handlers via the `ctx` argument.
 
 **Wrong** — closure capture:
 ```typescript
 function createMyExtension(db: Database): Extension {
   return (api) => {
     // BAD: db captured from factory scope
-    api.registerTool(querySpec, () => db.query(...));
+    api.registerTool(querySpec, (_, ctx) => db.query(...));
   };
 }
 ```
 
-**Right** — dependency through API:
+**Right** — dependency through the runtime:
 ```typescript
-const databaseSystem = createDependencySystem('Database', db);
+const databaseSystem = createDependencySystem('database', db);
 
-const myExtension: Extension<DependencyAPI<'Database', Database> & CoreAPI> = (api) => {
-  const db = api.getDatabase(); // dependency from DependencyAPI
-  api.registerTool(querySpec, (params) => db.query(params));
+const myExtension: Extension<CoreAPI<DependencyRuntime<'database', Database>>> = (api) => {
+  api.registerTool(querySpec, (params, ctx) => ctx.database.query(params));
 };
 ```
 
-For app-level singleton services, prefer `createDependencySystem(...)` over
-hand-rolling a one-method API family.
+For app-level singleton services, prefer `createDependencySystem(...)` over hand-rolling a one-method API family.
 
 ### 2. Don't call API methods within tool execution closures
 

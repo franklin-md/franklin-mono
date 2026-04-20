@@ -1,4 +1,3 @@
-import type { Store } from './types.js';
 import type { Sharing } from './sharing.js';
 import type { StoreKey } from './key.js';
 
@@ -9,9 +8,6 @@ export interface StoreAPI {
 		key: StoreKey<X, T>,
 		initial: T,
 		sharing: Sharing,
-	): Store<T>;
-	registerStore<T>(name: string, initial: T, sharing: Sharing): Store<T>;
-
-	useStore<X extends string, T>(key: StoreKey<X, T>): Store<T>;
-	useStore<T>(name: string): Store<T>;
+	): void;
+	registerStore(name: string, initial: unknown, sharing: Sharing): void;
 }

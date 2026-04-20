@@ -1,21 +1,19 @@
-import type { EnvironmentAPI, Extension } from '@franklin/extensions';
+import type { Extension } from '../../../algebra/types/index.js';
 import { decode } from '@franklin/lib';
 import type { CoreAPI } from '../../../systems/core/index.js';
-import type { StoreAPI } from '../../../systems/store/index.js';
+import type { StoreRuntime } from '../../../systems/store/runtime.js';
+import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import { fileKey } from '../common/key.js';
 import { createFileControl } from '../common/control.js';
 import { readFileSpec } from './tools.js';
 
-// Read file extension that keeps track of the last version of a file that
-// an agent has seen.
 export function readExtension(): Extension<
-	CoreAPI & EnvironmentAPI & StoreAPI
+	CoreAPI<EnvironmentRuntime & StoreRuntime>
 > {
 	return (api) => {
-		const fs = api.getEnvironment().filesystem;
-		const file = createFileControl(api.useStore(fileKey));
-
-		api.registerTool(readFileSpec, async ({ path, limit, offset }) => {
+		api.registerTool(readFileSpec, async ({ path, limit, offset }, ctx) => {
+			const fs = ctx.environment.filesystem;
+			const file = createFileControl(ctx.getStore(fileKey));
 			const absPath = await fs.resolve(path);
 			const bytes = await fs.readFile(absPath);
 			await file.markFileRead(fs, path, bytes);

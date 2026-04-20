@@ -1,5 +1,5 @@
 import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentAPI } from '../../../systems/environment/index.js';
+import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import type { Extension } from '../../../algebra/types/index.js';
 import { toSearchError, toSearchResult } from './result.js';
 import { searchWebSpec } from './tools.js';
@@ -12,13 +12,12 @@ import {
 
 export function webSearchExtension(
 	options: Partial<WebSearchExtensionOptions>,
-): Extension<CoreAPI & EnvironmentAPI> {
+): Extension<CoreAPI<EnvironmentRuntime>> {
 	const resolved = resolveWebSearchOptions(options);
 
 	return (api) => {
-		const web = api.getEnvironment().web;
-
-		api.registerTool(searchWebSpec, async ({ query }) => {
+		api.registerTool(searchWebSpec, async ({ query }, ctx) => {
+			const web = ctx.environment.web;
 			try {
 				const results = await searchWithExa(web, query, resolved);
 				return toSearchResult(query, results);

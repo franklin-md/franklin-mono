@@ -16,16 +16,16 @@ type TestSystem = RuntimeSystem<TestState, Record<string, never>, TestRuntime>;
 function createTestSystem(empty: TestState = { value: 'root' }): TestSystem {
 	return {
 		emptyState: () => empty,
-		async createCompiler(
-			state: TestState,
-		): Promise<Compiler<Record<string, never>, TestRuntime>> {
+		createCompiler(): Compiler<Record<string, never>, TestState, TestRuntime> {
 			return {
 				api: {},
-				async build(): Promise<TestRuntime> {
+				async build(state) {
 					return {
 						state: vi.fn(async () => state),
 						fork: vi.fn(async () => state),
-						child: vi.fn(async () => ({ value: 'child-of-' + state.value })),
+						child: vi.fn(async () => ({
+							value: 'child-of-' + state.value,
+						})),
 						dispose: vi.fn(async () => {}),
 						subscribe: vi.fn(() => () => {}),
 					};
@@ -183,12 +183,14 @@ describe('SessionManager', () => {
 					change: 'base',
 				},
 			}),
-			async createCompiler(
-				state: NestedState,
-			): Promise<Compiler<Record<string, never>, NestedRuntime>> {
+			createCompiler(): Compiler<
+				Record<string, never>,
+				NestedState,
+				NestedRuntime
+			> {
 				return {
 					api: {},
-					async build(): Promise<NestedRuntime> {
+					async build(state) {
 						return {
 							state: vi.fn(async () => state),
 							fork: vi.fn(async () => state),

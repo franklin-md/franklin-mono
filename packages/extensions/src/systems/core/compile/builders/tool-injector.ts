@@ -1,14 +1,14 @@
 import type { MiniACPClient } from '@franklin/mini-acp';
 import { serializeTool } from '../../api/tools/index.js';
-import type { ExtensionToolDefinition } from '../../api/tool.js';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
+import type { BoundTool } from '../registrar/bind.js';
 
 /**
  * Build a setContext middleware that injects serialized tool definitions
  * into the context's tools array.
  */
 export function buildToolInjector(
-	tools: ExtensionToolDefinition[],
+	tools: BoundTool[],
 	existingSetContext?: MethodMiddleware<MiniACPClient['setContext']>,
 ): MethodMiddleware<MiniACPClient['setContext']> {
 	const serialized = tools.map((t) => serializeTool(t));

@@ -1,6 +1,6 @@
 import type { UserContent, UserMessage } from '@franklin/mini-acp';
 
-export interface PromptContext {
+export interface Prompt {
 	readonly request: Readonly<UserMessage>;
 
 	// TODO(FRA-215): Support an optional priority number (default 0) to order prepends.
@@ -11,7 +11,7 @@ export interface PromptContext {
 	asPrompt(): UserMessage;
 }
 
-export function createPromptContext(message: UserMessage): PromptContext {
+export function createPrompt(message: UserMessage): Prompt {
 	const prepended: UserContent[] = [];
 	const appended: UserContent[] = [];
 

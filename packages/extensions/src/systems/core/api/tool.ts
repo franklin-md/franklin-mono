@@ -1,5 +1,6 @@
 import type { ToolResultContent } from '@franklin/mini-acp';
-import type { MaybePromise } from '../../../algebra/types/shared.js';
+import type { MaybePromise } from '../../../algebra/types/index.js';
+import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import type { z } from 'zod';
 
 export type ToolOutput = {
@@ -16,9 +17,20 @@ export function resolveToolOutput(value: ToolExecuteReturn): ToolOutput {
 	return value;
 }
 
-export interface ExtensionToolDefinition<TInput = unknown> {
+/**
+ * The public shape of a tool registered via `api.registerTool(...)`.
+ *
+ * `execute` receives the call params plus the fully-tied runtime context —
+ * the same ctx any registered handler sees. Middleware invokes
+ * `tool.execute(params, getCtx())` at call time (mirroring how handlers
+ * are bound), so there is no separate "bound" shape.
+ */
+export interface ExtensionToolDefinition<
+	TInput = unknown,
+	Ctx extends BaseRuntime<unknown> = BaseRuntime<unknown>,
+> {
 	name: string;
 	description: string;
 	schema: z.ZodType<TInput>;
-	execute(params: TInput): MaybePromise<ToolExecuteReturn>;
+	execute(params: TInput, ctx: Ctx): MaybePromise<ToolExecuteReturn>;
 }

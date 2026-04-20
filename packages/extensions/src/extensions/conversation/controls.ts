@@ -1,6 +1,7 @@
 import type { Store } from '../../systems/store/api/types.js';
 import type { ConversationTurn } from './types.js';
 
+// TODO: Maybe the controls should just take in a StoreRuntime?
 export function createConversationControl(store: Store<ConversationTurn[]>) {
 	return {
 		// Noop if turn doesnt exist
