@@ -12,6 +12,8 @@ import type { CoreAPI } from '../systems/core/api/api.js';
 import type { FullMiddleware } from '../systems/core/api/middleware/types.js';
 import { createCoreRegistrar } from '../systems/core/compile/registrar/index.js';
 import { buildMiddleware } from '../systems/core/compile/middleware.js';
+import { serializeTool } from '../systems/core/api/tools/index.js';
+import type { SerializedToolDefinition } from '../systems/core/api/tools/index.js';
 import type { BaseRuntime } from '../algebra/runtime/types.js';
 import type { Extension } from '../algebra/types/extension.js';
 
@@ -32,11 +34,12 @@ export function compileCoreExt<
 >(
 	ext: Extension<CoreAPI<Ctx>>,
 	getCtx: () => Ctx = (() => undefined) as unknown as () => Ctx,
-): { middleware: FullMiddleware } {
+): { middleware: FullMiddleware; tools: SerializedToolDefinition[] } {
 	const { api, registered } = createCoreRegistrar<Ctx>();
 	ext(api);
 	const middleware = buildMiddleware(registered, getCtx);
-	return { middleware };
+	const tools = registered.tools.map(serializeTool);
+	return { middleware, tools };
 }
 
 /**
@@ -47,7 +50,11 @@ export function compileCoreExt<
  */
 export async function compileCoreWithStore(
 	ext: Extension<CoreAPI<StoreRuntime> & StoreAPI>,
-): Promise<{ middleware: FullMiddleware; stores: StoreRuntime }> {
+): Promise<{
+	middleware: FullMiddleware;
+	stores: StoreRuntime;
+	tools: SerializedToolDefinition[];
+}> {
 	const pendingRegistrations: Parameters<StoreAPI['registerStore']>[] = [];
 	const cell: { stores?: StoreRuntime } = {};
 	const getCtx = (): StoreRuntime => {
@@ -79,7 +86,8 @@ export async function compileCoreWithStore(
 	);
 
 	const middleware = buildMiddleware(registered, getCtx);
-	return { middleware, stores: cell.stores };
+	const tools = registered.tools.map(serializeTool);
+	return { middleware, stores: cell.stores, tools };
 }
 
 /**
@@ -93,6 +101,7 @@ export async function compileCoreWithStoreAndEnv(
 ): Promise<{
 	middleware: FullMiddleware;
 	ctx: StoreRuntime & EnvironmentRuntime;
+	tools: SerializedToolDefinition[];
 }> {
 	const pendingRegistrations: Parameters<StoreAPI['registerStore']>[] = [];
 	const cell: { ctx?: StoreRuntime & EnvironmentRuntime } = {};
@@ -131,7 +140,8 @@ export async function compileCoreWithStoreAndEnv(
 	)) as StoreRuntime & EnvironmentRuntime;
 
 	const middleware = buildMiddleware(registered, getCtx);
-	return { middleware, ctx: cell.ctx };
+	const tools = registered.tools.map(serializeTool);
+	return { middleware, ctx: cell.ctx, tools };
 }
 
 /**
@@ -144,6 +154,7 @@ export async function compileCoreWithEnv(
 ): Promise<{
 	middleware: FullMiddleware;
 	ctx: EnvironmentRuntime;
+	tools: SerializedToolDefinition[];
 }> {
 	const cell: { ctx?: EnvironmentRuntime } = {};
 	const getCtx = (): EnvironmentRuntime => {
@@ -161,5 +172,6 @@ export async function compileCoreWithEnv(
 	);
 
 	const middleware = buildMiddleware(registered, getCtx);
-	return { middleware, ctx: cell.ctx };
+	const tools = registered.tools.map(serializeTool);
+	return { middleware, ctx: cell.ctx, tools };
 }

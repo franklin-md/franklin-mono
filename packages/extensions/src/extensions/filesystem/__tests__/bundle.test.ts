@@ -1,7 +1,5 @@
 import type { AbsolutePath } from '@franklin/lib';
-import type { MiniACPClient } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
-import { apply } from '@franklin/lib/middleware';
 import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
 import { fileKey } from '../common/key.js';
@@ -58,25 +56,7 @@ describe('filesystemExtension', () => {
 			mockEnvironment(),
 		);
 
-		const received: Array<Parameters<MiniACPClient['setContext']>[0]> = [];
-		const target: MiniACPClient = {
-			initialize: vi.fn(async () => {}),
-			setContext: vi.fn(
-				async (params: Parameters<MiniACPClient['setContext']>[0]) => {
-					received.push(params);
-				},
-			),
-			prompt: vi.fn(async function* () {
-				yield* [];
-			}),
-			cancel: vi.fn(async () => {}),
-		};
-
-		await apply(compiled.middleware.client, target).setContext({});
-
-		const names = (received[0] as { tools: Array<{ name: string }> }).tools.map(
-			(tool) => tool.name,
-		);
+		const names = compiled.tools.map((tool) => tool.name);
 		expect(names).toEqual(
 			expect.arrayContaining(['read_file', 'write_file', 'edit_file', 'glob']),
 		);
