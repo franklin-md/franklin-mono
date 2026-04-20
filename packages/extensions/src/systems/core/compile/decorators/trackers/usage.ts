@@ -3,7 +3,7 @@ import {
 	decorateTurn,
 	trackUsage,
 } from '@franklin/mini-acp';
-import type { ProtocolDecorator } from './types.js';
+import type { ProtocolDecorator } from '../types.js';
 
 /**
  * Wraps the client so per-turn usage accumulates into the given tracker.

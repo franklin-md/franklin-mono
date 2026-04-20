@@ -1,7 +1,7 @@
 import { createClientConnection, type MiniACPClient } from '@franklin/mini-acp';
-import type { ProtocolDecorator } from './types.js';
-import type { SpawnResult } from '../compiler.js';
-import { fallbackServer } from '../fallback.js';
+import type { ProtocolDecorator } from './decorators/types.js';
+import type { SpawnResult } from './compiler.js';
+import { fallbackServer } from './fallback.js';
 
 type ConnectInput = {
 	readonly decorator: ProtocolDecorator;

@@ -5,7 +5,7 @@ import type {
 import type { CoreState } from '../state.js';
 import { bootRuntime } from './boot.js';
 import type { SpawnResult } from './compiler.js';
-import { connect } from './decorators/connect.js';
+import { connect } from './connect.js';
 import type { ProtocolDecorator } from './decorators/types.js';
 
 export type AgentClient = MiniACPClient & { dispose(): Promise<void> };

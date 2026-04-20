@@ -1,13 +1,19 @@
 import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
-import { buildSystemPromptAssembler } from '../builders/system-prompt.js';
 import type { ProtocolDecorator } from './types.js';
-import { createMiddlewareDecorator } from './middleware.js';
-import { createSystemPromptDecorator } from './system-prompt.js';
-import { buildMiddleware } from '../middleware.js';
+import {
+	buildMiddleware,
+	createMiddlewareDecorator,
+} from './middleware/index.js';
+import {
+	buildSystemPromptAssembler,
+	createSystemPromptDecorator,
+} from './system-prompt/index.js';
 import { bindHandlers } from '../registrar/bind.js';
 import type { CoreRegistrar } from '../registrar/types.js';
-import { createTrackerDecorator } from './tracker.js';
-import { createUsageTrackerDecorator } from './usage-tracker.js';
+import {
+	createContextTrackerDecorator,
+	createUsageTrackerDecorator,
+} from './trackers/index.js';
 import type { CoreResources } from '../resources.js';
 import { compose } from './compose.js';
 
@@ -35,7 +41,7 @@ export function createAgentDecorator<Runtime extends BaseRuntime<unknown>>(
 		);
 	}
 
-	stack.push(createTrackerDecorator(resources.tracker));
+	stack.push(createContextTrackerDecorator(resources.tracker));
 	stack.push(createUsageTrackerDecorator(resources.usageTracker));
 
 	return compose(stack);

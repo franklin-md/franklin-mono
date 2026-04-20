@@ -5,7 +5,7 @@ import type { MaybePromise } from '../../../algebra/types/shared.js';
 import { serializeTool } from '../api/tools/index.js';
 import { createAgentDecorator as createClientDecorator } from './decorators/full.js';
 import { createCoreRegistrar } from './registrar/index.js';
-import { assembleRuntime, type CoreRuntime } from '../runtime.js';
+import { createCoreRuntime, type CoreRuntime } from '../runtime/index.js';
 import type { CoreState } from '../state.js';
 import { createResources } from './resources.js';
 import { createAgentClient } from './client.js';
@@ -56,11 +56,11 @@ export function createCoreCompiler<Runtime extends CoreRuntime = CoreRuntime>(
 				tools: serializedTools,
 			});
 
-			return assembleRuntime(
+			return createCoreRuntime({
 				client,
-				resources.tracker,
-				resources.stateHandle,
-			) as Runtime;
+				tracker: resources.tracker,
+				state: resources.stateHandle,
+			}) as Runtime;
 		},
 	};
 }

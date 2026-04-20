@@ -6,7 +6,7 @@ import type {
 	ToolExecuteParams,
 } from '@franklin/mini-acp';
 import { connect } from '../connect.js';
-import type { ProtocolDecorator } from '../types.js';
+import type { ProtocolDecorator } from '../decorators/types.js';
 
 function stubAgent(): MiniACPAgent {
 	return {

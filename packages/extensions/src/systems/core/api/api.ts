@@ -10,7 +10,7 @@ import type {
 import type { MaybePromise } from '../../../algebra/types/index.js';
 import type { WithContext } from '../compile/registrar/types.js';
 import type { BaseRuntime } from '../../../algebra/runtime/types.js';
-import type { CoreRuntime } from '../runtime.js';
+import type { CoreRuntime } from '../runtime/index.js';
 
 /**
  * Core registration surface, parameterised by the eventual Runtime
