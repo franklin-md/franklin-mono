@@ -13,3 +13,8 @@ export function normalizePath(path: string): string {
 		.replace(/\/+/g, '/')
 		.replace(/^\/|\/$/g, '');
 }
+
+export function getLinkpath(linktext: string): string {
+	const hashIndex = linktext.indexOf('#');
+	return hashIndex >= 0 ? linktext.slice(0, hashIndex) : linktext;
+}

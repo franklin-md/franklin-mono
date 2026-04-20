@@ -1,22 +1,29 @@
 import type { AbsolutePath, Filesystem } from '@franklin/lib';
-import type { Vault } from 'obsidian';
+import type { App } from 'obsidian';
 
 import { createObsidianPathPolicyFromVault } from './path-policy.js';
+import { createNoteLocatorResolver } from './note-locator/resolve.js';
+import { createObsidianResolve } from './resolve.js';
 import { createVaultFilesystem } from './vault.js';
 
 export function createObsidianFilesystem(
-	vault: Vault,
+	app: App,
 	backupFs: Filesystem,
 ): Filesystem {
+	const { vault } = app;
 	const vaultFs = createVaultFilesystem(vault);
 	const policy = createObsidianPathPolicyFromVault(vault);
+	const resolve = createObsidianResolve(
+		backupFs,
+		createNoteLocatorResolver(app),
+	);
 
 	function fsForPath(p: AbsolutePath): Omit<Filesystem, 'resolve' | 'glob'> {
 		return policy.classifyPath(p).kind === 'vault' ? vaultFs : backupFs;
 	}
 
 	return {
-		resolve: (...paths) => backupFs.resolve(...paths),
+		resolve,
 		glob: (pattern, options) => backupFs.glob(pattern, options),
 
 		readFile: (p) => fsForPath(p).readFile(p),
