@@ -30,11 +30,12 @@ export async function buildCoreRuntime(
 
 	const tracker = new CtxTracker();
 	const usageTracker = new UsageTracker();
+	usageTracker.add(state.core.usage);
 
 	const stack: ProtocolDecorator[] = [
 		...extensionDecorators,
 		createTrackerDecorator(state, tracker),
-		createUsageTrackerDecorator(state, usageTracker),
+		createUsageTrackerDecorator(usageTracker),
 	];
 
 	const { client } = await applyDecorators(

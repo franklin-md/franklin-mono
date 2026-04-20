@@ -4,15 +4,13 @@ import {
 	trackUsage,
 } from '@franklin/mini-acp';
 import type { ProtocolDecorator } from '../decorator.js';
-import type { CoreState } from '../../state.js';
 
 /**
- * Seeds a UsageTracker from persisted CoreState and wraps the client so
- * per-turn usage accumulates into the tracker. The tracker's running total
- * is later snapshotted back into CoreState for persistence.
+ * Wraps the client so per-turn usage accumulates into the given tracker.
+ * The tracker must be seeded from persisted state by the caller before
+ * the decorator stack is applied.
  */
 export function createUsageTrackerDecorator(
-	state: CoreState,
 	tracker: UsageTracker,
 ): ProtocolDecorator {
 	return {
@@ -21,7 +19,6 @@ export function createUsageTrackerDecorator(
 			return s;
 		},
 		async client(c) {
-			tracker.add(state.core.usage);
 			return decorateTurn(c, (turn) => trackUsage(tracker, turn));
 		},
 	};

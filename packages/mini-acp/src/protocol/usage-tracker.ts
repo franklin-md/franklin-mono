@@ -58,11 +58,8 @@ function mergeUsage(a: Usage, b: Usage): Usage {
 export class UsageTracker {
 	private usage: Usage = ZERO_USAGE;
 
-	onChange?: () => void;
-
 	add(delta: Usage): void {
 		this.usage = mergeUsage(this.usage, delta);
-		this.onChange?.();
 	}
 
 	get(): Usage {

@@ -69,5 +69,4 @@ describe('UsageTracker', () => {
 		expect(total.cost.cacheWrite).toBeCloseTo(0.00005, 10);
 		expect(total.cost.total).toBeCloseTo(0.0049, 10);
 	});
-
 });
