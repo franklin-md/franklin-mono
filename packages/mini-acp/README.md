@@ -218,8 +218,37 @@ TurnEnd {
   type:         "turnEnd"
   stopCode:     StopCode      // Integer code indicating why the turn ended
   stopMessage?: string        // Optional human-readable detail
+  usage?:       Usage         // Token counts and cost for the turn (see below)
 }
 ```
+
+`usage` is optional because some turns terminate before any LLM call is
+made (e.g. config-resolution failures). Adapters that do reach the provider
+SHOULD populate it.
+
+**`Usage`** — token counts and cost for a completed turn. The two buckets
+share the same field names so a consumer can iterate either symmetrically:
+```
+Usage {
+  tokens: {
+    input:      number   // Prompt/input tokens
+    output:     number   // Completion/output tokens
+    cacheRead:  number   // Prompt-cache hit tokens (0 if provider has no cache)
+    cacheWrite: number   // Prompt-cache write tokens (0 if provider has no cache)
+    total:      number   // Sum of all four
+  }
+  cost: {
+    input:      number   // USD cost for input tokens
+    output:     number   // USD cost for output tokens
+    cacheRead:  number   // USD cost for cache reads
+    cacheWrite: number   // USD cost for cache writes
+    total:      number   // Sum of all four
+  }
+}
+```
+
+Token counts are raw integers. `cost.*` values are in USD and are supplied
+by the provider adapter; when pricing is unknown, the adapter reports 0.
 
 A typical stream for a simple text response:
 ```
@@ -227,11 +256,10 @@ TurnStart { "turnStart" }
 Chunk { "chunk", messageId: "m1", role: "assistant", content: { type: "text", text: "Hello" } }
 Chunk { "chunk", messageId: "m1", role: "assistant", content: { type: "text", text: " world" } }
 Update { "update", messageId: "m1", message: { role: "assistant", content: [{ type: "text", text: "Hello world" }] } }
-TurnEnd { "turnEnd", stopCode: 1000 }
+TurnEnd { "turnEnd", stopCode: 1000, usage: { tokens: { input: 12, output: 2, cacheRead: 0, cacheWrite: 0, total: 14 }, cost: { input: 0.000036, output: 0.00003, cacheRead: 0, cacheWrite: 0, total: 0.000066 } } }
 ```
 
 The `Update` message text `"Hello world"` is exactly the concatenation of the two chunk deltas `"Hello"` + `" world"`. Every chunk's `messageId` (`"m1"`) matches the update's `messageId`, and no chunks for `"m1"` appear after the update.
-- [ ] Usage information (token counts, cost) is not currently included in `TurnEnd`. This is a known gap.
 
 #### Tool Execution
 

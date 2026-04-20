@@ -42,6 +42,8 @@ export type {
 	StreamEvent,
 } from './stream.js';
 
+export type { Usage } from './usage.js';
+
 export type { AuthError, OAuthError, APIKeyError } from './errors.js';
 
 export {
