@@ -7,6 +7,8 @@ export function createObsidianResolve(
 	noteLocatorResolver: NoteLocatorResolver,
 ): Filesystem['resolve'] {
 	return async (...paths) => {
+		// Wikilinks are vault-relative absolutes, so only the last segment matters and
+		// any leading path args are intentionally discarded when a wikilink is resolved.
 		const input = paths.at(-1);
 		if (input !== undefined) {
 			const resolved = noteLocatorResolver(input);

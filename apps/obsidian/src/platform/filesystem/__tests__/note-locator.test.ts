@@ -1,25 +1,10 @@
-import path from 'node:path';
-import { describe, it, expect, vi } from 'vitest';
-import type { AbsolutePath } from '@franklin/lib';
+import { describe, it, expect } from 'vitest';
 import { toAbsolutePath } from '@franklin/lib';
-import { FileSystemAdapter, type App, type TFile, type Vault } from 'obsidian';
+import { FileSystemAdapter, type App, type TFile } from 'obsidian';
 
 import { createObsidianFilesystem } from '../obsidian.js';
 import { createNoteLocatorResolver } from '../note-locator/resolve.js';
-
-function makeFile(filePath: string): TFile {
-	const name = filePath.split('/').pop() ?? filePath;
-	const dotIndex = name.lastIndexOf('.');
-	return {
-		path: filePath,
-		name,
-		basename: dotIndex >= 0 ? name.slice(0, dotIndex) : name,
-		extension: dotIndex >= 0 ? name.slice(dotIndex + 1) : '',
-		stat: { ctime: 0, mtime: 0, size: 0, type: 'file' },
-		vault: {} as Vault,
-		parent: null,
-	} as TFile;
-}
+import { makeFile, mockHostFs } from '../test-helpers.js';
 
 function createMockApp(options?: {
 	basePath?: string;
@@ -61,24 +46,6 @@ function createMockApp(options?: {
 				}),
 		},
 	} as unknown as App;
-}
-
-function mockHostFs() {
-	return {
-		resolve: vi.fn(
-			async (...paths: string[]) =>
-				path.resolve(...(paths as [string, ...string[]])) as AbsolutePath,
-		),
-		readFile: vi.fn().mockResolvedValue(new Uint8Array()),
-		writeFile: vi.fn().mockResolvedValue(undefined),
-		mkdir: vi.fn().mockResolvedValue(undefined),
-		access: vi.fn().mockResolvedValue(undefined),
-		stat: vi.fn().mockResolvedValue({ isFile: true, isDirectory: false }),
-		readdir: vi.fn().mockResolvedValue([]),
-		exists: vi.fn().mockResolvedValue(true),
-		glob: vi.fn().mockResolvedValue([]),
-		deleteFile: vi.fn().mockResolvedValue(undefined),
-	};
 }
 
 describe('createNoteLocatorResolver', () => {

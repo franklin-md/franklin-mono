@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
 	FileSystemAdapter,
@@ -9,28 +8,15 @@ import {
 	type TAbstractFile,
 } from 'obsidian';
 import { toAbsolutePath } from '@franklin/lib';
-import type { AbsolutePath, Filesystem } from '@franklin/lib';
+import type { Filesystem } from '@franklin/lib';
 
 import { createObsidianFilesystem } from '../obsidian.js';
 import {
 	createObsidianPathPolicy,
 	createObsidianPathPolicyFromVault,
 } from '../path-policy.js';
+import { makeFile, mockHostFs } from '../test-helpers.js';
 import { createVaultFilesystem } from '../vault.js';
-
-function makeFile(path: string): TFile {
-	const name = path.split('/').pop() ?? path;
-	const dotIndex = name.lastIndexOf('.');
-	return {
-		path,
-		name,
-		basename: dotIndex >= 0 ? name.slice(0, dotIndex) : name,
-		extension: dotIndex >= 0 ? name.slice(dotIndex + 1) : '',
-		stat: { ctime: 0, mtime: 0, size: 0, type: 'file' },
-		vault: {} as Vault,
-		parent: null,
-	} as TFile;
-}
 
 function makeFolder(path: string, children: TAbstractFile[] = []): TFolder {
 	const name = path.split('/').pop() ?? path;
@@ -103,24 +89,6 @@ function createMockApp(vault: Vault): App {
 			fileToLinktext: vi.fn((file: TFile) => file.path),
 		},
 	} as unknown as App;
-}
-
-function mockHostFs(): Filesystem {
-	return {
-		resolve: vi.fn(
-			async (...paths: string[]) =>
-				path.resolve(...(paths as [string, ...string[]])) as AbsolutePath,
-		),
-		readFile: vi.fn().mockResolvedValue(new Uint8Array()),
-		writeFile: vi.fn().mockResolvedValue(undefined),
-		mkdir: vi.fn().mockResolvedValue(undefined),
-		access: vi.fn().mockResolvedValue(undefined),
-		stat: vi.fn().mockResolvedValue({ isFile: true, isDirectory: false }),
-		readdir: vi.fn().mockResolvedValue([]),
-		exists: vi.fn().mockResolvedValue(true),
-		glob: vi.fn().mockResolvedValue([]),
-		deleteFile: vi.fn().mockResolvedValue(undefined),
-	};
 }
 
 describe('createObsidianPathPolicy', () => {
