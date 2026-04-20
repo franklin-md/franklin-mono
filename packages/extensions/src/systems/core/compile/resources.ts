@@ -11,7 +11,7 @@ import type { CoreState } from '../state.js';
 
 type LLMConfigSnapshot = CoreState['core']['llmConfig'];
 
-type CoreResources = {
+export type CoreResources = {
 	readonly tracker: CtxTracker;
 	readonly usageTracker: UsageTracker;
 	readonly stateHandle: StateHandle<CoreState>;
