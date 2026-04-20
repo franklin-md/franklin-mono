@@ -1,4 +1,4 @@
-export type EmptyAPI = Record<string, never>;
+export type EmptyAPI = Record<never, never>;
 
 export function emptyAPI(): EmptyAPI {
 	return {};
