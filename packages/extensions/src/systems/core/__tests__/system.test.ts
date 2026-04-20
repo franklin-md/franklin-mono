@@ -337,7 +337,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[
 				(api: CoreAPI) => {
 					api.registerTool({
