@@ -160,7 +160,6 @@ describe('bindMain', () => {
 					},
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
-					getHome: async () => '/home/test' as AbsolutePath,
 					openExternal: async () => {},
 				},
 				ai: {
@@ -227,7 +226,6 @@ describe('bindMain', () => {
 					},
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
-					getHome: async () => '/home/test' as AbsolutePath,
 					openExternal: async () => {},
 				},
 				ai: {
@@ -335,7 +333,6 @@ describe('bindMain', () => {
 					},
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
-					getHome: async () => '/home/test' as AbsolutePath,
 					openExternal: async () => {},
 				},
 				ai: {
@@ -520,7 +517,6 @@ describe('bindMain', () => {
 					},
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
-					getHome: async () => '/home/test' as AbsolutePath,
 					openExternal: async () => {},
 				},
 				ai: {

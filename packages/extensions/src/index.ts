@@ -153,6 +153,7 @@ export {
 	createWebExtension,
 	spawnExtension,
 	instructionsExtension,
+	environmentInfoExtension,
 } from './extensions/index.js';
 
 export { createTodoControl, createStatusControl } from './extensions/index.js';

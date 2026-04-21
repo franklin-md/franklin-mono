@@ -106,7 +106,6 @@ describe('initializeMain', () => {
 				},
 				filesystem: createFilesystem(),
 				osInfo: new MemoryOsInfo(),
-				getHome: async () => '/home/test' as AbsolutePath,
 				openExternal: async () => {},
 			},
 			ai: {

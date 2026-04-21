@@ -7,10 +7,15 @@ describe('createNodeOsInfo', () => {
 		vi.restoreAllMocks();
 	});
 
-	it('returns platform from os.platform()', async () => {
-		vi.spyOn(os, 'platform').mockReturnValue('linux');
+	it.each([
+		['darwin', 'mac'],
+		['win32', 'windows'],
+		['linux', 'linux'],
+		['freebsd', 'linux'],
+	] as const)('maps node platform %s to %s', async (node, expected) => {
+		vi.spyOn(os, 'platform').mockReturnValue(node);
 		const info = createNodeOsInfo();
-		await expect(info.getPlatform()).resolves.toBe('linux');
+		await expect(info.getPlatform()).resolves.toBe(expected);
 	});
 
 	it('combines os.type() and os.release() for version string', async () => {

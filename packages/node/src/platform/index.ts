@@ -9,7 +9,7 @@ import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
-import { toAbsolutePath, type AbsolutePath } from '@franklin/lib';
+import type { AbsolutePath } from '@franklin/lib';
 import os from 'node:os';
 import { SandboxedTerminal } from './anthropic/sandboxed-terminal.js';
 import { withAnthropicProtected } from './anthropic/protected.js';
@@ -69,7 +69,6 @@ export function createNodePlatform(args: Args = {}): Platform {
 			terminal: new UnrestrictedTerminal(process.cwd()),
 			filesystem,
 			osInfo,
-			getHome: async () => toAbsolutePath(os.homedir()),
 			openExternal,
 		},
 	};

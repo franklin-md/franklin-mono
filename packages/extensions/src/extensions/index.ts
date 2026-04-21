@@ -9,3 +9,4 @@ export { bashExtension } from './terminal/index.js';
 export { createWebExtension } from './web/index.js';
 export { spawnExtension } from './spawn/index.js';
 export { instructionsExtension } from './instructions/index.js';
+export { environmentInfoExtension } from './environment-info/index.js';

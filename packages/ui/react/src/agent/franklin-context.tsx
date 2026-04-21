@@ -50,7 +50,7 @@ export function FranklinProvider({
 
 		void (async () => {
 			try {
-				const home = await platform.os.getHome();
+				const home = await platform.os.osInfo.getHomeDir();
 				const appDir = joinAbsolute(home, '.franklin');
 
 				created = new FranklinApp({

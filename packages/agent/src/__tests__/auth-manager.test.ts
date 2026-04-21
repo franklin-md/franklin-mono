@@ -64,7 +64,6 @@ function createPlatform(
 			},
 			filesystem,
 			osInfo: new MemoryOsInfo(),
-			getHome: vi.fn(async () => '/home/test' as AbsolutePath),
 			openExternal: vi.fn(async () => {}),
 		},
 		ai: {

@@ -86,9 +86,7 @@ describe('createEnvironmentSystem', () => {
 		const system = createEnvironmentSystem(factory);
 
 		const runtime = await createRuntime(system, { env: defaultConfig }, []);
-		await expect(runtime.environment.osInfo.getPlatform()).resolves.toBe(
-			'darwin',
-		);
+		await expect(runtime.environment.osInfo.getPlatform()).resolves.toBe('mac');
 	});
 
 	it('state returns the environment config', async () => {
