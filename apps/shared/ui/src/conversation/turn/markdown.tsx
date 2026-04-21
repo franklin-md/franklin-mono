@@ -12,12 +12,14 @@ const plugins = { code, math };
 
 export function Markdown({ text }: { text: string }) {
 	return (
-		<Streamdown
-			plugins={plugins}
-			components={chromeComponents}
-			controls={false}
-		>
-			{text}
-		</Streamdown>
+		<div className="prose-content">
+			<Streamdown
+				plugins={plugins}
+				components={chromeComponents}
+				controls={false}
+			>
+				{text}
+			</Streamdown>
+		</div>
 	);
 }

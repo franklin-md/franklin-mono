@@ -4,7 +4,7 @@ import { Markdown } from '../markdown.js';
 
 export function TextBlock({ block }: { block: TextBlockData }) {
 	return (
-		<div className="prose-content text-sm">
+		<div className="text-sm">
 			<Markdown text={block.text} />
 		</div>
 	);
