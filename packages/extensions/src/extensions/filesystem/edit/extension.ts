@@ -115,6 +115,8 @@ export function editExtension(): Extension<
 				await env.filesystem.writeFile(absPath, final);
 
 				// 6. Refresh the read hash so consecutive edits don't require a re-read
+
+				// TODO: race conditions between agents.
 				await file.markFileRead(env.filesystem, path, final);
 
 				return `Successfully edited ${path}.`;

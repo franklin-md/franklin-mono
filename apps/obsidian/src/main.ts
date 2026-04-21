@@ -3,21 +3,24 @@ import type { FranklinApp } from '@franklin/agent/browser';
 
 import { createFranklinApp } from './app/app.js';
 import { getDefaultAgent } from './app/agent.js';
+import { ObsidianDiffClient } from './diff/diff-client.js';
 import { DiffController } from './diff/diff-controller.js';
 import { FranklinSettingTab } from './settings.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
 
 export default class FranklinPlugin extends Plugin {
+	private diffClient!: ObsidianDiffClient;
 	private diffController!: DiffController;
 	franklinApp: FranklinApp | null = null;
 
 	async onload() {
-		this.diffController = new DiffController(this);
+		this.diffClient = new ObsidianDiffClient(this.app.vault, this.manifest);
+		this.diffController = new DiffController(this, this.diffClient);
 		this.diffController.onload();
 
 		this.addSettingTab(new FranklinSettingTab(this.app, this));
 
-		createFranklinApp(this)
+		createFranklinApp(this, this.diffClient)
 			.then(({ app, vaultRoot }) =>
 				getDefaultAgent(app, vaultRoot).then((runtime) => ({
 					app,

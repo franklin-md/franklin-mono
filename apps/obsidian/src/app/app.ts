@@ -19,6 +19,7 @@ import {
 	getPluginAbsolutePath,
 	getVaultAbsolutePath,
 } from '../utils/obsidian/path.js';
+import type { ObsidianDiffClient } from '../diff/diff-client.js';
 
 export interface ObsidianAppResult {
 	app: FranklinApp;
@@ -43,8 +44,9 @@ const extensions = extensionBundles.map(
 
 export async function createFranklinApp(
 	plugin: Plugin,
+	diffClient: ObsidianDiffClient,
 ): Promise<ObsidianAppResult> {
-	const platform = createObsidianPlatform(plugin.app);
+	const platform = createObsidianPlatform(plugin.app, diffClient.onWrite);
 	const vaultRoot = toAbsolutePath(getVaultAbsolutePath(plugin.app.vault));
 	const appDir = toAbsolutePath(
 		getPluginAbsolutePath(plugin.app.vault, plugin.manifest),
@@ -55,6 +57,7 @@ export async function createFranklinApp(
 		platform,
 		appDir,
 	});
+
 	await app.start();
 
 	return { app, platform, vaultRoot };

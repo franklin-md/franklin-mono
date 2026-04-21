@@ -3,7 +3,6 @@ import type { Plugin } from 'obsidian';
 import { MarkdownView } from 'obsidian';
 
 import type { DiffClient } from './diff-client.js';
-import { MockDiffClient } from './diff-client.js';
 import {
 	clearDiff,
 	diffField,
@@ -28,14 +27,14 @@ type EditorSession = {
 };
 
 export class DiffController {
-	private client!: DiffClient;
 	private sessions = new Map<EditorView, EditorSession>();
 
-	constructor(private readonly plugin: Plugin) {}
+	constructor(
+		private readonly plugin: Plugin,
+		private readonly client: DiffClient,
+	) {}
 
 	onload() {
-		this.client = new MockDiffClient(this.plugin.app.vault);
-
 		this.plugin.registerEditorExtension([
 			diffField,
 			diffInvertedEffects,
