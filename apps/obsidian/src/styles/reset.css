@@ -1,0 +1,34 @@
+/*
+ * Reset Obsidian's defaults on native form elements within .franklin.
+ *
+ * Obsidian styles raw <button>, <input>, <textarea>, <select> with borders,
+ * outlines, and box-shadows at 0,0,1 specificity. The shared UI uses
+ * Tailwind ring-* / border-* / shadow-* utilities for its own outlines,
+ * so Obsidian's decorations double up on top of ours.
+ *
+ * The postcss-prefix-selector build step wraps every selector with
+ * `.franklin`, so this reset lands at 0,1,1 — beating Obsidian's 0,0,1
+ * while losing to Tailwind utilities (0,2,0 after prefixing). Intentional
+ * rings/borders/shadows on Franklin components are therefore preserved.
+ */
+
+button,
+input,
+select,
+textarea {
+	border: 0;
+	outline: 0;
+	box-shadow: none;
+}
+
+button:focus,
+button:focus-visible,
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+	outline: 0;
+	box-shadow: none;
+}

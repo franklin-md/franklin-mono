@@ -16,6 +16,7 @@
 @import 'tailwindcss/theme';
 @import 'tailwindcss/utilities';
 
+@import './reset.css';
 @import './variables.css';
 /* @import '@franklin/ui/styles/franklin-theme.css'; */
 @import './theme.css';
