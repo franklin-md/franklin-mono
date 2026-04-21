@@ -1,7 +1,6 @@
 import { FranklinApp } from '@franklin/agent/browser';
 import type { FranklinExtension, Platform } from '@franklin/agent/browser';
 import {
-	bashExtension,
 	conversationExtension,
 	createWebExtension,
 	filesystemExtension,
@@ -33,7 +32,6 @@ const extensionBundles = [
 	statusExtension,
 	instructionsExtension,
 	filesystemExtension,
-	bashExtension,
 	webExtension,
 	spawnExtension,
 ];
