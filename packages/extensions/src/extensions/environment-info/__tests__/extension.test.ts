@@ -5,24 +5,27 @@ import {
 	type AbsolutePath,
 } from '@franklin/lib';
 import type { SystemPromptHandler } from '../../../systems/core/api/handlers.js';
+import {
+	bindHandlers,
+	createCoreRegistrar,
+	type WithContext,
+} from '../../../systems/core/compile/registrar/index.js';
 import { buildSystemPromptAssembler } from '../../../systems/core/compile/builders/system-prompt.js';
-import type { CoreAPI } from '../../../systems/core/api/api.js';
 import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
 
+type RuntimeSystemPromptHandler = WithContext<
+	SystemPromptHandler,
+	EnvironmentRuntime
+>;
+
 function collectHandlers(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
-): SystemPromptHandler[] {
-	const handlers: SystemPromptHandler[] = [];
-	const api = {
-		on: (event: string, handler: SystemPromptHandler) => {
-			if (event === 'systemPrompt') handlers.push(handler);
-		},
-		registerTool: () => {},
-	} as unknown as CoreAPI<EnvironmentRuntime>;
+): RuntimeSystemPromptHandler[] {
+	const { api, registered } = createCoreRegistrar<EnvironmentRuntime>();
 	extension(api);
-	return handlers;
+	return registered.systemPrompt;
 }
 
 function fakeEnvironment(osInfo: MemoryOsInfo): ReconfigurableEnvironment {
@@ -57,18 +60,10 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 }
 
 function bindAssembler(
-	handlers: SystemPromptHandler[],
+	handlers: RuntimeSystemPromptHandler[],
 	ctx: EnvironmentRuntime,
 ) {
-	return buildSystemPromptAssembler(
-		handlers.map(
-			(h) => (prompt) =>
-				(h as unknown as (p: unknown, c: unknown) => Promise<void>)(
-					prompt,
-					ctx,
-				),
-		),
-	);
+	return buildSystemPromptAssembler(bindHandlers(handlers, () => ctx));
 }
 
 describe('createEnvironmentInfoExtension', () => {
