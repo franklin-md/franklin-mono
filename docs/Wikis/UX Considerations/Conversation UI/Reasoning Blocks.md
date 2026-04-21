@@ -1,6 +1,3 @@
-## Reasoning Blocks
-
-Reasoning tokens are intended 
 
 ## Dimensions of the design space
 

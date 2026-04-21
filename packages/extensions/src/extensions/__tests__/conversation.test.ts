@@ -585,6 +585,23 @@ describe('conversationExtension', () => {
 			startedAt: expect.any(Number),
 			endedAt: expect.any(Number),
 		});
+
+		// Contiguity at startNewBlock-linked boundaries: when a new block
+		// is opened, it closes the trailing block at the same instant, so
+		// those two timestamps match exactly.
+		// blocks[0] (text) → blocks[1] (toolUse): handleToolCall closes the
+		// text via startNewBlock.
+		expect(blocks[0]!.endedAt).toBe(blocks[1]!.startedAt);
+		// blocks[2] (text) → blocks[3] (turnEnd): handleTurnEnd closes the
+		// text via startAndEndNewBlock.
+		expect(blocks[2]!.endedAt).toBe(blocks[3]!.startedAt);
+		// blocks[1] (toolUse) → blocks[2] (text) is NOT contiguous: the
+		// tool-result event closes the toolUse independently of when the
+		// next chunk arrives.
+		expect(blocks[1]!.endedAt!).toBeLessThanOrEqual(blocks[2]!.startedAt);
+
+		// turnEnd is instantaneous: startedAt === endedAt.
+		expect(blocks[3]!.startedAt).toBe(blocks[3]!.endedAt);
 	});
 
 	it('multiple turns from multiple prompt calls', async () => {

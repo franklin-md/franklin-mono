@@ -12,7 +12,11 @@ const plugins = { code, math };
 
 export function Markdown({ text }: { text: string }) {
 	return (
-		<Streamdown plugins={plugins} components={chromeComponents} controls={false}>
+		<Streamdown
+			plugins={plugins}
+			components={chromeComponents}
+			controls={false}
+		>
 			{text}
 		</Streamdown>
 	);
