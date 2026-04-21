@@ -5,6 +5,7 @@ import {
 	markdownConversation,
 	multiTurn,
 	singleTurnSequence,
+	thinkingStreamingTurnSequence,
 	thinkingTurnSequence,
 } from '../fixtures.js';
 import { ConversationView } from '../../src/conversation/view.js';
@@ -31,6 +32,10 @@ export const MultiTurn: Story = {
 
 export const WithThinking: Story = {
 	args: { turns: thinkingTurnSequence },
+};
+
+export const WithThinkingStreaming: Story = {
+	args: { turns: thinkingStreamingTurnSequence },
 };
 
 export const RichMarkdown: Story = {

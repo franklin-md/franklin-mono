@@ -60,7 +60,7 @@ describe('useConversationTurns', () => {
 					role: 'user',
 					content: [{ type: 'text', text: 'Hello' }],
 				},
-				response: { blocks: [{ kind: 'text', text: 'Hi!' }] },
+				response: { blocks: [{ kind: 'text', text: 'Hi!', startedAt: 0 }] },
 			},
 		];
 

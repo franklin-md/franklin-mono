@@ -2,6 +2,8 @@ import { describe, it, expect, expectTypeOf, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import type {
 	ConversationTurn,
+	TextBlock,
+	ThinkingBlock,
 	ToolSpec,
 	ToolUseBlock,
 } from '@franklin/extensions';
@@ -45,6 +47,7 @@ describe('computeToolStatus', () => {
 	const base: ToolUseBlock = {
 		kind: 'toolUse',
 		call: { type: 'toolCall', id: '1', name: 'read', arguments: {} },
+		startedAt: 0,
 	};
 
 	it('returns in-progress when result is undefined', () => {
@@ -104,6 +107,7 @@ describe('resolveToolRenderer', () => {
 		const block: ToolUseBlock = {
 			kind: 'toolUse',
 			call: { type: 'toolCall', id: '1', name: 'grep', arguments: {} },
+			startedAt: 0,
 		};
 		expect(
 			entry.summary({ block, status: 'success', args: block.call.arguments }),
@@ -150,12 +154,12 @@ describe('Conversation', () => {
 		const users: string[] = [];
 
 		const components: ConversationComponents = {
-			Text: ({ text }: { text: string }) => {
-				texts.push(text);
+			Text: ({ block }: { block: TextBlock }) => {
+				texts.push(block.text);
 				return null;
 			},
-			Thinking: ({ text }: { text: string }) => {
-				thinkings.push(text);
+			Thinking: ({ block }: { block: ThinkingBlock }) => {
+				thinkings.push(block.text);
 				return null;
 			},
 			ToolUse: ({
@@ -191,7 +195,7 @@ describe('Conversation', () => {
 			},
 			response: {
 				blocks: [
-					{ kind: 'text', text: 'hi there' },
+					{ kind: 'text', text: 'hi there', startedAt: 0 },
 					{
 						kind: 'toolUse',
 						call: {
@@ -201,8 +205,9 @@ describe('Conversation', () => {
 							arguments: {},
 						},
 						result: [{ type: 'text', text: 'file contents' }],
+						startedAt: 0,
 					},
-					{ kind: 'thinking', text: 'hmm' },
+					{ kind: 'thinking', text: 'hmm', startedAt: 0 },
 				],
 			},
 		},
@@ -251,6 +256,7 @@ describe('Conversation', () => {
 								name: 'write',
 								arguments: {},
 							},
+							startedAt: 0,
 						},
 					],
 				},
@@ -282,6 +288,7 @@ describe('Conversation', () => {
 							},
 							result: [{ type: 'text', text: 'fail' }],
 							isError: true,
+							startedAt: 0,
 						},
 					],
 				},
@@ -337,7 +344,7 @@ describe('Conversation', () => {
 					role: 'user',
 					content: [{ type: 'text', text: 'first' }],
 				},
-				response: { blocks: [{ kind: 'text', text: 'reply 1' }] },
+				response: { blocks: [{ kind: 'text', text: 'reply 1', startedAt: 0 }] },
 			},
 			{
 				id: 'b',
@@ -346,7 +353,7 @@ describe('Conversation', () => {
 					role: 'user',
 					content: [{ type: 'text', text: 'second' }],
 				},
-				response: { blocks: [{ kind: 'text', text: 'reply 2' }] },
+				response: { blocks: [{ kind: 'text', text: 'reply 2', startedAt: 0 }] },
 			},
 		];
 		const { components, users, texts } = createCapturingComponents();
@@ -383,6 +390,7 @@ describe('ToolUseBlock', () => {
 			kind: 'toolUse',
 			call: { type: 'toolCall', id: '1', name: 'read', arguments: {} },
 			result: [{ type: 'text', text: 'ok' }],
+			startedAt: 0,
 		};
 
 		render(
@@ -427,6 +435,7 @@ describe('ToolUseBlock', () => {
 				name: 'unknown_tool',
 				arguments: {},
 			},
+			startedAt: 0,
 		};
 
 		render(
@@ -459,6 +468,7 @@ describe('ToolUseBlock', () => {
 		const block: ToolUseBlock = {
 			kind: 'toolUse',
 			call: { type: 'toolCall', id: '1', name: 'read', arguments: {} },
+			startedAt: 0,
 		};
 
 		render(
@@ -503,6 +513,7 @@ describe('createToolUseBlock', () => {
 			kind: 'toolUse',
 			call: { type: 'toolCall', id: '1', name: 'read', arguments: {} },
 			result: [{ type: 'text', text: 'ok' }],
+			startedAt: 0,
 		};
 
 		render(<ToolUse block={block} status="success" />);

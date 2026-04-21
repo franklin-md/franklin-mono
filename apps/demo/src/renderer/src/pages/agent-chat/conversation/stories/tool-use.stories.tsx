@@ -13,11 +13,15 @@ function toolBlock(
 	args: Record<string, unknown>,
 	opts?: { result?: string; isError?: boolean },
 ): ToolUseBlockData {
+	const startedAt = Date.now();
+	const settled = opts?.result !== undefined || opts?.isError;
 	return {
 		kind: 'toolUse',
 		call: { type: 'toolCall', id: `tc_${name}`, name, arguments: args },
 		result: opts?.result ? [{ type: 'text', text: opts.result }] : undefined,
 		isError: opts?.isError,
+		startedAt,
+		endedAt: settled ? startedAt + 500 : undefined,
 	};
 }
 

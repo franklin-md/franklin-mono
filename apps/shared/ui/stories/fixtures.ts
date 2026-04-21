@@ -1,6 +1,16 @@
 import type { AssistantTurn, ConversationTurn } from '@franklin/extensions';
 import { StopCode, type UserMessage } from '@franklin/mini-acp';
 
+const T0 = Date.now() - 300_000;
+
+// Walk a monotonically-increasing clock through block literals so fixtures
+// carry coherent startedAt/endedAt without each call site recomputing offsets.
+let fixtureClock = T0;
+const tick = (ms = 500) => {
+	fixtureClock += ms;
+	return fixtureClock;
+};
+
 export const userTextPrompt: UserMessage = {
 	role: 'user',
 	content: [{ type: 'text', text: 'Hello, can you help me with something?' }],
@@ -11,26 +21,65 @@ const assistantTextResponse: AssistantTurn = {
 		{
 			kind: 'text',
 			text: "Of course. Tell me what you're working on.",
+			startedAt: tick(),
+			endedAt: tick(800),
 		},
 	],
 };
+
+const thinkingBody = `Let me work through this.
+
+## Options
+
+1. **Keep it simple** — do the obvious thing and move on.
+2. **Make it clever** — add indirection in case we need it later.
+
+\`\`\`ts
+function decide(input: string) {
+  return input.length > 0;
+}
+\`\`\`
+
+On balance, I think option 1 wins.`;
 
 const assistantThinkingResponse: AssistantTurn = {
 	blocks: [
 		{
 			kind: 'thinking',
-			text: 'I should give a compact answer first, then offer a concrete next step.',
+			text: thinkingBody,
+			startedAt: tick(),
+			endedAt: tick(6_000),
 		},
 		{
 			kind: 'text',
 			text: 'Sure. What part do you want to focus on first?',
+			startedAt: tick(),
+			endedAt: tick(800),
+		},
+	],
+};
+
+// Mid-stream: thinking block still open, no following text yet.
+const assistantThinkingStreamingResponse: AssistantTurn = {
+	blocks: [
+		{
+			kind: 'thinking',
+			text:
+				thinkingBody.slice(0, Math.floor(thinkingBody.length * 0.6)) +
+				'\n\nStill working through this…',
+			startedAt: tick(),
 		},
 	],
 };
 
 const assistantToolResponse: AssistantTurn = {
 	blocks: [
-		{ kind: 'text', text: 'I checked the repo structure first.' },
+		{
+			kind: 'text',
+			text: 'I checked the repo structure first.',
+			startedAt: tick(),
+			endedAt: tick(500),
+		},
 		{
 			kind: 'toolUse',
 			call: {
@@ -40,10 +89,14 @@ const assistantToolResponse: AssistantTurn = {
 				arguments: { pattern: 'README.md' },
 			},
 			result: [{ type: 'text', text: 'Found 3 matching files.' }],
+			startedAt: tick(),
+			endedAt: tick(1_200),
 		},
 		{
 			kind: 'text',
 			text: 'The shared package already has the pieces we need.',
+			startedAt: tick(),
+			endedAt: tick(600),
 		},
 	],
 };
@@ -82,6 +135,8 @@ $$
 | React hooks | Bind runtime state |
 | Theme CSS | Provide semantic tokens |
 `,
+			startedAt: tick(),
+			endedAt: tick(2_000),
 		},
 	],
 };
@@ -138,6 +193,18 @@ export const thinkingTurnSequence: ConversationTurn[] = [
 	},
 ];
 
+export const thinkingStreamingTurnSequence: ConversationTurn[] = [
+	{
+		id: 'turn-thinking-streaming',
+		timestamp: Date.now() - 5_000,
+		prompt: {
+			role: 'user',
+			content: [{ type: 'text', text: 'What is the right tradeoff here?' }],
+		},
+		response: assistantThinkingStreamingResponse,
+	},
+];
+
 export const markdownConversation: ConversationTurn[] = [
 	{
 		id: 'turn-md',
@@ -155,6 +222,11 @@ export const markdownConversation: ConversationTurn[] = [
 	},
 ];
 
+const turnEndMoment = (): { startedAt: number; endedAt: number } => {
+	const t = tick();
+	return { startedAt: t, endedAt: t };
+};
+
 export const finishedTurn: ConversationTurn = {
 	id: 'turn-finished',
 	timestamp: Date.now(),
@@ -164,8 +236,13 @@ export const finishedTurn: ConversationTurn = {
 	},
 	response: {
 		blocks: [
-			{ kind: 'text', text: 'Done. The work is complete.' },
-			{ kind: 'turnEnd', stopCode: StopCode.Finished },
+			{
+				kind: 'text',
+				text: 'Done. The work is complete.',
+				startedAt: tick(),
+				endedAt: tick(400),
+			},
+			{ kind: 'turnEnd', stopCode: StopCode.Finished, ...turnEndMoment() },
 		],
 	},
 };
@@ -179,8 +256,13 @@ export const cancelledTurn: ConversationTurn = {
 	},
 	response: {
 		blocks: [
-			{ kind: 'text', text: 'Stopping now.' },
-			{ kind: 'turnEnd', stopCode: StopCode.Cancelled },
+			{
+				kind: 'text',
+				text: 'Stopping now.',
+				startedAt: tick(),
+				endedAt: tick(300),
+			},
+			{ kind: 'turnEnd', stopCode: StopCode.Cancelled, ...turnEndMoment() },
 		],
 	},
 };
@@ -197,8 +279,10 @@ export const maxTokensTurn: ConversationTurn = {
 			{
 				kind: 'text',
 				text: 'The system is layered across transport, protocol, runtime, and UI boundaries, and the response is truncated here to demonstrate token exhaustion.',
+				startedAt: tick(),
+				endedAt: tick(2_500),
 			},
-			{ kind: 'turnEnd', stopCode: StopCode.MaxTokens },
+			{ kind: 'turnEnd', stopCode: StopCode.MaxTokens, ...turnEndMoment() },
 		],
 	},
 };
@@ -216,6 +300,7 @@ export const configErrorTurn: ConversationTurn = {
 				kind: 'turnEnd',
 				stopCode: StopCode.ProviderNotSpecified,
 				stopMessage: 'No provider specified in config.',
+				...turnEndMoment(),
 			},
 		],
 	},
@@ -234,6 +319,7 @@ export const providerErrorTurn: ConversationTurn = {
 				kind: 'turnEnd',
 				stopCode: StopCode.ProviderError,
 				stopMessage: 'Anthropic API returned 529: overloaded.',
+				...turnEndMoment(),
 			},
 		],
 	},
@@ -251,6 +337,7 @@ export const genericErrorTurn: ConversationTurn = {
 			{
 				kind: 'turnEnd',
 				stopCode: StopCode.LlmError,
+				...turnEndMoment(),
 			},
 		],
 	},

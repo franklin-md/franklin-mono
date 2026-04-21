@@ -12,9 +12,9 @@ export function BlockDispatch({
 }) {
 	switch (block.kind) {
 		case 'text':
-			return <components.Text text={block.text} />;
+			return <components.Text block={block} />;
 		case 'thinking':
-			return <components.Thinking text={block.text} />;
+			return <components.Thinking block={block} />;
 		case 'toolUse':
 			return (
 				<components.ToolUse block={block} status={computeToolStatus(block)} />
