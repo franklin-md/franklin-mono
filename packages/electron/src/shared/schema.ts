@@ -23,6 +23,13 @@ const web = namespace({
 	fetch: method(),
 });
 
+const osInfo = namespace({
+	getPlatform: method(),
+	getOsVersion: method(),
+	getShellInfo: method(),
+	getHomeDir: method(),
+});
+
 const authFlow = namespace({
 	onAuth: on(),
 	onProgress: on(),
@@ -37,6 +44,7 @@ export const schema = namespace({
 			filesystem: filesystem,
 			terminal: terminal,
 			web: web,
+			osInfo: osInfo,
 			config: method(),
 			reconfigure: method(),
 		}),
@@ -48,7 +56,7 @@ export const schema = namespace({
 	os: namespace({
 		terminal: terminal,
 		filesystem: filesystem,
-		getHome: method(),
+		osInfo: osInfo,
 		openExternal: method(),
 	}),
 } satisfies NamespaceShape<Platform>);

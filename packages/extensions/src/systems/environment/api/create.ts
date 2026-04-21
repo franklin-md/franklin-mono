@@ -1,4 +1,4 @@
-import type { Filesystem, Terminal } from '@franklin/lib';
+import type { Filesystem, OsInfo, Terminal } from '@franklin/lib';
 import type {
 	EnvironmentConfig,
 	FilesystemConfig,
@@ -13,6 +13,7 @@ export type ConfigureOptions<
 	W extends WebAPI = WebAPI,
 > = {
 	config: EnvironmentConfig;
+	osInfo: OsInfo;
 	configureFilesystem: (
 		config: FilesystemConfig,
 		previous: F | undefined,
@@ -76,6 +77,7 @@ export async function createReconfigurableEnvironment<
 		filesystem,
 		terminal,
 		web,
+		osInfo: opts.osInfo,
 
 		async config() {
 			return currentConfig;

@@ -18,6 +18,7 @@ export function createObsidianPlatform(app: App): Platform {
 		environment: (config: EnvironmentConfig) =>
 			createReconfigurableEnvironment({
 				config,
+				osInfo: nodePlatform.os.osInfo,
 				configureFilesystem: async (fsConfig) =>
 					configureFilesystem(
 						createObsidianFilesystem(app, createNodeFilesystem()),

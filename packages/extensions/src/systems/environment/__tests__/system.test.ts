@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
+import {
+	FILESYSTEM_ALLOW_ALL,
+	MemoryOsInfo,
+	type AbsolutePath,
+} from '@franklin/lib';
 import { createEnvironmentSystem } from '../system.js';
 import { createRuntime } from '../../../algebra/system/create.js';
 import type {
@@ -37,6 +41,7 @@ function mockEnvironment(config: EnvironmentConfig): ReconfigurableEnvironment {
 		},
 		terminal: { exec: vi.fn() },
 		web: { fetch: vi.fn() },
+		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({ ...config })),
 		reconfigure: vi.fn(async () => {}),
 		dispose: vi.fn(async () => {}),
@@ -74,6 +79,14 @@ describe('createEnvironmentSystem', () => {
 
 		const runtime = await createRuntime(system, { env: defaultConfig }, []);
 		expect(runtime.environment.filesystem).toBeDefined();
+	});
+
+	it('runtime exposes osInfo on the environment', async () => {
+		const { factory } = mockFactory();
+		const system = createEnvironmentSystem(factory);
+
+		const runtime = await createRuntime(system, { env: defaultConfig }, []);
+		await expect(runtime.environment.osInfo.getPlatform()).resolves.toBe('mac');
 	});
 
 	it('state returns the environment config', async () => {
