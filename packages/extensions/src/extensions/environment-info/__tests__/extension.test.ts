@@ -13,7 +13,7 @@ import {
 import {
 	buildSystemPromptAssembler,
 	type SystemPromptAssembler,
-} from '../../../systems/core/compile/builders/system-prompt.js';
+} from '../../../systems/core/compile/decorators/system-prompt/index.js';
 import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
