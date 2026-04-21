@@ -1,6 +1,7 @@
 import type { WebContents } from 'electron';
 import {
 	FILESYSTEM_ALLOW_ALL,
+	MemoryOsInfo,
 	type AbsolutePath,
 	type Filesystem,
 } from '@franklin/lib';
@@ -53,6 +54,7 @@ function createEnvironment(label: string) {
 					cacheable: true,
 				}),
 			},
+			osInfo: new MemoryOsInfo(),
 			config: async () => ({
 				fsConfig: {
 					cwd: '/tmp' as AbsolutePath,
@@ -157,6 +159,7 @@ describe('bindMain', () => {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
+					osInfo: new MemoryOsInfo(),
 					getHome: async () => '/home/test' as AbsolutePath,
 					openExternal: async () => {},
 				},
@@ -223,6 +226,7 @@ describe('bindMain', () => {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
+					osInfo: new MemoryOsInfo(),
 					getHome: async () => '/home/test' as AbsolutePath,
 					openExternal: async () => {},
 				},
@@ -312,6 +316,7 @@ describe('bindMain', () => {
 									cacheable: true,
 								}),
 							},
+							osInfo: new MemoryOsInfo(),
 							config: async () => ({
 								fsConfig: {
 									cwd: '/tmp' as AbsolutePath,
@@ -329,6 +334,7 @@ describe('bindMain', () => {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
+					osInfo: new MemoryOsInfo(),
 					getHome: async () => '/home/test' as AbsolutePath,
 					openExternal: async () => {},
 				},
@@ -513,6 +519,7 @@ describe('bindMain', () => {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
+					osInfo: new MemoryOsInfo(),
 					getHome: async () => '/home/test' as AbsolutePath,
 					openExternal: async () => {},
 				},

@@ -3,6 +3,7 @@ import type {
 	Filesystem,
 	FilesystemPermissions,
 	NetworkPermissions,
+	OsInfo,
 	Terminal,
 	WebFetchResponse,
 	WebFetchRequest,
@@ -28,6 +29,7 @@ export interface Environment {
 	readonly filesystem: Filesystem;
 	readonly terminal: Terminal;
 	readonly web: WebAPI;
+	readonly osInfo: OsInfo;
 }
 
 export interface ReconfigurableEnvironment extends Environment {

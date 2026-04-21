@@ -1,6 +1,7 @@
 import type { WebContents } from 'electron';
 import {
 	FILESYSTEM_ALLOW_ALL,
+	MemoryOsInfo,
 	type AbsolutePath,
 	type Filesystem,
 } from '@franklin/lib';
@@ -87,6 +88,7 @@ describe('initializeMain', () => {
 								cacheable: true,
 							}),
 						},
+						osInfo: new MemoryOsInfo(),
 						config: async () => ({
 							fsConfig: {
 								cwd: '/tmp' as AbsolutePath,
@@ -103,6 +105,7 @@ describe('initializeMain', () => {
 					exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 				},
 				filesystem: createFilesystem(),
+				osInfo: new MemoryOsInfo(),
 				getHome: async () => '/home/test' as AbsolutePath,
 				openExternal: async () => {},
 			},

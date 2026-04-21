@@ -16,6 +16,7 @@ export function createEnvironmentRuntime(
 		filesystem: environment.filesystem,
 		terminal: environment.terminal,
 		web: environment.web,
+		osInfo: environment.osInfo,
 		config: () => environment.config(),
 		async reconfigure(config) {
 			await environment.reconfigure(config);

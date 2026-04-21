@@ -1,5 +1,9 @@
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
-import type { AbsolutePath, Filesystem } from '@franklin/lib';
+import {
+	MemoryOsInfo,
+	type AbsolutePath,
+	type Filesystem,
+} from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AuthManager } from '../auth/manager.js';
@@ -60,6 +64,7 @@ function createPlatform(
 				})),
 			},
 			filesystem,
+			osInfo: new MemoryOsInfo(),
 			getHome: vi.fn(async () => '/home/test' as AbsolutePath),
 			openExternal: vi.fn(async () => {}),
 		},

@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
+import {
+	FILESYSTEM_ALLOW_ALL,
+	MemoryOsInfo,
+	type AbsolutePath,
+} from '@franklin/lib';
 import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { webSearchExtension } from '../extension.js';
@@ -23,6 +27,7 @@ function mockEnvironment(
 		},
 		terminal: { exec: vi.fn() },
 		web: { fetch: vi.fn(fetchImpl) },
+		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,
