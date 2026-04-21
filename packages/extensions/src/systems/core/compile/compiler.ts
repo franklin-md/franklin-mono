@@ -3,11 +3,12 @@ import type { CoreAPI } from '../api/api.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
 import { serializeTool } from '../api/tools/index.js';
-import { composeDecorators } from './compose.js';
-import { createCoreRuntime } from './create.js';
+import { createAgentDecorator as createClientDecorator } from './decorators/full.js';
 import { createCoreRegistrar } from './registrar/index.js';
-import type { CoreRuntime } from '../runtime.js';
+import { createCoreRuntime, type CoreRuntime } from '../runtime/index.js';
 import type { CoreState } from '../state.js';
+import { createResources } from './resources.js';
+import { createAgentClient } from './client.js';
 
 export type SpawnResult = ClientProtocol & { dispose(): Promise<void> };
 export type SpawnFn = () => MaybePromise<SpawnResult>;
@@ -40,15 +41,26 @@ export function createCoreCompiler<Runtime extends CoreRuntime = CoreRuntime>(
 		api,
 		async build(state, getRuntime): Promise<Runtime> {
 			const transport = await spawn();
-			const decorators = composeDecorators(registered, getRuntime);
-			const serializedTools = registered.tools.map(serializeTool);
-			const runtime = await createCoreRuntime(
-				transport,
-				state,
-				decorators,
-				serializedTools,
+			const resources = createResources(state);
+			const decorator = createClientDecorator(
+				resources,
+				registered,
+				getRuntime,
 			);
-			return runtime as Runtime;
+			const serializedTools = registered.tools.map(serializeTool);
+
+			const client = await createAgentClient({
+				transport,
+				decorator,
+				state,
+				tools: serializedTools,
+			});
+
+			return createCoreRuntime({
+				client,
+				tracker: resources.tracker,
+				state: resources.stateHandle,
+			}) as Runtime;
 		},
 	};
 }

@@ -2,14 +2,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import type { Extension } from '../../../../algebra/types/extension.js';
-import type { FullMiddleware } from '../../api/middleware/types.js';
-import { buildMiddleware } from '../middleware.js';
+import type { FullMiddleware } from '../decorators/middleware/types.js';
+import { buildMiddleware } from '../decorators/middleware/build.js';
 import { createCoreRegistrar } from '../registrar/index.js';
 import {
 	serializeTool,
 	type SerializedToolDefinition,
 } from '../../api/tools/index.js';
-import type { CoreRuntime } from '../../runtime.js';
+import type { CoreRuntime } from '../../runtime/index.js';
 import { apply } from '@franklin/lib/middleware';
 import type {
 	MiniACPAgent,

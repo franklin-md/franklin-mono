@@ -1,5 +1,5 @@
-import type { BaseRuntime } from '../../../algebra/runtime/types.js';
-import type { FullMiddleware } from '../api/middleware/types.js';
+import type { BaseRuntime } from '../../../../../algebra/runtime/types.js';
+import type { FullMiddleware } from './types.js';
 import { passThrough, buildWaterfall } from '@franklin/lib/middleware';
 import {
 	buildPromptWaterfall,
@@ -9,8 +9,8 @@ import {
 	type StreamObservers,
 	type ToolObservers,
 } from './builders/index.js';
-import { bindHandlers, bindTool } from './registrar/bind.js';
-import type { CoreRegistrar } from './registrar/types.js';
+import { bindHandlers, bindTool } from '../../registrar/bind.js';
+import type { CoreRegistrar } from '../../registrar/types.js';
 
 export function buildMiddleware<Runtime extends BaseRuntime<unknown>>(
 	registered: CoreRegistrar<Runtime>,

@@ -6,6 +6,7 @@ import {
 	createSessionAdapter,
 	createAgentConnection,
 	StopCode,
+	ZERO_USAGE,
 } from '@franklin/mini-acp';
 import {
 	authenticateAgent,
@@ -57,13 +58,13 @@ function mockCoreRuntime(): CoreRuntime {
 		subscribe: vi.fn(() => () => {}),
 		state: {
 			get: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {} },
+				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
 			})),
 			fork: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {} },
+				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
 			})),
 			child: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {} },
+				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
 			})),
 		},
 		dispose: vi.fn(async () => {}),
@@ -140,6 +141,7 @@ describe('reconnectAgent', () => {
 			core: {
 				messages: [],
 				llmConfig: { provider: 'anthropic' },
+				usage: ZERO_USAGE,
 			},
 		};
 
@@ -158,6 +160,7 @@ describe('reconnectAgent', () => {
 			core: {
 				messages: [],
 				llmConfig: {},
+				usage: ZERO_USAGE,
 			},
 		};
 
@@ -195,6 +198,7 @@ describe('withAuth', () => {
 				core: {
 					messages: [],
 					llmConfig: { provider: 'anthropic' },
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
@@ -222,6 +226,7 @@ describe('withAuth', () => {
 				core: {
 					messages: [],
 					llmConfig: { provider: 'anthropic' },
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
@@ -252,6 +257,7 @@ describe('withAuth', () => {
 				core: {
 					messages: [],
 					llmConfig: { provider: 'anthropic' },
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
@@ -282,6 +288,7 @@ describe('withAuth', () => {
 				core: {
 					messages: [],
 					llmConfig: { provider: 'anthropic' },
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
@@ -309,6 +316,7 @@ describe('withAuth', () => {
 				core: {
 					messages: [],
 					llmConfig: { provider: 'anthropic' },
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
@@ -346,6 +354,7 @@ describe('withAuth live sync', () => {
 				core: {
 					messages: [],
 					llmConfig: { provider },
+					usage: ZERO_USAGE,
 				},
 			},
 			[],

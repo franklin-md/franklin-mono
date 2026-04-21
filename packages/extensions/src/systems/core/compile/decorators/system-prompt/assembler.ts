@@ -1,5 +1,5 @@
-import type { SystemPromptHandler } from '../../api/handlers.js';
-import type { SystemPrompt } from '../../api/system-prompt.js';
+import type { SystemPromptHandler } from '../../../api/handlers.js';
+import type { SystemPrompt } from '../../../api/system-prompt.js';
 
 export interface SystemPromptAssembler {
 	/**

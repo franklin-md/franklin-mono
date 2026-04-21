@@ -4,8 +4,10 @@ import type {
 	MiniACPClient,
 	ToolExecuteParams,
 } from '@franklin/mini-acp';
-import { createSystemPromptDecorator } from '../decorators/system-prompt.js';
-import { buildSystemPromptAssembler } from '../builders/system-prompt.js';
+import {
+	buildSystemPromptAssembler,
+	createSystemPromptDecorator,
+} from '../decorators/system-prompt/index.js';
 import type { SystemPromptHandler } from '../../api/handlers.js';
 
 // ---------------------------------------------------------------------------

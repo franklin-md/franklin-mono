@@ -3,6 +3,7 @@ import type {
 	ToolCallContent,
 	ToolResultContent,
 	StopCode,
+	Usage,
 } from '@franklin/mini-acp';
 
 // ---------------------------------------------------------------------------
@@ -21,6 +22,7 @@ export type TurnEndBlock = {
 	kind: 'turnEnd';
 	stopCode: StopCode;
 	stopMessage?: string;
+	usage?: Usage;
 };
 
 export type AssistantBlock =

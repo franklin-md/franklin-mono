@@ -1,10 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
-import { trackAgent, trackTurn, trackClient } from '../protocol/tracking.js';
+import {
+	trackAgent,
+	trackTurn,
+	trackClient,
+	trackUsage,
+} from '../protocol/tracking.js';
 import { CtxTracker } from '../protocol/ctx-tracker.js';
+import { UsageTracker, ZERO_USAGE } from '../protocol/usage-tracker.js';
 import type { MuAgent, MuClient } from '../protocol/types.js';
 import type { TurnClient } from '../base/types.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { ToolExecuteParams } from '../types/tool.js';
+import type { Usage } from '../types/usage.js';
 import { StopCode } from '../types/stop-code.js';
 
 // ---------------------------------------------------------------------------
@@ -247,5 +254,139 @@ describe('trackClient', () => {
 		await tracked.initialize();
 		expect(inner.initialize).toHaveBeenCalled();
 		expect(tracker.get().history.messages).toHaveLength(0);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// trackUsage
+// ---------------------------------------------------------------------------
+
+describe('trackUsage', () => {
+	function usageOf(input: number, output: number): Usage {
+		return {
+			tokens: {
+				input,
+				output,
+				cacheRead: 0,
+				cacheWrite: 0,
+				total: input + output,
+			},
+			cost: {
+				input: 0,
+				output: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
+				total: 0,
+			},
+		};
+	}
+
+	it('accumulates usage from turnEnd events', async () => {
+		const tracker = new UsageTracker();
+		const usage = usageOf(10, 5);
+		const inner = mockTurn([
+			{ type: 'turnStart' },
+			{ type: 'turnEnd', stopCode: StopCode.Finished, usage },
+		]);
+		const tracked = trackUsage(tracker, inner);
+
+		await drain(
+			tracked.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		expect(tracker.get().tokens).toEqual(usage.tokens);
+	});
+
+	it('sums usage across multiple prompts', async () => {
+		const tracker = new UsageTracker();
+		const first = usageOf(10, 5);
+		const second = usageOf(3, 7);
+		const turnOne = mockTurn([
+			{ type: 'turnEnd', stopCode: StopCode.Finished, usage: first },
+		]);
+		const turnTwo = mockTurn([
+			{ type: 'turnEnd', stopCode: StopCode.Finished, usage: second },
+		]);
+
+		await drain(
+			trackUsage(tracker, turnOne).prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'a' }],
+			}),
+		);
+		await drain(
+			trackUsage(tracker, turnTwo).prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'b' }],
+			}),
+		);
+
+		expect(tracker.get().tokens).toEqual({
+			input: 13,
+			output: 12,
+			cacheRead: 0,
+			cacheWrite: 0,
+			total: 25,
+		});
+	});
+
+	it('leaves tracker unchanged when turnEnd has no usage', async () => {
+		const tracker = new UsageTracker();
+		const inner = mockTurn([
+			{ type: 'turnStart' },
+			{ type: 'turnEnd', stopCode: StopCode.ProviderNotFound },
+		]);
+		const tracked = trackUsage(tracker, inner);
+
+		await drain(
+			tracked.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		expect(tracker.get()).toEqual(ZERO_USAGE);
+	});
+
+	it('yields all events from the inner turn', async () => {
+		const tracker = new UsageTracker();
+		const events: StreamEvent[] = [
+			{ type: 'turnStart' },
+			{
+				type: 'update',
+				messageId: 'm1',
+				message: {
+					role: 'assistant',
+					content: [{ type: 'text', text: 'hi' }],
+				},
+			},
+			{
+				type: 'turnEnd',
+				stopCode: StopCode.Finished,
+				usage: usageOf(1, 2),
+			},
+		];
+		const tracked = trackUsage(tracker, mockTurn(events));
+
+		const yielded = await drain(
+			tracked.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'test' }],
+			}),
+		);
+
+		expect(yielded).toEqual(events);
+	});
+
+	it('delegates cancel to inner turn', async () => {
+		const tracker = new UsageTracker();
+		const inner = mockTurn([]);
+		const tracked = trackUsage(tracker, inner);
+
+		await tracked.cancel();
+		expect(inner.cancel).toHaveBeenCalled();
 	});
 });

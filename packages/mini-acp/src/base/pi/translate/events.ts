@@ -11,6 +11,7 @@ import type { AgentEvent } from '@mariozechner/pi-agent-core';
 
 import { fromPiMessage } from './message.js';
 import { narrowPiStopCode } from './error.js';
+import { fromPiUsage } from './usage.js';
 import type { StreamEvent } from 'packages/mini-acp/src/types/stream.js';
 // ---------------------------------------------------------------------------
 // AgentEvent → StreamEvent
@@ -40,6 +41,7 @@ export function fromAgentEvent(
 				type: 'turnEnd',
 				stopCode,
 				stopMessage,
+				usage: fromPiUsage(turnEnd.usage),
 			};
 		}
 		// Streaming deltas → chunks

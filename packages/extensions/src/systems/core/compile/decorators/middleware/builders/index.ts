@@ -3,8 +3,6 @@ export {
 	hasAnyStreamObserver,
 } from './prompt-waterfall.js';
 export type { StreamObservers } from './prompt-waterfall.js';
-export { buildSystemPromptAssembler } from './system-prompt.js';
-export type { SystemPromptAssembler } from './system-prompt.js';
 export {
 	buildToolExecuteMiddleware,
 	hasAnyToolObserver,
