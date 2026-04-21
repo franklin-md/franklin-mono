@@ -6,10 +6,10 @@ import type { EditorView } from '@codemirror/view';
 import { WidgetType } from '@codemirror/view';
 import type { Hunk } from '../compute-hunks.js';
 import {
-	acceptHunkEffect,
+	acceptHunkIntoBaseline,
 	diffField,
-	rejectHunkEffect,
 	reverseHunkChange,
+	setBaselineEffect,
 	setHoveredHunkEffect,
 } from './diff-field.js';
 
@@ -117,7 +117,7 @@ export class DiffHunkActionsWidget extends WidgetType {
 			createElement(HunkActionsWidget, {
 				hunkId: this.hunk.id,
 				onAccept: () => {
-					view.dispatch({ effects: acceptHunkEffect.of(this.hunk.id) });
+					acceptHunk(view, this.hunk);
 				},
 				onReject: () => {
 					rejectHunks(view, [this.hunk.id]);
@@ -243,15 +243,28 @@ function Toolbar({
 export function acceptAllHunks(view: EditorView) {
 	const ds = view.state.field(diffField, false);
 	if (!ds || ds.oldContent === null) return;
-
-	const pendingIds = ds.hunks
-		.filter((hunk) => ds.status.get(hunk.id) === 'pending')
-		.map((hunk) => hunk.id);
-	if (pendingIds.length === 0) return;
+	if (ds.hunks.length === 0) return;
 
 	view.dispatch({
 		effects: [
-			...pendingIds.map((id) => acceptHunkEffect.of(id)),
+			setBaselineEffect.of({ oldContent: view.state.doc.toString() }),
+			setHoveredHunkEffect.of(null),
+		],
+	});
+}
+
+function acceptHunk(view: EditorView, hunk: Hunk) {
+	const ds = view.state.field(diffField, false);
+	if (!ds || ds.oldContent === null) return;
+
+	const oldContent = ds.oldContent;
+	const newContent = view.state.doc.toString();
+
+	view.dispatch({
+		effects: [
+			setBaselineEffect.of({
+				oldContent: acceptHunkIntoBaseline(oldContent, newContent, hunk),
+			}),
 			setHoveredHunkEffect.of(null),
 		],
 	});
@@ -261,18 +274,14 @@ export function rejectAllHunks(view: EditorView) {
 	const ds = view.state.field(diffField, false);
 	if (!ds || ds.oldContent === null) return;
 	const oldContent = ds.oldContent;
-
 	const pendingHunks = ds.hunks
-		.filter((hunk) => ds.status.get(hunk.id) === 'pending')
+		.slice()
 		.sort((left, right) => left.newFrom - right.newFrom);
 	if (pendingHunks.length === 0) return;
 
 	view.dispatch({
 		changes: pendingHunks.map((hunk) => reverseHunkChange(oldContent, hunk)),
-		effects: [
-			...pendingHunks.map((hunk) => rejectHunkEffect.of(hunk.id)),
-			setHoveredHunkEffect.of(null),
-		],
+		effects: [setHoveredHunkEffect.of(null)],
 	});
 }
 
@@ -282,19 +291,13 @@ function rejectHunks(view: EditorView, hunkIds: string[]) {
 	const oldContent = ds.oldContent;
 
 	const hunks = ds.hunks
-		.filter(
-			(hunk) =>
-				hunkIds.includes(hunk.id) && ds.status.get(hunk.id) === 'pending',
-		)
+		.filter((hunk) => hunkIds.includes(hunk.id))
 		.sort((left, right) => left.newFrom - right.newFrom);
 	if (hunks.length === 0) return;
 
 	view.dispatch({
 		changes: hunks.map((hunk) => reverseHunkChange(oldContent, hunk)),
-		effects: [
-			...hunks.map((hunk) => rejectHunkEffect.of(hunk.id)),
-			setHoveredHunkEffect.of(null),
-		],
+		effects: [setHoveredHunkEffect.of(null)],
 	});
 }
 

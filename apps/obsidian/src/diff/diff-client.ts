@@ -3,6 +3,7 @@ import { createNodeFilesystem } from '@franklin/node';
 import {
 	createObserver,
 	decode,
+	encode,
 	joinAbsolute,
 	toAbsolutePath,
 	type AbsolutePath,
@@ -26,6 +27,7 @@ export type DiffEntry = {
 
 export interface DiffClient {
 	getEntry(path: string): Promise<DiffEntry | null>;
+	setBaseline(path: string, oldContent: string): Promise<void>;
 	onEntryAppeared(listener: () => void): () => void;
 	onEntryRemoved(listener: () => void): () => void;
 }
@@ -78,6 +80,28 @@ export class ObsidianDiffClient implements DiffClient {
 			path,
 			oldContent: decode(previous ?? new Uint8Array()),
 		};
+	}
+
+	async setBaseline(path: string, oldContent: string): Promise<void> {
+		await this.ready;
+		const absolutePath = this.resolveVaultPath(path);
+		const baseline = encode(oldContent);
+		const current = await this.readCurrent(absolutePath);
+		const existed = this.cache.has(absolutePath);
+
+		if (equalBytes(baseline, current)) {
+			if (!existed) return;
+			this.cache.delete(absolutePath);
+			await this.persist();
+			this.entryRemoved.notify();
+			return;
+		}
+
+		this.cache.set(absolutePath, baseline);
+		await this.persist();
+		if (!existed) {
+			this.entryAppeared.notify();
+		}
 	}
 
 	private async handleWrite(...args: Parameters<WriteListener>): Promise<void> {

@@ -45,6 +45,15 @@ export class DiffController {
 				const next = update.state.field(diffField, false);
 				if (prev !== next) {
 					this.syncHeaderActions(update.view);
+					const session = this.sessions.get(update.view);
+					if (
+						session?.currentPath &&
+						next &&
+						next.oldContent !== null &&
+						prev?.oldContent !== next.oldContent
+					) {
+						void this.client.setBaseline(session.currentPath, next.oldContent);
+					}
 				}
 			}),
 		]);
@@ -98,7 +107,7 @@ export class DiffController {
 		});
 
 		for (const [view, session] of this.sessions) {
-			if (seen.has(view)) continue;
+			if (seen.has(view) || view.dom.isConnected) continue;
 			session.requestToken++;
 			this.clearSession(view, session);
 			this.sessions.delete(view);
@@ -195,10 +204,7 @@ export class DiffController {
 			return;
 		}
 
-		let pending = 0;
-		for (const hunk of ds.hunks) {
-			if (ds.status.get(hunk.id) === 'pending') pending++;
-		}
+		const pending = ds.hunks.length;
 
 		if (pending === 0) {
 			this.removeHeaderUI(session);

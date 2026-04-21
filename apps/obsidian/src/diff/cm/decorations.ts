@@ -13,7 +13,6 @@ function buildDecorations(state: EditorState): DecorationSet {
 
 	const hoveredHunkId = ds.hoveredHunkId;
 	const visible: Hunk[] = ds.hunks
-		.filter((hunk) => ds.status.get(hunk.id) === 'pending')
 		.slice()
 		.sort(
 			(left, right) =>

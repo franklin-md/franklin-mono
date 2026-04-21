@@ -48,6 +48,17 @@ describe('obsidian bundle', () => {
 		expect(css).toContain('.franklin');
 	});
 
+	it('leaves diff editor selectors unscoped so they apply in Markdown views', () => {
+		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
+
+		expect(css).toContain('.diff-plugin-added-line');
+		expect(css).not.toContain('.franklin .diff-plugin-added-line');
+		expect(css).toContain('.cm-line:has(.diff-plugin-actions-host)');
+		expect(css).not.toContain(
+			'.franklin .cm-line:has(.diff-plugin-actions-host)',
+		);
+	});
+
 	it('styles.css includes Obsidian token bridge variables', () => {
 		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
 

@@ -1,30 +1,23 @@
 import type { EditorState, Transaction } from '@codemirror/state';
-import { StateField, StateEffect } from '@codemirror/state';
+import { StateEffect, StateField } from '@codemirror/state';
 import { invertedEffects } from '@codemirror/commands';
 import type { Hunk } from '../compute-hunks.js';
 import { computeHunks } from '../compute-hunks.js';
 
-export type HunkStatus = 'pending' | 'accepted' | 'rejected';
-
 export type DiffState = {
 	oldContent: string | null;
 	hunks: Hunk[];
-	status: Map<string, HunkStatus>;
 	hoveredHunkId: string | null;
 };
 
 export const setDiffEntry = StateEffect.define<{ oldContent: string }>();
 export const clearDiff = StateEffect.define();
-export const acceptHunkEffect = StateEffect.define<string>();
-export const unacceptHunkEffect = StateEffect.define<string>();
-export const rejectHunkEffect = StateEffect.define<string>();
-export const unrejectHunkEffect = StateEffect.define<string>();
+export const setBaselineEffect = StateEffect.define<{ oldContent: string }>();
 export const setHoveredHunkEffect = StateEffect.define<string | null>();
 
 const empty: DiffState = {
 	oldContent: null,
 	hunks: [],
-	status: new Map(),
 	hoveredHunkId: null,
 };
 
@@ -34,86 +27,67 @@ export const diffField = StateField.define<DiffState>({
 	update(value, tr: Transaction): DiffState {
 		let next = value;
 
-		for (const e of tr.effects) {
-			if (e.is(setDiffEntry)) {
-				const oldContent = e.value.oldContent;
-				const hunks = computeHunks(oldContent, tr.state.doc.toString());
-				next = {
-					oldContent,
-					hunks,
-					status: pendingStatus(hunks),
-					hoveredHunkId: null,
-				};
-			} else if (e.is(clearDiff)) {
+		for (const effect of tr.effects) {
+			if (effect.is(setDiffEntry) || effect.is(setBaselineEffect)) {
+				next = createDiffState(
+					effect.value.oldContent,
+					tr.state.doc.toString(),
+				);
+			} else if (effect.is(clearDiff)) {
 				next = empty;
-			} else if (e.is(acceptHunkEffect)) {
-				next = withStatus(next, e.value, 'accepted');
-			} else if (e.is(unacceptHunkEffect)) {
-				next = withStatus(next, e.value, 'pending');
-			} else if (e.is(rejectHunkEffect)) {
-				next = withStatus(next, e.value, 'rejected');
-			} else if (e.is(unrejectHunkEffect)) {
-				next = withStatus(next, e.value, 'pending');
-			} else if (e.is(setHoveredHunkEffect)) {
-				if (next.hoveredHunkId !== e.value) {
-					next = { ...next, hoveredHunkId: e.value };
+			} else if (effect.is(setHoveredHunkEffect)) {
+				if (next.hoveredHunkId !== effect.value) {
+					next = { ...next, hoveredHunkId: effect.value };
 				}
 			}
 		}
 
 		if (tr.docChanged && next.oldContent !== null) {
 			const hunks = computeHunks(next.oldContent, tr.state.doc.toString());
-			const status = new Map<string, HunkStatus>();
-			for (const h of hunks) {
-				status.set(h.id, next.status.get(h.id) ?? 'pending');
-			}
-			const hoveredHunkId =
-				next.hoveredHunkId && status.get(next.hoveredHunkId) === 'pending'
+			next = {
+				...next,
+				hunks,
+				hoveredHunkId: hunks.some((hunk) => hunk.id === next.hoveredHunkId)
 					? next.hoveredHunkId
-					: null;
-			next = { ...next, hunks, status, hoveredHunkId };
+					: null,
+			};
 		}
 
 		return next;
 	},
 });
 
-function pendingStatus(hunks: Hunk[]): Map<string, HunkStatus> {
-	const m = new Map<string, HunkStatus>();
-	for (const h of hunks) m.set(h.id, 'pending');
-	return m;
-}
-
-function withStatus(
-	state: DiffState,
-	id: string,
-	status: HunkStatus,
+function createDiffState(
+	oldContent: string,
+	currentContent: string,
 ): DiffState {
-	if (!state.status.has(id)) return state;
-	const next = new Map(state.status);
-	next.set(id, status);
-	const hoveredHunkId =
-		state.hoveredHunkId === id && status !== 'pending'
-			? null
-			: state.hoveredHunkId;
-	return { ...state, status: next, hoveredHunkId };
+	return {
+		oldContent,
+		hunks: computeHunks(oldContent, currentContent),
+		hoveredHunkId: null,
+	};
 }
 
 export const diffInvertedEffects = invertedEffects.of((tr) => {
+	// Accept decisions mutate the baseline rather than the document.
+	// Make those baseline changes part of editor undo/redo by restoring the
+	// prior baseline from the transaction's start state.
+	const previous = tr.startState.field(diffField, false)?.oldContent;
 	const out: StateEffect<unknown>[] = [];
-	for (const e of tr.effects) {
-		if (e.is(acceptHunkEffect)) out.push(unacceptHunkEffect.of(e.value));
-		else if (e.is(unacceptHunkEffect)) out.push(acceptHunkEffect.of(e.value));
-		else if (e.is(rejectHunkEffect)) out.push(unrejectHunkEffect.of(e.value));
-		else if (e.is(unrejectHunkEffect)) out.push(rejectHunkEffect.of(e.value));
+
+	for (const effect of tr.effects) {
+		if (effect.is(setBaselineEffect) && previous != null) {
+			out.push(setBaselineEffect.of({ oldContent: previous }));
+		}
 	}
+
 	return out;
 });
 
 export function visibleHunks(state: EditorState): Hunk[] {
 	const ds = state.field(diffField, false);
 	if (!ds || ds.oldContent === null) return [];
-	return ds.hunks.filter((h) => ds.status.get(h.id) === 'pending');
+	return ds.hunks;
 }
 
 export function reverseHunkChange(
@@ -125,4 +99,16 @@ export function reverseHunkChange(
 		to: hunk.newTo,
 		insert: oldContent.slice(hunk.oldFrom, hunk.oldTo),
 	};
+}
+
+export function acceptHunkIntoBaseline(
+	oldContent: string,
+	newContent: string,
+	hunk: Hunk,
+): string {
+	return (
+		oldContent.slice(0, hunk.oldFrom) +
+		newContent.slice(hunk.newFrom, hunk.newTo) +
+		oldContent.slice(hunk.oldTo)
+	);
 }
