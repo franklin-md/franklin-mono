@@ -45,6 +45,30 @@ describe('inspectRuntime', () => {
 		expect(dump.core).toEqual(ctx);
 	});
 
+	it('redacts apiKey from the inspected config snapshot', async () => {
+		const ctx: Ctx = {
+			history: { systemPrompt: '', messages: [] },
+			tools: [],
+			config: {
+				model: 'test-model',
+				provider: 'test-provider',
+				reasoning: 'high',
+				apiKey: 'sk-secret',
+			},
+		};
+
+		const dump = await inspectRuntime(
+			stubRuntime({ core: { messages: [], llmConfig: {} } }, ctx),
+		);
+
+		expect(dump.core.config).toEqual({
+			model: 'test-model',
+			provider: 'test-provider',
+			reasoning: 'high',
+		});
+		expect('apiKey' in dump.core.config).toBe(false);
+	});
+
 	it('preserves sibling state slots alongside the replaced core slot', async () => {
 		const ctx: Ctx = {
 			history: { systemPrompt: '', messages: [] },
