@@ -10,7 +10,10 @@ import {
 	createCoreRegistrar,
 	type WithContext,
 } from '../../../systems/core/compile/registrar/index.js';
-import { buildSystemPromptAssembler } from '../../../systems/core/compile/builders/system-prompt.js';
+import {
+	buildSystemPromptAssembler,
+	type SystemPromptAssembler,
+} from '../../../systems/core/compile/builders/system-prompt.js';
 import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
@@ -62,8 +65,12 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 function bindAssembler(
 	handlers: RuntimeSystemPromptHandler[],
 	ctx: EnvironmentRuntime,
-) {
-	return buildSystemPromptAssembler(bindHandlers(handlers, () => ctx));
+): SystemPromptAssembler {
+	const boundHandlers: SystemPromptHandler[] = bindHandlers(
+		handlers,
+		() => ctx,
+	);
+	return buildSystemPromptAssembler(boundHandlers);
 }
 
 describe('createEnvironmentInfoExtension', () => {
