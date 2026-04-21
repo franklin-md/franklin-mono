@@ -18,7 +18,7 @@ export function ConversationPanel({
 	const turns = useConversationTurns();
 
 	return (
-		<div className="flex flex-1 flex-col overflow-hidden">
+		<div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 			<ConversationView turns={turns.get()} toolUse={toolUse} />
 			<Prompt>
 				<PromptInput additionalControls={additionalControls} />
