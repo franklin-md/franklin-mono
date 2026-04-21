@@ -3,7 +3,7 @@ import { createCoreCompiler, type SpawnFn } from './compile/compiler.js';
 import type { RuntimeSystem } from '../../algebra/system/index.js';
 import type { CoreState } from './state.js';
 import { emptyCoreState } from './state.js';
-import type { CoreRuntime } from './runtime.js';
+import type { CoreRuntime } from './runtime/index.js';
 
 /**
  * `CoreSystem<Runtime>` parameterises Core by the eventual fully-tied

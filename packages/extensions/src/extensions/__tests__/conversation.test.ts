@@ -9,6 +9,7 @@ import type {
 	ToolExecuteParams,
 	Update,
 	TurnEnd,
+	Usage,
 } from '@franklin/mini-acp';
 import { StopCode } from '@franklin/mini-acp';
 import { compileCoreWithStore } from '../../testing/compile-ext.js';
@@ -384,6 +385,50 @@ describe('conversationExtension', () => {
 			kind: 'turnEnd',
 			stopCode: StopCode.Finished,
 			stopMessage: undefined,
+		});
+	});
+
+	it('records usage on the turnEnd block when present', async () => {
+		const { middleware, stores } = await compileConversation();
+
+		const usage: Usage = {
+			tokens: { input: 12, output: 5, cacheRead: 0, cacheWrite: 0, total: 17 },
+			cost: {
+				input: 0.000036,
+				output: 0.00003,
+				cacheRead: 0,
+				cacheWrite: 0,
+				total: 0.000066,
+			},
+		};
+
+		const turnEnd: TurnEnd = {
+			type: 'turnEnd',
+			stopCode: StopCode.Finished,
+			usage,
+		};
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield turnEnd;
+			},
+		});
+
+		const wrapped = apply(middleware.client, target);
+		await collect(
+			wrapped.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const blocks = getTurns(stores)[0]!.response.blocks;
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]).toEqual({
+			kind: 'turnEnd',
+			stopCode: StopCode.Finished,
+			stopMessage: undefined,
+			usage,
 		});
 	});
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Ctx } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
-import type { CoreRuntime } from '../runtime.js';
+import type { CoreRuntime } from '../runtime/index.js';
 
 function stubRuntime(state: Record<string, unknown>, ctx: Ctx): CoreRuntime {
 	return {

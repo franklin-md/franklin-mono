@@ -4,5 +4,5 @@ export type { CoreSystem } from './system.js';
 export { createCoreSystem } from './system.js';
 export type { CoreState } from './state.js';
 export { emptyCoreState } from './state.js';
-export type { CoreRuntime } from './runtime.js';
+export type { CoreRuntime } from './runtime/index.js';
 export { inspectRuntime } from './inspect.js';

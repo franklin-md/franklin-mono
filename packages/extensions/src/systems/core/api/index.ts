@@ -23,8 +23,3 @@ export type {
 	SerializedToolDefinition,
 } from './tools/index.js';
 export { serializeTool, toToolInputSchema } from './tools/index.js';
-export type {
-	ClientMiddleware,
-	ServerMiddleware,
-	FullMiddleware,
-} from './middleware/index.js';

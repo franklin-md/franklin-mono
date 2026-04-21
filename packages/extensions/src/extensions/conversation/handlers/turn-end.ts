@@ -13,5 +13,6 @@ export function handleTurnEnd(turn: ConversationTurn, event: TurnEnd): void {
 		kind: 'turnEnd',
 		stopCode: event.stopCode,
 		stopMessage: event.stopMessage,
+		usage: event.usage,
 	});
 }

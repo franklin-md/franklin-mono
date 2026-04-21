@@ -1,7 +1,7 @@
 import type { Simplify } from '@franklin/lib';
 import type { Ctx } from '@franklin/mini-acp';
 import type { InferState } from '../../algebra/system/types.js';
-import type { CoreRuntime } from './runtime.js';
+import type { CoreRuntime } from './runtime/index.js';
 
 type InspectDump<RT extends CoreRuntime> = Simplify<
 	Omit<InferState<RT>, 'core'> & { core: Ctx }

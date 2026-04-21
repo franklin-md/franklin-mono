@@ -1,6 +1,9 @@
+import type { Usage } from '../../types/usage.js';
+
 import {
 	ANSI_DIM,
 	ANSI_YELLOW,
+	bold,
 	collapseWhitespace,
 	colorAction,
 	paint,
@@ -121,6 +124,18 @@ export function summarizeThrown(error: unknown): string {
 	}
 
 	return summarizeJson(error);
+}
+
+export function summarizeUsage(usage: Usage): string[] {
+	const { tokens, cost } = usage;
+	return [
+		`${bold('tokens')} in=${tokens.input} out=${tokens.output} cacheR=${tokens.cacheRead} cacheW=${tokens.cacheWrite} total=${tokens.total}`,
+		`${bold('cost')}   in=${formatCost(cost.input)} out=${formatCost(cost.output)} cacheR=${formatCost(cost.cacheRead)} cacheW=${formatCost(cost.cacheWrite)} total=${formatCost(cost.total)}`,
+	];
+}
+
+function formatCost(value: number): string {
+	return `$${value.toFixed(4)}`;
 }
 
 export function summarizeJson(value: unknown): string {

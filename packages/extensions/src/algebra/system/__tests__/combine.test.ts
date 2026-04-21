@@ -19,6 +19,7 @@ import {
 	createSessionAdapter,
 	createAgentConnection,
 	StopCode,
+	ZERO_USAGE,
 	type Update,
 	type StreamEvent,
 } from '@franklin/mini-acp';
@@ -278,7 +279,7 @@ describe('combine — three systems (nested)', () => {
 		const runtime = await createRuntime(
 			system,
 			{
-				core: { messages: [], llmConfig: {} },
+				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
 				store: {},
 				env: defaultEnvConfig,
 			},
@@ -323,7 +324,7 @@ describe('combine — three systems (nested)', () => {
 		const runtime = await createRuntime(
 			system,
 			{
-				core: { messages: [], llmConfig: {} },
+				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
 				store: {},
 				env: defaultEnvConfig,
 			},
@@ -351,7 +352,7 @@ describe('combine — three systems (nested)', () => {
 		const runtime = await createRuntime(
 			system,
 			{
-				core: { messages: [], llmConfig: {} },
+				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
 				store: {},
 				env: defaultEnvConfig,
 			},
@@ -390,6 +391,7 @@ describe('combine — three systems (nested)', () => {
 						},
 					],
 					llmConfig: { model: 'gpt-4' },
+					usage: ZERO_USAGE,
 				},
 				store: {},
 				env: defaultEnvConfig,

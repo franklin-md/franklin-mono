@@ -77,6 +77,59 @@ describe('fromAgentEvent', () => {
 			type: 'turnEnd',
 			stopCode: StopCode.AuthKeyInvalid,
 			stopMessage: errorMessage,
+			usage: {
+				tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+			},
+		});
+	});
+
+	it('propagates real pi-ai usage values onto the turnEnd event', () => {
+		const usage = {
+			input: 120,
+			output: 45,
+			cacheRead: 80,
+			cacheWrite: 10,
+			totalTokens: 255,
+			cost: {
+				input: 0.00036,
+				output: 0.000675,
+				cacheRead: 0.00002,
+				cacheWrite: 0.0000375,
+				total: 0.0010925,
+			},
+		};
+
+		const event: AgentEvent = {
+			type: 'agent_end',
+			messages: [
+				{
+					role: 'assistant',
+					content: [],
+					api: 'anthropic-messages',
+					provider: 'anthropic',
+					model: 'claude-sonnet-4-6',
+					usage,
+					stopReason: 'stop',
+					timestamp: Date.now(),
+				},
+			],
+		};
+
+		expect(fromAgentEvent(event, 'msg-2')).toEqual({
+			type: 'turnEnd',
+			stopCode: StopCode.Finished,
+			stopMessage: undefined,
+			usage: {
+				tokens: {
+					input: 120,
+					output: 45,
+					cacheRead: 80,
+					cacheWrite: 10,
+					total: 255,
+				},
+				cost: usage.cost,
+			},
 		});
 	});
 });

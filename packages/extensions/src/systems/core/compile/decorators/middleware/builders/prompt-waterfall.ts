@@ -3,9 +3,9 @@ import type {
 	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,
-} from '../../api/handlers.js';
+} from '../../../../api/handlers.js';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
-import { createPrompt } from '../../api/prompt.js';
+import { createPrompt } from '../../../../api/prompt.js';
 
 export type StreamObservers = {
 	[K in StreamObserverEvent]: StreamObserverHandler<K>[];
