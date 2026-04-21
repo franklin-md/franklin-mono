@@ -3,6 +3,7 @@ import type { FranklinExtension, Platform } from '@franklin/agent/browser';
 import {
 	conversationExtension,
 	createWebExtension,
+	environmentInfoExtension,
 	filesystemExtension,
 	instructionsExtension,
 	spawnExtension,
@@ -34,6 +35,7 @@ const extensionBundles = [
 	filesystemExtension,
 	webExtension,
 	spawnExtension,
+	environmentInfoExtension,
 ];
 const extensions = extensionBundles.map(
 	(bundle: { extension: FranklinExtension }) => bundle.extension,
