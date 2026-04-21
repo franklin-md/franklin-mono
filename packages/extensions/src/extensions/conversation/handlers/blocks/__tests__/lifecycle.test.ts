@@ -5,11 +5,7 @@ import { StopCode } from '@franklin/mini-acp';
 import type { ConversationTurn } from '../../../types.js';
 import { handleToolResult } from '../../tool-result.js';
 import { endBlock, endLastBlock } from '../end.js';
-import {
-	startAndEndNewBlock,
-	startBlock,
-	startNewBlock,
-} from '../start.js';
+import { startAndEndNewBlock, startBlock, startNewBlock } from '../start.js';
 
 function emptyTurn(): ConversationTurn {
 	return {

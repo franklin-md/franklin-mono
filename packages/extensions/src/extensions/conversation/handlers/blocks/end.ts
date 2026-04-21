@@ -4,10 +4,7 @@ import type { AssistantBlock, ConversationTurn } from '../../types.js';
  * Close a specific block's lifecycle. Idempotent — no-op if the block
  * is already closed.
  */
-export function endBlock(
-	block: AssistantBlock,
-	at: number = Date.now(),
-): void {
+export function endBlock(block: AssistantBlock, at: number = Date.now()): void {
 	if (block.endedAt === undefined) block.endedAt = at;
 }
 
