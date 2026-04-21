@@ -265,6 +265,54 @@ describe('debugMiniACP', () => {
 		spy.mockRestore();
 	});
 
+	it('renders usage below turnEnd when present', async () => {
+		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+		const debugged = debugMiniACP(
+			mockClient([
+				{
+					type: 'turnEnd',
+					stopCode: StopCode.Finished,
+					usage: {
+						tokens: {
+							input: 1234,
+							output: 567,
+							cacheRead: 890,
+							cacheWrite: 0,
+							total: 2691,
+						},
+						cost: {
+							input: 0.01234,
+							output: 0.0456,
+							cacheRead: 0.0001,
+							cacheWrite: 0,
+							total: 0.05804,
+						},
+					},
+				},
+			]),
+			'mini',
+		);
+
+		await drain(
+			debugged.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		expect(spy).toHaveBeenCalledWith(
+			`[mini]     ${ANSI_BOLD}turnEnd${ANSI_RESET} ${ANSI_GREEN}Finished (1000)${ANSI_RESET}`,
+		);
+		expect(spy).toHaveBeenCalledWith(
+			`[mini]       ${ANSI_BOLD}tokens${ANSI_RESET} in=1234 out=567 cacheR=890 cacheW=0 total=2691`,
+		);
+		expect(spy).toHaveBeenCalledWith(
+			`[mini]       ${ANSI_BOLD}cost${ANSI_RESET}   in=$0.0123 out=$0.0456 cacheR=$0.0001 cacheW=$0.0000 total=$0.0580`,
+		);
+
+		spy.mockRestore();
+	});
+
 	it('colors cancelled turnEnd in blue', async () => {
 		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 		const debugged = debugMiniACP(

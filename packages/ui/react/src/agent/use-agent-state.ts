@@ -35,15 +35,11 @@ export function useAgentState(
 	selector?: (value: unknown) => unknown,
 ): unknown {
 	const agent = useAgent();
-	const entry = agent.stores.get(storeName);
-
-	if (!entry) {
-		throw new Error(`useAgentState: no store named "${storeName}" on agent`);
-	}
+	const store = agent.getStore(storeName);
 
 	// Is this allowed? This is conditionally calling the hook? (although in both branches it is called.)
 	if (selector !== undefined) {
-		return useStore(entry.store, selector);
+		return useStore(store, selector);
 	}
-	return useStore(entry.store);
+	return useStore(store);
 }

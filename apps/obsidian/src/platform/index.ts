@@ -25,7 +25,7 @@ export function createObsidianPlatform(
 				configureFilesystem: async (fsConfig) => {
 					const fs = createObservableFilesystem(
 						configureFilesystem(
-							createObsidianFilesystem(app.vault, createNodeFilesystem()),
+							createObsidianFilesystem(app, createNodeFilesystem()),
 							fsConfig,
 						),
 					);

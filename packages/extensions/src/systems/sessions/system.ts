@@ -1,4 +1,3 @@
-import type { SessionAPI } from './api/api.js';
 import type {
 	BaseRuntimeSystem,
 	InferAPI,
@@ -8,12 +7,15 @@ import type {
 import type { SessionRuntime } from './runtime/runtime.js';
 import type { SessionCreate } from './runtime/types.js';
 
-// A form of composition. Similar to CombineSystems — wraps a base system
-// with session capabilities (child/fork). Recursive: child/fork produce
-// runtimes that themselves have session capabilities via the manager.
+/**
+ * SessionSystem wraps a base system, contributing session ops
+ * (`child`, `fork`, `removeSelf`) into the runtime only — never on the
+ * compile-time api. Extensions reach session ops via
+ * `ctx.runtime.session.*` from inside handler closures.
+ */
 export type SessionSystem<RTS extends BaseRuntimeSystem> = RuntimeSystem<
 	InferState<RTS>,
-	InferAPI<RTS> & SessionAPI<RTS>,
+	InferAPI<RTS>,
 	SessionRuntime<RTS>
 >;
 
@@ -26,30 +28,21 @@ export function createSessionSystem<RTS extends BaseRuntimeSystem>(
 	return {
 		emptyState: () => system.emptyState(),
 
-		async createCompiler(state: InferState<RTS>) {
-			const baseCompiler = await system.createCompiler(state);
-			const createChild = () => create({ from: id, mode: 'child' });
-			const createFork = () => create({ from: id, mode: 'fork' });
-			const removeSelf = () => remove(id);
+		createCompiler() {
+			const baseCompiler = system.createCompiler();
+			const sessionOps = {
+				child: () => create({ from: id, mode: 'child' }),
+				fork: () => create({ from: id, mode: 'fork' }),
+				removeSelf: () => remove(id),
+			};
 
 			return {
-				api: {
-					...baseCompiler.api,
-					session: {
-						createChild,
-						createFork,
-						removeSelf,
-					},
-				},
-				async build() {
-					const baseRuntime = await baseCompiler.build();
+				api: baseCompiler.api,
+				async build(state, getRuntime) {
+					const baseRuntime = await baseCompiler.build(state, getRuntime);
 					return {
 						...baseRuntime,
-						session: {
-							child: createChild,
-							fork: createFork,
-							removeSelf,
-						},
+						session: sessionOps,
 					};
 				},
 			};

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { withSetup } from '../setup.js';
+import { withSetup, withSetupCompiler } from '../setup.js';
 import type { RuntimeSystem } from '../types.js';
 import type { BaseRuntime } from '../../runtime/types.js';
+import type { Compiler } from '../../compiler/types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -14,21 +15,23 @@ type TestRuntime = BaseRuntime<TestState> & { getValue(): number };
 function createTestSystem(): RuntimeSystem<TestState, TestAPI, TestRuntime> {
 	return {
 		emptyState: () => ({ value: 0 }),
-		async createCompiler(state: TestState) {
-			let registered = state.value;
+		createCompiler(): Compiler<TestAPI, TestState, TestRuntime> {
+			let registered: number | undefined;
 			return {
 				api: {
 					register(n: number) {
 						registered = n;
 					},
 				},
-				async build(): Promise<TestRuntime> {
-					const val = registered;
+				async build(state) {
+					const val = registered ?? state.value;
 					return {
 						getValue: () => val,
-						state: async () => ({ value: val }),
-						fork: async () => ({ value: val }),
-						child: async () => ({ value: 0 }),
+						state: {
+							get: async () => ({ value: val }),
+							fork: async () => ({ value: val }),
+							child: async () => ({ value: 0 }),
+						},
 						dispose: async () => {},
 						subscribe: () => () => {},
 					};
@@ -38,8 +41,12 @@ function createTestSystem(): RuntimeSystem<TestState, TestAPI, TestRuntime> {
 	};
 }
 
+const noGetRuntime = (): never => {
+	throw new Error('getRuntime not used in this test');
+};
+
 // ---------------------------------------------------------------------------
-// Tests
+// withSetup (system-level)
 // ---------------------------------------------------------------------------
 
 describe('withSetup', () => {
@@ -51,10 +58,10 @@ describe('withSetup', () => {
 			order.push('setup');
 		});
 
-		const compiler = await decorated.createCompiler({ value: 42 });
+		const compiler = decorated.createCompiler();
 
 		order.push('before-build');
-		await compiler.build();
+		await compiler.build({ value: 42 }, noGetRuntime);
 		order.push('after-build');
 
 		expect(order).toEqual(['before-build', 'setup', 'after-build']);
@@ -68,10 +75,10 @@ describe('withSetup', () => {
 			captured = runtime;
 		});
 
-		const compiler = await decorated.createCompiler({ value: 7 });
-		const runtime = await compiler.build();
+		const compiler = decorated.createCompiler();
+		const built = await compiler.build({ value: 7 }, noGetRuntime);
 
-		expect(captured).toBe(runtime);
+		expect(captured).toBe(built);
 		expect(captured!.getValue()).toBe(7);
 	});
 
@@ -83,8 +90,8 @@ describe('withSetup', () => {
 			capturedState = state;
 		});
 
-		const compiler = await decorated.createCompiler({ value: 99 });
-		await compiler.build();
+		const compiler = decorated.createCompiler();
+		await compiler.build({ value: 99 }, noGetRuntime);
 
 		expect(capturedState).toEqual({ value: 99 });
 	});
@@ -100,25 +107,54 @@ describe('withSetup', () => {
 		const system = createTestSystem();
 		const decorated = withSetup(system, async () => {});
 
-		const compiler = await decorated.createCompiler({ value: 0 });
+		const compiler = decorated.createCompiler();
 		compiler.api.register(42);
-		const runtime = await compiler.build();
+		const built = await compiler.build({ value: 0 }, noGetRuntime);
 
-		expect(runtime.getValue()).toBe(42);
+		expect(built.getValue()).toBe(42);
 	});
 
-	it('setup can mutate the runtime', async () => {
+	it('setup can observe the runtime', async () => {
 		const system = createTestSystem();
 		const setupSpy = vi.fn();
 
 		const decorated = withSetup(system, async (runtime) => {
-			// Simulate a side effect like setContext — verify it's called
 			setupSpy(runtime.getValue());
 		});
 
-		const compiler = await decorated.createCompiler({ value: 5 });
-		await compiler.build();
+		const compiler = decorated.createCompiler();
+		await compiler.build({ value: 5 }, noGetRuntime);
 
 		expect(setupSpy).toHaveBeenCalledWith(5);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// withSetupCompiler (compiler-level)
+// ---------------------------------------------------------------------------
+
+describe('withSetupCompiler', () => {
+	it('wraps build to run setup after inner build resolves', async () => {
+		const system = createTestSystem();
+		const inner = system.createCompiler();
+
+		const order: string[] = [];
+		const decorated = withSetupCompiler(inner, async () => {
+			order.push('setup');
+		});
+
+		order.push('pre');
+		await decorated.build({ value: 1 }, noGetRuntime);
+		order.push('post');
+
+		expect(order).toEqual(['pre', 'setup', 'post']);
+	});
+
+	it('preserves the inner api', async () => {
+		const system = createTestSystem();
+		const inner = system.createCompiler();
+		const decorated = withSetupCompiler(inner, async () => {});
+
+		expect(decorated.api).toBe(inner.api);
 	});
 });

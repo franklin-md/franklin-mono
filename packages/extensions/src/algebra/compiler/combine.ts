@@ -1,22 +1,36 @@
 import type { AssertNoOverlap } from '@franklin/lib';
 import type { BaseAPI } from '../api/index.js';
+import type {
+	BaseRuntime,
+	CombinedRuntime,
+	RuntimeExtras,
+} from '../runtime/index.js';
+import { combineRuntimes } from '../runtime/index.js';
 import type { Compiler } from './types.js';
+import type { BaseState } from '../state/types.js';
 
-/**
- * Combine two compilers into one whose API is A1 & A2
- * and whose result is R1 & R2.
- *
- * Each compiler collects independently; the extension sees the merged API.
- */
-export function combine<A1 extends BaseAPI, R1, A2 extends BaseAPI, R2>(
-	c1: Compiler<A1, R1>,
-	c2: Compiler<A2, R2> & AssertNoOverlap<A1, A2>,
-): Compiler<A1 & A2, R1 & R2> {
+export function combine<
+	API1 extends BaseAPI,
+	API2 extends BaseAPI & AssertNoOverlap<API1, API2>,
+	S1 extends BaseState,
+	S2 extends BaseState & AssertNoOverlap<S1, S2>,
+	R1 extends BaseRuntime<S1>,
+	R2 extends BaseRuntime<S2> &
+		AssertNoOverlap<RuntimeExtras<S1, R1>, RuntimeExtras<S2, R2>>,
+>(
+	c1: Compiler<API1, S1, R1>,
+	c2: Compiler<API2, S2, R2>,
+): Compiler<API1 & API2, S1 & S2, CombinedRuntime<S1, S2, R1, R2>> {
+	type CR = CombinedRuntime<S1, S2, R1, R2>;
 	return {
 		api: { ...c1.api, ...c2.api },
-		async build() {
-			const [r1, r2] = await Promise.all([c1.build(), c2.build()]);
-			return { ...r1, ...r2 } as R1 & R2;
+		async build(state, getRuntime): Promise<CR> {
+			// TODO: Can we type this correctly?
+			const [r1, r2] = await Promise.all([
+				c1.build(state, getRuntime as unknown as () => R1),
+				c2.build(state, getRuntime as unknown as () => R2),
+			]);
+			return combineRuntimes<S1, R1, S2, R2>(r1, r2);
 		},
 	};
 }

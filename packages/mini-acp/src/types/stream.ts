@@ -1,6 +1,7 @@
 import type { Content } from './content.js';
 import type { Message } from './message.js';
 import type { StopCode } from './stop-code.js';
+import type { Usage } from './usage.js';
 
 // ---------------------------------------------------------------------------
 // Stream events — emitted during a prompt turn
@@ -34,6 +35,7 @@ export type TurnEnd = {
 	type: 'turnEnd';
 	stopCode: StopCode;
 	stopMessage?: string;
+	usage?: Usage;
 };
 
 export type StreamEvent = TurnStart | Chunk | Update | TurnEnd;

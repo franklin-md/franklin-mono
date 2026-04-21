@@ -18,29 +18,24 @@ function makeMockRuntime(turns: ConversationTurn[]): FranklinRuntime {
 	const listeners = new Set<(v: unknown) => void>();
 
 	const store = {
-		ref: 'mock',
-		sharing: 'private',
-		store: {
-			get: () => turns,
-			set: vi.fn(),
-			subscribe: (listener: (v: unknown) => void) => {
-				listeners.add(listener);
-				return () => {
-					listeners.delete(listener);
-				};
-			},
+		get: () => turns,
+		set: vi.fn(),
+		subscribe: (listener: (v: unknown) => void) => {
+			listeners.add(listener);
+			return () => {
+				listeners.delete(listener);
+			};
 		},
 	};
 
-	const stores = new Map<string, typeof store>();
-	stores.set(conversationKey, store);
-
 	return {
-		state: vi.fn(async () => ({})),
+		state: {
+			get: vi.fn(async () => ({})),
+		},
 		subscribe: vi.fn(() => () => {}),
-		stores: {
-			get: (name: string) => stores.get(name),
-			has: (name: string) => stores.has(name),
+		getStore: (name: string) => {
+			if (name === conversationKey) return store;
+			throw new Error(`No store named "${name}"`);
 		},
 	} as unknown as FranklinRuntime;
 }

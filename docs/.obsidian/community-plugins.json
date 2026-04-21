@@ -1,1 +1,6 @@
-["obsidian-outliner", "note-refactor-obsidian", "obsidian-linter"]
+[
+  "obsidian-outliner",
+  "note-refactor-obsidian",
+  "obsidian-linter",
+  "obsidian-vimrc-support"
+]

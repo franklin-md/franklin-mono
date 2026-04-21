@@ -68,19 +68,12 @@ describe('createEnvironmentSystem', () => {
 		expect(runtime.environment.filesystem).toBeDefined();
 	});
 
-	it('extensions can access the environment via getEnvironment', async () => {
+	it('runtime exposes the environment to handlers', async () => {
 		const { factory } = mockFactory();
 		const system = createEnvironmentSystem(factory);
 
-		let received: ReconfigurableEnvironment | undefined;
-		await createRuntime(system, { env: defaultConfig }, [
-			(api) => {
-				received = api.getEnvironment();
-			},
-		]);
-
-		expect(received).toBeDefined();
-		expect(received!.filesystem).toBeDefined();
+		const runtime = await createRuntime(system, { env: defaultConfig }, []);
+		expect(runtime.environment.filesystem).toBeDefined();
 	});
 
 	it('state returns the environment config', async () => {
@@ -89,7 +82,7 @@ describe('createEnvironmentSystem', () => {
 
 		const runtime = await createRuntime(system, { env: defaultConfig }, []);
 
-		expect(await runtime.state()).toEqual({ env: defaultConfig });
+		expect(await runtime.state.get()).toEqual({ env: defaultConfig });
 	});
 
 	it('fork returns a clone of the keyed config', async () => {
@@ -97,10 +90,10 @@ describe('createEnvironmentSystem', () => {
 		const system = createEnvironmentSystem(factory);
 
 		const runtime = await createRuntime(system, { env: defaultConfig }, []);
-		const forked = await runtime.fork();
+		const forked = await runtime.state.fork();
 
 		expect(forked).toEqual({ env: defaultConfig });
-		expect(forked.env).not.toBe((await runtime.state()).env);
+		expect(forked.env).not.toBe((await runtime.state.get()).env);
 	});
 
 	it('child returns a clone of the keyed config', async () => {
@@ -108,10 +101,10 @@ describe('createEnvironmentSystem', () => {
 		const system = createEnvironmentSystem(factory);
 
 		const runtime = await createRuntime(system, { env: defaultConfig }, []);
-		const childState = await runtime.child();
+		const childState = await runtime.state.child();
 
 		expect(childState).toEqual({ env: defaultConfig });
-		expect(childState.env).not.toBe((await runtime.state()).env);
+		expect(childState.env).not.toBe((await runtime.state.get()).env);
 	});
 
 	it('dispose calls the environment disposable', async () => {

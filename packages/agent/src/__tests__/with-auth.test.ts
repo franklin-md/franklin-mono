@@ -1,11 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { CoreRuntime, CoreState } from '@franklin/extensions';
-import { createCoreSystem } from '@franklin/extensions';
+import { createCoreSystem, createRuntime } from '@franklin/extensions';
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
 	createSessionAdapter,
 	createAgentConnection,
 	StopCode,
+	ZERO_USAGE,
 } from '@franklin/mini-acp';
 import {
 	authenticateAgent,
@@ -55,15 +56,17 @@ function mockCoreRuntime(): CoreRuntime {
 		prompt: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
-		state: vi.fn(async () => ({
-			core: { messages: [], llmConfig: {} },
-		})),
-		fork: vi.fn(async () => ({
-			core: { messages: [], llmConfig: {} },
-		})),
-		child: vi.fn(async () => ({
-			core: { messages: [], llmConfig: {} },
-		})),
+		state: {
+			get: vi.fn(async () => ({
+				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
+			})),
+			fork: vi.fn(async () => ({
+				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
+			})),
+			child: vi.fn(async () => ({
+				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
+			})),
+		},
 		dispose: vi.fn(async () => {}),
 	} as unknown as CoreRuntime;
 }
@@ -138,6 +141,7 @@ describe('reconnectAgent', () => {
 			core: {
 				messages: [],
 				llmConfig: { provider: 'anthropic' },
+				usage: ZERO_USAGE,
 			},
 		};
 
@@ -156,6 +160,7 @@ describe('reconnectAgent', () => {
 			core: {
 				messages: [],
 				llmConfig: {},
+				usage: ZERO_USAGE,
 			},
 		};
 
@@ -187,14 +192,17 @@ describe('withAuth', () => {
 		const auth = mockAuthManager({ anthropic: 'sk-build-test' });
 
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider: 'anthropic' },
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'anthropic' },
+					usage: ZERO_USAGE,
+				},
 			},
-		});
-
-		const runtime = await compiler.build();
+			[],
+		);
 
 		// TODO: We can't easily inspect that setLLMConfig was called on the
 		// real runtime (it's behind the CtxTracker), so we just verify
@@ -212,13 +220,17 @@ describe('withAuth', () => {
 		});
 
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider: 'anthropic' },
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'anthropic' },
+					usage: ZERO_USAGE,
+				},
 			},
-		});
-		const runtime = await compiler.build();
+			[],
+		);
 
 		// Clear the initial login call
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
@@ -229,7 +241,7 @@ describe('withAuth', () => {
 		expect(auth.getApiKey).toHaveBeenCalledWith('openai-codex');
 
 		// Verify the runtime now has the new provider's config
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.llmConfig.provider).toBe('openai-codex');
 	});
 
@@ -239,13 +251,17 @@ describe('withAuth', () => {
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider: 'anthropic' },
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'anthropic' },
+					usage: ZERO_USAGE,
+				},
 			},
-		});
-		const runtime = await compiler.build();
+			[],
+		);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Same provider, different model — still resolves apiKey
@@ -266,13 +282,17 @@ describe('withAuth', () => {
 		});
 
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider: 'anthropic' },
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'anthropic' },
+					usage: ZERO_USAGE,
+				},
 			},
-		});
-		const runtime = await compiler.build();
+			[],
+		);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Provider change WITH explicit apiKey — should not resolve
@@ -290,13 +310,17 @@ describe('withAuth', () => {
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider: 'anthropic' },
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'anthropic' },
+					usage: ZERO_USAGE,
+				},
 			},
-		});
-		const runtime = await compiler.build();
+			[],
+		);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
 		// Switch to a provider with no stored key — should pass through without apiKey
@@ -307,7 +331,7 @@ describe('withAuth', () => {
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('openrouter');
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.llmConfig.provider).toBe('openrouter');
 	});
 });
@@ -324,13 +348,17 @@ describe('withAuth live sync', () => {
 		const spawn = createMockSpawn();
 		const base = createCoreSystem(spawn);
 		const decorated = withAuth(base, auth);
-		const compiler = await decorated.createCompiler({
-			core: {
-				messages: [],
-				llmConfig: { provider },
+		return createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider },
+					usage: ZERO_USAGE,
+				},
 			},
-		});
-		return await compiler.build();
+			[],
+		);
 	}
 
 	it('pushes new key when provider credentials change', async () => {

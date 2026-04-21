@@ -36,6 +36,8 @@ export type {
 	Chunk,
 	TurnEnd,
 	StreamEvent,
+	// Usage
+	Usage,
 	// Errors
 	AuthError,
 	OAuthError,
@@ -82,9 +84,13 @@ export {
 	debugMiniACP,
 	createSessionAdapter,
 	CtxTracker,
+	UsageTracker,
+	ZERO_USAGE,
 	trackAgent,
 	trackTurn,
 	trackClient,
+	trackUsage,
+	decorateTurn,
 } from './protocol/index.js';
 
 // Utils

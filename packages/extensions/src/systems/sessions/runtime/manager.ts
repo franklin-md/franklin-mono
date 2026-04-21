@@ -3,7 +3,6 @@ import type {
 	InferAPI,
 	InferState,
 } from '../../../algebra/system/types.js';
-import type { SessionAPI } from '../api/api.js';
 import type { Extension } from '../../../algebra/types/extension.js';
 import type { SessionCollection } from './collection.js';
 import type { SessionRuntime } from './runtime.js';
@@ -16,13 +15,13 @@ import type { Session, SessionCreateInput } from './types.js';
 type SessionManagerOptions<RTS extends BaseRuntimeSystem> = {
 	system: RTS;
 	collection: SessionCollection<SessionRuntime<RTS>>;
-	extensions: Extension<InferAPI<RTS> & SessionAPI<RTS>>[];
+	extensions: Extension<InferAPI<RTS>>[];
 };
 
 export class SessionManager<RTS extends BaseRuntimeSystem> {
 	private readonly system: RTS;
 	private readonly collection: SessionCollection<SessionRuntime<RTS>>;
-	private readonly extensions: Extension<InferAPI<RTS> & SessionAPI<RTS>>[];
+	private readonly extensions: Extension<InferAPI<RTS>>[];
 
 	constructor(opts: SessionManagerOptions<RTS>) {
 		this.system = opts.system;
@@ -69,7 +68,10 @@ export class SessionManager<RTS extends BaseRuntimeSystem> {
 			const source = this.collection.get(options.from);
 			if (!source) throw new Error(`Session ${options.from} not found`);
 			const rt: BaseRuntime<InferState<RTS>> = source.runtime;
-			state = options.mode === 'fork' ? await rt.fork() : await rt.child();
+			state =
+				options.mode === 'fork'
+					? await rt.state.fork()
+					: await rt.state.child();
 		} else {
 			state = this.system.emptyState();
 		}

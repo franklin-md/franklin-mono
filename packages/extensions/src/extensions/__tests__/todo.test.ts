@@ -1,14 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createCoreCompiler } from '../../systems/core/compile/compiler.js';
-import { createStoreCompiler } from '../../systems/store/compile/compiler.js';
-import { compile } from '../../algebra/compiler/compile.js';
-import { combine } from '../../algebra/compiler/combine.js';
 import { apply } from '@franklin/lib/middleware';
-import { createEmptyStoreResult } from '../../systems/store/api/registry/result.js';
 import type { MiniACPClient, ToolResult } from '@franklin/mini-acp';
+import { compileCoreWithStore } from '../../testing/compile-ext.js';
 import { todoExtension } from '../todo/extension.js';
+import { todoKey } from '../todo/key.js';
 import type { Todo } from '../todo/types.js';
-import { StoreRegistry } from '../../systems/store/api/registry/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -16,7 +12,6 @@ import { StoreRegistry } from '../../systems/store/api/registry/index.js';
 
 type StubOverrides = { [K in keyof MiniACPClient]?: (...args: any[]) => any };
 type PromptParams = Parameters<MiniACPClient['prompt']>[0];
-type SetContextParams = Parameters<MiniACPClient['setContext']>[0];
 
 function stubClient(overrides: StubOverrides = {}): MiniACPClient {
 	return {
@@ -50,26 +45,12 @@ function getToolResultText(result: ToolResult): string {
 
 describe('todoExtension', () => {
 	function compileWithTodo() {
-		const registry = new StoreRegistry();
-		const seed = createEmptyStoreResult(registry);
-		const compiler = combine(createCoreCompiler(), createStoreCompiler(seed));
-		return compile(compiler, todoExtension());
+		return compileCoreWithStore(todoExtension());
 	}
 
-	it('registers 3 tools into setContext', async () => {
-		const result = await compileWithTodo();
+	it('registers 3 tools', async () => {
+		const { tools } = await compileWithTodo();
 
-		const received: SetContextParams[] = [];
-		const target = stubClient({
-			setContext: async (params: SetContextParams) => {
-				received.push(params);
-			},
-		});
-
-		const wrapped = apply(result.client, target);
-		await wrapped.setContext({});
-
-		const tools = (received[0] as { tools: { name: string }[] }).tools;
 		expect(tools).toHaveLength(3);
 		expect(tools.map((t) => t.name).sort()).toEqual([
 			'add_todo',
@@ -79,9 +60,9 @@ describe('todoExtension', () => {
 	});
 
 	it('add_todo tool creates a todo', async () => {
-		const result = await compileWithTodo();
+		const { middleware } = await compileWithTodo();
 
-		const addResult = await result.server.toolExecute(
+		const addResult = await middleware.server.toolExecute(
 			{
 				call: {
 					type: 'toolCall',
@@ -99,11 +80,10 @@ describe('todoExtension', () => {
 	});
 
 	it('complete_todo marks a todo as completed', async () => {
-		const result = await compileWithTodo();
+		const { middleware } = await compileWithTodo();
 		const next = vi.fn();
 
-		// Add a todo first
-		const addResult = await result.server.toolExecute(
+		const addResult = await middleware.server.toolExecute(
 			{
 				call: {
 					type: 'toolCall',
@@ -117,8 +97,7 @@ describe('todoExtension', () => {
 
 		const { id } = JSON.parse(getToolResultText(addResult)) as { id: string };
 
-		// Complete it
-		await result.server.toolExecute(
+		await middleware.server.toolExecute(
 			{
 				call: {
 					type: 'toolCall',
@@ -130,8 +109,7 @@ describe('todoExtension', () => {
 			next,
 		);
 
-		// Verify via list
-		const listResult = await result.server.toolExecute(
+		const listResult = await middleware.server.toolExecute(
 			{
 				call: {
 					type: 'toolCall',
@@ -151,10 +129,9 @@ describe('todoExtension', () => {
 	});
 
 	it('injects formatted todos into prompt params', async () => {
-		const result = await compileWithTodo();
+		const { middleware } = await compileWithTodo();
 
-		// Add a todo
-		await result.server.toolExecute(
+		await middleware.server.toolExecute(
 			{
 				call: {
 					type: 'toolCall',
@@ -166,7 +143,6 @@ describe('todoExtension', () => {
 			vi.fn(),
 		);
 
-		// Now call prompt — todos should be prepended
 		const received: PromptParams[] = [];
 		const target = stubClient({
 			prompt: async function* (params: PromptParams) {
@@ -175,7 +151,7 @@ describe('todoExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -186,15 +162,13 @@ describe('todoExtension', () => {
 		const params = received[0] as {
 			content: { type: string; text: string }[];
 		};
-		// First content block should be the todos injection
 		expect(params.content[0]?.text).toContain('<todos>');
 		expect(params.content[0]?.text).toContain('Buy milk');
-		// Original content preserved
 		expect(params.content[1]?.text).toBe('hello');
 	});
 
 	it('no injection when todo list is empty', async () => {
-		const result = await compileWithTodo();
+		const { middleware } = await compileWithTodo();
 
 		const received: PromptParams[] = [];
 		const target = stubClient({
@@ -204,7 +178,7 @@ describe('todoExtension', () => {
 			},
 		});
 
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 		await collect(
 			wrapped.prompt({
 				role: 'user',
@@ -219,11 +193,10 @@ describe('todoExtension', () => {
 		expect(params.content[0]?.text).toBe('hello');
 	});
 
-	it('stores todos in a store accessible via StoreResult', async () => {
-		const result = await compileWithTodo();
+	it('todos end up in the store runtime', async () => {
+		const { middleware, stores } = await compileWithTodo();
 
-		// Add a todo
-		await result.server.toolExecute(
+		await middleware.server.toolExecute(
 			{
 				call: {
 					type: 'toolCall',
@@ -235,12 +208,7 @@ describe('todoExtension', () => {
 			vi.fn(),
 		);
 
-		const todoStore = result.stores.get('todo');
-		expect(todoStore).toBeDefined();
-		if (!todoStore) {
-			throw new Error('Expected todo store to exist');
-		}
-		const todos = todoStore.store.get() as Todo[];
+		const todos = stores.getStore(todoKey).get();
 		expect(todos).toHaveLength(1);
 		expect(todos[0]?.text).toBe('Test store');
 	});

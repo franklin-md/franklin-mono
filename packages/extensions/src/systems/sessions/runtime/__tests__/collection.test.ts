@@ -1,15 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SessionCollection } from '../collection.js';
 import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
-import type { EmptyState } from '../../../empty/state.js';
+import type { IdentityState } from '../../../identity/state.js';
 
-type TestRuntime = BaseRuntime<EmptyState>;
+type TestRuntime = BaseRuntime<IdentityState>;
 
 function mockRuntime(): TestRuntime {
 	return {
-		state: vi.fn(async () => ({})),
-		fork: vi.fn(async () => ({})),
-		child: vi.fn(async () => ({})),
+		state: {
+			get: vi.fn(async () => ({})),
+			fork: vi.fn(async () => ({})),
+			child: vi.fn(async () => ({})),
+		},
 		dispose: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
 	};

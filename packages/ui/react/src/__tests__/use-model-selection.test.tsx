@@ -23,12 +23,14 @@ function makeMockRuntime(opts?: { provider?: string; model?: string }): {
 	const listeners = new Set<Listener>();
 
 	const runtime = {
-		state: vi.fn(async () => ({
-			core: {
-				messages: [],
-				llmConfig: { provider, model },
-			},
-		})),
+		state: {
+			get: vi.fn(async () => ({
+				core: {
+					messages: [],
+					llmConfig: { provider, model },
+				},
+			})),
+		},
 		setLLMConfig: vi.fn(async () => {
 			for (const l of listeners) l();
 		}),

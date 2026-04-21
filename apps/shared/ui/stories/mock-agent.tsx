@@ -48,8 +48,8 @@ export function createMockRuntime(opts?: {
 	const conversationKey = conversationExtension.keys.conversation;
 	const conversationStore = createMockStore(opts?.turns ?? []);
 
-	const stores = new Map<string, ReturnType<typeof createMockStore>>();
-	stores.set(
+	const storeEntries = new Map<string, ReturnType<typeof createMockStore>>();
+	storeEntries.set(
 		conversationKey,
 		conversationStore as ReturnType<typeof createMockStore>,
 	);
@@ -61,16 +61,16 @@ export function createMockRuntime(opts?: {
 				llmConfig: { reasoning, provider, model },
 			},
 		}),
-		setContext: async () => {},
 		subscribe: () => () => {},
 		prompt: async function* () {},
 		cancel: async () => {},
 		dispose: async () => {},
 		fork: async () => ({}),
 		child: async () => ({}),
-		stores: {
-			get: (name: string) => stores.get(name),
-			has: (name: string) => stores.has(name),
+		getStore: (name: string) => {
+			const entry = storeEntries.get(name);
+			if (!entry) throw new Error(`No mock store "${name}"`);
+			return entry.store;
 		},
 		environment: {},
 	} as unknown as FranklinRuntime;

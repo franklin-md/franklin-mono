@@ -1,16 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { MiniACPClient, TurnEnd } from '@franklin/mini-acp';
 import { StopCode } from '@franklin/mini-acp';
-import { createCoreCompiler } from '../../systems/core/compile/compiler.js';
-import { createStoreCompiler } from '../../systems/store/compile/compiler.js';
-import { compile } from '../../algebra/compiler/compile.js';
-import { combine } from '../../algebra/compiler/combine.js';
 import { apply } from '@franklin/lib/middleware';
-import { createEmptyStoreResult } from '../../systems/store/api/registry/result.js';
-import { StoreRegistry } from '../../systems/store/api/registry/index.js';
-import type { Store } from '../../systems/store/api/types.js';
+import { compileCoreWithStore } from '../../testing/compile-ext.js';
 import { createStatusControl } from '../status/control.js';
 import { statusExtension } from '../status/extension.js';
+import { statusKey } from '../status/key.js';
+import type { StoreRuntime } from '../../systems/store/runtime.js';
 import type { StatusState } from '../status/types.js';
 
 type StubOverrides = { [K in keyof MiniACPClient]?: (...args: any[]) => any };
@@ -32,29 +28,23 @@ async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
 }
 
 function compileWithStatus() {
-	const registry = new StoreRegistry();
-	const seed = createEmptyStoreResult(registry);
-	const compiler = combine(createCoreCompiler(), createStoreCompiler(seed));
-	return compile(compiler, statusExtension());
+	return compileCoreWithStore(statusExtension());
 }
 
-function getStatus(
-	result: Awaited<ReturnType<typeof compileWithStatus>>,
-): StatusState {
-	return result.stores.get('status')!.store.get() as StatusState;
+function getStatus(stores: StoreRuntime): StatusState {
+	return stores.getStore(statusKey).get();
 }
 
 describe('statusExtension', () => {
 	it('initializes the status store to idle', async () => {
-		const result = await compileWithStatus();
-
-		expect(getStatus(result)).toBe('idle');
+		const { stores } = await compileWithStatus();
+		expect(getStatus(stores)).toBe('idle');
 	});
 
 	it('moves to in-progress when a prompt is sent', async () => {
-		const result = await compileWithStatus();
+		const { middleware, stores } = await compileWithStatus();
 		const target = stubClient();
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 
 		await collect(
 			wrapped.prompt({
@@ -63,18 +53,18 @@ describe('statusExtension', () => {
 			}),
 		);
 
-		expect(getStatus(result)).toBe('in-progress');
+		expect(getStatus(stores)).toBe('in-progress');
 	});
 
 	it('moves to unread when the turn ends', async () => {
-		const result = await compileWithStatus();
+		const { middleware, stores } = await compileWithStatus();
 		const turnEnd: TurnEnd = { type: 'turnEnd', stopCode: StopCode.Finished };
 		const target = stubClient({
 			prompt: async function* () {
 				yield turnEnd;
 			},
 		});
-		const wrapped = apply(result.client, target);
+		const wrapped = apply(middleware.client, target);
 
 		await collect(
 			wrapped.prompt({
@@ -83,18 +73,15 @@ describe('statusExtension', () => {
 			}),
 		);
 
-		expect(getStatus(result)).toBe('unread');
+		expect(getStatus(stores)).toBe('unread');
 	});
 
 	it('markRead clears unread back to idle', async () => {
-		const result = await compileWithStatus();
-		const entry = result.stores.get('status');
-		expect(entry).toBeDefined();
-
-		const control = createStatusControl(entry!.store as Store<StatusState>);
+		const { stores } = await compileWithStatus();
+		const control = createStatusControl(stores.getStore(statusKey));
 		control.setUnread();
 		control.markRead();
 
-		expect(getStatus(result)).toBe('idle');
+		expect(getStatus(stores)).toBe('idle');
 	});
 });

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { z } from 'zod';
 import { createCoreSystem } from '../system.js';
 import { createRuntime } from '../../../algebra/system/create.js';
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
@@ -6,9 +7,11 @@ import {
 	createSessionAdapter,
 	createAgentConnection,
 	StopCode,
+	ZERO_USAGE,
 	type Ctx,
 	type Update,
 	type StreamEvent,
+	type Usage,
 } from '@franklin/mini-acp';
 import type { CoreAPI } from '../api/api.js';
 
@@ -16,7 +19,7 @@ import type { CoreAPI } from '../api/api.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createMockSpawn(onPrompt?: (ctx: Ctx) => void) {
+function createMockSpawn(onPrompt?: (ctx: Ctx) => void, turnUsage?: Usage) {
 	return async () => {
 		const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
 		const connection = createAgentConnection(agentSide);
@@ -36,6 +39,7 @@ function createMockSpawn(onPrompt?: (ctx: Ctx) => void) {
 					yield {
 						type: 'turnEnd' as const,
 						stopCode: StopCode.Finished,
+						...(turnUsage ? { usage: turnUsage } : {}),
 					};
 				},
 				async cancel() {},
@@ -68,7 +72,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[],
 		);
 
@@ -84,7 +88,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[],
 		);
 
@@ -106,11 +110,11 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core).toBeDefined();
 		expect(state.core.messages).toEqual([]);
 
@@ -122,7 +126,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[],
 		);
 
@@ -133,7 +137,7 @@ describe('createCoreSystem', () => {
 			}),
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.messages.length).toBeGreaterThanOrEqual(2);
 
 		await runtime.dispose();
@@ -151,12 +155,13 @@ describe('createCoreSystem', () => {
 						model: 'test-model',
 						provider: 'test-provider',
 					},
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.core.llmConfig.model).toBe('test-model');
 		expect(state.core.llmConfig.provider).toBe('test-provider');
 
@@ -175,12 +180,13 @@ describe('createCoreSystem', () => {
 						model: 'test-model',
 						provider: 'test-provider',
 					},
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
 		);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect('apiKey' in state.core.llmConfig).toBe(false);
 
 		await runtime.dispose();
@@ -200,16 +206,17 @@ describe('createCoreSystem', () => {
 						},
 					],
 					llmConfig: { model: 'test' },
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
 		);
 
-		const forked = await runtime.fork();
+		const forked = await runtime.state.fork();
 		expect(forked.core.messages).toHaveLength(1);
 		expect(forked.core.llmConfig.model).toBe('test');
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(forked.core.messages).not.toBe(state.core.messages);
 
 		await runtime.dispose();
@@ -229,12 +236,13 @@ describe('createCoreSystem', () => {
 						},
 					],
 					llmConfig: { model: 'test' },
+					usage: ZERO_USAGE,
 				},
 			},
 			[],
 		);
 
-		const childState = await runtime.child();
+		const childState = await runtime.state.child();
 		expect(childState.core.messages).toHaveLength(0);
 		expect(childState.core.llmConfig.model).toBe('test');
 
@@ -246,7 +254,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[],
 		);
 
@@ -258,7 +266,7 @@ describe('createCoreSystem', () => {
 
 		const runtime = await createRuntime(
 			system,
-			{ core: { messages: [], llmConfig: {} } },
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[
 				(api: CoreAPI) => {
 					api.on('prompt', (_params) => {
@@ -295,6 +303,7 @@ describe('createCoreSystem', () => {
 				core: {
 					messages: [],
 					llmConfig: {},
+					usage: ZERO_USAGE,
 				},
 			},
 			[
@@ -318,6 +327,42 @@ describe('createCoreSystem', () => {
 		await runtime.dispose();
 	});
 
+	it('registered tools reach the agent at bootstrap', async () => {
+		let capturedCtx: Ctx | undefined;
+		const system = createCoreSystem(
+			createMockSpawn((ctx) => {
+				capturedCtx = ctx;
+			}),
+		);
+
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
+			[
+				(api: CoreAPI) => {
+					api.registerTool({
+						name: 'my_tool',
+						description: 'does things',
+						schema: z.object({ x: z.string() }),
+						execute: async () => 'ok',
+					});
+				},
+			],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		expect(capturedCtx!.tools).toHaveLength(1);
+		expect(capturedCtx!.tools[0]?.name).toBe('my_tool');
+
+		await runtime.dispose();
+	});
+
 	it('multiple systemPrompt handlers compose in registration order', async () => {
 		let capturedCtx: Ctx | undefined;
 		const system = createCoreSystem(
@@ -332,6 +377,7 @@ describe('createCoreSystem', () => {
 				core: {
 					messages: [],
 					llmConfig: {},
+					usage: ZERO_USAGE,
 				},
 			},
 			[
@@ -354,6 +400,145 @@ describe('createCoreSystem', () => {
 		);
 
 		expect(capturedCtx!.history.systemPrompt).toBe('first\n\nsecond');
+
+		await runtime.dispose();
+	});
+
+	// -------------------------------------------------------------------------
+	// Usage accumulation — UsageTracker wired through CoreState
+	// -------------------------------------------------------------------------
+
+	it('state returns seeded usage when no prompt has run', async () => {
+		const seededUsage: Usage = {
+			tokens: { input: 50, output: 20, cacheRead: 0, cacheWrite: 0, total: 70 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const system = createCoreSystem(createMockSpawn());
+
+		const runtime = await createRuntime(
+			system,
+			{
+				core: { messages: [], llmConfig: {}, usage: seededUsage },
+			},
+			[],
+		);
+
+		const state = await runtime.state.get();
+		expect(state.core.usage).toEqual(seededUsage);
+
+		await runtime.dispose();
+	});
+
+	it('state accumulates turnEnd usage on top of seeded value', async () => {
+		const seeded: Usage = {
+			tokens: { input: 50, output: 20, cacheRead: 0, cacheWrite: 0, total: 70 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const turnUsage: Usage = {
+			tokens: { input: 10, output: 5, cacheRead: 2, cacheWrite: 1, total: 18 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const system = createCoreSystem(createMockSpawn(undefined, turnUsage));
+
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: seeded } },
+			[],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const state = await runtime.state.get();
+		expect(state.core.usage.tokens).toEqual({
+			input: 60,
+			output: 25,
+			cacheRead: 2,
+			cacheWrite: 1,
+			total: 88,
+		});
+
+		await runtime.dispose();
+	});
+
+	it('state.get returns a usage snapshot copy', async () => {
+		const seeded: Usage = {
+			tokens: { input: 50, output: 20, cacheRead: 0, cacheWrite: 0, total: 70 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const system = createCoreSystem(createMockSpawn());
+
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: seeded } },
+			[],
+		);
+
+		const first = await runtime.state.get();
+		first.core.usage.tokens.input = 999;
+
+		const second = await runtime.state.get();
+		expect(second.core.usage.tokens.input).toBe(50);
+
+		await runtime.dispose();
+	});
+
+	it('fork resets usage to ZERO_USAGE while preserving messages', async () => {
+		const turnUsage: Usage = {
+			tokens: { input: 10, output: 5, cacheRead: 0, cacheWrite: 0, total: 15 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const system = createCoreSystem(createMockSpawn(undefined, turnUsage));
+
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
+			[],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const forked = await runtime.state.fork();
+		expect(forked.core.usage).toEqual(ZERO_USAGE);
+		expect(forked.core.messages.length).toBeGreaterThan(0);
+
+		const state = await runtime.state.get();
+		expect(state.core.usage).toEqual(turnUsage);
+
+		await runtime.dispose();
+	});
+
+	it('child returns ZERO_USAGE regardless of parent accumulation', async () => {
+		const turnUsage: Usage = {
+			tokens: { input: 10, output: 5, cacheRead: 0, cacheWrite: 0, total: 15 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const system = createCoreSystem(createMockSpawn(undefined, turnUsage));
+
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
+			[],
+		);
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const childState = await runtime.state.child();
+		expect(childState.core.usage).toEqual(ZERO_USAGE);
 
 		await runtime.dispose();
 	});

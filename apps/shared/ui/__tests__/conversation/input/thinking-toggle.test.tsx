@@ -16,12 +16,14 @@ import { ThinkingToggle } from '../../../src/conversation/input/thinking-toggle.
 
 function makeMockRuntime(reasoning: ThinkingLevel): FranklinRuntime {
 	return {
-		state: vi.fn(async () => ({
-			core: {
-				messages: [],
-				llmConfig: { reasoning },
-			},
-		})),
+		state: {
+			get: vi.fn(async () => ({
+				core: {
+					messages: [],
+					llmConfig: { reasoning },
+				},
+			})),
+		},
 		setContext: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
 	} as unknown as FranklinRuntime;

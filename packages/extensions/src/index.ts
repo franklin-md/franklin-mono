@@ -1,9 +1,9 @@
 export type {
 	CoreAPI,
 	CancelHandler,
-	PromptContext,
+	Prompt,
 	PromptHandler,
-	SystemPromptContext,
+	SystemPrompt,
 	SystemPromptHandler,
 	ExtensionToolDefinition,
 	ToolSpec,
@@ -17,7 +17,7 @@ export type {
 export { resolveToolOutput } from './systems/core/api/index.js';
 export { toolSpec } from './systems/core/api/index.js';
 export { serializeTool, toToolInputSchema } from './systems/core/api/index.js';
-export type { DependencyAPI } from './systems/dependency/index.js';
+export type { DependencyRuntime } from './systems/dependency/index.js';
 export type { EnvironmentAPI } from './systems/environment/api/index.js';
 export type {
 	Environment,
@@ -57,7 +57,6 @@ export { StoreRegistry } from './systems/store/api/index.js';
 export type { StoreEntry, StoreMapping } from './systems/store/api/index.js';
 export type { StoreSnapshot } from './systems/store/api/index.js';
 export type {
-	SessionAPI,
 	SessionRuntime,
 	Session,
 	SessionCreate,
@@ -70,9 +69,13 @@ export {
 	createSessionManager,
 } from './systems/sessions/api/index.js';
 export type { BaseAPI } from './algebra/api/types.js';
+export type { IdentityAPI } from './systems/identity/api.js';
+export { identityAPI } from './systems/identity/api.js';
 export type { Compiler } from './algebra/compiler/types.js';
 export { compile, compileAll } from './algebra/compiler/compile.js';
 export { combine } from './algebra/compiler/combine.js';
+export type { IdentityCompiler } from './systems/identity/compiler.js';
+export { identityCompiler } from './systems/identity/compiler.js';
 export { createCoreCompiler } from './systems/core/compile/index.js';
 export { createStoreCompiler } from './systems/store/compile/index.js';
 export { createEnvironmentCompiler } from './systems/environment/compile/index.js';
@@ -98,6 +101,8 @@ export { createCoreSystem } from './systems/core/system.js';
 export type { CoreSystem } from './systems/core/system.js';
 export { createStoreSystem } from './systems/store/system.js';
 export type { StoreSystem } from './systems/store/system.js';
+export { identitySystem } from './systems/identity/system.js';
+export type { IdentitySystem } from './systems/identity/system.js';
 export { createDependencySystem } from './systems/dependency/system.js';
 export type { DependencySystem } from './systems/dependency/system.js';
 export { createEnvironmentSystem } from './systems/environment/system.js';
@@ -114,11 +119,14 @@ export { resolveState } from './algebra/state/resolve.js';
 // ---------------------------------------------------------------------------
 // Runtime
 // ---------------------------------------------------------------------------
-export type { BaseRuntime } from './algebra/runtime/types.js';
+export type { BaseRuntime, StateHandle } from './algebra/runtime/types.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
-export type { CoreRuntime } from './systems/core/runtime.js';
+export type { CoreRuntime } from './systems/core/runtime/index.js';
+export { inspectRuntime } from './systems/core/inspect.js';
 export type { StoreRuntime } from './systems/store/runtime.js';
 export type { EnvironmentRuntime } from './systems/environment/runtime.js';
+export type { IdentityRuntime } from './systems/identity/runtime.js';
+export { identityRuntime } from './systems/identity/runtime.js';
 
 // ---------------------------------------------------------------------------
 // State
@@ -130,8 +138,8 @@ export { emptyStoreState } from './systems/store/state.js';
 export type { EnvironmentState } from './systems/environment/state.js';
 export { emptyEnvironmentState } from './systems/environment/state.js';
 export type { SessionState } from './systems/sessions/state.js';
-export type { EmptyState } from './systems/empty/state.js';
-export { emptyState } from './systems/empty/state.js';
+export type { IdentityState } from './systems/identity/state.js';
+export { identityState } from './systems/identity/state.js';
 
 // ---------------------------------------------------------------------------
 // Built-in extensions

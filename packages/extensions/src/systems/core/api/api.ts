@@ -7,29 +7,62 @@ import type {
 	SystemPromptHandler,
 	ToolObserverHandler,
 } from './handlers.js';
-import type { MaybePromise } from '../../../algebra/types/shared.js';
+import type { MaybePromise } from '../../../algebra/types/index.js';
+import type { WithContext } from '../compile/registrar/types.js';
+import type { BaseRuntime } from '../../../algebra/runtime/types.js';
+import type { CoreRuntime } from '../runtime/index.js';
 
-export interface CoreAPI {
-	// Request events — prompt contributions plus cancellation handling.
-	on(event: 'prompt', handler: PromptHandler): void;
-	on(event: 'cancel', handler: CancelHandler): void;
+/**
+ * Core registration surface, parameterised by the eventual Runtime
+ * handlers receive as their trailing argument.
+ *
+ * `CoreAPI<Runtime>` is covariant in Runtime: an extension requiring
+ * `CoreAPI<MyRuntime>` accepts a `CoreAPI<FullRuntime>` whenever
+ * `FullRuntime <: MyRuntime`. Each extension declares the runtime slice
+ * it needs; the assembler picks the concrete Runtime.
+ *
+ * Handlers receive the fully-tied Runtime *directly* as their trailing
+ * argument — no wrapper object. Extensions read capabilities via
+ * `runtime.environment`, `runtime.session`, `runtime.getStore(key)`, etc.
+ */
+export interface CoreAPI<Runtime extends BaseRuntime<unknown> = CoreRuntime> {
+	on(event: 'prompt', handler: WithContext<PromptHandler, Runtime>): void;
+	on(event: 'cancel', handler: WithContext<CancelHandler, Runtime>): void;
 
-	// System prompt — handler redefines its own fragment via SystemPromptContext
-	on(event: 'systemPrompt', handler: SystemPromptHandler): void;
+	on(
+		event: 'systemPrompt',
+		handler: WithContext<SystemPromptHandler, Runtime>,
+	): void;
 
-	// Stream observer events — fire-and-forget on response stream
-	on(event: 'chunk', handler: StreamObserverHandler<'chunk'>): void;
-	on(event: 'update', handler: StreamObserverHandler<'update'>): void;
-	on(event: 'turnEnd', handler: StreamObserverHandler<'turnEnd'>): void;
+	on(
+		event: 'chunk',
+		handler: WithContext<StreamObserverHandler<'chunk'>, Runtime>,
+	): void;
+	on(
+		event: 'update',
+		handler: WithContext<StreamObserverHandler<'update'>, Runtime>,
+	): void;
+	on(
+		event: 'turnEnd',
+		handler: WithContext<StreamObserverHandler<'turnEnd'>, Runtime>,
+	): void;
 
-	// Tool observer events — fire-and-forget on tool execution lifecycle
-	on(event: 'toolCall', handler: ToolObserverHandler<'toolCall'>): void;
-	on(event: 'toolResult', handler: ToolObserverHandler<'toolResult'>): void;
+	on(
+		event: 'toolCall',
+		handler: WithContext<ToolObserverHandler<'toolCall'>, Runtime>,
+	): void;
+	on(
+		event: 'toolResult',
+		handler: WithContext<ToolObserverHandler<'toolResult'>, Runtime>,
+	): void;
 
-	registerTool<TInput>(tool: ExtensionToolDefinition<TInput>): void;
+	registerTool<TInput>(tool: ExtensionToolDefinition<TInput, Runtime>): void;
 
 	registerTool<TArgs>(
 		spec: ToolSpec<string, TArgs>,
-		execute: (params: TArgs) => MaybePromise<ToolExecuteReturn>,
+		execute: (
+			params: TArgs,
+			runtime: Runtime,
+		) => MaybePromise<ToolExecuteReturn>,
 	): void;
 }

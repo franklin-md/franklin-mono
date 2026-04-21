@@ -20,7 +20,7 @@ export default tseslint.config(
 			'**/vite.config.ts',
 			'**/electron.vite.config.ts',
 			'**/out/**',
-			'docs/.obsidian/plugins/**',
+			'docs/**',
 		],
 	},
 	{

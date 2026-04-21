@@ -1,5 +1,3 @@
-import type { ReconfigurableEnvironment } from './types.js';
+import type { IdentityAPI } from '../../identity/api.js';
 
-export interface EnvironmentAPI {
-	getEnvironment(): ReconfigurableEnvironment;
-}
+export type EnvironmentAPI = IdentityAPI;

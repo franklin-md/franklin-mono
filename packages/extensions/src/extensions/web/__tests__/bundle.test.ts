@@ -1,17 +1,7 @@
 import type { AbsolutePath } from '@franklin/lib';
-import type { MiniACPClient } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
-import { compile } from '../../../algebra/compiler/compile.js';
-import { combine } from '../../../algebra/compiler/combine.js';
-import { apply } from '@franklin/lib/middleware';
-import { createCoreCompiler } from '../../../systems/core/compile/compiler.js';
-import { createEnvironmentCompiler } from '../../../systems/environment/compile/compiler.js';
+import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
-import {
-	StoreRegistry,
-	createEmptyStoreResult,
-} from '../../../systems/store/api/index.js';
-import { createStoreCompiler } from '../../../systems/store/compile/compiler.js';
 import { webFetchCacheKey } from '../web-fetch/key.js';
 import { createWebExtension } from '../index.js';
 
@@ -67,34 +57,8 @@ function mockEnvironment(
 	};
 }
 
-async function executeTool(
-	result: Awaited<ReturnType<typeof compileWeb>>,
-	name: string,
-	args: Record<string, unknown>,
-) {
-	return result.server.toolExecute(
-		{
-			call: {
-				type: 'toolCall',
-				id: 'c1',
-				name,
-				arguments: args,
-			},
-		},
-		vi.fn(),
-	);
-}
-
 function compileWeb(env: ReconfigurableEnvironment) {
-	const compiler = combine(
-		combine(
-			createCoreCompiler(),
-			createStoreCompiler(createEmptyStoreResult(new StoreRegistry())),
-		),
-		createEnvironmentCompiler(env),
-	);
-	return compile(
-		compiler,
+	return compileCoreWithStoreAndEnv(
 		createWebExtension({
 			fetch: {
 				timeoutMs: 1234,
@@ -106,6 +70,27 @@ function compileWeb(env: ReconfigurableEnvironment) {
 				maxRetries: 1,
 			},
 		}).extension,
+		env,
+	);
+}
+
+type Compiled = Awaited<ReturnType<typeof compileWeb>>;
+
+async function executeTool(
+	compiled: Compiled,
+	name: string,
+	args: Record<string, unknown>,
+) {
+	return compiled.middleware.server.toolExecute(
+		{
+			call: {
+				type: 'toolCall',
+				id: 'c1',
+				name,
+				arguments: args,
+			},
+		},
+		vi.fn(),
 	);
 }
 
@@ -137,37 +122,19 @@ describe('createWebExtension', () => {
 			throw new Error(`Unexpected url: ${request.url}`);
 		});
 		const bundle = createWebExtension({});
-		const result = await compileWeb(env);
+		const compiled = await compileWeb(env);
 
 		expect(bundle.keys.cache).toBe(webFetchCacheKey);
 		expect(bundle.tools.fetchUrl.name).toBe('fetch_url');
 		expect(bundle.tools.searchWeb.name).toBe('search_web');
 
-		const received: Array<Parameters<MiniACPClient['setContext']>[0]> = [];
-		const target: MiniACPClient = {
-			initialize: vi.fn(async () => {}),
-			setContext: vi.fn(
-				async (params: Parameters<MiniACPClient['setContext']>[0]) => {
-					received.push(params);
-				},
-			),
-			prompt: vi.fn(async function* () {
-				yield* [];
-			}),
-			cancel: vi.fn(async () => {}),
-		};
-
-		await apply(result.client, target).setContext({});
-
-		const names = (received[0] as { tools: Array<{ name: string }> }).tools.map(
-			(tool) => tool.name,
-		);
+		const names = compiled.tools.map((tool) => tool.name);
 		expect(names).toEqual(expect.arrayContaining(['fetch_url', 'search_web']));
 
-		await executeTool(result, 'fetch_url', {
+		await executeTool(compiled, 'fetch_url', {
 			url: 'https://example.com/docs',
 		});
-		await executeTool(result, 'search_web', {
+		await executeTool(compiled, 'search_web', {
 			query: 'example',
 		});
 

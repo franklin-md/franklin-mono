@@ -8,12 +8,39 @@ An API is intended to solve a particular class of problems. Implemented so far:
 - **StoreAPI**: Allows sharing state between agent-agent and agent-app
 - **EnvironmentAPI**: Localizes agent actions within a sandboxed environement.
 - **SessionAPI**: Let's the agent know it's position within an agent orchestration tree, and perform actions relative to it.
-- **DependencyAPI<Name,T>**: Simple way for an extension to depend on an app-provided global resource, such as authentication, secrets or the app-level environment.
+- **DependencyRuntime<Name,T>**: Simple way for an extension to depend on an app-provided global resource (authentication, secrets, app-level environment). The dependency lands on the runtime as a field keyed by `Name`, so handlers read it via `ctx.<name>`.
 
 
-## Extension Algebra [TODO after reading about tagless style article]
-- [ ] Extensions, APis, Compilers, Runtimes, RuntimeSystems
-  - [ ] Mention of algebraic properties like associativity, composition, commutativity etc
+## Extension Algebra
+
+Franklin models extension composition across three related surfaces:
+- **Compiler**: compile-time registration surface plus runtime builder.
+- **Runtime**: lifecycle surface (`state.get`, `state.fork`, `state.child`, `dispose`, `subscribe`) plus system-specific capabilities.
+- **RuntimeSystem**: a factory for `emptyState()` and fresh compilers.
+
+`combine(...)` merges these surfaces by product:
+- API members are merged by object spread.
+- State is merged by object spread.
+- Runtime lifecycle is recomposed while runtime extras are merged.
+
+This composition is intentionally **partial**:
+- it is only defined when the two operands have disjoint state keys
+- it is only defined when the two operands have disjoint API keys
+- it is only defined when the two operands have disjoint runtime-extra keys
+
+The neutral element for this composition is the `Identity*` family:
+- `IdentityAPI`
+- `IdentityState`
+- `IdentityRuntime`
+- `identityCompiler()`
+- `identitySystem()`
+
+The important laws for the current algebra surface are:
+- **Left identity**: combining identity on the left preserves the other operand.
+- **Right identity**: combining identity on the right preserves the other operand.
+- **Associativity**: intended for valid disjoint compositions, so regrouping does not change the resulting merged surface.
+
+Left/right identity is tested explicitly for compiler, runtime, and runtime-system composition.
 
 
 ### Agent Composition Strategies
@@ -28,32 +55,30 @@ There are many places where you could plausibly compose simpler mechanics to cre
 
 These are architectural invariants, not conventions. They should eventually become ESLint rules.
 
-### 1. Dependencies flow through the API
+### 1. Dependencies flow through the runtime
 
-Extensions must not capture external dependencies via closure. All dependencies are provided through the API mechanism — i.e., through the `api` object passed to the extension function body. If a dependency is needed, it must be introduced as part of a `RuntimeSystem`'s API type.
+Extensions must not capture external dependencies via closure. App-level singletons (auth, database, settings) are surfaced as fields on the runtime by `createDependencySystem(...)` and read inside handlers via the `ctx` argument.
 
 **Wrong** — closure capture:
 ```typescript
 function createMyExtension(db: Database): Extension {
   return (api) => {
     // BAD: db captured from factory scope
-    api.registerTool(querySpec, () => db.query(...));
+    api.registerTool(querySpec, (_, ctx) => db.query(...));
   };
 }
 ```
 
-**Right** — dependency through API:
+**Right** — dependency through the runtime:
 ```typescript
-const databaseSystem = createDependencySystem('Database', db);
+const databaseSystem = createDependencySystem('database', db);
 
-const myExtension: Extension<DependencyAPI<'Database', Database> & CoreAPI> = (api) => {
-  const db = api.getDatabase(); // dependency from DependencyAPI
-  api.registerTool(querySpec, (params) => db.query(params));
+const myExtension: Extension<CoreAPI<DependencyRuntime<'database', Database>>> = (api) => {
+  api.registerTool(querySpec, (params, ctx) => ctx.database.query(params));
 };
 ```
 
-For app-level singleton services, prefer `createDependencySystem(...)` over
-hand-rolling a one-method API family.
+For app-level singleton services, prefer `createDependencySystem(...)` over hand-rolling a one-method API family.
 
 ### 2. Don't call API methods within tool execution closures
 

@@ -36,12 +36,14 @@ function makeMockRuntime(): {
 	const cancelSpy = vi.fn(async () => {});
 
 	const runtime = {
-		state: vi.fn(async () => ({
-			core: {
-				messages: [],
-				llmConfig: {},
-			},
-		})),
+		state: {
+			get: vi.fn(async () => ({
+				core: {
+					messages: [],
+					llmConfig: {},
+				},
+			})),
+		},
 		subscribe: vi.fn(() => () => {}),
 		prompt: promptSpy,
 		cancel: cancelSpy,
@@ -67,12 +69,14 @@ function makePendingRuntime(): {
 	const cancelSpy = vi.fn(async () => {});
 
 	const runtime = {
-		state: vi.fn(async () => ({
-			core: {
-				messages: [],
-				llmConfig: {},
-			},
-		})),
+		state: {
+			get: vi.fn(async () => ({
+				core: {
+					messages: [],
+					llmConfig: {},
+				},
+			})),
+		},
 		subscribe: vi.fn(() => () => {}),
 		// eslint-disable-next-line require-yield -- intentionally hangs to keep sending=true
 		prompt: vi.fn(async function* () {
@@ -104,12 +108,14 @@ function makeHangingRuntime(): {
 	});
 
 	const runtime = {
-		state: vi.fn(async () => ({
-			core: {
-				messages: [],
-				llmConfig: {},
-			},
-		})),
+		state: {
+			get: vi.fn(async () => ({
+				core: {
+					messages: [],
+					llmConfig: {},
+				},
+			})),
+		},
 		subscribe: vi.fn(() => () => {}),
 		prompt: promptSpy,
 	} as unknown as FranklinRuntime;

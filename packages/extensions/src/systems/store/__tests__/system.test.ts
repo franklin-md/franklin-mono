@@ -17,7 +17,7 @@ describe('createStoreSystem', () => {
 			},
 		]);
 
-		expect(runtime.stores.get('count')?.store.get()).toBe(0);
+		expect(runtime.getStore<number>('count').get()).toBe(0);
 	});
 
 	it('state returns store mapping keyed under "store"', async () => {
@@ -29,7 +29,7 @@ describe('createStoreSystem', () => {
 			},
 		]);
 
-		const state = await runtime.state();
+		const state = await runtime.state.get();
 		expect(state.store).toBeDefined();
 		expect(Object.keys(state.store)).toContain('x');
 		expect(typeof state.store['x']).toBe('string');
@@ -45,14 +45,14 @@ describe('createStoreSystem', () => {
 			},
 		]);
 
-		runtime.stores.get('data')!.store.set(() => 99);
+		runtime.getStore<number>('data').set(() => 99);
 
-		const forked = await runtime.fork();
+		const forked = await runtime.state.fork();
 
 		expect(Object.keys(forked.store)).toContain('data');
 		expect(Object.keys(forked.store)).toContain('shared');
 
-		const origState = await runtime.state();
+		const origState = await runtime.state.get();
 		expect(forked.store['shared']).toBe(origState.store['shared']);
 		expect(forked.store['data']).not.toBe(origState.store['data']);
 	});
@@ -67,7 +67,7 @@ describe('createStoreSystem', () => {
 			},
 		]);
 
-		const childState = await runtime.child();
+		const childState = await runtime.state.child();
 
 		expect(Object.keys(childState.store)).toContain('shared');
 		expect(Object.keys(childState.store)).not.toContain('data');
@@ -82,7 +82,7 @@ describe('createStoreSystem', () => {
 				api.registerStore('count', 42, 'private');
 			},
 		]);
-		const snapshot = await runtime1.state();
+		const snapshot = await runtime1.state.get();
 
 		const runtime2 = await createRuntime(system, snapshot, [
 			(api) => {
@@ -90,7 +90,7 @@ describe('createStoreSystem', () => {
 			},
 		]);
 
-		expect(runtime2.stores.get('count')?.store.get()).toBe(42);
+		expect(runtime2.getStore<number>('count').get()).toBe(42);
 	});
 
 	it('emptyState returns empty keyed mapping', () => {
