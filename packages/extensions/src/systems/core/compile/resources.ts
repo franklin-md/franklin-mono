@@ -82,5 +82,30 @@ function coreState(
 	llmConfig: LLMConfigSnapshot,
 	usage: Usage,
 ): CoreState {
-	return { core: { messages: [...messages], llmConfig, usage } };
+	return {
+		core: {
+			messages: [...messages],
+			llmConfig,
+			usage: snapshotUsage(usage),
+		},
+	};
+}
+
+function snapshotUsage(usage: Usage): Usage {
+	return {
+		tokens: {
+			input: usage.tokens.input,
+			output: usage.tokens.output,
+			cacheRead: usage.tokens.cacheRead,
+			cacheWrite: usage.tokens.cacheWrite,
+			total: usage.tokens.total,
+		},
+		cost: {
+			input: usage.cost.input,
+			output: usage.cost.output,
+			cacheRead: usage.cost.cacheRead,
+			cacheWrite: usage.cost.cacheWrite,
+			total: usage.cost.total,
+		},
+	};
 }

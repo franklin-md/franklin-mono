@@ -465,6 +465,28 @@ describe('createCoreSystem', () => {
 		await runtime.dispose();
 	});
 
+	it('state.get returns a usage snapshot copy', async () => {
+		const seeded: Usage = {
+			tokens: { input: 50, output: 20, cacheRead: 0, cacheWrite: 0, total: 70 },
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		};
+		const system = createCoreSystem(createMockSpawn());
+
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: seeded } },
+			[],
+		);
+
+		const first = await runtime.state.get();
+		first.core.usage.tokens.input = 999;
+
+		const second = await runtime.state.get();
+		expect(second.core.usage.tokens.input).toBe(50);
+
+		await runtime.dispose();
+	});
+
 	it('fork resets usage to ZERO_USAGE while preserving messages', async () => {
 		const turnUsage: Usage = {
 			tokens: { input: 10, output: 5, cacheRead: 0, cacheWrite: 0, total: 15 },
