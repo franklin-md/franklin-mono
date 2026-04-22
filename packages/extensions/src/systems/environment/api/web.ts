@@ -1,7 +1,7 @@
 import type { Fetch, NetworkPermissions, WebAPI } from '@franklin/lib';
 import { withDefaults, withPolicy } from '@franklin/lib';
 
-// AGENT-TODO: Should live in permissions folder and be called something like createPermissionedNetwork
+// TODO(FRA-239): Move this into a permissions folder and rename it to createPermissionedNetwork.
 
 /**
  * Composes the WebAPI that the environment exposes to extensions. The

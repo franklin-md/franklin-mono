@@ -3,8 +3,8 @@ import { joinAbsolute } from '../paths/index.js';
 import type { AbsolutePath } from '../paths/index.js';
 import type { Filesystem } from './types.js';
 
-// TODO: The concept of permission system is not core, but rather tied to the extensions/environement system.
-// Hence, we should move the permissions type + implementation there (maybe into a folder called sandboxing), along with the network permissions + policy
+// TODO(FRA-212): Move the permission model into a dedicated permissions module,
+// including the filesystem types here and the network permissions + policy.
 /**
  * Configuration for filesystem access filtering. This follows
  * the Anthropic Runtime Sandbox model:

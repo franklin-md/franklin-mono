@@ -30,7 +30,7 @@ export type Fetch = (request: WebFetchRequest) => Promise<WebFetchResponse>;
 
 export type FetchDecorator = (next: Fetch) => Fetch;
 
-// AGENT-TODO: I would want this renamed to NetworkAPI
+// TODO(FRA-239): Rename this interface to NetworkAPI.
 export interface WebAPI {
 	fetch: Fetch;
 }

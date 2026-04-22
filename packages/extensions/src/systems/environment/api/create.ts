@@ -33,7 +33,7 @@ export type ConfigureOptions<
 	dispose?: (current: { filesystem: F; terminal: T; web: W }) => Promise<void>;
 };
 
-// AGENT-TODO: This feels like it should really be refacctored into something like Swappable<T> factory that given a T and a factory C=>T
+// TODO(FRA-238): Extract a Swappable<T> helper for this config-backed resource pattern.
 
 export async function createReconfigurableEnvironment<
 	F extends Filesystem = Filesystem,

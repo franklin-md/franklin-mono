@@ -15,7 +15,7 @@ export interface FilesystemConfig {
 
 export interface EnvironmentConfig {
 	fsConfig: FilesystemConfig;
-	// AGENT-TODO: Would like type to be renamed to NetworkConfig
+	// TODO(FRA-239): Rename this to NetworkConfig.
 	netConfig: NetworkPermissions;
 }
 
