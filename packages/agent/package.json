@@ -30,6 +30,7 @@
 		"@franklin/extensions": "*",
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
+		"@mariozechner/pi-ai": "^0.61.0",
 		"zod": "^4.0.0"
 	}
 }
