@@ -37,7 +37,7 @@ function createEnvironment(label: string) {
 	return Object.assign(
 		{
 			filesystem: createFilesystem(label),
-			terminal: {
+			process: {
 				exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 			},
 			web: {
@@ -153,7 +153,7 @@ describe('bindMain', () => {
 				spawn: async () => createTransportSpy().transport,
 				environment: async () => createEnvironment('b'),
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
@@ -219,7 +219,7 @@ describe('bindMain', () => {
 				spawn: async () => createTransportSpy().transport,
 				environment: async () => createEnvironment('b'),
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
@@ -295,7 +295,7 @@ describe('bindMain', () => {
 					return Object.assign(
 						{
 							filesystem: fs,
-							terminal: {
+							process: {
 								exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 							},
 							web: {
@@ -324,7 +324,7 @@ describe('bindMain', () => {
 					);
 				},
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
@@ -508,7 +508,7 @@ describe('bindMain', () => {
 				spawn: async () => transportSpy.transport,
 				environment: async () => createEnvironment('b'),
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),

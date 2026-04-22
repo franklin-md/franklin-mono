@@ -25,7 +25,7 @@ function mockEnvironment(
 			deleteFile: vi.fn(),
 			resolve: vi.fn(),
 		},
-		terminal: { exec: vi.fn() },
+		process: { exec: vi.fn() },
 		web: { fetch: vi.fn(fetchImpl) },
 		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({

@@ -71,7 +71,7 @@ describe('initializeMain', () => {
 				Object.assign(
 					{
 						filesystem: createFilesystem(),
-						terminal: {
+						process: {
 							exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 						},
 						web: {
@@ -99,7 +99,7 @@ describe('initializeMain', () => {
 					{ dispose: noop },
 				),
 			os: {
-				terminal: {
+				process: {
 					exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 				},
 				filesystem: createFilesystem(),

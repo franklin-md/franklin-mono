@@ -31,7 +31,7 @@
 	"dependencies": {
 		"@agentclientprotocol/sdk": "^0.16.1",
 		"@franklin/agent": "*",
-		"@mariozechner/pi-ai": "^0.68.0",
+		"@mariozechner/pi-ai": "^0.61.0",
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*"
 	},

@@ -7,6 +7,7 @@ import { readFromCache, writeToCache } from './cache.js';
 import {
 	decorate,
 	normalizeUrl,
+	withOnlyHTTP,
 	withRedirect,
 	withTimeout,
 } from '@franklin/lib';
@@ -29,6 +30,7 @@ export function webFetchExtension(
 
 		api.registerTool(fetchUrlSpec, async ({ url }, ctx) => {
 			const boundedFetch = decorate(ctx.environment.web.fetch)
+				.with(withOnlyHTTP())
 				.with(withRedirect(resolved.maxRedirects))
 				.with(withTimeout(resolved.timeoutMs))
 				.build();

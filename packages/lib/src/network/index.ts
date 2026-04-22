@@ -10,6 +10,7 @@ export type {
 export type { FetchDecorator } from './decorators/types.js';
 export type { FetchBuilder } from './decorators/builder.js';
 export { decorate } from './decorators/builder.js';
+export { withOnlyHTTP } from './decorators/only-http.js';
 export { withPolicy, assertAllowed } from './decorators/policy.js';
 export { withUserAgent } from './decorators/user-agent.js';
 export { withTimeout } from './decorators/timeout.js';

@@ -24,7 +24,7 @@ function mockEnvironment(): ReconfigurableEnvironment {
 				async (...paths: string[]) => paths[paths.length - 1]! as AbsolutePath,
 			),
 		},
-		terminal: { exec: vi.fn() },
+		process: { exec: vi.fn() },
 		web: { fetch: vi.fn() },
 		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({

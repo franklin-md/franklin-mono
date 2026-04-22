@@ -4,7 +4,7 @@ import type {
 	FilesystemPermissions,
 	NetworkPermissions,
 	OsInfo,
-	Terminal,
+	Process,
 	WebAPI,
 } from '@franklin/lib';
 
@@ -21,7 +21,7 @@ export interface EnvironmentConfig {
 
 export interface Environment {
 	readonly filesystem: Filesystem;
-	readonly terminal: Terminal;
+	readonly process: Process;
 	readonly web: WebAPI;
 	readonly osInfo: OsInfo;
 }

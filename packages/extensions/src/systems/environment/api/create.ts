@@ -2,7 +2,7 @@ import type {
 	Filesystem,
 	NetworkPermissions,
 	OsInfo,
-	Terminal,
+	Process,
 	WebAPI,
 } from '@franklin/lib';
 import type {
@@ -13,7 +13,7 @@ import type {
 
 export type ConfigureOptions<
 	F extends Filesystem = Filesystem,
-	T extends Terminal = Terminal,
+	P extends Process = Process,
 	W extends WebAPI = WebAPI,
 > = {
 	config: EnvironmentConfig;
@@ -22,24 +22,24 @@ export type ConfigureOptions<
 		config: FilesystemConfig,
 		previous: F | undefined,
 	) => Promise<F>;
-	configureTerminal: (
+	configureProcess: (
 		config: EnvironmentConfig,
-		previous: T | undefined,
-	) => Promise<T>;
+		previous: P | undefined,
+	) => Promise<P>;
 	configureWeb: (
 		config: NetworkPermissions,
 		previous: W | undefined,
 	) => Promise<W>;
-	dispose?: (current: { filesystem: F; terminal: T; web: W }) => Promise<void>;
+	dispose?: (current: { filesystem: F; process: P; web: W }) => Promise<void>;
 };
 
 // TODO(FRA-238): Extract a Swappable<T> helper for this config-backed resource pattern.
 
 export async function createReconfigurableEnvironment<
 	F extends Filesystem = Filesystem,
-	T extends Terminal = Terminal,
+	P extends Process = Process,
 	W extends WebAPI = WebAPI,
->(opts: ConfigureOptions<F, T, W>): Promise<ReconfigurableEnvironment> {
+>(opts: ConfigureOptions<F, P, W>): Promise<ReconfigurableEnvironment> {
 	let currentConfig: EnvironmentConfig = {
 		fsConfig: {
 			...opts.config.fsConfig,
@@ -52,10 +52,7 @@ export async function createReconfigurableEnvironment<
 		currentConfig.fsConfig,
 		undefined,
 	);
-	let currentTerminal: T = await opts.configureTerminal(
-		currentConfig,
-		undefined,
-	);
+	let currentProcess: P = await opts.configureProcess(currentConfig, undefined);
 	let currentWeb: W = await opts.configureWeb(
 		currentConfig.netConfig,
 		undefined,
@@ -74,8 +71,8 @@ export async function createReconfigurableEnvironment<
 		deleteFile: (path) => currentFs.deleteFile(path),
 	};
 
-	const terminal: Terminal = {
-		exec: (input) => currentTerminal.exec(input),
+	const process: Process = {
+		exec: (input) => currentProcess.exec(input),
 	};
 
 	const web: WebAPI = {
@@ -84,7 +81,7 @@ export async function createReconfigurableEnvironment<
 
 	return {
 		filesystem,
-		terminal,
+		process,
 		web,
 		osInfo: opts.osInfo,
 
@@ -98,7 +95,7 @@ export async function createReconfigurableEnvironment<
 				netConfig: partial.netConfig ?? currentConfig.netConfig,
 			};
 			currentFs = await opts.configureFilesystem(merged.fsConfig, currentFs);
-			currentTerminal = await opts.configureTerminal(merged, currentTerminal);
+			currentProcess = await opts.configureProcess(merged, currentProcess);
 			currentWeb = await opts.configureWeb(merged.netConfig, currentWeb);
 			currentConfig = merged;
 		},
@@ -106,7 +103,7 @@ export async function createReconfigurableEnvironment<
 		async dispose() {
 			await opts.dispose?.({
 				filesystem: currentFs,
-				terminal: currentTerminal,
+				process: currentProcess,
 				web: currentWeb,
 			});
 		},

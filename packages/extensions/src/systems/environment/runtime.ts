@@ -14,7 +14,7 @@ export function createEnvironmentRuntime(
 
 	const observed: ReconfigurableEnvironment = {
 		filesystem: environment.filesystem,
-		terminal: environment.terminal,
+		process: environment.process,
 		web: environment.web,
 		osInfo: environment.osInfo,
 		config: () => environment.config(),
