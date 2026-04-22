@@ -1,26 +1,25 @@
+import { requestUrl, type RequestUrlParam } from 'obsidian';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-const { fetchMock } = vi.hoisted(() => ({
-	fetchMock: vi.fn(),
-}));
-
-vi.mock('undici', () => ({
-	fetch: fetchMock,
-}));
 
 import { obsidianFetch } from '../fetch.js';
 
 describe('obsidianFetch', () => {
 	beforeEach(() => {
-		fetchMock.mockReset();
+		vi.mocked(requestUrl).mockReset();
 	});
 
 	afterEach(() => {
-		fetchMock.mockReset();
+		vi.mocked(requestUrl).mockReset();
 	});
 
-	it('issues Undici fetch with manual redirects', async () => {
-		fetchMock.mockResolvedValue(new Response('ok'));
+	it('issues requestUrl with throw disabled', async () => {
+		vi.mocked(requestUrl).mockResolvedValue({
+			status: 200,
+			headers: {},
+			arrayBuffer: new Uint8Array().buffer,
+			json: null,
+			text: 'ok',
+		});
 
 		await obsidianFetch({
 			url: 'https://example.com/api',
@@ -28,45 +27,58 @@ describe('obsidianFetch', () => {
 			headers: { 'user-agent': 'test' },
 		});
 
-		const [url, options] = fetchMock.mock.calls[0] ?? [];
-		expect(String(url)).toBe('https://example.com/api');
-		expect(options).toEqual(
+		expect(requestUrl).toHaveBeenCalledWith(
 			expect.objectContaining({
-				redirect: 'manual',
-				credentials: 'omit',
+				url: 'https://example.com/api',
 				method: 'GET',
 				headers: { 'user-agent': 'test' },
+				throw: false,
 			}),
 		);
 	});
 
-	it('passes Uint8Array bodies through to Undici fetch', async () => {
+	it('passes Uint8Array bodies through to requestUrl as ArrayBuffer', async () => {
 		const body = new TextEncoder().encode('{"hello":"world"}');
-		fetchMock.mockResolvedValue(new Response('ok'));
+		vi.mocked(requestUrl).mockResolvedValue({
+			status: 200,
+			headers: {},
+			arrayBuffer: new Uint8Array().buffer,
+			json: null,
+			text: 'ok',
+		});
 
 		await obsidianFetch({
 			url: 'https://example.com/',
 			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
 			body,
 		});
 
-		expect(fetchMock).toHaveBeenCalledWith(
-			expect.any(URL),
+		const [request] = vi.mocked(requestUrl).mock.calls[0] ?? [];
+		expect(typeof request).toBe('object');
+		const requestParam = request as RequestUrlParam;
+		expect(requestParam).toEqual(
 			expect.objectContaining({
 				method: 'POST',
-				body,
+				contentType: 'application/json',
 			}),
 		);
+		expect(requestParam.body).toBeInstanceOf(ArrayBuffer);
+		expect(
+			new TextDecoder().decode(
+				new Uint8Array(requestParam.body as ArrayBuffer),
+			),
+		).toBe('{"hello":"world"}');
 	});
 
-	it('maps Undici responses to WebFetchResponse', async () => {
-		fetchMock.mockResolvedValue(
-			new Response('hello', {
-				status: 201,
-				statusText: 'Created',
-				headers: { 'content-type': 'application/json' },
-			}),
-		);
+	it('maps requestUrl responses to WebFetchResponse', async () => {
+		vi.mocked(requestUrl).mockResolvedValue({
+			status: 201,
+			headers: { 'Content-Type': 'application/json' },
+			arrayBuffer: new TextEncoder().encode('hello').buffer,
+			json: null,
+			text: 'hello',
+		});
 
 		const response = await obsidianFetch({
 			url: 'https://example.com/',
@@ -74,39 +86,20 @@ describe('obsidianFetch', () => {
 		});
 
 		expect(response.status).toBe(201);
-		expect(response.statusText).toBe('Created');
+		expect(response.statusText).toBe('');
 		expect(response.headers['content-type']).toBe('application/json');
 		expect(response.body).toBeInstanceOf(Uint8Array);
 		expect(new TextDecoder().decode(response.body)).toBe('hello');
 	});
 
-	it('returns redirects as raw 3xx responses so higher layers own redirect handling', async () => {
-		fetchMock.mockResolvedValue(
-			new Response(null, {
-				status: 302,
-				headers: { location: 'https://example.com/next' },
-			}),
-		);
-
-		const response = await obsidianFetch({
-			url: 'https://example.com/start',
-			method: 'GET',
-		});
-
-		expect(response.url).toBe('https://example.com/start');
-		expect(response.status).toBe(302);
-		expect(response.statusText).toBe('');
-		expect(response.headers.location).toBe('https://example.com/next');
-		expect(response.body.byteLength).toBe(0);
-	});
-
 	it('surfaces non-2xx responses as data', async () => {
-		fetchMock.mockResolvedValue(
-			new Response('oops', {
-				status: 500,
-				statusText: 'Internal Server Error',
-			}),
-		);
+		vi.mocked(requestUrl).mockResolvedValue({
+			status: 500,
+			headers: {},
+			arrayBuffer: new TextEncoder().encode('oops').buffer,
+			json: null,
+			text: 'oops',
+		});
 
 		const response = await obsidianFetch({
 			url: 'https://example.com/',
@@ -114,6 +107,7 @@ describe('obsidianFetch', () => {
 		});
 
 		expect(response.status).toBe(500);
-		expect(response.statusText).toBe('Internal Server Error');
+		expect(response.statusText).toBe('');
+		expect(new TextDecoder().decode(response.body)).toBe('oops');
 	});
 });

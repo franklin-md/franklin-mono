@@ -1,34 +1,32 @@
 import type { Fetch } from '@franklin/lib';
-import { readBodyWithLimit } from '@franklin/lib';
-import { fetch as undiciFetch } from 'undici';
+import { requestUrl } from 'obsidian';
 
 /**
- * Platform transport for the Obsidian plugin. Routes through Undici so the
- * plugin uses Node's HTTP stack rather than the renderer's browser fetch.
+ * Platform transport for the Obsidian plugin. Routes through Obsidian's native
+ * request API because Undici does not run correctly in this renderer runtime.
  *
- * Redirects are kept in `manual` mode here so this transport returns 3xx
- * responses raw. That lets the outer `withRedirect` decorator own the loop
- * and re-run normalization + policy checks on every hop.
+ * TODO(FRA-244): `requestUrl()` auto-follows redirects before control returns
+ * here, which bypasses `withRedirect()`'s per-hop normalization, policy checks,
+ * and redirect limits. Replace this stopgap with a rawer HTTP/1.1 client that
+ * can surface 3xx responses unchanged.
  */
 export const obsidianFetch: Fetch = async (request) => {
 	const url = new URL(request.url);
-	const response = await undiciFetch(url, {
+	const response = await requestUrl({
+		url: url.toString(),
 		method: request.method,
-		redirect: 'manual',
-		credentials: 'omit',
 		headers: request.headers,
-		body: request.body,
+		contentType: getHeaderValue(request.headers, 'content-type'),
+		body: bodyToArrayBuffer(request.body),
+		throw: false,
 	});
-	const body = await readBodyWithLimit(
-		response.body as ReadableStream<Uint8Array> | null,
-	);
 
 	return {
-		url: response.url || url.toString(),
+		url: url.toString(),
 		status: response.status,
-		statusText: response.statusText,
+		statusText: '',
 		headers: headersToRecord(response.headers),
-		body,
+		body: new Uint8Array(response.arrayBuffer),
 	};
 };
 
