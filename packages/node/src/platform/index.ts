@@ -15,6 +15,7 @@ import { SandboxedTerminal } from './anthropic/sandboxed-terminal.js';
 import { withAnthropicProtected } from './anthropic/protected.js';
 import { openExternal } from './open-external.js';
 import { createOAuthFlow } from './auth/create-flow.js';
+import { createLoopbackListener } from './network/loopback/create.js';
 import { UnrestrictedTerminal } from './unrestricted-terminal.js';
 import { createNodeOsInfo } from './os-info.js';
 
@@ -70,6 +71,9 @@ export function createNodePlatform(args: Args = {}): Platform {
 			filesystem,
 			osInfo,
 			openExternal,
+			net: {
+				listenLoopback: createLoopbackListener,
+			},
 		},
 	};
 }

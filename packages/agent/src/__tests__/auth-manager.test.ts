@@ -65,6 +65,11 @@ function createPlatform(
 			filesystem,
 			osInfo: new MemoryOsInfo(),
 			openExternal: vi.fn(async () => {}),
+			net: {
+				listenLoopback: vi.fn(async () => {
+					throw new Error('not implemented');
+				}),
+			},
 		},
 		ai: {
 			getOAuthProviders: async () => [],

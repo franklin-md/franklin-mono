@@ -36,6 +36,12 @@ const authFlow = namespace({
 	login: method(),
 });
 
+const loopbackListener = namespace({
+	getRedirectUri: method(),
+	onRequest: on(),
+	respond: method(),
+});
+
 export const schema = namespace({
 	spawn: resource(stream()),
 	createFlow: resource(authFlow),
@@ -58,5 +64,8 @@ export const schema = namespace({
 		filesystem: filesystem,
 		osInfo: osInfo,
 		openExternal: method(),
+		net: namespace({
+			listenLoopback: resource(loopbackListener),
+		}),
 	}),
 } satisfies NamespaceShape<Platform>);

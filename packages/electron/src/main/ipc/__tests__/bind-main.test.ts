@@ -161,6 +161,11 @@ describe('bindMain', () => {
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
+					net: {
+						listenLoopback: async () => {
+							throw new Error('not implemented');
+						},
+					},
 				},
 				ai: {
 					getOAuthProviders: async () => [],
@@ -227,6 +232,11 @@ describe('bindMain', () => {
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
+					net: {
+						listenLoopback: async () => {
+							throw new Error('not implemented');
+						},
+					},
 				},
 				ai: {
 					getOAuthProviders: async () => [],
@@ -334,6 +344,11 @@ describe('bindMain', () => {
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
+					net: {
+						listenLoopback: async () => {
+							throw new Error('not implemented');
+						},
+					},
 				},
 				ai: {
 					getOAuthProviders: async () => [],
@@ -518,6 +533,11 @@ describe('bindMain', () => {
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
+					net: {
+						listenLoopback: async () => {
+							throw new Error('not implemented');
+						},
+					},
 				},
 				ai: {
 					getOAuthProviders: async () => [],

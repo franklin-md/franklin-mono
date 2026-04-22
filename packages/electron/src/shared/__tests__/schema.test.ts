@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	isNamespaceDescriptor,
+	isOnDescriptor,
 	isResourceDescriptor,
 	isStreamDescriptor,
 } from '@franklin/lib/proxy';
@@ -77,5 +78,29 @@ describe('schema', () => {
 				isNamespaceDescriptor(environment.inner),
 		).toBe(true);
 		expect(isNamespaceDescriptor(schema)).toBe(true);
+	});
+
+	it('exposes os.net.listenLoopback as a namespace resource', () => {
+		const os = schema.shape.os;
+		if (!isNamespaceDescriptor(os)) {
+			throw new Error('Expected schema.os to be a namespace');
+		}
+		const net = os.shape.net;
+		if (!isNamespaceDescriptor(net)) {
+			throw new Error('Expected schema.os.net to be a namespace');
+		}
+		const listenLoopback = net.shape.listenLoopback;
+		if (
+			!isResourceDescriptor(listenLoopback) ||
+			!isNamespaceDescriptor(listenLoopback.inner)
+		) {
+			throw new Error(
+				'Expected os.net.listenLoopback to be a namespace resource',
+			);
+		}
+		const inner = listenLoopback.inner.shape;
+		expect(inner.getRedirectUri).toBeDefined();
+		expect(isOnDescriptor(inner.onRequest)).toBe(true);
+		expect(inner.respond).toBeDefined();
 	});
 });

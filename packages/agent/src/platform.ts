@@ -1,4 +1,10 @@
-import type { Filesystem, OsInfo, Terminal } from '@franklin/lib';
+import type {
+	Filesystem,
+	ListenLoopbackOptions,
+	LoopbackListener,
+	OsInfo,
+	Terminal,
+} from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { EnvironmentFactory } from '@franklin/extensions';
 import type { OAuthFlow } from './auth/oauth-flow.js';
@@ -16,6 +22,9 @@ export interface OperatingSystem {
 	filesystem: Filesystem;
 	osInfo: OsInfo;
 	openExternal(url: string): Promise<void>;
+	net: {
+		listenLoopback(options?: ListenLoopbackOptions): Promise<LoopbackListener>;
+	};
 }
 
 export interface Platform {

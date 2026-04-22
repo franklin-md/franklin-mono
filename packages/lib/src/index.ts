@@ -15,6 +15,12 @@ export type {
 	WebFetchRequest,
 	WebFetchResponse,
 } from './network/index.js';
+export type {
+	ListenLoopbackOptions,
+	LoopbackListener,
+	LoopbackRequest,
+	LoopbackResponse,
+} from './network/loopback/types.js';
 export {
 	createFolderScopedFilesystem,
 	createFilteredFilesystem,

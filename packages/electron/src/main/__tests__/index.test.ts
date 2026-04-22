@@ -107,6 +107,11 @@ describe('initializeMain', () => {
 				filesystem: createFilesystem(),
 				osInfo: new MemoryOsInfo(),
 				openExternal: async () => {},
+				net: {
+					listenLoopback: async () => {
+						throw new Error('not implemented');
+					},
+				},
 			},
 			ai: {
 				getOAuthProviders: async () => [],
