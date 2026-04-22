@@ -1,6 +1,6 @@
 import { createObserver } from '@franklin/lib';
 
-import { OAuthClient } from './oauth-client.js';
+import type { OAuthClient } from './oauth-client.js';
 import { createBuiltInOAuthClient } from './specs/index.js';
 import type {
 	ApiKeyEntry,
@@ -22,8 +22,7 @@ export class AuthManager {
 		private readonly store: AuthStore,
 		oauthClient?: OAuthClient,
 	) {
-		this.oauthClient =
-			oauthClient ?? createBuiltInOAuthClient(platform.os.net);
+		this.oauthClient = oauthClient ?? createBuiltInOAuthClient(platform.os.net);
 	}
 
 	async restore(): Promise<void> {

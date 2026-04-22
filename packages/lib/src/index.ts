@@ -152,3 +152,7 @@ export { wait } from './utils/async/wait.js';
 export { withDeadline } from './utils/async/deadline.js';
 export { randomDelay } from './utils/random.js';
 export { encode, decode } from './utils/bytes.js';
+export { base64url, base64urlToBase64, hex } from './utils/encoding.js';
+export { randomBytes } from './crypto/seed.js';
+export type { PkceParams } from './crypto/pkce.js';
+export { generatePkceParams } from './crypto/pkce.js';
