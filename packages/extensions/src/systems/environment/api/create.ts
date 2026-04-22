@@ -1,10 +1,14 @@
-import type { Filesystem, OsInfo, Process } from '@franklin/lib';
+import type {
+	Filesystem,
+	NetworkPermissions,
+	OsInfo,
+	Process,
+	WebAPI,
+} from '@franklin/lib';
 import type {
 	EnvironmentConfig,
 	FilesystemConfig,
-	NetworkConfig,
 	ReconfigurableEnvironment,
-	WebAPI,
 } from './types.js';
 
 export type ConfigureOptions<
@@ -22,9 +26,14 @@ export type ConfigureOptions<
 		config: EnvironmentConfig,
 		previous: P | undefined,
 	) => Promise<P>;
-	configureWeb: (config: NetworkConfig, previous: W | undefined) => Promise<W>;
+	configureWeb: (
+		config: NetworkPermissions,
+		previous: W | undefined,
+	) => Promise<W>;
 	dispose?: (current: { filesystem: F; process: P; web: W }) => Promise<void>;
 };
+
+// TODO(FRA-238): Extract a Swappable<T> helper for this config-backed resource pattern.
 
 export async function createReconfigurableEnvironment<
 	F extends Filesystem = Filesystem,

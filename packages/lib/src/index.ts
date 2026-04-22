@@ -12,9 +12,28 @@ export type {
 export { detectShellFamily, MemoryOsInfo } from './os-info/index.js';
 export type {
 	NetworkPermissions,
+	WebFetchMethod,
 	WebFetchRequest,
 	WebFetchResponse,
+	Fetch,
+	FetchDecorator,
+	FetchBuilder,
+	WebAPI,
 } from './network/index.js';
+export {
+	decorate,
+	withOnlyHTTP,
+	withPolicy,
+	assertAllowed,
+	withUserAgent,
+	getHeader,
+	setHeader,
+	withTimeout,
+	withRedirect,
+	withRetry,
+	readBodyWithLimit,
+} from './network/index.js';
+export type { RetryOptions } from './network/index.js';
 export {
 	createFolderScopedFilesystem,
 	createFilteredFilesystem,
@@ -124,5 +143,6 @@ export type {
 export { bindClient, UnsupportedDescriptorError } from './proxy/index.js';
 export { bindServer } from './proxy/index.js';
 export { wait } from './utils/async/wait.js';
+export { withDeadline } from './utils/async/deadline.js';
 export { randomDelay } from './utils/random.js';
 export { encode, decode } from './utils/bytes.js';

@@ -3,6 +3,8 @@ import { joinAbsolute } from '../paths/index.js';
 import type { AbsolutePath } from '../paths/index.js';
 import type { Filesystem } from './types.js';
 
+// TODO(FRA-212): Move the permission model into a dedicated permissions module,
+// including the filesystem types here and the network permissions + policy.
 /**
  * Configuration for filesystem access filtering. This follows
  * the Anthropic Runtime Sandbox model:

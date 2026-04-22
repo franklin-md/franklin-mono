@@ -3,6 +3,7 @@
 // and provides recording primitives for the action loop.
 // ---------------------------------------------------------------------------
 
+import { withDeadline } from '@franklin/lib';
 import { createDuplexPair } from '@franklin/lib/transport';
 import type { JsonRpcMessage } from '@franklin/lib/transport';
 
@@ -108,18 +109,16 @@ export function createContext(factory: AgentFactory) {
 		if (transcript.some(predicate)) return;
 
 		const ms = timeoutMs ?? DEFAULT_WAIT_TIMEOUT_MS;
-		await new Promise<void>((resolve, reject) => {
-			const timer = setTimeout(() => {
-				onEntry = null;
-				reject(new Error('waitFor timed out'));
-			}, ms);
-			onEntry = (entry) => {
-				if (predicate(entry)) {
-					clearTimeout(timer);
-					onEntry = null;
-					resolve();
-				}
-			};
+		await withDeadline(
+			new Promise<void>((resolve) => {
+				onEntry = (entry) => {
+					if (predicate(entry)) resolve();
+				};
+			}),
+			ms,
+			'waitFor',
+		).finally(() => {
+			onEntry = null;
 		});
 	}
 

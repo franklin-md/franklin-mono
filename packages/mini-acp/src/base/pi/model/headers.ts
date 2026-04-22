@@ -1,4 +1,5 @@
 import type { Model } from '@mariozechner/pi-ai';
+import { setHeader } from '@franklin/lib';
 
 import type { LLMConfig } from '../../../types/context.js';
 
@@ -18,10 +19,13 @@ export function withOpenRouterHeaders(
 
 	// https://openrouter.ai/docs/app-attribution
 	// https://openrouter.ai/docs/api/reference/overview#headers
-	const headers = { ...model.headers };
-	headers['HTTP-Referer'] = OPENROUTER_APP_URL;
-	headers['X-OpenRouter-Title'] = OPENROUTER_APP_TITLE;
-	headers['X-OpenRouter-Categories'] = OPENROUTER_APP_CATEGORY.join(',');
+	let headers = setHeader(model.headers, 'HTTP-Referer', OPENROUTER_APP_URL);
+	headers = setHeader(headers, 'X-OpenRouter-Title', OPENROUTER_APP_TITLE);
+	headers = setHeader(
+		headers,
+		'X-OpenRouter-Categories',
+		OPENROUTER_APP_CATEGORY.join(','),
+	);
 	return {
 		...model,
 		headers,
