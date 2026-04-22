@@ -138,7 +138,7 @@ describe('createWebExtension', () => {
 		});
 
 		// Request literals no longer carry timeoutMs/maxRedirects — those
-		// configure the withBounded decorator each extension wraps around
+		// configure the withTimeout + withRedirect decorators each extension wraps around
 		// environment.web.fetch. Verify the URLs flow through correctly.
 		const fetchMock = env.web.fetch as ReturnType<typeof vi.fn>;
 		expect(fetchMock).toHaveBeenNthCalledWith(

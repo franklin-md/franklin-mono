@@ -8,8 +8,8 @@ import {
 
 /**
  * Throws if the URL's host is not allowed by the given permissions. Pure
- * guard — does not mutate the request. Placed inside withBounded so that
- * every redirect hop re-invokes the check via the next() call.
+ * guard — does not mutate the request. Placed inside withRedirect so that
+ * every hop re-invokes the check via the next() call.
  */
 export function withPolicy(permissions: NetworkPermissions): FetchDecorator {
 	return (next: Fetch): Fetch =>

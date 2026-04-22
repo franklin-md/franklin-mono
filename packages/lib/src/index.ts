@@ -18,14 +18,17 @@ export type {
 	Fetch,
 	FetchDecorator,
 	WebAPI,
-	BoundedOptions,
 } from './network/index.js';
 export {
 	withPolicy,
 	assertAllowed,
-	withNormalize,
-	withBounded,
+	withDefaults,
+	withTimeout,
+	withRedirect,
+	withRetry,
+	readBodyWithLimit,
 } from './network/index.js';
+export type { RetryOptions } from './network/index.js';
 export {
 	createFolderScopedFilesystem,
 	createFilteredFilesystem,

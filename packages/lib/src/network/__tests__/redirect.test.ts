@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Fetch, WebFetchResponse } from '../types.js';
-import { withBounded } from '../bounded.js';
+import { withRedirect } from '../redirect.js';
 import { withPolicy } from '../policy.js';
 
 function okResponse(url = 'https://example.com/final'): WebFetchResponse {
@@ -23,10 +23,10 @@ function redirectResponse(to: string): WebFetchResponse {
 	};
 }
 
-describe('withBounded', () => {
+describe('withRedirect', () => {
 	it('returns the final response when no redirect occurs', async () => {
 		const next = vi.fn<Fetch>().mockResolvedValue(okResponse());
-		const fetch = withBounded({ timeoutMs: 5000, maxRedirects: 5 })(next);
+		const fetch = withRedirect(5)(next);
 
 		const response = await fetch({
 			url: 'https://example.com/',
@@ -43,7 +43,7 @@ describe('withBounded', () => {
 			.mockResolvedValueOnce(redirectResponse('https://example.com/b'))
 			.mockResolvedValueOnce(redirectResponse('https://example.com/c'))
 			.mockResolvedValueOnce(okResponse());
-		const fetch = withBounded({ timeoutMs: 5000, maxRedirects: 5 })(next);
+		const fetch = withRedirect(5)(next);
 
 		const response = await fetch({
 			url: 'https://example.com/a',
@@ -61,25 +61,11 @@ describe('withBounded', () => {
 		const next = vi
 			.fn<Fetch>()
 			.mockResolvedValue(redirectResponse('https://example.com/loop'));
-		const fetch = withBounded({ timeoutMs: 5000, maxRedirects: 2 })(next);
+		const fetch = withRedirect(2)(next);
 
 		await expect(
 			fetch({ url: 'https://example.com/', method: 'GET' }),
 		).rejects.toThrow('Redirect limit exceeded (2)');
-	});
-
-	it('rejects with timeout error when next exceeds the deadline', async () => {
-		const next = vi.fn<Fetch>().mockImplementation(
-			() =>
-				new Promise<WebFetchResponse>((resolve) => {
-					setTimeout(() => resolve(okResponse()), 500);
-				}),
-		);
-		const fetch = withBounded({ timeoutMs: 50, maxRedirects: 0 })(next);
-
-		await expect(
-			fetch({ url: 'https://example.com/', method: 'GET' }),
-		).rejects.toThrow('Request timed out after 50ms');
 	});
 
 	it('rejects when redirect response is missing Location header', async () => {
@@ -90,7 +76,7 @@ describe('withBounded', () => {
 			headers: {},
 			body: new Uint8Array(),
 		});
-		const fetch = withBounded({ timeoutMs: 5000, maxRedirects: 5 })(next);
+		const fetch = withRedirect(5)(next);
 
 		await expect(
 			fetch({ url: 'https://example.com/', method: 'GET' }),
@@ -101,7 +87,7 @@ describe('withBounded', () => {
 		const next = vi
 			.fn<Fetch>()
 			.mockResolvedValue(redirectResponse('javascript:alert(1)'));
-		const fetch = withBounded({ timeoutMs: 5000, maxRedirects: 5 })(next);
+		const fetch = withRedirect(5)(next);
 
 		await expect(
 			fetch({ url: 'https://example.com/', method: 'GET' }),
@@ -109,13 +95,13 @@ describe('withBounded', () => {
 	});
 });
 
-describe('withBounded + withPolicy composition', () => {
+describe('withRedirect + withPolicy composition', () => {
 	it('denies redirects from public hosts to loopback unless explicitly allowlisted', async () => {
 		const transport = vi.fn<Fetch>();
 		transport.mockResolvedValueOnce(
 			redirectResponse('http://localhost:11434/api/tags'),
 		);
-		const fetch = withBounded({ timeoutMs: 5000, maxRedirects: 5 })(
+		const fetch = withRedirect(5)(
 			withPolicy({ allowedDomains: [], deniedDomains: [] })(transport),
 		);
 
@@ -132,7 +118,7 @@ describe('withBounded + withPolicy composition', () => {
 				redirectResponse('http://localhost:11434/api/tags'),
 			)
 			.mockResolvedValueOnce(okResponse());
-		const fetch = withBounded({ timeoutMs: 5000, maxRedirects: 5 })(
+		const fetch = withRedirect(5)(
 			withPolicy({
 				allowedDomains: ['example.com', 'localhost:11434'],
 				deniedDomains: [],

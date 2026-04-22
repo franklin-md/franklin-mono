@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Fetch, WebFetchResponse } from '../types.js';
-import { withNormalize } from '../normalize.js';
+import { withDefaults } from '../defaults.js';
 
 function okResponse(): WebFetchResponse {
 	return {
@@ -12,38 +12,10 @@ function okResponse(): WebFetchResponse {
 	};
 }
 
-describe('withNormalize', () => {
-	it('rejects empty URL', async () => {
-		const next = vi.fn<Fetch>();
-		const fetch = withNormalize(next);
-
-		await expect(fetch({ url: '', method: 'GET' })).rejects.toThrow(
-			'URL is required',
-		);
-		expect(next).not.toHaveBeenCalled();
-	});
-
-	it('rejects malformed URL', async () => {
-		const next = vi.fn<Fetch>();
-		const fetch = withNormalize(next);
-
-		await expect(fetch({ url: 'not a url', method: 'GET' })).rejects.toThrow(
-			'Invalid URL: not a url',
-		);
-	});
-
-	it('rejects non-http(s) protocols', async () => {
-		const next = vi.fn<Fetch>();
-		const fetch = withNormalize(next);
-
-		await expect(
-			fetch({ url: 'ftp://example.com/', method: 'GET' }),
-		).rejects.toThrow('Only HTTP and HTTPS URLs are supported');
-	});
-
+describe('withDefaults', () => {
 	it('applies a default user-agent', async () => {
 		const next = vi.fn<Fetch>().mockResolvedValue(okResponse());
-		const fetch = withNormalize(next);
+		const fetch = withDefaults(next);
 
 		await fetch({ url: 'https://example.com/', method: 'GET' });
 
@@ -53,7 +25,7 @@ describe('withNormalize', () => {
 
 	it('lowercases header keys', async () => {
 		const next = vi.fn<Fetch>().mockResolvedValue(okResponse());
-		const fetch = withNormalize(next);
+		const fetch = withDefaults(next);
 
 		await fetch({
 			url: 'https://example.com/',
@@ -68,7 +40,7 @@ describe('withNormalize', () => {
 
 	it('preserves caller user-agent over default', async () => {
 		const next = vi.fn<Fetch>().mockResolvedValue(okResponse());
-		const fetch = withNormalize(next);
+		const fetch = withDefaults(next);
 
 		await fetch({
 			url: 'https://example.com/',
@@ -78,19 +50,5 @@ describe('withNormalize', () => {
 
 		const call = next.mock.calls[0]?.[0];
 		expect(call?.headers?.['user-agent']).toBe('my-agent/1.0');
-	});
-
-	it('rejects unrecognised methods', async () => {
-		const next = vi.fn<Fetch>();
-		const fetch = withNormalize(next);
-
-		await expect(
-			fetch({
-				url: 'https://example.com/',
-				// @ts-expect-error intentional — runtime validation
-				method: 'CONNECT',
-			}),
-		).rejects.toThrow('Unsupported HTTP method');
-		expect(next).not.toHaveBeenCalled();
 	});
 });

@@ -64,7 +64,13 @@ export function processWebResponse(
 	};
 }
 
-// AGENT-TODO: Refactor the normalization step for both of these
+function wrapUntrusted(body: string): string {
+	return (
+		`<<<<EXTERNAL_UNTRUSTED_CONTENT>>>>\n` +
+		body +
+		`\n<<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>>`
+	);
+}
 
 function extractHtml(
 	response: WebFetchResponse,
@@ -80,16 +86,12 @@ function extractHtml(
 		const rawText = article?.textContent ?? doc.body.textContent;
 		const normalized = normalizeExtractedText(rawText);
 
-		const full_normalized =
-			`<<<<EXTERNAL_UNTRUSTED_CONTENT>>>>\n` +
+		const wrapped = wrapUntrusted(
 			`TITLE: ${title !== '' ? title : '[empty title]'}\n` +
-			(normalized !== '' ? normalized : '[empty body]') +
-			`\n<<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>>`;
-
-		const { text, truncated } = truncateText(
-			full_normalized,
-			options.maxOutputChars,
+				(normalized !== '' ? normalized : '[empty body]'),
 		);
+
+		const { text, truncated } = truncateText(wrapped, options.maxOutputChars);
 		return {
 			kind: 'html',
 			content: text,
@@ -112,13 +114,9 @@ function extractPlainText(
 ): WebFetchProcessedResult {
 	const normalized = normalizeExtractedText(decodeBody(response.body));
 	const { text, truncated } = truncateText(normalized, options.maxOutputChars);
-	const wrapped =
-		`<<<<EXTERNAL_UNTRUSTED_CONTENT>>>>\n` +
-		text +
-		`\n<<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>>`;
 	return {
 		kind: 'text',
-		content: text.length > 0 ? wrapped : '[empty response]',
+		content: text.length > 0 ? wrapUntrusted(text) : '[empty response]',
 		isError: false,
 		truncated,
 	};
