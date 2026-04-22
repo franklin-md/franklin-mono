@@ -8,7 +8,7 @@ import type {
 import { describe, expect, it, vi } from 'vitest';
 
 import { runAuthorizationCodePkce } from '../auth/engine.js';
-import type { PkceHost } from '../auth/engine.js';
+import type { Net } from '../platform.js';
 import type { AuthorizationCodePkceSpec } from '../auth/specs/types.js';
 
 type EmittedRequest = {
@@ -93,12 +93,12 @@ function makeSpec(
 	};
 }
 
-function makeHost(
+function makeNet(
 	listener: FakeListener,
 	fetch: Fetch = vi.fn(async () => {
 		throw new Error('fetch not expected');
 	}),
-): PkceHost {
+): Net {
 	return {
 		listenLoopback: async (options?: ListenLoopbackOptions) => {
 			if (options?.path) listener.path = options.path;
@@ -115,7 +115,7 @@ describe('runAuthorizationCodePkce', () => {
 		const onAuth = vi.fn();
 		const onProgress = vi.fn();
 
-		const promise = runAuthorizationCodePkce(spec, makeHost(listener), {
+		const promise = runAuthorizationCodePkce(spec, makeNet(listener), {
 			onAuth,
 			onProgress,
 		});
@@ -150,7 +150,7 @@ describe('runAuthorizationCodePkce', () => {
 		const spec = makeSpec();
 		const onAuth = vi.fn();
 
-		const promise = runAuthorizationCodePkce(spec, makeHost(listener), {
+		const promise = runAuthorizationCodePkce(spec, makeNet(listener), {
 			onAuth,
 		});
 		await vi.waitFor(() => expect(onAuth).toHaveBeenCalled());
@@ -175,7 +175,7 @@ describe('runAuthorizationCodePkce', () => {
 		// Buffered simulate: engine picks up the pending request on subscription.
 		listener.simulate(`?error=access_denied&error_description=User%20declined`);
 
-		const promise = runAuthorizationCodePkce(spec, makeHost(listener), {
+		const promise = runAuthorizationCodePkce(spec, makeNet(listener), {
 			onAuth: vi.fn(),
 		});
 
@@ -188,7 +188,7 @@ describe('runAuthorizationCodePkce', () => {
 		const spec = makeSpec();
 		listener.simulate(`?code=auth-code&state=wrong-state`);
 
-		const promise = runAuthorizationCodePkce(spec, makeHost(listener), {
+		const promise = runAuthorizationCodePkce(spec, makeNet(listener), {
 			onAuth: vi.fn(),
 		});
 
@@ -200,7 +200,7 @@ describe('runAuthorizationCodePkce', () => {
 		const spec = makeSpec();
 		listener.simulate(`?state=some-state`);
 
-		const promise = runAuthorizationCodePkce(spec, makeHost(listener), {
+		const promise = runAuthorizationCodePkce(spec, makeNet(listener), {
 			onAuth: vi.fn(),
 		});
 
@@ -216,7 +216,7 @@ describe('runAuthorizationCodePkce', () => {
 			validateState: (expected, received) => received === expected.verifier,
 		});
 
-		const promise = runAuthorizationCodePkce(spec, makeHost(listener), {
+		const promise = runAuthorizationCodePkce(spec, makeNet(listener), {
 			onAuth,
 		});
 		await vi.waitFor(() => expect(onAuth).toHaveBeenCalled());

@@ -1,7 +1,7 @@
-import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
 import { createObserver } from '@franklin/lib';
-import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
+import { OAuthClient } from './oauth-client.js';
+import { createBuiltInOAuthClient } from './specs/index.js';
 import type {
 	ApiKeyEntry,
 	AuthEntries,
@@ -15,11 +15,16 @@ import type { AuthStore } from './store.js';
 
 export class AuthManager {
 	private readonly observer = createObserver<[string, AuthEntry | undefined]>();
+	private readonly oauthClient: OAuthClient;
 
 	constructor(
 		private readonly platform: Platform,
 		private readonly store: AuthStore,
-	) {}
+		oauthClient?: OAuthClient,
+	) {
+		this.oauthClient =
+			oauthClient ?? createBuiltInOAuthClient(platform.os.net);
+	}
 
 	async restore(): Promise<void> {
 		await this.store.restore();

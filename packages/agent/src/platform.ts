@@ -11,15 +11,17 @@ import type { EnvironmentFactory } from '@franklin/extensions';
 
 type Disposable = { dispose(): Promise<void> };
 
+export interface Net {
+	listenLoopback(options?: ListenLoopbackOptions): Promise<LoopbackListener>;
+	fetch: Fetch;
+}
+
 export interface OperatingSystem {
 	process: Process;
 	filesystem: Filesystem;
 	osInfo: OsInfo;
 	openExternal(url: string): Promise<void>;
-	net: {
-		listenLoopback(options?: ListenLoopbackOptions): Promise<LoopbackListener>;
-		fetch: Fetch;
-	};
+	net: Net;
 }
 
 export interface Platform {

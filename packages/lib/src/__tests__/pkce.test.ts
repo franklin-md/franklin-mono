@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { generatePkceParams } from '../auth/pkce.js';
+import { base64url, generatePkceParams } from '../index.js';
 
 describe('generatePkceParams', () => {
 	it('produces base64url-safe verifier and challenge (no +, /, = characters)', async () => {
@@ -28,16 +28,7 @@ describe('generatePkceParams', () => {
 			'SHA-256',
 			new TextEncoder().encode(verifier),
 		);
-		const expected = toBase64Url(new Uint8Array(digest));
+		const expected = base64url(new Uint8Array(digest));
 		expect(challenge).toBe(expected);
 	});
 });
-
-function toBase64Url(bytes: Uint8Array): string {
-	let binary = '';
-	for (const byte of bytes) binary += String.fromCharCode(byte);
-	return btoa(binary)
-		.replace(/\+/g, '-')
-		.replace(/\//g, '_')
-		.replace(/=+$/, '');
-}
