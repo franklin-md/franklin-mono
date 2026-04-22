@@ -1,19 +1,13 @@
 import { useEffect, useState } from 'react';
 
 import type { AuthEntries } from '@franklin/agent/browser';
-import {
-	Button,
-	Dialog,
-	DialogTrigger,
-	AuthModalContent,
-	useAuthManager,
-	oauthPanel,
-	apiKeyPanel,
-} from '@franklin/ui';
 
-// ---------------------------------------------------------------------------
-// PersonIcon — minimal inline SVG, no external dependencies
-// ---------------------------------------------------------------------------
+import { Button } from '../primitives/button.js';
+import { Dialog, DialogTrigger } from '../primitives/dialog.js';
+
+import { useAuthManager } from './context.js';
+import { AuthModalContent } from './modal.js';
+import { apiKeyPanel, oauthPanel } from './panels.js';
 
 function PersonIcon() {
 	return (
@@ -29,10 +23,6 @@ function PersonIcon() {
 		</svg>
 	);
 }
-
-// ---------------------------------------------------------------------------
-// AuthButton
-// ---------------------------------------------------------------------------
 
 export function AuthButton() {
 	const auth = useAuthManager();

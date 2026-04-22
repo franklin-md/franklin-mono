@@ -119,6 +119,7 @@ export { defaultRegistry as defaultTurnEndRegistry } from './conversation/turn/t
 
 // auth
 export { AuthModalContent } from './auth/modal.js';
+export { AuthButton } from './auth/button.js';
 export { useAuthManager } from './auth/context.js';
 export { apiKeyPanel, oauthPanel } from './auth/panels.js';
 export type { AuthPanelDescriptor, AuthPanelProps } from './auth/types.js';

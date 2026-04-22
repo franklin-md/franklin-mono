@@ -1,5 +1,6 @@
 import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
 import { AgentProvider, AppContext } from '@franklin/react';
+import { AuthButton } from '@franklin/ui';
 
 import { ConversationPanel } from './conversation.js';
 
@@ -23,6 +24,7 @@ export function ObsidianApp({
 								Obsidian agent window
 							</p>
 						</div>
+						<AuthButton />
 					</header>
 					<ConversationPanel />
 				</div>
