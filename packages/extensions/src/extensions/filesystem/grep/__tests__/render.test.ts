@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { renderGrepInfo } from '../render.js';
+import { renderGrepInfo } from '../guidance.js';
 
 describe('renderGrepInfo', () => {
 	it('describes the ripgrep backend and its regex dialect', () => {

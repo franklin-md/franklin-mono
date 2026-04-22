@@ -76,6 +76,8 @@ describe('runGrep', () => {
 				args: [
 					'--json',
 					'--color=never',
+					'--max-columns=240',
+					'--max-columns-preview',
 					'--max-count=25',
 					'-e',
 					'foo',
@@ -92,7 +94,7 @@ describe('runGrep', () => {
 			await runGrep(RIPGREP, { pattern: 'foo' }, env);
 
 			const call = vi.mocked(env.process.exec).mock.calls[0]?.[0];
-			expect(call?.args).toContain('--max-count=100');
+			expect(call?.args).toContain('--max-count=50');
 			expect(call?.args?.at(-1)).toBe('/work');
 			expect(env.filesystem.resolve).not.toHaveBeenCalled();
 		});
@@ -169,7 +171,9 @@ describe('runGrep', () => {
 
 			const result = await runGrep(RIPGREP, { pattern: 'x', limit: 2 }, env);
 
-			expect(result.output).toContain('(results truncated)');
+			expect(result.output).toContain(
+				'(results truncated; narrow with path/include/limit)',
+			);
 		});
 
 		it('returns an error result when exit code is ≥2', async () => {
@@ -186,6 +190,23 @@ describe('runGrep', () => {
 			expect(result.isError).toBe(true);
 			expect(result.output).toContain('exit 2');
 			expect(result.output).toContain('regex parse error');
+		});
+
+		it('rejects path arguments that look like multiple absolute paths', async () => {
+			const env = mockEnv();
+
+			const result = await runGrep(
+				RIPGREP,
+				{
+					pattern: 'foo',
+					path: '/tmp/project/src /tmp/project/docs',
+				},
+				env,
+			);
+
+			expect(result.isError).toBe(true);
+			expect(result.output).toContain('Pass a single file or directory path');
+			expect(env.process.exec).not.toHaveBeenCalled();
 		});
 	});
 

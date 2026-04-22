@@ -3,7 +3,7 @@ import type { Extension } from '../../../algebra/types/index.js';
 import type { CoreAPI } from '../../../systems/core/index.js';
 import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import { detectGrepBackend, type GrepBackend } from './detect.js';
-import { renderGrepInfo } from './render.js';
+import { renderGrepInfo } from './guidance.js';
 import { runGrep } from './run.js';
 import { grepSpec } from './tools.js';
 
