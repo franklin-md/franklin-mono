@@ -11,11 +11,11 @@ import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import type { AbsolutePath } from '@franklin/lib';
 import os from 'node:os';
-import { SandboxedTerminal } from './anthropic/sandboxed-terminal.js';
+import { SandboxedProcess } from './anthropic/sandboxed-process.js';
 import { withAnthropicProtected } from './anthropic/protected.js';
 import { openExternal } from './open-external.js';
 import { createOAuthFlow } from './auth/create-flow.js';
-import { UnrestrictedTerminal } from './unrestricted-terminal.js';
+import { UnrestrictedProcess } from './unrestricted-process.js';
 import { createNodeOsInfo } from './os-info.js';
 
 type Args = {
@@ -50,23 +50,23 @@ export function createNodePlatform(args: Args = {}): Platform {
 						createNodeFilesystem(),
 						withAnthropicProtected(fsConfig),
 					),
-				configureTerminal: async (
+				configureProcess: async (
 					cfg,
-					previous: SandboxedTerminal | undefined,
+					previous: SandboxedProcess | undefined,
 				) => {
 					if (previous) {
 						await previous.setFilesystemConfig(cfg.fsConfig);
 						await previous.setNetworkConfig(cfg.netConfig);
 						return previous;
 					}
-					const terminal = new SandboxedTerminal(appDir, cfg);
-					await terminal.initialize();
-					return terminal;
+					const proc = new SandboxedProcess(appDir, cfg);
+					await proc.initialize();
+					return proc;
 				},
 				configureWeb: async (netConfig) => createWeb(netConfig),
 			}),
 		os: {
-			terminal: new UnrestrictedTerminal(process.cwd()),
+			process: new UnrestrictedProcess(process.cwd()),
 			filesystem,
 			osInfo,
 			openExternal,
