@@ -100,15 +100,6 @@ function createTransportSpy(): {
 	};
 }
 
-async function createFlow() {
-	return {
-		onAuth: () => () => {},
-		onProgress: () => () => {},
-		login: async () => ({}),
-		dispose: async () => {},
-	};
-}
-
 function createWebContents(id: number): WebContents {
 	return {
 		id,
@@ -163,13 +154,14 @@ describe('bindMain', () => {
 						listenLoopback: async () => {
 							throw new Error('not implemented');
 						},
+						fetch: async () => {
+							throw new Error('not implemented');
+						},
 					},
 				},
 				ai: {
-					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				createFlow,
 			},
 			createWebContents(1),
 		);
@@ -234,13 +226,14 @@ describe('bindMain', () => {
 						listenLoopback: async () => {
 							throw new Error('not implemented');
 						},
+						fetch: async () => {
+							throw new Error('not implemented');
+						},
 					},
 				},
 				ai: {
-					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				createFlow,
 			},
 			createWebContents(1),
 		);
@@ -344,13 +337,14 @@ describe('bindMain', () => {
 						listenLoopback: async () => {
 							throw new Error('not implemented');
 						},
+						fetch: async () => {
+							throw new Error('not implemented');
+						},
 					},
 				},
 				ai: {
-					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				createFlow,
 			},
 			createWebContents(1),
 		);
@@ -533,13 +527,14 @@ describe('bindMain', () => {
 						listenLoopback: async () => {
 							throw new Error('not implemented');
 						},
+						fetch: async () => {
+							throw new Error('not implemented');
+						},
 					},
 				},
 				ai: {
-					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				createFlow,
 			},
 			createWebContents(1),
 		);

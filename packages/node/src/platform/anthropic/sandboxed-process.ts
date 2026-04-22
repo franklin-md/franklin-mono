@@ -4,17 +4,12 @@ import {
 } from '@anthropic-ai/sandbox-runtime';
 import { spawn } from 'child_process';
 import { once } from 'events';
-import { createRequire } from 'node:module';
 import { delimiter } from 'path';
+import { quote as quoteArgv } from 'shell-quote';
 import type { AbsolutePath, Process, ProcessInput } from '@franklin/lib';
 import { joinAbsolute } from '@franklin/lib';
 import type { NetworkPermissions } from '@franklin/lib';
 import type { FilesystemConfig, EnvironmentConfig } from '@franklin/extensions';
-
-const require = createRequire(import.meta.url);
-const { quote: quoteArgv } = require('shell-quote') as {
-	quote: (args: readonly string[]) => string;
-};
 
 export class SandboxedProcess implements Process {
 	private _cwd: string;

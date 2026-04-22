@@ -30,12 +30,6 @@ const osInfo = namespace({
 	getHomeDir: method(),
 });
 
-const authFlow = namespace({
-	onAuth: on(),
-	onProgress: on(),
-	login: method(),
-});
-
 const loopbackListener = namespace({
 	getRedirectUri: method(),
 	onRequest: on(),
@@ -44,7 +38,6 @@ const loopbackListener = namespace({
 
 export const schema = namespace({
 	spawn: resource(stream()),
-	createFlow: resource(authFlow),
 	environment: resource(
 		namespace({
 			filesystem: filesystem,
@@ -56,7 +49,6 @@ export const schema = namespace({
 		}),
 	),
 	ai: namespace({
-		getOAuthProviders: method(),
 		getApiKeyProviders: method(),
 	}),
 	os: namespace({
@@ -66,6 +58,7 @@ export const schema = namespace({
 		openExternal: method(),
 		net: namespace({
 			listenLoopback: resource(loopbackListener),
+			fetch: method(),
 		}),
 	}),
 } satisfies NamespaceShape<Platform>);

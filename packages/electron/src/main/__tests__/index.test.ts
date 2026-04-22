@@ -25,15 +25,6 @@ vi.mock('electron', () => ({
 
 const noop = async () => {};
 
-async function createFlow() {
-	return {
-		onAuth: () => () => {},
-		onProgress: () => () => {},
-		login: async () => ({}),
-		dispose: async () => {},
-	};
-}
-
 function createFilesystem(): Filesystem {
 	return {
 		readFile: async () => new Uint8Array(),
@@ -109,13 +100,14 @@ describe('initializeMain', () => {
 					listenLoopback: async () => {
 						throw new Error('not implemented');
 					},
+					fetch: async () => {
+						throw new Error('not implemented');
+					},
 				},
 			},
 			ai: {
-				getOAuthProviders: async () => [],
 				getApiKeyProviders: async () => [],
 			},
-			createFlow,
 		};
 
 		const handle = initializeMain(
@@ -132,10 +124,9 @@ describe('initializeMain', () => {
 			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:spawn:connect`),
 		).toBe(true);
 		expect(
-			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:ai:getOAuthProviders`),
-		).toBe(true);
-		expect(
-			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:createFlow:connect`),
+			handleMap.has(
+				`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:ai:getApiKeyProviders`,
+			),
 		).toBe(true);
 		expect(
 			handleMap.has(`${FRANKLIN_PROXY_CHANNEL_NAMESPACE}:os:openExternal`),

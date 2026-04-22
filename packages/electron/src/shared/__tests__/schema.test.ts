@@ -39,45 +39,22 @@ describe('schema', () => {
 		expect(`${prefix}:environment:lease:${envId}:filesystem:readFile`).toBe(
 			'franklin:environment:lease:env-1:filesystem:readFile',
 		);
-
-		// OAuth flow resource channels
-		expect(`${prefix}:createFlow:connect`).toBe('franklin:createFlow:connect');
-		const flowId = 'flow-1';
-		expect(`${prefix}:createFlow:lease:${flowId}:onProgress:on:subscribe`).toBe(
-			'franklin:createFlow:lease:flow-1:onProgress:on:subscribe',
-		);
 	});
 
-	it('captures environment, spawn, and createFlow as proxy descriptors', () => {
+	it('captures environment and spawn as proxy descriptors', () => {
 		const spawn = schema.shape.spawn;
-		const createFlow = schema.shape.createFlow;
 		const environment = schema.shape.environment;
 		expect(spawn).toBeDefined();
-		expect(createFlow).toBeDefined();
 		expect(environment).toBeDefined();
 		expect(isResourceDescriptor(spawn) && isStreamDescriptor(spawn.inner)).toBe(
 			true,
 		);
 		expect(
-			isResourceDescriptor(createFlow) &&
-				isNamespaceDescriptor(createFlow.inner),
-		).toBe(true);
-		if (
-			!isResourceDescriptor(createFlow) ||
-			!isNamespaceDescriptor(createFlow.inner)
-		) {
-			throw new Error('Expected createFlow to be a namespace resource');
-		}
-		expect(createFlow.inner.shape.onAuth).toBeDefined();
-		expect(createFlow.inner.shape.onProgress).toBeDefined();
-		expect(createFlow.inner.shape.login).toBeDefined();
-		expect('onPrompt' in createFlow.inner.shape).toBe(false);
-		expect('respond' in createFlow.inner.shape).toBe(false);
-		expect(
 			isResourceDescriptor(environment) &&
 				isNamespaceDescriptor(environment.inner),
 		).toBe(true);
 		expect(isNamespaceDescriptor(schema)).toBe(true);
+		expect('createFlow' in schema.shape).toBe(false);
 	});
 
 	it('exposes os.net.listenLoopback as a namespace resource', () => {

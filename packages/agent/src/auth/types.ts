@@ -1,4 +1,4 @@
-import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
+import type { OAuthCredentials } from './credentials.js';
 
 // ---------------------------------------------------------------------------
 // Stored credential entries — domain shapes. The persistence schema lives in

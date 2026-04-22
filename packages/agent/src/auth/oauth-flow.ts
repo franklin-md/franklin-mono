@@ -1,6 +1,6 @@
-import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 import { createObserver } from '@franklin/lib';
 
+import type { OAuthCredentials } from './credentials.js';
 import type { OAuthAuthInfo, OAuthLoginCallbacks } from './types.js';
 
 // TODO: This interactive flow primitive is fairly general and may belong in a

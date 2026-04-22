@@ -9,13 +9,11 @@ import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { nodePlatformFetch } from './fetch.js';
 import { getProviders } from '@mariozechner/pi-ai';
-import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import type { AbsolutePath } from '@franklin/lib';
 import os from 'node:os';
 import { SandboxedProcess } from './anthropic/sandboxed-process.js';
 import { withAnthropicProtected } from './anthropic/protected.js';
 import { openExternal } from './open-external.js';
-import { createOAuthFlow } from './auth/create-flow.js';
 import { createLoopbackListener } from './network/loopback/create.js';
 import { UnrestrictedProcess } from './unrestricted-process.js';
 import { createNodeOsInfo } from './os-info.js';
@@ -29,11 +27,6 @@ export function createNodePlatform(args: Args = {}): Platform {
 	const filesystem = createNodeFilesystem();
 	const osInfo = createNodeOsInfo();
 	const ai = {
-		getOAuthProviders: async () => {
-			return getOAuthProviders()
-				.filter((provider) => provider.usesCallbackServer === true)
-				.map((provider) => ({ id: provider.id, name: provider.name }));
-		},
 		getApiKeyProviders: async () => getProviders(),
 	};
 
@@ -42,7 +35,6 @@ export function createNodePlatform(args: Args = {}): Platform {
 			return spawn();
 		},
 		ai,
-		createFlow: createOAuthFlow,
 		environment: (config: EnvironmentConfig) =>
 			createReconfigurableEnvironment({
 				config,
@@ -75,6 +67,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 			openExternal,
 			net: {
 				listenLoopback: createLoopbackListener,
+				fetch: nodePlatformFetch,
 			},
 		},
 	};
