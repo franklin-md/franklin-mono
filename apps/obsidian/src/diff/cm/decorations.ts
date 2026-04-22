@@ -161,9 +161,18 @@ function findHoveredHunkId(target: EventTarget | null): string | null {
 			: target instanceof Node
 				? target.parentElement
 				: null;
+	if (!element) return null;
+
+	const directHunkId =
+		element.closest<HTMLElement>('[data-diff-hunk-id]')?.dataset.diffHunkId ??
+		null;
+	return directHunkId;
+}
+
+function findHoveredHunkIdInView(view: EditorView): string | null {
 	return (
-		element?.closest<HTMLElement>('[data-diff-hunk-id]')?.dataset.diffHunkId ??
-		null
+		view.dom.querySelector<HTMLElement>('[data-diff-hunk-id]:hover')?.dataset
+			.diffHunkId ?? null
 	);
 }
 
@@ -184,11 +193,26 @@ export const diffHoverTracking = ViewPlugin.fromClass(
 			this.hoveredHunkId = next;
 			this.view.dispatch({ effects: setHoveredHunkEffect.of(next) });
 		}
+
+		syncHoveredHunkFromDom(target: EventTarget | null = null) {
+			this.setHoveredHunkId(
+				findHoveredHunkId(target) ?? findHoveredHunkIdInView(this.view),
+			);
+		}
 	},
 	{
 		eventHandlers: {
 			mousemove(event) {
-				this.setHoveredHunkId(findHoveredHunkId(event.target));
+				this.syncHoveredHunkFromDom(event.target);
+			},
+			mouseover(event) {
+				this.syncHoveredHunkFromDom(event.target);
+			},
+			mouseenter(event) {
+				this.syncHoveredHunkFromDom(event.target);
+			},
+			focus() {
+				this.syncHoveredHunkFromDom();
 			},
 			mouseleave() {
 				this.setHoveredHunkId(null);
@@ -196,6 +220,80 @@ export const diffHoverTracking = ViewPlugin.fromClass(
 		},
 	},
 );
+
+export const diffEmbeddedBlockStyling = ViewPlugin.fromClass(
+	class {
+		constructor(readonly view: EditorView) {
+			this.sync();
+		}
+
+		update() {
+			this.sync();
+		}
+
+		destroy() {
+			for (const widget of this.view.dom.querySelectorAll<HTMLElement>(
+				'.diff-plugin-added-table-widget',
+			)) {
+				widget.classList.remove('diff-plugin-added-table-widget');
+			}
+		}
+
+		sync() {
+			for (const widget of this.view.dom.querySelectorAll<HTMLElement>(
+				'.cm-embed-block.cm-table-widget',
+			)) {
+				const hunkId = findNearestAddedHunkId(widget);
+				widget.classList.toggle(
+					'diff-plugin-added-table-widget',
+					hunkId !== null,
+				);
+				if (hunkId) {
+					widget.dataset.diffHunkId = hunkId;
+				} else {
+					delete widget.dataset.diffHunkId;
+				}
+			}
+		}
+	},
+);
+
+function findNearestAddedHunkId(widget: HTMLElement): string | null {
+	return (
+		findNearestHunkId(widget, 'previous') ?? findNearestHunkId(widget, 'next')
+	);
+}
+
+function findNearestHunkId(
+	widget: HTMLElement,
+	direction: 'previous' | 'next',
+): string | null {
+	let sibling =
+		direction === 'previous'
+			? widget.previousElementSibling
+			: widget.nextElementSibling;
+
+	while (sibling) {
+		if (sibling.classList.contains('cm-line')) {
+			if (!sibling.classList.contains('diff-plugin-added-line')) {
+				return null;
+			}
+
+			return sibling.getAttribute('data-diff-hunk-id');
+		}
+
+		if (sibling.classList.contains('cm-embed-block')) {
+			return null;
+		}
+
+		sibling =
+			direction === 'previous'
+				? sibling.previousElementSibling
+				: sibling.nextElementSibling;
+	}
+
+	return null;
+}
 
 export const diffDecorations = StateField.define<DecorationSet>({
 	create: (state) => buildDecorations(state),

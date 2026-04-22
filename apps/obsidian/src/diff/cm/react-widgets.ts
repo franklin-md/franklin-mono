@@ -323,7 +323,7 @@ function arraysEqual(left: string[], right: string[]): boolean {
 	);
 }
 
-function stopMouseEvent(event: MouseEvent) {
+function stopMouseEvent(event: Event) {
 	event.stopPropagation();
 }
 

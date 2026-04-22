@@ -9,7 +9,11 @@ import {
 	diffInvertedEffects,
 	setDiffEntry,
 } from './cm/diff-field.js';
-import { diffDecorations, diffHoverTracking } from './cm/decorations.js';
+import {
+	diffDecorations,
+	diffEmbeddedBlockStyling,
+	diffHoverTracking,
+} from './cm/decorations.js';
 import { acceptAllHunks, rejectAllHunks } from './cm/react-widgets.js';
 
 type HeaderUI = {
@@ -39,6 +43,7 @@ export class DiffController {
 			diffField,
 			diffInvertedEffects,
 			diffDecorations,
+			diffEmbeddedBlockStyling,
 			diffHoverTracking,
 			EditorView.updateListener.of((update) => {
 				const prev = update.startState.field(diffField, false);
