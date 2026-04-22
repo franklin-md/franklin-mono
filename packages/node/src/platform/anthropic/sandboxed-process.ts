@@ -6,11 +6,8 @@ import { spawn } from 'child_process';
 import { delimiter } from 'path';
 import type { AbsolutePath, Process, ProcessInput } from '@franklin/lib';
 import { joinAbsolute } from '@franklin/lib';
-import type {
-	NetworkConfig,
-	FilesystemConfig,
-	EnvironmentConfig,
-} from '@franklin/extensions';
+import type { NetworkPermissions } from '@franklin/lib';
+import type { FilesystemConfig, EnvironmentConfig } from '@franklin/extensions';
 import { once } from 'events';
 import { quote } from 'shell-quote';
 
@@ -26,13 +23,13 @@ export class SandboxedProcess implements Process {
 			.filter((path) => path.length > 0);
 	}
 
-	async setNetworkConfig(config: NetworkConfig) {
+	async setNetworkConfig(config: NetworkPermissions) {
 		this._config.network = { ...config };
 		await SandboxManager.initialize(this._config);
 	}
 
 	getNetworkConfig() {
-		return this._config.network as NetworkConfig;
+		return this._config.network as NetworkPermissions;
 	}
 
 	private _denyWritePaths(): string[] {

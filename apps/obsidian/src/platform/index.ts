@@ -9,6 +9,7 @@ import {
 import type { App } from 'obsidian';
 import { createNodeFilesystem, createNodePlatform } from '@franklin/node';
 import { createObsidianFilesystem } from './filesystem/obsidian.js';
+import { obsidianFetch } from './fetch.js';
 
 export function createObsidianPlatform(app: App): Platform {
 	const nodePlatform = createNodePlatform();
@@ -35,7 +36,7 @@ export function createObsidianPlatform(app: App): Platform {
 						},
 					};
 				},
-				configureWeb: async (netConfig) => createWeb(netConfig),
+				configureWeb: async (netConfig) => createWeb(netConfig, obsidianFetch),
 			}),
 	};
 }

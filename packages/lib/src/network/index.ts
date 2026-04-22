@@ -1,26 +1,21 @@
-export interface NetworkPermissions {
-	allowedDomains: string[];
-	deniedDomains: string[];
-}
+export type {
+	NetworkPermissions,
+	WebFetchMethod,
+	WebFetchRequest,
+	WebFetchResponse,
+	Fetch,
+	WebAPI,
+} from './types.js';
 
-export type WebFetchResponse = {
-	requestedUrl: string;
-	finalUrl: string;
-	status: number;
-	statusText: string;
-	contentType?: string;
-	headers: Record<string, string>;
-	body: Uint8Array;
-};
-
-// FRA-149: I think eventually we want this to have exactly
-// the same configuration parameters as a Node.js fetch
-// for maximum freedom on top of our safety model
-export type WebFetchRequest = {
-	url: string;
-	method: 'GET' | 'POST';
-	timeoutMs?: number;
-	maxRedirects?: number;
-	headers?: Record<string, string>;
-	body?: Uint8Array;
-};
+export type { FetchDecorator } from './decorators/types.js';
+export type { FetchBuilder } from './decorators/builder.js';
+export { decorate } from './decorators/builder.js';
+export { withOnlyHTTP } from './decorators/only-http.js';
+export { withPolicy, assertAllowed } from './decorators/policy.js';
+export { withUserAgent } from './decorators/user-agent.js';
+export { withTimeout } from './decorators/timeout.js';
+export { withRedirect } from './decorators/redirect.js';
+export { withRetry } from './decorators/retry.js';
+export type { RetryOptions } from './decorators/retry.js';
+export { getHeader, setHeader } from './headers.js';
+export { readBodyWithLimit } from './body-limit.js';

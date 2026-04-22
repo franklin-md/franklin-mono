@@ -6,6 +6,7 @@ import type {
 	WebFetchExtensionOptions,
 } from './types.js';
 
+// TODO: Should Caching be moved down the the fetch layer? (i.e. creation of Agent with Memory?)
 export function readFromCache(
 	store: Store<WebFetchCache>,
 	url: string,

@@ -71,12 +71,10 @@ function getResultText(result: {
 
 function textResponse(body: string, contentType: string) {
 	return {
-		requestedUrl: 'https://example.com',
-		finalUrl: 'https://example.com',
+		url: 'https://example.com',
 		status: 200,
 		statusText: 'OK',
-		contentType,
-		headers: {},
+		headers: { 'Content-Type': contentType },
 		body: new TextEncoder().encode(body),
 	};
 }
