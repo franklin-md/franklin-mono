@@ -17,20 +17,6 @@ export function singleLine(text: string | null): string {
 	return (text ?? '').replace(/\s+/g, ' ').trim();
 }
 
-export function truncateText(
-	text: string,
-	maxOutputChars: number,
-): { text: string; truncated: boolean } {
-	if (text.length <= maxOutputChars) {
-		return { text, truncated: false };
-	}
-
-	return {
-		text: `${text.slice(0, maxOutputChars).trimEnd()}\n\n[truncated]`,
-		truncated: true,
-	};
-}
-
 export function normalizeContentType(contentType?: string): string | undefined {
 	return contentType?.split(';', 1)[0]?.trim().toLowerCase();
 }
