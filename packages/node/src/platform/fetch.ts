@@ -1,9 +1,9 @@
 import type { Fetch } from '@franklin/lib';
-import { readBodyWithLimit } from './body-limit.js';
+import { readBodyWithLimit } from '@franklin/lib';
 
 /**
  * Default Node platform transport. Wraps `globalThis.fetch` with manual
- * redirect handling (the `withBounded` decorator owns the loop) and
+ * redirect handling (the `withRedirect` decorator owns the loop) and
  * credentials omitted.
  */
 export const nodePlatformFetch: Fetch = async (request) => {
@@ -16,7 +16,7 @@ export const nodePlatformFetch: Fetch = async (request) => {
 		body: request.body,
 	});
 
-	const body = await readBodyWithLimit(response);
+	const body = await readBodyWithLimit(response.body);
 
 	return {
 		url: response.url || url.toString(),
