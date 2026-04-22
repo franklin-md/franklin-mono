@@ -161,22 +161,54 @@ describe('grepExtension', () => {
 		expect(text).toBe('src/a.ts\n  3: foo');
 	});
 
-	it('caches detection across repeated assembles (shared promise)', async () => {
-		const exec = vi.fn(ripgrepExec());
-		const env = mockEnvironment(exec);
-		const handlers = collectHandlers(grepExtension());
-		const bound: SystemPromptHandler[] = bindHandlers(handlers, () =>
-			fakeRuntime(env),
-		);
-		const assembler = buildSystemPromptAssembler(bound);
+	it('detects the backend independently for each runtime built from one extension', async () => {
+		const ext = grepExtension();
 
-		await assembler.assemble();
-		await assembler.assemble();
-
-		const versionCalls = exec.mock.calls.filter(
-			(c) => c[0].args?.[0] === '--version',
+		const unavailable = await compileCoreWithEnv(
+			ext,
+			mockEnvironment(async () => ({
+				exit_code: 127,
+				stdout: '',
+				stderr: '',
+			})),
 		);
-		expect(versionCalls).toHaveLength(1);
+
+		const unavailableResult = await unavailable.middleware.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'grep-unavailable',
+					name: 'grep',
+					arguments: { pattern: 'foo' },
+				},
+			},
+			vi.fn(),
+		);
+
+		expect(unavailableResult.isError).toBe(true);
+
+		const available = await compileCoreWithEnv(
+			ext,
+			mockEnvironment(ripgrepExec()),
+		);
+		const availableResult = await available.middleware.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'grep-available',
+					name: 'grep',
+					arguments: { pattern: 'foo' },
+				},
+			},
+			vi.fn(),
+		);
+
+		const text = availableResult.content
+			.filter((block) => block.type === 'text')
+			.map((block) => block.text)
+			.join('\n');
+		expect(availableResult.isError).toBeUndefined();
+		expect(text).toBe('src/a.ts\n  3: foo');
 	});
 
 	it('returns a structured error when the backend is unavailable', async () => {

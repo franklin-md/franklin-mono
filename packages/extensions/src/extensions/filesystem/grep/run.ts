@@ -1,23 +1,20 @@
 import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
+import { grepCommand } from './backends/grep/command.js';
+import { ripgrepCommand } from './backends/ripgrep/command.js';
 import type { GrepBackend } from './detect.js';
+import { formatMatches } from './format/matches.js';
 import type { GrepParams } from './tools.js';
 import {
-	formatMatches,
-	parseGrepOutput,
-	parseRipgrepJson,
-	type GrepMatch,
-} from './format.js';
+	GREP_SINGLE_PATH_MESSAGE,
+	looksLikeMultipleAbsolutePaths,
+} from './validate.js';
 
-const DEFAULT_LIMIT = 100;
+// Output budget: ~50 matches × ~240 chars per preview ≈ 12k chars worst case,
+// keeping the three caps in alignment.
+const DEFAULT_LIMIT = 50;
+const MAX_FORMATTED_CHARS = 12_000;
+const MAX_MATCH_TEXT_CHARS = 240;
 const RUN_TIMEOUT_MS = 10_000;
-
-type Parser = (stdout: string, limit: number) => GrepMatch[];
-
-interface BackendCommand {
-	file: string;
-	args: string[];
-	parse: Parser;
-}
 
 export interface RunGrepResult {
 	output: string;
@@ -33,6 +30,13 @@ export async function runGrep(
 		return {
 			output:
 				'grep is not available in this environment. Use `glob` to locate files and `read_file` to inspect contents.',
+			isError: true,
+		};
+	}
+
+	if (params.path && looksLikeMultipleAbsolutePaths(params.path)) {
+		return {
+			output: GREP_SINGLE_PATH_MESSAGE,
 			isError: true,
 		};
 	}
@@ -56,40 +60,22 @@ export async function runGrep(
 	// Both rg and grep use the same exit-code convention:
 	//   0 = matches found, 1 = no matches, ≥2 = real error.
 	if (exit_code >= 2) {
+		const hint = params.path
+			? '\nHint: `path` accepts a single file or directory. Use a common parent or separate calls when searching multiple roots.'
+			: '';
 		return {
-			output: `grep failed (exit ${exit_code}): ${stderr || stdout}`,
+			output: `grep failed (exit ${exit_code}): ${stderr || stdout}${hint}`,
 			isError: true,
 		};
 	}
 
 	const matches = command.parse(stdout, limit);
 	return {
-		output: formatMatches(matches, matches.length >= limit),
+		output: formatMatches(matches, {
+			truncated: matches.length >= limit,
+			maxChars: MAX_FORMATTED_CHARS,
+			maxMatchTextChars: MAX_MATCH_TEXT_CHARS,
+		}),
 		isError: false,
 	};
-}
-
-function ripgrepCommand(
-	command: string,
-	params: GrepParams,
-	limit: number,
-	target: string,
-): BackendCommand {
-	const args = ['--json', '--color=never', `--max-count=${limit}`];
-	if (params.case_insensitive) args.push('-i');
-	if (params.include) args.push('--glob', params.include);
-	args.push('-e', params.pattern, '--', target);
-	return { file: command, args, parse: parseRipgrepJson };
-}
-
-function grepCommand(
-	command: string,
-	params: GrepParams,
-	target: string,
-): BackendCommand {
-	const args = ['-rEnI', '--color=never'];
-	if (params.case_insensitive) args.push('-i');
-	if (params.include) args.push(`--include=${params.include}`);
-	args.push('-e', params.pattern, '--', target);
-	return { file: command, args, parse: parseGrepOutput };
 }
