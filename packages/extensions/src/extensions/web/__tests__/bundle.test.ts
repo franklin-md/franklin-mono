@@ -10,9 +10,18 @@ function textResponse(body: string, contentType: string) {
 		url: 'https://example.com',
 		status: 200,
 		statusText: 'OK',
-		headers: { 'content-type': contentType },
+		headers: { 'Content-Type': contentType },
 		body: new TextEncoder().encode(body),
 	};
+}
+
+function getResultText(result: {
+	content: Array<{ type: string; text?: string }>;
+}): string {
+	return result.content
+		.filter((block) => block.type === 'text')
+		.map((block) => block.text ?? '')
+		.join('\n');
 }
 
 function mockEnvironment(
@@ -130,12 +139,17 @@ describe('createWebExtension', () => {
 		const names = compiled.tools.map((tool) => tool.name);
 		expect(names).toEqual(expect.arrayContaining(['fetch_url', 'search_web']));
 
-		await executeTool(compiled, 'fetch_url', {
+		const fetchResult = await executeTool(compiled, 'fetch_url', {
 			url: 'https://example.com/docs',
 		});
-		await executeTool(compiled, 'search_web', {
+		const searchResult = await executeTool(compiled, 'search_web', {
 			query: 'example',
 		});
+
+		expect(fetchResult.isError).toBe(false);
+		expect(getResultText(fetchResult)).toContain('Hello world');
+		expect(searchResult.isError).toBe(false);
+		expect(getResultText(searchResult)).toContain('https://example.com');
 
 		// Request literals no longer carry timeoutMs/maxRedirects — those
 		// configure the withTimeout + withRedirect decorators each extension wraps around

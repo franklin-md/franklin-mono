@@ -5,9 +5,9 @@ import { requestUrl } from 'obsidian';
 /**
  * Platform transport for the Obsidian plugin. Routes through Obsidian's native
  * request API because Undici does not run correctly in this renderer runtime.
- * Header-key casing is the decorator chain's concern (`withNormalizedHeaders`),
- * not this transport's; `getHeader` is used for the pre-decorator content-type
- * peek because Obsidian's `requestUrl` needs it as a separate field.
+ * Header-key casing remains transport-defined; `getHeader` is used for the
+ * content-type peek because Obsidian's `requestUrl` needs it as a separate
+ * field.
  *
  * TODO(FRA-244): `requestUrl()` auto-follows redirects before control returns
  * here, which bypasses `withRedirect()`'s per-hop normalization, policy checks,

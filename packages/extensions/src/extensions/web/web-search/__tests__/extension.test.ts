@@ -74,7 +74,7 @@ function textResponse(body: string, contentType: string) {
 		url: 'https://example.com',
 		status: 200,
 		statusText: 'OK',
-		headers: { 'content-type': contentType },
+		headers: { 'Content-Type': contentType },
 		body: new TextEncoder().encode(body),
 	};
 }

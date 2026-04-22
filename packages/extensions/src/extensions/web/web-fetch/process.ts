@@ -1,3 +1,4 @@
+import { getHeader } from '@franklin/lib';
 import { Readability } from '@mozilla/readability';
 import type { WebFetchResponse } from '@franklin/lib';
 import {
@@ -28,7 +29,7 @@ export function processWebResponse(
 		};
 	}
 
-	const contentType = response.headers['content-type'];
+	const contentType = getHeader(response.headers, 'content-type');
 	const type = normalizeContentType(contentType);
 	if (type === 'text/html' || type === 'application/xhtml+xml') {
 		return extractHtml(response, options);

@@ -1,5 +1,6 @@
 import type { Fetch } from '../types.js';
 import type { FetchDecorator } from './types.js';
+import { getHeader } from '../headers.js';
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 303, 307, 308]);
 
@@ -19,7 +20,7 @@ export function withRedirect(maxRedirects: number): FetchDecorator {
 					return response;
 				}
 
-				const location = response.headers['location'];
+				const location = getHeader(response.headers, 'location');
 				if (!location) {
 					throw new Error('Redirect response missing Location header');
 				}

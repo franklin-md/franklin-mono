@@ -4,8 +4,8 @@ import { readBodyWithLimit } from '@franklin/lib';
 /**
  * Default Node platform transport. Wraps `globalThis.fetch` with manual
  * redirect handling (the `withRedirect` decorator owns the loop) and
- * credentials omitted. Header-key casing is the decorator chain's concern
- * (`withNormalizedHeaders`), not this transport's.
+ * credentials omitted. Header-key casing remains platform-defined, so callers
+ * should use `getHeader(...)` for case-insensitive reads.
  */
 export const nodePlatformFetch: Fetch = async (request) => {
 	const url = new URL(request.url);

@@ -1,5 +1,5 @@
+import { getHeader, withRetry } from '@franklin/lib';
 import type { Fetch } from '@franklin/lib';
-import { withRetry } from '@franklin/lib';
 import { decodeBody, normalizeContentType } from '../utils.js';
 import { parseDdgLite } from './parse.js';
 import type { WebSearchExtensionOptions, WebSearchResult } from './types.js';
@@ -29,7 +29,7 @@ export async function searchWithDdg(
 		headers: { 'User-Agent': pickUserAgent() },
 	});
 
-	const contentType = response.headers['content-type'];
+	const contentType = getHeader(response.headers, 'content-type');
 	if (normalizeContentType(contentType) !== 'text/html') {
 		throw new Error(`Unsupported content type: ${contentType ?? 'unknown'}`);
 	}

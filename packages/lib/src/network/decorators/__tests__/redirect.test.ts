@@ -18,7 +18,7 @@ function redirectResponse(to: string): WebFetchResponse {
 		url: 'https://example.com/',
 		status: 302,
 		statusText: 'Found',
-		headers: { location: to },
+		headers: { Location: to },
 		body: new Uint8Array(),
 	};
 }
