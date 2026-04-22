@@ -56,7 +56,7 @@ function createPlatform(
 			throw new Error('not implemented');
 		}),
 		os: {
-			terminal: {
+			process: {
 				exec: vi.fn(async () => ({
 					exit_code: 0,
 					stdout: '',

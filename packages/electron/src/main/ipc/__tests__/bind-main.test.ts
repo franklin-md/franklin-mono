@@ -37,16 +37,14 @@ function createEnvironment(label: string) {
 	return Object.assign(
 		{
 			filesystem: createFilesystem(label),
-			terminal: {
+			process: {
 				exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 			},
 			web: {
 				fetch: async () => ({
-					requestedUrl: 'https://example.com',
-					finalUrl: 'https://example.com',
+					url: 'https://example.com',
 					status: 200,
 					statusText: 'OK',
-					contentType: 'text/plain',
 					kind: 'text',
 					text: '',
 					truncated: false,
@@ -155,7 +153,7 @@ describe('bindMain', () => {
 				spawn: async () => createTransportSpy().transport,
 				environment: async () => createEnvironment('b'),
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
@@ -226,7 +224,7 @@ describe('bindMain', () => {
 				spawn: async () => createTransportSpy().transport,
 				environment: async () => createEnvironment('b'),
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
@@ -307,16 +305,14 @@ describe('bindMain', () => {
 					return Object.assign(
 						{
 							filesystem: fs,
-							terminal: {
+							process: {
 								exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 							},
 							web: {
 								fetch: async () => ({
-									requestedUrl: 'https://example.com',
-									finalUrl: 'https://example.com',
+									url: 'https://example.com',
 									status: 200,
 									statusText: 'OK',
-									contentType: 'text/plain',
 									kind: 'text',
 									text: '',
 									truncated: false,
@@ -338,7 +334,7 @@ describe('bindMain', () => {
 					);
 				},
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
@@ -527,7 +523,7 @@ describe('bindMain', () => {
 				spawn: async () => transportSpy.transport,
 				environment: async () => createEnvironment('b'),
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),

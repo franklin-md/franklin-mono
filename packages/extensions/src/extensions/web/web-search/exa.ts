@@ -1,5 +1,5 @@
 import { encode } from '@franklin/lib';
-import type { WebAPI } from '../../../systems/environment/api/types.js';
+import type { Fetch } from '@franklin/lib';
 import { decodeBody } from '../utils.js';
 import type { WebSearchExtensionOptions, WebSearchResult } from './types.js';
 
@@ -23,15 +23,13 @@ type ExaParsedResult = {
 };
 
 export async function searchWithExa(
-	web: WebAPI,
+	fetch: Fetch,
 	query: string,
 	options: WebSearchExtensionOptions,
 ): Promise<WebSearchResult[]> {
-	const response = await web.fetch({
+	const response = await fetch({
 		url: EXA_MCP_URL,
 		method: 'POST',
-		timeoutMs: options.timeoutMs,
-		maxRedirects: options.maxRedirects,
 		headers: {
 			'Content-Type': 'application/json',
 			Accept: 'application/json, text/event-stream',

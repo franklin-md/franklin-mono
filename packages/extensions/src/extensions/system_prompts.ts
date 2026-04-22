@@ -22,7 +22,7 @@ Supports standard glob syntax: * (any characters in a segment), ** (any nested d
 Use this tool when you need to discover files by name pattern — for searching file *contents*, use a different tool.`;
 
 export const bashDescription = `
-Purpose: Execute shell commands in an ephemeral bash session.
+Purpose: Execute a command in the user's default shell.
 When to Use: Terminal operations: git, npm, docker, pytest, etc.
 Commands that modify system state
 Running builds, tests, servers

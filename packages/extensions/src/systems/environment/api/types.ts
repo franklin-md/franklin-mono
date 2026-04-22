@@ -4,9 +4,8 @@ import type {
 	FilesystemPermissions,
 	NetworkPermissions,
 	OsInfo,
-	Terminal,
-	WebFetchResponse,
-	WebFetchRequest,
+	Process,
+	WebAPI,
 } from '@franklin/lib';
 
 export interface FilesystemConfig {
@@ -14,20 +13,15 @@ export interface FilesystemConfig {
 	permissions: FilesystemPermissions;
 }
 
-export type NetworkConfig = NetworkPermissions;
-
-export interface WebAPI {
-	fetch(request: WebFetchRequest): Promise<WebFetchResponse>;
-}
-
 export interface EnvironmentConfig {
 	fsConfig: FilesystemConfig;
-	netConfig: NetworkConfig;
+	// TODO(FRA-239): Rename this to NetworkConfig.
+	netConfig: NetworkPermissions;
 }
 
 export interface Environment {
 	readonly filesystem: Filesystem;
-	readonly terminal: Terminal;
+	readonly process: Process;
 	readonly web: WebAPI;
 	readonly osInfo: OsInfo;
 }

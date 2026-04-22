@@ -25,7 +25,7 @@ function mockEnvironment(
 			deleteFile: vi.fn(),
 			resolve: vi.fn(),
 		},
-		terminal: { exec: vi.fn() },
+		process: { exec: vi.fn() },
 		web: { fetch: vi.fn(fetchImpl) },
 		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({
@@ -71,12 +71,10 @@ function getResultText(result: {
 
 function textResponse(body: string, contentType: string) {
 	return {
-		requestedUrl: 'https://example.com',
-		finalUrl: 'https://example.com',
+		url: 'https://example.com',
 		status: 200,
 		statusText: 'OK',
-		contentType,
-		headers: {},
+		headers: { 'Content-Type': contentType },
 		body: new TextEncoder().encode(body),
 	};
 }

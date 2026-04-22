@@ -34,7 +34,7 @@ function collectHandlers(
 function fakeEnvironment(osInfo: MemoryOsInfo): ReconfigurableEnvironment {
 	return {
 		filesystem: {} as never,
-		terminal: {} as never,
+		process: {} as never,
 		web: {} as never,
 		osInfo,
 		config: async () => ({

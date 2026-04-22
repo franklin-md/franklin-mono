@@ -3,17 +3,20 @@ import {
 	type SandboxRuntimeConfig,
 } from '@anthropic-ai/sandbox-runtime';
 import { spawn } from 'child_process';
-import { delimiter } from 'path';
-import type { AbsolutePath, Terminal, TerminalInput } from '@franklin/lib';
-import { joinAbsolute } from '@franklin/lib';
-import type {
-	NetworkConfig,
-	FilesystemConfig,
-	EnvironmentConfig,
-} from '@franklin/extensions';
 import { once } from 'events';
+import { createRequire } from 'node:module';
+import { delimiter } from 'path';
+import type { AbsolutePath, Process, ProcessInput } from '@franklin/lib';
+import { joinAbsolute } from '@franklin/lib';
+import type { NetworkPermissions } from '@franklin/lib';
+import type { FilesystemConfig, EnvironmentConfig } from '@franklin/extensions';
 
-export class SandboxedTerminal implements Terminal {
+const require = createRequire(import.meta.url);
+const { quote: quoteArgv } = require('shell-quote') as {
+	quote: (args: readonly string[]) => string;
+};
+
+export class SandboxedProcess implements Process {
 	private _cwd: string;
 	private _app_dir: AbsolutePath;
 	private _config: SandboxRuntimeConfig;
@@ -25,13 +28,13 @@ export class SandboxedTerminal implements Terminal {
 			.filter((path) => path.length > 0);
 	}
 
-	async setNetworkConfig(config: NetworkConfig) {
+	async setNetworkConfig(config: NetworkPermissions) {
 		this._config.network = { ...config };
 		await SandboxManager.initialize(this._config);
 	}
 
 	getNetworkConfig() {
-		return this._config.network as NetworkConfig;
+		return this._config.network as NetworkPermissions;
 	}
 
 	private _denyWritePaths(): string[] {
@@ -85,20 +88,28 @@ export class SandboxedTerminal implements Terminal {
 		await SandboxManager.initialize(this._config);
 	}
 
-	async exec({ cmd, timeout }: TerminalInput) {
-		// Wrap a command with sandbox restrictions
+	async exec({ file, args, cwd, env, timeout }: ProcessInput) {
+		// SandboxManager.wrapWithSandbox takes a shell-string and returns a
+		// shell-string (e.g. `sandbox-exec -p <policy> /bin/sh -c "..."`), which
+		// must ultimately be run through `shell: true`. We POSIX-quote the argv
+		// here so the shell reassembles the exact argv we were given — callers
+		// never have to shell-escape themselves.
+		const shellCmd = quoteArgv([file, ...(args ?? [])]);
 		const sandboxedCommand = await SandboxManager.wrapWithSandbox(
-			cmd,
+			shellCmd,
 			undefined,
 			this._config,
 		);
 
-		// Execute the sandboxed command
-		// TODO: we should have a way of managing environment variables
+		// env merges over process.env so callers can add a few vars without
+		// dropping PATH, HOME, etc.
+		const mergedEnv = env ? { ...process.env, ...env } : undefined;
+
 		const child = spawn(sandboxedCommand, {
 			shell: true,
 			stdio: 'pipe',
-			cwd: this._cwd,
+			cwd: cwd ?? this._cwd,
+			env: mergedEnv,
 			timeout,
 		});
 
