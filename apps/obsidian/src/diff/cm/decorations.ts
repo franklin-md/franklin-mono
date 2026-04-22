@@ -176,6 +176,20 @@ function findHoveredHunkIdInView(view: EditorView): string | null {
 	);
 }
 
+export function findAddedHunkIdAtPosition(
+	hunks: Hunk[],
+	position: number,
+): string | null {
+	for (const hunk of hunks) {
+		if (hunk.addedLines.length === 0) continue;
+		if (position >= hunk.newFrom && position <= hunk.newTo) {
+			return hunk.id;
+		}
+	}
+
+	return null;
+}
+
 export const diffHoverTracking = ViewPlugin.fromClass(
 	class {
 		hoveredHunkId: string | null = null;
@@ -240,10 +254,14 @@ export const diffEmbeddedBlockStyling = ViewPlugin.fromClass(
 		}
 
 		sync() {
+			const hunks = this.view.state.field(diffField, false)?.hunks ?? [];
+
 			for (const widget of this.view.dom.querySelectorAll<HTMLElement>(
 				'.cm-embed-block.cm-table-widget',
 			)) {
-				const hunkId = findNearestAddedHunkId(widget);
+				const hunkId =
+					findHunkIdForTableWidget(this.view, widget, hunks) ??
+					findNearestAddedHunkId(widget);
 				widget.classList.toggle(
 					'diff-plugin-added-table-widget',
 					hunkId !== null,
@@ -257,6 +275,18 @@ export const diffEmbeddedBlockStyling = ViewPlugin.fromClass(
 		}
 	},
 );
+
+function findHunkIdForTableWidget(
+	view: EditorView,
+	widget: HTMLElement,
+	hunks: Hunk[],
+): string | null {
+	try {
+		return findAddedHunkIdAtPosition(hunks, view.posAtDOM(widget, 0));
+	} catch {
+		return null;
+	}
+}
 
 function findNearestAddedHunkId(widget: HTMLElement): string | null {
 	return (

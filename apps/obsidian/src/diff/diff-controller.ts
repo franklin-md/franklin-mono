@@ -105,7 +105,6 @@ export class DiffController {
 			if (leaf.view.getMode() !== 'source') return;
 
 			const view = this.getCmView(leaf.view);
-			if (!view) return;
 
 			seen.add(view);
 			void this.syncEditor(view, leaf.view, leaf.view.file?.path ?? null);
@@ -194,9 +193,9 @@ export class DiffController {
 		return created;
 	}
 
-	private getCmView(markdownView: MarkdownView): EditorView | null {
-		const cm = (markdownView.editor as { cm?: EditorView }).cm;
-		return cm ?? null;
+	private getCmView(markdownView: MarkdownView): EditorView {
+		// @ts-expect-error, not typed
+		return markdownView.editor.cm as EditorView;
 	}
 
 	private syncHeaderActions(view: EditorView) {
@@ -243,6 +242,7 @@ export class DiffController {
 			accept.type = 'button';
 			accept.className = 'diff-plugin-header-btn diff-plugin-header-accept';
 			accept.textContent = 'Accept All';
+			accept.onmousedown = stopHeaderButtonMouseDown;
 			accept.onclick = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
@@ -254,6 +254,7 @@ export class DiffController {
 			reject.type = 'button';
 			reject.className = 'diff-plugin-header-btn diff-plugin-header-reject';
 			reject.textContent = 'Reject All';
+			reject.onmousedown = stopHeaderButtonMouseDown;
 			reject.onclick = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
@@ -275,4 +276,9 @@ export class DiffController {
 		session.header.container.remove();
 		session.header = null;
 	}
+}
+
+function stopHeaderButtonMouseDown(event: MouseEvent) {
+	event.preventDefault();
+	event.stopPropagation();
 }
