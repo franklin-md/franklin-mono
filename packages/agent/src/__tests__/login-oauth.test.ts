@@ -1,4 +1,4 @@
-import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
+import type { OAuthCredentials } from '../auth/credentials.js';
 import {
 	MemoryOsInfo,
 	type AbsolutePath,
@@ -7,6 +7,7 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 
 import { AuthManager } from '../auth/manager.js';
+import type { OAuthClient } from '../auth/oauth-client.js';
 import { OAuthFlow } from '../auth/oauth-flow.js';
 import { createAuthStore } from '../auth/store.js';
 import type { OAuthLoginCallbacks } from '../auth/types.js';
@@ -44,10 +45,7 @@ function createFilesystem(): Filesystem {
 	};
 }
 
-function createPlatform(
-	filesystem: Filesystem,
-	createFlow: Platform['createFlow'],
-): Platform {
+function createPlatform(filesystem: Filesystem): Platform {
 	return {
 		spawn: vi.fn(async () => {
 			throw new Error('not implemented');
@@ -70,13 +68,14 @@ function createPlatform(
 				listenLoopback: vi.fn(async () => {
 					throw new Error('not implemented');
 				}),
+				fetch: vi.fn(async () => {
+					throw new Error('not implemented');
+				}),
 			},
 		},
 		ai: {
-			getOAuthProviders: async () => [],
 			getApiKeyProviders: async () => [],
 		},
-		createFlow,
 	};
 }
 
@@ -99,16 +98,20 @@ function createFlow(
 }
 
 describe('AuthManager.loginOAuth', () => {
-	it('drives the auth flow resource, persists credentials, and disposes it when finished', async () => {
+	it('drives the OAuth flow, persists credentials, and disposes it when finished', async () => {
 		const filesystem = createFilesystem();
 		const { credentials, flow } = createFlow();
-		const platform = createPlatform(
-			filesystem,
-			vi.fn(async () => flow),
-		);
+		const platform = createPlatform(filesystem);
+		const oauthClient = {
+			createFlow: vi.fn(() => flow),
+			refresh: vi.fn(),
+			getApiKey: vi.fn(),
+			providers: vi.fn(() => []),
+		} as unknown as OAuthClient;
 		const auth = new AuthManager(
 			platform,
 			createAuthStore(filesystem, '/test/app' as AbsolutePath),
+			oauthClient,
 		);
 		const loginSpy = vi.spyOn(flow, 'login');
 		const disposeSpy = vi.spyOn(flow, 'dispose');
@@ -120,7 +123,7 @@ describe('AuthManager.loginOAuth', () => {
 			onProgress,
 		});
 
-		expect(platform.createFlow).toHaveBeenCalledWith('anthropic');
+		expect(oauthClient.createFlow).toHaveBeenCalledWith('anthropic');
 		expect(loginSpy).toHaveBeenCalledTimes(1);
 		expect(onProgress).toHaveBeenCalledWith('Waiting for browser');
 		expect(onAuth).toHaveBeenCalledWith({

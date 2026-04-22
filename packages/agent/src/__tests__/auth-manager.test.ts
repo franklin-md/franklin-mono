@@ -1,4 +1,4 @@
-import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
+import type { OAuthCredentials } from '../auth/credentials.js';
 import {
 	MemoryOsInfo,
 	type AbsolutePath,
@@ -7,6 +7,7 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 import { AuthManager } from '../auth/manager.js';
 import { OAuthFlow } from '../auth/oauth-flow.js';
+import type { OAuthClient } from '../auth/oauth-client.js';
 import { createAuthStore, DEFAULT_AUTH_FILE } from '../auth/store.js';
 import { joinAbsolute } from '@franklin/lib';
 import type { Platform } from '../platform.js';
@@ -43,10 +44,16 @@ function createFilesystem(): Filesystem {
 	};
 }
 
-function createPlatform(
-	filesystem: Filesystem,
-	createFlow: Platform['createFlow'],
-): Platform {
+function stubClient(flow: OAuthFlow): OAuthClient {
+	return {
+		createFlow: vi.fn(() => flow),
+		refresh: vi.fn(),
+		getApiKey: vi.fn((_id: string, creds: OAuthCredentials) => creds.access),
+		providers: vi.fn(() => []),
+	} as unknown as OAuthClient;
+}
+
+function createPlatform(filesystem: Filesystem): Platform {
 	return {
 		spawn: vi.fn(async () => {
 			throw new Error('not implemented');
@@ -69,13 +76,14 @@ function createPlatform(
 				listenLoopback: vi.fn(async () => {
 					throw new Error('not implemented');
 				}),
+				fetch: vi.fn(async () => {
+					throw new Error('not implemented');
+				}),
 			},
 		},
 		ai: {
-			getOAuthProviders: async () => [],
 			getApiKeyProviders: async () => [],
 		},
-		createFlow,
 	};
 }
 
@@ -83,21 +91,19 @@ const TEST_APP_DIR = '/test/app' as AbsolutePath;
 const TEST_AUTH_PATH = joinAbsolute(TEST_APP_DIR, DEFAULT_AUTH_FILE);
 
 describe('AuthManager', () => {
-	it('returns OAuth credentials from the platform flow without persisting them', async () => {
+	it('returns OAuth credentials from the OAuth client flow without persisting them', async () => {
 		const filesystem = createFilesystem();
 		const credentials = {
 			accessToken: 'token',
 		} as unknown as OAuthCredentials;
+		const flow = new OAuthFlow(async () => credentials);
 		const auth = new AuthManager(
-			createPlatform(
-				filesystem,
-				async () => new OAuthFlow(async () => credentials),
-			),
+			createPlatform(filesystem),
 			createAuthStore(filesystem, TEST_APP_DIR),
+			stubClient(flow),
 		);
 
-		const flow = await auth.flow('anthropic');
-		await expect(flow.login()).resolves.toBe(credentials);
+		await expect(auth.flow('anthropic').login()).resolves.toBe(credentials);
 
 		expect(auth.entries()).toEqual({});
 	});
@@ -107,12 +113,11 @@ describe('AuthManager', () => {
 		const credentials = {
 			accessToken: 'token',
 		} as unknown as OAuthCredentials;
+		const flow = new OAuthFlow(async () => credentials);
 		const auth = new AuthManager(
-			createPlatform(
-				filesystem,
-				async () => new OAuthFlow(async () => credentials),
-			),
+			createPlatform(filesystem),
 			createAuthStore(filesystem, TEST_APP_DIR),
+			stubClient(flow),
 		);
 
 		auth.setOAuthEntry('anthropic', {
@@ -148,10 +153,7 @@ describe('AuthManager', () => {
 		);
 		vi.mocked(filesystem.writeFile).mockClear();
 		const auth = new AuthManager(
-			createPlatform(
-				filesystem,
-				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
-			),
+			createPlatform(filesystem),
 			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 
@@ -185,10 +187,7 @@ describe('AuthManager', () => {
 			}),
 		);
 		const auth = new AuthManager(
-			createPlatform(
-				filesystem,
-				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
-			),
+			createPlatform(filesystem),
 			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 		const listener = vi.fn();
@@ -202,10 +201,7 @@ describe('AuthManager', () => {
 	it('emits auth change events for store mutations', async () => {
 		const filesystem = createFilesystem();
 		const auth = new AuthManager(
-			createPlatform(
-				filesystem,
-				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
-			),
+			createPlatform(filesystem),
 			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 		const listener = vi.fn();
@@ -227,10 +223,7 @@ describe('AuthManager', () => {
 	it('emits provider removals as undefined entries', async () => {
 		const filesystem = createFilesystem();
 		const auth = new AuthManager(
-			createPlatform(
-				filesystem,
-				async () => new OAuthFlow(async () => ({}) as OAuthCredentials),
-			),
+			createPlatform(filesystem),
 			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 		const listener = vi.fn();
@@ -245,5 +238,68 @@ describe('AuthManager', () => {
 		auth.removeApiKeyEntry('anthropic');
 
 		expect(listener).toHaveBeenCalledWith('anthropic', undefined);
+	});
+
+	it('getApiKey returns the current access token when not expired', async () => {
+		const filesystem = createFilesystem();
+		const client = {
+			createFlow: vi.fn(),
+			refresh: vi.fn(),
+			getApiKey: vi.fn(() => 'api-key'),
+			providers: vi.fn(() => []),
+		} as unknown as OAuthClient;
+		const auth = new AuthManager(
+			createPlatform(filesystem),
+			createAuthStore(filesystem, TEST_APP_DIR),
+			client,
+		);
+		auth.setOAuthEntry('anthropic', {
+			type: 'oauth',
+			credentials: {
+				access: 'access',
+				refresh: 'refresh',
+				expires: Date.now() + 60_000,
+			},
+		});
+
+		await expect(auth.getApiKey('anthropic')).resolves.toBe('api-key');
+		expect(client.refresh).not.toHaveBeenCalled();
+	});
+
+	it('getApiKey refreshes expired credentials and persists the new ones', async () => {
+		const filesystem = createFilesystem();
+		const refreshed = {
+			access: 'new-access',
+			refresh: 'new-refresh',
+			expires: Date.now() + 60_000,
+		};
+		const client = {
+			createFlow: vi.fn(),
+			refresh: vi.fn(async () => refreshed),
+			getApiKey: vi.fn((_id: string, creds: OAuthCredentials) => creds.access),
+			providers: vi.fn(() => []),
+		} as unknown as OAuthClient;
+		const auth = new AuthManager(
+			createPlatform(filesystem),
+			createAuthStore(filesystem, TEST_APP_DIR),
+			client,
+		);
+		auth.setOAuthEntry('anthropic', {
+			type: 'oauth',
+			credentials: {
+				access: 'stale',
+				refresh: 'stale-refresh',
+				expires: 0,
+			},
+		});
+
+		const apiKey = await auth.getApiKey('anthropic');
+
+		expect(apiKey).toBe('new-access');
+		expect(client.refresh).toHaveBeenCalledWith(
+			'anthropic',
+			expect.objectContaining({ access: 'stale' }),
+		);
+		expect(auth.entries().anthropic?.oauth?.credentials).toEqual(refreshed);
 	});
 });
