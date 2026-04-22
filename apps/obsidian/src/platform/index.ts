@@ -24,12 +24,12 @@ export function createObsidianPlatform(app: App): Platform {
 						createObsidianFilesystem(app, createNodeFilesystem()),
 						fsConfig,
 					),
-				configureTerminal: async () => {
+				configureProcess: async () => {
 					return {
 						exec: async () => {
 							return {
 								exit_code: 0,
-								stdout: 'Terminal is not available in Obsidian',
+								stdout: 'Process execution is not available in Obsidian',
 								stderr: '',
 							};
 						},

@@ -27,7 +27,11 @@
 		"@franklin/agent": "*",
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
+		"@mariozechner/pi-agent-core": "*",
 		"@mariozechner/pi-ai": "*",
-		"@mariozechner/pi-agent-core": "*"
+		"shell-quote": "^1.8.3"
+	},
+	"devDependencies": {
+		"@types/shell-quote": "^1.7.5"
 	}
 }
