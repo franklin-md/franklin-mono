@@ -7,6 +7,7 @@ import {
 } from '@franklin/extensions';
 import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
+import { nodePlatformFetch } from './fetch.js';
 import { getProviders } from '@mariozechner/pi-ai';
 import { getOAuthProviders } from '@mariozechner/pi-ai/oauth';
 import type { AbsolutePath } from '@franklin/lib';
@@ -63,7 +64,8 @@ export function createNodePlatform(args: Args = {}): Platform {
 					await terminal.initialize();
 					return terminal;
 				},
-				configureWeb: async (netConfig) => createWeb(netConfig),
+				configureWeb: async (netConfig) =>
+					createWeb(netConfig, nodePlatformFetch),
 			}),
 		os: {
 			terminal: new UnrestrictedTerminal(process.cwd()),

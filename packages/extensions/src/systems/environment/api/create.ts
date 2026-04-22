@@ -1,10 +1,14 @@
-import type { Filesystem, OsInfo, Terminal } from '@franklin/lib';
+import type {
+	Filesystem,
+	NetworkPermissions,
+	OsInfo,
+	Terminal,
+	WebAPI,
+} from '@franklin/lib';
 import type {
 	EnvironmentConfig,
 	FilesystemConfig,
-	NetworkConfig,
 	ReconfigurableEnvironment,
-	WebAPI,
 } from './types.js';
 
 export type ConfigureOptions<
@@ -22,9 +26,14 @@ export type ConfigureOptions<
 		config: EnvironmentConfig,
 		previous: T | undefined,
 	) => Promise<T>;
-	configureWeb: (config: NetworkConfig, previous: W | undefined) => Promise<W>;
+	configureWeb: (
+		config: NetworkPermissions,
+		previous: W | undefined,
+	) => Promise<W>;
 	dispose?: (current: { filesystem: F; terminal: T; web: W }) => Promise<void>;
 };
+
+// AGENT-TODO: This feels like it should really be refacctored into something like Swappable<T> factory that given a T and a factory C=>T
 
 export async function createReconfigurableEnvironment<
 	F extends Filesystem = Filesystem,

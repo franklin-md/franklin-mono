@@ -7,12 +7,10 @@ import { createWebExtension } from '../index.js';
 
 function textResponse(body: string, contentType: string) {
 	return {
-		requestedUrl: 'https://example.com',
-		finalUrl: 'https://example.com',
+		url: 'https://example.com',
 		status: 200,
 		statusText: 'OK',
-		contentType,
-		headers: {},
+		headers: { 'content-type': contentType },
 		body: new TextEncoder().encode(body),
 	};
 }
@@ -139,22 +137,17 @@ describe('createWebExtension', () => {
 			query: 'example',
 		});
 
+		// Request literals no longer carry timeoutMs/maxRedirects — those
+		// configure the withBounded decorator each extension wraps around
+		// environment.web.fetch. Verify the URLs flow through correctly.
 		const fetchMock = env.web.fetch as ReturnType<typeof vi.fn>;
 		expect(fetchMock).toHaveBeenNthCalledWith(
 			1,
-			expect.objectContaining({
-				url: 'https://example.com/docs',
-				timeoutMs: 1234,
-				maxRedirects: 2,
-			}),
+			expect.objectContaining({ url: 'https://example.com/docs' }),
 		);
 		expect(fetchMock).toHaveBeenNthCalledWith(
 			2,
-			expect.objectContaining({
-				url: 'https://mcp.exa.ai/mcp',
-				timeoutMs: 4321,
-				maxRedirects: 7,
-			}),
+			expect.objectContaining({ url: 'https://mcp.exa.ai/mcp' }),
 		);
 	});
 });

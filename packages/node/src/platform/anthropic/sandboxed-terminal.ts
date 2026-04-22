@@ -4,13 +4,14 @@ import {
 } from '@anthropic-ai/sandbox-runtime';
 import { spawn } from 'child_process';
 import { delimiter } from 'path';
-import type { AbsolutePath, Terminal, TerminalInput } from '@franklin/lib';
-import { joinAbsolute } from '@franklin/lib';
 import type {
-	NetworkConfig,
-	FilesystemConfig,
-	EnvironmentConfig,
-} from '@franklin/extensions';
+	AbsolutePath,
+	NetworkPermissions,
+	Terminal,
+	TerminalInput,
+} from '@franklin/lib';
+import { joinAbsolute } from '@franklin/lib';
+import type { FilesystemConfig, EnvironmentConfig } from '@franklin/extensions';
 import { once } from 'events';
 
 export class SandboxedTerminal implements Terminal {
@@ -25,13 +26,13 @@ export class SandboxedTerminal implements Terminal {
 			.filter((path) => path.length > 0);
 	}
 
-	async setNetworkConfig(config: NetworkConfig) {
+	async setNetworkConfig(config: NetworkPermissions) {
 		this._config.network = { ...config };
 		await SandboxManager.initialize(this._config);
 	}
 
 	getNetworkConfig() {
-		return this._config.network as NetworkConfig;
+		return this._config.network as NetworkPermissions;
 	}
 
 	private _denyWritePaths(): string[] {

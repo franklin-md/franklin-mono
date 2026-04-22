@@ -4,7 +4,7 @@ import type { StoreAPI } from '../../../systems/store/index.js';
 import type { StoreRuntime } from '../../../systems/store/runtime.js';
 import type { Extension } from '../../../algebra/types/index.js';
 import { readFromCache, writeToCache } from './cache.js';
-import { normalizeUrl } from '@franklin/lib';
+import { normalizeUrl, withBounded } from '@franklin/lib';
 import { toContentResult } from './result.js';
 import { fetchUrlSpec } from './tools.js';
 import {
@@ -23,7 +23,10 @@ export function webFetchExtension(
 		api.registerStore(webFetchCacheKey, {}, 'shared');
 
 		api.registerTool(fetchUrlSpec, async ({ url }, ctx) => {
-			const web = ctx.environment.web;
+			const boundedFetch = withBounded({
+				timeoutMs: resolved.timeoutMs,
+				maxRedirects: resolved.maxRedirects,
+			})(ctx.environment.web.fetch);
 			const store = ctx.getStore(webFetchCacheKey);
 			let normalizedUrl: string;
 			try {
@@ -50,17 +53,15 @@ export function webFetchExtension(
 			}
 
 			try {
-				const response = await web.fetch({
+				const response = await boundedFetch({
 					url: normalizedUrl,
 					method: 'GET',
-					timeoutMs: resolved.timeoutMs,
-					maxRedirects: resolved.maxRedirects,
 				});
 				// We process the response, and if it is an error of any
 				// kind, we DO NOT cache it
 				const processed = processWebResponse(response, resolved);
 				if (!processed.isError) {
-					const _ = writeToCache(store, normalizedUrl, response, resolved, now);
+					writeToCache(store, normalizedUrl, response, resolved, now);
 				}
 
 				return toContentResult(processed, false);

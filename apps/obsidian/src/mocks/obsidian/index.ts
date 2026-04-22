@@ -1,6 +1,8 @@
 // Runtime stub for the obsidian module (types-only package with no JS entry).
 // Used as a Vite alias in vitest.config.ts so imports resolve at test time.
 
+import { vi, type Mock } from 'vitest';
+
 export class FileSystemAdapter {
 	getBasePath(): string {
 		return '';
@@ -18,3 +20,5 @@ export function getLinkpath(linktext: string): string {
 	const hashIndex = linktext.indexOf('#');
 	return hashIndex >= 0 ? linktext.slice(0, hashIndex) : linktext;
 }
+
+export const requestUrl: Mock = vi.fn();

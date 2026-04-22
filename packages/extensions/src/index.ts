@@ -23,9 +23,7 @@ export type {
 	Environment,
 	ReconfigurableEnvironment,
 	FilesystemConfig,
-	NetworkConfig,
 	EnvironmentConfig,
-	WebAPI,
 } from './systems/environment/api/index.js';
 export type { ConfigureOptions } from './systems/environment/api/index.js';
 export {

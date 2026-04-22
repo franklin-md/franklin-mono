@@ -1,6 +1,7 @@
 import type { CoreAPI } from '../../../systems/core/index.js';
 import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import type { Extension } from '../../../algebra/types/index.js';
+import { withBounded } from '@franklin/lib';
 import { toSearchError, toSearchResult } from './result.js';
 import { searchWebSpec } from './tools.js';
 import { searchWithDdg } from './ddg.js';
@@ -17,13 +18,16 @@ export function webSearchExtension(
 
 	return (api) => {
 		api.registerTool(searchWebSpec, async ({ query }, ctx) => {
-			const web = ctx.environment.web;
+			const fetch = withBounded({
+				timeoutMs: resolved.timeoutMs,
+				maxRedirects: resolved.maxRedirects,
+			})(ctx.environment.web.fetch);
 			try {
-				const results = await searchWithExa(web, query, resolved);
+				const results = await searchWithExa(fetch, query, resolved);
 				return toSearchResult(query, results);
 			} catch (exaError) {
 				try {
-					const results = await searchWithDdg(web, query, resolved);
+					const results = await searchWithDdg(fetch, query, resolved);
 					return toSearchResult(query, results);
 				} catch (ddgError) {
 					return toSearchError(query, combineSearchErrors(exaError, ddgError));

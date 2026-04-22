@@ -5,8 +5,7 @@ import type {
 	NetworkPermissions,
 	OsInfo,
 	Terminal,
-	WebFetchResponse,
-	WebFetchRequest,
+	WebAPI,
 } from '@franklin/lib';
 
 export interface FilesystemConfig {
@@ -14,15 +13,10 @@ export interface FilesystemConfig {
 	permissions: FilesystemPermissions;
 }
 
-export type NetworkConfig = NetworkPermissions;
-
-export interface WebAPI {
-	fetch(request: WebFetchRequest): Promise<WebFetchResponse>;
-}
-
 export interface EnvironmentConfig {
 	fsConfig: FilesystemConfig;
-	netConfig: NetworkConfig;
+	// AGENT-TODO: Would like type to be renamed to NetworkConfig
+	netConfig: NetworkPermissions;
 }
 
 export interface Environment {

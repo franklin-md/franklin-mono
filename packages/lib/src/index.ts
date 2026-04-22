@@ -12,8 +12,19 @@ export type {
 export { detectShellFamily, MemoryOsInfo } from './os-info/index.js';
 export type {
 	NetworkPermissions,
+	WebFetchMethod,
 	WebFetchRequest,
 	WebFetchResponse,
+	Fetch,
+	FetchDecorator,
+	WebAPI,
+	BoundedOptions,
+} from './network/index.js';
+export {
+	withPolicy,
+	assertAllowed,
+	withNormalize,
+	withBounded,
 } from './network/index.js';
 export {
 	createFolderScopedFilesystem,

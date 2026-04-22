@@ -76,11 +76,9 @@ describe('initializeMain', () => {
 						},
 						web: {
 							fetch: async () => ({
-								requestedUrl: 'https://example.com',
-								finalUrl: 'https://example.com',
+								url: 'https://example.com',
 								status: 200,
 								statusText: 'OK',
-								contentType: 'text/plain',
 								kind: 'text',
 								text: '',
 								truncated: false,

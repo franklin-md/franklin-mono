@@ -28,7 +28,8 @@ export function processWebResponse(
 		};
 	}
 
-	const type = normalizeContentType(response.contentType);
+	const contentType = response.headers['content-type'];
+	const type = normalizeContentType(contentType);
 	if (type === 'text/html' || type === 'application/xhtml+xml') {
 		return extractHtml(response, options);
 	}
@@ -57,11 +58,13 @@ export function processWebResponse(
 
 	return {
 		kind: 'error',
-		content: `Unsupported content type: ${response.contentType ?? 'unknown'}.`,
+		content: `Unsupported content type: ${contentType ?? 'unknown'}.`,
 		isError: true,
 		truncated: false,
 	};
 }
+
+// AGENT-TODO: Refactor the normalization step for both of these
 
 function extractHtml(
 	response: WebFetchResponse,
