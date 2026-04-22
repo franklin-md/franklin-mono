@@ -28,8 +28,6 @@ export type WebFetchResponse = {
 
 export type Fetch = (request: WebFetchRequest) => Promise<WebFetchResponse>;
 
-export type FetchDecorator = (next: Fetch) => Fetch;
-
 // TODO(FRA-239): Rename this interface to NetworkAPI.
 export interface WebAPI {
 	fetch: Fetch;

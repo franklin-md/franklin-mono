@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Fetch, NetworkPermissions, WebFetchResponse } from '../types.js';
+import type {
+	Fetch,
+	NetworkPermissions,
+	WebFetchResponse,
+} from '../../types.js';
 import { withPolicy } from '../policy.js';
 
 function createConfig(

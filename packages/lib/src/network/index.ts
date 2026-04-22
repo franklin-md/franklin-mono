@@ -4,14 +4,18 @@ export type {
 	WebFetchRequest,
 	WebFetchResponse,
 	Fetch,
-	FetchDecorator,
 	WebAPI,
 } from './types.js';
 
-export { withPolicy, assertAllowed } from './policy.js';
-export { withDefaults } from './defaults.js';
-export { withTimeout } from './timeout.js';
-export { withRedirect } from './redirect.js';
-export { withRetry } from './retry.js';
-export type { RetryOptions } from './retry.js';
+export type { FetchDecorator } from './decorators/types.js';
+export type { FetchBuilder } from './decorators/builder.js';
+export { decorate } from './decorators/builder.js';
+export { withPolicy, assertAllowed } from './decorators/policy.js';
+export { withUserAgent } from './decorators/user-agent.js';
+export { withNormalizedHeaders } from './decorators/normalize-headers.js';
+export { withTimeout } from './decorators/timeout.js';
+export { withRedirect } from './decorators/redirect.js';
+export { withRetry } from './decorators/retry.js';
+export type { RetryOptions } from './decorators/retry.js';
+export { getHeader } from './headers.js';
 export { readBodyWithLimit } from './body-limit.js';

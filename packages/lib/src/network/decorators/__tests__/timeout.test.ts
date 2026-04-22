@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Fetch, WebFetchResponse } from '../types.js';
+import type { Fetch, WebFetchResponse } from '../../types.js';
 import { withTimeout } from '../timeout.js';
 
 function okResponse(): WebFetchResponse {

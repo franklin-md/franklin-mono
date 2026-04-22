@@ -1,4 +1,5 @@
-import type { Fetch, FetchDecorator } from './types.js';
+import type { Fetch } from '../types.js';
+import type { FetchDecorator } from './types.js';
 
 const REDIRECT_STATUS_CODES = new Set([301, 302, 303, 307, 308]);
 

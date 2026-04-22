@@ -1,9 +1,13 @@
 import type { Fetch } from '@franklin/lib';
+import { getHeader } from '@franklin/lib';
 import { requestUrl } from 'obsidian';
 
 /**
  * Platform transport for the Obsidian plugin. Routes through Obsidian's native
  * request API because Undici does not run correctly in this renderer runtime.
+ * Header-key casing is the decorator chain's concern (`withNormalizedHeaders`),
+ * not this transport's; `getHeader` is used for the pre-decorator content-type
+ * peek because Obsidian's `requestUrl` needs it as a separate field.
  *
  * TODO(FRA-244): `requestUrl()` auto-follows redirects before control returns
  * here, which bypasses `withRedirect()`'s per-hop normalization, policy checks,
@@ -16,7 +20,7 @@ export const obsidianFetch: Fetch = async (request) => {
 		url: url.toString(),
 		method: request.method,
 		headers: request.headers,
-		contentType: getHeaderValue(request.headers, 'content-type'),
+		contentType: getHeader(request.headers, 'content-type'),
 		body: bodyToArrayBuffer(request.body),
 		throw: false,
 	});
@@ -25,19 +29,13 @@ export const obsidianFetch: Fetch = async (request) => {
 		url: url.toString(),
 		status: response.status,
 		statusText: '',
-		headers: headersToRecord(response.headers),
+		headers: response.headers,
 		body: new Uint8Array(response.arrayBuffer),
 	};
 };
 
-function headersToRecord(
-	headers: Readonly<{
-		forEach: (callback: (value: string, key: string) => void) => void;
-	}>,
-): Record<string, string> {
-	const result: Record<string, string> = {};
-	headers.forEach((value, key) => {
-		result[key] = value;
-	});
-	return result;
+function bodyToArrayBuffer(
+	body: Uint8Array | undefined,
+): ArrayBuffer | undefined {
+	return body?.slice().buffer;
 }

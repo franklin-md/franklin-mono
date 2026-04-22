@@ -4,7 +4,8 @@ import { readBodyWithLimit } from '@franklin/lib';
 /**
  * Default Node platform transport. Wraps `globalThis.fetch` with manual
  * redirect handling (the `withRedirect` decorator owns the loop) and
- * credentials omitted.
+ * credentials omitted. Header-key casing is the decorator chain's concern
+ * (`withNormalizedHeaders`), not this transport's.
  */
 export const nodePlatformFetch: Fetch = async (request) => {
 	const url = new URL(request.url);
@@ -22,15 +23,7 @@ export const nodePlatformFetch: Fetch = async (request) => {
 		url: response.url || url.toString(),
 		status: response.status,
 		statusText: response.statusText,
-		headers: headersToRecord(response.headers),
+		headers: Object.fromEntries(response.headers.entries()),
 		body,
 	};
 };
-
-function headersToRecord(headers: Headers): Record<string, string> {
-	const result: Record<string, string> = {};
-	headers.forEach((value, key) => {
-		result[key] = value;
-	});
-	return result;
-}

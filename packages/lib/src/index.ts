@@ -17,12 +17,16 @@ export type {
 	WebFetchResponse,
 	Fetch,
 	FetchDecorator,
+	FetchBuilder,
 	WebAPI,
 } from './network/index.js';
 export {
+	decorate,
 	withPolicy,
 	assertAllowed,
-	withDefaults,
+	withUserAgent,
+	withNormalizedHeaders,
+	getHeader,
 	withTimeout,
 	withRedirect,
 	withRetry,

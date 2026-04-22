@@ -71,7 +71,7 @@ describe('obsidianFetch', () => {
 		).toBe('{"hello":"world"}');
 	});
 
-	it('maps requestUrl responses to WebFetchResponse', async () => {
+	it('maps requestUrl responses to WebFetchResponse without altering header casing', async () => {
 		vi.mocked(requestUrl).mockResolvedValue({
 			status: 201,
 			headers: { 'Content-Type': 'application/json' },
@@ -87,7 +87,7 @@ describe('obsidianFetch', () => {
 
 		expect(response.status).toBe(201);
 		expect(response.statusText).toBe('');
-		expect(response.headers['content-type']).toBe('application/json');
+		expect(response.headers['Content-Type']).toBe('application/json');
 		expect(response.body).toBeInstanceOf(Uint8Array);
 		expect(new TextDecoder().decode(response.body)).toBe('hello');
 	});

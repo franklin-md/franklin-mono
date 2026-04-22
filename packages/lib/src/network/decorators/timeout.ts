@@ -1,5 +1,6 @@
-import { withDeadline } from '../utils/async/deadline.js';
-import type { Fetch, FetchDecorator } from './types.js';
+import { withDeadline } from '../../utils/async/deadline.js';
+import type { Fetch } from '../types.js';
+import type { FetchDecorator } from './types.js';
 
 /**
  * Races the inner call against a deadline. On overrun, rejects with a timeout

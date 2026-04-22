@@ -1,10 +1,11 @@
-import type { Fetch, FetchDecorator, NetworkPermissions } from './types.js';
+import type { Fetch, NetworkPermissions } from '../types.js';
+import type { FetchDecorator } from './types.js';
 import {
 	isLoopbackHost,
 	isPrivateHost,
 	matchesUrlPattern,
 	normalizeHost,
-} from './utils.js';
+} from '../utils.js';
 
 /**
  * Throws if the URL's host is not allowed by the given permissions. Pure

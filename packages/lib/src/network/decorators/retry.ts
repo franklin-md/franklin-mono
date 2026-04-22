@@ -1,6 +1,7 @@
-import { randomDelay } from '../utils/random.js';
-import { wait } from '../utils/async/wait.js';
-import type { Fetch, FetchDecorator } from './types.js';
+import { randomDelay } from '../../utils/random.js';
+import { wait } from '../../utils/async/wait.js';
+import type { Fetch } from '../types.js';
+import type { FetchDecorator } from './types.js';
 
 export type RetryOptions = {
 	maxAttempts: number;
