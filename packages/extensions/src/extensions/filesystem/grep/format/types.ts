@@ -6,6 +6,5 @@ export interface GrepMatch {
 
 export interface FormatMatchesOptions {
 	truncated: boolean;
-	maxChars?: number;
-	maxMatchTextChars?: number;
+	maxLength?: number;
 }

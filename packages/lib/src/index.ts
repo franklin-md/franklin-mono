@@ -146,5 +146,8 @@ export { wait } from './utils/async/wait.js';
 export { withDeadline } from './utils/async/deadline.js';
 export { randomDelay } from './utils/random.js';
 export { encode, decode } from './utils/bytes.js';
-export { truncate } from './utils/truncate.js';
-export type { TruncateResult } from './utils/truncate.js';
+export { truncate, truncateStream } from './utils/truncate.js';
+export type {
+	TruncateResult,
+	TruncateStreamOptions,
+} from './utils/truncate.js';

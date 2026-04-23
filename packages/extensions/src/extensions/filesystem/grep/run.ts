@@ -9,11 +9,10 @@ import {
 	looksLikeMultipleAbsolutePaths,
 } from './validate.js';
 
-// Output budget: ~50 matches × ~240 chars per preview ≈ 12k chars worst case,
-// keeping the three caps in alignment.
+// Output budget: ~50 matches, 12k chars of formatted output, leaves room for
+// file headers and the truncation note under the hard cap.
 const DEFAULT_LIMIT = 50;
 const MAX_FORMATTED_CHARS = 12_000;
-const MAX_MATCH_TEXT_CHARS = 240;
 const RUN_TIMEOUT_MS = 10_000;
 
 export interface RunGrepResult {
@@ -83,8 +82,7 @@ export async function runGrep(
 	return {
 		output: formatMatches(matches, {
 			truncated,
-			maxChars: MAX_FORMATTED_CHARS,
-			maxMatchTextChars: MAX_MATCH_TEXT_CHARS,
+			maxLength: MAX_FORMATTED_CHARS,
 		}),
 		isError: false,
 	};

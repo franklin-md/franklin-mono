@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { formatMatches } from '../../format/matches.js';
 import type { GrepMatch } from '../../format/types.js';
 
+const NOTE = '(results truncated; narrow with path/include/limit)';
+
 describe('formatMatches', () => {
 	it('returns "No matches found." when the list is empty', () => {
 		expect(formatMatches([], { truncated: false })).toBe('No matches found.');
@@ -24,56 +26,31 @@ describe('formatMatches', () => {
 	it('appends a truncation note when truncated is true', () => {
 		const matches: GrepMatch[] = [{ file: 'a.ts', line: 1, text: 'x' }];
 		expect(formatMatches(matches, { truncated: true })).toBe(
-			'a.ts\n  1: x\n(results truncated; narrow with path/include/limit)',
+			`a.ts\n  1: x\n${NOTE}`,
 		);
 	});
 
-	it('truncates long match text previews when requested', () => {
-		const matches: GrepMatch[] = [
-			{ file: 'a.ts', line: 1, text: 'abcdefghijklmnopqrstuvwxyz' },
-		];
-		expect(
-			formatMatches(matches, {
-				truncated: false,
-				maxMatchTextChars: 10,
-			}),
-		).toBe('a.ts\n  1: abcdefg...');
-	});
-
-	it('caps the formatted output and keeps a truncation note', () => {
-		const matches: GrepMatch[] = [
-			{ file: 'a.ts', line: 1, text: 'alpha' },
-			{ file: 'a.ts', line: 2, text: 'beta' },
-			{ file: 'b.ts', line: 3, text: 'gamma' },
-			{ file: 'b.ts', line: 4, text: 'delta' },
-			{ file: 'c.ts', line: 5, text: 'epsilon' },
-		];
-
-		expect(
-			formatMatches(matches, {
-				truncated: false,
-				maxChars: 68,
-			}),
-		).toBe(
-			'a.ts\n  1: alpha\n(results truncated; narrow with path/include/limit)',
-		);
-	});
-
-	it('drops orphaned file headers when the cap forces truncation mid-file', () => {
+	it('drops whole groups rather than leaving an orphaned file header', () => {
 		const matches: GrepMatch[] = [
 			{ file: 'a.ts', line: 1, text: 'alpha' },
 			{ file: 'b.ts', line: 2, text: 'x'.repeat(60) },
 		];
 
-		// Budget fits the b.ts header but not its (long) match. Without header
-		// cleanup the output would end in a bare 'b.ts' line before the note.
+		// After the suffix reservation (51 chars), content budget is 80 - 51 = 29.
+		// 'a.ts\n  1: alpha' (15) fits; the b.ts block (≥ 60) does not, so it is
+		// dropped atomically — no bare header survives.
 		expect(
-			formatMatches(matches, {
-				truncated: false,
-				maxChars: 70,
-			}),
-		).toBe(
-			'a.ts\n  1: alpha\n(results truncated; narrow with path/include/limit)',
+			formatMatches(matches, { truncated: false, maxLength: 80 }),
+		).toBe(`a.ts\n  1: alpha\n${NOTE}`);
+	});
+
+	it('returns just the note when even the first group does not fit', () => {
+		const matches: GrepMatch[] = [
+			{ file: 'a.ts', line: 1, text: 'x'.repeat(200) },
+		];
+
+		expect(formatMatches(matches, { truncated: false, maxLength: 60 })).toBe(
+			NOTE,
 		);
 	});
 });
