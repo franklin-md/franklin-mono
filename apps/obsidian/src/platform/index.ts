@@ -13,8 +13,12 @@ import {
 	nodePlatformFetch,
 } from '@franklin/node';
 import { createObsidianFilesystem } from './filesystem/obsidian.js';
+import { createObservableFilesystem, type WriteListener } from '@franklin/lib';
 
-export function createObsidianPlatform(app: App): Platform {
+export function createObsidianPlatform(
+	app: App,
+	writeListener: WriteListener,
+): Platform {
 	const nodePlatform = createNodePlatform();
 
 	return {
@@ -22,12 +26,29 @@ export function createObsidianPlatform(app: App): Platform {
 		environment: (config: EnvironmentConfig) =>
 			createReconfigurableEnvironment({
 				config,
+				// configureFilesystem: async (fsConfig) => {
+				// 	const fs = createObservableFilesystem(
+				// 		configureFilesystem(
+				// 			createObsidianFilesystem(app, createNodeFilesystem()),
+				// 			fsConfig,
+				// 		),
+				// 	);
+				// 	fs.onWrite(writeListener);
+				// 	return fs;
+				// },
+				// configureTerminal: async () => {
+
 				osInfo: nodePlatform.os.osInfo,
-				configureFilesystem: async (fsConfig) =>
-					configureFilesystem(
-						createObsidianFilesystem(app, createNodeFilesystem()),
-						fsConfig,
-					),
+				configureFilesystem: async (fsConfig) => {
+					const fs = createObservableFilesystem(
+						configureFilesystem(
+							createObsidianFilesystem(app, createNodeFilesystem()),
+							fsConfig,
+						),
+					);
+					fs.onWrite(writeListener);
+					return fs;
+				},
 				configureProcess: async () => {
 					return {
 						exec: async () => {

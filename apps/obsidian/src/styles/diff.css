@@ -79,7 +79,9 @@
 	width: 0;
 	height: 0;
 	overflow: visible;
-	font: inherit;
+	font-family: inherit;
+	font-size: 1rem !important;
+	line-height: 1.5 !important;
 }
 
 .diff-plugin-actions {
@@ -91,10 +93,46 @@
 	align-items: center;
 	justify-content: flex-end;
 	gap: 4px;
-	height: 1lh;
+	height: auto;
 	padding: 0;
-	font: inherit;
+	font-family: inherit;
+	font-size: 1rem !important;
+	line-height: 1.5 !important;
 	pointer-events: auto;
+}
+
+.diff-plugin-added-embedded-widget {
+	position: relative;
+}
+
+.diff-plugin-embedded-actions-host {
+	position: absolute;
+	top: 8px;
+	right: 40px;
+	z-index: 20;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-family: inherit;
+	font-size: 1rem !important;
+	line-height: 1.5 !important;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 120ms ease;
+}
+
+.diff-plugin-added-embedded-widget:hover .diff-plugin-embedded-actions-host,
+.diff-plugin-added-embedded-widget:focus-within
+	.diff-plugin-embedded-actions-host {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.cm-content:has(.diff-plugin-added-embedded-widget:hover)
+	.diff-plugin-actions-host,
+.cm-content:has(.diff-plugin-embedded-actions-host:hover)
+	.diff-plugin-actions-host {
+	display: none;
 }
 
 .diff-plugin-actions-separator {
@@ -107,16 +145,17 @@
 .diff-plugin-btn {
 	appearance: none;
 	box-sizing: border-box;
-	height: 1lh;
-	min-height: 0;
+	height: auto;
+	min-height: 22px;
 	padding: 0 8px;
 	border: 1px solid transparent;
 	border-radius: 4px;
 	background: transparent;
 	color: var(--text-muted);
 	cursor: pointer;
-	font: inherit;
-	line-height: calc(1lh - 2px);
+	font-family: inherit;
+	font-size: 1rem !important;
+	line-height: 1.2 !important;
 	transition:
 		background-color 120ms ease,
 		border-color 120ms ease,
@@ -160,17 +199,21 @@
 }
 
 .diff-plugin-removed-block {
+	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
 	gap: 0;
+	margin-left: -18px;
+	margin-right: -18px;
 	padding: 1px 0;
-	border-left: 2px solid rgba(248, 81, 73, 0.42);
+	padding-right: 18px;
+	border-left: 4px solid rgba(248, 81, 73, 0.42);
 	background: rgba(248, 81, 73, 0.06);
 	font: inherit;
 }
 
 .diff-plugin-removed-line {
-	padding: 0 8px;
+	padding: 0 14px;
 	color: color-mix(in srgb, var(--text-normal) 86%, rgba(248, 81, 73, 0.95));
 	font: inherit;
 	white-space: pre-wrap;
@@ -182,19 +225,237 @@
 }
 
 .diff-plugin-added-line {
-	background: rgba(46, 160, 67, 0.1) !important;
-	border-left: 2px solid transparent;
+	box-sizing: border-box;
+	margin-left: -18px;
+	margin-right: -18px;
+	padding-left: 14px;
+	padding-right: 18px;
+	background: rgba(var(--color-green-rgb), 0.08) !important;
+	border-left: 4px solid rgba(var(--color-green-rgb), 0.42);
 }
 
 .diff-plugin-added-first {
-	border-top: 1px solid rgba(46, 160, 67, 0.18);
+	border-top: 2px solid rgba(var(--color-green-rgb), 0.18);
 }
 
 .diff-plugin-added-last {
-	border-bottom: 1px solid rgba(46, 160, 67, 0.18);
+	border-bottom: 2px solid rgba(var(--color-green-rgb), 0.18);
 }
 
-.diff-plugin-added-line.diff-plugin-added-first,
-.diff-plugin-added-line:not(.diff-plugin-added-first) {
-	border-left-color: rgba(46, 160, 67, 0.42);
+.diff-plugin-added-last:has(+ .cm-embed-block.cm-table-widget),
+.diff-plugin-added-last:has(+ .cm-embed-block:has(table.table-editor)),
+.diff-plugin-added-last:has(+ .diff-plugin-added-table-widget) {
+	border-bottom: none;
+}
+
+.diff-plugin-added-line.HyperMD-codeblock,
+.diff-plugin-added-line.HyperMD-codeblock-bg {
+	border-left: 4px solid rgba(var(--color-green-rgb), 0.42);
+	background: rgba(var(--color-green-rgb), 0.08) !important;
+	border-top: none !important;
+	border-bottom: none !important;
+}
+
+.diff-plugin-added-table-widget {
+	box-sizing: border-box;
+	padding-top: 8px;
+	padding-bottom: 8px;
+	background: transparent;
+}
+
+.diff-plugin-added-diagram-widget {
+	box-sizing: border-box;
+	margin-left: -18px;
+	margin-right: -18px;
+	padding: 8px 18px 8px 14px;
+	background: rgba(var(--color-green-rgb), 0.08);
+	border-left: 4px solid rgba(var(--color-green-rgb), 0.42);
+}
+
+.diff-plugin-added-diagram-widget .mermaid {
+	overflow-x: auto;
+}
+
+.diff-plugin-added-diagram-widget .mermaid > svg {
+	display: block;
+}
+
+.diff-plugin-added-table-widget .table-wrapper {
+	position: relative;
+	display: flex;
+	width: 100%;
+	justify-content: flex-start;
+	margin-left: 0;
+	margin-right: auto;
+	background: transparent;
+	cursor: default;
+}
+
+.diff-plugin-added-table-widget .table-wrapper::before {
+	content: '';
+	position: absolute;
+	top: -8px;
+	right: 0;
+	bottom: -8px;
+	left: 0;
+	background: rgba(var(--color-green-rgb), 0.08);
+	pointer-events: none;
+	z-index: 0;
+}
+
+.diff-plugin-added-table-widget table.table-editor {
+	position: relative;
+	z-index: 1;
+	margin-left: 0;
+	margin-right: auto;
+	cursor: default;
+}
+
+.diff-plugin-added-table-widget table.table-editor th,
+.diff-plugin-added-table-widget table.table-editor td {
+	background-color: color-mix(
+		in srgb,
+		rgba(var(--color-green-rgb), 0.08) 55%,
+		var(--background-primary)
+	);
+	cursor: default;
+}
+
+.diff-plugin-added-table-widget .table-cell-wrapper {
+	background: transparent;
+	cursor: default;
+}
+
+.diff-plugin-added-line + .cm-embed-block.cm-table-widget,
+.diff-plugin-added-line + .cm-embed-block:has(table.table-editor),
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block.cm-table-widget,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block:has(table.table-editor) {
+	box-sizing: border-box;
+	padding-top: 8px;
+	padding-bottom: 8px;
+	background: transparent;
+}
+
+.diff-plugin-added-line + .cm-embed-block.cm-table-widget .table-wrapper,
+.diff-plugin-added-line
+	+ .cm-embed-block:has(table.table-editor)
+	.table-wrapper,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block.cm-table-widget
+	.table-wrapper,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block:has(table.table-editor)
+	.table-wrapper {
+	position: relative;
+	display: flex;
+	width: 100%;
+	justify-content: flex-start;
+	margin-left: 0;
+	margin-right: auto;
+	background: transparent;
+	cursor: default;
+}
+
+.diff-plugin-added-line
+	+ .cm-embed-block.cm-table-widget
+	.table-wrapper::before,
+.diff-plugin-added-line
+	+ .cm-embed-block:has(table.table-editor)
+	.table-wrapper::before,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block.cm-table-widget
+	.table-wrapper::before {
+	content: '';
+	position: absolute;
+	top: -8px;
+	right: 0;
+	bottom: -8px;
+	left: 0;
+	background: rgba(var(--color-green-rgb), 0.08);
+	pointer-events: none;
+	z-index: 0;
+}
+
+.diff-plugin-added-line + .cm-embed-block.cm-table-widget table.table-editor,
+.diff-plugin-added-line
+	+ .cm-embed-block:has(table.table-editor)
+	table.table-editor,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block.cm-table-widget
+	table.table-editor,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block:has(table.table-editor)
+	table.table-editor {
+	position: relative;
+	z-index: 1;
+	margin-left: 0;
+	margin-right: auto;
+	cursor: default;
+}
+
+.diff-plugin-added-line + .cm-embed-block.cm-table-widget table.table-editor th,
+.diff-plugin-added-line + .cm-embed-block.cm-table-widget table.table-editor td,
+.diff-plugin-added-line
+	+ .cm-embed-block:has(table.table-editor)
+	table.table-editor
+	th,
+.diff-plugin-added-line
+	+ .cm-embed-block:has(table.table-editor)
+	table.table-editor
+	td,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block.cm-table-widget
+	table.table-editor
+	th,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block.cm-table-widget
+	table.table-editor
+	td,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block:has(table.table-editor)
+	table.table-editor
+	th,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block:has(table.table-editor)
+	table.table-editor
+	td {
+	background-color: color-mix(
+		in srgb,
+		rgba(var(--color-green-rgb), 0.08) 55%,
+		var(--background-primary)
+	);
+	cursor: default;
+}
+
+.diff-plugin-added-line + .cm-embed-block.cm-table-widget .table-cell-wrapper,
+.diff-plugin-added-line
+	+ .cm-embed-block:has(table.table-editor)
+	.table-cell-wrapper,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block.cm-table-widget
+	.table-cell-wrapper,
+.diff-plugin-added-line.diff-plugin-added-first
+	+ .cm-embed-block:has(table.table-editor)
+	.table-cell-wrapper {
+	background: transparent;
+	cursor: default;
+}
+
+.diff-plugin-unopened-new-file {
+	position: relative;
+}
+
+.diff-plugin-unopened-new-file::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 6px;
+	width: 8px;
+	height: 8px;
+	border-radius: 999px;
+	background: var(--interactive-accent);
+	transform: translateY(-50%);
+	pointer-events: none;
 }

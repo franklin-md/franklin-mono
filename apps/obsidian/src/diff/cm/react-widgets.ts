@@ -6,27 +6,15 @@ import type { EditorView } from '@codemirror/view';
 import { WidgetType } from '@codemirror/view';
 import type { Hunk } from '../compute-hunks.js';
 import {
-	acceptHunkEffect,
+	acceptHunkIntoBaseline,
 	diffField,
-	rejectHunkEffect,
 	reverseHunkChange,
-	setHoveredHunkEffect,
+	setBaseline,
+	setHoveredHunk,
 } from './diff-field.js';
 
 type HunkWidgetProps = {
 	hunk: Hunk;
-};
-
-type HunkActionsWidgetProps = {
-	hunkId: string;
-	onAccept: () => void;
-	onReject: () => void;
-};
-
-type ToolbarWidgetProps = {
-	pendingCount: number;
-	onAcceptAll: () => void;
-	onRejectAll: () => void;
 };
 
 export class DiffHunkWidget extends WidgetType {
@@ -62,7 +50,7 @@ export class DiffHunkWidget extends WidgetType {
 	}
 
 	ignoreEvent(): boolean {
-		return false;
+		return true;
 	}
 }
 
@@ -96,8 +84,6 @@ function HunkWidget({ hunk }: HunkWidgetProps) {
 }
 
 export class DiffHunkActionsWidget extends WidgetType {
-	private root: Root | null = null;
-
 	constructor(private readonly hunk: Hunk) {
 		super();
 	}
@@ -112,147 +98,51 @@ export class DiffHunkActionsWidget extends WidgetType {
 		dom.dataset.diffHunkId = this.hunk.id;
 		dom.addEventListener('mousedown', stopMouseEvent);
 
-		this.root = createRoot(dom);
-		this.root.render(
-			createElement(HunkActionsWidget, {
-				hunkId: this.hunk.id,
-				onAccept: () => {
-					view.dispatch({ effects: acceptHunkEffect.of(this.hunk.id) });
-				},
-				onReject: () => {
-					rejectHunks(view, [this.hunk.id]);
-				},
-			}),
+		const actions = document.createElement('span');
+		actions.className = 'diff-plugin-actions';
+		actions.dataset.diffHunkId = this.hunk.id;
+
+		const [accept, reject] = createActionButtonPair(
+			this.hunk.id,
+			() => acceptHunk(view, this.hunk),
+			() => rejectHunks(view, [this.hunk.id]),
 		);
-
+		actions.append(accept, reject);
+		dom.appendChild(actions);
 		return dom;
-	}
-
-	destroy(_dom: HTMLElement): void {
-		this.root?.unmount();
-		this.root = null;
 	}
 
 	ignoreEvent(): boolean {
 		return false;
 	}
-}
-
-function HunkActionsWidget({
-	hunkId,
-	onAccept,
-	onReject,
-}: HunkActionsWidgetProps) {
-	return createElement(
-		'span',
-		{ className: 'diff-plugin-actions', 'data-diff-hunk-id': hunkId },
-		createElement(
-			'button',
-			{
-				type: 'button',
-				className: 'diff-plugin-btn diff-plugin-btn-accept',
-				onMouseDown: stopReactMouseEvent,
-				onClick: onAccept,
-			},
-			'Accept',
-		),
-		createElement(
-			'button',
-			{
-				type: 'button',
-				className: 'diff-plugin-btn diff-plugin-btn-reject',
-				onMouseDown: stopReactMouseEvent,
-				onClick: onReject,
-			},
-			'Reject',
-		),
-	);
-}
-
-export class DiffToolbarWidget extends WidgetType {
-	private root: Root | null = null;
-
-	constructor(private readonly pendingCount: number) {
-		super();
-	}
-
-	eq(other: DiffToolbarWidget): boolean {
-		return other.pendingCount === this.pendingCount;
-	}
-
-	toDOM(view: EditorView): HTMLElement {
-		const dom = document.createElement('div');
-		dom.className = 'diff-plugin-toolbar-host';
-		dom.addEventListener('mousedown', stopMouseEvent);
-
-		this.root = createRoot(dom);
-		this.root.render(
-			createElement(Toolbar, {
-				pendingCount: this.pendingCount,
-				onAcceptAll: () => acceptAllHunks(view),
-				onRejectAll: () => rejectAllHunks(view),
-			}),
-		);
-
-		return dom;
-	}
-
-	destroy(_dom: HTMLElement): void {
-		this.root?.unmount();
-		this.root = null;
-	}
-
-	ignoreEvent(): boolean {
-		return false;
-	}
-}
-
-function Toolbar({
-	pendingCount,
-	onAcceptAll,
-	onRejectAll,
-}: ToolbarWidgetProps) {
-	const label = `${pendingCount} pending change${pendingCount === 1 ? '' : 's'}`;
-	return createElement(
-		'div',
-		{ className: 'diff-plugin-toolbar', onMouseDown: stopReactMouseEvent },
-		createElement('span', { className: 'diff-plugin-toolbar-label' }, label),
-		createElement(
-			'button',
-			{
-				type: 'button',
-				className: 'diff-plugin-btn diff-plugin-btn-all',
-				onMouseDown: stopReactMouseEvent,
-				onClick: onAcceptAll,
-			},
-			'Accept All',
-		),
-		createElement(
-			'button',
-			{
-				type: 'button',
-				className: 'diff-plugin-btn diff-plugin-btn-all',
-				onMouseDown: stopReactMouseEvent,
-				onClick: onRejectAll,
-			},
-			'Reject All',
-		),
-	);
 }
 
 export function acceptAllHunks(view: EditorView) {
 	const ds = view.state.field(diffField, false);
 	if (!ds || ds.oldContent === null) return;
-
-	const pendingIds = ds.hunks
-		.filter((hunk) => ds.status.get(hunk.id) === 'pending')
-		.map((hunk) => hunk.id);
-	if (pendingIds.length === 0) return;
+	if (ds.hunks.length === 0) return;
 
 	view.dispatch({
 		effects: [
-			...pendingIds.map((id) => acceptHunkEffect.of(id)),
-			setHoveredHunkEffect.of(null),
+			setBaseline.of({ oldContent: view.state.doc.toString() }),
+			setHoveredHunk.of(null),
+		],
+	});
+}
+
+export function acceptHunk(view: EditorView, hunk: Hunk) {
+	const ds = view.state.field(diffField, false);
+	if (!ds || ds.oldContent === null) return;
+
+	const oldContent = ds.oldContent;
+	const newContent = view.state.doc.toString();
+
+	view.dispatch({
+		effects: [
+			setBaseline.of({
+				oldContent: acceptHunkIntoBaseline(oldContent, newContent, hunk),
+			}),
+			setHoveredHunk.of(null),
 		],
 	});
 }
@@ -261,40 +151,30 @@ export function rejectAllHunks(view: EditorView) {
 	const ds = view.state.field(diffField, false);
 	if (!ds || ds.oldContent === null) return;
 	const oldContent = ds.oldContent;
-
 	const pendingHunks = ds.hunks
-		.filter((hunk) => ds.status.get(hunk.id) === 'pending')
+		.slice()
 		.sort((left, right) => left.newFrom - right.newFrom);
 	if (pendingHunks.length === 0) return;
 
 	view.dispatch({
 		changes: pendingHunks.map((hunk) => reverseHunkChange(oldContent, hunk)),
-		effects: [
-			...pendingHunks.map((hunk) => rejectHunkEffect.of(hunk.id)),
-			setHoveredHunkEffect.of(null),
-		],
+		effects: [setHoveredHunk.of(null)],
 	});
 }
 
-function rejectHunks(view: EditorView, hunkIds: string[]) {
+export function rejectHunks(view: EditorView, hunkIds: string[]) {
 	const ds = view.state.field(diffField, false);
 	if (!ds || ds.oldContent === null) return;
 	const oldContent = ds.oldContent;
 
 	const hunks = ds.hunks
-		.filter(
-			(hunk) =>
-				hunkIds.includes(hunk.id) && ds.status.get(hunk.id) === 'pending',
-		)
+		.filter((hunk) => hunkIds.includes(hunk.id))
 		.sort((left, right) => left.newFrom - right.newFrom);
 	if (hunks.length === 0) return;
 
 	view.dispatch({
 		changes: hunks.map((hunk) => reverseHunkChange(oldContent, hunk)),
-		effects: [
-			...hunks.map((hunk) => rejectHunkEffect.of(hunk.id)),
-			setHoveredHunkEffect.of(null),
-		],
+		effects: [setHoveredHunk.of(null)],
 	});
 }
 
@@ -320,11 +200,47 @@ function arraysEqual(left: string[], right: string[]): boolean {
 	);
 }
 
-function stopMouseEvent(event: MouseEvent) {
+export function createActionButtonPair(
+	hunkId: string,
+	onAccept: () => void,
+	onReject: () => void,
+): [HTMLButtonElement, HTMLButtonElement] {
+	return [
+		createActionButton('Accept', 'diff-plugin-btn-accept', hunkId, onAccept),
+		createActionButton('Reject', 'diff-plugin-btn-reject', hunkId, onReject),
+	];
+}
+
+function createActionButton(
+	label: string,
+	variantClass: string,
+	hunkId: string,
+	onClick: () => void,
+): HTMLButtonElement {
+	const button = document.createElement('button');
+	button.type = 'button';
+	button.className = `diff-plugin-btn ${variantClass}`;
+	button.dataset.diffHunkId = hunkId;
+	button.textContent = label;
+	button.addEventListener('mousedown', stopDomEvent);
+	button.addEventListener('click', (event) => {
+		event.preventDefault();
+		event.stopPropagation();
+		onClick();
+	});
+	return button;
+}
+
+function stopMouseEvent(event: Event) {
 	event.stopPropagation();
 }
 
 function stopReactMouseEvent(event: ReactMouseEvent<HTMLElement>) {
+	event.preventDefault();
+	event.stopPropagation();
+}
+
+function stopDomEvent(event: Event) {
 	event.preventDefault();
 	event.stopPropagation();
 }

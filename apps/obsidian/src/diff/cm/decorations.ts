@@ -3,7 +3,11 @@ import { StateField } from '@codemirror/state';
 import type { DecorationSet } from '@codemirror/view';
 import { Decoration, EditorView, ViewPlugin } from '@codemirror/view';
 import type { Hunk } from '../compute-hunks.js';
-import { diffField, setHoveredHunkEffect } from './diff-field.js';
+import { diffField, setHoveredHunk } from './diff-field.js';
+import {
+	looksLikeTableDivider,
+	looksLikeTableRow,
+} from './embedded-source-blocks.js';
 import { DiffHunkActionsWidget, DiffHunkWidget } from './react-widgets.js';
 
 function buildDecorations(state: EditorState): DecorationSet {
@@ -13,7 +17,6 @@ function buildDecorations(state: EditorState): DecorationSet {
 
 	const hoveredHunkId = ds.hoveredHunkId;
 	const visible: Hunk[] = ds.hunks
-		.filter((hunk) => ds.status.get(hunk.id) === 'pending')
 		.slice()
 		.sort(
 			(left, right) =>
@@ -35,7 +38,7 @@ function buildDecorations(state: EditorState): DecorationSet {
 			);
 		}
 
-		if (hoveredHunkId === hunk.id) {
+		if (hoveredHunkId === hunk.id && !hunkHasEmbeddedActions(hunk)) {
 			decorations.push(
 				Decoration.widget({
 					widget: new DiffHunkActionsWidget(hunk),
@@ -46,6 +49,27 @@ function buildDecorations(state: EditorState): DecorationSet {
 	}
 
 	return Decoration.set(decorations, true);
+}
+
+function hunkHasEmbeddedActions(hunk: Hunk): boolean {
+	return hunkContainsMermaidBlock(hunk) || hunkContainsTableBlock(hunk);
+}
+
+function hunkContainsMermaidBlock(hunk: Hunk): boolean {
+	return hunk.addedLines.some((line) => /^```mermaid\s*$/i.test(line.trim()));
+}
+
+function hunkContainsTableBlock(hunk: Hunk): boolean {
+	for (let index = 0; index < hunk.addedLines.length - 1; index++) {
+		const line = hunk.addedLines[index];
+		const nextLine = hunk.addedLines[index + 1];
+		if (!line || !nextLine) continue;
+		if (!looksLikeTableRow(line)) continue;
+		if (!looksLikeTableDivider(nextLine)) continue;
+		return true;
+	}
+
+	return false;
 }
 
 function addAddedLineDecorations(
@@ -112,7 +136,7 @@ function resolveAnchorPosition(
 	return { pos: line.from, side: -1 };
 }
 
-function resolveActionPosition(
+export function resolveActionPosition(
 	doc: Text,
 	hunk: Hunk,
 	visibleHunks: Hunk[],
@@ -120,6 +144,10 @@ function resolveActionPosition(
 	if (doc.length === 0) return 0;
 
 	if (hunk.addedLines.length > 0) {
+		if (hunk.newTo >= doc.length) {
+			return doc.lineAt(hunk.newFrom).from;
+		}
+
 		const nextLine = doc.lineAt(Math.min(hunk.newTo, doc.length));
 		if (!isLineInAnotherHunk(doc, nextLine.from, hunk, visibleHunks)) {
 			return nextLine.from;
@@ -162,9 +190,46 @@ function findHoveredHunkId(target: EventTarget | null): string | null {
 			: target instanceof Node
 				? target.parentElement
 				: null;
+	if (!element) return null;
+
+	const directHunkId =
+		element.closest<HTMLElement>('[data-diff-hunk-id]')?.dataset.diffHunkId ??
+		null;
+	return directHunkId;
+}
+
+function isEmbeddedHoverTarget(target: EventTarget | null): boolean {
+	const element =
+		target instanceof Element
+			? target
+			: target instanceof Node
+				? target.parentElement
+				: null;
+	if (!element) return false;
+
 	return (
-		element?.closest<HTMLElement>('[data-diff-hunk-id]')?.dataset.diffHunkId ??
-		null
+		element.closest(
+			'.diff-plugin-added-embedded-widget, .diff-plugin-embedded-actions-host',
+		) !== null
+	);
+}
+
+function hasHoveredEmbeddedWidget(view: EditorView): boolean {
+	return (
+		view.dom.querySelector(
+			'.diff-plugin-added-embedded-widget:hover, .diff-plugin-embedded-actions-host:hover',
+		) !== null
+	);
+}
+
+function findHoveredHunkIdInView(view: EditorView): string | null {
+	if (hasHoveredEmbeddedWidget(view)) {
+		return null;
+	}
+
+	return (
+		view.dom.querySelector<HTMLElement>('[data-diff-hunk-id]:hover')?.dataset
+			.diffHunkId ?? null
 	);
 }
 
@@ -183,13 +248,36 @@ export const diffHoverTracking = ViewPlugin.fromClass(
 		setHoveredHunkId(next: string | null) {
 			if (this.hoveredHunkId === next) return;
 			this.hoveredHunkId = next;
-			this.view.dispatch({ effects: setHoveredHunkEffect.of(next) });
+			this.view.dispatch({ effects: setHoveredHunk.of(next) });
+		}
+
+		syncHoveredHunkFromDom(target: EventTarget | null = null) {
+			if (
+				isEmbeddedHoverTarget(target) ||
+				hasHoveredEmbeddedWidget(this.view)
+			) {
+				this.setHoveredHunkId(null);
+				return;
+			}
+
+			this.setHoveredHunkId(
+				findHoveredHunkId(target) ?? findHoveredHunkIdInView(this.view),
+			);
 		}
 	},
 	{
 		eventHandlers: {
 			mousemove(event) {
-				this.setHoveredHunkId(findHoveredHunkId(event.target));
+				this.syncHoveredHunkFromDom(event.target);
+			},
+			mouseover(event) {
+				this.syncHoveredHunkFromDom(event.target);
+			},
+			mouseenter(event) {
+				this.syncHoveredHunkFromDom(event.target);
+			},
+			focus() {
+				this.syncHoveredHunkFromDom();
 			},
 			mouseleave() {
 				this.setHoveredHunkId(null);

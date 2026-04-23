@@ -3,14 +3,14 @@ import type { Plugin } from 'obsidian';
 import { MarkdownView } from 'obsidian';
 
 import type { DiffClient } from './diff-client.js';
-import { MockDiffClient } from './diff-client.js';
 import {
 	clearDiff,
 	diffField,
-	diffInvertedEffects,
+	diffInverted,
 	setDiffEntry,
 } from './cm/diff-field.js';
 import { diffDecorations, diffHoverTracking } from './cm/decorations.js';
+import { diffEmbeddedBlockStyling } from './cm/embedded-block-styling.js';
 import { acceptAllHunks, rejectAllHunks } from './cm/react-widgets.js';
 
 type HeaderUI = {
@@ -28,24 +28,38 @@ type EditorSession = {
 };
 
 export class DiffController {
-	private client!: DiffClient;
 	private sessions = new Map<EditorView, EditorSession>();
 
-	constructor(private readonly plugin: Plugin) {}
+	constructor(
+		private readonly plugin: Plugin,
+		private readonly client: DiffClient,
+	) {}
 
 	onload() {
-		this.client = new MockDiffClient(this.plugin.app.vault);
-
 		this.plugin.registerEditorExtension([
 			diffField,
-			diffInvertedEffects,
+			diffInverted,
 			diffDecorations,
+			diffEmbeddedBlockStyling,
 			diffHoverTracking,
 			EditorView.updateListener.of((update) => {
 				const prev = update.startState.field(diffField, false);
 				const next = update.state.field(diffField, false);
 				if (prev !== next) {
 					this.syncHeaderActions(update.view);
+					const session = this.sessions.get(update.view);
+					if (
+						session?.currentPath &&
+						next &&
+						next.oldContent !== null &&
+						prev?.oldContent !== next.oldContent &&
+						session.appliedOldContent !== next.oldContent
+					) {
+						session.requestToken++;
+						session.appliedPath = session.currentPath;
+						session.appliedOldContent = next.oldContent;
+						void this.client.setBaseline(session.currentPath, next.oldContent);
+					}
 				}
 			}),
 		]);
@@ -55,7 +69,12 @@ export class DiffController {
 		};
 
 		this.plugin.registerEvent(
-			this.plugin.app.workspace.on('file-open', syncEditors),
+			this.plugin.app.workspace.on('file-open', (file) => {
+				if (file) {
+					void this.client.markOpened(file.path);
+				}
+				syncEditors();
+			}),
 		);
 		this.plugin.registerEvent(
 			this.plugin.app.workspace.on('active-leaf-change', syncEditors),
@@ -64,16 +83,10 @@ export class DiffController {
 			this.plugin.app.workspace.on('layout-change', syncEditors),
 		);
 
-		this.plugin.register(
-			this.client.onEntryAppeared(() => this.syncAllEditors()),
-		);
-		this.plugin.register(
-			this.client.onEntryRemoved(() => this.syncAllEditors()),
-		);
+		this.plugin.register(this.client.onEntryAppeared(syncEditors));
+		this.plugin.register(this.client.onEntryRemoved(syncEditors));
 
-		this.plugin.app.workspace.onLayoutReady(() => {
-			this.syncAllEditors();
-		});
+		this.plugin.app.workspace.onLayoutReady(syncEditors);
 	}
 
 	onunload() {
@@ -92,14 +105,13 @@ export class DiffController {
 			if (leaf.view.getMode() !== 'source') return;
 
 			const view = this.getCmView(leaf.view);
-			if (!view) return;
 
 			seen.add(view);
 			void this.syncEditor(view, leaf.view, leaf.view.file?.path ?? null);
 		});
 
 		for (const [view, session] of this.sessions) {
-			if (seen.has(view)) continue;
+			if (seen.has(view) || view.dom.isConnected) continue;
 			session.requestToken++;
 			this.clearSession(view, session);
 			this.sessions.delete(view);
@@ -181,9 +193,9 @@ export class DiffController {
 		return created;
 	}
 
-	private getCmView(markdownView: MarkdownView): EditorView | null {
-		const cm = (markdownView.editor as { cm?: EditorView }).cm;
-		return cm ?? null;
+	private getCmView(markdownView: MarkdownView): EditorView {
+		// @ts-expect-error, not typed
+		return markdownView.editor.cm as EditorView;
 	}
 
 	private syncHeaderActions(view: EditorView) {
@@ -196,10 +208,7 @@ export class DiffController {
 			return;
 		}
 
-		let pending = 0;
-		for (const hunk of ds.hunks) {
-			if (ds.status.get(hunk.id) === 'pending') pending++;
-		}
+		const pending = ds.hunks.length;
 
 		if (pending === 0) {
 			this.removeHeaderUI(session);
@@ -233,6 +242,7 @@ export class DiffController {
 			accept.type = 'button';
 			accept.className = 'diff-plugin-header-btn diff-plugin-header-accept';
 			accept.textContent = 'Accept All';
+			accept.onmousedown = stopHeaderButtonMouseDown;
 			accept.onclick = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
@@ -244,6 +254,7 @@ export class DiffController {
 			reject.type = 'button';
 			reject.className = 'diff-plugin-header-btn diff-plugin-header-reject';
 			reject.textContent = 'Reject All';
+			reject.onmousedown = stopHeaderButtonMouseDown;
 			reject.onclick = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
@@ -265,4 +276,9 @@ export class DiffController {
 		session.header.container.remove();
 		session.header = null;
 	}
+}
+
+function stopHeaderButtonMouseDown(event: MouseEvent) {
+	event.preventDefault();
+	event.stopPropagation();
 }
