@@ -9,11 +9,8 @@ import {
 	diffInvertedEffects,
 	setDiffEntry,
 } from './cm/diff-field.js';
-import {
-	diffDecorations,
-	diffEmbeddedBlockStyling,
-	diffHoverTracking,
-} from './cm/decorations.js';
+import { diffDecorations, diffHoverTracking } from './cm/decorations.js';
+import { diffEmbeddedBlockStyling } from './cm/embedded-block-styling.js';
 import { acceptAllHunks, rejectAllHunks } from './cm/react-widgets.js';
 
 type HeaderUI = {

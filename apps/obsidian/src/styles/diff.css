@@ -97,6 +97,37 @@
 	pointer-events: auto;
 }
 
+.diff-plugin-added-embedded-widget {
+	position: relative;
+}
+
+.diff-plugin-embedded-actions-host {
+	position: absolute;
+	top: 8px;
+	right: 40px;
+	z-index: 20;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 120ms ease;
+}
+
+.diff-plugin-added-embedded-widget:hover .diff-plugin-embedded-actions-host,
+.diff-plugin-added-embedded-widget:focus-within
+	.diff-plugin-embedded-actions-host {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.cm-content:has(.diff-plugin-added-embedded-widget:hover)
+	.diff-plugin-actions-host,
+.cm-content:has(.diff-plugin-embedded-actions-host:hover)
+	.diff-plugin-actions-host {
+	display: none;
+}
+
 .diff-plugin-actions-separator {
 	width: 1px;
 	height: 14px;
@@ -209,11 +240,34 @@
 	border-bottom: none;
 }
 
+.diff-plugin-added-line.HyperMD-codeblock,
+.diff-plugin-added-line.HyperMD-codeblock-bg {
+	border-top: none !important;
+	border-bottom: none !important;
+}
+
 .diff-plugin-added-table-widget {
 	box-sizing: border-box;
 	padding-top: 8px;
 	padding-bottom: 8px;
 	background: transparent;
+}
+
+.diff-plugin-added-diagram-widget {
+	box-sizing: border-box;
+	margin-left: -18px;
+	margin-right: -18px;
+	padding: 8px 18px 8px 14px;
+	background: rgba(var(--color-green-rgb), 0.08);
+	border-left: 4px solid rgba(var(--color-green-rgb), 0.42);
+}
+
+.diff-plugin-added-diagram-widget .mermaid {
+	overflow-x: auto;
+}
+
+.diff-plugin-added-diagram-widget .mermaid > svg {
+	display: block;
 }
 
 .diff-plugin-added-table-widget .table-wrapper {

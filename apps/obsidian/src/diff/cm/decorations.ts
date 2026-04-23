@@ -4,6 +4,10 @@ import type { DecorationSet } from '@codemirror/view';
 import { Decoration, EditorView, ViewPlugin } from '@codemirror/view';
 import type { Hunk } from '../compute-hunks.js';
 import { diffField, setHoveredHunkEffect } from './diff-field.js';
+import {
+	looksLikeTableDivider,
+	looksLikeTableRow,
+} from './embedded-source-blocks.js';
 import { DiffHunkActionsWidget, DiffHunkWidget } from './react-widgets.js';
 
 function buildDecorations(state: EditorState): DecorationSet {
@@ -34,7 +38,7 @@ function buildDecorations(state: EditorState): DecorationSet {
 			);
 		}
 
-		if (hoveredHunkId === hunk.id) {
+		if (hoveredHunkId === hunk.id && !hunkHasEmbeddedActions(hunk)) {
 			decorations.push(
 				Decoration.widget({
 					widget: new DiffHunkActionsWidget(hunk),
@@ -45,6 +49,27 @@ function buildDecorations(state: EditorState): DecorationSet {
 	}
 
 	return Decoration.set(decorations, true);
+}
+
+function hunkHasEmbeddedActions(hunk: Hunk): boolean {
+	return hunkContainsMermaidBlock(hunk) || hunkContainsTableBlock(hunk);
+}
+
+function hunkContainsMermaidBlock(hunk: Hunk): boolean {
+	return hunk.addedLines.some((line) => /^```mermaid\s*$/i.test(line.trim()));
+}
+
+function hunkContainsTableBlock(hunk: Hunk): boolean {
+	for (let index = 0; index < hunk.addedLines.length - 1; index++) {
+		const line = hunk.addedLines[index];
+		const nextLine = hunk.addedLines[index + 1];
+		if (!line || !nextLine) continue;
+		if (!looksLikeTableRow(line)) continue;
+		if (!looksLikeTableDivider(nextLine)) continue;
+		return true;
+	}
+
+	return false;
 }
 
 function addAddedLineDecorations(
@@ -173,25 +198,39 @@ function findHoveredHunkId(target: EventTarget | null): string | null {
 	return directHunkId;
 }
 
+function isEmbeddedHoverTarget(target: EventTarget | null): boolean {
+	const element =
+		target instanceof Element
+			? target
+			: target instanceof Node
+				? target.parentElement
+				: null;
+	if (!element) return false;
+
+	return (
+		element.closest(
+			'.diff-plugin-added-embedded-widget, .diff-plugin-embedded-actions-host',
+		) !== null
+	);
+}
+
+function hasHoveredEmbeddedWidget(view: EditorView): boolean {
+	return (
+		view.dom.querySelector(
+			'.diff-plugin-added-embedded-widget:hover, .diff-plugin-embedded-actions-host:hover',
+		) !== null
+	);
+}
+
 function findHoveredHunkIdInView(view: EditorView): string | null {
+	if (hasHoveredEmbeddedWidget(view)) {
+		return null;
+	}
+
 	return (
 		view.dom.querySelector<HTMLElement>('[data-diff-hunk-id]:hover')?.dataset
 			.diffHunkId ?? null
 	);
-}
-
-export function findAddedHunkIdAtPosition(
-	hunks: Hunk[],
-	position: number,
-): string | null {
-	for (const hunk of hunks) {
-		if (hunk.addedLines.length === 0) continue;
-		if (position >= hunk.newFrom && position <= hunk.newTo) {
-			return hunk.id;
-		}
-	}
-
-	return null;
 }
 
 export const diffHoverTracking = ViewPlugin.fromClass(
@@ -213,6 +252,14 @@ export const diffHoverTracking = ViewPlugin.fromClass(
 		}
 
 		syncHoveredHunkFromDom(target: EventTarget | null = null) {
+			if (
+				isEmbeddedHoverTarget(target) ||
+				hasHoveredEmbeddedWidget(this.view)
+			) {
+				this.setHoveredHunkId(null);
+				return;
+			}
+
 			this.setHoveredHunkId(
 				findHoveredHunkId(target) ?? findHoveredHunkIdInView(this.view),
 			);
@@ -238,96 +285,6 @@ export const diffHoverTracking = ViewPlugin.fromClass(
 		},
 	},
 );
-
-export const diffEmbeddedBlockStyling = ViewPlugin.fromClass(
-	class {
-		constructor(readonly view: EditorView) {
-			this.sync();
-		}
-
-		update() {
-			this.sync();
-		}
-
-		destroy() {
-			for (const widget of this.view.dom.querySelectorAll<HTMLElement>(
-				'.diff-plugin-added-table-widget',
-			)) {
-				widget.classList.remove('diff-plugin-added-table-widget');
-			}
-		}
-
-		sync() {
-			const hunks = this.view.state.field(diffField, false)?.hunks ?? [];
-
-			for (const widget of this.view.dom.querySelectorAll<HTMLElement>(
-				'.cm-embed-block.cm-table-widget',
-			)) {
-				const hunkId =
-					findHunkIdForTableWidget(this.view, widget, hunks) ??
-					findNearestAddedHunkId(widget);
-				widget.classList.toggle(
-					'diff-plugin-added-table-widget',
-					hunkId !== null,
-				);
-				if (hunkId) {
-					widget.dataset.diffHunkId = hunkId;
-				} else {
-					delete widget.dataset.diffHunkId;
-				}
-			}
-		}
-	},
-);
-
-function findHunkIdForTableWidget(
-	view: EditorView,
-	widget: HTMLElement,
-	hunks: Hunk[],
-): string | null {
-	try {
-		return findAddedHunkIdAtPosition(hunks, view.posAtDOM(widget, 0));
-	} catch {
-		return null;
-	}
-}
-
-function findNearestAddedHunkId(widget: HTMLElement): string | null {
-	return (
-		findNearestHunkId(widget, 'previous') ?? findNearestHunkId(widget, 'next')
-	);
-}
-
-function findNearestHunkId(
-	widget: HTMLElement,
-	direction: 'previous' | 'next',
-): string | null {
-	let sibling =
-		direction === 'previous'
-			? widget.previousElementSibling
-			: widget.nextElementSibling;
-
-	while (sibling) {
-		if (sibling.classList.contains('cm-line')) {
-			if (!sibling.classList.contains('diff-plugin-added-line')) {
-				return null;
-			}
-
-			return sibling.getAttribute('data-diff-hunk-id');
-		}
-
-		if (sibling.classList.contains('cm-embed-block')) {
-			return null;
-		}
-
-		sibling =
-			direction === 'previous'
-				? sibling.previousElementSibling
-				: sibling.nextElementSibling;
-	}
-
-	return null;
-}
 
 export const diffDecorations = StateField.define<DecorationSet>({
 	create: (state) => buildDecorations(state),
