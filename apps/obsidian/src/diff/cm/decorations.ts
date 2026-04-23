@@ -3,7 +3,7 @@ import { StateField } from '@codemirror/state';
 import type { DecorationSet } from '@codemirror/view';
 import { Decoration, EditorView, ViewPlugin } from '@codemirror/view';
 import type { Hunk } from '../compute-hunks.js';
-import { diffField, setHoveredHunkEffect } from './diff-field.js';
+import { diffField, setHoveredHunk } from './diff-field.js';
 import {
 	looksLikeTableDivider,
 	looksLikeTableRow,
@@ -248,7 +248,7 @@ export const diffHoverTracking = ViewPlugin.fromClass(
 		setHoveredHunkId(next: string | null) {
 			if (this.hoveredHunkId === next) return;
 			this.hoveredHunkId = next;
-			this.view.dispatch({ effects: setHoveredHunkEffect.of(next) });
+			this.view.dispatch({ effects: setHoveredHunk.of(next) });
 		}
 
 		syncHoveredHunkFromDom(target: EventTarget | null = null) {

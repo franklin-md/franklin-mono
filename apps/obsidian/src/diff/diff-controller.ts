@@ -6,7 +6,7 @@ import type { DiffClient } from './diff-client.js';
 import {
 	clearDiff,
 	diffField,
-	diffInvertedEffects,
+	diffInverted,
 	setDiffEntry,
 } from './cm/diff-field.js';
 import { diffDecorations, diffHoverTracking } from './cm/decorations.js';
@@ -38,7 +38,7 @@ export class DiffController {
 	onload() {
 		this.plugin.registerEditorExtension([
 			diffField,
-			diffInvertedEffects,
+			diffInverted,
 			diffDecorations,
 			diffEmbeddedBlockStyling,
 			diffHoverTracking,
@@ -79,15 +79,13 @@ export class DiffController {
 		);
 
 		this.plugin.register(
-			this.client.onEntryAppeared(() => this.syncAllEditors()),
+			this.client.onEntryAppeared(syncEditors),
 		);
 		this.plugin.register(
-			this.client.onEntryRemoved(() => this.syncAllEditors()),
+			this.client.onEntryRemoved(syncEditors),
 		);
 
-		this.plugin.app.workspace.onLayoutReady(() => {
-			this.syncAllEditors();
-		});
+		this.plugin.app.workspace.onLayoutReady(syncEditors);
 	}
 
 	onunload() {

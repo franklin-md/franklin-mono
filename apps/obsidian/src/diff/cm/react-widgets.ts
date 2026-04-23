@@ -9,8 +9,8 @@ import {
 	acceptHunkIntoBaseline,
 	diffField,
 	reverseHunkChange,
-	setBaselineEffect,
-	setHoveredHunkEffect,
+	setBaseline,
+	setHoveredHunk,
 } from './diff-field.js';
 
 type HunkWidgetProps = {
@@ -124,8 +124,8 @@ export function acceptAllHunks(view: EditorView) {
 
 	view.dispatch({
 		effects: [
-			setBaselineEffect.of({ oldContent: view.state.doc.toString() }),
-			setHoveredHunkEffect.of(null),
+			setBaseline.of({ oldContent: view.state.doc.toString() }),
+			setHoveredHunk.of(null),
 		],
 	});
 }
@@ -139,10 +139,10 @@ export function acceptHunk(view: EditorView, hunk: Hunk) {
 
 	view.dispatch({
 		effects: [
-			setBaselineEffect.of({
+			setBaseline.of({
 				oldContent: acceptHunkIntoBaseline(oldContent, newContent, hunk),
 			}),
-			setHoveredHunkEffect.of(null),
+			setHoveredHunk.of(null),
 		],
 	});
 }
@@ -158,7 +158,7 @@ export function rejectAllHunks(view: EditorView) {
 
 	view.dispatch({
 		changes: pendingHunks.map((hunk) => reverseHunkChange(oldContent, hunk)),
-		effects: [setHoveredHunkEffect.of(null)],
+		effects: [setHoveredHunk.of(null)],
 	});
 }
 
@@ -174,7 +174,7 @@ export function rejectHunks(view: EditorView, hunkIds: string[]) {
 
 	view.dispatch({
 		changes: hunks.map((hunk) => reverseHunkChange(oldContent, hunk)),
-		effects: [setHoveredHunkEffect.of(null)],
+		effects: [setHoveredHunk.of(null)],
 	});
 }
 

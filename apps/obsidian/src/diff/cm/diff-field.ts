@@ -12,8 +12,8 @@ export type DiffState = {
 
 export const setDiffEntry = StateEffect.define<{ oldContent: string }>();
 export const clearDiff = StateEffect.define();
-export const setBaselineEffect = StateEffect.define<{ oldContent: string }>();
-export const setHoveredHunkEffect = StateEffect.define<string | null>();
+export const setBaseline = StateEffect.define<{ oldContent: string }>();
+export const setHoveredHunk = StateEffect.define<string | null>();
 
 const empty: DiffState = {
 	oldContent: null,
@@ -28,14 +28,14 @@ export const diffField = StateField.define<DiffState>({
 		let next = value;
 
 		for (const effect of tr.effects) {
-			if (effect.is(setDiffEntry) || effect.is(setBaselineEffect)) {
+			if (effect.is(setDiffEntry) || effect.is(setBaseline)) {
 				next = createDiffState(
 					effect.value.oldContent,
 					tr.state.doc.toString(),
 				);
 			} else if (effect.is(clearDiff)) {
 				next = empty;
-			} else if (effect.is(setHoveredHunkEffect)) {
+			} else if (effect.is(setHoveredHunk)) {
 				if (next.hoveredHunkId !== effect.value) {
 					next = { ...next, hoveredHunkId: effect.value };
 				}
@@ -68,7 +68,7 @@ function createDiffState(
 	};
 }
 
-export const diffInvertedEffects = invertedEffects.of((tr) => {
+export const diffInverted = invertedEffects.of((tr) => {
 	// Accept decisions mutate the baseline rather than the document.
 	// Make those baseline changes part of editor undo/redo by restoring the
 	// prior baseline from the transaction's start state.
@@ -76,8 +76,8 @@ export const diffInvertedEffects = invertedEffects.of((tr) => {
 	const out: StateEffect<unknown>[] = [];
 
 	for (const effect of tr.effects) {
-		if (effect.is(setBaselineEffect) && previous != null) {
-			out.push(setBaselineEffect.of({ oldContent: previous }));
+		if (effect.is(setBaseline) && previous != null) {
+			out.push(setBaseline.of({ oldContent: previous }));
 		}
 	}
 
