@@ -242,6 +242,8 @@
 
 .diff-plugin-added-line.HyperMD-codeblock,
 .diff-plugin-added-line.HyperMD-codeblock-bg {
+	border-left: 4px solid rgba(var(--color-green-rgb), 0.42);
+	background: rgba(var(--color-green-rgb), 0.08) !important;
 	border-top: none !important;
 	border-bottom: none !important;
 }
@@ -431,4 +433,21 @@
 	.table-cell-wrapper {
 	background: transparent;
 	cursor: default;
+}
+
+.diff-plugin-unopened-new-file {
+	position: relative;
+}
+
+.diff-plugin-unopened-new-file::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 6px;
+	width: 8px;
+	height: 8px;
+	border-radius: 999px;
+	background: var(--interactive-accent);
+	transform: translateY(-50%);
+	pointer-events: none;
 }

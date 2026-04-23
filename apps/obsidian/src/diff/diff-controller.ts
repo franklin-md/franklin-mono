@@ -69,7 +69,12 @@ export class DiffController {
 		};
 
 		this.plugin.registerEvent(
-			this.plugin.app.workspace.on('file-open', syncEditors),
+			this.plugin.app.workspace.on('file-open', (file) => {
+				if (file) {
+					void this.client.markOpened(file.path);
+				}
+				syncEditors();
+			}),
 		);
 		this.plugin.registerEvent(
 			this.plugin.app.workspace.on('active-leaf-change', syncEditors),
@@ -78,12 +83,8 @@ export class DiffController {
 			this.plugin.app.workspace.on('layout-change', syncEditors),
 		);
 
-		this.plugin.register(
-			this.client.onEntryAppeared(syncEditors),
-		);
-		this.plugin.register(
-			this.client.onEntryRemoved(syncEditors),
-		);
+		this.plugin.register(this.client.onEntryAppeared(syncEditors));
+		this.plugin.register(this.client.onEntryRemoved(syncEditors));
 
 		this.plugin.app.workspace.onLayoutReady(syncEditors);
 	}

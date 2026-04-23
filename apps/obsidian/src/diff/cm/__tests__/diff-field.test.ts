@@ -4,7 +4,7 @@ import { computeHunks } from '../../compute-hunks.js';
 import {
 	acceptHunkIntoBaseline,
 	diffField,
-	setBaselineEffect,
+	setBaseline,
 	setDiffEntry,
 	visibleHunks,
 } from '../diff-field.js';
@@ -36,7 +36,7 @@ describe('diffField', () => {
 
 		state = state.update({
 			effects: [
-				setBaselineEffect.of({
+				setBaseline.of({
 					oldContent: acceptHunkIntoBaseline(
 						'alpha\ngamma\n',
 						state.doc.toString(),

@@ -52,6 +52,7 @@ describe('obsidian bundle', () => {
 		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
 
 		expect(css).toContain('.diff-plugin-added-line');
+		expect(css).toContain('.diff-plugin-unopened-new-file');
 		expect(css).not.toContain('.franklin .diff-plugin-added-line');
 		expect(css).toContain('.cm-line:has(.diff-plugin-actions-host)');
 		expect(css).not.toContain(

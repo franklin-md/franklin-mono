@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 import { createNodeFilesystem } from '@franklin/node';
 import {
 	createObserver,
@@ -7,8 +7,10 @@ import {
 	joinAbsolute,
 	toAbsolutePath,
 	type AbsolutePath,
+	type Filesystem,
 	type WriteListener,
 } from '@franklin/lib';
+import { normalizePath } from 'obsidian';
 import type { PluginManifest, Vault } from 'obsidian';
 
 import {
@@ -18,23 +20,41 @@ import {
 
 const DIFF_CACHE_FILE = 'diff-cache.json';
 
-type PersistedDiffCache = Record<string, string | null>;
+type DiffCacheEntry = {
+	baseline: Uint8Array | null;
+	unopenedNewFile: boolean;
+};
+
+type PersistedDiffCacheEntry = {
+	baseline: string | null;
+	unopenedNewFile?: boolean;
+};
+
+type PersistedDiffCache = Record<
+	string,
+	PersistedDiffCacheEntry | string | null
+>;
 
 export type DiffEntry = {
 	path: string;
 	oldContent: string;
+	isNewFile: boolean;
 };
 
 export interface DiffClient {
 	getEntry(path: string): Promise<DiffEntry | null>;
+	listUnopenedNewFiles(): Promise<string[]>;
+	markOpened(path: string): Promise<void>;
 	setBaseline(path: string, oldContent: string): Promise<void>;
+	onEntryChanged(listener: () => void): () => void;
 	onEntryAppeared(listener: () => void): () => void;
 	onEntryRemoved(listener: () => void): () => void;
 }
 
 export class ObsidianDiffClient implements DiffClient {
-	private readonly fs = createNodeFilesystem();
-	private readonly cache = new Map<AbsolutePath, Uint8Array | null>();
+	private readonly fs: Filesystem = createNodeFilesystem();
+	private readonly cache = new Map<AbsolutePath, DiffCacheEntry>();
+	private readonly entryChanged = createObserver();
 	private readonly entryAppeared = createObserver();
 	private readonly entryRemoved = createObserver();
 	private readonly vaultRoot: AbsolutePath;
@@ -57,6 +77,10 @@ export class ObsidianDiffClient implements DiffClient {
 		return this.entryAppeared.subscribe(listener);
 	}
 
+	onEntryChanged(listener: () => void): () => void {
+		return this.entryChanged.subscribe(listener);
+	}
+
 	onEntryRemoved(listener: () => void): () => void {
 		return this.entryRemoved.subscribe(listener);
 	}
@@ -64,22 +88,33 @@ export class ObsidianDiffClient implements DiffClient {
 	async getEntry(path: string): Promise<DiffEntry | null> {
 		await this.ready;
 		const absolutePath = this.resolveVaultPath(path);
-		if (!this.cache.has(absolutePath)) return null;
-
-		const previous = this.cache.get(absolutePath) ?? null;
-		const current = await this.readCurrent(absolutePath);
-
-		if (equalBytes(previous, current)) {
-			this.cache.delete(absolutePath);
-			await this.persist();
-			this.entryRemoved.notify();
-			return null;
-		}
+		const entry = await this.getCachedEntry(absolutePath);
+		if (!entry) return null;
 
 		return {
 			path,
-			oldContent: decode(previous ?? new Uint8Array()),
+			oldContent: decode(entry.baseline ?? new Uint8Array()),
+			isNewFile: entry.baseline === null,
 		};
+	}
+
+	async listUnopenedNewFiles(): Promise<string[]> {
+		await this.ready;
+
+		return Array.from(this.cache.entries())
+			.filter(([, entry]) => entry.unopenedNewFile)
+			.map(([path]) => normalizePath(relative(this.vaultRoot, path)));
+	}
+
+	async markOpened(path: string): Promise<void> {
+		await this.ready;
+		const absolutePath = this.resolveVaultPath(path);
+		const entry = await this.getCachedEntry(absolutePath);
+		if (!entry?.unopenedNewFile) return;
+
+		this.cache.set(absolutePath, createCacheEntry(entry.baseline, false));
+		await this.persist();
+		this.entryChanged.notify();
 	}
 
 	async setBaseline(path: string, oldContent: string): Promise<void> {
@@ -87,21 +122,27 @@ export class ObsidianDiffClient implements DiffClient {
 		const absolutePath = this.resolveVaultPath(path);
 		const baseline = encode(oldContent);
 		const current = await this.readCurrent(absolutePath);
-		const existed = this.cache.has(absolutePath);
+		const existing = this.cache.get(absolutePath) ?? null;
+		const existed = existing !== null;
 
 		if (equalBytes(baseline, current)) {
 			if (!existed) return;
 			this.cache.delete(absolutePath);
 			await this.persist();
 			this.entryRemoved.notify();
+			this.entryChanged.notify();
 			return;
 		}
 
-		this.cache.set(absolutePath, baseline);
+		this.cache.set(
+			absolutePath,
+			createCacheEntry(baseline, existing?.unopenedNewFile ?? false),
+		);
 		await this.persist();
 		if (!existed) {
 			this.entryAppeared.notify();
 		}
+		this.entryChanged.notify();
 	}
 
 	private async handleWrite(...args: Parameters<WriteListener>): Promise<void> {
@@ -110,9 +151,10 @@ export class ObsidianDiffClient implements DiffClient {
 
 		if (this.cache.has(path)) return;
 
-		this.cache.set(path, prev);
+		this.cache.set(path, createCacheEntry(prev, prev === null));
 		await this.persist();
 		this.entryAppeared.notify();
+		this.entryChanged.notify();
 
 		// TODO: race conditions between agents. Related to
 		// the race condition on edit_file tools. CODEX: DO not
@@ -127,10 +169,8 @@ export class ObsidianDiffClient implements DiffClient {
 			const parsed = JSON.parse(decode(raw)) as unknown;
 			if (!isPersistedDiffCache(parsed)) return;
 			for (const [path, value] of Object.entries(parsed)) {
-				this.cache.set(
-					toAbsolutePath(path),
-					value === null ? null : decodeBase64(value),
-				);
+				const entry = decodePersistedDiffCacheEntry(value);
+				this.cache.set(toAbsolutePath(path), entry);
 			}
 		} catch (error: unknown) {
 			console.error(
@@ -143,7 +183,10 @@ export class ObsidianDiffClient implements DiffClient {
 		await this.fs.mkdir(this.appDir, { recursive: true });
 		const serialized: PersistedDiffCache = {};
 		for (const [path, value] of this.cache) {
-			serialized[path] = value === null ? null : encodeBase64(value);
+			serialized[path] = {
+				baseline: value.baseline === null ? null : encodeBase64(value.baseline),
+				unopenedNewFile: value.unopenedNewFile,
+			};
 		}
 		await this.fs.writeFile(
 			this.cachePath,
@@ -153,6 +196,24 @@ export class ObsidianDiffClient implements DiffClient {
 
 	private resolveVaultPath(path: string): AbsolutePath {
 		return toAbsolutePath(resolve(this.vaultRoot, path));
+	}
+
+	private async getCachedEntry(
+		path: AbsolutePath,
+	): Promise<DiffCacheEntry | null> {
+		const entry = this.cache.get(path);
+		if (!entry) return null;
+
+		const current = await this.readCurrent(path);
+		if (equalBytes(entry.baseline, current)) {
+			this.cache.delete(path);
+			await this.persist();
+			this.entryRemoved.notify();
+			this.entryChanged.notify();
+			return null;
+		}
+
+		return entry;
 	}
 
 	private async readCurrent(path: AbsolutePath): Promise<Uint8Array | null> {
@@ -172,6 +233,32 @@ function decodeBase64(value: string): Uint8Array {
 	return new Uint8Array(Buffer.from(value, 'base64'));
 }
 
+function createCacheEntry(
+	baseline: Uint8Array | null,
+	unopenedNewFile: boolean,
+): DiffCacheEntry {
+	return {
+		baseline,
+		unopenedNewFile,
+	};
+}
+
+function decodePersistedDiffCacheEntry(
+	value: PersistedDiffCache[string],
+): DiffCacheEntry {
+	if (value === null || typeof value === 'string') {
+		return createCacheEntry(
+			value === null ? null : decodeBase64(value),
+			value === null,
+		);
+	}
+
+	return createCacheEntry(
+		value.baseline === null ? null : decodeBase64(value.baseline),
+		value.unopenedNewFile ?? false,
+	);
+}
+
 function equalBytes(
 	left: Uint8Array | null,
 	right: Uint8Array | null,
@@ -188,7 +275,14 @@ function equalBytes(
 function isPersistedDiffCache(value: unknown): value is PersistedDiffCache {
 	if (typeof value !== 'object' || value === null) return false;
 	for (const entry of Object.values(value)) {
-		if (entry !== null && typeof entry !== 'string') return false;
+		if (entry === null || typeof entry === 'string') continue;
+		if (typeof entry !== 'object') return false;
+		if (!('baseline' in entry)) return false;
+		const { baseline, unopenedNewFile } = entry;
+		if (baseline !== null && typeof baseline !== 'string') return false;
+		if (unopenedNewFile !== undefined && typeof unopenedNewFile !== 'boolean') {
+			return false;
+		}
 	}
 	return true;
 }
