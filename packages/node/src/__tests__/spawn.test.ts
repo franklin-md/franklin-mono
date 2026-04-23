@@ -31,6 +31,7 @@ describe('spawn', () => {
 	it('debug-wraps both the agent session and reverse RPC server', async () => {
 		const transport = await import('@franklin/lib/transport');
 		const miniACP = await import('@franklin/mini-acp');
+		const streamFn = vi.fn();
 
 		const clientDuplex = createMockDuplex();
 		const agentDuplex = createMockDuplex();
@@ -67,7 +68,7 @@ describe('spawn', () => {
 		);
 
 		const { spawn } = await import('../platform/spawn.js');
-		const result = spawn();
+		const result = spawn({ streamFn });
 
 		expect(result).toBe(clientDuplex);
 		expect(miniACP.createAgentConnection).toHaveBeenCalledWith(agentDuplex);
@@ -93,6 +94,7 @@ describe('spawn', () => {
 		expect(miniACP.createPiAdapter).toHaveBeenCalledWith({
 			ctx,
 			server: { endpoint: turnServer, label: 'agent' },
+			streamFn,
 		});
 		expect(created).toBe(turnClient);
 	});

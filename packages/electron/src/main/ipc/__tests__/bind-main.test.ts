@@ -100,15 +100,6 @@ function createTransportSpy(): {
 	};
 }
 
-async function createFlow() {
-	return {
-		onAuth: () => () => {},
-		onProgress: () => () => {},
-		login: async () => ({}),
-		dispose: async () => {},
-	};
-}
-
 function createWebContents(id: number): WebContents {
 	return {
 		id,
@@ -159,12 +150,18 @@ describe('bindMain', () => {
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
+					net: {
+						listenLoopback: async () => {
+							throw new Error('not implemented');
+						},
+						fetch: async () => {
+							throw new Error('not implemented');
+						},
+					},
 				},
 				ai: {
-					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				createFlow,
 			},
 			createWebContents(1),
 		);
@@ -225,12 +222,18 @@ describe('bindMain', () => {
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
+					net: {
+						listenLoopback: async () => {
+							throw new Error('not implemented');
+						},
+						fetch: async () => {
+							throw new Error('not implemented');
+						},
+					},
 				},
 				ai: {
-					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				createFlow,
 			},
 			createWebContents(1),
 		);
@@ -330,12 +333,18 @@ describe('bindMain', () => {
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
+					net: {
+						listenLoopback: async () => {
+							throw new Error('not implemented');
+						},
+						fetch: async () => {
+							throw new Error('not implemented');
+						},
+					},
 				},
 				ai: {
-					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				createFlow,
 			},
 			createWebContents(1),
 		);
@@ -514,12 +523,18 @@ describe('bindMain', () => {
 					filesystem: createFilesystem('a'),
 					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
+					net: {
+						listenLoopback: async () => {
+							throw new Error('not implemented');
+						},
+						fetch: async () => {
+							throw new Error('not implemented');
+						},
+					},
 				},
 				ai: {
-					getOAuthProviders: async () => [],
 					getApiKeyProviders: async () => [],
 				},
-				createFlow,
 			},
 			createWebContents(1),
 		);

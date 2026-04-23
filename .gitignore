@@ -6,9 +6,10 @@ node_modules/
 .eslintcache
 **/storybook-static/
 
-# Agent Folders
+# Agent Folder
 .context/
 .cursor/debug*
+.claude/debug*
 .playwright-mcp
 
 # Obsidian workspace state

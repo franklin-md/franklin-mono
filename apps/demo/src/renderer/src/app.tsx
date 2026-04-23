@@ -1,6 +1,11 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@franklin/ui';
+import {
+	AuthButton,
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+} from '@franklin/ui';
 import { AgentChatPage } from '@/pages/agent-chat/agent-chat-page.js';
-import { AuthButton } from '@/components/auth/button.js';
 import { FranklinProvider } from '@franklin/react';
 import { createElectronPlatform } from '@franklin/electron/renderer';
 import {

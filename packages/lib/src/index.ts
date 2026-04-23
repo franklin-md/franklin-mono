@@ -20,6 +20,17 @@ export type {
 	FetchBuilder,
 	WebAPI,
 } from './network/index.js';
+export type {
+	ListenLoopbackOptions,
+	LoopbackListener,
+	LoopbackRequest,
+	LoopbackResponse,
+} from './network/loopback/types.js';
+export type {
+	EmittedLoopbackRequest,
+	MemoryLoopbackListenerOptions,
+} from './network/loopback/memory.js';
+export { MemoryLoopbackListener } from './network/loopback/memory.js';
 export {
 	decorate,
 	withOnlyHTTP,
@@ -146,6 +157,10 @@ export { wait } from './utils/async/wait.js';
 export { withDeadline } from './utils/async/deadline.js';
 export { randomDelay } from './utils/random.js';
 export { encode, decode } from './utils/bytes.js';
+export { base64url, base64urlToBase64, hex } from './utils/encoding.js';
+export { randomBytes } from './crypto/seed.js';
+export type { PkceParams } from './crypto/pkce.js';
+export { generatePkceParams } from './crypto/pkce.js';
 export { truncate, truncateStream } from './utils/truncate.js';
 export type {
 	TruncateResult,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { OAuthLoginCallbacks } from '@franklin/agent/browser';
 import { useApp } from '@franklin/react';
@@ -15,6 +15,14 @@ export function useOAuthFlow(
 	const app = useApp();
 
 	const [flowState, setFlowState] = useState<FlowState>({ phase: 'idle' });
+
+	// Release the loopback port if the user closes the modal mid-flow — fixed
+	// callback ports mean a leaked listener blocks the next sign-in attempt.
+	useEffect(() => {
+		return () => {
+			void auth.cancel(providerId);
+		};
+	}, [auth, providerId]);
 
 	async function login() {
 		setFlowState({ phase: 'starting' });

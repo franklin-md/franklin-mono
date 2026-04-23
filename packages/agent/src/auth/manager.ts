@@ -1,7 +1,7 @@
-import { getOAuthApiKey } from '@mariozechner/pi-ai/oauth';
 import { createObserver } from '@franklin/lib';
-import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
 
+import type { OAuthClient } from './oauth-client.js';
+import { createBuiltInOAuthClient } from './specs/index.js';
 import type {
 	ApiKeyEntry,
 	AuthEntries,
@@ -9,17 +9,26 @@ import type {
 	OAuthLoginCallbacks,
 	OAuthEntry,
 } from './types.js';
-import type { OAuthFlow } from './oauth-flow.js';
 import type { Platform } from '../platform.js';
 import type { AuthStore } from './store.js';
 
+interface ActiveFlow {
+	controller: AbortController;
+	promise: Promise<unknown>;
+}
+
 export class AuthManager {
 	private readonly observer = createObserver<[string, AuthEntry | undefined]>();
+	private readonly oauthClient: OAuthClient;
+	private readonly activeFlows = new Map<string, ActiveFlow>();
 
 	constructor(
 		private readonly platform: Platform,
 		private readonly store: AuthStore,
-	) {}
+		oauthClient?: OAuthClient,
+	) {
+		this.oauthClient = oauthClient ?? createBuiltInOAuthClient(platform.os.net);
+	}
 
 	async restore(): Promise<void> {
 		await this.store.restore();
@@ -35,8 +44,8 @@ export class AuthManager {
 	// Provider discovery
 	// -------------------------------------------------------------------------
 
-	async getOAuthProviders(): Promise<{ id: string; name: string }[]> {
-		return await this.platform.ai.getOAuthProviders();
+	getOAuthProviders(): { id: string; name: string }[] {
+		return this.oauthClient.providers();
 	}
 
 	async getApiKeyProviders(): Promise<string[]> {
@@ -47,33 +56,44 @@ export class AuthManager {
 	// OAuth flow
 	// -------------------------------------------------------------------------
 
-	async flow(provider: string): Promise<OAuthFlow> {
-		return this.platform.createFlow(provider);
-	}
-
 	async loginOAuth(
 		provider: string,
 		callbacks: OAuthLoginCallbacks,
 	): Promise<void> {
-		const flow = await this.flow(provider);
-		const unsubAuth = flow.onAuth((info) => {
-			callbacks.onAuth(info);
-		});
-		const unsubProgress = flow.onProgress((message) => {
-			callbacks.onProgress?.(message);
-		});
+		// Anthropic/OpenAI-Codex pin fixed callback ports, so two active flows
+		// per provider would collide — cancel any prior attempt first.
+		await this.cancel(provider);
+
+		const controller = new AbortController();
+		const promise = this.oauthClient.run(
+			provider,
+			callbacks,
+			controller.signal,
+		);
+		const active: ActiveFlow = { controller, promise };
+		this.activeFlows.set(provider, active);
 
 		try {
-			const credentials = await flow.login();
+			const credentials = await promise;
 			this.setOAuthEntry(provider, {
 				type: 'oauth',
 				credentials,
 			});
 		} finally {
-			unsubAuth();
-			unsubProgress();
-			await flow.dispose();
+			if (this.activeFlows.get(provider) === active) {
+				this.activeFlows.delete(provider);
+			}
 		}
+	}
+
+	async cancel(provider: string): Promise<void> {
+		const active = this.activeFlows.get(provider);
+		if (!active) return;
+		this.activeFlows.delete(provider);
+		active.controller.abort();
+		// Wait for the engine's finally (listener.dispose) to run so the port
+		// is free before the next loginOAuth tries to bind.
+		await active.promise.catch(() => {});
 	}
 
 	// -------------------------------------------------------------------------
@@ -137,21 +157,15 @@ export class AuthManager {
 		if (!entry) return undefined;
 
 		if (entry.oauth) {
-			const credMap: Record<string, OAuthCredentials> = {
-				[provider]: entry.oauth.credentials,
-			};
-
-			const result = await getOAuthApiKey(provider, credMap);
-			if (!result) return undefined;
-
-			if (!sameCredentials(entry.oauth.credentials, result.newCredentials)) {
+			let credentials = entry.oauth.credentials;
+			if (Date.now() >= credentials.expires) {
+				credentials = await this.oauthClient.refresh(provider, credentials);
 				this.setOAuthEntry(provider, {
 					type: 'oauth',
-					credentials: result.newCredentials,
+					credentials,
 				});
 			}
-
-			return result.apiKey;
+			return this.oauthClient.getApiKey(provider, credentials);
 		}
 
 		return entry.apiKey?.key;
@@ -182,8 +196,4 @@ export class AuthManager {
 	private notifyChange(provider: string, entry: AuthEntry | undefined): void {
 		this.observer.notify(provider, entry);
 	}
-}
-
-function sameCredentials(a: OAuthCredentials, b: OAuthCredentials): boolean {
-	return JSON.stringify(a) === JSON.stringify(b);
 }

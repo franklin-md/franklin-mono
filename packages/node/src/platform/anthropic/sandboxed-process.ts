@@ -3,13 +3,13 @@ import {
 	type SandboxRuntimeConfig,
 } from '@anthropic-ai/sandbox-runtime';
 import { spawn } from 'child_process';
+import { once } from 'events';
 import { delimiter } from 'path';
+import { quote as quoteArgv } from 'shell-quote';
 import type { AbsolutePath, Process, ProcessInput } from '@franklin/lib';
 import { joinAbsolute } from '@franklin/lib';
 import type { NetworkPermissions } from '@franklin/lib';
 import type { FilesystemConfig, EnvironmentConfig } from '@franklin/extensions';
-import { once } from 'events';
-import { quote } from 'shell-quote';
 
 export class SandboxedProcess implements Process {
 	private _cwd: string;
@@ -89,7 +89,7 @@ export class SandboxedProcess implements Process {
 		// must ultimately be run through `shell: true`. We POSIX-quote the argv
 		// here so the shell reassembles the exact argv we were given — callers
 		// never have to shell-escape themselves.
-		const shellCmd = quote([file, ...(args ?? [])]);
+		const shellCmd = quoteArgv([file, ...(args ?? [])]);
 		const sandboxedCommand = await SandboxManager.wrapWithSandbox(
 			shellCmd,
 			undefined,

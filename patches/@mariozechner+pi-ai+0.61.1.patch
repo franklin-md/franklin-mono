@@ -1,0 +1,56 @@
+diff --git a/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.d.ts b/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.d.ts
+index 47fda07..74ead49 100644
+--- a/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.d.ts
++++ b/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.d.ts
+@@ -1,5 +1,6 @@
+ import type { SimpleStreamOptions, StreamFunction, StreamOptions } from "../types.js";
+ export interface OpenAICodexResponsesOptions extends StreamOptions {
++    fetch?: typeof globalThis.fetch;
+     reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+     reasoningSummary?: "auto" | "concise" | "detailed" | "off" | "on" | null;
+     textVerbosity?: "low" | "medium" | "high";
+diff --git a/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.js b/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.js
+index 6cfd828..7bcc606 100644
+--- a/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.js
++++ b/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.js
+@@ -115,12 +115,13 @@ export const streamOpenAICodexResponses = (model, context, options) => {
+             // Fetch with retry logic for rate limits and transient errors
+             let response;
+             let lastError;
++            const fetchFn = options?.fetch ?? globalThis.fetch;
+             for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                 if (options?.signal?.aborted) {
+                     throw new Error("Request was aborted");
+                 }
+                 try {
+-                    response = await fetch(resolveCodexUrl(model.baseUrl), {
++                    response = await fetchFn(resolveCodexUrl(model.baseUrl), {
+                         method: "POST",
+                         headers: sseHeaders,
+                         body: bodyJson,
+diff --git a/node_modules/@mariozechner/pi-ai/dist/providers/simple-options.js b/node_modules/@mariozechner/pi-ai/dist/providers/simple-options.js
+index de04c6d..ec42ecb 100644
+--- a/node_modules/@mariozechner/pi-ai/dist/providers/simple-options.js
++++ b/node_modules/@mariozechner/pi-ai/dist/providers/simple-options.js
+@@ -3,7 +3,9 @@ export function buildBaseOptions(model, options, apiKey) {
+         temperature: options?.temperature,
+         maxTokens: options?.maxTokens || Math.min(model.maxTokens, 32000),
+         signal: options?.signal,
++        fetch: options?.fetch,
+         apiKey: apiKey || options?.apiKey,
++        transport: options?.transport,
+         cacheRetention: options?.cacheRetention,
+         sessionId: options?.sessionId,
+         headers: options?.headers,
+diff --git a/node_modules/@mariozechner/pi-ai/dist/types.d.ts b/node_modules/@mariozechner/pi-ai/dist/types.d.ts
+index 91d3c54..e7e83f6 100644
+--- a/node_modules/@mariozechner/pi-ai/dist/types.d.ts
++++ b/node_modules/@mariozechner/pi-ai/dist/types.d.ts
+@@ -18,6 +18,7 @@ export interface StreamOptions {
+     temperature?: number;
+     maxTokens?: number;
+     signal?: AbortSignal;
++    fetch?: typeof globalThis.fetch;
+     apiKey?: string;
+     /**
+      * Preferred transport for providers that support multiple transports.

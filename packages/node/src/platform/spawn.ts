@@ -7,8 +7,14 @@ import {
 	createSessionAdapter,
 	debugMiniACP,
 } from '@franklin/mini-acp';
+import type { StreamFn } from '@mariozechner/pi-agent-core';
 
-export function spawn(): ClientProtocol {
+type SpawnOptions = {
+	streamFn?: StreamFn;
+};
+
+export function spawn(options: SpawnOptions = {}): ClientProtocol {
+	const { streamFn } = options;
 	// TODO: Type this correctly, it is already correct but message type is painful
 	const { a, b } = createDuplexPair();
 	const clientDuplex = a as unknown as ClientProtocol;
@@ -19,7 +25,11 @@ export function spawn(): ClientProtocol {
 	const session = debugMiniACP(
 		createSessionAdapter(
 			(ctx, server) =>
-				createPiAdapter({ ctx, server: debugMiniACP(server, label) }),
+				createPiAdapter({
+					ctx,
+					server: debugMiniACP(server, label),
+					streamFn,
+				}),
 			connection.remote,
 		),
 		label,

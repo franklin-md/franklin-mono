@@ -13,9 +13,11 @@ export function OAuthPanel({ savedEntries, onUpdate }: AuthPanelProps) {
 	const auth = useAuthManager();
 
 	const providers = useAsync(
-		async () => {
-			const all = await auth.getOAuthProviders();
-			return all.filter((p: OAuthProviderMeta) => ALLOWED_PROVIDERS.has(p.id));
+		() => {
+			const all = auth.getOAuthProviders();
+			return Promise.resolve(
+				all.filter((p: OAuthProviderMeta) => ALLOWED_PROVIDERS.has(p.id)),
+			);
 		},
 		[],
 		[auth],
