@@ -11,6 +11,7 @@ import {
 	bashExtension,
 	createWebExtension,
 	spawnExtension,
+	environmentInfoExtension,
 } from '@franklin/extensions';
 
 const webExtension = createWebExtension({});
@@ -23,6 +24,7 @@ const extensionBundles = [
 	bashExtension,
 	webExtension,
 	spawnExtension,
+	environmentInfoExtension,
 ];
 const extensions = extensionBundles.map((bundle) => bundle.extension);
 

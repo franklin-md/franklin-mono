@@ -1,6 +1,7 @@
 import type { WebContents } from 'electron';
 import {
 	FILESYSTEM_ALLOW_ALL,
+	MemoryOsInfo,
 	type AbsolutePath,
 	type Filesystem,
 } from '@franklin/lib';
@@ -70,16 +71,14 @@ describe('initializeMain', () => {
 				Object.assign(
 					{
 						filesystem: createFilesystem(),
-						terminal: {
+						process: {
 							exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 						},
 						web: {
 							fetch: async () => ({
-								requestedUrl: 'https://example.com',
-								finalUrl: 'https://example.com',
+								url: 'https://example.com',
 								status: 200,
 								statusText: 'OK',
-								contentType: 'text/plain',
 								kind: 'text',
 								text: '',
 								truncated: false,
@@ -87,6 +86,7 @@ describe('initializeMain', () => {
 								cacheable: true,
 							}),
 						},
+						osInfo: new MemoryOsInfo(),
 						config: async () => ({
 							fsConfig: {
 								cwd: '/tmp' as AbsolutePath,
@@ -99,11 +99,11 @@ describe('initializeMain', () => {
 					{ dispose: noop },
 				),
 			os: {
-				terminal: {
+				process: {
 					exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 				},
 				filesystem: createFilesystem(),
-				getHome: async () => '/home/test' as AbsolutePath,
+				osInfo: new MemoryOsInfo(),
 				openExternal: async () => {},
 			},
 			ai: {

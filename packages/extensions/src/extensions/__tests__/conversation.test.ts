@@ -121,7 +121,12 @@ describe('conversationExtension', () => {
 		expect(turns).toHaveLength(1);
 		const blocks = turns[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
-		expect(blocks[0]).toEqual({ kind: 'text', text: 'hello world' });
+		expect(blocks[0]).toEqual({
+			kind: 'text',
+			text: 'hello world',
+			startedAt: expect.any(Number),
+		});
+		expect(blocks[0]!.endedAt).toBeUndefined();
 	});
 
 	it('creates separate blocks for thinking then text', async () => {
@@ -158,8 +163,18 @@ describe('conversationExtension', () => {
 		const turns = getTurns(stores);
 		const blocks = turns[0]!.response.blocks;
 		expect(blocks).toHaveLength(2);
-		expect(blocks[0]).toEqual({ kind: 'thinking', text: 'reasoning...' });
-		expect(blocks[1]).toEqual({ kind: 'text', text: 'visible' });
+		expect(blocks[0]).toEqual({
+			kind: 'thinking',
+			text: 'reasoning...',
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
+		});
+		expect(blocks[1]).toEqual({
+			kind: 'text',
+			text: 'visible',
+			startedAt: expect.any(Number),
+		});
+		expect(blocks[1]!.endedAt).toBeUndefined();
 	});
 
 	it('coalesces adjacent thinking chunks', async () => {
@@ -192,7 +207,12 @@ describe('conversationExtension', () => {
 
 		const blocks = getTurns(stores)[0]!.response.blocks;
 		expect(blocks).toHaveLength(1);
-		expect(blocks[0]).toEqual({ kind: 'thinking', text: 'first second' });
+		expect(blocks[0]).toEqual({
+			kind: 'thinking',
+			text: 'first second',
+			startedAt: expect.any(Number),
+		});
+		expect(blocks[0]!.endedAt).toBeUndefined();
 	});
 
 	it('records tool call from toolExecute as toolUse block', async () => {
@@ -234,6 +254,8 @@ describe('conversationExtension', () => {
 				arguments: { path: '/foo' },
 			},
 			result: [{ type: 'text', text: 'ok' }],
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
 		});
 	});
 
@@ -281,6 +303,8 @@ describe('conversationExtension', () => {
 			},
 			result: [{ type: 'text', text: 'Permission denied' }],
 			isError: true,
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
 		});
 	});
 
@@ -326,6 +350,8 @@ describe('conversationExtension', () => {
 				arguments: { path: '/foo' },
 			},
 			result: [{ type: 'text', text: 'file contents here' }],
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
 		});
 	});
 
@@ -385,6 +411,8 @@ describe('conversationExtension', () => {
 			kind: 'turnEnd',
 			stopCode: StopCode.Finished,
 			stopMessage: undefined,
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
 		});
 	});
 
@@ -429,6 +457,8 @@ describe('conversationExtension', () => {
 			stopCode: StopCode.Finished,
 			stopMessage: undefined,
 			usage,
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
 		});
 	});
 
@@ -461,6 +491,8 @@ describe('conversationExtension', () => {
 			kind: 'turnEnd',
 			stopCode: StopCode.LlmError,
 			stopMessage: 'Missing API key',
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
 		});
 	});
 
@@ -522,7 +554,12 @@ describe('conversationExtension', () => {
 
 		const blocks = turn.response.blocks;
 		expect(blocks).toHaveLength(4);
-		expect(blocks[0]).toEqual({ kind: 'text', text: 'Let me check' });
+		expect(blocks[0]).toEqual({
+			kind: 'text',
+			text: 'Let me check',
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
+		});
 		expect(blocks[1]).toEqual({
 			kind: 'toolUse',
 			call: {
@@ -532,16 +569,39 @@ describe('conversationExtension', () => {
 				arguments: { path: '/foo' },
 			},
 			result: [{ type: 'text', text: 'contents' }],
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
 		});
 		expect(blocks[2]).toEqual({
 			kind: 'text',
 			text: 'Here is the result',
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
 		});
 		expect(blocks[3]).toEqual({
 			kind: 'turnEnd',
 			stopCode: StopCode.Finished,
 			stopMessage: undefined,
+			startedAt: expect.any(Number),
+			endedAt: expect.any(Number),
 		});
+
+		// Contiguity at startNewBlock-linked boundaries: when a new block
+		// is opened, it closes the trailing block at the same instant, so
+		// those two timestamps match exactly.
+		// blocks[0] (text) → blocks[1] (toolUse): handleToolCall closes the
+		// text via startNewBlock.
+		expect(blocks[0]!.endedAt).toBe(blocks[1]!.startedAt);
+		// blocks[2] (text) → blocks[3] (turnEnd): handleTurnEnd closes the
+		// text via startAndEndNewBlock.
+		expect(blocks[2]!.endedAt).toBe(blocks[3]!.startedAt);
+		// blocks[1] (toolUse) → blocks[2] (text) is NOT contiguous: the
+		// tool-result event closes the toolUse independently of when the
+		// next chunk arrives.
+		expect(blocks[1]!.endedAt!).toBeLessThanOrEqual(blocks[2]!.startedAt);
+
+		// turnEnd is instantaneous: startedAt === endedAt.
+		expect(blocks[3]!.startedAt).toBe(blocks[3]!.endedAt);
 	});
 
 	it('multiple turns from multiple prompt calls', async () => {

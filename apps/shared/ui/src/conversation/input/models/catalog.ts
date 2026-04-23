@@ -200,7 +200,7 @@ export const MODEL_CATALOG: ProviderGroup[] = [
 				costOut: 1.2,
 				intelligence: 'strong',
 			}),
-			model('openrouter', 'moonshotai/kimi-k2.5', 'Kimi K2.5', {
+			model('openrouter', 'moonshotai/kimi-k2.6', 'Kimi K2.6', {
 				reasoning: true,
 				ctx: 262_144,
 				costIn: 0.3827,

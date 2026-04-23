@@ -1,6 +1,7 @@
 import type { WebContents } from 'electron';
 import {
 	FILESYSTEM_ALLOW_ALL,
+	MemoryOsInfo,
 	type AbsolutePath,
 	type Filesystem,
 } from '@franklin/lib';
@@ -36,16 +37,14 @@ function createEnvironment(label: string) {
 	return Object.assign(
 		{
 			filesystem: createFilesystem(label),
-			terminal: {
+			process: {
 				exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 			},
 			web: {
 				fetch: async () => ({
-					requestedUrl: 'https://example.com',
-					finalUrl: 'https://example.com',
+					url: 'https://example.com',
 					status: 200,
 					statusText: 'OK',
-					contentType: 'text/plain',
 					kind: 'text',
 					text: '',
 					truncated: false,
@@ -53,6 +52,7 @@ function createEnvironment(label: string) {
 					cacheable: true,
 				}),
 			},
+			osInfo: new MemoryOsInfo(),
 			config: async () => ({
 				fsConfig: {
 					cwd: '/tmp' as AbsolutePath,
@@ -153,11 +153,11 @@ describe('bindMain', () => {
 				spawn: async () => createTransportSpy().transport,
 				environment: async () => createEnvironment('b'),
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
-					getHome: async () => '/home/test' as AbsolutePath,
+					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
 				},
 				ai: {
@@ -219,11 +219,11 @@ describe('bindMain', () => {
 				spawn: async () => createTransportSpy().transport,
 				environment: async () => createEnvironment('b'),
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
-					getHome: async () => '/home/test' as AbsolutePath,
+					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
 				},
 				ai: {
@@ -295,16 +295,14 @@ describe('bindMain', () => {
 					return Object.assign(
 						{
 							filesystem: fs,
-							terminal: {
+							process: {
 								exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 							},
 							web: {
 								fetch: async () => ({
-									requestedUrl: 'https://example.com',
-									finalUrl: 'https://example.com',
+									url: 'https://example.com',
 									status: 200,
 									statusText: 'OK',
-									contentType: 'text/plain',
 									kind: 'text',
 									text: '',
 									truncated: false,
@@ -312,6 +310,7 @@ describe('bindMain', () => {
 									cacheable: true,
 								}),
 							},
+							osInfo: new MemoryOsInfo(),
 							config: async () => ({
 								fsConfig: {
 									cwd: '/tmp' as AbsolutePath,
@@ -325,11 +324,11 @@ describe('bindMain', () => {
 					);
 				},
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
-					getHome: async () => '/home/test' as AbsolutePath,
+					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
 				},
 				ai: {
@@ -509,11 +508,11 @@ describe('bindMain', () => {
 				spawn: async () => transportSpy.transport,
 				environment: async () => createEnvironment('b'),
 				os: {
-					terminal: {
+					process: {
 						exec: async () => ({ exit_code: 0, stdout: '', stderr: '' }),
 					},
 					filesystem: createFilesystem('a'),
-					getHome: async () => '/home/test' as AbsolutePath,
+					osInfo: new MemoryOsInfo(),
 					openExternal: async () => {},
 				},
 				ai: {

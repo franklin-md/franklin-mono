@@ -1,8 +1,8 @@
+import { getHeader, truncate } from '@franklin/lib';
 import { Readability } from '@mozilla/readability';
 import type { WebFetchResponse } from '@franklin/lib';
 import {
 	normalizeExtractedText,
-	truncateText,
 	decodeBody,
 	toErrorMessage,
 	normalizeContentType,
@@ -28,7 +28,8 @@ export function processWebResponse(
 		};
 	}
 
-	const type = normalizeContentType(response.contentType);
+	const contentType = getHeader(response.headers, 'content-type');
+	const type = normalizeContentType(contentType);
 	if (type === 'text/html' || type === 'application/xhtml+xml') {
 		return extractHtml(response, options);
 	}
@@ -57,10 +58,18 @@ export function processWebResponse(
 
 	return {
 		kind: 'error',
-		content: `Unsupported content type: ${response.contentType ?? 'unknown'}.`,
+		content: `Unsupported content type: ${contentType ?? 'unknown'}.`,
 		isError: true,
 		truncated: false,
 	};
+}
+
+function wrapUntrusted(body: string): string {
+	return (
+		`<<<<EXTERNAL_UNTRUSTED_CONTENT>>>>\n` +
+		body +
+		`\n<<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>>`
+	);
 }
 
 function extractHtml(
@@ -77,15 +86,15 @@ function extractHtml(
 		const rawText = article?.textContent ?? doc.body.textContent;
 		const normalized = normalizeExtractedText(rawText);
 
-		const full_normalized =
-			`<<<<EXTERNAL_UNTRUSTED_CONTENT>>>>\n` +
+		const wrapped = wrapUntrusted(
 			`TITLE: ${title !== '' ? title : '[empty title]'}\n` +
-			(normalized !== '' ? normalized : '[empty body]') +
-			`\n<<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>>`;
+				(normalized !== '' ? normalized : '[empty body]'),
+		);
 
-		const { text, truncated } = truncateText(
-			full_normalized,
+		const { text, truncated } = truncate(
+			wrapped,
 			options.maxOutputChars,
+			'\n\n[truncated]',
 		);
 		return {
 			kind: 'html',
@@ -108,14 +117,14 @@ function extractPlainText(
 	options: WebFetchExtensionOptions,
 ): WebFetchProcessedResult {
 	const normalized = normalizeExtractedText(decodeBody(response.body));
-	const { text, truncated } = truncateText(normalized, options.maxOutputChars);
-	const wrapped =
-		`<<<<EXTERNAL_UNTRUSTED_CONTENT>>>>\n` +
-		text +
-		`\n<<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>>`;
+	const { text, truncated } = truncate(
+		normalized,
+		options.maxOutputChars,
+		'\n\n[truncated]',
+	);
 	return {
 		kind: 'text',
-		content: text.length > 0 ? wrapped : '[empty response]',
+		content: text.length > 0 ? wrapUntrusted(text) : '[empty response]',
 		isError: false,
 		truncated,
 	};

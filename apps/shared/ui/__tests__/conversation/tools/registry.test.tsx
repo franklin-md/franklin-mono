@@ -25,6 +25,7 @@ function createBlock(
 			name,
 			arguments: args,
 		},
+		startedAt: 0,
 	};
 }
 

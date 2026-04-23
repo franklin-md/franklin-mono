@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
+import {
+	FILESYSTEM_ALLOW_ALL,
+	MemoryOsInfo,
+	type AbsolutePath,
+} from '@franklin/lib';
 import { combine } from '../combine.js';
 import { createRuntime } from '../create.js';
 import { identitySystem } from '../../../systems/identity/system.js';
@@ -52,8 +56,9 @@ function mockEnvironment(config: EnvironmentConfig): ReconfigurableEnvironment {
 				async (...paths: string[]) => paths[paths.length - 1]! as AbsolutePath,
 			),
 		},
-		terminal: { exec: vi.fn() },
+		process: { exec: vi.fn() },
 		web: { fetch: vi.fn() },
+		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({ ...config })),
 		reconfigure: vi.fn(async () => {}),
 		dispose: vi.fn(async () => {}),

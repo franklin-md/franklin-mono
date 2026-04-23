@@ -7,7 +7,11 @@ import {
 } from '@franklin/extensions';
 
 import type { App } from 'obsidian';
-import { createNodeFilesystem, createNodePlatform } from '@franklin/node';
+import {
+	createNodeFilesystem,
+	createNodePlatform,
+	nodePlatformFetch,
+} from '@franklin/node';
 import { createObsidianFilesystem } from './filesystem/obsidian.js';
 import { createObservableFilesystem, type WriteListener } from '@franklin/lib';
 
@@ -22,6 +26,20 @@ export function createObsidianPlatform(
 		environment: (config: EnvironmentConfig) =>
 			createReconfigurableEnvironment({
 				config,
+				// configureFilesystem: async (fsConfig) => {
+				// 	const fs = createObservableFilesystem(
+				// 		configureFilesystem(
+				// 			createObsidianFilesystem(app, createNodeFilesystem()),
+				// 			fsConfig,
+				// 		),
+				// 	);
+				// 	fs.onWrite(writeListener);
+				// 	return fs;
+				// },
+				// configureTerminal: async () => {
+
+
+				osInfo: nodePlatform.os.osInfo,
 				configureFilesystem: async (fsConfig) => {
 					const fs = createObservableFilesystem(
 						configureFilesystem(
@@ -32,18 +50,19 @@ export function createObsidianPlatform(
 					fs.onWrite(writeListener);
 					return fs;
 				},
-				configureTerminal: async () => {
+				configureProcess: async () => {
 					return {
 						exec: async () => {
 							return {
 								exit_code: 0,
-								stdout: 'Terminal is not available in Obsidian',
+								stdout: 'Process execution is not available in Obsidian',
 								stderr: '',
 							};
 						},
 					};
 				},
-				configureWeb: async (netConfig) => createWeb(netConfig),
+				configureWeb: async (netConfig) =>
+					createWeb(netConfig, nodePlatformFetch),
 			}),
 	};
 }

@@ -79,7 +79,9 @@
 	width: 0;
 	height: 0;
 	overflow: visible;
-	font: inherit;
+	font-family: inherit;
+	font-size: 1rem !important;
+	line-height: 1.5 !important;
 }
 
 .diff-plugin-actions {
@@ -91,9 +93,11 @@
 	align-items: center;
 	justify-content: flex-end;
 	gap: 4px;
-	height: 1lh;
+	height: auto;
 	padding: 0;
-	font: inherit;
+	font-family: inherit;
+	font-size: 1rem !important;
+	line-height: 1.5 !important;
 	pointer-events: auto;
 }
 
@@ -109,6 +113,9 @@
 	display: flex;
 	align-items: center;
 	gap: 4px;
+	font-family: inherit;
+	font-size: 1rem !important;
+	line-height: 1.5 !important;
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 120ms ease;
@@ -138,16 +145,17 @@
 .diff-plugin-btn {
 	appearance: none;
 	box-sizing: border-box;
-	height: 1lh;
-	min-height: 0;
+	height: auto;
+	min-height: 22px;
 	padding: 0 8px;
 	border: 1px solid transparent;
 	border-radius: 4px;
 	background: transparent;
 	color: var(--text-muted);
 	cursor: pointer;
-	font: inherit;
-	line-height: calc(1lh - 2px);
+	font-family: inherit;
+	font-size: 1rem !important;
+	line-height: 1.2 !important;
 	transition:
 		background-color 120ms ease,
 		border-color 120ms ease,

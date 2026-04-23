@@ -1,4 +1,4 @@
-import type { AbsolutePath } from '@franklin/lib';
+import { MemoryOsInfo, type AbsolutePath } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
@@ -24,8 +24,9 @@ function mockEnvironment(): ReconfigurableEnvironment {
 				async (...paths: string[]) => paths[paths.length - 1]! as AbsolutePath,
 			),
 		},
-		terminal: { exec: vi.fn() },
+		process: { exec: vi.fn() },
 		web: { fetch: vi.fn() },
+		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,

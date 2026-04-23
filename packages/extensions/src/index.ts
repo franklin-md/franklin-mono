@@ -23,9 +23,7 @@ export type {
 	Environment,
 	ReconfigurableEnvironment,
 	FilesystemConfig,
-	NetworkConfig,
 	EnvironmentConfig,
-	WebAPI,
 } from './systems/environment/api/index.js';
 export type { ConfigureOptions } from './systems/environment/api/index.js';
 export {
@@ -153,6 +151,7 @@ export {
 	createWebExtension,
 	spawnExtension,
 	instructionsExtension,
+	environmentInfoExtension,
 } from './extensions/index.js';
 
 export { createTodoControl, createStatusControl } from './extensions/index.js';

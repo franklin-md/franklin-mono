@@ -15,12 +15,19 @@ const filesystem = namespace({
 	deleteFile: method(),
 });
 
-const terminal = namespace({
+const process = namespace({
 	exec: method(),
 });
 
 const web = namespace({
 	fetch: method(),
+});
+
+const osInfo = namespace({
+	getPlatform: method(),
+	getOsVersion: method(),
+	getShellInfo: method(),
+	getHomeDir: method(),
 });
 
 const authFlow = namespace({
@@ -35,8 +42,9 @@ export const schema = namespace({
 	environment: resource(
 		namespace({
 			filesystem: filesystem,
-			terminal: terminal,
+			process: process,
 			web: web,
+			osInfo: osInfo,
 			config: method(),
 			reconfigure: method(),
 		}),
@@ -46,9 +54,9 @@ export const schema = namespace({
 		getApiKeyProviders: method(),
 	}),
 	os: namespace({
-		terminal: terminal,
+		process: process,
 		filesystem: filesystem,
-		getHome: method(),
+		osInfo: osInfo,
 		openExternal: method(),
 	}),
 } satisfies NamespaceShape<Platform>);

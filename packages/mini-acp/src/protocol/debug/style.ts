@@ -39,11 +39,6 @@ export function indent(level: number, value: string): string {
 	return `${INDENT.repeat(level)}${value}`;
 }
 
-export function truncate(value: string, maxLength: number): string {
-	if (value.length <= maxLength) return value;
-	return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
-}
-
 export function collapseWhitespace(value: string): string {
 	return value.replace(/\s+/g, ' ').trim();
 }

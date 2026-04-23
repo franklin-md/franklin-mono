@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
+import {
+	FILESYSTEM_ALLOW_ALL,
+	MemoryOsInfo,
+	type AbsolutePath,
+} from '@franklin/lib';
 import { compile } from '../../../../algebra/compiler/compile.js';
 import { combine } from '../../../../algebra/compiler/combine.js';
 import { createEnvironmentCompiler } from '../compiler.js';
@@ -24,8 +28,9 @@ function mockEnvironment(): ReconfigurableEnvironment {
 				async (...paths: string[]) => paths[paths.length - 1]! as AbsolutePath,
 			),
 		},
-		terminal: { exec: vi.fn() },
+		process: { exec: vi.fn() },
 		web: { fetch: vi.fn() },
+		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,

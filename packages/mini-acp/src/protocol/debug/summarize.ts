@@ -1,3 +1,5 @@
+import { truncate } from '@franklin/lib';
+
 import type { Usage } from '../../types/usage.js';
 
 import {
@@ -7,8 +9,9 @@ import {
 	collapseWhitespace,
 	colorAction,
 	paint,
-	truncate,
 } from './style.js';
+
+const TRUNCATE_LENGTH = 2000;
 
 export function summarizeContext(value: unknown): string {
 	if (!isRecord(value)) return summarizeJson(value);
@@ -112,7 +115,7 @@ export function summarizeToolResultContent(value: unknown): string {
 }
 
 export function summarizeArguments(value: unknown): string {
-	return truncate(summarizeJson(value), 120);
+	return truncate(summarizeJson(value), TRUNCATE_LENGTH).text;
 }
 
 export function summarizeThrown(error: unknown): string {
@@ -141,7 +144,10 @@ function formatCost(value: number): string {
 export function summarizeJson(value: unknown): string {
 	try {
 		const serialized = JSON.stringify(value);
-		return truncate(typeof serialized === 'string' ? serialized : 'null', 120);
+		return truncate(
+			typeof serialized === 'string' ? serialized : 'null',
+			TRUNCATE_LENGTH,
+		).text;
 	} catch {
 		return '[unserializable]';
 	}
@@ -180,7 +186,7 @@ function summarizeContentBlock(value: unknown): string {
 
 function summarizeText(value: unknown): string {
 	if (typeof value !== 'string') return summarizeJson(value);
-	return truncate(collapseWhitespace(value), 120);
+	return truncate(collapseWhitespace(value), TRUNCATE_LENGTH).text;
 }
 
 function summarizeMimeType(value: unknown): string {

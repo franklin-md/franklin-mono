@@ -9,6 +9,15 @@ import { handleToolResult } from './handlers/tool-result.js';
 import { handleUpdate } from './handlers/update.js';
 import { handleTurnEnd } from './handlers/turn-end.js';
 import { createConversationControl } from './controls.js';
+import type { ConversationTurn } from './types.js';
+
+function wrapHandler<T>(fn: (turn: ConversationTurn, event: T) => void) {
+	return (event: T, ctx: StoreRuntime) => {
+		const store = ctx.getStore(conversationKey);
+		const control = createConversationControl(store);
+		control.modifyCurrentTurn((turn) => fn(turn, event));
+	};
+}
 
 /**
  * Extension that maintains a conversation transcript as a list of turns.
@@ -19,9 +28,6 @@ export function conversationExtension(): Extension<
 	CoreAPI<StoreRuntime> & StoreAPI
 > {
 	return (api) => {
-		const control = (ctx: StoreRuntime) =>
-			createConversationControl(ctx.getStore(conversationKey));
-
 		api.registerStore(conversationKey, [], 'private');
 
 		api.on('prompt', (prompt, ctx) => {
@@ -36,24 +42,10 @@ export function conversationExtension(): Extension<
 			});
 		});
 
-		api.on('chunk', (event, ctx) => {
-			control(ctx).modifyCurrentTurn((turn) => handleChunk(turn, event));
-		});
-
-		api.on('update', (event, ctx) => {
-			control(ctx).modifyCurrentTurn((turn) => handleUpdate(turn, event));
-		});
-
-		api.on('toolCall', (event, ctx) => {
-			control(ctx).modifyCurrentTurn((turn) => handleToolCall(turn, event));
-		});
-
-		api.on('toolResult', (event, ctx) => {
-			control(ctx).modifyCurrentTurn((turn) => handleToolResult(turn, event));
-		});
-
-		api.on('turnEnd', (event, ctx) => {
-			control(ctx).modifyCurrentTurn((turn) => handleTurnEnd(turn, event));
-		});
+		api.on('chunk', wrapHandler(handleChunk));
+		api.on('update', wrapHandler(handleUpdate));
+		api.on('toolCall', wrapHandler(handleToolCall));
+		api.on('toolResult', wrapHandler(handleToolResult));
+		api.on('turnEnd', wrapHandler(handleTurnEnd));
 	};
 }

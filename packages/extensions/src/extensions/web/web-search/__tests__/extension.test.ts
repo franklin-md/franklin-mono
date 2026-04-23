@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
+import {
+	FILESYSTEM_ALLOW_ALL,
+	MemoryOsInfo,
+	type AbsolutePath,
+} from '@franklin/lib';
 import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { webSearchExtension } from '../extension.js';
@@ -21,8 +25,9 @@ function mockEnvironment(
 			deleteFile: vi.fn(),
 			resolve: vi.fn(),
 		},
-		terminal: { exec: vi.fn() },
+		process: { exec: vi.fn() },
 		web: { fetch: vi.fn(fetchImpl) },
+		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,
@@ -66,12 +71,10 @@ function getResultText(result: {
 
 function textResponse(body: string, contentType: string) {
 	return {
-		requestedUrl: 'https://example.com',
-		finalUrl: 'https://example.com',
+		url: 'https://example.com',
 		status: 200,
 		statusText: 'OK',
-		contentType,
-		headers: {},
+		headers: { 'Content-Type': contentType },
 		body: new TextEncoder().encode(body),
 	};
 }

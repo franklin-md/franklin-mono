@@ -1,5 +1,9 @@
 import type { OAuthCredentials } from '@mariozechner/pi-ai/oauth';
-import type { AbsolutePath, Filesystem } from '@franklin/lib';
+import {
+	MemoryOsInfo,
+	type AbsolutePath,
+	type Filesystem,
+} from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AuthManager } from '../auth/manager.js';
@@ -52,7 +56,7 @@ function createPlatform(
 			throw new Error('not implemented');
 		}),
 		os: {
-			terminal: {
+			process: {
 				exec: vi.fn(async () => ({
 					exit_code: 0,
 					stdout: '',
@@ -60,7 +64,7 @@ function createPlatform(
 				})),
 			},
 			filesystem,
-			getHome: vi.fn(async () => '/home/test' as AbsolutePath),
+			osInfo: new MemoryOsInfo(),
 			openExternal: vi.fn(async () => {}),
 		},
 		ai: {

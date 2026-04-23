@@ -1,4 +1,4 @@
-import type { AbsolutePath, Filesystem, Terminal } from '@franklin/lib';
+import type { Filesystem, OsInfo, Process } from '@franklin/lib';
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { EnvironmentFactory } from '@franklin/extensions';
 import type { OAuthFlow } from './auth/oauth-flow.js';
@@ -12,9 +12,9 @@ type ProviderMeta = {
 type Disposable = { dispose(): Promise<void> };
 
 export interface OperatingSystem {
-	terminal: Terminal;
+	process: Process;
 	filesystem: Filesystem;
-	getHome(): Promise<AbsolutePath>;
+	osInfo: OsInfo;
 	openExternal(url: string): Promise<void>;
 }
 

@@ -1,12 +1,39 @@
 export type { AbsolutePath } from './paths/index.js';
 export { toAbsolutePath, joinAbsolute } from './paths/index.js';
 export type { FileStat, Filesystem } from './filesystem/index.js';
-export type { Terminal, TerminalInput } from './terminal/index.js';
+export type { Process, ProcessInput, ProcessOutput } from './process/index.js';
+export type {
+	PlatformName,
+	ShellFamily,
+	ShellInfo,
+	OsInfo,
+	MemoryOsInfoValues,
+} from './os-info/index.js';
+export { detectShellFamily, MemoryOsInfo } from './os-info/index.js';
 export type {
 	NetworkPermissions,
+	WebFetchMethod,
 	WebFetchRequest,
 	WebFetchResponse,
+	Fetch,
+	FetchDecorator,
+	FetchBuilder,
+	WebAPI,
 } from './network/index.js';
+export {
+	decorate,
+	withOnlyHTTP,
+	withPolicy,
+	assertAllowed,
+	withUserAgent,
+	getHeader,
+	setHeader,
+	withTimeout,
+	withRedirect,
+	withRetry,
+	readBodyWithLimit,
+} from './network/index.js';
+export type { RetryOptions } from './network/index.js';
 export {
 	createFolderScopedFilesystem,
 	createFilteredFilesystem,
@@ -116,5 +143,11 @@ export type {
 export { bindClient, UnsupportedDescriptorError } from './proxy/index.js';
 export { bindServer } from './proxy/index.js';
 export { wait } from './utils/async/wait.js';
+export { withDeadline } from './utils/async/deadline.js';
 export { randomDelay } from './utils/random.js';
 export { encode, decode } from './utils/bytes.js';
+export { truncate, truncateStream } from './utils/truncate.js';
+export type {
+	TruncateResult,
+	TruncateStreamOptions,
+} from './utils/truncate.js';

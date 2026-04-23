@@ -1,4 +1,4 @@
-import type { AbsolutePath } from '@franklin/lib';
+import { MemoryOsInfo, type AbsolutePath } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
@@ -7,14 +7,21 @@ import { createWebExtension } from '../index.js';
 
 function textResponse(body: string, contentType: string) {
 	return {
-		requestedUrl: 'https://example.com',
-		finalUrl: 'https://example.com',
+		url: 'https://example.com',
 		status: 200,
 		statusText: 'OK',
-		contentType,
-		headers: {},
+		headers: { 'Content-Type': contentType },
 		body: new TextEncoder().encode(body),
 	};
+}
+
+function getResultText(result: {
+	content: Array<{ type: string; text?: string }>;
+}): string {
+	return result.content
+		.filter((block) => block.type === 'text')
+		.map((block) => block.text ?? '')
+		.join('\n');
 }
 
 function mockEnvironment(
@@ -38,8 +45,9 @@ function mockEnvironment(
 				async (...paths: string[]) => paths[paths.length - 1]! as AbsolutePath,
 			),
 		},
-		terminal: { exec: vi.fn() },
+		process: { exec: vi.fn() },
 		web: { fetch: vi.fn(fetchImpl) },
+		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,
@@ -131,29 +139,29 @@ describe('createWebExtension', () => {
 		const names = compiled.tools.map((tool) => tool.name);
 		expect(names).toEqual(expect.arrayContaining(['fetch_url', 'search_web']));
 
-		await executeTool(compiled, 'fetch_url', {
+		const fetchResult = await executeTool(compiled, 'fetch_url', {
 			url: 'https://example.com/docs',
 		});
-		await executeTool(compiled, 'search_web', {
+		const searchResult = await executeTool(compiled, 'search_web', {
 			query: 'example',
 		});
 
+		expect(fetchResult.isError).toBe(false);
+		expect(getResultText(fetchResult)).toContain('Hello world');
+		expect(searchResult.isError).toBe(false);
+		expect(getResultText(searchResult)).toContain('https://example.com');
+
+		// Request literals no longer carry timeoutMs/maxRedirects — those
+		// configure the withTimeout + withRedirect decorators each extension wraps around
+		// environment.web.fetch. Verify the URLs flow through correctly.
 		const fetchMock = env.web.fetch as ReturnType<typeof vi.fn>;
 		expect(fetchMock).toHaveBeenNthCalledWith(
 			1,
-			expect.objectContaining({
-				url: 'https://example.com/docs',
-				timeoutMs: 1234,
-				maxRedirects: 2,
-			}),
+			expect.objectContaining({ url: 'https://example.com/docs' }),
 		);
 		expect(fetchMock).toHaveBeenNthCalledWith(
 			2,
-			expect.objectContaining({
-				url: 'https://mcp.exa.ai/mcp',
-				timeoutMs: 4321,
-				maxRedirects: 7,
-			}),
+			expect.objectContaining({ url: 'https://mcp.exa.ai/mcp' }),
 		);
 	});
 });

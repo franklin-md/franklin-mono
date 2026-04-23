@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
+import {
+	FILESYSTEM_ALLOW_ALL,
+	MemoryOsInfo,
+	type AbsolutePath,
+} from '@franklin/lib';
 import { sha256Hex } from '../../hash.js';
 import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
@@ -38,8 +42,9 @@ function mockEnvironment(
 				async (...paths: string[]) => paths[paths.length - 1]! as AbsolutePath,
 			),
 		},
-		terminal: { exec: vi.fn() },
+		process: { exec: vi.fn() },
 		web: { fetch: vi.fn() },
+		osInfo: new MemoryOsInfo(),
 		config: vi.fn(async () => ({
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,

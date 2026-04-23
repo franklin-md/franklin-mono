@@ -13,11 +13,15 @@ function toolBlock(
 	args: Record<string, unknown>,
 	opts?: { result?: string; isError?: boolean },
 ): ToolUseBlockData {
+	const startedAt = Date.now();
+	const settled = opts?.result !== undefined || opts?.isError;
 	return {
 		kind: 'toolUse',
 		call: { type: 'toolCall', id: `tc_${name}`, name, arguments: args },
 		result: opts?.result ? [{ type: 'text', text: opts.result }] : undefined,
 		isError: opts?.isError,
+		startedAt,
+		endedAt: settled ? startedAt + 500 : undefined,
 	};
 }
 
@@ -73,6 +77,11 @@ const writeFileBlock = toolBlock('write_file', {
 
 const globBlock = toolBlock('glob', {
 	pattern: '**/*.test.ts',
+});
+
+const grepBlock = toolBlock('grep', {
+	pattern: 'createToolRenderer',
+	include: '*.ts',
 });
 
 const readJsonBlock = toolBlock('read_file', {
@@ -137,6 +146,10 @@ export const WriteFile: Story = {
 
 export const GlobSearch: Story = {
 	args: { block: globBlock, status: 'success' },
+};
+
+export const Grep: Story = {
+	args: { block: grepBlock, status: 'success' },
 };
 
 export const ReadJsonFile: Story = {
