@@ -334,6 +334,46 @@ describe('withAuth', () => {
 		const state = await runtime.state.get();
 		expect(state.core.llmConfig.provider).toBe('openrouter');
 	});
+
+	it('still applies provider/model when auth resolution throws (FRA-246)', async () => {
+		// Simulates Anthropic OAuth token refresh failure: getApiKey rejects
+		// synchronously. Before the fix, this blocked originalSetLLMConfig and
+		// the runtime silently kept the old provider/model, so subsequent
+		// reasoning toggles re-rendered the stale tracker and the UI reverted.
+		const spawn = createMockSpawn();
+		const base = createCoreSystem(spawn);
+		const auth = mockAuthManager({ 'openai-codex': 'sk-openai' });
+		(auth as { getApiKey: AuthManager['getApiKey'] }).getApiKey = vi.fn(
+			async (provider: string) => {
+				if (provider === 'anthropic') {
+					throw new Error('Anthropic OAuth refresh failed');
+				}
+				return 'sk-openai';
+			},
+		);
+
+		const decorated = withAuth(base, auth);
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'openai-codex', model: 'gpt-5.4' },
+					usage: ZERO_USAGE,
+				},
+			},
+			[],
+		);
+
+		await runtime.setLLMConfig({
+			provider: 'anthropic',
+			model: 'claude-sonnet-4-6',
+		});
+
+		const state = await runtime.state.get();
+		expect(state.core.llmConfig.provider).toBe('anthropic');
+		expect(state.core.llmConfig.model).toBe('claude-sonnet-4-6');
+	});
 });
 
 // ---------------------------------------------------------------------------
