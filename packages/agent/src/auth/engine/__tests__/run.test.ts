@@ -7,9 +7,9 @@ import type {
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 
-import { runAuthorizationCodePkce } from '../auth/engine.js';
-import type { Net } from '../platform.js';
-import type { AuthorizationCodePkceSpec } from '../auth/specs/types.js';
+import type { Net } from '../../../platform.js';
+import type { AuthorizationCodePkceSpec } from '../../specs/types.js';
+import { runAuthorizationCodePkce } from '../run.js';
 
 type EmittedRequest = {
 	request: LoopbackRequest;

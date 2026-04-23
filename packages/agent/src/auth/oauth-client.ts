@@ -1,6 +1,6 @@
 import type { Net } from '../platform.js';
 import type { OAuthCredentials } from './credentials.js';
-import { runAuthorizationCodePkce } from './engine.js';
+import { runAuthorizationCodePkce } from './engine/run.js';
 import type { AuthorizationCodePkceSpec } from './specs/types.js';
 import type { OAuthLoginCallbacks } from './types.js';
 
