@@ -128,6 +128,8 @@ can reload the plugin manually inside Obsidian.
 
 - The plugin renders a single Franklin conversation window inside an Obsidian view.
 - Franklin application state is stored in the plugin directory itself (`<plugin-dir>/`).
+- Agent filesystem reads deny `.env` files and the vault's Obsidian config directory.
+- Agent filesystem writes are limited to the vault root and the OS temp directory, with the vault's Obsidian config directory denied again.
 - This package uses React, Tailwind, and Obsidian APIs.
 - `styles.css` is generated from `src/styles/globals.css`.
 - `dist/` is generated output and should not be edited by hand.
