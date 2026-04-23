@@ -1,4 +1,10 @@
-import { FilePlus, FileText, FolderSearch, Pencil } from 'lucide-react';
+import {
+	FilePlus,
+	FileText,
+	FolderSearch,
+	Pencil,
+	TextSearch,
+} from 'lucide-react';
 
 import { filesystemExtension } from '@franklin/extensions';
 import type { ToolRendererRegistryEntries } from '@franklin/react';
@@ -27,4 +33,7 @@ export const fileToolRenderers = [
 			</ToolSummaryDetail>
 		),
 	),
+	toolEntry(filesystemExtension.tools.grep, TextSearch, 'Grep', (args) => (
+		<ToolSummaryDetail>{args.pattern}</ToolSummaryDetail>
+	)),
 ] satisfies ToolRendererRegistryEntries;

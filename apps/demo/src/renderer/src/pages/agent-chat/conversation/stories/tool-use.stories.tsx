@@ -79,6 +79,11 @@ const globBlock = toolBlock('glob', {
 	pattern: '**/*.test.ts',
 });
 
+const grepBlock = toolBlock('grep', {
+	pattern: 'createToolRenderer',
+	include: '*.ts',
+});
+
 const readJsonBlock = toolBlock('read_file', {
 	path: 'tsconfig.json',
 });
@@ -141,6 +146,10 @@ export const WriteFile: Story = {
 
 export const GlobSearch: Story = {
 	args: { block: globBlock, status: 'success' },
+};
+
+export const Grep: Story = {
+	args: { block: grepBlock, status: 'success' },
 };
 
 export const ReadJsonFile: Story = {
