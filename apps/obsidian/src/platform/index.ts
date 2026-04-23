@@ -7,24 +7,18 @@ import {
 } from '@franklin/extensions';
 
 import type { App } from 'obsidian';
-import { createNodeFilesystem, createNodePlatform } from '@franklin/node';
+import {
+	createNodeFilesystem,
+	createNodePlatform,
+	nodePlatformFetch,
+} from '@franklin/node';
 import { createObsidianFilesystem } from './filesystem/obsidian.js';
-import { obsidianFetch, obsidianProviderFetch } from './fetch.js';
 
 export function createObsidianPlatform(app: App): Platform {
-	const nodePlatform = createNodePlatform({ llmFetch: obsidianProviderFetch });
+	const nodePlatform = createNodePlatform();
 
 	return {
 		...nodePlatform,
-		os: {
-			...nodePlatform.os,
-			net: {
-				...nodePlatform.os.net,
-				// Node's fetch uses the ambient fetch (undici), but in a web environement that inherits a browser fetch with CORS etc
-				// TODO: Make Node explicitly use undici?
-				fetch: obsidianFetch,
-			},
-		},
 		environment: (config: EnvironmentConfig) =>
 			createReconfigurableEnvironment({
 				config,
@@ -45,7 +39,8 @@ export function createObsidianPlatform(app: App): Platform {
 						},
 					};
 				},
-				configureWeb: async (netConfig) => createWeb(netConfig, obsidianFetch),
+				configureWeb: async (netConfig) =>
+					createWeb(netConfig, nodePlatformFetch),
 			}),
 	};
 }

@@ -1,15 +1,20 @@
 import { cpSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { reloadPlugin } from './reload.mjs';
+
 const ARTIFACTS = ['main.js', 'styles.css', 'manifest.json'];
 
 /**
- * Copies manifest.json into dist/ and optionally syncs all artifacts
- * to an Obsidian vault plugin directory.
+ * Copies manifest.json into dist/ and syncs all artifacts
+ * to an Obsidian vault plugin directory when configured.
+ * A successful vault sync is followed by a best-effort plugin reload.
  *
  * @param {import('./cli.mjs').BuildArgs} args
  */
-export function sync({ rootDir, distDir, pluginDir }) {
+export function sync(args) {
+	const { rootDir, distDir, pluginDir } = args;
+
 	mkdirSync(distDir, { recursive: true });
 	cpSync(resolve(rootDir, 'manifest.json'), resolve(distDir, 'manifest.json'), {
 		force: true,
@@ -25,4 +30,6 @@ export function sync({ rootDir, distDir, pluginDir }) {
 		});
 		console.log(`  → ${file}`);
 	}
+
+	reloadPlugin(args);
 }

@@ -8,6 +8,8 @@ import { resolve } from 'node:path';
  * @property {string}  distDir   — output directory
  * @property {boolean} isWatch   — true when --watch is passed
  * @property {boolean} isProd    — true when --prod is passed
+ * @property {string}  pluginId  — manifest id for the Obsidian plugin
+ * @property {string}  [vaultDir] — resolved Obsidian vault directory
  * @property {string}  [pluginDir] — resolved Obsidian vault plugin directory
  */
 
@@ -22,6 +24,10 @@ export function parseBuildArgs() {
 	const distDir = resolve(rootDir, 'dist');
 	const isWatch = process.argv.includes('--watch');
 	const isProd = process.argv.includes('--prod');
+	const manifest = JSON.parse(
+		readFileSync(resolve(rootDir, 'manifest.json'), 'utf-8'),
+	);
+	const pluginId = manifest.id;
 
 	const vaultDirArg = process.argv.find((v) => v.startsWith('--vault-dir='));
 	const vaultDir = vaultDirArg?.slice('--vault-dir='.length);
@@ -29,21 +35,26 @@ export function parseBuildArgs() {
 	const pluginDirArg = process.argv.find((v) => v.startsWith('--plugin-dir='));
 	const pluginDirExplicit = pluginDirArg?.slice('--plugin-dir='.length);
 
-	const pluginDir = resolvePluginDir({ rootDir, vaultDir, pluginDirExplicit });
+	const pluginDir = resolvePluginDir({ vaultDir, pluginDirExplicit, pluginId });
 
-	return { rootDir, srcDir, distDir, isWatch, isProd, pluginDir };
+	return {
+		rootDir,
+		srcDir,
+		distDir,
+		isWatch,
+		isProd,
+		pluginId,
+		vaultDir,
+		pluginDir,
+	};
 }
 
 /**
  * Resolves the plugin directory from CLI args.
  * --plugin-dir takes precedence; --vault-dir derives it from manifest.id.
  */
-function resolvePluginDir({ rootDir, vaultDir, pluginDirExplicit }) {
+function resolvePluginDir({ vaultDir, pluginDirExplicit, pluginId }) {
 	if (pluginDirExplicit) return pluginDirExplicit;
 	if (!vaultDir) return undefined;
-
-	const manifest = JSON.parse(
-		readFileSync(resolve(rootDir, 'manifest.json'), 'utf-8'),
-	);
-	return resolve(vaultDir, '.obsidian', 'plugins', manifest.id);
+	return resolve(vaultDir, '.obsidian', 'plugins', pluginId);
 }
