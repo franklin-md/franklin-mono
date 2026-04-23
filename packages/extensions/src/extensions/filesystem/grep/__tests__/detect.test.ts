@@ -26,10 +26,7 @@ describe('detectGrepBackend', () => {
 	it('returns ripgrep when `rg --version` exits 0', async () => {
 		const { process, calls } = mockProcess({ rg: { exit_code: 0 } });
 
-		await expect(detectGrepBackend(process)).resolves.toEqual({
-			kind: 'ripgrep',
-			command: 'rg',
-		});
+		await expect(detectGrepBackend(process)).resolves.toBe('ripgrep');
 		expect(calls).toEqual([{ file: 'rg', args: ['--version'], timeout: 2000 }]);
 	});
 
@@ -39,10 +36,7 @@ describe('detectGrepBackend', () => {
 			grep: { exit_code: 0 },
 		});
 
-		await expect(detectGrepBackend(process)).resolves.toEqual({
-			kind: 'grep',
-			command: 'grep',
-		});
+		await expect(detectGrepBackend(process)).resolves.toBe('grep');
 		expect(calls.map((c) => c.file)).toEqual(['rg', 'grep']);
 	});
 
@@ -52,16 +46,13 @@ describe('detectGrepBackend', () => {
 			grep: { exit_code: 0 },
 		});
 
-		await expect(detectGrepBackend(process)).resolves.toEqual({
-			kind: 'grep',
-			command: 'grep',
-		});
+		await expect(detectGrepBackend(process)).resolves.toBe('grep');
 	});
 
 	it('returns none when both binaries are missing', async () => {
 		const { process } = mockProcess({ rg: 'throw', grep: 'throw' });
 
-		await expect(detectGrepBackend(process)).resolves.toEqual({ kind: 'none' });
+		await expect(detectGrepBackend(process)).resolves.toBe('none');
 	});
 
 	it('returns none when both exit non-zero', async () => {
@@ -70,6 +61,6 @@ describe('detectGrepBackend', () => {
 			grep: { exit_code: 127 },
 		});
 
-		await expect(detectGrepBackend(process)).resolves.toEqual({ kind: 'none' });
+		await expect(detectGrepBackend(process)).resolves.toBe('none');
 	});
 });
