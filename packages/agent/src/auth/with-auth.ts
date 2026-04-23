@@ -52,11 +52,25 @@ export function withAuth(system: CoreSystem, auth: AuthManager): CoreSystem {
 		// Install setLLMConfig wrapper to auto-resolve auth when provider is set.
 		const originalSetLLMConfig = runtime.setLLMConfig.bind(runtime);
 		runtime.setLLMConfig = async (config) => {
-			if (config.provider && !config.apiKey) {
-				const apiKey = await auth.getApiKey(config.provider);
-				if (apiKey) {
-					config = { ...config, apiKey };
+			const currentProvider = runtime.context().config.provider;
+			const nextProvider = config.provider;
+			const providerChanged =
+				nextProvider !== undefined && nextProvider !== currentProvider;
+
+			if (providerChanged && !('apiKey' in config)) {
+				// Auth resolution is best-effort: setContext must not be blocked
+				// by credential refresh failures (e.g. provider OAuth refresh
+				// throwing). A missing apiKey surfaces at prompt time via
+				// StopCode.AuthKeyNotSpecified. We must still write
+				// `apiKey: undefined` explicitly so the previous provider's key
+				// does not survive config-merge on provider switch.
+				let apiKey: string | undefined;
+				try {
+					apiKey = await auth.getApiKey(nextProvider);
+				} catch {
+					// swallow; proceed without apiKey
 				}
+				config = { ...config, apiKey };
 			}
 			return originalSetLLMConfig(config);
 		};

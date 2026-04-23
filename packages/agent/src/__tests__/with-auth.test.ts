@@ -245,7 +245,7 @@ describe('withAuth', () => {
 		expect(state.core.llmConfig.provider).toBe('openai-codex');
 	});
 
-	it('resolves auth even when provider is unchanged', async () => {
+	it('does not resolve auth when provider is unchanged', async () => {
 		const spawn = createMockSpawn();
 		const base = createCoreSystem(spawn);
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
@@ -264,13 +264,14 @@ describe('withAuth', () => {
 		);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
-		// Same provider, different model — still resolves apiKey
+		// Same provider, different model — preserve the existing key without
+		// re-authing.
 		await runtime.setLLMConfig({
 			provider: 'anthropic',
 			model: 'claude-opus-4-6',
 		});
 
-		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
+		expect(auth.getApiKey).not.toHaveBeenCalled();
 	});
 
 	it('does not overwrite an explicit apiKey in setLLMConfig', async () => {
@@ -304,7 +305,7 @@ describe('withAuth', () => {
 		expect(auth.getApiKey).not.toHaveBeenCalled();
 	});
 
-	it('passes through when no apiKey exists for the new provider', async () => {
+	it('clears apiKey when no stored key exists for the new provider', async () => {
 		const spawn = createMockSpawn();
 		const base = createCoreSystem(spawn);
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
@@ -323,7 +324,8 @@ describe('withAuth', () => {
 		);
 		(auth.getApiKey as ReturnType<typeof vi.fn>).mockClear();
 
-		// Switch to a provider with no stored key — should pass through without apiKey
+		// Switch to a provider with no stored key — clear the previous provider's
+		// key so prompt-time validation can raise AuthKeyNotSpecified.
 		await runtime.setLLMConfig({
 			provider: 'openrouter',
 			model: 'deepseek-r1',
@@ -333,6 +335,48 @@ describe('withAuth', () => {
 
 		const state = await runtime.state.get();
 		expect(state.core.llmConfig.provider).toBe('openrouter');
+		expect(runtime.context().config.apiKey).toBeUndefined();
+	});
+
+	it('still applies provider/model when auth resolution throws (FRA-246)', async () => {
+		// Simulates Anthropic OAuth token refresh failure: getApiKey rejects
+		// synchronously. Before the fix, this blocked originalSetLLMConfig and
+		// the runtime silently kept the old provider/model, so subsequent
+		// reasoning toggles re-rendered the stale tracker and the UI reverted.
+		const spawn = createMockSpawn();
+		const base = createCoreSystem(spawn);
+		const auth = mockAuthManager({ 'openai-codex': 'sk-openai' });
+		(auth as { getApiKey: AuthManager['getApiKey'] }).getApiKey = vi.fn(
+			async (provider: string) => {
+				if (provider === 'anthropic') {
+					throw new Error('Anthropic OAuth refresh failed');
+				}
+				return 'sk-openai';
+			},
+		);
+
+		const decorated = withAuth(base, auth);
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'openai-codex', model: 'gpt-5.4' },
+					usage: ZERO_USAGE,
+				},
+			},
+			[],
+		);
+
+		await runtime.setLLMConfig({
+			provider: 'anthropic',
+			model: 'claude-sonnet-4-6',
+		});
+
+		const state = await runtime.state.get();
+		expect(state.core.llmConfig.provider).toBe('anthropic');
+		expect(state.core.llmConfig.model).toBe('claude-sonnet-4-6');
+		expect(runtime.context().config.apiKey).toBeUndefined();
 	});
 });
 
