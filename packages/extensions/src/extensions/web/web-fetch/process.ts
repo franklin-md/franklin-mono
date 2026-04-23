@@ -1,9 +1,8 @@
-import { getHeader } from '@franklin/lib';
+import { getHeader, truncate } from '@franklin/lib';
 import { Readability } from '@mozilla/readability';
 import type { WebFetchResponse } from '@franklin/lib';
 import {
 	normalizeExtractedText,
-	truncateText,
 	decodeBody,
 	toErrorMessage,
 	normalizeContentType,
@@ -92,7 +91,11 @@ function extractHtml(
 				(normalized !== '' ? normalized : '[empty body]'),
 		);
 
-		const { text, truncated } = truncateText(wrapped, options.maxOutputChars);
+		const { text, truncated } = truncate(
+			wrapped,
+			options.maxOutputChars,
+			'\n\n[truncated]',
+		);
 		return {
 			kind: 'html',
 			content: text,
@@ -114,7 +117,11 @@ function extractPlainText(
 	options: WebFetchExtensionOptions,
 ): WebFetchProcessedResult {
 	const normalized = normalizeExtractedText(decodeBody(response.body));
-	const { text, truncated } = truncateText(normalized, options.maxOutputChars);
+	const { text, truncated } = truncate(
+		normalized,
+		options.maxOutputChars,
+		'\n\n[truncated]',
+	);
 	return {
 		kind: 'text',
 		content: text.length > 0 ? wrapUntrusted(text) : '[empty response]',

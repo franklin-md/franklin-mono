@@ -1,6 +1,6 @@
 ---
 description: Diagnose a Franklin agent session log for issues, poor context management, and agent mistakes
-allowed-tools: Read, Bash(wc:*), Bash(python3:*), Bash(cat:*)
+allowed-tools: Agent,Read,Grep,Glob,Bash(wc:*),Bash(python3:*),Bash(cat:*)
 ---
 
 # Diagnose Log: Franklin Session Analysis
@@ -17,7 +17,8 @@ Run a Python script that:
 
 1. Loads the JSON file
 2. Extracts and prints:
-   - `core.llmConfig` (model, provider, reasoning)
+   - `core.config` (model, provider, reasoning)
+     - If `core.config` is absent, note that explicitly and fall back to `core.llmConfig` only as a compatibility fallback.
    - `core.history.systemPrompt` (first 500 chars, or "[empty]")
    - `env.fsConfig.cwd` and `env.fsConfig.permissions`
    - `env.netConfig`
@@ -51,7 +52,26 @@ Consider dimensions like:
 
 Only report findings you are confident about. Do not invent issues to fill categories — if a dimension looks fine, skip it.
 
-## Step 3: Report
+## Step 3: Deep-Dive CRITICAL/WARNING Findings
+
+Before finalizing the report, take every tentative **CRITICAL** and **WARNING** finding and investigate it with a subagent.
+
+- Use the `Agent` tool to launch one cheap/focused subagent per finding, in parallel when possible.
+- Give each subagent:
+  - the log path
+  - the tentative finding title + severity
+  - the relevant message indices
+  - the exact claim that needs verification
+- Instruct each subagent to:
+  - verify whether the finding is real or should be downgraded/dropped
+  - trace the likely cause as far as possible
+  - if the cause appears to map to this local codebase, inspect the relevant implementation with `Grep`/`Glob`/`Read`
+  - classify the cause as one of: runtime/tooling issue, prompt/command issue, session config issue, or agent misuse
+  - propose a concrete correction if it looks easy/low-risk to solve
+
+Use the subagent output to refine the final writeup. If a subagent cannot support the claim, downgrade it or remove it.
+
+## Step 4: Report
 
 Present the diagnosis in chat using this format:
 
@@ -73,9 +93,13 @@ Present the diagnosis in chat using this format:
 
 ### [CRITICAL] Title
 What happened, why it matters, what should have been done instead.
+Root cause trace: ...
+Suggested correction: ...
 
 ### [WARNING] Title
 ...
+Root cause trace: ...
+Suggested correction: ...
 
 ### [INFO] Title
 ...
@@ -89,3 +113,4 @@ Group findings by severity (CRITICAL first, then WARNING, then INFO). Within eac
 If no issues are found at a given severity level, omit that section.
 
 Be specific and cite message indices (e.g., "message [3]") when referencing specific parts of the conversation.
+For CRITICAL/WARNING findings, fold the subagent investigation into the final text instead of appending raw subagent transcripts.

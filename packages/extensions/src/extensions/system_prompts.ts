@@ -16,10 +16,18 @@ that has changed since the last time you have read it.`;
 
 export const globDescription = `Fast file pattern matching tool that returns paths of files matching a glob pattern.
 Use this to find files by name or extension (e.g. "**/*.ts", "src/**/*.test.js", "package.json").
-Returns matching file paths as a list. 
+Returns matching file paths as a list.
 Supports standard glob syntax: * (any characters in a segment), ** (any nested directories),
 ? (single character), {a,b} (alternatives), [abc] (character classes).
 Use this tool when you need to discover files by name pattern — for searching file *contents*, use a different tool.`;
+
+export const grepDescription = `Fast content-search tool that finds lines matching a regular expression across files.
+Use this when you need to locate *content* in the filesystem/codebase (e.g. "where is this function called?"),
+not when you need to find files *by name* (use glob for that).
+Prefer narrow searches: use \`path\`, add \`include\` when you know the likely file pattern, and start with a modest \`limit\`.
+If you can predict the likely files by name first, use \`glob\` to discover them before running a broad content search.
+Returns results grouped by file: each file path on its own line, followed by "  line: matching text" for each hit, capped at the configured limit.
+The exact regex dialect depends on which backend is available — see the grep backend note in the environment section for the safe syntax subset to use.`;
 
 export const bashDescription = `
 Purpose: Execute a command in the user's default shell.

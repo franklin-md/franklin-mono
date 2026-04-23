@@ -156,3 +156,8 @@ export { base64url, base64urlToBase64, hex } from './utils/encoding.js';
 export { randomBytes } from './crypto/seed.js';
 export type { PkceParams } from './crypto/pkce.js';
 export { generatePkceParams } from './crypto/pkce.js';
+export { truncate, truncateStream } from './utils/truncate.js';
+export type {
+	TruncateResult,
+	TruncateStreamOptions,
+} from './utils/truncate.js';
