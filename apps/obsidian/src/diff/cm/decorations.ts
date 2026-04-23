@@ -111,7 +111,7 @@ function resolveAnchorPosition(
 	return { pos: line.from, side: -1 };
 }
 
-function resolveActionPosition(
+export function resolveActionPosition(
 	doc: Text,
 	hunk: Hunk,
 	visibleHunks: Hunk[],
@@ -119,6 +119,10 @@ function resolveActionPosition(
 	if (doc.length === 0) return 0;
 
 	if (hunk.addedLines.length > 0) {
+		if (hunk.newTo >= doc.length) {
+			return doc.lineAt(hunk.newFrom).from;
+		}
+
 		const nextLine = doc.lineAt(Math.min(hunk.newTo, doc.length));
 		if (!isLineInAnotherHunk(doc, nextLine.from, hunk, visibleHunks)) {
 			return nextLine.from;

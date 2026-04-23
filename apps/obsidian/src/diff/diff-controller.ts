@@ -55,8 +55,12 @@ export class DiffController {
 						session?.currentPath &&
 						next &&
 						next.oldContent !== null &&
-						prev?.oldContent !== next.oldContent
+						prev?.oldContent !== next.oldContent &&
+						session.appliedOldContent !== next.oldContent
 					) {
+						session.requestToken++;
+						session.appliedPath = session.currentPath;
+						session.appliedOldContent = next.oldContent;
 						void this.client.setBaseline(session.currentPath, next.oldContent);
 					}
 				}
