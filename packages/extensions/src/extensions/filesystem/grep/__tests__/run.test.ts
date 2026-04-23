@@ -7,7 +7,6 @@ import {
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
-import type { GrepBackend } from '../detect.js';
 import { runGrep } from '../run.js';
 
 interface MockEnvOptions {
@@ -47,9 +46,9 @@ function mockEnv(opts: MockEnvOptions = {}): ReconfigurableEnvironment {
 	};
 }
 
-const RIPGREP: GrepBackend = { kind: 'ripgrep', command: 'rg' };
-const GREP: GrepBackend = { kind: 'grep', command: 'grep' };
-const NONE: GrepBackend = { kind: 'none' };
+const RIPGREP = 'ripgrep' as const;
+const GREP = 'grep' as const;
+const NONE = 'none' as const;
 
 describe('runGrep', () => {
 	it('returns a friendly error when no backend is available, never calls exec', async () => {
@@ -65,7 +64,7 @@ describe('runGrep', () => {
 	});
 
 	describe('ripgrep backend', () => {
-		it('invokes rg with --json, limit, pattern, and resolved target', async () => {
+		it('invokes rg with --json, pattern, and resolved target', async () => {
 			const env = mockEnv();
 
 			await runGrep(RIPGREP, { pattern: 'foo', path: 'src', limit: 25 }, env);
@@ -73,17 +72,7 @@ describe('runGrep', () => {
 			expect(env.filesystem.resolve).toHaveBeenCalledWith('src');
 			expect(env.process.exec).toHaveBeenCalledWith({
 				file: 'rg',
-				args: [
-					'--json',
-					'--color=never',
-					'--max-columns=240',
-					'--max-columns-preview',
-					'--max-count=25',
-					'-e',
-					'foo',
-					'--',
-					'/resolved/src',
-				],
+				args: ['--json', '--color=never', '-e', 'foo', '--', '/resolved/src'],
 				timeout: 10_000,
 			});
 		});
@@ -94,7 +83,14 @@ describe('runGrep', () => {
 			await runGrep(RIPGREP, { pattern: 'foo' }, env);
 
 			const call = vi.mocked(env.process.exec).mock.calls[0]?.[0];
-			expect(call?.args).toContain('--max-count=50');
+			expect(call?.args).toEqual([
+				'--json',
+				'--color=never',
+				'-e',
+				'foo',
+				'--',
+				'/work',
+			]);
 			expect(call?.args?.at(-1)).toBe('/work');
 			expect(env.filesystem.resolve).not.toHaveBeenCalled();
 		});
@@ -152,8 +148,8 @@ describe('runGrep', () => {
 			expect(result.output).toBe('src/a.ts\n  7: const foo = 1');
 		});
 
-		it('reports a truncation note when match count equals the limit', async () => {
-			const matches = [1, 2]
+		it('reports a truncation note when more than limit matches are parsed', async () => {
+			const matches = [1, 2, 3]
 				.map((n) =>
 					JSON.stringify({
 						type: 'match',

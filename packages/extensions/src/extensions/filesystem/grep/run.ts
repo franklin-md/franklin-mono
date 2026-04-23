@@ -1,7 +1,7 @@
 import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
-import { grepCommand } from './backends/grep/command.js';
-import { ripgrepCommand } from './backends/ripgrep/command.js';
-import type { GrepBackend } from './detect.js';
+import { collectMatches } from './backends/collect.js';
+import { createBackend } from './backends/index.js';
+import type { GrepBackendKind } from './backends/types.js';
 import { formatMatches } from './format/matches.js';
 import type { GrepParams } from './tools.js';
 import {
@@ -22,11 +22,20 @@ export interface RunGrepResult {
 }
 
 export async function runGrep(
-	backend: GrepBackend,
+	backendKind: GrepBackendKind,
 	params: GrepParams,
 	env: ReconfigurableEnvironment,
 ): Promise<RunGrepResult> {
-	if (backend.kind === 'none') {
+	if (backendKind === 'none') {
+		return {
+			output:
+				'grep is not available in this environment. Use `glob` to locate files and `read_file` to inspect contents.',
+			isError: true,
+		};
+	}
+
+	const backend = createBackend(backendKind);
+	if (!backend) {
 		return {
 			output:
 				'grep is not available in this environment. Use `glob` to locate files and `read_file` to inspect contents.',
@@ -46,14 +55,11 @@ export async function runGrep(
 		? await env.filesystem.resolve(params.path)
 		: (await env.config()).fsConfig.cwd;
 
-	const command =
-		backend.kind === 'ripgrep'
-			? ripgrepCommand(backend.command, params, limit, target)
-			: grepCommand(backend.command, params, target);
+	const args = backend.args(params, target);
 
 	const { exit_code, stdout, stderr } = await env.process.exec({
-		file: command.file,
-		args: command.args,
+		file: backend.file,
+		args,
 		timeout: RUN_TIMEOUT_MS,
 	});
 
@@ -69,10 +75,14 @@ export async function runGrep(
 		};
 	}
 
-	const matches = command.parse(stdout, limit);
+	const { matches, truncated } = collectMatches(
+		stdout,
+		backend.parseLine,
+		limit,
+	);
 	return {
 		output: formatMatches(matches, {
-			truncated: matches.length >= limit,
+			truncated,
 			maxChars: MAX_FORMATTED_CHARS,
 			maxMatchTextChars: MAX_MATCH_TEXT_CHARS,
 		}),

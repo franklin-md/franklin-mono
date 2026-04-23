@@ -38,23 +38,18 @@ function isRgMatch(record: unknown): record is RgMatchRecord {
 	);
 }
 
-export function parseRipgrepJson(stdout: string, limit: number): GrepMatch[] {
-	const out: GrepMatch[] = [];
-	for (const line of stdout.split('\n')) {
-		if (!line) continue;
-		let record: unknown;
-		try {
-			record = JSON.parse(line);
-		} catch {
-			continue;
-		}
-		if (!isRgMatch(record)) continue;
-		out.push({
-			file: record.data.path.text,
-			line: record.data.line_number,
-			text: record.data.lines.text.replace(/\n$/, ''),
-		});
-		if (out.length >= limit) break;
+export function parseRipgrepLine(line: string): GrepMatch | undefined {
+	if (!line) return undefined;
+	let record: unknown;
+	try {
+		record = JSON.parse(line);
+	} catch {
+		return undefined;
 	}
-	return out;
+	if (!isRgMatch(record)) return undefined;
+	return {
+		file: record.data.path.text,
+		line: record.data.line_number,
+		text: record.data.lines.text.replace(/\n$/, ''),
+	};
 }

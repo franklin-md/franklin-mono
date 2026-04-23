@@ -1,9 +1,5 @@
 import type { Process } from '@franklin/lib';
-
-export type GrepBackend =
-	| { kind: 'ripgrep'; command: string }
-	| { kind: 'grep'; command: string }
-	| { kind: 'none' };
+import type { GrepBackendKind } from './backends/types.js';
 
 const DETECT_TIMEOUT_MS = 2000;
 
@@ -22,12 +18,12 @@ async function tryVersion(process: Process, command: string): Promise<boolean> {
 
 export async function detectGrepBackend(
 	process: Process,
-): Promise<GrepBackend> {
+): Promise<GrepBackendKind> {
 	if (await tryVersion(process, 'rg')) {
-		return { kind: 'ripgrep', command: 'rg' };
+		return 'ripgrep';
 	}
 	if (await tryVersion(process, 'grep')) {
-		return { kind: 'grep', command: 'grep' };
+		return 'grep';
 	}
-	return { kind: 'none' };
+	return 'none';
 }

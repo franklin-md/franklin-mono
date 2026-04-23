@@ -1,4 +1,4 @@
-import type { GrepBackend } from './detect.js';
+import type { GrepBackendKind } from './backends/types.js';
 
 // Authors the system-prompt section for the grep tool. The critical job of
 // this fragment is telling the model which regex dialect to emit: `rg`
@@ -7,8 +7,8 @@ import type { GrepBackend } from './detect.js';
 // handler dispatches to whichever backend is available, but the model must
 // know the safe syntax subset upfront or it will write patterns that match
 // in one backend and fail in the other.
-export function renderGrepInfo(backend: GrepBackend): string {
-	switch (backend.kind) {
+export function renderGrepInfo(backend: GrepBackendKind): string {
+	switch (backend) {
 		case 'ripgrep':
 			return [
 				'Grep tool backend: ripgrep (`rg`).',

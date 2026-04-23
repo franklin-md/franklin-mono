@@ -1,12 +1,6 @@
 import type { GrepParams } from '../../tools.js';
-import type { BackendCommand } from '../types.js';
-import { parseGrepOutput } from './parse.js';
 
-export function grepCommand(
-	command: string,
-	params: GrepParams,
-	target: string,
-): BackendCommand {
+export function grepArgs(params: GrepParams, target: string): string[] {
 	/*
   -r: Recursively search directories
   -E: Use extended regular expressions
@@ -21,5 +15,5 @@ export function grepCommand(
 	if (params.case_insensitive) args.push('-i');
 	if (params.include) args.push(`--include=${params.include}`);
 	args.push('-e', params.pattern, '--', target);
-	return { file: command, args, parse: parseGrepOutput };
+	return args;
 }

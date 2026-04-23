@@ -1,9 +1,13 @@
 import type { GrepMatch } from '../format/types.js';
+import type { GrepParams } from '../tools.js';
 
-export type Parser = (stdout: string, limit: number) => GrepMatch[];
+export type LineParser = (line: string) => GrepMatch | undefined;
 
-export interface BackendCommand {
+export type GrepBackendKind = 'ripgrep' | 'grep' | 'none';
+
+export interface Backend {
+	kind: Exclude<GrepBackendKind, 'none'>;
 	file: string;
-	args: string[];
-	parse: Parser;
+	args: (params: GrepParams, target: string) => string[];
+	parseLine: LineParser;
 }
