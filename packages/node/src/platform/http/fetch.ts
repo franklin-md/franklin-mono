@@ -1,6 +1,8 @@
 import { Readable } from 'node:stream';
 import nodeFetch from 'node-fetch';
 
+import { createFetchResponse } from './response.js';
+
 // HEAD and these status codes carry no body per the fetch spec.
 const NULL_BODY_METHODS = new Set(['HEAD']);
 const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
@@ -14,6 +16,10 @@ const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
 // globalThis.setTimeout().unref() in its fast-clock. That crashes in Electron
 // renderer because browser timers don't have .unref(). Undici also has HTTP/2
 // and Brotli stream-completion bugs in this environment. Hence this wrapper.
+//
+// We intentionally do not wrap the body with `new Response(...)`. See
+// `response.ts` for the renderer stream-brand gotcha that motivates the
+// hand-rolled adapter.
 export const nodeHttpFetch: typeof fetch = async (input, init) => {
 	// node-fetch uses its own Request class; extract URL and method/headers from
 	// a global Request so we can pass them as plain init fields.
@@ -33,14 +39,13 @@ export const nodeHttpFetch: typeof fetch = async (input, init) => {
 		!NULL_BODY_METHODS.has(method) && !NULL_BODY_STATUSES.has(r.status);
 	const body =
 		hasBody && r.body
-			? (Readable.toWeb(r.body) as ReadableStream<Uint8Array>)
+			? (Readable.toWeb(r.body) as ReadableStream<Uint8Array<ArrayBuffer>>)
 			: null;
 
-	const response = new Response(body, {
+	return createFetchResponse(body, {
+		url: r.url,
 		status: r.status,
 		statusText: r.statusText,
-		headers: Object.fromEntries(r.headers.entries()),
+		headers: new Headers(Object.fromEntries(r.headers.entries())),
 	});
-	Object.defineProperty(response, 'url', { value: r.url, configurable: true });
-	return response;
 };
