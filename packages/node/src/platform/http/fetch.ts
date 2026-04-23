@@ -5,13 +5,15 @@ import nodeFetch from 'node-fetch';
 const NULL_BODY_METHODS = new Set(['HEAD']);
 const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
 
-// This is effectively the concrete ambient fetch that node has BUT can be used in environments that build Node externals BUT
-// do not necessarily use Node globals.
-// It is not the same as undici because
-// (and we need to fact check this)
-// Undici is also implemented in terms of some ambient Node methods and types.
-// For example, timeouts use Node ref timeouts as opposed to the web int timeouts.
-// This means undici cannot be used in a browser environment EVEN IF Node externals are built (like in Obsidian).
+// node-fetch uses node:http/https as its transport and does not call .unref()
+// on globalThis.setTimeout return values. This makes it safe in Electron renderer,
+// where node:* externals are available but globalThis.setTimeout returns a plain
+// browser integer (no .unref()), not a Node Timeout object.
+//
+// Node's own globalThis.fetch is backed by undici, which calls
+// globalThis.setTimeout().unref() in its fast-clock. That crashes in Electron
+// renderer because browser timers don't have .unref(). Undici also has HTTP/2
+// and Brotli stream-completion bugs in this environment. Hence this wrapper.
 export const nodeHttpFetch: typeof fetch = async (input, init) => {
 	// node-fetch uses its own Request class; extract URL and method/headers from
 	// a global Request so we can pass them as plain init fields.
