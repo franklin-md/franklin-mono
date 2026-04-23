@@ -49,9 +49,6 @@ function getContentType(encoding: Encoding): string {
 		case 'form':
 			return 'application/x-www-form-urlencoded';
 	}
-	return encoding === 'json'
-		? 'application/json'
-		: 'application/x-www-form-urlencoded';
 }
 
 function getEncodedBody(
@@ -99,18 +96,19 @@ function parseResponse(
 		);
 	}
 
+	const { access_token, refresh_token, expires_in } = data;
+	const problems: string[] = [];
+	if (typeof access_token !== 'string') problems.push('access_token');
+	if (typeof refresh_token !== 'string') problems.push('refresh_token');
+	if (typeof expires_in !== 'number') problems.push('expires_in');
 	if (
-		typeof data.access_token !== 'string' ||
-		typeof data.refresh_token !== 'string' ||
-		typeof data.expires_in !== 'number'
+		typeof access_token !== 'string' ||
+		typeof refresh_token !== 'string' ||
+		typeof expires_in !== 'number'
 	) {
 		throw new Error(
-			`${providerLabel} token response missing fields: ${JSON.stringify(data)}`,
+			`${providerLabel} token response missing or mistyped fields: ${problems.join(', ')}`,
 		);
 	}
-	return {
-		access_token: data.access_token,
-		refresh_token: data.refresh_token,
-		expires_in: data.expires_in,
-	};
+	return { access_token, refresh_token, expires_in };
 }

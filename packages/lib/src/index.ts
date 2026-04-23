@@ -26,6 +26,11 @@ export type {
 	LoopbackRequest,
 	LoopbackResponse,
 } from './network/loopback/types.js';
+export type {
+	EmittedLoopbackRequest,
+	MemoryLoopbackListenerOptions,
+} from './network/loopback/memory.js';
+export { MemoryLoopbackListener } from './network/loopback/memory.js';
 export {
 	decorate,
 	withOnlyHTTP,

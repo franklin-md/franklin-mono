@@ -1,4 +1,5 @@
-import type { Fetch, LoopbackListener, LoopbackRequest } from '@franklin/lib';
+import type { Fetch, LoopbackListener } from '@franklin/lib';
+import { MemoryLoopbackListener } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 
 import { OAuthClient } from '../auth/oauth-client.js';
@@ -38,41 +39,6 @@ function makeNet(): Net {
 	};
 }
 
-interface FakeListener extends LoopbackListener {
-	disposed: boolean;
-	simulate(queryString: string): void;
-}
-
-function makeListener(path = '/callback'): FakeListener {
-	const subscribers = new Set<(request: LoopbackRequest) => void>();
-	const state = { disposed: false };
-	return {
-		disposed: false,
-		async getRedirectUri() {
-			return `http://127.0.0.1:9999${path}`;
-		},
-		onRequest(cb) {
-			subscribers.add(cb);
-			return () => subscribers.delete(cb);
-		},
-		async respond() {},
-		async dispose() {
-			state.disposed = true;
-			this.disposed = true;
-			subscribers.clear();
-		},
-		simulate(queryString) {
-			const request: LoopbackRequest = {
-				id: 'req-1',
-				method: 'GET',
-				url: `http://127.0.0.1:9999${path}${queryString}`,
-				headers: {},
-			};
-			for (const sub of subscribers) sub(request);
-		},
-	};
-}
-
 function makeNetWithListener(listener: LoopbackListener): Net {
 	return {
 		listenLoopback: async () => listener,
@@ -83,7 +49,7 @@ function makeNetWithListener(listener: LoopbackListener): Net {
 describe('OAuthClient', () => {
 	it('run drives the PKCE engine for a known provider', async () => {
 		const spec = makeSpec('anthropic');
-		const listener = makeListener();
+		const listener = new MemoryLoopbackListener();
 		const client = new OAuthClient(
 			new Map([['anthropic', spec]]),
 			makeNetWithListener(listener),

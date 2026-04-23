@@ -1,74 +1,10 @@
-import type {
-	Fetch,
-	ListenLoopbackOptions,
-	LoopbackListener,
-	LoopbackRequest,
-	LoopbackResponse,
-} from '@franklin/lib';
+import type { Fetch, ListenLoopbackOptions } from '@franklin/lib';
+import { MemoryLoopbackListener } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { Net } from '../../../platform.js';
 import type { AuthorizationCodePkceSpec } from '../../specs/types.js';
 import { runAuthorizationCodePkce } from '../run.js';
-
-type EmittedRequest = {
-	request: LoopbackRequest;
-	responses: LoopbackResponse[];
-};
-
-class FakeListener implements LoopbackListener {
-	private readonly subscribers = new Set<(request: LoopbackRequest) => void>();
-	private readonly pending: LoopbackRequest[] = [];
-	readonly emitted: EmittedRequest[] = [];
-	disposed = false;
-	host = '127.0.0.1';
-	boundPort = 9999;
-	path: string;
-
-	constructor(path: string) {
-		this.path = path;
-	}
-
-	async getRedirectUri(): Promise<string> {
-		return `http://${this.host}:${this.boundPort}${this.path}`;
-	}
-
-	onRequest(callback: (request: LoopbackRequest) => void): () => void {
-		this.subscribers.add(callback);
-		const buffered = this.pending.splice(0, this.pending.length);
-		for (const request of buffered) callback(request);
-		return () => this.subscribers.delete(callback);
-	}
-
-	async respond(id: string, response: LoopbackResponse): Promise<void> {
-		const record = this.emitted.find((e) => e.request.id === id);
-		if (record) record.responses.push(response);
-	}
-
-	async dispose(): Promise<void> {
-		this.disposed = true;
-		this.subscribers.clear();
-	}
-
-	simulate(query: string, id = 'req-1'): void {
-		this.simulateUrl(`${this.path}${query}`, id);
-	}
-
-	simulateUrl(pathAndQuery: string, id = 'req-1'): void {
-		const request: LoopbackRequest = {
-			id,
-			method: 'GET',
-			url: `http://${this.host}:${this.boundPort}${pathAndQuery}`,
-			headers: {},
-		};
-		this.emitted.push({ request, responses: [] });
-		if (this.subscribers.size === 0) {
-			this.pending.push(request);
-			return;
-		}
-		for (const sub of this.subscribers) sub(request);
-	}
-}
 
 function makeSpec(
 	overrides: Partial<AuthorizationCodePkceSpec> = {},
@@ -94,7 +30,7 @@ function makeSpec(
 }
 
 function makeNet(
-	listener: FakeListener,
+	listener: MemoryLoopbackListener,
 	fetch: Fetch = vi.fn(async () => {
 		throw new Error('fetch not expected');
 	}),
@@ -110,7 +46,7 @@ function makeNet(
 
 describe('runAuthorizationCodePkce', () => {
 	it('emits onAuth with an authorize URL and exchanges the code on success', async () => {
-		const listener = new FakeListener('/callback');
+		const listener = new MemoryLoopbackListener({ path: '/callback' });
 		const spec = makeSpec();
 		const onAuth = vi.fn();
 		const onProgress = vi.fn();
@@ -146,7 +82,7 @@ describe('runAuthorizationCodePkce', () => {
 	});
 
 	it('ignores unmatched paths and resolves when the callback path matches', async () => {
-		const listener = new FakeListener('/callback');
+		const listener = new MemoryLoopbackListener({ path: '/callback' });
 		const spec = makeSpec();
 		const onAuth = vi.fn();
 
@@ -170,7 +106,7 @@ describe('runAuthorizationCodePkce', () => {
 	});
 
 	it('rejects when the callback carries an ?error param', async () => {
-		const listener = new FakeListener('/callback');
+		const listener = new MemoryLoopbackListener({ path: '/callback' });
 		const spec = makeSpec();
 		// Buffered simulate: engine picks up the pending request on subscription.
 		listener.simulate(`?error=access_denied&error_description=User%20declined`);
@@ -184,7 +120,7 @@ describe('runAuthorizationCodePkce', () => {
 	});
 
 	it('rejects when state does not match', async () => {
-		const listener = new FakeListener('/callback');
+		const listener = new MemoryLoopbackListener({ path: '/callback' });
 		const spec = makeSpec();
 		listener.simulate(`?code=auth-code&state=wrong-state`);
 
@@ -196,7 +132,7 @@ describe('runAuthorizationCodePkce', () => {
 	});
 
 	it('rejects when code or state is missing', async () => {
-		const listener = new FakeListener('/callback');
+		const listener = new MemoryLoopbackListener({ path: '/callback' });
 		const spec = makeSpec();
 		listener.simulate(`?state=some-state`);
 
@@ -208,7 +144,7 @@ describe('runAuthorizationCodePkce', () => {
 	});
 
 	it('uses spec.validateState override when provided (Anthropic-style verifier-as-state)', async () => {
-		const listener = new FakeListener('/callback');
+		const listener = new MemoryLoopbackListener({ path: '/callback' });
 		const onAuth = vi.fn();
 		const spec = makeSpec({
 			buildAuthUrl: (pkce, redirectUri) =>
@@ -231,7 +167,7 @@ describe('runAuthorizationCodePkce', () => {
 	});
 
 	it('aborts the pending callback wait and disposes the listener when the signal fires', async () => {
-		const listener = new FakeListener('/callback');
+		const listener = new MemoryLoopbackListener({ path: '/callback' });
 		const spec = makeSpec();
 		const controller = new AbortController();
 
@@ -252,7 +188,7 @@ describe('runAuthorizationCodePkce', () => {
 	});
 
 	it('rejects immediately when the signal is already aborted', async () => {
-		const listener = new FakeListener('/callback');
+		const listener = new MemoryLoopbackListener({ path: '/callback' });
 		const spec = makeSpec();
 		const controller = new AbortController();
 		controller.abort();
