@@ -39,9 +39,9 @@ describe('formatMatches', () => {
 		// After the suffix reservation (51 chars), content budget is 80 - 51 = 29.
 		// 'a.ts\n  1: alpha' (15) fits; the b.ts block (≥ 60) does not, so it is
 		// dropped atomically — no bare header survives.
-		expect(
-			formatMatches(matches, { truncated: false, maxLength: 80 }),
-		).toBe(`a.ts\n  1: alpha\n${NOTE}`);
+		expect(formatMatches(matches, { truncated: false, maxLength: 80 })).toBe(
+			`a.ts\n  1: alpha\n${NOTE}`,
+		);
 	});
 
 	it('returns just the note when even the first group does not fit', () => {

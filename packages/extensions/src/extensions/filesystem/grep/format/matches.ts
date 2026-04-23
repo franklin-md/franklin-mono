@@ -20,9 +20,7 @@ export function formatMatches(
 	);
 
 	if (hardTruncated || !options.truncated) return text;
-	return text.length === 0
-		? TRUNCATION_NOTE
-		: `${text}\n${TRUNCATION_NOTE}`;
+	return text.length === 0 ? TRUNCATION_NOTE : `${text}\n${TRUNCATION_NOTE}`;
 }
 
 // One atomic block per file: `<path>\n  <line>: <text>` rows. Blocks are

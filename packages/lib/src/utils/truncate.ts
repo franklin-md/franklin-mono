@@ -33,7 +33,8 @@ export function truncateStream(
 	let used = 0;
 
 	for (const chunk of chunks) {
-		const next = used + chunk.length + (accepted.length > 0 ? separator.length : 0);
+		const next =
+			used + chunk.length + (accepted.length > 0 ? separator.length : 0);
 		if (next > contentBudget) {
 			return {
 				text: joinThenAppend(accepted, separator, suffix, maxLength),

@@ -46,9 +46,10 @@ describe('truncateStream', () => {
 	});
 
 	it('returns empty text for empty input', () => {
-		expect(
-			truncateStream([], { maxLength: 10, separator: '\n' }),
-		).toEqual({ text: '', truncated: false });
+		expect(truncateStream([], { maxLength: 10, separator: '\n' })).toEqual({
+			text: '',
+			truncated: false,
+		});
 	});
 
 	it('accepts chunks that exactly fit the budget', () => {
@@ -70,9 +71,10 @@ describe('truncateStream', () => {
 	});
 
 	it('handles maxLength = 0 by truncating before any chunk', () => {
-		expect(
-			truncateStream(['a'], { maxLength: 0, separator: '\n' }),
-		).toEqual({ text: '', truncated: true });
+		expect(truncateStream(['a'], { maxLength: 0, separator: '\n' })).toEqual({
+			text: '',
+			truncated: true,
+		});
 	});
 
 	it('stops consuming a generator on the first overflow', () => {
@@ -133,9 +135,10 @@ describe('truncateStream', () => {
 	});
 
 	it('slices the suffix when maxLength is smaller than it', () => {
-		expect(
-			truncateStream(['x'], { maxLength: 2, suffix: 'NOTE' }),
-		).toEqual({ text: 'NO', truncated: true });
+		expect(truncateStream(['x'], { maxLength: 2, suffix: 'NOTE' })).toEqual({
+			text: 'NO',
+			truncated: true,
+		});
 	});
 
 	it('treats Infinity as no limit', () => {
