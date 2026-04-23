@@ -1,9 +1,11 @@
 import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
-import { FILESYSTEM_ALLOW_ALL, type AbsolutePath } from '@franklin/lib';
+import type { AbsolutePath } from '@franklin/lib';
+import { createDefaultObsidianFilesystemPermissions } from '../platform/filesystem/permissions.js';
 
 export async function getDefaultAgent(
 	app: FranklinApp,
 	vaultRoot: AbsolutePath,
+	configDir: string,
 ): Promise<FranklinRuntime> {
 	// TODO(FRA-191): Recycle persisted session instead of always creating fresh
 	const session = await app.agents.create({
@@ -12,10 +14,10 @@ export async function getDefaultAgent(
 			env: {
 				fsConfig: {
 					cwd: vaultRoot,
-					// TODO(FRA-188): Reintroduce Obsidian's default permission carve-outs
-					// for `.obsidian/**` and outside-vault paths once the filesystem layer
-					// can deny them instead of routing them to the host filesystem.
-					permissions: FILESYSTEM_ALLOW_ALL,
+					permissions: createDefaultObsidianFilesystemPermissions(
+						vaultRoot,
+						configDir,
+					),
 				},
 				netConfig: {
 					allowedDomains: [],

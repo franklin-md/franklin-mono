@@ -29,10 +29,12 @@ export default class FranklinPlugin extends Plugin {
 
 		createFranklinApp(this, this.diffClient)
 			.then(({ app, vaultRoot }) =>
-				getDefaultAgent(app, vaultRoot).then((runtime) => ({
-					app,
-					runtime,
-				})),
+				getDefaultAgent(app, vaultRoot, this.app.vault.configDir).then(
+					(runtime) => ({
+						app,
+						runtime,
+					}),
+				),
 			)
 			.then(({ app, runtime }) => {
 				this.franklinApp = app;
