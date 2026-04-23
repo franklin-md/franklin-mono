@@ -7,9 +7,12 @@ import {
 } from '@franklin/extensions';
 
 import type { App } from 'obsidian';
-import { createNodeFilesystem, createNodePlatform } from '@franklin/node';
+import {
+	createNodeFilesystem,
+	createNodePlatform,
+	nodePlatformFetch,
+} from '@franklin/node';
 import { createObsidianFilesystem } from './filesystem/obsidian.js';
-import { obsidianFetch } from './fetch.js';
 
 export function createObsidianPlatform(app: App): Platform {
 	const nodePlatform = createNodePlatform();
@@ -36,7 +39,8 @@ export function createObsidianPlatform(app: App): Platform {
 						},
 					};
 				},
-				configureWeb: async (netConfig) => createWeb(netConfig, obsidianFetch),
+				configureWeb: async (netConfig) =>
+					createWeb(netConfig, nodePlatformFetch),
 			}),
 	};
 }

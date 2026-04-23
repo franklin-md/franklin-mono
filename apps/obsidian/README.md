@@ -101,7 +101,18 @@ That does two things:
 - watches and rebundles `src/main.ts`
 - copies `main.js`, `manifest.json`, and `styles.css` into the configured vault plugin directory
 
-After each rebuild, reload the plugin inside Obsidian to pick up the latest code.
+When `--vault-dir` or `--plugin-dir` is configured, the sync step also makes a
+best-effort attempt to run:
+
+```bash
+obsidian plugin:reload id=franklin
+```
+
+The reload is scoped to the target vault by running the CLI from that vault
+directory. This applies to both `npm run dev` and one-off `bundle` runs that
+sync into a vault. If the Obsidian CLI is unavailable, the vault cannot be
+inferred, or the reload command fails, the build only prints a warning and you
+can reload the plugin manually inside Obsidian.
 
 ## Build Matrix
 
