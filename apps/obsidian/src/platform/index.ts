@@ -38,7 +38,6 @@ export function createObsidianPlatform(
 				// },
 				// configureTerminal: async () => {
 
-
 				osInfo: nodePlatform.os.osInfo,
 				configureFilesystem: async (fsConfig) => {
 					const fs = createObservableFilesystem(
