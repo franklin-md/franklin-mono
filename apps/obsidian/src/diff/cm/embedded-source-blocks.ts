@@ -3,7 +3,7 @@ import type { Hunk } from '../compute-hunks.js';
 
 export type EmbeddedBlockKind = 'diagram' | 'table';
 
-export type SourceRange = {
+type SourceRange = {
 	from: number;
 	to: number;
 };

@@ -20,7 +20,7 @@ import {
 } from '../utils/obsidian/path.js';
 import type { ObsidianDiffClient } from '../diff/diff-client.js';
 
-export interface ObsidianAppResult {
+interface ObsidianAppResult {
 	app: FranklinApp;
 	platform: Platform;
 	vaultRoot: AbsolutePath;

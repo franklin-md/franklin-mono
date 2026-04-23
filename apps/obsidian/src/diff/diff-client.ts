@@ -35,7 +35,7 @@ type PersistedDiffCache = Record<
 	PersistedDiffCacheEntry | string | null
 >;
 
-export type DiffEntry = {
+type DiffEntry = {
 	path: string;
 	oldContent: string;
 	isNewFile: boolean;
