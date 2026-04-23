@@ -69,18 +69,9 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 					tools: piTools,
 					messages: piMessages,
 				},
-				// TODO: Lets not hard code this. I think solution should be to pass this from ctx?
-				// Only resolve the API key when using the real stream function (not a test mock).
-				getApiKey: streamFn
-					? undefined
-					: (_: string) => {
-							// const key = process.env[`${provider.toUpperCase()}_API_KEY`];
-							// if (!key) {
-							// 	throw new Error(`Missing API key for provider: ${provider}`);
-							// }
-							// return key;
-							return ctx.config.apiKey;
-						},
+				getApiKey: (_: string) => {
+					return ctx.config.apiKey;
+				},
 				streamFn,
 			});
 			let currentMessageId = crypto.randomUUID();
