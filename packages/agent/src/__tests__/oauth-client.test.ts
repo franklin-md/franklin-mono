@@ -1,4 +1,4 @@
-import type { Fetch } from '@franklin/lib';
+import type { Fetch, LoopbackListener, LoopbackRequest } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 
 import { OAuthClient } from '../auth/oauth-client.js';
@@ -14,7 +14,7 @@ function makeSpec(
 		name: `Provider ${id}`,
 		loopback: { path: '/callback' },
 		redirectUri: 'http://localhost:9999/callback',
-		buildAuthUrl: () => 'https://example.com/authorize',
+		buildAuthUrl: (pkce) => `https://example.com/authorize?state=${pkce.state}`,
 		exchangeCode: vi.fn(async () => ({
 			access: 'A',
 			refresh: 'R',
@@ -38,18 +38,75 @@ function makeNet(): Net {
 	};
 }
 
+interface FakeListener extends LoopbackListener {
+	disposed: boolean;
+	simulate(queryString: string): void;
+}
+
+function makeListener(path = '/callback'): FakeListener {
+	const subscribers = new Set<(request: LoopbackRequest) => void>();
+	const state = { disposed: false };
+	return {
+		disposed: false,
+		async getRedirectUri() {
+			return `http://127.0.0.1:9999${path}`;
+		},
+		onRequest(cb) {
+			subscribers.add(cb);
+			return () => subscribers.delete(cb);
+		},
+		async respond() {},
+		async dispose() {
+			state.disposed = true;
+			this.disposed = true;
+			subscribers.clear();
+		},
+		simulate(queryString) {
+			const request: LoopbackRequest = {
+				id: 'req-1',
+				method: 'GET',
+				url: `http://127.0.0.1:9999${path}${queryString}`,
+				headers: {},
+			};
+			for (const sub of subscribers) sub(request);
+		},
+	};
+}
+
+function makeNetWithListener(listener: LoopbackListener): Net {
+	return {
+		listenLoopback: async () => listener,
+		fetch: vi.fn() as unknown as Fetch,
+	};
+}
+
 describe('OAuthClient', () => {
-	it('createFlow returns an OAuthFlow for a known provider', () => {
+	it('run drives the PKCE engine for a known provider', async () => {
 		const spec = makeSpec('anthropic');
-		const client = new OAuthClient(new Map([['anthropic', spec]]), makeNet());
-		const flow = client.createFlow('anthropic');
-		expect(typeof flow.login).toBe('function');
-		expect(typeof flow.dispose).toBe('function');
+		const listener = makeListener();
+		const client = new OAuthClient(
+			new Map([['anthropic', spec]]),
+			makeNetWithListener(listener),
+		);
+
+		const onAuth = vi.fn<(info: { url: string }) => void>();
+		const controller = new AbortController();
+		const promise = client.run('anthropic', { onAuth }, controller.signal);
+		await vi.waitFor(() => expect(onAuth).toHaveBeenCalled());
+
+		const url = (onAuth.mock.calls[0]![0] as { url: string }).url;
+		const state = new URL(url).searchParams.get('state')!;
+		listener.simulate(`?code=auth-code&state=${state}`);
+
+		await expect(promise).resolves.toMatchObject({ access: 'A' });
+		expect(listener.disposed).toBe(true);
 	});
 
-	it('createFlow throws for an unknown provider', () => {
+	it('run throws for an unknown provider', async () => {
 		const client = new OAuthClient(new Map(), makeNet());
-		expect(() => client.createFlow('missing')).toThrow(/not found/i);
+		await expect(
+			client.run('missing', { onAuth: vi.fn() }, new AbortController().signal),
+		).rejects.toThrow(/not found/i);
 	});
 
 	it('refresh delegates to the provider spec with the net fetch', async () => {

@@ -6,7 +6,6 @@ import {
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthManager } from '../auth/manager.js';
-import { OAuthFlow } from '../auth/oauth-flow.js';
 import type { OAuthClient } from '../auth/oauth-client.js';
 import { createAuthStore, DEFAULT_AUTH_FILE } from '../auth/store.js';
 import { joinAbsolute } from '@franklin/lib';
@@ -44,9 +43,9 @@ function createFilesystem(): Filesystem {
 	};
 }
 
-function stubClient(flow: OAuthFlow): OAuthClient {
+function stubClient(): OAuthClient {
 	return {
-		createFlow: vi.fn(() => flow),
+		run: vi.fn(),
 		refresh: vi.fn(),
 		getApiKey: vi.fn((_id: string, creds: OAuthCredentials) => creds.access),
 		providers: vi.fn(() => []),
@@ -91,33 +90,15 @@ const TEST_APP_DIR = '/test/app' as AbsolutePath;
 const TEST_AUTH_PATH = joinAbsolute(TEST_APP_DIR, DEFAULT_AUTH_FILE);
 
 describe('AuthManager', () => {
-	it('returns OAuth credentials from the OAuth client flow without persisting them', async () => {
-		const filesystem = createFilesystem();
-		const credentials = {
-			accessToken: 'token',
-		} as unknown as OAuthCredentials;
-		const flow = new OAuthFlow(async () => credentials);
-		const auth = new AuthManager(
-			createPlatform(filesystem),
-			createAuthStore(filesystem, TEST_APP_DIR),
-			stubClient(flow),
-		);
-
-		await expect(auth.flow('anthropic').login()).resolves.toBe(credentials);
-
-		expect(auth.entries()).toEqual({});
-	});
-
 	it('persists OAuth entries explicitly', async () => {
 		const filesystem = createFilesystem();
 		const credentials = {
 			accessToken: 'token',
 		} as unknown as OAuthCredentials;
-		const flow = new OAuthFlow(async () => credentials);
 		const auth = new AuthManager(
 			createPlatform(filesystem),
 			createAuthStore(filesystem, TEST_APP_DIR),
-			stubClient(flow),
+			stubClient(),
 		);
 
 		auth.setOAuthEntry('anthropic', {

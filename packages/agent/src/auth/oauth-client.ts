@@ -1,8 +1,8 @@
 import type { Net } from '../platform.js';
 import type { OAuthCredentials } from './credentials.js';
 import { runAuthorizationCodePkce } from './engine.js';
-import { OAuthFlow } from './oauth-flow.js';
 import type { AuthorizationCodePkceSpec } from './specs/types.js';
+import type { OAuthLoginCallbacks } from './types.js';
 
 export class OAuthClient {
 	constructor(
@@ -10,11 +10,13 @@ export class OAuthClient {
 		private readonly net: Net,
 	) {}
 
-	createFlow(providerId: string): OAuthFlow {
+	async run(
+		providerId: string,
+		callbacks: OAuthLoginCallbacks,
+		signal: AbortSignal,
+	): Promise<OAuthCredentials> {
 		const spec = this.requireSpec(providerId);
-		return new OAuthFlow((callbacks) =>
-			runAuthorizationCodePkce(spec, this.net, callbacks),
-		);
+		return runAuthorizationCodePkce(spec, this.net, callbacks, signal);
 	}
 
 	async refresh(

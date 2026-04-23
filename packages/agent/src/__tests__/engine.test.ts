@@ -229,4 +229,41 @@ describe('runAuthorizationCodePkce', () => {
 
 		await expect(promise).resolves.toMatchObject({ access: 'access-token' });
 	});
+
+	it('aborts the pending callback wait and disposes the listener when the signal fires', async () => {
+		const listener = new FakeListener('/callback');
+		const spec = makeSpec();
+		const controller = new AbortController();
+
+		const promise = runAuthorizationCodePkce(
+			spec,
+			makeNet(listener),
+			{ onAuth: vi.fn() },
+			controller.signal,
+		);
+
+		// Let the engine bind its listener before we abort.
+		await vi.waitFor(() => expect(listener.disposed).toBe(false));
+
+		controller.abort();
+
+		await expect(promise).rejects.toThrow(/abort/i);
+		expect(listener.disposed).toBe(true);
+	});
+
+	it('rejects immediately when the signal is already aborted', async () => {
+		const listener = new FakeListener('/callback');
+		const spec = makeSpec();
+		const controller = new AbortController();
+		controller.abort();
+
+		const promise = runAuthorizationCodePkce(
+			spec,
+			makeNet(listener),
+			{ onAuth: vi.fn() },
+			controller.signal,
+		);
+
+		await expect(promise).rejects.toThrow(/abort/i);
+	});
 });

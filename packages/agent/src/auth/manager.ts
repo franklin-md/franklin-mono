@@ -9,13 +9,18 @@ import type {
 	OAuthLoginCallbacks,
 	OAuthEntry,
 } from './types.js';
-import type { OAuthFlow } from './oauth-flow.js';
 import type { Platform } from '../platform.js';
 import type { AuthStore } from './store.js';
+
+interface ActiveFlow {
+	controller: AbortController;
+	promise: Promise<unknown>;
+}
 
 export class AuthManager {
 	private readonly observer = createObserver<[string, AuthEntry | undefined]>();
 	private readonly oauthClient: OAuthClient;
+	private readonly activeFlows = new Map<string, ActiveFlow>();
 
 	constructor(
 		private readonly platform: Platform,
@@ -51,33 +56,44 @@ export class AuthManager {
 	// OAuth flow
 	// -------------------------------------------------------------------------
 
-	flow(provider: string): OAuthFlow {
-		return this.oauthClient.createFlow(provider);
-	}
-
 	async loginOAuth(
 		provider: string,
 		callbacks: OAuthLoginCallbacks,
 	): Promise<void> {
-		const flow = this.flow(provider);
-		const unsubAuth = flow.onAuth((info) => {
-			callbacks.onAuth(info);
-		});
-		const unsubProgress = flow.onProgress((message) => {
-			callbacks.onProgress?.(message);
-		});
+		// Anthropic/OpenAI-Codex pin fixed callback ports, so two active flows
+		// per provider would collide — cancel any prior attempt first.
+		await this.cancel(provider);
+
+		const controller = new AbortController();
+		const promise = this.oauthClient.run(
+			provider,
+			callbacks,
+			controller.signal,
+		);
+		const active: ActiveFlow = { controller, promise };
+		this.activeFlows.set(provider, active);
 
 		try {
-			const credentials = await flow.login();
+			const credentials = await promise;
 			this.setOAuthEntry(provider, {
 				type: 'oauth',
 				credentials,
 			});
 		} finally {
-			unsubAuth();
-			unsubProgress();
-			await flow.dispose();
+			if (this.activeFlows.get(provider) === active) {
+				this.activeFlows.delete(provider);
+			}
 		}
+	}
+
+	async cancel(provider: string): Promise<void> {
+		const active = this.activeFlows.get(provider);
+		if (!active) return;
+		this.activeFlows.delete(provider);
+		active.controller.abort();
+		// Wait for the engine's finally (listener.dispose) to run so the port
+		// is free before the next loginOAuth tries to bind.
+		await active.promise.catch(() => {});
 	}
 
 	// -------------------------------------------------------------------------
