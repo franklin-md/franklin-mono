@@ -5,7 +5,7 @@ import {
 	Conversation,
 	createTurnEndBlock,
 	useAutoFollow,
-	useFollowKey,
+	useTriggerOnChange,
 	type ConversationComponents,
 	type ToolStatus,
 } from '@franklin/react';
@@ -65,7 +65,7 @@ export function ConversationView({ turns, toolUse }: ConversationViewProps) {
 
 	// Behaviour: On each new turn start, we refocus to bottom
 	const resetKey = turns.at(-1)?.id;
-	useFollowKey(resetKey, autoFollow.follow);
+	useTriggerOnChange(resetKey, autoFollow.follow);
 
 	return (
 		<ScrollRoot className="min-w-0 flex-1">

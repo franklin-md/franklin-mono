@@ -39,10 +39,9 @@ export {
 	useAutoFollow,
 	type AutoFollow,
 	type UseAutoFollowOptions,
-} from './dom/use-auto-follow.js';
+} from './dom/scrollable/use-auto-follow.js';
 export {
 	useTriggerOnChange,
-	useTriggerOnChange as useFollowKey,
 	type UseTriggerOnChange,
 	type UseTriggerOnChangeOptions,
 } from './utils/use-trigger-on-change.js';

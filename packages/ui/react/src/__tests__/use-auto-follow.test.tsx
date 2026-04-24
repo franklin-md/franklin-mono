@@ -4,19 +4,14 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-	getAutoFollowScrollState,
 	getScrollDistanceFromBottom,
-} from '../dom/auto-follow-metrics.js';
-import { useAutoFollow } from '../dom/use-auto-follow.js';
+	isFollowing,
+} from '../dom/scrollable/metrics.js';
+import type { ScrollableMetrics } from '../dom/scrollable/metrics.js';
+import { useAutoFollow } from '../dom/scrollable/use-auto-follow.js';
 import { useTriggerOnChange } from '../utils/use-trigger-on-change.js';
 
-type ScrollMetrics = {
-	clientHeight: number;
-	scrollHeight: number;
-	scrollTop: number;
-};
-
-function setScrollMetrics(element: HTMLElement, metrics: ScrollMetrics) {
+function setScrollMetrics(element: HTMLElement, metrics: ScrollableMetrics) {
 	let scrollHeight = metrics.scrollHeight;
 	let scrollTop = metrics.scrollTop;
 
@@ -71,13 +66,8 @@ function Harness() {
 				data-testid="viewport"
 				onScroll={autoFollow.handleScroll}
 			/>
-			<div data-testid="mode">{autoFollow.mode}</div>
-			<div data-testid="at-bottom">{String(autoFollow.atBottom)}</div>
 			<button type="button" onClick={autoFollow.follow}>
 				follow
-			</button>
-			<button type="button" onClick={autoFollow.pause}>
-				pause
 			</button>
 		</>
 	);
@@ -131,15 +121,15 @@ describe('useAutoFollow', () => {
 
 		expect(getScrollDistanceFromBottom(metrics)).toBe(23.5);
 		expect(
-			getAutoFollowScrollState(metrics, {
+			isFollowing(metrics, {
 				bottomThresholdPx: 24,
 				escapeThresholdPx: 64,
-				mode: 'paused',
+				following: false,
 			}),
-		).toEqual({ atBottom: true, mode: 'following' });
+		).toBe(true);
 	});
 
-	it('scrolls to the bottom when observed content size changes while following', () => {
+	it('scrolls to the bottom when observed content grows while following', () => {
 		globalThis.ResizeObserver = ResizeObserverMock;
 		render(<Harness />);
 		const metrics = setScrollMetrics(screen.getByTestId('viewport'), {
@@ -148,13 +138,14 @@ describe('useAutoFollow', () => {
 			scrollTop: 0,
 		});
 
+		metrics.scrollHeight = 1200;
 		ResizeObserverMock.instances[0]?.resize();
 
-		expect(metrics.scrollTop).toBe(1000);
-		expect(screen.getByTestId('mode').textContent).toBe('following');
+		expect(metrics.scrollTop).toBe(1200);
 	});
 
 	it('stops following when the user scrolls beyond the escape threshold', () => {
+		globalThis.ResizeObserver = ResizeObserverMock;
 		render(<Harness />);
 		const viewport = screen.getByTestId('viewport');
 		const metrics = setScrollMetrics(viewport, {
@@ -166,9 +157,11 @@ describe('useAutoFollow', () => {
 		metrics.scrollTop = 700;
 		fireEvent.scroll(viewport);
 
+		metrics.scrollHeight = 1100;
+		ResizeObserverMock.instances[0]?.resize();
+
+		// Paused: growth must not yank the viewport to the bottom.
 		expect(metrics.scrollTop).toBe(700);
-		expect(screen.getByTestId('mode').textContent).toBe('paused');
-		expect(screen.getByTestId('at-bottom').textContent).toBe('false');
 	});
 
 	it('resumes following when the user scrolls back near the bottom', () => {
@@ -188,15 +181,6 @@ describe('useAutoFollow', () => {
 		ResizeObserverMock.instances[0]?.resize();
 
 		expect(metrics.scrollTop).toBe(1100);
-		expect(screen.getByTestId('mode').textContent).toBe('following');
-		expect(screen.getByTestId('at-bottom').textContent).toBe('true');
-	});
-
-	it('does not require caller-owned keys', () => {
-		render(<Harness />);
-
-		expect(screen.getByTestId('mode').textContent).toBe('following');
-		expect(screen.getByTestId('at-bottom').textContent).toBe('true');
 	});
 
 	it('composes caller-owned reset behavior outside useAutoFollow', () => {
@@ -215,7 +199,7 @@ describe('useAutoFollow', () => {
 		expect(follow).toHaveBeenCalledTimes(2);
 	});
 
-	it('exposes imperative follow and pause controls', () => {
+	it('exposes an imperative follow control that forces scroll-to-bottom', () => {
 		render(<Harness />);
 		const metrics = setScrollMetrics(screen.getByTestId('viewport'), {
 			clientHeight: 200,
@@ -223,26 +207,25 @@ describe('useAutoFollow', () => {
 			scrollTop: 0,
 		});
 
-		fireEvent.click(screen.getByText('pause'));
-		expect(metrics.scrollTop).toBe(0);
-
 		fireEvent.click(screen.getByText('follow'));
 		expect(metrics.scrollTop).toBe(1000);
-		expect(screen.getByTestId('mode').textContent).toBe('following');
 	});
 
 	it('uses threshold math so fractional scrollTop values count as bottom', () => {
+		globalThis.ResizeObserver = ResizeObserverMock;
 		render(<Harness />);
 		const viewport = screen.getByTestId('viewport');
-		setScrollMetrics(viewport, {
+		const metrics = setScrollMetrics(viewport, {
 			clientHeight: 200,
 			scrollHeight: 1000,
 			scrollTop: 776.5,
 		});
 
+		// User was paused; scrolling within the bottom threshold snaps back to following.
 		fireEvent.scroll(viewport);
 
-		expect(screen.getByTestId('mode').textContent).toBe('following');
-		expect(screen.getByTestId('at-bottom').textContent).toBe('true');
+		metrics.scrollHeight = 1100;
+		ResizeObserverMock.instances[0]?.resize();
+		expect(metrics.scrollTop).toBe(1100);
 	});
 });
