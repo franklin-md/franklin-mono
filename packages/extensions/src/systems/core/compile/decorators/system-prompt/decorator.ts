@@ -1,6 +1,6 @@
 import type { MiniACPClient } from '@franklin/mini-acp';
 import type { ProtocolDecorator } from '../types.js';
-import type { SystemPromptAssembler } from './assembler.js';
+import type { SystemPromptAssembler } from './assembler/index.js';
 
 /**
  * Decorator that recomputes the system prompt before every prompt call.

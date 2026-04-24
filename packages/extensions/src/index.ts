@@ -4,6 +4,8 @@ export type {
 	Prompt,
 	PromptHandler,
 	SystemPrompt,
+	SetPartOptions,
+	SystemPromptContent,
 	SystemPromptHandler,
 	ExtensionToolDefinition,
 	ToolSpec,

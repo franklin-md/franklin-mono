@@ -8,9 +8,14 @@ import { grepSpec } from './tools.js';
 
 export function grepExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
 	return (api) => {
-		api.on('systemPrompt', async (prompt, ctx) => {
-			const backendKind = await detectGrepBackend(ctx.environment.process);
-			prompt.setPart(renderGrepInfo(backendKind));
+		api.on('systemPrompt', (prompt, ctx) => {
+			prompt.setPart(
+				async () => {
+					const backendKind = await detectGrepBackend(ctx.environment.process);
+					return renderGrepInfo(backendKind);
+				},
+				{ once: true },
+			);
 		});
 
 		// TODO: the extension API does not support conditional/async tool

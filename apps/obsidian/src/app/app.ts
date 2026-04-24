@@ -20,6 +20,7 @@ import {
 	getVaultAbsolutePath,
 } from '../utils/obsidian/path.js';
 import type { ObsidianDiffClient } from '../diff/diff-client.js';
+import { obsidianSystemPromptExtension } from './extensions/system-prompt.js';
 
 interface ObsidianAppResult {
 	app: FranklinApp;
@@ -32,6 +33,7 @@ const extensionBundles = [
 	conversationExtension,
 	todoExtension,
 	statusExtension,
+	{ extension: obsidianSystemPromptExtension },
 	instructionsExtension,
 	filesystemExtension,
 	webExtension,

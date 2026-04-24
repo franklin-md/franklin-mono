@@ -117,7 +117,7 @@ describe('createEnvironmentInfoExtension', () => {
 		expect(assembled).toContain("Today's date: 2026-04-21");
 	});
 
-	it('static fragment is emitted once — assembler skips it on second assemble if handler returns early', async () => {
+	it('static fragment is computed once — handler is pinned via { once: true }', async () => {
 		const osInfoSpy = vi.spyOn(MemoryOsInfo.prototype, 'getPlatform');
 		const env = fakeEnvironment(new MemoryOsInfo());
 		const ctx = fakeRuntime(env);
@@ -127,7 +127,8 @@ describe('createEnvironmentInfoExtension', () => {
 		await assembler.assemble();
 		await assembler.assemble();
 
-		// Static handler guards with hasLoaded → should only read osInfo once.
+		// `{ once: true }` pins the slot → assembler skips the handler on the
+		// second assemble, so osInfo reads happen at most once.
 		expect(osInfoSpy).toHaveBeenCalledTimes(1);
 		osInfoSpy.mockRestore();
 	});

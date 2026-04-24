@@ -12,28 +12,20 @@ export function createInstructionExtension(): Extension<
 	CoreAPI<EnvironmentRuntime>
 > {
 	return (api) => {
-		let hasLoaded = false;
-
 		const spec = createClaudeSpec();
 
-		api.on('systemPrompt', async (prompt, ctx) => {
-			// Only load once per conversation.
-			if (hasLoaded) return;
-			// TODO: How do we actually figure out if this is the first in the converstion VS first since hydration?
-			const env = ctx.environment;
-			const fs = env.filesystem;
-
-			const cwd = await env.config().then((config) => config.fsConfig.cwd);
-			const instructions = await spec.collect(fs, cwd);
-			const loaded = await loadInstructions(fs, instructions);
-			const rendered = concat(loaded, {
-				render: renderWithFilename,
-			});
-
-			// TODO: General and configurable algorithm for composition
-			prompt.setPart(rendered);
-
-			hasLoaded = true;
+		api.on('systemPrompt', (prompt, ctx) => {
+			prompt.setPart(
+				async () => {
+					const env = ctx.environment;
+					const fs = env.filesystem;
+					const cwd = await env.config().then((config) => config.fsConfig.cwd);
+					const instructions = await spec.collect(fs, cwd);
+					const loaded = await loadInstructions(fs, instructions);
+					return concat(loaded, { render: renderWithFilename });
+				},
+				{ once: true },
+			);
 		});
 	};
 }
