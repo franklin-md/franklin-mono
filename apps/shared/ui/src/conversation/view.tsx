@@ -10,6 +10,7 @@ import type { ConversationTurn, ToolUseBlock } from '@franklin/extensions';
 import {
 	Conversation,
 	createTurnEndBlock,
+	type ConversationRenderTurn,
 	type ConversationComponents,
 	type ToolStatus,
 } from '@franklin/react';
@@ -31,6 +32,10 @@ const AssistantChrome = ({ children }: { children: ReactNode }) => (
 	<div className="flex flex-col gap-1.5">{children}</div>
 );
 
+const UserMessage = ({ turn }: { turn: ConversationRenderTurn }) => (
+	<UserBubble message={turn.prompt} />
+);
+
 const DefaultToolUse = ({
 	block,
 }: {
@@ -43,7 +48,7 @@ const defaultComponents: ConversationComponents = {
 	Thinking: ThinkingBlock,
 	ToolUse: DefaultToolUse,
 	TurnEnd,
-	UserMessage: UserBubble,
+	UserMessage,
 	Turn: TurnChrome,
 	AssistantMessage: AssistantChrome,
 };

@@ -9,6 +9,7 @@ import type {
 } from '@franklin/extensions';
 
 import { Conversation } from '../conversation/conversation.js';
+import type { ConversationRenderTurn } from '../conversation/turn-info/types.js';
 import { computeToolStatus } from '../conversation/tools/status.js';
 import {
 	createToolRenderer,
@@ -152,6 +153,7 @@ describe('Conversation', () => {
 		const thinkings: string[] = [];
 		const tools: CapturedTool[] = [];
 		const users: string[] = [];
+		const userTurns: ConversationRenderTurn[] = [];
 
 		const components: ConversationComponents = {
 			Text: ({ block }: { block: TextBlock }) => {
@@ -172,8 +174,9 @@ describe('Conversation', () => {
 				tools.push({ name: block.call.name, status });
 				return null;
 			},
-			UserMessage: ({ message }: { message: ConversationTurn['prompt'] }) => {
-				const text = message.content
+			UserMessage: ({ turn }: { turn: ConversationRenderTurn }) => {
+				userTurns.push(turn);
+				const text = turn.prompt.content
 					.filter((c): c is { type: 'text'; text: string } => c.type === 'text')
 					.map((c) => c.text)
 					.join('');
@@ -182,7 +185,7 @@ describe('Conversation', () => {
 			},
 		};
 
-		return { components, texts, thinkings, tools, users };
+		return { components, texts, thinkings, tools, users, userTurns };
 	}
 
 	const turns: ConversationTurn[] = [
@@ -214,9 +217,10 @@ describe('Conversation', () => {
 	];
 
 	it('dispatches user messages', () => {
-		const { components, users } = createCapturingComponents();
+		const { components, users, userTurns } = createCapturingComponents();
 		render(<Conversation turns={turns} components={components} />);
 		expect(users).toEqual(['hello']);
+		expect(userTurns[0]?.phase).toBe('in-progress');
 	});
 
 	it('dispatches text blocks', () => {
@@ -307,14 +311,15 @@ describe('Conversation', () => {
 				turns={turns}
 				components={{
 					...components,
-					Turn: ({ children }) => {
-						wrapperCalled();
+					Turn: ({ children, turn }) => {
+						wrapperCalled(turn.phase);
 						return <>{children}</>;
 					},
 				}}
 			/>,
 		);
 		expect(wrapperCalled).toHaveBeenCalledTimes(1);
+		expect(wrapperCalled).toHaveBeenCalledWith('in-progress');
 	});
 
 	it('uses custom AssistantMessage wrapper when provided', () => {
@@ -325,14 +330,44 @@ describe('Conversation', () => {
 				turns={turns}
 				components={{
 					...components,
-					AssistantMessage: ({ children }) => {
-						wrapperCalled();
+					AssistantMessage: ({ children, turn }) => {
+						wrapperCalled(turn.id);
 						return <>{children}</>;
 					},
 				}}
 			/>,
 		);
 		expect(wrapperCalled).toHaveBeenCalledTimes(1);
+		expect(wrapperCalled).toHaveBeenCalledWith('t1');
+	});
+
+	it('uses custom Footer when provided', () => {
+		const footerCalled = vi.fn();
+		const { components } = createCapturingComponents();
+		render(
+			<Conversation
+				turns={turns}
+				now={2_000}
+				components={{
+					...components,
+					Footer: ({ turn }) => {
+						footerCalled({
+							id: turn.id,
+							elapsedMs: turn.timing.elapsedMs,
+							isLast: turn.isLast,
+							phase: turn.phase,
+						});
+						return null;
+					},
+				}}
+			/>,
+		);
+		expect(footerCalled).toHaveBeenCalledWith({
+			id: 't1',
+			elapsedMs: 2_000,
+			isLast: true,
+			phase: 'in-progress',
+		});
 	});
 
 	it('renders multiple turns', () => {
