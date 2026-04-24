@@ -7,8 +7,8 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc -b tsconfig.json --pretty false",
+		"build": "node ../../scripts/in-parallel.mjs --mb 800 --name obsidian-build -- tsc -b tsconfig.json",
+		"typecheck": "node ../../scripts/in-parallel.mjs --mb 700 --name obsidian-typecheck -- tsc -b tsconfig.json --pretty false",
 		"bundle": "node ./build/bundle.mjs",
 		"bundle:prod": "node ./build/bundle.mjs --prod",
 		"dev": "node ./build/bundle.mjs --watch"
