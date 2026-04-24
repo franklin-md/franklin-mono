@@ -1,5 +1,6 @@
 export { useAsync } from './utils/use-async.js';
 export { createSimpleContext } from './utils/create-simple-context.js';
+export { useFirstMountEffect } from './utils/use-first-mount-effect.js';
 export { useElapsed } from './utils/use-elapsed.js';
 export { useStore } from './utils/use-store.js';
 export { useCollectionNavigator } from './utils/use-collection-navigator.js';
@@ -42,9 +43,19 @@ export {
 	type UseTextareaAutosizeLayoutResult,
 } from './dom/use-textarea-autosize-layout.js';
 export {
+	useAutoFollow,
+	type AutoFollow,
+	type UseAutoFollowOptions,
+} from './dom/scrollable/use-auto-follow.js';
+export {
 	useMiddleButtonEffect,
 	type MiddleButtonEffect,
 } from './dom/use-middle-button-effect.js';
+export {
+	useTriggerOnChange,
+	type UseTriggerOnChange,
+	type UseTriggerOnChangeOptions,
+} from './utils/use-trigger-on-change.js';
 export { PromptProvider, usePrompt } from './prompt/context.js';
 export type { PromptContextValue } from './prompt/context.js';
 export { Prompt } from './prompt/prompt.js';
