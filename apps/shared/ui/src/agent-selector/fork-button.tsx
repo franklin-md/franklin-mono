@@ -5,7 +5,7 @@ import type { Session } from '@franklin/extensions';
 import { useAgents } from '@franklin/react';
 import { MdForkRight } from 'react-icons/md';
 
-import { IconButton } from '../primitives/icon-button.js';
+import { IconButton } from '../components/icon-button.js';
 
 export interface ForkButtonProps {
 	icon?: ComponentType<{ className?: string }>;

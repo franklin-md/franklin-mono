@@ -1,8 +1,8 @@
 import type { ConversationRenderTurn } from '@franklin/react';
+import { useCopyFeedback } from '@franklin/react';
 import { Check, Copy } from 'lucide-react';
 
-import { useCopyFeedback } from '../../lib/use-copy-feedback.js';
-import { IconButton } from '../../primitives/icon-button.js';
+import { IconButton } from '../../components/icon-button.js';
 
 export interface CopyButtonProps {
 	text: string;
