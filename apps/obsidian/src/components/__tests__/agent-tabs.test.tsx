@@ -170,13 +170,15 @@ describe('Obsidian agent tabs', () => {
 		expect(screen.getByRole('tab', { name: '2' })).toBeTruthy();
 		expect(screen.getByRole('tab', { name: '3' })).toBeTruthy();
 
-		const unreadDot = screen.getByTestId('agent-tab-status-session-b')
+		const unreadIndicator = screen.getByTestId('agent-tab-status-session-b')
 			.firstElementChild as HTMLElement;
-		const idleDot = screen.getByTestId('agent-tab-status-session-a')
+		const idleIndicator = screen.getByTestId('agent-tab-status-session-a')
 			.firstElementChild as HTMLElement;
 
-		expect(unreadDot.className).toContain('bg-primary');
-		expect(idleDot.className).toContain('invisible');
+		expect(unreadIndicator.querySelector('span')?.className).toContain(
+			'bg-primary',
+		);
+		expect(idleIndicator.className).toContain('invisible');
 	});
 
 	it('auto-selects the last restored session when none is active yet', async () => {

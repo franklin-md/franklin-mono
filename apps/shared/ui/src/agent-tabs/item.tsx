@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { cn } from '../lib/cn.js';
 import { Button } from '../primitives/button.js';
 import { TabsTrigger } from '../primitives/tabs.js';
-import { StatusDot } from '../sidebar/status-dot.js';
+import { StatusIndicator } from '../components/status-indicator.js';
 
 type AgentTabsItemProps = {
 	label: string;
@@ -52,7 +52,7 @@ export function AgentTabsItem({
 					data-status={status}
 					className="inline-flex"
 				>
-					<StatusDot status={status} />
+					<StatusIndicator status={status} />
 				</span>
 				<span>{label}</span>
 			</TabsTrigger>

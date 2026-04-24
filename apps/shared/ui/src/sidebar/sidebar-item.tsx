@@ -1,8 +1,8 @@
 import type { StatusState } from '@franklin/extensions';
 
 import { DeleteButton } from '../components/delete-button.js';
+import { StatusIndicator } from '../components/status-indicator.js';
 import { cn } from '../lib/cn.js';
-import { StatusDot } from './status-dot.js';
 
 export function SidebarItem({
 	name,
@@ -29,7 +29,7 @@ export function SidebarItem({
 			)}
 		>
 			<span className="flex items-center gap-2">
-				<StatusDot status={status} />
+				<StatusIndicator status={status} />
 				<span className="flex-1">{name}</span>
 				{onDelete && <DeleteButton onClick={onDelete} />}
 			</span>
