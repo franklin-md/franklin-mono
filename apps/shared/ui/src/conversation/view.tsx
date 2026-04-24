@@ -5,6 +5,7 @@ import {
 	Conversation,
 	createTurnEndBlock,
 	useAutoFollow,
+	useFirstMountEffect,
 	useTriggerOnChange,
 	type ConversationComponents,
 	type ToolStatus,
@@ -62,6 +63,11 @@ export function ConversationView({ turns, toolUse }: ConversationViewProps) {
 			toolUse ? { ...defaultComponents, ToolUse: toolUse } : defaultComponents,
 		[toolUse],
 	);
+
+	// Behaviour: Go to bottom on mount (i.e. switch to this tab)
+	useFirstMountEffect(() => {
+		if (turns.length > 0) autoFollow.follow();
+	});
 
 	// Behaviour: On each new turn start, we refocus to bottom
 	const resetKey = turns.at(-1)?.id;

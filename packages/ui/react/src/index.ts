@@ -1,5 +1,6 @@
 export { useAsync } from './utils/use-async.js';
 export { createSimpleContext } from './utils/create-simple-context.js';
+export { useFirstMountEffect } from './utils/use-first-mount-effect.js';
 export { useStore } from './utils/use-store.js';
 export { AgentProvider, useAgent } from './agent/agent-context.js';
 export {
