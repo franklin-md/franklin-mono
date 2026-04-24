@@ -1,10 +1,15 @@
 import type { ReactNode } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { ConversationTurn } from '@franklin/extensions';
+import type { ConversationTurn, Session } from '@franklin/extensions';
 import { conversationExtension } from '@franklin/extensions';
 import type { ThinkingLevel } from '@franklin/mini-acp';
-import { AgentProvider, AppContext } from '@franklin/react';
+import {
+	AgentProvider,
+	AgentsValueProvider,
+	AppContext,
+	type AgentsControl,
+} from '@franklin/react';
 
 function createMockStore<T>(initial: T) {
 	let value = initial;
@@ -105,7 +110,36 @@ export function MockAgentDecorator({
 
 	return (
 		<AppContext.Provider value={app as never}>
-			<AgentProvider agent={runtime}>{children}</AgentProvider>
+			<AgentProvider agent={runtime}>
+				<MockAgentsDecorator
+					activeSessionId={opts.turns?.length ? 'mock-session' : null}
+				>
+					{children}
+				</MockAgentsDecorator>
+			</AgentProvider>
 		</AppContext.Provider>
 	);
+}
+
+export function MockAgentsDecorator({
+	children,
+	activeSessionId = null,
+}: {
+	children: ReactNode;
+	activeSessionId?: string | null;
+}) {
+	const control = {
+		sessions: [],
+		activeSessionId,
+		activeSession: undefined,
+		select: () => {},
+		create: async () =>
+			({
+				id: 'mock-forked',
+				runtime: {} as FranklinRuntime,
+			}) satisfies Session<FranklinRuntime>,
+		remove: () => {},
+	} satisfies AgentsControl;
+
+	return <AgentsValueProvider value={control}>{children}</AgentsValueProvider>;
 }

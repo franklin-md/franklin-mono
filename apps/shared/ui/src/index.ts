@@ -89,6 +89,10 @@ export {
 	type TextareaGroupProps,
 } from './components/textarea-group.js';
 export { AgentTabs } from './agent-tabs/tabs.js';
+export {
+	ForkButton,
+	type ForkButtonProps,
+} from './agent-selector/fork-button.js';
 
 // conversation
 export {

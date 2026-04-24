@@ -13,6 +13,7 @@ export { useAgentState } from './agent/use-agent-state.js';
 export { useSessions } from './agent/use-sessions.js';
 export {
 	AgentsProvider,
+	AgentsValueProvider,
 	useAgents,
 	type AgentCreate,
 	type AgentCreateInput,
