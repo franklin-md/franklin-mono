@@ -9,6 +9,7 @@ import type { LLMConfig } from '../../../types/context.js';
 import { StopCode } from '../../../types/stop-code.js';
 import type { TurnEnd } from '../../../types/stream.js';
 import { withOpenRouterHeaders } from './headers.js';
+import { getOpenRouterModelOverride } from './openrouter-overrides.js';
 
 export type ResolveSuccess = { ok: true; model: Model<string> };
 export type ResolveFailure = { ok: false; turnEnd: TurnEnd };
@@ -20,6 +21,20 @@ function fail(stopCode: StopCode, stopMessage: string): ResolveFailure {
 
 function isKnownProvider(provider: string): provider is KnownProvider {
 	return getProviders().includes(provider as KnownProvider);
+}
+
+function findModel(
+	provider: KnownProvider,
+	modelId: string,
+): Model<string> | undefined {
+	if (provider === 'openrouter') {
+		const override = getOpenRouterModelOverride(modelId);
+		if (override) {
+			return override;
+		}
+	}
+
+	return getModels(provider).find((candidate) => candidate.id === modelId);
 }
 
 export function resolveModel(config: LLMConfig): ResolveResult {
@@ -42,8 +57,7 @@ export function resolveModel(config: LLMConfig): ResolveResult {
 		return fail(StopCode.ModelNotSpecified, 'Missing model in ctx.config');
 	}
 
-	const availableModels = getModels(provider);
-	const model = availableModels.find((candidate) => candidate.id === modelId);
+	const model = findModel(provider, modelId);
 	if (!model) {
 		return fail(
 			StopCode.ModelNotFound,
@@ -53,6 +67,6 @@ export function resolveModel(config: LLMConfig): ResolveResult {
 
 	return {
 		ok: true,
-		model: withOpenRouterHeaders(config, model as Model<string>),
+		model: withOpenRouterHeaders(config, model),
 	};
 }
