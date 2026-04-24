@@ -19,6 +19,7 @@ import { ScrollArea } from '../primitives/scroll-area.js';
 
 import { TextBlock } from './turn/text/text.js';
 import { ThinkingBlock } from './turn/thinking.js';
+import { TurnFooter } from './turn/footer.js';
 import { defaultRegistry } from './turn/turn-end/registry.js';
 import { UserBubble } from './turn/user-bubble.js';
 import { Waiting } from './turn/waiting.js';
@@ -53,6 +54,7 @@ const defaultComponents: ConversationComponents = {
 	Turn: TurnChrome,
 	AssistantMessage: AssistantChrome,
 	Waiting,
+	Footer: TurnFooter,
 };
 
 export interface ConversationViewProps {
