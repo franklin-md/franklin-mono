@@ -47,7 +47,13 @@ export {
 	PopoverContent,
 	PopoverTrigger,
 } from './primitives/popover.js';
-export { ScrollArea, ScrollBar } from './primitives/scroll-area.js';
+export {
+	ScrollArea,
+	ScrollBar,
+	ScrollCorner,
+	ScrollRoot,
+	ScrollViewport,
+} from './primitives/scroll-area.js';
 export {
 	Select,
 	SelectContent,

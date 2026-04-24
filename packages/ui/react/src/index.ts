@@ -35,6 +35,17 @@ export {
 	type UseTextareaAutosizeLayoutOptions,
 	type UseTextareaAutosizeLayoutResult,
 } from './dom/use-textarea-autosize-layout.js';
+export {
+	useAutoFollow,
+	type AutoFollow,
+	type UseAutoFollowOptions,
+} from './dom/use-auto-follow.js';
+export {
+	useTriggerOnChange,
+	useTriggerOnChange as useFollowKey,
+	type UseTriggerOnChange,
+	type UseTriggerOnChangeOptions,
+} from './utils/use-trigger-on-change.js';
 export { PromptProvider, usePrompt } from './prompt/context.js';
 export type { PromptContextValue } from './prompt/context.js';
 export { Prompt } from './prompt/prompt.js';
