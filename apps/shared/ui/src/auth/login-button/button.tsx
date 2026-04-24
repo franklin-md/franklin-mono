@@ -13,6 +13,7 @@ export interface LoginProviderButtonProps extends Omit<
 	icon: ComponentType<IconProps>;
 	foreground: CSSProperties['color'];
 	background: CSSProperties['background'];
+	providerName: string;
 	isLoading?: boolean;
 	isSignedIn?: boolean;
 }
@@ -26,6 +27,7 @@ export function LoginProviderButton({
 	icon: Icon,
 	foreground,
 	background,
+	providerName,
 	size = 'sm',
 	isLoading = false,
 	isSignedIn = false,
@@ -37,8 +39,8 @@ export function LoginProviderButton({
 	const label = isLoading
 		? 'Signing in…'
 		: isSignedIn
-			? 'Logged in :)'
-			: 'Sign in';
+			? `Logged into ${providerName}`
+			: `Log into ${providerName}`;
 
 	return (
 		<Button

@@ -2,7 +2,9 @@ import { useAsync } from '@franklin/react';
 
 import { useAuthManager } from '../context.js';
 
-import { LOGIN_BUTTONS, ProviderRow } from './provider-row.js';
+import { LOGIN_BUTTONS } from '../login-button/registry.js';
+
+import { ProviderRow } from './provider-row.js';
 
 export function OAuthPanel() {
 	const auth = useAuthManager();

@@ -13,19 +13,23 @@ describe('LoginProviderButton', () => {
 		cleanup();
 	});
 
-	it('shows a sign-in label by default', () => {
-		render(<AnthropicLoginButton />);
-		expect(screen.getByRole('button').textContent).toContain('Sign in');
+	it('shows a log-into label by default', () => {
+		render(<AnthropicLoginButton providerName="Claude" />);
+		expect(screen.getByRole('button').textContent).toContain('Log into Claude');
 	});
 
-	it('shows a signed-in label when isSignedIn', () => {
-		render(<AnthropicLoginButton isSignedIn />);
-		expect(screen.getByRole('button').textContent).toContain('Logged in');
+	it('shows a logged-into label when isSignedIn', () => {
+		render(<AnthropicLoginButton isSignedIn providerName="Claude" />);
+		expect(screen.getByRole('button').textContent).toContain(
+			'Logged into Claude',
+		);
 	});
 
 	it('disables and sets aria-busy when loading', () => {
 		const onClick = vi.fn();
-		render(<AnthropicLoginButton isLoading onClick={onClick} />);
+		render(
+			<AnthropicLoginButton isLoading onClick={onClick} providerName="Claude" />,
+		);
 
 		const button = screen.getByRole('button');
 		fireEvent.click(button);
@@ -37,7 +41,7 @@ describe('LoginProviderButton', () => {
 
 	it('calls onClick', () => {
 		const onClick = vi.fn();
-		render(<AnthropicLoginButton onClick={onClick} />);
+		render(<AnthropicLoginButton onClick={onClick} providerName="Claude" />);
 
 		fireEvent.click(screen.getByRole('button'));
 
@@ -47,8 +51,8 @@ describe('LoginProviderButton', () => {
 	it('renders both Anthropic and OpenAI Codex wrappers', () => {
 		render(
 			<>
-				<AnthropicLoginButton data-testid="anthropic" />
-				<OpenAICodexLoginButton data-testid="codex" />
+				<AnthropicLoginButton data-testid="anthropic" providerName="Claude" />
+				<OpenAICodexLoginButton data-testid="codex" providerName="ChatGPT" />
 			</>,
 		);
 

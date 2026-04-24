@@ -1,22 +1,10 @@
-import type { ComponentType } from 'react';
-
-import { AnthropicLoginButton } from '../login-button/anthropic.js';
-import type { ProviderLoginButtonProps } from '../login-button/button.js';
-import { OpenAICodexLoginButton } from '../login-button/openai-codex.js';
+import { LOGIN_BUTTONS } from '../login-button/registry.js';
 import { Button } from '../../primitives/button.js';
 import { useAuthEntries } from '../use-entries.js';
 
 import type { OAuthProviderMeta } from './types.js';
 import { OAuthFlowView } from './flow-view.js';
 import { useOAuthFlow } from './hook.js';
-
-export const LOGIN_BUTTONS: Record<
-	string,
-	ComponentType<ProviderLoginButtonProps>
-> = {
-	anthropic: AnthropicLoginButton,
-	'openai-codex': OpenAICodexLoginButton,
-};
 
 export function ProviderRow({ provider }: { provider: OAuthProviderMeta }) {
 	const { isOAuthSignedIn } = useAuthEntries();
@@ -35,6 +23,7 @@ export function ProviderRow({ provider }: { provider: OAuthProviderMeta }) {
 				<LoginButton
 					isLoading={flowRunning}
 					isSignedIn={isSignedIn}
+					providerName={provider.name}
 					onClick={() => {
 						void login();
 					}}
