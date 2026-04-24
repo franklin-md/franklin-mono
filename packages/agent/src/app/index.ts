@@ -19,6 +19,7 @@ import type {
 	FranklinRuntime,
 	FranklinExtension,
 } from '../types.js';
+import type { AuthStore } from '../storage/types.js';
 import { createAgents, type Agents } from './agents.js';
 
 export class FranklinApp {
@@ -38,11 +39,15 @@ export class FranklinApp {
 		extensions: FranklinExtension[];
 		platform: Platform;
 		appDir: AbsolutePath;
+		authStore?: AuthStore;
 	}) {
 		const { extensions, platform, appDir } = opts;
 		const storage = createStorage<FranklinState>(
 			platform.os.filesystem,
 			appDir,
+			{
+				authStore: opts.authStore,
+			},
 		);
 
 		this.auth = new AuthManager(platform, storage.auth);

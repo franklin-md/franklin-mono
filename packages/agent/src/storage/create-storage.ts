@@ -4,14 +4,15 @@ import type { AbsolutePath, Filesystem, RestoreResult } from '@franklin/lib';
 import { createAuthStore } from './auth.js';
 import { createPersistence } from './persistence.js';
 import { createSettingsStore } from './settings.js';
-import type { Storage } from './types.js';
+import type { AuthStore, Storage } from './types.js';
 
 export function createStorage<S extends SessionState>(
 	filesystem: Filesystem,
 	appDir: AbsolutePath,
+	opts?: { authStore?: AuthStore },
 ): Storage<S> {
 	const settings = createSettingsStore(filesystem, appDir);
-	const auth = createAuthStore(filesystem, appDir);
+	const auth = opts?.authStore ?? createAuthStore(filesystem, appDir);
 	const persistence = createPersistence<S>(appDir, filesystem);
 	const sessions = persistence.session;
 	const stores = new StoreRegistry(persistence.store);

@@ -20,6 +20,7 @@ import {
 	getVaultAbsolutePath,
 } from '../utils/obsidian/path.js';
 import type { ObsidianDiffClient } from '../diff/diff-client.js';
+import { resolveAuthStore } from './auth/resolve.js';
 
 interface ObsidianAppResult {
 	app: FranklinApp;
@@ -51,11 +52,13 @@ export async function createFranklinApp(
 	const appDir = toAbsolutePath(
 		getPluginAbsolutePath(plugin.app.vault, plugin.manifest),
 	);
+	const authStore = await resolveAuthStore(plugin);
 
 	const app = new FranklinApp({
 		extensions,
 		platform,
 		appDir,
+		authStore,
 	});
 
 	await app.start();
