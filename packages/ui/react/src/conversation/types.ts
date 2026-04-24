@@ -20,5 +20,6 @@ export type ConversationComponents = {
 		turn: ConversationRenderTurn;
 		children: ReactNode;
 	}>;
+	Waiting?: ComponentType<{ turn: ConversationRenderTurn }>;
 	Footer?: ComponentType<{ turn: ConversationRenderTurn }>;
 };

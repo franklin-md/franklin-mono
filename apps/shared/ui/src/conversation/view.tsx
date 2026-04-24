@@ -21,6 +21,7 @@ import { TextBlock } from './turn/text/text.js';
 import { ThinkingBlock } from './turn/thinking.js';
 import { defaultRegistry } from './turn/turn-end/registry.js';
 import { UserBubble } from './turn/user-bubble.js';
+import { Waiting } from './turn/waiting.js';
 
 const TurnEnd = createTurnEndBlock(defaultRegistry);
 
@@ -51,6 +52,7 @@ const defaultComponents: ConversationComponents = {
 	UserMessage,
 	Turn: TurnChrome,
 	AssistantMessage: AssistantChrome,
+	Waiting,
 };
 
 export interface ConversationViewProps {

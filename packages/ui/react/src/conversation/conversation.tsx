@@ -24,6 +24,7 @@ export function Conversation({ turns, components, now }: ConversationProps) {
 		UserMessage,
 		Turn = IdentityTurn,
 		AssistantMessage = IdentityTurn,
+		Waiting,
 		Footer,
 	} = components;
 	const renderTurns = getConversationRenderTurns(turns, now);
@@ -38,7 +39,10 @@ export function Conversation({ turns, components, now }: ConversationProps) {
 							<BlockDispatch key={i} block={block} components={components} />
 						))}
 					</AssistantMessage>
-					{Footer ? <Footer turn={turn} /> : null}
+					{turn.phase === 'in-progress' && Waiting ? (
+						<Waiting turn={turn} />
+					) : null}
+					{turn.phase === 'complete' && Footer ? <Footer turn={turn} /> : null}
 				</Turn>
 			))}
 		</>
