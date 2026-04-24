@@ -34,14 +34,14 @@ function ErrorBadge({ block }: { block: TurnEndBlock }) {
 	);
 }
 
-export function finishedRenderer() {
+export function FinishedRenderer(_block: TurnEndBlock) {
 	return null;
 }
 
-export function cancelledRenderer() {
+export function CancelledRenderer(_block: TurnEndBlock) {
 	return <CancelledChip />;
 }
 
-export function errorRenderer(block: TurnEndBlock) {
+export function ErrorRenderer(block: TurnEndBlock) {
 	return <ErrorBadge block={block} />;
 }

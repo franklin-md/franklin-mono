@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import type { StopCategory } from '@franklin/mini-acp';
 import type { TurnEndBlock } from '@franklin/extensions';
+import type { StopCategory } from '@franklin/mini-acp';
 import type { StopCode } from '@franklin/mini-acp';
 
 export type TurnEndRenderer = (block: TurnEndBlock) => ReactNode;
