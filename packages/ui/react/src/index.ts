@@ -51,6 +51,17 @@ export type { PromptAgentControlProps } from './prompt/agent-control.js';
 export { Conversation } from './conversation/conversation.js';
 export type { ConversationComponents } from './conversation/types.js';
 export { useConversationTurns } from './conversation/use-conversation-turns.js';
+export { getConversationTurnEnd } from './conversation/turn-info/get-turn-end.js';
+export { getConversationTurnPhase } from './conversation/turn-info/get-phase.js';
+export { getConversationTurnTiming } from './conversation/turn-info/get-timing.js';
+export { getConversationRenderTurn } from './conversation/turn-info/get-turn.js';
+export { getConversationRenderTurns } from './conversation/turn-info/get-turns.js';
+export { getLastConversationRenderTurn } from './conversation/turn-info/get-last-turn.js';
+export type {
+	ConversationRenderTurn,
+	ConversationTurnPhase,
+	ConversationTurnTiming,
+} from './conversation/turn-info/types.js';
 
 // ---------------------------------------------------------------------------
 // Conversation / Tools — renderer registry and status
