@@ -12,6 +12,7 @@ export type { SettingsStore } from './settings/store.js';
 export type { AppSettings } from './settings/schema.js';
 export { getLLMConfig } from './settings/llm-config.js';
 export type {
+	FranklinSystem,
 	FranklinState,
 	FranklinRuntime,
 	FranklinAPI,

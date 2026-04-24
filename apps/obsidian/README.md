@@ -126,7 +126,7 @@ can reload the plugin manually inside Obsidian.
 
 ## Notes
 
-- The plugin renders a single Franklin conversation window inside an Obsidian view.
+- The plugin renders a Franklin conversation window inside an Obsidian view, with compact agent tabs for switching sessions.
 - Franklin application state is stored in the plugin directory itself (`<plugin-dir>/`).
 - This package uses React, Tailwind, and Obsidian APIs.
 - `styles.css` is generated from `src/styles/globals.css`.

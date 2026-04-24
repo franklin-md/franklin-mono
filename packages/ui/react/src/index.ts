@@ -1,6 +1,7 @@
 export { useAsync } from './utils/use-async.js';
 export { createSimpleContext } from './utils/create-simple-context.js';
 export { useStore } from './utils/use-store.js';
+export { useCollectionNavigator } from './utils/use-collection-navigator.js';
 export { AgentProvider, useAgent } from './agent/agent-context.js';
 export {
 	AppContext,
@@ -19,6 +20,7 @@ export {
 	type AgentListComponents,
 	type AgentItemProps,
 } from './agent/agent-list.js';
+export { useAgentControl } from './agent/use-agent-control.js';
 export { useSettings } from './agent/use-settings.js';
 export {
 	useModelSelection,

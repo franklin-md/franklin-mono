@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
-
 import { createStatusControl, statusExtension } from '@franklin/extensions';
-import { useAgentState } from '@franklin/react';
-import type { AgentItemProps } from '@franklin/react';
+import {
+	useAgentControl,
+	type AgentItemProps,
+	useAgentState,
+} from '@franklin/react';
 
 import { SidebarItem } from './sidebar-item.js';
 
@@ -18,9 +19,9 @@ export function AgentSidebarItem({
 }: AgentItemProps) {
 	const statusStore = useAgentState(statusExtension.keys.status);
 	const status = statusStore.get();
-	const control = useMemo(
-		() => createStatusControl(statusStore),
-		[statusStore],
+	const control = useAgentControl(
+		statusExtension.keys.status,
+		createStatusControl,
 	);
 
 	return (

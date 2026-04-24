@@ -1,23 +1,25 @@
-import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
-import { PortalContainerProvider } from '@franklin/ui';
+import type { FranklinApp, FranklinSystem } from '@franklin/agent/browser';
+import type { SessionCreateInput } from '@franklin/extensions';
 import { ItemView } from 'obsidian';
 import type { WorkspaceLeaf } from 'obsidian';
-import { createRoot } from 'react-dom/client';
-import type { Root } from 'react-dom/client';
 
-import { ObsidianApp } from './components/app.js';
+import { mountConversationWindow } from './components/conversation-window/mount.js';
 
 export const VIEW_TYPE = 'franklin-view';
 
+type FranklinViewOptions = {
+	app: FranklinApp;
+	getCreateAgentOverrides: () => NonNullable<
+		SessionCreateInput<FranklinSystem>['overrides']
+	>;
+};
+
 export class FranklinView extends ItemView {
-	private root: Root | null = null;
+	private unmountWindow: (() => void) | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
-		private readonly options: {
-			app: FranklinApp;
-			runtime: FranklinRuntime;
-		},
+		private readonly options: FranklinViewOptions,
 	) {
 		super(leaf);
 	}
@@ -35,23 +37,16 @@ export class FranklinView extends ItemView {
 	}
 
 	async onOpen() {
-		this.contentEl.empty();
-		this.contentEl.addClass('franklin');
-		this.contentEl.style.height = '100%';
-
-		const root = createRoot(this.contentEl);
-		this.root = root;
-		root.render(
-			<PortalContainerProvider value={this.contentEl}>
-				<ObsidianApp app={this.options.app} runtime={this.options.runtime} />
-			</PortalContainerProvider>,
-		);
+		this.unmountWindow?.();
+		this.unmountWindow = mountConversationWindow({
+			app: this.options.app,
+			contentEl: this.contentEl,
+			getCreateAgentOverrides: this.options.getCreateAgentOverrides,
+		});
 	}
 
 	async onClose() {
-		this.root?.unmount();
-		this.root = null;
-		this.contentEl.style.removeProperty('height');
-		this.contentEl.empty();
+		this.unmountWindow?.();
+		this.unmountWindow = null;
 	}
 }

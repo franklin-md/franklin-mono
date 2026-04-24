@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
@@ -87,6 +87,22 @@ async function createSession(result: {
 // ---------------------------------------------------------------------------
 
 describe('useAgentList', () => {
+	it('auto-selects the last restored session when there is no active selection', async () => {
+		const agents = makeMockAgents();
+		agents.sessions.push(
+			{ id: 'agent-1', runtime: {} as FranklinRuntime },
+			{ id: 'agent-2', runtime: {} as FranklinRuntime },
+		);
+		const wrapper = makeWrapper(agents);
+
+		const { result } = renderHook(() => useAgentList(), { wrapper });
+
+		await waitFor(() => {
+			expect(result.current.activeSessionId).toBe('agent-2');
+		});
+		expect(result.current.activeSession?.id).toBe('agent-2');
+	});
+
 	it('select updates activeSessionId and activeSession', async () => {
 		const agents = makeMockAgents();
 		const wrapper = makeWrapper(agents);

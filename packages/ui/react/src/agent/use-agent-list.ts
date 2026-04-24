@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback } from 'react';
 
 import type { Agents, FranklinRuntime } from '@franklin/agent/browser';
 import type { BaseRuntime, Session } from '@franklin/extensions';
 
 import { useApp } from './franklin-context.js';
 import { useSessions } from './use-sessions.js';
+import { useCollectionNavigator } from '../utils/use-collection-navigator.js';
 
 export type AgentsControl<RT extends BaseRuntime<any> = FranklinRuntime> = {
 	sessions: Session<RT>[];
@@ -14,6 +15,12 @@ export type AgentsControl<RT extends BaseRuntime<any> = FranklinRuntime> = {
 	create: (...args: Parameters<Agents['create']>) => Promise<Session<RT>>;
 	remove: (id: string) => void;
 };
+
+function getSessionKey<RT extends BaseRuntime<any>>(
+	session: Session<RT>,
+): string {
+	return session.id;
+}
 
 /**
  * Headless controller for agent-list state and actions.
@@ -27,41 +34,39 @@ export type AgentsControl<RT extends BaseRuntime<any> = FranklinRuntime> = {
 export function useAgentList(): AgentsControl {
 	const manager = useApp().agents;
 	const sessions = useSessions();
-	const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+	const {
+		currentItem: activeSession,
+		currentKey,
+		navigateToKey,
+		navigateToItem,
+		removeEntry,
+	} = useCollectionNavigator(sessions, getSessionKey, {
+		initialPosition: 'last',
+		removeEntry: (id) => manager.remove(id),
+	});
+	const activeSessionId = currentKey ?? null;
 
-	const activeSession = useMemo(
-		() => sessions.find((s) => s.id === activeSessionId),
-		[sessions, activeSessionId],
+	const select = useCallback(
+		(id: string) => {
+			navigateToItem(id);
+		},
+		[navigateToItem],
 	);
-
-	const select = useCallback((id: string) => {
-		setActiveSessionId(id);
-	}, []);
 
 	const create = useCallback(
 		async (...args: Parameters<Agents['create']>) => {
 			const session = await manager.create(...args);
-			setActiveSessionId(session.id);
+			navigateToKey(session.id);
 			return session;
 		},
-		[manager],
+		[manager, navigateToKey],
 	);
 
 	const remove = useCallback(
 		(id: string) => {
-			const idx = sessions.findIndex((s) => s.id === id);
-			void manager.remove(id);
-
-			if (activeSessionId === id) {
-				const remaining = sessions.filter((s) => s.id !== id);
-				// TODO: improve fallback using click history — pop the last
-				// selected session from a visited-sessions stack that is still valid.
-				const prevIdx = Math.max(0, idx - 1);
-				const next = remaining[prevIdx];
-				setActiveSessionId(next ? next.id : null);
-			}
+			removeEntry(id);
 		},
-		[manager, activeSessionId, sessions],
+		[removeEntry],
 	);
 
 	return { sessions, activeSessionId, activeSession, select, create, remove };
