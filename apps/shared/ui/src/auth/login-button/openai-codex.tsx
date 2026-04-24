@@ -2,7 +2,10 @@ import { Icons } from '@franklin/react';
 
 import { cn } from '../../lib/cn.js';
 
-import { LoginProviderButton, type ProviderLoginButtonProps } from './button.js';
+import {
+	LoginProviderButton,
+	type ProviderLoginButtonProps,
+} from './button.js';
 
 export function OpenAICodexLoginButton({
 	className,

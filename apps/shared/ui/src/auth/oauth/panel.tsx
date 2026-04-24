@@ -2,11 +2,7 @@ import { useAsync } from '@franklin/react';
 
 import { useAuthManager } from '../context.js';
 
-import type { OAuthProviderMeta } from './types.js';
-import { ProviderRow } from './provider-row.js';
-
-// Only surface these providers in the OAuth UI.
-const ALLOWED_PROVIDERS = new Set(['anthropic', 'openai-codex']);
+import { LOGIN_BUTTONS, ProviderRow } from './provider-row.js';
 
 export function OAuthPanel() {
 	const auth = useAuthManager();
@@ -14,9 +10,7 @@ export function OAuthPanel() {
 	const providers = useAsync(
 		() => {
 			const all = auth.getOAuthProviders();
-			return Promise.resolve(
-				all.filter((p: OAuthProviderMeta) => ALLOWED_PROVIDERS.has(p.id)),
-			);
+			return Promise.resolve(all.filter((p) => p.id in LOGIN_BUTTONS));
 		},
 		[],
 		[auth],
