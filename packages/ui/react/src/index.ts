@@ -41,6 +41,10 @@ export {
 	type UseTextareaAutosizeLayoutOptions,
 	type UseTextareaAutosizeLayoutResult,
 } from './dom/use-textarea-autosize-layout.js';
+export {
+	useMiddleButtonEffect,
+	type MiddleButtonEffect,
+} from './dom/use-middle-button-effect.js';
 export { PromptProvider, usePrompt } from './prompt/context.js';
 export type { PromptContextValue } from './prompt/context.js';
 export { Prompt } from './prompt/prompt.js';
