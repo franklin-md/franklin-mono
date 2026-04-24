@@ -7,5 +7,8 @@ export function getLastConversationRenderTurn(
 	turns: readonly ConversationTurn[],
 	now: number = Date.now(),
 ): ConversationRenderTurn | undefined {
-	return getConversationRenderTurn(turns, turns.length - 1, now);
+	const index = turns.length - 1;
+	const turn = turns[index];
+	if (!turn) return undefined;
+	return getConversationRenderTurn(turn, index, true, now);
 }

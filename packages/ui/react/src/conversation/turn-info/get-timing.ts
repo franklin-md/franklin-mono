@@ -1,56 +1,28 @@
-import type { ConversationTurn, TurnEndBlock } from '@franklin/extensions';
+import type { ConversationTurn } from '@franklin/extensions';
 
 import type { ConversationTurnTiming } from './types.js';
 import { getConversationTurnEnd } from './get-turn-end.js';
 
-function getPromptedAt(turn: ConversationTurn): number {
-	return turn.timestamp;
-}
-
-function getResponseStartedAt(turn: ConversationTurn): number | undefined {
-	return turn.response.blocks[0]?.startedAt;
-}
-
-function getCompletedAt(turnEnd: TurnEndBlock | undefined): number | undefined {
-	return turnEnd !== undefined
-		? (turnEnd.endedAt ?? turnEnd.startedAt)
-		: undefined;
-}
-
-function getElapsedMs(start: number, end: number): number {
-	return Math.max(0, end - start);
-}
-
-function getResponseTiming(
-	responseStartedAt: number | undefined,
-	end: number,
-): Pick<ConversationTurnTiming, 'responseStartedAt' | 'responseDurationMs'> {
-	if (responseStartedAt === undefined) return {};
-
-	return {
-		responseStartedAt,
-		responseDurationMs: getElapsedMs(responseStartedAt, end),
-	};
-}
+const clampMs = (start: number, end: number): number =>
+	Math.max(0, end - start);
 
 export function getConversationTurnTiming(
 	turn: ConversationTurn,
 	now: number,
 ): ConversationTurnTiming {
-	const promptedAt = getPromptedAt(turn);
-	const responseStartedAt = getResponseStartedAt(turn);
+	const promptedAt = turn.timestamp;
+	const responseStartedAt = turn.response.blocks[0]?.startedAt;
 	const turnEnd = getConversationTurnEnd(turn);
-	const completedAt = getCompletedAt(turnEnd);
+	const completedAt = turnEnd && (turnEnd.endedAt ?? turnEnd.startedAt);
 	const end = completedAt ?? now;
-	const timing: ConversationTurnTiming = {
+
+	return {
 		promptedAt,
-		elapsedMs: getElapsedMs(promptedAt, end),
-		...getResponseTiming(responseStartedAt, end),
+		elapsedMs: clampMs(promptedAt, end),
+		...(responseStartedAt !== undefined && {
+			responseStartedAt,
+			responseDurationMs: clampMs(responseStartedAt, end),
+		}),
+		...(completedAt !== undefined && { completedAt }),
 	};
-
-	if (completedAt !== undefined) {
-		timing.completedAt = completedAt;
-	}
-
-	return timing;
 }

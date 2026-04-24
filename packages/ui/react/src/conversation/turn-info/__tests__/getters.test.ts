@@ -155,7 +155,7 @@ describe('getConversationRenderTurn', () => {
 	it('adds render metadata without replacing the source turn fields', () => {
 		const terminal = turnEndBlock(1_400, 1_500);
 		const turn = baseTurn([terminal]);
-		const renderTurn = getConversationRenderTurn([turn], 0, 2_000);
+		const renderTurn = getConversationRenderTurn(turn, 0, true, 2_000);
 
 		expect(renderTurn).toMatchObject({
 			id: 't1',
@@ -175,18 +175,13 @@ describe('getConversationRenderTurn', () => {
 		});
 	});
 
-	it('returns undefined when the index does not exist', () => {
-		expect(getConversationRenderTurn([], 0, 2_000)).toBeUndefined();
-		expect(getConversationRenderTurn([baseTurn()], 1, 2_000)).toBeUndefined();
-	});
-
 	it('uses Date.now when now is not provided', () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(1_750);
 		try {
-			expect(getConversationRenderTurn([baseTurn()], 0)?.timing.elapsedMs).toBe(
-				750,
-			);
+			expect(
+				getConversationRenderTurn(baseTurn(), 0, true).timing.elapsedMs,
+			).toBe(750);
 		} finally {
 			vi.useRealTimers();
 		}

@@ -2,28 +2,21 @@ import type { ConversationTurn } from '@franklin/extensions';
 
 import type { ConversationRenderTurn } from './types.js';
 import { getConversationTurnEnd } from './get-turn-end.js';
-import { getConversationTurnPhase } from './get-phase.js';
 import { getConversationTurnTiming } from './get-timing.js';
 
 export function getConversationRenderTurn(
-	turns: readonly ConversationTurn[],
+	turn: ConversationTurn,
 	index: number,
+	isLast: boolean,
 	now: number = Date.now(),
-): ConversationRenderTurn | undefined {
-	const turn = turns[index];
-	if (!turn) return undefined;
-
-	const renderTurn: ConversationRenderTurn = {
+): ConversationRenderTurn {
+	const turnEnd = getConversationTurnEnd(turn);
+	return {
 		...turn,
 		index,
-		isLast: index === turns.length - 1,
-		phase: getConversationTurnPhase(turn),
+		isLast,
+		phase: turnEnd ? 'complete' : 'in-progress',
+		turnEnd,
 		timing: getConversationTurnTiming(turn, now),
 	};
-	const turnEnd = getConversationTurnEnd(turn);
-	if (turnEnd !== undefined) {
-		renderTurn.turnEnd = turnEnd;
-	}
-
-	return renderTurn;
 }
