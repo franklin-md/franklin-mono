@@ -8,5 +8,6 @@
 
 @import './theme-tokens.css';
 @import './utilities/index.css';
+@import 'tw-animate-css';
 
 @source "../**/*.{ts,tsx}";

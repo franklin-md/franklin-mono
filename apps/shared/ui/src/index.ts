@@ -113,7 +113,7 @@ export {
 export { TextBlock } from './conversation/turn/text/text.js';
 export { ThinkingBlock } from './conversation/turn/thinking.js';
 export { UserBubble } from './conversation/turn/user-bubble.js';
-export { CopyButton } from './conversation/turn/text/chrome/copy.js';
+export { CopyButton } from './conversation/turn/copy-button.js';
 export { ToolCardChrome } from './conversation/tools/chrome.js';
 export { StatusIcon } from './conversation/tools/status-icon.js';
 export {

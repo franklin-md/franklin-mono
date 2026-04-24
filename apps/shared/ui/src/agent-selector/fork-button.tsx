@@ -5,8 +5,7 @@ import type { Session } from '@franklin/extensions';
 import { useAgents } from '@franklin/react';
 import { MdForkRight } from 'react-icons/md';
 
-import { cn } from '../lib/cn.js';
-import { Button } from '../primitives/button.js';
+import { IconButton } from '../primitives/icon-button.js';
 
 export interface ForkButtonProps {
 	icon?: ComponentType<{ className?: string }>;
@@ -15,7 +14,7 @@ export interface ForkButtonProps {
 }
 
 export function ForkButton({
-	icon: Icon = MdForkRight,
+	icon = MdForkRight,
 	onCreated,
 	className,
 }: ForkButtonProps) {
@@ -31,16 +30,13 @@ export function ForkButton({
 	}, [activeSessionId, create, onCreated]);
 
 	return (
-		<Button
-			variant="ghost"
-			size="icon"
-			className={cn('h-7 w-7', className)}
+		<IconButton
+			icon={icon}
+			className={className}
 			onClick={handleClick}
 			disabled={disabled}
 			title="Continue in new chat"
 			aria-label="Continue in new chat"
-		>
-			<Icon className="h-3.5 w-3.5" />
-		</Button>
+		/>
 	);
 }
