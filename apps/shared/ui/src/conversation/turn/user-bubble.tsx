@@ -7,7 +7,7 @@ export function UserBubble({ message }: { message: UserMessage }) {
 		.join('');
 
 	return (
-		<div className="rounded-lg bg-muted px-3 py-2 text-sm ring-1 ring-inset ring-ring">
+		<div className="min-w-0 break-words rounded-lg bg-muted px-3 py-2 text-sm ring-1 ring-inset ring-ring">
 			{text}
 		</div>
 	);
