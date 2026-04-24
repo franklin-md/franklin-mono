@@ -1,11 +1,13 @@
 import type { TextBlock as TextBlockData } from '@franklin/extensions';
 
+import { RowInset } from '../../row-inset.js';
+
 import { Markdown } from '../markdown.js';
 
 export function TextBlock({ block }: { block: TextBlockData }) {
 	return (
-		<div className="text-sm">
+		<RowInset className="text-sm">
 			<Markdown text={block.text} />
-		</div>
+		</RowInset>
 	);
 }
