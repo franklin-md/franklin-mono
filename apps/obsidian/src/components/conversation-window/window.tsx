@@ -1,5 +1,4 @@
-import type { FranklinApp, FranklinSystem } from '@franklin/agent/browser';
-import type { SessionCreateInput } from '@franklin/extensions';
+import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
 import { AgentsProvider, AppContext } from '@franklin/react';
 import { AgentTabs, AuthButton } from '@franklin/ui';
 
@@ -7,14 +6,12 @@ import { ActiveAgent } from './active-agent.js';
 
 type ConversationWindowProps = {
 	app: FranklinApp;
-	getCreateAgentOverrides: () => NonNullable<
-		SessionCreateInput<FranklinSystem>['overrides']
-	>;
+	getCreateInput: () => AgentCreateInput;
 };
 
 export function ConversationWindow({
 	app,
-	getCreateAgentOverrides,
+	getCreateInput,
 }: ConversationWindowProps) {
 	return (
 		<AppContext.Provider value={app}>
@@ -31,7 +28,7 @@ export function ConversationWindow({
 						</div>
 						<AuthButton />
 					</header>
-					<AgentTabs getCreateOverrides={getCreateAgentOverrides} />
+					<AgentTabs getCreateInput={getCreateInput} />
 					<ActiveAgent />
 				</div>
 			</AgentsProvider>

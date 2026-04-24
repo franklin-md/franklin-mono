@@ -1,6 +1,4 @@
-import type { FranklinApp } from '@franklin/agent/browser';
-import type { FranklinSystem } from '@franklin/agent/browser';
-import type { SessionCreateInput } from '@franklin/extensions';
+import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
 import { PortalContainerProvider } from '@franklin/ui';
 import { createRoot } from 'react-dom/client';
 
@@ -9,15 +7,13 @@ import { ConversationWindow } from './window.js';
 type MountConversationWindowOptions = {
 	app: FranklinApp;
 	contentEl: HTMLElement;
-	getCreateAgentOverrides: () => NonNullable<
-		SessionCreateInput<FranklinSystem>['overrides']
-	>;
+	getCreateInput: () => AgentCreateInput;
 };
 
 export function mountConversationWindow({
 	app,
 	contentEl,
-	getCreateAgentOverrides,
+	getCreateInput,
 }: MountConversationWindowOptions): () => void {
 	contentEl.replaceChildren();
 	contentEl.classList.add('franklin');
@@ -26,10 +22,7 @@ export function mountConversationWindow({
 	const root = createRoot(contentEl);
 	root.render(
 		<PortalContainerProvider value={contentEl}>
-			<ConversationWindow
-				app={app}
-				getCreateAgentOverrides={getCreateAgentOverrides}
-			/>
+			<ConversationWindow app={app} getCreateInput={getCreateInput} />
 		</PortalContainerProvider>,
 	);
 

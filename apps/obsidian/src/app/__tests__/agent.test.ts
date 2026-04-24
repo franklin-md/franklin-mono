@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import type { FranklinApp } from '@franklin/agent/browser';
 import { toAbsolutePath } from '@franklin/lib';
 
-import { createObsidianAgentInput } from '../agent.js';
+import { createObsidianSessionInput } from '../agent.js';
 import { createDefaultObsidianFilesystemPermissions } from '../../platform/filesystem/permissions.js';
 
-describe('createObsidianAgentInput', () => {
+describe('createObsidianSessionInput', () => {
 	it('returns the Obsidian default session overrides', () => {
 		const defaultLLMConfig = {
 			provider: 'openai-codex',
@@ -23,7 +23,7 @@ describe('createObsidianAgentInput', () => {
 		const vaultRoot = toAbsolutePath('/vault');
 		const configDir = '.obsidian';
 
-		expect(createObsidianAgentInput(app, vaultRoot, configDir)).toEqual({
+		expect(createObsidianSessionInput(app, vaultRoot, configDir)).toEqual({
 			overrides: {
 				core: { llmConfig: defaultLLMConfig },
 				env: {

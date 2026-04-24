@@ -7,12 +7,15 @@ import { useApp } from './franklin-context.js';
 import { useSessions } from './use-sessions.js';
 import { useCollectionNavigator } from '../utils/use-collection-navigator.js';
 
+export type AgentCreateInput = Parameters<Agents['create']>[0];
+export type AgentCreate = Agents['create'];
+
 export type AgentsControl<RT extends BaseRuntime<any> = FranklinRuntime> = {
 	sessions: Session<RT>[];
 	activeSessionId: string | null;
 	activeSession: Session<RT> | undefined;
 	select: (id: string) => void;
-	create: (...args: Parameters<Agents['create']>) => Promise<Session<RT>>;
+	create: AgentCreate;
 	remove: (id: string) => void;
 };
 

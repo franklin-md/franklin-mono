@@ -13,6 +13,8 @@ export { useSessions } from './agent/use-sessions.js';
 export {
 	AgentsProvider,
 	useAgents,
+	type AgentCreate,
+	type AgentCreateInput,
 	type AgentsControl,
 } from './agent/agents-context.js';
 export {

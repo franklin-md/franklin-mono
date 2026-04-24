@@ -1,28 +1,27 @@
-import { AgentProvider, useAgents, type AgentsControl } from '@franklin/react';
+import {
+	AgentProvider,
+	type AgentCreateInput,
+	useAgents,
+} from '@franklin/react';
 import { Plus } from 'lucide-react';
 
 import { Button } from '../primitives/button.js';
 import { Tabs, TabsList } from '../primitives/tabs.js';
 import { AgentTabsItem } from './item.js';
 
-type AgentCreateOverrides = NonNullable<
-	NonNullable<Parameters<AgentsControl['create']>[0]>['overrides']
->;
-
 type AgentTabsProps = {
-	getCreateOverrides?: () => AgentCreateOverrides;
+	getCreateInput?: () => AgentCreateInput;
 	ariaLabel?: string;
 };
 
 export function AgentTabs({
-	getCreateOverrides,
+	getCreateInput,
 	ariaLabel = 'Agents',
 }: AgentTabsProps) {
 	const { sessions, activeSessionId, select, create, remove } = useAgents();
 
 	function handleCreate() {
-		const overrides = getCreateOverrides?.();
-		void create(overrides ? { overrides } : undefined);
+		void create(getCreateInput?.());
 	}
 
 	return (

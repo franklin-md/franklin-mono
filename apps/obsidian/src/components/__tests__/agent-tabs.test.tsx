@@ -9,12 +9,16 @@ import {
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
+import type {
+	AgentCreateInput,
+	FranklinApp,
+	FranklinRuntime,
+} from '@franklin/agent/browser';
 import { statusExtension, type StatusState } from '@franklin/extensions';
 import { toAbsolutePath } from '@franklin/lib';
 import type { Session } from '@franklin/extensions';
 
-import { createObsidianAgentOverrides } from '../../app/agent.js';
+import { createObsidianSessionInput } from '../../app/agent.js';
 import { ConversationWindow } from '../conversation-window/window.js';
 
 vi.mock('../conversation.js', () => ({
@@ -86,16 +90,14 @@ function createAgents(initialSessions: TestSession[]) {
 	let nextId = sessions.length + 1;
 
 	const agents = {
-		create: vi.fn(
-			async (_input?: Parameters<FranklinApp['agents']['create']>[0]) => {
-				const session = createSession(`session-${nextId++}`, 'idle');
-				sessions.push(session);
-				for (const listener of listeners) {
-					listener();
-				}
-				return session;
-			},
-		),
+		create: vi.fn(async (_input?: AgentCreateInput) => {
+			const session = createSession(`session-${nextId++}`, 'idle');
+			sessions.push(session);
+			for (const listener of listeners) {
+				listener();
+			}
+			return session;
+		}),
 		get: vi.fn((id: string) => sessions.find((session) => session.id === id)),
 		list: vi.fn(() => [...sessions]),
 		remove: vi.fn(async (id: string) => {
@@ -141,22 +143,17 @@ function renderApp(initialSessions: TestSession[]) {
 	} as unknown as FranklinApp;
 	const vaultRoot = toAbsolutePath('/vault');
 	const configDir = '.obsidian';
-	const getCreateAgentOverrides = () =>
-		createObsidianAgentOverrides(app, vaultRoot, configDir);
+	const getCreateInput = () =>
+		createObsidianSessionInput(app, vaultRoot, configDir);
 
-	render(
-		<ConversationWindow
-			app={app}
-			getCreateAgentOverrides={getCreateAgentOverrides}
-		/>,
-	);
+	render(<ConversationWindow app={app} getCreateInput={getCreateInput} />);
 
 	return {
 		agents,
 		app,
 		configDir,
 		defaultLLMConfig,
-		getCreateAgentOverrides,
+		getCreateInput,
 		vaultRoot,
 	};
 }
@@ -221,7 +218,7 @@ describe('Obsidian agent tabs', () => {
 	});
 
 	it('clicking plus creates a new Obsidian-default session and selects it', async () => {
-		const { agents, getCreateAgentOverrides } = renderApp([
+		const { agents, app, configDir, vaultRoot } = renderApp([
 			createSession('session-a', 'idle'),
 			createSession('session-b', 'idle'),
 		]);
@@ -231,9 +228,9 @@ describe('Obsidian agent tabs', () => {
 		await waitFor(() => {
 			expect(agents.create).toHaveBeenCalledTimes(1);
 		});
-		expect(agents.create.mock.calls[0]?.[0]).toEqual({
-			overrides: getCreateAgentOverrides(),
-		});
+		expect(agents.create.mock.calls[0]?.[0]).toEqual(
+			createObsidianSessionInput(app, vaultRoot, configDir),
+		);
 
 		await waitFor(() => {
 			expect(

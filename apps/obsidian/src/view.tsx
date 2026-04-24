@@ -1,5 +1,4 @@
-import type { FranklinApp, FranklinSystem } from '@franklin/agent/browser';
-import type { SessionCreateInput } from '@franklin/extensions';
+import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
 import { ItemView } from 'obsidian';
 import type { WorkspaceLeaf } from 'obsidian';
 
@@ -9,9 +8,7 @@ export const VIEW_TYPE = 'franklin-view';
 
 type FranklinViewOptions = {
 	app: FranklinApp;
-	getCreateAgentOverrides: () => NonNullable<
-		SessionCreateInput<FranklinSystem>['overrides']
-	>;
+	getCreateInput: () => AgentCreateInput;
 };
 
 export class FranklinView extends ItemView {
@@ -41,7 +38,7 @@ export class FranklinView extends ItemView {
 		this.unmountWindow = mountConversationWindow({
 			app: this.options.app,
 			contentEl: this.contentEl,
-			getCreateAgentOverrides: this.options.getCreateAgentOverrides,
+			getCreateInput: this.options.getCreateInput,
 		});
 	}
 
