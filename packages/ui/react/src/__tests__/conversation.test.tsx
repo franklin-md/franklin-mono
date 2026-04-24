@@ -7,6 +7,7 @@ import type {
 	ToolSpec,
 	ToolUseBlock,
 } from '@franklin/extensions';
+import { StopCode } from '@franklin/mini-acp';
 
 import { Conversation } from '../conversation/conversation.js';
 import type { ConversationRenderTurn } from '../conversation/turn-info/types.js';
@@ -341,13 +342,63 @@ describe('Conversation', () => {
 		expect(wrapperCalled).toHaveBeenCalledWith('t1');
 	});
 
-	it('uses custom Footer when provided', () => {
-		const footerCalled = vi.fn();
+	it('uses custom Waiting when provided', () => {
+		const waitingCalled = vi.fn();
 		const { components } = createCapturingComponents();
 		render(
 			<Conversation
 				turns={turns}
 				now={2_000}
+				components={{
+					...components,
+					Waiting: ({ turn }) => {
+						waitingCalled({
+							id: turn.id,
+							elapsedMs: turn.timing.elapsedMs,
+							isLast: turn.isLast,
+							phase: turn.phase,
+						});
+						return null;
+					},
+				}}
+			/>,
+		);
+		expect(waitingCalled).toHaveBeenCalledWith({
+			id: 't1',
+			elapsedMs: 2_000,
+			isLast: true,
+			phase: 'in-progress',
+		});
+	});
+
+	it('uses custom Footer when provided for complete turns', () => {
+		const footerCalled = vi.fn();
+		const { components } = createCapturingComponents();
+		const completeTurns: ConversationTurn[] = [
+			{
+				id: 't4',
+				timestamp: 0,
+				prompt: {
+					role: 'user',
+					content: [{ type: 'text', text: 'done' }],
+				},
+				response: {
+					blocks: [
+						{ kind: 'text', text: 'finished', startedAt: 0 },
+						{
+							kind: 'turnEnd',
+							stopCode: StopCode.Finished,
+							startedAt: 2_000,
+							endedAt: 2_000,
+						},
+					],
+				},
+			},
+		];
+		render(
+			<Conversation
+				turns={completeTurns}
+				now={3_000}
 				components={{
 					...components,
 					Footer: ({ turn }) => {
@@ -363,10 +414,10 @@ describe('Conversation', () => {
 			/>,
 		);
 		expect(footerCalled).toHaveBeenCalledWith({
-			id: 't1',
+			id: 't4',
 			elapsedMs: 2_000,
 			isLast: true,
-			phase: 'in-progress',
+			phase: 'complete',
 		});
 	});
 

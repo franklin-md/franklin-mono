@@ -5,6 +5,8 @@ import type { ThinkingBlock as ThinkingBlockData } from '@franklin/extensions';
 
 import { cn } from '../../lib/cn.js';
 import { Button } from '../../primitives/button.js';
+import { RowDetailInset } from '../row-detail-inset.js';
+import { RowInset } from '../row-inset.js';
 
 import { Markdown } from './markdown.js';
 
@@ -18,25 +20,27 @@ export function ThinkingBlock({ block }: { block: ThinkingBlockData }) {
 
 	return (
 		<div className="text-xs">
-			<Button
-				type="button"
-				variant="ghost"
-				className="h-auto w-full cursor-pointer appearance-none justify-start gap-2 rounded-md border-0 bg-transparent px-1 py-1 text-left text-xs font-normal text-muted-foreground shadow-none"
-				onClick={() => setExpanded((v) => !v)}
-				aria-expanded={expanded}
-			>
-				<ChevronRight
-					className={cn(
-						'h-3 w-3 shrink-0 transition-transform duration-150',
-						expanded && 'rotate-90',
-					)}
-				/>
-				<span>{headerLabel(block, streaming)}</span>
-			</Button>
+			<RowInset asChild>
+				<Button
+					type="button"
+					variant="ghost"
+					className="h-auto w-full cursor-pointer appearance-none justify-start gap-2 rounded-md border-0 bg-transparent text-left text-xs font-normal text-muted-foreground shadow-none"
+					onClick={() => setExpanded((v) => !v)}
+					aria-expanded={expanded}
+				>
+					<ChevronRight
+						className={cn(
+							'h-3 w-3 shrink-0 transition-transform duration-150',
+							expanded && 'rotate-90',
+						)}
+					/>
+					<span>{headerLabel(block, streaming)}</span>
+				</Button>
+			</RowInset>
 			{expanded && (
-				<div className="px-1 pb-1 pt-0.5 text-sm text-muted-foreground/80 italic">
+				<RowDetailInset className="text-sm text-muted-foreground/80 italic">
 					<Markdown text={block.text} />
-				</div>
+				</RowDetailInset>
 			)}
 		</div>
 	);
