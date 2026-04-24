@@ -88,6 +88,7 @@ export {
 	TextareaGroup,
 	type TextareaGroupProps,
 } from './components/textarea-group.js';
+export { AgentTabs } from './agent-tabs/tabs.js';
 
 // conversation
 export {

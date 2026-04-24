@@ -1,19 +1,21 @@
-import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
-import { AgentProvider, AppContext } from '@franklin/react';
-import { AuthButton } from '@franklin/ui';
+import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
+import { AgentsProvider, AppContext } from '@franklin/react';
+import { AgentTabs, AuthButton } from '@franklin/ui';
 
-import { ConversationPanel } from './conversation.js';
+import { ActiveAgent } from './active-agent.js';
 
-export function ObsidianApp({
-	app,
-	runtime,
-}: {
+type ConversationWindowProps = {
 	app: FranklinApp;
-	runtime: FranklinRuntime;
-}) {
+	getCreateInput: () => AgentCreateInput;
+};
+
+export function ConversationWindow({
+	app,
+	getCreateInput,
+}: ConversationWindowProps) {
 	return (
 		<AppContext.Provider value={app}>
-			<AgentProvider agent={runtime}>
+			<AgentsProvider>
 				<div className="flex h-full min-h-0 flex-col bg-background text-foreground">
 					<header className="flex items-center justify-between px-4 py-3 ring-1 ring-inset ring-border/60">
 						<div>
@@ -26,9 +28,10 @@ export function ObsidianApp({
 						</div>
 						<AuthButton />
 					</header>
-					<ConversationPanel />
+					<AgentTabs getCreateInput={getCreateInput} />
+					<ActiveAgent />
 				</div>
-			</AgentProvider>
+			</AgentsProvider>
 		</AppContext.Provider>
 	);
 }

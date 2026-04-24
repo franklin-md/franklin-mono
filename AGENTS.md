@@ -86,6 +86,7 @@ Franklin is an extension runtime for minimal agent loops.
 - **Nesting** - prefer small files with single exported methods, with implementation in a series of files in a folder. Do not barallel exports from subfolders. When a file needs more than one distinct exported thing, split into a folder: `types.ts` for the type surface, `factory.ts` for constructors, named operation files (`create.ts`, `decode.ts`, etc.). Each variant of a discriminated union gets its own named exported type; compose the union below them.
 - **Exports** - Only export methods from packages if they are actually to be consumed. Do not re-export from other packages either.
 - **Factory-extract on the 2nd occurrence** — when the same construction literal repeats (especially `err instanceof Error ? err.message : String(err)` or any shared default-field object), extract the factory immediately rather than noting it for later. One source of truth for shape and coercion.
+- **React props** — prefer named `Props`/options types for component prop objects; avoid anonymous object types in component signatures.
 - **Comments** - Avoid introducing lots of method or class docstrings. We should maintain the docstrings for exported package code, but want to avoid introducing potentially stale comments on library code. However, existing comments within implementation bodies (like todos) are very important to preserve across edits, and any potential resolutions should be flagged.
 
 ### UI

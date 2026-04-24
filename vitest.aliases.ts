@@ -4,9 +4,15 @@ import { fileURLToPath } from 'node:url';
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 const entries = [
+	// TODO: franklin/agent should be platform agnostic
+	['@franklin/agent/browser', 'packages/agent/src/browser.ts'],
+	['@franklin/agent', 'packages/agent/src/index.ts'],
+	['@franklin/react', 'packages/ui/react/src/index.ts'],
+	['@franklin/ui', 'apps/shared/ui/src/index.ts'],
 	['@franklin/lib/transport/node', 'packages/lib/src/transport/node.ts'],
 	['@franklin/lib/transport', 'packages/lib/src/transport/index.ts'],
 	['@franklin/lib/proxy', 'packages/lib/src/proxy/index.ts'],
+	['@franklin/lib/middleware', 'packages/lib/src/middleware/index.ts'],
 	['@franklin/lib', 'packages/lib/src/index.ts'],
 	['@franklin/extensions', 'packages/extensions/src/index.ts'],
 	['@franklin/mini-acp', 'packages/mini-acp/src/index.ts'],

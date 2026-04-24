@@ -2,7 +2,7 @@ import { Notice, Plugin } from 'obsidian';
 import type { FranklinApp } from '@franklin/agent/browser';
 
 import { createFranklinApp } from './app/app.js';
-import { getDefaultAgent } from './app/agent.js';
+import { createObsidianSessionInput } from './app/agent.js';
 import { ObsidianDiffClient } from './diff/diff-client.js';
 import { DiffController } from './diff/diff-controller.js';
 import { DiffExplorerController } from './diff/diff-explorer-controller.js';
@@ -28,19 +28,21 @@ export default class FranklinPlugin extends Plugin {
 		this.addSettingTab(new FranklinSettingTab(this.app, this));
 
 		createFranklinApp(this, this.diffClient)
-			.then(({ app, vaultRoot }) =>
-				getDefaultAgent(app, vaultRoot, this.app.vault.configDir).then(
-					(runtime) => ({
-						app,
-						runtime,
-					}),
-				),
-			)
-			.then(({ app, runtime }) => {
+			.then(async ({ app, vaultRoot }) => {
+				const getCreateInput = () =>
+					createObsidianSessionInput(app, vaultRoot, this.app.vault.configDir);
+
+				if (app.agents.list().length === 0) {
+					await app.agents.create(getCreateInput());
+				}
+
+				return { app, getCreateInput };
+			})
+			.then(({ app, getCreateInput }) => {
 				this.franklinApp = app;
 
 				this.registerView(VIEW_TYPE, (leaf) => {
-					return new FranklinView(leaf, { app, runtime });
+					return new FranklinView(leaf, { app, getCreateInput });
 				});
 
 				this.addRibbonIcon('bot', 'Open Franklin', () => {
