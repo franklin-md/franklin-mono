@@ -19,6 +19,6 @@ export type {
 } from './types.js';
 
 export { FranklinApp } from './app/index.js';
-export type { Agents } from './app/agents.js';
+export type { AgentCreate, AgentCreateInput, Agents } from './app/agents.js';
 
 export { type Platform, type OperatingSystem } from './platform.js';

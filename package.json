@@ -12,12 +12,12 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"build": "tsc -b",
+		"build": "node ./scripts/in-parallel.mjs --mb 800 --name root-build -- tsc -b",
 		"clean": "tsc -b --clean",
-		"lint": "eslint . --cache --max-warnings=0",
+		"lint": "node ./scripts/in-parallel.mjs --mb 3250 --name root-lint -- eslint . --cache --max-warnings=0",
 		"lint:fix": "npm run lint -- --fix",
 		"typecheck": "npm run typecheck --workspaces --if-present",
-		"test": "vitest run",
+		"test": "node ./scripts/in-parallel.mjs --mb 1750 --name root-test -- vitest run",
 		"test:watch": "vitest",
 		"test:changed": "vitest run --changed",
 		"check": "npm run format:check && npm run lint && npm run build",
@@ -38,6 +38,7 @@
 		"husky": "^9.1.7",
 		"patch-package": "^8.0.1",
 		"prettier": "^3.8.1",
+		"proper-lockfile": "^4.1.2",
 		"tsx": "^4.21.0",
 		"typescript": "^5.8.3",
 		"typescript-eslint": "^8.57.0",

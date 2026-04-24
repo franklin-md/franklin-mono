@@ -143,6 +143,20 @@ export const MODEL_CATALOG: ProviderGroup[] = [
 				costOut: 1.95,
 				intelligence: 'frontier',
 			}),
+			model('openrouter', 'deepseek/deepseek-v4-flash', 'DeepSeek V4 Flash', {
+				reasoning: true,
+				ctx: 1_048_576,
+				costIn: 0.14,
+				costOut: 0.28,
+				intelligence: 'strong',
+			}),
+			model('openrouter', 'deepseek/deepseek-v4-pro', 'DeepSeek V4 Pro', {
+				reasoning: true,
+				ctx: 1_048_576,
+				costIn: 1.74,
+				costOut: 3.48,
+				intelligence: 'frontier',
+			}),
 			model('openrouter', 'x-ai/grok-4.20', 'Grok 4.20', {
 				reasoning: true,
 				ctx: 2_000_000,
@@ -186,7 +200,7 @@ export const MODEL_CATALOG: ProviderGroup[] = [
 					intelligence: 'frontier',
 				},
 			),
-			model('openrouter', 'xiaomi/mimo-v2-pro', 'MiMo-V2-Pro', {
+			model('openrouter', 'xiaomi/mimo-v2.5-pro', 'MiMo-V2.5-Pro', {
 				reasoning: true,
 				ctx: 1_048_576,
 				costIn: 1,
@@ -202,9 +216,9 @@ export const MODEL_CATALOG: ProviderGroup[] = [
 			}),
 			model('openrouter', 'moonshotai/kimi-k2.6', 'Kimi K2.6', {
 				reasoning: true,
-				ctx: 262_144,
-				costIn: 0.3827,
-				costOut: 1.72,
+				ctx: 256_000,
+				costIn: 0.7448,
+				costOut: 4.655,
 				intelligence: 'strong',
 			}),
 		],

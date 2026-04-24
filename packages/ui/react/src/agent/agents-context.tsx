@@ -1,13 +1,21 @@
 import type { ReactNode } from 'react';
 
 import { createSimpleContext } from '../utils/create-simple-context.js';
-import { useAgentList, type AgentsControl } from './use-agent-list.js';
+import {
+	useAgentList,
+	type AgentCreate,
+	type AgentCreateInput,
+	type AgentsControl,
+} from './use-agent-list.js';
 
-const [AgentsProviderInner, useAgents] =
+const [AgentsValueProvider, useAgents] =
 	createSimpleContext<AgentsControl>('Agents');
 
 export { useAgents };
-export type { AgentsControl };
+export type { AgentCreate, AgentCreateInput, AgentsControl };
+
+/** @internal exported for test wrappers and Storybook decorators. */
+export { AgentsValueProvider };
 
 /**
  * Provides agent-list state and actions to the subtree.
@@ -18,5 +26,5 @@ export type { AgentsControl };
  */
 export function AgentsProvider({ children }: { children: ReactNode }) {
 	const control = useAgentList();
-	return <AgentsProviderInner value={control}>{children}</AgentsProviderInner>;
+	return <AgentsValueProvider value={control}>{children}</AgentsValueProvider>;
 }

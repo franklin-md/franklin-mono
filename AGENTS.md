@@ -87,6 +87,7 @@ Franklin is an extension runtime for minimal agent loops.
 - **Exports** - Only export methods from packages if they are actually to be consumed. Do not re-export from other packages either.
 - **Pure React helpers** - Do not turn deterministic calculations into hooks. Keep pure helpers outside components and hooks, using module-level functions or a separate file when the logic is reused or deserves tests; hooks should own React state, refs, effects, and lifecycle wiring.
 - **Factory-extract on the 2nd occurrence** — when the same construction literal repeats (especially `err instanceof Error ? err.message : String(err)` or any shared default-field object), extract the factory immediately rather than noting it for later. One source of truth for shape and coercion.
+- **React props** — prefer named `Props`/options types for component prop objects; avoid anonymous object types in component signatures.
 - **Comments** - Avoid introducing lots of method or class docstrings. We should maintain the docstrings for exported package code, but want to avoid introducing potentially stale comments on library code. However, existing comments within implementation bodies (like todos) are very important to preserve across edits, and any potential resolutions should be flagged.
 
 ### UI

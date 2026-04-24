@@ -18,9 +18,9 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc --noEmit -p tsconfig.json",
-		"test": "vitest run --passWithNoTests"
+		"build": "node ../../scripts/in-parallel.mjs --mb 800 --name extensions-build -- tsc -b tsconfig.json",
+		"typecheck": "node ../../scripts/in-parallel.mjs --mb 550 --name extensions-typecheck -- tsc --noEmit -p tsconfig.json",
+		"test": "node ../../scripts/in-parallel.mjs --mb 1300 --name extensions-test -- vitest run --passWithNoTests"
 	},
 	"dependencies": {
 		"@agentclientprotocol/sdk": "^0.16.1",

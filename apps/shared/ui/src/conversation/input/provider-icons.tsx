@@ -16,6 +16,7 @@ function resolveModelIconComponent(model: CatalogModel): IconComponent | null {
 	if (model.provider === 'openai-codex') return Icons.OpenAI;
 	if (model.provider !== 'openrouter') return null;
 
+	if (model.id.startsWith('deepseek/')) return Icons.DeepSeek;
 	if (model.id.startsWith('z-ai/glm')) return Icons.ZAI;
 	if (model.id.startsWith('google/')) return Icons.Gemini;
 	if (model.id.startsWith('moonshotai/kimi')) return Icons.Moonshot;

@@ -5,6 +5,8 @@ import type { ResolvedToolRender } from '@franklin/react';
 
 import { cn } from '../../lib/cn.js';
 import { Button } from '../../primitives/button.js';
+import { RowDetailInset } from '../row-detail-inset.js';
+import { RowInset } from '../row-inset.js';
 
 import { StatusIcon } from './status-icon.js';
 
@@ -18,32 +20,36 @@ export function ToolCardChrome({
 
 	return (
 		<div className="text-xs">
-			<Button
-				type="button"
-				variant="ghost"
-				className={cn(
-					'h-auto w-full appearance-none justify-start gap-2 rounded-md border-0 bg-transparent px-1 py-1 text-left text-xs font-normal text-muted-foreground shadow-none disabled:opacity-100',
-					hasExpanded ? 'cursor-pointer' : 'cursor-default',
-				)}
-				onClick={() => hasExpanded && setOpen((o) => !o)}
-				disabled={!hasExpanded}
-				aria-expanded={hasExpanded ? open : undefined}
-			>
-				<StatusIcon status={status} />
-				<span className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
-					{summary}
-				</span>
-				{hasExpanded && (
-					<ChevronRight
-						className={cn(
-							'h-3 w-3 shrink-0 text-muted-foreground transition-transform duration-150',
-							open && 'rotate-90',
-						)}
-					/>
-				)}
-			</Button>
+			<RowInset asChild>
+				<Button
+					type="button"
+					variant="ghost"
+					className={cn(
+						'h-auto w-full appearance-none justify-start gap-2 rounded-md border-0 bg-transparent text-left text-xs font-normal text-muted-foreground shadow-none disabled:opacity-100',
+						hasExpanded ? 'cursor-pointer' : 'cursor-default',
+					)}
+					onClick={() => hasExpanded && setOpen((o) => !o)}
+					disabled={!hasExpanded}
+					aria-expanded={hasExpanded ? open : undefined}
+				>
+					<StatusIcon status={status} />
+					<span className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
+						{summary}
+					</span>
+					{hasExpanded && (
+						<ChevronRight
+							className={cn(
+								'h-3 w-3 shrink-0 text-muted-foreground transition-transform duration-150',
+								open && 'rotate-90',
+							)}
+						/>
+					)}
+				</Button>
+			</RowInset>
 			{open && hasExpanded && (
-				<div className="px-1 pb-1 pt-0.5 text-muted-foreground">{expanded}</div>
+				<RowDetailInset className="text-muted-foreground">
+					{expanded}
+				</RowDetailInset>
 			)}
 		</div>
 	);

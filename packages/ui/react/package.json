@@ -13,9 +13,9 @@
 		"dist"
 	],
 	"scripts": {
-		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc --noEmit -p tsconfig.json",
-		"test": "vitest run --passWithNoTests"
+		"build": "node ../../../scripts/in-parallel.mjs --mb 800 --name react-build -- tsc -b tsconfig.json",
+		"typecheck": "node ../../../scripts/in-parallel.mjs --mb 550 --name react-typecheck -- tsc --noEmit -p tsconfig.json",
+		"test": "node ../../../scripts/in-parallel.mjs --mb 2250 --name react-test -- vitest run --passWithNoTests"
 	},
 	"dependencies": {
 		"@franklin/agent": "*",

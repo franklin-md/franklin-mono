@@ -78,6 +78,11 @@ export {
 export { DeleteButton } from './components/delete-button.js';
 export { Favicon, type FaviconProps } from './components/favicon.js';
 export { FileBadge, type FileBadgeProps } from './components/file-badge.js';
+export { StatusDot, type StatusDotProps } from './components/status-dot.js';
+export {
+	StatusIndicator,
+	type StatusIndicatorProps,
+} from './components/status-indicator.js';
 export {
 	EXT_ICONS,
 	FILENAME_ICONS,
@@ -89,6 +94,11 @@ export {
 	TextareaGroup,
 	type TextareaGroupProps,
 } from './components/textarea-group.js';
+export { AgentTabs } from './agent-tabs/tabs.js';
+export {
+	ForkButton,
+	type ForkButtonProps,
+} from './agent-selector/fork-button.js';
 
 // conversation
 export {
@@ -134,4 +144,3 @@ export type { AuthPanelDescriptor, AuthPanelProps } from './auth/types.js';
 export { AgentSidebar } from './sidebar/agent-sidebar.js';
 export { AgentSidebarItem } from './sidebar/agent-sidebar-item.js';
 export { SidebarItem } from './sidebar/sidebar-item.js';
-export { StatusDot } from './sidebar/status-dot.js';

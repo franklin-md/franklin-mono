@@ -2,15 +2,15 @@ import { StopCode } from '@franklin/mini-acp';
 import type { TurnEndRendererRegistry } from '@franklin/react';
 
 import {
-	finishedRenderer,
-	cancelledRenderer,
-	errorRenderer,
+	CancelledRenderer,
+	ErrorRenderer,
+	FinishedRenderer,
 } from './renderers.js';
 
 export const defaultRegistry: TurnEndRendererRegistry = {
 	byCode: {
-		[StopCode.Finished]: finishedRenderer,
-		[StopCode.Cancelled]: cancelledRenderer,
+		[StopCode.Finished]: FinishedRenderer,
+		[StopCode.Cancelled]: CancelledRenderer,
 	},
-	default: errorRenderer,
+	default: ErrorRenderer,
 };

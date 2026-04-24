@@ -11,9 +11,9 @@
 		"./styles/*": "./src/styles/*"
 	},
 	"scripts": {
-		"build": "tsc -b tsconfig.build.json",
-		"typecheck": "tsc -b tsconfig.build.json --pretty false",
-		"test": "vitest run --passWithNoTests",
+		"build": "node ../../../scripts/in-parallel.mjs --mb 1000 --name ui-build -- tsc -b tsconfig.build.json",
+		"typecheck": "node ../../../scripts/in-parallel.mjs --mb 950 --name ui-typecheck -- tsc -b tsconfig.build.json --pretty false",
+		"test": "node ../../../scripts/in-parallel.mjs --mb 1700 --name ui-test -- vitest run --passWithNoTests",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build"
 	},
@@ -21,6 +21,7 @@
 		"@fontsource-variable/geist-mono": "^5.2.7",
 		"@fontsource-variable/inter": "^5.2.8",
 		"@franklin/extensions": "*",
+		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
 		"@franklin/react": "*",
 		"@radix-ui/react-dialog": "^1.1.15",

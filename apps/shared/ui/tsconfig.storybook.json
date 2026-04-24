@@ -30,6 +30,7 @@
 	"references": [
 		{ "path": "../../../packages/agent" },
 		{ "path": "../../../packages/extensions" },
+		{ "path": "../../../packages/lib" },
 		{ "path": "../../../packages/mini-acp" },
 		{ "path": "../../../packages/ui/react" }
 	]

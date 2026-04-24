@@ -116,7 +116,7 @@ describe('AgentList', () => {
 		expect(container.querySelector('[data-testid="item-b"]')).toBeTruthy();
 	});
 
-	it('passes isActive=false when no session is selected', () => {
+	it('auto-selects the only session on mount', () => {
 		const sessions: Session<FranklinRuntime>[] = [
 			{ id: 'a', runtime: {} as FranklinRuntime },
 		];
@@ -126,7 +126,7 @@ describe('AgentList', () => {
 		const { container } = render(<Tree />);
 
 		const item = container.querySelector('[data-testid="item-a"]');
-		expect(item?.getAttribute('data-active')).toBe('false');
+		expect(item?.getAttribute('data-active')).toBe('true');
 	});
 
 	it('clicking select marks the item as active', () => {
