@@ -8,12 +8,12 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc -b tsconfig.json --pretty false",
+		"build": "node ../../scripts/in-parallel.mjs --mb 1000 --name demo-build -- tsc -b tsconfig.json",
+		"typecheck": "node ../../scripts/in-parallel.mjs --mb 1150 --name demo-typecheck -- tsc -b tsconfig.json --pretty false",
 		"dev": "electron-vite dev",
 		"dev:debug": "electron-vite dev --sourcemap --inspect 9229 --remoteDebuggingPort 9223",
 		"build:vite": "electron-vite build",
-		"test": "vitest run --passWithNoTests",
+		"test": "node ../../scripts/in-parallel.mjs --mb 1200 --name demo-test -- vitest run --passWithNoTests",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build"
 	},
