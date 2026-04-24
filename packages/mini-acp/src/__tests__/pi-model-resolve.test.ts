@@ -6,6 +6,57 @@ import {
 import { resolveModel } from '../base/pi/model/resolve.js';
 import { StopCode } from '../types/stop-code.js';
 
+const OPENROUTER_OVERRIDE_CASES = [
+	{
+		id: 'deepseek/deepseek-v4-flash',
+		contextWindow: 1_048_576,
+		cost: {
+			input: 0.14,
+			output: 0.28,
+			cacheRead: 0.028,
+			cacheWrite: 0,
+		},
+	},
+	{
+		id: 'deepseek/deepseek-v4-pro',
+		contextWindow: 1_048_576,
+		cost: {
+			input: 1.74,
+			output: 3.48,
+			cacheRead: 0.174,
+			cacheWrite: 1.74,
+		},
+	},
+	{
+		id: 'moonshotai/kimi-k2.6',
+		contextWindow: 256_000,
+		cost: {
+			input: 0.7448,
+			output: 4.655,
+		},
+	},
+	{
+		id: 'qwen/qwen3.6-plus',
+		contextWindow: 1_000_000,
+		cost: {
+			input: 0.325,
+			output: 1.95,
+			cacheRead: 0.0325,
+			cacheWrite: 0.40625,
+		},
+	},
+	{
+		id: 'xiaomi/mimo-v2.5-pro',
+		contextWindow: 1_048_576,
+		cost: {
+			input: 1,
+			output: 3,
+			cacheRead: 0.2,
+			cacheWrite: 0,
+		},
+	},
+] as const;
+
 describe('resolveModel', () => {
 	it('returns the configured model for the configured provider', () => {
 		const result = resolveModel({
@@ -32,6 +83,25 @@ describe('resolveModel', () => {
 			'X-OpenRouter-Title': OPENROUTER_APP_TITLE,
 		});
 	});
+
+	for (const { id, contextWindow, cost } of OPENROUTER_OVERRIDE_CASES) {
+		it(`resolves the Franklin OpenRouter override for ${id}`, () => {
+			const result = resolveModel({
+				provider: 'openrouter',
+				model: id,
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.model).toMatchObject({
+				provider: 'openrouter',
+				id,
+				api: 'openai-completions',
+				reasoning: true,
+				contextWindow,
+				cost,
+			});
+		});
+	}
 
 	it('returns ProviderNotSpecified when provider is omitted', () => {
 		const result = resolveModel({ model: 'openrouter/free' });
