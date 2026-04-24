@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import type { ConversationTurn } from '@franklin/extensions';
 import { StopCode } from '@franklin/mini-acp';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ConversationView } from '../../src/conversation/view.js';
 import { MockAgentsDecorator } from '../../stories/mock-agent.js';
 
-function finishedTurn(id: string): ConversationTurn {
+function finishedTurn(id: string, elapsedMs: number): ConversationTurn {
 	return {
 		id,
 		timestamp: 0,
@@ -22,13 +22,13 @@ function finishedTurn(id: string): ConversationTurn {
 					kind: 'text',
 					text: `reply ${id}`,
 					startedAt: 0,
-					endedAt: 1,
+					endedAt: elapsedMs,
 				},
 				{
 					kind: 'turnEnd',
 					stopCode: StopCode.Finished,
-					startedAt: 1,
-					endedAt: 1,
+					startedAt: elapsedMs,
+					endedAt: elapsedMs,
 				},
 			],
 		},
@@ -36,6 +36,10 @@ function finishedTurn(id: string): ConversationTurn {
 }
 
 describe('TurnFooter', () => {
+	afterEach(() => {
+		cleanup();
+	});
+
 	beforeEach(() => {
 		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
 			configurable: true,
@@ -47,7 +51,7 @@ describe('TurnFooter', () => {
 		render(
 			<MockAgentsDecorator activeSessionId="active-session">
 				<ConversationView
-					turns={[finishedTurn('first'), finishedTurn('last')]}
+					turns={[finishedTurn('first', 65_000), finishedTurn('last', 83_000)]}
 				/>
 			</MockAgentsDecorator>,
 		);
@@ -55,5 +59,18 @@ describe('TurnFooter', () => {
 		expect(
 			screen.getAllByRole('button', { name: 'Continue in new chat' }),
 		).toHaveLength(1);
+	});
+
+	it('renders the runtime for each completed turn footer', () => {
+		render(
+			<MockAgentsDecorator activeSessionId="active-session">
+				<ConversationView
+					turns={[finishedTurn('first', 65_000), finishedTurn('last', 83_000)]}
+				/>
+			</MockAgentsDecorator>,
+		);
+
+		expect(screen.getByText('Ran for 1m 5s')).toBeTruthy();
+		expect(screen.getByText('Ran for 1m 23s')).toBeTruthy();
 	});
 });
