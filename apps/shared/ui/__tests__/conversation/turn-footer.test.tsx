@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	within,
+} from '@testing-library/react';
 import type { ConversationTurn } from '@franklin/extensions';
 import { StopCode } from '@franklin/mini-acp';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -45,6 +51,33 @@ function finishedTurn(id: string, elapsedMs: number): ConversationTurn {
 							total: 0,
 						},
 					},
+				},
+			],
+		},
+	};
+}
+
+function finishedTurnWithoutUsage(
+	id: string,
+	elapsedMs: number,
+): ConversationTurn {
+	return {
+		id,
+		timestamp: 0,
+		prompt: { role: 'user', content: [{ type: 'text', text: `prompt ${id}` }] },
+		response: {
+			blocks: [
+				{
+					kind: 'text',
+					text: `reply ${id}`,
+					startedAt: 0,
+					endedAt: elapsedMs,
+				},
+				{
+					kind: 'turnEnd',
+					startedAt: elapsedMs,
+					endedAt: elapsedMs,
+					stopCode: StopCode.Finished,
 				},
 			],
 		},
@@ -132,5 +165,20 @@ describe('TurnFooter', () => {
 		expect(screen.getAllByText('4,855').length).toBeGreaterThan(0);
 		expect(screen.getAllByText('1,386,598').length).toBeGreaterThan(0);
 		expect(screen.getAllByText('18,869').length).toBeGreaterThan(0);
+	});
+
+	it('shows an unavailable message when turn usage is missing', () => {
+		render(
+			<MockAgentsDecorator activeSessionId="active-session">
+				<ConversationView turns={[finishedTurnWithoutUsage('last', 127_000)]} />
+			</MockAgentsDecorator>,
+		);
+
+		const trigger = screen.getByRole('button', { name: 'Turn details' });
+		fireEvent.focus(trigger);
+
+		const tooltip = screen.getByRole('tooltip');
+		expect(within(tooltip).getByText('Usage details unavailble')).toBeTruthy();
+		expect(within(tooltip).queryByText('Input')).toBeNull();
 	});
 });
