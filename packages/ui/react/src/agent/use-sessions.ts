@@ -1,9 +1,10 @@
-import { useCallback, useRef, useSyncExternalStore } from 'react';
+import { useCallback } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
 import type { Session } from '@franklin/extensions';
 
 import { useApp } from './franklin-context.js';
+import { useStableExternalStore } from '../utils/use-stable-external-store.js';
 
 function sameSessions(
 	prev: Session<FranklinRuntime>[],
@@ -33,26 +34,13 @@ function sameSessions(
  */
 export function useSessions(): Session<FranklinRuntime>[] {
 	const manager = useApp().agents;
-	const snapshotRef = useRef<Session<FranklinRuntime>[] | null>(null);
 
 	const subscribe = useCallback(
 		(cb: () => void) => manager.subscribe(cb),
 		[manager],
 	);
 
-	const getSnapshot = useCallback(() => {
-		const next = manager.list();
-		const prev = snapshotRef.current;
+	const getSnapshot = useCallback(() => manager.list(), [manager]);
 
-		// agents.list() returns a fresh array on every call. Reuse the previous
-		// snapshot when the runtime references are stable.
-		if (prev && sameSessions(prev, next)) {
-			return prev;
-		}
-
-		snapshotRef.current = next;
-		return next;
-	}, [manager]);
-
-	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+	return useStableExternalStore(subscribe, getSnapshot, sameSessions);
 }

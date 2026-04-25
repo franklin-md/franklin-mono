@@ -1,13 +1,9 @@
-import { useEffect, useState } from 'react';
-
-import type { AuthEntries } from '@franklin/agent/browser';
-
 import { Button } from '../primitives/button.js';
 import { Dialog, DialogTrigger } from '../primitives/dialog.js';
 
-import { useAuthManager } from './context.js';
 import { AuthModalContent } from './modal.js';
 import { apiKeyPanel, oauthPanel } from './panels.js';
+import { useAuthEntries } from './use-entries.js';
 
 function PersonIcon() {
 	return (
@@ -25,20 +21,7 @@ function PersonIcon() {
 }
 
 export function AuthButton() {
-	const auth = useAuthManager();
-	const [providerCount, setProviderCount] = useState(
-		() => Object.keys(auth.entries()).length,
-	);
-
-	useEffect(() => {
-		setProviderCount(Object.keys(auth.entries()).length);
-	}, [auth]);
-
-	function handleEntriesChange(entries: AuthEntries) {
-		setProviderCount(Object.keys(entries).length);
-	}
-
-	const isSignedIn = providerCount > 0;
+	const { providerCount, isSignedIn } = useAuthEntries();
 
 	return (
 		<Dialog>
@@ -51,10 +34,7 @@ export function AuthButton() {
 				</Button>
 			</DialogTrigger>
 
-			<AuthModalContent
-				panels={[oauthPanel, apiKeyPanel]}
-				onEntriesChange={handleEntriesChange}
-			/>
+			<AuthModalContent panels={[oauthPanel, apiKeyPanel]} />
 		</Dialog>
 	);
 }

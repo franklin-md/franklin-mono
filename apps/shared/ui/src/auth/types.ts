@@ -1,12 +1,6 @@
 import type { ComponentType } from 'react';
 
-import type { AuthEntries } from '@franklin/agent/browser';
-
-/** Props passed to every auth panel by the modal shell. */
-export type AuthPanelProps = {
-	savedEntries: AuthEntries;
-	onUpdate: () => Promise<void>;
-};
+export type AuthPanelProps = Record<string, never>;
 
 /** Descriptor that plugs a panel into `AuthModalContent`. */
 export type AuthPanelDescriptor = {

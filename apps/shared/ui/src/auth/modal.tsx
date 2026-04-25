@@ -1,7 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
-
-import type { AuthEntries } from '@franklin/agent/browser';
-
 import {
 	DialogContent,
 	DialogHeader,
@@ -14,7 +10,6 @@ import {
 	TabsTrigger,
 } from '../primitives/tabs.js';
 
-import { useAuthManager } from './context.js';
 import type { AuthPanelDescriptor } from './types.js';
 
 /**
@@ -26,26 +21,9 @@ import type { AuthPanelDescriptor } from './types.js';
  */
 export function AuthModalContent({
 	panels,
-	onEntriesChange,
 }: {
 	panels: AuthPanelDescriptor[];
-	onEntriesChange?: (entries: AuthEntries) => void;
 }) {
-	const auth = useAuthManager();
-	const [savedEntries, setSavedEntries] = useState<AuthEntries>({});
-
-	useEffect(() => {
-		const entries = auth.entries();
-		setSavedEntries(entries);
-		onEntriesChange?.(entries);
-	}, [auth, onEntriesChange]);
-
-	const handleUpdate = useCallback(async () => {
-		const entries = auth.entries();
-		setSavedEntries(entries);
-		onEntriesChange?.(entries);
-	}, [auth, onEntriesChange]);
-
 	return (
 		<DialogContent className="w-[500px]">
 			<DialogHeader>
@@ -53,17 +31,9 @@ export function AuthModalContent({
 			</DialogHeader>
 
 			{panels.length === 1 && panels[0] ? (
-				<SinglePanel
-					panel={panels[0]}
-					savedEntries={savedEntries}
-					onUpdate={handleUpdate}
-				/>
+				<SinglePanel panel={panels[0]} />
 			) : (
-				<TabbedPanels
-					panels={panels}
-					savedEntries={savedEntries}
-					onUpdate={handleUpdate}
-				/>
+				<TabbedPanels panels={panels} />
 			)}
 		</DialogContent>
 	);
@@ -71,28 +41,12 @@ export function AuthModalContent({
 
 // ---------------------------------------------------------------------------
 
-function SinglePanel({
-	panel,
-	savedEntries,
-	onUpdate,
-}: {
-	panel: AuthPanelDescriptor;
-	savedEntries: AuthEntries;
-	onUpdate: () => Promise<void>;
-}) {
+function SinglePanel({ panel }: { panel: AuthPanelDescriptor }) {
 	const Component = panel.component;
-	return <Component savedEntries={savedEntries} onUpdate={onUpdate} />;
+	return <Component />;
 }
 
-function TabbedPanels({
-	panels,
-	savedEntries,
-	onUpdate,
-}: {
-	panels: AuthPanelDescriptor[];
-	savedEntries: AuthEntries;
-	onUpdate: () => Promise<void>;
-}) {
+function TabbedPanels({ panels }: { panels: AuthPanelDescriptor[] }) {
 	return (
 		<Tabs defaultValue={panels[0]?.id}>
 			<TabsList className="w-full">
@@ -112,7 +66,7 @@ function TabbedPanels({
 						forceMount
 						className="data-[state=inactive]:hidden"
 					>
-						<Component savedEntries={savedEntries} onUpdate={onUpdate} />
+						<Component />
 					</TabsContent>
 				);
 			})}

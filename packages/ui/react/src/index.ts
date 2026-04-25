@@ -4,6 +4,7 @@ export { useFirstMountEffect } from './utils/use-first-mount-effect.js';
 export { useElapsed } from './utils/use-elapsed.js';
 export { useCopyFeedback } from './utils/use-copy-feedback.js';
 export { useStore } from './utils/use-store.js';
+export { useStableExternalStore } from './utils/use-stable-external-store.js';
 export { useCollectionNavigator } from './utils/use-collection-navigator.js';
 export { AgentProvider, useAgent } from './agent/agent-context.js';
 export {
