@@ -58,6 +58,29 @@ const OPENROUTER_OVERRIDE_CASES = [
 ] as const;
 
 describe('resolveModel', () => {
+	it('resolves the Franklin OpenAI Codex override for gpt-5.5', () => {
+		const result = resolveModel({
+			provider: 'openai-codex',
+			model: 'gpt-5.5',
+		});
+
+		expect(result.ok).toBe(true);
+		expect(result.ok && result.model).toMatchObject({
+			provider: 'openai-codex',
+			id: 'gpt-5.5',
+			api: 'openai-codex-responses',
+			reasoning: true,
+			contextWindow: 1_050_000,
+			maxTokens: 128_000,
+			cost: {
+				input: 5,
+				output: 30,
+				cacheRead: 0.5,
+				cacheWrite: 0,
+			},
+		});
+	});
+
 	it('returns the configured model for the configured provider', () => {
 		const result = resolveModel({
 			provider: 'openrouter',

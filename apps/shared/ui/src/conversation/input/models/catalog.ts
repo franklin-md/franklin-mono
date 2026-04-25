@@ -93,6 +93,13 @@ export const MODEL_CATALOG: ProviderGroup[] = [
 		displayName: 'OpenAI Codex',
 		access: 'sub',
 		models: [
+			model('openai-codex', 'gpt-5.5', 'GPT-5.5', {
+				reasoning: true,
+				ctx: 1_050_000,
+				costIn: 5,
+				costOut: 30,
+				intelligence: 'frontier',
+			}),
 			model('openai-codex', 'gpt-5.4', 'GPT-5.4', {
 				reasoning: true,
 				ctx: 272_000,
