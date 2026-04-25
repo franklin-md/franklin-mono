@@ -9,6 +9,13 @@ import {
 } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
+import type {
+	ConversationTurn,
+	Store,
+	TurnEndBlock,
+} from '@franklin/extensions';
+import { conversationExtension, createStore } from '@franklin/extensions';
+import type { UserMessage } from '@franklin/mini-acp';
 import type { FranklinRuntime } from '@franklin/agent/browser';
 
 import { AgentProvider } from '../agent/agent-context.js';
@@ -16,6 +23,7 @@ import { usePrompt } from '../prompt/context.js';
 import { Prompt } from '../prompt/prompt.js';
 import { PromptText } from '../prompt/text.js';
 import { PromptSend } from '../prompt/send.js';
+import { PromptAgentControl } from '../prompt/agent-control.js';
 import { PromptControls } from '../prompt/controls.js';
 
 afterEach(cleanup);
@@ -24,18 +32,47 @@ afterEach(cleanup);
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeMockRuntime(): {
-	runtime: FranklinRuntime;
-	promptSpy: ReturnType<typeof vi.fn>;
-	cancelSpy: ReturnType<typeof vi.fn>;
-} {
-	const promptSpy = vi.fn(async function* () {
-		// yields nothing — simulates a completed turn
+const conversationKey = conversationExtension.keys.conversation;
+const finishedStopCode = 1000 as TurnEndBlock['stopCode'];
+
+// Mirrors what the real conversation extension does on the `prompt` event:
+// pushes a fresh in-progress turn so `phase === 'in-progress'` derivation works.
+function pushPromptTurn(
+	store: Store<ConversationTurn[]>,
+	prompt: UserMessage,
+): void {
+	store.set((draft) => {
+		draft.push({
+			id: `turn-${draft.length}`,
+			timestamp: 0,
+			prompt,
+			response: { blocks: [] },
+		});
 	});
+}
 
-	const cancelSpy = vi.fn(async () => {});
+// Mirrors `handleTurnEnd`: appends a terminal turnEnd block to the last turn,
+// flipping its phase to `complete`. Idempotent so cancel-then-resolve is safe.
+function appendTurnEnd(store: Store<ConversationTurn[]>): void {
+	store.set((draft) => {
+		const turn = draft.at(-1);
+		if (!turn) return;
+		if (turn.response.blocks.at(-1)?.kind === 'turnEnd') return;
+		turn.response.blocks.push({
+			kind: 'turnEnd',
+			stopCode: finishedStopCode,
+			startedAt: 0,
+			endedAt: 0,
+		});
+	});
+}
 
-	const runtime = {
+function buildRuntime(
+	store: Store<ConversationTurn[]>,
+	promptSpy: ReturnType<typeof vi.fn>,
+	cancelSpy: ReturnType<typeof vi.fn>,
+): FranklinRuntime {
+	return {
 		state: {
 			get: vi.fn(async () => ({
 				core: {
@@ -47,80 +84,103 @@ function makeMockRuntime(): {
 		subscribe: vi.fn(() => () => {}),
 		prompt: promptSpy,
 		cancel: cancelSpy,
+		getStore: (name: string) => {
+			if (name === conversationKey) return store;
+			throw new Error(`No store named "${name}"`);
+		},
 	} as unknown as FranklinRuntime;
+}
 
-	return { runtime, promptSpy, cancelSpy };
+function makeMockRuntime(initialTurns: ConversationTurn[] = []): {
+	runtime: FranklinRuntime;
+	promptSpy: ReturnType<typeof vi.fn>;
+	cancelSpy: ReturnType<typeof vi.fn>;
+	store: Store<ConversationTurn[]>;
+} {
+	const store = createStore(initialTurns);
+
+	// eslint-disable-next-line require-yield -- generator drives store updates only
+	const promptSpy = vi.fn(async function* (request: UserMessage) {
+		pushPromptTurn(store, request);
+		appendTurnEnd(store);
+	});
+
+	const cancelSpy = vi.fn(async () => {
+		appendTurnEnd(store);
+	});
+
+	return {
+		runtime: buildRuntime(store, promptSpy, cancelSpy),
+		promptSpy,
+		cancelSpy,
+		store,
+	};
 }
 
 /**
  * Creates a mock runtime whose prompt generator stays open until
- * `resolve()` is called, keeping `sending === true` for the test duration.
+ * `resolve()` is called, keeping the in-progress turn alive in the store.
  */
 function makePendingRuntime(): {
 	runtime: FranklinRuntime;
 	cancelSpy: ReturnType<typeof vi.fn>;
 	resolve: () => void;
 } {
+	const store = createStore<ConversationTurn[]>([]);
 	let resolve!: () => void;
 	const pending = new Promise<void>((r) => {
 		resolve = r;
 	});
 
-	const cancelSpy = vi.fn(async () => {});
+	// eslint-disable-next-line require-yield -- intentionally hangs to keep the turn in-progress
+	const promptSpy = vi.fn(async function* (request: UserMessage) {
+		pushPromptTurn(store, request);
+		await pending;
+		appendTurnEnd(store);
+	});
 
-	const runtime = {
-		state: {
-			get: vi.fn(async () => ({
-				core: {
-					messages: [],
-					llmConfig: {},
-				},
-			})),
-		},
-		subscribe: vi.fn(() => () => {}),
-		// eslint-disable-next-line require-yield -- intentionally hangs to keep sending=true
-		prompt: vi.fn(async function* () {
-			await pending;
-		}),
-		cancel: cancelSpy,
-	} as unknown as FranklinRuntime;
+	const cancelSpy = vi.fn(async () => {
+		appendTurnEnd(store);
+	});
 
-	return { runtime, cancelSpy, resolve };
+	return {
+		runtime: buildRuntime(store, promptSpy, cancelSpy),
+		cancelSpy,
+		resolve,
+	};
 }
 
 /**
  * Returns a mock runtime whose prompt hangs until `complete()` is called,
- * keeping the prompt in the `sending` state for the duration.
+ * keeping the in-progress turn in the conversation store for the duration.
  */
 function makeHangingRuntime(): {
 	runtime: FranklinRuntime;
 	promptSpy: ReturnType<typeof vi.fn>;
 	complete: () => void;
 } {
+	const store = createStore<ConversationTurn[]>([]);
 	let resolve!: () => void;
 	const gate = new Promise<void>((r) => {
 		resolve = r;
 	});
 
-	// eslint-disable-next-line require-yield
-	const promptSpy = vi.fn(async function* () {
+	// eslint-disable-next-line require-yield -- intentionally hangs to keep the turn in-progress
+	const promptSpy = vi.fn(async function* (request: UserMessage) {
+		pushPromptTurn(store, request);
 		await gate;
+		appendTurnEnd(store);
 	});
 
-	const runtime = {
-		state: {
-			get: vi.fn(async () => ({
-				core: {
-					messages: [],
-					llmConfig: {},
-				},
-			})),
-		},
-		subscribe: vi.fn(() => () => {}),
-		prompt: promptSpy,
-	} as unknown as FranklinRuntime;
+	const cancelSpy = vi.fn(async () => {
+		appendTurnEnd(store);
+	});
 
-	return { runtime, promptSpy, complete: resolve };
+	return {
+		runtime: buildRuntime(store, promptSpy, cancelSpy),
+		promptSpy,
+		complete: resolve,
+	};
 }
 
 function TestHarness({
@@ -498,6 +558,96 @@ describe('ESC-to-cancel', () => {
 		fireEvent.keyDown(screen.getByTestId('input'), { key: 'Escape' });
 
 		expect(cancelSpy).not.toHaveBeenCalled();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// sending derives from conversation store
+//
+// Models the "switch away mid-turn, switch back" scenario: when Prompt mounts
+// against a session whose conversation store already holds an in-progress
+// turn (no terminal turnEnd block), it must derive sending=true without any
+// prior call to send() in this component instance.
+// ---------------------------------------------------------------------------
+
+function inProgressTurn(): ConversationTurn {
+	return {
+		id: 'turn-mid-flight',
+		timestamp: 0,
+		prompt: { role: 'user', content: [{ type: 'text', text: 'mid-flight' }] },
+		response: { blocks: [{ kind: 'text', text: 'streaming…', startedAt: 0 }] },
+	};
+}
+
+describe('sending derives from conversation store', () => {
+	it('renders the cancel control when the store has an in-progress turn on mount', () => {
+		const { runtime } = makeMockRuntime([inProgressTurn()]);
+
+		render(
+			<TestHarness runtime={runtime}>
+				<PromptText>
+					<textarea data-testid="input" />
+				</PromptText>
+				<PromptAgentControl
+					send={<button data-testid="send">Send</button>}
+					cancel={<button data-testid="cancel">Stop</button>}
+				/>
+			</TestHarness>,
+		);
+
+		expect(screen.queryByTestId('cancel')).toBeTruthy();
+		expect(screen.queryByTestId('send')).toBeNull();
+	});
+
+	it('routes ESC to cancel when the store has an in-progress turn on mount', () => {
+		const { runtime, cancelSpy } = makeMockRuntime([inProgressTurn()]);
+
+		render(
+			<TestHarness runtime={runtime}>
+				<PromptText>
+					<textarea data-testid="input" />
+				</PromptText>
+			</TestHarness>,
+		);
+
+		fireEvent.keyDown(screen.getByTestId('input'), { key: 'Escape' });
+
+		expect(cancelSpy).toHaveBeenCalledOnce();
+	});
+
+	it('renders the send control when the store has only completed turns', () => {
+		const completedTurn: ConversationTurn = {
+			id: 'turn-done',
+			timestamp: 0,
+			prompt: { role: 'user', content: [{ type: 'text', text: 'hi' }] },
+			response: {
+				blocks: [
+					{ kind: 'text', text: 'done', startedAt: 0, endedAt: 0 },
+					{
+						kind: 'turnEnd',
+						stopCode: finishedStopCode,
+						startedAt: 0,
+						endedAt: 0,
+					},
+				],
+			},
+		};
+		const { runtime } = makeMockRuntime([completedTurn]);
+
+		render(
+			<TestHarness runtime={runtime}>
+				<PromptText>
+					<textarea data-testid="input" />
+				</PromptText>
+				<PromptAgentControl
+					send={<button data-testid="send">Send</button>}
+					cancel={<button data-testid="cancel">Stop</button>}
+				/>
+			</TestHarness>,
+		);
+
+		expect(screen.queryByTestId('send')).toBeTruthy();
+		expect(screen.queryByTestId('cancel')).toBeNull();
 	});
 });
 
