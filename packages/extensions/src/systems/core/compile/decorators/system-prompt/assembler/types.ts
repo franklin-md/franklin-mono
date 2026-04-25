@@ -7,6 +7,8 @@
  * - `cache` — whether this fragment belongs in the cache-stable bucket.
  * - `pinned` — set once a handler calls setPart with `{ once: true }`; the
  *   assembler then skips that handler on subsequent assembles.
+ * - `priority` — relative position within this slot's bucket. Higher sorts
+ *   earlier; ties preserve registration order. Default `0`.
  * - `runCount` — how many times a content factory has been invoked for
  *   this slot over the life of the session. String setPart calls do not
  *   advance it. Useful for tests and runtime introspection.
@@ -15,6 +17,7 @@ export interface Slot {
 	content: string | undefined;
 	cache: boolean;
 	pinned: boolean;
+	priority: number;
 	runCount: number;
 }
 
@@ -24,10 +27,12 @@ export interface SystemPromptAssembler {
 	 * resolve any pending content factories, then concatenate the non-empty
 	 * fragments, separated by blank lines.
 	 *
-	 * Slots with `cache: true` are emitted first (in handler registration
-	 * order), then non-cache slots (in handler registration order). This
-	 * keeps volatile fragments (cwd, date, env info) from invalidating the
-	 * cached prefix of a later stable fragment.
+	 * Slots with `cache: true` are emitted first, then non-cache slots.
+	 * Within each bucket, fragments sort by `priority` descending (default
+	 * `0`); ties preserve handler registration order. This keeps volatile
+	 * fragments (cwd, date, env info) from invalidating the cached prefix
+	 * of a later stable fragment, and lets extensions express relative
+	 * intent ("persona first", "safety rules last") within a bucket.
 	 *
 	 * A handler that does not call `setPart` leaves its fragment (and its
 	 * cache flag) unchanged from the previous assemble() call. A handler

@@ -6,11 +6,12 @@ import {
 } from '../assembler/slot.js';
 
 describe('createSlot', () => {
-	it('starts empty, unpinned, non-cache, with runCount 0', () => {
+	it('starts empty, unpinned, non-cache, priority 0, with runCount 0', () => {
 		expect(createSlot()).toEqual({
 			content: undefined,
 			cache: false,
 			pinned: false,
+			priority: 0,
 			runCount: 0,
 		});
 	});
@@ -42,6 +43,32 @@ describe('applySetPart', () => {
 		applySetPart(slot, { once: true, cache: false });
 		expect(slot.pinned).toBe(true);
 		expect(slot.cache).toBe(false);
+	});
+
+	it('writes opts.priority onto the slot', () => {
+		const slot = createSlot();
+		applySetPart(slot, { priority: 7 });
+		expect(slot.priority).toBe(7);
+	});
+
+	it('resets priority to 0 when opts omits it', () => {
+		const slot = createSlot();
+		slot.priority = 5;
+		applySetPart(slot, { cache: true });
+		expect(slot.priority).toBe(0);
+	});
+
+	it('resets priority to 0 when opts is undefined', () => {
+		const slot = createSlot();
+		slot.priority = 5;
+		applySetPart(slot, undefined);
+		expect(slot.priority).toBe(0);
+	});
+
+	it('supports negative priority', () => {
+		const slot = createSlot();
+		applySetPart(slot, { priority: -3 });
+		expect(slot.priority).toBe(-3);
 	});
 });
 

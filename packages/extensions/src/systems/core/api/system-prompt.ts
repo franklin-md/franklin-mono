@@ -30,6 +30,15 @@ export interface SetPartOptions {
 	 * can distinguish it from "handler happened not to write this turn".
 	 */
 	once?: boolean;
+
+	/**
+	 * Relative position within this fragment's bucket. Higher priority
+	 * sorts earlier; ties preserve handler registration order. Defaults
+	 * to `0`. Bucket membership (`cache`) always wins over priority — a
+	 * `cache: true` fragment with `priority: -100` still sorts before any
+	 * non-cache fragment.
+	 */
+	priority?: number;
 }
 
 export interface SystemPrompt {
