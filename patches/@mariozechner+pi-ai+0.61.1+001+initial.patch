@@ -1,3 +1,49 @@
+diff --git a/node_modules/@mariozechner/pi-ai/dist/providers/anthropic.js b/node_modules/@mariozechner/pi-ai/dist/providers/anthropic.js
+index 5aeee0d..c24cf7c 100644
+--- a/node_modules/@mariozechner/pi-ai/dist/providers/anthropic.js
++++ b/node_modules/@mariozechner/pi-ai/dist/providers/anthropic.js
+@@ -149,7 +149,7 @@ export const streamAnthropic = (model, context, options) => {
+                         hasImages,
+                     });
+                 }
+-                const created = createClient(model, apiKey, options?.interleavedThinking ?? true, options?.headers, copilotDynamicHeaders);
++                const created = createClient(model, apiKey, options?.interleavedThinking ?? true, options?.headers, copilotDynamicHeaders, options?.fetch);
+                 client = created.client;
+                 isOAuth = created.isOAuthToken;
+             }
+@@ -408,7 +408,7 @@ export const streamSimpleAnthropic = (model, context, options) => {
+ function isOAuthToken(apiKey) {
+     return apiKey.includes("sk-ant-oat");
+ }
+-function createClient(model, apiKey, interleavedThinking, optionsHeaders, dynamicHeaders) {
++function createClient(model, apiKey, interleavedThinking, optionsHeaders, dynamicHeaders, fetch) {
+     // Adaptive thinking models (Opus 4.6, Sonnet 4.6) have interleaved thinking built-in.
+     // The beta header is deprecated on Opus 4.6 and redundant on Sonnet 4.6, so skip it.
+     const needsInterleavedBeta = interleavedThinking && !supportsAdaptiveThinking(model.id);
+@@ -422,6 +422,7 @@ function createClient(model, apiKey, interleavedThinking, optionsHeaders, dynami
+             apiKey: null,
+             authToken: apiKey,
+             baseURL: model.baseUrl,
++            fetch,
+             dangerouslyAllowBrowser: true,
+             defaultHeaders: mergeHeaders({
+                 accept: "application/json",
+@@ -441,6 +442,7 @@ function createClient(model, apiKey, interleavedThinking, optionsHeaders, dynami
+             apiKey: null,
+             authToken: apiKey,
+             baseURL: model.baseUrl,
++            fetch,
+             dangerouslyAllowBrowser: true,
+             defaultHeaders: mergeHeaders({
+                 accept: "application/json",
+@@ -456,6 +458,7 @@ function createClient(model, apiKey, interleavedThinking, optionsHeaders, dynami
+     const client = new Anthropic({
+         apiKey,
+         baseURL: model.baseUrl,
++        fetch,
+         dangerouslyAllowBrowser: true,
+         defaultHeaders: mergeHeaders({
+             accept: "application/json",
 diff --git a/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.d.ts b/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.d.ts
 index 47fda07..74ead49 100644
 --- a/node_modules/@mariozechner/pi-ai/dist/providers/openai-codex-responses.d.ts
