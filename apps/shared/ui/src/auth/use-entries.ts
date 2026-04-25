@@ -6,7 +6,7 @@ import type {
 	AuthEntry,
 } from '@franklin/agent/browser';
 
-import { useStableExternalStore } from '../lib/use-stable-external-store.js';
+import { useStableExternalStore } from '@franklin/react';
 
 import { useAuthManager } from './context.js';
 

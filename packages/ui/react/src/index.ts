@@ -2,6 +2,7 @@ export { useAsync } from './utils/use-async.js';
 export { createSimpleContext } from './utils/create-simple-context.js';
 export { useElapsed } from './utils/use-elapsed.js';
 export { useStore } from './utils/use-store.js';
+export { useStableExternalStore } from './utils/use-stable-external-store.js';
 export { useCollectionNavigator } from './utils/use-collection-navigator.js';
 export { AgentProvider, useAgent } from './agent/agent-context.js';
 export {

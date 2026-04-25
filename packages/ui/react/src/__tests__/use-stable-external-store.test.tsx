@@ -3,7 +3,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { useStableExternalStore } from '../../src/lib/use-stable-external-store.js';
+import { useStableExternalStore } from '../utils/use-stable-external-store.js';
 
 type Snapshot = {
 	provider: {
