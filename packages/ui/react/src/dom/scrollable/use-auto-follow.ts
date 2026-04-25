@@ -32,11 +32,20 @@ export function useAutoFollow<T extends HTMLElement = HTMLElement>({
 
 	const followingRef = useRef(true);
 	const scrollHeightRef = useRef(0);
+	const scrollTopRef = useRef(0);
 
-	const registerViewport = useCallback((element: T | null) => {
-		viewport.current = element;
+	const captureMetrics = useCallback((element: T | null) => {
 		scrollHeightRef.current = element?.scrollHeight ?? 0;
+		scrollTopRef.current = element?.scrollTop ?? 0;
 	}, []);
+
+	const registerViewport = useCallback(
+		(element: T | null) => {
+			viewport.current = element;
+			captureMetrics(element);
+		},
+		[captureMetrics],
+	);
 	const registerContent = useCallback((element: HTMLElement | null) => {
 		setContent(element);
 	}, []);
@@ -48,22 +57,26 @@ export function useAutoFollow<T extends HTMLElement = HTMLElement>({
 		// scrollHeight is total height
 		// So technically to scroll to bottom you need scrollHeight - clientHeight, but browsers clamp to max possible value.
 		element.scrollTop = element.scrollHeight;
-		scrollHeightRef.current = element.scrollHeight;
+		captureMetrics(element);
 	}, []);
 
 	const handleScroll = useCallback<UIEventHandler<T>>(
 		(event) => {
-			const scrollHeight = event.currentTarget.scrollHeight;
-			const contentSizeChanged = scrollHeight !== scrollHeightRef.current;
-			scrollHeightRef.current = scrollHeight;
+			const element = event.currentTarget;
+			const contentSizeChanged =
+				element.scrollHeight !== scrollHeightRef.current;
+			// Test that the user has scrolled up
+			const activelyScrolledAway = element.scrollTop < scrollTopRef.current;
+
+			captureMetrics(element);
 
 			// Content updates while following are not user intent to escape.
-			if (contentSizeChanged && followingRef.current) {
+			if (contentSizeChanged && followingRef.current && !activelyScrolledAway) {
 				scrollToBottom();
 				return;
 			}
 
-			followingRef.current = isFollowing(event.currentTarget, {
+			followingRef.current = isFollowing(element, {
 				bottomThresholdPx,
 				escapeThresholdPx,
 				following: followingRef.current,
@@ -82,6 +95,7 @@ export function useAutoFollow<T extends HTMLElement = HTMLElement>({
 			const scrollHeight = element.scrollHeight;
 			const contentSizeChanged = scrollHeight !== scrollHeightRef.current;
 			scrollHeightRef.current = scrollHeight;
+			scrollTopRef.current = element.scrollTop;
 
 			if (contentSizeChanged && followingRef.current) {
 				scrollToBottom();

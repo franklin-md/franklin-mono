@@ -162,6 +162,29 @@ describe('useAutoFollow', () => {
 		expect(metrics.scrollTop).toBe(1100);
 	});
 
+	it('allows user escape while content grows in the same scroll event', () => {
+		globalThis.ResizeObserver = ResizeObserverMock;
+		render(<Harness />);
+		const viewport = screen.getByTestId('viewport');
+		const metrics = setScrollMetrics(viewport, {
+			clientHeight: 200,
+			scrollHeight: 1000,
+			scrollTop: 800,
+		});
+
+		fireEvent.scroll(viewport);
+		metrics.scrollHeight = 1050;
+		metrics.scrollTop = 760;
+		fireEvent.scroll(viewport);
+
+		expect(metrics.scrollTop).toBe(760);
+
+		metrics.scrollHeight = 1100;
+		ResizeObserverMock.instances[0]?.resize();
+
+		expect(metrics.scrollTop).toBe(760);
+	});
+
 	it('stops following when the user scrolls beyond the escape threshold', () => {
 		globalThis.ResizeObserver = ResizeObserverMock;
 		render(<Harness />);
