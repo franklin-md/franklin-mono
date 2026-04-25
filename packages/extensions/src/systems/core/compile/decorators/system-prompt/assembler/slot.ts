@@ -5,14 +5,25 @@ import type {
 import type { Slot } from './types.js';
 
 export function createSlot(): Slot {
-	return { content: undefined, cache: false, pinned: false, runCount: 0 };
+	return {
+		content: undefined,
+		cache: false,
+		pinned: false,
+		priority: 0,
+		runCount: 0,
+	};
 }
 
 /**
  * Apply the options half of a `setPart(content, opts)` call (cache-bucket
- * membership + pinning). Synchronous; runs inside the handler's `setPart`
- * closure. Content resolution is deferred to {@link resolveSlotContent}
- * so that async factories can be awaited after the handler returns.
+ * membership + pinning + priority). Synchronous; runs inside the handler's
+ * `setPart` closure. Content resolution is deferred to
+ * {@link resolveSlotContent} so that async factories can be awaited after
+ * the handler returns.
+ *
+ * `cache` and `priority` are re-declared on every call (they reset to
+ * their defaults when omitted), consistent with the per-call options-bag
+ * model. `pinned` is sticky once set.
  */
 export function applySetPart(
 	slot: Slot,
@@ -20,6 +31,7 @@ export function applySetPart(
 ): void {
 	const once = opts?.once === true;
 	slot.cache = opts?.cache ?? once;
+	slot.priority = opts?.priority ?? 0;
 	if (once) slot.pinned = true;
 }
 

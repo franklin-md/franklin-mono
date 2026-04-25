@@ -280,6 +280,118 @@ describe('buildSystemPromptAssembler', () => {
 		});
 	});
 
+	describe('priority ordering', () => {
+		it('sorts higher priority earlier within the non-cache bucket', async () => {
+			const assembler = buildSystemPromptAssembler([
+				(ctx) => ctx.setPart('low', { priority: 1 }),
+				(ctx) => ctx.setPart('high', { priority: 10 }),
+				(ctx) => ctx.setPart('mid', { priority: 5 }),
+			]);
+			expect(await assembler.assemble()).toBe('high\n\nmid\n\nlow');
+		});
+
+		it('sorts higher priority earlier within the cache bucket', async () => {
+			const assembler = buildSystemPromptAssembler([
+				(ctx) => ctx.setPart('cache-low', { cache: true, priority: 1 }),
+				(ctx) => ctx.setPart('cache-high', { cache: true, priority: 10 }),
+				(ctx) => ctx.setPart('cache-mid', { cache: true, priority: 5 }),
+			]);
+			expect(await assembler.assemble()).toBe(
+				'cache-high\n\ncache-mid\n\ncache-low',
+			);
+		});
+
+		it('keeps cache bucket strictly before non-cache regardless of priority', async () => {
+			const assembler = buildSystemPromptAssembler([
+				(ctx) => ctx.setPart('volatile-high', { priority: 100 }),
+				(ctx) => ctx.setPart('stable-low', { cache: true, priority: -100 }),
+			]);
+			// cache=true wins the bucket order, even with a much lower priority.
+			expect(await assembler.assemble()).toBe('stable-low\n\nvolatile-high');
+		});
+
+		it('breaks priority ties by registration order (stable)', async () => {
+			const assembler = buildSystemPromptAssembler([
+				(ctx) => ctx.setPart('a', { priority: 5 }),
+				(ctx) => ctx.setPart('b', { priority: 5 }),
+				(ctx) => ctx.setPart('c', { priority: 5 }),
+			]);
+			expect(await assembler.assemble()).toBe('a\n\nb\n\nc');
+		});
+
+		it('treats unspecified priority as 0', async () => {
+			const assembler = buildSystemPromptAssembler([
+				(ctx) => ctx.setPart('default'),
+				(ctx) => ctx.setPart('positive', { priority: 1 }),
+				(ctx) => ctx.setPart('negative', { priority: -1 }),
+			]);
+			expect(await assembler.assemble()).toBe(
+				'positive\n\ndefault\n\nnegative',
+			);
+		});
+
+		it('supports negative priority (sorts after default 0)', async () => {
+			const assembler = buildSystemPromptAssembler([
+				(ctx) => ctx.setPart('default'),
+				(ctx) => ctx.setPart('low', { priority: -5 }),
+				(ctx) => ctx.setPart('lower', { priority: -10 }),
+			]);
+			expect(await assembler.assemble()).toBe('default\n\nlow\n\nlower');
+		});
+
+		it('updates priority on subsequent setPart calls', async () => {
+			let turn = 0;
+			const handler: SystemPromptHandler = (ctx) => {
+				ctx.setPart('x', { priority: turn === 0 ? 10 : -10 });
+			};
+			const assembler = buildSystemPromptAssembler([
+				handler,
+				(ctx) => ctx.setPart('y'),
+			]);
+
+			expect(await assembler.assemble()).toBe('x\n\ny');
+			turn = 1;
+			expect(await assembler.assemble()).toBe('y\n\nx');
+		});
+
+		it('resets priority to 0 when subsequent setPart omits it', async () => {
+			let turn = 0;
+			const handler: SystemPromptHandler = (ctx) => {
+				if (turn === 0) ctx.setPart('x', { priority: 10 });
+				else ctx.setPart('x');
+			};
+			const assembler = buildSystemPromptAssembler([
+				handler,
+				(ctx) => ctx.setPart('y', { priority: 1 }),
+			]);
+
+			// turn 0: x has priority 10 → x first
+			expect(await assembler.assemble()).toBe('x\n\ny');
+			turn = 1;
+			// turn 1: x reset to default 0, y stays at 1 → y first
+			expect(await assembler.assemble()).toBe('y\n\nx');
+		});
+
+		it('combines priority with once: pinned fragment keeps its initial priority', async () => {
+			let turn = 0;
+			const handler: SystemPromptHandler = (ctx) => {
+				if (turn === 0)
+					ctx.setPart('pinned-high', { once: true, priority: 100 });
+				else ctx.setPart('replacement');
+			};
+			const assembler = buildSystemPromptAssembler([
+				(ctx) => ctx.setPart('also-cache', { cache: true }),
+				handler,
+			]);
+
+			// turn 0: pinned-high (priority 100) > also-cache (priority 0); both in cache bucket.
+			expect(await assembler.assemble()).toBe('pinned-high\n\nalso-cache');
+			turn = 1;
+			// turn 1: handler skipped; pinned content + priority preserved.
+			expect(await assembler.assemble()).toBe('pinned-high\n\nalso-cache');
+		});
+	});
+
 	describe('multiple setPart calls in one handler', () => {
 		it('throws when setPart is called twice in a single handler invocation', async () => {
 			const assembler = buildSystemPromptAssembler([
