@@ -1,7 +1,10 @@
 import type { SystemPromptHandler } from '../../../../api/handlers.js';
-import type { SystemPrompt } from '../../../../api/system-prompt.js';
+import type {
+	SystemPrompt,
+	SystemPromptContent,
+} from '../../../../api/system-prompt.js';
 import { order } from './order.js';
-import { applySetPart, createSlot, resolveSlot } from './slot.js';
+import { applySetPart, createSlot, resolveSlotContent } from './slot.js';
 import type { Slot, SystemPromptAssembler } from './types.js';
 
 export function buildSystemPromptAssembler(
@@ -17,15 +20,19 @@ export function buildSystemPromptAssembler(
 				// fixed and the handler need not recompute it.
 				if (slot.pinned) continue;
 				const handler = handlers[i] as SystemPromptHandler;
+				// `pending` is a per-handler local, not slot state — any
+				// content factory lives only within this iteration.
+				let pending: SystemPromptContent | undefined;
 				const systemPrompt: SystemPrompt = {
 					setPart(content, opts) {
-						applySetPart(slot, content, opts);
+						pending = content;
+						applySetPart(slot, opts);
 					},
 				};
 				await handler(systemPrompt);
-			}
-			for (const slot of slots) {
-				await resolveSlot(slot);
+				if (pending !== undefined) {
+					await resolveSlotContent(slot, pending);
+				}
 			}
 			return order(slots).join('\n\n');
 		},

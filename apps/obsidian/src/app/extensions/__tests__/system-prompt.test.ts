@@ -29,6 +29,9 @@ describe('obsidianSystemPromptExtension', () => {
 
 		handlers[0]?.({
 			setPart(content, options) {
+				if (typeof content !== 'string') {
+					throw new Error('obsidian system prompt should be a string literal');
+				}
 				fragment = content;
 				opts = options;
 			},
