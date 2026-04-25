@@ -20,7 +20,8 @@
 	"dependencies": {
 		"@franklin/agent": "*",
 		"@franklin/extensions": "*",
-		"@radix-ui/react-slot": "^1.1.1"
+		"@radix-ui/react-slot": "^1.1.1",
+		"dequal": "^2.0.3"
 	},
 	"peerDependencies": {
 		"react": "^18.3.1 || ^19.0.0"

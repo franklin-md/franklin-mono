@@ -5,6 +5,7 @@ import { Loader2, Check } from 'lucide-react';
 
 import { cn } from '../../lib/cn.js';
 import { Button } from '../../primitives/button.js';
+import { useAuthEntries } from '../use-entries.js';
 
 import type { OAuthProviderMeta } from './types.js';
 import { OAuthFlowView } from './flow-view.js';
@@ -28,19 +29,10 @@ const PROVIDER_LABELS: Record<string, string> = {
 // ProviderRow
 // ---------------------------------------------------------------------------
 
-export function ProviderRow({
-	provider,
-	isSignedIn,
-	onUpdate,
-}: {
-	provider: OAuthProviderMeta;
-	isSignedIn: boolean;
-	onUpdate: () => Promise<void>;
-}) {
-	const { flowState, login, remove, dismiss } = useOAuthFlow(
-		provider.id,
-		onUpdate,
-	);
+export function ProviderRow({ provider }: { provider: OAuthProviderMeta }) {
+	const { isOAuthSignedIn } = useAuthEntries();
+	const { flowState, login, remove, dismiss } = useOAuthFlow(provider.id);
+	const isSignedIn = isOAuthSignedIn(provider.id);
 
 	const Icon = PROVIDER_ICONS[provider.id];
 	const flowDone = flowState.phase === 'success' || flowState.phase === 'error';

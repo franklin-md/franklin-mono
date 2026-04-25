@@ -68,6 +68,13 @@ describe('obsidian bundle', () => {
 		expect(css).toContain('--primary:var(--interactive-accent)');
 	});
 
+	it('includes the transcript text selection utility', () => {
+		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
+
+		expect(css).toContain('.franklin .select-text');
+		expect(css).toContain('user-select:text');
+	});
+
 	it('produces dist/manifest.json', () => {
 		expect(existsSync(resolve(dist, 'manifest.json'))).toBe(true);
 	});

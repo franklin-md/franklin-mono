@@ -7,10 +7,7 @@ import { useAuthManager } from '../context.js';
 
 import type { FlowState } from './types.js';
 
-export function useOAuthFlow(
-	providerId: string,
-	onUpdate: () => Promise<void>,
-) {
+export function useOAuthFlow(providerId: string) {
 	const auth = useAuthManager();
 	const app = useApp();
 
@@ -42,7 +39,6 @@ export function useOAuthFlow(
 		try {
 			await auth.loginOAuth(providerId, callbacks);
 			setFlowState({ phase: 'success' });
-			await onUpdate();
 		} catch (err) {
 			setFlowState({
 				phase: 'error',
@@ -53,7 +49,6 @@ export function useOAuthFlow(
 
 	function remove() {
 		auth.removeOAuthEntry(providerId);
-		void onUpdate();
 	}
 
 	function dismiss() {

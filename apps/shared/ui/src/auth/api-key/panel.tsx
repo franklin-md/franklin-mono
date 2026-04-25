@@ -13,12 +13,13 @@ import {
 	SelectValue,
 } from '../../primitives/select.js';
 import { useAuthManager } from '../context.js';
-import type { AuthPanelProps } from '../types.js';
+import { useAuthEntries } from '../use-entries.js';
 
 type ProviderMeta = { id: string; name: string };
 
-export function ApiKeyPanel({ savedEntries, onUpdate }: AuthPanelProps) {
+export function ApiKeyPanel() {
 	const auth = useAuthManager();
+	const { apiKeyEntries } = useAuthEntries();
 	const providers = useAsync(
 		async (): Promise<ProviderMeta[]> =>
 			(await auth.getApiKeyProviders()).map((id) => ({ id, name: id })),
@@ -36,11 +37,7 @@ export function ApiKeyPanel({ savedEntries, onUpdate }: AuthPanelProps) {
 		}
 	}, [provider, providers]);
 
-	const apiKeyEntries = Object.entries(savedEntries).filter(([, entry]) =>
-		Boolean(entry.apiKey),
-	) as [string, { apiKey: ApiKeyEntry }][];
-
-	async function handleSubmit(e: FormEvent) {
+	function handleSubmit(e: FormEvent) {
 		e.preventDefault();
 		if (!provider.trim()) {
 			setError('Provider name is required');
@@ -55,12 +52,10 @@ export function ApiKeyPanel({ savedEntries, onUpdate }: AuthPanelProps) {
 		setProvider('');
 		setKey('');
 		setError(null);
-		await onUpdate();
 	}
 
-	async function handleRemove(providerId: string) {
+	function handleRemove(providerId: string) {
 		auth.removeApiKeyEntry(providerId);
-		await onUpdate();
 	}
 
 	return (
@@ -85,7 +80,7 @@ export function ApiKeyPanel({ savedEntries, onUpdate }: AuthPanelProps) {
 										size="sm"
 										className="text-destructive"
 										onClick={() => {
-											void handleRemove(id);
+											handleRemove(id);
 										}}
 									>
 										Remove
@@ -105,12 +100,7 @@ export function ApiKeyPanel({ savedEntries, onUpdate }: AuthPanelProps) {
 				<p className="mb-2.5 text-sm font-medium text-foreground">
 					Add API Key
 				</p>
-				<form
-					onSubmit={(e) => {
-						void handleSubmit(e);
-					}}
-					className="flex flex-col gap-2"
-				>
+				<form onSubmit={handleSubmit} className="flex flex-col gap-2">
 					<Select
 						value={provider}
 						onValueChange={(value) => {

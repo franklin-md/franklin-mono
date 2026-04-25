@@ -263,6 +263,27 @@ describe('Obsidian agent tabs', () => {
 		});
 	});
 
+	it('middle-clicking a tab deletes it', async () => {
+		const { agents } = renderApp([
+			createSession('session-a', 'idle'),
+			createSession('session-b', 'idle'),
+		]);
+
+		fireEvent(
+			screen.getByRole('tab', { name: '1' }),
+			new MouseEvent('auxclick', {
+				button: 1,
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
+
+		await waitFor(() => {
+			expect(agents.remove).toHaveBeenCalledWith('session-a');
+		});
+		expect(screen.queryByRole('tab', { name: '2' })).toBeNull();
+	});
+
 	it('deleting the last tab shows the empty state and keeps plus available', async () => {
 		renderApp([createSession('session-a', 'idle')]);
 

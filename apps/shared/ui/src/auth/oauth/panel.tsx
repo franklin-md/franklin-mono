@@ -1,7 +1,6 @@
 import { useAsync } from '@franklin/react';
 
 import { useAuthManager } from '../context.js';
-import type { AuthPanelProps } from '../types.js';
 
 import type { OAuthProviderMeta } from './types.js';
 import { ProviderRow } from './provider-row.js';
@@ -9,7 +8,7 @@ import { ProviderRow } from './provider-row.js';
 // Only surface these providers in the OAuth UI.
 const ALLOWED_PROVIDERS = new Set(['anthropic', 'openai-codex']);
 
-export function OAuthPanel({ savedEntries, onUpdate }: AuthPanelProps) {
+export function OAuthPanel() {
 	const auth = useAuthManager();
 
 	const providers = useAsync(
@@ -31,12 +30,7 @@ export function OAuthPanel({ savedEntries, onUpdate }: AuthPanelProps) {
 				</p>
 			)}
 			{providers.map((provider) => (
-				<ProviderRow
-					key={provider.id}
-					provider={provider}
-					isSignedIn={Boolean(savedEntries[provider.id]?.oauth)}
-					onUpdate={onUpdate}
-				/>
+				<ProviderRow key={provider.id} provider={provider} />
 			))}
 		</div>
 	);

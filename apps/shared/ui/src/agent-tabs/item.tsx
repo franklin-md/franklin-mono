@@ -1,5 +1,9 @@
 import { createStatusControl, statusExtension } from '@franklin/extensions';
-import { useAgentControl, useAgentState } from '@franklin/react';
+import {
+	useAgentControl,
+	useAgentState,
+	useMiddleButtonEffect,
+} from '@franklin/react';
 import { X } from 'lucide-react';
 
 import { cn } from '../lib/cn.js';
@@ -28,6 +32,8 @@ export function AgentTabsItem({
 		statusExtension.keys.status,
 		createStatusControl,
 	);
+	const handleMiddleButtonRemove =
+		useMiddleButtonEffect<HTMLButtonElement>(onRemove);
 
 	return (
 		<div
@@ -46,6 +52,7 @@ export function AgentTabsItem({
 					control.markRead();
 					onSelect();
 				}}
+				onAuxClick={handleMiddleButtonRemove}
 			>
 				<span
 					data-testid={`agent-tab-status-${sessionId}`}

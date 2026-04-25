@@ -47,7 +47,13 @@ export {
 	PopoverContent,
 	PopoverTrigger,
 } from './primitives/popover.js';
-export { ScrollArea, ScrollBar } from './primitives/scroll-area.js';
+export {
+	ScrollArea,
+	ScrollBar,
+	ScrollCorner,
+	ScrollRoot,
+	ScrollViewport,
+} from './primitives/scroll-area.js';
 export {
 	Select,
 	SelectContent,
@@ -69,6 +75,7 @@ export {
 	InspectDumpButton,
 	type InspectDumpButtonProps,
 } from './components/inspect-dump-button.js';
+export { IconButton, type IconButtonProps } from './components/icon-button.js';
 export { DeleteButton } from './components/delete-button.js';
 export { Favicon, type FaviconProps } from './components/favicon.js';
 export { FileBadge, type FileBadgeProps } from './components/file-badge.js';
@@ -89,6 +96,10 @@ export {
 	type TextareaGroupProps,
 } from './components/textarea-group.js';
 export { AgentTabs } from './agent-tabs/tabs.js';
+export {
+	ForkButton,
+	type ForkButtonProps,
+} from './agent-selector/fork-button.js';
 
 // conversation
 export {
@@ -109,7 +120,7 @@ export {
 export { TextBlock } from './conversation/turn/text/text.js';
 export { ThinkingBlock } from './conversation/turn/thinking.js';
 export { UserBubble } from './conversation/turn/user-bubble.js';
-export { CopyButton } from './conversation/turn/text/chrome/copy.js';
+export { CopyButton } from './conversation/turn/copy-button.js';
 export { ToolCardChrome } from './conversation/tools/chrome.js';
 export { StatusIcon } from './conversation/tools/status-icon.js';
 export {
@@ -127,7 +138,9 @@ export { defaultRegistry as defaultTurnEndRegistry } from './conversation/turn/t
 export { AuthModalContent } from './auth/modal.js';
 export { AuthButton } from './auth/button.js';
 export { useAuthManager } from './auth/context.js';
+export { useAuthEntries } from './auth/use-entries.js';
 export { apiKeyPanel, oauthPanel } from './auth/panels.js';
+export type { ApiKeyAuthEntry } from './auth/use-entries.js';
 export type { AuthPanelDescriptor, AuthPanelProps } from './auth/types.js';
 
 // sidebar
