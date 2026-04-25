@@ -24,9 +24,9 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc --noEmit -p tsconfig.main.json --pretty false && tsc --noEmit -p tsconfig.preload.json --pretty false && tsc --noEmit -p tsconfig.renderer.json --pretty false",
-		"test": "vitest run --passWithNoTests"
+		"build": "node ../../scripts/in-parallel.mjs --mb 800 --name electron-build -- tsc -b tsconfig.json",
+		"typecheck": "node ../../scripts/in-parallel.mjs --mb 600 --name electron-typecheck-main -- tsc --noEmit -p tsconfig.main.json --pretty false && node ../../scripts/in-parallel.mjs --mb 600 --name electron-typecheck-preload -- tsc --noEmit -p tsconfig.preload.json --pretty false && node ../../scripts/in-parallel.mjs --mb 800 --name electron-typecheck-renderer -- tsc --noEmit -p tsconfig.renderer.json --pretty false",
+		"test": "node ../../scripts/in-parallel.mjs --mb 600 --name electron-test -- vitest run --passWithNoTests"
 	},
 	"dependencies": {
 		"@agentclientprotocol/sdk": "^0.16.1",

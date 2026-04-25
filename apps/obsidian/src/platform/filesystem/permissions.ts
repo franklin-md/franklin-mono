@@ -1,5 +1,6 @@
 import os from 'node:os';
 import path from 'node:path';
+
 import type { AbsolutePath, FilesystemPermissions } from '@franklin/lib';
 import { normalizePath } from 'obsidian';
 

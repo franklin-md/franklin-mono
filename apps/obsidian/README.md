@@ -126,7 +126,7 @@ can reload the plugin manually inside Obsidian.
 
 ## Notes
 
-- The plugin renders a single Franklin conversation window inside an Obsidian view.
+- The plugin renders a Franklin conversation window inside an Obsidian view, with compact agent tabs for switching sessions.
 - Franklin application state is stored in the plugin directory itself (`<plugin-dir>/`).
 - Agent filesystem reads deny `.env` files and the vault's Obsidian config directory.
 - Agent filesystem writes are limited to the vault root and the OS temp directory, with the vault's Obsidian config directory denied again.

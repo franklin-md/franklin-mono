@@ -1,15 +1,17 @@
-import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
+import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
 import type { AbsolutePath } from '@franklin/lib';
+
 import { createDefaultObsidianFilesystemPermissions } from '../platform/filesystem/permissions.js';
 
-export async function getDefaultAgent(
+export function createObsidianSessionInput(
 	app: FranklinApp,
 	vaultRoot: AbsolutePath,
 	configDir: string,
-): Promise<FranklinRuntime> {
-	// TODO(FRA-191): Recycle persisted session instead of always creating fresh
-	const session = await app.agents.create({
+): AgentCreateInput {
+	return {
 		overrides: {
+			// New root sessions inherit the current app defaults plus the
+			// Obsidian host environment constraints.
 			core: { llmConfig: app.settings.get().defaultLLMConfig },
 			env: {
 				fsConfig: {
@@ -25,7 +27,5 @@ export async function getDefaultAgent(
 				},
 			},
 		},
-	});
-
-	return session.runtime;
+	};
 }

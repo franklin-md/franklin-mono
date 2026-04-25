@@ -8,11 +8,19 @@ import {
 	maxTokensTurn,
 	providerErrorTurn,
 } from '../fixtures.js';
+import { MockAgentsDecorator } from '../mock-agent.js';
 import { ConversationView } from '../../src/conversation/view.js';
 
 const meta = {
 	title: 'Conversation/TurnEnd',
 	component: ConversationView,
+	decorators: [
+		(Story) => (
+			<MockAgentsDecorator activeSessionId="mock-session">
+				<Story />
+			</MockAgentsDecorator>
+		),
+	],
 } satisfies Meta<typeof ConversationView>;
 
 export default meta;

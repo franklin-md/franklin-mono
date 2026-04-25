@@ -18,9 +18,9 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"build": "tsc -b tsconfig.json",
-		"typecheck": "tsc --noEmit -p tsconfig.json",
-		"test": "vitest run --passWithNoTests"
+		"build": "node ../../scripts/in-parallel.mjs --mb 800 --name mini-acp-build -- tsc -b tsconfig.json",
+		"typecheck": "node ../../scripts/in-parallel.mjs --mb 600 --name mini-acp-typecheck -- tsc --noEmit -p tsconfig.json",
+		"test": "node ../../scripts/in-parallel.mjs --mb 950 --name mini-acp-test -- vitest run --passWithNoTests"
 	},
 	"dependencies": {
 		"@franklin/lib": "*",
