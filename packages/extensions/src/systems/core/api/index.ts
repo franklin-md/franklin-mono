@@ -1,6 +1,10 @@
 export type { CoreAPI } from './api.js';
 export type { Prompt } from './prompt.js';
-export type { SystemPrompt } from './system-prompt.js';
+export type {
+	SystemPrompt,
+	SetPartOptions,
+	SystemPromptContent,
+} from './system-prompt.js';
 export type {
 	CancelHandler,
 	PromptHandler,

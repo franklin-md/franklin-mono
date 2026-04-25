@@ -1,3 +1,3 @@
-export type { SystemPromptAssembler } from './assembler.js';
-export { buildSystemPromptAssembler } from './assembler.js';
+export type { SystemPromptAssembler } from './assembler/index.js';
+export { buildSystemPromptAssembler } from './assembler/index.js';
 export { createSystemPromptDecorator } from './decorator.js';

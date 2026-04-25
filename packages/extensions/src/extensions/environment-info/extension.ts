@@ -14,28 +14,28 @@ export function createEnvironmentInfoExtension(
 	const now = opts.now ?? (() => new Date());
 
 	return (api) => {
-		let staticLoaded = false;
-
-		api.on('systemPrompt', async (prompt, ctx) => {
-			if (staticLoaded) return;
-			const env = ctx.environment;
-			const [platform, osVersion, shell, homeDir, config] = await Promise.all([
-				env.osInfo.getPlatform(),
-				env.osInfo.getOsVersion(),
-				env.osInfo.getShellInfo(),
-				env.osInfo.getHomeDir(),
-				env.config(),
-			]);
+		api.on('systemPrompt', (prompt, ctx) => {
 			prompt.setPart(
-				renderEnvironmentInfo({
-					platform,
-					osVersion,
-					shell,
-					homeDir,
-					cwd: config.fsConfig.cwd,
-				}),
+				async () => {
+					const env = ctx.environment;
+					const [platform, osVersion, shell, homeDir, config] =
+						await Promise.all([
+							env.osInfo.getPlatform(),
+							env.osInfo.getOsVersion(),
+							env.osInfo.getShellInfo(),
+							env.osInfo.getHomeDir(),
+							env.config(),
+						]);
+					return renderEnvironmentInfo({
+						platform,
+						osVersion,
+						shell,
+						homeDir,
+						cwd: config.fsConfig.cwd,
+					});
+				},
+				{ once: true },
 			);
-			staticLoaded = true;
 		});
 
 		api.on('systemPrompt', (prompt) => {
