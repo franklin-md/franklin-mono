@@ -86,7 +86,8 @@ export function ConversationView({ turns, toolUse }: ConversationViewProps) {
 		<ScrollRoot className="min-w-0 flex-1">
 			<ScrollViewport
 				ref={autoFollow.viewportRef}
-				className="p-4"
+				// Radix's table wrapper can expand horizontally around chat content.
+				className="p-4 [&>div]:!block"
 				onScroll={autoFollow.handleScroll}
 			>
 				<div
