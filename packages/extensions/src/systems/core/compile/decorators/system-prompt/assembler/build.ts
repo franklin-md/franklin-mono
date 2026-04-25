@@ -23,8 +23,15 @@ export function buildSystemPromptAssembler(
 				// `pending` is a per-handler local, not slot state — any
 				// content factory lives only within this iteration.
 				let pending: SystemPromptContent | undefined;
+				let called = false;
 				const systemPrompt: SystemPrompt = {
 					setPart(content, opts) {
+						if (called) {
+							throw new Error(
+								'setPart called more than once in a single handler invocation; each handler owns one slot and may set it at most once per turn',
+							);
+						}
+						called = true;
 						pending = content;
 						applySetPart(slot, opts);
 					},

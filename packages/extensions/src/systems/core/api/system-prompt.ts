@@ -39,6 +39,12 @@ export interface SystemPrompt {
 	 * Each handler owns a single fragment slot, identified by its
 	 * registration. Calling `setPart` redefines that slot's contents;
 	 * not calling it leaves the prior fragment untouched.
+	 *
+	 * May be called at most once per handler invocation. A second call
+	 * within the same invocation is a programmer error (the handler likely
+	 * meant to register multiple handlers) and throws synchronously. The
+	 * restriction is per-invocation, not per-session: handlers are free to
+	 * call `setPart` again on subsequent assembles.
 	 */
 	setPart(content: SystemPromptContent, opts?: SetPartOptions): void;
 }

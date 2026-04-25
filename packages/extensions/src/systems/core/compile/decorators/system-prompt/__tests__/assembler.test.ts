@@ -280,6 +280,40 @@ describe('buildSystemPromptAssembler', () => {
 		});
 	});
 
+	describe('multiple setPart calls in one handler', () => {
+		it('throws when setPart is called twice in a single handler invocation', async () => {
+			const assembler = buildSystemPromptAssembler([
+				(ctx) => {
+					ctx.setPart('first');
+					ctx.setPart('second');
+				},
+			]);
+			await expect(assembler.assemble()).rejects.toThrow(/setPart/);
+		});
+
+		it('throws even when the second setPart carries different opts', async () => {
+			const assembler = buildSystemPromptAssembler([
+				(ctx) => {
+					ctx.setPart('first', { cache: true });
+					ctx.setPart('second', { once: true });
+				},
+			]);
+			await expect(assembler.assemble()).rejects.toThrow(/setPart/);
+		});
+
+		it('allows the same handler to call setPart again on a later assemble', async () => {
+			let turn = 0;
+			const handler: SystemPromptHandler = (ctx) => {
+				ctx.setPart(turn === 0 ? 'a' : 'b');
+			};
+			const assembler = buildSystemPromptAssembler([handler]);
+
+			expect(await assembler.assemble()).toBe('a');
+			turn = 1;
+			expect(await assembler.assemble()).toBe('b');
+		});
+	});
+
 	describe('factory form', () => {
 		it('accepts a () => string factory and resolves it to the fragment', async () => {
 			const assembler = buildSystemPromptAssembler([
