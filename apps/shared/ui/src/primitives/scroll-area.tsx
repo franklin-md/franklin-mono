@@ -17,22 +17,13 @@ const ScrollRoot = React.forwardRef<
 ));
 ScrollRoot.displayName = ScrollAreaPrimitive.Root.displayName;
 
-// Radix wraps Viewport children in `<div style="display:table; min-width:100%">`,
-// which sizes the wrapper to its widest descendant and breaks horizontal
-// constraints (max-w, mx-auto, truncate) on children. Override both inline
-// styles on the wrapper so width flows from the parent again.
-// https://github.com/radix-ui/primitives/issues/2722
-// https://github.com/radix-ui/primitives/issues/3646
 const ScrollViewport = React.forwardRef<
 	React.ComponentRef<typeof ScrollAreaPrimitive.Viewport>,
 	React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Viewport>
 >(({ className, ...props }, ref) => (
 	<ScrollAreaPrimitive.Viewport
 		ref={ref}
-		className={cn(
-			'h-full w-full rounded-[inherit] [&>div]:!block [&>div]:!min-w-0',
-			className,
-		)}
+		className={cn('h-full w-full rounded-[inherit]', className)}
 		{...props}
 	/>
 ));
