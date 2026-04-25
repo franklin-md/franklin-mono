@@ -1,18 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { withDeadline } from '../../utils/async/deadline.js';
 import { createDuplexPair } from '../in-memory/index.js';
 import { callable } from '../streams/writable/callable.js';
-
-async function readWithTimeout<T>(
-	reader: ReadableStreamDefaultReader<T>,
-): Promise<{ done: boolean; value?: T } | 'timeout'> {
-	return await Promise.race([
-		reader.read(),
-		new Promise<'timeout'>((resolve) => {
-			setTimeout(() => resolve('timeout'), 10);
-		}),
-	]);
-}
 
 describe('createDuplexPair', () => {
 	it('sends data from a to b', async () => {
@@ -111,11 +101,15 @@ describe('createDuplexPair', () => {
 		try {
 			await a.dispose();
 
-			expect(await readWithTimeout(aReader)).toEqual({
+			await expect(
+				withDeadline(aReader.read(), 10, 'a readable close'),
+			).resolves.toEqual({
 				done: true,
 				value: undefined,
 			});
-			expect(await readWithTimeout(bReader)).toEqual({
+			await expect(
+				withDeadline(bReader.read(), 10, 'b readable close'),
+			).resolves.toEqual({
 				done: true,
 				value: undefined,
 			});
