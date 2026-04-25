@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { AuthEntries, OAuthCredentials } from '@franklin/agent/browser';
 import { MemorySecretStorage } from '../memory-secret-storage.js';
+import { toApiKeyName, toOAuthName } from '../key-names.js';
 import {
-	createObsidianAuthStore,
 	decodeApiKey,
 	decodeOAuth,
 	encodeApiKey,
 	encodeOAuth,
-	toApiKeyName,
-	toOAuthName,
-} from '../store.js';
+} from '../schema.js';
+import { createObsidianAuthStore } from '../store.js';
 
 describe('toApiKeyName / toOAuthName', () => {
 	it('produces the expected keychain key names', () => {

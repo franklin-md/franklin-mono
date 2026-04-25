@@ -1,4 +1,4 @@
-import type { ObsidianSecretStorage } from './store.js';
+import type { ObsidianSecretStorage } from './types.js';
 
 export class MemorySecretStorage implements ObsidianSecretStorage {
 	private readonly map = new Map<string, string>();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { toSecretStorageIdSegment } from '../secret-storage.js';
+import { toSecretStorageIdSegment } from '../key-names.js';
 
 describe('toSecretStorageIdSegment', () => {
 	it('normalizes values to Obsidian-compatible SecretStorage segments', () => {
