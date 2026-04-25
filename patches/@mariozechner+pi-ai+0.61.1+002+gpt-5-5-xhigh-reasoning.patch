@@ -1,0 +1,13 @@
+diff --git a/node_modules/@mariozechner/pi-ai/dist/models.js b/node_modules/@mariozechner/pi-ai/dist/models.js
+index b859f4a..f0fbc59 100644
+--- a/node_modules/@mariozechner/pi-ai/dist/models.js
++++ b/node_modules/@mariozechner/pi-ai/dist/models.js
+@@ -35,7 +35,7 @@ export function calculateCost(model, usage) {
+  * - Opus 4.6 models (xhigh maps to adaptive effort "max" on Anthropic-compatible providers)
+  */
+ export function supportsXhigh(model) {
+-    if (model.id.includes("gpt-5.2") || model.id.includes("gpt-5.3") || model.id.includes("gpt-5.4")) {
++    if (model.id.includes("gpt-5.2") || model.id.includes("gpt-5.3") || model.id.includes("gpt-5.4") || model.id.includes("gpt-5.5")) {
+         return true;
+     }
+     if (model.id.includes("opus-4-6") || model.id.includes("opus-4.6")) {
