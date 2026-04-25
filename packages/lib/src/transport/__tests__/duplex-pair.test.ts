@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDuplexPair } from '../in-memory/index.js';
+import { callable } from '../streams/writable/callable.js';
+
+async function readWithTimeout<T>(
+	reader: ReadableStreamDefaultReader<T>,
+): Promise<{ done: boolean; value?: T } | 'timeout'> {
+	return await Promise.race([
+		reader.read(),
+		new Promise<'timeout'>((resolve) => {
+			setTimeout(() => resolve('timeout'), 10);
+		}),
+	]);
+}
 
 describe('createDuplexPair', () => {
 	it('sends data from a to b', async () => {
@@ -74,5 +86,43 @@ describe('createDuplexPair', () => {
 
 		const result = await reader.read();
 		expect(result.done).toBe(true);
+	});
+
+	it('dispose succeeds while the writable is locked by a callable writer', async () => {
+		const { a, b } = createDuplexPair<string>();
+		const send = callable(a.writable);
+		const reader = b.readable.getReader();
+
+		send('hello');
+		const first = await reader.read();
+		expect(first.value).toBe('hello');
+
+		await expect(a.dispose()).resolves.toBeUndefined();
+
+		const result = await reader.read();
+		expect(result.done).toBe(true);
+	});
+
+	it('dispose closes both directions of the pair', async () => {
+		const { a, b } = createDuplexPair<string>();
+		const aReader = a.readable.getReader();
+		const bReader = b.readable.getReader();
+
+		try {
+			await a.dispose();
+
+			expect(await readWithTimeout(aReader)).toEqual({
+				done: true,
+				value: undefined,
+			});
+			expect(await readWithTimeout(bReader)).toEqual({
+				done: true,
+				value: undefined,
+			});
+		} finally {
+			aReader.releaseLock();
+			bReader.releaseLock();
+			await b.dispose().catch(() => {});
+		}
 	});
 });

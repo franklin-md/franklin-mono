@@ -2,13 +2,46 @@ import type { Duplex } from '../streams/types.js';
 
 // This is a pipe where you can put stuff in and take it out
 export function createMemoryStream<A, B = A>(): Duplex<A, B> {
-	const stream = new TransformStream<B, A>();
+	let controller!: ReadableStreamDefaultController<A>;
+	let closed = false;
+
+	const closeReadable = () => {
+		if (closed) return;
+		closed = true;
+		try {
+			controller.close();
+		} catch {
+			// Already closed or cancelled.
+		}
+	};
+
+	const readable = new ReadableStream<A>({
+		start(c) {
+			controller = c;
+		},
+		cancel() {
+			closed = true;
+		},
+	});
+
+	const writable = new WritableStream<B>({
+		write(chunk) {
+			if (closed) throw new Error('Stream closed');
+			controller.enqueue(chunk as unknown as A);
+		},
+		close() {
+			closeReadable();
+		},
+		abort() {
+			closeReadable();
+		},
+	});
 
 	return {
-		readable: stream.readable,
-		writable: stream.writable,
+		readable,
+		writable,
 		dispose: async () => {
-			await stream.writable.close();
+			closeReadable();
 		},
 	};
 }
@@ -26,17 +59,23 @@ export function createDuplexPair<A, B = A>(): {
 } {
 	const aToB = createMemoryStream<B>(); // a writes B, b reads B
 	const bToA = createMemoryStream<A>(); // b writes A, a reads A
+	let disposed = false;
+	const dispose = async () => {
+		if (disposed) return;
+		disposed = true;
+		await Promise.all([aToB.dispose(), bToA.dispose()]);
+	};
 
 	return {
 		a: {
 			readable: bToA.readable,
 			writable: aToB.writable,
-			dispose: () => aToB.dispose(),
+			dispose,
 		},
 		b: {
 			readable: aToB.readable,
 			writable: bToA.writable,
-			dispose: () => bToA.dispose(),
+			dispose,
 		},
 	};
 }
