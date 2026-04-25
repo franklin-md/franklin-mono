@@ -1,0 +1,22 @@
+import { describe, expect, it } from 'vitest';
+
+import { MODEL_CATALOG } from '../../../../src/conversation/input/models/catalog.js';
+
+describe('MODEL_CATALOG', () => {
+	it('surfaces GPT-5.5 as the leading OpenAI Codex model', () => {
+		const openAICodex = MODEL_CATALOG.find(
+			(group) => group.provider === 'openai-codex',
+		);
+
+		expect(openAICodex?.models[0]).toMatchObject({
+			provider: 'openai-codex',
+			id: 'gpt-5.5',
+			name: 'GPT-5.5',
+			reasoning: true,
+			contextWindow: 1_050_000,
+			costInput: 5,
+			costOutput: 30,
+			intelligence: 'frontier',
+		});
+	});
+});
