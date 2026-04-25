@@ -75,6 +75,7 @@ export {
 	InspectDumpButton,
 	type InspectDumpButtonProps,
 } from './components/inspect-dump-button.js';
+export { IconButton, type IconButtonProps } from './components/icon-button.js';
 export { DeleteButton } from './components/delete-button.js';
 export { Favicon, type FaviconProps } from './components/favicon.js';
 export { FileBadge, type FileBadgeProps } from './components/file-badge.js';
@@ -119,7 +120,7 @@ export {
 export { TextBlock } from './conversation/turn/text/text.js';
 export { ThinkingBlock } from './conversation/turn/thinking.js';
 export { UserBubble } from './conversation/turn/user-bubble.js';
-export { CopyButton } from './conversation/turn/text/chrome/copy.js';
+export { CopyButton } from './conversation/turn/copy-button.js';
 export { ToolCardChrome } from './conversation/tools/chrome.js';
 export { StatusIcon } from './conversation/tools/status-icon.js';
 export {
