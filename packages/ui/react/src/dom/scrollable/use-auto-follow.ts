@@ -53,14 +53,23 @@ export function useAutoFollow<T extends HTMLElement = HTMLElement>({
 
 	const handleScroll = useCallback<UIEventHandler<T>>(
 		(event) => {
+			const scrollHeight = event.currentTarget.scrollHeight;
+			const contentSizeChanged = scrollHeight !== scrollHeightRef.current;
+			scrollHeightRef.current = scrollHeight;
+
+			// Content updates while following are not user intent to escape.
+			if (contentSizeChanged && followingRef.current) {
+				scrollToBottom();
+				return;
+			}
+
 			followingRef.current = isFollowing(event.currentTarget, {
 				bottomThresholdPx,
 				escapeThresholdPx,
 				following: followingRef.current,
 			});
-			scrollHeightRef.current = event.currentTarget.scrollHeight;
 		},
-		[bottomThresholdPx, escapeThresholdPx],
+		[bottomThresholdPx, escapeThresholdPx, scrollToBottom],
 	);
 
 	useLayoutEffect(() => {
@@ -71,10 +80,10 @@ export function useAutoFollow<T extends HTMLElement = HTMLElement>({
 			if (!element) return;
 
 			const scrollHeight = element.scrollHeight;
-			const grew = scrollHeight > scrollHeightRef.current;
+			const contentSizeChanged = scrollHeight !== scrollHeightRef.current;
 			scrollHeightRef.current = scrollHeight;
 
-			if (grew && followingRef.current) {
+			if (contentSizeChanged && followingRef.current) {
 				scrollToBottom();
 			}
 		});

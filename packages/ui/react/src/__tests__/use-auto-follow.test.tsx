@@ -144,6 +144,24 @@ describe('useAutoFollow', () => {
 		expect(metrics.scrollTop).toBe(1200);
 	});
 
+	it('does not treat a large content burst as a user escape', () => {
+		globalThis.ResizeObserver = ResizeObserverMock;
+		render(<Harness />);
+		const viewport = screen.getByTestId('viewport');
+		const metrics = setScrollMetrics(viewport, {
+			clientHeight: 200,
+			scrollHeight: 1000,
+			scrollTop: 800,
+		});
+
+		fireEvent.scroll(viewport);
+		metrics.scrollHeight = 1100;
+		fireEvent.scroll(viewport);
+		ResizeObserverMock.instances[0]?.resize();
+
+		expect(metrics.scrollTop).toBe(1100);
+	});
+
 	it('stops following when the user scrolls beyond the escape threshold', () => {
 		globalThis.ResizeObserver = ResizeObserverMock;
 		render(<Harness />);
@@ -154,6 +172,7 @@ describe('useAutoFollow', () => {
 			scrollTop: 800,
 		});
 
+		fireEvent.scroll(viewport);
 		metrics.scrollTop = 700;
 		fireEvent.scroll(viewport);
 
