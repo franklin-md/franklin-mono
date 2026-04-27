@@ -28,6 +28,7 @@ export {
 	type AgentItemProps,
 } from './agent/agent-list.js';
 export { useAgentControl } from './agent/use-agent-control.js';
+export { useAutoMarkRead } from './agent/use-auto-mark-read.js';
 export { useSettings } from './agent/use-settings.js';
 export {
 	useModelSelection,
