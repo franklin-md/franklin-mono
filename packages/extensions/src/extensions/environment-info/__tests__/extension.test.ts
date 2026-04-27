@@ -15,7 +15,10 @@ import {
 	type SystemPromptAssembler,
 } from '../../../systems/core/compile/decorators/system-prompt/index.js';
 import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
-import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
+import type {
+	EnvironmentConfig,
+	ReconfigurableEnvironment,
+} from '../../../systems/environment/api/types.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
 
 type RuntimeSystemPromptHandler = WithContext<
@@ -31,19 +34,26 @@ function collectHandlers(
 	return registered.systemPrompt;
 }
 
-function fakeEnvironment(osInfo: MemoryOsInfo): ReconfigurableEnvironment {
+function defaultConfig(): EnvironmentConfig {
+	return {
+		fsConfig: {
+			cwd: '/Users/afv/project' as AbsolutePath,
+			permissions: FILESYSTEM_ALLOW_ALL,
+		},
+		netConfig: { allowedDomains: [], deniedDomains: [] },
+	};
+}
+
+function fakeEnvironment(
+	osInfo: MemoryOsInfo,
+	config: () => EnvironmentConfig = defaultConfig,
+): ReconfigurableEnvironment {
 	return {
 		filesystem: {} as never,
 		process: {} as never,
 		web: {} as never,
 		osInfo,
-		config: async () => ({
-			fsConfig: {
-				cwd: '/Users/afv/project' as AbsolutePath,
-				permissions: FILESYSTEM_ALLOW_ALL,
-			},
-			netConfig: { allowedDomains: [], deniedDomains: [] },
-		}),
+		config: async () => config(),
 		reconfigure: async () => {},
 		dispose: async () => {},
 	};
@@ -74,9 +84,9 @@ function bindAssembler(
 }
 
 describe('createEnvironmentInfoExtension', () => {
-	it('registers two systemPrompt handlers (static + dynamic)', () => {
+	it('registers three systemPrompt handlers (static + permissions + date)', () => {
 		const handlers = collectHandlers(createEnvironmentInfoExtension());
-		expect(handlers).toHaveLength(2);
+		expect(handlers).toHaveLength(3);
 	});
 
 	it('static fragment renders cwd + platform + shell + osVersion + homeDir', async () => {
@@ -101,6 +111,36 @@ describe('createEnvironmentInfoExtension', () => {
 		expect(assembled).toContain('Shell: /bin/zsh (posix)');
 		expect(assembled).toContain('OS Version: Darwin 24.6.0');
 		expect(assembled).toContain('Home directory: /Users/afv');
+	});
+
+	it('permissions fragment renders configured filesystem and network policies', async () => {
+		const env = fakeEnvironment(new MemoryOsInfo(), () => ({
+			fsConfig: {
+				cwd: '/Users/afv/project' as AbsolutePath,
+				permissions: {
+					allowRead: ['Users/afv/project/src/**'],
+					denyRead: ['Users/afv/project/secrets/**'],
+					allowWrite: ['Users/afv/project/**'],
+					denyWrite: ['Users/afv/project/.git/**'],
+				},
+			},
+			netConfig: {
+				allowedDomains: ['example.com'],
+				deniedDomains: ['localhost:9229'],
+			},
+		}));
+		const ctx = fakeRuntime(env);
+		const handlers = collectHandlers(createEnvironmentInfoExtension());
+
+		const assembled = await bindAssembler(handlers, ctx).assemble();
+
+		expect(assembled).toContain('Configured environment permissions:');
+		expect(assembled).toContain('- allowRead: Users/afv/project/src/**');
+		expect(assembled).toContain('- denyRead: Users/afv/project/secrets/**');
+		expect(assembled).toContain('- allowWrite: Users/afv/project/**');
+		expect(assembled).toContain('- denyWrite: Users/afv/project/.git/**');
+		expect(assembled).toContain('- allowedDomains: example.com');
+		expect(assembled).toContain('- deniedDomains: localhost:9229');
 	});
 
 	it('dynamic fragment renders current date', async () => {
@@ -131,6 +171,32 @@ describe('createEnvironmentInfoExtension', () => {
 		// second assemble, so osInfo reads happen at most once.
 		expect(osInfoSpy).toHaveBeenCalledTimes(1);
 		osInfoSpy.mockRestore();
+	});
+
+	it('permissions fragment reflects a new environment config on subsequent assembles', async () => {
+		let allowWrite: readonly string[] = [];
+		const env = fakeEnvironment(new MemoryOsInfo(), () => ({
+			fsConfig: {
+				cwd: '/Users/afv/project' as AbsolutePath,
+				permissions: {
+					allowRead: [],
+					denyRead: [],
+					allowWrite,
+					denyWrite: [],
+				},
+			},
+			netConfig: { allowedDomains: [], deniedDomains: [] },
+		}));
+		const ctx = fakeRuntime(env);
+		const handlers = collectHandlers(createEnvironmentInfoExtension());
+		const assembler = bindAssembler(handlers, ctx);
+
+		const first = await assembler.assemble();
+		expect(first).toContain('- allowWrite: (none)');
+
+		allowWrite = ['Users/afv/project/**'];
+		const second = await assembler.assemble();
+		expect(second).toContain('- allowWrite: Users/afv/project/**');
 	});
 
 	it('dynamic fragment reflects a new date on subsequent assembles', async () => {
