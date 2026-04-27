@@ -3,6 +3,7 @@ import {
 	useAgentControl,
 	type AgentItemProps,
 	useAgentState,
+	useAutoMarkRead,
 } from '@franklin/react';
 
 import { SidebarItem } from './sidebar-item.js';
@@ -23,6 +24,7 @@ export function AgentSidebarItem({
 		statusExtension.keys.status,
 		createStatusControl,
 	);
+	useAutoMarkRead(isActive);
 
 	return (
 		<SidebarItem

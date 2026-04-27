@@ -2,6 +2,7 @@ import { createStatusControl, statusExtension } from '@franklin/extensions';
 import {
 	useAgentControl,
 	useAgentState,
+	useAutoMarkRead,
 	useMiddleButtonEffect,
 } from '@franklin/react';
 import { X } from 'lucide-react';
@@ -34,6 +35,7 @@ export function AgentTabsItem({
 	);
 	const handleMiddleButtonRemove =
 		useMiddleButtonEffect<HTMLButtonElement>(onRemove);
+	useAutoMarkRead(isActive);
 
 	return (
 		<div
