@@ -11,13 +11,12 @@
  * honor is purely a cascade concern. Keying off Obsidian's body class lets
  * the swap follow the live Obsidian theme with no JS or change observers.
  *
- * The `body.theme-dark` selector must NOT be auto-prefixed with `.franklin`
- * — body is an ancestor of `.franklin`, not a descendant. franklinPrefix's
- * `ignoreSelector` already exempts `body.theme-*` selectors, which is why
- * we don't manually weave `.franklin` into the selector here. `.shiki` is
- * emitted only by our renderer, so the rule stays effectively scoped.
+ * The `body.theme-dark` selector must NOT be auto-prefixed before the body
+ * selector — body is an ancestor of `.franklin`, not a descendant.
+ * franklinPrefix's `ignoreSelector` exempts `body.theme-*` selectors, so the
+ * explicit `.franklin` keeps the Shiki override scoped to Franklin content.
  */
 
-body.theme-dark .shiki span {
+body.theme-dark .franklin .shiki span {
 	color: var(--shiki-dark) !important;
 }
