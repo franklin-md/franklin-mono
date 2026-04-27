@@ -4,10 +4,8 @@ export interface ScrollableMetrics {
 	scrollTop: number;
 }
 
-export interface AutoFollowOptions {
+export interface AtBottomOptions {
 	bottomThresholdPx: number;
-	escapeThresholdPx: number;
-	following: boolean;
 }
 
 export function getScrollDistanceFromBottom(
@@ -19,14 +17,9 @@ export function getScrollDistanceFromBottom(
 	return metrics.scrollHeight - metrics.clientHeight - metrics.scrollTop;
 }
 
-// Hysteresis: snap to following at the bottom, release once the user escapes
-// past escapeThreshold, and keep the caller's previous decision in between.
-export function isFollowing(
+export function isAtBottom(
 	metrics: ScrollableMetrics,
-	options: AutoFollowOptions,
+	options: AtBottomOptions,
 ): boolean {
-	const distance = getScrollDistanceFromBottom(metrics);
-	if (distance <= options.bottomThresholdPx) return true;
-	if (distance > options.escapeThresholdPx) return false;
-	return options.following;
+	return getScrollDistanceFromBottom(metrics) <= options.bottomThresholdPx;
 }

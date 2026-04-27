@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
 	getScrollDistanceFromBottom,
-	isFollowing,
+	isAtBottom,
 } from '../dom/scrollable/metrics.js';
 import type { ScrollableMetrics } from '../dom/scrollable/metrics.js';
 import { useAutoFollow } from '../dom/scrollable/use-auto-follow.js';
@@ -52,10 +52,33 @@ function setScrollMetrics(element: HTMLElement, metrics: ScrollableMetrics) {
 	};
 }
 
+function renderAutoFollow(initialMetrics: ScrollableMetrics) {
+	globalThis.ResizeObserver = ResizeObserverMock;
+	render(<Harness />);
+	const viewport = screen.getByTestId('viewport');
+	const metrics = setScrollMetrics(viewport, initialMetrics);
+
+	return {
+		expectScrollTop(expected: number) {
+			expect(metrics.scrollTop).toBe(expected);
+		},
+		follow() {
+			fireEvent.click(screen.getByText('follow'));
+		},
+		resizeContent(changes: Partial<ScrollableMetrics> = {}) {
+			Object.assign(metrics, changes);
+			ResizeObserverMock.instances[0]?.resize();
+		},
+		scroll(changes: Partial<ScrollableMetrics> = {}) {
+			Object.assign(metrics, changes);
+			fireEvent.scroll(viewport);
+		},
+	};
+}
+
 function Harness() {
 	const autoFollow = useAutoFollow<HTMLDivElement>({
 		bottomThresholdPx: 24,
-		escapeThresholdPx: 64,
 	});
 
 	return (
@@ -112,162 +135,153 @@ describe('useAutoFollow', () => {
 		globalThis.ResizeObserver = undefined as never;
 	});
 
-	it('keeps pure scroll math outside the hook', () => {
-		const metrics = {
-			clientHeight: 200,
-			scrollHeight: 1000,
-			scrollTop: 776.5,
-		};
+	describe('scroll metrics', () => {
+		it('keeps pure scroll math outside the hook', () => {
+			const metrics = {
+				clientHeight: 200,
+				scrollHeight: 1000,
+				scrollTop: 776.5,
+			};
 
-		expect(getScrollDistanceFromBottom(metrics)).toBe(23.5);
-		expect(
-			isFollowing(metrics, {
-				bottomThresholdPx: 24,
-				escapeThresholdPx: 64,
-				following: false,
-			}),
-		).toBe(true);
+			expect(getScrollDistanceFromBottom(metrics)).toBe(23.5);
+			expect(
+				isAtBottom(metrics, {
+					bottomThresholdPx: 24,
+				}),
+			).toBe(true);
+		});
 	});
 
-	it('scrolls to the bottom when observed content grows while following', () => {
-		globalThis.ResizeObserver = ResizeObserverMock;
-		render(<Harness />);
-		const metrics = setScrollMetrics(screen.getByTestId('viewport'), {
-			clientHeight: 200,
-			scrollHeight: 1000,
-			scrollTop: 0,
+	describe('content growth', () => {
+		it('scrolls to the bottom when observed content grows while following', () => {
+			const scenario = renderAutoFollow({
+				clientHeight: 200,
+				scrollHeight: 1000,
+				scrollTop: 0,
+			});
+
+			scenario.resizeContent({ scrollHeight: 1200 });
+
+			scenario.expectScrollTop(1200);
 		});
 
-		metrics.scrollHeight = 1200;
-		ResizeObserverMock.instances[0]?.resize();
+		it('does not treat a large content burst as a user escape', () => {
+			const scenario = renderAutoFollow({
+				clientHeight: 200,
+				scrollHeight: 1000,
+				scrollTop: 800,
+			});
 
-		expect(metrics.scrollTop).toBe(1200);
-	});
+			scenario.scroll();
+			scenario.scroll({ scrollHeight: 1100 });
+			scenario.resizeContent();
 
-	it('does not treat a large content burst as a user escape', () => {
-		globalThis.ResizeObserver = ResizeObserverMock;
-		render(<Harness />);
-		const viewport = screen.getByTestId('viewport');
-		const metrics = setScrollMetrics(viewport, {
-			clientHeight: 200,
-			scrollHeight: 1000,
-			scrollTop: 800,
+			scenario.expectScrollTop(1100);
 		});
 
-		fireEvent.scroll(viewport);
-		metrics.scrollHeight = 1100;
-		fireEvent.scroll(viewport);
-		ResizeObserverMock.instances[0]?.resize();
+		it('allows user escape while content grows in the same scroll event', () => {
+			const scenario = renderAutoFollow({
+				clientHeight: 200,
+				scrollHeight: 1000,
+				scrollTop: 800,
+			});
 
-		expect(metrics.scrollTop).toBe(1100);
+			scenario.scroll();
+			scenario.scroll({ scrollHeight: 1050, scrollTop: 760 });
+			scenario.expectScrollTop(760);
+
+			scenario.resizeContent({ scrollHeight: 1100 });
+
+			scenario.expectScrollTop(760);
+		});
 	});
 
-	it('allows user escape while content grows in the same scroll event', () => {
-		globalThis.ResizeObserver = ResizeObserverMock;
-		render(<Harness />);
-		const viewport = screen.getByTestId('viewport');
-		const metrics = setScrollMetrics(viewport, {
-			clientHeight: 200,
-			scrollHeight: 1000,
-			scrollTop: 800,
+	describe('user scroll intent', () => {
+		it('stops following when the user scrolls up', () => {
+			const scenario = renderAutoFollow({
+				clientHeight: 200,
+				scrollHeight: 1000,
+				scrollTop: 800,
+			});
+
+			scenario.scroll();
+			scenario.scroll({ scrollTop: 700 });
+			scenario.resizeContent({ scrollHeight: 1100 });
+
+			// Paused: growth must not yank the viewport to the bottom.
+			scenario.expectScrollTop(700);
 		});
 
-		fireEvent.scroll(viewport);
-		metrics.scrollHeight = 1050;
-		metrics.scrollTop = 760;
-		fireEvent.scroll(viewport);
+		it('does not stop following if the user stays within the bottom threshold', () => {
+			const scenario = renderAutoFollow({
+				clientHeight: 200,
+				scrollHeight: 1000,
+				scrollTop: 800,
+			});
 
-		expect(metrics.scrollTop).toBe(760);
+			scenario.scroll();
+			scenario.scroll({ scrollTop: 780 });
+			scenario.resizeContent({ scrollHeight: 1100 });
 
-		metrics.scrollHeight = 1100;
-		ResizeObserverMock.instances[0]?.resize();
-
-		expect(metrics.scrollTop).toBe(760);
-	});
-
-	it('stops following when the user scrolls beyond the escape threshold', () => {
-		globalThis.ResizeObserver = ResizeObserverMock;
-		render(<Harness />);
-		const viewport = screen.getByTestId('viewport');
-		const metrics = setScrollMetrics(viewport, {
-			clientHeight: 200,
-			scrollHeight: 1000,
-			scrollTop: 800,
+			scenario.expectScrollTop(1100);
 		});
 
-		fireEvent.scroll(viewport);
-		metrics.scrollTop = 700;
-		fireEvent.scroll(viewport);
+		it('resumes following when the user scrolls back near the bottom', () => {
+			const scenario = renderAutoFollow({
+				clientHeight: 200,
+				scrollHeight: 1000,
+				scrollTop: 700,
+			});
 
-		metrics.scrollHeight = 1100;
-		ResizeObserverMock.instances[0]?.resize();
+			scenario.scroll();
+			scenario.scroll({ scrollTop: 780 });
+			scenario.resizeContent({ scrollHeight: 1100 });
 
-		// Paused: growth must not yank the viewport to the bottom.
-		expect(metrics.scrollTop).toBe(700);
-	});
-
-	it('resumes following when the user scrolls back near the bottom', () => {
-		globalThis.ResizeObserver = ResizeObserverMock;
-		render(<Harness />);
-		const viewport = screen.getByTestId('viewport');
-		const metrics = setScrollMetrics(viewport, {
-			clientHeight: 200,
-			scrollHeight: 1000,
-			scrollTop: 700,
+			scenario.expectScrollTop(1100);
 		});
 
-		fireEvent.scroll(viewport);
-		metrics.scrollTop = 780;
-		fireEvent.scroll(viewport);
-		metrics.scrollHeight = 1100;
-		ResizeObserverMock.instances[0]?.resize();
+		it('uses threshold math so fractional scrollTop values count as bottom', () => {
+			const scenario = renderAutoFollow({
+				clientHeight: 200,
+				scrollHeight: 1000,
+				scrollTop: 776.5,
+			});
 
-		expect(metrics.scrollTop).toBe(1100);
+			// User was paused; scrolling within the bottom threshold snaps back to following.
+			scenario.scroll();
+			scenario.resizeContent({ scrollHeight: 1100 });
+
+			scenario.expectScrollTop(1100);
+		});
 	});
 
-	it('composes caller-owned reset behavior outside useAutoFollow', () => {
-		const follow = vi.fn();
-		const { rerender } = render(<FollowKeyHarness follow={follow} />);
+	describe('caller controls', () => {
+		it('composes caller-owned reset behavior outside useAutoFollow', () => {
+			const follow = vi.fn();
+			const { rerender } = render(<FollowKeyHarness follow={follow} />);
 
-		expect(follow).not.toHaveBeenCalled();
+			expect(follow).not.toHaveBeenCalled();
 
-		rerender(<FollowKeyHarness follow={follow} resetKey="turn-1" />);
-		expect(follow).toHaveBeenCalledTimes(1);
+			rerender(<FollowKeyHarness follow={follow} resetKey="turn-1" />);
+			expect(follow).toHaveBeenCalledTimes(1);
 
-		rerender(<FollowKeyHarness follow={follow} resetKey="turn-1" />);
-		expect(follow).toHaveBeenCalledTimes(1);
+			rerender(<FollowKeyHarness follow={follow} resetKey="turn-1" />);
+			expect(follow).toHaveBeenCalledTimes(1);
 
-		rerender(<FollowKeyHarness follow={follow} resetKey="turn-2" />);
-		expect(follow).toHaveBeenCalledTimes(2);
-	});
-
-	it('exposes an imperative follow control that forces scroll-to-bottom', () => {
-		render(<Harness />);
-		const metrics = setScrollMetrics(screen.getByTestId('viewport'), {
-			clientHeight: 200,
-			scrollHeight: 1000,
-			scrollTop: 0,
+			rerender(<FollowKeyHarness follow={follow} resetKey="turn-2" />);
+			expect(follow).toHaveBeenCalledTimes(2);
 		});
 
-		fireEvent.click(screen.getByText('follow'));
-		expect(metrics.scrollTop).toBe(1000);
-	});
+		it('exposes an imperative follow control that forces scroll-to-bottom', () => {
+			const scenario = renderAutoFollow({
+				clientHeight: 200,
+				scrollHeight: 1000,
+				scrollTop: 0,
+			});
 
-	it('uses threshold math so fractional scrollTop values count as bottom', () => {
-		globalThis.ResizeObserver = ResizeObserverMock;
-		render(<Harness />);
-		const viewport = screen.getByTestId('viewport');
-		const metrics = setScrollMetrics(viewport, {
-			clientHeight: 200,
-			scrollHeight: 1000,
-			scrollTop: 776.5,
+			scenario.follow();
+
+			scenario.expectScrollTop(1000);
 		});
-
-		// User was paused; scrolling within the bottom threshold snaps back to following.
-		fireEvent.scroll(viewport);
-
-		metrics.scrollHeight = 1100;
-		ResizeObserverMock.instances[0]?.resize();
-		expect(metrics.scrollTop).toBe(1100);
 	});
 });

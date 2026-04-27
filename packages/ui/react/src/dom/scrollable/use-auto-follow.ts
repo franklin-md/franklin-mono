@@ -6,11 +6,10 @@ import {
 	type UIEventHandler,
 } from 'react';
 
-import { isFollowing } from './metrics.js';
+import { isAtBottom } from './metrics.js';
 
 export interface UseAutoFollowOptions {
 	bottomThresholdPx?: number;
-	escapeThresholdPx?: number;
 }
 
 export interface AutoFollow<T extends HTMLElement> {
@@ -21,11 +20,9 @@ export interface AutoFollow<T extends HTMLElement> {
 }
 
 const defaultBottomThresholdPx = 24;
-const defaultEscapeThresholdPx = 64;
 
 export function useAutoFollow<T extends HTMLElement = HTMLElement>({
 	bottomThresholdPx = defaultBottomThresholdPx,
-	escapeThresholdPx = defaultEscapeThresholdPx,
 }: UseAutoFollowOptions = {}): AutoFollow<T> {
 	const viewport = useRef<T | null>(null);
 	const [content, setContent] = useState<HTMLElement | null>(null);
@@ -58,31 +55,33 @@ export function useAutoFollow<T extends HTMLElement = HTMLElement>({
 		// So technically to scroll to bottom you need scrollHeight - clientHeight, but browsers clamp to max possible value.
 		element.scrollTop = element.scrollHeight;
 		captureMetrics(element);
-	}, []);
+	}, [captureMetrics]);
 
 	const handleScroll = useCallback<UIEventHandler<T>>(
 		(event) => {
 			const element = event.currentTarget;
 			const contentSizeChanged =
 				element.scrollHeight !== scrollHeightRef.current;
-			// Test that the user has scrolled up
-			const activelyScrolledAway = element.scrollTop < scrollTopRef.current;
+			const activelyScrolledUp = element.scrollTop < scrollTopRef.current;
 
 			captureMetrics(element);
 
 			// Content updates while following are not user intent to escape.
-			if (contentSizeChanged && followingRef.current && !activelyScrolledAway) {
+			if (contentSizeChanged && followingRef.current && !activelyScrolledUp) {
 				scrollToBottom();
 				return;
 			}
 
-			followingRef.current = isFollowing(element, {
-				bottomThresholdPx,
-				escapeThresholdPx,
-				following: followingRef.current,
-			});
+			if (isAtBottom(element, { bottomThresholdPx })) {
+				followingRef.current = true;
+				return;
+			}
+
+			if (activelyScrolledUp) {
+				followingRef.current = false;
+			}
 		},
-		[bottomThresholdPx, escapeThresholdPx, scrollToBottom],
+		[bottomThresholdPx, scrollToBottom],
 	);
 
 	useLayoutEffect(() => {
