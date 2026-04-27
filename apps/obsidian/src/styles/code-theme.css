@@ -1,0 +1,23 @@
+/*
+ * Shiki dual-theme swap — Obsidian host-class variant.
+ *
+ * The Obsidian counterpart to `@franklin/ui/styles/utilities/code-theme.css`,
+ * which keys off Franklin's `.dark` convention. Obsidian signals theme via
+ * `body.theme-dark` / `body.theme-light` instead, so the plugin imports this
+ * file and skips the shared one (which would never match here anyway).
+ *
+ * Shiki emits both palettes inline per token (`color: #xxx; --shiki-dark:
+ * #yyy` from the dual-theme codeToTokens output); picking which one to
+ * honor is purely a cascade concern. Keying off Obsidian's body class lets
+ * the swap follow the live Obsidian theme with no JS or change observers.
+ *
+ * The `body.theme-dark` selector must NOT be auto-prefixed with `.franklin`
+ * — body is an ancestor of `.franklin`, not a descendant. franklinPrefix's
+ * `ignoreSelector` already exempts `body.theme-*` selectors, which is why
+ * we don't manually weave `.franklin` into the selector here. `.shiki` is
+ * emitted only by our renderer, so the rule stays effectively scoped.
+ */
+
+body.theme-dark .shiki span {
+	color: var(--shiki-dark) !important;
+}

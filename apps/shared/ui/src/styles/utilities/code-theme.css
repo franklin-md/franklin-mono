@@ -1,0 +1,19 @@
+/*
+ * Shiki dual-theme swap — Franklin `.dark` convention.
+ *
+ * The shared markdown renderer compiles fenced code with Shiki's dual-theme
+ * mode (`github-light` + `github-dark`), which emits both palettes inline
+ * per token (`color: #xxx; --shiki-dark: #yyy`). This rule selects the dark
+ * palette whenever an ancestor carries the `.dark` class.
+ *
+ * Hosts that don't use Franklin's `.dark` convention (e.g. the Obsidian
+ * plugin, which keys off `body.theme-dark`) should ship a sibling stylesheet
+ * with their own selector and skip importing this file. See
+ * `apps/obsidian/src/styles/code-theme.css` for the host-class variant.
+ *
+ * Reference: https://shiki.style/guide/dual-themes
+ */
+
+.dark .shiki span {
+	color: var(--shiki-dark) !important;
+}
