@@ -2,7 +2,8 @@ import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
 import { ItemView } from 'obsidian';
 import type { WorkspaceLeaf } from 'obsidian';
 
-import { mountConversationWindow } from './components/conversation-window/mount.js';
+import { ConversationWindow } from './components/conversation-window/window.js';
+import { createMounter, type Mounter } from './renderer/mount.js';
 
 export const VIEW_TYPE = 'franklin-view';
 
@@ -12,7 +13,7 @@ type FranklinViewOptions = {
 };
 
 export class FranklinView extends ItemView {
-	private unmountWindow: (() => void) | null = null;
+	private mounter: Mounter | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -34,16 +35,20 @@ export class FranklinView extends ItemView {
 	}
 
 	async onOpen() {
-		this.unmountWindow?.();
-		this.unmountWindow = mountConversationWindow({
-			app: this.options.app,
-			contentEl: this.contentEl,
-			getCreateInput: this.options.getCreateInput,
+		this.mounter?.unmount();
+		this.mounter = createMounter({
+			children: (
+				<ConversationWindow
+					app={this.options.app}
+					getCreateInput={this.options.getCreateInput}
+				/>
+			),
 		});
+		this.mounter.mount(this.contentEl);
 	}
 
 	async onClose() {
-		this.unmountWindow?.();
-		this.unmountWindow = null;
+		this.mounter?.unmount();
+		this.mounter = null;
 	}
 }
