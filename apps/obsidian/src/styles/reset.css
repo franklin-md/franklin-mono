@@ -34,3 +34,8 @@ textarea:focus-visible {
 	outline: 0;
 	box-shadow: none;
 }
+
+pre,
+code {
+	background-color: transparent;
+}

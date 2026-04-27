@@ -8,6 +8,8 @@
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/geist-mono';
 
+@import './utilities/code-theme.css';
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
