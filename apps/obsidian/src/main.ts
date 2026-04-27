@@ -6,6 +6,7 @@ import { createObsidianSessionInput } from './app/agent.js';
 import { ObsidianDiffClient } from './diff/diff-client.js';
 import { DiffController } from './diff/diff-controller.js';
 import { DiffExplorerController } from './diff/diff-explorer-controller.js';
+import { clearPortalRoot } from './renderer/portal.js';
 import { FranklinSettingTab } from './settings.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
 
@@ -68,6 +69,7 @@ export default class FranklinPlugin extends Plugin {
 	onunload() {
 		this.diffExplorerController.onunload();
 		this.diffController.onunload();
+		clearPortalRoot(document);
 		this.franklinApp = null;
 	}
 
