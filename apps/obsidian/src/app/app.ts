@@ -6,7 +6,6 @@ import {
 	environmentInfoExtension,
 	filesystemExtension,
 	instructionsExtension,
-	spawnExtension,
 	statusExtension,
 	todoExtension,
 } from '@franklin/extensions';
@@ -38,7 +37,7 @@ const extensionBundles = [
 	instructionsExtension,
 	filesystemExtension,
 	webExtension,
-	spawnExtension,
+	// spawnExtension,
 	environmentInfoExtension,
 ];
 const extensions = extensionBundles.map(

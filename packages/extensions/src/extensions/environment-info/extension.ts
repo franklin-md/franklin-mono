@@ -3,6 +3,7 @@ import type { CoreAPI } from '../../systems/core/index.js';
 import type { EnvironmentRuntime } from '../../systems/environment/runtime.js';
 import { renderEnvironmentInfo } from './render.js';
 import { renderCurrentDate } from './render-date.js';
+import { renderEnvironmentPermissions } from './render-permissions.js';
 
 export interface EnvironmentInfoOptions {
 	now?: () => Date;
@@ -36,6 +37,16 @@ export function createEnvironmentInfoExtension(
 				},
 				{ once: true },
 			);
+		});
+
+		api.on('systemPrompt', (prompt, ctx) => {
+			prompt.setPart(async () => {
+				const config = await ctx.environment.config();
+				return renderEnvironmentPermissions({
+					filesystem: config.fsConfig.permissions,
+					network: config.netConfig,
+				});
+			});
 		});
 
 		api.on('systemPrompt', (prompt) => {
