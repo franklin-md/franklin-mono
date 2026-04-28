@@ -22,4 +22,5 @@ export type ConversationComponents = {
 	}>;
 	Waiting?: ComponentType<{ turn: ConversationRenderTurn }>;
 	Footer?: ComponentType<{ turn: ConversationRenderTurn }>;
+	EmptyPlaceholder?: ComponentType;
 };

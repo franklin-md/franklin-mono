@@ -26,8 +26,13 @@ export function Conversation({ turns, components, now }: ConversationProps) {
 		AssistantMessage = IdentityTurn,
 		Waiting,
 		Footer,
+		EmptyPlaceholder,
 	} = components;
 	const renderTurns = getConversationRenderTurns(turns, now);
+
+	if (renderTurns.length === 0 && EmptyPlaceholder) {
+		return <EmptyPlaceholder />;
+	}
 
 	return (
 		<>
