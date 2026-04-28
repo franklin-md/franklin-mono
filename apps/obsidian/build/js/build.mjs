@@ -14,6 +14,15 @@ import esbuild from 'esbuild';
 // compaction, whitespace removal) which is permitted.
 // See: https://docs.obsidian.md/Developer+policies
 export function createJsBuilder({ srcDir, distDir, isProd }) {
+	// Prod externalization prevents esbuild from traversing React Scan's literal
+	// dynamic import before minification removes the unreachable dev-only branch.
+	const external = [
+		'obsidian',
+		'electron',
+		'@codemirror/*',
+		'@lezer/*',
+		...(isProd ? ['react-scan'] : []),
+	];
 	const options = {
 		entryPoints: [resolve(srcDir, 'main.ts')],
 		bundle: true,
@@ -26,7 +35,7 @@ export function createJsBuilder({ srcDir, distDir, isProd }) {
 		sourcemap: !isProd,
 		minify: isProd,
 		logLevel: 'info',
-		external: ['obsidian', 'electron', '@codemirror/*', '@lezer/*'],
+		external,
 		define: {
 			'process.env.NODE_ENV': isProd ? '"production"' : '"development"',
 		},

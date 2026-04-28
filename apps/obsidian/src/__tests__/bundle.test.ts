@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it, beforeAll } from 'vitest';
@@ -6,89 +6,105 @@ import { describe, expect, it, beforeAll } from 'vitest';
 const root = resolve(import.meta.dirname, '../..');
 const dist = resolve(root, 'dist');
 
+type BundleOutput = {
+	js: string;
+	css: string;
+	hasMain: boolean;
+	hasManifest: boolean;
+};
+
+function buildBundle(args: string[] = []): BundleOutput {
+	rmSync(dist, { recursive: true, force: true });
+	execFileSync(process.execPath, ['./build/bundle.mjs', ...args], {
+		cwd: root,
+		stdio: 'pipe',
+	});
+
+	return {
+		js: readFileSync(resolve(dist, 'main.js'), 'utf8'),
+		css: readFileSync(resolve(dist, 'styles.css'), 'utf8'),
+		hasMain: existsSync(resolve(dist, 'main.js')),
+		hasManifest: existsSync(resolve(dist, 'manifest.json')),
+	};
+}
+
 describe('obsidian bundle', () => {
+	let devBundle: BundleOutput;
+	let prodBundle: BundleOutput;
+
 	beforeAll(() => {
-		// Clean dist so we know the output is fresh
-		rmSync(dist, { recursive: true, force: true });
-		execSync('node ./build/bundle.mjs', { cwd: root, stdio: 'pipe' });
-	}, 30_000);
+		devBundle = buildBundle();
+		prodBundle = buildBundle(['--prod']);
+	}, 60_000);
 
 	it('produces dist/main.js', () => {
-		expect(existsSync(resolve(dist, 'main.js'))).toBe(true);
+		expect(devBundle.hasMain).toBe(true);
 	});
 
 	it('bundles a single copy of @franklin/react context modules', () => {
-		const js = readFileSync(resolve(dist, 'main.js'), 'utf8');
-
-		expect(js).toContain(
+		expect(devBundle.js).toContain(
 			'../../packages/ui/react/src/agent/franklin-context.tsx',
 		);
-		expect(js).not.toContain(
+		expect(devBundle.js).not.toContain(
 			'../../packages/ui/react/dist/agent/franklin-context.js',
 		);
-		expect(js).not.toContain(
+		expect(devBundle.js).not.toContain(
 			'../../packages/ui/react/dist/agent/agent-context.js',
 		);
 	});
 
 	it('produces dist/styles.css with Tailwind utilities', () => {
-		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
-
 		// Tailwind utilities used in the app components should be present
-		expect(css).toContain('flex');
-		expect(css).toContain('gap-4');
-		expect(css).toContain('rounded-lg');
-		expect(css).toContain('text-sm');
+		expect(devBundle.css).toContain('flex');
+		expect(devBundle.css).toContain('gap-4');
+		expect(devBundle.css).toContain('rounded-lg');
+		expect(devBundle.css).toContain('text-sm');
 	});
 
 	it('styles.css includes .franklin prefix scoping', () => {
-		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
-
 		// The PostCSS prefix plugin wraps selectors with .franklin
-		expect(css).toContain('.franklin');
+		expect(devBundle.css).toContain('.franklin');
 	});
 
 	it('leaves diff editor selectors unscoped so they apply in Markdown views', () => {
-		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
-
-		expect(css).toContain('.diff-plugin-added-line');
-		expect(css).toContain('.diff-plugin-unopened-new-file');
-		expect(css).not.toContain('.franklin .diff-plugin-added-line');
-		expect(css).toContain('.cm-line:has(.diff-plugin-actions-host)');
-		expect(css).not.toContain(
+		expect(devBundle.css).toContain('.diff-plugin-added-line');
+		expect(devBundle.css).toContain('.diff-plugin-unopened-new-file');
+		expect(devBundle.css).not.toContain('.franklin .diff-plugin-added-line');
+		expect(devBundle.css).toContain('.cm-line:has(.diff-plugin-actions-host)');
+		expect(devBundle.css).not.toContain(
 			'.franklin .cm-line:has(.diff-plugin-actions-host)',
 		);
 	});
 
 	it('styles.css includes Obsidian token bridge variables', () => {
-		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
-
 		// variables.css maps Obsidian vars → Franklin tokens (minified, no spaces around colon)
-		expect(css).toContain('--background:var(--background-primary)');
-		expect(css).toContain('--primary:var(--interactive-accent)');
+		expect(devBundle.css).toContain('--background:var(--background-primary)');
+		expect(devBundle.css).toContain('--primary:var(--interactive-accent)');
 	});
 
 	it('includes the transcript text selection utility', () => {
-		const css = readFileSync(resolve(dist, 'styles.css'), 'utf8');
-
-		expect(css).toContain('.franklin .select-text');
-		expect(css).toContain('user-select:text');
+		expect(devBundle.css).toContain('.franklin .select-text');
+		expect(devBundle.css).toContain('user-select:text');
 	});
 
 	it('produces dist/manifest.json', () => {
-		expect(existsSync(resolve(dist, 'manifest.json'))).toBe(true);
+		expect(devBundle.hasManifest).toBe(true);
 	});
 
 	it('bundles node_modules into main.js instead of leaving external requires', () => {
-		const js = readFileSync(resolve(dist, 'main.js'), 'utf8');
-
 		// React and ReactDOM should be inlined — no external require calls for them
-		expect(js).not.toMatch(/require\(["']react["']\)/);
-		expect(js).not.toMatch(/require\(["']react-dom["']\)/);
-		expect(js).not.toMatch(/require\(["']react-dom\/client["']\)/);
-		expect(js).not.toMatch(/require\(["']react\/jsx-runtime["']\)/);
+		expect(devBundle.js).not.toMatch(/require\(["']react["']\)/);
+		expect(devBundle.js).not.toMatch(/require\(["']react-dom["']\)/);
+		expect(devBundle.js).not.toMatch(/require\(["']react-dom\/client["']\)/);
+		expect(devBundle.js).not.toMatch(/require\(["']react\/jsx-runtime["']\)/);
 
 		// Externals that Obsidian provides should still be require() calls
-		expect(js).toMatch(/require\(["']obsidian["']\)/);
+		expect(devBundle.js).toMatch(/require\(["']obsidian["']\)/);
+	});
+
+	it('includes React Scan in dev bundles only', () => {
+		expect(devBundle.js).toContain('ReactScanInternals');
+		expect(prodBundle.js).not.toContain('ReactScanInternals');
+		expect(prodBundle.js).not.toContain('react-scan');
 	});
 });
