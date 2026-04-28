@@ -110,6 +110,7 @@ export {
 	ConversationView,
 	type ConversationViewProps,
 } from './conversation/view.js';
+export { ConversationOnboardingPlaceholder } from './onboarding/conversation-placeholder.js';
 export { PromptInput } from './conversation/input/prompt-input.js';
 export { ThinkingToggle } from './conversation/input/thinking-toggle.js';
 export { ModelSelector } from './conversation/input/model-selector/selector.js';
