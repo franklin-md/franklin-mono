@@ -8,7 +8,7 @@ import { ObsidianDiffClient } from './diff/diff-client.js';
 import { DiffController } from './diff/diff-controller.js';
 import { DiffExplorerController } from './diff/diff-explorer-controller.js';
 import { clearPortalRoot } from './renderer/portal.js';
-import { FranklinSettingTab } from './settings.js';
+import { FranklinSettingTab } from './settings/tab.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
 
 export default class FranklinPlugin extends Plugin {
@@ -29,8 +29,6 @@ export default class FranklinPlugin extends Plugin {
 		this.diffController.onload();
 		this.diffExplorerController.onload();
 
-		this.addSettingTab(new FranklinSettingTab(this.app, this));
-
 		createFranklinApp(this, this.diffClient)
 			.then(async ({ app, vaultRoot }) => {
 				const getCreateInput = () =>
@@ -44,6 +42,8 @@ export default class FranklinPlugin extends Plugin {
 			})
 			.then(({ app, getCreateInput }) => {
 				this.franklinApp = app;
+
+				this.addSettingTab(new FranklinSettingTab(this));
 
 				this.registerView(VIEW_TYPE, (leaf) => {
 					return new FranklinView(leaf, { app, getCreateInput });

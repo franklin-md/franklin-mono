@@ -1,4 +1,5 @@
 import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
+import { AppContext } from '@franklin/react';
 import { ItemView } from 'obsidian';
 import type { WorkspaceLeaf } from 'obsidian';
 
@@ -13,7 +14,7 @@ type FranklinViewOptions = {
 };
 
 export class FranklinView extends ItemView {
-	private mounter: Mounter | null = null;
+	private readonly mounter: Mounter = createMounter();
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -35,20 +36,15 @@ export class FranklinView extends ItemView {
 	}
 
 	async onOpen() {
-		this.mounter?.unmount();
-		this.mounter = createMounter({
-			children: (
-				<ConversationWindow
-					app={this.options.app}
-					getCreateInput={this.options.getCreateInput}
-				/>
-			),
-		});
-		this.mounter.mount(this.contentEl);
+		this.mounter.mount(
+			this.contentEl,
+			<AppContext.Provider value={this.options.app}>
+				<ConversationWindow getCreateInput={this.options.getCreateInput} />
+			</AppContext.Provider>,
+		);
 	}
 
 	async onClose() {
-		this.mounter?.unmount();
-		this.mounter = null;
+		this.mounter.unmount();
 	}
 }
