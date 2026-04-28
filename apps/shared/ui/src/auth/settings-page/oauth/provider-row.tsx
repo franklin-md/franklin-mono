@@ -1,6 +1,7 @@
 import { useAuthEntries, useOAuthFlow } from '@franklin/react';
 
 import { Button } from '../../../primitives/button.js';
+import { isOAuthFlowRunning } from '../../login-button/flow.js';
 import { LOGIN_BUTTONS } from '../../login-button/registry.js';
 
 import { OAuthFlowView } from './flow-view.js';
@@ -14,10 +15,7 @@ export function ProviderRow({ provider }: { provider: OAuthProviderMeta }) {
 	const LoginButton = LOGIN_BUTTONS[provider.id];
 	if (!LoginButton) return null;
 
-	const flowRunning =
-		flowState.phase !== 'idle' &&
-		flowState.phase !== 'success' &&
-		flowState.phase !== 'error';
+	const flowRunning = isOAuthFlowRunning(flowState);
 
 	return (
 		<div className="flex flex-col gap-2">

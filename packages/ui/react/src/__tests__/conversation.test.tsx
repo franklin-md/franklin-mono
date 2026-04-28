@@ -1,5 +1,5 @@
 import { describe, it, expect, expectTypeOf, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import type {
 	ConversationTurn,
 	TextBlock,
@@ -222,6 +222,21 @@ describe('Conversation', () => {
 		render(<Conversation turns={turns} components={components} />);
 		expect(users).toEqual(['hello']);
 		expect(userTurns[0]?.phase).toBe('in-progress');
+	});
+
+	it('renders the empty placeholder when there are no turns', () => {
+		const { components } = createCapturingComponents();
+		render(
+			<Conversation
+				turns={[]}
+				components={{
+					...components,
+					EmptyPlaceholder: () => <div data-testid="empty">Empty</div>,
+				}}
+			/>,
+		);
+
+		expect(screen.getByTestId('empty')).toBeTruthy();
 	});
 
 	it('dispatches text blocks', () => {

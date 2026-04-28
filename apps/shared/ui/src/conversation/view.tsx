@@ -1,4 +1,4 @@
-import { useMemo, type ComponentType, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 
 import type { ConversationTurn, ToolUseBlock } from '@franklin/extensions';
 import {
@@ -19,6 +19,7 @@ import {
 	ScrollViewport,
 } from '../primitives/scroll-area.js';
 
+import { DefaultEmptyConversationPlaceholder } from './default-empty-placeholder.js';
 import { TextBlock } from './turn/text/text.js';
 import { ThinkingBlock } from './turn/thinking.js';
 import { TurnFooter } from './turn/footer/index.js';
@@ -57,20 +58,26 @@ const defaultComponents: ConversationComponents = {
 	AssistantMessage: AssistantChrome,
 	Waiting,
 	Footer: TurnFooter,
+	EmptyPlaceholder: DefaultEmptyConversationPlaceholder,
 };
 
 export interface ConversationViewProps {
 	turns: ConversationTurn[];
-	toolUse?: ComponentType<{ block: ToolUseBlock; status: ToolStatus }>;
+	components?: Partial<ConversationComponents>;
 }
 
-export function ConversationView({ turns, toolUse }: ConversationViewProps) {
+export function ConversationView({
+	turns,
+	components: componentOverrides,
+}: ConversationViewProps) {
 	const autoFollow = useAutoFollow<HTMLDivElement>();
 
-	const components = useMemo(
+	const components = useMemo<ConversationComponents>(
 		() =>
-			toolUse ? { ...defaultComponents, ToolUse: toolUse } : defaultComponents,
-		[toolUse],
+			componentOverrides
+				? { ...defaultComponents, ...componentOverrides }
+				: defaultComponents,
+		[componentOverrides],
 	);
 
 	// Behaviour: Go to bottom on mount (i.e. switch to this tab)
@@ -94,11 +101,6 @@ export function ConversationView({ turns, toolUse }: ConversationViewProps) {
 					ref={autoFollow.contentRef}
 					className="mx-auto flex w-full min-w-0 max-w-3xl select-text flex-col gap-10 pt-6"
 				>
-					{turns.length === 0 && (
-						<p className="py-8 text-center text-sm text-muted-foreground">
-							Send a message to start the conversation.
-						</p>
-					)}
 					<Conversation turns={turns} components={components} />
 				</div>
 			</ScrollViewport>
