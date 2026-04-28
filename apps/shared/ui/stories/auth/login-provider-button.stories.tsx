@@ -8,7 +8,7 @@ import {
 const meta = {
 	title: 'Auth/LoginProviderButton',
 	component: AnthropicLoginButton,
-	args: { providerName: 'Claude' },
+	args: { providerName: 'Claude Pro/Max' },
 } satisfies Meta<typeof AnthropicLoginButton>;
 
 export default meta;
@@ -20,10 +20,6 @@ export const OpenAICodex: Story = {
 	render: () => <OpenAICodexLoginButton providerName="ChatGPT" />,
 };
 
-export const SignedIn: Story = {
-	args: { isSignedIn: true },
-};
-
 export const Loading: Story = {
 	args: { isLoading: true },
 };
@@ -31,7 +27,7 @@ export const Loading: Story = {
 export const Both: Story = {
 	render: () => (
 		<div className="flex gap-2">
-			<AnthropicLoginButton providerName="Claude" />
+			<AnthropicLoginButton providerName="Claude Pro/Max" />
 			<OpenAICodexLoginButton providerName="ChatGPT" />
 		</div>
 	),

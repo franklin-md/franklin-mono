@@ -22,7 +22,7 @@ const SCOPES =
 
 export const anthropicSpec: AuthorizationCodePkceSpec = {
 	id: 'anthropic',
-	name: 'Anthropic (Claude Pro/Max)',
+	name: 'Claude Pro/Max',
 	loopback: { port: CALLBACK_PORT, path: CALLBACK_PATH },
 	redirectUri: REDIRECT_URI,
 

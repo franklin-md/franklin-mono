@@ -15,7 +15,6 @@ export interface LoginProviderButtonProps extends Omit<
 	background: CSSProperties['background'];
 	providerName: string;
 	isLoading?: boolean;
-	isSignedIn?: boolean;
 }
 
 export type ProviderLoginButtonProps = Omit<
@@ -30,17 +29,12 @@ export function LoginProviderButton({
 	providerName,
 	size = 'sm',
 	isLoading = false,
-	isSignedIn = false,
 	className,
 	style,
 	disabled,
 	...rest
 }: LoginProviderButtonProps) {
-	const label = isLoading
-		? 'Signing in…'
-		: isSignedIn
-			? `Logged into ${providerName}`
-			: `Log into ${providerName}`;
+	const label = isLoading ? 'Signing in…' : providerName;
 
 	return (
 		<Button

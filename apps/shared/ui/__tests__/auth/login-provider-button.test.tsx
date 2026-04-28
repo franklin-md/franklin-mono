@@ -13,22 +13,24 @@ describe('LoginProviderButton', () => {
 		cleanup();
 	});
 
-	it('shows a log-into label by default', () => {
-		render(<AnthropicLoginButton providerName="Claude" />);
-		expect(screen.getByRole('button').textContent).toContain('Log into Claude');
+	it('shows the provider name as the label', () => {
+		render(<AnthropicLoginButton providerName="Claude Pro/Max" />);
+		expect(screen.getByRole('button').textContent).toContain('Claude Pro/Max');
 	});
 
-	it('shows a logged-into label when isSignedIn', () => {
-		render(<AnthropicLoginButton isSignedIn providerName="Claude" />);
-		expect(screen.getByRole('button').textContent).toContain(
-			'Logged into Claude',
-		);
+	it('shows a signing-in label when loading', () => {
+		render(<AnthropicLoginButton isLoading providerName="Claude Pro/Max" />);
+		expect(screen.getByRole('button').textContent).toContain('Signing in');
 	});
 
 	it('disables and sets aria-busy when loading', () => {
 		const onClick = vi.fn();
 		render(
-			<AnthropicLoginButton isLoading onClick={onClick} providerName="Claude" />,
+			<AnthropicLoginButton
+				isLoading
+				onClick={onClick}
+				providerName="Claude"
+			/>,
 		);
 
 		const button = screen.getByRole('button');
