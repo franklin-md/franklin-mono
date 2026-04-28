@@ -124,6 +124,10 @@ can reload the plugin manually inside Obsidian.
 
 `--vault-dir` and `--plugin-dir` flags work with all three scripts.
 
+Dev builds (`bundle` and `dev`) initialize React Scan before the plugin mounts
+React roots so render highlights and the toolbar are available while profiling
+inside Obsidian. Production bundles (`bundle:prod`) do not include React Scan.
+
 ## Notes
 
 - The plugin renders a Franklin conversation window inside an Obsidian view, with compact agent tabs for switching sessions.

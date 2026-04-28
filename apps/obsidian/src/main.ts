@@ -2,6 +2,7 @@ import { Notice, Plugin } from 'obsidian';
 import type { FranklinApp } from '@franklin/agent/browser';
 
 import { createFranklinApp } from './app/app.js';
+import { registerReactScan } from './dev/react-scan.js';
 import { createObsidianSessionInput } from './app/agent.js';
 import { ObsidianDiffClient } from './diff/diff-client.js';
 import { DiffController } from './diff/diff-controller.js';
@@ -17,6 +18,8 @@ export default class FranklinPlugin extends Plugin {
 	franklinApp: FranklinApp | null = null;
 
 	async onload() {
+		await registerReactScan();
+
 		this.diffClient = new ObsidianDiffClient(this.app.vault, this.manifest);
 		this.diffController = new DiffController(this, this.diffClient);
 		this.diffExplorerController = new DiffExplorerController(
