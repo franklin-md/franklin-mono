@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 
-import type { OAuthFlowState } from '@franklin/react';
+import type { OAuthLoginState } from '@franklin/react';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 import { cn } from '../../../lib/cn.js';
 import { Button } from '../../../primitives/button.js';
 
 export interface OAuthFlowViewProps {
-	state: OAuthFlowState;
+	state: OAuthLoginState;
 	onDismiss: () => void;
 }
 
