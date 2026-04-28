@@ -1,10 +1,5 @@
-import { useAuthEntries, useAuthManager, useOAuthFlow } from '@franklin/react';
-import {
-	Button,
-	Input,
-	isOAuthFlowRunning,
-	OpenAICodexLoginButton,
-} from '@franklin/ui';
+import { useAuthEntries, useAuthManager, useOAuthLogin } from '@franklin/react';
+import { Button, Input, OpenAICodexLoginButton } from '@franklin/ui';
 
 import { SettingControl } from '../components/obsidian-native/setting/control.js';
 import { SettingDescription } from '../components/obsidian-native/setting/description.js';
@@ -69,11 +64,10 @@ function OpenRouterApiKeyField() {
 
 function ChatGPTLoginField() {
 	const { isOAuthSignedIn } = useAuthEntries();
-	const auth = useAuthManager();
-	const { flowState, login } = useOAuthFlow(OPENAI_CODEX_PROVIDER);
+	const { state, pending, handleLogin, remove } = useOAuthLogin(
+		OPENAI_CODEX_PROVIDER,
+	);
 	const signedIn = isOAuthSignedIn(OPENAI_CODEX_PROVIDER);
-
-	const flowRunning = isOAuthFlowRunning(flowState);
 
 	return (
 		<SettingItem>
@@ -83,27 +77,25 @@ function ChatGPTLoginField() {
 					{signedIn
 						? 'Signed in to ChatGPT.'
 						: 'Sign in to use OpenAI Codex models.'}
-					{flowState.phase === 'error' && ` ${flowState.message}`}
+					{state.phase === 'error' && ` ${state.message}`}
 				</SettingDescription>
 			</SettingInfo>
 			<SettingControl>
 				{signedIn ? (
 					<Button
-						disabled={flowRunning}
+						disabled={pending}
 						size="sm"
 						variant="outline"
-						onClick={() => {
-							auth.removeOAuthEntry(OPENAI_CODEX_PROVIDER);
-						}}
+						onClick={remove}
 					>
 						Sign out
 					</Button>
 				) : (
 					<OpenAICodexLoginButton
 						providerName="Sign in with ChatGPT"
-						isLoading={flowRunning}
+						isLoading={pending}
 						onClick={() => {
-							void login();
+							void handleLogin();
 						}}
 					/>
 				)}
