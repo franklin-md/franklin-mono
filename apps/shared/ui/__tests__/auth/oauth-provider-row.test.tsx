@@ -1,26 +1,26 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type { OAuthFlowState } from '@franklin/react';
+import type { OAuthLoginState } from '@franklin/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type AuthEntriesMock = {
 	isOAuthSignedIn: (providerId: string) => boolean;
 };
 
-type OAuthFlowMock = {
-	flowState: OAuthFlowState;
-	login: () => Promise<void>;
+type OAuthLoginMock = {
+	state: OAuthLoginState;
+	handleLogin: () => Promise<void>;
 	remove: () => void;
-	dismiss: () => void;
+	reset: () => void;
 };
 
 const mocks = vi.hoisted(() => ({
 	useAuthEntries: vi.fn<() => AuthEntriesMock>(),
-	useOAuthFlow: vi.fn<() => OAuthFlowMock>(),
-	login: vi.fn<() => Promise<void>>(),
+	useOAuthLogin: vi.fn<() => OAuthLoginMock>(),
+	handleLogin: vi.fn<() => Promise<void>>(),
 	remove: vi.fn<() => void>(),
-	dismiss: vi.fn<() => void>(),
+	reset: vi.fn<() => void>(),
 }));
 
 vi.mock('@franklin/react', () => ({
@@ -33,32 +33,32 @@ vi.mock('@franklin/react', () => ({
 		),
 	},
 	useAuthEntries: mocks.useAuthEntries,
-	useOAuthFlow: mocks.useOAuthFlow,
+	useOAuthLogin: mocks.useOAuthLogin,
 }));
 
 import { ProviderRow } from '../../src/auth/settings-page/oauth/provider-row.js';
 
 function setProviderState({
-	flowState,
+	state,
 	isSignedIn = false,
 }: {
-	flowState: OAuthFlowState;
+	state: OAuthLoginState;
 	isSignedIn?: boolean;
 }) {
 	mocks.useAuthEntries.mockReturnValue({
 		isOAuthSignedIn: () => isSignedIn,
 	});
-	mocks.useOAuthFlow.mockReturnValue({
-		flowState,
-		login: mocks.login,
+	mocks.useOAuthLogin.mockReturnValue({
+		state,
+		handleLogin: mocks.handleLogin,
 		remove: mocks.remove,
-		dismiss: mocks.dismiss,
+		reset: mocks.reset,
 	});
 }
 
 describe('ProviderRow', () => {
 	beforeEach(() => {
-		setProviderState({ flowState: { phase: 'idle' } });
+		setProviderState({ state: { phase: 'idle' } });
 	});
 
 	afterEach(() => {
@@ -68,7 +68,7 @@ describe('ProviderRow', () => {
 
 	it('renders the OAuth flow progress below the provider controls', () => {
 		setProviderState({
-			flowState: {
+			state: {
 				phase: 'in-progress',
 				message: 'Opening provider authorization page',
 			},
@@ -81,12 +81,12 @@ describe('ProviderRow', () => {
 		).toBeTruthy();
 	});
 
-	it('dismisses completed OAuth flow states', () => {
-		setProviderState({ flowState: { phase: 'success' } });
+	it('dismisses completed OAuth login states', () => {
+		setProviderState({ state: { phase: 'success' } });
 
 		render(<ProviderRow provider={{ id: 'anthropic', name: 'Claude' }} />);
 		fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
 
-		expect(mocks.dismiss).toHaveBeenCalledTimes(1);
+		expect(mocks.reset).toHaveBeenCalledTimes(1);
 	});
 });

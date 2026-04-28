@@ -1,4 +1,4 @@
-import { useAuthEntries, useOAuthFlow } from '@franklin/react';
+import { useAuthEntries, useOAuthLogin } from '@franklin/react';
 
 import { Button } from '../../../primitives/button.js';
 import { LOGIN_BUTTONS } from '../../login-button/registry.js';
@@ -8,16 +8,16 @@ import type { OAuthProviderMeta } from './types.js';
 
 export function ProviderRow({ provider }: { provider: OAuthProviderMeta }) {
 	const { isOAuthSignedIn } = useAuthEntries();
-	const { flowState, login, remove, dismiss } = useOAuthFlow(provider.id);
+	const { state, handleLogin, remove, reset } = useOAuthLogin(provider.id);
 	const isSignedIn = isOAuthSignedIn(provider.id);
 
 	const LoginButton = LOGIN_BUTTONS[provider.id];
 	if (!LoginButton) return null;
 
 	const flowRunning =
-		flowState.phase !== 'idle' &&
-		flowState.phase !== 'success' &&
-		flowState.phase !== 'error';
+		state.phase !== 'idle' &&
+		state.phase !== 'success' &&
+		state.phase !== 'error';
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -26,7 +26,7 @@ export function ProviderRow({ provider }: { provider: OAuthProviderMeta }) {
 					isLoading={flowRunning}
 					providerName={provider.name}
 					onClick={() => {
-						void login();
+						void handleLogin();
 					}}
 				/>
 
@@ -42,7 +42,7 @@ export function ProviderRow({ provider }: { provider: OAuthProviderMeta }) {
 				)}
 			</div>
 
-			<OAuthFlowView state={flowState} onDismiss={dismiss} />
+			<OAuthFlowView state={state} onDismiss={reset} />
 		</div>
 	);
 }

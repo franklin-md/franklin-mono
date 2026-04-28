@@ -1,6 +1,11 @@
 import type { ReactNode } from 'react';
 
-import type { FranklinRuntime } from '@franklin/agent/browser';
+import type {
+	AuthEntries,
+	AuthEntry,
+	FranklinRuntime,
+	OAuthLoginCallbacks,
+} from '@franklin/agent/browser';
 import type { ConversationTurn, Session } from '@franklin/extensions';
 import { conversationExtension } from '@franklin/extensions';
 import type { ThinkingLevel } from '@franklin/mini-acp';
@@ -88,10 +93,99 @@ function createMockApp() {
 			model: 'claude-sonnet-4-6',
 		},
 	});
+	const auth = createMockAuth();
 
 	return {
+		auth,
 		settings: settingsStore.store,
 		agents: { list: () => [] },
+		platform: {
+			os: {
+				openExternal: () => {},
+			},
+		},
+	};
+}
+
+function createMockAuth() {
+	let entries: AuthEntries = {};
+	const listeners = new Set<
+		(provider: string, entry: AuthEntry | undefined) => void
+	>();
+
+	function notify(provider: string) {
+		for (const listener of listeners) {
+			listener(provider, entries[provider]);
+		}
+	}
+
+	return {
+		entries: () => entries,
+		onAuthChange: (
+			listener: (provider: string, entry: AuthEntry | undefined) => void,
+		) => {
+			listeners.add(listener);
+			return () => {
+				listeners.delete(listener);
+			};
+		},
+		getOAuthProviders: () => [
+			{ id: 'anthropic', name: 'Anthropic' },
+			{ id: 'openai-codex', name: 'ChatGPT' },
+		],
+		getApiKeyProviders: async () => ['openrouter'],
+		loginOAuth: async (
+			provider: string,
+			callbacks: OAuthLoginCallbacks,
+		): Promise<void> => {
+			callbacks.onAuth({ url: 'https://example.com/auth' });
+			entries = {
+				...entries,
+				[provider]: {
+					...(entries[provider] ?? {}),
+					oauth: {
+						type: 'oauth',
+						credentials: {
+							access: 'mock-access-token',
+							refresh: 'mock-refresh-token',
+							expires: Date.now() + 60_000,
+						},
+					},
+				},
+			};
+			notify(provider);
+		},
+		cancel: async () => {},
+		removeOAuthEntry: (provider: string) => {
+			const current = entries[provider];
+			if (!current) return;
+			const { oauth: _oauth, ...rest } = current;
+			entries = {
+				...entries,
+				[provider]: rest,
+			};
+			notify(provider);
+		},
+		setApiKeyEntry: (provider: string, apiKey: AuthEntry['apiKey']) => {
+			entries = {
+				...entries,
+				[provider]: {
+					...(entries[provider] ?? {}),
+					apiKey,
+				},
+			};
+			notify(provider);
+		},
+		removeApiKeyEntry: (provider: string) => {
+			const current = entries[provider];
+			if (!current) return;
+			const { apiKey: _apiKey, ...rest } = current;
+			entries = {
+				...entries,
+				[provider]: rest,
+			};
+			notify(provider);
+		},
 	};
 }
 
