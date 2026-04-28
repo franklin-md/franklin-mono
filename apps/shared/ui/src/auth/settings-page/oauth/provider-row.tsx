@@ -3,11 +3,12 @@ import { useAuthEntries, useOAuthFlow } from '@franklin/react';
 import { Button } from '../../../primitives/button.js';
 import { LOGIN_BUTTONS } from '../../login-button/registry.js';
 
+import { OAuthFlowView } from './flow-view.js';
 import type { OAuthProviderMeta } from './types.js';
 
 export function ProviderRow({ provider }: { provider: OAuthProviderMeta }) {
 	const { isOAuthSignedIn } = useAuthEntries();
-	const { flowState, login, remove } = useOAuthFlow(provider.id);
+	const { flowState, login, remove, dismiss } = useOAuthFlow(provider.id);
 	const isSignedIn = isOAuthSignedIn(provider.id);
 
 	const LoginButton = LOGIN_BUTTONS[provider.id];
@@ -19,25 +20,29 @@ export function ProviderRow({ provider }: { provider: OAuthProviderMeta }) {
 		flowState.phase !== 'error';
 
 	return (
-		<div className="flex items-center gap-2">
-			<LoginButton
-				isLoading={flowRunning}
-				providerName={provider.name}
-				onClick={() => {
-					void login();
-				}}
-			/>
+		<div className="flex flex-col gap-2">
+			<div className="flex items-center gap-2">
+				<LoginButton
+					isLoading={flowRunning}
+					providerName={provider.name}
+					onClick={() => {
+						void login();
+					}}
+				/>
 
-			{isSignedIn && (
-				<Button
-					disabled={flowRunning}
-					onClick={remove}
-					size="sm"
-					variant="outline"
-				>
-					Remove
-				</Button>
-			)}
+				{isSignedIn && (
+					<Button
+						disabled={flowRunning}
+						onClick={remove}
+						size="sm"
+						variant="outline"
+					>
+						Remove
+					</Button>
+				)}
+			</div>
+
+			<OAuthFlowView state={flowState} onDismiss={dismiss} />
 		</div>
 	);
 }

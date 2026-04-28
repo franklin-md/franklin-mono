@@ -58,5 +58,9 @@ export function useOAuthFlow(providerId: string) {
 		auth.removeOAuthEntry(providerId);
 	}
 
-	return { flowState, login, remove };
+	function dismiss() {
+		setFlowState({ phase: 'idle' });
+	}
+
+	return { flowState, login, remove, dismiss };
 }
