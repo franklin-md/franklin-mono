@@ -135,13 +135,18 @@ export {
 export { defaultRegistry as defaultTurnEndRegistry } from './conversation/turn/turn-end/registry.js';
 
 // auth
-export { AuthModalContent } from './auth/modal.js';
-export { AuthButton } from './auth/button.js';
-export { useAuthManager } from './auth/context.js';
-export { useAuthEntries } from './auth/use-entries.js';
-export { apiKeyPanel, oauthPanel } from './auth/panels.js';
-export type { ApiKeyAuthEntry } from './auth/use-entries.js';
-export type { AuthPanelDescriptor, AuthPanelProps } from './auth/types.js';
+export { AuthButton, type AuthButtonProps } from './auth/auth-button/button.js';
+export { AuthSettingsTrigger } from './auth/auth-button/trigger.js';
+export { AuthModalContent } from './auth/settings-page/modal.js';
+export { apiKeyPanel, oauthPanel } from './auth/settings-page/panels.js';
+export type {
+	AuthPanelDescriptor,
+	AuthPanelProps,
+} from './auth/settings-page/types.js';
+export { LoginProviderButton } from './auth/login-button/button.js';
+export { AnthropicLoginButton } from './auth/login-button/anthropic.js';
+export { OpenAICodexLoginButton } from './auth/login-button/openai-codex.js';
+export type { LoginProviderButtonProps } from './auth/login-button/button.js';
 
 // sidebar
 export { AgentSidebar } from './sidebar/agent-sidebar.js';

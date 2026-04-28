@@ -28,7 +28,7 @@ const ORIGINATOR = 'pi';
 
 export const openaiCodexSpec: AuthorizationCodePkceSpec = {
 	id: 'openai-codex',
-	name: 'ChatGPT Plus/Pro (Codex Subscription)',
+	name: 'ChatGPT',
 	loopback: { port: CALLBACK_PORT, path: CALLBACK_PATH },
 	redirectUri: REDIRECT_URI,
 
