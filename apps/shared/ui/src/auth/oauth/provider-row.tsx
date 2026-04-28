@@ -1,9 +1,9 @@
-import { LOGIN_BUTTONS } from '../login-button/registry.js';
+import { useAuthEntries, useOAuthFlow } from '@franklin/react';
+
 import { Button } from '../../primitives/button.js';
-import { useAuthEntries } from '../use-entries.js';
+import { LOGIN_BUTTONS } from '../login-button/registry.js';
 
 import type { OAuthProviderMeta } from './types.js';
-import { useOAuthFlow } from './hook.js';
 
 export function ProviderRow({ provider }: { provider: OAuthProviderMeta }) {
 	const { isOAuthSignedIn } = useAuthEntries();

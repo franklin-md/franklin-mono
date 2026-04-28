@@ -6,9 +6,9 @@ import type {
 	AuthEntry,
 } from '@franklin/agent/browser';
 
-import { useStableExternalStore } from '@franklin/react';
+import { useStableExternalStore } from '../utils/use-stable-external-store.js';
 
-import { useAuthManager } from './context.js';
+import { useAuthManager } from './use-auth-manager.js';
 
 export type ApiKeyAuthEntry = [
 	provider: string,

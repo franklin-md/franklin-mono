@@ -140,10 +140,7 @@ export { AuthButton } from './auth/button.js';
 export { LoginProviderButton } from './auth/login-button/button.js';
 export { AnthropicLoginButton } from './auth/login-button/anthropic.js';
 export { OpenAICodexLoginButton } from './auth/login-button/openai-codex.js';
-export { useAuthManager } from './auth/context.js';
-export { useAuthEntries } from './auth/use-entries.js';
 export { apiKeyPanel, oauthPanel } from './auth/panels.js';
-export type { ApiKeyAuthEntry } from './auth/use-entries.js';
 export type { LoginProviderButtonProps } from './auth/login-button/button.js';
 export type { AuthPanelDescriptor, AuthPanelProps } from './auth/types.js';
 

@@ -1,9 +1,10 @@
+import { useAuthEntries } from '@franklin/react';
+
 import { Button } from '../primitives/button.js';
 import { Dialog, DialogTrigger } from '../primitives/dialog.js';
 
 import { AuthModalContent } from './modal.js';
 import { apiKeyPanel, oauthPanel } from './panels.js';
-import { useAuthEntries } from './use-entries.js';
 
 function PersonIcon() {
 	return (

@@ -1,6 +1,4 @@
-import { useAsync } from '@franklin/react';
-
-import { useAuthManager } from '../context.js';
+import { useAsync, useAuthManager } from '@franklin/react';
 
 import { LOGIN_BUTTONS } from '../login-button/registry.js';
 

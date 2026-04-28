@@ -123,6 +123,19 @@ export type {
 } from './conversation/turn-end/types.js';
 
 // ---------------------------------------------------------------------------
+// Auth — hooks over the AuthManager surface from @franklin/agent
+// ---------------------------------------------------------------------------
+export { useAuthManager } from './auth/use-auth-manager.js';
+export {
+	useAuthEntries,
+	type ApiKeyAuthEntry,
+} from './auth/use-auth-entries.js';
+export {
+	useOAuthFlow,
+	type OAuthFlowState,
+} from './auth/use-oauth-flow.js';
+
+// ---------------------------------------------------------------------------
 // Icons — AI provider and model brand icons (sourced from lobehub/lobe-icons)
 // ---------------------------------------------------------------------------
 export type { IconProps } from './icons/types.js';

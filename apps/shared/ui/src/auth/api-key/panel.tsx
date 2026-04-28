@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
 import type { ApiKeyEntry } from '@franklin/agent/browser';
-import { useAsync } from '@franklin/react';
+import { useAsync, useAuthEntries, useAuthManager } from '@franklin/react';
 
 import { Button } from '../../primitives/button.js';
 import { Input } from '../../primitives/input.js';
@@ -12,8 +12,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '../../primitives/select.js';
-import { useAuthManager } from '../context.js';
-import { useAuthEntries } from '../use-entries.js';
 
 type ProviderMeta = { id: string; name: string };
 
