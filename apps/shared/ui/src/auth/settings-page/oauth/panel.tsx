@@ -1,6 +1,6 @@
 import { useAsync, useAuthManager } from '@franklin/react';
 
-import { LOGIN_BUTTONS } from '../login-button/registry.js';
+import { LOGIN_BUTTONS } from '../../login-button/registry.js';
 
 import { ProviderRow } from './provider-row.js';
 

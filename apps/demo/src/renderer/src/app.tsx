@@ -1,5 +1,5 @@
 import {
-	AuthButton,
+	AuthSettingsTrigger,
 	Tabs,
 	TabsContent,
 	TabsList,
@@ -50,7 +50,7 @@ export function App() {
 						<h1 className="text-lg font-semibold tracking-tight">
 							Franklin — Demo
 						</h1>
-						<AuthButton />
+						<AuthSettingsTrigger />
 					</div>
 				</header>
 

@@ -3,15 +3,15 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { ApiKeyEntry } from '@franklin/agent/browser';
 import { useAsync, useAuthEntries, useAuthManager } from '@franklin/react';
 
-import { Button } from '../../primitives/button.js';
-import { Input } from '../../primitives/input.js';
+import { Button } from '../../../primitives/button.js';
+import { Input } from '../../../primitives/input.js';
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '../../primitives/select.js';
+} from '../../../primitives/select.js';
 
 type ProviderMeta = { id: string; name: string };
 

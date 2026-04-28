@@ -1,7 +1,7 @@
 import { useAuthEntries, useOAuthFlow } from '@franklin/react';
 
-import { Button } from '../../primitives/button.js';
-import { LOGIN_BUTTONS } from '../login-button/registry.js';
+import { Button } from '../../../primitives/button.js';
+import { LOGIN_BUTTONS } from '../../login-button/registry.js';
 
 import type { OAuthProviderMeta } from './types.js';
 

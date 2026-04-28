@@ -1,6 +1,6 @@
 import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
 import { AgentsProvider, AppContext } from '@franklin/react';
-import { AgentTabs, AuthButton } from '@franklin/ui';
+import { AgentTabs, AuthSettingsTrigger } from '@franklin/ui';
 
 import { ActiveAgent } from './active-agent.js';
 
@@ -26,7 +26,7 @@ export function ConversationWindow({
 								Obsidian agent window
 							</p>
 						</div>
-						<AuthButton />
+						<AuthSettingsTrigger />
 					</header>
 					<AgentTabs getCreateInput={getCreateInput} />
 					<ActiveAgent />

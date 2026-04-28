@@ -2,13 +2,13 @@ import {
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
-} from '../primitives/dialog.js';
+} from '../../primitives/dialog.js';
 import {
 	Tabs,
 	TabsContent,
 	TabsList,
 	TabsTrigger,
-} from '../primitives/tabs.js';
+} from '../../primitives/tabs.js';
 
 import type { AuthPanelDescriptor } from './types.js';
 
