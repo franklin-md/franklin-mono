@@ -26,18 +26,6 @@ export function createObsidianPlatform(
 		environment: (config: EnvironmentConfig) =>
 			createReconfigurableEnvironment({
 				config,
-				// configureFilesystem: async (fsConfig) => {
-				// 	const fs = createObservableFilesystem(
-				// 		configureFilesystem(
-				// 			createObsidianFilesystem(app, createNodeFilesystem()),
-				// 			fsConfig,
-				// 		),
-				// 	);
-				// 	fs.onWrite(writeListener);
-				// 	return fs;
-				// },
-				// configureTerminal: async () => {
-
 				osInfo: nodePlatform.os.osInfo,
 				configureFilesystem: async (fsConfig) => {
 					const fs = createObservableFilesystem(
