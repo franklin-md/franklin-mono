@@ -1,5 +1,6 @@
 import { createToolUseBlock } from '@franklin/react';
 import {
+	ConversationOnboardingPlaceholder,
 	ConversationPanel as SharedConversationPanel,
 	InspectDumpButton,
 	ToolCardChrome,
@@ -12,7 +13,10 @@ const ToolUse = createToolUseBlock(defaultToolRegistry, ToolCardChrome);
 export function ConversationPanel() {
 	return (
 		<SharedConversationPanel
-			toolUse={ToolUse}
+			components={{
+				ToolUse,
+				EmptyPlaceholder: ConversationOnboardingPlaceholder,
+			}}
 			additionalControls={
 				process.env.NODE_ENV === 'development'
 					? [

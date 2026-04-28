@@ -8,7 +8,7 @@ import { ToolUse } from './tools/tool-use.js';
 export function ConversationPanel() {
 	return (
 		<SharedConversationPanel
-			toolUse={ToolUse}
+			components={{ ToolUse }}
 			additionalControls={
 				process.env.NODE_ENV === 'development'
 					? [<InspectDumpButton key="debug" />]
