@@ -1,4 +1,4 @@
-import { useAuthEntries, useOAuthFlow } from '@franklin/react';
+import { useAuthEntries, useOAuthLogin } from '@franklin/react';
 
 import { OpenAICodexLoginButton } from '../auth/login-button/openai-codex.js';
 import { isOAuthFlowRunning } from '../auth/login-button/flow.js';
@@ -8,7 +8,7 @@ const CODEX_PROVIDER_ID = 'openai-codex';
 
 export function ConversationOnboardingPlaceholder() {
 	const { providerCount } = useAuthEntries();
-	const { flowState, login } = useOAuthFlow(CODEX_PROVIDER_ID);
+	const { state, handleLogin } = useOAuthLogin(CODEX_PROVIDER_ID);
 
 	if (providerCount > 0) {
 		return <DefaultEmptyConversationPlaceholder />;
@@ -20,10 +20,10 @@ export function ConversationOnboardingPlaceholder() {
 				Welcome to Franklin!
 			</p>
 			<OpenAICodexLoginButton
-				isLoading={isOAuthFlowRunning(flowState)}
+				isLoading={isOAuthFlowRunning(state)}
 				providerName="Login with ChatGPT"
 				onClick={() => {
-					void login();
+					void handleLogin();
 				}}
 			/>
 		</div>
