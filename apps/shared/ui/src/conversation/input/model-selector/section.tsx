@@ -19,22 +19,20 @@ export function ProviderSection({
 	onSelect,
 }: Props) {
 	return (
-		<CommandGroup
-			heading={
-				<span className="flex w-full items-center gap-2">
-					<ProviderIcon
-						provider={group.provider}
-						className="h-3.5 w-3.5 text-muted-foreground"
-					/>
-					<span>{group.displayName}</span>
-					<ProviderAuthAction
-						access={group.access}
-						displayName={group.displayName}
-						provider={group.provider}
-					/>
-				</span>
-			}
-		>
+		<CommandGroup>
+			<div className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-muted-foreground">
+				<ProviderIcon
+					provider={group.provider}
+					className="h-3.5 w-3.5 text-muted-foreground"
+				/>
+				<span>{group.displayName}</span>
+				<ProviderAuthAction
+					access={group.access}
+					displayName={group.displayName}
+					provider={group.provider}
+				/>
+			</div>
+
 			{group.models.map((model) => (
 				<ModelRow
 					key={model.id}

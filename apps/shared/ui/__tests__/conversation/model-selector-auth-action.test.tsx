@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 
 import type {
@@ -12,7 +12,9 @@ import type {
 } from '@franklin/agent/browser';
 import { AppContext } from '@franklin/react';
 
+import { Command } from '../../src/primitives/command.js';
 import { ProviderAuthAction } from '../../src/conversation/input/model-selector/auth-shortcut/index.js';
+import { ProviderSection } from '../../src/conversation/input/model-selector/section.js';
 
 function renderWithAuth(ui: ReactElement, opts?: { entries?: AuthEntries }) {
 	const auth = createAuthMock(opts?.entries ?? {});
@@ -99,6 +101,13 @@ function createAuthMock(initialEntries: AuthEntries) {
 }
 
 describe('ProviderAuthAction', () => {
+	beforeEach(() => {
+		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+			configurable: true,
+			value: vi.fn(),
+		});
+	});
+
 	it('renders signed-in providers as non-button status', () => {
 		renderWithAuth(
 			<ProviderAuthAction
@@ -157,5 +166,40 @@ describe('ProviderAuthAction', () => {
 		);
 
 		expect(await screen.findByText('Add API Key')).toBeTruthy();
+	});
+
+	it('keeps provider section auth actions outside aria-hidden headings', () => {
+		renderWithAuth(
+			<Command>
+				<ProviderSection
+					group={{
+						provider: 'openrouter',
+						displayName: 'OpenRouter',
+						access: 'api',
+						models: [
+							{
+								id: 'z-ai/glm-5.1',
+								provider: 'openrouter',
+								name: 'GLM 5.1',
+								reasoning: true,
+								contextWindow: 202_752,
+								costInput: 1.26,
+								costOutput: 3.96,
+								intelligence: 'frontier',
+							},
+						],
+					}}
+					selectedModel="z-ai/glm-5.1"
+					selectedProvider="openrouter"
+					onSelect={vi.fn()}
+				/>
+			</Command>,
+		);
+
+		const button = screen.getByRole('button', {
+			name: 'Add API key for OpenRouter',
+		});
+
+		expect(button.closest('[aria-hidden="true"]')).toBeNull();
 	});
 });
