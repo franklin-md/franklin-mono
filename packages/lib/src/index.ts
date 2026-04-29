@@ -84,6 +84,7 @@ export { createMapFilePersister } from './persistence/map/create.js';
 export { DebouncedPersister } from './persistence/map/debounced.js';
 export { Debouncer } from './utils/debouncer.js';
 export { formatElapsed } from './utils/format-elapsed.js';
+export { oxfordJoin } from './utils/oxford-join.js';
 export { createObserver } from './utils/observer.js';
 export type { Observer } from './utils/observer.js';
 export type { DeepPartial } from './typing/deep-partial.js';
