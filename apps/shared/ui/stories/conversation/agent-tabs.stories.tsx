@@ -107,8 +107,8 @@ function MockAgentsHost({ initialSessions, children }: MockAgentsHostProps) {
 			settings: {
 				get: () => ({
 					defaultLLMConfig: {
-						provider: 'anthropic',
-						model: 'claude-sonnet-4-6',
+						provider: 'openai-codex',
+						model: 'gpt-5.4',
 						reasoning: 'medium' as const,
 					},
 				}),

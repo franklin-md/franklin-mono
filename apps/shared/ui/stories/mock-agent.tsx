@@ -52,8 +52,8 @@ export function createMockRuntime(opts?: {
 	model?: string;
 }): FranklinRuntime {
 	const reasoning = opts?.reasoning ?? 'medium';
-	const provider = opts?.provider ?? 'anthropic';
-	const model = opts?.model ?? 'claude-sonnet-4-6';
+	const provider = opts?.provider ?? 'openai-codex';
+	const model = opts?.model ?? 'gpt-5.4';
 
 	const conversationKey = conversationExtension.keys.conversation;
 	const conversationStore = createMockStore(opts?.turns ?? []);
@@ -89,8 +89,8 @@ export function createMockRuntime(opts?: {
 function createMockApp() {
 	const settingsStore = createMockStore({
 		defaultLLMConfig: {
-			provider: 'anthropic',
-			model: 'claude-sonnet-4-6',
+			provider: 'openai-codex',
+			model: 'gpt-5.4',
 		},
 	});
 	const auth = createMockAuth();
