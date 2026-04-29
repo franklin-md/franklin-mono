@@ -11,12 +11,14 @@ import {
 	createNodeFilesystem,
 	createNodePlatform,
 	nodePlatformFetch,
+	SandboxedProcess,
 } from '@franklin/node';
 import { createObsidianFilesystem } from './filesystem/obsidian.js';
-import { createObservableFilesystem, type WriteListener } from '@franklin/lib';
+import { createObservableFilesystem, type AbsolutePath, type WriteListener } from '@franklin/lib';
 
 export function createObsidianPlatform(
 	app: App,
+	appDir: AbsolutePath,
 	writeListener: WriteListener,
 ): Platform {
 	const nodePlatform = createNodePlatform();
@@ -37,17 +39,22 @@ export function createObsidianPlatform(
 					fs.onWrite(writeListener);
 					return fs;
 				},
-				configureProcess: async () => {
-					return {
-						exec: async () => {
-							return {
-								exit_code: 0,
-								stdout: 'Process execution is not available in Obsidian',
-								stderr: '',
-							};
-						},
+				configureProcess: async (
+					config,
+					previous: SandboxedProcess | undefined,
+				) => {
+					process.env.PATH = `/opt/homebrew/bin:${process.env.PATH}`;
+					if (previous) {
+						await previous.setFilesystemConfig(config.fsConfig);
+						await previous.setNetworkConfig(config.netConfig);
+						return previous;
 					};
+
+					const proc = new SandboxedProcess(appDir, config);
+					await proc.initialize();
+					return proc;
 				},
+						
 				configureWeb: async (netConfig) =>
 					createWeb(netConfig, nodePlatformFetch),
 			}),
