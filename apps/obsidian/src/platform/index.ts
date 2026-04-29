@@ -5,61 +5,45 @@ import {
 	configureFilesystem,
 	createWeb,
 } from '@franklin/extensions';
-
 import type { App } from 'obsidian';
 import {
 	createNodeFilesystem,
 	createNodePlatform,
+	createConfigureProcess,
 	nodePlatformFetch,
+	withAnthropicProtected,
 } from '@franklin/node';
 import { createObsidianFilesystem } from './filesystem/obsidian.js';
-import { createObservableFilesystem, type WriteListener } from '@franklin/lib';
+import {
+	createObservableFilesystem,
+	type AbsolutePath,
+	type WriteListener,
+} from '@franklin/lib';
 
 export function createObsidianPlatform(
 	app: App,
+	appDir: AbsolutePath,
 	writeListener: WriteListener,
 ): Platform {
-	const nodePlatform = createNodePlatform();
+	const nodePlatform = createNodePlatform({ appDir });
 
 	return {
 		...nodePlatform,
 		environment: (config: EnvironmentConfig) =>
 			createReconfigurableEnvironment({
 				config,
-				// configureFilesystem: async (fsConfig) => {
-				// 	const fs = createObservableFilesystem(
-				// 		configureFilesystem(
-				// 			createObsidianFilesystem(app, createNodeFilesystem()),
-				// 			fsConfig,
-				// 		),
-				// 	);
-				// 	fs.onWrite(writeListener);
-				// 	return fs;
-				// },
-				// configureTerminal: async () => {
-
 				osInfo: nodePlatform.os.osInfo,
 				configureFilesystem: async (fsConfig) => {
 					const fs = createObservableFilesystem(
 						configureFilesystem(
 							createObsidianFilesystem(app, createNodeFilesystem()),
-							fsConfig,
+							withAnthropicProtected(fsConfig),
 						),
 					);
 					fs.onWrite(writeListener);
 					return fs;
 				},
-				configureProcess: async () => {
-					return {
-						exec: async () => {
-							return {
-								exit_code: 0,
-								stdout: 'Process execution is not available in Obsidian',
-								stderr: '',
-							};
-						},
-					};
-				},
+				...createConfigureProcess(nodePlatform.os.osInfo, appDir),
 				configureWeb: async (netConfig) =>
 					createWeb(netConfig, nodePlatformFetch),
 			}),

@@ -12,13 +12,13 @@ import { nodeHttpFetch } from './http/fetch.js';
 import { getProviders } from '@mariozechner/pi-ai';
 import type { AbsolutePath } from '@franklin/lib';
 import os from 'node:os';
-import { SandboxedProcess } from './anthropic/sandboxed-process.js';
 import { withAnthropicProtected } from './anthropic/protected.js';
 import { openExternal } from './open-external.js';
 import { createLoopbackListener } from './network/loopback/create.js';
 import { createPiStreamFn } from './pi-stream.js';
 import { UnrestrictedProcess } from './unrestricted-process.js';
 import { createNodeOsInfo } from './os-info.js';
+import { createConfigureProcess } from './configure-process.js';
 
 type Args = {
 	appDir?: AbsolutePath;
@@ -28,6 +28,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 	const appDir = args.appDir ?? (os.homedir() as AbsolutePath);
 	const filesystem = createNodeFilesystem();
 	const osInfo = createNodeOsInfo();
+
 	const llmStreamFn = createPiStreamFn({ fetch: nodeHttpFetch });
 	const ai = {
 		getApiKeyProviders: async () => getProviders(),
@@ -47,19 +48,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 						createNodeFilesystem(),
 						withAnthropicProtected(fsConfig),
 					),
-				configureProcess: async (
-					cfg,
-					previous: SandboxedProcess | undefined,
-				) => {
-					if (previous) {
-						await previous.setFilesystemConfig(cfg.fsConfig);
-						await previous.setNetworkConfig(cfg.netConfig);
-						return previous;
-					}
-					const proc = new SandboxedProcess(appDir, cfg);
-					await proc.initialize();
-					return proc;
-				},
+				...createConfigureProcess(osInfo, appDir),
 				configureWeb: async (netConfig) =>
 					createWeb(netConfig, nodePlatformFetch),
 			}),
