@@ -1,4 +1,12 @@
-# Before PR/Merge
+## Licensing
+
+By contributing to this repository, you agree that your contributions are licensed under the same license as the files you modify.
+
+The Franklin name and logo are trademarks. Forks and derived works are welcome, but they must use a distinct name and must not imply endorsement by or affiliation with the Franklin project, unless given explicit permission
+
+##
+
+### Before PR/Merge
 
 - Ensure no-dead code paths:
   - Dead if not exported from package and not consumed within package other than tests
@@ -12,7 +20,7 @@
   - Husky works in GitKraken, but GUI apps may not inherit your shell's Node version manager setup
   - If GitKraken cannot find `node` or `npm`, add your version manager init to `~/.config/husky/init.sh`
 
-# Memory-budgeted builds (opt-in)
+### Memory-budgeted builds (opt-in)
 
 When multiple AI agents (Claude Code / Superconductor sessions) run on separate worktrees of this repo, concurrent `npm run build` / `test` / `lint` invocations can OOM low-RAM machines. The `build`, `test`, `lint`, and workspace `typecheck` scripts are wrapped with `scripts/in-parallel.mjs`, which declares an estimated MB budget per task and queues invocations across every shell on the machine (state lives in `$TMPDIR/franklin-in-parallel.json`).
 

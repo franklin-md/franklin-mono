@@ -1,0 +1,92 @@
+name: Release Obsidian Plugin
+
+on:
+  push:
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+
+concurrency:
+  group: release-obsidian-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      NODE_OPTIONS: '--max-old-space-size=4096'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run check
+
+      - run: npm run test
+
+      - run: npm run bundle:prod -w @franklin/obsidian
+
+      - name: Validate Obsidian release
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ ! "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Obsidian release tags must use bare x.y.z format: $tag" >&2
+            exit 1
+          fi
+
+          manifest_version="$(node -e "const fs = require('node:fs'); console.log(JSON.parse(fs.readFileSync('apps/obsidian/manifest.json', 'utf8')).version)")"
+          dist_manifest_version="$(node -e "const fs = require('node:fs'); console.log(JSON.parse(fs.readFileSync('apps/obsidian/dist/manifest.json', 'utf8')).version)")"
+
+          if [[ "$tag" != "$manifest_version" ]]; then
+            echo "Tag $tag does not match apps/obsidian/manifest.json version $manifest_version" >&2
+            exit 1
+          fi
+
+          if [[ "$tag" != "$dist_manifest_version" ]]; then
+            echo "Tag $tag does not match bundled manifest version $dist_manifest_version" >&2
+            exit 1
+          fi
+
+          for file in main.js manifest.json styles.css; do
+            if [[ ! -f "apps/obsidian/dist/$file" ]]; then
+              echo "Missing release asset: apps/obsidian/dist/$file" >&2
+              exit 1
+            fi
+          done
+
+          if [[ ! -s apps/obsidian/dist/styles.css ]]; then
+            echo "styles.css is empty; omit it intentionally or ship generated styles" >&2
+            exit 1
+          fi
+
+      - name: Package manual install zip
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          plugin_dir="release/franklin"
+          mkdir -p "$plugin_dir"
+          cp apps/obsidian/dist/main.js "$plugin_dir/main.js"
+          cp apps/obsidian/dist/manifest.json "$plugin_dir/manifest.json"
+          cp apps/obsidian/dist/styles.css "$plugin_dir/styles.css"
+          (cd release && zip -r "franklin-obsidian-${tag}.zip" franklin)
+
+      - name: Create draft GitHub release
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          gh release create "$tag" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$tag" \
+            --draft \
+            --verify-tag \
+            --generate-notes \
+            apps/obsidian/dist/main.js \
+            apps/obsidian/dist/manifest.json \
+            apps/obsidian/dist/styles.css \
+            "release/franklin-obsidian-${tag}.zip"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -5,6 +5,17 @@ import {
 	type ProcessInput,
 	type ProcessOutput,
 } from '@franklin/lib';
+import { spawnSync } from 'node:child_process';
+import {
+	chmodSync,
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	writeFileSync,
+} from 'node:fs';
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { runGrep } from '../run.js';
@@ -49,6 +60,49 @@ function mockEnv(opts: MockEnvOptions = {}): ReconfigurableEnvironment {
 const RIPGREP = 'ripgrep' as const;
 const GREP = 'grep' as const;
 const NONE = 'none' as const;
+
+async function execRealProcess(input: ProcessInput): Promise<ProcessOutput> {
+	const result = spawnSync(input.file, input.args ?? [], {
+		cwd: input.cwd,
+		encoding: 'utf8',
+		timeout: input.timeout,
+	});
+	if (result.error) throw result.error;
+	return {
+		exit_code: result.status ?? 1,
+		stdout: result.stdout,
+		stderr: result.stderr,
+	};
+}
+
+function canExerciseGrepTraversalWarning(): boolean {
+	if (process.platform === 'win32') return false;
+	const version = spawnSync('grep', ['--version'], { encoding: 'utf8' });
+	if (version.status !== 0) return false;
+
+	const root = mkdtempSync(join(tmpdir(), 'franklin-grep-probe-'));
+	const locked = join(root, 'locked');
+	try {
+		mkdirSync(locked);
+		writeFileSync(join(root, 'hit.txt'), 'needle\n');
+		chmodSync(locked, 0);
+		const result = spawnSync(
+			'grep',
+			['-rEnI', '--color=never', '-e', 'needle', '--', root],
+			{ encoding: 'utf8' },
+		);
+		return result.status === 2 && result.stdout.includes('needle');
+	} catch {
+		return false;
+	} finally {
+		try {
+			chmodSync(locked, 0o700);
+		} catch {
+			// Directory may not have been created before setup failed.
+		}
+		rmSync(root, { recursive: true, force: true });
+	}
+}
 
 describe('runGrep', () => {
 	it('returns a friendly error when no backend is available, never calls exec', async () => {
@@ -250,5 +304,57 @@ describe('runGrep', () => {
 
 			expect(result.output).toBe('src/a.ts\n  7: hit here');
 		});
+
+		it('returns partial matches when grep exits with traversal warnings', async () => {
+			const env = mockEnv({
+				exec: async () => ({
+					exit_code: 2,
+					stdout: '/resolved/src/a.ts:7:hit here',
+					stderr: 'grep: /resolved/src/locked: Permission denied',
+				}),
+			});
+
+			const result = await runGrep(GREP, { pattern: 'hit', path: 'src' }, env);
+
+			expect(result.isError).toBe(false);
+			expect(result.output).toContain('/resolved/src/a.ts\n  7: hit here');
+			expect(result.output).toContain('results may be incomplete');
+		});
+
+		it.skipIf(!canExerciseGrepTraversalWarning())(
+			'returns matches from path "." when real grep reports traversal warnings',
+			async () => {
+				const root = await mkdtemp(join(tmpdir(), 'franklin-grep-dot-'));
+				const locked = join(root, 'locked');
+				try {
+					await writeFile(join(root, 'hit.txt'), 'needle\n');
+					await mkdir(locked);
+					await chmod(locked, 0);
+					const env = mockEnv({
+						cwd: root as AbsolutePath,
+						exec: execRealProcess,
+						resolve: async (path) => {
+							if (path === '.') return root as AbsolutePath;
+							return join(root, path) as AbsolutePath;
+						},
+					});
+
+					const result = await runGrep(
+						GREP,
+						{ pattern: 'needle', path: '.' },
+						env,
+					);
+
+					expect(result.isError).toBe(false);
+					expect(result.output).toContain(
+						`${join(root, 'hit.txt')}\n  1: needle`,
+					);
+					expect(result.output).toContain('results may be incomplete');
+				} finally {
+					await chmod(locked, 0o700).catch(() => {});
+					await rm(root, { recursive: true, force: true });
+				}
+			},
+		);
 	});
 });

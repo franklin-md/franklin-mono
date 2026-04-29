@@ -4,6 +4,11 @@ export interface GrepMatch {
 	text: string;
 }
 
+export interface GrepResult {
+	output: string;
+	isError: boolean;
+}
+
 export interface FormatMatchesOptions {
 	truncated: boolean;
 	maxLength?: number;
