@@ -71,7 +71,7 @@ npm run bundle -- --plugin-dir=/path/to/YourVault/.obsidian/plugins/franklin
 Then in Obsidian:
 
 1. Enable the `Franklin` community plugin.
-2. Click the ribbon icon, or run `Open Franklin` from the command palette.
+2. Click the ribbon icon, or run `Franklin: Open chat window` from the command palette.
 
 ## Develop
 

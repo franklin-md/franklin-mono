@@ -54,8 +54,8 @@ export default class FranklinPlugin extends Plugin {
 				});
 
 				this.addCommand({
-					id: 'open-franklin',
-					name: 'Open Franklin',
+					id: 'open-chat-window',
+					name: 'Open chat window',
 					callback: () => {
 						void this.activateView();
 					},
