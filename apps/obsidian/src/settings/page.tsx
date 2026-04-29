@@ -3,7 +3,6 @@ import { Button, Input, OpenAICodexLoginButton } from '@franklin/ui';
 
 import { SettingControl } from '../components/obsidian-native/setting/control.js';
 import { SettingDescription } from '../components/obsidian-native/setting/description.js';
-import { SettingHeading } from '../components/obsidian-native/setting/heading.js';
 import { SettingInfo } from '../components/obsidian-native/setting/info.js';
 import { SettingItem } from '../components/obsidian-native/setting/item.js';
 import { SettingName } from '../components/obsidian-native/setting/name.js';
@@ -14,10 +13,6 @@ const OPENAI_CODEX_PROVIDER = 'openai-codex';
 export function SettingsPage() {
 	return (
 		<>
-			<SettingHeading
-				name="AI Credentials"
-				description="Configure how Franklin reaches model providers."
-			/>
 			<OpenRouterApiKeyField />
 			<ChatGPTLoginField />
 		</>
