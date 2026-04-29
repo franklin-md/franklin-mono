@@ -90,10 +90,9 @@ export {
 export {
 	EXT_ICONS,
 	FILENAME_ICONS,
-	FileIcon,
-	type FileIconProps,
 	type IconEntry,
-} from './components/file-icon/icon.js';
+} from './components/file-icon/branding.js';
+export { FileIcon, type FileIconProps } from './components/file-icon/icon.js';
 export {
 	TextareaGroup,
 	type TextareaGroupProps,

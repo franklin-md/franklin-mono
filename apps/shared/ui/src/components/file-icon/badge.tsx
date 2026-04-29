@@ -13,7 +13,7 @@ export interface FileBadgeProps {
 
 export function FileBadge({ path, className, iconExtension }: FileBadgeProps) {
 	const filename = getFilename(path);
-	const { extension } = resolveFileExtension(filename, iconExtension);
+	const extension = resolveFileExtension(filename, iconExtension);
 
 	return (
 		<Badge
