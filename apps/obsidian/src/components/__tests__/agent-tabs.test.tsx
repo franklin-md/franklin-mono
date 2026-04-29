@@ -164,6 +164,14 @@ function renderApp(initialSessions: TestSession[]) {
 }
 
 describe('Obsidian agent tabs', () => {
+	it('omits the standalone Franklin header and auth button', () => {
+		renderApp([]);
+
+		expect(screen.queryByText('Franklin')).toBeNull();
+		expect(screen.queryByText('Obsidian agent window')).toBeNull();
+		expect(screen.queryByRole('button', { name: 'Sign in' })).toBeNull();
+	});
+
 	it('renders one compact tab per session with positional labels', async () => {
 		renderApp([
 			createSession('session-a', 'idle'),
