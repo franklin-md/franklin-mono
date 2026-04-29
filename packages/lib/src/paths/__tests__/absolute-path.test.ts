@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { joinAbsolute, toAbsolutePath } from '../paths/index.js';
+import { joinAbsolute, toAbsolutePath } from '../absolute.js';
 
 describe('AbsolutePath', () => {
 	describe('validation', () => {

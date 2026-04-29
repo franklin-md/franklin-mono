@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { FileBadge } from '../../src/components/file-badge.js';
+import { FileBadge } from '../../src/components/file-icon/badge.js';
 
 const meta = {
 	title: 'Components/FileBadge',

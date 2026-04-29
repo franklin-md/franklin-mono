@@ -3,7 +3,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { FileIcon } from '../../src/components/file-icon.js';
+import { FileIcon } from '../../src/components/file-icon/icon.js';
 
 describe('FileIcon', () => {
 	it('inherits text color by default for react-icons entries', () => {
@@ -17,6 +17,16 @@ describe('FileIcon', () => {
 	it('applies brand color when requested for react-icons entries', () => {
 		const { container } = render(
 			<FileIcon filename="index.ts" withBrandColor />,
+		);
+
+		const icon = container.querySelector('svg');
+		expect(icon).not.toBeNull();
+		expect(icon?.style.color).toBe('rgb(49, 120, 198)');
+	});
+
+	it('uses an extension override for extensionless filenames', () => {
+		const { container } = render(
+			<FileIcon filename="session" extension="ts" withBrandColor />,
 		);
 
 		const icon = container.querySelector('svg');

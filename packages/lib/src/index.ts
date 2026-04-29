@@ -1,5 +1,10 @@
 export type { AbsolutePath } from './paths/index.js';
-export { toAbsolutePath, joinAbsolute } from './paths/index.js';
+export {
+	getFilename,
+	getFilenameExtension,
+	toAbsolutePath,
+	joinAbsolute,
+} from './paths/index.js';
 export type { FileStat, Filesystem } from './filesystem/index.js';
 export type { Process, ProcessInput, ProcessOutput } from './process/index.js';
 export type {

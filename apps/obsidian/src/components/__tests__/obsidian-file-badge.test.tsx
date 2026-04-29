@@ -1,9 +1,20 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ObsidianFileBadge } from '../obsidian-file-badge.js';
+
+vi.mock('@franklin/ui', () => ({
+	FileBadge({ path, iconExtension }: { path: string; iconExtension?: string }) {
+		const name = path.split('/').pop() ?? path;
+		return (
+			<span data-icon-extension={iconExtension ?? ''} data-testid="file-badge">
+				{name}
+			</span>
+		);
+	},
+}));
 
 afterEach(cleanup);
 
@@ -19,6 +30,14 @@ describe('ObsidianFileBadge', () => {
 
 		expect(screen.getByText('MEMORY')).toBeTruthy();
 		expect(screen.queryByText('[[MEMORY]]')).toBeNull();
+	});
+
+	it('uses the Markdown icon extension for wikilink paths', () => {
+		render(<ObsidianFileBadge path="[[MEMORY]]" />);
+
+		expect(
+			screen.getByTestId('file-badge').getAttribute('data-icon-extension'),
+		).toBe('md');
 	});
 
 	it('renders the basename for a nested wikilink path', () => {
@@ -39,5 +58,13 @@ describe('ObsidianFileBadge', () => {
 		render(<ObsidianFileBadge path="[[]]" />);
 
 		expect(screen.getByText('[[]]')).toBeTruthy();
+	});
+
+	it('does not use the Markdown icon extension for normal paths', () => {
+		render(<ObsidianFileBadge path="packages/agent/src/session.ts" />);
+
+		expect(
+			screen.getByTestId('file-badge').getAttribute('data-icon-extension'),
+		).toBe('');
 	});
 });
