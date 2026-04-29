@@ -148,6 +148,7 @@ export { LoginProviderButton } from './auth/login-button/button.js';
 export { AnthropicLoginButton } from './auth/login-button/anthropic.js';
 export { OpenAICodexLoginButton } from './auth/login-button/openai-codex.js';
 export type { LoginProviderButtonProps } from './auth/login-button/button.js';
+export { isOAuthFlowRunning } from './auth/login-button/flow.js';
 
 // sidebar
 export { AgentSidebar } from './sidebar/agent-sidebar.js';

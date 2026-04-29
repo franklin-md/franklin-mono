@@ -4,15 +4,11 @@ import { createRoot, type Root } from 'react-dom/client';
 import { PortalProvider } from './portal.js';
 
 export type Mounter = {
-	mount: (contentEl: HTMLElement) => void;
+	mount: (contentEl: HTMLElement, children: ReactNode) => void;
 	unmount: () => void;
 };
 
-type Options = {
-	children: ReactNode;
-};
-
-export function createMounter({ children }: Options): Mounter {
+export function createMounter(): Mounter {
 	let contentEl: HTMLElement | null = null;
 	let root: Root | null = null;
 
@@ -30,7 +26,7 @@ export function createMounter({ children }: Options): Mounter {
 	};
 
 	return {
-		mount: (nextContentEl) => {
+		mount: (nextContentEl, children) => {
 			unmount();
 			contentEl = nextContentEl;
 			nextContentEl.replaceChildren();

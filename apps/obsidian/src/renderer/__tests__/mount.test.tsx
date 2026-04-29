@@ -18,11 +18,9 @@ describe('createMounter', () => {
 		contentEl.onWindowMigrated = vi.fn(() => removeWindowMigratedListener);
 		document.body.append(contentEl);
 
-		const mounter = createMounter({
-			children: <div data-testid="child">hello</div>,
-		});
+		const mounter = createMounter();
 		act(() => {
-			mounter.mount(contentEl);
+			mounter.mount(contentEl, <div data-testid="child">hello</div>);
 		});
 
 		expect(contentEl.classList.contains('franklin')).toBe(true);
@@ -52,12 +50,12 @@ describe('createMounter', () => {
 		secondHost.onWindowMigrated = vi.fn(() => secondRemove);
 		document.body.append(secondHost);
 
-		const mounter = createMounter({ children: <div /> });
+		const mounter = createMounter();
 		act(() => {
-			mounter.mount(firstHost);
+			mounter.mount(firstHost, <div />);
 		});
 		act(() => {
-			mounter.mount(secondHost);
+			mounter.mount(secondHost, <div />);
 		});
 
 		expect(firstRemove).toHaveBeenCalledOnce();
