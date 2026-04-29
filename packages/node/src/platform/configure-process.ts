@@ -40,7 +40,10 @@ export function createConfigureProcess(osInfo: OsInfo, appDir: AbsolutePath) {
 
 			// rg path exists, can proceed with SRT
 			if (process.env.PATH) {
-				if (!process.env.PATH.includes(`:${rgPath}`) && !process.env.PATH.includes(`${rgPath}:`)) {
+				if (
+					!process.env.PATH.includes(`:${rgPath}`) &&
+					!process.env.PATH.includes(`${rgPath}:`)
+				) {
 					process.env.PATH += `:${rgPath}`;
 				}
 			} else {
