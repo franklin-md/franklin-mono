@@ -40,9 +40,9 @@ export function createConfigureProcess(osInfo: OsInfo, appDir: AbsolutePath) {
 			}
 
 			// rg path exists, can proceed with SRT
-            if (!PathIncludes(rgPath)) {
-                addToPath(rgPath);
-            }
+			if (!PathIncludes(rgPath)) {
+				addToPath(rgPath);
+			}
 
 			const proc = new SandboxedProcess(appDir, cfg);
 			await proc.initialize();
