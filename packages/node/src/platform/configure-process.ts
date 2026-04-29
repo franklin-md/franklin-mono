@@ -5,6 +5,7 @@ import { UnrestrictedProcess } from './unrestricted-process.js';
 import type { OsInfo } from '@franklin/lib';
 import { findRgPath } from './find-rg.js';
 import type { AbsolutePath } from '@franklin/lib';
+import { addToPath, PathIncludes } from './utils.js';
 
 export function createConfigureProcess(osInfo: OsInfo, appDir: AbsolutePath) {
 	return {
@@ -39,16 +40,9 @@ export function createConfigureProcess(osInfo: OsInfo, appDir: AbsolutePath) {
 			}
 
 			// rg path exists, can proceed with SRT
-			if (process.env.PATH) {
-				if (
-					!process.env.PATH.includes(`:${rgPath}`) &&
-					!process.env.PATH.includes(`${rgPath}:`)
-				) {
-					process.env.PATH += `:${rgPath}`;
-				}
-			} else {
-				process.env.PATH = rgPath as string;
-			}
+            if (!PathIncludes(rgPath)) {
+                addToPath(rgPath);
+            }
 
 			const proc = new SandboxedProcess(appDir, cfg);
 			await proc.initialize();
