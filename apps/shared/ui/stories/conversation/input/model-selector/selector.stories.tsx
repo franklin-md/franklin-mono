@@ -8,7 +8,7 @@ const meta = {
 	component: ModelSelector,
 	decorators: [
 		(Story) => (
-			<MockAgentDecorator provider="anthropic" model="claude-sonnet-4-6">
+			<MockAgentDecorator provider="openai-codex" model="gpt-5.4">
 				<div className="flex min-h-[500px] items-end p-4">
 					<Story />
 				</div>
