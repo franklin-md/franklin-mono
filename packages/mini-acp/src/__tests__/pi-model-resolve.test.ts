@@ -81,6 +81,43 @@ describe('resolveModel', () => {
 		});
 	});
 
+	it('resolves the OpenAI Codex gpt-5.4-mini model from pi-ai', () => {
+		const result = resolveModel({
+			provider: 'openai-codex',
+			model: 'gpt-5.4-mini',
+		});
+
+		expect(result.ok).toBe(true);
+		expect(result.ok && result.model).toMatchObject({
+			provider: 'openai-codex',
+			id: 'gpt-5.4-mini',
+			api: 'openai-codex-responses',
+			reasoning: true,
+			contextWindow: 272_000,
+			maxTokens: 128_000,
+			cost: {
+				input: 0.75,
+				output: 4.5,
+				cacheRead: 0.075,
+				cacheWrite: 0,
+			},
+		});
+	});
+
+	for (const model of ['gpt-5.3-codex', 'gpt-5.3-codex-spark']) {
+		it(`rejects OpenAI Codex model outside the OAuth allowlist: ${model}`, () => {
+			const result = resolveModel({
+				provider: 'openai-codex',
+				model,
+			});
+
+			expect(result.ok).toBe(false);
+			expect(!result.ok && result.turnEnd.stopCode).toBe(
+				StopCode.ModelNotFound,
+			);
+		});
+	}
+
 	it('returns the configured model for the configured provider', () => {
 		const result = resolveModel({
 			provider: 'openrouter',

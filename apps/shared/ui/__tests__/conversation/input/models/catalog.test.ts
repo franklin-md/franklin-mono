@@ -26,4 +26,16 @@ describe('MODEL_CATALOG', () => {
 			intelligence: 'frontier',
 		});
 	});
+
+	it('limits OpenAI Codex to the first three OAuth models', () => {
+		const openAICodex = MODEL_CATALOG.find(
+			(group) => group.provider === 'openai-codex',
+		);
+
+		expect(openAICodex?.models.map((model) => model.id)).toEqual([
+			'gpt-5.5',
+			'gpt-5.4',
+			'gpt-5.4-mini',
+		]);
+	});
 });

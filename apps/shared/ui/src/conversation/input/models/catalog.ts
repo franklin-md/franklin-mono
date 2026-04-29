@@ -107,27 +107,12 @@ const OPENAI_CODEX_PROVIDER_GROUP: ProviderGroup = {
 			costOut: 15,
 			intelligence: 'frontier',
 		}),
-		model('openai-codex', 'gpt-5.3-codex', 'GPT-5.3 Codex', {
+		model('openai-codex', 'gpt-5.4-mini', 'GPT-5.4 Mini', {
 			reasoning: true,
 			ctx: 272_000,
-			costIn: 1.75,
-			costOut: 14,
-			intelligence: 'strong',
-		}),
-		model('openai-codex', 'gpt-5.1-codex-mini', 'GPT-5.1 Codex Mini', {
-			reasoning: true,
-			ctx: 272_000,
-			costIn: 0.25,
-			costOut: 2,
+			costIn: 0.75,
+			costOut: 4.5,
 			intelligence: 'balanced',
-		}),
-		model('openai-codex', 'gpt-5.3-codex-spark', 'GPT-5.3 Codex Spark', {
-			reasoning: true,
-			ctx: 128_000,
-			costIn: 0,
-			costOut: 0,
-			intelligence: 'balanced',
-			free: true,
 		}),
 	],
 };
