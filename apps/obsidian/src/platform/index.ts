@@ -9,6 +9,7 @@ import type { App } from 'obsidian';
 import {
 	createNodeFilesystem,
 	createNodePlatform,
+	createConfigureProcess,
 	nodePlatformFetch,
 	withAnthropicProtected,
 } from '@franklin/node';
@@ -18,7 +19,6 @@ import {
 	type AbsolutePath,
 	type WriteListener,
 } from '@franklin/lib';
-import { createConfigureProcess } from 'packages/node/src/platform/configure-process.js';
 
 export function createObsidianPlatform(
 	app: App,

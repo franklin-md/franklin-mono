@@ -6,5 +6,6 @@ export { SandboxedProcess } from './platform/anthropic/sandboxed-process.js';
 export { nodePlatformFetch } from './platform/fetch.js';
 export { nodeHttpFetch } from './platform/http/fetch.js';
 export { withAnthropicProtected } from './platform/anthropic/protected.js';
+export { createConfigureProcess } from './platform/configure-process.js';
 
 // TODO: just export createApp
