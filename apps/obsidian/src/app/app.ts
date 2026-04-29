@@ -52,7 +52,11 @@ export async function createFranklinApp(
 	const appDir = toAbsolutePath(
 		getPluginAbsolutePath(plugin.app.vault, plugin.manifest),
 	);
-	const platform = createObsidianPlatform(plugin.app, appDir, diffClient.onWrite);
+	const platform = createObsidianPlatform(
+		plugin.app,
+		appDir,
+		diffClient.onWrite,
+	);
 	const authStore = await resolveAuthStore(plugin);
 
 	const app = new FranklinApp({

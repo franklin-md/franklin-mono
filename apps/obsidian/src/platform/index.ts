@@ -5,23 +5,27 @@ import {
 	configureFilesystem,
 	createWeb,
 } from '@franklin/extensions';
-
 import type { App } from 'obsidian';
 import {
 	createNodeFilesystem,
 	createNodePlatform,
 	nodePlatformFetch,
-	SandboxedProcess,
+	withAnthropicProtected,
 } from '@franklin/node';
 import { createObsidianFilesystem } from './filesystem/obsidian.js';
-import { createObservableFilesystem, type AbsolutePath, type WriteListener } from '@franklin/lib';
+import {
+	createObservableFilesystem,
+	type AbsolutePath,
+	type WriteListener,
+} from '@franklin/lib';
+import { createConfigureProcess } from 'packages/node/src/platform/configure-process.js';
 
 export function createObsidianPlatform(
 	app: App,
 	appDir: AbsolutePath,
 	writeListener: WriteListener,
 ): Platform {
-	const nodePlatform = createNodePlatform();
+	const nodePlatform = createNodePlatform({ appDir });
 
 	return {
 		...nodePlatform,
@@ -33,28 +37,13 @@ export function createObsidianPlatform(
 					const fs = createObservableFilesystem(
 						configureFilesystem(
 							createObsidianFilesystem(app, createNodeFilesystem()),
-							fsConfig,
+							withAnthropicProtected(fsConfig),
 						),
 					);
 					fs.onWrite(writeListener);
 					return fs;
 				},
-				configureProcess: async (
-					config,
-					previous: SandboxedProcess | undefined,
-				) => {
-					process.env.PATH = `/opt/homebrew/bin:${process.env.PATH}`;
-					if (previous) {
-						await previous.setFilesystemConfig(config.fsConfig);
-						await previous.setNetworkConfig(config.netConfig);
-						return previous;
-					};
-
-					const proc = new SandboxedProcess(appDir, config);
-					await proc.initialize();
-					return proc;
-				},
-						
+				...createConfigureProcess(nodePlatform.os.osInfo, appDir),
 				configureWeb: async (netConfig) =>
 					createWeb(netConfig, nodePlatformFetch),
 			}),
