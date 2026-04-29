@@ -2,7 +2,7 @@ import { File } from 'lucide-react';
 
 import { cn } from '../../lib/cn.js';
 import { resolveFileExtension } from './extension.js';
-import { EXT_ICONS, FILENAME_ICONS, type IconEntry } from './branding.js';
+import { EXT_ICONS, type IconEntry } from './branding.js';
 
 const FALLBACK: IconEntry = { icon: File };
 
@@ -10,18 +10,11 @@ function resolveEntry(
 	filename: string,
 	extension: string | undefined,
 ): IconEntry {
-	const lower = filename.toLowerCase();
-	const resolvedExtension = resolveFileExtension(lower, extension);
+	const ext = resolveFileExtension(filename, extension);
 
-	if (resolvedExtension.source !== 'override') {
-		const filenameEntry = FILENAME_ICONS[lower];
-		if (filenameEntry) return filenameEntry;
-	}
-
-	const ext = resolvedExtension.extension;
 	if (ext) {
 		const extEntry = EXT_ICONS[ext];
-		if (extEntry) return extEntry;
+		return extEntry ?? FALLBACK;
 	}
 
 	return FALLBACK;

@@ -3,8 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
 	EXT_ICONS,
 	FILENAME_ICONS,
-	FileIcon,
-} from '../../src/components/file-icon/icon.js';
+} from '../../src/components/file-icon/branding.js';
+import { FileIcon } from '../../src/components/file-icon/icon.js';
 
 function IconGrid() {
 	return (
