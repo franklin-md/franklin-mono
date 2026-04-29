@@ -123,6 +123,18 @@ describe('resolveToolRenderer', () => {
 		]);
 		expect(resolveToolRenderer(reg, 'read')).toBe(readRenderer);
 	});
+
+	it('uses the latest renderer when tool names are registered more than once', () => {
+		const replacementRenderer: ToolRendererEntry = {
+			summary: ({ block }) => `replacement: ${block.call.name}`,
+		};
+		const reg = createToolRendererRegistry([
+			['read', readRenderer],
+			['read', replacementRenderer],
+		]);
+
+		expect(resolveToolRenderer(reg, 'read')).toBe(replacementRenderer);
+	});
 });
 
 describe('createToolRenderer', () => {

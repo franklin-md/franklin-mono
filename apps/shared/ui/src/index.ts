@@ -78,7 +78,10 @@ export {
 export { IconButton, type IconButtonProps } from './components/icon-button.js';
 export { DeleteButton } from './components/delete-button.js';
 export { Favicon, type FaviconProps } from './components/favicon.js';
-export { FileBadge, type FileBadgeProps } from './components/file-badge.js';
+export {
+	FileBadge,
+	type FileBadgeProps,
+} from './components/file-icon/badge.js';
 export { StatusDot, type StatusDotProps } from './components/status-dot.js';
 export {
 	StatusIndicator,
@@ -87,10 +90,9 @@ export {
 export {
 	EXT_ICONS,
 	FILENAME_ICONS,
-	FileIcon,
-	type FileIconProps,
 	type IconEntry,
-} from './components/file-icon.js';
+} from './components/file-icon/branding.js';
+export { FileIcon, type FileIconProps } from './components/file-icon/icon.js';
 export {
 	TextareaGroup,
 	type TextareaGroupProps,
