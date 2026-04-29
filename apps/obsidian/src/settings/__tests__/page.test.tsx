@@ -40,18 +40,22 @@ function createAuthStub(initial: AuthEntries = {}): AuthStub {
 }
 
 function renderPage(auth: AuthStub) {
+	const openExternal = vi.fn(async () => {});
 	const app = {
 		auth,
 		platform: {
-			os: { openExternal: vi.fn(async () => {}) },
+			os: { openExternal },
 		},
 	} as unknown as FranklinApp;
 
-	return render(
-		<AppContext.Provider value={app}>
-			<SettingsPage />
-		</AppContext.Provider>,
-	);
+	return {
+		...render(
+			<AppContext.Provider value={app}>
+				<SettingsPage />
+			</AppContext.Provider>,
+		),
+		openExternal,
+	};
 }
 
 describe('SettingsPage', () => {
@@ -64,6 +68,24 @@ describe('SettingsPage', () => {
 
 		const input = screen.getByLabelText<HTMLInputElement>('OpenRouter API key');
 		expect(input.value).toBe('sk-or-existing');
+	});
+
+	it('links to OpenRouter API key settings', () => {
+		const auth = createAuthStub();
+		const { openExternal } = renderPage(auth);
+
+		const link = screen.getByRole('link', {
+			name: 'OpenRouter API keys',
+		});
+		expect(link.getAttribute('href')).toBe(
+			'https://openrouter.ai/settings/keys',
+		);
+		expect(link.getAttribute('target')).toBe('_blank');
+
+		fireEvent.click(link);
+		expect(openExternal).toHaveBeenCalledWith(
+			'https://openrouter.ai/settings/keys',
+		);
 	});
 
 	it('writes the OpenRouter key into the auth manager on change', () => {
