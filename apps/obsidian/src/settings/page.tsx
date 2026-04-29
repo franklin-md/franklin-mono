@@ -1,4 +1,9 @@
-import { useAuthEntries, useAuthManager, useOAuthLogin } from '@franklin/react';
+import {
+	useApp,
+	useAuthEntries,
+	useAuthManager,
+	useOAuthLogin,
+} from '@franklin/react';
 import { Button, Input, OpenAICodexLoginButton } from '@franklin/ui';
 
 import { SettingControl } from '../components/obsidian-native/setting/control.js';
@@ -9,6 +14,7 @@ import { SettingItem } from '../components/obsidian-native/setting/item.js';
 import { SettingName } from '../components/obsidian-native/setting/name.js';
 
 const OPENROUTER_PROVIDER = 'openrouter';
+const OPENROUTER_API_KEYS_URL = 'https://openrouter.ai/settings/keys';
 const OPENAI_CODEX_PROVIDER = 'openai-codex';
 
 export function SettingsPage() {
@@ -25,6 +31,7 @@ export function SettingsPage() {
 }
 
 function OpenRouterApiKeyField() {
+	const app = useApp();
 	const auth = useAuthManager();
 	const { entries } = useAuthEntries();
 
@@ -35,7 +42,18 @@ function OpenRouterApiKeyField() {
 			<SettingInfo>
 				<SettingName>OpenRouter API key</SettingName>
 				<SettingDescription>
-					Used for LLM access via OpenRouter.
+					Used for LLM access via OpenRouter.{' '}
+					<a
+						href={OPENROUTER_API_KEYS_URL}
+						target="_blank"
+						rel="noreferrer"
+						onClick={(event) => {
+							event.preventDefault();
+							void app.platform.os.openExternal(OPENROUTER_API_KEYS_URL);
+						}}
+					>
+						OpenRouter API keys
+					</a>
 				</SettingDescription>
 			</SettingInfo>
 			<SettingControl>
