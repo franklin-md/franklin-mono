@@ -1,10 +1,6 @@
 <p align="center">
-  <a href="https://pi.dev">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="placeholder">
-      <source media="(prefers-color-scheme: light)" srcset="placeholder">
-      <img alt="Franklin logo" src="placeholder" width="128">
-    </picture>
+  <a href="https://franklin.md">
+    <img alt="Franklin banner" src="./assets/kite2-long.png" width="100%">
   </a>
 </p>
 <p align="center">
