@@ -3,14 +3,15 @@ import { resolve } from 'node:path';
 
 /**
  * @typedef {object} BuildArgs
- * @property {string}  rootDir   — package root (apps/obsidian)
- * @property {string}  srcDir    — source directory
- * @property {string}  distDir   — output directory
- * @property {boolean} isWatch   — true when --watch is passed
- * @property {boolean} isProd    — true when --prod is passed
- * @property {string}  pluginId  — manifest id for the Obsidian plugin
- * @property {string}  [vaultDir] — resolved Obsidian vault directory
- * @property {string}  [pluginDir] — resolved Obsidian vault plugin directory
+ * @property {string}  rootDir          — package root (apps/obsidian)
+ * @property {string}  workspaceRootDir — workspace root (where manifest.json lives)
+ * @property {string}  srcDir           — source directory
+ * @property {string}  distDir          — output directory
+ * @property {boolean} isWatch          — true when --watch is passed
+ * @property {boolean} isProd           — true when --prod is passed
+ * @property {string}  pluginId         — manifest id for the Obsidian plugin
+ * @property {string}  [vaultDir]       — resolved Obsidian vault directory
+ * @property {string}  [pluginDir]      — resolved Obsidian vault plugin directory
  */
 
 /**
@@ -20,12 +21,13 @@ import { resolve } from 'node:path';
  */
 export function parseBuildArgs() {
 	const rootDir = resolve(import.meta.dirname, '..');
+	const workspaceRootDir = resolve(rootDir, '../..');
 	const srcDir = resolve(rootDir, 'src');
 	const distDir = resolve(rootDir, 'dist');
 	const isWatch = process.argv.includes('--watch');
 	const isProd = process.argv.includes('--prod');
 	const manifest = JSON.parse(
-		readFileSync(resolve(rootDir, 'manifest.json'), 'utf-8'),
+		readFileSync(resolve(workspaceRootDir, 'manifest.json'), 'utf-8'),
 	);
 	const pluginId = manifest.id;
 
@@ -39,6 +41,7 @@ export function parseBuildArgs() {
 
 	return {
 		rootDir,
+		workspaceRootDir,
 		srcDir,
 		distDir,
 		isWatch,
