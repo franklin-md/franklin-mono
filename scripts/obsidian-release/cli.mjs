@@ -26,8 +26,8 @@ try {
 	assertCleanWorktree(rootDir);
 	assertTagDoesNotExist(rootDir, plan.version);
 
-	applyRelease(plan);
 	runQualityChecks(rootDir);
+	applyRelease(plan);
 	commitRelease(rootDir, plan);
 
 	if (!(await confirm(`Create tag ${plan.version}?`))) {
