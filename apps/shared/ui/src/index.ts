@@ -138,6 +138,7 @@ export { defaultRegistry as defaultTurnEndRegistry } from './conversation/turn/t
 // auth
 export { AuthButton, type AuthButtonProps } from './auth/auth-button/button.js';
 export { AuthSettingsTrigger } from './auth/auth-button/trigger.js';
+export { DefaultAuthActionProvider } from './auth/default-action-provider.js';
 export { AuthModalContent } from './auth/settings-page/modal.js';
 export { apiKeyPanel, oauthPanel } from './auth/settings-page/panels.js';
 export type {

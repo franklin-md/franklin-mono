@@ -9,8 +9,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { AppContext } from '@franklin/react';
-
+import { AppContext, AuthActionProvider } from '@franklin/react';
 import { ConversationOnboardingPlaceholder } from '../../src/onboarding/conversation-placeholder.js';
 
 function renderWithAuth(entries: Record<string, unknown> = {}) {
@@ -29,11 +28,14 @@ function renderWithAuth(entries: Record<string, unknown> = {}) {
 			},
 		},
 	};
+	const content = (
+		<AuthActionProvider handlers={{ requestApiKey: vi.fn() }}>
+			<ConversationOnboardingPlaceholder />
+		</AuthActionProvider>
+	);
 
 	render(
-		<AppContext.Provider value={app as never}>
-			<ConversationOnboardingPlaceholder />
-		</AppContext.Provider>,
+		<AppContext.Provider value={app as never}>{content}</AppContext.Provider>,
 	);
 
 	return { loginOAuth };

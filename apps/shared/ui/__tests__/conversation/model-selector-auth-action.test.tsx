@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 
 import type {
@@ -10,8 +16,9 @@ import type {
 	AuthEntry,
 	OAuthLoginCallbacks,
 } from '@franklin/agent/browser';
-import { AppContext } from '@franklin/react';
+import { AppContext, AuthActionProvider } from '@franklin/react';
 
+import { DefaultAuthActionProvider } from '../../src/auth/default-action-provider.js';
 import { Command } from '../../src/primitives/command.js';
 import { ProviderAuthAction } from '../../src/conversation/input/model-selector/auth-shortcut/index.js';
 import { ProviderSection } from '../../src/conversation/input/model-selector/section.js';
@@ -32,7 +39,11 @@ function renderWithAuth(ui: ReactElement, opts?: { entries?: AuthEntries }) {
 		auth,
 		openExternal,
 		...render(
-			<AppContext.Provider value={app as never}>{ui}</AppContext.Provider>,
+			<AppContext.Provider value={app as never}>
+				<AuthActionProvider handlers={{ requestApiKey: vi.fn() }}>
+					{ui}
+				</AuthActionProvider>
+			</AppContext.Provider>,
 		),
 	};
 }
@@ -100,6 +111,10 @@ function createAuthMock(initialEntries: AuthEntries) {
 	};
 }
 
+afterEach(() => {
+	cleanup();
+});
+
 describe('ProviderAuthAction', () => {
 	beforeEach(() => {
 		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
@@ -152,13 +167,15 @@ describe('ProviderAuthAction', () => {
 		expect(openExternal).toHaveBeenCalledWith('https://example.com/auth');
 	});
 
-	it('opens the API key dialog for unsigned API providers', async () => {
+	it('opens the API key dialog for unsigned API providers (default handler)', async () => {
 		renderWithAuth(
-			<ProviderAuthAction
-				access="api"
-				displayName="OpenRouter"
-				provider="openrouter"
-			/>,
+			<DefaultAuthActionProvider>
+				<ProviderAuthAction
+					access="api"
+					displayName="OpenRouter"
+					provider="openrouter"
+				/>
+			</DefaultAuthActionProvider>,
 		);
 
 		fireEvent.click(
@@ -166,6 +183,30 @@ describe('ProviderAuthAction', () => {
 		);
 
 		expect(await screen.findByText('Add API Key')).toBeTruthy();
+	});
+
+	it('uses the host API key action when one is provided', () => {
+		const requestApiKey = vi.fn();
+
+		renderWithAuth(
+			<AuthActionProvider handlers={{ requestApiKey }}>
+				<ProviderAuthAction
+					access="api"
+					displayName="OpenRouter"
+					provider="openrouter"
+				/>
+			</AuthActionProvider>,
+		);
+
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Add API key for OpenRouter' }),
+		);
+
+		expect(requestApiKey).toHaveBeenCalledWith({
+			provider: 'openrouter',
+			displayName: 'OpenRouter',
+		});
+		expect(screen.queryByText('Add API Key')).toBeNull();
 	});
 
 	it('keeps provider section auth actions outside aria-hidden headings', () => {

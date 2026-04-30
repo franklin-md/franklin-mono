@@ -28,7 +28,7 @@ export function ProviderAuthAction({ access, displayName, provider }: Props) {
 	}
 
 	if (access === 'api') {
-		return <ApiKeyAuthAction displayName={displayName} />;
+		return <ApiKeyAuthAction displayName={displayName} provider={provider} />;
 	}
 
 	return null;

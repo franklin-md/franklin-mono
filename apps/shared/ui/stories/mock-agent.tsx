@@ -16,6 +16,8 @@ import {
 	type AgentsControl,
 } from '@franklin/react';
 
+import { DefaultAuthActionProvider } from '../src/auth/default-action-provider.js';
+
 function createMockStore<T>(initial: T) {
 	let value = initial;
 	const listeners = new Set<(next: T) => void>();
@@ -204,13 +206,15 @@ export function MockAgentDecorator({
 
 	return (
 		<AppContext.Provider value={app as never}>
-			<AgentProvider agent={runtime}>
-				<MockAgentsDecorator
-					activeSessionId={opts.turns?.length ? 'mock-session' : null}
-				>
-					{children}
-				</MockAgentsDecorator>
-			</AgentProvider>
+			<DefaultAuthActionProvider>
+				<AgentProvider agent={runtime}>
+					<MockAgentsDecorator
+						activeSessionId={opts.turns?.length ? 'mock-session' : null}
+					>
+						{children}
+					</MockAgentsDecorator>
+				</AgentProvider>
+			</DefaultAuthActionProvider>
 		</AppContext.Provider>
 	);
 }

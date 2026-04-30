@@ -1,5 +1,6 @@
 import {
 	AuthSettingsTrigger,
+	DefaultAuthActionProvider,
 	Tabs,
 	TabsContent,
 	TabsList,
@@ -44,34 +45,36 @@ export function App() {
 				</div>
 			}
 		>
-			<div className="flex h-screen flex-col bg-background">
-				<header className="border-b px-6 py-3">
-					<div className="flex items-center justify-between">
-						<h1 className="text-lg font-semibold tracking-tight">
-							Franklin — Demo
-						</h1>
-						<AuthSettingsTrigger />
-					</div>
-				</header>
+			<DefaultAuthActionProvider>
+				<div className="flex h-screen flex-col bg-background">
+					<header className="border-b px-6 py-3">
+						<div className="flex items-center justify-between">
+							<h1 className="text-lg font-semibold tracking-tight">
+								Franklin — Demo
+							</h1>
+							<AuthSettingsTrigger />
+						</div>
+					</header>
 
-				<Tabs
-					defaultValue="agent-chat"
-					className="flex flex-1 flex-col overflow-hidden"
-				>
-					<div className="border-b px-6">
-						<TabsList>
-							<TabsTrigger value="agent-chat">Agent Chat</TabsTrigger>
-						</TabsList>
-					</div>
-
-					<TabsContent
-						value="agent-chat"
-						className="flex flex-1 overflow-hidden m-0"
+					<Tabs
+						defaultValue="agent-chat"
+						className="flex flex-1 flex-col overflow-hidden"
 					>
-						<AgentChatPage />
-					</TabsContent>
-				</Tabs>
-			</div>
+						<div className="border-b px-6">
+							<TabsList>
+								<TabsTrigger value="agent-chat">Agent Chat</TabsTrigger>
+							</TabsList>
+						</div>
+
+						<TabsContent
+							value="agent-chat"
+							className="flex flex-1 overflow-hidden m-0"
+						>
+							<AgentChatPage />
+						</TabsContent>
+					</Tabs>
+				</div>
+			</DefaultAuthActionProvider>
 		</FranklinProvider>
 	);
 }
