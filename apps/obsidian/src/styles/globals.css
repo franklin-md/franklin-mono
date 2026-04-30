@@ -20,6 +20,7 @@
 @import './variables.css';
 /* @import '@franklin/ui/styles/franklin-theme.css'; */
 @import './theme.css';
+@import './markdown-obsidian.css';
 @import './code-theme.css';
 @import './diff.css';
 

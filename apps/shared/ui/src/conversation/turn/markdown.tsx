@@ -10,9 +10,14 @@ const math = createMathPlugin({
 
 const plugins = { code, math };
 
-export function Markdown({ text }: { text: string }) {
+export interface MarkdownProps {
+	text: string;
+	className?: string;
+}
+
+export function Markdown({ text, className = 'prose-content' }: MarkdownProps) {
 	return (
-		<div className="prose-content">
+		<div className={className}>
 			<Streamdown
 				plugins={plugins}
 				components={chromeComponents}
