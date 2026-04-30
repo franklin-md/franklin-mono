@@ -13,12 +13,14 @@ const ARTIFACTS = ['main.js', 'styles.css', 'manifest.json'];
  * @param {import('./cli.mjs').BuildArgs} args
  */
 export function sync(args) {
-	const { rootDir, distDir, pluginDir } = args;
+	const { workspaceRootDir, distDir, pluginDir } = args;
 
 	mkdirSync(distDir, { recursive: true });
-	cpSync(resolve(rootDir, 'manifest.json'), resolve(distDir, 'manifest.json'), {
-		force: true,
-	});
+	cpSync(
+		resolve(workspaceRootDir, 'manifest.json'),
+		resolve(distDir, 'manifest.json'),
+		{ force: true },
+	);
 
 	if (!pluginDir) return;
 

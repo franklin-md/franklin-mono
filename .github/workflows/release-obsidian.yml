@@ -40,11 +40,11 @@ jobs:
             exit 1
           fi
 
-          manifest_version="$(node -e "const fs = require('node:fs'); console.log(JSON.parse(fs.readFileSync('apps/obsidian/manifest.json', 'utf8')).version)")"
+          manifest_version="$(node -e "const fs = require('node:fs'); console.log(JSON.parse(fs.readFileSync('manifest.json', 'utf8')).version)")"
           dist_manifest_version="$(node -e "const fs = require('node:fs'); console.log(JSON.parse(fs.readFileSync('apps/obsidian/dist/manifest.json', 'utf8')).version)")"
 
           if [[ "$tag" != "$manifest_version" ]]; then
-            echo "Tag $tag does not match apps/obsidian/manifest.json version $manifest_version" >&2
+            echo "Tag $tag does not match manifest.json version $manifest_version" >&2
             exit 1
           fi
 

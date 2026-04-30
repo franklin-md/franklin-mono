@@ -12,7 +12,7 @@ export function planRelease({ rootDir, options }) {
 		);
 	}
 
-	const manifestPath = resolve(rootDir, 'apps/obsidian/manifest.json');
+	const manifestPath = resolve(rootDir, 'manifest.json');
 	const versionsPath = resolve(rootDir, 'versions.json');
 
 	const manifest = readJson(manifestPath);
@@ -23,7 +23,7 @@ export function planRelease({ rootDir, options }) {
 	assertAllowedUpgrade(currentVersion, options.version);
 
 	if (typeof currentMinAppVersion !== 'string') {
-		throw new Error('apps/obsidian/manifest.json must include minAppVersion');
+		throw new Error('manifest.json must include minAppVersion');
 	}
 
 	if (options.minAppVersion !== undefined) {
@@ -34,7 +34,7 @@ export function planRelease({ rootDir, options }) {
 	const shouldUpdateVersions =
 		existsSync(versionsPath) || nextMinAppVersion !== currentMinAppVersion;
 
-	const changedFiles = ['apps/obsidian/manifest.json'];
+	const changedFiles = ['manifest.json'];
 	if (shouldUpdateVersions) changedFiles.push('versions.json');
 
 	return {
