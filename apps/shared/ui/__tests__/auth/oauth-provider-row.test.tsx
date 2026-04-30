@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type * as FranklinReact from '@franklin/react';
 import type { OAuthLoginState } from '@franklin/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -24,25 +23,19 @@ const mocks = vi.hoisted(() => ({
 	reset: vi.fn<() => void>(),
 }));
 
-vi.mock('@franklin/react', async (importOriginal) => {
-	const actual = await importOriginal<typeof FranklinReact>();
+vi.mock('@franklin/react', () => ({
+	Icons: {
+		Claude: ({ className }: { className?: string }) => (
+			<svg className={className} data-testid="claude-icon" />
+		),
+		OpenAI: ({ className }: { className?: string }) => (
+			<svg className={className} data-testid="openai-icon" />
+		),
+	},
+	useAuthEntries: mocks.useAuthEntries,
+	useOAuthLogin: mocks.useOAuthLogin,
+}));
 
-	return {
-		...actual,
-		Icons: {
-			Claude: ({ className }: { className?: string }) => (
-				<svg className={className} data-testid="claude-icon" />
-			),
-			OpenAI: ({ className }: { className?: string }) => (
-				<svg className={className} data-testid="openai-icon" />
-			),
-		},
-		useAuthEntries: mocks.useAuthEntries,
-		useOAuthLogin: mocks.useOAuthLogin,
-	};
-});
-
-import { AuthActionProvider } from '@franklin/react';
 import { ProviderRow } from '../../src/auth/settings-page/oauth/provider-row.js';
 
 function setProviderState({
@@ -81,11 +74,7 @@ describe('ProviderRow', () => {
 			},
 		});
 
-		render(
-			<AuthActionProvider handlers={{ requestApiKey: vi.fn() }}>
-				<ProviderRow provider={{ id: 'anthropic', name: 'Claude' }} />
-			</AuthActionProvider>,
-		);
+		render(<ProviderRow provider={{ id: 'anthropic', name: 'Claude' }} />);
 
 		expect(
 			screen.getByText('Opening provider authorization page'),
@@ -95,14 +84,9 @@ describe('ProviderRow', () => {
 	it('dismisses completed OAuth login states', () => {
 		setProviderState({ state: { phase: 'success' } });
 
-		render(
-			<AuthActionProvider handlers={{ requestApiKey: vi.fn() }}>
-				<ProviderRow provider={{ id: 'anthropic', name: 'Claude' }} />
-			</AuthActionProvider>,
-		);
+		render(<ProviderRow provider={{ id: 'anthropic', name: 'Claude' }} />);
 		fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
 
 		expect(mocks.reset).toHaveBeenCalledTimes(1);
 	});
-
 });

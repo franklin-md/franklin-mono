@@ -1,13 +1,15 @@
-import { Notice, Plugin } from 'obsidian';
 import type { FranklinApp } from '@franklin/agent/browser';
+import { Notice, Plugin } from 'obsidian';
 
-import { createFranklinApp } from './app/app.js';
-import { registerReactScan } from './dev/react-scan.js';
 import { createObsidianSessionInput } from './app/agent.js';
+import { createFranklinApp } from './app/app.js';
+import { createFranklinViewContent } from './components/franklin-view-content.js';
+import { registerReactScan } from './dev/react-scan.js';
 import { ObsidianDiffClient } from './diff/diff-client.js';
 import { DiffController } from './diff/diff-controller.js';
 import { DiffExplorerController } from './diff/diff-explorer-controller.js';
 import { clearPortalRoot } from './renderer/portal.js';
+import { openPluginSettings } from './settings/open.js';
 import { FranklinSettingTab } from './settings/tab.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
 
@@ -45,8 +47,19 @@ export default class FranklinPlugin extends Plugin {
 
 				this.addSettingTab(new FranklinSettingTab(this));
 
+				const requestApiKey = () => {
+					openPluginSettings(this.app, this.manifest.id);
+				};
+
 				this.registerView(VIEW_TYPE, (leaf) => {
-					return new FranklinView(leaf, { app, getCreateInput });
+					return new FranklinView(leaf, {
+						renderContent: () =>
+							createFranklinViewContent({
+								app,
+								getCreateInput,
+								requestApiKey,
+							}),
+					});
 				});
 
 				this.addRibbonIcon('bot', 'Open Franklin', () => {

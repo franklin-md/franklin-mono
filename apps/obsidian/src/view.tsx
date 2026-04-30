@@ -1,16 +1,13 @@
-import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
-import { AppContext } from '@franklin/react';
-import { ItemView } from 'obsidian';
 import type { WorkspaceLeaf } from 'obsidian';
+import { ItemView } from 'obsidian';
+import type { ReactNode } from 'react';
 
-import { ConversationWindow } from './components/conversation-window/window.js';
 import { createMounter, type Mounter } from './renderer/mount.js';
 
 export const VIEW_TYPE = 'franklin-view';
 
 type FranklinViewOptions = {
-	app: FranklinApp;
-	getCreateInput: () => AgentCreateInput;
+	renderContent: () => ReactNode;
 };
 
 export class FranklinView extends ItemView {
@@ -36,12 +33,7 @@ export class FranklinView extends ItemView {
 	}
 
 	async onOpen() {
-		this.mounter.mount(
-			this.contentEl,
-			<AppContext.Provider value={this.options.app}>
-				<ConversationWindow getCreateInput={this.options.getCreateInput} />
-			</AppContext.Provider>,
-		);
+		this.mounter.mount(this.contentEl, this.options.renderContent());
 	}
 
 	async onClose() {
