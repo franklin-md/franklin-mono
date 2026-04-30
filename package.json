@@ -1,6 +1,7 @@
 {
 	"name": "franklin-workspace",
 	"private": true,
+	"license": "Apache-2.0",
 	"packageManager": "npm@11.6.2",
 	"workspaces": [
 		"packages/*",
@@ -21,6 +22,7 @@
 		"test:watch": "vitest",
 		"test:changed": "vitest run --changed",
 		"check": "npm run format:check && npm run lint && npm run build",
+		"release:obsidian": "node ./scripts/obsidian-release/cli.mjs",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"postinstall": "patch-package",

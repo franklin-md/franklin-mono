@@ -1,5 +1,10 @@
 export type { AbsolutePath } from './paths/index.js';
-export { toAbsolutePath, joinAbsolute } from './paths/index.js';
+export {
+	getFilename,
+	getFilenameExtension,
+	toAbsolutePath,
+	joinAbsolute,
+} from './paths/index.js';
 export type { FileStat, Filesystem } from './filesystem/index.js';
 export type { Process, ProcessInput, ProcessOutput } from './process/index.js';
 export type {
@@ -84,6 +89,7 @@ export { createMapFilePersister } from './persistence/map/create.js';
 export { DebouncedPersister } from './persistence/map/debounced.js';
 export { Debouncer } from './utils/debouncer.js';
 export { formatElapsed } from './utils/format-elapsed.js';
+export { oxfordJoin } from './utils/oxford-join.js';
 export { createObserver } from './utils/observer.js';
 export type { Observer } from './utils/observer.js';
 export type { DeepPartial } from './typing/deep-partial.js';

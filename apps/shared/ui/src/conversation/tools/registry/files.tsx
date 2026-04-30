@@ -9,7 +9,7 @@ import {
 import { filesystemExtension } from '@franklin/extensions';
 import type { ToolRendererRegistryEntries } from '@franklin/react';
 
-import { FileBadge } from '../../../components/file-badge.js';
+import { FileBadge } from '../../../components/file-icon/badge.js';
 import { ToolSummaryDetail } from '../summary.js';
 import { toolEntry } from '../entry.js';
 

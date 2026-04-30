@@ -4,11 +4,12 @@ import {
 	ConversationPanel as SharedConversationPanel,
 	InspectDumpButton,
 	ToolCardChrome,
-	defaultToolRegistry,
 } from '@franklin/ui';
 import { Notice } from 'obsidian';
 
-const ToolUse = createToolUseBlock(defaultToolRegistry, ToolCardChrome);
+import { obsidianToolRegistry } from './tool-registry.js';
+
+const ToolUse = createToolUseBlock(obsidianToolRegistry, ToolCardChrome);
 
 export function ConversationPanel() {
 	return (

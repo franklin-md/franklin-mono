@@ -1,4 +1,0 @@
-Agent: `Sartre`
-
-You are doing an independent source-based inventory of Franklin's current extension/runtime surface relevant to extension compatibility. Do not read any files under `.context/attachments` or `.context/algebra`, and do not infer from previous summaries. Read the package READMEs you need, especially `packages/extensions/README.md` and `packages/mini-acp/README.md`, then inspect the public API/source under `packages/extensions/src/systems`, `packages/mini-acp/src`, and `packages/agent/src` as needed. Produce a concise memo with: (1) API families and public methods/events available today, (2) runtime/protocol constraints that matter for compatibility work, (3) capabilities that are plainly absent today without comparing to Pi, and (4) concrete file references. Keep it under 900 words.
-
