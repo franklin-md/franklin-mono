@@ -1,12 +1,6 @@
-## Licensing
+# Contributing to Franklin
 
-Copyright 2026 Franklin contributors.
-
-By contributing to this repository, you agree that your contributions are licensed under the Apache License, Version 2.0, unless the files you modify state a different license.
-
-The Franklin name and logo are trademarks. Forks and derived works are welcome, but they must use a distinct name and must not imply endorsement by or affiliation with the Franklin project, unless given explicit permission.
-
-##
+ℹ️ This section is a work-in-progres.
 
 ### Before PR/Merge
 
