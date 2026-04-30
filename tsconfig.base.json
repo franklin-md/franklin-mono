@@ -19,6 +19,7 @@
 			"@franklin/lib/proxy": ["packages/lib/src/proxy/index.ts"],
 			"@franklin/lib/transport": ["packages/lib/src/transport/index.ts"],
 			"@franklin/lib/transport/node": ["packages/lib/src/transport/node.ts"],
+			"@franklin/lib/middleware": ["packages/lib/src/middleware/index.ts"],
 			"@franklin/agent": ["packages/agent/src/index.ts"],
 			"@franklin/agent/browser": ["packages/agent/src/browser.ts"],
 			"@franklin/extensions": ["packages/extensions/src/index.ts"],

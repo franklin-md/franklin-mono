@@ -7,8 +7,13 @@ const entries = [
 	// TODO: franklin/agent should be platform agnostic
 	['@franklin/agent/browser', 'packages/agent/src/browser.ts'],
 	['@franklin/agent', 'packages/agent/src/index.ts'],
+	['@franklin/electron/main', 'packages/electron/src/main/index.ts'],
+	['@franklin/electron/preload', 'packages/electron/src/preload/index.ts'],
+	['@franklin/electron/renderer', 'packages/electron/src/renderer/index.ts'],
 	['@franklin/react', 'packages/ui/react/src/index.ts'],
+	['@franklin/react/browser', 'packages/ui/react/src/browser.ts'],
 	['@franklin/ui', 'apps/shared/ui/src/index.ts'],
+	['@franklin/node', 'packages/node/src/index.ts'],
 	['@franklin/lib/transport/node', 'packages/lib/src/transport/node.ts'],
 	['@franklin/lib/transport', 'packages/lib/src/transport/index.ts'],
 	['@franklin/lib/proxy', 'packages/lib/src/proxy/index.ts'],
