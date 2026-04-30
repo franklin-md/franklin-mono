@@ -16,6 +16,12 @@
 # Franklin
 Meet Franklin, your **provider-agnostic** Obsidian agent. Right now, we support [OpenAI subscriptions](https://openai.com/codex/) and [OpenRouter](https://openrouter.ai) API keys. 
 
+## Table of contents
+- [BYOK/S philosophy](#byoks-philosophy)
+- [Features](#features)
+- [Roadmap](#roadmap)
+- [License](#license)
+
 ## BYOK/S philosophy
 We believe in BYOK/S – bring your own _keys_ or _subscription_:
 - Conversation history stays on your machine;
