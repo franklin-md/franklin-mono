@@ -80,4 +80,11 @@
 	& > *:last-child {
 		margin-bottom: 0;
 	}
+	/* Streamdown wraps blocks in a `space-y-4` div; let element margins drive rhythm. */
+	& > div > * + * {
+		margin-top: 0;
+	}
+	li > p {
+		display: inline;
+	}
 }

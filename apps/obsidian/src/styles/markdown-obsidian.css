@@ -1,0 +1,21 @@
+/*
+ * Conversation markdown — Obsidian-side overrides.
+ *
+ * The Obsidian-side blocks.tsx currently applies the class `markdown-rendered`
+ * to the wrapper around Streamdown output, so chat content inherits Obsidian's
+ * native reading-mode typography (paragraph spacing, heading sizes/spacing,
+ * list indents, blockquote borders) and tracks community themes for free.
+ *
+ * Most of those rules in Obsidian target `.markdown-rendered` descendants
+ * directly and reach our content. The rules in this file fill the gaps where
+ * the parent context Obsidian's stylesheet expects (typically
+ * `.markdown-preview-view`) is not present in our chat sidebar.
+ */
+
+/* Font size: Obsidian sets `--font-text-size` on the reading-mode container
+   above `.markdown-rendered`, not on `.markdown-rendered` itself. Inside our
+   chat row the inherited value is `text-sm` (14px) from RowInset, which makes
+   chat content visibly smaller than reading-mode notes. Pin it here. */
+.franklin .markdown-rendered {
+	font-size: var(--font-text-size);
+}

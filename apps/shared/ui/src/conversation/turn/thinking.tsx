@@ -10,7 +10,12 @@ import { RowInset } from '../row-inset.js';
 
 import { Markdown } from './markdown.js';
 
-export function ThinkingBlock({ block }: { block: ThinkingBlockData }) {
+export interface ThinkingBlockProps {
+	block: ThinkingBlockData;
+	className?: string;
+}
+
+export function ThinkingBlock({ block, className }: ThinkingBlockProps) {
 	const streaming = block.endedAt === undefined;
 	const [expanded, setExpanded] = useState(streaming);
 
@@ -39,7 +44,7 @@ export function ThinkingBlock({ block }: { block: ThinkingBlockData }) {
 			</RowInset>
 			{expanded && (
 				<RowDetailInset className="text-sm text-muted-foreground/80 italic">
-					<Markdown text={block.text} />
+					<Markdown text={block.text} className={className} />
 				</RowDetailInset>
 			)}
 		</div>
