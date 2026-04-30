@@ -1,11 +1,4 @@
-import {
-	AuthSettingsTrigger,
-	DefaultAuthActionProvider,
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
-} from '@franklin/ui';
+import { DefaultAuthActionProvider } from '@franklin/ui';
 import { AgentChatPage } from '@/pages/agent-chat/agent-chat-page.js';
 import { FranklinProvider } from '@franklin/react';
 import { createElectronPlatform } from '@franklin/electron/renderer';
@@ -46,33 +39,8 @@ export function App() {
 			}
 		>
 			<DefaultAuthActionProvider>
-				<div className="flex h-screen flex-col bg-background">
-					<header className="border-b px-6 py-3">
-						<div className="flex items-center justify-between">
-							<h1 className="text-lg font-semibold tracking-tight">
-								Franklin — Demo
-							</h1>
-							<AuthSettingsTrigger />
-						</div>
-					</header>
-
-					<Tabs
-						defaultValue="agent-chat"
-						className="flex flex-1 flex-col overflow-hidden"
-					>
-						<div className="border-b px-6">
-							<TabsList>
-								<TabsTrigger value="agent-chat">Agent Chat</TabsTrigger>
-							</TabsList>
-						</div>
-
-						<TabsContent
-							value="agent-chat"
-							className="flex flex-1 overflow-hidden m-0"
-						>
-							<AgentChatPage />
-						</TabsContent>
-					</Tabs>
+				<div className="flex h-screen bg-background">
+					<AgentChatPage />
 				</div>
 			</DefaultAuthActionProvider>
 		</FranklinProvider>
