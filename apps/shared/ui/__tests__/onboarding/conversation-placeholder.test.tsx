@@ -10,7 +10,6 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AppContext } from '@franklin/react';
-
 import { ConversationOnboardingPlaceholder } from '../../src/onboarding/conversation-placeholder.js';
 
 function renderWithAuth(entries: Record<string, unknown> = {}) {

@@ -1,9 +1,7 @@
 import { KeyRound } from 'lucide-react';
+import { useAuthActionHandlers } from '@franklin/react';
 
-import { AuthModalContent } from '../../../../auth/settings-page/modal.js';
-import { apiKeyPanel } from '../../../../auth/settings-page/panels.js';
 import { IconButton } from '../../../../components/icon-button.js';
-import { Dialog, DialogTrigger } from '../../../../primitives/dialog.js';
 
 import {
 	shortcutButtonClassName,
@@ -12,25 +10,24 @@ import {
 
 type Props = {
 	displayName: string;
+	provider: string;
 };
 
-export function ApiKeyAuthAction({ displayName }: Props) {
+export function ApiKeyAuthAction({ displayName, provider }: Props) {
+	const { requestApiKey } = useAuthActionHandlers();
 	const label = `Add API key for ${displayName}`;
 
 	return (
-		<Dialog>
-			<DialogTrigger asChild>
-				<IconButton
-					aria-label={label}
-					className={shortcutButtonClassName}
-					icon={KeyRound}
-					iconClassName={shortcutIconClassName}
-					title={label}
-					type="button"
-				/>
-			</DialogTrigger>
-
-			<AuthModalContent panels={[apiKeyPanel]} />
-		</Dialog>
+		<IconButton
+			aria-label={label}
+			className={shortcutButtonClassName}
+			icon={KeyRound}
+			iconClassName={shortcutIconClassName}
+			onClick={() => {
+				void requestApiKey({ provider, displayName });
+			}}
+			title={label}
+			type="button"
+		/>
 	);
 }
