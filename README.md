@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://franklin.md">
-    <img alt="Franklin banner" src="./assets/kite2-long.png" width="284">
+    <img alt="Franklin banner" src="./assets/kite2-long.png" width="100%">
   </a>
 </p>
 <p align="center">
