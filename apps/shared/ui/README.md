@@ -46,25 +46,26 @@ example:
 
 ```css
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
+  --background: oklch(0.96 0.012 88);
+  --foreground: oklch(0.21 0.040 302);
+  --card: oklch(0.99 0.008 88);
+  --card-foreground: oklch(0.21 0.040 302);
+  --popover: oklch(0.99 0.008 88);
+  --popover-foreground: oklch(0.21 0.040 302);
+  --primary: oklch(0.21 0.040 302);
+  --primary-foreground: oklch(0.92 0.035 88);
+  --secondary: oklch(0.90 0.018 88);
+  --secondary-foreground: oklch(0.28 0.038 302);
+  --muted: oklch(0.92 0.014 88);
+  --muted-foreground: oklch(0.48 0.022 302);
+  --accent: oklch(0.88 0.020 88);
+  --accent-foreground: oklch(0.25 0.040 302);
+  --destructive: oklch(0.55 0.20 22);
+  --destructive-foreground: oklch(0.97 0.005 88);
+  --border: oklch(0.82 0.018 88);
+  --input: oklch(0.82 0.018 88);
+  --ring: oklch(0.21 0.040 302);
+  --radius: 0.5rem;
 }
 ```
 
