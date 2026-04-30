@@ -8,7 +8,7 @@
   </a>
 </p>
 <p align="center">
-  <a href="https://discord.gg/FzWcEJfe"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>
+  <a href="https://discord.gg/KRFy6ECMnf"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>
 <a href="https://github.com/franklin-md/franklin-mono/actions/workflows/release-obsidian.yml">
   <img alt="Release Obsidian Plugin" src="https://github.com/franklin-md/franklin-mono/actions/workflows/release-obsidian.yml/badge.svg?branch=main" /></a>
 </p>
