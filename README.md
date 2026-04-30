@@ -31,3 +31,9 @@ Franklin can read and write **only the folders you give it permission to**. By d
 [Contributing]
 
 [Disclosures]
+
+## License
+
+Copyright 2026 Franklin contributors.
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).

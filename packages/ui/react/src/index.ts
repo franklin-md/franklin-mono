@@ -132,6 +132,14 @@ export {
 	type ApiKeyAuthEntry,
 } from './auth/use-auth-entries.js';
 export { useOAuthLogin, type OAuthLoginState } from './auth/use-oauth-login.js';
+export {
+	AuthActionProvider,
+	useAuthActionHandlers,
+	type AuthActionHandler,
+	type AuthActionHandlers,
+	type AuthActionProviderProps,
+	type AuthActionRequest,
+} from './auth/action-provider.js';
 
 // ---------------------------------------------------------------------------
 // Icons — AI provider and model brand icons (sourced from lobehub/lobe-icons)
