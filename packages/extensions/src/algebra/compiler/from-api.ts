@@ -10,7 +10,8 @@ export function compilerFromApi<
 	build: Compiler<A, Runtime>['build'],
 ): Compiler<A, Runtime> {
 	return {
-		createApi: () => api as never,
+		createApi: <ContextRuntime extends BaseRuntime & A['In']>() =>
+			api as unknown as BoundAPI<A, ContextRuntime>,
 		build,
 	};
 }

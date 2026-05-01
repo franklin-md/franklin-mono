@@ -1,6 +1,6 @@
 import type { API, BoundAPI } from '../api/index.js';
+import { reduceExtensions, type Extension } from '../extension/index.js';
 import type { BaseRuntime } from '../runtime/index.js';
-import { reduceExtensions, type Extension } from '../types/extension.js';
 import type { Compiler } from './types.js';
 
 /**
@@ -44,6 +44,6 @@ async function tie<A extends API, Runtime extends BaseRuntime & A['In']>(
 		}
 		return cell.value;
 	};
-	cell.value = await compiler.build(getRuntime);
+	cell.value = await compiler.build<Runtime>(getRuntime);
 	return cell.value;
 }

@@ -1,5 +1,5 @@
 import { compileAll } from '../compiler/index.js';
-import type { Extension } from '../types/index.js';
+import type { Extension } from '../extension/index.js';
 import type {
 	BaseRuntimeSystem,
 	InferBoundAPI,

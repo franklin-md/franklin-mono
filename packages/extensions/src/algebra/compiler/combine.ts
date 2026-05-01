@@ -24,24 +24,20 @@ export function combine<
 		>,
 ): Compiler<ComposeAPI<A1, A2>, CombinedRuntime<R1, R2>> {
 	type CR = CombinedRuntime<R1, R2>;
-	type CreateApiFor<A extends API> = <ContextRuntime extends CR>() => BoundAPI<
-		A,
-		ContextRuntime
-	>;
-
-	const createApi1 = c1.createApi as CreateApiFor<A1>;
-	const createApi2 = c2.createApi as CreateApiFor<A2>;
+	type CA = ComposeAPI<A1, A2>;
 
 	return {
-		createApi: <ContextRuntime extends CR>() =>
+		createApi: <ContextRuntime extends BaseRuntime & CA['In']>() =>
 			({
-				...createApi1<ContextRuntime>(),
-				...createApi2<ContextRuntime>(),
+				...c1.createApi<ContextRuntime>(),
+				...c2.createApi<ContextRuntime>(),
 			}) as BoundAPI<ComposeAPI<A1, A2>, ContextRuntime>,
-		build: async (getRuntime): Promise<CR> => {
+		build: async <ContextRuntime extends BaseRuntime & CA['In']>(
+			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
+		): Promise<CR> => {
 			const [r1, r2] = await Promise.all([
-				c1.build(getRuntime as unknown as () => R1),
-				c2.build(getRuntime as unknown as () => R2),
+				c1.build<ContextRuntime>(getRuntime),
+				c2.build<ContextRuntime>(getRuntime),
 			]);
 			return combineRuntimes<R1, R2>(r1, r2);
 		},

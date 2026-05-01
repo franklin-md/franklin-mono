@@ -2,7 +2,7 @@ import type { BoundAPI } from '../algebra/api/index.js';
 import { combine } from '../algebra/compiler/combine.js';
 import { compile } from '../algebra/compiler/compile.js';
 import type { BaseRuntime } from '../algebra/runtime/types.js';
-import type { Extension } from '../algebra/types/extension.js';
+import type { Extension } from '../algebra/extension/index.js';
 import type { CoreAPI } from '../systems/core/api/api.js';
 import type { SerializedToolDefinition } from '../systems/core/api/tools/index.js';
 import { serializeTool } from '../systems/core/api/tools/index.js';

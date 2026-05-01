@@ -6,11 +6,13 @@ export type {
 	ComposeAPI,
 	StaticAPI,
 } from './algebra/api/types.js';
+export type { ReduceAPIs } from './algebra/api/reduce.js';
 export { combine } from './algebra/compiler/combine.js';
 export { compile, compileAll } from './algebra/compiler/compile.js';
 export { compilerFromApi } from './algebra/compiler/from-api.js';
 export type { Compiler } from './algebra/compiler/types.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
+export type { ReduceRuntimes } from './algebra/runtime/reduce.js';
 // ---------------------------------------------------------------------------
 // Runtime
 // ---------------------------------------------------------------------------
@@ -41,11 +43,12 @@ export type {
 	Extension,
 	ExtensionAPISurface,
 	ExtensionFor,
-	MaybePromise,
-	ReduceAPIs,
-	ReduceRuntimes,
-} from './algebra/types/index.js';
-export { createExtension, reduceExtensions } from './algebra/types/index.js';
+} from './algebra/extension/types.js';
+export {
+	createExtension,
+	reduceExtensions,
+} from './algebra/extension/index.js';
+export type { MaybePromise } from './algebra/types/shared.js';
 export type {
 	AssistantBlock,
 	AssistantTurn,

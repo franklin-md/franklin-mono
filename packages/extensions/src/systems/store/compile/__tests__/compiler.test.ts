@@ -4,7 +4,7 @@ import { compile } from '../../../../algebra/compiler/compile.js';
 import { createStoreCompiler } from '../compiler.js';
 import { storeStateHandle } from '../../runtime.js';
 import type { StoreAPISurface } from '../../api/api.js';
-import type { Extension } from '../../../../algebra/types/extension.js';
+import type { Extension } from '../../../../algebra/extension/index.js';
 import type { StoreMapping } from '../../api/registry/mapping.js';
 
 function compileStore(

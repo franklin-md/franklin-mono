@@ -1,5 +1,5 @@
 import { createBundle } from '../../algebra/system/bundle/index.js';
-import { reduceExtensions } from '../../algebra/types/index.js';
+import { reduceExtensions } from '../../algebra/extension/index.js';
 import { fileKey } from './common/key.js';
 import { editExtension } from './edit/extension.js';
 import { editFileSpec } from './edit/tools.js';

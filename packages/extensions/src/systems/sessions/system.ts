@@ -1,8 +1,9 @@
 import type { Compiler } from '../../algebra/compiler/index.js';
+import type { BoundAPI } from '../../algebra/api/index.js';
+import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type {
 	BaseRuntimeSystem,
 	InferAPI,
-	InferRuntime,
 	InferState,
 	RuntimeSystem,
 } from '../../algebra/system/index.js';
@@ -45,11 +46,15 @@ export function createSessionSystem<RTS extends BaseRuntimeSystem>(
 			};
 
 			return {
-				createApi: () => baseCompiler.createApi() as never,
-				build: async (getRuntime) => {
-					const baseRuntime = await baseCompiler.build(
-						getRuntime as unknown as () => InferRuntime<RTS>,
-					);
+				createApi: <
+					ContextRuntime extends BaseRuntime & InferAPI<RTS>['In'],
+				>(): BoundAPI<InferAPI<RTS>, ContextRuntime> =>
+					baseCompiler.createApi<ContextRuntime>(),
+				build: async <ContextRuntime extends BaseRuntime & InferAPI<RTS>['In']>(
+					getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
+				) => {
+					const baseRuntime =
+						await baseCompiler.build<ContextRuntime>(getRuntime);
 					return {
 						...baseRuntime,
 						session: sessionOps,

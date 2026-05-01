@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { API, BoundAPI } from '../algebra/api/index.js';
 import type { BaseRuntime } from '../algebra/runtime/index.js';
-import type { Extension } from '../algebra/types/extension.js';
+import type { Extension } from '../algebra/extension/index.js';
 import { compileAll, compilerFromApi } from '../index.js';
 
 type TestAPISurface = { register(label: string): void };

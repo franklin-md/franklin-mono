@@ -1,5 +1,6 @@
 export * from './api/index.js';
 export * from './compiler/index.js';
+export * from './extension/index.js';
 export * from './runtime/index.js';
 export * from './state/index.js';
 // `combine` conflicts between compiler (combine compilers) and system (combine systems).
@@ -24,4 +25,4 @@ export {
 	createBundle,
 } from './system/index.js';
 export type { SystemBuilder } from './system/index.js';
-export * from './types/index.js';
+export type { MaybePromise } from './types/index.js';

@@ -1,5 +1,5 @@
 import { createBundle } from '../../algebra/system/bundle/index.js';
-import { reduceExtensions } from '../../algebra/types/index.js';
+import { reduceExtensions } from '../../algebra/extension/index.js';
 import { webFetchCacheKey } from './web-fetch/key.js';
 import { fetchUrlSpec } from './web-fetch/tools.js';
 import type { WebFetchExtensionOptions } from './web-fetch/types.js';

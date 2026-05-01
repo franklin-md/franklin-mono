@@ -1,6 +1,6 @@
 import type { StoreKey } from '../../../systems/store/api/key.js';
 import type { ToolSpec } from '../../../systems/core/api/tool-spec.js';
-import type { Extension } from '../../types/extension.js';
+import type { Extension } from '../../extension/index.js';
 
 export type ExtensionBundle<
 	TKeys extends Record<string, StoreKey<string, any>> = Record<string, never>,

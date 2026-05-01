@@ -1,5 +1,6 @@
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { Compiler } from '../../../algebra/compiler/types.js';
+import type { BaseRuntime } from '../../../algebra/runtime/index.js';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
 import type { CoreAPI } from '../api/api.js';
 import { serializeTool } from '../api/tools/index.js';
@@ -44,12 +45,14 @@ export function createCoreCompiler(
 	const registrations = createCoreRegistrations();
 
 	return {
-		createApi: <ContextRuntime extends CoreRuntime>() =>
+		createApi: <ContextRuntime extends BaseRuntime>() =>
 			createCoreApi<ContextRuntime>(registrations),
-		build: async (getRuntime): Promise<CoreRuntime> => {
+		build: async <ContextRuntime extends BaseRuntime>(
+			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
+		): Promise<CoreRuntime> => {
 			const transport = await spawn();
 			const resources = createResources(state);
-			const coreRegistrar = asCoreRegistrar<CoreRuntime>(registrations);
+			const coreRegistrar = asCoreRegistrar<ContextRuntime>(registrations);
 			const decorator = createClientDecorator(
 				resources,
 				coreRegistrar,
