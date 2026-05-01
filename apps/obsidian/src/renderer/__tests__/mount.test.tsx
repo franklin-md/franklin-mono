@@ -2,9 +2,8 @@
 
 import { act } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-
-import { clearPortalRoot } from '../portal.js';
 import { createMounter } from '../mount.js';
+import { clearPortalRoot } from '../portal.js';
 
 afterEach(() => {
 	clearPortalRoot(document);
@@ -24,7 +23,7 @@ describe('createMounter', () => {
 		});
 
 		expect(contentEl.classList.contains('franklin')).toBe(true);
-		expect(contentEl.style.height).toBe('100%');
+		expect(contentEl.classList.contains('franklin-mount-host')).toBe(true);
 		expect(contentEl.querySelector('[data-testid="child"]')).not.toBeNull();
 		expect(
 			document.body.querySelector('[data-franklin-portal-root="true"]'),
@@ -35,7 +34,7 @@ describe('createMounter', () => {
 		});
 
 		expect(removeWindowMigratedListener).toHaveBeenCalledOnce();
-		expect(contentEl.style.height).toBe('');
+		expect(contentEl.classList.contains('franklin-mount-host')).toBe(false);
 		expect(contentEl.childNodes).toHaveLength(0);
 	});
 
@@ -59,8 +58,8 @@ describe('createMounter', () => {
 		});
 
 		expect(firstRemove).toHaveBeenCalledOnce();
-		expect(firstHost.style.height).toBe('');
-		expect(secondHost.style.height).toBe('100%');
+		expect(firstHost.classList.contains('franklin-mount-host')).toBe(false);
+		expect(secondHost.classList.contains('franklin-mount-host')).toBe(true);
 
 		act(() => {
 			mounter.unmount();

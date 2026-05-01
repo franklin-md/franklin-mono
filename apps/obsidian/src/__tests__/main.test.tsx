@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { render } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import FranklinPlugin from '../main.js';
 import { PortalProvider } from '../renderer/portal.js';
@@ -17,7 +17,13 @@ type TestFranklinPlugin = {
 };
 
 describe('FranklinPlugin unload', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
 	it('clears the shared portal root and runs sub-controller unloads', () => {
+		vi.stubGlobal('activeDocument', document);
+
 		const hostEl = document.createElement('section');
 		hostEl.onWindowMigrated = vi.fn(() => vi.fn());
 		document.body.append(hostEl);

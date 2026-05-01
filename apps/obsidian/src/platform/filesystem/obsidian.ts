@@ -1,8 +1,7 @@
 import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import type { App } from 'obsidian';
-
-import { createObsidianPathPolicyFromVault } from './path-policy.js';
 import { createNoteLocatorResolver } from './note-locator/resolve.js';
+import { createObsidianPathPolicyFromVault } from './path-policy.js';
 import { createObsidianResolve } from './resolve.js';
 import { createVaultFilesystem } from './vault.js';
 
@@ -10,8 +9,8 @@ export function createObsidianFilesystem(
 	app: App,
 	backupFs: Filesystem,
 ): Filesystem {
-	const { vault } = app;
-	const vaultFs = createVaultFilesystem(vault);
+	const { fileManager, vault } = app;
+	const vaultFs = createVaultFilesystem(vault, fileManager);
 	const policy = createObsidianPathPolicyFromVault(vault);
 	const resolve = createObsidianResolve(
 		backupFs,

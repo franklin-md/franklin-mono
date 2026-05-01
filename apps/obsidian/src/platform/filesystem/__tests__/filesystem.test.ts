@@ -1,14 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Filesystem } from '@franklin/lib';
+import { toAbsolutePath } from '@franklin/lib';
 import {
-	FileSystemAdapter,
 	type App,
-	type Vault,
+	type FileManager,
+	FileSystemAdapter,
+	type TAbstractFile,
 	type TFile,
 	type TFolder,
-	type TAbstractFile,
+	type Vault,
 } from 'obsidian';
-import { toAbsolutePath } from '@franklin/lib';
-import type { Filesystem } from '@franklin/lib';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createObsidianFilesystem } from '../obsidian.js';
 import {
@@ -42,6 +43,12 @@ class MockFileSystemAdapter extends FileSystemAdapter {
 	getBasePath(): string {
 		return this.basePath;
 	}
+}
+
+function createMockFileManager(): FileManager {
+	return {
+		trashFile: vi.fn().mockResolvedValue(undefined),
+	} as unknown as FileManager;
 }
 
 function createMockVault(options?: {
@@ -81,9 +88,13 @@ function createMockVault(options?: {
 	} as unknown as Vault;
 }
 
-function createMockApp(vault: Vault): App {
+function createMockApp(
+	vault: Vault,
+	fileManager = createMockFileManager(),
+): App {
 	return {
 		vault,
+		fileManager,
 		metadataCache: {
 			getFirstLinkpathDest: vi.fn().mockReturnValue(null),
 			fileToLinktext: vi.fn((file: TFile) => file.path),
@@ -139,6 +150,7 @@ describe('createObsidianPathPolicy', () => {
 
 describe('createVisibleVaultFilesystem', () => {
 	let vault: Vault;
+	let fileManager: FileManager;
 	const noteFile = makeFile('notes/hello.md');
 	const dataFile = makeFile('data/config.json');
 	const notesFolder = makeFolder('notes', [noteFile]);
@@ -151,12 +163,13 @@ describe('createVisibleVaultFilesystem', () => {
 			files: [noteFile, dataFile],
 			folders: [rootFolder, notesFolder, dataFolder],
 		});
+		fileManager = createMockFileManager();
 	});
 
 	it('reads binary content via Vault.readBinary', async () => {
 		const content = new TextEncoder().encode('hello world');
 		vi.mocked(vault.readBinary).mockResolvedValue(content.buffer);
-		const fs = createVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault, fileManager);
 
 		const result = await fs.readFile(toAbsolutePath('/vault/notes/hello.md'));
 
@@ -165,7 +178,7 @@ describe('createVisibleVaultFilesystem', () => {
 	});
 
 	it('modifies an existing visible file through Vault.modifyBinary', async () => {
-		const fs = createVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault, fileManager);
 
 		await fs.writeFile(toAbsolutePath('/vault/notes/hello.md'), 'updated');
 
@@ -177,7 +190,7 @@ describe('createVisibleVaultFilesystem', () => {
 	});
 
 	it('creates a new visible file through Vault.createBinary', async () => {
-		const fs = createVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault, fileManager);
 
 		await fs.writeFile(toAbsolutePath('/vault/notes/new.md'), 'new file');
 
@@ -189,7 +202,7 @@ describe('createVisibleVaultFilesystem', () => {
 	});
 
 	it('creates folders recursively through Vault.createFolder', async () => {
-		const fs = createVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault, fileManager);
 
 		await fs.mkdir(toAbsolutePath('/vault/notes/sub/folder'), {
 			recursive: true,
@@ -201,7 +214,7 @@ describe('createVisibleVaultFilesystem', () => {
 	});
 
 	it('returns root as a directory in stat', async () => {
-		const fs = createVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault, fileManager);
 		await expect(fs.stat(toAbsolutePath('/vault'))).resolves.toEqual({
 			isFile: false,
 			isDirectory: true,
@@ -209,25 +222,26 @@ describe('createVisibleVaultFilesystem', () => {
 	});
 
 	it('lists folder contents through the vault tree', async () => {
-		const fs = createVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault, fileManager);
 		await expect(fs.readdir(toAbsolutePath('/vault/notes'))).resolves.toEqual([
 			'hello.md',
 		]);
 	});
 
 	it('reports root exists', async () => {
-		const fs = createVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault, fileManager);
 		await expect(fs.exists(toAbsolutePath('/vault'))).resolves.toBe(true);
 	});
 
-	it('deletes files through Vault.delete', async () => {
-		const fs = createVaultFilesystem(vault);
+	it('deletes files through FileManager.trashFile', async () => {
+		const fs = createVaultFilesystem(vault, fileManager);
 		await fs.deleteFile(toAbsolutePath('/vault/notes/hello.md'));
-		expect(vault.delete).toHaveBeenCalledWith(noteFile);
+		expect(fileManager.trashFile).toHaveBeenCalledWith(noteFile);
+		expect(vault.delete).not.toHaveBeenCalled();
 	});
 
 	it('rejects deleting a folder through deleteFile', async () => {
-		const fs = createVaultFilesystem(vault);
+		const fs = createVaultFilesystem(vault, fileManager);
 		await expect(fs.deleteFile(toAbsolutePath('/vault/notes'))).rejects.toThrow(
 			'EISDIR',
 		);

@@ -85,7 +85,7 @@ export default class FranklinPlugin extends Plugin {
 	onunload() {
 		this.diffExplorerController.onunload();
 		this.diffController.onunload();
-		clearPortalRoot(document);
+		clearPortalRoot(activeDocument);
 		this.franklinApp = null;
 	}
 
