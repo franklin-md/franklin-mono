@@ -1,18 +1,19 @@
-import { describe, it, expect, vi } from 'vitest';
-import { createSessionSystem, type SessionSystem } from '../system.js';
-import { createRuntime } from '../../../algebra/system/create.js';
-import { SessionCollection } from '../runtime/collection.js';
-import { createSessionManager } from '../runtime/manager.js';
-import type { SessionRuntime } from '../runtime/runtime.js';
+import { describe, expect, it, vi } from 'vitest';
+import type { StaticAPI } from '../../../algebra/api/types.js';
+import type { Compiler } from '../../../algebra/compiler/types.js';
+import type { CombinedRuntime } from '../../../algebra/runtime/combine.js';
 import type {
 	BaseRuntime,
 	StateHandle,
 } from '../../../algebra/runtime/types.js';
-import type { CombinedRuntime } from '../../../algebra/runtime/combine.js';
-import type { IdentityState } from '../../identity/state.js';
+import { createRuntime } from '../../../algebra/system/create.js';
 import type { RuntimeSystem } from '../../../algebra/system/types.js';
-import type { Compiler } from '../../../algebra/compiler/types.js';
+import type { IdentityState } from '../../identity/state.js';
+import { SessionCollection } from '../runtime/collection.js';
+import { createSessionManager } from '../runtime/manager.js';
+import type { SessionRuntime } from '../runtime/runtime.js';
 import type { SessionCreate } from '../runtime/types.js';
+import { createSessionSystem, type SessionSystem } from '../system.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -23,15 +24,17 @@ const TEST_STATE: unique symbol = Symbol('test/sessions-system-state');
 type TestRuntime = BaseRuntime & {
 	readonly [TEST_STATE]: StateHandle<TestState>;
 };
-type TestSystem = RuntimeSystem<TestState, Record<string, never>, TestRuntime>;
+type TestAPI = StaticAPI<Record<string, never>>;
+type TestSystem = RuntimeSystem<TestState, TestAPI, TestRuntime>;
 
 function createTestSystem(): TestSystem {
 	return {
 		emptyState: () => ({ value: 'root' }),
 		state: (runtime) => runtime[TEST_STATE],
-		createCompiler(state): Compiler<Record<string, never>, TestRuntime> {
+		createCompiler(state): Compiler<TestAPI, TestRuntime> {
+			const api: Record<string, never> = {};
 			return {
-				api: {},
+				createApi: () => api,
 				async build() {
 					return {
 						[TEST_STATE]: {
@@ -226,7 +229,7 @@ describe('SessionRuntime subtyping', () => {
 	it('CombinedRuntime with SessionRuntime is assignable to SessionRuntime', () => {
 		type MinimalSystem = RuntimeSystem<
 			IdentityState,
-			Record<never, never>,
+			StaticAPI<Record<never, never>>,
 			BaseRuntime
 		>;
 		type FakeRuntime = BaseRuntime & { doFake(): void };

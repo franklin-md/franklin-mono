@@ -1,23 +1,23 @@
 import {
+	type AbsolutePath,
 	FILESYSTEM_ALLOW_ALL,
 	MemoryOsInfo,
-	type AbsolutePath,
 	type ProcessInput,
 	type ProcessOutput,
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import type { SystemPromptHandler } from '../../../../systems/core/api/handlers.js';
+import { buildSystemPromptAssembler } from '../../../../systems/core/compile/decorators/system-prompt/index.js';
 import {
 	bindHandlers,
 	createCoreRegistrar,
 	type WithContext,
 } from '../../../../systems/core/compile/registrar/index.js';
-import { buildSystemPromptAssembler } from '../../../../systems/core/compile/decorators/system-prompt/index.js';
+import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import {
 	createEnvironmentRuntime,
 	type EnvironmentRuntime,
 } from '../../../../systems/environment/runtime.js';
-import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import { grepExtension } from '../extension.js';
 
@@ -64,9 +64,9 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 function collectHandlers(
 	ext: ReturnType<typeof grepExtension>,
 ): RuntimeSystemPromptHandler[] {
-	const { api, registered } = createCoreRegistrar<EnvironmentRuntime>();
+	const { api, registrations } = createCoreRegistrar<EnvironmentRuntime>();
 	ext(api);
-	return registered.systemPrompt;
+	return registrations.systemPrompt;
 }
 
 // rg-success answers `rg --version` with exit 0 AND streams an rg-style match

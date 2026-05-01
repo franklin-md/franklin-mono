@@ -1,14 +1,18 @@
 import type { ClientProtocol } from '@franklin/mini-acp';
-import type { CoreAPI } from '../api/api.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
+import type { CoreAPI } from '../api/api.js';
 import { serializeTool } from '../api/tools/index.js';
-import { createAgentDecorator as createClientDecorator } from './decorators/full.js';
-import { createCoreRegistrar } from './registrar/index.js';
-import { createCoreRuntime, type CoreRuntime } from '../runtime/index.js';
+import { type CoreRuntime, createCoreRuntime } from '../runtime/index.js';
 import type { CoreState } from '../state.js';
-import { createResources } from './resources.js';
 import { createAgentClient } from './client.js';
+import { createAgentDecorator as createClientDecorator } from './decorators/full.js';
+import {
+	asCoreRegistrar,
+	createCoreApi,
+	createCoreRegistrations,
+} from './registrar/index.js';
+import { createResources } from './resources.js';
 
 export type SpawnResult = ClientProtocol & { dispose(): Promise<void> };
 export type SpawnFn = () => MaybePromise<SpawnResult>;
@@ -33,23 +37,25 @@ export type SpawnFn = () => MaybePromise<SpawnResult>;
  * No mutable runtime cell — `getRuntime` IS the binding mechanism,
  * threaded through each builder at decorator-construction time.
  */
-export function createCoreCompiler<Runtime extends CoreRuntime = CoreRuntime>(
+export function createCoreCompiler(
 	spawn: SpawnFn,
 	state: CoreState,
-): Compiler<CoreAPI<Runtime>, Runtime> {
-	const { api, registered } = createCoreRegistrar<Runtime>();
+): Compiler<CoreAPI, CoreRuntime> {
+	const registrations = createCoreRegistrations();
 
 	return {
-		api,
-		async build(getRuntime): Promise<Runtime> {
+		createApi: <ContextRuntime extends CoreRuntime>() =>
+			createCoreApi<ContextRuntime>(registrations),
+		build: async (getRuntime): Promise<CoreRuntime> => {
 			const transport = await spawn();
 			const resources = createResources(state);
+			const coreRegistrar = asCoreRegistrar<CoreRuntime>(registrations);
 			const decorator = createClientDecorator(
 				resources,
-				registered,
+				coreRegistrar,
 				getRuntime,
 			);
-			const serializedTools = registered.tools.map(serializeTool);
+			const serializedTools = coreRegistrar.tools.map(serializeTool);
 
 			const client = await createAgentClient({
 				transport,
@@ -62,7 +68,7 @@ export function createCoreCompiler<Runtime extends CoreRuntime = CoreRuntime>(
 				client,
 				tracker: resources.tracker,
 				state: resources.stateHandle,
-			}) as Runtime;
+			});
 		},
 	};
 }

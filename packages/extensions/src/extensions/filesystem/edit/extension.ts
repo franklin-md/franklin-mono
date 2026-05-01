@@ -1,19 +1,19 @@
-import type { Extension } from '../../../algebra/types/index.js';
+import { createExtension } from '../../../algebra/index.js';
 import type { CoreAPI } from '../../../systems/core/index.js';
 import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
+import type { StoreAPI } from '../../../systems/store/index.js';
+import type { StoreRuntime } from '../../../systems/store/runtime.js';
+import { createFileControl } from '../common/control.js';
+import { fileKey } from '../common/key.js';
 import { sha256Hex } from '../hash.js';
+import { findUnique } from './match/find-unique.js';
+import { applyReplacement } from './replace.js';
 import { decode } from './text/encoding.js';
 import {
 	detectLineEnding,
 	normalizeToLF,
 	restoreLineEndings,
 } from './text/line-endings.js';
-import { findUnique } from './match/find-unique.js';
-import { applyReplacement } from './replace.js';
-import type { StoreAPI } from '../../../systems/store/index.js';
-import type { StoreRuntime } from '../../../systems/store/runtime.js';
-import { fileKey } from '../common/key.js';
-import { createFileControl } from '../common/control.js';
 import { editFileSpec } from './tools.js';
 
 /**
@@ -27,10 +27,11 @@ import { editFileSpec } from './tools.js';
  *
  * Platform-agnostic: reads/writes via the Environment filesystem.
  */
-export function editExtension(): Extension<
-	CoreAPI<EnvironmentRuntime & StoreRuntime> & StoreAPI
-> {
-	return (api) => {
+export function editExtension() {
+	return createExtension<
+		[CoreAPI, StoreAPI],
+		[EnvironmentRuntime, StoreRuntime]
+	>((api) => {
 		// The store is private to ONE agent; it keeps track of the agent's "seen" files.
 		api.registerStore(fileKey, {}, 'private');
 		api.registerTool(
@@ -124,5 +125,5 @@ export function editExtension(): Extension<
 				return `Successfully edited ${path}.`;
 			},
 		);
-	};
+	});
 }

@@ -1,16 +1,16 @@
-import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
-import type { Extension } from '../../../algebra/types/index.js';
 import {
 	decorate,
 	withOnlyHTTP,
 	withRedirect,
 	withTimeout,
 } from '@franklin/lib';
-import { toSearchError, toSearchResult } from './result.js';
-import { searchWebSpec } from './tools.js';
+import { createExtension } from '../../../algebra/index.js';
+import type { CoreAPI } from '../../../systems/core/index.js';
+import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import { searchWithDdg } from './ddg.js';
 import { searchWithExa } from './exa.js';
+import { toSearchError, toSearchResult } from './result.js';
+import { searchWebSpec } from './tools.js';
 import {
 	resolveWebSearchOptions,
 	type WebSearchExtensionOptions,
@@ -18,10 +18,10 @@ import {
 
 export function webSearchExtension(
 	options: Partial<WebSearchExtensionOptions>,
-): Extension<CoreAPI<EnvironmentRuntime>> {
+) {
 	const resolved = resolveWebSearchOptions(options);
 
-	return (api) => {
+	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
 		api.registerTool(searchWebSpec, async ({ query }, ctx) => {
 			const fetch = decorate(ctx.environment.web.fetch)
 				.with(withOnlyHTTP())
@@ -40,7 +40,7 @@ export function webSearchExtension(
 				}
 			}
 		});
-	};
+	});
 }
 
 function combineSearchErrors(exaError: unknown, ddgError: unknown): Error {

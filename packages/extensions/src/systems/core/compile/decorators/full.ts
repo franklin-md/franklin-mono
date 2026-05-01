@@ -1,5 +1,8 @@
 import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
-import type { ProtocolDecorator } from './types.js';
+import { bindHandlers } from '../registrar/bind.js';
+import type { CoreRegistrar } from '../registrar/types.js';
+import type { CoreResources } from '../resources.js';
+import { compose } from './compose.js';
 import {
 	buildMiddleware,
 	createMiddlewareDecorator,
@@ -8,14 +11,11 @@ import {
 	buildSystemPromptAssembler,
 	createSystemPromptDecorator,
 } from './system-prompt/index.js';
-import { bindHandlers } from '../registrar/bind.js';
-import type { CoreRegistrar } from '../registrar/types.js';
 import {
 	createContextTrackerDecorator,
 	createUsageTrackerDecorator,
 } from './trackers/index.js';
-import type { CoreResources } from '../resources.js';
-import { compose } from './compose.js';
+import type { ProtocolDecorator } from './types.js';
 
 /**
  * Turn a `CoreRegistrar` into the ordered `ProtocolDecorator` stack
@@ -26,16 +26,15 @@ import { compose } from './compose.js';
  */
 export function createAgentDecorator<Runtime extends BaseRuntime>(
 	resources: CoreResources,
-	registered: CoreRegistrar<Runtime>,
+	registrations: CoreRegistrar<Runtime>,
 	getCtx: () => Runtime,
 ): ProtocolDecorator {
 	const stack: ProtocolDecorator[] = [];
 
-	// With the registered
-	stack.push(createMiddlewareDecorator(buildMiddleware(registered, getCtx)));
+	stack.push(createMiddlewareDecorator(buildMiddleware(registrations, getCtx)));
 
-	if (registered.systemPrompt.length > 0) {
-		const handlers = bindHandlers(registered.systemPrompt, getCtx);
+	if (registrations.systemPrompt.length > 0) {
+		const handlers = bindHandlers(registrations.systemPrompt, getCtx);
 		stack.push(
 			createSystemPromptDecorator(buildSystemPromptAssembler(handlers)),
 		);

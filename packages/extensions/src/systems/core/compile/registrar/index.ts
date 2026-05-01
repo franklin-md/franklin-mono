@@ -1,4 +1,9 @@
-export { createCoreRegistrar } from './create.js';
-export { bindHandler, bindHandlers, bindTool } from './bind.js';
 export type { BoundTool } from './bind.js';
-export type { CoreRegistrar, WithContext } from './types.js';
+export { bindHandler, bindHandlers, bindTool } from './bind.js';
+export {
+	asCoreRegistrar,
+	createCoreApi,
+	createCoreRegistrar,
+	createCoreRegistrations,
+} from './create.js';
+export type { CoreRegistrar, CoreRegistrations, WithContext } from './types.js';

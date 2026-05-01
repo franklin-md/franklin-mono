@@ -1,3 +1,4 @@
+import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
 import type {
 	CancelHandler,
 	PromptHandler,
@@ -6,7 +7,6 @@ import type {
 	ToolObserverHandler,
 } from '../../api/handlers.js';
 import type { ExtensionToolDefinition } from '../../api/tool.js';
-import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
 
 /**
  * Append a stage-1 context parameter to an existing handler signature.
@@ -24,7 +24,7 @@ export type WithContext<H extends (...args: any[]) => any, T> = (
 /**
  * Accumulated registrations from extensions — transport-free data, not
  * yet bound to runtime. One field per event: dispatch is direct property
- * lookup, no Map indirection. `composeDecorators(registered, getRuntime)`
+ * lookup, no Map indirection. `composeDecorators(registrations, getRuntime)`
  * binds these and produces the decorator stack.
  */
 export type CoreRegistrar<Runtime extends BaseRuntime> = {
@@ -38,4 +38,13 @@ export type CoreRegistrar<Runtime extends BaseRuntime> = {
 	toolCall: WithContext<ToolObserverHandler<'toolCall'>, Runtime>[];
 	toolResult: WithContext<ToolObserverHandler<'toolResult'>, Runtime>[];
 	tools: ExtensionToolDefinition<unknown, Runtime>[];
+};
+
+/**
+ * Runtime-erased registration storage. The API facade supplies the runtime
+ * type during registration; build later reinterprets the same data with the
+ * runtime slice it materialises.
+ */
+export type CoreRegistrations = {
+	[Key in keyof CoreRegistrar<BaseRuntime>]: unknown[];
 };

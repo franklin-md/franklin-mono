@@ -6,7 +6,7 @@ import type {
 	SessionSystem,
 	InferState,
 	InferRuntime,
-	InferAPI,
+	InferBoundAPI,
 } from '@franklin/extensions';
 
 // ---------------------------------------------------------------------------
@@ -34,6 +34,6 @@ export type FranklinRuntime = InferRuntime<FranklinSystem>;
 export type FranklinState = InferState<FranklinSystem>;
 
 /** Combined extension API surface. */
-export type FranklinAPI = InferAPI<FranklinSystem>;
+export type FranklinAPI = InferBoundAPI<FranklinSystem>;
 
 export type FranklinExtension = (api: FranklinAPI) => void;

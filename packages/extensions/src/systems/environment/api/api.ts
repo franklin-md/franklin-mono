@@ -1,3 +1,4 @@
-import type { IdentityAPI } from '../../identity/api.js';
+import type { IdentityAPI, IdentityAPISurface } from '../../identity/api.js';
 
+export type EnvironmentAPISurface = IdentityAPISurface;
 export type EnvironmentAPI = IdentityAPI;

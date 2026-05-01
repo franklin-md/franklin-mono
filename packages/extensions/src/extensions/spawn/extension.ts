@@ -1,19 +1,19 @@
 import type { Message, TurnEnd } from '@franklin/mini-acp';
 import { collect, stopCategory } from '@franklin/mini-acp';
-import type { CoreAPI } from '../../systems/core/index.js';
-import type { ToolExecuteReturn } from '../../systems/core/index.js';
-import type { CoreSystem } from '../../systems/core/index.js';
+import { createExtension } from '../../algebra/index.js';
+import type {
+	CoreAPI,
+	CoreSystem,
+	ToolExecuteReturn,
+} from '../../systems/core/index.js';
 import type { SessionRuntime } from '../../systems/sessions/index.js';
-import type { Extension } from '../../algebra/types/index.js';
 import { spawnSpec } from './tools.js';
 
 /**
  * Spawn a child agent with a fresh prompt and return its last message.
  */
-export function spawnExtension(): Extension<
-	CoreAPI<SessionRuntime<CoreSystem>>
-> {
-	return (api) => {
+export function spawnExtension() {
+	return createExtension<[CoreAPI], [SessionRuntime<CoreSystem>]>((api) => {
 		api.registerTool(spawnSpec, async ({ prompt }, ctx) => {
 			const child = await ctx.session.child();
 			try {
@@ -27,7 +27,7 @@ export function spawnExtension(): Extension<
 				await child.runtime.session.removeSelf();
 			}
 		});
-	};
+	});
 }
 
 function formatResult(

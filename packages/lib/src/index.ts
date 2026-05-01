@@ -104,6 +104,7 @@ export {
 	matchesUrlPattern,
 } from './network/utils.js';
 export type { Simplify } from './typing/simplify.js';
+export type { HKT, Apply } from './typing/hkt.js';
 
 // Proxy algebra
 export {

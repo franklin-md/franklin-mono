@@ -1,27 +1,27 @@
-import { describe, expect, it, vi } from 'vitest';
 import {
+	type AbsolutePath,
 	FILESYSTEM_ALLOW_ALL,
 	MemoryOsInfo,
-	type AbsolutePath,
 } from '@franklin/lib';
+import { describe, expect, it, vi } from 'vitest';
 import type { SystemPromptHandler } from '../../../systems/core/api/handlers.js';
-import {
-	bindHandlers,
-	createCoreRegistrar,
-	type WithContext,
-} from '../../../systems/core/compile/registrar/index.js';
 import {
 	buildSystemPromptAssembler,
 	type SystemPromptAssembler,
 } from '../../../systems/core/compile/decorators/system-prompt/index.js';
 import {
-	createEnvironmentRuntime,
-	type EnvironmentRuntime,
-} from '../../../systems/environment/runtime.js';
+	bindHandlers,
+	createCoreRegistrar,
+	type WithContext,
+} from '../../../systems/core/compile/registrar/index.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
 } from '../../../systems/environment/api/types.js';
+import {
+	createEnvironmentRuntime,
+	type EnvironmentRuntime,
+} from '../../../systems/environment/runtime.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
 
 type RuntimeSystemPromptHandler = WithContext<
@@ -32,9 +32,9 @@ type RuntimeSystemPromptHandler = WithContext<
 function collectHandlers(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
 ): RuntimeSystemPromptHandler[] {
-	const { api, registered } = createCoreRegistrar<EnvironmentRuntime>();
+	const { api, registrations } = createCoreRegistrar<EnvironmentRuntime>();
 	extension(api);
-	return registered.systemPrompt;
+	return registrations.systemPrompt;
 }
 
 function defaultConfig(): EnvironmentConfig {
