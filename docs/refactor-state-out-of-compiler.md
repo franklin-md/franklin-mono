@@ -4,11 +4,11 @@
 
 Three concerns that were entangled in the algebra are now cleanly separated:
 
-| Layer                                  | Owns                                                                          |
-| -------------------------------------- | ----------------------------------------------------------------------------- |
-| `Compiler<APIFamily, Runtime>`         | extension registration + build (no `<S>`; API binds per registration context) |
-| `BaseRuntime` (no `<S>`)               | live capabilities + lifecycle (`dispose`, `subscribe`)                        |
-| `RuntimeSystem<S, APIFamily, Runtime>` | `emptyState`, `createCompiler(state)`, `state(runtime)` projection            |
+| Layer                                  | Owns                                                                |
+| -------------------------------------- | ------------------------------------------------------------------- |
+| `Compiler<APIFamily, Runtime>`         | API creation + build (no `<S>`; API binds per registration context) |
+| `BaseRuntime` (no `<S>`)               | live capabilities + lifecycle (`dispose`, `subscribe`)              |
+| `RuntimeSystem<S, APIFamily, Runtime>` | `emptyState`, `createCompiler(state)`, `state(runtime)` projection  |
 
 Before, every runtime was forced to expose a `state: StateHandle<S>` field, which made
 fakes (like `DependencyRuntime`'s no-op state) into ceremonial noise and pinned `<S>`
@@ -27,7 +27,7 @@ type RuntimeSystem<S, APIFamily, Runtime> = {
 ```
 
 `createCompiler(state)` returns a state-free concrete `Compiler<APIFamily, Runtime>`
-whose `register` binds the API family to the chosen context runtime and whose
+whose `createApi` binds the API family to the chosen context runtime and whose
 `build` takes only `getRuntime`. The concrete API is produced by applying the
 system's API family to the eventual context runtime, so composition can make
 runtime-aware APIs such as `CoreAPI<Runtime>` see the fully tied runtime. Inside

@@ -1,4 +1,5 @@
 import { castDraft } from 'immer';
+import { compilerFromApi } from '../../../algebra/compiler/from-api.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { StoreAPI, StoreAPISurface } from '../api/api.js';
 import type { BaseStore } from '../api/base.js';
@@ -36,41 +37,36 @@ export function createStoreCompiler(
 		},
 	};
 
-	return {
-		register: (use) => {
-			use(api);
-		},
-		build: async () => {
-			const seedMapping = state.store;
-			const hasEntries = Object.keys(seedMapping).length > 0;
-			const seed = hasEntries
-				? createStoreResult(registry, seedMapping)
-				: createEmptyStoreResult(registry);
+	return compilerFromApi(api, async () => {
+		const seedMapping = state.store;
+		const hasEntries = Object.keys(seedMapping).length > 0;
+		const seed = hasEntries
+			? createStoreResult(registry, seedMapping)
+			: createEmptyStoreResult(registry);
 
-			const mapping: StoreMapping = {};
-			const seen = new Set<string>();
+		const mapping: StoreMapping = {};
+		const seen = new Set<string>();
 
-			for (const { name, initial, sharing } of registrations) {
-				if (seen.has(name)) {
-					throw new Error(`Store "${name}" has multiple initializers`);
-				}
-				seen.add(name);
-
-				let ref = mapping[name];
-				if (ref === undefined) {
-					const seeded = seed.get(name);
-					ref = seeded ? seeded.ref : seed.registry.create(sharing).ref;
-					mapping[name] = ref;
-				}
-				const entry = seed.registry.get(ref);
-				entry.sharing = sharing;
-				// TODO: can we avoid this?
-				// TODO: Is BaseStore actually base type? OR is it concrete?
-				(entry.store as BaseStore<unknown>).setInitial(castDraft(initial));
+		for (const { name, initial, sharing } of registrations) {
+			if (seen.has(name)) {
+				throw new Error(`Store "${name}" has multiple initializers`);
 			}
+			seen.add(name);
 
-			const stores = createStoreResult(seed.registry, mapping);
-			return createStoreRuntime(stores);
-		},
-	};
+			let ref = mapping[name];
+			if (ref === undefined) {
+				const seeded = seed.get(name);
+				ref = seeded ? seeded.ref : seed.registry.create(sharing).ref;
+				mapping[name] = ref;
+			}
+			const entry = seed.registry.get(ref);
+			entry.sharing = sharing;
+			// TODO: can we avoid this?
+			// TODO: Is BaseStore actually base type? OR is it concrete?
+			(entry.store as BaseStore<unknown>).setInitial(castDraft(initial));
+		}
+
+		const stores = createStoreResult(seed.registry, mapping);
+		return createStoreRuntime(stores);
+	});
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { identityCompiler } from '../../../systems/identity/compiler.js';
-import type { API, BoundAPI } from '../../api/index.js';
+import type { API } from '../../api/index.js';
 import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import { combine } from '../combine.js';
 import { compile } from '../compile.js';
@@ -39,11 +39,7 @@ function createCounterCompiler(
 	};
 
 	return {
-		register<ContextRuntime extends CounterRuntime>(
-			use: (api: BoundAPI<CounterAPI, ContextRuntime>) => void,
-		): void {
-			use(api);
-		},
+		createApi: () => api,
 		async build() {
 			const count = registeredCount ?? state.count;
 			return {
@@ -66,11 +62,7 @@ function createCounterCompiler(
 function apiKeys<A extends API, Runtime extends BaseRuntime & A['In']>(
 	compiler: Compiler<A, Runtime>,
 ): string[] {
-	let keys: string[] = [];
-	compiler.register<Runtime>((api) => {
-		keys = Object.keys(api);
-	});
-	return keys;
+	return Object.keys(compiler.createApi<Runtime>());
 }
 
 describe('compiler combine identity laws', () => {

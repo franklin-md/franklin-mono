@@ -7,7 +7,11 @@ import { type CoreRuntime, createCoreRuntime } from '../runtime/index.js';
 import type { CoreState } from '../state.js';
 import { createAgentClient } from './client.js';
 import { createAgentDecorator as createClientDecorator } from './decorators/full.js';
-import { createCoreRegistrar } from './registrar/index.js';
+import {
+	asCoreRegistrar,
+	createCoreApi,
+	createCoreRegistrations,
+} from './registrar/index.js';
 import { createResources } from './resources.js';
 
 export type SpawnResult = ClientProtocol & { dispose(): Promise<void> };
@@ -37,21 +41,21 @@ export function createCoreCompiler(
 	spawn: SpawnFn,
 	state: CoreState,
 ): Compiler<CoreAPI, CoreRuntime> {
-	const { api, registered } = createCoreRegistrar<CoreRuntime>();
+	const registrations = createCoreRegistrations();
 
 	return {
-		register: (use) => {
-			use(api as never);
-		},
+		createApi: <ContextRuntime extends CoreRuntime>() =>
+			createCoreApi<ContextRuntime>(registrations),
 		build: async (getRuntime): Promise<CoreRuntime> => {
 			const transport = await spawn();
 			const resources = createResources(state);
+			const coreRegistrar = asCoreRegistrar<CoreRuntime>(registrations);
 			const decorator = createClientDecorator(
 				resources,
-				registered,
+				coreRegistrar,
 				getRuntime,
 			);
-			const serializedTools = registered.tools.map(serializeTool);
+			const serializedTools = coreRegistrar.tools.map(serializeTool);
 
 			const client = await createAgentClient({
 				transport,

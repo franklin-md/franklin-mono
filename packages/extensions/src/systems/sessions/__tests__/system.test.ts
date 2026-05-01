@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { BoundAPI, StaticAPI } from '../../../algebra/api/types.js';
+import type { StaticAPI } from '../../../algebra/api/types.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { CombinedRuntime } from '../../../algebra/runtime/combine.js';
 import type {
@@ -34,11 +34,7 @@ function createTestSystem(): TestSystem {
 		createCompiler(state): Compiler<TestAPI, TestRuntime> {
 			const api: Record<string, never> = {};
 			return {
-				register<ContextRuntime extends TestRuntime>(
-					use: (api: BoundAPI<TestAPI, ContextRuntime>) => void,
-				): void {
-					use(api);
-				},
+				createApi: () => api,
 				async build() {
 					return {
 						[TEST_STATE]: {

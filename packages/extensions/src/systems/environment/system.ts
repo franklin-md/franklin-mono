@@ -1,3 +1,4 @@
+import { compilerFromApi } from '../../algebra/compiler/from-api.js';
 import type { Compiler } from '../../algebra/compiler/index.js';
 import type { RuntimeSystem } from '../../algebra/system/index.js';
 import type { EnvironmentAPI, EnvironmentAPISurface } from './api/api.js';
@@ -38,15 +39,10 @@ export function createEnvironmentSystem(
 
 		createCompiler(state): Compiler<EnvironmentAPI, EnvironmentRuntime> {
 			const api: EnvironmentAPISurface = {};
-			return {
-				register: (use) => {
-					use(api);
-				},
-				build: async () => {
-					const env = await factory(state.env);
-					return createEnvironmentRuntime(env);
-				},
-			};
+			return compilerFromApi(api, async () => {
+				const env = await factory(state.env);
+				return createEnvironmentRuntime(env);
+			});
 		},
 	};
 }

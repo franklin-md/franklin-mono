@@ -1,24 +1,25 @@
 /* eslint-disable require-yield */
-import { describe, it, expect, vi } from 'vitest';
-import { z } from 'zod';
-import type { Extension } from '../../../../algebra/types/extension.js';
-import type { FullMiddleware } from '../decorators/middleware/types.js';
-import { buildMiddleware } from '../decorators/middleware/build.js';
-import { createCoreRegistrar } from '../registrar/index.js';
-import {
-	serializeTool,
-	type SerializedToolDefinition,
-} from '../../api/tools/index.js';
-import type { CoreRuntime } from '../../runtime/index.js';
+
 import { apply } from '@franklin/lib/middleware';
 import type {
+	Chunk,
 	MiniACPAgent,
 	MiniACPClient,
-	Chunk,
 	ToolExecuteParams,
 	Update,
 } from '@franklin/mini-acp';
+import { describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
+import type { Extension } from '../../../../algebra/types/extension.js';
 import { resolveToolOutput } from '../../api/tool.js';
+import {
+	type SerializedToolDefinition,
+	serializeTool,
+} from '../../api/tools/index.js';
+import type { CoreRuntime } from '../../runtime/index.js';
+import { buildMiddleware } from '../decorators/middleware/build.js';
+import type { FullMiddleware } from '../decorators/middleware/types.js';
+import { createCoreRegistrar } from '../registrar/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -38,10 +39,10 @@ async function compileExt(
 	ext: Extension,
 ): Promise<FullMiddleware & { tools: SerializedToolDefinition[] }> {
 	const stubCtx = undefined as unknown as CoreRuntime;
-	const { api, registered } = createCoreRegistrar<CoreRuntime>();
+	const { api, registrations } = createCoreRegistrar<CoreRuntime>();
 	ext(api);
-	const middleware = buildMiddleware(registered, () => stubCtx);
-	const tools = registered.tools.map(serializeTool);
+	const middleware = buildMiddleware(registrations, () => stubCtx);
+	const tools = registrations.tools.map(serializeTool);
 	return { ...middleware, tools };
 }
 

@@ -1,21 +1,21 @@
-import { compile } from '../algebra/compiler/compile.js';
-import { combine } from '../algebra/compiler/combine.js';
-import { createStoreCompiler } from '../systems/store/compile/compiler.js';
-import { StoreRegistry } from '../systems/store/api/registry/index.js';
-import type { StoreRuntime } from '../systems/store/runtime.js';
-import type { StoreAPISurface } from '../systems/store/api/api.js';
-import { createEnvironmentCompiler } from '../systems/environment/compile/compiler.js';
-import type { EnvironmentRuntime } from '../systems/environment/runtime.js';
-import type { ReconfigurableEnvironment } from '../systems/environment/api/types.js';
 import type { BoundAPI } from '../algebra/api/index.js';
-import type { CoreAPI } from '../systems/core/api/api.js';
-import type { FullMiddleware } from '../systems/core/compile/decorators/middleware/types.js';
-import { createCoreRegistrar } from '../systems/core/compile/registrar/index.js';
-import { buildMiddleware } from '../systems/core/compile/decorators/middleware/build.js';
-import { serializeTool } from '../systems/core/api/tools/index.js';
-import type { SerializedToolDefinition } from '../systems/core/api/tools/index.js';
+import { combine } from '../algebra/compiler/combine.js';
+import { compile } from '../algebra/compiler/compile.js';
 import type { BaseRuntime } from '../algebra/runtime/types.js';
 import type { Extension } from '../algebra/types/extension.js';
+import type { CoreAPI } from '../systems/core/api/api.js';
+import type { SerializedToolDefinition } from '../systems/core/api/tools/index.js';
+import { serializeTool } from '../systems/core/api/tools/index.js';
+import { buildMiddleware } from '../systems/core/compile/decorators/middleware/build.js';
+import type { FullMiddleware } from '../systems/core/compile/decorators/middleware/types.js';
+import { createCoreRegistrar } from '../systems/core/compile/registrar/index.js';
+import type { ReconfigurableEnvironment } from '../systems/environment/api/types.js';
+import { createEnvironmentCompiler } from '../systems/environment/compile/compiler.js';
+import type { EnvironmentRuntime } from '../systems/environment/runtime.js';
+import type { StoreAPISurface } from '../systems/store/api/api.js';
+import { StoreRegistry } from '../systems/store/api/registry/index.js';
+import { createStoreCompiler } from '../systems/store/compile/compiler.js';
+import type { StoreRuntime } from '../systems/store/runtime.js';
 
 /**
  * Build middleware from a Core-only extension without spinning up a
@@ -33,10 +33,10 @@ export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 	ext: Extension<BoundAPI<CoreAPI, Ctx>>,
 	getCtx: () => Ctx = (() => undefined) as unknown as () => Ctx,
 ): { middleware: FullMiddleware; tools: SerializedToolDefinition[] } {
-	const { api, registered } = createCoreRegistrar<Ctx>();
+	const { api, registrations } = createCoreRegistrar<Ctx>();
 	ext(api);
-	const middleware = buildMiddleware(registered, getCtx);
-	const tools = registered.tools.map(serializeTool);
+	const middleware = buildMiddleware(registrations, getCtx);
+	const tools = registrations.tools.map(serializeTool);
 	return { middleware, tools };
 }
 
@@ -67,7 +67,7 @@ export async function compileCoreWithStore(
 		}) as StoreAPISurface['registerStore'],
 	};
 
-	const { api, registered } = createCoreRegistrar<StoreRuntime>();
+	const { api, registrations } = createCoreRegistrar<StoreRuntime>();
 	const combinedApi = {
 		...api,
 		...storeApi,
@@ -83,8 +83,8 @@ export async function compileCoreWithStore(
 		},
 	);
 
-	const middleware = buildMiddleware(registered, getCtx);
-	const tools = registered.tools.map(serializeTool);
+	const middleware = buildMiddleware(registrations, getCtx);
+	const tools = registrations.tools.map(serializeTool);
 	return { middleware, stores: cell.stores, tools };
 }
 
@@ -117,7 +117,7 @@ export async function compileCoreWithStoreAndEnv(
 		}) as StoreAPISurface['registerStore'],
 	};
 
-	const { api, registered } = createCoreRegistrar<
+	const { api, registrations } = createCoreRegistrar<
 		StoreRuntime & EnvironmentRuntime
 	>();
 	const combinedApi = { ...api, ...storeApi } as BoundAPI<
@@ -137,8 +137,8 @@ export async function compileCoreWithStoreAndEnv(
 		}
 	})) as StoreRuntime & EnvironmentRuntime;
 
-	const middleware = buildMiddleware(registered, getCtx);
-	const tools = registered.tools.map(serializeTool);
+	const middleware = buildMiddleware(registrations, getCtx);
+	const tools = registrations.tools.map(serializeTool);
 	return { middleware, ctx: cell.ctx, tools };
 }
 
@@ -160,12 +160,12 @@ export async function compileCoreWithEnv(
 		return cell.ctx;
 	};
 
-	const { api, registered } = createCoreRegistrar<EnvironmentRuntime>();
+	const { api, registrations } = createCoreRegistrar<EnvironmentRuntime>();
 	ext(api);
 
 	cell.ctx = await compile(createEnvironmentCompiler(env), () => {});
 
-	const middleware = buildMiddleware(registered, getCtx);
-	const tools = registered.tools.map(serializeTool);
+	const middleware = buildMiddleware(registrations, getCtx);
+	const tools = registrations.tools.map(serializeTool);
 	return { middleware, ctx: cell.ctx, tools };
 }

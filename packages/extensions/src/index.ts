@@ -8,6 +8,7 @@ export type {
 } from './algebra/api/types.js';
 export { combine } from './algebra/compiler/combine.js';
 export { compile, compileAll } from './algebra/compiler/compile.js';
+export { compilerFromApi } from './algebra/compiler/from-api.js';
 export type { Compiler } from './algebra/compiler/types.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 // ---------------------------------------------------------------------------

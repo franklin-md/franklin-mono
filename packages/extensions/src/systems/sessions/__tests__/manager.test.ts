@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { BoundAPI, StaticAPI } from '../../../algebra/api/types.js';
+import type { StaticAPI } from '../../../algebra/api/types.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type {
 	BaseRuntime,
@@ -29,11 +29,7 @@ function createTestSystem(empty: TestState = { value: 'root' }): TestSystem {
 		createCompiler(state): Compiler<TestAPI, TestRuntime> {
 			const api: Record<string, never> = {};
 			return {
-				register<ContextRuntime extends TestRuntime>(
-					use: (api: BoundAPI<TestAPI, ContextRuntime>) => void,
-				): void {
-					use(api);
-				},
+				createApi: () => api,
 				async build() {
 					return {
 						[TEST_STATE]: {
@@ -203,11 +199,7 @@ describe('SessionManager', () => {
 			createCompiler(state): Compiler<NestedAPI, NestedRuntime> {
 				const api: Record<string, never> = {};
 				return {
-					register<ContextRuntime extends NestedRuntime>(
-						use: (api: BoundAPI<NestedAPI, ContextRuntime>) => void,
-					): void {
-						use(api);
-					},
+					createApi: () => api,
 					async build() {
 						return {
 							[NESTED_STATE]: {

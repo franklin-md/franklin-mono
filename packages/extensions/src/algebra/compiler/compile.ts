@@ -1,10 +1,11 @@
 import type { API, BoundAPI } from '../api/index.js';
 import type { BaseRuntime } from '../runtime/index.js';
-import type { Extension } from '../types/extension.js';
+import { reduceExtensions, type Extension } from '../types/extension.js';
 import type { Compiler } from './types.js';
 
 /**
- * Compile a single extension — register, then tie the Y-combinator.
+ * Compile a single extension — create the API, register, then tie the
+ * Y-combinator.
  */
 export async function compile<
 	A extends API,
@@ -13,7 +14,8 @@ export async function compile<
 	compiler: Compiler<A, Runtime>,
 	extension: Extension<BoundAPI<A, Runtime>>,
 ): Promise<Runtime> {
-	compiler.register<Runtime>(extension);
+	const api = compiler.createApi<Runtime>();
+	extension(api);
 	return tie(compiler);
 }
 
@@ -24,8 +26,8 @@ export async function compileAll<
 	compiler: Compiler<A, Runtime>,
 	extensions: Extension<BoundAPI<A, Runtime>>[],
 ): Promise<Runtime> {
-	for (const ext of extensions) compiler.register<Runtime>(ext);
-	return tie(compiler);
+	const extension = reduceExtensions(...extensions);
+	return compile(compiler, extension);
 }
 
 async function tie<A extends API, Runtime extends BaseRuntime & A['In']>(

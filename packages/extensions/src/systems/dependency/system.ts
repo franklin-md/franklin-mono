@@ -1,3 +1,4 @@
+import { compilerFromApi } from '../../algebra/compiler/from-api.js';
 import type { Compiler } from '../../algebra/compiler/index.js';
 import type { RuntimeSystem } from '../../algebra/system/index.js';
 import { type IdentityAPI, identityAPI } from '../identity/api.js';
@@ -20,12 +21,9 @@ export function createDependencySystem<Name extends string, T>(
 		state: () => identityStateHandle(),
 		createCompiler(): Compiler<IdentityAPI, DependencyRuntime<Name, T>> {
 			const api = identityAPI();
-			return {
-				register: (use) => {
-					use(api);
-				},
-				build: async () => createDependencyRuntime(name, dependency),
-			};
+			return compilerFromApi(api, async () =>
+				createDependencyRuntime(name, dependency),
+			);
 		},
 	};
 }

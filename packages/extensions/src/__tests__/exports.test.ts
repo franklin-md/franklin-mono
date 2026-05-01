@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { API, BoundAPI } from '../algebra/api/index.js';
-import type { Compiler } from '../algebra/compiler/types.js';
 import type { BaseRuntime } from '../algebra/runtime/index.js';
 import type { Extension } from '../algebra/types/extension.js';
-import { compileAll } from '../index.js';
+import { compileAll, compilerFromApi } from '../index.js';
 
 type TestAPISurface = { register(label: string): void };
 
@@ -25,17 +24,10 @@ describe('package exports', () => {
 			dispose: async () => {},
 			subscribe: () => () => {},
 		};
-		const compiler: Compiler<TestAPI, BaseRuntime> = {
-			register<ContextRuntime extends BaseRuntime>(
-				use: (api: BoundAPI<TestAPI, ContextRuntime>) => void,
-			): void {
-				use(api);
-			},
-			async build() {
-				buildCalls += 1;
-				return runtime;
-			},
-		};
+		const compiler = compilerFromApi<TestAPI, BaseRuntime>(api, async () => {
+			buildCalls += 1;
+			return runtime;
+		});
 		const extensions: Extension<BoundAPI<TestAPI, BaseRuntime>>[] = [
 			(api) => api.register('one'),
 			(api) => api.register('two'),

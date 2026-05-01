@@ -33,7 +33,7 @@ API keys and runtime-extra keys are still required to be disjoint, matching `com
 
 Franklin models extension composition across three related surfaces:
 
-- **Compiler**: API-family-aware registration sink plus runtime builder. It exposes `register(...)`, which binds the API HKT to the compile context runtime for each extension.
+- **Compiler**: API-family-aware API factory plus runtime builder. It exposes `createApi<ContextRuntime>()`, which binds the API HKT to the compile context runtime.
 - **Runtime**: lifecycle surface (`state.get`, `state.fork`, `state.child`, `dispose`, `subscribe`) plus system-specific capabilities.
 - **RuntimeSystem**: a factory for `emptyState()` and fresh compilers, parameterized by an API (HKT).
 

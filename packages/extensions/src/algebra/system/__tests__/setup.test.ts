@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { BoundAPI, StaticAPI } from '../../api/types.js';
+import type { StaticAPI } from '../../api/types.js';
 import type { Compiler } from '../../compiler/types.js';
 import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import { withSetup, withSetupCompiler } from '../setup.js';
@@ -32,11 +32,7 @@ function createTestSystem(): RuntimeSystem<TestState, TestAPI, TestRuntime> {
 				},
 			};
 			return {
-				register<ContextRuntime extends TestRuntime>(
-					use: (api: BoundAPI<TestAPI, ContextRuntime>) => void,
-				): void {
-					use(api);
-				},
+				createApi: () => api,
 				async build() {
 					const val = registered ?? state.value;
 					return {
@@ -122,7 +118,7 @@ describe('withSetup', () => {
 		const decorated = withSetup(system, async () => {});
 
 		const compiler = decorated.createCompiler({ value: 0 });
-		compiler.register<TestRuntime>((api) => api.register(42));
+		compiler.createApi<TestRuntime>().register(42);
 		const built = await compiler.build(noGetRuntime);
 
 		expect(built.getValue()).toBe(42);
@@ -169,7 +165,7 @@ describe('withSetupCompiler', () => {
 		const inner = system.createCompiler({ value: 0 });
 		const decorated = withSetupCompiler(inner, async () => {});
 
-		decorated.register<TestRuntime>((api) => api.register(123));
+		decorated.createApi<TestRuntime>().register(123);
 		const built = await decorated.build(noGetRuntime);
 
 		expect(built.getValue()).toBe(123);

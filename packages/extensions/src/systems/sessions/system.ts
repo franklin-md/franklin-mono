@@ -45,9 +45,7 @@ export function createSessionSystem<RTS extends BaseRuntimeSystem>(
 			};
 
 			return {
-				register: (use) => {
-					baseCompiler.register(use as never);
-				},
+				createApi: () => baseCompiler.createApi() as never,
 				build: async (getRuntime) => {
 					const baseRuntime = await baseCompiler.build(
 						getRuntime as unknown as () => InferRuntime<RTS>,

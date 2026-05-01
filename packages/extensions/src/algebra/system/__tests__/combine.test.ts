@@ -22,7 +22,7 @@ import { createEnvironmentSystem } from '../../../systems/environment/system.js'
 import { identitySystem } from '../../../systems/identity/system.js';
 import { StoreRegistry } from '../../../systems/store/api/registry/index.js';
 import { createStoreSystem } from '../../../systems/store/system.js';
-import type { API, BoundAPI, StaticAPI } from '../../api/types.js';
+import type { API, StaticAPI } from '../../api/types.js';
 import type { Compiler } from '../../compiler/types.js';
 import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import { combine } from '../combine.js';
@@ -147,11 +147,7 @@ function createValueSystem(): RuntimeSystem<
 			};
 
 			return {
-				register<ContextRuntime extends ValueRuntime>(
-					use: (api: BoundAPI<ValueAPI, ContextRuntime>) => void,
-				): void {
-					use(api);
-				},
+				createApi: () => api,
 				async build() {
 					const value = registeredValue ?? state.value;
 					return {
@@ -176,11 +172,7 @@ function createValueSystem(): RuntimeSystem<
 function apiKeys<A extends API, Runtime extends BaseRuntime & A['In']>(
 	compiler: Compiler<A, Runtime>,
 ): string[] {
-	let keys: string[] = [];
-	compiler.register<Runtime>((api) => {
-		keys = Object.keys(api);
-	});
-	return keys;
+	return Object.keys(compiler.createApi<Runtime>());
 }
 
 // ---------------------------------------------------------------------------

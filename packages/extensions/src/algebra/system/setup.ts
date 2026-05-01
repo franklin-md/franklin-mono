@@ -19,7 +19,8 @@ export function withSetupCompiler<
 	setup: (runtime: Runtime) => Promise<void>,
 ): Compiler<A, Runtime> {
 	return {
-		register: (use) => inner.register(use),
+		createApi: <ContextRuntime extends Runtime>() =>
+			inner.createApi<ContextRuntime>(),
 		build: async (getRuntime) => {
 			const runtime = await inner.build(getRuntime);
 			await setup(runtime);
