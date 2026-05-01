@@ -19,10 +19,12 @@ export function withSetupCompiler<
 	setup: (runtime: Runtime) => Promise<void>,
 ): Compiler<A, Runtime> {
 	return {
-		createApi: <ContextRuntime extends Runtime>() =>
+		createApi: <ContextRuntime extends BaseRuntime & A['In']>() =>
 			inner.createApi<ContextRuntime>(),
-		build: async (getRuntime) => {
-			const runtime = await inner.build(getRuntime);
+		build: async <ContextRuntime extends BaseRuntime & A['In']>(
+			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
+		) => {
+			const runtime = await inner.build<ContextRuntime>(getRuntime);
 			await setup(runtime);
 			return runtime;
 		},

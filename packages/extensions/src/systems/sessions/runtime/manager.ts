@@ -3,7 +3,7 @@ import type {
 	InferBoundAPI,
 	InferState,
 } from '../../../algebra/system/types.js';
-import type { Extension } from '../../../algebra/types/extension.js';
+import type { Extension } from '../../../algebra/extension/index.js';
 import type { SessionCollection } from './collection.js';
 import type { SessionRuntime } from './runtime.js';
 import { createSessionSystem, type SessionSystem } from '../system.js';
