@@ -2,7 +2,6 @@
 	"name": "franklin-workspace",
 	"private": true,
 	"license": "Apache-2.0",
-	"packageManager": "npm@11.6.2",
 	"workspaces": [
 		"packages/*",
 		"packages/ui/*",
