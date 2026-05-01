@@ -1,4 +1,4 @@
-import type { BaseAPI } from '../api/index.js';
+import type { API } from '../api/index.js';
 import type { Compiler } from '../compiler/index.js';
 import type { BaseRuntime } from '../runtime/index.js';
 import type { BaseState } from '../state/index.js';
@@ -32,18 +32,19 @@ export function withSetupCompiler<API, Runtime>(
  */
 export function withSetup<
 	S extends BaseState,
-	API extends BaseAPI,
-	Runtime extends BaseRuntime,
+	A extends API,
+	Runtime extends BaseRuntime & A['In'],
 >(
-	system: RuntimeSystem<S, API, Runtime>,
+	system: RuntimeSystem<S, A, Runtime>,
 	setup: (runtime: Runtime, state: S) => Promise<void>,
-): RuntimeSystem<S, API, Runtime> {
+): RuntimeSystem<S, A, Runtime> {
 	return {
 		emptyState: () => system.emptyState(),
 		state: (runtime) => system.state(runtime),
-		createCompiler(state) {
-			return withSetupCompiler(system.createCompiler(state), (runtime) =>
-				setup(runtime, state),
+		createCompiler<ContextRuntime extends Runtime>(state: S) {
+			return withSetupCompiler(
+				system.createCompiler<ContextRuntime>(state),
+				(runtime) => setup(runtime, state),
 			);
 		},
 	};

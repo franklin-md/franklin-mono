@@ -2,7 +2,7 @@ import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
 } from './api/types.js';
-import type { EnvironmentAPI } from './api/api.js';
+import type { EnvironmentAPI, EnvironmentAPISurface } from './api/api.js';
 import type { Compiler } from '../../algebra/compiler/index.js';
 import type { RuntimeSystem } from '../../algebra/system/index.js';
 import type { EnvironmentState } from './state.js';
@@ -36,7 +36,7 @@ export function createEnvironmentSystem(
 
 		state: environmentStateHandle,
 
-		createCompiler(state): Compiler<EnvironmentAPI, EnvironmentRuntime> {
+		createCompiler(state): Compiler<EnvironmentAPISurface, EnvironmentRuntime> {
 			return {
 				api: {},
 				async build() {

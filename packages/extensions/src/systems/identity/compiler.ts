@@ -1,8 +1,8 @@
 import type { Compiler } from '../../algebra/compiler/types.js';
-import { identityAPI, type IdentityAPI } from './api.js';
+import { identityAPI, type IdentityAPISurface } from './api.js';
 import { identityRuntime, type IdentityRuntime } from './runtime.js';
 
-export type IdentityCompiler = Compiler<IdentityAPI, IdentityRuntime>;
+export type IdentityCompiler = Compiler<IdentityAPISurface, IdentityRuntime>;
 
 export function identityCompiler(): IdentityCompiler {
 	return {

@@ -1,16 +1,21 @@
 import { combine } from '../combine.js';
 import { systems } from '../builder.js';
 import { combineRuntimes } from '../../runtime/combine.js';
-import type { BaseAPI } from '../../api/types.js';
+import type { API, BaseAPI, StaticAPI } from '../../api/types.js';
 import type { BaseRuntime } from '../../runtime/types.js';
 import type { BaseState } from '../../state/types.js';
-import type { CombinableSystem, RuntimeSystem } from '../types.js';
+import type {
+	CombinableSystem,
+	CombineSystems,
+	InferBoundAPI,
+	RuntimeSystem,
+} from '../types.js';
 
 type StubSystem<
 	S extends BaseState,
-	API extends BaseAPI = Record<never, never>,
+	APISurface extends BaseAPI = Record<never, never>,
 	RT extends BaseRuntime = BaseRuntime,
-> = RuntimeSystem<S, API, RT>;
+> = RuntimeSystem<S, StaticAPI<APISurface>, RT>;
 
 type _ExpectNever<T extends never> = T;
 
@@ -152,3 +157,45 @@ const _invalidCombinedRuntime = combineRuntimes(
 	_runtimeC,
 );
 void _invalidCombinedRuntime;
+
+// ---------------------------------------------------------------------------
+// API families are applied after runtime composition
+// ---------------------------------------------------------------------------
+
+interface RuntimeAwareAPISurface<Runtime extends BaseRuntime> {
+	useRuntime(handler: (runtime: Runtime) => void): void;
+}
+
+interface RuntimeAwareAPI extends API {
+	readonly In: BaseRuntime;
+	readonly Out: RuntimeAwareAPISurface<this['In']>;
+}
+
+type RuntimeAwareSystem = RuntimeSystem<
+	{ aware: { value: boolean } },
+	RuntimeAwareAPI,
+	BaseRuntime
+>;
+
+type RuntimeWithExtra = BaseRuntime & {
+	extra(): string;
+};
+
+type ExtraRuntimeSystem = StubSystem<
+	{ extra: { value: string } },
+	Record<never, never>,
+	RuntimeWithExtra
+>;
+
+type CombinedRuntimeAwareAPI = InferBoundAPI<
+	CombineSystems<RuntimeAwareSystem, ExtraRuntimeSystem>
+>;
+
+const _combinedRuntimeAwareApi = null as unknown as CombinedRuntimeAwareAPI;
+/* eslint-disable @typescript-eslint/no-unsafe-call -- the @ts-expect-error below intentionally makes the call site unresolvable */
+_combinedRuntimeAwareApi.useRuntime((runtime) => {
+	runtime.extra();
+	// @ts-expect-error runtime API handlers should see only composed runtime keys
+	runtime.missing();
+});
+/* eslint-enable @typescript-eslint/no-unsafe-call */

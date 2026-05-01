@@ -3,11 +3,14 @@ import { StoreRegistry } from '../../api/registry/index.js';
 import { compile } from '../../../../algebra/compiler/compile.js';
 import { createStoreCompiler } from '../compiler.js';
 import { storeStateHandle } from '../../runtime.js';
-import type { StoreAPI } from '../../api/api.js';
+import type { StoreAPISurface } from '../../api/api.js';
 import type { Extension } from '../../../../algebra/types/extension.js';
 import type { StoreMapping } from '../../api/registry/mapping.js';
 
-function compileStore(ext: Extension<StoreAPI>, seed: StoreMapping = {}) {
+function compileStore(
+	ext: Extension<StoreAPISurface>,
+	seed: StoreMapping = {},
+) {
 	return compile(
 		createStoreCompiler(new StoreRegistry(), { store: seed }),
 		ext,

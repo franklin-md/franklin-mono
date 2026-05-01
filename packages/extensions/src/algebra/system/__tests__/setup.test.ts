@@ -3,6 +3,7 @@ import { withSetup, withSetupCompiler } from '../setup.js';
 import type { RuntimeSystem } from '../types.js';
 import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import type { Compiler } from '../../compiler/types.js';
+import type { StaticAPI } from '../../api/types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -18,7 +19,11 @@ type TestRuntime = BaseRuntime & {
 	readonly [TEST_STATE]: StateHandle<TestState>;
 };
 
-function createTestSystem(): RuntimeSystem<TestState, TestAPI, TestRuntime> {
+function createTestSystem(): RuntimeSystem<
+	TestState,
+	StaticAPI<TestAPI>,
+	TestRuntime
+> {
 	return {
 		emptyState: () => ({ value: 0 }),
 		state: (runtime) => runtime[TEST_STATE],

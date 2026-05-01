@@ -9,60 +9,66 @@ import type {
 } from './handlers.js';
 import type { MaybePromise } from '../../../algebra/types/index.js';
 import type { WithContext } from '../compile/registrar/types.js';
-import type { BaseRuntime } from '../../../algebra/runtime/types.js';
-import type { CoreRuntime } from '../runtime/index.js';
+import type { API } from '../../../algebra/api/index.js';
+import type { BaseRuntime } from '../../../algebra/runtime/index.js';
 
 /**
- * Core registration surface, parameterised by the eventual Runtime
- * handlers receive as their trailing argument.
+ * The bound Core registration surface at runtime `R`. This is what
+ * extensions hold and call methods on once `CoreAPI` has been applied
+ * to a concrete runtime.
  *
- * `CoreAPI<Runtime>` is covariant in Runtime: an extension requiring
- * `CoreAPI<MyRuntime>` accepts a `CoreAPI<FullRuntime>` whenever
- * `FullRuntime <: MyRuntime`. Each extension declares the runtime slice
- * it needs; the assembler picks the concrete Runtime.
- *
- * Handlers receive the fully-tied Runtime *directly* as their trailing
- * argument — no wrapper object. Extensions read capabilities via
- * `runtime.environment`, `runtime.session`, `runtime.getStore(key)`, etc.
+ * Lifted into the HKT space below as `CoreAPI`. Most consumers do not
+ * reference `CoreAPISurface` directly — they spell the bound shape as
+ * `BoundAPI<CoreAPI, MyRuntime>`.
  */
-export interface CoreAPI<Runtime extends BaseRuntime = CoreRuntime> {
-	on(event: 'prompt', handler: WithContext<PromptHandler, Runtime>): void;
-	on(event: 'cancel', handler: WithContext<CancelHandler, Runtime>): void;
+export interface CoreAPISurface<R extends BaseRuntime> {
+	on(event: 'prompt', handler: WithContext<PromptHandler, R>): void;
+	on(event: 'cancel', handler: WithContext<CancelHandler, R>): void;
 
-	on(
-		event: 'systemPrompt',
-		handler: WithContext<SystemPromptHandler, Runtime>,
-	): void;
+	on(event: 'systemPrompt', handler: WithContext<SystemPromptHandler, R>): void;
 
 	on(
 		event: 'chunk',
-		handler: WithContext<StreamObserverHandler<'chunk'>, Runtime>,
+		handler: WithContext<StreamObserverHandler<'chunk'>, R>,
 	): void;
 	on(
 		event: 'update',
-		handler: WithContext<StreamObserverHandler<'update'>, Runtime>,
+		handler: WithContext<StreamObserverHandler<'update'>, R>,
 	): void;
 	on(
 		event: 'turnEnd',
-		handler: WithContext<StreamObserverHandler<'turnEnd'>, Runtime>,
+		handler: WithContext<StreamObserverHandler<'turnEnd'>, R>,
 	): void;
 
 	on(
 		event: 'toolCall',
-		handler: WithContext<ToolObserverHandler<'toolCall'>, Runtime>,
+		handler: WithContext<ToolObserverHandler<'toolCall'>, R>,
 	): void;
 	on(
 		event: 'toolResult',
-		handler: WithContext<ToolObserverHandler<'toolResult'>, Runtime>,
+		handler: WithContext<ToolObserverHandler<'toolResult'>, R>,
 	): void;
 
-	registerTool<TInput>(tool: ExtensionToolDefinition<TInput, Runtime>): void;
+	registerTool<TInput>(tool: ExtensionToolDefinition<TInput, R>): void;
 
 	registerTool<TArgs>(
 		spec: ToolSpec<string, TArgs>,
-		execute: (
-			params: TArgs,
-			runtime: Runtime,
-		) => MaybePromise<ToolExecuteReturn>,
+		execute: (params: TArgs, runtime: R) => MaybePromise<ToolExecuteReturn>,
 	): void;
+}
+
+/**
+ * Core registration API as a type-level function `Runtime → APISurface`.
+ *
+ * Composition substitutes the eventual fully-tied runtime, so handlers
+ * registered via `on(...)` receive the composed runtime as their
+ * trailing argument and can read `runtime.environment`,
+ * `runtime.session`, `runtime.getStore(key)`, etc.
+ *
+ * Extensions consume the bound surface as `BoundAPI<CoreAPI, R>` for
+ * the runtime slice they need.
+ */
+export interface CoreAPI extends API {
+	readonly In: BaseRuntime;
+	readonly Out: CoreAPISurface<this['In']>;
 }

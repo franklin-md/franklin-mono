@@ -13,6 +13,7 @@ import type { IdentityState } from '../../identity/state.js';
 import type { RuntimeSystem } from '../../../algebra/system/types.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { SessionCreate } from '../runtime/types.js';
+import type { StaticAPI } from '../../../algebra/api/types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -23,7 +24,11 @@ const TEST_STATE: unique symbol = Symbol('test/sessions-system-state');
 type TestRuntime = BaseRuntime & {
 	readonly [TEST_STATE]: StateHandle<TestState>;
 };
-type TestSystem = RuntimeSystem<TestState, Record<string, never>, TestRuntime>;
+type TestSystem = RuntimeSystem<
+	TestState,
+	StaticAPI<Record<string, never>>,
+	TestRuntime
+>;
 
 function createTestSystem(): TestSystem {
 	return {
@@ -226,7 +231,7 @@ describe('SessionRuntime subtyping', () => {
 	it('CombinedRuntime with SessionRuntime is assignable to SessionRuntime', () => {
 		type MinimalSystem = RuntimeSystem<
 			IdentityState,
-			Record<never, never>,
+			StaticAPI<Record<never, never>>,
 			BaseRuntime
 		>;
 		type FakeRuntime = BaseRuntime & { doFake(): void };

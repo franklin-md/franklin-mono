@@ -8,6 +8,7 @@ import type {
 } from '../../../algebra/runtime/types.js';
 import type { RuntimeSystem } from '../../../algebra/system/types.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
+import type { StaticAPI } from '../../../algebra/api/types.js';
 
 type TestState = {
 	value: string;
@@ -18,7 +19,11 @@ const TEST_STATE: unique symbol = Symbol('test/sessions-state');
 type TestRuntime = BaseRuntime & {
 	readonly [TEST_STATE]: StateHandle<TestState>;
 };
-type TestSystem = RuntimeSystem<TestState, Record<string, never>, TestRuntime>;
+type TestSystem = RuntimeSystem<
+	TestState,
+	StaticAPI<Record<string, never>>,
+	TestRuntime
+>;
 
 function createTestSystem(empty: TestState = { value: 'root' }): TestSystem {
 	return {
@@ -183,7 +188,7 @@ describe('SessionManager', () => {
 		};
 		type NestedSystem = RuntimeSystem<
 			NestedState,
-			Record<string, never>,
+			StaticAPI<Record<string, never>>,
 			NestedRuntime
 		>;
 

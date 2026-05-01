@@ -1,12 +1,12 @@
-import type { Extension } from '../../algebra/types/index.js';
+import { createExtension } from '../../algebra/index.js';
 import type { CoreAPI } from '../../systems/core/index.js';
 import type { StoreAPI } from '../../systems/store/index.js';
 import type { StoreRuntime } from '../../systems/store/runtime.js';
 import { createStatusControl } from './control.js';
 import { statusKey } from './key.js';
 
-export function statusExtension(): Extension<CoreAPI<StoreRuntime> & StoreAPI> {
-	return (api) => {
+export function statusExtension() {
+	return createExtension<[CoreAPI, StoreAPI], [StoreRuntime]>((api) => {
 		api.registerStore(statusKey, 'idle', 'private');
 
 		api.on('prompt', (_prompt, ctx) => {
@@ -18,5 +18,5 @@ export function statusExtension(): Extension<CoreAPI<StoreRuntime> & StoreAPI> {
 			const control = createStatusControl(ctx.getStore(statusKey));
 			control.setUnread();
 		});
-	};
+	});
 }

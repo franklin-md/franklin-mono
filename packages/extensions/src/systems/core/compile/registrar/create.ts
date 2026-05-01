@@ -1,3 +1,4 @@
+import type { BoundAPI } from '../../../../algebra/api/index.js';
 import type { CoreAPI } from '../../api/api.js';
 import type { ExtensionToolDefinition } from '../../api/tool.js';
 import type { ToolSpec } from '../../api/tool-spec.js';
@@ -27,7 +28,7 @@ function normalizeTool<Runtime extends BaseRuntime>(
  * turns the result into wire-ready middleware + system prompt handlers.
  */
 export function createCoreRegistrar<Runtime extends BaseRuntime>(): {
-	api: CoreAPI<Runtime>;
+	api: BoundAPI<CoreAPI, Runtime>;
 	registered: CoreRegistrar<Runtime>;
 } {
 	const registered: CoreRegistrar<Runtime> = {
@@ -45,7 +46,7 @@ export function createCoreRegistrar<Runtime extends BaseRuntime>(): {
 
 	type EventKey = Exclude<keyof CoreRegistrar<Runtime>, 'tools'>;
 
-	const api: CoreAPI<Runtime> = {
+	const api: BoundAPI<CoreAPI, Runtime> = {
 		on(event: string, handler: (...args: any[]) => any) {
 			(registered[event as EventKey] as unknown[]).push(handler);
 		},

@@ -1,6 +1,10 @@
 import type { Compiler } from '../../algebra/compiler/index.js';
 import type { RuntimeSystem } from '../../algebra/system/index.js';
-import { identityAPI, type IdentityAPI } from '../identity/api.js';
+import {
+	identityAPI,
+	type IdentityAPI,
+	type IdentityAPISurface,
+} from '../identity/api.js';
 import { identityState, type IdentityState } from '../identity/state.js';
 import { identityStateHandle } from '../identity/runtime.js';
 import { createDependencyRuntime, type DependencyRuntime } from './runtime.js';
@@ -18,7 +22,7 @@ export function createDependencySystem<Name extends string, T>(
 	return {
 		emptyState: identityState,
 		state: () => identityStateHandle(),
-		createCompiler(): Compiler<IdentityAPI, DependencyRuntime<Name, T>> {
+		createCompiler(): Compiler<IdentityAPISurface, DependencyRuntime<Name, T>> {
 			return {
 				api: identityAPI(),
 				async build() {

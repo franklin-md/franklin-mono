@@ -1,4 +1,4 @@
-export type { IdentityAPI } from './api.js';
+export type { IdentityAPI, IdentityAPISurface } from './api.js';
 export { identityAPI } from './api.js';
 export type { IdentityState } from './state.js';
 export { identityState } from './state.js';

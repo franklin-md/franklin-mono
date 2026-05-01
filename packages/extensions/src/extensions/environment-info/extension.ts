@@ -1,4 +1,4 @@
-import type { Extension } from '../../algebra/index.js';
+import { createExtension } from '../../algebra/index.js';
 import type { CoreAPI } from '../../systems/core/index.js';
 import type { EnvironmentRuntime } from '../../systems/environment/runtime.js';
 import { renderEnvironmentInfo } from './render.js';
@@ -11,10 +11,10 @@ export interface EnvironmentInfoOptions {
 
 export function createEnvironmentInfoExtension(
 	opts: EnvironmentInfoOptions = {},
-): Extension<CoreAPI<EnvironmentRuntime>> {
+) {
 	const now = opts.now ?? (() => new Date());
 
-	return (api) => {
+	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
 		api.on('systemPrompt', (prompt, ctx) => {
 			prompt.setPart(
 				async () => {
@@ -52,5 +52,5 @@ export function createEnvironmentInfoExtension(
 		api.on('systemPrompt', (prompt) => {
 			prompt.setPart(renderCurrentDate(now()));
 		});
-	};
+	});
 }

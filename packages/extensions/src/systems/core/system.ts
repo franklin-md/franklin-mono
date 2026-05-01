@@ -6,20 +6,16 @@ import { emptyCoreState } from './state.js';
 import { coreStateHandle, type CoreRuntime } from './runtime/index.js';
 
 /**
- * `CoreSystem<Runtime>` parameterises Core by the eventual fully-tied
- * Runtime that handlers receive. `Runtime extends CoreRuntime` ensures
- * Runtime at least exposes Core's surface; the assembler names the
- * combined Runtime explicitly when composing with other systems.
+ * Core builds only `CoreRuntime`, but its API is applied to the
+ * eventual fully-tied runtime during system composition.
  */
-export type CoreSystem<Runtime extends CoreRuntime = CoreRuntime> =
-	RuntimeSystem<CoreState, CoreAPI<Runtime>, Runtime>;
+export type CoreSystem = RuntimeSystem<CoreState, CoreAPI, CoreRuntime>;
 
-export function createCoreSystem<Runtime extends CoreRuntime = CoreRuntime>(
-	spawn: SpawnFn,
-): CoreSystem<Runtime> {
+export function createCoreSystem(spawn: SpawnFn): CoreSystem {
 	return {
 		emptyState: emptyCoreState,
 		state: (runtime) => coreStateHandle(runtime),
-		createCompiler: (state) => createCoreCompiler<Runtime>(spawn, state),
+		createCompiler: <ContextRuntime extends CoreRuntime>(state: CoreState) =>
+			createCoreCompiler<ContextRuntime>(spawn, state),
 	};
 }

@@ -1,6 +1,6 @@
 import type {
 	BaseRuntimeSystem,
-	InferAPI,
+	InferBoundAPI,
 	InferState,
 } from '../../../algebra/system/types.js';
 import type { Extension } from '../../../algebra/types/extension.js';
@@ -14,13 +14,13 @@ import type { Session, SessionCreateInput } from './types.js';
 type SessionManagerOptions<RTS extends BaseRuntimeSystem> = {
 	system: RTS;
 	collection: SessionCollection<SessionRuntime<RTS>>;
-	extensions: Extension<InferAPI<RTS>>[];
+	extensions: Extension<InferBoundAPI<SessionSystem<RTS>>>[];
 };
 
 export class SessionManager<RTS extends BaseRuntimeSystem> {
 	private readonly system: RTS;
 	private readonly collection: SessionCollection<SessionRuntime<RTS>>;
-	private readonly extensions: Extension<InferAPI<RTS>>[];
+	private readonly extensions: Extension<InferBoundAPI<SessionSystem<RTS>>>[];
 
 	constructor(opts: SessionManagerOptions<RTS>) {
 		this.system = opts.system;

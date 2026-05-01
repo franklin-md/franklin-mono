@@ -1,7 +1,7 @@
 export type { ReadonlyStore, Store } from './types.js';
 export type { PersistedStore, PersistedStoreAdapter } from './persisted.js';
 export type { Sharing, ForkMode } from './sharing.js';
-export type { StoreAPI } from './api.js';
+export type { StoreAPI, StoreAPISurface } from './api.js';
 export type { StoreKey, StoreValueType } from './key.js';
 export { storeKey } from './key.js';
 export type { StoreResult } from './registry/result.js';

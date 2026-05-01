@@ -1,4 +1,4 @@
-import type { StoreAPI } from './api/api.js';
+import type { StoreAPI, StoreAPISurface } from './api/api.js';
 import type { StoreRegistry } from './api/registry/index.js';
 import { createStoreCompiler } from './compile/compiler.js';
 import type { Compiler } from '../../algebra/compiler/index.js';
@@ -15,7 +15,7 @@ export function createStoreSystem(registry: StoreRegistry): StoreSystem {
 
 		state: storeStateHandle,
 
-		createCompiler(state): Compiler<StoreAPI, StoreRuntime> {
+		createCompiler(state): Compiler<StoreAPISurface, StoreRuntime> {
 			return createStoreCompiler(registry, state);
 		},
 	};

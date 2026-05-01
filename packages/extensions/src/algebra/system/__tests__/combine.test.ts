@@ -18,6 +18,7 @@ import type {
 import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import type { RuntimeSystem } from '../types.js';
 import type { Compiler } from '../../compiler/types.js';
+import type { StaticAPI } from '../../api/types.js';
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
 	createSessionAdapter,
@@ -129,7 +130,7 @@ type ValueRuntime = BaseRuntime & {
 
 function createValueSystem(): RuntimeSystem<
 	ValueState,
-	ValueAPI,
+	StaticAPI<ValueAPI>,
 	ValueRuntime
 > {
 	return {

@@ -1,5 +1,6 @@
 import type { ClientProtocol } from '@franklin/mini-acp';
 import type { CoreAPI } from '../api/api.js';
+import type { BoundAPI } from '../../../algebra/api/index.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
 import { serializeTool } from '../api/tools/index.js';
@@ -36,18 +37,18 @@ export type SpawnFn = () => MaybePromise<SpawnResult>;
 export function createCoreCompiler<Runtime extends CoreRuntime = CoreRuntime>(
 	spawn: SpawnFn,
 	state: CoreState,
-): Compiler<CoreAPI<Runtime>, Runtime> {
+): Compiler<BoundAPI<CoreAPI, Runtime>, CoreRuntime> {
 	const { api, registered } = createCoreRegistrar<Runtime>();
 
 	return {
 		api,
-		async build(getRuntime): Promise<Runtime> {
+		async build(getRuntime): Promise<CoreRuntime> {
 			const transport = await spawn();
 			const resources = createResources(state);
 			const decorator = createClientDecorator(
 				resources,
 				registered,
-				getRuntime,
+				getRuntime as unknown as () => Runtime,
 			);
 			const serializedTools = registered.tools.map(serializeTool);
 
@@ -62,7 +63,7 @@ export function createCoreCompiler<Runtime extends CoreRuntime = CoreRuntime>(
 				client,
 				tracker: resources.tracker,
 				state: resources.stateHandle,
-			}) as Runtime;
+			});
 		},
 	};
 }

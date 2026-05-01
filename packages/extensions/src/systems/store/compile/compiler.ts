@@ -1,4 +1,4 @@
-import type { StoreAPI } from '../api/api.js';
+import type { StoreAPISurface } from '../api/api.js';
 import type { Sharing } from '../api/sharing.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { StoreMapping } from '../api/registry/mapping.js';
@@ -28,10 +28,10 @@ type Registration = {
 export function createStoreCompiler(
 	registry: StoreRegistry,
 	state: StoreState,
-): Compiler<StoreAPI, StoreRuntime> {
+): Compiler<StoreAPISurface, StoreRuntime> {
 	const registrations: Registration[] = [];
 
-	const api: StoreAPI = {
+	const api: StoreAPISurface = {
 		registerStore(name: string, initial: unknown, sharing: Sharing): void {
 			registrations.push({ name, initial, sharing });
 		},

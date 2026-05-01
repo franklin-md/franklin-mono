@@ -3,10 +3,11 @@ import { combine } from '../algebra/compiler/combine.js';
 import { createStoreCompiler } from '../systems/store/compile/compiler.js';
 import { StoreRegistry } from '../systems/store/api/registry/index.js';
 import type { StoreRuntime } from '../systems/store/runtime.js';
-import type { StoreAPI } from '../systems/store/api/api.js';
+import type { StoreAPISurface } from '../systems/store/api/api.js';
 import { createEnvironmentCompiler } from '../systems/environment/compile/compiler.js';
 import type { EnvironmentRuntime } from '../systems/environment/runtime.js';
 import type { ReconfigurableEnvironment } from '../systems/environment/api/types.js';
+import type { BoundAPI } from '../algebra/api/index.js';
 import type { CoreAPI } from '../systems/core/api/api.js';
 import type { FullMiddleware } from '../systems/core/compile/decorators/middleware/types.js';
 import { createCoreRegistrar } from '../systems/core/compile/registrar/index.js';
@@ -29,7 +30,7 @@ import type { Extension } from '../algebra/types/extension.js';
  * use a full runtime.
  */
 export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
-	ext: Extension<CoreAPI<Ctx>>,
+	ext: Extension<BoundAPI<CoreAPI, Ctx>>,
 	getCtx: () => Ctx = (() => undefined) as unknown as () => Ctx,
 ): { middleware: FullMiddleware; tools: SerializedToolDefinition[] } {
 	const { api, registered } = createCoreRegistrar<Ctx>();
@@ -41,35 +42,36 @@ export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 
 /**
  * Build middleware + a `StoreRuntime` for extensions that combine
- * `CoreAPI<StoreRuntime> & StoreAPI`. The store runtime is materialised
- * via the real `createStoreCompiler`, so `ctx.getStore(...)` in handlers
- * exactly matches production behaviour.
+ * `BoundAPI<CoreAPI, StoreRuntime> & StoreAPISurface`. The store runtime is
+ * materialised via the real `createStoreCompiler`, so `ctx.getStore(...)`
+ * in handlers exactly matches production behaviour.
  */
 export async function compileCoreWithStore(
-	ext: Extension<CoreAPI<StoreRuntime> & StoreAPI>,
+	ext: Extension<BoundAPI<CoreAPI, StoreRuntime> & StoreAPISurface>,
 ): Promise<{
 	middleware: FullMiddleware;
 	stores: StoreRuntime;
 	tools: SerializedToolDefinition[];
 }> {
-	const pendingRegistrations: Parameters<StoreAPI['registerStore']>[] = [];
+	const pendingRegistrations: Parameters<StoreAPISurface['registerStore']>[] =
+		[];
 	const cell: { stores?: StoreRuntime } = {};
 	const getCtx = (): StoreRuntime => {
 		if (!cell.stores) throw new Error('store runtime accessed before build');
 		return cell.stores;
 	};
 
-	const storeApi: StoreAPI = {
-		registerStore: ((...args: Parameters<StoreAPI['registerStore']>) => {
+	const storeApi: StoreAPISurface = {
+		registerStore: ((...args: Parameters<StoreAPISurface['registerStore']>) => {
 			pendingRegistrations.push(args);
-		}) as StoreAPI['registerStore'],
+		}) as StoreAPISurface['registerStore'],
 	};
 
 	const { api, registered } = createCoreRegistrar<StoreRuntime>();
 	const combinedApi = {
 		...api,
 		...storeApi,
-	} as CoreAPI<StoreRuntime> & StoreAPI;
+	} as BoundAPI<CoreAPI, StoreRuntime> & StoreAPISurface;
 	ext(combinedApi);
 
 	cell.stores = await compile(
@@ -92,33 +94,37 @@ export async function compileCoreWithStore(
  * EnvironmentRuntime`.
  */
 export async function compileCoreWithStoreAndEnv(
-	ext: Extension<CoreAPI<StoreRuntime & EnvironmentRuntime> & StoreAPI>,
+	ext: Extension<
+		BoundAPI<CoreAPI, StoreRuntime & EnvironmentRuntime> & StoreAPISurface
+	>,
 	env: ReconfigurableEnvironment,
 ): Promise<{
 	middleware: FullMiddleware;
 	ctx: StoreRuntime & EnvironmentRuntime;
 	tools: SerializedToolDefinition[];
 }> {
-	const pendingRegistrations: Parameters<StoreAPI['registerStore']>[] = [];
+	const pendingRegistrations: Parameters<StoreAPISurface['registerStore']>[] =
+		[];
 	const cell: { ctx?: StoreRuntime & EnvironmentRuntime } = {};
 	const getCtx = () => {
 		if (!cell.ctx) throw new Error('ctx accessed before build');
 		return cell.ctx;
 	};
 
-	const storeApi: StoreAPI = {
-		registerStore: ((...args: Parameters<StoreAPI['registerStore']>) => {
+	const storeApi: StoreAPISurface = {
+		registerStore: ((...args: Parameters<StoreAPISurface['registerStore']>) => {
 			pendingRegistrations.push(args);
-		}) as StoreAPI['registerStore'],
+		}) as StoreAPISurface['registerStore'],
 	};
 
 	const { api, registered } = createCoreRegistrar<
 		StoreRuntime & EnvironmentRuntime
 	>();
-	const combinedApi = { ...api, ...storeApi } as CoreAPI<
+	const combinedApi = { ...api, ...storeApi } as BoundAPI<
+		CoreAPI,
 		StoreRuntime & EnvironmentRuntime
 	> &
-		StoreAPI;
+		StoreAPISurface;
 	ext(combinedApi);
 
 	const combined = combine(
@@ -141,7 +147,7 @@ export async function compileCoreWithStoreAndEnv(
  * just `EnvironmentRuntime` (no store). Useful for simple env-only tools.
  */
 export async function compileCoreWithEnv(
-	ext: Extension<CoreAPI<EnvironmentRuntime>>,
+	ext: Extension<BoundAPI<CoreAPI, EnvironmentRuntime>>,
 	env: ReconfigurableEnvironment,
 ): Promise<{
 	middleware: FullMiddleware;
