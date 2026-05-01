@@ -1,4 +1,5 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import obsidianmd from 'eslint-plugin-obsidianmd';
 import storybook from 'eslint-plugin-storybook';
 
 import js from '@eslint/js';
@@ -26,6 +27,46 @@ export default tseslint.config(
 	{
 		linterOptions: {
 			reportUnusedDisableDirectives: 'error',
+		},
+	},
+	...obsidianmd.configs.recommended,
+	{
+		files: ['**/*.{js,mjs,cjs,ts,mts,cts,tsx}'],
+		rules: {
+			'import/no-extraneous-dependencies': 'off',
+			'obsidianmd/no-nodejs-modules': 'off',
+			'obsidianmd/ui/sentence-case': [
+				'error',
+				{
+					brands: ['Franklin'],
+					enforceCamelCaseLower: true,
+				},
+			],
+		},
+	},
+	{
+		files: [
+			'apps/demo/**/*.{js,mjs,cjs,ts,mts,cts,tsx}',
+			'apps/shared/**/*.{js,mjs,cjs,ts,mts,cts,tsx}',
+			'apps/obsidian/build/**/*.{js,mjs,cjs}',
+			'apps/obsidian/src/mocks/**/*.{ts,tsx}',
+			'packages/**/*.{js,mjs,cjs,ts,mts,cts,tsx}',
+			'scripts/**/*.{js,mjs,cjs,ts,mts,cts,tsx}',
+			'**/__tests__/**/*.{js,mjs,cjs,ts,mts,cts,tsx}',
+			'**/test-helpers.{js,mjs,cjs,ts,mts,cts,tsx}',
+		],
+		rules: {
+			'no-restricted-globals': 'off',
+			'no-restricted-imports': 'off',
+			'obsidianmd/hardcoded-config-path': 'off',
+			'obsidianmd/no-static-styles-assignment': 'off',
+			'obsidianmd/no-tfile-tfolder-cast': 'off',
+			'obsidianmd/object-assign': 'off',
+			'obsidianmd/prefer-active-doc': 'off',
+			'obsidianmd/prefer-active-window-timers': 'off',
+			'obsidianmd/prefer-create-el': 'off',
+			'obsidianmd/prefer-instanceof': 'off',
+			'obsidianmd/rule-custom-message': 'off',
 		},
 	},
 	{
