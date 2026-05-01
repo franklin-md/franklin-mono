@@ -5,6 +5,7 @@ import {
 	type BaseRuntime,
 	type Session,
 	type SessionState,
+	type StateHandle,
 } from '@franklin/extensions';
 import type { SessionPersistence } from '../../storage/types.js';
 
@@ -17,12 +18,19 @@ import type { SessionPersistence } from '../../storage/types.js';
  *
  * The tree operates on the collection as if it were a plain collection —
  * persistence is a transparent side-effect.
+ *
+ * `projectState` is the runtime → `StateHandle<S>` projection from the
+ * owning system (`system.state(runtime)`); the collection no longer
+ * assumes runtimes carry state directly.
  */
 export class PersistedSessionCollection<
 	S extends SessionState,
-	RT extends BaseRuntime<S>,
+	RT extends BaseRuntime,
 > extends SessionCollection<RT> {
-	constructor(private readonly persister: SessionPersistence<S>) {
+	constructor(
+		private readonly persister: SessionPersistence<S>,
+		private readonly projectState: (runtime: RT) => StateHandle<S>,
+	) {
 		super();
 		this.subscribe((event) => {
 			if (event.action === 'add') {
@@ -52,7 +60,7 @@ export class PersistedSessionCollection<
 	}
 
 	private persist(sessionId: string, runtime: RT): void {
-		void runtime.state
+		void this.projectState(runtime)
 			.get()
 			.then((state) => this.persister.save(sessionId, state));
 	}

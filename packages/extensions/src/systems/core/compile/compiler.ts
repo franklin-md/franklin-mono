@@ -19,10 +19,11 @@ export type SpawnFn = () => MaybePromise<SpawnResult>;
  * **Registration (api):** extensions register raw handlers/tools into a
  * transport-free `CoreRegistrar` — stored as data, not yet bound to runtime.
  *
- * **Build:** receives `state` and `getRuntime` (lazy reference to the
- * eventual fully-tied Runtime). `spawn()` is invoked here so the transport
- * lifecycle is scoped to the runtime it powers — callers that never build
- * never pay for a transport. `composeDecorators` turns the registrar plus
+ * **Build:** receives `getRuntime` (lazy reference to the eventual
+ * fully-tied Runtime); state was captured by closure when this compiler
+ * was created. `spawn()` is invoked here so the transport lifecycle is
+ * scoped to the runtime it powers — callers that never build never pay
+ * for a transport. `composeDecorators` turns the registrar plus
  * `getRuntime` into the decorator stack `createCoreRuntime` applies.
  *
  * Registered tools are serialized once here and threaded into the boot
@@ -34,12 +35,13 @@ export type SpawnFn = () => MaybePromise<SpawnResult>;
  */
 export function createCoreCompiler<Runtime extends CoreRuntime = CoreRuntime>(
 	spawn: SpawnFn,
-): Compiler<CoreAPI<Runtime>, CoreState, Runtime> {
+	state: CoreState,
+): Compiler<CoreAPI<Runtime>, Runtime> {
 	const { api, registered } = createCoreRegistrar<Runtime>();
 
 	return {
 		api,
-		async build(state, getRuntime): Promise<Runtime> {
+		async build(getRuntime): Promise<Runtime> {
 			const transport = await spawn();
 			const resources = createResources(state);
 			const decorator = createClientDecorator(

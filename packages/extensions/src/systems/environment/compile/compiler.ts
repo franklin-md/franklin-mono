@@ -1,7 +1,6 @@
 import type { ReconfigurableEnvironment } from '../api/types.js';
 import type { EnvironmentAPI } from '../api/api.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
-import type { EnvironmentState } from '../state.js';
 import {
 	createEnvironmentRuntime,
 	type EnvironmentRuntime,
@@ -14,7 +13,7 @@ import {
  */
 export function createEnvironmentCompiler(
 	environment: ReconfigurableEnvironment,
-): Compiler<EnvironmentAPI, EnvironmentState, EnvironmentRuntime> {
+): Compiler<EnvironmentAPI, EnvironmentRuntime> {
 	return {
 		api: {},
 		async build() {

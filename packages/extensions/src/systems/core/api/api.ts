@@ -25,7 +25,7 @@ import type { CoreRuntime } from '../runtime/index.js';
  * argument — no wrapper object. Extensions read capabilities via
  * `runtime.environment`, `runtime.session`, `runtime.getStore(key)`, etc.
  */
-export interface CoreAPI<Runtime extends BaseRuntime<unknown> = CoreRuntime> {
+export interface CoreAPI<Runtime extends BaseRuntime = CoreRuntime> {
 	on(event: 'prompt', handler: WithContext<PromptHandler, Runtime>): void;
 	on(event: 'cancel', handler: WithContext<CancelHandler, Runtime>): void;
 

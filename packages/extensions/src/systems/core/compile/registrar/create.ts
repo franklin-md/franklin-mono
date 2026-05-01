@@ -4,7 +4,7 @@ import type { ToolSpec } from '../../api/tool-spec.js';
 import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
 import type { CoreRegistrar } from './types.js';
 
-function normalizeTool<Runtime extends BaseRuntime<unknown>>(
+function normalizeTool<Runtime extends BaseRuntime>(
 	specOrTool: ToolSpec | ExtensionToolDefinition<unknown, Runtime>,
 	execute?: (params: any, runtime: Runtime) => any,
 ): ExtensionToolDefinition<unknown, Runtime> {
@@ -26,7 +26,7 @@ function normalizeTool<Runtime extends BaseRuntime<unknown>>(
  * runtime, transport, or middleware. `assemble(registered, getRuntime)`
  * turns the result into wire-ready middleware + system prompt handlers.
  */
-export function createCoreRegistrar<Runtime extends BaseRuntime<unknown>>(): {
+export function createCoreRegistrar<Runtime extends BaseRuntime>(): {
 	api: CoreAPI<Runtime>;
 	registered: CoreRegistrar<Runtime>;
 } {

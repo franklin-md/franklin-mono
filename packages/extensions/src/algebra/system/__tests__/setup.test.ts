@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { withSetup, withSetupCompiler } from '../setup.js';
 import type { RuntimeSystem } from '../types.js';
-import type { BaseRuntime } from '../../runtime/types.js';
+import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import type { Compiler } from '../../compiler/types.js';
 
 // ---------------------------------------------------------------------------
@@ -10,12 +10,19 @@ import type { Compiler } from '../../compiler/types.js';
 
 type TestState = { value: number };
 type TestAPI = { register(n: number): void };
-type TestRuntime = BaseRuntime<TestState> & { getValue(): number };
+
+const TEST_STATE: unique symbol = Symbol('test/setup-state');
+
+type TestRuntime = BaseRuntime & {
+	getValue(): number;
+	readonly [TEST_STATE]: StateHandle<TestState>;
+};
 
 function createTestSystem(): RuntimeSystem<TestState, TestAPI, TestRuntime> {
 	return {
 		emptyState: () => ({ value: 0 }),
-		createCompiler(): Compiler<TestAPI, TestState, TestRuntime> {
+		state: (runtime) => runtime[TEST_STATE],
+		createCompiler(state): Compiler<TestAPI, TestRuntime> {
 			let registered: number | undefined;
 			return {
 				api: {
@@ -23,11 +30,11 @@ function createTestSystem(): RuntimeSystem<TestState, TestAPI, TestRuntime> {
 						registered = n;
 					},
 				},
-				async build(state) {
+				async build() {
 					const val = registered ?? state.value;
 					return {
 						getValue: () => val,
-						state: {
+						[TEST_STATE]: {
 							get: async () => ({ value: val }),
 							fork: async () => ({ value: val }),
 							child: async () => ({ value: 0 }),
@@ -58,10 +65,10 @@ describe('withSetup', () => {
 			order.push('setup');
 		});
 
-		const compiler = decorated.createCompiler();
+		const compiler = decorated.createCompiler({ value: 42 });
 
 		order.push('before-build');
-		await compiler.build({ value: 42 }, noGetRuntime);
+		await compiler.build(noGetRuntime);
 		order.push('after-build');
 
 		expect(order).toEqual(['before-build', 'setup', 'after-build']);
@@ -75,8 +82,8 @@ describe('withSetup', () => {
 			captured = runtime;
 		});
 
-		const compiler = decorated.createCompiler();
-		const built = await compiler.build({ value: 7 }, noGetRuntime);
+		const compiler = decorated.createCompiler({ value: 7 });
+		const built = await compiler.build(noGetRuntime);
 
 		expect(captured).toBe(built);
 		expect(captured!.getValue()).toBe(7);
@@ -90,8 +97,8 @@ describe('withSetup', () => {
 			capturedState = state;
 		});
 
-		const compiler = decorated.createCompiler();
-		await compiler.build({ value: 99 }, noGetRuntime);
+		const compiler = decorated.createCompiler({ value: 99 });
+		await compiler.build(noGetRuntime);
 
 		expect(capturedState).toEqual({ value: 99 });
 	});
@@ -107,9 +114,9 @@ describe('withSetup', () => {
 		const system = createTestSystem();
 		const decorated = withSetup(system, async () => {});
 
-		const compiler = decorated.createCompiler();
+		const compiler = decorated.createCompiler({ value: 0 });
 		compiler.api.register(42);
-		const built = await compiler.build({ value: 0 }, noGetRuntime);
+		const built = await compiler.build(noGetRuntime);
 
 		expect(built.getValue()).toBe(42);
 	});
@@ -122,8 +129,8 @@ describe('withSetup', () => {
 			setupSpy(runtime.getValue());
 		});
 
-		const compiler = decorated.createCompiler();
-		await compiler.build({ value: 5 }, noGetRuntime);
+		const compiler = decorated.createCompiler({ value: 5 });
+		await compiler.build(noGetRuntime);
 
 		expect(setupSpy).toHaveBeenCalledWith(5);
 	});
@@ -136,7 +143,7 @@ describe('withSetup', () => {
 describe('withSetupCompiler', () => {
 	it('wraps build to run setup after inner build resolves', async () => {
 		const system = createTestSystem();
-		const inner = system.createCompiler();
+		const inner = system.createCompiler({ value: 1 });
 
 		const order: string[] = [];
 		const decorated = withSetupCompiler(inner, async () => {
@@ -144,7 +151,7 @@ describe('withSetupCompiler', () => {
 		});
 
 		order.push('pre');
-		await decorated.build({ value: 1 }, noGetRuntime);
+		await decorated.build(noGetRuntime);
 		order.push('post');
 
 		expect(order).toEqual(['pre', 'setup', 'post']);
@@ -152,7 +159,7 @@ describe('withSetupCompiler', () => {
 
 	it('preserves the inner api', async () => {
 		const system = createTestSystem();
-		const inner = system.createCompiler();
+		const inner = system.createCompiler({ value: 0 });
 		const decorated = withSetupCompiler(inner, async () => {});
 
 		expect(decorated.api).toBe(inner.api);

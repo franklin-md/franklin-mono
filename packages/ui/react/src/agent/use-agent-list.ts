@@ -10,7 +10,7 @@ import { useCollectionNavigator } from '../utils/use-collection-navigator.js';
 export type AgentCreateInput = Parameters<Agents['create']>[0];
 export type AgentCreate = Agents['create'];
 
-export type AgentsControl<RT extends BaseRuntime<any> = FranklinRuntime> = {
+export type AgentsControl<RT extends BaseRuntime = FranklinRuntime> = {
 	sessions: Session<RT>[];
 	activeSessionId: string | null;
 	activeSession: Session<RT> | undefined;
@@ -19,9 +19,7 @@ export type AgentsControl<RT extends BaseRuntime<any> = FranklinRuntime> = {
 	remove: (id: string) => void;
 };
 
-function getSessionKey<RT extends BaseRuntime<any>>(
-	session: Session<RT>,
-): string {
+function getSessionKey<RT extends BaseRuntime>(session: Session<RT>): string {
 	return session.id;
 }
 
