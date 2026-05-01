@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createExtension } from '../create-extension.js';
+import { createExtension } from '../create.js';
 
 describe('createExtension', () => {
 	it('returns the extension passed directly', () => {

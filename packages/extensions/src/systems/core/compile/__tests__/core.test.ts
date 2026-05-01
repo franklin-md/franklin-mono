@@ -10,7 +10,7 @@ import type {
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import type { Extension } from '../../../../algebra/types/extension.js';
+import type { Extension } from '../../../../algebra/extension/index.js';
 import { resolveToolOutput } from '../../api/tool.js';
 import {
 	type SerializedToolDefinition,

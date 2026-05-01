@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { MaybePromise } from '../../../../algebra/types/index.js';
+import type { MaybePromise } from '../../../../algebra/types/shared.js';
 import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
 import type {
 	ExtensionToolDefinition,
