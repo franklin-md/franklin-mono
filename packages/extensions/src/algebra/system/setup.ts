@@ -1,4 +1,4 @@
-import type { BaseAPI } from '../api/index.js';
+import type { API } from '../api/index.js';
 import type { Compiler } from '../compiler/index.js';
 import type { BaseRuntime } from '../runtime/index.js';
 import type { BaseState } from '../state/index.js';
@@ -11,13 +11,17 @@ import type { RuntimeSystem } from './types.js';
  * `setup(runtime)` after the inner build. State is captured by closure
  * at compiler-creation time and threaded by the system layer.
  */
-export function withSetupCompiler<API, Runtime>(
-	inner: Compiler<API, Runtime>,
+export function withSetupCompiler<
+	A extends API,
+	Runtime extends BaseRuntime & A['In'],
+>(
+	inner: Compiler<A, Runtime>,
 	setup: (runtime: Runtime) => Promise<void>,
-): Compiler<API, Runtime> {
+): Compiler<A, Runtime> {
 	return {
-		api: inner.api,
-		async build(getRuntime) {
+		createApi: <ContextRuntime extends Runtime>() =>
+			inner.createApi<ContextRuntime>(),
+		build: async (getRuntime) => {
 			const runtime = await inner.build(getRuntime);
 			await setup(runtime);
 			return runtime;
@@ -32,16 +36,16 @@ export function withSetupCompiler<API, Runtime>(
  */
 export function withSetup<
 	S extends BaseState,
-	API extends BaseAPI,
-	Runtime extends BaseRuntime,
+	A extends API,
+	Runtime extends BaseRuntime & A['In'],
 >(
-	system: RuntimeSystem<S, API, Runtime>,
+	system: RuntimeSystem<S, A, Runtime>,
 	setup: (runtime: Runtime, state: S) => Promise<void>,
-): RuntimeSystem<S, API, Runtime> {
+): RuntimeSystem<S, A, Runtime> {
 	return {
 		emptyState: () => system.emptyState(),
 		state: (runtime) => system.state(runtime),
-		createCompiler(state) {
+		createCompiler(state: S) {
 			return withSetupCompiler(system.createCompiler(state), (runtime) =>
 				setup(runtime, state),
 			);

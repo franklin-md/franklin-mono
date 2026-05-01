@@ -13,8 +13,6 @@ import {
 	type StreamEvent,
 	type Usage,
 } from '@franklin/mini-acp';
-import type { CoreAPI } from '../api/api.js';
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -268,7 +266,7 @@ describe('createCoreSystem', () => {
 			system,
 			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[
-				(api: CoreAPI) => {
+				(api) => {
 					api.on('prompt', (_params) => {
 						// side effect
 					});
@@ -307,7 +305,7 @@ describe('createCoreSystem', () => {
 				},
 			},
 			[
-				(api: CoreAPI) => {
+				(api) => {
 					api.on('systemPrompt', (ctx) => {
 						ctx.setPart('Tool guidelines here.');
 					});
@@ -339,7 +337,7 @@ describe('createCoreSystem', () => {
 			system,
 			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
 			[
-				(api: CoreAPI) => {
+				(api) => {
 					api.registerTool({
 						name: 'my_tool',
 						description: 'does things',
@@ -381,7 +379,7 @@ describe('createCoreSystem', () => {
 				},
 			},
 			[
-				(api: CoreAPI) => {
+				(api) => {
 					api.on('systemPrompt', (ctx) => {
 						ctx.setPart('first');
 					});

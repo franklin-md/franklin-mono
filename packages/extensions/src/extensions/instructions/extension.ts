@@ -1,17 +1,15 @@
-import type { Extension } from '../../algebra/index.js';
+import { createExtension } from '../../algebra/index.js';
 import type { CoreAPI } from '../../systems/core/index.js';
 import type { EnvironmentRuntime } from '../../systems/environment/runtime.js';
-import { createClaudeSpec } from './specs/claude.js';
-import {
-	loadInstructions,
-	type LoadedInstruction,
-} from './composers/loader.js';
 import { concat } from './composers/concat.js';
+import {
+	type LoadedInstruction,
+	loadInstructions,
+} from './composers/loader.js';
+import { createClaudeSpec } from './specs/claude.js';
 
-export function createInstructionExtension(): Extension<
-	CoreAPI<EnvironmentRuntime>
-> {
-	return (api) => {
+export function createInstructionExtension() {
+	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
 		const spec = createClaudeSpec();
 
 		api.on('systemPrompt', (prompt, ctx) => {
@@ -27,7 +25,7 @@ export function createInstructionExtension(): Extension<
 				{ once: true },
 			);
 		});
-	};
+	});
 }
 
 function renderWithFilename(instruction: LoadedInstruction): string {

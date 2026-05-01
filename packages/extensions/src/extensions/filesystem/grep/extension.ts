@@ -1,4 +1,4 @@
-import type { Extension } from '../../../algebra/types/index.js';
+import { createExtension } from '../../../algebra/index.js';
 import type { CoreAPI } from '../../../systems/core/index.js';
 import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import { detectGrepBackend } from './detect.js';
@@ -6,8 +6,8 @@ import { renderGrepInfo } from './guidance.js';
 import { runGrep } from './run.js';
 import { grepSpec } from './tools.js';
 
-export function grepExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
-	return (api) => {
+export function grepExtension() {
+	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
 		api.on('systemPrompt', (prompt, ctx) => {
 			prompt.setPart(
 				async () => {
@@ -37,5 +37,5 @@ export function grepExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
 			}
 			return output;
 		});
-	};
+	});
 }

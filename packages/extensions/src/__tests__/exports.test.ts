@@ -1,26 +1,40 @@
-import { describe, expect, it, vi } from 'vitest';
-import { compileAll } from '../index.js';
-import type { Compiler } from '../algebra/compiler/types.js';
+import { describe, expect, it } from 'vitest';
+import type { API, BoundAPI } from '../algebra/api/index.js';
+import type { BaseRuntime } from '../algebra/runtime/index.js';
 import type { Extension } from '../algebra/types/extension.js';
+import { compileAll, compilerFromApi } from '../index.js';
+
+type TestAPISurface = { register(label: string): void };
+
+interface TestAPI extends API {
+	readonly In: BaseRuntime;
+	readonly Out: TestAPISurface;
+}
 
 describe('package exports', () => {
 	it('re-exports compileAll from the root barrel', async () => {
 		const calls: string[] = [];
-		const compiler: Compiler<{ register(label: string): void }, string> = {
-			api: {
-				register(label: string) {
-					calls.push(label);
-				},
+		let buildCalls = 0;
+		const api: TestAPISurface = {
+			register(label: string) {
+				calls.push(label);
 			},
-			build: vi.fn(async () => 'built'),
 		};
-		const extensions: Extension<{ register(label: string): void }>[] = [
+		const runtime: BaseRuntime = {
+			dispose: async () => {},
+			subscribe: () => () => {},
+		};
+		const compiler = compilerFromApi<TestAPI, BaseRuntime>(api, async () => {
+			buildCalls += 1;
+			return runtime;
+		});
+		const extensions: Extension<BoundAPI<TestAPI, BaseRuntime>>[] = [
 			(api) => api.register('one'),
 			(api) => api.register('two'),
 		];
 
-		await expect(compileAll(compiler, extensions)).resolves.toBe('built');
+		await expect(compileAll(compiler, extensions)).resolves.toBe(runtime);
 		expect(calls).toEqual(['one', 'two']);
-		expect(compiler.build).toHaveBeenCalledOnce();
+		expect(buildCalls).toBe(1);
 	});
 });

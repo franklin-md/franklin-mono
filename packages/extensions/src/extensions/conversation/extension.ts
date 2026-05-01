@@ -1,14 +1,14 @@
-import type { Extension } from '../../algebra/types/index.js';
+import { createExtension } from '../../algebra/index.js';
 import type { CoreAPI } from '../../systems/core/index.js';
 import type { StoreAPI } from '../../systems/store/index.js';
 import type { StoreRuntime } from '../../systems/store/runtime.js';
-import { conversationKey } from './key.js';
+import { createConversationControl } from './controls.js';
 import { handleChunk } from './handlers/chunk.js';
 import { handleToolCall } from './handlers/tool-call.js';
 import { handleToolResult } from './handlers/tool-result.js';
-import { handleUpdate } from './handlers/update.js';
 import { handleTurnEnd } from './handlers/turn-end.js';
-import { createConversationControl } from './controls.js';
+import { handleUpdate } from './handlers/update.js';
+import { conversationKey } from './key.js';
 import type { ConversationTurn } from './types.js';
 
 function wrapHandler<T>(fn: (turn: ConversationTurn, event: T) => void) {
@@ -24,10 +24,8 @@ function wrapHandler<T>(fn: (turn: ConversationTurn, event: T) => void) {
  *
  * Store access happens at runtime via `runtime.getStore(conversationKey)`.
  */
-export function conversationExtension(): Extension<
-	CoreAPI<StoreRuntime> & StoreAPI
-> {
-	return (api) => {
+export function conversationExtension() {
+	return createExtension<[CoreAPI, StoreAPI], [StoreRuntime]>((api) => {
 		api.registerStore(conversationKey, [], 'private');
 
 		api.on('prompt', (prompt, ctx) => {
@@ -47,5 +45,5 @@ export function conversationExtension(): Extension<
 		api.on('toolCall', wrapHandler(handleToolCall));
 		api.on('toolResult', wrapHandler(handleToolResult));
 		api.on('turnEnd', wrapHandler(handleTurnEnd));
-	};
+	});
 }

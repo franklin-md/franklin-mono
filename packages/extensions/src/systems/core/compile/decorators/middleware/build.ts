@@ -1,6 +1,7 @@
+import { buildWaterfall, passThrough } from '@franklin/lib/middleware';
 import type { BaseRuntime } from '../../../../../algebra/runtime/types.js';
-import type { FullMiddleware } from './types.js';
-import { passThrough, buildWaterfall } from '@franklin/lib/middleware';
+import { bindHandlers, bindTool } from '../../registrar/bind.js';
+import type { CoreRegistrar } from '../../registrar/types.js';
 import {
 	buildPromptWaterfall,
 	buildToolExecuteMiddleware,
@@ -9,26 +10,25 @@ import {
 	type StreamObservers,
 	type ToolObservers,
 } from './builders/index.js';
-import { bindHandlers, bindTool } from '../../registrar/bind.js';
-import type { CoreRegistrar } from '../../registrar/types.js';
+import type { FullMiddleware } from './types.js';
 
 export function buildMiddleware<Runtime extends BaseRuntime>(
-	registered: CoreRegistrar<Runtime>,
+	registrations: CoreRegistrar<Runtime>,
 	getCtx: () => Runtime,
 ): FullMiddleware {
-	const cancel = bindHandlers(registered.cancel, getCtx);
-	const prompt = bindHandlers(registered.prompt, getCtx);
+	const cancel = bindHandlers(registrations.cancel, getCtx);
+	const prompt = bindHandlers(registrations.prompt, getCtx);
 	const streamObs: StreamObservers = {
-		turnStart: bindHandlers(registered.turnStart, getCtx),
-		chunk: bindHandlers(registered.chunk, getCtx),
-		update: bindHandlers(registered.update, getCtx),
-		turnEnd: bindHandlers(registered.turnEnd, getCtx),
+		turnStart: bindHandlers(registrations.turnStart, getCtx),
+		chunk: bindHandlers(registrations.chunk, getCtx),
+		update: bindHandlers(registrations.update, getCtx),
+		turnEnd: bindHandlers(registrations.turnEnd, getCtx),
 	};
 	const toolObs: ToolObservers = {
-		toolCall: bindHandlers(registered.toolCall, getCtx),
-		toolResult: bindHandlers(registered.toolResult, getCtx),
+		toolCall: bindHandlers(registrations.toolCall, getCtx),
+		toolResult: bindHandlers(registrations.toolResult, getCtx),
 	};
-	const tools = registered.tools.map((t) => bindTool(t, getCtx));
+	const tools = registrations.tools.map((t) => bindTool(t, getCtx));
 
 	const client: FullMiddleware['client'] = {
 		initialize: passThrough(),

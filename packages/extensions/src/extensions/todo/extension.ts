@@ -1,9 +1,9 @@
-import type { Extension } from '../../algebra/types/index.js';
+import { createExtension } from '../../algebra/index.js';
 import type { CoreAPI } from '../../systems/core/index.js';
 import type { StoreAPI } from '../../systems/store/index.js';
 import type { StoreRuntime } from '../../systems/store/runtime.js';
-import { formatTodos } from './format.js';
 import { createTodoControl } from './control.js';
+import { formatTodos } from './format.js';
 import { todoKey } from './key.js';
 import { addTodoSpec, completeTodoSpec, listTodosSpec } from './tools.js';
 
@@ -12,8 +12,8 @@ import { addTodoSpec, completeTodoSpec, listTodosSpec } from './tools.js';
  * (`add_todo`, `complete_todo`, `list_todos`) and injects active
  * todos into every prompt.
  */
-export function todoExtension(): Extension<CoreAPI<StoreRuntime> & StoreAPI> {
-	return (api) => {
+export function todoExtension() {
+	return createExtension<[CoreAPI, StoreAPI], [StoreRuntime]>((api) => {
 		api.registerStore(todoKey, [], 'shared');
 
 		api.registerTool(addTodoSpec, async ({ text }, ctx) => {
@@ -40,5 +40,5 @@ export function todoExtension(): Extension<CoreAPI<StoreRuntime> & StoreAPI> {
 				prompt.prependContent({ type: 'text', text: formatted });
 			}
 		});
-	};
+	});
 }

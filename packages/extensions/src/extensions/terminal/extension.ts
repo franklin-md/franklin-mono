@@ -1,11 +1,11 @@
+import { createExtension } from '../../algebra/index.js';
 import type { CoreAPI } from '../../systems/core/index.js';
 import type { EnvironmentRuntime } from '../../systems/environment/runtime.js';
-import type { Extension } from '../../algebra/types/index.js';
-import { bashSpec } from './tools.js';
 import { shellArgs } from './shell-args.js';
+import { bashSpec } from './tools.js';
 
-export function bashExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
-	return (api) => {
+export function bashExtension() {
+	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
 		api.registerTool(bashSpec, async ({ cmd, timeout }, ctx) => {
 			const shell = await ctx.environment.osInfo.getShellInfo();
 			const { exit_code, stdout, stderr } = await ctx.environment.process.exec({
@@ -27,5 +27,5 @@ export function bashExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
 			}
 			return output;
 		});
-	};
+	});
 }

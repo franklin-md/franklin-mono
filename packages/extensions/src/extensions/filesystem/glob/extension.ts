@@ -1,13 +1,13 @@
 import { truncateStream } from '@franklin/lib';
-import type { Extension } from '../../../algebra/types/index.js';
+import { createExtension } from '../../../algebra/index.js';
 import type { CoreAPI } from '../../../systems/core/index.js';
 import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
 import { globSpec } from './tools.js';
 
 const MAX_FORMATTED_CHARS = 12_000;
 
-export function globExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
-	return (api) => {
+export function globExtension() {
+	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
 		api.registerTool(globSpec, async ({ pattern, options }, ctx) => {
 			const env = ctx.environment;
 			const rootDir = options.root_dir
@@ -36,5 +36,5 @@ export function globExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
 
 			return text;
 		});
-	};
+	});
 }

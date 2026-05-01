@@ -1,9 +1,3 @@
-import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
-import type { StoreAPI } from '../../../systems/store/index.js';
-import type { StoreRuntime } from '../../../systems/store/runtime.js';
-import type { Extension } from '../../../algebra/types/index.js';
-import { readFromCache, writeToCache } from './cache.js';
 import {
 	decorate,
 	normalizeUrl,
@@ -11,21 +5,28 @@ import {
 	withRedirect,
 	withTimeout,
 } from '@franklin/lib';
+import { createExtension } from '../../../algebra/index.js';
+import type { CoreAPI } from '../../../systems/core/index.js';
+import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
+import type { StoreAPI } from '../../../systems/store/index.js';
+import type { StoreRuntime } from '../../../systems/store/runtime.js';
+import { readFromCache, writeToCache } from './cache.js';
+import { webFetchCacheKey } from './key.js';
+import { processWebResponse } from './process.js';
 import { toContentResult } from './result.js';
 import { fetchUrlSpec } from './tools.js';
 import {
 	resolveWebFetchOptions,
 	type WebFetchExtensionOptions,
 } from './types.js';
-import { webFetchCacheKey } from './key.js';
-import { processWebResponse } from './process.js';
 
-export function webFetchExtension(
-	options: Partial<WebFetchExtensionOptions>,
-): Extension<CoreAPI<EnvironmentRuntime & StoreRuntime> & StoreAPI> {
+export function webFetchExtension(options: Partial<WebFetchExtensionOptions>) {
 	const resolved = resolveWebFetchOptions(options);
 
-	return (api) => {
+	return createExtension<
+		[CoreAPI, StoreAPI],
+		[EnvironmentRuntime, StoreRuntime]
+	>((api) => {
 		api.registerStore(webFetchCacheKey, {}, 'shared');
 
 		api.registerTool(fetchUrlSpec, async ({ url }, ctx) => {
@@ -85,5 +86,5 @@ export function webFetchExtension(
 				};
 			}
 		});
-	};
+	});
 }

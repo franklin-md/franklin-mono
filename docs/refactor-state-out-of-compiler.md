@@ -4,11 +4,11 @@
 
 Three concerns that were entangled in the algebra are now cleanly separated:
 
-| Layer | Owns |
-|---|---|
-| `Compiler<API, Runtime>` | extension registration + build (no `<S>`) |
-| `BaseRuntime` (no `<S>`) | live capabilities + lifecycle (`dispose`, `subscribe`) |
-| `RuntimeSystem<S, API, Runtime>` | `emptyState`, `createCompiler(state)`, `state(runtime)` projection |
+| Layer                                  | Owns                                                                |
+| -------------------------------------- | ------------------------------------------------------------------- |
+| `Compiler<APIFamily, Runtime>`         | API creation + build (no `<S>`; API binds per registration context) |
+| `BaseRuntime` (no `<S>`)               | live capabilities + lifecycle (`dispose`, `subscribe`)              |
+| `RuntimeSystem<S, APIFamily, Runtime>` | `emptyState`, `createCompiler(state)`, `state(runtime)` projection  |
 
 Before, every runtime was forced to expose a `state: StateHandle<S>` field, which made
 fakes (like `DependencyRuntime`'s no-op state) into ceremonial noise and pinned `<S>`
@@ -19,17 +19,20 @@ through `Compiler`, `BaseRuntime`, and several Inference helpers.
 State is captured by closure when the system creates a compiler:
 
 ```ts
-type RuntimeSystem<S, API, Runtime> = {
-  emptyState(): S
-  createCompiler(state: S): Compiler<API, Runtime>   // closes over state
-  state(runtime: Runtime): StateHandle<S>            // projection
-}
+type RuntimeSystem<S, APIFamily, Runtime> = {
+	emptyState(): S;
+	createCompiler(state: S): Compiler<APIFamily, Runtime>; // closes over state
+	state(runtime: Runtime): StateHandle<S>; // projection
+};
 ```
 
-`createCompiler(state)` returns a state-free `Compiler<API, Runtime>` whose `build`
-takes only `getRuntime`. Inside the closure, the system materialises whatever
-backing structures the state implies (Store collection, environment observer,
-core resources/transport).
+`createCompiler(state)` returns a state-free concrete `Compiler<APIFamily, Runtime>`
+whose `createApi` binds the API family to the chosen context runtime and whose
+`build` takes only `getRuntime`. The concrete API is produced by applying the
+system's API family to the eventual context runtime, so composition can make
+runtime-aware APIs such as `CoreAPI<Runtime>` see the fully tied runtime. Inside
+the closure, the system materialises whatever backing structures the state
+implies (Store collection, environment observer, core resources/transport).
 
 ## Pattern: private symbol for state projection
 
@@ -53,10 +56,11 @@ state: (runtime) => runtime[STORE_STATE]
 Combined systems compose projections by delegating to each sub-system:
 
 ```ts
-combinedSystem.state = (rt) => mergeHandles(
-  s1.state(rt),  // reads runtime[STORE_STATE]
-  s2.state(rt),  // reads runtime[ENV_STATE]
-)
+combinedSystem.state = (rt) =>
+	mergeHandles(
+		s1.state(rt), // reads runtime[STORE_STATE]
+		s2.state(rt), // reads runtime[ENV_STATE]
+	);
 ```
 
 Different systems use different symbols → no collision when combined.
