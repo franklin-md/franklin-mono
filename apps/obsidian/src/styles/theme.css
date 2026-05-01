@@ -7,6 +7,10 @@
 
 @import '@franklin/ui/styles/franklin-core.css';
 
+.franklin.franklin-mount-host {
+	height: 100%;
+}
+
 @theme inline {
 	/* ── Fonts — use Obsidian's theme fonts ───────────────── */
 	--font-sans: var(--font-interface);

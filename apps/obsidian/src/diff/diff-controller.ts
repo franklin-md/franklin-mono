@@ -1,17 +1,16 @@
 import { EditorView } from '@codemirror/view';
 import type { Plugin } from 'obsidian';
 import { MarkdownView } from 'obsidian';
-
-import type { DiffClient } from './diff-client.js';
+import { diffDecorations, diffHoverTracking } from './cm/decorations.js';
 import {
 	clearDiff,
 	diffField,
 	diffInverted,
 	setDiffEntry,
 } from './cm/diff-field.js';
-import { diffDecorations, diffHoverTracking } from './cm/decorations.js';
 import { diffEmbeddedBlockStyling } from './cm/embedded-block-styling.js';
 import { acceptAllHunks, rejectAllHunks } from './cm/react-widgets.js';
+import type { DiffClient } from './diff-client.js';
 
 type HeaderUI = {
 	container: HTMLElement;
@@ -231,17 +230,17 @@ export class DiffController {
 
 		let header = session.header;
 		if (!header || !header.container.isConnected) {
-			const container = document.createElement('div');
+			const container = activeDocument.createDiv();
 			container.className = 'diff-plugin-header-group';
 
-			const count = document.createElement('span');
+			const count = activeDocument.createSpan();
 			count.className = 'diff-plugin-header-count';
 			container.appendChild(count);
 
-			const accept = document.createElement('button');
+			const accept = activeDocument.createEl('button');
 			accept.type = 'button';
 			accept.className = 'diff-plugin-header-btn diff-plugin-header-accept';
-			accept.textContent = 'Accept All';
+			accept.textContent = 'Accept all';
 			accept.onmousedown = stopHeaderButtonMouseDown;
 			accept.onclick = (event) => {
 				event.preventDefault();
@@ -250,10 +249,10 @@ export class DiffController {
 			};
 			container.appendChild(accept);
 
-			const reject = document.createElement('button');
+			const reject = activeDocument.createEl('button');
 			reject.type = 'button';
 			reject.className = 'diff-plugin-header-btn diff-plugin-header-reject';
-			reject.textContent = 'Reject All';
+			reject.textContent = 'Reject all';
 			reject.onmousedown = stopHeaderButtonMouseDown;
 			reject.onclick = (event) => {
 				event.preventDefault();

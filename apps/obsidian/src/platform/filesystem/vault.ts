@@ -1,8 +1,7 @@
 import path from 'node:path';
-
+import type { AbsolutePath, FileStat, Filesystem } from '@franklin/lib';
 import { encode } from '@franklin/lib';
-import type { AbsolutePath, Filesystem, FileStat } from '@franklin/lib';
-import { type Vault, normalizePath } from 'obsidian';
+import { type FileManager, normalizePath, type Vault } from 'obsidian';
 
 import { getVaultAbsolutePath } from '../../utils/obsidian/path.js';
 import { isFile, isFolder } from '../../utils/obsidian/type-guards.js';
@@ -25,7 +24,10 @@ function assertFilePath(vaultPath: string): string {
 
 export type VaultFilesystem = Omit<Filesystem, 'resolve' | 'glob'>;
 
-export function createVaultFilesystem(vault: Vault): VaultFilesystem {
+export function createVaultFilesystem(
+	vault: Vault,
+	fileManager: FileManager,
+): VaultFilesystem {
 	const vaultRoot = getVaultAbsolutePath(vault);
 
 	return {
@@ -109,7 +111,7 @@ export function createVaultFilesystem(vault: Vault): VaultFilesystem {
 			const file = vault.getAbstractFileByPath(vaultPath);
 			if (!file) throw new Error(`ENOENT: ${p}`);
 			if (!isFile(file)) throw new Error(`EISDIR: ${p}`);
-			await vault.delete(file);
+			await fileManager.trashFile(file);
 		},
 	};
 }
