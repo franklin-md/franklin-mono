@@ -1,8 +1,16 @@
 import type { StoreResult } from './api/registry/result.js';
-import type { BaseRuntime } from '../../algebra/runtime/index.js';
+import type { BaseRuntime, StateHandle } from '../../algebra/runtime/index.js';
 import type { StoreState, StoreMapping } from './state.js';
 import type { Store } from './api/types.js';
 import type { StoreKey } from './api/key.js';
+
+/**
+ * Private symbol — the store system stashes its `StateHandle<StoreState>`
+ * here on the runtime so the system's `state(runtime)` projection can
+ * read it back without a side-channel. Module-private (not re-exported
+ * from the package) so other systems can't reach in.
+ */
+export const STORE_STATE: unique symbol = Symbol('store/state');
 
 /**
  * Store capabilities exposed to handlers at stage 1.
@@ -11,9 +19,10 @@ import type { StoreKey } from './api/key.js';
  * captured at registration time. Returns the live `Store<T>` whose
  * value type is inferred from the `StoreKey`.
  */
-export type StoreRuntime = BaseRuntime<StoreState> & {
+export type StoreRuntime = BaseRuntime & {
 	getStore<X extends string, T>(key: StoreKey<X, T>): Store<T>;
 	getStore<T>(name: string): Store<T>;
+	readonly [STORE_STATE]: StateHandle<StoreState>;
 };
 
 function extractMapping(stores: StoreResult): StoreMapping {
@@ -33,7 +42,7 @@ export function createStoreRuntime(stores: StoreResult): StoreRuntime {
 			}
 			return entry.store as Store<T>;
 		},
-		state: {
+		[STORE_STATE]: {
 			async get(): Promise<StoreState> {
 				return { store: extractMapping(stores) };
 			},
@@ -52,4 +61,10 @@ export function createStoreRuntime(stores: StoreResult): StoreRuntime {
 			return () => {};
 		},
 	};
+}
+
+export function storeStateHandle(
+	runtime: StoreRuntime,
+): StateHandle<StoreState> {
+	return runtime[STORE_STATE];
 }

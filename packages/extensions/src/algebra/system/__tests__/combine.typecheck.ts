@@ -9,7 +9,7 @@ import type { CombinableSystem, RuntimeSystem } from '../types.js';
 type StubSystem<
 	S extends BaseState,
 	API extends BaseAPI = Record<never, never>,
-	RT extends BaseRuntime<S> = BaseRuntime<S>,
+	RT extends BaseRuntime = BaseRuntime,
 > = RuntimeSystem<S, API, RT>;
 
 type _ExpectNever<T extends never> = T;
@@ -96,13 +96,13 @@ const _invalidApiBuilder =
 // Runtime overlap
 // ---------------------------------------------------------------------------
 
-type RuntimeA = BaseRuntime<{ runtimeA: { value: string } }> & {
+type RuntimeA = BaseRuntime & {
 	run(): string;
 };
-type RuntimeB = BaseRuntime<{ runtimeB: { value: number } }> & {
+type RuntimeB = BaseRuntime & {
 	inspect(): number;
 };
-type RuntimeC = BaseRuntime<{ runtimeC: { value: boolean } }> & {
+type RuntimeC = BaseRuntime & {
 	run(): number;
 };
 

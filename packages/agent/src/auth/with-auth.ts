@@ -1,5 +1,5 @@
 import type { CoreSystem, CoreRuntime, CoreState } from '@franklin/extensions';
-import { withSetup } from '@franklin/extensions';
+import { coreStateHandle, withSetup } from '@franklin/extensions';
 import type { AuthManager } from './manager.js';
 
 /**
@@ -80,9 +80,10 @@ export function withAuth(system: CoreSystem, auth: AuthManager): CoreSystem {
 		await reconnectAgent(runtime, state, auth);
 
 		// Live credential sync — push new keys when this runtime's provider changes.
+		const handle = coreStateHandle(runtime);
 		const unsubscribe = auth.onAuthChange((provider) => {
 			void (async () => {
-				const currentState = await runtime.state.get();
+				const currentState = await handle.get();
 				if (currentState.core.llmConfig.provider !== provider) return;
 				await authenticateAgent(runtime, provider, auth);
 			})();

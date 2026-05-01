@@ -5,7 +5,6 @@ import { StoreRegistry } from '../systems/store/api/registry/index.js';
 import type { StoreRuntime } from '../systems/store/runtime.js';
 import type { StoreAPI } from '../systems/store/api/api.js';
 import { createEnvironmentCompiler } from '../systems/environment/compile/compiler.js';
-import { emptyEnvironmentState } from '../systems/environment/state.js';
 import type { EnvironmentRuntime } from '../systems/environment/runtime.js';
 import type { ReconfigurableEnvironment } from '../systems/environment/api/types.js';
 import type { CoreAPI } from '../systems/core/api/api.js';
@@ -29,9 +28,7 @@ import type { Extension } from '../algebra/types/extension.js';
  * accepts them silently; tests that need systemPrompt behaviour must
  * use a full runtime.
  */
-export function compileCoreExt<
-	Ctx extends BaseRuntime<unknown> = BaseRuntime<unknown>,
->(
+export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 	ext: Extension<CoreAPI<Ctx>>,
 	getCtx: () => Ctx = (() => undefined) as unknown as () => Ctx,
 ): { middleware: FullMiddleware; tools: SerializedToolDefinition[] } {
@@ -76,13 +73,12 @@ export async function compileCoreWithStore(
 	ext(combinedApi);
 
 	cell.stores = await compile(
-		createStoreCompiler(new StoreRegistry()),
+		createStoreCompiler(new StoreRegistry(), { store: {} }),
 		(api) => {
 			for (const args of pendingRegistrations) {
 				(api.registerStore as (...a: unknown[]) => void)(...args);
 			}
 		},
-		{ store: {} },
 	);
 
 	const middleware = buildMiddleware(registered, getCtx);
@@ -126,18 +122,14 @@ export async function compileCoreWithStoreAndEnv(
 	ext(combinedApi);
 
 	const combined = combine(
-		createStoreCompiler(new StoreRegistry()),
+		createStoreCompiler(new StoreRegistry(), { store: {} }),
 		createEnvironmentCompiler(env),
 	);
-	cell.ctx = (await compile(
-		combined,
-		(api) => {
-			for (const args of pendingRegistrations) {
-				(api.registerStore as (...a: unknown[]) => void)(...args);
-			}
-		},
-		{ store: {}, ...emptyEnvironmentState() },
-	)) as StoreRuntime & EnvironmentRuntime;
+	cell.ctx = (await compile(combined, (api) => {
+		for (const args of pendingRegistrations) {
+			(api.registerStore as (...a: unknown[]) => void)(...args);
+		}
+	})) as StoreRuntime & EnvironmentRuntime;
 
 	const middleware = buildMiddleware(registered, getCtx);
 	const tools = registered.tools.map(serializeTool);
@@ -165,11 +157,7 @@ export async function compileCoreWithEnv(
 	const { api, registered } = createCoreRegistrar<EnvironmentRuntime>();
 	ext(api);
 
-	cell.ctx = await compile(
-		createEnvironmentCompiler(env),
-		() => {},
-		emptyEnvironmentState(),
-	);
+	cell.ctx = await compile(createEnvironmentCompiler(env), () => {});
 
 	const middleware = buildMiddleware(registered, getCtx);
 	const tools = registered.tools.map(serializeTool);

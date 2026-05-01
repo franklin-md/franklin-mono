@@ -1,22 +1,32 @@
 import type { AssertNoOverlap, Simplify } from '@franklin/lib';
 import type { BaseAPI } from '../api/index.js';
 import type { Compiler } from '../compiler/index.js';
-import type { BaseRuntime, CombinedRuntime } from '../runtime/index.js';
+import type {
+	BaseRuntime,
+	CombinedRuntime,
+	RuntimeExtras,
+	StateHandle,
+} from '../runtime/index.js';
 import type { BaseState } from '../state/index.js';
 
 /**
- * A `RuntimeSystem` exposes a fresh `Compiler` per `createCompiler()` —
- * no state needed yet; state is threaded in at `build` time. The
- * compiler's `Runtime` type is what handlers receive via `ctx.runtime`
- * and what `compileAll` eventually ties via the Y-combinator.
+ * A `RuntimeSystem` owns three things:
+ *  - `emptyState()` — the initial state shape for the system
+ *  - `createCompiler(state)` — given configured state, hand back a
+ *    state-free compiler that registers extensions and builds the runtime
+ *  - `state(runtime)` — the `Runtime → StateHandle<S>` projection. Each
+ *    system stashes its handle on the runtime via a private symbol; this
+ *    projection reads it back. The runtime type itself never references
+ *    `<S>`.
  */
 export type RuntimeSystem<
 	S extends BaseState,
 	API extends BaseAPI,
-	Runtime extends BaseRuntime<S>,
+	Runtime extends BaseRuntime,
 > = {
 	emptyState(): S;
-	createCompiler(): Compiler<API, S, Runtime>;
+	createCompiler(state: S): Compiler<API, Runtime>;
+	state(runtime: Runtime): StateHandle<S>;
 };
 
 export type BaseRuntimeSystem = RuntimeSystem<any, any, any>;
@@ -31,16 +41,16 @@ type InferSystem<T> =
 		infer API extends BaseAPI,
 		infer Runtime
 	>
-		? Runtime extends BaseRuntime<S>
+		? Runtime extends BaseRuntime
 			? {
 					state: S;
 					api: API;
 					runtime: Runtime;
 				}
 			: never
-		: T extends BaseRuntime<infer S>
+		: T extends BaseRuntime
 			? {
-					state: S;
+					state: never;
 					api: never;
 					runtime: T;
 				}
@@ -48,7 +58,6 @@ type InferSystem<T> =
 
 export type InferCompiler<T> = Compiler<
 	InferSystem<T>['api'],
-	InferSystem<T>['state'],
 	InferSystem<T>['runtime']
 >;
 
@@ -58,9 +67,8 @@ export type InferAPI<T> = Simplify<InferSystem<T>['api']>;
 
 export type InferRuntime<T> = InferSystem<T>['runtime'];
 
-type RuntimeExtrasOf<Sys extends BaseRuntimeSystem> = Omit<
-	InferRuntime<Sys>,
-	keyof BaseRuntime<InferState<Sys>>
+type RuntimeExtrasOf<Sys extends BaseRuntimeSystem> = RuntimeExtras<
+	InferRuntime<Sys>
 >;
 
 export type CombineSystems<
@@ -69,12 +77,7 @@ export type CombineSystems<
 > = RuntimeSystem<
 	InferState<Sys1> & InferState<Sys2>,
 	InferAPI<Sys1> & InferAPI<Sys2>,
-	CombinedRuntime<
-		InferState<Sys1>,
-		InferState<Sys2>,
-		InferRuntime<Sys1>,
-		InferRuntime<Sys2>
-	>
+	CombinedRuntime<InferRuntime<Sys1>, InferRuntime<Sys2>>
 >;
 
 export type CombinableSystem<

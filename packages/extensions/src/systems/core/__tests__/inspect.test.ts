@@ -2,14 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { Ctx } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
 import type { CoreRuntime } from '../runtime/index.js';
+import type { StateHandle } from '../../../algebra/runtime/index.js';
+import type { CoreState } from '../state.js';
 
-function stubRuntime(state: Record<string, unknown>, ctx: Ctx): CoreRuntime {
+function stubRuntime(ctx: Ctx): CoreRuntime {
 	return {
-		state: {
-			get: async () => state,
-			fork: async () => ({}) as never,
-			child: async () => ({}) as never,
-		},
 		context: () => ctx,
 		dispose: async () => {},
 		subscribe: () => () => {},
@@ -19,6 +16,14 @@ function stubRuntime(state: Record<string, unknown>, ctx: Ctx): CoreRuntime {
 		cancel: async () => {},
 		setLLMConfig: async () => {},
 	} as unknown as CoreRuntime;
+}
+
+function stubState<S extends CoreState>(state: S): StateHandle<S> {
+	return {
+		get: async () => state,
+		fork: async () => ({}) as never,
+		child: async () => ({}) as never,
+	};
 }
 
 describe('inspectRuntime', () => {
@@ -39,7 +44,10 @@ describe('inspectRuntime', () => {
 		};
 
 		const dump = await inspectRuntime(
-			stubRuntime({ core: { messages: [], llmConfig: {} } }, ctx),
+			stubRuntime(ctx),
+			stubState({
+				core: { messages: [], llmConfig: {} },
+			} as unknown as CoreState),
 		);
 
 		expect(dump.core).toEqual(ctx);
@@ -58,7 +66,10 @@ describe('inspectRuntime', () => {
 		};
 
 		const dump = await inspectRuntime(
-			stubRuntime({ core: { messages: [], llmConfig: {} } }, ctx),
+			stubRuntime(ctx),
+			stubState({
+				core: { messages: [], llmConfig: {} },
+			} as unknown as CoreState),
 		);
 
 		expect(dump.core.config).toEqual({
@@ -77,14 +88,12 @@ describe('inspectRuntime', () => {
 		};
 
 		const dump = await inspectRuntime(
-			stubRuntime(
-				{
-					core: { messages: [], llmConfig: {} },
-					todos: { items: ['a', 'b'] },
-					status: { state: 'idle' },
-				},
-				ctx,
-			),
+			stubRuntime(ctx),
+			stubState({
+				core: { messages: [], llmConfig: {} },
+				todos: { items: ['a', 'b'] },
+				status: { state: 'idle' },
+			} as unknown as CoreState),
 		);
 
 		expect(dump).toMatchObject({

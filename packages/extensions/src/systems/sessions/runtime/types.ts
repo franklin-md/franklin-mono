@@ -6,12 +6,12 @@ import type {
 } from '../../../algebra/system/types.js';
 import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 
-export type Session<RT extends BaseRuntime<any>> = {
+export type Session<RT extends BaseRuntime> = {
 	id: string;
 	runtime: RT;
 };
 
-export type SessionEvent<RT extends BaseRuntime<any>> =
+export type SessionEvent<RT extends BaseRuntime> =
 	| { action: 'add'; id: string; runtime: RT }
 	| { action: 'remove'; id: string; runtime: RT };
 

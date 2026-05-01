@@ -8,18 +8,18 @@ import type { RuntimeSystem } from './types.js';
  * Compiler-level decorator: run `setup` after build returns Runtime.
  *
  * Pure `Compiler => Compiler` functor — `build` is decorated to call
- * `setup(runtime, state)` after the inner build. State is available
- * because it now lives in `build`.
+ * `setup(runtime)` after the inner build. State is captured by closure
+ * at compiler-creation time and threaded by the system layer.
  */
-export function withSetupCompiler<API, S, Runtime>(
-	inner: Compiler<API, S, Runtime>,
-	setup: (runtime: Runtime, state: S) => Promise<void>,
-): Compiler<API, S, Runtime> {
+export function withSetupCompiler<API, Runtime>(
+	inner: Compiler<API, Runtime>,
+	setup: (runtime: Runtime) => Promise<void>,
+): Compiler<API, Runtime> {
 	return {
 		api: inner.api,
-		async build(state, getRuntime) {
-			const runtime = await inner.build(state, getRuntime);
-			await setup(runtime, state);
+		async build(getRuntime) {
+			const runtime = await inner.build(getRuntime);
+			await setup(runtime);
 			return runtime;
 		},
 	};
@@ -27,19 +27,24 @@ export function withSetupCompiler<API, S, Runtime>(
 
 /**
  * System-level convenience: lift `withSetupCompiler` through `RuntimeSystem`.
+ * `setup` receives the freshly-built runtime plus the state used to
+ * configure this compilation.
  */
 export function withSetup<
 	S extends BaseState,
 	API extends BaseAPI,
-	Runtime extends BaseRuntime<S>,
+	Runtime extends BaseRuntime,
 >(
 	system: RuntimeSystem<S, API, Runtime>,
 	setup: (runtime: Runtime, state: S) => Promise<void>,
 ): RuntimeSystem<S, API, Runtime> {
 	return {
 		emptyState: () => system.emptyState(),
-		createCompiler() {
-			return withSetupCompiler(system.createCompiler(), setup);
+		state: (runtime) => system.state(runtime),
+		createCompiler(state) {
+			return withSetupCompiler(system.createCompiler(state), (runtime) =>
+				setup(runtime, state),
+			);
 		},
 	};
 }

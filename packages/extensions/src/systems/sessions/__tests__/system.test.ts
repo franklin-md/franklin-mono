@@ -4,7 +4,10 @@ import { createRuntime } from '../../../algebra/system/create.js';
 import { SessionCollection } from '../runtime/collection.js';
 import { createSessionManager } from '../runtime/manager.js';
 import type { SessionRuntime } from '../runtime/runtime.js';
-import type { BaseRuntime } from '../../../algebra/runtime/types.js';
+import type {
+	BaseRuntime,
+	StateHandle,
+} from '../../../algebra/runtime/types.js';
 import type { CombinedRuntime } from '../../../algebra/runtime/combine.js';
 import type { IdentityState } from '../../identity/state.js';
 import type { RuntimeSystem } from '../../../algebra/system/types.js';
@@ -16,18 +19,22 @@ import type { SessionCreate } from '../runtime/types.js';
 // ---------------------------------------------------------------------------
 
 type TestState = { value: string };
-type TestRuntime = BaseRuntime<TestState>;
+const TEST_STATE: unique symbol = Symbol('test/sessions-system-state');
+type TestRuntime = BaseRuntime & {
+	readonly [TEST_STATE]: StateHandle<TestState>;
+};
 type TestSystem = RuntimeSystem<TestState, Record<string, never>, TestRuntime>;
 
 function createTestSystem(): TestSystem {
 	return {
 		emptyState: () => ({ value: 'root' }),
-		createCompiler(): Compiler<Record<string, never>, TestState, TestRuntime> {
+		state: (runtime) => runtime[TEST_STATE],
+		createCompiler(state): Compiler<Record<string, never>, TestRuntime> {
 			return {
 				api: {},
-				async build(state) {
+				async build() {
 					return {
-						state: {
+						[TEST_STATE]: {
 							get: vi.fn(async () => state),
 							fork: vi.fn(async () => state),
 							child: vi.fn(async () => state),
@@ -116,7 +123,7 @@ describe('createSessionSystem', () => {
 		]);
 	});
 
-	it('preserves base runtime methods', async () => {
+	it('preserves base runtime state via system.state(runtime)', async () => {
 		const { manager } = createTestManager();
 		const system = createTestSystem();
 		const sessionSystem = createTestSessionSystem(
@@ -127,9 +134,10 @@ describe('createSessionSystem', () => {
 
 		const runtime = await createRuntime(sessionSystem, { value: 'test' }, []);
 
-		expect(await runtime.state.get()).toEqual({ value: 'test' });
-		expect(await runtime.state.fork()).toEqual({ value: 'test' });
-		expect(await runtime.state.child()).toEqual({ value: 'test' });
+		const handle = sessionSystem.state(runtime);
+		expect(await handle.get()).toEqual({ value: 'test' });
+		expect(await handle.fork()).toEqual({ value: 'test' });
+		expect(await handle.child()).toEqual({ value: 'test' });
 	});
 
 	it('dispose is safe to call', async () => {
@@ -219,16 +227,10 @@ describe('SessionRuntime subtyping', () => {
 		type MinimalSystem = RuntimeSystem<
 			IdentityState,
 			Record<never, never>,
-			BaseRuntime<IdentityState>
+			BaseRuntime
 		>;
-		type FakeState = { fake: { value: string } };
-		type FakeRuntime = BaseRuntime<FakeState> & { doFake(): void };
-		type Combined = CombinedRuntime<
-			IdentityState,
-			FakeState,
-			SessionRuntime<MinimalSystem>,
-			FakeRuntime
-		>;
+		type FakeRuntime = BaseRuntime & { doFake(): void };
+		type Combined = CombinedRuntime<SessionRuntime<MinimalSystem>, FakeRuntime>;
 
 		// This assignment must compile — Combined extends SessionRuntime
 		const _check: SessionRuntime<MinimalSystem> = {} as Combined;

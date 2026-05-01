@@ -12,7 +12,7 @@ import {
 import { bindHandlers, bindTool } from '../../registrar/bind.js';
 import type { CoreRegistrar } from '../../registrar/types.js';
 
-export function buildMiddleware<Runtime extends BaseRuntime<unknown>>(
+export function buildMiddleware<Runtime extends BaseRuntime>(
 	registered: CoreRegistrar<Runtime>,
 	getCtx: () => Runtime,
 ): FullMiddleware {

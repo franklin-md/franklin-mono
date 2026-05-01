@@ -27,7 +27,7 @@ export type WithContext<H extends (...args: any[]) => any, T> = (
  * lookup, no Map indirection. `composeDecorators(registered, getRuntime)`
  * binds these and produces the decorator stack.
  */
-export type CoreRegistrar<Runtime extends BaseRuntime<unknown>> = {
+export type CoreRegistrar<Runtime extends BaseRuntime> = {
 	prompt: WithContext<PromptHandler, Runtime>[];
 	cancel: WithContext<CancelHandler, Runtime>[];
 	systemPrompt: WithContext<SystemPromptHandler, Runtime>[];

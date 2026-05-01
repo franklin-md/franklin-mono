@@ -14,7 +14,10 @@ import {
 	buildSystemPromptAssembler,
 	type SystemPromptAssembler,
 } from '../../../systems/core/compile/decorators/system-prompt/index.js';
-import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
+import {
+	createEnvironmentRuntime,
+	type EnvironmentRuntime,
+} from '../../../systems/environment/runtime.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
@@ -60,16 +63,7 @@ function fakeEnvironment(
 }
 
 function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
-	return {
-		environment: env,
-		state: {
-			get: async () => ({ env: await env.config() }),
-			fork: async () => ({ env: await env.config() }),
-			child: async () => ({ env: await env.config() }),
-		},
-		subscribe: () => () => {},
-		dispose: async () => {},
-	} as EnvironmentRuntime;
+	return createEnvironmentRuntime(env);
 }
 
 function bindAssembler(

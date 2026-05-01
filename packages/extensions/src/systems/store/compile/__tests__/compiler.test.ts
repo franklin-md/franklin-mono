@@ -2,14 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { StoreRegistry } from '../../api/registry/index.js';
 import { compile } from '../../../../algebra/compiler/compile.js';
 import { createStoreCompiler } from '../compiler.js';
+import { storeStateHandle } from '../../runtime.js';
 import type { StoreAPI } from '../../api/api.js';
 import type { Extension } from '../../../../algebra/types/extension.js';
 import type { StoreMapping } from '../../api/registry/mapping.js';
 
 function compileStore(ext: Extension<StoreAPI>, seed: StoreMapping = {}) {
-	return compile(createStoreCompiler(new StoreRegistry()), ext, {
-		store: seed,
-	});
+	return compile(
+		createStoreCompiler(new StoreRegistry(), { store: seed }),
+		ext,
+	);
 }
 
 describe('createStoreCompiler', () => {
@@ -79,7 +81,7 @@ describe('createStoreCompiler', () => {
 				api.registerStore('private_k', 100, 'private');
 			});
 
-			const forked = await runtime.state.fork();
+			const forked = await storeStateHandle(runtime).fork();
 			expect(forked.store).toBeDefined();
 			expect(forked.store.shared_k).toBeDefined();
 			expect(forked.store.private_k).toBeDefined();
@@ -91,7 +93,7 @@ describe('createStoreCompiler', () => {
 				api.registerStore('private_k', 1, 'private');
 			});
 
-			const childState = await runtime.state.child();
+			const childState = await storeStateHandle(runtime).child();
 			expect(childState.store.shared_k).toBeDefined();
 			expect(childState.store.private_k).toBeUndefined();
 		});
@@ -103,21 +105,19 @@ describe('createStoreCompiler', () => {
 			// to resolve — the registry is the backing store for all entries.
 			const registry = new StoreRegistry();
 			const parent = await compile(
-				createStoreCompiler(registry),
+				createStoreCompiler(registry, { store: {} }),
 				(api) => {
 					api.registerStore('seeded', 99, 'shared');
 				},
-				{ store: {} },
 			);
 
-			const parentState = await parent.state.get();
+			const parentState = await storeStateHandle(parent).get();
 
 			const child = await compile(
-				createStoreCompiler(registry),
+				createStoreCompiler(registry, { store: parentState.store }),
 				(api) => {
 					api.registerStore('seeded', 0, 'shared');
 				},
-				{ store: parentState.store },
 			);
 
 			expect(child.getStore<number>('seeded').get()).toBe(99);
@@ -126,23 +126,21 @@ describe('createStoreCompiler', () => {
 		it('overwriting initial in a new compile does not clobber seeded value', async () => {
 			const registry = new StoreRegistry();
 			const parent = await compile(
-				createStoreCompiler(registry),
+				createStoreCompiler(registry, { store: {} }),
 				(api) => {
 					api.registerStore('todos', 0, 'shared');
 				},
-				{ store: {} },
 			);
 
 			// Mutate in the parent before sharing (simulate real usage)
 			parent.getStore<number>('todos').set(() => 99);
-			const snapshot = await parent.state.get();
+			const snapshot = await storeStateHandle(parent).get();
 
 			const child = await compile(
-				createStoreCompiler(registry),
+				createStoreCompiler(registry, { store: snapshot.store }),
 				(api) => {
 					api.registerStore('todos', 0, 'shared');
 				},
-				{ store: snapshot.store },
 			);
 
 			expect(child.getStore<number>('todos').get()).toBe(99);

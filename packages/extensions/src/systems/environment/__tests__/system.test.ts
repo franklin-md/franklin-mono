@@ -95,7 +95,7 @@ describe('createEnvironmentSystem', () => {
 
 		const runtime = await createRuntime(system, { env: defaultConfig }, []);
 
-		expect(await runtime.state.get()).toEqual({ env: defaultConfig });
+		expect(await system.state(runtime).get()).toEqual({ env: defaultConfig });
 	});
 
 	it('fork returns a clone of the keyed config', async () => {
@@ -103,10 +103,10 @@ describe('createEnvironmentSystem', () => {
 		const system = createEnvironmentSystem(factory);
 
 		const runtime = await createRuntime(system, { env: defaultConfig }, []);
-		const forked = await runtime.state.fork();
+		const forked = await system.state(runtime).fork();
 
 		expect(forked).toEqual({ env: defaultConfig });
-		expect(forked.env).not.toBe((await runtime.state.get()).env);
+		expect(forked.env).not.toBe((await system.state(runtime).get()).env);
 	});
 
 	it('child returns a clone of the keyed config', async () => {
@@ -114,10 +114,10 @@ describe('createEnvironmentSystem', () => {
 		const system = createEnvironmentSystem(factory);
 
 		const runtime = await createRuntime(system, { env: defaultConfig }, []);
-		const childState = await runtime.state.child();
+		const childState = await system.state(runtime).child();
 
 		expect(childState).toEqual({ env: defaultConfig });
-		expect(childState.env).not.toBe((await runtime.state.get()).env);
+		expect(childState.env).not.toBe((await system.state(runtime).get()).env);
 	});
 
 	it('dispose calls the environment disposable', async () => {

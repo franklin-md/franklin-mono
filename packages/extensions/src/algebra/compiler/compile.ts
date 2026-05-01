@@ -4,27 +4,24 @@ import type { Compiler } from './types.js';
 /**
  * Compile a single extension — register, then tie the Y-combinator.
  */
-export async function compile<API, S, Runtime>(
-	compiler: Compiler<API, S, Runtime>,
+export async function compile<API, Runtime>(
+	compiler: Compiler<API, Runtime>,
 	extension: Extension<API>,
-	state: S,
 ): Promise<Runtime> {
 	extension(compiler.api);
-	return tie(compiler, state);
+	return tie(compiler);
 }
 
-export async function compileAll<API, S, Runtime>(
-	compiler: Compiler<API, S, Runtime>,
+export async function compileAll<API, Runtime>(
+	compiler: Compiler<API, Runtime>,
 	extensions: Extension<API>[],
-	state: S,
 ): Promise<Runtime> {
 	for (const ext of extensions) ext(compiler.api);
-	return tie(compiler, state);
+	return tie(compiler);
 }
 
-async function tie<API, S, Runtime>(
-	compiler: Compiler<API, S, Runtime>,
-	state: S,
+async function tie<API, Runtime>(
+	compiler: Compiler<API, Runtime>,
 ): Promise<Runtime> {
 	// Mutable cell — handler closures capture `getRuntime` at registration,
 	// `compileAll`/`compile` populates `cell.value` once `build` resolves.
@@ -37,6 +34,6 @@ async function tie<API, S, Runtime>(
 		}
 		return cell.value;
 	};
-	cell.value = await compiler.build(state, getRuntime);
+	cell.value = await compiler.build(getRuntime);
 	return cell.value;
 }

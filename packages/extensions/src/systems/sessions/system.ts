@@ -11,7 +11,9 @@ import type { SessionCreate } from './runtime/types.js';
  * SessionSystem wraps a base system, contributing session ops
  * (`child`, `fork`, `removeSelf`) into the runtime only — never on the
  * compile-time api. Extensions reach session ops via
- * `ctx.runtime.session.*` from inside handler closures.
+ * `ctx.runtime.session.*` from inside handler closures. State projection
+ * delegates straight through to the base system; the `session` extra
+ * carries no persisted state of its own.
  */
 export type SessionSystem<RTS extends BaseRuntimeSystem> = RuntimeSystem<
 	InferState<RTS>,
@@ -28,8 +30,10 @@ export function createSessionSystem<RTS extends BaseRuntimeSystem>(
 	return {
 		emptyState: () => system.emptyState(),
 
-		createCompiler() {
-			const baseCompiler = system.createCompiler();
+		state: (runtime) => system.state(runtime),
+
+		createCompiler(state) {
+			const baseCompiler = system.createCompiler(state);
 			const sessionOps = {
 				child: () => create({ from: id, mode: 'child' }),
 				fork: () => create({ from: id, mode: 'fork' }),
@@ -38,8 +42,8 @@ export function createSessionSystem<RTS extends BaseRuntimeSystem>(
 
 			return {
 				api: baseCompiler.api,
-				async build(state, getRuntime) {
-					const baseRuntime = await baseCompiler.build(state, getRuntime);
+				async build(getRuntime) {
+					const baseRuntime = await baseCompiler.build(getRuntime);
 					return {
 						...baseRuntime,
 						session: sessionOps,

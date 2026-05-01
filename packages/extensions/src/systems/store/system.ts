@@ -5,7 +5,7 @@ import type { Compiler } from '../../algebra/compiler/index.js';
 import type { RuntimeSystem } from '../../algebra/system/index.js';
 import type { StoreState } from './state.js';
 import { emptyStoreState } from './state.js';
-import type { StoreRuntime } from './runtime.js';
+import { storeStateHandle, type StoreRuntime } from './runtime.js';
 
 export type StoreSystem = RuntimeSystem<StoreState, StoreAPI, StoreRuntime>;
 
@@ -13,8 +13,10 @@ export function createStoreSystem(registry: StoreRegistry): StoreSystem {
 	return {
 		emptyState: emptyStoreState,
 
-		createCompiler(): Compiler<StoreAPI, StoreState, StoreRuntime> {
-			return createStoreCompiler(registry);
+		state: storeStateHandle,
+
+		createCompiler(state): Compiler<StoreAPI, StoreRuntime> {
+			return createStoreCompiler(registry, state);
 		},
 	};
 }

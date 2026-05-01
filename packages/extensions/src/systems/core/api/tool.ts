@@ -27,7 +27,7 @@ export function resolveToolOutput(value: ToolExecuteReturn): ToolOutput {
  */
 export interface ExtensionToolDefinition<
 	TInput = unknown,
-	Ctx extends BaseRuntime<unknown> = BaseRuntime<unknown>,
+	Ctx extends BaseRuntime = BaseRuntime,
 > {
 	name: string;
 	description: string;

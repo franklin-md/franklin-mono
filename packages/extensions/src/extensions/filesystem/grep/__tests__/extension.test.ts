@@ -13,7 +13,10 @@ import {
 	type WithContext,
 } from '../../../../systems/core/compile/registrar/index.js';
 import { buildSystemPromptAssembler } from '../../../../systems/core/compile/decorators/system-prompt/index.js';
-import type { EnvironmentRuntime } from '../../../../systems/environment/runtime.js';
+import {
+	createEnvironmentRuntime,
+	type EnvironmentRuntime,
+} from '../../../../systems/environment/runtime.js';
 import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
 import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import { grepExtension } from '../extension.js';
@@ -55,16 +58,7 @@ function mockEnvironment(
 }
 
 function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
-	return {
-		environment: env,
-		state: {
-			get: async () => ({ env: await env.config() }),
-			fork: async () => ({ env: await env.config() }),
-			child: async () => ({ env: await env.config() }),
-		},
-		subscribe: () => () => {},
-		dispose: async () => {},
-	} as EnvironmentRuntime;
+	return createEnvironmentRuntime(env);
 }
 
 function collectHandlers(

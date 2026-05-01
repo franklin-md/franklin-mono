@@ -15,7 +15,7 @@ import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
 } from '../../../systems/environment/api/types.js';
-import type { BaseRuntime } from '../../runtime/types.js';
+import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import type { RuntimeSystem } from '../types.js';
 import type { Compiler } from '../../compiler/types.js';
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
@@ -119,9 +119,12 @@ type ValueState = {
 	value: number;
 };
 
-type ValueRuntime = BaseRuntime<ValueState> & {
+const VALUE_STATE: unique symbol = Symbol('test/value-state');
+
+type ValueRuntime = BaseRuntime & {
 	readonly label: string;
 	currentValue(): number;
+	readonly [VALUE_STATE]: StateHandle<ValueState>;
 };
 
 function createValueSystem(): RuntimeSystem<
@@ -131,7 +134,8 @@ function createValueSystem(): RuntimeSystem<
 > {
 	return {
 		emptyState: () => ({ value: 0 }),
-		createCompiler(): Compiler<ValueAPI, ValueState, ValueRuntime> {
+		state: (runtime) => runtime[VALUE_STATE],
+		createCompiler(state): Compiler<ValueAPI, ValueRuntime> {
 			let registeredValue: number | undefined;
 
 			return {
@@ -140,14 +144,14 @@ function createValueSystem(): RuntimeSystem<
 						registeredValue = value;
 					},
 				},
-				async build(state) {
+				async build() {
 					const value = registeredValue ?? state.value;
 					return {
 						label: 'value',
 						currentValue() {
 							return value;
 						},
-						state: {
+						[VALUE_STATE]: {
 							get: vi.fn(async () => ({ value })),
 							fork: vi.fn(async () => ({ value })),
 							child: vi.fn(async () => ({ value })),
@@ -216,7 +220,7 @@ describe('combine — two systems', () => {
 			],
 		);
 
-		const state = await runtime.state.get();
+		const state = await system.state(runtime).get();
 		expect(state.store).toBeDefined();
 		expect(Object.keys(state.store)).toContain('x');
 		expect(state.env).toEqual(defaultEnvConfig);
@@ -262,7 +266,7 @@ describe('combine — two systems', () => {
 			],
 		);
 
-		const forked = await runtime.state.fork();
+		const forked = await system.state(runtime).fork();
 		expect(forked.store).toBeDefined();
 		expect(forked.env).toBeDefined();
 		expect(Object.keys(forked.store)).toContain('data');
@@ -336,7 +340,7 @@ describe('combine — three systems (nested)', () => {
 			[],
 		);
 
-		const state = await runtime.state.get();
+		const state = await system.state(runtime).get();
 		expect(state.core).toBeDefined();
 		expect(state.core.messages).toBeDefined();
 		expect(state.store).toBeDefined();
@@ -408,7 +412,7 @@ describe('combine — three systems (nested)', () => {
 			],
 		);
 
-		const forked = await runtime.state.fork();
+		const forked = await system.state(runtime).fork();
 		expect(forked.core.messages).toHaveLength(1);
 		expect(forked.core.llmConfig.model).toBe('gpt-4');
 		expect(forked.store).toBeDefined();
@@ -424,8 +428,8 @@ describe('combine — identity laws', () => {
 		const combined = combine(identitySystem(), createValueSystem());
 
 		expect(combined.emptyState()).toEqual(baseline.emptyState());
-		expect(Object.keys(combined.createCompiler().api)).toEqual(
-			Object.keys(baseline.createCompiler().api),
+		expect(Object.keys(combined.createCompiler({ value: 0 }).api)).toEqual(
+			Object.keys(baseline.createCompiler({ value: 0 }).api),
 		);
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([
@@ -443,8 +447,8 @@ describe('combine — identity laws', () => {
 
 		expect(combinedRuntime.label).toBe(baselineRuntime.label);
 		expect(combinedRuntime.currentValue()).toBe(baselineRuntime.currentValue());
-		await expect(combinedRuntime.state.get()).resolves.toEqual(
-			await baselineRuntime.state.get(),
+		await expect(combined.state(combinedRuntime).get()).resolves.toEqual(
+			await baseline.state(baselineRuntime).get(),
 		);
 
 		await Promise.all([baselineRuntime.dispose(), combinedRuntime.dispose()]);
@@ -455,8 +459,8 @@ describe('combine — identity laws', () => {
 		const combined = combine(createValueSystem(), identitySystem());
 
 		expect(combined.emptyState()).toEqual(baseline.emptyState());
-		expect(Object.keys(combined.createCompiler().api)).toEqual(
-			Object.keys(baseline.createCompiler().api),
+		expect(Object.keys(combined.createCompiler({ value: 0 }).api)).toEqual(
+			Object.keys(baseline.createCompiler({ value: 0 }).api),
 		);
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([
@@ -474,8 +478,8 @@ describe('combine — identity laws', () => {
 
 		expect(combinedRuntime.label).toBe(baselineRuntime.label);
 		expect(combinedRuntime.currentValue()).toBe(baselineRuntime.currentValue());
-		await expect(combinedRuntime.state.get()).resolves.toEqual(
-			await baselineRuntime.state.get(),
+		await expect(combined.state(combinedRuntime).get()).resolves.toEqual(
+			await baseline.state(baselineRuntime).get(),
 		);
 
 		await Promise.all([baselineRuntime.dispose(), combinedRuntime.dispose()]);

@@ -1,48 +1,67 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { CoreRuntime } from '@franklin/extensions';
+import {
+	createCoreSystem,
+	createRuntime,
+	type CoreRuntime,
+} from '@franklin/extensions';
+import { ZERO_USAGE } from '@franklin/mini-acp';
+import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
+import {
+	createSessionAdapter,
+	createAgentConnection,
+	StopCode,
+	type Update,
+} from '@franklin/mini-acp';
 import { getLLMConfig } from '../settings/llm-config.js';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+function createMockSpawn() {
+	return async () => {
+		const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
+		const connection = createAgentConnection(agentSide);
 
-function mockRuntime(
-	llmConfig: {
-		provider?: string;
-		model?: string;
-		reasoning?: string;
-	} = {},
-): CoreRuntime {
-	return {
-		state: {
-			get: vi.fn(async () => ({
-				core: {
-					messages: [],
-					llmConfig,
+		const adapter = createSessionAdapter(
+			(_ctx) => ({
+				async *prompt() {
+					yield {
+						type: 'update' as const,
+						messageId: 'm1',
+						message: {
+							role: 'assistant' as const,
+							content: [{ type: 'text' as const, text: 'hi' }],
+						},
+					} satisfies Update;
+					yield { type: 'turnEnd' as const, stopCode: StopCode.Finished };
 				},
-			})),
-			fork: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {} },
-			})),
-			child: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {} },
-			})),
-		},
-		setLLMConfig: vi.fn(async () => {}),
-		prompt: vi.fn(async function* () {}),
-		cancel: vi.fn(async () => {}),
-		subscribe: vi.fn(() => () => {}),
-		dispose: vi.fn(async () => {}),
-	} as unknown as CoreRuntime;
+				async cancel() {},
+			}),
+			connection.remote,
+		);
+		connection.bind(adapter);
+
+		return { ...clientSide, dispose: vi.fn(async () => {}) };
+	};
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+async function makeRuntime(
+	llmConfig: Record<string, unknown>,
+): Promise<CoreRuntime> {
+	const system = createCoreSystem(createMockSpawn());
+	return createRuntime(
+		system,
+		{
+			core: {
+				messages: [],
+				llmConfig,
+				usage: ZERO_USAGE,
+			},
+		},
+		[],
+	);
+}
 
 describe('getLLMConfig', () => {
 	it('returns the current llmConfig from runtime state', async () => {
-		const runtime = mockRuntime({
+		const runtime = await makeRuntime({
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
 		});
@@ -53,13 +72,17 @@ describe('getLLMConfig', () => {
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
 		});
+
+		await runtime.dispose();
 	});
 
 	it('returns empty object when no config is set', async () => {
-		const runtime = mockRuntime();
+		const runtime = await makeRuntime({});
 
 		const config = await getLLMConfig(runtime);
 
 		expect(config).toEqual({});
+
+		await runtime.dispose();
 	});
 });

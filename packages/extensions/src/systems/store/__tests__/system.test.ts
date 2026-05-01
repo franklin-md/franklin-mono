@@ -29,7 +29,7 @@ describe('createStoreSystem', () => {
 			},
 		]);
 
-		const state = await runtime.state.get();
+		const state = await system.state(runtime).get();
 		expect(state.store).toBeDefined();
 		expect(Object.keys(state.store)).toContain('x');
 		expect(typeof state.store['x']).toBe('string');
@@ -47,12 +47,12 @@ describe('createStoreSystem', () => {
 
 		runtime.getStore<number>('data').set(() => 99);
 
-		const forked = await runtime.state.fork();
+		const forked = await system.state(runtime).fork();
 
 		expect(Object.keys(forked.store)).toContain('data');
 		expect(Object.keys(forked.store)).toContain('shared');
 
-		const origState = await runtime.state.get();
+		const origState = await system.state(runtime).get();
 		expect(forked.store['shared']).toBe(origState.store['shared']);
 		expect(forked.store['data']).not.toBe(origState.store['data']);
 	});
@@ -67,7 +67,7 @@ describe('createStoreSystem', () => {
 			},
 		]);
 
-		const childState = await runtime.state.child();
+		const childState = await system.state(runtime).child();
 
 		expect(Object.keys(childState.store)).toContain('shared');
 		expect(Object.keys(childState.store)).not.toContain('data');
@@ -82,7 +82,7 @@ describe('createStoreSystem', () => {
 				api.registerStore('count', 42, 'private');
 			},
 		]);
-		const snapshot = await runtime1.state.get();
+		const snapshot = await system.state(runtime1).get();
 
 		const runtime2 = await createRuntime(system, snapshot, [
 			(api) => {

@@ -6,7 +6,6 @@ import type {
 import type { Extension } from '../../../algebra/types/extension.js';
 import type { SessionCollection } from './collection.js';
 import type { SessionRuntime } from './runtime.js';
-import type { BaseRuntime } from '../../../algebra/runtime/types.js';
 import { createSessionSystem, type SessionSystem } from '../system.js';
 import { createRuntime } from '../../../algebra/system/create.js';
 import { resolveState } from '../../../algebra/state/resolve.js';
@@ -67,11 +66,9 @@ export class SessionManager<RTS extends BaseRuntimeSystem> {
 		if (options.from) {
 			const source = this.collection.get(options.from);
 			if (!source) throw new Error(`Session ${options.from} not found`);
-			const rt: BaseRuntime<InferState<RTS>> = source.runtime;
+			const handle = this.system.state(source.runtime);
 			state =
-				options.mode === 'fork'
-					? await rt.state.fork()
-					: await rt.state.child();
+				options.mode === 'fork' ? await handle.fork() : await handle.child();
 		} else {
 			state = this.system.emptyState();
 		}

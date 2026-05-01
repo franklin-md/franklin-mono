@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { SessionCollection } from '../runtime/collection.js';
 import { createSessionManager } from '../runtime/manager.js';
 import type { SessionRuntime } from '../runtime/runtime.js';
-import type { BaseRuntime } from '../../../algebra/runtime/types.js';
+import type {
+	BaseRuntime,
+	StateHandle,
+} from '../../../algebra/runtime/types.js';
 import type { RuntimeSystem } from '../../../algebra/system/types.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 
@@ -10,18 +13,23 @@ type TestState = {
 	value: string;
 };
 
-type TestRuntime = BaseRuntime<TestState>;
+const TEST_STATE: unique symbol = Symbol('test/sessions-state');
+
+type TestRuntime = BaseRuntime & {
+	readonly [TEST_STATE]: StateHandle<TestState>;
+};
 type TestSystem = RuntimeSystem<TestState, Record<string, never>, TestRuntime>;
 
 function createTestSystem(empty: TestState = { value: 'root' }): TestSystem {
 	return {
 		emptyState: () => empty,
-		createCompiler(): Compiler<Record<string, never>, TestState, TestRuntime> {
+		state: (runtime) => runtime[TEST_STATE],
+		createCompiler(state): Compiler<Record<string, never>, TestRuntime> {
 			return {
 				api: {},
-				async build(state) {
+				async build() {
 					return {
-						state: {
+						[TEST_STATE]: {
 							get: vi.fn(async () => state),
 							fork: vi.fn(async () => state),
 							child: vi.fn(async () => ({
@@ -43,16 +51,18 @@ function createManagerAndCollection(empty?: TestState) {
 	const collection = new SessionCollection<TestSessionRuntime>();
 	const system = createTestSystem(empty);
 	const manager = createSessionManager({ system, collection, extensions: [] });
-	return { manager, collection };
+	return { manager, collection, system };
 }
 
 describe('SessionManager', () => {
 	it('creates a root session from emptyState', async () => {
-		const { manager, collection } = createManagerAndCollection();
+		const { manager, collection, system } = createManagerAndCollection();
 
 		const session = await manager.create();
 
-		expect(await session.runtime.state.get()).toEqual({ value: 'root' });
+		expect(await system.state(session.runtime).get()).toEqual({
+			value: 'root',
+		});
 		expect(collection.list()).toHaveLength(1);
 		expect(collection.list()[0]!.id).toBe(session.id);
 		expect(collection.list()[0]!.runtime).toBe(session.runtime);
@@ -81,22 +91,21 @@ describe('SessionManager', () => {
 	});
 
 	it('creates a child session by deriving state from parent', async () => {
-		const { manager, collection } = createManagerAndCollection();
+		const { manager, collection, system } = createManagerAndCollection();
 
 		await manager.create();
 		const parentId = collection.list()[0]!.id;
 
 		const child = await manager.create({ from: parentId, mode: 'child' });
 
-		// child() on the merged runtime returns { value: 'child-of-root' }
-		expect(await child.runtime.state.get()).toEqual(
+		expect(await system.state(child.runtime).get()).toEqual(
 			expect.objectContaining({ value: 'child-of-root' }),
 		);
 		expect(collection.list()).toHaveLength(2);
 	});
 
 	it('creates a fork session by deriving state from source', async () => {
-		const { manager, collection } = createManagerAndCollection({
+		const { manager, collection, system } = createManagerAndCollection({
 			value: 'source',
 		});
 
@@ -105,8 +114,7 @@ describe('SessionManager', () => {
 
 		const forked = await manager.create({ from: sourceId, mode: 'fork' });
 
-		// fork() returns the same state as the source
-		expect(await forked.runtime.state.get()).toEqual(
+		expect(await system.state(forked.runtime).get()).toEqual(
 			expect.objectContaining({ value: 'source' }),
 		);
 	});
@@ -120,33 +128,32 @@ describe('SessionManager', () => {
 	});
 
 	it('defaults to child mode when from is specified without mode', async () => {
-		const { manager, collection } = createManagerAndCollection();
+		const { manager, collection, system } = createManagerAndCollection();
 
 		await manager.create();
 		const parentId = collection.list()[0]!.id;
 
 		const derived = await manager.create({ from: parentId });
 
-		// Default mode is child — should get child-derived state
-		expect(await derived.runtime.state.get()).toEqual(
+		expect(await system.state(derived.runtime).get()).toEqual(
 			expect.objectContaining({ value: 'child-of-root' }),
 		);
 	});
 
 	it('applies state overrides to root sessions', async () => {
-		const { manager } = createManagerAndCollection();
+		const { manager, system } = createManagerAndCollection();
 
 		const session = await manager.create({
 			overrides: { value: 'overridden' },
 		});
 
-		expect(await session.runtime.state.get()).toEqual(
+		expect(await system.state(session.runtime).get()).toEqual(
 			expect.objectContaining({ value: 'overridden' }),
 		);
 	});
 
 	it('applies state overrides to derived sessions', async () => {
-		const { manager, collection } = createManagerAndCollection();
+		const { manager, collection, system } = createManagerAndCollection();
 
 		await manager.create();
 		const parentId = collection.list()[0]!.id;
@@ -157,7 +164,7 @@ describe('SessionManager', () => {
 			overrides: { value: 'child-override' },
 		});
 
-		expect(await child.runtime.state.get()).toEqual(
+		expect(await system.state(child.runtime).get()).toEqual(
 			expect.objectContaining({ value: 'child-override' }),
 		);
 	});
@@ -170,7 +177,10 @@ describe('SessionManager', () => {
 				change: string;
 			};
 		};
-		type NestedRuntime = BaseRuntime<NestedState>;
+		const NESTED_STATE: unique symbol = Symbol('test/nested-state');
+		type NestedRuntime = BaseRuntime & {
+			readonly [NESTED_STATE]: StateHandle<NestedState>;
+		};
 		type NestedSystem = RuntimeSystem<
 			NestedState,
 			Record<string, never>,
@@ -185,16 +195,13 @@ describe('SessionManager', () => {
 					change: 'base',
 				},
 			}),
-			createCompiler(): Compiler<
-				Record<string, never>,
-				NestedState,
-				NestedRuntime
-			> {
+			state: (runtime) => runtime[NESTED_STATE],
+			createCompiler(state): Compiler<Record<string, never>, NestedRuntime> {
 				return {
 					api: {},
-					async build(state) {
+					async build() {
 						return {
-							state: {
+							[NESTED_STATE]: {
 								get: vi.fn(async () => state),
 								fork: vi.fn(async () => state),
 								child: vi.fn(async () => state),
@@ -217,7 +224,7 @@ describe('SessionManager', () => {
 			overrides: { nested: { change: 'override' } },
 		});
 
-		expect(await session.runtime.state.get()).toEqual({
+		expect(await system.state(session.runtime).get()).toEqual({
 			value: 'root',
 			nested: {
 				keep: 'keep',

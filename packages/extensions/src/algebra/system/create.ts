@@ -8,12 +8,12 @@ import type { RuntimeSystem } from './types.js';
 export async function createRuntime<
 	S extends BaseState,
 	API extends BaseAPI,
-	Self extends BaseRuntime<S>,
+	Self extends BaseRuntime,
 >(
 	system: RuntimeSystem<S, API, Self>,
 	state: S,
 	extensions: Extension<API>[],
 ): Promise<Self> {
-	const compiler = system.createCompiler();
-	return compileAll(compiler, extensions, state);
+	const compiler = system.createCompiler(state);
+	return compileAll(compiler, extensions);
 }

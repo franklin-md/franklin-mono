@@ -122,11 +122,17 @@ export { resolveState } from './algebra/state/resolve.js';
 export type { BaseRuntime, StateHandle } from './algebra/runtime/types.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { CoreRuntime } from './systems/core/runtime/index.js';
+export { CORE_STATE, coreStateHandle } from './systems/core/runtime/index.js';
 export { inspectRuntime } from './systems/core/inspect.js';
 export type { StoreRuntime } from './systems/store/runtime.js';
+export { storeStateHandle } from './systems/store/runtime.js';
 export type { EnvironmentRuntime } from './systems/environment/runtime.js';
+export { environmentStateHandle } from './systems/environment/runtime.js';
 export type { IdentityRuntime } from './systems/identity/runtime.js';
-export { identityRuntime } from './systems/identity/runtime.js';
+export {
+	identityRuntime,
+	identityStateHandle,
+} from './systems/identity/runtime.js';
 
 // ---------------------------------------------------------------------------
 // State
