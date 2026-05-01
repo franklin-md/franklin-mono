@@ -32,9 +32,7 @@ export type RuntimeSystem<
 > = {
 	readonly [SYSTEM_API]?: A;
 	emptyState(): S;
-	createCompiler<ContextRuntime extends Runtime = Runtime>(
-		state: S,
-	): Compiler<BoundAPI<A, ContextRuntime>, Runtime>;
+	createCompiler(state: S): Compiler<A, Runtime>;
 	state(runtime: Runtime): StateHandle<S>;
 };
 
@@ -67,10 +65,7 @@ type InferSystem<T> =
 
 export type InferAPI<T> = InferSystem<T>['api'];
 
-export type InferCompiler<
-	T,
-	ContextRuntime extends InferSystem<T>['runtime'] = InferSystem<T>['runtime'],
-> = Compiler<BoundAPI<InferAPI<T>, ContextRuntime>, InferSystem<T>['runtime']>;
+export type InferCompiler<T> = Compiler<InferAPI<T>, InferSystem<T>['runtime']>;
 
 export type InferState<T> = Simplify<InferSystem<T>['state']>;
 

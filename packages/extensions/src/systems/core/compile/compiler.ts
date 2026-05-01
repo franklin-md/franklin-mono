@@ -1,15 +1,14 @@
 import type { ClientProtocol } from '@franklin/mini-acp';
-import type { CoreAPI } from '../api/api.js';
-import type { BoundAPI } from '../../../algebra/api/index.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { MaybePromise } from '../../../algebra/types/shared.js';
+import type { CoreAPI } from '../api/api.js';
 import { serializeTool } from '../api/tools/index.js';
+import { type CoreRuntime, createCoreRuntime } from '../runtime/index.js';
+import type { CoreState } from '../state.js';
+import { createAgentClient } from './client.js';
 import { createAgentDecorator as createClientDecorator } from './decorators/full.js';
 import { createCoreRegistrar } from './registrar/index.js';
-import { createCoreRuntime, type CoreRuntime } from '../runtime/index.js';
-import type { CoreState } from '../state.js';
 import { createResources } from './resources.js';
-import { createAgentClient } from './client.js';
 
 export type SpawnResult = ClientProtocol & { dispose(): Promise<void> };
 export type SpawnFn = () => MaybePromise<SpawnResult>;
@@ -34,21 +33,23 @@ export type SpawnFn = () => MaybePromise<SpawnResult>;
  * No mutable runtime cell — `getRuntime` IS the binding mechanism,
  * threaded through each builder at decorator-construction time.
  */
-export function createCoreCompiler<Runtime extends CoreRuntime = CoreRuntime>(
+export function createCoreCompiler(
 	spawn: SpawnFn,
 	state: CoreState,
-): Compiler<BoundAPI<CoreAPI, Runtime>, CoreRuntime> {
-	const { api, registered } = createCoreRegistrar<Runtime>();
+): Compiler<CoreAPI, CoreRuntime> {
+	const { api, registered } = createCoreRegistrar<CoreRuntime>();
 
 	return {
-		api,
-		async build(getRuntime): Promise<CoreRuntime> {
+		register: (use) => {
+			use(api as never);
+		},
+		build: async (getRuntime): Promise<CoreRuntime> => {
 			const transport = await spawn();
 			const resources = createResources(state);
 			const decorator = createClientDecorator(
 				resources,
 				registered,
-				getRuntime as unknown as () => Runtime,
+				getRuntime,
 			);
 			const serializedTools = registered.tools.map(serializeTool);
 

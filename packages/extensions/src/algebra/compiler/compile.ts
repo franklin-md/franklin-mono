@@ -1,27 +1,35 @@
+import type { API, BoundAPI } from '../api/index.js';
+import type { BaseRuntime } from '../runtime/index.js';
 import type { Extension } from '../types/extension.js';
 import type { Compiler } from './types.js';
 
 /**
  * Compile a single extension — register, then tie the Y-combinator.
  */
-export async function compile<API, Runtime>(
-	compiler: Compiler<API, Runtime>,
-	extension: Extension<API>,
+export async function compile<
+	A extends API,
+	Runtime extends BaseRuntime & A['In'],
+>(
+	compiler: Compiler<A, Runtime>,
+	extension: Extension<BoundAPI<A, Runtime>>,
 ): Promise<Runtime> {
-	extension(compiler.api);
+	compiler.register<Runtime>(extension);
 	return tie(compiler);
 }
 
-export async function compileAll<API, Runtime>(
-	compiler: Compiler<API, Runtime>,
-	extensions: Extension<API>[],
+export async function compileAll<
+	A extends API,
+	Runtime extends BaseRuntime & A['In'],
+>(
+	compiler: Compiler<A, Runtime>,
+	extensions: Extension<BoundAPI<A, Runtime>>[],
 ): Promise<Runtime> {
-	for (const ext of extensions) ext(compiler.api);
+	for (const ext of extensions) compiler.register<Runtime>(ext);
 	return tie(compiler);
 }
 
-async function tie<API, Runtime>(
-	compiler: Compiler<API, Runtime>,
+async function tie<A extends API, Runtime extends BaseRuntime & A['In']>(
+	compiler: Compiler<A, Runtime>,
 ): Promise<Runtime> {
 	// Mutable cell — handler closures capture `getRuntime` at registration,
 	// `compileAll`/`compile` populates `cell.value` once `build` resolves.

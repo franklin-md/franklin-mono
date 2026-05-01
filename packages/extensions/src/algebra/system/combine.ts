@@ -1,5 +1,5 @@
-import type { StateHandle } from '../runtime/index.js';
 import { combine as combineCompilers } from '../compiler/combine.js';
+import type { StateHandle } from '../runtime/index.js';
 import type {
 	BaseRuntimeSystem,
 	CombinableSystem,
@@ -33,9 +33,9 @@ export function combine<
 		},
 
 		createCompiler(state) {
-			const c1 = sys1.createCompiler<RT>(state) as InferCompiler<RTS1>;
-			const c2 = sys2.createCompiler<RT>(state) as InferCompiler<RTS2>;
-			return combineCompilers(c1, c2) as never;
+			const c1 = sys1.createCompiler(state) as InferCompiler<RTS1>;
+			const c2 = sys2.createCompiler(state) as InferCompiler<RTS2>;
+			return combineCompilers(c1, c2 as never) as never;
 		},
 
 		state(runtime: RT): StateHandle<S> {

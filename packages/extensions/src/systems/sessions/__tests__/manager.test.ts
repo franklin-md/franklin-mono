@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SessionCollection } from '../runtime/collection.js';
-import { createSessionManager } from '../runtime/manager.js';
-import type { SessionRuntime } from '../runtime/runtime.js';
+import type { BoundAPI, StaticAPI } from '../../../algebra/api/types.js';
+import type { Compiler } from '../../../algebra/compiler/types.js';
 import type {
 	BaseRuntime,
 	StateHandle,
 } from '../../../algebra/runtime/types.js';
 import type { RuntimeSystem } from '../../../algebra/system/types.js';
-import type { Compiler } from '../../../algebra/compiler/types.js';
-import type { StaticAPI } from '../../../algebra/api/types.js';
+import { SessionCollection } from '../runtime/collection.js';
+import { createSessionManager } from '../runtime/manager.js';
+import type { SessionRuntime } from '../runtime/runtime.js';
 
 type TestState = {
 	value: string;
@@ -19,19 +19,21 @@ const TEST_STATE: unique symbol = Symbol('test/sessions-state');
 type TestRuntime = BaseRuntime & {
 	readonly [TEST_STATE]: StateHandle<TestState>;
 };
-type TestSystem = RuntimeSystem<
-	TestState,
-	StaticAPI<Record<string, never>>,
-	TestRuntime
->;
+type TestAPI = StaticAPI<Record<string, never>>;
+type TestSystem = RuntimeSystem<TestState, TestAPI, TestRuntime>;
 
 function createTestSystem(empty: TestState = { value: 'root' }): TestSystem {
 	return {
 		emptyState: () => empty,
 		state: (runtime) => runtime[TEST_STATE],
-		createCompiler(state): Compiler<Record<string, never>, TestRuntime> {
+		createCompiler(state): Compiler<TestAPI, TestRuntime> {
+			const api: Record<string, never> = {};
 			return {
-				api: {},
+				register<ContextRuntime extends TestRuntime>(
+					use: (api: BoundAPI<TestAPI, ContextRuntime>) => void,
+				): void {
+					use(api);
+				},
 				async build() {
 					return {
 						[TEST_STATE]: {
@@ -186,11 +188,8 @@ describe('SessionManager', () => {
 		type NestedRuntime = BaseRuntime & {
 			readonly [NESTED_STATE]: StateHandle<NestedState>;
 		};
-		type NestedSystem = RuntimeSystem<
-			NestedState,
-			StaticAPI<Record<string, never>>,
-			NestedRuntime
-		>;
+		type NestedAPI = StaticAPI<Record<string, never>>;
+		type NestedSystem = RuntimeSystem<NestedState, NestedAPI, NestedRuntime>;
 
 		const system: NestedSystem = {
 			emptyState: () => ({
@@ -201,9 +200,14 @@ describe('SessionManager', () => {
 				},
 			}),
 			state: (runtime) => runtime[NESTED_STATE],
-			createCompiler(state): Compiler<Record<string, never>, NestedRuntime> {
+			createCompiler(state): Compiler<NestedAPI, NestedRuntime> {
+				const api: Record<string, never> = {};
 				return {
-					api: {},
+					register<ContextRuntime extends NestedRuntime>(
+						use: (api: BoundAPI<NestedAPI, ContextRuntime>) => void,
+					): void {
+						use(api);
+					},
 					async build() {
 						return {
 							[NESTED_STATE]: {

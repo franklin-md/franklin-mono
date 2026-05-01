@@ -1,16 +1,17 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { BoundAPI, StaticAPI } from '../../api/types.js';
+import type { Compiler } from '../../compiler/types.js';
+import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import { withSetup, withSetupCompiler } from '../setup.js';
 import type { RuntimeSystem } from '../types.js';
-import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
-import type { Compiler } from '../../compiler/types.js';
-import type { StaticAPI } from '../../api/types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 type TestState = { value: number };
-type TestAPI = { register(n: number): void };
+type TestAPISurface = { register(n: number): void };
+type TestAPI = StaticAPI<TestAPISurface>;
 
 const TEST_STATE: unique symbol = Symbol('test/setup-state');
 
@@ -19,21 +20,22 @@ type TestRuntime = BaseRuntime & {
 	readonly [TEST_STATE]: StateHandle<TestState>;
 };
 
-function createTestSystem(): RuntimeSystem<
-	TestState,
-	StaticAPI<TestAPI>,
-	TestRuntime
-> {
+function createTestSystem(): RuntimeSystem<TestState, TestAPI, TestRuntime> {
 	return {
 		emptyState: () => ({ value: 0 }),
 		state: (runtime) => runtime[TEST_STATE],
 		createCompiler(state): Compiler<TestAPI, TestRuntime> {
 			let registered: number | undefined;
+			const api: TestAPISurface = {
+				register(n: number) {
+					registered = n;
+				},
+			};
 			return {
-				api: {
-					register(n: number) {
-						registered = n;
-					},
+				register<ContextRuntime extends TestRuntime>(
+					use: (api: BoundAPI<TestAPI, ContextRuntime>) => void,
+				): void {
+					use(api);
 				},
 				async build() {
 					const val = registered ?? state.value;
@@ -115,12 +117,12 @@ describe('withSetup', () => {
 		expect(decorated.emptyState()).toEqual({ value: 0 });
 	});
 
-	it('preserves the compiler API', async () => {
+	it('preserves compiler registration', async () => {
 		const system = createTestSystem();
 		const decorated = withSetup(system, async () => {});
 
 		const compiler = decorated.createCompiler({ value: 0 });
-		compiler.api.register(42);
+		compiler.register<TestRuntime>((api) => api.register(42));
 		const built = await compiler.build(noGetRuntime);
 
 		expect(built.getValue()).toBe(42);
@@ -162,11 +164,14 @@ describe('withSetupCompiler', () => {
 		expect(order).toEqual(['pre', 'setup', 'post']);
 	});
 
-	it('preserves the inner api', async () => {
+	it('preserves the inner registration surface', async () => {
 		const system = createTestSystem();
 		const inner = system.createCompiler({ value: 0 });
 		const decorated = withSetupCompiler(inner, async () => {});
 
-		expect(decorated.api).toBe(inner.api);
+		decorated.register<TestRuntime>((api) => api.register(123));
+		const built = await decorated.build(noGetRuntime);
+
+		expect(built.getValue()).toBe(123);
 	});
 });

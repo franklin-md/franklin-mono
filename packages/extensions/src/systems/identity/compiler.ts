@@ -1,14 +1,15 @@
 import type { Compiler } from '../../algebra/compiler/types.js';
-import { identityAPI, type IdentityAPISurface } from './api.js';
-import { identityRuntime, type IdentityRuntime } from './runtime.js';
+import { type IdentityAPI, identityAPI } from './api.js';
+import { type IdentityRuntime, identityRuntime } from './runtime.js';
 
-export type IdentityCompiler = Compiler<IdentityAPISurface, IdentityRuntime>;
+export type IdentityCompiler = Compiler<IdentityAPI, IdentityRuntime>;
 
 export function identityCompiler(): IdentityCompiler {
+	const api = identityAPI();
 	return {
-		api: identityAPI(),
-		async build(_getRuntime): Promise<IdentityRuntime> {
-			return identityRuntime();
+		register: (use) => {
+			use(api);
 		},
+		build: async (_getRuntime): Promise<IdentityRuntime> => identityRuntime(),
 	};
 }

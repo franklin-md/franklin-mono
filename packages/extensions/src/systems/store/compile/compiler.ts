@@ -1,16 +1,15 @@
-import type { StoreAPISurface } from '../api/api.js';
-import type { Sharing } from '../api/sharing.js';
-import type { Compiler } from '../../../algebra/compiler/types.js';
-import type { StoreMapping } from '../api/registry/mapping.js';
 import { castDraft } from 'immer';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import { BaseStore } from '../api/base.js';
-import {
-	createStoreResult,
-	createEmptyStoreResult,
-} from '../api/registry/result.js';
-import { createStoreRuntime, type StoreRuntime } from '../runtime.js';
+import type { Compiler } from '../../../algebra/compiler/types.js';
+import type { StoreAPI, StoreAPISurface } from '../api/api.js';
+import type { BaseStore } from '../api/base.js';
 import type { StoreRegistry } from '../api/registry/index.js';
+import type { StoreMapping } from '../api/registry/mapping.js';
+import {
+	createEmptyStoreResult,
+	createStoreResult,
+} from '../api/registry/result.js';
+import type { Sharing } from '../api/sharing.js';
+import { createStoreRuntime, type StoreRuntime } from '../runtime.js';
 import type { StoreState } from '../state.js';
 
 type Registration = {
@@ -28,7 +27,7 @@ type Registration = {
 export function createStoreCompiler(
 	registry: StoreRegistry,
 	state: StoreState,
-): Compiler<StoreAPISurface, StoreRuntime> {
+): Compiler<StoreAPI, StoreRuntime> {
 	const registrations: Registration[] = [];
 
 	const api: StoreAPISurface = {
@@ -38,8 +37,10 @@ export function createStoreCompiler(
 	};
 
 	return {
-		api,
-		async build() {
+		register: (use) => {
+			use(api);
+		},
+		build: async () => {
 			const seedMapping = state.store;
 			const hasEntries = Object.keys(seedMapping).length > 0;
 			const seed = hasEntries

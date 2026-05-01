@@ -1,17 +1,17 @@
+import type { Compiler } from '../../algebra/compiler/index.js';
+import type { RuntimeSystem } from '../../algebra/system/index.js';
+import type { EnvironmentAPI, EnvironmentAPISurface } from './api/api.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
 } from './api/types.js';
-import type { EnvironmentAPI, EnvironmentAPISurface } from './api/api.js';
-import type { Compiler } from '../../algebra/compiler/index.js';
-import type { RuntimeSystem } from '../../algebra/system/index.js';
-import type { EnvironmentState } from './state.js';
-import { emptyEnvironmentState } from './state.js';
 import {
 	createEnvironmentRuntime,
-	environmentStateHandle,
 	type EnvironmentRuntime,
+	environmentStateHandle,
 } from './runtime.js';
+import type { EnvironmentState } from './state.js';
+import { emptyEnvironmentState } from './state.js';
 
 export type EnvironmentFactory = (
 	config: EnvironmentConfig,
@@ -36,10 +36,13 @@ export function createEnvironmentSystem(
 
 		state: environmentStateHandle,
 
-		createCompiler(state): Compiler<EnvironmentAPISurface, EnvironmentRuntime> {
+		createCompiler(state): Compiler<EnvironmentAPI, EnvironmentRuntime> {
+			const api: EnvironmentAPISurface = {};
 			return {
-				api: {},
-				async build() {
+				register: (use) => {
+					use(api);
+				},
+				build: async () => {
 					const env = await factory(state.env);
 					return createEnvironmentRuntime(env);
 				},

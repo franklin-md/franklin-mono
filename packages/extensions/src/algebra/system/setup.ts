@@ -11,13 +11,16 @@ import type { RuntimeSystem } from './types.js';
  * `setup(runtime)` after the inner build. State is captured by closure
  * at compiler-creation time and threaded by the system layer.
  */
-export function withSetupCompiler<API, Runtime>(
-	inner: Compiler<API, Runtime>,
+export function withSetupCompiler<
+	A extends API,
+	Runtime extends BaseRuntime & A['In'],
+>(
+	inner: Compiler<A, Runtime>,
 	setup: (runtime: Runtime) => Promise<void>,
-): Compiler<API, Runtime> {
+): Compiler<A, Runtime> {
 	return {
-		api: inner.api,
-		async build(getRuntime) {
+		register: (use) => inner.register(use),
+		build: async (getRuntime) => {
 			const runtime = await inner.build(getRuntime);
 			await setup(runtime);
 			return runtime;
@@ -41,10 +44,9 @@ export function withSetup<
 	return {
 		emptyState: () => system.emptyState(),
 		state: (runtime) => system.state(runtime),
-		createCompiler<ContextRuntime extends Runtime>(state: S) {
-			return withSetupCompiler(
-				system.createCompiler<ContextRuntime>(state),
-				(runtime) => setup(runtime, state),
+		createCompiler(state: S) {
+			return withSetupCompiler(system.createCompiler(state), (runtime) =>
+				setup(runtime, state),
 			);
 		},
 	};

@@ -1,33 +1,33 @@
-import { describe, it, expect, vi } from 'vitest';
 import {
+	type AbsolutePath,
 	FILESYSTEM_ALLOW_ALL,
 	MemoryOsInfo,
-	type AbsolutePath,
 } from '@franklin/lib';
-import { combine } from '../combine.js';
-import { createRuntime } from '../create.js';
-import { identitySystem } from '../../../systems/identity/system.js';
-import { createEnvironmentSystem } from '../../../systems/environment/system.js';
-import { createStoreSystem } from '../../../systems/store/system.js';
+import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
+import {
+	createAgentConnection,
+	createSessionAdapter,
+	StopCode,
+	type StreamEvent,
+	type Update,
+	ZERO_USAGE,
+} from '@franklin/mini-acp';
+import { describe, expect, it, vi } from 'vitest';
 import { createCoreSystem } from '../../../systems/core/system.js';
-import { StoreRegistry } from '../../../systems/store/api/registry/index.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
 } from '../../../systems/environment/api/types.js';
-import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
-import type { RuntimeSystem } from '../types.js';
+import { createEnvironmentSystem } from '../../../systems/environment/system.js';
+import { identitySystem } from '../../../systems/identity/system.js';
+import { StoreRegistry } from '../../../systems/store/api/registry/index.js';
+import { createStoreSystem } from '../../../systems/store/system.js';
+import type { API, BoundAPI, StaticAPI } from '../../api/types.js';
 import type { Compiler } from '../../compiler/types.js';
-import type { StaticAPI } from '../../api/types.js';
-import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
-import {
-	createSessionAdapter,
-	createAgentConnection,
-	StopCode,
-	ZERO_USAGE,
-	type Update,
-	type StreamEvent,
-} from '@franklin/mini-acp';
+import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
+import { combine } from '../combine.js';
+import { createRuntime } from '../create.js';
+import type { RuntimeSystem } from '../types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -112,9 +112,11 @@ async function collect(
 	return items;
 }
 
-type ValueAPI = {
+type ValueAPISurface = {
 	registerValue(value: number): void;
 };
+
+type ValueAPI = StaticAPI<ValueAPISurface>;
 
 type ValueState = {
 	value: number;
@@ -130,7 +132,7 @@ type ValueRuntime = BaseRuntime & {
 
 function createValueSystem(): RuntimeSystem<
 	ValueState,
-	StaticAPI<ValueAPI>,
+	ValueAPI,
 	ValueRuntime
 > {
 	return {
@@ -138,12 +140,17 @@ function createValueSystem(): RuntimeSystem<
 		state: (runtime) => runtime[VALUE_STATE],
 		createCompiler(state): Compiler<ValueAPI, ValueRuntime> {
 			let registeredValue: number | undefined;
+			const api: ValueAPISurface = {
+				registerValue(value) {
+					registeredValue = value;
+				},
+			};
 
 			return {
-				api: {
-					registerValue(value) {
-						registeredValue = value;
-					},
+				register<ContextRuntime extends ValueRuntime>(
+					use: (api: BoundAPI<ValueAPI, ContextRuntime>) => void,
+				): void {
+					use(api);
 				},
 				async build() {
 					const value = registeredValue ?? state.value;
@@ -164,6 +171,16 @@ function createValueSystem(): RuntimeSystem<
 			};
 		},
 	};
+}
+
+function apiKeys<A extends API, Runtime extends BaseRuntime & A['In']>(
+	compiler: Compiler<A, Runtime>,
+): string[] {
+	let keys: string[] = [];
+	compiler.register<Runtime>((api) => {
+		keys = Object.keys(api);
+	});
+	return keys;
 }
 
 // ---------------------------------------------------------------------------
@@ -429,8 +446,8 @@ describe('combine — identity laws', () => {
 		const combined = combine(identitySystem(), createValueSystem());
 
 		expect(combined.emptyState()).toEqual(baseline.emptyState());
-		expect(Object.keys(combined.createCompiler({ value: 0 }).api)).toEqual(
-			Object.keys(baseline.createCompiler({ value: 0 }).api),
+		expect(apiKeys(combined.createCompiler({ value: 0 }))).toEqual(
+			apiKeys(baseline.createCompiler({ value: 0 })),
 		);
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([
@@ -460,8 +477,8 @@ describe('combine — identity laws', () => {
 		const combined = combine(createValueSystem(), identitySystem());
 
 		expect(combined.emptyState()).toEqual(baseline.emptyState());
-		expect(Object.keys(combined.createCompiler({ value: 0 }).api)).toEqual(
-			Object.keys(baseline.createCompiler({ value: 0 }).api),
+		expect(apiKeys(combined.createCompiler({ value: 0 }))).toEqual(
+			apiKeys(baseline.createCompiler({ value: 0 })),
 		);
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([
