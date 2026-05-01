@@ -55,11 +55,6 @@ export class FranklinApp {
 		this.settings = storage.settings;
 		this.restoreStorage = () => storage.restore();
 
-		this.collection = new PersistedSessionCollection<
-			FranklinState,
-			FranklinRuntime
-		>(storage.sessions);
-
 		// Static base system — shared across all sessions
 		const baseSystem = systems(
 			withAuth(createCoreSystem(platform.spawn), this.auth),
@@ -67,6 +62,11 @@ export class FranklinApp {
 			.add(createStoreSystem(storage.stores))
 			.add(createEnvironmentSystem(platform.environment))
 			.done();
+
+		this.collection = new PersistedSessionCollection<
+			FranklinState,
+			FranklinRuntime
+		>(storage.sessions, (runtime) => baseSystem.state(runtime));
 
 		// Session manager — wraps base system, handles per-session session system internally
 		this.manager = createSessionManager({

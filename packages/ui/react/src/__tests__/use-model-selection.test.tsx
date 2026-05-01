@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
+import { CORE_STATE } from '@franklin/extensions';
 
 import { AgentProvider } from '../agent/agent-context.js';
 import { AppContext } from '../agent/franklin-context.js';
@@ -23,12 +24,18 @@ function makeMockRuntime(opts?: { provider?: string; model?: string }): {
 	const listeners = new Set<Listener>();
 
 	const runtime = {
-		state: {
+		[CORE_STATE]: {
 			get: vi.fn(async () => ({
 				core: {
 					messages: [],
 					llmConfig: { provider, model },
 				},
+			})),
+			fork: vi.fn(async () => ({
+				core: { messages: [], llmConfig: { provider, model } },
+			})),
+			child: vi.fn(async () => ({
+				core: { messages: [], llmConfig: { provider, model } },
 			})),
 		},
 		setLLMConfig: vi.fn(async () => {

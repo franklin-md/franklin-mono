@@ -21,14 +21,14 @@ type Registration = {
 
 /**
  * Store compiler — registrations are pure writes captured as data.
- * At build time, stores are materialised from seed + registrations;
- * handlers access them at stage 1 via `runtime.getStore(key)`.
- *
- * No proxies, no cells, no `useStore` — simplest possible story.
+ * State is closure-captured at compiler-creation time; at build time,
+ * stores are materialised from seed + registrations and handlers access
+ * them at stage 1 via `runtime.getStore(key)`.
  */
 export function createStoreCompiler(
 	registry: StoreRegistry,
-): Compiler<StoreAPI, StoreState, StoreRuntime> {
+	state: StoreState,
+): Compiler<StoreAPI, StoreRuntime> {
 	const registrations: Registration[] = [];
 
 	const api: StoreAPI = {
@@ -39,7 +39,7 @@ export function createStoreCompiler(
 
 	return {
 		api,
-		async build(state) {
+		async build() {
 			const seedMapping = state.store;
 			const hasEntries = Object.keys(seedMapping).length > 0;
 			const seed = hasEntries

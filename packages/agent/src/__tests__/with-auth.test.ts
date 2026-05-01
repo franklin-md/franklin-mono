@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { CoreRuntime, CoreState } from '@franklin/extensions';
-import { createCoreSystem, createRuntime } from '@franklin/extensions';
+import {
+	coreStateHandle,
+	createCoreSystem,
+	createRuntime,
+} from '@franklin/extensions';
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
 	createSessionAdapter,
@@ -56,17 +60,6 @@ function mockCoreRuntime(): CoreRuntime {
 		prompt: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
-		state: {
-			get: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
-			})),
-			fork: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
-			})),
-			child: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
-			})),
-		},
 		dispose: vi.fn(async () => {}),
 	} as unknown as CoreRuntime;
 }
@@ -241,7 +234,7 @@ describe('withAuth', () => {
 		expect(auth.getApiKey).toHaveBeenCalledWith('openai-codex');
 
 		// Verify the runtime now has the new provider's config
-		const state = await runtime.state.get();
+		const state = await coreStateHandle(runtime).get();
 		expect(state.core.llmConfig.provider).toBe('openai-codex');
 	});
 
@@ -333,7 +326,7 @@ describe('withAuth', () => {
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('openrouter');
 
-		const state = await runtime.state.get();
+		const state = await coreStateHandle(runtime).get();
 		expect(state.core.llmConfig.provider).toBe('openrouter');
 		expect(runtime.context().config.apiKey).toBeUndefined();
 	});
@@ -373,7 +366,7 @@ describe('withAuth', () => {
 			model: 'claude-sonnet-4-6',
 		});
 
-		const state = await runtime.state.get();
+		const state = await coreStateHandle(runtime).get();
 		expect(state.core.llmConfig.provider).toBe('anthropic');
 		expect(state.core.llmConfig.model).toBe('claude-sonnet-4-6');
 		expect(runtime.context().config.apiKey).toBeUndefined();

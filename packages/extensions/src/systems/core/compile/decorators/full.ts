@@ -24,7 +24,7 @@ import { compose } from './compose.js';
  * binding happens here via `bindHandlers`/`bindTool`, so each builder's
  * signature stays runtime-agnostic.
  */
-export function createAgentDecorator<Runtime extends BaseRuntime<unknown>>(
+export function createAgentDecorator<Runtime extends BaseRuntime>(
 	resources: CoreResources,
 	registered: CoreRegistrar<Runtime>,
 	getCtx: () => Runtime,

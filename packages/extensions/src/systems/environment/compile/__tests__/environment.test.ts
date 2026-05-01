@@ -9,7 +9,6 @@ import { combine } from '../../../../algebra/compiler/combine.js';
 import { createEnvironmentCompiler } from '../compiler.js';
 import { createStoreCompiler } from '../../../store/compile/compiler.js';
 import { StoreRegistry } from '../../../store/api/registry/index.js';
-import { emptyEnvironmentState } from '../../state.js';
 import type { ReconfigurableEnvironment } from '../../api/types.js';
 
 function mockEnvironment(): ReconfigurableEnvironment {
@@ -46,11 +45,7 @@ function mockEnvironment(): ReconfigurableEnvironment {
 describe('createEnvironmentCompiler', () => {
 	it('build returns a runtime that exposes the environment', async () => {
 		const env = mockEnvironment();
-		const result = await compile(
-			createEnvironmentCompiler(env),
-			() => {},
-			emptyEnvironmentState(),
-		);
+		const result = await compile(createEnvironmentCompiler(env), () => {});
 
 		expect(result.environment.filesystem).toBe(env.filesystem);
 		expect(await result.environment.config()).toEqual(await env.config());
@@ -60,16 +55,12 @@ describe('createEnvironmentCompiler', () => {
 		const env = mockEnvironment();
 		const compiler = combine(
 			createEnvironmentCompiler(env),
-			createStoreCompiler(new StoreRegistry()),
+			createStoreCompiler(new StoreRegistry(), { store: {} }),
 		);
 
-		const result = await compile(
-			compiler,
-			(api) => {
-				api.registerStore('test', 42, 'private');
-			},
-			{ ...emptyEnvironmentState(), store: {} },
-		);
+		const result = await compile(compiler, (api) => {
+			api.registerStore('test', 42, 'private');
+		});
 
 		expect(result.environment.filesystem).toBe(env.filesystem);
 		expect(result.getStore<number>('test').get()).toBe(42);

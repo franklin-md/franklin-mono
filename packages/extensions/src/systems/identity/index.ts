@@ -3,7 +3,7 @@ export { identityAPI } from './api.js';
 export type { IdentityState } from './state.js';
 export { identityState } from './state.js';
 export type { IdentityRuntime } from './runtime.js';
-export { identityRuntime } from './runtime.js';
+export { identityRuntime, identityStateHandle } from './runtime.js';
 export type { IdentityCompiler } from './compiler.js';
 export { identityCompiler } from './compiler.js';
 export type { IdentitySystem } from './system.js';

@@ -42,7 +42,7 @@ export type BoundTool<TInput = unknown> = {
 	execute(params: TInput): MaybePromise<ToolExecuteReturn>;
 };
 
-export function bindTool<R extends BaseRuntime<unknown>>(
+export function bindTool<R extends BaseRuntime>(
 	tool: ExtensionToolDefinition<unknown, R>,
 	getCtx: () => R,
 ): BoundTool {

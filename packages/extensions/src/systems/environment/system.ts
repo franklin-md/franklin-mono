@@ -9,6 +9,7 @@ import type { EnvironmentState } from './state.js';
 import { emptyEnvironmentState } from './state.js';
 import {
 	createEnvironmentRuntime,
+	environmentStateHandle,
 	type EnvironmentRuntime,
 } from './runtime.js';
 
@@ -33,14 +34,12 @@ export function createEnvironmentSystem(
 	return {
 		emptyState: emptyEnvironmentState,
 
-		createCompiler(): Compiler<
-			EnvironmentAPI,
-			EnvironmentState,
-			EnvironmentRuntime
-		> {
+		state: environmentStateHandle,
+
+		createCompiler(state): Compiler<EnvironmentAPI, EnvironmentRuntime> {
 			return {
 				api: {},
-				async build(state) {
+				async build() {
 					const env = await factory(state.env);
 					return createEnvironmentRuntime(env);
 				},
