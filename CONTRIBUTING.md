@@ -10,6 +10,10 @@ Use Node.js 22 or newer and install dependencies from the committed lockfile:
 npm ci
 ```
 
+Maintainers currently use npm 11.6.2. Keep the npm version documented here rather
+than pinning it with `packageManager`, because the Obsidian review bot runs
+`pnpm install` during plugin review.
+
 Use `npm install` only when intentionally adding, removing, or updating
 dependencies and committing the resulting `package-lock.json` change.
 
