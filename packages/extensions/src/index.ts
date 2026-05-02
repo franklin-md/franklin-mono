@@ -17,19 +17,15 @@ export {
 	RuntimeCollection,
 } from './harness/orchestrator/index.js';
 export type {
-	OrchestratedAPI,
-	OrchestratedExtension,
-	OrchestratedRuntime,
+	OrchestratorCreateInput,
+	OrchestratorHandle,
+	OrchestratorModule,
 	OrchestratorOptions,
 	OrchestratorRuntime,
+	RuntimeEntry,
 	RuntimeEvent,
 	SelfRuntime,
 } from './harness/orchestrator/index.js';
-export type {
-	OrchestratorCreateInput,
-	OrchestratorHandle,
-	RuntimeEntry,
-} from './harness/modules/context.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { ReduceRuntimes } from './algebra/runtime/reduce.js';
 // ---------------------------------------------------------------------------
@@ -41,11 +37,12 @@ export { resolveState } from './harness/state/resolve.js';
 // Harness modules
 // ---------------------------------------------------------------------------
 export type { BaseState } from './harness/state/types.js';
-export type { ModuleBuilder } from './harness/modules/builder.js';
-export { modules } from './harness/modules/builder.js';
 export type { ExtensionBundle } from './modules/bundle/index.js';
 export { createBundle } from './modules/bundle/index.js';
-export { combine as combineModules } from './harness/modules/combine.js';
+export {
+	combine as combineModules,
+	combineAll,
+} from './harness/modules/index.js';
 export { createRuntime } from './harness/modules/create.js';
 export { withSetup } from './harness/modules/setup.js';
 export type {
@@ -57,6 +54,8 @@ export type {
 	InferRuntime,
 	InferState,
 	HarnessModule,
+	Modules,
+	ValidateModules,
 } from './harness/modules/types.js';
 export type {
 	Extension,
@@ -163,7 +162,10 @@ export {
 } from './modules/environment/api/index.js';
 export { createEnvironmentCompiler } from './modules/environment/compile/index.js';
 export type { EnvironmentRuntime } from './modules/environment/runtime.js';
-export { environmentStateHandle } from './modules/environment/runtime.js';
+export {
+	ENV_STATE,
+	environmentStateHandle,
+} from './modules/environment/runtime.js';
 export type { EnvironmentState } from './modules/environment/state.js';
 export { emptyEnvironmentState } from './modules/environment/state.js';
 export type {
@@ -213,7 +215,7 @@ export {
 } from './modules/store/api/index.js';
 export { createStoreCompiler } from './modules/store/compile/index.js';
 export type { StoreRuntime } from './modules/store/runtime.js';
-export { storeStateHandle } from './modules/store/runtime.js';
+export { STORE_STATE, storeStateHandle } from './modules/store/runtime.js';
 export type { StoreState } from './modules/store/state.js';
 export { emptyStoreState } from './modules/store/state.js';
 export type { StoreModule } from './modules/store/module.js';

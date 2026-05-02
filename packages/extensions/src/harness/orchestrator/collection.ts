@@ -1,7 +1,6 @@
 import { createObserver } from '@franklin/lib';
 import type { BaseRuntime } from '../../algebra/runtime/index.js';
-import type { RuntimeEntry } from '../modules/context.js';
-import type { RuntimeEvent } from './types.js';
+import type { RuntimeEntry, RuntimeEvent } from './types.js';
 
 export class RuntimeCollection<Runtime extends BaseRuntime> {
 	private readonly runtimes = new Map<string, RuntimeEntry<Runtime>>();

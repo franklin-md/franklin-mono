@@ -16,15 +16,15 @@ export type {
 	InferRuntime,
 	CombineModules,
 	CombinableModule,
+	Modules,
+	ValidateModules,
 } from '../harness/modules/index.js';
-export type { OrchestratorHandle } from '../harness/modules/context.js';
 export type { ExtensionBundle } from '../modules/bundle/index.js';
 export {
 	createRuntime,
 	combine as combineModules,
+	combineAll,
 	withSetup,
-	modules,
 } from '../harness/modules/index.js';
 export { createBundle } from '../modules/bundle/index.js';
-export type { ModuleBuilder } from '../harness/modules/index.js';
 export type { MaybePromise } from './types/index.js';

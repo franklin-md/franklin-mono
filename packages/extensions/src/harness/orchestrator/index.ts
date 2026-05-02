@@ -1,10 +1,13 @@
 export { RuntimeCollection } from './collection.js';
-export type { OrchestratorRuntime, SelfRuntime } from './internal-module.js';
+export type { SelfRuntime } from './internal-module.js';
 export { createOrchestrator, Orchestrator } from './orchestrator.js';
 export type {
-	OrchestratedAPI,
-	OrchestratedExtension,
-	OrchestratedRuntime,
+	OrchestratorCreateInput,
+	OrchestratorHandle,
+	OrchestratorModule,
 	OrchestratorOptions,
+	OrchestratorRuntime,
+	RuntimeCreateInput,
+	RuntimeEntry,
 	RuntimeEvent,
 } from './types.js';

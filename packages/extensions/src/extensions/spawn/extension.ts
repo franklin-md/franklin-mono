@@ -1,8 +1,10 @@
 import { collect } from '@franklin/mini-acp';
 import { createExtension } from '../../algebra/index.js';
 import type { CoreAPI, CoreRuntime } from '../../modules/core/index.js';
-import type { OrchestratorHandle } from '../../harness/modules/context.js';
-import type { SelfRuntime } from '../../harness/orchestrator/index.js';
+import type {
+	OrchestratorHandle,
+	SelfRuntime,
+} from '../../harness/orchestrator/index.js';
 import { spawnSpec } from './tools.js';
 import { formatResult } from './format.js';
 

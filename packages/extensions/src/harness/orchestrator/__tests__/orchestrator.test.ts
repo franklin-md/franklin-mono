@@ -6,12 +6,15 @@ import type {
 	BaseRuntime,
 	StateHandle,
 } from '../../../algebra/runtime/index.js';
-import type { HarnessModule } from '../../modules/index.js';
+import type {
+	HarnessModule,
+	InferBoundAPI,
+	InferRuntime,
+} from '../../modules/index.js';
 import {
 	createOrchestrator,
 	RuntimeCollection,
-	type OrchestratedAPI,
-	type OrchestratedRuntime,
+	type OrchestratorModule,
 } from '../index.js';
 
 type TestState = {
@@ -38,6 +41,9 @@ interface RuntimeAwareAPI extends API {
 }
 
 type TestModule = HarnessModule<TestState, RuntimeAwareAPI, TestRuntime>;
+type TestModules = readonly [TestModule];
+type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<TestModules>>;
+type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<TestModules>>;
 
 function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 	return {
@@ -87,9 +93,9 @@ function createIds(...ids: string[]) {
 
 describe('Orchestrator', () => {
 	it('creates a runtime with self id and stores it in the collection', async () => {
-		const collection = new RuntimeCollection<OrchestratedRuntime<TestModule>>();
+		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
-			module: createTestModule(),
+			modules: [createTestModule()] as const,
 			collection,
 			extensions: [],
 			createId: createIds('root-id'),
@@ -105,9 +111,9 @@ describe('Orchestrator', () => {
 	});
 
 	it('materializes a restored runtime with the supplied id and state', async () => {
-		const collection = new RuntimeCollection<OrchestratedRuntime<TestModule>>();
+		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
-			module: createTestModule(),
+			modules: [createTestModule()] as const,
 			collection,
 			extensions: [],
 		});
@@ -125,16 +131,16 @@ describe('Orchestrator', () => {
 	});
 
 	it('injects a final-runtime orchestrator port into runtime-aware handlers', async () => {
-		const collection = new RuntimeCollection<OrchestratedRuntime<TestModule>>();
+		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const seen: string[] = [];
-		const extension: Extension<OrchestratedAPI<TestModule>> = (api) => {
+		const extension: Extension<TestOrchestratedAPI> = (api) => {
 			api.onRuntime((runtime) => {
 				seen.push(runtime.self.id);
 				seen.push(runtime.orchestrator.list()[0]!.runtime.self.id);
 			});
 		};
 		const orchestrator = createOrchestrator({
-			module: createTestModule(),
+			modules: [createTestModule()] as const,
 			collection,
 			extensions: [extension],
 			createId: createIds('root-id'),
@@ -147,9 +153,9 @@ describe('Orchestrator', () => {
 	});
 
 	it('creates child and fork runtimes from source state', async () => {
-		const collection = new RuntimeCollection<OrchestratedRuntime<TestModule>>();
+		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
-			module: createTestModule({ value: 'source' }),
+			modules: [createTestModule({ value: 'source' })] as const,
 			collection,
 			extensions: [],
 			createId: createIds('source-id', 'child-id', 'fork-id'),
@@ -176,9 +182,9 @@ describe('Orchestrator', () => {
 	});
 
 	it('applies typed state overrides on orchestrator-level create', async () => {
-		const collection = new RuntimeCollection<OrchestratedRuntime<TestModule>>();
+		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
-			module: createTestModule(),
+			modules: [createTestModule()] as const,
 			collection,
 			extensions: [],
 			createId: createIds('root-id'),
@@ -194,9 +200,9 @@ describe('Orchestrator', () => {
 	});
 
 	it('removes and disposes runtimes through the injected port', async () => {
-		const collection = new RuntimeCollection<OrchestratedRuntime<TestModule>>();
+		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
-			module: createTestModule(),
+			modules: [createTestModule()] as const,
 			collection,
 			extensions: [],
 			createId: createIds('root-id'),

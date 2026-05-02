@@ -1,9 +1,6 @@
 import { compileAll } from '../../algebra/compiler/index.js';
 import type { Extension } from '../../algebra/extension/index.js';
-import {
-	createHarnessModuleCompilerInput,
-	type HarnessModuleCompilerContext,
-} from './context.js';
+import { createHarnessModuleCompilerInput } from './context.js';
 import type {
 	BaseHarnessModule,
 	InferBoundAPI,
@@ -15,10 +12,10 @@ export async function createRuntime<Module extends BaseHarnessModule>(
 	module: Module,
 	state: InferState<Module>,
 	extensions: Extension<InferBoundAPI<Module>>[],
-	context?: Partial<HarnessModuleCompilerContext>,
+	options?: { readonly id?: string },
 ): Promise<InferRuntime<Module>> {
 	const compiler = module.createCompiler(
-		createHarnessModuleCompilerInput(state, context),
+		createHarnessModuleCompilerInput(state, options),
 	);
 	return compileAll(compiler, extensions);
 }

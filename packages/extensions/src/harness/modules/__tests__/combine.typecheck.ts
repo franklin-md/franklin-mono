@@ -1,5 +1,5 @@
 import { combine } from '../combine.js';
-import { modules } from '../builder.js';
+import { combineAll } from '../combine-all.js';
 import { combineRuntimes } from '../../../algebra/runtime/combine.js';
 import type { API, BaseAPI, StaticAPI } from '../../../algebra/api/types.js';
 import type { BaseRuntime } from '../../../algebra/runtime/types.js';
@@ -9,6 +9,7 @@ import type {
 	CombineModules,
 	InferBoundAPI,
 	HarnessModule,
+	Modules,
 } from '../types.js';
 
 type StubSystem<
@@ -39,8 +40,14 @@ const _sharedStringSystem = null as unknown as StubSystem<{
 const _combinedSystem = combine(_environmentSystem, _storeSystem);
 void _combinedSystem;
 
-const _builtSystem = modules(_environmentSystem).add(_storeSystem).done();
+const _builtSystem = combineAll([_environmentSystem, _storeSystem]);
 void _builtSystem;
+
+// Modules<[A, B]> at the type level corresponds to combineAll's runtime fold.
+const _foldedSystem = null as unknown as Modules<
+	readonly [typeof _environmentSystem, typeof _storeSystem]
+>;
+void _foldedSystem;
 
 // The type-level overlap guard lives on the second operand via
 // `Sys2 & CombinableModule<Sys1, Sys2>`. The predicate itself reduces to
@@ -55,9 +62,11 @@ const _invalidCombinedSystem = combine(
 	_sharedStringSystem,
 );
 
-const _invalidBuiltSystem =
-	// @ts-expect-error overlapping state keys should be rejected in ModuleBuilder.add()
-	modules(_sharedNumberSystem).add(_sharedStringSystem);
+const _invalidBuiltSystem = combineAll([
+	_sharedNumberSystem,
+	// @ts-expect-error overlapping state keys should be rejected by combineAll's pairwise validator
+	_sharedStringSystem,
+]);
 
 // ---------------------------------------------------------------------------
 // API overlap
@@ -93,9 +102,11 @@ const _invalidApiCombine = combine(
 	_sysWithApiC,
 );
 
-const _invalidApiBuilder =
-	// @ts-expect-error overlapping API keys should be rejected in ModuleBuilder.add()
-	modules(_sysWithApiA).add(_sysWithApiC);
+const _invalidApiBuilder = combineAll([
+	_sysWithApiA,
+	// @ts-expect-error overlapping API keys should be rejected by combineAll's pairwise validator
+	_sysWithApiC,
+]);
 
 // ---------------------------------------------------------------------------
 // Runtime overlap
@@ -140,9 +151,11 @@ const _invalidRuntimeCombine = combine(
 	_sysWithRuntimeC,
 );
 
-const _invalidRuntimeBuilder =
-	// @ts-expect-error overlapping runtime keys should be rejected in ModuleBuilder.add()
-	modules(_sysWithRuntimeA).add(_sysWithRuntimeC);
+const _invalidRuntimeBuilder = combineAll([
+	_sysWithRuntimeA,
+	// @ts-expect-error overlapping runtime keys should be rejected by combineAll's pairwise validator
+	_sysWithRuntimeC,
+]);
 
 const _runtimeA = null as unknown as RuntimeA;
 const _runtimeB = null as unknown as RuntimeB;

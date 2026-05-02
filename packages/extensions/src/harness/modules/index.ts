@@ -8,9 +8,10 @@ export type {
 	InferRuntime,
 	CombineModules,
 	CombinableModule,
+	Modules,
+	ValidateModules,
 } from './types.js';
 export { createRuntime } from './create.js';
 export { combine } from './combine.js';
+export { combineAll } from './combine-all.js';
 export { withSetup } from './setup.js';
-export { modules } from './builder.js';
-export type { ModuleBuilder } from './builder.js';

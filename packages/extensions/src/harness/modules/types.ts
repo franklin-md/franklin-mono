@@ -104,3 +104,47 @@ export type CombinableModule<
 		BoundAPI<InferAPI<B>, CombinedRuntimeOf<A, B>>
 	> &
 	AssertNoOverlap<RuntimeExtrasOf<A>, RuntimeExtrasOf<B>>;
+
+// ---------------------------------------------------------------------------
+// Tuple fold
+// ---------------------------------------------------------------------------
+
+/**
+ * Right-fold `CombineModules` over a tuple of modules. Use this anywhere a
+ * single combined module type is needed but the input is naturally a list:
+ *
+ *   type FranklinModule = Modules<[CoreModule, StoreModule, EnvironmentModule]>;
+ *
+ * Pairwise overlap rejection is enforced by the `combineAll` runtime fn.
+ */
+export type Modules<T extends readonly BaseHarnessModule[]> =
+	T extends readonly [infer Head extends BaseHarnessModule]
+		? Head
+		: T extends readonly [
+					infer Head extends BaseHarnessModule,
+					...infer Tail extends readonly BaseHarnessModule[],
+			  ]
+			? CombineModules<Head, Modules<Tail>>
+			: never;
+
+/**
+ * Validates a tuple of modules pairwise: each successive module must be
+ * combinable with the running fold of all earlier modules. Used as
+ * `T & ValidateModules<T>` in `combineAll`'s signature so call-site errors
+ * land on the offending tuple element rather than at the fold call.
+ */
+export type ValidateModules<
+	T extends readonly BaseHarnessModule[],
+	Acc extends BaseHarnessModule | null = null,
+> = T extends readonly [
+	infer Head extends BaseHarnessModule,
+	...infer Tail extends readonly BaseHarnessModule[],
+]
+	? readonly [
+			Acc extends BaseHarnessModule ? Head & CombinableModule<Acc, Head> : Head,
+			...ValidateModules<
+				Tail,
+				Acc extends BaseHarnessModule ? CombineModules<Acc, Head> : Head
+			>,
+		]
+	: T;

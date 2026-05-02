@@ -1,8 +1,8 @@
 import {
+	combineAll,
 	createCoreModule,
 	createStoreModule,
 	createEnvironmentModule,
-	modules,
 	createOrchestrator,
 } from '@franklin/extensions';
 import type { Orchestrator } from '@franklin/extensions';
@@ -14,10 +14,10 @@ import { createStorage } from '../storage/create-storage.js';
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
 import type {
-	BaseModule,
-	FranklinState,
-	FranklinRuntime,
 	FranklinExtension,
+	FranklinModules,
+	FranklinRuntime,
+	FranklinState,
 } from '../types.js';
 import type { AuthStore } from '../storage/types.js';
 import { createAgents, type Agents } from './agents.js';
@@ -28,7 +28,7 @@ export class FranklinApp {
 	readonly agents: Agents;
 	readonly platform: Platform;
 
-	private readonly orchestrator: Orchestrator<BaseModule>;
+	private readonly orchestrator: Orchestrator<FranklinModules>;
 	private readonly collection: PersistedSessionCollection<
 		FranklinState,
 		FranklinRuntime
@@ -55,12 +55,12 @@ export class FranklinApp {
 		this.settings = storage.settings;
 		this.restoreStorage = () => storage.restore();
 
-		const baseModule = modules(
+		const baseModules: FranklinModules = [
 			withAuth(createCoreModule(platform.spawn), this.auth),
-		)
-			.add(createStoreModule(storage.stores))
-			.add(createEnvironmentModule(platform.environment))
-			.done();
+			createStoreModule(storage.stores),
+			createEnvironmentModule(platform.environment),
+		];
+		const baseModule = combineAll(baseModules);
 
 		this.collection = new PersistedSessionCollection<
 			FranklinState,
@@ -68,7 +68,7 @@ export class FranklinApp {
 		>(storage.sessions, (runtime) => baseModule.state(runtime));
 
 		this.orchestrator = createOrchestrator({
-			module: baseModule,
+			modules: baseModules,
 			collection: this.collection,
 			extensions,
 		});

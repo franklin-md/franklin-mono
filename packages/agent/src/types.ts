@@ -2,24 +2,27 @@ import type {
 	CoreModule,
 	StoreModule,
 	EnvironmentModule,
-	CombineModules,
+	Extension,
+	InferBoundAPI,
 	InferState,
-	OrchestratedAPI,
-	OrchestratedExtension,
-	OrchestratedRuntime,
+	OrchestratorModule,
+	OrchestratorRuntime,
 } from '@franklin/extensions';
 
-export type BaseModule = CombineModules<
+export type FranklinModules = readonly [
 	CoreModule,
-	CombineModules<StoreModule, EnvironmentModule>
->;
+	StoreModule,
+	EnvironmentModule,
+];
 
-export type FranklinRuntime = OrchestratedRuntime<BaseModule>;
+export type FranklinModule = OrchestratorModule<FranklinModules>;
+
+export type FranklinRuntime = OrchestratorRuntime<FranklinModules>;
 
 /** Combined state persisted without secrets. */
-export type FranklinState = InferState<BaseModule>;
+export type FranklinState = InferState<FranklinModule>;
 
 /** Combined extension API surface. */
-export type FranklinAPI = OrchestratedAPI<BaseModule>;
+export type FranklinAPI = InferBoundAPI<FranklinModule>;
 
-export type FranklinExtension = OrchestratedExtension<BaseModule>;
+export type FranklinExtension = Extension<FranklinAPI>;

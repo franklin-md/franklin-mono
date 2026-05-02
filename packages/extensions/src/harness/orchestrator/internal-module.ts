@@ -1,7 +1,7 @@
 import { compilerFromApi } from '../../algebra/compiler/index.js';
 import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { HarnessModule } from '../modules/index.js';
-import type { OrchestratorHandle } from '../modules/context.js';
+import type { OrchestratorHandle } from './types.js';
 import type { IdentityAPI } from '../../modules/identity/api.js';
 import { identityAPI } from '../../modules/identity/api.js';
 import {
@@ -17,12 +17,10 @@ export type SelfRuntime = BaseRuntime & {
 	};
 };
 
-export type OrchestratorRuntime<Runtime extends BaseRuntime> = BaseRuntime & {
-	readonly orchestrator: OrchestratorHandle<Runtime>;
-};
-
 export type OrchestratorInternalRuntime<Runtime extends BaseRuntime> =
-	SelfRuntime & OrchestratorRuntime<Runtime>;
+	SelfRuntime & {
+		readonly orchestrator: OrchestratorHandle<Runtime>;
+	};
 
 export type OrchestratorInternalModule<Runtime extends BaseRuntime> =
 	HarnessModule<
@@ -31,20 +29,18 @@ export type OrchestratorInternalModule<Runtime extends BaseRuntime> =
 		OrchestratorInternalRuntime<Runtime>
 	>;
 
-export function createOrchestratorInternalModule<
-	Runtime extends BaseRuntime,
->(): OrchestratorInternalModule<Runtime> {
+export function createOrchestratorInternalModule<Runtime extends BaseRuntime>(
+	getHandle: () => OrchestratorHandle<Runtime>,
+): OrchestratorInternalModule<Runtime> {
 	return {
 		emptyState: identityState,
 		state: () => identityStateHandle(),
 		createCompiler(input) {
 			const api = identityAPI();
-			return compilerFromApi(api, async (_getRuntime) => ({
+			return compilerFromApi(api, async () => ({
 				...identityRuntime(),
 				self: { id: input.id },
-				orchestrator: input.getOrchestrator<
-					ReturnType<typeof _getRuntime>
-				>() as unknown as OrchestratorHandle<Runtime>,
+				orchestrator: getHandle(),
 			}));
 		},
 	};

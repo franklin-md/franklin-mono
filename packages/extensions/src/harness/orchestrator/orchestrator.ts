@@ -1,65 +1,69 @@
 import { compileAll } from '../../algebra/compiler/index.js';
+import type { Extension } from '../../algebra/extension/index.js';
 import { resolveState } from '../state/index.js';
-import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import {
 	combine,
+	combineAll,
 	type BaseHarnessModule,
-	type InferAPI,
+	type InferBoundAPI,
+	type InferRuntime,
 	type InferState,
-	type HarnessModule,
+	type Modules,
 } from '../modules/index.js';
-import { createHarnessModuleCompilerInput } from '../modules/context.js';
+import { createOrchestratorInternalModule } from './internal-module.js';
+import type { RuntimeCollection } from './collection.js';
 import type {
 	OrchestratorCreateInput,
 	OrchestratorHandle,
+	OrchestratorModule,
+	OrchestratorOptions,
 	RuntimeEntry,
-} from '../modules/context.js';
-import { createOrchestratorInternalModule } from './internal-module.js';
-import type { OrchestratedRuntime, OrchestratorOptions } from './types.js';
+} from './types.js';
 
 export class Orchestrator<
-	Module extends BaseHarnessModule,
+	Mods extends readonly BaseHarnessModule[],
 > implements OrchestratorHandle<
-	OrchestratedRuntime<Module>,
-	InferState<Module>
+	InferRuntime<OrchestratorModule<Mods>>,
+	InferState<OrchestratorModule<Mods>>
 > {
-	private readonly baseModule: Module;
-	private readonly fullModule: HarnessModule<
-		InferState<Module>,
-		InferAPI<Module>,
-		OrchestratedRuntime<Module>
+	private readonly baseModule: Modules<Mods>;
+	private readonly fullModule: OrchestratorModule<Mods>;
+	private readonly collection: RuntimeCollection<
+		InferRuntime<OrchestratorModule<Mods>>
 	>;
-	private readonly collection: OrchestratorOptions<Module>['collection'];
-	private readonly extensions: OrchestratorOptions<Module>['extensions'];
+	private readonly extensions: Extension<
+		InferBoundAPI<OrchestratorModule<Mods>>
+	>[];
 	private readonly createId: () => string;
 
-	constructor(opts: OrchestratorOptions<Module>) {
-		this.baseModule = opts.module;
+	constructor(opts: OrchestratorOptions<Mods>) {
+		this.baseModule = combineAll<Mods>(opts.modules);
 		this.collection = opts.collection;
 		this.extensions = opts.extensions;
 		this.createId = opts.createId ?? (() => crypto.randomUUID());
+		type Runtime = InferRuntime<OrchestratorModule<Mods>>;
 		this.fullModule = combine(
-			opts.module,
-			createOrchestratorInternalModule<OrchestratedRuntime<Module>>() as never,
-		) as unknown as HarnessModule<
-			InferState<Module>,
-			InferAPI<Module>,
-			OrchestratedRuntime<Module>
-		>;
+			this.baseModule,
+			createOrchestratorInternalModule<Runtime>(
+				() => this as unknown as OrchestratorHandle<Runtime>,
+			) as never,
+		) as unknown as OrchestratorModule<Mods>;
 	}
 
 	async create(
-		input?: OrchestratorCreateInput<InferState<Module>>,
-	): Promise<RuntimeEntry<OrchestratedRuntime<Module>>> {
+		input?: OrchestratorCreateInput<InferState<OrchestratorModule<Mods>>>,
+	): Promise<RuntimeEntry<InferRuntime<OrchestratorModule<Mods>>>> {
 		const id = this.createId();
 		return this.materialize(id, await this.createState(input ?? {}));
 	}
 
-	get(id: string): RuntimeEntry<OrchestratedRuntime<Module>> | undefined {
+	get(
+		id: string,
+	): RuntimeEntry<InferRuntime<OrchestratorModule<Mods>>> | undefined {
 		return this.collection.get(id);
 	}
 
-	list(): RuntimeEntry<OrchestratedRuntime<Module>>[] {
+	list(): RuntimeEntry<InferRuntime<OrchestratorModule<Mods>>>[] {
 		return this.collection.list();
 	}
 
@@ -69,28 +73,22 @@ export class Orchestrator<
 
 	async materialize(
 		id: string,
-		state: InferState<Module>,
-	): Promise<RuntimeEntry<OrchestratedRuntime<Module>>> {
-		const compiler = this.fullModule.createCompiler(
-			createHarnessModuleCompilerInput(state, {
-				id,
-				getOrchestrator: <ContextRuntime extends BaseRuntime>() =>
-					this as unknown as OrchestratorHandle<ContextRuntime>,
-			}),
-		);
+		state: InferState<OrchestratorModule<Mods>>,
+	): Promise<RuntimeEntry<InferRuntime<OrchestratorModule<Mods>>>> {
+		const compiler = this.fullModule.createCompiler({ id, state });
 		const runtime = await compileAll(compiler, this.extensions);
 		this.collection.set(id, runtime);
 		return { id, runtime };
 	}
 
 	private async createState(
-		options: OrchestratorCreateInput<InferState<Module>>,
-	): Promise<InferState<Module>> {
-		let state: InferState<Module>;
+		options: OrchestratorCreateInput<InferState<OrchestratorModule<Mods>>>,
+	): Promise<InferState<OrchestratorModule<Mods>>> {
+		let state: InferState<OrchestratorModule<Mods>>;
 		if (options.from) {
 			const source = this.collection.get(options.from);
 			if (!source) throw new Error(`Runtime ${options.from} not found`);
-			const handle = this.baseModule.state(source.runtime);
+			const handle = this.baseModule.state(source.runtime as never);
 			state =
 				options.mode === 'fork' ? await handle.fork() : await handle.child();
 		} else {
@@ -101,8 +99,8 @@ export class Orchestrator<
 	}
 }
 
-export function createOrchestrator<Module extends BaseHarnessModule>(
-	opts: OrchestratorOptions<Module>,
-): Orchestrator<Module> {
+export function createOrchestrator<Mods extends readonly BaseHarnessModule[]>(
+	opts: OrchestratorOptions<Mods>,
+): Orchestrator<Mods> {
 	return new Orchestrator(opts);
 }
