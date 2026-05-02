@@ -1,11 +1,11 @@
 import {
-	createCoreSystem,
-	createStoreSystem,
-	createEnvironmentSystem,
-	systems,
-	createSessionManager,
+	createCoreModule,
+	createStoreModule,
+	createEnvironmentModule,
+	modules,
+	createOrchestrator,
 } from '@franklin/extensions';
-import type { SessionManager } from '@franklin/extensions';
+import type { Orchestrator } from '@franklin/extensions';
 import type { AbsolutePath, RestoreResult } from '@franklin/lib';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { withAuth } from '../auth/with-auth.js';
@@ -14,7 +14,7 @@ import { createStorage } from '../storage/create-storage.js';
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
 import type {
-	BaseSystem,
+	BaseModule,
 	FranklinState,
 	FranklinRuntime,
 	FranklinExtension,
@@ -28,7 +28,7 @@ export class FranklinApp {
 	readonly agents: Agents;
 	readonly platform: Platform;
 
-	private readonly manager: SessionManager<BaseSystem>;
+	private readonly orchestrator: Orchestrator<BaseModule>;
 	private readonly collection: PersistedSessionCollection<
 		FranklinState,
 		FranklinRuntime
@@ -55,28 +55,26 @@ export class FranklinApp {
 		this.settings = storage.settings;
 		this.restoreStorage = () => storage.restore();
 
-		// Static base system — shared across all sessions
-		const baseSystem = systems(
-			withAuth(createCoreSystem(platform.spawn), this.auth),
+		const baseModule = modules(
+			withAuth(createCoreModule(platform.spawn), this.auth),
 		)
-			.add(createStoreSystem(storage.stores))
-			.add(createEnvironmentSystem(platform.environment))
+			.add(createStoreModule(storage.stores))
+			.add(createEnvironmentModule(platform.environment))
 			.done();
 
 		this.collection = new PersistedSessionCollection<
 			FranklinState,
 			FranklinRuntime
-		>(storage.sessions, (runtime) => baseSystem.state(runtime));
+		>(storage.sessions, (runtime) => baseModule.state(runtime));
 
-		// Session manager — wraps base system, handles per-session session system internally
-		this.manager = createSessionManager({
-			system: baseSystem,
+		this.orchestrator = createOrchestrator({
+			module: baseModule,
 			collection: this.collection,
 			extensions,
 		});
 
 		this.agents = createAgents(
-			this.manager.create.bind(this.manager),
+			this.orchestrator.create.bind(this.orchestrator),
 			this.collection,
 		);
 	}
@@ -84,7 +82,7 @@ export class FranklinApp {
 	async start(): Promise<RestoreResult> {
 		const storageResult = await this.restoreStorage();
 		const collectionResult = await this.collection.restore((id, state) =>
-			this.manager.materialize(id, state),
+			this.orchestrator.materialize(id, state),
 		);
 		return {
 			issues: [...storageResult.issues, ...collectionResult.issues],

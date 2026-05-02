@@ -1,14 +1,14 @@
 import { useCallback } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { Session } from '@franklin/extensions';
+import type { RuntimeEntry } from '@franklin/extensions';
 
 import { useApp } from './franklin-context.js';
 import { useStableExternalStore } from '../utils/use-stable-external-store.js';
 
 function sameSessions(
-	prev: Session<FranklinRuntime>[],
-	next: Session<FranklinRuntime>[],
+	prev: RuntimeEntry<FranklinRuntime>[],
+	next: RuntimeEntry<FranklinRuntime>[],
 ): boolean {
 	if (prev.length !== next.length) {
 		return false;
@@ -26,13 +26,13 @@ function sameSessions(
 }
 
 /**
- * Subscribe to the session list on the nearest `<FranklinProvider>`.
+ * Subscribe to the runtime-entry list on the nearest `<FranklinProvider>`.
  *
- * Returns the current `Session[]` and re-renders only when sessions are
- * added or removed — mutations within a session (stores, history) do not
+ * Returns the current `RuntimeEntry[]` and re-renders only when entries are
+ * added or removed — mutations within a runtime (stores, history) do not
  * trigger re-renders here.
  */
-export function useSessions(): Session<FranklinRuntime>[] {
+export function useSessions(): RuntimeEntry<FranklinRuntime>[] {
 	const manager = useApp().agents;
 
 	const subscribe = useCallback(

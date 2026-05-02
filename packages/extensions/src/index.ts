@@ -11,34 +11,58 @@ export { combine } from './algebra/compiler/combine.js';
 export { compile, compileAll } from './algebra/compiler/compile.js';
 export { compilerFromApi } from './algebra/compiler/from-api.js';
 export type { Compiler } from './algebra/compiler/types.js';
+export {
+	createOrchestrator,
+	Orchestrator,
+	RuntimeCollection,
+} from './harness/orchestrator/index.js';
+export type {
+	OrchestratorPort,
+	OrchestratedAPI,
+	OrchestratedExtension,
+	OrchestratedRuntime,
+	OrchestratorCreateInput,
+	OrchestratorOptions,
+	OrchestratorRuntime,
+	RuntimeEvent,
+	SelfRuntime,
+} from './harness/orchestrator/index.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { ReduceRuntimes } from './algebra/runtime/reduce.js';
 // ---------------------------------------------------------------------------
 // Runtime
 // ---------------------------------------------------------------------------
 export type { BaseRuntime, StateHandle } from './algebra/runtime/types.js';
-export { resolveState } from './algebra/state/resolve.js';
+export { resolveState } from './harness/state/resolve.js';
 // ---------------------------------------------------------------------------
-// Runtime system
+// Harness modules
 // ---------------------------------------------------------------------------
-export type { BaseState } from './algebra/state/types.js';
-export type { SystemBuilder } from './algebra/system/builder.js';
-export { systems } from './algebra/system/builder.js';
-export type { ExtensionBundle } from './algebra/system/bundle/index.js';
-export { createBundle } from './algebra/system/bundle/index.js';
-export { combine as combineSystems } from './algebra/system/combine.js';
-export { createRuntime } from './algebra/system/create.js';
-export { withSetup } from './algebra/system/setup.js';
+export type { BaseState } from './harness/state/types.js';
+export type { ModuleBuilder } from './harness/modules/builder.js';
+export { modules } from './harness/modules/builder.js';
+export type { ExtensionBundle } from './modules/bundle/index.js';
+export { createBundle } from './modules/bundle/index.js';
+export { combine as combineModules } from './harness/modules/combine.js';
+export { createRuntime } from './harness/modules/create.js';
+export { withSetup } from './harness/modules/setup.js';
+export {
+	createHarnessModuleCompilerInput,
+	type RuntimeCreateInput,
+	type RuntimeEntry,
+	type RuntimeOrchestratorPort,
+	type HarnessModuleCompilerContext,
+	type HarnessModuleCompilerInput,
+} from './harness/modules/context.js';
 export type {
-	BaseRuntimeSystem,
-	CombinableSystem,
-	CombineSystems,
+	BaseHarnessModule,
+	CombinableModule,
+	CombineModules,
 	InferAPI,
 	InferBoundAPI,
 	InferRuntime,
 	InferState,
-	RuntimeSystem,
-} from './algebra/system/types.js';
+	HarnessModule,
+} from './harness/modules/types.js';
 export type {
 	Extension,
 	ExtensionAPISurface,
@@ -108,27 +132,27 @@ export type {
 	ToolExecuteReturn,
 	ToolOutput,
 	ToolSpec,
-} from './systems/core/api/index.js';
+} from './modules/core/api/index.js';
 export {
 	resolveToolOutput,
 	serializeTool,
 	toolSpec,
 	toToolInputSchema,
-} from './systems/core/api/index.js';
-export { createCoreCompiler } from './systems/core/compile/index.js';
-export { inspectRuntime } from './systems/core/inspect.js';
-export type { CoreRuntime } from './systems/core/runtime/index.js';
-export { CORE_STATE, coreStateHandle } from './systems/core/runtime/index.js';
+} from './modules/core/api/index.js';
+export { createCoreCompiler } from './modules/core/compile/index.js';
+export { inspectRuntime } from './modules/core/inspect.js';
+export type { CoreRuntime } from './modules/core/runtime/index.js';
+export { CORE_STATE, coreStateHandle } from './modules/core/runtime/index.js';
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
-export type { CoreState } from './systems/core/state.js';
-export { emptyCoreState } from './systems/core/state.js';
-export type { CoreSystem } from './systems/core/system.js';
-export { createCoreSystem } from './systems/core/system.js';
-export type { DependencyRuntime } from './systems/dependency/index.js';
-export type { DependencySystem } from './systems/dependency/system.js';
-export { createDependencySystem } from './systems/dependency/system.js';
+export type { CoreState } from './modules/core/state.js';
+export { emptyCoreState } from './modules/core/state.js';
+export type { CoreModule } from './modules/core/module.js';
+export { createCoreModule } from './modules/core/module.js';
+export type { DependencyRuntime } from './modules/dependency/index.js';
+export type { DependencyModule } from './modules/dependency/module.js';
+export { createDependencyModule } from './modules/dependency/module.js';
 export type {
 	ConfigureOptions,
 	Environment,
@@ -137,54 +161,39 @@ export type {
 	EnvironmentConfig,
 	FilesystemConfig,
 	ReconfigurableEnvironment,
-} from './systems/environment/api/index.js';
+} from './modules/environment/api/index.js';
 export {
 	configureFilesystem,
 	createReconfigurableEnvironment,
 	createWeb,
 	DEFAULT_NETWORK_CONFIG,
-} from './systems/environment/api/index.js';
-export { createEnvironmentCompiler } from './systems/environment/compile/index.js';
-export type { EnvironmentRuntime } from './systems/environment/runtime.js';
-export { environmentStateHandle } from './systems/environment/runtime.js';
-export type { EnvironmentState } from './systems/environment/state.js';
-export { emptyEnvironmentState } from './systems/environment/state.js';
+} from './modules/environment/api/index.js';
+export { createEnvironmentCompiler } from './modules/environment/compile/index.js';
+export type { EnvironmentRuntime } from './modules/environment/runtime.js';
+export { environmentStateHandle } from './modules/environment/runtime.js';
+export type { EnvironmentState } from './modules/environment/state.js';
+export { emptyEnvironmentState } from './modules/environment/state.js';
 export type {
 	EnvironmentFactory,
-	EnvironmentSystem,
-} from './systems/environment/system.js';
-export { createEnvironmentSystem } from './systems/environment/system.js';
+	EnvironmentModule,
+} from './modules/environment/module.js';
+export { createEnvironmentModule } from './modules/environment/module.js';
 export type {
 	IdentityAPI,
 	IdentityAPISurface,
-} from './systems/identity/api.js';
-export { identityAPI } from './systems/identity/api.js';
-export type { IdentityCompiler } from './systems/identity/compiler.js';
-export { identityCompiler } from './systems/identity/compiler.js';
-export type { IdentityRuntime } from './systems/identity/runtime.js';
+} from './modules/identity/api.js';
+export { identityAPI } from './modules/identity/api.js';
+export type { IdentityCompiler } from './modules/identity/compiler.js';
+export { identityCompiler } from './modules/identity/compiler.js';
+export type { IdentityRuntime } from './modules/identity/runtime.js';
 export {
 	identityRuntime,
 	identityStateHandle,
-} from './systems/identity/runtime.js';
-export type { IdentityState } from './systems/identity/state.js';
-export { identityState } from './systems/identity/state.js';
-export type { IdentitySystem } from './systems/identity/system.js';
-export { identitySystem } from './systems/identity/system.js';
-export type {
-	Session,
-	SessionCreate,
-	SessionCreateInput,
-	SessionEvent,
-	SessionRuntime,
-} from './systems/sessions/api/index.js';
-export {
-	createSessionManager,
-	SessionCollection,
-	SessionManager,
-} from './systems/sessions/api/index.js';
-export type { SessionState } from './systems/sessions/state.js';
-export type { SessionSystem } from './systems/sessions/system.js';
-export { createSessionSystem } from './systems/sessions/system.js';
+} from './modules/identity/runtime.js';
+export type { IdentityState } from './modules/identity/state.js';
+export { identityState } from './modules/identity/state.js';
+export type { IdentityModule } from './modules/identity/module.js';
+export { identityModule } from './modules/identity/module.js';
 export type {
 	ForkMode,
 	PersistedStore,
@@ -200,7 +209,7 @@ export type {
 	StoreResult,
 	StoreSnapshot,
 	StoreValueType,
-} from './systems/store/api/index.js';
+} from './modules/store/api/index.js';
 export {
 	createEmptyStoreResult,
 	createPersistedStore,
@@ -208,11 +217,11 @@ export {
 	createStoreResult,
 	StoreRegistry,
 	storeKey,
-} from './systems/store/api/index.js';
-export { createStoreCompiler } from './systems/store/compile/index.js';
-export type { StoreRuntime } from './systems/store/runtime.js';
-export { storeStateHandle } from './systems/store/runtime.js';
-export type { StoreState } from './systems/store/state.js';
-export { emptyStoreState } from './systems/store/state.js';
-export type { StoreSystem } from './systems/store/system.js';
-export { createStoreSystem } from './systems/store/system.js';
+} from './modules/store/api/index.js';
+export { createStoreCompiler } from './modules/store/compile/index.js';
+export type { StoreRuntime } from './modules/store/runtime.js';
+export { storeStateHandle } from './modules/store/runtime.js';
+export type { StoreState } from './modules/store/state.js';
+export { emptyStoreState } from './modules/store/state.js';
+export type { StoreModule } from './modules/store/module.js';
+export { createStoreModule } from './modules/store/module.js';

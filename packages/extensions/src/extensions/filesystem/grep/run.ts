@@ -1,4 +1,4 @@
-import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
+import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
 import { createBackend } from './backends/index.js';
 import type { GrepBackendKind } from './backends/types.js';
 import { formatGrepResult } from './format/result.js';

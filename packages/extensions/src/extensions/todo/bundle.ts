@@ -1,4 +1,4 @@
-import { createBundle } from '../../algebra/system/bundle/create.js';
+import { createBundle } from '../../modules/bundle/create.js';
 import { todoExtension as buildTodoExtension } from './extension.js';
 import { todoKey } from './key.js';
 import { addTodoSpec, completeTodoSpec, listTodosSpec } from './tools.js';

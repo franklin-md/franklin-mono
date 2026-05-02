@@ -3,19 +3,19 @@ import { combine } from '../algebra/compiler/combine.js';
 import { compile } from '../algebra/compiler/compile.js';
 import type { BaseRuntime } from '../algebra/runtime/types.js';
 import type { Extension } from '../algebra/extension/index.js';
-import type { CoreAPI } from '../systems/core/api/api.js';
-import type { SerializedToolDefinition } from '../systems/core/api/tools/index.js';
-import { serializeTool } from '../systems/core/api/tools/index.js';
-import { buildMiddleware } from '../systems/core/compile/decorators/middleware/build.js';
-import type { FullMiddleware } from '../systems/core/compile/decorators/middleware/types.js';
-import { createCoreRegistrar } from '../systems/core/compile/registrar/index.js';
-import type { ReconfigurableEnvironment } from '../systems/environment/api/types.js';
-import { createEnvironmentCompiler } from '../systems/environment/compile/compiler.js';
-import type { EnvironmentRuntime } from '../systems/environment/runtime.js';
-import type { StoreAPISurface } from '../systems/store/api/api.js';
-import { StoreRegistry } from '../systems/store/api/registry/index.js';
-import { createStoreCompiler } from '../systems/store/compile/compiler.js';
-import type { StoreRuntime } from '../systems/store/runtime.js';
+import type { CoreAPI } from '../modules/core/api/api.js';
+import type { SerializedToolDefinition } from '../modules/core/api/tools/index.js';
+import { serializeTool } from '../modules/core/api/tools/index.js';
+import { buildMiddleware } from '../modules/core/compile/decorators/middleware/build.js';
+import type { FullMiddleware } from '../modules/core/compile/decorators/middleware/types.js';
+import { createCoreRegistrar } from '../modules/core/compile/registrar/index.js';
+import type { ReconfigurableEnvironment } from '../modules/environment/api/types.js';
+import { createEnvironmentCompiler } from '../modules/environment/compile/compiler.js';
+import type { EnvironmentRuntime } from '../modules/environment/runtime.js';
+import type { StoreAPISurface } from '../modules/store/api/api.js';
+import { StoreRegistry } from '../modules/store/api/registry/index.js';
+import { createStoreCompiler } from '../modules/store/compile/compiler.js';
+import type { StoreRuntime } from '../modules/store/runtime.js';
 
 /**
  * Build middleware from a Core-only extension without spinning up a

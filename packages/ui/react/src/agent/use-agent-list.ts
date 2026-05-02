@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 import type { Agents, FranklinRuntime } from '@franklin/agent/browser';
-import type { BaseRuntime, Session } from '@franklin/extensions';
+import type { BaseRuntime, RuntimeEntry } from '@franklin/extensions';
 
 import { useApp } from './franklin-context.js';
 import { useSessions } from './use-sessions.js';
@@ -11,15 +11,17 @@ export type AgentCreateInput = Parameters<Agents['create']>[0];
 export type AgentCreate = Agents['create'];
 
 export type AgentsControl<RT extends BaseRuntime = FranklinRuntime> = {
-	sessions: Session<RT>[];
+	sessions: RuntimeEntry<RT>[];
 	activeSessionId: string | null;
-	activeSession: Session<RT> | undefined;
+	activeSession: RuntimeEntry<RT> | undefined;
 	select: (id: string) => void;
 	create: AgentCreate;
 	remove: (id: string) => void;
 };
 
-function getSessionKey<RT extends BaseRuntime>(session: Session<RT>): string {
+function getSessionKey<RT extends BaseRuntime>(
+	session: RuntimeEntry<RT>,
+): string {
 	return session.id;
 }
 

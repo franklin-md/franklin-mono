@@ -6,7 +6,7 @@ import {
 } from '@franklin/lib';
 import { sha256Hex } from '../../hash.js';
 import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
-import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
+import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import { fileKey } from '../../common/key.js';
 import { editExtension } from '../extension.js';
 

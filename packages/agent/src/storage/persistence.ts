@@ -1,4 +1,4 @@
-import type { SessionState, StoreSnapshot } from '@franklin/extensions';
+import type { BaseState, StoreSnapshot } from '@franklin/extensions';
 import {
 	createMapFilePersister,
 	DebouncedPersister,
@@ -21,7 +21,7 @@ import type { FilePersistence } from './types.js';
  * they use `rawCodec` (envelope only, no validation). Future work can
  * tighten these to proper zod schemas without a disk-format migration.
  */
-export function createPersistence<S extends SessionState>(
+export function createPersistence<S extends BaseState>(
 	dir: AbsolutePath,
 	fs: Filesystem,
 ): FilePersistence<S> {

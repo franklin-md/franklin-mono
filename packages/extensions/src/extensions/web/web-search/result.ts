@@ -1,4 +1,4 @@
-import type { ToolOutput } from '../../../systems/core/api/tool.js';
+import type { ToolOutput } from '../../../modules/core/api/tool.js';
 import type { WebSearchResult } from './types.js';
 
 export function toSearchResult(

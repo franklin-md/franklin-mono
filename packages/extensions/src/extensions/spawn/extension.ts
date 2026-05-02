@@ -1,21 +1,26 @@
-import type { Message, TurnEnd } from '@franklin/mini-acp';
-import { collect, stopCategory } from '@franklin/mini-acp';
+import { collect } from '@franklin/mini-acp';
 import { createExtension } from '../../algebra/index.js';
-import type {
-	CoreAPI,
-	CoreSystem,
-	ToolExecuteReturn,
-} from '../../systems/core/index.js';
-import type { SessionRuntime } from '../../systems/sessions/index.js';
+import type { CoreAPI, CoreRuntime } from '../../modules/core/index.js';
+import type { RuntimeOrchestratorPort } from '../../harness/modules/index.js';
+import type { SelfRuntime } from '../../harness/orchestrator/index.js';
 import { spawnSpec } from './tools.js';
+import { formatResult } from './format.js';
+
+type SpawnRuntime = CoreRuntime &
+	SelfRuntime & {
+		readonly orchestrator: RuntimeOrchestratorPort<SpawnRuntime>;
+	};
 
 /**
  * Spawn a child agent with a fresh prompt and return its last message.
  */
 export function spawnExtension() {
-	return createExtension<[CoreAPI], [SessionRuntime<CoreSystem>]>((api) => {
+	return createExtension<[CoreAPI], [SpawnRuntime]>((api) => {
 		api.registerTool(spawnSpec, async ({ prompt }, ctx) => {
-			const child = await ctx.session.child();
+			const child = await ctx.orchestrator.create({
+				from: ctx.self.id,
+				mode: 'child',
+			});
 			try {
 				const stream = child.runtime.prompt({
 					role: 'user',
@@ -24,39 +29,8 @@ export function spawnExtension() {
 				const { messages, turnEnd } = await collect(stream);
 				return formatResult(messages, turnEnd);
 			} finally {
-				await child.runtime.session.removeSelf();
+				await child.runtime.orchestrator.remove(child.id);
 			}
 		});
 	});
-}
-
-function formatResult(
-	messages: Message[],
-	turnEnd: TurnEnd | undefined,
-): ToolExecuteReturn {
-	if (turnEnd && stopCategory(turnEnd.stopCode) !== 'finished') {
-		return {
-			content: [
-				{
-					type: 'text',
-					text: turnEnd.stopMessage ?? 'Child agent turn ended with an error',
-				},
-			],
-			isError: true,
-		};
-	}
-
-	const lastMessage = messages[messages.length - 1];
-	if (!lastMessage) {
-		return {
-			content: [{ type: 'text', text: 'Child agent produced no response' }],
-			isError: true,
-		};
-	}
-
-	const text = lastMessage.content
-		.flatMap((block) => (block.type === 'text' ? [block.text] : []))
-		.join('');
-
-	return text;
 }

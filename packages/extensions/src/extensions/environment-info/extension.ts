@@ -1,6 +1,6 @@
 import { createExtension } from '../../algebra/index.js';
-import type { CoreAPI } from '../../systems/core/index.js';
-import type { EnvironmentRuntime } from '../../systems/environment/runtime.js';
+import type { CoreAPI } from '../../modules/core/index.js';
+import type { EnvironmentRuntime } from '../../modules/environment/runtime.js';
 import { renderEnvironmentInfo } from './render.js';
 import { renderCurrentDate } from './render-date.js';
 import { renderEnvironmentPermissions } from './render-permissions.js';

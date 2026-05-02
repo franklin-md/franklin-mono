@@ -1,8 +1,8 @@
 import type { AssertNoOverlap, Simplify } from '@franklin/lib';
 import type { API, BoundAPI } from '../api/index.js';
 import type { BaseRuntime, ReduceRuntimes } from '../runtime/index.js';
-import type { CoreAPI } from '../../systems/core/api/api.js';
-import type { CoreRuntime } from '../../systems/core/runtime/index.js';
+import type { CoreAPI } from '../../modules/core/api/api.js';
+import type { CoreRuntime } from '../../modules/core/runtime/index.js';
 
 // Same API as Pi Extensions
 export type Extension<TApi = BoundAPI<CoreAPI, CoreRuntime>> = (

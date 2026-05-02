@@ -9,7 +9,7 @@ An API is encoded as a type-level function `Runtime → APISurface` (an HKT) so 
 - **CoreAPI**: Bound as `BoundAPI<CoreAPI, Runtime>`, extending a minimal agent loop with tools and context management. Tool and handler closures receive the fully composed runtime.
 - **StoreAPI**: Static API, allowing shared state between agent-agent and agent-app.
 - **EnvironmentAPI**: Static and currently empty — environment capabilities flow through the runtime.
-- **SessionSystem**: Preserves the wrapped system's API while adding session capabilities to the runtime.
+- **Orchestrator**: Materializes root, child, fork, and restored runtimes from a reduced harness module while injecting `ctx.self` and `ctx.orchestrator`.
 - **DependencyRuntime<Name,T>**: Simple way for an extension to depend on an app-provided global resource (authentication, secrets, app-level environment). The dependency lands on the runtime as a field keyed by `Name`, so handlers read it via `ctx.<name>`.
 
 For extension authoring, prefer `createExtension<APIs, Runtimes>(...)` over manually spelling the bound API intersection. It reduces the runtime tuple with the same `CombinedRuntime` semantics, applies each API HKT to that reduced runtime, and returns a regular `Extension`:
@@ -34,8 +34,8 @@ API keys and runtime-extra keys are still required to be disjoint, matching `com
 Franklin models extension composition across three related surfaces:
 
 - **Compiler**: API-family-aware API factory plus runtime builder. It exposes `createApi<ContextRuntime>()` and `build<ContextRuntime>(getRuntime)`, which bind the API HKT and lazy runtime context to the compile context runtime while `build` still returns the compiler's own runtime.
-- **Runtime**: lifecycle surface (`state.get`, `state.fork`, `state.child`, `dispose`, `subscribe`) plus system-specific capabilities.
-- **RuntimeSystem**: a factory for `emptyState()` and fresh compilers, parameterized by an API (HKT).
+- **Runtime**: lifecycle surface (`dispose`, `subscribe`) plus module-specific capabilities.
+- **HarnessModule**: a factory for `emptyState()` and fresh compilers, parameterized by an API (HKT). Compiler creation receives materialization context (`state`, runtime `id`, and `getOrchestrator<ContextRuntime>()`) so modules can contribute per-runtime capabilities without each module parsing create/fork/child options.
 
 `combine(...)` merges these surfaces by product:
 
@@ -51,11 +51,11 @@ This composition is intentionally **partial**:
 
 The neutral element for this composition is the `Identity*` set:
 
-- `IdentityAPI` (lifted with `StaticAPI<IdentityAPI>` at the system signature)
+- `IdentityAPI` (lifted with `StaticAPI<IdentityAPI>` at the module signature)
 - `IdentityState`
 - `IdentityRuntime`
 - `identityCompiler()`
-- `identitySystem()`
+- `identityModule()`
 
 The important laws for the current algebra surface are:
 
@@ -63,16 +63,41 @@ The important laws for the current algebra surface are:
 - **Right identity**: combining identity on the right preserves the other operand.
 - **Associativity**: intended for valid disjoint compositions, so regrouping does not change the resulting merged surface.
 
-Left/right identity is tested explicitly for compiler, runtime, and runtime-system composition.
+Left/right identity is tested explicitly for compiler, runtime, and harness module composition.
+
+### Harness Orchestration
+
+`Orchestrator` is the generic runtime collection and materialization
+boundary. It takes a reduced module, a reduced extension list, and a runtime
+collection. It owns create/materialize semantics:
+
+- new runtimes start from `module.emptyState()`
+- child and fork runtimes derive state via `module.state(source).child()` and
+  `module.state(source).fork()`
+- supplied overrides are resolved after derivation
+- extensions are applied to the final composed API before the runtime is built
+- the built runtime is inserted into the collection
+
+The orchestrator folds in two internal runtime modules before compiling
+extensions:
+
+- `self`, which exposes the runtime id
+- `orchestrator`, which exposes a narrow runtime-facing port
+  (`create/get/list/remove`)
+
+The injected orchestrator port is late-bound through
+`getOrchestrator<ContextRuntime>()`, mirroring `createApi<ContextRuntime>()`.
+This lets runtime-aware API handlers see the final composed runtime while the
+state type remains private to the orchestrator.
 
 ### Agent Composition Strategies
 
 There are many places where you could plausibly compose simpler mechanics to create a specific agent behaviour. These solutions are largely functionally equivalent, so the choice is more of a complexity management decision. Here are some emergent patterns we have discovered and documented so far:
 
-- **RuntimeSystem decoration for enforcing universal behaviour**:
-  - _It may be easier to express the behaviour as a transformation over the Runtime as oppposed to using the API_
-  - Examples:
-    - `withAuth` decorates CoreSytem so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials
+- **HarnessModule decoration for enforcing universal behaviour**:
+	- _It may be easier to express the behaviour as a transformation over the Runtime as oppposed to using the API_
+	- Examples:
+    - `withAuth` decorates `CoreModule` so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials
     - [ ] `withAgentsMd`
 
 ## Extension Authoring Rules
@@ -81,7 +106,7 @@ These are architectural invariants, not conventions. They should eventually beco
 
 ### 1. Dependencies flow through the runtime
 
-Extensions must not capture external dependencies via closure. App-level singletons (auth, database, settings) are surfaced as fields on the runtime by `createDependencySystem(...)` and read inside handlers via the `ctx` argument.
+Extensions must not capture external dependencies via closure. App-level singletons (auth, database, settings) are surfaced as fields on the runtime by `createDependencyModule(...)` and read inside handlers via the `ctx` argument.
 
 **Wrong** — closure capture:
 
@@ -97,7 +122,7 @@ function createMyExtension(db: Database): Extension {
 **Right** — dependency through the runtime:
 
 ```typescript
-const databaseSystem = createDependencySystem('database', db);
+const databaseModule = createDependencyModule('database', db);
 
 const myExtension: Extension<
 	BoundAPI<CoreAPI, DependencyRuntime<'database', Database>>
@@ -106,7 +131,7 @@ const myExtension: Extension<
 };
 ```
 
-For app-level singleton services, prefer `createDependencySystem(...)` over hand-rolling a one-method API.
+For app-level singleton services, prefer `createDependencyModule(...)` over hand-rolling a one-method API.
 
 ### 2. Don't call API methods within tool execution closures
 

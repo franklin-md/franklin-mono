@@ -1,7 +1,7 @@
 import { truncateStream } from '@franklin/lib';
 import { createExtension } from '../../../algebra/index.js';
-import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
+import type { CoreAPI } from '../../../modules/core/index.js';
+import type { EnvironmentRuntime } from '../../../modules/environment/runtime.js';
 import { globSpec } from './tools.js';
 
 const MAX_FORMATTED_CHARS = 12_000;

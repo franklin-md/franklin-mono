@@ -4,34 +4,34 @@ import {
 	MemoryOsInfo,
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
-import type { SystemPromptHandler } from '../../../systems/core/api/handlers.js';
+import type { SystemPromptHandler } from '../../../modules/core/api/handlers.js';
 import {
 	buildSystemPromptAssembler,
 	type SystemPromptAssembler,
-} from '../../../systems/core/compile/decorators/system-prompt/index.js';
+} from '../../../modules/core/compile/decorators/system-prompt/index.js';
 import {
 	bindHandlers,
 	createCoreRegistrar,
 	type WithContext,
-} from '../../../systems/core/compile/registrar/index.js';
+} from '../../../modules/core/compile/registrar/index.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
-} from '../../../systems/environment/api/types.js';
+} from '../../../modules/environment/api/types.js';
 import {
 	createEnvironmentRuntime,
 	type EnvironmentRuntime,
-} from '../../../systems/environment/runtime.js';
+} from '../../../modules/environment/runtime.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
 
-type RuntimeSystemPromptHandler = WithContext<
+type HarnessModulePromptHandler = WithContext<
 	SystemPromptHandler,
 	EnvironmentRuntime
 >;
 
 function collectHandlers(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
-): RuntimeSystemPromptHandler[] {
+): HarnessModulePromptHandler[] {
 	const { api, registrations } = createCoreRegistrar<EnvironmentRuntime>();
 	extension(api);
 	return registrations.systemPrompt;
@@ -67,7 +67,7 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 }
 
 function bindAssembler(
-	handlers: RuntimeSystemPromptHandler[],
+	handlers: HarnessModulePromptHandler[],
 	ctx: EnvironmentRuntime,
 ): SystemPromptAssembler {
 	const boundHandlers: SystemPromptHandler[] = bindHandlers(

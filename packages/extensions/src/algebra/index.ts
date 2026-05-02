@@ -2,27 +2,34 @@ export * from './api/index.js';
 export * from './compiler/index.js';
 export * from './extension/index.js';
 export * from './runtime/index.js';
-export * from './state/index.js';
-// `combine` conflicts between compiler (combine compilers) and system (combine systems).
-// Re-export system's combine under the public alias used by the package barrel.
+export * from '../harness/orchestrator/index.js';
+export * from '../harness/state/index.js';
+// `combine` conflicts between compiler (combine compilers) and modules (combine modules).
+// Re-export the module combine under the public alias used by the package barrel.
 export type {
-	BaseRuntimeSystem,
-	RuntimeSystem,
+	BaseHarnessModule,
+	HarnessModule,
 	InferCompiler,
 	InferAPI,
 	InferState,
 	InferBoundAPI,
 	InferRuntime,
-	CombineSystems,
-	CombinableSystem,
-	ExtensionBundle,
-} from './system/index.js';
+	CombineModules,
+	CombinableModule,
+	RuntimeCreateInput,
+	RuntimeEntry,
+	RuntimeOrchestratorPort,
+	HarnessModuleCompilerContext,
+	HarnessModuleCompilerInput,
+} from '../harness/modules/index.js';
+export type { ExtensionBundle } from '../modules/bundle/index.js';
 export {
+	createHarnessModuleCompilerInput,
 	createRuntime,
-	combine as combineSystems,
+	combine as combineModules,
 	withSetup,
-	systems,
-	createBundle,
-} from './system/index.js';
-export type { SystemBuilder } from './system/index.js';
+	modules,
+} from '../harness/modules/index.js';
+export { createBundle } from '../modules/bundle/index.js';
+export type { ModuleBuilder } from '../harness/modules/index.js';
 export type { MaybePromise } from './types/index.js';

@@ -3,7 +3,7 @@ import { useMemo, type ReactNode } from 'react';
 
 import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
 import { statusExtension, type StatusState } from '@franklin/extensions';
-import type { Session } from '@franklin/extensions';
+import type { RuntimeEntry } from '@franklin/extensions';
 import { AgentsProvider, AppContext } from '@franklin/react';
 
 import { AgentTabs } from '../../src/agent-tabs/tabs.js';
@@ -53,7 +53,7 @@ function createRuntime(status: StatusState): FranklinRuntime {
 function createSession(
 	id: string,
 	status: StatusState,
-): Session<FranklinRuntime> {
+): RuntimeEntry<FranklinRuntime> {
 	return { id, runtime: createRuntime(status) };
 }
 
@@ -64,8 +64,8 @@ type MockAgentsHostProps = {
 
 function MockAgentsHost({ initialSessions, children }: MockAgentsHostProps) {
 	const app = useMemo(() => {
-		const sessions: Session<FranklinRuntime>[] = initialSessions.map((seed) =>
-			createSession(seed.id, seed.status),
+		const sessions: RuntimeEntry<FranklinRuntime>[] = initialSessions.map(
+			(seed) => createSession(seed.id, seed.status),
 		);
 		const listeners = new Set<() => void>();
 		let nextIndex = sessions.length + 1;

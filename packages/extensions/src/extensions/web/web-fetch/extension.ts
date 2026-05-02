@@ -6,10 +6,10 @@ import {
 	withTimeout,
 } from '@franklin/lib';
 import { createExtension } from '../../../algebra/index.js';
-import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
-import type { StoreAPI } from '../../../systems/store/index.js';
-import type { StoreRuntime } from '../../../systems/store/runtime.js';
+import type { CoreAPI } from '../../../modules/core/index.js';
+import type { EnvironmentRuntime } from '../../../modules/environment/runtime.js';
+import type { StoreAPI } from '../../../modules/store/index.js';
+import type { StoreRuntime } from '../../../modules/store/runtime.js';
 import { readFromCache, writeToCache } from './cache.js';
 import { webFetchCacheKey } from './key.js';
 import { processWebResponse } from './process.js';

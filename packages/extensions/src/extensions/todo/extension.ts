@@ -1,7 +1,7 @@
 import { createExtension } from '../../algebra/index.js';
-import type { CoreAPI } from '../../systems/core/index.js';
-import type { StoreAPI } from '../../systems/store/index.js';
-import type { StoreRuntime } from '../../systems/store/runtime.js';
+import type { CoreAPI } from '../../modules/core/index.js';
+import type { StoreAPI } from '../../modules/store/index.js';
+import type { StoreRuntime } from '../../modules/store/runtime.js';
 import { createTodoControl } from './control.js';
 import { formatTodos } from './format.js';
 import { todoKey } from './key.js';
