@@ -7,7 +7,7 @@ import type {
 	InferState,
 	Modules,
 	OrchestratorModule,
-	InferRuntime,
+	OrchestratorRuntime,
 } from '@franklin/extensions';
 
 export type FranklinModules = readonly [
@@ -18,9 +18,15 @@ export type FranklinModules = readonly [
 
 export type FranklinBase = Modules<FranklinModules>;
 
-export type FranklinModule = OrchestratorModule<FranklinBase>;
+export type FranklinModule = OrchestratorModule<FranklinModules>;
 
-export type FranklinRuntime = InferRuntime<FranklinModule>;
+// Use the named `OrchestratorRuntime<…>` alias rather than
+// `InferRuntime<FranklinModule>`: the structural `OrchestratorModule<Mods>`
+// (a `Modules<[Modules<Mods>, InternalOrchestratorModule<Modules<Mods>>]>`)
+// routes through
+// `Simplify<CombinedRuntime<…>>`, which forces TypeScript to inline the
+// runtime's `unique symbol` keys (CORE_STATE, …) into downstream dts files.
+export type FranklinRuntime = OrchestratorRuntime<FranklinBase>;
 
 /** Combined state persisted without secrets. */
 export type FranklinState = InferState<FranklinModule>;

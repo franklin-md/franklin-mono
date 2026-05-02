@@ -41,8 +41,8 @@ interface RuntimeAwareAPI extends API {
 }
 
 type TestModule = HarnessModule<TestState, RuntimeAwareAPI, TestRuntime>;
-type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<TestModule>>;
-type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<TestModule>>;
+type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<[TestModule]>>;
+type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<[TestModule]>>;
 
 function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 	return {

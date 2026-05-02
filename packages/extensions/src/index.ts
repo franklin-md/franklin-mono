@@ -21,7 +21,6 @@ export type {
 	OrchestratorCreateInput,
 	OrchestratorHandle,
 	OrchestratorModule,
-	OrchestratorOptions,
 	OrchestratorRuntime,
 	RuntimeEntry,
 	RuntimeEvent,

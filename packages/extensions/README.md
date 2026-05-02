@@ -35,7 +35,7 @@ Franklin models extension composition across three related surfaces:
 
 - **Compiler**: API-family-aware API factory plus runtime builder. It exposes `createApi<ContextRuntime>()` and `build<ContextRuntime>(getRuntime)`, which bind the API HKT and lazy runtime context to the compile context runtime while `build` still returns the compiler's own runtime.
 - **Runtime**: lifecycle surface (`dispose`, `subscribe`) plus module-specific capabilities.
-- **HarnessModule**: a factory for `emptyState()` and fresh compilers, parameterized by an API (HKT). Compiler creation receives materialization context (`state`, runtime `id`, and `getOrchestrator<ContextRuntime>()`) so modules can contribute per-runtime capabilities without each module parsing create/fork/child options.
+- **HarnessModule**: a factory for `emptyState()` and fresh compilers, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options.
 
 `combine(...)` merges these surfaces by product:
 
@@ -78,17 +78,16 @@ collection. It owns create/materialize semantics:
 - extensions are applied to the final composed API before the runtime is built
 - the built runtime is inserted into the collection
 
-The orchestrator folds in two internal runtime modules before compiling
+The orchestrator folds in two internal dependency-backed runtime ports before compiling
 extensions:
 
 - `self`, which exposes the runtime id
 - `orchestrator`, which exposes a narrow runtime-facing port
   (`create/get/list/remove`)
 
-The injected orchestrator port is late-bound through
-`getOrchestrator<ContextRuntime>()`, mirroring `createApi<ContextRuntime>()`.
-This lets runtime-aware API handlers see the final composed runtime while the
-state type remains private to the orchestrator.
+These ports are implemented with the same dependency module used for
+app-provided resources. This keeps runtime-aware API handlers on the final
+composed runtime while the state type remains private to the orchestrator.
 
 ### Agent Composition Strategies
 

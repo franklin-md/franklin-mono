@@ -25,6 +25,7 @@ export type HarnessModule<
 	A extends API,
 	Runtime extends BaseRuntime & A['In'],
 > = {
+	// TODO: Is this actually needed?
 	readonly [MODULE_API]?: A;
 	emptyState(): S;
 	createCompiler(state: S): Compiler<A, Runtime>;

@@ -1,19 +1,18 @@
 import type { DeepPartial } from '@franklin/lib';
-import type { Extension } from '../../algebra/extension/index.js';
 import type {
 	BaseRuntime,
 	RuntimeExtras,
 } from '../../algebra/runtime/index.js';
 import type {
 	BaseHarnessModule,
-	HarnessModule,
-	InferAPI,
-	InferBoundAPI,
 	InferRuntime,
 	InferState,
+	Modules,
 } from '../modules/index.js';
-import type { SelfRuntime } from './internal/index.js';
-import type { RuntimeCollection } from './collection.js';
+import type {
+	InternalOrchestratorModule,
+	SelfRuntime,
+} from './internal/index.js';
 
 export type RuntimeEntry<Runtime extends BaseRuntime> = {
 	readonly id: string;
@@ -40,12 +39,18 @@ export type OrchestratorHandle<Runtime extends BaseRuntime, State = unknown> = {
 };
 
 /**
- * The runtime produced by an orchestrator over a base module.
- * Recursive fixed point: `runtime.orchestrator` references this same type.
+ * Runtime produced by an orchestrator over a base module. Recursive fixed
+ * point: `runtime.orchestrator` references this same type.
  *
- * Exported as a named alias so that dts emission can reference it by name —
- * runtime fields use `unique symbol` keys (CORE_STATE, ENV_STATE, ...) which
- * cannot be safely inlined into downstream consumers' declaration files.
+ * Spelled as a manual intersection (rather than
+ * `InferRuntime<OrchestratorModule<[M]>>`) so dts emission can reference it by
+ * name. Going through `Modules`/`CombineModules` would route through
+ * `Simplify<CombinedRuntime<…>>`, which forces TypeScript to enumerate keys
+ * at write-time and inlines the runtime's `unique symbol` keys (CORE_STATE,
+ * ENV_STATE, …) into every downstream consumer's declaration file.
+ *
+ * TODO: Replace symbol-backed runtime state handles with a uniform module-local
+ * state registry so this type can be inferred from `OrchestratorModule`.
  */
 export type OrchestratorRuntime<M extends BaseHarnessModule> = BaseRuntime &
 	RuntimeExtras<InferRuntime<M>> &
@@ -57,29 +62,21 @@ export type OrchestratorRuntime<M extends BaseHarnessModule> = BaseRuntime &
 	};
 
 /**
- * The fully orchestrated module for a base module. It is itself a
- * `HarnessModule`, so the standard inference helpers (`InferRuntime`,
- * `InferState`, `InferBoundAPI`) work on it directly:
+ * The fully orchestrated module for a module list: the reduced user modules
+ * composed with the internal `Self` + orchestration ports (see
+ * `InternalOrchestratorModule`). It is itself a `HarnessModule`, so the
+ * standard inference helpers (`InferRuntime`, `InferState`, `InferBoundAPI`)
+ * work on it directly:
  *
  *   type FranklinBase      = Modules<FranklinModules>;
- *   type FranklinModule    = OrchestratorModule<FranklinBase>;
+ *   type FranklinModule    = OrchestratorModule<FranklinModules>;
  *   type FranklinRuntime   = OrchestratorRuntime<FranklinBase>;
  *   type FranklinState     = InferState<FranklinModule>;
  *   type FranklinAPI       = InferBoundAPI<FranklinModule>;
  *   type FranklinExtension = Extension<FranklinAPI>;
  */
-export type OrchestratorModule<M extends BaseHarnessModule> = HarnessModule<
-	InferState<M>,
-	InferAPI<M>,
-	OrchestratorRuntime<M>
->;
-
-export type OrchestratorOptions<M extends BaseHarnessModule> = {
-	readonly module: M;
-	readonly collection: RuntimeCollection<OrchestratorRuntime<M>>;
-	readonly extensions: Extension<InferBoundAPI<OrchestratorModule<M>>>[];
-	readonly createId?: () => string;
-};
+export type OrchestratorModule<Mods extends readonly BaseHarnessModule[]> =
+	Modules<[Modules<Mods>, InternalOrchestratorModule<Modules<Mods>>]>;
 
 export type RuntimeEvent<Runtime extends BaseRuntime> =
 	| { readonly action: 'add'; readonly id: string; readonly runtime: Runtime }

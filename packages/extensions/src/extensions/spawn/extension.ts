@@ -1,23 +1,24 @@
 import { collect } from '@franklin/mini-acp';
-import { createExtension } from '../../algebra/index.js';
-import type { CoreAPI, CoreRuntime } from '../../modules/core/index.js';
+import type { BoundAPI } from '../../algebra/api/index.js';
+import type { Extension } from '../../algebra/extension/index.js';
+import { createExtension } from '../../harness/modules/index.js';
 import type {
-	OrchestratorHandle,
-	SelfRuntime,
+	OrchestratorModule,
+	OrchestratorRuntime,
 } from '../../harness/orchestrator/index.js';
+import type { CoreAPI, CoreModule } from '../../modules/core/index.js';
 import { spawnSpec } from './tools.js';
 import { formatResult } from './format.js';
 
-type SpawnRuntime = CoreRuntime &
-	SelfRuntime & {
-		readonly orchestrator: OrchestratorHandle<SpawnRuntime>;
-	};
+type SpawnExtension = Extension<
+	BoundAPI<CoreAPI, OrchestratorRuntime<CoreModule>>
+>;
 
 /**
  * Spawn a child agent with a fresh prompt and return its last message.
  */
-export function spawnExtension() {
-	return createExtension<[CoreAPI], [SpawnRuntime]>((api) => {
+export function spawnExtension(): SpawnExtension {
+	return createExtension<[OrchestratorModule<[CoreModule]>]>((api) => {
 		api.registerTool(spawnSpec, async ({ prompt }, ctx) => {
 			const child = await ctx.orchestrator.create({
 				from: ctx.self.id,
