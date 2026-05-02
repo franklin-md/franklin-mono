@@ -1,14 +1,14 @@
 import { decode } from '@franklin/lib';
-import { createExtension } from '../../../algebra/index.js';
-import type { CoreAPI } from '../../../modules/core/index.js';
-import type { EnvironmentRuntime } from '../../../modules/environment/runtime.js';
-import type { StoreRuntime } from '../../../modules/store/runtime.js';
+import { defineExtension } from '../../../harness/modules/index.js';
+import type { CoreModule } from '../../../modules/core/index.js';
+import type { EnvironmentModule } from '../../../modules/environment/index.js';
+import type { StoreModule } from '../../../modules/store/index.js';
 import { createFileControl } from '../common/control.js';
 import { fileKey } from '../common/key.js';
 import { readFileSpec } from './tools.js';
 
 export function readExtension() {
-	return createExtension<[CoreAPI], [EnvironmentRuntime, StoreRuntime]>(
+	return defineExtension<[CoreModule, StoreModule, EnvironmentModule]>(
 		(api) => {
 			api.registerTool(readFileSpec, async ({ path, limit, offset }, ctx) => {
 				const fs = ctx.environment.filesystem;

@@ -1,35 +1,44 @@
 import { createExtension as createAlgebraExtension } from '../../algebra/extension/index.js';
 import type {
 	Extension,
-	ExtensionFor,
+	ExtensionAPISurface,
 	ExtensionInput,
 } from '../../algebra/extension/types.js';
 import type { InferAPI, InferRuntime } from './infer.js';
 import type { BaseHarnessModule } from './module.js';
 
-type ModuleAPIs<T extends readonly BaseHarnessModule[]> = {
+export type ModuleAPIs<T extends readonly BaseHarnessModule[]> = {
 	readonly [K in keyof T]: InferAPI<T[K]>;
 };
 
-type ModuleRuntimes<T extends readonly BaseHarnessModule[]> = {
+export type ModuleRuntimes<T extends readonly BaseHarnessModule[]> = {
 	readonly [K in keyof T]: InferRuntime<T[K]>;
 };
 
+export type ExtensionApi<Modules extends readonly BaseHarnessModule[]> =
+	ExtensionAPISurface<ModuleAPIs<Modules>, ModuleRuntimes<Modules>>;
+
+export type ExtensionForModules<Modules extends readonly BaseHarnessModule[]> =
+	Extension<ExtensionApi<Modules>>;
+
+type ExtensionInputForModules<Modules extends readonly BaseHarnessModule[]> =
+	ExtensionInput<ModuleAPIs<Modules>, ModuleRuntimes<Modules>>;
+
 /**
- * Harness counterpart to `algebra/createExtension`. Takes a tuple of
+ * Authoring counterpart to `algebra/createExtension`. Takes a tuple of
  * `HarnessModule`s and infers the API + runtime tuples for the algebra
  * version.
  */
-export function createExtension<
+export function defineExtension<
 	Modules extends readonly BaseHarnessModule[],
 >(): (
-	extension: ExtensionInput<ModuleAPIs<Modules>, ModuleRuntimes<Modules>>,
-) => ExtensionFor<ModuleAPIs<Modules>, ModuleRuntimes<Modules>>;
+	extension: ExtensionInputForModules<Modules>,
+) => ExtensionForModules<Modules>;
 
-export function createExtension<Modules extends readonly BaseHarnessModule[]>(
-	extension: ExtensionInput<ModuleAPIs<Modules>, ModuleRuntimes<Modules>>,
-): ExtensionFor<ModuleAPIs<Modules>, ModuleRuntimes<Modules>>;
+export function defineExtension<Modules extends readonly BaseHarnessModule[]>(
+	extension: ExtensionInputForModules<Modules>,
+): ExtensionForModules<Modules>;
 
-export function createExtension(extension?: Extension<never>): unknown {
+export function defineExtension(extension?: Extension<never>): unknown {
 	return createAlgebraExtension(extension as never);
 }

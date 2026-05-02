@@ -1,7 +1,6 @@
-import { createExtension } from '../../algebra/index.js';
-import type { CoreAPI } from '../../modules/core/index.js';
-import type { StoreAPI } from '../../modules/store/index.js';
-import type { StoreRuntime } from '../../modules/store/runtime.js';
+import { defineExtension } from '../../harness/modules/index.js';
+import type { CoreModule } from '../../modules/core/index.js';
+import type { StoreModule } from '../../modules/store/index.js';
 import { createTodoControl } from './control.js';
 import { formatTodos } from './format.js';
 import { todoKey } from './key.js';
@@ -13,7 +12,7 @@ import { addTodoSpec, completeTodoSpec, listTodosSpec } from './tools.js';
  * todos into every prompt.
  */
 export function todoExtension() {
-	return createExtension<[CoreAPI, StoreAPI], [StoreRuntime]>((api) => {
+	return defineExtension<[CoreModule, StoreModule]>((api) => {
 		api.registerStore(todoKey, [], 'shared');
 
 		api.registerTool(addTodoSpec, async ({ text }, ctx) => {

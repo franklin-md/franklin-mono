@@ -42,6 +42,7 @@ export { createBundle } from './modules/bundle/index.js';
 export {
 	combine as combineModules,
 	combineAll,
+	defineExtension,
 } from './harness/modules/index.js';
 export { createRuntime } from './harness/modules/create.js';
 export { withSetup } from './harness/modules/setup.js';
@@ -49,6 +50,8 @@ export type {
 	BaseHarnessModule,
 	CombinableModule,
 	CombineModules,
+	ExtensionApi,
+	ExtensionForModules,
 	HarnessModule,
 	InferAPI,
 	InferBoundAPI,
@@ -62,10 +65,7 @@ export type {
 	ExtensionAPISurface,
 	ExtensionFor,
 } from './algebra/extension/types.js';
-export {
-	createExtension,
-	reduceExtensions,
-} from './algebra/extension/index.js';
+export { reduceExtensions } from './algebra/extension/index.js';
 export type { MaybePromise } from './algebra/types/shared.js';
 export type {
 	AssistantBlock,

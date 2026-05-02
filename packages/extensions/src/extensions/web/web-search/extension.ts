@@ -4,9 +4,9 @@ import {
 	withRedirect,
 	withTimeout,
 } from '@franklin/lib';
-import { createExtension } from '../../../algebra/index.js';
-import type { CoreAPI } from '../../../modules/core/index.js';
-import type { EnvironmentRuntime } from '../../../modules/environment/runtime.js';
+import { defineExtension } from '../../../harness/modules/index.js';
+import type { CoreModule } from '../../../modules/core/index.js';
+import type { EnvironmentModule } from '../../../modules/environment/index.js';
 import { searchWithDdg } from './ddg.js';
 import { searchWithExa } from './exa.js';
 import { toSearchError, toSearchResult } from './result.js';
@@ -21,7 +21,7 @@ export function webSearchExtension(
 ) {
 	const resolved = resolveWebSearchOptions(options);
 
-	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
+	return defineExtension<[CoreModule, EnvironmentModule]>((api) => {
 		api.registerTool(searchWebSpec, async ({ query }, ctx) => {
 			const fetch = decorate(ctx.environment.web.fetch)
 				.with(withOnlyHTTP())

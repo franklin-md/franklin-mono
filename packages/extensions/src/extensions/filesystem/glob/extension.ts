@@ -1,13 +1,13 @@
 import { truncateStream } from '@franklin/lib';
-import { createExtension } from '../../../algebra/index.js';
-import type { CoreAPI } from '../../../modules/core/index.js';
-import type { EnvironmentRuntime } from '../../../modules/environment/runtime.js';
+import { defineExtension } from '../../../harness/modules/index.js';
+import type { CoreModule } from '../../../modules/core/index.js';
+import type { EnvironmentModule } from '../../../modules/environment/index.js';
 import { globSpec } from './tools.js';
 
 const MAX_FORMATTED_CHARS = 12_000;
 
 export function globExtension() {
-	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
+	return defineExtension<[CoreModule, EnvironmentModule]>((api) => {
 		api.registerTool(globSpec, async ({ pattern, options }, ctx) => {
 			const env = ctx.environment;
 			const rootDir = options.root_dir

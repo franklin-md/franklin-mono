@@ -1,6 +1,6 @@
-import { createExtension } from '../../algebra/index.js';
-import type { CoreAPI } from '../../modules/core/index.js';
-import type { EnvironmentRuntime } from '../../modules/environment/runtime.js';
+import { defineExtension } from '../../harness/modules/index.js';
+import type { CoreModule } from '../../modules/core/index.js';
+import type { EnvironmentModule } from '../../modules/environment/index.js';
 import { concat } from './composers/concat.js';
 import {
 	type LoadedInstruction,
@@ -9,7 +9,7 @@ import {
 import { createClaudeSpec } from './specs/claude.js';
 
 export function createInstructionExtension() {
-	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
+	return defineExtension<[CoreModule, EnvironmentModule]>((api) => {
 		const spec = createClaudeSpec();
 
 		api.on('systemPrompt', (prompt, ctx) => {

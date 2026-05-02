@@ -4,21 +4,24 @@ Plugin system for Franklin's agent runtime. Extensions register tools, lifecycle
 
 ## APIs
 
-An API is encoded as a type-level function `Runtime → APISurface` (an HKT) so it can be applied to the eventual composed runtime. The HKT is `API` from `@franklin/extensions`; the concrete bound surface at runtime `R` is `BoundAPI<A, R>`. Static APIs that don't depend on runtime use the `StaticAPI<A>` helper. Implemented so far:
+Extensions are authored against a tuple of `HarnessModule`s with
+`defineExtension<Modules>(...)`. A module contributes any registration API it
+owns plus any runtime capabilities its handlers can read from `ctx`.
+Implemented so far:
 
-- **CoreAPI**: Bound as `BoundAPI<CoreAPI, Runtime>`, extending a minimal agent loop with tools and context management. Tool and handler closures receive the fully composed runtime.
-- **StoreAPI**: Static API, allowing shared state between agent-agent and agent-app.
-- **EnvironmentAPI**: Static and currently empty — environment capabilities flow through the runtime.
+- **CoreModule**: Contributes the core registration API, extending a minimal agent loop with tools and context management. Tool and handler closures receive the fully composed runtime.
+- **StoreModule**: Contributes store registration plus runtime access to shared state between agent-agent and agent-app.
+- **EnvironmentModule**: Contributes runtime environment capabilities; its registration API is empty.
 - **Orchestrator**: Materializes root, child, fork, and restored runtimes from a reduced harness module while injecting `ctx.self` and `ctx.orchestrator`.
 - **DependencyRuntime<Name,T>**: Simple way for an extension to depend on an app-provided global resource (authentication, secrets, app-level environment). The dependency lands on the runtime as a field keyed by `Name`, so handlers read it via `ctx.<name>`.
 
-For extension authoring, prefer `createExtension<APIs, Runtimes>(...)` over manually spelling the bound API intersection. It reduces the runtime tuple with the same `CombinedRuntime` semantics, applies each API HKT to that reduced runtime, and returns a regular `Extension`:
+The resolved API surface can be named with `ExtensionApi<Modules>`, and the
+extension function type can be named with `ExtensionForModules<Modules>`:
 
 ```typescript
-const extension = createExtension<
-	[CoreAPI, StoreAPI],
-	[EnvironmentRuntime, StoreRuntime]
->((api) => {
+type MyModules = [CoreModule, StoreModule, EnvironmentModule];
+
+const extension = defineExtension<MyModules>((api) => {
 	api.registerStore('files', {}, 'private');
 	api.on('systemPrompt', (_prompt, ctx) => {
 		ctx.environment;
@@ -27,9 +30,14 @@ const extension = createExtension<
 });
 ```
 
-API keys and runtime-extra keys are still required to be disjoint, matching `combine(...)`. The equivalent named type is `ExtensionFor<[CoreAPI, StoreAPI], [EnvironmentRuntime, StoreRuntime]>`.
+API keys and runtime-extra keys are still required to be disjoint, matching
+`combine(...)`.
 
 ## Extension Algebra
+
+TODO: The `algebra/` folder can stand by itself as a stable, non-AI-specific
+composition layer. Consider documenting and testing that boundary as its own
+package-level surface.
 
 Franklin models extension composition across three related surfaces:
 

@@ -1,11 +1,11 @@
-import {
-	type BaseRuntime,
-	type CoreAPI,
-	createExtension,
-	type EnvironmentRuntime,
-	type StoreAPI,
-	type StoreRuntime,
+import type {
+	BaseRuntime,
+	CoreAPI,
+	EnvironmentRuntime,
+	StoreAPI,
+	StoreRuntime,
 } from '../../../index.js';
+import { createExtension } from '../create.js';
 
 const _storeEnvironmentExtension = createExtension<
 	[CoreAPI, StoreAPI],

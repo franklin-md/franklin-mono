@@ -13,6 +13,12 @@ export type {
 	ValidateModules,
 } from './combine.js';
 export { combine, combineAll } from './combine.js';
-export { createExtension } from './extension.js';
+export { defineExtension } from './extension.js';
+export type {
+	ExtensionApi,
+	ExtensionForModules,
+	ModuleAPIs,
+	ModuleRuntimes,
+} from './extension.js';
 export { createRuntime } from './create.js';
 export { withSetup } from './setup.js';

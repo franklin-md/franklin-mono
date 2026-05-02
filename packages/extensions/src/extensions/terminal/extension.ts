@@ -1,11 +1,11 @@
-import { createExtension } from '../../algebra/index.js';
-import type { CoreAPI } from '../../modules/core/index.js';
-import type { EnvironmentRuntime } from '../../modules/environment/runtime.js';
+import { defineExtension } from '../../harness/modules/index.js';
+import type { CoreModule } from '../../modules/core/index.js';
+import type { EnvironmentModule } from '../../modules/environment/index.js';
 import { shellArgs } from './shell-args.js';
 import { bashSpec } from './tools.js';
 
 export function bashExtension() {
-	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
+	return defineExtension<[CoreModule, EnvironmentModule]>((api) => {
 		api.registerTool(bashSpec, async ({ cmd, timeout }, ctx) => {
 			const shell = await ctx.environment.osInfo.getShellInfo();
 			const { exit_code, stdout, stderr } = await ctx.environment.process.exec({

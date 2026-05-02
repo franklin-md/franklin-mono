@@ -75,5 +75,4 @@ export type ExtensionFor<
 export type ExtensionInput<
 	APIs extends readonly API[],
 	Runtimes extends readonly BaseRuntime[],
-> = Extension<ExtensionAPISurface<APIs, Runtimes>> &
-	ValidateExtensionTuples<APIs, Runtimes>;
+> = ExtensionFor<APIs, Runtimes> & ValidateExtensionTuples<APIs, Runtimes>;

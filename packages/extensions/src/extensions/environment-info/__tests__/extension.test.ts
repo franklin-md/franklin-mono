@@ -14,6 +14,7 @@ import {
 	createCoreRegistrar,
 	type WithContext,
 } from '../../../modules/core/compile/registrar/index.js';
+import type { CoreRuntime } from '../../../modules/core/runtime/index.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
@@ -26,13 +27,15 @@ import { createEnvironmentInfoExtension } from '../extension.js';
 
 type HarnessModulePromptHandler = WithContext<
 	SystemPromptHandler,
-	EnvironmentRuntime
+	CoreRuntime & EnvironmentRuntime
 >;
 
 function collectHandlers(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
 ): HarnessModulePromptHandler[] {
-	const { api, registrations } = createCoreRegistrar<EnvironmentRuntime>();
+	const { api, registrations } = createCoreRegistrar<
+		CoreRuntime & EnvironmentRuntime
+	>();
 	extension(api);
 	return registrations.systemPrompt;
 }
@@ -72,7 +75,7 @@ function bindAssembler(
 ): SystemPromptAssembler {
 	const boundHandlers: SystemPromptHandler[] = bindHandlers(
 		handlers,
-		() => ctx,
+		() => ctx as CoreRuntime & EnvironmentRuntime,
 	);
 	return buildSystemPromptAssembler(boundHandlers);
 }
