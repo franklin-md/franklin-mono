@@ -1,17 +1,17 @@
+export type { BaseHarnessModule, HarnessModule } from './module.js';
 export type {
-	BaseHarnessModule,
-	HarnessModule,
-	InferCompiler,
 	InferAPI,
-	InferState,
 	InferBoundAPI,
+	InferCompiler,
 	InferRuntime,
-	CombineModules,
+	InferState,
+} from './infer.js';
+export type {
 	CombinableModule,
+	CombineModules,
 	Modules,
 	ValidateModules,
-} from './types.js';
+} from './combine.js';
+export { combine, combineAll } from './combine.js';
 export { createRuntime } from './create.js';
-export { combine } from './combine.js';
-export { combineAll } from './combine-all.js';
 export { withSetup } from './setup.js';

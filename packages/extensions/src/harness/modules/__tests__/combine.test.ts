@@ -29,9 +29,8 @@ import type {
 	StateHandle,
 } from '../../../algebra/runtime/types.js';
 import { combine } from '../combine.js';
-import { createHarnessModuleCompilerInput } from '../context.js';
 import { createRuntime } from '../create.js';
-import type { HarnessModule } from '../types.js';
+import type { HarnessModule } from '../module.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -142,7 +141,7 @@ function createValueSystem(): HarnessModule<
 	return {
 		emptyState: () => ({ value: 0 }),
 		state: (runtime) => runtime[VALUE_STATE],
-		createCompiler({ state }): Compiler<ValueAPI, ValueRuntime> {
+		createCompiler(state): Compiler<ValueAPI, ValueRuntime> {
 			let registeredValue: number | undefined;
 			const api: ValueAPISurface = {
 				registerValue(value) {
@@ -442,14 +441,8 @@ describe('combine — identity laws', () => {
 		const combined = combine(identityModule(), createValueSystem());
 
 		expect(combined.emptyState()).toEqual(baseline.emptyState());
-		expect(
-			apiKeys(
-				combined.createCompiler(createHarnessModuleCompilerInput({ value: 0 })),
-			),
-		).toEqual(
-			apiKeys(
-				baseline.createCompiler(createHarnessModuleCompilerInput({ value: 0 })),
-			),
+		expect(apiKeys(combined.createCompiler({ value: 0 }))).toEqual(
+			apiKeys(baseline.createCompiler({ value: 0 })),
 		);
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([
@@ -479,14 +472,8 @@ describe('combine — identity laws', () => {
 		const combined = combine(createValueSystem(), identityModule());
 
 		expect(combined.emptyState()).toEqual(baseline.emptyState());
-		expect(
-			apiKeys(
-				combined.createCompiler(createHarnessModuleCompilerInput({ value: 0 })),
-			),
-		).toEqual(
-			apiKeys(
-				baseline.createCompiler(createHarnessModuleCompilerInput({ value: 0 })),
-			),
+		expect(apiKeys(combined.createCompiler({ value: 0 }))).toEqual(
+			apiKeys(baseline.createCompiler({ value: 0 })),
 		);
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([

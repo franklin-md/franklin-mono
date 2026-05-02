@@ -15,6 +15,6 @@ export function createCoreModule(spawn: SpawnFn): CoreModule {
 	return {
 		emptyState: emptyCoreState,
 		state: (runtime) => coreStateHandle(runtime),
-		createCompiler: ({ state }) => createCoreCompiler(spawn, state),
+		createCompiler: (state) => createCoreCompiler(spawn, state),
 	};
 }

@@ -5,9 +5,8 @@ import type {
 	BaseRuntime,
 	StateHandle,
 } from '../../../algebra/runtime/types.js';
-import { createHarnessModuleCompilerInput } from '../context.js';
 import { withSetup, withSetupCompiler } from '../setup.js';
-import type { HarnessModule } from '../types.js';
+import type { HarnessModule } from '../module.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -28,7 +27,7 @@ function createTestSystem(): HarnessModule<TestState, TestAPI, TestRuntime> {
 	return {
 		emptyState: () => ({ value: 0 }),
 		state: (runtime) => runtime[TEST_STATE],
-		createCompiler({ state }): Compiler<TestAPI, TestRuntime> {
+		createCompiler(state): Compiler<TestAPI, TestRuntime> {
 			let registered: number | undefined;
 			const api: TestAPISurface = {
 				register(n: number) {
@@ -72,9 +71,7 @@ describe('withSetup', () => {
 			order.push('setup');
 		});
 
-		const compiler = decorated.createCompiler(
-			createHarnessModuleCompilerInput({ value: 42 }),
-		);
+		const compiler = decorated.createCompiler({ value: 42 });
 
 		order.push('before-build');
 		await compiler.build(noGetRuntime);
@@ -91,9 +88,7 @@ describe('withSetup', () => {
 			captured = runtime;
 		});
 
-		const compiler = decorated.createCompiler(
-			createHarnessModuleCompilerInput({ value: 7 }),
-		);
+		const compiler = decorated.createCompiler({ value: 7 });
 		const built = await compiler.build(noGetRuntime);
 
 		expect(captured).toBe(built);
@@ -108,9 +103,7 @@ describe('withSetup', () => {
 			capturedState = state;
 		});
 
-		const compiler = decorated.createCompiler(
-			createHarnessModuleCompilerInput({ value: 99 }),
-		);
+		const compiler = decorated.createCompiler({ value: 99 });
 		await compiler.build(noGetRuntime);
 
 		expect(capturedState).toEqual({ value: 99 });
@@ -127,9 +120,7 @@ describe('withSetup', () => {
 		const system = createTestSystem();
 		const decorated = withSetup(system, async () => {});
 
-		const compiler = decorated.createCompiler(
-			createHarnessModuleCompilerInput({ value: 0 }),
-		);
+		const compiler = decorated.createCompiler({ value: 0 });
 		compiler.createApi<TestRuntime>().register(42);
 		const built = await compiler.build(noGetRuntime);
 
@@ -144,9 +135,7 @@ describe('withSetup', () => {
 			setupSpy(runtime.getValue());
 		});
 
-		const compiler = decorated.createCompiler(
-			createHarnessModuleCompilerInput({ value: 5 }),
-		);
+		const compiler = decorated.createCompiler({ value: 5 });
 		await compiler.build(noGetRuntime);
 
 		expect(setupSpy).toHaveBeenCalledWith(5);
@@ -160,9 +149,7 @@ describe('withSetup', () => {
 describe('withSetupCompiler', () => {
 	it('wraps build to run setup after inner build resolves', async () => {
 		const system = createTestSystem();
-		const inner = system.createCompiler(
-			createHarnessModuleCompilerInput({ value: 1 }),
-		);
+		const inner = system.createCompiler({ value: 1 });
 
 		const order: string[] = [];
 		const decorated = withSetupCompiler(inner, async () => {
@@ -178,9 +165,7 @@ describe('withSetupCompiler', () => {
 
 	it('preserves the inner registration surface', async () => {
 		const system = createTestSystem();
-		const inner = system.createCompiler(
-			createHarnessModuleCompilerInput({ value: 0 }),
-		);
+		const inner = system.createCompiler({ value: 0 });
 		const decorated = withSetupCompiler(inner, async () => {});
 
 		decorated.createApi<TestRuntime>().register(123);

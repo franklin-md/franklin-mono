@@ -2,7 +2,7 @@ import type { API } from '../../algebra/api/index.js';
 import type { Compiler } from '../../algebra/compiler/index.js';
 import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { BaseState } from '../state/index.js';
-import type { HarnessModule } from './types.js';
+import type { HarnessModule } from './module.js';
 
 export function withSetupCompiler<
 	A extends API,
@@ -37,9 +37,9 @@ export function withSetup<
 ): HarnessModule<S, A, Runtime> {
 	return {
 		...module,
-		createCompiler(input) {
-			return withSetupCompiler(module.createCompiler(input), (runtime) =>
-				setup(runtime, input.state),
+		createCompiler(state) {
+			return withSetupCompiler(module.createCompiler(state), (runtime) =>
+				setup(runtime, state),
 			);
 		},
 	};

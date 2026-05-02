@@ -5,8 +5,9 @@ import type {
 	Extension,
 	InferBoundAPI,
 	InferState,
+	Modules,
 	OrchestratorModule,
-	OrchestratorRuntime,
+	InferRuntime,
 } from '@franklin/extensions';
 
 export type FranklinModules = readonly [
@@ -15,9 +16,11 @@ export type FranklinModules = readonly [
 	EnvironmentModule,
 ];
 
-export type FranklinModule = OrchestratorModule<FranklinModules>;
+export type FranklinBase = Modules<FranklinModules>;
 
-export type FranklinRuntime = OrchestratorRuntime<FranklinModules>;
+export type FranklinModule = OrchestratorModule<FranklinBase>;
+
+export type FranklinRuntime = InferRuntime<FranklinModule>;
 
 /** Combined state persisted without secrets. */
 export type FranklinState = InferState<FranklinModule>;

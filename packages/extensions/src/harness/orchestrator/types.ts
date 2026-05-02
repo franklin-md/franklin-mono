@@ -11,10 +11,8 @@ import type {
 	InferBoundAPI,
 	InferRuntime,
 	InferState,
-	Modules,
-	ValidateModules,
 } from '../modules/index.js';
-import type { SelfRuntime } from './internal-module.js';
+import type { SelfRuntime } from './internal/index.js';
 import type { RuntimeCollection } from './collection.js';
 
 export type RuntimeEntry<Runtime extends BaseRuntime> = {
@@ -42,47 +40,44 @@ export type OrchestratorHandle<Runtime extends BaseRuntime, State = unknown> = {
 };
 
 /**
- * The runtime produced by an orchestrator over a tuple of base modules.
+ * The runtime produced by an orchestrator over a base module.
  * Recursive fixed point: `runtime.orchestrator` references this same type.
  *
  * Exported as a named alias so that dts emission can reference it by name —
  * runtime fields use `unique symbol` keys (CORE_STATE, ENV_STATE, ...) which
  * cannot be safely inlined into downstream consumers' declaration files.
  */
-export type OrchestratorRuntime<Mods extends readonly BaseHarnessModule[]> =
-	BaseRuntime &
-		RuntimeExtras<InferRuntime<Modules<Mods>>> &
-		SelfRuntime & {
-			readonly orchestrator: OrchestratorHandle<
-				OrchestratorRuntime<Mods>,
-				InferState<Modules<Mods>>
-			>;
-		};
+export type OrchestratorRuntime<M extends BaseHarnessModule> = BaseRuntime &
+	RuntimeExtras<InferRuntime<M>> &
+	SelfRuntime & {
+		readonly orchestrator: OrchestratorHandle<
+			OrchestratorRuntime<M>,
+			InferState<M>
+		>;
+	};
 
 /**
- * The fully orchestrated module for a tuple of base modules. It is itself a
+ * The fully orchestrated module for a base module. It is itself a
  * `HarnessModule`, so the standard inference helpers (`InferRuntime`,
  * `InferState`, `InferBoundAPI`) work on it directly:
  *
- *   type FranklinModule    = OrchestratorModule<FranklinModules>;
- *   type FranklinRuntime   = OrchestratorRuntime<FranklinModules>;
+ *   type FranklinBase      = Modules<FranklinModules>;
+ *   type FranklinModule    = OrchestratorModule<FranklinBase>;
+ *   type FranklinRuntime   = OrchestratorRuntime<FranklinBase>;
  *   type FranklinState     = InferState<FranklinModule>;
  *   type FranklinAPI       = InferBoundAPI<FranklinModule>;
  *   type FranklinExtension = Extension<FranklinAPI>;
  */
-export type OrchestratorModule<Mods extends readonly BaseHarnessModule[]> =
-	HarnessModule<
-		InferState<Modules<Mods>>,
-		InferAPI<Modules<Mods>>,
-		OrchestratorRuntime<Mods>
-	>;
+export type OrchestratorModule<M extends BaseHarnessModule> = HarnessModule<
+	InferState<M>,
+	InferAPI<M>,
+	OrchestratorRuntime<M>
+>;
 
-export type OrchestratorOptions<Mods extends readonly BaseHarnessModule[]> = {
-	readonly modules: readonly [...Mods] & ValidateModules<Mods>;
-	readonly collection: RuntimeCollection<
-		InferRuntime<OrchestratorModule<Mods>>
-	>;
-	readonly extensions: Extension<InferBoundAPI<OrchestratorModule<Mods>>>[];
+export type OrchestratorOptions<M extends BaseHarnessModule> = {
+	readonly module: M;
+	readonly collection: RuntimeCollection<OrchestratorRuntime<M>>;
+	readonly extensions: Extension<InferBoundAPI<OrchestratorModule<M>>>[];
 	readonly createId?: () => string;
 };
 

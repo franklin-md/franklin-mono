@@ -32,7 +32,7 @@ export function createEnvironmentModule(
 
 		state: environmentStateHandle,
 
-		createCompiler({ state }): Compiler<IdentityAPI, EnvironmentRuntime> {
+		createCompiler(state): Compiler<IdentityAPI, EnvironmentRuntime> {
 			const api: IdentityAPISurface = {};
 			return compilerFromApi(api, async () => {
 				const env = await factory(state.env);

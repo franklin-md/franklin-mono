@@ -1,4 +1,4 @@
-import type { HarnessModule } from '../../harness/modules/types.js';
+import type { HarnessModule } from '../../harness/modules/module.js';
 import { identityCompiler, type IdentityCompiler } from './compiler.js';
 import type { IdentityAPI } from './api.js';
 import { identityState, type IdentityState } from './state.js';

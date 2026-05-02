@@ -41,15 +41,14 @@ interface RuntimeAwareAPI extends API {
 }
 
 type TestModule = HarnessModule<TestState, RuntimeAwareAPI, TestRuntime>;
-type TestModules = readonly [TestModule];
-type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<TestModules>>;
-type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<TestModules>>;
+type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<TestModule>>;
+type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<TestModule>>;
 
 function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 	return {
 		emptyState: () => empty,
 		state: (runtime) => runtime[TEST_STATE],
-		createCompiler({ state }): Compiler<RuntimeAwareAPI, TestRuntime> {
+		createCompiler(state): Compiler<RuntimeAwareAPI, TestRuntime> {
 			const handlers: RuntimeHandler<BaseRuntime>[] = [];
 
 			return {

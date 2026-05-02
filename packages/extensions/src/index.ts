@@ -17,6 +17,7 @@ export {
 	RuntimeCollection,
 } from './harness/orchestrator/index.js';
 export type {
+	CreateOrchestratorInput,
 	OrchestratorCreateInput,
 	OrchestratorHandle,
 	OrchestratorModule,
@@ -49,14 +50,14 @@ export type {
 	BaseHarnessModule,
 	CombinableModule,
 	CombineModules,
+	HarnessModule,
 	InferAPI,
 	InferBoundAPI,
 	InferRuntime,
 	InferState,
-	HarnessModule,
 	Modules,
 	ValidateModules,
-} from './harness/modules/types.js';
+} from './harness/modules/index.js';
 export type {
 	Extension,
 	ExtensionAPISurface,

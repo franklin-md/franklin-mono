@@ -1,13 +1,50 @@
+import type { AssertNoOverlap } from '@franklin/lib';
+import type { BoundAPI, ComposeAPI } from '../../algebra/api/index.js';
 import { combine as combineCompilers } from '../../algebra/compiler/combine.js';
-import type { StateHandle } from '../../algebra/runtime/index.js';
 import type {
-	BaseHarnessModule,
-	CombinableModule,
-	CombineModules,
+	CombinedRuntime,
+	RuntimeExtras,
+	StateHandle,
+} from '../../algebra/runtime/index.js';
+import type {
+	InferAPI,
 	InferCompiler,
 	InferRuntime,
 	InferState,
-} from './types.js';
+} from './infer.js';
+import type { BaseHarnessModule, HarnessModule } from './module.js';
+
+// ---------------------------------------------------------------------------
+// Pairwise combine
+// ---------------------------------------------------------------------------
+
+export type CombineModules<
+	Sys1 extends BaseHarnessModule,
+	Sys2 extends BaseHarnessModule,
+> = HarnessModule<
+	InferState<Sys1> & InferState<Sys2>,
+	ComposeAPI<InferAPI<Sys1>, InferAPI<Sys2>>,
+	CombinedRuntime<InferRuntime<Sys1>, InferRuntime<Sys2>>
+>;
+
+type CombinedRuntimeOf<
+	Sys1 extends BaseHarnessModule,
+	Sys2 extends BaseHarnessModule,
+> = CombinedRuntime<InferRuntime<Sys1>, InferRuntime<Sys2>>;
+
+type RuntimeExtrasOf<Sys extends BaseHarnessModule> = RuntimeExtras<
+	InferRuntime<Sys>
+>;
+
+export type CombinableModule<
+	A extends BaseHarnessModule,
+	B extends BaseHarnessModule,
+> = AssertNoOverlap<InferState<A>, InferState<B>> &
+	AssertNoOverlap<
+		BoundAPI<InferAPI<A>, CombinedRuntimeOf<A, B>>,
+		BoundAPI<InferAPI<B>, CombinedRuntimeOf<A, B>>
+	> &
+	AssertNoOverlap<RuntimeExtrasOf<A>, RuntimeExtrasOf<B>>;
 
 /**
  * Combine two `HarnessModule`s by merging their empty states, delegating
@@ -32,15 +69,13 @@ export function combine<
 			} as never;
 		},
 
-		createCompiler(input) {
-			const c1 = module1.createCompiler({
-				...input,
-				state: input.state as InferState<RTS1>,
-			}) as InferCompiler<RTS1>;
-			const c2 = module2.createCompiler({
-				...input,
-				state: input.state as InferState<RTS2>,
-			}) as InferCompiler<RTS2>;
+		createCompiler(state) {
+			const c1 = module1.createCompiler(
+				state as InferState<RTS1>,
+			) as InferCompiler<RTS1>;
+			const c2 = module2.createCompiler(
+				state as InferState<RTS2>,
+			) as InferCompiler<RTS2>;
 			return combineCompilers(c1, c2 as never) as never;
 		},
 
@@ -70,4 +105,67 @@ export function combine<
 			};
 		},
 	};
+}
+
+// ---------------------------------------------------------------------------
+// Tuple fold
+// ---------------------------------------------------------------------------
+
+/**
+ * Right-fold `CombineModules` over a tuple of modules. Use this anywhere a
+ * single combined module type is needed but the input is naturally a list:
+ *
+ *   type FranklinModule = Modules<[CoreModule, StoreModule, EnvironmentModule]>;
+ *
+ * Pairwise overlap rejection is enforced by the `combineAll` runtime fn.
+ */
+export type Modules<T extends readonly BaseHarnessModule[]> =
+	T extends readonly [infer Head extends BaseHarnessModule]
+		? Head
+		: T extends readonly [
+					infer Head extends BaseHarnessModule,
+					...infer Tail extends readonly BaseHarnessModule[],
+			  ]
+			? CombineModules<Head, Modules<Tail>>
+			: never;
+
+/**
+ * Validates a tuple of modules pairwise: each successive module must be
+ * combinable with the running fold of all earlier modules. Used as
+ * `T & ValidateModules<T>` in `combineAll`'s signature so call-site errors
+ * land on the offending tuple element rather than at the fold call.
+ */
+export type ValidateModules<
+	T extends readonly BaseHarnessModule[],
+	Acc extends BaseHarnessModule | null = null,
+> = T extends readonly [
+	infer Head extends BaseHarnessModule,
+	...infer Tail extends readonly BaseHarnessModule[],
+]
+	? readonly [
+			Acc extends BaseHarnessModule ? Head & CombinableModule<Acc, Head> : Head,
+			...ValidateModules<
+				Tail,
+				Acc extends BaseHarnessModule ? CombineModules<Acc, Head> : Head
+			>,
+		]
+	: T;
+
+/**
+ * Fold `combine` over a tuple of harness modules. The signature accepts
+ * `modules: T & ValidateModules<T>`, which routes each pairwise overlap
+ * error onto the offending tuple element rather than the fold call site.
+ */
+export function combineAll<T extends readonly BaseHarnessModule[]>(
+	modules: readonly [...T] & ValidateModules<T>,
+): Modules<T> {
+	const [head, ...rest] = modules as readonly BaseHarnessModule[];
+	if (head === undefined) {
+		throw new Error('combineAll requires at least one module');
+	}
+	let acc: BaseHarnessModule = head;
+	for (const next of rest) {
+		acc = combine(acc, next as never);
+	}
+	return acc as Modules<T>;
 }

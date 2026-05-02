@@ -15,7 +15,7 @@ export function createStoreModule(registry: StoreRegistry): StoreModule {
 
 		state: storeStateHandle,
 
-		createCompiler({ state }): Compiler<StoreAPI, StoreRuntime> {
+		createCompiler(state): Compiler<StoreAPI, StoreRuntime> {
 			return createStoreCompiler(registry, state);
 		},
 	};

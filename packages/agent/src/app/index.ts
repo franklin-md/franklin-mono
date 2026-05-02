@@ -14,6 +14,7 @@ import { createStorage } from '../storage/create-storage.js';
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
 import type {
+	FranklinBase,
 	FranklinExtension,
 	FranklinModules,
 	FranklinRuntime,
@@ -28,7 +29,7 @@ export class FranklinApp {
 	readonly agents: Agents;
 	readonly platform: Platform;
 
-	private readonly orchestrator: Orchestrator<FranklinModules>;
+	private readonly orchestrator: Orchestrator<FranklinBase>;
 	private readonly collection: PersistedSessionCollection<
 		FranklinState,
 		FranklinRuntime
