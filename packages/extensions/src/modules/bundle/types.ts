@@ -13,4 +13,3 @@ export type ExtensionBundle<
 	readonly keys: TKeys;
 	readonly tools: TTools;
 };
-

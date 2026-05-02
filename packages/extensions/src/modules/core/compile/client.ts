@@ -12,7 +12,10 @@ export async function createAgentClient(input: {
 	readonly state: CoreState;
 	readonly tools: readonly SerializedToolDefinition[];
 }): Promise<AgentClient> {
-	const client = await connect({ decorator: input.decorator, transport: input.transport });
+	const client = await connect({
+		decorator: input.decorator,
+		transport: input.transport,
+	});
 	await bootRuntime({ client, state: input.state, tools: input.tools });
 	return client;
 }

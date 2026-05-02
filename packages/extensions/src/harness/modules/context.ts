@@ -17,11 +17,10 @@ export type OrchestratorCreateInput<State = unknown> = RuntimeCreateInput & {
 	readonly overrides?: DeepPartial<State>;
 };
 
-export type OrchestratorHandle<
-	Runtime extends BaseRuntime,
-	State = unknown,
-> = {
-	create(input?: OrchestratorCreateInput<State>): Promise<RuntimeEntry<Runtime>>;
+export type OrchestratorHandle<Runtime extends BaseRuntime, State = unknown> = {
+	create(
+		input?: OrchestratorCreateInput<State>,
+	): Promise<RuntimeEntry<Runtime>>;
 	get(id: string): RuntimeEntry<Runtime> | undefined;
 	list(): RuntimeEntry<Runtime>[];
 	remove(id: string): Promise<boolean>;

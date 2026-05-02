@@ -9,9 +9,7 @@ import type {
 	InferRuntime,
 	InferState,
 } from '../modules/index.js';
-import type {
-	OrchestratorHandle,
-} from '../modules/context.js';
+import type { OrchestratorHandle } from '../modules/context.js';
 import type { SelfRuntime } from './internal-module.js';
 import type { RuntimeCollection } from './collection.js';
 

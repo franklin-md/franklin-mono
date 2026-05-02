@@ -15,14 +15,14 @@ import type {
 	RuntimeEntry,
 } from '../modules/context.js';
 import { createOrchestratorInternalModule } from './internal-module.js';
-import type {
-	OrchestratedRuntime,
-	OrchestratorOptions,
-} from './types.js';
+import type { OrchestratedRuntime, OrchestratorOptions } from './types.js';
 
 export class Orchestrator<
 	Module extends BaseHarnessModule,
-> implements OrchestratorHandle<OrchestratedRuntime<Module>, InferState<Module>> {
+> implements OrchestratorHandle<
+	OrchestratedRuntime<Module>,
+	InferState<Module>
+> {
 	private readonly baseModule: Module;
 	private readonly fullModule: HarnessModule<
 		InferState<Module>,
