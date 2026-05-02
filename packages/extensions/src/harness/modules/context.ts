@@ -1,4 +1,7 @@
+import type { DeepPartial } from '@franklin/lib';
 import type { BaseRuntime } from '../../algebra/runtime/index.js';
+
+const NO_ORCHESTRATOR_MSG = 'No runtime orchestrator is available';
 
 export type RuntimeEntry<Runtime extends BaseRuntime> = {
 	readonly id: string;
@@ -10,18 +13,26 @@ export type RuntimeCreateInput = {
 	readonly mode?: 'child' | 'fork';
 };
 
-export type RuntimeOrchestratorPort<Runtime extends BaseRuntime> = {
-	create(input?: RuntimeCreateInput): Promise<RuntimeEntry<Runtime>>;
+export type OrchestratorCreateInput<State = unknown> = RuntimeCreateInput & {
+	readonly overrides?: DeepPartial<State>;
+};
+
+export type OrchestratorHandle<
+	Runtime extends BaseRuntime,
+	State = unknown,
+> = {
+	create(input?: OrchestratorCreateInput<State>): Promise<RuntimeEntry<Runtime>>;
 	get(id: string): RuntimeEntry<Runtime> | undefined;
 	list(): RuntimeEntry<Runtime>[];
 	remove(id: string): Promise<boolean>;
+	materialize(id: string, state: State): Promise<RuntimeEntry<Runtime>>;
 };
 
 export type HarnessModuleCompilerContext = {
 	readonly id: string;
 	getOrchestrator<
 		ContextRuntime extends BaseRuntime,
-	>(): RuntimeOrchestratorPort<ContextRuntime>;
+	>(): OrchestratorHandle<ContextRuntime>;
 };
 
 export type HarnessModuleCompilerInput<S> = HarnessModuleCompilerContext & {
@@ -30,19 +41,22 @@ export type HarnessModuleCompilerInput<S> = HarnessModuleCompilerContext & {
 
 function missingOrchestrator<
 	ContextRuntime extends BaseRuntime,
->(): RuntimeOrchestratorPort<ContextRuntime> {
+>(): OrchestratorHandle<ContextRuntime> {
 	return {
 		async create(): Promise<RuntimeEntry<ContextRuntime>> {
-			throw new Error('No runtime orchestrator is available');
+			throw new Error(NO_ORCHESTRATOR_MSG);
 		},
 		get(): RuntimeEntry<ContextRuntime> | undefined {
-			throw new Error('No runtime orchestrator is available');
+			throw new Error(NO_ORCHESTRATOR_MSG);
 		},
 		list(): RuntimeEntry<ContextRuntime>[] {
-			throw new Error('No runtime orchestrator is available');
+			throw new Error(NO_ORCHESTRATOR_MSG);
 		},
 		async remove(): Promise<boolean> {
-			throw new Error('No runtime orchestrator is available');
+			throw new Error(NO_ORCHESTRATOR_MSG);
+		},
+		async materialize(): Promise<RuntimeEntry<ContextRuntime>> {
+			throw new Error(NO_ORCHESTRATOR_MSG);
 		},
 	};
 }

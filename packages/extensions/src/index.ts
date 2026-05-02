@@ -17,16 +17,19 @@ export {
 	RuntimeCollection,
 } from './harness/orchestrator/index.js';
 export type {
-	OrchestratorPort,
 	OrchestratedAPI,
 	OrchestratedExtension,
 	OrchestratedRuntime,
-	OrchestratorCreateInput,
 	OrchestratorOptions,
 	OrchestratorRuntime,
 	RuntimeEvent,
 	SelfRuntime,
 } from './harness/orchestrator/index.js';
+export type {
+	OrchestratorCreateInput,
+	OrchestratorHandle,
+	RuntimeEntry,
+} from './harness/modules/context.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { ReduceRuntimes } from './algebra/runtime/reduce.js';
 // ---------------------------------------------------------------------------
@@ -45,14 +48,6 @@ export { createBundle } from './modules/bundle/index.js';
 export { combine as combineModules } from './harness/modules/combine.js';
 export { createRuntime } from './harness/modules/create.js';
 export { withSetup } from './harness/modules/setup.js';
-export {
-	createHarnessModuleCompilerInput,
-	type RuntimeCreateInput,
-	type RuntimeEntry,
-	type RuntimeOrchestratorPort,
-	type HarnessModuleCompilerContext,
-	type HarnessModuleCompilerInput,
-} from './harness/modules/context.js';
 export type {
 	BaseHarnessModule,
 	CombinableModule,
@@ -156,8 +151,6 @@ export { createDependencyModule } from './modules/dependency/module.js';
 export type {
 	ConfigureOptions,
 	Environment,
-	EnvironmentAPI,
-	EnvironmentAPISurface,
 	EnvironmentConfig,
 	FilesystemConfig,
 	ReconfigurableEnvironment,

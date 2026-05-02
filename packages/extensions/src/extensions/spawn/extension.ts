@@ -1,14 +1,14 @@
 import { collect } from '@franklin/mini-acp';
 import { createExtension } from '../../algebra/index.js';
 import type { CoreAPI, CoreRuntime } from '../../modules/core/index.js';
-import type { RuntimeOrchestratorPort } from '../../harness/modules/index.js';
+import type { OrchestratorHandle } from '../../harness/modules/context.js';
 import type { SelfRuntime } from '../../harness/orchestrator/index.js';
 import { spawnSpec } from './tools.js';
 import { formatResult } from './format.js';
 
 type SpawnRuntime = CoreRuntime &
 	SelfRuntime & {
-		readonly orchestrator: RuntimeOrchestratorPort<SpawnRuntime>;
+		readonly orchestrator: OrchestratorHandle<SpawnRuntime>;
 	};
 
 /**

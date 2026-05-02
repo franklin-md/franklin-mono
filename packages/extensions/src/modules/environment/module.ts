@@ -1,7 +1,7 @@
 import { compilerFromApi } from '../../algebra/compiler/from-api.js';
 import type { Compiler } from '../../algebra/compiler/index.js';
 import type { HarnessModule } from '../../harness/modules/index.js';
-import type { EnvironmentAPI, EnvironmentAPISurface } from './api/api.js';
+import type { IdentityAPI, IdentityAPISurface } from '../identity/api.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
@@ -20,15 +20,10 @@ export type EnvironmentFactory = (
 
 export type EnvironmentModule = HarnessModule<
 	EnvironmentState,
-	EnvironmentAPI,
+	IdentityAPI,
 	EnvironmentRuntime
 >;
 
-/**
- * Environment constructs the env at **build** time. The api surface is
- * empty — `getEnvironment()` is gone; extensions access env via
- * `ctx.runtime.environment.*`.
- */
 export function createEnvironmentModule(
 	factory: EnvironmentFactory,
 ): EnvironmentModule {
@@ -37,8 +32,8 @@ export function createEnvironmentModule(
 
 		state: environmentStateHandle,
 
-		createCompiler({ state }): Compiler<EnvironmentAPI, EnvironmentRuntime> {
-			const api: EnvironmentAPISurface = {};
+		createCompiler({ state }): Compiler<IdentityAPI, EnvironmentRuntime> {
+			const api: IdentityAPISurface = {};
 			return compilerFromApi(api, async () => {
 				const env = await factory(state.env);
 				return createEnvironmentRuntime(env);

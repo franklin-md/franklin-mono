@@ -4,7 +4,7 @@ import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { StoreAPI, StoreAPISurface } from '../api/api.js';
 import type { BaseStore } from '../api/base.js';
 import type { StoreRegistry } from '../api/registry/index.js';
-import type { StoreMapping } from '../api/registry/mapping.js';
+import type { StoreMapping } from '../state.js';
 import {
 	createEmptyStoreResult,
 	createStoreResult,

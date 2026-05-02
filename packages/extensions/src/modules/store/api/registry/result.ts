@@ -1,6 +1,6 @@
 import type { ForkMode } from '../sharing.js';
+import type { StoreMapping } from '../../state.js';
 import type { StoreRegistry } from './index.js';
-import type { StoreMapping } from './mapping.js';
 import type { StoreEntry } from './types.js';
 
 export class StoreResult {

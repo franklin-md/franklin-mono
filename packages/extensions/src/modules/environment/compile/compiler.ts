@@ -1,21 +1,19 @@
 import { compilerFromApi } from '../../../algebra/compiler/from-api.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
-import type { EnvironmentAPI, EnvironmentAPISurface } from '../api/api.js';
+import type {
+	IdentityAPI,
+	IdentityAPISurface,
+} from '../../identity/api.js';
 import type { ReconfigurableEnvironment } from '../api/types.js';
 import {
 	createEnvironmentRuntime,
 	type EnvironmentRuntime,
 } from '../runtime.js';
 
-/**
- * Direct compiler for an already-constructed environment (used in tests
- * or callers that supply their own env without going through the system
- * factory). The api is empty; the env is wrapped at build time.
- */
 export function createEnvironmentCompiler(
 	environment: ReconfigurableEnvironment,
-): Compiler<EnvironmentAPI, EnvironmentRuntime> {
-	const api: EnvironmentAPISurface = {};
+): Compiler<IdentityAPI, EnvironmentRuntime> {
+	const api: IdentityAPISurface = {};
 	return compilerFromApi(api, async () =>
 		createEnvironmentRuntime(environment),
 	);

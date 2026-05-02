@@ -10,20 +10,19 @@ import {
 } from '../modules/index.js';
 import { createHarnessModuleCompilerInput } from '../modules/context.js';
 import type {
+	OrchestratorCreateInput,
+	OrchestratorHandle,
 	RuntimeEntry,
-	RuntimeOrchestratorPort,
 } from '../modules/context.js';
 import { createOrchestratorInternalModule } from './internal-module.js';
 import type {
-	OrchestratorPort,
 	OrchestratedRuntime,
-	OrchestratorCreateInput,
 	OrchestratorOptions,
 } from './types.js';
 
 export class Orchestrator<
 	Module extends BaseHarnessModule,
-> implements OrchestratorPort<Module> {
+> implements OrchestratorHandle<OrchestratedRuntime<Module>, InferState<Module>> {
 	private readonly baseModule: Module;
 	private readonly fullModule: HarnessModule<
 		InferState<Module>,
@@ -76,7 +75,7 @@ export class Orchestrator<
 			createHarnessModuleCompilerInput(state, {
 				id,
 				getOrchestrator: <ContextRuntime extends BaseRuntime>() =>
-					this as unknown as RuntimeOrchestratorPort<ContextRuntime>,
+					this as unknown as OrchestratorHandle<ContextRuntime>,
 			}),
 		);
 		const runtime = await compileAll(compiler, this.extensions);

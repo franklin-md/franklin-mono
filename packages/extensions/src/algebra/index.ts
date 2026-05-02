@@ -16,15 +16,10 @@ export type {
 	InferRuntime,
 	CombineModules,
 	CombinableModule,
-	RuntimeCreateInput,
-	RuntimeEntry,
-	RuntimeOrchestratorPort,
-	HarnessModuleCompilerContext,
-	HarnessModuleCompilerInput,
 } from '../harness/modules/index.js';
+export type { OrchestratorHandle } from '../harness/modules/context.js';
 export type { ExtensionBundle } from '../modules/bundle/index.js';
 export {
-	createHarnessModuleCompilerInput,
 	createRuntime,
 	combine as combineModules,
 	withSetup,

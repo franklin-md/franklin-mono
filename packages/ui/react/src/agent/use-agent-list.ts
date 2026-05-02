@@ -1,27 +1,29 @@
 import { useCallback } from 'react';
 
-import type { Agents, FranklinRuntime } from '@franklin/agent/browser';
-import type { BaseRuntime, RuntimeEntry } from '@franklin/extensions';
+import type {
+	AgentCreate,
+	AgentCreateInput,
+	Agents,
+	FranklinRuntime,
+} from '@franklin/agent/browser';
+import type { RuntimeEntry } from '@franklin/extensions';
 
 import { useApp } from './franklin-context.js';
 import { useSessions } from './use-sessions.js';
 import { useCollectionNavigator } from '../utils/use-collection-navigator.js';
 
-export type AgentCreateInput = Parameters<Agents['create']>[0];
-export type AgentCreate = Agents['create'];
+export type { AgentCreate, AgentCreateInput };
 
-export type AgentsControl<RT extends BaseRuntime = FranklinRuntime> = {
-	sessions: RuntimeEntry<RT>[];
+export type AgentsControl = {
+	sessions: RuntimeEntry<FranklinRuntime>[];
 	activeSessionId: string | null;
-	activeSession: RuntimeEntry<RT> | undefined;
+	activeSession: RuntimeEntry<FranklinRuntime> | undefined;
 	select: (id: string) => void;
 	create: AgentCreate;
 	remove: (id: string) => void;
 };
 
-function getSessionKey<RT extends BaseRuntime>(
-	session: RuntimeEntry<RT>,
-): string {
+function getSessionKey(session: RuntimeEntry<FranklinRuntime>): string {
 	return session.id;
 }
 
@@ -49,13 +51,6 @@ export function useAgentList(): AgentsControl {
 	});
 	const activeSessionId = currentKey ?? null;
 
-	const select = useCallback(
-		(id: string) => {
-			navigateToItem(id);
-		},
-		[navigateToItem],
-	);
-
 	const create = useCallback(
 		async (...args: Parameters<Agents['create']>) => {
 			const session = await manager.create(...args);
@@ -65,12 +60,12 @@ export function useAgentList(): AgentsControl {
 		[manager, navigateToKey],
 	);
 
-	const remove = useCallback(
-		(id: string) => {
-			removeEntry(id);
-		},
-		[removeEntry],
-	);
-
-	return { sessions, activeSessionId, activeSession, select, create, remove };
+	return {
+		sessions,
+		activeSessionId,
+		activeSession,
+		select: navigateToItem,
+		create,
+		remove: removeEntry,
+	};
 }

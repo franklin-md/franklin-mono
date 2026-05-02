@@ -1,11 +1,6 @@
 import { createObserver } from '@franklin/lib';
 import type { CoreRuntime, AgentClient } from './types.js';
 
-export type ClientRuntime = Pick<
-	CoreRuntime,
-	'prompt' | 'cancel' | 'setLLMConfig' | 'dispose' | 'subscribe'
->;
-
 async function* notifyAfter<T>(
 	stream: AsyncIterable<T>,
 	notify: () => void,
@@ -17,16 +12,14 @@ async function* notifyAfter<T>(
 	}
 }
 
-/**
- * The client-bound slice of `CoreRuntime`: prompt/cancel/setLLMConfig/dispose
- * plus the turn-end notification surface wired to `subscribe`.
- *
- * Notify fires after `prompt` completes (turn end), not per-chunk.
- * Originally wired to tracker.onChange which fired per-chunk on every
- * append. Moved to turn-end because persisting incomplete responses
- * mid-stream isn't useful — they can't be resumed.
- */
-export function createClientRuntime(client: AgentClient): ClientRuntime {
+// `notify` fires at turn end (after prompt completes), not per-chunk —
+// persisting incomplete responses mid-stream isn't useful, they can't be resumed.
+export function createClientRuntime(
+	client: AgentClient,
+): Pick<
+	CoreRuntime,
+	'prompt' | 'cancel' | 'setLLMConfig' | 'dispose' | 'subscribe'
+> {
 	const observer = createObserver();
 
 	return {

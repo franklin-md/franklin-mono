@@ -3,10 +3,14 @@ import type { ToolSpec } from '../core/api/tool-spec.js';
 import type { Extension } from '../../algebra/extension/index.js';
 
 export type ExtensionBundle<
-	TKeys extends Record<string, StoreKey<string, any>> = Record<string, never>,
+	TKeys extends Record<string, StoreKey<string, unknown>> = Record<
+		string,
+		never
+	>,
 	TTools extends Record<string, ToolSpec> = Record<string, never>,
 > = {
-	readonly extension: Extension<any>;
+	readonly extension: Extension;
 	readonly keys: TKeys;
 	readonly tools: TTools;
 };
+

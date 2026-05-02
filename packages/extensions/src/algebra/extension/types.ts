@@ -1,13 +1,11 @@
 import type { AssertNoOverlap, Simplify } from '@franklin/lib';
 import type { API, BoundAPI } from '../api/index.js';
 import type { BaseRuntime, ReduceRuntimes } from '../runtime/index.js';
-import type { CoreAPI } from '../../modules/core/api/api.js';
-import type { CoreRuntime } from '../../modules/core/runtime/index.js';
 
-// Same API as Pi Extensions
-export type Extension<TApi = BoundAPI<CoreAPI, CoreRuntime>> = (
-	api: TApi,
-) => void;
+// `TApi` defaults to `any` so a heterogeneous bundle can store extensions
+// keyed to different APIs/runtimes. The function-argument position is
+// contravariant, so `unknown` would force every bundle slot to a single shape.
+export type Extension<TApi = any> = (api: TApi) => void;
 
 type AssertAPIListNoOverlap<
 	APIs extends readonly API[],

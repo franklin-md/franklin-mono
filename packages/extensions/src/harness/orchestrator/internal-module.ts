@@ -1,16 +1,15 @@
 import { compilerFromApi } from '../../algebra/compiler/index.js';
 import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { HarnessModule } from '../modules/index.js';
-import type { RuntimeOrchestratorPort } from '../modules/context.js';
-import { type IdentityAPI, identityAPI } from '../../modules/identity/api.js';
+import type { OrchestratorHandle } from '../modules/context.js';
+import type { IdentityAPI } from '../../modules/identity/api.js';
+import { identityAPI } from '../../modules/identity/api.js';
 import {
 	identityRuntime,
 	identityStateHandle,
 } from '../../modules/identity/runtime.js';
-import {
-	type IdentityState,
-	identityState,
-} from '../../modules/identity/state.js';
+import type { IdentityState } from '../../modules/identity/state.js';
+import { identityState } from '../../modules/identity/state.js';
 
 export type SelfRuntime = BaseRuntime & {
 	readonly self: {
@@ -19,7 +18,7 @@ export type SelfRuntime = BaseRuntime & {
 };
 
 export type OrchestratorRuntime<Runtime extends BaseRuntime> = BaseRuntime & {
-	readonly orchestrator: RuntimeOrchestratorPort<Runtime>;
+	readonly orchestrator: OrchestratorHandle<Runtime>;
 };
 
 export type OrchestratorInternalRuntime<Runtime extends BaseRuntime> =
@@ -45,7 +44,7 @@ export function createOrchestratorInternalModule<
 				self: { id: input.id },
 				orchestrator: input.getOrchestrator<
 					ReturnType<typeof _getRuntime>
-				>() as unknown as RuntimeOrchestratorPort<Runtime>,
+				>() as unknown as OrchestratorHandle<Runtime>,
 			}));
 		},
 	};

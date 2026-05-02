@@ -10,7 +10,9 @@ import type {
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+import type { BoundAPI } from '../../../../algebra/api/index.js';
 import type { Extension } from '../../../../algebra/extension/index.js';
+import type { CoreAPI } from '../../api/api.js';
 import { resolveToolOutput } from '../../api/tool.js';
 import {
 	type SerializedToolDefinition,
@@ -20,6 +22,8 @@ import type { CoreRuntime } from '../../runtime/index.js';
 import { buildMiddleware } from '../decorators/middleware/build.js';
 import type { FullMiddleware } from '../decorators/middleware/types.js';
 import { createCoreRegistrar } from '../registrar/index.js';
+
+type CoreExtension = Extension<BoundAPI<CoreAPI, CoreRuntime>>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -36,7 +40,7 @@ import { createCoreRegistrar } from '../registrar/index.js';
  * without booting a full runtime.
  */
 async function compileExt(
-	ext: Extension,
+	ext: CoreExtension,
 ): Promise<FullMiddleware & { tools: SerializedToolDefinition[] }> {
 	const stubCtx = undefined as unknown as CoreRuntime;
 	const { api, registrations } = createCoreRegistrar<CoreRuntime>();

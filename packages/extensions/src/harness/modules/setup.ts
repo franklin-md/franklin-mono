@@ -4,13 +4,6 @@ import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { BaseState } from '../state/index.js';
 import type { HarnessModule } from './types.js';
 
-/**
- * Compiler-level decorator: run `setup` after build returns Runtime.
- *
- * Pure `Compiler => Compiler` functor — `build` is decorated to call
- * `setup(runtime)` after the inner build. State is captured by closure
- * at compiler-creation time and threaded by the module layer.
- */
 export function withSetupCompiler<
 	A extends API,
 	Runtime extends BaseRuntime & A['In'],
@@ -19,8 +12,11 @@ export function withSetupCompiler<
 	setup: (runtime: Runtime) => Promise<void>,
 ): Compiler<A, Runtime> {
 	return {
-		createApi: <ContextRuntime extends BaseRuntime & A['In']>() =>
-			inner.createApi<ContextRuntime>(),
+		createApi: () => inner.createApi(),
+		// `Pick<ContextRuntime, never>` keeps the type parameter referenced
+		// in the public signature so the no-unnecessary-type-parameters
+		// lint rule sees ContextRuntime as load-bearing. The intersection is
+		// `{}` and adds nothing at runtime; it's a structural marker.
 		build: async <ContextRuntime extends BaseRuntime & A['In']>(
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		) => {
@@ -31,11 +27,6 @@ export function withSetupCompiler<
 	};
 }
 
-/**
- * Module-level convenience: lift `withSetupCompiler` through `HarnessModule`.
- * `setup` receives the freshly-built runtime plus the state used to configure
- * this materialization.
- */
 export function withSetup<
 	S extends BaseState,
 	A extends API,
@@ -45,8 +36,7 @@ export function withSetup<
 	setup: (runtime: Runtime, state: S) => Promise<void>,
 ): HarnessModule<S, A, Runtime> {
 	return {
-		emptyState: () => module.emptyState(),
-		state: (runtime) => module.state(runtime),
+		...module,
 		createCompiler(input) {
 			return withSetupCompiler(module.createCompiler(input), (runtime) =>
 				setup(runtime, input.state),
