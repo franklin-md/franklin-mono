@@ -27,16 +27,16 @@ try {
 	assertTagDoesNotExist(rootDir, plan.version);
 
 	runQualityChecks(rootDir);
-	applyRelease(plan);
-	commitRelease(rootDir, plan);
 
-	if (!(await confirm(`Create tag ${plan.version}?`))) {
-		console.log(
-			`Aborted. The bump commit is still in place; tag manually with: git tag -a ${plan.version} -m ${plan.version}`,
-		);
+	if (
+		!(await confirm(`Commit and tag Obsidian plugin release ${plan.version}?`))
+	) {
+		console.log('Aborted. No commit or tag was created.');
 		process.exit(0);
 	}
 
+	applyRelease(plan);
+	commitRelease(rootDir, plan);
 	tagRelease(rootDir, plan);
 
 	console.log(`Created Obsidian plugin release tag ${plan.version}`);
