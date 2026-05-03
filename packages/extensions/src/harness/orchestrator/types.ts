@@ -35,7 +35,6 @@ export type OrchestratorHandle<Runtime extends BaseRuntime, State = unknown> = {
 	get(id: string): RuntimeEntry<Runtime> | undefined;
 	list(): RuntimeEntry<Runtime>[];
 	remove(id: string): Promise<boolean>;
-	materialize(id: string, state: State): Promise<RuntimeEntry<Runtime>>;
 };
 
 /**

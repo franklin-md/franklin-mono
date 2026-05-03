@@ -30,12 +30,19 @@ export class Orchestrator<
 	private readonly collection: RuntimeCollection<Runtime<M>>;
 	private readonly extension: InferExtension<OrchestratorModule<[M]>>;
 	private readonly createId: () => string;
+	private readonly runtimeHandle: OrchestratorHandle<Runtime<M>, State<M>>;
 
 	constructor(opts: OrchestratorOptions<M>) {
 		this.baseModule = opts.module;
 		this.collection = opts.collection;
 		this.extension = opts.extension;
 		this.createId = opts.createId ?? (() => crypto.randomUUID());
+		this.runtimeHandle = {
+			create: (input) => this.create(input),
+			get: (id) => this.get(id),
+			list: () => this.list(),
+			remove: (id) => this.remove(id),
+		};
 	}
 
 	async create(input?: OrchestratorCreateInput<State<M>>): Promise<Entry<M>> {
@@ -66,7 +73,7 @@ export class Orchestrator<
 	private createFullModule(id: string): OrchestratorModule<[M]> {
 		return createOrchestratorModule(this.baseModule, {
 			id,
-			getHandle: () => this,
+			getHandle: () => this.runtimeHandle,
 		});
 	}
 

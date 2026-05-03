@@ -107,6 +107,9 @@ describe('Orchestrator', () => {
 		expect(await entry.runtime[TEST_STATE].get()).toEqual({ value: 'root' });
 		expect(collection.get('root-id')?.runtime).toBe(entry.runtime);
 		expect(orchestrator.list()).toEqual([entry]);
+		expect('materialize' in entry.runtime.orchestrator).toBe(false);
+		// @ts-expect-error restore-only materialization is not runtime-facing
+		void entry.runtime.orchestrator.materialize;
 	});
 
 	it('materializes a restored runtime with the supplied id and state', async () => {
