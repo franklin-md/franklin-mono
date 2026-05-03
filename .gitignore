@@ -9,6 +9,7 @@ node_modules/
 # Agent Folder
 .context/
 .cursor/debug*
+.claude/settings.local.json
 .claude/debug*
 .playwright-mcp
 
