@@ -1,8 +1,7 @@
-import { createExtension } from '../../../algebra/index.js';
-import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
-import type { StoreAPI } from '../../../systems/store/index.js';
-import type { StoreRuntime } from '../../../systems/store/runtime.js';
+import { defineExtension } from '../../../harness/modules/index.js';
+import type { CoreModule } from '../../../modules/core/index.js';
+import type { EnvironmentModule } from '../../../modules/environment/index.js';
+import type { StoreModule } from '../../../modules/store/index.js';
 import { createFileControl } from '../common/control.js';
 import { fileKey } from '../common/key.js';
 import { sha256Hex } from '../hash.js';
@@ -28,102 +27,101 @@ import { editFileSpec } from './tools.js';
  * Platform-agnostic: reads/writes via the Environment filesystem.
  */
 export function editExtension() {
-	return createExtension<
-		[CoreAPI, StoreAPI],
-		[EnvironmentRuntime, StoreRuntime]
-	>((api) => {
-		// The store is private to ONE agent; it keeps track of the agent's "seen" files.
-		api.registerStore(fileKey, {}, 'private');
-		api.registerTool(
-			editFileSpec,
-			async ({ path, old_text, new_text, replace_all }, ctx) => {
-				const env = ctx.environment;
-				const store = ctx.getStore(fileKey);
-				const file = createFileControl(store);
-				// 1. Read + decode
-				const absPath = await env.filesystem.resolve(path);
-				let bytes: Uint8Array;
-				try {
-					bytes = await env.filesystem.readFile(absPath);
-				} catch {
-					const message = `File not found: ${path}`;
-					console.error(`[edit_file] ${message}`);
-					throw new Error(message);
-				}
-
-				const hash = sha256Hex(bytes);
-
-				const fileRecord = store.get()[absPath];
-				if (fileRecord === undefined) {
-					const message = 'File cannot be edited if you have never read it.';
-					console.error(`[edit_file] ${message} (path: ${path})`);
-					throw new Error(message);
-				}
-
-				if (fileRecord !== hash) {
-					const message = `File has changed since last read. Refusing to edit.`;
-					console.error(`[edit_file] ${message} (path: ${path})`);
-					throw new Error(message);
-				}
-				const { bom, text } = decode(bytes);
-
-				// 2. Normalize line endings for matching
-				const ending = detectLineEnding(text);
-				const normalized = normalizeToLF(text);
-				const normalizedOld = normalizeToLF(old_text);
-				const normalizedNew = normalizeToLF(new_text);
-
-				let replaced: string;
-
-				if (replace_all) {
-					// 3a. Replace all occurrences
-					if (!normalized.includes(normalizedOld)) {
-						const message = `Could not find the specified text in ${path}. The old_text must match exactly including all whitespace and newlines.`;
+	return defineExtension<[CoreModule, StoreModule, EnvironmentModule]>(
+		(api) => {
+			// The store is private to ONE agent; it keeps track of the agent's "seen" files.
+			api.registerStore(fileKey, {}, 'private');
+			api.registerTool(
+				editFileSpec,
+				async ({ path, old_text, new_text, replace_all }, ctx) => {
+					const env = ctx.environment;
+					const store = ctx.getStore(fileKey);
+					const file = createFileControl(store);
+					// 1. Read + decode
+					const absPath = await env.filesystem.resolve(path);
+					let bytes: Uint8Array;
+					try {
+						bytes = await env.filesystem.readFile(absPath);
+					} catch {
+						const message = `File not found: ${path}`;
 						console.error(`[edit_file] ${message}`);
 						throw new Error(message);
 					}
-					replaced = normalized.split(normalizedOld).join(normalizedNew);
-				} else {
-					// 3b. Find unique match
-					const match = findUnique(normalized, normalizedOld);
 
-					if (!match.found) {
-						if (match.ambiguous) {
-							const message = `Found multiple occurrences of the text in ${path}. The text must be unique. Please provide more surrounding context to make it unique.`;
+					const hash = sha256Hex(bytes);
+
+					const fileRecord = store.get()[absPath];
+					if (fileRecord === undefined) {
+						const message = 'File cannot be edited if you have never read it.';
+						console.error(`[edit_file] ${message} (path: ${path})`);
+						throw new Error(message);
+					}
+
+					if (fileRecord !== hash) {
+						const message = `File has changed since last read. Refusing to edit.`;
+						console.error(`[edit_file] ${message} (path: ${path})`);
+						throw new Error(message);
+					}
+					const { bom, text } = decode(bytes);
+
+					// 2. Normalize line endings for matching
+					const ending = detectLineEnding(text);
+					const normalized = normalizeToLF(text);
+					const normalizedOld = normalizeToLF(old_text);
+					const normalizedNew = normalizeToLF(new_text);
+
+					let replaced: string;
+
+					if (replace_all) {
+						// 3a. Replace all occurrences
+						if (!normalized.includes(normalizedOld)) {
+							const message = `Could not find the specified text in ${path}. The old_text must match exactly including all whitespace and newlines.`;
 							console.error(`[edit_file] ${message}`);
 							throw new Error(message);
 						}
-						const message = `Could not find the specified text in ${path}. The old_text must match exactly including all whitespace and newlines.`;
+						replaced = normalized.split(normalizedOld).join(normalizedNew);
+					} else {
+						// 3b. Find unique match
+						const match = findUnique(normalized, normalizedOld);
+
+						if (!match.found) {
+							if (match.ambiguous) {
+								const message = `Found multiple occurrences of the text in ${path}. The text must be unique. Please provide more surrounding context to make it unique.`;
+								console.error(`[edit_file] ${message}`);
+								throw new Error(message);
+							}
+							const message = `Could not find the specified text in ${path}. The old_text must match exactly including all whitespace and newlines.`;
+							console.error(`[edit_file] ${message}`);
+							throw new Error(message);
+						}
+
+						replaced = applyReplacement(
+							match.content,
+							match.index,
+							match.length,
+							normalizedNew,
+						);
+					}
+
+					// 4. Verify change
+					if (normalized === replaced) {
+						const message = `No changes made to ${path}. The replacement produced identical content.`;
 						console.error(`[edit_file] ${message}`);
 						throw new Error(message);
 					}
 
-					replaced = applyReplacement(
-						match.content,
-						match.index,
-						match.length,
-						normalizedNew,
-					);
-				}
+					// 5. Restore encoding + write
+					const final = bom + restoreLineEndings(replaced, ending);
+					await env.filesystem.writeFile(absPath, final);
 
-				// 4. Verify change
-				if (normalized === replaced) {
-					const message = `No changes made to ${path}. The replacement produced identical content.`;
-					console.error(`[edit_file] ${message}`);
-					throw new Error(message);
-				}
+					// 6. Refresh the read hash so consecutive edits don't require a re-read
 
-				// 5. Restore encoding + write
-				const final = bom + restoreLineEndings(replaced, ending);
-				await env.filesystem.writeFile(absPath, final);
+					// TODO: race conditions between agents.
+					await file.markFileRead(env.filesystem, path, final);
 
-				// 6. Refresh the read hash so consecutive edits don't require a re-read
-
-				// TODO: race conditions between agents.
-				await file.markFileRead(env.filesystem, path, final);
-
-				return `Successfully edited ${path}.`;
-			},
-		);
-	});
+					return `Successfully edited ${path}.`;
+				},
+			);
+		},
+	);
 }

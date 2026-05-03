@@ -1,4 +1,4 @@
-import type { Store } from '../../systems/store/api/types.js';
+import type { Store } from '../../modules/store/api/types.js';
 import type { Todo, TodoControl } from './types.js';
 
 export function createTodoControl(todos: Store<Todo[]>): TodoControl {

@@ -1,6 +1,6 @@
-import { createExtension } from '../../algebra/index.js';
-import type { CoreAPI } from '../../systems/core/index.js';
-import type { EnvironmentRuntime } from '../../systems/environment/runtime.js';
+import { defineExtension } from '../../harness/modules/index.js';
+import type { CoreModule } from '../../modules/core/index.js';
+import type { EnvironmentModule } from '../../modules/environment/index.js';
 import { renderEnvironmentInfo } from './render.js';
 import { renderCurrentDate } from './render-date.js';
 import { renderEnvironmentPermissions } from './render-permissions.js';
@@ -14,7 +14,7 @@ export function createEnvironmentInfoExtension(
 ) {
 	const now = opts.now ?? (() => new Date());
 
-	return createExtension<[CoreAPI], [EnvironmentRuntime]>((api) => {
+	return defineExtension<[CoreModule, EnvironmentModule]>((api) => {
 		api.on('systemPrompt', (prompt, ctx) => {
 			prompt.setPart(
 				async () => {

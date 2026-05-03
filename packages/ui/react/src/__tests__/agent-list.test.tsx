@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, act, fireEvent } from '@testing-library/react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { Session } from '@franklin/extensions';
+import type { RuntimeEntry } from '@franklin/extensions';
 
 import { AppContext } from '../agent/franklin-context.js';
 import { AgentsProvider } from '../agent/agents-context.js';
@@ -15,15 +15,15 @@ import type { AgentItemProps } from '../agent/agent-list.js';
 
 type Listener = () => void;
 
-function makeMockAgents(initial: Session<FranklinRuntime>[] = []) {
-	const sessions: Session<FranklinRuntime>[] = [...initial];
+function makeMockAgents(initial: RuntimeEntry<FranklinRuntime>[] = []) {
+	const sessions: RuntimeEntry<FranklinRuntime>[] = [...initial];
 	const listeners = new Set<Listener>();
 	let nextId = 1;
 
 	return {
 		sessions,
 		create: vi.fn(async () => {
-			const session: Session<FranklinRuntime> = {
+			const session: RuntimeEntry<FranklinRuntime> = {
 				id: `agent-${nextId++}`,
 				runtime: {} as FranklinRuntime,
 			};
@@ -103,7 +103,7 @@ describe('AgentList', () => {
 	});
 
 	it('renders one Item per session', () => {
-		const sessions: Session<FranklinRuntime>[] = [
+		const sessions: RuntimeEntry<FranklinRuntime>[] = [
 			{ id: 'a', runtime: {} as FranklinRuntime },
 			{ id: 'b', runtime: {} as FranklinRuntime },
 		];
@@ -117,7 +117,7 @@ describe('AgentList', () => {
 	});
 
 	it('auto-selects the only session on mount', () => {
-		const sessions: Session<FranklinRuntime>[] = [
+		const sessions: RuntimeEntry<FranklinRuntime>[] = [
 			{ id: 'a', runtime: {} as FranklinRuntime },
 		];
 		const agents = makeMockAgents(sessions);
@@ -130,7 +130,7 @@ describe('AgentList', () => {
 	});
 
 	it('clicking select marks the item as active', () => {
-		const sessions: Session<FranklinRuntime>[] = [
+		const sessions: RuntimeEntry<FranklinRuntime>[] = [
 			{ id: 'a', runtime: {} as FranklinRuntime },
 			{ id: 'b', runtime: {} as FranklinRuntime },
 		];

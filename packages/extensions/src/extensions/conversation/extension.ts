@@ -1,7 +1,7 @@
-import { createExtension } from '../../algebra/index.js';
-import type { CoreAPI } from '../../systems/core/index.js';
-import type { StoreAPI } from '../../systems/store/index.js';
-import type { StoreRuntime } from '../../systems/store/runtime.js';
+import { defineExtension } from '../../harness/modules/index.js';
+import type { CoreModule } from '../../modules/core/index.js';
+import type { StoreModule } from '../../modules/store/index.js';
+import type { StoreRuntime } from '../../modules/store/runtime.js';
 import { createConversationControl } from './controls.js';
 import { handleChunk } from './handlers/chunk.js';
 import { handleToolCall } from './handlers/tool-call.js';
@@ -25,7 +25,7 @@ function wrapHandler<T>(fn: (turn: ConversationTurn, event: T) => void) {
  * Store access happens at runtime via `runtime.getStore(conversationKey)`.
  */
 export function conversationExtension() {
-	return createExtension<[CoreAPI, StoreAPI], [StoreRuntime]>((api) => {
+	return defineExtension<[CoreModule, StoreModule]>((api) => {
 		api.registerStore(conversationKey, [], 'private');
 
 		api.on('prompt', (prompt, ctx) => {

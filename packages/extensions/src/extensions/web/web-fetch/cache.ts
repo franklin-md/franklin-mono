@@ -1,5 +1,5 @@
 import type { WebFetchResponse } from '@franklin/lib';
-import type { Store } from '../../../systems/store/api/types.js';
+import type { Store } from '../../../modules/store/api/types.js';
 import type {
 	WebFetchCache,
 	WebFetchCacheEntry,

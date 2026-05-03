@@ -37,7 +37,7 @@ export type BoundAPI<A extends API, R extends A['In']> = Apply<A, R>;
 /**
  * Lift a runtime-independent API into the API space.
  *
- *   export type StoreSystem = RuntimeSystem<S, StaticAPI<StoreAPI>, R>
+ *   export type StoreModule = HarnessModule<S, StaticAPI<StoreAPI>, R>
  */
 export interface StaticAPI<A extends BaseAPI> extends API {
 	readonly In: BaseRuntime;

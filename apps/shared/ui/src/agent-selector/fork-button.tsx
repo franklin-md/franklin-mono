@@ -1,7 +1,7 @@
 import { useCallback, type ComponentType } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { Session } from '@franklin/extensions';
+import type { RuntimeEntry } from '@franklin/extensions';
 import { useAgents } from '@franklin/react';
 import { MdForkRight } from 'react-icons/md';
 
@@ -9,7 +9,7 @@ import { IconButton } from '../components/icon-button.js';
 
 export interface ForkButtonProps {
 	icon?: ComponentType<{ className?: string }>;
-	onCreated?: (session: Session<FranklinRuntime>) => void;
+	onCreated?: (session: RuntimeEntry<FranklinRuntime>) => void;
 	className?: string;
 }
 

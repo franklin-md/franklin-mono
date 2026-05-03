@@ -1,11 +1,11 @@
-import {
-	type BaseRuntime,
-	type CoreAPI,
-	createExtension,
-	type EnvironmentRuntime,
-	type StoreAPI,
-	type StoreRuntime,
+import type {
+	BaseRuntime,
+	CoreAPI,
+	EnvironmentRuntime,
+	StoreAPI,
+	StoreRuntime,
 } from '../../../index.js';
+import { createExtension } from '../create.js';
 
 const _storeEnvironmentExtension = createExtension<
 	[CoreAPI, StoreAPI],
@@ -16,8 +16,8 @@ const _storeEnvironmentExtension = createExtension<
 	api.on('systemPrompt', (_prompt, ctx) => {
 		void ctx.environment;
 		void ctx.getStore;
-		// @ts-expect-error session runtime was not requested
-		void ctx.session;
+		// @ts-expect-error orchestrator runtime was not requested
+		void ctx.orchestrator;
 	});
 });
 void _storeEnvironmentExtension;

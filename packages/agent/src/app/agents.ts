@@ -1,28 +1,29 @@
 import type {
-	SessionCollection,
-	Session,
-	SessionCreate,
-	SessionCreateInput,
-	SessionEvent,
+	OrchestratorCreateInput,
+	RuntimeCollection,
+	RuntimeEntry,
+	RuntimeEvent,
 } from '@franklin/extensions';
-import type { FranklinRuntime, FranklinSystem } from '../types.js';
+import type { FranklinRuntime, FranklinState } from '../types.js';
 
-export type AgentCreateInput = SessionCreateInput<FranklinSystem>;
-export type AgentCreate = SessionCreate<FranklinSystem>;
+export type AgentCreateInput = OrchestratorCreateInput<FranklinState>;
+export type AgentCreate = (
+	input?: AgentCreateInput,
+) => Promise<RuntimeEntry<FranklinRuntime>>;
 
 export type Agents = {
 	create: AgentCreate;
-	get(id: string): Session<FranklinRuntime> | undefined;
-	list(): Session<FranklinRuntime>[];
+	get(id: string): RuntimeEntry<FranklinRuntime> | undefined;
+	list(): RuntimeEntry<FranklinRuntime>[];
 	remove(id: string): Promise<boolean>;
 	subscribe(
-		listener: (event: SessionEvent<FranklinRuntime>) => void,
+		listener: (event: RuntimeEvent<FranklinRuntime>) => void,
 	): () => void;
 };
 
 export function createAgents(
 	create: AgentCreate,
-	collection: SessionCollection<FranklinRuntime>,
+	collection: RuntimeCollection<FranklinRuntime>,
 ): Agents {
 	return {
 		create,

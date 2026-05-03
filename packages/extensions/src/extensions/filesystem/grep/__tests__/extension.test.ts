@@ -6,24 +6,25 @@ import {
 	type ProcessOutput,
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
-import type { SystemPromptHandler } from '../../../../systems/core/api/handlers.js';
-import { buildSystemPromptAssembler } from '../../../../systems/core/compile/decorators/system-prompt/index.js';
+import type { SystemPromptHandler } from '../../../../modules/core/api/handlers.js';
+import { buildSystemPromptAssembler } from '../../../../modules/core/compile/decorators/system-prompt/index.js';
 import {
 	bindHandlers,
 	createCoreRegistrar,
 	type WithContext,
-} from '../../../../systems/core/compile/registrar/index.js';
-import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
+} from '../../../../modules/core/compile/registrar/index.js';
+import type { CoreRuntime } from '../../../../modules/core/runtime/index.js';
+import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import {
 	createEnvironmentRuntime,
 	type EnvironmentRuntime,
-} from '../../../../systems/environment/runtime.js';
+} from '../../../../modules/environment/runtime.js';
 import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import { grepExtension } from '../extension.js';
 
-type RuntimeSystemPromptHandler = WithContext<
+type HarnessModulePromptHandler = WithContext<
 	SystemPromptHandler,
-	EnvironmentRuntime
+	CoreRuntime & EnvironmentRuntime
 >;
 
 function mockEnvironment(
@@ -63,8 +64,10 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 
 function collectHandlers(
 	ext: ReturnType<typeof grepExtension>,
-): RuntimeSystemPromptHandler[] {
-	const { api, registrations } = createCoreRegistrar<EnvironmentRuntime>();
+): HarnessModulePromptHandler[] {
+	const { api, registrations } = createCoreRegistrar<
+		CoreRuntime & EnvironmentRuntime
+	>();
 	ext(api);
 	return registrations.systemPrompt;
 }
@@ -96,8 +99,9 @@ describe('grepExtension', () => {
 	it('contributes the ripgrep dialect fragment when rg is detected', async () => {
 		const env = mockEnvironment(ripgrepExec());
 		const handlers = collectHandlers(grepExtension());
-		const bound: SystemPromptHandler[] = bindHandlers(handlers, () =>
-			fakeRuntime(env),
+		const bound: SystemPromptHandler[] = bindHandlers(
+			handlers,
+			() => fakeRuntime(env) as CoreRuntime & EnvironmentRuntime,
 		);
 		const assembler = buildSystemPromptAssembler(bound);
 
@@ -114,8 +118,9 @@ describe('grepExtension', () => {
 			stderr: '',
 		}));
 		const handlers = collectHandlers(grepExtension());
-		const bound: SystemPromptHandler[] = bindHandlers(handlers, () =>
-			fakeRuntime(env),
+		const bound: SystemPromptHandler[] = bindHandlers(
+			handlers,
+			() => fakeRuntime(env) as CoreRuntime & EnvironmentRuntime,
 		);
 		const assembler = buildSystemPromptAssembler(bound);
 

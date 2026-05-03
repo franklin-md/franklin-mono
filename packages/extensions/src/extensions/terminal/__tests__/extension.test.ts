@@ -5,7 +5,7 @@ import {
 	type AbsolutePath,
 } from '@franklin/lib';
 import { compileCoreWithEnv } from '../../../testing/compile-ext.js';
-import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
+import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
 import { bashExtension } from '../extension.js';
 
 function mockEnvironment(exitCode: number, stdout = '', stderr = '') {
