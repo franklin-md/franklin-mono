@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
-	createCoreSystem,
+	createCoreModule,
 	createRuntime,
 	type CoreRuntime,
 } from '@franklin/extensions';
@@ -45,7 +45,7 @@ function createMockSpawn() {
 async function makeRuntime(
 	llmConfig: Record<string, unknown>,
 ): Promise<CoreRuntime> {
-	const system = createCoreSystem(createMockSpawn());
+	const system = createCoreModule(createMockSpawn());
 	return createRuntime(
 		system,
 		{

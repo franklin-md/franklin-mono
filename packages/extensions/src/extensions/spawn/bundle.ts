@@ -1,4 +1,4 @@
-import { createBundle } from '../../algebra/system/bundle/index.js';
+import { createBundle } from '../../modules/bundle/index.js';
 import { spawnExtension as buildSpawnExtension } from './extension.js';
 import { spawnSpec } from './tools.js';
 

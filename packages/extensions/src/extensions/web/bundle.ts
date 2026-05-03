@@ -1,4 +1,4 @@
-import { createBundle } from '../../algebra/system/bundle/index.js';
+import { createBundle } from '../../modules/bundle/index.js';
 import { reduceExtensions } from '../../algebra/extension/index.js';
 import { webFetchCacheKey } from './web-fetch/key.js';
 import { fetchUrlSpec } from './web-fetch/tools.js';

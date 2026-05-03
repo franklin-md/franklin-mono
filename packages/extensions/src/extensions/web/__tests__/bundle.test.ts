@@ -1,7 +1,7 @@
 import { MemoryOsInfo, type AbsolutePath } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
-import type { ReconfigurableEnvironment } from '../../../systems/environment/api/types.js';
+import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
 import { webFetchCacheKey } from '../web-fetch/key.js';
 import { createWebExtension } from '../index.js';
 

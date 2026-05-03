@@ -16,7 +16,7 @@ import type {
 } from '@franklin/agent/browser';
 import { statusExtension, type StatusState } from '@franklin/extensions';
 import { toAbsolutePath } from '@franklin/lib';
-import type { Session } from '@franklin/extensions';
+import type { RuntimeEntry } from '@franklin/extensions';
 import { AppContext } from '@franklin/react';
 
 import { createObsidianSessionInput } from '../../app/agent.js';
@@ -62,7 +62,7 @@ type TestRuntime = FranklinRuntime & {
 	statusStore: ReturnType<typeof createStore<StatusState>>;
 };
 
-type TestSession = Session<FranklinRuntime> & { runtime: TestRuntime };
+type TestSession = RuntimeEntry<FranklinRuntime> & { runtime: TestRuntime };
 
 function createRuntime(status: StatusState): TestRuntime {
 	const statusStore = createStore(status);

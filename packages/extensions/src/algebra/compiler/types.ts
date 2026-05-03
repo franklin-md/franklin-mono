@@ -3,8 +3,8 @@ import type { BaseRuntime } from '../runtime/index.js';
 
 /**
  * A compiler captures registrations and materialises a runtime. State is
- * configured at compiler-creation time by the system
- * (`RuntimeSystem.createCompiler(state)`) and captured in the compiler's
+ * configured at compiler-creation time by the harness module
+ * (`HarnessModule.createCompiler(input)`) and captured in the compiler's
  * closure — it never appears in the compiler's type.
  *
  * `A` is the API family. `createApi` and `build` bind that family to the

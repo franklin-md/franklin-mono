@@ -6,7 +6,7 @@ import type {
 	FranklinRuntime,
 	OAuthLoginCallbacks,
 } from '@franklin/agent/browser';
-import type { ConversationTurn, Session } from '@franklin/extensions';
+import type { ConversationTurn, RuntimeEntry } from '@franklin/extensions';
 import { conversationExtension } from '@franklin/extensions';
 import type { ThinkingLevel } from '@franklin/mini-acp';
 import {
@@ -235,7 +235,7 @@ export function MockAgentsDecorator({
 			({
 				id: 'mock-forked',
 				runtime: {} as FranklinRuntime,
-			}) satisfies Session<FranklinRuntime>,
+			}) satisfies RuntimeEntry<FranklinRuntime>,
 		remove: () => {},
 	} satisfies AgentsControl;
 

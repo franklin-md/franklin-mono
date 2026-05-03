@@ -1,16 +1,16 @@
 import type { Issue, RestoreResult } from '@franklin/lib';
 import { hydrateFailedIssue } from '@franklin/lib';
 import {
-	SessionCollection,
+	RuntimeCollection,
 	type BaseRuntime,
-	type Session,
-	type SessionState,
+	type BaseState,
+	type RuntimeEntry,
 	type StateHandle,
 } from '@franklin/extensions';
 import type { SessionPersistence } from '../../storage/types.js';
 
 /**
- * PersistedSessionCollection = SessionCollection + Persistence.
+ * PersistedSessionCollection = RuntimeCollection + persistence.
  *
  * Subscribes to collection events so that every `set` automatically
  * starts persistence (initial snapshot + change watching) and every
@@ -20,13 +20,13 @@ import type { SessionPersistence } from '../../storage/types.js';
  * persistence is a transparent side-effect.
  *
  * `projectState` is the runtime → `StateHandle<S>` projection from the
- * owning system (`system.state(runtime)`); the collection no longer
+ * owning module (`module.state(runtime)`); the collection no longer
  * assumes runtimes carry state directly.
  */
 export class PersistedSessionCollection<
-	S extends SessionState,
+	S extends BaseState,
 	RT extends BaseRuntime,
-> extends SessionCollection<RT> {
+> extends RuntimeCollection<RT> {
 	constructor(
 		private readonly persister: SessionPersistence<S>,
 		private readonly projectState: (runtime: RT) => StateHandle<S>,
@@ -44,14 +44,13 @@ export class PersistedSessionCollection<
 	}
 
 	async restore(
-		hydrate: (id: string, state: S) => Promise<Session<RT>>,
+		hydrate: (id: string, state: S) => Promise<RuntimeEntry<RT>>,
 	): Promise<RestoreResult> {
 		const { values, issues } = await this.persister.load();
 		const runtimeIssues: Issue[] = [];
 		for (const [id, state] of values) {
 			try {
-				const session = await hydrate(id, state);
-				this.set(session.id, session.runtime);
+				await hydrate(id, state);
 			} catch (err) {
 				runtimeIssues.push(hydrateFailedIssue(id, err));
 			}

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BaseRuntime } from '../types.js';
 import { combineRuntimes } from '../combine.js';
-import { identityRuntime } from '../../../systems/identity/runtime.js';
+import { identityRuntime } from '../../../modules/identity/runtime.js';
 
 type TaggedRuntime = BaseRuntime & {
 	readonly label: string;

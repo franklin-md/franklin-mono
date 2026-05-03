@@ -1,6 +1,6 @@
 import { encode } from '@franklin/lib';
 import type { Filesystem } from '@franklin/lib';
-import type { Store } from '../../../systems/store/api/types.js';
+import type { Store } from '../../../modules/store/api/types.js';
 import { sha256Hex } from '../hash.js';
 import type { FileRecord } from './key.js';
 

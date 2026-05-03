@@ -1,7 +1,7 @@
 /**
  * Grouped state snapshot/derivation operations for a runtime.
  *
- * Lives on the system (`RuntimeSystem.state(runtime)`), not on the runtime
+ * Lives on the harness module (`HarnessModule.state(runtime)`), not on the runtime
  * itself — runtimes carry only live capabilities + lifecycle.
  */
 export interface StateHandle<S> {
@@ -11,9 +11,9 @@ export interface StateHandle<S> {
 }
 
 /**
- * Base constraint for system runtimes — pure capability surface plus
- * lifecycle. State is projected from the system via
- * `RuntimeSystem.state(runtime)`, not exposed as a runtime field.
+ * Base constraint for harness runtimes — pure capability surface plus
+ * lifecycle. State is projected from the harness module via
+ * `HarnessModule.state(runtime)`, not exposed as a runtime field.
  */
 export interface BaseRuntime {
 	dispose(): Promise<void>;

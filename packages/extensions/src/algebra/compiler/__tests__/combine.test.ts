@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { identityCompiler } from '../../../systems/identity/compiler.js';
+import { identityCompiler } from '../../../modules/identity/compiler.js';
 import type { API } from '../../api/index.js';
 import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import { combine } from '../combine.js';
