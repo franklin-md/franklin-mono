@@ -9,7 +9,7 @@ vi.mock('@franklin/node', () => ({
 	createNodeFilesystem: () => fs,
 }));
 
-import { ObsidianDiffClient } from '../diff-client.js';
+import { ObsidianDiffClient } from '../client.js';
 
 const MANIFEST = { id: 'franklin' } as PluginManifest;
 const VAULT_ROOT = '/vault';

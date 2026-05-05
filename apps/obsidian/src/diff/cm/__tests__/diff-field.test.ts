@@ -1,13 +1,9 @@
 import { EditorState } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
 import { computeHunks } from '../../compute-hunks.js';
-import {
-	acceptHunkIntoBaseline,
-	diffField,
-	setBaseline,
-	setDiffEntry,
-	visibleHunks,
-} from '../diff-field.js';
+import { acceptHunkChange } from '../changes.js';
+import { diffField, visibleHunks } from '../diff-field.js';
+import { setBaselineEffect, setDiffEffect } from '../effects.js';
 
 describe('diffField', () => {
 	it('folds an accepted insert into the baseline', () => {
@@ -16,7 +12,7 @@ describe('diffField', () => {
 		const [hunk] = computeHunks(oldContent, newContent);
 
 		expect(hunk).toBeDefined();
-		expect(acceptHunkIntoBaseline(oldContent, newContent, hunk!)).toBe(
+		expect(acceptHunkChange(oldContent, newContent, hunk!)).toBe(
 			newContent,
 		);
 	});
@@ -28,7 +24,7 @@ describe('diffField', () => {
 		});
 
 		state = state.update({
-			effects: [setDiffEntry.of({ oldContent: 'alpha\ngamma\n' })],
+			effects: [setDiffEffect.of({ oldContent: 'alpha\ngamma\n' })],
 		}).state;
 
 		const [insertHunk] = visibleHunks(state);
@@ -36,8 +32,8 @@ describe('diffField', () => {
 
 		state = state.update({
 			effects: [
-				setBaseline.of({
-					oldContent: acceptHunkIntoBaseline(
+				setBaselineEffect.of({
+					oldContent: acceptHunkChange(
 						'alpha\ngamma\n',
 						state.doc.toString(),
 						insertHunk!,

@@ -9,11 +9,10 @@ import {
 	type EmbeddedBlockMatchCandidate,
 	type EmbeddedSourceBlock,
 } from './embedded-source-blocks.js';
-import {
-	acceptHunk,
-	createActionButtonPair,
-	rejectHunks,
-} from './react-widgets.js';
+
+import { acceptHunk } from './accept-hunk.js';
+import { rejectHunk } from './reject-hunk.js';
+import { createActionButtonPair } from './decorations/actions.js';
 
 export const diffEmbeddedBlockStyling = ViewPlugin.fromClass(
 	class {
@@ -196,7 +195,7 @@ function syncEmbeddedActions(
 	const [accept, reject] = createActionButtonPair(
 		hunk.id,
 		() => acceptHunk(view, hunk),
-		() => rejectHunks(view, [hunk.id]),
+		() => rejectHunk(view, [hunk.id]),
 	);
 	host.replaceChildren(accept, reject);
 }

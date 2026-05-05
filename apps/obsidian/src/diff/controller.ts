@@ -1,16 +1,15 @@
 import { EditorView } from '@codemirror/view';
 import type { Plugin } from 'obsidian';
 import { MarkdownView } from 'obsidian';
-import { diffDecorations, diffHoverTracking } from './cm/decorations.js';
-import {
-	clearDiff,
-	diffField,
-	diffInverted,
-	setDiffEntry,
-} from './cm/diff-field.js';
+import { diffDecorations } from './cm/decorations/build.js';
+import { diffField } from './cm/diff-field.js';
+import { clearDiffEffect, setDiffEffect } from './cm/effects.js';
+import { diffInverted } from './cm/inverted.js';
 import { diffEmbeddedBlockStyling } from './cm/embedded-block-styling.js';
-import { acceptAllHunks, rejectAllHunks } from './cm/react-widgets.js';
-import type { DiffClient } from './diff-client.js';
+import { acceptAllHunks } from './cm/accept-hunk.js';
+import { rejectAllHunks } from './cm/reject-hunk.js';
+import type { DiffClient } from './client.js';
+import { diffHoverTracking } from './hover-tracking.js';
 
 type HeaderUI = {
 	container: HTMLElement;
@@ -161,7 +160,7 @@ export class DiffController {
 		current.appliedPath = normalizedPath;
 		current.appliedOldContent = entry.oldContent;
 		view.dispatch({
-			effects: setDiffEntry.of({ oldContent: entry.oldContent }),
+			effects: setDiffEffect.of({ oldContent: entry.oldContent }),
 		});
 	}
 
@@ -172,7 +171,7 @@ export class DiffController {
 		this.removeHeaderUI(session);
 
 		if (hadDiff && view.dom.isConnected) {
-			view.dispatch({ effects: clearDiff.of(null) });
+			view.dispatch({ effects: clearDiffEffect.of(null) });
 		}
 	}
 

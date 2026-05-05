@@ -218,7 +218,7 @@ export class ObsidianDiffClient implements DiffClient {
 
 	private async readCurrent(path: AbsolutePath): Promise<Uint8Array | null> {
 		try {
-			return await this.fs.readFile(path);
+			return await this.fs.readFile(path); // TODO: change this to use the vault
 		} catch {
 			return null;
 		}

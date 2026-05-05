@@ -18,7 +18,7 @@ import {
 	getPluginAbsolutePath,
 	getVaultAbsolutePath,
 } from '../utils/obsidian/path.js';
-import type { ObsidianDiffClient } from '../diff/diff-client.js';
+import type { ObsidianDiffClient } from '../diff/client.js';
 import { resolveAuthStore } from './auth/resolve.js';
 import { obsidianSystemPromptExtension } from './extensions/system-prompt.js';
 

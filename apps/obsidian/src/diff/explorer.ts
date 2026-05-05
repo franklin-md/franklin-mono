@@ -1,6 +1,6 @@
 import type { Plugin } from 'obsidian';
 
-import type { DiffClient } from './diff-client.js';
+import type { DiffClient } from './client.js';
 
 const FILE_EXPLORER_VIEW_TYPE = 'file-explorer';
 const NEW_FILE_ROW_CLASS = 'diff-plugin-unopened-new-file';
