@@ -1,6 +1,6 @@
 import { type EditorView, ViewPlugin } from '@codemirror/view';
-import type { Hunk } from '../compute-hunks.js';
-import { diffField } from './diff-field.js';
+import type { Hunk } from '../../../compute-hunks.js';
+import { diffField } from '../../diff-field.js';
 import {
 	assignEmbeddedSourceBlocks,
 	findEmbeddedSourceBlocks,
@@ -8,11 +8,11 @@ import {
 	type EmbeddedBlockKind,
 	type EmbeddedBlockMatchCandidate,
 	type EmbeddedSourceBlock,
-} from './embedded-source-blocks.js';
+} from './source-blocks.js';
 
-import { acceptHunk } from './accept-hunk.js';
-import { rejectHunk } from './reject-hunk.js';
-import { createActionButtonPair } from './decorations/actions.js';
+import { acceptHunk } from '../../accept-hunk.js';
+import { rejectHunk } from '../../reject-hunk.js';
+import { createActionButtonPair } from '../actions.js';
 
 export const diffEmbeddedBlockStyling = ViewPlugin.fromClass(
 	class {

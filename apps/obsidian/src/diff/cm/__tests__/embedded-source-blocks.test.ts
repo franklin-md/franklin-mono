@@ -6,7 +6,7 @@ import {
 	findEmbeddedSourceBlocks,
 	findHunkIdForEmbeddedSourceBlock,
 	findVisibleEmbeddedSourceBlocks,
-} from '../embedded-source-blocks.js';
+} from '../decorations/embedded/source-blocks.js';
 
 describe('findEmbeddedSourceBlocks', () => {
 	it('finds multiple rendered diagrams in document order', () => {

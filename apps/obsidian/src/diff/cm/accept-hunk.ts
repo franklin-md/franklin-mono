@@ -1,8 +1,8 @@
-import { EditorView } from '@codemirror/view';
+import type { EditorView } from '@codemirror/view';
 import { diffField } from './diff-field.js';
 import { setBaselineEffect, setHoveredHunkEffect } from './effects.js';
 import type { Hunk } from '../compute-hunks.js';
-import { acceptHunkChange } from './changes';
+import { acceptHunkChange } from './changes.js';
 
 export function acceptAllHunks(view: EditorView) {
 	const ds = view.state.field(diffField, false);

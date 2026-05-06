@@ -5,15 +5,17 @@ import type { Decoration } from '@codemirror/view';
 import { computeHunks } from '../../compute-hunks.js';
 import {
 	actionDecorations,
-	resolveActionPosition,
+	DiffHunkActionsWidget,
 } from '../decorations/actions.js';
 import { addedLineDecorations } from '../decorations/added-line.js';
 import {
-	DiffHunkActionsWidget,
-	DiffHunkWidget,
+	RemovedHunkWidget,
 	removedLineDecorations,
-	resolveAnchorPosition,
 } from '../decorations/deleted-line.js';
+import {
+	resolveActionPosition,
+	resolveAnchorPosition,
+} from '../decorations/utils.js';
 
 describe('resolveActionPosition', () => {
 	it('anchors eof inserted embedded blocks at the start of the added block', () => {
@@ -120,7 +122,7 @@ describe('removedLineDecorations', () => {
 		expect(decoration?.from).toBe(anchor.pos);
 		expect(spec.block).toBe(true);
 		expect(spec.side).toBe(anchor.side);
-		expect(spec.widget).toBeInstanceOf(DiffHunkWidget);
+		expect(spec.widget).toBeInstanceOf(RemovedHunkWidget);
 	});
 });
 

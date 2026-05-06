@@ -12,9 +12,7 @@ describe('diffField', () => {
 		const [hunk] = computeHunks(oldContent, newContent);
 
 		expect(hunk).toBeDefined();
-		expect(acceptHunkChange(oldContent, newContent, hunk!)).toBe(
-			newContent,
-		);
+		expect(acceptHunkChange(oldContent, newContent, hunk!)).toBe(newContent);
 	});
 
 	it('recomputes pending hunks against the updated baseline', () => {

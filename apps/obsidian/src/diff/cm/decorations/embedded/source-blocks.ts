@@ -1,5 +1,5 @@
 import type { Text } from '@codemirror/state';
-import type { Hunk } from '../compute-hunks.js';
+import type { Hunk } from '../../../compute-hunks.js';
 
 export type EmbeddedBlockKind = 'diagram' | 'table';
 

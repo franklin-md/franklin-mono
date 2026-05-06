@@ -22,8 +22,12 @@ const empty: DiffState = {
 	hoveredHunkId: null,
 };
 
+// TODO: we could get rid of `setDiffEffect` by using
+// calling it on `create` instead?
 export const diffField = StateField.define<DiffState>({
-	create: () => empty,
+	create: () => {
+		return empty;
+	},
 
 	update(value, tr: Transaction): DiffState {
 		let next = value;

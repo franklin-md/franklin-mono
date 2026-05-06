@@ -1,5 +1,5 @@
 import { invertedEffects } from '@codemirror/commands';
-import { StateEffect } from '@codemirror/state';
+import type { StateEffect } from '@codemirror/state';
 
 import { setBaselineEffect } from './effects.js';
 import { diffField } from './diff-field.js';

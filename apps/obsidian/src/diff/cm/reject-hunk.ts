@@ -1,4 +1,4 @@
-import { EditorView } from '@codemirror/view';
+import type { EditorView } from '@codemirror/view';
 import { diffField } from './diff-field.js';
 import { rejectHunkChange } from './changes.js';
 import { setHoveredHunkEffect } from './effects.js';

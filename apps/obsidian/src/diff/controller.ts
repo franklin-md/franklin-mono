@@ -5,7 +5,7 @@ import { diffDecorations } from './cm/decorations/build.js';
 import { diffField } from './cm/diff-field.js';
 import { clearDiffEffect, setDiffEffect } from './cm/effects.js';
 import { diffInverted } from './cm/inverted.js';
-import { diffEmbeddedBlockStyling } from './cm/embedded-block-styling.js';
+import { diffEmbeddedBlockStyling } from './cm/decorations/embedded/block-styling.js';
 import { acceptAllHunks } from './cm/accept-hunk.js';
 import { rejectAllHunks } from './cm/reject-hunk.js';
 import type { DiffClient } from './client.js';

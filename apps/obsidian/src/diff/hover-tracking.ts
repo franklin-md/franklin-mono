@@ -1,4 +1,5 @@
-import { ViewPlugin, EditorView } from '@codemirror/view';
+import type { EditorView } from '@codemirror/view';
+import { ViewPlugin } from '@codemirror/view';
 
 import { setHoveredHunkEffect } from './cm/effects.js';
 import { diffField } from './cm/diff-field.js';

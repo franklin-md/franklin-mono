@@ -1,15 +1,15 @@
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { Range, Text } from '@codemirror/state';
-import { Decoration } from '@codemirror/view';
+import type { EditorView } from '@codemirror/view';
+import { Decoration, WidgetType } from '@codemirror/view';
 import type { Hunk } from '../../compute-hunks.js';
 import {
-	looksLikeTableDivider,
-	looksLikeTableRow,
-} from '../embedded-source-blocks.js';
-import {
-	DiffHunkActionsWidget,
-	resolveAnchorPosition,
-} from './deleted-line.js';
+	areHunksEqual,
+	hunkHasEmbeddedActions,
+	resolveActionPosition,
+} from './utils.js';
+import { acceptHunk } from '../accept-hunk.js';
+import { rejectHunk } from '../reject-hunk.js';
 
 export function actionDecorations(
 	doc: Text,
@@ -27,72 +27,38 @@ export function actionDecorations(
 	];
 }
 
-function hunkHasEmbeddedActions(hunk: Hunk): boolean {
-	return hunkContainsMermaidBlock(hunk) || hunkContainsTableBlock(hunk);
-}
-
-function hunkContainsMermaidBlock(hunk: Hunk): boolean {
-	return hunk.addedLines.some((line) => /^```mermaid\s*$/i.test(line.trim()));
-}
-
-function hunkContainsTableBlock(hunk: Hunk): boolean {
-	for (let index = 0; index < hunk.addedLines.length - 1; index++) {
-		const line = hunk.addedLines[index];
-		const nextLine = hunk.addedLines[index + 1];
-		if (!line || !nextLine) continue;
-		if (!looksLikeTableRow(line)) continue;
-		if (!looksLikeTableDivider(nextLine)) continue;
-		return true;
+export class DiffHunkActionsWidget extends WidgetType {
+	constructor(private readonly hunk: Hunk) {
+		super();
 	}
 
-	return false;
-}
-
-export function resolveActionPosition(
-	doc: Text,
-	hunk: Hunk,
-	visibleHunks: Hunk[],
-): number {
-	if (doc.length === 0) return 0;
-
-	if (hunk.addedLines.length > 0) {
-		if (hunk.newTo >= doc.length) {
-			return doc.lineAt(hunk.newFrom).from;
-		}
-
-		const nextLine = doc.lineAt(Math.min(hunk.newTo, doc.length));
-		if (!isLineInAnotherHunk(doc, nextLine.from, hunk, visibleHunks)) {
-			return nextLine.from;
-		}
-
-		return doc.lineAt(Math.max(hunk.newTo - 1, hunk.newFrom)).from;
+	eq(other: DiffHunkActionsWidget): boolean {
+		return areHunksEqual(this.hunk, other.hunk);
 	}
 
-	const lineNumber = clampLineNumber(hunk.anchor.lineIndex + 1, doc.lines);
-	return doc.line(lineNumber).from;
-}
+	toDOM(view: EditorView): HTMLElement {
+		const dom = activeDocument.createSpan();
+		dom.className = 'diff-plugin-actions-host';
+		dom.dataset.diffHunkId = this.hunk.id;
+		dom.addEventListener('mousedown', stopMouseEvent);
 
-function isLineInAnotherHunk(
-	doc: Text,
-	pos: number,
-	currentHunk: Hunk,
-	hunks: Hunk[],
-): boolean {
-	return hunks.some((hunk) => {
-		if (hunk.id === currentHunk.id) return false;
-		if (hunk.addedLines.length > 0 && pos >= hunk.newFrom && pos < hunk.newTo) {
-			return true;
-		}
-		if (hunk.removedLines.length === 0) return false;
+		const actions = activeDocument.createSpan();
+		actions.className = 'diff-plugin-actions';
+		actions.dataset.diffHunkId = this.hunk.id;
 
-		return pos === doc.lineAt(resolveAnchorPosition(doc, hunk).pos).from;
-	});
-}
+		const [accept, reject] = createActionButtonPair(
+			this.hunk.id,
+			() => acceptHunk(view, this.hunk),
+			() => rejectHunk(view, [this.hunk.id]),
+		);
+		actions.append(accept, reject);
+		dom.appendChild(actions);
+		return dom;
+	}
 
-function clampLineNumber(lineNumber: number, maxLines: number): number {
-	if (lineNumber < 1) return 1;
-	if (lineNumber > maxLines) return maxLines;
-	return lineNumber;
+	ignoreEvent(): boolean {
+		return false;
+	}
 }
 
 export function createActionButtonPair(
