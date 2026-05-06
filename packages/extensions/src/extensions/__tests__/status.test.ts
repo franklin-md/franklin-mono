@@ -6,7 +6,7 @@ import { compileCoreWithStore } from '../../testing/compile-ext.js';
 import { createStatusControl } from '../status/control.js';
 import { statusExtension } from '../status/extension.js';
 import { statusKey } from '../status/key.js';
-import type { StoreRuntime } from '../../systems/store/runtime.js';
+import type { StoreRuntime } from '../../modules/store/runtime.js';
 import type { StatusState } from '../status/types.js';
 
 type StubOverrides = { [K in keyof MiniACPClient]?: (...args: any[]) => any };

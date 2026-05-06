@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { CoreRuntime, CoreState } from '@franklin/extensions';
-import { createCoreSystem, createRuntime } from '@franklin/extensions';
+import {
+	coreStateHandle,
+	createCoreModule,
+	createRuntime,
+} from '@franklin/extensions';
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
 	createSessionAdapter,
@@ -56,17 +60,6 @@ function mockCoreRuntime(): CoreRuntime {
 		prompt: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 		subscribe: vi.fn(() => () => {}),
-		state: {
-			get: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
-			})),
-			fork: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
-			})),
-			child: vi.fn(async () => ({
-				core: { messages: [], llmConfig: {}, usage: ZERO_USAGE },
-			})),
-		},
 		dispose: vi.fn(async () => {}),
 	} as unknown as CoreRuntime;
 }
@@ -178,7 +171,7 @@ describe('reconnectAgent', () => {
 describe('withAuth', () => {
 	it('returns a system with the same emptyState', () => {
 		const spawn = createMockSpawn();
-		const base = createCoreSystem(spawn);
+		const base = createCoreModule(spawn);
 		const auth = mockAuthManager({});
 
 		const decorated = withAuth(base, auth);
@@ -188,7 +181,7 @@ describe('withAuth', () => {
 
 	it('authenticates the runtime during build', async () => {
 		const spawn = createMockSpawn();
-		const base = createCoreSystem(spawn);
+		const base = createCoreModule(spawn);
 		const auth = mockAuthManager({ anthropic: 'sk-build-test' });
 
 		const decorated = withAuth(base, auth);
@@ -213,7 +206,7 @@ describe('withAuth', () => {
 
 	it('resolves apiKey when provider changes via setLLMConfig', async () => {
 		const spawn = createMockSpawn();
-		const base = createCoreSystem(spawn);
+		const base = createCoreModule(spawn);
 		const auth = mockAuthManager({
 			anthropic: 'sk-anthropic',
 			'openai-codex': 'sk-openai',
@@ -241,13 +234,13 @@ describe('withAuth', () => {
 		expect(auth.getApiKey).toHaveBeenCalledWith('openai-codex');
 
 		// Verify the runtime now has the new provider's config
-		const state = await runtime.state.get();
+		const state = await coreStateHandle(runtime).get();
 		expect(state.core.llmConfig.provider).toBe('openai-codex');
 	});
 
 	it('does not resolve auth when provider is unchanged', async () => {
 		const spawn = createMockSpawn();
-		const base = createCoreSystem(spawn);
+		const base = createCoreModule(spawn);
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
@@ -276,7 +269,7 @@ describe('withAuth', () => {
 
 	it('does not overwrite an explicit apiKey in setLLMConfig', async () => {
 		const spawn = createMockSpawn();
-		const base = createCoreSystem(spawn);
+		const base = createCoreModule(spawn);
 		const auth = mockAuthManager({
 			anthropic: 'sk-anthropic',
 			'openai-codex': 'sk-openai',
@@ -307,7 +300,7 @@ describe('withAuth', () => {
 
 	it('clears apiKey when no stored key exists for the new provider', async () => {
 		const spawn = createMockSpawn();
-		const base = createCoreSystem(spawn);
+		const base = createCoreModule(spawn);
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
@@ -333,7 +326,7 @@ describe('withAuth', () => {
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('openrouter');
 
-		const state = await runtime.state.get();
+		const state = await coreStateHandle(runtime).get();
 		expect(state.core.llmConfig.provider).toBe('openrouter');
 		expect(runtime.context().config.apiKey).toBeUndefined();
 	});
@@ -344,7 +337,7 @@ describe('withAuth', () => {
 		// the runtime silently kept the old provider/model, so subsequent
 		// reasoning toggles re-rendered the stale tracker and the UI reverted.
 		const spawn = createMockSpawn();
-		const base = createCoreSystem(spawn);
+		const base = createCoreModule(spawn);
 		const auth = mockAuthManager({ 'openai-codex': 'sk-openai' });
 		(auth as { getApiKey: AuthManager['getApiKey'] }).getApiKey = vi.fn(
 			async (provider: string) => {
@@ -373,7 +366,7 @@ describe('withAuth', () => {
 			model: 'claude-sonnet-4-6',
 		});
 
-		const state = await runtime.state.get();
+		const state = await coreStateHandle(runtime).get();
 		expect(state.core.llmConfig.provider).toBe('anthropic');
 		expect(state.core.llmConfig.model).toBe('claude-sonnet-4-6');
 		expect(runtime.context().config.apiKey).toBeUndefined();
@@ -390,7 +383,7 @@ describe('withAuth live sync', () => {
 		auth: ReturnType<typeof mockAuthManager>,
 	) {
 		const spawn = createMockSpawn();
-		const base = createCoreSystem(spawn);
+		const base = createCoreModule(spawn);
 		const decorated = withAuth(base, auth);
 		return createRuntime(
 			decorated,

@@ -25,8 +25,8 @@
 	},
 	"dependencies": {
 		"@franklin/lib": "*",
+		"@mariozechner/pi-agent-core": "^0.61.1",
 		"@mariozechner/pi-ai": "^0.61.0",
-		"@mariozechner/pi-agent-core": "^0.61.0",
 		"dotenv": "^17.3.1",
 		"pi-agents": "^0.1.0"
 	}

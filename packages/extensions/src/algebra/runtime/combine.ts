@@ -1,52 +1,29 @@
 import type { AssertNoOverlap, Simplify } from '@franklin/lib';
 import type { BaseRuntime } from './types.js';
 
-export type RuntimeExtras<S, RT extends BaseRuntime<S>> = Omit<
-	RT,
-	keyof BaseRuntime<S>
->;
+export type RuntimeExtras<RT extends BaseRuntime> = Omit<RT, keyof BaseRuntime>;
 
 /**
  * Runtime produced by `combineRuntimes`. Recomposes the lifecycle members of
- * `BaseRuntime<S1 & S2>` and merges the extra surface areas of both runtimes.
+ * `BaseRuntime` and merges the extra surface areas of both runtimes.
  * Overlap between the extras is prevented at composition sites (via the
  * guards on `combine()` / `combineRuntimes()`), not in this type.
  */
 export type CombinedRuntime<
-	S1,
-	S2,
-	RT1 extends BaseRuntime<S1>,
-	RT2 extends BaseRuntime<S2>,
-> = Simplify<
-	BaseRuntime<S1 & S2> & RuntimeExtras<S1, RT1> & RuntimeExtras<S2, RT2>
->;
+	RT1 extends BaseRuntime,
+	RT2 extends BaseRuntime,
+> = Simplify<BaseRuntime & RuntimeExtras<RT1> & RuntimeExtras<RT2>>;
 
 export function combineRuntimes<
-	S1,
-	RT1 extends BaseRuntime<S1>,
-	S2,
-	RT2 extends BaseRuntime<S2>,
+	RT1 extends BaseRuntime,
+	RT2 extends BaseRuntime,
 >(
 	rt1: RT1,
-	rt2: RT2 & AssertNoOverlap<RuntimeExtras<S1, RT1>, RuntimeExtras<S2, RT2>>,
-): CombinedRuntime<S1, S2, RT1, RT2> {
+	rt2: RT2 & AssertNoOverlap<RuntimeExtras<RT1>, RuntimeExtras<RT2>>,
+): CombinedRuntime<RT1, RT2> {
 	return {
 		...rt1,
 		...rt2,
-		state: {
-			get: async () => ({
-				...(await rt1.state.get()),
-				...(await rt2.state.get()),
-			}),
-			fork: async () => ({
-				...(await rt1.state.fork()),
-				...(await rt2.state.fork()),
-			}),
-			child: async () => ({
-				...(await rt1.state.child()),
-				...(await rt2.state.child()),
-			}),
-		},
 		dispose: () => Promise.all([rt1.dispose(), rt2.dispose()]).then(() => {}),
 		subscribe: (listener: () => void) => {
 			const unsub1 = rt1.subscribe(listener);

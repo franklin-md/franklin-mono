@@ -1,37 +1,43 @@
-import { describe, expect, it, vi } from 'vitest';
 import {
+	type AbsolutePath,
 	FILESYSTEM_ALLOW_ALL,
 	MemoryOsInfo,
-	type AbsolutePath,
 } from '@franklin/lib';
-import type { SystemPromptHandler } from '../../../systems/core/api/handlers.js';
+import { describe, expect, it, vi } from 'vitest';
+import type { SystemPromptHandler } from '../../../modules/core/api/handlers.js';
+import {
+	buildSystemPromptAssembler,
+	type SystemPromptAssembler,
+} from '../../../modules/core/compile/decorators/system-prompt/index.js';
 import {
 	bindHandlers,
 	createCoreRegistrar,
 	type WithContext,
-} from '../../../systems/core/compile/registrar/index.js';
-import {
-	buildSystemPromptAssembler,
-	type SystemPromptAssembler,
-} from '../../../systems/core/compile/decorators/system-prompt/index.js';
-import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
+} from '../../../modules/core/compile/registrar/index.js';
+import type { CoreRuntime } from '../../../modules/core/runtime/index.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
-} from '../../../systems/environment/api/types.js';
+} from '../../../modules/environment/api/types.js';
+import {
+	createEnvironmentRuntime,
+	type EnvironmentRuntime,
+} from '../../../modules/environment/runtime.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
 
-type RuntimeSystemPromptHandler = WithContext<
+type HarnessModulePromptHandler = WithContext<
 	SystemPromptHandler,
-	EnvironmentRuntime
+	CoreRuntime & EnvironmentRuntime
 >;
 
 function collectHandlers(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
-): RuntimeSystemPromptHandler[] {
-	const { api, registered } = createCoreRegistrar<EnvironmentRuntime>();
+): HarnessModulePromptHandler[] {
+	const { api, registrations } = createCoreRegistrar<
+		CoreRuntime & EnvironmentRuntime
+	>();
 	extension(api);
-	return registered.systemPrompt;
+	return registrations.systemPrompt;
 }
 
 function defaultConfig(): EnvironmentConfig {
@@ -60,25 +66,16 @@ function fakeEnvironment(
 }
 
 function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
-	return {
-		environment: env,
-		state: {
-			get: async () => ({ env: await env.config() }),
-			fork: async () => ({ env: await env.config() }),
-			child: async () => ({ env: await env.config() }),
-		},
-		subscribe: () => () => {},
-		dispose: async () => {},
-	} as EnvironmentRuntime;
+	return createEnvironmentRuntime(env);
 }
 
 function bindAssembler(
-	handlers: RuntimeSystemPromptHandler[],
+	handlers: HarnessModulePromptHandler[],
 	ctx: EnvironmentRuntime,
 ): SystemPromptAssembler {
 	const boundHandlers: SystemPromptHandler[] = bindHandlers(
 		handlers,
-		() => ctx,
+		() => ctx as CoreRuntime & EnvironmentRuntime,
 	);
 	return buildSystemPromptAssembler(boundHandlers);
 }

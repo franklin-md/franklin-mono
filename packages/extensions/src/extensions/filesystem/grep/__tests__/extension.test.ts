@@ -1,26 +1,30 @@
 import {
+	type AbsolutePath,
 	FILESYSTEM_ALLOW_ALL,
 	MemoryOsInfo,
-	type AbsolutePath,
 	type ProcessInput,
 	type ProcessOutput,
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
-import type { SystemPromptHandler } from '../../../../systems/core/api/handlers.js';
+import type { SystemPromptHandler } from '../../../../modules/core/api/handlers.js';
+import { buildSystemPromptAssembler } from '../../../../modules/core/compile/decorators/system-prompt/index.js';
 import {
 	bindHandlers,
 	createCoreRegistrar,
 	type WithContext,
-} from '../../../../systems/core/compile/registrar/index.js';
-import { buildSystemPromptAssembler } from '../../../../systems/core/compile/decorators/system-prompt/index.js';
-import type { EnvironmentRuntime } from '../../../../systems/environment/runtime.js';
-import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
+} from '../../../../modules/core/compile/registrar/index.js';
+import type { CoreRuntime } from '../../../../modules/core/runtime/index.js';
+import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
+import {
+	createEnvironmentRuntime,
+	type EnvironmentRuntime,
+} from '../../../../modules/environment/runtime.js';
 import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import { grepExtension } from '../extension.js';
 
-type RuntimeSystemPromptHandler = WithContext<
+type HarnessModulePromptHandler = WithContext<
 	SystemPromptHandler,
-	EnvironmentRuntime
+	CoreRuntime & EnvironmentRuntime
 >;
 
 function mockEnvironment(
@@ -55,24 +59,17 @@ function mockEnvironment(
 }
 
 function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
-	return {
-		environment: env,
-		state: {
-			get: async () => ({ env: await env.config() }),
-			fork: async () => ({ env: await env.config() }),
-			child: async () => ({ env: await env.config() }),
-		},
-		subscribe: () => () => {},
-		dispose: async () => {},
-	} as EnvironmentRuntime;
+	return createEnvironmentRuntime(env);
 }
 
 function collectHandlers(
 	ext: ReturnType<typeof grepExtension>,
-): RuntimeSystemPromptHandler[] {
-	const { api, registered } = createCoreRegistrar<EnvironmentRuntime>();
+): HarnessModulePromptHandler[] {
+	const { api, registrations } = createCoreRegistrar<
+		CoreRuntime & EnvironmentRuntime
+	>();
 	ext(api);
-	return registered.systemPrompt;
+	return registrations.systemPrompt;
 }
 
 // rg-success answers `rg --version` with exit 0 AND streams an rg-style match
@@ -102,8 +99,9 @@ describe('grepExtension', () => {
 	it('contributes the ripgrep dialect fragment when rg is detected', async () => {
 		const env = mockEnvironment(ripgrepExec());
 		const handlers = collectHandlers(grepExtension());
-		const bound: SystemPromptHandler[] = bindHandlers(handlers, () =>
-			fakeRuntime(env),
+		const bound: SystemPromptHandler[] = bindHandlers(
+			handlers,
+			() => fakeRuntime(env) as CoreRuntime & EnvironmentRuntime,
 		);
 		const assembler = buildSystemPromptAssembler(bound);
 
@@ -120,8 +118,9 @@ describe('grepExtension', () => {
 			stderr: '',
 		}));
 		const handlers = collectHandlers(grepExtension());
-		const bound: SystemPromptHandler[] = bindHandlers(handlers, () =>
-			fakeRuntime(env),
+		const bound: SystemPromptHandler[] = bindHandlers(
+			handlers,
+			() => fakeRuntime(env) as CoreRuntime & EnvironmentRuntime,
 		);
 		const assembler = buildSystemPromptAssembler(bound);
 

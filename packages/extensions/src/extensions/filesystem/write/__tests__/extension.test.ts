@@ -5,7 +5,7 @@ import {
 	type AbsolutePath,
 } from '@franklin/lib';
 import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
-import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
+import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import { editExtension } from '../../edit/extension.js';
 import { writeExtension } from '../extension.js';
 

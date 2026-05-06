@@ -104,6 +104,13 @@ export {
 	matchesUrlPattern,
 } from './network/utils.js';
 export type { Simplify } from './typing/simplify.js';
+export type {
+	Apply,
+	ApplyFold,
+	Fold,
+	FoldRight,
+	HKT,
+} from './typing/hkt/index.js';
 
 // Proxy algebra
 export {

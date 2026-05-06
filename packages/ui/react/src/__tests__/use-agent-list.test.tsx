@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { Session } from '@franklin/extensions';
+import type { RuntimeEntry } from '@franklin/extensions';
 
 import { AppContext } from '../agent/franklin-context.js';
 import { useAgentList } from '../agent/use-agent-list.js';
@@ -17,14 +17,14 @@ import { useAgents } from '../agent/agents-context.js';
 type Listener = () => void;
 
 function makeMockAgents() {
-	const sessions: Session<FranklinRuntime>[] = [];
+	const sessions: RuntimeEntry<FranklinRuntime>[] = [];
 	const listeners = new Set<Listener>();
 	let nextId = 1;
 
 	return {
 		sessions,
 		create: vi.fn(async () => {
-			const session: Session<FranklinRuntime> = {
+			const session: RuntimeEntry<FranklinRuntime> = {
 				id: `agent-${nextId++}`,
 				runtime: {} as FranklinRuntime,
 			};
@@ -74,12 +74,12 @@ function makeProviderWrapper(agents: ReturnType<typeof makeMockAgents>) {
 
 async function createSession(result: {
 	current: ReturnType<typeof useAgentList>;
-}): Promise<Session<FranklinRuntime>> {
-	let session: Session<FranklinRuntime> | undefined;
+}): Promise<RuntimeEntry<FranklinRuntime>> {
+	let session: RuntimeEntry<FranklinRuntime> | undefined;
 	await act(async () => {
 		session = await result.current.create();
 	});
-	return session as Session<FranklinRuntime>;
+	return session as RuntimeEntry<FranklinRuntime>;
 }
 
 // ---------------------------------------------------------------------------
@@ -237,7 +237,7 @@ describe('AgentsProvider + useAgents', () => {
 
 		const { result } = renderHook(() => useAgents(), { wrapper });
 
-		let session: Session<FranklinRuntime> | undefined;
+		let session: RuntimeEntry<FranklinRuntime> | undefined;
 		await act(async () => {
 			session = await result.current.create();
 		});

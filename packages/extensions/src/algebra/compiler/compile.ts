@@ -1,30 +1,37 @@
-import type { Extension } from '../types/extension.js';
+import type { API, BoundAPI } from '../api/index.js';
+import { reduceExtensions, type Extension } from '../extension/index.js';
+import type { BaseRuntime } from '../runtime/index.js';
 import type { Compiler } from './types.js';
 
 /**
- * Compile a single extension — register, then tie the Y-combinator.
+ * Compile a single extension — create the API, register, then tie the
+ * Y-combinator.
  */
-export async function compile<API, S, Runtime>(
-	compiler: Compiler<API, S, Runtime>,
-	extension: Extension<API>,
-	state: S,
+export async function compile<
+	A extends API,
+	Runtime extends BaseRuntime & A['In'],
+>(
+	compiler: Compiler<A, Runtime>,
+	extension: Extension<BoundAPI<A, Runtime>>,
 ): Promise<Runtime> {
-	extension(compiler.api);
-	return tie(compiler, state);
+	const api = compiler.createApi<Runtime>();
+	extension(api);
+	return tie(compiler);
 }
 
-export async function compileAll<API, S, Runtime>(
-	compiler: Compiler<API, S, Runtime>,
-	extensions: Extension<API>[],
-	state: S,
+export async function compileAll<
+	A extends API,
+	Runtime extends BaseRuntime & A['In'],
+>(
+	compiler: Compiler<A, Runtime>,
+	extensions: Extension<BoundAPI<A, Runtime>>[],
 ): Promise<Runtime> {
-	for (const ext of extensions) ext(compiler.api);
-	return tie(compiler, state);
+	const extension = reduceExtensions(...extensions);
+	return compile(compiler, extension);
 }
 
-async function tie<API, S, Runtime>(
-	compiler: Compiler<API, S, Runtime>,
-	state: S,
+async function tie<A extends API, Runtime extends BaseRuntime & A['In']>(
+	compiler: Compiler<A, Runtime>,
 ): Promise<Runtime> {
 	// Mutable cell — handler closures capture `getRuntime` at registration,
 	// `compileAll`/`compile` populates `cell.value` once `build` resolves.
@@ -37,6 +44,6 @@ async function tie<API, S, Runtime>(
 		}
 		return cell.value;
 	};
-	cell.value = await compiler.build(state, getRuntime);
+	cell.value = await compiler.build<Runtime>(getRuntime);
 	return cell.value;
 }

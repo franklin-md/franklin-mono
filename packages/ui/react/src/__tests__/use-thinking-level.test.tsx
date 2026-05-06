@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import type { ThinkingLevel } from '@franklin/mini-acp';
 import type { FranklinRuntime } from '@franklin/agent/browser';
+import { CORE_STATE } from '@franklin/extensions';
 
 import { AgentProvider } from '../agent/agent-context.js';
 import { useThinkingLevel } from '../agent/use-thinking-level.js';
@@ -32,8 +33,20 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 	});
 
 	const runtime = {
-		state: {
+		[CORE_STATE]: {
 			get: vi.fn(async () => ({
+				core: {
+					messages: [],
+					llmConfig: { reasoning },
+				},
+			})),
+			fork: vi.fn(async () => ({
+				core: {
+					messages: [],
+					llmConfig: { reasoning },
+				},
+			})),
+			child: vi.fn(async () => ({
 				core: {
 					messages: [],
 					llmConfig: { reasoning },
@@ -230,7 +243,7 @@ describe('useThinkingLevel – reactivity', () => {
 		});
 
 		// Simulate external config change
-		(runtime.state.get as ReturnType<typeof vi.fn>).mockResolvedValue({
+		(runtime[CORE_STATE].get as ReturnType<typeof vi.fn>).mockResolvedValue({
 			core: {
 				messages: [],
 				llmConfig: { reasoning: 'xhigh' },

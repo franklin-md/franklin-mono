@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { toolSpec } from '../../../systems/core/api/tool-spec.js';
+import { toolSpec } from '../../../modules/core/api/tool-spec.js';
 import { readFileDescription } from '../../system_prompts.js';
 
 const readFileSchema = z.object({

@@ -1,7 +1,7 @@
 /* eslint-disable require-yield */
 import { describe, it, expect, vi } from 'vitest';
 import { apply } from '@franklin/lib/middleware';
-import type { StoreRuntime } from '../../systems/store/runtime.js';
+import type { StoreRuntime } from '../../modules/store/runtime.js';
 import type {
 	MiniACPAgent,
 	MiniACPClient,

@@ -1,4 +1,4 @@
-import { storeKey } from '../../../systems/store/api/key.js';
+import { storeKey } from '../../../modules/store/api/key.js';
 
 export type FileRecord = Record<string, string>;
 

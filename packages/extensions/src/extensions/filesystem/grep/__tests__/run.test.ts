@@ -17,7 +17,7 @@ import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import type { ReconfigurableEnvironment } from '../../../../systems/environment/api/types.js';
+import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import { runGrep } from '../run.js';
 
 interface MockEnvOptions {
