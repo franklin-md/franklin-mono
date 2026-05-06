@@ -68,6 +68,8 @@ export type {
 	MiniACPClient,
 	MiniACPAgent,
 	MiniACPProtocol,
+	MiniACPClientHandle,
+	MiniACPConnector,
 	ClientProtocol,
 	AgentProtocol,
 	ClientBinding,
@@ -80,6 +82,8 @@ export {
 } from './protocol/index.js';
 export {
 	createClientConnection,
+	createMiniACPConnector,
+	connectMiniACPClient,
 	createAgentConnection,
 	debugMiniACP,
 	createSessionAdapter,

@@ -1,4 +1,9 @@
-import type { Ctx, LLMConfig, MiniACPClient } from '@franklin/mini-acp';
+import type {
+	Ctx,
+	LLMConfig,
+	MiniACPClient,
+	MiniACPClientHandle,
+} from '@franklin/mini-acp';
 import type {
 	BaseRuntime,
 	StateHandle,
@@ -27,4 +32,4 @@ export type CoreRuntime = BaseRuntime &
 		readonly [CORE_STATE]: StateHandle<CoreState>;
 	};
 
-export type AgentClient = MiniACPClient & { dispose(): Promise<void> };
+export type AgentClient = MiniACPClientHandle;

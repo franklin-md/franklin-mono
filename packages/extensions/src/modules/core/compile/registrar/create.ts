@@ -23,6 +23,7 @@ function normalizeTool<Runtime extends BaseRuntime>(
 
 export function createCoreRegistrations(): CoreRegistrations {
 	return {
+		// `on` event handlers
 		prompt: [],
 		cancel: [],
 		systemPrompt: [],
@@ -32,6 +33,7 @@ export function createCoreRegistrations(): CoreRegistrations {
 		turnEnd: [],
 		toolCall: [],
 		toolResult: [],
+		// `registerTool`
 		tools: [],
 	};
 }

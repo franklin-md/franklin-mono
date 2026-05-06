@@ -31,7 +31,7 @@ type CoreExtension = Extension<BoundAPI<CoreAPI, CoreRuntime>>;
 
 /**
  * Build middleware directly from a single CoreAPI extension, without going
- * through the full Core compiler (which requires a transport and builds a
+ * through the full Core compiler (which requires a connector and builds a
  * full CoreRuntime). Handlers receive `undefined` as their runtime/ctx —
  * these tests exercise middleware composition and don't touch it.
  *

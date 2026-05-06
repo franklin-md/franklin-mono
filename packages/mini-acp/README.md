@@ -2,7 +2,7 @@
 *Mini-ACP is sometimes aliased to Mu and may change name because of its divergence from ACP (in addition to its simplification)*
 
 ## Overview and Philosophy
-> Mini-ACP defines a protocol for communication between any Agent and Application.
+> Mini-ACP defines a protocol for communication between a Minimal Agent Loop and Application.
 
 This is a bi-directional protocol where both parties engage at different times as both Client and Server to each other. The protocol does not mandate a codec for messages, but JSON-RPC 2.0 is suggested. It requires a transport protocol like websocket or stdio pipes.
 
@@ -302,19 +302,19 @@ Client-side `toolExecute` implementations SHOULD catch their own exceptions and 
 
 The turn ends when the agent emits a `TurnEnd` event and closes the stream. The `stopCode` is an integer indicating why:
 
-| Code | Name                   | Category   | Meaning                                          |
-| ---- | ---------------------- | ---------- | ------------------------------------------------ |
-| 1000 | `Finished`             | finished   | The agent completed its response normally         |
-| 1001 | `Cancelled`            | finished   | The client requested cancellation                 |
-| 2000 | `LlmError`             | llm_error  | Generic / unclassified LLM error                  |
-| 2100 | `ProviderNotSpecified` | llm_error  | No provider in LLMConfig                          |
-| 2101 | `ProviderNotFound`     | llm_error  | Provider string does not match any known provider |
-| 2102 | `ModelNotSpecified`    | llm_error  | No model in LLMConfig                             |
-| 2103 | `ModelNotFound`        | llm_error  | Model not available for the given provider        |
-| 2104 | `AuthKeyNotSpecified`  | llm_error  | No auth key in LLMConfig                          |
-| 2105 | `AuthKeyInvalid`       | llm_error  | Auth key present but rejected by provider         |
-| 2200 | `ProviderError`        | llm_error  | Provider runtime error (rate limit, ban, etc.)    |
-| 2300 | `MaxTokens`            | llm_error  | The LLM's token limit was reached                 |
+| Code | Name                   | Category  | Meaning                                           |
+| ---- | ---------------------- | --------- | ------------------------------------------------- |
+| 1000 | `Finished`             | finished  | The agent completed its response normally         |
+| 1001 | `Cancelled`            | finished  | The client requested cancellation                 |
+| 2000 | `LlmError`             | llm_error | Generic / unclassified LLM error                  |
+| 2100 | `ProviderNotSpecified` | llm_error | No provider in LLMConfig                          |
+| 2101 | `ProviderNotFound`     | llm_error | Provider string does not match any known provider |
+| 2102 | `ModelNotSpecified`    | llm_error | No model in LLMConfig                             |
+| 2103 | `ModelNotFound`        | llm_error | Model not available for the given provider        |
+| 2104 | `AuthKeyNotSpecified`  | llm_error | No auth key in LLMConfig                          |
+| 2105 | `AuthKeyInvalid`       | llm_error | Auth key present but rejected by provider         |
+| 2200 | `ProviderError`        | llm_error | Provider runtime error (rate limit, ban, etc.)    |
+| 2300 | `MaxTokens`            | llm_error | The LLM's token limit was reached                 |
 
 Codes are grouped by range: 1xxx = `finished` (the turn completed), 2xxx = `llm_error` (the turn could not complete). Sub-ranges (21xx, 22xx, 23xx) group related error types. The category is derived from the code, never stored separately.
 
@@ -345,70 +345,70 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 
 ### Initialization
 
-| ID | Description | Level |
-|----|-------------|-------|
-| `init-send-exists` | `initialize` send must exist | MUST |
-| `init-receive-exists` | Agent must respond to `initialize` | MUST |
-| `init-is-first` | `initialize` must be the first message sent | MUST |
-| `init-exactly-once` | `initialize` must be sent exactly once | MUST |
+| ID                    | Description                                 | Level |
+| --------------------- | ------------------------------------------- | ----- |
+| `init-send-exists`    | `initialize` send must exist                | MUST  |
+| `init-receive-exists` | Agent must respond to `initialize`          | MUST  |
+| `init-is-first`       | `initialize` must be the first message sent | MUST  |
+| `init-exactly-once`   | `initialize` must be sent exactly once      | MUST  |
 
 ### Context Setup
 
-| ID | Description | Level |
-|----|-------------|-------|
-| `ctx-before-first-prompt` | `setContext` must precede the first `prompt` | MUST |
-| `ctx-receive-exists` | Agent must respond to each `setContext` | MUST |
-| `ctx-after-init` | `setContext` must not be sent before `initialize` completes | MUST |
-| `ctx-history-merges-by-property` | When `history` is present in a patch, each subfield (`systemPrompt`, `messages`) replaces only when set; omitted subfields are preserved | MUST |
-| `ctx-tools-replaces-wholesale` | When `tools` is present in a patch, it replaces the current tool list wholesale (including when set to `[]`, which clears all tools) | MUST |
-| `ctx-config-merges-by-property` | When `config` is present in a patch, each subfield replaces only when set; omitted subfields are preserved | MUST |
+| ID                               | Description                                                                                                                              | Level |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `ctx-before-first-prompt`        | `setContext` must precede the first `prompt`                                                                                             | MUST  |
+| `ctx-receive-exists`             | Agent must respond to each `setContext`                                                                                                  | MUST  |
+| `ctx-after-init`                 | `setContext` must not be sent before `initialize` completes                                                                              | MUST  |
+| `ctx-history-merges-by-property` | When `history` is present in a patch, each subfield (`systemPrompt`, `messages`) replaces only when set; omitted subfields are preserved | MUST  |
+| `ctx-tools-replaces-wholesale`   | When `tools` is present in a patch, it replaces the current tool list wholesale (including when set to `[]`, which clears all tools)     | MUST  |
+| `ctx-config-merges-by-property`  | When `config` is present in a patch, each subfield replaces only when set; omitted subfields are preserved                               | MUST  |
 
 ### Turn Lifecycle
 
-| ID | Description | Level |
-|----|-------------|-------|
-| `turn-starts-with-turn-start` | The first stream event after every `prompt` must be a `turnStart` | MUST |
-| `turn-ends-with-turn-end` | Every `prompt` must eventually be followed by a `turnEnd` | MUST |
-| `no-overlapping-prompts` | `prompt` must not be sent while a turn is active | MUST |
-| `prompt-after-init` | `prompt` must not be sent before `initialize` completes | MUST |
-| `turn-end-is-terminal` | No stream events (`chunk`, `update`) after `turnEnd` within a turn | MUST |
+| ID                            | Description                                                        | Level |
+| ----------------------------- | ------------------------------------------------------------------ | ----- |
+| `turn-starts-with-turn-start` | The first stream event after every `prompt` must be a `turnStart`  | MUST  |
+| `turn-ends-with-turn-end`     | Every `prompt` must eventually be followed by a `turnEnd`          | MUST  |
+| `no-overlapping-prompts`      | `prompt` must not be sent while a turn is active                   | MUST  |
+| `prompt-after-init`           | `prompt` must not be sent before `initialize` completes            | MUST  |
+| `turn-end-is-terminal`        | No stream events (`chunk`, `update`) after `turnEnd` within a turn | MUST  |
 
 ### Stream Events
 
-| ID | Description | Level |
-|----|-------------|-------|
-| `one-turn-end-per-turn` | Every turn has exactly one `turnEnd` | MUST |
-| `stop-code-valid` | `turnEnd.stopCode` must be a valid `StopCode` enum value | MUST |
-| `chunk-has-message-id` | Every `chunk` has a `messageId` and `role` | MUST |
-| `update-has-message-id` | Every `update` has a non-empty `messageId` | MUST |
-| `update-has-message` | Every `update` contains a complete `message` | MUST |
-| `chunk-has-matching-update` | Every chunk `messageId` must have a corresponding `update` with the same `messageId` | MUST |
-| `chunks-precede-update` | All `chunk`s for a `messageId` precede the corresponding `update` | MUST |
-| `update-message-matches-chunks` | If chunks exist for a `messageId`, the update message content is their concatenation | MUST |
+| ID                              | Description                                                                          | Level |
+| ------------------------------- | ------------------------------------------------------------------------------------ | ----- |
+| `one-turn-end-per-turn`         | Every turn has exactly one `turnEnd`                                                 | MUST  |
+| `stop-code-valid`               | `turnEnd.stopCode` must be a valid `StopCode` enum value                             | MUST  |
+| `chunk-has-message-id`          | Every `chunk` has a `messageId` and `role`                                           | MUST  |
+| `update-has-message-id`         | Every `update` has a non-empty `messageId`                                           | MUST  |
+| `update-has-message`            | Every `update` contains a complete `message`                                         | MUST  |
+| `chunk-has-matching-update`     | Every chunk `messageId` must have a corresponding `update` with the same `messageId` | MUST  |
+| `chunks-precede-update`         | All `chunk`s for a `messageId` precede the corresponding `update`                    | MUST  |
+| `update-message-matches-chunks` | If chunks exist for a `messageId`, the update message content is their concatenation | MUST  |
 
 ### Tool Execution
 
-| ID | Description | Level |
-|----|-------------|-------|
-| `tool-result-follows-execute` | Every `toolExecute` receive is followed by a `toolResult` send | MUST |
-| `tool-result-id-matches` | `toolResult.toolCallId` must match the preceding `toolExecute`'s `call.id` | MUST |
-| `tool-execute-during-turn` | `toolExecute` only occurs during an active turn | MUST |
-| `tool-name-in-context` | Invoked tool name must exist in a prior `setContext` tools array | MUST |
+| ID                            | Description                                                                | Level |
+| ----------------------------- | -------------------------------------------------------------------------- | ----- |
+| `tool-result-follows-execute` | Every `toolExecute` receive is followed by a `toolResult` send             | MUST  |
+| `tool-result-id-matches`      | `toolResult.toolCallId` must match the preceding `toolExecute`'s `call.id` | MUST  |
+| `tool-execute-during-turn`    | `toolExecute` only occurs during an active turn                            | MUST  |
+| `tool-name-in-context`        | Invoked tool name must exist in a prior `setContext` tools array           | MUST  |
 
 ### Message Content
 
-| ID | Description | Level |
-|----|-------------|-------|
-| `user-content-types` | User messages may only contain `text` and `image` content blocks | MUST |
-| `assistant-content-types` | Assistant stream updates may only contain `text`, `thinking`, `image` blocks | MUST |
-| `tool-result-content-types` | `toolResult` messages may only contain `text` and `image` content blocks | MUST |
+| ID                          | Description                                                                  | Level |
+| --------------------------- | ---------------------------------------------------------------------------- | ----- |
+| `user-content-types`        | User messages may only contain `text` and `image` content blocks             | MUST  |
+| `assistant-content-types`   | Assistant stream updates may only contain `text`, `thinking`, `image` blocks | MUST  |
+| `tool-result-content-types` | `toolResult` messages may only contain `text` and `image` content blocks     | MUST  |
 
 ### Cancellation
 
-| ID | Description | Level |
-|----|-------------|-------|
-| `cancel-during-active-turn` | `cancel` must only be sent during an active turn | MUST |
-| `cancel-stop-code` | After `cancel`, the turn should end with `stopCode: Cancelled (1001)` | SHOULD |
+| ID                          | Description                                                           | Level  |
+| --------------------------- | --------------------------------------------------------------------- | ------ |
+| `cancel-during-active-turn` | `cancel` must only be sent during an active turn                      | MUST   |
+| `cancel-stop-code`          | After `cancel`, the turn should end with `stopCode: Cancelled (1001)` | SHOULD |
 
 
 ## Support for other Standards

@@ -7,6 +7,8 @@ import {
 import type {
 	MuClient,
 	MuAgent,
+	MiniACPClientHandle,
+	MiniACPConnector,
 	ClientProtocol,
 	AgentProtocol,
 } from './types.js';
@@ -36,6 +38,30 @@ export function createClientConnection(duplex: ClientProtocol): ClientBinding {
 		server: muServerDescriptor,
 		client: muClientDescriptor,
 	});
+}
+
+export function createMiniACPConnector(
+	spawn: () => ClientProtocol | Promise<ClientProtocol>,
+): MiniACPConnector {
+	return async (server) => {
+		const transport = await spawn();
+		return connectMiniACPClient(transport, server);
+	};
+}
+
+export function connectMiniACPClient(
+	transport: ClientProtocol,
+	server: MuAgent,
+): MiniACPClientHandle {
+	const connection = createClientConnection(transport);
+	const binding = connection.bind(server);
+
+	return {
+		...connection.remote,
+		dispose: async () => {
+			await binding.close();
+		},
+	};
 }
 
 // ---------------------------------------------------------------------------
