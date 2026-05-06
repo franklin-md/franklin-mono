@@ -1,5 +1,18 @@
 import { EditorView } from '@codemirror/view';
 
+const actionHostSelector = [
+	'.diff-plugin-actions-host',
+	'.diff-plugin-embedded-actions-host',
+].join(', ');
+
+const addedTableWidgetSelectors = [
+	'.diff-plugin-added-table-widget',
+	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget',
+	'.diff-plugin-added-line + .cm-embed-block:has(table.table-editor)',
+	'.diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget',
+	'.diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor)',
+].join(', ');
+
 export const diffTheme = EditorView.baseTheme({
 	'&': {
 		'--diff-plugin-added-bg': 'rgba(var(--color-green-rgb), 0.08)',
@@ -9,14 +22,8 @@ export const diffTheme = EditorView.baseTheme({
 		'--diff-plugin-removed-border': 'rgba(var(--color-red-rgb), 0.42)',
 		'--diff-plugin-removed-text':
 			'color-mix(in srgb, var(--text-normal) 86%, rgb(var(--color-red-rgb)))',
-		'--diff-plugin-intent-accept-bg': 'rgba(var(--color-green-rgb), 0.16)',
-		'--diff-plugin-intent-accept-bg-hover':
-			'rgba(var(--color-green-rgb), 0.22)',
-		'--diff-plugin-intent-accept-border': 'rgba(var(--color-green-rgb), 0.38)',
-		'--diff-plugin-intent-accept-border-hover':
-			'rgba(var(--color-green-rgb), 0.5)',
-		'--diff-plugin-intent-accept-text':
-			'color-mix(in srgb, var(--text-normal) 76%, rgb(var(--color-green-rgb)))',
+		'--diff-plugin-table-cell-bg':
+			'color-mix(in srgb, var(--diff-plugin-added-bg) 55%, var(--background-primary))',
 	},
 
 	'.diff-plugin-widget-host': {
@@ -38,14 +45,17 @@ export const diffTheme = EditorView.baseTheme({
 		position: 'relative',
 	},
 
+	[actionHostSelector]: {
+		fontFamily: 'inherit',
+		fontSize: '1rem',
+		lineHeight: '1.5',
+	},
+
 	'.diff-plugin-actions-host': {
 		display: 'inline',
 		width: '0',
 		height: '0',
 		overflow: 'visible',
-		fontFamily: 'inherit',
-		fontSize: '1rem',
-		lineHeight: '1.5',
 	},
 
 	'.diff-plugin-actions': {
@@ -59,9 +69,6 @@ export const diffTheme = EditorView.baseTheme({
 		gap: '4px',
 		height: 'auto',
 		padding: '0',
-		fontFamily: 'inherit',
-		fontSize: '1rem',
-		lineHeight: '1.5',
 		pointerEvents: 'auto',
 	},
 
@@ -77,9 +84,6 @@ export const diffTheme = EditorView.baseTheme({
 		display: 'flex',
 		alignItems: 'center',
 		gap: '4px',
-		fontFamily: 'inherit',
-		fontSize: '1rem',
-		lineHeight: '1.5',
 		opacity: '0',
 		pointerEvents: 'none',
 		transition: 'opacity 120ms ease',
@@ -104,15 +108,21 @@ export const diffTheme = EditorView.baseTheme({
 	},
 
 	'.diff-plugin-btn': {
+		'--diff-plugin-btn-bg': 'transparent',
+		'--diff-plugin-btn-border': 'transparent',
+		'--diff-plugin-btn-text': 'var(--text-muted)',
+		'--diff-plugin-btn-bg-hover': 'var(--background-modifier-hover)',
+		'--diff-plugin-btn-border-hover': 'var(--diff-plugin-btn-border)',
+		'--diff-plugin-btn-text-hover': 'var(--text-normal)',
 		appearance: 'none',
 		boxSizing: 'border-box',
 		height: 'auto',
 		minHeight: '22px',
 		padding: '0 8px',
-		border: '1px solid transparent',
+		border: '1px solid var(--diff-plugin-btn-border)',
 		borderRadius: 'var(--radius-s, 4px)',
-		background: 'transparent',
-		color: 'var(--text-muted)',
+		background: 'var(--diff-plugin-btn-bg)',
+		color: 'var(--diff-plugin-btn-text)',
 		cursor: 'pointer',
 		fontFamily: 'inherit',
 		fontSize: '1rem',
@@ -122,33 +132,26 @@ export const diffTheme = EditorView.baseTheme({
 	},
 
 	'.diff-plugin-btn:hover': {
-		background: 'var(--background-modifier-hover)',
-		color: 'var(--text-normal)',
+		background: 'var(--diff-plugin-btn-bg-hover)',
+		borderColor: 'var(--diff-plugin-btn-border-hover)',
+		color: 'var(--diff-plugin-btn-text-hover)',
 	},
 
 	'.diff-plugin-btn-accept': {
-		background: 'var(--diff-plugin-intent-accept-bg)',
-		borderColor: 'var(--diff-plugin-intent-accept-border)',
-		color: 'var(--diff-plugin-intent-accept-text)',
-	},
-
-	'.diff-plugin-btn-accept:hover': {
-		background: 'var(--diff-plugin-intent-accept-bg-hover)',
-		borderColor: 'var(--diff-plugin-intent-accept-border-hover)',
-		color:
+		'--diff-plugin-btn-bg': 'rgba(var(--color-green-rgb), 0.16)',
+		'--diff-plugin-btn-border': 'rgba(var(--color-green-rgb), 0.38)',
+		'--diff-plugin-btn-text':
+			'color-mix(in srgb, var(--text-normal) 76%, rgb(var(--color-green-rgb)))',
+		'--diff-plugin-btn-bg-hover': 'rgba(var(--color-green-rgb), 0.22)',
+		'--diff-plugin-btn-border-hover': 'rgba(var(--color-green-rgb), 0.5)',
+		'--diff-plugin-btn-text-hover':
 			'color-mix(in srgb, var(--text-normal) 70%, rgb(var(--color-green-rgb)))',
 	},
 
 	'.diff-plugin-btn-reject': {
-		background: 'var(--background-primary)',
-		borderColor: 'var(--background-modifier-border)',
-		color: 'var(--text-muted)',
-	},
-
-	'.diff-plugin-btn-reject:hover': {
-		background: 'var(--background-modifier-hover)',
-		borderColor: 'var(--background-modifier-border-hover)',
-		color: 'var(--text-normal)',
+		'--diff-plugin-btn-bg': 'var(--background-primary)',
+		'--diff-plugin-btn-border': 'var(--background-modifier-border)',
+		'--diff-plugin-btn-border-hover': 'var(--background-modifier-border-hover)',
 	},
 
 	'.diff-plugin-btn-all': {
@@ -214,13 +217,6 @@ export const diffTheme = EditorView.baseTheme({
 			borderBottom: 'none',
 		},
 
-	'.diff-plugin-added-table-widget': {
-		boxSizing: 'border-box',
-		paddingTop: '8px',
-		paddingBottom: '8px',
-		background: 'transparent',
-	},
-
 	'.diff-plugin-added-diagram-widget': {
 		boxSizing: 'border-box',
 		marginLeft: '-18px',
@@ -238,7 +234,14 @@ export const diffTheme = EditorView.baseTheme({
 		display: 'block',
 	},
 
-	'.diff-plugin-added-table-widget .table-wrapper': {
+	[addedTableWidgetSelectors]: {
+		boxSizing: 'border-box',
+		paddingTop: '8px',
+		paddingBottom: '8px',
+		background: 'transparent',
+	},
+
+	[`${addedTableWidgetSelectors} .table-wrapper`]: {
 		position: 'relative',
 		display: 'flex',
 		width: '100%',
@@ -249,7 +252,7 @@ export const diffTheme = EditorView.baseTheme({
 		cursor: 'default',
 	},
 
-	'.diff-plugin-added-table-widget .table-wrapper::before': {
+	[`${addedTableWidgetSelectors} .table-wrapper::before`]: {
 		content: '""',
 		position: 'absolute',
 		top: '-8px',
@@ -261,7 +264,7 @@ export const diffTheme = EditorView.baseTheme({
 		zIndex: '0',
 	},
 
-	'.diff-plugin-added-table-widget table.table-editor': {
+	[`${addedTableWidgetSelectors} table.table-editor`]: {
 		position: 'relative',
 		zIndex: '1',
 		marginLeft: '0',
@@ -269,70 +272,14 @@ export const diffTheme = EditorView.baseTheme({
 		cursor: 'default',
 	},
 
-	'.diff-plugin-added-table-widget table.table-editor th, .diff-plugin-added-table-widget table.table-editor td':
+	[`${addedTableWidgetSelectors} table.table-editor th, ${addedTableWidgetSelectors} table.table-editor td`]:
 		{
-			backgroundColor:
-				'color-mix(in srgb, var(--diff-plugin-added-bg) 55%, var(--background-primary))',
+			backgroundColor: 'var(--diff-plugin-table-cell-bg)',
 			cursor: 'default',
 		},
 
-	'.diff-plugin-added-table-widget .table-cell-wrapper': {
+	[`${addedTableWidgetSelectors} .table-cell-wrapper`]: {
 		background: 'transparent',
 		cursor: 'default',
 	},
-
-	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor), .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor)':
-		{
-			boxSizing: 'border-box',
-			paddingTop: '8px',
-			paddingBottom: '8px',
-			background: 'transparent',
-		},
-
-	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget .table-wrapper, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) .table-wrapper, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget .table-wrapper, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor) .table-wrapper':
-		{
-			position: 'relative',
-			display: 'flex',
-			width: '100%',
-			justifyContent: 'flex-start',
-			marginLeft: '0',
-			marginRight: 'auto',
-			background: 'transparent',
-			cursor: 'default',
-		},
-
-	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget .table-wrapper::before, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) .table-wrapper::before, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget .table-wrapper::before':
-		{
-			content: '""',
-			position: 'absolute',
-			top: '-8px',
-			right: '0',
-			bottom: '-8px',
-			left: '0',
-			background: 'var(--diff-plugin-added-bg)',
-			pointerEvents: 'none',
-			zIndex: '0',
-		},
-
-	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget table.table-editor, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) table.table-editor, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget table.table-editor, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor) table.table-editor':
-		{
-			position: 'relative',
-			zIndex: '1',
-			marginLeft: '0',
-			marginRight: 'auto',
-			cursor: 'default',
-		},
-
-	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget table.table-editor th, .diff-plugin-added-line + .cm-embed-block.cm-table-widget table.table-editor td, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) table.table-editor th, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) table.table-editor td, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget table.table-editor th, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget table.table-editor td, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor) table.table-editor th, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor) table.table-editor td':
-		{
-			backgroundColor:
-				'color-mix(in srgb, var(--diff-plugin-added-bg) 55%, var(--background-primary))',
-			cursor: 'default',
-		},
-
-	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget .table-cell-wrapper, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) .table-cell-wrapper, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget .table-cell-wrapper, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor) .table-cell-wrapper':
-		{
-			background: 'transparent',
-			cursor: 'default',
-		},
 });
