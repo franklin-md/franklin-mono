@@ -1,0 +1,338 @@
+import { EditorView } from '@codemirror/view';
+
+export const diffTheme = EditorView.baseTheme({
+	'&': {
+		'--diff-plugin-added-bg': 'rgba(var(--color-green-rgb), 0.08)',
+		'--diff-plugin-added-border': 'rgba(var(--color-green-rgb), 0.42)',
+		'--diff-plugin-added-edge': 'rgba(var(--color-green-rgb), 0.18)',
+		'--diff-plugin-removed-bg': 'rgba(var(--color-red-rgb), 0.06)',
+		'--diff-plugin-removed-border': 'rgba(var(--color-red-rgb), 0.42)',
+		'--diff-plugin-removed-text':
+			'color-mix(in srgb, var(--text-normal) 86%, rgb(var(--color-red-rgb)))',
+		'--diff-plugin-intent-accept-bg': 'rgba(var(--color-green-rgb), 0.16)',
+		'--diff-plugin-intent-accept-bg-hover':
+			'rgba(var(--color-green-rgb), 0.22)',
+		'--diff-plugin-intent-accept-border': 'rgba(var(--color-green-rgb), 0.38)',
+		'--diff-plugin-intent-accept-border-hover':
+			'rgba(var(--color-green-rgb), 0.5)',
+		'--diff-plugin-intent-accept-text':
+			'color-mix(in srgb, var(--text-normal) 76%, rgb(var(--color-green-rgb)))',
+	},
+
+	'.diff-plugin-widget-host': {
+		position: 'relative',
+		zIndex: '2',
+		overflow: 'visible',
+		pointerEvents: 'auto',
+		margin: '0',
+		font: 'inherit',
+	},
+
+	'.diff-plugin-widget': {
+		display: 'block',
+		position: 'relative',
+		font: 'inherit',
+	},
+
+	'.cm-line:has(.diff-plugin-actions-host)': {
+		position: 'relative',
+	},
+
+	'.diff-plugin-actions-host': {
+		display: 'inline',
+		width: '0',
+		height: '0',
+		overflow: 'visible',
+		fontFamily: 'inherit',
+		fontSize: '1rem',
+		lineHeight: '1.5',
+	},
+
+	'.diff-plugin-actions': {
+		position: 'absolute',
+		top: '0',
+		right: '0',
+		zIndex: '20',
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'flex-end',
+		gap: '4px',
+		height: 'auto',
+		padding: '0',
+		fontFamily: 'inherit',
+		fontSize: '1rem',
+		lineHeight: '1.5',
+		pointerEvents: 'auto',
+	},
+
+	'.diff-plugin-added-embedded-widget': {
+		position: 'relative',
+	},
+
+	'.diff-plugin-embedded-actions-host': {
+		position: 'absolute',
+		top: '8px',
+		right: '40px',
+		zIndex: '20',
+		display: 'flex',
+		alignItems: 'center',
+		gap: '4px',
+		fontFamily: 'inherit',
+		fontSize: '1rem',
+		lineHeight: '1.5',
+		opacity: '0',
+		pointerEvents: 'none',
+		transition: 'opacity 120ms ease',
+	},
+
+	'.diff-plugin-added-embedded-widget:hover .diff-plugin-embedded-actions-host, .diff-plugin-added-embedded-widget:focus-within .diff-plugin-embedded-actions-host':
+		{
+			opacity: '1',
+			pointerEvents: 'auto',
+		},
+
+	'.cm-content:has(.diff-plugin-added-embedded-widget:hover) .diff-plugin-actions-host, .cm-content:has(.diff-plugin-embedded-actions-host:hover) .diff-plugin-actions-host':
+		{
+			display: 'none',
+		},
+
+	'.diff-plugin-actions-separator': {
+		width: '1px',
+		height: '14px',
+		margin: '0 2px',
+		background: 'var(--background-modifier-border)',
+	},
+
+	'.diff-plugin-btn': {
+		appearance: 'none',
+		boxSizing: 'border-box',
+		height: 'auto',
+		minHeight: '22px',
+		padding: '0 8px',
+		border: '1px solid transparent',
+		borderRadius: 'var(--radius-s, 4px)',
+		background: 'transparent',
+		color: 'var(--text-muted)',
+		cursor: 'pointer',
+		fontFamily: 'inherit',
+		fontSize: '1rem',
+		lineHeight: '1.2',
+		transition:
+			'background-color 120ms ease, border-color 120ms ease, color 120ms ease',
+	},
+
+	'.diff-plugin-btn:hover': {
+		background: 'var(--background-modifier-hover)',
+		color: 'var(--text-normal)',
+	},
+
+	'.diff-plugin-btn-accept': {
+		background: 'var(--diff-plugin-intent-accept-bg)',
+		borderColor: 'var(--diff-plugin-intent-accept-border)',
+		color: 'var(--diff-plugin-intent-accept-text)',
+	},
+
+	'.diff-plugin-btn-accept:hover': {
+		background: 'var(--diff-plugin-intent-accept-bg-hover)',
+		borderColor: 'var(--diff-plugin-intent-accept-border-hover)',
+		color:
+			'color-mix(in srgb, var(--text-normal) 70%, rgb(var(--color-green-rgb)))',
+	},
+
+	'.diff-plugin-btn-reject': {
+		background: 'var(--background-primary)',
+		borderColor: 'var(--background-modifier-border)',
+		color: 'var(--text-muted)',
+	},
+
+	'.diff-plugin-btn-reject:hover': {
+		background: 'var(--background-modifier-hover)',
+		borderColor: 'var(--background-modifier-border-hover)',
+		color: 'var(--text-normal)',
+	},
+
+	'.diff-plugin-btn-all': {
+		height: 'auto',
+		minHeight: '22px',
+		lineHeight: 'inherit',
+		color: 'var(--text-faint)',
+	},
+
+	'.diff-plugin-removed-block': {
+		boxSizing: 'border-box',
+		display: 'flex',
+		flexDirection: 'column',
+		gap: '0',
+		marginLeft: '-18px',
+		marginRight: '-18px',
+		padding: '1px 18px 1px 0',
+		borderLeft: '4px solid var(--diff-plugin-removed-border)',
+		background: 'var(--diff-plugin-removed-bg)',
+		font: 'inherit',
+	},
+
+	'.diff-plugin-removed-line': {
+		padding: '0 14px',
+		color: 'var(--diff-plugin-removed-text)',
+		font: 'inherit',
+		whiteSpace: 'pre-wrap',
+	},
+
+	'.diff-plugin-removed-line::before': {
+		content: '"- "',
+		color: 'rgb(var(--color-red-rgb))',
+	},
+
+	'.diff-plugin-added-line': {
+		boxSizing: 'border-box',
+		marginLeft: '-18px',
+		marginRight: '-18px',
+		paddingLeft: '14px',
+		paddingRight: '18px',
+		background: 'var(--diff-plugin-added-bg)',
+		borderLeft: '4px solid var(--diff-plugin-added-border)',
+	},
+
+	'.diff-plugin-added-first': {
+		borderTop: '2px solid var(--diff-plugin-added-edge)',
+	},
+
+	'.diff-plugin-added-last': {
+		borderBottom: '2px solid var(--diff-plugin-added-edge)',
+	},
+
+	'.diff-plugin-added-last:has(+ .cm-embed-block.cm-table-widget), .diff-plugin-added-last:has(+ .cm-embed-block:has(table.table-editor)), .diff-plugin-added-last:has(+ .diff-plugin-added-table-widget)':
+		{
+			borderBottom: 'none',
+		},
+
+	'.diff-plugin-added-line.HyperMD-codeblock, .diff-plugin-added-line.HyperMD-codeblock-bg':
+		{
+			borderLeft: '4px solid var(--diff-plugin-added-border)',
+			background: 'var(--diff-plugin-added-bg)',
+			borderTop: 'none',
+			borderBottom: 'none',
+		},
+
+	'.diff-plugin-added-table-widget': {
+		boxSizing: 'border-box',
+		paddingTop: '8px',
+		paddingBottom: '8px',
+		background: 'transparent',
+	},
+
+	'.diff-plugin-added-diagram-widget': {
+		boxSizing: 'border-box',
+		marginLeft: '-18px',
+		marginRight: '-18px',
+		padding: '8px 18px 8px 14px',
+		background: 'var(--diff-plugin-added-bg)',
+		borderLeft: '4px solid var(--diff-plugin-added-border)',
+	},
+
+	'.diff-plugin-added-diagram-widget .mermaid': {
+		overflowX: 'auto',
+	},
+
+	'.diff-plugin-added-diagram-widget .mermaid > svg': {
+		display: 'block',
+	},
+
+	'.diff-plugin-added-table-widget .table-wrapper': {
+		position: 'relative',
+		display: 'flex',
+		width: '100%',
+		justifyContent: 'flex-start',
+		marginLeft: '0',
+		marginRight: 'auto',
+		background: 'transparent',
+		cursor: 'default',
+	},
+
+	'.diff-plugin-added-table-widget .table-wrapper::before': {
+		content: '""',
+		position: 'absolute',
+		top: '-8px',
+		right: '0',
+		bottom: '-8px',
+		left: '0',
+		background: 'var(--diff-plugin-added-bg)',
+		pointerEvents: 'none',
+		zIndex: '0',
+	},
+
+	'.diff-plugin-added-table-widget table.table-editor': {
+		position: 'relative',
+		zIndex: '1',
+		marginLeft: '0',
+		marginRight: 'auto',
+		cursor: 'default',
+	},
+
+	'.diff-plugin-added-table-widget table.table-editor th, .diff-plugin-added-table-widget table.table-editor td':
+		{
+			backgroundColor:
+				'color-mix(in srgb, var(--diff-plugin-added-bg) 55%, var(--background-primary))',
+			cursor: 'default',
+		},
+
+	'.diff-plugin-added-table-widget .table-cell-wrapper': {
+		background: 'transparent',
+		cursor: 'default',
+	},
+
+	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor), .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor)':
+		{
+			boxSizing: 'border-box',
+			paddingTop: '8px',
+			paddingBottom: '8px',
+			background: 'transparent',
+		},
+
+	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget .table-wrapper, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) .table-wrapper, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget .table-wrapper, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor) .table-wrapper':
+		{
+			position: 'relative',
+			display: 'flex',
+			width: '100%',
+			justifyContent: 'flex-start',
+			marginLeft: '0',
+			marginRight: 'auto',
+			background: 'transparent',
+			cursor: 'default',
+		},
+
+	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget .table-wrapper::before, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) .table-wrapper::before, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget .table-wrapper::before':
+		{
+			content: '""',
+			position: 'absolute',
+			top: '-8px',
+			right: '0',
+			bottom: '-8px',
+			left: '0',
+			background: 'var(--diff-plugin-added-bg)',
+			pointerEvents: 'none',
+			zIndex: '0',
+		},
+
+	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget table.table-editor, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) table.table-editor, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget table.table-editor, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor) table.table-editor':
+		{
+			position: 'relative',
+			zIndex: '1',
+			marginLeft: '0',
+			marginRight: 'auto',
+			cursor: 'default',
+		},
+
+	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget table.table-editor th, .diff-plugin-added-line + .cm-embed-block.cm-table-widget table.table-editor td, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) table.table-editor th, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) table.table-editor td, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget table.table-editor th, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget table.table-editor td, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor) table.table-editor th, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor) table.table-editor td':
+		{
+			backgroundColor:
+				'color-mix(in srgb, var(--diff-plugin-added-bg) 55%, var(--background-primary))',
+			cursor: 'default',
+		},
+
+	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget .table-cell-wrapper, .diff-plugin-added-line + .cm-embed-block:has(table.table-editor) .table-cell-wrapper, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget .table-cell-wrapper, .diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor) .table-cell-wrapper':
+		{
+			background: 'transparent',
+			cursor: 'default',
+		},
+});

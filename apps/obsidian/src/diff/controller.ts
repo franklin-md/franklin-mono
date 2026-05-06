@@ -5,6 +5,7 @@ import { diffDecorations } from './cm/decorations/build.js';
 import { diffField } from './cm/diff-field.js';
 import { clearDiffEffect, setDiffEffect } from './cm/effects.js';
 import { diffInverted } from './cm/inverted.js';
+import { diffTheme } from './cm/theme.js';
 import { diffEmbeddedBlockStyling } from './cm/decorations/embedded/block-styling.js';
 import { acceptAllHunks } from './cm/accept-hunk.js';
 import { rejectAllHunks } from './cm/reject-hunk.js';
@@ -36,6 +37,7 @@ export class DiffController {
 	onload() {
 		this.plugin.registerEditorExtension([
 			diffField,
+			diffTheme,
 			diffInverted,
 			diffDecorations,
 			diffEmbeddedBlockStyling,
