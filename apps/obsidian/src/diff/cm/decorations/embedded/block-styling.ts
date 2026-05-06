@@ -14,6 +14,8 @@ import { acceptHunk } from '../../accept-hunk.js';
 import { rejectHunk } from '../../reject-hunk.js';
 import { createActionButtonPair } from '../actions.js';
 
+const ADDED_LINE_BEFORE_TABLE_CLASS = 'diff-plugin-added-line-before-table';
+
 export const diffEmbeddedBlockStyling = ViewPlugin.fromClass(
 	class {
 		constructor(readonly view: EditorView) {
@@ -35,6 +37,7 @@ export const diffEmbeddedBlockStyling = ViewPlugin.fromClass(
 		sync() {
 			const ds = this.view.state.field(diffField, false);
 			const hunks = ds?.hunks ?? [];
+			clearAddedLineBeforeTableState(this.view.dom);
 			const widgets = Array.from(
 				this.view.dom.querySelectorAll<HTMLElement>('.cm-embed-block'),
 			);
@@ -55,6 +58,7 @@ export const diffEmbeddedBlockStyling = ViewPlugin.fromClass(
 					widgetBlocks.get(widget) ?? null,
 				);
 				applyEmbeddedWidgetState(widget, hunkId);
+				syncAddedLineBeforeTableState(widget, hunkId !== null);
 				syncEmbeddedActions(
 					this.view,
 					widget,
@@ -124,6 +128,41 @@ function clearEmbeddedWidgetState(widget: HTMLElement): void {
 	);
 	delete widget.dataset.diffHunkId;
 	removeEmbeddedActions(widget);
+}
+
+function syncAddedLineBeforeTableState(
+	widget: HTMLElement,
+	hasHunk: boolean,
+): void {
+	if (!hasHunk || getEmbeddedWidgetKind(widget) !== 'table') return;
+	findPreviousAddedLine(widget)?.classList.add(ADDED_LINE_BEFORE_TABLE_CLASS);
+}
+
+function clearAddedLineBeforeTableState(root: HTMLElement): void {
+	for (const line of root.querySelectorAll<HTMLElement>(
+		`.${ADDED_LINE_BEFORE_TABLE_CLASS}`,
+	)) {
+		line.classList.remove(ADDED_LINE_BEFORE_TABLE_CLASS);
+	}
+}
+
+function findPreviousAddedLine(widget: HTMLElement): HTMLElement | null {
+	let previous = widget.previousElementSibling;
+
+	while (previous instanceof HTMLElement) {
+		if (previous.classList.contains('diff-plugin-added-line')) {
+			return previous;
+		}
+		if (
+			previous.classList.contains('cm-line') ||
+			previous.classList.contains('cm-embed-block')
+		) {
+			return null;
+		}
+		previous = previous.previousElementSibling;
+	}
+
+	return null;
 }
 
 function isSupportedEmbeddedBlock(widget: HTMLElement): boolean {

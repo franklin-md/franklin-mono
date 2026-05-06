@@ -217,6 +217,11 @@ export const diffTheme = EditorView.baseTheme({
 			borderBottom: 'none',
 		},
 
+	'.diff-plugin-added-line-before-table': {
+		borderLeft: 'none',
+		paddingLeft: '18px',
+	},
+
 	'.diff-plugin-added-line.HyperMD-codeblock, .diff-plugin-added-line.HyperMD-codeblock-bg':
 		{
 			borderLeft: '4px solid var(--diff-plugin-added-border)',
