@@ -9,7 +9,7 @@ import type { CtxPatch, HistoryPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import type { Chunk, TurnStart, Update, TurnEnd } from '../types/stream.js';
 import type { ToolCall, ToolDefinition, ToolResult } from '../types/tool.js';
-import type { AgentProtocol } from '../protocol/types.js';
+import type { AgentProtocol } from '../rpc/types.js';
 
 // ---------------------------------------------------------------------------
 // Transcript

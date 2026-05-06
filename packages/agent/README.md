@@ -3,26 +3,28 @@
 
 ### Handles
 
-There are two kinds of handles in the system:
+There are three kinds of handles in the system:
 
 **EnvironmentHandle** — a handle to a provisioned environment. The environment is the place where agents exist and execute. Today, an environment is a working directory on the user's OS. In the future, it could be a Docker container, a cloud VM, a git worktree. Environments have their own lifecycle — they are provisioned before agents are spawned and may outlive any single agent. Multiple agents can share an environment.
 
-**MiniACPProtocol** — a handle to a running agent. This is the communication line between the application and the agent. One transport per agent. The transport is a bidirectional stream of ACP messages. It is the primitive that crosses boundaries — it can be bridged across IPC (e.g., Electron main↔renderer), piped through relays, or connected directly in-memory for testing.
+**Mini-ACP RPC transport** — the data-protocol stream between the application and the agent. One transport is created per agent. The transport is the primitive that crosses process or IPC boundaries and is exposed from `@franklin/mini-acp/rpc`.
+
+**MiniACPClientHandle** — the functional handle to a connected Mini-ACP agent. A `MiniACPConnector` turns a reverse-RPC client handler into this handle by spawning/binding the underlying transport. Core extensions depend on the connector, not on the raw RPC stream.
 
 ### Flow
 
 ```
 ┌─────────────┐     ┌────────────────────┐     ┌──────────────┐
-│  provision() │────▶│  EnvironmentHandle  │────▶│   spawn()    │
+│ provision() │────▶│ EnvironmentHandle  │────▶│   spawn()    │
 └─────────────┘     └────────────────────┘     └──────┬───────┘
                                                       │
-                                                MiniACPProtocol
+                                           Mini-ACP RPC transport
                                                       │
                                                 ┌─────▼───────┐
-                                                │  connect()   │
-                                                └──────┬───────┘
+                                                │ connector() │
+                                                └──────┬──────┘
                                                        │
-                                                 AgentCommands
+                                               MiniACPClientHandle
                                                        │
                                               ┌────────▼────────┐
                                               │   Extensions /   │
@@ -32,16 +34,16 @@ There are two kinds of handles in the system:
 
 1. **Provision** an environment — prepare the place where agents will run
 2. **Spawn** an agent in that environment — start the process, get back a transport
-3. **Connect** to the agent via the transport — wire up typed ACP commands and event handlers
+3. **Connect** to the agent via the connector — wire up typed Mini-ACP commands and reverse RPC handlers
   -  **Extend** handling and commands via middleware — intercept ACP calls in both directions to add behavior
 
-The caller is responsible for calling `initialize()` and `newSession()` through the commands interface. Spawn creates the process and returns the wire; it does not perform ACP handshaking.
+The caller is responsible for calling `initialize()` and `setContext()` through the client handle. Spawn creates the process and returns the wire; it does not perform Mini-ACP handshaking.
 
 ### Connect
 
-`connect(transport, handler)` is fundamentally an ACP operation — it takes a raw message stream and a set of event handlers (the ACP Client interface) and produces a typed command surface (the ACP Agent interface). This is a thin wrapper over the ACP SDK's `ClientSideConnection`.
+`connector(handler)` is fundamentally a Mini-ACP operation — it takes the reverse-RPC client handler and produces a typed command surface for the agent.
 
-The separation between transport and connection is important: transports are composable and bridgeable across process boundaries, while connections are bound endpoints. By returning a transport from spawn and deferring connect to the caller, different application frameworks (Electron, web, CLI) can bridge the transport across whatever boundary they need and connect on the application side.
+The separation between transport and connection is important: transports are composable and bridgeable across process boundaries, while connections are bound endpoints. By keeping the JSON-RPC binding in `@franklin/mini-acp/rpc`, different application frameworks (Electron, web, CLI) can bridge the transport across whatever boundary they need and expose only a functional connector to the extension runtime.
 
 ### Middleware
 

@@ -2,11 +2,9 @@ import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import { describe, expect, it, vi } from 'vitest';
 import { StopCode } from '../../types/index.js';
 import type { StreamEvent, ToolExecuteParams } from '../../types/index.js';
-import {
-	createAgentConnection,
-	createMiniACPConnector,
-} from '../connection.js';
-import type { ClientProtocol, MuClient } from '../types.js';
+import { bindMiniACPRpcAgent, createMiniACPRpcConnector } from '../index.js';
+import type { MuClient } from '../../protocol/types.js';
+import type { ClientProtocol } from '../types.js';
 
 async function collect(
 	iter: AsyncIterable<StreamEvent>,
@@ -23,7 +21,7 @@ function createTransportFactory(agent: MuClient) {
 		spawn: (): ClientProtocol => {
 			const { a: clientSide, b: agentSide } =
 				createDuplexPair<JsonRpcMessage>();
-			const connection = createAgentConnection(agentSide);
+			const connection = bindMiniACPRpcAgent(agentSide);
 			connection.bind(agent);
 
 			return {
@@ -38,7 +36,7 @@ function createTransportFactory(agent: MuClient) {
 	};
 }
 
-describe('createMiniACPConnector', () => {
+describe('createMiniACPRpcConnector', () => {
 	it('creates a fresh transport for each client binding', async () => {
 		const initialize = vi.fn(async () => {});
 		const { spawn } = createTransportFactory({
@@ -48,7 +46,7 @@ describe('createMiniACPConnector', () => {
 			cancel: vi.fn(async () => {}),
 		});
 		const spawnSpy = vi.fn(spawn);
-		const connect = createMiniACPConnector(spawnSpy);
+		const connect = createMiniACPRpcConnector(spawnSpy);
 
 		const first = await connect({
 			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
@@ -74,11 +72,11 @@ describe('createMiniACPConnector', () => {
 	});
 
 	it('binds reverse client handlers for agent tool calls', async () => {
-		let remote: ReturnType<typeof createAgentConnection>['remote'] | undefined;
-		const connect = createMiniACPConnector(() => {
+		let remote: ReturnType<typeof bindMiniACPRpcAgent>['remote'] | undefined;
+		const connect = createMiniACPRpcConnector(() => {
 			const { a: clientSide, b: agentSide } =
 				createDuplexPair<JsonRpcMessage>();
-			const connection = createAgentConnection(agentSide);
+			const connection = bindMiniACPRpcAgent(agentSide);
 			remote = connection.remote;
 			connection.bind({
 				initialize: vi.fn(async () => {}),
@@ -150,7 +148,7 @@ describe('createMiniACPConnector', () => {
 			prompt: vi.fn(async function* () {}),
 			cancel: vi.fn(async () => {}),
 		});
-		const connect = createMiniACPConnector(spawn);
+		const connect = createMiniACPRpcConnector(spawn);
 		const client = await connect({
 			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
 				toolCallId: call.id,

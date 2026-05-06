@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createAgentConnection } from '../../protocol/connection.js';
+import { bindMiniACPRpcAgent } from '../../rpc/index.js';
 import { createSessionAdapter } from '../../protocol/adapter.js';
 import type { TurnClient } from '../../base/types.js';
 import type { MuAgent } from '../../protocol/types.js';
@@ -29,7 +29,7 @@ function createMockFactory(
 	createTurnClient: (remote: MuAgent) => TurnClient,
 ): AgentFactory {
 	return (transport) => {
-		const conn = createAgentConnection(transport);
+		const conn = bindMiniACPRpcAgent(transport);
 		const adapter = createSessionAdapter(
 			(_ctx) => createTurnClient(conn.remote),
 			conn.remote,

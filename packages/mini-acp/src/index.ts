@@ -67,24 +67,11 @@ export {
 export type {
 	MiniACPClient,
 	MiniACPAgent,
-	MiniACPProtocol,
 	MiniACPClientHandle,
 	MiniACPConnector,
-	ClientProtocol,
-	AgentProtocol,
-	ClientBinding,
-	AgentBinding,
 } from './protocol/index.js';
 
 export {
-	miniACPServerDescriptor,
-	miniACPClientDescriptor,
-} from './protocol/index.js';
-export {
-	createClientConnection,
-	createMiniACPConnector,
-	connectMiniACPClient,
-	createAgentConnection,
 	debugMiniACP,
 	createSessionAdapter,
 	CtxTracker,

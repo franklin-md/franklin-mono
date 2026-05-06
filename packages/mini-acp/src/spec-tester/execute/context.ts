@@ -7,7 +7,7 @@ import { withDeadline } from '@franklin/lib';
 import { createDuplexPair } from '@franklin/lib/transport';
 import type { JsonRpcMessage } from '@franklin/lib/transport';
 
-import { createClientConnection } from '../../protocol/connection.js';
+import { bindMiniACPRpcClient } from '../../rpc/index.js';
 import type { ToolCall, ToolResult } from '../../types/tool.js';
 import type { CtxPatch } from '../../types/context.js';
 import type { UserMessage } from '../../types/message.js';
@@ -40,7 +40,7 @@ export function createContext(factory: AgentFactory) {
 		(call: ToolCall) => ToolResult | Promise<ToolResult>
 	> = {};
 
-	const connection = createClientConnection(clientSide);
+	const connection = bindMiniACPRpcClient(clientSide);
 
 	connection.bind({
 		toolExecute: async ({ call }) => {

@@ -13,13 +13,16 @@ vi.mock('@franklin/lib/transport', () => ({
 }));
 
 vi.mock('@franklin/mini-acp', () => ({
-	createAgentConnection: vi.fn(),
 	createPiAdapter: vi.fn(),
 	createSessionAdapter: vi.fn(),
 	debugMiniACP: vi.fn((endpoint: unknown, label: string) => ({
 		endpoint,
 		label,
 	})),
+}));
+
+vi.mock('@franklin/mini-acp/rpc', () => ({
+	bindMiniACPRpcAgent: vi.fn(),
 }));
 
 describe('spawn', () => {
@@ -31,6 +34,7 @@ describe('spawn', () => {
 	it('debug-wraps both the agent session and reverse RPC server', async () => {
 		const transport = await import('@franklin/lib/transport');
 		const miniACP = await import('@franklin/mini-acp');
+		const miniACPRpc = await import('@franklin/mini-acp/rpc');
 		const streamFn = vi.fn();
 
 		const clientDuplex = createMockDuplex();
@@ -44,10 +48,10 @@ describe('spawn', () => {
 			toolExecute: vi.fn(async () => ({ toolCallId: 'tool-1', content: [] })),
 		};
 		const bind = vi.fn();
-		vi.mocked(miniACP.createAgentConnection).mockReturnValue({
+		vi.mocked(miniACPRpc.bindMiniACPRpcAgent).mockReturnValue({
 			remote,
 			bind,
-		} as ReturnType<typeof miniACP.createAgentConnection>);
+		} as ReturnType<typeof miniACPRpc.bindMiniACPRpcAgent>);
 
 		const session = {
 			initialize: vi.fn(async () => {}),
@@ -71,7 +75,7 @@ describe('spawn', () => {
 		const result = spawn({ streamFn });
 
 		expect(result).toBe(clientDuplex);
-		expect(miniACP.createAgentConnection).toHaveBeenCalledWith(agentDuplex);
+		expect(miniACPRpc.bindMiniACPRpcAgent).toHaveBeenCalledWith(agentDuplex);
 		expect(miniACP.createSessionAdapter).toHaveBeenCalledOnce();
 		expect(miniACP.debugMiniACP).toHaveBeenCalledWith(session, 'agent');
 		expect(bind).toHaveBeenCalledWith({ endpoint: session, label: 'agent' });

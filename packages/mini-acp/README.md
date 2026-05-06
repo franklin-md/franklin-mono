@@ -6,6 +6,11 @@
 
 This is a bi-directional protocol where both parties engage at different times as both Client and Server to each other. The protocol does not mandate a codec for messages, but JSON-RPC 2.0 is suggested. It requires a transport protocol like websocket or stdio pipes.
 
+The package root exports the functional Mini-ACP surface: client/agent types,
+session adapters, tracking, and protocol data types. JSON-RPC transport binding
+helpers live under `@franklin/mini-acp/rpc` so data-protocol plumbing does not
+become part of the default protocol API.
+
 At a glance:
 - **Agents have state but there is no session persistence on the agent's side**:
   - Throughout the protocol, the agent's `Context` changes as it keeps track of:

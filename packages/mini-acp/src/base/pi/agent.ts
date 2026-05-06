@@ -1,10 +1,10 @@
-import type { AgentProtocol } from '../../protocol/types.js';
-import { createAgentConnection } from '../../protocol/connection.js';
+import { bindMiniACPRpcAgent } from '../../rpc/agent.js';
+import type { AgentProtocol } from '../../rpc/types.js';
 import { createSessionAdapter } from '../../protocol/adapter.js';
 import { createPiAdapter } from './adapter.js';
 
 export function bindPiAgent(transport: AgentProtocol): void {
-	const connection = createAgentConnection(transport);
+	const connection = bindMiniACPRpcAgent(transport);
 	connection.bind(
 		createSessionAdapter(
 			(ctx, server) => createPiAdapter({ ctx, server }),
