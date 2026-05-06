@@ -5,13 +5,21 @@ const actionHostSelector = [
 	'.diff-plugin-embedded-actions-host',
 ].join(', ');
 
-const addedTableWidgetSelectors = [
+const addedTableWidgetSelectorList = [
 	'.diff-plugin-added-table-widget',
 	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget',
 	'.diff-plugin-added-line + .cm-embed-block:has(table.table-editor)',
 	'.diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget',
 	'.diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor)',
-].join(', ');
+];
+
+const addedTableWidgetSelectors = addedTableWidgetSelectorList.join(', ');
+
+function tableWidgetSelector(suffix: string): string {
+	return addedTableWidgetSelectorList
+		.map((selector) => `${selector}${suffix}`)
+		.join(', ');
+}
 
 export const diffTheme = EditorView.baseTheme({
 	'&': {
@@ -241,7 +249,7 @@ export const diffTheme = EditorView.baseTheme({
 		background: 'transparent',
 	},
 
-	[`${addedTableWidgetSelectors} .table-wrapper`]: {
+	[tableWidgetSelector(' .table-wrapper')]: {
 		position: 'relative',
 		display: 'flex',
 		width: '100%',
@@ -252,7 +260,7 @@ export const diffTheme = EditorView.baseTheme({
 		cursor: 'default',
 	},
 
-	[`${addedTableWidgetSelectors} .table-wrapper::before`]: {
+	[tableWidgetSelector(' .table-wrapper::before')]: {
 		content: '""',
 		position: 'absolute',
 		top: '-8px',
@@ -264,7 +272,7 @@ export const diffTheme = EditorView.baseTheme({
 		zIndex: '0',
 	},
 
-	[`${addedTableWidgetSelectors} table.table-editor`]: {
+	[tableWidgetSelector(' table.table-editor')]: {
 		position: 'relative',
 		zIndex: '1',
 		marginLeft: '0',
@@ -272,13 +280,17 @@ export const diffTheme = EditorView.baseTheme({
 		cursor: 'default',
 	},
 
-	[`${addedTableWidgetSelectors} table.table-editor th, ${addedTableWidgetSelectors} table.table-editor td`]:
-		{
-			backgroundColor: 'var(--diff-plugin-table-cell-bg)',
-			cursor: 'default',
-		},
+	[tableWidgetSelector(' table.table-editor th')]: {
+		backgroundColor: 'var(--diff-plugin-table-cell-bg)',
+		cursor: 'default',
+	},
 
-	[`${addedTableWidgetSelectors} .table-cell-wrapper`]: {
+	[tableWidgetSelector(' table.table-editor td')]: {
+		backgroundColor: 'var(--diff-plugin-table-cell-bg)',
+		cursor: 'default',
+	},
+
+	[tableWidgetSelector(' .table-cell-wrapper')]: {
 		background: 'transparent',
 		cursor: 'default',
 	},

@@ -185,7 +185,7 @@ function syncEmbeddedActions(
 		':scope > .diff-plugin-embedded-actions-host',
 	);
 	if (!host) {
-		host = activeDocument.createDiv();
+		host = activeDocument.createElement('div');
 		host.className = 'diff-plugin-embedded-actions-host';
 		host.dataset.diffHunkId = hunk.id;
 		host.addEventListener('mousedown', stopMouseEvent);

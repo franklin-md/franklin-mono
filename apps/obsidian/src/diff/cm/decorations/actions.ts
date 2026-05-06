@@ -37,12 +37,12 @@ export class DiffHunkActionsWidget extends WidgetType {
 	}
 
 	toDOM(view: EditorView): HTMLElement {
-		const dom = activeDocument.createSpan();
+		const dom = activeDocument.createElement('span');
 		dom.className = 'diff-plugin-actions-host';
 		dom.dataset.diffHunkId = this.hunk.id;
 		dom.addEventListener('mousedown', stopMouseEvent);
 
-		const actions = activeDocument.createSpan();
+		const actions = activeDocument.createElement('span');
 		actions.className = 'diff-plugin-actions';
 		actions.dataset.diffHunkId = this.hunk.id;
 
@@ -78,7 +78,7 @@ function createActionButton(
 	hunkId: string,
 	onClick: () => void,
 ): HTMLButtonElement {
-	const button = activeDocument.createEl('button');
+	const button = activeDocument.createElement('button');
 	button.type = 'button';
 	button.className = `diff-plugin-btn ${variantClass}`;
 	button.dataset.diffHunkId = hunkId;

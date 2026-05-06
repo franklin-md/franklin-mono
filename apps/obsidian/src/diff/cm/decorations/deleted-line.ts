@@ -40,7 +40,7 @@ export class RemovedHunkWidget extends WidgetType {
 	}
 
 	toDOM(_view: EditorView): HTMLElement {
-		const dom = activeDocument.createDiv();
+		const dom = activeDocument.createElement('div');
 		dom.className = 'diff-plugin-widget-host';
 		dom.dataset.diffHunkId = this.hunk.id;
 		dom.addEventListener('mousedown', stopMouseEvent);
