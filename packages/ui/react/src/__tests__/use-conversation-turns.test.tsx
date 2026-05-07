@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
 import type { ConversationTurn } from '@franklin/extensions';
@@ -40,6 +40,42 @@ function makeMockRuntime(turns: ConversationTurn[]): FranklinRuntime {
 	} as unknown as FranklinRuntime;
 }
 
+function makeMutableMockRuntime(initial: ConversationTurn[]) {
+	const conversationKey = conversationExtension.keys.conversation;
+	const listeners = new Set<(v: unknown) => void>();
+	let turns = initial;
+
+	const store = {
+		get: () => turns,
+		set: vi.fn(),
+		subscribe: (listener: (v: unknown) => void) => {
+			listeners.add(listener);
+			return () => {
+				listeners.delete(listener);
+			};
+		},
+	};
+
+	const runtime = {
+		state: {
+			get: vi.fn(async () => ({})),
+		},
+		subscribe: vi.fn(() => () => {}),
+		getStore: (name: string) => {
+			if (name === conversationKey) return store;
+			throw new Error(`No store named "${name}"`);
+		},
+	} as unknown as FranklinRuntime;
+
+	return {
+		runtime,
+		setTurns: (next: ConversationTurn[]) => {
+			turns = next;
+			for (const listener of listeners) listener(turns);
+		},
+	};
+}
+
 function agentWrapper(runtime: FranklinRuntime) {
 	return function Wrapper({ children }: { children: ReactNode }) {
 		return <AgentProvider agent={runtime}>{children}</AgentProvider>;
@@ -50,8 +86,12 @@ function agentWrapper(runtime: FranklinRuntime) {
 // Tests
 // ---------------------------------------------------------------------------
 
+afterEach(() => {
+	vi.useRealTimers();
+});
+
 describe('useConversationTurns', () => {
-	it('returns a store with the conversation turns', () => {
+	it('returns the conversation turns', () => {
 		const turns: ConversationTurn[] = [
 			{
 				id: 'turn-1',
@@ -69,7 +109,7 @@ describe('useConversationTurns', () => {
 			wrapper: agentWrapper(runtime),
 		});
 
-		expect(result.current.get()).toBe(turns);
+		expect(result.current).toBe(turns);
 	});
 
 	it('returns an empty array when no turns exist', () => {
@@ -78,6 +118,35 @@ describe('useConversationTurns', () => {
 			wrapper: agentWrapper(runtime),
 		});
 
-		expect(result.current.get()).toEqual([]);
+		expect(result.current).toEqual([]);
+	});
+
+	it('throttles conversation turn updates by default', () => {
+		vi.useFakeTimers();
+		const turn: ConversationTurn = {
+			id: 'turn-1',
+			timestamp: Date.now(),
+			prompt: {
+				role: 'user',
+				content: [{ type: 'text', text: 'Hello' }],
+			},
+			response: { blocks: [{ kind: 'text', text: 'Hi!', startedAt: 0 }] },
+		};
+		const { runtime, setTurns } = makeMutableMockRuntime([]);
+		const { result } = renderHook(() => useConversationTurns(), {
+			wrapper: agentWrapper(runtime),
+		});
+
+		act(() => {
+			setTurns([turn]);
+		});
+
+		expect(result.current).toEqual([]);
+
+		act(() => {
+			vi.advanceTimersByTime(16);
+		});
+
+		expect(result.current).toEqual([turn]);
 	});
 });

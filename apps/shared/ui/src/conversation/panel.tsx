@@ -22,7 +22,7 @@ export function ConversationPanel({
 
 	return (
 		<div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-			<ConversationView turns={turns.get()} components={components} />
+			<ConversationView turns={turns} components={components} />
 			<Prompt>
 				<PromptInput additionalControls={additionalControls} />
 			</Prompt>

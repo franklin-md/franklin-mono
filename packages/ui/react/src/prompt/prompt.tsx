@@ -28,7 +28,7 @@ export function Prompt({ children }: { children: React.ReactNode }) {
 	const agent = useAgent();
 	const turns = useConversationTurns();
 	const [input, setInput] = useState('');
-	const sending = isLastTurnInProgress(turns.get());
+	const sending = isLastTurnInProgress(turns);
 	const canSend = !!input.trim() && !sending;
 
 	// Ref to latest input so the send callback doesn't go stale.

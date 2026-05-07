@@ -197,6 +197,11 @@ function TestHarness({
 	);
 }
 
+function PromptSendingProbe() {
+	const { sending } = usePrompt();
+	return <span data-testid="sending">{String(sending)}</span>;
+}
+
 // ---------------------------------------------------------------------------
 // PromptText
 // ---------------------------------------------------------------------------
@@ -341,6 +346,7 @@ describe('during active turn', () => {
 				<PromptText>
 					<textarea data-testid="input" />
 				</PromptText>
+				<PromptSendingProbe />
 			</TestHarness>,
 		);
 
@@ -355,6 +361,9 @@ describe('during active turn', () => {
 
 		await waitFor(() => {
 			expect(promptSpy).toHaveBeenCalledTimes(1);
+		});
+		await waitFor(() => {
+			expect(screen.getByTestId('sending').textContent).toBe('true');
 		});
 
 		// Type a new message and press Enter while still sending
@@ -520,6 +529,7 @@ describe('ESC-to-cancel', () => {
 				<PromptSend>
 					<button data-testid="send">Send</button>
 				</PromptSend>
+				<PromptSendingProbe />
 			</TestHarness>,
 		);
 
@@ -529,10 +539,8 @@ describe('ESC-to-cancel', () => {
 		});
 		fireEvent.click(screen.getByTestId('send'));
 
-		// Wait for sending state to be active (button becomes disabled)
 		await waitFor(() => {
-			const btn = screen.getByTestId('send');
-			expect((btn as HTMLButtonElement).disabled).toBe(true);
+			expect(screen.getByTestId('sending').textContent).toBe('true');
 		});
 
 		// Press Escape on the textarea
