@@ -1,5 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import {
+	act,
 	cleanup,
 	render,
 	renderHook,
@@ -26,7 +27,10 @@ import { PromptSend } from '../prompt/send.js';
 import { PromptAgentControl } from '../prompt/agent-control.js';
 import { PromptControls } from '../prompt/controls.js';
 
-afterEach(cleanup);
+afterEach(() => {
+	cleanup();
+	vi.useRealTimers();
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -376,6 +380,46 @@ describe('during active turn', () => {
 		expect(textarea.value).toBe('second');
 
 		complete();
+	});
+
+	it('Enter does not submit again before the transcript throttle window elapses', async () => {
+		vi.useFakeTimers();
+		const { runtime, promptSpy, complete } = makeHangingRuntime();
+
+		render(
+			<TestHarness runtime={runtime}>
+				<PromptText>
+					<textarea data-testid="input" />
+				</PromptText>
+				<PromptSendingProbe />
+			</TestHarness>,
+		);
+
+		const textarea = screen.getByTestId('input');
+		if (!(textarea instanceof HTMLTextAreaElement)) {
+			throw new TypeError('Expected a textarea');
+		}
+
+		await act(async () => {
+			fireEvent.change(textarea, { target: { value: 'first' } });
+			fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
+		});
+
+		expect(promptSpy).toHaveBeenCalledTimes(1);
+		expect(screen.getByTestId('sending').textContent).toBe('true');
+
+		act(() => {
+			vi.advanceTimersByTime(15);
+		});
+		fireEvent.change(textarea, { target: { value: 'second' } });
+		fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
+
+		expect(promptSpy).toHaveBeenCalledTimes(1);
+		expect(textarea.value).toBe('second');
+
+		await act(async () => {
+			complete();
+		});
 	});
 
 	it('send button is disabled while sending', async () => {

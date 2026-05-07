@@ -78,7 +78,10 @@ export type { PromptAgentControlProps } from './prompt/agent-control.js';
 // ---------------------------------------------------------------------------
 export { Conversation } from './conversation/conversation.js';
 export type { ConversationComponents } from './conversation/types.js';
-export { useConversationTurns } from './conversation/use-conversation-turns.js';
+export {
+	useConversationTurns,
+	useThrottledConversationTurns,
+} from './conversation/use-conversation-turns.js';
 export { getConversationTurnEnd } from './conversation/turn-info/get-turn-end.js';
 export { getConversationTurnPhase } from './conversation/turn-info/get-phase.js';
 export { getConversationTurnTiming } from './conversation/turn-info/get-timing.js';

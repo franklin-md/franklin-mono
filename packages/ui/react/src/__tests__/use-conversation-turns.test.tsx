@@ -7,7 +7,10 @@ import { conversationExtension } from '@franklin/extensions';
 import type { FranklinRuntime } from '@franklin/agent/browser';
 
 import { AgentProvider } from '../agent/agent-context.js';
-import { useConversationTurns } from '../conversation/use-conversation-turns.js';
+import {
+	useConversationTurns,
+	useThrottledConversationTurns,
+} from '../conversation/use-conversation-turns.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -121,8 +124,7 @@ describe('useConversationTurns', () => {
 		expect(result.current).toEqual([]);
 	});
 
-	it('throttles conversation turn updates by default', () => {
-		vi.useFakeTimers();
+	it('publishes conversation turn updates immediately', () => {
 		const turn: ConversationTurn = {
 			id: 'turn-1',
 			timestamp: Date.now(),
@@ -141,10 +143,39 @@ describe('useConversationTurns', () => {
 			setTurns([turn]);
 		});
 
+		expect(result.current).toEqual([turn]);
+	});
+
+	it('throttles conversation turn updates when requested', () => {
+		vi.useFakeTimers();
+		const turn: ConversationTurn = {
+			id: 'turn-1',
+			timestamp: Date.now(),
+			prompt: {
+				role: 'user',
+				content: [{ type: 'text', text: 'Hello' }],
+			},
+			response: { blocks: [{ kind: 'text', text: 'Hi!', startedAt: 0 }] },
+		};
+		const { runtime, setTurns } = makeMutableMockRuntime([]);
+		const { result } = renderHook(() => useThrottledConversationTurns(), {
+			wrapper: agentWrapper(runtime),
+		});
+
+		act(() => {
+			setTurns([turn]);
+		});
+
 		expect(result.current).toEqual([]);
 
 		act(() => {
-			vi.advanceTimersByTime(16);
+			vi.advanceTimersByTime(15);
+		});
+
+		expect(result.current).toEqual([]);
+
+		act(() => {
+			vi.advanceTimersByTime(1);
 		});
 
 		expect(result.current).toEqual([turn]);
