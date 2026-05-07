@@ -1,4 +1,5 @@
 import type { StreamEvent } from '@franklin/mini-acp';
+import { wait } from '@franklin/lib';
 import {
 	createMockMiniACP,
 	textChunkStream,
@@ -13,11 +14,10 @@ import { createCoreModule } from '../../modules/core/module.js';
 import { StoreRegistry } from '../../modules/store/api/registry/index.js';
 import { createStoreModule } from '../../modules/store/module.js';
 import { conversationExtension } from '../conversation/bundle.js';
-
-type RaceWinner = 'subscriber-processed' | 'prompt-drained';
+import type { ConversationTurn } from '../conversation/types.js';
 
 const TOKEN_INTERVAL_MS = 5;
-const CHUNK_COUNT = 24;
+const CHUNK_COUNT = 100;
 const TOKEN_TEXT = 'x'.repeat(CHUNK_COUNT);
 const BLOCKER = new Int32Array(new SharedArrayBuffer(4));
 
@@ -55,72 +55,69 @@ async function createConversationRuntime() {
 	return runtime;
 }
 
+function assistantTextLength(turns: readonly ConversationTurn[]): number {
+	const latestBlock = turns.at(-1)?.response.blocks[0];
+	return latestBlock?.kind === 'text' ? latestBlock.text.length : 0;
+}
+
+async function collectPaintSamples(input: {
+	readonly isPromptDone: () => boolean;
+	readonly getTurns: () => readonly ConversationTurn[];
+}): Promise<number[]> {
+	const samples: number[] = [];
+	while (!input.isPromptDone()) {
+		await wait(0);
+		if (!input.isPromptDone()) {
+			samples.push(assistantTextLength(input.getTurns()));
+		}
+	}
+	return samples;
+}
+
+async function expectPartialResponseVisibleFromMacrotask(
+	subscriberWorkMs: number,
+): Promise<void> {
+	const runtime = await createConversationRuntime();
+	const store = runtime.getStore(conversationExtension.keys.conversation);
+	let promptDone = false;
+
+	store.subscribe(() => {
+		blockFor(subscriberWorkMs);
+	});
+
+	try {
+		const paintSamples = collectPaintSamples({
+			isPromptDone: () => promptDone,
+			getTurns: () => store.get(),
+		});
+		const promptDrained = collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		).finally(() => {
+			promptDone = true;
+		});
+
+		await promptDrained;
+		const samples = await paintSamples;
+		const partialSamples = samples.filter(
+			(textLength) => textLength > 0 && textLength < CHUNK_COUNT,
+		);
+		expect(partialSamples.length).toBeGreaterThan(0);
+	} finally {
+		await runtime.dispose();
+	}
+}
+
 describe('conversationExtension event loop integration', () => {
-	it('lets subscriber macrotasks run when sync subscriber work stays below the token interval', async () => {
-		const runtime = await createConversationRuntime();
-		const store = runtime.getStore(conversationExtension.keys.conversation);
-		let resolveSubscriber: (winner: RaceWinner) => void = () => {};
-		const subscriberProcessed = new Promise<RaceWinner>((resolve) => {
-			resolveSubscriber = resolve;
-		});
-		let scheduled = false;
-
-		store.subscribe((turns) => {
-			const latestBlock = turns.at(-1)?.response.blocks[0];
-			if (!scheduled && latestBlock?.kind === 'text') {
-				scheduled = true;
-				setTimeout(() => resolveSubscriber('subscriber-processed'), 0);
-			}
-			blockFor(1);
-		});
-
-		try {
-			const promptDrained = collect(
-				runtime.prompt({
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				}),
-			).then((): RaceWinner => 'prompt-drained');
-
-			await expect(
-				Promise.race([subscriberProcessed, promptDrained]),
-			).resolves.toBe('subscriber-processed');
-		} finally {
-			await runtime.dispose();
-		}
-	});
-
-	it('lets subscriber macrotasks run even when sync subscriber work exceeds the token interval', async () => {
-		const runtime = await createConversationRuntime();
-		const store = runtime.getStore(conversationExtension.keys.conversation);
-		let resolveSubscriber: (winner: RaceWinner) => void = () => {};
-		const subscriberProcessed = new Promise<RaceWinner>((resolve) => {
-			resolveSubscriber = resolve;
-		});
-		let scheduled = false;
-
-		store.subscribe((turns) => {
-			const latestBlock = turns.at(-1)?.response.blocks[0];
-			if (!scheduled && latestBlock?.kind === 'text') {
-				scheduled = true;
-				setTimeout(() => resolveSubscriber('subscriber-processed'), 0);
-			}
-			blockFor(TOKEN_INTERVAL_MS + 3);
-		});
-
-		try {
-			const promptDrained = collect(
-				runtime.prompt({
-					role: 'user',
-					content: [{ type: 'text', text: 'hi' }],
-				}),
-			).then((): RaceWinner => 'prompt-drained');
-
-			await expect(
-				Promise.race([subscriberProcessed, promptDrained]),
-			).resolves.toBe('subscriber-processed');
-		} finally {
-			await runtime.dispose();
-		}
-	});
+	it.each([
+		['sync subscriber work stays below the token interval', 1],
+		['sync subscriber work exceeds the token interval', TOKEN_INTERVAL_MS + 3],
+	] as const)(
+		'makes partial assistant text visible from a macrotask when %s',
+		async (_description, subscriberWorkMs) => {
+			await expectPartialResponseVisibleFromMacrotask(subscriberWorkMs);
+		},
+	);
 });
