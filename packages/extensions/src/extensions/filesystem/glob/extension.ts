@@ -2,6 +2,7 @@ import { truncateStream } from '@franklin/lib';
 import { defineExtension } from '../../../harness/modules/index.js';
 import type { CoreModule } from '../../../modules/core/index.js';
 import type { EnvironmentModule } from '../../../modules/environment/index.js';
+import { limitedGlob } from './limited-glob.js';
 import { globSpec } from './tools.js';
 
 const MAX_FORMATTED_CHARS = 12_000;
@@ -13,11 +14,15 @@ export function globExtension() {
 			const rootDir = options.root_dir
 				? await env.filesystem.resolve(options.root_dir)
 				: undefined;
-			const files = await env.filesystem.glob(pattern, {
-				root_dir: rootDir,
-				ignore: options.exclude,
-				limit: options.limit,
-			});
+			const { files, exceededLimit } = await limitedGlob(
+				env.filesystem,
+				pattern,
+				{
+					root_dir: rootDir,
+					ignore: options.exclude,
+					limit: options.limit,
+				},
+			);
 
 			const { text, truncated } = truncateStream(files, {
 				maxLength: MAX_FORMATTED_CHARS,
@@ -28,7 +33,7 @@ export function globExtension() {
 			if (truncated) {
 				return text;
 			}
-			if (options.limit) {
+			if (exceededLimit) {
 				return (
 					text + '\n' + `[OUTPUT IS LIMITED TO FIRST ${options.limit} RESULTS]`
 				);
