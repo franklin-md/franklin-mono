@@ -56,6 +56,12 @@ export async function* executeMockTurn(
 	async function* executeStep(
 		step: MockTurnStepDescriptor,
 	): AsyncGenerator<StreamEvent> {
+		if (ended) {
+			throw new Error(
+				'Mock turn descriptor must not include steps after turnEnd().',
+			);
+		}
+
 		switch (step.type) {
 			case 'assistantText':
 				yield* executeAssistantContent(step, 'text');

@@ -111,11 +111,7 @@ export function createMockMiniACP(
 		reset() {
 			pendingTurns.splice(0, pendingTurns.length, ...initialTurns);
 			resetRecording(recording);
-			tracker.apply({
-				history: { systemPrompt: '', messages: [] },
-				tools: [],
-				config: {},
-			});
+			tracker.reset();
 			messageId = 0;
 			toolCallId = 0;
 		},

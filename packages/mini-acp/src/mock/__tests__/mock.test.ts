@@ -229,6 +229,20 @@ describe('createMockMiniACP', () => {
 		);
 	});
 
+	it('throws when a descriptor continues after turnEnd', async () => {
+		const mock = createMockMiniACP({
+			turns: [turn([turnEnd(), text('late')])],
+		});
+		const client = await mock.connector(noopServer());
+
+		await client.initialize();
+		await client.setContext({});
+
+		await expect(collect(client.prompt(userMessage))).rejects.toThrow(
+			'Mock turn descriptor must not include steps after turnEnd().',
+		);
+	});
+
 	it('reuses defaultTurn for low-friction successful prompts', async () => {
 		const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
 		const client = await mock.connector(noopServer());
@@ -244,5 +258,19 @@ describe('createMockMiniACP', () => {
 			{ type: 'turnEnd', stopCode: StopCode.Finished },
 		]);
 		expect(second).toEqual(first);
+	});
+
+	it('reset clears merged context fields', async () => {
+		const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
+		const client = await mock.connector(noopServer());
+
+		await client.initialize();
+		await client.setContext({
+			config: { model: 'test-model', provider: 'test-provider', apiKey: 'key' },
+		});
+
+		mock.reset();
+
+		expect(mock.context().config).toEqual({});
 	});
 });
