@@ -8,8 +8,11 @@ export type TextTokenizer = (text: string) => readonly string[];
 
 export type ChunkDelay = number | ((chunk: string, index: number) => number);
 
+export type ChunkDelayMode = 'relative' | 'elapsed';
+
 export type TextChunkStreamOptions = {
 	readonly delayMs?: ChunkDelay;
+	readonly delayMode?: ChunkDelayMode;
 	readonly tokenizer?: TextTokenizer;
 };
 
@@ -22,12 +25,14 @@ export type AssistantTextDescriptor = {
 	readonly type: 'assistantText';
 	readonly text: string;
 	readonly chunks?: readonly TextChunkDescriptor[];
+	readonly chunkDelayMode?: ChunkDelayMode;
 };
 
 export type AssistantThinkingDescriptor = {
 	readonly type: 'assistantThinking';
 	readonly text: string;
 	readonly chunks?: readonly TextChunkDescriptor[];
+	readonly chunkDelayMode?: ChunkDelayMode;
 };
 
 export type ToolCallRequestDescriptor = {

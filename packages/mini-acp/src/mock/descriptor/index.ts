@@ -2,6 +2,7 @@ export type {
 	AssistantTextDescriptor,
 	AssistantThinkingDescriptor,
 	ChunkDelay,
+	ChunkDelayMode,
 	DelayDescriptor,
 	DeriveDescriptor,
 	MockTurnContext,

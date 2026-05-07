@@ -96,10 +96,11 @@ export async function* executeMockTurn(
 		contentType: 'text' | 'thinking',
 	): AsyncGenerator<StreamEvent> {
 		const messageId = input.nextMessageId();
+		const startedAt = Date.now();
 
 		if (step.chunks) {
 			for (const chunk of step.chunks) {
-				await waitForChunk(chunk);
+				await waitForChunk(chunk, startedAt, step.chunkDelayMode ?? 'relative');
 				yield {
 					type: 'chunk',
 					messageId,
@@ -142,9 +143,22 @@ export async function* executeMockTurn(
 	}
 }
 
-async function waitForChunk(chunk: TextChunkDescriptor): Promise<void> {
+async function waitForChunk(
+	chunk: TextChunkDescriptor,
+	startedAt: number,
+	delayMode: 'relative' | 'elapsed',
+): Promise<void> {
 	if (chunk.delayMs === undefined || chunk.delayMs <= 0) return;
-	await wait(chunk.delayMs);
+	switch (delayMode) {
+		case 'relative':
+			await wait(chunk.delayMs);
+			break;
+		case 'elapsed': {
+			const remaining = startedAt + chunk.delayMs - Date.now();
+			if (remaining > 0) await wait(remaining);
+			break;
+		}
+	}
 }
 
 function toTurnEnd(step: TurnEndDescriptor): StreamEvent {
