@@ -27,5 +27,8 @@ export function thinkingChunkStream(
 		type: 'assistantThinking',
 		text: value,
 		chunks: tokenize(value, options),
+		...(options.delayMode === undefined
+			? {}
+			: { chunkDelayMode: options.delayMode }),
 	};
 }

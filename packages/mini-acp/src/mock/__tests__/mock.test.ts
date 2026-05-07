@@ -51,10 +51,12 @@ describe('mock descriptor factories', () => {
 			textChunkStream('hello world', {
 				tokenizer: (value) => value.split(/(\s+)/).filter(Boolean),
 				delayMs: (_chunk, index) => index * 5,
+				delayMode: 'elapsed',
 			}),
 		).toEqual({
 			type: 'assistantText',
 			text: 'hello world',
+			chunkDelayMode: 'elapsed',
 			chunks: [
 				{ text: 'hello', delayMs: 0 },
 				{ text: ' ', delayMs: 5 },

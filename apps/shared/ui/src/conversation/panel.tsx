@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import {
 	Prompt,
-	useConversationTurns,
+	useThrottledConversationTurns,
 	type ConversationComponents,
 } from '@franklin/react';
 
@@ -18,11 +18,11 @@ export function ConversationPanel({
 	additionalControls,
 	components,
 }: ConversationPanelProps) {
-	const turns = useConversationTurns();
+	const turns = useThrottledConversationTurns();
 
 	return (
 		<div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-			<ConversationView turns={turns.get()} components={components} />
+			<ConversationView turns={turns} components={components} />
 			<Prompt>
 				<PromptInput additionalControls={additionalControls} />
 			</Prompt>
