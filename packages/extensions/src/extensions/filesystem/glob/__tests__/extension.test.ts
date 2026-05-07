@@ -109,6 +109,22 @@ describe('globExtension', () => {
 		expect(getResultText(result)).toBe('one.md\ntwo.md');
 	});
 
+	it('treats zero limit as no limit', async () => {
+		const env = mockEnvironment(['one.md', 'two.md']);
+		const compiled = await compileGlob(env);
+
+		const result = await executeTool(compiled, {
+			pattern: '*.md',
+			options: { limit: 0 },
+		});
+
+		expect(getResultText(result)).toBe('one.md\ntwo.md');
+		expect(env.filesystem.glob).toHaveBeenCalledWith('*.md', {
+			root_dir: undefined,
+			ignore: undefined,
+		});
+	});
+
 	it('reports limited output only when an extra result exists', async () => {
 		const env = mockEnvironment(['one.md', 'two.md', 'three.md']);
 		const compiled = await compileGlob(env);

@@ -12,17 +12,18 @@ export async function limitedGlob(
 	pattern: string | string[],
 	options: GlobOptions,
 ): Promise<LimitedGlobResult> {
-	const { limit } = options;
-	if (limit === undefined) {
+	const { limit, ...globOptions } = options;
+	if (limit === undefined || limit === 0) {
+		// Keep limit: 0 as the legacy no-limit sentinel.
 		return {
-			files: await filesystem.glob(pattern, options),
+			files: await filesystem.glob(pattern, globOptions),
 			exceededLimit: false,
 		};
 	}
 
 	// Probe one extra result so "exactly at limit" is not reported as limited.
 	const probedFiles = await filesystem.glob(pattern, {
-		...options,
+		...globOptions,
 		limit: limit + 1,
 	});
 	const exceededLimit = probedFiles.length > limit;

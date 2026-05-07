@@ -44,6 +44,23 @@ describe('limitedGlob', () => {
 		});
 	});
 
+	it('treats zero limit as no limit', async () => {
+		const filesystem = mockFilesystem(['one.md', 'two.md']);
+
+		const result = await limitedGlob(filesystem, '*.md', {
+			root_dir: '/tmp' as AbsolutePath,
+			limit: 0,
+		});
+
+		expect(result).toEqual({
+			files: ['one.md', 'two.md'],
+			exceededLimit: false,
+		});
+		expect(filesystem.glob).toHaveBeenCalledWith('*.md', {
+			root_dir: '/tmp',
+		});
+	});
+
 	it('does not report exceeded limit when fewer results exist', async () => {
 		const filesystem = mockFilesystem(['one.md']);
 
