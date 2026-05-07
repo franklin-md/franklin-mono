@@ -7,6 +7,7 @@ import {
 } from '@franklin/extensions';
 import type { Orchestrator } from '@franklin/extensions';
 import type { AbsolutePath, RestoreResult } from '@franklin/lib';
+import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { withAuth } from '../auth/with-auth.js';
 import { AuthManager } from '../auth/manager.js';
@@ -56,8 +57,9 @@ export class FranklinApp {
 		this.settings = storage.settings;
 		this.restoreStorage = () => storage.restore();
 
+		const connectAgent = createMiniACPRpcConnector(platform.spawn);
 		const baseModules: FranklinModules = [
-			withAuth(createCoreModule(platform.spawn), this.auth),
+			withAuth(createCoreModule(connectAgent), this.auth),
 			createStoreModule(storage.stores),
 			createEnvironmentModule(platform.environment),
 		];

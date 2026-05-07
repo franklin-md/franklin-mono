@@ -1,12 +1,10 @@
 import { createDuplexPair } from '@franklin/lib/transport';
+import { createPiAgent, debugMiniACP } from '@franklin/mini-acp';
 import {
-	type ClientProtocol,
+	bindMiniACPRpcAgent,
 	type AgentProtocol,
-	createAgentConnection,
-	createPiAdapter,
-	createSessionAdapter,
-	debugMiniACP,
-} from '@franklin/mini-acp';
+	type ClientProtocol,
+} from '@franklin/mini-acp/rpc';
 import type { StreamFn } from '@mariozechner/pi-agent-core';
 
 type SpawnOptions = {
@@ -19,23 +17,16 @@ export function spawn(options: SpawnOptions = {}): ClientProtocol {
 	const { a, b } = createDuplexPair();
 	const clientDuplex = a as unknown as ClientProtocol;
 	const agentDuplex = b as unknown as AgentProtocol;
-	const label = 'agent';
 
-	const connection = createAgentConnection(agentDuplex);
-	const session = debugMiniACP(
-		createSessionAdapter(
-			(ctx, server) =>
-				createPiAdapter({
-					ctx,
-					server: debugMiniACP(server, label),
-					streamFn,
-				}),
-			connection.remote,
-		),
-		label,
+	const connection = bindMiniACPRpcAgent(agentDuplex);
+	const session = createPiAgent(
+		debugMiniACP(connection.remote, 'agent:tools'),
+		{
+			streamFn,
+		},
 	);
 
-	connection.bind(session);
+	connection.bind(debugMiniACP(session, 'agent:client'));
 
 	return clientDuplex;
 }

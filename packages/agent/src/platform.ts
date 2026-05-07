@@ -6,7 +6,7 @@ import type {
 	OsInfo,
 	Process,
 } from '@franklin/lib';
-import type { ClientProtocol } from '@franklin/mini-acp';
+import type { ClientProtocol } from '@franklin/mini-acp/rpc';
 import type { EnvironmentFactory } from '@franklin/extensions';
 
 type Disposable = { dispose(): Promise<void> };

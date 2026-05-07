@@ -12,7 +12,7 @@ export async function execute(
 	fixture: Fixture,
 	factory: AgentFactory,
 ): Promise<Transcript> {
-	const ctx = createContext(factory);
+	const ctx = await createContext(factory);
 
 	for (const action of fixture.actions) {
 		switch (action.type) {

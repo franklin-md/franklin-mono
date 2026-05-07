@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { createAgentConnection } from '../../protocol/connection.js';
 import { createSessionAdapter } from '../../protocol/adapter.js';
 import type { TurnClient } from '../../base/types.js';
 import type { MuAgent } from '../../protocol/types.js';
@@ -24,18 +23,15 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Create a factory that binds a mock agent using createSessionAdapter. */
+/** Create a factory for a mock agent using createSessionAdapter. */
 function createMockFactory(
 	createTurnClient: (remote: MuAgent) => TurnClient,
 ): AgentFactory {
-	return (transport) => {
-		const conn = createAgentConnection(transport);
-		const adapter = createSessionAdapter(
-			(_ctx) => createTurnClient(conn.remote),
-			conn.remote,
+	return (server) =>
+		createSessionAdapter(
+			(_ctx, trackedServer) => createTurnClient(trackedServer),
+			server,
 		);
-		conn.bind(adapter);
-	};
 }
 
 const noopTurn = (_remote: MuAgent): TurnClient => ({
@@ -247,7 +243,7 @@ describe('execute', () => {
 		).rejects.toThrow('tool handler must be specified');
 	});
 
-	it('tools in setContext are sent as definitions on the wire', async () => {
+	it('tools in setContext are sent as definitions to the agent', async () => {
 		const tool = echoTool('myTool');
 		const transcript = await execute(
 			{

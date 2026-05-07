@@ -4,22 +4,18 @@ import {
 	createRuntime,
 	type CoreRuntime,
 } from '@franklin/extensions';
-import { ZERO_USAGE } from '@franklin/mini-acp';
-import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
 	createSessionAdapter,
-	createAgentConnection,
 	StopCode,
+	type MiniACPConnector,
 	type Update,
+	ZERO_USAGE,
 } from '@franklin/mini-acp';
 import { getLLMConfig } from '../settings/llm-config.js';
 
-function createMockSpawn() {
-	return async () => {
-		const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
-		const connection = createAgentConnection(agentSide);
-
-		const adapter = createSessionAdapter(
+function createMockConnector(): MiniACPConnector {
+	return (server) => {
+		const client = createSessionAdapter(
 			(_ctx) => ({
 				async *prompt() {
 					yield {
@@ -34,18 +30,17 @@ function createMockSpawn() {
 				},
 				async cancel() {},
 			}),
-			connection.remote,
+			server,
 		);
-		connection.bind(adapter);
 
-		return { ...clientSide, dispose: vi.fn(async () => {}) };
+		return { ...client, dispose: vi.fn(async () => {}) };
 	};
 }
 
 async function makeRuntime(
 	llmConfig: Record<string, unknown>,
 ): Promise<CoreRuntime> {
-	const system = createCoreModule(createMockSpawn());
+	const system = createCoreModule(createMockConnector());
 	return createRuntime(
 		system,
 		{

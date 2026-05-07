@@ -1,13 +1,10 @@
 // ---------------------------------------------------------------------------
-// Execution context — wires up transport, connection, tool handlers,
-// and provides recording primitives for the action loop.
+// Execution context — wires up the Mini-ACP client, tool handlers, and
+// provides recording primitives for the action loop.
 // ---------------------------------------------------------------------------
 
 import { withDeadline } from '@franklin/lib';
-import { createDuplexPair } from '@franklin/lib/transport';
-import type { JsonRpcMessage } from '@franklin/lib/transport';
 
-import { createClientConnection } from '../../protocol/connection.js';
 import type { ToolCall, ToolResult } from '../../types/tool.js';
 import type { CtxPatch } from '../../types/context.js';
 import type { UserMessage } from '../../types/message.js';
@@ -19,10 +16,9 @@ import type {
 
 const DEFAULT_WAIT_TIMEOUT_MS = 5000;
 
-export type ExecutionContext = ReturnType<typeof createContext>;
+export type ExecutionContext = Awaited<ReturnType<typeof createContext>>;
 
-export function createContext(factory: AgentFactory) {
-	const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
+export async function createContext(factory: AgentFactory) {
 	const transcript: TranscriptEntry[] = [];
 	const backgroundPromises: Promise<void>[] = [];
 
@@ -40,9 +36,7 @@ export function createContext(factory: AgentFactory) {
 		(call: ToolCall) => ToolResult | Promise<ToolResult>
 	> = {};
 
-	const connection = createClientConnection(clientSide);
-
-	connection.bind({
+	const client = await factory({
 		toolExecute: async ({ call }) => {
 			record({
 				direction: 'receive',
@@ -63,20 +57,18 @@ export function createContext(factory: AgentFactory) {
 		},
 	});
 
-	factory(agentSide);
-
 	// -----------------------------------------------------------------------
 	// Actions
 	// -----------------------------------------------------------------------
 
 	async function initialize(): Promise<void> {
 		record({ direction: 'send', method: 'initialize', params: {} });
-		await connection.remote.initialize();
+		await client.initialize();
 		record({ direction: 'receive', method: 'initialize', params: {} });
 	}
 
 	async function setContext(payload: SetContextPayload): Promise<void> {
-		// Split ToolSpecs into definitions (for the wire) and handlers (local)
+		// Split ToolSpecs into definitions for the agent and local handlers.
 		const ctx: CtxPatch = {};
 		if (payload.history) ctx.history = payload.history;
 		if (payload.config) ctx.config = payload.config;
@@ -88,18 +80,18 @@ export function createContext(factory: AgentFactory) {
 		}
 
 		record({ direction: 'send', method: 'setContext', params: ctx });
-		await connection.remote.setContext(ctx);
+		await client.setContext(ctx);
 		record({ direction: 'receive', method: 'setContext', params: {} });
 	}
 
 	function prompt(message: UserMessage): void {
 		record({ direction: 'send', method: 'prompt', params: message });
-		backgroundPromises.push(consume(connection.remote.prompt(message)));
+		backgroundPromises.push(consume(client.prompt(message)));
 	}
 
 	function cancel(): void {
 		record({ direction: 'send', method: 'cancel', params: {} });
-		void connection.remote.cancel();
+		void client.cancel();
 	}
 
 	async function waitFor(

@@ -3,11 +3,10 @@ import {
 	FILESYSTEM_ALLOW_ALL,
 	MemoryOsInfo,
 } from '@franklin/lib';
-import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
-	createAgentConnection,
 	createSessionAdapter,
 	StopCode,
+	type MiniACPConnector,
 	type StreamEvent,
 	type Update,
 	ZERO_USAGE,
@@ -73,12 +72,9 @@ function mockEnvFactory() {
 	return async (config: EnvironmentConfig) => mockEnvironment(config);
 }
 
-function createMockSpawn() {
-	return async () => {
-		const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
-		const connection = createAgentConnection(agentSide);
-
-		const adapter = createSessionAdapter(
+function createMockConnector(): MiniACPConnector {
+	return (server) => {
+		const client = createSessionAdapter(
 			(_ctx) => ({
 				async *prompt() {
 					yield {
@@ -96,12 +92,11 @@ function createMockSpawn() {
 				},
 				async cancel() {},
 			}),
-			connection.remote,
+			server,
 		);
-		connection.bind(adapter);
 
 		return {
-			...clientSide,
+			...client,
 			dispose: vi.fn(async () => {}),
 		};
 	};
@@ -291,7 +286,7 @@ describe('combine — two modules', () => {
 describe('combine — three modules (nested)', () => {
 	it('combines core + (store + environment)', async () => {
 		const system = combine(
-			createCoreModule(createMockSpawn()),
+			createCoreModule(createMockConnector()),
 			combine(
 				createStoreModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
@@ -321,7 +316,7 @@ describe('combine — three modules (nested)', () => {
 
 	it('emptyState has all three keys', () => {
 		const system = combine(
-			createCoreModule(createMockSpawn()),
+			createCoreModule(createMockConnector()),
 			combine(
 				createStoreModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
@@ -336,7 +331,7 @@ describe('combine — three modules (nested)', () => {
 
 	it('state has all three keyed sections', async () => {
 		const system = combine(
-			createCoreModule(createMockSpawn()),
+			createCoreModule(createMockConnector()),
 			combine(
 				createStoreModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
@@ -364,7 +359,7 @@ describe('combine — three modules (nested)', () => {
 
 	it('prompt works through combined system', async () => {
 		const system = combine(
-			createCoreModule(createMockSpawn()),
+			createCoreModule(createMockConnector()),
 			combine(
 				createStoreModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
@@ -395,7 +390,7 @@ describe('combine — three modules (nested)', () => {
 
 	it('fork produces full combined state', async () => {
 		const system = combine(
-			createCoreModule(createMockSpawn()),
+			createCoreModule(createMockConnector()),
 			combine(
 				createStoreModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),

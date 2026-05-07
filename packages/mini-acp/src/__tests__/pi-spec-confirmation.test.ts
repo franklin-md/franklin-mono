@@ -1,4 +1,5 @@
-import { bindPiAgent } from '../base/pi/agent.js';
+import { createPiAgent } from '../base/pi/agent.js';
+import type { MiniACPAgent } from '../protocol/index.js';
 import { confirmSpec } from '../spec-tester/confirm.js';
 import { allFixtureExpectations } from '../spec-tester/fixtures/index.js';
 import { describeIfKey } from './utils/describe-if-key.js';
@@ -12,6 +13,9 @@ describeIfKey(
 			allFixtureExpectations,
 			createValidLLMConfig(apiKey),
 		);
-		confirmSpec(bindPiAgent, { entries, timeoutMs: 60_000 });
+		confirmSpec((server: MiniACPAgent) => createPiAgent(server), {
+			entries,
+			timeoutMs: 60_000,
+		});
 	},
 );

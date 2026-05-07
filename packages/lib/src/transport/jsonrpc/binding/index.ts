@@ -8,6 +8,9 @@ import type { PeerBinding } from './runtime/index.js';
 export type { PeerBinding } from './runtime/index.js';
 export { JsonRpcProxyRuntime, JsonRpcServerRuntime } from './runtime/index.js';
 
+// TODO: Maybe we should really reduce this just to a single Client->Server RPC and just require
+// using 2 duplexes to implement the Client->Server and Server->Client RPCs.
+
 /**
  * Bind as the client (calling the server).
  *

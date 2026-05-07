@@ -5,11 +5,10 @@ import {
 	createCoreModule,
 	createRuntime,
 } from '@franklin/extensions';
-import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import {
 	createSessionAdapter,
-	createAgentConnection,
 	StopCode,
+	type MiniACPConnector,
 	ZERO_USAGE,
 } from '@franklin/mini-acp';
 import {
@@ -64,12 +63,9 @@ function mockCoreRuntime(): CoreRuntime {
 	} as unknown as CoreRuntime;
 }
 
-function createMockSpawn() {
-	return async () => {
-		const { a: clientSide, b: agentSide } = createDuplexPair<JsonRpcMessage>();
-		const connection = createAgentConnection(agentSide);
-
-		const adapter = createSessionAdapter(
+function createMockConnector(): MiniACPConnector {
+	return (server) => {
+		const client = createSessionAdapter(
 			(_ctx) => ({
 				async *prompt() {
 					yield {
@@ -79,15 +75,12 @@ function createMockSpawn() {
 				},
 				async cancel() {},
 			}),
-			connection.remote,
+			server,
 		);
-		connection.bind(adapter);
 
 		return {
-			...clientSide,
-			dispose: async () => {
-				await clientSide.dispose();
-			},
+			...client,
+			dispose: vi.fn(async () => {}),
 		};
 	};
 }
@@ -170,8 +163,8 @@ describe('reconnectAgent', () => {
 
 describe('withAuth', () => {
 	it('returns a system with the same emptyState', () => {
-		const spawn = createMockSpawn();
-		const base = createCoreModule(spawn);
+		const connector = createMockConnector();
+		const base = createCoreModule(connector);
 		const auth = mockAuthManager({});
 
 		const decorated = withAuth(base, auth);
@@ -180,8 +173,8 @@ describe('withAuth', () => {
 	});
 
 	it('authenticates the runtime during build', async () => {
-		const spawn = createMockSpawn();
-		const base = createCoreModule(spawn);
+		const connector = createMockConnector();
+		const base = createCoreModule(connector);
 		const auth = mockAuthManager({ anthropic: 'sk-build-test' });
 
 		const decorated = withAuth(base, auth);
@@ -205,8 +198,8 @@ describe('withAuth', () => {
 	});
 
 	it('resolves apiKey when provider changes via setLLMConfig', async () => {
-		const spawn = createMockSpawn();
-		const base = createCoreModule(spawn);
+		const connector = createMockConnector();
+		const base = createCoreModule(connector);
 		const auth = mockAuthManager({
 			anthropic: 'sk-anthropic',
 			'openai-codex': 'sk-openai',
@@ -239,8 +232,8 @@ describe('withAuth', () => {
 	});
 
 	it('does not resolve auth when provider is unchanged', async () => {
-		const spawn = createMockSpawn();
-		const base = createCoreModule(spawn);
+		const connector = createMockConnector();
+		const base = createCoreModule(connector);
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
@@ -268,8 +261,8 @@ describe('withAuth', () => {
 	});
 
 	it('does not overwrite an explicit apiKey in setLLMConfig', async () => {
-		const spawn = createMockSpawn();
-		const base = createCoreModule(spawn);
+		const connector = createMockConnector();
+		const base = createCoreModule(connector);
 		const auth = mockAuthManager({
 			anthropic: 'sk-anthropic',
 			'openai-codex': 'sk-openai',
@@ -299,8 +292,8 @@ describe('withAuth', () => {
 	});
 
 	it('clears apiKey when no stored key exists for the new provider', async () => {
-		const spawn = createMockSpawn();
-		const base = createCoreModule(spawn);
+		const connector = createMockConnector();
+		const base = createCoreModule(connector);
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
@@ -336,8 +329,8 @@ describe('withAuth', () => {
 		// synchronously. Before the fix, this blocked originalSetLLMConfig and
 		// the runtime silently kept the old provider/model, so subsequent
 		// reasoning toggles re-rendered the stale tracker and the UI reverted.
-		const spawn = createMockSpawn();
-		const base = createCoreModule(spawn);
+		const connector = createMockConnector();
+		const base = createCoreModule(connector);
 		const auth = mockAuthManager({ 'openai-codex': 'sk-openai' });
 		(auth as { getApiKey: AuthManager['getApiKey'] }).getApiKey = vi.fn(
 			async (provider: string) => {
@@ -382,8 +375,8 @@ describe('withAuth live sync', () => {
 		provider: string,
 		auth: ReturnType<typeof mockAuthManager>,
 	) {
-		const spawn = createMockSpawn();
-		const base = createCoreModule(spawn);
+		const connector = createMockConnector();
+		const base = createCoreModule(connector);
 		const decorated = withAuth(base, auth);
 		return createRuntime(
 			decorated,
@@ -471,8 +464,7 @@ describe('withAuth live sync', () => {
 
 		expect(auth._listeners).toHaveLength(1);
 
-		// Dispose may throw due to transport stream state in tests — that's fine.
-		await runtime.dispose().catch(() => {});
+		await runtime.dispose();
 
 		expect(auth._listeners).toHaveLength(0);
 	});

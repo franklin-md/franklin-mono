@@ -4,14 +4,15 @@
 // Requires OPENROUTER_API_KEY in env or in .env at project root.
 // Skips when no key is available.
 // Uses the spec-tester fixture DSL against the real Pi agent factory so
-// integration coverage exercises the same transport/session path as spec
-// confirmation, while still allowing scenario-specific assertions.
+// integration coverage exercises the same Mini-ACP client path as spec
+// confirmation while still allowing scenario-specific assertions.
 // ---------------------------------------------------------------------------
 
 import { expect, it } from 'vitest';
+import { createPiAgent } from '../base/pi/agent.js';
+import type { MiniACPAgent } from '../protocol/index.js';
 import { StopCode } from '../types/stop-code.js';
 
-import { bindPiAgent } from '../base/pi/agent.js';
 import { initialize } from '../spec-tester/actions/initialize.js';
 import { prompt } from '../spec-tester/actions/prompt.js';
 import { setContext } from '../spec-tester/actions/set-context.js';
@@ -71,7 +72,7 @@ describeIfKey(
 	'Pi Adapter — integration (OpenRouter, z-ai/glm-5)',
 	(apiKey) => {
 		const config = createValidLLMConfig(apiKey, { model: 'z-ai/glm-5' });
-		const factory = bindPiAgent;
+		const factory = (server: MiniACPAgent) => createPiAgent(server);
 
 		it('simple text prompt returns a coherent response', async () => {
 			const fixture: Fixture = {

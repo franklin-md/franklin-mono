@@ -19,7 +19,7 @@ import type { ProtocolDecorator } from './types.js';
 
 /**
  * Turn a `CoreRegistrar` into the ordered `ProtocolDecorator` stack
- * `createCoreRuntime` composes over the transport. Each concern
+ * composed around the connected Mini-ACP client/server pair. Each concern
  * (middleware, system prompt, …) becomes its own decorator; runtime
  * binding happens here via `bindHandlers`/`bindTool`, so each builder's
  * signature stays runtime-agnostic.

@@ -1,6 +1,7 @@
+import type { MiniACPConnector } from '@franklin/mini-acp';
 import type { HarnessModule } from '../../harness/modules/index.js';
 import type { CoreAPI } from './api/api.js';
-import { createCoreCompiler, type SpawnFn } from './compile/compiler.js';
+import { createCoreCompiler } from './compile/compiler.js';
 import { type CoreRuntime, coreStateHandle } from './runtime/index.js';
 import type { CoreState } from './state.js';
 import { emptyCoreState } from './state.js';
@@ -11,10 +12,10 @@ import { emptyCoreState } from './state.js';
  */
 export type CoreModule = HarnessModule<CoreState, CoreAPI, CoreRuntime>;
 
-export function createCoreModule(spawn: SpawnFn): CoreModule {
+export function createCoreModule(connectAgent: MiniACPConnector): CoreModule {
 	return {
 		emptyState: emptyCoreState,
 		state: (runtime) => coreStateHandle(runtime),
-		createCompiler: (state) => createCoreCompiler(spawn, state),
+		createCompiler: (state) => createCoreCompiler(connectAgent, state),
 	};
 }
