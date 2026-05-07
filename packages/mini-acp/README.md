@@ -10,6 +10,7 @@ The package root exports the functional Mini-ACP surface: client/agent types,
 session adapters, tracking, and protocol data types. JSON-RPC transport binding
 helpers live under `@franklin/mini-acp/rpc` so data-protocol plumbing does not
 become part of the default protocol API.
+Scripted test helpers live under `@franklin/mini-acp/mock`.
 
 At a glance:
 - **Agents have state but there is no session persistence on the agent's side**:
