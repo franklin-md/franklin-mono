@@ -12,6 +12,7 @@ import {
 	type StreamEvent,
 	type Usage,
 } from '@franklin/mini-acp';
+import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -64,7 +65,8 @@ async function collect(
 
 describe('createCoreModule', () => {
 	it('create returns a runtime with protocol methods', async () => {
-		const system = createCoreModule(createMockConnector());
+		const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
+		const system = createCoreModule(mock.connector);
 
 		const runtime = await createRuntime(
 			system,
@@ -75,6 +77,7 @@ describe('createCoreModule', () => {
 		expect(runtime.prompt).toBeDefined();
 		expect(runtime.setLLMConfig).toBeDefined();
 		expect(runtime.cancel).toBeDefined();
+		expect(mock.calls().initialize).toBe(1);
 
 		await runtime.dispose();
 	});
