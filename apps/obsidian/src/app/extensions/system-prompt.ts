@@ -38,6 +38,14 @@ const obsidianUserConventionPreservation = `When editing the vault, prefer prese
 Reuse existing notes and links when possible. 
 Maintain the integrity of the graph: avoid broken links, unnecessary duplicate notes, and unexplained moved content.`;
 
+const obsidianDeletionSafety = `Never delete files or directories unless the user has explicitly asked for that deletion in the current conversation.
+This includes shell commands such as \`rm\`, \`rmdir\`, \`unlink\`, and \`trash\`, as well as any other deletion mechanism.
+If deleting something might help while trying another approach, ask the user first and wait for permission.`;
+
+const circumventionGuard = `When performing actions that have effects (like editing or deleting files, running effectful POST or PUT requests, etc.), 
+DO NOT attempt to find an alternative approach if the standard, designated approach fails; this is to minimize the risk of unintended, destructive misuse. 
+It is fine for query operations (like searching).`;
+
 // Motivation:
 // Avoid suggesting but not executing
 const franklinSurface = `When the user asks for changes to vault Markdown files, make the edits directly rather than only describing them; 
@@ -61,5 +69,7 @@ export const obsidianSystemPromptExtension: FranklinExtension = (api) => {
 	includePrompt(obsidianFlavouredMarkdown, api);
 	includePrompt(obsidianToolPathResolution, api);
 	includePrompt(obsidianUserConventionPreservation, api);
+	includePrompt(obsidianDeletionSafety, api);
+	includePrompt(circumventionGuard, api);
 	includePrompt(franklinSurface, api);
 };
