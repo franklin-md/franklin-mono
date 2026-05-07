@@ -1,15 +1,15 @@
 // ---------------------------------------------------------------------------
 // Spec Tester — types
 //
-// The transcript is a flat log of everything that crossed the wire,
-// ordered as seen from the CLIENT side.
+// The transcript is a flat log of Mini-ACP protocol calls and events, ordered
+// as seen from the client side.
 // ---------------------------------------------------------------------------
 
 import type { CtxPatch, HistoryPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import type { Chunk, TurnStart, Update, TurnEnd } from '../types/stream.js';
 import type { ToolCall, ToolDefinition, ToolResult } from '../types/tool.js';
-import type { AgentProtocol } from '../rpc/types.js';
+import type { MiniACPAgent, MiniACPClient } from '../protocol/index.js';
 
 // ---------------------------------------------------------------------------
 // Transcript
@@ -95,10 +95,12 @@ export type FixtureExpectation = {
 };
 
 // ---------------------------------------------------------------------------
-// Agent factory — receives one end of a duplex pair, binds an agent to it
+// Agent factory — receives the app-side tool server and returns a client
 // ---------------------------------------------------------------------------
 
-export type AgentFactory = (transport: AgentProtocol) => void;
+export type AgentFactory = (
+	server: MiniACPAgent,
+) => MiniACPClient | Promise<MiniACPClient>;
 
 // ---------------------------------------------------------------------------
 // Suite results — coverage matrix

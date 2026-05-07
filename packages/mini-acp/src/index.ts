@@ -51,7 +51,7 @@ export { StopCode, stopCategory, VALID_STOP_CODES } from './types/index.js';
 // Base protocol
 export type { BaseAgent, BaseClient } from './base/index.js';
 export { createPiAdapter, type PiAdapterOptions } from './base/index.js';
-export { bindPiAgent } from './base/index.js';
+export { createPiAgent, type CreatePiAgentOptions } from './base/index.js';
 export {
 	fromPiUserContent,
 	fromPiAssistantContent,

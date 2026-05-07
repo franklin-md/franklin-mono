@@ -1,14 +1,21 @@
-import { bindMiniACPRpcAgent } from '../../rpc/agent.js';
-import type { AgentProtocol } from '../../rpc/types.js';
+import type { StreamFn } from '@mariozechner/pi-agent-core';
+
 import { createSessionAdapter } from '../../protocol/adapter.js';
+import type { MuAgent, MuClient } from '../../protocol/types.js';
 import { createPiAdapter } from './adapter.js';
 
-export function bindPiAgent(transport: AgentProtocol): void {
-	const connection = bindMiniACPRpcAgent(transport);
-	connection.bind(
-		createSessionAdapter(
-			(ctx, server) => createPiAdapter({ ctx, server }),
-			connection.remote,
-		),
+export type CreatePiAgentOptions = {
+	streamFn?: StreamFn;
+};
+
+export function createPiAgent(
+	server: MuAgent,
+	options: CreatePiAgentOptions = {},
+): MuClient {
+	const { streamFn } = options;
+	return createSessionAdapter(
+		(ctx, trackedServer) =>
+			createPiAdapter({ ctx, server: trackedServer, streamFn }),
+		server,
 	);
 }
