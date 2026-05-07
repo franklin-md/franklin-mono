@@ -57,4 +57,13 @@ describe('obsidianSystemPromptExtension', () => {
 		expect(prompt).toContain('`[[Note#Heading|label]]`');
 		expect(prompt).toContain('ambiguous');
 	});
+
+	it('requires explicit user permission before deleting files', async () => {
+		const prompt = await renderSystemPrompt();
+
+		expect(prompt).toContain('Never delete files or directories');
+		expect(prompt).toContain('explicitly asked for that deletion');
+		expect(prompt).toContain('`rm`');
+		expect(prompt).toContain('ask the user first and wait for permission');
+	});
 });
