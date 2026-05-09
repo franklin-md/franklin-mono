@@ -13,4 +13,12 @@ describe('Icons', () => {
 
 		expect(path?.getAttribute('fill')).toBe('#D97757');
 	});
+
+	it('keeps the OpenCode icon on the sourced mark shape', () => {
+		const { container } = render(<Icons.OpenCode />);
+
+		const path = container.querySelector('path');
+
+		expect(path?.getAttribute('d')).toBe('M16 6H8v12h8V6zm4 16H4V2h16v20z');
+	});
 });

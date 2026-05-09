@@ -117,6 +117,77 @@ const OPENAI_CODEX_PROVIDER_GROUP: ProviderGroup = {
 	],
 };
 
+const OPENCODE_GO_PROVIDER_GROUP: ProviderGroup = {
+	provider: 'opencode-go',
+	displayName: 'OpenCode Go',
+	access: 'api',
+	models: [
+		model('opencode-go', 'deepseek-v4-pro', 'DeepSeek V4 Pro', {
+			reasoning: true,
+			ctx: 1_000_000,
+			costIn: 1.74,
+			costOut: 3.48,
+			intelligence: 'frontier',
+		}),
+		model('opencode-go', 'deepseek-v4-flash', 'DeepSeek V4 Flash', {
+			reasoning: true,
+			ctx: 1_000_000,
+			costIn: 0.14,
+			costOut: 0.28,
+			intelligence: 'strong',
+		}),
+		model('opencode-go', 'mimo-v2.5-pro', 'MiMo V2.5 Pro', {
+			reasoning: true,
+			ctx: 1_048_576,
+			costIn: 1,
+			costOut: 3,
+			intelligence: 'frontier',
+		}),
+		model('opencode-go', 'mimo-v2.5', 'MiMo V2.5', {
+			reasoning: true,
+			ctx: 1_000_000,
+			costIn: 0.4,
+			costOut: 2,
+			intelligence: 'balanced',
+		}),
+		model('opencode-go', 'kimi-k2.6', 'Kimi K2.6', {
+			reasoning: true,
+			ctx: 262_144,
+			costIn: 0.95,
+			costOut: 4,
+			intelligence: 'strong',
+		}),
+		model('opencode-go', 'glm-5.1', 'GLM-5.1', {
+			reasoning: true,
+			ctx: 202_752,
+			costIn: 1.4,
+			costOut: 4.4,
+			intelligence: 'frontier',
+		}),
+		model('opencode-go', 'qwen3.6-plus', 'Qwen3.6 Plus', {
+			reasoning: true,
+			ctx: 262_144,
+			costIn: 0.5,
+			costOut: 3,
+			intelligence: 'frontier',
+		}),
+		model('opencode-go', 'qwen3.5-plus', 'Qwen3.5 Plus', {
+			reasoning: true,
+			ctx: 262_144,
+			costIn: 0.2,
+			costOut: 1.2,
+			intelligence: 'efficient',
+		}),
+		model('opencode-go', 'minimax-m2.7', 'MiniMax M2.7', {
+			reasoning: true,
+			ctx: 204_800,
+			costIn: 0.3,
+			costOut: 1.2,
+			intelligence: 'strong',
+		}),
+	],
+};
+
 const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 	provider: 'openrouter',
 	displayName: 'OpenRouter',
@@ -220,10 +291,12 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 const PROVIDER_GROUPS = {
 	anthropic: ANTHROPIC_PROVIDER_GROUP,
 	openaiCodex: OPENAI_CODEX_PROVIDER_GROUP,
+	opencodeGo: OPENCODE_GO_PROVIDER_GROUP,
 	openrouter: OPENROUTER_PROVIDER_GROUP,
 };
 
 export const MODEL_CATALOG: ProviderGroup[] = [
 	PROVIDER_GROUPS.openaiCodex,
+	PROVIDER_GROUPS.opencodeGo,
 	PROVIDER_GROUPS.openrouter,
 ];
