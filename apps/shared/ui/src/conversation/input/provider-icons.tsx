@@ -5,27 +5,39 @@ import type { CatalogModel } from './models/catalog.js';
 
 type IconComponent = ComponentType<IconProps>;
 
+// TODO: Good to have type for ModelLab? Basically provider includes middle men like
+// OpenRouter, whereas for a given set of models (models.dev), they all come from the same lab
+
 const PROVIDER_ICONS: Record<string, IconComponent> = {
 	anthropic: Icons.Anthropic,
 	'openai-codex': Icons.OpenAI,
+	'opencode-go': Icons.OpenCode,
 	openrouter: Icons.OpenRouter,
 };
 
+const MODEL_ICON_PREFIXES: {
+	prefixes: readonly string[];
+	Icon: IconComponent;
+}[] = [
+	{ prefixes: ['claude-'], Icon: Icons.Claude },
+	{ prefixes: ['gpt-'], Icon: Icons.OpenAI },
+	{ prefixes: ['deepseek/', 'deepseek-'], Icon: Icons.DeepSeek },
+	{ prefixes: ['z-ai/', 'glm-'], Icon: Icons.ZAI },
+	{ prefixes: ['google/'], Icon: Icons.Gemini },
+	{ prefixes: ['moonshotai/kimi'], Icon: Icons.Moonshot },
+	{ prefixes: ['kimi-'], Icon: Icons.Kimi },
+	{ prefixes: ['minimax/', 'minimax-'], Icon: Icons.MiniMax },
+	{ prefixes: ['mimo-', 'xiaomi/mimo'], Icon: Icons.Xiaomi },
+	{ prefixes: ['qwen/', 'qwen'], Icon: Icons.Qwen },
+	{ prefixes: ['x-ai/'], Icon: Icons.XAI },
+];
+
 function resolveModelIconComponent(model: CatalogModel): IconComponent | null {
-	if (model.provider === 'anthropic') return Icons.Claude;
-	if (model.provider === 'openai-codex') return Icons.OpenAI;
-	if (model.provider !== 'openrouter') return null;
-
-	if (model.id.startsWith('deepseek/')) return Icons.DeepSeek;
-	if (model.id.startsWith('z-ai/glm')) return Icons.ZAI;
-	if (model.id.startsWith('google/')) return Icons.Gemini;
-	if (model.id.startsWith('moonshotai/kimi')) return Icons.Moonshot;
-	if (model.id.startsWith('minimax/')) return Icons.MiniMax;
-	if (model.id.startsWith('qwen/')) return Icons.Qwen;
-	if (model.id.startsWith('xiaomi/mimo')) return Icons.Xiaomi;
-	if (model.id.startsWith('x-ai/')) return Icons.XAI;
-
-	return null;
+	return (
+		MODEL_ICON_PREFIXES.find((rule) =>
+			rule.prefixes.some((prefix) => model.id.startsWith(prefix)),
+		)?.Icon ?? null
+	);
 }
 
 export function ProviderIcon({
