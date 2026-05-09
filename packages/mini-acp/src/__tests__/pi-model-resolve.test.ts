@@ -8,8 +8,20 @@ import { StopCode } from '../types/stop-code.js';
 
 const OPENROUTER_OVERRIDE_CASES = [
 	{
+		id: 'z-ai/glm-5.1',
+		contextWindow: 202_752,
+		maxTokens: 65_535,
+		cost: {
+			input: 1.0499999999999998,
+			output: 3.5,
+			cacheRead: 0.5249999999999999,
+			cacheWrite: 0,
+		},
+	},
+	{
 		id: 'deepseek/deepseek-v4-flash',
 		contextWindow: 1_048_576,
+		maxTokens: 384_000,
 		cost: {
 			input: 0.14,
 			output: 0.28,
@@ -20,6 +32,7 @@ const OPENROUTER_OVERRIDE_CASES = [
 	{
 		id: 'deepseek/deepseek-v4-pro',
 		contextWindow: 1_048_576,
+		maxTokens: 65_536,
 		cost: {
 			input: 1.74,
 			output: 3.48,
@@ -30,14 +43,27 @@ const OPENROUTER_OVERRIDE_CASES = [
 	{
 		id: 'moonshotai/kimi-k2.6',
 		contextWindow: 256_000,
+		maxTokens: 65_536,
 		cost: {
 			input: 0.7448,
 			output: 4.655,
 		},
 	},
 	{
+		id: 'x-ai/grok-4.20',
+		contextWindow: 2_000_000,
+		maxTokens: 4_096,
+		cost: {
+			input: 1.25,
+			output: 2.5,
+			cacheRead: 0.19999999999999998,
+			cacheWrite: 0,
+		},
+	},
+	{
 		id: 'qwen/qwen3.6-plus',
 		contextWindow: 1_000_000,
+		maxTokens: 65_536,
 		cost: {
 			input: 0.325,
 			output: 1.95,
@@ -48,10 +74,113 @@ const OPENROUTER_OVERRIDE_CASES = [
 	{
 		id: 'xiaomi/mimo-v2.5-pro',
 		contextWindow: 1_048_576,
+		maxTokens: 131_072,
 		cost: {
 			input: 1,
 			output: 3,
 			cacheRead: 0.2,
+			cacheWrite: 0,
+		},
+	},
+] as const;
+
+const OPENCODE_GO_OVERRIDE_CASES = [
+	{
+		id: 'deepseek-v4-pro',
+		contextWindow: 1_000_000,
+		maxTokens: 384_000,
+		cost: {
+			input: 1.74,
+			output: 3.48,
+			cacheRead: 0.0145,
+			cacheWrite: 0,
+		},
+	},
+	{
+		id: 'deepseek-v4-flash',
+		contextWindow: 1_000_000,
+		maxTokens: 384_000,
+		cost: {
+			input: 0.14,
+			output: 0.28,
+			cacheRead: 0.0028,
+			cacheWrite: 0,
+		},
+	},
+	{
+		id: 'mimo-v2.5-pro',
+		contextWindow: 1_048_576,
+		maxTokens: 128_000,
+		cost: {
+			input: 1,
+			output: 3,
+			cacheRead: 0.2,
+			cacheWrite: 0,
+		},
+	},
+	{
+		id: 'mimo-v2.5',
+		contextWindow: 1_000_000,
+		maxTokens: 128_000,
+		cost: {
+			input: 0.4,
+			output: 2,
+			cacheRead: 0.08,
+			cacheWrite: 0,
+		},
+	},
+	{
+		id: 'kimi-k2.6',
+		contextWindow: 262_144,
+		maxTokens: 65_536,
+		cost: {
+			input: 0.95,
+			output: 4,
+			cacheRead: 0.16,
+			cacheWrite: 0,
+		},
+	},
+	{
+		id: 'glm-5.1',
+		contextWindow: 202_752,
+		maxTokens: 32_768,
+		cost: {
+			input: 1.4,
+			output: 4.4,
+			cacheRead: 0.26,
+			cacheWrite: 0,
+		},
+	},
+	{
+		id: 'qwen3.6-plus',
+		contextWindow: 262_144,
+		maxTokens: 65_536,
+		cost: {
+			input: 0.5,
+			output: 3,
+			cacheRead: 0.05,
+			cacheWrite: 0.625,
+		},
+	},
+	{
+		id: 'qwen3.5-plus',
+		contextWindow: 262_144,
+		maxTokens: 65_536,
+		cost: {
+			input: 0.2,
+			output: 1.2,
+			cacheRead: 0.02,
+			cacheWrite: 0.25,
+		},
+	},
+	{
+		id: 'minimax-m2.7',
+		contextWindow: 204_800,
+		maxTokens: 131_072,
+		cost: {
+			input: 0.3,
+			output: 1.2,
+			cacheRead: 0.06,
 			cacheWrite: 0,
 		},
 	},
@@ -144,7 +273,12 @@ describe('resolveModel', () => {
 		});
 	});
 
-	for (const { id, contextWindow, cost } of OPENROUTER_OVERRIDE_CASES) {
+	for (const {
+		id,
+		contextWindow,
+		maxTokens,
+		cost,
+	} of OPENROUTER_OVERRIDE_CASES) {
 		it(`resolves the Franklin OpenRouter override for ${id}`, () => {
 			const result = resolveModel({
 				provider: 'openrouter',
@@ -158,6 +292,32 @@ describe('resolveModel', () => {
 				api: 'openai-completions',
 				reasoning: true,
 				contextWindow,
+				maxTokens,
+				cost,
+			});
+		});
+	}
+
+	for (const {
+		id,
+		contextWindow,
+		maxTokens,
+		cost,
+	} of OPENCODE_GO_OVERRIDE_CASES) {
+		it(`resolves the OpenCode Go override for ${id}`, () => {
+			const result = resolveModel({
+				provider: 'opencode-go',
+				model: id,
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.model).toMatchObject({
+				provider: 'opencode-go',
+				id,
+				api: 'openai-completions',
+				reasoning: true,
+				contextWindow,
+				maxTokens,
 				cost,
 			});
 		});

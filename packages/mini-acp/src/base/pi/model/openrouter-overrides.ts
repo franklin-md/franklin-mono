@@ -28,6 +28,18 @@ function openRouterModel(
 }
 
 const OPENROUTER_MODEL_OVERRIDES = {
+	'z-ai/glm-5.1': openRouterModel('z-ai/glm-5.1', 'GLM 5.1', {
+		reasoning: true,
+		input: ['text'],
+		cost: {
+			input: 1.0499999999999998,
+			output: 3.5,
+			cacheRead: 0.5249999999999999,
+			cacheWrite: 0,
+		},
+		contextWindow: 202_752,
+		maxTokens: 65_535,
+	}),
 	'deepseek/deepseek-v4-flash': openRouterModel(
 		'deepseek/deepseek-v4-flash',
 		'DeepSeek V4 Flash',
@@ -71,6 +83,18 @@ const OPENROUTER_MODEL_OVERRIDES = {
 		},
 		contextWindow: 256_000,
 		maxTokens: 65_536,
+	}),
+	'x-ai/grok-4.20': openRouterModel('x-ai/grok-4.20', 'Grok 4.20', {
+		reasoning: true,
+		input: ['text', 'image'],
+		cost: {
+			input: 1.25,
+			output: 2.5,
+			cacheRead: 0.19999999999999998,
+			cacheWrite: 0,
+		},
+		contextWindow: 2_000_000,
+		maxTokens: 4_096,
 	}),
 	'qwen/qwen3.6-plus': openRouterModel('qwen/qwen3.6-plus', 'Qwen3.6 Plus', {
 		reasoning: true,
