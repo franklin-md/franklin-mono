@@ -4,6 +4,8 @@ import { ViewPlugin } from '@codemirror/view';
 import { setHoveredHunkEffect } from './cm/effects.js';
 import { diffField } from './cm/diff-field.js';
 
+const PROXIMITY_LINES = 5;
+
 export const diffHoverTracking = ViewPlugin.fromClass(
 	class {
 		hoveredHunkId: string | null = null;
@@ -11,9 +13,8 @@ export const diffHoverTracking = ViewPlugin.fromClass(
 		constructor(readonly view: EditorView) {}
 
 		update() {
-			const hoveredHunkId =
+			this.hoveredHunkId =
 				this.view.state.field(diffField, false)?.hoveredHunkId ?? null;
-			this.hoveredHunkId = hoveredHunkId;
 		}
 
 		setHoveredHunkId(next: string | null) {
@@ -22,25 +23,18 @@ export const diffHoverTracking = ViewPlugin.fromClass(
 			this.view.dispatch({ effects: setHoveredHunkEffect.of(next) });
 		}
 
-		syncHoveredHunkFromDom(target: EventTarget | null = null) {
-			this.setHoveredHunkId(
-				findHoveredHunkId(target) ?? findHoveredHunkIdInView(this.view),
-			);
+		syncHoveredHunkFromY(clientY: number) {
+			const threshold = this.view.defaultLineHeight * PROXIMITY_LINES;
+			this.setHoveredHunkId(findNearestHunk(this.view, clientY, threshold));
 		}
 	},
 	{
 		eventHandlers: {
 			mousemove(event) {
-				this.syncHoveredHunkFromDom(event.target);
-			},
-			mouseover(event) {
-				this.syncHoveredHunkFromDom(event.target);
+				this.syncHoveredHunkFromY(event.clientY);
 			},
 			mouseenter(event) {
-				this.syncHoveredHunkFromDom(event.target);
-			},
-			focus() {
-				this.syncHoveredHunkFromDom();
+				this.syncHoveredHunkFromY(event.clientY);
 			},
 			mouseleave() {
 				this.setHoveredHunkId(null);
@@ -49,24 +43,33 @@ export const diffHoverTracking = ViewPlugin.fromClass(
 	},
 );
 
-function findHoveredHunkId(target: EventTarget | null): string | null {
-	const element =
-		target instanceof Element
-			? target
-			: target instanceof Node
-				? target.parentElement
-				: null;
-	if (!element) return null;
+function findNearestHunk(
+	view: EditorView,
+	clientY: number,
+	threshold: number,
+): string | null {
+	let bestId: string | null = null;
+	let bestDistance = Infinity;
 
-	const directHunkId =
-		element.closest<HTMLElement>('[data-diff-hunk-id]')?.dataset.diffHunkId ??
-		null;
-	return directHunkId;
+	for (const element of view.dom.querySelectorAll<HTMLElement>(
+		'[data-diff-hunk-id]',
+	)) {
+		const hunkId = element.dataset.diffHunkId;
+		if (!hunkId) continue;
+		const rect = element.getBoundingClientRect();
+		if (rect.height === 0) continue;
+		const distance = verticalDistance(clientY, rect.top, rect.bottom);
+		if (distance < bestDistance) {
+			bestDistance = distance;
+			bestId = hunkId;
+		}
+	}
+
+	return bestDistance <= threshold ? bestId : null;
 }
 
-function findHoveredHunkIdInView(view: EditorView): string | null {
-	return (
-		view.dom.querySelector<HTMLElement>('[data-diff-hunk-id]:hover')?.dataset
-			.diffHunkId ?? null
-	);
+function verticalDistance(y: number, top: number, bottom: number): number {
+	if (y < top) return top - y;
+	if (y > bottom) return y - bottom;
+	return 0;
 }

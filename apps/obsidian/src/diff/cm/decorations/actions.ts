@@ -43,12 +43,12 @@ export class DiffHunkActionsWidget extends WidgetType {
 	}
 
 	toDOM(view: EditorView): HTMLElement {
-		const dom = activeDocument.createElement('span');
+		const dom = activeDocument.createSpan();
 		dom.className = 'diff-plugin-actions-host';
 		dom.dataset.diffHunkId = this.hunk.id;
 		dom.addEventListener('mousedown', stopMouseEvent);
 
-		const actions = activeDocument.createElement('span');
+		const actions = activeDocument.createSpan();
 		actions.className = 'diff-plugin-actions';
 		actions.dataset.diffHunkId = this.hunk.id;
 
@@ -77,11 +77,16 @@ export class DiffHunkActionsBlockWidget extends WidgetType {
 	}
 
 	toDOM(view: EditorView): HTMLElement {
-		const dom = activeDocument.createDiv({
-			cls: 'diff-plugin-actions-block',
-		});
+		const dom = activeDocument.createDiv();
+		dom.className = 'diff-plugin-actions-block';
 		dom.dataset.diffHunkId = this.hunk.id;
 		dom.addEventListener('mousedown', stopMouseEvent);
+		// TODO: will have to move this somewhere else, but
+		// for now this is the only way to make a button block
+		// align right. Is Obsidian overriding this?
+		// eslint-disable-next-line obsidianmd/no-static-styles-assignment
+		dom.style.cssText =
+			'display:flex;justify-content:flex-end;align-items:center;gap:4px;padding:0;width:100%;box-sizing:border-box;pointer-events:auto;';
 
 		const [accept, reject] = createActionButtonPair(
 			this.hunk.id,
@@ -114,7 +119,7 @@ function createActionButton(
 	hunkId: string,
 	onClick: () => void,
 ): HTMLButtonElement {
-	const button = activeDocument.createElement('button');
+	const button = activeDocument.createEl('button');
 	button.type = 'button';
 	button.className = `diff-plugin-btn ${variantClass}`;
 	button.dataset.diffHunkId = hunkId;

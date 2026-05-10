@@ -65,6 +65,10 @@ export const diffTheme = EditorView.baseTheme({
 	},
 
 	'.diff-plugin-actions-block': {
+		boxSizing: 'border-box',
+		width: '100%',
+		minWidth: '100%',
+		alignSelf: 'stretch',
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'flex-end',
