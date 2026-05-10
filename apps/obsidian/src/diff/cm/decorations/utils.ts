@@ -1,9 +1,14 @@
 import type { Text } from '@codemirror/state';
 import type { Hunk } from '../../compute-hunks.js';
-import {
-	looksLikeTableDivider,
-	looksLikeTableRow,
-} from './embedded/source-blocks.js';
+
+export function looksLikeTableRow(lineText: string): boolean {
+	const trimmed = lineText.trim();
+	return trimmed.includes('|') && trimmed.replaceAll('|', '').trim().length > 0;
+}
+
+export function looksLikeTableDivider(lineText: string): boolean {
+	return /^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$/.test(lineText);
+}
 
 export function resolveAnchorPosition(
 	doc: Text,
