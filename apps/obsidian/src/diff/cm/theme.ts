@@ -5,21 +5,21 @@ const actionHostSelector = [
 	'.diff-plugin-embedded-actions-host',
 ].join(', ');
 
-const addedTableWidgetSelectorList = [
-	'.diff-plugin-added-table-widget',
-	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget',
-	'.diff-plugin-added-line + .cm-embed-block:has(table.table-editor)',
-	'.diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget',
-	'.diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor)',
-];
+// const addedTableWidgetSelectorList = [
+// 	'.diff-plugin-added-table-widget',
+// 	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget',
+// 	'.diff-plugin-added-line + .cm-embed-block:has(table.table-editor)',
+// 	'.diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget',
+// 	'.diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor)',
+// ];
 
-const addedTableWidgetSelectors = addedTableWidgetSelectorList.join(', ');
+// const addedTableWidgetSelectors = addedTableWidgetSelectorList.join(', ');
 
-function tableWidgetSelector(suffix: string): string {
-	return addedTableWidgetSelectorList
-		.map((selector) => `${selector}${suffix}`)
-		.join(', ');
-}
+// function tableWidgetSelector(suffix: string): string {
+// 	return addedTableWidgetSelectorList
+// 		.map((selector) => `${selector}${suffix}`)
+// 		.join(', ');
+// }
 
 export const diffTheme = EditorView.baseTheme({
 	'&': {
@@ -80,8 +80,19 @@ export const diffTheme = EditorView.baseTheme({
 		pointerEvents: 'auto',
 	},
 
-	'.diff-plugin-added-embedded-widget': {
+	'.diff-plugin-added-embedded-widget.cm-embed-block': {
 		position: 'relative',
+		isolation: 'isolate',
+	},
+
+	'.diff-plugin-added-embedded-widget.cm-embed-block::before': {
+		content: '""',
+		position: 'absolute',
+		inset:
+			'0 var(--diff-plugin-embed-padding-right, 0px) 0 var(--diff-plugin-embed-padding-left, 0px)',
+		background: 'var(--diff-plugin-added-bg)',
+		pointerEvents: 'none',
+		zIndex: '-1',
 	},
 
 	'.diff-plugin-embedded-actions-host': {
@@ -212,15 +223,15 @@ export const diffTheme = EditorView.baseTheme({
 		borderBottom: '2px solid var(--diff-plugin-added-edge)',
 	},
 
-	'.diff-plugin-added-last:has(+ .cm-embed-block.cm-table-widget), .diff-plugin-added-last:has(+ .cm-embed-block:has(table.table-editor)), .diff-plugin-added-last:has(+ .diff-plugin-added-table-widget)':
-		{
-			borderBottom: 'none',
-		},
+	// '.diff-plugin-added-last:has(+ .cm-embed-block.cm-table-widget), .diff-plugin-added-last:has(+ .cm-embed-block:has(table.table-editor)), .diff-plugin-added-last:has(+ .diff-plugin-added-table-widget)':
+	// 	{
+	// 		borderBottom: 'none',
+	// 	},
 
-	'.diff-plugin-added-line-before-table': {
-		borderLeft: 'none',
-		paddingLeft: '18px',
-	},
+	// '.diff-plugin-added-line-before-table': {
+	// 	borderLeft: 'none',
+	// 	paddingLeft: '18px',
+	// },
 
 	'.diff-plugin-added-line.HyperMD-codeblock, .diff-plugin-added-line.HyperMD-codeblock-bg':
 		{
@@ -245,58 +256,5 @@ export const diffTheme = EditorView.baseTheme({
 
 	'.diff-plugin-added-diagram-widget .mermaid > svg': {
 		display: 'block',
-	},
-
-	[addedTableWidgetSelectors]: {
-		boxSizing: 'border-box',
-		paddingTop: '8px',
-		paddingBottom: '8px',
-		background: 'transparent',
-	},
-
-	[tableWidgetSelector(' .table-wrapper')]: {
-		position: 'relative',
-		display: 'flex',
-		width: '100%',
-		justifyContent: 'flex-start',
-		marginLeft: '0',
-		marginRight: 'auto',
-		background: 'transparent',
-		cursor: 'default',
-	},
-
-	[tableWidgetSelector(' .table-wrapper::before')]: {
-		content: '""',
-		position: 'absolute',
-		top: '-8px',
-		right: '0',
-		bottom: '-8px',
-		left: '0',
-		background: 'var(--diff-plugin-added-bg)',
-		pointerEvents: 'none',
-		zIndex: '0',
-	},
-
-	[tableWidgetSelector(' table.table-editor')]: {
-		position: 'relative',
-		zIndex: '1',
-		marginLeft: '0',
-		marginRight: 'auto',
-		cursor: 'default',
-	},
-
-	[tableWidgetSelector(' table.table-editor th')]: {
-		backgroundColor: 'var(--diff-plugin-table-cell-bg)',
-		cursor: 'default',
-	},
-
-	[tableWidgetSelector(' table.table-editor td')]: {
-		backgroundColor: 'var(--diff-plugin-table-cell-bg)',
-		cursor: 'default',
-	},
-
-	[tableWidgetSelector(' .table-cell-wrapper')]: {
-		background: 'transparent',
-		cursor: 'default',
 	},
 });
