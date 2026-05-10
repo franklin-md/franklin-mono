@@ -3,26 +3,33 @@ import type { Range, Text } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 import { Decoration, WidgetType } from '@codemirror/view';
 import type { Hunk } from '../../compute-hunks.js';
-import {
-	areHunksEqual,
-	resolveActionPosition,
-} from './utils.js';
+import { areHunksEqual, resolveActionPosition } from './utils.js';
 import { acceptHunk } from '../accept-hunk.js';
 import { rejectHunk } from '../reject-hunk.js';
 
 export function actionDecorations(
 	doc: Text,
 	hunk: Hunk,
-	visibleHunks: Hunk[],
 	hoveredHunkId: string | null,
 ): Range<Decoration>[] {
 	if (hoveredHunkId !== hunk.id) return [];
+
+	const position = resolveActionPosition(doc, hunk);
+	if (position.kind === 'block') {
+		return [
+			Decoration.widget({
+				widget: new DiffHunkActionsBlockWidget(hunk),
+				block: true,
+				side: 1,
+			}).range(position.pos),
+		];
+	}
 
 	return [
 		Decoration.widget({
 			widget: new DiffHunkActionsWidget(hunk),
 			side: 1,
-		}).range(resolveActionPosition(doc, hunk, visibleHunks)),
+		}).range(position.pos),
 	];
 }
 
@@ -52,6 +59,36 @@ export class DiffHunkActionsWidget extends WidgetType {
 		);
 		actions.append(accept, reject);
 		dom.appendChild(actions);
+		return dom;
+	}
+
+	ignoreEvent(): boolean {
+		return false;
+	}
+}
+
+export class DiffHunkActionsBlockWidget extends WidgetType {
+	constructor(private readonly hunk: Hunk) {
+		super();
+	}
+
+	eq(other: DiffHunkActionsBlockWidget): boolean {
+		return areHunksEqual(this.hunk, other.hunk);
+	}
+
+	toDOM(view: EditorView): HTMLElement {
+		const dom = activeDocument.createDiv({
+			cls: 'diff-plugin-actions-block',
+		});
+		dom.dataset.diffHunkId = this.hunk.id;
+		dom.addEventListener('mousedown', stopMouseEvent);
+
+		const [accept, reject] = createActionButtonPair(
+			this.hunk.id,
+			() => acceptHunk(view, this.hunk),
+			() => rejectHunk(view, [this.hunk.id]),
+		);
+		dom.append(accept, reject);
 		return dom;
 	}
 

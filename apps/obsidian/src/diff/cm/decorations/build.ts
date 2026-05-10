@@ -25,9 +25,7 @@ function buildDecorations(state: EditorState): DecorationSet {
 	for (const hunk of visible) {
 		decorations.push(...addedLineDecorations(state.doc, hunk));
 		decorations.push(...removedLineDecorations(state.doc, hunk));
-		decorations.push(
-			...actionDecorations(state.doc, hunk, visible, hoveredHunkId),
-		);
+		decorations.push(...actionDecorations(state.doc, hunk, hoveredHunkId));
 	}
 
 	return Decoration.set(decorations, true);

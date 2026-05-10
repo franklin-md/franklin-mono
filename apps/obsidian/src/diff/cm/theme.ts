@@ -64,6 +64,15 @@ export const diffTheme = EditorView.baseTheme({
 		pointerEvents: 'auto',
 	},
 
+	'.diff-plugin-actions-block': {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'flex-end',
+		gap: '4px',
+		padding: '4px 0',
+		pointerEvents: 'auto',
+	},
+
 	'.diff-plugin-added-embedded-widget.cm-embed-block': {
 		position: 'relative',
 		isolation: 'isolate',

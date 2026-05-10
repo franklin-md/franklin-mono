@@ -1,6 +1,10 @@
 import type { Text } from '@codemirror/state';
 import type { Hunk } from '../../compute-hunks.js';
 
+export type ActionPosition =
+	| { kind: 'inline'; pos: number }
+	| { kind: 'block'; pos: number };
+
 export function looksLikeTableRow(lineText: string): boolean {
 	const trimmed = lineText.trim();
 	return trimmed.includes('|') && trimmed.replaceAll('|', '').trim().length > 0;
@@ -26,28 +30,22 @@ export function resolveAnchorPosition(
 	return { pos: line.from, side: -1 };
 }
 
-export function resolveActionPosition(
-	doc: Text,
-	hunk: Hunk,
-	visibleHunks: Hunk[],
-): number {
-	if (doc.length === 0) return 0;
-
-	if (hunk.addedLines.length > 0) {
-		if (hunk.newTo >= doc.length) {
-			return doc.lineAt(hunk.newFrom).from;
-		}
-
-		const nextLine = doc.lineAt(Math.min(hunk.newTo, doc.length));
-		if (!isLineInAnotherHunk(doc, nextLine.from, hunk, visibleHunks)) {
-			return nextLine.from;
-		}
-
-		return doc.lineAt(Math.max(hunk.newTo - 1, hunk.newFrom)).from;
+export function resolveActionPosition(doc: Text, hunk: Hunk): ActionPosition {
+	const cmLineNumber = lineBelowHunk(hunk);
+	if (cmLineNumber !== null && cmLineNumber <= doc.lines) {
+		return { kind: 'inline', pos: doc.line(cmLineNumber).from };
 	}
+	return { kind: 'block', pos: doc.length };
+}
 
-	const lineNumber = clampLineNumber(hunk.anchor.lineIndex + 1, doc.lines);
-	return doc.line(lineNumber).from;
+function lineBelowHunk(hunk: Hunk): number | null {
+	if (hunk.addedLines.length > 0) {
+		return hunk.newToLine + 1;
+	}
+	if (hunk.anchor.placement === 'after') {
+		return hunk.anchor.lineIndex + 2;
+	}
+	return hunk.anchor.lineIndex + 1;
 }
 
 export function areHunksEqual(left: Hunk, right: Hunk): boolean {
@@ -63,23 +61,6 @@ export function areHunksEqual(left: Hunk, right: Hunk): boolean {
 		arraysEqual(left.removedLines, right.removedLines) &&
 		arraysEqual(left.addedLines, right.addedLines)
 	);
-}
-
-function isLineInAnotherHunk(
-	doc: Text,
-	pos: number,
-	currentHunk: Hunk,
-	hunks: Hunk[],
-): boolean {
-	return hunks.some((hunk) => {
-		if (hunk.id === currentHunk.id) return false;
-		if (hunk.addedLines.length > 0 && pos >= hunk.newFrom && pos < hunk.newTo) {
-			return true;
-		}
-		if (hunk.removedLines.length === 0) return false;
-
-		return pos === doc.lineAt(resolveAnchorPosition(doc, hunk).pos).from;
-	});
 }
 
 function arraysEqual(left: string[], right: string[]): boolean {
