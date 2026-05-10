@@ -57,6 +57,7 @@ export class ObsidianDiffClient implements DiffClient {
 	private readonly entryChanged = createObserver();
 	private readonly entryAppeared = createObserver();
 	private readonly entryRemoved = createObserver();
+	private readonly vault: Vault;
 	private readonly vaultRoot: AbsolutePath;
 	private readonly appDir: AbsolutePath;
 	private readonly cachePath: AbsolutePath;
@@ -67,6 +68,7 @@ export class ObsidianDiffClient implements DiffClient {
 	};
 
 	constructor(vault: Vault, manifest: PluginManifest) {
+		this.vault = vault;
 		this.vaultRoot = toAbsolutePath(getVaultAbsolutePath(vault));
 		this.appDir = toAbsolutePath(getPluginAbsolutePath(vault, manifest));
 		this.cachePath = joinAbsolute(this.appDir, DIFF_CACHE_FILE);
@@ -218,7 +220,11 @@ export class ObsidianDiffClient implements DiffClient {
 
 	private async readCurrent(path: AbsolutePath): Promise<Uint8Array | null> {
 		try {
-			return await this.fs.readFile(path); // TODO: change this to use the vault
+			const vaultPath = normalizePath(relative(this.vaultRoot, path));
+			const file = this.vault.getFileByPath(vaultPath);
+			return file
+				? new Uint8Array(await this.vault.readBinary(file))
+				: null;
 		} catch {
 			return null;
 		}
