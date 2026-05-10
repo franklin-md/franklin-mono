@@ -87,6 +87,8 @@ const OPENROUTER_OVERRIDE_CASES = [
 const OPENCODE_GO_OVERRIDE_CASES = [
 	{
 		id: 'deepseek-v4-pro',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 1_000_000,
 		maxTokens: 384_000,
 		cost: {
@@ -98,6 +100,8 @@ const OPENCODE_GO_OVERRIDE_CASES = [
 	},
 	{
 		id: 'deepseek-v4-flash',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 1_000_000,
 		maxTokens: 384_000,
 		cost: {
@@ -109,6 +113,8 @@ const OPENCODE_GO_OVERRIDE_CASES = [
 	},
 	{
 		id: 'mimo-v2.5-pro',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 1_048_576,
 		maxTokens: 128_000,
 		cost: {
@@ -120,6 +126,8 @@ const OPENCODE_GO_OVERRIDE_CASES = [
 	},
 	{
 		id: 'mimo-v2.5',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 1_000_000,
 		maxTokens: 128_000,
 		cost: {
@@ -131,6 +139,8 @@ const OPENCODE_GO_OVERRIDE_CASES = [
 	},
 	{
 		id: 'kimi-k2.6',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 262_144,
 		maxTokens: 65_536,
 		cost: {
@@ -142,6 +152,8 @@ const OPENCODE_GO_OVERRIDE_CASES = [
 	},
 	{
 		id: 'glm-5.1',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 202_752,
 		maxTokens: 32_768,
 		cost: {
@@ -153,6 +165,8 @@ const OPENCODE_GO_OVERRIDE_CASES = [
 	},
 	{
 		id: 'qwen3.6-plus',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 262_144,
 		maxTokens: 65_536,
 		cost: {
@@ -164,6 +178,8 @@ const OPENCODE_GO_OVERRIDE_CASES = [
 	},
 	{
 		id: 'qwen3.5-plus',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 262_144,
 		maxTokens: 65_536,
 		cost: {
@@ -175,6 +191,8 @@ const OPENCODE_GO_OVERRIDE_CASES = [
 	},
 	{
 		id: 'minimax-m2.7',
+		api: 'anthropic-messages',
+		baseUrl: 'https://opencode.ai/zen/go',
 		contextWindow: 204_800,
 		maxTokens: 131_072,
 		cost: {
@@ -300,6 +318,8 @@ describe('resolveModel', () => {
 
 	for (const {
 		id,
+		api,
+		baseUrl,
 		contextWindow,
 		maxTokens,
 		cost,
@@ -314,7 +334,8 @@ describe('resolveModel', () => {
 			expect(result.ok && result.model).toMatchObject({
 				provider: 'opencode-go',
 				id,
-				api: 'openai-completions',
+				api,
+				baseUrl,
 				reasoning: true,
 				contextWindow,
 				maxTokens,
