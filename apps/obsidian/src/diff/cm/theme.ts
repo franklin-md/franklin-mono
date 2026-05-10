@@ -5,21 +5,6 @@ const actionHostSelector = [
 	'.diff-plugin-embedded-actions-host',
 ].join(', ');
 
-// const addedTableWidgetSelectorList = [
-// 	'.diff-plugin-added-table-widget',
-// 	'.diff-plugin-added-line + .cm-embed-block.cm-table-widget',
-// 	'.diff-plugin-added-line + .cm-embed-block:has(table.table-editor)',
-// 	'.diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block.cm-table-widget',
-// 	'.diff-plugin-added-line.diff-plugin-added-first + .cm-embed-block:has(table.table-editor)',
-// ];
-
-// const addedTableWidgetSelectors = addedTableWidgetSelectorList.join(', ');
-
-// function tableWidgetSelector(suffix: string): string {
-// 	return addedTableWidgetSelectorList
-// 		.map((selector) => `${selector}${suffix}`)
-// 		.join(', ');
-// }
 
 export const diffTheme = EditorView.baseTheme({
 	'&': {
@@ -112,11 +97,6 @@ export const diffTheme = EditorView.baseTheme({
 		{
 			opacity: '1',
 			pointerEvents: 'auto',
-		},
-
-	'.cm-content:has(.diff-plugin-added-embedded-widget:hover) .diff-plugin-actions-host, .cm-content:has(.diff-plugin-embedded-actions-host:hover) .diff-plugin-actions-host':
-		{
-			display: 'none',
 		},
 
 	'.diff-plugin-actions-separator': {

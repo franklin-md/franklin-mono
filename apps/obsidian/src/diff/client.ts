@@ -222,9 +222,7 @@ export class ObsidianDiffClient implements DiffClient {
 		try {
 			const vaultPath = normalizePath(relative(this.vaultRoot, path));
 			const file = this.vault.getFileByPath(vaultPath);
-			return file
-				? new Uint8Array(await this.vault.readBinary(file))
-				: null;
+			return file ? new Uint8Array(await this.vault.readBinary(file)) : null;
 		} catch {
 			return null;
 		}

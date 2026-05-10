@@ -23,14 +23,6 @@ export const diffHoverTracking = ViewPlugin.fromClass(
 		}
 
 		syncHoveredHunkFromDom(target: EventTarget | null = null) {
-			if (
-				isEmbeddedHoverTarget(target) ||
-				hasHoveredEmbeddedWidget(this.view)
-			) {
-				this.setHoveredHunkId(null);
-				return;
-			}
-
 			this.setHoveredHunkId(
 				findHoveredHunkId(target) ?? findHoveredHunkIdInView(this.view),
 			);
@@ -72,27 +64,9 @@ function findHoveredHunkId(target: EventTarget | null): string | null {
 	return directHunkId;
 }
 
-function isEmbeddedHoverTarget(target: EventTarget | null): boolean {
-	const element =
-		target instanceof Element
-			? target
-			: target instanceof Node
-				? target.parentElement
-				: null;
-	if (!element) return false;
-
-	return (
-		element.closest(
-			'.diff-plugin-added-embedded-widget, .diff-plugin-embedded-actions-host',
-		) !== null
-	);
-}
-
 function hasHoveredEmbeddedWidget(view: EditorView): boolean {
 	return (
-		view.dom.querySelector(
-			'.diff-plugin-added-embedded-widget:hover, .diff-plugin-embedded-actions-host:hover',
-		) !== null
+		view.dom.querySelector('.diff-plugin-added-embedded-widget:hover') !== null
 	);
 }
 

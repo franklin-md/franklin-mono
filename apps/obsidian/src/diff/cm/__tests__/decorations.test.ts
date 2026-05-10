@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest';
+// @vitest-environment jsdom
+
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Range } from '@codemirror/state';
 import { EditorState } from '@codemirror/state';
-import type { Decoration } from '@codemirror/view';
+import type { Decoration, EditorView } from '@codemirror/view';
 import { computeHunks } from '../../compute-hunks.js';
 import {
 	actionDecorations,
@@ -16,6 +18,10 @@ import {
 	resolveActionPosition,
 	resolveAnchorPosition,
 } from '../decorations/utils.js';
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+});
 
 describe('resolveActionPosition', () => {
 	it('anchors eof inserted embedded blocks at the start of the added block', () => {
@@ -154,14 +160,35 @@ describe('actionDecorations', () => {
 		expect(spec.widget).toBeInstanceOf(DiffHunkActionsWidget);
 	});
 
-	it('returns no decorations for embedded action hunks', () => {
+	it('returns an action widget decoration for embedded hunks', () => {
 		const oldContent = 'alpha\n';
 		const newContent = 'alpha\n```mermaid\nflowchart TD\nA --> B\n```\n';
 		const [hunk] = computeHunks(oldContent, newContent);
 		const state = EditorState.create({ doc: newContent });
 
 		expect(hunk).toBeDefined();
-		expect(actionDecorations(state.doc, hunk!, [hunk!], hunk!.id)).toEqual([]);
+		const [decoration] = actionDecorations(state.doc, hunk!, [hunk!], hunk!.id);
+		const spec = decorationSpec(decoration!);
+
+		expect(decoration?.from).toBe(
+			resolveActionPosition(state.doc, hunk!, [hunk!]),
+		);
+		expect(spec.widget).toBeInstanceOf(DiffHunkActionsWidget);
+	});
+
+	it('creates action DOM without Obsidian document helper methods', () => {
+		const oldContent = 'alpha\nomega\n';
+		const newContent = 'alpha\nbeta\nomega\n';
+		const [hunk] = computeHunks(oldContent, newContent);
+		expect(hunk).toBeDefined();
+		vi.stubGlobal('activeDocument', document);
+
+		const host = new DiffHunkActionsWidget(hunk!).toDOM({} as EditorView);
+
+		expect(host.tagName).toBe('SPAN');
+		expect(host.dataset.diffHunkId).toBe(hunk!.id);
+		expect(host.querySelectorAll('button')).toHaveLength(2);
+		expect(host.isConnected).toBe(false);
 	});
 });
 

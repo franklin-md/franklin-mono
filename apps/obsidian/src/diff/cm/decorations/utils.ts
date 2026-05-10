@@ -26,10 +26,6 @@ export function resolveAnchorPosition(
 	return { pos: line.from, side: -1 };
 }
 
-export function hunkHasEmbeddedActions(hunk: Hunk): boolean {
-	return hunkContainsMermaidBlock(hunk) || hunkContainsTableBlock(hunk);
-}
-
 export function resolveActionPosition(
 	doc: Text,
 	hunk: Hunk,
@@ -67,23 +63,6 @@ export function areHunksEqual(left: Hunk, right: Hunk): boolean {
 		arraysEqual(left.removedLines, right.removedLines) &&
 		arraysEqual(left.addedLines, right.addedLines)
 	);
-}
-
-function hunkContainsMermaidBlock(hunk: Hunk): boolean {
-	return hunk.addedLines.some((line) => /^```mermaid\s*$/i.test(line.trim()));
-}
-
-function hunkContainsTableBlock(hunk: Hunk): boolean {
-	for (let index = 0; index < hunk.addedLines.length - 1; index++) {
-		const line = hunk.addedLines[index];
-		const nextLine = hunk.addedLines[index + 1];
-		if (!line || !nextLine) continue;
-		if (!looksLikeTableRow(line)) continue;
-		if (!looksLikeTableDivider(nextLine)) continue;
-		return true;
-	}
-
-	return false;
 }
 
 function isLineInAnotherHunk(
