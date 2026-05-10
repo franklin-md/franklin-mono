@@ -5,7 +5,6 @@ const actionHostSelector = [
 	'.diff-plugin-embedded-actions-host',
 ].join(', ');
 
-
 export const diffTheme = EditorView.baseTheme({
 	'&': {
 		'--diff-plugin-added-bg': 'rgba(var(--color-green-rgb), 0.08)',

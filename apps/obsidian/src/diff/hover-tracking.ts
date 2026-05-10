@@ -64,17 +64,7 @@ function findHoveredHunkId(target: EventTarget | null): string | null {
 	return directHunkId;
 }
 
-function hasHoveredEmbeddedWidget(view: EditorView): boolean {
-	return (
-		view.dom.querySelector('.diff-plugin-added-embedded-widget:hover') !== null
-	);
-}
-
 function findHoveredHunkIdInView(view: EditorView): string | null {
-	if (hasHoveredEmbeddedWidget(view)) {
-		return null;
-	}
-
 	return (
 		view.dom.querySelector<HTMLElement>('[data-diff-hunk-id]:hover')?.dataset
 			.diffHunkId ?? null
