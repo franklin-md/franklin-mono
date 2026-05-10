@@ -10,6 +10,14 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./rpc": {
+			"types": "./dist/rpc/index.d.ts",
+			"import": "./dist/rpc/index.js"
+		},
+		"./mock": {
+			"types": "./dist/mock/index.d.ts",
+			"import": "./dist/mock/index.js"
 		}
 	},
 	"files": [
@@ -19,14 +27,14 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"build": "node ../../scripts/in-parallel.mjs --mb 800 --name mini-acp-build -- tsc -b tsconfig.json",
-		"typecheck": "node ../../scripts/in-parallel.mjs --mb 600 --name mini-acp-typecheck -- tsc --noEmit -p tsconfig.json",
-		"test": "node ../../scripts/in-parallel.mjs --mb 950 --name mini-acp-test -- vitest run --passWithNoTests"
+		"build": "tsc -b tsconfig.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
 		"@franklin/lib": "*",
+		"@mariozechner/pi-agent-core": "^0.61.1",
 		"@mariozechner/pi-ai": "^0.61.0",
-		"@mariozechner/pi-agent-core": "^0.61.0",
 		"dotenv": "^17.3.1",
 		"pi-agents": "^0.1.0"
 	}

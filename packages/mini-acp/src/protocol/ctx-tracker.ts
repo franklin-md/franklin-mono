@@ -27,6 +27,14 @@ function appendMessage(ctx: Ctx, message: Message): void {
 	ctx.history.messages.push(message);
 }
 
+function createEmptyCtx(): Ctx {
+	return {
+		history: { systemPrompt: '', messages: [] },
+		tools: [],
+		config: {},
+	};
+}
+
 // ---------------------------------------------------------------------------
 // CtxTracker — mutable holder for agent-side ctx state
 // ---------------------------------------------------------------------------
@@ -39,11 +47,7 @@ function appendMessage(ctx: Ctx, message: Message): void {
  * state (user messages from prompt, response messages from update).
  */
 export class CtxTracker {
-	private ctx: Ctx = {
-		history: { systemPrompt: '', messages: [] },
-		tools: [],
-		config: {},
-	};
+	private ctx: Ctx = createEmptyCtx();
 
 	onChange?: () => void;
 
@@ -54,6 +58,11 @@ export class CtxTracker {
 
 	append(message: Message): void {
 		appendMessage(this.ctx, message);
+		this.onChange?.();
+	}
+
+	reset(): void {
+		this.ctx = createEmptyCtx();
 		this.onChange?.();
 	}
 

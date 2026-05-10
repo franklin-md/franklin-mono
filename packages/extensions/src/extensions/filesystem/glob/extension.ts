@@ -1,23 +1,28 @@
 import { truncateStream } from '@franklin/lib';
-import type { Extension } from '../../../algebra/types/index.js';
-import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
+import { defineExtension } from '../../../harness/modules/index.js';
+import type { CoreModule } from '../../../modules/core/index.js';
+import type { EnvironmentModule } from '../../../modules/environment/index.js';
+import { limitedGlob } from './limited-glob.js';
 import { globSpec } from './tools.js';
 
 const MAX_FORMATTED_CHARS = 12_000;
 
-export function globExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
-	return (api) => {
+export function globExtension() {
+	return defineExtension<[CoreModule, EnvironmentModule]>((api) => {
 		api.registerTool(globSpec, async ({ pattern, options }, ctx) => {
 			const env = ctx.environment;
 			const rootDir = options.root_dir
 				? await env.filesystem.resolve(options.root_dir)
 				: undefined;
-			const files = await env.filesystem.glob(pattern, {
-				root_dir: rootDir,
-				ignore: options.exclude,
-				limit: options.limit,
-			});
+			const { files, exceededLimit } = await limitedGlob(
+				env.filesystem,
+				pattern,
+				{
+					root_dir: rootDir,
+					ignore: options.exclude,
+					limit: options.limit,
+				},
+			);
 
 			const { text, truncated } = truncateStream(files, {
 				maxLength: MAX_FORMATTED_CHARS,
@@ -28,7 +33,7 @@ export function globExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
 			if (truncated) {
 				return text;
 			}
-			if (options.limit) {
+			if (exceededLimit) {
 				return (
 					text + '\n' + `[OUTPUT IS LIMITED TO FIRST ${options.limit} RESULTS]`
 				);
@@ -36,5 +41,5 @@ export function globExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
 
 			return text;
 		});
-	};
+	});
 }

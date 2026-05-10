@@ -1,4 +1,4 @@
-import { createBundle } from '../../algebra/system/bundle/create.js';
+import { createBundle } from '../../modules/bundle/create.js';
 import { createInstructionExtension } from './extension.js';
 
 export const instructionsExtension = createBundle({

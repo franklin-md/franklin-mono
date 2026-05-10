@@ -1,13 +1,13 @@
-import type { Extension } from '../../../algebra/types/index.js';
-import type { CoreAPI } from '../../../systems/core/index.js';
-import type { EnvironmentRuntime } from '../../../systems/environment/runtime.js';
+import { defineExtension } from '../../../harness/modules/index.js';
+import type { CoreModule } from '../../../modules/core/index.js';
+import type { EnvironmentModule } from '../../../modules/environment/index.js';
 import { detectGrepBackend } from './detect.js';
 import { renderGrepInfo } from './guidance.js';
 import { runGrep } from './run.js';
 import { grepSpec } from './tools.js';
 
-export function grepExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
-	return (api) => {
+export function grepExtension() {
+	return defineExtension<[CoreModule, EnvironmentModule]>((api) => {
 		api.on('systemPrompt', (prompt, ctx) => {
 			prompt.setPart(
 				async () => {
@@ -37,5 +37,5 @@ export function grepExtension(): Extension<CoreAPI<EnvironmentRuntime>> {
 			}
 			return output;
 		});
-	};
+	});
 }

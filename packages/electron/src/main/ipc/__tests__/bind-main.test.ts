@@ -5,7 +5,7 @@ import {
 	type AbsolutePath,
 	type Filesystem,
 } from '@franklin/lib';
-import type { ClientProtocol } from '@franklin/mini-acp';
+import type { ClientProtocol } from '@franklin/mini-acp/rpc';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

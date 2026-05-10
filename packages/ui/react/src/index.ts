@@ -4,6 +4,10 @@ export { useFirstMountEffect } from './utils/use-first-mount-effect.js';
 export { useElapsed } from './utils/use-elapsed.js';
 export { useCopyFeedback } from './utils/use-copy-feedback.js';
 export { useStore } from './utils/use-store.js';
+export {
+	useThrottledStoreValue,
+	type UseThrottledStoreValueOptions,
+} from './utils/use-throttled-store-value.js';
 export { useStableExternalStore } from './utils/use-stable-external-store.js';
 export { useCollectionNavigator } from './utils/use-collection-navigator.js';
 export { AgentProvider, useAgent } from './agent/agent-context.js';
@@ -74,7 +78,10 @@ export type { PromptAgentControlProps } from './prompt/agent-control.js';
 // ---------------------------------------------------------------------------
 export { Conversation } from './conversation/conversation.js';
 export type { ConversationComponents } from './conversation/types.js';
-export { useConversationTurns } from './conversation/use-conversation-turns.js';
+export {
+	useConversationTurns,
+	useThrottledConversationTurns,
+} from './conversation/use-conversation-turns.js';
 export { getConversationTurnEnd } from './conversation/turn-info/get-turn-end.js';
 export { getConversationTurnPhase } from './conversation/turn-info/get-phase.js';
 export { getConversationTurnTiming } from './conversation/turn-info/get-timing.js';

@@ -1,12 +1,13 @@
 import {
-	createCoreSystem,
-	createStoreSystem,
-	createEnvironmentSystem,
-	systems,
-	createSessionManager,
+	combineAll,
+	createCoreModule,
+	createStoreModule,
+	createEnvironmentModule,
+	createOrchestrator,
 } from '@franklin/extensions';
-import type { SessionManager } from '@franklin/extensions';
+import type { Orchestrator } from '@franklin/extensions';
 import type { AbsolutePath, RestoreResult } from '@franklin/lib';
+import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { withAuth } from '../auth/with-auth.js';
 import { AuthManager } from '../auth/manager.js';
@@ -14,10 +15,11 @@ import { createStorage } from '../storage/create-storage.js';
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';
 import type {
-	BaseSystem,
-	FranklinState,
-	FranklinRuntime,
+	FranklinBase,
 	FranklinExtension,
+	FranklinModules,
+	FranklinRuntime,
+	FranklinState,
 } from '../types.js';
 import type { AuthStore } from '../storage/types.js';
 import { createAgents, type Agents } from './agents.js';
@@ -28,7 +30,7 @@ export class FranklinApp {
 	readonly agents: Agents;
 	readonly platform: Platform;
 
-	private readonly manager: SessionManager<BaseSystem>;
+	private readonly orchestrator: Orchestrator<FranklinBase>;
 	private readonly collection: PersistedSessionCollection<
 		FranklinState,
 		FranklinRuntime
@@ -55,28 +57,27 @@ export class FranklinApp {
 		this.settings = storage.settings;
 		this.restoreStorage = () => storage.restore();
 
+		const connectAgent = createMiniACPRpcConnector(platform.spawn);
+		const baseModules: FranklinModules = [
+			withAuth(createCoreModule(connectAgent), this.auth),
+			createStoreModule(storage.stores),
+			createEnvironmentModule(platform.environment),
+		];
+		const baseModule = combineAll(baseModules);
+
 		this.collection = new PersistedSessionCollection<
 			FranklinState,
 			FranklinRuntime
-		>(storage.sessions);
+		>(storage.sessions, (runtime) => baseModule.state(runtime));
 
-		// Static base system — shared across all sessions
-		const baseSystem = systems(
-			withAuth(createCoreSystem(platform.spawn), this.auth),
-		)
-			.add(createStoreSystem(storage.stores))
-			.add(createEnvironmentSystem(platform.environment))
-			.done();
-
-		// Session manager — wraps base system, handles per-session session system internally
-		this.manager = createSessionManager({
-			system: baseSystem,
+		this.orchestrator = createOrchestrator({
+			modules: baseModules,
 			collection: this.collection,
 			extensions,
 		});
 
 		this.agents = createAgents(
-			this.manager.create.bind(this.manager),
+			this.orchestrator.create.bind(this.orchestrator),
 			this.collection,
 		);
 	}
@@ -84,7 +85,7 @@ export class FranklinApp {
 	async start(): Promise<RestoreResult> {
 		const storageResult = await this.restoreStorage();
 		const collectionResult = await this.collection.restore((id, state) =>
-			this.manager.materialize(id, state),
+			this.orchestrator.materialize(id, state),
 		);
 		return {
 			issues: [...storageResult.issues, ...collectionResult.issues],

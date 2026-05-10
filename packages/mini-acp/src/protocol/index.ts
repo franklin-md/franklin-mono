@@ -1,22 +1,10 @@
 export type {
 	MuClient as MiniACPClient,
 	MuAgent as MiniACPAgent,
-	MuProtocol as MiniACPProtocol,
-	ClientProtocol,
-	AgentProtocol,
+	MiniACPClientHandle,
+	MiniACPConnector,
 } from './types.js';
 
-export {
-	muServerDescriptor as miniACPServerDescriptor,
-	muClientDescriptor as miniACPClientDescriptor,
-} from './manifest.js';
-
-export {
-	createClientConnection,
-	createAgentConnection,
-	type ClientBinding,
-	type AgentBinding,
-} from './connection.js';
 export { debugMiniACP } from './debug.js';
 
 export { createSessionAdapter } from './adapter.js';

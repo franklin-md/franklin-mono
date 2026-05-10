@@ -1,5 +1,5 @@
-import type { CoreSystem, CoreRuntime, CoreState } from '@franklin/extensions';
-import { withSetup } from '@franklin/extensions';
+import type { CoreModule, CoreRuntime, CoreState } from '@franklin/extensions';
+import { coreStateHandle, withSetup } from '@franklin/extensions';
 import type { AuthManager } from './manager.js';
 
 /**
@@ -34,7 +34,7 @@ export async function reconnectAgent(
 }
 
 /**
- * Wrap a core system so that every compiled runtime is automatically
+ * Wrap a core module so that every compiled runtime is automatically
  * authenticated at build time and kept in sync with credential changes.
  *
  * Three behaviors:
@@ -47,8 +47,8 @@ export async function reconnectAgent(
  *    keys to the runtime when its provider's credentials change.
  *    Unsubscribes on dispose.
  */
-export function withAuth(system: CoreSystem, auth: AuthManager): CoreSystem {
-	return withSetup(system, async (runtime, state) => {
+export function withAuth(module: CoreModule, auth: AuthManager): CoreModule {
+	return withSetup(module, async (runtime, state) => {
 		// Install setLLMConfig wrapper to auto-resolve auth when provider is set.
 		const originalSetLLMConfig = runtime.setLLMConfig.bind(runtime);
 		runtime.setLLMConfig = async (config) => {
@@ -80,9 +80,10 @@ export function withAuth(system: CoreSystem, auth: AuthManager): CoreSystem {
 		await reconnectAgent(runtime, state, auth);
 
 		// Live credential sync — push new keys when this runtime's provider changes.
+		const handle = coreStateHandle(runtime);
 		const unsubscribe = auth.onAuthChange((provider) => {
 			void (async () => {
-				const currentState = await runtime.state.get();
+				const currentState = await handle.get();
 				if (currentState.core.llmConfig.provider !== provider) return;
 				await authenticateAgent(runtime, provider, auth);
 			})();

@@ -1,12 +1,12 @@
 import { StoreRegistry } from '@franklin/extensions';
-import type { SessionState } from '@franklin/extensions';
+import type { BaseState } from '@franklin/extensions';
 import type { AbsolutePath, Filesystem, RestoreResult } from '@franklin/lib';
 import { createAuthStore } from './auth.js';
 import { createPersistence } from './persistence.js';
 import { createSettingsStore } from './settings.js';
 import type { AuthStore, Storage } from './types.js';
 
-export function createStorage<S extends SessionState>(
+export function createStorage<S extends BaseState>(
 	filesystem: Filesystem,
 	appDir: AbsolutePath,
 	opts?: { authStore?: AuthStore },

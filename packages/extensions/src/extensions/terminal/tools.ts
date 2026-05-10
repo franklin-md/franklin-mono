@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { toolSpec } from '../../systems/core/api/tool-spec.js';
+import { toolSpec } from '../../modules/core/api/tool-spec.js';
 import { bashDescription } from '../system_prompts.js';
 
 const bashSchema = z.object({

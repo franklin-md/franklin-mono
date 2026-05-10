@@ -1,14 +1,21 @@
-import type { AgentProtocol } from '../../protocol/types.js';
-import { createAgentConnection } from '../../protocol/connection.js';
+import type { StreamFn } from '@mariozechner/pi-agent-core';
+
 import { createSessionAdapter } from '../../protocol/adapter.js';
+import type { MuAgent, MuClient } from '../../protocol/types.js';
 import { createPiAdapter } from './adapter.js';
 
-export function bindPiAgent(transport: AgentProtocol): void {
-	const connection = createAgentConnection(transport);
-	connection.bind(
-		createSessionAdapter(
-			(ctx, server) => createPiAdapter({ ctx, server }),
-			connection.remote,
-		),
+export type CreatePiAgentOptions = {
+	streamFn?: StreamFn;
+};
+
+export function createPiAgent(
+	server: MuAgent,
+	options: CreatePiAgentOptions = {},
+): MuClient {
+	const { streamFn } = options;
+	return createSessionAdapter(
+		(ctx, trackedServer) =>
+			createPiAdapter({ ctx, server: trackedServer, streamFn }),
+		server,
 	);
 }
