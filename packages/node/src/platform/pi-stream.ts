@@ -10,8 +10,8 @@ export function createPiStreamFn(options: PiStreamOptions): StreamFn {
 
 	return (model, context, streamOptions) => {
 		const nextOptions: SimpleStreamOptions = streamOptions
-			? { transport: 'sse', ...streamOptions, fetch }
-			: { transport: 'sse', fetch };
+			? { ...streamOptions, fetch }
+			: { fetch };
 		return streamSimple(model, context, nextOptions);
 	};
 }

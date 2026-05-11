@@ -20,7 +20,7 @@ describe('createPiStreamFn', () => {
 		const streamFn = createPiStreamFn({ fetch });
 		const model = { id: 'gpt-5.4' };
 		const context = { messages: [] };
-		const options = { apiKey: 'token', transport: 'sse' };
+		const options = { apiKey: 'token', transport: 'auto' };
 
 		expect(
 			streamFn(
@@ -47,7 +47,6 @@ describe('createPiStreamFn', () => {
 		);
 
 		expect(streamSimple).toHaveBeenCalledWith(model, context, {
-			transport: 'sse',
 			fetch,
 		});
 	});
