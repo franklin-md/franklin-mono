@@ -1,8 +1,14 @@
 import type { EditorState, Transaction } from '@codemirror/state';
-import { StateEffect, StateField } from '@codemirror/state';
-import { invertedEffects } from '@codemirror/commands';
+import { StateField } from '@codemirror/state';
 import type { Hunk } from '../compute-hunks.js';
 import { computeHunks } from '../compute-hunks.js';
+
+import {
+	setBaselineEffect,
+	setDiffEffect,
+	setHoveredHunkEffect,
+	clearDiffEffect,
+} from './effects.js';
 
 export type DiffState = {
 	oldContent: string | null;
@@ -10,32 +16,31 @@ export type DiffState = {
 	hoveredHunkId: string | null;
 };
 
-export const setDiffEntry = StateEffect.define<{ oldContent: string }>();
-export const clearDiff = StateEffect.define();
-export const setBaseline = StateEffect.define<{ oldContent: string }>();
-export const setHoveredHunk = StateEffect.define<string | null>();
-
 const empty: DiffState = {
 	oldContent: null,
 	hunks: [],
 	hoveredHunkId: null,
 };
 
+// TODO: we could get rid of `setDiffEffect` by using
+// calling it on `create` instead?
 export const diffField = StateField.define<DiffState>({
-	create: () => empty,
+	create: () => {
+		return empty;
+	},
 
 	update(value, tr: Transaction): DiffState {
 		let next = value;
 
 		for (const effect of tr.effects) {
-			if (effect.is(setDiffEntry) || effect.is(setBaseline)) {
+			if (effect.is(setDiffEffect) || effect.is(setBaselineEffect)) {
 				next = createDiffState(
 					effect.value.oldContent,
 					tr.state.doc.toString(),
 				);
-			} else if (effect.is(clearDiff)) {
+			} else if (effect.is(clearDiffEffect)) {
 				next = empty;
-			} else if (effect.is(setHoveredHunk)) {
+			} else if (effect.is(setHoveredHunkEffect)) {
 				if (next.hoveredHunkId !== effect.value) {
 					next = { ...next, hoveredHunkId: effect.value };
 				}
@@ -43,14 +48,7 @@ export const diffField = StateField.define<DiffState>({
 		}
 
 		if (tr.docChanged && next.oldContent !== null) {
-			const hunks = computeHunks(next.oldContent, tr.state.doc.toString());
-			next = {
-				...next,
-				hunks,
-				hoveredHunkId: hunks.some((hunk) => hunk.id === next.hoveredHunkId)
-					? next.hoveredHunkId
-					: null,
-			};
+			next = updateDiffState(next, next.oldContent, tr.state.doc.toString());
 		}
 
 		return next;
@@ -68,47 +66,23 @@ function createDiffState(
 	};
 }
 
-export const diffInverted = invertedEffects.of((tr) => {
-	// Accept decisions mutate the baseline rather than the document.
-	// Make those baseline changes part of editor undo/redo by restoring the
-	// prior baseline from the transaction's start state.
-	const previous = tr.startState.field(diffField, false)?.oldContent;
-	const out: StateEffect<unknown>[] = [];
-
-	for (const effect of tr.effects) {
-		if (effect.is(setBaseline) && previous != null) {
-			out.push(setBaseline.of({ oldContent: previous }));
-		}
-	}
-
-	return out;
-});
+function updateDiffState(
+	prev: DiffState,
+	oldContent: string,
+	currentContent: string,
+) {
+	const hunks = computeHunks(oldContent, currentContent);
+	return {
+		...prev,
+		hunks,
+		hoveredHunkId: hunks.some((hunk) => hunk.id === prev.hoveredHunkId)
+			? prev.hoveredHunkId
+			: null,
+	};
+}
 
 export function visibleHunks(state: EditorState): Hunk[] {
 	const ds = state.field(diffField, false);
 	if (!ds || ds.oldContent === null) return [];
 	return ds.hunks;
-}
-
-export function reverseHunkChange(
-	oldContent: string,
-	hunk: Hunk,
-): { from: number; to: number; insert: string } {
-	return {
-		from: hunk.newFrom,
-		to: hunk.newTo,
-		insert: oldContent.slice(hunk.oldFrom, hunk.oldTo),
-	};
-}
-
-export function acceptHunkIntoBaseline(
-	oldContent: string,
-	newContent: string,
-	hunk: Hunk,
-): string {
-	return (
-		oldContent.slice(0, hunk.oldFrom) +
-		newContent.slice(hunk.newFrom, hunk.newTo) +
-		oldContent.slice(hunk.oldTo)
-	);
 }

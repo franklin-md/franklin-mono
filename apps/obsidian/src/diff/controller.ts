@@ -1,16 +1,16 @@
 import { EditorView } from '@codemirror/view';
 import type { Plugin } from 'obsidian';
 import { MarkdownView } from 'obsidian';
-import { diffDecorations, diffHoverTracking } from './cm/decorations.js';
-import {
-	clearDiff,
-	diffField,
-	diffInverted,
-	setDiffEntry,
-} from './cm/diff-field.js';
-import { diffEmbeddedBlockStyling } from './cm/embedded-block-styling.js';
-import { acceptAllHunks, rejectAllHunks } from './cm/react-widgets.js';
-import type { DiffClient } from './diff-client.js';
+import { diffDecorations } from './cm/decorations/build.js';
+import { diffField } from './cm/diff-field.js';
+import { clearDiffEffect, setDiffEffect } from './cm/effects.js';
+import { diffInverted } from './cm/inverted.js';
+import { diffTheme } from './cm/theme.js';
+import { diffEmbeddedBlockStyling } from './cm/decorations/embedded/block-styling.js';
+import { acceptAllHunks } from './cm/accept-hunk.js';
+import { rejectAllHunks } from './cm/reject-hunk.js';
+import type { DiffClient } from './client.js';
+import { diffHoverTracking } from './hover-tracking.js';
 
 type HeaderUI = {
 	container: HTMLElement;
@@ -37,6 +37,7 @@ export class DiffController {
 	onload() {
 		this.plugin.registerEditorExtension([
 			diffField,
+			diffTheme,
 			diffInverted,
 			diffDecorations,
 			diffEmbeddedBlockStyling,
@@ -161,7 +162,7 @@ export class DiffController {
 		current.appliedPath = normalizedPath;
 		current.appliedOldContent = entry.oldContent;
 		view.dispatch({
-			effects: setDiffEntry.of({ oldContent: entry.oldContent }),
+			effects: setDiffEffect.of({ oldContent: entry.oldContent }),
 		});
 	}
 
@@ -172,7 +173,7 @@ export class DiffController {
 		this.removeHeaderUI(session);
 
 		if (hadDiff && view.dom.isConnected) {
-			view.dispatch({ effects: clearDiff.of(null) });
+			view.dispatch({ effects: clearDiffEffect.of(null) });
 		}
 	}
 
@@ -230,14 +231,15 @@ export class DiffController {
 
 		let header = session.header;
 		if (!header || !header.container.isConnected) {
-			const container = activeDocument.createDiv();
+			const doc = markdownView.containerEl.ownerDocument;
+			const container = doc.createElement('div');
 			container.className = 'diff-plugin-header-group';
 
-			const count = activeDocument.createSpan();
+			const count = doc.createElement('span');
 			count.className = 'diff-plugin-header-count';
 			container.appendChild(count);
 
-			const accept = activeDocument.createEl('button');
+			const accept = doc.createElement('button');
 			accept.type = 'button';
 			accept.className = 'diff-plugin-header-btn diff-plugin-header-accept';
 			accept.textContent = 'Accept all';
@@ -245,11 +247,11 @@ export class DiffController {
 			accept.onclick = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
-				acceptAllHunks(view);
+				runHeaderBulkAction(view, acceptAllHunks);
 			};
 			container.appendChild(accept);
 
-			const reject = activeDocument.createEl('button');
+			const reject = doc.createElement('button');
 			reject.type = 'button';
 			reject.className = 'diff-plugin-header-btn diff-plugin-header-reject';
 			reject.textContent = 'Reject all';
@@ -257,7 +259,7 @@ export class DiffController {
 			reject.onclick = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
-				rejectAllHunks(view);
+				runHeaderBulkAction(view, rejectAllHunks);
 			};
 			container.appendChild(reject);
 
@@ -280,4 +282,12 @@ export class DiffController {
 function stopHeaderButtonMouseDown(event: MouseEvent) {
 	event.preventDefault();
 	event.stopPropagation();
+}
+
+function runHeaderBulkAction(
+	view: EditorView,
+	action: (view: EditorView) => void,
+) {
+	action(view);
+	view.focus();
 }
