@@ -43,16 +43,18 @@ export class DiffHunkActionsWidget extends WidgetType {
 	}
 
 	toDOM(view: EditorView): HTMLElement {
-		const dom = activeDocument.createSpan();
+		const doc = view.dom.ownerDocument;
+		const dom = doc.createElement('span');
 		dom.className = 'diff-plugin-actions-host';
 		dom.dataset.diffHunkId = this.hunk.id;
 		dom.addEventListener('mousedown', stopMouseEvent);
 
-		const actions = activeDocument.createSpan();
+		const actions = doc.createElement('span');
 		actions.className = 'diff-plugin-actions';
 		actions.dataset.diffHunkId = this.hunk.id;
 
 		const [accept, reject] = createActionButtonPair(
+			doc,
 			this.hunk.id,
 			() => acceptHunk(view, this.hunk),
 			() => rejectHunk(view, [this.hunk.id]),
@@ -77,7 +79,8 @@ export class DiffHunkActionsBlockWidget extends WidgetType {
 	}
 
 	toDOM(view: EditorView): HTMLElement {
-		const dom = activeDocument.createDiv();
+		const doc = view.dom.ownerDocument;
+		const dom = doc.createElement('div');
 		dom.className = 'diff-plugin-actions-block';
 		dom.dataset.diffHunkId = this.hunk.id;
 		dom.addEventListener('mousedown', stopMouseEvent);
@@ -89,6 +92,7 @@ export class DiffHunkActionsBlockWidget extends WidgetType {
 			'display:flex;justify-content:flex-end;align-items:center;gap:4px;padding:0;width:100%;box-sizing:border-box;pointer-events:auto;';
 
 		const [accept, reject] = createActionButtonPair(
+			doc,
 			this.hunk.id,
 			() => acceptHunk(view, this.hunk),
 			() => rejectHunk(view, [this.hunk.id]),
@@ -103,23 +107,37 @@ export class DiffHunkActionsBlockWidget extends WidgetType {
 }
 
 export function createActionButtonPair(
+	doc: Document,
 	hunkId: string,
 	onAccept: () => void,
 	onReject: () => void,
 ): [HTMLButtonElement, HTMLButtonElement] {
 	return [
-		createActionButton('Accept', 'diff-plugin-btn-accept', hunkId, onAccept),
-		createActionButton('Reject', 'diff-plugin-btn-reject', hunkId, onReject),
+		createActionButton(
+			doc,
+			'Accept',
+			'diff-plugin-btn-accept',
+			hunkId,
+			onAccept,
+		),
+		createActionButton(
+			doc,
+			'Reject',
+			'diff-plugin-btn-reject',
+			hunkId,
+			onReject,
+		),
 	];
 }
 
 function createActionButton(
+	doc: Document,
 	label: string,
 	variantClass: string,
 	hunkId: string,
 	onClick: () => void,
 ): HTMLButtonElement {
-	const button = activeDocument.createEl('button');
+	const button = doc.createElement('button');
 	button.type = 'button';
 	button.className = `diff-plugin-btn ${variantClass}`;
 	button.dataset.diffHunkId = hunkId;

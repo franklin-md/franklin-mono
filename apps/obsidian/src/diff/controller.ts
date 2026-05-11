@@ -231,14 +231,15 @@ export class DiffController {
 
 		let header = session.header;
 		if (!header || !header.container.isConnected) {
-			const container = activeDocument.createDiv();
+			const doc = markdownView.containerEl.ownerDocument;
+			const container = doc.createElement('div');
 			container.className = 'diff-plugin-header-group';
 
-			const count = activeDocument.createSpan();
+			const count = doc.createElement('span');
 			count.className = 'diff-plugin-header-count';
 			container.appendChild(count);
 
-			const accept = activeDocument.createEl('button');
+			const accept = doc.createElement('button');
 			accept.type = 'button';
 			accept.className = 'diff-plugin-header-btn diff-plugin-header-accept';
 			accept.textContent = 'Accept all';
@@ -250,7 +251,7 @@ export class DiffController {
 			};
 			container.appendChild(accept);
 
-			const reject = activeDocument.createEl('button');
+			const reject = doc.createElement('button');
 			reject.type = 'button';
 			reject.className = 'diff-plugin-header-btn diff-plugin-header-reject';
 			reject.textContent = 'Reject all';

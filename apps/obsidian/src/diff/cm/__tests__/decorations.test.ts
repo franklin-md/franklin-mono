@@ -210,9 +210,11 @@ describe('actionDecorations', () => {
 		const newContent = 'alpha\nbeta\nomega\n';
 		const [hunk] = computeHunks(oldContent, newContent);
 		expect(hunk).toBeDefined();
-		vi.stubGlobal('activeDocument', document);
+		const view = {
+			dom: document.createElement('div'),
+		} as unknown as EditorView;
 
-		const host = new DiffHunkActionsWidget(hunk!).toDOM({} as EditorView);
+		const host = new DiffHunkActionsWidget(hunk!).toDOM(view);
 
 		expect(host.tagName).toBe('SPAN');
 		expect(host.dataset.diffHunkId).toBe(hunk!.id);
@@ -225,9 +227,11 @@ describe('actionDecorations', () => {
 		const newContent = 'alpha\nbeta';
 		const [hunk] = computeHunks(oldContent, newContent);
 		expect(hunk).toBeDefined();
-		vi.stubGlobal('activeDocument', document);
+		const view = {
+			dom: document.createElement('div'),
+		} as unknown as EditorView;
 
-		const host = new DiffHunkActionsBlockWidget(hunk!).toDOM({} as EditorView);
+		const host = new DiffHunkActionsBlockWidget(hunk!).toDOM(view);
 
 		expect(host.tagName).toBe('DIV');
 		expect(host.className).toBe('diff-plugin-actions-block');
