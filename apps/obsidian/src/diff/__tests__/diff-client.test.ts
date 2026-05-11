@@ -1,7 +1,12 @@
 import { resolve } from 'node:path';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { MemoryFilesystem, toAbsolutePath } from '@franklin/lib';
-import { FileSystemAdapter, type PluginManifest, type Vault } from 'obsidian';
+import {
+	FileSystemAdapter,
+	type PluginManifest,
+	type TFile,
+	type Vault,
+} from 'obsidian';
 
 let fs = new MemoryFilesystem();
 
@@ -22,7 +27,7 @@ describe('ObsidianDiffClient', () => {
 		fs = new MemoryFilesystem();
 	});
 
-	it('tracks newly created files as unopened until first open', async () => {
+	it('tracks non-empty newly created files as unopened until first open', async () => {
 		const client = new ObsidianDiffClient(
 			createMockVault(VAULT_ROOT),
 			MANIFEST,
@@ -57,6 +62,33 @@ describe('ObsidianDiffClient', () => {
 				unopenedNewFile: false,
 			},
 		});
+	});
+
+	it('clears newly created empty files on first open', async () => {
+		const client = new ObsidianDiffClient(
+			createMockVault(VAULT_ROOT),
+			MANIFEST,
+		);
+		const notePath = toAbsolutePath('/vault/notes/empty.md');
+
+		fs.seed(notePath, '');
+		client.onWrite(notePath, null, new Uint8Array());
+		await flushAsyncWork();
+
+		await expect(client.listUnopenedNewFiles()).resolves.toEqual([
+			'notes/empty.md',
+		]);
+		await expect(client.getEntry('notes/empty.md')).resolves.toMatchObject({
+			path: 'notes/empty.md',
+			oldContent: '',
+			isNewFile: true,
+		});
+
+		await client.markOpened('notes/empty.md');
+
+		await expect(client.listUnopenedNewFiles()).resolves.toEqual([]);
+		await expect(client.getEntry('notes/empty.md')).resolves.toBeNull();
+		await expect(readCacheFile()).resolves.toEqual({});
 	});
 
 	it('loads legacy cache entries and preserves unopened new-file state', async () => {
@@ -111,6 +143,17 @@ function createMockVault(basePath: string): Vault {
 	return {
 		adapter,
 		configDir: '.obsidian',
+		getFileByPath(path: string): TFile | null {
+			const absolutePath = toAbsolutePath(resolve(basePath, path));
+			if (!fs.has(absolutePath)) return null;
+			return { path } as TFile;
+		},
+		async readBinary(file: TFile): Promise<ArrayBuffer> {
+			const bytes = await fs.readFile(
+				toAbsolutePath(resolve(basePath, file.path)),
+			);
+			return new Uint8Array(bytes).buffer;
+		},
 	} as unknown as Vault;
 }
 

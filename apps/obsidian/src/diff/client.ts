@@ -112,7 +112,15 @@ export class ObsidianDiffClient implements DiffClient {
 		await this.ready;
 		const absolutePath = this.resolveVaultPath(path);
 		const entry = await this.getCachedEntry(absolutePath);
-		if (!entry?.unopenedNewFile) return;
+		if (!entry) return;
+
+		const current = await this.readCurrent(absolutePath);
+		if (isEmptyNewFileEntry(entry, current)) {
+			await this.removeCachedEntry(absolutePath);
+			return;
+		}
+
+		if (!entry.unopenedNewFile) return;
 
 		this.cache.set(absolutePath, createCacheEntry(entry.baseline, false));
 		await this.persist();
@@ -208,14 +216,18 @@ export class ObsidianDiffClient implements DiffClient {
 
 		const current = await this.readCurrent(path);
 		if (equalBytes(entry.baseline, current)) {
-			this.cache.delete(path);
-			await this.persist();
-			this.entryRemoved.notify();
-			this.entryChanged.notify();
+			await this.removeCachedEntry(path);
 			return null;
 		}
 
 		return entry;
+	}
+
+	private async removeCachedEntry(path: AbsolutePath): Promise<void> {
+		this.cache.delete(path);
+		await this.persist();
+		this.entryRemoved.notify();
+		this.entryChanged.notify();
 	}
 
 	private async readCurrent(path: AbsolutePath): Promise<Uint8Array | null> {
@@ -245,6 +257,13 @@ function createCacheEntry(
 		baseline,
 		unopenedNewFile,
 	};
+}
+
+function isEmptyNewFileEntry(
+	entry: DiffCacheEntry,
+	current: Uint8Array | null,
+): boolean {
+	return entry.baseline === null && current?.length === 0;
 }
 
 function decodePersistedDiffCacheEntry(
