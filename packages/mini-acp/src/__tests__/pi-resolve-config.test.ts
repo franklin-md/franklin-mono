@@ -7,11 +7,11 @@ import {
 } from '../base/pi/model/headers.js';
 import { OPENROUTER_APP_URL } from '../base/pi/model/headers.js';
 
-const OPENROUTER_OVERRIDE_CASES = [
+const OPENROUTER_UPSTREAM_MODEL_CASES = [
 	{ id: 'z-ai/glm-5.1', contextWindow: 202_752 },
 	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_576 },
 	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_048_576 },
-	{ id: 'moonshotai/kimi-k2.6', contextWindow: 256_000 },
+	{ id: 'moonshotai/kimi-k2.6', contextWindow: 262_144 },
 	{ id: 'x-ai/grok-4.20', contextWindow: 2_000_000 },
 	{ id: 'qwen/qwen3.6-plus', contextWindow: 1_000_000 },
 	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
@@ -47,8 +47,8 @@ describe('resolveConfig', () => {
 		});
 	});
 
-	for (const { id, contextWindow } of OPENROUTER_OVERRIDE_CASES) {
-		it(`accepts the Franklin OpenRouter override for ${id} when apiKey is present`, () => {
+	for (const { id, contextWindow } of OPENROUTER_UPSTREAM_MODEL_CASES) {
+		it(`accepts the OpenRouter ${id} model from pi-ai when apiKey is present`, () => {
 			const result = resolveConfig({
 				provider: 'openrouter',
 				model: id,
@@ -65,7 +65,7 @@ describe('resolveConfig', () => {
 		});
 	}
 
-	it('accepts an OpenCode Go override when apiKey is present', () => {
+	it('accepts an OpenCode Go model from pi-ai when apiKey is present', () => {
 		const result = resolveConfig({
 			provider: 'opencode-go',
 			model: 'deepseek-v4-pro',

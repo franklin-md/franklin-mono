@@ -3,7 +3,7 @@ import {
 	getProviders,
 	type KnownProvider,
 	type Model,
-} from '@mariozechner/pi-ai';
+} from '@earendil-works/pi-ai';
 
 import type { LLMConfig } from '../../../types/context.js';
 import { StopCode } from '../../../types/stop-code.js';

@@ -3,8 +3,8 @@ import { base64urlToBase64 } from '@franklin/lib';
 import { postOAuthTokenRequest } from './token-request.js';
 import type { AuthorizationCodePkceSpec } from './types.js';
 
-// Values sourced from @mariozechner/pi-ai:
-// node_modules/@mariozechner/pi-ai/dist/utils/oauth/openai-codex.js
+// Values sourced from @earendil-works/pi-ai:
+// node_modules/@earendil-works/pi-ai/dist/utils/oauth/openai-codex.js
 //
 // We reuse pi-ai's registered OAuth client, so every field below must match
 // pi-ai's exact request shape — including `originator` and the exact

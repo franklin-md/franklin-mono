@@ -1,43 +1,7 @@
-import { getModel, type Model } from '@mariozechner/pi-ai';
+import { getModel } from '@earendil-works/pi-ai';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createPiStreamFn } from '../platform/pi-stream.js';
-
-const GPT_55_CODEX_MODEL: Model<'openai-codex-responses'> = {
-	id: 'gpt-5.5',
-	name: 'GPT-5.5',
-	api: 'openai-codex-responses',
-	provider: 'openai-codex',
-	baseUrl: 'https://chatgpt.com/backend-api',
-	reasoning: true,
-	input: ['text', 'image'],
-	cost: {
-		input: 5,
-		output: 30,
-		cacheRead: 0.5,
-		cacheWrite: 0,
-	},
-	contextWindow: 1_050_000,
-	maxTokens: 128_000,
-};
-
-const OPENCODE_GO_OPENAI_MODEL: Model<'openai-completions'> = {
-	id: 'deepseek-v4-flash',
-	name: 'DeepSeek V4 Flash',
-	api: 'openai-completions',
-	provider: 'opencode-go',
-	baseUrl: 'https://opencode.ai/zen/go/v1',
-	reasoning: false,
-	input: ['text'],
-	cost: {
-		input: 0,
-		output: 0,
-		cacheRead: 0,
-		cacheWrite: 0,
-	},
-	contextWindow: 1_000_000,
-	maxTokens: 128_000,
-};
 
 function createCodexToken(accountId = 'acct_test'): string {
 	const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }));
@@ -109,7 +73,7 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 
 		const streamFn = createPiStreamFn({ fetch: customFetch });
 		const stream = streamFn(
-			OPENCODE_GO_OPENAI_MODEL,
+			getModel('opencode-go', 'deepseek-v4-flash'),
 			{ messages: [] },
 			{ apiKey: 'opencode-go-test' },
 		);
@@ -126,7 +90,7 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 		expect(globalFetch).not.toHaveBeenCalled();
 	});
 
-	it('preserves xhigh reasoning for the Franklin GPT-5.5 codex override', async () => {
+	it('preserves xhigh reasoning for the pi-ai GPT-5.5 codex model', async () => {
 		const customFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
 			new Response(
 				'data: {"type":"response.completed","response":{"status":"completed"}}\n\n',
@@ -139,7 +103,7 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 
 		const streamFn = createPiStreamFn({ fetch: customFetch });
 		const stream = streamFn(
-			GPT_55_CODEX_MODEL,
+			getModel('openai-codex', 'gpt-5.5'),
 			{ messages: [] },
 			{
 				apiKey: createCodexToken(),

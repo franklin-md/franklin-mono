@@ -5,7 +5,7 @@ import {
 	type AgentProtocol,
 	type ClientProtocol,
 } from '@franklin/mini-acp/rpc';
-import type { StreamFn } from '@mariozechner/pi-agent-core';
+import type { StreamFn } from '@earendil-works/pi-agent-core';
 
 type SpawnOptions = {
 	streamFn?: StreamFn;

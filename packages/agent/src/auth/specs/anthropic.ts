@@ -1,8 +1,8 @@
 import { postOAuthTokenRequest } from './token-request.js';
 import type { AuthorizationCodePkceSpec } from './types.js';
 
-// Values sourced from @mariozechner/pi-ai:
-// node_modules/@mariozechner/pi-ai/dist/utils/oauth/anthropic.js
+// Values sourced from @earendil-works/pi-ai:
+// node_modules/@earendil-works/pi-ai/dist/utils/oauth/anthropic.js
 //
 // We reuse pi-ai's registered OAuth client, so every field below must match
 // pi-ai's exact request shape — the allowlist on Anthropic's side is keyed

@@ -1,17 +1,22 @@
 import { relative, resolve } from 'node:path';
 import { createNodeFilesystem } from '@franklin/node';
 import {
+	createSingleFilePersister,
 	createObserver,
 	decode,
 	encode,
 	joinAbsolute,
 	toAbsolutePath,
+	versioned,
+	zodCodec,
 	type AbsolutePath,
 	type Filesystem,
+	type SingleFilePersister,
 	type WriteListener,
 } from '@franklin/lib';
 import { normalizePath } from 'obsidian';
 import type { PluginManifest, Vault } from 'obsidian';
+import { z } from 'zod';
 
 import {
 	getPluginAbsolutePath,
@@ -27,13 +32,24 @@ type DiffCacheEntry = {
 
 type PersistedDiffCacheEntry = {
 	baseline: string | null;
-	unopenedNewFile?: boolean;
+	unopenedNewFile: boolean;
 };
 
-type PersistedDiffCache = Record<
-	string,
-	PersistedDiffCacheEntry | string | null
->;
+type PersistedDiffCache = Record<string, PersistedDiffCacheEntry>;
+
+const PersistedDiffCacheEntryV1 = z.object({
+	baseline: z.string().nullable(),
+	unopenedNewFile: z.boolean(),
+});
+
+const PersistedDiffCacheV1 = z.record(
+	z.string(),
+	PersistedDiffCacheEntryV1,
+) as z.ZodType<PersistedDiffCache>;
+
+const diffCacheCodec = versioned()
+	.version(1, zodCodec(PersistedDiffCacheV1))
+	.build();
 
 type DiffEntry = {
 	path: string;
@@ -57,9 +73,11 @@ export class ObsidianDiffClient implements DiffClient {
 	private readonly entryChanged = createObserver();
 	private readonly entryAppeared = createObserver();
 	private readonly entryRemoved = createObserver();
+	private readonly vault: Vault;
 	private readonly vaultRoot: AbsolutePath;
 	private readonly appDir: AbsolutePath;
 	private readonly cachePath: AbsolutePath;
+	private readonly persister: SingleFilePersister<PersistedDiffCache>;
 	private readonly ready: Promise<void>;
 
 	readonly onWrite: WriteListener = (...args) => {
@@ -67,9 +85,15 @@ export class ObsidianDiffClient implements DiffClient {
 	};
 
 	constructor(vault: Vault, manifest: PluginManifest) {
+		this.vault = vault;
 		this.vaultRoot = toAbsolutePath(getVaultAbsolutePath(vault));
 		this.appDir = toAbsolutePath(getPluginAbsolutePath(vault, manifest));
 		this.cachePath = joinAbsolute(this.appDir, DIFF_CACHE_FILE);
+		this.persister = createSingleFilePersister(
+			this.fs,
+			this.cachePath,
+			diffCacheCodec,
+		);
 		this.ready = this.load();
 	}
 
@@ -110,7 +134,15 @@ export class ObsidianDiffClient implements DiffClient {
 		await this.ready;
 		const absolutePath = this.resolveVaultPath(path);
 		const entry = await this.getCachedEntry(absolutePath);
-		if (!entry?.unopenedNewFile) return;
+		if (!entry) return;
+
+		const current = await this.readCurrent(absolutePath);
+		if (isEmptyNewFileEntry(entry, current)) {
+			await this.removeCachedEntry(absolutePath);
+			return;
+		}
+
+		if (!entry.unopenedNewFile) return;
 
 		this.cache.set(absolutePath, createCacheEntry(entry.baseline, false));
 		await this.persist();
@@ -162,19 +194,18 @@ export class ObsidianDiffClient implements DiffClient {
 	}
 
 	private async load(): Promise<void> {
-		if (!(await this.fs.exists(this.cachePath))) return;
-
-		try {
-			const raw = await this.fs.readFile(this.cachePath);
-			const parsed = JSON.parse(decode(raw)) as unknown;
-			if (!isPersistedDiffCache(parsed)) return;
-			for (const [path, value] of Object.entries(parsed)) {
-				const entry = decodePersistedDiffCacheEntry(value);
-				this.cache.set(toAbsolutePath(path), entry);
-			}
-		} catch (error: unknown) {
+		const { value, issues } = await this.persister.load();
+		for (const issue of issues) {
 			console.error(
-				`[obsidian-diff] Failed to load persisted diff cache: ${error instanceof Error ? error.message : String(error)}`,
+				`[obsidian-diff] Failed to load persisted diff cache: ${issue.kind} at ${issue.path}`,
+			);
+		}
+		if (!value) return;
+
+		for (const [path, entry] of Object.entries(value)) {
+			this.cache.set(
+				toAbsolutePath(path),
+				decodePersistedDiffCacheEntry(entry),
 			);
 		}
 	}
@@ -188,10 +219,7 @@ export class ObsidianDiffClient implements DiffClient {
 				unopenedNewFile: value.unopenedNewFile,
 			};
 		}
-		await this.fs.writeFile(
-			this.cachePath,
-			JSON.stringify(serialized, null, 2),
-		);
+		await this.persister.save(serialized);
 	}
 
 	private resolveVaultPath(path: string): AbsolutePath {
@@ -206,19 +234,25 @@ export class ObsidianDiffClient implements DiffClient {
 
 		const current = await this.readCurrent(path);
 		if (equalBytes(entry.baseline, current)) {
-			this.cache.delete(path);
-			await this.persist();
-			this.entryRemoved.notify();
-			this.entryChanged.notify();
+			await this.removeCachedEntry(path);
 			return null;
 		}
 
 		return entry;
 	}
 
+	private async removeCachedEntry(path: AbsolutePath): Promise<void> {
+		this.cache.delete(path);
+		await this.persist();
+		this.entryRemoved.notify();
+		this.entryChanged.notify();
+	}
+
 	private async readCurrent(path: AbsolutePath): Promise<Uint8Array | null> {
 		try {
-			return await this.fs.readFile(path);
+			const vaultPath = normalizePath(relative(this.vaultRoot, path));
+			const file = this.vault.getFileByPath(vaultPath);
+			return file ? new Uint8Array(await this.vault.readBinary(file)) : null;
 		} catch {
 			return null;
 		}
@@ -243,19 +277,19 @@ function createCacheEntry(
 	};
 }
 
-function decodePersistedDiffCacheEntry(
-	value: PersistedDiffCache[string],
-): DiffCacheEntry {
-	if (value === null || typeof value === 'string') {
-		return createCacheEntry(
-			value === null ? null : decodeBase64(value),
-			value === null,
-		);
-	}
+function isEmptyNewFileEntry(
+	entry: DiffCacheEntry,
+	current: Uint8Array | null,
+): boolean {
+	return entry.baseline === null && current?.length === 0;
+}
 
+function decodePersistedDiffCacheEntry(
+	value: PersistedDiffCacheEntry,
+): DiffCacheEntry {
 	return createCacheEntry(
 		value.baseline === null ? null : decodeBase64(value.baseline),
-		value.unopenedNewFile ?? false,
+		value.unopenedNewFile,
 	);
 }
 
@@ -268,21 +302,6 @@ function equalBytes(
 	if (left.length !== right.length) return false;
 	for (let index = 0; index < left.length; index++) {
 		if (left[index] !== right[index]) return false;
-	}
-	return true;
-}
-
-function isPersistedDiffCache(value: unknown): value is PersistedDiffCache {
-	if (typeof value !== 'object' || value === null) return false;
-	for (const entry of Object.values(value)) {
-		if (entry === null || typeof entry === 'string') continue;
-		if (typeof entry !== 'object') return false;
-		if (!('baseline' in entry)) return false;
-		const { baseline, unopenedNewFile } = entry;
-		if (baseline !== null && typeof baseline !== 'string') return false;
-		if (unopenedNewFile !== undefined && typeof unopenedNewFile !== 'boolean') {
-			return false;
-		}
 	}
 	return true;
 }
