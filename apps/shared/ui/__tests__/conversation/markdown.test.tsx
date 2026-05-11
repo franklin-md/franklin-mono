@@ -5,6 +5,53 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { Markdown } from '../../src/conversation/turn/markdown.js';
 
+interface ParentNode {
+	children: MarkdownNode[];
+}
+
+interface TextNode {
+	type: 'text';
+	value: string;
+}
+
+type MarkdownNode = ParentNode | TextNode | Record<string, unknown>;
+
+function isParentNode(node: unknown): node is ParentNode {
+	return (
+		typeof node === 'object' &&
+		node !== null &&
+		'children' in node &&
+		Array.isArray(node.children)
+	);
+}
+
+function isTextNode(node: unknown): node is TextNode {
+	return (
+		typeof node === 'object' &&
+		node !== null &&
+		'type' in node &&
+		node.type === 'text' &&
+		'value' in node &&
+		typeof node.value === 'string'
+	);
+}
+
+function replaceHelloPlugin() {
+	return function transform(tree: unknown) {
+		const visit = (node: unknown) => {
+			if (isTextNode(node)) {
+				node.value = node.value.replaceAll('hello', 'changed');
+				return;
+			}
+
+			if (!isParentNode(node)) return;
+			for (const child of node.children) visit(child);
+		};
+
+		visit(tree);
+	};
+}
+
 describe('Markdown', () => {
 	afterEach(cleanup);
 
@@ -56,6 +103,18 @@ describe('Markdown', () => {
 		expect(li?.getAttribute('class')).toBeNull();
 		expect(blockquote?.getAttribute('class')).toBeNull();
 		expect(container.querySelector('[node]')).toBeNull();
+	});
+
+	it('applies host remark plugins while preserving default GFM parsing', () => {
+		const { container } = render(
+			<Markdown
+				text="hello from ~~markdown~~"
+				remarkPlugins={[replaceHelloPlugin]}
+			/>,
+		);
+
+		expect(container.textContent).toContain('changed from markdown');
+		expect(container.querySelector('del')?.textContent).toBe('markdown');
 	});
 
 	it('does not wrap block image markdown in a paragraph', () => {
