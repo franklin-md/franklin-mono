@@ -17,6 +17,7 @@ const plugins = { code, math };
 const baseRemarkPlugins = Object.values(defaultRemarkPlugins);
 
 export interface MarkdownExtensions {
+	allowedTags?: StreamdownProps['allowedTags'];
 	components?: Components;
 	remarkPlugins?: StreamdownProps['remarkPlugins'];
 }
@@ -39,6 +40,7 @@ function composeComponents(components: MarkdownExtensions['components']) {
 export function Markdown({
 	text,
 	className = 'prose-content',
+	allowedTags,
 	components,
 	remarkPlugins,
 }: MarkdownProps) {
@@ -48,6 +50,7 @@ export function Markdown({
 				plugins={plugins}
 				remarkPlugins={composeRemarkPlugins(remarkPlugins)}
 				components={composeComponents(components)}
+				allowedTags={allowedTags}
 				controls={false}
 			>
 				{text}
