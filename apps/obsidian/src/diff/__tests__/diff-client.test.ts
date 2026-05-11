@@ -57,9 +57,12 @@ describe('ObsidianDiffClient', () => {
 		});
 
 		await expect(readCacheFile()).resolves.toEqual({
-			'/vault/notes/new.md': {
-				baseline: null,
-				unopenedNewFile: false,
+			version: 1,
+			data: {
+				'/vault/notes/new.md': {
+					baseline: null,
+					unopenedNewFile: false,
+				},
 			},
 		});
 	});
@@ -88,11 +91,11 @@ describe('ObsidianDiffClient', () => {
 
 		await expect(client.listUnopenedNewFiles()).resolves.toEqual([]);
 		await expect(client.getEntry('notes/empty.md')).resolves.toBeNull();
-		await expect(readCacheFile()).resolves.toEqual({});
+		await expect(readCacheFile()).resolves.toEqual({ version: 1, data: {} });
 	});
 
-	it('loads legacy cache entries and preserves unopened new-file state', async () => {
-		fs.seed(CACHE_PATH, JSON.stringify(createLegacyCacheFile(), null, 2));
+	it('loads versioned cache entries and preserves unopened new-file state', async () => {
+		fs.seed(CACHE_PATH, JSON.stringify(createCacheFile(), null, 2));
 		fs.seed(toAbsolutePath('/vault/notes/new.md'), 'fresh');
 		fs.seed(toAbsolutePath('/vault/notes/existing.md'), 'after');
 
@@ -115,10 +118,47 @@ describe('ObsidianDiffClient', () => {
 			isNewFile: false,
 		});
 	});
+
+	it('ignores old unversioned cache files', async () => {
+		const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+		fs.seed(CACHE_PATH, JSON.stringify(createLegacyCacheFile(), null, 2));
+		fs.seed(toAbsolutePath('/vault/notes/new.md'), 'fresh');
+
+		const client = new ObsidianDiffClient(
+			createMockVault(VAULT_ROOT),
+			MANIFEST,
+		);
+
+		await expect(client.listUnopenedNewFiles()).resolves.toEqual([]);
+		await expect(client.getEntry('notes/new.md')).resolves.toBeNull();
+		expect(error).toHaveBeenCalledWith(
+			'[obsidian-diff] Failed to load persisted diff cache: envelope-invalid at /vault/.obsidian/plugins/franklin/diff-cache.json',
+		);
+	});
 });
 
 async function readCacheFile(): Promise<unknown> {
 	return JSON.parse(new TextDecoder().decode(await fs.readFile(CACHE_PATH)));
+}
+
+function createCacheFile(): {
+	version: number;
+	data: Record<string, { baseline: string | null; unopenedNewFile: boolean }>;
+} {
+	return {
+		version: 1,
+		data: {
+			'/vault/notes/new.md': {
+				baseline: null,
+				unopenedNewFile: true,
+			},
+			'/vault/notes/existing.md': {
+				baseline: encodeBase64('before'),
+				unopenedNewFile: false,
+			},
+		},
+	};
 }
 
 function createLegacyCacheFile(): Record<string, string | null> {
