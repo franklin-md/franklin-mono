@@ -207,6 +207,10 @@ export const diffTheme = EditorView.baseTheme({
 		borderLeft: '4px solid var(--diff-plugin-added-border)',
 	},
 
+	'.diff-plugin-added-line.HyperMD-quote::before': {
+		background: 'var(--diff-plugin-added-bg)',
+	},
+
 	'.diff-plugin-added-first': {
 		borderTop: '2px solid var(--diff-plugin-added-edge)',
 	},

@@ -67,12 +67,15 @@ describe('obsidian bundle', () => {
 	});
 
 	it('leaves diff editor selectors unscoped so they apply in Markdown views', () => {
-		expect(devBundle.css).toContain('.diff-plugin-added-line');
+		expect(devBundle.js).toContain('".diff-plugin-added-line"');
+		expect(devBundle.js).toContain(
+			'".diff-plugin-added-line.HyperMD-quote::before"',
+		);
 		expect(devBundle.css).toContain('.diff-plugin-unopened-new-file');
-		expect(devBundle.css).not.toContain('.franklin .diff-plugin-added-line');
-		expect(devBundle.css).toContain('.cm-line:has(.diff-plugin-actions-host)');
-		expect(devBundle.css).not.toContain(
-			'.franklin .cm-line:has(.diff-plugin-actions-host)',
+		expect(devBundle.js).toContain('".cm-line:has(.diff-plugin-actions-host)"');
+		expect(devBundle.js).not.toContain('".franklin .diff-plugin-added-line"');
+		expect(devBundle.js).not.toContain(
+			'".franklin .cm-line:has(.diff-plugin-actions-host)"',
 		);
 	});
 
