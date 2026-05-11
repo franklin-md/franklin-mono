@@ -247,7 +247,7 @@ export class DiffController {
 			accept.onclick = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
-				acceptAllHunks(view);
+				runHeaderBulkAction(view, acceptAllHunks);
 			};
 			container.appendChild(accept);
 
@@ -259,7 +259,7 @@ export class DiffController {
 			reject.onclick = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
-				rejectAllHunks(view);
+				runHeaderBulkAction(view, rejectAllHunks);
 			};
 			container.appendChild(reject);
 
@@ -282,4 +282,12 @@ export class DiffController {
 function stopHeaderButtonMouseDown(event: MouseEvent) {
 	event.preventDefault();
 	event.stopPropagation();
+}
+
+function runHeaderBulkAction(
+	view: EditorView,
+	action: (view: EditorView) => void,
+) {
+	action(view);
+	view.focus();
 }
