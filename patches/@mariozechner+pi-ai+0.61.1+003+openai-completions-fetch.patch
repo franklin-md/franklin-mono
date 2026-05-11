@@ -1,0 +1,30 @@
+diff --git a/node_modules/@mariozechner/pi-ai/dist/providers/openai-completions.js b/node_modules/@mariozechner/pi-ai/dist/providers/openai-completions.js
+index 9b9e27d..a215f98 100644
+--- a/node_modules/@mariozechner/pi-ai/dist/providers/openai-completions.js
++++ b/node_modules/@mariozechner/pi-ai/dist/providers/openai-completions.js
+@@ -47,7 +47,7 @@ export const streamOpenAICompletions = (model, context, options) => {
+         };
+         try {
+             const apiKey = options?.apiKey || getEnvApiKey(model.provider) || "";
+-            const client = createClient(model, context, apiKey, options?.headers);
++            const client = createClient(model, context, apiKey, options?.headers, options?.fetch);
+             let params = buildParams(model, context, options);
+             const nextParams = await options?.onPayload?.(params, model);
+             if (nextParams !== undefined) {
+@@ -259,7 +259,7 @@ export const streamSimpleOpenAICompletions = (model, context, options) => {
+         toolChoice,
+     });
+ };
+-function createClient(model, context, apiKey, optionsHeaders) {
++function createClient(model, context, apiKey, optionsHeaders, fetch) {
+     if (!apiKey) {
+         if (!process.env.OPENAI_API_KEY) {
+             throw new Error("OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass it as an argument.");
+@@ -282,6 +282,7 @@ function createClient(model, context, apiKey, optionsHeaders) {
+     return new OpenAI({
+         apiKey,
+         baseURL: model.baseUrl,
++        fetch,
+         dangerouslyAllowBrowser: true,
+         defaultHeaders: headers,
+     });

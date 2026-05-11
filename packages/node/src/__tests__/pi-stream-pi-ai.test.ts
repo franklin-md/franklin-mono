@@ -21,6 +21,24 @@ const GPT_55_CODEX_MODEL: Model<'openai-codex-responses'> = {
 	maxTokens: 128_000,
 };
 
+const OPENCODE_GO_OPENAI_MODEL: Model<'openai-completions'> = {
+	id: 'deepseek-v4-flash',
+	name: 'DeepSeek V4 Flash',
+	api: 'openai-completions',
+	provider: 'opencode-go',
+	baseUrl: 'https://opencode.ai/zen/go/v1',
+	reasoning: false,
+	input: ['text'],
+	cost: {
+		input: 0,
+		output: 0,
+		cacheRead: 0,
+		cacheWrite: 0,
+	},
+	contextWindow: 1_000_000,
+	maxTokens: 128_000,
+};
+
 function createCodexToken(accountId = 'acct_test'): string {
 	const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }));
 	const payload = btoa(
@@ -73,6 +91,36 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 
 		expect(customFetch).toHaveBeenCalledExactlyOnceWith(
 			'https://chatgpt.com/backend-api/codex/responses',
+			expect.objectContaining({ method: 'POST' }),
+		);
+		expect(globalFetch).not.toHaveBeenCalled();
+	});
+
+	it('preserves the custom fetch through pi-ai simple OpenAI-compatible options', async () => {
+		const customFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+			new Response(JSON.stringify({ error: { message: 'denied' } }), {
+				status: 401,
+				headers: { 'content-type': 'application/json' },
+			}),
+		);
+		globalFetch.mockResolvedValue(
+			new Response('unexpected global fetch', { status: 418 }),
+		);
+
+		const streamFn = createPiStreamFn({ fetch: customFetch });
+		const stream = streamFn(
+			OPENCODE_GO_OPENAI_MODEL,
+			{ messages: [] },
+			{ apiKey: 'opencode-go-test' },
+		);
+
+		void stream;
+		await vi.waitFor(() => {
+			expect(customFetch).toHaveBeenCalledOnce();
+		});
+
+		expect(customFetch).toHaveBeenCalledExactlyOnceWith(
+			'https://opencode.ai/zen/go/v1/chat/completions',
 			expect.objectContaining({ method: 'POST' }),
 		);
 		expect(globalFetch).not.toHaveBeenCalled();
