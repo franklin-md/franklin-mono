@@ -95,7 +95,7 @@ const OPENAI_CODEX_PROVIDER_GROUP: ProviderGroup = {
 	models: [
 		model('openai-codex', 'gpt-5.5', 'GPT-5.5', {
 			reasoning: true,
-			ctx: 1_050_000,
+			ctx: 272_000,
 			costIn: 5,
 			costOut: 30,
 			intelligence: 'frontier',
@@ -146,8 +146,8 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 		model('openrouter', 'deepseek/deepseek-v4-pro', 'DeepSeek V4 Pro', {
 			reasoning: true,
 			ctx: 1_048_576,
-			costIn: 1.74,
-			costOut: 3.48,
+			costIn: 0.435,
+			costOut: 0.87,
 			intelligence: 'frontier',
 		}),
 		model('openrouter', 'x-ai/grok-4.20', 'Grok 4.20', {
@@ -209,9 +209,9 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 		}),
 		model('openrouter', 'moonshotai/kimi-k2.6', 'Kimi K2.6', {
 			reasoning: true,
-			ctx: 256_000,
-			costIn: 0.7448,
-			costOut: 4.655,
+			ctx: 262_144,
+			costIn: 0.75,
+			costOut: 3.5,
 			intelligence: 'strong',
 		}),
 	],

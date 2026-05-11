@@ -1,25 +1,7 @@
-import { getModel, type Model } from '@mariozechner/pi-ai';
+import { getModel } from '@earendil-works/pi-ai';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createPiStreamFn } from '../platform/pi-stream.js';
-
-const GPT_55_CODEX_MODEL: Model<'openai-codex-responses'> = {
-	id: 'gpt-5.5',
-	name: 'GPT-5.5',
-	api: 'openai-codex-responses',
-	provider: 'openai-codex',
-	baseUrl: 'https://chatgpt.com/backend-api',
-	reasoning: true,
-	input: ['text', 'image'],
-	cost: {
-		input: 5,
-		output: 30,
-		cacheRead: 0.5,
-		cacheWrite: 0,
-	},
-	contextWindow: 1_050_000,
-	maxTokens: 128_000,
-};
 
 function createCodexToken(accountId = 'acct_test'): string {
 	const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }));
@@ -78,7 +60,7 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 		expect(globalFetch).not.toHaveBeenCalled();
 	});
 
-	it('preserves xhigh reasoning for the Franklin GPT-5.5 codex override', async () => {
+	it('preserves xhigh reasoning for the pi-ai GPT-5.5 codex model', async () => {
 		const customFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
 			new Response(
 				'data: {"type":"response.completed","response":{"status":"completed"}}\n\n',
@@ -91,7 +73,7 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 
 		const streamFn = createPiStreamFn({ fetch: customFetch });
 		const stream = streamFn(
-			GPT_55_CODEX_MODEL,
+			getModel('openai-codex', 'gpt-5.5'),
 			{ messages: [] },
 			{
 				apiKey: createCodexToken(),

@@ -8,7 +8,7 @@
 // `cost` passes through verbatim — pi-ai's cost object already matches the
 // mini-acp shape.
 
-import type { Usage as PiUsage } from '@mariozechner/pi-ai';
+import type { Usage as PiUsage } from '@earendil-works/pi-ai';
 
 import type { Usage } from '../../../types/usage.js';
 

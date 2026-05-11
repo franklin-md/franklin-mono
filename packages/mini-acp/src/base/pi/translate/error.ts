@@ -1,4 +1,4 @@
-import type { StopReason as PiStopReason } from '@mariozechner/pi-ai';
+import type { StopReason as PiStopReason } from '@earendil-works/pi-ai';
 
 import { StopCode } from '../../../types/stop-code.js';
 

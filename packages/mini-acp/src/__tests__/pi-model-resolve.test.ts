@@ -6,59 +6,31 @@ import {
 import { resolveModel } from '../base/pi/model/resolve.js';
 import { StopCode } from '../types/stop-code.js';
 
-const OPENROUTER_OVERRIDE_CASES = [
+const OPENROUTER_UPSTREAM_MODEL_CASES = [
 	{
 		id: 'deepseek/deepseek-v4-flash',
 		contextWindow: 1_048_576,
-		cost: {
-			input: 0.14,
-			output: 0.28,
-			cacheRead: 0.028,
-			cacheWrite: 0,
-		},
 	},
 	{
 		id: 'deepseek/deepseek-v4-pro',
 		contextWindow: 1_048_576,
-		cost: {
-			input: 1.74,
-			output: 3.48,
-			cacheRead: 0.174,
-			cacheWrite: 1.74,
-		},
 	},
 	{
 		id: 'moonshotai/kimi-k2.6',
-		contextWindow: 256_000,
-		cost: {
-			input: 0.7448,
-			output: 4.655,
-		},
+		contextWindow: 262_144,
 	},
 	{
 		id: 'qwen/qwen3.6-plus',
 		contextWindow: 1_000_000,
-		cost: {
-			input: 0.325,
-			output: 1.95,
-			cacheRead: 0.0325,
-			cacheWrite: 0.40625,
-		},
 	},
 	{
 		id: 'xiaomi/mimo-v2.5-pro',
 		contextWindow: 1_048_576,
-		cost: {
-			input: 1,
-			output: 3,
-			cacheRead: 0.2,
-			cacheWrite: 0,
-		},
 	},
 ] as const;
 
 describe('resolveModel', () => {
-	it('resolves the Franklin OpenAI Codex override for gpt-5.5', () => {
+	it('resolves the OpenAI Codex gpt-5.5 model from pi-ai', () => {
 		const result = resolveModel({
 			provider: 'openai-codex',
 			model: 'gpt-5.5',
@@ -70,7 +42,8 @@ describe('resolveModel', () => {
 			id: 'gpt-5.5',
 			api: 'openai-codex-responses',
 			reasoning: true,
-			contextWindow: 1_050_000,
+			thinkingLevelMap: { xhigh: 'xhigh' },
+			contextWindow: 272_000,
 			maxTokens: 128_000,
 			cost: {
 				input: 5,
@@ -144,8 +117,8 @@ describe('resolveModel', () => {
 		});
 	});
 
-	for (const { id, contextWindow, cost } of OPENROUTER_OVERRIDE_CASES) {
-		it(`resolves the Franklin OpenRouter override for ${id}`, () => {
+	for (const { id, contextWindow } of OPENROUTER_UPSTREAM_MODEL_CASES) {
+		it(`resolves the OpenRouter ${id} model from pi-ai`, () => {
 			const result = resolveModel({
 				provider: 'openrouter',
 				model: id,
@@ -158,7 +131,6 @@ describe('resolveModel', () => {
 				api: 'openai-completions',
 				reasoning: true,
 				contextWindow,
-				cost,
 			});
 		});
 	}

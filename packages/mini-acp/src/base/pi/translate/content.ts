@@ -7,7 +7,7 @@ import type {
 	ThinkingContent as PiThinkingContent,
 	ImageContent as PiImageContent,
 	ToolCall as PiToolCall,
-} from '@mariozechner/pi-ai';
+} from '@earendil-works/pi-ai';
 
 import type {
 	UserContent,

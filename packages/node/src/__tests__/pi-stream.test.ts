@@ -4,7 +4,7 @@ const { streamSimple } = vi.hoisted(() => ({
 	streamSimple: vi.fn(),
 }));
 
-vi.mock('@mariozechner/pi-ai', () => ({ streamSimple }));
+vi.mock('@earendil-works/pi-ai', () => ({ streamSimple }));
 
 import { createPiStreamFn } from '../platform/pi-stream.js';
 
@@ -20,7 +20,7 @@ describe('createPiStreamFn', () => {
 		const streamFn = createPiStreamFn({ fetch });
 		const model = { id: 'gpt-5.4' };
 		const context = { messages: [] };
-		const options = { apiKey: 'token', transport: 'sse' };
+		const options = { apiKey: 'token', transport: 'auto' };
 
 		expect(
 			streamFn(
@@ -46,6 +46,8 @@ describe('createPiStreamFn', () => {
 			context as Parameters<typeof streamFn>[1],
 		);
 
-		expect(streamSimple).toHaveBeenCalledWith(model, context, { fetch });
+		expect(streamSimple).toHaveBeenCalledWith(model, context, {
+			fetch,
+		});
 	});
 });

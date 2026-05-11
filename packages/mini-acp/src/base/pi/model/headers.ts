@@ -1,4 +1,4 @@
-import type { Model } from '@mariozechner/pi-ai';
+import type { Model } from '@earendil-works/pi-ai';
 import { setHeader } from '@franklin/lib';
 
 import type { LLMConfig } from '../../../types/context.js';

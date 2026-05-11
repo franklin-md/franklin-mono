@@ -1,5 +1,5 @@
-import type { StreamFn } from '@mariozechner/pi-agent-core';
-import { streamSimple, type SimpleStreamOptions } from '@mariozechner/pi-ai';
+import type { StreamFn } from '@earendil-works/pi-agent-core';
+import { streamSimple, type SimpleStreamOptions } from '@earendil-works/pi-ai';
 
 type PiStreamOptions = {
 	fetch: typeof globalThis.fetch;

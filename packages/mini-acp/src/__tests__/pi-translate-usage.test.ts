@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Usage as PiUsage } from '@mariozechner/pi-ai';
+import type { Usage as PiUsage } from '@earendil-works/pi-ai';
 
 import { fromPiUsage } from '../base/pi/translate/usage.js';
 
