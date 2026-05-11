@@ -92,6 +92,27 @@ export const diffTheme = EditorView.baseTheme({
 		zIndex: '-1',
 	},
 
+	'.diff-plugin-added-horizontal-rule.hr.cm-line': {
+		position: 'relative',
+		isolation: 'isolate',
+		background: 'transparent',
+	},
+
+	'.diff-plugin-added-horizontal-rule.hr.cm-line::before': {
+		content: '""',
+		position: 'absolute',
+		inset:
+			'0 var(--diff-plugin-hr-padding-right, 0px) 0 var(--diff-plugin-hr-padding-left, 0px)',
+		background: 'var(--diff-plugin-added-bg)',
+		pointerEvents: 'none',
+		zIndex: '0',
+	},
+
+	'.diff-plugin-added-horizontal-rule.hr.cm-line > *': {
+		position: 'relative',
+		zIndex: '1',
+	},
+
 	'.diff-plugin-embedded-actions-host': {
 		position: 'absolute',
 		top: '8px',
