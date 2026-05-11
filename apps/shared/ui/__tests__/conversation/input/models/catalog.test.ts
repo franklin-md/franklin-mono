@@ -20,7 +20,7 @@ describe('MODEL_CATALOG', () => {
 			id: 'gpt-5.5',
 			name: 'GPT-5.5',
 			reasoning: true,
-			contextWindow: 1_050_000,
+			contextWindow: 272_000,
 			costInput: 5,
 			costOutput: 30,
 			intelligence: 'frontier',

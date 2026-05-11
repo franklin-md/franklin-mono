@@ -1,4 +1,4 @@
-import type { KnownProvider, Model } from '@mariozechner/pi-ai';
+import type { KnownProvider, Model } from '@earendil-works/pi-ai';
 
 import { getOpenAICodexModelOverride } from './openai-codex-overrides.js';
 import { getOpenRouterModelOverride } from './openrouter-overrides.js';

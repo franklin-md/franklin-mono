@@ -1,4 +1,4 @@
-import type { StreamFn } from '@mariozechner/pi-agent-core';
+import type { StreamFn } from '@earendil-works/pi-agent-core';
 
 import { createSessionAdapter } from '../../protocol/adapter.js';
 import type { MuAgent, MuClient } from '../../protocol/types.js';

@@ -6,8 +6,8 @@ import type {
 	Message as PiMessage,
 	AssistantMessage as PiAssistantMessage,
 	AssistantMessageEvent,
-} from '@mariozechner/pi-ai';
-import type { AgentEvent } from '@mariozechner/pi-agent-core';
+} from '@earendil-works/pi-ai';
+import type { AgentEvent } from '@earendil-works/pi-agent-core';
 
 import { fromPiMessage } from './message.js';
 import { narrowPiStopCode } from './error.js';

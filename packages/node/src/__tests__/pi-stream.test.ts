@@ -4,7 +4,7 @@ const { streamSimple } = vi.hoisted(() => ({
 	streamSimple: vi.fn(),
 }));
 
-vi.mock('@mariozechner/pi-ai', () => ({ streamSimple }));
+vi.mock('@earendil-works/pi-ai', () => ({ streamSimple }));
 
 import { createPiStreamFn } from '../platform/pi-stream.js';
 
@@ -46,6 +46,9 @@ describe('createPiStreamFn', () => {
 			context as Parameters<typeof streamFn>[1],
 		);
 
-		expect(streamSimple).toHaveBeenCalledWith(model, context, { fetch });
+		expect(streamSimple).toHaveBeenCalledWith(model, context, {
+			transport: 'sse',
+			fetch,
+		});
 	});
 });

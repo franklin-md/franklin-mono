@@ -5,9 +5,9 @@
 // Tool calls from the pi agent loop are routed through server.toolExecute().
 // ---------------------------------------------------------------------------
 
-import { Agent as PiCoreAgent } from '@mariozechner/pi-agent-core';
-import type { AgentEvent } from '@mariozechner/pi-agent-core';
-import type { StreamFn } from '@mariozechner/pi-agent-core';
+import { Agent as PiCoreAgent } from '@earendil-works/pi-agent-core';
+import type { AgentEvent } from '@earendil-works/pi-agent-core';
+import type { StreamFn } from '@earendil-works/pi-agent-core';
 
 import type { TurnClient, TurnServer } from '../types.js';
 import type { UserMessage } from '../../types/message.js';

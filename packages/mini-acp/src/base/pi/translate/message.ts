@@ -7,7 +7,7 @@ import type {
 	AssistantMessage as PiAssistantMessage,
 	ToolResultMessage as PiToolResultMessage,
 	Message as PiMessage,
-} from '@mariozechner/pi-ai';
+} from '@earendil-works/pi-ai';
 
 import type {
 	Message,

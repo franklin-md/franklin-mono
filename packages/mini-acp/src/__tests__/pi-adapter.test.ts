@@ -7,7 +7,7 @@ const agentInstances: Array<{
 }> = [];
 const agentConstructor = vi.fn();
 
-vi.mock('@mariozechner/pi-agent-core', () => ({
+vi.mock('@earendil-works/pi-agent-core', () => ({
 	Agent: class {
 		readonly subscribe = vi.fn(() => () => {});
 		readonly prompt = vi.fn(async () => {});

@@ -1,0 +1,93 @@
+diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js b/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js
+--- a/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js
++++ b/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js
+@@ -310,7 +310,7 @@ export const streamAnthropic = (model, context, options) => {
+                         hasImages,
+                     });
+                 }
+-                const created = createClient(model, apiKey, options?.interleavedThinking ?? true, shouldUseFineGrainedToolStreamingBeta(model, context), options?.headers, copilotDynamicHeaders);
++                const created = createClient(model, apiKey, options?.interleavedThinking ?? true, shouldUseFineGrainedToolStreamingBeta(model, context), options?.headers, copilotDynamicHeaders, options?.fetch);
+                 client = created.client;
+                 isOAuth = created.isOAuthToken;
+             }
+@@ -582,7 +582,7 @@ export const streamSimpleAnthropic = (model, context, options) => {
+ function isOAuthToken(apiKey) {
+     return apiKey.includes("sk-ant-oat");
+ }
+-function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStreamingBeta, optionsHeaders, dynamicHeaders) {
++function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStreamingBeta, optionsHeaders, dynamicHeaders, fetch) {
+     // Adaptive thinking models (Opus 4.6, Sonnet 4.6) have interleaved thinking built-in.
+     // The beta header is deprecated on Opus 4.6 and redundant on Sonnet 4.6, so skip it.
+     const needsInterleavedBeta = interleavedThinking && !supportsAdaptiveThinking(model.id);
+@@ -598,6 +598,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
+             apiKey: null,
+             authToken: null,
+             baseURL: resolveCloudflareBaseUrl(model),
++            fetch,
+             dangerouslyAllowBrowser: true,
+             defaultHeaders: mergeHeaders({
+                 accept: "application/json",
+@@ -616,6 +617,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
+             apiKey: null,
+             authToken: apiKey,
+             baseURL: model.baseUrl,
++            fetch,
+             dangerouslyAllowBrowser: true,
+             defaultHeaders: mergeHeaders({
+                 accept: "application/json",
+@@ -631,6 +633,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
+             apiKey: null,
+             authToken: apiKey,
+             baseURL: model.baseUrl,
++            fetch,
+             dangerouslyAllowBrowser: true,
+             defaultHeaders: mergeHeaders({
+                 accept: "application/json",
+@@ -646,6 +649,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
+     const client = new Anthropic({
+         apiKey,
+         baseURL: model.baseUrl,
++        fetch,
+         dangerouslyAllowBrowser: true,
+         defaultHeaders: mergeHeaders({
+             accept: "application/json",
+diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js b/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js
+--- a/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js
++++ b/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js
+@@ -136,12 +136,13 @@ export const streamOpenAICodexResponses = (model, context, options) => {
+             // Fetch with retry logic for rate limits and transient errors
+             let response;
+             let lastError;
++            const fetchFn = options?.fetch ?? globalThis.fetch;
+             for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                 if (options?.signal?.aborted) {
+                     throw new Error("Request was aborted");
+                 }
+                 try {
+-                    response = await fetch(resolveCodexUrl(model.baseUrl), {
++                    response = await fetchFn(resolveCodexUrl(model.baseUrl), {
+                         method: "POST",
+                         headers: sseHeaders,
+                         body: bodyJson,
+diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js b/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js
+--- a/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js
++++ b/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js
+@@ -3,6 +3,7 @@ export function buildBaseOptions(model, options, apiKey) {
+         temperature: options?.temperature,
+         maxTokens: options?.maxTokens ?? (model.maxTokens > 0 ? Math.min(model.maxTokens, 32000) : undefined),
+         signal: options?.signal,
++        fetch: options?.fetch,
+         apiKey: apiKey || options?.apiKey,
+         transport: options?.transport,
+         cacheRetention: options?.cacheRetention,
+diff --git a/node_modules/@earendil-works/pi-ai/dist/types.d.ts b/node_modules/@earendil-works/pi-ai/dist/types.d.ts
+--- a/node_modules/@earendil-works/pi-ai/dist/types.d.ts
++++ b/node_modules/@earendil-works/pi-ai/dist/types.d.ts
+@@ -25,6 +25,7 @@ export interface StreamOptions {
+     temperature?: number;
+     maxTokens?: number;
+     signal?: AbortSignal;
++    fetch?: typeof globalThis.fetch;
+     apiKey?: string;
+     /**
+      * Preferred transport for providers that support multiple transports.

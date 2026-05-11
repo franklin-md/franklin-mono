@@ -7,10 +7,10 @@ import {
 } from '../base/pi/model/headers.js';
 import { OPENROUTER_APP_URL } from '../base/pi/model/headers.js';
 
-const OPENROUTER_OVERRIDE_CASES = [
+const OPENROUTER_UPSTREAM_MODEL_CASES = [
 	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_576 },
 	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_048_576 },
-	{ id: 'moonshotai/kimi-k2.6', contextWindow: 256_000 },
+	{ id: 'moonshotai/kimi-k2.6', contextWindow: 262_144 },
 	{ id: 'qwen/qwen3.6-plus', contextWindow: 1_000_000 },
 	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
 ] as const;
@@ -45,8 +45,8 @@ describe('resolveConfig', () => {
 		});
 	});
 
-	for (const { id, contextWindow } of OPENROUTER_OVERRIDE_CASES) {
-		it(`accepts the Franklin OpenRouter override for ${id} when apiKey is present`, () => {
+	for (const { id, contextWindow } of OPENROUTER_UPSTREAM_MODEL_CASES) {
+		it(`accepts the OpenRouter ${id} model from pi-ai when apiKey is present`, () => {
 			const result = resolveConfig({
 				provider: 'openrouter',
 				model: id,

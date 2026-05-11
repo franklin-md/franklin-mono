@@ -28,8 +28,8 @@
 		"@franklin/agent": "*",
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
-		"@mariozechner/pi-agent-core": "^0.61.1",
-		"@mariozechner/pi-ai": "^0.61.0",
+		"@earendil-works/pi-agent-core": "^0.74.0",
+		"@earendil-works/pi-ai": "^0.74.0",
 		"node-fetch": "^3.3.2",
 		"shell-quote": "^1.8.3"
 	},

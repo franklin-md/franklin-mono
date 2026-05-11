@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AgentEvent } from '@mariozechner/pi-agent-core';
+import type { AgentEvent } from '@earendil-works/pi-agent-core';
 
 import { narrowPiStopCode } from '../base/pi/translate/error.js';
 import { fromAgentEvent } from '../base/pi/translate/events.js';
