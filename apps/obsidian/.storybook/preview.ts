@@ -1,5 +1,6 @@
 import type { Preview } from '@storybook/react-vite';
 
+import { franklinPluginStylesheetDecorator } from './plugin-stylesheet.js';
 import {
 	obsidianThemeSelectorDecorator,
 	obsidianThemeSelectorGlobalTypes,
@@ -19,7 +20,10 @@ const preview: Preview = {
 			},
 		},
 	},
-	decorators: [obsidianThemeSelectorDecorator],
+	decorators: [
+		franklinPluginStylesheetDecorator,
+		obsidianThemeSelectorDecorator,
+	],
 };
 
 export default preview;

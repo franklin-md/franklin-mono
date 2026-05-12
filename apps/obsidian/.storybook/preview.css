@@ -1,8 +1,8 @@
 /*
  * Storybook host shell.
  *
- * preview.ts loads Franklin's generated plugin stylesheet after this file,
- * matching Obsidian's host CSS first, plugin CSS second order.
+ * A preview decorator loads Franklin's generated plugin stylesheet after this
+ * file, matching Obsidian's host CSS first, plugin CSS second order.
  */
 
 body.franklin-storybook-obsidian-theme {
