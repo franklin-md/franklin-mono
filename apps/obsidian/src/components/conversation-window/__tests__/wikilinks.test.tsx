@@ -74,6 +74,31 @@ describe('Obsidian conversation wikilinks', () => {
 		expect(link.classList.contains('text-primary')).toBe(false);
 	});
 
+	it('uses Obsidian unresolved link variables for missing wikilinks', () => {
+		const { app } = createMockApp({ file: null });
+		renderText('See [[MEMORY]]', app);
+
+		const link = screen.getByRole('button', { name: '[[MEMORY]]' });
+		expect(link.classList.contains('[color:var(--link-color)]')).toBe(false);
+		expect(
+			link.classList.contains('[color:var(--link-unresolved-color)]'),
+		).toBe(true);
+		expect(
+			link.classList.contains('[opacity:var(--link-unresolved-opacity)]'),
+		).toBe(true);
+	});
+
+	it('uses Obsidian unresolved link variables for ambiguous wikilinks', () => {
+		const { app } = createMockApp({ canonicalLinktext: 'notes/MEMORY' });
+		renderText('See [[MEMORY]]', app);
+
+		const link = screen.getByRole('button', { name: '[[MEMORY]]' });
+		expect(link.classList.contains('[color:var(--link-color)]')).toBe(false);
+		expect(
+			link.classList.contains('[color:var(--link-unresolved-color)]'),
+		).toBe(true);
+	});
+
 	it('uses alias text for display while preserving the link target', () => {
 		renderText('Open [[notes/MEMORY#Overview|Read this note]]');
 
@@ -81,6 +106,13 @@ describe('Obsidian conversation wikilinks', () => {
 		expect(link.getAttribute('data-obsidian-linktext')).toBe(
 			'notes/MEMORY#Overview',
 		);
+	});
+
+	it('renders multiple wikilinks from the same text node', () => {
+		renderText('See [[MEMORY]] and [[notes/PROJECT|Project]]');
+
+		expect(screen.getByRole('button', { name: '[[MEMORY]]' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: '[[Project]]' })).toBeTruthy();
 	});
 
 	it('opens clicked wikilinks through the Obsidian workspace', async () => {

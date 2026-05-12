@@ -1,6 +1,30 @@
-import { parseWikilink } from '../../../utils/obsidian/wikilinks/parse.js';
+import { is } from 'unist-util-is';
+import { SKIP, visit } from 'unist-util-visit';
 
-const STREAMDOWN_INCOMPLETE_LINK_URL = 'streamdown:incomplete-link';
+import { parseWikilink } from '../../../utils/obsidian/wikilinks/parse.js';
+import type { ParsedWikilink } from '../../../utils/obsidian/wikilinks/types.js';
+import type { Literal, Parent } from 'unist';
+
+interface TextNode extends Literal {
+	type: 'text';
+	value: string;
+}
+
+interface WikilinkNode extends Parent {
+	type: 'obsidianWikilink';
+	data: {
+		hName: 'obsidian-wikilink';
+		hProperties: {
+			linktext: string;
+		};
+	};
+	children: TextNode[];
+}
+
+type ReplacementNode = TextNode | WikilinkNode;
+
+// Algorithm: Replace all `[[X]]` (not in a codeblock) with a wikilink node that we render with link.tsx
+const WIKILINK_PATTERN = /\[\[[\s\S]*?\]\]/g;
 const SKIPPED_PARENT_TYPES = new Set([
 	'code',
 	'definition',
@@ -9,169 +33,81 @@ const SKIPPED_PARENT_TYPES = new Set([
 	'linkReference',
 ]);
 
-interface ParentNode {
-	type?: string;
-	children: MarkdownNode[];
-}
-
-interface TextNode {
-	type: 'text';
-	value: string;
-}
-
-interface LinkNode {
-	type: 'link';
-	url: string;
-	title: string | null;
-	children: MarkdownNode[];
-}
-
-interface WikilinkNode {
-	type: 'obsidianWikilink';
-	data: {
-		hName: 'obsidian-wikilink';
-		hProperties: {
-			linktext: string;
-		};
-	};
-	children: MarkdownNode[];
-}
-
-type MarkdownNode =
-	| ParentNode
-	| TextNode
-	| LinkNode
-	| WikilinkNode
-	| Record<string, unknown>;
-
 export function remarkObsidianWikilinks() {
 	return function transform(tree: unknown) {
-		if (isParentNode(tree)) transformChildren(tree);
+		if (!isParentNode(tree)) return;
+
+		visit(tree, (node, index, parent) => {
+			if (SKIPPED_PARENT_TYPES.has(node.type)) return SKIP;
+			if (!isTextNode(node) || index === undefined || parent === undefined) {
+				return;
+			}
+
+			const rewritten = replaceWikilinksInText(node.value);
+			if (rewritten.length === 0) return;
+
+			parent.children.splice(index, 1, ...rewritten);
+			return [SKIP, index + rewritten.length];
+		});
 	};
 }
 
-function transformChildren(parent: ParentNode) {
-	let index = 0;
-	while (index < parent.children.length) {
-		if (repairIncompleteWikilink(parent, index)) continue;
-
-		const child = parent.children[index];
-		if (isTextNode(child)) {
-			const rewritten = rewriteText(child.value);
-			if (rewritten) {
-				parent.children.splice(index, 1, ...rewritten);
-				index += rewritten.length;
-				continue;
-			}
-		}
-
-		if (isParentNode(child) && !SKIPPED_PARENT_TYPES.has(child.type ?? '')) {
-			transformChildren(child);
-		}
-
-		index += 1;
-	}
-}
-
-function repairIncompleteWikilink(parent: ParentNode, index: number) {
-	const current = parent.children[index];
-	const previous = parent.children[index - 1];
-	if (!isTextNode(previous) || !isIncompleteLinkNode(current)) return false;
-	if (!previous.value.endsWith('[')) return false;
-
-	previous.value = `${previous.value}[${getTextContent(current)}`;
-	parent.children.splice(index, 1);
-	return true;
-}
-
-function rewriteText(value: string) {
-	const nodes: MarkdownNode[] = [];
+function replaceWikilinksInText(value: string): ReplacementNode[] {
+	const nodes: ReplacementNode[] = [];
 	let cursor = 0;
-	let searchIndex = 0;
 	let hasRewrite = false;
 
-	while (searchIndex < value.length) {
-		const openIndex = value.indexOf('[[', searchIndex);
-		if (openIndex < 0) break;
-
-		const closeIndex = value.indexOf(']]', openIndex + 2);
-		if (closeIndex < 0) break;
-
-		if (openIndex > 0 && value[openIndex - 1] === '!') {
-			searchIndex = openIndex + 2;
+	for (const match of value.matchAll(WIKILINK_PATTERN)) {
+		const raw = match[0];
+		const index = match.index;
+		if (index > 0 && value[index - 1] === '!') {
 			continue;
 		}
 
-		const raw = value.slice(openIndex, closeIndex + 2);
 		const wikilink = parseWikilink(raw);
 		if (!wikilink) {
-			searchIndex = openIndex + 2;
 			continue;
 		}
 
-		pushTextNode(nodes, value.slice(cursor, openIndex));
-		nodes.push({
-			type: 'obsidianWikilink',
-			data: {
-				hName: 'obsidian-wikilink',
-				hProperties: {
-					linktext: wikilink.linktext,
-				},
-			},
-			children: [{ type: 'text', value: wikilink.displayText }],
-		});
+		pushTextNode(nodes, value.slice(cursor, index));
+		nodes.push(createWikilinkNode(wikilink));
 
 		hasRewrite = true;
-		cursor = closeIndex + 2;
-		searchIndex = cursor;
+		cursor = index + raw.length;
 	}
 
-	if (!hasRewrite) return undefined;
+	if (!hasRewrite) return [];
 
 	pushTextNode(nodes, value.slice(cursor));
 	return nodes;
 }
 
-function pushTextNode(nodes: MarkdownNode[], value: string) {
+function createWikilinkNode(wikilink: ParsedWikilink): WikilinkNode {
+	return {
+		type: 'obsidianWikilink',
+		data: {
+			hName: 'obsidian-wikilink',
+			hProperties: {
+				linktext: wikilink.linktext,
+			},
+		},
+		children: [{ type: 'text', value: wikilink.displayText }],
+	};
+}
+
+function pushTextNode(nodes: ReplacementNode[], value: string) {
 	if (value === '') return;
 	nodes.push({ type: 'text', value });
 }
 
-function isParentNode(node: unknown): node is ParentNode {
+function isParentNode(node: unknown): node is Parent {
 	return (
-		typeof node === 'object' &&
-		node !== null &&
+		is(node) &&
 		'children' in node &&
-		Array.isArray(node.children)
+		Array.isArray((node as Partial<Parent>).children)
 	);
 }
 
 function isTextNode(node: unknown): node is TextNode {
-	return (
-		typeof node === 'object' &&
-		node !== null &&
-		'type' in node &&
-		node.type === 'text' &&
-		'value' in node &&
-		typeof node.value === 'string'
-	);
-}
-
-function isIncompleteLinkNode(node: unknown): node is LinkNode {
-	return (
-		typeof node === 'object' &&
-		node !== null &&
-		'type' in node &&
-		node.type === 'link' &&
-		'url' in node &&
-		node.url === STREAMDOWN_INCOMPLETE_LINK_URL &&
-		'children' in node &&
-		Array.isArray(node.children)
-	);
-}
-
-function getTextContent(node: MarkdownNode): string {
-	if (isTextNode(node)) return node.value;
-	if (!isParentNode(node)) return '';
-	return node.children.map(getTextContent).join('');
+	return is(node, 'text');
 }
