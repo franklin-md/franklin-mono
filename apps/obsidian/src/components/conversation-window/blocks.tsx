@@ -11,7 +11,7 @@ const MARKDOWN_CLASS = 'markdown-rendered';
 const markdown = {
 	customElements: {
 		'obsidian-wikilink': {
-			allowedAttributes: ['dataLinktext'],
+			allowedAttributes: ['linktext'],
 			component: ObsidianWikilink,
 		},
 	},

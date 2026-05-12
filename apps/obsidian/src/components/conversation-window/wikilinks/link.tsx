@@ -5,20 +5,18 @@ import { useObsidianApp } from '../../obsidian-app-context.js';
 import { openObsidianWikilink } from '../../../utils/obsidian/wikilinks/open.js';
 
 type Props = ComponentProps<'button'> & {
-	'data-linktext'?: string;
-	dataLinktext?: string;
+	linktext?: string;
 	node?: unknown;
 };
 
 export function ObsidianWikilink({
 	children,
-	'data-linktext': linktext,
-	dataLinktext,
+	linktext,
 	node: _node,
 	...props
 }: Props) {
 	const app = useObsidianApp();
-	const target = linktext ?? dataLinktext;
+	const target = linktext;
 	const handleClick: Props['onClick'] = (event) => {
 		props.onClick?.(event);
 		if (event.defaultPrevented || !target) return;

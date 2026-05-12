@@ -31,7 +31,7 @@ interface WikilinkNode {
 	data: {
 		hName: 'obsidian-wikilink';
 		hProperties: {
-			dataLinktext: string;
+			linktext: string;
 		};
 	};
 	children: MarkdownNode[];
@@ -115,7 +115,7 @@ function rewriteText(value: string) {
 			data: {
 				hName: 'obsidian-wikilink',
 				hProperties: {
-					dataLinktext: wikilink.linktext,
+					linktext: wikilink.linktext,
 				},
 			},
 			children: [{ type: 'text', value: wikilink.displayText }],

@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ObsidianAppProvider } from '../../obsidian-app-context.js';
 import { ObsidianText } from '../blocks.js';
+import { ObsidianWikilink } from '../wikilinks/link.js';
 
 afterEach(cleanup);
 
@@ -74,6 +75,23 @@ describe('Obsidian conversation wikilinks', () => {
 		renderText('See [[MEMORY]]', app);
 
 		fireEvent.click(screen.getByRole('button', { name: 'MEMORY' }));
+
+		await waitFor(() => {
+			expect(openLinkText).toHaveBeenCalledWith('MEMORY', '', false);
+		});
+	});
+
+	it('uses the semantic linktext prop as the link target', async () => {
+		const { app, openLinkText } = createMockApp();
+		render(
+			<ObsidianAppProvider value={app}>
+				<ObsidianWikilink linktext="MEMORY">Memory note</ObsidianWikilink>
+			</ObsidianAppProvider>,
+		);
+
+		const link = screen.getByRole('button', { name: 'Memory note' });
+		expect(link.getAttribute('data-obsidian-linktext')).toBe('MEMORY');
+		fireEvent.click(link);
 
 		await waitFor(() => {
 			expect(openLinkText).toHaveBeenCalledWith('MEMORY', '', false);
