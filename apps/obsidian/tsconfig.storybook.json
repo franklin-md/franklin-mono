@@ -3,6 +3,7 @@
 		"target": "ES2023",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
 		"lib": ["ES2023", "DOM"],
 		"strict": true,
 		"isolatedModules": true,
@@ -15,5 +16,5 @@
 		"declaration": true,
 		"declarationMap": true
 	},
-	"include": [".storybook/**/*.ts"]
+	"include": [".storybook/**/*.ts", ".storybook/**/*.tsx"]
 }

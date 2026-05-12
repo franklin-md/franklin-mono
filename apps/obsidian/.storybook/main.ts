@@ -1,4 +1,5 @@
 import type { StorybookConfig } from '@storybook/react-vite';
+import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -6,19 +7,31 @@ function getAbsolutePath(value: string) {
 	return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`)));
 }
 
-const storybookDir = dirname(fileURLToPath(import.meta.url));
-const packageDir = resolve(storybookDir, '..');
+const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+function buildPlugin() {
+	execFileSync(process.execPath, [resolve(packageDir, 'build/bundle.mjs')], {
+		cwd: packageDir,
+		stdio: 'inherit',
+	});
+}
+
+buildPlugin();
 
 const config: StorybookConfig = {
 	stories: ['../src/**/*.stories.@(ts|tsx)'],
+	staticDirs: [
+		{
+			from: resolve(packageDir, 'dist'),
+			to: '/franklin-plugin',
+		},
+	],
 	addons: [
 		getAbsolutePath('@storybook/addon-docs'),
 		getAbsolutePath('@storybook/addon-mcp'),
 	],
 	framework: getAbsolutePath('@storybook/react-vite'),
-	viteFinal: async (config) => {
-		const { default: tailwindcss } = await import('@tailwindcss/vite');
-		config.plugins = [...(config.plugins ?? []), tailwindcss()];
+	viteFinal: (config) => {
 		config.resolve = {
 			...config.resolve,
 			alias: {

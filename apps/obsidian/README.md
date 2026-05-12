@@ -142,10 +142,11 @@ Build the static Storybook:
 npm run build-storybook
 ```
 
-The Storybook toolbar includes an Obsidian theme selector. Theme options are
-registered in `.storybook/themes.ts`; the matching Storybook-only host variable
-fixtures live in `.storybook/themes.css`. Those fixtures currently cover
-Obsidian light/dark plus Catppuccin Latte, Frappe, Macchiato, and Mocha.
+The Storybook toolbar includes an Obsidian theme selector for the built-in
+`theme-light` and `theme-dark` body classes. Storybook runs the existing plugin
+bundle script before startup, serves `dist/styles.css`, and loads it after the
+Storybook host CSS so token flow matches Obsidian: host variables first,
+Franklin's Obsidian bridge second.
 
 For full correctness, Storybook should eventually implement or load Obsidian's
 own component layer so Franklin's reset layer is tested against the same native
