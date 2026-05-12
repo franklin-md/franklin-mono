@@ -17,13 +17,16 @@ type Props = ComponentProps<'button'> & {
 // Obsidian link theme variables:
 // https://docs.obsidian.md/Reference/CSS+variables/Editor/Link
 const inlineTextButtonClassName =
-	'inline cursor-pointer appearance-none border-0 bg-transparent m-0 p-0 text-inherit shadow-none [font:inherit] [line-height:inherit] [text-align:inherit]';
+	'inline cursor-pointer appearance-none border-0 bg-transparent m-0 p-0 text-inherit shadow-none [font:inherit] [line-height:inherit] [text-align:inherit] wrap-anywhere';
 
+// Important is intentional: the reset above must inherit surrounding markdown
+// metrics, and Tailwind's generated rule order can otherwise let those reset
+// utilities win over Obsidian's link token utilities.
 const resolvedWikilinkClassName =
-	'[color:var(--link-color)] [font-weight:var(--link-weight)] [text-decoration:var(--link-decoration)] [text-decoration-thickness:var(--link-decoration-thickness)] hover:[color:var(--link-color-hover)] hover:[text-decoration:var(--link-decoration-hover)]';
+	'![color:var(--link-color)] ![font-weight:var(--link-weight)] ![text-decoration:var(--link-decoration)] ![text-decoration-thickness:var(--link-decoration-thickness)] hover:![color:var(--link-color-hover)] hover:![text-decoration:var(--link-decoration-hover)]';
 
 const unresolvedWikilinkClassName =
-	'[color:var(--link-unresolved-color)] [opacity:var(--link-unresolved-opacity)] [filter:var(--link-unresolved-filter)] [font-weight:var(--link-weight)] [text-decoration-line:underline] [text-decoration-style:var(--link-unresolved-decoration-style)] [text-decoration-color:var(--link-unresolved-decoration-color)] [text-decoration-thickness:var(--link-decoration-thickness)]';
+	'![color:var(--link-unresolved-color)] ![opacity:var(--link-unresolved-opacity)] ![filter:var(--link-unresolved-filter)] ![font-weight:var(--link-weight)] ![text-decoration-line:underline] ![text-decoration-style:var(--link-unresolved-decoration-style)] ![text-decoration-color:var(--link-unresolved-decoration-color)] ![text-decoration-thickness:var(--link-decoration-thickness)]';
 
 export function ObsidianWikilink({
 	children,
@@ -58,7 +61,6 @@ export function ObsidianWikilink({
 			className={cn(
 				inlineTextButtonClassName,
 				wikilinkStyleClassName,
-				'wrap-anywhere',
 				className,
 			)}
 			data-obsidian-linktext={target}

@@ -66,8 +66,10 @@ describe('Obsidian conversation wikilinks', () => {
 
 		const link = screen.getByRole('button', { name: '[[MEMORY]]' });
 		expect(link.classList.contains('internal-link')).toBe(false);
-		expect(link.classList.contains('[color:var(--link-color)]')).toBe(true);
-		expect(link.classList.contains('[font-weight:var(--link-weight)]')).toBe(
+		expect(link.classList.contains('text-inherit')).toBe(true);
+		expect(link.classList.contains('[font:inherit]')).toBe(true);
+		expect(link.classList.contains('![color:var(--link-color)]')).toBe(true);
+		expect(link.classList.contains('![font-weight:var(--link-weight)]')).toBe(
 			true,
 		);
 		expect(link.classList.contains('font-medium')).toBe(false);
@@ -79,12 +81,12 @@ describe('Obsidian conversation wikilinks', () => {
 		renderText('See [[MEMORY]]', app);
 
 		const link = screen.getByRole('button', { name: '[[MEMORY]]' });
-		expect(link.classList.contains('[color:var(--link-color)]')).toBe(false);
+		expect(link.classList.contains('![color:var(--link-color)]')).toBe(false);
 		expect(
-			link.classList.contains('[color:var(--link-unresolved-color)]'),
+			link.classList.contains('![color:var(--link-unresolved-color)]'),
 		).toBe(true);
 		expect(
-			link.classList.contains('[opacity:var(--link-unresolved-opacity)]'),
+			link.classList.contains('![opacity:var(--link-unresolved-opacity)]'),
 		).toBe(true);
 	});
 
@@ -93,9 +95,9 @@ describe('Obsidian conversation wikilinks', () => {
 		renderText('See [[MEMORY]]', app);
 
 		const link = screen.getByRole('button', { name: '[[MEMORY]]' });
-		expect(link.classList.contains('[color:var(--link-color)]')).toBe(false);
+		expect(link.classList.contains('![color:var(--link-color)]')).toBe(false);
 		expect(
-			link.classList.contains('[color:var(--link-unresolved-color)]'),
+			link.classList.contains('![color:var(--link-unresolved-color)]'),
 		).toBe(true);
 	});
 
