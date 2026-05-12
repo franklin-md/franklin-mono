@@ -12,7 +12,9 @@
 		"typecheck": "tsc -b tsconfig.json --pretty false",
 		"bundle": "node ./build/bundle.mjs",
 		"bundle:prod": "node ./build/bundle.mjs --prod",
-		"dev": "node ./build/bundle.mjs --watch"
+		"dev": "node ./build/bundle.mjs --watch",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build"
 	},
 	"dependencies": {
 		"@franklin/agent": "*",
@@ -27,7 +29,11 @@
 		"zod": "^4.0.0"
 	},
 	"devDependencies": {
+		"@storybook/addon-docs": "^10.2.19",
+		"@storybook/addon-mcp": "^0.4.1",
+		"@storybook/react-vite": "^10.2.19",
 		"@tailwindcss/postcss": "^4.1.4",
+		"@tailwindcss/vite": "^4.1.4",
 		"@types/react": "^18.3.20",
 		"@types/react-dom": "^18.3.7",
 		"esbuild": "^0.25.0",
@@ -35,6 +41,7 @@
 		"postcss": "^8.5.0",
 		"postcss-prefix-selector": "^2.1.0",
 		"react-scan": "^0.5.3",
+		"storybook": "^10.2.19",
 		"tailwindcss": "^4.1.4"
 	}
 }

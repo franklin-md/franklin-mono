@@ -23,7 +23,6 @@ describe('createMounter', () => {
 		});
 
 		expect(contentEl.classList.contains('franklin')).toBe(true);
-		expect(contentEl.classList.contains('franklin-mount-host')).toBe(true);
 		expect(contentEl.querySelector('[data-testid="child"]')).not.toBeNull();
 		expect(
 			document.body.querySelector('[data-franklin-portal-root="true"]'),
@@ -34,7 +33,7 @@ describe('createMounter', () => {
 		});
 
 		expect(removeWindowMigratedListener).toHaveBeenCalledOnce();
-		expect(contentEl.classList.contains('franklin-mount-host')).toBe(false);
+		expect(contentEl.classList.contains('franklin')).toBe(false);
 		expect(contentEl.childNodes).toHaveLength(0);
 	});
 
@@ -58,12 +57,13 @@ describe('createMounter', () => {
 		});
 
 		expect(firstRemove).toHaveBeenCalledOnce();
-		expect(firstHost.classList.contains('franklin-mount-host')).toBe(false);
-		expect(secondHost.classList.contains('franklin-mount-host')).toBe(true);
+		expect(firstHost.classList.contains('franklin')).toBe(false);
+		expect(secondHost.classList.contains('franklin')).toBe(true);
 
 		act(() => {
 			mounter.unmount();
 		});
 		expect(secondRemove).toHaveBeenCalledOnce();
+		expect(secondHost.classList.contains('franklin')).toBe(false);
 	});
 });

@@ -3,8 +3,6 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import { PortalProvider } from './portal.js';
 
-const mountHostClass = 'franklin-mount-host';
-
 export type Mounter = {
 	mount: (contentEl: HTMLElement, children: ReactNode) => void;
 	unmount: () => void;
@@ -22,7 +20,7 @@ export function createMounter(): Mounter {
 
 		root?.unmount();
 		root = null;
-		currentContentEl.classList.remove(mountHostClass);
+		currentContentEl.classList.remove('franklin');
 		currentContentEl.replaceChildren();
 		contentEl = null;
 	};
@@ -32,7 +30,7 @@ export function createMounter(): Mounter {
 			unmount();
 			contentEl = nextContentEl;
 			nextContentEl.replaceChildren();
-			nextContentEl.classList.add('franklin', mountHostClass);
+			nextContentEl.classList.add('franklin');
 			root = createRoot(nextContentEl);
 			root.render(
 				<PortalProvider hostEl={nextContentEl}>{children}</PortalProvider>,

@@ -128,6 +128,30 @@ Dev builds (`bundle` and `dev`) initialize React Scan before the plugin mounts
 React roots so render highlights and the toolbar are available while profiling
 inside Obsidian. Production bundles (`bundle:prod`) do not include React Scan.
 
+## Storybook
+
+Run the Obsidian component stories locally:
+
+```bash
+npm run storybook
+```
+
+Build the static Storybook:
+
+```bash
+npm run build-storybook
+```
+
+The Storybook toolbar includes an Obsidian theme selector for the built-in
+`theme-light` and `theme-dark` body classes. Storybook runs the existing plugin
+bundle script before startup, serves `dist/styles.css`, and loads it after the
+Storybook host CSS so token flow matches Obsidian: host variables first,
+Franklin's Obsidian bridge second.
+
+For full correctness, Storybook should eventually implement or load Obsidian's
+own component layer so Franklin's reset layer is tested against the same native
+button, input, select, and textarea styles that Obsidian applies.
+
 ## Notes
 
 - The plugin renders a Franklin conversation window inside an Obsidian view, with compact agent tabs for switching sessions.
