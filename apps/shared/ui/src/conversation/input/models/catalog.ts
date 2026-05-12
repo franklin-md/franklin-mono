@@ -5,8 +5,6 @@
 
 export type AccessType = 'api' | 'sub';
 
-export type IntelligenceTier = 'frontier' | 'strong' | 'balanced' | 'efficient';
-
 export interface CatalogModel {
 	id: string;
 	provider: string;
@@ -15,7 +13,6 @@ export interface CatalogModel {
 	contextWindow: number;
 	costInput: number;
 	costOutput: number;
-	intelligence: IntelligenceTier;
 	free?: boolean;
 }
 
@@ -35,7 +32,6 @@ function model(
 		ctx: number;
 		costIn: number;
 		costOut: number;
-		intelligence: IntelligenceTier;
 		free?: boolean;
 	},
 ): CatalogModel {
@@ -47,7 +43,6 @@ function model(
 		contextWindow: opts.ctx,
 		costInput: opts.costIn,
 		costOutput: opts.costOut,
-		intelligence: opts.intelligence,
 		free: opts.free,
 	};
 }
@@ -62,28 +57,24 @@ const ANTHROPIC_PROVIDER_GROUP: ProviderGroup = {
 			ctx: 1_000_000,
 			costIn: 5,
 			costOut: 25,
-			intelligence: 'frontier',
 		}),
 		model('anthropic', 'claude-sonnet-4-6', 'Claude Sonnet 4.6', {
 			reasoning: true,
 			ctx: 1_000_000,
 			costIn: 3,
 			costOut: 15,
-			intelligence: 'frontier',
 		}),
 		model('anthropic', 'claude-sonnet-4-5', 'Claude Sonnet 4.5', {
 			reasoning: true,
 			ctx: 200_000,
 			costIn: 3,
 			costOut: 15,
-			intelligence: 'strong',
 		}),
 		model('anthropic', 'claude-haiku-4-5', 'Claude Haiku 4.5', {
 			reasoning: true,
 			ctx: 200_000,
 			costIn: 1,
 			costOut: 5,
-			intelligence: 'balanced',
 		}),
 	],
 };
@@ -98,21 +89,18 @@ const OPENAI_CODEX_PROVIDER_GROUP: ProviderGroup = {
 			ctx: 272_000,
 			costIn: 5,
 			costOut: 30,
-			intelligence: 'frontier',
 		}),
 		model('openai-codex', 'gpt-5.4', 'GPT-5.4', {
 			reasoning: true,
 			ctx: 272_000,
 			costIn: 2.5,
 			costOut: 15,
-			intelligence: 'frontier',
 		}),
 		model('openai-codex', 'gpt-5.4-mini', 'GPT-5.4 Mini', {
 			reasoning: true,
 			ctx: 272_000,
 			costIn: 0.75,
 			costOut: 4.5,
-			intelligence: 'balanced',
 		}),
 	],
 };
@@ -127,63 +115,54 @@ const OPENCODE_GO_PROVIDER_GROUP: ProviderGroup = {
 			ctx: 1_000_000,
 			costIn: 1.74,
 			costOut: 3.48,
-			intelligence: 'frontier',
 		}),
 		model('opencode-go', 'deepseek-v4-flash', 'DeepSeek V4 Flash', {
 			reasoning: true,
 			ctx: 1_000_000,
 			costIn: 0.14,
 			costOut: 0.28,
-			intelligence: 'strong',
 		}),
 		model('opencode-go', 'mimo-v2.5-pro', 'MiMo V2.5 Pro', {
 			reasoning: true,
 			ctx: 1_048_576,
 			costIn: 1,
 			costOut: 3,
-			intelligence: 'frontier',
 		}),
 		model('opencode-go', 'mimo-v2.5', 'MiMo V2.5', {
 			reasoning: true,
 			ctx: 1_000_000,
 			costIn: 0.4,
 			costOut: 2,
-			intelligence: 'balanced',
 		}),
 		model('opencode-go', 'kimi-k2.6', 'Kimi K2.6', {
 			reasoning: true,
 			ctx: 262_144,
 			costIn: 0.95,
 			costOut: 4,
-			intelligence: 'strong',
 		}),
 		model('opencode-go', 'glm-5.1', 'GLM-5.1', {
 			reasoning: true,
 			ctx: 202_752,
 			costIn: 1.4,
 			costOut: 4.4,
-			intelligence: 'frontier',
 		}),
 		model('opencode-go', 'qwen3.6-plus', 'Qwen3.6 Plus', {
 			reasoning: true,
 			ctx: 262_144,
 			costIn: 0.5,
 			costOut: 3,
-			intelligence: 'frontier',
 		}),
 		model('opencode-go', 'qwen3.5-plus', 'Qwen3.5 Plus', {
 			reasoning: true,
 			ctx: 262_144,
 			costIn: 0.2,
 			costOut: 1.2,
-			intelligence: 'efficient',
 		}),
 		model('opencode-go', 'minimax-m2.7', 'MiniMax M2.7', {
 			reasoning: true,
 			ctx: 204_800,
 			costIn: 0.3,
 			costOut: 1.2,
-			intelligence: 'strong',
 		}),
 	],
 };
@@ -198,35 +177,30 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 			ctx: 202_752,
 			costIn: 1.26,
 			costOut: 3.96,
-			intelligence: 'frontier',
 		}),
 		model('openrouter', 'qwen/qwen3.6-plus', 'Qwen3.6 Plus', {
 			reasoning: true,
 			ctx: 1_000_000,
 			costIn: 0.325,
 			costOut: 1.95,
-			intelligence: 'frontier',
 		}),
 		model('openrouter', 'deepseek/deepseek-v4-flash', 'DeepSeek V4 Flash', {
 			reasoning: true,
 			ctx: 1_048_576,
 			costIn: 0.14,
 			costOut: 0.28,
-			intelligence: 'strong',
 		}),
 		model('openrouter', 'deepseek/deepseek-v4-pro', 'DeepSeek V4 Pro', {
 			reasoning: true,
 			ctx: 1_048_576,
 			costIn: 0.435,
 			costOut: 0.87,
-			intelligence: 'frontier',
 		}),
 		model('openrouter', 'x-ai/grok-4.20', 'Grok 4.20', {
 			reasoning: true,
 			ctx: 2_000_000,
 			costIn: 2,
 			costOut: 6,
-			intelligence: 'frontier',
 		}),
 		model(
 			'openrouter',
@@ -237,7 +211,6 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 				ctx: 1_048_576,
 				costIn: 0.5,
 				costOut: 3,
-				intelligence: 'strong',
 			},
 		),
 		model(
@@ -249,7 +222,6 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 				ctx: 1_048_576,
 				costIn: 0.25,
 				costOut: 1.5,
-				intelligence: 'efficient',
 			},
 		),
 		model(
@@ -261,7 +233,6 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 				ctx: 1_048_576,
 				costIn: 2,
 				costOut: 12,
-				intelligence: 'frontier',
 			},
 		),
 		model('openrouter', 'xiaomi/mimo-v2.5-pro', 'MiMo-V2.5-Pro', {
@@ -269,21 +240,18 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 			ctx: 1_048_576,
 			costIn: 1,
 			costOut: 3,
-			intelligence: 'frontier',
 		}),
 		model('openrouter', 'minimax/minimax-m2.7', 'MiniMax M2.7', {
 			reasoning: true,
 			ctx: 204_800,
 			costIn: 0.3,
 			costOut: 1.2,
-			intelligence: 'strong',
 		}),
 		model('openrouter', 'moonshotai/kimi-k2.6', 'Kimi K2.6', {
 			reasoning: true,
 			ctx: 262_144,
 			costIn: 0.75,
 			costOut: 3.5,
-			intelligence: 'strong',
 		}),
 	],
 };

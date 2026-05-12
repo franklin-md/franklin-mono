@@ -226,7 +226,6 @@ describe('ProviderAuthAction', () => {
 								contextWindow: 202_752,
 								costInput: 1.26,
 								costOutput: 3.96,
-								intelligence: 'frontier',
 							},
 						],
 					}}

@@ -24,7 +24,6 @@ describe('MODEL_CATALOG', () => {
 			contextWindow: 272_000,
 			costInput: 5,
 			costOutput: 30,
-			intelligence: 'frontier',
 		});
 	});
 
@@ -79,7 +78,6 @@ describe('MODEL_CATALOG', () => {
 			contextWindow: 1_000_000,
 			costInput: 1.74,
 			costOutput: 3.48,
-			intelligence: 'frontier',
 		});
 	});
 });
