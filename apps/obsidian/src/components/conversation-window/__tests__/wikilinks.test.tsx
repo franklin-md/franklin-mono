@@ -11,7 +11,7 @@ import {
 import type { App } from 'obsidian';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ObsidianAppContext } from '../../obsidian-app-context.js';
+import { ObsidianAppProvider } from '../../obsidian-app-context.js';
 import { ObsidianText } from '../blocks.js';
 
 afterEach(cleanup);
@@ -41,7 +41,7 @@ function createMockApp({
 	return { app, fileToLinktext, getFirstLinkpathDest, openLinkText };
 }
 
-function renderText(text: string, app?: App) {
+function renderText(text: string, app: App = createMockApp().app) {
 	const block: TextBlock = {
 		kind: 'text',
 		text,
@@ -49,15 +49,7 @@ function renderText(text: string, app?: App) {
 	};
 
 	const content = <ObsidianText block={block} />;
-	render(
-		app ? (
-			<ObsidianAppContext.Provider value={app}>
-				{content}
-			</ObsidianAppContext.Provider>
-		) : (
-			content
-		),
-	);
+	render(<ObsidianAppProvider value={app}>{content}</ObsidianAppProvider>);
 }
 
 describe('Obsidian conversation wikilinks', () => {

@@ -22,7 +22,7 @@ export function ObsidianWikilink({
 	const target = linktext ?? dataLinktext;
 	const handleClick: Props['onClick'] = (event) => {
 		props.onClick?.(event);
-		if (event.defaultPrevented || !app || !target) return;
+		if (event.defaultPrevented || !target) return;
 
 		void openObsidianWikilink(app, target).catch((error: unknown) => {
 			new Notice(getOpenErrorMessage(error));

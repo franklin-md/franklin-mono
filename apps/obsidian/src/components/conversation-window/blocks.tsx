@@ -8,11 +8,11 @@ import { remarkObsidianWikilinks } from './wikilinks/remark-wikilinks.js';
 
 const MARKDOWN_CLASS = 'markdown-rendered';
 const markdown = {
-	allowedTags: {
-		'obsidian-wikilink': ['dataLinktext'],
-	},
-	components: {
-		'obsidian-wikilink': ObsidianWikilink,
+	customElements: {
+		'obsidian-wikilink': {
+			attributes: ['dataLinktext'],
+			component: ObsidianWikilink,
+		},
 	},
 	remarkPlugins: [remarkObsidianWikilinks],
 };

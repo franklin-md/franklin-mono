@@ -4,7 +4,7 @@ import { AppContext, AuthActionProvider } from '@franklin/react';
 import type { App as ObsidianApp } from 'obsidian';
 import type { ReactNode } from 'react';
 
-import { ObsidianAppContext } from './obsidian-app-context.js';
+import { ObsidianAppProvider } from './obsidian-app-context.js';
 
 type Props = {
 	app: FranklinApp;
@@ -20,12 +20,12 @@ export function FranklinRoot({
 	requestApiKey,
 }: Props) {
 	return (
-		<ObsidianAppContext.Provider value={obsidianApp}>
+		<ObsidianAppProvider value={obsidianApp}>
 			<AppContext.Provider value={app}>
 				<AuthActionProvider handlers={{ requestApiKey }}>
 					{children}
 				</AuthActionProvider>
 			</AppContext.Provider>
-		</ObsidianAppContext.Provider>
+		</ObsidianAppProvider>
 	);
 }
