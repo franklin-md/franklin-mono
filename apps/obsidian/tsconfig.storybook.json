@@ -1,0 +1,19 @@
+{
+	"compilerOptions": {
+		"target": "ES2023",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["ES2023", "DOM"],
+		"strict": true,
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"rootDir": "./.storybook",
+		"outDir": "./dist/storybook",
+		"composite": true,
+		"declaration": true,
+		"declarationMap": true
+	},
+	"include": [".storybook/**/*.ts"]
+}

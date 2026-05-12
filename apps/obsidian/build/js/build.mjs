@@ -27,7 +27,7 @@ export function createJsBuilder({ srcDir, distDir, isProd }) {
 		entryPoints: [resolve(srcDir, 'main.ts')],
 		bundle: true,
 		outfile: resolve(distDir, 'main.js'),
-		tsconfig: resolve(srcDir, '../../../tsconfig.base.json'),
+		tsconfig: resolve(srcDir, '../tsconfig.build.json'),
 		format: 'cjs',
 		platform: 'node',
 		target: 'es2022',
