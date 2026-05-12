@@ -14,7 +14,13 @@ function isSearchOnlyLink(linktext: string): boolean {
 export function parseWikilink(input: string): ParsedWikilink | undefined {
 	if (!input.startsWith('[[') || !input.endsWith(']]')) return undefined;
 
-	const inner = input.slice(2, -2).trim();
+	return parseWikilinkLinktext(input.slice(2, -2));
+}
+
+export function parseWikilinkLinktext(
+	input: string,
+): ParsedWikilink | undefined {
+	const inner = input.trim();
 	if (inner === '') return undefined;
 
 	const linktext = stripDisplayText(inner).trim();
@@ -24,7 +30,6 @@ export function parseWikilink(input: string): ParsedWikilink | undefined {
 	if (linkpath === '' || isSearchOnlyLink(linkpath)) return undefined;
 
 	return {
-		raw: input,
 		linktext,
 		linkpath,
 		hasExplicitPath: linkpath.includes('/'),

@@ -2,8 +2,7 @@ import type { ComponentProps } from 'react';
 import { Notice } from 'obsidian';
 
 import { useObsidianApp } from '../../obsidian-app-context.js';
-
-import { openObsidianWikilink } from './open.js';
+import { openObsidianWikilink } from '../../../utils/obsidian/wikilinks/open.js';
 
 type Props = ComponentProps<'button'> & {
 	'data-linktext'?: string;
