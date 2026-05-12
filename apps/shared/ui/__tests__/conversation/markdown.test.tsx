@@ -117,6 +117,49 @@ describe('Markdown', () => {
 		expect(container.querySelector('del')?.textContent).toBe('markdown');
 	});
 
+	it('renders fully qualified HTTP(S) markdown links as anchors with favicons', () => {
+		const { container } = render(
+			<Markdown
+				text={[
+					'[Secure](https://example.com/docs)',
+					'[Insecure](http://example.test/path)',
+				].join(' ')}
+			/>,
+		);
+
+		const links = Array.from(container.querySelectorAll('a'));
+		expect(links).toHaveLength(2);
+		expect(links[0]?.getAttribute('href')).toBe('https://example.com/docs');
+		expect(links[0]?.getAttribute('target')).toBe('_blank');
+		expect(links[0]?.getAttribute('rel')).toContain('noreferrer');
+		expect(links[0]?.querySelector('img')?.getAttribute('src')).toBe(
+			'https://www.google.com/s2/favicons?domain=example.com&sz=16',
+		);
+		expect(links[1]?.querySelector('img')?.getAttribute('src')).toBe(
+			'https://www.google.com/s2/favicons?domain=example.test&sz=16',
+		);
+	});
+
+	it('does not decorate markdown links that are not fully qualified HTTP(S) URLs', () => {
+		const { container } = render(
+			<Markdown
+				text={[
+					'[Relative](/docs)',
+					'[Fragment](#heading)',
+					'[Email](mailto:hello@example.com)',
+					'[Bare](example.com)',
+				].join(' ')}
+			/>,
+		);
+
+		expect(container.querySelector('a[href="/docs"]')).not.toBeNull();
+		const fragmentLink = container.querySelector('a[href="#heading"]');
+		expect(fragmentLink).not.toBeNull();
+		expect(fragmentLink?.getAttribute('target')).toBeNull();
+		expect(fragmentLink?.getAttribute('rel')).toBeNull();
+		expect(container.querySelector('img')).toBeNull();
+	});
+
 	it('does not wrap block image markdown in a paragraph', () => {
 		const { container } = render(
 			<Markdown text="![alt text](https://example.com/image.png)" />,

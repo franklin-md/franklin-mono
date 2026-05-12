@@ -11,7 +11,10 @@ export function Favicon({ hostname, className }: FaviconProps) {
 		<img
 			src={faviconUrl(hostname)}
 			alt=""
-			className={cn('h-3.5 w-3.5 shrink-0 rounded-sm', className)}
+			className={cn(
+				'inline-block size-[0.9em] shrink-0 rounded-[0.15em] align-[-0.1em]',
+				className,
+			)}
 			onError={(e) => {
 				e.currentTarget.style.display = 'none';
 			}}
