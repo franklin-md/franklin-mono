@@ -16,7 +16,6 @@ export async function openObsidianWikilink(
 	}
 
 	resolveWikilinkFile(app, wikilink, { sourcePath: SOURCE_PATH });
-	// TODO: We should consider in the future fixing a lot of the obsidian path utils
-	// as most of them just simplify and assume we are getting link from root.
+	// TODO(FRA-302): Thread real source context instead of assuming vault root.
 	await app.workspace.openLinkText(wikilink.linktext, SOURCE_PATH, false);
 }

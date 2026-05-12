@@ -35,10 +35,8 @@ function findIncompleteWikilinkOpen(text: string) {
 	return openIndex;
 }
 
-// TODO: I wonder if in the future we should have general implementation/algorithm that efficiently
-// checks what type of markdown block you are in (i.e. returns flag for each block category)
-// I wonder if this is already implemented?
-// My current fear is that this is probably quite expensive
+// Keep this local and cheap until another streaming repair needs markdown
+// context; full markdown parsing per token is likely too expensive here.
 function isWithinMarkdownCode(text: string, position: number) {
 	let inFence = false;
 	let inInlineCode = false;

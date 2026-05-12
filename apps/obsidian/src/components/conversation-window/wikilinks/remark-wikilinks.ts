@@ -25,6 +25,8 @@ type ReplacementNode = TextNode | WikilinkNode;
 
 // Algorithm: Replace all `[[X]]` (not in a codeblock) with a wikilink node that we render with link.tsx
 const WIKILINK_PATTERN = /\[\[[\s\S]*?\]\]/g;
+// Wikilinks inside code and existing link contexts are intentionally preserved
+// as literal text unless we define an explicit opt-in rendering contract.
 const SKIPPED_PARENT_TYPES = new Set([
 	'code',
 	'definition',

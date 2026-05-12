@@ -45,6 +45,7 @@ export function ObsidianWikilink({
 		props.onClick?.(event);
 		if (event.defaultPrevented || !target) return;
 
+		// TODO(FRA-303): Missing note links should create the note and then open it.
 		void openObsidianWikilink(app, target).catch((error: unknown) => {
 			new Notice(getOpenErrorMessage(error));
 		});
