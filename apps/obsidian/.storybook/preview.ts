@@ -7,6 +7,7 @@ import {
 	obsidianThemeSelectorInitialGlobals,
 } from './theme-selector.js';
 
+import './obsidian-default-theme-vars.css';
 import './preview.css';
 
 const preview: Preview = {

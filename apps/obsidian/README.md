@@ -143,10 +143,24 @@ npm run build-storybook
 ```
 
 The Storybook toolbar includes an Obsidian theme selector for the built-in
-`theme-light` and `theme-dark` body classes. Storybook runs the existing plugin
+`theme-light` and `theme-dark` body classes. Storybook imports a checked-in
+snapshot of Obsidian's default host CSS variables from
+`.storybook/obsidian-default-theme-vars.css`, then runs the existing plugin
 bundle script before startup, serves `dist/styles.css`, and loads it after the
 Storybook host CSS so token flow matches Obsidian: host variables first,
 Franklin's Obsidian bridge second.
+
+Refresh the default variable snapshot only when intentionally updating the
+Obsidian baseline:
+
+```bash
+npm run extract-obsidian-theme-vars -w @franklin/obsidian -- /path/to/app.css --version=<obsidian-version>
+```
+
+The extractor keeps custom property declarations from Obsidian's global default
+theme selectors such as `:root`, `body`, `.theme-light`, and `.theme-dark`, so
+documented editor variables like `--link-color` are available in Storybook
+without requiring each developer to extract Obsidian assets locally.
 
 For full correctness, Storybook should eventually implement or load Obsidian's
 own component layer so Franklin's reset layer is tested against the same native
