@@ -53,7 +53,11 @@ export function Markdown({
 				remarkPlugins={
 					remarkPlugins ? [...baseRemarkPlugins, ...remarkPlugins] : undefined
 				}
-				components={{ ...chromeComponents, ...components, ...custom.components }}
+				components={{
+					...chromeComponents,
+					...components,
+					...custom.components,
+				}}
 				allowedTags={custom.allowedTags}
 				controls={false}
 				remend={remend}

@@ -57,14 +57,14 @@ describe('Obsidian conversation wikilinks', () => {
 	it('renders bare wikilinks as marker links', () => {
 		renderText('See [[MEMORY]]');
 
-		const link = screen.getByRole('button', { name: 'MEMORY' });
+		const link = screen.getByRole('button', { name: '[[MEMORY]]' });
 		expect(link.getAttribute('data-obsidian-linktext')).toBe('MEMORY');
 	});
 
 	it('uses alias text for display while preserving the link target', () => {
 		renderText('Open [[notes/MEMORY#Overview|Read this note]]');
 
-		const link = screen.getByRole('button', { name: 'Read this note' });
+		const link = screen.getByRole('button', { name: '[[Read this note]]' });
 		expect(link.getAttribute('data-obsidian-linktext')).toBe(
 			'notes/MEMORY#Overview',
 		);
@@ -74,7 +74,7 @@ describe('Obsidian conversation wikilinks', () => {
 		const { app, openLinkText } = createMockApp();
 		renderText('See [[MEMORY]]', app);
 
-		fireEvent.click(screen.getByRole('button', { name: 'MEMORY' }));
+		fireEvent.click(screen.getByRole('button', { name: '[[MEMORY]]' }));
 
 		await waitFor(() => {
 			expect(openLinkText).toHaveBeenCalledWith('MEMORY', '', false);
@@ -89,7 +89,7 @@ describe('Obsidian conversation wikilinks', () => {
 			</ObsidianAppProvider>,
 		);
 
-		const link = screen.getByRole('button', { name: 'Memory note' });
+		const link = screen.getByRole('button', { name: '[[Memory note]]' });
 		expect(link.getAttribute('data-obsidian-linktext')).toBe('MEMORY');
 		fireEvent.click(link);
 
@@ -104,7 +104,7 @@ describe('Obsidian conversation wikilinks', () => {
 		});
 		renderText('See [[MEMORY]]', app);
 
-		fireEvent.click(screen.getByRole('button', { name: 'MEMORY' }));
+		fireEvent.click(screen.getByRole('button', { name: '[[MEMORY]]' }));
 
 		await waitFor(() => {
 			expect(getFirstLinkpathDest).toHaveBeenCalledWith('MEMORY', '');
@@ -118,7 +118,7 @@ describe('Obsidian conversation wikilinks', () => {
 		});
 		renderText('See [[MEMORY]]', app);
 
-		fireEvent.click(screen.getByRole('button', { name: 'MEMORY' }));
+		fireEvent.click(screen.getByRole('button', { name: '[[MEMORY]]' }));
 
 		await waitFor(() => {
 			expect(fileToLinktext).toHaveBeenCalled();
@@ -129,7 +129,7 @@ describe('Obsidian conversation wikilinks', () => {
 	it('renders incomplete wikilinks as transient marker links while streaming', () => {
 		renderText('See [[MEM');
 
-		const link = screen.getByRole('button', { name: 'MEM' });
+		const link = screen.getByRole('button', { name: '[[MEM]]' });
 		expect(link.getAttribute('data-obsidian-linktext')).toBe('MEM');
 	});
 
@@ -157,7 +157,7 @@ describe('Obsidian conversation wikilinks', () => {
 	it('does not rewrite wikilinks inside code blocks', () => {
 		renderText('```\n[[MEMORY]]\n```');
 
-		expect(screen.queryByRole('button', { name: 'MEMORY' })).toBeNull();
+		expect(screen.queryByRole('button', { name: '[[MEMORY]]' })).toBeNull();
 		expect(screen.getByText('[[MEMORY]]')).toBeTruthy();
 	});
 

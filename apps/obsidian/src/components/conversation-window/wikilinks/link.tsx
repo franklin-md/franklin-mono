@@ -34,7 +34,9 @@ export function ObsidianWikilink({
 			data-obsidian-linktext={target}
 			onClick={handleClick}
 		>
+			{'[['}
 			{children}
+			{']]'}
 		</button>
 	);
 }
