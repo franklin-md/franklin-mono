@@ -16,6 +16,16 @@ const OPENROUTER_UPSTREAM_MODEL_CASES = [
 	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
 ] as const;
 
+// Keep OpenCode Go Qwen 3.5/3.6 and MiniMax M2.7 on the OpenAI-compatible
+// path even though the OpenCode docs table lists provider SDKs such as
+// @ai-sdk/alibaba and @ai-sdk/anthropic. Pi issue #4106 reproduced 404s with
+// the non-/v1 metadata, PR #4110 fixed these models to openai-completions, and
+// v0.73.0 release notes call out that generated metadata fix.
+// Sources:
+// - https://dev.opencode.ai/docs/go/
+// - https://github.com/earendil-works/pi/issues/4106
+// - https://github.com/earendil-works/pi/pull/4110
+// - https://github.com/earendil-works/pi/releases/tag/v0.73.0
 const OPENCODE_GO_UPSTREAM_MODEL_CASES = [
 	{
 		id: 'deepseek-v4-pro',
