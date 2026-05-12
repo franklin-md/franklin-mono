@@ -20,7 +20,6 @@ function catalogModel(provider: string, id: string): CatalogModel {
 		contextWindow: 1_000_000,
 		costInput: 1,
 		costOutput: 1,
-		intelligence: 'strong',
 	};
 }
 
