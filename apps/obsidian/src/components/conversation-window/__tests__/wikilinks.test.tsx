@@ -61,6 +61,19 @@ describe('Obsidian conversation wikilinks', () => {
 		expect(link.getAttribute('data-obsidian-linktext')).toBe('MEMORY');
 	});
 
+	it('uses Obsidian link variables without relying on internal-link classes', () => {
+		renderText('See [[MEMORY]]');
+
+		const link = screen.getByRole('button', { name: '[[MEMORY]]' });
+		expect(link.classList.contains('internal-link')).toBe(false);
+		expect(link.classList.contains('[color:var(--link-color)]')).toBe(true);
+		expect(link.classList.contains('[font-weight:var(--link-weight)]')).toBe(
+			true,
+		);
+		expect(link.classList.contains('font-medium')).toBe(false);
+		expect(link.classList.contains('text-primary')).toBe(false);
+	});
+
 	it('uses alias text for display while preserving the link target', () => {
 		renderText('Open [[notes/MEMORY#Overview|Read this note]]');
 

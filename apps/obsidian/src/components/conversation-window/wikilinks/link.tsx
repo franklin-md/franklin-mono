@@ -1,4 +1,5 @@
 import type { ComponentProps } from 'react';
+import { cn } from '@franklin/ui';
 import { Notice } from 'obsidian';
 
 import { useObsidianApp } from '../../obsidian-app-context.js';
@@ -9,8 +10,15 @@ type Props = ComponentProps<'button'> & {
 	node?: unknown;
 };
 
+const inlineTextButtonClassName =
+	'inline cursor-pointer appearance-none border-0 bg-transparent m-0 p-0 text-inherit shadow-none [font:inherit] [line-height:inherit] [text-align:inherit]';
+
+const resolvedWikilinkClassName =
+	'[color:var(--link-color)] [font-weight:var(--link-weight)] [text-decoration:var(--link-decoration)] [text-decoration-thickness:var(--link-decoration-thickness)] hover:[color:var(--link-color-hover)] hover:[text-decoration:var(--link-decoration-hover)]';
+
 export function ObsidianWikilink({
 	children,
+	className,
 	linktext,
 	node: _node,
 	...props
@@ -30,7 +38,12 @@ export function ObsidianWikilink({
 		<button
 			{...props}
 			type="button"
-			className="wrap-anywhere appearance-none text-left font-medium text-primary underline"
+			className={cn(
+				inlineTextButtonClassName,
+				resolvedWikilinkClassName,
+				'wrap-anywhere',
+				className,
+			)}
 			data-obsidian-linktext={target}
 			onClick={handleClick}
 		>
