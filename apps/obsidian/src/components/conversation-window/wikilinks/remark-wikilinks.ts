@@ -118,9 +118,7 @@ function rewriteText(value: string) {
 					dataLinktext: wikilink.linktext,
 				},
 			},
-			children: [
-				{ type: 'text', value: getDisplayText(raw, wikilink.linktext) },
-			],
+			children: [{ type: 'text', value: wikilink.displayText }],
 		});
 
 		hasRewrite = true;
@@ -132,15 +130,6 @@ function rewriteText(value: string) {
 
 	pushTextNode(nodes, value.slice(cursor));
 	return nodes;
-}
-
-function getDisplayText(raw: string, fallback: string) {
-	const inner = raw.slice(2, -2).trim();
-	const pipeIndex = inner.indexOf('|');
-	if (pipeIndex < 0) return fallback;
-
-	const displayText = inner.slice(pipeIndex + 1).trim();
-	return displayText === '' ? fallback : displayText;
 }
 
 function pushTextNode(nodes: MarkdownNode[], value: string) {

@@ -20,6 +20,7 @@ describe('parseWikilink', () => {
 		expect(parseWikilink('[[Hello]]')).toEqual({
 			linktext: 'Hello',
 			linkpath: 'Hello',
+			displayText: 'Hello',
 			hasExplicitPath: false,
 			hasMarkdownExtension: false,
 		});
@@ -29,6 +30,13 @@ describe('parseWikilink', () => {
 		const parsed = parseWikilink('[[Hello|Read this]]');
 		expect(parsed?.linktext).toBe('Hello');
 		expect(parsed?.linkpath).toBe('Hello');
+		expect(parsed?.displayText).toBe('Read this');
+	});
+
+	it('falls back to linktext for an empty display text', () => {
+		const parsed = parseWikilink('[[Hello|   ]]');
+		expect(parsed?.linktext).toBe('Hello');
+		expect(parsed?.displayText).toBe('Hello');
 	});
 
 	it('strips heading suffix from linkpath', () => {
@@ -71,6 +79,7 @@ describe('parseWikilink', () => {
 		expect(parseWikilinkLinktext('notes/Hello#Overview')).toEqual({
 			linktext: 'notes/Hello#Overview',
 			linkpath: 'notes/Hello',
+			displayText: 'notes/Hello#Overview',
 			hasExplicitPath: true,
 			hasMarkdownExtension: false,
 		});

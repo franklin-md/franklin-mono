@@ -4,15 +4,19 @@ import type { TextBlock as TextBlockData } from '@franklin/extensions';
 import type { ThinkingBlock as ThinkingBlockData } from '@franklin/extensions';
 
 import { ObsidianWikilink } from './wikilinks/link.js';
+import { remendObsidianWikilinks } from './wikilinks/remend-wikilinks.js';
 import { remarkObsidianWikilinks } from './wikilinks/remark-wikilinks.js';
 
 const MARKDOWN_CLASS = 'markdown-rendered';
 const markdown = {
 	customElements: {
 		'obsidian-wikilink': {
-			attributes: ['dataLinktext'],
+			allowedAttributes: ['dataLinktext'],
 			component: ObsidianWikilink,
 		},
+	},
+	remend: {
+		handlers: [remendObsidianWikilinks],
 	},
 	remarkPlugins: [remarkObsidianWikilinks],
 };

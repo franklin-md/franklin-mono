@@ -2,9 +2,16 @@ import { getLinkpath } from 'obsidian';
 
 import type { ParsedWikilink } from './types.js';
 
-function stripDisplayText(linktext: string): string {
-	const pipeIndex = linktext.indexOf('|');
-	return pipeIndex >= 0 ? linktext.slice(0, pipeIndex) : linktext;
+function splitDisplayText(inner: string) {
+	const pipeIndex = inner.indexOf('|');
+	const linktext = (pipeIndex >= 0 ? inner.slice(0, pipeIndex) : inner).trim();
+	const displayCandidate =
+		pipeIndex >= 0 ? inner.slice(pipeIndex + 1).trim() : linktext;
+
+	return {
+		linktext,
+		displayText: displayCandidate === '' ? linktext : displayCandidate,
+	};
 }
 
 function isSearchOnlyLink(linktext: string): boolean {
@@ -23,7 +30,7 @@ export function parseWikilinkLinktext(
 	const inner = input.trim();
 	if (inner === '') return undefined;
 
-	const linktext = stripDisplayText(inner).trim();
+	const { linktext, displayText } = splitDisplayText(inner);
 	if (linktext === '' || isSearchOnlyLink(linktext)) return undefined;
 
 	const linkpath = getLinkpath(linktext).trim();
@@ -32,6 +39,7 @@ export function parseWikilinkLinktext(
 	return {
 		linktext,
 		linkpath,
+		displayText,
 		hasExplicitPath: linkpath.includes('/'),
 		hasMarkdownExtension: linkpath.toLowerCase().endsWith('.md'),
 	};
