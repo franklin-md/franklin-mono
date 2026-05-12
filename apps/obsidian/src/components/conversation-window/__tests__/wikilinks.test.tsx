@@ -108,11 +108,18 @@ describe('Obsidian conversation wikilinks', () => {
 		expect(openLinkText).not.toHaveBeenCalled();
 	});
 
-	it('leaves incomplete wikilinks as plain text while streaming', () => {
+	it('renders incomplete wikilinks as transient marker links while streaming', () => {
 		renderText('See [[MEM');
 
-		expect(screen.queryByRole('link')).toBeNull();
-		expect(screen.getByText('See [[MEM')).toBeTruthy();
+		const link = screen.getByRole('button', { name: 'MEM' });
+		expect(link.getAttribute('data-obsidian-linktext')).toBe('MEM');
+	});
+
+	it('does not rewrite incomplete Obsidian embeds as note links', () => {
+		renderText('Embed ![[MEM');
+
+		expect(screen.queryByRole('button')).toBeNull();
+		expect(screen.getByText('Embed ![[MEM]]')).toBeTruthy();
 	});
 
 	it('does not rewrite Obsidian embeds as note links', () => {
@@ -120,5 +127,28 @@ describe('Obsidian conversation wikilinks', () => {
 
 		expect(screen.queryByRole('link')).toBeNull();
 		expect(screen.getByText('Embed ![[MEMORY]]')).toBeTruthy();
+	});
+
+	it('does not rewrite wikilinks inside inline code', () => {
+		renderText('Use `[[MEMORY]]`');
+
+		expect(screen.queryByRole('button')).toBeNull();
+		expect(screen.getByText('[[MEMORY]]')).toBeTruthy();
+	});
+
+	it('does not rewrite wikilinks inside code blocks', () => {
+		renderText('```\n[[MEMORY]]\n```');
+
+		expect(screen.queryByRole('button', { name: 'MEMORY' })).toBeNull();
+		expect(screen.getByText('[[MEMORY]]')).toBeTruthy();
+	});
+
+	it('does not rewrite wikilinks inside markdown links', () => {
+		renderText('[See [[MEMORY]]](https://example.com)');
+
+		const link = screen.getByRole('link', { name: 'See [[MEMORY]]' });
+
+		expect(screen.queryByRole('button')).toBeNull();
+		expect(link.getAttribute('href')).toBe('https://example.com/');
 	});
 });
