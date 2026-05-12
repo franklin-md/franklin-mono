@@ -60,6 +60,36 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 		expect(globalFetch).not.toHaveBeenCalled();
 	});
 
+	it('preserves the custom fetch through pi-ai simple OpenAI-compatible options', async () => {
+		const customFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+			new Response(JSON.stringify({ error: { message: 'denied' } }), {
+				status: 401,
+				headers: { 'content-type': 'application/json' },
+			}),
+		);
+		globalFetch.mockResolvedValue(
+			new Response('unexpected global fetch', { status: 418 }),
+		);
+
+		const streamFn = createPiStreamFn({ fetch: customFetch });
+		const stream = streamFn(
+			getModel('opencode-go', 'deepseek-v4-flash'),
+			{ messages: [] },
+			{ apiKey: 'opencode-go-test' },
+		);
+
+		void stream;
+		await vi.waitFor(() => {
+			expect(customFetch).toHaveBeenCalledOnce();
+		});
+
+		expect(customFetch).toHaveBeenCalledExactlyOnceWith(
+			'https://opencode.ai/zen/go/v1/chat/completions',
+			expect.objectContaining({ method: 'POST' }),
+		);
+		expect(globalFetch).not.toHaveBeenCalled();
+	});
+
 	it('preserves xhigh reasoning for the pi-ai GPT-5.5 codex model', async () => {
 		const customFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
 			new Response(

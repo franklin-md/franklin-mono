@@ -3,9 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { MODEL_CATALOG } from '../../../../src/conversation/input/models/catalog.js';
 
 describe('MODEL_CATALOG', () => {
-	it('surfaces only Codex and OpenRouter in the selector catalog', () => {
+	it('surfaces supported provider groups in the selector catalog', () => {
 		expect(MODEL_CATALOG.map((group) => group.provider)).toEqual([
 			'openai-codex',
+			'opencode-go',
 			'openrouter',
 		]);
 	});
@@ -37,5 +38,48 @@ describe('MODEL_CATALOG', () => {
 			'gpt-5.4',
 			'gpt-5.4-mini',
 		]);
+	});
+
+	it('includes the curated OpenCode Go model list', () => {
+		const group = MODEL_CATALOG.find(
+			(providerGroup) => providerGroup.provider === 'opencode-go',
+		);
+
+		expect(group).toMatchObject({
+			displayName: 'OpenCode Go',
+			access: 'api',
+		});
+		expect(group?.models.map((model) => model.id)).toEqual([
+			'deepseek-v4-pro',
+			'deepseek-v4-flash',
+			'mimo-v2.5-pro',
+			'mimo-v2.5',
+			'kimi-k2.6',
+			'glm-5.1',
+			'qwen3.6-plus',
+			'qwen3.5-plus',
+			'minimax-m2.7',
+		]);
+		expect(
+			group?.models.every((model) => model.provider === 'opencode-go'),
+		).toBe(true);
+	});
+
+	it('keeps OpenCode Go model metadata aligned to the source catalog', () => {
+		const group = MODEL_CATALOG.find(
+			(providerGroup) => providerGroup.provider === 'opencode-go',
+		);
+		const deepSeekPro = group?.models.find(
+			(model) => model.id === 'deepseek-v4-pro',
+		);
+
+		expect(deepSeekPro).toMatchObject({
+			name: 'DeepSeek V4 Pro',
+			reasoning: true,
+			contextWindow: 1_000_000,
+			costInput: 1.74,
+			costOutput: 3.48,
+			intelligence: 'frontier',
+		});
 	});
 });

@@ -7,25 +7,79 @@ import { resolveModel } from '../base/pi/model/resolve.js';
 import { StopCode } from '../types/stop-code.js';
 
 const OPENROUTER_UPSTREAM_MODEL_CASES = [
+	{ id: 'z-ai/glm-5.1', contextWindow: 202_752 },
+	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_576 },
+	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_048_576 },
+	{ id: 'moonshotai/kimi-k2.6', contextWindow: 262_144 },
+	{ id: 'x-ai/grok-4.20', contextWindow: 2_000_000 },
+	{ id: 'qwen/qwen3.6-plus', contextWindow: 1_000_000 },
+	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
+] as const;
+
+// Keep OpenCode Go Qwen 3.5/3.6 and MiniMax M2.7 on the OpenAI-compatible
+// path even though the OpenCode docs table lists provider SDKs such as
+// @ai-sdk/alibaba and @ai-sdk/anthropic. Pi issue #4106 reproduced 404s with
+// the non-/v1 metadata, PR #4110 fixed these models to openai-completions, and
+// v0.73.0 release notes call out that generated metadata fix.
+// Sources:
+// - https://dev.opencode.ai/docs/go/
+// - https://github.com/earendil-works/pi/issues/4106
+// - https://github.com/earendil-works/pi/pull/4110
+// - https://github.com/earendil-works/pi/releases/tag/v0.73.0
+const OPENCODE_GO_UPSTREAM_MODEL_CASES = [
 	{
-		id: 'deepseek/deepseek-v4-flash',
-		contextWindow: 1_048_576,
-	},
-	{
-		id: 'deepseek/deepseek-v4-pro',
-		contextWindow: 1_048_576,
-	},
-	{
-		id: 'moonshotai/kimi-k2.6',
-		contextWindow: 262_144,
-	},
-	{
-		id: 'qwen/qwen3.6-plus',
+		id: 'deepseek-v4-pro',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 1_000_000,
 	},
 	{
-		id: 'xiaomi/mimo-v2.5-pro',
+		id: 'deepseek-v4-flash',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		contextWindow: 1_000_000,
+	},
+	{
+		id: 'mimo-v2.5-pro',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 1_048_576,
+	},
+	{
+		id: 'mimo-v2.5',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		contextWindow: 1_000_000,
+	},
+	{
+		id: 'kimi-k2.6',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		contextWindow: 262_144,
+	},
+	{
+		id: 'glm-5.1',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		contextWindow: 202_752,
+	},
+	{
+		id: 'qwen3.6-plus',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		contextWindow: 262_144,
+	},
+	{
+		id: 'qwen3.5-plus',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		contextWindow: 262_144,
+	},
+	{
+		id: 'minimax-m2.7',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		contextWindow: 204_800,
 	},
 ] as const;
 
@@ -129,6 +183,30 @@ describe('resolveModel', () => {
 				provider: 'openrouter',
 				id,
 				api: 'openai-completions',
+				reasoning: true,
+				contextWindow,
+			});
+		});
+	}
+
+	for (const {
+		id,
+		api,
+		baseUrl,
+		contextWindow,
+	} of OPENCODE_GO_UPSTREAM_MODEL_CASES) {
+		it(`resolves the OpenCode Go ${id} model from pi-ai`, () => {
+			const result = resolveModel({
+				provider: 'opencode-go',
+				model: id,
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.model).toMatchObject({
+				provider: 'opencode-go',
+				id,
+				api,
+				baseUrl,
 				reasoning: true,
 				contextWindow,
 			});

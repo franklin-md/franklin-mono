@@ -32,7 +32,7 @@ function createAuthStub(initial: AuthEntries = {}): AuthStub {
 			const { [provider]: _removed, ...rest } = entries;
 			entries = rest;
 		}),
-		getApiKeyProviders: async () => ['openrouter'],
+		getApiKeyProviders: async () => ['openrouter', 'opencode-go'],
 		getOAuthProviders: () => [{ id: 'openai-codex', name: 'ChatGPT' }],
 		onAuthChange: () => () => {},
 		cancel: async () => {},
@@ -70,6 +70,28 @@ describe('SettingsPage', () => {
 		expect(input.value).toBe('sk-or-existing');
 	});
 
+	it('seeds the OpenCode Go input from the existing auth entry', () => {
+		const auth = createAuthStub({
+			'opencode-go': { apiKey: { type: 'apiKey', key: 'oc-existing' } },
+		});
+
+		renderPage(auth);
+
+		const input = screen.getByLabelText<HTMLInputElement>(
+			'OpenCode Go API key',
+		);
+		expect(input.value).toBe('oc-existing');
+	});
+
+	it('renders provider logos beside API key settings', () => {
+		const auth = createAuthStub();
+		const { container } = renderPage(auth);
+
+		expect(container.querySelectorAll('.setting-item-name svg')).toHaveLength(
+			2,
+		);
+	});
+
 	it('links to OpenRouter API key settings', () => {
 		const auth = createAuthStub();
 		const { openExternal } = renderPage(auth);
@@ -88,6 +110,20 @@ describe('SettingsPage', () => {
 		);
 	});
 
+	it('links to OpenCode API key settings', () => {
+		const auth = createAuthStub();
+		const { openExternal } = renderPage(auth);
+
+		const link = screen.getByRole('link', {
+			name: 'OpenCode API keys',
+		});
+		expect(link.getAttribute('href')).toBe('https://opencode.ai/auth');
+		expect(link.getAttribute('target')).toBe('_blank');
+
+		fireEvent.click(link);
+		expect(openExternal).toHaveBeenCalledWith('https://opencode.ai/auth');
+	});
+
 	it('writes the OpenRouter key into the auth manager on change', () => {
 		const auth = createAuthStub();
 		renderPage(auth);
@@ -101,6 +137,19 @@ describe('SettingsPage', () => {
 		});
 	});
 
+	it('writes the OpenCode Go key into the auth manager on change', () => {
+		const auth = createAuthStub();
+		renderPage(auth);
+
+		const input = screen.getByLabelText('OpenCode Go API key');
+		fireEvent.change(input, { target: { value: '  oc-new  ' } });
+
+		expect(auth.setApiKeyEntry).toHaveBeenCalledWith('opencode-go', {
+			type: 'apiKey',
+			key: 'oc-new',
+		});
+	});
+
 	it('clears the OpenRouter entry when the input is emptied', () => {
 		const auth = createAuthStub({
 			openrouter: { apiKey: { type: 'apiKey', key: 'sk-or-existing' } },
@@ -111,6 +160,18 @@ describe('SettingsPage', () => {
 		fireEvent.change(input, { target: { value: '   ' } });
 
 		expect(auth.removeApiKeyEntry).toHaveBeenCalledWith('openrouter');
+	});
+
+	it('clears the OpenCode Go entry when the input is emptied', () => {
+		const auth = createAuthStub({
+			'opencode-go': { apiKey: { type: 'apiKey', key: 'oc-existing' } },
+		});
+		renderPage(auth);
+
+		const input = screen.getByLabelText('OpenCode Go API key');
+		fireEvent.change(input, { target: { value: '   ' } });
+
+		expect(auth.removeApiKeyEntry).toHaveBeenCalledWith('opencode-go');
 	});
 
 	it('renders a ChatGPT login button', () => {

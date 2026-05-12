@@ -14,6 +14,7 @@ import { Mistral } from './mistral.js';
 import { Moonshot } from './moonshot.js';
 import { Ollama } from './ollama.js';
 import { OpenAI } from './openai.js';
+import { OpenCode } from './opencode.js';
 import { OpenRouter } from './openrouter.js';
 import { Perplexity } from './perplexity.js';
 import { Qwen } from './qwen.js';
@@ -39,6 +40,7 @@ export const Icons = {
 	Moonshot,
 	Ollama,
 	OpenAI,
+	OpenCode,
 	OpenRouter,
 	Perplexity,
 	Qwen,

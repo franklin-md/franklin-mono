@@ -1,4 +1,5 @@
 diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js b/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js
+index 3f0cc9a..f830481 100644
 --- a/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js
 +++ b/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js
 @@ -310,7 +310,7 @@ export const streamAnthropic = (model, context, options) => {
@@ -52,6 +53,7 @@ diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js b/no
          defaultHeaders: mergeHeaders({
              accept: "application/json",
 diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js b/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js
+index 0bebea1..979a069 100644
 --- a/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js
 +++ b/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js
 @@ -136,12 +136,13 @@ export const streamOpenAICodexResponses = (model, context, options) => {
@@ -69,7 +71,38 @@ diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-resp
                          method: "POST",
                          headers: sseHeaders,
                          body: bodyJson,
+diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/openai-completions.js b/node_modules/@earendil-works/pi-ai/dist/providers/openai-completions.js
+index 3ec63be..9ce8d85 100644
+--- a/node_modules/@earendil-works/pi-ai/dist/providers/openai-completions.js
++++ b/node_modules/@earendil-works/pi-ai/dist/providers/openai-completions.js
+@@ -73,7 +73,7 @@ export const streamOpenAICompletions = (model, context, options) => {
+             const compat = getCompat(model);
+             const cacheRetention = resolveCacheRetention(options?.cacheRetention);
+             const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
+-            const client = createClient(model, context, apiKey, options?.headers, cacheSessionId, compat);
++            const client = createClient(model, context, apiKey, options?.headers, cacheSessionId, compat, options?.fetch);
+             let params = buildParams(model, context, options, compat, cacheRetention);
+             const nextParams = await options?.onPayload?.(params, model);
+             if (nextParams !== undefined) {
+@@ -340,7 +340,7 @@ export const streamSimpleOpenAICompletions = (model, context, options) => {
+         toolChoice,
+     });
+ };
+-function createClient(model, context, apiKey, optionsHeaders, sessionId, compat = getCompat(model)) {
++function createClient(model, context, apiKey, optionsHeaders, sessionId, compat = getCompat(model), fetch) {
+     if (!apiKey) {
+         if (!process.env.OPENAI_API_KEY) {
+             throw new Error("OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass it as an argument.");
+@@ -375,6 +375,7 @@ function createClient(model, context, apiKey, optionsHeaders, sessionId, compat
+     return new OpenAI({
+         apiKey,
+         baseURL: isCloudflareProvider(model.provider) ? resolveCloudflareBaseUrl(model) : model.baseUrl,
++        fetch,
+         dangerouslyAllowBrowser: true,
+         defaultHeaders,
+     });
 diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js b/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js
+index 64c0447..04a916d 100644
 --- a/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js
 +++ b/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js
 @@ -3,6 +3,7 @@ export function buildBaseOptions(model, options, apiKey) {
@@ -81,6 +114,7 @@ diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js
          transport: options?.transport,
          cacheRetention: options?.cacheRetention,
 diff --git a/node_modules/@earendil-works/pi-ai/dist/types.d.ts b/node_modules/@earendil-works/pi-ai/dist/types.d.ts
+index 65b4bce..f7b4581 100644
 --- a/node_modules/@earendil-works/pi-ai/dist/types.d.ts
 +++ b/node_modules/@earendil-works/pi-ai/dist/types.d.ts
 @@ -25,6 +25,7 @@ export interface StreamOptions {

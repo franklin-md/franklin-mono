@@ -12,7 +12,7 @@
 # Franklin
 > Meet **🪁 Franklin**, your personal AI agent for Obsidian. Franklin reads your vault, helps you think through notes, and proposes reviewable changes to your Markdown files.
 
-Franklin is **provider-agnostic**, and currently supports you bringing your [OpenAI Plus/Pro subscriptions](https://openai.com/codex/) and [OpenRouter](https://openrouter.ai) API keys. 
+Franklin is **provider-agnostic**, and currently supports you bringing your [OpenAI Plus/Pro subscriptions](https://openai.com/codex/), [OpenCode Go subscriptions](https://opencode.ai/docs/go/) via API key, and [OpenRouter](https://openrouter.ai) API keys.
 
 Franklin's core local experience is **free**. Features that can run purely on your machine are intended to remain free.
 
@@ -67,7 +67,7 @@ We are actively working towards making filesystem permissions **configurable** a
 
 ## Roadmap
 Below is a list (in approximate priority) of what we are building:
-- Support for other subscriptions and api providers such as Anthropic and OpenCode
+- Support for additional subscriptions and API providers such as Anthropic
 - Greater parity with popular coding agents like Claude Code, including:
   - Sub-Agents
   - Terminal
