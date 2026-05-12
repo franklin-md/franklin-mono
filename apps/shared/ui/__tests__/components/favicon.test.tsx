@@ -11,7 +11,7 @@ describe('Favicon', () => {
 		const img = container.querySelector('img');
 		expect(img).not.toBeNull();
 		expect(img?.getAttribute('src')).toBe(
-			'https://www.google.com/s2/favicons?domain=example.com&sz=16',
+			'https://www.google.com/s2/favicons?domain=example.com&sz=64',
 		);
 	});
 

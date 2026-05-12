@@ -33,9 +33,15 @@ describe('displayUrl', () => {
 });
 
 describe('faviconUrl', () => {
-	it('returns a Google favicon service URL', () => {
+	it('uses a 64px favicon by default', () => {
 		expect(faviconUrl('example.com')).toBe(
-			'https://www.google.com/s2/favicons?domain=example.com&sz=16',
+			'https://www.google.com/s2/favicons?domain=example.com&sz=64',
+		);
+	});
+
+	it('accepts an explicit favicon size', () => {
+		expect(faviconUrl('example.com', 32)).toBe(
+			'https://www.google.com/s2/favicons?domain=example.com&sz=32',
 		);
 	});
 });
