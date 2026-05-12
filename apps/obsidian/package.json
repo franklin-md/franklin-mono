@@ -13,6 +13,7 @@
 		"bundle": "node ./build/bundle.mjs",
 		"bundle:prod": "node ./build/bundle.mjs --prod",
 		"dev": "node ./build/bundle.mjs --watch",
+		"extract-obsidian-theme-vars": "node ./build/extract-obsidian-theme-vars.mjs",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build"
 	},
