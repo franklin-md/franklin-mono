@@ -1,4 +1,6 @@
 export const readFileDescription = `Used to read the contents of the specified file on the available filesystem.
+For text files, returns text content. For supported image files, returns image content that the model can inspect.
+Supported image file types include JPEG, PNG, GIF, and WebP.
 This tool can only read files, not directories.`;
 
 export const writeFileDescription = `Writes a file to the local filesystem.

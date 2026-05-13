@@ -1,3 +1,9 @@
+export function base64(bytes: Uint8Array): string {
+	let binary = '';
+	for (const byte of bytes) binary += String.fromCharCode(byte);
+	return btoa(binary);
+}
+
 export function base64url(bytes: Uint8Array): string {
 	let binary = '';
 	for (const byte of bytes) binary += String.fromCharCode(byte);

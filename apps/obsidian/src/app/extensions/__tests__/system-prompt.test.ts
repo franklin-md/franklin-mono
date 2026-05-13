@@ -55,6 +55,10 @@ describe('obsidianSystemPromptExtension', () => {
 			`Tools such as ${wikilinkPathToolNames} resolve wikilink paths`,
 		);
 		expect(prompt).toContain('`[[Note#Heading|label]]`');
+		expect(prompt).toContain(
+			"embedded image's wikilink path directly to `read_file`",
+		);
+		expect(prompt).toContain('resolves it to the correct image');
 		expect(prompt).toContain('ambiguous');
 	});
 

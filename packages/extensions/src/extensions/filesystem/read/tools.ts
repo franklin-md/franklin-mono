@@ -9,12 +9,12 @@ const readFileSchema = z.object({
 			'Path to the file. Relative file paths (like `../../path.to.file `)' +
 				"are accepted as arguments, but the request may be denied if the file path is outside of the scope of this agent's environment",
 		),
-	limit: z.number().default(2000).describe('Number of lines to read'),
+	limit: z.number().default(2000).describe('Number of text lines to read'),
 	offset: z
 		.number()
 		.optional()
 		.describe(
-			'Line number to start reading from. By default starts at 1. (OPTIONAL)',
+			'Text line number to start reading from. By default starts at 1. (OPTIONAL)',
 		),
 });
 
