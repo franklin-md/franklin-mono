@@ -1,6 +1,5 @@
 import { createBundle } from '../../modules/bundle/index.js';
 import { reduceExtensions } from '../../algebra/extension/index.js';
-import { webFetchCacheKey } from './web-fetch/key.js';
 import { fetchUrlSpec } from './web-fetch/tools.js';
 import type { WebFetchExtensionOptions } from './web-fetch/types.js';
 import { webFetchExtension } from './web-fetch/extension.js';
@@ -19,7 +18,7 @@ export function createWebExtension(options: WebExtensionOptions = {}) {
 			webFetchExtension(options.fetch ?? {}),
 			webSearchExtension(options.search ?? {}),
 		),
-		keys: { cache: webFetchCacheKey },
+		keys: {},
 		tools: {
 			fetchUrl: fetchUrlSpec,
 			searchWeb: searchWebSpec,

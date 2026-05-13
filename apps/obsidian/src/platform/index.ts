@@ -1,5 +1,7 @@
 import type { Platform } from '@franklin/agent/browser';
 import type { EnvironmentConfig } from '@franklin/extensions';
+import { Agent as HttpAgent } from 'node:http';
+import { Agent as HttpsAgent } from 'node:https';
 import {
 	createReconfigurableEnvironment,
 	configureFilesystem,
@@ -10,7 +12,7 @@ import {
 	createNodeFilesystem,
 	createNodePlatform,
 	createConfigureProcess,
-	nodePlatformFetch,
+	createNodePlatformFetch,
 	withAnthropicProtected,
 } from '@franklin/node';
 import { createObsidianFilesystem } from './filesystem/obsidian.js';
@@ -26,6 +28,7 @@ export function createObsidianPlatform(
 	writeListener: WriteListener,
 ): Platform {
 	const nodePlatform = createNodePlatform({ appDir });
+	const obsidianFetch = createObsidianFetch();
 
 	return {
 		...nodePlatform,
@@ -44,8 +47,27 @@ export function createObsidianPlatform(
 					return fs;
 				},
 				...createConfigureProcess(nodePlatform.os.osInfo, appDir),
-				configureWeb: async (netConfig) =>
-					createWeb(netConfig, nodePlatformFetch),
+				configureWeb: async (netConfig) => createWeb(netConfig, obsidianFetch),
 			}),
+		os: {
+			...nodePlatform.os,
+			net: {
+				...nodePlatform.os.net,
+				fetch: obsidianFetch,
+			},
+		},
 	};
+}
+
+function createObsidianFetch() {
+	const httpAgent = new HttpAgent();
+	const httpsAgent = new HttpsAgent();
+	return createNodePlatformFetch(
+		{},
+		{
+			agent(url) {
+				return url.protocol === 'http:' ? httpAgent : httpsAgent;
+			},
+		},
+	);
 }

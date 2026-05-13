@@ -3,7 +3,11 @@ export { createNodePlatform } from './platform/index.js';
 export { createNodeFilesystem } from './platform/filesystem.js';
 export { UnrestrictedProcess } from './platform/unrestricted-process.js';
 export { SandboxedProcess } from './platform/anthropic/sandboxed-process.js';
-export { nodePlatformFetch } from './platform/fetch.js';
+export {
+	createNodePlatformFetch,
+	nodePlatformFetch,
+	type NodePlatformFetchOptions,
+} from './platform/fetch.js';
 export { nodeHttpFetch } from './platform/http/fetch.js';
 export { withAnthropicProtected } from './platform/anthropic/protected.js';
 export { createConfigureProcess } from './platform/configure-process.js';

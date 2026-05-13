@@ -1,3 +1,4 @@
+import { Agent as HttpAgent } from 'node:http';
 import { decorate, withRedirect } from '@franklin/lib';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -5,7 +6,10 @@ import {
 	createHttpTestServer,
 	type HttpTestServer,
 } from './test-helpers/http.js';
-import { nodePlatformFetch } from '../platform/fetch.js';
+import {
+	createNodePlatformFetch,
+	nodePlatformFetch,
+} from '../platform/fetch.js';
 
 describe('nodePlatformFetch', () => {
 	const servers: HttpTestServer[] = [];
@@ -83,6 +87,39 @@ describe('nodePlatformFetch', () => {
 		expect(response.url).toBe(server.url('/final'));
 		expect(new TextDecoder().decode(response.body)).toBe('done');
 		expect(seenPaths).toEqual(['/start', '/middle', '/final']);
+	});
+
+	it('passes a custom agent selector to the underlying fetch', async () => {
+		const agent = new HttpAgent();
+		const seenProtocols: string[] = [];
+		const server = await startServer(servers, (_request, response) => {
+			response.writeHead(200, 'OK', {
+				'content-type': 'text/plain',
+			});
+			response.end('agent');
+		});
+		const fetch = createNodePlatformFetch(
+			{},
+			{
+				agent(url) {
+					seenProtocols.push(url.protocol);
+					return agent;
+				},
+			},
+		);
+
+		try {
+			const response = await fetch({
+				url: server.url('/agent'),
+				method: 'GET',
+			});
+
+			expect(response.status).toBe(200);
+			expect(new TextDecoder().decode(response.body)).toBe('agent');
+			expect(seenProtocols).toEqual(['http:']);
+		} finally {
+			agent.destroy();
+		}
 	});
 });
 
