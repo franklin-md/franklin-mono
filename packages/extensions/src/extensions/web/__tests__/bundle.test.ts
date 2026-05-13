@@ -2,7 +2,6 @@ import { MemoryOsInfo, type AbsolutePath } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
-import { webFetchCacheKey } from '../web-fetch/key.js';
 import { createWebExtension } from '../index.js';
 
 function textResponse(body: string, contentType: string) {
@@ -132,7 +131,7 @@ describe('createWebExtension', () => {
 		const bundle = createWebExtension({});
 		const compiled = await compileWeb(env);
 
-		expect(bundle.keys.cache).toBe(webFetchCacheKey);
+		expect(bundle.keys).toEqual({});
 		expect(bundle.tools.fetchUrl.name).toBe('fetch_url');
 		expect(bundle.tools.searchWeb.name).toBe('search_web');
 
