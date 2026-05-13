@@ -56,9 +56,9 @@ describe('obsidianSystemPromptExtension', () => {
 		);
 		expect(prompt).toContain('`[[Note#Heading|label]]`');
 		expect(prompt).toContain(
-			"embedded image's wikilink path directly to `read_file`",
+			'To retrieve the contents of embedded wikilinks, pass the wikilink path directly to `read_file`',
 		);
-		expect(prompt).toContain('resolves it to the correct image');
+		expect(prompt).toContain('This works for embedded images too');
 		expect(prompt).toContain('ambiguous');
 	});
 
