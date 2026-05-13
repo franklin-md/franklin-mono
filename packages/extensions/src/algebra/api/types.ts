@@ -1,6 +1,8 @@
 import type { Apply, HKT } from '@franklin/lib';
 import type { BaseRuntime } from '../runtime/index.js';
 
+// TODO: It may be more appropriate to call this the Signature? and then applying R gives you API?
+
 /**
  * Base constraint for an API surface — any object shape (registration
  * methods, collectors, etc.).

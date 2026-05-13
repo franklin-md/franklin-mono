@@ -11,6 +11,7 @@ import type { MaybePromise } from '../../../algebra/types/shared.js';
 import type { WithContext } from '../compile/registrar/types.js';
 import type { API } from '../../../algebra/api/index.js';
 import type { BaseRuntime } from '../../../algebra/runtime/index.js';
+import { createExtensionPoint } from 'packages/extensions/src/algebra/extension-points/named.js';
 
 /**
  * The bound Core registration surface at runtime `R`. This is what
