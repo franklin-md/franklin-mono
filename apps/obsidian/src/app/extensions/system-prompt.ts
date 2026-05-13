@@ -33,8 +33,8 @@ Tools such as ${filesystemToolNames} resolve wikilink paths to canonical vault f
 Supported path forms include \`[[Note]]\`, \`[[Folder/Note]]\`, \`[[Note.md]]\`, and \`[[Note#Heading|label]]\`; heading or block fragments and display text are ignored for file resolution.
 If a bare note name is ambiguous or cannot be found, use an explicit folder wikilink or a normal file path.`;
 
-const clickableLinks = `Both wikilinks and urls are clickable in the conversation window, as long as they are not inside a code block. 
-It is preferable to not use the full path for wikilinks (and just the filename) for legibility.`;
+const clickableLinks = `Both wikilinks and URLs are clickable in the conversation window, as long as they are not inside a code block.
+Prefer filename-only wikilinks for legibility when the target is unambiguous; when a specific note needs folder disambiguation, keep the folder in the link target and use an alias such as \`[[Folder/Note|Note]]\`.`;
 
 // I am least sure about this one
 const obsidianUserConventionPreservation = `When editing the vault, prefer preserving and extending the user’s existing structure over imposing a new one. 
