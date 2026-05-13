@@ -7,11 +7,18 @@ export interface FaviconProps {
 }
 
 export function Favicon({ hostname, className }: FaviconProps) {
+	// Request a larger source bitmap because the rendered size is em-relative;
+	// headings and high-DPI displays can otherwise upscale a 16px favicon.
+	const sourceSize = 64;
+
 	return (
 		<img
-			src={faviconUrl(hostname)}
+			src={faviconUrl(hostname, sourceSize)}
 			alt=""
-			className={cn('h-3.5 w-3.5 shrink-0 rounded-sm', className)}
+			className={cn(
+				'inline-block size-[0.9em] shrink-0 rounded-[0.15em] align-[-0.1em]',
+				className,
+			)}
 			onError={(e) => {
 				e.currentTarget.style.display = 'none';
 			}}

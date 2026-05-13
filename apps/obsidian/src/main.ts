@@ -57,6 +57,7 @@ export default class FranklinPlugin extends Plugin {
 							createFranklinViewContent({
 								app,
 								getCreateInput,
+								obsidianApp: this.app,
 								requestApiKey,
 							}),
 					});

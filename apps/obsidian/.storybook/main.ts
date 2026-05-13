@@ -36,7 +36,7 @@ const config: StorybookConfig = {
 			...config.resolve,
 			alias: {
 				obsidian: resolve(packageDir, 'src/mocks/obsidian/index.ts'),
-				// TODO: This is a smell, and we may just need to fix the packaging of transport.
+				// TODO(FRA-165): Fix transport packaging so this alias is unnecessary.
 				// Remap barrel imports to browser-safe subpaths so Storybook
 				// never pulls in Node-only transitive dependencies.
 				'@franklin/transport': '@franklin/transport/core',

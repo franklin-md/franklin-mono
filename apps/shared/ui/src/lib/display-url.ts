@@ -13,6 +13,6 @@ export function displayUrl(urlString: string) {
 	return { hostname, path };
 }
 
-export function faviconUrl(hostname: string) {
-	return `https://www.google.com/s2/favicons?domain=${hostname}&sz=16`;
+export function faviconUrl(hostname: string, sz = 64) {
+	return `https://www.google.com/s2/favicons?domain=${hostname}&sz=${sz}`;
 }
