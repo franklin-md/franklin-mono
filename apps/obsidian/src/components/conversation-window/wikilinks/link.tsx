@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { useMemo } from 'react';
 import { cn } from '@franklin/ui';
 import type { App } from 'obsidian';
-import { Notice } from 'obsidian';
+import { Keymap, Notice } from 'obsidian';
 
 import { useObsidianApp } from '../../obsidian-app-context.js';
 import { openObsidianWikilink } from '../../../utils/obsidian/wikilinks/open.js';
@@ -48,10 +48,13 @@ export function ObsidianWikilink({
 		props.onClick?.(event);
 		if (event.defaultPrevented || !target) return;
 
+		const newLeaf = Keymap.isModEvent(event.nativeEvent);
 		// TODO(FRA-303): Missing note links should create the note and then open it.
-		void openObsidianWikilink(app, target).catch((error: unknown) => {
-			new Notice(getOpenErrorMessage(error));
-		});
+		void openObsidianWikilink(app, target, { newLeaf }).catch(
+			(error: unknown) => {
+				new Notice(getOpenErrorMessage(error));
+			},
+		);
 	};
 
 	return (

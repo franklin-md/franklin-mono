@@ -9,13 +9,17 @@ import {
 	waitFor,
 } from '@testing-library/react';
 import type { App } from 'obsidian';
+import { Keymap } from 'obsidian';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ObsidianAppProvider } from '../../obsidian-app-context.js';
 import { ObsidianText } from '../blocks.js';
 import { ObsidianWikilink } from '../wikilinks/link.js';
 
-afterEach(cleanup);
+afterEach(() => {
+	cleanup();
+	vi.restoreAllMocks();
+});
 
 interface MockAppOptions {
 	canonicalLinktext?: string;
@@ -125,6 +129,34 @@ describe('Obsidian conversation wikilinks', () => {
 
 		await waitFor(() => {
 			expect(openLinkText).toHaveBeenCalledWith('MEMORY', '', false);
+		});
+	});
+
+	it('opens mod-clicked wikilinks in a new tab', async () => {
+		const { app, openLinkText } = createMockApp();
+		renderText('See [[MEMORY]]', app);
+
+		fireEvent.click(screen.getByRole('button', { name: '[[MEMORY]]' }), {
+			ctrlKey: true,
+		});
+
+		await waitFor(() => {
+			expect(openLinkText).toHaveBeenCalledWith('MEMORY', '', 'tab');
+		});
+	});
+
+	it('uses the Obsidian keymap to choose the pane target', async () => {
+		const { app, openLinkText } = createMockApp();
+		const isModEvent = vi.spyOn(Keymap, 'isModEvent').mockReturnValue('window');
+		renderText('See [[MEMORY]]', app);
+
+		fireEvent.click(screen.getByRole('button', { name: '[[MEMORY]]' }));
+
+		await waitFor(() => {
+			expect(isModEvent).toHaveBeenCalledWith(
+				expect.objectContaining({ type: 'click' }),
+			);
+			expect(openLinkText).toHaveBeenCalledWith('MEMORY', '', 'window');
 		});
 	});
 
