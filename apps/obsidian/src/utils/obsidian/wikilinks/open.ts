@@ -10,7 +10,7 @@ export interface OpenObsidianWikilinkOptions {
 	// Workspace.openLinkText accepts these PaneType values as its newLeaf target.
 	// https://github.com/obsidianmd/obsidian-api/blob/master/obsidian.d.ts#L6949
 	// https://obsidian.md/help/uri
-	newLeaf?: PaneType | false;
+	newLeaf?: PaneType | boolean;
 }
 
 export async function openObsidianWikilink(

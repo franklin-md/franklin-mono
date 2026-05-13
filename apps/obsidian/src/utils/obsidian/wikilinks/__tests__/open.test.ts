@@ -57,6 +57,14 @@ describe('openObsidianWikilink', () => {
 		expect(openLinkText).toHaveBeenCalledWith('Hello', '', 'split');
 	});
 
+	it('forwards boolean Obsidian pane targets', async () => {
+		const { app, openLinkText } = createMockApp();
+
+		await openObsidianWikilink(app, 'Hello', { newLeaf: true });
+
+		expect(openLinkText).toHaveBeenCalledWith('Hello', '', true);
+	});
+
 	it('does not open missing wikilinks', async () => {
 		const { app, getFirstLinkpathDest, openLinkText } = createMockApp({
 			file: null,
