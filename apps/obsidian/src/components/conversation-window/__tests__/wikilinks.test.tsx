@@ -128,6 +128,19 @@ describe('Obsidian conversation wikilinks', () => {
 		});
 	});
 
+	it('opens mod-clicked wikilinks in a new tab', async () => {
+		const { app, openLinkText } = createMockApp();
+		renderText('See [[MEMORY]]', app);
+
+		fireEvent.click(screen.getByRole('button', { name: '[[MEMORY]]' }), {
+			ctrlKey: true,
+		});
+
+		await waitFor(() => {
+			expect(openLinkText).toHaveBeenCalledWith('MEMORY', '', 'tab');
+		});
+	});
+
 	it('uses the semantic linktext prop as the link target', async () => {
 		const { app, openLinkText } = createMockApp();
 		render(

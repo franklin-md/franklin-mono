@@ -7,7 +7,6 @@ export type WikilinkPaneTarget = PaneType | false;
 export function getWikilinkPaneTarget(
 	modifiers: ClickModifiers,
 ): WikilinkPaneTarget {
-	if (modifiers.button === 'middle') return 'tab';
 	if (!modifiers.mod) return false;
 	if (modifiers.alt && modifiers.shift) return 'window';
 	if (modifiers.alt) return 'split';
