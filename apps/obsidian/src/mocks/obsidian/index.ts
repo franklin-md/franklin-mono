@@ -42,6 +42,28 @@ export class Notice {
 	constructor(readonly message: string) {}
 }
 
+export const Keymap = {
+	isModifier(
+		event: MouseEvent | TouchEvent | KeyboardEvent,
+		modifier: 'Mod' | 'Ctrl' | 'Meta' | 'Shift' | 'Alt',
+	): boolean {
+		switch (modifier) {
+			case 'Mod':
+				return isKeyboardOrMouseEvent(event)
+					? event.ctrlKey || event.metaKey
+					: false;
+			case 'Ctrl':
+				return isKeyboardOrMouseEvent(event) ? event.ctrlKey : false;
+			case 'Meta':
+				return isKeyboardOrMouseEvent(event) ? event.metaKey : false;
+			case 'Shift':
+				return isKeyboardOrMouseEvent(event) ? event.shiftKey : false;
+			case 'Alt':
+				return isKeyboardOrMouseEvent(event) ? event.altKey : false;
+		}
+	},
+};
+
 export class Setting {
 	constructor(readonly containerEl: HTMLElement) {}
 
@@ -68,4 +90,10 @@ export function normalizePath(path: string): string {
 export function getLinkpath(linktext: string): string {
 	const hashIndex = linktext.indexOf('#');
 	return hashIndex >= 0 ? linktext.slice(0, hashIndex) : linktext;
+}
+
+function isKeyboardOrMouseEvent(
+	event: MouseEvent | TouchEvent | KeyboardEvent,
+): event is MouseEvent | KeyboardEvent {
+	return 'ctrlKey' in event;
 }
