@@ -31,6 +31,7 @@ const filesystemToolNames = oxfordJoin(
 const obsidianToolPathResolution = `When using filesystem tools inside this vault, pass a full Obsidian wikilink directly as the \`path\` value when the user identifies an existing note by wikilink.
 Tools such as ${filesystemToolNames} resolve wikilink paths to canonical vault file paths before running.
 Supported path forms include \`[[Note]]\`, \`[[Folder/Note]]\`, \`[[Note.md]]\`, and \`[[Note#Heading|label]]\`; heading or block fragments and display text are ignored for file resolution.
+To retrieve the contents of embedded wikilinks, pass the wikilink path directly to \`read_file\`; the vault resolves it to the correct file path. This works for embedded images too.
 If a bare note name is ambiguous or cannot be found, use an explicit folder wikilink or a normal file path.`;
 
 const clickableLinks = `Both wikilinks and URLs are clickable in the conversation window, as long as they are not inside a code block.
