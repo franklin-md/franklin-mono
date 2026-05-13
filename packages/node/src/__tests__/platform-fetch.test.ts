@@ -98,12 +98,15 @@ describe('nodePlatformFetch', () => {
 			});
 			response.end('agent');
 		});
-		const fetch = createNodePlatformFetch({
-			agent(url) {
-				seenProtocols.push(url.protocol);
-				return agent;
+		const fetch = createNodePlatformFetch(
+			{},
+			{
+				agent(url) {
+					seenProtocols.push(url.protocol);
+					return agent;
+				},
 			},
-		});
+		);
 
 		try {
 			const response = await fetch({

@@ -6,6 +6,7 @@ export { SandboxedProcess } from './platform/anthropic/sandboxed-process.js';
 export {
 	createNodePlatformFetch,
 	nodePlatformFetch,
+	type NodePlatformFetchOptions,
 } from './platform/fetch.js';
 export { nodeHttpFetch } from './platform/http/fetch.js';
 export { withAnthropicProtected } from './platform/anthropic/protected.js';

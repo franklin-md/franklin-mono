@@ -62,9 +62,12 @@ export function createObsidianPlatform(
 function createObsidianFetch() {
 	const httpAgent = new HttpAgent();
 	const httpsAgent = new HttpsAgent();
-	return createNodePlatformFetch({
-		agent(url) {
-			return url.protocol === 'http:' ? httpAgent : httpsAgent;
+	return createNodePlatformFetch(
+		{},
+		{
+			agent(url) {
+				return url.protocol === 'http:' ? httpAgent : httpsAgent;
+			},
 		},
-	});
+	);
 }
