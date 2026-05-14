@@ -16,6 +16,22 @@ const readFileSchema = z.object({
 		.describe(
 			'Text line number to start reading from. By default starts at 1. (OPTIONAL)',
 		),
+	pages: z
+		.tuple([
+			z
+				.number()
+				.int()
+				.positive()
+				.describe('First page to process, starting at 1'),
+			z.number().int().positive().describe('Last page to process, inclusive'),
+		])
+		.optional()
+		.refine((pages) => !pages || pages[0] <= pages[1], {
+			message: 'pages start_page must be less than or equal to end_page',
+		})
+		.describe(
+			'PDF page range to process as [start_page, end_page], inclusive. Page numbers start at 1. (OPTIONAL)',
+		),
 });
 
 export const readFileSpec = toolSpec(

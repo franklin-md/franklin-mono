@@ -10,3 +10,7 @@ export function isSupportedImageType(mime: string): boolean {
 			return false;
 	}
 }
+
+export function isPDF(mime: string): boolean {
+	return mime.toLowerCase() === 'application/pdf';
+}
