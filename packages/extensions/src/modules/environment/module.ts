@@ -1,7 +1,7 @@
-import { compilerFromApi } from '../../algebra/compiler/from-api.js';
 import type { Compiler } from '../../algebra/compiler/index.js';
+import { createExtensionPoint } from '../../algebra/extension-points/create.js';
 import type { HarnessModule } from '../../harness/modules/index.js';
-import type { IdentityAPI, IdentityAPISurface } from '../identity/api.js';
+import type { IdentityAPI } from '../identity/api.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
@@ -18,6 +18,8 @@ export type EnvironmentFactory = (
 	config: EnvironmentConfig,
 ) => Promise<ReconfigurableEnvironment>;
 
+const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
+
 export type EnvironmentModule = HarnessModule<
 	EnvironmentState,
 	IdentityAPI,
@@ -28,16 +30,19 @@ export function createEnvironmentModule(
 	factory: EnvironmentFactory,
 ): EnvironmentModule {
 	return {
+		extensionPoint: identityExtensionPoint,
+
 		emptyState: emptyEnvironmentState,
 
 		state: environmentStateHandle,
 
 		createCompiler(state): Compiler<IdentityAPI, EnvironmentRuntime> {
-			const api: IdentityAPISurface = {};
-			return compilerFromApi(api, async () => {
-				const env = await factory(state.env);
-				return createEnvironmentRuntime(env);
-			});
+			return {
+				async compile() {
+					const env = await factory(state.env);
+					return createEnvironmentRuntime(env);
+				},
+			};
 		},
 	};
 }

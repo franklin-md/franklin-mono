@@ -1,6 +1,7 @@
 import type { AssertNoOverlap } from '@franklin/lib';
 import type { BoundAPI, ComposeAPI } from '../../algebra/api/index.js';
 import { combine as combineCompilers } from '../../algebra/compiler/combine.js';
+import { combine as combineExtensionPoints } from '../../algebra/extension-points/combine.js';
 import type {
 	CombinedRuntime,
 	RuntimeExtras,
@@ -62,6 +63,11 @@ export function combine<
 	type RT = InferRuntime<CombineModules<RTS1, RTS2>>;
 
 	return {
+		extensionPoint: combineExtensionPoints(
+			module1.extensionPoint,
+			module2.extensionPoint,
+		),
+
 		emptyState() {
 			return {
 				...module1.emptyState(),

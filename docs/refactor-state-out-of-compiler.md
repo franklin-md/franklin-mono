@@ -6,20 +6,22 @@ Three concerns that were entangled in the algebra are now cleanly separated:
 
 | Layer                                  | Owns                                                                |
 | -------------------------------------- | ------------------------------------------------------------------- |
-| `Compiler<APIFamily, Runtime>`         | API creation + build (no `<S>`; API binds per registration context) |
+| `ExtensionPoint<APIFamily>`            | Registry creation + API facade (registration writes to registry)    |
+| `Compiler<APIFamily, Runtime>`         | Registry interpretation + runtime build (no `<S>`)                  |
 | `BaseRuntime` (no `<S>`)               | live capabilities + lifecycle (`dispose`, `subscribe`)              |
-| `RuntimeSystem<S, APIFamily, Runtime>` | `emptyState`, `createCompiler(state)`, `state(runtime)` projection  |
+| `RuntimeSystem<S, APIFamily, Runtime>` | `extensionPoint`, `emptyState`, `createCompiler(state)`, `state(runtime)` projection |
 
 Before, every runtime was forced to expose a `state: StateHandle<S>` field, which made
 fakes (like `DependencyRuntime`'s no-op state) into ceremonial noise and pinned `<S>`
 through `Compiler`, `BaseRuntime`, and several Inference helpers.
 
-## Pattern: configure → register → build
+## Pattern: configure → register → interpret → build
 
 State is captured by closure when the system creates a compiler:
 
 ```ts
 type RuntimeSystem<S, APIFamily, Runtime> = {
+	extensionPoint: ExtensionPoint<APIFamily>;
 	emptyState(): S;
 	createCompiler(state: S): Compiler<APIFamily, Runtime>; // closes over state
 	state(runtime: Runtime): StateHandle<S>; // projection
@@ -27,12 +29,18 @@ type RuntimeSystem<S, APIFamily, Runtime> = {
 ```
 
 `createCompiler(state)` returns a state-free concrete `Compiler<APIFamily, Runtime>`
-whose `createApi` binds the API family to the chosen context runtime and whose
-`build` takes only `getRuntime`. The concrete API is produced by applying the
-system's API family to the eventual context runtime, so composition can make
-runtime-aware APIs such as `CoreAPI<Runtime>` see the fully tied runtime. Inside
-the closure, the system materialises whatever backing structures the state
-implies (Store collection, environment observer, core resources/transport).
+whose `compile(registry, getRuntime)` interprets an already-populated registry.
+The module's `extensionPoint` owns `createRegistry()` and `createApi(registry)`.
+The concrete API is produced by applying the system's API family to the eventual
+context runtime, so composition can make runtime-aware APIs such as
+`CoreAPI<Runtime>` see the fully tied runtime. Inside the compiler closure, the
+system materialises whatever backing structures the state implies (Store
+collection, environment observer, core resources/transport).
+
+Most extension points use `createExtensionPoint<API>({ ... })`, with an
+exhaustive object map of `keyof Apply<API, any>` contribution names. That keeps
+registry/API construction type-erased and mechanical while making missing or
+misspelled contribution keys a typecheck failure.
 
 ## Pattern: private symbol for state projection
 

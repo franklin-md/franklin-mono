@@ -9,8 +9,15 @@ export type {
 export type { ReduceAPIs } from './algebra/api/reduce.js';
 export { combine } from './algebra/compiler/combine.js';
 export { compile, compileAll } from './algebra/compiler/compile.js';
-export { compilerFromApi } from './algebra/compiler/from-api.js';
 export type { Compiler } from './algebra/compiler/types.js';
+export type { Registry } from './algebra/extension-points/registry.js';
+export type { ExtensionPoint } from './algebra/extension-points/types.js';
+export {
+	createExtensionPoint,
+	type ExtensionPointName,
+	type ExtensionPointNames,
+} from './algebra/extension-points/create.js';
+export { combine as combineExtensionPoints } from './algebra/extension-points/combine.js';
 export {
 	createOrchestrator,
 	Orchestrator,
@@ -113,6 +120,9 @@ export type {
 	AnyToolDefinition,
 	CancelHandler,
 	CoreAPI,
+	CoreEventHandlers,
+	CoreOnRegistration,
+	CoreRegisterToolRegistration,
 	ExtensionToolDefinition,
 	Prompt,
 	PromptHandler,

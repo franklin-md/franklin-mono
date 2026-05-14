@@ -6,10 +6,20 @@ import {
 } from '@franklin/lib';
 import { compile } from '../../../../algebra/compiler/compile.js';
 import { combine } from '../../../../algebra/compiler/combine.js';
+import { combine as combineExtensionPoints } from '../../../../algebra/extension-points/combine.js';
+import { createExtensionPoint } from '../../../../algebra/extension-points/create.js';
 import { createEnvironmentCompiler } from '../compiler.js';
 import { createStoreCompiler } from '../../../store/compile/compiler.js';
 import { StoreRegistry } from '../../../store/api/registry/index.js';
+import type { StoreAPI } from '../../../store/api/api.js';
+import type { IdentityAPI } from '../../../identity/api.js';
 import type { ReconfigurableEnvironment } from '../../api/types.js';
+
+const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
+
+const storeExtensionPoint = createExtensionPoint<StoreAPI>({
+	registerStore: true,
+});
 
 function mockEnvironment(): ReconfigurableEnvironment {
 	return {
@@ -45,7 +55,11 @@ function mockEnvironment(): ReconfigurableEnvironment {
 describe('createEnvironmentCompiler', () => {
 	it('build returns a runtime that exposes the environment', async () => {
 		const env = mockEnvironment();
-		const result = await compile(createEnvironmentCompiler(env), () => {});
+		const result = await compile(
+			identityExtensionPoint,
+			createEnvironmentCompiler(env),
+			() => {},
+		);
 
 		expect(result.environment.filesystem).toBe(env.filesystem);
 		expect(await result.environment.config()).toEqual(await env.config());
@@ -57,8 +71,12 @@ describe('createEnvironmentCompiler', () => {
 			createEnvironmentCompiler(env),
 			createStoreCompiler(new StoreRegistry(), { store: {} }),
 		);
+		const extensionPoint = combineExtensionPoints(
+			identityExtensionPoint,
+			storeExtensionPoint,
+		);
 
-		const result = await compile(compiler, (api) => {
+		const result = await compile(extensionPoint, compiler, (api) => {
 			api.registerStore('test', 42, 'private');
 		});
 

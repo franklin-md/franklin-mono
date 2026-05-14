@@ -11,7 +11,34 @@ import type { MaybePromise } from '../../../algebra/types/shared.js';
 import type { WithContext } from '../compile/registrar/types.js';
 import type { API } from '../../../algebra/api/index.js';
 import type { BaseRuntime } from '../../../algebra/runtime/index.js';
-import { createExtensionPoint } from 'packages/extensions/src/algebra/extension-points/named.js';
+
+export type CoreEventHandlers<R extends BaseRuntime> = {
+	prompt: WithContext<PromptHandler, R>;
+	cancel: WithContext<CancelHandler, R>;
+	systemPrompt: WithContext<SystemPromptHandler, R>;
+	chunk: WithContext<StreamObserverHandler<'chunk'>, R>;
+	update: WithContext<StreamObserverHandler<'update'>, R>;
+	turnEnd: WithContext<StreamObserverHandler<'turnEnd'>, R>;
+	toolCall: WithContext<ToolObserverHandler<'toolCall'>, R>;
+	toolResult: WithContext<ToolObserverHandler<'toolResult'>, R>;
+};
+
+export type CoreOnRegistration<R extends BaseRuntime> = {
+	[K in keyof CoreEventHandlers<R>]: [
+		event: K,
+		handler: CoreEventHandlers<R>[K],
+	];
+}[keyof CoreEventHandlers<R>];
+
+export type CoreRegisterToolRegistration<
+	R extends BaseRuntime,
+	TArgs = unknown,
+> =
+	| [tool: ExtensionToolDefinition<TArgs, R>]
+	| [
+			spec: ToolSpec<string, TArgs>,
+			execute: (params: TArgs, runtime: R) => MaybePromise<ToolExecuteReturn>,
+	  ];
 
 /**
  * The bound Core registration surface at runtime `R`. This is what
@@ -23,39 +50,20 @@ import { createExtensionPoint } from 'packages/extensions/src/algebra/extension-
  * `BoundAPI<CoreAPI, MyRuntime>`.
  */
 export interface CoreAPISurface<R extends BaseRuntime> {
-	on(event: 'prompt', handler: WithContext<PromptHandler, R>): void;
-	on(event: 'cancel', handler: WithContext<CancelHandler, R>): void;
-
-	on(event: 'systemPrompt', handler: WithContext<SystemPromptHandler, R>): void;
-
+	on(event: 'prompt', handler: CoreEventHandlers<R>['prompt']): void;
+	on(event: 'cancel', handler: CoreEventHandlers<R>['cancel']): void;
 	on(
-		event: 'chunk',
-		handler: WithContext<StreamObserverHandler<'chunk'>, R>,
+		event: 'systemPrompt',
+		handler: CoreEventHandlers<R>['systemPrompt'],
 	): void;
-	on(
-		event: 'update',
-		handler: WithContext<StreamObserverHandler<'update'>, R>,
-	): void;
-	on(
-		event: 'turnEnd',
-		handler: WithContext<StreamObserverHandler<'turnEnd'>, R>,
-	): void;
-
-	on(
-		event: 'toolCall',
-		handler: WithContext<ToolObserverHandler<'toolCall'>, R>,
-	): void;
-	on(
-		event: 'toolResult',
-		handler: WithContext<ToolObserverHandler<'toolResult'>, R>,
-	): void;
+	on(event: 'chunk', handler: CoreEventHandlers<R>['chunk']): void;
+	on(event: 'update', handler: CoreEventHandlers<R>['update']): void;
+	on(event: 'turnEnd', handler: CoreEventHandlers<R>['turnEnd']): void;
+	on(event: 'toolCall', handler: CoreEventHandlers<R>['toolCall']): void;
+	on(event: 'toolResult', handler: CoreEventHandlers<R>['toolResult']): void;
 
 	registerTool<TInput>(tool: ExtensionToolDefinition<TInput, R>): void;
-
-	registerTool<TArgs>(
-		spec: ToolSpec<string, TArgs>,
-		execute: (params: TArgs, runtime: R) => MaybePromise<ToolExecuteReturn>,
-	): void;
+	registerTool<TArgs>(...args: CoreRegisterToolRegistration<R, TArgs>): void;
 }
 
 /**

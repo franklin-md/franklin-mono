@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { identityCompiler } from '../../../modules/identity/compiler.js';
+import type { IdentityAPI } from '../../../modules/identity/api.js';
 import type { API } from '../../api/index.js';
+import type { ExtensionPoint } from '../../extension-points/types.js';
+import type { Registry } from '../../extension-points/registry.js';
+import { createExtensionPoint } from '../../extension-points/create.js';
+import { combine as combineExtensionPoints } from '../../extension-points/combine.js';
 import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import { combine } from '../combine.js';
 import { compile } from '../compile.js';
@@ -14,6 +19,12 @@ interface CounterAPI extends API {
 	readonly In: BaseRuntime;
 	readonly Out: CounterAPISurface;
 }
+
+const counterExtensionPoint = createExtensionPoint<CounterAPI>({
+	registerCount: true,
+});
+
+const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
 
 type CounterState = {
 	count: number;
@@ -30,17 +41,11 @@ type CounterRuntime = BaseRuntime & {
 function createCounterCompiler(
 	state: CounterState,
 ): Compiler<CounterAPI, CounterRuntime> {
-	let registeredCount: number | undefined;
-
-	const api: CounterAPISurface = {
-		registerCount(value) {
-			registeredCount = value;
-		},
-	};
-
 	return {
-		createApi: () => api,
-		async build() {
+		async compile<ContextRuntime extends BaseRuntime>(
+			registry: Registry<CounterAPI, ContextRuntime>,
+		) {
+			const registeredCount = registry.registerCount.at(-1)?.[0];
 			const count = registeredCount ?? state.count;
 			return {
 				label: 'counter',
@@ -59,10 +64,9 @@ function createCounterCompiler(
 	};
 }
 
-function apiKeys<A extends API, Runtime extends BaseRuntime & A['In']>(
-	compiler: Compiler<A, Runtime>,
-): string[] {
-	return Object.keys(compiler.createApi<Runtime>());
+function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
+	const registry = extensionPoint.createRegistry();
+	return Object.keys(extensionPoint.createApi(registry));
 }
 
 describe('compiler combine identity laws', () => {
@@ -72,12 +76,18 @@ describe('compiler combine identity laws', () => {
 			identityCompiler(),
 			createCounterCompiler({ count: 1 }),
 		);
+		const combinedExtensionPoint = combineExtensionPoints(
+			identityExtensionPoint,
+			counterExtensionPoint,
+		);
 
-		expect(apiKeys(combined)).toEqual(apiKeys(baseline));
+		expect(apiKeys(combinedExtensionPoint)).toEqual(
+			apiKeys(counterExtensionPoint),
+		);
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([
-			compile(baseline, (api) => api.registerCount(7)),
-			compile(combined, (api) => api.registerCount(7)),
+			compile(counterExtensionPoint, baseline, (api) => api.registerCount(7)),
+			compile(combinedExtensionPoint, combined, (api) => api.registerCount(7)),
 		]);
 
 		expect(combinedRuntime.label).toBe(baselineRuntime.label);
@@ -93,12 +103,18 @@ describe('compiler combine identity laws', () => {
 			createCounterCompiler({ count: 2 }),
 			identityCompiler(),
 		);
+		const combinedExtensionPoint = combineExtensionPoints(
+			counterExtensionPoint,
+			identityExtensionPoint,
+		);
 
-		expect(apiKeys(combined)).toEqual(apiKeys(baseline));
+		expect(apiKeys(combinedExtensionPoint)).toEqual(
+			apiKeys(counterExtensionPoint),
+		);
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([
-			compile(baseline, (api) => api.registerCount(11)),
-			compile(combined, (api) => api.registerCount(11)),
+			compile(counterExtensionPoint, baseline, (api) => api.registerCount(11)),
+			compile(combinedExtensionPoint, combined, (api) => api.registerCount(11)),
 		]);
 
 		expect(combinedRuntime.label).toBe(baselineRuntime.label);

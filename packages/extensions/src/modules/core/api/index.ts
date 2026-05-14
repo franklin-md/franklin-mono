@@ -1,4 +1,9 @@
-export type { CoreAPI } from './api.js';
+export type {
+	CoreAPI,
+	CoreEventHandlers,
+	CoreOnRegistration,
+	CoreRegisterToolRegistration,
+} from './api.js';
 export type { Prompt } from './prompt.js';
 export type {
 	SystemPrompt,

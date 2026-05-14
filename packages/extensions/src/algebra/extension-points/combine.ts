@@ -1,4 +1,3 @@
-import type { AssertNoOverlap } from '@franklin/lib';
 import type { API, BoundAPI, ComposeAPI } from '../api/types.js';
 import type { Registry } from './registry.js';
 import type { ExtensionPoint } from './types.js';

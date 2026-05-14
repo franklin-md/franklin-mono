@@ -23,6 +23,9 @@ import { StoreRegistry } from '../../../modules/store/api/registry/index.js';
 import { createStoreModule } from '../../../modules/store/module.js';
 import type { API, StaticAPI } from '../../../algebra/api/types.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
+import type { ExtensionPoint } from '../../../algebra/extension-points/types.js';
+import type { Registry } from '../../../algebra/extension-points/registry.js';
+import { createExtensionPoint } from '../../../algebra/extension-points/create.js';
 import type {
 	BaseRuntime,
 	StateHandle,
@@ -116,6 +119,10 @@ type ValueAPISurface = {
 
 type ValueAPI = StaticAPI<ValueAPISurface>;
 
+const valueExtensionPoint = createExtensionPoint<ValueAPI>({
+	registerValue: true,
+});
+
 type ValueState = {
 	value: number;
 };
@@ -134,19 +141,15 @@ function createValueSystem(): HarnessModule<
 	ValueRuntime
 > {
 	return {
+		extensionPoint: valueExtensionPoint,
 		emptyState: () => ({ value: 0 }),
 		state: (runtime) => runtime[VALUE_STATE],
 		createCompiler(state): Compiler<ValueAPI, ValueRuntime> {
-			let registeredValue: number | undefined;
-			const api: ValueAPISurface = {
-				registerValue(value) {
-					registeredValue = value;
-				},
-			};
-
 			return {
-				createApi: () => api,
-				async build() {
+				async compile<ContextRuntime extends BaseRuntime>(
+					registry: Registry<ValueAPI, ContextRuntime>,
+				) {
+					const registeredValue = registry.registerValue.at(-1)?.[0];
 					const value = registeredValue ?? state.value;
 					return {
 						label: 'value',
@@ -167,10 +170,9 @@ function createValueSystem(): HarnessModule<
 	};
 }
 
-function apiKeys<A extends API, Runtime extends BaseRuntime & A['In']>(
-	compiler: Compiler<A, Runtime>,
-): string[] {
-	return Object.keys(compiler.createApi<Runtime>());
+function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
+	const registry = extensionPoint.createRegistry();
+	return Object.keys(extensionPoint.createApi(registry));
 }
 
 // ---------------------------------------------------------------------------
@@ -436,8 +438,8 @@ describe('combine — identity laws', () => {
 		const combined = combine(identityModule(), createValueSystem());
 
 		expect(combined.emptyState()).toEqual(baseline.emptyState());
-		expect(apiKeys(combined.createCompiler({ value: 0 }))).toEqual(
-			apiKeys(baseline.createCompiler({ value: 0 })),
+		expect(apiKeys(combined.extensionPoint)).toEqual(
+			apiKeys(baseline.extensionPoint),
 		);
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([
@@ -467,8 +469,8 @@ describe('combine — identity laws', () => {
 		const combined = combine(createValueSystem(), identityModule());
 
 		expect(combined.emptyState()).toEqual(baseline.emptyState());
-		expect(apiKeys(combined.createCompiler({ value: 0 }))).toEqual(
-			apiKeys(baseline.createCompiler({ value: 0 })),
+		expect(apiKeys(combined.extensionPoint)).toEqual(
+			apiKeys(baseline.extensionPoint),
 		);
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([

@@ -1,5 +1,6 @@
 import type { API } from '../../algebra/api/index.js';
 import type { Compiler } from '../../algebra/compiler/index.js';
+import type { Registry } from '../../algebra/extension-points/registry.js';
 import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { BaseState } from '../state/index.js';
 import type { HarnessModule } from './module.js';
@@ -12,15 +13,15 @@ export function withSetupCompiler<
 	setup: (runtime: Runtime) => Promise<void>,
 ): Compiler<A, Runtime> {
 	return {
-		createApi: () => inner.createApi(),
 		// `Pick<ContextRuntime, never>` keeps the type parameter referenced
 		// in the public signature so the no-unnecessary-type-parameters
 		// lint rule sees ContextRuntime as load-bearing. The intersection is
 		// `{}` and adds nothing at runtime; it's a structural marker.
-		build: async <ContextRuntime extends BaseRuntime & A['In']>(
+		compile: async <ContextRuntime extends BaseRuntime & A['In']>(
+			registry: Registry<A, ContextRuntime>,
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		) => {
-			const runtime = await inner.build<ContextRuntime>(getRuntime);
+			const runtime = await inner.compile<ContextRuntime>(registry, getRuntime);
 			await setup(runtime);
 			return runtime;
 		},

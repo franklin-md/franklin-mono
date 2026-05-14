@@ -12,6 +12,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import type { BoundAPI } from '../../../../algebra/api/index.js';
 import type { Extension } from '../../../../algebra/extension/index.js';
+import { createExtensionPoint } from '../../../../algebra/extension-points/create.js';
+import type { Registry } from '../../../../algebra/extension-points/registry.js';
 import type { CoreAPI } from '../../api/api.js';
 import { resolveToolOutput } from '../../api/tool.js';
 import {
@@ -24,6 +26,11 @@ import type { FullMiddleware } from '../decorators/middleware/types.js';
 import { createCoreRegistrar } from '../registrar/index.js';
 
 type CoreExtension = Extension<BoundAPI<CoreAPI, CoreRuntime>>;
+
+const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+	on: true,
+	registerTool: true,
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -43,8 +50,12 @@ async function compileExt(
 	ext: CoreExtension,
 ): Promise<FullMiddleware & { tools: SerializedToolDefinition[] }> {
 	const stubCtx = undefined as unknown as CoreRuntime;
-	const { api, registrations } = createCoreRegistrar<CoreRuntime>();
+	const registry = coreExtensionPoint.createRegistry();
+	const api = coreExtensionPoint.createApi<CoreRuntime>(registry);
 	ext(api);
+	const registrations = createCoreRegistrar(
+		registry as Registry<CoreAPI, CoreRuntime>,
+	);
 	const middleware = buildMiddleware(registrations, () => stubCtx);
 	const tools = registrations.tools.map(serializeTool);
 	return { ...middleware, tools };

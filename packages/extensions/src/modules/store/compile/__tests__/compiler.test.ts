@@ -1,17 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { StoreRegistry } from '../../api/registry/index.js';
 import { compile } from '../../../../algebra/compiler/compile.js';
+import { createExtensionPoint } from '../../../../algebra/extension-points/create.js';
 import { createStoreCompiler } from '../compiler.js';
 import { storeStateHandle } from '../../runtime.js';
-import type { StoreAPISurface } from '../../api/api.js';
+import type { StoreAPI, StoreAPISurface } from '../../api/api.js';
 import type { Extension } from '../../../../algebra/extension/index.js';
 import type { StoreMapping } from '../../state.js';
+
+const storeExtensionPoint = createExtensionPoint<StoreAPI>({
+	registerStore: true,
+});
 
 function compileStore(
 	ext: Extension<StoreAPISurface>,
 	seed: StoreMapping = {},
 ) {
 	return compile(
+		storeExtensionPoint,
 		createStoreCompiler(new StoreRegistry(), { store: seed }),
 		ext,
 	);
@@ -108,6 +114,7 @@ describe('createStoreCompiler', () => {
 			// to resolve — the registry is the backing store for all entries.
 			const registry = new StoreRegistry();
 			const parent = await compile(
+				storeExtensionPoint,
 				createStoreCompiler(registry, { store: {} }),
 				(api) => {
 					api.registerStore('seeded', 99, 'shared');
@@ -117,6 +124,7 @@ describe('createStoreCompiler', () => {
 			const parentState = await storeStateHandle(parent).get();
 
 			const child = await compile(
+				storeExtensionPoint,
 				createStoreCompiler(registry, { store: parentState.store }),
 				(api) => {
 					api.registerStore('seeded', 0, 'shared');
@@ -129,6 +137,7 @@ describe('createStoreCompiler', () => {
 		it('overwriting initial in a new compile does not clobber seeded value', async () => {
 			const registry = new StoreRegistry();
 			const parent = await compile(
+				storeExtensionPoint,
 				createStoreCompiler(registry, { store: {} }),
 				(api) => {
 					api.registerStore('todos', 0, 'shared');
@@ -140,6 +149,7 @@ describe('createStoreCompiler', () => {
 			const snapshot = await storeStateHandle(parent).get();
 
 			const child = await compile(
+				storeExtensionPoint,
 				createStoreCompiler(registry, { store: snapshot.store }),
 				(api) => {
 					api.registerStore('todos', 0, 'shared');

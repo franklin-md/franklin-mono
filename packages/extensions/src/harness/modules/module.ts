@@ -1,5 +1,6 @@
 import type { API } from '../../algebra/api/index.js';
 import type { Compiler } from '../../algebra/compiler/index.js';
+import type { ExtensionPoint } from '../../algebra/extension-points/types.js';
 import type { BaseRuntime, StateHandle } from '../../algebra/runtime/index.js';
 import type { BaseState } from '../state/index.js';
 
@@ -7,10 +8,11 @@ declare const MODULE_API: unique symbol;
 
 /**
  * A `HarnessModule` owns three things:
+ *  - `extensionPoint` — the registration storage + API facade for extensions
  *  - `emptyState()` — the initial state shape for the module
  *  - `createCompiler(state)` — configure the module against the supplied
- *    state and hand back a compiler that registers extensions and builds the
- *    runtime
+ *    state and hand back a compiler that interprets completed registrations
+ *    into the runtime
  *  - `state(runtime)` — the `Runtime → StateHandle<S>` projection. Each
  *    module stashes its handle on the runtime via a private symbol; this
  *    projection reads it back. The runtime type itself never references
@@ -27,6 +29,7 @@ export type HarnessModule<
 > = {
 	// TODO: Is this actually needed?
 	readonly [MODULE_API]?: A;
+	readonly extensionPoint: ExtensionPoint<A>;
 	emptyState(): S;
 	createCompiler(state: S): Compiler<A, Runtime>;
 	state(runtime: Runtime): StateHandle<S>;

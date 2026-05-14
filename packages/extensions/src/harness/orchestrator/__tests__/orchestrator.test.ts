@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { API, BoundAPI } from '../../../algebra/api/index.js';
+import type { API } from '../../../algebra/api/index.js';
 import type { Compiler } from '../../../algebra/compiler/index.js';
 import type { Extension } from '../../../algebra/extension/index.js';
+import type { Registry } from '../../../algebra/extension-points/registry.js';
+import type { ExtensionPoint } from '../../../algebra/extension-points/types.js';
 import type {
 	BaseRuntime,
 	StateHandle,
@@ -40,25 +42,38 @@ interface RuntimeAwareAPI extends API {
 	readonly Out: RuntimeAwareAPISurface<this['In']>;
 }
 
+const runtimeAwareExtensionPoint: ExtensionPoint<RuntimeAwareAPI> = {
+	createRegistry: () =>
+		({
+			onRuntime: [],
+		}) as Registry<RuntimeAwareAPI>,
+	createApi: <ContextRuntime extends BaseRuntime>(
+		registry: Registry<RuntimeAwareAPI>,
+	) => ({
+		onRuntime(handler: RuntimeHandler<ContextRuntime>) {
+			registry.onRuntime.push([handler] as never);
+		},
+	}),
+};
+
 type TestModule = HarnessModule<TestState, RuntimeAwareAPI, TestRuntime>;
 type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<[TestModule]>>;
 type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<[TestModule]>>;
 
 function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 	return {
+		extensionPoint: runtimeAwareExtensionPoint,
 		emptyState: () => empty,
 		state: (runtime) => runtime[TEST_STATE],
 		createCompiler(state): Compiler<RuntimeAwareAPI, TestRuntime> {
-			const handlers: RuntimeHandler<BaseRuntime>[] = [];
-
 			return {
-				createApi: <ContextRuntime extends BaseRuntime>() =>
-					({
-						onRuntime(handler: RuntimeHandler<ContextRuntime>) {
-							handlers.push(handler as RuntimeHandler<BaseRuntime>);
-						},
-					}) as BoundAPI<RuntimeAwareAPI, ContextRuntime>,
-				async build(getRuntime: () => BaseRuntime) {
+				async compile<ContextRuntime extends BaseRuntime>(
+					registry: Registry<RuntimeAwareAPI, ContextRuntime>,
+					getRuntime: () => ContextRuntime,
+				) {
+					const handlers = registry.onRuntime.map(
+						([handler]) => handler as RuntimeHandler<BaseRuntime>,
+					);
 					let disposed = false;
 					return {
 						runHandlers() {

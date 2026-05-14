@@ -41,15 +41,44 @@ package-level surface.
 
 Franklin models extension composition across three related surfaces:
 
-- **Compiler**: API-family-aware API factory plus runtime builder. It exposes `createApi<ContextRuntime>()` and `build<ContextRuntime>(getRuntime)`, which bind the API HKT and lazy runtime context to the compile context runtime while `build` still returns the compiler's own runtime.
+- **ExtensionPoint**: registration storage plus author-facing API facade. It creates a fresh `Registry<API>`, creates the API object that writes to that registry, and is the only layer that runs extension registration.
+- **Compiler**: registry interpreter plus runtime builder. It exposes `compile<ContextRuntime>(registry, getRuntime)`, which receives the populated registry with the compile context runtime restored while still returning the compiler's own `Runtime`.
 - **Runtime**: lifecycle surface (`dispose`, `subscribe`) plus module-specific capabilities.
-- **HarnessModule**: a factory for `emptyState()` and fresh compilers, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options.
+- **HarnessModule**: a factory for `emptyState()` and fresh compilers, plus the module's extension point, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options.
+
+The extension-point algorithm is:
+
+```typescript
+const registry = extensionPoint.createRegistry();
+const api = extensionPoint.createApi<Runtime>(registry);
+extension(api);
+const runtime = await compiler.compile(registry, getRuntime);
+```
+
+Extension points are usually declared with `createExtensionPoint<API>(keys)`,
+where `keys` is an exhaustive map of the API contribution method names:
+
+```typescript
+const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+	on: true,
+	registerTool: true,
+});
+```
+
+The key map is checked against `keyof Apply<API, any>`, so typo keys and
+missing keys fail typechecking while registry creation remains runtime-erased.
+
+`Registry<API>` is intentionally runtime-erased by default so extension points
+can allocate simple storage. Compile helpers re-specialise it as
+`Registry<API, Runtime>` when handing it to compilers. APIs with overloads can
+still keep typed contribution logs because `Registry` extracts a union of
+overloaded parameter tuples.
 
 `combine(...)` merges these surfaces by product:
 
-- APIs are applied to the composed runtime, then API members are merged by object spread.
+- Extension-point registries and API members are merged by object spread.
 - State is merged by object spread.
-- Runtime lifecycle is recomposed while runtime extras are merged.
+- Compilers interpret their slice of the combined registry, then runtime lifecycle is recomposed while runtime extras are merged.
 
 This composition is intentionally **partial**:
 
@@ -62,6 +91,7 @@ The neutral element for this composition is the `Identity*` set:
 - `IdentityAPI` (lifted with `StaticAPI<IdentityAPI>` at the module signature)
 - `IdentityState`
 - `IdentityRuntime`
+- the empty identity extension point (`createExtensionPoint<IdentityAPI>({})`)
 - `identityCompiler()`
 - `identityModule()`
 
