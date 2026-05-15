@@ -8,7 +8,7 @@ export interface PDFScreenshot {
 
 export interface PDFPageRange {
 	readonly startPage: number;
-	readonly endPage: number;
+	readonly endPage?: number;
 }
 
 export interface PDFInput {

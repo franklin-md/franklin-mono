@@ -110,6 +110,9 @@ export class MistralPDFConverter implements PDFConverter {
 
 function formatMistralPages(range: PDFPageRange): string {
 	const startPage = range.startPage - 1;
+	if (range.endPage === undefined) {
+		return `${startPage}-`;
+	}
 	const endPage = range.endPage - 1;
 	return startPage === endPage ? `${startPage}` : `${startPage}-${endPage}`;
 }

@@ -110,4 +110,25 @@ describe('MistralPDFConverter', () => {
 			expect.objectContaining({ pages: '2' }),
 		);
 	});
+
+	it('formats an open-ended page range for Mistral', async () => {
+		const upload = vi.fn(async () => ({ id: 'file-1' }));
+		const process = vi.fn(async () => ({ pages: [] }));
+		const converter = new MistralPDFConverter({
+			apiKey: 'test-key',
+			createClient: () => ({
+				files: { upload },
+				ocr: { process },
+			}),
+			renderScreenshots: vi.fn(async () => []),
+		});
+
+		await converter.convertPDF(new Uint8Array([1]), {
+			pages: { startPage: 3 },
+		});
+
+		expect(process).toHaveBeenCalledWith(
+			expect.objectContaining({ pages: '2-' }),
+		);
+	});
 });

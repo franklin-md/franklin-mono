@@ -82,15 +82,25 @@ export type {
 export {
 	bashExtension,
 	conversationExtension,
+	createFilesystemExtension,
 	createStatusControl,
 	createTodoControl,
 	createWebExtension,
 	environmentInfoExtension,
 	filesystemExtension,
+	FreePDFConverter,
 	instructionsExtension,
+	isPDFPageInRange,
+	PDF_SCREENSHOT_DPI,
 	spawnExtension,
 	statusExtension,
 	todoExtension,
+} from './extensions/index.js';
+export type {
+	FilesystemExtensionOptions,
+	PDFConverter,
+	PDFPageRange,
+	RenderPDFScreenshots,
 } from './extensions/index.js';
 export type {
 	InstructionSpec,

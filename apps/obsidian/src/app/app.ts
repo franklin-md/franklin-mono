@@ -2,9 +2,9 @@ import { FranklinApp } from '@franklin/agent/browser';
 import type { FranklinExtension, Platform } from '@franklin/agent/browser';
 import {
 	conversationExtension,
+	createFilesystemExtension,
 	createWebExtension,
 	environmentInfoExtension,
-	filesystemExtension,
 	instructionsExtension,
 	statusExtension,
 	todoExtension,
@@ -20,6 +20,7 @@ import {
 } from '../utils/obsidian/path.js';
 import type { ObsidianDiffClient } from '../diff/client.js';
 import { resolveAuthStore } from './auth/resolve.js';
+import { createObsidianPDFConverter } from './extensions/pdf.js';
 import { obsidianSystemPromptExtension } from './extensions/system-prompt.js';
 
 interface ObsidianAppResult {
@@ -29,6 +30,9 @@ interface ObsidianAppResult {
 }
 
 const webExtension = createWebExtension({});
+const filesystemExtension = createFilesystemExtension({
+	pdfConverter: createObsidianPDFConverter(),
+});
 const extensionBundles = [
 	conversationExtension,
 	todoExtension,

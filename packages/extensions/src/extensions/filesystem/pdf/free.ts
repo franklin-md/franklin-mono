@@ -1,4 +1,5 @@
 import { extractLinks, extractText } from 'unpdf';
+import { isPDFPageInRange } from './page-range.js';
 import type {
 	PDFConvertOptions,
 	PDFConverter,
@@ -51,7 +52,7 @@ function formatExtractedText(
 ): string[] {
 	return pages.flatMap((text, index) => {
 		const pageNumber = index + 1;
-		if (!isPageInRange(pageNumber, range)) {
+		if (!isPDFPageInRange(pageNumber, range)) {
 			return [];
 		}
 		const normalized = text.trim();
@@ -66,10 +67,4 @@ function formatLinks(links: readonly string[]): string[] {
 		return [];
 	}
 	return [`## Links\n\n${links.map((link) => `- ${link}`).join('\n')}`];
-}
-
-function isPageInRange(pageNumber: number, range: PDFPageRange | undefined) {
-	return (
-		!range || (pageNumber >= range.startPage && pageNumber <= range.endPage)
-	);
 }

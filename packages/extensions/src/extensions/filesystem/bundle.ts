@@ -14,25 +14,38 @@ import { readExtension } from './read/extension.js';
 import { readFileSpec } from './read/tools.js';
 import { writeExtension } from './write/extension.js';
 import { writeFileSpec } from './write/tools.js';
+import type { PDFConverter } from './pdf/types.js';
 
-export const filesystemExtension = createBundle({
-	extension: reduceExtensions(
-		editExtension(),
-		readExtension(),
-		readPDFExtension({
-			pdfConverter: new FreePDFConverter({ renderScreenshots: async () => [] }),
-		}),
-		writeExtension(),
-		globExtension(),
-		grepExtension(),
-	),
-	keys: { file: fileKey },
-	tools: {
-		editFile: editFileSpec,
-		readFile: readFileSpec,
-		readPDF: readPDFSpec,
-		writeFile: writeFileSpec,
-		glob: globSpec,
-		grep: grepSpec,
-	},
-});
+export interface FilesystemExtensionOptions {
+	readonly pdfConverter?: PDFConverter;
+}
+
+export function createFilesystemExtension(
+	options: FilesystemExtensionOptions = {},
+) {
+	const pdfConverter =
+		options.pdfConverter ??
+		new FreePDFConverter({ renderScreenshots: async () => [] });
+
+	return createBundle({
+		extension: reduceExtensions(
+			editExtension(),
+			readExtension(),
+			readPDFExtension({ pdfConverter }),
+			writeExtension(),
+			globExtension(),
+			grepExtension(),
+		),
+		keys: { file: fileKey },
+		tools: {
+			editFile: editFileSpec,
+			readFile: readFileSpec,
+			readPDF: readPDFSpec,
+			writeFile: writeFileSpec,
+			glob: globSpec,
+			grep: grepSpec,
+		},
+	});
+}
+
+export const filesystemExtension = createFilesystemExtension();

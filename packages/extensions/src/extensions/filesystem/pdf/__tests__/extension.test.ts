@@ -72,7 +72,8 @@ describe('readPDFExtension', () => {
 					name: 'read_pdf',
 					arguments: {
 						path: 'document.pdf',
-						pages: [2, 4],
+						start_page: 2,
+						end_page: 4,
 					},
 				},
 			},
@@ -83,5 +84,39 @@ describe('readPDFExtension', () => {
 			pages: { startPage: 2, endPage: 4 },
 		});
 		expect(result.content).toEqual([{ type: 'text', text: 'converted pdf' }]);
+	});
+
+	it('defaults missing page range boundaries', async () => {
+		const pdf = new TextEncoder().encode('%PDF-1.7\n');
+		const env = mockEnvironment(pdf);
+		const pdfConverter = {
+			convertPDF: vi.fn(async () => ({
+				markdown: 'converted pdf',
+				screenshots: [],
+			})),
+		};
+		const compiled = await compileCoreWithStoreAndEnv((api) => {
+			editExtension()(api);
+			readPDFExtension({ pdfConverter })(api);
+		}, env);
+
+		await compiled.middleware.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'read-1',
+					name: 'read_pdf',
+					arguments: {
+						path: 'document.pdf',
+						end_page: 4,
+					},
+				},
+			},
+			vi.fn(),
+		);
+
+		expect(pdfConverter.convertPDF).toHaveBeenCalledWith(pdf, {
+			pages: { startPage: 1, endPage: 4 },
+		});
 	});
 });
