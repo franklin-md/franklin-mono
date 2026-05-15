@@ -1,5 +1,5 @@
 import { compile } from '../../algebra/compiler/index.js';
-import { resolveState } from '../state/index.js';
+import { resolveState } from '../../algebra/modules/state/index.js';
 import type {
 	InferExtension,
 	InferState,

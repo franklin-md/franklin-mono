@@ -6,8 +6,8 @@ import type {
 } from '../../../algebra/modules/state/combine.js';
 import { combineRuntimes } from '../../../algebra/runtime/combine.js';
 import type { API, BaseAPI, StaticAPI } from '../../../algebra/api/types.js';
+import type { BaseState } from '../../../algebra/modules/state/index.js';
 import type { BaseRuntime } from '../../../algebra/runtime/types.js';
-import type { BaseState } from '../../state/types.js';
 import type { InferBoundAPI } from '../../../algebra/modules/state/infer.js';
 import type { HarnessModule } from '../module.js';
 
