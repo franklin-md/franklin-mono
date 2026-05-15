@@ -1,14 +1,12 @@
 import { Mistral } from '@mistralai/mistralai';
 
-import {
-	renderPDFScreenshots,
-	type RenderPDFScreenshots,
-} from './screenshots.js';
 import type {
 	PDFConvertOptions,
 	PDFConverter,
+	PDFConverterOptions,
 	PDFInput,
 	PDFPageRange,
+	RenderPDFScreenshots,
 } from './types.js';
 
 interface MistralFileUploadResponse {
@@ -46,10 +44,9 @@ interface MistralClient {
 	};
 }
 
-export interface MistralPDFConverterOptions {
+export interface MistralPDFConverterOptions extends PDFConverterOptions {
 	readonly apiKey?: string;
 	readonly createClient?: (apiKey: string) => MistralClient;
-	readonly renderScreenshots?: RenderPDFScreenshots;
 }
 
 const IMAGE_MARKDOWN_PATTERN = /!\[[^\]]*]\([^)]*\)/g;
@@ -59,11 +56,11 @@ export class MistralPDFConverter implements PDFConverter {
 	private readonly createClient: (apiKey: string) => MistralClient;
 	private readonly renderScreenshots: RenderPDFScreenshots;
 
-	constructor(options: MistralPDFConverterOptions = {}) {
+	constructor(options: MistralPDFConverterOptions) {
 		this.apiKey = options.apiKey ?? process.env.MISTRAL_API_KEY;
 		this.createClient =
 			options.createClient ?? ((apiKey) => new Mistral({ apiKey }));
-		this.renderScreenshots = options.renderScreenshots ?? renderPDFScreenshots;
+		this.renderScreenshots = options.renderScreenshots;
 	}
 
 	async convertPDF(

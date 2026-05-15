@@ -48,6 +48,7 @@ describe('filesystemExtension', () => {
 	it('exposes the shared file store and all filesystem tools', async () => {
 		expect(filesystemExtension.keys.file).toBe(fileKey);
 		expect(filesystemExtension.tools.readFile.name).toBe('read_file');
+		expect(filesystemExtension.tools.readPDF.name).toBe('read_pdf');
 		expect(filesystemExtension.tools.writeFile.name).toBe('write_file');
 		expect(filesystemExtension.tools.editFile.name).toBe('edit_file');
 		expect(filesystemExtension.tools.glob.name).toBe('glob');
@@ -59,7 +60,13 @@ describe('filesystemExtension', () => {
 
 		const names = compiled.tools.map((tool) => tool.name);
 		expect(names).toEqual(
-			expect.arrayContaining(['read_file', 'write_file', 'edit_file', 'glob']),
+			expect.arrayContaining([
+				'read_file',
+				'read_pdf',
+				'write_file',
+				'edit_file',
+				'glob',
+			]),
 		);
 	});
 });

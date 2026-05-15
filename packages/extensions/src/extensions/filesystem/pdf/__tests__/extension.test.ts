@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
 import { editExtension } from '../../edit/extension.js';
-import { readExtension } from '../extension.js';
+import { readPDFExtension } from '../extension.js';
 
 vi.mock('file-type', () => ({
 	fileTypeFromBuffer: vi.fn(async () => ({
@@ -49,13 +49,19 @@ function mockEnvironment(file: Uint8Array): ReconfigurableEnvironment {
 	};
 }
 
-describe('readExtension', () => {
-	it('asks callers to use read_pdf for PDF files', async () => {
+describe('readPDFExtension', () => {
+	it('routes PDFs through the PDF converter with page ranges', async () => {
 		const pdf = new TextEncoder().encode('%PDF-1.7\n');
 		const env = mockEnvironment(pdf);
+		const pdfConverter = {
+			convertPDF: vi.fn(async () => ({
+				markdown: 'converted pdf',
+				screenshots: [],
+			})),
+		};
 		const compiled = await compileCoreWithStoreAndEnv((api) => {
 			editExtension()(api);
-			readExtension()(api);
+			readPDFExtension({ pdfConverter })(api);
 		}, env);
 
 		const result = await compiled.middleware.server.toolExecute(
@@ -63,25 +69,19 @@ describe('readExtension', () => {
 				call: {
 					type: 'toolCall',
 					id: 'read-1',
-					name: 'read_file',
+					name: 'read_pdf',
 					arguments: {
 						path: 'document.pdf',
-						limit: 3,
-						offset: 2,
+						pages: [2, 4],
 					},
 				},
 			},
 			vi.fn(),
 		);
 
-		expect(result).toMatchObject({
-			content: [
-				{
-					type: 'text',
-					text: 'PDF files must be read with the read_pdf tool.',
-				},
-			],
-			isError: true,
+		expect(pdfConverter.convertPDF).toHaveBeenCalledWith(pdf, {
+			pages: { startPage: 2, endPage: 4 },
 		});
+		expect(result.content).toEqual([{ type: 'text', text: 'converted pdf' }]);
 	});
 });

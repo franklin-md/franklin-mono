@@ -1,18 +1,14 @@
-import {
-	renderPDFScreenshots,
-	type RenderPDFScreenshots,
-} from './screenshots.js';
-import type { PDFConvertOptions, PDFConverter, PDFInput } from './types.js';
+import type { PDFConvertOptions, PDFConverter, PDFInput, RenderPDFScreenshots } from './types.js';
 
 export interface FreePDFConverterOptions {
-	readonly renderScreenshots?: RenderPDFScreenshots;
+	readonly renderScreenshots: RenderPDFScreenshots;
 }
 
 export class FreePDFConverter implements PDFConverter {
 	private readonly renderScreenshots: RenderPDFScreenshots;
 
-	constructor(options: FreePDFConverterOptions = {}) {
-		this.renderScreenshots = options.renderScreenshots ?? renderPDFScreenshots;
+	constructor(options: FreePDFConverterOptions) {
+		this.renderScreenshots = options.renderScreenshots;
 	}
 
 	async convertPDF(
