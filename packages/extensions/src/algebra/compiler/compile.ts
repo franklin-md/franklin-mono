@@ -5,34 +5,25 @@ import type { Registry } from '../extension-points/registry.js';
 import type { BaseRuntime } from '../runtime/index.js';
 import type { Compiler } from './types.js';
 
-/**
- * Compile a single extension — create the extension-point registry, bind the
- * API facade, run extension registration, then tie the Y-combinator.
- */
-export async function compile<
-	A extends API,
-	Runtime extends BaseRuntime & A['In'],
->(
+export function register<A extends API, Runtime extends BaseRuntime & A['In']>(
 	extensionPoint: ExtensionPoint<A>,
-	compiler: Compiler<A, Runtime>,
 	extension: Extension<BoundAPI<A, Runtime>>,
-): Promise<Runtime> {
-	// TODO: The question is do we split this out into 2 phase functions?
-	// Phase 1: Registration
+): Registry<A, Runtime> {
 	const registry = extensionPoint.createRegistry();
 	const api = extensionPoint.createApi<Runtime>(registry);
 	extension(api);
-	// Phase 2: Interprettation
-	return tie(compiler, registry as Registry<A, Runtime>);
+	return registry as Registry<A, Runtime>;
 }
 
-async function tie<A extends API, Runtime extends BaseRuntime & A['In']>(
-	compiler: Compiler<A, Runtime>,
+export async function build<
+	A extends API,
+	Runtime extends BaseRuntime & A['In'],
+>(
 	registry: Registry<A, Runtime>,
+	compiler: Compiler<A, Runtime>,
 ): Promise<Runtime> {
-	// Mutable cell — handler closures capture `getRuntime` at registration,
-	// `compileAll`/`compile` populates `cell.value` once compiler compilation
-	// resolves.
+	// Mutable cell: handlers capture `getRuntime` during registration, then
+	// `build` populates the cell once compiler compilation resolves.
 	const cell: { value?: Runtime } = {};
 	const getRuntime = (): Runtime => {
 		if (cell.value === undefined) {
@@ -44,4 +35,16 @@ async function tie<A extends API, Runtime extends BaseRuntime & A['In']>(
 	};
 	cell.value = await compiler.compile<Runtime>(registry, getRuntime);
 	return cell.value;
+}
+
+export async function compile<
+	A extends API,
+	Runtime extends BaseRuntime & A['In'],
+>(
+	extensionPoint: ExtensionPoint<A>,
+	compiler: Compiler<A, Runtime>,
+	extension: Extension<BoundAPI<A, Runtime>>,
+): Promise<Runtime> {
+	const registry = register(extensionPoint, extension);
+	return build(registry, compiler);
 }
