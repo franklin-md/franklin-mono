@@ -18,16 +18,18 @@ import type {
 	ReconfigurableEnvironment,
 } from '../../../modules/environment/api/types.js';
 import { createEnvironmentModule } from '../../../modules/environment/module.js';
-import { identityModule } from '../../../modules/identity/module.js';
+import { identityModule } from '../../../algebra/modules/state/identity.js';
 import { StoreRegistry } from '../../../modules/store/api/registry/index.js';
 import { createStoreModule } from '../../../modules/store/module.js';
 import type { API, StaticAPI } from '../../../algebra/api/types.js';
-import type { Compiler } from '../../../algebra/compiler/types.js';
+import type { ExtensionPoint } from '../../../algebra/extension-points/types.js';
+import type { Registry } from '../../../algebra/extension-points/registry.js';
+import { createExtensionPoint } from '../../../algebra/extension-points/create.js';
 import type {
 	BaseRuntime,
 	StateHandle,
 } from '../../../algebra/runtime/types.js';
-import { combine } from '../combine.js';
+import { combine } from '../../../algebra/modules/state/combine.js';
 import { createRuntime } from '../create.js';
 import type { HarnessModule } from '../module.js';
 
@@ -116,6 +118,10 @@ type ValueAPISurface = {
 
 type ValueAPI = StaticAPI<ValueAPISurface>;
 
+const valueExtensionPoint = createExtensionPoint<ValueAPI>({
+	registerValue: true,
+});
+
 type ValueState = {
 	value: number;
 };
@@ -136,41 +142,42 @@ function createValueSystem(): HarnessModule<
 	return {
 		emptyState: () => ({ value: 0 }),
 		state: (runtime) => runtime[VALUE_STATE],
-		createCompiler(state): Compiler<ValueAPI, ValueRuntime> {
-			let registeredValue: number | undefined;
-			const api: ValueAPISurface = {
-				registerValue(value) {
-					registeredValue = value;
-				},
-			};
-
+		instantiate(state) {
 			return {
-				createApi: () => api,
-				async build() {
-					const value = registeredValue ?? state.value;
-					return {
-						label: 'value',
-						currentValue() {
-							return value;
-						},
-						[VALUE_STATE]: {
-							get: vi.fn(async () => ({ value })),
-							fork: vi.fn(async () => ({ value })),
-							child: vi.fn(async () => ({ value })),
-						},
-						dispose: vi.fn(async () => {}),
-						subscribe: vi.fn(() => () => {}),
-					};
+				extensionPoint: valueExtensionPoint,
+				compiler: {
+					async compile<ContextRuntime extends BaseRuntime>(
+						registry: Registry<ValueAPI, ContextRuntime>,
+					) {
+						const registeredValue = registry.registerValue.at(-1)?.[0];
+						const value = registeredValue ?? state.value;
+						return {
+							label: 'value',
+							currentValue() {
+								return value;
+							},
+							[VALUE_STATE]: {
+								get: vi.fn(async () => ({ value })),
+								fork: vi.fn(async () => ({ value })),
+								child: vi.fn(async () => ({ value })),
+							},
+							dispose: vi.fn(async () => {}),
+							subscribe: vi.fn(() => () => {}),
+						};
+					},
 				},
 			};
 		},
 	};
 }
 
-function apiKeys<A extends API, Runtime extends BaseRuntime & A['In']>(
-	compiler: Compiler<A, Runtime>,
-): string[] {
-	return Object.keys(compiler.createApi<Runtime>());
+function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
+	const registry = extensionPoint.createRegistry();
+	return Object.keys(extensionPoint.createApi(registry));
+}
+
+function moduleApiKeys(module: HarnessModule<any, any, any>): string[] {
+	return apiKeys(module.instantiate(module.emptyState()).extensionPoint);
 }
 
 // ---------------------------------------------------------------------------
@@ -436,9 +443,7 @@ describe('combine — identity laws', () => {
 		const combined = combine(identityModule(), createValueSystem());
 
 		expect(combined.emptyState()).toEqual(baseline.emptyState());
-		expect(apiKeys(combined.createCompiler({ value: 0 }))).toEqual(
-			apiKeys(baseline.createCompiler({ value: 0 })),
-		);
+		expect(moduleApiKeys(combined)).toEqual(moduleApiKeys(baseline));
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([
 			createRuntime(baseline, { value: 1 }, [
@@ -467,9 +472,7 @@ describe('combine — identity laws', () => {
 		const combined = combine(createValueSystem(), identityModule());
 
 		expect(combined.emptyState()).toEqual(baseline.emptyState());
-		expect(apiKeys(combined.createCompiler({ value: 0 }))).toEqual(
-			apiKeys(baseline.createCompiler({ value: 0 })),
-		);
+		expect(moduleApiKeys(combined)).toEqual(moduleApiKeys(baseline));
 
 		const [baselineRuntime, combinedRuntime] = await Promise.all([
 			createRuntime(baseline, { value: 3 }, [

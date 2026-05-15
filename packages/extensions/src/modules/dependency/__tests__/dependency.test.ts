@@ -1,8 +1,8 @@
 import { describe, it, expect, expectTypeOf, vi } from 'vitest';
+import { compile } from '../../../algebra/compiler/index.js';
 import type { DependencyRuntime as ApiIndexDependencyRuntime } from '../../../index.js';
 import {
 	createDependencyModule,
-	createRuntime,
 	type DependencyRuntime,
 	type DependencyModule,
 } from '../../../index.js';
@@ -28,13 +28,14 @@ describe('createDependencyModule', () => {
 		const settings = { get: vi.fn(() => 'medium') };
 		const system = createDependencyModule('settings', settings);
 
-		const runtime = await createRuntime(system, {}, []);
+		const runtime = await compile(
+			system.extensionPoint,
+			system.compiler,
+			() => {},
+		);
 
 		expectTypeOf(runtime.settings).toEqualTypeOf<typeof settings>();
 		expect(runtime.settings).toBe(settings);
-		expect(await system.state(runtime).get()).toEqual({});
-		expect(await system.state(runtime).fork()).toEqual({});
-		expect(await system.state(runtime).child()).toEqual({});
 
 		const unsubscribe = runtime.subscribe(() => {});
 		unsubscribe();
@@ -43,10 +44,11 @@ describe('createDependencyModule', () => {
 
 	it('keys the runtime field by the configured name', async () => {
 		const auth = { token: 'abc' };
-		const runtime = await createRuntime(
-			createDependencyModule('auth', auth),
-			{},
-			[],
+		const system = createDependencyModule('auth', auth);
+		const runtime = await compile(
+			system.extensionPoint,
+			system.compiler,
+			() => {},
 		);
 
 		expectTypeOf(runtime.auth).toEqualTypeOf<typeof auth>();

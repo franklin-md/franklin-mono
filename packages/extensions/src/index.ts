@@ -8,9 +8,18 @@ export type {
 } from './algebra/api/types.js';
 export type { ReduceAPIs } from './algebra/api/reduce.js';
 export { combine } from './algebra/compiler/combine.js';
-export { compile, compileAll } from './algebra/compiler/compile.js';
-export { compilerFromApi } from './algebra/compiler/from-api.js';
+export { compile } from './algebra/compiler/compile.js';
 export type { Compiler } from './algebra/compiler/types.js';
+export type { CompilerStep, RuntimeStep } from './algebra/compiler/setup.js';
+export {
+	composeCompilerSteps,
+	transformCompiler,
+	withSetupCompiler,
+} from './algebra/compiler/setup.js';
+export type { Registry } from './algebra/extension-points/registry.js';
+export type { ExtensionPoint } from './algebra/extension-points/types.js';
+export { createExtensionPoint } from './algebra/extension-points/create.js';
+export { combine as combineExtensionPoints } from './algebra/extension-points/combine.js';
 export {
 	createOrchestrator,
 	Orchestrator,
@@ -28,6 +37,20 @@ export type {
 } from './harness/orchestrator/index.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { ReduceRuntimes } from './algebra/runtime/reduce.js';
+export type {
+	BaseExtensionModule,
+	ExtensionModule,
+} from './algebra/modules/simple/index.js';
+export type {
+	BaseStateExtensionModule,
+	StateExtensionModule,
+} from './algebra/modules/state/index.js';
+export {
+	buildStateExtensionModule,
+	combine as combineModules,
+	combineAll,
+	liftExtensionModule,
+} from './algebra/modules/state/index.js';
 // ---------------------------------------------------------------------------
 // Runtime
 // ---------------------------------------------------------------------------
@@ -36,37 +59,42 @@ export { resolveState } from './harness/state/resolve.js';
 // ---------------------------------------------------------------------------
 // Harness modules
 // ---------------------------------------------------------------------------
-export type { BaseState } from './harness/state/types.js';
+export type { BaseState } from './algebra/modules/state/index.js';
 export type { ExtensionBundle } from './modules/bundle/index.js';
 export { createBundle } from './modules/bundle/index.js';
-export {
-	combine as combineModules,
-	combineAll,
-	defineExtension,
-} from './harness/modules/index.js';
+export { defineExtension } from './harness/modules/index.js';
 export { createRuntime } from './harness/modules/create.js';
 export { withSetup } from './harness/modules/setup.js';
 export type {
 	BaseHarnessModule,
-	CombinableModule,
-	CombineModules,
 	ExtensionApi,
 	ExtensionForModules,
 	HarnessModule,
+	ModuleAPIs,
+	ModuleRuntimes,
+} from './harness/modules/index.js';
+export type {
+	BuildableModule,
+	BuildModules,
+	CombinableModule,
+	CombinableBuildModule,
+	CombineModules,
 	InferAPI,
 	InferBoundAPI,
 	InferRuntime,
 	InferState,
+	LiftModule,
+	LiftModules,
 	Modules,
+	ValidateBuildModules,
 	ValidateModules,
-} from './harness/modules/index.js';
+} from './algebra/modules/state/index.js';
 export type {
 	Extension,
 	ExtensionAPISurface,
 	ExtensionFor,
 } from './algebra/extension/types.js';
 export { reduceExtensions } from './algebra/extension/index.js';
-export type { MaybePromise } from './algebra/types/shared.js';
 export type {
 	AssistantBlock,
 	AssistantTurn,
@@ -107,12 +135,16 @@ export type {
 	WebFetchExtensionOptions,
 	WebFetchProcessedResult,
 } from './extensions/web/web-fetch/types.js';
+
 export { DEFAULT_WEB_FETCH_OPTIONS } from './extensions/web/web-fetch/types.js';
 export { DEFAULT_WEB_SEARCH_OPTIONS } from './extensions/web/web-search/types.js';
 export type {
 	AnyToolDefinition,
 	CancelHandler,
 	CoreAPI,
+	CoreEventHandlers,
+	CoreOnRegistration,
+	CoreRegisterToolRegistration,
 	ExtensionToolDefinition,
 	Prompt,
 	PromptHandler,
@@ -173,22 +205,6 @@ export type {
 	EnvironmentModule,
 } from './modules/environment/module.js';
 export { createEnvironmentModule } from './modules/environment/module.js';
-export type {
-	IdentityAPI,
-	IdentityAPISurface,
-} from './modules/identity/api.js';
-export { identityAPI } from './modules/identity/api.js';
-export type { IdentityCompiler } from './modules/identity/compiler.js';
-export { identityCompiler } from './modules/identity/compiler.js';
-export type { IdentityRuntime } from './modules/identity/runtime.js';
-export {
-	identityRuntime,
-	identityStateHandle,
-} from './modules/identity/runtime.js';
-export type { IdentityState } from './modules/identity/state.js';
-export { identityState } from './modules/identity/state.js';
-export type { IdentityModule } from './modules/identity/module.js';
-export { identityModule } from './modules/identity/module.js';
 export type {
 	ForkMode,
 	PersistedStore,

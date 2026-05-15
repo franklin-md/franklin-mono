@@ -3,9 +3,9 @@ import type {
 	StoreModule,
 	EnvironmentModule,
 	Extension,
+	BuildModules,
 	InferBoundAPI,
 	InferState,
-	Modules,
 	OrchestratorModule,
 	OrchestratorRuntime,
 } from '@franklin/extensions';
@@ -16,7 +16,7 @@ export type FranklinModules = readonly [
 	EnvironmentModule,
 ];
 
-export type FranklinBase = Modules<FranklinModules>;
+export type FranklinBase = BuildModules<FranklinModules>;
 
 export type FranklinModule = OrchestratorModule<FranklinModules>;
 

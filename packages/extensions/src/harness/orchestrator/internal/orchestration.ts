@@ -2,11 +2,9 @@ import {
 	createDependencyModule,
 	type DependencyModule,
 } from '../../../modules/dependency/module.js';
-import type {
-	BaseHarnessModule,
-	InferRuntime,
-	InferState,
-} from '../../modules/index.js';
+import type { InferRuntime } from '../../../algebra/modules/simple/index.js';
+import type { InferState } from '../../../algebra/modules/state/index.js';
+import type { BaseHarnessModule } from '../../modules/module.js';
 import type { OrchestratorHandle, OrchestratorRuntime } from '../types.js';
 
 type OrchestrationHandle<M extends BaseHarnessModule> = OrchestratorHandle<
@@ -19,7 +17,6 @@ export type OrchestrationModule<M extends BaseHarnessModule> = DependencyModule<
 	OrchestrationHandle<M>
 >;
 
-// TODO: Do we need to export this? I think this is dead code
 export type OrchestrationRuntime<M extends BaseHarnessModule> = InferRuntime<
 	OrchestrationModule<M>
 >;

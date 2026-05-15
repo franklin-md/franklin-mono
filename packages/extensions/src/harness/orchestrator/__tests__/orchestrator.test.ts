@@ -1,16 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { API, BoundAPI } from '../../../algebra/api/index.js';
-import type { Compiler } from '../../../algebra/compiler/index.js';
+import type { API } from '../../../algebra/api/index.js';
 import type { Extension } from '../../../algebra/extension/index.js';
+import type { Registry } from '../../../algebra/extension-points/registry.js';
+import type { ExtensionPoint } from '../../../algebra/extension-points/types.js';
 import type {
 	BaseRuntime,
 	StateHandle,
 } from '../../../algebra/runtime/index.js';
+import { createDependencyModule } from '../../../modules/dependency/module.js';
+import type { HarnessModule } from '../../modules/index.js';
 import type {
-	HarnessModule,
 	InferBoundAPI,
 	InferRuntime,
-} from '../../modules/index.js';
+} from '../../../algebra/modules/state/index.js';
 import {
 	createOrchestrator,
 	RuntimeCollection,
@@ -40,45 +42,63 @@ interface RuntimeAwareAPI extends API {
 	readonly Out: RuntimeAwareAPISurface<this['In']>;
 }
 
+const runtimeAwareExtensionPoint: ExtensionPoint<RuntimeAwareAPI> = {
+	createRegistry: () =>
+		({
+			onRuntime: [],
+		}) as Registry<RuntimeAwareAPI>,
+	createApi: <ContextRuntime extends BaseRuntime>(
+		registry: Registry<RuntimeAwareAPI>,
+	) => ({
+		onRuntime(handler: RuntimeHandler<ContextRuntime>) {
+			registry.onRuntime.push([handler] as never);
+		},
+	}),
+};
+
 type TestModule = HarnessModule<TestState, RuntimeAwareAPI, TestRuntime>;
 type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<[TestModule]>>;
 type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<[TestModule]>>;
+type Settings = {
+	get(): string;
+};
 
 function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 	return {
 		emptyState: () => empty,
 		state: (runtime) => runtime[TEST_STATE],
-		createCompiler(state): Compiler<RuntimeAwareAPI, TestRuntime> {
-			const handlers: RuntimeHandler<BaseRuntime>[] = [];
-
+		instantiate(state) {
 			return {
-				createApi: <ContextRuntime extends BaseRuntime>() =>
-					({
-						onRuntime(handler: RuntimeHandler<ContextRuntime>) {
-							handlers.push(handler as RuntimeHandler<BaseRuntime>);
-						},
-					}) as BoundAPI<RuntimeAwareAPI, ContextRuntime>,
-				async build(getRuntime: () => BaseRuntime) {
-					let disposed = false;
-					return {
-						runHandlers() {
-							for (const handler of handlers) handler(getRuntime());
-						},
-						wasDisposed() {
-							return disposed;
-						},
-						[TEST_STATE]: {
-							get: vi.fn(async () => state),
-							fork: vi.fn(async () => state),
-							child: vi.fn(async () => ({
-								value: `child-of-${state.value}`,
-							})),
-						},
-						dispose: vi.fn(async () => {
-							disposed = true;
-						}),
-						subscribe: vi.fn(() => () => {}),
-					};
+				extensionPoint: runtimeAwareExtensionPoint,
+				compiler: {
+					async compile<ContextRuntime extends BaseRuntime>(
+						registry: Registry<RuntimeAwareAPI, ContextRuntime>,
+						getRuntime: () => ContextRuntime,
+					) {
+						const handlers = registry.onRuntime.map(
+							([handler]) => handler as RuntimeHandler<BaseRuntime>,
+						);
+						let disposed = false;
+						return {
+							runHandlers() {
+								for (const handler of handlers) handler(getRuntime());
+							},
+							wasDisposed() {
+								return disposed;
+							},
+							[TEST_STATE]: {
+								get: vi.fn(async () => state),
+								fork: vi.fn(async () => state),
+								child: vi.fn(async () => ({
+									value: `child-of-${state.value}`,
+								})),
+							},
+							dispose: vi.fn(async () => {
+								disposed = true;
+							}),
+							subscribe: vi.fn(() => () => {}),
+						};
+					},
 				},
 			};
 		},
@@ -152,6 +172,34 @@ describe('Orchestrator', () => {
 		entry.runtime.runHandlers();
 
 		expect(seen).toEqual(['root-id', 'root-id']);
+	});
+
+	it('lifts simple modules passed to createOrchestrator', async () => {
+		const settings: Settings = { get: vi.fn(() => 'strict') };
+		const settingsModule = createDependencyModule('settings', settings);
+		type MixedModule = OrchestratorModule<[TestModule, typeof settingsModule]>;
+		type MixedRuntime = InferRuntime<MixedModule>;
+		type MixedAPI = InferBoundAPI<MixedModule>;
+		const collection = new RuntimeCollection<MixedRuntime>();
+		const seen: string[] = [];
+		const extension: Extension<MixedAPI> = (api) => {
+			api.onRuntime((runtime) => {
+				seen.push(runtime.settings.get());
+				seen.push(runtime.self.id);
+			});
+		};
+		const orchestrator = createOrchestrator({
+			modules: [createTestModule(), settingsModule] as const,
+			collection,
+			extensions: [extension],
+			createId: createIds('root-id'),
+		});
+
+		const entry = await orchestrator.create();
+		entry.runtime.runHandlers();
+
+		expect(seen).toEqual(['strict', 'root-id']);
+		expect(await entry.runtime[TEST_STATE].get()).toEqual({ value: 'root' });
 	});
 
 	it('creates child and fork runtimes from source state', async () => {

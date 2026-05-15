@@ -1,14 +1,14 @@
-import type { BoundAPI } from '../../../../algebra/api/index.js';
+import type { Registry } from '../../../../algebra/extension-points/registry.js';
 import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
-import type { CoreAPI } from '../../api/api.js';
+import type { CoreAPI, CoreRegisterToolRegistration } from '../../api/api.js';
 import type { ExtensionToolDefinition } from '../../api/tool.js';
 import type { ToolSpec } from '../../api/tool-spec.js';
-import type { CoreRegistrar, CoreRegistrations } from './types.js';
+import type { CoreRegistrar } from './types.js';
 
 function normalizeTool<Runtime extends BaseRuntime>(
-	specOrTool: ToolSpec | ExtensionToolDefinition<unknown, Runtime>,
-	execute?: (params: any, runtime: Runtime) => any,
+	registration: CoreRegisterToolRegistration<Runtime>,
 ): ExtensionToolDefinition<unknown, Runtime> {
+	const [specOrTool, execute] = registration;
 	if (!execute) {
 		return specOrTool as ExtensionToolDefinition<unknown, Runtime>;
 	}
@@ -21,7 +21,9 @@ function normalizeTool<Runtime extends BaseRuntime>(
 	};
 }
 
-export function createCoreRegistrations(): CoreRegistrations {
+function createEmptyCoreRegistrar<
+	Runtime extends BaseRuntime,
+>(): CoreRegistrar<Runtime> {
 	return {
 		// `on` event handlers
 		prompt: [],
@@ -38,43 +40,19 @@ export function createCoreRegistrations(): CoreRegistrations {
 	};
 }
 
-export function asCoreRegistrar<Runtime extends BaseRuntime>(
-	registrations: CoreRegistrations,
-): CoreRegistrar<Runtime> {
-	return registrations as unknown as CoreRegistrar<Runtime>;
-}
-
-export function createCoreApi<Runtime extends BaseRuntime>(
-	registrations: CoreRegistrations,
-): BoundAPI<CoreAPI, Runtime> {
-	type EventKey = Exclude<keyof CoreRegistrar<Runtime>, 'tools'>;
-
-	return {
-		on(event: string, handler: (...args: any[]) => any) {
-			registrations[event as EventKey].push(handler);
-		},
-		registerTool(
-			specOrTool: ToolSpec | ExtensionToolDefinition<unknown, Runtime>,
-			execute?: (params: any, runtime: Runtime) => any,
-		) {
-			registrations.tools.push(normalizeTool(specOrTool, execute));
-		},
-	};
-}
-
 /**
- * Create an empty `CoreRegistrar` together with the `api` surface that
- * mutates it. Registration is pure accumulation — nothing here touches
- * runtime, transport, or middleware. `assemble(registrations, getRuntime)`
- * turns the result into wire-ready middleware + system prompt handlers.
+ * Lower the extension-point contribution log into the runtime builder's
+ * handler-indexed registrar shape.
  */
-export function createCoreRegistrar<Runtime extends BaseRuntime>(): {
-	api: BoundAPI<CoreAPI, Runtime>;
-	registrations: CoreRegistrar<Runtime>;
-} {
-	const registrations = createCoreRegistrations();
-	return {
-		api: createCoreApi<Runtime>(registrations),
-		registrations: asCoreRegistrar<Runtime>(registrations),
-	};
+export function createCoreRegistrar<Runtime extends BaseRuntime>(
+	registry: Registry<CoreAPI, Runtime>,
+): CoreRegistrar<Runtime> {
+	const registrar = createEmptyCoreRegistrar<Runtime>();
+	for (const [event, handler] of registry.on) {
+		registrar[event].push(handler as never);
+	}
+	for (const registration of registry.registerTool) {
+		registrar.tools.push(normalizeTool(registration));
+	}
+	return registrar;
 }

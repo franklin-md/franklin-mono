@@ -1,4 +1,5 @@
 import type { MiniACPConnector } from '@franklin/mini-acp';
+import { createExtensionPoint } from '../../algebra/extension-points/create.js';
 import type { HarnessModule } from '../../harness/modules/index.js';
 import type { CoreAPI } from './api/api.js';
 import { createCoreCompiler } from './compile/compiler.js';
@@ -12,10 +13,18 @@ import { emptyCoreState } from './state.js';
  */
 export type CoreModule = HarnessModule<CoreState, CoreAPI, CoreRuntime>;
 
+const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+	on: true,
+	registerTool: true,
+});
+
 export function createCoreModule(connectAgent: MiniACPConnector): CoreModule {
 	return {
 		emptyState: emptyCoreState,
 		state: (runtime) => coreStateHandle(runtime),
-		createCompiler: (state) => createCoreCompiler(connectAgent, state),
+		instantiate: (state) => ({
+			extensionPoint: coreExtensionPoint,
+			compiler: createCoreCompiler(connectAgent, state),
+		}),
 	};
 }

@@ -1,31 +1,34 @@
 import { reduceExtensions } from '../../algebra/extension/index.js';
 import {
-	combineAll,
-	type BaseHarnessModule,
-	type Modules,
-	type ValidateModules,
-} from '../modules/index.js';
-import type { InferExtension } from '../modules/infer.js';
+	buildStateExtensionModule,
+	type BuildableModule,
+	type BuildModules,
+	type InferExtension,
+	type ValidateBuildModules,
+} from '../../algebra/modules/state/index.js';
 import type { RuntimeCollection } from './collection.js';
 import { Orchestrator } from './orchestrator.js';
 import type { OrchestratorModule, OrchestratorRuntime } from './types.js';
 
-export type CreateOrchestratorInput<Mods extends readonly BaseHarnessModule[]> =
-	{
-		readonly modules: readonly [...Mods] & ValidateModules<Mods>;
-		readonly collection: RuntimeCollection<OrchestratorRuntime<Modules<Mods>>>;
-		readonly extensions: InferExtension<OrchestratorModule<Mods>>[];
-		readonly createId?: () => string;
-	};
+export type CreateOrchestratorInput<Mods extends readonly BuildableModule[]> = {
+	readonly modules: readonly [...Mods] & ValidateBuildModules<Mods>;
+	readonly collection: RuntimeCollection<
+		OrchestratorRuntime<BuildModules<Mods>>
+	>;
+	readonly extensions: InferExtension<OrchestratorModule<Mods>>[];
+	readonly createId?: () => string;
+};
 
-export function createOrchestrator<Mods extends readonly BaseHarnessModule[]>(
+export function createOrchestrator<Mods extends readonly BuildableModule[]>(
 	opts: CreateOrchestratorInput<Mods>,
-): Orchestrator<Modules<Mods>> {
-	const module = combineAll<Mods>(opts.modules);
+): Orchestrator<BuildModules<Mods>> {
+	const module = buildStateExtensionModule<Mods>(opts.modules);
 	const extension = reduceExtensions(...opts.extensions);
-	return new Orchestrator<Modules<Mods>>({
+	return new Orchestrator<BuildModules<Mods>>({
 		module,
-		extension,
+		extension: extension as InferExtension<
+			OrchestratorModule<[BuildModules<Mods>]>
+		>,
 		collection: opts.collection,
 		createId: opts.createId,
 	});

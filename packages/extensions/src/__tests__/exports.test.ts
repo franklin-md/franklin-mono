@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { API, BoundAPI } from '../algebra/api/index.js';
+import type { API } from '../algebra/api/index.js';
 import type { BaseRuntime } from '../algebra/runtime/index.js';
-import type { Extension } from '../algebra/extension/index.js';
+import type { Registry } from '../algebra/extension-points/registry.js';
 import * as rootExports from '../index.js';
-import { compileAll, compilerFromApi, defineExtension } from '../index.js';
+import { createExtensionPoint, defineExtension } from '../index.js';
+import type { Apply } from '@franklin/lib';
 
 type TestAPISurface = { register(label: string): void };
 
@@ -12,36 +13,61 @@ interface TestAPI extends API {
 	readonly Out: TestAPISurface;
 }
 
+const testExtensionPoint = createExtensionPoint<TestAPI>({
+	register: true,
+});
+
 describe('package exports', () => {
 	it('re-exports defineExtension as the authoring helper', () => {
 		const extension = () => {};
 
 		expect(defineExtension<[]>(extension)).toBe(extension);
 		expect('createExtension' in rootExports).toBe(false);
+		expect(rootExports.createExtensionPoint).toBe(createExtensionPoint);
+		expect('coreExtensionPoint' in rootExports).toBe(false);
+		expect('createCoreApi' in rootExports).toBe(false);
+		expect('createCoreRegistry' in rootExports).toBe(false);
+		expect('identityExtensionPoint' in rootExports).toBe(false);
+		expect('storeExtensionPoint' in rootExports).toBe(false);
+		expect('createStoreApi' in rootExports).toBe(false);
+		expect('createStoreExtensionRegistry' in rootExports).toBe(false);
+		expect('identityAPI' in rootExports).toBe(false);
+		expect('identityCompiler' in rootExports).toBe(false);
+		expect('identityRuntime' in rootExports).toBe(false);
+		expect('identityState' in rootExports).toBe(false);
+		expect('identityStateHandle' in rootExports).toBe(false);
+		expect('identityModule' in rootExports).toBe(false);
+		expect(typeof rootExports.buildStateExtensionModule).toBe('function');
+		expect(typeof rootExports.liftExtensionModule).toBe('function');
+		expect(typeof rootExports.transformCompiler).toBe('function');
+		expect(typeof rootExports.composeCompilerSteps).toBe('function');
+		expect(typeof rootExports.withSetupCompiler).toBe('function');
 	});
 
 	it('re-exports compileAll from the root barrel', async () => {
 		const calls: string[] = [];
 		let buildCalls = 0;
-		const api: TestAPISurface = {
-			register(label: string) {
-				calls.push(label);
-			},
-		};
 		const runtime: BaseRuntime = {
 			dispose: async () => {},
 			subscribe: () => () => {},
 		};
-		const compiler = compilerFromApi<TestAPI, BaseRuntime>(api, async () => {
-			buildCalls += 1;
-			return runtime;
-		});
-		const extensions: Extension<BoundAPI<TestAPI, BaseRuntime>>[] = [
+		const compiler = {
+			async compile<ContextRuntime extends BaseRuntime>(
+				registry: Registry<TestAPI, ContextRuntime>,
+			) {
+				buildCalls += 1;
+				for (const [label] of registry.register) calls.push(label);
+				return runtime;
+			},
+		};
+		const extension = rootExports.reduceExtensions<Apply<TestAPI, BaseRuntime>>(
 			(api) => api.register('one'),
 			(api) => api.register('two'),
-		];
+		);
 
-		await expect(compileAll(compiler, extensions)).resolves.toBe(runtime);
+		await expect(
+			rootExports.compile(testExtensionPoint, compiler, extension),
+		).resolves.toBe(runtime);
 		expect(calls).toEqual(['one', 'two']);
 		expect(buildCalls).toBe(1);
 	});

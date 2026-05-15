@@ -1,5 +1,6 @@
 import type { AssertNoOverlap } from '@franklin/lib';
 import type { API, BoundAPI, ComposeAPI } from '../api/index.js';
+import type { Registry } from '../extension-points/registry.js';
 import type {
 	BaseRuntime,
 	CombinedRuntime,
@@ -27,17 +28,19 @@ export function combine<
 	type CA = ComposeAPI<A1, A2>;
 
 	return {
-		createApi: <ContextRuntime extends BaseRuntime & CA['In']>() =>
-			({
-				...c1.createApi<ContextRuntime>(),
-				...c2.createApi<ContextRuntime>(),
-			}) as BoundAPI<ComposeAPI<A1, A2>, ContextRuntime>,
-		build: async <ContextRuntime extends BaseRuntime & CA['In']>(
+		compile: async <ContextRuntime extends BaseRuntime & CA['In']>(
+			registry: Registry<CA, ContextRuntime>,
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CR> => {
 			const [r1, r2] = await Promise.all([
-				c1.build<ContextRuntime>(getRuntime),
-				c2.build<ContextRuntime>(getRuntime),
+				c1.compile<ContextRuntime>(
+					registry as unknown as Registry<A1, ContextRuntime>,
+					getRuntime,
+				),
+				c2.compile<ContextRuntime>(
+					registry as unknown as Registry<A2, ContextRuntime>,
+					getRuntime,
+				),
 			]);
 			return combineRuntimes<R1, R2>(r1, r2);
 		},

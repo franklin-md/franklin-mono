@@ -5,6 +5,7 @@ import {
 	defineExtension,
 	type EnvironmentModule,
 	type ExtensionApi,
+	type ExtensionModule,
 	type ExtensionForModules,
 	type HarnessModule,
 	type StaticAPI,
@@ -51,6 +52,28 @@ const _aliasExtension: ExtensionForModules<[CoreModule, StoreModule]> =
 		api.registerStore('alias-extension', {}, 'private');
 	});
 void _aliasExtension;
+
+type SettingsRuntime = BaseRuntime & {
+	readonly settings: {
+		get(): string;
+	};
+};
+
+type SettingsModule = ExtensionModule<
+	StaticAPI<Record<never, never>>,
+	SettingsRuntime
+>;
+
+const _mixedModuleExtension = defineExtension<[CoreModule, SettingsModule]>(
+	(api) => {
+		api.on('systemPrompt', (_prompt, ctx) => {
+			ctx.settings.get();
+			// @ts-expect-error store API was not requested
+			void ctx.getStore;
+		});
+	},
+);
+void _mixedModuleExtension;
 
 type APIa = { on(event: string): void };
 type APIb = { on(event: number): void };
