@@ -37,4 +37,5 @@ export {
 	identityStateHandle,
 } from './identity.js';
 export { liftExtensionModule } from './lift.js';
+export { resolveState } from './resolve.js';
 export { withSetup } from './setup.js';
