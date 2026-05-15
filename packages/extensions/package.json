@@ -29,7 +29,6 @@
 		"@franklin/mini-acp": "*",
 		"@mozilla/readability": "^0.6.0",
 		"@noble/hashes": "^2.0.1",
-		"immer": "^10.2.0",
-		"type-fest": "^5.6.0"
+		"immer": "^10.2.0"
 	}
 }
