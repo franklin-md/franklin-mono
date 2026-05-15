@@ -58,18 +58,18 @@ export {
 export type { BaseRuntime, StateHandle } from './algebra/runtime/types.js';
 export { resolveState } from './harness/state/resolve.js';
 // ---------------------------------------------------------------------------
-// Harness modules
+// Extension authoring
 // ---------------------------------------------------------------------------
 export type { BaseState } from './algebra/modules/state/index.js';
 export type { ExtensionBundle } from './modules/bundle/index.js';
 export { createBundle } from './modules/bundle/index.js';
-export { defineExtension } from './harness/modules/index.js';
+export { defineExtension } from './algebra/extension/index.js';
 export type {
 	ExtensionApi,
 	ExtensionForModules,
 	ModuleAPIs,
 	ModuleRuntimes,
-} from './harness/modules/index.js';
+} from './algebra/extension/index.js';
 export type {
 	BuildableModule,
 	BuildModules,

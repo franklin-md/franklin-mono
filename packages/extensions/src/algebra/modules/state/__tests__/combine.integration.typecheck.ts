@@ -1,17 +1,13 @@
-import { combine, combineAll } from '../../../algebra/modules/state/combine.js';
+import { combine, combineAll } from '../combine.js';
+import type { CombinableModule, CombineModules, Modules } from '../combine.js';
+import type { API, BaseAPI, StaticAPI } from '../../../api/types.js';
+import { combineRuntimes } from '../../../runtime/combine.js';
+import type { BaseRuntime } from '../../../runtime/types.js';
 import type {
-	CombinableModule,
-	CombineModules,
-	Modules,
-} from '../../../algebra/modules/state/combine.js';
-import { combineRuntimes } from '../../../algebra/runtime/combine.js';
-import type { API, BaseAPI, StaticAPI } from '../../../algebra/api/types.js';
-import type { BaseRuntime } from '../../../algebra/runtime/types.js';
-import type { BaseState } from '../../state/types.js';
-import type {
+	BaseState,
 	InferBoundAPI,
 	StateExtensionModule,
-} from '../../../algebra/modules/state/index.js';
+} from '../index.js';
 
 type StubSystem<
 	S extends BaseState,
