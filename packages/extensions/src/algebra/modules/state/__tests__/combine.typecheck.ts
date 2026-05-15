@@ -1,7 +1,8 @@
 import type { API, StaticAPI } from '../../../api/types.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import type { StateExtensionModule } from '../types.js';
-import { buildStateExtensionModule, combine } from '../combine.js';
+import { buildStateExtensionModule } from '../build.js';
+import { combine } from '../combine.js';
 import type {
 	CombinableModule,
 	CombineModules,

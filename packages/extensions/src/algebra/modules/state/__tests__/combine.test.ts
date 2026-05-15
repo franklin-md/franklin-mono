@@ -4,7 +4,8 @@ import { compile } from '../../../compiler/compile.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { Registry } from '../../../extension-points/registry.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
-import { combine, buildStateExtensionModule } from '../combine.js';
+import { buildStateExtensionModule } from '../build.js';
+import { combine } from '../combine.js';
 import { identityModule } from '../identity.js';
 import type { StateExtensionModule, StateHandle } from '../types.js';
 

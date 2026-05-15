@@ -20,7 +20,16 @@ export type {
 	Modules,
 	ValidateModules,
 } from './combine.js';
-export { buildStateExtensionModule, combine, combineAll } from './combine.js';
+export { combine, combineAll } from './combine.js';
+export type {
+	BuildableModule,
+	BuildModules,
+	CombinableBuildModule,
+	LiftModule,
+	LiftModules,
+	ValidateBuildModules,
+} from './build.js';
+export { buildStateExtensionModule, liftBuildModule } from './build.js';
 export type { IdentityModule } from './identity.js';
 export {
 	identityModule,
