@@ -56,7 +56,7 @@ export {
 // Runtime
 // ---------------------------------------------------------------------------
 export type { BaseRuntime, StateHandle } from './algebra/runtime/types.js';
-export { resolveState } from './harness/state/resolve.js';
+export { resolveState } from './algebra/modules/state/index.js';
 // ---------------------------------------------------------------------------
 // Extension authoring
 // ---------------------------------------------------------------------------

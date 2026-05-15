@@ -16,6 +16,7 @@ export type CoreEventHandlers<R extends BaseRuntime> = {
 	prompt: WithContext<PromptHandler, R>;
 	cancel: WithContext<CancelHandler, R>;
 	systemPrompt: WithContext<SystemPromptHandler, R>;
+	turnStart: WithContext<StreamObserverHandler<'turnStart'>, R>;
 	chunk: WithContext<StreamObserverHandler<'chunk'>, R>;
 	update: WithContext<StreamObserverHandler<'update'>, R>;
 	turnEnd: WithContext<StreamObserverHandler<'turnEnd'>, R>;
@@ -56,6 +57,7 @@ export interface CoreAPISurface<R extends BaseRuntime> {
 		event: 'systemPrompt',
 		handler: CoreEventHandlers<R>['systemPrompt'],
 	): void;
+	on(event: 'turnStart', handler: CoreEventHandlers<R>['turnStart']): void;
 	on(event: 'chunk', handler: CoreEventHandlers<R>['chunk']): void;
 	on(event: 'update', handler: CoreEventHandlers<R>['update']): void;
 	on(event: 'turnEnd', handler: CoreEventHandlers<R>['turnEnd']): void;
