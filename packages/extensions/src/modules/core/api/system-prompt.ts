@@ -1,4 +1,4 @@
-import type { MaybePromise } from '../../../algebra/types/shared.js';
+import type { MaybePromise } from '../../../utils/maybe-promise.js';
 
 /**
  * Value accepted by {@link SystemPrompt.setPart} — either a string fragment

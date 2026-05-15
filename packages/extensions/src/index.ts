@@ -89,7 +89,6 @@ export type {
 	ExtensionFor,
 } from './algebra/extension/types.js';
 export { reduceExtensions } from './algebra/extension/index.js';
-export type { MaybePromise } from './algebra/types/shared.js';
 export type {
 	AssistantBlock,
 	AssistantTurn,
