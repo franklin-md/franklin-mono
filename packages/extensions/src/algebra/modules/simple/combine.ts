@@ -1,0 +1,86 @@
+import type { AssertNoOverlap } from '@franklin/lib';
+import type { BoundAPI, ComposeAPI } from '../../api/index.js';
+import { combine as combineCompilers } from '../../compiler/combine.js';
+import { combine as combineExtensionPoints } from '../../extension-points/combine.js';
+import type { CombinedRuntime, RuntimeExtras } from '../../runtime/index.js';
+import type {
+	BinaryType,
+	ReduceCompositionTuple,
+	ValidateCompositionTuple,
+} from '../../../utils/compose-typing.js';
+import { reduceNonEmpty } from '../../../utils/reduce-non-empty.js';
+import type { InferAPI, InferRuntime } from './infer.js';
+import type { BaseExtensionModule, ExtensionModule } from './types.js';
+
+export type CombineModules<
+	Module1 extends BaseExtensionModule,
+	Module2 extends BaseExtensionModule,
+> = ExtensionModule<
+	ComposeAPI<InferAPI<Module1>, InferAPI<Module2>>,
+	CombinedRuntime<InferRuntime<Module1>, InferRuntime<Module2>>
+>;
+
+type CombinedRuntimeOf<
+	Module1 extends BaseExtensionModule,
+	Module2 extends BaseExtensionModule,
+> = CombinedRuntime<InferRuntime<Module1>, InferRuntime<Module2>>;
+
+type RuntimeExtrasOf<Module extends BaseExtensionModule> = RuntimeExtras<
+	InferRuntime<Module>
+>;
+
+export type CombinableModule<
+	Module1 extends BaseExtensionModule,
+	Module2 extends BaseExtensionModule,
+> = AssertNoOverlap<
+	BoundAPI<InferAPI<Module1>, CombinedRuntimeOf<Module1, Module2>>,
+	BoundAPI<InferAPI<Module2>, CombinedRuntimeOf<Module1, Module2>>
+> &
+	AssertNoOverlap<RuntimeExtrasOf<Module1>, RuntimeExtrasOf<Module2>>;
+
+interface CombineModuleType extends BinaryType {
+	readonly In: readonly [BaseExtensionModule, BaseExtensionModule];
+	readonly Out: CombineModules<this['In'][0], this['In'][1]>;
+}
+
+interface CombinableModuleType extends BinaryType {
+	readonly In: readonly [BaseExtensionModule, BaseExtensionModule];
+	readonly Out: CombinableModule<this['In'][0], this['In'][1]>;
+}
+
+export function combine<
+	Module1 extends BaseExtensionModule,
+	Module2 extends BaseExtensionModule,
+>(
+	module1: Module1,
+	module2: Module2 & CombinableModule<Module1, Module2>,
+): CombineModules<Module1, Module2> {
+	return {
+		extensionPoint: combineExtensionPoints(
+			module1.extensionPoint,
+			module2.extensionPoint,
+		),
+		compiler: combineCompilers(module1.compiler, module2.compiler as never),
+	} as never;
+}
+
+export type Modules<T extends readonly BaseExtensionModule[]> =
+	ReduceCompositionTuple<T, BaseExtensionModule, CombineModuleType>;
+
+export type ValidateModules<T extends readonly BaseExtensionModule[]> =
+	ValidateCompositionTuple<
+		T,
+		BaseExtensionModule,
+		CombineModuleType,
+		CombinableModuleType
+	>;
+
+export function combineAll<T extends readonly BaseExtensionModule[]>(
+	modules: readonly [...T] & ValidateModules<T>,
+): Modules<T> {
+	return reduceNonEmpty(
+		modules as readonly BaseExtensionModule[],
+		(acc, next) => combine(acc, next as never),
+		'combineAll requires at least one module',
+	) as Modules<T>;
+}

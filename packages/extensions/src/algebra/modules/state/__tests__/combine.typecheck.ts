@@ -2,7 +2,7 @@ import type { API, StaticAPI } from '../../../api/types.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import type { StateExtensionModule } from '../types.js';
 import { buildStateExtensionModule } from '../build.js';
-import { combine } from '../combine.js';
+import { combine, combineAll } from '../combine.js';
 import type {
 	CombinableModule,
 	CombineModules,
@@ -39,6 +39,9 @@ const _sharedNumberModule = null as unknown as StubModule<{
 const _sharedStringModule = null as unknown as StubModule<{
 	shared: string;
 }>;
+const _counterStringModule = null as unknown as StubModule<{
+	counter: { value: string };
+}>;
 
 type _CombinableRejectsStateOverlap = _ExpectNever<
 	CombinableModule<typeof _sharedNumberModule, typeof _sharedStringModule>
@@ -50,6 +53,14 @@ const _invalidStateCombine = combine(
 	_sharedStringModule,
 );
 void _invalidStateCombine;
+
+const _invalidAccumulatedStateBuilder = combineAll([
+	_counterModule,
+	_labelModule,
+	// @ts-expect-error overlapping state keys should be rejected against accumulated modules
+	_counterStringModule,
+]);
+void _invalidAccumulatedStateBuilder;
 
 type APIa = { on(event: string): void };
 type APIb = { on(event: number): void };

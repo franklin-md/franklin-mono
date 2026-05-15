@@ -37,6 +37,11 @@ describe('package exports', () => {
 		expect('identityState' in rootExports).toBe(false);
 		expect('identityStateHandle' in rootExports).toBe(false);
 		expect('identityModule' in rootExports).toBe(false);
+		expect(typeof rootExports.buildStateExtensionModule).toBe('function');
+		expect(typeof rootExports.liftExtensionModule).toBe('function');
+		expect(typeof rootExports.transformCompiler).toBe('function');
+		expect(typeof rootExports.composeCompilerSteps).toBe('function');
+		expect(typeof rootExports.withSetupCompiler).toBe('function');
 	});
 
 	it('re-exports compileAll from the root barrel', async () => {

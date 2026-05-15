@@ -5,10 +5,11 @@ import type {
 	InferRuntime as InferSimpleRuntime,
 } from '../../algebra/modules/simple/index.js';
 import type {
+	BuildableModule,
+	BuildModules,
 	InferAPI,
 	InferRuntime,
 	InferState,
-	Modules,
 	StateExtensionModule,
 } from '../../algebra/modules/state/index.js';
 import type {
@@ -75,23 +76,23 @@ export type OrchestratorRuntime<M extends BaseHarnessModule> = BaseRuntime &
  * standard inference helpers (`InferRuntime`, `InferState`, `InferBoundAPI`)
  * work on it directly:
  *
- *   type FranklinBase      = Modules<FranklinModules>;
+ *   type FranklinBase      = BuildModules<FranklinModules>;
  *   type FranklinModule    = OrchestratorModule<FranklinModules>;
  *   type FranklinRuntime   = OrchestratorRuntime<FranklinBase>;
  *   type FranklinState     = InferState<FranklinModule>;
  *   type FranklinAPI       = InferBoundAPI<FranklinModule>;
  *   type FranklinExtension = Extension<FranklinAPI>;
  */
-export type OrchestratorModule<Mods extends readonly BaseHarnessModule[]> =
+export type OrchestratorModule<Mods extends readonly BuildableModule[]> =
 	StateExtensionModule<
-		InferState<Modules<Mods>>,
+		InferState<BuildModules<Mods>>,
 		ComposeAPI<
-			InferAPI<Modules<Mods>>,
-			InferSimpleAPI<InternalOrchestratorModule<Modules<Mods>>>
+			InferAPI<BuildModules<Mods>>,
+			InferSimpleAPI<InternalOrchestratorModule<BuildModules<Mods>>>
 		>,
 		CombinedRuntime<
-			InferRuntime<Modules<Mods>>,
-			InferSimpleRuntime<InternalOrchestratorModule<Modules<Mods>>>
+			InferRuntime<BuildModules<Mods>>,
+			InferSimpleRuntime<InternalOrchestratorModule<BuildModules<Mods>>>
 		>
 	>;
 

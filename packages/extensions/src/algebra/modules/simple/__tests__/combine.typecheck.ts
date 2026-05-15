@@ -44,6 +44,14 @@ const _invalidApiBuilder = combineAll([
 ]);
 void _invalidApiBuilder;
 
+const _moduleWithApiBThenA = combineAll([
+	_moduleWithApiA,
+	_moduleWithApiB,
+	// @ts-expect-error overlapping API keys should be rejected against accumulated modules
+	_moduleWithApiC,
+]);
+void _moduleWithApiBThenA;
+
 type RuntimeA = BaseRuntime & {
 	run(): string;
 };
