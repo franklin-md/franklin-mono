@@ -1,5 +1,5 @@
 import type { API, BoundAPI } from '../api/index.js';
-import { reduceExtensions, type Extension } from '../extension/index.js';
+import type { Extension } from '../extension/index.js';
 import type { ExtensionPoint } from '../extension-points/types.js';
 import type { Registry } from '../extension-points/registry.js';
 import type { BaseRuntime } from '../runtime/index.js';
@@ -17,22 +17,13 @@ export async function compile<
 	compiler: Compiler<A, Runtime>,
 	extension: Extension<BoundAPI<A, Runtime>>,
 ): Promise<Runtime> {
+	// TODO: The question is do we split this out into 2 phase functions?
+	// Phase 1: Registration
 	const registry = extensionPoint.createRegistry();
 	const api = extensionPoint.createApi<Runtime>(registry);
 	extension(api);
+	// Phase 2: Interprettation
 	return tie(compiler, registry as Registry<A, Runtime>);
-}
-
-export async function compileAll<
-	A extends API,
-	Runtime extends BaseRuntime & A['In'],
->(
-	extensionPoint: ExtensionPoint<A>,
-	compiler: Compiler<A, Runtime>,
-	extensions: Extension<BoundAPI<A, Runtime>>[],
-): Promise<Runtime> {
-	const extension = reduceExtensions(...extensions);
-	return compile(extensionPoint, compiler, extension);
 }
 
 async function tie<A extends API, Runtime extends BaseRuntime & A['In']>(

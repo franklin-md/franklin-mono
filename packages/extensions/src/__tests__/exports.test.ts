@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { API, BoundAPI } from '../algebra/api/index.js';
+import type { API } from '../algebra/api/index.js';
 import type { BaseRuntime } from '../algebra/runtime/index.js';
-import type { Extension } from '../algebra/extension/index.js';
 import type { Registry } from '../algebra/extension-points/registry.js';
 import * as rootExports from '../index.js';
-import { compileAll, createExtensionPoint, defineExtension } from '../index.js';
+import { createExtensionPoint, defineExtension } from '../index.js';
+import type { Apply } from '@franklin/lib';
 
 type TestAPISurface = { register(label: string): void };
 
@@ -49,13 +49,13 @@ describe('package exports', () => {
 				return runtime;
 			},
 		};
-		const extensions: Extension<BoundAPI<TestAPI, BaseRuntime>>[] = [
+		const extension = rootExports.reduceExtensions<Apply<TestAPI, BaseRuntime>>(
 			(api) => api.register('one'),
 			(api) => api.register('two'),
-		];
+		);
 
 		await expect(
-			compileAll(testExtensionPoint, compiler, extensions),
+			rootExports.compile(testExtensionPoint, compiler, extension),
 		).resolves.toBe(runtime);
 		expect(calls).toEqual(['one', 'two']);
 		expect(buildCalls).toBe(1);

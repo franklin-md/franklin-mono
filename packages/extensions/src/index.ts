@@ -8,15 +8,11 @@ export type {
 } from './algebra/api/types.js';
 export type { ReduceAPIs } from './algebra/api/reduce.js';
 export { combine } from './algebra/compiler/combine.js';
-export { compile, compileAll } from './algebra/compiler/compile.js';
+export { compile } from './algebra/compiler/compile.js';
 export type { Compiler } from './algebra/compiler/types.js';
 export type { Registry } from './algebra/extension-points/registry.js';
 export type { ExtensionPoint } from './algebra/extension-points/types.js';
-export {
-	createExtensionPoint,
-	type ExtensionPointName,
-	type ExtensionPointNames,
-} from './algebra/extension-points/create.js';
+export { createExtensionPoint } from './algebra/extension-points/create.js';
 export { combine as combineExtensionPoints } from './algebra/extension-points/combine.js';
 export {
 	createOrchestrator,
@@ -114,6 +110,7 @@ export type {
 	WebFetchExtensionOptions,
 	WebFetchProcessedResult,
 } from './extensions/web/web-fetch/types.js';
+
 export { DEFAULT_WEB_FETCH_OPTIONS } from './extensions/web/web-fetch/types.js';
 export { DEFAULT_WEB_SEARCH_OPTIONS } from './extensions/web/web-search/types.js';
 export type {

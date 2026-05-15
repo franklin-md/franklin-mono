@@ -3,14 +3,13 @@ import type { API } from '../api/types.js';
 import type { Registry } from './registry.js';
 import type { ExtensionPoint as ExtensionPoint } from './types.js';
 
-export type ExtensionPointName<A extends API> = Extract<
-	keyof Apply<A, any>,
-	string
->;
+// This returns a union over the keys
+type ExtensionPointName<A extends API> = Extract<keyof Apply<A, any>, string>;
 
-export type ExtensionPointNames<A extends API> = [
-	ExtensionPointName<A>,
-] extends [never]
+// This turns that union into a record that requires every name to be present
+type ExtensionPointNames<A extends API> = [ExtensionPointName<A>] extends [
+	never,
+]
 	? Record<string, never>
 	: { readonly [K in ExtensionPointName<A>]: true };
 

@@ -64,10 +64,9 @@ export class Orchestrator<
 
 	async materialize(id: string, state: State<M>): Promise<Entry<M>> {
 		const fullModule = this.createFullModule(id);
-		const compiler = fullModule.createCompiler(state);
 		const runtime = await compile(
 			fullModule.extensionPoint,
-			compiler,
+			fullModule.createCompiler(state),
 			this.extension,
 		);
 		this.collection.set(id, runtime);
