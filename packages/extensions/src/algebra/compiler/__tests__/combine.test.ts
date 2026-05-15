@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { identityCompiler } from '../../../modules/identity/compiler.js';
-import type { IdentityAPI } from '../../../modules/identity/api.js';
+import {
+	identityCompiler,
+	type IdentityAPI,
+} from '../../modules/simple/identity.js';
 import type { API } from '../../api/index.js';
 import type { ExtensionPoint } from '../../extension-points/types.js';
 import type { Registry } from '../../extension-points/registry.js';

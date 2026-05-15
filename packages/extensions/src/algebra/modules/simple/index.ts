@@ -26,3 +26,4 @@ export {
 	identityModule,
 	identityRuntime,
 } from './identity.js';
+export { withSetup } from './setup.js';

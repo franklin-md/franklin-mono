@@ -31,6 +31,12 @@ describe('package exports', () => {
 		expect('storeExtensionPoint' in rootExports).toBe(false);
 		expect('createStoreApi' in rootExports).toBe(false);
 		expect('createStoreExtensionRegistry' in rootExports).toBe(false);
+		expect('identityAPI' in rootExports).toBe(false);
+		expect('identityCompiler' in rootExports).toBe(false);
+		expect('identityRuntime' in rootExports).toBe(false);
+		expect('identityState' in rootExports).toBe(false);
+		expect('identityStateHandle' in rootExports).toBe(false);
+		expect('identityModule' in rootExports).toBe(false);
 	});
 
 	it('re-exports compileAll from the root barrel', async () => {

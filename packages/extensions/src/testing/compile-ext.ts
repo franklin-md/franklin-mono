@@ -18,7 +18,7 @@ import type { StoreAPI, StoreAPISurface } from '../modules/store/api/api.js';
 import { StoreRegistry } from '../modules/store/api/registry/index.js';
 import { createStoreCompiler } from '../modules/store/compile/compiler.js';
 import type { StoreRuntime } from '../modules/store/runtime.js';
-import type { IdentityAPI } from '../modules/identity/api.js';
+import type { IdentityAPI } from '../algebra/modules/simple/identity.js';
 
 type CoreStoreRuntime = CoreRuntime & StoreRuntime;
 

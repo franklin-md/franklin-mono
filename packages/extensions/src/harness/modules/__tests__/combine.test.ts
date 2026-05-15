@@ -18,7 +18,7 @@ import type {
 	ReconfigurableEnvironment,
 } from '../../../modules/environment/api/types.js';
 import { createEnvironmentModule } from '../../../modules/environment/module.js';
-import { identityModule } from '../../../modules/identity/module.js';
+import { identityModule } from '../../../algebra/modules/state/identity.js';
 import { StoreRegistry } from '../../../modules/store/api/registry/index.js';
 import { createStoreModule } from '../../../modules/store/module.js';
 import type { API, StaticAPI } from '../../../algebra/api/types.js';

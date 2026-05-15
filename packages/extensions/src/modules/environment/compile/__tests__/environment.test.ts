@@ -12,7 +12,7 @@ import { createEnvironmentCompiler } from '../compiler.js';
 import { createStoreCompiler } from '../../../store/compile/compiler.js';
 import { StoreRegistry } from '../../../store/api/registry/index.js';
 import type { StoreAPI } from '../../../store/api/api.js';
-import type { IdentityAPI } from '../../../identity/api.js';
+import type { IdentityAPI } from '../../../../algebra/modules/simple/identity.js';
 import type { ReconfigurableEnvironment } from '../../api/types.js';
 
 const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});

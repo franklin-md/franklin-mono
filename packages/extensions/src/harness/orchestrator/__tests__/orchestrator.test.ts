@@ -7,6 +7,7 @@ import type {
 	BaseRuntime,
 	StateHandle,
 } from '../../../algebra/runtime/index.js';
+import { createDependencyModule } from '../../../modules/dependency/module.js';
 import type { HarnessModule } from '../../modules/index.js';
 import type {
 	InferBoundAPI,
@@ -58,6 +59,9 @@ const runtimeAwareExtensionPoint: ExtensionPoint<RuntimeAwareAPI> = {
 type TestModule = HarnessModule<TestState, RuntimeAwareAPI, TestRuntime>;
 type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<[TestModule]>>;
 type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<[TestModule]>>;
+type Settings = {
+	get(): string;
+};
 
 function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 	return {
@@ -168,6 +172,34 @@ describe('Orchestrator', () => {
 		entry.runtime.runHandlers();
 
 		expect(seen).toEqual(['root-id', 'root-id']);
+	});
+
+	it('lifts simple modules passed to createOrchestrator', async () => {
+		const settings: Settings = { get: vi.fn(() => 'strict') };
+		const settingsModule = createDependencyModule('settings', settings);
+		type MixedModule = OrchestratorModule<[TestModule, typeof settingsModule]>;
+		type MixedRuntime = InferRuntime<MixedModule>;
+		type MixedAPI = InferBoundAPI<MixedModule>;
+		const collection = new RuntimeCollection<MixedRuntime>();
+		const seen: string[] = [];
+		const extension: Extension<MixedAPI> = (api) => {
+			api.onRuntime((runtime) => {
+				seen.push(runtime.settings.get());
+				seen.push(runtime.self.id);
+			});
+		};
+		const orchestrator = createOrchestrator({
+			modules: [createTestModule(), settingsModule] as const,
+			collection,
+			extensions: [extension],
+			createId: createIds('root-id'),
+		});
+
+		const entry = await orchestrator.create();
+		entry.runtime.runHandlers();
+
+		expect(seen).toEqual(['strict', 'root-id']);
+		expect(await entry.runtime[TEST_STATE].get()).toEqual({ value: 'root' });
 	});
 
 	it('creates child and fork runtimes from source state', async () => {

@@ -1,6 +1,6 @@
 import { createExtensionPoint } from '../../algebra/extension-points/create.js';
 import type { ExtensionModule } from '../../algebra/modules/simple/index.js';
-import type { IdentityAPI } from '../identity/api.js';
+import type { IdentityAPI } from '../../algebra/modules/simple/identity.js';
 import { createDependencyRuntime, type DependencyRuntime } from './runtime.js';
 
 export type DependencyModule<Name extends string, T> = ExtensionModule<

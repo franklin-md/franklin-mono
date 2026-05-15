@@ -1,5 +1,5 @@
 import type { Compiler } from '../../../algebra/compiler/types.js';
-import type { IdentityAPI } from '../../identity/api.js';
+import type { IdentityAPI } from '../../../algebra/modules/simple/identity.js';
 import type { ReconfigurableEnvironment } from '../api/types.js';
 import {
 	createEnvironmentRuntime,

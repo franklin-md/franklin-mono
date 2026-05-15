@@ -68,13 +68,19 @@ export type {
 	ModuleRuntimes,
 } from './harness/modules/index.js';
 export type {
+	BuildableModule,
+	BuildModules,
 	CombinableModule,
+	CombinableBuildModule,
 	CombineModules,
 	InferAPI,
 	InferBoundAPI,
 	InferRuntime,
 	InferState,
+	LiftModule,
+	LiftModules,
 	Modules,
+	ValidateBuildModules,
 	ValidateModules,
 } from './algebra/modules/state/index.js';
 export type {
@@ -194,22 +200,6 @@ export type {
 	EnvironmentModule,
 } from './modules/environment/module.js';
 export { createEnvironmentModule } from './modules/environment/module.js';
-export type {
-	IdentityAPI,
-	IdentityAPISurface,
-} from './modules/identity/api.js';
-export { identityAPI } from './modules/identity/api.js';
-export type { IdentityCompiler } from './modules/identity/compiler.js';
-export { identityCompiler } from './modules/identity/compiler.js';
-export type { IdentityRuntime } from './modules/identity/runtime.js';
-export {
-	identityRuntime,
-	identityStateHandle,
-} from './modules/identity/runtime.js';
-export type { IdentityState } from './modules/identity/state.js';
-export { identityState } from './modules/identity/state.js';
-export type { IdentityModule } from './modules/identity/module.js';
-export { identityModule } from './modules/identity/module.js';
 export type {
 	ForkMode,
 	PersistedStore,

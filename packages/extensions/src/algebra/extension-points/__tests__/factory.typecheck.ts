@@ -1,6 +1,6 @@
 import { createExtensionPoint } from '../create.js';
 import type { CoreAPI } from '../../../modules/core/api/api.js';
-import type { IdentityAPI } from '../../../modules/identity/api.js';
+import type { IdentityAPI } from '../../modules/simple/identity.js';
 import type { StoreAPI } from '../../../modules/store/api/api.js';
 
 createExtensionPoint<CoreAPI>({

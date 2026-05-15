@@ -5,6 +5,7 @@ import type { Registry } from '../../../extension-points/registry.js';
 import type { ExtensionPoint } from '../../../extension-points/types.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import { combine, combineAll } from '../combine.js';
+import { identityModule } from '../identity.js';
 import type { ExtensionModule } from '../types.js';
 import type { API, StaticAPI } from '../../../api/types.js';
 
@@ -131,5 +132,37 @@ describe('simple module combine', () => {
 
 		expect(runtime.getCount()).toBe(9);
 		expect(runtime.getLabel()).toBe('tuple');
+	});
+
+	it('preserves behaviour with left identity', async () => {
+		const module = combine(identityModule(), createCounterModule(4));
+
+		expect(apiKeys(module.extensionPoint)).toEqual(['registerCount']);
+
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			(api) => {
+				api.registerCount(12);
+			},
+		);
+
+		expect(runtime.getCount()).toBe(12);
+		await runtime.dispose();
+	});
+
+	it('preserves behaviour with right identity', async () => {
+		const module = combine(createCounterModule(6), identityModule());
+
+		expect(apiKeys(module.extensionPoint)).toEqual(['registerCount']);
+
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			() => {},
+		);
+
+		expect(runtime.getCount()).toBe(6);
+		await runtime.dispose();
 	});
 });

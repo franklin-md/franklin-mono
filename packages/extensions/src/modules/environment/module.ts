@@ -1,6 +1,6 @@
 import { createExtensionPoint } from '../../algebra/extension-points/create.js';
 import type { HarnessModule } from '../../harness/modules/index.js';
-import type { IdentityAPI } from '../identity/api.js';
+import type { IdentityAPI } from '../../algebra/modules/simple/identity.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
