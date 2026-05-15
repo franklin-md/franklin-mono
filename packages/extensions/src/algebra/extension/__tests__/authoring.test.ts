@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { createExtension } from '../create.js';
+import { defineExtension } from '../authoring.js';
 
-describe('createExtension', () => {
+describe('defineExtension', () => {
 	it('returns the extension passed directly', () => {
 		const extension = () => {};
-		expect(createExtension<[], []>(extension)).toBe(extension);
+		expect(defineExtension<[]>(extension)).toBe(extension);
 	});
 
 	it('supports a curried form', () => {
 		const extension = () => {};
-		expect(createExtension<[], []>()(extension)).toBe(extension);
+		expect(defineExtension<[]>()(extension)).toBe(extension);
 	});
 });

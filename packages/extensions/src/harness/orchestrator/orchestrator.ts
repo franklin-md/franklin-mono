@@ -1,10 +1,10 @@
 import { compile } from '../../algebra/compiler/index.js';
 import { resolveState } from '../../algebra/modules/state/index.js';
 import type {
+	BaseStateExtensionModule,
 	InferExtension,
 	InferState,
 } from '../../algebra/modules/state/index.js';
-import type { BaseHarnessModule } from '../modules/module.js';
 import { createOrchestratorModule } from './internal/index.js';
 import type { RuntimeCollection } from './collection.js';
 import type {
@@ -15,11 +15,11 @@ import type {
 	RuntimeEntry,
 } from './types.js';
 
-type Runtime<M extends BaseHarnessModule> = OrchestratorRuntime<M>;
-type State<M extends BaseHarnessModule> = InferState<M>;
-type Entry<M extends BaseHarnessModule> = RuntimeEntry<Runtime<M>>;
+type Runtime<M extends BaseStateExtensionModule> = OrchestratorRuntime<M>;
+type State<M extends BaseStateExtensionModule> = InferState<M>;
+type Entry<M extends BaseStateExtensionModule> = RuntimeEntry<Runtime<M>>;
 
-type OrchestratorOptions<M extends BaseHarnessModule> = {
+type OrchestratorOptions<M extends BaseStateExtensionModule> = {
 	readonly module: M;
 	readonly collection: RuntimeCollection<OrchestratorRuntime<M>>;
 	readonly extension: InferExtension<OrchestratorModule<[M]>>;
@@ -27,7 +27,7 @@ type OrchestratorOptions<M extends BaseHarnessModule> = {
 };
 
 export class Orchestrator<
-	M extends BaseHarnessModule,
+	M extends BaseStateExtensionModule,
 > implements OrchestratorHandle<Runtime<M>, State<M>> {
 	private readonly baseModule: M;
 	private readonly collection: RuntimeCollection<Runtime<M>>;

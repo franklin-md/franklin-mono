@@ -5,6 +5,7 @@ import type {
 	InferRuntime as InferSimpleRuntime,
 } from '../../algebra/modules/simple/index.js';
 import type {
+	BaseStateExtensionModule,
 	BuildableModule,
 	BuildModules,
 	InferAPI,
@@ -17,7 +18,6 @@ import type {
 	CombinedRuntime,
 	RuntimeExtras,
 } from '../../algebra/runtime/index.js';
-import type { BaseHarnessModule } from '../modules/module.js';
 import type {
 	InternalOrchestratorModule,
 	SelfRuntime,
@@ -60,19 +60,20 @@ export type OrchestratorHandle<Runtime extends BaseRuntime, State = unknown> = {
  * TODO: Replace symbol-backed runtime state handles with a uniform module-local
  * state registry so this type can be inferred from `OrchestratorModule`.
  */
-export type OrchestratorRuntime<M extends BaseHarnessModule> = BaseRuntime &
-	RuntimeExtras<InferRuntime<M>> &
-	SelfRuntime & {
-		readonly orchestrator: OrchestratorHandle<
-			OrchestratorRuntime<M>,
-			InferState<M>
-		>;
-	};
+export type OrchestratorRuntime<M extends BaseStateExtensionModule> =
+	BaseRuntime &
+		RuntimeExtras<InferRuntime<M>> &
+		SelfRuntime & {
+			readonly orchestrator: OrchestratorHandle<
+				OrchestratorRuntime<M>,
+				InferState<M>
+			>;
+		};
 
 /**
  * The fully orchestrated module for a module list: the reduced user modules
  * composed with the internal `Self` + orchestration ports (see
- * `InternalOrchestratorModule`). It is itself a `HarnessModule`, so the
+ * `InternalOrchestratorModule`). It is itself a state extension module, so the
  * standard inference helpers (`InferRuntime`, `InferState`, `InferBoundAPI`)
  * work on it directly:
  *

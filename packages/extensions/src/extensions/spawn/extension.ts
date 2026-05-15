@@ -2,7 +2,7 @@ import { collect } from '@franklin/mini-acp';
 import {
 	defineExtension,
 	type ExtensionForModules,
-} from '../../harness/modules/index.js';
+} from '../../algebra/extension/index.js';
 import type { OrchestratorModule } from '../../harness/orchestrator/index.js';
 import type { CoreModule } from '../../modules/core/index.js';
 import { spawnSpec } from './tools.js';

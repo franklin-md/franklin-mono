@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import { createCoreModule } from '../module.js';
-import { createRuntime } from '../../../harness/modules/create.js';
+import { createRuntime } from '../../../testing/index.js';
 import {
 	createSessionAdapter,
 	StopCode,

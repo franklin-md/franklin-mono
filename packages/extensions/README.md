@@ -4,7 +4,7 @@ Plugin system for Franklin's agent runtime. Extensions register tools, lifecycle
 
 ## APIs
 
-Extensions are authored against a tuple of `HarnessModule`s with
+Extensions are authored against a tuple of `BuildableModule`s with
 `defineExtension<Modules>(...)`. A module contributes any registration API it
 owns plus any runtime capabilities its handlers can read from `ctx`.
 Implemented so far:
@@ -44,7 +44,7 @@ Franklin models extension composition across three related surfaces:
 - **ExtensionPoint**: registration storage plus author-facing API facade. It creates a fresh `Registry<API>`, creates the API object that writes to that registry, and is the only layer that runs extension registration.
 - **Compiler**: registry interpreter plus runtime builder. It exposes `compile<ContextRuntime>(registry, getRuntime)`, which receives the populated registry with the compile context runtime restored while still returning the compiler's own `Runtime`.
 - **Runtime**: lifecycle surface (`dispose`, `subscribe`) plus module-specific capabilities.
-- **HarnessModule**: a factory for `emptyState()` and fresh compilers, plus the module's extension point, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options.
+- **StateExtensionModule**: a factory for `emptyState()` and fresh compilers, plus the module's extension point, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options.
 
 The extension-point algorithm is:
 
@@ -131,7 +131,7 @@ composed runtime while the state type remains private to the orchestrator.
 
 There are many places where you could plausibly compose simpler mechanics to create a specific agent behaviour. These solutions are largely functionally equivalent, so the choice is more of a complexity management decision. Here are some emergent patterns we have discovered and documented so far:
 
-- **HarnessModule decoration for enforcing universal behaviour**:
+- **StateExtensionModule decoration for enforcing universal behaviour**:
 	- _It may be easier to express the behaviour as a transformation over the Runtime as oppposed to using the API_
 	- Examples:
     - `withAuth` decorates `CoreModule` so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials

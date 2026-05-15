@@ -1,16 +1,17 @@
-import { createExtension as createAlgebraExtension } from '../../algebra/extension/index.js';
-import type {
-	Extension,
-	ExtensionAPISurface,
-	ExtensionInput,
-} from '../../algebra/extension/types.js';
 import type {
 	BuildableModule,
 	InferAPI,
 	InferRuntime,
 	LiftModule,
-} from '../../algebra/modules/state/index.js';
+} from '../modules/state/index.js';
+import type {
+	Extension,
+	ExtensionAPISurface,
+	ExtensionInput,
+} from './types.js';
 
+// TODO: Switch from BuildableModule to a regular module type once every module
+// system guarantees both module.ts and state-module.ts entry points.
 export type ModuleAPIs<T extends readonly BuildableModule[]> = {
 	readonly [K in keyof T]: InferAPI<LiftModule<T[K]>>;
 };
@@ -28,11 +29,6 @@ export type ExtensionForModules<Modules extends readonly BuildableModule[]> =
 type ExtensionInputForModules<Modules extends readonly BuildableModule[]> =
 	ExtensionInput<ModuleAPIs<Modules>, ModuleRuntimes<Modules>>;
 
-/**
- * Authoring counterpart to `algebra/createExtension`. Takes a tuple of
- * extension modules and infers the API + runtime tuples for the algebra
- * version.
- */
 export function defineExtension<Modules extends readonly BuildableModule[]>(): (
 	extension: ExtensionInputForModules<Modules>,
 ) => ExtensionForModules<Modules>;
@@ -42,5 +38,6 @@ export function defineExtension<Modules extends readonly BuildableModule[]>(
 ): ExtensionForModules<Modules>;
 
 export function defineExtension(extension?: Extension<never>): unknown {
-	return createAlgebraExtension(extension as never);
+	if (extension !== undefined) return extension;
+	return (next: Extension<never>) => next;
 }

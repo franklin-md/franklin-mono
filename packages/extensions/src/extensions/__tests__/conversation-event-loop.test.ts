@@ -9,7 +9,7 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { combineAll } from '../../algebra/modules/state/combine.js';
-import { createRuntime } from '../../harness/modules/create.js';
+import { createRuntime } from '../../testing/index.js';
 import { createCoreModule } from '../../modules/core/module.js';
 import { StoreRegistry } from '../../modules/store/api/registry/index.js';
 import { createStoreModule } from '../../modules/store/module.js';

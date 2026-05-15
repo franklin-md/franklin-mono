@@ -1,4 +1,4 @@
-import { defineExtension } from '../../harness/modules/index.js';
+import { defineExtension } from '../../algebra/extension/index.js';
 import type { CoreModule } from '../../modules/core/index.js';
 import type { EnvironmentModule } from '../../modules/environment/index.js';
 import { shellArgs } from './shell-args.js';

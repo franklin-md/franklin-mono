@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createStoreModule } from '../module.js';
-import { createRuntime } from '../../../harness/modules/create.js';
+import { createRuntime } from '../../../testing/index.js';
 import { StoreRegistry } from '../api/registry/index.js';
 
 // ---------------------------------------------------------------------------

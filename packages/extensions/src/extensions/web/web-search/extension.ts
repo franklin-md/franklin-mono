@@ -4,7 +4,7 @@ import {
 	withRedirect,
 	withTimeout,
 } from '@franklin/lib';
-import { defineExtension } from '../../../harness/modules/index.js';
+import { defineExtension } from '../../../algebra/extension/index.js';
 import type { CoreModule } from '../../../modules/core/index.js';
 import type { EnvironmentModule } from '../../../modules/environment/index.js';
 import { searchWithDdg } from './ddg.js';

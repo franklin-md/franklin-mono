@@ -3,25 +3,22 @@ import {
 	type DependencyModule,
 } from '../../../modules/dependency/module.js';
 import type { InferRuntime } from '../../../algebra/modules/simple/index.js';
-import type { InferState } from '../../../algebra/modules/state/index.js';
-import type { BaseHarnessModule } from '../../modules/module.js';
+import type {
+	BaseStateExtensionModule,
+	InferState,
+} from '../../../algebra/modules/state/index.js';
 import type { OrchestratorHandle, OrchestratorRuntime } from '../types.js';
 
-type OrchestrationHandle<M extends BaseHarnessModule> = OrchestratorHandle<
-	OrchestratorRuntime<M>,
-	InferState<M>
->;
+type OrchestrationHandle<M extends BaseStateExtensionModule> =
+	OrchestratorHandle<OrchestratorRuntime<M>, InferState<M>>;
 
-export type OrchestrationModule<M extends BaseHarnessModule> = DependencyModule<
-	'orchestrator',
-	OrchestrationHandle<M>
->;
+export type OrchestrationModule<M extends BaseStateExtensionModule> =
+	DependencyModule<'orchestrator', OrchestrationHandle<M>>;
 
-export type OrchestrationRuntime<M extends BaseHarnessModule> = InferRuntime<
-	OrchestrationModule<M>
->;
+export type OrchestrationRuntime<M extends BaseStateExtensionModule> =
+	InferRuntime<OrchestrationModule<M>>;
 
-export function createOrchestrationModule<M extends BaseHarnessModule>(
+export function createOrchestrationModule<M extends BaseStateExtensionModule>(
 	getHandle: () => OrchestrationHandle<M>,
 ): OrchestrationModule<M> {
 	return createDependencyModule('orchestrator', getHandle());

@@ -12,26 +12,23 @@ import {
 	ZERO_USAGE,
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
-import { createCoreModule } from '../../../modules/core/module.js';
+import { createCoreModule } from '../../../../modules/core/module.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
-} from '../../../modules/environment/api/types.js';
-import { createEnvironmentModule } from '../../../modules/environment/module.js';
-import { identityModule } from '../../../algebra/modules/state/identity.js';
-import { StoreRegistry } from '../../../modules/store/api/registry/index.js';
-import { createStoreModule } from '../../../modules/store/module.js';
-import type { API, StaticAPI } from '../../../algebra/api/types.js';
-import type { ExtensionPoint } from '../../../algebra/extension-points/types.js';
-import type { Registry } from '../../../algebra/extension-points/registry.js';
-import { createExtensionPoint } from '../../../algebra/extension-points/create.js';
-import type {
-	BaseRuntime,
-	StateHandle,
-} from '../../../algebra/runtime/types.js';
-import { combine } from '../../../algebra/modules/state/combine.js';
-import { createRuntime } from '../create.js';
-import type { HarnessModule } from '../module.js';
+} from '../../../../modules/environment/api/types.js';
+import { createEnvironmentModule } from '../../../../modules/environment/module.js';
+import { StoreRegistry } from '../../../../modules/store/api/registry/index.js';
+import { createStoreModule } from '../../../../modules/store/module.js';
+import { createRuntime } from '../../../../testing/index.js';
+import type { API, StaticAPI } from '../../../api/types.js';
+import { createExtensionPoint } from '../../../extension-points/create.js';
+import type { Registry } from '../../../extension-points/registry.js';
+import type { ExtensionPoint } from '../../../extension-points/types.js';
+import type { BaseRuntime, StateHandle } from '../../../runtime/types.js';
+import { combine } from '../combine.js';
+import { identityModule } from '../identity.js';
+import type { StateExtensionModule } from '../index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -134,7 +131,7 @@ type ValueRuntime = BaseRuntime & {
 	readonly [VALUE_STATE]: StateHandle<ValueState>;
 };
 
-function createValueSystem(): HarnessModule<
+function createValueSystem(): StateExtensionModule<
 	ValueState,
 	ValueAPI,
 	ValueRuntime
@@ -176,7 +173,7 @@ function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
 	return Object.keys(extensionPoint.createApi(registry));
 }
 
-function moduleApiKeys(module: HarnessModule<any, any, any>): string[] {
+function moduleApiKeys(module: StateExtensionModule<any, any, any>): string[] {
 	return apiKeys(module.instantiate(module.emptyState()).extensionPoint);
 }
 

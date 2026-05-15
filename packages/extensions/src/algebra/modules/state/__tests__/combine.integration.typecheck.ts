@@ -1,21 +1,19 @@
-import { combine, combineAll } from '../../../algebra/modules/state/combine.js';
+import { combine, combineAll } from '../combine.js';
+import type { CombinableModule, CombineModules, Modules } from '../combine.js';
+import type { API, BaseAPI, StaticAPI } from '../../../api/types.js';
+import { combineRuntimes } from '../../../runtime/combine.js';
+import type { BaseRuntime } from '../../../runtime/types.js';
 import type {
-	CombinableModule,
-	CombineModules,
-	Modules,
-} from '../../../algebra/modules/state/combine.js';
-import { combineRuntimes } from '../../../algebra/runtime/combine.js';
-import type { API, BaseAPI, StaticAPI } from '../../../algebra/api/types.js';
-import type { BaseState } from '../../../algebra/modules/state/index.js';
-import type { BaseRuntime } from '../../../algebra/runtime/types.js';
-import type { InferBoundAPI } from '../../../algebra/modules/state/infer.js';
-import type { HarnessModule } from '../module.js';
+	BaseState,
+	InferBoundAPI,
+	StateExtensionModule,
+} from '../index.js';
 
 type StubSystem<
 	S extends BaseState,
 	APISurface extends BaseAPI = Record<never, never>,
 	RT extends BaseRuntime = BaseRuntime,
-> = HarnessModule<S, StaticAPI<APISurface>, RT>;
+> = StateExtensionModule<S, StaticAPI<APISurface>, RT>;
 
 type _ExpectNever<T extends never> = T;
 
@@ -183,7 +181,7 @@ interface RuntimeAwareAPI extends API {
 	readonly Out: RuntimeAwareAPISurface<this['In']>;
 }
 
-type RuntimeAwareSystem = HarnessModule<
+type RuntimeAwareSystem = StateExtensionModule<
 	{ aware: { value: boolean } },
 	RuntimeAwareAPI,
 	BaseRuntime
@@ -193,14 +191,14 @@ type RuntimeWithExtra = BaseRuntime & {
 	extra(): string;
 };
 
-type ExtraHarnessModule = StubSystem<
+type ExtraStateModule = StubSystem<
 	{ extra: { value: string } },
 	Record<never, never>,
 	RuntimeWithExtra
 >;
 
 type CombinedRuntimeAwareAPI = InferBoundAPI<
-	CombineModules<RuntimeAwareSystem, ExtraHarnessModule>
+	CombineModules<RuntimeAwareSystem, ExtraStateModule>
 >;
 
 const _combinedRuntimeAwareApi = null as unknown as CombinedRuntimeAwareAPI;
