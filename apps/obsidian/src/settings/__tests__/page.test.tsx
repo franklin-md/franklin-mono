@@ -83,12 +83,23 @@ describe('SettingsPage', () => {
 		expect(input.value).toBe('oc-existing');
 	});
 
+	it('seeds the Mistral input from the existing auth entry', () => {
+		const auth = createAuthStub({
+			mistral: { apiKey: { type: 'apiKey', key: 'mis-existing' } },
+		});
+
+		renderPage(auth);
+
+		const input = screen.getByLabelText<HTMLInputElement>('Mistral API key');
+		expect(input.value).toBe('mis-existing');
+	});
+
 	it('renders provider logos beside API key settings', () => {
 		const auth = createAuthStub();
 		const { container } = renderPage(auth);
 
 		expect(container.querySelectorAll('.setting-item-name svg')).toHaveLength(
-			2,
+			3,
 		);
 	});
 
@@ -124,6 +135,24 @@ describe('SettingsPage', () => {
 		expect(openExternal).toHaveBeenCalledWith('https://opencode.ai/auth');
 	});
 
+	it('links to Mistral API key settings', () => {
+		const auth = createAuthStub();
+		const { openExternal } = renderPage(auth);
+
+		const link = screen.getByRole('link', {
+			name: 'Mistral API keys',
+		});
+		expect(link.getAttribute('href')).toBe(
+			'https://console.mistral.ai/api-keys',
+		);
+		expect(link.getAttribute('target')).toBe('_blank');
+
+		fireEvent.click(link);
+		expect(openExternal).toHaveBeenCalledWith(
+			'https://console.mistral.ai/api-keys',
+		);
+	});
+
 	it('writes the OpenRouter key into the auth manager on change', () => {
 		const auth = createAuthStub();
 		renderPage(auth);
@@ -150,6 +179,19 @@ describe('SettingsPage', () => {
 		});
 	});
 
+	it('writes the Mistral key into the auth manager on change', () => {
+		const auth = createAuthStub();
+		renderPage(auth);
+
+		const input = screen.getByLabelText('Mistral API key');
+		fireEvent.change(input, { target: { value: '  mis-new  ' } });
+
+		expect(auth.setApiKeyEntry).toHaveBeenCalledWith('mistral', {
+			type: 'apiKey',
+			key: 'mis-new',
+		});
+	});
+
 	it('clears the OpenRouter entry when the input is emptied', () => {
 		const auth = createAuthStub({
 			openrouter: { apiKey: { type: 'apiKey', key: 'sk-or-existing' } },
@@ -172,6 +214,18 @@ describe('SettingsPage', () => {
 		fireEvent.change(input, { target: { value: '   ' } });
 
 		expect(auth.removeApiKeyEntry).toHaveBeenCalledWith('opencode-go');
+	});
+
+	it('clears the Mistral entry when the input is emptied', () => {
+		const auth = createAuthStub({
+			mistral: { apiKey: { type: 'apiKey', key: 'mis-existing' } },
+		});
+		renderPage(auth);
+
+		const input = screen.getByLabelText('Mistral API key');
+		fireEvent.change(input, { target: { value: '   ' } });
+
+		expect(auth.removeApiKeyEntry).toHaveBeenCalledWith('mistral');
 	});
 
 	it('renders a ChatGPT login button', () => {

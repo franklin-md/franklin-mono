@@ -57,16 +57,34 @@ describe('MistralPDFConverter', () => {
 		});
 	});
 
-	it('requires a Mistral API key', async () => {
+	it('requires a Mistral API key', () => {
+		expect(
+			() =>
+				new MistralPDFConverter({
+					apiKey: '',
+					createClient: vi.fn(),
+					renderScreenshots: vi.fn(),
+				}),
+		).toThrow('Mistral API key is required');
+	});
+
+	it('reuses the Mistral client across conversions', async () => {
+		const upload = vi.fn(async () => ({ id: 'file-1' }));
+		const process = vi.fn(async () => ({ pages: [] }));
+		const createClient = vi.fn(() => ({
+			files: { upload },
+			ocr: { process },
+		}));
 		const converter = new MistralPDFConverter({
-			apiKey: '',
-			createClient: vi.fn(),
-			renderScreenshots: vi.fn(),
+			apiKey: 'test-key',
+			createClient,
+			renderScreenshots: vi.fn(async () => []),
 		});
 
-		await expect(converter.convertPDF(new Uint8Array())).rejects.toThrow(
-			'MISTRAL_API_KEY is required',
-		);
+		await converter.convertPDF(new Uint8Array([1]));
+		await converter.convertPDF(new Uint8Array([2]));
+
+		expect(createClient).toHaveBeenCalledOnce();
 	});
 
 	it('formats pages in index order and preserves inline tables', () => {

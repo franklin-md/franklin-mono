@@ -17,6 +17,7 @@ export default class FranklinPlugin extends Plugin {
 	private diffClient!: ObsidianDiffClient;
 	private diffController!: DiffController;
 	private diffExplorerController!: DiffExplorerController;
+	private disposeFranklinApp: (() => void) | null = null;
 	franklinApp: FranklinApp | null = null;
 
 	async onload() {
@@ -32,7 +33,8 @@ export default class FranklinPlugin extends Plugin {
 		this.diffExplorerController.onload();
 
 		createFranklinApp(this, this.diffClient)
-			.then(async ({ app, vaultRoot }) => {
+			.then(async (result) => {
+				const { app, vaultRoot } = result;
 				const getCreateInput = () =>
 					createObsidianSessionInput(app, vaultRoot, this.app.vault.configDir);
 
@@ -40,10 +42,15 @@ export default class FranklinPlugin extends Plugin {
 					await app.agents.create(getCreateInput());
 				}
 
-				return { app, getCreateInput };
+				return {
+					app,
+					getCreateInput,
+					disposeFranklinApp: () => result.dispose(),
+				};
 			})
-			.then(({ app, getCreateInput }) => {
+			.then(({ app, getCreateInput, disposeFranklinApp }) => {
 				this.franklinApp = app;
+				this.disposeFranklinApp = disposeFranklinApp;
 
 				this.addSettingTab(new FranklinSettingTab(this));
 
@@ -86,8 +93,10 @@ export default class FranklinPlugin extends Plugin {
 	onunload() {
 		this.diffExplorerController.onunload();
 		this.diffController.onunload();
+		this.disposeFranklinApp?.();
 		clearPortalRoot(activeDocument);
 		this.franklinApp = null;
+		this.disposeFranklinApp = null;
 	}
 
 	private async activateView() {

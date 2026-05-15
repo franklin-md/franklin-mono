@@ -39,6 +39,12 @@ describe('ProviderIcon', () => {
 			'M16 6H8v12h8V6zm4 16H4V2h16v20z',
 		);
 	});
+
+	it('uses the sourced Mistral mark for Mistral', () => {
+		expect(renderedSvgMarkup(<ProviderIcon provider="mistral" />)).toBe(
+			renderedSvgMarkup(<Icons.Mistral />),
+		);
+	});
 });
 
 describe('ModelIcon', () => {

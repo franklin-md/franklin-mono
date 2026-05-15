@@ -1,5 +1,4 @@
 import {
-	FreePDFConverter,
 	isPDFPageInRange,
 	PDF_SCREENSHOT_DPI,
 	type RenderPDFScreenshots,
@@ -9,13 +8,7 @@ import { getDocumentProxy, renderPageAsImage } from 'unpdf';
 const PDF_POINTS_PER_INCH = 72;
 const PNG_DATA_URL_PREFIX = 'data:image/png;base64,';
 
-export function createObsidianPDFConverter() {
-	return new FreePDFConverter({
-		renderScreenshots: renderObsidianPDFScreenshots,
-	});
-}
-
-const renderObsidianPDFScreenshots: RenderPDFScreenshots = async (
+export const renderObsidianPDFScreenshots: RenderPDFScreenshots = async (
 	pdf,
 	options = {},
 ) => {

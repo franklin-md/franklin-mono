@@ -52,14 +52,17 @@ export interface MistralPDFConverterOptions extends PDFConverterOptions {
 const IMAGE_MARKDOWN_PATTERN = /!\[[^\]]*]\([^)]*\)/g;
 
 export class MistralPDFConverter implements PDFConverter {
-	private readonly apiKey: string | undefined;
-	private readonly createClient: (apiKey: string) => MistralClient;
+	private readonly client: MistralClient;
 	private readonly renderScreenshots: RenderPDFScreenshots;
 
 	constructor(options: MistralPDFConverterOptions) {
-		this.apiKey = options.apiKey ?? process.env.MISTRAL_API_KEY;
-		this.createClient =
-			options.createClient ?? ((apiKey) => new Mistral({ apiKey }));
+		if (!options.apiKey) {
+			throw new Error('Mistral API key is required for Mistral PDF OCR');
+		}
+
+		const createClient =
+			options.createClient ?? ((key) => new Mistral({ apiKey: key }));
+		this.client = createClient(options.apiKey);
 		this.renderScreenshots = options.renderScreenshots;
 	}
 
@@ -67,13 +70,8 @@ export class MistralPDFConverter implements PDFConverter {
 		pdf: Uint8Array,
 		options: PDFConvertOptions = {},
 	): Promise<PDFInput> {
-		if (!this.apiKey) {
-			throw new Error('MISTRAL_API_KEY is required for Mistral PDF OCR');
-		}
-
-		const client = this.createClient(this.apiKey);
 		const [ocrResponse, screenshots] = await Promise.all([
-			this.ocrPDF(client, pdf, options),
+			this.ocrPDF(this.client, pdf, options),
 			this.renderScreenshots(pdf, options),
 		]);
 

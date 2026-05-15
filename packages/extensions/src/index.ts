@@ -91,6 +91,7 @@ export {
 	FreePDFConverter,
 	instructionsExtension,
 	isPDFPageInRange,
+	MistralPDFConverter,
 	PDF_SCREENSHOT_DPI,
 	spawnExtension,
 	statusExtension,
@@ -98,7 +99,9 @@ export {
 } from './extensions/index.js';
 export type {
 	FilesystemExtensionOptions,
+	PDFConvertOptions,
 	PDFConverter,
+	PDFInput,
 	PDFPageRange,
 	RenderPDFScreenshots,
 } from './extensions/index.js';

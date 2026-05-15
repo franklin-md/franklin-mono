@@ -9,11 +9,14 @@ export {
 	filesystemExtension,
 	FreePDFConverter,
 	isPDFPageInRange,
+	MistralPDFConverter,
 	PDF_SCREENSHOT_DPI,
 } from './filesystem/index.js';
 export type {
 	FilesystemExtensionOptions,
+	PDFConvertOptions,
 	PDFConverter,
+	PDFInput,
 	PDFPageRange,
 	RenderPDFScreenshots,
 } from './filesystem/index.js';
