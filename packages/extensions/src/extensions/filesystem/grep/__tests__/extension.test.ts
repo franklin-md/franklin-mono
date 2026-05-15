@@ -25,7 +25,7 @@ import {
 import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import { grepExtension } from '../extension.js';
 
-type HarnessModulePromptHandler = WithContext<
+type ModulePromptHandler = WithContext<
 	SystemPromptHandler,
 	CoreRuntime & EnvironmentRuntime
 >;
@@ -72,7 +72,7 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 
 function collectHandlers(
 	ext: ReturnType<typeof grepExtension>,
-): HarnessModulePromptHandler[] {
+): ModulePromptHandler[] {
 	const registry = coreExtensionPoint.createRegistry();
 	const api = coreExtensionPoint.createApi<CoreRuntime & EnvironmentRuntime>(
 		registry,

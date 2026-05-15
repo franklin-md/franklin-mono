@@ -7,7 +7,7 @@ import {
 	type ExtensionApi,
 	type ExtensionModule,
 	type ExtensionForModules,
-	type HarnessModule,
+	type StateExtensionModule,
 	type StaticAPI,
 	type StoreModule,
 } from '../../../index.js';
@@ -16,7 +16,7 @@ type StubModule<
 	S extends BaseState,
 	APISurface extends object = Record<never, never>,
 	Runtime extends BaseRuntime = BaseRuntime,
-> = HarnessModule<S, StaticAPI<APISurface>, Runtime>;
+> = StateExtensionModule<S, StaticAPI<APISurface>, Runtime>;
 
 const _moduleExtension = defineExtension<
 	[CoreModule, StoreModule, EnvironmentModule]

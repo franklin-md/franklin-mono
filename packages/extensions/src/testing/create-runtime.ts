@@ -1,16 +1,16 @@
 import {
 	reduceExtensions,
 	type Extension,
-} from '../../algebra/extension/index.js';
-import { compile } from '../../algebra/index.js';
+} from '../algebra/extension/index.js';
+import { compile } from '../algebra/index.js';
 import type {
+	BaseStateExtensionModule,
 	InferBoundAPI,
 	InferRuntime,
 	InferState,
-} from '../../algebra/modules/state/index.js';
-import type { BaseHarnessModule } from './module.js';
+} from '../algebra/modules/state/index.js';
 
-export async function createRuntime<Module extends BaseHarnessModule>(
+export async function createRuntime<Module extends BaseStateExtensionModule>(
 	module: Module,
 	state: InferState<Module>,
 	extensions: Extension<InferBoundAPI<Module>>[],

@@ -50,6 +50,7 @@ export {
 	combine as combineModules,
 	combineAll,
 	liftExtensionModule,
+	withSetup,
 } from './algebra/modules/state/index.js';
 // ---------------------------------------------------------------------------
 // Runtime
@@ -63,13 +64,9 @@ export type { BaseState } from './algebra/modules/state/index.js';
 export type { ExtensionBundle } from './modules/bundle/index.js';
 export { createBundle } from './modules/bundle/index.js';
 export { defineExtension } from './harness/modules/index.js';
-export { createRuntime } from './harness/modules/create.js';
-export { withSetup } from './harness/modules/setup.js';
 export type {
-	BaseHarnessModule,
 	ExtensionApi,
 	ExtensionForModules,
-	HarnessModule,
 	ModuleAPIs,
 	ModuleRuntimes,
 } from './harness/modules/index.js';

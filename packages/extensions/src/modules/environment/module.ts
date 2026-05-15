@@ -1,5 +1,5 @@
 import { createExtensionPoint } from '../../algebra/extension-points/create.js';
-import type { HarnessModule } from '../../harness/modules/index.js';
+import type { StateExtensionModule } from '../../algebra/modules/state/index.js';
 import type { IdentityAPI } from '../../algebra/modules/simple/identity.js';
 import type {
 	EnvironmentConfig,
@@ -19,7 +19,7 @@ export type EnvironmentFactory = (
 
 const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
 
-export type EnvironmentModule = HarnessModule<
+export type EnvironmentModule = StateExtensionModule<
 	EnvironmentState,
 	IdentityAPI,
 	EnvironmentRuntime

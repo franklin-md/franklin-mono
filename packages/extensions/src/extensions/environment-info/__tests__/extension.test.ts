@@ -28,7 +28,7 @@ import {
 } from '../../../modules/environment/runtime.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
 
-type HarnessModulePromptHandler = WithContext<
+type ModulePromptHandler = WithContext<
 	SystemPromptHandler,
 	CoreRuntime & EnvironmentRuntime
 >;
@@ -40,7 +40,7 @@ const coreExtensionPoint = createExtensionPoint<CoreAPI>({
 
 function collectHandlers(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
-): HarnessModulePromptHandler[] {
+): ModulePromptHandler[] {
 	const registry = coreExtensionPoint.createRegistry();
 	const api = coreExtensionPoint.createApi<CoreRuntime & EnvironmentRuntime>(
 		registry,
@@ -82,7 +82,7 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 }
 
 function bindAssembler(
-	handlers: HarnessModulePromptHandler[],
+	handlers: ModulePromptHandler[],
 	ctx: EnvironmentRuntime,
 ): SystemPromptAssembler {
 	const boundHandlers: SystemPromptHandler[] = bindHandlers(

@@ -3,8 +3,10 @@ import {
 	combineAll as combineSimpleModulesAll,
 	type Modules as SimpleModules,
 } from '../../../algebra/modules/simple/index.js';
-import type { InferState } from '../../../algebra/modules/state/index.js';
-import type { BaseHarnessModule } from '../../modules/module.js';
+import type {
+	BaseStateExtensionModule,
+	InferState,
+} from '../../../algebra/modules/state/index.js';
 import type {
 	OrchestratorHandle,
 	OrchestratorModule,
@@ -20,10 +22,10 @@ import { createSelfModule, type SelfModule } from './self.js';
  * The internal slice of an orchestrated module: the `Self` identity port and
  * the recursive `Orchestration` port, combined as a stateless extension module.
  */
-export type InternalOrchestratorModule<M extends BaseHarnessModule> =
+export type InternalOrchestratorModule<M extends BaseStateExtensionModule> =
 	SimpleModules<[SelfModule, OrchestrationModule<M>]>;
 
-export type InternalOrchestratorOptions<M extends BaseHarnessModule> = {
+export type InternalOrchestratorOptions<M extends BaseStateExtensionModule> = {
 	readonly id: string;
 	readonly getHandle: () => OrchestratorHandle<
 		OrchestratorRuntime<M>,
@@ -31,9 +33,9 @@ export type InternalOrchestratorOptions<M extends BaseHarnessModule> = {
 	>;
 };
 
-export function createInternalOrchestratorModule<M extends BaseHarnessModule>(
-	opts: InternalOrchestratorOptions<M>,
-): InternalOrchestratorModule<M> {
+export function createInternalOrchestratorModule<
+	M extends BaseStateExtensionModule,
+>(opts: InternalOrchestratorOptions<M>): InternalOrchestratorModule<M> {
 	return combineSimpleModulesAll([
 		createSelfModule(opts.id),
 		createOrchestrationModule<M>(opts.getHandle),
@@ -44,7 +46,7 @@ export function createInternalOrchestratorModule<M extends BaseHarnessModule>(
  * Attach the internal stateless ports after the user's stateful module has
  * been instantiated. The base state rules remain owned by the user module.
  */
-export function createOrchestratorModule<M extends BaseHarnessModule>(
+export function createOrchestratorModule<M extends BaseStateExtensionModule>(
 	module: M,
 	opts: InternalOrchestratorOptions<M>,
 ): OrchestratorModule<[M]> {

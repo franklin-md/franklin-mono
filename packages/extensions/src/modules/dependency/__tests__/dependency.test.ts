@@ -6,15 +6,12 @@ import {
 	type DependencyRuntime,
 	type DependencyModule,
 } from '../../../index.js';
-import { createDependencyModule as createDependencyModuleFromHarnessModuleIndex } from '../module.js';
+import { createDependencyModule as createDependencyModuleFromModuleFile } from '../module.js';
 
 describe('createDependencyModule', () => {
 	it('is exported from the public surfaces', () => {
 		const settings = { get: vi.fn(() => 'medium') };
-		const system = createDependencyModuleFromHarnessModuleIndex(
-			'settings',
-			settings,
-		);
+		const system = createDependencyModuleFromModuleFile('settings', settings);
 
 		expectTypeOf(system).toEqualTypeOf<
 			DependencyModule<'settings', typeof settings>

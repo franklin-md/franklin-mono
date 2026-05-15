@@ -30,8 +30,8 @@ import type {
 	StateHandle,
 } from '../../../algebra/runtime/types.js';
 import { combine } from '../../../algebra/modules/state/combine.js';
-import { createRuntime } from '../create.js';
-import type { HarnessModule } from '../module.js';
+import type { StateExtensionModule } from '../../../algebra/modules/state/index.js';
+import { createRuntime } from '../../../testing/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -134,7 +134,7 @@ type ValueRuntime = BaseRuntime & {
 	readonly [VALUE_STATE]: StateHandle<ValueState>;
 };
 
-function createValueSystem(): HarnessModule<
+function createValueSystem(): StateExtensionModule<
 	ValueState,
 	ValueAPI,
 	ValueRuntime
@@ -176,7 +176,7 @@ function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
 	return Object.keys(extensionPoint.createApi(registry));
 }
 
-function moduleApiKeys(module: HarnessModule<any, any, any>): string[] {
+function moduleApiKeys(module: StateExtensionModule<any, any, any>): string[] {
 	return apiKeys(module.instantiate(module.emptyState()).extensionPoint);
 }
 

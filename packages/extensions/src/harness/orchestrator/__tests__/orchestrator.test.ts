@@ -8,10 +8,10 @@ import type {
 	StateHandle,
 } from '../../../algebra/runtime/index.js';
 import { createDependencyModule } from '../../../modules/dependency/module.js';
-import type { HarnessModule } from '../../modules/index.js';
 import type {
 	InferBoundAPI,
 	InferRuntime,
+	StateExtensionModule,
 } from '../../../algebra/modules/state/index.js';
 import {
 	createOrchestrator,
@@ -56,7 +56,7 @@ const runtimeAwareExtensionPoint: ExtensionPoint<RuntimeAwareAPI> = {
 	}),
 };
 
-type TestModule = HarnessModule<TestState, RuntimeAwareAPI, TestRuntime>;
+type TestModule = StateExtensionModule<TestState, RuntimeAwareAPI, TestRuntime>;
 type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<[TestModule]>>;
 type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<[TestModule]>>;
 type Settings = {
