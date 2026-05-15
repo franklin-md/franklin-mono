@@ -1,14 +1,22 @@
 import type { DeepPartial } from '@franklin/lib';
+import type { ComposeAPI } from '../../algebra/api/index.js';
 import type {
-	BaseRuntime,
-	RuntimeExtras,
-} from '../../algebra/runtime/index.js';
+	InferAPI as InferSimpleAPI,
+	InferRuntime as InferSimpleRuntime,
+} from '../../algebra/modules/simple/index.js';
 import type {
-	BaseHarnessModule,
+	InferAPI,
 	InferRuntime,
 	InferState,
 	Modules,
-} from '../modules/index.js';
+	StateExtensionModule,
+} from '../../algebra/modules/state/index.js';
+import type {
+	BaseRuntime,
+	CombinedRuntime,
+	RuntimeExtras,
+} from '../../algebra/runtime/index.js';
+import type { BaseHarnessModule } from '../modules/module.js';
 import type {
 	InternalOrchestratorModule,
 	SelfRuntime,
@@ -75,7 +83,17 @@ export type OrchestratorRuntime<M extends BaseHarnessModule> = BaseRuntime &
  *   type FranklinExtension = Extension<FranklinAPI>;
  */
 export type OrchestratorModule<Mods extends readonly BaseHarnessModule[]> =
-	Modules<[Modules<Mods>, InternalOrchestratorModule<Modules<Mods>>]>;
+	StateExtensionModule<
+		InferState<Modules<Mods>>,
+		ComposeAPI<
+			InferAPI<Modules<Mods>>,
+			InferSimpleAPI<InternalOrchestratorModule<Modules<Mods>>>
+		>,
+		CombinedRuntime<
+			InferRuntime<Modules<Mods>>,
+			InferSimpleRuntime<InternalOrchestratorModule<Modules<Mods>>>
+		>
+	>;
 
 export type RuntimeEvent<Runtime extends BaseRuntime> =
 	| { readonly action: 'add'; readonly id: string; readonly runtime: Runtime }

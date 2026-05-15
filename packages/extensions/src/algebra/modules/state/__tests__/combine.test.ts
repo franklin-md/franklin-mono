@@ -5,6 +5,7 @@ import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { Registry } from '../../../extension-points/registry.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import { combine, buildStateExtensionModule } from '../combine.js';
+import { identityModule } from '../identity.js';
 import type { StateExtensionModule, StateHandle } from '../types.js';
 
 type CounterAPISurface = {
@@ -192,5 +193,43 @@ describe('state module combine', () => {
 
 		expect(runtime.getCount()).toBe(0);
 		expect(runtime.getLabel()).toBe('builder');
+	});
+
+	it('preserves state and runtime behaviour with left identity', async () => {
+		const module = combine(identityModule(), createCounterModule());
+		const state = module.emptyState();
+
+		expect(state).toEqual({ counter: { value: 0 } });
+
+		const simple = module.instantiate({ counter: { value: 14 } });
+		const runtime = await compile(
+			simple.extensionPoint,
+			simple.compiler,
+			() => {},
+		);
+
+		expect(runtime.getCount()).toBe(14);
+		await expect(module.state(runtime).get()).resolves.toEqual({
+			counter: { value: 14 },
+		});
+	});
+
+	it('preserves state and runtime behaviour with right identity', async () => {
+		const module = combine(createCounterModule(), identityModule());
+		const state = module.emptyState();
+
+		expect(state).toEqual({ counter: { value: 0 } });
+
+		const simple = module.instantiate({ counter: { value: 15 } });
+		const runtime = await compile(
+			simple.extensionPoint,
+			simple.compiler,
+			() => {},
+		);
+
+		expect(runtime.getCount()).toBe(15);
+		await expect(module.state(runtime).get()).resolves.toEqual({
+			counter: { value: 15 },
+		});
 	});
 });

@@ -4,7 +4,10 @@ import type {
 	ExtensionAPISurface,
 	ExtensionInput,
 } from '../../algebra/extension/types.js';
-import type { InferAPI, InferRuntime } from './infer.js';
+import type {
+	InferAPI,
+	InferRuntime,
+} from '../../algebra/modules/state/index.js';
 import type { BaseHarnessModule } from './module.js';
 
 export type ModuleAPIs<T extends readonly BaseHarnessModule[]> = {

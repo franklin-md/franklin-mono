@@ -3,7 +3,8 @@ import {
 	type DependencyModule,
 } from '../../../modules/dependency/module.js';
 import type { InferRuntime } from '../../../algebra/modules/simple/index.js';
-import type { BaseHarnessModule, InferState } from '../../modules/index.js';
+import type { InferState } from '../../../algebra/modules/state/index.js';
+import type { BaseHarnessModule } from '../../modules/module.js';
 import type { OrchestratorHandle, OrchestratorRuntime } from '../types.js';
 
 type OrchestrationHandle<M extends BaseHarnessModule> = OrchestratorHandle<

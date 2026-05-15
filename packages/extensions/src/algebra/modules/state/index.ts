@@ -21,9 +21,10 @@ export type {
 	ValidateModules,
 } from './combine.js';
 export { buildStateExtensionModule, combine, combineAll } from './combine.js';
+export type { IdentityModule } from './identity.js';
 export {
+	identityModule,
 	identityState,
 	identityStateHandle,
-	liftExtensionModule,
-} from './lift.js';
-export { instantiate } from './instantiate.js';
+} from './identity.js';
+export { liftExtensionModule } from './lift.js';

@@ -3,7 +3,11 @@ import {
 	type Extension,
 } from '../../algebra/extension/index.js';
 import { compile } from '../../algebra/index.js';
-import type { InferBoundAPI, InferRuntime, InferState } from './infer.js';
+import type {
+	InferBoundAPI,
+	InferRuntime,
+	InferState,
+} from '../../algebra/modules/state/index.js';
 import type { BaseHarnessModule } from './module.js';
 
 export async function createRuntime<Module extends BaseHarnessModule>(

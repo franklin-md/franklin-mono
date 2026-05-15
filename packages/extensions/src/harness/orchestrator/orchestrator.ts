@@ -1,6 +1,10 @@
 import { compile } from '../../algebra/compiler/index.js';
 import { resolveState } from '../state/index.js';
-import type { BaseHarnessModule, InferState } from '../modules/index.js';
+import type {
+	InferExtension,
+	InferState,
+} from '../../algebra/modules/state/index.js';
+import type { BaseHarnessModule } from '../modules/module.js';
 import { createOrchestratorModule } from './internal/index.js';
 import type { RuntimeCollection } from './collection.js';
 import type {
@@ -10,7 +14,6 @@ import type {
 	OrchestratorRuntime,
 	RuntimeEntry,
 } from './types.js';
-import type { InferExtension } from '../modules/infer.js';
 
 type Runtime<M extends BaseHarnessModule> = OrchestratorRuntime<M>;
 type State<M extends BaseHarnessModule> = InferState<M>;
@@ -64,9 +67,10 @@ export class Orchestrator<
 
 	async materialize(id: string, state: State<M>): Promise<Entry<M>> {
 		const fullModule = this.createFullModule(id);
+		const simple = fullModule.instantiate(state);
 		const runtime = await compile(
-			fullModule.extensionPoint,
-			fullModule.createCompiler(state),
+			simple.extensionPoint,
+			simple.compiler,
 			this.extension,
 		);
 		this.collection.set(id, runtime);

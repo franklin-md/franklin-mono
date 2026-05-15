@@ -13,3 +13,16 @@ export type {
 	ValidateModules,
 } from './combine.js';
 export { combine, combineAll } from './combine.js';
+export type {
+	IdentityAPI,
+	IdentityAPISurface,
+	IdentityCompiler,
+	IdentityModule,
+	IdentityRuntime,
+} from './identity.js';
+export {
+	identityAPI,
+	identityCompiler,
+	identityModule,
+	identityRuntime,
+} from './identity.js';

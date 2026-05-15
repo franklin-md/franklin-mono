@@ -1,11 +1,11 @@
 import { reduceExtensions } from '../../algebra/extension/index.js';
 import {
 	buildStateExtensionModule,
-	type BaseHarnessModule,
+	type InferExtension,
 	type Modules,
 	type ValidateModules,
-} from '../modules/index.js';
-import type { InferExtension } from '../modules/infer.js';
+} from '../../algebra/modules/state/index.js';
+import type { BaseHarnessModule } from '../modules/module.js';
 import type { RuntimeCollection } from './collection.js';
 import { Orchestrator } from './orchestrator.js';
 import type { OrchestratorModule, OrchestratorRuntime } from './types.js';

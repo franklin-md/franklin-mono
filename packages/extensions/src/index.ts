@@ -39,7 +39,12 @@ export type {
 	BaseStateExtensionModule,
 	StateExtensionModule,
 } from './algebra/modules/state/index.js';
-export { liftExtensionModule } from './algebra/modules/state/index.js';
+export {
+	buildStateExtensionModule,
+	combine as combineModules,
+	combineAll,
+	liftExtensionModule,
+} from './algebra/modules/state/index.js';
 // ---------------------------------------------------------------------------
 // Runtime
 // ---------------------------------------------------------------------------
@@ -48,31 +53,30 @@ export { resolveState } from './harness/state/resolve.js';
 // ---------------------------------------------------------------------------
 // Harness modules
 // ---------------------------------------------------------------------------
-export type { BaseState } from './harness/state/types.js';
+export type { BaseState } from './algebra/modules/state/index.js';
 export type { ExtensionBundle } from './modules/bundle/index.js';
 export { createBundle } from './modules/bundle/index.js';
-export {
-	combine as combineModules,
-	combineAll,
-	buildStateExtensionModule,
-	defineExtension,
-} from './harness/modules/index.js';
+export { defineExtension } from './harness/modules/index.js';
 export { createRuntime } from './harness/modules/create.js';
 export { withSetup } from './harness/modules/setup.js';
 export type {
 	BaseHarnessModule,
-	CombinableModule,
-	CombineModules,
 	ExtensionApi,
 	ExtensionForModules,
 	HarnessModule,
+	ModuleAPIs,
+	ModuleRuntimes,
+} from './harness/modules/index.js';
+export type {
+	CombinableModule,
+	CombineModules,
 	InferAPI,
 	InferBoundAPI,
 	InferRuntime,
 	InferState,
 	Modules,
 	ValidateModules,
-} from './harness/modules/index.js';
+} from './algebra/modules/state/index.js';
 export type {
 	Extension,
 	ExtensionAPISurface,

@@ -7,11 +7,11 @@ import type {
 	BaseRuntime,
 	StateHandle,
 } from '../../../algebra/runtime/index.js';
+import type { HarnessModule } from '../../modules/index.js';
 import type {
-	HarnessModule,
 	InferBoundAPI,
 	InferRuntime,
-} from '../../modules/index.js';
+} from '../../../algebra/modules/state/index.js';
 import {
 	createOrchestrator,
 	RuntimeCollection,

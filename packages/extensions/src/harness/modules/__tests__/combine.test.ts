@@ -29,7 +29,7 @@ import type {
 	BaseRuntime,
 	StateHandle,
 } from '../../../algebra/runtime/types.js';
-import { combine } from '../combine.js';
+import { combine } from '../../../algebra/modules/state/combine.js';
 import { createRuntime } from '../create.js';
 import type { HarnessModule } from '../module.js';
 
