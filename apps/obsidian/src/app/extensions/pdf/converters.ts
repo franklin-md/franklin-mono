@@ -60,7 +60,6 @@ class AuthSwitchingPDFConverter implements ObsidianPDFConverter {
 		options: PDFConvertOptions = {},
 	): Promise<PDFInput> {
 		const converter = this.current;
-		console.info(`Franklin read_pdf using ${this.currentService} PDF service`);
 		return converter.convertPDF(pdf, options);
 	}
 
