@@ -1,7 +1,10 @@
+import type { TurnStart } from '@franklin/mini-acp';
 import type { Registry } from '../../../../algebra/extension-points/registry.js';
 import type { BaseRuntime } from '../../../../algebra/runtime/index.js';
 import type {
 	CoreAPI,
+	CoreAPISurface,
+	CoreEventHandlers,
 	CoreOnRegistration,
 	CoreRegisterToolRegistration,
 } from '../api.js';
@@ -27,3 +30,26 @@ type _CoreRegistryToolEntries = Expect<
 		CoreRegisterToolRegistration<BaseRuntime>
 	>
 >;
+
+type _CoreTurnStartHandler = CoreEventHandlers<BaseRuntime>['turnStart'];
+
+const _turnStartHandler: _CoreTurnStartHandler = (event, runtime) => {
+	const _event: TurnStart = event;
+	const _runtime: BaseRuntime = runtime;
+	void _event;
+	void _runtime;
+};
+
+const _turnStartRegistration: CoreOnRegistration<BaseRuntime> = [
+	'turnStart',
+	_turnStartHandler,
+];
+void _turnStartRegistration;
+
+const _api = null as unknown as CoreAPISurface<BaseRuntime>;
+_api.on('turnStart', (event, runtime) => {
+	const _event: TurnStart = event;
+	const _runtime: BaseRuntime = runtime;
+	void _event;
+	void _runtime;
+});

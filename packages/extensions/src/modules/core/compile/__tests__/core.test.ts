@@ -6,6 +6,7 @@ import type {
 	MiniACPAgent,
 	MiniACPClient,
 	ToolExecuteParams,
+	TurnStart,
 	Update,
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
@@ -487,6 +488,42 @@ describe('buildCore – empty extension', () => {
 // ---------------------------------------------------------------------------
 
 describe('buildCore – stream observers', () => {
+	it('on("turnStart") fires for turnStart events', async () => {
+		const observed: TurnStart[] = [];
+
+		const mw = await compileExt((api) => {
+			api.on('turnStart', (event) => {
+				observed.push(event);
+			});
+		});
+
+		const turnStart: TurnStart = { type: 'turnStart' };
+		const chunk: Chunk = {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'text', text: 'hello' },
+		};
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield turnStart;
+				yield chunk;
+			},
+		});
+
+		const wrapped = apply(mw.client, target);
+		const events = await collect(
+			wrapped.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		expect(observed).toEqual([turnStart]);
+		expect(events).toEqual([turnStart, chunk]);
+	});
+
 	it('on("chunk") fires for each chunk event', async () => {
 		const observed: Chunk[] = [];
 
