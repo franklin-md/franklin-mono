@@ -1,7 +1,6 @@
 export const PDF_SCREENSHOT_DPI = 150;
 export const PDF_SCREENSHOT_MIME_TYPE = 'image/png';
 
-
 export interface PDFScreenshot {
 	readonly pageIndex: number;
 	readonly data: string;
@@ -26,11 +25,9 @@ export type RenderPDFScreenshots = (
 	options?: RenderPDFScreenshotsOptions,
 ) => Promise<readonly PDFScreenshot[]>;
 
-
 export interface PDFConverterOptions {
 	readonly renderScreenshots: RenderPDFScreenshots;
 }
-
 
 export interface PDFConverter {
 	convertPDF(pdf: Uint8Array, options?: PDFConvertOptions): Promise<PDFInput>;

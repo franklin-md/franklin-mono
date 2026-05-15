@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { MistralPDFConverter, formatOCRMarkdown } from '../mistral.js';
-import { PDF_SCREENSHOT_DPI } from '../screenshots.js';
+import { PDF_SCREENSHOT_DPI } from '../types.js';
 
 describe('MistralPDFConverter', () => {
 	it('uploads the PDF, runs Mistral OCR, and returns screenshots', async () => {

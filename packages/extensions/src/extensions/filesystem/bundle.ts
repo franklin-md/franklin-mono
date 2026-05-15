@@ -7,6 +7,7 @@ import { globExtension } from './glob/extension.js';
 import { globSpec } from './glob/tools.js';
 import { grepExtension } from './grep/extension.js';
 import { grepSpec } from './grep/tools.js';
+import { FreePDFConverter } from './pdf/free.js';
 import { readPDFExtension } from './pdf/extension.js';
 import { readPDFSpec } from './pdf/tools.js';
 import { readExtension } from './read/extension.js';
@@ -18,7 +19,9 @@ export const filesystemExtension = createBundle({
 	extension: reduceExtensions(
 		editExtension(),
 		readExtension(),
-		readPDFExtension(),
+		readPDFExtension({
+			pdfConverter: new FreePDFConverter({ renderScreenshots: async () => [] }),
+		}),
 		writeExtension(),
 		globExtension(),
 		grepExtension(),

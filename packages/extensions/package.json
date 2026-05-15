@@ -27,11 +27,10 @@
 		"@agentclientprotocol/sdk": "^0.16.1",
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
-		"@hyzyla/pdfium": "^2.1.13",
 		"@mistralai/mistralai": "^2.2.1",
 		"@mozilla/readability": "^0.6.0",
 		"@noble/hashes": "^2.0.1",
 		"immer": "^10.2.0",
-		"sharp": "^0.34.5"
+		"unpdf": "^1.6.2"
 	}
 }
