@@ -20,9 +20,11 @@ const coreExtensionPoint = createExtensionPoint<CoreAPI>({
 
 export function createCoreModule(connectAgent: MiniACPConnector): CoreModule {
 	return {
-		extensionPoint: coreExtensionPoint,
 		emptyState: emptyCoreState,
 		state: (runtime) => coreStateHandle(runtime),
-		createCompiler: (state) => createCoreCompiler(connectAgent, state),
+		instantiate: (state) => ({
+			extensionPoint: coreExtensionPoint,
+			compiler: createCoreCompiler(connectAgent, state),
+		}),
 	};
 }

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { API } from '../../../algebra/api/index.js';
-import type { Compiler } from '../../../algebra/compiler/index.js';
 import type { Extension } from '../../../algebra/extension/index.js';
 import type { Registry } from '../../../algebra/extension-points/registry.js';
 import type { ExtensionPoint } from '../../../algebra/extension-points/types.js';
@@ -62,38 +61,40 @@ type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<[TestModule]>>;
 
 function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 	return {
-		extensionPoint: runtimeAwareExtensionPoint,
 		emptyState: () => empty,
 		state: (runtime) => runtime[TEST_STATE],
-		createCompiler(state): Compiler<RuntimeAwareAPI, TestRuntime> {
+		instantiate(state) {
 			return {
-				async compile<ContextRuntime extends BaseRuntime>(
-					registry: Registry<RuntimeAwareAPI, ContextRuntime>,
-					getRuntime: () => ContextRuntime,
-				) {
-					const handlers = registry.onRuntime.map(
-						([handler]) => handler as RuntimeHandler<BaseRuntime>,
-					);
-					let disposed = false;
-					return {
-						runHandlers() {
-							for (const handler of handlers) handler(getRuntime());
-						},
-						wasDisposed() {
-							return disposed;
-						},
-						[TEST_STATE]: {
-							get: vi.fn(async () => state),
-							fork: vi.fn(async () => state),
-							child: vi.fn(async () => ({
-								value: `child-of-${state.value}`,
-							})),
-						},
-						dispose: vi.fn(async () => {
-							disposed = true;
-						}),
-						subscribe: vi.fn(() => () => {}),
-					};
+				extensionPoint: runtimeAwareExtensionPoint,
+				compiler: {
+					async compile<ContextRuntime extends BaseRuntime>(
+						registry: Registry<RuntimeAwareAPI, ContextRuntime>,
+						getRuntime: () => ContextRuntime,
+					) {
+						const handlers = registry.onRuntime.map(
+							([handler]) => handler as RuntimeHandler<BaseRuntime>,
+						);
+						let disposed = false;
+						return {
+							runHandlers() {
+								for (const handler of handlers) handler(getRuntime());
+							},
+							wasDisposed() {
+								return disposed;
+							},
+							[TEST_STATE]: {
+								get: vi.fn(async () => state),
+								fork: vi.fn(async () => state),
+								child: vi.fn(async () => ({
+									value: `child-of-${state.value}`,
+								})),
+							},
+							dispose: vi.fn(async () => {
+								disposed = true;
+							}),
+							subscribe: vi.fn(() => () => {}),
+						};
+					},
 				},
 			};
 		},

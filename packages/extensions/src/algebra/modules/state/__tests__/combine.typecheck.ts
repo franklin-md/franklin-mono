@@ -121,8 +121,10 @@ type CombinedRuntimeAwareAPI = InferBoundAPI<
 >;
 
 const _combinedRuntimeAwareApi = null as unknown as CombinedRuntimeAwareAPI;
+/* eslint-disable @typescript-eslint/no-unsafe-call -- the @ts-expect-error below intentionally makes the call site unresolvable */
 _combinedRuntimeAwareApi.useRuntime((runtime) => {
 	runtime.inspect();
 	// @ts-expect-error runtime-aware API handlers should see only composed runtime keys
 	runtime.missing();
 });
+/* eslint-enable @typescript-eslint/no-unsafe-call */

@@ -1,5 +1,6 @@
 import type { API } from '../../algebra/api/index.js';
 import type { Compiler } from '../../algebra/compiler/index.js';
+import type { ExtensionModule } from '../../algebra/modules/simple/index.js';
 import type { Registry } from '../../algebra/extension-points/registry.js';
 import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { BaseState } from '../state/index.js';
@@ -37,11 +38,16 @@ export function withSetup<
 	setup: (runtime: Runtime, state: S) => Promise<void>,
 ): HarnessModule<S, A, Runtime> {
 	return {
-		...module,
-		createCompiler(state) {
-			return withSetupCompiler(module.createCompiler(state), (runtime) =>
-				setup(runtime, state),
-			);
+		emptyState: () => module.emptyState(),
+		state: (runtime) => module.state(runtime),
+		instantiate(state): ExtensionModule<A, Runtime> {
+			const simple = module.instantiate(state);
+			return {
+				extensionPoint: simple.extensionPoint,
+				compiler: withSetupCompiler(simple.compiler, (runtime) =>
+					setup(runtime, state),
+				),
+			};
 		},
 	};
 }

@@ -11,7 +11,7 @@ export async function createRuntime<Module extends BaseHarnessModule>(
 	state: InferState<Module>,
 	extensions: Extension<InferBoundAPI<Module>>[],
 ): Promise<InferRuntime<Module>> {
-	const compiler = module.createCompiler(state);
+	const simple = module.instantiate(state);
 	const extension = reduceExtensions(...extensions);
-	return compile(module.extensionPoint, compiler, extension);
+	return compile(simple.extensionPoint, simple.compiler, extension);
 }

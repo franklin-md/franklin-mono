@@ -1,4 +1,3 @@
-import type { Compiler } from '../../algebra/compiler/index.js';
 import { createExtensionPoint } from '../../algebra/extension-points/create.js';
 import type { HarnessModule } from '../../harness/modules/index.js';
 import type { StoreAPI } from './api/api.js';
@@ -16,13 +15,15 @@ const storeExtensionPoint = createExtensionPoint<StoreAPI>({
 
 export function createStoreModule(registry: StoreRegistry): StoreModule {
 	return {
-		extensionPoint: storeExtensionPoint,
 		emptyState: emptyStoreState,
 
 		state: storeStateHandle,
 
-		createCompiler(state): Compiler<StoreAPI, StoreRuntime> {
-			return createStoreCompiler(registry, state);
+		instantiate(state) {
+			return {
+				extensionPoint: storeExtensionPoint,
+				compiler: createStoreCompiler(registry, state),
+			};
 		},
 	};
 }

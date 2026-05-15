@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { compile } from '../../../compiler/compile.js';
-import type { Compiler } from '../../../compiler/types.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { Registry } from '../../../extension-points/registry.js';
 import type { ExtensionPoint } from '../../../extension-points/types.js';
@@ -24,7 +23,9 @@ type CounterRuntime = BaseRuntime & {
 	getCount(): number;
 };
 
-function createCounterModule(initial: number): ExtensionModule<CounterAPI, CounterRuntime> {
+function createCounterModule(
+	initial: number,
+): ExtensionModule<CounterAPI, CounterRuntime> {
 	return {
 		extensionPoint: counterExtensionPoint,
 		compiler: {
@@ -60,7 +61,9 @@ type LabelRuntime = BaseRuntime & {
 	getLabel(): string;
 };
 
-function createLabelModule(initial: string): ExtensionModule<LabelAPI, LabelRuntime> {
+function createLabelModule(
+	initial: string,
+): ExtensionModule<LabelAPI, LabelRuntime> {
 	return {
 		extensionPoint: labelExtensionPoint,
 		compiler: {
@@ -88,17 +91,24 @@ function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
 
 describe('simple module combine', () => {
 	it('combines extension points and compilers', async () => {
-		const module = combine(createCounterModule(1), createLabelModule('fallback'));
+		const module = combine(
+			createCounterModule(1),
+			createLabelModule('fallback'),
+		);
 
 		expect(apiKeys(module.extensionPoint)).toEqual([
 			'registerCount',
 			'registerLabel',
 		]);
 
-		const runtime = await compile(module.extensionPoint, module.compiler, (api) => {
-			api.registerCount(7);
-			api.registerLabel('registered');
-		});
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			(api) => {
+				api.registerCount(7);
+				api.registerLabel('registered');
+			},
+		);
 
 		expect(runtime.label).toBe('counter');
 		expect(runtime.getCount()).toBe(7);
@@ -111,12 +121,15 @@ describe('simple module combine', () => {
 			createLabelModule('tuple'),
 		] as const);
 
-		const runtime = await compile(module.extensionPoint, module.compiler, (api) => {
-			api.registerCount(9);
-		});
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			(api) => {
+				api.registerCount(9);
+			},
+		);
 
 		expect(runtime.getCount()).toBe(9);
 		expect(runtime.getLabel()).toBe('tuple');
 	});
 });
-

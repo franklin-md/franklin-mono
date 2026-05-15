@@ -31,6 +31,15 @@ export type {
 } from './harness/orchestrator/index.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { ReduceRuntimes } from './algebra/runtime/reduce.js';
+export type {
+	BaseExtensionModule,
+	ExtensionModule,
+} from './algebra/modules/simple/index.js';
+export type {
+	BaseStateExtensionModule,
+	StateExtensionModule,
+} from './algebra/modules/state/index.js';
+export { liftExtensionModule } from './algebra/modules/state/index.js';
 // ---------------------------------------------------------------------------
 // Runtime
 // ---------------------------------------------------------------------------
@@ -45,6 +54,7 @@ export { createBundle } from './modules/bundle/index.js';
 export {
 	combine as combineModules,
 	combineAll,
+	buildStateExtensionModule,
 	defineExtension,
 } from './harness/modules/index.js';
 export { createRuntime } from './harness/modules/create.js';

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { StaticAPI } from '../../../algebra/api/types.js';
-import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { Registry } from '../../../algebra/extension-points/registry.js';
 import { createExtensionPoint } from '../../../algebra/extension-points/create.js';
 import type {
@@ -31,26 +30,28 @@ type TestRuntime = BaseRuntime & {
 
 function createTestSystem(): HarnessModule<TestState, TestAPI, TestRuntime> {
 	return {
-		extensionPoint: testExtensionPoint,
 		emptyState: () => ({ value: 0 }),
 		state: (runtime) => runtime[TEST_STATE],
-		createCompiler(state): Compiler<TestAPI, TestRuntime> {
+		instantiate(state) {
 			return {
-				async compile<ContextRuntime extends BaseRuntime>(
-					registry: Registry<TestAPI, ContextRuntime>,
-				) {
-					const registered = registry.register.at(-1)?.[0];
-					const val = registered ?? state.value;
-					return {
-						getValue: () => val,
-						[TEST_STATE]: {
-							get: async () => ({ value: val }),
-							fork: async () => ({ value: val }),
-							child: async () => ({ value: 0 }),
-						},
-						dispose: async () => {},
-						subscribe: () => () => {},
-					};
+				extensionPoint: testExtensionPoint,
+				compiler: {
+					async compile<ContextRuntime extends BaseRuntime>(
+						registry: Registry<TestAPI, ContextRuntime>,
+					) {
+						const registered = registry.register.at(-1)?.[0];
+						const val = registered ?? state.value;
+						return {
+							getValue: () => val,
+							[TEST_STATE]: {
+								get: async () => ({ value: val }),
+								fork: async () => ({ value: val }),
+								child: async () => ({ value: 0 }),
+							},
+							dispose: async () => {},
+							subscribe: () => () => {},
+						};
+					},
 				},
 			};
 		},
@@ -74,11 +75,11 @@ describe('withSetup', () => {
 			order.push('setup');
 		});
 
-		const compiler = decorated.createCompiler({ value: 42 });
-		const registry = decorated.extensionPoint.createRegistry();
+		const simple = decorated.instantiate({ value: 42 });
+		const registry = simple.extensionPoint.createRegistry();
 
 		order.push('before-build');
-		await compiler.compile(
+		await simple.compiler.compile(
 			registry as Registry<TestAPI, TestRuntime>,
 			noGetRuntime,
 		);
@@ -95,9 +96,9 @@ describe('withSetup', () => {
 			captured = runtime;
 		});
 
-		const compiler = decorated.createCompiler({ value: 7 });
-		const registry = decorated.extensionPoint.createRegistry();
-		const built = await compiler.compile(
+		const simple = decorated.instantiate({ value: 7 });
+		const registry = simple.extensionPoint.createRegistry();
+		const built = await simple.compiler.compile(
 			registry as Registry<TestAPI, TestRuntime>,
 			noGetRuntime,
 		);
@@ -114,9 +115,9 @@ describe('withSetup', () => {
 			capturedState = state;
 		});
 
-		const compiler = decorated.createCompiler({ value: 99 });
-		const registry = decorated.extensionPoint.createRegistry();
-		await compiler.compile(
+		const simple = decorated.instantiate({ value: 99 });
+		const registry = simple.extensionPoint.createRegistry();
+		await simple.compiler.compile(
 			registry as Registry<TestAPI, TestRuntime>,
 			noGetRuntime,
 		);
@@ -135,10 +136,10 @@ describe('withSetup', () => {
 		const system = createTestSystem();
 		const decorated = withSetup(system, async () => {});
 
-		const compiler = decorated.createCompiler({ value: 0 });
-		const registry = decorated.extensionPoint.createRegistry();
-		decorated.extensionPoint.createApi<TestRuntime>(registry).register(42);
-		const built = await compiler.compile(
+		const simple = decorated.instantiate({ value: 0 });
+		const registry = simple.extensionPoint.createRegistry();
+		simple.extensionPoint.createApi<TestRuntime>(registry).register(42);
+		const built = await simple.compiler.compile(
 			registry as Registry<TestAPI, TestRuntime>,
 			noGetRuntime,
 		);
@@ -154,9 +155,9 @@ describe('withSetup', () => {
 			setupSpy(runtime.getValue());
 		});
 
-		const compiler = decorated.createCompiler({ value: 5 });
-		const registry = decorated.extensionPoint.createRegistry();
-		await compiler.compile(
+		const simple = decorated.instantiate({ value: 5 });
+		const registry = simple.extensionPoint.createRegistry();
+		await simple.compiler.compile(
 			registry as Registry<TestAPI, TestRuntime>,
 			noGetRuntime,
 		);
@@ -172,7 +173,8 @@ describe('withSetup', () => {
 describe('withSetupCompiler', () => {
 	it('wraps build to run setup after inner build resolves', async () => {
 		const system = createTestSystem();
-		const inner = system.createCompiler({ value: 1 });
+		const simple = system.instantiate({ value: 1 });
+		const inner = simple.compiler;
 
 		const order: string[] = [];
 		const decorated = withSetupCompiler(inner, async () => {
@@ -180,7 +182,7 @@ describe('withSetupCompiler', () => {
 		});
 
 		order.push('pre');
-		const registry = system.extensionPoint.createRegistry();
+		const registry = simple.extensionPoint.createRegistry();
 		await decorated.compile(
 			registry as Registry<TestAPI, TestRuntime>,
 			noGetRuntime,
@@ -192,11 +194,12 @@ describe('withSetupCompiler', () => {
 
 	it('preserves the inner registration surface', async () => {
 		const system = createTestSystem();
-		const inner = system.createCompiler({ value: 0 });
+		const simple = system.instantiate({ value: 0 });
+		const inner = simple.compiler;
 		const decorated = withSetupCompiler(inner, async () => {});
 
-		const registry = system.extensionPoint.createRegistry();
-		system.extensionPoint.createApi<TestRuntime>(registry).register(123);
+		const registry = simple.extensionPoint.createRegistry();
+		simple.extensionPoint.createApi<TestRuntime>(registry).register(123);
 		const built = await decorated.compile(
 			registry as Registry<TestAPI, TestRuntime>,
 			noGetRuntime,

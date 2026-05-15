@@ -2,7 +2,11 @@ import type { API, StaticAPI } from '../../../api/types.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import type { ExtensionModule } from '../types.js';
 import { combine, combineAll } from '../combine.js';
-import type { CombineModules, CombinableModule, InferBoundAPI } from '../index.js';
+import type {
+	CombineModules,
+	CombinableModule,
+	InferBoundAPI,
+} from '../index.js';
 
 type _ExpectNever<T extends never> = T;
 
@@ -97,9 +101,10 @@ type CombinedRuntimeAwareAPI = InferBoundAPI<
 >;
 
 const _combinedRuntimeAwareApi = null as unknown as CombinedRuntimeAwareAPI;
+/* eslint-disable @typescript-eslint/no-unsafe-call -- the @ts-expect-error below intentionally makes the call site unresolvable */
 _combinedRuntimeAwareApi.useRuntime((runtime) => {
 	runtime.inspect();
 	// @ts-expect-error runtime-aware API handlers should see only composed runtime keys
 	runtime.missing();
 });
-
+/* eslint-enable @typescript-eslint/no-unsafe-call */

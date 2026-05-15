@@ -12,7 +12,7 @@ export type {
 	Modules,
 	ValidateModules,
 } from './combine.js';
-export { combine, combineAll } from './combine.js';
+export { buildStateExtensionModule, combine, combineAll } from './combine.js';
 export { defineExtension } from './extension.js';
 export type {
 	ExtensionApi,

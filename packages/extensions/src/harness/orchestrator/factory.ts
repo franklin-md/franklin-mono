@@ -1,6 +1,6 @@
 import { reduceExtensions } from '../../algebra/extension/index.js';
 import {
-	combineAll,
+	buildStateExtensionModule,
 	type BaseHarnessModule,
 	type Modules,
 	type ValidateModules,
@@ -21,7 +21,7 @@ export type CreateOrchestratorInput<Mods extends readonly BaseHarnessModule[]> =
 export function createOrchestrator<Mods extends readonly BaseHarnessModule[]>(
 	opts: CreateOrchestratorInput<Mods>,
 ): Orchestrator<Modules<Mods>> {
-	const module = combineAll<Mods>(opts.modules);
+	const module = buildStateExtensionModule<Mods>(opts.modules);
 	const extension = reduceExtensions(...opts.extensions);
 	return new Orchestrator<Modules<Mods>>({
 		module,

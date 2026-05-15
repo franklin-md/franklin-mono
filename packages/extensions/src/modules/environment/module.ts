@@ -1,4 +1,3 @@
-import type { Compiler } from '../../algebra/compiler/index.js';
 import { createExtensionPoint } from '../../algebra/extension-points/create.js';
 import type { HarnessModule } from '../../harness/modules/index.js';
 import type { IdentityAPI } from '../identity/api.js';
@@ -30,17 +29,18 @@ export function createEnvironmentModule(
 	factory: EnvironmentFactory,
 ): EnvironmentModule {
 	return {
-		extensionPoint: identityExtensionPoint,
-
 		emptyState: emptyEnvironmentState,
 
 		state: environmentStateHandle,
 
-		createCompiler(state): Compiler<IdentityAPI, EnvironmentRuntime> {
+		instantiate(state) {
 			return {
-				async compile() {
-					const env = await factory(state.env);
-					return createEnvironmentRuntime(env);
+				extensionPoint: identityExtensionPoint,
+				compiler: {
+					async compile() {
+						const env = await factory(state.env);
+						return createEnvironmentRuntime(env);
+					},
 				},
 			};
 		},

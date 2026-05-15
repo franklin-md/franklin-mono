@@ -12,4 +12,3 @@ export type ExtensionModule<
 };
 
 export type BaseExtensionModule = ExtensionModule<any, any>;
-

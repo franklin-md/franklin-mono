@@ -23,4 +23,3 @@ export type InferBoundAPI<T> = Simplify<
 >;
 
 export type InferExtension<T> = Extension<InferBoundAPI<T>>;
-
