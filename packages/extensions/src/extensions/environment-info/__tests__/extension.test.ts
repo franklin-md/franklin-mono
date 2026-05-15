@@ -4,6 +4,9 @@ import {
 	MemoryOsInfo,
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
+import { createExtensionPoint } from '../../../algebra/extension-points/create.js';
+import type { Registry } from '../../../algebra/extension-points/registry.js';
+import type { CoreAPI } from '../../../modules/core/api/api.js';
 import type { SystemPromptHandler } from '../../../modules/core/api/handlers.js';
 import {
 	buildSystemPromptAssembler,
@@ -30,13 +33,22 @@ type HarnessModulePromptHandler = WithContext<
 	CoreRuntime & EnvironmentRuntime
 >;
 
+const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+	on: true,
+	registerTool: true,
+});
+
 function collectHandlers(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
 ): HarnessModulePromptHandler[] {
-	const { api, registrations } = createCoreRegistrar<
-		CoreRuntime & EnvironmentRuntime
-	>();
+	const registry = coreExtensionPoint.createRegistry();
+	const api = coreExtensionPoint.createApi<CoreRuntime & EnvironmentRuntime>(
+		registry,
+	);
 	extension(api);
+	const registrations = createCoreRegistrar(
+		registry as Registry<CoreAPI, CoreRuntime & EnvironmentRuntime>,
+	);
 	return registrations.systemPrompt;
 }
 

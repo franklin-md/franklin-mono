@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { StaticAPI } from '../../../algebra/api/types.js';
-import type { Compiler } from '../../../algebra/compiler/types.js';
+import type { Registry } from '../../../algebra/extension-points/registry.js';
+import { createExtensionPoint } from '../../../algebra/extension-points/create.js';
 import type {
 	BaseRuntime,
 	StateHandle,
@@ -16,6 +17,10 @@ type TestState = { value: number };
 type TestAPISurface = { register(n: number): void };
 type TestAPI = StaticAPI<TestAPISurface>;
 
+const testExtensionPoint = createExtensionPoint<TestAPI>({
+	register: true,
+});
+
 const TEST_STATE: unique symbol = Symbol('test/setup-state');
 
 type TestRuntime = BaseRuntime & {
@@ -27,27 +32,26 @@ function createTestSystem(): HarnessModule<TestState, TestAPI, TestRuntime> {
 	return {
 		emptyState: () => ({ value: 0 }),
 		state: (runtime) => runtime[TEST_STATE],
-		createCompiler(state): Compiler<TestAPI, TestRuntime> {
-			let registered: number | undefined;
-			const api: TestAPISurface = {
-				register(n: number) {
-					registered = n;
-				},
-			};
+		instantiate(state) {
 			return {
-				createApi: () => api,
-				async build() {
-					const val = registered ?? state.value;
-					return {
-						getValue: () => val,
-						[TEST_STATE]: {
-							get: async () => ({ value: val }),
-							fork: async () => ({ value: val }),
-							child: async () => ({ value: 0 }),
-						},
-						dispose: async () => {},
-						subscribe: () => () => {},
-					};
+				extensionPoint: testExtensionPoint,
+				compiler: {
+					async compile<ContextRuntime extends BaseRuntime>(
+						registry: Registry<TestAPI, ContextRuntime>,
+					) {
+						const registered = registry.register.at(-1)?.[0];
+						const val = registered ?? state.value;
+						return {
+							getValue: () => val,
+							[TEST_STATE]: {
+								get: async () => ({ value: val }),
+								fork: async () => ({ value: val }),
+								child: async () => ({ value: 0 }),
+							},
+							dispose: async () => {},
+							subscribe: () => () => {},
+						};
+					},
 				},
 			};
 		},
@@ -71,10 +75,14 @@ describe('withSetup', () => {
 			order.push('setup');
 		});
 
-		const compiler = decorated.createCompiler({ value: 42 });
+		const simple = decorated.instantiate({ value: 42 });
+		const registry = simple.extensionPoint.createRegistry();
 
 		order.push('before-build');
-		await compiler.build(noGetRuntime);
+		await simple.compiler.compile(
+			registry as Registry<TestAPI, TestRuntime>,
+			noGetRuntime,
+		);
 		order.push('after-build');
 
 		expect(order).toEqual(['before-build', 'setup', 'after-build']);
@@ -88,8 +96,12 @@ describe('withSetup', () => {
 			captured = runtime;
 		});
 
-		const compiler = decorated.createCompiler({ value: 7 });
-		const built = await compiler.build(noGetRuntime);
+		const simple = decorated.instantiate({ value: 7 });
+		const registry = simple.extensionPoint.createRegistry();
+		const built = await simple.compiler.compile(
+			registry as Registry<TestAPI, TestRuntime>,
+			noGetRuntime,
+		);
 
 		expect(captured).toBe(built);
 		expect(captured!.getValue()).toBe(7);
@@ -103,8 +115,12 @@ describe('withSetup', () => {
 			capturedState = state;
 		});
 
-		const compiler = decorated.createCompiler({ value: 99 });
-		await compiler.build(noGetRuntime);
+		const simple = decorated.instantiate({ value: 99 });
+		const registry = simple.extensionPoint.createRegistry();
+		await simple.compiler.compile(
+			registry as Registry<TestAPI, TestRuntime>,
+			noGetRuntime,
+		);
 
 		expect(capturedState).toEqual({ value: 99 });
 	});
@@ -120,9 +136,13 @@ describe('withSetup', () => {
 		const system = createTestSystem();
 		const decorated = withSetup(system, async () => {});
 
-		const compiler = decorated.createCompiler({ value: 0 });
-		compiler.createApi<TestRuntime>().register(42);
-		const built = await compiler.build(noGetRuntime);
+		const simple = decorated.instantiate({ value: 0 });
+		const registry = simple.extensionPoint.createRegistry();
+		simple.extensionPoint.createApi<TestRuntime>(registry).register(42);
+		const built = await simple.compiler.compile(
+			registry as Registry<TestAPI, TestRuntime>,
+			noGetRuntime,
+		);
 
 		expect(built.getValue()).toBe(42);
 	});
@@ -135,8 +155,12 @@ describe('withSetup', () => {
 			setupSpy(runtime.getValue());
 		});
 
-		const compiler = decorated.createCompiler({ value: 5 });
-		await compiler.build(noGetRuntime);
+		const simple = decorated.instantiate({ value: 5 });
+		const registry = simple.extensionPoint.createRegistry();
+		await simple.compiler.compile(
+			registry as Registry<TestAPI, TestRuntime>,
+			noGetRuntime,
+		);
 
 		expect(setupSpy).toHaveBeenCalledWith(5);
 	});
@@ -149,7 +173,8 @@ describe('withSetup', () => {
 describe('withSetupCompiler', () => {
 	it('wraps build to run setup after inner build resolves', async () => {
 		const system = createTestSystem();
-		const inner = system.createCompiler({ value: 1 });
+		const simple = system.instantiate({ value: 1 });
+		const inner = simple.compiler;
 
 		const order: string[] = [];
 		const decorated = withSetupCompiler(inner, async () => {
@@ -157,7 +182,11 @@ describe('withSetupCompiler', () => {
 		});
 
 		order.push('pre');
-		await decorated.build(noGetRuntime);
+		const registry = simple.extensionPoint.createRegistry();
+		await decorated.compile(
+			registry as Registry<TestAPI, TestRuntime>,
+			noGetRuntime,
+		);
 		order.push('post');
 
 		expect(order).toEqual(['pre', 'setup', 'post']);
@@ -165,11 +194,16 @@ describe('withSetupCompiler', () => {
 
 	it('preserves the inner registration surface', async () => {
 		const system = createTestSystem();
-		const inner = system.createCompiler({ value: 0 });
+		const simple = system.instantiate({ value: 0 });
+		const inner = simple.compiler;
 		const decorated = withSetupCompiler(inner, async () => {});
 
-		decorated.createApi<TestRuntime>().register(123);
-		const built = await decorated.build(noGetRuntime);
+		const registry = simple.extensionPoint.createRegistry();
+		simple.extensionPoint.createApi<TestRuntime>(registry).register(123);
+		const built = await decorated.compile(
+			registry as Registry<TestAPI, TestRuntime>,
+			noGetRuntime,
+		);
 
 		expect(built.getValue()).toBe(123);
 	});

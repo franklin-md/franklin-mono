@@ -1,5 +1,5 @@
 import {
-	combineAll,
+	buildStateExtensionModule,
 	createCoreModule,
 	createStoreModule,
 	createEnvironmentModule,
@@ -80,7 +80,7 @@ export class FranklinApp {
 			createStoreModule(storage.stores),
 			createEnvironmentModule(platform.environment),
 		];
-		const baseModule = combineAll(baseModules);
+		const baseModule = buildStateExtensionModule(baseModules);
 
 		this.collection = new PersistedSessionCollection<
 			FranklinState,

@@ -39,12 +39,3 @@ export type CoreRegistrar<Runtime extends BaseRuntime> = {
 	toolResult: WithContext<ToolObserverHandler<'toolResult'>, Runtime>[];
 	tools: ExtensionToolDefinition<unknown, Runtime>[];
 };
-
-/**
- * Runtime-erased registration storage. The API facade supplies the runtime
- * type during registration; build later reinterprets the same data with the
- * runtime slice it materialises.
- */
-export type CoreRegistrations = {
-	[Key in keyof CoreRegistrar<BaseRuntime>]: unknown[];
-};

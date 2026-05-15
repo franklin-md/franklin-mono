@@ -6,12 +6,15 @@ import type {
 	MiniACPAgent,
 	MiniACPClient,
 	ToolExecuteParams,
+	TurnStart,
 	Update,
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import type { BoundAPI } from '../../../../algebra/api/index.js';
 import type { Extension } from '../../../../algebra/extension/index.js';
+import { createExtensionPoint } from '../../../../algebra/extension-points/create.js';
+import type { Registry } from '../../../../algebra/extension-points/registry.js';
 import type { CoreAPI } from '../../api/api.js';
 import { resolveToolOutput } from '../../api/tool.js';
 import {
@@ -24,6 +27,11 @@ import type { FullMiddleware } from '../decorators/middleware/types.js';
 import { createCoreRegistrar } from '../registrar/index.js';
 
 type CoreExtension = Extension<BoundAPI<CoreAPI, CoreRuntime>>;
+
+const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+	on: true,
+	registerTool: true,
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -43,8 +51,12 @@ async function compileExt(
 	ext: CoreExtension,
 ): Promise<FullMiddleware & { tools: SerializedToolDefinition[] }> {
 	const stubCtx = undefined as unknown as CoreRuntime;
-	const { api, registrations } = createCoreRegistrar<CoreRuntime>();
+	const registry = coreExtensionPoint.createRegistry();
+	const api = coreExtensionPoint.createApi<CoreRuntime>(registry);
 	ext(api);
+	const registrations = createCoreRegistrar(
+		registry as Registry<CoreAPI, CoreRuntime>,
+	);
 	const middleware = buildMiddleware(registrations, () => stubCtx);
 	const tools = registrations.tools.map(serializeTool);
 	return { ...middleware, tools };
@@ -476,6 +488,42 @@ describe('buildCore – empty extension', () => {
 // ---------------------------------------------------------------------------
 
 describe('buildCore – stream observers', () => {
+	it('on("turnStart") fires for turnStart events', async () => {
+		const observed: TurnStart[] = [];
+
+		const mw = await compileExt((api) => {
+			api.on('turnStart', (event) => {
+				observed.push(event);
+			});
+		});
+
+		const turnStart: TurnStart = { type: 'turnStart' };
+		const chunk: Chunk = {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'text', text: 'hello' },
+		};
+
+		const target = stubClient({
+			prompt: async function* () {
+				yield turnStart;
+				yield chunk;
+			},
+		});
+
+		const wrapped = apply(mw.client, target);
+		const events = await collect(
+			wrapped.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		expect(observed).toEqual([turnStart]);
+		expect(events).toEqual([turnStart, chunk]);
+	});
+
 	it('on("chunk") fires for each chunk event', async () => {
 		const observed: Chunk[] = [];
 

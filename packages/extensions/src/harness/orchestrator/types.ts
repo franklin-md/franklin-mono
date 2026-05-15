@@ -1,14 +1,23 @@
 import type { DeepPartial } from '@franklin/lib';
+import type { ComposeAPI } from '../../algebra/api/index.js';
 import type {
-	BaseRuntime,
-	RuntimeExtras,
-} from '../../algebra/runtime/index.js';
+	InferAPI as InferSimpleAPI,
+	InferRuntime as InferSimpleRuntime,
+} from '../../algebra/modules/simple/index.js';
 import type {
-	BaseHarnessModule,
+	BuildableModule,
+	BuildModules,
+	InferAPI,
 	InferRuntime,
 	InferState,
-	Modules,
-} from '../modules/index.js';
+	StateExtensionModule,
+} from '../../algebra/modules/state/index.js';
+import type {
+	BaseRuntime,
+	CombinedRuntime,
+	RuntimeExtras,
+} from '../../algebra/runtime/index.js';
+import type { BaseHarnessModule } from '../modules/module.js';
 import type {
 	InternalOrchestratorModule,
 	SelfRuntime,
@@ -67,15 +76,25 @@ export type OrchestratorRuntime<M extends BaseHarnessModule> = BaseRuntime &
  * standard inference helpers (`InferRuntime`, `InferState`, `InferBoundAPI`)
  * work on it directly:
  *
- *   type FranklinBase      = Modules<FranklinModules>;
+ *   type FranklinBase      = BuildModules<FranklinModules>;
  *   type FranklinModule    = OrchestratorModule<FranklinModules>;
  *   type FranklinRuntime   = OrchestratorRuntime<FranklinBase>;
  *   type FranklinState     = InferState<FranklinModule>;
  *   type FranklinAPI       = InferBoundAPI<FranklinModule>;
  *   type FranklinExtension = Extension<FranklinAPI>;
  */
-export type OrchestratorModule<Mods extends readonly BaseHarnessModule[]> =
-	Modules<[Modules<Mods>, InternalOrchestratorModule<Modules<Mods>>]>;
+export type OrchestratorModule<Mods extends readonly BuildableModule[]> =
+	StateExtensionModule<
+		InferState<BuildModules<Mods>>,
+		ComposeAPI<
+			InferAPI<BuildModules<Mods>>,
+			InferSimpleAPI<InternalOrchestratorModule<BuildModules<Mods>>>
+		>,
+		CombinedRuntime<
+			InferRuntime<BuildModules<Mods>>,
+			InferSimpleRuntime<InternalOrchestratorModule<BuildModules<Mods>>>
+		>
+	>;
 
 export type RuntimeEvent<Runtime extends BaseRuntime> =
 	| { readonly action: 'add'; readonly id: string; readonly runtime: Runtime }

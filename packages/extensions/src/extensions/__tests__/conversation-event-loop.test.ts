@@ -8,7 +8,7 @@ import {
 } from '@franklin/mini-acp/mock';
 import { describe, expect, it } from 'vitest';
 
-import { combineAll } from '../../harness/modules/combine.js';
+import { combineAll } from '../../algebra/modules/state/combine.js';
 import { createRuntime } from '../../harness/modules/create.js';
 import { createCoreModule } from '../../modules/core/module.js';
 import { StoreRegistry } from '../../modules/store/api/registry/index.js';

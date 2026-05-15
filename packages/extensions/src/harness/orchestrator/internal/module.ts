@@ -1,10 +1,10 @@
 import {
-	combine,
-	combineAll,
-	type BaseHarnessModule,
-	type InferState,
-	type Modules,
-} from '../../modules/index.js';
+	combine as combineSimpleModules,
+	combineAll as combineSimpleModulesAll,
+	type Modules as SimpleModules,
+} from '../../../algebra/modules/simple/index.js';
+import type { InferState } from '../../../algebra/modules/state/index.js';
+import type { BaseHarnessModule } from '../../modules/module.js';
 import type {
 	OrchestratorHandle,
 	OrchestratorModule,
@@ -18,12 +18,10 @@ import { createSelfModule, type SelfModule } from './self.js';
 
 /**
  * The internal slice of an orchestrated module: the `Self` identity port and
- * the recursive `Orchestration` port, combined. Composed against the user's
- * base module to form the full `OrchestratorModule<[M]>`.
+ * the recursive `Orchestration` port, combined as a stateless extension module.
  */
-export type InternalOrchestratorModule<M extends BaseHarnessModule> = Modules<
-	[SelfModule, OrchestrationModule<M>]
->;
+export type InternalOrchestratorModule<M extends BaseHarnessModule> =
+	SimpleModules<[SelfModule, OrchestrationModule<M>]>;
 
 export type InternalOrchestratorOptions<M extends BaseHarnessModule> = {
 	readonly id: string;
@@ -36,32 +34,29 @@ export type InternalOrchestratorOptions<M extends BaseHarnessModule> = {
 export function createInternalOrchestratorModule<M extends BaseHarnessModule>(
 	opts: InternalOrchestratorOptions<M>,
 ): InternalOrchestratorModule<M> {
-	return combineAll([
+	return combineSimpleModulesAll([
 		createSelfModule(opts.id),
 		createOrchestrationModule<M>(opts.getHandle),
 	]);
 }
 
 /**
- * Compose the user's base module with the internal `Self` + orchestration
- * ports to produce the full `OrchestratorModule<[M]>`.
- *
- * `combine`'s `CombinableModule` constraint requires `AssertNoOverlap` on
- * runtime extras, which TypeScript cannot prove for a generic `M` against
- * the `self` / `orchestrator` keys contributed here. The keys are disjoint
- * by construction (no user module declares them), so the cast is sound and
- * stays encapsulated in this factory rather than leaking to call sites.
- *
- * TODO: Encode an OrchestratableModule/CombinableWithInternal constraint so
- * generic base modules are statically proven not to overlap reserved runtime
- * keys (`self`, `orchestrator`) before calling `combine`.
+ * Attach the internal stateless ports after the user's stateful module has
+ * been instantiated. The base state rules remain owned by the user module.
  */
 export function createOrchestratorModule<M extends BaseHarnessModule>(
 	module: M,
 	opts: InternalOrchestratorOptions<M>,
 ): OrchestratorModule<[M]> {
 	const internal = createInternalOrchestratorModule(opts);
-	return combine(module, internal as never) as unknown as OrchestratorModule<
-		[M]
-	>;
+	return {
+		emptyState: () => module.emptyState(),
+		state: (runtime) => module.state(runtime as never),
+		instantiate(state) {
+			return combineSimpleModules(
+				module.instantiate(state as InferState<M>),
+				internal as never,
+			) as never;
+		},
+	} as OrchestratorModule<[M]>;
 }

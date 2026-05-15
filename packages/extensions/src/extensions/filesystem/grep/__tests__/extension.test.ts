@@ -6,7 +6,10 @@ import {
 	type ProcessOutput,
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
+import { createExtensionPoint } from '../../../../algebra/extension-points/create.js';
+import type { Registry } from '../../../../algebra/extension-points/registry.js';
 import type { SystemPromptHandler } from '../../../../modules/core/api/handlers.js';
+import type { CoreAPI } from '../../../../modules/core/api/api.js';
 import { buildSystemPromptAssembler } from '../../../../modules/core/compile/decorators/system-prompt/index.js';
 import {
 	bindHandlers,
@@ -26,6 +29,11 @@ type HarnessModulePromptHandler = WithContext<
 	SystemPromptHandler,
 	CoreRuntime & EnvironmentRuntime
 >;
+
+const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+	on: true,
+	registerTool: true,
+});
 
 function mockEnvironment(
 	exec: (input: ProcessInput) => Promise<ProcessOutput>,
@@ -65,10 +73,14 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 function collectHandlers(
 	ext: ReturnType<typeof grepExtension>,
 ): HarnessModulePromptHandler[] {
-	const { api, registrations } = createCoreRegistrar<
-		CoreRuntime & EnvironmentRuntime
-	>();
+	const registry = coreExtensionPoint.createRegistry();
+	const api = coreExtensionPoint.createApi<CoreRuntime & EnvironmentRuntime>(
+		registry,
+	);
 	ext(api);
+	const registrations = createCoreRegistrar(
+		registry as Registry<CoreAPI, CoreRuntime & EnvironmentRuntime>,
+	);
 	return registrations.systemPrompt;
 }
 

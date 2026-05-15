@@ -1,5 +1,5 @@
 import type { BaseRuntime } from '../../algebra/runtime/types.js';
-import { identityRuntime } from '../identity/runtime.js';
+import { identityRuntime } from '../../algebra/modules/simple/identity.js';
 
 export type DependencyRuntime<Name extends string, T> = BaseRuntime & {
 	readonly [K in Name]: T;

@@ -1,6 +1,5 @@
-import { compilerFromApi } from '../../../algebra/compiler/from-api.js';
 import type { Compiler } from '../../../algebra/compiler/types.js';
-import type { IdentityAPI, IdentityAPISurface } from '../../identity/api.js';
+import type { IdentityAPI } from '../../../algebra/modules/simple/identity.js';
 import type { ReconfigurableEnvironment } from '../api/types.js';
 import {
 	createEnvironmentRuntime,
@@ -10,8 +9,9 @@ import {
 export function createEnvironmentCompiler(
 	environment: ReconfigurableEnvironment,
 ): Compiler<IdentityAPI, EnvironmentRuntime> {
-	const api: IdentityAPISurface = {};
-	return compilerFromApi(api, async () =>
-		createEnvironmentRuntime(environment),
-	);
+	return {
+		async compile() {
+			return createEnvironmentRuntime(environment);
+		},
+	};
 }
