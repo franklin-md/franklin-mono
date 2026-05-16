@@ -2,6 +2,9 @@ import type { API, BoundAPI } from '../api/index.js';
 import type { Extension } from '../extension/index.js';
 import type { ExtensionPoint } from '../extension-points/types.js';
 import type { Registry } from '../extension-points/registry.js';
+import { createApi } from '../extension-points/facade.js';
+import { createRegistryView } from '../extension-points/view.js';
+import { createRegistry } from '../extension-points/writer.js';
 import type { BaseRuntime } from '../runtime/index.js';
 import type { Compiler } from './types.js';
 
@@ -9,10 +12,10 @@ export function register<A extends API, Runtime extends BaseRuntime & A['In']>(
 	extensionPoint: ExtensionPoint<A>,
 	extension: Extension<BoundAPI<A, Runtime>>,
 ): Registry<A, Runtime> {
-	const registry = extensionPoint.createRegistry();
-	const api = extensionPoint.createApi<Runtime>(registry);
+	const { registry, writer } = createRegistry<A, Runtime>();
+	const api = createApi<A, Runtime>(extensionPoint, writer);
 	extension(api);
-	return registry as Registry<A, Runtime>;
+	return registry;
 }
 
 export async function build<
@@ -33,7 +36,10 @@ export async function build<
 		}
 		return cell.value;
 	};
-	cell.value = await compiler.compile<Runtime>(registry, getRuntime);
+	cell.value = await compiler.compile<Runtime>(
+		createRegistryView(registry),
+		getRuntime,
+	);
 	return cell.value;
 }
 

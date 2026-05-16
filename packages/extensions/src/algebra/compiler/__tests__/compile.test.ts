@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { API } from '../../api/index.js';
-import type { Registry } from '../../extension-points/registry.js';
 import { createExtensionPoint } from '../../extension-points/create.js';
+import {
+	createRegistryView,
+	type RegistryView,
+} from '../../extension-points/view.js';
 import type { BaseRuntime } from '../../runtime/index.js';
 import { build, compile, register } from '../compile.js';
 import type { Compiler } from '../types.js';
@@ -26,10 +29,10 @@ const labelExtensionPoint = createExtensionPoint<LabelAPI>({
 function createLabelCompiler(): Compiler<LabelAPI, LabelRuntime> {
 	return {
 		async compile<ContextRuntime extends BaseRuntime>(
-			registry: Registry<LabelAPI, ContextRuntime>,
+			registry: RegistryView<LabelAPI, ContextRuntime>,
 		) {
 			return {
-				labels: registry.registerLabel.map(([label]) => label),
+				labels: registry.argsFor('registerLabel').map(([label]) => label),
 				dispose: vi.fn(async () => {}),
 				subscribe: vi.fn(() => () => {}),
 			};
@@ -47,7 +50,10 @@ describe('compile', () => {
 			},
 		);
 
-		expect(registry.registerLabel).toEqual([['one'], ['two']]);
+		expect(createRegistryView(registry).argsFor('registerLabel')).toEqual([
+			['one'],
+			['two'],
+		]);
 	});
 
 	it('builds a runtime from a populated registry and compiler', async () => {

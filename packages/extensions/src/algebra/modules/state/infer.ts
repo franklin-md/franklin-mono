@@ -3,30 +3,41 @@ import type { BoundAPI } from '../../api/index.js';
 import type { Compiler } from '../../compiler/index.js';
 import type { Extension } from '../../extension/index.js';
 import type { ExtensionModule } from '../simple/index.js';
-import type { StateExtensionModule } from './types.js';
+import type { BaseStateExtensionModule } from './types.js';
 
-type InferModule<T> =
-	T extends StateExtensionModule<infer S, infer A, infer Runtime>
-		? {
-				state: S;
-				api: A;
-				runtime: Runtime;
-				simple: ExtensionModule<A, Runtime>;
-			}
-		: never;
+type InferModule<T extends BaseStateExtensionModule> = T extends {
+	emptyState(): infer S;
+	instantiate(state: never): ExtensionModule<infer A, infer Runtime>;
+}
+	? {
+			readonly state: S;
+			readonly api: A;
+			readonly runtime: Runtime;
+		}
+	: never;
 
-export type InferState<T> = Simplify<InferModule<T>['state']>;
+export type InferState<T extends BaseStateExtensionModule> = Simplify<
+	InferModule<T>['state']
+>;
 
-export type InferAPI<T> = InferModule<T>['api'];
+export type InferAPI<T extends BaseStateExtensionModule> =
+	InferModule<T>['api'];
 
-export type InferRuntime<T> = InferModule<T>['runtime'];
+export type InferRuntime<T extends BaseStateExtensionModule> =
+	InferModule<T>['runtime'];
 
-export type InferCompiler<T> = Compiler<InferAPI<T>, InferRuntime<T>>;
+export type InferCompiler<T extends BaseStateExtensionModule> = Compiler<
+	InferAPI<T>,
+	InferRuntime<T>
+>;
 
-export type InferSimpleModule<T> = InferModule<T>['simple'];
+export type InferSimpleModule<T extends BaseStateExtensionModule> =
+	ExtensionModule<InferAPI<T>, InferRuntime<T>>;
 
-export type InferBoundAPI<T> = Simplify<
+export type InferBoundAPI<T extends BaseStateExtensionModule> = Simplify<
 	BoundAPI<InferAPI<T>, InferModule<T>['runtime']>
 >;
 
-export type InferExtension<T> = Extension<InferBoundAPI<T>>;
+export type InferExtension<T extends BaseStateExtensionModule> = Extension<
+	InferBoundAPI<T>
+>;

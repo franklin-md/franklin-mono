@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { StaticAPI } from '../../../api/index.js';
 import { compile } from '../../../compiler/index.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
-import type { Registry } from '../../../extension-points/registry.js';
+import type { RegistryView } from '../../../extension-points/view.js';
 import type { BaseRuntime, StateHandle } from '../../../runtime/index.js';
 import type { StateExtensionModule } from '../types.js';
 import { withSetup } from '../setup.js';
@@ -36,8 +36,9 @@ function createModule(): StateExtensionModule<TestState, TestAPI, TestRuntime> {
 			return {
 				extensionPoint,
 				compiler: {
-					async compile(registry: Registry<TestAPI>) {
-						const value = registry.register.at(-1)?.[0] ?? state.value;
+					async compile(registry: RegistryView<TestAPI, BaseRuntime>) {
+						const value =
+							registry.argsFor('register').at(-1)?.[0] ?? state.value;
 						return {
 							value,
 							[TEST_STATE]: {

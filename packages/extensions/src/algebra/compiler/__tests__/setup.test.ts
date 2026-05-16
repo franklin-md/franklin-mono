@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { StaticAPI } from '../../api/index.js';
 import type { Registry } from '../../extension-points/registry.js';
+import {
+	createRegistryView,
+	type RegistryView,
+} from '../../extension-points/view.js';
 import type { BaseRuntime } from '../../runtime/index.js';
 import type { Compiler } from '../types.js';
 import {
@@ -25,9 +29,9 @@ type TaggedRuntime = TestRuntime & {
 
 function createCompiler(): Compiler<TestAPI, TestRuntime> {
 	return {
-		async compile(registry: Registry<TestAPI>) {
+		async compile(registry: RegistryView<TestAPI, BaseRuntime>) {
 			return {
-				value: registry.register.at(-1)?.[0] ?? 0,
+				value: registry.argsFor('register').at(-1)?.[0] ?? 0,
 				dispose: vi.fn(async () => {}),
 				subscribe: vi.fn(() => () => {}),
 			};
@@ -35,9 +39,9 @@ function createCompiler(): Compiler<TestAPI, TestRuntime> {
 	};
 }
 
-function createRegistry(value: number): Registry<TestAPI> {
+function createRegistry(value: number): Registry<TestAPI, BaseRuntime> {
 	return {
-		register: [[value]],
+		effects: [{ name: 'register', value: [value] }],
 	};
 }
 
@@ -52,7 +56,10 @@ describe('compiler setup steps', () => {
 			tag: `value:${runtime.value}`,
 		}));
 
-		const runtime = await compiler.compile(createRegistry(4), noGetRuntime);
+		const runtime = await compiler.compile(
+			createRegistryView(createRegistry(4)),
+			noGetRuntime,
+		);
 
 		expect(runtime.value).toBe(4);
 		expect(runtime.tag).toBe('value:4');
@@ -85,7 +92,10 @@ describe('compiler setup steps', () => {
 		const setup = vi.fn(async (_runtime: TestRuntime) => {});
 		const compiler = withSetupCompiler(createCompiler(), setup);
 
-		const runtime = await compiler.compile(createRegistry(9), noGetRuntime);
+		const runtime = await compiler.compile(
+			createRegistryView(createRegistry(9)),
+			noGetRuntime,
+		);
 
 		expect(runtime.value).toBe(9);
 		expect(setup).toHaveBeenCalledWith(runtime);

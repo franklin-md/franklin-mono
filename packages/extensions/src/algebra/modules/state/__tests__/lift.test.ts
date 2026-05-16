@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { StaticAPI } from '../../../api/types.js';
 import { compile } from '../../../compiler/compile.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
-import type { Registry } from '../../../extension-points/registry.js';
+import type { RegistryView } from '../../../extension-points/view.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import type { ExtensionModule } from '../../simple/index.js';
 import { liftExtensionModule } from '../lift.js';
@@ -22,7 +22,7 @@ function createDependencyModule(
 		extensionPoint: dependencyExtensionPoint,
 		compiler: {
 			async compile<ContextRuntime extends BaseRuntime>(
-				_registry: Registry<DependencyAPI, ContextRuntime>,
+				_registry: RegistryView<DependencyAPI, ContextRuntime>,
 			) {
 				return {
 					dependency,

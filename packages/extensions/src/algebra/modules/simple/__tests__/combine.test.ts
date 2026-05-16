@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { compile } from '../../../compiler/compile.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
-import type { Registry } from '../../../extension-points/registry.js';
+import { createApi } from '../../../extension-points/facade.js';
 import type { ExtensionPoint } from '../../../extension-points/types.js';
+import type { RegistryView } from '../../../extension-points/view.js';
+import { createRegistry } from '../../../extension-points/writer.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import { combine, combineAll } from '../combine.js';
 import { identityModule } from '../identity.js';
@@ -31,9 +33,9 @@ function createCounterModule(
 		extensionPoint: counterExtensionPoint,
 		compiler: {
 			async compile<ContextRuntime extends BaseRuntime>(
-				registry: Registry<CounterAPI, ContextRuntime>,
+				registry: RegistryView<CounterAPI, ContextRuntime>,
 			) {
-				const registeredCount = registry.registerCount.at(-1)?.[0];
+				const registeredCount = registry.argsFor('registerCount').at(-1)?.[0];
 				const count = registeredCount ?? initial;
 				return {
 					label: 'counter',
@@ -69,9 +71,9 @@ function createLabelModule(
 		extensionPoint: labelExtensionPoint,
 		compiler: {
 			async compile<ContextRuntime extends BaseRuntime>(
-				registry: Registry<LabelAPI, ContextRuntime>,
+				registry: RegistryView<LabelAPI, ContextRuntime>,
 			) {
-				const registeredLabel = registry.registerLabel.at(-1)?.[0];
+				const registeredLabel = registry.argsFor('registerLabel').at(-1)?.[0];
 				const label = registeredLabel ?? initial;
 				return {
 					getLabel() {
@@ -86,8 +88,8 @@ function createLabelModule(
 }
 
 function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
-	const registry = extensionPoint.createRegistry();
-	return Object.keys(extensionPoint.createApi(registry));
+	const { writer } = createRegistry<A, A['In']>();
+	return Object.keys(createApi<A, A['In']>(extensionPoint, writer));
 }
 
 describe('simple module combine', () => {

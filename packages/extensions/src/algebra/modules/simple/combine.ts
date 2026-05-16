@@ -39,13 +39,21 @@ export type CombinableModule<
 	AssertNoOverlap<RuntimeExtrasOf<Module1>, RuntimeExtrasOf<Module2>>;
 
 interface CombineModuleType extends BinaryType {
-	readonly In: readonly [BaseExtensionModule, BaseExtensionModule];
-	readonly Out: CombineModules<this['In'][0], this['In'][1]>;
+	readonly In: readonly [unknown, unknown];
+	readonly Out: this['In'][0] extends BaseExtensionModule
+		? this['In'][1] extends BaseExtensionModule
+			? CombineModules<this['In'][0], this['In'][1]>
+			: never
+		: never;
 }
 
 interface CombinableModuleType extends BinaryType {
-	readonly In: readonly [BaseExtensionModule, BaseExtensionModule];
-	readonly Out: CombinableModule<this['In'][0], this['In'][1]>;
+	readonly In: readonly [unknown, unknown];
+	readonly Out: this['In'][0] extends BaseExtensionModule
+		? this['In'][1] extends BaseExtensionModule
+			? CombinableModule<this['In'][0], this['In'][1]>
+			: never
+		: never;
 }
 
 export function combine<
@@ -75,7 +83,7 @@ export type ValidateModules<T extends readonly BaseExtensionModule[]> =
 		CombinableModuleType
 	>;
 
-export function combineAll<T extends readonly BaseExtensionModule[]>(
+export function combineAll<const T extends readonly BaseExtensionModule[]>(
 	modules: readonly [...T] & ValidateModules<T>,
 ): Modules<T> {
 	return reduceNonEmpty(

@@ -5,9 +5,11 @@ import {
 } from '../../modules/simple/identity.js';
 import type { API } from '../../api/index.js';
 import type { ExtensionPoint } from '../../extension-points/types.js';
-import type { Registry } from '../../extension-points/registry.js';
 import { createExtensionPoint } from '../../extension-points/create.js';
+import { createApi } from '../../extension-points/facade.js';
 import { combine as combineExtensionPoints } from '../../extension-points/combine.js';
+import type { RegistryView } from '../../extension-points/view.js';
+import { createRegistry } from '../../extension-points/writer.js';
 import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
 import { combine } from '../combine.js';
 import { compile } from '../compile.js';
@@ -45,9 +47,9 @@ function createCounterCompiler(
 ): Compiler<CounterAPI, CounterRuntime> {
 	return {
 		async compile<ContextRuntime extends BaseRuntime>(
-			registry: Registry<CounterAPI, ContextRuntime>,
+			registry: RegistryView<CounterAPI, ContextRuntime>,
 		) {
-			const registeredCount = registry.registerCount.at(-1)?.[0];
+			const registeredCount = registry.argsFor('registerCount').at(-1)?.[0];
 			const count = registeredCount ?? state.count;
 			return {
 				label: 'counter',
@@ -67,8 +69,8 @@ function createCounterCompiler(
 }
 
 function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
-	const registry = extensionPoint.createRegistry();
-	return Object.keys(extensionPoint.createApi(registry));
+	const { writer } = createRegistry<A, A['In']>();
+	return Object.keys(createApi<A, A['In']>(extensionPoint, writer));
 }
 
 describe('compiler combine identity laws', () => {

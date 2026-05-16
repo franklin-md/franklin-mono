@@ -1,6 +1,6 @@
 import { castDraft } from 'immer';
 import type { Compiler } from '../../../algebra/compiler/types.js';
-import type { Registry } from '../../../algebra/extension-points/registry.js';
+import type { RegistryView } from '../../../algebra/extension-points/view.js';
 import type { BaseRuntime } from '../../../algebra/runtime/index.js';
 import type { StoreAPI } from '../api/api.js';
 import type { BaseStore } from '../api/base.js';
@@ -32,12 +32,14 @@ export function createStoreCompiler(
 ): Compiler<StoreAPI, StoreRuntime> {
 	return {
 		async compile<ContextRuntime extends BaseRuntime>(
-			registry: Registry<StoreAPI, ContextRuntime>,
+			registry: RegistryView<StoreAPI, ContextRuntime>,
 		) {
-			const registrations = registry.registerStore.map(
-				([name, initial, sharing]) =>
-					({ name, initial, sharing }) satisfies Registration,
-			);
+			const registrations = registry
+				.argsFor('registerStore')
+				.map(
+					([name, initial, sharing]) =>
+						({ name, initial, sharing }) satisfies Registration,
+				);
 			const seedMapping = state.store;
 			const hasEntries = Object.keys(seedMapping).length > 0;
 			const seed = hasEntries
