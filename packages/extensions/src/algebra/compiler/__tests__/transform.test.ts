@@ -3,11 +3,7 @@ import type { StaticAPI } from '../../api/index.js';
 import type { Registry } from '../../extension-points/registry.js';
 import type { BaseRuntime } from '../../runtime/index.js';
 import type { Compiler } from '../types.js';
-import {
-	composeCompilerSteps,
-	transformCompiler,
-	withSetupCompiler,
-} from '../setup.js';
+import { applyStep, composeSteps, reduceSteps } from '../transform/index.js';
 
 type TestAPISurface = {
 	register(value: number): void;
@@ -45,12 +41,15 @@ const noGetRuntime = (): never => {
 	throw new Error('getRuntime not used in this test');
 };
 
-describe('compiler setup steps', () => {
-	it('transforms the runtime produced by a compiler', async () => {
-		const compiler = transformCompiler(createCompiler(), async (runtime) => ({
-			...runtime,
-			tag: `value:${runtime.value}`,
-		}));
+describe('compiler transform steps', () => {
+	it('applies a step to the runtime produced by a compiler', async () => {
+		const transform = applyStep<TestAPI, TestRuntime, TaggedRuntime>(
+			async (runtime) => ({
+				...runtime,
+				tag: `value:${runtime.value}`,
+			}),
+		);
+		const compiler = transform(createCompiler());
 
 		const runtime = await compiler.compile(createRegistry(4), noGetRuntime);
 
@@ -60,7 +59,7 @@ describe('compiler setup steps', () => {
 
 	it('composes compiler steps from left to right', async () => {
 		const order: string[] = [];
-		const step = composeCompilerSteps(
+		const step = composeSteps(
 			async (runtime: TestRuntime): Promise<TaggedRuntime> => {
 				order.push('first');
 				return { ...runtime, tag: 'tagged' };
@@ -81,13 +80,41 @@ describe('compiler setup steps', () => {
 		expect(runtime.tag).toBe('tagged');
 	});
 
-	it('runs setup after compile and returns the original runtime', async () => {
-		const setup = vi.fn(async (_runtime: TestRuntime) => {});
-		const compiler = withSetupCompiler(createCompiler(), setup);
+	it('reduces runtime-preserving steps from left to right', async () => {
+		const order: string[] = [];
+		const step = reduceSteps<TestRuntime>([
+			async (runtime) => {
+				order.push('first');
+				return runtime;
+			},
+			async (runtime) => {
+				order.push('second');
+				return runtime;
+			},
+		]);
+
+		const runtime = await step({
+			value: 2,
+			dispose: vi.fn(async () => {}),
+			subscribe: vi.fn(() => () => {}),
+		});
+
+		expect(runtime.value).toBe(2);
+		expect(order).toEqual(['first', 'second']);
+	});
+
+	it('applies a runtime-preserving step after compile', async () => {
+		const tap = vi.fn(async (_runtime: TestRuntime) => {});
+		const compiler = applyStep<TestAPI, TestRuntime, TestRuntime>(
+			async (runtime) => {
+				await tap(runtime);
+				return runtime;
+			},
+		)(createCompiler());
 
 		const runtime = await compiler.compile(createRegistry(9), noGetRuntime);
 
 		expect(runtime.value).toBe(9);
-		expect(setup).toHaveBeenCalledWith(runtime);
+		expect(tap).toHaveBeenCalledWith(runtime);
 	});
 });

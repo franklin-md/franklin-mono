@@ -9,7 +9,7 @@ import {
 	type CombineModules,
 	type Modules,
 } from './combine.js';
-import { liftExtensionModule } from './lift.js';
+import { fromSimpleModule } from './transform/index.js';
 import type {
 	BaseStateExtensionModule,
 	IdentityState,
@@ -76,7 +76,7 @@ export function liftBuildModule<Module extends BuildableModule>(
 	module: Module,
 ): LiftModule<Module> {
 	return (
-		isStateExtensionModule(module) ? module : liftExtensionModule(module)
+		isStateExtensionModule(module) ? module : fromSimpleModule(module)
 	) as LiftModule<Module>;
 }
 

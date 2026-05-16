@@ -43,6 +43,7 @@ Franklin models extension composition across three related surfaces:
 
 - **ExtensionPoint**: registration storage plus author-facing API facade. It creates a fresh `Registry<API>`, creates the API object that writes to that registry, and is the only layer that runs extension registration.
 - **Compiler**: registry interpreter plus runtime builder. It exposes `compile<ContextRuntime>(registry, getRuntime)`, which receives the populated registry with the compile context runtime restored while still returning the compiler's own `Runtime`.
+- **CompilerStep / CompilerTransform**: post-compile runtime operations. A `CompilerStep<T, U>` maps one compiled runtime to another, and `applyStep(step)` lifts that operation into a compiler transform.
 - **Runtime**: lifecycle surface (`dispose`, `subscribe`) plus module-specific capabilities.
 - **StateExtensionModule**: a factory for `emptyState()` and fresh compilers, plus the module's extension point, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options.
 
@@ -101,7 +102,7 @@ The important laws for the current algebra surface are:
 - **Right identity**: combining identity on the right preserves the other operand.
 - **Associativity**: intended for valid disjoint compositions, so regrouping does not change the resulting merged surface.
 
-Left/right identity is tested explicitly for compiler, runtime, and harness module composition.
+Left/right identity is tested explicitly for compiler, runtime, and state module composition.
 
 ### Harness Orchestration
 
@@ -131,8 +132,9 @@ composed runtime while the state type remains private to the orchestrator.
 
 There are many places where you could plausibly compose simpler mechanics to create a specific agent behaviour. These solutions are largely functionally equivalent, so the choice is more of a complexity management decision. Here are some emergent patterns we have discovered and documented so far:
 
-- **StateExtensionModule decoration for enforcing universal behaviour**:
-	- _It may be easier to express the behaviour as a transformation over the Runtime as oppposed to using the API_
+- **StateExtensionModule transforms for enforcing universal behaviour**:
+	- _It may be easier to express the behaviour as a transformation over the Runtime as opposed to using the API_
+	- The algebraic path is `CompilerStep` -> `CompilerTransform` -> `StateExtensionModule` transform.
 	- Examples:
     - `withAuth` decorates `CoreModule` so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials
     - [ ] `withAgentsMd`

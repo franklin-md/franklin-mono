@@ -5,7 +5,7 @@ import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { Registry } from '../../../extension-points/registry.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import type { ExtensionModule } from '../../simple/index.js';
-import { liftExtensionModule } from '../lift.js';
+import { fromSimpleModule } from '../transform/index.js';
 
 type DependencyAPI = StaticAPI<Record<never, never>>;
 
@@ -34,9 +34,9 @@ function createDependencyModule(
 	};
 }
 
-describe('liftExtensionModule', () => {
-	it('lifts a stateless extension module into identity state', async () => {
-		const stateModule = liftExtensionModule(createDependencyModule('dep'));
+describe('state transform from simple modules', () => {
+	it('turns a stateless extension module into an identity-state module', async () => {
+		const stateModule = fromSimpleModule(createDependencyModule('dep'));
 
 		expect(stateModule.emptyState()).toEqual({});
 

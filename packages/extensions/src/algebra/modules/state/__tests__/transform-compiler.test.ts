@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { StaticAPI } from '../../../api/index.js';
-import { compile } from '../../../compiler/index.js';
+import { applyStep, compile } from '../../../compiler/index.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { Registry } from '../../../extension-points/registry.js';
 import type { BaseRuntime, StateHandle } from '../../../runtime/index.js';
 import type { StateExtensionModule } from '../types.js';
-import { withSetup } from '../setup.js';
+import { liftCompilerTransform } from '../transform/index.js';
 
 type TestState = {
 	readonly value: number;
@@ -21,7 +21,7 @@ const extensionPoint = createExtensionPoint<TestAPI>({
 	register: true,
 });
 
-const TEST_STATE: unique symbol = Symbol('test/state-setup');
+const TEST_STATE: unique symbol = Symbol('test/state-transform');
 
 type TestRuntime = BaseRuntime & {
 	readonly value: number;
@@ -55,10 +55,16 @@ function createModule(): StateExtensionModule<TestState, TestAPI, TestRuntime> {
 	};
 }
 
-describe('state module setup', () => {
-	it('decorates instantiated compilers with runtime and state setup', async () => {
-		const setup = vi.fn(async (_runtime: TestRuntime, _state: TestState) => {});
-		const module = withSetup(createModule(), setup);
+describe('state module compiler transform', () => {
+	it('lifts state-aware compiler transforms through instantiation', async () => {
+		const tap = vi.fn(async (_runtime: TestRuntime, _state: TestState) => {});
+		const transform = liftCompilerTransform((state: TestState) =>
+			applyStep<TestAPI, TestRuntime, TestRuntime>(async (runtime) => {
+				await tap(runtime, state);
+				return runtime;
+			}),
+		);
+		const module = transform(createModule());
 		const state = { value: 3 };
 		const simple = module.instantiate(state);
 
@@ -69,7 +75,7 @@ describe('state module setup', () => {
 		);
 
 		expect(runtime.value).toBe(11);
-		expect(setup).toHaveBeenCalledWith(runtime, state);
+		expect(tap).toHaveBeenCalledWith(runtime, state);
 		await expect(module.state(runtime).get()).resolves.toEqual({ value: 11 });
 	});
 });

@@ -36,6 +36,9 @@ export {
 	identityState,
 	identityStateHandle,
 } from './identity.js';
-export { liftExtensionModule } from './lift.js';
 export { resolveState } from './resolve.js';
-export { withSetup } from './setup.js';
+export type {
+	StateCompilerTransform,
+	StateExtensionModuleTransform,
+} from './transform/index.js';
+export { fromSimpleModule, liftCompilerTransform } from './transform/index.js';
