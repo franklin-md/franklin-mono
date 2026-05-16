@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { API } from '../algebra/api/index.js';
 import type { BaseRuntime } from '../algebra/runtime/index.js';
-import type { Registry } from '../algebra/extension-points/registry.js';
 import * as rootExports from '../index.js';
 import { createExtensionPoint, defineExtension } from '../index.js';
+import type { RegistryView } from '../index.js';
 import type { Apply } from '@franklin/lib';
 
 type TestAPISurface = { register(label: string): void };
@@ -44,6 +44,11 @@ describe('package exports', () => {
 		expect(typeof rootExports.transformCompiler).toBe('function');
 		expect(typeof rootExports.composeCompilerSteps).toBe('function');
 		expect(typeof rootExports.withSetupCompiler).toBe('function');
+		expect('createRegistry' in rootExports).toBe(false);
+		expect('createApi' in rootExports).toBe(false);
+		expect('deriveApi' in rootExports).toBe(false);
+		expect('createRegistryView' in rootExports).toBe(false);
+		expect('combineExtensionPoints' in rootExports).toBe(false);
 	});
 
 	it('re-exports compileAll from the root barrel', async () => {
@@ -55,10 +60,12 @@ describe('package exports', () => {
 		};
 		const compiler = {
 			async compile<ContextRuntime extends BaseRuntime>(
-				registry: Registry<TestAPI, ContextRuntime>,
+				registry: RegistryView<TestAPI, ContextRuntime>,
 			) {
 				buildCalls += 1;
-				for (const [label] of registry.register) calls.push(label);
+				for (const [label] of registry.argsFor('register')) {
+					calls.push(label);
+				}
 				return runtime;
 			},
 		};

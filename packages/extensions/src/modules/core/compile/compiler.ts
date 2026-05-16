@@ -1,6 +1,6 @@
 import type { MiniACPConnector } from '@franklin/mini-acp';
 import type { Compiler } from '../../../algebra/compiler/types.js';
-import type { Registry } from '../../../algebra/extension-points/registry.js';
+import type { RegistryView } from '../../../algebra/extension-points/view.js';
 import type { BaseRuntime } from '../../../algebra/runtime/index.js';
 import type { CoreAPI } from '../api/api.js';
 import { serializeTool } from '../api/tools/index.js';
@@ -17,11 +17,11 @@ export function createCoreCompiler(
 ): Compiler<CoreAPI, CoreRuntime> {
 	return {
 		compile: async <ContextRuntime extends BaseRuntime>(
-			registry: Registry<CoreAPI, ContextRuntime>,
+			registry: RegistryView<CoreAPI, ContextRuntime>,
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CoreRuntime> => {
 			const resources = createResources(state);
-			const coreRegistrar = createCoreRegistrar(registry);
+			const coreRegistrar = createCoreRegistrar<ContextRuntime>(registry);
 			const decorator = createAgentDecorator(
 				resources,
 				coreRegistrar,

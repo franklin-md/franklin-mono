@@ -7,7 +7,9 @@ import {
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { createExtensionPoint } from '../../../../algebra/extension-points/create.js';
-import type { Registry } from '../../../../algebra/extension-points/registry.js';
+import { createApi } from '../../../../algebra/extension-points/facade.js';
+import { createRegistryView } from '../../../../algebra/extension-points/view.js';
+import { createRegistry } from '../../../../algebra/extension-points/writer.js';
 import type { SystemPromptHandler } from '../../../../modules/core/api/handlers.js';
 import type { CoreAPI } from '../../../../modules/core/api/api.js';
 import { buildSystemPromptAssembler } from '../../../../modules/core/compile/decorators/system-prompt/index.js';
@@ -73,13 +75,17 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 function collectHandlers(
 	ext: ReturnType<typeof grepExtension>,
 ): ModulePromptHandler[] {
-	const registry = coreExtensionPoint.createRegistry();
-	const api = coreExtensionPoint.createApi<CoreRuntime & EnvironmentRuntime>(
-		registry,
+	const { registry, writer } = createRegistry<
+		CoreAPI,
+		CoreRuntime & EnvironmentRuntime
+	>();
+	const api = createApi<CoreAPI, CoreRuntime & EnvironmentRuntime>(
+		coreExtensionPoint,
+		writer,
 	);
 	ext(api);
-	const registrations = createCoreRegistrar(
-		registry as Registry<CoreAPI, CoreRuntime & EnvironmentRuntime>,
+	const registrations = createCoreRegistrar<CoreRuntime & EnvironmentRuntime>(
+		createRegistryView(registry),
 	);
 	return registrations.systemPrompt;
 }

@@ -43,13 +43,21 @@ export type CombinableModule<
 	>;
 
 interface CombineModuleType extends BinaryType {
-	readonly In: readonly [BaseStateExtensionModule, BaseStateExtensionModule];
-	readonly Out: CombineModules<this['In'][0], this['In'][1]>;
+	readonly In: readonly [unknown, unknown];
+	readonly Out: this['In'][0] extends BaseStateExtensionModule
+		? this['In'][1] extends BaseStateExtensionModule
+			? CombineModules<this['In'][0], this['In'][1]>
+			: never
+		: never;
 }
 
 interface CombinableModuleType extends BinaryType {
-	readonly In: readonly [BaseStateExtensionModule, BaseStateExtensionModule];
-	readonly Out: CombinableModule<this['In'][0], this['In'][1]>;
+	readonly In: readonly [unknown, unknown];
+	readonly Out: this['In'][0] extends BaseStateExtensionModule
+		? this['In'][1] extends BaseStateExtensionModule
+			? CombinableModule<this['In'][0], this['In'][1]>
+			: never
+		: never;
 }
 
 export function combine<
@@ -117,7 +125,7 @@ export type ValidateModules<T extends readonly BaseStateExtensionModule[]> =
 		CombinableModuleType
 	>;
 
-export function combineAll<T extends readonly BaseStateExtensionModule[]>(
+export function combineAll<const T extends readonly BaseStateExtensionModule[]>(
 	modules: readonly [...T] & ValidateModules<T>,
 ): Modules<T> {
 	return reduceNonEmpty(

@@ -41,18 +41,19 @@ package-level surface.
 
 Franklin models extension composition across three related surfaces:
 
-- **ExtensionPoint**: registration storage plus author-facing API facade. It creates a fresh `Registry<API>`, creates the API object that writes to that registry, and is the only layer that runs extension registration.
-- **Compiler**: registry interpreter plus runtime builder. It exposes `compile<ContextRuntime>(registry, getRuntime)`, which receives the populated registry with the compile context runtime restored while still returning the compiler's own `Runtime`.
+- **ExtensionPoint**: a runtime-generic function from an internal registry writer to the author-facing `BoundAPI<API, Runtime>` facade. It does not own storage; it only describes how to bind an API surface to a writer.
+- **Registry**: an internal `Registry<API, Runtime>` effect log. Each contributed value is stored as `{ name, value }`, where `value` is the tuple passed to the registration method.
+- **Compiler**: registry-view interpreter plus runtime builder. It exposes `compile<ContextRuntime>(view, getRuntime)`, which receives a `RegistryView<API, ContextRuntime>` with the compile context runtime restored while still returning the compiler's own `Runtime`.
 - **Runtime**: lifecycle surface (`dispose`, `subscribe`) plus module-specific capabilities.
 - **StateExtensionModule**: a factory for `emptyState()` and fresh compilers, plus the module's extension point, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options.
 
-The extension-point algorithm is:
+Internally, the extension-point algorithm is:
 
 ```typescript
-const registry = extensionPoint.createRegistry();
-const api = extensionPoint.createApi<Runtime>(registry);
+const { registry, writer } = createRegistry<MyAPI, Runtime>();
+const api = createApi(extensionPoint, writer);
 extension(api);
-const runtime = await compiler.compile(registry, getRuntime);
+const runtime = await compiler.compile(createRegistryView(registry), getRuntime);
 ```
 
 Extension points are usually declared with `createExtensionPoint<API>(keys)`,
@@ -65,18 +66,24 @@ const coreExtensionPoint = createExtensionPoint<CoreAPI>({
 });
 ```
 
-The key map is checked against `keyof Apply<API, any>`, so typo keys and
-missing keys fail typechecking while registry creation remains runtime-erased.
+The key map is checked against the method keys of `Apply<API, any>`, so typo
+keys and missing registration methods fail typechecking. Extension points that
+need non-registration API values can be declared directly as `(writer) => api`.
 
-`Registry<API>` is intentionally runtime-erased by default so extension points
-can allocate simple storage. Compile helpers re-specialise it as
-`Registry<API, Runtime>` when handing it to compilers. APIs with overloads can
-still keep typed contribution logs because `Registry` extracts a union of
-overloaded parameter tuples.
+Compiler authors receive `RegistryView<API, Runtime>`, which provides typed
+projections:
+
+```typescript
+const tools = view.argsFor('registerTool');
+```
+
+`argsFor` is an alias for `valuesFor` because registration effects store the
+method argument tuple as the value. Effects remain in append order; ordering
+policy belongs in the specific compiler/interpreter that needs it.
 
 `combine(...)` merges these surfaces by product:
 
-- Extension-point registries and API members are merged by object spread.
+- Extension points are evaluated against the same writer and their API members are merged by object spread.
 - State is merged by object spread.
 - Compilers interpret their slice of the combined registry, then runtime lifecycle is recomposed while runtime extras are merged.
 

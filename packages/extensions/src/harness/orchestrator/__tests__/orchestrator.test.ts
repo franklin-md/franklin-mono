@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { API } from '../../../algebra/api/index.js';
 import type { Extension } from '../../../algebra/extension/index.js';
-import type { Registry } from '../../../algebra/extension-points/registry.js';
+import type { RegistryView } from '../../../algebra/extension-points/view.js';
 import type { ExtensionPoint } from '../../../algebra/extension-points/types.js';
 import type {
 	BaseRuntime,
@@ -42,19 +42,13 @@ interface RuntimeAwareAPI extends API {
 	readonly Out: RuntimeAwareAPISurface<this['In']>;
 }
 
-const runtimeAwareExtensionPoint: ExtensionPoint<RuntimeAwareAPI> = {
-	createRegistry: () =>
-		({
-			onRuntime: [],
-		}) as Registry<RuntimeAwareAPI>,
-	createApi: <ContextRuntime extends BaseRuntime>(
-		registry: Registry<RuntimeAwareAPI>,
-	) => ({
-		onRuntime(handler: RuntimeHandler<ContextRuntime>) {
-			registry.onRuntime.push([handler] as never);
-		},
-	}),
-};
+const runtimeAwareExtensionPoint: ExtensionPoint<RuntimeAwareAPI> = (
+	writer,
+) => ({
+	onRuntime(handler) {
+		writer({ name: 'onRuntime', value: [handler] });
+	},
+});
 
 type TestModule = StateExtensionModule<TestState, RuntimeAwareAPI, TestRuntime>;
 type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<[TestModule]>>;
@@ -72,12 +66,12 @@ function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 				extensionPoint: runtimeAwareExtensionPoint,
 				compiler: {
 					async compile<ContextRuntime extends BaseRuntime>(
-						registry: Registry<RuntimeAwareAPI, ContextRuntime>,
+						registry: RegistryView<RuntimeAwareAPI, ContextRuntime>,
 						getRuntime: () => ContextRuntime,
 					) {
-						const handlers = registry.onRuntime.map(
-							([handler]) => handler as RuntimeHandler<BaseRuntime>,
-						);
+						const handlers = registry
+							.argsFor('onRuntime')
+							.map(([handler]) => handler as RuntimeHandler<BaseRuntime>);
 						let disposed = false;
 						return {
 							runHandlers() {

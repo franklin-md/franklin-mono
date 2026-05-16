@@ -1,90 +1,40 @@
-/*
-Registry Type:
-- A key->any[] typed record of values contributed by extensions
-*/
+import type { API, BoundAPI } from '../api/types.js';
+import type { OverloadedParameters } from '../../utils/typing/overloads.js';
 
-import type { Apply } from '@franklin/lib';
-import type { API as APIFamily } from '../api/types.js';
+type MethodName<Surface extends object> = {
+	[Name in keyof Surface]: Surface[Name] extends (
+		...args: infer _Args
+	) => unknown
+		? Name
+		: never;
+}[keyof Surface];
 
-// TODO: Move to utils.
-type OverloadedParameters<T> = T extends {
-	(...args: infer A1): unknown;
-	(...args: infer A2): unknown;
-	(...args: infer A3): unknown;
-	(...args: infer A4): unknown;
-	(...args: infer A5): unknown;
-	(...args: infer A6): unknown;
-	(...args: infer A7): unknown;
-	(...args: infer A8): unknown;
-	(...args: infer A9): unknown;
-}
-	? A1 | A2 | A3 | A4 | A5 | A6 | A7 | A8 | A9
-	: T extends {
-				(...args: infer A1): unknown;
-				(...args: infer A2): unknown;
-				(...args: infer A3): unknown;
-				(...args: infer A4): unknown;
-				(...args: infer A5): unknown;
-				(...args: infer A6): unknown;
-				(...args: infer A7): unknown;
-				(...args: infer A8): unknown;
-		  }
-		? A1 | A2 | A3 | A4 | A5 | A6 | A7 | A8
-		: T extends {
-					(...args: infer A1): unknown;
-					(...args: infer A2): unknown;
-					(...args: infer A3): unknown;
-					(...args: infer A4): unknown;
-					(...args: infer A5): unknown;
-					(...args: infer A6): unknown;
-					(...args: infer A7): unknown;
-			  }
-			? A1 | A2 | A3 | A4 | A5 | A6 | A7
-			: T extends {
-						(...args: infer A1): unknown;
-						(...args: infer A2): unknown;
-						(...args: infer A3): unknown;
-						(...args: infer A4): unknown;
-						(...args: infer A5): unknown;
-						(...args: infer A6): unknown;
-				  }
-				? A1 | A2 | A3 | A4 | A5 | A6
-				: T extends {
-							(...args: infer A1): unknown;
-							(...args: infer A2): unknown;
-							(...args: infer A3): unknown;
-							(...args: infer A4): unknown;
-							(...args: infer A5): unknown;
-					  }
-					? A1 | A2 | A3 | A4 | A5
-					: T extends {
-								(...args: infer A1): unknown;
-								(...args: infer A2): unknown;
-								(...args: infer A3): unknown;
-								(...args: infer A4): unknown;
-						  }
-						? A1 | A2 | A3 | A4
-						: T extends {
-									(...args: infer A1): unknown;
-									(...args: infer A2): unknown;
-									(...args: infer A3): unknown;
-							  }
-							? A1 | A2 | A3
-							: T extends {
-										(...args: infer A1): unknown;
-										(...args: infer A2): unknown;
-								  }
-								? A1 | A2
-								: T extends (...args: infer A) => unknown
-									? A
-									: never;
+export type EffectName<A extends API, Runtime extends A['In']> = Extract<
+	MethodName<BoundAPI<A, Runtime>>,
+	string
+>;
 
-type ContributedValue<T> = OverloadedParameters<T>;
+export type EffectValueForName<
+	A extends API,
+	Runtime extends A['In'],
+	Name extends EffectName<A, Runtime>,
+> = OverloadedParameters<BoundAPI<A, Runtime>[Name]>;
 
-// Gets the names of the contributions of API, defaulting to an erased runtime
-// while still allowing compilers to recover the runtime-specialised view.
-export type Registry<API extends APIFamily, Runtime extends API['In'] = any> = {
-	[ContributionName in keyof Apply<API, Runtime>]: ContributedValue<
-		Apply<API, Runtime>[ContributionName]
-	>[];
+export type EffectValue<Name extends string = string, Value = unknown> = {
+	readonly name: Name;
+	readonly value: Value;
+};
+
+export type EffectForName<
+	A extends API,
+	Runtime extends A['In'],
+	Name extends EffectName<A, Runtime>,
+> = EffectValue<Name, EffectValueForName<A, Runtime, Name>>;
+
+export type EffectValueFor<A extends API, Runtime extends A['In']> = {
+	readonly [Name in EffectName<A, Runtime>]: EffectForName<A, Runtime, Name>;
+}[EffectName<A, Runtime>];
+
+export type Registry<A extends API, Runtime extends A['In']> = {
+	readonly effects: readonly EffectValueFor<A, Runtime>[];
 };

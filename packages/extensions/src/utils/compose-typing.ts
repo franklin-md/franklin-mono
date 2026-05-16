@@ -4,10 +4,12 @@ export interface BinaryType extends HKT {
 	readonly In: readonly [unknown, unknown];
 }
 
-export type ApplyBinaryType<F extends BinaryType, Left, Right> = Apply<
-	F,
-	readonly [Left, Right] & F['In']
->;
+export type ApplyBinaryType<F extends BinaryType, Left, Right> = readonly [
+	Left,
+	Right,
+] extends F['In']
+	? Apply<F, readonly [Left, Right]>
+	: never;
 
 export type CanCompose<Guard extends BinaryType, Left, Right> = [
 	ApplyBinaryType<Guard, Left, Right>,

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { compile } from '../../../compiler/index.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
-import type { Registry } from '../../../extension-points/registry.js';
+import type { RegistryView } from '../../../extension-points/view.js';
 import type { BaseRuntime, StateHandle } from '../../../runtime/index.js';
 import type { StaticAPI } from '../../../api/index.js';
 import type { ExtensionModule } from '../../simple/index.js';
@@ -44,10 +44,11 @@ function createCounterModule(): StateExtensionModule<
 				extensionPoint: counterExtensionPoint,
 				compiler: {
 					async compile<ContextRuntime extends BaseRuntime>(
-						registry: Registry<CounterAPI, ContextRuntime>,
+						registry: RegistryView<CounterAPI, ContextRuntime>,
 					) {
 						const value =
-							registry.registerCount.at(-1)?.[0] ?? state.counter.value;
+							registry.argsFor('registerCount').at(-1)?.[0] ??
+							state.counter.value;
 						return {
 							getCount() {
 								return value;

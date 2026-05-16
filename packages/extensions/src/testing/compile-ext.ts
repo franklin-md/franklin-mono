@@ -1,6 +1,8 @@
 import type { BoundAPI } from '../algebra/api/index.js';
 import { createExtensionPoint } from '../algebra/extension-points/create.js';
-import type { Registry } from '../algebra/extension-points/registry.js';
+import { createApi } from '../algebra/extension-points/facade.js';
+import { createRegistryView } from '../algebra/extension-points/view.js';
+import { createRegistry } from '../algebra/extension-points/writer.js';
 import { combineRuntimes } from '../algebra/runtime/index.js';
 import type { BaseRuntime } from '../algebra/runtime/types.js';
 import type { Extension } from '../algebra/extension/index.js';
@@ -37,8 +39,6 @@ const storeExtensionPoint = createExtensionPoint<StoreAPI>({
 	registerStore: true,
 });
 
-const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
-
 /**
  * Build middleware from a Core-only extension without spinning up a
  * transport. Handlers receive `undefined` as their ctx — tests that
@@ -55,10 +55,10 @@ export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 	ext: Extension<BoundAPI<CoreAPI, Ctx>>,
 	getCtx: () => Ctx = (() => undefined) as unknown as () => Ctx,
 ): { middleware: FullMiddleware; tools: SerializedToolDefinition[] } {
-	const registry = coreExtensionPoint.createRegistry();
-	const api = coreExtensionPoint.createApi<Ctx>(registry);
+	const { registry, writer } = createRegistry<CoreAPI, Ctx>();
+	const api = createApi<CoreAPI, Ctx>(coreExtensionPoint, writer);
 	ext(api);
-	const registrations = createCoreRegistrar(registry as Registry<CoreAPI, Ctx>);
+	const registrations = createCoreRegistrar<Ctx>(createRegistryView(registry));
 	const middleware = buildMiddleware(registrations, getCtx);
 	const tools = registrations.tools.map(serializeTool);
 	return { middleware, tools };
@@ -83,11 +83,22 @@ export async function compileCoreWithStore(
 		return cell.stores as CoreStoreRuntime;
 	};
 
-	const coreRegistry = coreExtensionPoint.createRegistry();
-	const api = coreExtensionPoint.createApi<CoreStoreRuntime>(coreRegistry);
-	const storeRegistry = storeExtensionPoint.createRegistry();
-	const storeApi =
-		storeExtensionPoint.createApi<CoreStoreRuntime>(storeRegistry);
+	const { registry: coreRegistry, writer: coreWriter } = createRegistry<
+		CoreAPI,
+		CoreStoreRuntime
+	>();
+	const api = createApi<CoreAPI, CoreStoreRuntime>(
+		coreExtensionPoint,
+		coreWriter,
+	);
+	const { registry: storeRegistry, writer: storeWriter } = createRegistry<
+		StoreAPI,
+		CoreStoreRuntime
+	>();
+	const storeApi = createApi<StoreAPI, CoreStoreRuntime>(
+		storeExtensionPoint,
+		storeWriter,
+	);
 	const combinedApi = {
 		...api,
 		...storeApi,
@@ -96,10 +107,10 @@ export async function compileCoreWithStore(
 
 	cell.stores = await createStoreCompiler(new StoreRegistry(), {
 		store: {},
-	}).compile(storeRegistry as Registry<StoreAPI, CoreStoreRuntime>, getCtx);
+	}).compile(createRegistryView(storeRegistry), getCtx);
 
-	const registrations = createCoreRegistrar(
-		coreRegistry as Registry<CoreAPI, CoreStoreRuntime>,
+	const registrations = createCoreRegistrar<CoreStoreRuntime>(
+		createRegistryView(coreRegistry),
 	);
 	const middleware = buildMiddleware(registrations, getCtx);
 	const tools = registrations.tools.map(serializeTool);
@@ -127,12 +138,22 @@ export async function compileCoreWithStoreAndEnv(
 		return cell.ctx as CoreStoreEnvironmentRuntime;
 	};
 
-	const coreRegistry = coreExtensionPoint.createRegistry();
-	const api =
-		coreExtensionPoint.createApi<CoreStoreEnvironmentRuntime>(coreRegistry);
-	const storeRegistry = storeExtensionPoint.createRegistry();
-	const storeApi =
-		storeExtensionPoint.createApi<CoreStoreEnvironmentRuntime>(storeRegistry);
+	const { registry: coreRegistry, writer: coreWriter } = createRegistry<
+		CoreAPI,
+		CoreStoreEnvironmentRuntime
+	>();
+	const api = createApi<CoreAPI, CoreStoreEnvironmentRuntime>(
+		coreExtensionPoint,
+		coreWriter,
+	);
+	const { registry: storeRegistry, writer: storeWriter } = createRegistry<
+		StoreAPI,
+		CoreStoreEnvironmentRuntime
+	>();
+	const storeApi = createApi<StoreAPI, CoreStoreEnvironmentRuntime>(
+		storeExtensionPoint,
+		storeWriter,
+	);
 	const combinedApi = { ...api, ...storeApi } as BoundAPI<
 		CoreAPI,
 		CoreStoreEnvironmentRuntime
@@ -142,18 +163,19 @@ export async function compileCoreWithStoreAndEnv(
 
 	const stores = await createStoreCompiler(new StoreRegistry(), {
 		store: {},
-	}).compile(
-		storeRegistry as Registry<StoreAPI, CoreStoreEnvironmentRuntime>,
-		getCtx,
-	);
+	}).compile(createRegistryView(storeRegistry), getCtx);
+	const { registry: identityRegistry } = createRegistry<
+		IdentityAPI,
+		CoreStoreEnvironmentRuntime
+	>();
 	const environment = await createEnvironmentCompiler(env).compile(
-		identityExtensionPoint.createRegistry(),
+		createRegistryView(identityRegistry),
 		getCtx,
 	);
 	cell.ctx = combineRuntimes(stores, environment);
 
-	const registrations = createCoreRegistrar(
-		coreRegistry as Registry<CoreAPI, CoreStoreEnvironmentRuntime>,
+	const registrations = createCoreRegistrar<CoreStoreEnvironmentRuntime>(
+		createRegistryView(coreRegistry),
 	);
 	const middleware = buildMiddleware(registrations, getCtx);
 	const tools = registrations.tools.map(serializeTool);
@@ -179,17 +201,27 @@ export async function compileCoreWithEnv(
 		return cell.ctx as CoreEnvironmentRuntime;
 	};
 
-	const registry = coreExtensionPoint.createRegistry();
-	const api = coreExtensionPoint.createApi<CoreEnvironmentRuntime>(registry);
+	const { registry, writer } = createRegistry<
+		CoreAPI,
+		CoreEnvironmentRuntime
+	>();
+	const api = createApi<CoreAPI, CoreEnvironmentRuntime>(
+		coreExtensionPoint,
+		writer,
+	);
 	ext(api);
 
+	const { registry: identityRegistry } = createRegistry<
+		IdentityAPI,
+		CoreEnvironmentRuntime
+	>();
 	cell.ctx = await createEnvironmentCompiler(env).compile(
-		identityExtensionPoint.createRegistry(),
+		createRegistryView(identityRegistry),
 		getCtx,
 	);
 
-	const registrations = createCoreRegistrar(
-		registry as Registry<CoreAPI, CoreEnvironmentRuntime>,
+	const registrations = createCoreRegistrar<CoreEnvironmentRuntime>(
+		createRegistryView(registry),
 	);
 	const middleware = buildMiddleware(registrations, getCtx);
 	const tools = registrations.tools.map(serializeTool);

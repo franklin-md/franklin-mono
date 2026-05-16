@@ -16,10 +16,9 @@ export {
 	transformCompiler,
 	withSetupCompiler,
 } from './algebra/compiler/setup.js';
-export type { Registry } from './algebra/extension-points/registry.js';
 export type { ExtensionPoint } from './algebra/extension-points/types.js';
 export { createExtensionPoint } from './algebra/extension-points/create.js';
-export { combine as combineExtensionPoints } from './algebra/extension-points/combine.js';
+export type { RegistryView } from './algebra/extension-points/view.js';
 export {
 	createOrchestrator,
 	Orchestrator,
