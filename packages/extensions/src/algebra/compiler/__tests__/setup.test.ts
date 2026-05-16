@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { StaticAPI } from '../../api/index.js';
+import type { StaticSignature } from '../../api/index.js';
 import type { Registry } from '../../extension-points/registry.js';
 import {
 	createRegistryView,
@@ -17,7 +17,7 @@ type TestAPISurface = {
 	register(value: number): void;
 };
 
-type TestAPI = StaticAPI<TestAPISurface>;
+type TestSignature = StaticSignature<TestAPISurface>;
 
 type TestRuntime = BaseRuntime & {
 	readonly value: number;
@@ -27,9 +27,9 @@ type TaggedRuntime = TestRuntime & {
 	readonly tag: string;
 };
 
-function createCompiler(): Compiler<TestAPI, TestRuntime> {
+function createCompiler(): Compiler<TestSignature, TestRuntime> {
 	return {
-		async compile(registry: RegistryView<TestAPI, BaseRuntime>) {
+		async compile(registry: RegistryView<TestSignature, BaseRuntime>) {
 			return {
 				value: registry.argsFor('register').at(-1)?.[0] ?? 0,
 				dispose: vi.fn(async () => {}),
@@ -39,7 +39,7 @@ function createCompiler(): Compiler<TestAPI, TestRuntime> {
 	};
 }
 
-function createRegistry(value: number): Registry<TestAPI, BaseRuntime> {
+function createRegistry(value: number): Registry<TestSignature, BaseRuntime> {
 	return {
 		effects: [{ name: 'register', value: [value] }],
 	};

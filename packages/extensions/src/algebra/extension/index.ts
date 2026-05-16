@@ -1,9 +1,13 @@
 export { defineExtension } from './authoring.js';
 export { reduceExtensions } from './reduce.js';
 export type {
-	ExtensionApi,
+	ExtensionAPIForModules as ExtensionAPI,
 	ExtensionForModules,
-	ModuleAPIs,
+	ModuleSignatures,
 	ModuleRuntimes,
 } from './authoring.js';
-export type { Extension, ExtensionAPISurface, ExtensionFor } from './types.js';
+export type {
+	Extension,
+	ExtensionAPI as AlgebraExtensionAPI,
+	ExtensionFor,
+} from './types.js';

@@ -9,15 +9,15 @@ import type { BaseRuntime } from '../../../runtime/types.js';
 import { combine, combineAll } from '../combine.js';
 import { identityModule } from '../identity.js';
 import type { ExtensionModule } from '../types.js';
-import type { API, StaticAPI } from '../../../api/types.js';
+import type { Signature, StaticSignature } from '../../../api/types.js';
 
 type CounterAPISurface = {
 	registerCount(value: number): void;
 };
 
-type CounterAPI = StaticAPI<CounterAPISurface>;
+type CounterSignature = StaticSignature<CounterAPISurface>;
 
-const counterExtensionPoint = createExtensionPoint<CounterAPI>({
+const counterExtensionPoint = createExtensionPoint<CounterSignature>({
 	registerCount: true,
 });
 
@@ -28,12 +28,12 @@ type CounterRuntime = BaseRuntime & {
 
 function createCounterModule(
 	initial: number,
-): ExtensionModule<CounterAPI, CounterRuntime> {
+): ExtensionModule<CounterSignature, CounterRuntime> {
 	return {
 		extensionPoint: counterExtensionPoint,
 		compiler: {
 			async compile<ContextRuntime extends BaseRuntime>(
-				registry: RegistryView<CounterAPI, ContextRuntime>,
+				registry: RegistryView<CounterSignature, ContextRuntime>,
 			) {
 				const registeredCount = registry.argsFor('registerCount').at(-1)?.[0];
 				const count = registeredCount ?? initial;
@@ -54,9 +54,9 @@ type LabelAPISurface = {
 	registerLabel(value: string): void;
 };
 
-type LabelAPI = StaticAPI<LabelAPISurface>;
+type LabelSignature = StaticSignature<LabelAPISurface>;
 
-const labelExtensionPoint = createExtensionPoint<LabelAPI>({
+const labelExtensionPoint = createExtensionPoint<LabelSignature>({
 	registerLabel: true,
 });
 
@@ -66,12 +66,12 @@ type LabelRuntime = BaseRuntime & {
 
 function createLabelModule(
 	initial: string,
-): ExtensionModule<LabelAPI, LabelRuntime> {
+): ExtensionModule<LabelSignature, LabelRuntime> {
 	return {
 		extensionPoint: labelExtensionPoint,
 		compiler: {
 			async compile<ContextRuntime extends BaseRuntime>(
-				registry: RegistryView<LabelAPI, ContextRuntime>,
+				registry: RegistryView<LabelSignature, ContextRuntime>,
 			) {
 				const registeredLabel = registry.argsFor('registerLabel').at(-1)?.[0];
 				const label = registeredLabel ?? initial;
@@ -87,7 +87,9 @@ function createLabelModule(
 	};
 }
 
-function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
+function apiKeys<A extends Signature>(
+	extensionPoint: ExtensionPoint<A>,
+): string[] {
 	const { writer } = createRegistry<A, A['In']>();
 	return Object.keys(createApi<A, A['In']>(extensionPoint, writer));
 }

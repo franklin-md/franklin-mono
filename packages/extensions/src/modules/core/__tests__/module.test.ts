@@ -260,7 +260,7 @@ describe('createCoreModule', () => {
 		await runtime.dispose();
 	});
 
-	it('extensions receive CoreAPI for handler registration', async () => {
+	it('extensions receive CoreSignature for handler registration', async () => {
 		const system = createCoreModule(createMockConnector());
 
 		const runtime = await createRuntime(

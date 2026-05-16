@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { API } from '../algebra/api/index.js';
+import type { Signature } from '../algebra/api/index.js';
 import type { BaseRuntime } from '../algebra/runtime/index.js';
 import * as rootExports from '../index.js';
 import { createExtensionPoint, defineExtension } from '../index.js';
@@ -8,12 +8,12 @@ import type { Apply } from '@franklin/lib';
 
 type TestAPISurface = { register(label: string): void };
 
-interface TestAPI extends API {
+interface TestSignature extends Signature {
 	readonly In: BaseRuntime;
 	readonly Out: TestAPISurface;
 }
 
-const testExtensionPoint = createExtensionPoint<TestAPI>({
+const testExtensionPoint = createExtensionPoint<TestSignature>({
 	register: true,
 });
 
@@ -60,7 +60,7 @@ describe('package exports', () => {
 		};
 		const compiler = {
 			async compile<ContextRuntime extends BaseRuntime>(
-				registry: RegistryView<TestAPI, ContextRuntime>,
+				registry: RegistryView<TestSignature, ContextRuntime>,
 			) {
 				buildCalls += 1;
 				for (const [label] of registry.argsFor('register')) {
@@ -69,7 +69,9 @@ describe('package exports', () => {
 				return runtime;
 			},
 		};
-		const extension = rootExports.reduceExtensions<Apply<TestAPI, BaseRuntime>>(
+		const extension = rootExports.reduceExtensions<
+			Apply<TestSignature, BaseRuntime>
+		>(
 			(api) => api.register('one'),
 			(api) => api.register('two'),
 		);

@@ -2,7 +2,7 @@ import type { MiniACPConnector } from '@franklin/mini-acp';
 import type { Compiler } from '../../../algebra/compiler/types.js';
 import type { RegistryView } from '../../../algebra/extension-points/view.js';
 import type { BaseRuntime } from '../../../algebra/runtime/index.js';
-import type { CoreAPI } from '../api/api.js';
+import type { CoreSignature } from '../api/api.js';
 import { serializeTool } from '../api/tools/index.js';
 import { type CoreRuntime, createCoreRuntime } from '../runtime/index.js';
 import type { CoreState } from '../state.js';
@@ -14,10 +14,10 @@ import { createResources } from './resources.js';
 export function createCoreCompiler(
 	connectAgent: MiniACPConnector,
 	state: CoreState,
-): Compiler<CoreAPI, CoreRuntime> {
+): Compiler<CoreSignature, CoreRuntime> {
 	return {
 		compile: async <ContextRuntime extends BaseRuntime>(
-			registry: RegistryView<CoreAPI, ContextRuntime>,
+			registry: RegistryView<CoreSignature, ContextRuntime>,
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CoreRuntime> => {
 			const resources = createResources(state);

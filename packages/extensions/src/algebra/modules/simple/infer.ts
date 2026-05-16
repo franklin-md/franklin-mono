@@ -1,5 +1,5 @@
 import type { Simplify } from '@franklin/lib';
-import type { BoundAPI } from '../../api/index.js';
+import type { API } from '../../api/index.js';
 import type { Compiler } from '../../compiler/index.js';
 import type { Extension } from '../../extension/index.js';
 import type { ExtensionPoint } from '../../extension-points/types.js';
@@ -11,26 +11,27 @@ type InferModule<T extends BaseExtensionModule> = T extends {
 }
 	? [CompilerAPI] extends [A]
 		? {
-				readonly api: A;
+				readonly signature: A;
 				readonly runtime: Runtime;
 			}
 		: never
 	: never;
 
-export type InferAPI<T extends BaseExtensionModule> = InferModule<T>['api'];
+export type InferSignature<T extends BaseExtensionModule> =
+	InferModule<T>['signature'];
 
 export type InferCompiler<T extends BaseExtensionModule> = Compiler<
-	InferAPI<T>,
+	InferSignature<T>,
 	InferModule<T>['runtime']
 >;
 
 export type InferRuntime<T extends BaseExtensionModule> =
 	InferModule<T>['runtime'];
 
-export type InferBoundAPI<T extends BaseExtensionModule> = Simplify<
-	BoundAPI<InferAPI<T>, InferModule<T>['runtime']>
+export type InferAPI<T extends BaseExtensionModule> = Simplify<
+	API<InferSignature<T>, InferModule<T>['runtime']>
 >;
 
 export type InferExtension<T extends BaseExtensionModule> = Extension<
-	InferBoundAPI<T>
+	InferAPI<T>
 >;

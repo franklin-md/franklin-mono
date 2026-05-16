@@ -5,7 +5,7 @@ import {
 import { compile } from '../algebra/index.js';
 import type {
 	BaseStateExtensionModule,
-	InferBoundAPI,
+	InferAPI,
 	InferRuntime,
 	InferState,
 } from '../algebra/modules/state/index.js';
@@ -13,7 +13,7 @@ import type {
 export async function createRuntime<Module extends BaseStateExtensionModule>(
 	module: Module,
 	state: InferState<Module>,
-	extensions: Extension<InferBoundAPI<Module>>[],
+	extensions: Extension<InferAPI<Module>>[],
 ): Promise<InferRuntime<Module>> {
 	const simple = module.instantiate(state);
 	const extension = reduceExtensions(...extensions);

@@ -1,5 +1,6 @@
 export type {
 	CoreAPI,
+	CoreSignature,
 	CoreEventHandlers,
 	CoreOnRegistration,
 	CoreRegisterToolRegistration,

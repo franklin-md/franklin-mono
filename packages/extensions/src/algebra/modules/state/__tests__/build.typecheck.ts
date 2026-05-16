@@ -1,4 +1,4 @@
-import type { API, StaticAPI } from '../../../api/index.js';
+import type { Signature, StaticSignature } from '../../../api/index.js';
 import type { BaseRuntime } from '../../../runtime/index.js';
 import type { ExtensionModule } from '../../simple/index.js';
 import type { StateExtensionModule } from '../types.js';
@@ -8,7 +8,7 @@ import type {
 	CombinableBuildModule,
 	ValidateBuildModules,
 } from '../build.js';
-import type { InferBoundAPI, InferState } from '../infer.js';
+import type { InferAPI, InferState } from '../infer.js';
 
 type _ExpectNever<T extends never> = T;
 
@@ -16,12 +16,12 @@ type StubStateModule<
 	S extends Record<string, unknown>,
 	APISurface extends object = Record<never, never>,
 	Runtime extends BaseRuntime = BaseRuntime,
-> = StateExtensionModule<S, StaticAPI<APISurface>, Runtime>;
+> = StateExtensionModule<S, StaticSignature<APISurface>, Runtime>;
 
 type StubSimpleModule<
 	APISurface extends object = Record<never, never>,
 	Runtime extends BaseRuntime = BaseRuntime,
-> = ExtensionModule<StaticAPI<APISurface>, Runtime>;
+> = ExtensionModule<StaticSignature<APISurface>, Runtime>;
 
 type CounterState = {
 	counter: { value: number };
@@ -120,18 +120,18 @@ interface RuntimeAwareAPISurface<Runtime extends BaseRuntime> {
 	useRuntime(handler: (runtime: Runtime) => void): void;
 }
 
-interface RuntimeAwareAPI extends API {
+interface RuntimeAwareSignature extends Signature {
 	readonly In: BaseRuntime;
 	readonly Out: RuntimeAwareAPISurface<this['In']>;
 }
 
 type RuntimeAwareModule = StateExtensionModule<
 	{ aware: unknown },
-	RuntimeAwareAPI,
+	RuntimeAwareSignature,
 	BaseRuntime
 >;
 
-type CombinedRuntimeAwareAPI = InferBoundAPI<
+type CombinedRuntimeAwareAPI = InferAPI<
 	BuildModules<readonly [RuntimeAwareModule, typeof _simpleExtraModule]>
 >;
 

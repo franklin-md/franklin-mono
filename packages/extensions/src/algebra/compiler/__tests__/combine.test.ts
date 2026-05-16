@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
 	identityCompiler,
-	type IdentityAPI,
+	type IdentitySignature,
 } from '../../modules/simple/identity.js';
-import type { API } from '../../api/index.js';
+import type { Signature } from '../../api/index.js';
 import type { ExtensionPoint } from '../../extension-points/types.js';
 import { createExtensionPoint } from '../../extension-points/create.js';
 import { createApi } from '../../extension-points/facade.js';
@@ -19,16 +19,16 @@ type CounterAPISurface = {
 	registerCount(value: number): void;
 };
 
-interface CounterAPI extends API {
+interface CounterSignature extends Signature {
 	readonly In: BaseRuntime;
 	readonly Out: CounterAPISurface;
 }
 
-const counterExtensionPoint = createExtensionPoint<CounterAPI>({
+const counterExtensionPoint = createExtensionPoint<CounterSignature>({
 	registerCount: true,
 });
 
-const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
+const identityExtensionPoint = createExtensionPoint<IdentitySignature>({});
 
 type CounterState = {
 	count: number;
@@ -44,10 +44,10 @@ type CounterRuntime = BaseRuntime & {
 
 function createCounterCompiler(
 	state: CounterState,
-): Compiler<CounterAPI, CounterRuntime> {
+): Compiler<CounterSignature, CounterRuntime> {
 	return {
 		async compile<ContextRuntime extends BaseRuntime>(
-			registry: RegistryView<CounterAPI, ContextRuntime>,
+			registry: RegistryView<CounterSignature, ContextRuntime>,
 		) {
 			const registeredCount = registry.argsFor('registerCount').at(-1)?.[0];
 			const count = registeredCount ?? state.count;
@@ -68,7 +68,9 @@ function createCounterCompiler(
 	};
 }
 
-function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
+function apiKeys<A extends Signature>(
+	extensionPoint: ExtensionPoint<A>,
+): string[] {
 	const { writer } = createRegistry<A, A['In']>();
 	return Object.keys(createApi<A, A['In']>(extensionPoint, writer));
 }

@@ -1,4 +1,4 @@
-import type { API, BoundAPI } from '../api/types.js';
+import type { API, Signature } from '../api/types.js';
 import type { OverloadedParameters } from '../../utils/typing/overloads.js';
 
 type MethodName<Surface extends object> = {
@@ -9,16 +9,16 @@ type MethodName<Surface extends object> = {
 		: never;
 }[keyof Surface];
 
-export type EffectName<A extends API, Runtime extends A['In']> = Extract<
-	MethodName<BoundAPI<A, Runtime>>,
+export type EffectName<S extends Signature, Runtime extends S['In']> = Extract<
+	MethodName<API<S, Runtime>>,
 	string
 >;
 
 export type EffectValueForName<
-	A extends API,
-	Runtime extends A['In'],
-	Name extends EffectName<A, Runtime>,
-> = OverloadedParameters<BoundAPI<A, Runtime>[Name]>;
+	S extends Signature,
+	Runtime extends S['In'],
+	Name extends EffectName<S, Runtime>,
+> = OverloadedParameters<API<S, Runtime>[Name]>;
 
 export type EffectValue<Name extends string = string, Value = unknown> = {
 	readonly name: Name;
@@ -26,15 +26,15 @@ export type EffectValue<Name extends string = string, Value = unknown> = {
 };
 
 export type EffectForName<
-	A extends API,
-	Runtime extends A['In'],
-	Name extends EffectName<A, Runtime>,
-> = EffectValue<Name, EffectValueForName<A, Runtime, Name>>;
+	S extends Signature,
+	Runtime extends S['In'],
+	Name extends EffectName<S, Runtime>,
+> = EffectValue<Name, EffectValueForName<S, Runtime, Name>>;
 
-export type EffectValueFor<A extends API, Runtime extends A['In']> = {
-	readonly [Name in EffectName<A, Runtime>]: EffectForName<A, Runtime, Name>;
-}[EffectName<A, Runtime>];
+export type EffectValueFor<S extends Signature, Runtime extends S['In']> = {
+	readonly [Name in EffectName<S, Runtime>]: EffectForName<S, Runtime, Name>;
+}[EffectName<S, Runtime>];
 
-export type Registry<A extends API, Runtime extends A['In']> = {
-	readonly effects: readonly EffectValueFor<A, Runtime>[];
+export type Registry<S extends Signature, Runtime extends S['In']> = {
+	readonly effects: readonly EffectValueFor<S, Runtime>[];
 };

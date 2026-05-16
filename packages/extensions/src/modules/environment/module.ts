@@ -1,6 +1,6 @@
 import { createExtensionPoint } from '../../algebra/extension-points/create.js';
 import type { StateExtensionModule } from '../../algebra/modules/state/index.js';
-import type { IdentityAPI } from '../../algebra/modules/simple/identity.js';
+import type { IdentitySignature } from '../../algebra/modules/simple/identity.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
@@ -17,11 +17,11 @@ export type EnvironmentFactory = (
 	config: EnvironmentConfig,
 ) => Promise<ReconfigurableEnvironment>;
 
-const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
+const identityExtensionPoint = createExtensionPoint<IdentitySignature>({});
 
 export type EnvironmentModule = StateExtensionModule<
 	EnvironmentState,
-	IdentityAPI,
+	IdentitySignature,
 	EnvironmentRuntime
 >;
 

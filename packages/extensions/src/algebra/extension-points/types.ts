@@ -1,14 +1,14 @@
-import type { API as APIFamily, BoundAPI } from '../api/types.js';
+import type { API, Signature } from '../api/types.js';
 import type { RegistryWriter } from './writer.js';
 
-export type ExtensionPoint<API extends APIFamily> = <Runtime extends API['In']>(
-	writer: RegistryWriter<API, Runtime>,
-) => BoundAPI<API, Runtime>;
+export type ExtensionPoint<S extends Signature> = <Runtime extends S['In']>(
+	writer: RegistryWriter<S, Runtime>,
+) => API<S, Runtime>;
 
 /*
 The extension-point algorithm:
 
-const { registry, writer } = createRegistry<MyAPI, Runtime>()
+const { registry, writer } = createRegistry<MySignature, Runtime>()
 const api = createApi(extensionPoint, writer) // api writes through writer
 extension(api) // run the extension to register values
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { API } from '../../api/index.js';
+import type { Signature } from '../../api/index.js';
 import { createExtensionPoint } from '../../extension-points/create.js';
 import {
 	createRegistryView,
@@ -13,7 +13,7 @@ type LabelAPISurface = {
 	registerLabel(label: string): void;
 };
 
-interface LabelAPI extends API {
+interface LabelSignature extends Signature {
 	readonly In: BaseRuntime;
 	readonly Out: LabelAPISurface;
 }
@@ -22,14 +22,14 @@ type LabelRuntime = BaseRuntime & {
 	readonly labels: string[];
 };
 
-const labelExtensionPoint = createExtensionPoint<LabelAPI>({
+const labelExtensionPoint = createExtensionPoint<LabelSignature>({
 	registerLabel: true,
 });
 
-function createLabelCompiler(): Compiler<LabelAPI, LabelRuntime> {
+function createLabelCompiler(): Compiler<LabelSignature, LabelRuntime> {
 	return {
 		async compile<ContextRuntime extends BaseRuntime>(
-			registry: RegistryView<LabelAPI, ContextRuntime>,
+			registry: RegistryView<LabelSignature, ContextRuntime>,
 		) {
 			return {
 				labels: registry.argsFor('registerLabel').map(([label]) => label),
@@ -42,7 +42,7 @@ function createLabelCompiler(): Compiler<LabelAPI, LabelRuntime> {
 
 describe('compile', () => {
 	it('registers an extension into a populated registry', () => {
-		const registry = register<LabelAPI, LabelRuntime>(
+		const registry = register<LabelSignature, LabelRuntime>(
 			labelExtensionPoint,
 			(api) => {
 				api.registerLabel('one');
@@ -57,7 +57,7 @@ describe('compile', () => {
 	});
 
 	it('builds a runtime from a populated registry and compiler', async () => {
-		const registry = register<LabelAPI, LabelRuntime>(
+		const registry = register<LabelSignature, LabelRuntime>(
 			labelExtensionPoint,
 			(api) => {
 				api.registerLabel('built');

@@ -1,7 +1,7 @@
 import type {
 	BaseExtensionModule,
-	InferAPI as InferSimpleAPI,
 	InferRuntime as InferSimpleRuntime,
+	InferSignature as InferSimpleSignature,
 } from '../simple/index.js';
 import {
 	combineAll,
@@ -24,7 +24,7 @@ export type LiftModule<Module extends BuildableModule> =
 		: Module extends BaseExtensionModule
 			? StateExtensionModule<
 					IdentityState,
-					InferSimpleAPI<Module>,
+					InferSimpleSignature<Module>,
 					InferSimpleRuntime<Module>
 				>
 			: never;

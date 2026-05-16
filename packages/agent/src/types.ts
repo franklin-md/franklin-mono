@@ -4,7 +4,7 @@ import type {
 	EnvironmentModule,
 	Extension,
 	BuildModules,
-	InferBoundAPI,
+	InferAPI,
 	InferState,
 	OrchestratorModule,
 	OrchestratorRuntime,
@@ -32,6 +32,6 @@ export type FranklinRuntime = OrchestratorRuntime<FranklinBase>;
 export type FranklinState = InferState<FranklinModule>;
 
 /** Combined extension API surface. */
-export type FranklinAPI = InferBoundAPI<FranklinModule>;
+export type FranklinAPI = InferAPI<FranklinModule>;
 
 export type FranklinExtension = Extension<FranklinAPI>;
