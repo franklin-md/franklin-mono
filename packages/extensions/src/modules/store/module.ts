@@ -1,6 +1,6 @@
 import { createExtensionPoint } from '../../algebra/extension-points/create.js';
 import type { StateExtensionModule } from '../../algebra/modules/state/index.js';
-import type { StoreAPI } from './api/api.js';
+import type { StoreSignature } from './api/api.js';
 import type { StoreRegistry } from './api/registry/index.js';
 import { createStoreCompiler } from './compile/compiler.js';
 import { type StoreRuntime, storeStateHandle } from './runtime.js';
@@ -9,11 +9,11 @@ import { emptyStoreState } from './state.js';
 
 export type StoreModule = StateExtensionModule<
 	StoreState,
-	StoreAPI,
+	StoreSignature,
 	StoreRuntime
 >;
 
-const storeExtensionPoint = createExtensionPoint<StoreAPI>({
+const storeExtensionPoint = createExtensionPoint<StoreSignature>({
 	registerStore: true,
 });
 

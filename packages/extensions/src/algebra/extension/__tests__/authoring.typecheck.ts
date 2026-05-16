@@ -4,11 +4,11 @@ import {
 	type CoreModule,
 	defineExtension,
 	type EnvironmentModule,
-	type ExtensionApi,
+	type ExtensionAPI,
 	type ExtensionModule,
 	type ExtensionForModules,
 	type StateExtensionModule,
-	type StaticAPI,
+	type StaticSignature,
 	type StoreModule,
 } from '../../../index.js';
 
@@ -16,7 +16,7 @@ type StubModule<
 	S extends BaseState,
 	APISurface extends object = Record<never, never>,
 	Runtime extends BaseRuntime = BaseRuntime,
-> = StateExtensionModule<S, StaticAPI<APISurface>, Runtime>;
+> = StateExtensionModule<S, StaticSignature<APISurface>, Runtime>;
 
 const _moduleExtension = defineExtension<
 	[CoreModule, StoreModule, EnvironmentModule]
@@ -39,7 +39,7 @@ const _curriedExtension = defineExtension<[CoreModule]>()((api) => {
 });
 void _curriedExtension;
 
-type _AliasAPI = ExtensionApi<[CoreModule, StoreModule, EnvironmentModule]>;
+type _AliasAPI = ExtensionAPI<[CoreModule, StoreModule, EnvironmentModule]>;
 const _aliasApi = null as unknown as _AliasAPI;
 _aliasApi.registerStore('alias', {}, 'private');
 _aliasApi.on('systemPrompt', (_prompt, ctx) => {
@@ -60,7 +60,7 @@ type SettingsRuntime = BaseRuntime & {
 };
 
 type SettingsModule = ExtensionModule<
-	StaticAPI<Record<never, never>>,
+	StaticSignature<Record<never, never>>,
 	SettingsRuntime
 >;
 

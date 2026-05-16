@@ -1,4 +1,4 @@
-import type { API } from '../api/types.js';
+import type { Signature } from '../api/types.js';
 import type {
 	EffectForName,
 	EffectName,
@@ -6,35 +6,36 @@ import type {
 	Registry,
 } from './registry.js';
 
-export type RegistryView<A extends API, Runtime extends A['In']> = {
-	effectsFor<Name extends EffectName<A, Runtime>>(
+export type RegistryView<S extends Signature, Runtime extends S['In']> = {
+	effectsFor<Name extends EffectName<S, Runtime>>(
 		name: Name,
-	): EffectForName<A, Runtime, Name>[];
-	valuesFor<Name extends EffectName<A, Runtime>>(
+	): EffectForName<S, Runtime, Name>[];
+	valuesFor<Name extends EffectName<S, Runtime>>(
 		name: Name,
-	): EffectValueForName<A, Runtime, Name>[];
-	argsFor<Name extends EffectName<A, Runtime>>(
+	): EffectValueForName<S, Runtime, Name>[];
+	argsFor<Name extends EffectName<S, Runtime>>(
 		name: Name,
-	): EffectValueForName<A, Runtime, Name>[];
+	): EffectValueForName<S, Runtime, Name>[];
 };
 
-export function createRegistryView<A extends API, Runtime extends A['In']>(
-	registry: Registry<A, Runtime>,
-): RegistryView<A, Runtime> {
-	const effectsFor = <Name extends EffectName<A, Runtime>>(
+export function createRegistryView<
+	S extends Signature,
+	Runtime extends S['In'],
+>(registry: Registry<S, Runtime>): RegistryView<S, Runtime> {
+	const effectsFor = <Name extends EffectName<S, Runtime>>(
 		name: Name,
-	): EffectForName<A, Runtime, Name>[] =>
+	): EffectForName<S, Runtime, Name>[] =>
 		registry.effects.filter((effect) => effect.name === name) as EffectForName<
-			A,
+			S,
 			Runtime,
 			Name
 		>[];
 
-	const valuesFor = <Name extends EffectName<A, Runtime>>(
+	const valuesFor = <Name extends EffectName<S, Runtime>>(
 		name: Name,
-	): EffectValueForName<A, Runtime, Name>[] =>
+	): EffectValueForName<S, Runtime, Name>[] =>
 		effectsFor(name).map((effect) => effect.value) as EffectValueForName<
-			A,
+			S,
 			Runtime,
 			Name
 		>[];

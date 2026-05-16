@@ -1,5 +1,5 @@
 import type { AssertNoOverlap } from '@franklin/lib';
-import type { ComposeAPI } from '../../api/index.js';
+import type { ComposeSignature } from '../../api/index.js';
 import type { CombinedRuntime } from '../../runtime/index.js';
 import type {
 	BinaryType,
@@ -13,9 +13,9 @@ import {
 	type CombineModules as CombineSimpleModules,
 } from '../simple/index.js';
 import type {
-	InferAPI,
 	InferRuntime,
 	InferSimpleModule,
+	InferSignature,
 	InferState,
 } from './infer.js';
 import type {
@@ -29,7 +29,7 @@ export type CombineModules<
 	Module2 extends BaseStateExtensionModule,
 > = StateExtensionModule<
 	InferState<Module1> & InferState<Module2>,
-	ComposeAPI<InferAPI<Module1>, InferAPI<Module2>>,
+	ComposeSignature<InferSignature<Module1>, InferSignature<Module2>>,
 	CombinedRuntime<InferRuntime<Module1>, InferRuntime<Module2>>
 >;
 

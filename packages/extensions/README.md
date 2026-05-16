@@ -15,7 +15,7 @@ Implemented so far:
 - **Orchestrator**: Materializes root, child, fork, and restored runtimes from a reduced harness module while injecting `ctx.self` and `ctx.orchestrator`.
 - **DependencyRuntime<Name,T>**: Simple way for an extension to depend on an app-provided global resource (authentication, secrets, app-level environment). The dependency lands on the runtime as a field keyed by `Name`, so handlers read it via `ctx.<name>`.
 
-The resolved API surface can be named with `ExtensionApi<Modules>`, and the
+The resolved API surface can be named with `ExtensionAPI<Modules>`, and the
 extension function type can be named with `ExtensionForModules<Modules>`:
 
 ```typescript
@@ -41,7 +41,7 @@ package-level surface.
 
 Franklin models extension composition across three related surfaces:
 
-- **ExtensionPoint**: a runtime-generic function from an internal registry writer to the author-facing `BoundAPI<API, Runtime>` facade. It does not own storage; it only describes how to bind an API surface to a writer.
+- **ExtensionPoint**: a runtime-generic function from an internal registry writer to the author-facing `API<API, Runtime>` facade. It does not own storage; it only describes how to bind an API surface to a writer.
 - **Registry**: an internal `Registry<API, Runtime>` effect log. Each contributed value is stored as `{ name, value }`, where `value` is the tuple passed to the registration method.
 - **Compiler**: registry-view interpreter plus runtime builder. It exposes `compile<ContextRuntime>(view, getRuntime)`, which receives a `RegistryView<API, ContextRuntime>` with the compile context runtime restored while still returning the compiler's own `Runtime`.
 - **Runtime**: lifecycle surface (`dispose`, `subscribe`) plus module-specific capabilities.
@@ -60,7 +60,7 @@ Extension points are usually declared with `createExtensionPoint<API>(keys)`,
 where `keys` is an exhaustive map of the API contribution method names:
 
 ```typescript
-const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
 });
@@ -95,10 +95,10 @@ This composition is intentionally **partial**:
 
 The neutral element for this composition is the `Identity*` set:
 
-- `IdentityAPI` (lifted with `StaticAPI<IdentityAPI>` at the module signature)
+- `IdentityAPI` (lifted with `StaticSignature<IdentityAPI>` at the module signature)
 - `IdentityState`
 - `IdentityRuntime`
-- the empty identity extension point (`createExtensionPoint<IdentityAPI>({})`)
+- the empty identity extension point (`createExtensionPoint<IdentitySignature>({})`)
 - `identityCompiler()`
 - `identityModule()`
 
@@ -169,7 +169,7 @@ function createMyExtension(db: Database): Extension {
 const databaseModule = createDependencyModule('database', db);
 
 const myExtension: Extension<
-	BoundAPI<CoreAPI, DependencyRuntime<'database', Database>>
+	API<CoreSignature, DependencyRuntime<'database', Database>>
 > = (api) => {
 	api.registerTool(querySpec, (params, ctx) => ctx.database.query(params));
 };
@@ -184,7 +184,7 @@ The `api` object is a compile-time registration surface. It should not be called
 **Wrong** — API call in closure:
 
 ```typescript
-const ext: Extension<MyAPI & BoundAPI<CoreAPI, R>> = (api) => {
+const ext: Extension<MyAPI & API<CoreSignature, R>> = (api) => {
 	api.registerTool(spec, (params) => {
 		// BAD: api.getFoo() called at runtime
 		return api.getFoo().bar(params);
@@ -195,7 +195,7 @@ const ext: Extension<MyAPI & BoundAPI<CoreAPI, R>> = (api) => {
 **Right** — extract then capture:
 
 ```typescript
-const ext: Extension<MyAPI & BoundAPI<CoreAPI, R>> = (api) => {
+const ext: Extension<MyAPI & API<CoreSignature, R>> = (api) => {
 	const foo = api.getFoo(); // extracted at compile time
 	api.registerTool(spec, (params) => foo.bar(params)); // captured binding
 };

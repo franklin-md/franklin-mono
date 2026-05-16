@@ -1,4 +1,4 @@
-import type { API } from '../api/index.js';
+import type { Signature } from '../api/index.js';
 import type { BaseRuntime } from '../runtime/index.js';
 import type { Compiler } from './types.js';
 
@@ -24,13 +24,13 @@ export function composeCompilerSteps<
 }
 
 export function transformCompiler<
-	A extends API,
-	Runtime extends BaseRuntime & A['In'],
-	OutputRuntime extends BaseRuntime & A['In'],
+	S extends Signature,
+	Runtime extends BaseRuntime & S['In'],
+	OutputRuntime extends BaseRuntime & S['In'],
 >(
-	inner: Compiler<A, Runtime>,
+	inner: Compiler<S, Runtime>,
 	step: CompilerStep<Runtime, OutputRuntime>,
-): Compiler<A, OutputRuntime> {
+): Compiler<S, OutputRuntime> {
 	return {
 		compile: async (registry, getRuntime) => {
 			const runtime = await inner.compile(registry, getRuntime);
@@ -40,12 +40,12 @@ export function transformCompiler<
 }
 
 export function withSetupCompiler<
-	A extends API,
-	Runtime extends BaseRuntime & A['In'],
+	S extends Signature,
+	Runtime extends BaseRuntime & S['In'],
 >(
-	inner: Compiler<A, Runtime>,
+	inner: Compiler<S, Runtime>,
 	setup: (runtime: Runtime) => Promise<void>,
-): Compiler<A, Runtime> {
+): Compiler<S, Runtime> {
 	return transformCompiler(inner, async (runtime) => {
 		await setup(runtime);
 		return runtime;

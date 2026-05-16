@@ -1,7 +1,7 @@
 import {
 	identityModule as simpleIdentityModule,
-	type IdentityAPI,
 	type IdentityRuntime,
+	type IdentitySignature,
 } from '../simple/identity.js';
 import type {
 	IdentityState,
@@ -11,7 +11,7 @@ import type {
 
 export type IdentityModule = StateExtensionModule<
 	IdentityState,
-	IdentityAPI,
+	IdentitySignature,
 	IdentityRuntime
 >;
 

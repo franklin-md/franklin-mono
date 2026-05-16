@@ -8,7 +8,7 @@ import { createExtensionPoint } from '../../../algebra/extension-points/create.j
 import { createApi } from '../../../algebra/extension-points/facade.js';
 import { createRegistryView } from '../../../algebra/extension-points/view.js';
 import { createRegistry } from '../../../algebra/extension-points/writer.js';
-import type { CoreAPI } from '../../../modules/core/api/api.js';
+import type { CoreSignature } from '../../../modules/core/api/api.js';
 import type { SystemPromptHandler } from '../../../modules/core/api/handlers.js';
 import {
 	buildSystemPromptAssembler,
@@ -35,7 +35,7 @@ type ModulePromptHandler = WithContext<
 	CoreRuntime & EnvironmentRuntime
 >;
 
-const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
 });
@@ -44,10 +44,10 @@ function collectHandlers(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
 ): ModulePromptHandler[] {
 	const { registry, writer } = createRegistry<
-		CoreAPI,
+		CoreSignature,
 		CoreRuntime & EnvironmentRuntime
 	>();
-	const api = createApi<CoreAPI, CoreRuntime & EnvironmentRuntime>(
+	const api = createApi<CoreSignature, CoreRuntime & EnvironmentRuntime>(
 		coreExtensionPoint,
 		writer,
 	);

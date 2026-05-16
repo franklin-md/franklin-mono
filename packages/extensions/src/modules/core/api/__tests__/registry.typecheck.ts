@@ -6,11 +6,11 @@ import type {
 } from '../../../../algebra/extension-points/registry.js';
 import type { BaseRuntime } from '../../../../algebra/runtime/index.js';
 import type {
-	CoreAPISurface,
-	CoreEventHandlers,
 	CoreAPI,
+	CoreEventHandlers,
 	CoreOnRegistration,
 	CoreRegisterToolRegistration,
+	CoreSignature,
 } from '../api.js';
 
 type Equal<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
@@ -18,23 +18,23 @@ type Equal<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 type Expect<T extends true> = T;
 
 type _CoreRegistryKeys = Expect<
-	Equal<keyof Registry<CoreAPI, BaseRuntime>, 'effects'>
+	Equal<keyof Registry<CoreSignature, BaseRuntime>, 'effects'>
 >;
 
 type _CoreEffectNames = Expect<
-	Equal<EffectName<CoreAPI, BaseRuntime>, 'on' | 'registerTool'>
+	Equal<EffectName<CoreSignature, BaseRuntime>, 'on' | 'registerTool'>
 >;
 
 type _CoreRegistryOnEntries = Expect<
 	Equal<
-		EffectValueForName<CoreAPI, BaseRuntime, 'on'>,
+		EffectValueForName<CoreSignature, BaseRuntime, 'on'>,
 		CoreOnRegistration<BaseRuntime>
 	>
 >;
 
 type _CoreRegistryToolEntries = Expect<
 	Equal<
-		EffectValueForName<CoreAPI, BaseRuntime, 'registerTool'>,
+		EffectValueForName<CoreSignature, BaseRuntime, 'registerTool'>,
 		CoreRegisterToolRegistration<BaseRuntime>
 	>
 >;
@@ -54,7 +54,7 @@ const _turnStartRegistration: CoreOnRegistration<BaseRuntime> = [
 ];
 void _turnStartRegistration;
 
-const _api = null as unknown as CoreAPISurface<BaseRuntime>;
+const _api = null as unknown as CoreAPI<BaseRuntime>;
 _api.on('turnStart', (event, runtime) => {
 	const _event: TurnStart = event;
 	const _runtime: BaseRuntime = runtime;

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { StaticAPI } from '../../../api/types.js';
+import type { StaticSignature } from '../../../api/types.js';
 import { compile } from '../../../compiler/compile.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { RegistryView } from '../../../extension-points/view.js';
@@ -7,9 +7,9 @@ import type { BaseRuntime } from '../../../runtime/types.js';
 import type { ExtensionModule } from '../../simple/index.js';
 import { liftExtensionModule } from '../lift.js';
 
-type DependencyAPI = StaticAPI<Record<never, never>>;
+type DependencySignature = StaticSignature<Record<never, never>>;
 
-const dependencyExtensionPoint = createExtensionPoint<DependencyAPI>({});
+const dependencyExtensionPoint = createExtensionPoint<DependencySignature>({});
 
 type DependencyRuntime = BaseRuntime & {
 	readonly dependency: string;
@@ -17,12 +17,12 @@ type DependencyRuntime = BaseRuntime & {
 
 function createDependencyModule(
 	dependency: string,
-): ExtensionModule<DependencyAPI, DependencyRuntime> {
+): ExtensionModule<DependencySignature, DependencyRuntime> {
 	return {
 		extensionPoint: dependencyExtensionPoint,
 		compiler: {
 			async compile<ContextRuntime extends BaseRuntime>(
-				_registry: RegistryView<DependencyAPI, ContextRuntime>,
+				_registry: RegistryView<DependencySignature, ContextRuntime>,
 			) {
 				return {
 					dependency,

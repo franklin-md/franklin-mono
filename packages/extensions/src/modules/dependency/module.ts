@@ -1,14 +1,14 @@
 import { createExtensionPoint } from '../../algebra/extension-points/create.js';
 import type { ExtensionModule } from '../../algebra/modules/simple/index.js';
-import type { IdentityAPI } from '../../algebra/modules/simple/identity.js';
+import type { IdentitySignature } from '../../algebra/modules/simple/identity.js';
 import { createDependencyRuntime, type DependencyRuntime } from './runtime.js';
 
 export type DependencyModule<Name extends string, T> = ExtensionModule<
-	IdentityAPI,
+	IdentitySignature,
 	DependencyRuntime<Name, T>
 >;
 
-const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
+const identityExtensionPoint = createExtensionPoint<IdentitySignature>({});
 
 export function createDependencyModule<Name extends string, T>(
 	name: Name,
