@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
+import { applyStep, compile } from '../../../compiler/index.js';
 import type { StaticSignature } from '../../../api/index.js';
-import { compile } from '../../../compiler/index.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { RegistryView } from '../../../extension-points/view.js';
 import type { BaseRuntime } from '../../../runtime/index.js';
 import type { ExtensionModule } from '../types.js';
-import { withSetup } from '../setup.js';
+import { liftCompilerTransform } from '../transform/index.js';
 
 type TestAPISurface = {
 	register(value: number): void;
@@ -36,10 +36,16 @@ function createModule(): ExtensionModule<TestSignature, TestRuntime> {
 	};
 }
 
-describe('simple module setup', () => {
-	it('decorates the compiler while preserving the extension point', async () => {
-		const setup = vi.fn(async (_runtime: TestRuntime) => {});
-		const module = withSetup(createModule(), setup);
+describe('simple module compiler transform', () => {
+	it('lifts a compiler transform while preserving the extension point', async () => {
+		const effect = vi.fn(async (_runtime: TestRuntime) => {});
+		const transform = liftCompilerTransform(
+			applyStep<TestSignature, TestRuntime, TestRuntime>(async (runtime) => {
+				await effect(runtime);
+				return runtime;
+			}),
+		);
+		const module = transform(createModule());
 
 		const runtime = await compile(
 			module.extensionPoint,
@@ -48,6 +54,6 @@ describe('simple module setup', () => {
 		);
 
 		expect(runtime.value).toBe(7);
-		expect(setup).toHaveBeenCalledWith(runtime);
+		expect(effect).toHaveBeenCalledWith(runtime);
 	});
 });

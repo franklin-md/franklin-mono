@@ -10,12 +10,18 @@ export type { ReduceSignatures } from './algebra/api/reduce.js';
 export { combine } from './algebra/compiler/combine.js';
 export { compile } from './algebra/compiler/compile.js';
 export type { Compiler } from './algebra/compiler/types.js';
-export type { CompilerStep, RuntimeStep } from './algebra/compiler/setup.js';
+export type {
+	CompilerStep,
+	CompilerTransform,
+	RuntimeStep,
+} from './algebra/compiler/transform/index.js';
 export {
-	composeCompilerSteps,
-	transformCompiler,
-	withSetupCompiler,
-} from './algebra/compiler/setup.js';
+	applyStep,
+	composeSteps,
+	identityStep,
+	reduceSteps,
+} from './algebra/compiler/transform/index.js';
+export type { Registry } from './algebra/extension-points/registry.js';
 export type { ExtensionPoint } from './algebra/extension-points/types.js';
 export { createExtensionPoint } from './algebra/extension-points/create.js';
 export type { RegistryView } from './algebra/extension-points/view.js';
@@ -48,8 +54,9 @@ export {
 	buildStateExtensionModule,
 	combine as combineModules,
 	combineAll,
-	liftExtensionModule,
-	withSetup,
+	fromSimpleModule,
+	liftCompilerTransform as liftStateCompilerTransform,
+	liftModuleTransform as liftStateModuleTransform,
 } from './algebra/modules/state/index.js';
 // ---------------------------------------------------------------------------
 // Runtime

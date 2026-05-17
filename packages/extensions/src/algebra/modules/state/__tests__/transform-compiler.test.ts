@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
+import { applyStep, compile } from '../../../compiler/index.js';
 import type { StaticSignature } from '../../../api/index.js';
-import { compile } from '../../../compiler/index.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { RegistryView } from '../../../extension-points/view.js';
 import type { BaseRuntime, StateHandle } from '../../../runtime/index.js';
 import type { StateExtensionModule } from '../types.js';
-import { withSetup } from '../setup.js';
+import {
+	liftCompilerTransform,
+	liftModuleTransform,
+} from '../transform/index.js';
 
 type TestState = {
 	readonly value: number;
@@ -21,7 +24,7 @@ const extensionPoint = createExtensionPoint<TestSignature>({
 	register: true,
 });
 
-const TEST_STATE: unique symbol = Symbol('test/state-setup');
+const TEST_STATE: unique symbol = Symbol('test/state-transform');
 
 type TestRuntime = BaseRuntime & {
 	readonly value: number;
@@ -60,10 +63,51 @@ function createModule(): StateExtensionModule<
 	};
 }
 
-describe('state module setup', () => {
-	it('decorates instantiated compilers with runtime and state setup', async () => {
-		const setup = vi.fn(async (_runtime: TestRuntime, _state: TestState) => {});
-		const module = withSetup(createModule(), setup);
+describe('state module compiler transform', () => {
+	it('lifts state-aware module transforms through instantiation', async () => {
+		const effect = vi.fn(
+			async (_runtime: TestRuntime, _state: TestState) => {},
+		);
+		const transform = liftModuleTransform<
+			TestState,
+			TestSignature,
+			TestRuntime,
+			TestRuntime
+		>((state) => (simple) => ({
+			extensionPoint: simple.extensionPoint,
+			compiler: applyStep<TestSignature, TestRuntime, TestRuntime>(
+				async (runtime) => {
+					await effect(runtime, state);
+					return runtime;
+				},
+			)(simple.compiler),
+		}));
+		const module = transform(createModule());
+		const state = { value: 5 };
+		const simple = module.instantiate(state);
+
+		const runtime = await compile(
+			simple.extensionPoint,
+			simple.compiler,
+			(api) => api.register(13),
+		);
+
+		expect(runtime.value).toBe(13);
+		expect(effect).toHaveBeenCalledWith(runtime, state);
+		await expect(module.state(runtime).get()).resolves.toEqual({ value: 13 });
+	});
+
+	it('lifts state-aware compiler transforms through instantiation', async () => {
+		const effect = vi.fn(
+			async (_runtime: TestRuntime, _state: TestState) => {},
+		);
+		const transform = liftCompilerTransform((state: TestState) =>
+			applyStep<TestSignature, TestRuntime, TestRuntime>(async (runtime) => {
+				await effect(runtime, state);
+				return runtime;
+			}),
+		);
+		const module = transform(createModule());
 		const state = { value: 3 };
 		const simple = module.instantiate(state);
 
@@ -74,7 +118,7 @@ describe('state module setup', () => {
 		);
 
 		expect(runtime.value).toBe(11);
-		expect(setup).toHaveBeenCalledWith(runtime, state);
+		expect(effect).toHaveBeenCalledWith(runtime, state);
 		await expect(module.state(runtime).get()).resolves.toEqual({ value: 11 });
 	});
 });

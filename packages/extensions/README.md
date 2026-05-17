@@ -39,11 +39,12 @@ TODO: The `algebra/` folder can stand by itself as a stable, non-AI-specific
 composition layer. Consider documenting and testing that boundary as its own
 package-level surface.
 
-Franklin models extension composition across three related surfaces:
+Franklin models extension composition across these six related surfaces:
 
 - **ExtensionPoint**: a runtime-generic function from an internal registry writer to the author-facing `API<API, Runtime>` facade. It does not own storage; it only describes how to bind an API surface to a writer.
 - **Registry**: an internal `Registry<API, Runtime>` effect log. Each contributed value is stored as `{ name, value }`, where `value` is the tuple passed to the registration method.
 - **Compiler**: registry-view interpreter plus runtime builder. It exposes `compile<ContextRuntime>(view, getRuntime)`, which receives a `RegistryView<API, ContextRuntime>` with the compile context runtime restored while still returning the compiler's own `Runtime`.
+- **CompilerStep / CompilerTransform**: post-compile runtime operations. A `CompilerStep<T, U>` maps one compiled runtime to another, and `applyStep(step)` lifts that operation into a compiler transform.
 - **Runtime**: lifecycle surface (`dispose`, `subscribe`) plus module-specific capabilities.
 - **StateExtensionModule**: a factory for `emptyState()` and fresh compilers, plus the module's extension point, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options.
 
@@ -108,7 +109,7 @@ The important laws for the current algebra surface are:
 - **Right identity**: combining identity on the right preserves the other operand.
 - **Associativity**: intended for valid disjoint compositions, so regrouping does not change the resulting merged surface.
 
-Left/right identity is tested explicitly for compiler, runtime, and module composition.
+Left/right identity is tested explicitly for compiler, runtime, and state module composition.
 
 ### Orchestration
 
@@ -138,11 +139,12 @@ composed runtime while the state type remains private to the orchestrator.
 
 There are many places where you could plausibly compose simpler mechanics to create a specific agent behaviour. These solutions are largely functionally equivalent, so the choice is more of a complexity management decision. Here are some emergent patterns we have discovered and documented so far:
 
-- **StateExtensionModule decoration for enforcing universal behaviour**:
-	- _It may be easier to express the behaviour as a transformation over the Runtime as oppposed to using the API_
+- **StateExtensionModule transforms for enforcing universal behaviour**:
+	- _It may be easier to express the behaviour as a transformation over the Runtime as opposed to using the API_
+	- The algebraic path is `CompilerStep` -> `CompilerTransform` -> `ExtensionModuleTransform` -> `StateExtensionModule` transform.
 	- Examples:
-    - `withAuth` decorates `CoreModule` so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials
-    - [ ] `withAgentsMd`
+	- `withAuth` decorates `CoreModule` so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials
+	- [ ] `withAgentsMd`
 
 ## Extension Authoring Rules
 
