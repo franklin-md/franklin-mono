@@ -69,7 +69,7 @@ describe('createEnvironmentCompiler', () => {
 		const env = mockEnvironment();
 		const compiler = combine(
 			createEnvironmentCompiler(env),
-			createStoreCompiler(new StoreRegistry(), { store: {} }),
+			createStoreCompiler(new StoreRegistry(), {}),
 		);
 		const extensionPoint = combineExtensionPoints(
 			identityExtensionPoint,

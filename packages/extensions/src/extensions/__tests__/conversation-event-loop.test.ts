@@ -12,7 +12,7 @@ import { combineAll } from '../../algebra/modules/state/combine.js';
 import { createRuntime } from '../../testing/index.js';
 import { createCoreModule } from '../../modules/core/module.js';
 import { StoreRegistry } from '../../modules/store/api/registry/index.js';
-import { createStoreModule } from '../../modules/store/module.js';
+import { createStoreStateModule } from '../../modules/store/state-module.js';
 import { conversationExtension } from '../conversation/bundle.js';
 import type { ConversationTurn } from '../conversation/types.js';
 
@@ -47,7 +47,7 @@ async function createConversationRuntime() {
 	const mock = createMockMiniACP({ defaultTurn: pacedTurn() });
 	const module = combineAll([
 		createCoreModule(mock.connector),
-		createStoreModule(new StoreRegistry()),
+		createStoreStateModule(new StoreRegistry()),
 	] as const);
 	const runtime = await createRuntime(module, module.emptyState(), [
 		conversationExtension.extension,

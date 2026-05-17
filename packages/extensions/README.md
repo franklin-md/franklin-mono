@@ -11,6 +11,7 @@ Implemented so far:
 
 - **CoreModule**: Contributes the core registration API, extending a minimal agent loop with tools and context management. Tool and handler closures receive the fully composed runtime.
 - **StoreModule**: Contributes store registration plus runtime access to shared state between agent-agent and agent-app.
+- **StoreStateModule**: Wraps `StoreModule` with the persisted `{ store: StoreMapping }` state shape used by state-module composition.
 - **EnvironmentModule**: Contributes runtime environment capabilities; its registration API is empty.
 - **Orchestrator**: Materializes root, child, fork, and restored runtimes from a reduced harness module while injecting `ctx.self` and `ctx.orchestrator`.
 - **DependencyRuntime<Name,T>**: Simple way for an extension to depend on an app-provided global resource (authentication, secrets, app-level environment). The dependency lands on the runtime as a field keyed by `Name`, so handlers read it via `ctx.<name>`.
@@ -19,7 +20,7 @@ The resolved API surface can be named with `ExtensionAPI<Modules>`, and the
 extension function type can be named with `ExtensionForModules<Modules>`:
 
 ```typescript
-type MyModules = [CoreModule, StoreModule, EnvironmentModule];
+type MyModules = [CoreModule, StoreStateModule, EnvironmentModule];
 
 const extension = defineExtension<MyModules>((api) => {
 	api.registerStore('files', {}, 'private');

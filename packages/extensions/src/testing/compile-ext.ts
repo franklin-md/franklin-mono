@@ -105,9 +105,10 @@ export async function compileCoreWithStore(
 	} as API<CoreSignature, CoreStoreRuntime> & StoreAPI;
 	ext(combinedApi);
 
-	cell.stores = await createStoreCompiler(new StoreRegistry(), {
-		store: {},
-	}).compile(createRegistryView(storeRegistry), getCtx);
+	cell.stores = await createStoreCompiler(new StoreRegistry(), {}).compile(
+		createRegistryView(storeRegistry),
+		getCtx,
+	);
 
 	const registrations = createCoreRegistrar<CoreStoreRuntime>(
 		createRegistryView(coreRegistry),
@@ -159,9 +160,10 @@ export async function compileCoreWithStoreAndEnv(
 		StoreAPI;
 	ext(combinedApi);
 
-	const stores = await createStoreCompiler(new StoreRegistry(), {
-		store: {},
-	}).compile(createRegistryView(storeRegistry), getCtx);
+	const stores = await createStoreCompiler(new StoreRegistry(), {}).compile(
+		createRegistryView(storeRegistry),
+		getCtx,
+	);
 	const { registry: identityRegistry } = createRegistry<
 		IdentitySignature,
 		CoreStoreEnvironmentRuntime

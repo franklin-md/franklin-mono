@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createStoreModule } from '../module.js';
+import { createStoreStateModule } from '../state-module.js';
+import { storeMappingHandle } from '../runtime.js';
+import { compile } from '../../../algebra/compiler/compile.js';
 import { createRuntime } from '../../../testing/index.js';
 import { StoreRegistry } from '../api/registry/index.js';
 
@@ -8,8 +11,34 @@ import { StoreRegistry } from '../api/registry/index.js';
 // ---------------------------------------------------------------------------
 
 describe('createStoreModule', () => {
+	it('creates a runtime with stores from a mapping seed', async () => {
+		const registry = new StoreRegistry();
+		const parentModule = createStoreModule(registry);
+		const parent = await compile(
+			parentModule.extensionPoint,
+			parentModule.compiler,
+			(api) => {
+				api.registerStore('count', 42, 'private');
+			},
+		);
+		const mapping = await storeMappingHandle(parent).get();
+
+		const childModule = createStoreModule(registry, mapping);
+		const runtime = await compile(
+			childModule.extensionPoint,
+			childModule.compiler,
+			(api) => {
+				api.registerStore('count', 0, 'private');
+			},
+		);
+
+		expect(runtime.getStore<number>('count').get()).toBe(42);
+	});
+});
+
+describe('createStoreStateModule', () => {
 	it('create returns a runtime with stores', async () => {
-		const system = createStoreModule(new StoreRegistry());
+		const system = createStoreStateModule(new StoreRegistry());
 
 		const runtime = await createRuntime(system, { store: {} }, [
 			(api) => {
@@ -21,7 +50,7 @@ describe('createStoreModule', () => {
 	});
 
 	it('state returns store mapping keyed under "store"', async () => {
-		const system = createStoreModule(new StoreRegistry());
+		const system = createStoreStateModule(new StoreRegistry());
 
 		const runtime = await createRuntime(system, { store: {} }, [
 			(api) => {
@@ -36,7 +65,7 @@ describe('createStoreModule', () => {
 	});
 
 	it('fork produces copy-mode mapping', async () => {
-		const system = createStoreModule(new StoreRegistry());
+		const system = createStoreStateModule(new StoreRegistry());
 
 		const runtime = await createRuntime(system, { store: {} }, [
 			(api) => {
@@ -58,7 +87,7 @@ describe('createStoreModule', () => {
 	});
 
 	it('child produces fresh-mode mapping (private stores omitted)', async () => {
-		const system = createStoreModule(new StoreRegistry());
+		const system = createStoreStateModule(new StoreRegistry());
 
 		const runtime = await createRuntime(system, { store: {} }, [
 			(api) => {
@@ -75,7 +104,7 @@ describe('createStoreModule', () => {
 
 	it('restore from existing mapping', async () => {
 		const registry = new StoreRegistry();
-		const system = createStoreModule(registry);
+		const system = createStoreStateModule(registry);
 
 		const runtime1 = await createRuntime(system, { store: {} }, [
 			(api) => {
@@ -94,7 +123,7 @@ describe('createStoreModule', () => {
 	});
 
 	it('emptyState returns empty keyed mapping', () => {
-		const system = createStoreModule(new StoreRegistry());
+		const system = createStoreStateModule(new StoreRegistry());
 		const empty = system.emptyState();
 
 		expect(empty.store).toEqual({});

@@ -5,14 +5,13 @@ import type { BaseRuntime } from '../../../algebra/runtime/index.js';
 import type { StoreSignature } from '../api/api.js';
 import type { BaseStore } from '../api/base.js';
 import type { StoreRegistry as RuntimeStoreRegistry } from '../api/registry/index.js';
-import type { StoreMapping } from '../state.js';
+import type { StoreMapping } from '../api/registry/mapping.js';
 import {
 	createEmptyStoreResult,
 	createStoreResult,
 } from '../api/registry/result.js';
 import type { Sharing } from '../api/sharing.js';
 import { createStoreRuntime, type StoreRuntime } from '../runtime.js';
-import type { StoreState } from '../state.js';
 
 type Registration = {
 	name: string;
@@ -28,7 +27,7 @@ type Registration = {
  */
 export function createStoreCompiler(
 	storeRegistry: RuntimeStoreRegistry,
-	state: StoreState,
+	seedMapping: StoreMapping = {},
 ): Compiler<StoreSignature, StoreRuntime> {
 	return {
 		async compile<ContextRuntime extends BaseRuntime>(
@@ -40,7 +39,6 @@ export function createStoreCompiler(
 					([name, initial, sharing]) =>
 						({ name, initial, sharing }) satisfies Registration,
 				);
-			const seedMapping = state.store;
 			const hasEntries = Object.keys(seedMapping).length > 0;
 			const seed = hasEntries
 				? createStoreResult(storeRegistry, seedMapping)
