@@ -3,9 +3,11 @@ import type { Signature } from '../../../algebra/api/index.js';
 import type { Extension } from '../../../algebra/extension/index.js';
 import type { RegistryView } from '../../../algebra/extension-points/view.js';
 import type { ExtensionPoint } from '../../../algebra/extension-points/types.js';
-import type { StateHandle } from '../../../algebra/modules/state/index.js';
-import type { BaseRuntime } from '../../../algebra/runtime/index.js';
-import { createDependencyModule } from '../../../modules/dependency/module.js';
+import type {
+	BaseRuntime,
+	StateHandle,
+} from '../../../algebra/runtime/index.js';
+import { createDependencyModule } from '../../dependency/module.js';
 import type {
 	InferAPI,
 	InferRuntime,
@@ -31,13 +33,13 @@ type TestRuntime = BaseRuntime & {
 
 type RuntimeHandler<Runtime extends BaseRuntime> = (runtime: Runtime) => void;
 
-type RuntimeAwareAPI<Runtime extends BaseRuntime> = {
+type RuntimeAwareAPISurface<Runtime extends BaseRuntime> = {
 	onRuntime(handler: RuntimeHandler<Runtime>): void;
 };
 
 interface RuntimeAwareSignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: RuntimeAwareAPI<this['In']>;
+	readonly Out: RuntimeAwareAPISurface<this['In']>;
 }
 
 const runtimeAwareExtensionPoint: ExtensionPoint<RuntimeAwareSignature> = (

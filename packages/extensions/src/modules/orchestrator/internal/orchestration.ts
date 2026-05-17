@@ -1,7 +1,7 @@
 import {
 	createDependencyModule,
 	type DependencyModule,
-} from '../../../modules/dependency/module.js';
+} from '../../dependency/module.js';
 import type { InferRuntime } from '../../../algebra/modules/simple/index.js';
 import type {
 	BaseStateExtensionModule,
