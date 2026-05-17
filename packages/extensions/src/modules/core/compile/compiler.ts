@@ -5,7 +5,7 @@ import type { BaseRuntime } from '../../../algebra/runtime/index.js';
 import type { CoreSignature } from '../api/api.js';
 import { serializeTool } from '../api/tools/index.js';
 import { type CoreRuntime, createCoreRuntime } from '../runtime/index.js';
-import type { CoreState } from '../state.js';
+import type { SessionSnapshot } from '../state.js';
 import { createAgentClient } from './client.js';
 import { createAgentDecorator } from './decorators/full.js';
 import { createCoreRegistrar } from './registrar/index.js';
@@ -13,14 +13,14 @@ import { createResources } from './resources.js';
 
 export function createCoreCompiler(
 	connectAgent: MiniACPConnector,
-	state: CoreState,
+	session: SessionSnapshot,
 ): Compiler<CoreSignature, CoreRuntime> {
 	return {
 		compile: async <ContextRuntime extends BaseRuntime>(
 			registry: RegistryView<CoreSignature, ContextRuntime>,
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CoreRuntime> => {
-			const resources = createResources(state);
+			const resources = createResources(session);
 			const coreRegistrar = createCoreRegistrar<ContextRuntime>(registry);
 			const decorator = createAgentDecorator(
 				resources,
@@ -32,7 +32,7 @@ export function createCoreCompiler(
 			const client = await createAgentClient({
 				connectAgent,
 				decorator,
-				state,
+				session,
 				tools: serializedTools,
 			});
 

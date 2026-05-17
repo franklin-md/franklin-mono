@@ -1,8 +1,8 @@
 import type {
-	CoreModule,
 	CoreRuntime,
 	CoreSignature,
 	CoreState,
+	CoreStateModule,
 } from '@franklin/extensions';
 import {
 	applyStep,
@@ -99,7 +99,7 @@ function createAuthCompilerTransform(auth: AuthManager) {
 }
 
 /**
- * Wrap a core module so that every compiled runtime is automatically
+ * Wrap a core state module so that every compiled runtime is automatically
  * authenticated at build time and kept in sync with credential changes.
  *
  * Three behaviors:
@@ -112,6 +112,9 @@ function createAuthCompilerTransform(auth: AuthManager) {
  *    keys to the runtime when its provider's credentials change.
  *    Unsubscribes on dispose.
  */
-export function withAuth(module: CoreModule, auth: AuthManager): CoreModule {
+export function withAuth(
+	module: CoreStateModule,
+	auth: AuthManager,
+): CoreStateModule {
 	return liftStateCompilerTransform(createAuthCompilerTransform(auth))(module);
 }

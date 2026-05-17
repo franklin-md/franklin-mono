@@ -10,6 +10,7 @@ owns plus any runtime capabilities its handlers can read from `ctx`.
 Implemented so far:
 
 - **CoreModule**: Contributes the core registration API, extending a minimal agent loop with tools and context management. Tool and handler closures receive the fully composed runtime.
+- **CoreStateModule**: Wraps `CoreModule` with the persisted `{ core: SessionSnapshot }` state slot used by orchestrated sessions.
 - **StoreModule**: Contributes store registration plus runtime access to shared state between agent-agent and agent-app.
 - **StoreStateModule**: Wraps `StoreModule` with the persisted `{ store: StoreMapping }` state shape used by state-module composition.
 - **EnvironmentModule**: Contributes runtime environment capabilities; its registration API is empty.
@@ -47,7 +48,7 @@ Franklin models extension composition across these six related surfaces:
 - **Compiler**: registry-view interpreter plus runtime builder. It exposes `compile<ContextRuntime>(view, getRuntime)`, which receives a `RegistryView<API, ContextRuntime>` with the compile context runtime restored while still returning the compiler's own `Runtime`.
 - **CompilerStep / CompilerTransform**: post-compile runtime operations. A `CompilerStep<T, U>` maps one compiled runtime to another, and `applyStep(step)` lifts that operation into a compiler transform.
 - **Runtime**: lifecycle surface (`dispose`, `subscribe`) plus module-specific capabilities.
-- **StateExtensionModule**: a factory for `emptyState()` and fresh compilers, plus the module's extension point, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options.
+- **StateExtensionModule**: a factory for `emptyState()` and fresh compilers, plus the module's extension point, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options. Core uses this split directly: `CoreModule` compiles from a `SessionSnapshot`, while `CoreStateModule` owns the persisted top-level `core` state key required for state composition.
 
 Internally, the extension-point algorithm is:
 
@@ -144,7 +145,7 @@ There are many places where you could plausibly compose simpler mechanics to cre
 	- _It may be easier to express the behaviour as a transformation over the Runtime as opposed to using the API_
 	- The algebraic path is `CompilerStep` -> `CompilerTransform` -> `ExtensionModuleTransform` -> `StateExtensionModule` transform.
 	- Examples:
-	- `withAuth` decorates `CoreModule` so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials
+	- `withAuth` decorates `CoreStateModule` so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials
 	- [ ] `withAgentsMd`
 
 ## Extension Authoring Rules

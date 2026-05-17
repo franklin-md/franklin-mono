@@ -172,10 +172,13 @@ export { CORE_STATE, coreStateHandle } from './modules/core/runtime/index.js';
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
-export type { CoreState } from './modules/core/state.js';
-export { emptyCoreState } from './modules/core/state.js';
-export type { CoreModule } from './modules/core/module.js';
-export { createCoreModule } from './modules/core/module.js';
+export type { CoreState, SessionSnapshot } from './modules/core/state.js';
+export { emptyCoreState, emptySessionSnapshot } from './modules/core/state.js';
+export type { CoreModule, CoreStateModule } from './modules/core/module.js';
+export {
+	createCoreModule,
+	createCoreStateModule,
+} from './modules/core/module.js';
 export type { DependencyRuntime } from './modules/dependency/index.js';
 export type { DependencyModule } from './modules/dependency/module.js';
 export { createDependencyModule } from './modules/dependency/module.js';
