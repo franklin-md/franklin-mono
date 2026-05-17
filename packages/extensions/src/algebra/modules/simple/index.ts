@@ -26,4 +26,5 @@ export {
 	identityModule,
 	identityRuntime,
 } from './identity.js';
-export { withSetup } from './setup.js';
+export type { ExtensionModuleTransform } from './transform/index.js';
+export { liftCompilerTransform } from './transform/index.js';
