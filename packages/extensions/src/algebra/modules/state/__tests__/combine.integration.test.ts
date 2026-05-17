@@ -19,7 +19,7 @@ import type {
 } from '../../../../modules/environment/api/types.js';
 import { createEnvironmentModule } from '../../../../modules/environment/module.js';
 import { StoreRegistry } from '../../../../modules/store/api/registry/index.js';
-import { createStoreModule } from '../../../../modules/store/module.js';
+import { createStoreStateModule } from '../../../../modules/store/state-module.js';
 import { createRuntime } from '../../../../testing/index.js';
 import type { Signature, StaticSignature } from '../../../api/types.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
@@ -190,7 +190,7 @@ function moduleApiKeys(module: StateExtensionModule<any, any, any>): string[] {
 describe('combine — two modules', () => {
 	it('combines store + environment modules', async () => {
 		const system = combine(
-			createStoreModule(new StoreRegistry()),
+			createStoreStateModule(new StoreRegistry()),
 			createEnvironmentModule(mockEnvFactory()),
 		);
 
@@ -212,7 +212,7 @@ describe('combine — two modules', () => {
 
 	it('emptyState merges both modules', () => {
 		const system = combine(
-			createStoreModule(new StoreRegistry()),
+			createStoreStateModule(new StoreRegistry()),
 			createEnvironmentModule(mockEnvFactory()),
 		);
 
@@ -224,7 +224,7 @@ describe('combine — two modules', () => {
 
 	it('state returns keyed state from both modules', async () => {
 		const system = combine(
-			createStoreModule(new StoreRegistry()),
+			createStoreStateModule(new StoreRegistry()),
 			createEnvironmentModule(mockEnvFactory()),
 		);
 
@@ -254,7 +254,7 @@ describe('combine — two modules', () => {
 		});
 
 		const system = combine(
-			createStoreModule(new StoreRegistry()),
+			createStoreStateModule(new StoreRegistry()),
 			createEnvironmentModule(envFactory),
 		);
 
@@ -270,7 +270,7 @@ describe('combine — two modules', () => {
 
 	it('fork composes both fork outputs', async () => {
 		const system = combine(
-			createStoreModule(new StoreRegistry()),
+			createStoreStateModule(new StoreRegistry()),
 			createEnvironmentModule(mockEnvFactory()),
 		);
 
@@ -298,7 +298,7 @@ describe('combine — three modules (nested)', () => {
 		const system = combine(
 			createCoreModule(createMockConnector()),
 			combine(
-				createStoreModule(new StoreRegistry()),
+				createStoreStateModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
 			),
 		);
@@ -328,7 +328,7 @@ describe('combine — three modules (nested)', () => {
 		const system = combine(
 			createCoreModule(createMockConnector()),
 			combine(
-				createStoreModule(new StoreRegistry()),
+				createStoreStateModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
 			),
 		);
@@ -343,7 +343,7 @@ describe('combine — three modules (nested)', () => {
 		const system = combine(
 			createCoreModule(createMockConnector()),
 			combine(
-				createStoreModule(new StoreRegistry()),
+				createStoreStateModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
 			),
 		);
@@ -371,7 +371,7 @@ describe('combine — three modules (nested)', () => {
 		const system = combine(
 			createCoreModule(createMockConnector()),
 			combine(
-				createStoreModule(new StoreRegistry()),
+				createStoreStateModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
 			),
 		);
@@ -402,7 +402,7 @@ describe('combine — three modules (nested)', () => {
 		const system = combine(
 			createCoreModule(createMockConnector()),
 			combine(
-				createStoreModule(new StoreRegistry()),
+				createStoreStateModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
 			),
 		);

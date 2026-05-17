@@ -1,5 +1,4 @@
-/** Maps store name (extension key) -> ref (registry UUID). */
-export type StoreMapping = Record<string, string>;
+import type { StoreMapping } from './api/registry/mapping.js';
 
 export type StoreState = {
 	store: StoreMapping;
