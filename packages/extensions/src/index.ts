@@ -23,7 +23,7 @@ export {
 	createOrchestrator,
 	Orchestrator,
 	RuntimeCollection,
-} from './harness/orchestrator/index.js';
+} from './modules/orchestrator/index.js';
 export type {
 	CreateOrchestratorInput,
 	OrchestratorCreateInput,
@@ -33,7 +33,7 @@ export type {
 	RuntimeEntry,
 	RuntimeEvent,
 	SelfRuntime,
-} from './harness/orchestrator/index.js';
+} from './modules/orchestrator/index.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { ReduceRuntimes } from './algebra/runtime/reduce.js';
 export type {

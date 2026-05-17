@@ -11,8 +11,8 @@ export interface StateHandle<S> {
 }
 
 /**
- * Base constraint for harness runtimes — pure capability surface plus
- * lifecycle. State is projected from the harness module via
+ * Base constraint for module runtimes — pure capability surface plus
+ * lifecycle. State is projected from the state extension module via
  * `StateExtensionModule.state(runtime)`, not exposed as a runtime field.
  */
 export interface BaseRuntime {
