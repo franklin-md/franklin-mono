@@ -38,10 +38,10 @@ function createModule(): ExtensionModule<TestAPI, TestRuntime> {
 
 describe('simple module compiler transform', () => {
 	it('lifts a compiler transform while preserving the extension point', async () => {
-		const tap = vi.fn(async (_runtime: TestRuntime) => {});
+		const effect = vi.fn(async (_runtime: TestRuntime) => {});
 		const transform = liftCompilerTransform(
 			applyStep<TestAPI, TestRuntime, TestRuntime>(async (runtime) => {
-				await tap(runtime);
+				await effect(runtime);
 				return runtime;
 			}),
 		);
@@ -54,6 +54,6 @@ describe('simple module compiler transform', () => {
 		);
 
 		expect(runtime.value).toBe(7);
-		expect(tap).toHaveBeenCalledWith(runtime);
+		expect(effect).toHaveBeenCalledWith(runtime);
 	});
 });

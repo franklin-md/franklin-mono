@@ -54,8 +54,9 @@ export {
 	buildStateExtensionModule,
 	combine as combineModules,
 	combineAll,
-	fromSimpleModule as stateModuleFromSimple,
+	fromSimpleModule,
 	liftCompilerTransform as liftStateCompilerTransform,
+	liftModuleTransform as liftStateModuleTransform,
 } from './algebra/modules/state/index.js';
 // ---------------------------------------------------------------------------
 // Runtime

@@ -44,7 +44,7 @@ const noGetRuntime = (): never => {
 describe('compiler transform steps', () => {
 	it('applies a step to the runtime produced by a compiler', async () => {
 		const transform = applyStep<TestAPI, TestRuntime, TaggedRuntime>(
-			async (runtime) => ({
+			(runtime) => ({
 				...runtime,
 				tag: `value:${runtime.value}`,
 			}),
@@ -104,10 +104,10 @@ describe('compiler transform steps', () => {
 	});
 
 	it('applies a runtime-preserving step after compile', async () => {
-		const tap = vi.fn(async (_runtime: TestRuntime) => {});
+		const effect = vi.fn(async (_runtime: TestRuntime) => {});
 		const compiler = applyStep<TestAPI, TestRuntime, TestRuntime>(
 			async (runtime) => {
-				await tap(runtime);
+				await effect(runtime);
 				return runtime;
 			},
 		)(createCompiler());
@@ -115,6 +115,6 @@ describe('compiler transform steps', () => {
 		const runtime = await compiler.compile(createRegistry(9), noGetRuntime);
 
 		expect(runtime.value).toBe(9);
-		expect(tap).toHaveBeenCalledWith(runtime);
+		expect(effect).toHaveBeenCalledWith(runtime);
 	});
 });

@@ -40,5 +40,10 @@ export { resolveState } from './resolve.js';
 export type {
 	StateCompilerTransform,
 	StateExtensionModuleTransform,
+	StateModuleTransform,
 } from './transform/index.js';
-export { fromSimpleModule, liftCompilerTransform } from './transform/index.js';
+export {
+	fromSimpleModule,
+	liftCompilerTransform,
+	liftModuleTransform,
+} from './transform/index.js';

@@ -46,11 +46,12 @@ describe('package exports', () => {
 		expect('liftHarnessCompilerTransform' in rootExports).toBe(false);
 		expect('tapStep' in rootExports).toBe(false);
 		expect(typeof rootExports.buildStateExtensionModule).toBe('function');
-		expect(typeof rootExports.stateModuleFromSimple).toBe('function');
+		expect(typeof rootExports.fromSimpleModule).toBe('function');
 		expect(typeof rootExports.applyStep).toBe('function');
 		expect(typeof rootExports.composeSteps).toBe('function');
 		expect(typeof rootExports.reduceSteps).toBe('function');
 		expect(typeof rootExports.liftStateCompilerTransform).toBe('function');
+		expect(typeof rootExports.liftStateModuleTransform).toBe('function');
 	});
 
 	it('re-exports compileAll from the root barrel', async () => {

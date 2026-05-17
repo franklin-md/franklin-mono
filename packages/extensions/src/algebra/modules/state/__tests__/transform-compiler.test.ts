@@ -5,7 +5,10 @@ import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { Registry } from '../../../extension-points/registry.js';
 import type { BaseRuntime, StateHandle } from '../../../runtime/index.js';
 import type { StateExtensionModule } from '../types.js';
-import { liftCompilerTransform } from '../transform/index.js';
+import {
+	liftCompilerTransform,
+	liftModuleTransform,
+} from '../transform/index.js';
 
 type TestState = {
 	readonly value: number;
@@ -56,11 +59,46 @@ function createModule(): StateExtensionModule<TestState, TestAPI, TestRuntime> {
 }
 
 describe('state module compiler transform', () => {
+	it('lifts state-aware module transforms through instantiation', async () => {
+		const effect = vi.fn(
+			async (_runtime: TestRuntime, _state: TestState) => {},
+		);
+		const transform = liftModuleTransform<
+			TestState,
+			TestAPI,
+			TestRuntime,
+			TestRuntime
+		>((state) => (simple) => ({
+			extensionPoint: simple.extensionPoint,
+			compiler: applyStep<TestAPI, TestRuntime, TestRuntime>(
+				async (runtime) => {
+					await effect(runtime, state);
+					return runtime;
+				},
+			)(simple.compiler),
+		}));
+		const module = transform(createModule());
+		const state = { value: 5 };
+		const simple = module.instantiate(state);
+
+		const runtime = await compile(
+			simple.extensionPoint,
+			simple.compiler,
+			(api) => api.register(13),
+		);
+
+		expect(runtime.value).toBe(13);
+		expect(effect).toHaveBeenCalledWith(runtime, state);
+		await expect(module.state(runtime).get()).resolves.toEqual({ value: 13 });
+	});
+
 	it('lifts state-aware compiler transforms through instantiation', async () => {
-		const tap = vi.fn(async (_runtime: TestRuntime, _state: TestState) => {});
+		const effect = vi.fn(
+			async (_runtime: TestRuntime, _state: TestState) => {},
+		);
 		const transform = liftCompilerTransform((state: TestState) =>
 			applyStep<TestAPI, TestRuntime, TestRuntime>(async (runtime) => {
-				await tap(runtime, state);
+				await effect(runtime, state);
 				return runtime;
 			}),
 		);
@@ -75,7 +113,7 @@ describe('state module compiler transform', () => {
 		);
 
 		expect(runtime.value).toBe(11);
-		expect(tap).toHaveBeenCalledWith(runtime, state);
+		expect(effect).toHaveBeenCalledWith(runtime, state);
 		await expect(module.state(runtime).get()).resolves.toEqual({ value: 11 });
 	});
 });

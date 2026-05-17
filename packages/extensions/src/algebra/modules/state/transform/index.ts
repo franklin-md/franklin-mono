@@ -1,6 +1,7 @@
 export type {
 	StateCompilerTransform,
 	StateExtensionModuleTransform,
-} from './compiler.js';
-export { liftCompilerTransform } from './compiler.js';
+	StateModuleTransform,
+} from './types.js';
+export { liftCompilerTransform, liftModuleTransform } from './compiler.js';
 export { fromSimpleModule } from './simple.js';

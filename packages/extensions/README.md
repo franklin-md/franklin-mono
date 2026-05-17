@@ -39,7 +39,7 @@ TODO: The `algebra/` folder can stand by itself as a stable, non-AI-specific
 composition layer. Consider documenting and testing that boundary as its own
 package-level surface.
 
-Franklin models extension composition across three related surfaces:
+Franklin models extension composition across these five related surfaces:
 
 - **ExtensionPoint**: registration storage plus author-facing API facade. It creates a fresh `Registry<API>`, creates the API object that writes to that registry, and is the only layer that runs extension registration.
 - **Compiler**: registry interpreter plus runtime builder. It exposes `compile<ContextRuntime>(registry, getRuntime)`, which receives the populated registry with the compile context runtime restored while still returning the compiler's own `Runtime`.
@@ -134,10 +134,10 @@ There are many places where you could plausibly compose simpler mechanics to cre
 
 - **StateExtensionModule transforms for enforcing universal behaviour**:
 	- _It may be easier to express the behaviour as a transformation over the Runtime as opposed to using the API_
-	- The algebraic path is `CompilerStep` -> `CompilerTransform` -> `StateExtensionModule` transform.
+	- The algebraic path is `CompilerStep` -> `CompilerTransform` -> `ExtensionModuleTransform` -> `StateExtensionModule` transform.
 	- Examples:
-    - `withAuth` decorates `CoreModule` so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials
-    - [ ] `withAgentsMd`
+	- `withAuth` decorates `CoreModule` so that: a) LLM credentials are automatically sent via Mini-ACP on agent build b) changes to credentials in the store automatically update credentials
+	- [ ] `withAgentsMd`
 
 ## Extension Authoring Rules
 

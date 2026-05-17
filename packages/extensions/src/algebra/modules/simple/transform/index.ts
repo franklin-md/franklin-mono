@@ -1,2 +1,2 @@
-export type { ExtensionModuleTransform } from './compiler.js';
+export type { ExtensionModuleTransform } from './types.js';
 export { liftCompilerTransform } from './compiler.js';

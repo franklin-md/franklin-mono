@@ -42,27 +42,11 @@ export async function reconnectAgent(
 	await authenticateAgent(runtime, provider, auth);
 }
 
-/**
- * Wrap a core module so that every compiled runtime is automatically
- * authenticated at build time and kept in sync with credential changes.
- *
- * Three behaviors:
- * 1. **Initial login** — resolves the apiKey for the configured provider
- *    when the runtime is first built.
- * 2. **Auto-auth** — intercepts `setLLMConfig` calls. When a provider is
- *    specified without an apiKey, resolves the key from the auth
- *    manager before passing through.
- * 3. **Live sync** — subscribes to credential changes and pushes new
- *    keys to the runtime when its provider's credentials change.
- *    Unsubscribes on dispose.
- */
-export function withAuth(module: CoreModule, auth: AuthManager): CoreModule {
-	const transform = liftStateCompilerTransform<
-		CoreState,
-		CoreAPI,
-		CoreRuntime,
-		CoreRuntime
-	>((state) =>
+// TODO: Can we not use the provider that has been set already during the compile step? (given that should populate?)
+// That would simplify this to just a CompilerStep
+
+function createAuthCompilerTransform(auth: AuthManager) {
+	return (state: CoreState) =>
 		applyStep<CoreAPI, CoreRuntime, CoreRuntime>(async (runtime) => {
 			// Install setLLMConfig wrapper to auto-resolve auth when provider is set.
 			const originalSetLLMConfig = runtime.setLLMConfig.bind(runtime);
@@ -90,11 +74,11 @@ export function withAuth(module: CoreModule, auth: AuthManager): CoreModule {
 				return originalSetLLMConfig(config);
 			};
 
-			// Initial login — resolves credentials for the configured provider,
+			// Initial login resolves credentials for the configured provider,
 			// or no-ops if none is set.
 			await reconnectAgent(runtime, state, auth);
 
-			// Live credential sync — push new keys when this runtime's provider changes.
+			// Live credential sync pushes new keys when this runtime's provider changes.
 			const handle = coreStateHandle(runtime);
 			const unsubscribe = auth.onAuthChange((provider) => {
 				void (async () => {
@@ -111,7 +95,23 @@ export function withAuth(module: CoreModule, auth: AuthManager): CoreModule {
 				return originalDispose();
 			};
 			return runtime;
-		}),
-	);
-	return transform(module);
+		});
+}
+
+/**
+ * Wrap a core module so that every compiled runtime is automatically
+ * authenticated at build time and kept in sync with credential changes.
+ *
+ * Three behaviors:
+ * 1. **Initial login** — resolves the apiKey for the configured provider
+ *    when the runtime is first built.
+ * 2. **Auto-auth** — intercepts `setLLMConfig` calls. When a provider is
+ *    specified without an apiKey, resolves the key from the auth
+ *    manager before passing through.
+ * 3. **Live sync** — subscribes to credential changes and pushes new
+ *    keys to the runtime when its provider's credentials change.
+ *    Unsubscribes on dispose.
+ */
+export function withAuth(module: CoreModule, auth: AuthManager): CoreModule {
+	return liftStateCompilerTransform(createAuthCompilerTransform(auth))(module);
 }
