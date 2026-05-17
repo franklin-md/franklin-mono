@@ -1,5 +1,6 @@
 import type { StoreResult } from './api/registry/result.js';
-import type { BaseRuntime, StateHandle } from '../../algebra/runtime/index.js';
+import type { StateHandle } from '../../algebra/modules/state/index.js';
+import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { StoreState, StoreMapping } from './state.js';
 import type { Store } from './api/types.js';
 import type { StoreKey } from './api/key.js';

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Ctx } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
 import type { CoreRuntime } from '../runtime/index.js';
-import type { StateHandle } from '../../../algebra/runtime/index.js';
+import type { StateHandle } from '../../../algebra/modules/state/index.js';
 import type { CoreState } from '../state.js';
 
 function stubRuntime(ctx: Ctx): CoreRuntime {

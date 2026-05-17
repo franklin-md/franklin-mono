@@ -5,7 +5,7 @@ import type { BaseRuntime } from '../runtime/index.js';
  * Base constraint for an API surface — any object shape (registration
  * methods, collectors, etc.).
  */
-export type APISurface = object;
+export type BaseAPI = object;
 
 /**
  * Type-level function `Runtime -> API`. A signature describes how to derive
@@ -25,7 +25,7 @@ export type APISurface = object;
  */
 export interface Signature extends HKT {
 	readonly In: BaseRuntime;
-	readonly Out: APISurface;
+	readonly Out: BaseAPI;
 }
 
 /**
@@ -39,16 +39,16 @@ export type API<S extends Signature, R extends S['In']> = Apply<S, R>;
  *
  *   export type StoreModule = StateExtensionModule<S, StaticSignature<StoreAPI>, R>
  */
-export interface StaticSignature<A extends APISurface> extends Signature {
+export interface StaticSignature<A extends BaseAPI> extends Signature {
 	readonly In: BaseRuntime;
 	readonly Out: A;
 }
 
 /**
- * Compose two signatures: intersect inputs, intersect API surfaces at the
+ * Combine two signatures: intersect inputs, intersect API surfaces at the
  * joined runtime.
  */
-export interface ComposeSignature<
+export interface CombineSignature<
 	S1 extends Signature,
 	S2 extends Signature,
 > extends Signature {

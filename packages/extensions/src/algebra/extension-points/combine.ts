@@ -1,11 +1,6 @@
-import type { API, ComposeSignature, Signature } from '../api/types.js';
+import type { API, CombineSignature, Signature } from '../api/types.js';
 import type { ExtensionPoint } from './types.js';
 import type { RegistryWriter } from './writer.js';
-
-export type CombineSignature<
-	S1 extends Signature,
-	S2 extends Signature,
-> = ComposeSignature<S1, S2>;
 
 // TODO: Add the same API-key overlap guard used by module composition before
 // exposing this helper as a public composition surface.

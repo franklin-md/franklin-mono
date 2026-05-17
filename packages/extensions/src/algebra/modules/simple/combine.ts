@@ -1,5 +1,5 @@
 import type { AssertNoOverlap } from '@franklin/lib';
-import type { API, ComposeSignature } from '../../api/index.js';
+import type { API, CombineSignature } from '../../api/index.js';
 import { combine as combineCompilers } from '../../compiler/combine.js';
 import { combine as combineExtensionPoints } from '../../extension-points/combine.js';
 import type { CombinedRuntime, RuntimeExtras } from '../../runtime/index.js';
@@ -16,7 +16,7 @@ export type CombineModules<
 	Module1 extends BaseExtensionModule,
 	Module2 extends BaseExtensionModule,
 > = ExtensionModule<
-	ComposeSignature<InferSignature<Module1>, InferSignature<Module2>>,
+	CombineSignature<InferSignature<Module1>, InferSignature<Module2>>,
 	CombinedRuntime<InferRuntime<Module1>, InferRuntime<Module2>>
 >;
 

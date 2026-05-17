@@ -40,9 +40,9 @@ type ValidateExtensionTuples<
 type BindReducedAPI<
 	Signatures extends readonly Signature[],
 	Runtime extends BaseRuntime,
-> = Simplify<BindAPISurfaces<Signatures, Runtime>>;
+> = Simplify<BindAPIs<Signatures, Runtime>>;
 
-type BindAPISurfaces<
+type BindAPIs<
 	Signatures extends readonly Signature[],
 	Runtime extends BaseRuntime,
 > = Signatures extends readonly []
@@ -52,7 +52,7 @@ type BindAPISurfaces<
 				...infer Tail extends readonly Signature[],
 		  ]
 		? Runtime extends Head['In']
-			? API<Head, Runtime> & BindAPISurfaces<Tail, Runtime>
+			? API<Head, Runtime> & BindAPIs<Tail, Runtime>
 			: never
 		: Record<never, never>;
 

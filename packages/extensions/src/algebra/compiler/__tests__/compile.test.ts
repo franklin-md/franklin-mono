@@ -9,13 +9,13 @@ import type { BaseRuntime } from '../../runtime/index.js';
 import { build, compile, register } from '../compile.js';
 import type { Compiler } from '../types.js';
 
-type LabelAPISurface = {
+type LabelAPI = {
 	registerLabel(label: string): void;
 };
 
 interface LabelSignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: LabelAPISurface;
+	readonly Out: LabelAPI;
 }
 
 type LabelRuntime = BaseRuntime & {

@@ -1,8 +1,18 @@
 import type { Signature } from '../../api/index.js';
-import type { BaseRuntime, StateHandle } from '../../runtime/index.js';
+import type { BaseRuntime } from '../../runtime/index.js';
 import type { ExtensionModule } from '../simple/index.js';
 
-export type { StateHandle } from '../../runtime/index.js';
+/**
+ * Grouped state snapshot/derivation operations for a runtime.
+ *
+ * Lives on the state extension module (`StateExtensionModule.state(runtime)`),
+ * not on the runtime itself — runtimes carry only live capabilities + lifecycle.
+ */
+export interface StateHandle<S> {
+	get(): Promise<S>;
+	fork(): Promise<S>;
+	child(): Promise<S>;
+}
 
 export type BaseState = Record<string, unknown>;
 

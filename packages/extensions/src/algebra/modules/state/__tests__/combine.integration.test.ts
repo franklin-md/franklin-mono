@@ -27,10 +27,10 @@ import { createApi } from '../../../extension-points/facade.js';
 import type { RegistryView } from '../../../extension-points/view.js';
 import { createRegistry } from '../../../extension-points/writer.js';
 import type { ExtensionPoint } from '../../../extension-points/types.js';
-import type { BaseRuntime, StateHandle } from '../../../runtime/types.js';
+import type { BaseRuntime } from '../../../runtime/types.js';
 import { combine } from '../combine.js';
 import { identityModule } from '../identity.js';
-import type { StateExtensionModule } from '../index.js';
+import type { StateExtensionModule, StateHandle } from '../index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -111,11 +111,11 @@ async function collect(
 	return items;
 }
 
-type ValueAPISurface = {
+type ValueAPI = {
 	registerValue(value: number): void;
 };
 
-type ValueSignature = StaticSignature<ValueAPISurface>;
+type ValueSignature = StaticSignature<ValueAPI>;
 
 const valueExtensionPoint = createExtensionPoint<ValueSignature>({
 	registerValue: true,

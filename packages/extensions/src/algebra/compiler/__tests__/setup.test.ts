@@ -13,11 +13,11 @@ import {
 	withSetupCompiler,
 } from '../setup.js';
 
-type TestAPISurface = {
+type TestAPI = {
 	register(value: number): void;
 };
 
-type TestSignature = StaticSignature<TestAPISurface>;
+type TestSignature = StaticSignature<TestAPI>;
 
 type TestRuntime = BaseRuntime & {
 	readonly value: number;

@@ -7,14 +7,14 @@ import type { ExtensionPoint } from '../types.js';
 import { createRegistryView } from '../view.js';
 import { createRegistry } from '../writer.js';
 
-type TestAPISurface = {
+type TestAPI = {
 	readonly registerText: (value: string) => void;
 	readonly registerPair: (first: number, second: boolean) => void;
 };
 
 interface TestSignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: TestAPISurface;
+	readonly Out: TestAPI;
 }
 
 interface EmptySignature extends Signature {
@@ -98,7 +98,7 @@ describe('createExtensionPoint', () => {
 	it('allows explicit extension points to return non-registration API values', () => {
 		interface LabeledSignature extends Signature {
 			readonly In: BaseRuntime;
-			readonly Out: TestAPISurface & { readonly label: string };
+			readonly Out: TestAPI & { readonly label: string };
 		}
 		const extensionPoint: ExtensionPoint<LabeledSignature> = (writer) => ({
 			label: 'test',

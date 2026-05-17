@@ -2,7 +2,7 @@ import { combine, combineAll } from '../combine.js';
 import type { CombinableModule, CombineModules, Modules } from '../combine.js';
 import type {
 	Signature,
-	APISurface,
+	BaseAPI,
 	StaticSignature,
 } from '../../../api/types.js';
 import { combineRuntimes } from '../../../runtime/combine.js';
@@ -11,7 +11,7 @@ import type { BaseState, InferAPI, StateExtensionModule } from '../index.js';
 
 type StubSystem<
 	S extends BaseState,
-	Surface extends APISurface = Record<never, never>,
+	Surface extends BaseAPI = Record<never, never>,
 	RT extends BaseRuntime = BaseRuntime,
 > = StateExtensionModule<S, StaticSignature<Surface>, RT>;
 
@@ -172,13 +172,13 @@ void _invalidCombinedRuntime;
 // API families are applied after runtime composition
 // ---------------------------------------------------------------------------
 
-interface RuntimeAwareAPISurface<Runtime extends BaseRuntime> {
+interface RuntimeAwareAPI<Runtime extends BaseRuntime> {
 	useRuntime(handler: (runtime: Runtime) => void): void;
 }
 
 interface RuntimeAwareSignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: RuntimeAwareAPISurface<this['In']>;
+	readonly Out: RuntimeAwareAPI<this['In']>;
 }
 
 type RuntimeAwareSystem = StateExtensionModule<

@@ -14,14 +14,14 @@ type _ExpectNever<T extends never> = T;
 
 type StubStateModule<
 	S extends Record<string, unknown>,
-	APISurface extends object = Record<never, never>,
+	Surface extends object = Record<never, never>,
 	Runtime extends BaseRuntime = BaseRuntime,
-> = StateExtensionModule<S, StaticSignature<APISurface>, Runtime>;
+> = StateExtensionModule<S, StaticSignature<Surface>, Runtime>;
 
 type StubSimpleModule<
-	APISurface extends object = Record<never, never>,
+	Surface extends object = Record<never, never>,
 	Runtime extends BaseRuntime = BaseRuntime,
-> = ExtensionModule<StaticSignature<APISurface>, Runtime>;
+> = ExtensionModule<StaticSignature<Surface>, Runtime>;
 
 type CounterState = {
 	counter: { value: number };
@@ -116,13 +116,13 @@ const _invalidRuntimeBuilder = buildStateExtensionModule([
 ]);
 void _invalidRuntimeBuilder;
 
-interface RuntimeAwareAPISurface<Runtime extends BaseRuntime> {
+interface RuntimeAwareAPI<Runtime extends BaseRuntime> {
 	useRuntime(handler: (runtime: Runtime) => void): void;
 }
 
 interface RuntimeAwareSignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: RuntimeAwareAPISurface<this['In']>;
+	readonly Out: RuntimeAwareAPI<this['In']>;
 }
 
 type RuntimeAwareModule = StateExtensionModule<

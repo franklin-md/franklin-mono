@@ -3,19 +3,19 @@ import type { StaticSignature } from '../../../api/index.js';
 import { compile } from '../../../compiler/index.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { RegistryView } from '../../../extension-points/view.js';
-import type { BaseRuntime, StateHandle } from '../../../runtime/index.js';
-import type { StateExtensionModule } from '../types.js';
+import type { BaseRuntime } from '../../../runtime/index.js';
+import type { StateExtensionModule, StateHandle } from '../types.js';
 import { withSetup } from '../setup.js';
 
 type TestState = {
 	readonly value: number;
 };
 
-type TestAPISurface = {
+type TestAPI = {
 	register(value: number): void;
 };
 
-type TestSignature = StaticSignature<TestAPISurface>;
+type TestSignature = StaticSignature<TestAPI>;
 
 const extensionPoint = createExtensionPoint<TestSignature>({
 	register: true,

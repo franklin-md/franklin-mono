@@ -11,11 +11,11 @@ import { identityModule } from '../identity.js';
 import type { ExtensionModule } from '../types.js';
 import type { Signature, StaticSignature } from '../../../api/types.js';
 
-type CounterAPISurface = {
+type CounterAPI = {
 	registerCount(value: number): void;
 };
 
-type CounterSignature = StaticSignature<CounterAPISurface>;
+type CounterSignature = StaticSignature<CounterAPI>;
 
 const counterExtensionPoint = createExtensionPoint<CounterSignature>({
 	registerCount: true,
@@ -50,11 +50,11 @@ function createCounterModule(
 	};
 }
 
-type LabelAPISurface = {
+type LabelAPI = {
 	registerLabel(value: string): void;
 };
 
-type LabelSignature = StaticSignature<LabelAPISurface>;
+type LabelSignature = StaticSignature<LabelAPI>;
 
 const labelExtensionPoint = createExtensionPoint<LabelSignature>({
 	registerLabel: true,

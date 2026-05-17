@@ -10,18 +10,19 @@ import { createApi } from '../../extension-points/facade.js';
 import { combine as combineExtensionPoints } from '../../extension-points/combine.js';
 import type { RegistryView } from '../../extension-points/view.js';
 import { createRegistry } from '../../extension-points/writer.js';
-import type { BaseRuntime, StateHandle } from '../../runtime/types.js';
+import type { StateHandle } from '../../modules/state/types.js';
+import type { BaseRuntime } from '../../runtime/types.js';
 import { combine } from '../combine.js';
 import { compile } from '../compile.js';
 import type { Compiler } from '../types.js';
 
-type CounterAPISurface = {
+type CounterAPI = {
 	registerCount(value: number): void;
 };
 
 interface CounterSignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: CounterAPISurface;
+	readonly Out: CounterAPI;
 }
 
 const counterExtensionPoint = createExtensionPoint<CounterSignature>({

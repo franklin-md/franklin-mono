@@ -1,6 +1,6 @@
 import type { Simplify } from '@franklin/lib';
 import type { Ctx } from '@franklin/mini-acp';
-import type { StateHandle } from '../../algebra/runtime/index.js';
+import type { StateHandle } from '../../algebra/modules/state/index.js';
 import type { CoreRuntime } from './runtime/index.js';
 import type { CoreState } from './state.js';
 
