@@ -1,42 +1,28 @@
-import type { Apply } from '@franklin/lib';
-import type { API } from '../api/types.js';
-import type { Registry } from './registry.js';
+import type { Signature } from '../api/types.js';
 import type { ExtensionPoint as ExtensionPoint } from './types.js';
+import type { EffectName } from './registry.js';
 
 // This returns a union over the keys
-type ExtensionPointName<A extends API> = Extract<keyof Apply<A, any>, string>;
+type ExtensionPointName<S extends Signature> = EffectName<S, any>;
 
 // This turns that union into a record that requires every name to be present
-type ExtensionPointNames<A extends API> = [ExtensionPointName<A>] extends [
-	never,
-]
+type ExtensionPointNames<S extends Signature> = [
+	ExtensionPointName<S>,
+] extends [never]
 	? Record<string, never>
-	: { readonly [K in ExtensionPointName<A>]: true };
+	: { readonly [K in ExtensionPointName<S>]: true };
 
-type WritableRegistry = Record<string, unknown[][]>;
-
-export function createExtensionPoint<A extends API>(
-	names: ExtensionPointNames<A>,
-): ExtensionPoint<A> {
+export function createExtensionPoint<S extends Signature>(
+	names: ExtensionPointNames<S>,
+): ExtensionPoint<S> {
 	const contributionNames = Object.keys(names);
-	return {
-		createRegistry: () => {
-			const entries = contributionNames.map((name) => [name, []]);
-			return Object.fromEntries(entries) as Registry<A>;
-		},
-		createApi<R extends A['In']>(registry: Registry<A>): Apply<A, R> {
-			const writableRegistry = registry as unknown as WritableRegistry;
-			const entries = contributionNames.map((name) => [
-				name,
-				(...args: unknown[]) => {
-					const contributions = writableRegistry[name];
-					if (contributions === undefined) {
-						throw new Error(`Missing registry contribution list: ${name}`);
-					}
-					contributions.push(args);
-				},
-			]);
-			return Object.fromEntries(entries) as Apply<A, R>;
-		},
-	};
+	return ((writer) => {
+		const entries = contributionNames.map((name) => [
+			name,
+			(...args: unknown[]) => {
+				writer({ name, value: args } as never);
+			},
+		]);
+		return Object.fromEntries(entries);
+	}) as ExtensionPoint<S>;
 }

@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import type { API } from '../algebra/api/index.js';
+import type { Signature } from '../algebra/api/index.js';
 import type { BaseRuntime } from '../algebra/runtime/index.js';
-import type { Registry } from '../algebra/extension-points/registry.js';
 import * as rootExports from '../index.js';
 import { createExtensionPoint, defineExtension } from '../index.js';
+import type { RegistryView } from '../index.js';
 import type { Apply } from '@franklin/lib';
 
 type TestAPISurface = { register(label: string): void };
 
-interface TestAPI extends API {
+interface TestSignature extends Signature {
 	readonly In: BaseRuntime;
 	readonly Out: TestAPISurface;
 }
 
-const testExtensionPoint = createExtensionPoint<TestAPI>({
+const testExtensionPoint = createExtensionPoint<TestSignature>({
 	register: true,
 });
 
@@ -52,6 +52,11 @@ describe('package exports', () => {
 		expect(typeof rootExports.reduceSteps).toBe('function');
 		expect(typeof rootExports.liftStateCompilerTransform).toBe('function');
 		expect(typeof rootExports.liftStateModuleTransform).toBe('function');
+		expect('createRegistry' in rootExports).toBe(false);
+		expect('createApi' in rootExports).toBe(false);
+		expect('deriveApi' in rootExports).toBe(false);
+		expect('createRegistryView' in rootExports).toBe(false);
+		expect('combineExtensionPoints' in rootExports).toBe(false);
 	});
 
 	it('re-exports compileAll from the root barrel', async () => {
@@ -63,14 +68,18 @@ describe('package exports', () => {
 		};
 		const compiler = {
 			async compile<ContextRuntime extends BaseRuntime>(
-				registry: Registry<TestAPI, ContextRuntime>,
+				registry: RegistryView<TestSignature, ContextRuntime>,
 			) {
 				buildCalls += 1;
-				for (const [label] of registry.register) calls.push(label);
+				for (const [label] of registry.argsFor('register')) {
+					calls.push(label);
+				}
 				return runtime;
 			},
 		};
-		const extension = rootExports.reduceExtensions<Apply<TestAPI, BaseRuntime>>(
+		const extension = rootExports.reduceExtensions<
+			Apply<TestSignature, BaseRuntime>
+		>(
 			(api) => api.register('one'),
 			(api) => api.register('two'),
 		);

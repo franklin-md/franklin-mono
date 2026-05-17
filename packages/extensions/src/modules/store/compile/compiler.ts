@@ -1,8 +1,8 @@
 import { castDraft } from 'immer';
 import type { Compiler } from '../../../algebra/compiler/types.js';
-import type { Registry } from '../../../algebra/extension-points/registry.js';
+import type { RegistryView } from '../../../algebra/extension-points/view.js';
 import type { BaseRuntime } from '../../../algebra/runtime/index.js';
-import type { StoreAPI } from '../api/api.js';
+import type { StoreSignature } from '../api/api.js';
 import type { BaseStore } from '../api/base.js';
 import type { StoreRegistry as RuntimeStoreRegistry } from '../api/registry/index.js';
 import type { StoreMapping } from '../state.js';
@@ -29,15 +29,17 @@ type Registration = {
 export function createStoreCompiler(
 	storeRegistry: RuntimeStoreRegistry,
 	state: StoreState,
-): Compiler<StoreAPI, StoreRuntime> {
+): Compiler<StoreSignature, StoreRuntime> {
 	return {
 		async compile<ContextRuntime extends BaseRuntime>(
-			registry: Registry<StoreAPI, ContextRuntime>,
+			registry: RegistryView<StoreSignature, ContextRuntime>,
 		) {
-			const registrations = registry.registerStore.map(
-				([name, initial, sharing]) =>
-					({ name, initial, sharing }) satisfies Registration,
-			);
+			const registrations = registry
+				.argsFor('registerStore')
+				.map(
+					([name, initial, sharing]) =>
+						({ name, initial, sharing }) satisfies Registration,
+				);
 			const seedMapping = state.store;
 			const hasEntries = Object.keys(seedMapping).length > 0;
 			const seed = hasEntries

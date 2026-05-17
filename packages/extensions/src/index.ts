@@ -1,12 +1,12 @@
 export type { Issue, MapFilePersister, RestoreResult } from '@franklin/lib';
 export type {
 	API,
-	BaseAPI,
-	BoundAPI,
-	ComposeAPI,
-	StaticAPI,
+	APISurface,
+	ComposeSignature,
+	Signature,
+	StaticSignature,
 } from './algebra/api/types.js';
-export type { ReduceAPIs } from './algebra/api/reduce.js';
+export type { ReduceSignatures } from './algebra/api/reduce.js';
 export { combine } from './algebra/compiler/combine.js';
 export { compile } from './algebra/compiler/compile.js';
 export type { Compiler } from './algebra/compiler/types.js';
@@ -24,7 +24,7 @@ export {
 export type { Registry } from './algebra/extension-points/registry.js';
 export type { ExtensionPoint } from './algebra/extension-points/types.js';
 export { createExtensionPoint } from './algebra/extension-points/create.js';
-export { combine as combineExtensionPoints } from './algebra/extension-points/combine.js';
+export type { RegistryView } from './algebra/extension-points/view.js';
 export {
 	createOrchestrator,
 	Orchestrator,
@@ -71,9 +71,10 @@ export type { ExtensionBundle } from './modules/bundle/index.js';
 export { createBundle } from './modules/bundle/index.js';
 export { defineExtension } from './algebra/extension/index.js';
 export type {
-	ExtensionApi,
+	AlgebraExtensionAPI,
+	ExtensionAPI,
 	ExtensionForModules,
-	ModuleAPIs,
+	ModuleSignatures,
 	ModuleRuntimes,
 } from './algebra/extension/index.js';
 export type {
@@ -83,8 +84,8 @@ export type {
 	CombinableBuildModule,
 	CombineModules,
 	InferAPI,
-	InferBoundAPI,
 	InferRuntime,
+	InferSignature,
 	InferState,
 	LiftModule,
 	LiftModules,
@@ -92,11 +93,7 @@ export type {
 	ValidateBuildModules,
 	ValidateModules,
 } from './algebra/modules/state/index.js';
-export type {
-	Extension,
-	ExtensionAPISurface,
-	ExtensionFor,
-} from './algebra/extension/types.js';
+export type { Extension, ExtensionFor } from './algebra/extension/types.js';
 export { reduceExtensions } from './algebra/extension/index.js';
 export type {
 	AssistantBlock,
@@ -148,6 +145,7 @@ export type {
 	CoreEventHandlers,
 	CoreOnRegistration,
 	CoreRegisterToolRegistration,
+	CoreSignature,
 	ExtensionToolDefinition,
 	Prompt,
 	PromptHandler,
@@ -216,7 +214,7 @@ export type {
 	Sharing,
 	Store,
 	StoreAPI,
-	StoreAPISurface,
+	StoreSignature,
 	StoreEntry,
 	StoreKey,
 	StoreMapping,

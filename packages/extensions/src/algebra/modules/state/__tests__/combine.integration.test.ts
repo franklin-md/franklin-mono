@@ -21,9 +21,11 @@ import { createEnvironmentModule } from '../../../../modules/environment/module.
 import { StoreRegistry } from '../../../../modules/store/api/registry/index.js';
 import { createStoreModule } from '../../../../modules/store/module.js';
 import { createRuntime } from '../../../../testing/index.js';
-import type { API, StaticAPI } from '../../../api/types.js';
+import type { Signature, StaticSignature } from '../../../api/types.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
-import type { Registry } from '../../../extension-points/registry.js';
+import { createApi } from '../../../extension-points/facade.js';
+import type { RegistryView } from '../../../extension-points/view.js';
+import { createRegistry } from '../../../extension-points/writer.js';
 import type { ExtensionPoint } from '../../../extension-points/types.js';
 import type { BaseRuntime, StateHandle } from '../../../runtime/types.js';
 import { combine } from '../combine.js';
@@ -113,9 +115,9 @@ type ValueAPISurface = {
 	registerValue(value: number): void;
 };
 
-type ValueAPI = StaticAPI<ValueAPISurface>;
+type ValueSignature = StaticSignature<ValueAPISurface>;
 
-const valueExtensionPoint = createExtensionPoint<ValueAPI>({
+const valueExtensionPoint = createExtensionPoint<ValueSignature>({
 	registerValue: true,
 });
 
@@ -133,7 +135,7 @@ type ValueRuntime = BaseRuntime & {
 
 function createValueSystem(): StateExtensionModule<
 	ValueState,
-	ValueAPI,
+	ValueSignature,
 	ValueRuntime
 > {
 	return {
@@ -144,9 +146,11 @@ function createValueSystem(): StateExtensionModule<
 				extensionPoint: valueExtensionPoint,
 				compiler: {
 					async compile<ContextRuntime extends BaseRuntime>(
-						registry: Registry<ValueAPI, ContextRuntime>,
+						registry: RegistryView<ValueSignature, ContextRuntime>,
 					) {
-						const registeredValue = registry.registerValue.at(-1)?.[0];
+						const registeredValue = registry
+							.argsFor('registerValue')
+							.at(-1)?.[0];
 						const value = registeredValue ?? state.value;
 						return {
 							label: 'value',
@@ -168,9 +172,11 @@ function createValueSystem(): StateExtensionModule<
 	};
 }
 
-function apiKeys<A extends API>(extensionPoint: ExtensionPoint<A>): string[] {
-	const registry = extensionPoint.createRegistry();
-	return Object.keys(extensionPoint.createApi(registry));
+function apiKeys<A extends Signature>(
+	extensionPoint: ExtensionPoint<A>,
+): string[] {
+	const { writer } = createRegistry<A, A['In']>();
+	return Object.keys(createApi<A, A['In']>(extensionPoint, writer));
 }
 
 function moduleApiKeys(module: StateExtensionModule<any, any, any>): string[] {

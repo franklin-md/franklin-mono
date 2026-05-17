@@ -1,4 +1,4 @@
-import type { API } from '../../api/index.js';
+import type { Signature } from '../../api/index.js';
 import type { BaseRuntime } from '../../runtime/index.js';
 import type { CompilerStep, CompilerTransform, RuntimeStep } from './types.js';
 
@@ -29,12 +29,12 @@ export function reduceSteps<Runtime extends BaseRuntime>(
 }
 
 export function applyStep<
-	A extends API,
-	Runtime extends BaseRuntime & A['In'],
-	OutputRuntime extends BaseRuntime & A['In'],
+	S extends Signature,
+	Runtime extends BaseRuntime & S['In'],
+	OutputRuntime extends BaseRuntime & S['In'],
 >(
 	step: CompilerStep<Runtime, OutputRuntime>,
-): CompilerTransform<A, Runtime, OutputRuntime> {
+): CompilerTransform<S, Runtime, OutputRuntime> {
 	return (inner) => {
 		return {
 			compile: async (registry, getRuntime) => {

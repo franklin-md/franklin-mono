@@ -4,18 +4,15 @@ import { compile } from '../../../../algebra/compiler/compile.js';
 import { createExtensionPoint } from '../../../../algebra/extension-points/create.js';
 import { createStoreCompiler } from '../compiler.js';
 import { storeStateHandle } from '../../runtime.js';
-import type { StoreAPI, StoreAPISurface } from '../../api/api.js';
+import type { StoreAPI, StoreSignature } from '../../api/api.js';
 import type { Extension } from '../../../../algebra/extension/index.js';
 import type { StoreMapping } from '../../state.js';
 
-const storeExtensionPoint = createExtensionPoint<StoreAPI>({
+const storeExtensionPoint = createExtensionPoint<StoreSignature>({
 	registerStore: true,
 });
 
-function compileStore(
-	ext: Extension<StoreAPISurface>,
-	seed: StoreMapping = {},
-) {
+function compileStore(ext: Extension<StoreAPI>, seed: StoreMapping = {}) {
 	return compile(
 		storeExtensionPoint,
 		createStoreCompiler(new StoreRegistry(), { store: seed }),

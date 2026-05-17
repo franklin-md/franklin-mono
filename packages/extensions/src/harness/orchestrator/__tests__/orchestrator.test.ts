@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { API } from '../../../algebra/api/index.js';
+import type { Signature } from '../../../algebra/api/index.js';
 import type { Extension } from '../../../algebra/extension/index.js';
-import type { Registry } from '../../../algebra/extension-points/registry.js';
+import type { RegistryView } from '../../../algebra/extension-points/view.js';
 import type { ExtensionPoint } from '../../../algebra/extension-points/types.js';
 import type {
 	BaseRuntime,
@@ -9,7 +9,7 @@ import type {
 } from '../../../algebra/runtime/index.js';
 import { createDependencyModule } from '../../../modules/dependency/module.js';
 import type {
-	InferBoundAPI,
+	InferAPI,
 	InferRuntime,
 	StateExtensionModule,
 } from '../../../algebra/modules/state/index.js';
@@ -37,28 +37,26 @@ type RuntimeAwareAPISurface<Runtime extends BaseRuntime> = {
 	onRuntime(handler: RuntimeHandler<Runtime>): void;
 };
 
-interface RuntimeAwareAPI extends API {
+interface RuntimeAwareSignature extends Signature {
 	readonly In: BaseRuntime;
 	readonly Out: RuntimeAwareAPISurface<this['In']>;
 }
 
-const runtimeAwareExtensionPoint: ExtensionPoint<RuntimeAwareAPI> = {
-	createRegistry: () =>
-		({
-			onRuntime: [],
-		}) as Registry<RuntimeAwareAPI>,
-	createApi: <ContextRuntime extends BaseRuntime>(
-		registry: Registry<RuntimeAwareAPI>,
-	) => ({
-		onRuntime(handler: RuntimeHandler<ContextRuntime>) {
-			registry.onRuntime.push([handler] as never);
-		},
-	}),
-};
+const runtimeAwareExtensionPoint: ExtensionPoint<RuntimeAwareSignature> = (
+	writer,
+) => ({
+	onRuntime(handler) {
+		writer({ name: 'onRuntime', value: [handler] });
+	},
+});
 
-type TestModule = StateExtensionModule<TestState, RuntimeAwareAPI, TestRuntime>;
+type TestModule = StateExtensionModule<
+	TestState,
+	RuntimeAwareSignature,
+	TestRuntime
+>;
 type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<[TestModule]>>;
-type TestOrchestratedAPI = InferBoundAPI<OrchestratorModule<[TestModule]>>;
+type TestOrchestratedAPI = InferAPI<OrchestratorModule<[TestModule]>>;
 type Settings = {
 	get(): string;
 };
@@ -72,12 +70,12 @@ function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 				extensionPoint: runtimeAwareExtensionPoint,
 				compiler: {
 					async compile<ContextRuntime extends BaseRuntime>(
-						registry: Registry<RuntimeAwareAPI, ContextRuntime>,
+						registry: RegistryView<RuntimeAwareSignature, ContextRuntime>,
 						getRuntime: () => ContextRuntime,
 					) {
-						const handlers = registry.onRuntime.map(
-							([handler]) => handler as RuntimeHandler<BaseRuntime>,
-						);
+						const handlers = registry
+							.argsFor('onRuntime')
+							.map(([handler]) => handler as RuntimeHandler<BaseRuntime>);
 						let disposed = false;
 						return {
 							runHandlers() {
@@ -179,7 +177,7 @@ describe('Orchestrator', () => {
 		const settingsModule = createDependencyModule('settings', settings);
 		type MixedModule = OrchestratorModule<[TestModule, typeof settingsModule]>;
 		type MixedRuntime = InferRuntime<MixedModule>;
-		type MixedAPI = InferBoundAPI<MixedModule>;
+		type MixedAPI = InferAPI<MixedModule>;
 		const collection = new RuntimeCollection<MixedRuntime>();
 		const seen: string[] = [];
 		const extension: Extension<MixedAPI> = (api) => {

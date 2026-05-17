@@ -1,19 +1,19 @@
 import { combine, combineAll } from '../combine.js';
 import type { CombinableModule, CombineModules, Modules } from '../combine.js';
-import type { API, BaseAPI, StaticAPI } from '../../../api/types.js';
+import type {
+	Signature,
+	APISurface,
+	StaticSignature,
+} from '../../../api/types.js';
 import { combineRuntimes } from '../../../runtime/combine.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
-import type {
-	BaseState,
-	InferBoundAPI,
-	StateExtensionModule,
-} from '../index.js';
+import type { BaseState, InferAPI, StateExtensionModule } from '../index.js';
 
 type StubSystem<
 	S extends BaseState,
-	APISurface extends BaseAPI = Record<never, never>,
+	Surface extends APISurface = Record<never, never>,
 	RT extends BaseRuntime = BaseRuntime,
-> = StateExtensionModule<S, StaticAPI<APISurface>, RT>;
+> = StateExtensionModule<S, StaticSignature<Surface>, RT>;
 
 type _ExpectNever<T extends never> = T;
 
@@ -176,14 +176,14 @@ interface RuntimeAwareAPISurface<Runtime extends BaseRuntime> {
 	useRuntime(handler: (runtime: Runtime) => void): void;
 }
 
-interface RuntimeAwareAPI extends API {
+interface RuntimeAwareSignature extends Signature {
 	readonly In: BaseRuntime;
 	readonly Out: RuntimeAwareAPISurface<this['In']>;
 }
 
 type RuntimeAwareSystem = StateExtensionModule<
 	{ aware: { value: boolean } },
-	RuntimeAwareAPI,
+	RuntimeAwareSignature,
 	BaseRuntime
 >;
 
@@ -197,7 +197,7 @@ type ExtraStateModule = StubSystem<
 	RuntimeWithExtra
 >;
 
-type CombinedRuntimeAwareAPI = InferBoundAPI<
+type CombinedRuntimeAwareAPI = InferAPI<
 	CombineModules<RuntimeAwareSystem, ExtraStateModule>
 >;
 

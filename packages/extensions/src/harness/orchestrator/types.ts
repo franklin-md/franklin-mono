@@ -1,15 +1,15 @@
 import type { DeepPartial } from '@franklin/lib';
-import type { ComposeAPI } from '../../algebra/api/index.js';
+import type { ComposeSignature } from '../../algebra/api/index.js';
 import type {
-	InferAPI as InferSimpleAPI,
 	InferRuntime as InferSimpleRuntime,
+	InferSignature as InferSimpleSignature,
 } from '../../algebra/modules/simple/index.js';
 import type {
 	BaseStateExtensionModule,
 	BuildableModule,
 	BuildModules,
-	InferAPI,
 	InferRuntime,
+	InferSignature,
 	InferState,
 	StateExtensionModule,
 } from '../../algebra/modules/state/index.js';
@@ -74,22 +74,22 @@ export type OrchestratorRuntime<M extends BaseStateExtensionModule> =
  * The fully orchestrated module for a module list: the reduced user modules
  * composed with the internal `Self` + orchestration ports (see
  * `InternalOrchestratorModule`). It is itself a state extension module, so the
- * standard inference helpers (`InferRuntime`, `InferState`, `InferBoundAPI`)
+ * standard inference helpers (`InferRuntime`, `InferState`, `InferAPI`)
  * work on it directly:
  *
  *   type FranklinBase      = BuildModules<FranklinModules>;
  *   type FranklinModule    = OrchestratorModule<FranklinModules>;
  *   type FranklinRuntime   = OrchestratorRuntime<FranklinBase>;
  *   type FranklinState     = InferState<FranklinModule>;
- *   type FranklinAPI       = InferBoundAPI<FranklinModule>;
+ *   type FranklinAPI       = InferAPI<FranklinModule>;
  *   type FranklinExtension = Extension<FranklinAPI>;
  */
 export type OrchestratorModule<Mods extends readonly BuildableModule[]> =
 	StateExtensionModule<
 		InferState<BuildModules<Mods>>,
-		ComposeAPI<
-			InferAPI<BuildModules<Mods>>,
-			InferSimpleAPI<InternalOrchestratorModule<BuildModules<Mods>>>
+		ComposeSignature<
+			InferSignature<BuildModules<Mods>>,
+			InferSimpleSignature<InternalOrchestratorModule<BuildModules<Mods>>>
 		>,
 		CombinedRuntime<
 			InferRuntime<BuildModules<Mods>>,

@@ -1,5 +1,5 @@
 import type { AssertNoOverlap } from '@franklin/lib';
-import type { BoundAPI, ComposeAPI } from '../../api/index.js';
+import type { API, ComposeSignature } from '../../api/index.js';
 import { combine as combineCompilers } from '../../compiler/combine.js';
 import { combine as combineExtensionPoints } from '../../extension-points/combine.js';
 import type { CombinedRuntime, RuntimeExtras } from '../../runtime/index.js';
@@ -9,14 +9,14 @@ import type {
 	ValidateCompositionTuple,
 } from '../../../utils/compose-typing.js';
 import { reduceNonEmpty } from '../../../utils/reduce-non-empty.js';
-import type { InferAPI, InferRuntime } from './infer.js';
+import type { InferRuntime, InferSignature } from './infer.js';
 import type { BaseExtensionModule, ExtensionModule } from './types.js';
 
 export type CombineModules<
 	Module1 extends BaseExtensionModule,
 	Module2 extends BaseExtensionModule,
 > = ExtensionModule<
-	ComposeAPI<InferAPI<Module1>, InferAPI<Module2>>,
+	ComposeSignature<InferSignature<Module1>, InferSignature<Module2>>,
 	CombinedRuntime<InferRuntime<Module1>, InferRuntime<Module2>>
 >;
 
@@ -33,19 +33,27 @@ export type CombinableModule<
 	Module1 extends BaseExtensionModule,
 	Module2 extends BaseExtensionModule,
 > = AssertNoOverlap<
-	BoundAPI<InferAPI<Module1>, CombinedRuntimeOf<Module1, Module2>>,
-	BoundAPI<InferAPI<Module2>, CombinedRuntimeOf<Module1, Module2>>
+	API<InferSignature<Module1>, CombinedRuntimeOf<Module1, Module2>>,
+	API<InferSignature<Module2>, CombinedRuntimeOf<Module1, Module2>>
 > &
 	AssertNoOverlap<RuntimeExtrasOf<Module1>, RuntimeExtrasOf<Module2>>;
 
 interface CombineModuleType extends BinaryType {
-	readonly In: readonly [BaseExtensionModule, BaseExtensionModule];
-	readonly Out: CombineModules<this['In'][0], this['In'][1]>;
+	readonly In: readonly [unknown, unknown];
+	readonly Out: this['In'][0] extends BaseExtensionModule
+		? this['In'][1] extends BaseExtensionModule
+			? CombineModules<this['In'][0], this['In'][1]>
+			: never
+		: never;
 }
 
 interface CombinableModuleType extends BinaryType {
-	readonly In: readonly [BaseExtensionModule, BaseExtensionModule];
-	readonly Out: CombinableModule<this['In'][0], this['In'][1]>;
+	readonly In: readonly [unknown, unknown];
+	readonly Out: this['In'][0] extends BaseExtensionModule
+		? this['In'][1] extends BaseExtensionModule
+			? CombinableModule<this['In'][0], this['In'][1]>
+			: never
+		: never;
 }
 
 export function combine<
@@ -75,7 +83,7 @@ export type ValidateModules<T extends readonly BaseExtensionModule[]> =
 		CombinableModuleType
 	>;
 
-export function combineAll<T extends readonly BaseExtensionModule[]>(
+export function combineAll<const T extends readonly BaseExtensionModule[]>(
 	modules: readonly [...T] & ValidateModules<T>,
 ): Modules<T> {
 	return reduceNonEmpty(

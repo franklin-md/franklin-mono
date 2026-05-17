@@ -1,14 +1,14 @@
-import type { API } from '../../api/index.js';
+import type { Signature } from '../../api/index.js';
 import type { Compiler } from '../../compiler/index.js';
 import type { ExtensionPoint } from '../../extension-points/types.js';
 import type { BaseRuntime } from '../../runtime/index.js';
 
 export type ExtensionModule<
-	A extends API,
-	Runtime extends BaseRuntime & A['In'],
+	S extends Signature,
+	Runtime extends BaseRuntime & S['In'],
 > = {
-	readonly extensionPoint: ExtensionPoint<A>;
-	readonly compiler: Compiler<A, Runtime>;
+	readonly extensionPoint: ExtensionPoint<S>;
+	readonly compiler: Compiler<S, Runtime>;
 };
 
 export type BaseExtensionModule = ExtensionModule<any, any>;

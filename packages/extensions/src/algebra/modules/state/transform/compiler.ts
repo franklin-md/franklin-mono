@@ -1,4 +1,4 @@
-import type { API } from '../../../api/index.js';
+import type { Signature } from '../../../api/index.js';
 import type { BaseRuntime } from '../../../runtime/index.js';
 import { liftCompilerTransform as liftSimpleCompilerTransform } from '../../simple/transform/index.js';
 import type { BaseState } from '../types.js';
@@ -10,12 +10,12 @@ import type {
 
 export function liftModuleTransform<
 	S extends BaseState,
-	A extends API,
-	InputRuntime extends BaseRuntime & A['In'],
+	Api extends Signature,
+	InputRuntime extends BaseRuntime & Api['In'],
 	OutputRuntime extends InputRuntime,
 >(
-	transform: StateModuleTransform<S, A, InputRuntime, OutputRuntime>,
-): StateExtensionModuleTransform<S, A, InputRuntime, OutputRuntime> {
+	transform: StateModuleTransform<S, Api, InputRuntime, OutputRuntime>,
+): StateExtensionModuleTransform<S, Api, InputRuntime, OutputRuntime> {
 	return (module) => {
 		return {
 			emptyState: () => module.emptyState(),
@@ -29,12 +29,12 @@ export function liftModuleTransform<
 
 export function liftCompilerTransform<
 	S extends BaseState,
-	A extends API,
-	InputRuntime extends BaseRuntime & A['In'],
+	Api extends Signature,
+	InputRuntime extends BaseRuntime & Api['In'],
 	OutputRuntime extends InputRuntime,
 >(
-	transform: StateCompilerTransform<S, A, InputRuntime, OutputRuntime>,
-): StateExtensionModuleTransform<S, A, InputRuntime, OutputRuntime> {
+	transform: StateCompilerTransform<S, Api, InputRuntime, OutputRuntime>,
+): StateExtensionModuleTransform<S, Api, InputRuntime, OutputRuntime> {
 	return liftModuleTransform((state) =>
 		liftSimpleCompilerTransform(transform(state)),
 	);

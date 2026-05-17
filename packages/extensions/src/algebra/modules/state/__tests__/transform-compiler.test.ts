@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { StaticAPI } from '../../../api/index.js';
 import { applyStep, compile } from '../../../compiler/index.js';
+import type { StaticSignature } from '../../../api/index.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
-import type { Registry } from '../../../extension-points/registry.js';
+import type { RegistryView } from '../../../extension-points/view.js';
 import type { BaseRuntime, StateHandle } from '../../../runtime/index.js';
 import type { StateExtensionModule } from '../types.js';
 import {
@@ -18,9 +18,9 @@ type TestAPISurface = {
 	register(value: number): void;
 };
 
-type TestAPI = StaticAPI<TestAPISurface>;
+type TestSignature = StaticSignature<TestAPISurface>;
 
-const extensionPoint = createExtensionPoint<TestAPI>({
+const extensionPoint = createExtensionPoint<TestSignature>({
 	register: true,
 });
 
@@ -31,7 +31,11 @@ type TestRuntime = BaseRuntime & {
 	readonly [TEST_STATE]: StateHandle<TestState>;
 };
 
-function createModule(): StateExtensionModule<TestState, TestAPI, TestRuntime> {
+function createModule(): StateExtensionModule<
+	TestState,
+	TestSignature,
+	TestRuntime
+> {
 	return {
 		emptyState: () => ({ value: 0 }),
 		state: (runtime) => runtime[TEST_STATE],
@@ -39,8 +43,9 @@ function createModule(): StateExtensionModule<TestState, TestAPI, TestRuntime> {
 			return {
 				extensionPoint,
 				compiler: {
-					async compile(registry: Registry<TestAPI>) {
-						const value = registry.register.at(-1)?.[0] ?? state.value;
+					async compile(registry: RegistryView<TestSignature, BaseRuntime>) {
+						const value =
+							registry.argsFor('register').at(-1)?.[0] ?? state.value;
 						return {
 							value,
 							[TEST_STATE]: {
@@ -65,12 +70,12 @@ describe('state module compiler transform', () => {
 		);
 		const transform = liftModuleTransform<
 			TestState,
-			TestAPI,
+			TestSignature,
 			TestRuntime,
 			TestRuntime
 		>((state) => (simple) => ({
 			extensionPoint: simple.extensionPoint,
-			compiler: applyStep<TestAPI, TestRuntime, TestRuntime>(
+			compiler: applyStep<TestSignature, TestRuntime, TestRuntime>(
 				async (runtime) => {
 					await effect(runtime, state);
 					return runtime;
@@ -97,7 +102,7 @@ describe('state module compiler transform', () => {
 			async (_runtime: TestRuntime, _state: TestState) => {},
 		);
 		const transform = liftCompilerTransform((state: TestState) =>
-			applyStep<TestAPI, TestRuntime, TestRuntime>(async (runtime) => {
+			applyStep<TestSignature, TestRuntime, TestRuntime>(async (runtime) => {
 				await effect(runtime, state);
 				return runtime;
 			}),

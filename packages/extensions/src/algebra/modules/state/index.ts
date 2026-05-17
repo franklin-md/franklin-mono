@@ -7,10 +7,10 @@ export type {
 } from './types.js';
 export type {
 	InferAPI,
-	InferBoundAPI,
 	InferCompiler,
 	InferExtension,
 	InferRuntime,
+	InferSignature,
 	InferSimpleModule,
 	InferState,
 } from './infer.js';

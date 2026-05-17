@@ -15,7 +15,7 @@ Implemented so far:
 - **Orchestrator**: Materializes root, child, fork, and restored runtimes from a reduced harness module while injecting `ctx.self` and `ctx.orchestrator`.
 - **DependencyRuntime<Name,T>**: Simple way for an extension to depend on an app-provided global resource (authentication, secrets, app-level environment). The dependency lands on the runtime as a field keyed by `Name`, so handlers read it via `ctx.<name>`.
 
-The resolved API surface can be named with `ExtensionApi<Modules>`, and the
+The resolved API surface can be named with `ExtensionAPI<Modules>`, and the
 extension function type can be named with `ExtensionForModules<Modules>`:
 
 ```typescript
@@ -39,45 +39,52 @@ TODO: The `algebra/` folder can stand by itself as a stable, non-AI-specific
 composition layer. Consider documenting and testing that boundary as its own
 package-level surface.
 
-Franklin models extension composition across these five related surfaces:
+Franklin models extension composition across these six related surfaces:
 
-- **ExtensionPoint**: registration storage plus author-facing API facade. It creates a fresh `Registry<API>`, creates the API object that writes to that registry, and is the only layer that runs extension registration.
-- **Compiler**: registry interpreter plus runtime builder. It exposes `compile<ContextRuntime>(registry, getRuntime)`, which receives the populated registry with the compile context runtime restored while still returning the compiler's own `Runtime`.
+- **ExtensionPoint**: a runtime-generic function from an internal registry writer to the author-facing `API<API, Runtime>` facade. It does not own storage; it only describes how to bind an API surface to a writer.
+- **Registry**: an internal `Registry<API, Runtime>` effect log. Each contributed value is stored as `{ name, value }`, where `value` is the tuple passed to the registration method.
+- **Compiler**: registry-view interpreter plus runtime builder. It exposes `compile<ContextRuntime>(view, getRuntime)`, which receives a `RegistryView<API, ContextRuntime>` with the compile context runtime restored while still returning the compiler's own `Runtime`.
 - **CompilerStep / CompilerTransform**: post-compile runtime operations. A `CompilerStep<T, U>` maps one compiled runtime to another, and `applyStep(step)` lifts that operation into a compiler transform.
 - **Runtime**: lifecycle surface (`dispose`, `subscribe`) plus module-specific capabilities.
 - **StateExtensionModule**: a factory for `emptyState()` and fresh compilers, plus the module's extension point, parameterized by an API (HKT). Orchestrator materialization composes the user module with small internal dependency modules so runtimes receive per-instance ports without each module parsing create/fork/child options.
 
-The extension-point algorithm is:
+Internally, the extension-point algorithm is:
 
 ```typescript
-const registry = extensionPoint.createRegistry();
-const api = extensionPoint.createApi<Runtime>(registry);
+const { registry, writer } = createRegistry<MyAPI, Runtime>();
+const api = createApi(extensionPoint, writer);
 extension(api);
-const runtime = await compiler.compile(registry, getRuntime);
+const runtime = await compiler.compile(createRegistryView(registry), getRuntime);
 ```
 
 Extension points are usually declared with `createExtensionPoint<API>(keys)`,
 where `keys` is an exhaustive map of the API contribution method names:
 
 ```typescript
-const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
 });
 ```
 
-The key map is checked against `keyof Apply<API, any>`, so typo keys and
-missing keys fail typechecking while registry creation remains runtime-erased.
+The key map is checked against the method keys of `Apply<API, any>`, so typo
+keys and missing registration methods fail typechecking. Extension points that
+need non-registration API values can be declared directly as `(writer) => api`.
 
-`Registry<API>` is intentionally runtime-erased by default so extension points
-can allocate simple storage. Compile helpers re-specialise it as
-`Registry<API, Runtime>` when handing it to compilers. APIs with overloads can
-still keep typed contribution logs because `Registry` extracts a union of
-overloaded parameter tuples.
+Compiler authors receive `RegistryView<API, Runtime>`, which provides typed
+projections:
+
+```typescript
+const tools = view.argsFor('registerTool');
+```
+
+`argsFor` is an alias for `valuesFor` because registration effects store the
+method argument tuple as the value. Effects remain in append order; ordering
+policy belongs in the specific compiler/interpreter that needs it.
 
 `combine(...)` merges these surfaces by product:
 
-- Extension-point registries and API members are merged by object spread.
+- Extension points are evaluated against the same writer and their API members are merged by object spread.
 - State is merged by object spread.
 - Compilers interpret their slice of the combined registry, then runtime lifecycle is recomposed while runtime extras are merged.
 
@@ -89,10 +96,10 @@ This composition is intentionally **partial**:
 
 The neutral element for this composition is the `Identity*` set:
 
-- `IdentityAPI` (lifted with `StaticAPI<IdentityAPI>` at the module signature)
+- `IdentityAPI` (lifted with `StaticSignature<IdentityAPI>` at the module signature)
 - `IdentityState`
 - `IdentityRuntime`
-- the empty identity extension point (`createExtensionPoint<IdentityAPI>({})`)
+- the empty identity extension point (`createExtensionPoint<IdentitySignature>({})`)
 - `identityCompiler()`
 - `identityModule()`
 
@@ -164,7 +171,7 @@ function createMyExtension(db: Database): Extension {
 const databaseModule = createDependencyModule('database', db);
 
 const myExtension: Extension<
-	BoundAPI<CoreAPI, DependencyRuntime<'database', Database>>
+	API<CoreSignature, DependencyRuntime<'database', Database>>
 > = (api) => {
 	api.registerTool(querySpec, (params, ctx) => ctx.database.query(params));
 };
@@ -179,7 +186,7 @@ The `api` object is a compile-time registration surface. It should not be called
 **Wrong** — API call in closure:
 
 ```typescript
-const ext: Extension<MyAPI & BoundAPI<CoreAPI, R>> = (api) => {
+const ext: Extension<MyAPI & API<CoreSignature, R>> = (api) => {
 	api.registerTool(spec, (params) => {
 		// BAD: api.getFoo() called at runtime
 		return api.getFoo().bar(params);
@@ -190,7 +197,7 @@ const ext: Extension<MyAPI & BoundAPI<CoreAPI, R>> = (api) => {
 **Right** — extract then capture:
 
 ```typescript
-const ext: Extension<MyAPI & BoundAPI<CoreAPI, R>> = (api) => {
+const ext: Extension<MyAPI & API<CoreSignature, R>> = (api) => {
 	const foo = api.getFoo(); // extracted at compile time
 	api.registerTool(spec, (params) => foo.bar(params)); // captured binding
 };

@@ -1,10 +1,12 @@
-import type { BoundAPI } from '../algebra/api/index.js';
+import type { API } from '../algebra/api/index.js';
 import { createExtensionPoint } from '../algebra/extension-points/create.js';
-import type { Registry } from '../algebra/extension-points/registry.js';
+import { createApi } from '../algebra/extension-points/facade.js';
+import { createRegistryView } from '../algebra/extension-points/view.js';
+import { createRegistry } from '../algebra/extension-points/writer.js';
 import { combineRuntimes } from '../algebra/runtime/index.js';
 import type { BaseRuntime } from '../algebra/runtime/types.js';
 import type { Extension } from '../algebra/extension/index.js';
-import type { CoreAPI } from '../modules/core/api/api.js';
+import type { CoreSignature } from '../modules/core/api/api.js';
 import type { SerializedToolDefinition } from '../modules/core/api/tools/index.js';
 import { serializeTool } from '../modules/core/api/tools/index.js';
 import { buildMiddleware } from '../modules/core/compile/decorators/middleware/build.js';
@@ -14,11 +16,11 @@ import type { CoreRuntime } from '../modules/core/runtime/index.js';
 import type { ReconfigurableEnvironment } from '../modules/environment/api/types.js';
 import { createEnvironmentCompiler } from '../modules/environment/compile/compiler.js';
 import type { EnvironmentRuntime } from '../modules/environment/runtime.js';
-import type { StoreAPI, StoreAPISurface } from '../modules/store/api/api.js';
+import type { StoreAPI, StoreSignature } from '../modules/store/api/api.js';
 import { StoreRegistry } from '../modules/store/api/registry/index.js';
 import { createStoreCompiler } from '../modules/store/compile/compiler.js';
 import type { StoreRuntime } from '../modules/store/runtime.js';
-import type { IdentityAPI } from '../algebra/modules/simple/identity.js';
+import type { IdentitySignature } from '../algebra/modules/simple/identity.js';
 
 type CoreStoreRuntime = CoreRuntime & StoreRuntime;
 
@@ -28,16 +30,14 @@ type CoreStoreEnvironmentRuntime = CoreRuntime &
 	StoreRuntime &
 	EnvironmentRuntime;
 
-const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
 });
 
-const storeExtensionPoint = createExtensionPoint<StoreAPI>({
+const storeExtensionPoint = createExtensionPoint<StoreSignature>({
 	registerStore: true,
 });
-
-const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
 
 /**
  * Build middleware from a Core-only extension without spinning up a
@@ -52,13 +52,13 @@ const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
  * use a full runtime.
  */
 export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
-	ext: Extension<BoundAPI<CoreAPI, Ctx>>,
+	ext: Extension<API<CoreSignature, Ctx>>,
 	getCtx: () => Ctx = (() => undefined) as unknown as () => Ctx,
 ): { middleware: FullMiddleware; tools: SerializedToolDefinition[] } {
-	const registry = coreExtensionPoint.createRegistry();
-	const api = coreExtensionPoint.createApi<Ctx>(registry);
+	const { registry, writer } = createRegistry<CoreSignature, Ctx>();
+	const api = createApi<CoreSignature, Ctx>(coreExtensionPoint, writer);
 	ext(api);
-	const registrations = createCoreRegistrar(registry as Registry<CoreAPI, Ctx>);
+	const registrations = createCoreRegistrar<Ctx>(createRegistryView(registry));
 	const middleware = buildMiddleware(registrations, getCtx);
 	const tools = registrations.tools.map(serializeTool);
 	return { middleware, tools };
@@ -66,12 +66,12 @@ export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 
 /**
  * Build middleware + a `StoreRuntime` for extensions that combine
- * `BoundAPI<CoreAPI, CoreRuntime & StoreRuntime> & StoreAPISurface`. The
+ * `API<CoreSignature, CoreRuntime & StoreRuntime> & StoreAPI`. The
  * store runtime is materialised via the real `createStoreCompiler`, so
  * `ctx.getStore(...)` in handlers exactly matches production behaviour.
  */
 export async function compileCoreWithStore(
-	ext: Extension<BoundAPI<CoreAPI, CoreStoreRuntime> & StoreAPISurface>,
+	ext: Extension<API<CoreSignature, CoreStoreRuntime> & StoreAPI>,
 ): Promise<{
 	middleware: FullMiddleware;
 	stores: StoreRuntime;
@@ -83,23 +83,34 @@ export async function compileCoreWithStore(
 		return cell.stores as CoreStoreRuntime;
 	};
 
-	const coreRegistry = coreExtensionPoint.createRegistry();
-	const api = coreExtensionPoint.createApi<CoreStoreRuntime>(coreRegistry);
-	const storeRegistry = storeExtensionPoint.createRegistry();
-	const storeApi =
-		storeExtensionPoint.createApi<CoreStoreRuntime>(storeRegistry);
+	const { registry: coreRegistry, writer: coreWriter } = createRegistry<
+		CoreSignature,
+		CoreStoreRuntime
+	>();
+	const api = createApi<CoreSignature, CoreStoreRuntime>(
+		coreExtensionPoint,
+		coreWriter,
+	);
+	const { registry: storeRegistry, writer: storeWriter } = createRegistry<
+		StoreSignature,
+		CoreStoreRuntime
+	>();
+	const storeApi = createApi<StoreSignature, CoreStoreRuntime>(
+		storeExtensionPoint,
+		storeWriter,
+	);
 	const combinedApi = {
 		...api,
 		...storeApi,
-	} as BoundAPI<CoreAPI, CoreStoreRuntime> & StoreAPISurface;
+	} as API<CoreSignature, CoreStoreRuntime> & StoreAPI;
 	ext(combinedApi);
 
 	cell.stores = await createStoreCompiler(new StoreRegistry(), {
 		store: {},
-	}).compile(storeRegistry as Registry<StoreAPI, CoreStoreRuntime>, getCtx);
+	}).compile(createRegistryView(storeRegistry), getCtx);
 
-	const registrations = createCoreRegistrar(
-		coreRegistry as Registry<CoreAPI, CoreStoreRuntime>,
+	const registrations = createCoreRegistrar<CoreStoreRuntime>(
+		createRegistryView(coreRegistry),
 	);
 	const middleware = buildMiddleware(registrations, getCtx);
 	const tools = registrations.tools.map(serializeTool);
@@ -112,9 +123,7 @@ export async function compileCoreWithStore(
  * StoreRuntime & EnvironmentRuntime`.
  */
 export async function compileCoreWithStoreAndEnv(
-	ext: Extension<
-		BoundAPI<CoreAPI, CoreStoreEnvironmentRuntime> & StoreAPISurface
-	>,
+	ext: Extension<API<CoreSignature, CoreStoreEnvironmentRuntime> & StoreAPI>,
 	env: ReconfigurableEnvironment,
 ): Promise<{
 	middleware: FullMiddleware;
@@ -127,33 +136,44 @@ export async function compileCoreWithStoreAndEnv(
 		return cell.ctx as CoreStoreEnvironmentRuntime;
 	};
 
-	const coreRegistry = coreExtensionPoint.createRegistry();
-	const api =
-		coreExtensionPoint.createApi<CoreStoreEnvironmentRuntime>(coreRegistry);
-	const storeRegistry = storeExtensionPoint.createRegistry();
-	const storeApi =
-		storeExtensionPoint.createApi<CoreStoreEnvironmentRuntime>(storeRegistry);
-	const combinedApi = { ...api, ...storeApi } as BoundAPI<
-		CoreAPI,
+	const { registry: coreRegistry, writer: coreWriter } = createRegistry<
+		CoreSignature,
+		CoreStoreEnvironmentRuntime
+	>();
+	const api = createApi<CoreSignature, CoreStoreEnvironmentRuntime>(
+		coreExtensionPoint,
+		coreWriter,
+	);
+	const { registry: storeRegistry, writer: storeWriter } = createRegistry<
+		StoreSignature,
+		CoreStoreEnvironmentRuntime
+	>();
+	const storeApi = createApi<StoreSignature, CoreStoreEnvironmentRuntime>(
+		storeExtensionPoint,
+		storeWriter,
+	);
+	const combinedApi = { ...api, ...storeApi } as API<
+		CoreSignature,
 		CoreStoreEnvironmentRuntime
 	> &
-		StoreAPISurface;
+		StoreAPI;
 	ext(combinedApi);
 
 	const stores = await createStoreCompiler(new StoreRegistry(), {
 		store: {},
-	}).compile(
-		storeRegistry as Registry<StoreAPI, CoreStoreEnvironmentRuntime>,
-		getCtx,
-	);
+	}).compile(createRegistryView(storeRegistry), getCtx);
+	const { registry: identityRegistry } = createRegistry<
+		IdentitySignature,
+		CoreStoreEnvironmentRuntime
+	>();
 	const environment = await createEnvironmentCompiler(env).compile(
-		identityExtensionPoint.createRegistry(),
+		createRegistryView(identityRegistry),
 		getCtx,
 	);
 	cell.ctx = combineRuntimes(stores, environment);
 
-	const registrations = createCoreRegistrar(
-		coreRegistry as Registry<CoreAPI, CoreStoreEnvironmentRuntime>,
+	const registrations = createCoreRegistrar<CoreStoreEnvironmentRuntime>(
+		createRegistryView(coreRegistry),
 	);
 	const middleware = buildMiddleware(registrations, getCtx);
 	const tools = registrations.tools.map(serializeTool);
@@ -166,7 +186,7 @@ export async function compileCoreWithStoreAndEnv(
  * tools.
  */
 export async function compileCoreWithEnv(
-	ext: Extension<BoundAPI<CoreAPI, CoreEnvironmentRuntime>>,
+	ext: Extension<API<CoreSignature, CoreEnvironmentRuntime>>,
 	env: ReconfigurableEnvironment,
 ): Promise<{
 	middleware: FullMiddleware;
@@ -179,17 +199,27 @@ export async function compileCoreWithEnv(
 		return cell.ctx as CoreEnvironmentRuntime;
 	};
 
-	const registry = coreExtensionPoint.createRegistry();
-	const api = coreExtensionPoint.createApi<CoreEnvironmentRuntime>(registry);
+	const { registry, writer } = createRegistry<
+		CoreSignature,
+		CoreEnvironmentRuntime
+	>();
+	const api = createApi<CoreSignature, CoreEnvironmentRuntime>(
+		coreExtensionPoint,
+		writer,
+	);
 	ext(api);
 
+	const { registry: identityRegistry } = createRegistry<
+		IdentitySignature,
+		CoreEnvironmentRuntime
+	>();
 	cell.ctx = await createEnvironmentCompiler(env).compile(
-		identityExtensionPoint.createRegistry(),
+		createRegistryView(identityRegistry),
 		getCtx,
 	);
 
-	const registrations = createCoreRegistrar(
-		registry as Registry<CoreAPI, CoreEnvironmentRuntime>,
+	const registrations = createCoreRegistrar<CoreEnvironmentRuntime>(
+		createRegistryView(registry),
 	);
 	const middleware = buildMiddleware(registrations, getCtx);
 	const tools = registrations.tools.map(serializeTool);

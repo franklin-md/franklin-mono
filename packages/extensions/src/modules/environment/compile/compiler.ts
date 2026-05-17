@@ -1,5 +1,5 @@
 import type { Compiler } from '../../../algebra/compiler/types.js';
-import type { IdentityAPI } from '../../../algebra/modules/simple/identity.js';
+import type { IdentitySignature } from '../../../algebra/modules/simple/identity.js';
 import type { ReconfigurableEnvironment } from '../api/types.js';
 import {
 	createEnvironmentRuntime,
@@ -8,7 +8,7 @@ import {
 
 export function createEnvironmentCompiler(
 	environment: ReconfigurableEnvironment,
-): Compiler<IdentityAPI, EnvironmentRuntime> {
+): Compiler<IdentitySignature, EnvironmentRuntime> {
 	return {
 		async compile() {
 			return createEnvironmentRuntime(environment);

@@ -1,35 +1,35 @@
 import { createExtensionPoint } from '../create.js';
-import type { CoreAPI } from '../../../modules/core/api/api.js';
-import type { IdentityAPI } from '../../modules/simple/identity.js';
-import type { StoreAPI } from '../../../modules/store/api/api.js';
+import type { CoreSignature } from '../../../modules/core/api/api.js';
+import type { IdentitySignature } from '../../modules/simple/identity.js';
+import type { StoreSignature } from '../../../modules/store/api/api.js';
 
-createExtensionPoint<CoreAPI>({
+createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
 });
 
 // @ts-expect-error core extension point must list every contribution key
-createExtensionPoint<CoreAPI>({
+createExtensionPoint<CoreSignature>({
 	on: true,
 });
 
-createExtensionPoint<CoreAPI>({
+createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
 	// @ts-expect-error core extension point cannot list store keys
 	registerStore: true,
 });
 
-createExtensionPoint<StoreAPI>({
+createExtensionPoint<StoreSignature>({
 	registerStore: true,
 });
 
 // @ts-expect-error store extension point must list registerStore
-createExtensionPoint<StoreAPI>({});
+createExtensionPoint<StoreSignature>({});
 
-createExtensionPoint<IdentityAPI>({});
+createExtensionPoint<IdentitySignature>({});
 
-createExtensionPoint<IdentityAPI>({
+createExtensionPoint<IdentitySignature>({
 	// @ts-expect-error identity extension point has no contribution keys
 	on: true,
 });

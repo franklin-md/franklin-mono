@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { StaticAPI } from '../../api/index.js';
+import type { StaticSignature } from '../../api/index.js';
 import type { Registry } from '../../extension-points/registry.js';
+import {
+	createRegistryView,
+	type RegistryView,
+} from '../../extension-points/view.js';
 import type { BaseRuntime } from '../../runtime/index.js';
 import type { Compiler } from '../types.js';
 import { applyStep, composeSteps, reduceSteps } from '../transform/index.js';
@@ -9,7 +13,7 @@ type TestAPISurface = {
 	register(value: number): void;
 };
 
-type TestAPI = StaticAPI<TestAPISurface>;
+type TestSignature = StaticSignature<TestAPISurface>;
 
 type TestRuntime = BaseRuntime & {
 	readonly value: number;
@@ -19,11 +23,11 @@ type TaggedRuntime = TestRuntime & {
 	readonly tag: string;
 };
 
-function createCompiler(): Compiler<TestAPI, TestRuntime> {
+function createCompiler(): Compiler<TestSignature, TestRuntime> {
 	return {
-		async compile(registry: Registry<TestAPI>) {
+		async compile(registry: RegistryView<TestSignature, BaseRuntime>) {
 			return {
-				value: registry.register.at(-1)?.[0] ?? 0,
+				value: registry.argsFor('register').at(-1)?.[0] ?? 0,
 				dispose: vi.fn(async () => {}),
 				subscribe: vi.fn(() => () => {}),
 			};
@@ -31,9 +35,9 @@ function createCompiler(): Compiler<TestAPI, TestRuntime> {
 	};
 }
 
-function createRegistry(value: number): Registry<TestAPI> {
+function createRegistry(value: number): Registry<TestSignature, BaseRuntime> {
 	return {
-		register: [[value]],
+		effects: [{ name: 'register', value: [value] }],
 	};
 }
 
@@ -43,7 +47,7 @@ const noGetRuntime = (): never => {
 
 describe('compiler transform steps', () => {
 	it('applies a step to the runtime produced by a compiler', async () => {
-		const transform = applyStep<TestAPI, TestRuntime, TaggedRuntime>(
+		const transform = applyStep<TestSignature, TestRuntime, TaggedRuntime>(
 			(runtime) => ({
 				...runtime,
 				tag: `value:${runtime.value}`,
@@ -51,7 +55,10 @@ describe('compiler transform steps', () => {
 		);
 		const compiler = transform(createCompiler());
 
-		const runtime = await compiler.compile(createRegistry(4), noGetRuntime);
+		const runtime = await compiler.compile(
+			createRegistryView(createRegistry(4)),
+			noGetRuntime,
+		);
 
 		expect(runtime.value).toBe(4);
 		expect(runtime.tag).toBe('value:4');
@@ -105,14 +112,17 @@ describe('compiler transform steps', () => {
 
 	it('applies a runtime-preserving step after compile', async () => {
 		const effect = vi.fn(async (_runtime: TestRuntime) => {});
-		const compiler = applyStep<TestAPI, TestRuntime, TestRuntime>(
+		const compiler = applyStep<TestSignature, TestRuntime, TestRuntime>(
 			async (runtime) => {
 				await effect(runtime);
 				return runtime;
 			},
 		)(createCompiler());
 
-		const runtime = await compiler.compile(createRegistry(9), noGetRuntime);
+		const runtime = await compiler.compile(
+			createRegistryView(createRegistry(9)),
+			noGetRuntime,
+		);
 
 		expect(runtime.value).toBe(9);
 		expect(effect).toHaveBeenCalledWith(runtime);

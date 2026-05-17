@@ -1,7 +1,7 @@
 import type {
-	CoreAPI,
 	CoreModule,
 	CoreRuntime,
+	CoreSignature,
 	CoreState,
 } from '@franklin/extensions';
 import {
@@ -47,7 +47,7 @@ export async function reconnectAgent(
 
 function createAuthCompilerTransform(auth: AuthManager) {
 	return (state: CoreState) =>
-		applyStep<CoreAPI, CoreRuntime, CoreRuntime>(async (runtime) => {
+		applyStep<CoreSignature, CoreRuntime, CoreRuntime>(async (runtime) => {
 			// Install setLLMConfig wrapper to auto-resolve auth when provider is set.
 			const originalSetLLMConfig = runtime.setLLMConfig.bind(runtime);
 			runtime.setLLMConfig = async (config) => {

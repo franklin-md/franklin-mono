@@ -11,11 +11,13 @@ import type {
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import type { BoundAPI } from '../../../../algebra/api/index.js';
+import type { API } from '../../../../algebra/api/index.js';
 import type { Extension } from '../../../../algebra/extension/index.js';
 import { createExtensionPoint } from '../../../../algebra/extension-points/create.js';
-import type { Registry } from '../../../../algebra/extension-points/registry.js';
-import type { CoreAPI } from '../../api/api.js';
+import { createApi } from '../../../../algebra/extension-points/facade.js';
+import { createRegistryView } from '../../../../algebra/extension-points/view.js';
+import { createRegistry } from '../../../../algebra/extension-points/writer.js';
+import type { CoreSignature } from '../../api/api.js';
 import { resolveToolOutput } from '../../api/tool.js';
 import {
 	type SerializedToolDefinition,
@@ -26,9 +28,9 @@ import { buildMiddleware } from '../decorators/middleware/build.js';
 import type { FullMiddleware } from '../decorators/middleware/types.js';
 import { createCoreRegistrar } from '../registrar/index.js';
 
-type CoreExtension = Extension<BoundAPI<CoreAPI, CoreRuntime>>;
+type CoreExtension = Extension<API<CoreSignature, CoreRuntime>>;
 
-const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
 });
@@ -51,11 +53,11 @@ async function compileExt(
 	ext: CoreExtension,
 ): Promise<FullMiddleware & { tools: SerializedToolDefinition[] }> {
 	const stubCtx = undefined as unknown as CoreRuntime;
-	const registry = coreExtensionPoint.createRegistry();
-	const api = coreExtensionPoint.createApi<CoreRuntime>(registry);
+	const { registry, writer } = createRegistry<CoreSignature, CoreRuntime>();
+	const api = createApi<CoreSignature, CoreRuntime>(coreExtensionPoint, writer);
 	ext(api);
-	const registrations = createCoreRegistrar(
-		registry as Registry<CoreAPI, CoreRuntime>,
+	const registrations = createCoreRegistrar<CoreRuntime>(
+		createRegistryView(registry),
 	);
 	const middleware = buildMiddleware(registrations, () => stubCtx);
 	const tools = registrations.tools.map(serializeTool);
