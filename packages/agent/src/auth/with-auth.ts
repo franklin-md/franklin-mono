@@ -1,5 +1,14 @@
-import type { CoreModule, CoreRuntime, CoreState } from '@franklin/extensions';
-import { coreStateHandle, withSetup } from '@franklin/extensions';
+import type {
+	CoreModule,
+	CoreRuntime,
+	CoreSignature,
+	CoreState,
+} from '@franklin/extensions';
+import {
+	applyStep,
+	coreStateHandle,
+	liftStateCompilerTransform,
+} from '@franklin/extensions';
 import type { AuthManager } from './manager.js';
 
 /**
@@ -33,6 +42,62 @@ export async function reconnectAgent(
 	await authenticateAgent(runtime, provider, auth);
 }
 
+// TODO: Can we not use the provider that has been set already during the compile step? (given that should populate?)
+// That would simplify this to just a CompilerStep
+
+function createAuthCompilerTransform(auth: AuthManager) {
+	return (state: CoreState) =>
+		applyStep<CoreSignature, CoreRuntime, CoreRuntime>(async (runtime) => {
+			// Install setLLMConfig wrapper to auto-resolve auth when provider is set.
+			const originalSetLLMConfig = runtime.setLLMConfig.bind(runtime);
+			runtime.setLLMConfig = async (config) => {
+				const currentProvider = runtime.context().config.provider;
+				const nextProvider = config.provider;
+				const providerChanged =
+					nextProvider !== undefined && nextProvider !== currentProvider;
+
+				if (providerChanged && !('apiKey' in config)) {
+					// Auth resolution is best-effort: setContext must not be blocked
+					// by credential refresh failures (e.g. provider OAuth refresh
+					// throwing). A missing apiKey surfaces at prompt time via
+					// StopCode.AuthKeyNotSpecified. We must still write
+					// `apiKey: undefined` explicitly so the previous provider's key
+					// does not survive config-merge on provider switch.
+					let apiKey: string | undefined;
+					try {
+						apiKey = await auth.getApiKey(nextProvider);
+					} catch {
+						// swallow; proceed without apiKey
+					}
+					config = { ...config, apiKey };
+				}
+				return originalSetLLMConfig(config);
+			};
+
+			// Initial login resolves credentials for the configured provider,
+			// or no-ops if none is set.
+			await reconnectAgent(runtime, state, auth);
+
+			// Live credential sync pushes new keys when this runtime's provider changes.
+			const handle = coreStateHandle(runtime);
+			const unsubscribe = auth.onAuthChange((provider) => {
+				void (async () => {
+					const currentState = await handle.get();
+					if (currentState.core.llmConfig.provider !== provider) return;
+					await authenticateAgent(runtime, provider, auth);
+				})();
+			});
+
+			// Clean up subscription on dispose.
+			const originalDispose = runtime.dispose.bind(runtime);
+			runtime.dispose = async () => {
+				unsubscribe();
+				return originalDispose();
+			};
+			return runtime;
+		});
+}
+
 /**
  * Wrap a core module so that every compiled runtime is automatically
  * authenticated at build time and kept in sync with credential changes.
@@ -48,52 +113,5 @@ export async function reconnectAgent(
  *    Unsubscribes on dispose.
  */
 export function withAuth(module: CoreModule, auth: AuthManager): CoreModule {
-	return withSetup(module, async (runtime, state) => {
-		// Install setLLMConfig wrapper to auto-resolve auth when provider is set.
-		const originalSetLLMConfig = runtime.setLLMConfig.bind(runtime);
-		runtime.setLLMConfig = async (config) => {
-			const currentProvider = runtime.context().config.provider;
-			const nextProvider = config.provider;
-			const providerChanged =
-				nextProvider !== undefined && nextProvider !== currentProvider;
-
-			if (providerChanged && !('apiKey' in config)) {
-				// Auth resolution is best-effort: setContext must not be blocked
-				// by credential refresh failures (e.g. provider OAuth refresh
-				// throwing). A missing apiKey surfaces at prompt time via
-				// StopCode.AuthKeyNotSpecified. We must still write
-				// `apiKey: undefined` explicitly so the previous provider's key
-				// does not survive config-merge on provider switch.
-				let apiKey: string | undefined;
-				try {
-					apiKey = await auth.getApiKey(nextProvider);
-				} catch {
-					// swallow; proceed without apiKey
-				}
-				config = { ...config, apiKey };
-			}
-			return originalSetLLMConfig(config);
-		};
-
-		// Initial login — resolves credentials for the configured provider,
-		// or no-ops if none is set.
-		await reconnectAgent(runtime, state, auth);
-
-		// Live credential sync — push new keys when this runtime's provider changes.
-		const handle = coreStateHandle(runtime);
-		const unsubscribe = auth.onAuthChange((provider) => {
-			void (async () => {
-				const currentState = await handle.get();
-				if (currentState.core.llmConfig.provider !== provider) return;
-				await authenticateAgent(runtime, provider, auth);
-			})();
-		});
-
-		// Clean up subscription on dispose.
-		const originalDispose = runtime.dispose.bind(runtime);
-		runtime.dispose = async () => {
-			unsubscribe();
-			return originalDispose();
-		};
-	});
+	return liftStateCompilerTransform(createAuthCompilerTransform(auth))(module);
 }

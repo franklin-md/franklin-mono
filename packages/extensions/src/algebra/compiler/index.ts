@@ -1,9 +1,14 @@
 export { combine } from './combine.js';
 export { compile } from './compile.js';
 export type { Compiler } from './types.js';
-export type { CompilerStep, RuntimeStep } from './setup.js';
+export type {
+	CompilerStep,
+	CompilerTransform,
+	RuntimeStep,
+} from './transform/index.js';
 export {
-	composeCompilerSteps,
-	transformCompiler,
-	withSetupCompiler,
-} from './setup.js';
+	applyStep,
+	composeSteps,
+	identityStep,
+	reduceSteps,
+} from './transform/index.js';
