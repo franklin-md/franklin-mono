@@ -13,7 +13,7 @@ Implemented so far:
 - **StoreModule**: Contributes store registration plus runtime access to shared state between agent-agent and agent-app.
 - **StoreStateModule**: Wraps `StoreModule` with the persisted `{ store: StoreMapping }` state shape used by state-module composition.
 - **EnvironmentModule**: Contributes runtime environment capabilities; its registration API is empty.
-- **Orchestrator**: Materializes root, child, fork, and restored runtimes from a reduced harness module while injecting `ctx.self` and `ctx.orchestrator`.
+- **Orchestrator**: Materializes root, child, fork, and restored runtimes from a reduced module while injecting `ctx.self` and `ctx.orchestrator`.
 - **DependencyRuntime<Name,T>**: Simple way for an extension to depend on an app-provided global resource (authentication, secrets, app-level environment). The dependency lands on the runtime as a field keyed by `Name`, so handlers read it via `ctx.<name>`.
 
 The resolved API surface can be named with `ExtensionAPI<Modules>`, and the
@@ -112,7 +112,7 @@ The important laws for the current algebra surface are:
 
 Left/right identity is tested explicitly for compiler, runtime, and state module composition.
 
-### Harness Orchestration
+### Orchestration
 
 `Orchestrator` is the generic runtime collection and materialization
 boundary. It takes a reduced module, a reduced extension list, and a runtime

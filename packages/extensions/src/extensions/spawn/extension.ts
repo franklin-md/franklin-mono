@@ -3,8 +3,8 @@ import {
 	defineExtension,
 	type ExtensionForModules,
 } from '../../algebra/extension/index.js';
-import type { OrchestratorModule } from '../../harness/orchestrator/index.js';
 import type { CoreModule } from '../../modules/core/index.js';
+import type { OrchestratorModule } from '../../modules/orchestrator/index.js';
 import { spawnSpec } from './tools.js';
 import { formatResult } from './format.js';
 

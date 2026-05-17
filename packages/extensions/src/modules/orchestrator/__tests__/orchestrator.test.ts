@@ -7,7 +7,7 @@ import type {
 	BaseRuntime,
 	StateHandle,
 } from '../../../algebra/runtime/index.js';
-import { createDependencyModule } from '../../../modules/dependency/module.js';
+import { createDependencyModule } from '../../dependency/module.js';
 import type {
 	InferAPI,
 	InferRuntime,
