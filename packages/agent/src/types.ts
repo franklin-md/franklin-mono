@@ -1,6 +1,6 @@
 import type {
 	CoreModule,
-	StoreModule,
+	StoreStateModule,
 	EnvironmentModule,
 	Extension,
 	BuildModules,
@@ -12,7 +12,7 @@ import type {
 
 export type FranklinModules = readonly [
 	CoreModule,
-	StoreModule,
+	StoreStateModule,
 	EnvironmentModule,
 ];
 

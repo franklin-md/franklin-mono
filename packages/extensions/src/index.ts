@@ -231,8 +231,13 @@ export {
 } from './modules/store/api/index.js';
 export { createStoreCompiler } from './modules/store/compile/index.js';
 export type { StoreRuntime } from './modules/store/runtime.js';
-export { STORE_STATE, storeStateHandle } from './modules/store/runtime.js';
+export { STORE_MAPPING, storeMappingHandle } from './modules/store/runtime.js';
 export type { StoreState } from './modules/store/state.js';
 export { emptyStoreState } from './modules/store/state.js';
 export type { StoreModule } from './modules/store/module.js';
 export { createStoreModule } from './modules/store/module.js';
+export type { StoreStateModule } from './modules/store/state-module.js';
+export {
+	createStoreStateModule,
+	storeStateHandle,
+} from './modules/store/state-module.js';

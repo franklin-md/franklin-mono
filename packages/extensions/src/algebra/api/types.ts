@@ -37,7 +37,7 @@ export type API<S extends Signature, R extends S['In']> = Apply<S, R>;
 /**
  * Lift a runtime-independent API into the signature space.
  *
- *   export type StoreModule = StateExtensionModule<S, StaticSignature<StoreAPI>, R>
+ *   export type MyModule = StateExtensionModule<S, StaticSignature<MyAPI>, R>
  */
 export interface StaticSignature<A extends BaseAPI> extends Signature {
 	readonly In: BaseRuntime;
