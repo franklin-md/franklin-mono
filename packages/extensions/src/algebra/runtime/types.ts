@@ -1,8 +1,8 @@
 /**
  * Grouped state snapshot/derivation operations for a runtime.
  *
- * Lives on the state extension module (`StateExtensionModule.state(runtime)`), not on the runtime
- * itself — runtimes carry only live capabilities + lifecycle.
+ * Lives on the state extension module (`StateExtensionModule.state(runtime)`),
+ * not on the runtime itself — runtimes carry only live capabilities + lifecycle.
  */
 export interface StateHandle<S> {
 	get(): Promise<S>;

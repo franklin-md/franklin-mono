@@ -14,9 +14,9 @@ import {
 
 type StubModule<
 	S extends BaseState,
-	APISurface extends object = Record<never, never>,
+	Surface extends object = Record<never, never>,
 	Runtime extends BaseRuntime = BaseRuntime,
-> = StateExtensionModule<S, StaticSignature<APISurface>, Runtime>;
+> = StateExtensionModule<S, StaticSignature<Surface>, Runtime>;
 
 const _moduleExtension = defineExtension<
 	[CoreModule, StoreModule, EnvironmentModule]

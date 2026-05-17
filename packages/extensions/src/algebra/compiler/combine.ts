@@ -1,5 +1,5 @@
 import type { AssertNoOverlap } from '@franklin/lib';
-import type { API, ComposeSignature, Signature } from '../api/index.js';
+import type { API, CombineSignature, Signature } from '../api/index.js';
 import type { RegistryView } from '../extension-points/view.js';
 import type {
 	BaseRuntime,
@@ -23,9 +23,9 @@ export function combine<
 			API<S1, CombinedRuntime<R1, R2>>,
 			API<S2, CombinedRuntime<R1, R2>>
 		>,
-): Compiler<ComposeSignature<S1, S2>, CombinedRuntime<R1, R2>> {
+): Compiler<CombineSignature<S1, S2>, CombinedRuntime<R1, R2>> {
 	type CR = CombinedRuntime<R1, R2>;
-	type CS = ComposeSignature<S1, S2>;
+	type CS = CombineSignature<S1, S2>;
 
 	return {
 		compile: async <ContextRuntime extends BaseRuntime & CS['In']>(
@@ -33,14 +33,8 @@ export function combine<
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CR> => {
 			const [r1, r2] = await Promise.all([
-				c1.compile<ContextRuntime>(
-					registry as unknown as RegistryView<S1, ContextRuntime>,
-					getRuntime,
-				),
-				c2.compile<ContextRuntime>(
-					registry as unknown as RegistryView<S2, ContextRuntime>,
-					getRuntime,
-				),
+				c1.compile<ContextRuntime>(registry, getRuntime),
+				c2.compile<ContextRuntime>(registry, getRuntime),
 			]);
 			return combineRuntimes<R1, R2>(r1, r2);
 		},

@@ -1,5 +1,5 @@
 import type { DeepPartial } from '@franklin/lib';
-import type { ComposeSignature } from '../../algebra/api/index.js';
+import type { CombineSignature } from '../../algebra/api/index.js';
 import type {
 	InferRuntime as InferSimpleRuntime,
 	InferSignature as InferSimpleSignature,
@@ -87,7 +87,7 @@ export type OrchestratorRuntime<M extends BaseStateExtensionModule> =
 export type OrchestratorModule<Mods extends readonly BuildableModule[]> =
 	StateExtensionModule<
 		InferState<BuildModules<Mods>>,
-		ComposeSignature<
+		CombineSignature<
 			InferSignature<BuildModules<Mods>>,
 			InferSimpleSignature<InternalOrchestratorModule<BuildModules<Mods>>>
 		>,

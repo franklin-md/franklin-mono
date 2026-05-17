@@ -9,11 +9,11 @@ import { combine } from '../combine.js';
 import { identityModule } from '../identity.js';
 import type { StateExtensionModule, StateHandle } from '../types.js';
 
-type CounterAPISurface = {
+type CounterAPI = {
 	registerCount(value: number): void;
 };
 
-type CounterSignature = StaticSignature<CounterAPISurface>;
+type CounterSignature = StaticSignature<CounterAPI>;
 
 const counterExtensionPoint = createExtensionPoint<CounterSignature>({
 	registerCount: true,
@@ -68,11 +68,11 @@ function createCounterModule(): StateExtensionModule<
 	};
 }
 
-type LabelAPISurface = {
+type LabelAPI = {
 	registerLabel(value: string): void;
 };
 
-type LabelSignature = StaticSignature<LabelAPISurface>;
+type LabelSignature = StaticSignature<LabelAPI>;
 
 const labelExtensionPoint = createExtensionPoint<LabelSignature>({
 	registerLabel: true,

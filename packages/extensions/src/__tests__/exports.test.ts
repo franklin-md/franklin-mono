@@ -6,11 +6,11 @@ import { createExtensionPoint, defineExtension } from '../index.js';
 import type { RegistryView } from '../index.js';
 import type { Apply } from '@franklin/lib';
 
-type TestAPISurface = { register(label: string): void };
+type TestAPI = { register(label: string): void };
 
 interface TestSignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: TestAPISurface;
+	readonly Out: TestAPI;
 }
 
 const testExtensionPoint = createExtensionPoint<TestSignature>({

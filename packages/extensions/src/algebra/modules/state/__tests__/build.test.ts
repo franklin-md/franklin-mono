@@ -2,17 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { compile } from '../../../compiler/index.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
 import type { RegistryView } from '../../../extension-points/view.js';
-import type { BaseRuntime, StateHandle } from '../../../runtime/index.js';
+import type { BaseRuntime } from '../../../runtime/index.js';
 import type { StaticSignature } from '../../../api/index.js';
 import type { ExtensionModule } from '../../simple/index.js';
-import type { StateExtensionModule } from '../types.js';
+import type { StateExtensionModule, StateHandle } from '../types.js';
 import { buildStateExtensionModule } from '../build.js';
 
-type CounterAPISurface = {
+type CounterAPI = {
 	registerCount(value: number): void;
 };
 
-type CounterSignature = StaticSignature<CounterAPISurface>;
+type CounterSignature = StaticSignature<CounterAPI>;
 
 const counterExtensionPoint = createExtensionPoint<CounterSignature>({
 	registerCount: true,

@@ -1,8 +1,7 @@
-export type { ReduceSignatures } from './reduce.js';
 export type {
 	API,
-	APISurface,
-	ComposeSignature,
+	BaseAPI,
+	CombineSignature,
 	Signature,
 	StaticSignature,
 } from './types.js';

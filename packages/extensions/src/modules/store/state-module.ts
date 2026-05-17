@@ -1,5 +1,5 @@
 import type { StateExtensionModule } from '../../algebra/modules/state/index.js';
-import type { StateHandle } from '../../algebra/runtime/index.js';
+import type { StateHandle } from '../../algebra/modules/state/index.js';
 import type { StoreSignature } from './api/api.js';
 import type { StoreRegistry } from './api/registry/index.js';
 import type { StoreMapping } from './api/registry/mapping.js';

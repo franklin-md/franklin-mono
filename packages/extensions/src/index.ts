@@ -1,12 +1,11 @@
 export type { Issue, MapFilePersister, RestoreResult } from '@franklin/lib';
 export type {
 	API,
-	APISurface,
-	ComposeSignature,
+	CombineSignature,
+	BaseAPI,
 	Signature,
 	StaticSignature,
 } from './algebra/api/types.js';
-export type { ReduceSignatures } from './algebra/api/reduce.js';
 export { combine } from './algebra/compiler/combine.js';
 export { compile } from './algebra/compiler/compile.js';
 export type { Compiler } from './algebra/compiler/types.js';
@@ -61,12 +60,12 @@ export {
 // ---------------------------------------------------------------------------
 // Runtime
 // ---------------------------------------------------------------------------
-export type { BaseRuntime, StateHandle } from './algebra/runtime/types.js';
+export type { BaseRuntime } from './algebra/runtime/types.js';
 export { resolveState } from './algebra/modules/state/index.js';
 // ---------------------------------------------------------------------------
 // Extension authoring
 // ---------------------------------------------------------------------------
-export type { BaseState } from './algebra/modules/state/index.js';
+export type { BaseState, StateHandle } from './algebra/modules/state/index.js';
 export type { ExtensionBundle } from './modules/bundle/index.js';
 export { createBundle } from './modules/bundle/index.js';
 export { defineExtension } from './algebra/extension/index.js';

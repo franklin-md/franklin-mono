@@ -7,11 +7,11 @@ import type { BaseRuntime } from '../../../runtime/index.js';
 import type { ExtensionModule } from '../types.js';
 import { liftCompilerTransform } from '../transform/index.js';
 
-type TestAPISurface = {
+type TestAPI = {
 	register(value: number): void;
 };
 
-type TestSignature = StaticSignature<TestAPISurface>;
+type TestSignature = StaticSignature<TestAPI>;
 
 const extensionPoint = createExtensionPoint<TestSignature>({
 	register: true,

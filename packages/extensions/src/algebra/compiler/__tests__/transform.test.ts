@@ -9,11 +9,11 @@ import type { BaseRuntime } from '../../runtime/index.js';
 import type { Compiler } from '../types.js';
 import { applyStep, composeSteps, reduceSteps } from '../transform/index.js';
 
-type TestAPISurface = {
+type TestAPI = {
 	register(value: number): void;
 };
 
-type TestSignature = StaticSignature<TestAPISurface>;
+type TestSignature = StaticSignature<TestAPI>;
 
 type TestRuntime = BaseRuntime & {
 	readonly value: number;

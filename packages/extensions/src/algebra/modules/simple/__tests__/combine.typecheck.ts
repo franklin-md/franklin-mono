@@ -7,9 +7,9 @@ import type { CombineModules, CombinableModule, InferAPI } from '../index.js';
 type _ExpectNever<T extends never> = T;
 
 type StubModule<
-	APISurface extends object = Record<never, never>,
+	Surface extends object = Record<never, never>,
 	Runtime extends BaseRuntime = BaseRuntime,
-> = ExtensionModule<StaticSignature<APISurface>, Runtime>;
+> = ExtensionModule<StaticSignature<Surface>, Runtime>;
 
 type APIa = { on(event: string): void };
 type APIb = { register(name: string): void };
@@ -88,13 +88,13 @@ const _invalidRuntimeCombine = combine(
 );
 void _invalidRuntimeCombine;
 
-interface RuntimeAwareAPISurface<Runtime extends BaseRuntime> {
+interface RuntimeAwareAPI<Runtime extends BaseRuntime> {
 	useRuntime(handler: (runtime: Runtime) => void): void;
 }
 
 interface RuntimeAwareSignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: RuntimeAwareAPISurface<this['In']>;
+	readonly Out: RuntimeAwareAPI<this['In']>;
 }
 
 type RuntimeAwareModule = ExtensionModule<RuntimeAwareSignature, BaseRuntime>;
