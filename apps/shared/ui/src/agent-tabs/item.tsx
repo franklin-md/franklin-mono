@@ -47,7 +47,7 @@ export function AgentTabsItem({
 		<div
 			data-testid={`agent-tab-${sessionId}`}
 			className={cn(
-				'group flex min-w-0 items-center gap-0.5 pr-0.5 transition-colors',
+				'group flex min-w-0 items-center gap-px pr-px transition-colors',
 				isActive
 					? 'border-b-2 border-foreground'
 					: 'text-muted-foreground/60 hover:text-muted-foreground',
@@ -55,7 +55,7 @@ export function AgentTabsItem({
 		>
 			<TabsTrigger
 				value={sessionId}
-				className="h-7 max-w-44 gap-1.5 rounded-sm px-2.5 text-xs data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
+				className="h-7 max-w-44 gap-1 rounded-sm px-1.5 text-xs data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
 				title={accessibleLabel}
 				aria-label={accessibleLabel}
 				onClick={() => {

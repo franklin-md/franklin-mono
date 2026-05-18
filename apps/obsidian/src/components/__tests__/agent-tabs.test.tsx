@@ -207,6 +207,7 @@ describe('Obsidian agent tabs', () => {
 		expect(getSessionTab('session-a').textContent).toContain('New chat');
 		expect(getSessionTab('session-b').textContent).toContain('New chat');
 		expect(getSessionTab('session-c').textContent).toContain('New chat');
+		expect(getSessionTab('session-a').className).toContain('px-1.5');
 		expect(screen.getByRole('tab', { name: 'New chat 1' })).toBeTruthy();
 		expect(screen.getByRole('tab', { name: 'New chat 2' })).toBeTruthy();
 		expect(screen.getByRole('tab', { name: 'New chat 3' })).toBeTruthy();
