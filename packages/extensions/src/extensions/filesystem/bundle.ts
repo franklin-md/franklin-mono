@@ -12,20 +12,24 @@ import { readFileSpec } from './read/tools.js';
 import { writeExtension } from './write/extension.js';
 import { writeFileSpec } from './write/tools.js';
 
-export const filesystemExtension = createBundle({
-	extension: reduceExtensions(
-		editExtension(),
-		readExtension(),
-		writeExtension(),
-		globExtension(),
-		grepExtension(),
-	),
-	keys: { file: fileKey },
-	tools: {
-		editFile: editFileSpec,
-		readFile: readFileSpec,
-		writeFile: writeFileSpec,
-		glob: globSpec,
-		grep: grepSpec,
-	},
-});
+export function createFilesystemExtension() {
+	return createBundle({
+		extension: reduceExtensions(
+			editExtension(),
+			readExtension(),
+			writeExtension(),
+			globExtension(),
+			grepExtension(),
+		),
+		keys: { file: fileKey },
+		tools: {
+			editFile: editFileSpec,
+			readFile: readFileSpec,
+			writeFile: writeFileSpec,
+			glob: globSpec,
+			grep: grepSpec,
+		},
+	});
+}
+
+export const filesystemExtension = createFilesystemExtension();

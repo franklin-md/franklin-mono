@@ -109,16 +109,22 @@ export type {
 export {
 	bashExtension,
 	conversationExtension,
+	createFilesystemExtension,
+	createReadPDFExtension,
 	createStatusControl,
 	createTodoControl,
 	createWebExtension,
 	environmentInfoExtension,
 	filesystemExtension,
+	FreePDFConverter,
 	instructionsExtension,
+	MistralPDFConverter,
+	type PDFInput,
 	spawnExtension,
 	statusExtension,
 	todoExtension,
 } from './extensions/index.js';
+export type { PDFConverter } from './extensions/index.js';
 export type {
 	InstructionSpec,
 	InstructionsManager,

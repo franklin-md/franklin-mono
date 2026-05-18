@@ -14,6 +14,7 @@ describe('toApiKeyName / toOAuthName', () => {
 	it('produces the expected keychain key names', () => {
 		expect(toApiKeyName('openrouter')).toBe('openrouter-api-key');
 		expect(toOAuthName('openrouter')).toBe('openrouter-oauth');
+		expect(toApiKeyName('mistral')).toBe('mistral-api-key');
 		expect(toApiKeyName('pi-ai')).toBe('pi-ai-api-key');
 		expect(toOAuthName('pi-ai')).toBe('pi-ai-oauth');
 	});

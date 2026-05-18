@@ -1,1 +1,1 @@
-export { filesystemExtension } from './bundle.js';
+export { createFilesystemExtension, filesystemExtension } from './bundle.js';

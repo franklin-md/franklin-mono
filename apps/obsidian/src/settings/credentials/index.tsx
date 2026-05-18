@@ -7,6 +7,8 @@ const OPENROUTER_PROVIDER = 'openrouter';
 const OPENROUTER_API_KEYS_URL = 'https://openrouter.ai/settings/keys';
 const OPENCODE_GO_PROVIDER = 'opencode-go';
 const OPENCODE_GO_API_KEYS_URL = 'https://opencode.ai/auth';
+const MISTRAL_PROVIDER = 'mistral';
+const MISTRAL_API_KEYS_URL = 'https://console.mistral.ai/api-keys';
 
 export function CredentialsSettings() {
 	return (
@@ -26,6 +28,14 @@ export function CredentialsSettings() {
 				linkUrl={OPENCODE_GO_API_KEYS_URL}
 				linkLabel="OpenCode API keys"
 				placeholder="OpenCode API key"
+			/>
+			<ProviderApiKeyField
+				provider={MISTRAL_PROVIDER}
+				name="Mistral"
+				description="Used for premium PDF OCR."
+				linkUrl={MISTRAL_API_KEYS_URL}
+				linkLabel="Mistral API keys"
+				placeholder="Mistral API key"
 			/>
 			<ChatGPTLoginField />
 		</>

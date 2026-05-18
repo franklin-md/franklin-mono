@@ -24,6 +24,16 @@ import type {
 import type { AuthStore } from '../storage/types.js';
 import { createAgents, type Agents } from './agents.js';
 
+export interface FranklinAppExtensionContext {
+	readonly auth: AuthManager;
+	readonly platform: Platform;
+	readonly settings: SettingsStore;
+}
+
+export type FranklinAppExtensions =
+	| readonly FranklinExtension[]
+	| ((context: FranklinAppExtensionContext) => readonly FranklinExtension[]);
+
 export class FranklinApp {
 	readonly auth: AuthManager;
 	readonly settings: SettingsStore;
@@ -38,12 +48,12 @@ export class FranklinApp {
 	private readonly restoreStorage: () => Promise<RestoreResult>;
 
 	constructor(opts: {
-		extensions: FranklinExtension[];
+		extensions: FranklinAppExtensions;
 		platform: Platform;
 		appDir: AbsolutePath;
 		authStore?: AuthStore;
 	}) {
-		const { extensions, platform, appDir } = opts;
+		const { platform, appDir } = opts;
 		const storage = createStorage<FranklinState>(
 			platform.os.filesystem,
 			appDir,
@@ -56,6 +66,13 @@ export class FranklinApp {
 		this.platform = platform;
 		this.settings = storage.settings;
 		this.restoreStorage = () => storage.restore();
+		const extensions = [
+			...resolveExtensions(opts.extensions, {
+				auth: this.auth,
+				platform,
+				settings: this.settings,
+			}),
+		];
 
 		const connectAgent = createMiniACPRpcConnector(platform.spawn);
 		const baseModules: FranklinModules = [
@@ -91,4 +108,11 @@ export class FranklinApp {
 			issues: [...storageResult.issues, ...collectionResult.issues],
 		};
 	}
+}
+
+function resolveExtensions(
+	extensions: FranklinAppExtensions,
+	context: FranklinAppExtensionContext,
+): readonly FranklinExtension[] {
+	return typeof extensions === 'function' ? extensions(context) : extensions;
 }

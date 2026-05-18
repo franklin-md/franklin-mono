@@ -13,6 +13,7 @@ const PROVIDER_ICONS: Record<string, IconComponent> = {
 	'openai-codex': Icons.OpenAI,
 	'opencode-go': Icons.OpenCode,
 	openrouter: Icons.OpenRouter,
+	mistral: Icons.Mistral,
 };
 
 const MODEL_ICON_PREFIXES: {

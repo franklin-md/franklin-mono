@@ -2,8 +2,14 @@
 // have to change this prompt.
 export const readFileDescription = `Used to read the contents of the specified file on the available filesystem.
 For text files, returns text content. For supported image files, returns image content that the model can inspect.
+For PDFs, use the read_pdf tool instead.
 The supported image file types are JPEG, PNG, GIF, and WebP.
 This tool can only read files, not directories.`;
+
+export const readPDFDescription = `Used to read PDF files on the available filesystem.
+Returns extracted PDF text and page screenshots that the model can inspect.
+Use the optional start_page and end_page arguments to limit processing to the pages you need.
+This tool can only read PDF files, not directories.`;
 
 export const writeFileDescription = `Writes a file to the local filesystem.
 This tool will overwrite the existing file if there is one at the provided path.
