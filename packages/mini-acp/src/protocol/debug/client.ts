@@ -18,11 +18,11 @@ export function debugClient(client: MuClient, label: string): MuClient {
 				throw error;
 			}
 		},
-		async setContext(ctx: Parameters<MuClient['setContext']>[0]) {
-			logLines(label, renderSetContext(ctx));
+		async setContext(context: Parameters<MuClient['setContext']>[0]) {
+			logLines(label, renderSetContext(context));
 
 			try {
-				await client.setContext(ctx);
+				await client.setContext(context);
 			} catch (error) {
 				logLines(label, renderThrown('setContext', error));
 				throw error;

@@ -9,25 +9,25 @@ export function setContext(opts?: {
 	tools?: ToolSpec[];
 	config?: LLMConfigPatch;
 }): Action {
-	const ctx: SetContextPayload = {};
+	const context: SetContextPayload = {};
 
 	if (opts?.systemPrompt !== undefined || opts?.messages !== undefined) {
-		ctx.history = {};
+		context.history = {};
 		if (opts.systemPrompt !== undefined) {
-			ctx.history.systemPrompt = opts.systemPrompt;
+			context.history.systemPrompt = opts.systemPrompt;
 		}
 		if (opts.messages !== undefined) {
-			ctx.history.messages = opts.messages;
+			context.history.messages = opts.messages;
 		}
 	}
 
 	if (opts?.tools !== undefined) {
-		ctx.tools = opts.tools;
+		context.tools = opts.tools;
 	}
 
 	if (opts?.config) {
-		ctx.config = opts.config;
+		context.config = opts.config;
 	}
 
-	return { type: 'setContext', ctx };
+	return { type: 'setContext', context };
 }

@@ -5,7 +5,7 @@ import {
 	trackClient,
 	trackUsage,
 } from '../protocol/tracking.js';
-import { CtxTracker } from '../protocol/ctx-tracker.js';
+import { ContextTracker } from '../protocol/context-tracker.js';
 import { UsageTracker, ZERO_USAGE } from '../protocol/usage-tracker.js';
 import type { MuAgent, MuClient } from '../protocol/types.js';
 import type { TurnClient } from '../base/types.js';
@@ -18,8 +18,8 @@ import { StopCode } from '../types/stop-code.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function seededTracker(): CtxTracker {
-	const tracker = new CtxTracker();
+function seededTracker(): ContextTracker {
+	const tracker = new ContextTracker();
 	tracker.apply({
 		history: { systemPrompt: 'test', messages: [] },
 		tools: [],

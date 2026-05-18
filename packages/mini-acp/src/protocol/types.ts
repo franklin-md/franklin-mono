@@ -1,11 +1,11 @@
 import type { TurnClient, TurnServer } from '../base/types.js';
-import type { CtxPatch } from '../types/context.js';
+import type { ContextPatch } from '../types/context.js';
 
 // Agent side (client calls agent)
 export interface MuClient extends TurnClient {
 	// Session management
 	initialize(): Promise<void>;
-	setContext(ctx: CtxPatch): Promise<void>;
+	setContext(context: ContextPatch): Promise<void>;
 }
 
 export type MuAgent = TurnServer;

@@ -51,19 +51,19 @@ const initExactlyOnce: Expectation = {
 // Context Setup
 // ---------------------------------------------------------------------------
 
-const ctxBeforeFirstPrompt: Expectation = {
-	id: 'ctx-before-first-prompt',
+const contextBeforeFirstPrompt: Expectation = {
+	id: 'context-before-first-prompt',
 	description: 'setContext must precede the first prompt',
 	test: (t) => {
 		const promptIdx = t.findIndex((e) => match(e, 'send', 'prompt'));
 		if (promptIdx === -1) return 'skip';
-		const ctxIdx = t.findIndex((e) => match(e, 'send', 'setContext'));
-		return ctxIdx !== -1 && ctxIdx < promptIdx ? 'pass' : 'fail';
+		const contextIdx = t.findIndex((e) => match(e, 'send', 'setContext'));
+		return contextIdx !== -1 && contextIdx < promptIdx ? 'pass' : 'fail';
 	},
 };
 
-const ctxReceiveExists: Expectation = {
-	id: 'ctx-receive-exists',
+const contextReceiveExists: Expectation = {
+	id: 'context-receive-exists',
 	description: 'Agent must respond to each setContext',
 	test: (t) => {
 		const sent = sends(t, 'setContext').length;
@@ -72,18 +72,18 @@ const ctxReceiveExists: Expectation = {
 	},
 };
 
-const ctxAfterInit: Expectation = {
-	id: 'ctx-after-init',
+const contextAfterInit: Expectation = {
+	id: 'context-after-init',
 	description: 'setContext must not be sent before initialize completes',
 	test: (t) => {
-		const ctxSends = sends(t, 'setContext');
-		if (ctxSends.length === 0) return 'skip';
+		const contextSends = sends(t, 'setContext');
+		if (contextSends.length === 0) return 'skip';
 		const initDone = initCompletedIndex(t);
 		if (initDone === -1) return 'fail';
-		const firstCtx = ctxSends[0];
-		if (!firstCtx) return 'fail';
-		const firstCtxIdx = t.indexOf(firstCtx);
-		return firstCtxIdx > initDone ? 'pass' : 'fail';
+		const firstContext = contextSends[0];
+		if (!firstContext) return 'fail';
+		const firstContextIdx = t.indexOf(firstContext);
+		return firstContextIdx > initDone ? 'pass' : 'fail';
 	},
 };
 
@@ -531,9 +531,9 @@ export const specPoints: Expectation[] = [
 	initIsFirst,
 	initExactlyOnce,
 	// Context Setup
-	ctxBeforeFirstPrompt,
-	ctxReceiveExists,
-	ctxAfterInit,
+	contextBeforeFirstPrompt,
+	contextReceiveExists,
+	contextAfterInit,
 	// Turn Lifecycle
 	turnStartsWithTurnStart,
 	turnEndsWithTurnEnd,

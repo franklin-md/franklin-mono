@@ -12,28 +12,28 @@ export async function execute(
 	fixture: Fixture,
 	factory: AgentFactory,
 ): Promise<Transcript> {
-	const ctx = await createContext(factory);
+	const context = await createContext(factory);
 
 	for (const action of fixture.actions) {
 		switch (action.type) {
 			case 'initialize':
-				await ctx.initialize();
+				await context.initialize();
 				break;
 			case 'setContext':
-				await ctx.setContext(action.ctx);
+				await context.setContext(action.context);
 				break;
 			case 'prompt':
-				ctx.prompt(action.message);
+				context.prompt(action.message);
 				break;
 			case 'cancel':
-				ctx.cancel();
+				context.cancel();
 				break;
 			case 'waitFor':
-				await ctx.waitFor(action.predicate, action.timeoutMs);
+				await context.waitFor(action.predicate, action.timeoutMs);
 				break;
 		}
 	}
 
-	await ctx.drain();
-	return ctx.transcript;
+	await context.drain();
+	return context.transcript;
 }
