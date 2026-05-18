@@ -54,7 +54,6 @@ function createModule(): StateExtensionModule<
 								child: vi.fn(async () => ({ value: 0 })),
 							},
 							dispose: vi.fn(async () => {}),
-							subscribe: vi.fn(() => () => {}),
 						};
 					},
 				},

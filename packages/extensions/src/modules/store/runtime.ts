@@ -56,10 +56,6 @@ export function createStoreRuntime(stores: StoreResult): StoreRuntime {
 		async dispose(): Promise<void> {
 			// Registry owns store data; nothing to dispose
 		},
-		subscribe(_listener: () => void): () => void {
-			// Store mappings (name→ref) are stable after creation — no changes to notify.
-			return () => {};
-		},
 	};
 }
 

@@ -17,5 +17,4 @@ export interface StateHandle<S> {
  */
 export interface BaseRuntime {
 	dispose(): Promise<void>;
-	subscribe(listener: () => void): () => void;
 }

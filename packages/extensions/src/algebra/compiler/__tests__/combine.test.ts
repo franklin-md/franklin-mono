@@ -63,7 +63,6 @@ function createCounterCompiler(
 					child: vi.fn(async () => ({ count })),
 				},
 				dispose: vi.fn(async () => {}),
-				subscribe: vi.fn(() => () => {}),
 			};
 		},
 	};

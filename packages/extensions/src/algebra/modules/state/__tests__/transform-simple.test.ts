@@ -27,7 +27,6 @@ function createDependencyModule(
 				return {
 					dependency,
 					dispose: vi.fn(async () => {}),
-					subscribe: vi.fn(() => () => {}),
 				};
 			},
 		},

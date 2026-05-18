@@ -18,7 +18,7 @@ export function createClientRuntime(
 	client: AgentClient,
 ): Pick<
 	CoreRuntime,
-	'prompt' | 'cancel' | 'setLLMConfig' | 'dispose' | 'coreEvents' | 'subscribe'
+	'prompt' | 'cancel' | 'setLLMConfig' | 'dispose' | 'coreEvents'
 > {
 	const observer = createObserver<[CoreEvent]>();
 	const coreEvents = {
@@ -41,6 +41,5 @@ export function createClientRuntime(
 			await client.dispose();
 		},
 		coreEvents,
-		subscribe: (listener) => coreEvents.subscribe(() => listener()),
 	};
 }

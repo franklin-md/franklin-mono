@@ -29,7 +29,6 @@ function createModule(): ExtensionModule<TestSignature, TestRuntime> {
 				return {
 					value: registry.argsFor('register').at(-1)?.[0] ?? 0,
 					dispose: vi.fn(async () => {}),
-					subscribe: vi.fn(() => () => {}),
 				};
 			},
 		},

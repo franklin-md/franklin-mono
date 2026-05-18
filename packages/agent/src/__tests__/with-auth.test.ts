@@ -55,7 +55,6 @@ function mockCoreRuntime(): CoreRuntime {
 		setLLMConfig: vi.fn(async () => {}),
 		prompt: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
-		subscribe: vi.fn(() => () => {}),
 		dispose: vi.fn(async () => {}),
 	} as unknown as CoreRuntime;
 }

@@ -34,8 +34,6 @@ describe('createDependencyModule', () => {
 		expectTypeOf(runtime.settings).toEqualTypeOf<typeof settings>();
 		expect(runtime.settings).toBe(settings);
 
-		const unsubscribe = runtime.subscribe(() => {});
-		unsubscribe();
 		await runtime.dispose();
 	});
 

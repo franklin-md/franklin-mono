@@ -21,7 +21,6 @@ function createRuntime(state: TestState): {
 } {
 	const runtime: TestRuntime = {
 		dispose: vi.fn(async () => {}),
-		subscribe: vi.fn(() => () => {}),
 	};
 	const stateHandle: StateHandle<TestState> = {
 		get: vi.fn(async () => ({ ...state })),
@@ -73,7 +72,6 @@ describe('PersistedSessionCollection', () => {
 			expect(persister.save).toHaveBeenCalledWith('root', { value: 1 });
 		});
 		expect(observe).toHaveBeenCalledWith(runtime, expect.any(Function));
-		expect(runtime.subscribe).not.toHaveBeenCalled();
 
 		vi.mocked(persister.save).mockClear();
 		state.value = 2;

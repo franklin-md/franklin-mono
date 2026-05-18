@@ -133,24 +133,6 @@ describe('createCoreStateModule', () => {
 		await runtime.dispose();
 	});
 
-	it('legacy subscribe bridges coreEvents during migration', async () => {
-		const system = createCoreModule(createMockConnector());
-		const runtime = await createRuntime(
-			system,
-			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
-			[],
-		);
-		const listener = vi.fn();
-		const unsubscribe = runtime.subscribe(listener);
-
-		await runtime.setLLMConfig({ model: 'test-model' });
-
-		expect(listener).toHaveBeenCalledOnce();
-
-		unsubscribe();
-		await runtime.dispose();
-	});
-
 	it('prompt streams events from the agent', async () => {
 		const system = createCoreStateModule(createMockConnector());
 

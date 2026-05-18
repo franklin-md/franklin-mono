@@ -58,8 +58,6 @@ export function createEnvironmentRuntime(
 		async dispose(): Promise<void> {
 			await observed.dispose();
 		},
-		subscribe: (listener: () => void) =>
-			environmentEvents.subscribe(() => listener()),
 	};
 }
 
