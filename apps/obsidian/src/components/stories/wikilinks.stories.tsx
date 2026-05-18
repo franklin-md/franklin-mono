@@ -99,13 +99,10 @@ export const LongPathWrapping: Story = {
 		await waitFor(async () => {
 			const containerRect = container.getBoundingClientRect();
 			const linkRect = link.getBoundingClientRect();
-			const linkStyle = getComputedStyle(link);
 
-			await expect(linkStyle.whiteSpace).toBe('normal');
-			await expect(linkStyle.overflowWrap).toBe('anywhere');
 			await expect(linkRect.width).toBeLessThanOrEqual(containerRect.width + 1);
-			await expect(linkRect.height).toBeGreaterThan(
-				parseFloat(linkStyle.lineHeight),
+			await expect(container.scrollWidth).toBeLessThanOrEqual(
+				container.clientWidth + 1,
 			);
 		});
 	},

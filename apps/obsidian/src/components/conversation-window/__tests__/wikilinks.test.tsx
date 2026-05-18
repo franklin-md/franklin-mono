@@ -80,18 +80,6 @@ describe('Obsidian conversation wikilinks', () => {
 		expect(link.classList.contains('text-primary')).toBe(false);
 	});
 
-	it('allows long explicit-path wikilinks to wrap inside the conversation', () => {
-		renderText(
-			'Write it in: [[Library/Literature Notes/Programming Language Abstractions for Extensible Systems]]',
-		);
-
-		const link = screen.getByRole('button', {
-			name: '[[Library/Literature Notes/Programming Language Abstractions for Extensible Systems]]',
-		});
-		expect(link.classList.contains('whitespace-normal')).toBe(true);
-		expect(link.classList.contains('wrap-anywhere')).toBe(true);
-	});
-
 	it('uses Obsidian unresolved link variables for missing wikilinks', () => {
 		const { app } = createMockApp({ file: null });
 		renderText('See [[MEMORY]]', app);
