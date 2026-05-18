@@ -5,7 +5,7 @@ import {
 	type PDFConverter,
 	type PDFInput,
 } from '@franklin/extensions';
-import type { RenderPDFScreenshots, PDFPageRange } from './screenshots.ts';
+import type { RenderPDFScreenshots, PDFPageRange } from './screenshots.js';
 
 const MISTRAL_PROVIDER = 'mistral';
 const FREE_PDF_SERVICE = 'free';

@@ -44,7 +44,7 @@ interface MistralClient {
 	};
 }
 
-export interface MistralPDFConverterOptions extends PDFConverterOptions {
+interface MistralPDFConverterOptions extends PDFConverterOptions {
 	readonly apiKey?: string;
 	readonly createClient?: (apiKey: string) => MistralClient;
 }

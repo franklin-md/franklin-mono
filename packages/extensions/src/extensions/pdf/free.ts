@@ -8,7 +8,7 @@ import type {
 	RenderPDFScreenshots,
 } from './types.js';
 
-export interface FreePDFConverterOptions {
+interface FreePDFConverterOptions {
 	readonly renderScreenshots: RenderPDFScreenshots;
 }
 

@@ -9,6 +9,7 @@ import type { ReconfigurableEnvironment } from '../../../modules/environment/api
 import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
 import { editExtension } from '../../filesystem/edit/extension.js';
 import { readPDFExtension } from '../extension.js';
+import type { PDFConverter } from '../types.js';
 
 vi.mock('file-type', () => ({
 	fileTypeFromBuffer: vi.fn(async () => ({
@@ -49,16 +50,22 @@ function mockEnvironment(file: Uint8Array): ReconfigurableEnvironment {
 	};
 }
 
+function mockPDFConverter(markdown: string): PDFConverter & {
+	convertPDF: ReturnType<typeof vi.fn<PDFConverter['convertPDF']>>;
+} {
+	return {
+		convertPDF: vi.fn<PDFConverter['convertPDF']>(async () => ({
+			markdown,
+			screenshots: [],
+		})),
+	};
+}
+
 describe('readPDFExtension', () => {
 	it('routes PDFs through the PDF converter with page ranges', async () => {
 		const pdf = new TextEncoder().encode('%PDF-1.7\n');
 		const env = mockEnvironment(pdf);
-		const pdfConverter = {
-			convertPDF: vi.fn(async () => ({
-				markdown: 'converted pdf',
-				screenshots: [],
-			})),
-		};
+		const pdfConverter = mockPDFConverter('converted pdf');
 		const compiled = await compileCoreWithStoreAndEnv((api) => {
 			editExtension()(api);
 			readPDFExtension(pdfConverter)(api);
@@ -89,12 +96,7 @@ describe('readPDFExtension', () => {
 	it('defaults missing page range boundaries', async () => {
 		const pdf = new TextEncoder().encode('%PDF-1.7\n');
 		const env = mockEnvironment(pdf);
-		const pdfConverter = {
-			convertPDF: vi.fn(async () => ({
-				markdown: 'converted pdf',
-				screenshots: [],
-			})),
-		};
+		const pdfConverter = mockPDFConverter('converted pdf');
 		const compiled = await compileCoreWithStoreAndEnv((api) => {
 			editExtension()(api);
 			readPDFExtension(pdfConverter)(api);
