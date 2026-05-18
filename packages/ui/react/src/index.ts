@@ -82,6 +82,7 @@ export {
 	useConversationTurns,
 	useThrottledConversationTurns,
 } from './conversation/use-conversation-turns.js';
+export { useConversationTitle } from './conversation/use-conversation-title.js';
 export { getConversationTurnEnd } from './conversation/turn-info/get-turn-end.js';
 export { getConversationTurnPhase } from './conversation/turn-info/get-phase.js';
 export { getConversationTurnTiming } from './conversation/turn-info/get-timing.js';

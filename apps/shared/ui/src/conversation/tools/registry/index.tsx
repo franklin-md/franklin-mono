@@ -1,5 +1,4 @@
 import { Wrench } from 'lucide-react';
-
 import {
 	createToolRendererRegistry,
 	type ToolRendererEntry,

@@ -103,12 +103,17 @@ export type {
 	ToolUseBlock,
 	TurnEndBlock,
 } from './extensions/conversation/types.js';
+export type {
+	ConversationTitle,
+	ConversationTitleControl,
+} from './extensions/conversation-title/types.js';
 // ---------------------------------------------------------------------------
 // Built-in extensions
 // ---------------------------------------------------------------------------
 export {
 	bashExtension,
 	conversationExtension,
+	conversationTitleExtension,
 	createFilesystemExtension,
 	createReadPDFExtension,
 	createStatusControl,

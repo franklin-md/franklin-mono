@@ -1,7 +1,6 @@
 /* eslint-disable require-yield */
 import { describe, it, expect, vi } from 'vitest';
 import { apply } from '@franklin/lib/middleware';
-import type { StoreRuntime } from '../../modules/store/runtime.js';
 import type {
 	MiniACPAgent,
 	MiniACPClient,
@@ -12,6 +11,7 @@ import type {
 	Usage,
 } from '@franklin/mini-acp';
 import { StopCode } from '@franklin/mini-acp';
+import type { StoreRuntime } from '../../modules/store/runtime.js';
 import { compileCoreWithStore } from '../../testing/compile-ext.js';
 import { conversationExtension } from '../conversation/extension.js';
 import { conversationKey } from '../conversation/key.js';
@@ -66,6 +66,13 @@ function compileConversation() {
 // ---------------------------------------------------------------------------
 
 describe('conversationExtension', () => {
+	it('registers the conversation store without tools', async () => {
+		const { stores, tools } = await compileConversation();
+
+		expect(getTurns(stores)).toEqual([]);
+		expect(tools).toEqual([]);
+	});
+
 	it('records user prompt on prompt', async () => {
 		const { middleware, stores } = await compileConversation();
 

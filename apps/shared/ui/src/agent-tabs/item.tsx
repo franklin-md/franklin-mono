@@ -3,6 +3,7 @@ import {
 	useAgentControl,
 	useAgentState,
 	useAutoMarkRead,
+	useConversationTitle,
 	useMiddleButtonEffect,
 } from '@franklin/react';
 import { X } from 'lucide-react';
@@ -13,22 +14,27 @@ import { TabsTrigger } from '../primitives/tabs.js';
 import { StatusIndicator } from '../components/status-indicator.js';
 
 type AgentTabsItemProps = {
-	label: string;
 	sessionId: string;
+	position: number;
 	isActive: boolean;
 	onSelect: () => void;
 	onRemove: () => void;
 };
 
 export function AgentTabsItem({
-	label,
 	sessionId,
+	position,
 	isActive,
 	onSelect,
 	onRemove,
 }: AgentTabsItemProps) {
 	const statusStore = useAgentState(statusExtension.keys.status);
 	const status = statusStore.get();
+	const title = useConversationTitle();
+	const trimmedTitle = title.trim();
+	const hasTitle = trimmedTitle.length > 0;
+	const displayLabel = hasTitle ? trimmedTitle : 'New chat';
+	const accessibleLabel = hasTitle ? displayLabel : `New chat ${position}`;
 	const control = useAgentControl(
 		statusExtension.keys.status,
 		createStatusControl,
@@ -41,7 +47,7 @@ export function AgentTabsItem({
 		<div
 			data-testid={`agent-tab-${sessionId}`}
 			className={cn(
-				'group flex items-center gap-0.5 pr-0.5 transition-colors',
+				'group flex min-w-0 items-center gap-px pr-px transition-colors',
 				isActive
 					? 'border-b-2 border-foreground'
 					: 'text-muted-foreground/60 hover:text-muted-foreground',
@@ -49,7 +55,9 @@ export function AgentTabsItem({
 		>
 			<TabsTrigger
 				value={sessionId}
-				className="h-7 gap-1.5 rounded-sm px-2.5 text-xs data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
+				className="h-7 max-w-44 gap-1 rounded-sm px-1.5 text-xs data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
+				title={accessibleLabel}
+				aria-label={accessibleLabel}
 				onClick={() => {
 					control.markRead();
 					onSelect();
@@ -63,7 +71,14 @@ export function AgentTabsItem({
 				>
 					<StatusIndicator status={status} />
 				</span>
-				<span>{label}</span>
+				<span
+					className={cn(
+						'min-w-0 truncate',
+						!hasTitle && 'text-muted-foreground',
+					)}
+				>
+					{displayLabel}
+				</span>
 			</TabsTrigger>
 
 			<Button
@@ -75,7 +90,7 @@ export function AgentTabsItem({
 					(isActive || status !== 'idle') && 'opacity-100',
 					'group-hover:opacity-100',
 				)}
-				aria-label={`Delete agent ${label}`}
+				aria-label={`Delete agent ${accessibleLabel}`}
 				onClick={onRemove}
 			>
 				<X className="h-3 w-3" />

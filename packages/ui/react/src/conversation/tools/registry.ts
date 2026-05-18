@@ -7,10 +7,6 @@ import type {
 	ToolRendererRegistryEntries,
 } from './types.js';
 
-const fallbackRenderer: ToolRendererEntry = {
-	summary: ({ block }) => block.call.name,
-};
-
 export function createToolRenderer<S extends ToolSpec>(
 	spec: S,
 	entry: ToolRendererEntry<ToolArgs<S>>,
@@ -27,6 +23,6 @@ export function createToolRendererRegistry(
 export function resolveToolRenderer(
 	registry: ToolRendererRegistry,
 	toolName: string,
-): ToolRendererEntry {
-	return registry.get(toolName) ?? registry.get('*') ?? fallbackRenderer;
+): ToolRendererEntry | null {
+	return registry.get(toolName) ?? registry.get('*') ?? null;
 }

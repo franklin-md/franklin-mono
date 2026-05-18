@@ -25,19 +25,19 @@ export function AgentTabs({
 	}
 
 	return (
-		<div className="flex items-end gap-2 border-b border-border px-4 pt-2">
+		<div className="flex items-end gap-1.5 border-b border-border px-2 pt-2">
 			<div className="min-w-0 flex-1 overflow-x-auto">
 				<Tabs
 					value={activeSessionId ?? ''}
 					onValueChange={select}
 					aria-label={ariaLabel}
 				>
-					<TabsList className="h-8 w-max min-w-full justify-start gap-0.5 rounded-none bg-transparent p-0">
+					<TabsList className="h-8 w-max min-w-full justify-start gap-px rounded-none bg-transparent p-0">
 						{sessions.map((session, index) => (
 							<AgentProvider key={session.id} agent={session.runtime}>
 								<AgentTabsItem
-									label={String(index + 1)}
 									sessionId={session.id}
+									position={index + 1}
 									isActive={session.id === activeSessionId}
 									onSelect={() => select(session.id)}
 									onRemove={() => remove(session.id)}
@@ -52,11 +52,11 @@ export function AgentTabs({
 				type="button"
 				variant="ghost"
 				size="icon"
-				className="mb-1 h-7 w-7 shrink-0 rounded-md"
+				className="mb-1 h-6 w-6 shrink-0 rounded-md"
 				aria-label="Create agent"
 				onClick={handleCreate}
 			>
-				<Plus className="h-3.5 w-3.5" />
+				<Plus className="h-3 w-3" />
 			</Button>
 		</div>
 	);

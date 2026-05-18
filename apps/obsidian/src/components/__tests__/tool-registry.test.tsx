@@ -27,7 +27,10 @@ function createBlock(
 
 function renderSummary(name: string, args: Record<string, unknown>) {
 	const entry = resolveToolRenderer(obsidianToolRegistry, name);
-	render(
+	if (entry == null) {
+		throw new Error(`Expected renderer for ${name}`);
+	}
+	return render(
 		entry.summary({
 			block: createBlock(name, args),
 			status: 'success',
@@ -47,10 +50,10 @@ describe('obsidianToolRegistry', () => {
 		expect(screen.queryByText('[[MEMORY]]')).toBeNull();
 	});
 
-	it('preserves the default fallback for unrelated tools', () => {
+	it('overrides the shared fallback with a hidden renderer', () => {
 		const name = 'unknown_tool';
-		renderSummary(name, {});
+		const { container } = renderSummary(name, {});
 
-		expect(screen.getByText(name)).toBeTruthy();
+		expect(container.textContent).toBe('');
 	});
 });

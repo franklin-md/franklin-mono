@@ -3,6 +3,7 @@
 import { render, screen } from '@testing-library/react';
 import {
 	bashExtension,
+	conversationTitleExtension,
 	createWebExtension,
 	filesystemExtension,
 	todoExtension,
@@ -11,7 +12,10 @@ import {
 import { resolveToolRenderer } from '@franklin/react';
 import { describe, expect, it } from 'vitest';
 
-import { defaultToolRegistry } from '../../../src/conversation/tools/registry/index.js';
+import {
+	defaultToolRenderers,
+	defaultToolRegistry,
+} from '../../../src/conversation/tools/registry/index.js';
 
 function createBlock(
 	name: string,
@@ -31,6 +35,9 @@ function createBlock(
 
 function renderSummary(name: string, args: Record<string, unknown>) {
 	const entry = resolveToolRenderer(defaultToolRegistry, name);
+	if (entry == null) {
+		throw new Error(`Expected renderer for ${name}`);
+	}
 	render(
 		entry.summary({
 			block: createBlock(name, args),
@@ -125,19 +132,25 @@ describe('defaultToolRegistry', () => {
 		});
 	});
 
-	describe('fallback', () => {
-		it('falls back to the tool name for unknown tools', () => {
-			const name = 'unknown_tool';
-			const entry = resolveToolRenderer(defaultToolRegistry, name);
-
-			render(
-				entry.summary({
-					block: createBlock(name, {}),
-					status: 'in-progress',
-					args: {},
-				}),
+	describe('conversation title tools', () => {
+		it('uses the shared fallback for set chat title without a dedicated renderer', () => {
+			const name = conversationTitleExtension.tools.setChatTitle.name;
+			const directEntry = defaultToolRenderers.find(
+				([toolName]) => toolName === name,
 			);
 
+			expect(directEntry).toBeUndefined();
+
+			renderSummary(name, { title: 'Inbox triage' });
+			expect(screen.getByText(name)).toBeTruthy();
+		});
+	});
+
+	describe('unknown tools', () => {
+		it('falls back to the tool name for unknown tools', () => {
+			const name = 'unknown_tool';
+
+			renderSummary(name, {});
 			expect(screen.getByText(name)).toBeTruthy();
 		});
 	});

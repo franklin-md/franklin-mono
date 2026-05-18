@@ -20,12 +20,19 @@ export function ToolUseBlock({
 	Chrome: ComponentType<ResolvedToolRender>;
 }) {
 	const entry = resolveToolRenderer(registry, block.call.name);
+	if (entry == null) return null;
+
+	const args = block.call.arguments;
+	const summary = entry.summary({ block, status, args });
+	const expanded = entry.expanded?.({ block, status, args });
+	if (summary == null && expanded == null) return null;
+
 	return (
 		<Chrome
 			block={block}
 			status={status}
-			summary={entry.summary({ block, status, args: block.call.arguments })}
-			expanded={entry.expanded?.({ block, status, args: block.call.arguments })}
+			summary={summary}
+			expanded={expanded}
 		/>
 	);
 }
@@ -41,17 +48,12 @@ export function createToolUseBlock(
 		block: ToolUseBlockData;
 		status: ToolStatus;
 	}) {
-		const entry = resolveToolRenderer(registry, block.call.name);
 		return (
-			<Chrome
+			<ToolUseBlock
 				block={block}
 				status={status}
-				summary={entry.summary({ block, status, args: block.call.arguments })}
-				expanded={entry.expanded?.({
-					block,
-					status,
-					args: block.call.arguments,
-				})}
+				registry={registry}
+				Chrome={Chrome}
 			/>
 		);
 	}

@@ -2,6 +2,7 @@ import { FranklinApp } from '@franklin/agent/browser';
 import type { FranklinExtension, Platform } from '@franklin/agent/browser';
 import {
 	conversationExtension,
+	conversationTitleExtension,
 	createFilesystemExtension,
 	createReadPDFExtension,
 	createWebExtension,
@@ -92,6 +93,7 @@ function createExtensions(pdfConverter: PDFConverter): FranklinExtension[] {
 	const webExtension = createWebExtension({});
 	const extensionBundles = [
 		conversationExtension,
+		conversationTitleExtension,
 		todoExtension,
 		statusExtension,
 		{ extension: obsidianSystemPromptExtension },
