@@ -19,9 +19,20 @@ export const CORE_STATE: unique symbol = Symbol.for(
 	'@franklin/extensions/core-state',
 ) as never;
 
+export type CoreEvent =
+	| {
+			readonly type: 'llm-config-changed';
+	  }
+	| {
+			readonly type: 'turn-settled';
+	  };
+
 export type CoreRuntime = BaseRuntime &
 	Pick<MiniACPClient, 'prompt' | 'cancel'> & {
 		setLLMConfig(config: Partial<LLMConfig>): Promise<void>;
+		readonly coreEvents: {
+			subscribe(listener: (event: CoreEvent) => void): () => void;
+		};
 		/**
 		 * Full last-sent context snapshot (systemPrompt, messages, tools,
 		 * config). Distinct from the state projection, which is the

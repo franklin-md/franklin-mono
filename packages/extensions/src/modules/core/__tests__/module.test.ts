@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import { createCoreStateModule } from '../module.js';
 import { createRuntime } from '../../../testing/index.js';
+import type { CoreEvent } from '../runtime/index.js';
 import {
 	createSessionAdapter,
 	StopCode,
@@ -77,8 +78,76 @@ describe('createCoreStateModule', () => {
 		expect(runtime.prompt).toBeDefined();
 		expect(runtime.setLLMConfig).toBeDefined();
 		expect(runtime.cancel).toBeDefined();
+		expect(runtime.coreEvents.subscribe).toBeDefined();
 		expect(mock.calls().initialize).toBe(1);
 
+		await runtime.dispose();
+	});
+
+	it('coreEvents emits llm config changes after setLLMConfig', async () => {
+		const system = createCoreModule(createMockConnector());
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
+			[],
+		);
+		const events: CoreEvent[] = [];
+		const unsubscribe = runtime.coreEvents.subscribe((event) => {
+			events.push(event);
+		});
+
+		await runtime.setLLMConfig({
+			provider: 'test-provider',
+			model: 'test-model',
+			apiKey: 'secret-key',
+		});
+
+		expect(events).toEqual([{ type: 'llm-config-changed' }]);
+
+		unsubscribe();
+		await runtime.dispose();
+	});
+
+	it('coreEvents emits turn-settled after prompt settles', async () => {
+		const system = createCoreModule(createMockConnector());
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
+			[],
+		);
+		const events: CoreEvent[] = [];
+		const unsubscribe = runtime.coreEvents.subscribe((event) => {
+			events.push(event);
+		});
+
+		await collect(
+			runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		expect(events).toEqual([{ type: 'turn-settled' }]);
+
+		unsubscribe();
+		await runtime.dispose();
+	});
+
+	it('legacy subscribe bridges coreEvents during migration', async () => {
+		const system = createCoreModule(createMockConnector());
+		const runtime = await createRuntime(
+			system,
+			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
+			[],
+		);
+		const listener = vi.fn();
+		const unsubscribe = runtime.subscribe(listener);
+
+		await runtime.setLLMConfig({ model: 'test-model' });
+
+		expect(listener).toHaveBeenCalledOnce();
+
+		unsubscribe();
 		await runtime.dispose();
 	});
 
