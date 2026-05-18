@@ -64,5 +64,8 @@ export const completeTodoDescription = 'Mark a todo item as completed';
 
 export const listTodosDescription = 'List all todo items';
 
+export const setChatTitleDescription =
+	'Set the short display title for the current chat.';
+
 export const spawnDescription =
 	'Spawn a child agent to perform a task. The child runs to completion and returns its final response.';
