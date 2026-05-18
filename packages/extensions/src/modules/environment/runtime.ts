@@ -11,15 +11,22 @@ import type { EnvironmentState } from './state.js';
  */
 export const ENV_STATE: unique symbol = Symbol('environment/state');
 
+export type EnvironmentEvent = {
+	readonly type: 'environment-reconfigured';
+};
+
 export type EnvironmentRuntime = BaseRuntime & {
 	readonly environment: ReconfigurableEnvironment;
+	readonly environmentEvents: {
+		subscribe(listener: (event: EnvironmentEvent) => void): () => void;
+	};
 	readonly [ENV_STATE]: StateHandle<EnvironmentState>;
 };
 
 export function createEnvironmentRuntime(
 	environment: ReconfigurableEnvironment,
 ): EnvironmentRuntime {
-	const observer = createObserver();
+	const environmentEvents = createObserver<[EnvironmentEvent]>();
 
 	const observed: ReconfigurableEnvironment = {
 		filesystem: environment.filesystem,
@@ -29,13 +36,14 @@ export function createEnvironmentRuntime(
 		config: () => environment.config(),
 		async reconfigure(config) {
 			await environment.reconfigure(config);
-			observer.notify();
+			environmentEvents.notify({ type: 'environment-reconfigured' });
 		},
 		dispose: () => environment.dispose(),
 	};
 
 	return {
 		environment: observed,
+		environmentEvents,
 		[ENV_STATE]: {
 			async get(): Promise<EnvironmentState> {
 				return { env: { ...(await observed.config()) } };
@@ -50,7 +58,8 @@ export function createEnvironmentRuntime(
 		async dispose(): Promise<void> {
 			await observed.dispose();
 		},
-		subscribe: (listener: () => void) => observer.subscribe(listener),
+		subscribe: (listener: () => void) =>
+			environmentEvents.subscribe(() => listener()),
 	};
 }
 

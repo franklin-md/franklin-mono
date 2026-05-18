@@ -9,6 +9,11 @@ import {
 } from '@franklin/extensions';
 import type { SessionPersistence } from '../../storage/types.js';
 
+export type RuntimePersistenceObserver<RT extends BaseRuntime> = (
+	runtime: RT,
+	listener: () => void,
+) => () => void;
+
 /**
  * PersistedSessionCollection = RuntimeCollection + persistence.
  *
@@ -30,18 +35,21 @@ export class PersistedSessionCollection<
 	constructor(
 		private readonly persister: SessionPersistence<S>,
 		private readonly projectState: (runtime: RT) => StateHandle<S>,
+		private readonly observeRuntime: RuntimePersistenceObserver<RT>,
 	) {
 		super();
 		this.subscribe((event) => {
 			if (event.action === 'add') {
 				this.persist(event.id, event.runtime);
-				// TODO: unsub is leaked — relies on runtime.dispose() to clean up subscribers
-				event.runtime.subscribe(() => this.persist(event.id, event.runtime));
+				this.replaceRuntimeObserver(event.id, event.runtime);
 			} else {
+				this.removeRuntimeObserver(event.id);
 				void this.persister.delete(event.id);
 			}
 		});
 	}
+
+	private readonly runtimeObservers = new Map<string, () => void>();
 
 	async restore(
 		hydrate: (id: string, state: S) => Promise<RuntimeEntry<RT>>,
@@ -62,5 +70,18 @@ export class PersistedSessionCollection<
 		void this.projectState(runtime)
 			.get()
 			.then((state) => this.persister.save(sessionId, state));
+	}
+
+	private replaceRuntimeObserver(sessionId: string, runtime: RT): void {
+		this.removeRuntimeObserver(sessionId);
+		const unsubscribe = this.observeRuntime(runtime, () => {
+			this.persist(sessionId, runtime);
+		});
+		this.runtimeObservers.set(sessionId, unsubscribe);
+	}
+
+	private removeRuntimeObserver(sessionId: string): void {
+		this.runtimeObservers.get(sessionId)?.();
+		this.runtimeObservers.delete(sessionId);
 	}
 }

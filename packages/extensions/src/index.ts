@@ -202,7 +202,10 @@ export {
 	DEFAULT_NETWORK_CONFIG,
 } from './modules/environment/api/index.js';
 export { createEnvironmentCompiler } from './modules/environment/compile/index.js';
-export type { EnvironmentRuntime } from './modules/environment/runtime.js';
+export type {
+	EnvironmentEvent,
+	EnvironmentRuntime,
+} from './modules/environment/runtime.js';
 export {
 	ENV_STATE,
 	environmentStateHandle,
