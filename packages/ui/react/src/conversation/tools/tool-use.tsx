@@ -8,26 +8,6 @@ import type {
 } from './types.js';
 import { resolveToolRenderer } from './registry.js';
 
-function resolveToolRender(
-	block: ToolUseBlockData,
-	status: ToolStatus,
-	registry: ToolRendererRegistry,
-): ResolvedToolRender | null {
-	const entry = resolveToolRenderer(registry, block.call.name);
-	const args = block.call.arguments;
-	const summary = entry.summary({ block, status, args });
-	const expanded = entry.expanded?.({ block, status, args });
-
-	if (summary == null && expanded == null) return null;
-
-	return {
-		block,
-		status,
-		summary,
-		expanded,
-	};
-}
-
 export function ToolUseBlock({
 	block,
 	status,
@@ -39,8 +19,22 @@ export function ToolUseBlock({
 	registry: ToolRendererRegistry;
 	Chrome: ComponentType<ResolvedToolRender>;
 }) {
-	const resolved = resolveToolRender(block, status, registry);
-	return resolved ? <Chrome {...resolved} /> : null;
+	const entry = resolveToolRenderer(registry, block.call.name);
+	if (entry == null) return null;
+
+	const args = block.call.arguments;
+	const summary = entry.summary({ block, status, args });
+	const expanded = entry.expanded?.({ block, status, args });
+	if (summary == null && expanded == null) return null;
+
+	return (
+		<Chrome
+			block={block}
+			status={status}
+			summary={summary}
+			expanded={expanded}
+		/>
+	);
 }
 
 export function createToolUseBlock(
@@ -54,8 +48,14 @@ export function createToolUseBlock(
 		block: ToolUseBlockData;
 		status: ToolStatus;
 	}) {
-		const resolved = resolveToolRender(block, status, registry);
-		return resolved ? <Chrome {...resolved} /> : null;
+		return (
+			<ToolUseBlock
+				block={block}
+				status={status}
+				registry={registry}
+				Chrome={Chrome}
+			/>
+		);
 	}
 	ToolUse.displayName = 'ToolUse';
 	return ToolUse;

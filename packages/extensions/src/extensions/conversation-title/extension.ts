@@ -1,7 +1,7 @@
 import { defineExtension } from '../../algebra/extension/index.js';
 import type { CoreModule } from '../../modules/core/index.js';
 import type { StoreModule } from '../../modules/store/index.js';
-import { createConversationTitleControl } from './control.js';
+import { createControl } from './control.js';
 import { conversationTitleKey } from './key.js';
 import { setChatTitleSpec } from './tools.js';
 
@@ -16,14 +16,11 @@ export function conversationTitleExtension() {
 			);
 		});
 
-		// TODO: disable tool after first use once the mechanism for this is supported.
-		api.registerTool(setChatTitleSpec, (params, ctx) => {
-			const input = setChatTitleSpec.schema.parse(params);
-			const control = createConversationTitleControl(
-				ctx.getStore(conversationTitleKey),
-			);
-			const title = control.setTitle(input.title);
-			return JSON.stringify({ title });
+		// TODO(FRA-326): disable tool after first use once the mechanism is supported.
+		api.registerTool(setChatTitleSpec, ({ title }, ctx) => {
+			const control = createControl(ctx.getStore(conversationTitleKey));
+			const nextTitle = control.setTitle(title);
+			return `Title set to "${nextTitle}"`;
 		});
 	});
 }

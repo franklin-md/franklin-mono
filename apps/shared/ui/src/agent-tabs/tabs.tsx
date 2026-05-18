@@ -36,8 +36,8 @@ export function AgentTabs({
 						{sessions.map((session, index) => (
 							<AgentProvider key={session.id} agent={session.runtime}>
 								<AgentTabsItem
-									label={String(index + 1)}
 									sessionId={session.id}
+									position={index + 1}
 									isActive={session.id === activeSessionId}
 									onSelect={() => select(session.id)}
 									onRemove={() => remove(session.id)}

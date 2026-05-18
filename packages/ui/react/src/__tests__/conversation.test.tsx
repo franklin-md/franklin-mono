@@ -82,7 +82,7 @@ describe('resolveToolRenderer', () => {
 	const readRenderer: ToolRendererEntry = {
 		summary: ({ block }) => `read: ${block.call.name}`,
 	};
-	const fallback: ToolRendererEntry = {
+	const fallbackRenderer: ToolRendererEntry = {
 		summary: ({ block }) => `fallback: ${block.call.name}`,
 	};
 
@@ -98,29 +98,22 @@ describe('resolveToolRenderer', () => {
 		expect(resolveToolRenderer(reg, 'read_file')).toBe(readRenderer);
 	});
 
-	it('falls back to * when no exact match', () => {
-		const reg = createToolRendererRegistry([['*', fallback]]);
-		expect(resolveToolRenderer(reg, 'unknown')).toBe(fallback);
-	});
-
-	it('uses built-in fallback when no * entry', () => {
+	it('returns null when no renderer is registered', () => {
 		const reg = createToolRendererRegistry([]);
-		const entry = resolveToolRenderer(reg, 'unknown');
-		const block: ToolUseBlock = {
-			kind: 'toolUse',
-			call: { type: 'toolCall', id: '1', name: 'grep', arguments: {} },
-			startedAt: 0,
-		};
-		expect(
-			entry.summary({ block, status: 'success', args: block.call.arguments }),
-		).toBe('grep');
+		expect(resolveToolRenderer(reg, 'unknown')).toBeNull();
 	});
 
-	it('prefers exact match over *', () => {
+	it('falls back to * when no exact match exists', () => {
+		const reg = createToolRendererRegistry([['*', fallbackRenderer]]);
+		expect(resolveToolRenderer(reg, 'unknown')).toBe(fallbackRenderer);
+	});
+
+	it('prefers exact matches over the * fallback', () => {
 		const reg = createToolRendererRegistry([
 			['read', readRenderer],
-			['*', fallback],
+			['*', fallbackRenderer],
 		]);
+
 		expect(resolveToolRenderer(reg, 'read')).toBe(readRenderer);
 	});
 
@@ -523,7 +516,7 @@ describe('ToolUseBlock', () => {
 		expect(props.block).toBe(block);
 	});
 
-	it('falls back to * renderer for unknown tools', () => {
+	it('falls back to the * renderer for unknown tools', () => {
 		const captured: ResolvedToolRender[] = [];
 
 		const registry = createToolRendererRegistry([
@@ -564,6 +557,40 @@ describe('ToolUseBlock', () => {
 		const props = captured[0] as ResolvedToolRender;
 		expect(props.summary).toBe('fallback:unknown_tool');
 		expect(props.expanded).toBeUndefined();
+	});
+
+	it('renders nothing when no renderer is registered', () => {
+		const captured: ResolvedToolRender[] = [];
+
+		const registry = createToolRendererRegistry([]);
+
+		function Chrome(props: ResolvedToolRender) {
+			captured.push(props);
+			return <div data-testid="tool-chrome" />;
+		}
+
+		const block: ToolUseBlock = {
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: '1',
+				name: 'unknown_tool',
+				arguments: {},
+			},
+			startedAt: 0,
+		};
+
+		render(
+			<ToolUseBlockComponent
+				block={block}
+				status="in-progress"
+				registry={registry}
+				Chrome={Chrome}
+			/>,
+		);
+
+		expect(captured).toEqual([]);
+		expect(screen.queryByTestId('tool-chrome')).toBeNull();
 	});
 
 	it('passes undefined expanded when renderer has no expanded', () => {

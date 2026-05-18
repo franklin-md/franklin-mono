@@ -1,8 +1,5 @@
 export { conversationExtension } from './conversation/index.js';
-export {
-	conversationTitleExtension,
-	createConversationTitleControl,
-} from './conversation-title/index.js';
+export { conversationTitleExtension } from './conversation-title/index.js';
 
 export { todoExtension, createTodoControl } from './todo/index.js';
 

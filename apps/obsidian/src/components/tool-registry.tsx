@@ -1,6 +1,7 @@
 import { filesystemExtension } from '@franklin/extensions';
 import {
 	createToolRendererRegistry,
+	type ToolRendererEntry,
 	type ToolRendererRegistryEntries,
 } from '@franklin/react';
 import { defaultToolRenderers, toolEntry } from '@franklin/ui';
@@ -20,7 +21,12 @@ const obsidianFileToolRenderers = [
 	)),
 ] satisfies ToolRendererRegistryEntries;
 
+const hiddenFallbackEntry: ToolRendererEntry = {
+	summary: () => null,
+};
+
 export const obsidianToolRegistry = createToolRendererRegistry([
 	...defaultToolRenderers,
 	...obsidianFileToolRenderers,
+	['*', hiddenFallbackEntry],
 ] satisfies ToolRendererRegistryEntries);

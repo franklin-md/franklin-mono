@@ -2,7 +2,7 @@ import type { Store } from '../../modules/store/api/types.js';
 import type { ConversationTitle, ConversationTitleControl } from './types.js';
 import { MAX_CONVERSATION_TITLE_LENGTH } from './types.js';
 
-export function createConversationTitleControl(
+export function createControl(
 	titleStore: Store<ConversationTitle>,
 ): ConversationTitleControl {
 	return {

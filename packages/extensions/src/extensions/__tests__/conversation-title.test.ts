@@ -94,9 +94,7 @@ describe('conversationTitleExtension', () => {
 
 		expect(result).toEqual({
 			toolCallId: 'tc-title',
-			content: [
-				{ type: 'text', text: JSON.stringify({ title: 'Project notes' }) },
-			],
+			content: [{ type: 'text', text: 'Title set to "Project notes"' }],
 			isError: undefined,
 		});
 		expect(getTitle(stores)).toBe('Project notes');

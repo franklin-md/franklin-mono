@@ -6,6 +6,7 @@ import {
 	render,
 	screen,
 	waitFor,
+	within,
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -99,6 +100,16 @@ function createSession(
 	};
 }
 
+function getSessionTab(sessionId: string): HTMLElement {
+	return within(screen.getByTestId(`agent-tab-${sessionId}`)).getByRole('tab');
+}
+
+function getSessionDeleteButton(sessionId: string): HTMLElement {
+	return within(screen.getByTestId(`agent-tab-${sessionId}`)).getByRole(
+		'button',
+	);
+}
+
 function createAgents(initialSessions: TestSession[]) {
 	const sessions = [...initialSessions];
 	const listeners = new Set<() => void>();
@@ -186,16 +197,19 @@ describe('Obsidian agent tabs', () => {
 		expect(screen.queryByRole('button', { name: 'Sign in' })).toBeNull();
 	});
 
-	it('renders one compact tab per session with positional labels', async () => {
+	it('renders one compact tab per session with new-chat labels', async () => {
 		renderApp([
 			createSession('session-a', 'idle'),
 			createSession('session-b', 'unread'),
 			createSession('session-c', 'in-progress'),
 		]);
 
-		expect(screen.getByRole('tab', { name: '1' })).toBeTruthy();
-		expect(screen.getByRole('tab', { name: '2' })).toBeTruthy();
-		expect(screen.getByRole('tab', { name: '3' })).toBeTruthy();
+		expect(getSessionTab('session-a').textContent).toContain('New chat');
+		expect(getSessionTab('session-b').textContent).toContain('New chat');
+		expect(getSessionTab('session-c').textContent).toContain('New chat');
+		expect(screen.getByRole('tab', { name: 'New chat 1' })).toBeTruthy();
+		expect(screen.getByRole('tab', { name: 'New chat 2' })).toBeTruthy();
+		expect(screen.getByRole('tab', { name: 'New chat 3' })).toBeTruthy();
 
 		const unreadIndicator = screen.getByTestId('agent-tab-status-session-b')
 			.firstElementChild as HTMLElement;
@@ -208,16 +222,24 @@ describe('Obsidian agent tabs', () => {
 		expect(idleIndicator.className).toContain('invisible');
 	});
 
-	it('uses chat titles for named sessions and positional labels as the fallback', async () => {
+	it('uses chat titles for named sessions and muted new-chat labels as the fallback', async () => {
 		renderApp([
 			createSession('session-a', 'idle', 'Inbox triage'),
 			createSession('session-b', 'idle'),
 		]);
 
 		expect(screen.getByRole('tab', { name: 'Inbox triage' })).toBeTruthy();
-		expect(screen.getByRole('tab', { name: '2' })).toBeTruthy();
+		const placeholder = screen.getByRole('tab', { name: 'New chat 2' });
+		expect(placeholder).toBeTruthy();
+		expect(
+			within(screen.getByTestId('agent-tab-session-b')).getByText('New chat')
+				.className,
+		).toContain('text-muted-foreground');
 		expect(
 			screen.getByRole('button', { name: 'Delete agent Inbox triage' }),
+		).toBeTruthy();
+		expect(
+			screen.getByRole('button', { name: 'Delete agent New chat 2' }),
 		).toBeTruthy();
 	});
 
@@ -229,9 +251,9 @@ describe('Obsidian agent tabs', () => {
 		]);
 
 		await waitFor(() => {
-			expect(
-				screen.getByRole('tab', { name: '3' }).getAttribute('data-state'),
-			).toBe('active');
+			expect(getSessionTab('session-c').getAttribute('data-state')).toBe(
+				'active',
+			);
 		});
 	});
 
@@ -241,17 +263,17 @@ describe('Obsidian agent tabs', () => {
 		renderApp([unreadSession, createSession('session-b', 'idle')]);
 
 		await waitFor(() => {
-			expect(
-				screen.getByRole('tab', { name: '2' }).getAttribute('data-state'),
-			).toBe('active');
+			expect(getSessionTab('session-b').getAttribute('data-state')).toBe(
+				'active',
+			);
 		});
 
-		fireEvent.click(screen.getByRole('tab', { name: '1' }));
+		fireEvent.click(getSessionTab('session-a'));
 
 		await waitFor(() => {
-			expect(
-				screen.getByRole('tab', { name: '1' }).getAttribute('data-state'),
-			).toBe('active');
+			expect(getSessionTab('session-a').getAttribute('data-state')).toBe(
+				'active',
+			);
 		});
 		expect(unreadSession.runtime.statusStore.get()).toBe('idle');
 		expect(
@@ -275,9 +297,9 @@ describe('Obsidian agent tabs', () => {
 		);
 
 		await waitFor(() => {
-			expect(
-				screen.getByRole('tab', { name: '3' }).getAttribute('data-state'),
-			).toBe('active');
+			expect(getSessionTab('session-3').getAttribute('data-state')).toBe(
+				'active',
+			);
 		});
 	});
 
@@ -289,17 +311,17 @@ describe('Obsidian agent tabs', () => {
 		]);
 
 		await waitFor(() => {
-			expect(
-				screen.getByRole('tab', { name: '3' }).getAttribute('data-state'),
-			).toBe('active');
+			expect(getSessionTab('session-c').getAttribute('data-state')).toBe(
+				'active',
+			);
 		});
 
-		fireEvent.click(screen.getByRole('button', { name: 'Delete agent 3' }));
+		fireEvent.click(getSessionDeleteButton('session-c'));
 
 		await waitFor(() => {
-			expect(
-				screen.getByRole('tab', { name: '2' }).getAttribute('data-state'),
-			).toBe('active');
+			expect(getSessionTab('session-b').getAttribute('data-state')).toBe(
+				'active',
+			);
 		});
 	});
 
@@ -310,7 +332,7 @@ describe('Obsidian agent tabs', () => {
 		]);
 
 		fireEvent(
-			screen.getByRole('tab', { name: '1' }),
+			getSessionTab('session-a'),
 			new MouseEvent('auxclick', {
 				button: 1,
 				bubbles: true,
@@ -321,19 +343,20 @@ describe('Obsidian agent tabs', () => {
 		await waitFor(() => {
 			expect(agents.remove).toHaveBeenCalledWith('session-a');
 		});
-		expect(screen.queryByRole('tab', { name: '2' })).toBeNull();
+		expect(screen.queryByTestId('agent-tab-session-a')).toBeNull();
+		expect(getSessionTab('session-b')).toBeTruthy();
 	});
 
 	it('deleting the last tab shows the empty state and keeps plus available', async () => {
 		renderApp([createSession('session-a', 'idle')]);
 
 		await waitFor(() => {
-			expect(
-				screen.getByRole('tab', { name: '1' }).getAttribute('data-state'),
-			).toBe('active');
+			expect(getSessionTab('session-a').getAttribute('data-state')).toBe(
+				'active',
+			);
 		});
 
-		fireEvent.click(screen.getByRole('button', { name: 'Delete agent 1' }));
+		fireEvent.click(getSessionDeleteButton('session-a'));
 
 		await waitFor(() => {
 			expect(

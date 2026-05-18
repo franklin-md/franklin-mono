@@ -114,7 +114,6 @@ export {
 	bashExtension,
 	conversationExtension,
 	conversationTitleExtension,
-	createConversationTitleControl,
 	createStatusControl,
 	createTodoControl,
 	createWebExtension,
