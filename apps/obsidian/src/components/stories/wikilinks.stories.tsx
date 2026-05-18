@@ -9,6 +9,7 @@ import { ObsidianText } from '../conversation-window/blocks.js';
 // TODO(FRA-193): Move these Storybook Obsidian app utilities into the shared
 // mock once the Obsidian API surface is modeled more completely.
 interface WikilinkMarkdownStoryProps {
+	containerClassName?: string;
 	text: string;
 }
 
@@ -83,7 +84,34 @@ export const LinkThemeAndTypography: Story = {
 	},
 };
 
-function WikilinkMarkdownStory({ text }: WikilinkMarkdownStoryProps) {
+export const LongPathWrapping: Story = {
+	args: {
+		containerClassName: 'w-64 max-w-64',
+		text: 'Write it in: [[Library/Literature Notes/Programming Language Abstractions for Extensible Systems]]',
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const container = canvas.getByTestId('wikilink-story-container');
+		const link = canvas.getByRole('button', {
+			name: '[[Library/Literature Notes/Programming Language Abstractions for Extensible Systems]]',
+		});
+
+		await waitFor(async () => {
+			const containerRect = container.getBoundingClientRect();
+			const linkRect = link.getBoundingClientRect();
+
+			await expect(linkRect.width).toBeLessThanOrEqual(containerRect.width + 1);
+			await expect(container.scrollWidth).toBeLessThanOrEqual(
+				container.clientWidth + 1,
+			);
+		});
+	},
+};
+
+function WikilinkMarkdownStory({
+	containerClassName = 'max-w-3xl',
+	text,
+}: WikilinkMarkdownStoryProps) {
 	const block: TextBlock = {
 		kind: 'text',
 		text,
@@ -92,7 +120,10 @@ function WikilinkMarkdownStory({ text }: WikilinkMarkdownStoryProps) {
 
 	return (
 		<ObsidianAppProvider value={storyApp}>
-			<div className="max-w-3xl">
+			<div
+				className={containerClassName}
+				data-testid="wikilink-story-container"
+			>
 				<ObsidianText block={block} />
 			</div>
 		</ObsidianAppProvider>
