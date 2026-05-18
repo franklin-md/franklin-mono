@@ -1,4 +1,4 @@
-import type { CtxTracker } from '@franklin/mini-acp';
+import type { ContextTracker } from '@franklin/mini-acp';
 import type { StateHandle } from '../../../algebra/modules/state/index.js';
 import type { CoreState } from '../state.js';
 import { createClientRuntime } from './from-client.js';
@@ -6,7 +6,7 @@ import { CORE_STATE, type AgentClient, type CoreRuntime } from './types.js';
 
 type CreateCoreRuntimeInput = {
 	readonly client: AgentClient;
-	readonly tracker: CtxTracker;
+	readonly tracker: ContextTracker;
 	readonly state: StateHandle<CoreState>;
 };
 

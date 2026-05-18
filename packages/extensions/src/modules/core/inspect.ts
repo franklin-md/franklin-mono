@@ -1,16 +1,16 @@
 import type { Simplify } from '@franklin/lib';
-import type { Ctx } from '@franklin/mini-acp';
+import type { Context } from '@franklin/mini-acp';
 import type { StateHandle } from '../../algebra/modules/state/index.js';
 import type { CoreRuntime } from './runtime/index.js';
 import type { CoreState } from './state.js';
 
 type InspectDump<S extends CoreState> = Simplify<
-	Omit<S, 'core'> & { core: Ctx }
+	Omit<S, 'core'> & { core: Context }
 >;
 
 /**
  * Debug/inspection dump of a runtime: its full persistable state with the
- * `core` slot replaced by the live `Ctx` snapshot (systemPrompt, tools, and
+ * `core` slot replaced by the live `Context` snapshot (systemPrompt, tools, and
  * config shape — fields that the state projection drops because they're
  * recomputed on fork). The copied config is redacted so inspect dumps never
  * expose the live provider API key. Produces one "truth" document for the
@@ -31,7 +31,7 @@ export async function inspectRuntime<S extends CoreState>(
 	} as InspectDump<S>;
 }
 
-function redactInspectContext(ctx: Ctx): Ctx {
-	const { apiKey: _apiKey, ...config } = ctx.config;
-	return { ...ctx, config };
+function redactInspectContext(context: Context): Context {
+	const { apiKey: _apiKey, ...config } = context.config;
+	return { ...context, config };
 }

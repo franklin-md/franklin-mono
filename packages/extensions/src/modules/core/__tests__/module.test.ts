@@ -6,7 +6,7 @@ import {
 	createSessionAdapter,
 	StopCode,
 	ZERO_USAGE,
-	type Ctx,
+	type Context,
 	type MiniACPConnector,
 	type Update,
 	type StreamEvent,
@@ -18,12 +18,12 @@ import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
 // ---------------------------------------------------------------------------
 
 function createMockConnector(
-	onPrompt?: (ctx: Ctx) => void,
+	onPrompt?: (context: Context) => void,
 	turnUsage?: Usage,
 ): MiniACPConnector {
 	return (server) => {
-		const client = createSessionAdapter((ctx) => {
-			onPrompt?.(ctx);
+		const client = createSessionAdapter((context) => {
+			onPrompt?.(context);
 			return {
 				async *prompt() {
 					yield {
@@ -289,10 +289,10 @@ describe('createCoreModule', () => {
 	});
 
 	it('systemPrompt handler assembles system prompt before first turn', async () => {
-		let capturedCtx: Ctx | undefined;
+		let capturedContext: Context | undefined;
 		const system = createCoreModule(
-			createMockConnector((ctx) => {
-				capturedCtx = ctx;
+			createMockConnector((context) => {
+				capturedContext = context;
 			}),
 		);
 
@@ -321,16 +321,16 @@ describe('createCoreModule', () => {
 			}),
 		);
 
-		expect(capturedCtx!.history.systemPrompt).toBe('Tool guidelines here.');
+		expect(capturedContext!.history.systemPrompt).toBe('Tool guidelines here.');
 
 		await runtime.dispose();
 	});
 
 	it('registered tools reach the agent at bootstrap', async () => {
-		let capturedCtx: Ctx | undefined;
+		let capturedContext: Context | undefined;
 		const system = createCoreModule(
-			createMockConnector((ctx) => {
-				capturedCtx = ctx;
+			createMockConnector((context) => {
+				capturedContext = context;
 			}),
 		);
 
@@ -356,17 +356,17 @@ describe('createCoreModule', () => {
 			}),
 		);
 
-		expect(capturedCtx!.tools).toHaveLength(1);
-		expect(capturedCtx!.tools[0]?.name).toBe('my_tool');
+		expect(capturedContext!.tools).toHaveLength(1);
+		expect(capturedContext!.tools[0]?.name).toBe('my_tool');
 
 		await runtime.dispose();
 	});
 
 	it('multiple systemPrompt handlers compose in registration order', async () => {
-		let capturedCtx: Ctx | undefined;
+		let capturedContext: Context | undefined;
 		const system = createCoreModule(
-			createMockConnector((ctx) => {
-				capturedCtx = ctx;
+			createMockConnector((context) => {
+				capturedContext = context;
 			}),
 		);
 
@@ -398,7 +398,7 @@ describe('createCoreModule', () => {
 			}),
 		);
 
-		expect(capturedCtx!.history.systemPrompt).toBe('first\n\nsecond');
+		expect(capturedContext!.history.systemPrompt).toBe('first\n\nsecond');
 
 		await runtime.dispose();
 	});

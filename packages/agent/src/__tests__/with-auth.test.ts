@@ -188,7 +188,7 @@ describe('withAuth', () => {
 		);
 
 		// TODO: We can't easily inspect that setLLMConfig was called on the
-		// real runtime (it's behind the CtxTracker), so we just verify
+		// real runtime (it's behind the ContextTracker), so we just verify
 		// that auth was invoked during the build step.
 		expect(runtime.setLLMConfig).toBeDefined();
 		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');

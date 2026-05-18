@@ -1,5 +1,5 @@
 import type {
-	Ctx,
+	Context,
 	LLMConfig,
 	MiniACPClient,
 	MiniACPClientHandle,
@@ -26,7 +26,7 @@ export type CoreRuntime = BaseRuntime &
 		 * `context()` is the debug/inspection view of what the agent
 		 * actually saw last.
 		 */
-		context(): Ctx;
+		context(): Context;
 		readonly [CORE_STATE]: StateHandle<CoreState>;
 	};
 

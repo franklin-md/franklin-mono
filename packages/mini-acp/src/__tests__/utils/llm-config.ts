@@ -32,11 +32,11 @@ function hasPlaceholder(cfg: LLMConfig): boolean {
 }
 
 function replaceActionConfig(action: Action, config: LLMConfig): Action {
-	if (action.type !== 'setContext' || !action.ctx.config) {
+	if (action.type !== 'setContext' || !action.context.config) {
 		return action;
 	}
 
-	if (!hasPlaceholder(action.ctx.config)) {
+	if (!hasPlaceholder(action.context.config)) {
 		return action;
 	}
 
@@ -44,8 +44,8 @@ function replaceActionConfig(action: Action, config: LLMConfig): Action {
 	// from the fixture's config. Placeholder values get replaced; explicit
 	// overrides (e.g. provider: undefined) are preserved.
 	const merged: LLMConfig = { ...config };
-	for (const key of Object.keys(action.ctx.config) as (keyof LLMConfig)[]) {
-		const fixtureValue = action.ctx.config[key];
+	for (const key of Object.keys(action.context.config) as (keyof LLMConfig)[]) {
+		const fixtureValue = action.context.config[key];
 		if (!isPlaceholderValue(fixtureValue)) {
 			merged[key] = fixtureValue as never;
 		}
@@ -53,8 +53,8 @@ function replaceActionConfig(action: Action, config: LLMConfig): Action {
 
 	return {
 		...action,
-		ctx: {
-			...action.ctx,
+		context: {
+			...action.context,
 			config: merged,
 		},
 	};

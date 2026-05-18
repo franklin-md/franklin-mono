@@ -1,5 +1,5 @@
 import {
-	CtxTracker,
+	ContextTracker,
 	UsageTracker,
 	ZERO_USAGE,
 	type LLMConfig,
@@ -12,13 +12,13 @@ import type { CoreState } from '../state.js';
 type LLMConfigSnapshot = CoreState['core']['llmConfig'];
 
 export type CoreResources = {
-	readonly tracker: CtxTracker;
+	readonly tracker: ContextTracker;
 	readonly usageTracker: UsageTracker;
 	readonly stateHandle: StateHandle<CoreState>;
 };
 
 export function createResources(state: CoreState): CoreResources {
-	const tracker = new CtxTracker();
+	const tracker = new ContextTracker();
 	tracker.apply({
 		history: { systemPrompt: '', messages: [...state.core.messages] },
 		tools: [],
@@ -44,23 +44,23 @@ export function createResources(state: CoreState): CoreResources {
  * returns a fresh blank state that inherits the caller's llmConfig.
  */
 export function createStateHandle(
-	tracker: CtxTracker,
+	tracker: ContextTracker,
 	usageTracker: UsageTracker,
 ): StateHandle<CoreState> {
 	return {
 		get: async () => {
-			const ctx = tracker.get();
+			const context = tracker.get();
 			return coreState(
-				ctx.history.messages,
-				pickLLMConfig(ctx.config),
+				context.history.messages,
+				pickLLMConfig(context.config),
 				usageTracker.get(),
 			);
 		},
 		fork: async () => {
-			const ctx = tracker.get();
+			const context = tracker.get();
 			return coreState(
-				ctx.history.messages,
-				pickLLMConfig(ctx.config),
+				context.history.messages,
+				pickLLMConfig(context.config),
 				ZERO_USAGE,
 			);
 		},

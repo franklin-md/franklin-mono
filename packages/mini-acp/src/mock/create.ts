@@ -1,13 +1,13 @@
 import type { TurnClient } from '../base/types.js';
 import { createSessionAdapter } from '../protocol/adapter.js';
-import { CtxTracker } from '../protocol/ctx-tracker.js';
+import { ContextTracker } from '../protocol/context-tracker.js';
 import { trackAgent, trackClient } from '../protocol/tracking.js';
 import type {
 	MiniACPAgent,
 	MiniACPClientHandle,
 	MiniACPConnector,
 } from '../protocol/index.js';
-import type { Ctx } from '../types/context.js';
+import type { Context } from '../types/context.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { MockTurnDescriptor } from './descriptor/index.js';
 import { executeMockTurn } from './execute.js';
@@ -26,7 +26,7 @@ export type CreateMockMiniACPOptions = {
 export type MockMiniACP = {
 	readonly connector: MiniACPConnector;
 	enqueue(turn: MockTurnDescriptor): void;
-	context(): Ctx;
+	context(): Context;
 	calls(): MockMiniACPRecording;
 	reset(): void;
 };
@@ -37,7 +37,7 @@ export function createMockMiniACP(
 	const initialTurns = [...(options.turns ?? [])];
 	const pendingTurns = [...initialTurns];
 	const recording = createRecording();
-	const tracker = new CtxTracker();
+	const tracker = new ContextTracker();
 	let messageId = 0;
 	let toolCallId = 0;
 
@@ -54,9 +54,9 @@ export function createMockMiniACP(
 	function connector(server: MiniACPAgent): MiniACPClientHandle {
 		const trackedServer = trackAgent(tracker, server);
 		const client = createSessionAdapter(
-			(ctx, turnServer) =>
+			(context, turnServer) =>
 				createMockTurnClient({
-					ctx,
+					context,
 					server: turnServer,
 					dequeueTurn,
 					recording,
@@ -72,9 +72,9 @@ export function createMockMiniACP(
 				recording.initialize += 1;
 				return trackedClient.initialize();
 			},
-			async setContext(ctx) {
-				recording.setContext.push(ctx);
-				return trackedClient.setContext(ctx);
+			async setContext(context) {
+				recording.setContext.push(context);
+				return trackedClient.setContext(context);
 			},
 			prompt(message) {
 				recording.prompts.push(message);
@@ -119,7 +119,7 @@ export function createMockMiniACP(
 }
 
 type CreateMockTurnClientInput = {
-	readonly ctx: Ctx;
+	readonly context: Context;
 	readonly server: MiniACPAgent;
 	readonly dequeueTurn: () => MockTurnDescriptor;
 	readonly recording: ReturnType<typeof createRecording>;
@@ -132,7 +132,7 @@ function createMockTurnClient(input: CreateMockTurnClientInput): TurnClient {
 		async *prompt(message): AsyncGenerator<StreamEvent> {
 			yield* executeMockTurn({
 				descriptor: input.dequeueTurn(),
-				ctx: input.ctx,
+				context: input.context,
 				prompt: message,
 				server: input.server,
 				recording: input.recording,

@@ -14,8 +14,8 @@ export function createPiAgent(
 ): MuClient {
 	const { streamFn } = options;
 	return createSessionAdapter(
-		(ctx, trackedServer) =>
-			createPiAdapter({ ctx, server: trackedServer, streamFn }),
+		(context, trackedServer) =>
+			createPiAdapter({ context, server: trackedServer, streamFn }),
 		server,
 	);
 }

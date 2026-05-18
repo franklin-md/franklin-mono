@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { Ctx } from '@franklin/mini-acp';
+import type { Context } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
 import type { CoreRuntime } from '../runtime/index.js';
 import type { StateHandle } from '../../../algebra/modules/state/index.js';
 import type { CoreState } from '../state.js';
 
-function stubRuntime(ctx: Ctx): CoreRuntime {
+function stubRuntime(context: Context): CoreRuntime {
 	return {
-		context: () => ctx,
+		context: () => context,
 		dispose: async () => {},
 		subscribe: () => () => {},
 		prompt: () => {
@@ -27,8 +27,8 @@ function stubState<S extends CoreState>(state: S): StateHandle<S> {
 }
 
 describe('inspectRuntime', () => {
-	it('replaces the core slot with the full Ctx snapshot', async () => {
-		const ctx: Ctx = {
+	it('replaces the core slot with the full Context snapshot', async () => {
+		const context: Context = {
 			history: {
 				systemPrompt: 'You are helpful.',
 				messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
@@ -44,17 +44,17 @@ describe('inspectRuntime', () => {
 		};
 
 		const dump = await inspectRuntime(
-			stubRuntime(ctx),
+			stubRuntime(context),
 			stubState({
 				core: { messages: [], llmConfig: {} },
 			} as unknown as CoreState),
 		);
 
-		expect(dump.core).toEqual(ctx);
+		expect(dump.core).toEqual(context);
 	});
 
 	it('redacts apiKey from the inspected config snapshot', async () => {
-		const ctx: Ctx = {
+		const context: Context = {
 			history: { systemPrompt: '', messages: [] },
 			tools: [],
 			config: {
@@ -66,7 +66,7 @@ describe('inspectRuntime', () => {
 		};
 
 		const dump = await inspectRuntime(
-			stubRuntime(ctx),
+			stubRuntime(context),
 			stubState({
 				core: { messages: [], llmConfig: {} },
 			} as unknown as CoreState),
@@ -81,14 +81,14 @@ describe('inspectRuntime', () => {
 	});
 
 	it('preserves sibling state slots alongside the replaced core slot', async () => {
-		const ctx: Ctx = {
+		const context: Context = {
 			history: { systemPrompt: '', messages: [] },
 			tools: [],
 			config: {},
 		};
 
 		const dump = await inspectRuntime(
-			stubRuntime(ctx),
+			stubRuntime(context),
 			stubState({
 				core: { messages: [], llmConfig: {} },
 				todos: { items: ['a', 'b'] },
@@ -97,7 +97,7 @@ describe('inspectRuntime', () => {
 		);
 
 		expect(dump).toMatchObject({
-			core: ctx,
+			core: context,
 			todos: { items: ['a', 'b'] },
 			status: { state: 'idle' },
 		});

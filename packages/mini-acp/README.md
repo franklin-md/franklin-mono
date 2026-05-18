@@ -33,7 +33,7 @@ Below, we explain the reasons why Mini-ACP was developed, including mention of p
 
 ### Minimal Agent
 - [ ] The domains of definition (the SDK for implementing apps that talk with agents looks like an ACP-compliant agent, but the entire state and behaviour is within the developer's control and can be programmatically queried and mutated)
-  - [ ] Why session persistence is not an agent responsibility: Because the agent receives its full context via `setContext`, it is a pure function of `(Ctx, UserMessage) → Stream`. Any process can restore a session by replaying the context — no agent-side state machine, no lock-in to a particular storage model. The application owns persistence, and the agent is none the wiser.
+  - [ ] Why session persistence is not an agent responsibility: Because the agent receives its full context via `setContext`, it is a pure function of `(Context, UserMessage) → Stream`. Any process can restore a session by replaying the context — no agent-side state machine, no lock-in to a particular storage model. The application owns persistence, and the agent is none the wiser.
   - [ ] Why tool execution is better served in application code: The agent holds only tool schemas, never implementations. When it needs a tool, it calls back to the application via reverse RPC (`toolExecute`). This means: the application controls what the agent can do; tools have access to platform resources (filesystem, network, UI) that an isolated agent process cannot; new tools can be added without restarting or redeploying the agent; and different sessions can wire different tool implementations to the same agent.
     - [ ] Developments in common coding agent workflows should not require a change to the protocol. For example, file editing, todo tracking, agent spawning, and filesystem search are all implemented as application-side extensions that register tools and observe the stream — none required new protocol methods or message types.
     - [ ] Makes no assumption on capabilities of agent environment (the application advertises its own capabilities), unlike the contract of `clientCapabilities` in ACP:
@@ -92,28 +92,28 @@ Currently, `InitializeParams` and `InitializeResult` are both empty objects. Fut
 
 ### Phase 2: Context Setup
 
-Before the first prompt (and whenever the application needs to change the agent's context), the client sends `setContext` with a partial `Ctx`.
+Before the first prompt (and whenever the application needs to change the agent's context), the client sends `setContext` with a partial `Context`.
 
 ```
-Client ──── setContext({ ctx }) ────► Agent
-Client ◄──────────── {} ────────────  Agent
+Client ──── setContext(contextPatch) ────► Agent
+Client ◄──────────────── {} ───────────── Agent
 ```
 
-The `Ctx` type represents the full state needed to drive an agent turn:
+The `Context` type represents the full state needed to drive an agent turn:
 
 ```
-Ctx {
+Context {
   history: History
   tools:   ToolDefinition[]
   config:  LLMConfig
 }
 ```
 
-`Ctx` is always fully present on the agent. Immediately after `initialize`,
+`Context` is always fully present on the agent. Immediately after `initialize`,
 `history.messages` and `tools` are empty and `config` is an empty object;
 `setContext` fills them in. Partial updates are expressed at the `setContext`
-boundary via `CtxPatch` (below), not by making top-level fields optional on
-`Ctx` itself.
+boundary via `ContextPatch` (below), not by making top-level fields optional on
+`Context` itself.
 
 **`History`** — the conversation state:
 ```
@@ -144,7 +144,7 @@ LLMConfig {
 }
 ```
 
-`setContext` accepts a `CtxPatch` and applies it to the agent's current `Ctx`.
+`setContext` accepts a `ContextPatch` and applies it to the agent's current `Context`.
 Top-level fields omitted from the patch are left unchanged. When a top-level
 field is present, update behavior depends on that field:
 
@@ -362,12 +362,12 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 
 | ID                               | Description                                                                                                                              | Level |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| `ctx-before-first-prompt`        | `setContext` must precede the first `prompt`                                                                                             | MUST  |
-| `ctx-receive-exists`             | Agent must respond to each `setContext`                                                                                                  | MUST  |
-| `ctx-after-init`                 | `setContext` must not be sent before `initialize` completes                                                                              | MUST  |
-| `ctx-history-merges-by-property` | When `history` is present in a patch, each subfield (`systemPrompt`, `messages`) replaces only when set; omitted subfields are preserved | MUST  |
-| `ctx-tools-replaces-wholesale`   | When `tools` is present in a patch, it replaces the current tool list wholesale (including when set to `[]`, which clears all tools)     | MUST  |
-| `ctx-config-merges-by-property`  | When `config` is present in a patch, each subfield replaces only when set; omitted subfields are preserved                               | MUST  |
+| `context-before-first-prompt`        | `setContext` must precede the first `prompt`                                                                                             | MUST  |
+| `context-receive-exists`             | Agent must respond to each `setContext`                                                                                                  | MUST  |
+| `context-after-init`                 | `setContext` must not be sent before `initialize` completes                                                                              | MUST  |
+| `context-history-merges-by-property` | When `history` is present in a patch, each subfield (`systemPrompt`, `messages`) replaces only when set; omitted subfields are preserved | MUST  |
+| `context-tools-replaces-wholesale`   | When `tools` is present in a patch, it replaces the current tool list wholesale (including when set to `[]`, which clears all tools)     | MUST  |
+| `context-config-merges-by-property`  | When `config` is present in a patch, each subfield replaces only when set; omitted subfields are preserved                               | MUST  |
 
 ### Turn Lifecycle
 
@@ -425,7 +425,7 @@ The ecosystem has slowly converged on a series of standards for agent subsystems
 Because the agent is stateless — it receives its full context on every interaction — session management is an application-level concern built entirely on top of `setContext`.
 
 #### Persistence
-An application persists a session by snapshotting the current `Ctx` (plus any application-side state such as extension stores). Restoring a session is simply: `initialize` → `setContext(savedCtx)` → ready for the next `prompt`. No special protocol support is needed.
+An application persists a session by snapshotting the current `Context` (plus any application-side state such as extension stores). Restoring a session is simply: `initialize` → `setContext(savedContext)` → ready for the next `prompt`. No special protocol support is needed.
 
 - https://agentclientprotocol.com/rfds/session-delete
 - https://agentclientprotocol.com/rfds/session-resume
@@ -452,7 +452,7 @@ Forking a session is creating a new agent connection and calling `setContext` wi
 
 ## Potential Problems and Todos
 - [ ] Is it expensive to send full history on fork?
-- [ ] Mid turn notification / ctx changing
+- [ ] Mid turn notification / context changing
   - [ ] May need to relax tool response type
 - [x] Error semantics spelled out (StopCode integer enum with categories; see Tool Error Semantics)
 - [ ] Spell out authentication model, but feels like apikey can really be enough
