@@ -3,6 +3,7 @@
 import { render, screen } from '@testing-library/react';
 import {
 	bashExtension,
+	conversationTitleExtension,
 	createWebExtension,
 	filesystemExtension,
 	todoExtension,
@@ -122,6 +123,23 @@ describe('defaultToolRegistry', () => {
 		it('renders list todos', () => {
 			renderSummary(todoExtension.tools.listTodos.name, {});
 			expect(screen.getByText('List todos')).toBeTruthy();
+		});
+	});
+
+	describe('conversation title tools', () => {
+		it('uses a hidden renderer for set chat title', () => {
+			const name = conversationTitleExtension.tools.setChatTitle.name;
+			const entry = resolveToolRenderer(defaultToolRegistry, name);
+			const { container } = render(
+				entry.summary({
+					block: createBlock(name, { title: 'Inbox triage' }),
+					status: 'success',
+					args: { title: 'Inbox triage' },
+				}),
+			);
+
+			expect(container.textContent).toBe('');
+			expect(entry.expanded).toBeUndefined();
 		});
 	});
 

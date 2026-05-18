@@ -596,6 +596,43 @@ describe('ToolUseBlock', () => {
 		const props = captured[0] as ResolvedToolRender;
 		expect(props.expanded).toBeUndefined();
 	});
+
+	it('renders nothing when the resolved renderer has no summary or expanded content', () => {
+		const captured: ResolvedToolRender[] = [];
+
+		const registry = createToolRendererRegistry([
+			['set_chat_title', { summary: () => null }],
+		]);
+
+		function Chrome(props: ResolvedToolRender) {
+			captured.push(props);
+			return <div data-testid="tool-chrome" />;
+		}
+
+		const block: ToolUseBlock = {
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: '1',
+				name: 'set_chat_title',
+				arguments: { title: 'Inbox triage' },
+			},
+			result: [{ type: 'text', text: '{"title":"Inbox triage"}' }],
+			startedAt: 0,
+		};
+
+		render(
+			<ToolUseBlockComponent
+				block={block}
+				status="success"
+				registry={registry}
+				Chrome={Chrome}
+			/>,
+		);
+
+		expect(captured).toEqual([]);
+		expect(screen.queryByTestId('tool-chrome')).toBeNull();
+	});
 });
 
 // ---------------------------------------------------------------------------

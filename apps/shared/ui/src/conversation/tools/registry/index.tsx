@@ -8,6 +8,7 @@ import {
 
 import { ToolSummary } from '../summary.js';
 import { agentToolRenderers } from './agents.js';
+import { conversationTitleToolRenderers } from './conversation-title.js';
 import { executionToolRenderers } from './execution.js';
 import { fileToolRenderers } from './files.js';
 import { todoToolRenderers } from './todos.js';
@@ -23,6 +24,7 @@ export const defaultToolRenderers = [
 	...agentToolRenderers,
 	...webToolRenderers,
 	...todoToolRenderers,
+	...conversationTitleToolRenderers,
 	['*', fallbackEntry],
 ] satisfies ToolRendererRegistryEntries;
 
