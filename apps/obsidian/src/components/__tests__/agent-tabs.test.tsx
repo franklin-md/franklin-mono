@@ -14,7 +14,11 @@ import type {
 	FranklinApp,
 	FranklinRuntime,
 } from '@franklin/agent/browser';
-import { statusExtension, type StatusState } from '@franklin/extensions';
+import {
+	conversationTitleExtension,
+	statusExtension,
+	type StatusState,
+} from '@franklin/extensions';
 import { toAbsolutePath } from '@franklin/lib';
 import type { RuntimeEntry } from '@franklin/extensions';
 import { AppContext } from '@franklin/react';
@@ -60,28 +64,38 @@ function createStore<T>(initial: T) {
 
 type TestRuntime = FranklinRuntime & {
 	statusStore: ReturnType<typeof createStore<StatusState>>;
+	titleStore: ReturnType<typeof createStore<string>>;
 };
 
 type TestSession = RuntimeEntry<FranklinRuntime> & { runtime: TestRuntime };
 
-function createRuntime(status: StatusState): TestRuntime {
+function createRuntime(status: StatusState, title = ''): TestRuntime {
 	const statusStore = createStore(status);
+	const titleStore = createStore(title);
 
 	return {
 		statusStore,
+		titleStore,
 		getStore(name: string) {
-			if (name !== statusExtension.keys.status) {
-				throw new Error(`Unknown store: ${name}`);
+			if (name === statusExtension.keys.status) {
+				return statusStore;
 			}
-			return statusStore;
+			if (name === conversationTitleExtension.keys.title) {
+				return titleStore;
+			}
+			throw new Error(`Unknown store: ${name}`);
 		},
 	} as TestRuntime;
 }
 
-function createSession(id: string, status: StatusState): TestSession {
+function createSession(
+	id: string,
+	status: StatusState,
+	title?: string,
+): TestSession {
 	return {
 		id,
-		runtime: createRuntime(status),
+		runtime: createRuntime(status, title),
 	};
 }
 
@@ -192,6 +206,19 @@ describe('Obsidian agent tabs', () => {
 			'bg-primary',
 		);
 		expect(idleIndicator.className).toContain('invisible');
+	});
+
+	it('uses chat titles for named sessions and positional labels as the fallback', async () => {
+		renderApp([
+			createSession('session-a', 'idle', 'Inbox triage'),
+			createSession('session-b', 'idle'),
+		]);
+
+		expect(screen.getByRole('tab', { name: 'Inbox triage' })).toBeTruthy();
+		expect(screen.getByRole('tab', { name: '2' })).toBeTruthy();
+		expect(
+			screen.getByRole('button', { name: 'Delete agent Inbox triage' }),
+		).toBeTruthy();
 	});
 
 	it('auto-selects the last restored session when none is active yet', async () => {

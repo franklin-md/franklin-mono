@@ -2,7 +2,11 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, type ReactNode } from 'react';
 
 import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
-import { statusExtension, type StatusState } from '@franklin/extensions';
+import {
+	conversationTitleExtension,
+	statusExtension,
+	type StatusState,
+} from '@franklin/extensions';
 import type { RuntimeEntry } from '@franklin/extensions';
 import { AgentsProvider, AppContext } from '@franklin/react';
 
@@ -13,6 +17,7 @@ type Listener<T> = (value: T) => void;
 type SessionSeed = {
 	id: string;
 	status: StatusState;
+	title?: string;
 };
 
 function createStore<T>(initial: T) {
@@ -37,15 +42,19 @@ function createStore<T>(initial: T) {
 	};
 }
 
-function createRuntime(status: StatusState): FranklinRuntime {
+function createRuntime(status: StatusState, title?: string): FranklinRuntime {
 	const statusStore = createStore<StatusState>(status);
+	const titleStore = createStore(title ?? '');
+
 	return {
 		getStore(name: string) {
-			if (name !== statusExtension.keys.status) {
-				throw new Error(`Unknown store: ${name}`);
+			if (name === statusExtension.keys.status) {
+				return statusStore;
 			}
-
-			return statusStore;
+			if (name === conversationTitleExtension.keys.title) {
+				return titleStore;
+			}
+			throw new Error(`Unknown store: ${name}`);
 		},
 	} as unknown as FranklinRuntime;
 }
@@ -53,8 +62,9 @@ function createRuntime(status: StatusState): FranklinRuntime {
 function createSession(
 	id: string,
 	status: StatusState,
+	title?: string,
 ): RuntimeEntry<FranklinRuntime> {
-	return { id, runtime: createRuntime(status) };
+	return { id, runtime: createRuntime(status, title) };
 }
 
 type MockAgentsHostProps = {
@@ -65,7 +75,7 @@ type MockAgentsHostProps = {
 function MockAgentsHost({ initialSessions, children }: MockAgentsHostProps) {
 	const app = useMemo(() => {
 		const sessions: RuntimeEntry<FranklinRuntime>[] = initialSessions.map(
-			(seed) => createSession(seed.id, seed.status),
+			(seed) => createSession(seed.id, seed.status, seed.title),
 		);
 		const listeners = new Set<() => void>();
 		let nextIndex = sessions.length + 1;
@@ -157,7 +167,7 @@ export const Empty: Story = {
 export const SingleAgent: Story = {
 	parameters: {
 		initialSessions: [
-			{ id: 'session-a', status: 'idle' },
+			{ id: 'session-a', status: 'idle', title: 'Inbox triage' },
 		] satisfies SessionSeed[],
 	},
 };
@@ -165,9 +175,9 @@ export const SingleAgent: Story = {
 export const MultipleAgents: Story = {
 	parameters: {
 		initialSessions: [
-			{ id: 'session-a', status: 'idle' },
+			{ id: 'session-a', status: 'idle', title: 'Inbox triage' },
 			{ id: 'session-b', status: 'unread' },
-			{ id: 'session-c', status: 'in-progress' },
+			{ id: 'session-c', status: 'in-progress', title: 'Draft outline' },
 		] satisfies SessionSeed[],
 	},
 };

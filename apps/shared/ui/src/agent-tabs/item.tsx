@@ -3,6 +3,7 @@ import {
 	useAgentControl,
 	useAgentState,
 	useAutoMarkRead,
+	useConversationTitle,
 	useMiddleButtonEffect,
 } from '@franklin/react';
 import { X } from 'lucide-react';
@@ -29,6 +30,8 @@ export function AgentTabsItem({
 }: AgentTabsItemProps) {
 	const statusStore = useAgentState(statusExtension.keys.status);
 	const status = statusStore.get();
+	const title = useConversationTitle();
+	const displayLabel = title || label;
 	const control = useAgentControl(
 		statusExtension.keys.status,
 		createStatusControl,
@@ -41,7 +44,7 @@ export function AgentTabsItem({
 		<div
 			data-testid={`agent-tab-${sessionId}`}
 			className={cn(
-				'group flex items-center gap-0.5 pr-0.5 transition-colors',
+				'group flex min-w-0 items-center gap-0.5 pr-0.5 transition-colors',
 				isActive
 					? 'border-b-2 border-foreground'
 					: 'text-muted-foreground/60 hover:text-muted-foreground',
@@ -49,7 +52,8 @@ export function AgentTabsItem({
 		>
 			<TabsTrigger
 				value={sessionId}
-				className="h-7 gap-1.5 rounded-sm px-2.5 text-xs data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
+				className="h-7 max-w-44 gap-1.5 rounded-sm px-2.5 text-xs data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
+				title={displayLabel}
 				onClick={() => {
 					control.markRead();
 					onSelect();
@@ -63,7 +67,7 @@ export function AgentTabsItem({
 				>
 					<StatusIndicator status={status} />
 				</span>
-				<span>{label}</span>
+				<span className="min-w-0 truncate">{displayLabel}</span>
 			</TabsTrigger>
 
 			<Button
@@ -75,7 +79,7 @@ export function AgentTabsItem({
 					(isActive || status !== 'idle') && 'opacity-100',
 					'group-hover:opacity-100',
 				)}
-				aria-label={`Delete agent ${label}`}
+				aria-label={`Delete agent ${displayLabel}`}
 				onClick={onRemove}
 			>
 				<X className="h-3 w-3" />
