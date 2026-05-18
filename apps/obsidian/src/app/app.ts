@@ -2,6 +2,7 @@ import { FranklinApp } from '@franklin/agent/browser';
 import type { FranklinExtension, Platform } from '@franklin/agent/browser';
 import {
 	conversationExtension,
+	conversationTitleExtension,
 	createWebExtension,
 	environmentInfoExtension,
 	filesystemExtension,
@@ -31,6 +32,7 @@ interface ObsidianAppResult {
 const webExtension = createWebExtension({});
 const extensionBundles = [
 	conversationExtension,
+	conversationTitleExtension,
 	todoExtension,
 	statusExtension,
 	{ extension: obsidianSystemPromptExtension },

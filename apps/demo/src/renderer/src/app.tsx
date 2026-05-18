@@ -4,6 +4,7 @@ import { FranklinProvider } from '@franklin/react';
 import { createElectronPlatform } from '@franklin/electron/renderer';
 import {
 	conversationExtension,
+	conversationTitleExtension,
 	todoExtension,
 	statusExtension,
 	filesystemExtension,
@@ -17,6 +18,7 @@ const webExtension = createWebExtension({});
 const platform = createElectronPlatform();
 const extensionBundles = [
 	conversationExtension,
+	conversationTitleExtension,
 	todoExtension,
 	statusExtension,
 	filesystemExtension,
