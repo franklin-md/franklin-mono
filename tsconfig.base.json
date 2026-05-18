@@ -23,6 +23,9 @@
 			"@franklin/agent": ["packages/agent/src/index.ts"],
 			"@franklin/agent/browser": ["packages/agent/src/browser.ts"],
 			"@franklin/extensions": ["packages/extensions/src/index.ts"],
+			"@franklin/extensions/testing": [
+				"packages/extensions/src/testing/index.ts"
+			],
 			"@franklin/mini-acp": ["packages/mini-acp/src/index.ts"],
 			"@franklin/mini-acp/mock": ["packages/mini-acp/src/mock/index.ts"],
 			"@franklin/mini-acp/rpc": ["packages/mini-acp/src/rpc/index.ts"],

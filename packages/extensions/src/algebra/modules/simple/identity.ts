@@ -1,25 +1,28 @@
-import type { API } from '../../api/index.js';
+import type { Signature } from '../../api/index.js';
 import type { Compiler } from '../../compiler/index.js';
 import { createExtensionPoint } from '../../extension-points/create.js';
 import type { BaseRuntime } from '../../runtime/index.js';
 import type { ExtensionModule } from './types.js';
 
-export type IdentityAPISurface = Record<never, never>;
+export type IdentityAPI = Record<never, never>;
 
-export interface IdentityAPI extends API {
+export interface IdentitySignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: IdentityAPISurface;
+	readonly Out: IdentityAPI;
 }
 
 export type IdentityRuntime = BaseRuntime;
 
-export type IdentityCompiler = Compiler<IdentityAPI, IdentityRuntime>;
+export type IdentityCompiler = Compiler<IdentitySignature, IdentityRuntime>;
 
-export type IdentityModule = ExtensionModule<IdentityAPI, IdentityRuntime>;
+export type IdentityModule = ExtensionModule<
+	IdentitySignature,
+	IdentityRuntime
+>;
 
-const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
+const identityExtensionPoint = createExtensionPoint<IdentitySignature>({});
 
-export function identityAPI(): IdentityAPISurface {
+export function identityAPI(): IdentityAPI {
 	return {};
 }
 

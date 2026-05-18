@@ -1,21 +1,21 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { StaticAPI } from '../../../api/types.js';
+import type { StaticSignature } from '../../../api/types.js';
 import { compile } from '../../../compiler/compile.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
-import type { Registry } from '../../../extension-points/registry.js';
+import type { RegistryView } from '../../../extension-points/view.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import { buildStateExtensionModule } from '../build.js';
 import { combine } from '../combine.js';
 import { identityModule } from '../identity.js';
 import type { StateExtensionModule, StateHandle } from '../types.js';
 
-type CounterAPISurface = {
+type CounterAPI = {
 	registerCount(value: number): void;
 };
 
-type CounterAPI = StaticAPI<CounterAPISurface>;
+type CounterSignature = StaticSignature<CounterAPI>;
 
-const counterExtensionPoint = createExtensionPoint<CounterAPI>({
+const counterExtensionPoint = createExtensionPoint<CounterSignature>({
 	registerCount: true,
 });
 
@@ -34,7 +34,7 @@ type CounterRuntime = BaseRuntime & {
 
 function createCounterModule(): StateExtensionModule<
 	CounterState,
-	CounterAPI,
+	CounterSignature,
 	CounterRuntime
 > {
 	return {
@@ -45,9 +45,9 @@ function createCounterModule(): StateExtensionModule<
 				extensionPoint: counterExtensionPoint,
 				compiler: {
 					async compile<ContextRuntime extends BaseRuntime>(
-						registry: Registry<CounterAPI, ContextRuntime>,
+						registry: RegistryView<CounterSignature, ContextRuntime>,
 					) {
-						const registered = registry.registerCount.at(-1)?.[0];
+						const registered = registry.argsFor('registerCount').at(-1)?.[0];
 						const value = registered ?? state.counter.value;
 						return {
 							getCount() {
@@ -68,13 +68,13 @@ function createCounterModule(): StateExtensionModule<
 	};
 }
 
-type LabelAPISurface = {
+type LabelAPI = {
 	registerLabel(value: string): void;
 };
 
-type LabelAPI = StaticAPI<LabelAPISurface>;
+type LabelSignature = StaticSignature<LabelAPI>;
 
-const labelExtensionPoint = createExtensionPoint<LabelAPI>({
+const labelExtensionPoint = createExtensionPoint<LabelSignature>({
 	registerLabel: true,
 });
 
@@ -93,7 +93,7 @@ type LabelRuntime = BaseRuntime & {
 
 function createLabelModule(): StateExtensionModule<
 	LabelState,
-	LabelAPI,
+	LabelSignature,
 	LabelRuntime
 > {
 	return {
@@ -104,9 +104,9 @@ function createLabelModule(): StateExtensionModule<
 				extensionPoint: labelExtensionPoint,
 				compiler: {
 					async compile<ContextRuntime extends BaseRuntime>(
-						registry: Registry<LabelAPI, ContextRuntime>,
+						registry: RegistryView<LabelSignature, ContextRuntime>,
 					) {
-						const registered = registry.registerLabel.at(-1)?.[0];
+						const registered = registry.argsFor('registerLabel').at(-1)?.[0];
 						const value = registered ?? state.label.value;
 						return {
 							getLabel() {

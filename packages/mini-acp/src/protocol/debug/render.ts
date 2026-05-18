@@ -30,8 +30,8 @@ export function renderInitialize(): string[] {
 	return [bold('initialize')];
 }
 
-export function renderSetContext(ctx: unknown): string[] {
-	return [`${bold('setContext')} ${summarizeContext(ctx)}`];
+export function renderSetContext(context: unknown): string[] {
+	return [`${bold('setContext')} ${summarizeContext(context)}`];
 }
 
 export function renderPrompt(message: unknown): string[] {

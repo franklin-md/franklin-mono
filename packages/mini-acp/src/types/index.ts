@@ -17,8 +17,8 @@ export type {
 } from './message.js';
 
 export type {
-	Ctx,
-	CtxPatch,
+	Context,
+	ContextPatch,
 	History,
 	HistoryPatch,
 	LLMConfig,

@@ -1,10 +1,10 @@
-import type { CtxPatch } from '../types/context.js';
+import type { ContextPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import type { ToolCall, ToolResult } from '../types/tool.js';
 
 export type MockMiniACPRecording = {
 	readonly initialize: number;
-	readonly setContext: readonly CtxPatch[];
+	readonly setContext: readonly ContextPatch[];
 	readonly prompts: readonly UserMessage[];
 	readonly toolCallPhases: readonly (readonly ToolCall[])[];
 	readonly toolCalls: readonly ToolCall[];
@@ -15,7 +15,7 @@ export type MockMiniACPRecording = {
 
 export type MutableMockMiniACPRecording = {
 	initialize: number;
-	setContext: CtxPatch[];
+	setContext: ContextPatch[];
 	prompts: UserMessage[];
 	toolCallPhases: ToolCall[][];
 	toolCalls: ToolCall[];

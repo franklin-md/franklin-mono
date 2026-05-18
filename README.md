@@ -10,27 +10,59 @@
 </p>
 
 # Franklin
-> Meet **🪁 Franklin**, your personal AI agent for Obsidian. Franklin reads your vault, helps you think through notes, and proposes reviewable changes to your Markdown files.
+Meet **🪁 Franklin**, your personal AI agent for Obsidian. Franklin reads your vault, helps you think through notes, and proposes reviewable changes to your Markdown files.
 
 Franklin is **provider-agnostic**, and currently supports you bringing your [OpenAI Plus/Pro subscriptions](https://openai.com/codex/), [OpenCode Go subscriptions](https://opencode.ai/docs/go/) via API key, and [OpenRouter](https://openrouter.ai) API keys.
 
 Franklin's core local experience is **free**. Features that can run purely on your machine are intended to remain free.
 
-Franklin starts as an Obsidian plugin, but the project is also building **open agent infrastructure** that can be embedded into other applications. To learn more or contribute to the broader effort, see [Motivation](#motivation).
+> The Franklin project is more than an Obsidian plugin. We are also building an experimental **agent sdk** that allows for quick and deep integration of novel AI workflows into any application; we just chose to demo this idea with Obsidian. To learn more or contribute to the broader effort, see [Our Philosopy](#our-philosophy) or join the [Discord](https://discord.gg/KRFy6ECMnf)!
+
+### Main Use Cases
+
+**As a Personal Librarian**  
+Franklin helps you organize, maintain, and rediscover your vault.
+
+- Split large notes into smaller, linked notes.
+- Move notes into suitable directories based on your existing structure.
+- Surface older notes that are relevant to your current work.
+- Connect recent files to forgotten ideas, related readings, and past projects.
+- Find relevant notes, PDFs, highlights, and references locally or **online**.
+
+**As a Tutor**  
+Franklin helps you understand new material using your notes and source texts.
+
+- Explain unfamiliar concepts step by step.
+- Ground explanations in your notes, PDFs, and other source material.
+- Adapt teaching to your existing knowledge and preferences.
+- Resolve misunderstanding and ambiguity to develop greater clarity.
+- Ask Socratic questions, create exercises, and identify gaps in your understanding.
+
+**As a Research Assistant**  
+Franklin helps you investigate, synthesize, and cite information.
+
+- Search across your vault, local files, and the web.
+- Summarize papers, articles, documentation, and notes.
+- Compare sources and extract key claims, assumptions, and disagreements.
+- Produce briefs, outlines, tables, and research maps.
 
 
 ## Table of contents
-- [Getting Started](#getting-started)
+- [Getting Started + Installation](#getting-started)
 - [Features](#features)
 - [Roadmap](#roadmap)
-- [Motivation](#motivation)
+- [Our Philosopy](#our-philosophy)
 - [License](#license)
 
 ## Getting Started
-1. Install the Franklin Obsidian plugin.
-2. Choose and authenticate with a model provider in settings or from the model selector.
-3. Start talking with Franklin to read, search, or edit notes in your vault.
-4. Review proposed file changes before accepting them.
+> Franklin is not yet accepted on the Obsidian plugin marketplace. These are the instructions to try it out right now.
+
+1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin.
+2. Add this project as a 'beta plugin' by pasting this link in: 'https://github.com/franklin-md/franklin-mono', ensuring you enable Franklin.
+3. Go to the Franklin settings page and authenticate with a model provider in settings or from the model selector.
+4. Use the sidebar button or command to open Franklin up
+5. Start talking with Franklin to read, search, or edit notes in your vault.
+6. Review proposed file changes before accepting them.
   
 Franklin is currently in **early release**. Join the [Discord](https://discord.gg/KRFy6ECMnf) to follow and support development!
 
@@ -67,7 +99,7 @@ We are actively working towards making filesystem permissions **configurable** a
 
 ## Roadmap
 Below is a list (in approximate priority) of what we are building:
-- Support for additional subscriptions and API providers such as Anthropic
+- Support for additional subscriptions and API providers such as Anthropic and Grok
 - Greater parity with popular coding agents like Claude Code, including:
   - Sub-Agents
   - Terminal
@@ -89,9 +121,10 @@ Below is a list (in approximate priority) of what we are building:
   - Chat costs
   - Cost budgets  
 
-## Motivation
+## Our Philosophy
+(wip)
 
-## BYOK/S philosophy
+### BYOK/S philosophy
 We believe in BYOK/S: bring your own _keys_ or _subscription_.
 - Conversation history stays on your machine;
 - Power the agent with any supported model, either via a subscription or an API key;

@@ -7,10 +7,10 @@ export type {
 } from './types.js';
 export type {
 	InferAPI,
-	InferBoundAPI,
 	InferCompiler,
 	InferExtension,
 	InferRuntime,
+	InferSignature,
 	InferSimpleModule,
 	InferState,
 } from './infer.js';
@@ -36,6 +36,14 @@ export {
 	identityState,
 	identityStateHandle,
 } from './identity.js';
-export { liftExtensionModule } from './lift.js';
 export { resolveState } from './resolve.js';
-export { withSetup } from './setup.js';
+export type {
+	StateCompilerTransform,
+	StateExtensionModuleTransform,
+	StateModuleTransform,
+} from './transform/index.js';
+export {
+	fromSimpleModule,
+	liftCompilerTransform,
+	liftModuleTransform,
+} from './transform/index.js';

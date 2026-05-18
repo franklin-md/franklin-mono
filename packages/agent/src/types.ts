@@ -1,18 +1,18 @@
 import type {
-	CoreModule,
-	StoreModule,
+	CoreStateModule,
+	StoreStateModule,
 	EnvironmentModule,
 	Extension,
 	BuildModules,
-	InferBoundAPI,
+	InferAPI,
 	InferState,
 	OrchestratorModule,
 	OrchestratorRuntime,
 } from '@franklin/extensions';
 
 export type FranklinModules = readonly [
-	CoreModule,
-	StoreModule,
+	CoreStateModule,
+	StoreStateModule,
 	EnvironmentModule,
 ];
 
@@ -32,6 +32,6 @@ export type FranklinRuntime = OrchestratorRuntime<FranklinBase>;
 export type FranklinState = InferState<FranklinModule>;
 
 /** Combined extension API surface. */
-export type FranklinAPI = InferBoundAPI<FranklinModule>;
+export type FranklinAPI = InferAPI<FranklinModule>;
 
 export type FranklinExtension = Extension<FranklinAPI>;

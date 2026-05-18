@@ -5,7 +5,7 @@ import {
 	type AbsolutePath,
 } from '@franklin/lib';
 import { createEnvironmentModule } from '../module.js';
-import { createRuntime } from '../../../harness/modules/create.js';
+import { createRuntime } from '../../../testing/index.js';
 import type {
 	ReconfigurableEnvironment,
 	EnvironmentConfig,

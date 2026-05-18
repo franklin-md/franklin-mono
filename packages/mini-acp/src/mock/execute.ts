@@ -1,7 +1,7 @@
 import { wait } from '@franklin/lib';
 
 import type { TurnServer } from '../base/types.js';
-import type { Ctx } from '../types/context.js';
+import type { Context } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import { StopCode } from '../types/stop-code.js';
 import type { StreamEvent } from '../types/stream.js';
@@ -19,7 +19,7 @@ import type { MutableMockMiniACPRecording } from './recording.js';
 
 export type MockTurnExecutionInput = {
 	readonly descriptor: MockTurnDescriptor;
-	readonly ctx: Ctx;
+	readonly context: Context;
 	readonly prompt: UserMessage;
 	readonly server: TurnServer;
 	readonly recording: MutableMockMiniACPRecording;
@@ -81,7 +81,7 @@ export async function* executeMockTurn(
 			case 'derive':
 				yield* executeSteps(
 					await step.run({
-						ctx: input.ctx,
+						context: input.context,
 						prompt: input.prompt,
 						toolCalls,
 						toolResults,

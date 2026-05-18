@@ -15,7 +15,7 @@ export function resolveConfig(config: LLMConfig): ResolveResult {
 			turnEnd: {
 				type: 'turnEnd',
 				stopCode: StopCode.AuthKeyNotSpecified,
-				stopMessage: 'Missing auth key in ctx.config',
+				stopMessage: 'Missing auth key in context.config',
 			},
 		};
 	}

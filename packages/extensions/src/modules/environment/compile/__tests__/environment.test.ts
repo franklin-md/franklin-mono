@@ -11,13 +11,13 @@ import { createExtensionPoint } from '../../../../algebra/extension-points/creat
 import { createEnvironmentCompiler } from '../compiler.js';
 import { createStoreCompiler } from '../../../store/compile/compiler.js';
 import { StoreRegistry } from '../../../store/api/registry/index.js';
-import type { StoreAPI } from '../../../store/api/api.js';
-import type { IdentityAPI } from '../../../../algebra/modules/simple/identity.js';
+import type { StoreSignature } from '../../../store/api/api.js';
+import type { IdentitySignature } from '../../../../algebra/modules/simple/identity.js';
 import type { ReconfigurableEnvironment } from '../../api/types.js';
 
-const identityExtensionPoint = createExtensionPoint<IdentityAPI>({});
+const identityExtensionPoint = createExtensionPoint<IdentitySignature>({});
 
-const storeExtensionPoint = createExtensionPoint<StoreAPI>({
+const storeExtensionPoint = createExtensionPoint<StoreSignature>({
 	registerStore: true,
 });
 
@@ -69,7 +69,7 @@ describe('createEnvironmentCompiler', () => {
 		const env = mockEnvironment();
 		const compiler = combine(
 			createEnvironmentCompiler(env),
-			createStoreCompiler(new StoreRegistry(), { store: {} }),
+			createStoreCompiler(new StoreRegistry(), {}),
 		);
 		const extensionPoint = combineExtensionPoints(
 			identityExtensionPoint,

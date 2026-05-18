@@ -5,7 +5,7 @@
 // as seen from the client side.
 // ---------------------------------------------------------------------------
 
-import type { CtxPatch, HistoryPatch } from '../types/context.js';
+import type { ContextPatch, HistoryPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import type { Chunk, TurnStart, Update, TurnEnd } from '../types/stream.js';
 import type { ToolCall, ToolDefinition, ToolResult } from '../types/tool.js';
@@ -17,7 +17,7 @@ import type { MiniACPAgent, MiniACPClient } from '../protocol/index.js';
 
 export type TranscriptEntry =
 	| { direction: 'send'; method: 'initialize'; params: Record<string, never> }
-	| { direction: 'send'; method: 'setContext'; params: CtxPatch }
+	| { direction: 'send'; method: 'setContext'; params: ContextPatch }
 	| { direction: 'send'; method: 'prompt'; params: UserMessage }
 	| { direction: 'send'; method: 'cancel'; params: Record<string, never> }
 	| { direction: 'send'; method: 'toolResult'; params: ToolResult }
@@ -64,14 +64,14 @@ export type ToolSpec = {
 	handler: (call: ToolCall) => ToolResult | Promise<ToolResult>;
 };
 
-export type SetContextPayload = Omit<CtxPatch, 'tools' | 'history'> & {
+export type SetContextPayload = Omit<ContextPatch, 'tools' | 'history'> & {
 	history?: HistoryPatch;
 	tools?: ToolSpec[];
 };
 
 export type Action =
 	| { type: 'initialize' }
-	| { type: 'setContext'; ctx: SetContextPayload }
+	| { type: 'setContext'; context: SetContextPayload }
 	| { type: 'prompt'; message: UserMessage }
 	| { type: 'cancel' }
 	| {

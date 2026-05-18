@@ -11,7 +11,7 @@ import type { StreamFn } from '@earendil-works/pi-agent-core';
 
 import type { TurnClient, TurnServer } from '../types.js';
 import type { UserMessage } from '../../types/message.js';
-import type { Ctx } from '../../types/context.js';
+import type { Context } from '../../types/context.js';
 import type { StreamEvent } from '../../types/stream.js';
 import { StopCode } from '../../types/stop-code.js';
 
@@ -32,13 +32,13 @@ export interface PiAdapterOptions {
 	/** TurnServer for reverse RPC (tool execution) */
 	server: TurnServer;
 	/** Agent context (history, tools, config) */
-	ctx: Ctx;
+	context: Context;
 	/** Custom stream function — inject for testing without real LLM calls */
 	streamFn?: StreamFn;
 }
 
 export function createPiAdapter(options: PiAdapterOptions): TurnClient {
-	const { server, ctx, streamFn } = options;
+	const { server, context, streamFn } = options;
 
 	let piAgent: PiCoreAgent | null = null;
 
@@ -46,7 +46,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
 			// Resolve model lazily at prompt time so unresolvable configs
 			// produce a clean turnStart → turnEnd sequence.
-			const resolved = resolveConfig(ctx.config);
+			const resolved = resolveConfig(context.config);
 			if (!resolved.ok) {
 				yield { type: 'turnStart' };
 				yield resolved.turnEnd;
@@ -55,22 +55,22 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 
 			// Bridge tool definitions to pi AgentTools that call server.toolExecute
 			const handler = server.toolExecute.bind(server);
-			const piTools = ctx.tools.map((def) => bridgeTool(def, handler));
+			const piTools = context.tools.map((def) => bridgeTool(def, handler));
 
 			// Convert history messages to pi-ai format
-			const piMessages = ctx.history.messages.map(toPiMessage);
+			const piMessages = context.history.messages.map(toPiMessage);
 
 			// Create the pi Agent
 			piAgent = new PiCoreAgent({
 				initialState: {
-					systemPrompt: ctx.history.systemPrompt,
+					systemPrompt: context.history.systemPrompt,
 					model: resolved.model,
-					thinkingLevel: ctx.config.reasoning ?? 'off',
+					thinkingLevel: context.config.reasoning ?? 'off',
 					tools: piTools,
 					messages: piMessages,
 				},
 				getApiKey: (_: string) => {
-					return ctx.config.apiKey;
+					return context.config.apiKey;
 				},
 				streamFn,
 			});

@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import type { API } from '../algebra/api/index.js';
+import type { Signature } from '../algebra/api/index.js';
 import type { BaseRuntime } from '../algebra/runtime/index.js';
-import type { Registry } from '../algebra/extension-points/registry.js';
 import * as rootExports from '../index.js';
 import { createExtensionPoint, defineExtension } from '../index.js';
+import type { RegistryView } from '../index.js';
 import type { Apply } from '@franklin/lib';
 
-type TestAPISurface = { register(label: string): void };
+type TestAPI = { register(label: string): void };
 
-interface TestAPI extends API {
+interface TestSignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: TestAPISurface;
+	readonly Out: TestAPI;
 }
 
-const testExtensionPoint = createExtensionPoint<TestAPI>({
+const testExtensionPoint = createExtensionPoint<TestSignature>({
 	register: true,
 });
 
@@ -37,11 +37,26 @@ describe('package exports', () => {
 		expect('identityState' in rootExports).toBe(false);
 		expect('identityStateHandle' in rootExports).toBe(false);
 		expect('identityModule' in rootExports).toBe(false);
+		expect('createRuntime' in rootExports).toBe(false);
+		expect('liftExtensionModule' in rootExports).toBe(false);
+		expect('withSetup' in rootExports).toBe(false);
+		expect('transformCompiler' in rootExports).toBe(false);
+		expect('composeCompilerSteps' in rootExports).toBe(false);
+		expect('withSetupCompiler' in rootExports).toBe(false);
+		expect('liftHarnessCompilerTransform' in rootExports).toBe(false);
+		expect('tapStep' in rootExports).toBe(false);
 		expect(typeof rootExports.buildStateExtensionModule).toBe('function');
-		expect(typeof rootExports.liftExtensionModule).toBe('function');
-		expect(typeof rootExports.transformCompiler).toBe('function');
-		expect(typeof rootExports.composeCompilerSteps).toBe('function');
-		expect(typeof rootExports.withSetupCompiler).toBe('function');
+		expect(typeof rootExports.fromSimpleModule).toBe('function');
+		expect(typeof rootExports.applyStep).toBe('function');
+		expect(typeof rootExports.composeSteps).toBe('function');
+		expect(typeof rootExports.reduceSteps).toBe('function');
+		expect(typeof rootExports.liftStateCompilerTransform).toBe('function');
+		expect(typeof rootExports.liftStateModuleTransform).toBe('function');
+		expect('createRegistry' in rootExports).toBe(false);
+		expect('createApi' in rootExports).toBe(false);
+		expect('deriveApi' in rootExports).toBe(false);
+		expect('createRegistryView' in rootExports).toBe(false);
+		expect('combineExtensionPoints' in rootExports).toBe(false);
 	});
 
 	it('re-exports compileAll from the root barrel', async () => {
@@ -53,14 +68,18 @@ describe('package exports', () => {
 		};
 		const compiler = {
 			async compile<ContextRuntime extends BaseRuntime>(
-				registry: Registry<TestAPI, ContextRuntime>,
+				registry: RegistryView<TestSignature, ContextRuntime>,
 			) {
 				buildCalls += 1;
-				for (const [label] of registry.register) calls.push(label);
+				for (const [label] of registry.argsFor('register')) {
+					calls.push(label);
+				}
 				return runtime;
 			},
 		};
-		const extension = rootExports.reduceExtensions<Apply<TestAPI, BaseRuntime>>(
+		const extension = rootExports.reduceExtensions<
+			Apply<TestSignature, BaseRuntime>
+		>(
 			(api) => api.register('one'),
 			(api) => api.register('two'),
 		);

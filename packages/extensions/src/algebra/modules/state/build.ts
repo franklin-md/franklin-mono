@@ -1,7 +1,7 @@
 import type {
 	BaseExtensionModule,
-	InferAPI as InferSimpleAPI,
 	InferRuntime as InferSimpleRuntime,
+	InferSignature as InferSimpleSignature,
 } from '../simple/index.js';
 import {
 	combineAll,
@@ -9,7 +9,7 @@ import {
 	type CombineModules,
 	type Modules,
 } from './combine.js';
-import { liftExtensionModule } from './lift.js';
+import { fromSimpleModule } from './transform/index.js';
 import type {
 	BaseStateExtensionModule,
 	IdentityState,
@@ -24,7 +24,7 @@ export type LiftModule<Module extends BuildableModule> =
 		: Module extends BaseExtensionModule
 			? StateExtensionModule<
 					IdentityState,
-					InferSimpleAPI<Module>,
+					InferSimpleSignature<Module>,
 					InferSimpleRuntime<Module>
 				>
 			: never;
@@ -76,7 +76,7 @@ export function liftBuildModule<Module extends BuildableModule>(
 	module: Module,
 ): LiftModule<Module> {
 	return (
-		isStateExtensionModule(module) ? module : liftExtensionModule(module)
+		isStateExtensionModule(module) ? module : fromSimpleModule(module)
 	) as LiftModule<Module>;
 }
 

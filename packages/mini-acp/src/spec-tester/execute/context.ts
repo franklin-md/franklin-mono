@@ -6,7 +6,7 @@
 import { withDeadline } from '@franklin/lib';
 
 import type { ToolCall, ToolResult } from '../../types/tool.js';
-import type { CtxPatch } from '../../types/context.js';
+import type { ContextPatch } from '../../types/context.js';
 import type { UserMessage } from '../../types/message.js';
 import type {
 	AgentFactory,
@@ -69,18 +69,18 @@ export async function createContext(factory: AgentFactory) {
 
 	async function setContext(payload: SetContextPayload): Promise<void> {
 		// Split ToolSpecs into definitions for the agent and local handlers.
-		const ctx: CtxPatch = {};
-		if (payload.history) ctx.history = payload.history;
-		if (payload.config) ctx.config = payload.config;
+		const context: ContextPatch = {};
+		if (payload.history) context.history = payload.history;
+		if (payload.config) context.config = payload.config;
 		if (payload.tools) {
-			ctx.tools = payload.tools.map((t) => t.definition);
+			context.tools = payload.tools.map((t) => t.definition);
 			for (const t of payload.tools) {
 				toolHandlers[t.definition.name] = t.handler;
 			}
 		}
 
-		record({ direction: 'send', method: 'setContext', params: ctx });
-		await client.setContext(ctx);
+		record({ direction: 'send', method: 'setContext', params: context });
+		await client.setContext(context);
 		record({ direction: 'receive', method: 'setContext', params: {} });
 	}
 

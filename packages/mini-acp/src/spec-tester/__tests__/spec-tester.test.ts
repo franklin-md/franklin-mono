@@ -29,7 +29,7 @@ function createMockFactory(
 ): AgentFactory {
 	return (server) =>
 		createSessionAdapter(
-			(_ctx, trackedServer) => createTurnClient(trackedServer),
+			(_context, trackedServer) => createTurnClient(trackedServer),
 			server,
 		);
 }
@@ -253,13 +253,13 @@ describe('execute', () => {
 			createMockFactory(noopTurn),
 		);
 
-		const setCtxEntry = transcript.find(
+		const setContextEntry = transcript.find(
 			(e: TranscriptEntry) =>
 				e.direction === 'send' && e.method === 'setContext',
 		) as TranscriptEntry & {
 			params: { tools?: { name: string }[] };
 		};
-		expect(setCtxEntry.params.tools).toEqual([tool.definition]);
+		expect(setContextEntry.params.tools).toEqual([tool.definition]);
 	});
 });
 
@@ -362,7 +362,7 @@ describe('action factories', () => {
 		const action = setContext();
 		expect(action).toEqual({
 			type: 'setContext',
-			ctx: {},
+			context: {},
 		});
 	});
 
@@ -374,7 +374,7 @@ describe('action factories', () => {
 		});
 		expect(action).toEqual({
 			type: 'setContext',
-			ctx: {
+			context: {
 				history: {
 					systemPrompt: 'Custom prompt',
 				},
@@ -394,7 +394,7 @@ describe('action factories', () => {
 		});
 		expect(action).toEqual({
 			type: 'setContext',
-			ctx: {
+			context: {
 				history: {
 					messages: [
 						{
@@ -414,7 +414,7 @@ describe('action factories', () => {
 		});
 		expect(action).toEqual({
 			type: 'setContext',
-			ctx: {
+			context: {
 				history: {
 					systemPrompt: 'You are a test agent.',
 					messages: [],
@@ -429,7 +429,7 @@ describe('action factories', () => {
 		});
 		expect(action).toEqual({
 			type: 'setContext',
-			ctx: {
+			context: {
 				config: {
 					provider: 'openrouter',
 					model: 'openrouter/free',

@@ -3,22 +3,19 @@ import { StoreRegistry } from '../../api/registry/index.js';
 import { compile } from '../../../../algebra/compiler/compile.js';
 import { createExtensionPoint } from '../../../../algebra/extension-points/create.js';
 import { createStoreCompiler } from '../compiler.js';
-import { storeStateHandle } from '../../runtime.js';
-import type { StoreAPI, StoreAPISurface } from '../../api/api.js';
+import { storeMappingHandle } from '../../runtime.js';
+import type { StoreAPI, StoreSignature } from '../../api/api.js';
 import type { Extension } from '../../../../algebra/extension/index.js';
-import type { StoreMapping } from '../../state.js';
+import type { StoreMapping } from '../../api/registry/mapping.js';
 
-const storeExtensionPoint = createExtensionPoint<StoreAPI>({
+const storeExtensionPoint = createExtensionPoint<StoreSignature>({
 	registerStore: true,
 });
 
-function compileStore(
-	ext: Extension<StoreAPISurface>,
-	seed: StoreMapping = {},
-) {
+function compileStore(ext: Extension<StoreAPI>, seed: StoreMapping = {}) {
 	return compile(
 		storeExtensionPoint,
-		createStoreCompiler(new StoreRegistry(), { store: seed }),
+		createStoreCompiler(new StoreRegistry(), seed),
 		ext,
 	);
 }
@@ -90,10 +87,10 @@ describe('createStoreCompiler', () => {
 				api.registerStore('private_k', 100, 'private');
 			});
 
-			const forked = await storeStateHandle(runtime).fork();
-			expect(forked.store).toBeDefined();
-			expect(forked.store.shared_k).toBeDefined();
-			expect(forked.store.private_k).toBeDefined();
+			const forked = await storeMappingHandle(runtime).fork();
+			expect(forked).toBeDefined();
+			expect(forked.shared_k).toBeDefined();
+			expect(forked.private_k).toBeDefined();
 		});
 
 		it('child drops private stores, keeps shared refs', async () => {
@@ -102,9 +99,9 @@ describe('createStoreCompiler', () => {
 				api.registerStore('private_k', 1, 'private');
 			});
 
-			const childState = await storeStateHandle(runtime).child();
-			expect(childState.store.shared_k).toBeDefined();
-			expect(childState.store.private_k).toBeUndefined();
+			const childState = await storeMappingHandle(runtime).child();
+			expect(childState.shared_k).toBeDefined();
+			expect(childState.private_k).toBeUndefined();
 		});
 	});
 
@@ -115,17 +112,17 @@ describe('createStoreCompiler', () => {
 			const registry = new StoreRegistry();
 			const parent = await compile(
 				storeExtensionPoint,
-				createStoreCompiler(registry, { store: {} }),
+				createStoreCompiler(registry, {}),
 				(api) => {
 					api.registerStore('seeded', 99, 'shared');
 				},
 			);
 
-			const parentState = await storeStateHandle(parent).get();
+			const parentMapping = await storeMappingHandle(parent).get();
 
 			const child = await compile(
 				storeExtensionPoint,
-				createStoreCompiler(registry, { store: parentState.store }),
+				createStoreCompiler(registry, parentMapping),
 				(api) => {
 					api.registerStore('seeded', 0, 'shared');
 				},
@@ -138,7 +135,7 @@ describe('createStoreCompiler', () => {
 			const registry = new StoreRegistry();
 			const parent = await compile(
 				storeExtensionPoint,
-				createStoreCompiler(registry, { store: {} }),
+				createStoreCompiler(registry, {}),
 				(api) => {
 					api.registerStore('todos', 0, 'shared');
 				},
@@ -146,11 +143,11 @@ describe('createStoreCompiler', () => {
 
 			// Mutate in the parent before sharing (simulate real usage)
 			parent.getStore<number>('todos').set(() => 99);
-			const snapshot = await storeStateHandle(parent).get();
+			const snapshot = await storeMappingHandle(parent).get();
 
 			const child = await compile(
 				storeExtensionPoint,
-				createStoreCompiler(registry, { store: snapshot.store }),
+				createStoreCompiler(registry, snapshot),
 				(api) => {
 					api.registerStore('todos', 0, 'shared');
 				},

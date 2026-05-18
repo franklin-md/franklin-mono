@@ -1,20 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 import { compile } from '../../../compiler/index.js';
 import { createExtensionPoint } from '../../../extension-points/create.js';
-import type { Registry } from '../../../extension-points/registry.js';
-import type { BaseRuntime, StateHandle } from '../../../runtime/index.js';
-import type { StaticAPI } from '../../../api/index.js';
+import type { RegistryView } from '../../../extension-points/view.js';
+import type { BaseRuntime } from '../../../runtime/index.js';
+import type { StaticSignature } from '../../../api/index.js';
 import type { ExtensionModule } from '../../simple/index.js';
-import type { StateExtensionModule } from '../types.js';
+import type { StateExtensionModule, StateHandle } from '../types.js';
 import { buildStateExtensionModule } from '../build.js';
 
-type CounterAPISurface = {
+type CounterAPI = {
 	registerCount(value: number): void;
 };
 
-type CounterAPI = StaticAPI<CounterAPISurface>;
+type CounterSignature = StaticSignature<CounterAPI>;
 
-const counterExtensionPoint = createExtensionPoint<CounterAPI>({
+const counterExtensionPoint = createExtensionPoint<CounterSignature>({
 	registerCount: true,
 });
 
@@ -33,7 +33,7 @@ type CounterRuntime = BaseRuntime & {
 
 function createCounterModule(): StateExtensionModule<
 	CounterState,
-	CounterAPI,
+	CounterSignature,
 	CounterRuntime
 > {
 	return {
@@ -44,10 +44,11 @@ function createCounterModule(): StateExtensionModule<
 				extensionPoint: counterExtensionPoint,
 				compiler: {
 					async compile<ContextRuntime extends BaseRuntime>(
-						registry: Registry<CounterAPI, ContextRuntime>,
+						registry: RegistryView<CounterSignature, ContextRuntime>,
 					) {
 						const value =
-							registry.registerCount.at(-1)?.[0] ?? state.counter.value;
+							registry.argsFor('registerCount').at(-1)?.[0] ??
+							state.counter.value;
 						return {
 							getCount() {
 								return value;
@@ -67,9 +68,9 @@ function createCounterModule(): StateExtensionModule<
 	};
 }
 
-type DependencyAPI = StaticAPI<Record<never, never>>;
+type DependencySignature = StaticSignature<Record<never, never>>;
 
-const dependencyExtensionPoint = createExtensionPoint<DependencyAPI>({});
+const dependencyExtensionPoint = createExtensionPoint<DependencySignature>({});
 
 type DependencyRuntime = BaseRuntime & {
 	readonly dependency: string;
@@ -77,7 +78,7 @@ type DependencyRuntime = BaseRuntime & {
 
 function createDependencyModule(
 	dependency: string,
-): ExtensionModule<DependencyAPI, DependencyRuntime> {
+): ExtensionModule<DependencySignature, DependencyRuntime> {
 	return {
 		extensionPoint: dependencyExtensionPoint,
 		compiler: {

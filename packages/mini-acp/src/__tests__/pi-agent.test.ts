@@ -4,7 +4,7 @@ import { StopCode } from '../types/stop-code.js';
 import type { ToolExecuteParams } from '../types/tool.js';
 
 const adapterInputs = vi.hoisted(
-	(): Array<{ ctx: unknown; server: unknown; streamFn: unknown }> => [],
+	(): Array<{ context: unknown; server: unknown; streamFn: unknown }> => [],
 );
 const createPiAdapterMock = vi.hoisted(() => vi.fn());
 
@@ -20,7 +20,7 @@ describe('createPiAgent', () => {
 		createPiAdapterMock.mockReset();
 		createPiAdapterMock.mockImplementation(
 			(options: {
-				ctx: unknown;
+				context: unknown;
 				server: {
 					toolExecute(params: {
 						call: {
@@ -34,7 +34,7 @@ describe('createPiAgent', () => {
 				streamFn?: unknown;
 			}) => {
 				adapterInputs.push({
-					ctx: structuredClone(options.ctx),
+					context: structuredClone(options.context),
 					server: options.server,
 					streamFn: options.streamFn,
 				});
@@ -104,7 +104,7 @@ describe('createPiAgent', () => {
 		expect(createPiAdapterMock).toHaveBeenCalledOnce();
 		expect(adapterInputs).toEqual([
 			{
-				ctx: {
+				context: {
 					history: { systemPrompt: 'system prompt', messages: [] },
 					tools: [tool],
 					config: { model: 'gpt-5.4' },

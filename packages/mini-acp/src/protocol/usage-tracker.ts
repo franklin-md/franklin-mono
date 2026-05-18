@@ -52,7 +52,7 @@ function mergeUsage(a: Usage, b: Usage): Usage {
  * Tracks running Usage totals for a session.
  *
  * Seed by calling `add(persistedUsage)` on setup; call `add(turnUsage)` each
- * time a turn ends. Used alongside `CtxTracker` in the core runtime so that
+ * time a turn ends. Used alongside `ContextTracker` in the core runtime so that
  * persisted session state includes a running token/cost tally.
  */
 export class UsageTracker {

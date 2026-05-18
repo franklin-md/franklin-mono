@@ -1,19 +1,15 @@
-import type { API, StaticAPI } from '../../../api/types.js';
+import type { Signature, StaticSignature } from '../../../api/types.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import type { ExtensionModule } from '../types.js';
 import { combine, combineAll } from '../combine.js';
-import type {
-	CombineModules,
-	CombinableModule,
-	InferBoundAPI,
-} from '../index.js';
+import type { CombineModules, CombinableModule, InferAPI } from '../index.js';
 
 type _ExpectNever<T extends never> = T;
 
 type StubModule<
-	APISurface extends object = Record<never, never>,
+	Surface extends object = Record<never, never>,
 	Runtime extends BaseRuntime = BaseRuntime,
-> = ExtensionModule<StaticAPI<APISurface>, Runtime>;
+> = ExtensionModule<StaticSignature<Surface>, Runtime>;
 
 type APIa = { on(event: string): void };
 type APIb = { register(name: string): void };
@@ -92,19 +88,22 @@ const _invalidRuntimeCombine = combine(
 );
 void _invalidRuntimeCombine;
 
-interface RuntimeAwareAPISurface<Runtime extends BaseRuntime> {
+interface RuntimeAwareAPI<Runtime extends BaseRuntime> {
 	useRuntime(handler: (runtime: Runtime) => void): void;
 }
 
-interface RuntimeAwareAPI extends API {
+interface RuntimeAwareSignature extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: RuntimeAwareAPISurface<this['In']>;
+	readonly Out: RuntimeAwareAPI<this['In']>;
 }
 
-type RuntimeAwareModule = ExtensionModule<RuntimeAwareAPI, BaseRuntime>;
-type ExtraModule = ExtensionModule<StaticAPI<Record<never, never>>, RuntimeB>;
+type RuntimeAwareModule = ExtensionModule<RuntimeAwareSignature, BaseRuntime>;
+type ExtraModule = ExtensionModule<
+	StaticSignature<Record<never, never>>,
+	RuntimeB
+>;
 
-type CombinedRuntimeAwareAPI = InferBoundAPI<
+type CombinedRuntimeAwareAPI = InferAPI<
 	CombineModules<RuntimeAwareModule, ExtraModule>
 >;
 

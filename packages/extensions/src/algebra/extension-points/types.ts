@@ -1,17 +1,15 @@
-import type { Apply } from '@franklin/lib';
-import type { API as APIFamily } from '../api/types.js';
-import type { Registry } from './registry.js';
+import type { API, Signature } from '../api/types.js';
+import type { RegistryWriter } from './writer.js';
 
-export type ExtensionPoint<API extends APIFamily> = {
-	createRegistry(): Registry<API>;
-	createApi<R extends API['In']>(registry: Registry<API>): Apply<API, R>;
-};
+export type ExtensionPoint<S extends Signature> = <Runtime extends S['In']>(
+	writer: RegistryWriter<S, Runtime>,
+) => API<S, Runtime>;
 
 /*
 The extension-point algorithm:
 
-const registry = EP.createRegistry()
-const api = EP.createApi(registry) // api writes to registry
+const { registry, writer } = createRegistry<MySignature, Runtime>()
+const api = createApi(extensionPoint, writer) // api writes through writer
 extension(api) // run the extension to register values
 
 The populated registry is then passed to a compiler to materialise a runtime.

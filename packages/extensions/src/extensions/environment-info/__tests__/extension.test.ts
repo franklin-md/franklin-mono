@@ -5,8 +5,10 @@ import {
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { createExtensionPoint } from '../../../algebra/extension-points/create.js';
-import type { Registry } from '../../../algebra/extension-points/registry.js';
-import type { CoreAPI } from '../../../modules/core/api/api.js';
+import { createApi } from '../../../algebra/extension-points/facade.js';
+import { createRegistryView } from '../../../algebra/extension-points/view.js';
+import { createRegistry } from '../../../algebra/extension-points/writer.js';
+import type { CoreSignature } from '../../../modules/core/api/api.js';
 import type { SystemPromptHandler } from '../../../modules/core/api/handlers.js';
 import {
 	buildSystemPromptAssembler,
@@ -28,26 +30,30 @@ import {
 } from '../../../modules/environment/runtime.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
 
-type HarnessModulePromptHandler = WithContext<
+type ModulePromptHandler = WithContext<
 	SystemPromptHandler,
 	CoreRuntime & EnvironmentRuntime
 >;
 
-const coreExtensionPoint = createExtensionPoint<CoreAPI>({
+const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
 });
 
 function collectHandlers(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
-): HarnessModulePromptHandler[] {
-	const registry = coreExtensionPoint.createRegistry();
-	const api = coreExtensionPoint.createApi<CoreRuntime & EnvironmentRuntime>(
-		registry,
+): ModulePromptHandler[] {
+	const { registry, writer } = createRegistry<
+		CoreSignature,
+		CoreRuntime & EnvironmentRuntime
+	>();
+	const api = createApi<CoreSignature, CoreRuntime & EnvironmentRuntime>(
+		coreExtensionPoint,
+		writer,
 	);
 	extension(api);
-	const registrations = createCoreRegistrar(
-		registry as Registry<CoreAPI, CoreRuntime & EnvironmentRuntime>,
+	const registrations = createCoreRegistrar<CoreRuntime & EnvironmentRuntime>(
+		createRegistryView(registry),
 	);
 	return registrations.systemPrompt;
 }
@@ -82,7 +88,7 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 }
 
 function bindAssembler(
-	handlers: HarnessModulePromptHandler[],
+	handlers: ModulePromptHandler[],
 	ctx: EnvironmentRuntime,
 ): SystemPromptAssembler {
 	const boundHandlers: SystemPromptHandler[] = bindHandlers(

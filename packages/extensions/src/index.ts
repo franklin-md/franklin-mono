@@ -1,30 +1,34 @@
 export type { Issue, MapFilePersister, RestoreResult } from '@franklin/lib';
 export type {
 	API,
+	CombineSignature,
 	BaseAPI,
-	BoundAPI,
-	ComposeAPI,
-	StaticAPI,
+	Signature,
+	StaticSignature,
 } from './algebra/api/types.js';
-export type { ReduceAPIs } from './algebra/api/reduce.js';
 export { combine } from './algebra/compiler/combine.js';
 export { compile } from './algebra/compiler/compile.js';
 export type { Compiler } from './algebra/compiler/types.js';
-export type { CompilerStep, RuntimeStep } from './algebra/compiler/setup.js';
+export type {
+	CompilerStep,
+	CompilerTransform,
+	RuntimeStep,
+} from './algebra/compiler/transform/index.js';
 export {
-	composeCompilerSteps,
-	transformCompiler,
-	withSetupCompiler,
-} from './algebra/compiler/setup.js';
+	applyStep,
+	composeSteps,
+	identityStep,
+	reduceSteps,
+} from './algebra/compiler/transform/index.js';
 export type { Registry } from './algebra/extension-points/registry.js';
 export type { ExtensionPoint } from './algebra/extension-points/types.js';
 export { createExtensionPoint } from './algebra/extension-points/create.js';
-export { combine as combineExtensionPoints } from './algebra/extension-points/combine.js';
+export type { RegistryView } from './algebra/extension-points/view.js';
 export {
 	createOrchestrator,
 	Orchestrator,
 	RuntimeCollection,
-} from './harness/orchestrator/index.js';
+} from './modules/orchestrator/index.js';
 export type {
 	CreateOrchestratorInput,
 	OrchestratorCreateInput,
@@ -34,7 +38,7 @@ export type {
 	RuntimeEntry,
 	RuntimeEvent,
 	SelfRuntime,
-} from './harness/orchestrator/index.js';
+} from './modules/orchestrator/index.js';
 export type { CombinedRuntime } from './algebra/runtime/combine.js';
 export type { ReduceRuntimes } from './algebra/runtime/reduce.js';
 export type {
@@ -49,30 +53,29 @@ export {
 	buildStateExtensionModule,
 	combine as combineModules,
 	combineAll,
-	liftExtensionModule,
+	fromSimpleModule,
+	liftCompilerTransform as liftStateCompilerTransform,
+	liftModuleTransform as liftStateModuleTransform,
 } from './algebra/modules/state/index.js';
 // ---------------------------------------------------------------------------
 // Runtime
 // ---------------------------------------------------------------------------
-export type { BaseRuntime, StateHandle } from './algebra/runtime/types.js';
+export type { BaseRuntime } from './algebra/runtime/types.js';
 export { resolveState } from './algebra/modules/state/index.js';
 // ---------------------------------------------------------------------------
-// Harness modules
+// Extension authoring
 // ---------------------------------------------------------------------------
-export type { BaseState } from './algebra/modules/state/index.js';
+export type { BaseState, StateHandle } from './algebra/modules/state/index.js';
 export type { ExtensionBundle } from './modules/bundle/index.js';
 export { createBundle } from './modules/bundle/index.js';
-export { defineExtension } from './harness/modules/index.js';
-export { createRuntime } from './harness/modules/create.js';
-export { withSetup } from './harness/modules/setup.js';
+export { defineExtension } from './algebra/extension/index.js';
 export type {
-	BaseHarnessModule,
-	ExtensionApi,
+	AlgebraExtensionAPI,
+	ExtensionAPI,
 	ExtensionForModules,
-	HarnessModule,
-	ModuleAPIs,
+	ModuleSignatures,
 	ModuleRuntimes,
-} from './harness/modules/index.js';
+} from './algebra/extension/index.js';
 export type {
 	BuildableModule,
 	BuildModules,
@@ -80,8 +83,8 @@ export type {
 	CombinableBuildModule,
 	CombineModules,
 	InferAPI,
-	InferBoundAPI,
 	InferRuntime,
+	InferSignature,
 	InferState,
 	LiftModule,
 	LiftModules,
@@ -89,11 +92,7 @@ export type {
 	ValidateBuildModules,
 	ValidateModules,
 } from './algebra/modules/state/index.js';
-export type {
-	Extension,
-	ExtensionAPISurface,
-	ExtensionFor,
-} from './algebra/extension/types.js';
+export type { Extension, ExtensionFor } from './algebra/extension/types.js';
 export { reduceExtensions } from './algebra/extension/index.js';
 export type {
 	AssistantBlock,
@@ -151,6 +150,7 @@ export type {
 	CoreEventHandlers,
 	CoreOnRegistration,
 	CoreRegisterToolRegistration,
+	CoreSignature,
 	ExtensionToolDefinition,
 	Prompt,
 	PromptHandler,
@@ -178,10 +178,13 @@ export { CORE_STATE, coreStateHandle } from './modules/core/runtime/index.js';
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
-export type { CoreState } from './modules/core/state.js';
-export { emptyCoreState } from './modules/core/state.js';
-export type { CoreModule } from './modules/core/module.js';
-export { createCoreModule } from './modules/core/module.js';
+export type { CoreState, SessionSnapshot } from './modules/core/state.js';
+export { emptyCoreState, emptySessionSnapshot } from './modules/core/state.js';
+export type { CoreModule, CoreStateModule } from './modules/core/module.js';
+export {
+	createCoreModule,
+	createCoreStateModule,
+} from './modules/core/module.js';
 export type { DependencyRuntime } from './modules/dependency/index.js';
 export type { DependencyModule } from './modules/dependency/module.js';
 export { createDependencyModule } from './modules/dependency/module.js';
@@ -219,7 +222,7 @@ export type {
 	Sharing,
 	Store,
 	StoreAPI,
-	StoreAPISurface,
+	StoreSignature,
 	StoreEntry,
 	StoreKey,
 	StoreMapping,
@@ -237,8 +240,13 @@ export {
 } from './modules/store/api/index.js';
 export { createStoreCompiler } from './modules/store/compile/index.js';
 export type { StoreRuntime } from './modules/store/runtime.js';
-export { STORE_STATE, storeStateHandle } from './modules/store/runtime.js';
+export { STORE_MAPPING, storeMappingHandle } from './modules/store/runtime.js';
 export type { StoreState } from './modules/store/state.js';
 export { emptyStoreState } from './modules/store/state.js';
 export type { StoreModule } from './modules/store/module.js';
 export { createStoreModule } from './modules/store/module.js';
+export type { StoreStateModule } from './modules/store/state-module.js';
+export {
+	createStoreStateModule,
+	storeStateHandle,
+} from './modules/store/state-module.js';

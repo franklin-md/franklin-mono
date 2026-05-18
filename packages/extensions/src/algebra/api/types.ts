@@ -1,8 +1,6 @@
 import type { Apply, HKT } from '@franklin/lib';
 import type { BaseRuntime } from '../runtime/index.js';
 
-// TODO: It may be more appropriate to call this the Signature? and then applying R gives you API?
-
 /**
  * Base constraint for an API surface — any object shape (registration
  * methods, collectors, etc.).
@@ -10,12 +8,12 @@ import type { BaseRuntime } from '../runtime/index.js';
 export type BaseAPI = object;
 
 /**
- * Type-level function `Runtime → API`. An API is just an HKT specialised
- * to take a runtime as input and produce an API surface.
+ * Type-level function `Runtime -> API`. A signature describes how to derive
+ * the concrete author-facing API surface from the eventual runtime.
  *
- * Authoring a runtime-dependent API:
+ * Authoring a runtime-dependent signature:
  *
- *   interface CoreAPI extends API {
+ *   interface CoreSignature extends Signature {
  *     In: CoreRuntime
  *     Out: {
  *       on(event: 'prompt', handler: WithContext<PromptHandler, this['In']>): void
@@ -23,34 +21,37 @@ export type BaseAPI = object;
  *     }
  *   }
  *
- * For runtime-independent APIs, use `StaticAPI<A>`.
+ * For runtime-independent APIs, use `StaticSignature<A>`.
  */
-export interface API extends HKT {
+export interface Signature extends HKT {
 	readonly In: BaseRuntime;
 	readonly Out: BaseAPI;
 }
 
 /**
- * The concrete, bound API surface obtained by applying `A` at runtime
- * `R`. This is what extensions hold and call methods on.
+ * The concrete API surface obtained by applying signature `S` at runtime `R`.
+ * This is what extensions hold and call methods on.
  */
-export type BoundAPI<A extends API, R extends A['In']> = Apply<A, R>;
+export type API<S extends Signature, R extends S['In']> = Apply<S, R>;
 
 /**
- * Lift a runtime-independent API into the API space.
+ * Lift a runtime-independent API into the signature space.
  *
- *   export type StoreModule = HarnessModule<S, StaticAPI<StoreAPI>, R>
+ *   export type MyModule = StateExtensionModule<S, StaticSignature<MyAPI>, R>
  */
-export interface StaticAPI<A extends BaseAPI> extends API {
+export interface StaticSignature<A extends BaseAPI> extends Signature {
 	readonly In: BaseRuntime;
 	readonly Out: A;
 }
 
 /**
- * Compose two APIs: intersect inputs, intersect bound surfaces at the
+ * Combine two signatures: intersect inputs, intersect API surfaces at the
  * joined runtime.
  */
-export interface ComposeAPI<A1 extends API, A2 extends API> extends API {
-	readonly In: A1['In'] & A2['In'];
-	readonly Out: BoundAPI<A1, this['In']> & BoundAPI<A2, this['In']>;
+export interface CombineSignature<
+	S1 extends Signature,
+	S2 extends Signature,
+> extends Signature {
+	readonly In: S1['In'] & S2['In'];
+	readonly Out: API<S1, this['In']> & API<S2, this['In']>;
 }

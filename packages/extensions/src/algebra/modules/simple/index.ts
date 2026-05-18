@@ -1,10 +1,10 @@
 export type { BaseExtensionModule, ExtensionModule } from './types.js';
 export type {
 	InferAPI,
-	InferBoundAPI,
 	InferCompiler,
 	InferExtension,
 	InferRuntime,
+	InferSignature,
 } from './infer.js';
 export type {
 	CombinableModule,
@@ -15,7 +15,7 @@ export type {
 export { combine, combineAll } from './combine.js';
 export type {
 	IdentityAPI,
-	IdentityAPISurface,
+	IdentitySignature,
 	IdentityCompiler,
 	IdentityModule,
 	IdentityRuntime,
@@ -26,4 +26,5 @@ export {
 	identityModule,
 	identityRuntime,
 } from './identity.js';
-export { withSetup } from './setup.js';
+export type { ExtensionModuleTransform } from './transform/index.js';
+export { liftCompilerTransform } from './transform/index.js';

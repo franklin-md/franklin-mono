@@ -1,6 +1,7 @@
 import { createObserver } from '@franklin/lib';
 import type { ReconfigurableEnvironment } from './api/types.js';
-import type { BaseRuntime, StateHandle } from '../../algebra/runtime/index.js';
+import type { StateHandle } from '../../algebra/modules/state/index.js';
+import type { BaseRuntime } from '../../algebra/runtime/index.js';
 import type { EnvironmentState } from './state.js';
 
 /**

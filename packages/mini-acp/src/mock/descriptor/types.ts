@@ -1,4 +1,4 @@
-import type { Ctx } from '../../types/context.js';
+import type { Context } from '../../types/context.js';
 import type { UserMessage } from '../../types/message.js';
 import type { StopCode } from '../../types/stop-code.js';
 import type { TurnEnd } from '../../types/stream.js';
@@ -58,7 +58,7 @@ export type TurnEndDescriptor = {
 };
 
 export type MockTurnContext = {
-	readonly ctx: Ctx;
+	readonly context: Context;
 	readonly prompt: UserMessage;
 	readonly toolCalls: readonly ToolCall[];
 	readonly toolResults: readonly ToolResult[];
@@ -67,7 +67,7 @@ export type MockTurnContext = {
 export type DeriveDescriptor = {
 	readonly type: 'derive';
 	readonly run: (
-		ctx: MockTurnContext,
+		context: MockTurnContext,
 	) => MockTurnDescriptor | Promise<MockTurnDescriptor>;
 };
 

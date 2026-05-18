@@ -45,26 +45,26 @@ export function resolveModel(config: LLMConfig): ResolveResult {
 	if (!provider) {
 		return fail(
 			StopCode.ProviderNotSpecified,
-			'Missing provider in ctx.config',
+			'Missing provider in context.config',
 		);
 	}
 	if (!isKnownProvider(provider)) {
 		return fail(
 			StopCode.ProviderNotFound,
-			`Unknown provider in ctx.config: ${provider}`,
+			`Unknown provider in context.config: ${provider}`,
 		);
 	}
 
 	const modelId = config.model;
 	if (!modelId) {
-		return fail(StopCode.ModelNotSpecified, 'Missing model in ctx.config');
+		return fail(StopCode.ModelNotSpecified, 'Missing model in context.config');
 	}
 
 	const model = findModel(provider, modelId);
 	if (!model) {
 		return fail(
 			StopCode.ModelNotFound,
-			`Unknown model '${modelId}' for provider '${provider}' in ctx.config`,
+			`Unknown model '${modelId}' for provider '${provider}' in context.config`,
 		);
 	}
 

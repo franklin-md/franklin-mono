@@ -1,5 +1,5 @@
 import type { AssertNoOverlap } from '@franklin/lib';
-import type { ComposeAPI } from '../../api/index.js';
+import type { CombineSignature } from '../../api/index.js';
 import type { CombinedRuntime } from '../../runtime/index.js';
 import type {
 	BinaryType,
@@ -13,9 +13,9 @@ import {
 	type CombineModules as CombineSimpleModules,
 } from '../simple/index.js';
 import type {
-	InferAPI,
 	InferRuntime,
 	InferSimpleModule,
+	InferSignature,
 	InferState,
 } from './infer.js';
 import type {
@@ -29,7 +29,7 @@ export type CombineModules<
 	Module2 extends BaseStateExtensionModule,
 > = StateExtensionModule<
 	InferState<Module1> & InferState<Module2>,
-	ComposeAPI<InferAPI<Module1>, InferAPI<Module2>>,
+	CombineSignature<InferSignature<Module1>, InferSignature<Module2>>,
 	CombinedRuntime<InferRuntime<Module1>, InferRuntime<Module2>>
 >;
 
@@ -43,13 +43,21 @@ export type CombinableModule<
 	>;
 
 interface CombineModuleType extends BinaryType {
-	readonly In: readonly [BaseStateExtensionModule, BaseStateExtensionModule];
-	readonly Out: CombineModules<this['In'][0], this['In'][1]>;
+	readonly In: readonly [unknown, unknown];
+	readonly Out: this['In'][0] extends BaseStateExtensionModule
+		? this['In'][1] extends BaseStateExtensionModule
+			? CombineModules<this['In'][0], this['In'][1]>
+			: never
+		: never;
 }
 
 interface CombinableModuleType extends BinaryType {
-	readonly In: readonly [BaseStateExtensionModule, BaseStateExtensionModule];
-	readonly Out: CombinableModule<this['In'][0], this['In'][1]>;
+	readonly In: readonly [unknown, unknown];
+	readonly Out: this['In'][0] extends BaseStateExtensionModule
+		? this['In'][1] extends BaseStateExtensionModule
+			? CombinableModule<this['In'][0], this['In'][1]>
+			: never
+		: never;
 }
 
 export function combine<
@@ -117,7 +125,7 @@ export type ValidateModules<T extends readonly BaseStateExtensionModule[]> =
 		CombinableModuleType
 	>;
 
-export function combineAll<T extends readonly BaseStateExtensionModule[]>(
+export function combineAll<const T extends readonly BaseStateExtensionModule[]>(
 	modules: readonly [...T] & ValidateModules<T>,
 ): Modules<T> {
 	return reduceNonEmpty(

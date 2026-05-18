@@ -1,6 +1,9 @@
-import type { Registry } from '../../../../algebra/extension-points/registry.js';
+import type { RegistryView } from '../../../../algebra/extension-points/view.js';
 import type { BaseRuntime } from '../../../../algebra/runtime/types.js';
-import type { CoreAPI, CoreRegisterToolRegistration } from '../../api/api.js';
+import type {
+	CoreRegisterToolRegistration,
+	CoreSignature,
+} from '../../api/api.js';
 import type { ExtensionToolDefinition } from '../../api/tool.js';
 import type { ToolSpec } from '../../api/tool-spec.js';
 import type { CoreRegistrar } from './types.js';
@@ -45,13 +48,13 @@ function createEmptyCoreRegistrar<
  * handler-indexed registrar shape.
  */
 export function createCoreRegistrar<Runtime extends BaseRuntime>(
-	registry: Registry<CoreAPI, Runtime>,
+	registrations: RegistryView<CoreSignature, Runtime>,
 ): CoreRegistrar<Runtime> {
 	const registrar = createEmptyCoreRegistrar<Runtime>();
-	for (const [event, handler] of registry.on) {
+	for (const [event, handler] of registrations.argsFor('on')) {
 		registrar[event].push(handler as never);
 	}
-	for (const registration of registry.registerTool) {
+	for (const registration of registrations.argsFor('registerTool')) {
 		registrar.tools.push(normalizeTool(registration));
 	}
 	return registrar;
