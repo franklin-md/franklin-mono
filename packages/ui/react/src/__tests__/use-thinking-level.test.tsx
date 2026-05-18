@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import { ZERO_USAGE, type ThinkingLevel } from '@franklin/mini-acp';
 import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { CoreEvent } from '@franklin/extensions';
 import { CORE_STATE } from '@franklin/extensions';
 
 import { AgentProvider } from '../agent/agent-context.js';
@@ -13,19 +14,19 @@ import { useThinkingLevel } from '../agent/use-thinking-level.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Listener = () => void;
+type CoreEventListener = (event: CoreEvent) => void;
 
 function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 	runtime: FranklinRuntime;
-	/** The vi.fn() backing runtime.subscribe — use for assertions. */
+	/** The vi.fn() backing runtime.coreEvents.subscribe — use for assertions. */
 	subscribeSpy: ReturnType<typeof vi.fn>;
 	/** Simulate a runtime notification (e.g. setLLMConfig completed). */
 	notify: () => void;
 } {
 	let reasoning: ThinkingLevel | undefined = initialReasoning;
-	const listeners = new Set<Listener>();
+	const listeners = new Set<CoreEventListener>();
 
-	const subscribeSpy = vi.fn((listener: Listener) => {
+	const subscribeSpy = vi.fn((listener: CoreEventListener) => {
 		listeners.add(listener);
 		return () => {
 			listeners.delete(listener);
@@ -54,16 +55,18 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 			if (config.reasoning !== undefined) {
 				reasoning = config.reasoning;
 			}
-			for (const l of listeners) l();
+			for (const l of listeners) l({ type: 'llm-config-changed' });
 		}),
-		subscribe: subscribeSpy,
+		coreEvents: {
+			subscribe: subscribeSpy,
+		},
 	} as unknown as FranklinRuntime;
 
 	return {
 		runtime,
 		subscribeSpy,
 		notify: () => {
-			for (const l of listeners) l();
+			for (const l of listeners) l({ type: 'llm-config-changed' });
 		},
 	};
 }
@@ -109,7 +112,9 @@ describe('useThinkingLevel – initialization', () => {
 					usage: ZERO_USAGE,
 				})),
 			},
-			subscribe: vi.fn(() => () => {}),
+			coreEvents: {
+				subscribe: vi.fn(() => () => {}),
+			},
 			setLLMConfig: vi.fn(async () => {}),
 		} as unknown as FranklinRuntime;
 
@@ -143,7 +148,7 @@ describe('useThinkingLevel – initialization', () => {
 // ---------------------------------------------------------------------------
 
 describe('useThinkingLevel – setLevel', () => {
-	it('updates the level optimistically and calls setLLMConfig', async () => {
+	it('updates the level from the observer and calls setLLMConfig', async () => {
 		const { runtime } = makeMockRuntime('medium');
 		const { result } = renderHook(() => useThinkingLevel(), {
 			wrapper: agentWrapper(runtime),
@@ -264,7 +269,7 @@ describe('useThinkingLevel – reactivity', () => {
 		});
 	});
 
-	it('subscribes to the runtime on mount and unsubscribes on unmount', () => {
+	it('subscribes to core events on mount and unsubscribes on unmount', () => {
 		const { runtime, subscribeSpy } = makeMockRuntime();
 		const { unmount } = renderHook(() => useThinkingLevel(), {
 			wrapper: agentWrapper(runtime),
@@ -274,7 +279,6 @@ describe('useThinkingLevel – reactivity', () => {
 
 		unmount();
 
-		// subscribe was called exactly once (on mount) and cleanup ran on unmount.
 		expect(subscribeSpy).toHaveBeenCalledTimes(1);
 	});
 });

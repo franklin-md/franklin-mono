@@ -1,9 +1,8 @@
 import { useCallback } from 'react';
 
 import type { ThinkingLevel } from '@franklin/mini-acp';
-import { getLLMConfig } from '@franklin/agent/browser';
 
-import { useRuntimeSync } from './use-runtime-sync.js';
+import { useLLMConfig } from './use-llm-config.js';
 
 // ---------------------------------------------------------------------------
 // useThinkingLevel
@@ -23,7 +22,7 @@ export type UseThinkingLevel = {
 	readonly levels: readonly ThinkingLevel[];
 	/** Current thinking level. */
 	readonly level: ThinkingLevel;
-	/** Set the thinking level. Await for confirmation; don't await for optimistic. */
+	/** Set the thinking level. */
 	readonly setLevel: (level: ThinkingLevel) => Promise<void>;
 	/** Cycle to the next toggle level (wraps around). */
 	readonly cycleLevel: () => Promise<void>;
@@ -38,24 +37,19 @@ export type UseThinkingLevel = {
  * Must be used inside an `<AgentProvider>`.
  */
 export function useThinkingLevel(): UseThinkingLevel {
-	const { value, set } = useRuntimeSync<ThinkingLevel>({
-		extract: async (runtime) => {
-			const config = await getLLMConfig(runtime);
-			return config.reasoning ?? 'medium';
-		},
-		apply: async (runtime, level) => {
-			await runtime.setLLMConfig({ reasoning: level });
-		},
-		initial: 'medium',
-	});
+	const { value, set } = useLLMConfig({ reasoning: 'medium' });
+	const level = value.reasoning ?? 'medium';
 
-	const setLevel = useCallback((next: ThinkingLevel) => set(next), [set]);
+	const setLevel = useCallback(
+		(next: ThinkingLevel) => set({ ...value, reasoning: next }),
+		[set, value],
+	);
 
 	const cycleLevel = useCallback(() => {
-		const idx = TOGGLE_LEVELS.indexOf(value);
+		const idx = TOGGLE_LEVELS.indexOf(level);
 		const next = TOGGLE_LEVELS[(idx + 1) % TOGGLE_LEVELS.length] ?? 'off';
-		return set(next);
-	}, [set, value]);
+		return setLevel(next);
+	}, [level, setLevel]);
 
-	return { levels: TOGGLE_LEVELS, level: value, setLevel, cycleLevel };
+	return { levels: TOGGLE_LEVELS, level, setLevel, cycleLevel };
 }

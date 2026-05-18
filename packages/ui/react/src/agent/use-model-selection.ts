@@ -1,8 +1,6 @@
 import { useCallback, useMemo, useRef } from 'react';
 
-import { getLLMConfig } from '@franklin/agent/browser';
-
-import { useRuntimeSync } from './use-runtime-sync.js';
+import { useLLMConfig } from './use-llm-config.js';
 import { useSettings } from './use-settings.js';
 
 // ---------------------------------------------------------------------------
@@ -36,37 +34,30 @@ export function useModelSelection(): UseModelSelection {
 		model: defaults.model,
 	};
 
-	const { value, set } = useRuntimeSync<{
-		provider: string;
-		model: string;
-	}>({
-		extract: async (runtime) => {
-			const config = await getLLMConfig(runtime);
-			return {
-				provider: config.provider ?? initial.provider,
-				model: config.model ?? initial.model,
-			};
-		},
-		apply: async (runtime, { provider, model }) => {
+	const { value, set } = useLLMConfig(initial);
+	const provider = value.provider ?? initial.provider;
+	const model = value.model ?? initial.model;
+
+	const setModel = useCallback(
+		(nextProvider: string, nextModel: string) => {
 			settingsRef.current.set((draft: ReturnType<typeof settings.get>) => {
 				draft.defaultLLMConfig = {
 					...draft.defaultLLMConfig,
-					provider,
-					model,
+					provider: nextProvider,
+					model: nextModel,
 				};
 			});
-			await runtime.setLLMConfig({ provider, model });
+			return set({
+				...value,
+				provider: nextProvider,
+				model: nextModel,
+			});
 		},
-		initial,
-	});
-
-	const setModel = useCallback(
-		(provider: string, model: string) => set({ provider, model }),
-		[set],
+		[set, value],
 	);
 
 	return useMemo(
-		() => ({ provider: value.provider, model: value.model, setModel }),
-		[value.provider, value.model, setModel],
+		() => ({ provider, model, setModel }),
+		[provider, model, setModel],
 	);
 }

@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { CoreEvent } from '@franklin/extensions';
 import { CORE_STATE } from '@franklin/extensions';
 import { ZERO_USAGE } from '@franklin/mini-acp';
 
@@ -15,14 +16,15 @@ import { useModelSelection } from '../agent/use-model-selection.js';
 // ---------------------------------------------------------------------------
 
 type Listener = () => void;
+type CoreEventListener = (event: CoreEvent) => void;
 
 function makeMockRuntime(opts?: { provider?: string; model?: string }): {
 	runtime: FranklinRuntime;
 	notify: () => void;
 } {
-	const provider = opts?.provider;
-	const model = opts?.model;
-	const listeners = new Set<Listener>();
+	let provider = opts?.provider;
+	let model = opts?.model;
+	const listeners = new Set<CoreEventListener>();
 
 	const runtime = {
 		[CORE_STATE]: {
@@ -42,13 +44,26 @@ function makeMockRuntime(opts?: { provider?: string; model?: string }): {
 				usage: ZERO_USAGE,
 			})),
 		},
-		setLLMConfig: vi.fn(async () => {
-			for (const l of listeners) l();
-		}),
+		setLLMConfig: vi.fn(
+			async (config: { provider?: string; model?: string }) => {
+				if (config.provider !== undefined) provider = config.provider;
+				if (config.model !== undefined) model = config.model;
+				for (const l of listeners) l({ type: 'llm-config-changed' });
+			},
+		),
+		coreEvents: {
+			subscribe: vi.fn((listener: CoreEventListener) => {
+				listeners.add(listener);
+				return () => {
+					listeners.delete(listener);
+				};
+			}),
+		},
 		subscribe: vi.fn((listener: Listener) => {
-			listeners.add(listener);
+			const coreListener: CoreEventListener = () => listener();
+			listeners.add(coreListener);
 			return () => {
-				listeners.delete(listener);
+				listeners.delete(coreListener);
 			};
 		}),
 	} as unknown as FranklinRuntime;
@@ -56,7 +71,7 @@ function makeMockRuntime(opts?: { provider?: string; model?: string }): {
 	return {
 		runtime,
 		notify: () => {
-			for (const l of listeners) l();
+			for (const l of listeners) l({ type: 'llm-config-changed' });
 		},
 	};
 }
@@ -140,7 +155,7 @@ describe('useModelSelection – initialization', () => {
 });
 
 describe('useModelSelection – setModel', () => {
-	it('updates optimistically and calls setLLMConfig', async () => {
+	it('updates from the observer and calls setLLMConfig', async () => {
 		const { runtime } = makeMockRuntime({
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
@@ -153,16 +168,13 @@ describe('useModelSelection – setModel', () => {
 			expect(result.current.provider).toBe('anthropic');
 		});
 
-		act(() => {
-			void result.current.setModel('openai-codex', 'gpt-5.4');
+		await act(async () => {
+			await result.current.setModel('openai-codex', 'gpt-5.4');
 		});
 
-		// Optimistic update
-		expect(result.current.provider).toBe('openai-codex');
-		expect(result.current.model).toBe('gpt-5.4');
-
-		// setLLMConfig is async; it delegates to runtime.setLLMConfig.
 		await waitFor(() => {
+			expect(result.current.provider).toBe('openai-codex');
+			expect(result.current.model).toBe('gpt-5.4');
 			expect(runtime.setLLMConfig).toHaveBeenCalledWith(
 				expect.objectContaining({
 					provider: 'openai-codex',
