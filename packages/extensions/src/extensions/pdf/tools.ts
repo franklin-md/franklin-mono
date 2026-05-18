@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { toolSpec } from '../../../modules/core/api/tool-spec.js';
-import { readPDFDescription } from '../../system_prompts.js';
+import { toolSpec } from '../../modules/core/api/tool-spec.js';
+import { readPDFDescription } from '../system_prompts.js';
 
 const pageNumberSchema = z
 	.number()

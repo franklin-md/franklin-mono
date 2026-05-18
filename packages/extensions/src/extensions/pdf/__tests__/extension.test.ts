@@ -5,9 +5,9 @@ import {
 } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
-import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
-import { editExtension } from '../../edit/extension.js';
+import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
+import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
+import { editExtension } from '../../filesystem/edit/extension.js';
 import { readPDFExtension } from '../extension.js';
 
 vi.mock('file-type', () => ({
@@ -61,7 +61,7 @@ describe('readPDFExtension', () => {
 		};
 		const compiled = await compileCoreWithStoreAndEnv((api) => {
 			editExtension()(api);
-			readPDFExtension({ pdfConverter })(api);
+			readPDFExtension(pdfConverter)(api);
 		}, env);
 
 		const result = await compiled.middleware.server.toolExecute(
@@ -97,7 +97,7 @@ describe('readPDFExtension', () => {
 		};
 		const compiled = await compileCoreWithStoreAndEnv((api) => {
 			editExtension()(api);
-			readPDFExtension({ pdfConverter })(api);
+			readPDFExtension(pdfConverter)(api);
 		}, env);
 
 		await compiled.middleware.server.toolExecute(

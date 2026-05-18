@@ -111,6 +111,7 @@ export {
 	bashExtension,
 	conversationExtension,
 	createFilesystemExtension,
+	createReadPDFExtension,
 	createStatusControl,
 	createTodoControl,
 	createWebExtension,
@@ -118,21 +119,13 @@ export {
 	filesystemExtension,
 	FreePDFConverter,
 	instructionsExtension,
-	isPDFPageInRange,
 	MistralPDFConverter,
-	PDF_SCREENSHOT_DPI,
+	type PDFInput,
 	spawnExtension,
 	statusExtension,
 	todoExtension,
 } from './extensions/index.js';
-export type {
-	FilesystemExtensionOptions,
-	PDFConvertOptions,
-	PDFConverter,
-	PDFInput,
-	PDFPageRange,
-	RenderPDFScreenshots,
-} from './extensions/index.js';
+export type { PDFConverter } from './extensions/index.js';
 export type {
 	InstructionSpec,
 	InstructionsManager,

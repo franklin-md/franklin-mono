@@ -2,11 +2,10 @@ import type { AuthManager } from '@franklin/agent/browser';
 import {
 	FreePDFConverter,
 	MistralPDFConverter,
-	type PDFConvertOptions,
 	type PDFConverter,
 	type PDFInput,
-	type RenderPDFScreenshots,
 } from '@franklin/extensions';
+import type { RenderPDFScreenshots, PDFPageRange } from './screenshots.ts';
 
 const MISTRAL_PROVIDER = 'mistral';
 const FREE_PDF_SERVICE = 'free';
@@ -57,7 +56,7 @@ class AuthSwitchingPDFConverter implements ObsidianPDFConverter {
 
 	async convertPDF(
 		pdf: Uint8Array,
-		options: PDFConvertOptions = {},
+		options: { pages?: PDFPageRange } = {},
 	): Promise<PDFInput> {
 		const converter = this.current;
 		return converter.convertPDF(pdf, options);

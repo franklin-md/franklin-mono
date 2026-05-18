@@ -1,4 +1,4 @@
-import type { ToolOutput } from '../../../modules/core/api/tool.js';
+import type { ToolOutput } from '../../modules/core/api/tool.js';
 import {
 	PDF_SCREENSHOT_MIME_TYPE,
 	type PDFConverter,

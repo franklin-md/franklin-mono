@@ -1,8 +1,10 @@
 import type { AuthEntry, AuthManager } from '@franklin/agent/browser';
-import type { PDFConverter, PDFInput } from '@franklin/extensions';
+import type { PDFConverter } from '@franklin/extensions';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createObsidianPDFConverter } from '../pdf/converters.js';
+
+type PDFInput = Awaited<ReturnType<PDFConverter['convertPDF']>>;
 
 type AuthListener = (provider: string, entry: AuthEntry | undefined) => void;
 

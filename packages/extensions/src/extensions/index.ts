@@ -7,19 +7,14 @@ export { statusExtension, createStatusControl } from './status/index.js';
 export {
 	createFilesystemExtension,
 	filesystemExtension,
+} from './filesystem/index.js';
+export {
+	createReadPDFExtension,
 	FreePDFConverter,
-	isPDFPageInRange,
 	MistralPDFConverter,
-	PDF_SCREENSHOT_DPI,
-} from './filesystem/index.js';
-export type {
-	FilesystemExtensionOptions,
-	PDFConvertOptions,
-	PDFConverter,
-	PDFInput,
-	PDFPageRange,
-	RenderPDFScreenshots,
-} from './filesystem/index.js';
+	type PDFConverter,
+	type PDFInput,
+} from './pdf/index.js';
 export { bashExtension } from './terminal/index.js';
 export { createWebExtension } from './web/index.js';
 export { spawnExtension } from './spawn/index.js';

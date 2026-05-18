@@ -1,20 +1,16 @@
 import { fileTypeFromBuffer } from 'file-type';
-import { defineExtension } from '../../../harness/modules/index.js';
-import type { CoreModule } from '../../../modules/core/index.js';
-import type { EnvironmentModule } from '../../../modules/environment/index.js';
-import type { StoreModule } from '../../../modules/store/index.js';
-import { createFileControl } from '../common/control.js';
-import { fileKey } from '../common/key.js';
-import { isPDF } from '../common/supported.js';
+import { defineExtension } from '../../harness/modules/index.js';
+import type { CoreModule } from '../../modules/core/index.js';
+import type { EnvironmentModule } from '../../modules/environment/index.js';
+import type { StoreModule } from '../../modules/store/index.js';
+import { createFileControl } from '../filesystem/common/control.js';
+import { fileKey } from '../filesystem/common/key.js';
+import { isPDF } from '../filesystem/common/supported.js';
 import { convertPDF } from './convert.js';
 import { readPDFSpec } from './tools.js';
 import type { PDFConverter, PDFPageRange } from './types.js';
 
-export interface ReadPDFExtensionOptions {
-	readonly pdfConverter: PDFConverter;
-}
-
-export function readPDFExtension(options: ReadPDFExtensionOptions) {
+export function readPDFExtension(pdfConverter: PDFConverter) {
 	return defineExtension<[CoreModule, StoreModule, EnvironmentModule]>(
 		(api) => {
 			api.registerTool(
@@ -42,7 +38,7 @@ export function readPDFExtension(options: ReadPDFExtensionOptions) {
 					}
 
 					return convertPDF(bytes, {
-						converter: options.pdfConverter,
+						converter: pdfConverter,
 						pages: toPDFPageRange(start_page, end_page),
 					});
 				},
