@@ -17,7 +17,7 @@ type Props = ComponentProps<'button'> & {
 // Obsidian link theme variables:
 // https://docs.obsidian.md/Reference/CSS+variables/Editor/Link
 const inlineTextButtonClassName =
-	'inline cursor-pointer appearance-none border-0 bg-transparent m-0 p-0 text-inherit shadow-none [font:inherit] [line-height:inherit] [text-align:inherit] wrap-anywhere';
+	'inline cursor-pointer appearance-none border-0 bg-transparent m-0 p-0 text-inherit shadow-none [font:inherit] [line-height:inherit] [text-align:inherit] whitespace-normal wrap-anywhere';
 
 // Important is intentional: the reset above must inherit surrounding markdown
 // metrics, and Tailwind's generated rule order can otherwise let those reset
