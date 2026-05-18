@@ -2,16 +2,16 @@
 // Tracking decorators — composable wrappers that record protocol events
 // into shared trackers.
 //
-// trackAgent   — wraps MuAgent    (toolExecute: tool call + result → CtxTracker)
-// trackTurn    — wraps TurnClient (prompt: user message + assistant updates → CtxTracker)
-// trackClient  — wraps MuClient   (trackTurn + setContext → CtxTracker)
+// trackAgent   — wraps MuAgent    (toolExecute: tool call + result → ContextTracker)
+// trackTurn    — wraps TurnClient (prompt: user message + assistant updates → ContextTracker)
+// trackClient  — wraps MuClient   (trackTurn + setContext → ContextTracker)
 // trackUsage   — wraps TurnClient (turnEnd usage → UsageTracker)
 // decorateTurn — lift a TurnClient transform to a MuClient transform
 // ---------------------------------------------------------------------------
 
 import type { TurnClient } from '../base/types.js';
 import type { MuClient, MuAgent } from './types.js';
-import type { CtxTracker } from './ctx-tracker.js';
+import type { ContextTracker } from './context-tracker.js';
 import type { UsageTracker } from './usage-tracker.js';
 import type { StreamEvent } from '../types/stream.js';
 
@@ -38,7 +38,7 @@ export function decorateTurn(
 /**
  * Decorates a MuAgent to record tool calls and results in the tracker.
  */
-export function trackAgent(tracker: CtxTracker, agent: MuAgent): MuAgent {
+export function trackAgent(tracker: ContextTracker, agent: MuAgent): MuAgent {
 	return {
 		toolExecute: async (params) => {
 			tracker.append({ role: 'assistant', content: [params.call] });
@@ -57,7 +57,10 @@ export function trackAgent(tracker: CtxTracker, agent: MuAgent): MuAgent {
  * Decorates a TurnClient to record user messages and assistant
  * updates in the tracker.
  */
-export function trackTurn(tracker: CtxTracker, turn: TurnClient): TurnClient {
+export function trackTurn(
+	tracker: ContextTracker,
+	turn: TurnClient,
+): TurnClient {
 	return {
 		async *prompt(message): AsyncGenerator<StreamEvent> {
 			tracker.append(message);
@@ -77,13 +80,16 @@ export function trackTurn(tracker: CtxTracker, turn: TurnClient): TurnClient {
  * and context changes in the tracker. Composes trackTurn for the
  * prompt stream.
  */
-export function trackClient(tracker: CtxTracker, client: MuClient): MuClient {
+export function trackClient(
+	tracker: ContextTracker,
+	client: MuClient,
+): MuClient {
 	const decorated = decorateTurn(client, (turn) => trackTurn(tracker, turn));
 	return {
 		...decorated,
-		async setContext(ctx) {
-			tracker.apply(ctx);
-			return client.setContext(ctx);
+		async setContext(context) {
+			tracker.apply(context);
+			return client.setContext(context);
 		},
 	};
 }

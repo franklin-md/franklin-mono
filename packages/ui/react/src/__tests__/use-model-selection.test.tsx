@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
 import { CORE_STATE } from '@franklin/extensions';
+import { ZERO_USAGE } from '@franklin/mini-acp';
 
 import { AgentProvider } from '../agent/agent-context.js';
 import { AppContext } from '../agent/franklin-context.js';
@@ -26,16 +27,19 @@ function makeMockRuntime(opts?: { provider?: string; model?: string }): {
 	const runtime = {
 		[CORE_STATE]: {
 			get: vi.fn(async () => ({
-				core: {
-					messages: [],
-					llmConfig: { provider, model },
-				},
+				messages: [],
+				llmConfig: { provider, model },
+				usage: ZERO_USAGE,
 			})),
 			fork: vi.fn(async () => ({
-				core: { messages: [], llmConfig: { provider, model } },
+				messages: [],
+				llmConfig: { provider, model },
+				usage: ZERO_USAGE,
 			})),
 			child: vi.fn(async () => ({
-				core: { messages: [], llmConfig: { provider, model } },
+				messages: [],
+				llmConfig: { provider, model },
+				usage: ZERO_USAGE,
 			})),
 		},
 		setLLMConfig: vi.fn(async () => {

@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { CtxTracker } from '../protocol/ctx-tracker.js';
+import { ContextTracker } from '../protocol/context-tracker.js';
 import type { LLMConfig, ThinkingLevel } from '../types/context.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function seededTracker(config: LLMConfig = {}): CtxTracker {
-	const tracker = new CtxTracker();
+function seededTracker(config: LLMConfig = {}): ContextTracker {
+	const tracker = new ContextTracker();
 	tracker.apply({
 		history: { systemPrompt: 'test', messages: [] },
 		tools: [],
@@ -20,7 +20,7 @@ function seededTracker(config: LLMConfig = {}): CtxTracker {
 // Basic apply
 // ---------------------------------------------------------------------------
 
-describe('CtxTracker.apply – field replacement', () => {
+describe('ContextTracker.apply – field replacement', () => {
 	it('replaces tools wholesale', () => {
 		const tracker = seededTracker();
 		tracker.apply({
@@ -67,7 +67,7 @@ describe('CtxTracker.apply – field replacement', () => {
 // History partial merge
 // ---------------------------------------------------------------------------
 
-describe('CtxTracker.apply – history merges by property', () => {
+describe('ContextTracker.apply – history merges by property', () => {
 	it('replaces both systemPrompt and messages when both are provided', () => {
 		const tracker = seededTracker();
 		tracker.append({
@@ -157,7 +157,7 @@ describe('CtxTracker.apply – history merges by property', () => {
 // Config merge (the bug fix)
 // ---------------------------------------------------------------------------
 
-describe('CtxTracker.apply – config is shallow-merged', () => {
+describe('ContextTracker.apply – config is shallow-merged', () => {
 	it('preserves apiKey when only reasoning is updated', () => {
 		const tracker = seededTracker({
 			provider: 'anthropic',
@@ -237,7 +237,7 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 	});
 
 	it('starts with an empty config and merges patches into it', () => {
-		const tracker = new CtxTracker();
+		const tracker = new ContextTracker();
 		expect(tracker.get().config).toEqual({});
 
 		tracker.apply({ config: { reasoning: 'low' } });
@@ -302,7 +302,7 @@ describe('CtxTracker.apply – config is shallow-merged', () => {
 // append
 // ---------------------------------------------------------------------------
 
-describe('CtxTracker.append', () => {
+describe('ContextTracker.append', () => {
 	it('appends a message to history', () => {
 		const tracker = seededTracker();
 		tracker.append({ role: 'user', content: [{ type: 'text', text: 'hi' }] });
@@ -314,7 +314,7 @@ describe('CtxTracker.append', () => {
 // onChange
 // ---------------------------------------------------------------------------
 
-describe('CtxTracker.onChange', () => {
+describe('ContextTracker.onChange', () => {
 	it('fires on apply', () => {
 		const tracker = seededTracker();
 		const spy = vi.fn();

@@ -18,8 +18,8 @@ export type {
 	AssistantMessage,
 	ToolResultMessage,
 	// Context
-	Ctx,
-	CtxPatch,
+	Context,
+	ContextPatch,
 	History,
 	HistoryPatch,
 	LLMConfig,
@@ -74,7 +74,7 @@ export type {
 export {
 	debugMiniACP,
 	createSessionAdapter,
-	CtxTracker,
+	ContextTracker,
 	UsageTracker,
 	ZERO_USAGE,
 	trackAgent,

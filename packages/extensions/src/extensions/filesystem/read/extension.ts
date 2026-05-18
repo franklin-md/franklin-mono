@@ -7,7 +7,7 @@ import type { StoreModule } from '../../../modules/store/index.js';
 import { createFileControl } from '../common/control.js';
 import { fileKey } from '../common/key.js';
 import { readFileSpec } from './tools.js';
-import { isSupportedImageType } from '../common/supported.js';
+import { isPDF, isSupportedImageType } from '../common/supported.js';
 
 export function readExtension() {
 	return defineExtension<[CoreModule, StoreModule, EnvironmentModule]>(
@@ -36,6 +36,18 @@ export function readExtension() {
 								mimeType: ft.mime,
 							},
 						],
+					};
+				}
+
+				if (isPDF(ft.mime)) {
+					return {
+						content: [
+							{
+								type: 'text',
+								text: 'PDF files must be read with the read_pdf tool.',
+							},
+						],
+						isError: true,
 					};
 				}
 

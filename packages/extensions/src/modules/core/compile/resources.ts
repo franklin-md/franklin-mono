@@ -1,32 +1,32 @@
 import {
-	CtxTracker,
+	ContextTracker,
 	UsageTracker,
 	ZERO_USAGE,
 	type LLMConfig,
 	type Message,
 	type Usage,
 } from '@franklin/mini-acp';
-import type { StateHandle } from '../../../algebra/modules/state/index.js';
-import type { CoreState } from '../state.js';
+import type { StateHandle } from '../../../algebra/runtime/index.js';
+import type { SessionSnapshot } from '../state.js';
 
-type LLMConfigSnapshot = CoreState['core']['llmConfig'];
+type LLMConfigSnapshot = SessionSnapshot['llmConfig'];
 
 export type CoreResources = {
-	readonly tracker: CtxTracker;
+	readonly tracker: ContextTracker;
 	readonly usageTracker: UsageTracker;
-	readonly stateHandle: StateHandle<CoreState>;
+	readonly stateHandle: StateHandle<SessionSnapshot>;
 };
 
-export function createResources(state: CoreState): CoreResources {
-	const tracker = new CtxTracker();
+export function createResources(session: SessionSnapshot): CoreResources {
+	const tracker = new ContextTracker();
 	tracker.apply({
-		history: { systemPrompt: '', messages: [...state.core.messages] },
+		history: { systemPrompt: '', messages: [...session.messages] },
 		tools: [],
-		config: { ...state.core.llmConfig },
+		config: { ...session.llmConfig },
 	});
 
 	const usageTracker = new UsageTracker();
-	usageTracker.add(state.core.usage);
+	usageTracker.add(session.usage);
 
 	return {
 		tracker,
@@ -36,7 +36,7 @@ export function createResources(state: CoreState): CoreResources {
 }
 
 /**
- * Build a `StateHandle<CoreState>` from the runtime's live trackers.
+ * Build a `StateHandle<SessionSnapshot>` from the runtime's live trackers.
  *
  * `get` snapshots the current message history, config, and accumulated
  * usage. `fork` inherits messages and config but resets usage — a fork
@@ -44,28 +44,28 @@ export function createResources(state: CoreState): CoreResources {
  * returns a fresh blank state that inherits the caller's llmConfig.
  */
 export function createStateHandle(
-	tracker: CtxTracker,
+	tracker: ContextTracker,
 	usageTracker: UsageTracker,
-): StateHandle<CoreState> {
+): StateHandle<SessionSnapshot> {
 	return {
 		get: async () => {
-			const ctx = tracker.get();
-			return coreState(
-				ctx.history.messages,
-				pickLLMConfig(ctx.config),
+			const context = tracker.get();
+			return sessionSnapshot(
+				context.history.messages,
+				pickLLMConfig(context.config),
 				usageTracker.get(),
 			);
 		},
 		fork: async () => {
-			const ctx = tracker.get();
-			return coreState(
-				ctx.history.messages,
-				pickLLMConfig(ctx.config),
+			const context = tracker.get();
+			return sessionSnapshot(
+				context.history.messages,
+				pickLLMConfig(context.config),
 				ZERO_USAGE,
 			);
 		},
 		child: async () =>
-			coreState([], pickLLMConfig(tracker.get().config), ZERO_USAGE),
+			sessionSnapshot([], pickLLMConfig(tracker.get().config), ZERO_USAGE),
 	};
 }
 
@@ -77,17 +77,15 @@ function pickLLMConfig(cfg: LLMConfig): LLMConfigSnapshot {
 	};
 }
 
-function coreState(
+function sessionSnapshot(
 	messages: readonly Message[],
 	llmConfig: LLMConfigSnapshot,
 	usage: Usage,
-): CoreState {
+): SessionSnapshot {
 	return {
-		core: {
-			messages: [...messages],
-			llmConfig,
-			usage: snapshotUsage(usage),
-		},
+		messages: [...messages],
+		llmConfig,
+		usage: snapshotUsage(usage),
 	};
 }
 

@@ -1,19 +1,23 @@
 import type {
-	Ctx,
+	Context,
 	LLMConfig,
 	MiniACPClient,
 	MiniACPClientHandle,
 } from '@franklin/mini-acp';
-import type { StateHandle } from '../../../algebra/modules/state/index.js';
-import type { BaseRuntime } from '../../../algebra/runtime/index.js';
-import type { CoreState } from '../state.js';
+import type {
+	BaseRuntime,
+	StateHandle,
+} from '../../../algebra/runtime/index.js';
+import type { SessionSnapshot } from '../state.js';
 
 /**
- * Private symbol — core module stashes its `StateHandle<CoreState>` here
+ * Private symbol — core module stashes its `StateHandle<SessionSnapshot>` here
  * so the module's `state(runtime)` projection can read it back without
  * a side-channel. Module-private (not re-exported from the package).
  */
-export const CORE_STATE: unique symbol = Symbol('core/state');
+export const CORE_STATE: unique symbol = Symbol.for(
+	'@franklin/extensions/core-state',
+) as never;
 
 export type CoreRuntime = BaseRuntime &
 	Pick<MiniACPClient, 'prompt' | 'cancel'> & {
@@ -26,8 +30,8 @@ export type CoreRuntime = BaseRuntime &
 		 * `context()` is the debug/inspection view of what the agent
 		 * actually saw last.
 		 */
-		context(): Ctx;
-		readonly [CORE_STATE]: StateHandle<CoreState>;
+		context(): Context;
+		readonly [CORE_STATE]: StateHandle<SessionSnapshot>;
 	};
 
 export type AgentClient = MiniACPClientHandle;

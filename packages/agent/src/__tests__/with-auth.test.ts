@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { CoreRuntime, CoreState } from '@franklin/extensions';
-import { coreStateHandle, createCoreModule } from '@franklin/extensions';
+import { coreStateHandle, createCoreStateModule } from '@franklin/extensions';
 import { createRuntime } from '@franklin/extensions/testing';
 import {
 	createSessionAdapter,
@@ -161,7 +161,7 @@ describe('reconnectAgent', () => {
 describe('withAuth', () => {
 	it('returns a system with the same emptyState', () => {
 		const connector = createMockConnector();
-		const base = createCoreModule(connector);
+		const base = createCoreStateModule(connector);
 		const auth = mockAuthManager({});
 
 		const decorated = withAuth(base, auth);
@@ -171,7 +171,7 @@ describe('withAuth', () => {
 
 	it('authenticates the runtime during build', async () => {
 		const connector = createMockConnector();
-		const base = createCoreModule(connector);
+		const base = createCoreStateModule(connector);
 		const auth = mockAuthManager({ anthropic: 'sk-build-test' });
 
 		const decorated = withAuth(base, auth);
@@ -188,7 +188,7 @@ describe('withAuth', () => {
 		);
 
 		// TODO: We can't easily inspect that setLLMConfig was called on the
-		// real runtime (it's behind the CtxTracker), so we just verify
+		// real runtime (it's behind the ContextTracker), so we just verify
 		// that auth was invoked during the build step.
 		expect(runtime.setLLMConfig).toBeDefined();
 		expect(auth.getApiKey).toHaveBeenCalledWith('anthropic');
@@ -196,7 +196,7 @@ describe('withAuth', () => {
 
 	it('resolves apiKey when provider changes via setLLMConfig', async () => {
 		const connector = createMockConnector();
-		const base = createCoreModule(connector);
+		const base = createCoreStateModule(connector);
 		const auth = mockAuthManager({
 			anthropic: 'sk-anthropic',
 			'openai-codex': 'sk-openai',
@@ -230,7 +230,7 @@ describe('withAuth', () => {
 
 	it('does not resolve auth when provider is unchanged', async () => {
 		const connector = createMockConnector();
-		const base = createCoreModule(connector);
+		const base = createCoreStateModule(connector);
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
@@ -259,7 +259,7 @@ describe('withAuth', () => {
 
 	it('does not overwrite an explicit apiKey in setLLMConfig', async () => {
 		const connector = createMockConnector();
-		const base = createCoreModule(connector);
+		const base = createCoreStateModule(connector);
 		const auth = mockAuthManager({
 			anthropic: 'sk-anthropic',
 			'openai-codex': 'sk-openai',
@@ -290,7 +290,7 @@ describe('withAuth', () => {
 
 	it('clears apiKey when no stored key exists for the new provider', async () => {
 		const connector = createMockConnector();
-		const base = createCoreModule(connector);
+		const base = createCoreStateModule(connector);
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
@@ -327,7 +327,7 @@ describe('withAuth', () => {
 		// the runtime silently kept the old provider/model, so subsequent
 		// reasoning toggles re-rendered the stale tracker and the UI reverted.
 		const connector = createMockConnector();
-		const base = createCoreModule(connector);
+		const base = createCoreStateModule(connector);
 		const auth = mockAuthManager({ 'openai-codex': 'sk-openai' });
 		(auth as { getApiKey: AuthManager['getApiKey'] }).getApiKey = vi.fn(
 			async (provider: string) => {
@@ -373,7 +373,7 @@ describe('withAuth live sync', () => {
 		auth: ReturnType<typeof mockAuthManager>,
 	) {
 		const connector = createMockConnector();
-		const base = createCoreModule(connector);
+		const base = createCoreStateModule(connector);
 		const decorated = withAuth(base, auth);
 		return createRuntime(
 			decorated,

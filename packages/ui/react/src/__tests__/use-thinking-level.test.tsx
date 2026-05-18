@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import type { ThinkingLevel } from '@franklin/mini-acp';
+import { ZERO_USAGE, type ThinkingLevel } from '@franklin/mini-acp';
 import type { FranklinRuntime } from '@franklin/agent/browser';
 import { CORE_STATE } from '@franklin/extensions';
 
@@ -35,22 +35,19 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 	const runtime = {
 		[CORE_STATE]: {
 			get: vi.fn(async () => ({
-				core: {
-					messages: [],
-					llmConfig: { reasoning },
-				},
+				messages: [],
+				llmConfig: { reasoning },
+				usage: ZERO_USAGE,
 			})),
 			fork: vi.fn(async () => ({
-				core: {
-					messages: [],
-					llmConfig: { reasoning },
-				},
+				messages: [],
+				llmConfig: { reasoning },
+				usage: ZERO_USAGE,
 			})),
 			child: vi.fn(async () => ({
-				core: {
-					messages: [],
-					llmConfig: { reasoning },
-				},
+				messages: [],
+				llmConfig: { reasoning },
+				usage: ZERO_USAGE,
 			})),
 		},
 		setLLMConfig: vi.fn(async (config: { reasoning?: ThinkingLevel }) => {
@@ -95,12 +92,21 @@ describe('useThinkingLevel – initialization', () => {
 
 	it('defaults to medium when runtime has no reasoning set', async () => {
 		const runtime = {
-			state: {
+			[CORE_STATE]: {
 				get: vi.fn(async () => ({
-					core: {
-						messages: [],
-						llmConfig: {},
-					},
+					messages: [],
+					llmConfig: {},
+					usage: ZERO_USAGE,
+				})),
+				fork: vi.fn(async () => ({
+					messages: [],
+					llmConfig: {},
+					usage: ZERO_USAGE,
+				})),
+				child: vi.fn(async () => ({
+					messages: [],
+					llmConfig: {},
+					usage: ZERO_USAGE,
 				})),
 			},
 			subscribe: vi.fn(() => () => {}),
@@ -244,10 +250,9 @@ describe('useThinkingLevel – reactivity', () => {
 
 		// Simulate external config change
 		(runtime[CORE_STATE].get as ReturnType<typeof vi.fn>).mockResolvedValue({
-			core: {
-				messages: [],
-				llmConfig: { reasoning: 'xhigh' },
-			},
+			messages: [],
+			llmConfig: { reasoning: 'xhigh' },
+			usage: ZERO_USAGE,
 		});
 
 		act(() => {

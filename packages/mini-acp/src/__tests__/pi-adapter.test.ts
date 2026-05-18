@@ -34,7 +34,7 @@ describe('createPiAdapter', () => {
 			server: {
 				toolExecute: vi.fn(async () => ({ toolCallId: 'tool-1', content: [] })),
 			},
-			ctx: {
+			context: {
 				history: { systemPrompt: '', messages: [] },
 				tools: [],
 				config: {

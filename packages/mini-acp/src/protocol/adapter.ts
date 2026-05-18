@@ -1,13 +1,13 @@
 // ---------------------------------------------------------------------------
 // Session adapter — wraps a TurnClient as a full MiniACPClient with
-// session management (initialize, setContext, ctx tracking).
+// session management (initialize, setContext, context tracking).
 // ---------------------------------------------------------------------------
 
 import type { TurnClient, TurnServer } from '../base/types.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { MuClient } from './types.js';
-import { CtxTracker } from './ctx-tracker.js';
-import type { Ctx, CtxPatch } from '../types/context.js';
+import { ContextTracker } from './context-tracker.js';
+import type { Context, ContextPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import { trackAgent, trackTurn } from './tracking.js';
 
@@ -16,25 +16,25 @@ import { trackAgent, trackTurn } from './tracking.js';
  *
  * The adapter manages context tracking and agent lifecycle:
  * - `initialize()` acknowledges session start
- * - `setContext()` applies partial ctx to the tracker and invalidates the agent
+ * - `setContext()` applies partial context to the tracker and invalidates the agent
  * - `prompt()` lazily creates the turn client, tracks user + response messages
  * - `cancel()` forwards to the current turn client (if any)
  *
  */
 export function createSessionAdapter(
-	createTurnClient: (ctx: Ctx, server: TurnServer) => TurnClient,
+	createTurnClient: (context: Context, server: TurnServer) => TurnClient,
 	server: TurnServer,
 ): MuClient {
-	const tracker = new CtxTracker();
+	const tracker = new ContextTracker();
 	let currentTurn: TurnClient | null = null;
 	const trackedServer = trackAgent(tracker, server);
 
 	return {
 		async initialize() {},
 
-		async setContext(ctx: CtxPatch) {
+		async setContext(context: ContextPatch) {
 			// TODO: We should reject a setContext if there is a turn in progress.
-			tracker.apply(ctx);
+			tracker.apply(context);
 			// Invalidate agent so next prompt uses new context
 			currentTurn = null;
 		},
