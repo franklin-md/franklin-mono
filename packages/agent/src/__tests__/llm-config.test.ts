@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createCoreModule, type CoreRuntime } from '@franklin/extensions';
+import { createCoreStateModule, type CoreRuntime } from '@franklin/extensions';
 import { createRuntime } from '@franklin/extensions/testing';
 import {
 	createSessionAdapter,
@@ -37,7 +37,7 @@ function createMockConnector(): MiniACPConnector {
 async function makeRuntime(
 	llmConfig: Record<string, unknown>,
 ): Promise<CoreRuntime> {
-	const system = createCoreModule(createMockConnector());
+	const system = createCoreStateModule(createMockConnector());
 	return createRuntime(
 		system,
 		{

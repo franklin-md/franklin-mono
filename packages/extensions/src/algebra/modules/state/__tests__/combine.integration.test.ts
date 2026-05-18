@@ -12,7 +12,7 @@ import {
 	ZERO_USAGE,
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
-import { createCoreModule } from '../../../../modules/core/module.js';
+import { createCoreStateModule } from '../../../../modules/core/module.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,
@@ -296,7 +296,7 @@ describe('combine — two modules', () => {
 describe('combine — three modules (nested)', () => {
 	it('combines core + (store + environment)', async () => {
 		const system = combine(
-			createCoreModule(createMockConnector()),
+			createCoreStateModule(createMockConnector()),
 			combine(
 				createStoreStateModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
@@ -326,7 +326,7 @@ describe('combine — three modules (nested)', () => {
 
 	it('emptyState has all three keys', () => {
 		const system = combine(
-			createCoreModule(createMockConnector()),
+			createCoreStateModule(createMockConnector()),
 			combine(
 				createStoreStateModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
@@ -341,7 +341,7 @@ describe('combine — three modules (nested)', () => {
 
 	it('state has all three keyed sections', async () => {
 		const system = combine(
-			createCoreModule(createMockConnector()),
+			createCoreStateModule(createMockConnector()),
 			combine(
 				createStoreStateModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
@@ -369,7 +369,7 @@ describe('combine — three modules (nested)', () => {
 
 	it('prompt works through combined system', async () => {
 		const system = combine(
-			createCoreModule(createMockConnector()),
+			createCoreStateModule(createMockConnector()),
 			combine(
 				createStoreStateModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),
@@ -400,7 +400,7 @@ describe('combine — three modules (nested)', () => {
 
 	it('fork produces full combined state', async () => {
 		const system = combine(
-			createCoreModule(createMockConnector()),
+			createCoreStateModule(createMockConnector()),
 			combine(
 				createStoreStateModule(new StoreRegistry()),
 				createEnvironmentModule(mockEnvFactory()),

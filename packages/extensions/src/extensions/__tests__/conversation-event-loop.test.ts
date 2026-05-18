@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import { combineAll } from '../../algebra/modules/state/combine.js';
 import { createRuntime } from '../../testing/index.js';
-import { createCoreModule } from '../../modules/core/module.js';
+import { createCoreStateModule } from '../../modules/core/module.js';
 import { StoreRegistry } from '../../modules/store/api/registry/index.js';
 import { createStoreStateModule } from '../../modules/store/state-module.js';
 import { conversationExtension } from '../conversation/bundle.js';
@@ -46,7 +46,7 @@ async function collect(iterable: AsyncIterable<StreamEvent>): Promise<void> {
 async function createConversationRuntime() {
 	const mock = createMockMiniACP({ defaultTurn: pacedTurn() });
 	const module = combineAll([
-		createCoreModule(mock.connector),
+		createCoreStateModule(mock.connector),
 		createStoreStateModule(new StoreRegistry()),
 	] as const);
 	const runtime = await createRuntime(module, module.emptyState(), [

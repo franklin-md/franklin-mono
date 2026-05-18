@@ -1,6 +1,6 @@
 import {
 	buildStateExtensionModule,
-	createCoreModule,
+	createCoreStateModule,
 	createEnvironmentModule,
 	createStoreStateModule,
 	createOrchestrator,
@@ -59,7 +59,7 @@ export class FranklinApp {
 
 		const connectAgent = createMiniACPRpcConnector(platform.spawn);
 		const baseModules: FranklinModules = [
-			withAuth(createCoreModule(connectAgent), this.auth),
+			withAuth(createCoreStateModule(connectAgent), this.auth),
 			createStoreStateModule(storage.stores),
 			createEnvironmentModule(platform.environment),
 		];

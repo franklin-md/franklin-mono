@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
-import { createCoreModule } from '../module.js';
+import { createCoreStateModule } from '../module.js';
 import { createRuntime } from '../../../testing/index.js';
 import {
 	createSessionAdapter,
@@ -63,10 +63,10 @@ async function collect(
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('createCoreModule', () => {
+describe('createCoreStateModule', () => {
 	it('create returns a runtime with protocol methods', async () => {
 		const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
-		const system = createCoreModule(mock.connector);
+		const system = createCoreStateModule(mock.connector);
 
 		const runtime = await createRuntime(
 			system,
@@ -83,7 +83,7 @@ describe('createCoreModule', () => {
 	});
 
 	it('prompt streams events from the agent', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -105,7 +105,7 @@ describe('createCoreModule', () => {
 	});
 
 	it('state returns keyed core state with messages', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -121,7 +121,7 @@ describe('createCoreModule', () => {
 	});
 
 	it('state tracks conversation after prompt', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -143,7 +143,7 @@ describe('createCoreModule', () => {
 	});
 
 	it('state preserves llmConfig', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -168,7 +168,7 @@ describe('createCoreModule', () => {
 	});
 
 	it('state strips apiKey from config', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -192,7 +192,7 @@ describe('createCoreModule', () => {
 	});
 
 	it('fork clones messages and config', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -222,7 +222,7 @@ describe('createCoreModule', () => {
 	});
 
 	it('child returns empty messages with same config', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -249,7 +249,7 @@ describe('createCoreModule', () => {
 	});
 
 	it('dispose cleans up connector client', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -261,7 +261,7 @@ describe('createCoreModule', () => {
 	});
 
 	it('extensions receive CoreSignature for handler registration', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -281,7 +281,7 @@ describe('createCoreModule', () => {
 	});
 
 	it('emptyState returns empty messages with no config', () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 		const empty = system.emptyState();
 
 		expect(empty.core.messages).toEqual([]);
@@ -290,7 +290,7 @@ describe('createCoreModule', () => {
 
 	it('systemPrompt handler assembles system prompt before first turn', async () => {
 		let capturedContext: Context | undefined;
-		const system = createCoreModule(
+		const system = createCoreStateModule(
 			createMockConnector((context) => {
 				capturedContext = context;
 			}),
@@ -328,7 +328,7 @@ describe('createCoreModule', () => {
 
 	it('registered tools reach the agent at bootstrap', async () => {
 		let capturedContext: Context | undefined;
-		const system = createCoreModule(
+		const system = createCoreStateModule(
 			createMockConnector((context) => {
 				capturedContext = context;
 			}),
@@ -364,7 +364,7 @@ describe('createCoreModule', () => {
 
 	it('multiple systemPrompt handlers compose in registration order', async () => {
 		let capturedContext: Context | undefined;
-		const system = createCoreModule(
+		const system = createCoreStateModule(
 			createMockConnector((context) => {
 				capturedContext = context;
 			}),
@@ -404,7 +404,7 @@ describe('createCoreModule', () => {
 	});
 
 	// -------------------------------------------------------------------------
-	// Usage accumulation — UsageTracker wired through CoreState
+	// Usage accumulation — UsageTracker wired through the session snapshot
 	// -------------------------------------------------------------------------
 
 	it('state returns seeded usage when no prompt has run', async () => {
@@ -412,7 +412,7 @@ describe('createCoreModule', () => {
 			tokens: { input: 50, output: 20, cacheRead: 0, cacheWrite: 0, total: 70 },
 			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 		};
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -437,7 +437,9 @@ describe('createCoreModule', () => {
 			tokens: { input: 10, output: 5, cacheRead: 2, cacheWrite: 1, total: 18 },
 			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 		};
-		const system = createCoreModule(createMockConnector(undefined, turnUsage));
+		const system = createCoreStateModule(
+			createMockConnector(undefined, turnUsage),
+		);
 
 		const runtime = await createRuntime(
 			system,
@@ -469,7 +471,7 @@ describe('createCoreModule', () => {
 			tokens: { input: 50, output: 20, cacheRead: 0, cacheWrite: 0, total: 70 },
 			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 		};
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 
 		const runtime = await createRuntime(
 			system,
@@ -491,7 +493,9 @@ describe('createCoreModule', () => {
 			tokens: { input: 10, output: 5, cacheRead: 0, cacheWrite: 0, total: 15 },
 			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 		};
-		const system = createCoreModule(createMockConnector(undefined, turnUsage));
+		const system = createCoreStateModule(
+			createMockConnector(undefined, turnUsage),
+		);
 
 		const runtime = await createRuntime(
 			system,
@@ -521,7 +525,9 @@ describe('createCoreModule', () => {
 			tokens: { input: 10, output: 5, cacheRead: 0, cacheWrite: 0, total: 15 },
 			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 		};
-		const system = createCoreModule(createMockConnector(undefined, turnUsage));
+		const system = createCoreStateModule(
+			createMockConnector(undefined, turnUsage),
+		);
 
 		const runtime = await createRuntime(
 			system,

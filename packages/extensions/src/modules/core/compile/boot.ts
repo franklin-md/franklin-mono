@@ -2,25 +2,24 @@ import type {
 	MiniACPClient,
 	ToolDefinition as SerializedToolDefinition,
 } from '@franklin/mini-acp';
-import type { CoreState } from '../state.js';
+import type { SessionSnapshot } from '../state.js';
 
 type BootRuntimeInput = {
 	readonly client: MiniACPClient;
-	readonly state: CoreState;
+	readonly session: SessionSnapshot;
 	readonly tools: readonly SerializedToolDefinition[];
 };
 
 export async function bootRuntime({
 	client,
-	state,
+	session,
 	tools,
 }: BootRuntimeInput): Promise<void> {
 	await client.initialize();
 
-	const core = state.core;
 	await client.setContext({
-		history: { systemPrompt: '', messages: [...core.messages] },
+		history: { systemPrompt: '', messages: [...session.messages] },
 		tools: [...tools],
-		config: { ...core.llmConfig },
+		config: { ...session.llmConfig },
 	});
 }
