@@ -3,12 +3,9 @@ import type {
 	CoreSignature,
 	CoreState,
 	CoreStateModule,
-} from '@franklin/extensions';
-import {
-	applyStep,
-	coreStateHandle,
-	liftStateCompilerTransform,
-} from '@franklin/extensions';
+} from '../modules/core/index.js';
+import { applyStep, liftStateCompilerTransform } from '@franklin/extensibility';
+import { coreStateHandle } from '../modules/core/index.js';
 import type { AuthManager } from './manager.js';
 
 /**

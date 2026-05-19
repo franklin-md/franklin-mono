@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { RuntimeEntry } from '@franklin/extensions';
+import type { RuntimeEntry } from '@franklin/agent';
 
 import { useApp } from './franklin-context.js';
 import { useStableExternalStore } from '../utils/use-stable-external-store.js';

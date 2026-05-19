@@ -10,8 +10,8 @@ import type {
 	ConversationTurn,
 	CoreEvent,
 	RuntimeEntry,
-} from '@franklin/extensions';
-import { CORE_STATE, conversationExtension } from '@franklin/extensions';
+} from '@franklin/agent';
+import { CORE_STATE, conversationExtension } from '@franklin/agent';
 import type { LLMConfig, ThinkingLevel } from '@franklin/mini-acp';
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import {

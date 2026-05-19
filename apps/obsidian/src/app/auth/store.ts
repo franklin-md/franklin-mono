@@ -1,4 +1,4 @@
-import { createPersistedStore, createStore } from '@franklin/extensions';
+import { createPersistedStore, createStore } from '@franklin/agent';
 import type { AuthEntries, AuthStore } from '@franklin/agent/browser';
 import { readEntry, tombstoneEntry, writeEntry } from './entry-storage.js';
 import { readIndex, writeIndex } from './index-storage.js';

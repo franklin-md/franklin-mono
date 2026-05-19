@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { filesystemExtension, type ToolUseBlock } from '@franklin/extensions';
+import { filesystemExtension, type ToolUseBlock } from '@franklin/agent';
 import { resolveToolRenderer } from '@franklin/react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';

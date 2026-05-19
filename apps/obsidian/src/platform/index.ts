@@ -1,12 +1,12 @@
 import type { Platform } from '@franklin/agent/browser';
-import type { EnvironmentConfig } from '@franklin/extensions';
+import type { EnvironmentConfig } from '@franklin/agent';
 import { Agent as HttpAgent } from 'node:http';
 import { Agent as HttpsAgent } from 'node:https';
 import {
 	createReconfigurableEnvironment,
 	configureFilesystem,
 	createWeb,
-} from '@franklin/extensions';
+} from '@franklin/agent';
 import type { App } from 'obsidian';
 import {
 	createNodeFilesystem,

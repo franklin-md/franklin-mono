@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { TextBlock } from '@franklin/extensions';
+import type { TextBlock } from '@franklin/agent';
 import {
 	cleanup,
 	fireEvent,

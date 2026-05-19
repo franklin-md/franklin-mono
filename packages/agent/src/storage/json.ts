@@ -2,7 +2,7 @@ import {
 	createPersistedStore,
 	createStore,
 	type PersistedStore,
-} from '@franklin/extensions';
+} from '../modules/store/api/index.js';
 import type { AbsolutePath, Codec, Filesystem } from '@franklin/lib';
 import { createSingleFilePersister, joinAbsolute } from '@franklin/lib';
 

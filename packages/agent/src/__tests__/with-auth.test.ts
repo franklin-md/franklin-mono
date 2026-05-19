@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { CoreRuntime, CoreState } from '@franklin/extensions';
-import { coreStateHandle, createCoreStateModule } from '@franklin/extensions';
-import { createRuntime } from '@franklin/extensions/testing';
+import type { CoreRuntime, CoreState } from '../modules/core/index.js';
+import {
+	coreStateHandle,
+	createCoreStateModule,
+} from '../modules/core/index.js';
+import { createRuntime } from '../testing/index.js';
 import {
 	createSessionAdapter,
 	StopCode,

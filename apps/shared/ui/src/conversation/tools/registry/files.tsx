@@ -6,7 +6,7 @@ import {
 	TextSearch,
 } from 'lucide-react';
 
-import { filesystemExtension } from '@franklin/extensions';
+import { filesystemExtension } from '@franklin/agent';
 import type { ToolRendererRegistryEntries } from '@franklin/react';
 
 import { FileBadge } from '../../../components/file-icon/badge.js';

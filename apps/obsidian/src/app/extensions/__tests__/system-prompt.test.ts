@@ -5,7 +5,7 @@ import {
 	filesystemExtension,
 	type SystemPromptContent,
 	type SystemPromptHandler,
-} from '@franklin/extensions';
+} from '@franklin/agent';
 import { oxfordJoin } from '@franklin/lib';
 
 import { obsidianSystemPromptExtension } from '../system-prompt.js';

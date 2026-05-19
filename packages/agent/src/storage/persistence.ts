@@ -1,4 +1,4 @@
-import type { BaseState, StoreSnapshot } from '@franklin/extensions';
+import type { BaseState } from '@franklin/extensibility';
 import {
 	createMapFilePersister,
 	DebouncedPersister,
@@ -8,6 +8,7 @@ import {
 	type AbsolutePath,
 	type Filesystem,
 } from '@franklin/lib';
+import type { StoreSnapshot } from '../modules/store/api/index.js';
 import type { FilePersistence } from './types.js';
 
 /**

@@ -1,7 +1,7 @@
 import { TextBlock, ThinkingBlock } from '@franklin/ui';
 
-import type { TextBlock as TextBlockData } from '@franklin/extensions';
-import type { ThinkingBlock as ThinkingBlockData } from '@franklin/extensions';
+import type { TextBlock as TextBlockData } from '@franklin/agent';
+import type { ThinkingBlock as ThinkingBlockData } from '@franklin/agent';
 
 import { ObsidianWikilink } from './wikilinks/link.js';
 import { remendObsidianWikilinks } from './wikilinks/remend-wikilinks.js';

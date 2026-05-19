@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
-import type { ReadonlyStore, Store } from '@franklin/extensions';
+import type { ReadonlyStore, Store } from '@franklin/agent';
 
 export function useStore<T>(store: Store<T>): Store<T>;
 export function useStore<T, S>(

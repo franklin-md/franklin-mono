@@ -1,11 +1,11 @@
+import type { BaseState } from '@franklin/extensibility';
+import type { MapFilePersister, RestoreResult } from '@franklin/lib';
+import type { AuthEntries } from '../auth/types.js';
 import type {
-	BaseState,
 	PersistedStore,
 	StoreRegistry,
 	StoreSnapshot,
-} from '@franklin/extensions';
-import type { MapFilePersister, RestoreResult } from '@franklin/lib';
-import type { AuthEntries } from '../auth/types.js';
+} from '../modules/store/api/index.js';
 import type { AppSettings } from '../settings/schema.js';
 
 export type SettingsStore = PersistedStore<AppSettings>;

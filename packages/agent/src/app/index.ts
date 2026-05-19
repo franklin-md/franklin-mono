@@ -1,16 +1,16 @@
-import {
-	buildStateExtensionModule,
-	createCoreStateModule,
-	createEnvironmentModule,
-	createStoreStateModule,
-	createOrchestrator,
-} from '@franklin/extensions';
-import type { Orchestrator } from '@franklin/extensions';
+import { buildStateExtensionModule } from '@franklin/extensibility';
 import type { AbsolutePath, RestoreResult } from '@franklin/lib';
 import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { withAuth } from '../auth/with-auth.js';
 import { AuthManager } from '../auth/manager.js';
+import { createCoreStateModule } from '../modules/core/module.js';
+import { createEnvironmentModule } from '../modules/environment/module.js';
+import {
+	createOrchestrator,
+	type Orchestrator,
+} from '../modules/orchestrator/index.js';
+import { createStoreStateModule } from '../modules/store/state-module.js';
 import { createStorage } from '../storage/create-storage.js';
 import type { SettingsStore } from '../settings/store.js';
 import type { Platform } from '../platform.js';

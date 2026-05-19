@@ -10,8 +10,8 @@ import {
 	instructionsExtension,
 	statusExtension,
 	todoExtension,
-} from '@franklin/extensions';
-import type { PDFConverter } from '@franklin/extensions';
+} from '@franklin/agent';
+import type { PDFConverter } from '@franklin/agent';
 import type { AbsolutePath } from '@franklin/lib';
 import { toAbsolutePath } from '@franklin/lib';
 import type { Plugin } from 'obsidian';

@@ -6,7 +6,7 @@ import type {
 	Agents,
 	FranklinRuntime,
 } from '@franklin/agent/browser';
-import type { RuntimeEntry } from '@franklin/extensions';
+import type { RuntimeEntry } from '@franklin/agent';
 
 import { useApp } from './franklin-context.js';
 import { useSessions } from './use-sessions.js';

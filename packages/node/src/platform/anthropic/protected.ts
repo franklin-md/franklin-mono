@@ -1,4 +1,4 @@
-import type { FilesystemConfig } from '@franklin/extensions';
+import type { FilesystemConfig } from '@franklin/agent';
 
 const PROTECTED_FILES = [
 	'.bashrc',

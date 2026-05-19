@@ -1,4 +1,4 @@
-import { createStatusControl, statusExtension } from '@franklin/extensions';
+import { createStatusControl, statusExtension } from '@franklin/agent';
 import {
 	useAgentControl,
 	type AgentItemProps,

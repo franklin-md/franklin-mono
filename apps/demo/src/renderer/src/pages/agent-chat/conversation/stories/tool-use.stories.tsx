@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { ToolUseBlock as ToolUseBlockData } from '@franklin/extensions';
+import type { ToolUseBlock as ToolUseBlockData } from '@franklin/agent/browser';
 import type { ToolStatus } from '@franklin/react';
 
 import { ToolUse } from '../tools/tool-use.js';

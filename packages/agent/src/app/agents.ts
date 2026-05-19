@@ -3,7 +3,7 @@ import type {
 	RuntimeCollection,
 	RuntimeEntry,
 	RuntimeEvent,
-} from '@franklin/extensions';
+} from '../modules/orchestrator/index.js';
 import type { FranklinRuntime, FranklinState } from '../types.js';
 
 export type AgentCreateInput = OrchestratorCreateInput<FranklinState>;

@@ -1,4 +1,4 @@
-import type { ToolUseBlock } from '@franklin/extensions';
+import type { ToolUseBlock } from '@franklin/agent';
 
 import type { ToolStatus } from './types.js';
 

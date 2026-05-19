@@ -1,4 +1,4 @@
-import type { ReadonlyStore } from '@franklin/extensions';
+import type { ReadonlyStore } from '@franklin/agent';
 import { createObserver } from '@franklin/lib';
 
 export type SharedThrottledStoreOptions = {

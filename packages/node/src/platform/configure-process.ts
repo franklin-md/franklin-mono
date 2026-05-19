@@ -1,4 +1,4 @@
-import type { EnvironmentConfig } from '@franklin/extensions';
+import type { EnvironmentConfig } from '@franklin/agent';
 import type { Process } from '@franklin/lib';
 import { SandboxedProcess } from './anthropic/sandboxed-process.js';
 import { UnrestrictedProcess } from './unrestricted-process.js';

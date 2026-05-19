@@ -19,9 +19,9 @@ import {
 	conversationTitleExtension,
 	statusExtension,
 	type StatusState,
-} from '@franklin/extensions';
+} from '@franklin/agent';
 import { toAbsolutePath } from '@franklin/lib';
-import type { RuntimeEntry } from '@franklin/extensions';
+import type { RuntimeEntry } from '@franklin/agent';
 import { AppContext } from '@franklin/react';
 
 import { createObsidianSessionInput } from '../../app/agent.js';

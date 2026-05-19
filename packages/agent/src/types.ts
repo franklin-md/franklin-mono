@@ -1,14 +1,16 @@
 import type {
-	CoreStateModule,
-	StoreStateModule,
-	EnvironmentModule,
 	Extension,
 	BuildModules,
 	InferAPI,
 	InferState,
+} from '@franklin/extensibility';
+import type {
 	OrchestratorModule,
 	OrchestratorRuntime,
-} from '@franklin/extensions';
+} from './modules/orchestrator/index.js';
+import type { CoreStateModule } from './modules/core/module.js';
+import type { EnvironmentModule } from './modules/environment/module.js';
+import type { StoreStateModule } from './modules/store/state-module.js';
 
 export type FranklinModules = readonly [
 	CoreStateModule,

@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type {
-	BaseRuntime,
-	StateHandle,
-	RuntimeEntry,
-} from '@franklin/extensions';
+import type { BaseRuntime, StateHandle } from '@franklin/extensibility';
+import type { RuntimeEntry } from '../modules/orchestrator/index.js';
 
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import type { SessionPersistence } from '../storage/types.js';

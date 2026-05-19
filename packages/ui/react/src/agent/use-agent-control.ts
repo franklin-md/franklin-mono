@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import type { Store, StoreKey } from '@franklin/extensions';
+import type { Store, StoreKey } from '@franklin/agent';
 
 import { useAgentState } from './use-agent-state.js';
 

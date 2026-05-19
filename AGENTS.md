@@ -50,14 +50,15 @@ Franklin is an extension runtime for minimal agent loops.
   - Stateful but unpersisted agents
   - Externalized tool execution (client owns tools via reverse RPC)
   - Context tracking and streaming turns
-- `@franklin/extensions` — plugin system
-  - Tool registration, lifecycle event handlers, reactive stores
-  - Compiles extensions into client + server middleware
-  - Built-in extensions: conversation, todos, status, spawn, file editing
-- `@franklin/agent` — application SDK
+- `@franklin/extensibility` — extension composition kernel
+  - Extension points, registration logs, compilers, runtime composition
+  - Stateless and stateful module algebra
+- `@franklin/agent` — application SDK and agent extension runtime
   - Session management (create, fork, child, restore)
   - File-based persistence
   - Auth management
+  - Tool registration, lifecycle event handlers, reactive stores
+  - Built-in extensions: conversation, todos, status, spawn, file editing
 - `@franklin/node` — Node.js platform bindings
 - `@franklin/electron` — Electron platform bindings (main/renderer IPC)
 - `@franklin/react` — React hooks and provider

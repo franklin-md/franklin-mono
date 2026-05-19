@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 
-import type { ThinkingBlock as ThinkingBlockData } from '@franklin/extensions';
+import type { ThinkingBlock as ThinkingBlockData } from '@franklin/agent';
 
 import { cn } from '../../lib/cn.js';
 import { Button } from '../../primitives/button.js';

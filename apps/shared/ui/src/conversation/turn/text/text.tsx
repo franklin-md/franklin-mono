@@ -1,4 +1,4 @@
-import type { TextBlock as TextBlockData } from '@franklin/extensions';
+import type { TextBlock as TextBlockData } from '@franklin/agent';
 
 import { RowInset } from '../../row-inset.js';
 

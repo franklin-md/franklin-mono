@@ -1,4 +1,4 @@
-import type { Todo } from '@franklin/extensions';
+import type { Todo } from '@franklin/agent/browser';
 import { Check, Pencil, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 

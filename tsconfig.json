@@ -2,8 +2,8 @@
 	"files": [],
 	"references": [
 		{ "path": "./packages/lib" },
+		{ "path": "./packages/extensibility" },
 		{ "path": "./packages/agent" },
-		{ "path": "./packages/extensions" },
 		{ "path": "./packages/mini-acp" },
 		{ "path": "./packages/node" },
 		{ "path": "./packages/electron" },

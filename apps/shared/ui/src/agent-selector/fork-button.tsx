@@ -1,7 +1,7 @@
 import { useCallback, type ComponentType } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { RuntimeEntry } from '@franklin/extensions';
+import type { RuntimeEntry } from '@franklin/agent';
 import { useAgents } from '@franklin/react';
 import { MdForkRight } from 'react-icons/md';
 

@@ -7,9 +7,9 @@ import {
 	statusExtension,
 	type Store,
 	type StoreEntry,
-} from '@franklin/extensions';
+} from '@franklin/agent';
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { StatusState } from '@franklin/extensions';
+import type { StatusState } from '@franklin/agent';
 
 import { useAutoMarkRead } from '../agent/use-auto-mark-read.js';
 import { AgentProvider } from '../agent/agent-context.js';

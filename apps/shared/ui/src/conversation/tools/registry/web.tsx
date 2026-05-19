@@ -1,6 +1,6 @@
 import { Globe } from 'lucide-react';
 
-import { createWebExtension } from '@franklin/extensions';
+import { createWebExtension } from '@franklin/agent';
 import {
 	createToolRenderer,
 	type ToolRendererRegistryEntries,

@@ -1,4 +1,4 @@
-import type { AssistantBlock } from '@franklin/extensions';
+import type { AssistantBlock } from '@franklin/agent';
 
 import type { ConversationComponents } from './types.js';
 import { computeToolStatus } from './tools/status.js';

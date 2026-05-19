@@ -1,5 +1,5 @@
 import type { AuthEntry, AuthManager } from '@franklin/agent/browser';
-import type { PDFConverter } from '@franklin/extensions';
+import type { PDFConverter } from '@franklin/agent';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createObsidianPDFConverter } from '../pdf/converters.js';

@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
-import type { ReadonlyStore } from '@franklin/extensions';
+import type { ReadonlyStore } from '@franklin/agent';
 
 import { getSharedThrottledStore } from './get-shared-throttled-store.js';
 

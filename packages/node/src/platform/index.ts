@@ -1,10 +1,10 @@
 import type { Platform } from '@franklin/agent/browser';
-import type { EnvironmentConfig } from '@franklin/extensions';
+import type { EnvironmentConfig } from '@franklin/agent';
 import {
 	createReconfigurableEnvironment,
 	configureFilesystem,
 	createWeb,
-} from '@franklin/extensions';
+} from '@franklin/agent';
 import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { nodePlatformFetch } from './fetch.js';

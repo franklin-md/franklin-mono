@@ -6,7 +6,7 @@ import type {
 	ThinkingBlock,
 	ToolSpec,
 	ToolUseBlock,
-} from '@franklin/extensions';
+} from '@franklin/agent';
 import { StopCode } from '@franklin/mini-acp';
 
 import { Conversation } from '../conversation/conversation.js';
