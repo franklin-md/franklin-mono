@@ -1,6 +1,6 @@
 import { Loader2 } from 'lucide-react';
 
-import type { StatusState } from '@franklin/extensions';
+import type { StatusState } from '@franklin/agent';
 
 import { cn } from '../lib/cn.js';
 

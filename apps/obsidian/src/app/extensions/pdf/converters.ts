@@ -4,7 +4,7 @@ import {
 	MistralPDFConverter,
 	type PDFConverter,
 	type PDFInput,
-} from '@franklin/extensions';
+} from '@franklin/agent';
 import type { RenderPDFScreenshots, PDFPageRange } from './screenshots.js';
 
 const MISTRAL_PROVIDER = 'mistral';

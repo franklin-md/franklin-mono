@@ -8,7 +8,7 @@ import {
 	filesystemExtension,
 	todoExtension,
 	type ToolUseBlock,
-} from '@franklin/extensions';
+} from '@franklin/agent';
 import { resolveToolRenderer } from '@franklin/react';
 import { describe, expect, it } from 'vitest';
 

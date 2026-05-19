@@ -2,8 +2,8 @@ import { afterEach, describe, it, expect, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import type { ConversationTurn } from '@franklin/extensions';
-import { conversationExtension } from '@franklin/extensions';
+import type { ConversationTurn } from '@franklin/agent';
+import { conversationExtension } from '@franklin/agent';
 import type { FranklinRuntime } from '@franklin/agent/browser';
 
 import { AgentProvider } from '../agent/agent-context.js';

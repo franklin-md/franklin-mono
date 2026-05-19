@@ -1,4 +1,4 @@
-import type { ConversationTurn } from '@franklin/extensions';
+import type { ConversationTurn } from '@franklin/agent';
 
 import type { ConversationRenderTurn } from './types.js';
 import { getConversationRenderTurn } from './get-turn.js';

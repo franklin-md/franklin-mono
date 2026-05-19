@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 
-import type { ConversationTurn } from '@franklin/extensions';
+import type { ConversationTurn } from '@franklin/agent';
 
 import { useAgent } from '../agent/agent-context.js';
 import { useConversationTurns } from '../conversation/use-conversation-turns.js';

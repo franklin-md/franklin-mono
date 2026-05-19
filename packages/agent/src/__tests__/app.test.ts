@@ -4,7 +4,7 @@ import {
 	MemoryOsInfo,
 	type AbsolutePath,
 } from '@franklin/lib';
-import type { EnvironmentConfig } from '@franklin/extensions';
+import type { EnvironmentConfig } from '../modules/environment/index.js';
 
 import { FranklinApp } from '../app/index.js';
 import type { Platform } from '../platform.js';

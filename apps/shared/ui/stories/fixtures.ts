@@ -1,4 +1,4 @@
-import type { AssistantTurn, ConversationTurn } from '@franklin/extensions';
+import type { AssistantTurn, ConversationTurn } from '@franklin/agent';
 import { StopCode, type UserMessage } from '@franklin/mini-acp';
 
 const T0 = Date.now() - 300_000;

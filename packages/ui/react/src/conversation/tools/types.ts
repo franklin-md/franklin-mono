@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ToolArgs, ToolSpec, ToolUseBlock } from '@franklin/extensions';
+import type { ToolArgs, ToolSpec, ToolUseBlock } from '@franklin/agent';
 
 export type ToolStatus = 'in-progress' | 'success' | 'error';
 

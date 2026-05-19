@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { TurnEndBlock as TurnEndBlockType } from '@franklin/extensions';
+import type { TurnEndBlock as TurnEndBlockType } from '@franklin/agent';
 
 import type { TurnEndRendererRegistry } from './types.js';
 import { resolveTurnEndRenderer } from './registry.js';

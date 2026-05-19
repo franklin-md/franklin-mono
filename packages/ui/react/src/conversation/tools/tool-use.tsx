@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { ToolUseBlock as ToolUseBlockData } from '@franklin/extensions';
+import type { ToolUseBlock as ToolUseBlockData } from '@franklin/agent';
 
 import type {
 	ToolStatus,

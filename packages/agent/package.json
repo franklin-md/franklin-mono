@@ -14,6 +14,10 @@
 		"./browser": {
 			"types": "./dist/browser.d.ts",
 			"import": "./dist/browser.js"
+		},
+		"./testing": {
+			"types": "./dist/testing/index.d.ts",
+			"import": "./dist/testing/index.js"
 		}
 	},
 	"files": [
@@ -28,10 +32,17 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@franklin/extensions": "*",
+		"@agentclientprotocol/sdk": "^0.16.1",
+		"@franklin/extensibility": "*",
 		"@franklin/lib": "*",
 		"@franklin/mini-acp": "*",
 		"@earendil-works/pi-ai": "^0.74.0",
+		"@mistralai/mistralai": "^2.2.1",
+		"@mozilla/readability": "^0.6.0",
+		"@noble/hashes": "^2.0.1",
+		"file-type": "^22.0.1",
+		"immer": "^10.2.0",
+		"unpdf": "^1.6.2",
 		"zod": "^4.0.0"
 	}
 }

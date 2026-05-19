@@ -1,4 +1,4 @@
-import type { TurnEndBlock } from '@franklin/extensions';
+import type { TurnEndBlock } from '@franklin/agent';
 import { StopCode } from '@franklin/mini-acp';
 
 import { Badge } from '../../../primitives/badge.js';

@@ -1,12 +1,14 @@
 import type { Issue, RestoreResult } from '@franklin/lib';
 import { hydrateFailedIssue } from '@franklin/lib';
+import type {
+	BaseRuntime,
+	BaseState,
+	StateHandle,
+} from '@franklin/extensibility';
 import {
 	RuntimeCollection,
-	type BaseRuntime,
-	type BaseState,
 	type RuntimeEntry,
-	type StateHandle,
-} from '@franklin/extensions';
+} from '../../modules/orchestrator/index.js';
 import type { SessionPersistence } from '../../storage/types.js';
 
 export type RuntimePersistenceObserver<RT extends BaseRuntime> = (

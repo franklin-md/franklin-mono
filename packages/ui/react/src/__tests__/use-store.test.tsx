@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { createStore } from '@franklin/extensions';
+import { createStore } from '@franklin/agent';
 
 import { useStore } from '../utils/use-store.js';
 

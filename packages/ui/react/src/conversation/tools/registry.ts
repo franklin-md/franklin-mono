@@ -1,4 +1,4 @@
-import type { ToolArgs, ToolSpec } from '@franklin/extensions';
+import type { ToolArgs, ToolSpec } from '@franklin/agent';
 
 import type {
 	ToolRendererBinding,

@@ -4,7 +4,7 @@ import type {
 	ThinkingBlock,
 	ToolUseBlock,
 	TurnEndBlock,
-} from '@franklin/extensions';
+} from '@franklin/agent';
 
 import type { ConversationRenderTurn } from './turn-info/types.js';
 import type { ToolStatus } from './tools/types.js';

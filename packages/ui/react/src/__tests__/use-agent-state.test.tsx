@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 
 import { useAgentState } from '../agent/use-agent-state.js';
 import { AgentProvider } from '../agent/agent-context.js';
-import { createStore, storeKey } from '@franklin/extensions';
+import { createStore, storeKey } from '@franklin/agent';
 import type { FranklinRuntime } from '@franklin/agent/browser';
-import type { Store, StoreEntry } from '@franklin/extensions';
+import type { Store, StoreEntry } from '@franklin/agent';
 
 // ---------------------------------------------------------------------------
 // Helpers

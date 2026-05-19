@@ -1,4 +1,4 @@
-import type { ReadonlyStore, Store, StoreKey } from '@franklin/extensions';
+import type { ReadonlyStore, Store, StoreKey } from '@franklin/agent';
 
 import { useStore } from '../utils/use-store.js';
 import { useAgent } from './agent-context.js';

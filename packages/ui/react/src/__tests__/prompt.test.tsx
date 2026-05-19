@@ -10,12 +10,8 @@ import {
 } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import type {
-	ConversationTurn,
-	Store,
-	TurnEndBlock,
-} from '@franklin/extensions';
-import { conversationExtension, createStore } from '@franklin/extensions';
+import type { ConversationTurn, Store, TurnEndBlock } from '@franklin/agent';
+import { conversationExtension, createStore } from '@franklin/agent';
 import type { UserMessage } from '@franklin/mini-acp';
 import type { FranklinRuntime } from '@franklin/agent/browser';
 

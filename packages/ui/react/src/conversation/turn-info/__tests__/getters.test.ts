@@ -3,7 +3,7 @@ import type {
 	ConversationTurn,
 	TextBlock,
 	TurnEndBlock,
-} from '@franklin/extensions';
+} from '@franklin/agent';
 
 import { getLastConversationRenderTurn } from '../get-last-turn.js';
 import { getConversationTurnPhase } from '../get-phase.js';

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { TurnEndBlock } from '@franklin/extensions';
+import type { TurnEndBlock } from '@franklin/agent';
 import type { StopCategory } from '@franklin/mini-acp';
 import type { StopCode } from '@franklin/mini-acp';
 

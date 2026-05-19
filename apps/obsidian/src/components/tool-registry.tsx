@@ -1,4 +1,4 @@
-import { filesystemExtension } from '@franklin/extensions';
+import { filesystemExtension } from '@franklin/agent';
 import {
 	createToolRendererRegistry,
 	type ToolRendererEntry,

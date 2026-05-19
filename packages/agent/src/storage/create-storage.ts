@@ -1,6 +1,6 @@
-import { StoreRegistry } from '@franklin/extensions';
-import type { BaseState } from '@franklin/extensions';
+import type { BaseState } from '@franklin/extensibility';
 import type { AbsolutePath, Filesystem, RestoreResult } from '@franklin/lib';
+import { StoreRegistry } from '../modules/store/api/index.js';
 import { createAuthStore } from './auth.js';
 import { createPersistence } from './persistence.js';
 import { createSettingsStore } from './settings.js';

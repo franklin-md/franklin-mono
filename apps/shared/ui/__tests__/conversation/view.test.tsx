@@ -3,7 +3,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { ConversationTurn } from '@franklin/extensions';
+import type { ConversationTurn } from '@franklin/agent';
 import type * as FranklinReact from '@franklin/react';
 
 const mocks = vi.hoisted(() => ({

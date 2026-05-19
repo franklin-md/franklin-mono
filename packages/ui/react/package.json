@@ -20,7 +20,6 @@
 	},
 	"dependencies": {
 		"@franklin/agent": "*",
-		"@franklin/extensions": "*",
 		"@radix-ui/react-slot": "^1.1.1",
 		"dequal": "^2.0.3"
 	},

@@ -19,7 +19,6 @@
 	},
 	"dependencies": {
 		"@franklin/agent": "*",
-		"@franklin/extensions": "*",
 		"@franklin/lib": "*",
 		"@franklin/node": "*",
 		"@franklin/react": "*",

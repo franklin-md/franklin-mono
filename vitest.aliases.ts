@@ -6,7 +6,9 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const entries = [
 	// TODO: franklin/agent should be platform agnostic
 	['@franklin/agent/browser', 'packages/agent/src/browser.ts'],
+	['@franklin/agent/testing', 'packages/agent/src/testing/index.ts'],
 	['@franklin/agent', 'packages/agent/src/index.ts'],
+	['@franklin/extensibility', 'packages/extensibility/src/index.ts'],
 	['@franklin/electron/main', 'packages/electron/src/main/index.ts'],
 	['@franklin/electron/preload', 'packages/electron/src/preload/index.ts'],
 	['@franklin/electron/renderer', 'packages/electron/src/renderer/index.ts'],
@@ -19,10 +21,12 @@ const entries = [
 	['@franklin/lib/proxy', 'packages/lib/src/proxy/index.ts'],
 	['@franklin/lib/middleware', 'packages/lib/src/middleware/index.ts'],
 	['@franklin/lib', 'packages/lib/src/index.ts'],
-	['@franklin/extensions/testing', 'packages/extensions/src/testing/index.ts'],
-	['@franklin/extensions', 'packages/extensions/src/index.ts'],
 	['@franklin/mini-acp/mock', 'packages/mini-acp/src/mock/index.ts'],
 	['@franklin/mini-acp', 'packages/mini-acp/src/index.ts'],
+] as const;
+
+const wildcardEntries = [
+	['@franklin/extensibility/', 'packages/extensibility/src/'],
 ] as const;
 
 function escapeRegex(value: string) {
@@ -41,5 +45,11 @@ function aliasEntry(find: string, replacement: string) {
 }
 
 export function franklinVitestAliases() {
-	return entries.map(([find, replacement]) => aliasEntry(find, replacement));
+	return [
+		...wildcardEntries.map(([find, replacement]) => ({
+			find: new RegExp(`^${escapeRegex(find)}(.+)$`),
+			replacement: path.resolve(rootDir, replacement) + '/$1',
+		})),
+		...entries.map(([find, replacement]) => aliasEntry(find, replacement)),
+	];
 }

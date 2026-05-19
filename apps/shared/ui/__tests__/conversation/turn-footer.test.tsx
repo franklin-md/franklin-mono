@@ -7,7 +7,7 @@ import {
 	screen,
 	within,
 } from '@testing-library/react';
-import type { ConversationTurn } from '@franklin/extensions';
+import type { ConversationTurn } from '@franklin/agent';
 import { StopCode } from '@franklin/mini-acp';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

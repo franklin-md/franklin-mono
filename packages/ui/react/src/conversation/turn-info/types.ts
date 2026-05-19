@@ -1,4 +1,4 @@
-import type { ConversationTurn, TurnEndBlock } from '@franklin/extensions';
+import type { ConversationTurn, TurnEndBlock } from '@franklin/agent';
 
 export type ConversationTurnPhase = 'in-progress' | 'complete';
 

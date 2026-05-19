@@ -1,5 +1,5 @@
 import type { AppSettings } from '@franklin/agent/browser';
-import type { Store } from '@franklin/extensions';
+import type { Store } from '@franklin/agent';
 
 import { useApp } from './franklin-context.js';
 import { useStore } from '../utils/use-store.js';

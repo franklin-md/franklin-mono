@@ -1,4 +1,4 @@
-import { conversationTitleExtension } from '@franklin/extensions';
+import { conversationTitleExtension } from '@franklin/agent';
 
 import { useAgentState } from '../agent/use-agent-state.js';
 

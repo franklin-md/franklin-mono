@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ConversationTurn } from '@franklin/extensions';
+import type { ConversationTurn } from '@franklin/agent';
 
 import type { ConversationComponents } from './types.js';
 import { BlockDispatch } from './block-dispatch.js';

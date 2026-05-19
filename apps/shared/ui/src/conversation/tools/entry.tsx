@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { ToolArgs, ToolSpec } from '@franklin/extensions';
+import type { ToolArgs, ToolSpec } from '@franklin/agent';
 import { createToolRenderer, type ToolRendererEntry } from '@franklin/react';
 
 import { ToolSummary } from './summary.js';

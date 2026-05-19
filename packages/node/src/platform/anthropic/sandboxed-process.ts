@@ -9,7 +9,7 @@ import { quote as quoteArgv } from 'shell-quote';
 import type { AbsolutePath, Process, ProcessInput } from '@franklin/lib';
 import { joinAbsolute } from '@franklin/lib';
 import type { NetworkPermissions } from '@franklin/lib';
-import type { FilesystemConfig, EnvironmentConfig } from '@franklin/extensions';
+import type { FilesystemConfig, EnvironmentConfig } from '@franklin/agent';
 
 export class SandboxedProcess implements Process {
 	private _cwd: string;

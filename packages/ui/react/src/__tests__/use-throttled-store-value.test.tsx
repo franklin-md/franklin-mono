@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createStore } from '@franklin/extensions';
+import { createStore } from '@franklin/agent';
 
 import { getSharedThrottledStore } from '../utils/get-shared-throttled-store.js';
 import { useThrottledStoreValue } from '../utils/use-throttled-store-value.js';

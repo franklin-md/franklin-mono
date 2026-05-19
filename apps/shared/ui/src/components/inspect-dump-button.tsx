@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { coreStateHandle, inspectRuntime } from '@franklin/extensions';
+import { coreStateHandle, inspectRuntime } from '@franklin/agent';
 import { useAgent } from '@franklin/react';
 import { Bug, Check } from 'lucide-react';
 

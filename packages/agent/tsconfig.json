@@ -5,12 +5,13 @@
 		"outDir": "./dist",
 		"composite": true,
 		"declaration": true,
-		"declarationMap": true
+		"declarationMap": true,
+		"lib": ["ES2023", "DOM"]
 	},
 	"include": ["src/**/*.ts"],
 	"references": [
+		{ "path": "../extensibility" },
 		{ "path": "../lib" },
-		{ "path": "../mini-acp" },
-		{ "path": "../extensions" }
+		{ "path": "../mini-acp" }
 	]
 }

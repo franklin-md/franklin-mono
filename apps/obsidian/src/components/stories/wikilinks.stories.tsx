@@ -1,4 +1,4 @@
-import type { TextBlock } from '@franklin/extensions';
+import type { TextBlock } from '@franklin/agent';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { App } from 'obsidian';
 import { expect, waitFor, within } from 'storybook/test';

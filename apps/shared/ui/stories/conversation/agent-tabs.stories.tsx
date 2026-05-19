@@ -6,8 +6,8 @@ import {
 	conversationTitleExtension,
 	statusExtension,
 	type StatusState,
-} from '@franklin/extensions';
-import type { RuntimeEntry } from '@franklin/extensions';
+} from '@franklin/agent';
+import type { RuntimeEntry } from '@franklin/agent';
 import { AgentsProvider, AppContext } from '@franklin/react';
 
 import { AgentTabs } from '../../src/agent-tabs/tabs.js';

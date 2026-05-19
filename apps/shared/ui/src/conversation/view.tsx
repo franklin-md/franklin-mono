@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 
-import type { ConversationTurn, ToolUseBlock } from '@franklin/extensions';
+import type { ConversationTurn, ToolUseBlock } from '@franklin/agent';
 import {
 	Conversation,
 	createTurnEndBlock,

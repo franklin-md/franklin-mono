@@ -1,6 +1,6 @@
 import { Terminal } from 'lucide-react';
 
-import { bashExtension } from '@franklin/extensions';
+import { bashExtension } from '@franklin/agent';
 import type { ToolRendererRegistryEntries } from '@franklin/react';
 
 import { toolEntry } from '../entry.js';

@@ -16,7 +16,7 @@ vi.mock('@franklin/react', () => ({
 	useAgent: () => useAgent(),
 }));
 
-vi.mock('@franklin/extensions', () => ({
+vi.mock('@franklin/agent', () => ({
 	inspectRuntime: (arg: unknown, state: unknown) => inspectRuntime(arg, state),
 	coreStateHandle: (arg: unknown) => coreStateHandle(arg),
 }));

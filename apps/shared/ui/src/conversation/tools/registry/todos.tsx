@@ -1,6 +1,6 @@
 import { List, ListChecks, ListPlus } from 'lucide-react';
 
-import { todoExtension } from '@franklin/extensions';
+import { todoExtension } from '@franklin/agent';
 import type { ToolRendererRegistryEntries } from '@franklin/react';
 
 import { ToolSummaryDetail } from '../summary.js';
