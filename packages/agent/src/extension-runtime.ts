@@ -89,9 +89,11 @@ export {
 	createCoreStateModule,
 } from './modules/core/module.js';
 
-export type { DependencyRuntime } from './modules/dependency/index.js';
-export type { DependencyModule } from './modules/dependency/module.js';
-export { createDependencyModule } from './modules/dependency/module.js';
+export type {
+	DependencyRuntime,
+	DependencyModule,
+} from '@franklin/extensibility';
+export { createDependencyModule } from '@franklin/extensibility';
 
 export type {
 	ConfigureOptions,

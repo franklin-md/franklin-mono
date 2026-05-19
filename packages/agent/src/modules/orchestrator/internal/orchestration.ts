@@ -1,7 +1,7 @@
 import {
 	createDependencyModule,
 	type DependencyModule,
-} from '../../dependency/module.js';
+} from '@franklin/extensibility';
 import type { InferRuntime } from '@franklin/extensibility/modules/simple/index.js';
 import type {
 	BaseStateExtensionModule,

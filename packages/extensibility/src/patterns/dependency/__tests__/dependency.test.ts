@@ -1,5 +1,5 @@
 import { describe, it, expect, expectTypeOf, vi } from 'vitest';
-import { compile } from '@franklin/extensibility';
+import { compile } from '../../../compiler/compile.js';
 import type { DependencyRuntime as ApiIndexDependencyRuntime } from '../../../index.js';
 import {
 	createDependencyModule,

@@ -4,7 +4,7 @@ import type { Extension } from '@franklin/extensibility';
 import type { RegistryView } from '@franklin/extensibility';
 import type { ExtensionPoint } from '@franklin/extensibility';
 import type { BaseRuntime, StateHandle } from '@franklin/extensibility';
-import { createDependencyModule } from '../../dependency/module.js';
+import { createDependencyModule } from '@franklin/extensibility';
 import type {
 	InferAPI,
 	InferRuntime,

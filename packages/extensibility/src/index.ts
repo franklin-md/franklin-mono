@@ -52,3 +52,8 @@ export {
 	liftModuleTransform as liftStateModuleTransform,
 	resolveState,
 } from './modules/state/index.js';
+export type {
+	DependencyRuntime,
+	DependencyModule,
+} from './patterns/dependency/index.js';
+export { createDependencyModule } from './patterns/dependency/index.js';

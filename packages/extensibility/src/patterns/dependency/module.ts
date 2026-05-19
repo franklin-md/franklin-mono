@@ -1,6 +1,6 @@
-import { createExtensionPoint } from '@franklin/extensibility';
-import type { ExtensionModule } from '@franklin/extensibility';
-import type { IdentitySignature } from '@franklin/extensibility';
+import { createExtensionPoint } from '../../extension-points/create.js';
+import type { ExtensionModule } from '../../modules/simple/types.js';
+import type { IdentitySignature } from '../../modules/simple/identity.js';
 import { createDependencyRuntime, type DependencyRuntime } from './runtime.js';
 
 export type DependencyModule<Name extends string, T> = ExtensionModule<

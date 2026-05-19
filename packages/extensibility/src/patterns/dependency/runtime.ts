@@ -1,5 +1,5 @@
-import type { BaseRuntime } from '@franklin/extensibility';
-import { identityRuntime } from '@franklin/extensibility';
+import type { BaseRuntime } from '../../runtime/types.js';
+import { identityRuntime } from '../../modules/simple/identity.js';
 
 export type DependencyRuntime<Name extends string, T> = BaseRuntime & {
 	readonly [K in Name]: T;
