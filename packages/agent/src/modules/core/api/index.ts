@@ -5,6 +5,7 @@ export type {
 	CoreOnRegistration,
 	CoreRegisterToolRegistration,
 } from './api.js';
+export type { MaybePromise } from '../../../utils/maybe-promise.js';
 export type { Prompt } from './prompt.js';
 export type {
 	SystemPrompt,

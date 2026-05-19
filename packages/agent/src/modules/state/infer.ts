@@ -1,8 +1,8 @@
 import type { Simplify } from '@franklin/lib';
-import type { API } from '../../api/index.js';
-import type { Compiler } from '../../compiler/index.js';
-import type { Extension } from '../../extension/index.js';
-import type { ExtensionModule } from '../simple/index.js';
+import type { API } from '@franklin/extensibility';
+import type { Compiler } from '@franklin/extensibility';
+import type { Extension } from '@franklin/extensibility';
+import type { ExtensionModule } from '@franklin/extensibility/module';
 import type { BaseStateExtensionModule } from './types.js';
 
 type InferModule<T extends BaseStateExtensionModule> = T extends {

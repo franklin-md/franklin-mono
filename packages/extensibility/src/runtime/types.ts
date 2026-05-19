@@ -1,8 +1,8 @@
 /**
  * Grouped state snapshot/derivation operations for a runtime.
  *
- * Lives on the state extension module (`StateExtensionModule.state(runtime)`),
- * not on the runtime itself — runtimes carry only live capabilities + lifecycle.
+ * Lives on the state module layer, not on the runtime itself — runtimes carry
+ * only live capabilities + lifecycle.
  */
 export interface StateHandle<S> {
 	get(): Promise<S>;
@@ -12,8 +12,8 @@ export interface StateHandle<S> {
 
 /**
  * Base constraint for module runtimes — pure capability surface plus
- * lifecycle. State is projected from the state extension module via
- * `StateExtensionModule.state(runtime)`, not exposed as a runtime field.
+ * lifecycle. State is projected from the state module layer, not exposed as a
+ * runtime field.
  */
 export interface BaseRuntime {
 	dispose(): Promise<void>;

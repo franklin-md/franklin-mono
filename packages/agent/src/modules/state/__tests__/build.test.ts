@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { compile } from '../../../compiler/index.js';
-import { createExtensionPoint } from '../../../extension-points/create.js';
-import type { RegistryView } from '../../../extension-points/view.js';
-import type { BaseRuntime } from '../../../runtime/index.js';
-import type { StaticSignature } from '../../../api/index.js';
-import type { ExtensionModule } from '../../simple/index.js';
+import { compile } from '@franklin/extensibility';
+import { createExtensionPoint } from '@franklin/extensibility';
+import type { RegistryView } from '@franklin/extensibility';
+import type { BaseRuntime } from '@franklin/extensibility';
+import type { StaticSignature } from '@franklin/extensibility';
+import type { ExtensionModule } from '@franklin/extensibility/module';
 import type { StateExtensionModule, StateHandle } from '../types.js';
 import { buildStateExtensionModule } from '../build.js';
 

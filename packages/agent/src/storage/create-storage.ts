@@ -1,4 +1,4 @@
-import type { BaseState } from '@franklin/extensibility';
+import type { BaseState } from '../modules/state/index.js';
 import type { AbsolutePath, Filesystem, RestoreResult } from '@franklin/lib';
 import { StoreRegistry } from '../modules/store/api/index.js';
 import { createAuthStore } from './auth.js';

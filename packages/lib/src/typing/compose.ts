@@ -1,21 +1,15 @@
-import type { Apply, HKT } from '@franklin/lib';
+import type { Apply, HKT } from './hkt/index.js';
 
 export interface BinaryType extends HKT {
 	readonly In: readonly [unknown, unknown];
 }
 
-export type ApplyBinaryType<F extends BinaryType, Left, Right> = readonly [
+type ApplyBinaryType<F extends BinaryType, Left, Right> = readonly [
 	Left,
 	Right,
 ] extends F['In']
 	? Apply<F, readonly [Left, Right]>
 	: never;
-
-export type CanCompose<Guard extends BinaryType, Left, Right> = [
-	ApplyBinaryType<Guard, Left, Right>,
-] extends [never]
-	? false
-	: true;
 
 export type ReduceCompositionTuple<
 	Values extends readonly Element[],

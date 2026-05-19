@@ -5,7 +5,7 @@ import type {
 	InferAPI,
 	InferRuntime,
 	InferState,
-} from '@franklin/extensibility';
+} from '../modules/state/index.js';
 
 export async function createRuntime<Module extends BaseStateExtensionModule>(
 	module: Module,

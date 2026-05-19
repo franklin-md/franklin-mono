@@ -1,5 +1,5 @@
 import type { ToolResultContent } from '@franklin/mini-acp';
-import type { MaybePromise } from '@franklin/extensibility/utils/maybe-promise.js';
+import type { MaybePromise } from '../../../utils/maybe-promise.js';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { z } from 'zod';
 

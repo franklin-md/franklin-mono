@@ -1,14 +1,14 @@
-import type { AssertNoOverlap } from '@franklin/lib';
+import type {
+	AssertNoOverlap,
+	BinaryType,
+	ReduceCompositionTuple,
+	ValidateCompositionTuple,
+} from '@franklin/lib';
+import { reduceNonEmpty } from '@franklin/lib';
 import type { API, CombineSignature } from '../../api/index.js';
 import { combine as combineCompilers } from '../../compiler/combine.js';
 import { combine as combineExtensionPoints } from '../../extension-points/combine.js';
 import type { CombinedRuntime, RuntimeExtras } from '../../runtime/index.js';
-import type {
-	BinaryType,
-	ReduceCompositionTuple,
-	ValidateCompositionTuple,
-} from '../../utils/compose-typing.js';
-import { reduceNonEmpty } from '../../utils/reduce-non-empty.js';
 import type { InferRuntime, InferSignature } from './infer.js';
 import type { BaseExtensionModule, ExtensionModule } from './types.js';
 
@@ -66,7 +66,7 @@ export function combine<
 	return {
 		extensionPoint: combineExtensionPoints(
 			module1.extensionPoint,
-			module2.extensionPoint,
+			module2.extensionPoint as never,
 		),
 		compiler: combineCompilers(module1.compiler, module2.compiler as never),
 	} as never;

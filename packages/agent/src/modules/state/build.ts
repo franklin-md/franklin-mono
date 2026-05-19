@@ -2,7 +2,7 @@ import type {
 	BaseExtensionModule,
 	InferRuntime as InferSimpleRuntime,
 	InferSignature as InferSimpleSignature,
-} from '../simple/index.js';
+} from '@franklin/extensibility/module';
 import {
 	combineAll,
 	type CombinableModule,

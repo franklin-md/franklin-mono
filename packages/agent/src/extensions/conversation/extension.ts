@@ -1,4 +1,4 @@
-import { defineExtension } from '@franklin/extensibility';
+import { defineExtension } from '../../modules/state/index.js';
 import type { CoreModule } from '../../modules/core/index.js';
 import type { StoreModule } from '../../modules/store/index.js';
 import type { StoreRuntime } from '../../modules/store/runtime.js';

@@ -1,10 +1,10 @@
 import { compile } from '@franklin/extensibility';
-import { resolveState } from '@franklin/extensibility';
 import type {
 	BaseStateExtensionModule,
 	InferExtension,
 	InferState,
-} from '@franklin/extensibility';
+} from '../state/index.js';
+import { resolveState } from '../state/index.js';
 import { createOrchestratorModule } from './internal/index.js';
 import type { RuntimeCollection } from './collection.js';
 import type {

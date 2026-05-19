@@ -3,7 +3,7 @@ import type { CombineSignature } from '@franklin/extensibility';
 import type {
 	InferRuntime as InferSimpleRuntime,
 	InferSignature as InferSimpleSignature,
-} from '@franklin/extensibility/modules/simple/index.js';
+} from '@franklin/extensibility/module';
 import type {
 	BaseStateExtensionModule,
 	BuildableModule,
@@ -12,7 +12,7 @@ import type {
 	InferSignature,
 	InferState,
 	StateExtensionModule,
-} from '@franklin/extensibility/modules/state/index.js';
+} from '../state/index.js';
 import type {
 	BaseRuntime,
 	CombinedRuntime,

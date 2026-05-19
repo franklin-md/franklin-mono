@@ -1,17 +1,17 @@
-import type { AssertNoOverlap } from '@franklin/lib';
-import type { CombineSignature } from '../../api/index.js';
-import type { CombinedRuntime } from '../../runtime/index.js';
 import type {
+	AssertNoOverlap,
 	BinaryType,
 	ReduceCompositionTuple,
 	ValidateCompositionTuple,
-} from '../../utils/compose-typing.js';
-import { reduceNonEmpty } from '../../utils/reduce-non-empty.js';
+} from '@franklin/lib';
+import { reduceNonEmpty } from '@franklin/lib';
+import type { CombineSignature } from '@franklin/extensibility';
+import type { CombinedRuntime } from '@franklin/extensibility';
 import {
 	combine as combineSimpleModules,
 	type CombinableModule as CombinableSimpleModule,
 	type CombineModules as CombineSimpleModules,
-} from '../simple/index.js';
+} from '@franklin/extensibility/module';
 import type {
 	InferRuntime,
 	InferSimpleModule,

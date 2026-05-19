@@ -4,12 +4,12 @@ import type { Extension } from '@franklin/extensibility';
 import type { RegistryView } from '@franklin/extensibility';
 import type { ExtensionPoint } from '@franklin/extensibility';
 import type { BaseRuntime, StateHandle } from '@franklin/extensibility';
-import { createDependencyModule } from '@franklin/extensibility';
+import { createDependencyModule } from '@franklin/extensibility/module';
 import type {
 	InferAPI,
 	InferRuntime,
 	StateExtensionModule,
-} from '@franklin/extensibility';
+} from '../../state/index.js';
 import {
 	createOrchestrator,
 	RuntimeCollection,

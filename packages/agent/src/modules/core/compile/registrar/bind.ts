@@ -1,6 +1,6 @@
 import type { z } from 'zod';
-import type { MaybePromise } from '@franklin/extensibility/utils/maybe-promise.js';
 import type { BaseRuntime } from '@franklin/extensibility';
+import type { MaybePromise } from '../../../../utils/maybe-promise.js';
 import type {
 	ExtensionToolDefinition,
 	ToolExecuteReturn,

@@ -1,8 +1,8 @@
-import type { Signature } from '../../api/index.js';
-import type { BaseRuntime, StateHandle } from '../../runtime/index.js';
-import type { ExtensionModule } from '../simple/index.js';
+import type { Signature } from '@franklin/extensibility';
+import type { BaseRuntime, StateHandle } from '@franklin/extensibility';
+import type { ExtensionModule } from '@franklin/extensibility/module';
 
-export type { StateHandle } from '../../runtime/index.js';
+export type { StateHandle } from '@franklin/extensibility';
 
 export type BaseState = Record<string, unknown>;
 

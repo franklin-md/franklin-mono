@@ -2,11 +2,11 @@ import {
 	combine as combineSimpleModules,
 	combineAll as combineSimpleModulesAll,
 	type Modules as SimpleModules,
-} from '@franklin/extensibility/modules/simple/index.js';
+} from '@franklin/extensibility/module';
 import type {
 	BaseStateExtensionModule,
 	InferState,
-} from '@franklin/extensibility/modules/state/index.js';
+} from '../../state/index.js';
 import type {
 	OrchestratorHandle,
 	OrchestratorModule,
