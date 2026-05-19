@@ -29,9 +29,6 @@ export function identityAPI(): IdentityAPI {
 export function identityRuntime(): IdentityRuntime {
 	return {
 		async dispose(): Promise<void> {},
-		subscribe(): () => void {
-			return () => {};
-		},
 	};
 }
 

@@ -34,6 +34,23 @@ export type FranklinAppExtensions =
 	| readonly FranklinExtension[]
 	| ((context: FranklinAppExtensionContext) => readonly FranklinExtension[]);
 
+function observeRuntimePersistence(
+	runtime: FranklinRuntime,
+	listener: () => void,
+): () => void {
+	const unsubscribeCore = runtime.coreEvents.subscribe(() => {
+		listener();
+	});
+	const unsubscribeEnvironment = runtime.environmentEvents.subscribe(() => {
+		listener();
+	});
+
+	return () => {
+		unsubscribeCore();
+		unsubscribeEnvironment();
+	};
+}
+
 export class FranklinApp {
 	readonly auth: AuthManager;
 	readonly settings: SettingsStore;
@@ -85,7 +102,11 @@ export class FranklinApp {
 		this.collection = new PersistedSessionCollection<
 			FranklinState,
 			FranklinRuntime
-		>(storage.sessions, (runtime) => baseModule.state(runtime));
+		>(
+			storage.sessions,
+			(runtime) => baseModule.state(runtime),
+			observeRuntimePersistence,
+		);
 
 		this.orchestrator = createOrchestrator({
 			modules: baseModules,

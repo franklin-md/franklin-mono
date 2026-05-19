@@ -4,5 +4,5 @@ export type { EnvironmentModule, EnvironmentFactory } from './module.js';
 export { createEnvironmentModule } from './module.js';
 export type { EnvironmentState } from './state.js';
 export { emptyEnvironmentState } from './state.js';
-export type { EnvironmentRuntime } from './runtime.js';
+export type { EnvironmentEvent, EnvironmentRuntime } from './runtime.js';
 export { createEnvironmentRuntime, environmentStateHandle } from './runtime.js';

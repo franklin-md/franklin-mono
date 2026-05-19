@@ -29,7 +29,6 @@ function createCompiler(): Compiler<TestSignature, TestRuntime> {
 			return {
 				value: registry.argsFor('register').at(-1)?.[0] ?? 0,
 				dispose: vi.fn(async () => {}),
-				subscribe: vi.fn(() => () => {}),
 			};
 		},
 	};
@@ -80,7 +79,6 @@ describe('compiler transform steps', () => {
 		const runtime = await step({
 			value: 1,
 			dispose: vi.fn(async () => {}),
-			subscribe: vi.fn(() => () => {}),
 		});
 
 		expect(order).toEqual(['first', 'tagged']);
@@ -103,7 +101,6 @@ describe('compiler transform steps', () => {
 		const runtime = await step({
 			value: 2,
 			dispose: vi.fn(async () => {}),
-			subscribe: vi.fn(() => () => {}),
 		});
 
 		expect(runtime.value).toBe(2);

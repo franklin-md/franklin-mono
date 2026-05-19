@@ -6,9 +6,14 @@ import type {
 	FranklinRuntime,
 	OAuthLoginCallbacks,
 } from '@franklin/agent/browser';
-import type { ConversationTurn, RuntimeEntry } from '@franklin/extensions';
-import { conversationExtension } from '@franklin/extensions';
-import type { ThinkingLevel } from '@franklin/mini-acp';
+import type {
+	ConversationTurn,
+	CoreEvent,
+	RuntimeEntry,
+} from '@franklin/extensions';
+import { CORE_STATE, conversationExtension } from '@franklin/extensions';
+import type { LLMConfig, ThinkingLevel } from '@franklin/mini-acp';
+import { ZERO_USAGE } from '@franklin/mini-acp';
 import {
 	AgentProvider,
 	AgentsValueProvider,
@@ -53,9 +58,12 @@ export function createMockRuntime(opts?: {
 	provider?: string;
 	model?: string;
 }): FranklinRuntime {
-	const reasoning = opts?.reasoning ?? 'medium';
-	const provider = opts?.provider ?? 'openai-codex';
-	const model = opts?.model ?? 'gpt-5.4';
+	let llmConfig: Omit<LLMConfig, 'apiKey'> = {
+		reasoning: opts?.reasoning ?? 'medium',
+		provider: opts?.provider ?? 'openai-codex',
+		model: opts?.model ?? 'gpt-5.4',
+	};
+	const coreListeners = new Set<(event: CoreEvent) => void>();
 
 	const conversationKey = conversationExtension.keys.conversation;
 	const conversationStore = createMockStore(opts?.turns ?? []);
@@ -67,13 +75,40 @@ export function createMockRuntime(opts?: {
 	);
 
 	return {
-		state: async () => ({
-			core: {
+		[CORE_STATE]: {
+			get: async () => ({
 				messages: [],
-				llmConfig: { reasoning, provider, model },
+				llmConfig: { ...llmConfig },
+				usage: ZERO_USAGE,
+			}),
+			fork: async () => ({
+				messages: [],
+				llmConfig: { ...llmConfig },
+				usage: ZERO_USAGE,
+			}),
+			child: async () => ({
+				messages: [],
+				llmConfig: { ...llmConfig },
+				usage: ZERO_USAGE,
+			}),
+		},
+		setLLMConfig: async ({
+			apiKey: _apiKey,
+			...config
+		}: Partial<LLMConfig>) => {
+			llmConfig = { ...llmConfig, ...config };
+			for (const listener of coreListeners) {
+				listener({ type: 'llm-config-changed' });
+			}
+		},
+		coreEvents: {
+			subscribe: (listener: (event: CoreEvent) => void) => {
+				coreListeners.add(listener);
+				return () => {
+					coreListeners.delete(listener);
+				};
 			},
-		}),
-		subscribe: () => () => {},
+		},
 		prompt: async function* () {},
 		cancel: async () => {},
 		dispose: async () => {},
@@ -85,6 +120,9 @@ export function createMockRuntime(opts?: {
 			return entry.store;
 		},
 		environment: {},
+		environmentEvents: {
+			subscribe: () => () => {},
+		},
 	} as unknown as FranklinRuntime;
 }
 

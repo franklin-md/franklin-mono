@@ -98,6 +98,30 @@ describe('createEnvironmentModule', () => {
 		expect(await system.state(runtime).get()).toEqual({ env: defaultConfig });
 	});
 
+	it('emits environment events when reconfigured', async () => {
+		const { factory } = mockFactory();
+		const system = createEnvironmentModule(factory);
+		const runtime = await createRuntime(system, { env: defaultConfig }, []);
+		const events: string[] = [];
+
+		const unsubscribe = runtime.environmentEvents.subscribe((event) => {
+			events.push(event.type);
+		});
+
+		await runtime.environment.reconfigure({
+			netConfig: { allowedDomains: ['example.com'], deniedDomains: [] },
+		});
+
+		expect(events).toEqual(['environment-reconfigured']);
+
+		unsubscribe();
+		await runtime.environment.reconfigure({
+			netConfig: { allowedDomains: ['example.org'], deniedDomains: [] },
+		});
+
+		expect(events).toEqual(['environment-reconfigured']);
+	});
+
 	it('fork returns a clone of the keyed config', async () => {
 		const { factory } = mockFactory();
 		const system = createEnvironmentModule(factory);

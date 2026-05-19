@@ -59,7 +59,6 @@ function createCounterModule(): StateExtensionModule<
 								child: vi.fn(async () => ({ counter: { value: 0 } })),
 							},
 							dispose: vi.fn(async () => {}),
-							subscribe: vi.fn(() => () => {}),
 						};
 					},
 				},
@@ -118,7 +117,6 @@ function createLabelModule(): StateExtensionModule<
 								child: vi.fn(async () => ({ label: { value: 'child' } })),
 							},
 							dispose: vi.fn(async () => {}),
-							subscribe: vi.fn(() => () => {}),
 						};
 					},
 				},

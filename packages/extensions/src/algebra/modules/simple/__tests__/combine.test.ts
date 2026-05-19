@@ -43,7 +43,6 @@ function createCounterModule(
 						return count;
 					},
 					dispose: vi.fn(async () => {}),
-					subscribe: vi.fn(() => () => {}),
 				};
 			},
 		},
@@ -80,7 +79,6 @@ function createLabelModule(
 						return label;
 					},
 					dispose: vi.fn(async () => {}),
-					subscribe: vi.fn(() => () => {}),
 				};
 			},
 		},

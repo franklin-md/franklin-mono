@@ -1,8 +1,6 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback } from 'react';
 
-import { getLLMConfig } from '@franklin/agent/browser';
-
-import { useRuntimeSync } from './use-runtime-sync.js';
+import { useLLMConfig } from './use-llm-config.js';
 import { useSettings } from './use-settings.js';
 
 // ---------------------------------------------------------------------------
@@ -28,45 +26,26 @@ export function useModelSelection(): UseModelSelection {
 	const settings = useSettings();
 	const defaults = settings.get().defaultLLMConfig;
 
-	const settingsRef = useRef(settings);
-	settingsRef.current = settings;
-
-	const initial = {
-		provider: defaults.provider,
-		model: defaults.model,
-	};
-
-	const { value, set } = useRuntimeSync<{
-		provider: string;
-		model: string;
-	}>({
-		extract: async (runtime) => {
-			const config = await getLLMConfig(runtime);
-			return {
-				provider: config.provider ?? initial.provider,
-				model: config.model ?? initial.model,
-			};
-		},
-		apply: async (runtime, { provider, model }) => {
-			settingsRef.current.set((draft: ReturnType<typeof settings.get>) => {
-				draft.defaultLLMConfig = {
-					...draft.defaultLLMConfig,
-					provider,
-					model,
-				};
-			});
-			await runtime.setLLMConfig({ provider, model });
-		},
-		initial,
-	});
+	const { config, patchConfig } = useLLMConfig();
+	const provider = config.provider ?? defaults.provider;
+	const model = config.model ?? defaults.model;
 
 	const setModel = useCallback(
-		(provider: string, model: string) => set({ provider, model }),
-		[set],
+		(nextProvider: string, nextModel: string) => {
+			settings.set((draft: ReturnType<typeof settings.get>) => {
+				draft.defaultLLMConfig = {
+					...draft.defaultLLMConfig,
+					provider: nextProvider,
+					model: nextModel,
+				};
+			});
+			return patchConfig({
+				provider: nextProvider,
+				model: nextModel,
+			});
+		},
+		[settings, patchConfig],
 	);
 
-	return useMemo(
-		() => ({ provider: value.provider, model: value.model, setModel }),
-		[value.provider, value.model, setModel],
-	);
+	return { provider, model, setModel };
 }

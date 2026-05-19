@@ -3,52 +3,78 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { CoreEvent } from '@franklin/extensions';
 import { CORE_STATE } from '@franklin/extensions';
-import { ZERO_USAGE } from '@franklin/mini-acp';
+import { ZERO_USAGE, type ThinkingLevel } from '@franklin/mini-acp';
 
 import { AgentProvider } from '../agent/agent-context.js';
 import { AppContext } from '../agent/franklin-context.js';
 import { useModelSelection } from '../agent/use-model-selection.js';
+import { useThinkingLevel } from '../agent/use-thinking-level.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 type Listener = () => void;
+type CoreEventListener = (event: CoreEvent) => void;
 
-function makeMockRuntime(opts?: { provider?: string; model?: string }): {
+function makeMockRuntime(opts?: {
+	provider?: string;
+	model?: string;
+	reasoning?: ThinkingLevel;
+}): {
 	runtime: FranklinRuntime;
 	notify: () => void;
 } {
-	const provider = opts?.provider;
-	const model = opts?.model;
-	const listeners = new Set<Listener>();
+	let provider = opts?.provider;
+	let model = opts?.model;
+	let reasoning = opts?.reasoning;
+	const listeners = new Set<CoreEventListener>();
 
 	const runtime = {
 		[CORE_STATE]: {
 			get: vi.fn(async () => ({
 				messages: [],
-				llmConfig: { provider, model },
+				llmConfig: { provider, model, reasoning },
 				usage: ZERO_USAGE,
 			})),
 			fork: vi.fn(async () => ({
 				messages: [],
-				llmConfig: { provider, model },
+				llmConfig: { provider, model, reasoning },
 				usage: ZERO_USAGE,
 			})),
 			child: vi.fn(async () => ({
 				messages: [],
-				llmConfig: { provider, model },
+				llmConfig: { provider, model, reasoning },
 				usage: ZERO_USAGE,
 			})),
 		},
-		setLLMConfig: vi.fn(async () => {
-			for (const l of listeners) l();
-		}),
+		setLLMConfig: vi.fn(
+			async (config: {
+				provider?: string;
+				model?: string;
+				reasoning?: ThinkingLevel;
+			}) => {
+				if (config.provider !== undefined) provider = config.provider;
+				if (config.model !== undefined) model = config.model;
+				if (config.reasoning !== undefined) reasoning = config.reasoning;
+				for (const l of listeners) l({ type: 'llm-config-changed' });
+			},
+		),
+		coreEvents: {
+			subscribe: vi.fn((listener: CoreEventListener) => {
+				listeners.add(listener);
+				return () => {
+					listeners.delete(listener);
+				};
+			}),
+		},
 		subscribe: vi.fn((listener: Listener) => {
-			listeners.add(listener);
+			const coreListener: CoreEventListener = () => listener();
+			listeners.add(coreListener);
 			return () => {
-				listeners.delete(listener);
+				listeners.delete(coreListener);
 			};
 		}),
 	} as unknown as FranklinRuntime;
@@ -56,7 +82,7 @@ function makeMockRuntime(opts?: { provider?: string; model?: string }): {
 	return {
 		runtime,
 		notify: () => {
-			for (const l of listeners) l();
+			for (const l of listeners) l({ type: 'llm-config-changed' });
 		},
 	};
 }
@@ -140,7 +166,7 @@ describe('useModelSelection – initialization', () => {
 });
 
 describe('useModelSelection – setModel', () => {
-	it('updates optimistically and calls setLLMConfig', async () => {
+	it('updates from the observer and calls setLLMConfig', async () => {
 		const { runtime } = makeMockRuntime({
 			provider: 'anthropic',
 			model: 'claude-sonnet-4-5',
@@ -153,16 +179,13 @@ describe('useModelSelection – setModel', () => {
 			expect(result.current.provider).toBe('anthropic');
 		});
 
-		act(() => {
-			void result.current.setModel('openai-codex', 'gpt-5.4');
+		await act(async () => {
+			await result.current.setModel('openai-codex', 'gpt-5.4');
 		});
 
-		// Optimistic update
-		expect(result.current.provider).toBe('openai-codex');
-		expect(result.current.model).toBe('gpt-5.4');
-
-		// setLLMConfig is async; it delegates to runtime.setLLMConfig.
 		await waitFor(() => {
+			expect(result.current.provider).toBe('openai-codex');
+			expect(result.current.model).toBe('gpt-5.4');
 			expect(runtime.setLLMConfig).toHaveBeenCalledWith(
 				expect.objectContaining({
 					provider: 'openai-codex',
@@ -196,5 +219,38 @@ describe('useModelSelection – setModel', () => {
 				model: 'z-ai/glm-5.1',
 			}),
 		);
+	});
+
+	it('preserves model and thinking changes made before observers resync', async () => {
+		const { runtime } = makeMockRuntime({
+			provider: 'anthropic',
+			model: 'claude-sonnet-4-5',
+			reasoning: 'medium',
+		});
+		const { result } = renderHook(
+			() => ({
+				modelSelection: useModelSelection(),
+				thinkingLevel: useThinkingLevel(),
+			}),
+			{ wrapper: makeWrapper(runtime) },
+		);
+
+		await waitFor(() => {
+			expect(result.current.modelSelection.provider).toBe('anthropic');
+			expect(result.current.thinkingLevel.level).toBe('medium');
+		});
+
+		await act(async () => {
+			await Promise.all([
+				result.current.modelSelection.setModel('openai-codex', 'gpt-5.4'),
+				result.current.thinkingLevel.setLevel('high'),
+			]);
+		});
+
+		await waitFor(() => {
+			expect(result.current.modelSelection.provider).toBe('openai-codex');
+			expect(result.current.modelSelection.model).toBe('gpt-5.4');
+			expect(result.current.thinkingLevel.level).toBe('high');
+		});
 	});
 });

@@ -34,7 +34,6 @@ function createLabelCompiler(): Compiler<LabelSignature, LabelRuntime> {
 			return {
 				labels: registry.argsFor('registerLabel').map(([label]) => label),
 				dispose: vi.fn(async () => {}),
-				subscribe: vi.fn(() => () => {}),
 			};
 		},
 	};

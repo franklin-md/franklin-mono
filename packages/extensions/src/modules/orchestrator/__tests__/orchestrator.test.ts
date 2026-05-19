@@ -94,7 +94,6 @@ function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 							dispose: vi.fn(async () => {
 								disposed = true;
 							}),
-							subscribe: vi.fn(() => () => {}),
 						};
 					},
 				},

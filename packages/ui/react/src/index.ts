@@ -9,6 +9,10 @@ export {
 	type UseThrottledStoreValueOptions,
 } from './utils/use-throttled-store-value.js';
 export { useStableExternalStore } from './utils/use-stable-external-store.js';
+export {
+	useObservedState,
+	type UseObservedState,
+} from './utils/use-observed-state.js';
 export { useCollectionNavigator } from './utils/use-collection-navigator.js';
 export { AgentProvider, useAgent } from './agent/agent-context.js';
 export {
@@ -34,6 +38,11 @@ export {
 export { useAgentControl } from './agent/use-agent-control.js';
 export { useAutoMarkRead } from './agent/use-auto-mark-read.js';
 export { useSettings } from './agent/use-settings.js';
+export {
+	useLLMConfig,
+	type RedactedLLMConfig,
+	type UseLLMConfig,
+} from './agent/use-llm-config.js';
 export {
 	useModelSelection,
 	type UseModelSelection,

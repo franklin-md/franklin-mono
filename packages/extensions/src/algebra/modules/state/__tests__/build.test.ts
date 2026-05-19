@@ -59,7 +59,6 @@ function createCounterModule(): StateExtensionModule<
 								child: vi.fn(async () => ({ counter: { value: 0 } })),
 							},
 							dispose: vi.fn(async () => {}),
-							subscribe: vi.fn(() => () => {}),
 						};
 					},
 				},
@@ -86,7 +85,6 @@ function createDependencyModule(
 				return {
 					dependency,
 					dispose: vi.fn(async () => {}),
-					subscribe: vi.fn(() => () => {}),
 				};
 			},
 		},

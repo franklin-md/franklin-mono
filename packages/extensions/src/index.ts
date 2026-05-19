@@ -178,7 +178,7 @@ export {
 } from './modules/core/api/index.js';
 export { createCoreCompiler } from './modules/core/compile/index.js';
 export { inspectRuntime } from './modules/core/inspect.js';
-export type { CoreRuntime } from './modules/core/runtime/index.js';
+export type { CoreEvent, CoreRuntime } from './modules/core/runtime/index.js';
 export { CORE_STATE, coreStateHandle } from './modules/core/runtime/index.js';
 // ---------------------------------------------------------------------------
 // State
@@ -207,7 +207,10 @@ export {
 	DEFAULT_NETWORK_CONFIG,
 } from './modules/environment/api/index.js';
 export { createEnvironmentCompiler } from './modules/environment/compile/index.js';
-export type { EnvironmentRuntime } from './modules/environment/runtime.js';
+export type {
+	EnvironmentEvent,
+	EnvironmentRuntime,
+} from './modules/environment/runtime.js';
 export {
 	ENV_STATE,
 	environmentStateHandle,

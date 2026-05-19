@@ -163,7 +163,6 @@ function createValueSystem(): StateExtensionModule<
 								child: vi.fn(async () => ({ value })),
 							},
 							dispose: vi.fn(async () => {}),
-							subscribe: vi.fn(() => () => {}),
 						};
 					},
 				},

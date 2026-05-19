@@ -9,7 +9,6 @@ function stubRuntime(context: Context): CoreRuntime {
 	return {
 		context: () => context,
 		dispose: async () => {},
-		subscribe: () => () => {},
 		prompt: () => {
 			throw new Error('not used');
 		},

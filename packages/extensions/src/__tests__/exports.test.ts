@@ -64,7 +64,6 @@ describe('package exports', () => {
 		let buildCalls = 0;
 		const runtime: BaseRuntime = {
 			dispose: async () => {},
-			subscribe: () => () => {},
 		};
 		const compiler = {
 			async compile<ContextRuntime extends BaseRuntime>(
