@@ -5,7 +5,9 @@ import { describe, it, expect, vi } from 'vitest';
 import type { ReactNode } from 'react';
 
 import type { ThinkingLevel } from '@franklin/mini-acp';
+import { ZERO_USAGE } from '@franklin/mini-acp';
 import type { FranklinRuntime } from '@franklin/agent/browser';
+import { CORE_STATE, type CoreEvent } from '@franklin/extensions';
 import { AgentProvider } from '@franklin/react';
 
 import { ThinkingToggle } from '../../../src/conversation/input/thinking-toggle.js';
@@ -15,17 +17,43 @@ import { ThinkingToggle } from '../../../src/conversation/input/thinking-toggle.
 // ---------------------------------------------------------------------------
 
 function makeMockRuntime(reasoning: ThinkingLevel): FranklinRuntime {
+	let level = reasoning;
+	const listeners = new Set<(event: CoreEvent) => void>();
+
 	return {
-		state: {
+		[CORE_STATE]: {
 			get: vi.fn(async () => ({
-				core: {
-					messages: [],
-					llmConfig: { reasoning },
-				},
+				messages: [],
+				llmConfig: { reasoning: level },
+				usage: ZERO_USAGE,
+			})),
+			fork: vi.fn(async () => ({
+				messages: [],
+				llmConfig: { reasoning: level },
+				usage: ZERO_USAGE,
+			})),
+			child: vi.fn(async () => ({
+				messages: [],
+				llmConfig: { reasoning: level },
+				usage: ZERO_USAGE,
 			})),
 		},
-		setContext: vi.fn(async () => {}),
-		subscribe: vi.fn(() => () => {}),
+		setLLMConfig: vi.fn(async (config: { reasoning?: ThinkingLevel }) => {
+			if (config.reasoning !== undefined) {
+				level = config.reasoning;
+			}
+			for (const listener of listeners) {
+				listener({ type: 'llm-config-changed' });
+			}
+		}),
+		coreEvents: {
+			subscribe: vi.fn((listener: (event: CoreEvent) => void) => {
+				listeners.add(listener);
+				return () => {
+					listeners.delete(listener);
+				};
+			}),
+		},
 	} as unknown as FranklinRuntime;
 }
 
