@@ -85,7 +85,7 @@ describe('createCoreStateModule', () => {
 	});
 
 	it('coreEvents emits llm config changes after setLLMConfig', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 		const runtime = await createRuntime(
 			system,
 			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
@@ -109,7 +109,7 @@ describe('createCoreStateModule', () => {
 	});
 
 	it('coreEvents emits turn-settled after prompt settles', async () => {
-		const system = createCoreModule(createMockConnector());
+		const system = createCoreStateModule(createMockConnector());
 		const runtime = await createRuntime(
 			system,
 			{ core: { messages: [], llmConfig: {}, usage: ZERO_USAGE } },
