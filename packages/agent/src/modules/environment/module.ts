@@ -1,6 +1,6 @@
 import { createExtensionPoint } from '@franklin/extensibility';
-import type { StateExtensionModule } from '@franklin/extensibility';
-import type { IdentitySignature } from '@franklin/extensibility';
+import type { IdentitySignature } from '@franklin/extensibility/module';
+import type { StateExtensionModule } from '../state/index.js';
 import type {
 	EnvironmentConfig,
 	ReconfigurableEnvironment,

@@ -2,7 +2,7 @@ import {
 	identityModule as simpleIdentityModule,
 	type IdentityRuntime,
 	type IdentitySignature,
-} from '../simple/identity.js';
+} from '@franklin/extensibility/module';
 import type {
 	IdentityState,
 	StateExtensionModule,

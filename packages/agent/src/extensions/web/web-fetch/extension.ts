@@ -5,7 +5,7 @@ import {
 	withRedirect,
 	withTimeout,
 } from '@franklin/lib';
-import { defineExtension } from '@franklin/extensibility';
+import { defineExtension } from '../../../modules/state/index.js';
 import type { CoreModule } from '../../../modules/core/index.js';
 import type { EnvironmentModule } from '../../../modules/environment/index.js';
 import { processWebResponse } from './process.js';

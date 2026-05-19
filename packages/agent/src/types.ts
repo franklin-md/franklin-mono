@@ -1,9 +1,9 @@
+import type { Extension } from '@franklin/extensibility';
 import type {
-	Extension,
 	BuildModules,
 	InferAPI,
 	InferState,
-} from '@franklin/extensibility';
+} from './modules/state/index.js';
 import type {
 	OrchestratorModule,
 	OrchestratorRuntime,

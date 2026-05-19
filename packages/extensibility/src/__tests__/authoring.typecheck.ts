@@ -1,14 +1,12 @@
 import {
 	type BaseRuntime,
-	type BaseState,
 	defineExtension,
 	type ExtensionAPI,
-	type ExtensionModule,
 	type ExtensionForModules,
 	type Signature,
-	type StateExtensionModule,
 	type StaticSignature,
-} from '../../index.js';
+} from '../index.js';
+import type { ExtensionModule } from '../module.js';
 
 type CoreAPI<R extends BaseRuntime> = {
 	on(event: 'cancel', handler: () => void): void;
@@ -33,20 +31,10 @@ type StoreModule = ExtensionModule<
 	StoreRuntime
 >;
 
-type EnvironmentRuntime = BaseRuntime & {
-	readonly environment: unknown;
-};
-
 type EnvironmentModule = ExtensionModule<
 	StaticSignature<Record<never, never>>,
-	EnvironmentRuntime
+	BaseRuntime & { readonly environment: unknown }
 >;
-
-type StubModule<
-	S extends BaseState,
-	Surface extends object = Record<never, never>,
-	Runtime extends BaseRuntime = BaseRuntime,
-> = StateExtensionModule<S, StaticSignature<Surface>, Runtime>;
 
 const _moduleExtension = defineExtension<
 	[CoreModule, StoreModule, EnvironmentModule]
@@ -109,7 +97,10 @@ type APIa = { on(event: string): void };
 type APIb = { on(event: number): void };
 
 const _duplicateAPI = defineExtension<
-	[StubModule<{ a: unknown }, APIa>, StubModule<{ b: unknown }, APIb>]
+	[
+		ExtensionModule<StaticSignature<APIa>, BaseRuntime>,
+		ExtensionModule<StaticSignature<APIb>, BaseRuntime>,
+	]
 >(
 	// @ts-expect-error duplicate API keys should be rejected
 	() => {},
@@ -121,8 +112,8 @@ type RuntimeB = BaseRuntime & { readonly shared: number };
 
 const _duplicateRuntime = defineExtension<
 	[
-		StubModule<{ a: unknown }, Record<never, never>, RuntimeA>,
-		StubModule<{ b: unknown }, Record<never, never>, RuntimeB>,
+		ExtensionModule<StaticSignature<Record<never, never>>, RuntimeA>,
+		ExtensionModule<StaticSignature<Record<never, never>>, RuntimeB>,
 	]
 >(
 	// @ts-expect-error duplicate runtime extras should be rejected

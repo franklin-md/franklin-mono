@@ -12,7 +12,7 @@ import { createEnvironmentCompiler } from '../compiler.js';
 import { createStoreCompiler } from '../../../store/compile/compiler.js';
 import { StoreRegistry } from '../../../store/api/registry/index.js';
 import type { StoreSignature } from '../../../store/api/api.js';
-import type { IdentitySignature } from '@franklin/extensibility';
+import type { IdentitySignature } from '@franklin/extensibility/module';
 import type { ReconfigurableEnvironment } from '../../api/types.js';
 
 const identityExtensionPoint = createExtensionPoint<IdentitySignature>({});

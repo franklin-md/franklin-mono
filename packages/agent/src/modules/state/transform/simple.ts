@@ -1,6 +1,6 @@
-import type { Signature } from '../../../api/index.js';
-import type { BaseRuntime } from '../../../runtime/index.js';
-import type { ExtensionModule } from '../../simple/index.js';
+import type { Signature } from '@franklin/extensibility';
+import type { BaseRuntime } from '@franklin/extensibility';
+import type { ExtensionModule } from '@franklin/extensibility/module';
 import { identityState, identityStateHandle } from '../identity.js';
 import type { IdentityState, StateExtensionModule } from '../types.js';
 

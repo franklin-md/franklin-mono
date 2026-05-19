@@ -8,7 +8,7 @@ import {
 } from '@franklin/mini-acp/mock';
 import { describe, expect, it } from 'vitest';
 
-import { combineAll } from '@franklin/extensibility';
+import { combineAll } from '../../modules/state/index.js';
 import { createRuntime } from '../../testing/index.js';
 import { createCoreStateModule } from '../../modules/core/module.js';
 import { StoreRegistry } from '../../modules/store/api/registry/index.js';

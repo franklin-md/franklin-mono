@@ -1,8 +1,8 @@
 import {
 	createDependencyModule,
 	type DependencyModule,
-} from '@franklin/extensibility';
-import type { InferRuntime } from '@franklin/extensibility/modules/simple/index.js';
+} from '@franklin/extensibility/module';
+import type { InferRuntime } from '@franklin/extensibility/module';
 
 type Self = {
 	readonly id: string;
