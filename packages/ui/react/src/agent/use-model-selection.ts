@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback } from 'react';
 
 import { useLLMConfig } from './use-llm-config.js';
 import { useSettings } from './use-settings.js';
@@ -26,38 +26,26 @@ export function useModelSelection(): UseModelSelection {
 	const settings = useSettings();
 	const defaults = settings.get().defaultLLMConfig;
 
-	const settingsRef = useRef(settings);
-	settingsRef.current = settings;
-
-	const initial = {
-		provider: defaults.provider,
-		model: defaults.model,
-	};
-
-	const { value, set } = useLLMConfig(initial);
-	const provider = value.provider ?? initial.provider;
-	const model = value.model ?? initial.model;
+	const { config, patchConfig } = useLLMConfig();
+	const provider = config.provider ?? defaults.provider;
+	const model = config.model ?? defaults.model;
 
 	const setModel = useCallback(
 		(nextProvider: string, nextModel: string) => {
-			settingsRef.current.set((draft: ReturnType<typeof settings.get>) => {
+			settings.set((draft: ReturnType<typeof settings.get>) => {
 				draft.defaultLLMConfig = {
 					...draft.defaultLLMConfig,
 					provider: nextProvider,
 					model: nextModel,
 				};
 			});
-			return set({
-				...value,
+			return patchConfig({
 				provider: nextProvider,
 				model: nextModel,
 			});
 		},
-		[set, value],
+		[settings, patchConfig],
 	);
 
-	return useMemo(
-		() => ({ provider, model, setModel }),
-		[provider, model, setModel],
-	);
+	return { provider, model, setModel };
 }

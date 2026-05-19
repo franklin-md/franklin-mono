@@ -3,17 +3,17 @@ import { useCallback } from 'react';
 import { getLLMConfig } from '@franklin/agent/browser';
 import type { LLMConfig } from '@franklin/mini-acp';
 
-import {
-	useObservedState,
-	type UseObservedState,
-} from '../utils/use-observed-state.js';
+import { useObservedState } from '../utils/use-observed-state.js';
 import { useAgent } from './agent-context.js';
 
 export type RedactedLLMConfig = Omit<LLMConfig, 'apiKey'>;
 
-export type UseLLMConfig = UseObservedState<RedactedLLMConfig>;
+export type UseLLMConfig = {
+	readonly config: RedactedLLMConfig;
+	readonly patchConfig: (patch: RedactedLLMConfig) => Promise<void>;
+};
 
-export function useLLMConfig(initial: RedactedLLMConfig = {}): UseLLMConfig {
+export function useLLMConfig(): UseLLMConfig {
 	const runtime = useAgent();
 
 	const subscribe = useCallback(
@@ -30,5 +30,6 @@ export function useLLMConfig(initial: RedactedLLMConfig = {}): UseLLMConfig {
 		[runtime],
 	);
 
-	return useObservedState(subscribe, read, apply, initial);
+	const { value, set } = useObservedState(subscribe, read, apply, {});
+	return { config: value, patchConfig: set };
 }

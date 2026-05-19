@@ -37,12 +37,12 @@ export type UseThinkingLevel = {
  * Must be used inside an `<AgentProvider>`.
  */
 export function useThinkingLevel(): UseThinkingLevel {
-	const { value, set } = useLLMConfig({ reasoning: 'medium' });
-	const level = value.reasoning ?? 'medium';
+	const { config, patchConfig } = useLLMConfig();
+	const level = config.reasoning ?? 'medium';
 
 	const setLevel = useCallback(
-		(next: ThinkingLevel) => set({ ...value, reasoning: next }),
-		[set, value],
+		(next: ThinkingLevel) => patchConfig({ reasoning: next }),
+		[patchConfig],
 	);
 
 	const cycleLevel = useCallback(() => {
