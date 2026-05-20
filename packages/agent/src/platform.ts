@@ -6,7 +6,7 @@ import type {
 	OsInfo,
 	Process,
 } from '@franklin/lib';
-import type { ClientProtocol } from '@franklin/mini-acp/rpc';
+import type { MiniACPRpcProtocol } from '@franklin/mini-acp/rpc';
 import type { EnvironmentFactory } from './modules/environment/module.js';
 
 type Disposable = { dispose(): Promise<void> };
@@ -25,7 +25,7 @@ export interface OperatingSystem {
 }
 
 export interface Platform {
-	spawn: () => Promise<ClientProtocol & Disposable>;
+	spawn: () => Promise<MiniACPRpcProtocol & Disposable>;
 	environment: EnvironmentFactory;
 
 	ai: {

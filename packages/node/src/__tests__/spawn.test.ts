@@ -14,6 +14,9 @@ vi.mock('@franklin/lib/transport', () => ({
 
 vi.mock('@franklin/mini-acp', () => ({
 	createPiAgent: vi.fn(),
+}));
+
+vi.mock('@franklin/mini-acp/debug', () => ({
 	debugMiniACP: vi.fn((endpoint: unknown, label: string) => ({
 		endpoint,
 		label,
@@ -33,6 +36,7 @@ describe('spawn', () => {
 	it('creates a Pi agent and debug-wraps both protocol directions', async () => {
 		const transport = await import('@franklin/lib/transport');
 		const miniACP = await import('@franklin/mini-acp');
+		const miniACPDebug = await import('@franklin/mini-acp/debug');
 		const miniACPRpc = await import('@franklin/mini-acp/rpc');
 		const streamFn = vi.fn();
 
@@ -67,12 +71,18 @@ describe('spawn', () => {
 
 		expect(result).toBe(clientDuplex);
 		expect(miniACPRpc.bindMiniACPRpcAgent).toHaveBeenCalledWith(agentDuplex);
-		expect(miniACP.debugMiniACP).toHaveBeenCalledWith(remote, 'agent:tools');
+		expect(miniACPDebug.debugMiniACP).toHaveBeenCalledWith(
+			remote,
+			'agent:tools',
+		);
 		expect(miniACP.createPiAgent).toHaveBeenCalledWith(
 			{ endpoint: remote, label: 'agent:tools' },
 			{ streamFn },
 		);
-		expect(miniACP.debugMiniACP).toHaveBeenCalledWith(agent, 'agent:client');
+		expect(miniACPDebug.debugMiniACP).toHaveBeenCalledWith(
+			agent,
+			'agent:client',
+		);
 		expect(bind).toHaveBeenCalledWith({
 			endpoint: agent,
 			label: 'agent:client',

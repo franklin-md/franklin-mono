@@ -1,19 +1,6 @@
 export type {
-	AssistantTextDescriptor,
-	AssistantThinkingDescriptor,
-	ChunkDelay,
-	ChunkDelayMode,
-	DelayDescriptor,
-	DeriveDescriptor,
 	MockTurnContext,
 	MockTurnDescriptor,
-	MockTurnStepDescriptor,
-	TextChunkDescriptor,
-	TextChunkStreamOptions,
-	TextTokenizer,
-	ToolCallRequestDescriptor,
-	ToolCallsDescriptor,
-	TurnEndDescriptor,
 } from './descriptor/index.js';
 
 export {

@@ -4,7 +4,7 @@ import { StopCode } from '../../types/index.js';
 import type { StreamEvent, ToolExecuteParams } from '../../types/index.js';
 import { bindMiniACPRpcAgent, createMiniACPRpcConnector } from '../index.js';
 import type { MuClient } from '../../protocol/types.js';
-import type { ClientProtocol } from '../types.js';
+import type { MiniACPRpcProtocol } from '../types.js';
 
 async function collect(
 	iter: AsyncIterable<StreamEvent>,
@@ -18,7 +18,7 @@ function createTransportFactory(agent: MuClient) {
 	const dispose = vi.fn(async () => {});
 
 	return {
-		spawn: (): ClientProtocol => {
+		spawn: (): MiniACPRpcProtocol => {
 			const { a: clientSide, b: agentSide } =
 				createDuplexPair<JsonRpcMessage>();
 			const connection = bindMiniACPRpcAgent(agentSide);

@@ -1,4 +1,4 @@
-import { collect } from '@franklin/mini-acp';
+import type { Message, StreamEvent, TurnEnd } from '@franklin/mini-acp';
 import {
 	defineExtension,
 	type ExtensionForModules,
@@ -9,6 +9,30 @@ import { spawnSpec } from './tools.js';
 import { formatResult } from './format.js';
 
 type SpawnExtension = ExtensionForModules<[OrchestratorModule<[CoreModule]>]>;
+
+async function collectStream(stream: AsyncIterable<StreamEvent>): Promise<{
+	messages: Message[];
+	turnEnd: TurnEnd | undefined;
+}> {
+	const messages: Message[] = [];
+	let turnEnd: TurnEnd | undefined;
+
+	for await (const event of stream) {
+		switch (event.type) {
+			case 'update':
+				messages.push(event.message);
+				break;
+			case 'turnEnd':
+				turnEnd = event;
+				break;
+			case 'turnStart':
+			case 'chunk':
+				break;
+		}
+	}
+
+	return { messages, turnEnd };
+}
 
 /**
  * Spawn a child agent with a fresh prompt and return its last message.
@@ -25,7 +49,7 @@ export function spawnExtension(): SpawnExtension {
 					role: 'user',
 					content: [{ type: 'text', text: prompt }],
 				});
-				const { messages, turnEnd } = await collect(stream);
+				const { messages, turnEnd } = await collectStream(stream);
 				return formatResult(messages, turnEnd);
 			} finally {
 				await child.runtime.orchestrator.remove(child.id);

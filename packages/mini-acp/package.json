@@ -15,6 +15,14 @@
 			"types": "./dist/rpc/index.d.ts",
 			"import": "./dist/rpc/index.js"
 		},
+		"./session": {
+			"types": "./dist/session.d.ts",
+			"import": "./dist/session.js"
+		},
+		"./debug": {
+			"types": "./dist/debug.d.ts",
+			"import": "./dist/debug.js"
+		},
 		"./mock": {
 			"types": "./dist/mock/index.d.ts",
 			"import": "./dist/mock/index.js"
