@@ -10,7 +10,7 @@ import type { Extension } from '@franklin/extensibility';
 import type { CoreSignature } from '../modules/core/api/api.js';
 import { buildMiddleware } from '../modules/core/compile/decorators/middleware/build.js';
 import type { FullMiddleware } from '../modules/core/compile/decorators/middleware/types.js';
-import { createCoreRegistrar } from '../modules/core/compile/registrar/index.js';
+import { registeredTools } from '../modules/core/compile/registrations/index.js';
 import { serializeTool } from '../modules/core/compile/tools/index.js';
 import type { CoreRuntime } from '../modules/core/runtime/index.js';
 import type { ReconfigurableEnvironment } from '../modules/environment/api/types.js';
@@ -58,9 +58,9 @@ export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 	const { registry, writer } = createRegistry<CoreSignature, Ctx>();
 	const api = createApi<CoreSignature, Ctx>(coreExtensionPoint, writer);
 	ext(api);
-	const registrations = createCoreRegistrar<Ctx>(createRegistryView(registry));
+	const registrations = createRegistryView(registry);
 	const middleware = buildMiddleware(registrations, getCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { middleware, tools };
 }
 
@@ -110,11 +110,9 @@ export async function compileCoreWithStore(
 		getCtx,
 	);
 
-	const registrations = createCoreRegistrar<CoreStoreRuntime>(
-		createRegistryView(coreRegistry),
-	);
+	const registrations = createRegistryView(coreRegistry);
 	const middleware = buildMiddleware(registrations, getCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { middleware, stores: cell.stores, tools };
 }
 
@@ -174,11 +172,9 @@ export async function compileCoreWithStoreAndEnv(
 	);
 	cell.ctx = combineRuntimes(stores, environment);
 
-	const registrations = createCoreRegistrar<CoreStoreEnvironmentRuntime>(
-		createRegistryView(coreRegistry),
-	);
+	const registrations = createRegistryView(coreRegistry);
 	const middleware = buildMiddleware(registrations, getCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { middleware, ctx: cell.ctx, tools };
 }
 
@@ -220,10 +216,8 @@ export async function compileCoreWithEnv(
 		getCtx,
 	);
 
-	const registrations = createCoreRegistrar<CoreEnvironmentRuntime>(
-		createRegistryView(registry),
-	);
+	const registrations = createRegistryView(registry);
 	const middleware = buildMiddleware(registrations, getCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { middleware, ctx: cell.ctx, tools };
 }

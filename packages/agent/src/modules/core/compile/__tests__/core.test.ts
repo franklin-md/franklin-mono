@@ -23,7 +23,7 @@ import { resolveToolOutput } from '../../api/tool.js';
 import type { CoreRuntime } from '../../runtime/index.js';
 import { buildMiddleware } from '../decorators/middleware/build.js';
 import type { FullMiddleware } from '../decorators/middleware/types.js';
-import { createCoreRegistrar } from '../registrar/index.js';
+import { registeredTools } from '../registrations/index.js';
 import { serializeTool } from '../tools/index.js';
 
 type CoreExtension = Extension<API<CoreSignature, CoreRuntime>>;
@@ -54,11 +54,9 @@ async function compileExt(
 	const { registry, writer } = createRegistry<CoreSignature, CoreRuntime>();
 	const api = createApi<CoreSignature, CoreRuntime>(coreExtensionPoint, writer);
 	ext(api);
-	const registrations = createCoreRegistrar<CoreRuntime>(
-		createRegistryView(registry),
-	);
+	const registrations = createRegistryView(registry);
 	const middleware = buildMiddleware(registrations, () => stubCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { ...middleware, tools };
 }
 

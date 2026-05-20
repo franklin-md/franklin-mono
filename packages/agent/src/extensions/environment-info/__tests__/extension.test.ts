@@ -15,7 +15,7 @@ import {
 	buildSystemPromptAssembler,
 	type SystemPromptAssembler,
 } from '../../../modules/core/compile/decorators/system-prompt/index.js';
-import { createCoreRegistrar } from '../../../modules/core/compile/registrar/index.js';
+import { registeredEventHandlers } from '../../../modules/core/compile/registrations/index.js';
 import type { CoreRuntime } from '../../../modules/core/runtime/index.js';
 import type {
 	EnvironmentConfig,
@@ -49,10 +49,7 @@ function collectHandlers(
 		writer,
 	);
 	extension(api);
-	const registrations = createCoreRegistrar<CoreRuntime & EnvironmentRuntime>(
-		createRegistryView(registry),
-	);
-	return registrations.systemPrompt;
+	return registeredEventHandlers(createRegistryView(registry), 'systemPrompt');
 }
 
 function defaultConfig(): EnvironmentConfig {
