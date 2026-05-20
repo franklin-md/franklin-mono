@@ -138,8 +138,9 @@ describe('AuthManager', () => {
 			createAuthStore(filesystem, TEST_APP_DIR),
 		);
 
-		await auth.restore();
+		const result = await auth.restore();
 
+		expect(result.issues).toEqual([]);
 		expect(auth.entries()).toEqual({
 			anthropic: {
 				apiKey: {
@@ -149,6 +150,54 @@ describe('AuthManager', () => {
 			},
 		});
 		expect(filesystem.writeFile).not.toHaveBeenCalled();
+	});
+
+	it('surfaces a schema-mismatch for malformed auth data', async () => {
+		const filesystem = createFilesystem();
+		await filesystem.writeFile(
+			TEST_AUTH_PATH,
+			JSON.stringify({ version: 1, data: { anthropic: 'not-an-object' } }),
+		);
+		const auth = new AuthManager(
+			createPlatform(filesystem),
+			createAuthStore(filesystem, TEST_APP_DIR),
+		);
+
+		const result = await auth.restore();
+
+		expect(result.issues[0]).toMatchObject({
+			kind: 'schema-mismatch',
+			version: 1,
+		});
+	});
+
+	it('loads auth entries with unknown fields cleanly', async () => {
+		const filesystem = createFilesystem();
+		await filesystem.writeFile(
+			TEST_AUTH_PATH,
+			JSON.stringify({
+				version: 1,
+				data: {
+					anthropic: {
+						apiKey: { type: 'apiKey', key: 'sk-test' },
+						retiredField: 'should-be-dropped',
+					},
+				},
+			}),
+		);
+		const auth = new AuthManager(
+			createPlatform(filesystem),
+			createAuthStore(filesystem, TEST_APP_DIR),
+		);
+
+		const result = await auth.restore();
+
+		expect(result.issues).toEqual([]);
+		expect(auth.entries()).toEqual({
+			anthropic: {
+				apiKey: { type: 'apiKey', key: 'sk-test' },
+			},
+		});
 	});
 
 	it('does not emit auth change events during restore', async () => {

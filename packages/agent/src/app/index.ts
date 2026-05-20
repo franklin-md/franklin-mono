@@ -3,7 +3,7 @@ import type { AbsolutePath, RestoreResult } from '@franklin/lib';
 import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { withAuth } from '../auth/with-auth.js';
-import { AuthManager } from '../auth/manager.js';
+import type { AuthManager } from '../auth/manager.js';
 import { createCoreStateModule } from '../modules/core/module.js';
 import { createEnvironmentModule } from '../modules/environment/module.js';
 import {
@@ -21,7 +21,6 @@ import type {
 	FranklinRuntime,
 	FranklinState,
 } from '../types.js';
-import type { AuthStore } from '../storage/types.js';
 import { createAgents, type Agents } from './agents.js';
 
 export interface FranklinAppExtensionContext {
@@ -68,18 +67,15 @@ export class FranklinApp {
 		extensions: FranklinAppExtensions;
 		platform: Platform;
 		appDir: AbsolutePath;
-		authStore?: AuthStore;
+		auth: AuthManager;
 	}) {
 		const { platform, appDir } = opts;
 		const storage = createStorage<FranklinState>(
 			platform.os.filesystem,
 			appDir,
-			{
-				authStore: opts.authStore,
-			},
 		);
 
-		this.auth = new AuthManager(platform, storage.auth);
+		this.auth = opts.auth;
 		this.platform = platform;
 		this.settings = storage.settings;
 		this.restoreStorage = () => storage.restore();
@@ -121,12 +117,19 @@ export class FranklinApp {
 	}
 
 	async start(): Promise<RestoreResult> {
-		const storageResult = await this.restoreStorage();
+		const [authResult, storageResult] = await Promise.all([
+			this.auth.restore(),
+			this.restoreStorage(),
+		]);
 		const collectionResult = await this.collection.restore((id, state) =>
 			this.orchestrator.materialize(id, state),
 		);
 		return {
-			issues: [...storageResult.issues, ...collectionResult.issues],
+			issues: [
+				...authResult.issues,
+				...storageResult.issues,
+				...collectionResult.issues,
+			],
 		};
 	}
 }

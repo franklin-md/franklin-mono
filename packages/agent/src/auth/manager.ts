@@ -1,4 +1,4 @@
-import { createObserver } from '@franklin/lib';
+import { createObserver, type RestoreResult } from '@franklin/lib';
 
 import type { OAuthClient } from './oauth-client.js';
 import { createBuiltInOAuthClient } from './specs/index.js';
@@ -30,8 +30,8 @@ export class AuthManager {
 		this.oauthClient = oauthClient ?? createBuiltInOAuthClient(platform.os.net);
 	}
 
-	async restore(): Promise<void> {
-		await this.store.restore();
+	async restore(): Promise<RestoreResult> {
+		return this.store.restore();
 	}
 
 	onAuthChange(
