@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { createTodoControl, todoExtension } from '@franklin/agent/browser';
+import { createTodoControl, todoExtension } from '@franklin/agent';
 import { useAgentState } from '@franklin/react';
 
 import {

@@ -1,4 +1,4 @@
-import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
+import type { AgentCreateInput, FranklinApp } from '@franklin/agent';
 import type { AbsolutePath } from '@franklin/lib';
 
 import { createDefaultObsidianFilesystemPermissions } from '../platform/filesystem/permissions.js';

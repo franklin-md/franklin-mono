@@ -1,4 +1,4 @@
-import type { FranklinAPI, FranklinExtension } from '@franklin/agent/browser';
+import type { FranklinAPI, FranklinExtension } from '@franklin/agent';
 import { filesystemExtension, type SetPartOptions } from '@franklin/agent';
 import { oxfordJoin } from '@franklin/lib';
 

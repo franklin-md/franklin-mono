@@ -1,4 +1,4 @@
-import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent';
 
 import { createSimpleContext } from '../utils/create-simple-context.js';
 

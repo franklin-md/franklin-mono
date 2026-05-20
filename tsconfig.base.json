@@ -21,7 +21,6 @@
 			"@franklin/lib/transport/node": ["packages/lib/src/transport/node.ts"],
 			"@franklin/lib/middleware": ["packages/lib/src/middleware/index.ts"],
 			"@franklin/agent": ["packages/agent/src/index.ts"],
-			"@franklin/agent/browser": ["packages/agent/src/browser.ts"],
 			"@franklin/agent/testing": ["packages/agent/src/testing/index.ts"],
 			"@franklin/extensibility": ["packages/extensibility/src/index.ts"],
 			"@franklin/extensibility/authoring": [

@@ -13,7 +13,7 @@ import type { ReactNode } from 'react';
 import type { ConversationTurn, Store, TurnEndBlock } from '@franklin/agent';
 import { conversationExtension, createStore } from '@franklin/agent';
 import type { UserMessage } from '@franklin/mini-acp';
-import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent';
 
 import { AgentProvider } from '../agent/agent-context.js';
 import { usePrompt } from '../prompt/context.js';

@@ -1,4 +1,4 @@
-import type { Platform } from '@franklin/agent/browser';
+import type { Platform } from '@franklin/agent';
 import type { EnvironmentConfig } from '@franklin/agent';
 import { Agent as HttpAgent } from 'node:http';
 import { Agent as HttpsAgent } from 'node:https';

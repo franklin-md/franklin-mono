@@ -1,4 +1,4 @@
-import type { AppSettings } from '@franklin/agent/browser';
+import type { AppSettings } from '@franklin/agent';
 import type { Store } from '@franklin/agent';
 
 import { useApp } from './franklin-context.js';

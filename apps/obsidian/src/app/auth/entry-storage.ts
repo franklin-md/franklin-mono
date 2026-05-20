@@ -1,4 +1,4 @@
-import type { AuthEntry } from '@franklin/agent/browser';
+import type { AuthEntry } from '@franklin/agent';
 import { toApiKeyName, toOAuthName } from './key-names.js';
 import {
 	decodeApiKey,

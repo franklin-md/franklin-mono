@@ -11,10 +11,6 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
 		},
-		"./browser": {
-			"types": "./dist/browser.d.ts",
-			"import": "./dist/browser.js"
-		},
 		"./testing": {
 			"types": "./dist/testing/index.d.ts",
 			"import": "./dist/testing/index.js"
