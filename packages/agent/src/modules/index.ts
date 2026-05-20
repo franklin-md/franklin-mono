@@ -36,6 +36,12 @@ export { coreStateHandle } from './core/runtime/index.js';
 export type { CoreState, SessionSnapshot } from './core/state.js';
 export { emptyCoreState, emptySessionSnapshot } from './core/state.js';
 
+// Auth dependency
+export type {
+	AuthDependencyModule,
+	AuthDependencyRuntime,
+} from '../auth/dependency.js';
+
 // State modules
 export {
 	buildStateExtensionModule,

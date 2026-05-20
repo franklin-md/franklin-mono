@@ -34,10 +34,7 @@ export {
 // PDF
 export {
 	createReadPDFExtension,
-	FreePDFConverter,
-	MistralPDFConverter,
-	type PDFConverter,
-	type PDFInput,
+	type ReadPDFExtensionOptions,
 } from './pdf/index.js';
 
 // Terminal
