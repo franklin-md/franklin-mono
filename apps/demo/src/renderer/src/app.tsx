@@ -14,7 +14,7 @@ import {
 	environmentInfoExtension,
 } from '@franklin/agent';
 
-import { AppStartup } from './app-startup.js';
+import { useHarnessStartup } from './use-harness-startup.js';
 
 const webExtension = createWebExtension({});
 const platform = createElectronPlatform();
@@ -35,28 +35,30 @@ const extensionBundles = [
 const extensions = extensionBundles.map((bundle) => bundle.extension);
 
 export function App() {
+	const startup = useHarnessStartup({ extensions, platform });
+
+	if (startup.status === 'error') {
+		throw startup.error;
+	}
+
+	if (startup.status === 'loading') {
+		return (
+			<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+				Loading…
+			</div>
+		);
+	}
+
 	return (
-		<AppStartup
-			extensions={extensions}
-			platform={platform}
-			fallback={
-				<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-					Loading…
-				</div>
-			}
+		<ApplicationProvider
+			harness={startup.harness}
+			hostActionBindings={hostActionBindings}
 		>
-			{(harness) => (
-				<ApplicationProvider
-					harness={harness}
-					hostActionBindings={hostActionBindings}
-				>
-					<DefaultAuthActionProvider>
-						<div className="flex h-screen bg-background">
-							<AgentChatPage />
-						</div>
-					</DefaultAuthActionProvider>
-				</ApplicationProvider>
-			)}
-		</AppStartup>
+			<DefaultAuthActionProvider>
+				<div className="flex h-screen bg-background">
+					<AgentChatPage />
+				</div>
+			</DefaultAuthActionProvider>
+		</ApplicationProvider>
 	);
 }
