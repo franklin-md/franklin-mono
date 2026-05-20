@@ -1,4 +1,4 @@
-import type { FranklinApp } from '@franklin/agent/browser';
+import type { FranklinApp } from '@franklin/agent';
 import { Notice, Plugin } from 'obsidian';
 
 import { createObsidianSessionInput } from './app/agent.js';

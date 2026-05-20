@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { FranklinApp } from '@franklin/agent/browser';
+import type { FranklinApp } from '@franklin/agent';
 import { toAbsolutePath } from '@franklin/lib';
 
 import { createObsidianSessionInput } from '../agent.js';

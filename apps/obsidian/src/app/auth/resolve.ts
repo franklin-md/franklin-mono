@@ -1,4 +1,4 @@
-import type { AuthStore } from '@franklin/agent/browser';
+import type { AuthStore } from '@franklin/agent';
 import type { Plugin } from 'obsidian';
 
 import { createObsidianAuthStore } from './store.js';

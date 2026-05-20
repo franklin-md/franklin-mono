@@ -1,4 +1,4 @@
-import type { AuthEntry, AuthManager } from '@franklin/agent/browser';
+import type { AuthEntry, AuthManager } from '@franklin/agent';
 import type { PDFConverter } from '@franklin/agent';
 import { describe, expect, it, vi } from 'vitest';
 

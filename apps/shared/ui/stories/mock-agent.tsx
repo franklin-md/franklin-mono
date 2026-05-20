@@ -5,13 +5,14 @@ import type {
 	AuthEntry,
 	FranklinRuntime,
 	OAuthLoginCallbacks,
-} from '@franklin/agent/browser';
+} from '@franklin/agent';
 import type {
 	ConversationTurn,
 	CoreEvent,
 	RuntimeEntry,
 } from '@franklin/agent';
-import { CORE_STATE, conversationExtension } from '@franklin/agent';
+import { conversationExtension } from '@franklin/agent';
+import { CORE_STATE } from '@franklin/agent/testing';
 import type { LLMConfig, ThinkingLevel } from '@franklin/mini-acp';
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import {

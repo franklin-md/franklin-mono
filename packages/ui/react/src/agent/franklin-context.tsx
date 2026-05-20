@@ -7,8 +7,8 @@ import {
 	type ReactNode,
 } from 'react';
 
-import { FranklinApp, type FranklinExtension } from '@franklin/agent/browser';
-import type { Platform } from '@franklin/agent/browser';
+import { FranklinApp, type FranklinExtension } from '@franklin/agent';
+import type { Platform } from '@franklin/agent';
 import { joinAbsolute } from '@franklin/lib';
 
 // ---------------------------------------------------------------------------

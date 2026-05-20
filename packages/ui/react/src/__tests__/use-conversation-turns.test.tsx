@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 
 import type { ConversationTurn } from '@franklin/agent';
 import { conversationExtension } from '@franklin/agent';
-import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent';
 
 import { AgentProvider } from '../agent/agent-context.js';
 import {

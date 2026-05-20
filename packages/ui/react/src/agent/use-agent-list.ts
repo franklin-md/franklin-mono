@@ -4,8 +4,8 @@ import type {
 	FranklinRuntime,
 	FranklinState,
 	OrchestratorCreateInput,
-} from '@franklin/agent/browser';
-import type { RuntimeEntry } from '@franklin/agent';
+	RuntimeEntry,
+} from '@franklin/agent';
 
 import { useApp } from './franklin-context.js';
 import { useSessions } from './use-sessions.js';

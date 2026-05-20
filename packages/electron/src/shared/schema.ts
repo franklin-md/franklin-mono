@@ -1,4 +1,4 @@
-import type { Platform } from '@franklin/agent/browser';
+import type { Platform } from '@franklin/agent';
 import { method, namespace, on, resource, stream } from '@franklin/lib/proxy';
 import type { NamespaceShape } from '@franklin/lib/proxy';
 

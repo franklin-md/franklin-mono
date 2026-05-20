@@ -2,7 +2,7 @@ import type {
 	FranklinApp,
 	FranklinState,
 	OrchestratorCreateInput,
-} from '@franklin/agent/browser';
+} from '@franklin/agent';
 import type { AbsolutePath } from '@franklin/lib';
 
 import { createDefaultObsidianFilesystemPermissions } from '../platform/filesystem/permissions.js';

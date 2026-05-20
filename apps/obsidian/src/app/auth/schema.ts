@@ -3,7 +3,7 @@ import type {
 	ApiKeyEntry,
 	OAuthCredentials,
 	OAuthEntry,
-} from '@franklin/agent/browser';
+} from '@franklin/agent';
 
 const apiKeySchema = z.string().min(1);
 
