@@ -1,4 +1,8 @@
 export { AuthManager } from './auth/manager.js';
+export type {
+	AuthDependencyModule,
+	AuthDependencyRuntime,
+} from './auth/dependency.js';
 export type { OAuthCredentials } from './auth/credentials.js';
 export { createAuthStore } from './auth/store.js';
 export type {
