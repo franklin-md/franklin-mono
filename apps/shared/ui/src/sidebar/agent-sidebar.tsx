@@ -19,7 +19,7 @@ export function AgentSidebar() {
 
 	const handleCreate = useCallback(() => {
 		void create({
-			overrides: {
+			state: {
 				core: { llmConfig: settings.get().defaultLLMConfig },
 				env: {
 					fsConfig: {

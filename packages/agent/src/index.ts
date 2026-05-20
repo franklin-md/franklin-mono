@@ -25,7 +25,6 @@ export type {
 	FranklinAppExtensionContext,
 	FranklinAppExtensions,
 } from './app/index.js';
-export type { AgentCreate, AgentCreateInput, Agents } from './app/agents.js';
 export type { AuthStore } from './auth/store.js';
 
 export { type Platform, type OperatingSystem } from './platform.js';
