@@ -4,7 +4,6 @@ import type { AuthEntries } from '../auth/types.js';
 import type {
 	PersistedStore,
 	StoreRegistry,
-	StoreSnapshot,
 } from '../modules/store/api/index.js';
 import type { AppSettings } from '../settings/schema.js';
 
@@ -17,9 +16,4 @@ export interface Storage<S extends BaseState> {
 	readonly sessions: SessionPersistence<S>;
 	readonly stores: StoreRegistry;
 	restore(): Promise<RestoreResult>;
-}
-
-export interface FilePersistence<S extends BaseState> {
-	readonly session: SessionPersistence<S>;
-	readonly store: MapFilePersister<StoreSnapshot>;
 }
