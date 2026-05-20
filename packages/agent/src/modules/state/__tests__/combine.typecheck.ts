@@ -1,5 +1,5 @@
-import type { Signature, StaticSignature } from '../../../api/types.js';
-import type { BaseRuntime } from '../../../runtime/types.js';
+import type { Signature, StaticSignature } from '@franklin/extensibility';
+import type { BaseRuntime } from '@franklin/extensibility';
 import type { StateExtensionModule } from '../types.js';
 import { buildStateExtensionModule } from '../build.js';
 import { combine, combineAll } from '../combine.js';

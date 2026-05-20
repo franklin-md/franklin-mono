@@ -4,7 +4,8 @@ import type {
 	CoreState,
 	CoreStateModule,
 } from '../modules/core/index.js';
-import { applyStep, liftStateCompilerTransform } from '@franklin/extensibility';
+import { applyStep } from '@franklin/extensibility';
+import { liftCompilerTransform as liftStateCompilerTransform } from '../modules/state/index.js';
 import { coreStateHandle } from '../modules/core/index.js';
 import type { AuthManager } from './manager.js';
 

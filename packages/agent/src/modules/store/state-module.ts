@@ -1,5 +1,5 @@
-import type { StateExtensionModule } from '@franklin/extensibility';
 import type { StateHandle } from '@franklin/extensibility';
+import type { StateExtensionModule } from '../state/index.js';
 import type { StoreSignature } from './api/api.js';
 import type { StoreRegistry } from './api/registry/index.js';
 import type { StoreMapping } from './api/registry/mapping.js';

@@ -1,10 +1,7 @@
 import type { Issue, RestoreResult } from '@franklin/lib';
 import { hydrateFailedIssue } from '@franklin/lib';
-import type {
-	BaseRuntime,
-	BaseState,
-	StateHandle,
-} from '@franklin/extensibility';
+import type { BaseRuntime, StateHandle } from '@franklin/extensibility';
+import type { BaseState } from '../../modules/state/index.js';
 import {
 	RuntimeCollection,
 	type RuntimeEntry,

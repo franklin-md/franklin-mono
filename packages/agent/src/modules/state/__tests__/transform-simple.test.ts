@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { StaticSignature } from '../../../api/types.js';
-import { compile } from '../../../compiler/compile.js';
-import { createExtensionPoint } from '../../../extension-points/create.js';
-import type { RegistryView } from '../../../extension-points/view.js';
-import type { BaseRuntime } from '../../../runtime/types.js';
-import type { ExtensionModule } from '../../simple/index.js';
+import type { StaticSignature } from '@franklin/extensibility';
+import { compile } from '@franklin/extensibility';
+import { createExtensionPoint } from '@franklin/extensibility';
+import type { RegistryView } from '@franklin/extensibility';
+import type { BaseRuntime } from '@franklin/extensibility';
+import type { ExtensionModule } from '@franklin/extensibility/module';
 import { fromSimpleModule } from '../transform/index.js';
 
 type DependencySignature = StaticSignature<Record<never, never>>;

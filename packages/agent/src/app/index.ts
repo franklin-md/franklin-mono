@@ -1,4 +1,4 @@
-import { buildStateExtensionModule } from '@franklin/extensibility';
+import { buildStateExtensionModule } from '../modules/state/index.js';
 import type { AbsolutePath, RestoreResult } from '@franklin/lib';
 import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
 import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';

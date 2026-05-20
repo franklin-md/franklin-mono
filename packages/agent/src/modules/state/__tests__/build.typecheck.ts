@@ -1,6 +1,6 @@
-import type { Signature, StaticSignature } from '../../../api/index.js';
-import type { BaseRuntime } from '../../../runtime/index.js';
-import type { ExtensionModule } from '../../simple/index.js';
+import type { Signature, StaticSignature } from '@franklin/extensibility';
+import type { BaseRuntime } from '@franklin/extensibility';
+import type { ExtensionModule } from '@franklin/extensibility/module';
 import type { StateExtensionModule } from '../types.js';
 import { buildStateExtensionModule } from '../build.js';
 import type {

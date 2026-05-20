@@ -94,6 +94,12 @@ export { createObserver } from './utils/observer.js';
 export type { Observer } from './utils/observer.js';
 export type { DeepPartial } from './typing/deep-partial.js';
 export type { AssertNoOverlap, OverlappingKeys } from './typing/overlap.js';
+export type {
+	BinaryType,
+	ReduceCompositionTuple,
+	ValidateCompositionTuple,
+} from './typing/compose.js';
+export { reduceNonEmpty } from './utils/reduce-non-empty.js';
 export {
 	normalizeUrl,
 	isPrivateHost,

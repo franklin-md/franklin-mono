@@ -92,8 +92,53 @@ export {
 export type {
 	DependencyRuntime,
 	DependencyModule,
-} from '@franklin/extensibility';
-export { createDependencyModule } from '@franklin/extensibility';
+} from '@franklin/extensibility/module';
+export { createDependencyModule } from '@franklin/extensibility/module';
+export {
+	buildStateExtensionModule,
+	combine as combineStateModules,
+	combineAll as combineAllStateModules,
+	defineExtension,
+	fromSimpleModule,
+	identityState,
+	identityStateHandle,
+	liftBuildModule,
+	liftCompilerTransform as liftStateCompilerTransform,
+	liftModuleTransform as liftStateModuleTransform,
+	resolveState,
+} from './modules/state/index.js';
+export type {
+	BaseState,
+	BaseStateExtensionModule,
+	BuildableModule,
+	BuildModules,
+	CombinableBuildModule,
+	CombinableModule as CombinableStateModule,
+	CombineModules as CombineStateModules,
+	ExtensionAPI as ExtensionAPIForModules,
+	ExtensionForModules,
+	IdentityModule as IdentityStateModule,
+	IdentityState,
+	InferAPI as InferStateModuleAPI,
+	InferCompiler as InferStateModuleCompiler,
+	InferExtension as InferStateModuleExtension,
+	InferRuntime as InferStateModuleRuntime,
+	InferSignature as InferStateModuleSignature,
+	InferSimpleModule,
+	InferState,
+	LiftModule,
+	LiftModules,
+	ModuleRuntimes,
+	ModuleSignatures,
+	Modules as StateModules,
+	StateCompilerTransform,
+	StateExtensionModule,
+	StateExtensionModuleTransform,
+	StateHandle,
+	StateModuleTransform,
+	ValidateBuildModules,
+	ValidateModules as ValidateStateModules,
+} from './modules/state/index.js';
 
 export type {
 	ConfigureOptions,

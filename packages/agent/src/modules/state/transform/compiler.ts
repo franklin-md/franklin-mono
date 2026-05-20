@@ -1,6 +1,6 @@
-import type { Signature } from '../../../api/index.js';
-import type { BaseRuntime } from '../../../runtime/index.js';
-import { liftCompilerTransform as liftSimpleCompilerTransform } from '../../simple/transform/index.js';
+import type { Signature } from '@franklin/extensibility';
+import type { BaseRuntime } from '@franklin/extensibility';
+import { liftCompilerTransform as liftSimpleCompilerTransform } from '@franklin/extensibility/module';
 import type { BaseState } from '../types.js';
 import type {
 	StateCompilerTransform,

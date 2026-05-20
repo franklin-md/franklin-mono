@@ -1,11 +1,11 @@
 import { describe, it, expect, expectTypeOf, vi } from 'vitest';
 import { compile } from '../../../compiler/compile.js';
-import type { DependencyRuntime as ApiIndexDependencyRuntime } from '../../../index.js';
+import type { DependencyRuntime as ModuleDependencyRuntime } from '../../../module.js';
 import {
 	createDependencyModule,
 	type DependencyRuntime,
 	type DependencyModule,
-} from '../../../index.js';
+} from '../../../module.js';
 import { createDependencyModule as createDependencyModuleFromModuleFile } from '../module.js';
 
 describe('createDependencyModule', () => {
@@ -17,7 +17,7 @@ describe('createDependencyModule', () => {
 			DependencyModule<'settings', typeof settings>
 		>();
 		expectTypeOf<
-			ApiIndexDependencyRuntime<'settings', typeof settings>
+			ModuleDependencyRuntime<'settings', typeof settings>
 		>().toEqualTypeOf<DependencyRuntime<'settings', typeof settings>>();
 	});
 

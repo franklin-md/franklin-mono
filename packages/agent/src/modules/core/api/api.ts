@@ -7,7 +7,7 @@ import type {
 	SystemPromptHandler,
 	ToolObserverHandler,
 } from './handlers.js';
-import type { MaybePromise } from '@franklin/extensibility/utils/maybe-promise.js';
+import type { MaybePromise } from '../../../utils/maybe-promise.js';
 import type { WithContext } from '../compile/registrar/types.js';
 import type { Signature } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';

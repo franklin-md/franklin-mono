@@ -1,7 +1,7 @@
-import type { Signature } from '../../../api/index.js';
-import type { CompilerTransform } from '../../../compiler/transform/types.js';
-import type { BaseRuntime } from '../../../runtime/index.js';
-import type { ExtensionModuleTransform } from '../../simple/transform/types.js';
+import type { Signature } from '@franklin/extensibility';
+import type { CompilerTransform } from '@franklin/extensibility';
+import type { BaseRuntime } from '@franklin/extensibility';
+import type { ExtensionModuleTransform } from '@franklin/extensibility/module';
 import type { BaseState, StateExtensionModule } from '../types.js';
 
 export type StateCompilerTransform<

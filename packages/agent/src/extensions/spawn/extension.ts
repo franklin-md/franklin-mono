@@ -2,7 +2,7 @@ import { collect } from '@franklin/mini-acp';
 import {
 	defineExtension,
 	type ExtensionForModules,
-} from '@franklin/extensibility';
+} from '../../modules/state/index.js';
 import type { CoreModule } from '../../modules/core/index.js';
 import type { OrchestratorModule } from '../../modules/orchestrator/index.js';
 import { spawnSpec } from './tools.js';

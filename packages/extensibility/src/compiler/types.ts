@@ -4,9 +4,8 @@ import type { BaseRuntime } from '../runtime/index.js';
 
 /**
  * A compiler interprets a populated extension-point registry view and materialises
- * a runtime. Stateful modules configure compilers during
- * `StateExtensionModule.instantiate(state)` and capture state in the compiler's
- * closure — it never appears in the compiler's type.
+ * a runtime. Stateful module wrappers can configure compilers with captured
+ * state before compile time; that state never appears in the compiler's type.
  *
  * `S` is the API signature. Compile helpers bind an extension point to a
  * registry writer, run the extension, then pass a typed view of the populated

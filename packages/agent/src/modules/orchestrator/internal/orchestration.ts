@@ -1,12 +1,12 @@
 import {
 	createDependencyModule,
 	type DependencyModule,
-} from '@franklin/extensibility';
-import type { InferRuntime } from '@franklin/extensibility/modules/simple/index.js';
+} from '@franklin/extensibility/module';
+import type { InferRuntime } from '@franklin/extensibility/module';
 import type {
 	BaseStateExtensionModule,
 	InferState,
-} from '@franklin/extensibility/modules/state/index.js';
+} from '../../state/index.js';
 import type { OrchestratorHandle, OrchestratorRuntime } from '../types.js';
 
 type OrchestrationHandle<M extends BaseStateExtensionModule> =

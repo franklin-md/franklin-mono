@@ -5,7 +5,7 @@ import {
 	type BuildModules,
 	type InferExtension,
 	type ValidateBuildModules,
-} from '@franklin/extensibility';
+} from '../state/index.js';
 import type { RuntimeCollection } from './collection.js';
 import { Orchestrator } from './orchestrator.js';
 import type { OrchestratorModule, OrchestratorRuntime } from './types.js';

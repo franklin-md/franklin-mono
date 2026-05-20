@@ -20,7 +20,7 @@ import type { StoreAPI, StoreSignature } from '../modules/store/api/api.js';
 import { StoreRegistry } from '../modules/store/api/registry/index.js';
 import { createStoreCompiler } from '../modules/store/compile/compiler.js';
 import type { StoreRuntime } from '../modules/store/runtime.js';
-import type { IdentitySignature } from '@franklin/extensibility';
+import type { IdentitySignature } from '@franklin/extensibility/module';
 
 type CoreStoreRuntime = CoreRuntime & StoreRuntime;
 

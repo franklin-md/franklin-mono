@@ -1,4 +1,4 @@
-import type { BaseState } from '@franklin/extensibility';
+import type { BaseState } from '../modules/state/index.js';
 import {
 	createMapFilePersister,
 	DebouncedPersister,
