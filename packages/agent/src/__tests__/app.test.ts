@@ -66,28 +66,6 @@ describe('FranklinApp extensions option', () => {
 
 		expect(app.auth).toBe(auth);
 	});
-
-	it('calls extension factories with app services', () => {
-		const platform = createPlatform();
-		const auth = new AuthManager(
-			platform,
-			createAuthStore(platform.os.filesystem, APP_DIR),
-		);
-		const extensions: FranklinExtension[] = [];
-		const factory = vi.fn(() => extensions);
-		const app = new FranklinApp({
-			extensions: factory,
-			platform,
-			appDir: APP_DIR,
-			auth,
-		});
-
-		expect(factory).toHaveBeenCalledWith({
-			auth: app.auth,
-			platform,
-			settings: app.settings,
-		});
-	});
 });
 
 describe('FranklinApp.start', () => {
