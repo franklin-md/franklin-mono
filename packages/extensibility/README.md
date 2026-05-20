@@ -15,7 +15,7 @@ compiler/runtime primitives, and runtime lifecycle types:
 
 ```ts
 import { defineExtension, createExtensionPoint, compile } from '@franklin/extensibility';
-import type { API, BaseRuntime, Extension, Signature } from '@franklin/extensibility';
+import type { API, BaseRuntime, Extension, Signature, WithRuntime } from '@franklin/extensibility';
 ```
 
 Use `@franklin/extensibility/authoring` when a package wants the

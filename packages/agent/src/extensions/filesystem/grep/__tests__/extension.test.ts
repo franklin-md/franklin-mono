@@ -10,14 +10,11 @@ import { createExtensionPoint } from '@franklin/extensibility';
 import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
+import { bindAllWithRuntime, type WithRuntime } from '@franklin/extensibility';
 import type { SystemPromptHandler } from '../../../../modules/core/api/handlers.js';
 import type { CoreSignature } from '../../../../modules/core/api/api.js';
 import { buildSystemPromptAssembler } from '../../../../modules/core/compile/decorators/system-prompt/index.js';
-import {
-	bindHandlers,
-	createCoreRegistrar,
-	type WithContext,
-} from '../../../../modules/core/compile/registrar/index.js';
+import { createCoreRegistrar } from '../../../../modules/core/compile/registrar/index.js';
 import type { CoreRuntime } from '../../../../modules/core/runtime/index.js';
 import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import {
@@ -27,7 +24,7 @@ import {
 import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import { grepExtension } from '../extension.js';
 
-type ModulePromptHandler = WithContext<
+type ModulePromptHandler = WithRuntime<
 	SystemPromptHandler,
 	CoreRuntime & EnvironmentRuntime
 >;
@@ -117,7 +114,7 @@ describe('grepExtension', () => {
 	it('contributes the ripgrep dialect fragment when rg is detected', async () => {
 		const env = mockEnvironment(ripgrepExec());
 		const handlers = collectHandlers(grepExtension());
-		const bound: SystemPromptHandler[] = bindHandlers(
+		const bound: SystemPromptHandler[] = bindAllWithRuntime(
 			handlers,
 			() => fakeRuntime(env) as CoreRuntime & EnvironmentRuntime,
 		);
@@ -136,7 +133,7 @@ describe('grepExtension', () => {
 			stderr: '',
 		}));
 		const handlers = collectHandlers(grepExtension());
-		const bound: SystemPromptHandler[] = bindHandlers(
+		const bound: SystemPromptHandler[] = bindAllWithRuntime(
 			handlers,
 			() => fakeRuntime(env) as CoreRuntime & EnvironmentRuntime,
 		);

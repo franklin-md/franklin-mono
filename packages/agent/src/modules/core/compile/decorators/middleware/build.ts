@@ -1,6 +1,6 @@
 import { buildWaterfall, passThrough } from '@franklin/lib/middleware';
-import type { BaseRuntime } from '@franklin/extensibility';
-import { bindHandlers, bindTool } from '../../registrar/bind.js';
+import { bindAllWithRuntime, type BaseRuntime } from '@franklin/extensibility';
+import { bindTool } from '../../registrar/bind.js';
 import type { CoreRegistrar } from '../../registrar/types.js';
 import {
 	buildPromptWaterfall,
@@ -16,17 +16,17 @@ export function buildMiddleware<Runtime extends BaseRuntime>(
 	registrations: CoreRegistrar<Runtime>,
 	getCtx: () => Runtime,
 ): FullMiddleware {
-	const cancel = bindHandlers(registrations.cancel, getCtx);
-	const prompt = bindHandlers(registrations.prompt, getCtx);
+	const cancel = bindAllWithRuntime(registrations.cancel, getCtx);
+	const prompt = bindAllWithRuntime(registrations.prompt, getCtx);
 	const streamObs: StreamObservers = {
-		turnStart: bindHandlers(registrations.turnStart, getCtx),
-		chunk: bindHandlers(registrations.chunk, getCtx),
-		update: bindHandlers(registrations.update, getCtx),
-		turnEnd: bindHandlers(registrations.turnEnd, getCtx),
+		turnStart: bindAllWithRuntime(registrations.turnStart, getCtx),
+		chunk: bindAllWithRuntime(registrations.chunk, getCtx),
+		update: bindAllWithRuntime(registrations.update, getCtx),
+		turnEnd: bindAllWithRuntime(registrations.turnEnd, getCtx),
 	};
 	const toolObs: ToolObservers = {
-		toolCall: bindHandlers(registrations.toolCall, getCtx),
-		toolResult: bindHandlers(registrations.toolResult, getCtx),
+		toolCall: bindAllWithRuntime(registrations.toolCall, getCtx),
+		toolResult: bindAllWithRuntime(registrations.toolResult, getCtx),
 	};
 	const tools = registrations.tools.map((t) => bindTool(t, getCtx));
 

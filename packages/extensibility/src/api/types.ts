@@ -16,7 +16,7 @@ export type BaseAPI = object;
  *   interface CoreSignature extends Signature {
  *     In: CoreRuntime
  *     Out: {
- *       on(event: 'prompt', handler: WithContext<PromptHandler, this['In']>): void
+ *       on(event: 'prompt', handler: WithRuntime<PromptHandler, this['In']>): void
  *       // ...
  *     }
  *   }

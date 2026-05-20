@@ -7,19 +7,7 @@ import type {
 	ToolObserverHandler,
 } from '../../api/handlers.js';
 import type { ExtensionToolDefinition } from '../../api/tool.js';
-
-/**
- * Append a stage-1 context parameter to an existing handler signature.
- *
- * `WithContext<H, T>` is `H` with an extra trailing argument of type `T`.
- * TypeScript's function-arg width subtyping means a handler that ignores
- * the new argument (`(...origArgs) => ...`) is still assignable, so this
- * lets us add late-bound runtime context to api signatures without
- * touching the underlying handler types or breaking existing callers.
- */
-export type WithContext<H extends (...args: any[]) => any, T> = (
-	...args: [...Parameters<H>, T]
-) => ReturnType<H>;
+import type { WithRuntime } from '@franklin/extensibility';
 
 /**
  * Accumulated registrations from extensions — transport-free data, not
@@ -28,14 +16,14 @@ export type WithContext<H extends (...args: any[]) => any, T> = (
  * binds these and produces the decorator stack.
  */
 export type CoreRegistrar<Runtime extends BaseRuntime> = {
-	prompt: WithContext<PromptHandler, Runtime>[];
-	cancel: WithContext<CancelHandler, Runtime>[];
-	systemPrompt: WithContext<SystemPromptHandler, Runtime>[];
-	turnStart: WithContext<StreamObserverHandler<'turnStart'>, Runtime>[];
-	chunk: WithContext<StreamObserverHandler<'chunk'>, Runtime>[];
-	update: WithContext<StreamObserverHandler<'update'>, Runtime>[];
-	turnEnd: WithContext<StreamObserverHandler<'turnEnd'>, Runtime>[];
-	toolCall: WithContext<ToolObserverHandler<'toolCall'>, Runtime>[];
-	toolResult: WithContext<ToolObserverHandler<'toolResult'>, Runtime>[];
+	prompt: WithRuntime<PromptHandler, Runtime>[];
+	cancel: WithRuntime<CancelHandler, Runtime>[];
+	systemPrompt: WithRuntime<SystemPromptHandler, Runtime>[];
+	turnStart: WithRuntime<StreamObserverHandler<'turnStart'>, Runtime>[];
+	chunk: WithRuntime<StreamObserverHandler<'chunk'>, Runtime>[];
+	update: WithRuntime<StreamObserverHandler<'update'>, Runtime>[];
+	turnEnd: WithRuntime<StreamObserverHandler<'turnEnd'>, Runtime>[];
+	toolCall: WithRuntime<ToolObserverHandler<'toolCall'>, Runtime>[];
+	toolResult: WithRuntime<ToolObserverHandler<'toolResult'>, Runtime>[];
 	tools: ExtensionToolDefinition<unknown, Runtime>[];
 };

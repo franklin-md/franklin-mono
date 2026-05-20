@@ -8,17 +8,14 @@ import { createExtensionPoint } from '@franklin/extensibility';
 import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
+import { bindAllWithRuntime, type WithRuntime } from '@franklin/extensibility';
 import type { CoreSignature } from '../../../modules/core/api/api.js';
 import type { SystemPromptHandler } from '../../../modules/core/api/handlers.js';
 import {
 	buildSystemPromptAssembler,
 	type SystemPromptAssembler,
 } from '../../../modules/core/compile/decorators/system-prompt/index.js';
-import {
-	bindHandlers,
-	createCoreRegistrar,
-	type WithContext,
-} from '../../../modules/core/compile/registrar/index.js';
+import { createCoreRegistrar } from '../../../modules/core/compile/registrar/index.js';
 import type { CoreRuntime } from '../../../modules/core/runtime/index.js';
 import type {
 	EnvironmentConfig,
@@ -30,7 +27,7 @@ import {
 } from '../../../modules/environment/runtime.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
 
-type ModulePromptHandler = WithContext<
+type ModulePromptHandler = WithRuntime<
 	SystemPromptHandler,
 	CoreRuntime & EnvironmentRuntime
 >;
@@ -91,7 +88,7 @@ function bindAssembler(
 	handlers: ModulePromptHandler[],
 	ctx: EnvironmentRuntime,
 ): SystemPromptAssembler {
-	const boundHandlers: SystemPromptHandler[] = bindHandlers(
+	const boundHandlers: SystemPromptHandler[] = bindAllWithRuntime(
 		handlers,
 		() => ctx as CoreRuntime & EnvironmentRuntime,
 	);

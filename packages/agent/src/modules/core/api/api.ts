@@ -8,20 +8,19 @@ import type {
 	ToolObserverHandler,
 } from './handlers.js';
 import type { MaybePromise } from '../../../utils/maybe-promise.js';
-import type { WithContext } from '../compile/registrar/types.js';
-import type { Signature } from '@franklin/extensibility';
+import type { Signature, WithRuntime } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 
 export type CoreEventHandlers<R extends BaseRuntime> = {
-	prompt: WithContext<PromptHandler, R>;
-	cancel: WithContext<CancelHandler, R>;
-	systemPrompt: WithContext<SystemPromptHandler, R>;
-	turnStart: WithContext<StreamObserverHandler<'turnStart'>, R>;
-	chunk: WithContext<StreamObserverHandler<'chunk'>, R>;
-	update: WithContext<StreamObserverHandler<'update'>, R>;
-	turnEnd: WithContext<StreamObserverHandler<'turnEnd'>, R>;
-	toolCall: WithContext<ToolObserverHandler<'toolCall'>, R>;
-	toolResult: WithContext<ToolObserverHandler<'toolResult'>, R>;
+	prompt: WithRuntime<PromptHandler, R>;
+	cancel: WithRuntime<CancelHandler, R>;
+	systemPrompt: WithRuntime<SystemPromptHandler, R>;
+	turnStart: WithRuntime<StreamObserverHandler<'turnStart'>, R>;
+	chunk: WithRuntime<StreamObserverHandler<'chunk'>, R>;
+	update: WithRuntime<StreamObserverHandler<'update'>, R>;
+	turnEnd: WithRuntime<StreamObserverHandler<'turnEnd'>, R>;
+	toolCall: WithRuntime<ToolObserverHandler<'toolCall'>, R>;
+	toolResult: WithRuntime<ToolObserverHandler<'toolResult'>, R>;
 };
 
 export type CoreOnRegistration<R extends BaseRuntime> = {
