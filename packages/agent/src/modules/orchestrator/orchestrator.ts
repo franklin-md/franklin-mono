@@ -13,6 +13,7 @@ import type {
 	OrchestratorModule,
 	OrchestratorRuntime,
 	RuntimeEntry,
+	RuntimeEvent,
 } from './types.js';
 
 type Runtime<M extends BaseStateExtensionModule> = OrchestratorRuntime<M>;
@@ -70,12 +71,8 @@ export class Orchestrator<
 		return this.collection.remove(id);
 	}
 
-	async materialize(id: string, state: State<M>): Promise<Entry<M>> {
-		if (this.collection.has(id)) {
-			throw new Error(`Runtime ${id} already exists`);
-		}
-
-		return this.createRuntime(id, state);
+	subscribe(listener: (event: RuntimeEvent<Runtime<M>>) => void): () => void {
+		return this.collection.subscribe(listener);
 	}
 
 	private async createRuntime(id: string, state: State<M>): Promise<Entry<M>> {

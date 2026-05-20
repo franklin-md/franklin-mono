@@ -22,7 +22,6 @@ import type {
 	FranklinState,
 } from '../types.js';
 import type { AuthStore } from '../storage/types.js';
-import { createAgents, type Agents } from './agents.js';
 
 export interface FranklinAppExtensionContext {
 	readonly auth: AuthManager;
@@ -54,10 +53,9 @@ function observeRuntimePersistence(
 export class FranklinApp {
 	readonly auth: AuthManager;
 	readonly settings: SettingsStore;
-	readonly agents: Agents;
+	readonly agents: Orchestrator<FranklinBase>;
 	readonly platform: Platform;
 
-	private readonly orchestrator: Orchestrator<FranklinBase>;
 	private readonly collection: PersistedSessionCollection<
 		FranklinState,
 		FranklinRuntime
@@ -108,22 +106,17 @@ export class FranklinApp {
 			observeRuntimePersistence,
 		);
 
-		this.orchestrator = createOrchestrator({
+		this.agents = createOrchestrator({
 			modules: baseModules,
 			collection: this.collection,
 			extensions,
 		});
-
-		this.agents = createAgents(
-			this.orchestrator.create.bind(this.orchestrator),
-			this.collection,
-		);
 	}
 
 	async start(): Promise<RestoreResult> {
 		const storageResult = await this.restoreStorage();
 		const collectionResult = await this.collection.restore((id, state) =>
-			this.orchestrator.materialize(id, state),
+			this.agents.create({ id, state }),
 		);
 		return {
 			issues: [...storageResult.issues, ...collectionResult.issues],
