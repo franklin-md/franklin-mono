@@ -1,4 +1,8 @@
-import type { AgentCreateInput, FranklinApp } from '@franklin/agent';
+import type {
+	FranklinApp,
+	FranklinState,
+	OrchestratorCreateInput,
+} from '@franklin/agent';
 import type { AbsolutePath } from '@franklin/lib';
 
 import { createDefaultObsidianFilesystemPermissions } from '../platform/filesystem/permissions.js';
@@ -7,9 +11,9 @@ export function createObsidianSessionInput(
 	app: FranklinApp,
 	vaultRoot: AbsolutePath,
 	configDir: string,
-): AgentCreateInput {
+): OrchestratorCreateInput<FranklinState> {
 	return {
-		overrides: {
+		state: {
 			// New root sessions inherit the current app defaults plus the
 			// Obsidian host environment constraints.
 			core: { llmConfig: app.settings.get().defaultLLMConfig },

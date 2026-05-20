@@ -1,18 +1,20 @@
 import { useCallback } from 'react';
 
 import type {
-	AgentCreate,
-	AgentCreateInput,
-	Agents,
 	FranklinRuntime,
+	FranklinState,
+	OrchestratorCreateInput,
+	RuntimeEntry,
 } from '@franklin/agent';
-import type { RuntimeEntry } from '@franklin/agent';
 
 import { useApp } from './franklin-context.js';
 import { useSessions } from './use-sessions.js';
 import { useCollectionNavigator } from '../utils/use-collection-navigator.js';
 
-export type { AgentCreate, AgentCreateInput };
+export type AgentCreateInput = OrchestratorCreateInput<FranklinState>;
+export type AgentCreate = (
+	input?: AgentCreateInput,
+) => Promise<RuntimeEntry<FranklinRuntime>>;
 
 export type AgentsControl = {
 	sessions: RuntimeEntry<FranklinRuntime>[];
@@ -52,8 +54,8 @@ export function useAgentList(): AgentsControl {
 	const activeSessionId = currentKey ?? null;
 
 	const create = useCallback(
-		async (...args: Parameters<Agents['create']>) => {
-			const session = await manager.create(...args);
+		async (input?: AgentCreateInput) => {
+			const session = await manager.create(input);
 			navigateToKey(session.id);
 			return session;
 		},

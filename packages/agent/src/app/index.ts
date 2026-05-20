@@ -21,7 +21,6 @@ import type {
 	FranklinRuntime,
 } from '../types.js';
 import type { AuthStore } from '../storage/types.js';
-import { createAgents, type Agents } from './agents.js';
 import {
 	createSessionPersistence,
 	type FranklinSession,
@@ -59,10 +58,9 @@ function observeSessionChanges(
 export class FranklinApp {
 	readonly auth: AuthManager;
 	readonly settings: SettingsStore;
-	readonly agents: Agents;
+	readonly agents: Orchestrator<FranklinBase>;
 	readonly platform: Platform;
 
-	private readonly orchestrator: Orchestrator<FranklinBase>;
 	private readonly collection: RuntimeCollection<FranklinRuntime>;
 	private readonly sessionPersistence: SessionPersistenceController<
 		FranklinSession,
@@ -114,22 +112,17 @@ export class FranklinApp {
 			observeSessionChanges,
 		});
 
-		this.orchestrator = createOrchestrator({
+		this.agents = createOrchestrator({
 			modules: baseModules,
 			collection: this.collection,
 			extensions,
 		});
-
-		this.agents = createAgents(
-			this.orchestrator.create.bind(this.orchestrator),
-			this.collection,
-		);
 	}
 
 	async start(): Promise<RestoreResult> {
 		const storageResult = await this.restoreStorage();
 		const collectionResult = await this.sessionPersistence.restore(
-			(id, state) => this.orchestrator.materialize(id, state),
+			(id, state) => this.agents.create({ id, state }),
 		);
 		return {
 			issues: [...storageResult.issues, ...collectionResult.issues],
