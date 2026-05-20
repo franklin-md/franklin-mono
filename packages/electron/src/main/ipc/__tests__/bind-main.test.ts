@@ -5,7 +5,7 @@ import {
 	type AbsolutePath,
 	type Filesystem,
 } from '@franklin/lib';
-import type { ClientProtocol } from '@franklin/mini-acp/rpc';
+import type { MiniACPRpcProtocol } from '@franklin/mini-acp/rpc';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -87,7 +87,7 @@ function createFilesystem(label: string): Filesystem {
 
 function createTransportSpy(): {
 	dispose: ReturnType<typeof vi.fn>;
-	transport: ClientProtocol & { dispose(): Promise<void> };
+	transport: MiniACPRpcProtocol & { dispose(): Promise<void> };
 } {
 	const dispose = vi.fn(async () => {});
 	return {
@@ -96,7 +96,7 @@ function createTransportSpy(): {
 			readable: new ReadableStream(),
 			writable: new WritableStream(),
 			dispose,
-		} as unknown as ClientProtocol & { dispose(): Promise<void> },
+		} as unknown as MiniACPRpcProtocol & { dispose(): Promise<void> },
 	};
 }
 
@@ -402,7 +402,7 @@ describe('bindMain', () => {
 						},
 					}),
 					dispose,
-				} as ClientProtocol,
+				} as MiniACPRpcProtocol,
 			} as never,
 			webContents,
 		);
@@ -472,7 +472,7 @@ describe('bindMain', () => {
 							},
 						}),
 						dispose,
-					}) as ClientProtocol,
+					}) as MiniACPRpcProtocol,
 			} as never,
 			webContents,
 		);

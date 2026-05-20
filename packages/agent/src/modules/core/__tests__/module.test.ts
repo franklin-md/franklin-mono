@@ -4,7 +4,6 @@ import { createCoreStateModule } from '../module.js';
 import { createRuntime } from '../../../testing/index.js';
 import type { CoreEvent } from '../runtime/index.js';
 import {
-	createSessionAdapter,
 	StopCode,
 	ZERO_USAGE,
 	type Context,
@@ -13,6 +12,7 @@ import {
 	type StreamEvent,
 	type Usage,
 } from '@franklin/mini-acp';
+import { createSessionAdapter } from '@franklin/mini-acp/session';
 import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
 // ---------------------------------------------------------------------------
 // Helpers

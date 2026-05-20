@@ -1,11 +1,11 @@
 import { bindJsonRpcServer } from '@franklin/lib/transport';
-import type { AgentBinding, AgentProtocol } from './types.js';
+import type { AgentBinding, MiniACPRpcProtocol } from './types.js';
 import {
 	miniACPRpcClientDescriptor,
 	miniACPRpcServerDescriptor,
 } from './manifest.js';
 
-export function bindMiniACPRpcAgent(duplex: AgentProtocol): AgentBinding {
+export function bindMiniACPRpcAgent(duplex: MiniACPRpcProtocol): AgentBinding {
 	return bindJsonRpcServer({
 		duplex,
 		server: miniACPRpcServerDescriptor,

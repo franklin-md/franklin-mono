@@ -1,4 +1,4 @@
-import type { ContextTracker } from '@franklin/mini-acp';
+import type { ContextTracker } from '@franklin/mini-acp/session';
 import type { StateHandle } from '@franklin/extensibility';
 import type { CoreState, SessionSnapshot } from '../state.js';
 import { createClientRuntime } from './from-client.js';

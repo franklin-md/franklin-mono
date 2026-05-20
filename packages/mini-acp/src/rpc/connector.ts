@@ -4,10 +4,10 @@ import type {
 	MuAgent,
 } from '../protocol/types.js';
 import { bindMiniACPRpcClient } from './client.js';
-import type { ClientProtocol } from './types.js';
+import type { MiniACPRpcProtocol } from './types.js';
 
 export function createMiniACPRpcConnector(
-	spawn: () => ClientProtocol | Promise<ClientProtocol>,
+	spawn: () => MiniACPRpcProtocol | Promise<MiniACPRpcProtocol>,
 ): MiniACPConnector {
 	return async (server) => {
 		const transport = await spawn();
@@ -16,7 +16,7 @@ export function createMiniACPRpcConnector(
 }
 
 function connectMiniACPRpcClient(
-	transport: ClientProtocol,
+	transport: MiniACPRpcProtocol,
 	server: MuAgent,
 ): MiniACPClientHandle {
 	const connection = bindMiniACPRpcClient(transport);
