@@ -6,6 +6,7 @@ import {
 	rawCodec,
 	versioned,
 	type AbsolutePath,
+	type Codec,
 	type Filesystem,
 } from '@franklin/lib';
 import type { StoreSnapshot } from '../modules/store/api/index.js';
@@ -18,15 +19,15 @@ import type { FilePersistence } from './types.js';
  *   {dir}/sessions/{sessionId}.json
  *   {dir}/store/{ref}.json
  *
- * Session state and store values are extension-composed / arbitrary, so
- * they use `rawCodec` (envelope only, no validation). Future work can
- * tighten these to proper zod schemas without a disk-format migration.
+ * The app provides the session codec because it owns the composed session
+ * contract. Store values remain extension-composed / arbitrary, so they use
+ * `rawCodec` (envelope only, no validation).
  */
 export function createPersistence<S extends BaseState>(
 	dir: AbsolutePath,
 	fs: Filesystem,
+	sessionCodec: Codec<S>,
 ): FilePersistence<S> {
-	const sessionCodec = versioned().version(1, rawCodec<S>()).build();
 	const storeCodec = versioned().version(1, rawCodec<StoreSnapshot>()).build();
 
 	return {
