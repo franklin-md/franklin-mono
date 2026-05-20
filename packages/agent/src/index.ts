@@ -25,10 +25,6 @@ export type {
 } from './types.js';
 
 export { FranklinApp } from './app/index.js';
-export type {
-	FranklinAppExtensionContext,
-	FranklinAppExtensions,
-} from './app/index.js';
 export type { AuthStore } from './auth/store.js';
 
 export { type Platform, type OperatingSystem } from './platform.js';

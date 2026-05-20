@@ -28,16 +28,6 @@ import {
 } from './session/index.js';
 import { franklinSessionCodec } from './session/codecs/index.js';
 
-export interface FranklinAppExtensionContext {
-	readonly auth: AuthManager;
-	readonly platform: Platform;
-	readonly settings: SettingsStore;
-}
-
-export type FranklinAppExtensions =
-	| readonly FranklinExtension[]
-	| ((context: FranklinAppExtensionContext) => readonly FranklinExtension[]);
-
 function observeSessionChanges(
 	runtime: FranklinRuntime,
 	listener: () => void,
@@ -69,7 +59,7 @@ export class FranklinApp {
 	private readonly restoreStorage: () => Promise<RestoreResult>;
 
 	constructor(opts: {
-		extensions: FranklinAppExtensions;
+		extensions: readonly FranklinExtension[];
 		platform: Platform;
 		appDir: AbsolutePath;
 		auth: AuthManager;
@@ -87,13 +77,7 @@ export class FranklinApp {
 		this.platform = platform;
 		this.settings = storage.settings;
 		this.restoreStorage = () => storage.restore();
-		const extensions = [
-			...resolveExtensions(opts.extensions, {
-				auth: this.auth,
-				platform,
-				settings: this.settings,
-			}),
-		];
+		const extensions = [...opts.extensions];
 
 		const connectAgent = createMiniACPRpcConnector(platform.spawn);
 		const baseModules: FranklinModules = [
@@ -135,11 +119,4 @@ export class FranklinApp {
 			],
 		};
 	}
-}
-
-function resolveExtensions(
-	extensions: FranklinAppExtensions,
-	context: FranklinAppExtensionContext,
-): readonly FranklinExtension[] {
-	return typeof extensions === 'function' ? extensions(context) : extensions;
 }

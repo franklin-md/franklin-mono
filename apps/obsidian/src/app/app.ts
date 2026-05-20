@@ -52,7 +52,7 @@ export async function createFranklinApp(
 	);
 
 	const app = new FranklinApp({
-		extensions: () => createExtensions(),
+		extensions: createExtensions(),
 		platform,
 		appDir,
 		auth,
@@ -69,24 +69,19 @@ export async function createFranklinApp(
 }
 
 function createExtensions(): FranklinExtension[] {
-	const filesystemExtension = createFilesystemExtension();
-	const webExtension = createWebExtension({});
-	const extensionBundles = [
-		conversationExtension,
-		conversationTitleExtension,
-		todoExtension,
-		statusExtension,
-		{ extension: obsidianSystemPromptExtension },
-		instructionsExtension,
-		filesystemExtension,
+	return [
+		conversationExtension.extension,
+		conversationTitleExtension.extension,
+		todoExtension.extension,
+		statusExtension.extension,
+		obsidianSystemPromptExtension,
+		instructionsExtension.extension,
+		createFilesystemExtension().extension,
 		createReadPDFExtension({
 			renderScreenshots: renderObsidianPDFScreenshots,
-		}),
-		webExtension,
-		// spawnExtension,
-		environmentInfoExtension,
+		}).extension,
+		createWebExtension({}).extension,
+		// spawnExtension.extension,
+		environmentInfoExtension.extension,
 	];
-	return extensionBundles.map(
-		(bundle: { extension: FranklinExtension }) => bundle.extension,
-	);
 }
