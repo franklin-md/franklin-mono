@@ -36,8 +36,6 @@ export function readPDFExtension({
 }: ReadPDFExtensionOptions): ExtensionForModules<ReadPDFModules> {
 	const freeConverter = new FreePDFConverter({ renderScreenshots });
 
-	// TODO: This tool do not see a new api key UNTIL there is a new agent.
-	// We could do api.onAuthChange to re-register the tool, but this requires ToolRegistery existing, and allowing for dynamic overwrite.
 	return defineExtension<ReadPDFModules>((api) => {
 		api.registerTool(readPDFSpec, async (args, ctx) => {
 			const apiKey = await ctx.auth.getApiKey(MISTRAL_PROVIDER);
