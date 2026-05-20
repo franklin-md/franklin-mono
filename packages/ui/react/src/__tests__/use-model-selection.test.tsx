@@ -8,7 +8,7 @@ import { CORE_STATE } from '@franklin/agent/testing';
 import { ZERO_USAGE, type ThinkingLevel } from '@franklin/mini-acp';
 
 import { AgentProvider } from '../agent/agent-context.js';
-import { AppContext } from '../agent/franklin-context.js';
+import { HarnessProvider } from '../agent/harness-context.js';
 import { useModelSelection } from '../agent/use-model-selection.js';
 import { useThinkingLevel } from '../agent/use-thinking-level.js';
 
@@ -124,9 +124,9 @@ function makeWrapper(
 	const mockApp = app ?? makeMockApp();
 	return function Wrapper({ children }: { children: ReactNode }) {
 		return (
-			<AppContext.Provider value={mockApp as never}>
+			<HarnessProvider harness={mockApp as never}>
 				<AgentProvider agent={runtime}>{children}</AgentProvider>
-			</AppContext.Provider>
+			</HarnessProvider>
 		);
 	};
 }

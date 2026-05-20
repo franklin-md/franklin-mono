@@ -16,10 +16,11 @@ export {
 export { useCollectionNavigator } from './utils/use-collection-navigator.js';
 export { AgentProvider, useAgent } from './agent/agent-context.js';
 export {
-	AppContext,
-	FranklinProvider,
-	useApp,
-} from './agent/franklin-context.js';
+	HarnessProvider,
+	useHarness,
+	type Harness,
+	type HarnessProviderProps,
+} from './agent/harness-context.js';
 export { useAgentState } from './agent/use-agent-state.js';
 export { useSessions } from './agent/use-sessions.js';
 export {

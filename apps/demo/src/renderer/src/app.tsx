@@ -1,11 +1,6 @@
-import { DefaultAuthActionProvider } from '@franklin/ui';
+import { ApplicationProvider, DefaultAuthActionProvider } from '@franklin/ui';
 import { AgentChatPage } from '@/pages/agent-chat/agent-chat-page.js';
-import {
-	FranklinProvider,
-	HostActionProvider,
-	bindHostAction,
-	openExternalAction,
-} from '@franklin/react';
+import { bindHostAction, openExternalAction } from '@franklin/react';
 import { createElectronPlatform } from '@franklin/electron/renderer';
 import {
 	conversationExtension,
@@ -18,6 +13,8 @@ import {
 	spawnExtension,
 	environmentInfoExtension,
 } from '@franklin/agent';
+
+import { AppStartup } from './app-startup.js';
 
 const webExtension = createWebExtension({});
 const platform = createElectronPlatform();
@@ -39,22 +36,27 @@ const extensions = extensionBundles.map((bundle) => bundle.extension);
 
 export function App() {
 	return (
-		<HostActionProvider bindings={hostActionBindings}>
-			<FranklinProvider
-				extensions={extensions}
-				platform={platform}
-				fallback={
-					<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-						Loading…
-					</div>
-				}
-			>
-				<DefaultAuthActionProvider>
-					<div className="flex h-screen bg-background">
-						<AgentChatPage />
-					</div>
-				</DefaultAuthActionProvider>
-			</FranklinProvider>
-		</HostActionProvider>
+		<AppStartup
+			extensions={extensions}
+			platform={platform}
+			fallback={
+				<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+					Loading…
+				</div>
+			}
+		>
+			{(harness) => (
+				<ApplicationProvider
+					harness={harness}
+					hostActionBindings={hostActionBindings}
+				>
+					<DefaultAuthActionProvider>
+						<div className="flex h-screen bg-background">
+							<AgentChatPage />
+						</div>
+					</DefaultAuthActionProvider>
+				</ApplicationProvider>
+			)}
+		</AppStartup>
 	);
 }

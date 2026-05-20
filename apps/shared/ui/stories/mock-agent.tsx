@@ -18,13 +18,12 @@ import { ZERO_USAGE } from '@franklin/mini-acp';
 import {
 	AgentProvider,
 	AgentsValueProvider,
-	AppContext,
 	type AgentsControl,
-	HostActionProvider,
 	bindHostAction,
 	openExternalAction,
 } from '@franklin/react';
 
+import { ApplicationProvider } from '../src/application-context.js';
 import { DefaultAuthActionProvider } from '../src/auth/default-action-provider.js';
 
 function createMockStore<T>(initial: T) {
@@ -242,21 +241,20 @@ export function MockAgentDecorator({
 	const app = createMockApp();
 
 	return (
-		<AppContext.Provider value={app as never}>
-			<HostActionProvider
-				bindings={[bindHostAction(openExternalAction, () => {})]}
-			>
-				<DefaultAuthActionProvider>
-					<AgentProvider agent={runtime}>
-						<MockAgentsDecorator
-							activeSessionId={opts.turns?.length ? 'mock-session' : null}
-						>
-							{children}
-						</MockAgentsDecorator>
-					</AgentProvider>
-				</DefaultAuthActionProvider>
-			</HostActionProvider>
-		</AppContext.Provider>
+		<ApplicationProvider
+			harness={app as never}
+			hostActionBindings={[bindHostAction(openExternalAction, () => {})]}
+		>
+			<DefaultAuthActionProvider>
+				<AgentProvider agent={runtime}>
+					<MockAgentsDecorator
+						activeSessionId={opts.turns?.length ? 'mock-session' : null}
+					>
+						{children}
+					</MockAgentsDecorator>
+				</AgentProvider>
+			</DefaultAuthActionProvider>
+		</ApplicationProvider>
 	);
 }
 

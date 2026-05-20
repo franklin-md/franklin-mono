@@ -1,12 +1,8 @@
 // @vitest-environment jsdom
 
 import type { AuthEntries, FranklinApp } from '@franklin/agent';
-import {
-	AppContext,
-	HostActionProvider,
-	bindHostAction,
-	openExternalAction,
-} from '@franklin/react';
+import { bindHostAction, openExternalAction } from '@franklin/react';
+import { ApplicationProvider } from '@franklin/ui';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -52,13 +48,12 @@ function renderPage(auth: AuthStub) {
 
 	return {
 		...render(
-			<HostActionProvider
-				bindings={[bindHostAction(openExternalAction, openExternal)]}
+			<ApplicationProvider
+				harness={app}
+				hostActionBindings={[bindHostAction(openExternalAction, openExternal)]}
 			>
-				<AppContext.Provider value={app}>
-					<SettingsPage />
-				</AppContext.Provider>
-			</HostActionProvider>,
+				<SettingsPage />
+			</ApplicationProvider>,
 		),
 		openExternal,
 	};

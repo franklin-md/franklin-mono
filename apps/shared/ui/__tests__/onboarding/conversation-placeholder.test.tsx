@@ -9,12 +9,9 @@ import {
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-	AppContext,
-	HostActionProvider,
-	bindHostAction,
-	openExternalAction,
-} from '@franklin/react';
+import { bindHostAction, openExternalAction } from '@franklin/react';
+
+import { ApplicationProvider } from '../../src/application-context.js';
 import { ConversationOnboardingPlaceholder } from '../../src/onboarding/conversation-placeholder.js';
 
 function renderWithAuth(entries: Record<string, unknown> = {}) {
@@ -30,13 +27,12 @@ function renderWithAuth(entries: Record<string, unknown> = {}) {
 	};
 
 	render(
-		<HostActionProvider
-			bindings={[bindHostAction(openExternalAction, vi.fn())]}
+		<ApplicationProvider
+			harness={app as never}
+			hostActionBindings={[bindHostAction(openExternalAction, vi.fn())]}
 		>
-			<AppContext.Provider value={app as never}>
-				<ConversationOnboardingPlaceholder />
-			</AppContext.Provider>
-		</HostActionProvider>,
+			<ConversationOnboardingPlaceholder />
+		</ApplicationProvider>,
 	);
 
 	return { loginOAuth };

@@ -43,10 +43,10 @@ describe('obsidian bundle', () => {
 
 	it('bundles a single copy of @franklin/react context modules', () => {
 		expect(devBundle.js).toContain(
-			'../../packages/ui/react/src/agent/franklin-context.tsx',
+			'../../packages/ui/react/src/agent/harness-context.tsx',
 		);
 		expect(devBundle.js).not.toContain(
-			'../../packages/ui/react/dist/agent/franklin-context.js',
+			'../../packages/ui/react/dist/agent/harness-context.js',
 		);
 		expect(devBundle.js).not.toContain(
 			'../../packages/ui/react/dist/agent/agent-context.js',

@@ -1,4 +1,4 @@
-import { AppContext, HostActionProvider } from '@franklin/react';
+import { ApplicationProvider } from '@franklin/ui';
 import { PluginSettingTab } from 'obsidian';
 
 import type FranklinPlugin from '../main.js';
@@ -16,13 +16,20 @@ export class FranklinSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
+		const franklinApp = this.plugin.franklinApp;
+		if (!franklinApp) {
+			this.containerEl.empty();
+			return;
+		}
+
 		this.mounter.mount(
 			this.containerEl,
-			<HostActionProvider bindings={this.plugin.hostActionBindings}>
-				<AppContext.Provider value={this.plugin.franklinApp}>
-					<SettingsPage />
-				</AppContext.Provider>
-			</HostActionProvider>,
+			<ApplicationProvider
+				harness={franklinApp}
+				hostActionBindings={this.plugin.hostActionBindings}
+			>
+				<SettingsPage />
+			</ApplicationProvider>,
 		);
 	}
 

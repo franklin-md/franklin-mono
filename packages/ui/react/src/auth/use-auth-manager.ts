@@ -1,8 +1,8 @@
 import type { AuthManager } from '@franklin/agent';
 
-import { useApp } from '../agent/franklin-context.js';
+import { useHarness } from '../agent/harness-context.js';
 
-/** Returns the `AuthManager` from the nearest `FranklinProvider`. */
+/** Returns the `AuthManager` from the nearest `HarnessProvider`. */
 export function useAuthManager(): AuthManager {
-	return useApp().auth;
+	return useHarness().auth;
 }

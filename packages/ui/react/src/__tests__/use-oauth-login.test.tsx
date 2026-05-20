@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { OAuthLoginCallbacks } from '@franklin/agent';
 
-import { AppContext } from '../agent/franklin-context.js';
+import { HarnessProvider } from '../agent/harness-context.js';
 import { useOAuthLogin } from '../auth/use-oauth-login.js';
 import {
 	HostActionProvider,
@@ -33,9 +33,7 @@ function makeWrapper(auth: {
 				<HostActionProvider
 					bindings={[bindHostAction(openExternalAction, openExternal)]}
 				>
-					<AppContext.Provider value={app as never}>
-						{children}
-					</AppContext.Provider>
+					<HarnessProvider harness={app as never}>{children}</HarnessProvider>
 				</HostActionProvider>
 			);
 		},

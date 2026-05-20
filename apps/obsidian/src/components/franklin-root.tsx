@@ -1,10 +1,7 @@
 import type { FranklinApp } from '@franklin/agent';
 import type { AuthActionHandler, HostActionBinding } from '@franklin/react';
-import {
-	AppContext,
-	AuthActionProvider,
-	HostActionProvider,
-} from '@franklin/react';
+import { AuthActionProvider } from '@franklin/react';
+import { ApplicationProvider } from '@franklin/ui';
 import type { App as ObsidianApp } from 'obsidian';
 import type { ReactNode } from 'react';
 
@@ -27,13 +24,14 @@ export function FranklinRoot({
 }: Props) {
 	return (
 		<ObsidianAppProvider value={obsidianApp}>
-			<HostActionProvider bindings={hostActionBindings}>
-				<AppContext.Provider value={app}>
-					<AuthActionProvider handlers={{ requestApiKey }}>
-						{children}
-					</AuthActionProvider>
-				</AppContext.Provider>
-			</HostActionProvider>
+			<ApplicationProvider
+				harness={app}
+				hostActionBindings={hostActionBindings}
+			>
+				<AuthActionProvider handlers={{ requestApiKey }}>
+					{children}
+				</AuthActionProvider>
+			</ApplicationProvider>
 		</ObsidianAppProvider>
 	);
 }

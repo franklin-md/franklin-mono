@@ -21,7 +21,8 @@ import {
 	type StatusState,
 } from '@franklin/agent';
 import { toAbsolutePath } from '@franklin/lib';
-import { AppContext, type AgentCreateInput } from '@franklin/react';
+import type { AgentCreateInput } from '@franklin/react';
+import { ApplicationProvider } from '@franklin/ui';
 
 import { createObsidianSessionInput } from '../../app/agent.js';
 import { ConversationWindow } from '../conversation-window/window.js';
@@ -172,9 +173,9 @@ function renderApp(initialSessions: TestSession[]) {
 		createObsidianSessionInput(app, vaultRoot, configDir);
 
 	render(
-		<AppContext.Provider value={app}>
+		<ApplicationProvider harness={app} hostActionBindings={[]}>
 			<ConversationWindow getCreateInput={getCreateInput} />
-		</AppContext.Provider>,
+		</ApplicationProvider>,
 	);
 
 	return {
