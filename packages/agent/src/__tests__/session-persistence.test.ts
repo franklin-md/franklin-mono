@@ -6,7 +6,7 @@ import {
 	type RuntimeEntry,
 } from '../modules/orchestrator/index.js';
 
-import { createSessionPersistence } from '../app/session-persistence.js';
+import { createSessionPersistence } from '../app/session/index.js';
 import type { SessionPersistence } from '../storage/types.js';
 
 type TestSession = {

@@ -19,14 +19,14 @@ import type {
 	FranklinExtension,
 	FranklinModules,
 	FranklinRuntime,
-	FranklinState,
 } from '../types.js';
 import type { AuthStore } from '../storage/types.js';
 import { createAgents, type Agents } from './agents.js';
 import {
 	createSessionPersistence,
+	type FranklinSession,
 	type SessionPersistenceController,
-} from './session-persistence.js';
+} from './session/index.js';
 
 export interface FranklinAppExtensionContext {
 	readonly auth: AuthManager;
@@ -64,7 +64,7 @@ export class FranklinApp {
 	private readonly orchestrator: Orchestrator<FranklinBase>;
 	private readonly collection: RuntimeCollection<FranklinRuntime>;
 	private readonly sessionPersistence: SessionPersistenceController<
-		FranklinState,
+		FranklinSession,
 		FranklinRuntime
 	>;
 	private readonly restoreStorage: () => Promise<RestoreResult>;
@@ -76,7 +76,7 @@ export class FranklinApp {
 		authStore?: AuthStore;
 	}) {
 		const { platform, appDir } = opts;
-		const storage = createStorage<FranklinState>(
+		const storage = createStorage<FranklinSession>(
 			platform.os.filesystem,
 			appDir,
 			{
