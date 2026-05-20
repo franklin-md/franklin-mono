@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { OAuthLoginCallbacks } from '@franklin/agent/browser';
+import type { OAuthLoginCallbacks } from '@franklin/agent';
 
 import { AppContext } from '../agent/franklin-context.js';
 import { useOAuthLogin } from '../auth/use-oauth-login.js';

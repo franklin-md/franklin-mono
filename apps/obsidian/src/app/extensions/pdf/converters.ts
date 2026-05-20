@@ -1,4 +1,4 @@
-import type { AuthManager } from '@franklin/agent/browser';
+import type { AuthManager } from '@franklin/agent';
 import {
 	FreePDFConverter,
 	MistralPDFConverter,

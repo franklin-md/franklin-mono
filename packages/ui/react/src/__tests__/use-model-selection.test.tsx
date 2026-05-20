@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent';
 import type { CoreEvent } from '@franklin/agent';
 import { CORE_STATE } from '@franklin/agent';
 import { ZERO_USAGE, type ThinkingLevel } from '@franklin/mini-acp';

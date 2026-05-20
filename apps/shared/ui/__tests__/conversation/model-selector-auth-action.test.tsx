@@ -15,7 +15,7 @@ import type {
 	AuthEntries,
 	AuthEntry,
 	OAuthLoginCallbacks,
-} from '@franklin/agent/browser';
+} from '@franklin/agent';
 import { AppContext, AuthActionProvider } from '@franklin/react';
 
 import { DefaultAuthActionProvider } from '../../src/auth/default-action-provider.js';

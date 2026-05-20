@@ -5,7 +5,7 @@ import type {
 	AuthEntry,
 	FranklinRuntime,
 	OAuthLoginCallbacks,
-} from '@franklin/agent/browser';
+} from '@franklin/agent';
 import type {
 	ConversationTurn,
 	CoreEvent,

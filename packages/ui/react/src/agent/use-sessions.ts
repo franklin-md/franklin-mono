@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent';
 import type { RuntimeEntry } from '@franklin/agent';
 
 import { useApp } from './franklin-context.js';

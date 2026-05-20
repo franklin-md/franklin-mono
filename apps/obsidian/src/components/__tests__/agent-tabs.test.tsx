@@ -14,7 +14,7 @@ import type {
 	AgentCreateInput,
 	FranklinApp,
 	FranklinRuntime,
-} from '@franklin/agent/browser';
+} from '@franklin/agent';
 import {
 	conversationTitleExtension,
 	statusExtension,

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, type ReactNode } from 'react';
 
-import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
+import type { FranklinApp, FranklinRuntime } from '@franklin/agent';
 import {
 	conversationTitleExtension,
 	statusExtension,

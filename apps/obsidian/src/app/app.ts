@@ -1,5 +1,5 @@
-import { FranklinApp } from '@franklin/agent/browser';
-import type { FranklinExtension, Platform } from '@franklin/agent/browser';
+import { FranklinApp } from '@franklin/agent';
+import type { FranklinExtension, Platform } from '@franklin/agent';
 import {
 	conversationExtension,
 	conversationTitleExtension,

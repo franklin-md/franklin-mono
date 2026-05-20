@@ -4,8 +4,6 @@ import { fileURLToPath } from 'node:url';
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 const entries = [
-	// TODO: franklin/agent should be platform agnostic
-	['@franklin/agent/browser', 'packages/agent/src/browser.ts'],
 	['@franklin/agent/testing', 'packages/agent/src/testing/index.ts'],
 	['@franklin/agent', 'packages/agent/src/index.ts'],
 	['@franklin/extensibility', 'packages/extensibility/src/index.ts'],

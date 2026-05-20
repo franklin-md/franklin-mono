@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
-import type { ApiKeyEntry } from '@franklin/agent/browser';
+import type { ApiKeyEntry } from '@franklin/agent';
 import { useAsync, useAuthEntries, useAuthManager } from '@franklin/react';
 
 import { Button } from '../../../primitives/button.js';

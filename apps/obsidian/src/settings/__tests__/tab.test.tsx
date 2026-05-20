@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { FranklinApp } from '@franklin/agent/browser';
+import type { FranklinApp } from '@franklin/agent';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Mounter } from '../../renderer/mount.js';

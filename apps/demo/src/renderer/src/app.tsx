@@ -12,7 +12,7 @@ import {
 	createWebExtension,
 	spawnExtension,
 	environmentInfoExtension,
-} from '@franklin/agent/browser';
+} from '@franklin/agent';
 
 const webExtension = createWebExtension({});
 const platform = createElectronPlatform();
