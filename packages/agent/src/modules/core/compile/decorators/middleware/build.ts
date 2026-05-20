@@ -1,7 +1,6 @@
 import { buildWaterfall, passThrough } from '@franklin/lib/middleware';
 import { bindAllWithRuntime, type BaseRuntime } from '@franklin/extensibility';
 import type { CoreRegistrar } from '../../registrar/types.js';
-import { bindTool } from '../../tools/index.js';
 import {
 	buildPromptWaterfall,
 	buildToolExecuteMiddleware,
@@ -28,7 +27,6 @@ export function buildMiddleware<Runtime extends BaseRuntime>(
 		toolCall: bindAllWithRuntime(registrations.toolCall, getCtx),
 		toolResult: bindAllWithRuntime(registrations.toolResult, getCtx),
 	};
-	const tools = registrations.tools.map((t) => bindTool(t, getCtx));
 
 	const client: FullMiddleware['client'] = {
 		initialize: passThrough(),
@@ -47,8 +45,8 @@ export function buildMiddleware<Runtime extends BaseRuntime>(
 
 	const server: FullMiddleware['server'] = {
 		toolExecute:
-			tools.length > 0 || hasAnyToolObserver(toolObs)
-				? buildToolExecuteMiddleware(tools, toolObs)
+			registrations.tools.length > 0 || hasAnyToolObserver(toolObs)
+				? buildToolExecuteMiddleware(registrations.tools, toolObs, getCtx)
 				: passThrough(),
 	};
 

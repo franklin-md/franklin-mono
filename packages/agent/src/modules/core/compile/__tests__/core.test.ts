@@ -279,6 +279,84 @@ describe('buildCore – registerTool()', () => {
 		expect(result.toolCallId).toBe('other-call');
 	});
 
+	it('rejects invalid tool arguments before execute', async () => {
+		const execute = vi.fn(async (params: { input: string }) =>
+			params.input.toUpperCase(),
+		);
+		const mw = await compileExt((api) => {
+			api.registerTool({
+				name: 'myTool',
+				description: 'A test tool',
+				schema: z.object({ input: z.string() }),
+				execute,
+			});
+		});
+
+		const next = vi.fn();
+
+		const result = await mw.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'call-invalid',
+					name: 'myTool',
+					arguments: { input: 123 },
+				},
+			},
+			next,
+		);
+
+		expect(execute).not.toHaveBeenCalled();
+		expect(result.toolCallId).toBe('call-invalid');
+		expect(result.isError).toBe(true);
+		expect(result.content[0]).toMatchObject({
+			type: 'text',
+			text: expect.stringContaining('Invalid arguments for tool "myTool"'),
+		});
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it('passes parsed tool arguments to execute', async () => {
+		const schema = z.object({
+			count: z.coerce.number(),
+			label: z.string().default('item'),
+		});
+		const execute = vi.fn(
+			async (params: z.infer<typeof schema>) =>
+				`${params.count}:${params.label}`,
+		);
+
+		const mw = await compileExt((api) => {
+			api.registerTool({
+				name: 'parsedTool',
+				description: 'Uses parsed args',
+				schema,
+				execute,
+			});
+		});
+
+		const result = await mw.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'call-parse',
+					name: 'parsedTool',
+					arguments: { count: '4' },
+				},
+			},
+			vi.fn(),
+		);
+
+		expect(execute).toHaveBeenCalledWith(
+			{ count: 4, label: 'item' },
+			undefined,
+		);
+		expect(result.content[0]).toEqual({
+			type: 'text',
+			text: '4:item',
+		});
+	});
+
 	it('catches tool execute errors and returns isError result', async () => {
 		const error = new Error('tool exploded');
 		const failingTool = {

@@ -1,4 +1,6 @@
-import type { MiniACPAgent } from '@franklin/mini-acp';
+import type { BaseRuntime } from '@franklin/extensibility';
+import type { MiniACPAgent, ToolResult } from '@franklin/mini-acp';
+import { z } from 'zod';
 import type {
 	ToolObserverEvent,
 	ToolObserverHandler,
@@ -6,7 +8,7 @@ import type {
 } from '../../../../api/handlers.js';
 import { resolveToolOutput } from '../../../../api/tool.js';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
-import type { BoundTool } from '../../../tools/index.js';
+import type { RegisteredTool } from '../../../tools/index.js';
 
 export type ToolObservers = {
 	[K in ToolObserverEvent]: ToolObserverHandler<K>[];
@@ -32,16 +34,22 @@ function notifyObservers<K extends ToolObserverEvent>(
  * for tools registered by extensions, and notifies tool observers
  * before/after each call.
  */
-export function buildToolExecuteMiddleware(
-	tools: BoundTool[],
+export function buildToolExecuteMiddleware<Runtime extends BaseRuntime>(
+	tools: RegisteredTool<unknown, Runtime>[],
 	observers: ToolObservers,
+	getRuntime: () => Runtime,
 ): MethodMiddleware<MiniACPAgent['toolExecute']> {
 	return async (params, next) => {
 		notifyObservers(observers, 'toolCall', params);
 
 		const tool = tools.find((t) => t.name === params.call.name);
 		const result = tool
-			? await toToolResult(tool, params.call.id, params.call.arguments)
+			? await toToolResult(
+					tool,
+					params.call.id,
+					params.call.arguments,
+					getRuntime,
+				)
 			: await next(params);
 
 		notifyObservers(observers, 'toolResult', { ...result, call: params.call });
@@ -50,13 +58,24 @@ export function buildToolExecuteMiddleware(
 	};
 }
 
-async function toToolResult(
-	tool: BoundTool,
+async function toToolResult<Runtime extends BaseRuntime>(
+	tool: RegisteredTool<unknown, Runtime>,
 	toolCallId: string,
 	args: Record<string, unknown>,
-) {
+	getRuntime: () => Runtime,
+): Promise<ToolResult> {
 	try {
-		const raw = await tool.execute(args);
+		const parsedArgs = tool.schema.safeParse(args);
+		if (!parsedArgs.success) {
+			return createErrorToolResult(
+				toolCallId,
+				`Invalid arguments for tool "${tool.name}":\n${z.prettifyError(
+					parsedArgs.error,
+				)}`,
+			);
+		}
+
+		const raw = await tool.execute(parsedArgs.data, getRuntime());
 		const output = resolveToolOutput(raw);
 		return {
 			toolCallId,
@@ -64,16 +83,22 @@ async function toToolResult(
 			isError: output.isError,
 		};
 	} catch (error) {
-		return {
+		return createErrorToolResult(
 			toolCallId,
-			content: [
-				{
-					type: 'text' as const,
-					text:
-						error instanceof Error ? `Error: ${error.message}` : String(error),
-				},
-			],
-			isError: true,
-		};
+			error instanceof Error ? `Error: ${error.message}` : String(error),
+		);
 	}
+}
+
+function createErrorToolResult(toolCallId: string, text: string): ToolResult {
+	return {
+		toolCallId,
+		content: [
+			{
+				type: 'text',
+				text,
+			},
+		],
+		isError: true,
+	};
 }

@@ -13,10 +13,3 @@ export interface RegisteredTool<
 	schema: z.ZodType<TInput>;
 	execute(params: TInput, runtime: Runtime): MaybePromise<ToolExecuteReturn>;
 }
-
-export type BoundTool<TInput = unknown> = {
-	name: string;
-	description: string;
-	schema: z.ZodType<TInput>;
-	execute(params: TInput): MaybePromise<ToolExecuteReturn>;
-};

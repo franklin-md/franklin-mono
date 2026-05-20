@@ -54,7 +54,9 @@ export function createCoreRegistrar<Runtime extends BaseRuntime>(
 		registrar[event].push(handler as never);
 	}
 	for (const registration of registrations.argsFor('registerTool')) {
-		registrar.tools.push(normalizeTool(registration));
+		const tool = normalizeTool(registration);
+		// TODO: define duplicate tool-name policy at the compiler/tool lowering boundary.
+		registrar.tools.push(tool);
 	}
 	return registrar;
 }

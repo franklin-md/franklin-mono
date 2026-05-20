@@ -19,9 +19,8 @@ import type { ProtocolDecorator } from './types.js';
 /**
  * Turn a `CoreRegistrar` into the ordered `ProtocolDecorator` stack
  * composed around the connected Mini-ACP client/server pair. Each concern
- * (middleware, system prompt, …) becomes its own decorator; runtime
- * binding happens here via `bindAllWithRuntime`/`bindTool`, so each builder's
- * signature stays runtime-agnostic.
+ * (middleware, system prompt, …) becomes its own decorator; runtime access
+ * is wired through `getCtx` here so builders do not construct runtimes.
  */
 export function createAgentDecorator<Runtime extends BaseRuntime>(
 	resources: CoreResources,

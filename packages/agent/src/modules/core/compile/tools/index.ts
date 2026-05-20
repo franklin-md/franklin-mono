@@ -1,3 +1,2 @@
-export type { BoundTool, RegisteredTool } from './types.js';
-export { bindTool } from './bind.js';
+export type { RegisteredTool } from './types.js';
 export { serializeTool, toToolInputSchema } from './serialize.js';
