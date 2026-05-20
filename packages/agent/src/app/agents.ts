@@ -4,9 +4,10 @@ import type {
 	RuntimeEntry,
 	RuntimeEvent,
 } from '../modules/orchestrator/index.js';
-import type { FranklinRuntime, FranklinState } from '../types.js';
+import type { FranklinRuntime } from '../types.js';
+import type { FranklinSession } from './session/index.js';
 
-export type AgentCreateInput = OrchestratorCreateInput<FranklinState>;
+export type AgentCreateInput = OrchestratorCreateInput<FranklinSession>;
 export type AgentCreate = (
 	input?: AgentCreateInput,
 ) => Promise<RuntimeEntry<FranklinRuntime>>;
