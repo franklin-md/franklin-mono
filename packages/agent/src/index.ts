@@ -27,5 +27,6 @@ export type { AgentCreate, AgentCreateInput, Agents } from './app/agents.js';
 export type { AuthStore } from './storage/types.js';
 
 export { type Platform, type OperatingSystem } from './platform.js';
-export * from './extension-runtime.js';
+export * from './extensions/index.js';
+export * from './modules/index.js';
 export { createPersistence } from './storage/persistence.js';

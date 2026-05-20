@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { ZERO_USAGE, type ThinkingLevel } from '@franklin/mini-acp';
 import type { FranklinRuntime } from '@franklin/agent';
 import type { CoreEvent } from '@franklin/agent';
-import { CORE_STATE } from '@franklin/agent';
+import { CORE_STATE } from '@franklin/agent/testing';
 
 import { AgentProvider } from '../agent/agent-context.js';
 import { useThinkingLevel } from '../agent/use-thinking-level.js';
