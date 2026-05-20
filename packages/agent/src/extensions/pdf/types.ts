@@ -36,3 +36,7 @@ export interface PDFConverter {
 export interface PDFConvertOptions {
 	readonly pages?: PDFPageRange;
 }
+
+export interface ReadPDFExtensionOptions {
+	readonly renderScreenshots: RenderPDFScreenshots;
+}

@@ -7,6 +7,8 @@ import { combineRuntimes } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { Extension } from '@franklin/extensibility';
 import type { CoreSignature } from '../modules/core/api/api.js';
+import type { AuthDependencyRuntime } from '../auth/dependency.js';
+import type { AuthManager } from '../auth/manager.js';
 import type { SerializedToolDefinition } from '../modules/core/api/tools/index.js';
 import { serializeTool } from '../modules/core/api/tools/index.js';
 import { buildMiddleware } from '../modules/core/compile/decorators/middleware/build.js';
@@ -29,6 +31,11 @@ type CoreEnvironmentRuntime = CoreRuntime & EnvironmentRuntime;
 type CoreStoreEnvironmentRuntime = CoreRuntime &
 	StoreRuntime &
 	EnvironmentRuntime;
+
+type CoreStoreEnvironmentAuthRuntime = CoreRuntime &
+	StoreRuntime &
+	EnvironmentRuntime &
+	AuthDependencyRuntime;
 
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
@@ -175,6 +182,73 @@ export async function compileCoreWithStoreAndEnv(
 	cell.ctx = combineRuntimes(stores, environment);
 
 	const registrations = createCoreRegistrar<CoreStoreEnvironmentRuntime>(
+		createRegistryView(coreRegistry),
+	);
+	const middleware = buildMiddleware(registrations, getCtx);
+	const tools = registrations.tools.map(serializeTool);
+	return { middleware, ctx: cell.ctx, tools };
+}
+
+export async function compileCoreWithStoreEnvAndAuth(
+	ext: Extension<
+		API<CoreSignature, CoreStoreEnvironmentAuthRuntime> & StoreAPI
+	>,
+	env: ReconfigurableEnvironment,
+	auth: AuthManager,
+): Promise<{
+	middleware: FullMiddleware;
+	ctx: StoreRuntime & EnvironmentRuntime & AuthDependencyRuntime;
+	tools: SerializedToolDefinition[];
+}> {
+	const cell: {
+		ctx?: StoreRuntime & EnvironmentRuntime & AuthDependencyRuntime;
+	} = {};
+	const getCtx = (): CoreStoreEnvironmentAuthRuntime => {
+		if (!cell.ctx) throw new Error('ctx accessed before build');
+		return cell.ctx as CoreStoreEnvironmentAuthRuntime;
+	};
+
+	const { registry: coreRegistry, writer: coreWriter } = createRegistry<
+		CoreSignature,
+		CoreStoreEnvironmentAuthRuntime
+	>();
+	const api = createApi<CoreSignature, CoreStoreEnvironmentAuthRuntime>(
+		coreExtensionPoint,
+		coreWriter,
+	);
+	const { registry: storeRegistry, writer: storeWriter } = createRegistry<
+		StoreSignature,
+		CoreStoreEnvironmentAuthRuntime
+	>();
+	const storeApi = createApi<StoreSignature, CoreStoreEnvironmentAuthRuntime>(
+		storeExtensionPoint,
+		storeWriter,
+	);
+	const combinedApi = { ...api, ...storeApi } as API<
+		CoreSignature,
+		CoreStoreEnvironmentAuthRuntime
+	> &
+		StoreAPI;
+	ext(combinedApi);
+
+	const stores = await createStoreCompiler(new StoreRegistry(), {}).compile(
+		createRegistryView(storeRegistry),
+		getCtx,
+	);
+	const { registry: identityRegistry } = createRegistry<
+		IdentitySignature,
+		CoreStoreEnvironmentAuthRuntime
+	>();
+	const environment = await createEnvironmentCompiler(env).compile(
+		createRegistryView(identityRegistry),
+		getCtx,
+	);
+	cell.ctx = combineRuntimes(combineRuntimes(stores, environment), {
+		auth,
+		dispose: async () => {},
+	});
+
+	const registrations = createCoreRegistrar<CoreStoreEnvironmentAuthRuntime>(
 		createRegistryView(coreRegistry),
 	);
 	const middleware = buildMiddleware(registrations, getCtx);

@@ -11,7 +11,6 @@ import {
 	statusExtension,
 	todoExtension,
 } from '@franklin/agent';
-import type { PDFConverter } from '@franklin/agent';
 import type { AbsolutePath } from '@franklin/lib';
 import { toAbsolutePath } from '@franklin/lib';
 import type { Plugin } from 'obsidian';
@@ -23,11 +22,6 @@ import {
 } from '../utils/obsidian/path.js';
 import type { ObsidianDiffClient } from '../diff/client.js';
 import { resolveAuthStore } from './auth/resolve.js';
-import {
-	createObsidianFreePDFConverter,
-	createObsidianMistralPDFConverter,
-	createObsidianPDFConverter,
-} from './extensions/pdf/converters.js';
 import { renderObsidianPDFScreenshots } from './extensions/pdf/screenshots.js';
 import { obsidianSystemPromptExtension } from './extensions/system-prompt.js';
 
@@ -56,43 +50,25 @@ export async function createFranklinApp(
 		platform,
 		authStore ?? createAuthStore(platform.os.filesystem, appDir),
 	);
-	const disposables: (() => void)[] = [];
-	let obsidianPDFConverter:
-		| ReturnType<typeof createObsidianPDFConverter>
-		| undefined;
 
 	const app = new FranklinApp({
-		extensions: ({ auth }) => {
-			const pdfConverter = createObsidianPDFConverter(auth, {
-				renderScreenshots: renderObsidianPDFScreenshots,
-				createFreeConverter: createObsidianFreePDFConverter,
-				createMistralConverter: createObsidianMistralPDFConverter,
-			});
-			obsidianPDFConverter = pdfConverter;
-			disposables.push(() => pdfConverter.dispose());
-			return createExtensions(pdfConverter);
-		},
+		extensions: () => createExtensions(),
 		platform,
 		appDir,
 		auth,
 	});
 
 	await app.start();
-	obsidianPDFConverter?.refresh();
 
 	return {
 		app,
 		platform,
 		vaultRoot,
-		dispose() {
-			for (const dispose of disposables.splice(0)) {
-				dispose();
-			}
-		},
+		dispose: () => undefined,
 	};
 }
 
-function createExtensions(pdfConverter: PDFConverter): FranklinExtension[] {
+function createExtensions(): FranklinExtension[] {
 	const filesystemExtension = createFilesystemExtension();
 	const webExtension = createWebExtension({});
 	const extensionBundles = [
@@ -103,7 +79,9 @@ function createExtensions(pdfConverter: PDFConverter): FranklinExtension[] {
 		{ extension: obsidianSystemPromptExtension },
 		instructionsExtension,
 		filesystemExtension,
-		createReadPDFExtension(pdfConverter),
+		createReadPDFExtension({
+			renderScreenshots: renderObsidianPDFScreenshots,
+		}),
 		webExtension,
 		// spawnExtension,
 		environmentInfoExtension,

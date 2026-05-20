@@ -3,19 +3,41 @@ import {
 	MemoryOsInfo,
 	type AbsolutePath,
 } from '@franklin/lib';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AuthManager } from '../../../auth/manager.js';
 import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
-import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
+import { compileCoreWithStoreEnvAndAuth } from '../../../testing/compile-ext.js';
 import { editExtension } from '../../filesystem/edit/extension.js';
 import { readPDFExtension } from '../extension.js';
 import type { PDFConverter } from '../types.js';
+
+const pdfMocks = vi.hoisted(() => ({
+	freeConstructor: vi.fn(),
+	freeConvertPDF: vi.fn<PDFConverter['convertPDF']>(),
+	mistralConstructor: vi.fn(),
+	mistralConvertPDF: vi.fn<PDFConverter['convertPDF']>(),
+}));
 
 vi.mock('file-type', () => ({
 	fileTypeFromBuffer: vi.fn(async () => ({
 		ext: 'pdf',
 		mime: 'application/pdf',
 	})),
+}));
+
+vi.mock('../free.js', () => ({
+	FreePDFConverter: vi.fn(function (options) {
+		pdfMocks.freeConstructor(options);
+		return { convertPDF: pdfMocks.freeConvertPDF };
+	}),
+}));
+
+vi.mock('../mistral.js', () => ({
+	MistralPDFConverter: vi.fn(function (options) {
+		pdfMocks.mistralConstructor(options);
+		return { convertPDF: pdfMocks.mistralConvertPDF };
+	}),
 }));
 
 function mockEnvironment(file: Uint8Array): ReconfigurableEnvironment {
@@ -50,26 +72,47 @@ function mockEnvironment(file: Uint8Array): ReconfigurableEnvironment {
 	};
 }
 
-function mockPDFConverter(markdown: string): PDFConverter & {
-	convertPDF: ReturnType<typeof vi.fn<PDFConverter['convertPDF']>>;
+function mockAuthManager(apiKey?: string): AuthManager & {
+	getApiKey: ReturnType<typeof vi.fn>;
 } {
 	return {
-		convertPDF: vi.fn<PDFConverter['convertPDF']>(async () => ({
-			markdown,
-			screenshots: [],
-		})),
-	};
+		getApiKey: vi.fn(async () => apiKey),
+	} as unknown as AuthManager & { getApiKey: ReturnType<typeof vi.fn> };
 }
 
 describe('readPDFExtension', () => {
+	beforeEach(() => {
+		pdfMocks.freeConstructor.mockClear();
+		pdfMocks.freeConvertPDF.mockReset();
+		pdfMocks.mistralConstructor.mockClear();
+		pdfMocks.mistralConvertPDF.mockReset();
+		pdfMocks.freeConvertPDF.mockResolvedValue({
+			markdown: 'free',
+			screenshots: [],
+		});
+		pdfMocks.mistralConvertPDF.mockResolvedValue({
+			markdown: 'mistral',
+			screenshots: [],
+		});
+	});
+
 	it('routes PDFs through the PDF converter with page ranges', async () => {
 		const pdf = new TextEncoder().encode('%PDF-1.7\n');
 		const env = mockEnvironment(pdf);
-		const pdfConverter = mockPDFConverter('converted pdf');
-		const compiled = await compileCoreWithStoreAndEnv((api) => {
-			editExtension()(api);
-			readPDFExtension(pdfConverter)(api);
-		}, env);
+		const auth = mockAuthManager();
+		const renderScreenshots = vi.fn(async () => []);
+		pdfMocks.freeConvertPDF.mockResolvedValue({
+			markdown: 'converted pdf',
+			screenshots: [],
+		});
+		const compiled = await compileCoreWithStoreEnvAndAuth(
+			(api) => {
+				editExtension()(api);
+				readPDFExtension({ renderScreenshots })(api);
+			},
+			env,
+			auth,
+		);
 
 		const result = await compiled.middleware.server.toolExecute(
 			{
@@ -87,20 +130,30 @@ describe('readPDFExtension', () => {
 			vi.fn(),
 		);
 
-		expect(pdfConverter.convertPDF).toHaveBeenCalledWith(pdf, {
+		expect(auth.getApiKey).toHaveBeenCalledWith('mistral');
+		expect(pdfMocks.freeConstructor).toHaveBeenCalledWith({
+			renderScreenshots,
+		});
+		expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(pdf, {
 			pages: { startPage: 2, endPage: 4 },
 		});
+		expect(pdfMocks.mistralConstructor).not.toHaveBeenCalled();
 		expect(result.content).toEqual([{ type: 'text', text: 'converted pdf' }]);
 	});
 
 	it('defaults missing page range boundaries', async () => {
 		const pdf = new TextEncoder().encode('%PDF-1.7\n');
 		const env = mockEnvironment(pdf);
-		const pdfConverter = mockPDFConverter('converted pdf');
-		const compiled = await compileCoreWithStoreAndEnv((api) => {
-			editExtension()(api);
-			readPDFExtension(pdfConverter)(api);
-		}, env);
+		const auth = mockAuthManager();
+		const renderScreenshots = vi.fn(async () => []);
+		const compiled = await compileCoreWithStoreEnvAndAuth(
+			(api) => {
+				editExtension()(api);
+				readPDFExtension({ renderScreenshots })(api);
+			},
+			env,
+			auth,
+		);
 
 		await compiled.middleware.server.toolExecute(
 			{
@@ -117,8 +170,46 @@ describe('readPDFExtension', () => {
 			vi.fn(),
 		);
 
-		expect(pdfConverter.convertPDF).toHaveBeenCalledWith(pdf, {
+		expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(pdf, {
 			pages: { startPage: 1, endPage: 4 },
 		});
+	});
+
+	it('selects Mistral from the runtime auth dependency', async () => {
+		const pdf = new TextEncoder().encode('%PDF-1.7\n');
+		const env = mockEnvironment(pdf);
+		const auth = mockAuthManager('mis-key');
+		const renderScreenshots = vi.fn(async () => []);
+		const compiled = await compileCoreWithStoreEnvAndAuth(
+			(api) => {
+				editExtension()(api);
+				readPDFExtension({ renderScreenshots })(api);
+			},
+			env,
+			auth,
+		);
+
+		const result = await compiled.middleware.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'read-1',
+					name: 'read_pdf',
+					arguments: { path: 'document.pdf' },
+				},
+			},
+			vi.fn(),
+		);
+
+		expect(auth.getApiKey).toHaveBeenCalledWith('mistral');
+		expect(pdfMocks.mistralConstructor).toHaveBeenCalledWith({
+			apiKey: 'mis-key',
+			renderScreenshots,
+		});
+		expect(pdfMocks.mistralConvertPDF).toHaveBeenCalledWith(pdf, {
+			pages: undefined,
+		});
+		expect(pdfMocks.freeConvertPDF).not.toHaveBeenCalled();
+		expect(result.content).toEqual([{ type: 'text', text: 'mistral' }]);
 	});
 });
