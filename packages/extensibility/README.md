@@ -27,11 +27,13 @@ import type { ExtensionForModules } from '@franklin/extensibility/authoring';
 ```
 
 Use `@franklin/extensibility/module` for stateless module algebra and module
-composition helpers:
+composition helpers. Simple modules can also be created by lifting runtime
+factories; reusable patterns such as dependency modules specialize that lift
+into named runtime surfaces:
 
 ```ts
-import { combineAll, createDependencyModule } from '@franklin/extensibility/module';
-import type { ExtensionModule, InferRuntime } from '@franklin/extensibility/module';
+import { combineAll, createDependencyModule, liftRuntimeFactory } from '@franklin/extensibility/module';
+import type { ExtensionModule, InferRuntime, RuntimeModule } from '@franklin/extensibility/module';
 ```
 
 The package intentionally does not expose wildcard subpaths. If a helper is not

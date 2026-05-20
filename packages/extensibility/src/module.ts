@@ -15,6 +15,7 @@ export type {
 	InferRuntime,
 	InferSignature,
 	Modules,
+	RuntimeModule,
 	ValidateModules,
 } from './modules/simple/index.js';
 export {
@@ -25,6 +26,7 @@ export {
 	identityModule,
 	identityRuntime,
 	liftCompilerTransform,
+	liftRuntimeFactory,
 } from './modules/simple/index.js';
 export type {
 	DependencyModule,
