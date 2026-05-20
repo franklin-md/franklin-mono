@@ -30,4 +30,3 @@ export type { AuthStore } from './auth/store.js';
 export { type Platform, type OperatingSystem } from './platform.js';
 export * from './extensions/index.js';
 export * from './modules/index.js';
-export { createPersistence } from './storage/persistence.js';

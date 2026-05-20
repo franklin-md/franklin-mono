@@ -5,8 +5,17 @@ import type {
 	Filesystem,
 	RestoreResult,
 } from '@franklin/lib';
-import { StoreRegistry } from '../modules/store/api/index.js';
-import { createPersistence } from './persistence.js';
+import {
+	createMapFilePersister,
+	DebouncedPersister,
+	joinAbsolute,
+	rawCodec,
+	versioned,
+} from '@franklin/lib';
+import {
+	StoreRegistry,
+	type StoreSnapshot,
+} from '../modules/store/api/index.js';
 import { createSettingsStore } from './settings.js';
 import type { Storage } from './types.js';
 
@@ -20,13 +29,27 @@ export function createStorage<S extends BaseState>(
 	opts: CreateStorageOptions<S>,
 ): Storage<S> {
 	const settings = createSettingsStore(filesystem, appDir);
-	const persistence = createPersistence<S>(
-		appDir,
-		filesystem,
-		opts.sessionCodec,
+	const sessions = new DebouncedPersister(
+		createMapFilePersister<S>(
+			filesystem,
+			joinAbsolute(appDir, 'sessions'),
+			opts.sessionCodec,
+		),
+		500,
 	);
-	const sessions = persistence.session;
-	const stores = new StoreRegistry(persistence.store);
+
+	// Store snapshots are extension-composed and arbitrary, so the shared store
+	// registry can only persist a versioned envelope around the raw value.
+	const storeCodec = versioned().version(1, rawCodec<StoreSnapshot>()).build();
+	const storePersister = new DebouncedPersister(
+		createMapFilePersister<StoreSnapshot>(
+			filesystem,
+			joinAbsolute(appDir, 'store'),
+			storeCodec,
+		),
+		500,
+	);
+	const stores = new StoreRegistry(storePersister);
 
 	return {
 		settings,
