@@ -1,4 +1,4 @@
-import type { Platform } from '@franklin/agent/browser';
+import type { Platform } from '@franklin/agent';
 
 import { schema } from '../shared/schema.js';
 import { bindRenderer } from './ipc/bind/index.js';

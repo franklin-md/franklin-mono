@@ -2,7 +2,7 @@ import {
 	type ContextTracker,
 	trackAgent,
 	trackClient,
-} from '@franklin/mini-acp';
+} from '@franklin/mini-acp/session';
 import type { ProtocolDecorator } from '../types.js';
 
 export function createContextTrackerDecorator(

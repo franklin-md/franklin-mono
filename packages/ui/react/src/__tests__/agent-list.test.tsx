@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, act, fireEvent } from '@testing-library/react';
 
-import type { FranklinRuntime } from '@franklin/agent/browser';
+import type { FranklinRuntime } from '@franklin/agent';
 import type { RuntimeEntry } from '@franklin/agent';
 
 import { AppContext } from '../agent/franklin-context.js';

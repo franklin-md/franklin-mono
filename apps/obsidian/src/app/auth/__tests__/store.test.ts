@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AuthEntries, OAuthCredentials } from '@franklin/agent/browser';
+import type { AuthEntries, OAuthCredentials } from '@franklin/agent';
 import { MemorySecretStorage } from '../memory-secret-storage.js';
 import { toApiKeyName, toOAuthName } from '../key-names.js';
 import {

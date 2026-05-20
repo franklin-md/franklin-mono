@@ -4,7 +4,6 @@ export { THINKING_LEVELS } from './types/context.js';
 // Types
 export type {
 	// Content
-	Content,
 	UserContent,
 	AssistantContent,
 	ToolResultContent,
@@ -21,9 +20,7 @@ export type {
 	Context,
 	ContextPatch,
 	History,
-	HistoryPatch,
 	LLMConfig,
-	LLMConfigPatch,
 	ThinkingLevel,
 	// Tools
 	ToolDefinition,
@@ -38,30 +35,14 @@ export type {
 	StreamEvent,
 	// Usage
 	Usage,
-	// Errors
-	AuthError,
-	OAuthError,
-	APIKeyError,
 	// Stop codes
 	StopCategory,
 } from './types/index.js';
 
-export { StopCode, stopCategory, VALID_STOP_CODES } from './types/index.js';
+export { StopCode, stopCategory } from './types/index.js';
 
-// Base protocol
-export type { BaseAgent, BaseClient } from './base/index.js';
-export { createPiAdapter, type PiAdapterOptions } from './base/index.js';
+// Built-in agent implementation
 export { createPiAgent, type CreatePiAgentOptions } from './base/index.js';
-export {
-	fromPiUserContent,
-	fromPiAssistantContent,
-	fromPiToolResultContent,
-	fromPiMessage,
-	fromAgentEvent,
-	bridgeTool,
-	toPiUserMessage,
-	toPiMessage,
-} from './base/index.js';
 
 // Session protocol (Mini ACP)
 export type {
@@ -71,19 +52,4 @@ export type {
 	MiniACPConnector,
 } from './protocol/index.js';
 
-export {
-	debugMiniACP,
-	createSessionAdapter,
-	ContextTracker,
-	UsageTracker,
-	ZERO_USAGE,
-	trackAgent,
-	trackTurn,
-	trackClient,
-	trackUsage,
-	decorateTurn,
-} from './protocol/index.js';
-
-// Utils
-export type { CollectResult } from './utils/collect.js';
-export { collect } from './utils/collect.js';
+export { ZERO_USAGE } from './protocol/index.js';

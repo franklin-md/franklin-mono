@@ -29,9 +29,11 @@ import {
 	combine as combineModules,
 	combineAll as combineAllModules,
 	createDependencyModule,
+	liftRuntimeFactory,
 	type DependencyModule,
 	type ExtensionModule,
 	type InferRuntime as InferModuleRuntime,
+	type RuntimeModule,
 } from '../module.js';
 // @ts-expect-error base module aliases are intentionally kept out of root.
 import type { BaseExtensionModule as _RootBaseExtensionModule } from '../index.js';
@@ -84,12 +86,15 @@ void compile(
 const _dependency = createDependencyModule('settings', { get: () => 'value' });
 type _DependencyModule = DependencyModule<'settings', { get: () => string }>;
 type _DependencyRuntime = InferModuleRuntime<typeof _dependency>;
+type _RuntimeModule = RuntimeModule<_DependencyRuntime>;
 type _AuthoringAPI = AuthoringExtensionAPI<[typeof _dependency]>;
 type _AuthoredExtension = AuthoringExtensionForModules<[typeof _dependency]>;
 void (null as unknown as _DependencyModule);
 void (null as unknown as _DependencyRuntime);
+void (null as unknown as _RuntimeModule);
 void (null as unknown as _AuthoringAPI);
 void (null as unknown as _AuthoredExtension);
+void liftRuntimeFactory(async () => ({ dispose: async () => {} }));
 void defineAuthoredExtension<[typeof _dependency]>(() => {});
 void combineModules(
 	_dependency,

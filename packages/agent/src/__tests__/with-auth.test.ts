@@ -6,11 +6,11 @@ import {
 } from '../modules/core/index.js';
 import { createRuntime } from '../testing/index.js';
 import {
-	createSessionAdapter,
 	StopCode,
 	type MiniACPConnector,
 	ZERO_USAGE,
 } from '@franklin/mini-acp';
+import { createSessionAdapter } from '@franklin/mini-acp/session';
 import {
 	authenticateAgent,
 	reconnectAgent,

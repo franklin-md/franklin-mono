@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { OAuthLoginCallbacks } from '@franklin/agent/browser';
+import type { OAuthLoginCallbacks } from '@franklin/agent';
 
 import { useApp } from '../agent/franklin-context.js';
 

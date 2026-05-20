@@ -1,5 +1,5 @@
 import { createPersistedStore, createStore } from '@franklin/agent';
-import type { AuthEntries, AuthStore } from '@franklin/agent/browser';
+import type { AuthEntries, AuthStore } from '@franklin/agent';
 import { readEntry, tombstoneEntry, writeEntry } from './entry-storage.js';
 import { readIndex, writeIndex } from './index-storage.js';
 import type { ObsidianSecretStorage } from './types.js';

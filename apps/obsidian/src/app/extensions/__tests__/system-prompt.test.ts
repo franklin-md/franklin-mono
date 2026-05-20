@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { FranklinAPI } from '@franklin/agent/browser';
+import type { FranklinAPI } from '@franklin/agent';
 import {
 	filesystemExtension,
 	type SystemPromptContent,

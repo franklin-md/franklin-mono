@@ -5,12 +5,12 @@ import {
 } from '../modules/core/index.js';
 import { createRuntime } from '../testing/index.js';
 import {
-	createSessionAdapter,
 	StopCode,
 	type MiniACPConnector,
 	type Update,
 	ZERO_USAGE,
 } from '@franklin/mini-acp';
+import { createSessionAdapter } from '@franklin/mini-acp/session';
 import { getLLMConfig } from '../settings/llm-config.js';
 
 function createMockConnector(): MiniACPConnector {

@@ -6,8 +6,9 @@ import type { ReactNode } from 'react';
 
 import type { ThinkingLevel } from '@franklin/mini-acp';
 import { ZERO_USAGE } from '@franklin/mini-acp';
-import type { FranklinRuntime } from '@franklin/agent/browser';
-import { CORE_STATE, type CoreEvent } from '@franklin/agent';
+import type { FranklinRuntime } from '@franklin/agent';
+import type { CoreEvent } from '@franklin/agent';
+import { CORE_STATE } from '@franklin/agent/testing';
 import { AgentProvider } from '@franklin/react';
 
 import { ThinkingToggle } from '../../../src/conversation/input/thinking-toggle.js';

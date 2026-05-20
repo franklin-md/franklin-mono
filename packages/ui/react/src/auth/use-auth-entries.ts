@@ -1,10 +1,6 @@
 import { useCallback } from 'react';
 
-import type {
-	ApiKeyEntry,
-	AuthEntries,
-	AuthEntry,
-} from '@franklin/agent/browser';
+import type { ApiKeyEntry, AuthEntries, AuthEntry } from '@franklin/agent';
 
 import { useStableExternalStore } from '../utils/use-stable-external-store.js';
 

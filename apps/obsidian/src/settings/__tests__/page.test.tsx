@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { AuthEntries, FranklinApp } from '@franklin/agent/browser';
+import type { AuthEntries, FranklinApp } from '@franklin/agent';
 import { AppContext } from '@franklin/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';

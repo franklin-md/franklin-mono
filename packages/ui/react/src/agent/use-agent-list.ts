@@ -5,7 +5,7 @@ import type {
 	AgentCreateInput,
 	Agents,
 	FranklinRuntime,
-} from '@franklin/agent/browser';
+} from '@franklin/agent';
 import type { RuntimeEntry } from '@franklin/agent';
 
 import { useApp } from './franklin-context.js';

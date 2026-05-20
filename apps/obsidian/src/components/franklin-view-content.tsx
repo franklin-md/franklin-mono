@@ -1,4 +1,4 @@
-import type { AgentCreateInput, FranklinApp } from '@franklin/agent/browser';
+import type { AgentCreateInput, FranklinApp } from '@franklin/agent';
 import type { AuthActionHandler } from '@franklin/react';
 import type { App as ObsidianApp } from 'obsidian';
 import type { ReactNode } from 'react';

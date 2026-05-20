@@ -26,5 +26,11 @@ export {
 	identityModule,
 	identityRuntime,
 } from './identity.js';
-export type { ExtensionModuleTransform } from './transform/index.js';
-export { liftCompilerTransform } from './transform/index.js';
+export type {
+	ExtensionModuleTransform,
+	RuntimeModule,
+} from './transform/index.js';
+export {
+	liftCompilerTransform,
+	liftRuntimeFactory,
+} from './transform/index.js';
