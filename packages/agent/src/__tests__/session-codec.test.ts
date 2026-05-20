@@ -1,0 +1,112 @@
+import { describe, expect, it } from 'vitest';
+import type { AbsolutePath } from '@franklin/lib';
+import { ZERO_USAGE } from '@franklin/mini-acp';
+import type { FranklinSession } from '../types.js';
+import {
+	franklinSessionCodec,
+	SESSION_FILE_VERSION,
+} from '../app/session/index.js';
+
+function session(): FranklinSession {
+	return {
+		core: {
+			messages: [
+				{
+					role: 'user',
+					content: [{ type: 'text', text: 'hello' }],
+				},
+			],
+			llmConfig: {
+				provider: 'openai-codex',
+				model: 'gpt-5.4',
+				reasoning: 'medium',
+			},
+			usage: ZERO_USAGE,
+		},
+		store: {
+			todos: 'store-1',
+		},
+		env: {
+			fsConfig: {
+				cwd: '/workspace' as AbsolutePath,
+				permissions: {
+					allowRead: ['**'],
+					denyRead: [],
+					allowWrite: ['src/**'],
+					denyWrite: ['node_modules/**'],
+				},
+			},
+			netConfig: {
+				allowedDomains: ['example.com'],
+				deniedDomains: ['localhost:9222'],
+			},
+		},
+	};
+}
+
+describe('session codec', () => {
+	it('encodes sessions as a versioned envelope', () => {
+		const value = session();
+
+		expect(franklinSessionCodec.encode(value)).toEqual({
+			version: SESSION_FILE_VERSION,
+			data: value,
+		});
+	});
+
+	it('decodes a versioned envelope', () => {
+		const value = session();
+
+		expect(franklinSessionCodec.decode({ version: 1, data: value })).toEqual({
+			ok: true,
+			value,
+		});
+	});
+
+	it('rejects missing session roots', () => {
+		expect(
+			franklinSessionCodec.decode({
+				version: 1,
+				data: { core: session().core, env: session().env },
+			}),
+		).toMatchObject({
+			ok: false,
+			issue: { kind: 'schema-mismatch', version: 1 },
+		});
+	});
+
+	it('rejects future versions', () => {
+		expect(
+			franklinSessionCodec.decode({ version: 999, data: session() }),
+		).toEqual({
+			ok: false,
+			issue: {
+				kind: 'version-ahead',
+				version: 999,
+				currentVersion: SESSION_FILE_VERSION,
+			},
+		});
+	});
+
+	it('drops accidentally persisted api keys from llm config', () => {
+		const value = session();
+		const raw = {
+			version: 1,
+			data: {
+				...value,
+				core: {
+					...value.core,
+					llmConfig: {
+						...value.core.llmConfig,
+						apiKey: 'secret',
+					},
+				},
+			},
+		};
+
+		expect(franklinSessionCodec.decode(raw)).toEqual({
+			ok: true,
+			value,
+		});
+	});
+});
