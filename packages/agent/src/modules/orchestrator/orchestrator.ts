@@ -49,8 +49,13 @@ export class Orchestrator<
 	}
 
 	async create(input?: OrchestratorCreateInput<State<M>>): Promise<Entry<M>> {
-		const id = this.createId();
-		return this.materialize(id, await this.createState(input ?? {}));
+		const options = input ?? {};
+		const id = options.id ?? this.createId();
+		if (this.collection.has(id)) {
+			throw new Error(`Runtime ${id} already exists`);
+		}
+
+		return this.createRuntime(id, await this.createState(options));
 	}
 
 	get(id: string): Entry<M> | undefined {
@@ -66,6 +71,14 @@ export class Orchestrator<
 	}
 
 	async materialize(id: string, state: State<M>): Promise<Entry<M>> {
+		if (this.collection.has(id)) {
+			throw new Error(`Runtime ${id} already exists`);
+		}
+
+		return this.createRuntime(id, state);
+	}
+
+	private async createRuntime(id: string, state: State<M>): Promise<Entry<M>> {
 		const fullModule = this.createFullModule(id);
 		const simple = fullModule.instantiate(state);
 		const runtime = await compile(
@@ -98,6 +111,6 @@ export class Orchestrator<
 			state = this.baseModule.emptyState();
 		}
 
-		return resolveState(state, options.overrides);
+		return resolveState(state, options.state);
 	}
 }
