@@ -1,5 +1,10 @@
 import { AuthManager, createAuthStore, FranklinApp } from '@franklin/agent';
-import type { FranklinExtension, Platform } from '@franklin/agent';
+import type { FranklinExtension } from '@franklin/agent';
+import {
+	bindHostAction,
+	openExternalAction,
+	type HostActionBinding,
+} from '@franklin/react';
 import {
 	conversationExtension,
 	conversationTitleExtension,
@@ -27,7 +32,7 @@ import { obsidianSystemPromptExtension } from './extensions/system-prompt.js';
 
 interface ObsidianAppResult {
 	app: FranklinApp;
-	platform: Platform;
+	hostActionBindings: readonly HostActionBinding[];
 	vaultRoot: AbsolutePath;
 	dispose(): void;
 }
@@ -62,7 +67,11 @@ export async function createFranklinApp(
 
 	return {
 		app,
-		platform,
+		hostActionBindings: [
+			bindHostAction(openExternalAction, (url) =>
+				platform.os.openExternal(url),
+			),
+		],
 		vaultRoot,
 		dispose: () => undefined,
 	};

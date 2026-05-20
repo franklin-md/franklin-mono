@@ -8,8 +8,9 @@ import {
 	type StatusState,
 } from '@franklin/agent';
 import type { RuntimeEntry } from '@franklin/agent';
-import { AgentsProvider, AppContext } from '@franklin/react';
+import { AgentsProvider } from '@franklin/react';
 
+import { ApplicationProvider } from '../../src/application-context.js';
 import { AgentTabs } from '../../src/agent-tabs/tabs.js';
 
 type Listener<T> = (value: T) => void;
@@ -127,9 +128,9 @@ function MockAgentsHost({ initialSessions, children }: MockAgentsHostProps) {
 	}, [initialSessions]);
 
 	return (
-		<AppContext.Provider value={app}>
+		<ApplicationProvider harness={app} hostActionBindings={[]}>
 			<AgentsProvider>{children}</AgentsProvider>
-		</AppContext.Provider>
+		</ApplicationProvider>
 	);
 }
 

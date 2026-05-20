@@ -49,7 +49,6 @@ export class FranklinApp {
 	readonly auth: AuthManager;
 	readonly settings: SettingsStore;
 	readonly agents: Orchestrator<FranklinBase>;
-	readonly platform: Platform;
 
 	private readonly collection: RuntimeCollection<FranklinRuntime>;
 	private readonly sessionPersistence: SessionPersistenceController<
@@ -74,7 +73,6 @@ export class FranklinApp {
 		);
 
 		this.auth = opts.auth;
-		this.platform = platform;
 		this.settings = storage.settings;
 		this.restoreStorage = () => storage.restore();
 		const extensions = [...opts.extensions];

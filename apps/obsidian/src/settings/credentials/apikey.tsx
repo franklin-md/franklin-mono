@@ -1,4 +1,8 @@
-import { useApp, useAuthEntries, useAuthManager } from '@franklin/react';
+import {
+	useAuthEntries,
+	useAuthManager,
+	useOpenExternal,
+} from '@franklin/react';
 import { Input, ProviderIcon } from '@franklin/ui';
 
 import { SettingControl } from '../../components/obsidian-native/setting/control.js';
@@ -24,8 +28,8 @@ export function ProviderApiKeyField({
 	linkLabel,
 	placeholder,
 }: ProviderApiKeyFieldProps) {
-	const app = useApp();
 	const auth = useAuthManager();
+	const openExternal = useOpenExternal();
 	const { entries } = useAuthEntries();
 
 	const value = entries[provider]?.apiKey?.key ?? '';
@@ -54,7 +58,7 @@ export function ProviderApiKeyField({
 						rel="noreferrer"
 						onClick={(event) => {
 							event.preventDefault();
-							void app.platform.os.openExternal(linkUrl);
+							void openExternal(linkUrl);
 						}}
 					>
 						{linkLabel}

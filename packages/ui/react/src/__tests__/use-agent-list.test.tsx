@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import type { FranklinRuntime } from '@franklin/agent';
 import type { RuntimeEntry } from '@franklin/agent';
 
-import { AppContext } from '../agent/franklin-context.js';
+import { HarnessProvider } from '../agent/harness-context.js';
 import { useAgentList } from '../agent/use-agent-list.js';
 import { AgentsProvider } from '../agent/agents-context.js';
 import { useAgents } from '../agent/agents-context.js';
@@ -54,9 +54,7 @@ function makeWrapper(agents: ReturnType<typeof makeMockAgents>) {
 	const mockApp = { agents, settings: { get: () => ({}) } };
 	return function Wrapper({ children }: { children: ReactNode }) {
 		return (
-			<AppContext.Provider value={mockApp as never}>
-				{children}
-			</AppContext.Provider>
+			<HarnessProvider harness={mockApp as never}>{children}</HarnessProvider>
 		);
 	};
 }
@@ -65,9 +63,9 @@ function makeProviderWrapper(agents: ReturnType<typeof makeMockAgents>) {
 	const mockApp = { agents, settings: { get: () => ({}) } };
 	return function Wrapper({ children }: { children: ReactNode }) {
 		return (
-			<AppContext.Provider value={mockApp as never}>
+			<HarnessProvider harness={mockApp as never}>
 				<AgentsProvider>{children}</AgentsProvider>
-			</AppContext.Provider>
+			</HarnessProvider>
 		);
 	};
 }

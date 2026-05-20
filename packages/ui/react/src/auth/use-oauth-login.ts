@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { OAuthLoginCallbacks } from '@franklin/agent';
 
-import { useApp } from '../agent/franklin-context.js';
+import { useOpenExternal } from '../host-actions/open-external.js';
 
 import { useAuthManager } from './use-auth-manager.js';
 
@@ -24,7 +24,7 @@ function isPending(state: OAuthLoginState): boolean {
 
 export function useOAuthLogin(providerId: string) {
 	const auth = useAuthManager();
-	const app = useApp();
+	const openExternal = useOpenExternal();
 	const mountedRef = useRef(false);
 	const activeProviderRef = useRef(providerId);
 	const hasActiveLoginRef = useRef(false);
@@ -47,7 +47,7 @@ export function useOAuthLogin(providerId: string) {
 
 		const callbacks: OAuthLoginCallbacks = {
 			onAuth: (info) => {
-				void app.platform.os.openExternal(info.url);
+				void openExternal(info.url);
 				if (mountedRef.current) {
 					setState({ phase: 'waiting' });
 				}
@@ -75,7 +75,7 @@ export function useOAuthLogin(providerId: string) {
 		} finally {
 			hasActiveLoginRef.current = false;
 		}
-	}, [app.platform.os, auth, providerId]);
+	}, [auth, openExternal, providerId]);
 
 	const reset = useCallback(() => {
 		setState({ phase: 'idle' });

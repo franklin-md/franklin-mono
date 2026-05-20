@@ -18,10 +18,12 @@ import { ZERO_USAGE } from '@franklin/mini-acp';
 import {
 	AgentProvider,
 	AgentsValueProvider,
-	AppContext,
 	type AgentsControl,
+	bindHostAction,
+	openExternalAction,
 } from '@franklin/react';
 
+import { ApplicationProvider } from '../src/application-context.js';
 import { DefaultAuthActionProvider } from '../src/auth/default-action-provider.js';
 
 function createMockStore<T>(initial: T) {
@@ -140,11 +142,6 @@ function createMockApp() {
 		auth,
 		settings: settingsStore.store,
 		agents: { list: () => [] },
-		platform: {
-			os: {
-				openExternal: () => {},
-			},
-		},
 	};
 }
 
@@ -244,7 +241,10 @@ export function MockAgentDecorator({
 	const app = createMockApp();
 
 	return (
-		<AppContext.Provider value={app as never}>
+		<ApplicationProvider
+			harness={app as never}
+			hostActionBindings={[bindHostAction(openExternalAction, () => {})]}
+		>
 			<DefaultAuthActionProvider>
 				<AgentProvider agent={runtime}>
 					<MockAgentsDecorator
@@ -254,7 +254,7 @@ export function MockAgentDecorator({
 					</MockAgentsDecorator>
 				</AgentProvider>
 			</DefaultAuthActionProvider>
-		</AppContext.Provider>
+		</ApplicationProvider>
 	);
 }
 

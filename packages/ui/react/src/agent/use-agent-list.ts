@@ -7,7 +7,7 @@ import type {
 	RuntimeEntry,
 } from '@franklin/agent';
 
-import { useApp } from './franklin-context.js';
+import { useHarness } from './harness-context.js';
 import { useSessions } from './use-sessions.js';
 import { useCollectionNavigator } from '../utils/use-collection-navigator.js';
 
@@ -39,7 +39,7 @@ function getSessionKey(session: RuntimeEntry<FranklinRuntime>): string {
  * first if the deleted agent was first, or clears if none remain.
  */
 export function useAgentList(): AgentsControl {
-	const manager = useApp().agents;
+	const manager = useHarness().agents;
 	const sessions = useSessions();
 	const {
 		currentItem: activeSession,

@@ -20,7 +20,7 @@ export type UseModelSelection = {
  * Writes propagate to both the runtime (`setLLMConfig`) and the app-level
  * settings store (`defaultLLMConfig`).
  *
- * Must be used inside an `<AgentProvider>` and `<FranklinProvider>`.
+ * Must be used inside an `<AgentProvider>` and `<HarnessProvider>`.
  */
 export function useModelSelection(): UseModelSelection {
 	const settings = useSettings();
