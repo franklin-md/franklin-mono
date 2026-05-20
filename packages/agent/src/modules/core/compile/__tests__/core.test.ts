@@ -5,6 +5,7 @@ import type {
 	Chunk,
 	MiniACPAgent,
 	MiniACPClient,
+	ToolDefinition,
 	ToolExecuteParams,
 	TurnStart,
 	Update,
@@ -19,14 +20,11 @@ import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
 import type { CoreSignature } from '../../api/api.js';
 import { resolveToolOutput } from '../../api/tool.js';
-import {
-	type SerializedToolDefinition,
-	serializeTool,
-} from '../../api/tools/index.js';
 import type { CoreRuntime } from '../../runtime/index.js';
 import { buildMiddleware } from '../decorators/middleware/build.js';
 import type { FullMiddleware } from '../decorators/middleware/types.js';
-import { createCoreRegistrar } from '../registrar/index.js';
+import { registeredTools } from '../registrations/index.js';
+import { serializeTool } from '../tools/index.js';
 
 type CoreExtension = Extension<API<CoreSignature, CoreRuntime>>;
 
@@ -51,16 +49,14 @@ const coreExtensionPoint = createExtensionPoint<CoreSignature>({
  */
 async function compileExt(
 	ext: CoreExtension,
-): Promise<FullMiddleware & { tools: SerializedToolDefinition[] }> {
+): Promise<FullMiddleware & { tools: ToolDefinition[] }> {
 	const stubCtx = undefined as unknown as CoreRuntime;
 	const { registry, writer } = createRegistry<CoreSignature, CoreRuntime>();
 	const api = createApi<CoreSignature, CoreRuntime>(coreExtensionPoint, writer);
 	ext(api);
-	const registrations = createCoreRegistrar<CoreRuntime>(
-		createRegistryView(registry),
-	);
+	const registrations = createRegistryView(registry);
 	const middleware = buildMiddleware(registrations, () => stubCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { ...middleware, tools };
 }
 
@@ -279,6 +275,84 @@ describe('buildCore – registerTool()', () => {
 
 		expect(next).toHaveBeenCalled();
 		expect(result.toolCallId).toBe('other-call');
+	});
+
+	it('rejects invalid tool arguments before execute', async () => {
+		const execute = vi.fn(async (params: { input: string }) =>
+			params.input.toUpperCase(),
+		);
+		const mw = await compileExt((api) => {
+			api.registerTool({
+				name: 'myTool',
+				description: 'A test tool',
+				schema: z.object({ input: z.string() }),
+				execute,
+			});
+		});
+
+		const next = vi.fn();
+
+		const result = await mw.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'call-invalid',
+					name: 'myTool',
+					arguments: { input: 123 },
+				},
+			},
+			next,
+		);
+
+		expect(execute).not.toHaveBeenCalled();
+		expect(result.toolCallId).toBe('call-invalid');
+		expect(result.isError).toBe(true);
+		expect(result.content[0]).toMatchObject({
+			type: 'text',
+			text: expect.stringContaining('Invalid arguments for tool "myTool"'),
+		});
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it('passes parsed tool arguments to execute', async () => {
+		const schema = z.object({
+			count: z.coerce.number(),
+			label: z.string().default('item'),
+		});
+		const execute = vi.fn(
+			async (params: z.infer<typeof schema>) =>
+				`${params.count}:${params.label}`,
+		);
+
+		const mw = await compileExt((api) => {
+			api.registerTool({
+				name: 'parsedTool',
+				description: 'Uses parsed args',
+				schema,
+				execute,
+			});
+		});
+
+		const result = await mw.server.toolExecute(
+			{
+				call: {
+					type: 'toolCall',
+					id: 'call-parse',
+					name: 'parsedTool',
+					arguments: { count: '4' },
+				},
+			},
+			vi.fn(),
+		);
+
+		expect(execute).toHaveBeenCalledWith(
+			{ count: 4, label: 'item' },
+			undefined,
+		);
+		expect(result.content[0]).toEqual({
+			type: 'text',
+			text: '4:item',
+		});
 	});
 
 	it('catches tool execute errors and returns isError result', async () => {

@@ -3,13 +3,13 @@ import type { Compiler } from '@franklin/extensibility';
 import type { RegistryView } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { CoreSignature } from '../api/api.js';
-import { serializeTool } from '../api/tools/index.js';
 import { type CoreRuntime, createCoreRuntime } from '../runtime/index.js';
 import type { SessionSnapshot } from '../state.js';
 import { createAgentClient } from './client.js';
 import { createAgentDecorator } from './decorators/full.js';
-import { createCoreRegistrar } from './registrar/index.js';
+import { registeredTools } from './registrations/index.js';
 import { createResources } from './resources.js';
+import { serializeTool } from './tools/index.js';
 
 export function createCoreCompiler(
 	connectAgent: MiniACPConnector,
@@ -21,13 +21,8 @@ export function createCoreCompiler(
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CoreRuntime> => {
 			const resources = createResources(session);
-			const coreRegistrar = createCoreRegistrar<ContextRuntime>(registry);
-			const decorator = createAgentDecorator(
-				resources,
-				coreRegistrar,
-				getRuntime,
-			);
-			const serializedTools = coreRegistrar.tools.map(serializeTool);
+			const decorator = createAgentDecorator(resources, registry, getRuntime);
+			const serializedTools = registeredTools(registry).map(serializeTool);
 
 			const client = await createAgentClient({
 				connectAgent,

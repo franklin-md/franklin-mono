@@ -9,8 +9,11 @@ import type {
 	Signature,
 	StateHandle,
 	StaticSignature,
+	WithRuntime,
 } from '../index.js';
 import {
+	bindAllWithRuntime,
+	bindWithRuntime,
 	compile,
 	combineExtensionPoints,
 	createApi,
@@ -53,6 +56,7 @@ type _RootTypes = [
 	Signature,
 	StateHandle<Record<never, never>>,
 	StaticSignature<Record<never, never>>,
+	WithRuntime<() => void, BaseRuntime>,
 ];
 
 void (null as unknown as _RootTypes);
@@ -104,6 +108,15 @@ void combineAllModules([
 	_dependency,
 	createDependencyModule('cache', new Map()),
 ]);
+const _runtimeOnlyHandler: WithRuntime<() => void, BaseRuntime> = (
+	_runtime,
+) => {};
+void bindWithRuntime(_runtimeOnlyHandler, () => ({
+	dispose: async () => {},
+}));
+void bindAllWithRuntime([_runtimeOnlyHandler], () => ({
+	dispose: async () => {},
+}));
 
 void (null as unknown as _RootBaseExtensionModule);
 

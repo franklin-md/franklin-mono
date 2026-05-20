@@ -1,11 +1,4 @@
-export type {
-	CoreAPI,
-	CoreSignature,
-	CoreEventHandlers,
-	CoreOnRegistration,
-	CoreRegisterToolRegistration,
-} from './api.js';
-export type { MaybePromise } from '../../../utils/maybe-promise.js';
+export type { CoreAPI, CoreSignature, CoreEventHandlers } from './api.js';
 export type { Prompt } from './prompt.js';
 export type {
 	SystemPrompt,
@@ -28,9 +21,3 @@ export type {
 export { resolveToolOutput } from './tool.js';
 export type { ToolSpec, ToolArgs } from './tool-spec.js';
 export { toolSpec } from './tool-spec.js';
-export type {
-	ToolDefinition,
-	AnyToolDefinition,
-	SerializedToolDefinition,
-} from './tools/index.js';
-export { serializeTool, toToolInputSchema } from './tools/index.js';

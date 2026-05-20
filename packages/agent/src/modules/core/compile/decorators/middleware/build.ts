@@ -1,7 +1,10 @@
+import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import { buildWaterfall, passThrough } from '@franklin/lib/middleware';
-import type { BaseRuntime } from '@franklin/extensibility';
-import { bindHandlers, bindTool } from '../../registrar/bind.js';
-import type { CoreRegistrar } from '../../registrar/types.js';
+import type { CoreSignature } from '../../../api/api.js';
+import {
+	bindRegisteredEventHandlers,
+	registeredTools,
+} from '../../registrations/index.js';
 import {
 	buildPromptWaterfall,
 	buildToolExecuteMiddleware,
@@ -13,22 +16,26 @@ import {
 import type { FullMiddleware } from './types.js';
 
 export function buildMiddleware<Runtime extends BaseRuntime>(
-	registrations: CoreRegistrar<Runtime>,
+	registrations: RegistryView<CoreSignature, Runtime>,
 	getCtx: () => Runtime,
 ): FullMiddleware {
-	const cancel = bindHandlers(registrations.cancel, getCtx);
-	const prompt = bindHandlers(registrations.prompt, getCtx);
+	const cancel = bindRegisteredEventHandlers(registrations, 'cancel', getCtx);
+	const prompt = bindRegisteredEventHandlers(registrations, 'prompt', getCtx);
 	const streamObs: StreamObservers = {
-		turnStart: bindHandlers(registrations.turnStart, getCtx),
-		chunk: bindHandlers(registrations.chunk, getCtx),
-		update: bindHandlers(registrations.update, getCtx),
-		turnEnd: bindHandlers(registrations.turnEnd, getCtx),
+		turnStart: bindRegisteredEventHandlers(registrations, 'turnStart', getCtx),
+		chunk: bindRegisteredEventHandlers(registrations, 'chunk', getCtx),
+		update: bindRegisteredEventHandlers(registrations, 'update', getCtx),
+		turnEnd: bindRegisteredEventHandlers(registrations, 'turnEnd', getCtx),
 	};
 	const toolObs: ToolObservers = {
-		toolCall: bindHandlers(registrations.toolCall, getCtx),
-		toolResult: bindHandlers(registrations.toolResult, getCtx),
+		toolCall: bindRegisteredEventHandlers(registrations, 'toolCall', getCtx),
+		toolResult: bindRegisteredEventHandlers(
+			registrations,
+			'toolResult',
+			getCtx,
+		),
 	};
-	const tools = registrations.tools.map((t) => bindTool(t, getCtx));
+	const tools = registeredTools(registrations);
 
 	const client: FullMiddleware['client'] = {
 		initialize: passThrough(),
@@ -48,7 +55,7 @@ export function buildMiddleware<Runtime extends BaseRuntime>(
 	const server: FullMiddleware['server'] = {
 		toolExecute:
 			tools.length > 0 || hasAnyToolObserver(toolObs)
-				? buildToolExecuteMiddleware(tools, toolObs)
+				? buildToolExecuteMiddleware(tools, toolObs, getCtx)
 				: passThrough(),
 	};
 

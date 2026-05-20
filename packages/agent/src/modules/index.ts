@@ -1,33 +1,22 @@
 // Core
 export type {
-	AnyToolDefinition,
 	CancelHandler,
 	CoreAPI,
 	CoreEventHandlers,
-	CoreOnRegistration,
-	CoreRegisterToolRegistration,
 	CoreSignature,
 	ExtensionToolDefinition,
 	Prompt,
 	PromptHandler,
-	SerializedToolDefinition,
 	SetPartOptions,
 	SystemPrompt,
 	SystemPromptContent,
 	SystemPromptHandler,
 	ToolArgs,
-	ToolDefinition,
 	ToolExecuteReturn,
 	ToolOutput,
 	ToolSpec,
 } from './core/api/index.js';
-export {
-	resolveToolOutput,
-	serializeTool,
-	toolSpec,
-	toToolInputSchema,
-} from './core/api/index.js';
-export { createCoreCompiler } from './core/compile/index.js';
+export { resolveToolOutput, toolSpec } from './core/api/index.js';
 export { inspectRuntime } from './core/inspect.js';
 export type { CoreModule, CoreStateModule } from './core/module.js';
 export { createCoreModule, createCoreStateModule } from './core/module.js';

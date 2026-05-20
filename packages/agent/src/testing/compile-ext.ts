@@ -1,4 +1,5 @@
 import type { API } from '@franklin/extensibility';
+import type { ToolDefinition } from '@franklin/mini-acp';
 import { createExtensionPoint } from '@franklin/extensibility';
 import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
@@ -9,11 +10,10 @@ import type { Extension } from '@franklin/extensibility';
 import type { CoreSignature } from '../modules/core/api/api.js';
 import type { AuthDependencyRuntime } from '../auth/dependency.js';
 import type { AuthManager } from '../auth/manager.js';
-import type { SerializedToolDefinition } from '../modules/core/api/tools/index.js';
-import { serializeTool } from '../modules/core/api/tools/index.js';
 import { buildMiddleware } from '../modules/core/compile/decorators/middleware/build.js';
 import type { FullMiddleware } from '../modules/core/compile/decorators/middleware/types.js';
-import { createCoreRegistrar } from '../modules/core/compile/registrar/index.js';
+import { registeredTools } from '../modules/core/compile/registrations/index.js';
+import { serializeTool } from '../modules/core/compile/tools/index.js';
 import type { CoreRuntime } from '../modules/core/runtime/index.js';
 import type { ReconfigurableEnvironment } from '../modules/environment/api/types.js';
 import { createEnvironmentCompiler } from '../modules/environment/compile/compiler.js';
@@ -61,13 +61,13 @@ const storeExtensionPoint = createExtensionPoint<StoreSignature>({
 export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 	ext: Extension<API<CoreSignature, Ctx>>,
 	getCtx: () => Ctx = (() => undefined) as unknown as () => Ctx,
-): { middleware: FullMiddleware; tools: SerializedToolDefinition[] } {
+): { middleware: FullMiddleware; tools: ToolDefinition[] } {
 	const { registry, writer } = createRegistry<CoreSignature, Ctx>();
 	const api = createApi<CoreSignature, Ctx>(coreExtensionPoint, writer);
 	ext(api);
-	const registrations = createCoreRegistrar<Ctx>(createRegistryView(registry));
+	const registrations = createRegistryView(registry);
 	const middleware = buildMiddleware(registrations, getCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { middleware, tools };
 }
 
@@ -82,7 +82,7 @@ export async function compileCoreWithStore(
 ): Promise<{
 	middleware: FullMiddleware;
 	stores: StoreRuntime;
-	tools: SerializedToolDefinition[];
+	tools: ToolDefinition[];
 }> {
 	const cell: { stores?: StoreRuntime } = {};
 	const getCtx = (): CoreStoreRuntime => {
@@ -117,11 +117,9 @@ export async function compileCoreWithStore(
 		getCtx,
 	);
 
-	const registrations = createCoreRegistrar<CoreStoreRuntime>(
-		createRegistryView(coreRegistry),
-	);
+	const registrations = createRegistryView(coreRegistry);
 	const middleware = buildMiddleware(registrations, getCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { middleware, stores: cell.stores, tools };
 }
 
@@ -136,7 +134,7 @@ export async function compileCoreWithStoreAndEnv(
 ): Promise<{
 	middleware: FullMiddleware;
 	ctx: StoreRuntime & EnvironmentRuntime;
-	tools: SerializedToolDefinition[];
+	tools: ToolDefinition[];
 }> {
 	const cell: { ctx?: StoreRuntime & EnvironmentRuntime } = {};
 	const getCtx = (): CoreStoreEnvironmentRuntime => {
@@ -181,11 +179,9 @@ export async function compileCoreWithStoreAndEnv(
 	);
 	cell.ctx = combineRuntimes(stores, environment);
 
-	const registrations = createCoreRegistrar<CoreStoreEnvironmentRuntime>(
-		createRegistryView(coreRegistry),
-	);
+	const registrations = createRegistryView(coreRegistry);
 	const middleware = buildMiddleware(registrations, getCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { middleware, ctx: cell.ctx, tools };
 }
 
@@ -198,7 +194,7 @@ export async function compileCoreWithStoreEnvAndAuth(
 ): Promise<{
 	middleware: FullMiddleware;
 	ctx: StoreRuntime & EnvironmentRuntime & AuthDependencyRuntime;
-	tools: SerializedToolDefinition[];
+	tools: ToolDefinition[];
 }> {
 	const cell: {
 		ctx?: StoreRuntime & EnvironmentRuntime & AuthDependencyRuntime;
@@ -248,11 +244,9 @@ export async function compileCoreWithStoreEnvAndAuth(
 		dispose: async () => {},
 	});
 
-	const registrations = createCoreRegistrar<CoreStoreEnvironmentAuthRuntime>(
-		createRegistryView(coreRegistry),
-	);
+	const registrations = createRegistryView(coreRegistry);
 	const middleware = buildMiddleware(registrations, getCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { middleware, ctx: cell.ctx, tools };
 }
 
@@ -267,7 +261,7 @@ export async function compileCoreWithEnv(
 ): Promise<{
 	middleware: FullMiddleware;
 	ctx: EnvironmentRuntime;
-	tools: SerializedToolDefinition[];
+	tools: ToolDefinition[];
 }> {
 	const cell: { ctx?: EnvironmentRuntime } = {};
 	const getCtx = (): CoreEnvironmentRuntime => {
@@ -294,10 +288,8 @@ export async function compileCoreWithEnv(
 		getCtx,
 	);
 
-	const registrations = createCoreRegistrar<CoreEnvironmentRuntime>(
-		createRegistryView(registry),
-	);
+	const registrations = createRegistryView(registry);
 	const middleware = buildMiddleware(registrations, getCtx);
-	const tools = registrations.tools.map(serializeTool);
+	const tools = registeredTools(registrations).map(serializeTool);
 	return { middleware, ctx: cell.ctx, tools };
 }

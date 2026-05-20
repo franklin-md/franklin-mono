@@ -1,8 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import type { RegisteredTool } from '../types.js';
 import { serializeTool, toToolInputSchema } from '../serialize.js';
-import type { AnyToolDefinition } from '../types.js';
+
+function registeredTool(
+	name: string,
+	description: string,
+	schema: z.ZodType,
+): RegisteredTool {
+	return {
+		name,
+		description,
+		schema,
+		execute: () => '',
+	};
+}
 
 describe('toToolInputSchema', () => {
 	it('strips the $schema field from the output', () => {
@@ -30,13 +43,13 @@ describe('toToolInputSchema', () => {
 
 describe('serializeTool', () => {
 	it('serializes a tool with a simple schema', () => {
-		const tool: AnyToolDefinition = {
-			name: 'greet',
-			description: 'Say hello',
-			schema: z.object({
+		const tool = registeredTool(
+			'greet',
+			'Say hello',
+			z.object({
 				name: z.string(),
 			}),
-		};
+		);
 
 		const result = serializeTool(tool);
 
@@ -52,25 +65,25 @@ describe('serializeTool', () => {
 	});
 
 	it('does not include $schema in the inputSchema', () => {
-		const tool: AnyToolDefinition = {
-			name: 'greet',
-			description: 'Say hello',
-			schema: z.object({ name: z.string() }),
-		};
+		const tool = registeredTool(
+			'greet',
+			'Say hello',
+			z.object({ name: z.string() }),
+		);
 
 		const result = serializeTool(tool);
 		expect(result.inputSchema).not.toHaveProperty('$schema');
 	});
 
 	it('serializes a tool with multiple fields and optional properties', () => {
-		const tool: AnyToolDefinition = {
-			name: 'search',
-			description: 'Search for items',
-			schema: z.object({
+		const tool = registeredTool(
+			'search',
+			'Search for items',
+			z.object({
 				query: z.string(),
 				limit: z.number().optional(),
 			}),
-		};
+		);
 
 		const result = serializeTool(tool);
 
@@ -87,11 +100,7 @@ describe('serializeTool', () => {
 	});
 
 	it('serializes a tool with an empty object schema', () => {
-		const tool: AnyToolDefinition = {
-			name: 'ping',
-			description: 'Health check',
-			schema: z.object({}),
-		};
+		const tool = registeredTool('ping', 'Health check', z.object({}));
 
 		const result = serializeTool(tool);
 

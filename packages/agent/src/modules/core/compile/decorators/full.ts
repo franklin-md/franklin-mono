@@ -1,6 +1,6 @@
-import type { BaseRuntime } from '@franklin/extensibility';
-import { bindHandlers } from '../registrar/bind.js';
-import type { CoreRegistrar } from '../registrar/types.js';
+import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
+import type { CoreSignature } from '../../api/api.js';
+import { bindRegisteredEventHandlers } from '../registrations/index.js';
 import type { CoreResources } from '../resources.js';
 import { compose } from './compose.js';
 import {
@@ -18,25 +18,30 @@ import {
 import type { ProtocolDecorator } from './types.js';
 
 /**
- * Turn a `CoreRegistrar` into the ordered `ProtocolDecorator` stack
+ * Turn core extension registrations into the ordered `ProtocolDecorator` stack
  * composed around the connected Mini-ACP client/server pair. Each concern
- * (middleware, system prompt, …) becomes its own decorator; runtime
- * binding happens here via `bindHandlers`/`bindTool`, so each builder's
- * signature stays runtime-agnostic.
+ * (middleware, system prompt, …) becomes its own decorator; runtime access
+ * is wired through `getCtx` here so builders do not construct runtimes.
  */
 export function createAgentDecorator<Runtime extends BaseRuntime>(
 	resources: CoreResources,
-	registrations: CoreRegistrar<Runtime>,
+	registrations: RegistryView<CoreSignature, Runtime>,
 	getCtx: () => Runtime,
 ): ProtocolDecorator {
 	const stack: ProtocolDecorator[] = [];
 
 	stack.push(createMiddlewareDecorator(buildMiddleware(registrations, getCtx)));
 
-	if (registrations.systemPrompt.length > 0) {
-		const handlers = bindHandlers(registrations.systemPrompt, getCtx);
+	const systemPromptHandlers = bindRegisteredEventHandlers(
+		registrations,
+		'systemPrompt',
+		getCtx,
+	);
+	if (systemPromptHandlers.length > 0) {
 		stack.push(
-			createSystemPromptDecorator(buildSystemPromptAssembler(handlers)),
+			createSystemPromptDecorator(
+				buildSystemPromptAssembler(systemPromptHandlers),
+			),
 		);
 	}
 
