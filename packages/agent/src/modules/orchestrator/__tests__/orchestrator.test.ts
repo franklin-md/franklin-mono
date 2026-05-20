@@ -162,6 +162,28 @@ describe('Orchestrator', () => {
 		);
 	});
 
+	it.todo('rejects concurrent duplicate explicit ids', async () => {
+		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
+		const orchestrator = createOrchestrator({
+			modules: [createTestModule()] as const,
+			collection,
+			extensions: [],
+		});
+
+		const results = await Promise.allSettled([
+			orchestrator.create({ id: 'root-id' }),
+			orchestrator.create({ id: 'root-id' }),
+		]);
+
+		expect(
+			results.filter((result) => result.status === 'fulfilled'),
+		).toHaveLength(1);
+		expect(
+			results.filter((result) => result.status === 'rejected'),
+		).toHaveLength(1);
+		expect(collection.list()).toHaveLength(1);
+	});
+
 	it('injects a final-runtime orchestrator port into runtime-aware handlers', async () => {
 		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const seen: string[] = [];

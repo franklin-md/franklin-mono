@@ -52,6 +52,10 @@ export class Orchestrator<
 	async create(input?: OrchestratorCreateInput<State<M>>): Promise<Entry<M>> {
 		const options = input ?? {};
 		const id = options.id ?? this.createId();
+		// Known bug: two concurrent explicit-id creates can both pass this check
+		// before either runtime reaches the collection. The todo orchestrator
+		// regression test documents the race; restoration currently hydrates ids
+		// sequentially, so we are leaving this rare edge case unresolved for now.
 		if (this.collection.has(id)) {
 			throw new Error(`Runtime ${id} already exists`);
 		}
