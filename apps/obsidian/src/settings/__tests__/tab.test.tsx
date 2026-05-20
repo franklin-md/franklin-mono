@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import type { FranklinApp } from '@franklin/agent';
+import type FranklinPlugin from '../../main.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Mounter } from '../../renderer/mount.js';
@@ -26,10 +27,12 @@ const stubApp = (): FranklinApp =>
 	({ __stub: 'franklin-app' }) as unknown as FranklinApp;
 
 function createTab(app: FranklinApp | null = stubApp()): FranklinSettingTab {
-	return new FranklinSettingTab({
+	const plugin = {
 		app: {},
 		franklinApp: app,
-	} as ConstructorParameters<typeof FranklinSettingTab>[0]);
+		hostActionBindings: [],
+	} as unknown as FranklinPlugin;
+	return new FranklinSettingTab(plugin);
 }
 
 beforeEach(() => {

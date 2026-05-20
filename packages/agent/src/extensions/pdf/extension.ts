@@ -1,50 +1,87 @@
 import { fileTypeFromBuffer } from 'file-type';
+import type { ReduceRuntimes } from '@franklin/extensibility';
+import type {
+	ExtensionForModules,
+	ModuleRuntimes,
+} from '../../modules/state/index.js';
 import { defineExtension } from '../../modules/state/index.js';
+import type { AuthDependencyModule } from '../../auth/dependency.js';
 import type { CoreModule } from '../../modules/core/index.js';
 import type { EnvironmentModule } from '../../modules/environment/index.js';
 import type { StoreModule } from '../../modules/store/index.js';
-import { createFileControl } from '../filesystem/common/control.js';
-import { fileKey } from '../filesystem/common/key.js';
 import { isPDF } from '../filesystem/common/supported.js';
 import { convertPDF } from './convert.js';
+import { FreePDFConverter } from './free.js';
+import { MistralPDFConverter } from './mistral.js';
 import { readPDFSpec } from './tools.js';
-import type { PDFConverter, PDFPageRange } from './types.js';
+import type {
+	PDFConverter,
+	PDFPageRange,
+	ReadPDFExtensionOptions,
+} from './types.js';
 
-export function readPDFExtension(pdfConverter: PDFConverter) {
-	return defineExtension<[CoreModule, StoreModule, EnvironmentModule]>(
-		(api) => {
-			api.registerTool(
-				readPDFSpec,
-				async ({ path, start_page, end_page }, ctx) => {
-					const fs = ctx.environment.filesystem;
-					const file = createFileControl(ctx.getStore(fileKey));
-					const absPath = await fs.resolve(path);
-					const bytes = await fs.readFile(absPath);
-					await file.markFileRead(fs, path, bytes);
+const MISTRAL_PROVIDER = 'mistral';
 
-					const ft = await fileTypeFromBuffer(bytes);
-					if (!ft || !isPDF(ft.mime)) {
-						return {
-							content: [
-								{
-									type: 'text',
-									text: ft
-										? `Unsupported file format for read_pdf: ${ft.mime}`
-										: 'Unsupported file format for read_pdf: use read_file instead',
-								},
-							],
-							isError: true,
-						};
-					}
+type ReadPDFModules = [
+	CoreModule,
+	StoreModule,
+	EnvironmentModule,
+	AuthDependencyModule,
+];
 
-					return convertPDF(bytes, {
-						converter: pdfConverter,
-						pages: toPDFPageRange(start_page, end_page),
-					});
+type ReadPDFCtx = ReduceRuntimes<ModuleRuntimes<ReadPDFModules>>;
+
+export function readPDFExtension({
+	renderScreenshots,
+}: ReadPDFExtensionOptions): ExtensionForModules<ReadPDFModules> {
+	const freeConverter = new FreePDFConverter({ renderScreenshots });
+
+	return defineExtension<ReadPDFModules>((api) => {
+		api.registerTool(readPDFSpec, async (args, ctx) => {
+			const apiKey = await ctx.auth.getApiKey(MISTRAL_PROVIDER);
+			const pdfConverter = apiKey
+				? new MistralPDFConverter({ apiKey, renderScreenshots })
+				: freeConverter;
+			return readPDF(pdfConverter, args, ctx);
+		});
+	});
+}
+
+type ReadPDFArgs = {
+	readonly path: string;
+	readonly start_page?: number;
+	readonly end_page?: number;
+};
+
+async function readPDF(
+	pdfConverter: PDFConverter,
+	{ path, start_page, end_page }: ReadPDFArgs,
+	ctx: ReadPDFCtx,
+) {
+	const fs = ctx.environment.filesystem;
+	const absPath = await fs.resolve(path);
+	const bytes = await fs.readFile(absPath);
+	// TODO: Consider tracking which PDF pages were read if that becomes useful context for future prompts.
+
+	const ft = await fileTypeFromBuffer(bytes);
+	if (!ft || !isPDF(ft.mime)) {
+		return {
+			content: [
+				{
+					type: 'text' as const,
+					text: ft
+						? `Unsupported file format for read_pdf: ${ft.mime}`
+						: 'Unsupported file format for read_pdf: use read_file instead',
 				},
-			);
-		},
-	);
+			],
+			isError: true,
+		};
+	}
+
+	return convertPDF(bytes, {
+		converter: pdfConverter,
+		pages: toPDFPageRange(start_page, end_page),
+	});
 }
 
 function toPDFPageRange(

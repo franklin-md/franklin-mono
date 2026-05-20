@@ -4,7 +4,7 @@ import { render, act, fireEvent } from '@testing-library/react';
 import type { FranklinRuntime } from '@franklin/agent';
 import type { RuntimeEntry } from '@franklin/agent';
 
-import { AppContext } from '../agent/franklin-context.js';
+import { HarnessProvider } from '../agent/harness-context.js';
 import { AgentsProvider } from '../agent/agents-context.js';
 import { AgentList } from '../agent/agent-list.js';
 import type { AgentItemProps } from '../agent/agent-list.js';
@@ -70,11 +70,11 @@ function makeTestTree(
 	const mockApp = { agents, settings: { get: () => ({}) } };
 	return function Tree() {
 		return (
-			<AppContext.Provider value={mockApp as never}>
+			<HarnessProvider harness={mockApp as never}>
 				<AgentsProvider>
 					<AgentList components={components} />
 				</AgentsProvider>
-			</AppContext.Provider>
+			</HarnessProvider>
 		);
 	};
 }
@@ -139,11 +139,11 @@ describe('AgentList', () => {
 		function TreeWithList() {
 			const mockApp = { agents, settings: { get: () => ({}) } };
 			return (
-				<AppContext.Provider value={mockApp as never}>
+				<HarnessProvider harness={mockApp as never}>
 					<AgentsProvider>
 						<AgentList components={{ Item: TestItem }} />
 					</AgentsProvider>
-				</AppContext.Provider>
+				</HarnessProvider>
 			);
 		}
 

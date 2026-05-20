@@ -13,6 +13,7 @@ import type {
 	OrchestratorModule,
 	OrchestratorRuntime,
 	RuntimeEntry,
+	RuntimeEvent,
 } from './types.js';
 
 type Runtime<M extends BaseStateExtensionModule> = OrchestratorRuntime<M>;
@@ -49,8 +50,17 @@ export class Orchestrator<
 	}
 
 	async create(input?: OrchestratorCreateInput<State<M>>): Promise<Entry<M>> {
-		const id = this.createId();
-		return this.materialize(id, await this.createState(input ?? {}));
+		const options = input ?? {};
+		const id = options.id ?? this.createId();
+		// Known bug: two concurrent explicit-id creates can both pass this check
+		// before either runtime reaches the collection. The todo orchestrator
+		// regression test documents the race; restoration currently hydrates ids
+		// sequentially, so we are leaving this rare edge case unresolved for now.
+		if (this.collection.has(id)) {
+			throw new Error(`Runtime ${id} already exists`);
+		}
+
+		return this.createRuntime(id, await this.createState(options));
 	}
 
 	get(id: string): Entry<M> | undefined {
@@ -65,7 +75,11 @@ export class Orchestrator<
 		return this.collection.remove(id);
 	}
 
-	async materialize(id: string, state: State<M>): Promise<Entry<M>> {
+	subscribe(listener: (event: RuntimeEvent<Runtime<M>>) => void): () => void {
+		return this.collection.subscribe(listener);
+	}
+
+	private async createRuntime(id: string, state: State<M>): Promise<Entry<M>> {
 		const fullModule = this.createFullModule(id);
 		const simple = fullModule.instantiate(state);
 		const runtime = await compile(
@@ -98,6 +112,6 @@ export class Orchestrator<
 			state = this.baseModule.emptyState();
 		}
 
-		return resolveState(state, options.overrides);
+		return resolveState(state, options.state);
 	}
 }

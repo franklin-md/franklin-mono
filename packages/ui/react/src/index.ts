@@ -16,10 +16,11 @@ export {
 export { useCollectionNavigator } from './utils/use-collection-navigator.js';
 export { AgentProvider, useAgent } from './agent/agent-context.js';
 export {
-	AppContext,
-	FranklinProvider,
-	useApp,
-} from './agent/franklin-context.js';
+	HarnessProvider,
+	useHarness,
+	type Harness,
+	type HarnessProviderProps,
+} from './agent/harness-context.js';
 export { useAgentState } from './agent/use-agent-state.js';
 export { useSessions } from './agent/use-sessions.js';
 export {
@@ -157,6 +158,23 @@ export {
 	type AuthActionProviderProps,
 	type AuthActionRequest,
 } from './auth/action-provider.js';
+
+// ---------------------------------------------------------------------------
+// Host actions — typed UI requests implemented by the embedding host
+// ---------------------------------------------------------------------------
+export {
+	createHostAction,
+	bindHostAction,
+	HostActionProvider,
+	openExternalAction,
+	useHostAction,
+	useOpenExternal,
+	type HostAction,
+	type HostActionBinding,
+	type HostActionHandler,
+	type HostActionHandlerOf,
+	type HostActionProviderProps,
+} from './host-actions/index.js';
 
 // ---------------------------------------------------------------------------
 // Icons — AI provider and model brand icons (sourced from lobehub/lobe-icons)

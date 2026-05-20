@@ -1,5 +1,10 @@
 export { AuthManager } from './auth/manager.js';
+export type {
+	AuthDependencyModule,
+	AuthDependencyRuntime,
+} from './auth/dependency.js';
 export type { OAuthCredentials } from './auth/credentials.js';
+export { createAuthStore } from './auth/store.js';
 export type {
 	ApiKeyEntry,
 	AuthEntries,
@@ -20,14 +25,8 @@ export type {
 } from './types.js';
 
 export { FranklinApp } from './app/index.js';
-export type {
-	FranklinAppExtensionContext,
-	FranklinAppExtensions,
-} from './app/index.js';
-export type { AgentCreate, AgentCreateInput, Agents } from './app/agents.js';
-export type { AuthStore } from './storage/types.js';
+export type { AuthStore } from './auth/store.js';
 
 export { type Platform, type OperatingSystem } from './platform.js';
 export * from './extensions/index.js';
 export * from './modules/index.js';
-export { createPersistence } from './storage/persistence.js';

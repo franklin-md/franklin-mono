@@ -1,5 +1,4 @@
-import type { AgentCreateInput } from '@franklin/agent';
-import { AgentsProvider } from '@franklin/react';
+import { AgentsProvider, type AgentCreateInput } from '@franklin/react';
 import { AgentTabs } from '@franklin/ui';
 
 import { ActiveAgent } from './active-agent.js';

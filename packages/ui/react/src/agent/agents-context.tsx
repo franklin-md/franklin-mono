@@ -20,7 +20,7 @@ export { AgentsValueProvider };
 /**
  * Provides agent-list state and actions to the subtree.
  *
- * Must be rendered inside `<FranklinProvider>`. Both the sidebar
+ * Must be rendered inside `<HarnessProvider>`. Both the sidebar
  * (agent list) and the active-agent content area should live under
  * this provider so they share a single selection state.
  */

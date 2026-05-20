@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import type { FranklinRuntime } from '@franklin/agent';
 import type { RuntimeEntry } from '@franklin/agent';
 
-import { useApp } from './franklin-context.js';
+import { useHarness } from './harness-context.js';
 import { useStableExternalStore } from '../utils/use-stable-external-store.js';
 
 function sameSessions(
@@ -26,14 +26,14 @@ function sameSessions(
 }
 
 /**
- * Subscribe to the runtime-entry list on the nearest `<FranklinProvider>`.
+ * Subscribe to the runtime-entry list on the nearest `<HarnessProvider>`.
  *
  * Returns the current `RuntimeEntry[]` and re-renders only when entries are
  * added or removed — mutations within a runtime (stores, history) do not
  * trigger re-renders here.
  */
 export function useSessions(): RuntimeEntry<FranklinRuntime>[] {
-	const manager = useApp().agents;
+	const manager = useHarness().agents;
 
 	const subscribe = useCallback(
 		(cb: () => void) => manager.subscribe(cb),

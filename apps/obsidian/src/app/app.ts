@@ -1,5 +1,10 @@
-import { FranklinApp } from '@franklin/agent';
-import type { FranklinExtension, Platform } from '@franklin/agent';
+import { AuthManager, createAuthStore, FranklinApp } from '@franklin/agent';
+import type { FranklinExtension } from '@franklin/agent';
+import {
+	bindHostAction,
+	openExternalAction,
+	type HostActionBinding,
+} from '@franklin/react';
 import {
 	conversationExtension,
 	conversationTitleExtension,
@@ -11,7 +16,6 @@ import {
 	statusExtension,
 	todoExtension,
 } from '@franklin/agent';
-import type { PDFConverter } from '@franklin/agent';
 import type { AbsolutePath } from '@franklin/lib';
 import { toAbsolutePath } from '@franklin/lib';
 import type { Plugin } from 'obsidian';
@@ -23,17 +27,12 @@ import {
 } from '../utils/obsidian/path.js';
 import type { ObsidianDiffClient } from '../diff/client.js';
 import { resolveAuthStore } from './auth/resolve.js';
-import {
-	createObsidianFreePDFConverter,
-	createObsidianMistralPDFConverter,
-	createObsidianPDFConverter,
-} from './extensions/pdf/converters.js';
 import { renderObsidianPDFScreenshots } from './extensions/pdf/screenshots.js';
 import { obsidianSystemPromptExtension } from './extensions/system-prompt.js';
 
 interface ObsidianAppResult {
 	app: FranklinApp;
-	platform: Platform;
+	hostActionBindings: readonly HostActionBinding[];
 	vaultRoot: AbsolutePath;
 	dispose(): void;
 }
@@ -52,59 +51,46 @@ export async function createFranklinApp(
 		diffClient.onWrite,
 	);
 	const authStore = await resolveAuthStore(plugin);
-	const disposables: (() => void)[] = [];
-	let obsidianPDFConverter:
-		| ReturnType<typeof createObsidianPDFConverter>
-		| undefined;
+	const auth = new AuthManager(
+		platform,
+		authStore ?? createAuthStore(platform.os.filesystem, appDir),
+	);
 
 	const app = new FranklinApp({
-		extensions: ({ auth }) => {
-			const pdfConverter = createObsidianPDFConverter(auth, {
-				renderScreenshots: renderObsidianPDFScreenshots,
-				createFreeConverter: createObsidianFreePDFConverter,
-				createMistralConverter: createObsidianMistralPDFConverter,
-			});
-			obsidianPDFConverter = pdfConverter;
-			disposables.push(() => pdfConverter.dispose());
-			return createExtensions(pdfConverter);
-		},
+		extensions: createExtensions(),
 		platform,
 		appDir,
-		authStore,
+		auth,
 	});
 
 	await app.start();
-	obsidianPDFConverter?.refresh();
 
 	return {
 		app,
-		platform,
+		hostActionBindings: [
+			bindHostAction(openExternalAction, (url) =>
+				platform.os.openExternal(url),
+			),
+		],
 		vaultRoot,
-		dispose() {
-			for (const dispose of disposables.splice(0)) {
-				dispose();
-			}
-		},
+		dispose: () => undefined,
 	};
 }
 
-function createExtensions(pdfConverter: PDFConverter): FranklinExtension[] {
-	const filesystemExtension = createFilesystemExtension();
-	const webExtension = createWebExtension({});
-	const extensionBundles = [
-		conversationExtension,
-		conversationTitleExtension,
-		todoExtension,
-		statusExtension,
-		{ extension: obsidianSystemPromptExtension },
-		instructionsExtension,
-		filesystemExtension,
-		createReadPDFExtension(pdfConverter),
-		webExtension,
-		// spawnExtension,
-		environmentInfoExtension,
+function createExtensions(): FranklinExtension[] {
+	return [
+		conversationExtension.extension,
+		conversationTitleExtension.extension,
+		todoExtension.extension,
+		statusExtension.extension,
+		obsidianSystemPromptExtension,
+		instructionsExtension.extension,
+		createFilesystemExtension().extension,
+		createReadPDFExtension({
+			renderScreenshots: renderObsidianPDFScreenshots,
+		}).extension,
+		createWebExtension({}).extension,
+		// spawnExtension.extension,
+		environmentInfoExtension.extension,
 	];
-	return extensionBundles.map(
-		(bundle: { extension: FranklinExtension }) => bundle.extension,
-	);
 }

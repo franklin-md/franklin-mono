@@ -5,6 +5,10 @@ export {
 	PortalContainerProvider,
 	usePortalContainer,
 } from './lib/portal-container.js';
+export {
+	ApplicationProvider,
+	type ApplicationProviderProps,
+} from './application-context.js';
 
 // primitives (shadcn/radix base components)
 export { Badge, badgeVariants, type BadgeProps } from './primitives/badge.js';

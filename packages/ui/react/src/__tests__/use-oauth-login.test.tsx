@@ -4,8 +4,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { OAuthLoginCallbacks } from '@franklin/agent';
 
-import { AppContext } from '../agent/franklin-context.js';
+import { HarnessProvider } from '../agent/harness-context.js';
 import { useOAuthLogin } from '../auth/use-oauth-login.js';
+import {
+	HostActionProvider,
+	bindHostAction,
+	openExternalAction,
+} from '../host-actions/index.js';
 
 function makeWrapper(auth: {
 	loginOAuth: (
@@ -15,22 +20,21 @@ function makeWrapper(auth: {
 	cancel?: (provider: string) => Promise<void>;
 	removeOAuthEntry?: (provider: string) => void;
 }) {
+	const openExternal = vi.fn();
 	const app = {
 		auth,
-		platform: {
-			os: {
-				openExternal: vi.fn(),
-			},
-		},
 	};
 
 	return {
 		app,
+		openExternal,
 		Wrapper: ({ children }: { children: ReactNode }) => {
 			return (
-				<AppContext.Provider value={app as never}>
-					{children}
-				</AppContext.Provider>
+				<HostActionProvider
+					bindings={[bindHostAction(openExternalAction, openExternal)]}
+				>
+					<HarnessProvider harness={app as never}>{children}</HarnessProvider>
+				</HostActionProvider>
 			);
 		},
 	};
@@ -45,7 +49,7 @@ describe('useOAuthLogin', () => {
 				},
 			),
 		};
-		const { app, Wrapper } = makeWrapper(auth);
+		const { openExternal, Wrapper } = makeWrapper(auth);
 		const { result } = renderHook(() => useOAuthLogin('anthropic'), {
 			wrapper: Wrapper,
 		});
@@ -58,9 +62,7 @@ describe('useOAuthLogin', () => {
 			'anthropic',
 			expect.any(Object),
 		);
-		expect(app.platform.os.openExternal).toHaveBeenCalledWith(
-			'https://example.com/auth',
-		);
+		expect(openExternal).toHaveBeenCalledWith('https://example.com/auth');
 		expect(result.current.state).toEqual({ phase: 'success' });
 		expect(result.current.pending).toBe(false);
 	});

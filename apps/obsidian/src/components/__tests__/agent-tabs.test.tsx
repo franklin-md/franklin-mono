@@ -11,9 +11,9 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type {
-	AgentCreateInput,
 	FranklinApp,
 	FranklinRuntime,
+	RuntimeEntry,
 } from '@franklin/agent';
 import {
 	conversationTitleExtension,
@@ -21,8 +21,8 @@ import {
 	type StatusState,
 } from '@franklin/agent';
 import { toAbsolutePath } from '@franklin/lib';
-import type { RuntimeEntry } from '@franklin/agent';
-import { AppContext } from '@franklin/react';
+import type { AgentCreateInput } from '@franklin/react';
+import { ApplicationProvider } from '@franklin/ui';
 
 import { createObsidianSessionInput } from '../../app/agent.js';
 import { ConversationWindow } from '../conversation-window/window.js';
@@ -173,9 +173,9 @@ function renderApp(initialSessions: TestSession[]) {
 		createObsidianSessionInput(app, vaultRoot, configDir);
 
 	render(
-		<AppContext.Provider value={app}>
+		<ApplicationProvider harness={app} hostActionBindings={[]}>
 			<ConversationWindow getCreateInput={getCreateInput} />
-		</AppContext.Provider>,
+		</ApplicationProvider>,
 	);
 
 	return {

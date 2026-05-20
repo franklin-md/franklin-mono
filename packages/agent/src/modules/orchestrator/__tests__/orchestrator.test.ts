@@ -126,7 +126,7 @@ describe('Orchestrator', () => {
 		void entry.runtime.orchestrator.materialize;
 	});
 
-	it('materializes a restored runtime with the supplied id and state', async () => {
+	it('creates a restored runtime with the supplied id and state', async () => {
 		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule()] as const,
@@ -134,8 +134,9 @@ describe('Orchestrator', () => {
 			extensions: [],
 		});
 
-		const entry = await orchestrator.materialize('restored-id', {
-			value: 'restored',
+		const entry = await orchestrator.create({
+			id: 'restored-id',
+			state: { value: 'restored' },
 		});
 
 		expect(entry.id).toBe('restored-id');
@@ -144,6 +145,43 @@ describe('Orchestrator', () => {
 			value: 'restored',
 		});
 		expect(collection.get('restored-id')?.runtime).toBe(entry.runtime);
+	});
+
+	it('rejects duplicate explicit ids', async () => {
+		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
+		const orchestrator = createOrchestrator({
+			modules: [createTestModule()] as const,
+			collection,
+			extensions: [],
+		});
+
+		await orchestrator.create({ id: 'root-id' });
+
+		await expect(orchestrator.create({ id: 'root-id' })).rejects.toThrow(
+			'Runtime root-id already exists',
+		);
+	});
+
+	it.todo('rejects concurrent duplicate explicit ids', async () => {
+		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
+		const orchestrator = createOrchestrator({
+			modules: [createTestModule()] as const,
+			collection,
+			extensions: [],
+		});
+
+		const results = await Promise.allSettled([
+			orchestrator.create({ id: 'root-id' }),
+			orchestrator.create({ id: 'root-id' }),
+		]);
+
+		expect(
+			results.filter((result) => result.status === 'fulfilled'),
+		).toHaveLength(1);
+		expect(
+			results.filter((result) => result.status === 'rejected'),
+		).toHaveLength(1);
+		expect(collection.list()).toHaveLength(1);
 	});
 
 	it('injects a final-runtime orchestrator port into runtime-aware handlers', async () => {
@@ -225,7 +263,7 @@ describe('Orchestrator', () => {
 		});
 	});
 
-	it('applies typed state overrides on orchestrator-level create', async () => {
+	it('applies typed state patch on orchestrator-level create', async () => {
 		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule()] as const,
@@ -235,7 +273,7 @@ describe('Orchestrator', () => {
 		});
 
 		const entry = await orchestrator.create({
-			overrides: { value: 'override' },
+			state: { value: 'override' },
 		});
 
 		expect(await entry.runtime[TEST_STATE].get()).toEqual({

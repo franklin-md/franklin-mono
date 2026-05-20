@@ -34,7 +34,8 @@ export type RuntimeCreateInput = {
 };
 
 export type OrchestratorCreateInput<State = unknown> = RuntimeCreateInput & {
-	readonly overrides?: DeepPartial<State>;
+	readonly id?: string;
+	readonly state?: DeepPartial<State>;
 };
 
 export type OrchestratorHandle<Runtime extends BaseRuntime, State = unknown> = {
