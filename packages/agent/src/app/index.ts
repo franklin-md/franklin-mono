@@ -27,6 +27,7 @@ import {
 	type FranklinSession,
 	type SessionPersistenceController,
 } from './session/index.js';
+import { franklinSessionCodec } from './session/codecs/index.js';
 
 export interface FranklinAppExtensionContext {
 	readonly auth: AuthManager;
@@ -81,6 +82,7 @@ export class FranklinApp {
 			appDir,
 			{
 				authStore: opts.authStore,
+				sessionCodec: franklinSessionCodec,
 			},
 		);
 

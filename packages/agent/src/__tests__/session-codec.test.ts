@@ -5,7 +5,7 @@ import type { FranklinSession } from '../types.js';
 import {
 	franklinSessionCodec,
 	SESSION_FILE_VERSION,
-} from '../app/session/index.js';
+} from '../app/session/codecs/index.js';
 
 function session(): FranklinSession {
 	return {

@@ -6,13 +6,20 @@ import { createStorage } from '../storage/create-storage.js';
 import { DEFAULT_SETTINGS_FILE } from '../storage/settings.js';
 import { DEFAULT_AUTH_FILE } from '../storage/auth.js';
 import type { FranklinSession } from '../types.js';
+import { franklinSessionCodec } from '../app/session/codecs/index.js';
 
 const APP_DIR = '/test/app' as AbsolutePath;
+
+function createTestStorage(fs: MemoryFilesystem) {
+	return createStorage<FranklinSession>(fs, APP_DIR, {
+		sessionCodec: franklinSessionCodec,
+	});
+}
 
 describe('Storage.restore aggregates issues without halting startup', () => {
 	it('returns no issues when nothing is persisted yet', async () => {
 		const fs = new MemoryFilesystem();
-		const storage = createStorage<FranklinSession>(fs, APP_DIR);
+		const storage = createTestStorage(fs);
 
 		const result = await storage.restore();
 		expect(result.issues).toEqual([]);
@@ -21,7 +28,7 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 	it('surfaces a corrupt settings file and keeps startup going', async () => {
 		const fs = new MemoryFilesystem();
 		fs.seed(joinAbsolute(APP_DIR, DEFAULT_SETTINGS_FILE), '{not json');
-		const storage = createStorage<FranklinSession>(fs, APP_DIR);
+		const storage = createTestStorage(fs);
 
 		const result = await storage.restore();
 		expect(result.issues).toHaveLength(1);
@@ -34,7 +41,7 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 			joinAbsolute(APP_DIR, DEFAULT_AUTH_FILE),
 			JSON.stringify({ version: 1, data: { anthropic: 'not-an-object' } }),
 		);
-		const storage = createStorage<FranklinSession>(fs, APP_DIR);
+		const storage = createTestStorage(fs);
 
 		const result = await storage.restore();
 		expect(result.issues[0]).toMatchObject({
@@ -50,7 +57,7 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 			JSON.stringify({ version: 999, data: {} }),
 		);
 		fs.seed(joinAbsolute(APP_DIR, DEFAULT_AUTH_FILE), 'garbage');
-		const storage = createStorage<FranklinSession>(fs, APP_DIR);
+		const storage = createTestStorage(fs);
 
 		const result = await storage.restore();
 		expect(result.issues).toHaveLength(2);
@@ -75,7 +82,7 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 				},
 			}),
 		);
-		const storage = createStorage<FranklinSession>(fs, APP_DIR);
+		const storage = createTestStorage(fs);
 
 		const result = await storage.restore();
 		expect(result.issues).toEqual([]);
@@ -102,7 +109,7 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 				},
 			}),
 		);
-		const storage = createStorage<FranklinSession>(fs, APP_DIR);
+		const storage = createTestStorage(fs);
 
 		const result = await storage.restore();
 		expect(result.issues).toEqual([]);
@@ -126,7 +133,7 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 		);
 		fs.seed(joinAbsolute(storeDir, 'bad.json'), '{broken');
 
-		const storage = createStorage<FranklinSession>(fs, APP_DIR);
+		const storage = createTestStorage(fs);
 		const result = await storage.restore();
 
 		expect(result.issues).toHaveLength(1);
@@ -135,5 +142,31 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 			id: 'bad',
 		});
 		expect(storage.stores.get('good')).toBeDefined();
+	});
+
+	it('one malformed session entry does not load as raw state', async () => {
+		const fs = new MemoryFilesystem();
+		const sessionsDir = joinAbsolute(APP_DIR, 'sessions');
+		fs.seedDir(sessionsDir);
+		fs.seed(
+			joinAbsolute(sessionsDir, 'root.json'),
+			JSON.stringify({
+				version: 1,
+				data: {
+					core: { messages: [], llmConfig: {}, usage: 'invalid' },
+				},
+			}),
+		);
+		const storage = createTestStorage(fs);
+
+		const result = await storage.sessions.load();
+
+		expect(result.values.size).toBe(0);
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]).toMatchObject({
+			kind: 'schema-mismatch',
+			id: 'root',
+			version: 1,
+		});
 	});
 });
