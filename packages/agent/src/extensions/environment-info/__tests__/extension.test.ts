@@ -8,14 +8,15 @@ import { createExtensionPoint } from '@franklin/extensibility';
 import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
-import { bindAllWithRuntime, type WithRuntime } from '@franklin/extensibility';
 import type { CoreSignature } from '../../../modules/core/api/api.js';
-import type { SystemPromptHandler } from '../../../modules/core/api/handlers.js';
 import {
 	buildSystemPromptAssembler,
 	type SystemPromptAssembler,
 } from '../../../modules/core/compile/decorators/system-prompt/index.js';
-import { registeredEventHandlers } from '../../../modules/core/compile/registrations/index.js';
+import {
+	bindRegisteredEventHandlers,
+	registeredEventHandlers,
+} from '../../../modules/core/compile/registrations/index.js';
 import type { CoreRuntime } from '../../../modules/core/runtime/index.js';
 import type {
 	EnvironmentConfig,
@@ -27,19 +28,14 @@ import {
 } from '../../../modules/environment/runtime.js';
 import { createEnvironmentInfoExtension } from '../extension.js';
 
-type ModulePromptHandler = WithRuntime<
-	SystemPromptHandler,
-	CoreRuntime & EnvironmentRuntime
->;
-
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
 });
 
-function collectHandlers(
+function compileExtension(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
-): ModulePromptHandler[] {
+) {
 	const { registry, writer } = createRegistry<
 		CoreSignature,
 		CoreRuntime & EnvironmentRuntime
@@ -49,7 +45,13 @@ function collectHandlers(
 		writer,
 	);
 	extension(api);
-	return registeredEventHandlers(createRegistryView(registry), 'systemPrompt');
+	return createRegistryView(registry);
+}
+
+function collectHandlers(
+	extension: ReturnType<typeof createEnvironmentInfoExtension>,
+) {
+	return registeredEventHandlers(compileExtension(extension), 'systemPrompt');
 }
 
 function defaultConfig(): EnvironmentConfig {
@@ -82,11 +84,12 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 }
 
 function bindAssembler(
-	handlers: ModulePromptHandler[],
+	extension: ReturnType<typeof createEnvironmentInfoExtension>,
 	ctx: EnvironmentRuntime,
 ): SystemPromptAssembler {
-	const boundHandlers: SystemPromptHandler[] = bindAllWithRuntime(
-		handlers,
+	const boundHandlers = bindRegisteredEventHandlers(
+		compileExtension(extension),
+		'systemPrompt',
 		() => ctx as CoreRuntime & EnvironmentRuntime,
 	);
 	return buildSystemPromptAssembler(boundHandlers);
@@ -107,13 +110,11 @@ describe('createEnvironmentInfoExtension', () => {
 		});
 		const env = fakeEnvironment(osInfo);
 		const ctx = fakeRuntime(env);
-		const handlers = collectHandlers(
-			createEnvironmentInfoExtension({
-				now: () => new Date('2026-04-21T00:00:00Z'),
-			}),
-		);
+		const extension = createEnvironmentInfoExtension({
+			now: () => new Date('2026-04-21T00:00:00Z'),
+		});
 
-		const assembled = await bindAssembler(handlers, ctx).assemble();
+		const assembled = await bindAssembler(extension, ctx).assemble();
 
 		expect(assembled).toContain('Working directory: /Users/afv/project');
 		expect(assembled).toContain('Platform: mac');
@@ -139,9 +140,11 @@ describe('createEnvironmentInfoExtension', () => {
 			},
 		}));
 		const ctx = fakeRuntime(env);
-		const handlers = collectHandlers(createEnvironmentInfoExtension());
 
-		const assembled = await bindAssembler(handlers, ctx).assemble();
+		const assembled = await bindAssembler(
+			createEnvironmentInfoExtension(),
+			ctx,
+		).assemble();
 
 		expect(assembled).toContain('Configured environment permissions:');
 		expect(assembled).toContain('- allowRead: Users/afv/project/src/**');
@@ -155,13 +158,11 @@ describe('createEnvironmentInfoExtension', () => {
 	it('dynamic fragment renders current date', async () => {
 		const env = fakeEnvironment(new MemoryOsInfo());
 		const ctx = fakeRuntime(env);
-		const handlers = collectHandlers(
-			createEnvironmentInfoExtension({
-				now: () => new Date('2026-04-21T14:00:00Z'),
-			}),
-		);
+		const extension = createEnvironmentInfoExtension({
+			now: () => new Date('2026-04-21T14:00:00Z'),
+		});
 
-		const assembled = await bindAssembler(handlers, ctx).assemble();
+		const assembled = await bindAssembler(extension, ctx).assemble();
 
 		expect(assembled).toContain("Today's date: 2026-04-21");
 	});
@@ -170,8 +171,7 @@ describe('createEnvironmentInfoExtension', () => {
 		const osInfoSpy = vi.spyOn(MemoryOsInfo.prototype, 'getPlatform');
 		const env = fakeEnvironment(new MemoryOsInfo());
 		const ctx = fakeRuntime(env);
-		const handlers = collectHandlers(createEnvironmentInfoExtension());
-		const assembler = bindAssembler(handlers, ctx);
+		const assembler = bindAssembler(createEnvironmentInfoExtension(), ctx);
 
 		await assembler.assemble();
 		await assembler.assemble();
@@ -197,8 +197,7 @@ describe('createEnvironmentInfoExtension', () => {
 			netConfig: { allowedDomains: [], deniedDomains: [] },
 		}));
 		const ctx = fakeRuntime(env);
-		const handlers = collectHandlers(createEnvironmentInfoExtension());
-		const assembler = bindAssembler(handlers, ctx);
+		const assembler = bindAssembler(createEnvironmentInfoExtension(), ctx);
 
 		const first = await assembler.assemble();
 		expect(first).toContain('- allowWrite: (none)');
@@ -214,8 +213,10 @@ describe('createEnvironmentInfoExtension', () => {
 		let t = 0;
 		const now = () =>
 			new Date(t === 0 ? '2026-04-21T00:00:00Z' : '2026-04-22T00:00:00Z');
-		const handlers = collectHandlers(createEnvironmentInfoExtension({ now }));
-		const assembler = bindAssembler(handlers, ctx);
+		const assembler = bindAssembler(
+			createEnvironmentInfoExtension({ now }),
+			ctx,
+		);
 
 		const first = await assembler.assemble();
 		expect(first).toContain("Today's date: 2026-04-21");

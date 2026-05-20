@@ -1,2 +1,5 @@
-export { registeredEventHandlers } from './events.js';
+export {
+	bindRegisteredEventHandlers,
+	registeredEventHandlers,
+} from './events.js';
 export { registeredTools } from './tools.js';

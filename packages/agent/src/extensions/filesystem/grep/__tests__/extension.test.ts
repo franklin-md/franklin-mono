@@ -10,11 +10,9 @@ import { createExtensionPoint } from '@franklin/extensibility';
 import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
-import { bindAllWithRuntime, type WithRuntime } from '@franklin/extensibility';
-import type { SystemPromptHandler } from '../../../../modules/core/api/handlers.js';
 import type { CoreSignature } from '../../../../modules/core/api/api.js';
 import { buildSystemPromptAssembler } from '../../../../modules/core/compile/decorators/system-prompt/index.js';
-import { registeredEventHandlers } from '../../../../modules/core/compile/registrations/index.js';
+import { bindRegisteredEventHandlers } from '../../../../modules/core/compile/registrations/index.js';
 import type { CoreRuntime } from '../../../../modules/core/runtime/index.js';
 import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import {
@@ -23,11 +21,6 @@ import {
 } from '../../../../modules/environment/runtime.js';
 import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import { grepExtension } from '../extension.js';
-
-type ModulePromptHandler = WithRuntime<
-	SystemPromptHandler,
-	CoreRuntime & EnvironmentRuntime
->;
 
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
@@ -69,9 +62,7 @@ function fakeRuntime(env: ReconfigurableEnvironment): EnvironmentRuntime {
 	return createEnvironmentRuntime(env);
 }
 
-function collectHandlers(
-	ext: ReturnType<typeof grepExtension>,
-): ModulePromptHandler[] {
+function compileExtension(ext: ReturnType<typeof grepExtension>) {
 	const { registry, writer } = createRegistry<
 		CoreSignature,
 		CoreRuntime & EnvironmentRuntime
@@ -81,7 +72,19 @@ function collectHandlers(
 		writer,
 	);
 	ext(api);
-	return registeredEventHandlers(createRegistryView(registry), 'systemPrompt');
+	return createRegistryView(registry);
+}
+
+function buildAssembler(
+	ext: ReturnType<typeof grepExtension>,
+	env: ReconfigurableEnvironment,
+) {
+	const bound = bindRegisteredEventHandlers(
+		compileExtension(ext),
+		'systemPrompt',
+		() => fakeRuntime(env) as CoreRuntime & EnvironmentRuntime,
+	);
+	return buildSystemPromptAssembler(bound);
 }
 
 // rg-success answers `rg --version` with exit 0 AND streams an rg-style match
@@ -110,12 +113,7 @@ function ripgrepExec(): (input: ProcessInput) => Promise<ProcessOutput> {
 describe('grepExtension', () => {
 	it('contributes the ripgrep dialect fragment when rg is detected', async () => {
 		const env = mockEnvironment(ripgrepExec());
-		const handlers = collectHandlers(grepExtension());
-		const bound: SystemPromptHandler[] = bindAllWithRuntime(
-			handlers,
-			() => fakeRuntime(env) as CoreRuntime & EnvironmentRuntime,
-		);
-		const assembler = buildSystemPromptAssembler(bound);
+		const assembler = buildAssembler(grepExtension(), env);
 
 		const assembled = await assembler.assemble();
 
@@ -129,12 +127,7 @@ describe('grepExtension', () => {
 			stdout: '',
 			stderr: '',
 		}));
-		const handlers = collectHandlers(grepExtension());
-		const bound: SystemPromptHandler[] = bindAllWithRuntime(
-			handlers,
-			() => fakeRuntime(env) as CoreRuntime & EnvironmentRuntime,
-		);
-		const assembler = buildSystemPromptAssembler(bound);
+		const assembler = buildAssembler(grepExtension(), env);
 
 		const assembled = await assembler.assemble();
 

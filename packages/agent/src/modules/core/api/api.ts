@@ -11,16 +11,20 @@ import type { MaybePromise } from '../../../utils/maybe-promise.js';
 import type { Signature, WithRuntime } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 
+export type CoreEventHandlerMap = {
+	prompt: PromptHandler;
+	cancel: CancelHandler;
+	systemPrompt: SystemPromptHandler;
+	turnStart: StreamObserverHandler<'turnStart'>;
+	chunk: StreamObserverHandler<'chunk'>;
+	update: StreamObserverHandler<'update'>;
+	turnEnd: StreamObserverHandler<'turnEnd'>;
+	toolCall: ToolObserverHandler<'toolCall'>;
+	toolResult: ToolObserverHandler<'toolResult'>;
+};
+
 export type CoreEventHandlers<R extends BaseRuntime> = {
-	prompt: WithRuntime<PromptHandler, R>;
-	cancel: WithRuntime<CancelHandler, R>;
-	systemPrompt: WithRuntime<SystemPromptHandler, R>;
-	turnStart: WithRuntime<StreamObserverHandler<'turnStart'>, R>;
-	chunk: WithRuntime<StreamObserverHandler<'chunk'>, R>;
-	update: WithRuntime<StreamObserverHandler<'update'>, R>;
-	turnEnd: WithRuntime<StreamObserverHandler<'turnEnd'>, R>;
-	toolCall: WithRuntime<ToolObserverHandler<'toolCall'>, R>;
-	toolResult: WithRuntime<ToolObserverHandler<'toolResult'>, R>;
+	[K in keyof CoreEventHandlerMap]: WithRuntime<CoreEventHandlerMap[K], R>;
 };
 
 export type CoreOnRegistration<R extends BaseRuntime> = {
