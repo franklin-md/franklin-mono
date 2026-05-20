@@ -20,11 +20,11 @@ import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
 import type { CoreSignature } from '../../api/api.js';
 import { resolveToolOutput } from '../../api/tool.js';
-import { serializeTool } from '../../api/tools/index.js';
 import type { CoreRuntime } from '../../runtime/index.js';
 import { buildMiddleware } from '../decorators/middleware/build.js';
 import type { FullMiddleware } from '../decorators/middleware/types.js';
 import { createCoreRegistrar } from '../registrar/index.js';
+import { serializeTool } from '../tools/index.js';
 
 type CoreExtension = Extension<API<CoreSignature, CoreRuntime>>;
 

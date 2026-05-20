@@ -1,19 +1,18 @@
-import type { RegistryView } from '@franklin/extensibility';
-import type { BaseRuntime } from '@franklin/extensibility';
+import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type {
 	CoreRegisterToolRegistration,
 	CoreSignature,
 } from '../../api/api.js';
-import type { ExtensionToolDefinition } from '../../api/tool.js';
 import type { ToolSpec } from '../../api/tool-spec.js';
+import type { RegisteredTool } from '../tools/index.js';
 import type { CoreRegistrar } from './types.js';
 
 function normalizeTool<Runtime extends BaseRuntime>(
 	registration: CoreRegisterToolRegistration<Runtime>,
-): ExtensionToolDefinition<unknown, Runtime> {
+): RegisteredTool<unknown, Runtime> {
 	const [specOrTool, execute] = registration;
 	if (!execute) {
-		return specOrTool as ExtensionToolDefinition<unknown, Runtime>;
+		return specOrTool as RegisteredTool<unknown, Runtime>;
 	}
 	const spec = specOrTool as ToolSpec;
 	return {

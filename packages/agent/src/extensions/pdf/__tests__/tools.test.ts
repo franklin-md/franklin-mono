@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { toToolInputSchema } from '../../../modules/core/api/tools/serialize.js';
+import { toToolInputSchema } from '../../../modules/core/compile/tools/index.js';
 import { readPDFSpec } from '../tools.js';
 
 describe('readPDFSpec', () => {

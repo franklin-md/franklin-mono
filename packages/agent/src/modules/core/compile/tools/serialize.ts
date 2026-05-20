@@ -1,7 +1,7 @@
 import type { ToolDefinition } from '@franklin/mini-acp';
 import { z } from 'zod';
 
-import type { AnyToolDefinition } from './types.js';
+import type { RegisteredTool } from './types.js';
 
 /**
  * Converts a Zod schema to a JSON Schema suitable for tool inputSchema.
@@ -14,7 +14,7 @@ export function toToolInputSchema(schema: z.ZodType): Record<string, unknown> {
 	return jsonSchema;
 }
 
-export function serializeTool(tool: AnyToolDefinition): ToolDefinition {
+export function serializeTool(tool: RegisteredTool): ToolDefinition {
 	return {
 		name: tool.name,
 		description: tool.description,

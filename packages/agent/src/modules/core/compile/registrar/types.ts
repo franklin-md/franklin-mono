@@ -1,4 +1,4 @@
-import type { BaseRuntime } from '@franklin/extensibility';
+import type { BaseRuntime, WithRuntime } from '@franklin/extensibility';
 import type {
 	CancelHandler,
 	PromptHandler,
@@ -6,8 +6,7 @@ import type {
 	SystemPromptHandler,
 	ToolObserverHandler,
 } from '../../api/handlers.js';
-import type { ExtensionToolDefinition } from '../../api/tool.js';
-import type { WithRuntime } from '@franklin/extensibility';
+import type { RegisteredTool } from '../tools/index.js';
 
 /**
  * Accumulated registrations from extensions — transport-free data, not
@@ -25,5 +24,5 @@ export type CoreRegistrar<Runtime extends BaseRuntime> = {
 	turnEnd: WithRuntime<StreamObserverHandler<'turnEnd'>, Runtime>[];
 	toolCall: WithRuntime<ToolObserverHandler<'toolCall'>, Runtime>[];
 	toolResult: WithRuntime<ToolObserverHandler<'toolResult'>, Runtime>[];
-	tools: ExtensionToolDefinition<unknown, Runtime>[];
+	tools: RegisteredTool<unknown, Runtime>[];
 };

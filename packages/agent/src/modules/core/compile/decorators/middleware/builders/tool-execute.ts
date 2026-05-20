@@ -6,7 +6,7 @@ import type {
 } from '../../../../api/handlers.js';
 import { resolveToolOutput } from '../../../../api/tool.js';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
-import type { BoundTool } from '../../../registrar/bind.js';
+import type { BoundTool } from '../../../tools/index.js';
 
 export type ToolObservers = {
 	[K in ToolObserverEvent]: ToolObserverHandler<K>[];

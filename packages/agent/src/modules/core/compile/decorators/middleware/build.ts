@@ -1,7 +1,7 @@
 import { buildWaterfall, passThrough } from '@franklin/lib/middleware';
 import { bindAllWithRuntime, type BaseRuntime } from '@franklin/extensibility';
-import { bindTool } from '../../registrar/bind.js';
 import type { CoreRegistrar } from '../../registrar/types.js';
+import { bindTool } from '../../tools/index.js';
 import {
 	buildPromptWaterfall,
 	buildToolExecuteMiddleware,
