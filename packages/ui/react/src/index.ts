@@ -159,6 +159,23 @@ export {
 } from './auth/action-provider.js';
 
 // ---------------------------------------------------------------------------
+// Host actions — typed UI requests implemented by the embedding host
+// ---------------------------------------------------------------------------
+export {
+	createHostAction,
+	bindHostAction,
+	HostActionProvider,
+	openExternalAction,
+	useHostAction,
+	useOpenExternal,
+	type HostAction,
+	type HostActionBinding,
+	type HostActionHandler,
+	type HostActionHandlerOf,
+	type HostActionProviderProps,
+} from './host-actions/index.js';
+
+// ---------------------------------------------------------------------------
 // Icons — AI provider and model brand icons (sourced from lobehub/lobe-icons)
 // ---------------------------------------------------------------------------
 export type { IconProps } from './icons/types.js';
