@@ -24,7 +24,7 @@ describe('createObsidianSessionInput', () => {
 		const configDir = '.obsidian';
 
 		expect(createObsidianSessionInput(app, vaultRoot, configDir)).toEqual({
-			overrides: {
+			state: {
 				core: { llmConfig: defaultLLMConfig },
 				env: {
 					fsConfig: {

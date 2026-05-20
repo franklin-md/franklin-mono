@@ -10,11 +10,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type {
-	AgentCreateInput,
-	FranklinApp,
-	FranklinRuntime,
-} from '@franklin/agent/browser';
+import type { FranklinApp, FranklinRuntime } from '@franklin/agent/browser';
 import {
 	conversationTitleExtension,
 	statusExtension,
@@ -22,7 +18,7 @@ import {
 } from '@franklin/agent';
 import { toAbsolutePath } from '@franklin/lib';
 import type { RuntimeEntry } from '@franklin/agent';
-import { AppContext } from '@franklin/react';
+import { AppContext, type AgentCreateInput } from '@franklin/react';
 
 import { createObsidianSessionInput } from '../../app/agent.js';
 import { ConversationWindow } from '../conversation-window/window.js';
