@@ -1,4 +1,4 @@
-import { AppContext } from '@franklin/react';
+import { AppContext, HostActionProvider } from '@franklin/react';
 import { PluginSettingTab } from 'obsidian';
 
 import type FranklinPlugin from '../main.js';
@@ -18,9 +18,11 @@ export class FranklinSettingTab extends PluginSettingTab {
 	display(): void {
 		this.mounter.mount(
 			this.containerEl,
-			<AppContext.Provider value={this.plugin.franklinApp}>
-				<SettingsPage />
-			</AppContext.Provider>,
+			<HostActionProvider bindings={this.plugin.hostActionBindings}>
+				<AppContext.Provider value={this.plugin.franklinApp}>
+					<SettingsPage />
+				</AppContext.Provider>
+			</HostActionProvider>,
 		);
 	}
 

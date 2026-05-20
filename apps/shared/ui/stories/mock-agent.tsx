@@ -20,6 +20,9 @@ import {
 	AgentsValueProvider,
 	AppContext,
 	type AgentsControl,
+	HostActionProvider,
+	bindHostAction,
+	openExternalAction,
 } from '@franklin/react';
 
 import { DefaultAuthActionProvider } from '../src/auth/default-action-provider.js';
@@ -140,11 +143,6 @@ function createMockApp() {
 		auth,
 		settings: settingsStore.store,
 		agents: { list: () => [] },
-		platform: {
-			os: {
-				openExternal: () => {},
-			},
-		},
 	};
 }
 
@@ -245,15 +243,19 @@ export function MockAgentDecorator({
 
 	return (
 		<AppContext.Provider value={app as never}>
-			<DefaultAuthActionProvider>
-				<AgentProvider agent={runtime}>
-					<MockAgentsDecorator
-						activeSessionId={opts.turns?.length ? 'mock-session' : null}
-					>
-						{children}
-					</MockAgentsDecorator>
-				</AgentProvider>
-			</DefaultAuthActionProvider>
+			<HostActionProvider
+				bindings={[bindHostAction(openExternalAction, () => {})]}
+			>
+				<DefaultAuthActionProvider>
+					<AgentProvider agent={runtime}>
+						<MockAgentsDecorator
+							activeSessionId={opts.turns?.length ? 'mock-session' : null}
+						>
+							{children}
+						</MockAgentsDecorator>
+					</AgentProvider>
+				</DefaultAuthActionProvider>
+			</HostActionProvider>
 		</AppContext.Provider>
 	);
 }

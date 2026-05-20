@@ -1,4 +1,5 @@
 import type { FranklinApp } from '@franklin/agent';
+import type { HostActionBinding } from '@franklin/react';
 import { Notice, Plugin } from 'obsidian';
 
 import { createObsidianSessionInput } from './app/agent.js';
@@ -19,6 +20,7 @@ export default class FranklinPlugin extends Plugin {
 	private diffExplorerController!: DiffExplorerController;
 	private disposeFranklinApp: (() => void) | null = null;
 	franklinApp: FranklinApp | null = null;
+	hostActionBindings: readonly HostActionBinding[] = [];
 
 	async onload() {
 		await registerReactScan();
@@ -45,43 +47,48 @@ export default class FranklinPlugin extends Plugin {
 				return {
 					app,
 					getCreateInput,
+					hostActionBindings: result.hostActionBindings,
 					disposeFranklinApp: () => result.dispose(),
 				};
 			})
-			.then(({ app, getCreateInput, disposeFranklinApp }) => {
-				this.franklinApp = app;
-				this.disposeFranklinApp = disposeFranklinApp;
+			.then(
+				({ app, getCreateInput, hostActionBindings, disposeFranklinApp }) => {
+					this.franklinApp = app;
+					this.hostActionBindings = hostActionBindings;
+					this.disposeFranklinApp = disposeFranklinApp;
 
-				this.addSettingTab(new FranklinSettingTab(this));
+					this.addSettingTab(new FranklinSettingTab(this));
 
-				const requestApiKey = () => {
-					openPluginSettings(this.app, this.manifest.id);
-				};
+					const requestApiKey = () => {
+						openPluginSettings(this.app, this.manifest.id);
+					};
 
-				this.registerView(VIEW_TYPE, (leaf) => {
-					return new FranklinView(leaf, {
-						renderContent: () =>
-							createFranklinViewContent({
-								app,
-								getCreateInput,
-								obsidianApp: this.app,
-								requestApiKey,
-							}),
+					this.registerView(VIEW_TYPE, (leaf) => {
+						return new FranklinView(leaf, {
+							renderContent: () =>
+								createFranklinViewContent({
+									app,
+									getCreateInput,
+									hostActionBindings,
+									obsidianApp: this.app,
+									requestApiKey,
+								}),
+						});
 					});
-				});
 
-				this.addRibbonIcon('bot', 'Open Franklin', () => {
-					void this.activateView();
-				});
-
-				this.addCommand({
-					id: 'open-chat-window',
-					name: 'Open chat window',
-					callback: () => {
+					this.addRibbonIcon('bot', 'Open Franklin', () => {
 						void this.activateView();
-					},
-				});
-			})
+					});
+
+					this.addCommand({
+						id: 'open-chat-window',
+						name: 'Open chat window',
+						callback: () => {
+							void this.activateView();
+						},
+					});
+				},
+			)
 			.catch((err: unknown) => {
 				console.error(err);
 				new Notice(
@@ -96,6 +103,7 @@ export default class FranklinPlugin extends Plugin {
 		this.disposeFranklinApp?.();
 		clearPortalRoot(activeDocument);
 		this.franklinApp = null;
+		this.hostActionBindings = [];
 		this.disposeFranklinApp = null;
 	}
 

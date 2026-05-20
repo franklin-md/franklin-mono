@@ -16,7 +16,13 @@ import type {
 	AuthEntry,
 	OAuthLoginCallbacks,
 } from '@franklin/agent';
-import { AppContext, AuthActionProvider } from '@franklin/react';
+import {
+	AppContext,
+	AuthActionProvider,
+	HostActionProvider,
+	bindHostAction,
+	openExternalAction,
+} from '@franklin/react';
 
 import { DefaultAuthActionProvider } from '../../src/auth/default-action-provider.js';
 import { Command } from '../../src/primitives/command.js';
@@ -28,22 +34,21 @@ function renderWithAuth(ui: ReactElement, opts?: { entries?: AuthEntries }) {
 	const openExternal = vi.fn();
 	const app = {
 		auth,
-		platform: {
-			os: {
-				openExternal,
-			},
-		},
 	};
 
 	return {
 		auth,
 		openExternal,
 		...render(
-			<AppContext.Provider value={app as never}>
-				<AuthActionProvider handlers={{ requestApiKey: vi.fn() }}>
-					{ui}
-				</AuthActionProvider>
-			</AppContext.Provider>,
+			<HostActionProvider
+				bindings={[bindHostAction(openExternalAction, openExternal)]}
+			>
+				<AppContext.Provider value={app as never}>
+					<AuthActionProvider handlers={{ requestApiKey: vi.fn() }}>
+						{ui}
+					</AuthActionProvider>
+				</AppContext.Provider>
+			</HostActionProvider>,
 		),
 	};
 }
