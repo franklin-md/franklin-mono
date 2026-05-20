@@ -1,7 +1,6 @@
 import { buildStateExtensionModule } from '../modules/state/index.js';
 import type { AbsolutePath, RestoreResult } from '@franklin/lib';
 import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
-import { PersistedSessionCollection } from '../agent/session/persisted-session-collection.js';
 import { withAuth } from '../auth/with-auth.js';
 import { AuthManager } from '../auth/manager.js';
 import { createCoreStateModule } from '../modules/core/module.js';
@@ -9,6 +8,7 @@ import { createEnvironmentModule } from '../modules/environment/module.js';
 import {
 	createOrchestrator,
 	type Orchestrator,
+	RuntimeCollection,
 } from '../modules/orchestrator/index.js';
 import { createStoreStateModule } from '../modules/store/state-module.js';
 import { createStorage } from '../storage/create-storage.js';
@@ -23,6 +23,10 @@ import type {
 } from '../types.js';
 import type { AuthStore } from '../storage/types.js';
 import { createAgents, type Agents } from './agents.js';
+import {
+	createSessionPersistence,
+	type SessionPersistenceController,
+} from './session-persistence.js';
 
 export interface FranklinAppExtensionContext {
 	readonly auth: AuthManager;
@@ -34,7 +38,7 @@ export type FranklinAppExtensions =
 	| readonly FranklinExtension[]
 	| ((context: FranklinAppExtensionContext) => readonly FranklinExtension[]);
 
-function observeRuntimePersistence(
+function observeSessionChanges(
 	runtime: FranklinRuntime,
 	listener: () => void,
 ): () => void {
@@ -58,7 +62,8 @@ export class FranklinApp {
 	readonly platform: Platform;
 
 	private readonly orchestrator: Orchestrator<FranklinBase>;
-	private readonly collection: PersistedSessionCollection<
+	private readonly collection: RuntimeCollection<FranklinRuntime>;
+	private readonly sessionPersistence: SessionPersistenceController<
 		FranklinState,
 		FranklinRuntime
 	>;
@@ -99,14 +104,13 @@ export class FranklinApp {
 		];
 		const baseModule = buildStateExtensionModule(baseModules);
 
-		this.collection = new PersistedSessionCollection<
-			FranklinState,
-			FranklinRuntime
-		>(
-			storage.sessions,
-			(runtime) => baseModule.state(runtime),
-			observeRuntimePersistence,
-		);
+		this.collection = new RuntimeCollection<FranklinRuntime>();
+		this.sessionPersistence = createSessionPersistence({
+			collection: this.collection,
+			persistedSessions: storage.sessions,
+			getSession: (runtime) => baseModule.state(runtime).get(),
+			observeSessionChanges,
+		});
 
 		this.orchestrator = createOrchestrator({
 			modules: baseModules,
@@ -122,8 +126,8 @@ export class FranklinApp {
 
 	async start(): Promise<RestoreResult> {
 		const storageResult = await this.restoreStorage();
-		const collectionResult = await this.collection.restore((id, state) =>
-			this.orchestrator.materialize(id, state),
+		const collectionResult = await this.sessionPersistence.restore(
+			(id, state) => this.orchestrator.materialize(id, state),
 		);
 		return {
 			issues: [...storageResult.issues, ...collectionResult.issues],
