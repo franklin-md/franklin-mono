@@ -1,5 +1,4 @@
 export * from './api/index.js';
-export { createCoreCompiler } from './compile/index.js';
 export type { CoreModule, CoreStateModule } from './module.js';
 export { createCoreModule, createCoreStateModule } from './module.js';
 export type { CoreState, SessionSnapshot } from './state.js';

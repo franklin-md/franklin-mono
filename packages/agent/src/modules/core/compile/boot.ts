@@ -1,13 +1,10 @@
-import type {
-	MiniACPClient,
-	ToolDefinition as SerializedToolDefinition,
-} from '@franklin/mini-acp';
+import type { MiniACPClient, ToolDefinition } from '@franklin/mini-acp';
 import type { SessionSnapshot } from '../state.js';
 
 type BootRuntimeInput = {
 	readonly client: MiniACPClient;
 	readonly session: SessionSnapshot;
-	readonly tools: readonly SerializedToolDefinition[];
+	readonly tools: readonly ToolDefinition[];
 };
 
 export async function bootRuntime({

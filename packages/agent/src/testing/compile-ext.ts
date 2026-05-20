@@ -1,4 +1,5 @@
 import type { API } from '@franklin/extensibility';
+import type { ToolDefinition } from '@franklin/mini-acp';
 import { createExtensionPoint } from '@franklin/extensibility';
 import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
@@ -7,7 +8,6 @@ import { combineRuntimes } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { Extension } from '@franklin/extensibility';
 import type { CoreSignature } from '../modules/core/api/api.js';
-import type { SerializedToolDefinition } from '../modules/core/api/tools/index.js';
 import { serializeTool } from '../modules/core/api/tools/index.js';
 import { buildMiddleware } from '../modules/core/compile/decorators/middleware/build.js';
 import type { FullMiddleware } from '../modules/core/compile/decorators/middleware/types.js';
@@ -54,7 +54,7 @@ const storeExtensionPoint = createExtensionPoint<StoreSignature>({
 export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 	ext: Extension<API<CoreSignature, Ctx>>,
 	getCtx: () => Ctx = (() => undefined) as unknown as () => Ctx,
-): { middleware: FullMiddleware; tools: SerializedToolDefinition[] } {
+): { middleware: FullMiddleware; tools: ToolDefinition[] } {
 	const { registry, writer } = createRegistry<CoreSignature, Ctx>();
 	const api = createApi<CoreSignature, Ctx>(coreExtensionPoint, writer);
 	ext(api);
@@ -75,7 +75,7 @@ export async function compileCoreWithStore(
 ): Promise<{
 	middleware: FullMiddleware;
 	stores: StoreRuntime;
-	tools: SerializedToolDefinition[];
+	tools: ToolDefinition[];
 }> {
 	const cell: { stores?: StoreRuntime } = {};
 	const getCtx = (): CoreStoreRuntime => {
@@ -129,7 +129,7 @@ export async function compileCoreWithStoreAndEnv(
 ): Promise<{
 	middleware: FullMiddleware;
 	ctx: StoreRuntime & EnvironmentRuntime;
-	tools: SerializedToolDefinition[];
+	tools: ToolDefinition[];
 }> {
 	const cell: { ctx?: StoreRuntime & EnvironmentRuntime } = {};
 	const getCtx = (): CoreStoreEnvironmentRuntime => {
@@ -193,7 +193,7 @@ export async function compileCoreWithEnv(
 ): Promise<{
 	middleware: FullMiddleware;
 	ctx: EnvironmentRuntime;
-	tools: SerializedToolDefinition[];
+	tools: ToolDefinition[];
 }> {
 	const cell: { ctx?: EnvironmentRuntime } = {};
 	const getCtx = (): CoreEnvironmentRuntime => {

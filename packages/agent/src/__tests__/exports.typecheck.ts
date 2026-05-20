@@ -28,6 +28,24 @@ import { createEnvironmentRuntime as _RootCreateEnvironmentRuntime } from '../in
 import { createStoreRuntime as _RootCreateStoreRuntime } from '../index.js';
 // @ts-expect-error runtime state-handle projections are internal module plumbing.
 import { storeStateHandle as _RootStoreStateHandle } from '../index.js';
+// @ts-expect-error core compiler constructors are internal module plumbing.
+import { createCoreCompiler as _RootCreateCoreCompiler } from '../index.js';
+// @ts-expect-error core tool serialization is internal compiler plumbing.
+import { serializeTool as _RootSerializeTool } from '../index.js';
+// @ts-expect-error core tool schema serialization is internal compiler plumbing.
+import { toToolInputSchema as _RootToToolInputSchema } from '../index.js';
+// @ts-expect-error core registrar tuple types are internal compiler plumbing.
+import type { CoreOnRegistration as _RootCoreOnRegistration } from '../index.js';
+// @ts-expect-error core registrar tuple types are internal compiler plumbing.
+import type { CoreRegisterToolRegistration as _RootCoreRegisterToolRegistration } from '../index.js';
+// @ts-expect-error Agent-local Zod tool definitions are internal compiler plumbing.
+import type { ToolDefinition as _RootToolDefinition } from '../index.js';
+// @ts-expect-error Agent-local loose Zod tool definitions are internal compiler plumbing.
+import type { AnyToolDefinition as _RootAnyToolDefinition } from '../index.js';
+// @ts-expect-error Mini-ACP tool definitions are not re-exported through Agent core.
+import type { SerializedToolDefinition as _RootSerializedToolDefinition } from '../index.js';
+// @ts-expect-error MaybePromise is an internal utility, not public Agent API.
+import type { MaybePromise as _RootMaybePromise } from '../index.js';
 
 const _statusKey: StoreKey<'status', StatusState> = statusExtension.keys.status;
 const _todoKey: StoreKey<'todo', Todo[]> = todoExtension.keys.todo;
@@ -65,3 +83,6 @@ void _RootStoreMapping;
 void _RootCreateEnvironmentRuntime;
 void _RootCreateStoreRuntime;
 void _RootStoreStateHandle;
+void _RootCreateCoreCompiler;
+void _RootSerializeTool;
+void _RootToToolInputSchema;

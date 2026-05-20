@@ -1,7 +1,4 @@
-import type {
-	MiniACPConnector,
-	ToolDefinition as SerializedToolDefinition,
-} from '@franklin/mini-acp';
+import type { MiniACPConnector, ToolDefinition } from '@franklin/mini-acp';
 import type { SessionSnapshot } from '../state.js';
 import type { AgentClient } from '../runtime/types.js';
 import { bootRuntime } from './boot.js';
@@ -12,7 +9,7 @@ export async function createAgentClient(input: {
 	readonly connectAgent: MiniACPConnector;
 	readonly decorator: ProtocolDecorator;
 	readonly session: SessionSnapshot;
-	readonly tools: readonly SerializedToolDefinition[];
+	readonly tools: readonly ToolDefinition[];
 }): Promise<AgentClient> {
 	const client = await connect({
 		decorator: input.decorator,
