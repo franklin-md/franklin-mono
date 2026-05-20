@@ -14,7 +14,6 @@ export type SessionPersistence<S extends BaseState> = MapFilePersister<S>;
 
 export interface Storage<S extends BaseState> {
 	readonly settings: SettingsStore;
-	readonly auth: AuthStore;
 	readonly sessions: SessionPersistence<S>;
 	readonly stores: StoreRegistry;
 	restore(): Promise<RestoreResult>;

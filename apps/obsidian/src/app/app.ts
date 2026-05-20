@@ -1,4 +1,4 @@
-import { FranklinApp } from '@franklin/agent';
+import { AuthManager, createAuthStore, FranklinApp } from '@franklin/agent';
 import type { FranklinExtension, Platform } from '@franklin/agent';
 import {
 	conversationExtension,
@@ -52,6 +52,10 @@ export async function createFranklinApp(
 		diffClient.onWrite,
 	);
 	const authStore = await resolveAuthStore(plugin);
+	const auth = new AuthManager(
+		platform,
+		authStore ?? createAuthStore(platform.os.filesystem, appDir),
+	);
 	const disposables: (() => void)[] = [];
 	let obsidianPDFConverter:
 		| ReturnType<typeof createObsidianPDFConverter>
@@ -70,7 +74,7 @@ export async function createFranklinApp(
 		},
 		platform,
 		appDir,
-		authStore,
+		auth,
 	});
 
 	await app.start();

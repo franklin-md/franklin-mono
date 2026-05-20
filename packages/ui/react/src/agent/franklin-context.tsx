@@ -7,7 +7,12 @@ import {
 	type ReactNode,
 } from 'react';
 
-import { FranklinApp, type FranklinExtension } from '@franklin/agent';
+import {
+	AuthManager,
+	createAuthStore,
+	FranklinApp,
+	type FranklinExtension,
+} from '@franklin/agent';
 import type { Platform } from '@franklin/agent';
 import { joinAbsolute } from '@franklin/lib';
 
@@ -52,11 +57,16 @@ export function FranklinProvider({
 			try {
 				const home = await platform.os.osInfo.getHomeDir();
 				const appDir = joinAbsolute(home, '.franklin');
+				const auth = new AuthManager(
+					platform,
+					createAuthStore(platform.os.filesystem, appDir),
+				);
 
 				created = new FranklinApp({
 					extensions,
 					platform,
 					appDir,
+					auth,
 				});
 				// TODO: Should we make this optional?
 				await created.start();

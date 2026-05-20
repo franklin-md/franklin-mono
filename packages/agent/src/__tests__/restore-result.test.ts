@@ -4,7 +4,6 @@ import { joinAbsolute, MemoryFilesystem } from '@franklin/lib';
 
 import { createStorage } from '../storage/create-storage.js';
 import { DEFAULT_SETTINGS_FILE } from '../storage/settings.js';
-import { DEFAULT_AUTH_FILE } from '../storage/auth.js';
 import type { FranklinSession } from '../types.js';
 import { franklinSessionCodec } from '../app/session/codecs/index.js';
 
@@ -35,28 +34,15 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 		expect(result.issues[0]).toMatchObject({ kind: 'corrupt-json' });
 	});
 
-	it('surfaces a schema-mismatch for malformed auth data', async () => {
-		const fs = new MemoryFilesystem();
-		fs.seed(
-			joinAbsolute(APP_DIR, DEFAULT_AUTH_FILE),
-			JSON.stringify({ version: 1, data: { anthropic: 'not-an-object' } }),
-		);
-		const storage = createTestStorage(fs);
-
-		const result = await storage.restore();
-		expect(result.issues[0]).toMatchObject({
-			kind: 'schema-mismatch',
-			version: 1,
-		});
-	});
-
 	it('aggregates issues from multiple sources', async () => {
 		const fs = new MemoryFilesystem();
 		fs.seed(
 			joinAbsolute(APP_DIR, DEFAULT_SETTINGS_FILE),
 			JSON.stringify({ version: 999, data: {} }),
 		);
-		fs.seed(joinAbsolute(APP_DIR, DEFAULT_AUTH_FILE), 'garbage');
+		const storeDir = joinAbsolute(APP_DIR, 'store');
+		fs.seedDir(storeDir);
+		fs.seed(joinAbsolute(storeDir, 'bad.json'), 'garbage');
 		const storage = createTestStorage(fs);
 
 		const result = await storage.restore();
@@ -91,31 +77,6 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 				provider: 'anthropic',
 				model: 'claude-sonnet-4-5',
 				reasoning: 'medium',
-			},
-		});
-	});
-
-	it('auth entries with unknown fields load cleanly (record tolerance)', async () => {
-		const fs = new MemoryFilesystem();
-		fs.seed(
-			joinAbsolute(APP_DIR, DEFAULT_AUTH_FILE),
-			JSON.stringify({
-				version: 1,
-				data: {
-					anthropic: {
-						apiKey: { type: 'apiKey', key: 'sk-test' },
-						retiredField: 'should-be-dropped',
-					},
-				},
-			}),
-		);
-		const storage = createTestStorage(fs);
-
-		const result = await storage.restore();
-		expect(result.issues).toEqual([]);
-		expect(storage.auth.get()).toEqual({
-			anthropic: {
-				apiKey: { type: 'apiKey', key: 'sk-test' },
 			},
 		});
 	});

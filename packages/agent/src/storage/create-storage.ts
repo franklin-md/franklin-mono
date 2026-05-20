@@ -6,14 +6,12 @@ import type {
 	RestoreResult,
 } from '@franklin/lib';
 import { StoreRegistry } from '../modules/store/api/index.js';
-import { createAuthStore } from './auth.js';
 import { createPersistence } from './persistence.js';
 import { createSettingsStore } from './settings.js';
-import type { AuthStore, Storage } from './types.js';
+import type { Storage } from './types.js';
 
 type CreateStorageOptions<S extends BaseState> = {
 	readonly sessionCodec: Codec<S>;
-	readonly authStore?: AuthStore;
 };
 
 export function createStorage<S extends BaseState>(
@@ -22,7 +20,6 @@ export function createStorage<S extends BaseState>(
 	opts: CreateStorageOptions<S>,
 ): Storage<S> {
 	const settings = createSettingsStore(filesystem, appDir);
-	const auth = opts.authStore ?? createAuthStore(filesystem, appDir);
 	const persistence = createPersistence<S>(
 		appDir,
 		filesystem,
@@ -33,16 +30,11 @@ export function createStorage<S extends BaseState>(
 
 	return {
 		settings,
-		auth,
 		sessions,
 		stores,
 		async restore(): Promise<RestoreResult> {
-			const [a, b, c] = await Promise.all([
-				settings.restore(),
-				auth.restore(),
-				stores.restore(),
-			]);
-			return { issues: [...a.issues, ...b.issues, ...c.issues] };
+			const [a, b] = await Promise.all([settings.restore(), stores.restore()]);
+			return { issues: [...a.issues, ...b.issues] };
 		},
 	};
 }
