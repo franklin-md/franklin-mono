@@ -9,8 +9,6 @@ import type {
 import type { MiniACPRpcProtocol } from '@franklin/mini-acp/rpc';
 import type { EnvironmentFactory } from './modules/environment/module.js';
 
-type Disposable = { dispose(): Promise<void> };
-
 export interface Net {
 	listenLoopback(options?: ListenLoopbackOptions): Promise<LoopbackListener>;
 	fetch: Fetch;
@@ -25,7 +23,7 @@ export interface OperatingSystem {
 }
 
 export interface Platform {
-	spawn: () => Promise<MiniACPRpcProtocol & Disposable>;
+	spawn: () => Promise<MiniACPRpcProtocol>;
 	environment: EnvironmentFactory;
 
 	ai: {
