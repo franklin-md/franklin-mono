@@ -3,7 +3,7 @@ import { compile } from '../../../compiler/compile.js';
 import { createApi } from '../../../extension-points/facade.js';
 import { createRegistry } from '../../../extension-points/writer.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
-import { createFacet } from '../facet.js';
+import { Configuration } from '../configuration.js';
 import { CONFIGURATION_REGISTRATION } from '../internal.js';
 import {
 	createConfigurationModule,
@@ -30,9 +30,9 @@ describe('createConfigurationModule', () => {
 		expect(Reflect.ownKeys(api)).toContain(CONFIGURATION_REGISTRATION);
 	});
 
-	it('combines multiple contributions for one facet into one runtime value', async () => {
+	it('combines multiple contributions for one configuration into one runtime value', async () => {
 		const module = createConfigurationModule();
-		const facet = createFacet<string, string>({
+		const promptPrefix = new Configuration<string, string>({
 			name: 'promptPrefix',
 			combine: (values) => values.join('\n'),
 		});
@@ -41,22 +41,22 @@ describe('createConfigurationModule', () => {
 			module.extensionPoint,
 			module.compiler,
 			(api) => {
-				facet.of('first')(api);
-				facet.of('second')(api);
+				promptPrefix.of('first')(api);
+				promptPrefix.of('second')(api);
 			},
 		);
 
-		expect(runtime.config(facet)).toBe('first\nsecond');
+		expect(runtime.config(promptPrefix)).toBe('first\nsecond');
 		await runtime.dispose();
 	});
 
-	it('keeps facets with the same name distinct by id', async () => {
+	it('keeps configurations with the same name distinct by id', async () => {
 		const module = createConfigurationModule();
-		const first = createFacet<string, string>({
+		const first = new Configuration<string, string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'light',
 		});
-		const second = createFacet<string, string>({
+		const second = new Configuration<string, string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'light',
 		});
@@ -75,9 +75,9 @@ describe('createConfigurationModule', () => {
 		await runtime.dispose();
 	});
 
-	it('uses combine with an empty input list for facets without contributions', async () => {
+	it('uses combine with an empty input list for configurations without contributions', async () => {
 		const module = createConfigurationModule();
-		const facet = createFacet<number, number>({
+		const score = new Configuration<number, number>({
 			name: 'score',
 			combine: (values) => values.reduce((sum, value) => sum + value, 0),
 		});
@@ -88,7 +88,7 @@ describe('createConfigurationModule', () => {
 			() => {},
 		);
 
-		expect(runtime.config(facet)).toBe(0);
+		expect(runtime.config(score)).toBe(0);
 		await runtime.dispose();
 	});
 });

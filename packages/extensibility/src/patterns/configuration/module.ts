@@ -3,13 +3,15 @@ import { createExtensionPoint } from '../../extension-points/create.js';
 import type { RegistryView } from '../../extension-points/view.js';
 import type { ExtensionModule } from '../../modules/simple/types.js';
 import type { BaseRuntime } from '../../runtime/types.js';
-import { CONFIGURATION_REGISTRATION, getFacetInternals } from './internal.js';
+import {
+	CONFIGURATION_REGISTRATION,
+	getConfigurationInternals,
+} from './internal.js';
 import { createConfigurationRuntime } from './runtime.js';
 import type {
+	ConfigurationCombine,
 	ConfigurationContribution,
 	ConfigurationSignature,
-	Facet,
-	FacetCombine,
 } from './types.js';
 import type { ConfigurationRuntime } from './runtime.js';
 
@@ -19,9 +21,7 @@ export type ConfigurationModule = ExtensionModule<
 >;
 
 type ConfigurationGroup = {
-	readonly facet: Facet<any, any>;
-	readonly combine: FacetCombine<any, any>;
-	readonly name: string;
+	readonly combine: ConfigurationCombine<any, any>;
 	readonly inputs: any[];
 };
 
@@ -36,20 +36,18 @@ function collectConfigurationValues(
 	const groups = new Map<symbol, ConfigurationGroup>();
 
 	for (const contribution of contributions) {
-		const internals = getFacetInternals(contribution.facet);
+		const internals = getConfigurationInternals(contribution.configuration);
 		const existing = groups.get(internals.id);
 		if (existing === undefined) {
 			groups.set(internals.id, {
-				facet: contribution.facet,
 				combine: internals.combine,
-				name: internals.name,
 				inputs: [contribution.input],
 			});
 			continue;
 		}
 		if (existing.combine !== internals.combine) {
 			throw new Error(
-				`Conflicting combine functions registered for configuration facet "${internals.name}"`,
+				`Conflicting combine functions registered for configuration "${internals.name}"`,
 			);
 		}
 		existing.inputs.push(contribution.input);
