@@ -1,47 +1,33 @@
 import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type { MiniACPClient } from '@franklin/mini-acp';
-import type { MethodMiddleware } from '@franklin/lib/middleware';
 import type { CoreSignature } from '../../../api/api.js';
-import type { PromptHandler } from '../../../api/handlers.js';
-import { createPrompt } from '../../../api/prompt.js';
-import { bindRegisteredEventHandlers } from '../../registrations/index.js';
 import type { ProtocolDecorator } from '../types.js';
+import { createPromptBuilder } from './build-prompt/index.js';
+import { createPromptObserver } from './observer/index.js';
+import { createSystemPromptSync } from './system-prompt/index.js';
 
 export function createPromptDecorator<Runtime extends BaseRuntime>(
 	registrations: RegistryView<CoreSignature, Runtime>,
-	getCtx: () => Runtime,
-): ProtocolDecorator | undefined {
-	const handlers = bindRegisteredEventHandlers(registrations, 'prompt', getCtx);
-	if (handlers.length === 0) return undefined;
-	const promptMiddleware = buildPromptMiddleware(handlers);
+	getRuntime: () => Runtime,
+): ProtocolDecorator {
+	const syncSystemPrompt = createSystemPromptSync(registrations, getRuntime);
+	const buildPrompt = createPromptBuilder(registrations, getRuntime);
+	const observePrompt = createPromptObserver(registrations, getRuntime);
 
 	return {
 		name: 'prompt',
 		async server(s) {
 			return s;
 		},
-		async client(c) {
+		async client(c): Promise<MiniACPClient> {
 			return {
 				...c,
-				prompt(message) {
-					return promptMiddleware(message, (nextMessage) =>
-						c.prompt(nextMessage),
-					);
+				async *prompt(message) {
+					await syncSystemPrompt(c);
+					const fullPrompt = await buildPrompt(message);
+					yield* observePrompt(c.prompt(fullPrompt));
 				},
 			} as MiniACPClient;
 		},
-	};
-}
-
-export function buildPromptMiddleware(
-	handlers: PromptHandler[],
-): MethodMiddleware<MiniACPClient['prompt']> {
-	return async function* (params, next) {
-		const prompt = createPrompt(params);
-		for (const handler of handlers) {
-			await handler(prompt);
-		}
-
-		yield* next(prompt.asPrompt());
 	};
 }

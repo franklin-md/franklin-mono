@@ -1,7 +1,7 @@
 import type {
 	SetPartOptions,
 	SystemPromptContent,
-} from '../../../../api/system-prompt.js';
+} from '../../../../../api/system-prompt.js';
 import type { Slot } from './types.js';
 
 export function createSlot(): Slot {
