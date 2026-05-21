@@ -38,7 +38,7 @@ describe('createTrackingDecorator', () => {
 			},
 		});
 
-		expect(resources.tracker.get().history.messages).toEqual([
+		expect(resources.tracker.get().messages).toEqual([
 			{
 				role: 'assistant',
 				content: [
@@ -83,7 +83,7 @@ describe('createTrackingDecorator', () => {
 		} as MiniACPClient;
 
 		const wrapped = await decorator.client(client);
-		await wrapped.setContext({ history: { systemPrompt: 'rules' } });
+		await wrapped.setContext({ systemPrompt: 'rules' });
 		for await (const _event of wrapped.prompt({
 			role: 'user',
 			content: [{ type: 'text', text: 'hi' }],
@@ -91,8 +91,8 @@ describe('createTrackingDecorator', () => {
 			// Drain the stream so tracking callbacks run.
 		}
 
-		expect(resources.tracker.get().history.systemPrompt).toBe('rules');
-		expect(resources.tracker.get().history.messages).toEqual([
+		expect(resources.tracker.get().systemPrompt).toBe('rules');
+		expect(resources.tracker.get().messages).toEqual([
 			{ role: 'user', content: [{ type: 'text', text: 'hi' }] },
 			{ role: 'assistant', content: [{ type: 'text', text: 'hello' }] },
 		]);

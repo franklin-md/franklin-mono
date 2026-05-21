@@ -18,12 +18,12 @@ export function summarizeContext(value: unknown): string {
 
 	const parts: string[] = [];
 
-	if ('history' in value && isRecord(value.history)) {
-		const history = value.history;
-		if (typeof history.systemPrompt === 'string') parts.push('systemPrompt');
-		if (Array.isArray(history.messages)) {
-			parts.push(`messages=${history.messages.length}`);
-		}
+	if (typeof value.systemPrompt === 'string') {
+		parts.push('systemPrompt');
+	}
+
+	if (Array.isArray(value.messages)) {
+		parts.push(`messages=${value.messages.length}`);
 	}
 
 	if ('tools' in value && Array.isArray(value.tools)) {

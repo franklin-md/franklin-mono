@@ -31,13 +31,9 @@ export type LLMConfig = {
 	apiKey?: string;
 };
 
-export type History = {
+export type Context = {
 	systemPrompt: string;
 	messages: Message[];
-};
-
-export type Context = {
-	history: History;
 	tools: ToolDefinition[];
 	config: LLMConfig;
 };
@@ -47,17 +43,17 @@ export type Context = {
 //
 // Top-level fields are optional (omitted fields are left unchanged). Present
 // fields merge into the current Context per-type:
-// - history merges by property (systemPrompt/messages each replace when set)
+// - systemPrompt replaces the current system prompt
+// - messages replaces the message list wholesale
 // - tools replaces the list wholesale
 // - config merges by property
 // ---------------------------------------------------------------------------
 
-export type HistoryPatch = Partial<History>;
-
 export type LLMConfigPatch = Partial<LLMConfig>;
 
 export type ContextPatch = {
-	history?: HistoryPatch;
+	systemPrompt?: string;
+	messages?: Message[];
 	tools?: ToolDefinition[];
 	config?: LLMConfigPatch;
 };

@@ -17,10 +17,9 @@ function nonEmptySystemPromptPatches(
 	patches: readonly ContextPatch[],
 ): string[] {
 	return patches.flatMap((patch) =>
-		patch.history?.systemPrompt === undefined ||
-		patch.history.systemPrompt === ''
+		patch.systemPrompt === undefined || patch.systemPrompt === ''
 			? []
-			: [patch.history.systemPrompt],
+			: [patch.systemPrompt],
 	);
 }
 
@@ -106,7 +105,7 @@ describe('core extension system prompt handlers', () => {
 			],
 		});
 
-		expect(context.history.systemPrompt).toBe('Tool guidelines here.');
+		expect(context.systemPrompt).toBe('Tool guidelines here.');
 	});
 
 	it('composes multiple system prompt handlers in registration order', async () => {
@@ -123,7 +122,7 @@ describe('core extension system prompt handlers', () => {
 			],
 		});
 
-		expect(context.history.systemPrompt).toBe('first\n\nsecond');
+		expect(context.systemPrompt).toBe('first\n\nsecond');
 	});
 
 	it('composes system prompt handlers in priority order', async () => {
@@ -143,7 +142,7 @@ describe('core extension system prompt handlers', () => {
 			],
 		});
 
-		expect(context.history.systemPrompt).toBe('high\n\nnormal\n\nlow');
+		expect(context.systemPrompt).toBe('high\n\nnormal\n\nlow');
 	});
 
 	it('does not resend the system prompt when handlers produce the same result', async () => {
@@ -189,7 +188,7 @@ describe('core extension system prompt handlers', () => {
 			expect(
 				nonEmptySystemPromptPatches(scenario.mock.calls().setContext),
 			).toEqual(['v1', 'v2']);
-			expect(scenario.mock.context().history.systemPrompt).toBe('v2');
+			expect(scenario.mock.context().systemPrompt).toBe('v2');
 		} finally {
 			await scenario.dispose();
 		}
@@ -215,7 +214,7 @@ describe('core extension system prompt handlers', () => {
 			expect(
 				nonEmptySystemPromptPatches(scenario.mock.calls().setContext),
 			).toEqual(['sticky']);
-			expect(scenario.mock.context().history.systemPrompt).toBe('sticky');
+			expect(scenario.mock.context().systemPrompt).toBe('sticky');
 		} finally {
 			await scenario.dispose();
 		}
@@ -235,7 +234,7 @@ describe('core extension system prompt handlers', () => {
 			],
 		});
 
-		expect(context.history.systemPrompt).toBe('present');
+		expect(context.systemPrompt).toBe('present');
 	});
 
 	it('awaits async system prompt handlers before prompting the agent', async () => {
@@ -250,7 +249,7 @@ describe('core extension system prompt handlers', () => {
 			],
 		});
 
-		expect(context.history.systemPrompt).toBe('async-value');
+		expect(context.systemPrompt).toBe('async-value');
 	});
 
 	it('applies system prompt and user prompt handlers in one turn', async () => {
@@ -268,7 +267,7 @@ describe('core extension system prompt handlers', () => {
 			prompt: 'hello',
 		});
 
-		expect(context.history.systemPrompt).toBe('system');
+		expect(context.systemPrompt).toBe('system');
 		expect(
 			textContent(calls.prompts[0]).map((content) => content.text),
 		).toEqual(['hello', ' [injected]']);
@@ -290,9 +289,9 @@ describe('core extension system prompt handlers', () => {
 
 			const promptPatch = scenario.mock
 				.calls()
-				.setContext.find((patch) => patch.history?.systemPrompt === 'dynamic');
+				.setContext.find((patch) => patch.systemPrompt === 'dynamic');
 			expect(promptPatch).toEqual({
-				history: { systemPrompt: 'dynamic' },
+				systemPrompt: 'dynamic',
 			});
 		} finally {
 			await scenario.dispose();

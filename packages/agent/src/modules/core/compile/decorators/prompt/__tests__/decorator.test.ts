@@ -39,7 +39,7 @@ function stubClient(calls: string[]): MiniACPClient {
 	return {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async (patch: ContextPatch) => {
-			calls.push(`setContext:${patch.history?.systemPrompt ?? ''}`);
+			calls.push(`setContext:${patch.systemPrompt ?? ''}`);
 		}),
 		prompt: vi.fn(async function* (message: UserMessage) {
 			calls.push(`client.prompt:${text(message)}`);

@@ -19,8 +19,6 @@ export type {
 export type {
 	Context,
 	ContextPatch,
-	History,
-	HistoryPatch,
 	LLMConfig,
 	LLMConfigPatch,
 	ThinkingLevel,

@@ -23,7 +23,7 @@ export function createSystemPromptSync<Runtime extends BaseRuntime>(
 		if (assembled === lastSent) return;
 
 		await client.setContext({
-			history: { systemPrompt: assembled },
+			systemPrompt: assembled,
 		});
 		lastSent = assembled;
 	};

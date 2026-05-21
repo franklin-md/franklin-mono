@@ -8,28 +8,29 @@ import type { Message } from '../types/message.js';
 /**
  * Apply a partial context update.
  *
- * `history` and `config` merge by property: any subfield present in the
- * patch replaces the current value; omitted subfields are preserved.
- * `tools` replaces the list wholesale.
+ * `systemPrompt`, `messages`, and `tools` replace their current values when
+ * present. `config` merges by property so omitted config fields are preserved.
  */
 function applySetContext(context: Context, partial: ContextPatch): void {
-	if (partial.history !== undefined)
-		context.history = { ...context.history, ...partial.history };
+	if (partial.systemPrompt !== undefined)
+		context.systemPrompt = partial.systemPrompt;
+	if (partial.messages !== undefined) context.messages = partial.messages;
 	if (partial.tools !== undefined) context.tools = partial.tools;
 	if (partial.config !== undefined)
 		context.config = { ...context.config, ...partial.config };
 }
 
 /**
- * Append a message to the context's history.
+ * Append a message to the context's model-visible messages.
  */
 function appendMessage(context: Context, message: Message): void {
-	context.history.messages.push(message);
+	context.messages.push(message);
 }
 
 function createEmptyContext(): Context {
 	return {
-		history: { systemPrompt: '', messages: [] },
+		systemPrompt: '',
+		messages: [],
 		tools: [],
 		config: {},
 	};

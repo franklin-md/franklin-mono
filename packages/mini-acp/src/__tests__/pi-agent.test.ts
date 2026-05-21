@@ -88,7 +88,8 @@ describe('createPiAgent', () => {
 
 		await client.initialize();
 		await client.setContext({
-			history: { systemPrompt: 'system prompt', messages: [] },
+			systemPrompt: 'system prompt',
+			messages: [],
 			tools: [tool],
 			config: { model: 'gpt-5.4' },
 		});
@@ -105,7 +106,8 @@ describe('createPiAgent', () => {
 		expect(adapterInputs).toEqual([
 			{
 				context: {
-					history: { systemPrompt: 'system prompt', messages: [] },
+					systemPrompt: 'system prompt',
+					messages: [],
 					tools: [tool],
 					config: { model: 'gpt-5.4' },
 				},

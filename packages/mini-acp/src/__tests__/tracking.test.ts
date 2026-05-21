@@ -21,7 +21,8 @@ import { StopCode } from '../types/stop-code.js';
 function seededTracker(): ContextTracker {
 	const tracker = new ContextTracker();
 	tracker.apply({
-		history: { systemPrompt: 'test', messages: [] },
+		systemPrompt: 'test',
+		messages: [],
 		tools: [],
 	});
 	return tracker;
@@ -64,7 +65,7 @@ describe('trackAgent', () => {
 			call: { type: 'toolCall', id: 'c1', name: 'read', arguments: {} },
 		});
 
-		const messages = tracker.get().history.messages;
+		const messages = tracker.get().messages;
 		expect(messages).toHaveLength(2);
 
 		expect(messages[0]).toEqual({
@@ -111,8 +112,8 @@ describe('trackAgent', () => {
 		).rejects.toThrow('boom');
 
 		// Tool call was appended before the await, but result was not
-		expect(tracker.get().history.messages).toHaveLength(1);
-		expect(tracker.get().history.messages[0]!.role).toBe('assistant');
+		expect(tracker.get().messages).toHaveLength(1);
+		expect(tracker.get().messages[0]!.role).toBe('assistant');
 	});
 });
 
@@ -144,7 +145,7 @@ describe('trackTurn', () => {
 			}),
 		);
 
-		const messages = tracker.get().history.messages;
+		const messages = tracker.get().messages;
 		expect(messages).toHaveLength(2);
 		expect(messages[0]!.role).toBe('user');
 		expect(messages[1]!.role).toBe('assistant');
@@ -202,10 +203,11 @@ describe('trackClient', () => {
 		const tracked = trackClient(tracker, inner);
 
 		await tracked.setContext({
-			history: { systemPrompt: 'new', messages: [] },
+			systemPrompt: 'new',
+			messages: [],
 		});
 
-		expect(tracker.get().history.systemPrompt).toBe('new');
+		expect(tracker.get().systemPrompt).toBe('new');
 		expect(inner.setContext).toHaveBeenCalled();
 	});
 
@@ -235,7 +237,7 @@ describe('trackClient', () => {
 			}),
 		);
 
-		const messages = tracker.get().history.messages;
+		const messages = tracker.get().messages;
 		expect(messages).toHaveLength(2);
 		expect(messages[0]!.role).toBe('user');
 		expect(messages[1]!.role).toBe('assistant');
@@ -253,7 +255,7 @@ describe('trackClient', () => {
 
 		await tracked.initialize();
 		expect(inner.initialize).toHaveBeenCalled();
-		expect(tracker.get().history.messages).toHaveLength(0);
+		expect(tracker.get().messages).toHaveLength(0);
 	});
 });
 

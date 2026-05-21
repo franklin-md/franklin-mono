@@ -18,7 +18,7 @@ default protocol API. Scripted test helpers live under
 At a glance:
 - **Agents have state but there is no session persistence on the agent's side**:
   - Throughout the protocol, the agent's `Context` changes as it keeps track of:
-    - **Explicit Changes through `setContext`**, as would be expected from applications that implement sessions through `fork` and `resume` semantics over the `History`, and from applications wishing to change the current `LLMConfig`
+    - **Explicit Changes through `setContext`**, as would be expected from applications that implement sessions through `fork` and `resume` semantics over model-visible messages, and from applications wishing to change the current `LLMConfig`
     - **Implicit Changes during `prompt`**, in which the context grows with new user messages, assistant messages, and tool invocations.
   - **The Context is empty at the start of the protocol**
 - **Externalized Tool Execution**
@@ -106,25 +106,25 @@ The `Context` type represents the full state needed to drive an agent turn:
 
 ```
 Context {
-  history: History
-  tools:   ToolDefinition[]
-  config:  LLMConfig
+  systemPrompt: string
+  messages:     Message[]
+  tools:        ToolDefinition[]
+  config:       LLMConfig
 }
 ```
 
 `Context` is always fully present on the agent. Immediately after `initialize`,
-`history.messages` and `tools` are empty and `config` is an empty object;
-`setContext` fills them in. Partial updates are expressed at the `setContext`
-boundary via `ContextPatch` (below), not by making top-level fields optional on
-`Context` itself.
+`systemPrompt` is an empty string, `messages` and `tools` are empty, and
+`config` is an empty object; `setContext` fills them in. Partial updates are
+expressed at the `setContext` boundary via `ContextPatch` (below), not by
+making top-level fields optional on `Context` itself.
 
-**`History`** — the conversation state:
-```
-History {
-  systemPrompt: string       // The system-level instruction
-  messages:     Message[]    // The ordered conversation history
-}
-```
+**`systemPrompt`** — the system-level instruction.
+
+**`messages`** — the ordered, model-visible message head for the next turn.
+Applications may derive this list from a larger application-owned session
+history, including compacted segments or other checkpoint records, but Mini-ACP
+only receives the current message list it should send to the model.
 
 **`ToolDefinition`** — a tool the agent may invoke:
 ```
@@ -151,18 +151,17 @@ LLMConfig {
 Top-level fields omitted from the patch are left unchanged. When a top-level
 field is present, update behavior depends on that field:
 
-- `history` merges by property. Each subfield (`systemPrompt`, `messages`)
-  replaces the current value only when present in the patch; omitted subfields
-  are preserved. `messages` is still replaced as a whole array when provided —
-  there are no append/splice semantics at this boundary.
+- `systemPrompt` replaces the current system prompt when present.
+- `messages` replaces the current message list wholesale when present. There
+  are no append/splice semantics at this boundary.
 - `tools` replaces the current tool list wholesale.
 - `config` merges by property. Each subfield replaces the current value only
   when present in the patch; omitted subfields are preserved.
 
-For example, sending `{ history: { systemPrompt: '...' } }` updates only the
-system prompt and preserves the current `messages`. Similarly,
-`{ config: { reasoning: 'high' } }` updates only `reasoning` and preserves
-the current `model`, `provider`, and `apiKey`.
+For example, sending `{ systemPrompt: '...' }` updates only the system prompt
+and preserves the current `messages`. Sending `{ messages: [...] }` replaces
+only the message list. Similarly, `{ config: { reasoning: 'high' } }` updates
+only `reasoning` and preserves the current `model`, `provider`, and `apiKey`.
 
 
 ### Phase 3: Prompt
@@ -368,7 +367,7 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 | `context-before-first-prompt`        | `setContext` must precede the first `prompt`                                                                                             | MUST  |
 | `context-receive-exists`             | Agent must respond to each `setContext`                                                                                                  | MUST  |
 | `context-after-init`                 | `setContext` must not be sent before `initialize` completes                                                                              | MUST  |
-| `context-history-merges-by-property` | When `history` is present in a patch, each subfield (`systemPrompt`, `messages`) replaces only when set; omitted subfields are preserved | MUST  |
+| `context-prompt-fields-top-level`    | `setContext` prompt fields are top-level `systemPrompt` and `messages` fields; nested `history` is not part of the protocol           | MUST  |
 | `context-tools-replaces-wholesale`   | When `tools` is present in a patch, it replaces the current tool list wholesale (including when set to `[]`, which clears all tools)     | MUST  |
 | `context-config-merges-by-property`  | When `config` is present in a patch, each subfield replaces only when set; omitted subfields are preserved                               | MUST  |
 
@@ -454,7 +453,7 @@ Forking a session is creating a new agent connection and calling `setContext` wi
 ### Shared Context
 
 ## Potential Problems and Todos
-- [ ] Is it expensive to send full history on fork?
+- [ ] Is it expensive to send the full message head on fork?
 - [ ] Mid turn notification / context changing
   - [ ] May need to relax tool response type
 - [x] Error semantics spelled out (StopCode integer enum with categories; see Tool Error Semantics)
