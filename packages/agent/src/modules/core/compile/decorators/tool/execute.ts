@@ -3,20 +3,12 @@ import type { MiniACPAgent, ToolResult } from '@franklin/mini-acp';
 import { z } from 'zod';
 import type {
 	ToolObserverEvent,
-	ToolObserverHandler,
 	ToolObserverParamsMap,
-} from '../../../../api/handlers.js';
-import { resolveToolOutput } from '../../../../api/tool.js';
+} from '../../../api/handlers.js';
+import { resolveToolOutput } from '../../../api/tool.js';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
-import type { RegisteredTool } from '../../../tools/index.js';
-
-export type ToolObservers = {
-	[K in ToolObserverEvent]: ToolObserverHandler<K>[];
-};
-
-export function hasAnyToolObserver(observers: ToolObservers): boolean {
-	return observers.toolCall.length > 0 || observers.toolResult.length > 0;
-}
+import type { RegisteredTool } from '../../tools/index.js';
+import type { ToolLayer, ToolObservers } from './types.js';
 
 function notifyObservers<K extends ToolObserverEvent>(
 	observers: ToolObservers,
@@ -29,30 +21,26 @@ function notifyObservers<K extends ToolObserverEvent>(
 	}
 }
 
-/**
- * Build server-side middleware that short-circuits toolExecute
- * for tools registered by extensions, and notifies tool observers
- * before/after each call.
- */
 export function buildToolExecuteMiddleware<Runtime extends BaseRuntime>(
-	tools: RegisteredTool<unknown, Runtime>[],
-	observers: ToolObservers,
-	getRuntime: () => Runtime,
+	layer: ToolLayer<Runtime>,
 ): MethodMiddleware<MiniACPAgent['toolExecute']> {
 	return async (params, next) => {
-		notifyObservers(observers, 'toolCall', params);
+		notifyObservers(layer.observers, 'toolCall', params);
 
-		const tool = tools.find((t) => t.name === params.call.name);
+		const tool = layer.tools.find((t) => t.name === params.call.name);
 		const result = tool
 			? await toToolResult(
 					tool,
 					params.call.id,
 					params.call.arguments,
-					getRuntime,
+					layer.getRuntime,
 				)
 			: await next(params);
 
-		notifyObservers(observers, 'toolResult', { ...result, call: params.call });
+		notifyObservers(layer.observers, 'toolResult', {
+			...result,
+			call: params.call,
+		});
 
 		return result;
 	};

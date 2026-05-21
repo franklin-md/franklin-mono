@@ -17,6 +17,11 @@ import {
 	createSystemPromptDecorator,
 } from './system-prompt/index.js';
 import {
+	buildToolLayer,
+	createToolDecorator,
+	hasAnyToolLayer,
+} from './tool/index.js';
+import {
 	createContextTrackerDecorator,
 	createUsageTrackerDecorator,
 } from './trackers/index.js';
@@ -40,6 +45,11 @@ export function createAgentDecorator<Runtime extends BaseRuntime>(
 	const agentObservers = buildAgentStreamObservers(registrations, getCtx);
 	if (hasAnyAgentStreamObserver(agentObservers)) {
 		stack.push(createAgentObserverDecorator(agentObservers));
+	}
+
+	const toolLayer = buildToolLayer(registrations, getCtx);
+	if (hasAnyToolLayer(toolLayer)) {
+		stack.push(createToolDecorator(toolLayer));
 	}
 
 	const systemPromptHandlers = bindRegisteredEventHandlers(
