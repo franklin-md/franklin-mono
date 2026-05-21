@@ -15,7 +15,7 @@ type ExtensionPointNames<S extends Signature> = [
 export function createExtensionPoint<S extends Signature>(
 	names: ExtensionPointNames<S>,
 ): ExtensionPoint<S> {
-	const contributionNames = Object.keys(names);
+	const contributionNames = Reflect.ownKeys(names);
 	return ((writer) => {
 		const entries = contributionNames.map((name) => [
 			name,

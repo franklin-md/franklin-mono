@@ -11,7 +11,7 @@ type MethodName<Surface extends object> = {
 
 export type EffectName<S extends Signature, Runtime extends S['In']> = Extract<
 	MethodName<API<S, Runtime>>,
-	string
+	PropertyKey
 >;
 
 export type EffectValueForName<
@@ -20,7 +20,10 @@ export type EffectValueForName<
 	Name extends EffectName<S, Runtime>,
 > = OverloadedParameters<API<S, Runtime>[Name]>;
 
-export type EffectValue<Name extends string = string, Value = unknown> = {
+export type EffectValue<
+	Name extends PropertyKey = PropertyKey,
+	Value = unknown,
+> = {
 	readonly name: Name;
 	readonly value: Value;
 };
