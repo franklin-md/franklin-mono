@@ -3,8 +3,9 @@ import { compile } from '../../../compiler/compile.js';
 import { createApi } from '../../../extension-points/facade.js';
 import { createRegistry } from '../../../extension-points/writer.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
-import { Configuration } from '../configuration.js';
-import { CONFIGURATION_REGISTRATION } from '../internal.js';
+import { ConfigurationProvider } from '../configuration.js';
+import { ConfigurationCycleError } from '../cycle-error.js';
+import { CONFIGURATION_API } from '../internal.js';
 import {
 	createConfigurationModule,
 	type ConfigurationModule,
@@ -18,7 +19,7 @@ describe('createConfigurationModule', () => {
 		expectTypeOf(module).toEqualTypeOf<ConfigurationModule>();
 	});
 
-	it('uses a symbol-keyed registration API', () => {
+	it('uses a symbol-keyed configuration API', () => {
 		const module = createConfigurationModule();
 		const { writer } = createRegistry<ConfigurationSignature, BaseRuntime>();
 		const api = createApi<ConfigurationSignature, BaseRuntime>(
@@ -27,12 +28,12 @@ describe('createConfigurationModule', () => {
 		);
 
 		expect(Object.keys(api)).toEqual([]);
-		expect(Reflect.ownKeys(api)).toContain(CONFIGURATION_REGISTRATION);
+		expect(Reflect.ownKeys(api)).toContain(CONFIGURATION_API);
 	});
 
 	it('combines multiple contributions for one configuration into one runtime value', async () => {
 		const module = createConfigurationModule();
-		const promptPrefix = new Configuration<string, string>({
+		const promptPrefix = new ConfigurationProvider<string, string>({
 			name: 'promptPrefix',
 			combine: (values) => values.join('\n'),
 		});
@@ -50,13 +51,13 @@ describe('createConfigurationModule', () => {
 		await runtime.dispose();
 	});
 
-	it('keeps configurations with the same name distinct by id', async () => {
+	it('keeps providers with the same configuration name distinct by identity', async () => {
 		const module = createConfigurationModule();
-		const first = new Configuration<string, string>({
+		const first = new ConfigurationProvider<string, string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'light',
 		});
-		const second = new Configuration<string, string>({
+		const second = new ConfigurationProvider<string, string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'light',
 		});
@@ -77,7 +78,7 @@ describe('createConfigurationModule', () => {
 
 	it('uses combine with an empty input list for configurations without contributions', async () => {
 		const module = createConfigurationModule();
-		const score = new Configuration<number, number>({
+		const score = new ConfigurationProvider<number, number>({
 			name: 'score',
 			combine: (values) => values.reduce((sum, value) => sum + value, 0),
 		});
@@ -92,13 +93,37 @@ describe('createConfigurationModule', () => {
 		await runtime.dispose();
 	});
 
+	it('uses the provider construction-time configuration after the original object mutates', async () => {
+		const module = createConfigurationModule();
+		const configuration = {
+			name: 'score',
+			combine: (values: readonly number[]) =>
+				values.reduce((sum, value) => sum + value, 0),
+		};
+		const score = new ConfigurationProvider<number, number>(configuration);
+
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			(api) => {
+				score.of(1)(api);
+				score.of(2)(api);
+			},
+		);
+		configuration.name = 'mutated';
+		configuration.combine = () => 999;
+
+		expect(runtime.getConfig(score)).toBe(3);
+		await runtime.dispose();
+	});
+
 	it('resolves computed configuration values from declared dependencies', async () => {
 		const module = createConfigurationModule();
-		const account = new Configuration<'free' | 'premium'>({
+		const account = new ConfigurationProvider<'free' | 'premium'>({
 			name: 'account',
 			combine: (values) => values.at(-1) ?? 'free',
 		});
-		const maxPdfPages = new Configuration<number>({
+		const maxPdfPages = new ConfigurationProvider<number>({
 			name: 'maxPdfPages',
 			combine: (values) => values.at(-1) ?? 10,
 		});
@@ -120,11 +145,11 @@ describe('createConfigurationModule', () => {
 
 	it('rejects declared computed dependency cycles during compile', async () => {
 		const module = createConfigurationModule();
-		const first = new Configuration<number>({
+		const first = new ConfigurationProvider<number>({
 			name: 'first',
 			combine: (values) => values.at(-1) ?? 0,
 		});
-		const second = new Configuration<number>({
+		const second = new ConfigurationProvider<number>({
 			name: 'second',
 			combine: (values) => values.at(-1) ?? 0,
 		});
@@ -134,8 +159,6 @@ describe('createConfigurationModule', () => {
 				first.compute([second], ({ getConfig }) => getConfig(second) + 1)(api);
 				second.compute([first], ({ getConfig }) => getConfig(first) + 1)(api);
 			}),
-		).rejects.toThrow(
-			'Circular configuration computation: first -> second -> first',
-		);
+		).rejects.toThrow(ConfigurationCycleError);
 	});
 });
