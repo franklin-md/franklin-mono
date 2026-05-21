@@ -8,9 +8,7 @@ import {
 import {
 	buildPromptWaterfall,
 	buildToolExecuteMiddleware,
-	hasAnyStreamObserver,
 	hasAnyToolObserver,
-	type StreamObservers,
 	type ToolObservers,
 } from './builders/index.js';
 import type { FullMiddleware } from './types.js';
@@ -21,12 +19,6 @@ export function buildMiddleware<Runtime extends BaseRuntime>(
 ): FullMiddleware {
 	const cancel = bindRegisteredEventHandlers(registrations, 'cancel', getCtx);
 	const prompt = bindRegisteredEventHandlers(registrations, 'prompt', getCtx);
-	const streamObs: StreamObservers = {
-		turnStart: bindRegisteredEventHandlers(registrations, 'turnStart', getCtx),
-		chunk: bindRegisteredEventHandlers(registrations, 'chunk', getCtx),
-		update: bindRegisteredEventHandlers(registrations, 'update', getCtx),
-		turnEnd: bindRegisteredEventHandlers(registrations, 'turnEnd', getCtx),
-	};
 	const toolObs: ToolObservers = {
 		toolCall: bindRegisteredEventHandlers(registrations, 'toolCall', getCtx),
 		toolResult: bindRegisteredEventHandlers(
@@ -48,8 +40,8 @@ export function buildMiddleware<Runtime extends BaseRuntime>(
 		client.cancel = buildWaterfall(cancel);
 	}
 
-	if (prompt.length > 0 || hasAnyStreamObserver(streamObs)) {
-		client.prompt = buildPromptWaterfall(prompt, streamObs);
+	if (prompt.length > 0) {
+		client.prompt = buildPromptWaterfall(prompt);
 	}
 
 	const server: FullMiddleware['server'] = {

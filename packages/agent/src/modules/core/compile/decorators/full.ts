@@ -2,6 +2,11 @@ import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type { CoreSignature } from '../../api/api.js';
 import { bindRegisteredEventHandlers } from '../registrations/index.js';
 import type { CoreResources } from '../resources.js';
+import {
+	buildAgentStreamObservers,
+	createAgentObserverDecorator,
+	hasAnyAgentStreamObserver,
+} from './agent-observer/index.js';
 import { compose } from './compose.js';
 import {
 	buildMiddleware,
@@ -31,6 +36,11 @@ export function createAgentDecorator<Runtime extends BaseRuntime>(
 	const stack: ProtocolDecorator[] = [];
 
 	stack.push(createMiddlewareDecorator(buildMiddleware(registrations, getCtx)));
+
+	const agentObservers = buildAgentStreamObservers(registrations, getCtx);
+	if (hasAnyAgentStreamObserver(agentObservers)) {
+		stack.push(createAgentObserverDecorator(agentObservers));
+	}
 
 	const systemPromptHandlers = bindRegisteredEventHandlers(
 		registrations,

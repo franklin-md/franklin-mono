@@ -1,8 +1,4 @@
-export {
-	buildPromptWaterfall,
-	hasAnyStreamObserver,
-} from './prompt-waterfall.js';
-export type { StreamObservers } from './prompt-waterfall.js';
+export { buildPromptWaterfall } from './prompt-waterfall.js';
 export {
 	buildToolExecuteMiddleware,
 	hasAnyToolObserver,
