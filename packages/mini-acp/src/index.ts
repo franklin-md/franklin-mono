@@ -19,7 +19,6 @@ export type {
 	// Context
 	Context,
 	ContextPatch,
-	History,
 	LLMConfig,
 	ThinkingLevel,
 	// Tools
