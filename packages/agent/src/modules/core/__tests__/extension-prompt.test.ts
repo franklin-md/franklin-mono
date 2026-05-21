@@ -3,6 +3,7 @@ import type {
 	TextContent,
 	UserMessage,
 } from '@franklin/mini-acp';
+import { priority } from '@franklin/extensibility';
 import { describe, expect, it } from 'vitest';
 import { createCoreScenario, runCoreScenario } from '../../../testing/index.js';
 
@@ -123,6 +124,26 @@ describe('core extension system prompt handlers', () => {
 		});
 
 		expect(context.history.systemPrompt).toBe('first\n\nsecond');
+	});
+
+	it('composes system prompt handlers in priority order', async () => {
+		const { context } = await runCoreScenario({
+			extensions: [
+				(api) => {
+					api.on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart('normal');
+					});
+					priority.high(api).on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart('high');
+					});
+					priority.low(api).on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart('low');
+					});
+				},
+			],
+		});
+
+		expect(context.history.systemPrompt).toBe('high\n\nnormal\n\nlow');
 	});
 
 	it('does not resend the system prompt when handlers produce the same result', async () => {
