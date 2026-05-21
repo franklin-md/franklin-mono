@@ -55,7 +55,7 @@ function createSystemPromptClientDecorator(
 					const assembled = await assembler.assemble();
 					if (assembled !== lastSent) {
 						await c.setContext({
-							history: { systemPrompt: assembled },
+							systemPrompt: assembled,
 						});
 						lastSent = assembled;
 					}
