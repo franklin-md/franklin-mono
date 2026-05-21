@@ -120,6 +120,33 @@ describe('core runtime protocol state', () => {
 		}
 	});
 
+	it('exposes the session snapshot on the runtime', async () => {
+		const scenario = await createCoreScenario({
+			state: {
+				core: {
+					messages: [],
+					llmConfig: {
+						model: 'seed-model',
+						provider: 'seed-provider',
+					},
+					usage: ZERO_USAGE,
+				},
+			},
+		});
+
+		try {
+			expect(scenario.runtime.getSession().llmConfig).toMatchObject({
+				model: 'seed-model',
+				provider: 'seed-provider',
+			});
+			expect(scenario.runtime.getSession()).toEqual(
+				(await scenario.state()).core,
+			);
+		} finally {
+			await scenario.dispose();
+		}
+	});
+
 	it('tracks conversation messages after a prompt', async () => {
 		const scenario = await createCoreScenario({ turns: [assistantTurn] });
 

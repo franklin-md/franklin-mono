@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { coreStateHandle, inspectRuntime } from '@franklin/agent';
+import { inspectRuntime } from '@franklin/agent';
 import { useAgent } from '@franklin/react';
 import { Bug, Check } from 'lucide-react';
 
@@ -28,7 +28,7 @@ export function InspectDumpButton({
 	const handleClick = useCallback(() => {
 		if (copied) return;
 
-		void inspectRuntime(runtime, coreStateHandle(runtime))
+		void inspectRuntime(runtime)
 			.then((dump) =>
 				navigator.clipboard.writeText(JSON.stringify(dump, null, 2)),
 			)

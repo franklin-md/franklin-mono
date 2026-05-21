@@ -6,19 +6,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InspectDumpButton } from '../../src/components/inspect-dump-button.js';
 
 const runtime = { __marker: 'runtime' as const };
-const stateHandle = { __marker: 'state-handle' as const };
 const useAgent = vi.fn(() => runtime);
-const inspectRuntime =
-	vi.fn<(arg: unknown, state: unknown) => Promise<unknown>>();
-const coreStateHandle = vi.fn((_arg: unknown) => stateHandle);
+const inspectRuntime = vi.fn<(arg: unknown) => Promise<unknown>>();
 
 vi.mock('@franklin/react', () => ({
 	useAgent: () => useAgent(),
 }));
 
 vi.mock('@franklin/agent', () => ({
-	inspectRuntime: (arg: unknown, state: unknown) => inspectRuntime(arg, state),
-	coreStateHandle: (arg: unknown) => coreStateHandle(arg),
+	inspectRuntime: (arg: unknown) => inspectRuntime(arg),
 }));
 
 describe('InspectDumpButton', () => {
@@ -27,7 +23,6 @@ describe('InspectDumpButton', () => {
 	beforeEach(() => {
 		inspectRuntime.mockReset();
 		useAgent.mockClear();
-		coreStateHandle.mockClear();
 		vi.restoreAllMocks();
 		writeText = vi.fn().mockResolvedValue(undefined);
 		Object.defineProperty(navigator, 'clipboard', {
@@ -51,7 +46,7 @@ describe('InspectDumpButton', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Copy inspect dump' }));
 
 		await waitFor(() => {
-			expect(inspectRuntime).toHaveBeenCalledWith(runtime, stateHandle);
+			expect(inspectRuntime).toHaveBeenCalledWith(runtime);
 			expect(writeText).toHaveBeenCalledWith(JSON.stringify(dump, null, 2));
 		});
 		expect(onCopied).toHaveBeenCalledTimes(1);

@@ -1,16 +1,18 @@
 import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type { MiniACPClient } from '@franklin/mini-acp';
 import type { CoreSignature } from '../../../api/api.js';
+import type { RuntimeAgentState } from '../../../agent-state/index.js';
 import type { ProtocolDecorator } from '../types.js';
 import { createPromptBuilder } from './build-prompt/index.js';
 import { createPromptObserver } from './observer/index.js';
 import { createSystemPromptSync } from './system-prompt/index.js';
 
 export function createPromptDecorator<Runtime extends BaseRuntime>(
+	agentState: Pick<RuntimeAgentState, 'systemPrompt'>,
 	registrations: RegistryView<CoreSignature, Runtime>,
 	getRuntime: () => Runtime,
 ): ProtocolDecorator {
-	const syncSystemPrompt = createSystemPromptSync(registrations, getRuntime);
+	const syncSystemPrompt = createSystemPromptSync(agentState);
 	const buildPrompt = createPromptBuilder(registrations, getRuntime);
 	const observePrompt = createPromptObserver(registrations, getRuntime);
 

@@ -1,38 +1,22 @@
-import type { ContextTracker } from '@franklin/mini-acp/session';
-import type { StateHandle } from '@franklin/extensibility';
-import type { CoreState, SessionSnapshot } from '../state.js';
+import type { RuntimeAgentState } from '../agent-state/index.js';
+import { attachRuntimeAgentState } from './agent-state.js';
 import { createClientRuntime } from './from-client.js';
-import { CORE_STATE, type AgentClient, type CoreRuntime } from './types.js';
+import type { AgentClient, CoreRuntime } from './types.js';
 
 type CreateCoreRuntimeInput = {
 	readonly client: AgentClient;
-	readonly tracker: ContextTracker;
-	readonly state: StateHandle<SessionSnapshot>;
+	readonly agentState: RuntimeAgentState;
 };
 
 export function createCoreRuntime({
 	client,
-	tracker,
-	state,
+	agentState,
 }: CreateCoreRuntimeInput): CoreRuntime {
-	return {
-		...createClientRuntime(client),
-		context: () => tracker.get(),
-		[CORE_STATE]: state,
-	};
-}
-
-function sessionSnapshotHandle(
-	runtime: CoreRuntime,
-): StateHandle<SessionSnapshot> {
-	return runtime[CORE_STATE];
-}
-
-export function coreStateHandle(runtime: CoreRuntime): StateHandle<CoreState> {
-	const handle = sessionSnapshotHandle(runtime);
-	return {
-		get: async () => ({ core: await handle.get() }),
-		fork: async () => ({ core: await handle.fork() }),
-		child: async () => ({ core: await handle.child() }),
-	};
+	return attachRuntimeAgentState(
+		{
+			...createClientRuntime(client),
+			getSession: () => agentState.getSnapshot(),
+		},
+		agentState,
+	);
 }

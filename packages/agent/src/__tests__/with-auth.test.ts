@@ -1,10 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { CoreRuntime, CoreState } from '../modules/core/index.js';
-import {
-	coreStateHandle,
-	createCoreStateModule,
-} from '../modules/core/index.js';
+import { createCoreStateModule } from '../modules/core/index.js';
 import { createRuntime } from '../testing/index.js';
+import { getRuntimeAgentState } from '../modules/core/runtime/agent-state.js';
 import {
 	StopCode,
 	type MiniACPConnector,
@@ -226,8 +224,7 @@ describe('withAuth', () => {
 		expect(auth.getApiKey).toHaveBeenCalledWith('openai-codex');
 
 		// Verify the runtime now has the new provider's config
-		const state = await coreStateHandle(runtime).get();
-		expect(state.core.llmConfig.provider).toBe('openai-codex');
+		expect(runtime.getSession().llmConfig.provider).toBe('openai-codex');
 	});
 
 	it('does not resolve auth when provider is unchanged', async () => {
@@ -318,9 +315,10 @@ describe('withAuth', () => {
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('openrouter');
 
-		const state = await coreStateHandle(runtime).get();
-		expect(state.core.llmConfig.provider).toBe('openrouter');
-		expect(runtime.context().config.apiKey).toBeUndefined();
+		expect(runtime.getSession().llmConfig.provider).toBe('openrouter');
+		expect(
+			getRuntimeAgentState(runtime).getAgentContext().config.apiKey,
+		).toBeUndefined();
 	});
 
 	it('still applies provider/model when auth resolution throws (FRA-246)', async () => {
@@ -358,10 +356,11 @@ describe('withAuth', () => {
 			model: 'claude-sonnet-4-6',
 		});
 
-		const state = await coreStateHandle(runtime).get();
-		expect(state.core.llmConfig.provider).toBe('anthropic');
-		expect(state.core.llmConfig.model).toBe('claude-sonnet-4-6');
-		expect(runtime.context().config.apiKey).toBeUndefined();
+		expect(runtime.getSession().llmConfig.provider).toBe('anthropic');
+		expect(runtime.getSession().llmConfig.model).toBe('claude-sonnet-4-6');
+		expect(
+			getRuntimeAgentState(runtime).getAgentContext().config.apiKey,
+		).toBeUndefined();
 	});
 });
 
