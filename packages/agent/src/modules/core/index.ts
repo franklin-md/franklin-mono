@@ -4,5 +4,5 @@ export { createCoreModule, createCoreStateModule } from './module.js';
 export type { CoreState, SessionSnapshot } from './state.js';
 export { emptyCoreState, emptySessionSnapshot } from './state.js';
 export type { CoreRuntime } from './runtime/index.js';
-export { coreStateHandle } from './runtime/index.js';
+export type { Session } from './session/index.js';
 export { inspectRuntime } from './inspect.js';

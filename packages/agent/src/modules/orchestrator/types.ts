@@ -55,8 +55,8 @@ export type OrchestratorHandle<Runtime extends BaseRuntime, State = unknown> = {
  * `InferRuntime<OrchestratorModule<[M]>>`) so dts emission can reference it by
  * name. Going through `Modules`/`CombineModules` would route through
  * `Simplify<CombinedRuntime<…>>`, which forces TypeScript to enumerate keys
- * at write-time and inlines the runtime's `unique symbol` keys (CORE_STATE,
- * ENV_STATE, …) into every downstream consumer's declaration file.
+ * at write-time and inlines the runtime's `unique symbol` keys (ENV_STATE,
+ * STORE_MAPPING, …) into every downstream consumer's declaration file.
  *
  * TODO: Replace symbol-backed runtime state handles with a uniform module-local
  * state registry so this type can be inferred from `OrchestratorModule`.

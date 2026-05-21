@@ -1,38 +1,18 @@
-import type { ContextTracker } from '@franklin/mini-acp/session';
-import type { StateHandle } from '@franklin/extensibility';
-import type { CoreState, SessionSnapshot } from '../state.js';
+import type { Session } from '../session/index.js';
 import { createClientRuntime } from './from-client.js';
-import { CORE_STATE, type AgentClient, type CoreRuntime } from './types.js';
+import type { AgentClient, CoreRuntime } from './types.js';
 
 type CreateCoreRuntimeInput = {
 	readonly client: AgentClient;
-	readonly tracker: ContextTracker;
-	readonly state: StateHandle<SessionSnapshot>;
+	readonly session: Session;
 };
 
 export function createCoreRuntime({
 	client,
-	tracker,
-	state,
+	session,
 }: CreateCoreRuntimeInput): CoreRuntime {
 	return {
 		...createClientRuntime(client),
-		context: () => tracker.get(),
-		[CORE_STATE]: state,
-	};
-}
-
-function sessionSnapshotHandle(
-	runtime: CoreRuntime,
-): StateHandle<SessionSnapshot> {
-	return runtime[CORE_STATE];
-}
-
-export function coreStateHandle(runtime: CoreRuntime): StateHandle<CoreState> {
-	const handle = sessionSnapshotHandle(runtime);
-	return {
-		get: async () => ({ core: await handle.get() }),
-		fork: async () => ({ core: await handle.fork() }),
-		child: async () => ({ core: await handle.child() }),
+		session,
 	};
 }

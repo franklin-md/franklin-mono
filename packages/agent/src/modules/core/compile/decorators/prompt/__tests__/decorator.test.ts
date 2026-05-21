@@ -7,10 +7,13 @@ import type {
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { createPromptDecorator } from '../decorator.js';
+import { createSession } from '../../../../session/index.js';
+import { emptySessionSnapshot } from '../../../../state.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
+import type { MutableSession } from '../../../../session/index.js';
 
 const runtime = createTestRuntime();
 
@@ -35,11 +38,16 @@ function text(message: UserMessage): string {
 		.join('');
 }
 
-function stubClient(calls: string[]): MiniACPClient {
+function createTestSession(): MutableSession {
+	return createSession(emptySessionSnapshot());
+}
+
+function stubClient(calls: string[], session?: MutableSession): MiniACPClient {
 	return {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async (patch: ContextPatch) => {
 			calls.push(`setContext:${patch.systemPrompt ?? ''}`);
+			session?.apply(patch);
 		}),
 		prompt: vi.fn(async function* (message: UserMessage) {
 			calls.push(`client.prompt:${text(message)}`);
@@ -52,6 +60,7 @@ function stubClient(calls: string[]): MiniACPClient {
 describe('createPromptDecorator', () => {
 	it('returns a pass-through decorator when no prompt-time handlers are registered', async () => {
 		const decorator = createPromptDecorator(
+			createTestSession(),
 			createCoreRegistry(),
 			() => runtime,
 		);
@@ -83,9 +92,14 @@ describe('createPromptDecorator', () => {
 				observed.push(event);
 			});
 		});
-		const decorator = createPromptDecorator(registrations, () => runtime);
+		const session = createTestSession();
+		const decorator = createPromptDecorator(
+			session,
+			registrations,
+			() => runtime,
+		);
 
-		const base = stubClient(calls);
+		const base = stubClient(calls, session);
 		const client = await decorator.client(base);
 		const returned: StreamEvent[] = [];
 		for await (const event of client.prompt(userMessage)) returned.push(event);
@@ -112,9 +126,14 @@ describe('createPromptDecorator', () => {
 				prompt.appendContent({ type: 'text', text: ' rebuilt' });
 			});
 		});
-		const decorator = createPromptDecorator(registrations, () => runtime);
+		const session = createTestSession();
+		const decorator = createPromptDecorator(
+			session,
+			registrations,
+			() => runtime,
+		);
 
-		const base = stubClient(calls);
+		const base = stubClient(calls, session);
 		const client = await decorator.client(base);
 		for await (const _event of client.prompt(userMessage)) {
 			// Drain the stream so the prompt flow runs.
@@ -135,6 +154,7 @@ describe('createPromptDecorator', () => {
 
 	it('leaves the server side unchanged', async () => {
 		const decorator = createPromptDecorator(
+			createTestSession(),
 			createCoreRegistry((api) => {
 				api.on('prompt', () => {});
 			}),

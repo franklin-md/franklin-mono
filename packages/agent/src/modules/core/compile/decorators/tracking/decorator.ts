@@ -4,22 +4,22 @@ import {
 	trackClient,
 	trackUsage,
 } from '@franklin/mini-acp/session';
-import type { CoreResources } from '../../resources.js';
+import type { MutableSession } from '../../../session/index.js';
 import type { ProtocolDecorator } from '../types.js';
 
 export function createTrackingDecorator(
-	resources: Pick<CoreResources, 'tracker' | 'usageTracker'>,
+	session: MutableSession,
 ): ProtocolDecorator {
 	return {
 		name: 'tracking',
 		async server(s) {
-			return trackAgent(resources.tracker, s);
+			return trackAgent(session.contextTracker, s);
 		},
 		async client(c) {
 			const usageTracked = decorateTurn(c, (turn) =>
-				trackUsage(resources.usageTracker, turn),
+				trackUsage(session.usageTracker, turn),
 			);
-			return trackClient(resources.tracker, usageTracked);
+			return trackClient(session.contextTracker, usageTracked);
 		},
 	};
 }

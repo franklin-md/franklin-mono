@@ -1,34 +1,20 @@
 import type { Simplify } from '@franklin/lib';
 import type { Context } from '@franklin/mini-acp';
-import type { StateHandle } from '@franklin/extensibility';
 import type { CoreRuntime } from './runtime/index.js';
-import type { CoreState } from './state.js';
 
-type InspectDump<S extends CoreState> = Simplify<
-	Omit<S, 'core'> & { core: Context }
->;
+type InspectDump = Simplify<{ core: Context }>;
 
 /**
- * Debug/inspection dump of a runtime: its full persistable state with the
- * `core` slot replaced by the live `Context` snapshot (systemPrompt, tools, and
- * config shape — fields that the state projection drops because they're
- * recomputed on fork). The copied config is redacted so inspect dumps never
- * expose the live provider API key. Produces one "truth" document for the
- * debug UI.
- *
- * Caller supplies the state projection — typically `module.state(runtime)`
- * for the combined module, so the dump reflects every slot the runtime
- * was built with. Core-only callers can pass `coreStateHandle(runtime)`.
+ * Debug/inspection dump of a core runtime. The dump uses the live Mini-ACP
+ * `Context` because inspect needs runtime-only fields such as systemPrompt and
+ * tools, but the config is redacted so API keys never leave the runtime.
  */
-export async function inspectRuntime<S extends CoreState>(
+export async function inspectRuntime(
 	runtime: CoreRuntime,
-	state: StateHandle<S>,
-): Promise<InspectDump<S>> {
-	const snapshot = await state.get();
+): Promise<InspectDump> {
 	return {
-		...snapshot,
-		core: redactInspectContext(runtime.context()),
-	} as InspectDump<S>;
+		core: redactInspectContext(runtime.session.context()),
+	};
 }
 
 function redactInspectContext(context: Context): Context {

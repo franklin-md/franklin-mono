@@ -51,7 +51,9 @@ export type CoreRegisterToolRegistration<
  * to a concrete runtime.
  */
 export interface CoreAPI<R extends BaseRuntime> {
+	// TODO: We should split this into 'modifyPrompt' and 'on'
 	on(event: 'prompt', handler: CoreEventHandlers<R>['prompt']): void;
+	// TODO: We should rename this to 'modifySystemPrompt'
 	on(
 		event: 'systemPrompt',
 		handler: CoreEventHandlers<R>['systemPrompt'],

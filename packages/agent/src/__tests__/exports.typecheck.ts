@@ -28,6 +28,8 @@ import { createEnvironmentRuntime as _RootCreateEnvironmentRuntime } from '../in
 import { createStoreRuntime as _RootCreateStoreRuntime } from '../index.js';
 // @ts-expect-error runtime state-handle projections are internal module plumbing.
 import { storeStateHandle as _RootStoreStateHandle } from '../index.js';
+// @ts-expect-error core runtime session state is exposed through runtime.session.
+import { coreStateHandle as _RootCoreStateHandle } from '../index.js';
 // @ts-expect-error core compiler constructors are internal module plumbing.
 import { createCoreCompiler as _RootCreateCoreCompiler } from '../index.js';
 // @ts-expect-error core tool serialization is internal compiler plumbing.
@@ -83,6 +85,7 @@ void _RootStoreMapping;
 void _RootCreateEnvironmentRuntime;
 void _RootCreateStoreRuntime;
 void _RootStoreStateHandle;
+void _RootCoreStateHandle;
 void _RootCreateCoreCompiler;
 void _RootSerializeTool;
 void _RootToToolInputSchema;

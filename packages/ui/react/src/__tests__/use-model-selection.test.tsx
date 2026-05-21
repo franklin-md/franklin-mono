@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 
 import type { FranklinRuntime } from '@franklin/agent';
 import type { CoreEvent } from '@franklin/agent';
-import { CORE_STATE } from '@franklin/agent/testing';
 import { ZERO_USAGE, type ThinkingLevel } from '@franklin/mini-acp';
 
 import { AgentProvider } from '../agent/agent-context.js';
@@ -33,18 +32,14 @@ function makeMockRuntime(opts?: {
 	const listeners = new Set<CoreEventListener>();
 
 	const runtime = {
-		[CORE_STATE]: {
-			get: vi.fn(async () => ({
+		session: {
+			context: vi.fn(() => ({
+				systemPrompt: '',
 				messages: [],
-				llmConfig: { provider, model, reasoning },
-				usage: ZERO_USAGE,
+				tools: [],
+				config: { provider, model, reasoning },
 			})),
-			fork: vi.fn(async () => ({
-				messages: [],
-				llmConfig: { provider, model, reasoning },
-				usage: ZERO_USAGE,
-			})),
-			child: vi.fn(async () => ({
+			getSnapshot: vi.fn(() => ({
 				messages: [],
 				llmConfig: { provider, model, reasoning },
 				usage: ZERO_USAGE,

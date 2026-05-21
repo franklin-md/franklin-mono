@@ -1,25 +1,26 @@
 import type { MiniACPAgent, MiniACPClient, Usage } from '@franklin/mini-acp';
-import { StopCode } from '@franklin/mini-acp';
-import { ContextTracker, UsageTracker } from '@franklin/mini-acp/session';
+import { StopCode, ZERO_USAGE } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { createTrackingDecorator } from '../decorator.js';
+import { createSession } from '../../../../session/index.js';
 
 const turnUsage = {
 	tokens: { input: 2, output: 3, cacheRead: 0, cacheWrite: 0, total: 5 },
 	cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 } satisfies Usage;
 
-function createResources() {
-	return {
-		tracker: new ContextTracker(),
-		usageTracker: new UsageTracker(),
-	};
+function createTestSession() {
+	return createSession({
+		messages: [],
+		llmConfig: {},
+		usage: ZERO_USAGE,
+	});
 }
 
 describe('createTrackingDecorator', () => {
 	it('tracks tool calls and tool results on the server side', async () => {
-		const resources = createResources();
-		const decorator = createTrackingDecorator(resources);
+		const session = createTestSession();
+		const decorator = createTrackingDecorator(session);
 		const toolExecute: MiniACPAgent['toolExecute'] = async ({ call }) => ({
 			toolCallId: call.id,
 			content: [{ type: 'text', text: 'ok' }],
@@ -38,7 +39,7 @@ describe('createTrackingDecorator', () => {
 			},
 		});
 
-		expect(resources.tracker.get().messages).toEqual([
+		expect(session.context().messages).toEqual([
 			{
 				role: 'assistant',
 				content: [
@@ -59,8 +60,8 @@ describe('createTrackingDecorator', () => {
 	});
 
 	it('tracks client context, messages, and usage in one wrapper', async () => {
-		const resources = createResources();
-		const decorator = createTrackingDecorator(resources);
+		const session = createTestSession();
+		const decorator = createTrackingDecorator(session);
 		const client: MiniACPClient = {
 			initialize: vi.fn(async () => {}),
 			setContext: vi.fn(async () => {}),
@@ -91,11 +92,11 @@ describe('createTrackingDecorator', () => {
 			// Drain the stream so tracking callbacks run.
 		}
 
-		expect(resources.tracker.get().systemPrompt).toBe('rules');
-		expect(resources.tracker.get().messages).toEqual([
+		expect(session.context().systemPrompt).toBe('rules');
+		expect(session.context().messages).toEqual([
 			{ role: 'user', content: [{ type: 'text', text: 'hi' }] },
 			{ role: 'assistant', content: [{ type: 'text', text: 'hello' }] },
 		]);
-		expect(resources.usageTracker.get()).toEqual(turnUsage);
+		expect(session.getSnapshot().usage).toEqual(turnUsage);
 	});
 });

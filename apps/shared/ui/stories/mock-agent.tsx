@@ -12,7 +12,6 @@ import type {
 	RuntimeEntry,
 } from '@franklin/agent';
 import { conversationExtension } from '@franklin/agent';
-import { CORE_STATE } from '@franklin/agent/testing';
 import type { LLMConfig, ThinkingLevel } from '@franklin/mini-acp';
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import {
@@ -78,18 +77,14 @@ export function createMockRuntime(opts?: {
 	);
 
 	return {
-		[CORE_STATE]: {
-			get: async () => ({
+		session: {
+			context: () => ({
+				systemPrompt: '',
 				messages: [],
-				llmConfig: { ...llmConfig },
-				usage: ZERO_USAGE,
+				tools: [],
+				config: { ...llmConfig },
 			}),
-			fork: async () => ({
-				messages: [],
-				llmConfig: { ...llmConfig },
-				usage: ZERO_USAGE,
-			}),
-			child: async () => ({
+			getSnapshot: () => ({
 				messages: [],
 				llmConfig: { ...llmConfig },
 				usage: ZERO_USAGE,

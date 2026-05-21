@@ -6,7 +6,6 @@ import type {
 } from '../modules/core/index.js';
 import { applyStep } from '@franklin/extensibility';
 import { liftCompilerTransform as liftStateCompilerTransform } from '../modules/state/index.js';
-import { coreStateHandle } from '../modules/core/index.js';
 import type { AuthManager } from './manager.js';
 
 /**
@@ -49,7 +48,8 @@ function createAuthCompilerTransform(auth: AuthManager) {
 			// Install setLLMConfig wrapper to auto-resolve auth when provider is set.
 			const originalSetLLMConfig = runtime.setLLMConfig.bind(runtime);
 			runtime.setLLMConfig = async (config) => {
-				const currentProvider = runtime.context().config.provider;
+				const currentProvider =
+					runtime.session.getSnapshot().llmConfig.provider;
 				const nextProvider = config.provider;
 				const providerChanged =
 					nextProvider !== undefined && nextProvider !== currentProvider;
@@ -77,11 +77,11 @@ function createAuthCompilerTransform(auth: AuthManager) {
 			await reconnectAgent(runtime, state, auth);
 
 			// Live credential sync pushes new keys when this runtime's provider changes.
-			const handle = coreStateHandle(runtime);
 			const unsubscribe = auth.onAuthChange((provider) => {
 				void (async () => {
-					const currentState = await handle.get();
-					if (currentState.core.llmConfig.provider !== provider) return;
+					if (runtime.session.getSnapshot().llmConfig.provider !== provider) {
+						return;
+					}
 					await authenticateAgent(runtime, provider, auth);
 				})();
 			});

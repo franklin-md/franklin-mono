@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { Context } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
 import type { CoreRuntime } from '../runtime/index.js';
-import type { StateHandle } from '@franklin/extensibility';
-import type { CoreState } from '../state.js';
+import { emptySessionSnapshot } from '../state.js';
+import { createSession } from '../session/index.js';
 
 function stubRuntime(context: Context): CoreRuntime {
+	const session = createSession(emptySessionSnapshot());
+	session.apply(context);
 	return {
-		context: () => context,
+		session,
 		dispose: async () => {},
 		prompt: () => {
 			throw new Error('not used');
@@ -15,14 +17,6 @@ function stubRuntime(context: Context): CoreRuntime {
 		cancel: async () => {},
 		setLLMConfig: async () => {},
 	} as unknown as CoreRuntime;
-}
-
-function stubState<S extends CoreState>(state: S): StateHandle<S> {
-	return {
-		get: async () => state,
-		fork: async () => ({}) as never,
-		child: async () => ({}) as never,
-	};
 }
 
 describe('inspectRuntime', () => {
@@ -40,12 +34,7 @@ describe('inspectRuntime', () => {
 			config: { model: 'test-model', provider: 'test-provider' },
 		};
 
-		const dump = await inspectRuntime(
-			stubRuntime(context),
-			stubState({
-				core: { messages: [], llmConfig: {} },
-			} as unknown as CoreState),
-		);
+		const dump = await inspectRuntime(stubRuntime(context));
 
 		expect(dump.core).toEqual(context);
 	});
@@ -63,12 +52,7 @@ describe('inspectRuntime', () => {
 			},
 		};
 
-		const dump = await inspectRuntime(
-			stubRuntime(context),
-			stubState({
-				core: { messages: [], llmConfig: {} },
-			} as unknown as CoreState),
-		);
+		const dump = await inspectRuntime(stubRuntime(context));
 
 		expect(dump.core.config).toEqual({
 			model: 'test-model',
@@ -78,7 +62,7 @@ describe('inspectRuntime', () => {
 		expect('apiKey' in dump.core.config).toBe(false);
 	});
 
-	it('preserves sibling state slots alongside the replaced core slot', async () => {
+	it('returns only the core inspection payload', async () => {
 		const context: Context = {
 			systemPrompt: '',
 			messages: [],
@@ -86,19 +70,8 @@ describe('inspectRuntime', () => {
 			config: {},
 		};
 
-		const dump = await inspectRuntime(
-			stubRuntime(context),
-			stubState({
-				core: { messages: [], llmConfig: {} },
-				todos: { items: ['a', 'b'] },
-				status: { state: 'idle' },
-			} as unknown as CoreState),
-		);
-
-		expect(dump).toMatchObject({
+		await expect(inspectRuntime(stubRuntime(context))).resolves.toEqual({
 			core: context,
-			todos: { items: ['a', 'b'] },
-			status: { state: 'idle' },
 		});
 	});
 });
