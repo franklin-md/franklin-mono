@@ -1,20 +1,35 @@
+import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type { Context, LLMConfig, Message, Usage } from '@franklin/mini-acp';
 import { ContextTracker, UsageTracker } from '@franklin/mini-acp/session';
+import type { CoreSignature } from '../api/api.js';
 import type { SessionSnapshot } from '../state.js';
+import { createSystemPromptBuilder } from './system-prompt.js';
 import type { RuntimeAgentState } from './types.js';
 
 type LLMConfigSnapshot = SessionSnapshot['llmConfig'];
 
-export function createRuntimeAgentState(
-	snapshot: SessionSnapshot,
+type CreateRuntimeAgentStateInput<Runtime extends BaseRuntime> = {
+	readonly snapshot: SessionSnapshot;
+	readonly registrations: RegistryView<CoreSignature, Runtime>;
+	readonly getRuntime: () => Runtime;
+};
+
+export function createRuntimeAgentState<Runtime extends BaseRuntime>(
+	input: CreateRuntimeAgentStateInput<Runtime>,
 ): RuntimeAgentState {
 	const context = new ContextTracker();
-	context.apply(createContext(snapshot));
+	context.apply(createContext(input.snapshot));
 	const usage = new UsageTracker();
-	usage.add(snapshot.usage);
+	usage.add(input.snapshot.usage);
+	const systemPrompt = createSystemPromptBuilder({
+		registrations: input.registrations,
+		getRuntime: input.getRuntime,
+		getLastSentSystemPrompt: () => context.get().systemPrompt,
+	});
 
 	return {
 		contextTracker: context,
+		systemPrompt,
 		usageTracker: usage,
 		getAgentContext: () => context.get(),
 		apply(partial) {

@@ -8,15 +8,11 @@ import { createPromptObserver } from './observer/index.js';
 import { createSystemPromptSync } from './system-prompt/index.js';
 
 export function createPromptDecorator<Runtime extends BaseRuntime>(
-	agentState: Pick<RuntimeAgentState, 'getAgentContext'>,
+	agentState: Pick<RuntimeAgentState, 'systemPrompt'>,
 	registrations: RegistryView<CoreSignature, Runtime>,
 	getRuntime: () => Runtime,
 ): ProtocolDecorator {
-	const syncSystemPrompt = createSystemPromptSync(
-		agentState,
-		registrations,
-		getRuntime,
-	);
+	const syncSystemPrompt = createSystemPromptSync(agentState);
 	const buildPrompt = createPromptBuilder(registrations, getRuntime);
 	const observePrompt = createPromptObserver(registrations, getRuntime);
 

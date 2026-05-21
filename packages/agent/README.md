@@ -61,8 +61,11 @@ Each layer wraps the typed Mini-ACP client/server pair after connect, not the ra
 
 The core runtime keeps an internal `RuntimeAgentState` as the live owner of
 prompt-driving state: the last-sent Mini-ACP `Context` and accumulated usage.
-Decorators record `setContext`, prompt messages, assistant updates, tool
-results, and turn usage into this internal state object. The public runtime
+The runtime state also owns the registration-built system prompt builder, so
+prompt decorators only ask whether a freshly assembled prompt differs from the
+tracked Mini-ACP context before sending a patch. Decorators record `setContext`,
+prompt messages, assistant updates, tool results, and turn usage into this
+internal state object. The public runtime
 exposes `getSession()` as a safe projection to `SessionSnapshot` for consumers
 that need the dehydrated session view. The state-module layer uses the same
 projection for persistence, fork, and child-session creation.

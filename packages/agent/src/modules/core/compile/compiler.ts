@@ -20,7 +20,11 @@ export function createCoreCompiler(
 			registry: RegistryView<CoreSignature, ContextRuntime>,
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CoreRuntime> => {
-			const agentState = createRuntimeAgentState(snapshot);
+			const agentState = createRuntimeAgentState({
+				snapshot,
+				registrations: registry,
+				getRuntime,
+			});
 			const decorator = createAgentDecorator(agentState, registry, getRuntime);
 			const serializedTools = registeredTools(registry).map(serializeTool);
 

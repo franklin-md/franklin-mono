@@ -38,8 +38,14 @@ function text(message: UserMessage): string {
 		.join('');
 }
 
-function createTestAgentState(): RuntimeAgentState {
-	return createRuntimeAgentState(emptySessionSnapshot());
+function createTestAgentState(
+	registrations = createCoreRegistry(),
+): RuntimeAgentState {
+	return createRuntimeAgentState({
+		snapshot: emptySessionSnapshot(),
+		registrations,
+		getRuntime: () => runtime,
+	});
 }
 
 function stubClient(
@@ -95,7 +101,7 @@ describe('createPromptDecorator', () => {
 				observed.push(event);
 			});
 		});
-		const agentState = createTestAgentState();
+		const agentState = createTestAgentState(registrations);
 		const decorator = createPromptDecorator(
 			agentState,
 			registrations,
@@ -129,7 +135,7 @@ describe('createPromptDecorator', () => {
 				prompt.appendContent({ type: 'text', text: ' rebuilt' });
 			});
 		});
-		const agentState = createTestAgentState();
+		const agentState = createTestAgentState(registrations);
 		const decorator = createPromptDecorator(
 			agentState,
 			registrations,

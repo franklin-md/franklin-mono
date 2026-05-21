@@ -5,9 +5,17 @@ import { createRuntimeAgentState } from '../agent-state/index.js';
 import { attachRuntimeAgentState } from '../runtime/agent-state.js';
 import type { CoreRuntime } from '../runtime/index.js';
 import { emptySessionSnapshot } from '../state.js';
+import {
+	createCoreRegistry,
+	createTestRuntime,
+} from '../compile/decorators/__tests__/registry.js';
 
 function stubRuntime(context: Context): CoreRuntime {
-	const agentState = createRuntimeAgentState(emptySessionSnapshot());
+	const agentState = createRuntimeAgentState({
+		snapshot: emptySessionSnapshot(),
+		registrations: createCoreRegistry(),
+		getRuntime: createTestRuntime,
+	});
 	agentState.apply(context);
 	return attachRuntimeAgentState(
 		{
