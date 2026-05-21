@@ -6,7 +6,6 @@ export type {
 	SystemPromptContent,
 } from './system-prompt.js';
 export type {
-	CancelHandler,
 	PromptHandler,
 	StreamObserverEvent,
 	StreamObserverHandler,

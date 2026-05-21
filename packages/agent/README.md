@@ -28,14 +28,14 @@ There are three kinds of handles in the system:
                                                        │
                                               ┌────────▼────────┐
                                               │   Extensions /   │
-                                              │   Middleware      │
+                                              │ Decorator Layers  │
                                               └─────────────────┘
 ```
 
 1. **Provision** an environment — prepare the place where agents will run
 2. **Spawn** an agent in that environment — start the process, get back a transport
 3. **Connect** to the agent via the connector — wire up typed Mini-ACP commands and reverse RPC handlers
-  -  **Extend** handling and commands via middleware — intercept ACP calls in both directions to add behavior
+  -  **Extend** handling and events via decorator layers — intercept Mini-ACP flow to add behavior
 
 The caller is responsible for calling `initialize()` and `setContext()` through the client handle. Spawn creates the process and returns the wire; it does not perform Mini-ACP handshaking.
 
@@ -45,16 +45,17 @@ The caller is responsible for calling `initialize()` and `setContext()` through 
 
 The separation between transport and connection is important: transports are composable and bridgeable across process boundaries, while connections are bound endpoints. By keeping the JSON-RPC binding in `@franklin/mini-acp/rpc`, different application frameworks (Electron, web, CLI) can bridge the transport across whatever boundary they need and expose only a functional connector to the extension runtime.
 
-### Middleware
+### Decorator Layers
 
-Middleware intercepts ACP calls in both directions:
+Decorator layers intercept Mini-ACP flow in ordered concerns:
 
-- **Commands** (outbound, app → agent): `initialize`, `newSession`, `prompt`, `cancel`, etc.
-- **Events** (inbound, agent → app): `sessionUpdate`, `requestPermission`, etc.
+- **Prompt** — handles application behavior around `prompt` calls.
+- **Observer** — observes streaming events emitted during a prompt.
+- **Tool** — exposes application tool handlers to the agent.
+- **System prompt** — contributes system-prompt text before the agent sees the prompt.
+- **Tracking** — records prompt and usage information.
 
-Each middleware method is a continuation `(params, next) → result` that can inspect, modify, or short-circuit calls before passing them along. Middleware composes symmetrically — in a composed stack, the outermost middleware sees commands first (before they reach the wire) and events last (after inner middleware has processed them).
-
-Middleware operates at the typed command/event level, after connect. It wraps the `AgentCommands` and event handler interfaces, not the raw transport stream.
+Each layer wraps the typed Mini-ACP client/server pair after connect, not the raw transport stream. Some layers use method middleware internally, but the public core module shape is the ordered decorator stack.
 
 ### Extensions
 

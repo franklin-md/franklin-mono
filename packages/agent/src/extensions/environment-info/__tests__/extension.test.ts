@@ -12,7 +12,7 @@ import type { CoreSignature } from '../../../modules/core/api/api.js';
 import {
 	buildSystemPromptAssembler,
 	type SystemPromptAssembler,
-} from '../../../modules/core/compile/decorators/system-prompt/index.js';
+} from '../../../modules/core/compile/decorators/system-prompt/assembler/index.js';
 import {
 	bindRegisteredEventHandlers,
 	registeredEventHandlers,

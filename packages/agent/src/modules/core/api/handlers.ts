@@ -1,5 +1,4 @@
 import type {
-	MiniACPClient,
 	TurnStart,
 	Chunk,
 	Update,
@@ -13,18 +12,6 @@ import type { Prompt } from './prompt.js';
 import type { SystemPrompt } from './system-prompt.js';
 
 // ---------------------------------------------------------------------------
-// Core events — the subset of MiniACPClient methods exposed to extensions.
-// initialize and setContext are infrastructure concerns handled by the
-// tracker decorator and tool injector respectively.
-// ---------------------------------------------------------------------------
-
-type CoreEventHandler<K extends keyof MiniACPClient> = (
-	params: Parameters<MiniACPClient[K]>[0],
-	// eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-) => MaybePromise<Parameters<MiniACPClient[K]>[0] | void>;
-
-export type CancelHandler = CoreEventHandler<'cancel'>;
-
 export type PromptHandler = (prompt: Prompt) => MaybePromise<void>;
 
 export type SystemPromptHandler = (
