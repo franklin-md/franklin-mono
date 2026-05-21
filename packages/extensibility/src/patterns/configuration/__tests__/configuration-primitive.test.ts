@@ -50,7 +50,7 @@ describe('Configuration', () => {
 	it('creates extensions that write contributions through the hidden registration API', () => {
 		const configuration = new Configuration<string, string>({
 			name: 'theme',
-			combine: (values) => values.at(-1) ?? 'fallback',
+			combine: (values) => values[0] ?? 'fallback',
 		});
 		const extension: Extension<ConfigurationRegistrationAPI> =
 			configuration.of('dark');

@@ -7,6 +7,14 @@ import type {
 	Registry,
 } from './registry.js';
 
+/**
+ * Read-only compiler projection of the registration effect log.
+ *
+ * All list methods return effective registration order: higher numeric priority
+ * first, then original registration sequence for ties. Compilers that need
+ * highest-precedence-wins behavior should read the first entry; choose the last
+ * entry only for explicit fallback or lowest-precedence semantics.
+ */
 export type RegistryView<S extends Signature, Runtime extends S['In']> = {
 	effectsFor<Name extends EffectName<S, Runtime>>(
 		name: Name,
