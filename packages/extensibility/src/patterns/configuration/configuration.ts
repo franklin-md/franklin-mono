@@ -2,9 +2,7 @@ import type { Extension } from '../../extension/types.js';
 import { CONFIGURATION_API } from './internal.js';
 import type { ConfigurationAPI } from './types.js';
 
-export type ConfigurationCombine<Input, Output> = (
-	values: readonly Input[],
-) => Output;
+type ConfigurationCombine<Input, Output> = (values: readonly Input[]) => Output;
 
 export type ConfigurationSpec<Input, Output = Input> = {
 	readonly name: string;
