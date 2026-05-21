@@ -1,3 +1,4 @@
+import type { StaticSignature } from '../../api/types.js';
 import type { Extension } from '../../extension/types.js';
 import type {
 	CONFIGURATION_REGISTRATION,
@@ -27,6 +28,9 @@ export type ConfigurationRegistrationAPI = {
 		contribution: ConfigurationContribution,
 	) => void;
 };
+
+export type ConfigurationSignature =
+	StaticSignature<ConfigurationRegistrationAPI>;
 
 export type FacetOptions<Input, Output> = {
 	readonly name: string;
