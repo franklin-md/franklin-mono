@@ -87,6 +87,19 @@ const contextAfterInit: Expectation = {
 	},
 };
 
+const contextPromptFieldsTopLevel: Expectation = {
+	id: 'context-prompt-fields-top-level',
+	description:
+		'setContext prompt fields must be top-level systemPrompt/messages fields',
+	test: (t) => {
+		const contextSends = sends(t, 'setContext');
+		if (contextSends.length === 0) return 'skip';
+		return contextSends.some((entry) => 'history' in entry.params)
+			? 'fail'
+			: 'pass';
+	},
+};
+
 // ---------------------------------------------------------------------------
 // Turn Lifecycle
 // ---------------------------------------------------------------------------
@@ -534,6 +547,7 @@ export const specPoints: Expectation[] = [
 	contextBeforeFirstPrompt,
 	contextReceiveExists,
 	contextAfterInit,
+	contextPromptFieldsTopLevel,
 	// Turn Lifecycle
 	turnStartsWithTurnStart,
 	turnEndsWithTurnEnd,

@@ -35,7 +35,8 @@ describe('createPiAdapter', () => {
 				toolExecute: vi.fn(async () => ({ toolCallId: 'tool-1', content: [] })),
 			},
 			context: {
-				history: { systemPrompt: '', messages: [] },
+				systemPrompt: '',
+				messages: [],
 				tools: [],
 				config: {
 					provider: 'openai-codex',

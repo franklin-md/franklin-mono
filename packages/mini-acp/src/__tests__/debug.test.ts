@@ -52,7 +52,8 @@ describe('debugMiniACP', () => {
 
 		await debugged.initialize();
 		await debugged.setContext({
-			history: { systemPrompt: 'test', messages: [] },
+			systemPrompt: 'test',
+			messages: [],
 			tools: [],
 		});
 		const events = await drain(

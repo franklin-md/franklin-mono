@@ -9,7 +9,8 @@ import type { LLMConfig, ThinkingLevel } from '../types/context.js';
 function seededTracker(config: LLMConfig = {}): ContextTracker {
 	const tracker = new ContextTracker();
 	tracker.apply({
-		history: { systemPrompt: 'test', messages: [] },
+		systemPrompt: 'test',
+		messages: [],
 		tools: [],
 		config,
 	});
@@ -56,7 +57,8 @@ describe('ContextTracker.apply – field replacement', () => {
 	it('does not touch fields not present in the partial', () => {
 		const tracker = seededTracker({ provider: 'anthropic', apiKey: 'sk-123' });
 		tracker.apply({
-			history: { systemPrompt: 'updated', messages: [] },
+			systemPrompt: 'updated',
+			messages: [],
 		});
 		expect(tracker.get().config.provider).toBe('anthropic');
 		expect(tracker.get().config.apiKey).toBe('sk-123');
@@ -64,10 +66,10 @@ describe('ContextTracker.apply – field replacement', () => {
 });
 
 // ---------------------------------------------------------------------------
-// History partial merge
+// Prompt field replacement
 // ---------------------------------------------------------------------------
 
-describe('ContextTracker.apply – history merges by property', () => {
+describe('ContextTracker.apply – prompt fields replace independently', () => {
 	it('replaces both systemPrompt and messages when both are provided', () => {
 		const tracker = seededTracker();
 		tracker.append({
@@ -76,15 +78,13 @@ describe('ContextTracker.apply – history merges by property', () => {
 		});
 
 		tracker.apply({
-			history: {
-				systemPrompt: 'new prompt',
-				messages: [{ role: 'user', content: [{ type: 'text', text: 'new' }] }],
-			},
+			systemPrompt: 'new prompt',
+			messages: [{ role: 'user', content: [{ type: 'text', text: 'new' }] }],
 		});
 
-		expect(tracker.get().history.systemPrompt).toBe('new prompt');
-		expect(tracker.get().history.messages).toHaveLength(1);
-		expect(tracker.get().history.messages[0]).toEqual({
+		expect(tracker.get().systemPrompt).toBe('new prompt');
+		expect(tracker.get().messages).toHaveLength(1);
+		expect(tracker.get().messages[0]).toEqual({
 			role: 'user',
 			content: [{ type: 'text', text: 'new' }],
 		});
@@ -97,11 +97,11 @@ describe('ContextTracker.apply – history merges by property', () => {
 			content: [{ type: 'text', text: 'preserved' }],
 		});
 
-		tracker.apply({ history: { systemPrompt: 'updated prompt' } });
+		tracker.apply({ systemPrompt: 'updated prompt' });
 
-		expect(tracker.get().history.systemPrompt).toBe('updated prompt');
-		expect(tracker.get().history.messages).toHaveLength(1);
-		expect(tracker.get().history.messages[0]).toEqual({
+		expect(tracker.get().systemPrompt).toBe('updated prompt');
+		expect(tracker.get().messages).toHaveLength(1);
+		expect(tracker.get().messages[0]).toEqual({
 			role: 'user',
 			content: [{ type: 'text', text: 'preserved' }],
 		});
@@ -120,10 +120,10 @@ describe('ContextTracker.apply – history merges by property', () => {
 			},
 		];
 
-		tracker.apply({ history: { messages: replacement } });
+		tracker.apply({ messages: replacement });
 
-		expect(tracker.get().history.systemPrompt).toBe('test');
-		expect(tracker.get().history.messages).toHaveLength(2);
+		expect(tracker.get().systemPrompt).toBe('test');
+		expect(tracker.get().messages).toHaveLength(2);
 	});
 
 	it('replaces messages with an empty array when explicitly provided', () => {
@@ -133,13 +133,13 @@ describe('ContextTracker.apply – history merges by property', () => {
 			content: [{ type: 'text', text: 'will be cleared' }],
 		});
 
-		tracker.apply({ history: { messages: [] } });
+		tracker.apply({ messages: [] });
 
-		expect(tracker.get().history.messages).toHaveLength(0);
-		expect(tracker.get().history.systemPrompt).toBe('test');
+		expect(tracker.get().messages).toHaveLength(0);
+		expect(tracker.get().systemPrompt).toBe('test');
 	});
 
-	it('leaves history untouched when history is omitted', () => {
+	it('leaves prompt fields untouched when both are omitted', () => {
 		const tracker = seededTracker();
 		tracker.append({
 			role: 'user',
@@ -148,8 +148,8 @@ describe('ContextTracker.apply – history merges by property', () => {
 
 		tracker.apply({ config: { reasoning: 'high' } });
 
-		expect(tracker.get().history.systemPrompt).toBe('test');
-		expect(tracker.get().history.messages).toHaveLength(1);
+		expect(tracker.get().systemPrompt).toBe('test');
+		expect(tracker.get().messages).toHaveLength(1);
 	});
 });
 
@@ -303,10 +303,10 @@ describe('ContextTracker.apply – config is shallow-merged', () => {
 // ---------------------------------------------------------------------------
 
 describe('ContextTracker.append', () => {
-	it('appends a message to history', () => {
+	it('appends a message to messages', () => {
 		const tracker = seededTracker();
 		tracker.append({ role: 'user', content: [{ type: 'text', text: 'hi' }] });
-		expect(tracker.get().history.messages).toHaveLength(1);
+		expect(tracker.get().messages).toHaveLength(1);
 	});
 });
 
