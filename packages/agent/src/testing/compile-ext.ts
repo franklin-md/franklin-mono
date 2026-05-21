@@ -15,19 +15,14 @@ import type { RegistryView } from '@franklin/extensibility';
 import type { CoreSignature } from '../modules/core/api/api.js';
 import type { AuthDependencyRuntime } from '../auth/dependency.js';
 import type { AuthManager } from '../auth/manager.js';
-import {
-	buildAgentStreamObservers,
-	hasAnyAgentStreamObserver,
-} from '../modules/core/compile/decorators/agent-observer/decorator.js';
-import { buildAgentObserverPromptMiddleware } from '../modules/core/compile/decorators/agent-observer/prompt.js';
-import { buildPromptMiddleware } from '../modules/core/compile/decorators/prompt/decorator.js';
+import { createPromptBuilder } from '../modules/core/compile/decorators/prompt/build-prompt/index.js';
+import { createPromptObserver } from '../modules/core/compile/decorators/prompt/observer/index.js';
 import { buildToolServerMiddleware } from '../modules/core/compile/decorators/tool/decorator.js';
 import { registeredTools } from '../modules/core/compile/registrations/index.js';
-import { bindRegisteredEventHandlers } from '../modules/core/compile/registrations/index.js';
 import { serializeTool } from '../modules/core/compile/tools/index.js';
 import {
-	composeMethod,
 	passThrough,
+	type MethodMiddleware,
 	type Middleware,
 } from '@franklin/lib/middleware';
 import type { CoreRuntime } from '../modules/core/runtime/index.js';
@@ -75,25 +70,19 @@ function buildTestMiddleware<Runtime extends BaseRuntime>(
 	registrations: RegistryView<CoreSignature, Runtime>,
 	getCtx: () => Runtime,
 ): FullMiddleware {
-	const promptHandlers = bindRegisteredEventHandlers(
-		registrations,
-		'prompt',
-		getCtx,
-	);
-	const agentObservers = buildAgentStreamObservers(registrations, getCtx);
-	const prompt = promptHandlers.length
-		? buildPromptMiddleware(promptHandlers)
-		: passThrough<MiniACPClient['prompt']>();
+	const buildPrompt = createPromptBuilder(registrations, getCtx);
+	const observePrompt = createPromptObserver(registrations, getCtx);
+	const prompt: MethodMiddleware<MiniACPClient['prompt']> = async function* (
+		message,
+		next,
+	) {
+		yield* observePrompt(next(await buildPrompt(message)));
+	};
 
 	const client: ClientMiddleware = {
 		initialize: passThrough(),
 		setContext: passThrough(),
-		prompt: hasAnyAgentStreamObserver(agentObservers)
-			? composeMethod(
-					prompt,
-					buildAgentObserverPromptMiddleware(agentObservers),
-				)
-			: prompt,
+		prompt,
 		cancel: passThrough(),
 	};
 

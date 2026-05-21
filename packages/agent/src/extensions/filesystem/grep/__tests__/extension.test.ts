@@ -11,7 +11,7 @@ import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
 import type { CoreSignature } from '../../../../modules/core/api/api.js';
-import { buildSystemPromptAssembler } from '../../../../modules/core/compile/decorators/system-prompt/assembler/index.js';
+import { buildSystemPromptAssembler } from '../../../../modules/core/compile/decorators/prompt/system-prompt/assembler/index.js';
 import { bindRegisteredEventHandlers } from '../../../../modules/core/compile/registrations/index.js';
 import type { CoreRuntime } from '../../../../modules/core/runtime/index.js';
 import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';

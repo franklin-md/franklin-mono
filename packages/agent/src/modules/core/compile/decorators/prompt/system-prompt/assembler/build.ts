@@ -1,8 +1,8 @@
-import type { SystemPromptHandler } from '../../../../api/handlers.js';
+import type { SystemPromptHandler } from '../../../../../api/handlers.js';
 import type {
 	SystemPrompt,
 	SystemPromptContent,
-} from '../../../../api/system-prompt.js';
+} from '../../../../../api/system-prompt.js';
 import { order } from './order.js';
 import { applySetPart, createSlot, resolveSlotContent } from './slot.js';
 import type { Slot, SystemPromptAssembler } from './types.js';

@@ -1,6 +1,8 @@
 import type {
+	ContextPatch,
 	MiniACPAgent,
 	MiniACPClient,
+	StreamEvent,
 	UserMessage,
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
@@ -17,50 +19,118 @@ const userMessage = {
 	content: [{ type: 'text', text: 'hello' }],
 } satisfies UserMessage;
 
-function stubClient(): MiniACPClient {
+const streamEvents = [
+	{
+		type: 'chunk',
+		messageId: 'message-1',
+		role: 'assistant',
+		content: { type: 'text', text: 'ok' },
+	},
+] satisfies StreamEvent[];
+
+function text(message: UserMessage): string {
+	return message.content
+		.filter((content) => content.type === 'text')
+		.map((content) => content.text)
+		.join('');
+}
+
+function stubClient(calls: string[]): MiniACPClient {
 	return {
 		initialize: vi.fn(async () => {}),
-		setContext: vi.fn(async () => {}),
+		setContext: vi.fn(async (patch: ContextPatch) => {
+			calls.push(`setContext:${patch.history?.systemPrompt ?? ''}`);
+		}),
 		prompt: vi.fn(async function* (message: UserMessage) {
-			yield {
-				type: 'update' as const,
-				messageId: 'message-1',
-				message: { role: 'user', content: message.content },
-			};
+			calls.push(`client.prompt:${text(message)}`);
+			yield* streamEvents;
 		}),
 		cancel: vi.fn(async () => {}),
 	} as MiniACPClient;
 }
 
 describe('createPromptDecorator', () => {
-	it('returns undefined when no prompt handlers are registered', () => {
-		expect(
-			createPromptDecorator(createCoreRegistry(), () => runtime),
-		).toBeUndefined();
+	it('returns a pass-through decorator when no prompt-time handlers are registered', async () => {
+		const decorator = createPromptDecorator(
+			createCoreRegistry(),
+			() => runtime,
+		);
+		const calls: string[] = [];
+		const base = stubClient(calls);
+		const client = await decorator.client(base);
+
+		for await (const _event of client.prompt(userMessage)) {
+			// Drain the stream so the prompt flow runs.
+		}
+
+		expect(calls).toEqual(['client.prompt:hello']);
 	});
 
-	it('applies prompt handlers before the prompt reaches the client', async () => {
+	it('syncs system prompt, builds user prompt, then observes the response stream', async () => {
+		const calls: string[] = [];
+		const observed: StreamEvent[] = [];
 		const registrations = createCoreRegistry((api) => {
+			api.on('systemPrompt', (systemPrompt) => {
+				calls.push('systemPrompt.handler');
+				systemPrompt.setPart('system');
+			});
 			api.on('prompt', (prompt) => {
-				prompt.appendContent({ type: 'text', text: ' [injected]' });
+				calls.push('prompt.handler');
+				prompt.appendContent({ type: 'text', text: ' injected' });
+			});
+			api.on('chunk', (event) => {
+				calls.push('chunk.handler');
+				observed.push(event);
 			});
 		});
 		const decorator = createPromptDecorator(registrations, () => runtime);
-		if (!decorator) throw new Error('Expected prompt decorator');
 
-		const base = stubClient();
+		const base = stubClient(calls);
 		const client = await decorator.client(base);
-		const events = [];
-		for await (const event of client.prompt(userMessage)) events.push(event);
+		const returned: StreamEvent[] = [];
+		for await (const event of client.prompt(userMessage)) returned.push(event);
 
-		expect(base.prompt).toHaveBeenCalledWith({
-			role: 'user',
-			content: [
-				{ type: 'text', text: 'hello' },
-				{ type: 'text', text: ' [injected]' },
-			],
+		expect(calls).toEqual([
+			'systemPrompt.handler',
+			'setContext:system',
+			'prompt.handler',
+			'client.prompt:hello injected',
+			'chunk.handler',
+		]);
+		expect(observed).toEqual(streamEvents);
+		expect(returned).toEqual(streamEvents);
+	});
+
+	it('does not resend unchanged system prompts while still rebuilding the user prompt', async () => {
+		const calls: string[] = [];
+		const registrations = createCoreRegistry((api) => {
+			api.on('systemPrompt', (systemPrompt) => {
+				systemPrompt.setPart('stable');
+			});
+			api.on('prompt', (prompt) => {
+				calls.push('prompt.handler');
+				prompt.appendContent({ type: 'text', text: ' rebuilt' });
+			});
 		});
-		expect(events).toHaveLength(1);
+		const decorator = createPromptDecorator(registrations, () => runtime);
+
+		const base = stubClient(calls);
+		const client = await decorator.client(base);
+		for await (const _event of client.prompt(userMessage)) {
+			// Drain the stream so the prompt flow runs.
+		}
+		for await (const _event of client.prompt(userMessage)) {
+			// Drain the stream so the prompt flow runs.
+		}
+
+		expect(base.setContext).toHaveBeenCalledOnce();
+		expect(calls).toEqual([
+			'setContext:stable',
+			'prompt.handler',
+			'client.prompt:hello rebuilt',
+			'prompt.handler',
+			'client.prompt:hello rebuilt',
+		]);
 	});
 
 	it('leaves the server side unchanged', async () => {
@@ -70,7 +140,6 @@ describe('createPromptDecorator', () => {
 			}),
 			() => runtime,
 		);
-		if (!decorator) throw new Error('Expected prompt decorator');
 		const server = { toolExecute: vi.fn() } as unknown as MiniACPAgent;
 
 		await expect(decorator.server(server)).resolves.toBe(server);
