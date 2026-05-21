@@ -11,6 +11,7 @@ import type { MaybePromise } from '../../../utils/maybe-promise.js';
 import type { Signature, WithRuntime } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 
+// The possible 'on' handlers where the runtime value is bound.
 export type CoreEventHandlerMap = {
 	prompt: PromptHandler;
 	cancel: CancelHandler;
@@ -23,6 +24,8 @@ export type CoreEventHandlerMap = {
 	toolResult: ToolObserverHandler<'toolResult'>;
 };
 
+// TODO: Naming is poor
+// CoreEventHandlerMap with unbound runtime values.
 export type CoreEventHandlers<R extends BaseRuntime> = {
 	[K in keyof CoreEventHandlerMap]: WithRuntime<CoreEventHandlerMap[K], R>;
 };

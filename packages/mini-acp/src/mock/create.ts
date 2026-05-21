@@ -24,6 +24,8 @@ export type CreateMockMiniACPOptions = {
 };
 
 export type MockMiniACP = {
+	// TODO: This field feels off? Isn't this at the wrong phase?
+	// Feels like we are createing a new connector (but returns a different api)
 	readonly connector: MiniACPConnector;
 	enqueue(turn: MockTurnDescriptor): void;
 	context(): Context;
