@@ -3,15 +3,15 @@ import type {
 	ToolExecuteParams,
 	ToolResult,
 } from '@franklin/mini-acp';
-import type { BaseRuntime } from '@franklin/extensibility';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createToolDecorator } from '../decorator.js';
-import type { ToolLayer } from '../types.js';
+import {
+	createCoreRegistry,
+	createTestRuntime,
+} from '../../__tests__/registry.js';
 
-const runtime = {
-	dispose: async () => {},
-} satisfies BaseRuntime;
+const runtime = createTestRuntime();
 
 function fallbackServer(): MiniACPAgent {
 	const toolExecute: MiniACPAgent['toolExecute'] = async ({ call }) => ({
@@ -45,36 +45,31 @@ function text(result: ToolResult): string {
 		.join('');
 }
 
-function emptyLayer(): ToolLayer<typeof runtime> {
-	return {
-		tools: [],
-		observers: {
-			toolCall: [],
-			toolResult: [],
-		},
-		getRuntime: () => runtime,
-	};
-}
-
 describe('createToolDecorator', () => {
+	it('returns undefined when no tools or tool observers are registered', () => {
+		expect(
+			createToolDecorator(createCoreRegistry(), () => runtime),
+		).toBeUndefined();
+	});
+
 	it('executes registered tools instead of delegating to the fallback server', async () => {
 		const execute = vi.fn(async ({ input }: { input: string }) =>
 			input.toUpperCase(),
 		);
-		const layer: ToolLayer<typeof runtime> = {
-			...emptyLayer(),
-			tools: [
-				{
-					name: 'myTool',
-					description: 'A test tool',
-					schema: z.object({ input: z.string() }),
-					execute,
-				},
-			],
-		};
+
+		const registrations = createCoreRegistry((api) => {
+			api.registerTool({
+				name: 'myTool',
+				description: 'A test tool',
+				schema: z.object({ input: z.string() }),
+				execute,
+			});
+		});
+		const decorator = createToolDecorator(registrations, () => runtime);
+		if (!decorator) throw new Error('Expected tool decorator');
 
 		const server = fallbackServer();
-		const wrapped = await createToolDecorator(layer).server(server);
+		const wrapped = await decorator.server(server);
 		const result = await wrapped.toolExecute(
 			toolCall('myTool', { input: 'hello' }),
 		);
@@ -84,41 +79,43 @@ describe('createToolDecorator', () => {
 		expect(text(result)).toBe('HELLO');
 	});
 
-	it('delegates unknown tools to the fallback server', async () => {
+	it('delegates unknown tools to the fallback server when tool observers are registered', async () => {
+		const calls: string[] = [];
+		const registrations = createCoreRegistry((api) => {
+			api.on('toolCall', () => calls.push('call'));
+			api.on('toolResult', () => calls.push('result'));
+		});
+		const decorator = createToolDecorator(registrations, () => runtime);
+		if (!decorator) throw new Error('Expected tool decorator');
+
 		const server = fallbackServer();
-		const wrapped = await createToolDecorator(emptyLayer()).server(server);
+		const wrapped = await decorator.server(server);
 
 		const result = await wrapped.toolExecute(toolCall('unknownTool'));
 
 		expect(server.toolExecute).toHaveBeenCalledOnce();
 		expect(text(result)).toBe('fallback:unknownTool');
+		expect(calls).toEqual(['call', 'result']);
 	});
 
 	it('notifies tool observers around registered tool execution', async () => {
 		const calls: string[] = [];
-		const layer: ToolLayer<typeof runtime> = {
-			...emptyLayer(),
-			tools: [
-				{
-					name: 'myTool',
-					description: 'A test tool',
-					schema: z.object({}),
-					execute: async () => 'ok',
-				},
-			],
-			observers: {
-				toolCall: [
-					() => calls.push('call:first'),
-					() => calls.push('call:second'),
-				],
-				toolResult: [
-					() => calls.push('result:first'),
-					() => calls.push('result:second'),
-				],
-			},
-		};
+		const registrations = createCoreRegistry((api) => {
+			api.registerTool({
+				name: 'myTool',
+				description: 'A test tool',
+				schema: z.object({}),
+				execute: async () => 'ok',
+			});
+			api.on('toolCall', () => calls.push('call:first'));
+			api.on('toolCall', () => calls.push('call:second'));
+			api.on('toolResult', () => calls.push('result:first'));
+			api.on('toolResult', () => calls.push('result:second'));
+		});
+		const decorator = createToolDecorator(registrations, () => runtime);
+		if (!decorator) throw new Error('Expected tool decorator');
 
-		const wrapped = await createToolDecorator(layer).server(fallbackServer());
+		const wrapped = await decorator.server(fallbackServer());
 		await wrapped.toolExecute(toolCall('myTool'));
 
 		expect(calls).toEqual([
@@ -131,19 +128,18 @@ describe('createToolDecorator', () => {
 
 	it('returns validation errors before execute runs', async () => {
 		const execute = vi.fn(async () => 'not reached');
-		const layer: ToolLayer<typeof runtime> = {
-			...emptyLayer(),
-			tools: [
-				{
-					name: 'myTool',
-					description: 'A test tool',
-					schema: z.object({ input: z.string() }),
-					execute,
-				},
-			],
-		};
+		const registrations = createCoreRegistry((api) => {
+			api.registerTool({
+				name: 'myTool',
+				description: 'A test tool',
+				schema: z.object({ input: z.string() }),
+				execute,
+			});
+		});
+		const decorator = createToolDecorator(registrations, () => runtime);
+		if (!decorator) throw new Error('Expected tool decorator');
 
-		const wrapped = await createToolDecorator(layer).server(fallbackServer());
+		const wrapped = await decorator.server(fallbackServer());
 		const result = await wrapped.toolExecute(
 			toolCall('myTool', { input: 123 }),
 		);
@@ -154,7 +150,18 @@ describe('createToolDecorator', () => {
 	});
 
 	it('leaves the client side unchanged', async () => {
-		const decorator = createToolDecorator(emptyLayer());
+		const decorator = createToolDecorator(
+			createCoreRegistry((api) => {
+				api.registerTool({
+					name: 'myTool',
+					description: 'A test tool',
+					schema: z.object({}),
+					execute: async () => 'ok',
+				});
+			}),
+			() => runtime,
+		);
+		if (!decorator) throw new Error('Expected tool decorator');
 		const client = {} as Parameters<typeof decorator.client>[0];
 
 		await expect(decorator.client(client)).resolves.toBe(client);

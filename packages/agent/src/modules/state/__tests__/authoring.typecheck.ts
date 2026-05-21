@@ -13,7 +13,7 @@ import {
 } from '../index.js';
 
 type CoreAPI<R extends BaseRuntime> = {
-	on(event: 'cancel', handler: () => void): void;
+	on(event: 'turnEnd', handler: () => void): void;
 	on(event: 'systemPrompt', handler: (prompt: unknown, ctx: R) => void): void;
 };
 
@@ -66,7 +66,7 @@ const _moduleExtension = defineExtension<
 void _moduleExtension;
 
 const _curriedExtension = defineExtension<[CoreModule]>()((api) => {
-	api.on('cancel', () => {});
+	api.on('turnEnd', () => {});
 	// @ts-expect-error store API was not requested
 	void api.registerStore;
 });

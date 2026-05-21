@@ -1,5 +1,9 @@
 import type { API } from '@franklin/extensibility';
-import type { ToolDefinition } from '@franklin/mini-acp';
+import type {
+	MiniACPAgent,
+	MiniACPClient,
+	ToolDefinition,
+} from '@franklin/mini-acp';
 import { createExtensionPoint } from '@franklin/extensibility';
 import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
@@ -12,19 +16,20 @@ import type { CoreSignature } from '../modules/core/api/api.js';
 import type { AuthDependencyRuntime } from '../auth/dependency.js';
 import type { AuthManager } from '../auth/manager.js';
 import {
-	buildAgentObserverPromptMiddleware,
 	buildAgentStreamObservers,
 	hasAnyAgentStreamObserver,
-} from '../modules/core/compile/decorators/agent-observer/index.js';
-import { buildMiddleware } from '../modules/core/compile/decorators/middleware/build.js';
-import type { FullMiddleware } from '../modules/core/compile/decorators/middleware/types.js';
-import {
-	buildToolLayer,
-	buildToolServerMiddleware,
-} from '../modules/core/compile/decorators/tool/index.js';
+} from '../modules/core/compile/decorators/agent-observer/decorator.js';
+import { buildAgentObserverPromptMiddleware } from '../modules/core/compile/decorators/agent-observer/prompt.js';
+import { buildPromptMiddleware } from '../modules/core/compile/decorators/prompt/decorator.js';
+import { buildToolServerMiddleware } from '../modules/core/compile/decorators/tool/decorator.js';
 import { registeredTools } from '../modules/core/compile/registrations/index.js';
+import { bindRegisteredEventHandlers } from '../modules/core/compile/registrations/index.js';
 import { serializeTool } from '../modules/core/compile/tools/index.js';
-import { composeMethod } from '@franklin/lib/middleware';
+import {
+	composeMethod,
+	passThrough,
+	type Middleware,
+} from '@franklin/lib/middleware';
 import type { CoreRuntime } from '../modules/core/runtime/index.js';
 import type { ReconfigurableEnvironment } from '../modules/environment/api/types.js';
 import { createEnvironmentCompiler } from '../modules/environment/compile/compiler.js';
@@ -48,6 +53,15 @@ type CoreStoreEnvironmentAuthRuntime = CoreRuntime &
 	EnvironmentRuntime &
 	AuthDependencyRuntime;
 
+type ClientMiddleware = Middleware<MiniACPClient>;
+
+type ServerMiddleware = Middleware<MiniACPAgent>;
+
+type FullMiddleware = {
+	readonly client: ClientMiddleware;
+	readonly server: ServerMiddleware;
+};
+
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
@@ -61,21 +75,31 @@ function buildTestMiddleware<Runtime extends BaseRuntime>(
 	registrations: RegistryView<CoreSignature, Runtime>,
 	getCtx: () => Runtime,
 ): FullMiddleware {
-	const middleware = buildMiddleware(registrations, getCtx);
+	const promptHandlers = bindRegisteredEventHandlers(
+		registrations,
+		'prompt',
+		getCtx,
+	);
 	const agentObservers = buildAgentStreamObservers(registrations, getCtx);
-	const client = hasAnyAgentStreamObserver(agentObservers)
-		? {
-				...middleware.client,
-				prompt: composeMethod(
-					middleware.client.prompt,
+	const prompt = promptHandlers.length
+		? buildPromptMiddleware(promptHandlers)
+		: passThrough<MiniACPClient['prompt']>();
+
+	const client: ClientMiddleware = {
+		initialize: passThrough(),
+		setContext: passThrough(),
+		prompt: hasAnyAgentStreamObserver(agentObservers)
+			? composeMethod(
+					prompt,
 					buildAgentObserverPromptMiddleware(agentObservers),
-				),
-			}
-		: middleware.client;
+				)
+			: prompt,
+		cancel: passThrough(),
+	};
 
 	return {
 		client,
-		server: buildToolServerMiddleware(buildToolLayer(registrations, getCtx)),
+		server: buildToolServerMiddleware(registrations, getCtx),
 	};
 }
 

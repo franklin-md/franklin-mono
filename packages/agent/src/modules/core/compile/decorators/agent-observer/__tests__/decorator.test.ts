@@ -6,7 +6,12 @@ import type {
 import { StopCode } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { createAgentObserverDecorator } from '../decorator.js';
-import type { AgentStreamObservers } from '../types.js';
+import {
+	createCoreRegistry,
+	createTestRuntime,
+} from '../../__tests__/registry.js';
+
+const runtime = createTestRuntime();
 
 const userMessage = {
 	role: 'user',
@@ -32,15 +37,6 @@ const streamEvents = [
 	{ type: 'turnEnd', stopCode: StopCode.Finished },
 ] satisfies StreamEvent[];
 
-function emptyObservers(): AgentStreamObservers {
-	return {
-		turnStart: [],
-		chunk: [],
-		update: [],
-		turnEnd: [],
-	};
-}
-
 function stubClient(events: readonly StreamEvent[]): MiniACPClient {
 	return {
 		initialize: vi.fn(async () => {}),
@@ -53,15 +49,26 @@ function stubClient(events: readonly StreamEvent[]): MiniACPClient {
 }
 
 describe('createAgentObserverDecorator', () => {
+	it('returns undefined when no stream observers are registered', () => {
+		expect(
+			createAgentObserverDecorator(createCoreRegistry(), () => runtime),
+		).toBeUndefined();
+	});
+
 	it('observes prompt stream events while preserving the returned stream', async () => {
 		const observed: StreamEvent[] = [];
-		const observers = emptyObservers();
-		observers.turnStart.push((event) => observed.push(event));
-		observers.chunk.push((event) => observed.push(event));
-		observers.update.push((event) => observed.push(event));
-		observers.turnEnd.push((event) => observed.push(event));
+		const registrations = createCoreRegistry((api) => {
+			api.on('turnStart', (event) => observed.push(event));
+			api.on('chunk', (event) => observed.push(event));
+			api.on('update', (event) => observed.push(event));
+			api.on('turnEnd', (event) => observed.push(event));
+		});
 
-		const decorator = createAgentObserverDecorator(observers);
+		const decorator = createAgentObserverDecorator(
+			registrations,
+			() => runtime,
+		);
+		if (!decorator) throw new Error('Expected observer decorator');
 		const client = await decorator.client(stubClient(streamEvents));
 
 		const returned: StreamEvent[] = [];
@@ -73,11 +80,16 @@ describe('createAgentObserverDecorator', () => {
 
 	it('runs multiple observers for the same stream event in registration order', async () => {
 		const calls: string[] = [];
-		const observers = emptyObservers();
-		observers.chunk.push(() => calls.push('first'));
-		observers.chunk.push(() => calls.push('second'));
+		const registrations = createCoreRegistry((api) => {
+			api.on('chunk', () => calls.push('first'));
+			api.on('chunk', () => calls.push('second'));
+		});
 
-		const decorator = createAgentObserverDecorator(observers);
+		const decorator = createAgentObserverDecorator(
+			registrations,
+			() => runtime,
+		);
+		if (!decorator) throw new Error('Expected observer decorator');
 		const client = await decorator.client(stubClient(streamEvents));
 
 		for await (const _event of client.prompt(userMessage)) {
@@ -88,7 +100,13 @@ describe('createAgentObserverDecorator', () => {
 	});
 
 	it('leaves the server side unchanged', async () => {
-		const decorator = createAgentObserverDecorator(emptyObservers());
+		const decorator = createAgentObserverDecorator(
+			createCoreRegistry((api) => {
+				api.on('chunk', () => {});
+			}),
+			() => runtime,
+		);
+		if (!decorator) throw new Error('Expected observer decorator');
 		const server = { toolExecute: vi.fn() } as unknown as MiniACPAgent;
 
 		await expect(decorator.server(server)).resolves.toBe(server);

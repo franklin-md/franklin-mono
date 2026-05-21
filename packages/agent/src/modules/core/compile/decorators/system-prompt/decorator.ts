@@ -1,6 +1,10 @@
+import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type { MiniACPClient } from '@franklin/mini-acp';
+import type { CoreSignature } from '../../../api/api.js';
+import { bindRegisteredEventHandlers } from '../../registrations/index.js';
 import type { ProtocolDecorator } from '../types.js';
-import type { SystemPromptAssembler } from './assembler/index.js';
+import { buildSystemPromptAssembler } from './assembler/build.js';
+import type { SystemPromptAssembler } from './assembler/types.js';
 
 /**
  * Decorator that recomputes the system prompt before every prompt call.
@@ -19,7 +23,22 @@ import type { SystemPromptAssembler } from './assembler/index.js';
  * stale prompt until the next change. This should effectively never
  * happen in practice.
  */
-export function createSystemPromptDecorator(
+export function createSystemPromptDecorator<Runtime extends BaseRuntime>(
+	registrations: RegistryView<CoreSignature, Runtime>,
+	getRuntime: () => Runtime,
+): ProtocolDecorator | undefined {
+	const handlers = bindRegisteredEventHandlers(
+		registrations,
+		'systemPrompt',
+		getRuntime,
+	);
+	if (handlers.length === 0) return undefined;
+	return createSystemPromptClientDecorator(
+		buildSystemPromptAssembler(handlers),
+	);
+}
+
+function createSystemPromptClientDecorator(
 	assembler: SystemPromptAssembler,
 ): ProtocolDecorator {
 	let lastSent = '';
