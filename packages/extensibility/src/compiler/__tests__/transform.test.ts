@@ -36,7 +36,14 @@ function createCompiler(): Compiler<TestSignature, TestRuntime> {
 
 function createRegistry(value: number): Registry<TestSignature, BaseRuntime> {
 	return {
-		effects: [{ name: 'register', value: [value] }],
+		effects: [
+			{
+				name: 'register',
+				value: [value],
+				meta: { priority: 0 },
+				sequence: 0,
+			},
+		],
 	};
 }
 

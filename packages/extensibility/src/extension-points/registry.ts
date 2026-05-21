@@ -20,10 +20,46 @@ export type EffectValueForName<
 	Name extends EffectName<S, Runtime>,
 > = OverloadedParameters<API<S, Runtime>[Name]>;
 
+export type RegistrationMeta = {
+	readonly priority: number;
+};
+
+export type RegistrationMetaInput = Partial<RegistrationMeta>;
+
+export type EffectInput<Name extends string = string, Value = unknown> = {
+	readonly name: Name;
+	readonly value: Value;
+	readonly meta?: RegistrationMetaInput;
+};
+
 export type EffectValue<Name extends string = string, Value = unknown> = {
 	readonly name: Name;
 	readonly value: Value;
+	readonly meta: RegistrationMeta;
+	readonly sequence: number;
 };
+
+export type EffectInputForName<
+	S extends Signature,
+	Runtime extends S['In'],
+	Name extends EffectName<S, Runtime>,
+> = EffectInput<Name, EffectValueForName<S, Runtime, Name>>;
+
+export type EffectInputFor<S extends Signature, Runtime extends S['In']> = {
+	readonly [Name in EffectName<S, Runtime>]: EffectInputForName<
+		S,
+		Runtime,
+		Name
+	>;
+}[EffectName<S, Runtime>];
+
+export function normalizeRegistrationMeta(
+	meta: RegistrationMetaInput | undefined,
+): RegistrationMeta {
+	return {
+		priority: meta?.priority ?? 0,
+	};
+}
 
 export type EffectForName<
 	S extends Signature,
