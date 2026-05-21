@@ -34,19 +34,11 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 	});
 
 	const runtime = {
-		session: {
-			context: vi.fn(() => ({
-				systemPrompt: '',
-				messages: [],
-				tools: [],
-				config: { reasoning },
-			})),
-			getSnapshot: vi.fn(() => ({
-				messages: [],
-				llmConfig: { reasoning },
-				usage: ZERO_USAGE,
-			})),
-		},
+		getSession: vi.fn(() => ({
+			messages: [],
+			llmConfig: { reasoning },
+			usage: ZERO_USAGE,
+		})),
 		setLLMConfig: vi.fn(async (config: { reasoning?: ThinkingLevel }) => {
 			if (config.reasoning !== undefined) {
 				reasoning = config.reasoning;
@@ -94,19 +86,11 @@ describe('useThinkingLevel – initialization', () => {
 
 	it('defaults to medium when runtime has no reasoning set', async () => {
 		const runtime = {
-			session: {
-				context: vi.fn(() => ({
-					systemPrompt: '',
-					messages: [],
-					tools: [],
-					config: {},
-				})),
-				getSnapshot: vi.fn(() => ({
-					messages: [],
-					llmConfig: {},
-					usage: ZERO_USAGE,
-				})),
-			},
+			getSession: vi.fn(() => ({
+				messages: [],
+				llmConfig: {},
+				usage: ZERO_USAGE,
+			})),
 			coreEvents: {
 				subscribe: vi.fn(() => () => {}),
 			},

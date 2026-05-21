@@ -32,19 +32,11 @@ function makeMockRuntime(opts?: {
 	const listeners = new Set<CoreEventListener>();
 
 	const runtime = {
-		session: {
-			context: vi.fn(() => ({
-				systemPrompt: '',
-				messages: [],
-				tools: [],
-				config: { provider, model, reasoning },
-			})),
-			getSnapshot: vi.fn(() => ({
-				messages: [],
-				llmConfig: { provider, model, reasoning },
-				usage: ZERO_USAGE,
-			})),
-		},
+		getSession: vi.fn(() => ({
+			messages: [],
+			llmConfig: { provider, model, reasoning },
+			usage: ZERO_USAGE,
+		})),
 		setLLMConfig: vi.fn(
 			async (config: {
 				provider?: string;

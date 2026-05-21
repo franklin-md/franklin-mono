@@ -1,22 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import type { Context } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
+import { createRuntimeAgentState } from '../agent-state/index.js';
+import { attachRuntimeAgentState } from '../runtime/agent-state.js';
 import type { CoreRuntime } from '../runtime/index.js';
 import { emptySessionSnapshot } from '../state.js';
-import { createSession } from '../session/index.js';
 
 function stubRuntime(context: Context): CoreRuntime {
-	const session = createSession(emptySessionSnapshot());
-	session.apply(context);
-	return {
-		session,
-		dispose: async () => {},
-		prompt: () => {
-			throw new Error('not used');
-		},
-		cancel: async () => {},
-		setLLMConfig: async () => {},
-	} as unknown as CoreRuntime;
+	const agentState = createRuntimeAgentState(emptySessionSnapshot());
+	agentState.apply(context);
+	return attachRuntimeAgentState(
+		{
+			getSession: () => agentState.getSnapshot(),
+			dispose: async () => {},
+			prompt: () => {
+				throw new Error('not used');
+			},
+			cancel: async () => {},
+			setLLMConfig: async () => {},
+		} as unknown as CoreRuntime,
+		agentState,
+	);
 }
 
 describe('inspectRuntime', () => {

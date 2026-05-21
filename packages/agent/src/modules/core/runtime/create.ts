@@ -1,18 +1,22 @@
-import type { Session } from '../session/index.js';
+import type { RuntimeAgentState } from '../agent-state/index.js';
+import { attachRuntimeAgentState } from './agent-state.js';
 import { createClientRuntime } from './from-client.js';
 import type { AgentClient, CoreRuntime } from './types.js';
 
 type CreateCoreRuntimeInput = {
 	readonly client: AgentClient;
-	readonly session: Session;
+	readonly agentState: RuntimeAgentState;
 };
 
 export function createCoreRuntime({
 	client,
-	session,
+	agentState,
 }: CreateCoreRuntimeInput): CoreRuntime {
-	return {
-		...createClientRuntime(client),
-		session,
-	};
+	return attachRuntimeAgentState(
+		{
+			...createClientRuntime(client),
+			getSession: () => agentState.getSnapshot(),
+		},
+		agentState,
+	);
 }

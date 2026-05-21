@@ -4,7 +4,7 @@ import type {
 	MiniACPClientHandle,
 } from '@franklin/mini-acp';
 import type { BaseRuntime } from '@franklin/extensibility';
-import type { Session } from '../session/index.js';
+import type { SessionSnapshot } from '../state.js';
 
 export type CoreEvent =
 	| {
@@ -20,7 +20,7 @@ export type CoreRuntime = BaseRuntime &
 		readonly coreEvents: {
 			subscribe(listener: (event: CoreEvent) => void): () => void;
 		};
-		readonly session: Session;
+		getSession(): SessionSnapshot;
 	};
 
 export type AgentClient = MiniACPClientHandle;

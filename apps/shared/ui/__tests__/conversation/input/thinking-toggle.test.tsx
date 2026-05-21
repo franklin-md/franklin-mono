@@ -21,19 +21,11 @@ function makeMockRuntime(reasoning: ThinkingLevel): FranklinRuntime {
 	const listeners = new Set<(event: CoreEvent) => void>();
 
 	return {
-		session: {
-			context: vi.fn(() => ({
-				systemPrompt: '',
-				messages: [],
-				tools: [],
-				config: { reasoning: level },
-			})),
-			getSnapshot: vi.fn(() => ({
-				messages: [],
-				llmConfig: { reasoning: level },
-				usage: ZERO_USAGE,
-			})),
-		},
+		getSession: vi.fn(() => ({
+			messages: [],
+			llmConfig: { reasoning: level },
+			usage: ZERO_USAGE,
+		})),
 		setLLMConfig: vi.fn(async (config: { reasoning?: ThinkingLevel }) => {
 			if (config.reasoning !== undefined) {
 				level = config.reasoning;

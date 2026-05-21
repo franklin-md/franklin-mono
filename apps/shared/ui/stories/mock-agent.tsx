@@ -77,19 +77,11 @@ export function createMockRuntime(opts?: {
 	);
 
 	return {
-		session: {
-			context: () => ({
-				systemPrompt: '',
-				messages: [],
-				tools: [],
-				config: { ...llmConfig },
-			}),
-			getSnapshot: () => ({
-				messages: [],
-				llmConfig: { ...llmConfig },
-				usage: ZERO_USAGE,
-			}),
-		},
+		getSession: () => ({
+			messages: [],
+			llmConfig: { ...llmConfig },
+			usage: ZERO_USAGE,
+		}),
 		setLLMConfig: async ({
 			apiKey: _apiKey,
 			...config

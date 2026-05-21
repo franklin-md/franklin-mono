@@ -1,11 +1,13 @@
 import type { Context, LLMConfig, Message, Usage } from '@franklin/mini-acp';
 import { ContextTracker, UsageTracker } from '@franklin/mini-acp/session';
 import type { SessionSnapshot } from '../state.js';
-import type { MutableSession } from './types.js';
+import type { RuntimeAgentState } from './types.js';
 
 type LLMConfigSnapshot = SessionSnapshot['llmConfig'];
 
-export function createSession(snapshot: SessionSnapshot): MutableSession {
+export function createRuntimeAgentState(
+	snapshot: SessionSnapshot,
+): RuntimeAgentState {
 	const context = new ContextTracker();
 	context.apply(createContext(snapshot));
 	const usage = new UsageTracker();
@@ -14,7 +16,7 @@ export function createSession(snapshot: SessionSnapshot): MutableSession {
 	return {
 		contextTracker: context,
 		usageTracker: usage,
-		context: () => context.get(),
+		getAgentContext: () => context.get(),
 		apply(partial) {
 			context.apply(partial);
 		},

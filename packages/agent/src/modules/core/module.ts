@@ -6,7 +6,10 @@ import type { StateExtensionModule } from '../state/index.js';
 import type { CoreSignature } from './api/api.js';
 import { createCoreCompiler } from './compile/compiler.js';
 import type { CoreRuntime } from './runtime/index.js';
-import { childSessionSnapshot, forkSessionSnapshot } from './session/index.js';
+import {
+	childSessionSnapshot,
+	forkSessionSnapshot,
+} from './agent-state/index.js';
 import type { CoreState, SessionSnapshot } from './state.js';
 import { emptyCoreState } from './state.js';
 
@@ -49,12 +52,12 @@ export function createCoreStateModule(
 
 function coreStateFromSession(runtime: CoreRuntime): StateHandle<CoreState> {
 	return {
-		get: async () => ({ core: runtime.session.getSnapshot() }),
+		get: async () => ({ core: runtime.getSession() }),
 		fork: async () => ({
-			core: forkSessionSnapshot(runtime.session.getSnapshot()),
+			core: forkSessionSnapshot(runtime.getSession()),
 		}),
 		child: async () => ({
-			core: childSessionSnapshot(runtime.session.getSnapshot()),
+			core: childSessionSnapshot(runtime.getSession()),
 		}),
 	};
 }

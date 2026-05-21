@@ -2,15 +2,15 @@ import type { MiniACPAgent, MiniACPClient, Usage } from '@franklin/mini-acp';
 import { StopCode, ZERO_USAGE } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { createTrackingDecorator } from '../decorator.js';
-import { createSession } from '../../../../session/index.js';
+import { createRuntimeAgentState } from '../../../../agent-state/index.js';
 
 const turnUsage = {
 	tokens: { input: 2, output: 3, cacheRead: 0, cacheWrite: 0, total: 5 },
 	cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 } satisfies Usage;
 
-function createTestSession() {
-	return createSession({
+function createTestAgentState() {
+	return createRuntimeAgentState({
 		messages: [],
 		llmConfig: {},
 		usage: ZERO_USAGE,
@@ -19,8 +19,8 @@ function createTestSession() {
 
 describe('createTrackingDecorator', () => {
 	it('tracks tool calls and tool results on the server side', async () => {
-		const session = createTestSession();
-		const decorator = createTrackingDecorator(session);
+		const agentState = createTestAgentState();
+		const decorator = createTrackingDecorator(agentState);
 		const toolExecute: MiniACPAgent['toolExecute'] = async ({ call }) => ({
 			toolCallId: call.id,
 			content: [{ type: 'text', text: 'ok' }],
@@ -39,7 +39,7 @@ describe('createTrackingDecorator', () => {
 			},
 		});
 
-		expect(session.context().messages).toEqual([
+		expect(agentState.getAgentContext().messages).toEqual([
 			{
 				role: 'assistant',
 				content: [
@@ -60,8 +60,8 @@ describe('createTrackingDecorator', () => {
 	});
 
 	it('tracks client context, messages, and usage in one wrapper', async () => {
-		const session = createTestSession();
-		const decorator = createTrackingDecorator(session);
+		const agentState = createTestAgentState();
+		const decorator = createTrackingDecorator(agentState);
 		const client: MiniACPClient = {
 			initialize: vi.fn(async () => {}),
 			setContext: vi.fn(async () => {}),
@@ -92,11 +92,11 @@ describe('createTrackingDecorator', () => {
 			// Drain the stream so tracking callbacks run.
 		}
 
-		expect(session.context().systemPrompt).toBe('rules');
-		expect(session.context().messages).toEqual([
+		expect(agentState.getAgentContext().systemPrompt).toBe('rules');
+		expect(agentState.getAgentContext().messages).toEqual([
 			{ role: 'user', content: [{ type: 'text', text: 'hi' }] },
 			{ role: 'assistant', content: [{ type: 'text', text: 'hello' }] },
 		]);
-		expect(session.getSnapshot().usage).toEqual(turnUsage);
+		expect(agentState.getSnapshot().usage).toEqual(turnUsage);
 	});
 });

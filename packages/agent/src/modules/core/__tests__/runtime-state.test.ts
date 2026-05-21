@@ -120,7 +120,7 @@ describe('core runtime protocol state', () => {
 		}
 	});
 
-	it('exposes the live session on the runtime', async () => {
+	it('exposes the session snapshot on the runtime', async () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
@@ -135,11 +135,11 @@ describe('core runtime protocol state', () => {
 		});
 
 		try {
-			expect(scenario.runtime.session.context().config).toMatchObject({
+			expect(scenario.runtime.getSession().llmConfig).toMatchObject({
 				model: 'seed-model',
 				provider: 'seed-provider',
 			});
-			expect(scenario.runtime.session.getSnapshot()).toEqual(
+			expect(scenario.runtime.getSession()).toEqual(
 				(await scenario.state()).core,
 			);
 		} finally {

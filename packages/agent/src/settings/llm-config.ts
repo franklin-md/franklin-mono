@@ -5,5 +5,5 @@ import type { CoreRuntime } from '../modules/core/index.js';
 export async function getLLMConfig(
 	runtime: CoreRuntime,
 ): Promise<Omit<LLMConfig, 'apiKey'>> {
-	return runtime.session.getSnapshot().llmConfig;
+	return runtime.getSession().llmConfig;
 }

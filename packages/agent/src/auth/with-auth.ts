@@ -48,8 +48,7 @@ function createAuthCompilerTransform(auth: AuthManager) {
 			// Install setLLMConfig wrapper to auto-resolve auth when provider is set.
 			const originalSetLLMConfig = runtime.setLLMConfig.bind(runtime);
 			runtime.setLLMConfig = async (config) => {
-				const currentProvider =
-					runtime.session.getSnapshot().llmConfig.provider;
+				const currentProvider = runtime.getSession().llmConfig.provider;
 				const nextProvider = config.provider;
 				const providerChanged =
 					nextProvider !== undefined && nextProvider !== currentProvider;
@@ -79,7 +78,7 @@ function createAuthCompilerTransform(auth: AuthManager) {
 			// Live credential sync pushes new keys when this runtime's provider changes.
 			const unsubscribe = auth.onAuthChange((provider) => {
 				void (async () => {
-					if (runtime.session.getSnapshot().llmConfig.provider !== provider) {
+					if (runtime.getSession().llmConfig.provider !== provider) {
 						return;
 					}
 					await authenticateAgent(runtime, provider, auth);

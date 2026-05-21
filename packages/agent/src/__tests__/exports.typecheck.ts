@@ -28,7 +28,7 @@ import { createEnvironmentRuntime as _RootCreateEnvironmentRuntime } from '../in
 import { createStoreRuntime as _RootCreateStoreRuntime } from '../index.js';
 // @ts-expect-error runtime state-handle projections are internal module plumbing.
 import { storeStateHandle as _RootStoreStateHandle } from '../index.js';
-// @ts-expect-error core runtime session state is exposed through runtime.session.
+// @ts-expect-error core runtime agent state is internal module plumbing.
 import { coreStateHandle as _RootCoreStateHandle } from '../index.js';
 // @ts-expect-error core compiler constructors are internal module plumbing.
 import { createCoreCompiler as _RootCreateCoreCompiler } from '../index.js';
@@ -46,6 +46,10 @@ import type { ToolDefinition as _RootToolDefinition } from '../index.js';
 import type { AnyToolDefinition as _RootAnyToolDefinition } from '../index.js';
 // @ts-expect-error Mini-ACP tool definitions are not re-exported through Agent core.
 import type { SerializedToolDefinition as _RootSerializedToolDefinition } from '../index.js';
+// @ts-expect-error core runtime agent state/session internals are not public API.
+import type { RuntimeAgentState as _RootRuntimeAgentState } from '../index.js';
+// @ts-expect-error core runtime session internals are not public API.
+import type { Session as _RootSession } from '../index.js';
 // @ts-expect-error MaybePromise is an internal utility, not public Agent API.
 import type { MaybePromise as _RootMaybePromise } from '../index.js';
 
