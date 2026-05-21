@@ -82,7 +82,7 @@ describe('createMockMiniACP', () => {
 		const client = await mock.connector(noopServer());
 
 		await client.initialize();
-		await client.setContext({ history: { systemPrompt: 'system' } });
+		await client.setContext({ systemPrompt: 'system' });
 
 		const events = await collect(client.prompt(userMessage));
 
@@ -98,7 +98,7 @@ describe('createMockMiniACP', () => {
 			},
 			{ type: 'turnEnd', stopCode: StopCode.Finished },
 		]);
-		expect(mock.context().history.messages).toEqual([
+		expect(mock.context().messages).toEqual([
 			userMessage,
 			{
 				role: 'assistant',
@@ -106,9 +106,7 @@ describe('createMockMiniACP', () => {
 			},
 		]);
 		expect(mock.calls().initialize).toBe(1);
-		expect(mock.calls().setContext).toEqual([
-			{ history: { systemPrompt: 'system' } },
-		]);
+		expect(mock.calls().setContext).toEqual([{ systemPrompt: 'system' }]);
 	});
 
 	it('streams text chunks with one generated message ID and matching update', async () => {
@@ -198,7 +196,7 @@ describe('createMockMiniACP', () => {
 				content: [{ type: 'text', text: 'ran read_file' }],
 			},
 		]);
-		expect(mock.context().history.messages).toContainEqual({
+		expect(mock.context().messages).toContainEqual({
 			role: 'toolResult',
 			toolCallId: 'mock-tool-call-1',
 			content: [{ type: 'text', text: 'ran read_file' }],

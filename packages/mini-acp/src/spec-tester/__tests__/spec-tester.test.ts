@@ -375,9 +375,7 @@ describe('action factories', () => {
 		expect(action).toEqual({
 			type: 'setContext',
 			context: {
-				history: {
-					systemPrompt: 'Custom prompt',
-				},
+				systemPrompt: 'Custom prompt',
 				tools: [tool],
 			},
 		});
@@ -395,14 +393,12 @@ describe('action factories', () => {
 		expect(action).toEqual({
 			type: 'setContext',
 			context: {
-				history: {
-					messages: [
-						{
-							role: 'user',
-							content: [{ type: 'text', text: 'previous message' }],
-						},
-					],
-				},
+				messages: [
+					{
+						role: 'user',
+						content: [{ type: 'text', text: 'previous message' }],
+					},
+				],
 			},
 		});
 	});
@@ -415,10 +411,8 @@ describe('action factories', () => {
 		expect(action).toEqual({
 			type: 'setContext',
 			context: {
-				history: {
-					systemPrompt: 'You are a test agent.',
-					messages: [],
-				},
+				systemPrompt: 'You are a test agent.',
+				messages: [],
 			},
 		});
 	});

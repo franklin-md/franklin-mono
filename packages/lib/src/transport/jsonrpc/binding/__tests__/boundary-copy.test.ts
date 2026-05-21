@@ -57,7 +57,7 @@ function createBoundPeers(handlers: {
 describe('JSON-RPC boundary cloning', () => {
 	// Without a clone at the RPC boundary, local in-memory peers share nested
 	// arrays and objects by reference. That leaks mutation across sides and, in
-	// Mini-ACP, can alias `history.messages` between app and agent trackers.
+	// Mini-ACP, can alias `messages` between app and agent trackers.
 	it('clones request params and method results across local peers', async () => {
 		let seenParams:
 			| {

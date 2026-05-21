@@ -28,10 +28,8 @@ function stubState<S extends CoreState>(state: S): StateHandle<S> {
 describe('inspectRuntime', () => {
 	it('replaces the core slot with the full Context snapshot', async () => {
 		const context: Context = {
-			history: {
-				systemPrompt: 'You are helpful.',
-				messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
-			},
+			systemPrompt: 'You are helpful.',
+			messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
 			tools: [
 				{
 					name: 'my_tool',
@@ -54,7 +52,8 @@ describe('inspectRuntime', () => {
 
 	it('redacts apiKey from the inspected config snapshot', async () => {
 		const context: Context = {
-			history: { systemPrompt: '', messages: [] },
+			systemPrompt: '',
+			messages: [],
 			tools: [],
 			config: {
 				model: 'test-model',
@@ -81,7 +80,8 @@ describe('inspectRuntime', () => {
 
 	it('preserves sibling state slots alongside the replaced core slot', async () => {
 		const context: Context = {
-			history: { systemPrompt: '', messages: [] },
+			systemPrompt: '',
+			messages: [],
 			tools: [],
 			config: {},
 		};

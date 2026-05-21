@@ -48,7 +48,7 @@ describe('createSystemPromptDecorator', () => {
 		}
 
 		expect(base.setContext).toHaveBeenCalledWith({
-			history: { systemPrompt: 'first\n\nsecond' },
+			systemPrompt: 'first\n\nsecond',
 		});
 		expect(base.prompt).toHaveBeenCalledWith(userMessage);
 	});

@@ -31,7 +31,7 @@ import { resolveConfig } from './resolve-config.js';
 export interface PiAdapterOptions {
 	/** TurnServer for reverse RPC (tool execution) */
 	server: TurnServer;
-	/** Agent context (history, tools, config) */
+	/** Agent context (system prompt, messages, tools, config) */
 	context: Context;
 	/** Custom stream function — inject for testing without real LLM calls */
 	streamFn?: StreamFn;
@@ -57,13 +57,13 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 			const handler = server.toolExecute.bind(server);
 			const piTools = context.tools.map((def) => bridgeTool(def, handler));
 
-			// Convert history messages to pi-ai format
-			const piMessages = context.history.messages.map(toPiMessage);
+			// Convert model-visible messages to pi-ai format
+			const piMessages = context.messages.map(toPiMessage);
 
 			// Create the pi Agent
 			piAgent = new PiCoreAgent({
 				initialState: {
-					systemPrompt: context.history.systemPrompt,
+					systemPrompt: context.systemPrompt,
 					model: resolved.model,
 					thinkingLevel: context.config.reasoning ?? 'off',
 					tools: piTools,
