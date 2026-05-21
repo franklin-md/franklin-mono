@@ -1,54 +1,51 @@
-import type { ConfigurationProvider } from './configuration.js';
+import type { Configuration } from './configuration.js';
 
 export type ConfigurationCycleEntry = {
-	readonly provider: ConfigurationProvider<any, any>;
+	readonly configuration: Configuration<any, any>;
 	readonly name: string;
 };
 
 function formatConfigurationCycle(
 	cycle: readonly ConfigurationCycleEntry[],
 ): string {
-	const providersByName = new Map<
-		string,
-		Set<ConfigurationProvider<any, any>>
-	>();
+	const configurationsByName = new Map<string, Set<Configuration<any, any>>>();
 	for (const entry of cycle) {
-		const providers = providersByName.get(entry.name) ?? new Set();
-		providers.add(entry.provider);
-		providersByName.set(entry.name, providers);
+		const configurations = configurationsByName.get(entry.name) ?? new Set();
+		configurations.add(entry.configuration);
+		configurationsByName.set(entry.name, configurations);
 	}
 
 	const duplicateNames = new Set(
-		[...providersByName.entries()]
-			.filter(([, providers]) => providers.size > 1)
+		[...configurationsByName.entries()]
+			.filter(([, configurations]) => configurations.size > 1)
 			.map(([name]) => name),
 	);
-	const labelsByProvider = new Map<ConfigurationProvider<any, any>, string>();
+	const labelsByConfiguration = new Map<Configuration<any, any>, string>();
 	const countsByName = new Map<string, number>();
 
 	return cycle
 		.map((entry) => {
 			if (!duplicateNames.has(entry.name)) return entry.name;
 
-			const existing = labelsByProvider.get(entry.provider);
+			const existing = labelsByConfiguration.get(entry.configuration);
 			if (existing !== undefined) return existing;
 
 			const count = (countsByName.get(entry.name) ?? 0) + 1;
 			countsByName.set(entry.name, count);
 
 			const label = `${entry.name}#${count}`;
-			labelsByProvider.set(entry.provider, label);
+			labelsByConfiguration.set(entry.configuration, label);
 			return label;
 		})
 		.join(' -> ');
 }
 
 export function configurationCycleEntry(
-	provider: ConfigurationProvider<any, any>,
+	configuration: Configuration<any, any>,
 ): ConfigurationCycleEntry {
 	return {
-		provider,
-		name: provider.name,
+		configuration,
+		name: configuration.name,
 	};
 }
 

@@ -46,27 +46,27 @@ import { combineAll, createDependencyModule, liftRuntimeFactory } from '@frankli
 import type { ExtensionModule, InferRuntime, RuntimeModule } from '@franklin/extensibility/module';
 ```
 
-Configuration modules provide a CodeMirror Facet-style pattern: configuration
-providers contribute typed input values, the module compiler combines those
-values with the provider's configuration, and runtime consumers read the derived
-value through `getConfig(configurationProvider)`. Configurations default their
-output type to their input type; use a second type argument when a configuration
-combines inputs into a different output shape:
+Configuration modules provide a CodeMirror Facet-style pattern: extensions
+contribute typed input values to configurations, the module compiler combines
+those values with each configuration's combine function, and runtime consumers
+read the derived value through `getConfig(configuration)`. Configurations
+default their output type to their input type; use a second type argument when a
+configuration combines inputs into a different output shape:
 
 ```ts
-import { ConfigurationProvider, createConfigurationModule } from '@franklin/extensibility/module';
+import { Configuration, createConfigurationModule } from '@franklin/extensibility/module';
 
-const account = new ConfigurationProvider<'free' | 'premium'>({
+const account = new Configuration<'free' | 'premium'>({
 	name: 'account',
 	combine: (values) => values.at(-1) ?? 'free',
 });
 
-const maxPdfPages = new ConfigurationProvider<number>({
+const maxPdfPages = new Configuration<number>({
 	name: 'maxPdfPages',
 	combine: (values) => values.at(-1) ?? 10,
 });
 
-const promptPrefix = new ConfigurationProvider<string, string>({
+const promptPrefix = new Configuration<string, string>({
 	name: 'promptPrefix',
 	combine: (values) => values.join('\n'),
 });

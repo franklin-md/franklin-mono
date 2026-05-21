@@ -1,7 +1,4 @@
-import type {
-	ConfigurationProvider,
-	ConfigurationReader,
-} from '../configuration.js';
+import type { Configuration, ConfigurationReader } from '../configuration.js';
 import type {
 	ComputedConfigurationContribution,
 	ConfigurationContribution,
@@ -16,7 +13,7 @@ import {
 function resolveConfigurationContribution<Input>(
 	contribution: ConfigurationContribution<Input>,
 	resolve: <Input, Output>(
-		provider: ConfigurationProvider<Input, Output>,
+		configuration: Configuration<Input, Output>,
 	) => Output,
 ): Input {
 	switch (contribution.kind) {
@@ -32,10 +29,10 @@ function resolveConfigurationContribution<Input>(
 function createComputedConfigurationReader<Input>(
 	contribution: ComputedConfigurationContribution<Input>,
 	resolve: <Input, Output>(
-		provider: ConfigurationProvider<Input, Output>,
+		configuration: Configuration<Input, Output>,
 	) => Output,
 ): ConfigurationReader {
-	const target = configurationCycleEntry(contribution.provider);
+	const target = configurationCycleEntry(contribution.configuration);
 	const dependencies = new Set(contribution.dependencies);
 
 	return {
@@ -54,13 +51,13 @@ function createComputedConfigurationReader<Input>(
 function resolveConfigurationGroup(
 	group: ConfigurationContributionGroup,
 	resolve: <Input, Output>(
-		provider: ConfigurationProvider<Input, Output>,
+		configuration: Configuration<Input, Output>,
 	) => Output,
 ): unknown {
 	const inputs = group.contributions.map((contribution) =>
 		resolveConfigurationContribution(contribution, resolve),
 	);
-	return group.provider.configuration.combine(inputs);
+	return group.configuration.combine(inputs);
 }
 
 export function createConfigurationResolver(
@@ -70,21 +67,21 @@ export function createConfigurationResolver(
 	const groups = groupConfigurationContributions(contributions);
 
 	const resolve = <Input, Output>(
-		provider: ConfigurationProvider<Input, Output>,
+		configuration: Configuration<Input, Output>,
 	): Output => {
-		const group = groups.get(provider);
+		const group = groups.get(configuration);
 		if (group === undefined) {
-			return provider.configuration.combine([]);
+			return configuration.combine([]);
 		}
 
 		return resolveConfigurationGroup(group, resolve) as Output;
 	};
 
 	return {
-		getConfig(provider) {
-			// TODO(FRA-330): Consider caching resolved provider values and invalidating
+		getConfig(configuration) {
+			// TODO(FRA-330): Consider caching resolved configuration values and invalidating
 			// that cache when configuration contributions change.
-			return resolve(provider);
+			return resolve(configuration);
 		},
 	};
 }

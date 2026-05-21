@@ -34,16 +34,16 @@ import {
 } from '../authoring.js';
 import {
 	ConfigurationCycleError,
-	ConfigurationProvider,
+	Configuration,
 	combine as combineModules,
 	combineAll as combineAllModules,
 	createConfigurationModule,
 	createDependencyModule,
 	liftRuntimeFactory,
-	type Configuration,
 	type ConfigurationModule,
 	type ConfigurationReader,
 	type ConfigurationCycleEntry,
+	type ConfigurationSpec,
 	type ConfigurationRuntime,
 	type DependencyModule,
 	type ExtensionModule,
@@ -118,7 +118,7 @@ void compile(
 
 const _dependency = createDependencyModule('settings', { get: () => 'value' });
 const _configurationModule = createConfigurationModule();
-const _configuration = new ConfigurationProvider<string, string>({
+const _configuration = new Configuration<string, string>({
 	name: 'exported',
 	combine: (values) => values.join(''),
 });
@@ -127,6 +127,7 @@ type _ConfigurationModule = ConfigurationModule;
 type _DependencyRuntime = InferModuleRuntime<typeof _dependency>;
 type _ConfigurationRuntime = ConfigurationRuntime;
 type _Configuration = Configuration<string, string>;
+type _ConfigurationSpec = ConfigurationSpec<string, string>;
 type _ConfigurationReader = ConfigurationReader;
 type _ConfigurationCycleEntry = ConfigurationCycleEntry;
 type _RuntimeModule = RuntimeModule<_DependencyRuntime>;
@@ -138,6 +139,7 @@ const _configurationValue: string =
 void (null as unknown as _DependencyModule);
 void (null as unknown as _ConfigurationModule);
 void (null as unknown as _Configuration);
+void (null as unknown as _ConfigurationSpec);
 void (null as unknown as _ConfigurationReader);
 void (null as unknown as _ConfigurationCycleEntry);
 void (null as unknown as _DependencyRuntime);

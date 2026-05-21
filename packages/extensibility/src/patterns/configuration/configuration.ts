@@ -6,53 +6,55 @@ export type ConfigurationCombine<Input, Output> = (
 	values: readonly Input[],
 ) => Output;
 
-export type Configuration<Input, Output = Input> = {
+export type ConfigurationSpec<Input, Output = Input> = {
 	readonly name: string;
 	readonly combine: ConfigurationCombine<Input, Output>;
 };
 
 export type ConfigurationReader = {
-	getConfig<Input, Output>(
-		provider: ConfigurationProvider<Input, Output>,
-	): Output;
+	getConfig<Input, Output>(configuration: Configuration<Input, Output>): Output;
 };
 
 export type ConfigurationCompute<Input> = (
 	reader: ConfigurationReader,
 ) => Input;
 
-export class ConfigurationProvider<Input, Output = Input> {
-	readonly configuration: Configuration<Input, Output>;
+export class Configuration<Input, Output = Input> {
+	readonly spec: ConfigurationSpec<Input, Output>;
 
-	constructor(configuration: Configuration<Input, Output>) {
-		this.configuration = Object.freeze({
-			name: configuration.name,
-			combine: configuration.combine,
+	constructor(spec: ConfigurationSpec<Input, Output>) {
+		this.spec = Object.freeze({
+			name: spec.name,
+			combine: spec.combine,
 		});
 	}
 
 	get name(): string {
-		return this.configuration.name;
+		return this.spec.name;
+	}
+
+	combine(inputs: readonly Input[]): Output {
+		return this.spec.combine(inputs);
 	}
 
 	of(input: Input): Extension<ConfigurationAPI> {
 		return (api) => {
 			api[CONFIGURATION_API]({
 				kind: 'static',
-				provider: this,
+				configuration: this,
 				input,
 			});
 		};
 	}
 
 	compute(
-		dependencies: readonly ConfigurationProvider<any, any>[],
+		dependencies: readonly Configuration<any, any>[],
 		compute: ConfigurationCompute<Input>,
 	): Extension<ConfigurationAPI> {
 		return (api) => {
 			api[CONFIGURATION_API]({
 				kind: 'computed',
-				provider: this,
+				configuration: this,
 				dependencies,
 				compute,
 			});

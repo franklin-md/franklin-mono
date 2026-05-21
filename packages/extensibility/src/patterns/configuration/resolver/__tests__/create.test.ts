@@ -1,32 +1,32 @@
 import { describe, expect, it } from 'vitest';
 import { ConfigurationCycleError } from '../../cycle-error.js';
-import { ConfigurationProvider } from '../../configuration.js';
+import { Configuration } from '../../configuration.js';
 import { createConfigurationResolver } from '../create.js';
 
 describe('createConfigurationResolver', () => {
 	it('resolves static and computed inputs through the target combine function', () => {
-		const account = new ConfigurationProvider<'free' | 'premium'>({
+		const account = new Configuration<'free' | 'premium'>({
 			name: 'account',
 			combine: (values) => values.at(-1) ?? 'free',
 		});
-		const maxPdfPages = new ConfigurationProvider<number, string>({
+		const maxPdfPages = new Configuration<number, string>({
 			name: 'maxPdfPages',
 			combine: (values) => values.join(','),
 		});
 		const resolver = createConfigurationResolver([
 			{
 				kind: 'static',
-				provider: account,
+				configuration: account,
 				input: 'premium',
 			},
 			{
 				kind: 'static',
-				provider: maxPdfPages,
+				configuration: maxPdfPages,
 				input: 50,
 			},
 			{
 				kind: 'computed',
-				provider: maxPdfPages,
+				configuration: maxPdfPages,
 				dependencies: [account],
 				compute: ({ getConfig }) =>
 					getConfig(account) === 'premium' ? 100 : 10,
@@ -37,7 +37,7 @@ describe('createConfigurationResolver', () => {
 	});
 
 	it('uses combine with an empty input list for configurations without contributions', () => {
-		const score = new ConfigurationProvider<number>({
+		const score = new Configuration<number>({
 			name: 'score',
 			combine: (values) => values.reduce((sum, value) => sum + value, 0),
 		});
@@ -46,24 +46,24 @@ describe('createConfigurationResolver', () => {
 		expect(resolver.getConfig(score)).toBe(0);
 	});
 
-	it('keeps providers with the same configuration name distinct by identity', () => {
-		const first = new ConfigurationProvider<string>({
+	it('keeps configurations with the same configuration name distinct by identity', () => {
+		const first = new Configuration<string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'light',
 		});
-		const second = new ConfigurationProvider<string>({
+		const second = new Configuration<string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'light',
 		});
 		const resolver = createConfigurationResolver([
 			{
 				kind: 'static',
-				provider: first,
+				configuration: first,
 				input: 'dark',
 			},
 			{
 				kind: 'static',
-				provider: second,
+				configuration: second,
 				input: 'contrast',
 			},
 		]);
@@ -73,18 +73,18 @@ describe('createConfigurationResolver', () => {
 	});
 
 	it('rejects computed reads outside declared dependencies', () => {
-		const first = new ConfigurationProvider<number>({
+		const first = new Configuration<number>({
 			name: 'first',
 			combine: (values) => values.at(-1) ?? 0,
 		});
-		const second = new ConfigurationProvider<number>({
+		const second = new Configuration<number>({
 			name: 'second',
 			combine: (values) => values.at(-1) ?? 0,
 		});
 		const resolver = createConfigurationResolver([
 			{
 				kind: 'computed',
-				provider: first,
+				configuration: first,
 				dependencies: [],
 				compute: ({ getConfig }) => getConfig(second) + 1,
 			},
@@ -96,11 +96,11 @@ describe('createConfigurationResolver', () => {
 	});
 
 	it('rejects dependency cycles during resolver creation', () => {
-		const first = new ConfigurationProvider<number>({
+		const first = new Configuration<number>({
 			name: 'first',
 			combine: (values) => values.at(-1) ?? 0,
 		});
-		const second = new ConfigurationProvider<number>({
+		const second = new Configuration<number>({
 			name: 'second',
 			combine: (values) => values.at(-1) ?? 0,
 		});
@@ -108,13 +108,13 @@ describe('createConfigurationResolver', () => {
 			createConfigurationResolver([
 				{
 					kind: 'computed',
-					provider: first,
+					configuration: first,
 					dependencies: [second],
 					compute: ({ getConfig }) => getConfig(second) + 1,
 				},
 				{
 					kind: 'computed',
-					provider: second,
+					configuration: second,
 					dependencies: [first],
 					compute: ({ getConfig }) => getConfig(first) + 1,
 				},

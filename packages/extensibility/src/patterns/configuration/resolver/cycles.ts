@@ -3,10 +3,10 @@ import {
 	type ConfigurationCycleEntry,
 	configurationCycleEntry,
 } from '../cycle-error.js';
-import type { ConfigurationProvider } from '../configuration.js';
+import type { Configuration } from '../configuration.js';
 import type { ConfigurationContribution } from '../contribution.js';
 
-type NodeId = ConfigurationProvider<any, any>;
+type NodeId = Configuration<any, any>;
 
 type GraphNodeRef = {
 	readonly id: NodeId;
@@ -23,14 +23,14 @@ function graphRefForConfiguration(
 	entry: ConfigurationCycleEntry,
 ): GraphNodeRef {
 	return {
-		id: entry.provider,
+		id: entry.configuration,
 		label: entry.name,
 	};
 }
 
 function cycleEntryForGraphRef(ref: GraphNodeRef): ConfigurationCycleEntry {
 	return {
-		provider: ref.id,
+		configuration: ref.id,
 		name: ref.label,
 	};
 }
@@ -58,7 +58,9 @@ function buildDeclaredDependencyGraph(
 	for (const contribution of contributions) {
 		const node = getOrCreateGraphNode(
 			graph,
-			graphRefForConfiguration(configurationCycleEntry(contribution.provider)),
+			graphRefForConfiguration(
+				configurationCycleEntry(contribution.configuration),
+			),
 		);
 		if (contribution.kind === 'static') continue;
 

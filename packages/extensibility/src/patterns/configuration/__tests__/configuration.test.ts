@@ -3,7 +3,7 @@ import { compile } from '../../../compiler/compile.js';
 import { createApi } from '../../../extension-points/facade.js';
 import { createRegistry } from '../../../extension-points/writer.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
-import { ConfigurationProvider } from '../configuration.js';
+import { Configuration } from '../configuration.js';
 import { ConfigurationCycleError } from '../cycle-error.js';
 import { CONFIGURATION_API } from '../internal.js';
 import {
@@ -33,7 +33,7 @@ describe('createConfigurationModule', () => {
 
 	it('combines multiple contributions for one configuration into one runtime value', async () => {
 		const module = createConfigurationModule();
-		const promptPrefix = new ConfigurationProvider<string, string>({
+		const promptPrefix = new Configuration<string, string>({
 			name: 'promptPrefix',
 			combine: (values) => values.join('\n'),
 		});
@@ -51,13 +51,13 @@ describe('createConfigurationModule', () => {
 		await runtime.dispose();
 	});
 
-	it('keeps providers with the same configuration name distinct by identity', async () => {
+	it('keeps configurations with the same configuration name distinct by identity', async () => {
 		const module = createConfigurationModule();
-		const first = new ConfigurationProvider<string, string>({
+		const first = new Configuration<string, string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'light',
 		});
-		const second = new ConfigurationProvider<string, string>({
+		const second = new Configuration<string, string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'light',
 		});
@@ -78,7 +78,7 @@ describe('createConfigurationModule', () => {
 
 	it('uses combine with an empty input list for configurations without contributions', async () => {
 		const module = createConfigurationModule();
-		const score = new ConfigurationProvider<number, number>({
+		const score = new Configuration<number, number>({
 			name: 'score',
 			combine: (values) => values.reduce((sum, value) => sum + value, 0),
 		});
@@ -93,14 +93,14 @@ describe('createConfigurationModule', () => {
 		await runtime.dispose();
 	});
 
-	it('uses the provider construction-time configuration after the original object mutates', async () => {
+	it('uses the construction-time configuration spec after the original object mutates', async () => {
 		const module = createConfigurationModule();
 		const configuration = {
 			name: 'score',
 			combine: (values: readonly number[]) =>
 				values.reduce((sum, value) => sum + value, 0),
 		};
-		const score = new ConfigurationProvider<number, number>(configuration);
+		const score = new Configuration<number, number>(configuration);
 
 		const runtime = await compile(
 			module.extensionPoint,
@@ -119,11 +119,11 @@ describe('createConfigurationModule', () => {
 
 	it('resolves computed configuration values from declared dependencies', async () => {
 		const module = createConfigurationModule();
-		const account = new ConfigurationProvider<'free' | 'premium'>({
+		const account = new Configuration<'free' | 'premium'>({
 			name: 'account',
 			combine: (values) => values.at(-1) ?? 'free',
 		});
-		const maxPdfPages = new ConfigurationProvider<number>({
+		const maxPdfPages = new Configuration<number>({
 			name: 'maxPdfPages',
 			combine: (values) => values.at(-1) ?? 10,
 		});
@@ -145,11 +145,11 @@ describe('createConfigurationModule', () => {
 
 	it('rejects declared computed dependency cycles during compile', async () => {
 		const module = createConfigurationModule();
-		const first = new ConfigurationProvider<number>({
+		const first = new Configuration<number>({
 			name: 'first',
 			combine: (values) => values.at(-1) ?? 0,
 		});
-		const second = new ConfigurationProvider<number>({
+		const second = new Configuration<number>({
 			name: 'second',
 			combine: (values) => values.at(-1) ?? 0,
 		});

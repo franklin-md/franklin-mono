@@ -1,4 +1,4 @@
-import { ConfigurationProvider } from '../configuration.js';
+import { Configuration } from '../configuration.js';
 import { createConfigurationModule } from '../module.js';
 import type { ConfigurationRuntime } from '../runtime.js';
 
@@ -8,38 +8,40 @@ void _module.compiler;
 
 declare const runtime: ConfigurationRuntime;
 
-const _stringProvider = new ConfigurationProvider<string, string>({
+const _stringConfiguration = new Configuration<string, string>({
 	name: 'string',
 	combine: (values) => values.join(''),
 });
-const _stringValue: string = runtime.getConfig(_stringProvider);
+const _stringValue: string = runtime.getConfig(_stringConfiguration);
 // @ts-expect-error getConfig returns the configuration output type
-const _numberValue: number = runtime.getConfig(_stringProvider);
+const _numberValue: number = runtime.getConfig(_stringConfiguration);
 
-const _defaultOutputProvider = new ConfigurationProvider<number>({
+const _defaultOutputConfiguration = new Configuration<number>({
 	name: 'numbers',
 	combine: (values) => values.at(-1) ?? 0,
 });
-const _defaultOutputValue: number = runtime.getConfig(_defaultOutputProvider);
+const _defaultOutputValue: number = runtime.getConfig(
+	_defaultOutputConfiguration,
+);
 // @ts-expect-error default configuration output matches the input type
 const _defaultOutputListValue: readonly number[] = runtime.getConfig(
-	_defaultOutputProvider,
+	_defaultOutputConfiguration,
 );
 
-const _listProvider = new ConfigurationProvider<number, readonly number[]>({
+const _listConfiguration = new Configuration<number, readonly number[]>({
 	name: 'numberList',
 	combine: (values) => values,
 });
-const _listValue: readonly number[] = runtime.getConfig(_listProvider);
+const _listValue: readonly number[] = runtime.getConfig(_listConfiguration);
 // @ts-expect-error list configuration output is readonly
-const _mutableListValue: number[] = runtime.getConfig(_listProvider);
+const _mutableListValue: number[] = runtime.getConfig(_listConfiguration);
 
-const _computedExtension = _stringProvider.compute(
-	[_defaultOutputProvider],
-	(reader) => reader.getConfig(_defaultOutputProvider).toString(),
+const _computedExtension = _stringConfiguration.compute(
+	[_defaultOutputConfiguration],
+	(reader) => reader.getConfig(_defaultOutputConfiguration).toString(),
 );
 // @ts-expect-error computed values must return the configuration input type
-_stringProvider.compute([], () => 123);
+_stringConfiguration.compute([], () => 123);
 
 void _stringValue;
 void _numberValue;

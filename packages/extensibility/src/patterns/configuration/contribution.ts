@@ -1,20 +1,17 @@
-import type {
-	ConfigurationCompute,
-	ConfigurationProvider,
-} from './configuration.js';
+import type { ConfigurationCompute, Configuration } from './configuration.js';
 
 // Static and computed contributions share the same downstream pipeline: each
 // resolves to one input value for the target configuration's combine function.
 export type StaticConfigurationContribution<Input = any, Output = any> = {
 	readonly kind: 'static';
-	readonly provider: ConfigurationProvider<Input, Output>;
+	readonly configuration: Configuration<Input, Output>;
 	readonly input: Input;
 };
 
 export type ComputedConfigurationContribution<Input = any, Output = any> = {
 	readonly kind: 'computed';
-	readonly provider: ConfigurationProvider<Input, Output>;
-	readonly dependencies: readonly ConfigurationProvider<any, any>[];
+	readonly configuration: Configuration<Input, Output>;
+	readonly dependencies: readonly Configuration<any, any>[];
 	readonly compute: ConfigurationCompute<Input>;
 };
 

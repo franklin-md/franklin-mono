@@ -1,34 +1,34 @@
 import { describe, expect, it } from 'vitest';
 import { ConfigurationCycleError } from '../../cycle-error.js';
-import { ConfigurationProvider } from '../../configuration.js';
+import { Configuration } from '../../configuration.js';
 import type { ConfigurationContribution } from '../../contribution.js';
 import { assertNoDeclaredConfigurationCycles } from '../cycles.js';
 
-function numberConfiguration(name: string): ConfigurationProvider<number> {
-	return new ConfigurationProvider<number>({
+function numberConfiguration(name: string): Configuration<number> {
+	return new Configuration<number>({
 		name,
 		combine: (values) => values.at(-1) ?? 0,
 	});
 }
 
 function staticValue(
-	provider: ConfigurationProvider<number>,
+	configuration: Configuration<number>,
 	input = 1,
 ): ConfigurationContribution<number> {
 	return {
 		kind: 'static',
-		provider,
+		configuration,
 		input,
 	};
 }
 
 function computedValue(
-	provider: ConfigurationProvider<number>,
-	dependencies: readonly ConfigurationProvider<number>[],
+	configuration: Configuration<number>,
+	dependencies: readonly Configuration<number>[],
 ): ConfigurationContribution<number> {
 	return {
 		kind: 'computed',
-		provider,
+		configuration,
 		dependencies,
 		compute: ({ getConfig }) =>
 			dependencies.reduce((sum, dependency) => sum + getConfig(dependency), 0),
@@ -53,7 +53,7 @@ describe('assertNoDeclaredConfigurationCycles', () => {
 		expect(() => assertNoDeclaredConfigurationCycles([])).not.toThrow();
 	});
 
-	it('accepts static-only providers', () => {
+	it('accepts static-only configurations', () => {
 		const first = numberConfiguration('first');
 		const second = numberConfiguration('second');
 
@@ -115,7 +115,7 @@ describe('assertNoDeclaredConfigurationCycles', () => {
 		]);
 	});
 
-	it('disambiguates duplicate provider names in cycle messages', () => {
+	it('disambiguates duplicate configuration names in cycle messages', () => {
 		const first = numberConfiguration('duplicate');
 		const second = numberConfiguration('duplicate');
 		const error = captureCycleError([
@@ -126,7 +126,7 @@ describe('assertNoDeclaredConfigurationCycles', () => {
 		expect(error.message).toBe(
 			'Circular configuration computation: duplicate#1 -> duplicate#2 -> duplicate#1',
 		);
-		expect(error.cycle.map((entry) => entry.provider)).toEqual([
+		expect(error.cycle.map((entry) => entry.configuration)).toEqual([
 			first,
 			second,
 			first,
@@ -169,7 +169,7 @@ describe('assertNoDeclaredConfigurationCycles', () => {
 		]);
 	});
 
-	it('rejects cycles across duplicate contributions for one provider', () => {
+	it('rejects cycles across duplicate contributions for one configuration', () => {
 		const first = numberConfiguration('first');
 		const second = numberConfiguration('second');
 		const third = numberConfiguration('third');

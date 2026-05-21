@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Extension } from '../../../extension/types.js';
-import { ConfigurationProvider, type Configuration } from '../configuration.js';
+import { Configuration, type ConfigurationSpec } from '../configuration.js';
 import { CONFIGURATION_API } from '../internal.js';
 import type { ConfigurationAPI } from '../types.js';
 import type { ConfigurationContribution } from '../contribution.js';
@@ -22,45 +22,45 @@ function captureConfigurationContributions(): {
 
 describe('Configuration', () => {
 	it('is the configuration specification with an explicit combine function', () => {
-		const configuration: Configuration<string> = {
+		const spec: ConfigurationSpec<string> = {
 			name: 'list',
 			combine: (values) => values.at(-1) ?? 'fallback',
 		};
 		const inputs = ['one', 'two'] as const;
 
-		expect(configuration.combine(inputs)).toBe('two');
+		expect(spec.combine(inputs)).toBe('two');
 	});
 
 	it('allows configurations to combine inputs into a custom output type', () => {
-		const configuration: Configuration<string, string> = {
+		const spec: ConfigurationSpec<string, string> = {
 			name: 'joined',
 			combine: (values) => values.join('\n'),
 		};
 
-		expect(configuration.combine(['one', 'two'])).toBe('one\ntwo');
+		expect(spec.combine(['one', 'two'])).toBe('one\ntwo');
 	});
 
-	it('creates extensions from providers that write static values through the configuration API', () => {
-		const provider = new ConfigurationProvider<string, string>({
+	it('creates extensions from configurations that write static values through the configuration API', () => {
+		const theme = new Configuration<string, string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'fallback',
 		});
-		const extension: Extension<ConfigurationAPI> = provider.of('dark');
+		const extension: Extension<ConfigurationAPI> = theme.of('dark');
 		const { api, contributions } = captureConfigurationContributions();
 
 		extension(api);
 
 		expect(contributions).toEqual([
-			{ kind: 'static', provider, input: 'dark' },
+			{ kind: 'static', configuration: theme, input: 'dark' },
 		]);
 	});
 
-	it('creates extensions from providers that write computed values through the configuration API', () => {
-		const account = new ConfigurationProvider<'free' | 'premium'>({
+	it('creates extensions from configurations that write computed values through the configuration API', () => {
+		const account = new Configuration<'free' | 'premium'>({
 			name: 'account',
 			combine: (values) => values.at(-1) ?? 'free',
 		});
-		const maxPdfPages = new ConfigurationProvider<number>({
+		const maxPdfPages = new Configuration<number>({
 			name: 'maxPdfPages',
 			combine: (values) => values.at(-1) ?? 10,
 		});
@@ -75,30 +75,30 @@ describe('Configuration', () => {
 		expect(contributions).toHaveLength(1);
 		expect(contributions[0]).toMatchObject({
 			kind: 'computed',
-			provider: maxPdfPages,
+			configuration: maxPdfPages,
 			dependencies: [account],
 		});
 	});
 
-	it('keeps provider methods on the prototype and exposes the configuration spec', () => {
-		const configuration: Configuration<string> = {
+	it('keeps configuration methods on the prototype and exposes the configuration spec', () => {
+		const spec: ConfigurationSpec<string> = {
 			name: 'hidden',
 			combine: (values) => values.at(-1) ?? 'fallback',
 		};
-		const provider = new ConfigurationProvider(configuration);
+		const configuration = new Configuration(spec);
 
-		expect(provider.configuration).toEqual(configuration);
-		expect(Object.isFrozen(provider.configuration)).toBe(true);
-		expect(provider.of).toBeTypeOf('function');
-		expect(provider.compute).toBeTypeOf('function');
+		expect(configuration.spec).toEqual(spec);
+		expect(Object.isFrozen(configuration.spec)).toBe(true);
+		expect(configuration.of).toBeTypeOf('function');
+		expect(configuration.compute).toBeTypeOf('function');
 	});
 
-	it('keeps providers with the same configuration name distinct by object identity', () => {
-		const first = new ConfigurationProvider<string>({
+	it('keeps configurations with the same configuration name distinct by object identity', () => {
+		const first = new Configuration<string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'fallback',
 		});
-		const second = new ConfigurationProvider<string>({
+		const second = new Configuration<string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'fallback',
 		});

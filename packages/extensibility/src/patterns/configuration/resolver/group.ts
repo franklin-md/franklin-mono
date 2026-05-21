@@ -1,24 +1,24 @@
-import type { ConfigurationProvider } from '../configuration.js';
+import type { Configuration } from '../configuration.js';
 import type { ConfigurationContribution } from '../contribution.js';
 
 export type ConfigurationContributionGroup = {
-	readonly provider: ConfigurationProvider<any, any>;
+	readonly configuration: Configuration<any, any>;
 	readonly contributions: ConfigurationContribution[];
 };
 
 export function groupConfigurationContributions(
 	contributions: readonly ConfigurationContribution[],
-): Map<ConfigurationProvider<any, any>, ConfigurationContributionGroup> {
+): Map<Configuration<any, any>, ConfigurationContributionGroup> {
 	const groups = new Map<
-		ConfigurationProvider<any, any>,
+		Configuration<any, any>,
 		ConfigurationContributionGroup
 	>();
 
 	for (const contribution of contributions) {
-		const existing = groups.get(contribution.provider);
+		const existing = groups.get(contribution.configuration);
 		if (existing === undefined) {
-			groups.set(contribution.provider, {
-				provider: contribution.provider,
+			groups.set(contribution.configuration, {
+				configuration: contribution.configuration,
 				contributions: [contribution],
 			});
 			continue;

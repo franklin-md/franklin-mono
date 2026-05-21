@@ -1,8 +1,8 @@
-export { ConfigurationProvider } from './configuration.js';
+export { Configuration } from './configuration.js';
 export type {
-	Configuration,
 	ConfigurationCompute,
 	ConfigurationReader,
+	ConfigurationSpec,
 } from './configuration.js';
 export { ConfigurationCycleError } from './cycle-error.js';
 export type { ConfigurationCycleEntry } from './cycle-error.js';
