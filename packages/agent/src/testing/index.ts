@@ -11,4 +11,3 @@ export {
 	type CoreScenarioInput,
 	type CoreScenarioResult,
 } from './core-scenario.js';
-export { CORE_STATE } from '../modules/core/runtime/index.js';

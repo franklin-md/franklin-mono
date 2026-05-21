@@ -57,6 +57,22 @@ Decorator layers intercept Mini-ACP flow in ordered concerns:
 
 Each layer wraps the typed Mini-ACP client/server pair after connect, not the raw transport stream. Some layers use method middleware internally, but the public core module shape is the ordered decorator stack.
 
+### Runtime Agent State
+
+The core runtime keeps an internal `RuntimeAgentState` as the live owner of
+prompt-driving state: the last-sent Mini-ACP `Context` and accumulated usage.
+The runtime state also owns the registration-built system prompt builder, so
+prompt decorators only ask whether a freshly assembled prompt differs from the
+tracked Mini-ACP context before sending a patch. Decorators record `setContext`,
+prompt messages, assistant updates, tool results, and turn usage into this
+internal state object. The public runtime
+exposes `getSession()` as a safe projection to `SessionSnapshot` for consumers
+that need the dehydrated session view. The state-module layer uses the same
+projection for persistence, fork, and child-session creation.
+`SessionSnapshot` intentionally remains narrower than `Context`: it keeps
+model-visible messages, non-secret LLM config, and usage, while system prompt
+text, registered tool schemas, and API keys stay runtime-only.
+
 ### Extensions
 
 Extensions are the way the application interacts with both the agent and the environment. From an extension developer's perspective, the primary concern is: **how should the application handle the agent's tool requests?**

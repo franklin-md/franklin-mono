@@ -43,7 +43,7 @@ describe('Configuration', () => {
 	it('creates extensions from configurations that write static values through the configuration API', () => {
 		const theme = new Configuration<string, string>({
 			name: 'theme',
-			combine: (values) => values.at(-1) ?? 'fallback',
+			combine: (values) => values[0] ?? 'fallback',
 		});
 		const extension: Extension<ConfigurationAPI> = theme.of('dark');
 		const { api, contributions } = captureConfigurationContributions();

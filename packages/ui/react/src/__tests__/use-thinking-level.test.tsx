@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 import { ZERO_USAGE, type ThinkingLevel } from '@franklin/mini-acp';
 import type { FranklinRuntime } from '@franklin/agent';
 import type { CoreEvent } from '@franklin/agent';
-import { CORE_STATE } from '@franklin/agent/testing';
 
 import { AgentProvider } from '../agent/agent-context.js';
 import { useThinkingLevel } from '../agent/use-thinking-level.js';
@@ -22,6 +21,7 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 	subscribeSpy: ReturnType<typeof vi.fn>;
 	/** Simulate a runtime notification (e.g. setLLMConfig completed). */
 	notify: () => void;
+	setReasoning: (value: ThinkingLevel | undefined) => void;
 } {
 	let reasoning: ThinkingLevel | undefined = initialReasoning;
 	const listeners = new Set<CoreEventListener>();
@@ -34,23 +34,11 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 	});
 
 	const runtime = {
-		[CORE_STATE]: {
-			get: vi.fn(async () => ({
-				messages: [],
-				llmConfig: { reasoning },
-				usage: ZERO_USAGE,
-			})),
-			fork: vi.fn(async () => ({
-				messages: [],
-				llmConfig: { reasoning },
-				usage: ZERO_USAGE,
-			})),
-			child: vi.fn(async () => ({
-				messages: [],
-				llmConfig: { reasoning },
-				usage: ZERO_USAGE,
-			})),
-		},
+		getSession: vi.fn(() => ({
+			messages: [],
+			llmConfig: { reasoning },
+			usage: ZERO_USAGE,
+		})),
 		setLLMConfig: vi.fn(async (config: { reasoning?: ThinkingLevel }) => {
 			if (config.reasoning !== undefined) {
 				reasoning = config.reasoning;
@@ -67,6 +55,9 @@ function makeMockRuntime(initialReasoning: ThinkingLevel = 'medium'): {
 		subscribeSpy,
 		notify: () => {
 			for (const l of listeners) l({ type: 'llm-config-changed' });
+		},
+		setReasoning: (value) => {
+			reasoning = value;
 		},
 	};
 }
@@ -95,23 +86,11 @@ describe('useThinkingLevel – initialization', () => {
 
 	it('defaults to medium when runtime has no reasoning set', async () => {
 		const runtime = {
-			[CORE_STATE]: {
-				get: vi.fn(async () => ({
-					messages: [],
-					llmConfig: {},
-					usage: ZERO_USAGE,
-				})),
-				fork: vi.fn(async () => ({
-					messages: [],
-					llmConfig: {},
-					usage: ZERO_USAGE,
-				})),
-				child: vi.fn(async () => ({
-					messages: [],
-					llmConfig: {},
-					usage: ZERO_USAGE,
-				})),
-			},
+			getSession: vi.fn(() => ({
+				messages: [],
+				llmConfig: {},
+				usage: ZERO_USAGE,
+			})),
 			coreEvents: {
 				subscribe: vi.fn(() => () => {}),
 			},
@@ -244,7 +223,7 @@ describe('useThinkingLevel – cycleLevel', () => {
 
 describe('useThinkingLevel – reactivity', () => {
 	it('syncs when the runtime notifies a change', async () => {
-		const { runtime, notify } = makeMockRuntime('low');
+		const { runtime, notify, setReasoning } = makeMockRuntime('low');
 		const { result } = renderHook(() => useThinkingLevel(), {
 			wrapper: agentWrapper(runtime),
 		});
@@ -254,11 +233,7 @@ describe('useThinkingLevel – reactivity', () => {
 		});
 
 		// Simulate external config change
-		(runtime[CORE_STATE].get as ReturnType<typeof vi.fn>).mockResolvedValue({
-			messages: [],
-			llmConfig: { reasoning: 'xhigh' },
-			usage: ZERO_USAGE,
-		});
+		setReasoning('xhigh');
 
 		act(() => {
 			notify();

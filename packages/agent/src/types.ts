@@ -28,7 +28,7 @@ export type FranklinModule = OrchestratorModule<FranklinModules>;
 // (a `Modules<[Modules<Mods>, InternalOrchestratorModule<Modules<Mods>>]>`)
 // routes through
 // `Simplify<CombinedRuntime<…>>`, which forces TypeScript to inline the
-// runtime's `unique symbol` keys (CORE_STATE, …) into downstream dts files.
+// runtime's `unique symbol` keys (ENV_STATE, …) into downstream dts files.
 export type FranklinRuntime = OrchestratorRuntime<FranklinBase>;
 
 /** Compatibility alias for the previous persisted app session name. */
