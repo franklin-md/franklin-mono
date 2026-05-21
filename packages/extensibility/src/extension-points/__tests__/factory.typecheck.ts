@@ -11,6 +11,13 @@ type StoreSignature = StaticSignature<{
 	registerStore(name: string, initial: unknown): void;
 }>;
 
+const hidden = Symbol('hidden');
+
+type SymbolSignature = StaticSignature<{
+	visible(value: string): void;
+	[hidden](value: number): void;
+}>;
+
 createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
@@ -30,6 +37,16 @@ createExtensionPoint<CoreSignature>({
 
 createExtensionPoint<StoreSignature>({
 	registerStore: true,
+});
+
+createExtensionPoint<SymbolSignature>({
+	visible: true,
+	[hidden]: true,
+});
+
+// @ts-expect-error symbol extension point must list the symbol contribution key
+createExtensionPoint<SymbolSignature>({
+	visible: true,
 });
 
 // @ts-expect-error store extension point must list registerStore

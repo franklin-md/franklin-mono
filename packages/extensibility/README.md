@@ -46,6 +46,22 @@ import { combineAll, createDependencyModule, liftRuntimeFactory } from '@frankli
 import type { ExtensionModule, InferRuntime, RuntimeModule } from '@franklin/extensibility/module';
 ```
 
+Configuration modules provide a CodeMirror Facet-style pattern: extensions
+contribute typed inputs, the module compiler combines them, and runtime
+consumers read the derived value through `config(configuration)`:
+
+```ts
+import { Configuration, createConfigurationModule } from '@franklin/extensibility/module';
+
+const theme = new Configuration<string, string>({
+	name: 'theme',
+	combine: (values) => values.at(-1) ?? 'light',
+});
+
+const configurationModule = createConfigurationModule();
+const darkThemeExtension = theme.of('dark');
+```
+
 The package intentionally does not expose wildcard subpaths. If a helper is not
 available from one of the imports above, treat it as internal implementation
 detail rather than a supported package API.

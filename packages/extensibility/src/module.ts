@@ -29,6 +29,19 @@ export {
 	liftRuntimeFactory,
 } from './modules/simple/index.js';
 export type {
+	ConfigurationCombine,
+	ConfigurationContribution,
+	ConfigurationModule,
+	ConfigurationOptions,
+	ConfigurationRegistrationAPI,
+	ConfigurationRuntime,
+	ConfigurationSignature,
+} from './patterns/configuration/index.js';
+export {
+	Configuration,
+	createConfigurationModule,
+} from './patterns/configuration/index.js';
+export type {
 	DependencyModule,
 	DependencyRuntime,
 } from './patterns/dependency/index.js';

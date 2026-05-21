@@ -11,7 +11,7 @@ type MethodName<Surface extends object> = {
 
 export type EffectName<S extends Signature, Runtime extends S['In']> = Extract<
 	MethodName<API<S, Runtime>>,
-	string
+	PropertyKey
 >;
 
 export type EffectValueForName<
@@ -26,13 +26,19 @@ export type RegistrationMeta = {
 
 export type RegistrationMetaInput = Partial<RegistrationMeta>;
 
-export type EffectInput<Name extends string = string, Value = unknown> = {
+export type EffectInput<
+	Name extends PropertyKey = PropertyKey,
+	Value = unknown,
+> = {
 	readonly name: Name;
 	readonly value: Value;
 	readonly meta?: RegistrationMetaInput;
 };
 
-export type EffectValue<Name extends string = string, Value = unknown> = {
+export type EffectValue<
+	Name extends PropertyKey = PropertyKey,
+	Value = unknown,
+> = {
 	readonly name: Name;
 	readonly value: Value;
 	readonly meta: RegistrationMeta;

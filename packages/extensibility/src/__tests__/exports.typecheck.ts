@@ -33,10 +33,14 @@ import {
 	type ExtensionForModules as AuthoringExtensionForModules,
 } from '../authoring.js';
 import {
+	Configuration,
 	combine as combineModules,
 	combineAll as combineAllModules,
+	createConfigurationModule,
 	createDependencyModule,
 	liftRuntimeFactory,
+	type ConfigurationModule,
+	type ConfigurationRuntime,
 	type DependencyModule,
 	type ExtensionModule,
 	type InferRuntime as InferModuleRuntime,
@@ -109,16 +113,30 @@ void compile(
 );
 
 const _dependency = createDependencyModule('settings', { get: () => 'value' });
+const _configurationModule = createConfigurationModule();
+const _configuration = new Configuration<string, string>({
+	name: 'exported',
+	combine: (values) => values.join(''),
+});
 type _DependencyModule = DependencyModule<'settings', { get: () => string }>;
+type _ConfigurationModule = ConfigurationModule;
 type _DependencyRuntime = InferModuleRuntime<typeof _dependency>;
+type _ConfigurationRuntime = ConfigurationRuntime;
 type _RuntimeModule = RuntimeModule<_DependencyRuntime>;
 type _AuthoringAPI = AuthoringExtensionAPI<[typeof _dependency]>;
 type _AuthoredExtension = AuthoringExtensionForModules<[typeof _dependency]>;
+declare const _configurationRuntime: ConfigurationRuntime;
+const _configurationValue: string =
+	_configurationRuntime.config(_configuration);
 void (null as unknown as _DependencyModule);
+void (null as unknown as _ConfigurationModule);
 void (null as unknown as _DependencyRuntime);
+void (null as unknown as _ConfigurationRuntime);
 void (null as unknown as _RuntimeModule);
 void (null as unknown as _AuthoringAPI);
 void (null as unknown as _AuthoredExtension);
+void _configurationModule;
+void _configurationValue;
 void liftRuntimeFactory(async () => ({ dispose: async () => {} }));
 void defineAuthoredExtension<[typeof _dependency]>(() => {});
 void combineModules(

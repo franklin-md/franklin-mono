@@ -22,6 +22,18 @@ interface EmptySignature extends Signature {
 	readonly Out: Record<never, never>;
 }
 
+const hiddenRegister = Symbol('hiddenRegister');
+
+type SymbolAPI = {
+	readonly visible: (value: string) => void;
+	readonly [hiddenRegister]: (value: number) => void;
+};
+
+interface SymbolSignature extends Signature {
+	readonly In: BaseRuntime;
+	readonly Out: SymbolAPI;
+}
+
 describe('createExtensionPoint', () => {
 	it('creates a registry and API methods for every contribution key', () => {
 		const extensionPoint = createExtensionPoint<TestSignature>({
@@ -57,6 +69,25 @@ describe('createExtensionPoint', () => {
 		const view = createRegistryView(registry);
 		expect(view.argsFor('registerText')).toEqual([['hello']]);
 		expect(view.argsFor('registerPair')).toEqual([[1, true]]);
+	});
+
+	it('supports symbol-keyed contribution methods without exposing them through Object.keys', () => {
+		const extensionPoint = createExtensionPoint<SymbolSignature>({
+			visible: true,
+			[hiddenRegister]: true,
+		});
+		const { registry, writer } = createRegistry<SymbolSignature, BaseRuntime>();
+		const api = createApi<SymbolSignature, BaseRuntime>(extensionPoint, writer);
+
+		expect(Object.keys(api)).toEqual(['visible']);
+		expect(Reflect.ownKeys(api)).toContain(hiddenRegister);
+
+		api.visible('public');
+		api[hiddenRegister](42);
+
+		const view = createRegistryView(registry);
+		expect(view.argsFor('visible')).toEqual([['public']]);
+		expect(view.argsFor(hiddenRegister)).toEqual([[42]]);
 	});
 
 	it('supports identity extension points with no contribution keys', () => {
