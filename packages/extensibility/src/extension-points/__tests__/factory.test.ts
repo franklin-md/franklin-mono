@@ -40,8 +40,18 @@ describe('createExtensionPoint', () => {
 
 		expect(registry).toEqual({
 			effects: [
-				{ name: 'registerText', value: ['hello'] },
-				{ name: 'registerPair', value: [1, true] },
+				{
+					name: 'registerText',
+					value: ['hello'],
+					meta: { priority: 0 },
+					sequence: 0,
+				},
+				{
+					name: 'registerPair',
+					value: [1, true],
+					meta: { priority: 0 },
+					sequence: 1,
+				},
 			],
 		});
 		const view = createRegistryView(registry);
@@ -95,6 +105,43 @@ describe('createExtensionPoint', () => {
 		]);
 	});
 
+	it('orders registry views by priority while preserving registration order for ties', () => {
+		const extensionPoint = createExtensionPoint<TestSignature>({
+			registerText: true,
+			registerPair: true,
+		});
+		const { registry, writer } = createRegistry<TestSignature, BaseRuntime>();
+		const api = createApi<TestSignature, BaseRuntime>(extensionPoint, writer);
+		const high = deriveApi<TestSignature, BaseRuntime>(
+			api,
+			(write) => (effect) =>
+				write({ ...effect, meta: { ...effect.meta, priority: 10 } }),
+		);
+		const low = deriveApi<TestSignature, BaseRuntime>(
+			api,
+			(write) => (effect) =>
+				write({ ...effect, meta: { ...effect.meta, priority: -10 } }),
+		);
+
+		api.registerText('default-one');
+		high.registerText('high-one');
+		api.registerText('default-two');
+		high.registerText('high-two');
+		low.registerText('low');
+
+		const view = createRegistryView(registry);
+		expect(view.argsFor('registerText')).toEqual([
+			['high-one'],
+			['high-two'],
+			['default-one'],
+			['default-two'],
+			['low'],
+		]);
+		expect(
+			view.effectsFor('registerText').map((effect) => effect.sequence),
+		).toEqual([1, 3, 0, 2, 4]);
+	});
+
 	it('allows explicit extension points to return non-registration API values', () => {
 		interface LabeledSignature extends Signature {
 			readonly In: BaseRuntime;
@@ -102,10 +149,10 @@ describe('createExtensionPoint', () => {
 		}
 		const extensionPoint: ExtensionPoint<LabeledSignature> = (writer) => ({
 			label: 'test',
-			registerText(value) {
+			registerText(value: string) {
 				writer({ name: 'registerText', value: [value] });
 			},
-			registerPair(first, second) {
+			registerPair(first: number, second: boolean) {
 				writer({ name: 'registerPair', value: [first, second] });
 			},
 		});

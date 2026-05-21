@@ -4,3 +4,4 @@ export * from './compiler/index.js';
 export * from './extension/index.js';
 export * from './extension-points/index.js';
 export * from './runtime/index.js';
+export * from './transforms/index.js';

@@ -1,5 +1,6 @@
 import type { FranklinAPI, FranklinExtension } from '@franklin/agent';
 import { filesystemExtension, type SetPartOptions } from '@franklin/agent';
+import { priority } from '@franklin/extensibility';
 import { oxfordJoin } from '@franklin/lib';
 
 // We take inspiration from: https://www.dbreunig.com/2026/04/04/how-claude-code-builds-a-system-prompt.html
@@ -62,9 +63,8 @@ export const obsidianSystemPromptExtension: FranklinExtension = (api) => {
 		api: FranklinAPI,
 		opts: SetPartOptions = {},
 	) => {
-		api.on('systemPrompt', (systemPrompt) => {
-			// Always goes first
-			systemPrompt.setPart(prompt, { once: true, priority: Infinity, ...opts });
+		priority.highest(api).on('systemPrompt', (systemPrompt) => {
+			systemPrompt.setPart(prompt, { once: true, ...opts });
 		});
 	};
 
