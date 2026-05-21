@@ -3,9 +3,9 @@ import { deriveApi } from '../extension-points/facade.js';
 import type { BaseRuntime } from '../runtime/types.js';
 import type { APITransform } from './types.js';
 
-interface TransformSignature<Surface extends BaseAPI> extends Signature {
+interface TransformSignature<TAPI extends BaseAPI> extends Signature {
 	readonly In: BaseRuntime;
-	readonly Out: Surface;
+	readonly Out: TAPI;
 }
 
 export const priorityLevels = {
@@ -29,11 +29,8 @@ type PriorityTransform = {
 	readonly lowest: APITransform;
 };
 
-function withPriority<Surface extends BaseAPI>(
-	value: number,
-	api: Surface,
-): Surface {
-	return deriveApi<TransformSignature<Surface>, BaseRuntime>(
+function withPriority<TAPI extends BaseAPI>(value: number, api: TAPI): TAPI {
+	return deriveApi<TransformSignature<TAPI>, BaseRuntime>(
 		api,
 		(write) => (effect) => {
 			const prioritized: typeof effect = {
@@ -47,19 +44,14 @@ function withPriority<Surface extends BaseAPI>(
 
 export const priority = {
 	levels: priorityLevels,
-	highest<Surface extends BaseAPI>(api: Surface): Surface {
-		return withPriority(priorityLevels.highest, api);
-	},
-	high<Surface extends BaseAPI>(api: Surface): Surface {
-		return withPriority(priorityLevels.high, api);
-	},
-	default<Surface extends BaseAPI>(api: Surface): Surface {
-		return withPriority(priorityLevels.default, api);
-	},
-	low<Surface extends BaseAPI>(api: Surface): Surface {
-		return withPriority(priorityLevels.low, api);
-	},
-	lowest<Surface extends BaseAPI>(api: Surface): Surface {
-		return withPriority(priorityLevels.lowest, api);
-	},
+	highest: <TAPI extends BaseAPI>(api: TAPI): TAPI =>
+		withPriority(priorityLevels.highest, api),
+	high: <TAPI extends BaseAPI>(api: TAPI): TAPI =>
+		withPriority(priorityLevels.high, api),
+	default: <TAPI extends BaseAPI>(api: TAPI): TAPI =>
+		withPriority(priorityLevels.default, api),
+	low: <TAPI extends BaseAPI>(api: TAPI): TAPI =>
+		withPriority(priorityLevels.low, api),
+	lowest: <TAPI extends BaseAPI>(api: TAPI): TAPI =>
+		withPriority(priorityLevels.lowest, api),
 } satisfies PriorityTransform;
