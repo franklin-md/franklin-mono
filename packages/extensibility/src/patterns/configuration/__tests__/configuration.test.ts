@@ -3,6 +3,7 @@ import { compile } from '../../../compiler/compile.js';
 import { createApi } from '../../../extension-points/facade.js';
 import { createRegistry } from '../../../extension-points/writer.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
+import { priority } from '../../../transforms/priority.js';
 import { Configuration } from '../configuration.js';
 import { CONFIGURATION_REGISTRATION } from '../internal.js';
 import {
@@ -50,15 +51,45 @@ describe('createConfigurationModule', () => {
 		await runtime.dispose();
 	});
 
+	it('passes contributions to combine in effective priority order', async () => {
+		const module = createConfigurationModule();
+		const theme = new Configuration<string, string>({
+			name: 'theme',
+			combine: (values) => values.join(' > '),
+		});
+
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			(api) => {
+				theme.of('default-one')(api);
+				priority.low(api)[CONFIGURATION_REGISTRATION]({
+					configuration: theme,
+					input: 'low',
+				});
+				priority.high(api)[CONFIGURATION_REGISTRATION]({
+					configuration: theme,
+					input: 'high',
+				});
+				theme.of('default-two')(api);
+			},
+		);
+
+		expect(runtime.config(theme)).toBe(
+			'high > default-one > default-two > low',
+		);
+		await runtime.dispose();
+	});
+
 	it('keeps configurations with the same name distinct by id', async () => {
 		const module = createConfigurationModule();
 		const first = new Configuration<string, string>({
 			name: 'theme',
-			combine: (values) => values.at(-1) ?? 'light',
+			combine: (values) => values[0] ?? 'light',
 		});
 		const second = new Configuration<string, string>({
 			name: 'theme',
-			combine: (values) => values.at(-1) ?? 'light',
+			combine: (values) => values[0] ?? 'light',
 		});
 
 		const runtime = await compile(

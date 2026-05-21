@@ -2,6 +2,10 @@ import type { StaticSignature } from '../../api/types.js';
 import type { Configuration } from './configuration.js';
 import type { CONFIGURATION_REGISTRATION } from './internal.js';
 
+/**
+ * Combines contributions in `RegistryView` order: higher-priority inputs first,
+ * then registration order for ties.
+ */
 export type ConfigurationCombine<Input, Output> = (
 	values: readonly Input[],
 ) => Output;

@@ -20,13 +20,22 @@ import type { API, BaseRuntime, Extension, Signature, WithRuntime } from '@frank
 
 Use `priority` to derive a same-shape API facade whose registrations land in
 one of the `highest`, `high`, `default`, `low`, or `lowest` ordering buckets
-when read through `RegistryView`:
+when read through `RegistryView`. Registry views expose effective registration
+order: higher-priority registrations come first, and registrations with the
+same priority keep their original registration order. This mirrors CodeMirror's
+precedence model: https://codemirror.net/examples/config/#precedence.
 
 ```ts
-priority.highest(api).registerSystemPrompt(handler);
+priority.highest(api).on('systemPrompt', handler);
 priority.high(api).on('prompt', handler);
 priority.low(api).registerTool(tool);
 ```
+
+Compiler code should iterate `registry.argsFor(name)` forward when handlers run
+from highest precedence to lowest precedence. For winner-selection semantics,
+use `registry.argsFor(name)[0]` when the highest-precedence registration wins;
+use `.at(-1)` only for documented fallback behavior where the lowest-precedence
+registration intentionally wins.
 
 Use `@franklin/extensibility/authoring` when a package wants the
 module-aware authoring helper without importing the rest of the root barrel:
@@ -55,12 +64,17 @@ import { Configuration, createConfigurationModule } from '@franklin/extensibilit
 
 const theme = new Configuration<string, string>({
 	name: 'theme',
-	combine: (values) => values.at(-1) ?? 'light',
+	combine: (values) => values[0] ?? 'light',
 });
 
 const configurationModule = createConfigurationModule();
 const darkThemeExtension = theme.of('dark');
 ```
+
+Configuration `combine` functions receive values in the same effective
+registration order. Use `values[0]` for highest-precedence-wins configuration,
+or document the fallback rule if a configuration deliberately reads from the
+end of the list.
 
 The package intentionally does not expose wildcard subpaths. If a helper is not
 available from one of the imports above, treat it as internal implementation
