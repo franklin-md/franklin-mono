@@ -1,23 +1,21 @@
 import { identityRuntime } from '../../modules/simple/identity.js';
 import type { BaseRuntime } from '../../runtime/types.js';
 import type { Configuration } from './configuration.js';
-import { getConfigurationInternals } from './internal.js';
+import { createConfigurationResolver } from './resolver/create.js';
+import type { ConfigurationValue } from './value.js';
 
 export type ConfigurationRuntime = BaseRuntime & {
-	config<Input, Output>(configuration: Configuration<Input, Output>): Output;
+	getConfig<Input, Output>(configuration: Configuration<Input, Output>): Output;
 };
 
 export function createConfigurationRuntime(
-	values: ReadonlyMap<symbol, unknown>,
+	values: readonly ConfigurationValue[],
 ): ConfigurationRuntime {
+	const resolver = createConfigurationResolver(values);
 	return {
 		...identityRuntime(),
-		config<Input, Output>(configuration: Configuration<Input, Output>): Output {
-			const internals = getConfigurationInternals(configuration);
-			if (values.has(internals.id)) {
-				return values.get(internals.id) as Output;
-			}
-			return internals.combine([]);
+		getConfig(configuration) {
+			return resolver.getConfig(configuration);
 		},
 	};
 }

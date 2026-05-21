@@ -46,7 +46,7 @@ describe('createConfigurationModule', () => {
 			},
 		);
 
-		expect(runtime.config(promptPrefix)).toBe('first\nsecond');
+		expect(runtime.getConfig(promptPrefix)).toBe('first\nsecond');
 		await runtime.dispose();
 	});
 
@@ -70,8 +70,8 @@ describe('createConfigurationModule', () => {
 			},
 		);
 
-		expect(runtime.config(first)).toBe('dark');
-		expect(runtime.config(second)).toBe('contrast');
+		expect(runtime.getConfig(first)).toBe('dark');
+		expect(runtime.getConfig(second)).toBe('contrast');
 		await runtime.dispose();
 	});
 
@@ -88,7 +88,54 @@ describe('createConfigurationModule', () => {
 			() => {},
 		);
 
-		expect(runtime.config(score)).toBe(0);
+		expect(runtime.getConfig(score)).toBe(0);
 		await runtime.dispose();
+	});
+
+	it('resolves computed configuration values from declared dependencies', async () => {
+		const module = createConfigurationModule();
+		const account = new Configuration<'free' | 'premium'>({
+			name: 'account',
+			combine: (values) => values.at(-1) ?? 'free',
+		});
+		const maxPdfPages = new Configuration<number>({
+			name: 'maxPdfPages',
+			combine: (values) => values.at(-1) ?? 10,
+		});
+
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			(api) => {
+				account.of('premium')(api);
+				maxPdfPages.compute([account], ({ getConfig }) =>
+					getConfig(account) === 'premium' ? 100 : 10,
+				)(api);
+			},
+		);
+
+		expect(runtime.getConfig(maxPdfPages)).toBe(100);
+		await runtime.dispose();
+	});
+
+	it('rejects declared computed dependency cycles during compile', async () => {
+		const module = createConfigurationModule();
+		const first = new Configuration<number>({
+			name: 'first',
+			combine: (values) => values.at(-1) ?? 0,
+		});
+		const second = new Configuration<number>({
+			name: 'second',
+			combine: (values) => values.at(-1) ?? 0,
+		});
+
+		await expect(
+			compile(module.extensionPoint, module.compiler, (api) => {
+				first.compute([second], ({ getConfig }) => getConfig(second) + 1)(api);
+				second.compute([first], ({ getConfig }) => getConfig(first) + 1)(api);
+			}),
+		).rejects.toThrow(
+			'Circular configuration computation: first -> second -> first',
+		);
 	});
 });

@@ -1,32 +1,20 @@
 import type { StaticSignature } from '../../api/types.js';
-import type { Configuration } from './configuration.js';
+import type { ConfigurationCombine } from './combine.js';
 import type { CONFIGURATION_REGISTRATION } from './internal.js';
+import type { ConfigurationValue } from './value.js';
 
-export type ConfigurationCombine<Input, Output> = (
-	values: readonly Input[],
-) => Output;
-
-export type ConfigurationInternals<Input, Output> = {
+// Per-Configuration metadata hidden behind CONFIGURATION_INTERNALS.
+export type ConfigurationInternals<Input, Output = Input> = {
 	readonly id: symbol;
 	readonly name: string;
 	readonly combine: ConfigurationCombine<Input, Output>;
 };
 
-export type ConfigurationContribution<Input = any, Output = any> = {
-	readonly configuration: Configuration<Input, Output>;
-	readonly input: Input;
-};
-
+// Internal extension-point surface. Authors reach it through Configuration.of
+// and Configuration.compute, not by calling the symbol-keyed method directly.
 export type ConfigurationRegistrationAPI = {
-	readonly [CONFIGURATION_REGISTRATION]: (
-		contribution: ConfigurationContribution,
-	) => void;
+	readonly [CONFIGURATION_REGISTRATION]: (value: ConfigurationValue) => void;
 };
 
 export type ConfigurationSignature =
 	StaticSignature<ConfigurationRegistrationAPI>;
-
-export type ConfigurationOptions<Input, Output> = {
-	readonly name: string;
-	readonly combine: ConfigurationCombine<Input, Output>;
-};

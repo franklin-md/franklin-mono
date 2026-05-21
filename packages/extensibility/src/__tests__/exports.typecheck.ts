@@ -40,6 +40,8 @@ import {
 	createDependencyModule,
 	liftRuntimeFactory,
 	type ConfigurationModule,
+	type ConfigurationOptions,
+	type ConfigurationReader,
 	type ConfigurationRuntime,
 	type DependencyModule,
 	type ExtensionModule,
@@ -122,14 +124,18 @@ type _DependencyModule = DependencyModule<'settings', { get: () => string }>;
 type _ConfigurationModule = ConfigurationModule;
 type _DependencyRuntime = InferModuleRuntime<typeof _dependency>;
 type _ConfigurationRuntime = ConfigurationRuntime;
+type _ConfigurationOptions = ConfigurationOptions<string, string>;
+type _ConfigurationReader = ConfigurationReader;
 type _RuntimeModule = RuntimeModule<_DependencyRuntime>;
 type _AuthoringAPI = AuthoringExtensionAPI<[typeof _dependency]>;
 type _AuthoredExtension = AuthoringExtensionForModules<[typeof _dependency]>;
 declare const _configurationRuntime: ConfigurationRuntime;
 const _configurationValue: string =
-	_configurationRuntime.config(_configuration);
+	_configurationRuntime.getConfig(_configuration);
 void (null as unknown as _DependencyModule);
 void (null as unknown as _ConfigurationModule);
+void (null as unknown as _ConfigurationOptions);
+void (null as unknown as _ConfigurationReader);
 void (null as unknown as _DependencyRuntime);
 void (null as unknown as _ConfigurationRuntime);
 void (null as unknown as _RuntimeModule);
