@@ -40,7 +40,7 @@ describe('InspectDumpButton', () => {
 
 	it('copies the inspect dump of the active runtime to the clipboard', async () => {
 		const dump = {
-			core: { history: { systemPrompt: 'sys' } },
+			core: { systemPrompt: 'sys' },
 			todos: { items: [] },
 		};
 		inspectRuntime.mockResolvedValue(dump);

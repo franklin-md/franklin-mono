@@ -19,7 +19,8 @@ export type CoreResources = {
 export function createResources(session: SessionSnapshot): CoreResources {
 	const tracker = new ContextTracker();
 	tracker.apply({
-		history: { systemPrompt: '', messages: [...session.messages] },
+		systemPrompt: '',
+		messages: [...session.messages],
 		tools: [],
 		config: { ...session.llmConfig },
 	});
@@ -50,7 +51,7 @@ export function createStateHandle(
 		get: async () => {
 			const context = tracker.get();
 			return sessionSnapshot(
-				context.history.messages,
+				context.messages,
 				pickLLMConfig(context.config),
 				usageTracker.get(),
 			);
@@ -58,7 +59,7 @@ export function createStateHandle(
 		fork: async () => {
 			const context = tracker.get();
 			return sessionSnapshot(
-				context.history.messages,
+				context.messages,
 				pickLLMConfig(context.config),
 				ZERO_USAGE,
 			);

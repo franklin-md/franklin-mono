@@ -1,7 +1,6 @@
 import type { ExtensionToolDefinition, ToolExecuteReturn } from './tool.js';
 import type { ToolSpec } from './tool-spec.js';
 import type {
-	CancelHandler,
 	PromptHandler,
 	StreamObserverHandler,
 	SystemPromptHandler,
@@ -14,7 +13,6 @@ import type { BaseRuntime } from '@franklin/extensibility';
 // The possible 'on' handlers where the runtime value is bound.
 export type CoreEventHandlerMap = {
 	prompt: PromptHandler;
-	cancel: CancelHandler;
 	systemPrompt: SystemPromptHandler;
 	turnStart: StreamObserverHandler<'turnStart'>;
 	chunk: StreamObserverHandler<'chunk'>;
@@ -54,7 +52,6 @@ export type CoreRegisterToolRegistration<
  */
 export interface CoreAPI<R extends BaseRuntime> {
 	on(event: 'prompt', handler: CoreEventHandlers<R>['prompt']): void;
-	on(event: 'cancel', handler: CoreEventHandlers<R>['cancel']): void;
 	on(
 		event: 'systemPrompt',
 		handler: CoreEventHandlers<R>['systemPrompt'],

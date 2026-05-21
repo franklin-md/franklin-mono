@@ -15,7 +15,8 @@ export async function bootRuntime({
 	await client.initialize();
 
 	await client.setContext({
-		history: { systemPrompt: '', messages: [...session.messages] },
+		systemPrompt: '',
+		messages: [...session.messages],
 		tools: [...tools],
 		config: { ...session.llmConfig },
 	});

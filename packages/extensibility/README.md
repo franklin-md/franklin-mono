@@ -14,8 +14,18 @@ Use the root package for extension authoring, extension-point registration,
 compiler/runtime primitives, and runtime lifecycle types:
 
 ```ts
-import { defineExtension, createExtensionPoint, compile } from '@franklin/extensibility';
+import { defineExtension, createExtensionPoint, compile, priority } from '@franklin/extensibility';
 import type { API, BaseRuntime, Extension, Signature, WithRuntime } from '@franklin/extensibility';
+```
+
+Use `priority` to derive a same-shape API facade whose registrations land in
+one of the `highest`, `high`, `default`, `low`, or `lowest` ordering buckets
+when read through `RegistryView`:
+
+```ts
+priority.highest(api).registerSystemPrompt(handler);
+priority.high(api).on('prompt', handler);
+priority.low(api).registerTool(tool);
 ```
 
 Use `@franklin/extensibility/authoring` when a package wants the

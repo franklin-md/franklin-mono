@@ -11,14 +11,12 @@ export function setContext(opts?: {
 }): Action {
 	const context: SetContextPayload = {};
 
-	if (opts?.systemPrompt !== undefined || opts?.messages !== undefined) {
-		context.history = {};
-		if (opts.systemPrompt !== undefined) {
-			context.history.systemPrompt = opts.systemPrompt;
-		}
-		if (opts.messages !== undefined) {
-			context.history.messages = opts.messages;
-		}
+	if (opts?.systemPrompt !== undefined) {
+		context.systemPrompt = opts.systemPrompt;
+	}
+
+	if (opts?.messages !== undefined) {
+		context.messages = opts.messages;
 	}
 
 	if (opts?.tools !== undefined) {

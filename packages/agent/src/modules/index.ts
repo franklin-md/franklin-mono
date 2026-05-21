@@ -1,6 +1,5 @@
 // Core
 export type {
-	CancelHandler,
 	CoreAPI,
 	CoreEventHandlers,
 	CoreSignature,

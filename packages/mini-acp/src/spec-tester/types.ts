@@ -5,7 +5,7 @@
 // as seen from the client side.
 // ---------------------------------------------------------------------------
 
-import type { ContextPatch, HistoryPatch } from '../types/context.js';
+import type { ContextPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import type { Chunk, TurnStart, Update, TurnEnd } from '../types/stream.js';
 import type { ToolCall, ToolDefinition, ToolResult } from '../types/tool.js';
@@ -64,8 +64,7 @@ export type ToolSpec = {
 	handler: (call: ToolCall) => ToolResult | Promise<ToolResult>;
 };
 
-export type SetContextPayload = Omit<ContextPatch, 'tools' | 'history'> & {
-	history?: HistoryPatch;
+export type SetContextPayload = Omit<ContextPatch, 'tools'> & {
 	tools?: ToolSpec[];
 };
 

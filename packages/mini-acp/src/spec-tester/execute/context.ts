@@ -70,7 +70,9 @@ export async function createContext(factory: AgentFactory) {
 	async function setContext(payload: SetContextPayload): Promise<void> {
 		// Split ToolSpecs into definitions for the agent and local handlers.
 		const context: ContextPatch = {};
-		if (payload.history) context.history = payload.history;
+		if (payload.systemPrompt !== undefined)
+			context.systemPrompt = payload.systemPrompt;
+		if (payload.messages !== undefined) context.messages = payload.messages;
 		if (payload.config) context.config = payload.config;
 		if (payload.tools) {
 			context.tools = payload.tools.map((t) => t.definition);

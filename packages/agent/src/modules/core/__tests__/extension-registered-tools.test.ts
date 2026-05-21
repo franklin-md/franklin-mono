@@ -55,7 +55,7 @@ describe('core extension registered tools', () => {
 
 		expect(seenArgs).toEqual([{ input: 'hello' }]);
 		expect(toolResultText(calls.toolResults[0])).toBe('HELLO');
-		expect(context.history.messages).toContainEqual({
+		expect(context.messages).toContainEqual({
 			role: 'toolResult',
 			toolCallId: 'mock-tool-call-1',
 			content: [{ type: 'text', text: 'HELLO' }],

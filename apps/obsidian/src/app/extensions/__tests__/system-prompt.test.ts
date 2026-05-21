@@ -5,7 +5,15 @@ import {
 	filesystemExtension,
 	type SystemPromptContent,
 	type SystemPromptHandler,
+	type CoreSignature,
 } from '@franklin/agent';
+import {
+	createApi,
+	createExtensionPoint,
+	createRegistry,
+	createRegistryView,
+	type BaseRuntime,
+} from '@franklin/extensibility';
 import { oxfordJoin } from '@franklin/lib';
 
 import { obsidianSystemPromptExtension } from '../system-prompt.js';
@@ -18,15 +26,22 @@ const wikilinkPathToolNames = oxfordJoin(
 	].map((name) => `\`${name}\``),
 );
 
-async function renderSystemPrompt(): Promise<string> {
-	const handlers: SystemPromptHandler[] = [];
-	const api = {
-		on(event: string, handler: SystemPromptHandler) {
-			if (event === 'systemPrompt') handlers.push(handler);
-		},
-	} as unknown as FranklinAPI;
+const coreExtensionPoint = createExtensionPoint<CoreSignature>({
+	on: true,
+	registerTool: true,
+});
 
-	obsidianSystemPromptExtension(api);
+async function renderSystemPrompt(): Promise<string> {
+	const { registry, writer } = createRegistry<CoreSignature, BaseRuntime>();
+	const api = createApi<CoreSignature, BaseRuntime>(coreExtensionPoint, writer);
+
+	obsidianSystemPromptExtension(api as unknown as FranklinAPI);
+
+	const handlers = createRegistryView(registry)
+		.argsFor('on')
+		.flatMap(([event, handler]) =>
+			event === 'systemPrompt' ? [handler as SystemPromptHandler] : [],
+		);
 
 	const parts: string[] = [];
 	for (const handler of handlers) {
