@@ -17,7 +17,7 @@ function sameSessions(
 	for (let i = 0; i < prev.length; i++) {
 		const p = prev[i];
 		const n = next[i];
-		if (p?.id !== n?.id || p?.runtime !== n?.runtime) {
+		if (p?.details.id !== n?.details.id || p?.runtime !== n?.runtime) {
 			return false;
 		}
 	}

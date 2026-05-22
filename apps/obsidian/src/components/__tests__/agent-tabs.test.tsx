@@ -95,7 +95,7 @@ function createSession(
 	title?: string,
 ): TestSession {
 	return {
-		id,
+		details: { id, visibility: 'visible' },
 		runtime: createRuntime(status, title),
 	};
 }
@@ -124,10 +124,12 @@ function createAgents(initialSessions: TestSession[]) {
 			}
 			return session;
 		}),
-		get: vi.fn((id: string) => sessions.find((session) => session.id === id)),
+		get: vi.fn((id: string) =>
+			sessions.find((session) => session.details.id === id),
+		),
 		list: vi.fn(() => [...sessions]),
 		remove: vi.fn(async (id: string) => {
-			const index = sessions.findIndex((session) => session.id === id);
+			const index = sessions.findIndex((session) => session.details.id === id);
 			if (index === -1) {
 				return false;
 			}

@@ -2,7 +2,6 @@ import { compile } from '@franklin/extensibility';
 import type {
 	BaseStateExtensionModule,
 	InferExtension,
-	InferState,
 } from '../state/index.js';
 import { resolveState } from '../state/index.js';
 import { createOrchestratorModule } from './internal/index.js';
@@ -12,12 +11,13 @@ import type {
 	OrchestratorHandle,
 	OrchestratorModule,
 	OrchestratorRuntime,
+	OrchestratorState,
 	RuntimeEntry,
 	RuntimeEvent,
 } from './types.js';
 
 type Runtime<M extends BaseStateExtensionModule> = OrchestratorRuntime<M>;
-type State<M extends BaseStateExtensionModule> = InferState<M>;
+type State<M extends BaseStateExtensionModule> = OrchestratorState<M>;
 type Entry<M extends BaseStateExtensionModule> = RuntimeEntry<Runtime<M>>;
 
 type OrchestratorOptions<M extends BaseStateExtensionModule> = {
@@ -60,7 +60,7 @@ export class Orchestrator<
 			throw new Error(`Runtime ${id} already exists`);
 		}
 
-		return this.createRuntime(id, await this.createState(options));
+		return this.createRuntime(id, await this.createState(id, options));
 	}
 
 	get(id: string): Entry<M> | undefined {
@@ -69,6 +69,14 @@ export class Orchestrator<
 
 	list(): Entry<M>[] {
 		return this.collection.list();
+	}
+
+	async getState(id: string): Promise<State<M> | undefined> {
+		const entry = this.collection.get(id);
+		if (!entry) return undefined;
+		return this.createFullModule(entry.details.id)
+			.state(entry.runtime as never)
+			.get();
 	}
 
 	remove(id: string): Promise<boolean> {
@@ -87,8 +95,7 @@ export class Orchestrator<
 			simple.compiler,
 			this.extension,
 		);
-		this.collection.set(id, runtime);
-		return { id, runtime };
+		return this.collection.set(runtime);
 	}
 
 	private createFullModule(id: string): OrchestratorModule<[M]> {
@@ -99,17 +106,20 @@ export class Orchestrator<
 	}
 
 	private async createState(
+		id: string,
 		options: OrchestratorCreateInput<State<M>>,
 	): Promise<State<M>> {
 		let state: State<M>;
 		if (options.from) {
 			const source = this.collection.get(options.from);
 			if (!source) throw new Error(`Runtime ${options.from} not found`);
-			const handle = this.baseModule.state(source.runtime as never);
+			const handle = this.createFullModule(source.details.id).state(
+				source.runtime as never,
+			);
 			state =
 				options.mode === 'fork' ? await handle.fork() : await handle.child();
 		} else {
-			state = this.baseModule.emptyState();
+			state = this.createFullModule(id).emptyState();
 		}
 
 		return resolveState(state, options.state);

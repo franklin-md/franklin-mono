@@ -15,6 +15,13 @@ import type { AgentItemProps } from '../agent/agent-list.js';
 
 type Listener = () => void;
 
+function createEntry(id: string): RuntimeEntry<FranklinRuntime> {
+	return {
+		details: { id, visibility: 'visible' },
+		runtime: {} as FranklinRuntime,
+	};
+}
+
 function makeMockAgents(initial: RuntimeEntry<FranklinRuntime>[] = []) {
 	const sessions: RuntimeEntry<FranklinRuntime>[] = [...initial];
 	const listeners = new Set<Listener>();
@@ -23,18 +30,15 @@ function makeMockAgents(initial: RuntimeEntry<FranklinRuntime>[] = []) {
 	return {
 		sessions,
 		create: vi.fn(async () => {
-			const session: RuntimeEntry<FranklinRuntime> = {
-				id: `agent-${nextId++}`,
-				runtime: {} as FranklinRuntime,
-			};
+			const session = createEntry(`agent-${nextId++}`);
 			sessions.push(session);
 			for (const l of listeners) l();
 			return session;
 		}),
-		get: vi.fn((id: string) => sessions.find((s) => s.id === id)),
+		get: vi.fn((id: string) => sessions.find((s) => s.details.id === id)),
 		list: vi.fn(() => [...sessions]),
 		remove: vi.fn(async (id: string) => {
-			const idx = sessions.findIndex((s) => s.id === id);
+			const idx = sessions.findIndex((s) => s.details.id === id);
 			if (idx === -1) return false;
 			sessions.splice(idx, 1);
 			for (const l of listeners) l();
@@ -104,8 +108,8 @@ describe('AgentList', () => {
 
 	it('renders one Item per session', () => {
 		const sessions: RuntimeEntry<FranklinRuntime>[] = [
-			{ id: 'a', runtime: {} as FranklinRuntime },
-			{ id: 'b', runtime: {} as FranklinRuntime },
+			createEntry('a'),
+			createEntry('b'),
 		];
 		const agents = makeMockAgents(sessions);
 		const Tree = makeTestTree(agents, { Item: TestItem });
@@ -117,9 +121,7 @@ describe('AgentList', () => {
 	});
 
 	it('auto-selects the only session on mount', () => {
-		const sessions: RuntimeEntry<FranklinRuntime>[] = [
-			{ id: 'a', runtime: {} as FranklinRuntime },
-		];
+		const sessions: RuntimeEntry<FranklinRuntime>[] = [createEntry('a')];
 		const agents = makeMockAgents(sessions);
 		const Tree = makeTestTree(agents, { Item: TestItem });
 
@@ -131,8 +133,8 @@ describe('AgentList', () => {
 
 	it('clicking select marks the item as active', () => {
 		const sessions: RuntimeEntry<FranklinRuntime>[] = [
-			{ id: 'a', runtime: {} as FranklinRuntime },
-			{ id: 'b', runtime: {} as FranklinRuntime },
+			createEntry('a'),
+			createEntry('b'),
 		];
 		const agents = makeMockAgents(sessions);
 

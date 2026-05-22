@@ -1,10 +1,7 @@
-export { RuntimeCollection } from './collection.js';
 export type {
 	InternalOrchestratorModule,
 	OrchestrationModule,
 	OrchestrationRuntime,
-	SelfModule,
-	SelfRuntime,
 } from './internal/index.js';
 export { createOrchestrator, type CreateOrchestratorInput } from './factory.js';
 export { Orchestrator } from './orchestrator.js';
@@ -13,6 +10,7 @@ export type {
 	OrchestratorHandle,
 	OrchestratorModule,
 	OrchestratorRuntime,
+	OrchestratorState,
 	RuntimeCreateInput,
 	RuntimeEntry,
 	RuntimeEvent,

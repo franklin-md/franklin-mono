@@ -27,7 +27,7 @@ function ActiveAgent() {
 	}
 
 	return (
-		<AgentProvider key={activeSession.id} agent={activeSession.runtime}>
+		<AgentProvider key={activeSession.details.id} agent={activeSession.runtime}>
 			<div className="flex flex-1 overflow-hidden">
 				<ConversationPanel />
 				<TodoPanel />

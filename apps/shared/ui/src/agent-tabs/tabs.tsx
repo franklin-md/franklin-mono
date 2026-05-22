@@ -34,13 +34,13 @@ export function AgentTabs({
 				>
 					<TabsList className="h-8 w-max min-w-full justify-start gap-px rounded-none bg-transparent p-0">
 						{sessions.map((session, index) => (
-							<AgentProvider key={session.id} agent={session.runtime}>
+							<AgentProvider key={session.details.id} agent={session.runtime}>
 								<AgentTabsItem
-									sessionId={session.id}
+									sessionId={session.details.id}
 									position={index + 1}
-									isActive={session.id === activeSessionId}
-									onSelect={() => select(session.id)}
-									onRemove={() => remove(session.id)}
+									isActive={session.details.id === activeSessionId}
+									onSelect={() => select(session.details.id)}
+									onRemove={() => remove(session.details.id)}
 								/>
 							</AgentProvider>
 						))}

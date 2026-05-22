@@ -1,5 +1,1 @@
-export {
-	franklinSessionCodec,
-	SESSION_FILE_VERSION,
-	type FranklinSessionFileV1,
-} from './session.js';
+export { franklinSessionCodec, SESSION_FILE_VERSION } from './session.js';

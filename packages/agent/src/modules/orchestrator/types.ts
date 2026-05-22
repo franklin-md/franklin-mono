@@ -1,10 +1,6 @@
 import type { DeepPartial } from '@franklin/lib';
 import type { CombineSignature } from '@franklin/extensibility';
 import type {
-	InferRuntime as InferSimpleRuntime,
-	InferSignature as InferSimpleSignature,
-} from '@franklin/extensibility/module';
-import type {
 	BaseStateExtensionModule,
 	BuildableModule,
 	BuildModules,
@@ -19,12 +15,14 @@ import type {
 	RuntimeExtras,
 } from '@franklin/extensibility';
 import type {
-	InternalOrchestratorModule,
-	SelfRuntime,
-} from './internal/index.js';
+	Details,
+	DetailsRuntime,
+	DetailsState,
+} from './internal/details/index.js';
+import type { InternalOrchestratorModule } from './internal/index.js';
 
 export type RuntimeEntry<Runtime extends BaseRuntime> = {
-	readonly id: string;
+	readonly details: Details;
 	readonly runtime: Runtime;
 };
 
@@ -47,6 +45,9 @@ export type OrchestratorHandle<Runtime extends BaseRuntime, State = unknown> = {
 	remove(id: string): Promise<boolean>;
 };
 
+export type OrchestratorState<M extends BaseStateExtensionModule> =
+	InferState<M> & DetailsState;
+
 /**
  * Runtime produced by an orchestrator over a base module. Recursive fixed
  * point: `runtime.orchestrator` references this same type.
@@ -64,19 +65,19 @@ export type OrchestratorHandle<Runtime extends BaseRuntime, State = unknown> = {
 export type OrchestratorRuntime<M extends BaseStateExtensionModule> =
 	BaseRuntime &
 		RuntimeExtras<InferRuntime<M>> &
-		SelfRuntime & {
+		RuntimeExtras<DetailsRuntime> & {
 			readonly orchestrator: OrchestratorHandle<
 				OrchestratorRuntime<M>,
-				InferState<M>
+				OrchestratorState<M>
 			>;
 		};
 
 /**
  * The fully orchestrated module for a module list: the reduced user modules
- * composed with the internal `Self` + orchestration ports (see
+ * composed with the internal details + orchestration ports (see
  * `InternalOrchestratorModule`). It is itself a state extension module, so the
- * standard inference helpers (`InferRuntime`, `InferState`, `InferAPI`)
- * work on it directly:
+ * standard inference helpers (`InferRuntime`, `InferState`, `InferAPI`) work on
+ * it directly:
  *
  *   type FranklinBase      = BuildModules<FranklinModules>;
  *   type FranklinModule    = OrchestratorModule<FranklinModules>;
@@ -87,19 +88,23 @@ export type OrchestratorRuntime<M extends BaseStateExtensionModule> =
  */
 export type OrchestratorModule<Mods extends readonly BuildableModule[]> =
 	StateExtensionModule<
-		InferState<BuildModules<Mods>>,
+		OrchestratorState<BuildModules<Mods>>,
 		CombineSignature<
 			InferSignature<BuildModules<Mods>>,
-			InferSimpleSignature<InternalOrchestratorModule<BuildModules<Mods>>>
+			InferSignature<InternalOrchestratorModule<BuildModules<Mods>>>
 		>,
 		CombinedRuntime<
 			InferRuntime<BuildModules<Mods>>,
-			InferSimpleRuntime<InternalOrchestratorModule<BuildModules<Mods>>>
+			InferRuntime<InternalOrchestratorModule<BuildModules<Mods>>>
 		>
 	>;
 
 export type RuntimeEvent<Runtime extends BaseRuntime> =
-	| { readonly action: 'add'; readonly id: string; readonly runtime: Runtime }
+	| {
+			readonly action: 'add';
+			readonly id: string;
+			readonly runtime: Runtime;
+	  }
 	| {
 			readonly action: 'remove';
 			readonly id: string;

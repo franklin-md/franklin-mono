@@ -6,15 +6,12 @@ import {
 	type InferExtension,
 	type ValidateBuildModules,
 } from '../state/index.js';
-import type { RuntimeCollection } from './collection.js';
+import { RuntimeCollection } from './collection.js';
 import { Orchestrator } from './orchestrator.js';
-import type { OrchestratorModule, OrchestratorRuntime } from './types.js';
+import type { OrchestratorModule } from './types.js';
 
 export type CreateOrchestratorInput<Mods extends readonly BuildableModule[]> = {
 	readonly modules: readonly [...Mods] & ValidateBuildModules<Mods>;
-	readonly collection: RuntimeCollection<
-		OrchestratorRuntime<BuildModules<Mods>>
-	>;
 	readonly extensions: InferExtension<OrchestratorModule<Mods>>[];
 	readonly createId?: () => string;
 };
@@ -26,10 +23,8 @@ export function createOrchestrator<Mods extends readonly BuildableModule[]>(
 	const extension = reduceExtensions(...opts.extensions);
 	return new Orchestrator<BuildModules<Mods>>({
 		module,
-		extension: extension as InferExtension<
-			OrchestratorModule<[BuildModules<Mods>]>
-		>,
-		collection: opts.collection,
+		extension,
+		collection: new RuntimeCollection(),
 		createId: opts.createId,
 	});
 }

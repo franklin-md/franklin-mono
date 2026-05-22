@@ -139,18 +139,14 @@ export type { StoreState } from './store/state.js';
 export { emptyStoreState } from './store/state.js';
 
 // Orchestrator
-export {
-	createOrchestrator,
-	Orchestrator,
-	RuntimeCollection,
-} from './orchestrator/index.js';
+export { createOrchestrator, Orchestrator } from './orchestrator/index.js';
 export type {
 	CreateOrchestratorInput,
 	OrchestratorCreateInput,
 	OrchestratorHandle,
 	OrchestratorModule,
 	OrchestratorRuntime,
+	OrchestratorState,
 	RuntimeEntry,
 	RuntimeEvent,
-	SelfRuntime,
 } from './orchestrator/index.js';

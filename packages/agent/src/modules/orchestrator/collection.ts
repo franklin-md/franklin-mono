@@ -1,8 +1,8 @@
 import { createObserver } from '@franklin/lib';
-import type { BaseRuntime } from '@franklin/extensibility';
+import type { DetailsRuntime } from './internal/details/index.js';
 import type { RuntimeEntry, RuntimeEvent } from './types.js';
 
-export class RuntimeCollection<Runtime extends BaseRuntime> {
+export class RuntimeCollection<Runtime extends DetailsRuntime> {
 	private readonly runtimes = new Map<string, RuntimeEntry<Runtime>>();
 	private readonly observer = createObserver<[RuntimeEvent<Runtime>]>();
 
@@ -14,16 +14,26 @@ export class RuntimeCollection<Runtime extends BaseRuntime> {
 		return this.runtimes.has(id);
 	}
 
-	set(id: string, runtime: Runtime): void {
-		this.runtimes.set(id, { id, runtime });
-		this.observer.notify({ action: 'add', id, runtime });
+	set(runtime: Runtime): RuntimeEntry<Runtime> {
+		const entry = { details: runtime.details, runtime };
+		this.runtimes.set(entry.details.id, entry);
+		this.observer.notify({
+			action: 'add',
+			id: entry.details.id,
+			runtime,
+		});
+		return entry;
 	}
 
 	async remove(id: string): Promise<boolean> {
 		const entry = this.runtimes.get(id);
 		if (!entry) return false;
 		this.runtimes.delete(id);
-		this.observer.notify({ action: 'remove', id, runtime: entry.runtime });
+		this.observer.notify({
+			action: 'remove',
+			id,
+			runtime: entry.runtime,
+		});
 		await entry.runtime.dispose();
 		return true;
 	}

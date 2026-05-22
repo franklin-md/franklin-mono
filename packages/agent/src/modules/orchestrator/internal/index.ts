@@ -1,4 +1,3 @@
-export { createSelfModule, type SelfModule, type SelfRuntime } from './self.js';
 export {
 	createOrchestrationModule,
 	type OrchestrationModule,

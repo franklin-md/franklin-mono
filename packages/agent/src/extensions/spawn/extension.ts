@@ -17,7 +17,7 @@ export const spawnExtension = defineExtension<
 	api.registerTool(spawnSpec, {
 		execute: async ({ prompt }, ctx) => {
 			const child = await ctx.orchestrator.create({
-				from: ctx.self.id,
+				from: ctx.details.id,
 				mode: 'child',
 			});
 			try {
@@ -28,7 +28,7 @@ export const spawnExtension = defineExtension<
 				const { messages, turnEnd } = await collect(stream);
 				return formatResult(messages, turnEnd);
 			} finally {
-				await child.runtime.orchestrator.remove(child.id);
+				await child.runtime.orchestrator.remove(child.details.id);
 			}
 		},
 		render: renderSpawnOutput,

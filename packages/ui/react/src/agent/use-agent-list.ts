@@ -26,7 +26,7 @@ export type AgentsControl = {
 };
 
 function getSessionKey(session: RuntimeEntry<FranklinRuntime>): string {
-	return session.id;
+	return session.details.id;
 }
 
 /**
@@ -56,7 +56,7 @@ export function useAgentList(): AgentsControl {
 	const create = useCallback(
 		async (input?: AgentCreateInput) => {
 			const session = await manager.create(input);
-			navigateToKey(session.id);
+			navigateToKey(session.details.id);
 			return session;
 		},
 		[manager, navigateToKey],

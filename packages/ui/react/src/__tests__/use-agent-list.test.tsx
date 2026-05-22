@@ -16,6 +16,13 @@ import { useAgents } from '../agent/agents-context.js';
 
 type Listener = () => void;
 
+function createEntry(id: string): RuntimeEntry<FranklinRuntime> {
+	return {
+		details: { id, visibility: 'visible' },
+		runtime: {} as FranklinRuntime,
+	};
+}
+
 function makeMockAgents() {
 	const sessions: RuntimeEntry<FranklinRuntime>[] = [];
 	const listeners = new Set<Listener>();
@@ -24,18 +31,15 @@ function makeMockAgents() {
 	return {
 		sessions,
 		create: vi.fn(async () => {
-			const session: RuntimeEntry<FranklinRuntime> = {
-				id: `agent-${nextId++}`,
-				runtime: {} as FranklinRuntime,
-			};
+			const session = createEntry(`agent-${nextId++}`);
 			sessions.push(session);
 			for (const l of listeners) l();
 			return session;
 		}),
-		get: vi.fn((id: string) => sessions.find((s) => s.id === id)),
+		get: vi.fn((id: string) => sessions.find((s) => s.details.id === id)),
 		list: vi.fn(() => [...sessions]),
 		remove: vi.fn(async (id: string) => {
-			const idx = sessions.findIndex((s) => s.id === id);
+			const idx = sessions.findIndex((s) => s.details.id === id);
 			if (idx === -1) return false;
 			sessions.splice(idx, 1);
 			for (const l of listeners) l();
@@ -87,10 +91,7 @@ async function createSession(result: {
 describe('useAgentList', () => {
 	it('auto-selects the last restored session when there is no active selection', async () => {
 		const agents = makeMockAgents();
-		agents.sessions.push(
-			{ id: 'agent-1', runtime: {} as FranklinRuntime },
-			{ id: 'agent-2', runtime: {} as FranklinRuntime },
-		);
+		agents.sessions.push(createEntry('agent-1'), createEntry('agent-2'));
 		const wrapper = makeWrapper(agents);
 
 		const { result } = renderHook(() => useAgentList(), { wrapper });
@@ -98,7 +99,7 @@ describe('useAgentList', () => {
 		await waitFor(() => {
 			expect(result.current.activeSessionId).toBe('agent-2');
 		});
-		expect(result.current.activeSession?.id).toBe('agent-2');
+		expect(result.current.activeSession?.details.id).toBe('agent-2');
 	});
 
 	it('select updates activeSessionId and activeSession', async () => {
@@ -108,23 +109,23 @@ describe('useAgentList', () => {
 		const { result } = renderHook(() => useAgentList(), { wrapper });
 
 		const first = await createSession(result);
-		expect(result.current.activeSessionId).toBe(first.id);
+		expect(result.current.activeSessionId).toBe(first.details.id);
 		expect(result.current.activeSession).toBe(
-			result.current.sessions.find((s) => s.id === first.id),
+			result.current.sessions.find((s) => s.details.id === first.details.id),
 		);
 
 		// Create a second session (auto-selected)
 		const second = await createSession(result);
-		expect(result.current.activeSessionId).toBe(second.id);
+		expect(result.current.activeSessionId).toBe(second.details.id);
 
 		// Select the first session
 		act(() => {
-			result.current.select(first.id);
+			result.current.select(first.details.id);
 		});
 
-		expect(result.current.activeSessionId).toBe(first.id);
+		expect(result.current.activeSessionId).toBe(first.details.id);
 		expect(result.current.activeSession).toBe(
-			result.current.sessions.find((s) => s.id === first.id),
+			result.current.sessions.find((s) => s.details.id === first.details.id),
 		);
 	});
 
@@ -139,8 +140,8 @@ describe('useAgentList', () => {
 
 		const created = await createSession(result);
 
-		expect(result.current.activeSessionId).toBe(created.id);
-		expect(result.current.activeSession?.id).toBe(created.id);
+		expect(result.current.activeSessionId).toBe(created.details.id);
+		expect(result.current.activeSession?.details.id).toBe(created.details.id);
 		expect(agents.create).toHaveBeenCalledTimes(1);
 	});
 
@@ -155,18 +156,18 @@ describe('useAgentList', () => {
 
 		// Select the second (it's already active from create, but be explicit)
 		act(() => {
-			result.current.select(second.id);
+			result.current.select(second.details.id);
 		});
 
-		expect(result.current.activeSessionId).toBe(second.id);
+		expect(result.current.activeSessionId).toBe(second.details.id);
 
 		// Delete the second — should fall back to first (the previous)
 		await act(async () => {
-			result.current.remove(second.id);
+			result.current.remove(second.details.id);
 		});
 
-		expect(result.current.activeSessionId).toBe(first.id);
-		expect(result.current.activeSession?.id).toBe(first.id);
+		expect(result.current.activeSessionId).toBe(first.details.id);
+		expect(result.current.activeSession?.details.id).toBe(first.details.id);
 	});
 
 	it('deleting the last session clears selection', async () => {
@@ -176,10 +177,10 @@ describe('useAgentList', () => {
 		const { result } = renderHook(() => useAgentList(), { wrapper });
 
 		const only = await createSession(result);
-		expect(result.current.activeSessionId).toBe(only.id);
+		expect(result.current.activeSessionId).toBe(only.details.id);
 
 		await act(async () => {
-			result.current.remove(only.id);
+			result.current.remove(only.details.id);
 		});
 
 		expect(result.current.activeSessionId).toBeNull();
@@ -197,16 +198,16 @@ describe('useAgentList', () => {
 		const second = await createSession(result);
 
 		// Active is now the second (auto-selected on create)
-		expect(result.current.activeSessionId).toBe(second.id);
+		expect(result.current.activeSessionId).toBe(second.details.id);
 
 		// Delete the first (not active)
 		await act(async () => {
-			result.current.remove(first.id);
+			result.current.remove(first.details.id);
 		});
 
 		// Selection should remain on the second
-		expect(result.current.activeSessionId).toBe(second.id);
-		expect(result.current.activeSession?.id).toBe(second.id);
+		expect(result.current.activeSessionId).toBe(second.details.id);
+		expect(result.current.activeSession?.details.id).toBe(second.details.id);
 	});
 });
 
@@ -241,8 +242,8 @@ describe('AgentsProvider + useAgents', () => {
 		});
 
 		expect(session).toBeDefined();
-		expect(result.current.activeSessionId).toBe(session?.id);
-		expect(result.current.activeSession?.id).toBe(session?.id);
+		expect(result.current.activeSessionId).toBe(session?.details.id);
+		expect(result.current.activeSession?.details.id).toBe(session?.details.id);
 	});
 
 	it('throws when used outside AgentsProvider', () => {
