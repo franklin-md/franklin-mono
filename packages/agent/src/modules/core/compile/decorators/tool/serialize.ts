@@ -1,5 +1,5 @@
-import type { ToolDefinition } from '@franklin/mini-acp';
 import type { BaseRuntime } from '@franklin/extensibility';
+import type { ToolDefinition } from '@franklin/mini-acp';
 import { z } from 'zod';
 
 import type { AnyRegisteredTool } from './types.js';

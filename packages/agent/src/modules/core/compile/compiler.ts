@@ -8,8 +8,7 @@ import { createRuntimeAgentState } from '../agent-state/index.js';
 import type { SessionSnapshot } from '../state.js';
 import { createAgentClient } from './client.js';
 import { createAgentDecorator } from './decorators/full.js';
-import { registeredTools } from './registrations/index.js';
-import { serializeTool } from './tools/index.js';
+import { createToolRegistry } from './decorators/tool/index.js';
 
 export function createCoreCompiler(
 	connectAgent: MiniACPConnector,
@@ -25,14 +24,19 @@ export function createCoreCompiler(
 				registrations: registry,
 				getRuntime,
 			});
-			const decorator = createAgentDecorator(agentState, registry, getRuntime);
-			const serializedTools = registeredTools(registry).map(serializeTool);
+			const toolRegistry = createToolRegistry(registry, getRuntime);
+			const decorator = createAgentDecorator(
+				agentState,
+				registry,
+				getRuntime,
+				toolRegistry,
+			);
 
 			const client = await createAgentClient({
 				connectAgent,
 				decorator,
 				session: snapshot,
-				tools: serializedTools,
+				tools: toolRegistry.definitions(),
 			});
 
 			return createCoreRuntime({
