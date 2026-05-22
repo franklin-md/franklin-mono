@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ConfigurationCycleError } from '../../cycle-error.js';
-import { Configuration } from '../../configuration.js';
+import type { Configuration } from '../../configuration.js';
 import type { ConfigurationContribution } from '../../contribution.js';
+import { createConfiguration } from '../../create.js';
 import { assertNoDeclaredConfigurationCycles } from '../cycles.js';
 
 function numberConfiguration(name: string): Configuration<number> {
-	return new Configuration<number>({
+	return createConfiguration<number>({
 		name,
 		combine: (values) => values.at(-1) ?? 0,
 	});

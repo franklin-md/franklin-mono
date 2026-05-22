@@ -34,13 +34,14 @@ import {
 } from '../authoring.js';
 import {
 	ConfigurationCycleError,
-	Configuration,
 	combine as combineModules,
 	combineAll as combineAllModules,
+	createConfiguration,
 	createConfigurationModule,
 	createDependencyModule,
 	createLifecycleModule,
 	liftRuntimeFactory,
+	type Configuration,
 	type ConfigurationModule,
 	type ConfigurationReader,
 	type ConfigurationCycleEntry,
@@ -123,9 +124,12 @@ void compile(
 const _dependency = createDependencyModule('settings', { get: () => 'value' });
 const _configurationModule = createConfigurationModule();
 const _lifecycleModule = createLifecycleModule();
-const _configuration = new Configuration<string, string>({
+const _configuration = createConfiguration<string, string>({
 	name: 'exported',
 	combine: (values) => values.join(''),
+});
+const _collectedConfiguration = createConfiguration<string>({
+	name: 'collected',
 });
 type _DependencyModule = DependencyModule<'settings', { get: () => string }>;
 type _ConfigurationModule = ConfigurationModule;
@@ -144,6 +148,8 @@ type _AuthoredExtension = AuthoringExtensionForModules<[typeof _dependency]>;
 declare const _configurationRuntime: ConfigurationRuntime;
 const _configurationValue: string =
 	_configurationRuntime.getConfig(_configuration);
+const _collectedConfigurationValue: readonly string[] =
+	_configurationRuntime.getConfig(_collectedConfiguration);
 const _lifecycleUnload: LifecycleUnload = async () => {};
 void (null as unknown as _DependencyModule);
 void (null as unknown as _ConfigurationModule);
@@ -162,6 +168,7 @@ void (null as unknown as _AuthoredExtension);
 void _configurationModule;
 void _lifecycleModule;
 void _configurationValue;
+void _collectedConfigurationValue;
 void _lifecycleUnload;
 void ConfigurationCycleError;
 void liftRuntimeFactory(async () => ({ dispose: async () => {} }));

@@ -1,4 +1,4 @@
-import { Configuration } from '../configuration.js';
+import { createConfiguration } from '../create.js';
 import { createConfigurationModule } from '../module.js';
 import type { ConfigurationRuntime } from '../runtime.js';
 
@@ -8,7 +8,7 @@ void _module.compiler;
 
 declare const runtime: ConfigurationRuntime;
 
-const _stringConfiguration = new Configuration<string, string>({
+const _stringConfiguration = createConfiguration<string, string>({
 	name: 'string',
 	combine: (values) => values.join(''),
 });
@@ -16,7 +16,7 @@ const _stringValue: string = runtime.getConfig(_stringConfiguration);
 // @ts-expect-error getConfig returns the configuration output type
 const _numberValue: number = runtime.getConfig(_stringConfiguration);
 
-const _defaultOutputConfiguration = new Configuration<number>({
+const _defaultOutputConfiguration = createConfiguration<number>({
 	name: 'numbers',
 	combine: (values) => values.at(-1) ?? 0,
 });
@@ -28,7 +28,7 @@ const _defaultOutputListValue: readonly number[] = runtime.getConfig(
 	_defaultOutputConfiguration,
 );
 
-const _listConfiguration = new Configuration<number, readonly number[]>({
+const _listConfiguration = createConfiguration<number, readonly number[]>({
 	name: 'numberList',
 	combine: (values) => values,
 });

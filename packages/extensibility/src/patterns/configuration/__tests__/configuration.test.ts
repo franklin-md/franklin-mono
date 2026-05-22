@@ -4,7 +4,7 @@ import { createApi } from '../../../extension-points/facade.js';
 import { createRegistry } from '../../../extension-points/writer.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import { priority } from '../../../transforms/priority.js';
-import { Configuration } from '../configuration.js';
+import { createConfiguration } from '../create.js';
 import { ConfigurationCycleError } from '../cycle-error.js';
 import { CONFIGURATION_API } from '../internal.js';
 import {
@@ -34,7 +34,7 @@ describe('createConfigurationModule', () => {
 
 	it('combines multiple contributions for one configuration into one runtime value', async () => {
 		const module = createConfigurationModule();
-		const promptPrefix = new Configuration<string, string>({
+		const promptPrefix = createConfiguration<string, string>({
 			name: 'promptPrefix',
 			combine: (values) => values.join('\n'),
 		});
@@ -54,7 +54,7 @@ describe('createConfigurationModule', () => {
 
 	it('passes contributions to combine in effective priority order', async () => {
 		const module = createConfigurationModule();
-		const theme = new Configuration<string, string>({
+		const theme = createConfiguration<string, string>({
 			name: 'theme',
 			combine: (values) => values.join(' > '),
 		});
@@ -84,13 +84,47 @@ describe('createConfigurationModule', () => {
 		await runtime.dispose();
 	});
 
+	it('collects configuration inputs in effective priority order when combine is omitted', async () => {
+		const module = createConfigurationModule();
+		const promptFragments = createConfiguration<string>({
+			name: 'promptFragments',
+		});
+
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			(api) => {
+				promptFragments.of('default-one')(api);
+				priority.low(api)[CONFIGURATION_API]({
+					kind: 'static',
+					configuration: promptFragments,
+					input: 'low',
+				});
+				priority.high(api)[CONFIGURATION_API]({
+					kind: 'static',
+					configuration: promptFragments,
+					input: 'high',
+				});
+				promptFragments.of('default-two')(api);
+			},
+		);
+
+		expect(runtime.getConfig(promptFragments)).toEqual([
+			'high',
+			'default-one',
+			'default-two',
+			'low',
+		]);
+		await runtime.dispose();
+	});
+
 	it('keeps configurations with the same configuration name distinct by identity', async () => {
 		const module = createConfigurationModule();
-		const first = new Configuration<string, string>({
+		const first = createConfiguration<string, string>({
 			name: 'theme',
 			combine: (values) => values[0] ?? 'light',
 		});
-		const second = new Configuration<string, string>({
+		const second = createConfiguration<string, string>({
 			name: 'theme',
 			combine: (values) => values[0] ?? 'light',
 		});
@@ -111,7 +145,7 @@ describe('createConfigurationModule', () => {
 
 	it('uses combine with an empty input list for configurations without contributions', async () => {
 		const module = createConfigurationModule();
-		const score = new Configuration<number, number>({
+		const score = createConfiguration<number, number>({
 			name: 'score',
 			combine: (values) => values.reduce((sum, value) => sum + value, 0),
 		});
@@ -126,6 +160,22 @@ describe('createConfigurationModule', () => {
 		await runtime.dispose();
 	});
 
+	it('returns an empty input list for omitted-combine configurations without contributions', async () => {
+		const module = createConfigurationModule();
+		const promptFragments = createConfiguration<string>({
+			name: 'promptFragments',
+		});
+
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			() => {},
+		);
+
+		expect(runtime.getConfig(promptFragments)).toEqual([]);
+		await runtime.dispose();
+	});
+
 	it('uses the construction-time configuration spec after the original object mutates', async () => {
 		const module = createConfigurationModule();
 		const configuration = {
@@ -133,7 +183,7 @@ describe('createConfigurationModule', () => {
 			combine: (values: readonly number[]) =>
 				values.reduce((sum, value) => sum + value, 0),
 		};
-		const score = new Configuration<number, number>(configuration);
+		const score = createConfiguration<number, number>(configuration);
 
 		const runtime = await compile(
 			module.extensionPoint,
@@ -152,11 +202,11 @@ describe('createConfigurationModule', () => {
 
 	it('resolves computed configuration values from declared dependencies', async () => {
 		const module = createConfigurationModule();
-		const account = new Configuration<'free' | 'premium'>({
+		const account = createConfiguration<'free' | 'premium'>({
 			name: 'account',
 			combine: (values) => values.at(-1) ?? 'free',
 		});
-		const maxPdfPages = new Configuration<number>({
+		const maxPdfPages = createConfiguration<number>({
 			name: 'maxPdfPages',
 			combine: (values) => values.at(-1) ?? 10,
 		});
@@ -178,11 +228,11 @@ describe('createConfigurationModule', () => {
 
 	it('rejects declared computed dependency cycles during compile', async () => {
 		const module = createConfigurationModule();
-		const first = new Configuration<number>({
+		const first = createConfiguration<number>({
 			name: 'first',
 			combine: (values) => values.at(-1) ?? 0,
 		});
-		const second = new Configuration<number>({
+		const second = createConfiguration<number>({
 			name: 'second',
 			combine: (values) => values.at(-1) ?? 0,
 		});
