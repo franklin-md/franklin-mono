@@ -1,4 +1,5 @@
 import type { ToolResultContent } from '@franklin/mini-acp';
+import type { JsonValue } from '@franklin/lib';
 import type { MaybePromise } from '../../../utils/maybe-promise.js';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { ToolArgsOf, ToolOutputOf, ToolSpec } from './tool-spec.js';
@@ -8,7 +9,7 @@ export type RenderedToolOutput = {
 	isError?: boolean;
 };
 
-export function defaultToolRenderOutput(value: unknown): RenderedToolOutput {
+export function defaultToolRenderOutput(value: JsonValue): RenderedToolOutput {
 	return {
 		content: [
 			{
@@ -19,16 +20,9 @@ export function defaultToolRenderOutput(value: unknown): RenderedToolOutput {
 	};
 }
 
-function stringifyToolOutput(value: unknown): string {
+function stringifyToolOutput(value: JsonValue): string {
 	if (typeof value === 'string') {
 		return value;
-	}
-	if (
-		value === undefined ||
-		typeof value === 'function' ||
-		typeof value === 'symbol'
-	) {
-		return String(value);
 	}
 	return JSON.stringify(value);
 }
