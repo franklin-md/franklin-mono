@@ -14,10 +14,14 @@ import type { AgentItemProps } from '../agent/agent-list.js';
 // ---------------------------------------------------------------------------
 
 type Listener = () => void;
+type Visibility = RuntimeEntry<FranklinRuntime>['details']['visibility'];
 
-function createEntry(id: string): RuntimeEntry<FranklinRuntime> {
+function createEntry(
+	id: string,
+	visibility: Visibility = 'visible',
+): RuntimeEntry<FranklinRuntime> {
 	return {
-		details: { id, visibility: 'visible' },
+		details: { id, visibility },
 		runtime: {} as FranklinRuntime,
 	};
 }
@@ -117,6 +121,24 @@ describe('AgentList', () => {
 		const { container } = render(<Tree />);
 
 		expect(container.querySelector('[data-testid="item-a"]')).toBeTruthy();
+		expect(container.querySelector('[data-testid="item-b"]')).toBeTruthy();
+	});
+
+	it('renders only visible sessions', () => {
+		const sessions: RuntimeEntry<FranklinRuntime>[] = [
+			createEntry('a'),
+			createEntry('hidden-child', 'hidden'),
+			createEntry('b'),
+		];
+		const agents = makeMockAgents(sessions);
+		const Tree = makeTestTree(agents, { Item: TestItem });
+
+		const { container } = render(<Tree />);
+
+		expect(container.querySelector('[data-testid="item-a"]')).toBeTruthy();
+		expect(
+			container.querySelector('[data-testid="item-hidden-child"]'),
+		).toBeNull();
 		expect(container.querySelector('[data-testid="item-b"]')).toBeTruthy();
 	});
 

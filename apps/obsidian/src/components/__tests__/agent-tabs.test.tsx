@@ -69,6 +69,7 @@ type TestRuntime = FranklinRuntime & {
 };
 
 type TestSession = RuntimeEntry<FranklinRuntime> & { runtime: TestRuntime };
+type Visibility = RuntimeEntry<FranklinRuntime>['details']['visibility'];
 
 function createRuntime(status: StatusState, title = ''): TestRuntime {
 	const statusStore = createStore(status);
@@ -93,9 +94,10 @@ function createSession(
 	id: string,
 	status: StatusState,
 	title?: string,
+	visibility: Visibility = 'visible',
 ): TestSession {
 	return {
-		details: { id, visibility: 'visible' },
+		details: { id, visibility },
 		runtime: createRuntime(status, title),
 	};
 }
@@ -223,6 +225,21 @@ describe('Obsidian agent tabs', () => {
 			'bg-primary',
 		);
 		expect(idleIndicator.className).toContain('invisible');
+	});
+
+	it('renders compact tabs for visible sessions only', () => {
+		renderApp([
+			createSession('session-a', 'idle'),
+			createSession('session-hidden', 'idle', undefined, 'hidden'),
+			createSession('session-c', 'idle'),
+		]);
+
+		expect(getSessionTab('session-a')).toBeTruthy();
+		expect(screen.queryByTestId('agent-tab-session-hidden')).toBeNull();
+		expect(getSessionTab('session-c')).toBeTruthy();
+		expect(screen.getByRole('tab', { name: 'New chat 1' })).toBeTruthy();
+		expect(screen.getByRole('tab', { name: 'New chat 2' })).toBeTruthy();
+		expect(screen.queryByRole('tab', { name: 'New chat 3' })).toBeNull();
 	});
 
 	it('uses chat titles for named sessions and muted new-chat labels as the fallback', async () => {

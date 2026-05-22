@@ -8,7 +8,10 @@ import type {
 } from '@franklin/agent';
 
 import { useHarness } from './harness-context.js';
-import { useSessions } from './use-sessions.js';
+import {
+	isVisibleSession,
+	useVisibleSessions,
+} from './use-visible-sessions.js';
 import { useCollectionNavigator } from '../utils/use-collection-navigator.js';
 
 export type AgentCreateInput = OrchestratorCreateInput<FranklinState>;
@@ -32,15 +35,15 @@ function getSessionKey(session: RuntimeEntry<FranklinRuntime>): string {
 /**
  * Headless controller for agent-list state and actions.
  *
- * Composes `useSessions()` with local active-session tracking and
- * exposes imperative `select`, `create`, and `remove` actions.
+ * Composes the visible session list with local active-session tracking
+ * and exposes imperative `select`, `create`, and `remove` actions.
  *
  * Fallback on delete: selects the previous agent in the list, or the
  * first if the deleted agent was first, or clears if none remain.
  */
 export function useAgentList(): AgentsControl {
 	const manager = useHarness().agents;
-	const sessions = useSessions();
+	const sessions = useVisibleSessions();
 	const {
 		currentItem: activeSession,
 		currentKey,
@@ -56,7 +59,9 @@ export function useAgentList(): AgentsControl {
 	const create = useCallback(
 		async (input?: AgentCreateInput) => {
 			const session = await manager.create(input);
-			navigateToKey(session.details.id);
+			if (isVisibleSession(session)) {
+				navigateToKey(session.details.id);
+			}
 			return session;
 		},
 		[manager, navigateToKey],
