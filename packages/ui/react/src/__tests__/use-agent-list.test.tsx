@@ -6,7 +6,10 @@ import type { FranklinRuntime } from '@franklin/agent';
 import type { RuntimeEntry } from '@franklin/agent';
 
 import { HarnessProvider } from '../agent/harness-context.js';
-import { useAgentList } from '../agent/use-agent-list.js';
+import {
+	type AgentCreateInput,
+	useAgentList,
+} from '../agent/use-agent-list.js';
 import { AgentsProvider } from '../agent/agents-context.js';
 import { useAgents } from '../agent/agents-context.js';
 
@@ -15,10 +18,14 @@ import { useAgents } from '../agent/agents-context.js';
 // ---------------------------------------------------------------------------
 
 type Listener = () => void;
+type Visibility = RuntimeEntry<FranklinRuntime>['details']['visibility'];
 
-function createEntry(id: string): RuntimeEntry<FranklinRuntime> {
+function createEntry(
+	id: string,
+	visibility: Visibility = 'visible',
+): RuntimeEntry<FranklinRuntime> {
 	return {
-		details: { id, visibility: 'visible' },
+		details: { id, visibility },
 		runtime: {} as FranklinRuntime,
 	};
 }
@@ -30,8 +37,9 @@ function makeMockAgents() {
 
 	return {
 		sessions,
-		create: vi.fn(async () => {
-			const session = createEntry(`agent-${nextId++}`);
+		create: vi.fn(async (input?: AgentCreateInput) => {
+			const visibility = input?.state?.details?.visibility ?? 'visible';
+			const session = createEntry(`agent-${nextId++}`, visibility);
 			sessions.push(session);
 			for (const l of listeners) l();
 			return session;
@@ -89,6 +97,25 @@ async function createSession(result: {
 // ---------------------------------------------------------------------------
 
 describe('useAgentList', () => {
+	it('exposes only visible restored sessions and selects the last visible session', async () => {
+		const agents = makeMockAgents();
+		agents.sessions.push(
+			createEntry('agent-1'),
+			createEntry('hidden-child', 'hidden'),
+			createEntry('agent-2'),
+		);
+		const wrapper = makeWrapper(agents);
+
+		const { result } = renderHook(() => useAgentList(), { wrapper });
+
+		await waitFor(() => {
+			expect(result.current.activeSessionId).toBe('agent-2');
+		});
+		expect(
+			result.current.sessions.map((session) => session.details.id),
+		).toEqual(['agent-1', 'agent-2']);
+	});
+
 	it('auto-selects the last restored session when there is no active selection', async () => {
 		const agents = makeMockAgents();
 		agents.sessions.push(createEntry('agent-1'), createEntry('agent-2'));
@@ -143,6 +170,31 @@ describe('useAgentList', () => {
 		expect(result.current.activeSessionId).toBe(created.details.id);
 		expect(result.current.activeSession?.details.id).toBe(created.details.id);
 		expect(agents.create).toHaveBeenCalledTimes(1);
+	});
+
+	it('does not select hidden sessions created through the controller', async () => {
+		const agents = makeMockAgents();
+		agents.sessions.push(createEntry('agent-1'));
+		const wrapper = makeWrapper(agents);
+
+		const { result } = renderHook(() => useAgentList(), { wrapper });
+
+		await waitFor(() => {
+			expect(result.current.activeSessionId).toBe('agent-1');
+		});
+
+		let created: RuntimeEntry<FranklinRuntime> | undefined;
+		await act(async () => {
+			created = await result.current.create({
+				state: { details: { visibility: 'hidden' } },
+			});
+		});
+
+		expect(created?.details.visibility).toBe('hidden');
+		expect(result.current.activeSessionId).toBe('agent-1');
+		expect(
+			result.current.sessions.map((session) => session.details.id),
+		).toEqual(['agent-1']);
 	});
 
 	it('deleting the active session selects the previous session in the list', async () => {
