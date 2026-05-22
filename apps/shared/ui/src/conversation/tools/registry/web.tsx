@@ -42,6 +42,10 @@ export const webToolRenderers = [
 	}),
 	createToolRenderer(webExtension.tools.searchWeb, {
 		summary: ({ args, block }) => {
+			if (block.output?.kind !== 'success') {
+				return null;
+			}
+
 			const Icon = getSearchProviderIcon(block.output);
 
 			return (
@@ -56,9 +60,7 @@ export const webToolRenderers = [
 function getSearchProviderIcon(
 	output: WebSearchOutput | undefined,
 ): ToolSummaryIcon {
-	if (output?.kind !== 'success') {
-		return Globe;
-	}
-
-	return searchProviderIcons[output.provider.id] ?? Globe;
+	return output?.kind === 'success'
+		? (searchProviderIcons[output.provider.id] ?? Globe)
+		: Globe;
 }
