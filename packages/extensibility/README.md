@@ -88,25 +88,32 @@ Configuration modules provide a CodeMirror Facet-style pattern: extensions
 contribute typed input values to configurations, the module compiler combines
 those values with each configuration's combine function, and runtime consumers
 read the derived value through `getConfig(configuration)`. Configurations
-default their output type to their input type; use a second type argument when a
-configuration combines inputs into a different output shape:
+with explicit combine functions default their output type to their input type;
+use a second type argument when a configuration combines inputs into a different
+output shape. Use `createConfiguration<Input>({ name })` when a configuration
+should simply expose its contributed inputs as a `readonly Input[]` in effective
+registration order:
 
 ```ts
-import { Configuration, createConfigurationModule } from '@franklin/extensibility/module';
+import { createConfiguration, createConfigurationModule } from '@franklin/extensibility/module';
 
-const account = new Configuration<'free' | 'premium'>({
+const account = createConfiguration<'free' | 'premium'>({
 	name: 'account',
 	combine: (values) => values[0] ?? 'free',
 });
 
-const maxPdfPages = new Configuration<number>({
+const maxPdfPages = createConfiguration<number>({
 	name: 'maxPdfPages',
 	combine: (values) => values[0] ?? 10,
 });
 
-const promptPrefix = new Configuration<string, string>({
+const promptPrefix = createConfiguration<string, string>({
 	name: 'promptPrefix',
 	combine: (values) => values.join('\n'),
+});
+
+const promptFragments = createConfiguration<string>({
+	name: 'promptFragments',
 });
 
 const configurationModule = createConfigurationModule();
@@ -119,7 +126,8 @@ const computedLimitExtension = maxPdfPages.compute([account], ({ getConfig }) =>
 Configuration `combine` functions receive values in the same effective
 registration order. Use `values[0]` for highest-precedence-wins configuration,
 or document the fallback rule if a configuration deliberately reads from the
-end of the list.
+end of the list. Configurations created without a combine function expose that
+ordered value list directly.
 
 The package intentionally does not expose wildcard subpaths. If a helper is not
 available from one of the imports above, treat it as internal implementation

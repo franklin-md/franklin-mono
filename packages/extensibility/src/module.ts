@@ -29,6 +29,7 @@ export {
 	liftRuntimeFactory,
 } from './modules/simple/index.js';
 export type {
+	Configuration,
 	ConfigurationCompute,
 	ConfigurationCycleEntry,
 	ConfigurationModule,
@@ -37,8 +38,8 @@ export type {
 	ConfigurationRuntime,
 } from './patterns/configuration/index.js';
 export {
-	Configuration,
 	ConfigurationCycleError,
+	createConfiguration,
 	createConfigurationModule,
 } from './patterns/configuration/index.js';
 export type {

@@ -1,5 +1,6 @@
-export { Configuration } from './configuration.js';
+export { createConfiguration } from './create.js';
 export type {
+	Configuration,
 	ConfigurationCompute,
 	ConfigurationReader,
 	ConfigurationSpec,
