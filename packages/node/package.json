@@ -24,16 +24,16 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@agentclientprotocol/sdk": "^0.16.1",
-		"@franklin/agent": "*",
-		"@franklin/lib": "*",
-		"@franklin/mini-acp": "*",
-		"@earendil-works/pi-agent-core": "^0.74.0",
-		"@earendil-works/pi-ai": "^0.74.0",
-		"node-fetch": "^3.3.2",
-		"shell-quote": "^1.8.3"
+		"@agentclientprotocol/sdk": "0.16.1",
+		"@franklin/agent": "0.0.0",
+		"@franklin/lib": "0.0.0",
+		"@franklin/mini-acp": "0.0.0",
+		"@earendil-works/pi-agent-core": "0.74.0",
+		"@earendil-works/pi-ai": "0.74.0",
+		"node-fetch": "3.3.2",
+		"shell-quote": "1.8.3"
 	},
 	"devDependencies": {
-		"@types/shell-quote": "^1.7.5"
+		"@types/shell-quote": "1.7.5"
 	}
 }
