@@ -13,6 +13,6 @@ export type {
 	ToolCallEvent,
 	ToolResultEvent,
 } from './handlers.js';
-export type { ToolOutput, ToolResultWithOutput } from './tool.js';
+export type { RenderedToolOutput } from './tool.js';
 export type { ToolSpec, ToolArgsOf, ToolOutputOf } from './tool-spec.js';
 export { toolSpec } from './tool-spec.js';

@@ -2,7 +2,7 @@ import { toolCalls, turn, turnEnd } from '@franklin/mini-acp/mock';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createCoreScenario, runCoreScenario } from '../../../testing/index.js';
-import type { ToolOutput } from '../api/tool.js';
+import type { RenderedToolOutput } from '../api/tool.js';
 import { toolSpec } from '../api/tool-spec.js';
 import { toolResultText } from './tool-result-text.js';
 
@@ -233,12 +233,12 @@ describe('core extension registered tools', () => {
 		expect(toolResultText(calls.toolResults[0])).toBe('raw string error');
 	});
 
-	it('preserves structured ToolOutput values returned by registered tools', async () => {
-		const spec = toolSpec<'errorTool', Record<string, never>, ToolOutput>(
+	it('preserves structured RenderedToolOutput values returned by registered tools', async () => {
+		const spec = toolSpec<
 			'errorTool',
-			'Returns an error ToolOutput',
-			z.object({}),
-		);
+			Record<string, never>,
+			RenderedToolOutput
+		>('errorTool', 'Returns an error RenderedToolOutput', z.object({}));
 
 		const { calls } = await runCoreScenario({
 			turns: [turn([toolCalls([{ name: 'errorTool' }]), turnEnd()])],

@@ -2,7 +2,7 @@ import type { BaseRuntime } from '@franklin/extensibility';
 import type { z } from 'zod';
 
 import type { MaybePromise } from '../../../../utils/maybe-promise.js';
-import type { ToolOutput } from '../../api/tool.js';
+import type { RenderedToolOutput } from '../../api/tool.js';
 
 export interface RegisteredTool<
 	TInput = unknown,
@@ -17,7 +17,7 @@ export interface RegisteredTool<
 		output: TOutput,
 		params: TInput,
 		runtime: Runtime,
-	) => MaybePromise<ToolOutput>;
+	) => MaybePromise<RenderedToolOutput>;
 }
 
 export type AnyRegisteredTool<Runtime extends BaseRuntime = BaseRuntime> =

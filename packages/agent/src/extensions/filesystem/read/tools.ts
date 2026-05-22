@@ -3,7 +3,7 @@ import {
 	toolSpec,
 	type ToolSpec,
 } from '../../../modules/core/api/tool-spec.js';
-import type { ToolOutput } from '../../../modules/core/api/tool.js';
+import type { RenderedToolOutput } from '../../../modules/core/api/tool.js';
 import { readFileDescription } from '../../system_prompts.js';
 
 const readFileSchema = z.object({
@@ -25,5 +25,5 @@ const readFileSchema = z.object({
 export const readFileSpec: ToolSpec<
 	'read_file',
 	z.infer<typeof readFileSchema>,
-	string | ToolOutput
+	string | RenderedToolOutput
 > = toolSpec('read_file', readFileDescription, readFileSchema);

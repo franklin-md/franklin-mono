@@ -1,18 +1,14 @@
-import type { ToolResult, ToolResultContent } from '@franklin/mini-acp';
+import type { ToolResultContent } from '@franklin/mini-acp';
 import type { MaybePromise } from '../../../utils/maybe-promise.js';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { ToolArgsOf, ToolOutputOf, ToolSpec } from './tool-spec.js';
 
-export type ToolOutput = {
+export type RenderedToolOutput = {
 	content: ToolResultContent[];
 	isError?: boolean;
 };
 
-export type ToolResultWithOutput<TOutput = unknown> = ToolResult & {
-	output?: TOutput;
-};
-
-export function defaultToolRenderOutput(value: unknown): ToolOutput {
+export function defaultToolRenderOutput(value: unknown): RenderedToolOutput {
 	return {
 		content: [
 			{
@@ -46,7 +42,7 @@ export type ToolCallRender<S extends ToolSpec, Ctx extends BaseRuntime> = (
 	output: ToolOutputOf<S>,
 	params: ToolArgsOf<S>,
 	ctx: Ctx,
-) => MaybePromise<ToolOutput>;
+) => MaybePromise<RenderedToolOutput>;
 
 export type ToolHandlers<S extends ToolSpec, Ctx extends BaseRuntime> = {
 	execute: ToolCallExecute<S, Ctx>;

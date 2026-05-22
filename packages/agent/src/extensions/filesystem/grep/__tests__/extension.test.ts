@@ -170,7 +170,9 @@ describe('grepExtension', () => {
 			.join('\n');
 		expect(result.isError).toBeUndefined();
 		expect(text).toBe('src/a.ts\n  3: foo');
-		expect(events[0]).toMatchObject(result);
+		expect(events[0]?.result).toEqual({
+			content: result.content,
+		});
 		expect(events[0]?.output).toEqual({
 			status: 'success',
 			text: 'src/a.ts\n  3: foo',

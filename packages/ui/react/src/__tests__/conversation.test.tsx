@@ -5,7 +5,7 @@ import {
 	type ConversationTurn,
 	type TextBlock,
 	type ThinkingBlock,
-	type ToolOutput,
+	type RenderedToolOutput,
 	type ToolOutputOf,
 	type ToolUseBlock,
 } from '@franklin/agent';
@@ -52,7 +52,6 @@ describe('computeToolStatus', () => {
 		const block: ToolUseBlock = {
 			...base,
 			result: {
-				toolCallId: '1',
 				content: [{ type: 'text', text: 'ok' }],
 			},
 		};
@@ -63,7 +62,6 @@ describe('computeToolStatus', () => {
 		const block: ToolUseBlock = {
 			...base,
 			result: {
-				toolCallId: '1',
 				content: [{ type: 'text', text: 'failed' }],
 				isError: true,
 			},
@@ -132,8 +130,8 @@ describe('createToolRenderer', () => {
 	it('infers renderer args from the tool spec', () => {
 		const renderer = createToolRenderer(readFileSpec, {
 			summary: ({ args, block }) => {
-				expectTypeOf(block.result?.output).toEqualTypeOf<
-					string | ToolOutput | undefined
+				expectTypeOf(block.output).toEqualTypeOf<
+					string | RenderedToolOutput | undefined
 				>();
 				return args.path;
 			},
@@ -147,7 +145,7 @@ describe('createToolRenderer', () => {
 					limit: number;
 					offset?: number | undefined;
 				},
-				string | ToolOutput
+				string | RenderedToolOutput
 			>
 		>();
 	});
@@ -220,7 +218,6 @@ describe('Conversation', () => {
 							arguments: {},
 						},
 						result: {
-							toolCallId: 'c1',
 							content: [{ type: 'text', text: 'file contents' }],
 						},
 						startedAt: 0,
@@ -321,7 +318,6 @@ describe('Conversation', () => {
 								arguments: {},
 							},
 							result: {
-								toolCallId: 'c3',
 								content: [{ type: 'text', text: 'fail' }],
 								isError: true,
 							},
@@ -508,7 +504,6 @@ describe('ToolUseBlock', () => {
 			kind: 'toolUse',
 			call: { type: 'toolCall', id: '1', name: 'read', arguments: {} },
 			result: {
-				toolCallId: '1',
 				content: [{ type: 'text', text: 'ok' }],
 			},
 			startedAt: 0,
@@ -537,9 +532,9 @@ describe('ToolUseBlock', () => {
 		const registry = createToolRendererRegistry([
 			createToolRenderer(grepSpec, {
 				summary: ({ block }) =>
-					`summary:${block.result?.output?.matches.length}:${block.result?.toolCallId}`,
+					`summary:${block.output?.matches.length}:${block.call.id}`,
 				expanded: ({ block }) =>
-					block.result?.output?.matches.map((match) => match.file).join(','),
+					block.output?.matches.map((match) => match.file).join(','),
 			}),
 		]);
 
@@ -557,17 +552,16 @@ describe('ToolUseBlock', () => {
 				arguments: { pattern: 'foo' },
 			},
 			result: {
-				toolCallId: '1',
 				content: [{ type: 'text', text: 'matches:2' }],
-				output: {
-					status: 'success',
-					text: 'matches:2',
-					matches: [
-						{ file: 'src/a.ts', line: 1, text: 'foo' },
-						{ file: 'src/b.ts', line: 2, text: 'foo' },
-					],
-					truncated: false,
-				},
+			},
+			output: {
+				status: 'success',
+				text: 'matches:2',
+				matches: [
+					{ file: 'src/a.ts', line: 1, text: 'foo' },
+					{ file: 'src/b.ts', line: 2, text: 'foo' },
+				],
+				truncated: false,
 			},
 			startedAt: 0,
 		};
@@ -715,7 +709,6 @@ describe('ToolUseBlock', () => {
 				arguments: { title: 'Inbox triage' },
 			},
 			result: {
-				toolCallId: '1',
 				content: [{ type: 'text', text: '{"title":"Inbox triage"}' }],
 			},
 			startedAt: 0,
@@ -763,7 +756,6 @@ describe('createToolUseBlock', () => {
 			kind: 'toolUse',
 			call: { type: 'toolCall', id: '1', name: 'read', arguments: {} },
 			result: {
-				toolCallId: '1',
 				content: [{ type: 'text', text: 'ok' }],
 			},
 			startedAt: 0,

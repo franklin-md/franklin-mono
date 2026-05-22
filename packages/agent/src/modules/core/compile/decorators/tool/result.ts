@@ -1,7 +1,7 @@
 import type { ToolCall, ToolResult } from '@franklin/mini-acp';
 
 import type { ToolResultEvent } from '../../../api/handlers.js';
-import type { ToolOutput } from '../../../api/tool.js';
+import type { RenderedToolOutput } from '../../../api/tool.js';
 
 export type ToolExecutionResult<TOutput = unknown> = {
 	readonly modelOutput: ToolResult;
@@ -15,22 +15,22 @@ export function fallbackExecutionResult(
 	return {
 		modelOutput,
 		event: {
-			...modelOutput,
 			call,
+			result: renderedOutputFromToolResult(modelOutput),
 		},
 	};
 }
 
 export function registeredExecutionResult<TOutput>(
-	modelOutput: ToolResult,
 	call: ToolCall,
+	renderedOutput: RenderedToolOutput,
 	output: TOutput,
 ): ToolExecutionResult<TOutput> {
 	return {
-		modelOutput,
+		modelOutput: toolResultFromOutput(call.id, renderedOutput),
 		event: {
-			...modelOutput,
 			call,
+			result: renderedOutput,
 			output,
 		},
 	};
@@ -43,9 +43,9 @@ export function errorExecutionResult(
 	return fallbackExecutionResult(errorToolResult(call.id, text), call);
 }
 
-export function toolResultFromOutput(
+function toolResultFromOutput(
 	toolCallId: string,
-	output: ToolOutput,
+	output: RenderedToolOutput,
 ): ToolResult {
 	const modelOutput: ToolResult = {
 		toolCallId,
@@ -55,6 +55,16 @@ export function toolResultFromOutput(
 		modelOutput.isError = output.isError;
 	}
 	return modelOutput;
+}
+
+function renderedOutputFromToolResult(result: ToolResult): RenderedToolOutput {
+	const output: RenderedToolOutput = {
+		content: result.content,
+	};
+	if (result.isError !== undefined) {
+		output.isError = result.isError;
+	}
+	return output;
 }
 
 function errorToolResult(toolCallId: string, text: string): ToolResult {

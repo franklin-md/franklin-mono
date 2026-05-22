@@ -263,7 +263,6 @@ describe('conversationExtension', () => {
 				arguments: { path: '/foo' },
 			},
 			result: {
-				toolCallId: 'tc1',
 				content: [{ type: 'text', text: 'ok' }],
 			},
 			startedAt: expect.any(Number),
@@ -314,7 +313,6 @@ describe('conversationExtension', () => {
 				arguments: { path: '/etc/passwd' },
 			},
 			result: {
-				toolCallId: 'tc1',
 				content: [{ type: 'text', text: 'Permission denied' }],
 				isError: true,
 			},
@@ -370,10 +368,9 @@ describe('conversationExtension', () => {
 		expect(block).toMatchObject({
 			kind: 'toolUse',
 			result: {
-				toolCallId: 'tc1',
 				content: [{ type: 'text', text: 'matches:3' }],
-				output: { count: 3, files: ['src/a.ts'] },
 			},
+			output: { count: 3, files: ['src/a.ts'] },
 		});
 	});
 
@@ -419,7 +416,6 @@ describe('conversationExtension', () => {
 				arguments: { path: '/foo' },
 			},
 			result: {
-				toolCallId: 'tc1',
 				content: [{ type: 'text', text: 'file contents here' }],
 			},
 			startedAt: expect.any(Number),
@@ -641,7 +637,6 @@ describe('conversationExtension', () => {
 				arguments: { path: '/foo' },
 			},
 			result: {
-				toolCallId: 'tc1',
 				content: [{ type: 'text', text: 'contents' }],
 			},
 			startedAt: expect.any(Number),

@@ -11,9 +11,8 @@ export type {
 	SystemPromptHandler,
 	ToolArgsOf,
 	ToolCallEvent,
-	ToolOutput,
+	RenderedToolOutput,
 	ToolOutputOf,
-	ToolResultWithOutput,
 	ToolResultEvent,
 	ToolSpec,
 } from './core/api/index.js';

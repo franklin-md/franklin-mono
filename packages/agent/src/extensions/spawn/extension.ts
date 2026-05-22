@@ -7,7 +7,7 @@ import type { CoreModule } from '../../modules/core/index.js';
 import type { OrchestratorModule } from '../../modules/orchestrator/index.js';
 import { spawnSpec } from './tools.js';
 import { formatResult } from './format.js';
-import type { ToolOutput } from '../../modules/core/index.js';
+import type { RenderedToolOutput } from '../../modules/core/index.js';
 
 type SpawnExtension = ExtensionForModules<[OrchestratorModule<[CoreModule]>]>;
 
@@ -62,7 +62,9 @@ export function spawnExtension(): SpawnExtension {
 	});
 }
 
-function renderSpawnOutput(output: string | ToolOutput): ToolOutput {
+function renderSpawnOutput(
+	output: string | RenderedToolOutput,
+): RenderedToolOutput {
 	if (typeof output === 'string') {
 		return { content: [{ type: 'text', text: output }] };
 	}

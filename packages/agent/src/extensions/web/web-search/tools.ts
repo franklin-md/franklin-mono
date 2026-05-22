@@ -3,13 +3,13 @@ import {
 	toolSpec,
 	type ToolSpec,
 } from '../../../modules/core/api/tool-spec.js';
-import type { ToolOutput } from '../../../modules/core/api/tool.js';
+import type { RenderedToolOutput } from '../../../modules/core/api/tool.js';
 import { webSearchDescription } from '../../system_prompts.js';
 
 export const searchWebSpec: ToolSpec<
 	'search_web',
 	{ query: string },
-	ToolOutput
+	RenderedToolOutput
 > = toolSpec(
 	'search_web',
 	webSearchDescription,

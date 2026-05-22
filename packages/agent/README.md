@@ -85,10 +85,10 @@ The mechanism for cross-boundary interaction is **Local MCP**: the application d
 
 Tool handlers return the application-owned execution result. When that raw
 value should differ from the model-visible response, the tool registration can
-provide `render` to project it into Mini-ACP tool-result content. Tool result
-observers and conversation blocks receive one joined result value: the
-Mini-ACP `ToolResult` fields plus optional raw `output` for local UI summaries,
-persistence, and application handling.
+provide `render` to project it into rendered tool-result content. Tool result
+observers and conversation blocks keep that model-visible result separate from
+the optional raw `output` used for local UI summaries, persistence, and
+application handling.
 
 **Current extension API**: Extensions primarily define handlers for agent tool requests — the application-side behavior that the agent can invoke. Future iterations may expose environment mutation methods to extensions as well.
 

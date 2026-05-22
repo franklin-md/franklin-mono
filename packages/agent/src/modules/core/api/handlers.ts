@@ -6,7 +6,7 @@ import type {
 	ToolCall,
 	ToolExecuteParams,
 } from '@franklin/mini-acp';
-import type { ToolResultWithOutput } from './tool.js';
+import type { RenderedToolOutput } from './tool.js';
 
 // ---------------------------------------------------------------------------
 // Stream observer events — fire-and-forget side effects on response stream
@@ -31,7 +31,8 @@ export type StreamObserverHandler<K extends StreamObserverEvent> = (
 
 export type ToolCallEvent = ToolExecuteParams;
 
-export type ToolResultEvent<TOutput = unknown> =
-	ToolResultWithOutput<TOutput> & {
-		call: ToolCall;
-	};
+export type ToolResultEvent<TOutput = unknown> = {
+	call: ToolCall;
+	result: RenderedToolOutput;
+	output?: TOutput;
+};

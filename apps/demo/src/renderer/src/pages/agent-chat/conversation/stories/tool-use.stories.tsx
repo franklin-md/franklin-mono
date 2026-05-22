@@ -23,7 +23,6 @@ function toolBlock(
 		result:
 			resultText !== undefined || isError
 				? {
-						toolCallId: `tc_${name}`,
 						content:
 							resultText !== undefined
 								? [{ type: 'text', text: resultText }]

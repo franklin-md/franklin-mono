@@ -4,7 +4,7 @@ import type {
 	StopCode,
 	Usage,
 } from '@franklin/mini-acp';
-import type { ToolResultWithOutput } from '../../modules/core/index.js';
+import type { RenderedToolOutput } from '../../modules/core/index.js';
 
 // ---------------------------------------------------------------------------
 // AssistantTurn — everything the assistant does in response
@@ -20,7 +20,8 @@ export type ThinkingBlock = { kind: 'thinking'; text: string } & BlockMetadata;
 export type ToolUseBlock<TOutput = unknown> = {
 	kind: 'toolUse';
 	call: ToolCallContent;
-	result?: ToolResultWithOutput<TOutput>;
+	result?: RenderedToolOutput;
+	output?: TOutput;
 } & BlockMetadata;
 export type TurnEndBlock = {
 	kind: 'turnEnd';

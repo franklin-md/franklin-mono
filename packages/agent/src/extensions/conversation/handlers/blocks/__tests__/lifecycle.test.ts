@@ -188,13 +188,14 @@ describe('handleToolResult (orphan fallback)', () => {
 	it('pushes an instantaneous toolUse when no matching block exists', () => {
 		const turn = emptyTurn();
 		handleToolResult(turn, {
-			toolCallId: 'tc1',
-			content: [{ type: 'text', text: 'result' }],
 			call: {
 				type: 'toolCall',
 				id: 'tc1',
 				name: 'read_file',
 				arguments: { path: '/foo' },
+			},
+			result: {
+				content: [{ type: 'text', text: 'result' }],
 			},
 		});
 
@@ -207,13 +208,14 @@ describe('handleToolResult (orphan fallback)', () => {
 		const turn = emptyTurn();
 		startBlock(turn, 'text', { text: 'open' }, 100);
 		handleToolResult(turn, {
-			toolCallId: 'tc1',
-			content: [{ type: 'text', text: 'result' }],
 			call: {
 				type: 'toolCall',
 				id: 'tc1',
 				name: 'read_file',
 				arguments: {},
+			},
+			result: {
+				content: [{ type: 'text', text: 'result' }],
 			},
 		});
 

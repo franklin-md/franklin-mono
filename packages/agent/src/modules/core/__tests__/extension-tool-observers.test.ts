@@ -46,7 +46,7 @@ describe('core extension tool observers', () => {
 		]);
 		expect(
 			observer.toolResults.map((event) => ({
-				toolCallId: event.toolCallId,
+				toolCallId: event.call.id,
 				callName: event.call.name,
 			})),
 		).toEqual([{ toolCallId: 'mock-tool-call-1', callName: 'lookup' }]);
@@ -76,7 +76,7 @@ describe('core extension tool observers', () => {
 		expect(observer.toolCalls.map((event) => event.call.id)).toEqual([
 			'mock-tool-call-1',
 		]);
-		expect(observer.toolResults.map((event) => event.toolCallId)).toEqual([
+		expect(observer.toolResults.map((event) => event.call.id)).toEqual([
 			'mock-tool-call-1',
 		]);
 	});
@@ -107,8 +107,8 @@ describe('core extension tool observers', () => {
 
 		expect(observer.toolResults[0]?.output).toEqual({ count: 3 });
 		expect(observer.toolResults[0]).toMatchObject({
-			toolCallId: 'mock-tool-call-1',
-			content: [{ type: 'text', text: 'count:3' }],
+			call: { id: 'mock-tool-call-1' },
+			result: { content: [{ type: 'text', text: 'count:3' }] },
 		});
 	});
 
@@ -157,8 +157,8 @@ describe('core extension tool observers', () => {
 
 		expect(
 			observer.toolResults.map((event) => ({
-				toolCallId: event.toolCallId,
-				isError: event.isError,
+				toolCallId: event.call.id,
+				isError: event.result.isError,
 			})),
 		).toEqual([{ toolCallId: 'mock-tool-call-1', isError: true }]);
 	});

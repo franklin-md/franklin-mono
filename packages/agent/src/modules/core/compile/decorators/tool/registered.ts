@@ -7,7 +7,6 @@ import type { AnyRegisteredTool } from '../../tools/index.js';
 import {
 	errorExecutionResult,
 	registeredExecutionResult,
-	toolResultFromOutput,
 	type ToolExecutionResult,
 } from './result.js';
 
@@ -33,11 +32,7 @@ export async function executeRegisteredToolCall<Runtime extends BaseRuntime>(
 		const rendered = tool.render
 			? await tool.render(output, parsedArgs.data, runtime)
 			: defaultToolRenderOutput(output);
-		return registeredExecutionResult(
-			toolResultFromOutput(call.id, rendered),
-			call,
-			output,
-		);
+		return registeredExecutionResult(call, rendered, output);
 	} catch (error) {
 		return errorExecutionResult(call, formatToolError(error));
 	}

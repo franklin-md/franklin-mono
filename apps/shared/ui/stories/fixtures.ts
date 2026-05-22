@@ -89,7 +89,6 @@ const assistantToolResponse: AssistantTurn = {
 				arguments: { pattern: 'README.md' },
 			},
 			result: {
-				toolCallId: 'tool-1',
 				content: [{ type: 'text', text: 'Found 3 matching files.' }],
 			},
 			startedAt: tick(),

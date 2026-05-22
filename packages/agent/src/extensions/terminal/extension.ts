@@ -1,7 +1,7 @@
 import { defineExtension } from '../../modules/state/index.js';
 import type { CoreModule } from '../../modules/core/index.js';
 import type { EnvironmentModule } from '../../modules/environment/index.js';
-import type { ToolOutput } from '../../modules/core/index.js';
+import type { RenderedToolOutput } from '../../modules/core/index.js';
 import { shellArgs } from './shell-args.js';
 import { bashSpec } from './tools.js';
 
@@ -35,7 +35,9 @@ export function bashExtension() {
 	});
 }
 
-function renderBashOutput(output: string | ToolOutput): ToolOutput {
+function renderBashOutput(
+	output: string | RenderedToolOutput,
+): RenderedToolOutput {
 	if (typeof output === 'string') {
 		return { content: [{ type: 'text', text: output }] };
 	}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultToolRenderOutput } from '../tool.js';
 
 describe('defaultToolRenderOutput', () => {
-	it('converts a string to ToolOutput text', () => {
+	it('converts a string to RenderedToolOutput text', () => {
 		expect(defaultToolRenderOutput('hello')).toEqual({
 			content: [{ type: 'text', text: 'hello' }],
 		});
@@ -14,7 +14,7 @@ describe('defaultToolRenderOutput', () => {
 		});
 	});
 
-	it('does not treat arbitrary content-shaped raw objects like ToolOutput', () => {
+	it('does not treat arbitrary content-shaped raw objects like RenderedToolOutput', () => {
 		expect(
 			defaultToolRenderOutput({
 				content: ['not MiniACP content'],

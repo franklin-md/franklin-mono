@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { toolSpec, type ToolSpec } from '../../modules/core/api/tool-spec.js';
-import type { ToolOutput } from '../../modules/core/api/tool.js';
+import type { RenderedToolOutput } from '../../modules/core/api/tool.js';
 import { bashDescription } from '../system_prompts.js';
 
 const bashSchema = z.object({
@@ -19,5 +19,5 @@ const bashSchema = z.object({
 export const bashSpec: ToolSpec<
 	'bash',
 	z.infer<typeof bashSchema>,
-	string | ToolOutput
+	string | RenderedToolOutput
 > = toolSpec('bash', bashDescription, bashSchema);
