@@ -4,6 +4,8 @@ import { Claude } from './claude.js';
 import { Codex } from './codex.js';
 import { Cohere } from './cohere.js';
 import { DeepSeek } from './deepseek.js';
+import { DuckDuckGo } from './duck-duck-go.js';
+import { Exa } from './exa.js';
 import { Gemini } from './gemini.js';
 import { Google } from './google.js';
 import { Groq } from './groq.js';
@@ -30,6 +32,8 @@ export const Icons = {
 	Codex,
 	Cohere,
 	DeepSeek,
+	DuckDuckGo,
+	Exa,
 	Gemini,
 	Google,
 	Groq,

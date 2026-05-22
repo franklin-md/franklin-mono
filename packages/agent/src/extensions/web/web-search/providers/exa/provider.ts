@@ -4,13 +4,15 @@ import type {
 	WebSearchProvider,
 	WebSearchProviderRequest,
 } from '../../provider.js';
+import { EXA_WEB_SEARCH_PROVIDER_ID } from '../../provider.js';
 import { parseExaMcpResponse } from './parse.js';
 
 const EXA_MCP_URL = 'https://mcp.exa.ai/mcp';
 
 export function createExaWebSearchProvider(): WebSearchProvider {
 	return {
-		name: 'Exa MCP',
+		id: EXA_WEB_SEARCH_PROVIDER_ID,
+		name: 'Exa',
 		search: searchWithExa,
 	};
 }

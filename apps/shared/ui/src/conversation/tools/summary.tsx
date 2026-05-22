@@ -1,10 +1,11 @@
-import type { LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { ElementType, ReactNode } from 'react';
 
 import { cn } from '../../lib/cn.js';
 
+export type ToolSummaryIcon = ElementType<{ className?: string }>;
+
 export interface ToolSummaryProps {
-	icon: LucideIcon;
+	icon: ToolSummaryIcon;
 	label?: ReactNode;
 	children?: ReactNode;
 	labelClassName?: string;

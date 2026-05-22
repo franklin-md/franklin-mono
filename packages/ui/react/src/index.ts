@@ -177,7 +177,7 @@ export {
 } from './host-actions/index.js';
 
 // ---------------------------------------------------------------------------
-// Icons — AI provider and model brand icons (sourced from lobehub/lobe-icons)
+// Icons — provider and model brand icons
 // ---------------------------------------------------------------------------
 export type { IconProps } from './icons/types.js';
 export { Icons } from './icons/registry.js';

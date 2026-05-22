@@ -5,11 +5,13 @@ import {
 	bashExtension,
 	conversationTitleExtension,
 	createWebExtension,
+	DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
+	EXA_WEB_SEARCH_PROVIDER_ID,
 	filesystemExtension,
 	todoExtension,
 	type ToolUseBlock,
 } from '@franklin/agent';
-import type { JsonObject } from '@franklin/lib';
+import type { JsonObject, JsonValue } from '@franklin/lib';
 import { resolveToolRenderer } from '@franklin/react';
 import { describe, expect, it } from 'vitest';
 
@@ -18,8 +20,12 @@ import {
 	defaultToolRegistry,
 } from '../../../src/conversation/tools/registry/index.js';
 
-function createBlock(name: string, args: JsonObject): ToolUseBlock {
-	return {
+function createBlock(
+	name: string,
+	args: JsonObject,
+	output?: JsonValue,
+): ToolUseBlock {
+	const block: ToolUseBlock = {
 		kind: 'toolUse',
 		call: {
 			type: 'toolCall',
@@ -29,16 +35,22 @@ function createBlock(name: string, args: JsonObject): ToolUseBlock {
 		},
 		startedAt: 0,
 	};
+
+	if (output === undefined) {
+		return block;
+	}
+
+	return { ...block, output };
 }
 
-function renderSummary(name: string, args: JsonObject) {
+function renderSummary(name: string, args: JsonObject, output?: JsonValue) {
 	const entry = resolveToolRenderer(defaultToolRegistry, name);
 	if (entry == null) {
 		throw new Error(`Expected renderer for ${name}`);
 	}
-	render(
+	return render(
 		entry.summary({
-			block: createBlock(name, args),
+			block: createBlock(name, args, output),
 			status: 'success',
 			args,
 		}),
@@ -105,6 +117,43 @@ describe('defaultToolRegistry', () => {
 			});
 			expect(screen.getByText('Search')).toBeTruthy();
 			expect(screen.getByText('example query')).toBeTruthy();
+		});
+
+		it('renders search with the Exa provider icon from raw output', () => {
+			const { container } = renderSummary(
+				createWebExtension({}).tools.searchWeb.name,
+				{ query: 'example query' },
+				{
+					kind: 'success',
+					provider: { id: EXA_WEB_SEARCH_PROVIDER_ID, name: 'Exa' },
+					query: 'example query',
+					results: [],
+				},
+			);
+
+			const path = container.querySelector('path');
+
+			expect(path?.getAttribute('fill')).toBe('#1F40ED');
+		});
+
+		it('renders search with the DuckDuckGo provider icon from raw output', () => {
+			const { container } = renderSummary(
+				createWebExtension({}).tools.searchWeb.name,
+				{ query: 'example query' },
+				{
+					kind: 'success',
+					provider: {
+						id: DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
+						name: 'DuckDuckGo',
+					},
+					query: 'example query',
+					results: [],
+				},
+			);
+
+			const path = container.querySelector('path');
+
+			expect(path?.getAttribute('fill')).toBe('#DE5833');
 		});
 	});
 

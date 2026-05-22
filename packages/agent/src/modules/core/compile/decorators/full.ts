@@ -4,6 +4,7 @@ import type { RuntimeAgentState } from '../../agent-state/index.js';
 import { compose } from './compose.js';
 import { createPromptDecorator } from './prompt/index.js';
 import { createToolDecorator } from './tool/index.js';
+import type { ToolRegistry } from './tool/registry.js';
 import { createTrackingDecorator } from './tracking/index.js';
 import type { ProtocolDecorator } from './types.js';
 
@@ -17,11 +18,12 @@ export function createAgentDecorator<Runtime extends BaseRuntime>(
 	agentState: RuntimeAgentState,
 	registrations: RegistryView<CoreSignature, Runtime>,
 	getCtx: () => Runtime,
+	toolRegistry: ToolRegistry<Runtime>,
 ): ProtocolDecorator {
 	return compose(
 		[
 			createPromptDecorator(agentState, registrations, getCtx),
-			createToolDecorator(registrations, getCtx),
+			createToolDecorator(toolRegistry),
 			createTrackingDecorator(agentState),
 		].filter(isProtocolDecorator),
 	);

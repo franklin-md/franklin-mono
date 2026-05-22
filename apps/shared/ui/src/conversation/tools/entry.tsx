@@ -1,12 +1,11 @@
-import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ToolArgsOf, ToolSpec } from '@franklin/agent';
 import { createToolRenderer, type ToolRendererEntry } from '@franklin/react';
 
-import { ToolSummary } from './summary.js';
+import { ToolSummary, type ToolSummaryIcon } from './summary.js';
 
 export function iconEntry<T = Record<string, unknown>>(
-	Icon: LucideIcon,
+	Icon: ToolSummaryIcon,
 	label: ReactNode,
 	children?: (args: T) => ReactNode,
 ): ToolRendererEntry<T> {
@@ -21,7 +20,7 @@ export function iconEntry<T = Record<string, unknown>>(
 
 export function toolEntry<S extends ToolSpec>(
 	spec: S,
-	Icon: LucideIcon,
+	Icon: ToolSummaryIcon,
 	label: ReactNode,
 	children?: (args: ToolArgsOf<S>) => ReactNode,
 ) {

@@ -4,11 +4,13 @@ import type {
 	WebSearchProvider,
 	WebSearchProviderRequest,
 } from '../../provider.js';
+import { DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID } from '../../provider.js';
 import { parseDdgLite } from './parse.js';
 import { pickUserAgent } from './user-agents.js';
 
 export function createDuckDuckGoWebSearchProvider(): WebSearchProvider {
 	return {
+		id: DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
 		name: 'DuckDuckGo',
 		search: searchWithDuckDuckGo,
 	};
@@ -23,7 +25,7 @@ async function searchWithDuckDuckGo({
 
 	const retrying = withRetry({
 		maxAttempts: options.maxRetries,
-		delayMsRange: options.retryDelayMsRange,
+		delayMsRange: [options.retryDelayMsRange[0], options.retryDelayMsRange[1]],
 	})(async (request) => {
 		const response = await fetch(request);
 		if (response.status < 200 || response.status >= 300) {

@@ -4,7 +4,7 @@ import type { JsonObject } from '@franklin/lib';
 import { z } from 'zod';
 
 import { defaultToolRenderOutput } from '../../../api/tool.js';
-import type { AnyRegisteredTool } from '../../tools/index.js';
+import type { AnyRegisteredTool } from './types.js';
 import {
 	errorExecutionResult,
 	registeredExecutionResult,

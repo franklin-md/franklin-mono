@@ -7,6 +7,7 @@ import type { JsonObject } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createToolDecorator } from '../decorator.js';
+import { createToolRegistry } from '../registry.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
@@ -46,8 +47,9 @@ function text(result: ToolResult): string {
 
 describe('createToolDecorator', () => {
 	it('returns undefined when no tools or tool observers are registered', () => {
+		const registry = createCoreRegistry();
 		expect(
-			createToolDecorator(createCoreRegistry(), () => runtime),
+			createToolDecorator(createToolRegistry(registry, () => runtime)),
 		).toBeUndefined();
 	});
 
@@ -62,7 +64,9 @@ describe('createToolDecorator', () => {
 				{ execute },
 			);
 		});
-		const decorator = createToolDecorator(registrations, () => runtime);
+		const decorator = createToolDecorator(
+			createToolRegistry(registrations, () => runtime),
+		);
 		if (!decorator) throw new Error('Expected tool decorator');
 
 		const server = fallbackServer();
@@ -82,7 +86,9 @@ describe('createToolDecorator', () => {
 			api.on('toolCall', () => calls.push('call'));
 			api.on('toolResult', () => calls.push('result'));
 		});
-		const decorator = createToolDecorator(registrations, () => runtime);
+		const decorator = createToolDecorator(
+			createToolRegistry(registrations, () => runtime),
+		);
 		if (!decorator) throw new Error('Expected tool decorator');
 
 		const server = fallbackServer();
@@ -106,7 +112,9 @@ describe('createToolDecorator', () => {
 			api.on('toolResult', () => calls.push('result:first'));
 			api.on('toolResult', () => calls.push('result:second'));
 		});
-		const decorator = createToolDecorator(registrations, () => runtime);
+		const decorator = createToolDecorator(
+			createToolRegistry(registrations, () => runtime),
+		);
 		if (!decorator) throw new Error('Expected tool decorator');
 
 		const wrapped = await decorator.server(fallbackServer());
@@ -128,7 +136,9 @@ describe('createToolDecorator', () => {
 				{ execute },
 			);
 		});
-		const decorator = createToolDecorator(registrations, () => runtime);
+		const decorator = createToolDecorator(
+			createToolRegistry(registrations, () => runtime),
+		);
 		if (!decorator) throw new Error('Expected tool decorator');
 
 		const wrapped = await decorator.server(fallbackServer());
@@ -143,12 +153,14 @@ describe('createToolDecorator', () => {
 
 	it('leaves the client side unchanged', async () => {
 		const decorator = createToolDecorator(
-			createCoreRegistry((api) => {
-				api.registerTool(toolSpec('myTool', 'A test tool', z.object({})), {
-					execute: async () => 'ok',
-				});
-			}),
-			() => runtime,
+			createToolRegistry(
+				createCoreRegistry((api) => {
+					api.registerTool(toolSpec('myTool', 'A test tool', z.object({})), {
+						execute: async () => 'ok',
+					});
+				}),
+				() => runtime,
+			),
 		);
 		if (!decorator) throw new Error('Expected tool decorator');
 		const client = {} as Parameters<typeof decorator.client>[0];

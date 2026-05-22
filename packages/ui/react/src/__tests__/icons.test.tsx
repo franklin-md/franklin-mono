@@ -21,4 +21,18 @@ describe('Icons', () => {
 
 		expect(path?.getAttribute('d')).toBe('M16 6H8v12h8V6zm4 16H4V2h16v20z');
 	});
+
+	it('keeps search provider icons in the shared registry', () => {
+		const { container } = render(
+			<>
+				<Icons.Exa />
+				<Icons.DuckDuckGo />
+			</>,
+		);
+
+		const paths = container.querySelectorAll('path');
+
+		expect(paths[0]?.getAttribute('fill')).toBe('#1F40ED');
+		expect(paths[1]?.getAttribute('fill')).toBe('#DE5833');
+	});
 });

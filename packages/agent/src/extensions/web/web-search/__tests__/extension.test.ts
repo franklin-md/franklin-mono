@@ -8,6 +8,7 @@ import {
 } from '@franklin/lib';
 import { compileCoreWithEnv } from '../../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
+import type { ToolResultEvent } from '../../../../modules/core/index.js';
 import { webSearchProviders } from '../configuration.js';
 import { webSearchExtension, webSearchToolExtension } from '../extension.js';
 import type { WebSearchProvider } from '../provider.js';
@@ -54,6 +55,33 @@ function compileSearch(env: ReconfigurableEnvironment) {
 		),
 		env,
 	);
+}
+
+function compileSearchWithToolResults(env: ReconfigurableEnvironment) {
+	return compileSearchExtensionWithToolResults(
+		env,
+		reduceExtensions(
+			webSearchProviderExtension(createExaWebSearchProvider()),
+			webSearchProviderExtension(createDuckDuckGoWebSearchProvider()),
+			webSearchExtension({ maxRetries: 1 }),
+		),
+	);
+}
+
+function compileSearchExtensionWithToolResults(
+	env: ReconfigurableEnvironment,
+	extension: Parameters<typeof compileCoreWithEnv>[0],
+) {
+	const toolResults: ToolResultEvent[] = [];
+
+	return compileCoreWithEnv(
+		reduceExtensions(extension, (api) => {
+			api.on('toolResult', (event) => {
+				toolResults.push(event);
+			});
+		}),
+		env,
+	).then((compiled) => ({ compiled, toolResults }));
 }
 
 function compileSearchExtension(
@@ -137,6 +165,45 @@ describe('webSearchExtension', () => {
 		expect(getResultText(toolResult)).toContain('https://example.com');
 	});
 
+	it('emits Exa provider metadata in raw output when Exa succeeds', async () => {
+		const env = mockEnvironment(async () =>
+			textResponse(
+				JSON.stringify({
+					jsonrpc: '2.0',
+					id: 1,
+					result: {
+						content: [
+							{
+								type: 'text',
+								text: 'Title: Example\nURL: https://example.com\nText: Example snippet',
+							},
+						],
+					},
+				}),
+				'application/json',
+			),
+		);
+		const { compiled, toolResults } = await compileSearchWithToolResults(env);
+
+		const toolResult = await executeSearch(compiled, 'example');
+
+		expect(toolResult.isError).toBe(false);
+		expect(getResultText(toolResult)).toContain('https://example.com');
+		expect(toolResults).toHaveLength(1);
+		expect(toolResults[0]?.output).toEqual({
+			kind: 'success',
+			provider: { id: 'exa', name: 'Exa' },
+			query: 'example',
+			results: [
+				{
+					title: 'Example',
+					url: 'https://example.com',
+					snippet: 'Example snippet',
+				},
+			],
+		});
+	});
+
 	it('falls back to DuckDuckGo when Exa fails', async () => {
 		const env = mockEnvironment(
 			vi
@@ -182,6 +249,48 @@ describe('webSearchExtension', () => {
 		expect(getResultText(toolResult)).toContain('Fallback snippet.');
 	});
 
+	it('emits DuckDuckGo provider metadata in raw output after fallback succeeds', async () => {
+		const env = mockEnvironment(
+			vi
+				.fn()
+				.mockResolvedValueOnce({
+					...textResponse('rate limited', 'text/plain'),
+					status: 429,
+					statusText: 'Too Many Requests',
+				})
+				.mockResolvedValueOnce(
+					textResponse(
+						`
+							<html><body><table>
+								<tr><td><a class="result-link" href="https://fallback.test/">Fallback</a></td></tr>
+								<tr><td class="result-snippet">Fallback snippet.</td></tr>
+							</table></body></html>
+							`,
+						'text/html',
+					),
+				),
+		);
+		const { compiled, toolResults } = await compileSearchWithToolResults(env);
+
+		const toolResult = await executeSearch(compiled, 'fallback example');
+
+		expect(toolResult.isError).toBe(false);
+		expect(getResultText(toolResult)).toContain('Fallback snippet.');
+		expect(toolResults).toHaveLength(1);
+		expect(toolResults[0]?.output).toMatchObject({
+			kind: 'success',
+			provider: { id: 'duckduckgo', name: 'DuckDuckGo' },
+			query: 'fallback example',
+			results: [
+				{
+					title: 'Fallback',
+					url: 'https://fallback.test/',
+					snippet: 'Fallback snippet.',
+				},
+			],
+		});
+	});
+
 	it('returns a combined error when Exa and DuckDuckGo both fail', async () => {
 		const env = mockEnvironment(
 			vi
@@ -198,7 +307,7 @@ describe('webSearchExtension', () => {
 		const toolResult = await executeSearch(compiled, 'broken');
 
 		expect(toolResult.isError).toBe(true);
-		expect(getResultText(toolResult)).toContain('Exa MCP failed:');
+		expect(getResultText(toolResult)).toContain('Exa failed:');
 		expect(getResultText(toolResult)).toContain('DuckDuckGo failed:');
 	});
 
@@ -207,6 +316,7 @@ describe('webSearchExtension', () => {
 			throw new Error('later provider should not fetch');
 		});
 		const customProvider: WebSearchProvider = {
+			id: 'custom',
 			name: 'Custom',
 			search: vi.fn(async () => [
 				{
@@ -216,13 +326,14 @@ describe('webSearchExtension', () => {
 				},
 			]),
 		};
-		const compiled = await compileSearchExtension(
-			env,
-			reduceExtensions(
-				webSearchProviderExtension(customProvider),
-				webSearchExtension({ maxRetries: 1 }),
-			),
-		);
+		const { compiled, toolResults } =
+			await compileSearchExtensionWithToolResults(
+				env,
+				reduceExtensions(
+					webSearchProviderExtension(customProvider),
+					webSearchExtension({ maxRetries: 1 }),
+				),
+			);
 
 		const toolResult = await executeSearch(compiled, 'custom');
 		const fetchMock = env.web.fetch as ReturnType<typeof vi.fn>;
@@ -233,6 +344,18 @@ describe('webSearchExtension', () => {
 		);
 		expect(toolResult.isError).toBe(false);
 		expect(getResultText(toolResult)).toContain('https://custom.test/');
+		expect(toolResults[0]?.output).toEqual({
+			kind: 'success',
+			provider: { id: 'custom', name: 'Custom' },
+			query: 'custom',
+			results: [
+				{
+					title: 'Custom result',
+					url: 'https://custom.test/',
+					snippet: 'Custom snippet.',
+				},
+			],
+		});
 	});
 
 	it('returns no results when a configured provider succeeds with an empty list', async () => {
@@ -240,6 +363,7 @@ describe('webSearchExtension', () => {
 			throw new Error('provider should not fetch');
 		});
 		const emptyProvider: WebSearchProvider = {
+			id: 'empty',
 			name: 'Empty',
 			search: vi.fn(async () => []),
 		};

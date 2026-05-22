@@ -14,12 +14,18 @@ import type {
 	WebSearchProvider,
 	WebSearchProviderRequest,
 } from './provider.js';
-import { toSearchError, toSearchResult } from './result.js';
+import {
+	renderSearchOutput,
+	toSearchErrorOutput,
+	toSearchOutput,
+} from './result.js';
 import { searchWebSpec } from './tools.js';
 import {
 	resolveWebSearchOptions,
 	type WebSearchExtensionOptions,
-	type WebSearchResult,
+	type WebSearchOutput,
+	type WebSearchProviderFailure,
+	type WebSearchProviderMetadata,
 } from './types.js';
 
 type WebSearchModules = [CoreModule, EnvironmentModule, ConfigurationModule];
@@ -39,21 +45,16 @@ export function webSearchToolExtension(
 					.build();
 				const providers = ctx.getConfig(webSearchProviders);
 				if (providers.length === 0) {
-					return toSearchError(
+					return toSearchErrorOutput(
 						query,
-						new Error('No web search providers configured'),
+						'No web search providers configured',
 					);
 				}
 
 				const request = { query, fetch, options: resolved };
-				const result = await runWebSearchProviders(providers, request);
-				if (result.kind === 'success') {
-					return toSearchResult(query, result.results);
-				}
-
-				return toSearchError(query, result.error);
+				return runWebSearchProviders(query, providers, request);
 			},
-			render: (output) => output,
+			render: renderSearchOutput,
 		});
 	});
 }
@@ -64,35 +65,43 @@ export function webSearchExtension(
 	return webSearchToolExtension(options);
 }
 
-type WebSearchProviderRunResult =
-	| {
-			readonly kind: 'success';
-			readonly results: readonly WebSearchResult[];
-	  }
-	| {
-			readonly kind: 'error';
-			readonly error: Error;
-	  };
-
 async function runWebSearchProviders(
+	query: string,
 	providers: readonly WebSearchProvider[],
 	request: WebSearchProviderRequest,
-): Promise<WebSearchProviderRunResult> {
-	const failures: string[] = [];
+): Promise<WebSearchOutput> {
+	const failures: WebSearchProviderFailure[] = [];
 
 	for (const provider of providers) {
+		const providerMetadata = toProviderMetadata(provider);
 		try {
-			return {
-				kind: 'success',
-				results: await provider.search(request),
-			};
+			return toSearchOutput(
+				query,
+				providerMetadata,
+				await provider.search(request),
+			);
 		} catch (error) {
-			failures.push(`${provider.name} failed: ${toErrorMessage(error)}`);
+			failures.push({
+				provider: providerMetadata,
+				message: toErrorMessage(error),
+			});
 		}
 	}
 
+	return toSearchErrorOutput(
+		query,
+		failures
+			.map((failure) => `${failure.provider.name} failed: ${failure.message}`)
+			.join('. '),
+		failures,
+	);
+}
+
+function toProviderMetadata(
+	provider: WebSearchProvider,
+): WebSearchProviderMetadata {
 	return {
-		kind: 'error',
-		error: new Error(failures.join('. ')),
+		id: provider.id,
+		name: provider.name,
 	};
 }

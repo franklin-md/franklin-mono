@@ -1,7 +1,7 @@
 export interface WebFetchExtensionOptions {
-	timeoutMs: number;
-	maxRedirects: number;
-	maxOutputChars: number;
+	readonly timeoutMs: number;
+	readonly maxRedirects: number;
+	readonly maxOutputChars: number;
 }
 
 export type WebFetchProcessedResult = {
@@ -11,11 +11,11 @@ export type WebFetchProcessedResult = {
 	truncated: boolean;
 };
 
-export const DEFAULT_WEB_FETCH_OPTIONS: WebFetchExtensionOptions = {
+const DEFAULT_WEB_FETCH_OPTIONS = {
 	timeoutMs: 8000,
 	maxRedirects: 5,
 	maxOutputChars: 20_000,
-};
+} as const satisfies WebFetchExtensionOptions;
 
 export function resolveWebFetchOptions(
 	options: Partial<WebFetchExtensionOptions> = {},
