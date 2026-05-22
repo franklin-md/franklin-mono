@@ -1,7 +1,7 @@
 import { describe, it, expect, expectTypeOf } from 'vitest';
 import { z } from 'zod';
 import { toolSpec } from '../tool-spec.js';
-import type { ToolSpec, ToolArgs } from '../tool-spec.js';
+import type { ToolSpec, ToolArgsOf, ToolOutputOf } from '../tool-spec.js';
 
 describe('toolSpec', () => {
 	it('creates a spec with name, description, and schema', () => {
@@ -31,7 +31,7 @@ describe('toolSpec', () => {
 		);
 
 		expect(spec.name).toBe('edit');
-		type Args = ToolArgs<typeof spec>;
+		type Args = ToolArgsOf<typeof spec>;
 		expectTypeOf<Args>().toEqualTypeOf<{
 			path: string;
 			content: string;
@@ -44,9 +44,16 @@ describe('toolSpec', () => {
 		expect(Object.keys(spec)).toEqual(['name', 'description', 'schema']);
 	});
 
-	it('correctly types ToolArgs on a generic ToolSpec', () => {
+	it('correctly types ToolArgsOf on a generic ToolSpec', () => {
 		type Spec = ToolSpec<'foo', { bar: number }>;
-		type Args = ToolArgs<Spec>;
+		type Args = ToolArgsOf<Spec>;
 		expectTypeOf<Args>().toEqualTypeOf<{ bar: number }>();
+	});
+
+	it('extracts the raw output type from a generic ToolSpec', () => {
+		type Output = { matches: number };
+		type Spec = ToolSpec<'grep', { pattern: string }, Output>;
+		type Result = ToolOutputOf<Spec>;
+		expectTypeOf<Result>().toEqualTypeOf<Output>();
 	});
 });

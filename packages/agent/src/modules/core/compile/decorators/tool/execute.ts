@@ -1,92 +1,28 @@
 import type { BaseRuntime } from '@franklin/extensibility';
-import type { MiniACPAgent, ToolResult } from '@franklin/mini-acp';
-import { z } from 'zod';
-import type {
-	ToolObserverEvent,
-	ToolObserverParamsMap,
-} from '../../../api/handlers.js';
-import { resolveToolOutput } from '../../../api/tool.js';
+import type { MiniACPAgent } from '@franklin/mini-acp';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
-import type { RegisteredTool } from '../../tools/index.js';
-import type { ToolLayer, ToolObservers } from './types.js';
-
-function notifyObservers<K extends ToolObserverEvent>(
-	observers: ToolObservers,
-	event: K,
-	params: ToolObserverParamsMap[K],
-): void {
-	const fns = observers[event];
-	for (const fn of fns) {
-		(fn as (p: ToolObserverParamsMap[K]) => void)(params);
-	}
-}
+import { executeRegisteredToolCall } from './registered.js';
+import { fallbackExecutionResult } from './result.js';
+import type { ToolLayer } from './types.js';
 
 export function buildToolExecuteMiddleware<Runtime extends BaseRuntime>(
 	layer: ToolLayer<Runtime>,
 ): MethodMiddleware<MiniACPAgent['toolExecute']> {
 	return async (params, next) => {
-		notifyObservers(layer.observers, 'toolCall', params);
+		layer.observers.toolCall.notify(params);
 
 		const tool = layer.tools.find((t) => t.name === params.call.name);
-		const result = tool
-			? await toToolResult(
+		const execution = tool
+			? await executeRegisteredToolCall(
 					tool,
-					params.call.id,
+					params.call,
 					params.call.arguments,
 					layer.getRuntime,
 				)
-			: await next(params);
+			: fallbackExecutionResult(await next(params), params.call);
 
-		notifyObservers(layer.observers, 'toolResult', {
-			...result,
-			call: params.call,
-		});
+		layer.observers.toolResult.notify(execution.event);
 
-		return result;
-	};
-}
-
-async function toToolResult<Runtime extends BaseRuntime>(
-	tool: RegisteredTool<unknown, Runtime>,
-	toolCallId: string,
-	args: Record<string, unknown>,
-	getRuntime: () => Runtime,
-): Promise<ToolResult> {
-	try {
-		const parsedArgs = tool.schema.safeParse(args);
-		if (!parsedArgs.success) {
-			return createErrorToolResult(
-				toolCallId,
-				`Invalid arguments for tool "${tool.name}":\n${z.prettifyError(
-					parsedArgs.error,
-				)}`,
-			);
-		}
-
-		const raw = await tool.execute(parsedArgs.data, getRuntime());
-		const output = resolveToolOutput(raw);
-		return {
-			toolCallId,
-			content: output.content,
-			isError: output.isError,
-		};
-	} catch (error) {
-		return createErrorToolResult(
-			toolCallId,
-			error instanceof Error ? `Error: ${error.message}` : String(error),
-		);
-	}
-}
-
-function createErrorToolResult(toolCallId: string, text: string): ToolResult {
-	return {
-		toolCallId,
-		content: [
-			{
-				type: 'text',
-				text,
-			},
-		],
-		isError: true,
+		return execution.modelOutput;
 	};
 }

@@ -1,16 +1,15 @@
 import type { BaseRuntime } from '@franklin/extensibility';
-import type {
-	ToolObserverEvent,
-	ToolObserverHandler,
-} from '../../../api/handlers.js';
-import type { RegisteredTool } from '../../tools/index.js';
+import type { Observer } from '@franklin/lib';
+import type { ToolCallEvent, ToolResultEvent } from '../../../api/handlers.js';
+import type { AnyRegisteredTool } from '../../tools/index.js';
 
 export type ToolObservers = {
-	[K in ToolObserverEvent]: ToolObserverHandler<K>[];
+	readonly toolCall: Observer<[ToolCallEvent]>;
+	readonly toolResult: Observer<[ToolResultEvent]>;
 };
 
 export type ToolLayer<Runtime extends BaseRuntime> = {
-	readonly tools: readonly RegisteredTool<unknown, Runtime>[];
+	readonly tools: readonly AnyRegisteredTool<Runtime>[];
 	readonly observers: ToolObservers;
 	readonly getRuntime: () => Runtime;
 };

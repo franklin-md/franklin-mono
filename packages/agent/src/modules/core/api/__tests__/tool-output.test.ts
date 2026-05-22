@@ -1,19 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { resolveToolOutput } from '../tool.js';
+import { defaultToolRenderOutput } from '../tool.js';
 
-describe('resolveToolOutput', () => {
-	it('converts a string to ToolOutput', () => {
-		expect(resolveToolOutput('hello')).toEqual({
+describe('defaultToolRenderOutput', () => {
+	it('converts a string to RenderedToolOutput text', () => {
+		expect(defaultToolRenderOutput('hello')).toEqual({
 			content: [{ type: 'text', text: 'hello' }],
 		});
 	});
 
-	it('passes through a ToolOutput unchanged', () => {
-		const output = {
-			content: [{ type: 'text' as const, text: 'already structured' }],
-			isError: true,
-		};
+	it('projects JSON outputs to compact JSON text by default', () => {
+		expect(defaultToolRenderOutput({ count: 2 })).toEqual({
+			content: [{ type: 'text', text: '{"count":2}' }],
+		});
+	});
 
-		expect(resolveToolOutput(output)).toBe(output);
+	it('does not treat arbitrary content-shaped raw objects like RenderedToolOutput', () => {
+		expect(
+			defaultToolRenderOutput({
+				content: ['not MiniACP content'],
+				metadata: { source: 'raw output' },
+			}),
+		).toEqual({
+			content: [
+				{
+					type: 'text',
+					text: '{"content":["not MiniACP content"],"metadata":{"source":"raw output"}}',
+				},
+			],
+		});
 	});
 });

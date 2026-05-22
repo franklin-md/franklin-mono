@@ -1,8 +1,16 @@
 import { z } from 'zod';
-import { toolSpec } from '../../../modules/core/api/tool-spec.js';
+import {
+	toolSpec,
+	type ToolSpec,
+} from '../../../modules/core/api/tool-spec.js';
+import type { RenderedToolOutput } from '../../../modules/core/api/tool.js';
 import { webSearchDescription } from '../../system_prompts.js';
 
-export const searchWebSpec = toolSpec(
+export const searchWebSpec: ToolSpec<
+	'search_web',
+	{ query: string },
+	RenderedToolOutput
+> = toolSpec(
 	'search_web',
 	webSearchDescription,
 	z.object({

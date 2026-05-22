@@ -17,10 +17,12 @@ export function conversationTitleExtension() {
 		});
 
 		// TODO(FRA-326): disable tool after first use once the mechanism is supported.
-		api.registerTool(setChatTitleSpec, ({ title }, ctx) => {
-			const control = createControl(ctx.getStore(conversationTitleKey));
-			const nextTitle = control.setTitle(title);
-			return `Title set to "${nextTitle}"`;
+		api.registerTool(setChatTitleSpec, {
+			execute: ({ title }, ctx) => {
+				const control = createControl(ctx.getStore(conversationTitleKey));
+				const nextTitle = control.setTitle(title);
+				return `Title set to "${nextTitle}"`;
+			},
 		});
 	});
 }

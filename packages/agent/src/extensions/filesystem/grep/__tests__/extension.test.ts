@@ -11,6 +11,7 @@ import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
 import type { CoreSignature } from '../../../../modules/core/api/api.js';
+import type { ToolResultEvent } from '../../../../modules/core/api/handlers.js';
 import { buildSystemPromptAssembler } from '../../../../modules/core/compile/decorators/prompt/system-prompt/assembler/index.js';
 import { bindRegisteredEventHandlers } from '../../../../modules/core/compile/registrations/index.js';
 import type { CoreRuntime } from '../../../../modules/core/runtime/index.js';
@@ -143,7 +144,13 @@ describe('grepExtension', () => {
 
 	it('executes ripgrep via process.exec and returns formatted matches', async () => {
 		const env = mockEnvironment(ripgrepExec());
-		const compiled = await compileCoreWithEnv(grepExtension(), env);
+		const events: ToolResultEvent[] = [];
+		const compiled = await compileCoreWithEnv((api) => {
+			grepExtension()(api);
+			api.on('toolResult', (event) => {
+				events.push(event);
+			});
+		}, env);
 
 		const result = await compiled.middleware.server.toolExecute(
 			{
@@ -163,6 +170,15 @@ describe('grepExtension', () => {
 			.join('\n');
 		expect(result.isError).toBeUndefined();
 		expect(text).toBe('src/a.ts\n  3: foo');
+		expect(events[0]?.result).toEqual({
+			content: result.content,
+		});
+		expect(events[0]?.output).toEqual({
+			status: 'success',
+			text: 'src/a.ts\n  3: foo',
+			matches: [{ file: 'src/a.ts', line: 3, text: 'foo' }],
+			truncated: false,
+		});
 	});
 
 	it('detects the backend independently for each runtime built from one extension', async () => {

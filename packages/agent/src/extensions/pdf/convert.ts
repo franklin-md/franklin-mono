@@ -1,4 +1,4 @@
-import type { ToolOutput } from '../../modules/core/api/tool.js';
+import type { RenderedToolOutput } from '../../modules/core/api/tool.js';
 import {
 	PDF_SCREENSHOT_MIME_TYPE,
 	type PDFConverter,
@@ -13,7 +13,7 @@ export interface ConvertPDFOptions {
 export async function convertPDF(
 	pdf: Uint8Array,
 	{ converter, pages }: ConvertPDFOptions,
-): Promise<ToolOutput> {
+): Promise<RenderedToolOutput> {
 	try {
 		const converted = await converter.convertPDF(pdf, { pages });
 		return {

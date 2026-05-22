@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 
 declare const __toolArgs: unique symbol;
+declare const __toolOutput: unique symbol;
 
 /**
  * A branded object that pairs a tool name literal with its Zod-inferred
@@ -10,26 +11,37 @@ declare const __toolArgs: unique symbol;
  *
  * At runtime this is just `{ name, description, schema }`.
  */
-export type ToolSpec<Name extends string = string, TArgs = unknown> = {
+export type ToolSpec<
+	Name extends string = string,
+	TArgs = unknown,
+	TOutput = unknown,
+> = {
 	readonly name: Name;
 	readonly description: string;
 	readonly schema: z.ZodType<TArgs>;
 	readonly [__toolArgs]?: TArgs;
+	readonly [__toolOutput]?: TOutput;
 };
 
 /**
  * Create a typed tool spec. Zero runtime overhead — returns
  * `{ name, description, schema }` branded at the type level only.
  */
-export function toolSpec<Name extends string, TArgs>(
+export function toolSpec<Name extends string, TArgs, TOutput = unknown>(
 	name: Name,
 	description: string,
 	schema: z.ZodType<TArgs>,
-): ToolSpec<Name, TArgs> {
-	return { name, description, schema } as ToolSpec<Name, TArgs>;
+): ToolSpec<Name, TArgs, TOutput> {
+	return { name, description, schema };
 }
 
 /**
  * Extract the args type from a ToolSpec.
  */
-export type ToolArgs<S> = S extends ToolSpec<string, infer T> ? T : never;
+export type ToolArgsOf<S> = S extends ToolSpec<string, infer T> ? T : never;
+
+/**
+ * Extract the raw output type from a ToolSpec.
+ */
+export type ToolOutputOf<S> =
+	S extends ToolSpec<string, infer _TArgs, infer TOutput> ? TOutput : never;

@@ -110,10 +110,10 @@ describe('runGrep', () => {
 
 		const result = await runGrep(NONE, { pattern: 'foo' }, env);
 
-		expect(result.isError).toBe(true);
-		expect(result.output).toContain('grep is not available');
-		expect(result.output).toContain('glob');
-		expect(result.output).toContain('read_file');
+		expect(result.status).toBe('error');
+		expect(result.text).toContain('grep is not available');
+		expect(result.text).toContain('glob');
+		expect(result.text).toContain('read_file');
 		expect(env.process.exec).not.toHaveBeenCalled();
 	});
 
@@ -175,8 +175,8 @@ describe('runGrep', () => {
 
 			const result = await runGrep(RIPGREP, { pattern: 'foo' }, env);
 
-			expect(result.isError).toBe(false);
-			expect(result.output).toBe('No matches found.');
+			expect(result.status).toBe('success');
+			expect(result.text).toBe('No matches found.');
 		});
 
 		it('parses matches from rg --json stdout', async () => {
@@ -198,8 +198,8 @@ describe('runGrep', () => {
 
 			const result = await runGrep(RIPGREP, { pattern: 'foo' }, env);
 
-			expect(result.isError).toBe(false);
-			expect(result.output).toBe('src/a.ts\n  7: const foo = 1');
+			expect(result.status).toBe('success');
+			expect(result.text).toBe('src/a.ts\n  7: const foo = 1');
 		});
 
 		it('reports a truncation note when more than limit matches are parsed', async () => {
@@ -221,7 +221,7 @@ describe('runGrep', () => {
 
 			const result = await runGrep(RIPGREP, { pattern: 'x', limit: 2 }, env);
 
-			expect(result.output).toContain(
+			expect(result.text).toContain(
 				'(results truncated; narrow with path/include/limit)',
 			);
 		});
@@ -237,9 +237,9 @@ describe('runGrep', () => {
 
 			const result = await runGrep(RIPGREP, { pattern: 'bad[' }, env);
 
-			expect(result.isError).toBe(true);
-			expect(result.output).toContain('exit 2');
-			expect(result.output).toContain('regex parse error');
+			expect(result.status).toBe('error');
+			expect(result.text).toContain('exit 2');
+			expect(result.text).toContain('regex parse error');
 		});
 
 		it('rejects path arguments that look like multiple absolute paths', async () => {
@@ -254,8 +254,8 @@ describe('runGrep', () => {
 				env,
 			);
 
-			expect(result.isError).toBe(true);
-			expect(result.output).toContain('Pass a single file or directory path');
+			expect(result.status).toBe('error');
+			expect(result.text).toContain('Pass a single file or directory path');
 			expect(env.process.exec).not.toHaveBeenCalled();
 		});
 	});
@@ -302,7 +302,7 @@ describe('runGrep', () => {
 
 			const result = await runGrep(GREP, { pattern: 'hit' }, env);
 
-			expect(result.output).toBe('src/a.ts\n  7: hit here');
+			expect(result.text).toBe('src/a.ts\n  7: hit here');
 		});
 
 		it('returns partial matches when grep exits with traversal warnings', async () => {
@@ -316,9 +316,9 @@ describe('runGrep', () => {
 
 			const result = await runGrep(GREP, { pattern: 'hit', path: 'src' }, env);
 
-			expect(result.isError).toBe(false);
-			expect(result.output).toContain('/resolved/src/a.ts\n  7: hit here');
-			expect(result.output).toContain('results may be incomplete');
+			expect(result.status).toBe('success');
+			expect(result.text).toContain('/resolved/src/a.ts\n  7: hit here');
+			expect(result.text).toContain('results may be incomplete');
 		});
 
 		it.skipIf(!canExerciseGrepTraversalWarning())(
@@ -345,11 +345,11 @@ describe('runGrep', () => {
 						env,
 					);
 
-					expect(result.isError).toBe(false);
-					expect(result.output).toContain(
+					expect(result.status).toBe('success');
+					expect(result.text).toContain(
 						`${join(root, 'hit.txt')}\n  1: needle`,
 					);
-					expect(result.output).toContain('results may be incomplete');
+					expect(result.text).toContain('results may be incomplete');
 				} finally {
 					await chmod(locked, 0o700).catch(() => {});
 					await rm(root, { recursive: true, force: true });

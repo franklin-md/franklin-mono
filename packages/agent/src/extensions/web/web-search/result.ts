@@ -1,10 +1,10 @@
-import type { ToolOutput } from '../../../modules/core/api/tool.js';
+import type { RenderedToolOutput } from '../../../modules/core/api/tool.js';
 import type { WebSearchResult } from './types.js';
 
 export function toSearchResult(
 	query: string,
 	results: readonly WebSearchResult[],
-): ToolOutput {
+): RenderedToolOutput {
 	if (results.length === 0) {
 		return {
 			content: [
@@ -33,7 +33,10 @@ export function toSearchResult(
 	};
 }
 
-export function toSearchError(query: string, error: unknown): ToolOutput {
+export function toSearchError(
+	query: string,
+	error: unknown,
+): RenderedToolOutput {
 	const message = error instanceof Error ? error.message : String(error);
 	return {
 		content: [

@@ -3,19 +3,20 @@ export type {
 	CoreAPI,
 	CoreEventHandlers,
 	CoreSignature,
-	ExtensionToolDefinition,
 	Prompt,
 	PromptHandler,
 	SetPartOptions,
 	SystemPrompt,
 	SystemPromptContent,
 	SystemPromptHandler,
-	ToolArgs,
-	ToolExecuteReturn,
-	ToolOutput,
+	ToolArgsOf,
+	ToolCallEvent,
+	RenderedToolOutput,
+	ToolOutputOf,
+	ToolResultEvent,
 	ToolSpec,
 } from './core/api/index.js';
-export { resolveToolOutput, toolSpec } from './core/api/index.js';
+export { toolSpec } from './core/api/index.js';
 export { inspectRuntime } from './core/inspect.js';
 export type { CoreModule, CoreStateModule } from './core/module.js';
 export { createCoreModule, createCoreStateModule } from './core/module.js';

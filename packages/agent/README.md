@@ -83,6 +83,13 @@ Extensions intercept the ACP flow to augment the agent's behavior from the appli
 
 The mechanism for cross-boundary interaction is **Local MCP**: the application defines tool handlers that are exposed to the agent as MCP servers. The agent invokes tools using the MCP protocol it already speaks; the call crosses from the agent's environment into the application, where the handler executes and returns a result. No custom RPC — just protocol the agent already understands.
 
+Tool handlers return the application-owned execution result. When that raw
+value should differ from the model-visible response, the tool registration can
+provide `render` to project it into rendered tool-result content. Tool result
+observers and conversation blocks keep that model-visible result separate from
+the optional raw `output` used for local UI summaries, persistence, and
+application handling.
+
 **Current extension API**: Extensions primarily define handlers for agent tool requests — the application-side behavior that the agent can invoke. Future iterations may expose environment mutation methods to extensions as well.
 
 ### Relationship to PiMono

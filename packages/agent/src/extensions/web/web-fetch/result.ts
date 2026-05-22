@@ -1,7 +1,9 @@
-import type { ToolOutput } from '../../../modules/core/api/tool.js';
+import type { RenderedToolOutput } from '../../../modules/core/api/tool.js';
 import type { WebFetchProcessedResult } from './types.js';
 
-export function toContentResult(entry: WebFetchProcessedResult): ToolOutput {
+export function toContentResult(
+	entry: WebFetchProcessedResult,
+): RenderedToolOutput {
 	return {
 		content: [
 			{
