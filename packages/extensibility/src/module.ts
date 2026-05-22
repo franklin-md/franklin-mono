@@ -46,3 +46,9 @@ export type {
 	DependencyRuntime,
 } from './patterns/dependency/index.js';
 export { createDependencyModule } from './patterns/dependency/index.js';
+export type {
+	LifecycleModule,
+	LifecycleRuntime,
+	LifecycleUnload,
+} from './patterns/lifecycle/index.js';
+export { createLifecycleModule } from './patterns/lifecycle/index.js';

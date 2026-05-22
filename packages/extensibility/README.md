@@ -55,6 +55,23 @@ import { combineAll, createDependencyModule, liftRuntimeFactory } from '@frankli
 import type { ExtensionModule, InferRuntime, RuntimeModule } from '@franklin/extensibility/module';
 ```
 
+Lifecycle modules expose a small unload hook for extension-owned cleanup. Runtime
+initialization remains implicit in normal extension registration; unload handlers
+do not receive the runtime because sibling runtimes are disposed without a global
+ordering guarantee:
+
+```ts
+import { createLifecycleModule } from '@franklin/extensibility/module';
+
+const lifecycleModule = createLifecycleModule();
+const unsubscribeExtension = (api) => {
+	const unsubscribe = subscribeToHostEvents();
+	api.onUnload(() => unsubscribe());
+};
+```
+
+Priority transforms affect `onUnload` order within the lifecycle module only.
+
 Configuration modules provide a CodeMirror Facet-style pattern: extensions
 contribute typed input values to configurations, the module compiler combines
 those values with each configuration's combine function, and runtime consumers
