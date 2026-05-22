@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { parseExaMcpResponse, parseExaResultText } from '../exa.js';
+import {
+	parseExaMcpResponse,
+	parseExaResultText,
+} from '../providers/exa/parse.js';
 
 describe('parseExaMcpResponse', () => {
 	it('parses SSE JSON-RPC responses', () => {

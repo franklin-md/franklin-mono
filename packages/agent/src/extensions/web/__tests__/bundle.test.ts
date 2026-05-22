@@ -1,8 +1,14 @@
+import { reduceExtensions } from '@franklin/extensibility';
 import { MemoryOsInfo, type AbsolutePath } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
-import { createWebExtension } from '../index.js';
+import {
+	createDuckDuckGoWebSearchProvider,
+	createExaWebSearchProvider,
+	createWebExtension,
+	webSearchProviders,
+} from '../index.js';
 
 function textResponse(body: string, contentType: string) {
 	return {
@@ -66,17 +72,21 @@ function mockEnvironment(
 
 function compileWeb(env: ReconfigurableEnvironment) {
 	return compileCoreWithStoreAndEnv(
-		createWebExtension({
-			fetch: {
-				timeoutMs: 1234,
-				maxRedirects: 2,
-			},
-			search: {
-				timeoutMs: 4321,
-				maxRedirects: 7,
-				maxRetries: 1,
-			},
-		}).extension,
+		reduceExtensions(
+			webSearchProviders.of(createExaWebSearchProvider()),
+			webSearchProviders.of(createDuckDuckGoWebSearchProvider()),
+			createWebExtension({
+				fetch: {
+					timeoutMs: 1234,
+					maxRedirects: 2,
+				},
+				search: {
+					timeoutMs: 4321,
+					maxRedirects: 7,
+					maxRetries: 1,
+				},
+			}).extension,
+		),
 		env,
 	);
 }

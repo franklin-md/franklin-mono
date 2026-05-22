@@ -44,12 +44,20 @@ export { bashExtension } from './terminal/index.js';
 export {
 	DEFAULT_WEB_FETCH_OPTIONS,
 	DEFAULT_WEB_SEARCH_OPTIONS,
+	createDuckDuckGoWebSearchProvider,
+	createExaWebSearchProvider,
 	createWebExtension,
+	webFetchExtension,
+	webSearchExtension,
+	webSearchProviders,
+	webSearchToolExtension,
 } from './web/index.js';
 export type {
 	WebExtensionOptions,
 	WebFetchExtensionOptions,
 	WebFetchProcessedResult,
+	WebSearchProvider,
+	WebSearchProviderRequest,
 	WebSearchExtensionOptions,
 	WebSearchResult,
 } from './web/index.js';

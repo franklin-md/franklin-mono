@@ -1,15 +1,24 @@
 import { getHeader, withRetry } from '@franklin/lib';
-import type { Fetch } from '@franklin/lib';
-import { decodeBody, normalizeContentType } from '../utils.js';
+import { decodeBody, normalizeContentType } from '../../../utils.js';
+import type {
+	WebSearchProvider,
+	WebSearchProviderRequest,
+} from '../../provider.js';
 import { parseDdgLite } from './parse.js';
-import type { WebSearchExtensionOptions, WebSearchResult } from './types.js';
 import { pickUserAgent } from './user-agents.js';
 
-export async function searchWithDdg(
-	fetch: Fetch,
-	query: string,
-	options: WebSearchExtensionOptions,
-): Promise<WebSearchResult[]> {
+export function createDuckDuckGoWebSearchProvider(): WebSearchProvider {
+	return {
+		name: 'DuckDuckGo',
+		search: searchWithDuckDuckGo,
+	};
+}
+
+async function searchWithDuckDuckGo({
+	fetch,
+	query,
+	options,
+}: WebSearchProviderRequest) {
 	const url = `https://duckduckgo.com/lite?q=${encodeURIComponent(query)}`;
 
 	const retrying = withRetry({

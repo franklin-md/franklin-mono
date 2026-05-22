@@ -9,6 +9,8 @@ import { priority } from '@franklin/extensibility';
 import {
 	conversationExtension,
 	conversationTitleExtension,
+	createDuckDuckGoWebSearchProvider,
+	createExaWebSearchProvider,
 	createFilesystemExtension,
 	createReadPDFExtension,
 	createWebExtension,
@@ -16,6 +18,7 @@ import {
 	instructionsExtension,
 	statusExtension,
 	todoExtension,
+	webSearchProviders,
 } from '@franklin/agent';
 import type { AbsolutePath } from '@franklin/lib';
 import { toAbsolutePath } from '@franklin/lib';
@@ -90,6 +93,8 @@ function createExtensions(): FranklinExtension[] {
 		createReadPDFExtension({
 			renderScreenshots: renderObsidianPDFScreenshots,
 		}).extension,
+		webSearchProviders.of(createExaWebSearchProvider()),
+		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),
 		createWebExtension({}).extension,
 		// spawnExtension.extension,
 		environmentInfoExtension.extension,

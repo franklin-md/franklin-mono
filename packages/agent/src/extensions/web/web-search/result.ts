@@ -3,7 +3,7 @@ import type { WebSearchResult } from './types.js';
 
 export function toSearchResult(
 	query: string,
-	results: WebSearchResult[],
+	results: readonly WebSearchResult[],
 ): ToolOutput {
 	if (results.length === 0) {
 		return {
