@@ -19,15 +19,15 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@franklin/agent": "*",
-		"@radix-ui/react-slot": "^1.1.1",
-		"dequal": "^2.0.3"
+		"@franklin/agent": "0.0.0",
+		"@radix-ui/react-slot": "1.2.4",
+		"dequal": "2.0.3"
 	},
 	"peerDependencies": {
 		"react": "^18.3.1 || ^19.0.0"
 	},
 	"devDependencies": {
-		"@testing-library/react": "^15.0.7",
-		"jsdom": "^28.1.0"
+		"@testing-library/react": "15.0.7",
+		"jsdom": "28.1.0"
 	}
 }

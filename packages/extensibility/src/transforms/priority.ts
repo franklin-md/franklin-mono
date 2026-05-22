@@ -1,7 +1,7 @@
 import type { BaseAPI, Signature } from '../api/types.js';
+import type { Extension } from '../extension/types.js';
 import { deriveApi } from '../extension-points/facade.js';
 import type { BaseRuntime } from '../runtime/types.js';
-import type { APITransform } from './types.js';
 
 interface TransformSignature<TAPI extends BaseAPI> extends Signature {
 	readonly In: BaseRuntime;
@@ -22,11 +22,16 @@ export const priorityLevels = {
 
 type PriorityTransform = {
 	readonly levels: typeof priorityLevels;
-	readonly highest: APITransform;
-	readonly high: APITransform;
-	readonly default: APITransform;
-	readonly low: APITransform;
-	readonly lowest: APITransform;
+	readonly highest: PriorityBucketTransform;
+	readonly high: PriorityBucketTransform;
+	readonly default: PriorityBucketTransform;
+	readonly low: PriorityBucketTransform;
+	readonly lowest: PriorityBucketTransform;
+};
+
+type PriorityBucketTransform = {
+	<TAPI extends BaseAPI>(extension: Extension<TAPI>): Extension<TAPI>;
+	<TAPI extends BaseAPI>(api: TAPI): TAPI;
 };
 
 function withPriority<TAPI extends BaseAPI>(value: number, api: TAPI): TAPI {
@@ -42,16 +47,30 @@ function withPriority<TAPI extends BaseAPI>(value: number, api: TAPI): TAPI {
 	);
 }
 
+function withExtensionPriority<TAPI extends BaseAPI>(
+	value: number,
+	extension: Extension<TAPI>,
+): Extension<TAPI> {
+	return (api) => {
+		extension(withPriority(value, api));
+	};
+}
+
+function createPriorityBucketTransform(value: number): PriorityBucketTransform {
+	return ((target: unknown) => {
+		if (typeof target === 'function') {
+			return withExtensionPriority(value, target as Extension<BaseAPI>);
+		}
+
+		return withPriority(value, target as BaseAPI);
+	}) as PriorityBucketTransform;
+}
+
 export const priority = {
 	levels: priorityLevels,
-	highest: <TAPI extends BaseAPI>(api: TAPI): TAPI =>
-		withPriority(priorityLevels.highest, api),
-	high: <TAPI extends BaseAPI>(api: TAPI): TAPI =>
-		withPriority(priorityLevels.high, api),
-	default: <TAPI extends BaseAPI>(api: TAPI): TAPI =>
-		withPriority(priorityLevels.default, api),
-	low: <TAPI extends BaseAPI>(api: TAPI): TAPI =>
-		withPriority(priorityLevels.low, api),
-	lowest: <TAPI extends BaseAPI>(api: TAPI): TAPI =>
-		withPriority(priorityLevels.lowest, api),
+	highest: createPriorityBucketTransform(priorityLevels.highest),
+	high: createPriorityBucketTransform(priorityLevels.high),
+	default: createPriorityBucketTransform(priorityLevels.default),
+	low: createPriorityBucketTransform(priorityLevels.low),
+	lowest: createPriorityBucketTransform(priorityLevels.lowest),
 } satisfies PriorityTransform;

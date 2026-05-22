@@ -18,11 +18,12 @@ jobs:
       NODE_OPTIONS: '--max-old-space-size=4096'
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          node-version: 24
 
       - run: npm ci
 

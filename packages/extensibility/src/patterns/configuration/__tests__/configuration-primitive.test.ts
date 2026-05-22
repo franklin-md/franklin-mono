@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Extension } from '../../../extension/types.js';
-import { Configuration, type ConfigurationSpec } from '../configuration.js';
+import type { ConfigurationSpec } from '../configuration.js';
+import { createConfiguration } from '../create.js';
 import { CONFIGURATION_API } from '../internal.js';
 import type { ConfigurationAPI } from '../types.js';
 import type { ConfigurationContribution } from '../contribution.js';
@@ -40,8 +41,29 @@ describe('Configuration', () => {
 		expect(spec.combine(['one', 'two'])).toBe('one\ntwo');
 	});
 
+	it('defaults configurations without combine functions to collected inputs', () => {
+		const tags = createConfiguration<string>({
+			name: 'tags',
+		});
+
+		expect(tags.name).toBe('tags');
+		expect(tags.combine(['alpha', 'beta'])).toEqual(['alpha', 'beta']);
+		expect(tags.spec.combine(['alpha', 'beta'])).toEqual(['alpha', 'beta']);
+	});
+
+	it('treats undefined combine functions as collected inputs', () => {
+		const tags = createConfiguration<string>({
+			name: 'tags',
+			combine: undefined,
+		});
+
+		expect(tags.name).toBe('tags');
+		expect(tags.combine(['alpha', 'beta'])).toEqual(['alpha', 'beta']);
+		expect(tags.spec.combine(['alpha', 'beta'])).toEqual(['alpha', 'beta']);
+	});
+
 	it('creates extensions from configurations that write static values through the configuration API', () => {
-		const theme = new Configuration<string, string>({
+		const theme = createConfiguration<string, string>({
 			name: 'theme',
 			combine: (values) => values[0] ?? 'fallback',
 		});
@@ -56,11 +78,11 @@ describe('Configuration', () => {
 	});
 
 	it('creates extensions from configurations that write computed values through the configuration API', () => {
-		const account = new Configuration<'free' | 'premium'>({
+		const account = createConfiguration<'free' | 'premium'>({
 			name: 'account',
 			combine: (values) => values.at(-1) ?? 'free',
 		});
-		const maxPdfPages = new Configuration<number>({
+		const maxPdfPages = createConfiguration<number>({
 			name: 'maxPdfPages',
 			combine: (values) => values.at(-1) ?? 10,
 		});
@@ -85,7 +107,7 @@ describe('Configuration', () => {
 			name: 'hidden',
 			combine: (values) => values.at(-1) ?? 'fallback',
 		};
-		const configuration = new Configuration(spec);
+		const configuration = createConfiguration(spec);
 
 		expect(configuration.spec).toEqual(spec);
 		expect(Object.isFrozen(configuration.spec)).toBe(true);
@@ -94,11 +116,11 @@ describe('Configuration', () => {
 	});
 
 	it('keeps configurations with the same configuration name distinct by object identity', () => {
-		const first = new Configuration<string>({
+		const first = createConfiguration<string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'fallback',
 		});
-		const second = new Configuration<string>({
+		const second = createConfiguration<string>({
 			name: 'theme',
 			combine: (values) => values.at(-1) ?? 'fallback',
 		});

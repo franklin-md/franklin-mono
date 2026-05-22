@@ -9,14 +9,21 @@ import {
 	statusExtension,
 	filesystemExtension,
 	bashExtension,
+	createDuckDuckGoWebSearchProvider,
+	createExaWebSearchProvider,
 	createWebExtension,
 	spawnExtension,
 	environmentInfoExtension,
+	webSearchProviders,
 } from '@franklin/agent';
 
 import { useHarnessStartup } from './use-harness-startup.js';
 
 const webExtension = createWebExtension({});
+const webSearchProviderExtensions = [
+	webSearchProviders.of(createExaWebSearchProvider()),
+	webSearchProviders.of(createDuckDuckGoWebSearchProvider()),
+];
 const platform = createElectronPlatform();
 const hostActionBindings = [
 	bindHostAction(openExternalAction, (url) => platform.os.openExternal(url)),
@@ -32,7 +39,10 @@ const extensionBundles = [
 	spawnExtension,
 	environmentInfoExtension,
 ];
-const extensions = extensionBundles.map((bundle) => bundle.extension);
+const extensions = [
+	...webSearchProviderExtensions,
+	...extensionBundles.map((bundle) => bundle.extension),
+];
 
 export function App() {
 	const startup = useHarnessStartup({ extensions, platform });

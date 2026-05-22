@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { parseDdgLite } from '../parse.js';
+import { parseDdgLite } from '../providers/duck-duck-go/parse.js';
 
 describe('parseDdgLite', () => {
 	it('extracts title, url, and snippet from ddg lite html', () => {
