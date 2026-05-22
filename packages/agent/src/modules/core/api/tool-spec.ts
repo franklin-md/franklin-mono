@@ -1,3 +1,4 @@
+import type { JsonValue } from '@franklin/lib';
 import type { z } from 'zod';
 
 declare const __toolArgs: unique symbol;
@@ -14,7 +15,7 @@ declare const __toolOutput: unique symbol;
 export type ToolSpec<
 	Name extends string = string,
 	TArgs = unknown,
-	TOutput = unknown,
+	TOutput extends JsonValue = JsonValue,
 > = {
 	readonly name: Name;
 	readonly description: string;
@@ -27,7 +28,11 @@ export type ToolSpec<
  * Create a typed tool spec. Zero runtime overhead — returns
  * `{ name, description, schema }` branded at the type level only.
  */
-export function toolSpec<Name extends string, TArgs, TOutput = unknown>(
+export function toolSpec<
+	Name extends string,
+	TArgs,
+	TOutput extends JsonValue = JsonValue,
+>(
 	name: Name,
 	description: string,
 	schema: z.ZodType<TArgs>,

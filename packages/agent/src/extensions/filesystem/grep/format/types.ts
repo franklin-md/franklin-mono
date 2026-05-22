@@ -1,15 +1,15 @@
-export interface GrepMatch {
-	file: string;
-	line: number;
-	text: string;
-}
+export type GrepMatch = {
+	readonly file: string;
+	readonly line: number;
+	readonly text: string;
+};
 
-export interface GrepResult {
-	status: 'success' | 'error';
-	text: string;
-	matches: GrepMatch[];
-	truncated: boolean;
-}
+export type GrepResult = {
+	readonly status: 'success' | 'error';
+	readonly text: string;
+	readonly matches: GrepMatch[];
+	readonly truncated: boolean;
+};
 
 export interface FormatMatchesOptions {
 	truncated: boolean;

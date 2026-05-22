@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import type { CoreRuntime, CoreState } from '../modules/core/index.js';
 import { createCoreStateModule } from '../modules/core/index.js';
 import { createRuntime } from '../testing/index.js';
-import { getRuntimeAgentState } from '../modules/core/runtime/agent-state.js';
+import { getAgentState } from '../modules/core/runtime/agent-state.js';
 import {
 	StopCode,
 	type MiniACPConnector,
@@ -317,7 +317,7 @@ describe('withAuth', () => {
 
 		expect(runtime.getSession().llmConfig.provider).toBe('openrouter');
 		expect(
-			getRuntimeAgentState(runtime).getAgentContext().config.apiKey,
+			getAgentState(runtime).getAgentContext().config.apiKey,
 		).toBeUndefined();
 	});
 
@@ -359,7 +359,7 @@ describe('withAuth', () => {
 		expect(runtime.getSession().llmConfig.provider).toBe('anthropic');
 		expect(runtime.getSession().llmConfig.model).toBe('claude-sonnet-4-6');
 		expect(
-			getRuntimeAgentState(runtime).getAgentContext().config.apiKey,
+			getAgentState(runtime).getAgentContext().config.apiKey,
 		).toBeUndefined();
 	});
 });

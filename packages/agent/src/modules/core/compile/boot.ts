@@ -1,23 +1,11 @@
-import type { MiniACPClient, ToolDefinition } from '@franklin/mini-acp';
-import type { SessionSnapshot } from '../state.js';
+import type { MiniACPClient } from '@franklin/mini-acp';
 
-type BootRuntimeInput = {
+type InitializeRuntimeInput = {
 	readonly client: MiniACPClient;
-	readonly session: SessionSnapshot;
-	readonly tools: readonly ToolDefinition[];
 };
 
-export async function bootRuntime({
+export async function initializeRuntime({
 	client,
-	session,
-	tools,
-}: BootRuntimeInput): Promise<void> {
+}: InitializeRuntimeInput): Promise<void> {
 	await client.initialize();
-
-	await client.setContext({
-		systemPrompt: '',
-		messages: [...session.messages],
-		tools: [...tools],
-		config: { ...session.llmConfig },
-	});
 }

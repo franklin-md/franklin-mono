@@ -105,10 +105,16 @@ describe('createMiniACPRpcConnector', () => {
 			});
 			return clientSide;
 		});
-		const toolExecute = vi.fn(async ({ call }: ToolExecuteParams) => ({
-			toolCallId: call.id,
-			content: [{ type: 'text' as const, text: String(call.arguments.text) }],
-		}));
+		const toolExecute = vi.fn(async ({ call }: ToolExecuteParams) => {
+			const text = call.arguments.text;
+			if (typeof text !== 'string') {
+				throw new Error('expected string text argument');
+			}
+			return {
+				toolCallId: call.id,
+				content: [{ type: 'text' as const, text }],
+			};
+		});
 
 		const client = await connect({ toolExecute });
 		const events = await collect(

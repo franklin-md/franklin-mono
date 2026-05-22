@@ -1,7 +1,7 @@
-import { castDraft } from 'immer';
 import type { Compiler } from '@franklin/extensibility';
 import type { RegistryView } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
+import type { JsonValue } from '@franklin/lib';
 import type { StoreSignature } from '../api/api.js';
 import type { BaseStore } from '../api/base.js';
 import type { StoreRegistry as RuntimeStoreRegistry } from '../api/registry/index.js';
@@ -15,7 +15,7 @@ import { createStoreRuntime, type StoreRuntime } from '../runtime.js';
 
 type Registration = {
 	name: string;
-	initial: unknown;
+	initial: JsonValue;
 	sharing: Sharing;
 };
 
@@ -63,7 +63,7 @@ export function createStoreCompiler(
 				entry.sharing = sharing;
 				// TODO: can we avoid this?
 				// TODO: Is BaseStore actually base type? OR is it concrete?
-				(entry.store as BaseStore<unknown>).setInitial(castDraft(initial));
+				(entry.store as BaseStore<JsonValue>).setInitial(initial);
 			}
 
 			const stores = createStoreResult(seed.registry, mapping);

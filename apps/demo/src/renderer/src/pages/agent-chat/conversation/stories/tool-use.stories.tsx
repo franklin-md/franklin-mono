@@ -3,6 +3,7 @@ import {
 	EXA_WEB_SEARCH_PROVIDER_ID,
 	type ToolUseBlock as ToolUseBlockData,
 } from '@franklin/agent';
+import type { JsonObject, JsonValue } from '@franklin/lib';
 import type { ToolStatus } from '@franklin/react';
 
 import { ToolUse } from '../tools/tool-use.js';
@@ -13,8 +14,8 @@ import { ToolUse } from '../tools/tool-use.js';
 
 function toolBlock(
 	name: string,
-	args: Record<string, unknown>,
-	opts?: { result?: string; isError?: boolean; output?: unknown },
+	args: JsonObject,
+	opts?: { result?: string; isError?: boolean; output?: JsonValue },
 ): ToolUseBlockData {
 	const startedAt = Date.now();
 	const resultText = opts?.result;

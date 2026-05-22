@@ -7,13 +7,14 @@ import type {
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { createPromptDecorator } from '../decorator.js';
-import { createRuntimeAgentState } from '../../../../agent-state/index.js';
+import { createAgentState } from '../../../../agent-state/index.js';
 import { emptySessionSnapshot } from '../../../../state.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
-import type { RuntimeAgentState } from '../../../../agent-state/index.js';
+import { createToolRegistry } from '../../tool/index.js';
+import type { AgentState } from '../../../../agent-state/index.js';
 
 const runtime = createTestRuntime();
 
@@ -40,23 +41,22 @@ function text(message: UserMessage): string {
 
 function createTestAgentState(
 	registrations = createCoreRegistry(),
-): RuntimeAgentState {
-	return createRuntimeAgentState({
+): AgentState {
+	const getRuntime = () => runtime;
+	return createAgentState({
 		snapshot: emptySessionSnapshot(),
 		registrations,
-		getRuntime: () => runtime,
+		getRuntime,
+		toolRegistry: createToolRegistry(registrations, getRuntime),
 	});
 }
 
-function stubClient(
-	calls: string[],
-	agentState?: RuntimeAgentState,
-): MiniACPClient {
+function stubClient(calls: string[], agentState?: AgentState): MiniACPClient {
 	return {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async (patch: ContextPatch) => {
 			calls.push(`setContext:${patch.systemPrompt ?? ''}`);
-			agentState?.apply(patch);
+			agentState?.contextLedger.apply(patch);
 		}),
 		prompt: vi.fn(async function* (message: UserMessage) {
 			calls.push(`client.prompt:${text(message)}`);
@@ -81,7 +81,7 @@ describe('createPromptDecorator', () => {
 			// Drain the stream so the prompt flow runs.
 		}
 
-		expect(calls).toEqual(['client.prompt:hello']);
+		expect(calls).toEqual(['setContext:', 'client.prompt:hello']);
 	});
 
 	it('syncs system prompt, builds user prompt, then observes the response stream', async () => {

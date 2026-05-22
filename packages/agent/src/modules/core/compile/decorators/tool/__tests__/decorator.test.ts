@@ -3,6 +3,7 @@ import type {
 	ToolExecuteParams,
 	ToolResult,
 } from '@franklin/mini-acp';
+import type { JsonObject } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createToolDecorator } from '../decorator.js';
@@ -26,10 +27,7 @@ function fallbackServer(): MiniACPAgent {
 	};
 }
 
-function toolCall(
-	name: string,
-	args: Record<string, unknown> = {},
-): ToolExecuteParams {
+function toolCall(name: string, args: JsonObject = {}): ToolExecuteParams {
 	return {
 		call: {
 			type: 'toolCall',

@@ -1,4 +1,5 @@
 import type { ToolExecuteParams } from '@franklin/mini-acp';
+import type { JsonObject } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -11,10 +12,7 @@ import { createToolRegistry } from '../registry.js';
 
 const runtime = createTestRuntime();
 
-function toolCall(
-	name: string,
-	args: Record<string, unknown> = {},
-): ToolExecuteParams {
+function toolCall(name: string, args: JsonObject = {}): ToolExecuteParams {
 	return {
 		call: {
 			type: 'toolCall',

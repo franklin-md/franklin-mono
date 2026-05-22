@@ -1,3 +1,3 @@
-export { createRuntimeAgentState } from './create.js';
+export { createAgentState } from './create.js';
 export { childSessionSnapshot, forkSessionSnapshot } from './snapshot.js';
-export type { RuntimeAgentState } from './types.js';
+export type { AgentState } from './types.js';

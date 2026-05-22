@@ -6,6 +6,7 @@ import type {
 	ToolCall,
 	ToolExecuteParams,
 } from '@franklin/mini-acp';
+import type { JsonValue } from '@franklin/lib';
 import type { RenderedToolOutput } from './tool.js';
 
 // ---------------------------------------------------------------------------
@@ -31,7 +32,7 @@ export type StreamObserverHandler<K extends StreamObserverEvent> = (
 
 export type ToolCallEvent = ToolExecuteParams;
 
-export type ToolResultEvent<TOutput = unknown> = {
+export type ToolResultEvent<TOutput extends JsonValue = JsonValue> = {
 	call: ToolCall;
 	result: RenderedToolOutput;
 	output?: TOutput;

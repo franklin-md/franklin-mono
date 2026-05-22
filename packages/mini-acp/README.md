@@ -129,9 +129,9 @@ only receives the current message list it should send to the model.
 **`ToolDefinition`** — a tool the agent may invoke:
 ```
 ToolDefinition {
-  name:        string                   // Unique tool identifier
-  description: string                   // Human-readable purpose
-  inputSchema: Record<string, unknown>  // JSON Schema for arguments
+  name:        string      // Unique tool identifier
+  description: string      // Human-readable purpose
+  inputSchema: JsonObject  // JSON Schema object for arguments
 }
 ```
 
@@ -188,7 +188,7 @@ Content block types:
 - **`TextContent`** — `{ type: "text", text: string }`
 - **`ThinkingContent`** — `{ type: "thinking", text: string }` — model reasoning, typically hidden from the user
 - **`ImageContent`** — `{ type: "image", data: string, mimeType: string }`
-- **`ToolCallContent`** — `{ type: "toolCall", id: string, name: string, arguments: Record<string, unknown> }`
+- **`ToolCallContent`** — `{ type: "toolCall", id: string, name: string, arguments: JsonObject }`
 
 #### Stream Events
 
@@ -282,9 +282,9 @@ Where:
 ```
 ToolCall {
   type:      "toolCall"
-  id:        string                    // Correlation ID for matching result to call
-  name:      string                    // The tool name (from ToolDefinition)
-  arguments: Record<string, unknown>   // Arguments matching the tool's inputSchema
+  id:        string      // Correlation ID for matching result to call
+  name:      string      // The tool name (from ToolDefinition)
+  arguments: JsonObject  // Arguments matching the tool's inputSchema
 }
 
 ToolResult {

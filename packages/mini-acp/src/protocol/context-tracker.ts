@@ -14,8 +14,8 @@ import type { Message } from '../types/message.js';
 function applySetContext(context: Context, partial: ContextPatch): void {
 	if (partial.systemPrompt !== undefined)
 		context.systemPrompt = partial.systemPrompt;
-	if (partial.messages !== undefined) context.messages = partial.messages;
-	if (partial.tools !== undefined) context.tools = partial.tools;
+	if (partial.messages !== undefined) context.messages = [...partial.messages];
+	if (partial.tools !== undefined) context.tools = [...partial.tools];
 	if (partial.config !== undefined)
 		context.config = { ...context.config, ...partial.config };
 }

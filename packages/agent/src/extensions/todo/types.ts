@@ -1,9 +1,9 @@
-export interface Todo {
+export type Todo = {
 	id: string;
 	text: string;
 	completed: boolean;
 	createdAt: number;
-}
+};
 
 export interface TodoControl {
 	addTodo: (text: string) => Todo;

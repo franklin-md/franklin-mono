@@ -1,4 +1,4 @@
-import type { MapFilePersister, RestoreResult } from '@franklin/lib';
+import type { JsonValue, MapFilePersister, RestoreResult } from '@franklin/lib';
 
 import { BaseStore } from '../base.js';
 import type { StoreSnapshot } from './snapshot.js';
@@ -24,9 +24,9 @@ export class StoreRegistry {
 	/**
 	 * Create a new registry entry with a fresh UUID.
 	 */
-	create(sharing: Sharing, initial?: unknown): StoreEntry {
+	create(sharing: Sharing, initial?: JsonValue): StoreEntry {
 		const ref = crypto.randomUUID();
-		const store = new BaseStore(initial);
+		const store = new BaseStore<JsonValue>(initial);
 		const entry: StoreEntry = { ref, sharing, store };
 		this.add(entry);
 		this.persist(entry);
@@ -65,7 +65,7 @@ export class StoreRegistry {
 		const snapshot: StoreSnapshot = {
 			ref: entry.ref,
 			sharing: entry.sharing,
-			value: entry.store.get(),
+			value: entry.store.get() as JsonValue,
 		};
 		void this.persister.save(entry.ref, snapshot);
 	}

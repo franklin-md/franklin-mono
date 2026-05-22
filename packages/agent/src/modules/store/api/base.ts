@@ -1,7 +1,7 @@
 import type { Producer } from 'immer';
 import { produce } from 'immer';
 
-import type { Store } from './types.js';
+import type { Store, StoreRecipe } from './types.js';
 
 /**
  * Immer-backed reactive store. Immutable updates via `set()`,
@@ -20,8 +20,8 @@ export class BaseStore<T> implements Store<T> {
 		return this.current;
 	}
 
-	set(recipe: Producer<T>): void {
-		const next = produce(this.current as T, recipe);
+	set(recipe: StoreRecipe<T>): void {
+		const next = produce(this.current as T, recipe as Producer<T>);
 		// Undefined Case
 		if (next === undefined) {
 			throw new Error('Store cannot be set to undefined');

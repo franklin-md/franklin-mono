@@ -4,6 +4,7 @@ import type {
 	StopCode,
 	Usage,
 } from '@franklin/mini-acp';
+import type { JsonValue } from '@franklin/lib';
 import type { RenderedToolOutput } from '../../modules/core/index.js';
 
 // ---------------------------------------------------------------------------
@@ -17,7 +18,7 @@ export type BlockMetadata = { startedAt: number; endedAt?: number };
 
 export type TextBlock = { kind: 'text'; text: string } & BlockMetadata;
 export type ThinkingBlock = { kind: 'thinking'; text: string } & BlockMetadata;
-export type ToolUseBlock<TOutput = unknown> = {
+export type ToolUseBlock<TOutput extends JsonValue = JsonValue> = {
 	kind: 'toolUse';
 	call: ToolCallContent;
 	result?: RenderedToolOutput;
@@ -44,9 +45,9 @@ export type AssistantTurn = {
 // ConversationTurn — one user prompt → the assistant's full response
 // ---------------------------------------------------------------------------
 
-export interface ConversationTurn {
+export type ConversationTurn = {
 	id: string;
 	timestamp: number;
 	prompt: UserMessage;
 	response: AssistantTurn;
-}
+};

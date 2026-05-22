@@ -8,6 +8,7 @@ import type {
 	ImageContent as PiImageContent,
 	ToolCall as PiToolCall,
 } from '@earendil-works/pi-ai';
+import type { JsonObject } from '@franklin/lib';
 
 import type {
 	UserContent,
@@ -42,7 +43,7 @@ export function fromPiAssistantContent(
 				type: 'toolCall',
 				id: c.id,
 				name: c.name,
-				arguments: c.arguments,
+				arguments: c.arguments as JsonObject,
 			};
 	}
 }
@@ -89,7 +90,7 @@ export function toPiAssistantContent(
 				type: 'toolCall',
 				id: c.id,
 				name: c.name,
-				arguments: c.arguments,
+				arguments: c.arguments as Record<string, unknown>,
 			};
 	}
 }

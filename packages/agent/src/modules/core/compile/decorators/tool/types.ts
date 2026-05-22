@@ -1,5 +1,5 @@
 import type { BaseRuntime } from '@franklin/extensibility';
-import type { Observer } from '@franklin/lib';
+import type { JsonValue, Observer } from '@franklin/lib';
 import type { z } from 'zod';
 
 import type { MaybePromise } from '../../../../../utils/maybe-promise.js';
@@ -8,7 +8,7 @@ import type { RenderedToolOutput } from '../../../api/tool.js';
 
 export interface RegisteredTool<
 	TInput = unknown,
-	TOutput = unknown,
+	TOutput extends JsonValue = JsonValue,
 	Runtime extends BaseRuntime = BaseRuntime,
 > {
 	name: string;
@@ -23,7 +23,7 @@ export interface RegisteredTool<
 }
 
 export type AnyRegisteredTool<Runtime extends BaseRuntime = BaseRuntime> =
-	RegisteredTool<unknown, unknown, Runtime>;
+	RegisteredTool<unknown, JsonValue, Runtime>;
 
 export type ToolObservers = {
 	readonly toolCall: Observer<[ToolCallEvent]>;
