@@ -51,6 +51,17 @@ describe('Configuration', () => {
 		expect(tags.spec.combine(['alpha', 'beta'])).toEqual(['alpha', 'beta']);
 	});
 
+	it('treats undefined combine functions as collected inputs', () => {
+		const tags = createConfiguration<string>({
+			name: 'tags',
+			combine: undefined,
+		});
+
+		expect(tags.name).toBe('tags');
+		expect(tags.combine(['alpha', 'beta'])).toEqual(['alpha', 'beta']);
+		expect(tags.spec.combine(['alpha', 'beta'])).toEqual(['alpha', 'beta']);
+	});
+
 	it('creates extensions from configurations that write static values through the configuration API', () => {
 		const theme = createConfiguration<string, string>({
 			name: 'theme',

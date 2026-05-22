@@ -43,6 +43,20 @@ const _collectedSingleValue: string = _collectedOutput;
 _collectedConfiguration.of('value');
 // @ts-expect-error collected configuration input type is enforced
 _collectedConfiguration.of(123);
+const _undefinedCombineConfiguration = createConfiguration<string>({
+	name: 'undefinedCombine',
+	combine: undefined,
+});
+const _undefinedCombineOutput = readConfiguration(
+	_undefinedCombineConfiguration,
+);
+const _undefinedCombineValues: readonly string[] = _undefinedCombineOutput;
+// @ts-expect-error undefined combine returns the collected input list
+const _undefinedCombineSingleValue: string = _undefinedCombineOutput;
+// @ts-expect-error omitted combine returns exactly readonly Input[], not a narrowed custom output
+createConfiguration<string, readonly ['only']>({
+	name: 'narrowedList',
+});
 
 const _explicitListSpec: ConfigurationSpec<string, readonly string[]> = {
 	name: 'explicitList',
@@ -91,6 +105,8 @@ void _readonlyListValues;
 void _mutableValues;
 void _collectedValues;
 void _collectedSingleValue;
+void _undefinedCombineValues;
+void _undefinedCombineSingleValue;
 void _explicitListValues;
 void _explicitListShorthandValues;
 void _customConfigurationSpecType;
