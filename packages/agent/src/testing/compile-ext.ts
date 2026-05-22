@@ -25,9 +25,11 @@ import type { AuthDependencyRuntime } from '../auth/dependency.js';
 import type { AuthManager } from '../auth/manager.js';
 import { createPromptBuilder } from '../modules/core/compile/decorators/prompt/build-prompt/index.js';
 import { createPromptObserver } from '../modules/core/compile/decorators/prompt/observer/index.js';
-import { buildToolServerMiddleware } from '../modules/core/compile/decorators/tool/decorator.js';
-import { registeredTools } from '../modules/core/compile/registrations/index.js';
-import { serializeTool } from '../modules/core/compile/tools/index.js';
+import {
+	buildToolServerMiddleware,
+	createToolRegistry,
+	type ToolRegistry,
+} from '../modules/core/compile/decorators/tool/index.js';
 import {
 	passThrough,
 	type MethodMiddleware,
@@ -93,6 +95,7 @@ const storeExtensionPoint = createExtensionPoint<StoreSignature>({
 
 function buildTestMiddleware<Runtime extends BaseRuntime>(
 	registrations: RegistryView<CoreSignature, Runtime>,
+	toolRegistry: ToolRegistry<Runtime>,
 	getCtx: () => Runtime,
 ): FullMiddleware {
 	const buildPrompt = createPromptBuilder(registrations, getCtx);
@@ -113,7 +116,7 @@ function buildTestMiddleware<Runtime extends BaseRuntime>(
 
 	return {
 		client,
-		server: buildToolServerMiddleware(registrations, getCtx),
+		server: buildToolServerMiddleware(toolRegistry),
 	};
 }
 
@@ -137,8 +140,9 @@ export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 	const api = createApi<CoreSignature, Ctx>(coreExtensionPoint, writer);
 	ext(api);
 	const registrations = createRegistryView(registry);
-	const middleware = buildTestMiddleware(registrations, getCtx);
-	const tools = registeredTools(registrations).map(serializeTool);
+	const toolRegistry = createToolRegistry(registrations, getCtx);
+	const middleware = buildTestMiddleware(registrations, toolRegistry, getCtx);
+	const tools = toolRegistry.definitions();
 	return { middleware, tools };
 }
 
@@ -189,8 +193,9 @@ export async function compileCoreWithStore(
 	);
 
 	const registrations = createRegistryView(coreRegistry);
-	const middleware = buildTestMiddleware(registrations, getCtx);
-	const tools = registeredTools(registrations).map(serializeTool);
+	const toolRegistry = createToolRegistry(registrations, getCtx);
+	const middleware = buildTestMiddleware(registrations, toolRegistry, getCtx);
+	const tools = toolRegistry.definitions();
 	return { middleware, stores: cell.stores, tools };
 }
 
@@ -265,8 +270,9 @@ export async function compileCoreWithStoreAndEnv(
 	);
 
 	const registrations = registryView as never;
-	const middleware = buildTestMiddleware(registrations, getCtx);
-	const tools = registeredTools(registrations).map(serializeTool);
+	const toolRegistry = createToolRegistry(registrations, getCtx);
+	const middleware = buildTestMiddleware(registrations, toolRegistry, getCtx);
+	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };
 }
 
@@ -330,8 +336,9 @@ export async function compileCoreWithStoreEnvAndAuth(
 	});
 
 	const registrations = createRegistryView(coreRegistry);
-	const middleware = buildTestMiddleware(registrations, getCtx);
-	const tools = registeredTools(registrations).map(serializeTool);
+	const toolRegistry = createToolRegistry(registrations, getCtx);
+	const middleware = buildTestMiddleware(registrations, toolRegistry, getCtx);
+	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };
 }
 
@@ -390,7 +397,8 @@ export async function compileCoreWithEnv(
 	cell.ctx = combineRuntimes(environment, configuration);
 
 	const registrations = registryView as never;
-	const middleware = buildTestMiddleware(registrations, getCtx);
-	const tools = registeredTools(registrations).map(serializeTool);
+	const toolRegistry = createToolRegistry(registrations, getCtx);
+	const middleware = buildTestMiddleware(registrations, toolRegistry, getCtx);
+	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };
 }

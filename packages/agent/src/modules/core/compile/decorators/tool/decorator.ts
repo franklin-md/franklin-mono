@@ -1,36 +1,26 @@
-import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
+import type { BaseRuntime } from '@franklin/extensibility';
 import type { MiniACPAgent } from '@franklin/mini-acp';
-import { createObserver } from '@franklin/lib';
 import { apply, passThrough, type Middleware } from '@franklin/lib/middleware';
-import type { CoreSignature } from '../../../api/api.js';
-import {
-	bindRegisteredEventHandlers,
-	registeredTools,
-} from '../../registrations/index.js';
 import type { ProtocolDecorator } from '../types.js';
-import { buildToolExecuteMiddleware } from './execute.js';
-import type { ToolLayer, ToolObservers } from './types.js';
+import type { ToolRegistry } from './registry.js';
 
 type ServerMiddleware = Middleware<MiniACPAgent>;
 
 export function buildToolServerMiddleware<Runtime extends BaseRuntime>(
-	registrations: RegistryView<CoreSignature, Runtime>,
-	getRuntime: () => Runtime,
+	registry: ToolRegistry<Runtime>,
 ): ServerMiddleware {
-	return serverMiddlewareFromLayer(buildToolLayer(registrations, getRuntime));
+	return serverMiddlewareFromRegistry(registry);
 }
 
 export function createToolDecorator<Runtime extends BaseRuntime>(
-	registrations: RegistryView<CoreSignature, Runtime>,
-	getRuntime: () => Runtime,
+	registry: ToolRegistry<Runtime>,
 ): ProtocolDecorator | undefined {
-	const layer = buildToolLayer(registrations, getRuntime);
-	if (!hasAnyToolLayer(layer)) return undefined;
+	if (!registry.hasRegistrations()) return undefined;
 
 	return {
 		name: 'tool',
 		async server(s) {
-			return apply(serverMiddlewareFromLayer(layer), s);
+			return apply(serverMiddlewareFromRegistry(registry), s);
 		},
 		async client(c) {
 			return c;
@@ -38,43 +28,12 @@ export function createToolDecorator<Runtime extends BaseRuntime>(
 	};
 }
 
-function buildToolLayer<Runtime extends BaseRuntime>(
-	registrations: RegistryView<CoreSignature, Runtime>,
-	getRuntime: () => Runtime,
-): ToolLayer<Runtime> {
-	return {
-		tools: registeredTools(registrations),
-		observers: {
-			toolCall: createObserver(
-				bindRegisteredEventHandlers(registrations, 'toolCall', getRuntime),
-			),
-			toolResult: createObserver(
-				bindRegisteredEventHandlers(registrations, 'toolResult', getRuntime),
-			),
-		},
-		getRuntime,
-	};
-}
-
-function serverMiddlewareFromLayer<Runtime extends BaseRuntime>(
-	layer: ToolLayer<Runtime>,
+function serverMiddlewareFromRegistry<Runtime extends BaseRuntime>(
+	registry: ToolRegistry<Runtime>,
 ): ServerMiddleware {
 	return {
-		toolExecute: hasAnyToolLayer(layer)
-			? buildToolExecuteMiddleware(layer)
+		toolExecute: registry.hasRegistrations()
+			? registry.createHandler()
 			: passThrough<MiniACPAgent['toolExecute']>(),
 	};
-}
-
-function hasAnyToolObserver(observers: ToolObservers): boolean {
-	return (
-		observers.toolCall.listenerCount > 0 ||
-		observers.toolResult.listenerCount > 0
-	);
-}
-
-function hasAnyToolLayer<Runtime extends BaseRuntime>(
-	layer: ToolLayer<Runtime>,
-): boolean {
-	return layer.tools.length > 0 || hasAnyToolObserver(layer.observers);
 }
