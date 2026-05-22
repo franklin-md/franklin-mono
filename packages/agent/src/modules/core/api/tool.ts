@@ -1,36 +1,50 @@
 import type { ToolResultContent } from '@franklin/mini-acp';
 import type { MaybePromise } from '../../../utils/maybe-promise.js';
 import type { BaseRuntime } from '@franklin/extensibility';
-import type { z } from 'zod';
+import type { ToolArgsOf, ToolOutputOf, ToolSpec } from './tool-spec.js';
 
-export type ToolOutput = {
+export type RenderedToolOutput = {
 	content: ToolResultContent[];
 	isError?: boolean;
 };
 
-export type ToolExecuteReturn = string | ToolOutput;
+export function defaultToolRenderOutput(value: unknown): RenderedToolOutput {
+	return {
+		content: [
+			{
+				type: 'text',
+				text: stringifyToolOutput(value),
+			},
+		],
+	};
+}
 
-export function resolveToolOutput(value: ToolExecuteReturn): ToolOutput {
+function stringifyToolOutput(value: unknown): string {
 	if (typeof value === 'string') {
-		return { content: [{ type: 'text', text: value }] };
+		return value;
 	}
-	return value;
+	if (
+		value === undefined ||
+		typeof value === 'function' ||
+		typeof value === 'symbol'
+	) {
+		return String(value);
+	}
+	return JSON.stringify(value);
 }
 
-/**
- * The public shape of a tool registered via `api.registerTool(...)`.
- *
- * `execute` receives the call params plus the fully-tied runtime context —
- * the same ctx any registered handler sees. Middleware invokes
- * `tool.execute(params, getCtx())` at call time (mirroring how handlers
- * are bound), so there is no separate "bound" shape.
- */
-export interface ExtensionToolDefinition<
-	TInput = unknown,
-	Ctx extends BaseRuntime = BaseRuntime,
-> {
-	name: string;
-	description: string;
-	schema: z.ZodType<TInput>;
-	execute(params: TInput, ctx: Ctx): MaybePromise<ToolExecuteReturn>;
-}
+export type ToolCallExecute<S extends ToolSpec, Ctx extends BaseRuntime> = (
+	params: ToolArgsOf<S>,
+	ctx: Ctx,
+) => MaybePromise<ToolOutputOf<S>>;
+
+export type ToolCallRender<S extends ToolSpec, Ctx extends BaseRuntime> = (
+	output: ToolOutputOf<S>,
+	params: ToolArgsOf<S>,
+	ctx: Ctx,
+) => MaybePromise<RenderedToolOutput>;
+
+export type ToolHandlers<S extends ToolSpec, Ctx extends BaseRuntime> = {
+	execute: ToolCallExecute<S, Ctx>;
+	render?: ToolCallRender<S, Ctx>;
+};

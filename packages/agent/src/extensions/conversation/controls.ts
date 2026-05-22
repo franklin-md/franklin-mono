@@ -1,8 +1,21 @@
 import type { Store } from '../../modules/store/api/types.js';
 import type { ConversationTurn } from './types.js';
 
+type ConversationControl = {
+	modifyCurrentTurn(modifier: (turn: ConversationTurn) => void): void;
+};
+
+type ConversationControlStore = {
+	set(recipe: (draft: ConversationTurn[]) => void): void;
+};
+
 // TODO: Maybe the controls should just take in a StoreRuntime?
-export function createConversationControl(store: Store<ConversationTurn[]>) {
+export function createConversationControl(
+	store: Store<ConversationTurn[]>,
+): ConversationControl;
+export function createConversationControl(
+	store: ConversationControlStore,
+): ConversationControl {
 	return {
 		// Noop if turn doesnt exist
 		modifyCurrentTurn: (modifier: (turn: ConversationTurn) => void) => {

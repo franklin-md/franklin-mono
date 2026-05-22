@@ -1,8 +1,16 @@
 import { z } from 'zod';
-import { toolSpec } from '../../../modules/core/api/tool-spec.js';
+import {
+	toolSpec,
+	type ToolSpec,
+} from '../../../modules/core/api/tool-spec.js';
+import type { RenderedToolOutput } from '../../../modules/core/api/tool.js';
 import { webFetchDescription } from '../../system_prompts.js';
 
-export const fetchUrlSpec = toolSpec(
+export const fetchUrlSpec: ToolSpec<
+	'fetch_url',
+	{ url: string },
+	RenderedToolOutput
+> = toolSpec(
 	'fetch_url',
 	webFetchDescription,
 	z.object({

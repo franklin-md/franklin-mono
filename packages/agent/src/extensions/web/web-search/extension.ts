@@ -30,27 +30,30 @@ export function webSearchToolExtension(
 	const resolved = resolveWebSearchOptions(options);
 
 	return defineExtension<WebSearchModules>((api) => {
-		api.registerTool(searchWebSpec, async ({ query }, ctx) => {
-			const fetch = decorate(ctx.environment.web.fetch)
-				.with(withOnlyHTTP())
-				.with(withRedirect(resolved.maxRedirects))
-				.with(withTimeout(resolved.timeoutMs))
-				.build();
-			const providers = ctx.getConfig(webSearchProviders);
-			if (providers.length === 0) {
-				return toSearchError(
-					query,
-					new Error('No web search providers configured'),
-				);
-			}
+		api.registerTool(searchWebSpec, {
+			execute: async ({ query }, ctx) => {
+				const fetch = decorate(ctx.environment.web.fetch)
+					.with(withOnlyHTTP())
+					.with(withRedirect(resolved.maxRedirects))
+					.with(withTimeout(resolved.timeoutMs))
+					.build();
+				const providers = ctx.getConfig(webSearchProviders);
+				if (providers.length === 0) {
+					return toSearchError(
+						query,
+						new Error('No web search providers configured'),
+					);
+				}
 
-			const request = { query, fetch, options: resolved };
-			const result = await runWebSearchProviders(providers, request);
-			if (result.kind === 'success') {
-				return toSearchResult(query, result.results);
-			}
+				const request = { query, fetch, options: resolved };
+				const result = await runWebSearchProviders(providers, request);
+				if (result.kind === 'success') {
+					return toSearchResult(query, result.results);
+				}
 
-			return toSearchError(query, result.error);
+				return toSearchError(query, result.error);
+			},
+			render: (output) => output,
 		});
 	});
 }

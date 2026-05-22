@@ -10,6 +10,7 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
+import { toolSpec } from '../../../../api/tool-spec.js';
 
 const runtime = createTestRuntime();
 
@@ -58,12 +59,10 @@ describe('createToolDecorator', () => {
 		);
 
 		const registrations = createCoreRegistry((api) => {
-			api.registerTool({
-				name: 'myTool',
-				description: 'A test tool',
-				schema: z.object({ input: z.string() }),
-				execute,
-			});
+			api.registerTool(
+				toolSpec('myTool', 'A test tool', z.object({ input: z.string() })),
+				{ execute },
+			);
 		});
 		const decorator = createToolDecorator(registrations, () => runtime);
 		if (!decorator) throw new Error('Expected tool decorator');
@@ -101,10 +100,7 @@ describe('createToolDecorator', () => {
 	it('notifies tool observers around registered tool execution', async () => {
 		const calls: string[] = [];
 		const registrations = createCoreRegistry((api) => {
-			api.registerTool({
-				name: 'myTool',
-				description: 'A test tool',
-				schema: z.object({}),
+			api.registerTool(toolSpec('myTool', 'A test tool', z.object({})), {
 				execute: async () => 'ok',
 			});
 			api.on('toolCall', () => calls.push('call:first'));
@@ -129,12 +125,10 @@ describe('createToolDecorator', () => {
 	it('returns validation errors before execute runs', async () => {
 		const execute = vi.fn(async () => 'not reached');
 		const registrations = createCoreRegistry((api) => {
-			api.registerTool({
-				name: 'myTool',
-				description: 'A test tool',
-				schema: z.object({ input: z.string() }),
-				execute,
-			});
+			api.registerTool(
+				toolSpec('myTool', 'A test tool', z.object({ input: z.string() })),
+				{ execute },
+			);
 		});
 		const decorator = createToolDecorator(registrations, () => runtime);
 		if (!decorator) throw new Error('Expected tool decorator');
@@ -152,10 +146,7 @@ describe('createToolDecorator', () => {
 	it('leaves the client side unchanged', async () => {
 		const decorator = createToolDecorator(
 			createCoreRegistry((api) => {
-				api.registerTool({
-					name: 'myTool',
-					description: 'A test tool',
-					schema: z.object({}),
+				api.registerTool(toolSpec('myTool', 'A test tool', z.object({})), {
 					execute: async () => 'ok',
 				});
 			}),

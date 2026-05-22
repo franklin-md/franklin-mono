@@ -14,12 +14,22 @@ function toolBlock(
 	opts?: { result?: string; isError?: boolean },
 ): ToolUseBlockData {
 	const startedAt = Date.now();
-	const settled = opts?.result !== undefined || opts?.isError;
+	const resultText = opts?.result;
+	const isError = opts?.isError;
+	const settled = resultText !== undefined || isError;
 	return {
 		kind: 'toolUse',
 		call: { type: 'toolCall', id: `tc_${name}`, name, arguments: args },
-		result: opts?.result ? [{ type: 'text', text: opts.result }] : undefined,
-		isError: opts?.isError,
+		result:
+			resultText !== undefined || isError
+				? {
+						content:
+							resultText !== undefined
+								? [{ type: 'text', text: resultText }]
+								: [],
+						isError,
+					}
+				: undefined,
 		startedAt,
 		endedAt: settled ? startedAt + 500 : undefined,
 	};

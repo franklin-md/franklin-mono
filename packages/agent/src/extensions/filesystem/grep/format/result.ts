@@ -31,29 +31,35 @@ export function formatGrepResult(
 	if (exit_code >= 2) {
 		if (matches.length > 0) {
 			return {
-				output: withWarning(
+				status: 'success',
+				text: withWarning(
 					formatMatches(matches, {
 						truncated,
 						maxLength: MAX_FORMATTED_CHARS,
 					}),
 					stderr,
 				),
-				isError: false,
+				matches,
+				truncated,
 			};
 		}
 		const hint = params.path ? GREP_SINGLE_PATH_HINT : '';
 		return {
-			output: `grep failed (exit ${exit_code}): ${stderr || stdout}${hint}`,
-			isError: true,
+			status: 'error',
+			text: `grep failed (exit ${exit_code}): ${stderr || stdout}${hint}`,
+			matches: [],
+			truncated: false,
 		};
 	}
 
 	return {
-		output: formatMatches(matches, {
+		status: 'success',
+		text: formatMatches(matches, {
 			truncated,
 			maxLength: MAX_FORMATTED_CHARS,
 		}),
-		isError: false,
+		matches,
+		truncated,
 	};
 }
 

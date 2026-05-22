@@ -24,7 +24,11 @@ export function ToolUseBlock({
 
 	const args = block.call.arguments;
 	const summary = entry.summary({ block, status, args });
-	const expanded = entry.expanded?.({ block, status, args });
+	const expanded = entry.expanded?.({
+		block,
+		status,
+		args,
+	});
 	if (summary == null && expanded == null) return null;
 
 	return (

@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { ToolArgs, ToolSpec } from '@franklin/agent';
+import type { ToolArgsOf, ToolSpec } from '@franklin/agent';
 import { createToolRenderer, type ToolRendererEntry } from '@franklin/react';
 
 import { ToolSummary } from './summary.js';
@@ -23,7 +23,7 @@ export function toolEntry<S extends ToolSpec>(
 	spec: S,
 	Icon: LucideIcon,
 	label: ReactNode,
-	children?: (args: ToolArgs<S>) => ReactNode,
+	children?: (args: ToolArgsOf<S>) => ReactNode,
 ) {
 	return createToolRenderer(spec, iconEntry(Icon, label, children));
 }

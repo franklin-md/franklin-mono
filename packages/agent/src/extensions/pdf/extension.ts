@@ -37,12 +37,15 @@ export function readPDFExtension({
 	const freeConverter = new FreePDFConverter({ renderScreenshots });
 
 	return defineExtension<ReadPDFModules>((api) => {
-		api.registerTool(readPDFSpec, async (args, ctx) => {
-			const apiKey = await ctx.auth.getApiKey(MISTRAL_PROVIDER);
-			const pdfConverter = apiKey
-				? new MistralPDFConverter({ apiKey, renderScreenshots })
-				: freeConverter;
-			return readPDF(pdfConverter, args, ctx);
+		api.registerTool(readPDFSpec, {
+			execute: async (args, ctx) => {
+				const apiKey = await ctx.auth.getApiKey(MISTRAL_PROVIDER);
+				const pdfConverter = apiKey
+					? new MistralPDFConverter({ apiKey, renderScreenshots })
+					: freeConverter;
+				return readPDF(pdfConverter, args, ctx);
+			},
+			render: (output) => output,
 		});
 	});
 }

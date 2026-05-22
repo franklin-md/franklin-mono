@@ -26,8 +26,10 @@ export async function runGrep(
 
 	if (params.path && looksLikeMultipleAbsolutePaths(params.path)) {
 		return {
-			output: GREP_SINGLE_PATH_MESSAGE,
-			isError: true,
+			status: 'error',
+			text: GREP_SINGLE_PATH_MESSAGE,
+			matches: [],
+			truncated: false,
 		};
 	}
 

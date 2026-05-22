@@ -5,7 +5,9 @@ const GREP_UNAVAILABLE_MESSAGE =
 
 export function unavailableGrepResult(): GrepResult {
 	return {
-		output: GREP_UNAVAILABLE_MESSAGE,
-		isError: true,
+		status: 'error',
+		text: GREP_UNAVAILABLE_MESSAGE,
+		matches: [],
+		truncated: false,
 	};
 }

@@ -31,9 +31,8 @@ export function editExtension() {
 		(api) => {
 			// The store is private to ONE agent; it keeps track of the agent's "seen" files.
 			api.registerStore(fileKey, {}, 'private');
-			api.registerTool(
-				editFileSpec,
-				async ({ path, old_text, new_text, replace_all }, ctx) => {
+			api.registerTool(editFileSpec, {
+				execute: async ({ path, old_text, new_text, replace_all }, ctx) => {
 					const env = ctx.environment;
 					const store = ctx.getStore(fileKey);
 					const file = createFileControl(store);
@@ -121,7 +120,7 @@ export function editExtension() {
 
 					return `Successfully edited ${path}.`;
 				},
-			);
+			});
 		},
 	);
 }

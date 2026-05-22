@@ -5,18 +5,8 @@ import type {
 	TurnEnd,
 	ToolCall,
 	ToolExecuteParams,
-	ToolResult,
 } from '@franklin/mini-acp';
-import type { MaybePromise } from '../../../utils/maybe-promise.js';
-import type { Prompt } from './prompt.js';
-import type { SystemPrompt } from './system-prompt.js';
-
-// ---------------------------------------------------------------------------
-export type PromptHandler = (prompt: Prompt) => MaybePromise<void>;
-
-export type SystemPromptHandler = (
-	systemPrompt: SystemPrompt,
-) => MaybePromise<void>;
+import type { RenderedToolOutput } from './tool.js';
 
 // ---------------------------------------------------------------------------
 // Stream observer events — fire-and-forget side effects on response stream
@@ -39,13 +29,10 @@ export type StreamObserverHandler<K extends StreamObserverEvent> = (
 // Tool observer events — fire-and-forget side effects on tool execution
 // ---------------------------------------------------------------------------
 
-export type ToolObserverEvent = 'toolCall' | 'toolResult';
+export type ToolCallEvent = ToolExecuteParams;
 
-export type ToolObserverParamsMap = {
-	toolCall: ToolExecuteParams;
-	toolResult: ToolResult & { call: ToolCall };
+export type ToolResultEvent<TOutput = unknown> = {
+	call: ToolCall;
+	result: RenderedToolOutput;
+	output?: TOutput;
 };
-
-export type ToolObserverHandler<K extends ToolObserverEvent> = (
-	event: ToolObserverParamsMap[K],
-) => void;

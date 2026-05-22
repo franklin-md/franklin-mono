@@ -22,20 +22,20 @@ export function grepExtension() {
 		// registration yet, so we always register `grep` and fail at call-time
 		// when the detected backend is `none`. When conditional registration
 		// lands, gate registration on `backend.kind !== 'none'` instead.
-		api.registerTool(grepSpec, async (params, ctx) => {
-			const backendKind = await detectGrepBackend(ctx.environment.process);
-			const { output, isError } = await runGrep(
-				backendKind,
-				params,
-				ctx.environment,
-			);
-			if (isError) {
-				return {
-					content: [{ type: 'text', text: output }],
-					isError: true,
-				};
-			}
-			return output;
+		api.registerTool(grepSpec, {
+			execute: async (params, ctx) => {
+				const backendKind = await detectGrepBackend(ctx.environment.process);
+				return await runGrep(backendKind, params, ctx.environment);
+			},
+			render: ({ status, text }) => {
+				if (status === 'error') {
+					return {
+						content: [{ type: 'text', text }],
+						isError: true,
+					};
+				}
+				return { content: [{ type: 'text', text }] };
+			},
 		});
 	});
 }

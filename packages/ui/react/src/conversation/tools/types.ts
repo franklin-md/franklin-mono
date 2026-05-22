@@ -1,22 +1,27 @@
 import type { ReactNode } from 'react';
-import type { ToolArgs, ToolSpec, ToolUseBlock } from '@franklin/agent';
+import type {
+	ToolArgsOf,
+	ToolOutputOf,
+	ToolSpec,
+	ToolUseBlock,
+} from '@franklin/agent';
 
 export type ToolStatus = 'in-progress' | 'success' | 'error';
 
-export type ToolRenderProps<T = any> = {
-	block: ToolUseBlock;
+export type ToolRenderProps<TArgs = unknown, TOutput = unknown> = {
+	block: ToolUseBlock<TOutput>;
 	status: ToolStatus;
-	args: T;
+	args: TArgs;
 };
 
-export type ToolRendererEntry<T = any> = {
-	summary: (props: ToolRenderProps<T>) => ReactNode;
-	expanded?: (props: ToolRenderProps<T>) => ReactNode;
+export type ToolRendererEntry<TArgs = unknown, TOutput = unknown> = {
+	summary(props: ToolRenderProps<TArgs, TOutput>): ReactNode;
+	expanded?(props: ToolRenderProps<TArgs, TOutput>): ReactNode;
 };
 
 export type ToolRendererBinding<S extends ToolSpec = ToolSpec> = readonly [
 	name: S['name'],
-	entry: ToolRendererEntry<ToolArgs<S>>,
+	entry: ToolRendererEntry<ToolArgsOf<S>, ToolOutputOf<S>>,
 ];
 
 export type ToolRendererRegistryEntries = readonly (readonly [

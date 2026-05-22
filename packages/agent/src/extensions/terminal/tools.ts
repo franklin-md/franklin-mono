@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { toolSpec } from '../../modules/core/api/tool-spec.js';
+import { toolSpec, type ToolSpec } from '../../modules/core/api/tool-spec.js';
+import type { RenderedToolOutput } from '../../modules/core/api/tool.js';
 import { bashDescription } from '../system_prompts.js';
 
 const bashSchema = z.object({
@@ -15,4 +16,8 @@ const bashSchema = z.object({
 		.describe('Milliseconds before timeout.'),
 });
 
-export const bashSpec = toolSpec('bash', bashDescription, bashSchema);
+export const bashSpec: ToolSpec<
+	'bash',
+	z.infer<typeof bashSchema>,
+	string | RenderedToolOutput
+> = toolSpec('bash', bashDescription, bashSchema);

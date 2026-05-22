@@ -1,5 +1,6 @@
 import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type { MiniACPAgent } from '@franklin/mini-acp';
+import { createObserver } from '@franklin/lib';
 import { apply, passThrough, type Middleware } from '@franklin/lib/middleware';
 import type { CoreSignature } from '../../../api/api.js';
 import {
@@ -44,15 +45,11 @@ function buildToolLayer<Runtime extends BaseRuntime>(
 	return {
 		tools: registeredTools(registrations),
 		observers: {
-			toolCall: bindRegisteredEventHandlers(
-				registrations,
-				'toolCall',
-				getRuntime,
+			toolCall: createObserver(
+				bindRegisteredEventHandlers(registrations, 'toolCall', getRuntime),
 			),
-			toolResult: bindRegisteredEventHandlers(
-				registrations,
-				'toolResult',
-				getRuntime,
+			toolResult: createObserver(
+				bindRegisteredEventHandlers(registrations, 'toolResult', getRuntime),
 			),
 		},
 		getRuntime,
@@ -70,7 +67,10 @@ function serverMiddlewareFromLayer<Runtime extends BaseRuntime>(
 }
 
 function hasAnyToolObserver(observers: ToolObservers): boolean {
-	return observers.toolCall.length > 0 || observers.toolResult.length > 0;
+	return (
+		observers.toolCall.listenerCount > 0 ||
+		observers.toolResult.listenerCount > 0
+	);
 }
 
 function hasAnyToolLayer<Runtime extends BaseRuntime>(
