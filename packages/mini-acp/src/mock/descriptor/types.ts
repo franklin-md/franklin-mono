@@ -1,3 +1,4 @@
+import type { JsonObject } from '@franklin/lib';
 import type { Context } from '../../types/context.js';
 import type { UserMessage } from '../../types/message.js';
 import type { StopCode } from '../../types/stop-code.js';
@@ -37,7 +38,7 @@ export type AssistantThinkingDescriptor = {
 
 export type ToolCallRequestDescriptor = {
 	readonly name: string;
-	readonly arguments?: Record<string, unknown>;
+	readonly arguments?: JsonObject;
 };
 
 export type ToolCallsDescriptor = {

@@ -1,5 +1,6 @@
-import type { BaseRuntime } from '@franklin/extensibility';
 import type { ToolDefinition } from '@franklin/mini-acp';
+import type { BaseRuntime } from '@franklin/extensibility';
+import type { JsonObject } from '@franklin/lib';
 import { z } from 'zod';
 
 import type { AnyRegisteredTool } from './types.js';
@@ -9,10 +10,10 @@ import type { AnyRegisteredTool } from './types.js';
  * Strips the $schema meta-field (it's not required by the agents, and implementations
  * (like pi-ai) get confused when there are additional fields like schemas
  */
-export function toToolInputSchema(schema: z.ZodType): Record<string, unknown> {
+export function toToolInputSchema(schema: z.ZodType): JsonObject {
 	const jsonSchema = z.toJSONSchema(schema) as Record<string, unknown>;
 	delete jsonSchema.$schema;
-	return jsonSchema;
+	return jsonSchema as JsonObject;
 }
 
 export function serializeTool<Runtime extends BaseRuntime>(

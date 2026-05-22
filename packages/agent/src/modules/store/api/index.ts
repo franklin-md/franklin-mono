@@ -1,4 +1,4 @@
-export type { ReadonlyStore, Store } from './types.js';
+export type { ReadonlyStore, Store, StoreRecipe } from './types.js';
 export type { PersistedStore, PersistedStoreAdapter } from './persisted.js';
 export type { Sharing, ForkMode } from './sharing.js';
 export type { StoreAPI, StoreSignature } from './api.js';

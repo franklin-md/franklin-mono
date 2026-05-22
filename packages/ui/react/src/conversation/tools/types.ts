@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { JsonValue } from '@franklin/lib';
 import type {
 	ToolArgsOf,
 	ToolOutputOf,
@@ -8,13 +9,19 @@ import type {
 
 export type ToolStatus = 'in-progress' | 'success' | 'error';
 
-export type ToolRenderProps<TArgs = unknown, TOutput = unknown> = {
+export type ToolRenderProps<
+	TArgs = unknown,
+	TOutput extends JsonValue = JsonValue,
+> = {
 	block: ToolUseBlock<TOutput>;
 	status: ToolStatus;
 	args: TArgs;
 };
 
-export type ToolRendererEntry<TArgs = unknown, TOutput = unknown> = {
+export type ToolRendererEntry<
+	TArgs = unknown,
+	TOutput extends JsonValue = JsonValue,
+> = {
 	summary(props: ToolRenderProps<TArgs, TOutput>): ReactNode;
 	expanded?(props: ToolRenderProps<TArgs, TOutput>): ReactNode;
 };

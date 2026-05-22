@@ -1,3 +1,5 @@
+import type { JsonValue } from '@franklin/lib';
+
 declare const __storeType: unique symbol;
 
 /**
@@ -7,7 +9,7 @@ declare const __storeType: unique symbol;
  * `T` type is attached via a unique symbol brand, giving consumers
  * full type inference without any runtime overhead.
  */
-export type StoreKey<X extends string, T> = X & {
+export type StoreKey<X extends string, T extends JsonValue> = X & {
 	readonly [__storeType]: T;
 };
 
@@ -15,7 +17,9 @@ export type StoreKey<X extends string, T> = X & {
  * Create a typed store key. Zero runtime overhead — returns the
  * name string unchanged, branded at the type level only.
  */
-export function storeKey<X extends string, T>(name: X): StoreKey<X, T> {
+export function storeKey<X extends string, T extends JsonValue>(
+	name: X,
+): StoreKey<X, T> {
 	return name as StoreKey<X, T>;
 }
 
@@ -23,4 +27,4 @@ export function storeKey<X extends string, T>(name: X): StoreKey<X, T> {
  * Extract the value type from a StoreKey.
  */
 export type StoreValueType<K> =
-	K extends StoreKey<string, infer T> ? T : unknown;
+	K extends StoreKey<string, infer T> ? T : JsonValue;

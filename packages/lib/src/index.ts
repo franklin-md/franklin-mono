@@ -70,7 +70,13 @@ export type {
 	DecodeIssue,
 	DecodeResult,
 } from './persistence/codec/types.js';
-export { rawCodec } from './persistence/codec/raw.js';
+export type {
+	JsonArray,
+	JsonObject,
+	JsonPrimitive,
+	JsonValue,
+} from './json/index.js';
+export { jsonCodec } from './persistence/codec/json.js';
 export { zodCodec } from './persistence/codec/zod.js';
 export { versioned } from './persistence/codec/versioned.js';
 export type { Issue } from './persistence/issue/types.js';

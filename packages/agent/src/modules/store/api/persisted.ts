@@ -1,6 +1,5 @@
-import type { Producer } from 'immer';
 import type { Issue, RestoreResult } from '@franklin/lib';
-import type { Store } from './types.js';
+import type { Store, StoreRecipe } from './types.js';
 
 export interface PersistedStore<T> extends Store<T> {
 	restore(): Promise<RestoreResult>;
@@ -30,7 +29,7 @@ class BasePersistedStore<T> implements PersistedStore<T> {
 		return this.store.get();
 	}
 
-	set(recipe: Producer<T>): void {
+	set(recipe: StoreRecipe<T>): void {
 		this.store.set(recipe);
 	}
 
@@ -45,7 +44,7 @@ class BasePersistedStore<T> implements PersistedStore<T> {
 
 		this.isRestoring = true;
 		try {
-			this.store.set((() => value) as Producer<T>);
+			this.store.set(() => value);
 		} finally {
 			this.isRestoring = false;
 		}

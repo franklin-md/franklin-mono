@@ -1,5 +1,3 @@
-import type { Producer } from 'immer';
-
 /**
  * A read-only reactive store. Consumers can read the current value
  * and subscribe to changes, but cannot mutate state directly.
@@ -10,11 +8,14 @@ export interface ReadonlyStore<T> {
 	subscribe(listener: (value: T) => void): () => void;
 }
 
+export type StoreRecipe<T> = ((draft: T) => T) | ((draft: T) => void);
+
 /**
  * A mutable reactive store. Extends ReadonlyStore with an Immer-style
- * `set()` method that accepts a producer function operating on a draft
- * or returning a replacement root value.
+ * `set()` method. The implementation may provide a mutable draft, but the
+ * public type stays Franklin-owned so consumers do not inherit Immer's
+ * recursive `Draft<T>` type.
  */
 export interface Store<T> extends ReadonlyStore<T> {
-	set(recipe: Producer<T>): void;
+	set(recipe: StoreRecipe<T>): void;
 }

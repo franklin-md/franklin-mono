@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+	type JsonObject,
 	MemoryOsInfo,
 	type AbsolutePath,
 	type Filesystem,
@@ -61,7 +62,7 @@ function compileGlob(env: ReconfigurableEnvironment) {
 	return compileCoreWithEnv(globExtension(), env);
 }
 
-async function executeTool(compiled: Compiled, args: Record<string, unknown>) {
+async function executeTool(compiled: Compiled, args: JsonObject) {
 	return compiled.middleware.server.toolExecute(
 		{
 			call: {

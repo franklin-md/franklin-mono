@@ -1,4 +1,5 @@
 import type { ReadonlyStore, Store, StoreKey } from '@franklin/agent';
+import type { JsonValue } from '@franklin/lib';
 
 import { useStore } from '../utils/use-store.js';
 import { useAgent } from './agent-context.js';
@@ -22,13 +23,15 @@ import { useAgent } from './agent-context.js';
  */
 
 // StoreKey + selector → ReadonlyStore<S>
-export function useAgentState<T, S>(
+export function useAgentState<T extends JsonValue, S>(
 	key: StoreKey<string, T>,
 	selector: (value: T) => S,
 ): ReadonlyStore<S>;
 
 // StoreKey alone → Store<T>
-export function useAgentState<T>(key: StoreKey<string, T>): Store<T>;
+export function useAgentState<T extends JsonValue>(
+	key: StoreKey<string, T>,
+): Store<T>;
 
 export function useAgentState(
 	storeName: string,

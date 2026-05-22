@@ -11,6 +11,7 @@ import {
 	todoExtension,
 	type ToolUseBlock,
 } from '@franklin/agent';
+import type { JsonObject, JsonValue } from '@franklin/lib';
 import { resolveToolRenderer } from '@franklin/react';
 import { describe, expect, it } from 'vitest';
 
@@ -21,8 +22,8 @@ import {
 
 function createBlock(
 	name: string,
-	args: Record<string, unknown>,
-	output?: unknown,
+	args: JsonObject,
+	output?: JsonValue,
 ): ToolUseBlock {
 	const block: ToolUseBlock = {
 		kind: 'toolUse',
@@ -42,11 +43,7 @@ function createBlock(
 	return { ...block, output };
 }
 
-function renderSummary(
-	name: string,
-	args: Record<string, unknown>,
-	output?: unknown,
-) {
+function renderSummary(name: string, args: JsonObject, output?: JsonValue) {
 	const entry = resolveToolRenderer(defaultToolRegistry, name);
 	if (entry == null) {
 		throw new Error(`Expected renderer for ${name}`);

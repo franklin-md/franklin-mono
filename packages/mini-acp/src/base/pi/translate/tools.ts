@@ -1,4 +1,5 @@
 import type { AgentTool, AgentToolResult } from '@earendil-works/pi-agent-core';
+import type { JsonObject } from '@franklin/lib';
 import type {
 	ToolDefinition,
 	ToolExecuteHandler,
@@ -31,7 +32,7 @@ export function bridgeTool(
 					type: 'toolCall',
 					id: toolCallId,
 					name: def.name,
-					arguments: (params ?? {}) as Record<string, unknown>,
+					arguments: (params ?? {}) as JsonObject,
 				},
 			});
 			return {

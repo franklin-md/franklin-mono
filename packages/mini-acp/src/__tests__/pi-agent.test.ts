@@ -1,3 +1,4 @@
+import type { JsonObject } from '@franklin/lib';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StopCode } from '../types/stop-code.js';
@@ -27,7 +28,7 @@ describe('createPiAgent', () => {
 							type: 'toolCall';
 							id: string;
 							name: string;
-							arguments: Record<string, unknown>;
+							arguments: JsonObject;
 						};
 					}): Promise<unknown>;
 				};

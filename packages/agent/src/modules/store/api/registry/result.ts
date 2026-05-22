@@ -1,3 +1,4 @@
+import type { JsonValue } from '@franklin/lib';
 import type { ForkMode } from '../sharing.js';
 import type { StoreMapping } from './mapping.js';
 import type { StoreRegistry } from './index.js';
@@ -41,7 +42,7 @@ export class StoreResult {
 					if (mode === 'copy') {
 						const newEntry = this.registry.create(
 							entry.sharing,
-							entry.store.get(),
+							entry.store.get() as JsonValue,
 						);
 						newMapping[name] = newEntry.ref;
 					}

@@ -1,4 +1,5 @@
 import type { ToolExecuteParams } from '@franklin/mini-acp';
+import type { JsonObject } from '@franklin/lib';
 import { toolCalls, turn, turnEnd } from '@franklin/mini-acp/mock';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -10,7 +11,7 @@ import type { ToolResultEvent } from '../api/handlers.js';
 import { toolSpec } from '../api/tool-spec.js';
 import { toolResultText } from './tool-result-text.js';
 
-type MockToolCall = { name: string; arguments?: Record<string, unknown> };
+type MockToolCall = { name: string; arguments?: JsonObject };
 
 function singleToolTurn(tool: MockToolCall) {
 	return turn([toolCalls([tool]), turnEnd()]);
@@ -112,20 +113,20 @@ describe('core extension tool observers', () => {
 		});
 	});
 
-	it('includes raw output for registered tools that return undefined', async () => {
-		const spec = toolSpec<'undefinedTool', Record<string, never>, undefined>(
-			'undefinedTool',
-			'Returns undefined',
+	it('includes raw output for registered tools that return null', async () => {
+		const spec = toolSpec<'nullTool', Record<string, never>, null>(
+			'nullTool',
+			'Returns null',
 			z.object({}),
 		);
 		const observer = createToolObserver();
 
 		await runCoreScenario({
-			turns: [singleToolTurn({ name: 'undefinedTool' })],
+			turns: [singleToolTurn({ name: 'nullTool' })],
 			extensions: [
 				(api) => {
 					api.registerTool(spec, {
-						execute: async () => undefined,
+						execute: async () => null,
 						render: () => ({
 							content: [{ type: 'text', text: 'ok' }],
 						}),
@@ -135,7 +136,7 @@ describe('core extension tool observers', () => {
 			],
 		});
 
-		expect(observer.toolResults[0]).toHaveProperty('output', undefined);
+		expect(observer.toolResults[0]).toHaveProperty('output', null);
 	});
 
 	it('still observes tool results when a registered tool throws', async () => {

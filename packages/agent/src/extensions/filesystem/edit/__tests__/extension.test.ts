@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
 	FILESYSTEM_ALLOW_ALL,
+	type JsonObject,
 	MemoryOsInfo,
 	type AbsolutePath,
 } from '@franklin/lib';
@@ -63,7 +64,7 @@ function compileEdit(env: ReconfigurableEnvironment) {
 
 type Compiled = Awaited<ReturnType<typeof compileEdit>>;
 
-async function executeTool(compiled: Compiled, args: Record<string, unknown>) {
+async function executeTool(compiled: Compiled, args: JsonObject) {
 	return compiled.middleware.server.toolExecute(
 		{
 			call: {

@@ -1,5 +1,9 @@
 import { reduceExtensions } from '@franklin/extensibility';
-import { MemoryOsInfo, type AbsolutePath } from '@franklin/lib';
+import {
+	MemoryOsInfo,
+	type AbsolutePath,
+	type JsonObject,
+} from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
@@ -93,11 +97,7 @@ function compileWeb(env: ReconfigurableEnvironment) {
 
 type Compiled = Awaited<ReturnType<typeof compileWeb>>;
 
-async function executeTool(
-	compiled: Compiled,
-	name: string,
-	args: Record<string, unknown>,
-) {
+async function executeTool(compiled: Compiled, name: string, args: JsonObject) {
 	return compiled.middleware.server.toolExecute(
 		{
 			call: {

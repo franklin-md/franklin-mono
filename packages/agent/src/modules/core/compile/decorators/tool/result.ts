@@ -1,9 +1,10 @@
 import type { ToolCall, ToolResult } from '@franklin/mini-acp';
+import type { JsonValue } from '@franklin/lib';
 
 import type { ToolResultEvent } from '../../../api/handlers.js';
 import type { RenderedToolOutput } from '../../../api/tool.js';
 
-export type ToolExecutionResult<TOutput = unknown> = {
+export type ToolExecutionResult<TOutput extends JsonValue = JsonValue> = {
 	readonly modelOutput: ToolResult;
 	readonly event: ToolResultEvent<TOutput>;
 };
@@ -21,7 +22,7 @@ export function fallbackExecutionResult(
 	};
 }
 
-export function registeredExecutionResult<TOutput>(
+export function registeredExecutionResult<TOutput extends JsonValue>(
 	call: ToolCall,
 	renderedOutput: RenderedToolOutput,
 	output: TOutput,
