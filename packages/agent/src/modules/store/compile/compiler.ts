@@ -63,7 +63,7 @@ export function createStoreCompiler(
 				entry.sharing = sharing;
 				// TODO: can we avoid this?
 				// TODO: Is BaseStore actually base type? OR is it concrete?
-				(entry.store as BaseStore<unknown>).setInitial(initial);
+				(entry.store as BaseStore<JsonValue>).setInitial(initial);
 			}
 
 			const stores = createStoreResult(seed.registry, mapping);

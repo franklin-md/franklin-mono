@@ -5,6 +5,14 @@ import type { StoreSnapshot } from './snapshot.js';
 import type { Sharing } from '../sharing.js';
 import type { StoreEntry } from './types.js';
 
+function createRegistryStore(initial?: JsonValue): StoreEntry['store'] {
+	const store = new BaseStore<JsonValue>(initial);
+	// StoreEntry erases heterogeneous store value types after the registry
+	// creates the JSON-typed store. Assigning directly makes TypeScript expand
+	// Immer's recursive Draft<JsonValue> deeply enough to hit TS2589.
+	return store as unknown as StoreEntry['store'];
+}
+
 /**
  * Central registry of all live store instances.
  *
@@ -26,7 +34,7 @@ export class StoreRegistry {
 	 */
 	create(sharing: Sharing, initial?: JsonValue): StoreEntry {
 		const ref = crypto.randomUUID();
-		const store = new BaseStore<unknown>(initial);
+		const store = createRegistryStore(initial);
 		const entry: StoreEntry = { ref, sharing, store };
 		this.add(entry);
 		this.persist(entry);
@@ -50,7 +58,7 @@ export class StoreRegistry {
 		if (!this.persister) return { issues: [] };
 		const { values, issues } = await this.persister.load();
 		for (const [ref, { value, sharing }] of values) {
-			this.add({ ref, sharing, store: new BaseStore<unknown>(value) });
+			this.add({ ref, sharing, store: createRegistryStore(value) });
 		}
 		return { issues };
 	}

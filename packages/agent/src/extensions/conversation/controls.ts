@@ -5,7 +5,7 @@ type ConversationControl = {
 };
 
 type ConversationControlStore = {
-	set(recipe: unknown): void;
+	set(recipe: (draft: ConversationTurn[]) => void): void;
 };
 
 export function createConversationControl(

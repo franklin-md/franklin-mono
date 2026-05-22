@@ -1,8 +1,9 @@
 import type { JsonValue } from '@franklin/lib';
-import type { ToolUseBlock } from '../types.js';
+import type { ConversationTurn, ToolUseBlock } from '../types.js';
 
 type ExpectJson<T extends JsonValue> = T;
 type _DefaultToolOutput = ExpectJson<NonNullable<ToolUseBlock['output']>>;
+type _ConversationTurnIsJson = ExpectJson<ConversationTurn>;
 
 const _toolUseBlock = {
 	kind: 'toolUse',
@@ -23,6 +24,20 @@ const _toolUseBlock = {
 
 const _json: JsonValue = _toolUseBlock;
 
+const _conversationTurn = {
+	id: 'turn-1',
+	timestamp: 1,
+	prompt: {
+		role: 'user',
+		content: [{ type: 'text', text: 'Check JSON shape' }],
+	},
+	response: {
+		blocks: [_toolUseBlock],
+	},
+} satisfies ConversationTurn;
+
+const _conversationJson: JsonValue = _conversationTurn;
+
 const _dateOutput = {
 	kind: 'toolUse',
 	call: {
@@ -37,5 +52,7 @@ const _dateOutput = {
 } satisfies ToolUseBlock;
 
 void (null as unknown as _DefaultToolOutput);
+void (null as unknown as _ConversationTurnIsJson);
 void _json;
+void _conversationJson;
 void _dateOutput;
