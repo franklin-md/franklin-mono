@@ -8,8 +8,8 @@ import type {
 import {
 	createMapFilePersister,
 	DebouncedPersister,
+	jsonCodec,
 	joinAbsolute,
-	rawCodec,
 	versioned,
 } from '@franklin/lib';
 import {
@@ -38,9 +38,7 @@ export function createStorage<S extends BaseState>(
 		500,
 	);
 
-	// Store snapshots are extension-composed and arbitrary, so the shared store
-	// registry can only persist a versioned envelope around the raw value.
-	const storeCodec = versioned().version(1, rawCodec<StoreSnapshot>()).build();
+	const storeCodec = versioned().version(1, jsonCodec<StoreSnapshot>()).build();
 	const storePersister = new DebouncedPersister(
 		createMapFilePersister<StoreSnapshot>(
 			filesystem,

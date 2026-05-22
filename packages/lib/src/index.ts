@@ -77,7 +77,6 @@ export type {
 	JsonValue,
 } from './json/index.js';
 export { jsonCodec } from './persistence/codec/json.js';
-export { rawCodec } from './persistence/codec/raw.js';
 export { zodCodec } from './persistence/codec/zod.js';
 export { versioned } from './persistence/codec/versioned.js';
 export type { Issue } from './persistence/issue/types.js';

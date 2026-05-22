@@ -1,6 +1,7 @@
 import type { StoreResult } from './api/registry/result.js';
 import type { StateHandle } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
+import type { JsonValue } from '@franklin/lib';
 import type { StoreMapping } from './api/registry/mapping.js';
 import type { Store } from './api/types.js';
 import type { StoreKey } from './api/key.js';
@@ -20,8 +21,10 @@ export const STORE_MAPPING: unique symbol = Symbol('store/mapping');
  * value type is inferred from the `StoreKey`.
  */
 export type StoreRuntime = BaseRuntime & {
-	getStore<X extends string, T>(key: StoreKey<X, T>): Store<T>;
-	getStore<T>(name: string): Store<T>;
+	getStore<X extends string, T extends JsonValue>(
+		key: StoreKey<X, T>,
+	): Store<T>;
+	getStore<T extends JsonValue = JsonValue>(name: string): Store<T>;
 	readonly [STORE_MAPPING]: StateHandle<StoreMapping>;
 };
 
@@ -35,7 +38,7 @@ function extractMapping(stores: StoreResult): StoreMapping {
 
 export function createStoreRuntime(stores: StoreResult): StoreRuntime {
 	return {
-		getStore<T>(nameOrKey: string): Store<T> {
+		getStore<T extends JsonValue = JsonValue>(nameOrKey: string): Store<T> {
 			const entry = stores.get(nameOrKey);
 			if (!entry) {
 				throw new Error(`Store "${nameOrKey}" was not registered`);
