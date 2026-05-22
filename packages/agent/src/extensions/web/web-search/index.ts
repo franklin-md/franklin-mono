@@ -11,12 +11,7 @@ export type {
 	WebSearchProviderRequest,
 } from './provider.js';
 export type {
-	WebSearchErrorOutput,
 	WebSearchExtensionOptions,
 	WebSearchOutput,
-	WebSearchProviderFailure,
-	WebSearchProviderMetadata,
 	WebSearchResult,
-	WebSearchSuccessOutput,
 } from './types.js';
-export { DEFAULT_WEB_SEARCH_OPTIONS } from './types.js';

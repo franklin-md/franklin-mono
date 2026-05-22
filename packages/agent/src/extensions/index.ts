@@ -43,8 +43,6 @@ export { bashExtension } from './terminal/index.js';
 // Web
 export {
 	DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
-	DEFAULT_WEB_FETCH_OPTIONS,
-	DEFAULT_WEB_SEARCH_OPTIONS,
 	EXA_WEB_SEARCH_PROVIDER_ID,
 	createDuckDuckGoWebSearchProvider,
 	createExaWebSearchProvider,
@@ -57,16 +55,11 @@ export {
 export type {
 	WebExtensionOptions,
 	WebFetchExtensionOptions,
-	WebFetchProcessedResult,
-	WebSearchErrorOutput,
 	WebSearchOutput,
 	WebSearchProvider,
-	WebSearchProviderFailure,
-	WebSearchProviderMetadata,
 	WebSearchProviderRequest,
 	WebSearchExtensionOptions,
 	WebSearchResult,
-	WebSearchSuccessOutput,
 } from './web/index.js';
 
 // Spawn

@@ -6,15 +6,31 @@ import type {
 	StoreKey,
 	StoreValueType,
 	Todo,
+	WebExtensionOptions,
+	WebFetchExtensionOptions,
+	WebSearchExtensionOptions,
+	WebSearchOutput,
+	WebSearchProvider,
+	WebSearchProviderRequest,
+	WebSearchResult,
 } from '../index.js';
 import {
+	DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
+	EXA_WEB_SEARCH_PROVIDER_ID,
 	conversationTitleExtension,
+	createDuckDuckGoWebSearchProvider,
+	createExaWebSearchProvider,
 	createStore,
+	createWebExtension,
 	defineExtension,
 	statusExtension,
 	storeKey,
 	todoExtension,
 	toolSpec,
+	webFetchExtension,
+	webSearchExtension,
+	webSearchProviders,
+	webSearchToolExtension,
 } from '../index.js';
 // @ts-expect-error private core runtime state symbol must stay out of root.
 import { CORE_STATE as _RootCoreState } from '../index.js';
@@ -66,6 +82,20 @@ import type { RuntimeAgentState as _RootRuntimeAgentState } from '../index.js';
 import type { Session as _RootSession } from '../index.js';
 // @ts-expect-error MaybePromise is an internal utility, not public Agent API.
 import type { MaybePromise as _RootMaybePromise } from '../index.js';
+// @ts-expect-error web default constants are internal implementation details.
+import { DEFAULT_WEB_FETCH_OPTIONS as _RootDefaultWebFetchOptions } from '../index.js';
+// @ts-expect-error web default constants are internal implementation details.
+import { DEFAULT_WEB_SEARCH_OPTIONS as _RootDefaultWebSearchOptions } from '../index.js';
+// @ts-expect-error web fetch processing shape is internal tool implementation detail.
+import type { WebFetchProcessedResult as _RootWebFetchProcessedResult } from '../index.js';
+// @ts-expect-error web search output variants stay behind the public union.
+import type { WebSearchSuccessOutput as _RootWebSearchSuccessOutput } from '../index.js';
+// @ts-expect-error web search output variants stay behind the public union.
+import type { WebSearchErrorOutput as _RootWebSearchErrorOutput } from '../index.js';
+// @ts-expect-error web search provider metadata shape stays behind the public union.
+import type { WebSearchProviderMetadata as _RootWebSearchProviderMetadata } from '../index.js';
+// @ts-expect-error web search provider failure shape stays behind the public union.
+import type { WebSearchProviderFailure as _RootWebSearchProviderFailure } from '../index.js';
 
 const _statusKey: StoreKey<'status', StatusState> = statusExtension.keys.status;
 const _todoKey: StoreKey<'todo', Todo[]> = todoExtension.keys.todo;
@@ -83,6 +113,35 @@ const _titleValue = null as unknown as _TitleValue;
 const _statusState: StatusState = _statusValue;
 const _todos: Todo[] = _todoValue;
 const _title: ConversationTitle = _titleValue;
+const _webOptions: WebExtensionOptions = { fetch: {}, search: {} };
+const _webFetchOptions: WebFetchExtensionOptions = {
+	timeoutMs: 1,
+	maxRedirects: 1,
+	maxOutputChars: 1,
+};
+const _webSearchOptions: WebSearchExtensionOptions = {
+	timeoutMs: 1,
+	maxRedirects: 1,
+	maxResults: 1,
+	maxRetries: 1,
+	retryDelayMsRange: [1, 2],
+};
+const _webSearchResult: WebSearchResult = {
+	title: 'Title',
+	url: 'https://example.com',
+	snippet: 'Snippet',
+};
+const _webSearchOutput: WebSearchOutput = {
+	kind: 'success',
+	query: 'query',
+	provider: { name: 'Provider' },
+	results: [_webSearchResult],
+};
+const _webSearchProvider: WebSearchProvider = {
+	name: 'Provider',
+	search: async (_request) => [],
+};
+const _webSearchRequest = null as unknown as WebSearchProviderRequest;
 
 void _statusKey;
 void _todoKey;
@@ -90,12 +149,27 @@ void _titleKey;
 void _statusState;
 void _todos;
 void _title;
+void _webOptions;
+void _webFetchOptions;
+void _webSearchOptions;
+void _webSearchOutput;
+void _webSearchProvider;
+void _webSearchRequest;
 
 const _guardKey: StoreKey<'guard', number> = storeKey<'guard', number>('guard');
 void _guardKey;
 void createStore(0);
+void createWebExtension;
+void createDuckDuckGoWebSearchProvider;
+void createExaWebSearchProvider;
 void defineExtension<[]>()(() => {});
 void toolSpec('guard', 'typecheck guard', z.object({}));
+void DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID;
+void EXA_WEB_SEARCH_PROVIDER_ID;
+void webFetchExtension;
+void webSearchExtension;
+void webSearchProviders;
+void webSearchToolExtension;
 
 void _RootCoreState;
 void _RootEnvironmentState;
@@ -108,3 +182,5 @@ void _RootCreateCoreCompiler;
 void _RootSerializeTool;
 void _RootToToolInputSchema;
 void _RootResolveToolOutput;
+void _RootDefaultWebFetchOptions;
+void _RootDefaultWebSearchOptions;

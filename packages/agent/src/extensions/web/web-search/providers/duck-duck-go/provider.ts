@@ -25,7 +25,7 @@ async function searchWithDuckDuckGo({
 
 	const retrying = withRetry({
 		maxAttempts: options.maxRetries,
-		delayMsRange: options.retryDelayMsRange,
+		delayMsRange: [options.retryDelayMsRange[0], options.retryDelayMsRange[1]],
 	})(async (request) => {
 		const response = await fetch(request);
 		if (response.status < 200 || response.status >= 300) {
