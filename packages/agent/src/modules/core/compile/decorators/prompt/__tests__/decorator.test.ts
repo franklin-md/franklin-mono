@@ -13,6 +13,7 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
+import { createToolRegistry } from '../../tool/index.js';
 import type { AgentState } from '../../../../agent-state/index.js';
 
 const runtime = createTestRuntime();
@@ -41,10 +42,12 @@ function text(message: UserMessage): string {
 function createTestAgentState(
 	registrations = createCoreRegistry(),
 ): AgentState {
+	const getRuntime = () => runtime;
 	return createAgentState({
 		snapshot: emptySessionSnapshot(),
 		registrations,
-		getRuntime: () => runtime,
+		getRuntime,
+		toolRegistry: createToolRegistry(registrations, getRuntime),
 	});
 }
 
@@ -53,7 +56,7 @@ function stubClient(calls: string[], agentState?: AgentState): MiniACPClient {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async (patch: ContextPatch) => {
 			calls.push(`setContext:${patch.systemPrompt ?? ''}`);
-			agentState?.promptContext.apply(patch);
+			agentState?.contextLedger.apply(patch);
 		}),
 		prompt: vi.fn(async function* (message: UserMessage) {
 			calls.push(`client.prompt:${text(message)}`);

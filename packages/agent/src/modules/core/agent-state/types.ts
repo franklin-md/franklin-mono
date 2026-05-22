@@ -1,14 +1,14 @@
 import type { Context, Usage } from '@franklin/mini-acp';
 import type { UsageTracker } from '@franklin/mini-acp/session';
 import type { SessionSnapshot } from '../state.js';
-import type { PromptContextLedger } from './prompt-context.js';
+import type { ContextLedger } from './context-ledger.js';
 
 export interface SystemPromptBuilder {
 	build(): Promise<string | undefined>;
 }
 
 /**
- * Internal core prompt-context ledger.
+ * Internal core context ledger.
  *
  * AgentState separates the context Mini-ACP has actually acknowledged from the
  * context core wants to send next. A hydrated `SessionSnapshot` seeds the next
@@ -23,7 +23,7 @@ export interface SystemPromptBuilder {
 export interface AgentState {
 	getAgentContext(): Context;
 	getSnapshot(): SessionSnapshot;
-	readonly promptContext: PromptContextLedger;
+	readonly contextLedger: ContextLedger;
 	readonly usageTracker: UsageTracker;
 	add(delta: Usage): void;
 }

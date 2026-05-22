@@ -159,7 +159,7 @@ describe('core runtime protocol state', () => {
 		}
 	});
 
-	it('folds acknowledged pre-prompt config updates into the first full prompt context', async () => {
+	it('folds acknowledged pre-prompt config updates into the first full context', async () => {
 		const seedMessage = {
 			role: 'user' as const,
 			content: [{ type: 'text' as const, text: 'seed' }],

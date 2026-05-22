@@ -59,8 +59,8 @@ Each layer wraps the typed Mini-ACP client/server pair after connect, not the ra
 
 ### Agent State
 
-The core runtime keeps an internal `AgentState` as the live prompt-context
-ledger. It is responsible for distinguishing the Mini-ACP `Context` that has
+The core runtime keeps an internal `AgentState` as the live context ledger. It
+is responsible for distinguishing the Mini-ACP `Context` that has
 actually been sent and acknowledged from the context core wants to send before
 the next prompt. A hydrated `SessionSnapshot` seeds that next desired context;
 it is not treated as already sent, because a restored Mini-ACP agent begins with

@@ -11,6 +11,7 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../compile/decorators/__tests__/registry.js';
+import { createToolRegistry } from '../../compile/decorators/tool/index.js';
 import type { SessionSnapshot } from '../../state.js';
 
 const runtime = createTestRuntime();
@@ -36,10 +37,22 @@ function stubClient(
 	};
 }
 
+type CreateStateInput = Omit<
+	Parameters<typeof createAgentState>[0],
+	'toolRegistry'
+>;
+
+function createState(input: CreateStateInput) {
+	return createAgentState({
+		...input,
+		toolRegistry: createToolRegistry(input.registrations, input.getRuntime),
+	});
+}
+
 describe('createAgentState', () => {
-	it('syncs registered system prompt changes through the prompt-context ledger', async () => {
+	it('syncs registered system prompt changes through the context ledger', async () => {
 		const client = stubClient();
-		const agentState = createAgentState({
+		const agentState = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry((api) => {
 				api.on('systemPrompt', (systemPrompt) => {
@@ -49,8 +62,8 @@ describe('createAgentState', () => {
 			getRuntime: () => runtime,
 		});
 
-		await agentState.promptContext.sync(client);
-		await agentState.promptContext.sync(client);
+		await agentState.contextLedger.sync(client);
+		await agentState.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({
 			systemPrompt: 'system',
@@ -60,16 +73,16 @@ describe('createAgentState', () => {
 		});
 	});
 
-	it('does not treat absent handlers as a request to clear acknowledged prompt context', async () => {
+	it('does not treat absent handlers as a request to clear acknowledged context', async () => {
 		const client = stubClient();
-		const agentState = createAgentState({
+		const agentState = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(),
 			getRuntime: () => runtime,
 		});
-		agentState.promptContext.apply({ systemPrompt: 'external' });
+		agentState.contextLedger.apply({ systemPrompt: 'external' });
 
-		await agentState.promptContext.sync(client);
+		await agentState.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({
 			systemPrompt: 'external',
@@ -79,13 +92,13 @@ describe('createAgentState', () => {
 		});
 	});
 
-	it('keeps system prompt changes pending until prompt context sync succeeds', async () => {
+	it('keeps system prompt changes pending until context sync succeeds', async () => {
 		const setContext = vi
 			.fn<MiniACPClient['setContext']>()
 			.mockRejectedValueOnce(new Error('transient failure'))
 			.mockResolvedValueOnce(undefined);
 		const client = stubClient(setContext);
-		const agentState = createAgentState({
+		const agentState = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry((api) => {
 				api.on('systemPrompt', (systemPrompt) => {
@@ -95,10 +108,10 @@ describe('createAgentState', () => {
 			getRuntime: () => runtime,
 		});
 
-		await expect(agentState.promptContext.sync(client)).rejects.toThrow(
+		await expect(agentState.contextLedger.sync(client)).rejects.toThrow(
 			'transient failure',
 		);
-		await agentState.promptContext.sync(client);
+		await agentState.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenNthCalledWith(1, {
 			systemPrompt: 'retryable',
@@ -114,9 +127,9 @@ describe('createAgentState', () => {
 		});
 	});
 
-	it('keeps hydrated session context pending until prompt context sync succeeds', async () => {
+	it('keeps hydrated session context pending until context sync succeeds', async () => {
 		const client = stubClient();
-		const agentState = createAgentState({
+		const agentState = createState({
 			snapshot: {
 				messages: [userMessage],
 				llmConfig: { provider: 'test-provider', model: 'test-model' },
@@ -151,7 +164,7 @@ describe('createAgentState', () => {
 			llmConfig: { model: 'test-model' },
 		});
 
-		await agentState.promptContext.sync(client);
+		await agentState.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledWith({
 			systemPrompt: 'system',
@@ -172,13 +185,13 @@ describe('createAgentState', () => {
 		expect(agentState.getAgentContext().tools).toHaveLength(1);
 	});
 
-	it('retries the same desired prompt context after setContext fails', async () => {
+	it('retries the same desired context after setContext fails', async () => {
 		const setContext = vi
 			.fn<MiniACPClient['setContext']>()
 			.mockRejectedValueOnce(new Error('transient failure'))
 			.mockResolvedValueOnce(undefined);
 		const client = stubClient(setContext);
-		const agentState = createAgentState({
+		const agentState = createState({
 			snapshot: {
 				messages: [userMessage],
 				llmConfig: { model: 'test-model' },
@@ -192,7 +205,7 @@ describe('createAgentState', () => {
 			getRuntime: () => runtime,
 		});
 
-		await expect(agentState.promptContext.sync(client)).rejects.toThrow(
+		await expect(agentState.contextLedger.sync(client)).rejects.toThrow(
 			'transient failure',
 		);
 		expect(agentState.getAgentContext()).toEqual({
@@ -202,7 +215,7 @@ describe('createAgentState', () => {
 			config: {},
 		});
 
-		await agentState.promptContext.sync(client);
+		await agentState.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledTimes(2);
 		expect(client.setContext).toHaveBeenNthCalledWith(1, {
@@ -222,7 +235,7 @@ describe('createAgentState', () => {
 
 	it('does not resend messages that were already tracked through the prompt stream', async () => {
 		const client = stubClient();
-		const agentState = createAgentState({
+		const agentState = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(),
 			getRuntime: () => runtime,
@@ -232,10 +245,10 @@ describe('createAgentState', () => {
 			content: [{ type: 'text' as const, text: 'done' }],
 		};
 
-		await agentState.promptContext.sync(client);
-		agentState.promptContext.append(userMessage);
-		agentState.promptContext.append(assistantMessage);
-		await agentState.promptContext.sync(client);
+		await agentState.contextLedger.sync(client);
+		agentState.contextLedger.append(userMessage);
+		agentState.contextLedger.append(assistantMessage);
+		await agentState.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({
 			systemPrompt: '',
@@ -249,9 +262,9 @@ describe('createAgentState', () => {
 		]);
 	});
 
-	it('does not send a prompt context patch when desired context already matches', async () => {
+	it('does not send a context patch when desired context already matches', async () => {
 		const client = stubClient();
-		const agentState = createAgentState({
+		const agentState = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry((api) => {
 				api.on('systemPrompt', (systemPrompt) => {
@@ -261,8 +274,8 @@ describe('createAgentState', () => {
 			getRuntime: () => runtime,
 		});
 
-		await agentState.promptContext.sync(client);
-		await agentState.promptContext.sync(client);
+		await agentState.contextLedger.sync(client);
+		await agentState.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({
 			systemPrompt: 'stable',
@@ -272,10 +285,10 @@ describe('createAgentState', () => {
 		});
 	});
 
-	it('sends only the changed system prompt after initial prompt context sync', async () => {
+	it('sends only the changed system prompt after initial context sync', async () => {
 		let promptText = 'v1';
 		const client = stubClient();
-		const agentState = createAgentState({
+		const agentState = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry((api) => {
 				api.on('systemPrompt', (systemPrompt) => {
@@ -285,9 +298,9 @@ describe('createAgentState', () => {
 			getRuntime: () => runtime,
 		});
 
-		await agentState.promptContext.sync(client);
+		await agentState.contextLedger.sync(client);
 		promptText = 'v2';
-		await agentState.promptContext.sync(client);
+		await agentState.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenNthCalledWith(1, {
 			systemPrompt: 'v1',

@@ -7,7 +7,7 @@ import { createPromptBuilder } from './build-prompt/index.js';
 import { createPromptObserver } from './observer/index.js';
 
 export function createPromptDecorator<Runtime extends BaseRuntime>(
-	agentState: Pick<AgentState, 'promptContext'>,
+	agentState: Pick<AgentState, 'contextLedger'>,
 	registrations: RegistryView<CoreSignature, Runtime>,
 	getRuntime: () => Runtime,
 ): ProtocolDecorator {
@@ -23,7 +23,7 @@ export function createPromptDecorator<Runtime extends BaseRuntime>(
 			return {
 				...c,
 				async *prompt(message) {
-					await agentState.promptContext.sync(c);
+					await agentState.contextLedger.sync(c);
 					const fullPrompt = await buildPrompt(message);
 					yield* observePrompt(c.prompt(fullPrompt));
 				},

@@ -13,24 +13,30 @@ import type { SystemPromptBuilder } from './types.js';
 
 type LLMConfigSnapshot = SessionSnapshot['llmConfig'];
 
-type PromptContextLedgerInput = {
+export interface ToolDefinitionProvider {
+	definitions(): readonly ToolDefinition[];
+}
+
+type ContextLedgerInput = {
 	readonly snapshot: SessionSnapshot;
 	readonly systemPrompt: SystemPromptBuilder;
-	readonly tools: readonly ToolDefinition[];
+	readonly toolRegistry: ToolDefinitionProvider;
 };
 
-export class PromptContextLedger extends ContextTracker {
+export class ContextLedger extends ContextTracker {
 	private readonly acknowledged = new ContextTracker();
 	private readonly target = new ContextTracker();
 	private readonly systemPrompt: SystemPromptBuilder;
-	private readonly tools: readonly ToolDefinition[];
+	private readonly toolRegistry: ToolDefinitionProvider;
 	private hasSentContext = false;
 
-	constructor({ snapshot, systemPrompt, tools }: PromptContextLedgerInput) {
+	constructor({ snapshot, systemPrompt, toolRegistry }: ContextLedgerInput) {
 		super();
 		this.systemPrompt = systemPrompt;
-		this.tools = tools;
-		this.target.apply(contextFromSnapshot(snapshot, tools));
+		this.toolRegistry = toolRegistry;
+		this.target.apply(
+			contextFromSnapshot(snapshot, toolRegistry.definitions()),
+		);
 	}
 
 	override get(): Context {
@@ -82,7 +88,7 @@ export class PromptContextLedger extends ContextTracker {
 		return {
 			systemPrompt: systemPrompt ?? base.systemPrompt,
 			messages: [...base.messages],
-			tools: [...this.tools],
+			tools: [...this.toolRegistry.definitions()],
 			config: { ...base.config },
 		};
 	}

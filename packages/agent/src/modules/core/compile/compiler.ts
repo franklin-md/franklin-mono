@@ -19,12 +19,13 @@ export function createCoreCompiler(
 			registry: RegistryView<CoreSignature, ContextRuntime>,
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CoreRuntime> => {
+			const toolRegistry = createToolRegistry(registry, getRuntime);
 			const agentState = createAgentState({
 				snapshot,
 				registrations: registry,
 				getRuntime,
+				toolRegistry,
 			});
-			const toolRegistry = createToolRegistry(registry, getRuntime);
 			const decorator = createAgentDecorator(
 				agentState,
 				registry,

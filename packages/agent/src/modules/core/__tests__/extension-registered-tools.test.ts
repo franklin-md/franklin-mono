@@ -32,7 +32,7 @@ describe('core extension registered tools', () => {
 		}
 	});
 
-	it('does not resend registered tools after the initial prompt context sync', async () => {
+	it('does not resend registered tools after the initial context sync', async () => {
 		const scenario = await createCoreScenario({
 			extensions: [
 				(api) => {
