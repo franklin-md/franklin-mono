@@ -100,10 +100,6 @@ async function runWebSearchProviders(
 function toProviderMetadata(
 	provider: WebSearchProvider,
 ): WebSearchProviderMetadata {
-	if (provider.id === undefined) {
-		return { name: provider.name };
-	}
-
 	return {
 		id: provider.id,
 		name: provider.name,

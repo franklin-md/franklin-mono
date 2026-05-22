@@ -56,7 +56,7 @@ export const webToolRenderers = [
 function getSearchProviderIcon(
 	output: WebSearchOutput | undefined,
 ): ToolSummaryIcon {
-	if (output?.kind !== 'success' || output.provider.id == null) {
+	if (output?.kind !== 'success') {
 		return Globe;
 	}
 

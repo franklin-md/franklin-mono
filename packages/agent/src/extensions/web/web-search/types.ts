@@ -13,7 +13,7 @@ export type WebSearchResult = {
 };
 
 export type WebSearchProviderMetadata = {
-	readonly id?: string;
+	readonly id: string;
 	readonly name: string;
 };
 

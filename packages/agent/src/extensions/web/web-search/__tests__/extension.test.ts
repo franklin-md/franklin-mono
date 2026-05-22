@@ -316,6 +316,7 @@ describe('webSearchExtension', () => {
 			throw new Error('later provider should not fetch');
 		});
 		const customProvider: WebSearchProvider = {
+			id: 'custom',
 			name: 'Custom',
 			search: vi.fn(async () => [
 				{
@@ -345,7 +346,7 @@ describe('webSearchExtension', () => {
 		expect(getResultText(toolResult)).toContain('https://custom.test/');
 		expect(toolResults[0]?.output).toEqual({
 			kind: 'success',
-			provider: { name: 'Custom' },
+			provider: { id: 'custom', name: 'Custom' },
 			query: 'custom',
 			results: [
 				{
@@ -362,6 +363,7 @@ describe('webSearchExtension', () => {
 			throw new Error('provider should not fetch');
 		});
 		const emptyProvider: WebSearchProvider = {
+			id: 'empty',
 			name: 'Empty',
 			search: vi.fn(async () => []),
 		};

@@ -11,7 +11,7 @@ export type WebSearchProviderRequest = {
 };
 
 export type WebSearchProvider = {
-	readonly id?: string;
+	readonly id: string;
 	readonly name: string;
 	search(
 		request: WebSearchProviderRequest,

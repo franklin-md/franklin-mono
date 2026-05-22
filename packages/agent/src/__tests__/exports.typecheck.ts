@@ -134,10 +134,11 @@ const _webSearchResult: WebSearchResult = {
 const _webSearchOutput: WebSearchOutput = {
 	kind: 'success',
 	query: 'query',
-	provider: { name: 'Provider' },
+	provider: { id: 'provider', name: 'Provider' },
 	results: [_webSearchResult],
 };
 const _webSearchProvider: WebSearchProvider = {
+	id: 'provider',
 	name: 'Provider',
 	search: async (_request) => [],
 };
