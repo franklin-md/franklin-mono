@@ -88,8 +88,8 @@ export function trackClient(
 	return {
 		...decorated,
 		async setContext(context) {
+			await client.setContext(context);
 			tracker.apply(context);
-			return client.setContext(context);
 		},
 	};
 }

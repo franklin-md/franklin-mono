@@ -2,19 +2,17 @@ import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type { CoreSignature } from '../api/api.js';
 import { buildSystemPromptAssembler } from '../compile/decorators/prompt/system-prompt/assembler/index.js';
 import { bindRegisteredEventHandlers } from '../compile/registrations/index.js';
-import type { RuntimeSystemPromptBuilder } from './types.js';
+import type { SystemPromptBuilder } from './types.js';
 
 type CreateSystemPromptBuilderInput<Runtime extends BaseRuntime> = {
 	readonly registrations: RegistryView<CoreSignature, Runtime>;
 	readonly getRuntime: () => Runtime;
-	readonly getLastSentSystemPrompt: () => string;
 };
 
 export function createSystemPromptBuilder<Runtime extends BaseRuntime>({
 	registrations,
 	getRuntime,
-	getLastSentSystemPrompt,
-}: CreateSystemPromptBuilderInput<Runtime>): RuntimeSystemPromptBuilder {
+}: CreateSystemPromptBuilderInput<Runtime>): SystemPromptBuilder {
 	const handlers = bindRegisteredEventHandlers(
 		registrations,
 		'systemPrompt',
@@ -26,20 +24,13 @@ export function createSystemPromptBuilder<Runtime extends BaseRuntime>({
 
 	return {
 		async build() {
-			const systemPrompt = await assembler.assemble();
-			return {
-				systemPrompt,
-				changed: systemPrompt !== getLastSentSystemPrompt(),
-			};
+			return assembler.assemble();
 		},
 	};
 }
 
-const emptySystemPromptBuilder: RuntimeSystemPromptBuilder = {
+const emptySystemPromptBuilder: SystemPromptBuilder = {
 	async build() {
-		return {
-			systemPrompt: '',
-			changed: false,
-		};
+		return undefined;
 	},
 };

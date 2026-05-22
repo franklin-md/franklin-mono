@@ -211,6 +211,28 @@ describe('trackClient', () => {
 		expect(inner.setContext).toHaveBeenCalled();
 	});
 
+	it('does not track setContext until the client acknowledges it', async () => {
+		const tracker = seededTracker();
+		const inner: MuClient = {
+			initialize: vi.fn(async () => {}),
+			cancel: vi.fn(async () => {}),
+			setContext: vi.fn(async () => {
+				throw new Error('setContext failed');
+			}),
+			async *prompt(): AsyncGenerator<StreamEvent> {},
+		};
+		const tracked = trackClient(tracker, inner);
+
+		await expect(
+			tracked.setContext({
+				systemPrompt: 'new',
+				messages: [],
+			}),
+		).rejects.toThrow('setContext failed');
+
+		expect(tracker.get().systemPrompt).toBe('test');
+	});
+
 	it('tracks user messages and updates via prompt', async () => {
 		const tracker = seededTracker();
 		const inner: MuClient = {
