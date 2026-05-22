@@ -42,7 +42,7 @@ export const webToolRenderers = [
 	}),
 	createToolRenderer(webExtension.tools.searchWeb, {
 		summary: ({ args, block }) => {
-			if (block.output?.kind !== 'success') {
+			if (block.output == null) {
 				return null;
 			}
 
@@ -57,10 +57,10 @@ export const webToolRenderers = [
 	}),
 ] satisfies ToolRendererRegistryEntries;
 
-function getSearchProviderIcon(
-	output: WebSearchOutput | undefined,
-): ToolSummaryIcon {
-	return output?.kind === 'success'
-		? (searchProviderIcons[output.provider.id] ?? Globe)
-		: Globe;
+function getSearchProviderIcon(output: WebSearchOutput): ToolSummaryIcon {
+	if (output.kind !== 'success') {
+		return Globe;
+	}
+
+	return searchProviderIcons[output.provider.id] ?? Globe;
 }
