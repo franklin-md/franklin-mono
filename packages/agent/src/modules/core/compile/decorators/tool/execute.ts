@@ -1,7 +1,6 @@
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { MiniACPAgent } from '@franklin/mini-acp';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
-import { notifyToolCall, notifyToolResult } from './observers.js';
 import { executeRegisteredToolCall } from './registered.js';
 import { fallbackExecutionResult } from './result.js';
 import type { ToolLayer } from './types.js';
@@ -10,7 +9,7 @@ export function buildToolExecuteMiddleware<Runtime extends BaseRuntime>(
 	layer: ToolLayer<Runtime>,
 ): MethodMiddleware<MiniACPAgent['toolExecute']> {
 	return async (params, next) => {
-		notifyToolCall(layer.observers, params);
+		layer.observers.toolCall.notify(params);
 
 		const tool = layer.tools.find((t) => t.name === params.call.name);
 		const execution = tool
@@ -22,7 +21,7 @@ export function buildToolExecuteMiddleware<Runtime extends BaseRuntime>(
 				)
 			: fallbackExecutionResult(await next(params), params.call);
 
-		notifyToolResult(layer.observers, execution.event);
+		layer.observers.toolResult.notify(execution.event);
 
 		return execution.modelOutput;
 	};
