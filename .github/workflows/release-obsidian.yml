@@ -22,7 +22,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+
+      - name: Install project npm
+        run: |
+          npm_spec="$(node -p 'require("./package.json").packageManager')"
+          cd /tmp
+          npm install --global "$npm_spec"
 
       - run: npm ci
 
