@@ -22,8 +22,47 @@ describe('core extension registered tools', () => {
 		});
 
 		try {
+			expect(scenario.mock.context().tools).toEqual([]);
+			await scenario.collectPrompt();
+
 			expect(scenario.mock.context().tools).toHaveLength(1);
 			expect(scenario.mock.context().tools[0]?.name).toBe('my_tool');
+		} finally {
+			await scenario.dispose();
+		}
+	});
+
+	it('does not resend registered tools after the initial prompt context sync', async () => {
+		const scenario = await createCoreScenario({
+			extensions: [
+				(api) => {
+					api.registerTool(
+						toolSpec('stable_tool', 'Stable tool', z.object({})),
+						{
+							execute: async () => 'ok',
+						},
+					);
+				},
+			],
+		});
+
+		try {
+			await scenario.collectPrompt('first');
+			await scenario.collectPrompt('second');
+
+			expect(scenario.mock.calls().setContext).toEqual([
+				{
+					systemPrompt: '',
+					messages: [],
+					tools: [
+						expect.objectContaining({
+							name: 'stable_tool',
+							description: 'Stable tool',
+						}),
+					],
+					config: {},
+				},
+			]);
 		} finally {
 			await scenario.dispose();
 		}

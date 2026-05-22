@@ -278,18 +278,21 @@ describe('core extension system prompt handlers', () => {
 		).toEqual(['hello', ' [injected]']);
 	});
 
-	it('updates the system prompt with a context patch instead of resending messages', async () => {
+	it('updates a changed system prompt with a context patch instead of resending messages', async () => {
+		let value = 'initial';
 		const scenario = await createCoreScenario({
 			extensions: [
 				(api) => {
 					api.on('systemPrompt', (systemPrompt) => {
-						systemPrompt.setPart('dynamic');
+						systemPrompt.setPart(value);
 					});
 				},
 			],
 		});
 
 		try {
+			await scenario.collectPrompt();
+			value = 'dynamic';
 			await scenario.collectPrompt();
 
 			const promptPatch = scenario.mock

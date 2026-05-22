@@ -78,7 +78,7 @@ describe('createPromptDecorator', () => {
 			// Drain the stream so the prompt flow runs.
 		}
 
-		expect(calls).toEqual(['client.prompt:hello']);
+		expect(calls).toEqual(['setContext:', 'client.prompt:hello']);
 	});
 
 	it('syncs system prompt, builds user prompt, then observes the response stream', async () => {

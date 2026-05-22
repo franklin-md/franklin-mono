@@ -35,8 +35,6 @@ export function createCoreCompiler(
 			const client = await createAgentClient({
 				connectAgent,
 				decorator,
-				session: snapshot,
-				tools: toolRegistry.definitions(),
 			});
 
 			return createCoreRuntime({

@@ -1,7 +1,9 @@
 import { StopCode, ZERO_USAGE, type Usage } from '@franklin/mini-acp';
 import { text, turn, turnEnd } from '@franklin/mini-acp/mock';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import type { CoreEvent } from '../runtime/index.js';
+import { toolSpec } from '../api/tool-spec.js';
 import {
 	createCoreScenario,
 	defaultUserPrompt,
@@ -39,6 +41,61 @@ describe('core runtime protocol state', () => {
 			expect(scenario.runtime.cancel).toBeDefined();
 			expect(scenario.runtime.coreEvents.subscribe).toBeDefined();
 			expect(scenario.mock.calls().initialize).toBe(1);
+			expect(scenario.mock.calls().setContext).toEqual([]);
+		} finally {
+			await scenario.dispose();
+		}
+	});
+
+	it('sends hydrated context through the prompt sync path before the first turn', async () => {
+		const seedMessage = {
+			role: 'user' as const,
+			content: [{ type: 'text' as const, text: 'seed' }],
+		};
+		const scenario = await createCoreScenario({
+			state: {
+				core: {
+					messages: [seedMessage],
+					llmConfig: {
+						model: 'seed-model',
+						provider: 'seed-provider',
+					},
+					usage: ZERO_USAGE,
+				},
+			},
+			extensions: [
+				(api) => {
+					api.on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart('system');
+					});
+					api.registerTool(toolSpec('seed_tool', 'Seed tool', z.object({})), {
+						execute: async () => 'ok',
+					});
+				},
+			],
+		});
+
+		try {
+			expect(scenario.mock.calls().setContext).toEqual([]);
+
+			await scenario.collectPrompt('first');
+
+			expect(scenario.mock.calls().setContext).toEqual([
+				{
+					systemPrompt: 'system',
+					messages: [seedMessage],
+					tools: [
+						expect.objectContaining({
+							name: 'seed_tool',
+							description: 'Seed tool',
+						}),
+					],
+					config: {
+						model: 'seed-model',
+						provider: 'seed-provider',
+					},
+				},
+			]);
 		} finally {
 			await scenario.dispose();
 		}
@@ -66,6 +123,112 @@ describe('core runtime protocol state', () => {
 			});
 		} finally {
 			unsubscribe();
+			await scenario.dispose();
+		}
+	});
+
+	it('does not resend llm config from prompt sync after a config update is acknowledged', async () => {
+		const scenario = await createCoreScenario();
+
+		try {
+			await scenario.collectPrompt('first');
+			await scenario.runtime.setLLMConfig({
+				model: 'updated-model',
+				provider: 'updated-provider',
+				apiKey: 'secret-key',
+			});
+			await scenario.collectPrompt('second');
+
+			expect(scenario.mock.calls().setContext).toEqual([
+				{
+					systemPrompt: '',
+					messages: [],
+					tools: [],
+					config: {},
+				},
+				{
+					config: {
+						model: 'updated-model',
+						provider: 'updated-provider',
+						apiKey: 'secret-key',
+					},
+				},
+			]);
+		} finally {
+			await scenario.dispose();
+		}
+	});
+
+	it('folds acknowledged pre-prompt config updates into the first full prompt context', async () => {
+		const seedMessage = {
+			role: 'user' as const,
+			content: [{ type: 'text' as const, text: 'seed' }],
+		};
+		const scenario = await createCoreScenario({
+			state: {
+				core: {
+					messages: [seedMessage],
+					llmConfig: { model: 'seed-model' },
+					usage: ZERO_USAGE,
+				},
+			},
+		});
+
+		try {
+			await scenario.runtime.setLLMConfig({
+				model: 'runtime-model',
+				provider: 'runtime-provider',
+				apiKey: 'secret-key',
+			});
+			await scenario.collectPrompt('first');
+
+			expect(scenario.mock.calls().setContext).toEqual([
+				{
+					config: {
+						model: 'runtime-model',
+						provider: 'runtime-provider',
+						apiKey: 'secret-key',
+					},
+				},
+				{
+					systemPrompt: '',
+					messages: [seedMessage],
+					tools: [],
+					config: {
+						model: 'runtime-model',
+						provider: 'runtime-provider',
+						apiKey: 'secret-key',
+					},
+				},
+			]);
+			expect((await scenario.state()).core.llmConfig).toEqual({
+				model: 'runtime-model',
+				provider: 'runtime-provider',
+				reasoning: undefined,
+			});
+		} finally {
+			await scenario.dispose();
+		}
+	});
+
+	it('does not resend context after implicit turn tracking already matches the next prompt state', async () => {
+		const scenario = await createCoreScenario({
+			turns: [assistantTurn, assistantTurn],
+		});
+
+		try {
+			await scenario.collectPrompt('first');
+			await scenario.collectPrompt('second');
+
+			expect(scenario.mock.calls().setContext).toEqual([
+				{
+					systemPrompt: '',
+					messages: [],
+					tools: [],
+					config: {},
+				},
+			]);
+		} finally {
 			await scenario.dispose();
 		}
 	});
