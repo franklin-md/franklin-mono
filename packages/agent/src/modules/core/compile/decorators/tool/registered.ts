@@ -1,5 +1,6 @@
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { ToolCall } from '@franklin/mini-acp';
+import type { JsonObject } from '@franklin/lib';
 import { z } from 'zod';
 
 import { defaultToolRenderOutput } from '../../../api/tool.js';
@@ -13,7 +14,7 @@ import {
 export async function executeRegisteredToolCall<Runtime extends BaseRuntime>(
 	tool: AnyRegisteredTool<Runtime>,
 	call: ToolCall,
-	args: Record<string, unknown>,
+	args: JsonObject,
 	getRuntime: () => Runtime,
 ): Promise<ToolExecutionResult> {
 	try {

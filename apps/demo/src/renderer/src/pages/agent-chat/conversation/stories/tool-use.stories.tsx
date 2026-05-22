@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ToolUseBlock as ToolUseBlockData } from '@franklin/agent';
+import type { JsonObject } from '@franklin/lib';
 import type { ToolStatus } from '@franklin/react';
 
 import { ToolUse } from '../tools/tool-use.js';
@@ -10,7 +11,7 @@ import { ToolUse } from '../tools/tool-use.js';
 
 function toolBlock(
 	name: string,
-	args: Record<string, unknown>,
+	args: JsonObject,
 	opts?: { result?: string; isError?: boolean },
 ): ToolUseBlockData {
 	const startedAt = Date.now();

@@ -1,3 +1,4 @@
+import type { JsonObject } from '@franklin/lib';
 import type { ImageContent, TextContent, ToolCallContent } from './content.js';
 
 // ---------------------------------------------------------------------------
@@ -7,7 +8,7 @@ import type { ImageContent, TextContent, ToolCallContent } from './content.js';
 export type ToolDefinition = {
 	name: string;
 	description: string;
-	inputSchema: Record<string, unknown>;
+	inputSchema: JsonObject;
 };
 
 // Convenience aliases extracted from content/message types for use in

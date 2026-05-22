@@ -9,6 +9,7 @@ import {
 	todoExtension,
 	type ToolUseBlock,
 } from '@franklin/agent';
+import type { JsonObject } from '@franklin/lib';
 import { resolveToolRenderer } from '@franklin/react';
 import { describe, expect, it } from 'vitest';
 
@@ -17,10 +18,7 @@ import {
 	defaultToolRegistry,
 } from '../../../src/conversation/tools/registry/index.js';
 
-function createBlock(
-	name: string,
-	args: Record<string, unknown>,
-): ToolUseBlock {
+function createBlock(name: string, args: JsonObject): ToolUseBlock {
 	return {
 		kind: 'toolUse',
 		call: {
@@ -33,7 +31,7 @@ function createBlock(
 	};
 }
 
-function renderSummary(name: string, args: Record<string, unknown>) {
+function renderSummary(name: string, args: JsonObject) {
 	const entry = resolveToolRenderer(defaultToolRegistry, name);
 	if (entry == null) {
 		throw new Error(`Expected renderer for ${name}`);
