@@ -1,7 +1,49 @@
 import type { RenderedToolOutput } from '../../../modules/core/api/tool.js';
-import type { WebSearchResult } from './types.js';
+import type {
+	WebSearchOutput,
+	WebSearchProviderFailure,
+	WebSearchProviderMetadata,
+	WebSearchResult,
+} from './types.js';
 
-export function toSearchResult(
+export function toSearchOutput(
+	query: string,
+	provider: WebSearchProviderMetadata,
+	results: readonly WebSearchResult[],
+): WebSearchOutput {
+	return {
+		kind: 'success',
+		query,
+		provider,
+		results,
+	};
+}
+
+export function toSearchErrorOutput(
+	query: string,
+	message: string,
+	failures: readonly WebSearchProviderFailure[] = [],
+): WebSearchOutput {
+	return {
+		kind: 'error',
+		query,
+		message,
+		failures,
+	};
+}
+
+export function renderSearchOutput(
+	output: WebSearchOutput,
+): RenderedToolOutput {
+	switch (output.kind) {
+		case 'success':
+			return renderSearchSuccess(output.query, output.results);
+		case 'error':
+			return renderSearchError(output.query, output.message);
+	}
+}
+
+function renderSearchSuccess(
 	query: string,
 	results: readonly WebSearchResult[],
 ): RenderedToolOutput {
@@ -33,11 +75,7 @@ export function toSearchResult(
 	};
 }
 
-export function toSearchError(
-	query: string,
-	error: unknown,
-): RenderedToolOutput {
-	const message = error instanceof Error ? error.message : String(error);
+function renderSearchError(query: string, message: string): RenderedToolOutput {
 	return {
 		content: [
 			{
