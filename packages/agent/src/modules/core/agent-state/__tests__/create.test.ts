@@ -1,6 +1,6 @@
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import { describe, expect, it } from 'vitest';
-import { createRuntimeAgentState } from '../create.js';
+import { createAgentState } from '../create.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
@@ -17,9 +17,9 @@ function emptySnapshot(): SessionSnapshot {
 	};
 }
 
-describe('createRuntimeAgentState', () => {
+describe('createAgentState', () => {
 	it('creates a system prompt builder from registered handlers', async () => {
-		const agentState = createRuntimeAgentState({
+		const agentState = createAgentState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry((api) => {
 				api.on('systemPrompt', (systemPrompt) => {
@@ -43,7 +43,7 @@ describe('createRuntimeAgentState', () => {
 	});
 
 	it('does not treat absent handlers as a request to clear a sent prompt', async () => {
-		const agentState = createRuntimeAgentState({
+		const agentState = createAgentState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(),
 			getRuntime: () => runtime,
@@ -57,7 +57,7 @@ describe('createRuntimeAgentState', () => {
 	});
 
 	it('keeps reporting changed until the tracked context changes', async () => {
-		const agentState = createRuntimeAgentState({
+		const agentState = createAgentState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry((api) => {
 				api.on('systemPrompt', (systemPrompt) => {

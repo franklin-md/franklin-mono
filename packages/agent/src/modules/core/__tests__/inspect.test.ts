@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Context } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
-import { createRuntimeAgentState } from '../agent-state/index.js';
-import { attachRuntimeAgentState } from '../runtime/agent-state.js';
+import { createAgentState } from '../agent-state/index.js';
+import { attachAgentState } from '../runtime/agent-state.js';
 import type { CoreRuntime } from '../runtime/index.js';
 import { emptySessionSnapshot } from '../state.js';
 import {
@@ -11,13 +11,13 @@ import {
 } from '../compile/decorators/__tests__/registry.js';
 
 function stubRuntime(context: Context): CoreRuntime {
-	const agentState = createRuntimeAgentState({
+	const agentState = createAgentState({
 		snapshot: emptySessionSnapshot(),
 		registrations: createCoreRegistry(),
 		getRuntime: createTestRuntime,
 	});
 	agentState.apply(context);
-	return attachRuntimeAgentState(
+	return attachAgentState(
 		{
 			getSession: () => agentState.getSnapshot(),
 			dispose: async () => {},

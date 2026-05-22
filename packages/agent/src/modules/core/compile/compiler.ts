@@ -4,7 +4,7 @@ import type { RegistryView } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { CoreSignature } from '../api/api.js';
 import { type CoreRuntime, createCoreRuntime } from '../runtime/index.js';
-import { createRuntimeAgentState } from '../agent-state/index.js';
+import { createAgentState } from '../agent-state/index.js';
 import type { SessionSnapshot } from '../state.js';
 import { createAgentClient } from './client.js';
 import { createAgentDecorator } from './decorators/full.js';
@@ -19,7 +19,7 @@ export function createCoreCompiler(
 			registry: RegistryView<CoreSignature, ContextRuntime>,
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CoreRuntime> => {
-			const agentState = createRuntimeAgentState({
+			const agentState = createAgentState({
 				snapshot,
 				registrations: registry,
 				getRuntime,

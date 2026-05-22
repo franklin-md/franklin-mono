@@ -4,11 +4,11 @@ import {
 	trackClient,
 	trackUsage,
 } from '@franklin/mini-acp/session';
-import type { RuntimeAgentState } from '../../../agent-state/index.js';
+import type { AgentState } from '../../../agent-state/index.js';
 import type { ProtocolDecorator } from '../types.js';
 
 export function createTrackingDecorator(
-	agentState: RuntimeAgentState,
+	agentState: AgentState,
 ): ProtocolDecorator {
 	return {
 		name: 'tracking',

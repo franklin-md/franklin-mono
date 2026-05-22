@@ -7,13 +7,13 @@ import type {
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { createPromptDecorator } from '../decorator.js';
-import { createRuntimeAgentState } from '../../../../agent-state/index.js';
+import { createAgentState } from '../../../../agent-state/index.js';
 import { emptySessionSnapshot } from '../../../../state.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
-import type { RuntimeAgentState } from '../../../../agent-state/index.js';
+import type { AgentState } from '../../../../agent-state/index.js';
 
 const runtime = createTestRuntime();
 
@@ -40,18 +40,15 @@ function text(message: UserMessage): string {
 
 function createTestAgentState(
 	registrations = createCoreRegistry(),
-): RuntimeAgentState {
-	return createRuntimeAgentState({
+): AgentState {
+	return createAgentState({
 		snapshot: emptySessionSnapshot(),
 		registrations,
 		getRuntime: () => runtime,
 	});
 }
 
-function stubClient(
-	calls: string[],
-	agentState?: RuntimeAgentState,
-): MiniACPClient {
+function stubClient(calls: string[], agentState?: AgentState): MiniACPClient {
 	return {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async (patch: ContextPatch) => {

@@ -1,6 +1,6 @@
 import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type { CoreSignature } from '../../api/api.js';
-import type { RuntimeAgentState } from '../../agent-state/index.js';
+import type { AgentState } from '../../agent-state/index.js';
 import { compose } from './compose.js';
 import { createPromptDecorator } from './prompt/index.js';
 import { createToolDecorator } from './tool/index.js';
@@ -15,7 +15,7 @@ import type { ProtocolDecorator } from './types.js';
  * lifecycle: sync system prompt, build user prompt, send, then observe stream.
  */
 export function createAgentDecorator<Runtime extends BaseRuntime>(
-	agentState: RuntimeAgentState,
+	agentState: AgentState,
 	registrations: RegistryView<CoreSignature, Runtime>,
 	getCtx: () => Runtime,
 	toolRegistry: ToolRegistry<Runtime>,

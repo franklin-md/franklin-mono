@@ -1,8 +1,8 @@
 import type { MiniACPClient } from '@franklin/mini-acp';
-import type { RuntimeAgentState } from '../../../../agent-state/index.js';
+import type { AgentState } from '../../../../agent-state/index.js';
 
 export function createSystemPromptSync(
-	agentState: Pick<RuntimeAgentState, 'systemPrompt'>,
+	agentState: Pick<AgentState, 'systemPrompt'>,
 ): (client: MiniACPClient) => Promise<void> {
 	return async (client) => {
 		const result = await agentState.systemPrompt.build();

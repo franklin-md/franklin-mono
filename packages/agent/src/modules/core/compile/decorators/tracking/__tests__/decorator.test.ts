@@ -2,7 +2,7 @@ import type { MiniACPAgent, MiniACPClient, Usage } from '@franklin/mini-acp';
 import { StopCode, ZERO_USAGE } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { createTrackingDecorator } from '../decorator.js';
-import { createRuntimeAgentState } from '../../../../agent-state/index.js';
+import { createAgentState } from '../../../../agent-state/index.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
@@ -14,7 +14,7 @@ const turnUsage = {
 } satisfies Usage;
 
 function createTestAgentState() {
-	return createRuntimeAgentState({
+	return createAgentState({
 		snapshot: {
 			messages: [],
 			llmConfig: {},
