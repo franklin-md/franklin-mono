@@ -23,15 +23,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-
-      - name: Install npm 11
-        run: |
-          # Run outside the repo so the bundled npm 10 does not evaluate
-          # devEngines before it upgrades itself to the project npm version.
-          cd /tmp
-          npm install --global --ignore-scripts npm@11.12.1
-          npm --version
+          node-version: 24
 
       - run: npm ci
 
