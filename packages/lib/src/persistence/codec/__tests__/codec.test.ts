@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { rawCodec } from '../raw.js';
+import { jsonCodec } from '../json.js';
 import { versioned } from '../versioned.js';
 import { zodCodec } from '../zod.js';
 
@@ -61,8 +61,8 @@ describe('zodCodec composes with versioned() for minor evolution', () => {
 	});
 });
 
-describe('rawCodec', () => {
-	const codec = rawCodec<{ foo: string }>();
+describe('jsonCodec', () => {
+	const codec = jsonCodec<{ foo: string }>();
 
 	it('is identity both ways', () => {
 		const v = { foo: 'bar' };
