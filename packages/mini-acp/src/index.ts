@@ -39,6 +39,7 @@ export type {
 } from './types/index.js';
 
 export { StopCode, stopCategory } from './types/index.js';
+export { collect, type CollectResult } from './utils/collect.js';
 
 // Built-in agent implementation
 export { createPiAgent, type CreatePiAgentOptions } from './base/index.js';
