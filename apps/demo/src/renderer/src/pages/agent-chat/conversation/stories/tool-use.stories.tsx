@@ -1,5 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { ToolUseBlock as ToolUseBlockData } from '@franklin/agent';
+import {
+	EXA_WEB_SEARCH_PROVIDER_ID,
+	type ToolUseBlock as ToolUseBlockData,
+} from '@franklin/agent';
 import type { ToolStatus } from '@franklin/react';
 
 import { ToolUse } from '../tools/tool-use.js';
@@ -11,13 +14,13 @@ import { ToolUse } from '../tools/tool-use.js';
 function toolBlock(
 	name: string,
 	args: Record<string, unknown>,
-	opts?: { result?: string; isError?: boolean },
+	opts?: { result?: string; isError?: boolean; output?: unknown },
 ): ToolUseBlockData {
 	const startedAt = Date.now();
 	const resultText = opts?.result;
 	const isError = opts?.isError;
 	const settled = resultText !== undefined || isError;
-	return {
+	const block: ToolUseBlockData = {
 		kind: 'toolUse',
 		call: { type: 'toolCall', id: `tc_${name}`, name, arguments: args },
 		result:
@@ -33,6 +36,12 @@ function toolBlock(
 		startedAt,
 		endedAt: settled ? startedAt + 500 : undefined,
 	};
+
+	if (opts?.output === undefined) {
+		return block;
+	}
+
+	return { ...block, output: opts.output };
 }
 
 function ToolRow({
@@ -106,9 +115,20 @@ const fetchInvalidBlock = toolBlock('fetch_url', {
 	url: 'not-a-valid-url',
 });
 
-const webSearchBlock = toolBlock('search_web', {
-	query: 'vitest snapshot testing best practices',
-});
+const webSearchBlock = toolBlock(
+	'search_web',
+	{
+		query: 'vitest snapshot testing best practices',
+	},
+	{
+		output: {
+			kind: 'success',
+			provider: { id: EXA_WEB_SEARCH_PROVIDER_ID, name: 'Exa' },
+			query: 'vitest snapshot testing best practices',
+			results: [],
+		},
+	},
+);
 
 const unknownBlock = toolBlock('some_custom_tool', {
 	query: 'hello',

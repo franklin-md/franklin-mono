@@ -4,11 +4,13 @@ import type {
 	WebSearchProvider,
 	WebSearchProviderRequest,
 } from '../../provider.js';
+import { DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID } from '../../provider.js';
 import { parseDdgLite } from './parse.js';
 import { pickUserAgent } from './user-agents.js';
 
 export function createDuckDuckGoWebSearchProvider(): WebSearchProvider {
 	return {
+		id: DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
 		name: 'DuckDuckGo',
 		search: searchWithDuckDuckGo,
 	};
