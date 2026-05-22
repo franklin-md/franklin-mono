@@ -3,9 +3,10 @@ import type {
 	TextContent,
 	UserMessage,
 } from '@franklin/mini-acp';
-import { priority } from '@franklin/extensibility';
+import { priority, type BaseRuntime } from '@franklin/extensibility';
 import { describe, expect, it } from 'vitest';
 import { createCoreScenario, runCoreScenario } from '../../../testing/index.js';
+import type { CoreAPI } from '../api/api.js';
 
 function textContent(message: UserMessage | undefined): TextContent[] {
 	return (message?.content ?? []).filter(
@@ -132,13 +133,17 @@ describe('core extension system prompt handlers', () => {
 					api.on('systemPrompt', (systemPrompt) => {
 						systemPrompt.setPart('normal');
 					});
-					priority.high(api).on('systemPrompt', (systemPrompt) => {
+				},
+				priority.high((prioritizedApi: CoreAPI<BaseRuntime>) => {
+					prioritizedApi.on('systemPrompt', (systemPrompt) => {
 						systemPrompt.setPart('high');
 					});
-					priority.low(api).on('systemPrompt', (systemPrompt) => {
+				}),
+				priority.low((prioritizedApi: CoreAPI<BaseRuntime>) => {
+					prioritizedApi.on('systemPrompt', (systemPrompt) => {
 						systemPrompt.setPart('low');
 					});
-				},
+				}),
 			],
 		});
 

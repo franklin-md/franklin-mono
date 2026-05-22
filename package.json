@@ -9,7 +9,8 @@
 		"apps/shared/*"
 	],
 	"engines": {
-		"node": ">=22"
+		"node": ">=22",
+		"npm": ">=11.10.0"
 	},
 	"scripts": {
 		"build": "tsc -b",
@@ -28,30 +29,30 @@
 		"prepare": "husky"
 	},
 	"devDependencies": {
-		"@eslint/js": "^10.0.1",
-		"@types/node": "^25.4.0",
-		"@types/shell-quote": "^1.7.5",
-		"@vitest/eslint-plugin": "^1.6.10",
-		"eslint": "^10.0.3",
-		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-obsidianmd": "^0.2.9",
-		"eslint-plugin-storybook": "^10.2.19",
-		"globals": "^17.4.0",
-		"husky": "^9.1.7",
-		"patch-package": "^8.0.1",
-		"prettier": "^3.8.1",
-		"tsx": "^4.21.0",
-		"typescript": "^5.8.3",
+		"@eslint/js": "10.0.1",
+		"@types/node": "25.5.0",
+		"@types/shell-quote": "1.7.5",
+		"@vitest/eslint-plugin": "1.6.14",
+		"eslint": "10.1.0",
+		"eslint-config-prettier": "10.1.8",
+		"eslint-plugin-obsidianmd": "0.2.9",
+		"eslint-plugin-storybook": "10.3.3",
+		"globals": "17.4.0",
+		"husky": "9.1.7",
+		"patch-package": "8.0.1",
+		"prettier": "3.8.1",
+		"tsx": "4.21.0",
+		"typescript": "5.9.3",
 		"typescript-eslint": "8.58.0",
-		"vitest": "^4.0.18"
+		"vitest": "4.1.2"
 	},
 	"dependencies": {
-		"@anthropic-ai/sandbox-runtime": "^0.0.46",
-		"@codemirror/commands": "github:codemirror/commands",
+		"@anthropic-ai/sandbox-runtime": "0.0.46",
+		"@codemirror/commands": "6.10.3",
 		"@codemirror/state": "6.6.0",
-		"diff": "^9.0.0",
-		"file-type": "^22.0.1",
-		"jsdom": "^29.0.2"
+		"diff": "9.0.0",
+		"file-type": "22.0.1",
+		"jsdom": "29.0.2"
 	},
 	"overrides": {
 		"@codemirror/state": "6.6.0",
@@ -61,5 +62,18 @@
 		"lodash-es": "4.18.1",
 		"protobufjs": "7.5.5",
 		"vite": "6.4.2"
+	},
+	"packageManager": "npm@11.12.1",
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": ">=22",
+			"onFail": "error"
+		},
+		"packageManager": {
+			"name": "npm",
+			"version": ">=11.10.0",
+			"onFail": "error"
+		}
 	}
 }

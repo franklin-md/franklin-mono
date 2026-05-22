@@ -1,5 +1,5 @@
-import { singleLine } from '../utils.js';
-import type { WebSearchResult } from './types.js';
+import { singleLine } from '../../../utils.js';
+import type { WebSearchResult } from '../../types.js';
 
 // DDG lite layout: each result is a pair of table rows — one containing
 // <a class="result-link"> and a following row with <td class="result-snippet">.

@@ -18,17 +18,29 @@ import { defineExtension, createExtensionPoint, compile, priority } from '@frank
 import type { API, BaseRuntime, Extension, Signature, WithRuntime } from '@franklin/extensibility';
 ```
 
-Use `priority` to derive a same-shape API facade whose registrations land in
-one of the `highest`, `high`, `default`, `low`, or `lowest` ordering buckets
-when read through `RegistryView`. Registry views expose effective registration
-order: higher-priority registrations come first, and registrations with the
-same priority keep their original registration order. This mirrors CodeMirror's
-precedence model: https://codemirror.net/examples/config/#precedence.
+Use `priority` to wrap an extension so all registrations from that extension
+land in one of the `highest`, `high`, `default`, `low`, or `lowest` ordering
+buckets when read through `RegistryView`. Registry views expose effective
+registration order: higher-priority registrations come first, and registrations
+with the same priority keep their original registration order. This mirrors
+CodeMirror's precedence model:
+https://codemirror.net/examples/config/#precedence.
 
 ```ts
-priority.highest(api).on('systemPrompt', handler);
+const extensions = [
+	basePromptExtension,
+	priority.high(appPromptExtension),
+	priority.low(fallbackPromptExtension),
+];
+```
+
+Prefer wrapping whole extensions so application code decides precedence without
+baking priority into reusable extension implementations. The same named buckets
+can still derive a same-shape API facade when one extension intentionally mixes
+priority levels:
+
+```ts
 priority.high(api).on('prompt', handler);
-priority.low(api).registerTool(tool);
 ```
 
 Compiler code should iterate `registry.argsFor(name)` forward when handlers run

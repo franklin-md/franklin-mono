@@ -1,5 +1,8 @@
 import { buildStateExtensionModule } from '../modules/state/index.js';
-import { createDependencyModule } from '@franklin/extensibility/module';
+import {
+	createConfigurationModule,
+	createDependencyModule,
+} from '@franklin/extensibility/module';
 import type { AbsolutePath, RestoreResult } from '@franklin/lib';
 import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
 import { withAuth } from '../auth/with-auth.js';
@@ -83,6 +86,7 @@ export class FranklinApp {
 			createStoreStateModule(storage.stores),
 			createEnvironmentModule(platform.environment),
 			createDependencyModule('auth', this.auth),
+			createConfigurationModule(),
 		];
 		const baseModule = buildStateExtensionModule(baseModules);
 

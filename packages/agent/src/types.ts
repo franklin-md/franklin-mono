@@ -1,4 +1,5 @@
 import type { Extension } from '@franklin/extensibility';
+import type { ConfigurationModule } from '@franklin/extensibility/module';
 import type { BuildModules, InferAPI } from './modules/state/index.js';
 import type {
 	OrchestratorModule,
@@ -17,6 +18,7 @@ export type FranklinModules = readonly [
 	StoreStateModule,
 	EnvironmentModule,
 	AuthDependencyModule,
+	ConfigurationModule,
 ];
 
 export type FranklinBase = BuildModules<FranklinModules>;

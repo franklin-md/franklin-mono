@@ -6,6 +6,8 @@ import type {
 	BaseRuntime,
 	Compiler,
 	Extension,
+	ExtensionTransform,
+	ExtensionTransformWith,
 	Registry,
 	RegistryView,
 	Signature,
@@ -76,6 +78,8 @@ type _RootTypes = [
 	WithRuntime<() => void, BaseRuntime>,
 	APITransform,
 	APITransformWith<[value: number]>,
+	ExtensionTransform,
+	ExtensionTransformWith<[value: number]>,
 	typeof priority,
 	typeof priorityLevels,
 ];
@@ -93,12 +97,19 @@ const _api = createApi(_extensionPoint, _registryBinding.writer);
 const _highTransform: APITransform = (api) => priority.high(api);
 const _customTransform: APITransformWith<[value: number]> = (_value, api) =>
 	priority.high(api);
+const _highExtensionTransform: ExtensionTransform = (extension) =>
+	priority.high(extension);
+const _customExtensionTransform: ExtensionTransformWith<[value: number]> = (
+	_value,
+	extension,
+) => priority.high(extension);
 const _defaultPriorityLevel = priorityLevels.default;
 const _highPriorityApi = priority.high(_api);
 const _customPriorityApi = _customTransform(priorityLevels.high, _api);
 const _defaultPriorityApi = priority.default(_api);
 const _registryView = createRegistryView(_registryBinding.registry);
 const _extension = defineExtension<[]>()(() => {});
+const _highPriorityExtension = priority.high(_extension);
 const _reduced = reduceExtensions(_extension);
 const _combinedExtensionPoint = combineExtensionPoints(
 	_extensionPoint,
@@ -108,11 +119,14 @@ const _combinedExtensionPoint = combineExtensionPoints(
 void _api;
 void _highTransform;
 void _customTransform;
+void _highExtensionTransform;
+void _customExtensionTransform;
 void _defaultPriorityLevel;
 void _highPriorityApi;
 void _customPriorityApi;
 void _defaultPriorityApi;
 void _registryView;
+void _highPriorityExtension;
 void _reduced;
 void _combinedExtensionPoint;
 void compile(
