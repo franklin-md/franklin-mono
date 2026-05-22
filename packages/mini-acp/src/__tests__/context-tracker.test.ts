@@ -63,6 +63,32 @@ describe('ContextTracker.apply – field replacement', () => {
 		expect(tracker.get().config.provider).toBe('anthropic');
 		expect(tracker.get().config.apiKey).toBe('sk-123');
 	});
+
+	it('snapshots replacement arrays so later appends do not mutate the patch', () => {
+		const tracker = seededTracker();
+		const patch = {
+			messages: [
+				{
+					role: 'user' as const,
+					content: [{ type: 'text' as const, text: 'seed' }],
+				},
+			],
+			tools: [
+				{
+					name: 'read',
+					description: 'Read a file',
+					inputSchema: { type: 'object' },
+				},
+			],
+		};
+
+		tracker.apply(patch);
+		tracker.append({ role: 'user', content: [{ type: 'text', text: 'next' }] });
+
+		expect(patch.messages).toHaveLength(1);
+		expect(patch.tools).toHaveLength(1);
+		expect(tracker.get().messages).toHaveLength(2);
+	});
 });
 
 // ---------------------------------------------------------------------------
