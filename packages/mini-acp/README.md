@@ -7,9 +7,9 @@
 This is a bi-directional protocol where both parties engage at different times as both Client and Server to each other. The protocol does not mandate a codec for messages, but JSON-RPC 2.0 is suggested. It requires a transport protocol like websocket or stdio pipes.
 
 The package root exports the functional Mini-ACP surface: client/agent types,
-protocol data types, stop-code helpers, usage defaults, and the default Pi agent
-factory. Session adapters and tracking helpers live under
-`@franklin/mini-acp/session`; protocol logging lives under
+protocol data types, stop-code helpers, stream collection helpers, usage
+defaults, and the default Pi agent factory. Session adapters and tracking
+helpers live under `@franklin/mini-acp/session`; protocol logging lives under
 `@franklin/mini-acp/debug`. JSON-RPC transport binding helpers live under
 `@franklin/mini-acp/rpc` so data-protocol plumbing does not become part of the
 default protocol API. Scripted test helpers live under
