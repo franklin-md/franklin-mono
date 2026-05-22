@@ -29,18 +29,9 @@ export type StreamObserverHandler<K extends StreamObserverEvent> = (
 // Tool observer events — fire-and-forget side effects on tool execution
 // ---------------------------------------------------------------------------
 
-export type ToolObserverEvent = 'toolCall' | 'toolResult';
+export type ToolCallEvent = ToolExecuteParams;
 
 export type ToolResultEvent<TOutput = unknown> =
 	ToolResultWithOutput<TOutput> & {
 		call: ToolCall;
 	};
-
-export type ToolObserverParamsMap = {
-	toolCall: ToolExecuteParams;
-	toolResult: ToolResultEvent;
-};
-
-export type ToolObserverHandler<K extends ToolObserverEvent> = (
-	event: ToolObserverParamsMap[K],
-) => void;

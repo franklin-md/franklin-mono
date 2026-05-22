@@ -1,4 +1,4 @@
-import type { TurnStart } from '@franklin/mini-acp';
+import type { ToolExecuteParams, TurnStart } from '@franklin/mini-acp';
 import type {
 	EffectName,
 	EffectValueForName,
@@ -11,6 +11,7 @@ import type {
 	CoreOnRegistration,
 	CoreSignature,
 } from '../api.js';
+import type { ToolCallEvent } from '../handlers.js';
 import { z } from 'zod';
 import type { ToolHandlers } from '../tool.js';
 import { toolSpec } from '../tool-spec.js';
@@ -43,6 +44,7 @@ type _CoreRegistryToolEntries = Expect<
 >;
 
 type _CoreTurnStartHandler = CoreEventHandlers<BaseRuntime>['turnStart'];
+type _CoreToolCallHandler = CoreEventHandlers<BaseRuntime>['toolCall'];
 
 const _turnStartHandler: _CoreTurnStartHandler = (event, runtime) => {
 	const _event: TurnStart = event;
@@ -56,6 +58,21 @@ const _turnStartRegistration: CoreOnRegistration<BaseRuntime> = [
 	_turnStartHandler,
 ];
 void _turnStartRegistration;
+
+const _toolCallHandler: _CoreToolCallHandler = (event, runtime) => {
+	const _event: ToolCallEvent = event;
+	const _params: ToolExecuteParams = event;
+	const _runtime: BaseRuntime = runtime;
+	void _event;
+	void _params;
+	void _runtime;
+};
+
+const _toolCallRegistration: CoreOnRegistration<BaseRuntime> = [
+	'toolCall',
+	_toolCallHandler,
+];
+void _toolCallRegistration;
 
 const _api = null as unknown as CoreAPI<BaseRuntime>;
 _api.on('turnStart', (event, runtime) => {

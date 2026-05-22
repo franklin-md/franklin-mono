@@ -2,7 +2,11 @@ import type { ToolHandlers } from './tool.js';
 import type { ToolSpec } from './tool-spec.js';
 import type { PromptHandler } from './prompt.js';
 import type { SystemPromptHandler } from './system-prompt.js';
-import type { StreamObserverHandler, ToolObserverHandler } from './handlers.js';
+import type {
+	StreamObserverHandler,
+	ToolCallEvent,
+	ToolResultEvent,
+} from './handlers.js';
 import type { Signature, WithRuntime } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 
@@ -14,8 +18,8 @@ export type CoreEventHandlerMap = {
 	chunk: StreamObserverHandler<'chunk'>;
 	update: StreamObserverHandler<'update'>;
 	turnEnd: StreamObserverHandler<'turnEnd'>;
-	toolCall: ToolObserverHandler<'toolCall'>;
-	toolResult: ToolObserverHandler<'toolResult'>;
+	toolCall: (event: ToolCallEvent) => void;
+	toolResult: (event: ToolResultEvent) => void;
 };
 
 // TODO: Naming is poor

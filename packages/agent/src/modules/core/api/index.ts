@@ -10,7 +10,7 @@ export type {
 	StreamObserverEvent,
 	StreamObserverHandler,
 	StreamObserverParamsMap,
-	ToolObserverHandler,
+	ToolCallEvent,
 	ToolResultEvent,
 } from './handlers.js';
 export type { ToolOutput, ToolResultWithOutput } from './tool.js';

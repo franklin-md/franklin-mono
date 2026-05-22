@@ -10,6 +10,7 @@ export type {
 	SystemPromptContent,
 	SystemPromptHandler,
 	ToolArgsOf,
+	ToolCallEvent,
 	ToolOutput,
 	ToolOutputOf,
 	ToolResultWithOutput,

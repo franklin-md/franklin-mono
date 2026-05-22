@@ -50,6 +50,8 @@ import type { ToolExecutionHandler as _RootToolExecutionHandler } from '../index
 import type { ToolCallRender as _RootToolCallRender } from '../index.js';
 // @ts-expect-error tool handler aliases are internal compiler plumbing.
 import type { ToolHandlers as _RootToolHandlers } from '../index.js';
+// @ts-expect-error tool observer handler aliases are not part of the public API.
+import type { ToolObserverHandler as _RootToolObserverHandler } from '../index.js';
 // @ts-expect-error core tool output coercion is internal compiler plumbing.
 import { resolveToolOutput as _RootResolveToolOutput } from '../index.js';
 // @ts-expect-error Agent-local Zod tool definitions are internal compiler plumbing.
