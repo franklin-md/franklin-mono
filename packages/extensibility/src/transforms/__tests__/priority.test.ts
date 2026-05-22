@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Signature } from '../../api/types.js';
+import type { Extension } from '../../extension/types.js';
 import { createExtensionPoint } from '../../extension-points/create.js';
 import { createApi } from '../../extension-points/facade.js';
 import { createRegistryView } from '../../extension-points/view.js';
@@ -43,6 +44,32 @@ describe('priority transform', () => {
 		priority.low(api).registerText('low');
 		priority.lowest(api).registerText('lowest');
 		api.registerText('default-two');
+
+		expect(createRegistryView(registry).argsFor('registerText')).toEqual([
+			['highest'],
+			['high'],
+			['default-one'],
+			['default-two'],
+			['low'],
+			['lowest'],
+		]);
+	});
+
+	it('wraps whole extensions that register priority metadata', () => {
+		const { registry, writer } = createRegistry<TestSignature, BaseRuntime>();
+		const api = createApi<TestSignature, BaseRuntime>(extensionPoint, writer);
+		const extensions: Extension<TestAPI>[] = [
+			priority.default((api: TestAPI) => api.registerText('default-one')),
+			priority.high((api: TestAPI) => api.registerText('high')),
+			priority.highest((api: TestAPI) => api.registerText('highest')),
+			priority.low((api: TestAPI) => api.registerText('low')),
+			priority.lowest((api: TestAPI) => api.registerText('lowest')),
+			(api) => api.registerText('default-two'),
+		];
+
+		for (const extension of extensions) {
+			extension(api);
+		}
 
 		expect(createRegistryView(registry).argsFor('registerText')).toEqual([
 			['highest'],

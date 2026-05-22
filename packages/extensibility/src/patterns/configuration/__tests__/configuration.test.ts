@@ -64,16 +64,8 @@ describe('createConfigurationModule', () => {
 			module.compiler,
 			(api) => {
 				theme.of('default-one')(api);
-				priority.low(api)[CONFIGURATION_API]({
-					kind: 'static',
-					configuration: theme,
-					input: 'low',
-				});
-				priority.high(api)[CONFIGURATION_API]({
-					kind: 'static',
-					configuration: theme,
-					input: 'high',
-				});
+				priority.low(theme.of('low'))(api);
+				priority.high(theme.of('high'))(api);
 				theme.of('default-two')(api);
 			},
 		);

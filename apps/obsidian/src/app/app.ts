@@ -5,6 +5,7 @@ import {
 	openExternalAction,
 	type HostActionBinding,
 } from '@franklin/react';
+import { priority } from '@franklin/extensibility';
 import {
 	conversationExtension,
 	conversationTitleExtension,
@@ -83,7 +84,7 @@ function createExtensions(): FranklinExtension[] {
 		conversationTitleExtension.extension,
 		todoExtension.extension,
 		statusExtension.extension,
-		obsidianSystemPromptExtension,
+		priority.highest(obsidianSystemPromptExtension),
 		instructionsExtension.extension,
 		createFilesystemExtension().extension,
 		createReadPDFExtension({
