@@ -1,4 +1,7 @@
-import type { ToolCall, ToolResult } from '@franklin/mini-acp';
+import type {
+	ToolResultEvent,
+	ToolResultWithOutput,
+} from '../../../modules/core/index.js';
 import type { ConversationTurn } from '../types.js';
 
 import { endBlock } from './blocks/end.js';
@@ -6,12 +9,12 @@ import { startAndEndNewBlock } from './blocks/start.js';
 
 export function handleToolResult(
 	turn: ConversationTurn,
-	event: ToolResult & { call: ToolCall },
+	event: ToolResultEvent,
 ): void {
+	const result = toolResultFromEvent(event);
 	for (const block of turn.response.blocks) {
 		if (block.kind === 'toolUse' && block.call.id === event.toolCallId) {
-			block.result = event.content;
-			block.isError = event.isError;
+			block.result = result;
 			endBlock(block);
 			return;
 		}
@@ -21,7 +24,11 @@ export function handleToolResult(
 	// instantaneous toolUse — startedAt and endedAt share the same moment.
 	startAndEndNewBlock(turn, 'toolUse', {
 		call: event.call,
-		result: event.content,
-		isError: event.isError,
+		result,
 	});
+}
+
+function toolResultFromEvent(event: ToolResultEvent): ToolResultWithOutput {
+	const { call: _call, ...result } = event;
+	return result;
 }

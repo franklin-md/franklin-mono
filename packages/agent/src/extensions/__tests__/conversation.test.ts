@@ -1,6 +1,7 @@
 /* eslint-disable require-yield */
 import { describe, it, expect, vi } from 'vitest';
 import { apply } from '@franklin/lib/middleware';
+import { z } from 'zod';
 import type {
 	MiniACPAgent,
 	MiniACPClient,
@@ -13,6 +14,7 @@ import type {
 import { StopCode } from '@franklin/mini-acp';
 import type { StoreRuntime } from '../../modules/store/runtime.js';
 import { compileCoreWithStore } from '../../testing/compile-ext.js';
+import { toolSpec } from '../../modules/core/index.js';
 import { conversationExtension } from '../conversation/extension.js';
 import { conversationKey } from '../conversation/key.js';
 import type { ConversationTurn } from '../conversation/types.js';
@@ -260,7 +262,10 @@ describe('conversationExtension', () => {
 				name: 'read_file',
 				arguments: { path: '/foo' },
 			},
-			result: [{ type: 'text', text: 'ok' }],
+			result: {
+				toolCallId: 'tc1',
+				content: [{ type: 'text', text: 'ok' }],
+			},
 			startedAt: expect.any(Number),
 			endedAt: expect.any(Number),
 		});
@@ -308,10 +313,67 @@ describe('conversationExtension', () => {
 				name: 'write_file',
 				arguments: { path: '/etc/passwd' },
 			},
-			result: [{ type: 'text', text: 'Permission denied' }],
-			isError: true,
+			result: {
+				toolCallId: 'tc1',
+				content: [{ type: 'text', text: 'Permission denied' }],
+				isError: true,
+			},
 			startedAt: expect.any(Number),
 			endedAt: expect.any(Number),
+		});
+	});
+
+	it('records raw registered tool output on toolUse block', async () => {
+		type Output = { count: number; files: string[] };
+		const spec = toolSpec<'count_matches', { pattern: string }, Output>(
+			'count_matches',
+			'Counts matches',
+			z.object({ pattern: z.string() }),
+		);
+		const conversation = conversationExtension();
+		const { middleware, stores } = await compileCoreWithStore((api) => {
+			conversation(api);
+			api.registerTool(spec, {
+				execute: async ({ pattern }) => ({
+					count: pattern.length,
+					files: ['src/a.ts'],
+				}),
+				render: ({ count }) => ({
+					content: [{ type: 'text', text: `matches:${count}` }],
+				}),
+			});
+		});
+		const wrappedAgent = apply(middleware.server, stubAgent());
+
+		const target = stubClient({
+			prompt: async function* () {
+				await wrappedAgent.toolExecute({
+					call: {
+						type: 'toolCall',
+						id: 'tc1',
+						name: 'count_matches',
+						arguments: { pattern: 'foo' },
+					},
+				});
+			},
+		});
+
+		const wrapped = apply(middleware.client, target);
+		await collect(
+			wrapped.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hi' }],
+			}),
+		);
+
+		const block = getTurns(stores)[0]!.response.blocks[0];
+		expect(block).toMatchObject({
+			kind: 'toolUse',
+			result: {
+				toolCallId: 'tc1',
+				content: [{ type: 'text', text: 'matches:3' }],
+				output: { count: 3, files: ['src/a.ts'] },
+			},
 		});
 	});
 
@@ -356,7 +418,10 @@ describe('conversationExtension', () => {
 				name: 'read_file',
 				arguments: { path: '/foo' },
 			},
-			result: [{ type: 'text', text: 'file contents here' }],
+			result: {
+				toolCallId: 'tc1',
+				content: [{ type: 'text', text: 'file contents here' }],
+			},
 			startedAt: expect.any(Number),
 			endedAt: expect.any(Number),
 		});
@@ -575,7 +640,10 @@ describe('conversationExtension', () => {
 				name: 'read_file',
 				arguments: { path: '/foo' },
 			},
-			result: [{ type: 'text', text: 'contents' }],
+			result: {
+				toolCallId: 'tc1',
+				content: [{ type: 'text', text: 'contents' }],
+			},
 			startedAt: expect.any(Number),
 			endedAt: expect.any(Number),
 		});

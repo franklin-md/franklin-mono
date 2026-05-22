@@ -48,3 +48,7 @@ export interface SystemPrompt {
 	 */
 	setPart(content: SystemPromptContent, opts?: SetPartOptions): void;
 }
+
+export type SystemPromptHandler = (
+	systemPrompt: SystemPrompt,
+) => MaybePromise<void>;

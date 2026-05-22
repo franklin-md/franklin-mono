@@ -22,23 +22,29 @@ export function webSearchExtension(
 	const resolved = resolveWebSearchOptions(options);
 
 	return defineExtension<[CoreModule, EnvironmentModule]>((api) => {
-		api.registerTool(searchWebSpec, async ({ query }, ctx) => {
-			const fetch = decorate(ctx.environment.web.fetch)
-				.with(withOnlyHTTP())
-				.with(withRedirect(resolved.maxRedirects))
-				.with(withTimeout(resolved.timeoutMs))
-				.build();
-			try {
-				const results = await searchWithExa(fetch, query, resolved);
-				return toSearchResult(query, results);
-			} catch (exaError) {
+		api.registerTool(searchWebSpec, {
+			execute: async ({ query }, ctx) => {
+				const fetch = decorate(ctx.environment.web.fetch)
+					.with(withOnlyHTTP())
+					.with(withRedirect(resolved.maxRedirects))
+					.with(withTimeout(resolved.timeoutMs))
+					.build();
 				try {
-					const results = await searchWithDdg(fetch, query, resolved);
+					const results = await searchWithExa(fetch, query, resolved);
 					return toSearchResult(query, results);
-				} catch (ddgError) {
-					return toSearchError(query, combineSearchErrors(exaError, ddgError));
+				} catch (exaError) {
+					try {
+						const results = await searchWithDdg(fetch, query, resolved);
+						return toSearchResult(query, results);
+					} catch (ddgError) {
+						return toSearchError(
+							query,
+							combineSearchErrors(exaError, ddgError),
+						);
+					}
 				}
-			}
+			},
+			render: (output) => output,
 		});
 	});
 }

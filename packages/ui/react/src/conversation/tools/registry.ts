@@ -1,4 +1,4 @@
-import type { ToolArgs, ToolSpec } from '@franklin/agent';
+import type { ToolArgsOf, ToolOutputOf, ToolSpec } from '@franklin/agent';
 
 import type {
 	ToolRendererBinding,
@@ -9,7 +9,7 @@ import type {
 
 export function createToolRenderer<S extends ToolSpec>(
 	spec: S,
-	entry: ToolRendererEntry<ToolArgs<S>>,
+	entry: ToolRendererEntry<ToolArgsOf<S>, ToolOutputOf<S>>,
 ): ToolRendererBinding<S> {
 	return [spec.name, entry];
 }

@@ -19,10 +19,10 @@ describe('unavailableGrepResult', () => {
 	it('points callers to fallback filesystem tools', () => {
 		const result = unavailableGrepResult();
 
-		expect(result.isError).toBe(true);
-		expect(result.output).toContain('grep is not available');
-		expect(result.output).toContain('glob');
-		expect(result.output).toContain('read_file');
+		expect(result.status).toBe('error');
+		expect(result.text).toContain('grep is not available');
+		expect(result.text).toContain('glob');
+		expect(result.text).toContain('read_file');
 	});
 });
 
@@ -35,8 +35,10 @@ describe('formatGrepResult', () => {
 		);
 
 		expect(result).toEqual({
-			output: 'src/a.ts\n  7: hit here',
-			isError: false,
+			status: 'success',
+			text: 'src/a.ts\n  7: hit here',
+			matches: [{ file: 'src/a.ts', line: 7, text: 'hit here' }],
+			truncated: false,
 		});
 	});
 
@@ -46,8 +48,10 @@ describe('formatGrepResult', () => {
 		});
 
 		expect(result).toEqual({
-			output: 'No matches found.',
-			isError: false,
+			status: 'success',
+			text: 'No matches found.',
+			matches: [],
+			truncated: false,
 		});
 	});
 
@@ -62,10 +66,14 @@ describe('formatGrepResult', () => {
 			{ pattern: 'hit', path: 'src' },
 		);
 
-		expect(result.isError).toBe(false);
-		expect(result.output).toContain('src/a.ts\n  7: hit here');
-		expect(result.output).toContain('results may be incomplete');
-		expect(result.output).toContain('Permission denied');
+		expect(result.status).toBe('success');
+		expect(result.text).toContain('src/a.ts\n  7: hit here');
+		expect(result.text).toContain('results may be incomplete');
+		expect(result.text).toContain('Permission denied');
+		expect(result.matches).toEqual([
+			{ file: 'src/a.ts', line: 7, text: 'hit here' },
+		]);
+		expect(result.truncated).toBe(false);
 	});
 
 	it('reports process failures and includes the single-path hint for path searches', () => {
@@ -78,8 +86,10 @@ describe('formatGrepResult', () => {
 			{ pattern: 'bad[', path: 'src' },
 		);
 
-		expect(result.isError).toBe(true);
-		expect(result.output).toContain('grep failed (exit 2): regex parse error');
-		expect(result.output).toContain('path` accepts a single file or directory');
+		expect(result.status).toBe('error');
+		expect(result.text).toContain('grep failed (exit 2): regex parse error');
+		expect(result.text).toContain('path` accepts a single file or directory');
+		expect(result.matches).toEqual([]);
+		expect(result.truncated).toBe(false);
 	});
 });

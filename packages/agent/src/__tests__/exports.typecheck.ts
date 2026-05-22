@@ -40,6 +40,18 @@ import { toToolInputSchema as _RootToToolInputSchema } from '../index.js';
 import type { CoreOnRegistration as _RootCoreOnRegistration } from '../index.js';
 // @ts-expect-error core registrar tuple types are internal compiler plumbing.
 import type { CoreRegisterToolRegistration as _RootCoreRegisterToolRegistration } from '../index.js';
+// @ts-expect-error inline tool definitions are not part of the public tool API.
+import type { ExtensionToolDefinition as _RootExtensionToolDefinition } from '../index.js';
+// @ts-expect-error tool implementation adapter types are internal compiler plumbing.
+import type { ToolImplementation as _RootToolImplementation } from '../index.js';
+// @ts-expect-error tool execution handler aliases are internal compiler plumbing.
+import type { ToolExecutionHandler as _RootToolExecutionHandler } from '../index.js';
+// @ts-expect-error tool render handler aliases are internal compiler plumbing.
+import type { ToolCallRender as _RootToolCallRender } from '../index.js';
+// @ts-expect-error tool handler aliases are internal compiler plumbing.
+import type { ToolHandlers as _RootToolHandlers } from '../index.js';
+// @ts-expect-error core tool output coercion is internal compiler plumbing.
+import { resolveToolOutput as _RootResolveToolOutput } from '../index.js';
 // @ts-expect-error Agent-local Zod tool definitions are internal compiler plumbing.
 import type { ToolDefinition as _RootToolDefinition } from '../index.js';
 // @ts-expect-error Agent-local loose Zod tool definitions are internal compiler plumbing.
@@ -93,3 +105,4 @@ void _RootCoreStateHandle;
 void _RootCreateCoreCompiler;
 void _RootSerializeTool;
 void _RootToToolInputSchema;
+void _RootResolveToolOutput;

@@ -1,8 +1,7 @@
 import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
-import type { UserMessage } from '@franklin/mini-acp';
+import type { UserContent, UserMessage } from '@franklin/mini-acp';
 import type { CoreSignature } from '../../../../api/api.js';
-import type { PromptHandler } from '../../../../api/handlers.js';
-import { createPrompt } from '../../../../api/prompt.js';
+import type { Prompt, PromptHandler } from '../../../../api/prompt.js';
 import { bindRegisteredEventHandlers } from '../../../registrations/index.js';
 
 export function createPromptBuilder<Runtime extends BaseRuntime>(
@@ -29,4 +28,29 @@ async function buildPrompt(
 		await handler(prompt);
 	}
 	return prompt.asPrompt();
+}
+
+function createPrompt(message: UserMessage): Prompt {
+	const prepended: UserContent[] = [];
+	const appended: UserContent[] = [];
+
+	return {
+		request: message,
+		prependContent(content) {
+			prepended.push(content);
+		},
+		appendContent(content) {
+			appended.push(content);
+		},
+		asPrompt() {
+			if (prepended.length === 0 && appended.length === 0) {
+				return message;
+			}
+
+			return {
+				...message,
+				content: [...prepended, ...message.content, ...appended],
+			};
+		},
+	};
 }

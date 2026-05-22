@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { toolSpec } from '../../modules/core/api/tool-spec.js';
+import { toolSpec, type ToolSpec } from '../../modules/core/api/tool-spec.js';
+import type { ToolOutput } from '../../modules/core/api/tool.js';
 import { readPDFDescription } from '../system_prompts.js';
 
 const pageNumberSchema = z
@@ -38,8 +39,8 @@ const readPDFSchema = z
 		},
 	);
 
-export const readPDFSpec = toolSpec(
+export const readPDFSpec: ToolSpec<
 	'read_pdf',
-	readPDFDescription,
-	readPDFSchema,
-);
+	z.infer<typeof readPDFSchema>,
+	ToolOutput
+> = toolSpec('read_pdf', readPDFDescription, readPDFSchema);

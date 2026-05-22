@@ -2,6 +2,7 @@ import { toolCalls, turn, turnEnd } from '@franklin/mini-acp/mock';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createCoreScenario, runCoreScenario } from '../../../testing/index.js';
+import type { ToolOutput } from '../api/tool.js';
 import { toolSpec } from '../api/tool-spec.js';
 import { toolResultText } from './tool-result-text.js';
 
@@ -10,12 +11,12 @@ describe('core extension registered tools', () => {
 		const scenario = await createCoreScenario({
 			extensions: [
 				(api) => {
-					api.registerTool({
-						name: 'my_tool',
-						description: 'does things',
-						schema: z.object({ x: z.string() }),
-						execute: async () => 'ok',
-					});
+					api.registerTool(
+						toolSpec('my_tool', 'does things', z.object({ x: z.string() })),
+						{
+							execute: async () => 'ok',
+						},
+					);
 				},
 			],
 		});
@@ -40,15 +41,15 @@ describe('core extension registered tools', () => {
 			],
 			extensions: [
 				(api) => {
-					api.registerTool({
-						name: 'myTool',
-						description: 'A test tool',
-						schema: z.object({ input: z.string() }),
-						execute: async (params) => {
-							seenArgs.push(params);
-							return params.input.toUpperCase();
+					api.registerTool(
+						toolSpec('myTool', 'A test tool', z.object({ input: z.string() })),
+						{
+							execute: async (params) => {
+								seenArgs.push(params);
+								return params.input.toUpperCase();
+							},
 						},
-					});
+					);
 				},
 			],
 		});
@@ -90,12 +91,10 @@ describe('core extension registered tools', () => {
 			],
 			extensions: [
 				(api) => {
-					api.registerTool({
-						name: 'myTool',
-						description: 'A test tool',
-						schema: z.object({ input: z.string() }),
-						execute,
-					});
+					api.registerTool(
+						toolSpec('myTool', 'A test tool', z.object({ input: z.string() })),
+						{ execute },
+					);
 				},
 			],
 		});
@@ -122,10 +121,7 @@ describe('core extension registered tools', () => {
 			],
 			extensions: [
 				(api) => {
-					api.registerTool({
-						name: 'parsedTool',
-						description: 'Uses parsed args',
-						schema,
+					api.registerTool(toolSpec('parsedTool', 'Uses parsed args', schema), {
 						execute: async (params) => `${params.count}:${params.label}`,
 					});
 				},
@@ -151,9 +147,10 @@ describe('core extension registered tools', () => {
 			],
 			extensions: [
 				(api) => {
-					api.registerTool(spec, async ({ value }) =>
-						JSON.stringify({ doubled: value * 2 }),
-					);
+					api.registerTool(spec, {
+						execute: async ({ value }) =>
+							JSON.stringify({ doubled: value * 2 }),
+					});
 				},
 			],
 		});
@@ -163,19 +160,49 @@ describe('core extension registered tools', () => {
 		);
 	});
 
+	it('supports projected raw outputs from spec-based tool registration', async () => {
+		type DoubleOutput = { doubled: number };
+		const spec = toolSpec<'projectedTool', { value: number }, DoubleOutput>(
+			'projectedTool',
+			'Doubles a number',
+			z.object({ value: z.number() }),
+		);
+
+		const { calls } = await runCoreScenario({
+			turns: [
+				turn([
+					toolCalls([{ name: 'projectedTool', arguments: { value: 5 } }]),
+					turnEnd(),
+				]),
+			],
+			extensions: [
+				(api) => {
+					api.registerTool(spec, {
+						execute: async ({ value }) => ({ doubled: value * 2 }),
+						render: (output) => ({
+							content: [{ type: 'text', text: `doubled:${output.doubled}` }],
+						}),
+					});
+				},
+			],
+		});
+
+		expect(toolResultText(calls.toolResults[0])).toBe('doubled:10');
+	});
+
 	it('converts thrown Error values into tool error results', async () => {
 		const { calls } = await runCoreScenario({
 			turns: [turn([toolCalls([{ name: 'failTool' }]), turnEnd()])],
 			extensions: [
 				(api) => {
-					api.registerTool({
-						name: 'failTool',
-						description: 'A tool that throws',
-						schema: z.object({}),
-						execute: async () => {
-							throw new Error('tool exploded');
+					api.registerTool(
+						toolSpec('failTool', 'A tool that throws', z.object({})),
+						{
+							execute: async () => {
+								throw new Error('tool exploded');
+							},
 						},
-					});
+					);
 				},
 			],
 		});
@@ -189,15 +216,15 @@ describe('core extension registered tools', () => {
 			turns: [turn([toolCalls([{ name: 'failTool' }]), turnEnd()])],
 			extensions: [
 				(api) => {
-					api.registerTool({
-						name: 'failTool',
-						description: 'A tool that throws a string',
-						schema: z.object({}),
-						execute: async () => {
-							// eslint-disable-next-line @typescript-eslint/only-throw-error
-							throw 'raw string error';
+					api.registerTool(
+						toolSpec('failTool', 'A tool that throws a string', z.object({})),
+						{
+							execute: async () => {
+								// eslint-disable-next-line @typescript-eslint/only-throw-error
+								throw 'raw string error';
+							},
 						},
-					});
+					);
 				},
 			],
 		});
@@ -207,18 +234,22 @@ describe('core extension registered tools', () => {
 	});
 
 	it('preserves structured ToolOutput values returned by registered tools', async () => {
+		const spec = toolSpec<'errorTool', Record<string, never>, ToolOutput>(
+			'errorTool',
+			'Returns an error ToolOutput',
+			z.object({}),
+		);
+
 		const { calls } = await runCoreScenario({
 			turns: [turn([toolCalls([{ name: 'errorTool' }]), turnEnd()])],
 			extensions: [
 				(api) => {
-					api.registerTool({
-						name: 'errorTool',
-						description: 'Returns an error ToolOutput',
-						schema: z.object({}),
+					api.registerTool(spec, {
 						execute: async () => ({
 							content: [{ type: 'text' as const, text: 'bad input' }],
 							isError: true,
 						}),
+						render: (output) => output,
 					});
 				},
 			],

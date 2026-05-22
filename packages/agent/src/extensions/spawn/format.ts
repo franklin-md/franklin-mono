@@ -1,10 +1,10 @@
 import { type Message, type TurnEnd, stopCategory } from '@franklin/mini-acp';
-import type { ToolExecuteReturn } from '../../modules/core/index.js';
+import type { ToolOutput } from '../../modules/core/index.js';
 
 export function formatResult(
 	messages: Message[],
 	turnEnd: TurnEnd | undefined,
-): ToolExecuteReturn {
+): string | ToolOutput {
 	if (turnEnd && stopCategory(turnEnd.stopCode) !== 'finished') {
 		return {
 			content: [

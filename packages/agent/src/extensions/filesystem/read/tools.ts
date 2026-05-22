@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { toolSpec } from '../../../modules/core/api/tool-spec.js';
+import {
+	toolSpec,
+	type ToolSpec,
+} from '../../../modules/core/api/tool-spec.js';
+import type { ToolOutput } from '../../../modules/core/api/tool.js';
 import { readFileDescription } from '../../system_prompts.js';
 
 const readFileSchema = z.object({
@@ -18,8 +22,8 @@ const readFileSchema = z.object({
 		),
 });
 
-export const readFileSpec = toolSpec(
+export const readFileSpec: ToolSpec<
 	'read_file',
-	readFileDescription,
-	readFileSchema,
-);
+	z.infer<typeof readFileSchema>,
+	string | ToolOutput
+> = toolSpec('read_file', readFileDescription, readFileSchema);

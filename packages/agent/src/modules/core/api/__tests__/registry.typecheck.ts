@@ -9,9 +9,12 @@ import type {
 	CoreAPI,
 	CoreEventHandlers,
 	CoreOnRegistration,
-	CoreRegisterToolRegistration,
 	CoreSignature,
 } from '../api.js';
+import { z } from 'zod';
+import type { ToolHandlers } from '../tool.js';
+import { toolSpec } from '../tool-spec.js';
+import type { ToolSpec } from '../tool-spec.js';
 
 type Equal<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
@@ -35,7 +38,7 @@ type _CoreRegistryOnEntries = Expect<
 type _CoreRegistryToolEntries = Expect<
 	Equal<
 		EffectValueForName<CoreSignature, BaseRuntime, 'registerTool'>,
-		CoreRegisterToolRegistration<BaseRuntime>
+		[spec: ToolSpec, handlers: ToolHandlers<ToolSpec, BaseRuntime>]
 	>
 >;
 
@@ -60,4 +63,34 @@ _api.on('turnStart', (event, runtime) => {
 	const _runtime: BaseRuntime = runtime;
 	void _event;
 	void _runtime;
+});
+
+const _toolSpec = toolSpec<'countTool', { value: number }, { count: number }>(
+	'countTool',
+	'Counts',
+	z.object({ value: z.number() }),
+);
+
+_api.registerTool(_toolSpec, {
+	execute: ({ value }) => ({ count: value }),
+	render: (output, args, runtime) => {
+		const _output: { count: number } = output;
+		const _args: { value: number } = args;
+		const _runtime: BaseRuntime = runtime;
+		void _output;
+		void _args;
+		void _runtime;
+		return { content: [{ type: 'text', text: String(output.count) }] };
+	},
+});
+
+// @ts-expect-error registerTool only accepts spec plus handlers.
+_api.registerTool(_toolSpec, ({ value }) => ({ count: value }));
+
+// @ts-expect-error inline tool definitions are no longer a registerTool form.
+_api.registerTool({
+	name: 'inlineTool',
+	description: 'Inline',
+	schema: z.object({}),
+	execute: () => 'ok',
 });

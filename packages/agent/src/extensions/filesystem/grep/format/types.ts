@@ -5,8 +5,10 @@ export interface GrepMatch {
 }
 
 export interface GrepResult {
-	output: string;
-	isError: boolean;
+	status: 'success' | 'error';
+	text: string;
+	matches: GrepMatch[];
+	truncated: boolean;
 }
 
 export interface FormatMatchesOptions {

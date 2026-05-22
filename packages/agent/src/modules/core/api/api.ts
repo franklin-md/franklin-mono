@@ -1,12 +1,8 @@
-import type { ExtensionToolDefinition, ToolExecuteReturn } from './tool.js';
+import type { ToolHandlers } from './tool.js';
 import type { ToolSpec } from './tool-spec.js';
-import type {
-	PromptHandler,
-	StreamObserverHandler,
-	SystemPromptHandler,
-	ToolObserverHandler,
-} from './handlers.js';
-import type { MaybePromise } from '../../../utils/maybe-promise.js';
+import type { PromptHandler } from './prompt.js';
+import type { SystemPromptHandler } from './system-prompt.js';
+import type { StreamObserverHandler, ToolObserverHandler } from './handlers.js';
 import type { Signature, WithRuntime } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 
@@ -35,16 +31,6 @@ export type CoreOnRegistration<R extends BaseRuntime> = {
 	];
 }[keyof CoreEventHandlers<R>];
 
-export type CoreRegisterToolRegistration<
-	R extends BaseRuntime,
-	TArgs = unknown,
-> =
-	| [tool: ExtensionToolDefinition<TArgs, R>]
-	| [
-			spec: ToolSpec<string, TArgs>,
-			execute: (params: TArgs, runtime: R) => MaybePromise<ToolExecuteReturn>,
-	  ];
-
 /**
  * The concrete Core registration surface at runtime `R`. This is what
  * extensions hold and call methods on after `CoreSignature` has been applied
@@ -65,8 +51,7 @@ export interface CoreAPI<R extends BaseRuntime> {
 	on(event: 'toolCall', handler: CoreEventHandlers<R>['toolCall']): void;
 	on(event: 'toolResult', handler: CoreEventHandlers<R>['toolResult']): void;
 
-	registerTool<TInput>(tool: ExtensionToolDefinition<TInput, R>): void;
-	registerTool<TArgs>(...args: CoreRegisterToolRegistration<R, TArgs>): void;
+	registerTool<S extends ToolSpec>(spec: S, handlers: ToolHandlers<S, R>): void;
 }
 
 /**

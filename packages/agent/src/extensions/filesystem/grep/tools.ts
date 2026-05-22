@@ -1,6 +1,10 @@
 import { z } from 'zod';
-import { toolSpec } from '../../../modules/core/api/tool-spec.js';
+import {
+	toolSpec,
+	type ToolSpec,
+} from '../../../modules/core/api/tool-spec.js';
 import { grepDescription } from '../../system_prompts.js';
+import type { GrepResult } from './format/types.js';
 import {
 	GREP_SINGLE_PATH_MESSAGE,
 	looksLikeMultipleAbsolutePaths,
@@ -36,6 +40,10 @@ const grepSchema = z.object({
 		),
 });
 
-export const grepSpec = toolSpec('grep', grepDescription, grepSchema);
-
 export type GrepParams = z.infer<typeof grepSchema>;
+
+export const grepSpec: ToolSpec<'grep', GrepParams, GrepResult> = toolSpec(
+	'grep',
+	grepDescription,
+	grepSchema,
+);

@@ -1,11 +1,13 @@
 import { describe, it, expect, expectTypeOf, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import type {
-	ConversationTurn,
-	TextBlock,
-	ThinkingBlock,
-	ToolSpec,
-	ToolUseBlock,
+import {
+	filesystemExtension,
+	type ConversationTurn,
+	type TextBlock,
+	type ThinkingBlock,
+	type ToolOutput,
+	type ToolOutputOf,
+	type ToolUseBlock,
 } from '@franklin/agent';
 import { StopCode } from '@franklin/mini-acp';
 
@@ -28,18 +30,8 @@ import type {
 	ToolStatus,
 } from '../conversation/tools/types.js';
 
-const readFileSpec = {
-	name: 'read_file',
-	description: 'Read file',
-	schema: undefined as never,
-} as ToolSpec<
-	'read_file',
-	{
-		path: string;
-		limit: number;
-		offset?: number | undefined;
-	}
->;
+const readFileSpec = filesystemExtension.tools.readFile;
+const grepSpec = filesystemExtension.tools.grep;
 
 // ---------------------------------------------------------------------------
 // computeToolStatus
@@ -59,7 +51,10 @@ describe('computeToolStatus', () => {
 	it('returns success when result is present', () => {
 		const block: ToolUseBlock = {
 			...base,
-			result: [{ type: 'text', text: 'ok' }],
+			result: {
+				toolCallId: '1',
+				content: [{ type: 'text', text: 'ok' }],
+			},
 		};
 		expect(computeToolStatus(block)).toBe('success');
 	});
@@ -67,8 +62,11 @@ describe('computeToolStatus', () => {
 	it('returns error when isError is true', () => {
 		const block: ToolUseBlock = {
 			...base,
-			result: [{ type: 'text', text: 'failed' }],
-			isError: true,
+			result: {
+				toolCallId: '1',
+				content: [{ type: 'text', text: 'failed' }],
+				isError: true,
+			},
 		};
 		expect(computeToolStatus(block)).toBe('error');
 	});
@@ -133,16 +131,24 @@ describe('resolveToolRenderer', () => {
 describe('createToolRenderer', () => {
 	it('infers renderer args from the tool spec', () => {
 		const renderer = createToolRenderer(readFileSpec, {
-			summary: ({ args }) => args.path,
+			summary: ({ args, block }) => {
+				expectTypeOf(block.result?.output).toEqualTypeOf<
+					string | ToolOutput | undefined
+				>();
+				return args.path;
+			},
 		});
 
 		expectTypeOf(renderer[0]).toEqualTypeOf<'read_file'>();
 		expectTypeOf(renderer[1]).toEqualTypeOf<
-			ToolRendererEntry<{
-				path: string;
-				limit: number;
-				offset?: number | undefined;
-			}>
+			ToolRendererEntry<
+				{
+					path: string;
+					limit: number;
+					offset?: number | undefined;
+				},
+				string | ToolOutput
+			>
 		>();
 	});
 });
@@ -213,7 +219,10 @@ describe('Conversation', () => {
 							name: 'read',
 							arguments: {},
 						},
-						result: [{ type: 'text', text: 'file contents' }],
+						result: {
+							toolCallId: 'c1',
+							content: [{ type: 'text', text: 'file contents' }],
+						},
 						startedAt: 0,
 					},
 					{ kind: 'thinking', text: 'hmm', startedAt: 0 },
@@ -311,8 +320,11 @@ describe('Conversation', () => {
 								name: 'write',
 								arguments: {},
 							},
-							result: [{ type: 'text', text: 'fail' }],
-							isError: true,
+							result: {
+								toolCallId: 'c3',
+								content: [{ type: 'text', text: 'fail' }],
+								isError: true,
+							},
 							startedAt: 0,
 						},
 					],
@@ -495,7 +507,10 @@ describe('ToolUseBlock', () => {
 		const block: ToolUseBlock = {
 			kind: 'toolUse',
 			call: { type: 'toolCall', id: '1', name: 'read', arguments: {} },
-			result: [{ type: 'text', text: 'ok' }],
+			result: {
+				toolCallId: '1',
+				content: [{ type: 'text', text: 'ok' }],
+			},
 			startedAt: 0,
 		};
 
@@ -514,6 +529,61 @@ describe('ToolUseBlock', () => {
 		expect(props.expanded).toBe('expanded:read');
 		expect(props.status).toBe('success');
 		expect(props.block).toBe(block);
+	});
+
+	it('passes typed tool results to renderers', () => {
+		const captured: ResolvedToolRender[] = [];
+
+		const registry = createToolRendererRegistry([
+			createToolRenderer(grepSpec, {
+				summary: ({ block }) =>
+					`summary:${block.result?.output?.matches.length}:${block.result?.toolCallId}`,
+				expanded: ({ block }) =>
+					block.result?.output?.matches.map((match) => match.file).join(','),
+			}),
+		]);
+
+		function Chrome(props: ResolvedToolRender) {
+			captured.push(props);
+			return null;
+		}
+
+		const block: ToolUseBlock<ToolOutputOf<typeof grepSpec>> = {
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: '1',
+				name: 'grep',
+				arguments: { pattern: 'foo' },
+			},
+			result: {
+				toolCallId: '1',
+				content: [{ type: 'text', text: 'matches:2' }],
+				output: {
+					status: 'success',
+					text: 'matches:2',
+					matches: [
+						{ file: 'src/a.ts', line: 1, text: 'foo' },
+						{ file: 'src/b.ts', line: 2, text: 'foo' },
+					],
+					truncated: false,
+				},
+			},
+			startedAt: 0,
+		};
+
+		render(
+			<ToolUseBlockComponent
+				block={block}
+				status="success"
+				registry={registry}
+				Chrome={Chrome}
+			/>,
+		);
+
+		expect(captured).toHaveLength(1);
+		expect(captured[0]?.summary).toBe('summary:2:1');
+		expect(captured[0]?.expanded).toBe('src/a.ts,src/b.ts');
 	});
 
 	it('falls back to the * renderer for unknown tools', () => {
@@ -644,7 +714,10 @@ describe('ToolUseBlock', () => {
 				name: 'set_chat_title',
 				arguments: { title: 'Inbox triage' },
 			},
-			result: [{ type: 'text', text: '{"title":"Inbox triage"}' }],
+			result: {
+				toolCallId: '1',
+				content: [{ type: 'text', text: '{"title":"Inbox triage"}' }],
+			},
 			startedAt: 0,
 		};
 
@@ -689,7 +762,10 @@ describe('createToolUseBlock', () => {
 		const block: ToolUseBlock = {
 			kind: 'toolUse',
 			call: { type: 'toolCall', id: '1', name: 'read', arguments: {} },
-			result: [{ type: 'text', text: 'ok' }],
+			result: {
+				toolCallId: '1',
+				content: [{ type: 'text', text: 'ok' }],
+			},
 			startedAt: 0,
 		};
 
