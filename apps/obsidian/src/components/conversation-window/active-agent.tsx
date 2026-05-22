@@ -18,7 +18,7 @@ export function ActiveAgent() {
 	}
 
 	return (
-		<AgentProvider key={activeSession.id} agent={activeSession.runtime}>
+		<AgentProvider key={activeSession.details.id} agent={activeSession.runtime}>
 			<ConversationPanel />
 		</AgentProvider>
 	);

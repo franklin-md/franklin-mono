@@ -34,12 +34,12 @@ export function AgentList({ components }: { components: AgentListComponents }) {
 	return (
 		<>
 			{sessions.map((session) => (
-				<AgentProvider key={session.id} agent={session.runtime}>
+				<AgentProvider key={session.details.id} agent={session.runtime}>
 					<Item
-						sessionId={session.id}
-						isActive={session.id === activeSessionId}
-						onSelect={() => select(session.id)}
-						onRemove={() => remove(session.id)}
+						sessionId={session.details.id}
+						isActive={session.details.id === activeSessionId}
+						onSelect={() => select(session.details.id)}
+						onRemove={() => remove(session.details.id)}
 					/>
 				</AgentProvider>
 			))}

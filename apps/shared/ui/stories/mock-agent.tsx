@@ -259,7 +259,7 @@ export function MockAgentsDecorator({
 		select: () => {},
 		create: async () =>
 			({
-				id: 'mock-forked',
+				details: { id: 'mock-forked', visibility: 'visible' },
 				runtime: {} as FranklinRuntime,
 			}) satisfies RuntimeEntry<FranklinRuntime>,
 		remove: () => {},

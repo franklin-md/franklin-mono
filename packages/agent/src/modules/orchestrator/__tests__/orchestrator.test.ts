@@ -5,16 +5,8 @@ import type { RegistryView } from '@franklin/extensibility';
 import type { ExtensionPoint } from '@franklin/extensibility';
 import type { BaseRuntime, StateHandle } from '@franklin/extensibility';
 import { createDependencyModule } from '@franklin/extensibility/module';
-import type {
-	InferAPI,
-	InferRuntime,
-	StateExtensionModule,
-} from '../../state/index.js';
-import {
-	createOrchestrator,
-	RuntimeCollection,
-	type OrchestratorModule,
-} from '../index.js';
+import type { InferAPI, StateExtensionModule } from '../../state/index.js';
+import { createOrchestrator, type OrchestratorModule } from '../index.js';
 
 type TestState = {
 	readonly value: string;
@@ -52,7 +44,6 @@ type TestModule = StateExtensionModule<
 	RuntimeAwareSignature,
 	TestRuntime
 >;
-type TestOrchestratedRuntime = InferRuntime<OrchestratorModule<[TestModule]>>;
 type TestOrchestratedAPI = InferAPI<OrchestratorModule<[TestModule]>>;
 type Settings = {
 	get(): string;
@@ -63,6 +54,7 @@ function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 		emptyState: () => empty,
 		state: (runtime) => runtime[TEST_STATE],
 		instantiate(state) {
+			const ownState: TestState = { value: state.value };
 			return {
 				extensionPoint: runtimeAwareExtensionPoint,
 				compiler: {
@@ -82,10 +74,10 @@ function createTestModule(empty: TestState = { value: 'root' }): TestModule {
 								return disposed;
 							},
 							[TEST_STATE]: {
-								get: vi.fn(async () => state),
-								fork: vi.fn(async () => state),
+								get: vi.fn(async () => ownState),
+								fork: vi.fn(async () => ownState),
 								child: vi.fn(async () => ({
-									value: `child-of-${state.value}`,
+									value: `child-of-${ownState.value}`,
 								})),
 							},
 							dispose: vi.fn(async () => {
@@ -105,53 +97,66 @@ function createIds(...ids: string[]) {
 }
 
 describe('Orchestrator', () => {
-	it('creates a runtime with self id and stores it in the collection', async () => {
-		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
+	it('creates a runtime with details and stores it in the collection', async () => {
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule()] as const,
-			collection,
 			extensions: [],
 			createId: createIds('root-id'),
 		});
 
 		const entry = await orchestrator.create();
 
-		expect(entry.id).toBe('root-id');
-		expect(entry.runtime.self.id).toBe('root-id');
+		expect(entry.details).toEqual({
+			id: 'root-id',
+			visibility: 'visible',
+		});
+		expect(entry.runtime.details).toEqual({
+			id: 'root-id',
+			visibility: 'visible',
+		});
 		expect(await entry.runtime[TEST_STATE].get()).toEqual({ value: 'root' });
-		expect(collection.get('root-id')?.runtime).toBe(entry.runtime);
+		expect(orchestrator.get('root-id')?.runtime).toBe(entry.runtime);
 		expect(orchestrator.list()).toEqual([entry]);
+		expect(await orchestrator.getState('root-id')).toEqual({
+			value: 'root',
+			details: { visibility: 'visible' },
+		});
 		expect('materialize' in entry.runtime.orchestrator).toBe(false);
 		// @ts-expect-error restore-only materialization is not runtime-facing
 		void entry.runtime.orchestrator.materialize;
 	});
 
 	it('creates a restored runtime with the supplied id and state', async () => {
-		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule()] as const,
-			collection,
 			extensions: [],
 		});
 
 		const entry = await orchestrator.create({
 			id: 'restored-id',
-			state: { value: 'restored' },
+			state: {
+				value: 'restored',
+				details: { visibility: 'hidden' },
+			},
 		});
 
-		expect(entry.id).toBe('restored-id');
-		expect(entry.runtime.self.id).toBe('restored-id');
+		expect(entry.details).toEqual({
+			id: 'restored-id',
+			visibility: 'hidden',
+		});
+		expect(entry.runtime.details).toEqual({
+			id: 'restored-id',
+			visibility: 'hidden',
+		});
 		expect(await entry.runtime[TEST_STATE].get()).toEqual({
 			value: 'restored',
 		});
-		expect(collection.get('restored-id')?.runtime).toBe(entry.runtime);
+		expect(orchestrator.get('restored-id')?.runtime).toBe(entry.runtime);
 	});
 
 	it('rejects duplicate explicit ids', async () => {
-		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule()] as const,
-			collection,
 			extensions: [],
 		});
 
@@ -163,10 +168,8 @@ describe('Orchestrator', () => {
 	});
 
 	it.todo('rejects concurrent duplicate explicit ids', async () => {
-		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule()] as const,
-			collection,
 			extensions: [],
 		});
 
@@ -181,21 +184,19 @@ describe('Orchestrator', () => {
 		expect(
 			results.filter((result) => result.status === 'rejected'),
 		).toHaveLength(1);
-		expect(collection.list()).toHaveLength(1);
+		expect(orchestrator.list()).toHaveLength(1);
 	});
 
 	it('injects a final-runtime orchestrator port into runtime-aware handlers', async () => {
-		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const seen: string[] = [];
 		const extension: Extension<TestOrchestratedAPI> = (api) => {
 			api.onRuntime((runtime) => {
-				seen.push(runtime.self.id);
-				seen.push(runtime.orchestrator.list()[0]!.runtime.self.id);
+				seen.push(runtime.details.id);
+				seen.push(runtime.orchestrator.list()[0]!.runtime.details.id);
 			});
 		};
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule()] as const,
-			collection,
 			extensions: [extension],
 			createId: createIds('root-id'),
 		});
@@ -210,19 +211,16 @@ describe('Orchestrator', () => {
 		const settings: Settings = { get: vi.fn(() => 'strict') };
 		const settingsModule = createDependencyModule('settings', settings);
 		type MixedModule = OrchestratorModule<[TestModule, typeof settingsModule]>;
-		type MixedRuntime = InferRuntime<MixedModule>;
 		type MixedAPI = InferAPI<MixedModule>;
-		const collection = new RuntimeCollection<MixedRuntime>();
 		const seen: string[] = [];
 		const extension: Extension<MixedAPI> = (api) => {
 			api.onRuntime((runtime) => {
 				seen.push(runtime.settings.get());
-				seen.push(runtime.self.id);
+				seen.push(runtime.details.id);
 			});
 		};
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule(), settingsModule] as const,
-			collection,
 			extensions: [extension],
 			createId: createIds('root-id'),
 		});
@@ -235,39 +233,41 @@ describe('Orchestrator', () => {
 	});
 
 	it('creates child and fork runtimes from source state', async () => {
-		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule({ value: 'source' })] as const,
-			collection,
 			extensions: [],
 			createId: createIds('source-id', 'child-id', 'fork-id'),
 		});
 
-		const source = await orchestrator.create();
+		const source = await orchestrator.create({
+			state: { details: { visibility: 'hidden' } },
+		});
 		const child = await source.runtime.orchestrator.create({
-			from: source.runtime.self.id,
+			from: source.runtime.details.id,
 			mode: 'child',
 		});
 		const fork = await source.runtime.orchestrator.create({
-			from: source.runtime.self.id,
+			from: source.runtime.details.id,
 			mode: 'fork',
 		});
 
-		expect(await orchestrator.get(child.id)!.runtime[TEST_STATE].get()).toEqual(
-			{
-				value: 'child-of-source',
-			},
-		);
-		expect(await orchestrator.get(fork.id)!.runtime[TEST_STATE].get()).toEqual({
+		expect(
+			await orchestrator.get(child.details.id)!.runtime[TEST_STATE].get(),
+		).toEqual({
+			value: 'child-of-source',
+		});
+		expect(
+			await orchestrator.get(fork.details.id)!.runtime[TEST_STATE].get(),
+		).toEqual({
 			value: 'source',
 		});
+		expect(child.runtime.details.visibility).toBe('hidden');
+		expect(fork.runtime.details.visibility).toBe('hidden');
 	});
 
 	it('applies typed state patch on orchestrator-level create', async () => {
-		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule()] as const,
-			collection,
 			extensions: [],
 			createId: createIds('root-id'),
 		});
@@ -282,10 +282,8 @@ describe('Orchestrator', () => {
 	});
 
 	it('removes and disposes runtimes through the injected port', async () => {
-		const collection = new RuntimeCollection<TestOrchestratedRuntime>();
 		const orchestrator = createOrchestrator({
 			modules: [createTestModule()] as const,
-			collection,
 			extensions: [],
 			createId: createIds('root-id'),
 		});

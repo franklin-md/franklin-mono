@@ -1,4 +1,3 @@
-import { buildStateExtensionModule } from '../modules/state/index.js';
 import {
 	createConfigurationModule,
 	createDependencyModule,
@@ -12,7 +11,6 @@ import { createEnvironmentModule } from '../modules/environment/module.js';
 import {
 	createOrchestrator,
 	type Orchestrator,
-	RuntimeCollection,
 } from '../modules/orchestrator/index.js';
 import { createStoreStateModule } from '../modules/store/state-module.js';
 import { createStorage } from '../storage/create-storage.js';
@@ -53,11 +51,7 @@ export class FranklinApp {
 	readonly settings: SettingsStore;
 	readonly agents: Orchestrator<FranklinBase>;
 
-	private readonly collection: RuntimeCollection<FranklinRuntime>;
-	private readonly sessionPersistence: SessionPersistenceController<
-		FranklinSession,
-		FranklinRuntime
-	>;
+	private readonly sessionPersistence: SessionPersistenceController;
 	private readonly restoreStorage: () => Promise<RestoreResult>;
 
 	constructor(opts: {
@@ -88,20 +82,14 @@ export class FranklinApp {
 			createDependencyModule('auth', this.auth),
 			createConfigurationModule(),
 		];
-		const baseModule = buildStateExtensionModule(baseModules);
-
-		this.collection = new RuntimeCollection<FranklinRuntime>();
-		this.sessionPersistence = createSessionPersistence({
-			collection: this.collection,
-			persistedSessions: storage.sessions,
-			getSession: (runtime) => baseModule.state(runtime).get(),
-			observeSessionChanges,
-		});
-
 		this.agents = createOrchestrator({
 			modules: baseModules,
-			collection: this.collection,
 			extensions,
+		});
+		this.sessionPersistence = createSessionPersistence({
+			source: this.agents,
+			persistedSessions: storage.sessions,
+			observeSessionChanges,
 		});
 	}
 
@@ -110,9 +98,7 @@ export class FranklinApp {
 			this.auth.restore(),
 			this.restoreStorage(),
 		]);
-		const collectionResult = await this.sessionPersistence.restore(
-			(id, state) => this.agents.create({ id, state }),
-		);
+		const collectionResult = await this.sessionPersistence.restore();
 		return {
 			issues: [
 				...authResult.issues,

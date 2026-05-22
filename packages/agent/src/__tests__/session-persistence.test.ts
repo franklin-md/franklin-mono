@@ -1,30 +1,24 @@
 import { describe, expect, it, vi } from 'vitest';
-
 import type { BaseRuntime } from '@franklin/extensibility';
-import {
-	RuntimeCollection,
-	type RuntimeEntry,
-} from '../modules/orchestrator/index.js';
 
+import type { RuntimeEvent } from '../modules/orchestrator/index.js';
 import { createSessionPersistence } from '../app/session/index.js';
+import type { SessionPersistenceSource } from '../app/session/persistence.js';
 import type { SessionPersistence } from '../storage/types.js';
 
 type TestSession = {
 	value: number;
 };
 
-type TestRuntime = BaseRuntime;
+type TestRuntime = BaseRuntime & {
+	readonly label: string;
+};
 
-function createRuntime(session: TestSession): {
-	runtime: TestRuntime;
-	getSession: () => Promise<TestSession>;
-} {
-	const runtime: TestRuntime = {
+function createRuntime(label: string): TestRuntime {
+	return {
+		label,
 		dispose: vi.fn(async () => {}),
 	};
-	const getSession = vi.fn(async () => ({ ...session }));
-
-	return { runtime, getSession };
 }
 
 function createPersistedSessions(): SessionPersistence<TestSession> {
@@ -33,6 +27,49 @@ function createPersistedSessions(): SessionPersistence<TestSession> {
 		load: vi.fn(async () => ({ values: new Map(), issues: [] })),
 		delete: vi.fn(async () => {}),
 	};
+}
+
+function createSessionSource() {
+	const sessions = new Map<string, TestSession>();
+	const listeners = new Set<(event: RuntimeEvent<TestRuntime>) => void>();
+	type Source = SessionPersistenceSource<TestSession, TestRuntime>;
+
+	function emit(event: RuntimeEvent<TestRuntime>): void {
+		for (const listener of listeners) listener(event);
+	}
+
+	const source: Source = {
+		create: vi.fn<Source['create']>(async ({ id, state }) => {
+			const runtime = createRuntime(id);
+			sessions.set(id, { ...state });
+			emit({ action: 'add', id, runtime });
+			return runtime;
+		}),
+		getState: vi.fn<Source['getState']>(async (id) => {
+			const session = sessions.get(id);
+			return session ? { ...session } : undefined;
+		}),
+		subscribe: vi.fn<Source['subscribe']>((listener) => {
+			listeners.add(listener);
+			return () => {
+				listeners.delete(listener);
+			};
+		}),
+	};
+
+	const add = (id: string, runtime: TestRuntime, session: TestSession) => {
+		sessions.set(id, { ...session });
+		emit({ action: 'add', id, runtime });
+	};
+	const remove = (id: string, runtime: TestRuntime) => {
+		sessions.delete(id);
+		emit({ action: 'remove', id, runtime });
+	};
+	const update = (id: string, session: TestSession) => {
+		sessions.set(id, { ...session });
+	};
+
+	return { source, add, remove, update };
 }
 
 function createObserver() {
@@ -52,19 +89,17 @@ function createObserver() {
 
 describe('createSessionPersistence', () => {
 	it('persists initial session and injected runtime observer changes', async () => {
-		const session = { value: 1 };
-		const { runtime, getSession } = createRuntime(session);
+		const runtime = createRuntime('root-runtime');
 		const persistedSessions = createPersistedSessions();
-		const collection = new RuntimeCollection<TestRuntime>();
+		const sessionSource = createSessionSource();
 		const { observe, notify } = createObserver();
 		createSessionPersistence<TestSession, TestRuntime>({
-			collection,
+			source: sessionSource.source,
 			persistedSessions,
-			getSession,
 			observeSessionChanges: observe,
 		});
 
-		collection.set('root', runtime);
+		sessionSource.add('root', runtime, { value: 1 });
 
 		await vi.waitFor(() => {
 			expect(persistedSessions.save).toHaveBeenCalledWith('root', {
@@ -74,7 +109,7 @@ describe('createSessionPersistence', () => {
 		expect(observe).toHaveBeenCalledWith(runtime, expect.any(Function));
 
 		vi.mocked(persistedSessions.save).mockClear();
-		session.value = 2;
+		sessionSource.update('root', { value: 2 });
 		notify(runtime);
 
 		await vi.waitFor(() => {
@@ -85,56 +120,48 @@ describe('createSessionPersistence', () => {
 	});
 
 	it('unsubscribes runtime observers when a runtime is removed', async () => {
-		const { runtime, getSession } = createRuntime({ value: 1 });
+		const runtime = createRuntime('root-runtime');
 		const persistedSessions = createPersistedSessions();
-		const collection = new RuntimeCollection<TestRuntime>();
+		const sessionSource = createSessionSource();
 		const { observe, notify } = createObserver();
 		createSessionPersistence<TestSession, TestRuntime>({
-			collection,
+			source: sessionSource.source,
 			persistedSessions,
-			getSession,
 			observeSessionChanges: observe,
 		});
 
-		collection.set('root', runtime);
+		sessionSource.add('root', runtime, { value: 1 });
 		await vi.waitFor(() => {
 			expect(persistedSessions.save).toHaveBeenCalledOnce();
 		});
 
 		vi.mocked(persistedSessions.save).mockClear();
-		await collection.remove('root');
+		sessionSource.remove('root', runtime);
 		notify(runtime);
 
 		expect(persistedSessions.save).not.toHaveBeenCalled();
 		expect(persistedSessions.delete).toHaveBeenCalledWith('root');
 	});
 
-	it('restores persisted entries through the supplied hydrate callback', async () => {
+	it('restores persisted entries through the session source', async () => {
 		const persistedSessions = createPersistedSessions();
-		const collection = new RuntimeCollection<TestRuntime>();
+		const sessionSource = createSessionSource();
 		const { observe } = createObserver();
 		const persistence = createSessionPersistence<TestSession, TestRuntime>({
-			collection,
+			source: sessionSource.source,
 			persistedSessions,
-			getSession: vi.fn(async () => ({ value: 0 })),
 			observeSessionChanges: observe,
 		});
 		vi.mocked(persistedSessions.load).mockResolvedValueOnce({
 			values: new Map([['root', { value: 5 }]]),
 			issues: [],
 		});
-		const hydrate = vi.fn(
-			async (
-				id: string,
-				session: TestSession,
-			): Promise<RuntimeEntry<TestRuntime>> => {
-				const { runtime } = createRuntime(session);
-				return { id, runtime };
-			},
-		);
 
-		await persistence.restore(hydrate);
+		await persistence.restore();
 
-		expect(hydrate).toHaveBeenCalledWith('root', { value: 5 });
+		expect(sessionSource.source.create).toHaveBeenCalledWith({
+			id: 'root',
+			state: { value: 5 },
+		});
 	});
 });

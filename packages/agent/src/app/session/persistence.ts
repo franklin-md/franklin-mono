@@ -2,34 +2,37 @@ import type { Issue, RestoreResult } from '@franklin/lib';
 import { hydrateFailedIssue } from '@franklin/lib';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { BaseState } from '../../modules/state/index.js';
-import type {
-	RuntimeCollection,
-	RuntimeEntry,
-} from '../../modules/orchestrator/index.js';
+import type { RuntimeEvent } from '../../modules/orchestrator/index.js';
 import type { SessionPersistence as PersistedSessions } from '../../storage/types.js';
 
-export type SessionChangeObserver<Runtime extends BaseRuntime> = (
+type SessionChangeObserver<Runtime extends BaseRuntime> = (
 	runtime: Runtime,
 	listener: () => void,
 ) => () => void;
 
-export type SessionPersistenceController<
+export type SessionPersistenceController = {
+	restore(): Promise<RestoreResult>;
+	dispose(): void;
+};
+
+export type SessionPersistenceSource<
 	Session extends BaseState,
 	Runtime extends BaseRuntime,
 > = {
-	restore(
-		hydrate: (id: string, session: Session) => Promise<RuntimeEntry<Runtime>>,
-	): Promise<RestoreResult>;
-	dispose(): void;
+	create(input: {
+		readonly id: string;
+		readonly state: Session;
+	}): Promise<unknown>;
+	getState(id: string): Promise<Session | undefined>;
+	subscribe(listener: (event: RuntimeEvent<Runtime>) => void): () => void;
 };
 
 type SessionPersistenceOptions<
 	Session extends BaseState,
 	Runtime extends BaseRuntime,
 > = {
-	readonly collection: RuntimeCollection<Runtime>;
+	readonly source: SessionPersistenceSource<Session, Runtime>;
 	readonly persistedSessions: PersistedSessions<Session>;
-	readonly getSession: (runtime: Runtime) => Promise<Session>;
 	readonly observeSessionChanges: SessionChangeObserver<Runtime>;
 };
 
@@ -37,14 +40,10 @@ export function createSessionPersistence<
 	Session extends BaseState,
 	Runtime extends BaseRuntime,
 >({
-	collection,
+	source,
 	persistedSessions,
-	getSession,
 	observeSessionChanges,
-}: SessionPersistenceOptions<Session, Runtime>): SessionPersistenceController<
-	Session,
-	Runtime
-> {
+}: SessionPersistenceOptions<Session, Runtime>): SessionPersistenceController {
 	const runtimeObservers = new Map<string, () => void>();
 
 	function removeRuntimeObserver(sessionId: string): void {
@@ -52,23 +51,24 @@ export function createSessionPersistence<
 		runtimeObservers.delete(sessionId);
 	}
 
-	function persist(sessionId: string, runtime: Runtime): void {
-		void getSession(runtime).then((session) =>
-			persistedSessions.save(sessionId, session),
-		);
+	function persist(sessionId: string): void {
+		void source.getState(sessionId).then((session) => {
+			if (!session) return;
+			return persistedSessions.save(sessionId, session);
+		});
 	}
 
 	function replaceRuntimeObserver(sessionId: string, runtime: Runtime): void {
 		removeRuntimeObserver(sessionId);
 		const unsubscribe = observeSessionChanges(runtime, () => {
-			persist(sessionId, runtime);
+			persist(sessionId);
 		});
 		runtimeObservers.set(sessionId, unsubscribe);
 	}
 
-	const unsubscribeCollection = collection.subscribe((event) => {
+	const unsubscribeSource = source.subscribe((event) => {
 		if (event.action === 'add') {
-			persist(event.id, event.runtime);
+			persist(event.id);
 			replaceRuntimeObserver(event.id, event.runtime);
 			return;
 		}
@@ -78,12 +78,12 @@ export function createSessionPersistence<
 	});
 
 	return {
-		async restore(hydrate) {
+		async restore() {
 			const { values, issues } = await persistedSessions.load();
 			const runtimeIssues: Issue[] = [];
 			for (const [id, session] of values) {
 				try {
-					await hydrate(id, session);
+					await source.create({ id, state: session });
 				} catch (err) {
 					runtimeIssues.push(hydrateFailedIssue(id, err));
 				}
@@ -92,7 +92,7 @@ export function createSessionPersistence<
 		},
 
 		dispose() {
-			unsubscribeCollection();
+			unsubscribeSource();
 			for (const unsubscribe of runtimeObservers.values()) {
 				unsubscribe();
 			}

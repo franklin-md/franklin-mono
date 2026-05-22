@@ -65,7 +65,10 @@ function createSession(
 	status: StatusState,
 	title?: string,
 ): RuntimeEntry<FranklinRuntime> {
-	return { id, runtime: createRuntime(status, title) };
+	return {
+		details: { id, visibility: 'visible' },
+		runtime: createRuntime(status, title),
+	};
 }
 
 type MockAgentsHostProps = {
@@ -95,10 +98,13 @@ function MockAgentsHost({ initialSessions, children }: MockAgentsHostProps) {
 					notify();
 					return session;
 				},
-				get: (id: string) => sessions.find((session) => session.id === id),
+				get: (id: string) =>
+					sessions.find((session) => session.details.id === id),
 				list: () => [...sessions],
 				remove: async (id: string) => {
-					const index = sessions.findIndex((session) => session.id === id);
+					const index = sessions.findIndex(
+						(session) => session.details.id === id,
+					);
 					if (index === -1) {
 						return false;
 					}

@@ -1,64 +1,90 @@
-import {
-	combine as combineSimpleModules,
-	combineAll as combineSimpleModulesAll,
-	type Modules as SimpleModules,
+import type {
+	InferRuntime as InferSimpleRuntime,
+	InferSignature as InferSimpleSignature,
 } from '@franklin/extensibility/module';
 import type {
 	BaseStateExtensionModule,
-	InferState,
+	CombineModules as CombineStateModules,
+	IdentityState,
+	StateExtensionModule,
 } from '../../state/index.js';
+import {
+	combine as combineStateModules,
+	fromSimpleModule,
+} from '../../state/index.js';
+import { createDetailsModule, type DetailsModule } from './details/index.js';
 import type {
 	OrchestratorHandle,
 	OrchestratorModule,
 	OrchestratorRuntime,
+	OrchestratorState,
 } from '../types.js';
 import {
 	createOrchestrationModule,
 	type OrchestrationModule,
 } from './orchestration.js';
-import { createSelfModule, type SelfModule } from './self.js';
 
 /**
- * The internal slice of an orchestrated module: the `Self` identity port and
- * the recursive `Orchestration` port, combined as a stateless extension module.
+ * The internal slice of an orchestrated module: persisted runtime details plus
+ * the recursive `Orchestration` port.
  */
 export type InternalOrchestratorModule<M extends BaseStateExtensionModule> =
-	SimpleModules<[SelfModule, OrchestrationModule<M>]>;
+	CombineStateModules<DetailsModule, OrchestrationStateModule<M>>;
+
+type OrchestrationStateModule<M extends BaseStateExtensionModule> =
+	StateExtensionModule<
+		IdentityState,
+		InferSimpleSignature<OrchestrationModule<M>>,
+		InferSimpleRuntime<OrchestrationModule<M>>
+	>;
 
 export type InternalOrchestratorOptions<M extends BaseStateExtensionModule> = {
 	readonly id: string;
 	readonly getHandle: () => OrchestratorHandle<
 		OrchestratorRuntime<M>,
-		InferState<M>
+		OrchestratorState<M>
 	>;
 };
+
+function createOrchestrationStateModule<M extends BaseStateExtensionModule>(
+	getHandle: () => OrchestratorHandle<
+		OrchestratorRuntime<M>,
+		OrchestratorState<M>
+	>,
+): OrchestrationStateModule<M> {
+	return fromSimpleModule(createOrchestrationModule<M>(getHandle));
+}
+
+function combineInternalOrchestratorModules<M extends BaseStateExtensionModule>(
+	details: DetailsModule,
+	orchestration: OrchestrationStateModule<M>,
+): InternalOrchestratorModule<M> {
+	return combineStateModules(
+		details,
+		orchestration as never,
+	) as unknown as InternalOrchestratorModule<M>;
+}
 
 export function createInternalOrchestratorModule<
 	M extends BaseStateExtensionModule,
 >(opts: InternalOrchestratorOptions<M>): InternalOrchestratorModule<M> {
-	return combineSimpleModulesAll([
-		createSelfModule(opts.id),
-		createOrchestrationModule<M>(opts.getHandle),
-	]);
+	return combineInternalOrchestratorModules(
+		createDetailsModule(opts.id),
+		createOrchestrationStateModule<M>(opts.getHandle),
+	);
 }
 
 /**
- * Attach the internal stateless ports after the user's stateful module has
- * been instantiated. The base state rules remain owned by the user module.
+ * Attach the internal stateful details port and stateless orchestration port
+ * after the user's module so details participate in state projection.
  */
 export function createOrchestratorModule<M extends BaseStateExtensionModule>(
 	module: M,
 	opts: InternalOrchestratorOptions<M>,
 ): OrchestratorModule<[M]> {
 	const internal = createInternalOrchestratorModule(opts);
-	return {
-		emptyState: () => module.emptyState(),
-		state: (runtime) => module.state(runtime as never),
-		instantiate(state) {
-			return combineSimpleModules(
-				module.instantiate(state as InferState<M>),
-				internal as never,
-			) as never;
-		},
-	} as OrchestratorModule<[M]>;
+	return combineStateModules(
+		module,
+		internal as never,
+	) as unknown as OrchestratorModule<[M]>;
 }

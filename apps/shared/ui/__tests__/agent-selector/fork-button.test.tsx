@@ -59,7 +59,7 @@ describe('ForkButton', () => {
 
 	it('forks the active session on click and calls onCreated', async () => {
 		const session = {
-			id: 'forked-session',
+			details: { id: 'forked-session', visibility: 'visible' },
 			runtime: {},
 		} as Awaited<ReturnType<AgentsControl['create']>>;
 		const create = vi.fn<AgentsControl['create']>().mockResolvedValue(session);

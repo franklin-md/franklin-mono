@@ -9,6 +9,9 @@ import {
 
 function session(): FranklinSession {
 	return {
+		details: {
+			visibility: 'hidden',
+		},
 		core: {
 			messages: [
 				{
@@ -57,21 +60,38 @@ describe('session codec', () => {
 	it('decodes a versioned envelope', () => {
 		const value = session();
 
-		expect(franklinSessionCodec.decode({ version: 1, data: value })).toEqual({
+		expect(
+			franklinSessionCodec.decode({
+				version: SESSION_FILE_VERSION,
+				data: value,
+			}),
+		).toEqual({
 			ok: true,
 			value,
+		});
+	});
+
+	it('migrates v1 sessions with default visible details', () => {
+		const { details: _details, ...v1 } = session();
+
+		expect(franklinSessionCodec.decode({ version: 1, data: v1 })).toEqual({
+			ok: true,
+			value: {
+				...v1,
+				details: { visibility: 'visible' },
+			},
 		});
 	});
 
 	it('rejects missing session roots', () => {
 		expect(
 			franklinSessionCodec.decode({
-				version: 1,
+				version: SESSION_FILE_VERSION,
 				data: { core: session().core, env: session().env },
 			}),
 		).toMatchObject({
 			ok: false,
-			issue: { kind: 'schema-mismatch', version: 1 },
+			issue: { kind: 'schema-mismatch', version: SESSION_FILE_VERSION },
 		});
 	});
 
@@ -91,7 +111,7 @@ describe('session codec', () => {
 	it('drops accidentally persisted api keys from llm config', () => {
 		const value = session();
 		const raw = {
-			version: 1,
+			version: SESSION_FILE_VERSION,
 			data: {
 				...value,
 				core: {
