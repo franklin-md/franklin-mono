@@ -17,8 +17,8 @@ import { describe, expect, it } from 'vitest';
 import { createCoreStateModule } from '../../../modules/core/module.js';
 import {
 	createOrchestrator,
-	RuntimeCollection,
 	type OrchestratorRuntime,
+	type RuntimeEntry,
 } from '../../../modules/orchestrator/index.js';
 import type { CoreStateModule } from '../../../modules/core/module.js';
 import { spawnExtension } from '../index.js';
@@ -27,8 +27,7 @@ type SpawnRuntime = OrchestratorRuntime<CoreStateModule>;
 
 type SpawnScenario = {
 	readonly mock: MockMiniACP;
-	readonly root: { readonly id: string; readonly runtime: SpawnRuntime };
-	readonly collection: RuntimeCollection<SpawnRuntime>;
+	readonly root: RuntimeEntry<SpawnRuntime>;
 	dispose(): Promise<void>;
 };
 
@@ -63,10 +62,8 @@ async function createSpawnScenario(
 ): Promise<SpawnScenario> {
 	const mock = createMockMiniACP(options);
 	const module = createCoreStateModule(mock.connector);
-	const collection = new RuntimeCollection<SpawnRuntime>();
 	const orchestrator = createOrchestrator({
 		modules: [module] as const,
-		collection,
 		extensions: [spawnExtension.extension],
 		createId: createIds('root', 'child'),
 	});
@@ -75,9 +72,8 @@ async function createSpawnScenario(
 	return {
 		mock,
 		root,
-		collection,
 		async dispose() {
-			await root.runtime.orchestrator.remove(root.id);
+			await root.runtime.orchestrator.remove(root.details.id);
 		},
 	};
 }
@@ -107,9 +103,11 @@ describe('spawnExtension', () => {
 				'parent task',
 				'write the summary',
 			]);
-			expect(scenario.collection.list().map((entry) => entry.id)).toEqual([
-				'root',
-			]);
+			expect(
+				scenario.root.runtime.orchestrator
+					.list()
+					.map((entry) => entry.details.id),
+			).toEqual(['root']);
 			expect(calls.disposes).toBe(1);
 		} finally {
 			await scenario.dispose();
@@ -138,9 +136,11 @@ describe('spawnExtension', () => {
 			const result = scenario.mock.calls().toolResults[0];
 			expect(result?.isError).toBe(true);
 			expect(resultText(result)).toBe('child failed');
-			expect(scenario.collection.list().map((entry) => entry.id)).toEqual([
-				'root',
-			]);
+			expect(
+				scenario.root.runtime.orchestrator
+					.list()
+					.map((entry) => entry.details.id),
+			).toEqual(['root']);
 		} finally {
 			await scenario.dispose();
 		}
