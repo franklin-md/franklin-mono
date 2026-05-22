@@ -18,16 +18,20 @@ jobs:
       NODE_OPTIONS: '--max-old-space-size=4096'
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install project npm
+      - name: Install npm 11
         run: |
-          npm_spec="$(node -p 'require("./package.json").packageManager')"
+          # Run outside the repo so the bundled npm 10 does not evaluate
+          # devEngines before it upgrades itself to the project npm version.
           cd /tmp
-          npm install --global "$npm_spec"
+          npm install --global --ignore-scripts npm@11.12.1
+          npm --version
 
       - run: npm ci
 
