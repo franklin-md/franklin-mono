@@ -8,6 +8,7 @@ import {
 	type LifecycleUnload,
 } from '../../../module.js';
 import { createLifecycleModule as createLifecycleModuleFromModuleFile } from '../module.js';
+import type { LifecycleAPI } from '../types.js';
 
 describe('createLifecycleModule', () => {
 	it('is exported from the public module surface', () => {
@@ -51,12 +52,16 @@ describe('createLifecycleModule', () => {
 				api.onUnload(() => {
 					events.push('default-one');
 				});
-				priority.low(api).onUnload(() => {
-					events.push('low');
-				});
-				priority.high(api).onUnload(() => {
-					events.push('high');
-				});
+				priority.low((prioritizedApi: LifecycleAPI) => {
+					prioritizedApi.onUnload(() => {
+						events.push('low');
+					});
+				})(api);
+				priority.high((prioritizedApi: LifecycleAPI) => {
+					prioritizedApi.onUnload(() => {
+						events.push('high');
+					});
+				})(api);
 				api.onUnload(() => {
 					events.push('default-two');
 				});
