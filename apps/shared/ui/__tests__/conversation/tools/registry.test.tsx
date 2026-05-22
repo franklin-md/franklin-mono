@@ -111,12 +111,44 @@ describe('defaultToolRegistry', () => {
 			expect(screen.getByText('/docs/getting-started')).toBeTruthy();
 		});
 
-		it('renders search with query text', () => {
-			renderSummary(createWebExtension({}).tools.searchWeb.name, {
-				query: 'example query',
-			});
+		it('does not render search before output resolves', () => {
+			const { container } = renderSummary(
+				createWebExtension({}).tools.searchWeb.name,
+				{ query: 'example query' },
+			);
+
+			expect(container.textContent).toBe('');
+			expect(container.querySelector('svg')).toBeNull();
+		});
+
+		it('renders search with query text from raw output', () => {
+			renderSummary(
+				createWebExtension({}).tools.searchWeb.name,
+				{ query: 'example query' },
+				{
+					kind: 'success',
+					provider: { id: EXA_WEB_SEARCH_PROVIDER_ID, name: 'Exa' },
+					query: 'example query',
+					results: [],
+				},
+			);
 			expect(screen.getByText('Search')).toBeTruthy();
 			expect(screen.getByText('example query')).toBeTruthy();
+		});
+
+		it('renders search with query text from error output', () => {
+			const { container } = renderSummary(
+				createWebExtension({}).tools.searchWeb.name,
+				{ query: 'example query' },
+				{
+					kind: 'error',
+					query: 'example query',
+					message: 'No web search providers configured',
+					failures: [],
+				},
+			);
+			expect(container.textContent).toContain('Search');
+			expect(container.textContent).toContain('example query');
 		});
 
 		it('renders search with the Exa provider icon from raw output', () => {
