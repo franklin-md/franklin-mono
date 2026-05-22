@@ -1,24 +1,10 @@
-import type {
-	Context,
-	ContextPatch,
-	Message,
-	MiniACPClient,
-	Usage,
-} from '@franklin/mini-acp';
-import type { ContextTracker, UsageTracker } from '@franklin/mini-acp/session';
+import type { Context, Usage } from '@franklin/mini-acp';
+import type { UsageTracker } from '@franklin/mini-acp/session';
 import type { SessionSnapshot } from '../state.js';
-
-export interface SystemPromptBuild {
-	readonly systemPrompt: string;
-	readonly changed: boolean;
-}
+import type { PromptContextLedger } from './prompt-context.js';
 
 export interface SystemPromptBuilder {
-	build(): Promise<SystemPromptBuild>;
-}
-
-export interface PromptContextSync {
-	sync(client: Pick<MiniACPClient, 'setContext'>): Promise<void>;
+	build(): Promise<string | undefined>;
 }
 
 /**
@@ -37,11 +23,7 @@ export interface PromptContextSync {
 export interface AgentState {
 	getAgentContext(): Context;
 	getSnapshot(): SessionSnapshot;
-	readonly contextTracker: ContextTracker;
-	readonly promptContext: PromptContextSync;
-	readonly systemPrompt: SystemPromptBuilder;
+	readonly promptContext: PromptContextLedger;
 	readonly usageTracker: UsageTracker;
-	apply(partial: ContextPatch): void;
-	append(message: Message): void;
 	add(delta: Usage): void;
 }

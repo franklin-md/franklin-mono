@@ -37,7 +37,8 @@ function stubClient(
 }
 
 describe('createAgentState', () => {
-	it('creates a system prompt builder from registered handlers', async () => {
+	it('syncs registered system prompt changes through the prompt-context ledger', async () => {
+		const client = stubClient();
 		const agentState = createAgentState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry((api) => {
@@ -48,34 +49,42 @@ describe('createAgentState', () => {
 			getRuntime: () => runtime,
 		});
 
-		expect(await agentState.systemPrompt.build()).toEqual({
-			systemPrompt: 'system',
-			changed: true,
-		});
+		await agentState.promptContext.sync(client);
+		await agentState.promptContext.sync(client);
 
-		agentState.apply({ systemPrompt: 'system' });
-
-		expect(await agentState.systemPrompt.build()).toEqual({
+		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({
 			systemPrompt: 'system',
-			changed: false,
+			messages: [],
+			tools: [],
+			config: {},
 		});
 	});
 
-	it('does not treat absent handlers as a request to clear a sent prompt', async () => {
+	it('does not treat absent handlers as a request to clear acknowledged prompt context', async () => {
+		const client = stubClient();
 		const agentState = createAgentState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(),
 			getRuntime: () => runtime,
 		});
-		agentState.apply({ systemPrompt: 'external' });
+		agentState.promptContext.apply({ systemPrompt: 'external' });
 
-		expect(await agentState.systemPrompt.build()).toEqual({
-			systemPrompt: '',
-			changed: false,
+		await agentState.promptContext.sync(client);
+
+		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({
+			systemPrompt: 'external',
+			messages: [],
+			tools: [],
+			config: {},
 		});
 	});
 
-	it('keeps reporting changed until the tracked context changes', async () => {
+	it('keeps system prompt changes pending until prompt context sync succeeds', async () => {
+		const setContext = vi
+			.fn<MiniACPClient['setContext']>()
+			.mockRejectedValueOnce(new Error('transient failure'))
+			.mockResolvedValueOnce(undefined);
+		const client = stubClient(setContext);
 		const agentState = createAgentState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry((api) => {
@@ -86,13 +95,22 @@ describe('createAgentState', () => {
 			getRuntime: () => runtime,
 		});
 
-		expect(await agentState.systemPrompt.build()).toEqual({
+		await expect(agentState.promptContext.sync(client)).rejects.toThrow(
+			'transient failure',
+		);
+		await agentState.promptContext.sync(client);
+
+		expect(client.setContext).toHaveBeenNthCalledWith(1, {
 			systemPrompt: 'retryable',
-			changed: true,
+			messages: [],
+			tools: [],
+			config: {},
 		});
-		expect(await agentState.systemPrompt.build()).toEqual({
+		expect(client.setContext).toHaveBeenNthCalledWith(2, {
 			systemPrompt: 'retryable',
-			changed: true,
+			messages: [],
+			tools: [],
+			config: {},
 		});
 	});
 
@@ -215,8 +233,8 @@ describe('createAgentState', () => {
 		};
 
 		await agentState.promptContext.sync(client);
-		agentState.append(userMessage);
-		agentState.append(assistantMessage);
+		agentState.promptContext.append(userMessage);
+		agentState.promptContext.append(assistantMessage);
 		await agentState.promptContext.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({

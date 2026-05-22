@@ -7,13 +7,11 @@ import type { SystemPromptBuilder } from './types.js';
 type CreateSystemPromptBuilderInput<Runtime extends BaseRuntime> = {
 	readonly registrations: RegistryView<CoreSignature, Runtime>;
 	readonly getRuntime: () => Runtime;
-	readonly getLastSentSystemPrompt: () => string;
 };
 
 export function createSystemPromptBuilder<Runtime extends BaseRuntime>({
 	registrations,
 	getRuntime,
-	getLastSentSystemPrompt,
 }: CreateSystemPromptBuilderInput<Runtime>): SystemPromptBuilder {
 	const handlers = bindRegisteredEventHandlers(
 		registrations,
@@ -26,20 +24,13 @@ export function createSystemPromptBuilder<Runtime extends BaseRuntime>({
 
 	return {
 		async build() {
-			const systemPrompt = await assembler.assemble();
-			return {
-				systemPrompt,
-				changed: systemPrompt !== getLastSentSystemPrompt(),
-			};
+			return assembler.assemble();
 		},
 	};
 }
 
 const emptySystemPromptBuilder: SystemPromptBuilder = {
 	async build() {
-		return {
-			systemPrompt: '',
-			changed: false,
-		};
+		return undefined;
 	},
 };

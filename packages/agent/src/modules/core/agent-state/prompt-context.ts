@@ -5,72 +5,137 @@ import type {
 	Message,
 	MiniACPClient,
 	ToolDefinition,
+	Usage,
 } from '@franklin/mini-acp';
-import type { ContextTracker } from '@franklin/mini-acp/session';
-import { copyContext, copyContextPatch } from './context-copy.js';
-import type { PromptContextSync, SystemPromptBuilder } from './types.js';
+import { ContextTracker } from '@franklin/mini-acp/session';
+import type { SessionSnapshot } from '../state.js';
+import type { SystemPromptBuilder } from './types.js';
 
-type CreatePromptContextSyncInput = {
-	readonly confirmed: ContextTracker;
-	readonly desired: ContextTracker;
+type LLMConfigSnapshot = SessionSnapshot['llmConfig'];
+
+type PromptContextLedgerInput = {
+	readonly snapshot: SessionSnapshot;
 	readonly systemPrompt: SystemPromptBuilder;
 	readonly tools: readonly ToolDefinition[];
 };
 
-export function createPromptContextSync({
-	confirmed,
-	desired,
-	systemPrompt,
-	tools,
-}: CreatePromptContextSyncInput): PromptContextSync {
-	let hasSentContext = false;
+export class PromptContextLedger extends ContextTracker {
+	private readonly acknowledged = new ContextTracker();
+	private readonly target = new ContextTracker();
+	private readonly systemPrompt: SystemPromptBuilder;
+	private readonly tools: readonly ToolDefinition[];
+	private hasSentContext = false;
 
-	async function desiredContext(): Promise<Context> {
-		const base = desired.get();
-		const builtSystemPrompt = await systemPrompt.build();
+	constructor({ snapshot, systemPrompt, tools }: PromptContextLedgerInput) {
+		super();
+		this.systemPrompt = systemPrompt;
+		this.tools = tools;
+		this.target.apply(contextFromSnapshot(snapshot, tools));
+	}
+
+	override get(): Context {
+		return this.acknowledged.get();
+	}
+
+	override apply(patch: ContextPatch): void {
+		this.recordAcknowledgedPatch(patch);
+		this.onChange?.();
+	}
+
+	override append(message: Message): void {
+		this.acknowledged.append(message);
+		this.target.append(message);
+		this.onChange?.();
+	}
+
+	override reset(): void {
+		this.acknowledged.reset();
+		this.target.reset();
+		this.hasSentContext = false;
+		this.onChange?.();
+	}
+
+	getSnapshot(usage: Usage): SessionSnapshot {
+		const context = this.target.get();
+		return sessionSnapshot(
+			context.messages,
+			pickLLMConfig(context.config),
+			usage,
+		);
+	}
+
+	async sync(client: Pick<MiniACPClient, 'setContext'>): Promise<void> {
+		const next = await this.targetContext();
+		const patch = this.hasSentContext
+			? diffContext(this.acknowledged.get(), next)
+			: copyContext(next);
+		if (isEmptyPatch(patch)) return;
+
+		await client.setContext(copyContextPatch(patch));
+		this.recordAcknowledgedPatch(patch);
+		this.hasSentContext = true;
+	}
+
+	private async targetContext(): Promise<Context> {
+		const base = this.target.get();
+		const systemPrompt = await this.systemPrompt.build();
 		return {
-			systemPrompt: builtSystemPrompt.changed
-				? builtSystemPrompt.systemPrompt
-				: base.systemPrompt,
+			systemPrompt: systemPrompt ?? base.systemPrompt,
 			messages: [...base.messages],
-			tools: [...tools],
+			tools: [...this.tools],
 			config: { ...base.config },
 		};
 	}
 
-	return {
-		async sync(client: Pick<MiniACPClient, 'setContext'>): Promise<void> {
-			const next = await desiredContext();
-			const patch = hasSentContext
-				? diffContext(confirmed.get(), next)
-				: fullContextPatch(next);
-			if (isEmptyPatch(patch)) return;
+	private recordAcknowledgedPatch(patch: ContextPatch): void {
+		applyIfNeeded(this.acknowledged, patch);
+		applyIfNeeded(this.target, patch);
+	}
+}
 
-			await client.setContext(copyContextPatch(patch));
-			applyIfNeeded(confirmed, patch);
-			applyIfNeeded(desired, patch);
-			hasSentContext = true;
-		},
+function contextFromSnapshot(
+	snapshot: SessionSnapshot,
+	tools: readonly ToolDefinition[],
+): Context {
+	return {
+		systemPrompt: '',
+		messages: [...snapshot.messages],
+		tools: [...tools],
+		config: { ...snapshot.llmConfig },
 	};
 }
 
-function fullContextPatch(context: Context): ContextPatch {
-	return copyContext(context);
+function copyContext(context: Context): ContextPatch {
+	return {
+		systemPrompt: context.systemPrompt,
+		messages: [...context.messages],
+		tools: [...context.tools],
+		config: { ...context.config },
+	};
 }
 
-function diffContext(confirmed: Context, desired: Context): ContextPatch {
+function copyContextPatch(patch: ContextPatch): ContextPatch {
+	const copy: ContextPatch = {};
+	if (patch.systemPrompt !== undefined) copy.systemPrompt = patch.systemPrompt;
+	if (patch.messages !== undefined) copy.messages = [...patch.messages];
+	if (patch.tools !== undefined) copy.tools = [...patch.tools];
+	if (patch.config !== undefined) copy.config = { ...patch.config };
+	return copy;
+}
+
+function diffContext(acknowledged: Context, target: Context): ContextPatch {
 	const patch: ContextPatch = {};
-	if (confirmed.systemPrompt !== desired.systemPrompt) {
-		patch.systemPrompt = desired.systemPrompt;
+	if (acknowledged.systemPrompt !== target.systemPrompt) {
+		patch.systemPrompt = target.systemPrompt;
 	}
-	if (!structurallyEqual(confirmed.messages, desired.messages)) {
-		patch.messages = [...desired.messages];
+	if (!structurallyEqual(acknowledged.messages, target.messages)) {
+		patch.messages = [...target.messages];
 	}
-	if (!structurallyEqual(confirmed.tools, desired.tools)) {
-		patch.tools = [...desired.tools];
+	if (!structurallyEqual(acknowledged.tools, target.tools)) {
+		patch.tools = [...target.tools];
 	}
 
-	const config = diffConfig(confirmed.config, desired.config);
+	const config = diffConfig(acknowledged.config, target.config);
 	if (Object.keys(config).length > 0) {
 		patch.config = config;
 	}
@@ -78,23 +143,24 @@ function diffContext(confirmed: Context, desired: Context): ContextPatch {
 }
 
 function diffConfig(
-	confirmed: LLMConfig,
-	desired: LLMConfig,
+	acknowledged: LLMConfig,
+	target: LLMConfig,
 ): Partial<LLMConfig> {
 	const patch: Partial<LLMConfig> = {};
-	if ('model' in desired && confirmed.model !== desired.model) {
-		patch.model = desired.model;
-	}
-	if ('provider' in desired && confirmed.provider !== desired.provider) {
-		patch.provider = desired.provider;
-	}
-	if ('reasoning' in desired && confirmed.reasoning !== desired.reasoning) {
-		patch.reasoning = desired.reasoning;
-	}
-	if ('apiKey' in desired && confirmed.apiKey !== desired.apiKey) {
-		patch.apiKey = desired.apiKey;
+	for (const key of Object.keys(target) as (keyof LLMConfig)[]) {
+		if (acknowledged[key] !== target[key]) {
+			setConfigPatchValue(patch, key, target[key]);
+		}
 	}
 	return patch;
+}
+
+function setConfigPatchValue<Key extends keyof LLMConfig>(
+	patch: Partial<LLMConfig>,
+	key: Key,
+	value: LLMConfig[Key],
+): void {
+	patch[key] = value;
 }
 
 function isEmptyPatch(patch: ContextPatch): boolean {
@@ -139,8 +205,8 @@ function configPatchMatches(
 	context: Context,
 	config: Partial<LLMConfig>,
 ): boolean {
-	for (const key of ['model', 'provider', 'reasoning', 'apiKey'] as const) {
-		if (key in config && context.config[key] !== config[key]) return false;
+	for (const key of Object.keys(config) as (keyof LLMConfig)[]) {
+		if (context.config[key] !== config[key]) return false;
 	}
 	return true;
 }
@@ -150,4 +216,31 @@ function structurallyEqual(
 	right: readonly Message[] | readonly ToolDefinition[],
 ): boolean {
 	return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function pickLLMConfig(cfg: LLMConfig): LLMConfigSnapshot {
+	return {
+		model: cfg.model,
+		provider: cfg.provider,
+		reasoning: cfg.reasoning,
+	};
+}
+
+function sessionSnapshot(
+	messages: readonly Message[],
+	llmConfig: LLMConfigSnapshot,
+	usage: Usage,
+): SessionSnapshot {
+	return {
+		messages: [...messages],
+		llmConfig,
+		usage: snapshotUsage(usage),
+	};
+}
+
+function snapshotUsage(usage: Usage): Usage {
+	return {
+		tokens: { ...usage.tokens },
+		cost: { ...usage.cost },
+	};
 }

@@ -16,7 +16,7 @@ function stubRuntime(context: Context): CoreRuntime {
 		registrations: createCoreRegistry(),
 		getRuntime: createTestRuntime,
 	});
-	agentState.apply(context);
+	agentState.promptContext.apply(context);
 	return attachAgentState(
 		{
 			getSession: () => agentState.getSnapshot(),
