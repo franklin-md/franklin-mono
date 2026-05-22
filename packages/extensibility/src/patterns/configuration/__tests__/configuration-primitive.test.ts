@@ -1,24 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import type { Extension } from '../../../extension/types.js';
-import { Configuration } from '../configuration.js';
-import {
-	CONFIGURATION_REGISTRATION,
-	getConfigurationInternals,
-} from '../internal.js';
-import type {
-	ConfigurationContribution,
-	ConfigurationRegistrationAPI,
-} from '../types.js';
+import { Configuration, type ConfigurationSpec } from '../configuration.js';
+import { CONFIGURATION_API } from '../internal.js';
+import type { ConfigurationAPI } from '../types.js';
+import type { ConfigurationContribution } from '../contribution.js';
 
 function captureConfigurationContributions(): {
-	readonly api: ConfigurationRegistrationAPI;
+	readonly api: ConfigurationAPI;
 	readonly contributions: ConfigurationContribution[];
 } {
 	const contributions: ConfigurationContribution[] = [];
 	return {
 		api: {
-			[CONFIGURATION_REGISTRATION](contribution) {
-				contributions.push(contribution);
+			[CONFIGURATION_API](value) {
+				contributions.push(value);
 			},
 		},
 		contributions,
@@ -26,67 +21,90 @@ function captureConfigurationContributions(): {
 }
 
 describe('Configuration', () => {
-	it('creates configurations with explicit combine functions', () => {
-		const configuration = new Configuration<string>({
+	it('is the configuration specification with an explicit combine function', () => {
+		const spec: ConfigurationSpec<string> = {
 			name: 'list',
-			combine: (values) => values,
-		});
-		const internals = getConfigurationInternals(configuration);
+			combine: (values) => values.at(-1) ?? 'fallback',
+		};
 		const inputs = ['one', 'two'] as const;
 
-		expect(internals.combine(inputs)).toBe(inputs);
+		expect(spec.combine(inputs)).toBe('two');
 	});
 
-	it('creates configurations with custom combine functions', () => {
-		const configuration = new Configuration<string, string>({
+	it('allows configurations to combine inputs into a custom output type', () => {
+		const spec: ConfigurationSpec<string, string> = {
 			name: 'joined',
 			combine: (values) => values.join('\n'),
-		});
-		const internals = getConfigurationInternals(configuration);
+		};
 
-		expect(internals.combine(['one', 'two'])).toBe('one\ntwo');
+		expect(spec.combine(['one', 'two'])).toBe('one\ntwo');
 	});
 
-	it('creates extensions that write contributions through the hidden registration API', () => {
-		const configuration = new Configuration<string, string>({
+	it('creates extensions from configurations that write static values through the configuration API', () => {
+		const theme = new Configuration<string, string>({
 			name: 'theme',
 			combine: (values) => values[0] ?? 'fallback',
 		});
-		const extension: Extension<ConfigurationRegistrationAPI> =
-			configuration.of('dark');
+		const extension: Extension<ConfigurationAPI> = theme.of('dark');
 		const { api, contributions } = captureConfigurationContributions();
 
 		extension(api);
 
-		expect(contributions).toEqual([{ configuration, input: 'dark' }]);
+		expect(contributions).toEqual([
+			{ kind: 'static', configuration: theme, input: 'dark' },
+		]);
 	});
 
-	it('keeps configuration methods and internals off enumerable object keys', () => {
-		const configuration = new Configuration<string>({
-			name: 'hidden',
-			combine: (values) => values,
+	it('creates extensions from configurations that write computed values through the configuration API', () => {
+		const account = new Configuration<'free' | 'premium'>({
+			name: 'account',
+			combine: (values) => values.at(-1) ?? 'free',
 		});
+		const maxPdfPages = new Configuration<number>({
+			name: 'maxPdfPages',
+			combine: (values) => values.at(-1) ?? 10,
+		});
+		const extension: Extension<ConfigurationAPI> = maxPdfPages.compute(
+			[account],
+			({ getConfig }) => (getConfig(account) === 'premium' ? 100 : 10),
+		);
+		const { api, contributions } = captureConfigurationContributions();
 
-		expect(Object.keys(configuration)).toEqual([]);
-		expect(configuration.of).toBeTypeOf('function');
-		expect(getConfigurationInternals(configuration).id).toBeTypeOf('symbol');
+		extension(api);
+
+		expect(contributions).toHaveLength(1);
+		expect(contributions[0]).toMatchObject({
+			kind: 'computed',
+			configuration: maxPdfPages,
+			dependencies: [account],
+		});
 	});
 
-	it('creates a unique symbol id for each configuration using the provided name as the description', () => {
+	it('keeps configuration methods on the prototype and exposes the configuration spec', () => {
+		const spec: ConfigurationSpec<string> = {
+			name: 'hidden',
+			combine: (values) => values.at(-1) ?? 'fallback',
+		};
+		const configuration = new Configuration(spec);
+
+		expect(configuration.spec).toEqual(spec);
+		expect(Object.isFrozen(configuration.spec)).toBe(true);
+		expect(configuration.of).toBeTypeOf('function');
+		expect(configuration.compute).toBeTypeOf('function');
+	});
+
+	it('keeps configurations with the same configuration name distinct by object identity', () => {
 		const first = new Configuration<string>({
 			name: 'theme',
-			combine: (values) => values,
+			combine: (values) => values.at(-1) ?? 'fallback',
 		});
 		const second = new Configuration<string>({
 			name: 'theme',
-			combine: (values) => values,
+			combine: (values) => values.at(-1) ?? 'fallback',
 		});
-		const firstInternals = getConfigurationInternals(first);
-		const secondInternals = getConfigurationInternals(second);
 
-		expect(firstInternals.name).toBe('theme');
-		expect(firstInternals.id.description).toBe('theme');
-		expect(secondInternals.id.description).toBe('theme');
-		expect(firstInternals.id).not.toBe(secondInternals.id);
+		expect(first.name).toBe('theme');
+		expect(second.name).toBe('theme');
+		expect(first).not.toBe(second);
 	});
 });

@@ -56,19 +56,35 @@ import type { ExtensionModule, InferRuntime, RuntimeModule } from '@franklin/ext
 ```
 
 Configuration modules provide a CodeMirror Facet-style pattern: extensions
-contribute typed inputs, the module compiler combines them, and runtime
-consumers read the derived value through `config(configuration)`:
+contribute typed input values to configurations, the module compiler combines
+those values with each configuration's combine function, and runtime consumers
+read the derived value through `getConfig(configuration)`. Configurations
+default their output type to their input type; use a second type argument when a
+configuration combines inputs into a different output shape:
 
 ```ts
 import { Configuration, createConfigurationModule } from '@franklin/extensibility/module';
 
-const theme = new Configuration<string, string>({
-	name: 'theme',
-	combine: (values) => values[0] ?? 'light',
+const account = new Configuration<'free' | 'premium'>({
+	name: 'account',
+	combine: (values) => values[0] ?? 'free',
+});
+
+const maxPdfPages = new Configuration<number>({
+	name: 'maxPdfPages',
+	combine: (values) => values[0] ?? 10,
+});
+
+const promptPrefix = new Configuration<string, string>({
+	name: 'promptPrefix',
+	combine: (values) => values.join('\n'),
 });
 
 const configurationModule = createConfigurationModule();
-const darkThemeExtension = theme.of('dark');
+const premiumAccountExtension = account.of('premium');
+const computedLimitExtension = maxPdfPages.compute([account], ({ getConfig }) =>
+	getConfig(account) === 'premium' ? 100 : 10,
+);
 ```
 
 Configuration `combine` functions receive values in the same effective

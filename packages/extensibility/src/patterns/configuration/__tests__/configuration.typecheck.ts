@@ -12,19 +12,41 @@ const _stringConfiguration = new Configuration<string, string>({
 	name: 'string',
 	combine: (values) => values.join(''),
 });
-const _stringValue: string = runtime.config(_stringConfiguration);
-// @ts-expect-error config returns the configuration output type
-const _numberValue: number = runtime.config(_stringConfiguration);
+const _stringValue: string = runtime.getConfig(_stringConfiguration);
+// @ts-expect-error getConfig returns the configuration output type
+const _numberValue: number = runtime.getConfig(_stringConfiguration);
 
-const _listConfiguration = new Configuration<number>({
+const _defaultOutputConfiguration = new Configuration<number>({
 	name: 'numbers',
+	combine: (values) => values.at(-1) ?? 0,
+});
+const _defaultOutputValue: number = runtime.getConfig(
+	_defaultOutputConfiguration,
+);
+// @ts-expect-error default configuration output matches the input type
+const _defaultOutputListValue: readonly number[] = runtime.getConfig(
+	_defaultOutputConfiguration,
+);
+
+const _listConfiguration = new Configuration<number, readonly number[]>({
+	name: 'numberList',
 	combine: (values) => values,
 });
-const _listValue: readonly number[] = runtime.config(_listConfiguration);
+const _listValue: readonly number[] = runtime.getConfig(_listConfiguration);
 // @ts-expect-error list configuration output is readonly
-const _mutableListValue: number[] = runtime.config(_listConfiguration);
+const _mutableListValue: number[] = runtime.getConfig(_listConfiguration);
+
+const _computedExtension = _stringConfiguration.compute(
+	[_defaultOutputConfiguration],
+	(reader) => reader.getConfig(_defaultOutputConfiguration).toString(),
+);
+// @ts-expect-error computed values must return the configuration input type
+_stringConfiguration.compute([], () => 123);
 
 void _stringValue;
 void _numberValue;
+void _defaultOutputValue;
+void _defaultOutputListValue;
 void _listValue;
 void _mutableListValue;
+void _computedExtension;

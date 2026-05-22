@@ -5,7 +5,8 @@ import { createRegistry } from '../../../extension-points/writer.js';
 import type { BaseRuntime } from '../../../runtime/types.js';
 import { priority } from '../../../transforms/priority.js';
 import { Configuration } from '../configuration.js';
-import { CONFIGURATION_REGISTRATION } from '../internal.js';
+import { ConfigurationCycleError } from '../cycle-error.js';
+import { CONFIGURATION_API } from '../internal.js';
 import {
 	createConfigurationModule,
 	type ConfigurationModule,
@@ -19,7 +20,7 @@ describe('createConfigurationModule', () => {
 		expectTypeOf(module).toEqualTypeOf<ConfigurationModule>();
 	});
 
-	it('uses a symbol-keyed registration API', () => {
+	it('uses a symbol-keyed configuration API', () => {
 		const module = createConfigurationModule();
 		const { writer } = createRegistry<ConfigurationSignature, BaseRuntime>();
 		const api = createApi<ConfigurationSignature, BaseRuntime>(
@@ -28,7 +29,7 @@ describe('createConfigurationModule', () => {
 		);
 
 		expect(Object.keys(api)).toEqual([]);
-		expect(Reflect.ownKeys(api)).toContain(CONFIGURATION_REGISTRATION);
+		expect(Reflect.ownKeys(api)).toContain(CONFIGURATION_API);
 	});
 
 	it('combines multiple contributions for one configuration into one runtime value', async () => {
@@ -47,7 +48,7 @@ describe('createConfigurationModule', () => {
 			},
 		);
 
-		expect(runtime.config(promptPrefix)).toBe('first\nsecond');
+		expect(runtime.getConfig(promptPrefix)).toBe('first\nsecond');
 		await runtime.dispose();
 	});
 
@@ -63,11 +64,13 @@ describe('createConfigurationModule', () => {
 			module.compiler,
 			(api) => {
 				theme.of('default-one')(api);
-				priority.low(api)[CONFIGURATION_REGISTRATION]({
+				priority.low(api)[CONFIGURATION_API]({
+					kind: 'static',
 					configuration: theme,
 					input: 'low',
 				});
-				priority.high(api)[CONFIGURATION_REGISTRATION]({
+				priority.high(api)[CONFIGURATION_API]({
+					kind: 'static',
 					configuration: theme,
 					input: 'high',
 				});
@@ -75,13 +78,13 @@ describe('createConfigurationModule', () => {
 			},
 		);
 
-		expect(runtime.config(theme)).toBe(
+		expect(runtime.getConfig(theme)).toBe(
 			'high > default-one > default-two > low',
 		);
 		await runtime.dispose();
 	});
 
-	it('keeps configurations with the same name distinct by id', async () => {
+	it('keeps configurations with the same configuration name distinct by identity', async () => {
 		const module = createConfigurationModule();
 		const first = new Configuration<string, string>({
 			name: 'theme',
@@ -101,8 +104,8 @@ describe('createConfigurationModule', () => {
 			},
 		);
 
-		expect(runtime.config(first)).toBe('dark');
-		expect(runtime.config(second)).toBe('contrast');
+		expect(runtime.getConfig(first)).toBe('dark');
+		expect(runtime.getConfig(second)).toBe('contrast');
 		await runtime.dispose();
 	});
 
@@ -119,7 +122,76 @@ describe('createConfigurationModule', () => {
 			() => {},
 		);
 
-		expect(runtime.config(score)).toBe(0);
+		expect(runtime.getConfig(score)).toBe(0);
 		await runtime.dispose();
+	});
+
+	it('uses the construction-time configuration spec after the original object mutates', async () => {
+		const module = createConfigurationModule();
+		const configuration = {
+			name: 'score',
+			combine: (values: readonly number[]) =>
+				values.reduce((sum, value) => sum + value, 0),
+		};
+		const score = new Configuration<number, number>(configuration);
+
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			(api) => {
+				score.of(1)(api);
+				score.of(2)(api);
+			},
+		);
+		configuration.name = 'mutated';
+		configuration.combine = () => 999;
+
+		expect(runtime.getConfig(score)).toBe(3);
+		await runtime.dispose();
+	});
+
+	it('resolves computed configuration values from declared dependencies', async () => {
+		const module = createConfigurationModule();
+		const account = new Configuration<'free' | 'premium'>({
+			name: 'account',
+			combine: (values) => values.at(-1) ?? 'free',
+		});
+		const maxPdfPages = new Configuration<number>({
+			name: 'maxPdfPages',
+			combine: (values) => values.at(-1) ?? 10,
+		});
+
+		const runtime = await compile(
+			module.extensionPoint,
+			module.compiler,
+			(api) => {
+				account.of('premium')(api);
+				maxPdfPages.compute([account], ({ getConfig }) =>
+					getConfig(account) === 'premium' ? 100 : 10,
+				)(api);
+			},
+		);
+
+		expect(runtime.getConfig(maxPdfPages)).toBe(100);
+		await runtime.dispose();
+	});
+
+	it('rejects declared computed dependency cycles during compile', async () => {
+		const module = createConfigurationModule();
+		const first = new Configuration<number>({
+			name: 'first',
+			combine: (values) => values.at(-1) ?? 0,
+		});
+		const second = new Configuration<number>({
+			name: 'second',
+			combine: (values) => values.at(-1) ?? 0,
+		});
+
+		await expect(
+			compile(module.extensionPoint, module.compiler, (api) => {
+				first.compute([second], ({ getConfig }) => getConfig(second) + 1)(api);
+				second.compute([first], ({ getConfig }) => getConfig(first) + 1)(api);
+			}),
+		).rejects.toThrow(ConfigurationCycleError);
 	});
 });

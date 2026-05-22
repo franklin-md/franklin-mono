@@ -1,38 +1,61 @@
 import type { Extension } from '../../extension/types.js';
-import {
-	CONFIGURATION_INTERNALS,
-	CONFIGURATION_REGISTRATION,
-} from './internal.js';
-import type {
-	ConfigurationRegistrationAPI,
-	ConfigurationInternals,
-	ConfigurationOptions,
-} from './types.js';
+import { CONFIGURATION_API } from './internal.js';
+import type { ConfigurationAPI } from './types.js';
 
-// Configuration is Franklin's version of CodeMirror Facets: extensions
-// contribute typed inputs, the module compiler combines them, and runtimes
-// read the derived value through config(configuration).
-export class Configuration<Input, Output = readonly Input[]> {
-	declare readonly [CONFIGURATION_INTERNALS]: ConfigurationInternals<
-		Input,
-		Output
-	>;
+type ConfigurationCombine<Input, Output> = (values: readonly Input[]) => Output;
 
-	constructor(options: ConfigurationOptions<Input, Output>) {
-		Object.defineProperty(this, CONFIGURATION_INTERNALS, {
-			value: {
-				id: Symbol(options.name),
-				name: options.name,
-				combine: options.combine,
-			},
-			enumerable: false,
-			configurable: false,
+export type ConfigurationSpec<Input, Output = Input> = {
+	readonly name: string;
+	readonly combine: ConfigurationCombine<Input, Output>;
+};
+
+export type ConfigurationReader = {
+	getConfig<Input, Output>(configuration: Configuration<Input, Output>): Output;
+};
+
+export type ConfigurationCompute<Input> = (
+	reader: ConfigurationReader,
+) => Input;
+
+export class Configuration<Input, Output = Input> {
+	readonly spec: ConfigurationSpec<Input, Output>;
+
+	constructor(spec: ConfigurationSpec<Input, Output>) {
+		this.spec = Object.freeze({
+			name: spec.name,
+			combine: spec.combine,
 		});
 	}
 
-	of(input: Input): Extension<ConfigurationRegistrationAPI> {
+	get name(): string {
+		return this.spec.name;
+	}
+
+	combine(inputs: readonly Input[]): Output {
+		return this.spec.combine(inputs);
+	}
+
+	of(input: Input): Extension<ConfigurationAPI> {
 		return (api) => {
-			api[CONFIGURATION_REGISTRATION]({ configuration: this, input });
+			api[CONFIGURATION_API]({
+				kind: 'static',
+				configuration: this,
+				input,
+			});
+		};
+	}
+
+	compute(
+		dependencies: readonly Configuration<any, any>[],
+		compute: ConfigurationCompute<Input>,
+	): Extension<ConfigurationAPI> {
+		return (api) => {
+			api[CONFIGURATION_API]({
+				kind: 'computed',
+				configuration: this,
+				dependencies,
+				compute,
+			});
 		};
 	}
 }
