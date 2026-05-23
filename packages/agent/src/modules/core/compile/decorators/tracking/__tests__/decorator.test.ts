@@ -22,6 +22,7 @@ function createTestAgentState() {
 			messages: [],
 			llmConfig: {},
 			usage: ZERO_USAGE,
+			toolFilter: { disabled: [] },
 		},
 		registrations,
 		getRuntime,

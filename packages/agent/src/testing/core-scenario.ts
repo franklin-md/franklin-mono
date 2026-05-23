@@ -118,6 +118,7 @@ export function emptyCoreScenarioState(): CoreState {
 			messages: [],
 			llmConfig: {},
 			usage: ZERO_USAGE,
+			toolFilter: { disabled: [] },
 		},
 	};
 }

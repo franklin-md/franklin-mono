@@ -61,6 +61,7 @@ describe('core runtime protocol state', () => {
 						provider: 'seed-provider',
 					},
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: [] },
 				},
 			},
 			extensions: [
@@ -170,6 +171,7 @@ describe('core runtime protocol state', () => {
 					messages: [seedMessage],
 					llmConfig: { model: 'seed-model' },
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: [] },
 				},
 			},
 		});
@@ -293,6 +295,7 @@ describe('core runtime protocol state', () => {
 						provider: 'seed-provider',
 					},
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: [] },
 				},
 			},
 		});
@@ -337,6 +340,7 @@ describe('core runtime protocol state', () => {
 						provider: 'seed-provider',
 					},
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: [] },
 				},
 			},
 		});
@@ -369,6 +373,7 @@ describe('core runtime protocol state', () => {
 					messages: [],
 					llmConfig: { model: 'test' },
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: ['set_chat_title'] },
 				},
 			},
 		});
@@ -383,6 +388,10 @@ describe('core runtime protocol state', () => {
 			expect(forked.core.messages).not.toBe(state.core.messages);
 			expect(forked.core.llmConfig.model).toBe('test');
 			expect(forked.core.usage).toEqual(ZERO_USAGE);
+			expect(forked.core.toolFilter).toEqual(state.core.toolFilter);
+			expect(forked.core.toolFilter.disabled).not.toBe(
+				state.core.toolFilter.disabled,
+			);
 			expect(state.core.usage).toEqual(turnUsage);
 		} finally {
 			await scenario.dispose();
@@ -403,6 +412,7 @@ describe('core runtime protocol state', () => {
 					],
 					llmConfig: { model: 'test' },
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: ['set_chat_title'] },
 				},
 			},
 		});
@@ -414,6 +424,7 @@ describe('core runtime protocol state', () => {
 			expect(child.core.messages).toEqual([]);
 			expect(child.core.llmConfig.model).toBe('test');
 			expect(child.core.usage).toEqual(ZERO_USAGE);
+			expect(child.core.toolFilter).toEqual({ disabled: [] });
 		} finally {
 			await scenario.dispose();
 		}
@@ -432,6 +443,7 @@ describe('core runtime protocol state', () => {
 					messages: [],
 					llmConfig: {},
 					usage: seededUsage,
+					toolFilter: { disabled: [] },
 				},
 			},
 		});
@@ -459,6 +471,7 @@ describe('core runtime protocol state', () => {
 					messages: [],
 					llmConfig: {},
 					usage: usage(50, 20),
+					toolFilter: { disabled: [] },
 				},
 			},
 		});
@@ -466,9 +479,11 @@ describe('core runtime protocol state', () => {
 		try {
 			const first = await scenario.state();
 			first.core.usage.tokens.input = 999;
+			first.core.toolFilter.disabled.push('mutated');
 
 			const second = await scenario.state();
 			expect(second.core.usage.tokens.input).toBe(50);
+			expect(second.core.toolFilter.disabled).toEqual([]);
 		} finally {
 			await scenario.dispose();
 		}

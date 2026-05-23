@@ -12,7 +12,7 @@ import {
 	createTestRuntime,
 } from '../../compile/decorators/__tests__/registry.js';
 import { createToolRegistry } from '../../compile/decorators/tool/index.js';
-import type { SessionSnapshot } from '../../state.js';
+import { emptyToolFilter, type SessionSnapshot } from '../../state.js';
 
 const runtime = createTestRuntime();
 
@@ -26,6 +26,7 @@ function emptySnapshot(): SessionSnapshot {
 		messages: [],
 		llmConfig: {},
 		usage: ZERO_USAGE,
+		toolFilter: emptyToolFilter(),
 	};
 }
 
@@ -134,6 +135,7 @@ describe('createAgentState', () => {
 				messages: [userMessage],
 				llmConfig: { provider: 'test-provider', model: 'test-model' },
 				usage: ZERO_USAGE,
+				toolFilter: emptyToolFilter(),
 			},
 			registrations: createCoreRegistry((api) => {
 				api.on('systemPrompt', (systemPrompt) => {
@@ -196,6 +198,7 @@ describe('createAgentState', () => {
 				messages: [userMessage],
 				llmConfig: { model: 'test-model' },
 				usage: ZERO_USAGE,
+				toolFilter: emptyToolFilter(),
 			},
 			registrations: createCoreRegistry((api) => {
 				api.on('systemPrompt', (systemPrompt) => {
