@@ -20,6 +20,10 @@ export const spawnExtension = defineExtension<
 					details: { visibility: 'hidden' },
 				},
 			});
+			// A create-time `core.toolFilter` override would make this more atomic,
+			// but it depends on deep state-merge details and can obscure future child
+			// state inheritance. Keep the recursive-spawn guard local until child tool
+			// policy has a first-class creation helper.
 			child.runtime.toolRegistry.setEnabled(spawnSpec.name, false);
 			try {
 				const stream = child.runtime.prompt({
