@@ -25,14 +25,14 @@ import type { AuthManager } from '../auth/manager.js';
 import {
 	createCoreRegistry as createBoundCoreRegistry,
 	type CoreRegistry,
-} from '../modules/core/compile/registrations/index.js';
+} from '../modules/core/registrations/index.js';
 import { createPromptBuilder } from '../modules/core/compile/decorators/prompt/build-prompt/index.js';
 import { createPromptObserver } from '../modules/core/compile/decorators/prompt/observer/index.js';
+import { buildToolServerMiddleware } from '../modules/core/compile/decorators/tool/index.js';
 import {
-	buildToolServerMiddleware,
 	createToolRegistry,
 	type ToolRegistry,
-} from '../modules/core/compile/decorators/tool/index.js';
+} from '../modules/core/tools/index.js';
 import {
 	passThrough,
 	type MethodMiddleware,

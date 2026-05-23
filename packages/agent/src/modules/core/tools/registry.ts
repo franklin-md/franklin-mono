@@ -8,15 +8,11 @@ import type {
 	ToolResult,
 } from '@franklin/mini-acp';
 
-import type { ToolCallEvent, ToolResultEvent } from '../../../api/handlers.js';
-import {
-	copyToolFilter,
-	emptyToolFilter,
-	type ToolFilter,
-} from '../../../state.js';
-import type { CoreRegistry } from '../../registrations/index.js';
-import type { AnyRegisteredTool } from '../../registrations/tools.js';
-import { executeRegisteredToolCall } from './registered.js';
+import type { ToolCallEvent, ToolResultEvent } from '../api/handlers.js';
+import { copyToolFilter, emptyToolFilter, type ToolFilter } from '../state.js';
+import type { CoreRegistry } from '../registrations/index.js';
+import type { BoundTool } from '../registrations/tools.js';
+import { executeBoundToolCall } from './execute.js';
 import { errorExecutionResult, fallbackExecutionResult } from './result.js';
 import { serializeTool } from './serialize.js';
 
@@ -26,12 +22,12 @@ type ToolObservers = {
 };
 
 export class ToolRegistry {
-	private readonly tools: readonly AnyRegisteredTool[];
+	private readonly tools: readonly BoundTool[];
 	private readonly observers: ToolObservers;
 	private readonly disabled: Set<string>;
 
 	constructor(input: {
-		readonly tools: readonly AnyRegisteredTool[];
+		readonly tools: readonly BoundTool[];
 		readonly observers: ToolObservers;
 		readonly toolFilter: ToolFilter;
 	}) {
@@ -73,11 +69,7 @@ export class ToolRegistry {
 		const tool = this.toolFor(params.call.name);
 		const execution =
 			tool && this.enabled(tool)
-				? await executeRegisteredToolCall(
-						tool,
-						params.call,
-						params.call.arguments,
-					)
+				? await executeBoundToolCall(tool, params.call, params.call.arguments)
 				: tool
 					? errorExecutionResult(
 							params.call,
@@ -97,12 +89,12 @@ export class ToolRegistry {
 		);
 	}
 
-	private toolFor(name: string): AnyRegisteredTool | undefined {
+	private toolFor(name: string): BoundTool | undefined {
 		// TODO: define duplicate tool-name policy at the registry boundary.
 		return this.tools.find((tool) => tool.name === name);
 	}
 
-	private enabled(tool: AnyRegisteredTool): boolean {
+	private enabled(tool: BoundTool): boolean {
 		return !this.disabled.has(tool.name);
 	}
 }

@@ -11,9 +11,9 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../compile/decorators/__tests__/registry.js';
-import { createToolRegistry } from '../../compile/decorators/tool/index.js';
+import { createToolRegistry } from '../../tools/index.js';
 import { emptyToolFilter, type SessionSnapshot } from '../../state.js';
-import type { CoreRegistry } from '../../compile/registrations/index.js';
+import type { CoreRegistry } from '../../registrations/index.js';
 
 const runtime = createTestRuntime();
 

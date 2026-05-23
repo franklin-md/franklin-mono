@@ -7,7 +7,7 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
-import { createToolRegistry } from '../../tool/index.js';
+import { createToolRegistry } from '../../../../tools/index.js';
 
 const turnUsage = {
 	tokens: { input: 2, output: 3, cacheRead: 0, cacheWrite: 0, total: 5 },

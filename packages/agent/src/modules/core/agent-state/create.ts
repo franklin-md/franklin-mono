@@ -1,5 +1,5 @@
 import { UsageTracker } from '@franklin/mini-acp/session';
-import type { CoreRegistry } from '../compile/registrations/index.js';
+import type { CoreRegistry } from '../registrations/index.js';
 import type { SessionSnapshot } from '../state.js';
 import {
 	ContextLedger,

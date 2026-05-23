@@ -9,7 +9,7 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../compile/decorators/__tests__/registry.js';
-import { createToolRegistry } from '../compile/decorators/tool/index.js';
+import { createToolRegistry } from '../tools/index.js';
 
 function stubRuntime(context: Context): CoreRuntime {
 	const getRuntime = createTestRuntime;

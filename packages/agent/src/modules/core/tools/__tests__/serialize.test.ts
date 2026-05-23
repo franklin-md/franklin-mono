@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import type { RegisteredTool } from '../../../registrations/tools.js';
+import type { BoundTool } from '../../registrations/tools.js';
 import { serializeTool, toToolInputSchema } from '../serialize.js';
 
-function registeredTool(
+function boundTool(
 	name: string,
 	description: string,
 	schema: z.ZodType,
-): RegisteredTool {
+): BoundTool {
 	return {
 		name,
 		description,
@@ -46,7 +46,7 @@ describe('toToolInputSchema', () => {
 
 describe('serializeTool', () => {
 	it('serializes a tool with a simple schema', () => {
-		const tool = registeredTool(
+		const tool = boundTool(
 			'greet',
 			'Say hello',
 			z.object({
@@ -68,7 +68,7 @@ describe('serializeTool', () => {
 	});
 
 	it('does not include $schema in the inputSchema', () => {
-		const tool = registeredTool(
+		const tool = boundTool(
 			'greet',
 			'Say hello',
 			z.object({ name: z.string() }),
@@ -79,7 +79,7 @@ describe('serializeTool', () => {
 	});
 
 	it('serializes a tool with multiple fields and optional properties', () => {
-		const tool = registeredTool(
+		const tool = boundTool(
 			'search',
 			'Search for items',
 			z.object({
@@ -103,7 +103,7 @@ describe('serializeTool', () => {
 	});
 
 	it('serializes a tool with an empty object schema', () => {
-		const tool = registeredTool('ping', 'Health check', z.object({}));
+		const tool = boundTool('ping', 'Health check', z.object({}));
 
 		const result = serializeTool(tool);
 

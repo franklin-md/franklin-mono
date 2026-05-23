@@ -1,4 +1,4 @@
-import type { CoreRegistry } from '../../compile/registrations/index.js';
+import type { CoreRegistry } from '../../registrations/index.js';
 import { buildSystemPromptAssembler } from './assembler/index.js';
 
 type CreateSystemPromptBuilderInput = {

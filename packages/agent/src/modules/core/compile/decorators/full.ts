@@ -1,9 +1,9 @@
 import type { AgentState } from '../../agent-state/index.js';
-import type { CoreRegistry } from '../registrations/index.js';
+import type { CoreRegistry } from '../../registrations/index.js';
+import type { ToolRegistry } from '../../tools/index.js';
 import { compose } from './compose.js';
 import { createPromptDecorator } from './prompt/index.js';
 import { createToolDecorator } from './tool/index.js';
-import type { ToolRegistry } from './tool/registry.js';
 import { createTrackingDecorator } from './tracking/index.js';
 import type { ProtocolDecorator } from './types.js';
 

@@ -7,7 +7,7 @@ import type { JsonObject } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createToolDecorator } from '../decorator.js';
-import { createToolRegistry } from '../registry.js';
+import { createToolRegistry } from '../../../../tools/index.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,

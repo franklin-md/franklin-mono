@@ -13,7 +13,7 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
-import { createToolRegistry } from '../../tool/index.js';
+import { createToolRegistry } from '../../../../tools/index.js';
 import type { AgentState } from '../../../../agent-state/index.js';
 
 const runtime = createTestRuntime();

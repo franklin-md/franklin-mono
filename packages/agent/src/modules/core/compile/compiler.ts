@@ -8,8 +8,8 @@ import { createAgentState } from '../agent-state/index.js';
 import type { SessionSnapshot } from '../state.js';
 import { createAgentClient } from './client.js';
 import { createAgentDecorator } from './decorators/full.js';
-import { createToolRegistry } from './decorators/tool/index.js';
-import { createCoreRegistry } from './registrations/index.js';
+import { createCoreRegistry } from '../registrations/index.js';
+import { createToolRegistry } from '../tools/index.js';
 
 export function createCoreCompiler(
 	connectAgent: MiniACPConnector,

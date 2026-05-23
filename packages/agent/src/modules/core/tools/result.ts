@@ -1,8 +1,8 @@
 import type { ToolCall, ToolResult } from '@franklin/mini-acp';
 import type { JsonValue } from '@franklin/lib';
 
-import type { ToolResultEvent } from '../../../api/handlers.js';
-import type { RenderedToolOutput } from '../../../api/tool.js';
+import type { ToolResultEvent } from '../api/handlers.js';
+import type { RenderedToolOutput } from '../api/tool.js';
 
 export type ToolExecutionResult<TOutput extends JsonValue = JsonValue> = {
 	readonly modelOutput: ToolResult;
