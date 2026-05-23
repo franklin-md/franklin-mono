@@ -95,7 +95,7 @@ const storeExtensionPoint = createExtensionPoint<StoreSignature>({
 
 function buildTestMiddleware<Runtime extends BaseRuntime>(
 	registrations: RegistryView<CoreSignature, Runtime>,
-	toolRegistry: ToolRegistry<Runtime>,
+	toolRegistry: ToolRegistry,
 	getCtx: () => Runtime,
 ): FullMiddleware {
 	const buildPrompt = createPromptBuilder(registrations, getCtx);

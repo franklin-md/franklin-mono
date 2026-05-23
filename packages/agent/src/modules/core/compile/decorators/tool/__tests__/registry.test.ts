@@ -1,5 +1,5 @@
 import type { ToolExecuteParams } from '@franklin/mini-acp';
-import type { JsonObject } from '@franklin/lib';
+import type { JsonObject, JsonValue } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -109,6 +109,40 @@ describe('ToolRegistry', () => {
 		expect(execute).toHaveBeenCalledWith({ input: 'hello' }, runtime);
 		expect(fallback).not.toHaveBeenCalled();
 		expect(result.content).toEqual([{ type: 'text', text: 'HELLO' }]);
+	});
+
+	it('binds one runtime value across execute and render for a tool call', async () => {
+		const execute = vi.fn(async ({ input }: { input: string }) =>
+			input.toUpperCase(),
+		);
+		const render = vi.fn(async (output: JsonValue) => {
+			if (typeof output !== 'string') throw new Error('expected string output');
+			return {
+				content: [{ type: 'text' as const, text: `rendered:${output}` }],
+			};
+		});
+		const getRuntime = vi.fn(() => runtime);
+		const registrations = createCoreRegistry((api) => {
+			api.registerTool(
+				toolSpec('upper', 'Uppercase input', z.object({ input: z.string() })),
+				{ execute, render },
+			);
+		});
+		const registry = createToolRegistry(registrations, getRuntime);
+		const fallback = vi.fn(async ({ call }: ToolExecuteParams) => ({
+			toolCallId: call.id,
+			content: [{ type: 'text' as const, text: 'fallback' }],
+		}));
+
+		const result = await registry.dispatch(
+			toolCall('upper', { input: 'hello' }),
+			fallback,
+		);
+
+		expect(getRuntime).toHaveBeenCalledOnce();
+		expect(execute).toHaveBeenCalledWith({ input: 'hello' }, runtime);
+		expect(render).toHaveBeenCalledWith('HELLO', { input: 'hello' }, runtime);
+		expect(result.content).toEqual([{ type: 'text', text: 'rendered:HELLO' }]);
 	});
 
 	it('rejects disabled registered tool calls before the fallback handler', async () => {

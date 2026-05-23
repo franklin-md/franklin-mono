@@ -18,7 +18,7 @@ export function createAgentDecorator<Runtime extends BaseRuntime>(
 	agentState: AgentState,
 	registrations: RegistryView<CoreSignature, Runtime>,
 	getCtx: () => Runtime,
-	toolRegistry: ToolRegistry<Runtime>,
+	toolRegistry: ToolRegistry,
 ): ProtocolDecorator {
 	return compose(
 		[

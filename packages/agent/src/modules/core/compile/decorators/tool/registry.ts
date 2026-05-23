@@ -13,6 +13,7 @@ import type {
 } from '@franklin/mini-acp';
 
 import type { CoreSignature } from '../../../api/api.js';
+import { defaultToolRenderOutput } from '../../../api/tool.js';
 import {
 	copyToolFilter,
 	emptyToolFilter,
@@ -30,21 +31,18 @@ type RegisterToolArgs<Runtime extends BaseRuntime> = EffectValueForName<
 	'registerTool'
 >;
 
-export class ToolRegistry<Runtime extends BaseRuntime> {
-	private readonly tools: readonly AnyRegisteredTool<Runtime>[];
+export class ToolRegistry {
+	private readonly tools: readonly AnyRegisteredTool[];
 	private readonly observers: ToolObservers;
-	private readonly getRuntime: () => Runtime;
 	private readonly disabled: Set<string>;
 
 	constructor(input: {
-		readonly tools: readonly AnyRegisteredTool<Runtime>[];
+		readonly tools: readonly AnyRegisteredTool[];
 		readonly observers: ToolObservers;
-		readonly getRuntime: () => Runtime;
 		readonly toolFilter: ToolFilter;
 	}) {
 		this.tools = input.tools;
 		this.observers = input.observers;
-		this.getRuntime = input.getRuntime;
 		this.disabled = new Set(input.toolFilter.disabled);
 	}
 
@@ -85,7 +83,6 @@ export class ToolRegistry<Runtime extends BaseRuntime> {
 						tool,
 						params.call,
 						params.call.arguments,
-						this.getRuntime,
 					)
 				: tool
 					? errorExecutionResult(
@@ -106,12 +103,12 @@ export class ToolRegistry<Runtime extends BaseRuntime> {
 		);
 	}
 
-	private toolFor(name: string): AnyRegisteredTool<Runtime> | undefined {
+	private toolFor(name: string): AnyRegisteredTool | undefined {
 		// TODO: define duplicate tool-name policy at the registry boundary.
 		return this.tools.find((tool) => tool.name === name);
 	}
 
-	private enabled(tool: AnyRegisteredTool<Runtime>): boolean {
+	private enabled(tool: AnyRegisteredTool): boolean {
 		return !this.disabled.has(tool.name);
 	}
 }
@@ -120,9 +117,11 @@ export function createToolRegistry<Runtime extends BaseRuntime>(
 	registrations: RegistryView<CoreSignature, Runtime>,
 	getRuntime: () => Runtime,
 	toolFilter: ToolFilter = emptyToolFilter(),
-): ToolRegistry<Runtime> {
+): ToolRegistry {
 	return new ToolRegistry({
-		tools: registrations.argsFor('registerTool').map(normalizeTool),
+		tools: registrations
+			.argsFor('registerTool')
+			.map((registration) => normalizeTool(registration, getRuntime)),
 		observers: {
 			toolCall: createObserver(
 				bindRegisteredEventHandlers(registrations, 'toolCall', getRuntime),
@@ -131,20 +130,26 @@ export function createToolRegistry<Runtime extends BaseRuntime>(
 				bindRegisteredEventHandlers(registrations, 'toolResult', getRuntime),
 			),
 		},
-		getRuntime,
 		toolFilter,
 	});
 }
 
 function normalizeTool<Runtime extends BaseRuntime>(
 	registration: RegisterToolArgs<Runtime>,
-): AnyRegisteredTool<Runtime> {
+	getRuntime: () => Runtime,
+): AnyRegisteredTool {
 	const [spec, handlers] = registration;
 	return {
 		name: spec.name,
 		description: spec.description,
 		schema: spec.schema,
-		execute: handlers.execute,
-		render: handlers.render,
+		async run(params) {
+			const runtime = getRuntime();
+			const output = await handlers.execute(params, runtime);
+			const rendered = handlers.render
+				? await handlers.render(output, params, runtime)
+				: defaultToolRenderOutput(output);
+			return { output, rendered };
+		},
 	};
 }
