@@ -5,7 +5,7 @@ import type {
 	OrchestratorModule,
 	OrchestratorRuntime,
 } from './modules/orchestrator/index.js';
-import type { CoreStateModule } from './modules/core/module.js';
+import type { CoreStateModule } from './modules/core/state-module.js';
 import type { EnvironmentModule } from './modules/environment/module.js';
 import type { StoreStateModule } from './modules/store/state-module.js';
 import type { FranklinSession } from './app/session/index.js';
