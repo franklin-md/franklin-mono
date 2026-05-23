@@ -48,9 +48,7 @@ function text(result: ToolResult): string {
 describe('createToolDecorator', () => {
 	it('returns undefined when no tools or tool observers are registered', () => {
 		const registry = createCoreRegistry();
-		expect(
-			createToolDecorator(createToolRegistry(registry, () => runtime)),
-		).toBeUndefined();
+		expect(createToolDecorator(createToolRegistry(registry))).toBeUndefined();
 	});
 
 	it('executes registered tools instead of delegating to the fallback server', async () => {
@@ -58,15 +56,16 @@ describe('createToolDecorator', () => {
 			input.toUpperCase(),
 		);
 
-		const registrations = createCoreRegistry((api) => {
-			api.registerTool(
-				toolSpec('myTool', 'A test tool', z.object({ input: z.string() })),
-				{ execute },
-			);
-		});
-		const decorator = createToolDecorator(
-			createToolRegistry(registrations, () => runtime),
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.registerTool(
+					toolSpec('myTool', 'A test tool', z.object({ input: z.string() })),
+					{ execute },
+				);
+			},
+			() => runtime,
 		);
+		const decorator = createToolDecorator(createToolRegistry(registrations));
 		if (!decorator) throw new Error('Expected tool decorator');
 
 		const server = fallbackServer();
@@ -82,13 +81,14 @@ describe('createToolDecorator', () => {
 
 	it('delegates unknown tools to the fallback server when tool observers are registered', async () => {
 		const calls: string[] = [];
-		const registrations = createCoreRegistry((api) => {
-			api.on('toolCall', () => calls.push('call'));
-			api.on('toolResult', () => calls.push('result'));
-		});
-		const decorator = createToolDecorator(
-			createToolRegistry(registrations, () => runtime),
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.on('toolCall', () => calls.push('call'));
+				api.on('toolResult', () => calls.push('result'));
+			},
+			() => runtime,
 		);
+		const decorator = createToolDecorator(createToolRegistry(registrations));
 		if (!decorator) throw new Error('Expected tool decorator');
 
 		const server = fallbackServer();
@@ -103,18 +103,19 @@ describe('createToolDecorator', () => {
 
 	it('notifies tool observers around registered tool execution', async () => {
 		const calls: string[] = [];
-		const registrations = createCoreRegistry((api) => {
-			api.registerTool(toolSpec('myTool', 'A test tool', z.object({})), {
-				execute: async () => 'ok',
-			});
-			api.on('toolCall', () => calls.push('call:first'));
-			api.on('toolCall', () => calls.push('call:second'));
-			api.on('toolResult', () => calls.push('result:first'));
-			api.on('toolResult', () => calls.push('result:second'));
-		});
-		const decorator = createToolDecorator(
-			createToolRegistry(registrations, () => runtime),
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.registerTool(toolSpec('myTool', 'A test tool', z.object({})), {
+					execute: async () => 'ok',
+				});
+				api.on('toolCall', () => calls.push('call:first'));
+				api.on('toolCall', () => calls.push('call:second'));
+				api.on('toolResult', () => calls.push('result:first'));
+				api.on('toolResult', () => calls.push('result:second'));
+			},
+			() => runtime,
 		);
+		const decorator = createToolDecorator(createToolRegistry(registrations));
 		if (!decorator) throw new Error('Expected tool decorator');
 
 		const wrapped = await decorator.server(fallbackServer());
@@ -130,15 +131,16 @@ describe('createToolDecorator', () => {
 
 	it('returns validation errors before execute runs', async () => {
 		const execute = vi.fn(async () => 'not reached');
-		const registrations = createCoreRegistry((api) => {
-			api.registerTool(
-				toolSpec('myTool', 'A test tool', z.object({ input: z.string() })),
-				{ execute },
-			);
-		});
-		const decorator = createToolDecorator(
-			createToolRegistry(registrations, () => runtime),
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.registerTool(
+					toolSpec('myTool', 'A test tool', z.object({ input: z.string() })),
+					{ execute },
+				);
+			},
+			() => runtime,
 		);
+		const decorator = createToolDecorator(createToolRegistry(registrations));
 		if (!decorator) throw new Error('Expected tool decorator');
 
 		const wrapped = await decorator.server(fallbackServer());
@@ -154,12 +156,14 @@ describe('createToolDecorator', () => {
 	it('leaves the client side unchanged', async () => {
 		const decorator = createToolDecorator(
 			createToolRegistry(
-				createCoreRegistry((api) => {
-					api.registerTool(toolSpec('myTool', 'A test tool', z.object({})), {
-						execute: async () => 'ok',
-					});
-				}),
-				() => runtime,
+				createCoreRegistry(
+					(api) => {
+						api.registerTool(toolSpec('myTool', 'A test tool', z.object({})), {
+							execute: async () => 'ok',
+						});
+					},
+					() => runtime,
+				),
 			),
 		);
 		if (!decorator) throw new Error('Expected tool decorator');

@@ -5,7 +5,6 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../../__tests__/registry.js';
-import { createCoreEventRegistrations } from '../../../../registrations/index.js';
 
 const runtime = createTestRuntime();
 
@@ -17,7 +16,7 @@ const userMessage = {
 describe('createPromptBuilder', () => {
 	it('returns the original prompt when no handlers are registered', async () => {
 		const buildPrompt = createPromptBuilder(
-			createCoreEventRegistrations(createCoreRegistry(), () => runtime),
+			createCoreRegistry(undefined, () => runtime),
 		);
 
 		await expect(buildPrompt(userMessage)).resolves.toBe(userMessage);
@@ -25,12 +24,12 @@ describe('createPromptBuilder', () => {
 
 	it('applies prompt handlers to produce the full user prompt', async () => {
 		const buildPrompt = createPromptBuilder(
-			createCoreEventRegistrations(
-				createCoreRegistry((api) => {
+			createCoreRegistry(
+				(api) => {
 					api.on('prompt', (prompt) => {
 						prompt.appendContent({ type: 'text', text: ' [injected]' });
 					});
-				}),
+				},
 				() => runtime,
 			),
 		);
@@ -49,8 +48,8 @@ describe('createPromptBuilder', () => {
 		const inputsSeen: string[] = [];
 
 		const buildPrompt = createPromptBuilder(
-			createCoreEventRegistrations(
-				createCoreRegistry((api) => {
+			createCoreRegistry(
+				(api) => {
 					api.on('prompt', (prompt) => {
 						callsSeen.push('first');
 						inputsSeen.push(prompt.request.content[0]?.type ?? '');
@@ -61,7 +60,7 @@ describe('createPromptBuilder', () => {
 						inputsSeen.push(prompt.request.content[0]?.type ?? '');
 						prompt.appendContent({ type: 'text', text: ' [injected]' });
 					});
-				}),
+				},
 				() => runtime,
 			),
 		);

@@ -1,6 +1,2 @@
-export {
-	bindRegisteredEventHandlers,
-	createCoreEventRegistrations,
-	registeredEventHandlers,
-} from './events.js';
-export type { CoreEventRegistrations } from './events.js';
+export { createCoreRegistry } from './registry.js';
+export type { CoreRegistry } from './registry.js';

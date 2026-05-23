@@ -7,7 +7,6 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
-import { createCoreEventRegistrations } from '../../../registrations/index.js';
 import { createToolRegistry } from '../../tool/index.js';
 
 const turnUsage = {
@@ -16,8 +15,8 @@ const turnUsage = {
 } satisfies Usage;
 
 function createTestAgentState() {
-	const registrations = createCoreRegistry();
 	const getRuntime = createTestRuntime;
+	const registrations = createCoreRegistry(undefined, getRuntime);
 	return createAgentState({
 		snapshot: {
 			messages: [],
@@ -25,8 +24,8 @@ function createTestAgentState() {
 			usage: ZERO_USAGE,
 			toolFilter: { disabled: [] },
 		},
-		registrations: createCoreEventRegistrations(registrations, getRuntime),
-		toolRegistry: createToolRegistry(registrations, getRuntime),
+		registrations,
+		toolRegistry: createToolRegistry(registrations),
 	});
 }
 

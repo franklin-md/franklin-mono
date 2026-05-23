@@ -12,8 +12,8 @@ import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
 import type { CoreSignature } from '../../../../modules/core/api/api.js';
 import type { ToolResultEvent } from '../../../../modules/core/api/handlers.js';
-import { buildSystemPromptAssembler } from '../../../../modules/core/compile/decorators/prompt/system-prompt/assembler/index.js';
-import { bindRegisteredEventHandlers } from '../../../../modules/core/compile/registrations/index.js';
+import { buildSystemPromptAssembler } from '../../../../modules/core/agent-state/system-prompt/assembler/index.js';
+import { createCoreRegistry as createBoundCoreRegistry } from '../../../../modules/core/compile/registrations/index.js';
 import type { CoreRuntime } from '../../../../modules/core/runtime/index.js';
 import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import {
@@ -80,12 +80,11 @@ function buildAssembler(
 	ext: ReturnType<typeof grepExtension>,
 	env: ReconfigurableEnvironment,
 ) {
-	const bound = bindRegisteredEventHandlers(
+	const registrations = createBoundCoreRegistry(
 		compileExtension(ext),
-		'systemPrompt',
 		() => fakeRuntime(env) as CoreRuntime & EnvironmentRuntime,
 	);
-	return buildSystemPromptAssembler(bound);
+	return buildSystemPromptAssembler(registrations.handlersFor('systemPrompt'));
 }
 
 // rg-success answers `rg --version` with exit 0 AND streams an rg-style match

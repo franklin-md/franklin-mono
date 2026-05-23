@@ -1,9 +1,5 @@
-import type {
-	BaseRuntime,
-	EffectValueForName,
-	RegistryView,
-} from '@franklin/extensibility';
 import { createObserver } from '@franklin/lib';
+import type { Observer } from '@franklin/lib';
 import type { MethodMiddleware } from '@franklin/lib/middleware';
 import type {
 	MiniACPAgent,
@@ -12,24 +8,22 @@ import type {
 	ToolResult,
 } from '@franklin/mini-acp';
 
-import type { CoreSignature } from '../../../api/api.js';
-import { defaultToolRenderOutput } from '../../../api/tool.js';
+import type { ToolCallEvent, ToolResultEvent } from '../../../api/handlers.js';
 import {
 	copyToolFilter,
 	emptyToolFilter,
 	type ToolFilter,
 } from '../../../state.js';
-import { createCoreEventRegistrations } from '../../registrations/events.js';
+import type { CoreRegistry } from '../../registrations/index.js';
+import type { AnyRegisteredTool } from '../../registrations/tools.js';
 import { executeRegisteredToolCall } from './registered.js';
 import { errorExecutionResult, fallbackExecutionResult } from './result.js';
 import { serializeTool } from './serialize.js';
-import type { AnyRegisteredTool, ToolObservers } from './types.js';
 
-type RegisterToolArgs<Runtime extends BaseRuntime> = EffectValueForName<
-	CoreSignature,
-	Runtime,
-	'registerTool'
->;
+type ToolObservers = {
+	readonly toolCall: Observer<[ToolCallEvent]>;
+	readonly toolResult: Observer<[ToolResultEvent]>;
+};
 
 export class ToolRegistry {
 	private readonly tools: readonly AnyRegisteredTool[];
@@ -113,41 +107,16 @@ export class ToolRegistry {
 	}
 }
 
-export function createToolRegistry<Runtime extends BaseRuntime>(
-	registrations: RegistryView<CoreSignature, Runtime>,
-	getRuntime: () => Runtime,
+export function createToolRegistry(
+	registrations: CoreRegistry,
 	toolFilter: ToolFilter = emptyToolFilter(),
 ): ToolRegistry {
-	const events = createCoreEventRegistrations(registrations, getRuntime);
-
 	return new ToolRegistry({
-		tools: registrations
-			.argsFor('registerTool')
-			.map((registration) => normalizeTool(registration, getRuntime)),
+		tools: registrations.tools,
 		observers: {
-			toolCall: createObserver(events.handlersFor('toolCall')),
-			toolResult: createObserver(events.handlersFor('toolResult')),
+			toolCall: createObserver(registrations.handlersFor('toolCall')),
+			toolResult: createObserver(registrations.handlersFor('toolResult')),
 		},
 		toolFilter,
 	});
-}
-
-function normalizeTool<Runtime extends BaseRuntime>(
-	registration: RegisterToolArgs<Runtime>,
-	getRuntime: () => Runtime,
-): AnyRegisteredTool {
-	const [spec, handlers] = registration;
-	return {
-		name: spec.name,
-		description: spec.description,
-		schema: spec.schema,
-		async run(params) {
-			const runtime = getRuntime();
-			const output = await handlers.execute(params, runtime);
-			const rendered = handlers.render
-				? await handlers.render(output, params, runtime)
-				: defaultToolRenderOutput(output);
-			return { output, rendered };
-		},
-	};
 }

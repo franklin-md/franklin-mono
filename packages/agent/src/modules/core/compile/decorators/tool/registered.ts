@@ -2,7 +2,7 @@ import type { ToolCall } from '@franklin/mini-acp';
 import type { JsonObject } from '@franklin/lib';
 import { z } from 'zod';
 
-import type { AnyRegisteredTool } from './types.js';
+import type { AnyRegisteredTool } from '../../registrations/tools.js';
 import {
 	errorExecutionResult,
 	registeredExecutionResult,

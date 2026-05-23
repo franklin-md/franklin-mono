@@ -5,9 +5,12 @@ import {
 	createRegistryView,
 	type API,
 	type BaseRuntime,
-	type RegistryView,
 } from '@franklin/extensibility';
 import type { CoreSignature } from '../../../api/api.js';
+import {
+	createCoreRegistry as createBoundCoreRegistry,
+	type CoreRegistry,
+} from '../../registrations/index.js';
 
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
@@ -22,9 +25,10 @@ export function createTestRuntime(): BaseRuntime {
 
 export function createCoreRegistry<Runtime extends BaseRuntime>(
 	configure?: (api: API<CoreSignature, Runtime>) => void,
-): RegistryView<CoreSignature, Runtime> {
+	getRuntime: () => Runtime = createTestRuntime as () => Runtime,
+): CoreRegistry {
 	const { registry, writer } = createRegistry<CoreSignature, Runtime>();
 	const api = createApi<CoreSignature, Runtime>(coreExtensionPoint, writer);
 	configure?.(api);
-	return createRegistryView(registry);
+	return createBoundCoreRegistry(createRegistryView(registry), getRuntime);
 }

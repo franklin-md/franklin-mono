@@ -12,11 +12,8 @@ import type { CoreSignature } from '../../../modules/core/api/api.js';
 import {
 	buildSystemPromptAssembler,
 	type SystemPromptAssembler,
-} from '../../../modules/core/compile/decorators/prompt/system-prompt/assembler/index.js';
-import {
-	bindRegisteredEventHandlers,
-	registeredEventHandlers,
-} from '../../../modules/core/compile/registrations/index.js';
+} from '../../../modules/core/agent-state/system-prompt/assembler/index.js';
+import { createCoreRegistry as createBoundCoreRegistry } from '../../../modules/core/compile/registrations/index.js';
 import type { CoreRuntime } from '../../../modules/core/runtime/index.js';
 import type {
 	EnvironmentConfig,
@@ -51,7 +48,12 @@ function compileExtension(
 function collectHandlers(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
 ) {
-	return registeredEventHandlers(compileExtension(extension), 'systemPrompt');
+	return createBoundCoreRegistry(
+		compileExtension(extension),
+		() =>
+			fakeRuntime(fakeEnvironment(new MemoryOsInfo())) as CoreRuntime &
+				EnvironmentRuntime,
+	).handlersFor('systemPrompt');
 }
 
 function defaultConfig(): EnvironmentConfig {
@@ -87,12 +89,11 @@ function bindAssembler(
 	extension: ReturnType<typeof createEnvironmentInfoExtension>,
 	ctx: EnvironmentRuntime,
 ): SystemPromptAssembler {
-	const boundHandlers = bindRegisteredEventHandlers(
+	const registrations = createBoundCoreRegistry(
 		compileExtension(extension),
-		'systemPrompt',
 		() => ctx as CoreRuntime & EnvironmentRuntime,
 	);
-	return buildSystemPromptAssembler(boundHandlers);
+	return buildSystemPromptAssembler(registrations.handlersFor('systemPrompt'));
 }
 
 describe('createEnvironmentInfoExtension', () => {

@@ -1,13 +1,13 @@
 import type { MiniACPClient } from '@franklin/mini-acp';
 import type { AgentState } from '../../../agent-state/index.js';
-import type { CoreEventRegistrations } from '../../registrations/index.js';
+import type { CoreRegistry } from '../../registrations/index.js';
 import type { ProtocolDecorator } from '../types.js';
 import { createPromptBuilder } from './build-prompt/index.js';
 import { createPromptObserver } from './observer/index.js';
 
 export function createPromptDecorator(
 	agentState: Pick<AgentState, 'contextLedger'>,
-	registrations: CoreEventRegistrations,
+	registrations: CoreRegistry,
 ): ProtocolDecorator {
 	const buildPrompt = createPromptBuilder(registrations);
 	const observePrompt = createPromptObserver(registrations);

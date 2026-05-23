@@ -1,16 +1,16 @@
 import { UsageTracker } from '@franklin/mini-acp/session';
-import type { CoreEventRegistrations } from '../compile/registrations/index.js';
+import type { CoreRegistry } from '../compile/registrations/index.js';
 import type { SessionSnapshot } from '../state.js';
 import {
 	ContextLedger,
 	type ToolDefinitionProvider,
 } from './context-ledger.js';
-import { createSystemPromptBuilder } from './system-prompt.js';
+import { createSystemPromptBuilder } from './system-prompt/index.js';
 import type { AgentState } from './types.js';
 
 type CreateAgentStateInput = {
 	readonly snapshot: SessionSnapshot;
-	readonly registrations: CoreEventRegistrations;
+	readonly registrations: CoreRegistry;
 	readonly toolRegistry: ToolDefinitionProvider;
 };
 

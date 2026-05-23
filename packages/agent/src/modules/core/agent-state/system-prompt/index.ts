@@ -1,10 +1,13 @@
-import { buildSystemPromptAssembler } from '../compile/decorators/prompt/system-prompt/assembler/index.js';
-import type { CoreEventRegistrations } from '../compile/registrations/index.js';
-import type { SystemPromptBuilder } from './types.js';
+import type { CoreRegistry } from '../../compile/registrations/index.js';
+import { buildSystemPromptAssembler } from './assembler/index.js';
 
 type CreateSystemPromptBuilderInput = {
-	readonly registrations: CoreEventRegistrations;
+	readonly registrations: CoreRegistry;
 };
+
+export interface SystemPromptBuilder {
+	build(): Promise<string | undefined>;
+}
 
 export function createSystemPromptBuilder({
 	registrations,

@@ -13,7 +13,6 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
-import { createCoreEventRegistrations } from '../../../registrations/index.js';
 import { createToolRegistry } from '../../tool/index.js';
 import type { AgentState } from '../../../../agent-state/index.js';
 
@@ -43,11 +42,10 @@ function text(message: UserMessage): string {
 function createTestAgentState(
 	registrations = createCoreRegistry(),
 ): AgentState {
-	const getRuntime = () => runtime;
 	return createAgentState({
 		snapshot: emptySessionSnapshot(),
-		registrations: createCoreEventRegistrations(registrations, getRuntime),
-		toolRegistry: createToolRegistry(registrations, getRuntime),
+		registrations,
+		toolRegistry: createToolRegistry(registrations),
 	});
 }
 
@@ -70,7 +68,7 @@ describe('createPromptDecorator', () => {
 	it('returns a pass-through decorator when no prompt-time handlers are registered', async () => {
 		const decorator = createPromptDecorator(
 			createTestAgentState(),
-			createCoreEventRegistrations(createCoreRegistry(), () => runtime),
+			createCoreRegistry(undefined, () => runtime),
 		);
 		const calls: string[] = [];
 		const base = stubClient(calls);
@@ -86,25 +84,25 @@ describe('createPromptDecorator', () => {
 	it('syncs system prompt, builds user prompt, then observes the response stream', async () => {
 		const calls: string[] = [];
 		const observed: StreamEvent[] = [];
-		const registrations = createCoreRegistry((api) => {
-			api.on('systemPrompt', (systemPrompt) => {
-				calls.push('systemPrompt.handler');
-				systemPrompt.setPart('system');
-			});
-			api.on('prompt', (prompt) => {
-				calls.push('prompt.handler');
-				prompt.appendContent({ type: 'text', text: ' injected' });
-			});
-			api.on('chunk', (event) => {
-				calls.push('chunk.handler');
-				observed.push(event);
-			});
-		});
-		const agentState = createTestAgentState(registrations);
-		const decorator = createPromptDecorator(
-			agentState,
-			createCoreEventRegistrations(registrations, () => runtime),
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.on('systemPrompt', (systemPrompt) => {
+					calls.push('systemPrompt.handler');
+					systemPrompt.setPart('system');
+				});
+				api.on('prompt', (prompt) => {
+					calls.push('prompt.handler');
+					prompt.appendContent({ type: 'text', text: ' injected' });
+				});
+				api.on('chunk', (event) => {
+					calls.push('chunk.handler');
+					observed.push(event);
+				});
+			},
+			() => runtime,
 		);
+		const agentState = createTestAgentState(registrations);
+		const decorator = createPromptDecorator(agentState, registrations);
 
 		const base = stubClient(calls, agentState);
 		const client = await decorator.client(base);
@@ -124,20 +122,20 @@ describe('createPromptDecorator', () => {
 
 	it('does not resend unchanged system prompts while still rebuilding the user prompt', async () => {
 		const calls: string[] = [];
-		const registrations = createCoreRegistry((api) => {
-			api.on('systemPrompt', (systemPrompt) => {
-				systemPrompt.setPart('stable');
-			});
-			api.on('prompt', (prompt) => {
-				calls.push('prompt.handler');
-				prompt.appendContent({ type: 'text', text: ' rebuilt' });
-			});
-		});
-		const agentState = createTestAgentState(registrations);
-		const decorator = createPromptDecorator(
-			agentState,
-			createCoreEventRegistrations(registrations, () => runtime),
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.on('systemPrompt', (systemPrompt) => {
+					systemPrompt.setPart('stable');
+				});
+				api.on('prompt', (prompt) => {
+					calls.push('prompt.handler');
+					prompt.appendContent({ type: 'text', text: ' rebuilt' });
+				});
+			},
+			() => runtime,
 		);
+		const agentState = createTestAgentState(registrations);
+		const decorator = createPromptDecorator(agentState, registrations);
 
 		const base = stubClient(calls, agentState);
 		const client = await decorator.client(base);
@@ -161,10 +159,10 @@ describe('createPromptDecorator', () => {
 	it('leaves the server side unchanged', async () => {
 		const decorator = createPromptDecorator(
 			createTestAgentState(),
-			createCoreEventRegistrations(
-				createCoreRegistry((api) => {
+			createCoreRegistry(
+				(api) => {
 					api.on('prompt', () => {});
-				}),
+				},
 				() => runtime,
 			),
 		);

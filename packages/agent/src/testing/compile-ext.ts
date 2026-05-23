@@ -12,7 +12,6 @@ import { combineRuntimes } from '@franklin/extensibility';
 import { combineExtensionPoints } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { Extension } from '@franklin/extensibility';
-import type { RegistryView } from '@franklin/extensibility';
 import {
 	createConfigurationModule,
 	type ConfigurationModule,
@@ -23,7 +22,10 @@ import {
 import type { CoreSignature } from '../modules/core/api/api.js';
 import type { AuthDependencyRuntime } from '../auth/dependency.js';
 import type { AuthManager } from '../auth/manager.js';
-import { createCoreEventRegistrations } from '../modules/core/compile/registrations/index.js';
+import {
+	createCoreRegistry as createBoundCoreRegistry,
+	type CoreRegistry,
+} from '../modules/core/compile/registrations/index.js';
 import { createPromptBuilder } from '../modules/core/compile/decorators/prompt/build-prompt/index.js';
 import { createPromptObserver } from '../modules/core/compile/decorators/prompt/observer/index.js';
 import {
@@ -94,14 +96,12 @@ const storeExtensionPoint = createExtensionPoint<StoreSignature>({
 	registerStore: true,
 });
 
-function buildTestMiddleware<Runtime extends BaseRuntime>(
-	registrations: RegistryView<CoreSignature, Runtime>,
+function buildTestMiddleware(
+	registrations: CoreRegistry,
 	toolRegistry: ToolRegistry,
-	getCtx: () => Runtime,
 ): FullMiddleware {
-	const events = createCoreEventRegistrations(registrations, getCtx);
-	const buildPrompt = createPromptBuilder(events);
-	const observePrompt = createPromptObserver(events);
+	const buildPrompt = createPromptBuilder(registrations);
+	const observePrompt = createPromptObserver(registrations);
 	const prompt: MethodMiddleware<MiniACPClient['prompt']> = async function* (
 		message,
 		next,
@@ -141,9 +141,12 @@ export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 	const { registry, writer } = createRegistry<CoreSignature, Ctx>();
 	const api = createApi<CoreSignature, Ctx>(coreExtensionPoint, writer);
 	ext(api);
-	const registrations = createRegistryView(registry);
-	const toolRegistry = createToolRegistry(registrations, getCtx);
-	const middleware = buildTestMiddleware(registrations, toolRegistry, getCtx);
+	const registrations = createBoundCoreRegistry(
+		createRegistryView(registry),
+		getCtx,
+	);
+	const toolRegistry = createToolRegistry(registrations);
+	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, tools };
 }
@@ -194,9 +197,12 @@ export async function compileCoreWithStore(
 		getCtx,
 	);
 
-	const registrations = createRegistryView(coreRegistry);
-	const toolRegistry = createToolRegistry(registrations, getCtx);
-	const middleware = buildTestMiddleware(registrations, toolRegistry, getCtx);
+	const registrations = createBoundCoreRegistry(
+		createRegistryView(coreRegistry),
+		getCtx,
+	);
+	const toolRegistry = createToolRegistry(registrations);
+	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, stores: cell.stores, tools };
 }
@@ -271,9 +277,9 @@ export async function compileCoreWithStoreAndEnv(
 		configuration,
 	);
 
-	const registrations = registryView as never;
-	const toolRegistry = createToolRegistry(registrations, getCtx);
-	const middleware = buildTestMiddleware(registrations, toolRegistry, getCtx);
+	const registrations = createBoundCoreRegistry(registryView as never, getCtx);
+	const toolRegistry = createToolRegistry(registrations);
+	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };
 }
@@ -337,9 +343,12 @@ export async function compileCoreWithStoreEnvAndAuth(
 		dispose: async () => {},
 	});
 
-	const registrations = createRegistryView(coreRegistry);
-	const toolRegistry = createToolRegistry(registrations, getCtx);
-	const middleware = buildTestMiddleware(registrations, toolRegistry, getCtx);
+	const registrations = createBoundCoreRegistry(
+		createRegistryView(coreRegistry),
+		getCtx,
+	);
+	const toolRegistry = createToolRegistry(registrations);
+	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };
 }
@@ -398,9 +407,9 @@ export async function compileCoreWithEnv(
 	);
 	cell.ctx = combineRuntimes(environment, configuration);
 
-	const registrations = registryView as never;
-	const toolRegistry = createToolRegistry(registrations, getCtx);
-	const middleware = buildTestMiddleware(registrations, toolRegistry, getCtx);
+	const registrations = createBoundCoreRegistry(registryView as never, getCtx);
+	const toolRegistry = createToolRegistry(registrations);
+	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };
 }

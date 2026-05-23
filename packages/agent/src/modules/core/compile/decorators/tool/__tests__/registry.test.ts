@@ -25,14 +25,21 @@ function toolCall(name: string, args: JsonObject = {}): ToolExecuteParams {
 
 describe('ToolRegistry', () => {
 	it('serializes registered tool definitions for Mini-ACP context', () => {
-		const registrations = createCoreRegistry((api) => {
-			api.registerTool(
-				toolSpec('search', 'Search for items', z.object({ query: z.string() })),
-				{ execute: async () => 'ok' },
-			);
-		});
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.registerTool(
+					toolSpec(
+						'search',
+						'Search for items',
+						z.object({ query: z.string() }),
+					),
+					{ execute: async () => 'ok' },
+				);
+			},
+			() => runtime,
+		);
 
-		const registry = createToolRegistry(registrations, () => runtime);
+		const registry = createToolRegistry(registrations);
 
 		expect(registry.definitions()).toMatchObject([
 			{
@@ -51,17 +58,24 @@ describe('ToolRegistry', () => {
 	});
 
 	it('filters disabled tool definitions', () => {
-		const registrations = createCoreRegistry((api) => {
-			api.registerTool(
-				toolSpec('search', 'Search for items', z.object({ query: z.string() })),
-				{ execute: async () => 'ok' },
-			);
-			api.registerTool(toolSpec('read', 'Read a file', z.object({})), {
-				execute: async () => 'ok',
-			});
-		});
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.registerTool(
+					toolSpec(
+						'search',
+						'Search for items',
+						z.object({ query: z.string() }),
+					),
+					{ execute: async () => 'ok' },
+				);
+				api.registerTool(toolSpec('read', 'Read a file', z.object({})), {
+					execute: async () => 'ok',
+				});
+			},
+			() => runtime,
+		);
 
-		const registry = createToolRegistry(registrations, () => runtime, {
+		const registry = createToolRegistry(registrations, {
 			disabled: ['search'],
 		});
 
@@ -76,7 +90,7 @@ describe('ToolRegistry', () => {
 
 	it('returns a copy of its filter', () => {
 		const registrations = createCoreRegistry();
-		const registry = createToolRegistry(registrations, () => runtime, {
+		const registry = createToolRegistry(registrations, {
 			disabled: ['search'],
 		});
 
@@ -89,13 +103,16 @@ describe('ToolRegistry', () => {
 		const execute = vi.fn(async ({ input }: { input: string }) =>
 			input.toUpperCase(),
 		);
-		const registrations = createCoreRegistry((api) => {
-			api.registerTool(
-				toolSpec('upper', 'Uppercase input', z.object({ input: z.string() })),
-				{ execute },
-			);
-		});
-		const registry = createToolRegistry(registrations, () => runtime);
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.registerTool(
+					toolSpec('upper', 'Uppercase input', z.object({ input: z.string() })),
+					{ execute },
+				);
+			},
+			() => runtime,
+		);
+		const registry = createToolRegistry(registrations);
 		const fallback = vi.fn(async ({ call }: ToolExecuteParams) => ({
 			toolCallId: call.id,
 			content: [{ type: 'text' as const, text: 'fallback' }],
@@ -127,8 +144,8 @@ describe('ToolRegistry', () => {
 				toolSpec('upper', 'Uppercase input', z.object({ input: z.string() })),
 				{ execute, render },
 			);
-		});
-		const registry = createToolRegistry(registrations, getRuntime);
+		}, getRuntime);
+		const registry = createToolRegistry(registrations);
 		const fallback = vi.fn(async ({ call }: ToolExecuteParams) => ({
 			toolCallId: call.id,
 			content: [{ type: 'text' as const, text: 'fallback' }],
@@ -147,12 +164,15 @@ describe('ToolRegistry', () => {
 
 	it('rejects disabled registered tool calls before the fallback handler', async () => {
 		const execute = vi.fn(async () => 'unexpected');
-		const registrations = createCoreRegistry((api) => {
-			api.registerTool(toolSpec('disabled_tool', 'Disabled', z.object({})), {
-				execute,
-			});
-		});
-		const registry = createToolRegistry(registrations, () => runtime, {
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.registerTool(toolSpec('disabled_tool', 'Disabled', z.object({})), {
+					execute,
+				});
+			},
+			() => runtime,
+		);
+		const registry = createToolRegistry(registrations, {
 			disabled: ['disabled_tool'],
 		});
 		const fallback = vi.fn(async ({ call }: ToolExecuteParams) => ({
@@ -177,15 +197,18 @@ describe('ToolRegistry', () => {
 	});
 
 	it('preserves fallback dispatch for unknown tools', async () => {
-		const registrations = createCoreRegistry((api) => {
-			api.registerTool(
-				toolSpec('registered_tool', 'Registered', z.object({})),
-				{
-					execute: async () => 'ok',
-				},
-			);
-		});
-		const registry = createToolRegistry(registrations, () => runtime, {
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.registerTool(
+					toolSpec('registered_tool', 'Registered', z.object({})),
+					{
+						execute: async () => 'ok',
+					},
+				);
+			},
+			() => runtime,
+		);
+		const registry = createToolRegistry(registrations, {
 			disabled: ['registered_tool'],
 		});
 		const fallback = vi.fn(async ({ call }: ToolExecuteParams) => ({

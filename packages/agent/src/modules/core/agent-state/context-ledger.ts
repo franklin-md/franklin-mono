@@ -9,7 +9,7 @@ import type {
 } from '@franklin/mini-acp';
 import { ContextTracker } from '@franklin/mini-acp/session';
 import type { SessionSnapshot, ToolFilter } from '../state.js';
-import type { SystemPromptBuilder } from './types.js';
+import type { SystemPromptBuilder } from './system-prompt/index.js';
 
 type LLMConfigSnapshot = SessionSnapshot['llmConfig'];
 
