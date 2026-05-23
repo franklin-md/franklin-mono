@@ -189,6 +189,29 @@ describe('resolveModel', () => {
 		});
 	}
 
+	it('resolves the Franklin-local OpenRouter qwen/qwen3.7-max model override', () => {
+		const result = resolveModel({
+			provider: 'openrouter',
+			model: 'qwen/qwen3.7-max',
+		});
+
+		expect(result.ok).toBe(true);
+		expect(result.ok && result.model).toMatchObject({
+			provider: 'openrouter',
+			id: 'qwen/qwen3.7-max',
+			api: 'openai-completions',
+			reasoning: true,
+			contextWindow: 1_000_000,
+			maxTokens: 65_536,
+			cost: {
+				input: 2.5,
+				output: 7.5,
+				cacheRead: 0,
+				cacheWrite: 3.125,
+			},
+		});
+	});
+
 	for (const {
 		id,
 		api,

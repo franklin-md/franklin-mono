@@ -2,10 +2,25 @@ import type { Model } from '@earendil-works/pi-ai';
 
 // Keep this Franklin-local escape hatch even when empty: it lets us add or
 // correct model metadata without waiting for a new pi-ai package release.
-const OPENROUTER_MODEL_OVERRIDES = {} as const satisfies Record<
-	string,
-	Model<'openai-completions'>
->;
+const OPENROUTER_MODEL_OVERRIDES = {
+	'qwen/qwen3.7-max': {
+		id: 'qwen/qwen3.7-max',
+		name: 'Qwen: Qwen3.7 Max',
+		api: 'openai-completions',
+		provider: 'openrouter',
+		baseUrl: 'https://openrouter.ai/api/v1',
+		reasoning: true,
+		input: ['text'],
+		cost: {
+			input: 2.5,
+			output: 7.5,
+			cacheRead: 0,
+			cacheWrite: 3.125,
+		},
+		contextWindow: 1_000_000,
+		maxTokens: 65_536,
+	},
+} as const satisfies Record<string, Model<'openai-completions'>>;
 
 export function getOpenRouterModelOverride(
 	modelId: string,

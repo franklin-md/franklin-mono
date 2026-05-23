@@ -97,4 +97,22 @@ describe('MODEL_CATALOG', () => {
 			costOutput: 9,
 		});
 	});
+
+	it('includes Qwen3.7 Max in the OpenRouter catalog', () => {
+		const group = MODEL_CATALOG.find(
+			(providerGroup) => providerGroup.provider === 'openrouter',
+		);
+		const qwenMax = group?.models.find(
+			(model) => model.id === 'qwen/qwen3.7-max',
+		);
+
+		expect(qwenMax).toMatchObject({
+			provider: 'openrouter',
+			name: 'Qwen3.7 Max',
+			reasoning: true,
+			contextWindow: 1_000_000,
+			costInput: 2.5,
+			costOutput: 7.5,
+		});
+	});
 });
