@@ -59,18 +59,24 @@ Each layer wraps the typed Mini-ACP client/server pair after connect, not the ra
 
 ### Context Manager
 
-The core runtime keeps an internal `ContextManager` as the live context ledger. It
-is responsible for distinguishing the Mini-ACP `Context` that has
-actually been sent and acknowledged from the context core wants to send before
-the next prompt. A hydrated `SessionSnapshot` seeds that next desired context;
-it is not treated as already sent, because a restored Mini-ACP agent begins with
-an empty context until `setContext` succeeds.
+The core runtime keeps an internal `ContextManager` that splits desired session
+state from the last successfully sent Mini-ACP context. A `SessionDraft` is
+constructed from a hydrated `SessionSnapshot` and stores the durable session
+base: messages, non-secret LLM config, and the session-local tool filter.
+Runtime-only contributions such as the registration-built system prompt and live
+tool definitions are attached as drafters. `commit()` runs those drafters
+against a scratch context, records field revisions, and returns the Mini-ACP
+`Context` core wants before the next prompt.
 
-`ContextManager` also owns accumulated usage and the registration-built system
-prompt builder, so prompt decorators can compare freshly assembled prompt state
-against the tracked Mini-ACP context before sending a patch. Decorators record
-acknowledged `setContext` changes, prompt messages, assistant updates, tool
-results, and turn usage into this internal state object.
+A restored Mini-ACP agent still starts with an empty context, so the first prompt
+sync sends a full committed context even when the draft came from a persisted
+snapshot. Later syncs derive patches from field revisions that have not been
+successfully sent rather than deep-comparing full context objects. For now, a
+resolved `setContext` call is treated as success; if Mini-ACP later grows a
+separate acknowledgement or retry policy, that policy should live at the send
+boundary rather than inside `SessionDraft`. Decorators record successful
+`setContext` changes, prompt messages, assistant updates, tool results, and turn
+usage into this internal state object.
 
 The public runtime exposes `getSession()` as a safe projection to
 `SessionSnapshot` for consumers that need the dehydrated session view. The

@@ -88,6 +88,32 @@ describe('ToolRegistry', () => {
 		expect(registry.filter()).toEqual({ disabled: ['read'] });
 	});
 
+	it('advances its revision only when the enabled filter changes', () => {
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.registerTool(toolSpec('search', 'Search', z.object({})), {
+					execute: async () => 'ok',
+				});
+			},
+			() => runtime,
+		);
+		const registry = createToolRegistry(registrations);
+
+		expect(registry.revision()).toBe(0);
+
+		registry.setEnabled('search', true);
+		expect(registry.revision()).toBe(0);
+
+		registry.setEnabled('search', false);
+		expect(registry.revision()).toBe(1);
+
+		registry.setEnabled('search', false);
+		expect(registry.revision()).toBe(1);
+
+		registry.setEnabled('search', true);
+		expect(registry.revision()).toBe(2);
+	});
+
 	it('returns a copy of its filter', () => {
 		const registrations = createCoreRegistry();
 		const registry = createToolRegistry(registrations, {

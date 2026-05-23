@@ -2,16 +2,16 @@
 // Tracking decorators — composable wrappers that record protocol events
 // into shared trackers.
 //
-// trackAgent   — wraps MuAgent    (toolExecute: tool call + result → ContextTracker)
-// trackTurn    — wraps TurnClient (prompt: user message + assistant updates → ContextTracker)
-// trackClient  — wraps MuClient   (trackTurn + setContext → ContextTracker)
+// trackAgent   — wraps MuAgent    (toolExecute: tool call + result → ContextRecorder)
+// trackTurn    — wraps TurnClient (prompt: user message + assistant updates → ContextRecorder)
+// trackClient  — wraps MuClient   (trackTurn + setContext → ContextRecorder)
 // trackUsage   — wraps TurnClient (turnEnd usage → UsageTracker)
 // decorateTurn — lift a TurnClient transform to a MuClient transform
 // ---------------------------------------------------------------------------
 
 import type { TurnClient } from '../base/types.js';
 import type { MuClient, MuAgent } from './types.js';
-import type { ContextTracker } from './context-tracker.js';
+import type { ContextRecorder } from './context-tracker.js';
 import type { UsageTracker } from './usage-tracker.js';
 import type { StreamEvent } from '../types/stream.js';
 
@@ -38,7 +38,7 @@ export function decorateTurn(
 /**
  * Decorates a MuAgent to record tool calls and results in the tracker.
  */
-export function trackAgent(tracker: ContextTracker, agent: MuAgent): MuAgent {
+export function trackAgent(tracker: ContextRecorder, agent: MuAgent): MuAgent {
 	return {
 		toolExecute: async (params) => {
 			tracker.append({ role: 'assistant', content: [params.call] });
@@ -58,7 +58,7 @@ export function trackAgent(tracker: ContextTracker, agent: MuAgent): MuAgent {
  * updates in the tracker.
  */
 export function trackTurn(
-	tracker: ContextTracker,
+	tracker: ContextRecorder,
 	turn: TurnClient,
 ): TurnClient {
 	return {
@@ -81,7 +81,7 @@ export function trackTurn(
  * prompt stream.
  */
 export function trackClient(
-	tracker: ContextTracker,
+	tracker: ContextRecorder,
 	client: MuClient,
 ): MuClient {
 	const decorated = decorateTurn(client, (turn) => trackTurn(tracker, turn));

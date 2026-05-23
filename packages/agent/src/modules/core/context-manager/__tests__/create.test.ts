@@ -81,7 +81,7 @@ describe('createContextManager', () => {
 		});
 	});
 
-	it('does not treat absent handlers as a request to clear acknowledged context', async () => {
+	it('does not treat absent handlers as a request to clear sent context', async () => {
 		const client = stubClient();
 		const contextManager = createState({
 			snapshot: emptySnapshot(),

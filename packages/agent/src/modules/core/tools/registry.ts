@@ -25,6 +25,7 @@ export class ToolRegistry {
 	private readonly tools: readonly BoundTool[];
 	private readonly observers: ToolObservers;
 	private readonly disabled: Set<string>;
+	private version = 0;
 
 	constructor(input: {
 		readonly tools: readonly BoundTool[];
@@ -48,12 +49,18 @@ export class ToolRegistry {
 		return copyToolFilter({ disabled: [...this.disabled] });
 	}
 
+	revision(): number {
+		return this.version;
+	}
+
 	setEnabled(name: string, enabled: boolean): void {
 		if (enabled) {
-			this.disabled.delete(name);
+			if (this.disabled.delete(name)) this.version += 1;
 			return;
 		}
+		if (this.disabled.has(name)) return;
 		this.disabled.add(name);
+		this.version += 1;
 	}
 
 	createHandler(): MethodMiddleware<MiniACPAgent['toolExecute']> {

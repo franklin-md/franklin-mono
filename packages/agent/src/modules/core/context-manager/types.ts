@@ -6,7 +6,7 @@ import type { ContextLedger } from './context-ledger.js';
 /**
  * Internal core context ledger.
  *
- * ContextManager separates the context Mini-ACP has actually acknowledged from the
+ * ContextManager separates the context most recently sent to Mini-ACP from the
  * context core wants to send next. A hydrated `SessionSnapshot` seeds the next
  * desired context; it is not treated as already sent, because a freshly restored
  * Mini-ACP agent starts with an empty `Context` until `setContext` succeeds.
