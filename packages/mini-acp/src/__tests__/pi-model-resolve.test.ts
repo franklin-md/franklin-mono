@@ -16,6 +16,35 @@ const OPENROUTER_UPSTREAM_MODEL_CASES = [
 	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
 ] as const;
 
+const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
+	{
+		id: 'google/gemini-3.5-flash',
+		name: 'Google: Gemini 3.5 Flash',
+		input: ['text', 'image'],
+		contextWindow: 1_048_576,
+		maxTokens: 65_536,
+		cost: {
+			input: 1.5,
+			output: 9,
+			cacheRead: 0.15,
+			cacheWrite: 0.08333333333333334,
+		},
+	},
+	{
+		id: 'qwen/qwen3.7-max',
+		name: 'Qwen: Qwen3.7 Max',
+		input: ['text'],
+		contextWindow: 1_000_000,
+		maxTokens: 65_536,
+		cost: {
+			input: 2.5,
+			output: 7.5,
+			cacheRead: 0,
+			cacheWrite: 3.125,
+		},
+	},
+] as const;
+
 // Keep OpenCode Go Qwen 3.5/3.6 and MiniMax M2.7 on the OpenAI-compatible
 // path even though the OpenCode docs table lists provider SDKs such as
 // @ai-sdk/alibaba and @ai-sdk/anthropic. Pi issue #4106 reproduced 404s with
@@ -189,28 +218,28 @@ describe('resolveModel', () => {
 		});
 	}
 
-	it('resolves the Franklin-local OpenRouter qwen/qwen3.7-max model override', () => {
-		const result = resolveModel({
-			provider: 'openrouter',
-			model: 'qwen/qwen3.7-max',
-		});
+	for (const model of OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES) {
+		it(`resolves the OpenRouter ${model.id} model from local overrides`, () => {
+			const result = resolveModel({
+				provider: 'openrouter',
+				model: model.id,
+			});
 
-		expect(result.ok).toBe(true);
-		expect(result.ok && result.model).toMatchObject({
-			provider: 'openrouter',
-			id: 'qwen/qwen3.7-max',
-			api: 'openai-completions',
-			reasoning: true,
-			contextWindow: 1_000_000,
-			maxTokens: 65_536,
-			cost: {
-				input: 2.5,
-				output: 7.5,
-				cacheRead: 0,
-				cacheWrite: 3.125,
-			},
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.model).toMatchObject({
+				provider: 'openrouter',
+				id: model.id,
+				name: model.name,
+				api: 'openai-completions',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				reasoning: true,
+				input: model.input,
+				contextWindow: model.contextWindow,
+				maxTokens: model.maxTokens,
+				cost: model.cost,
+			});
 		});
-	});
+	}
 
 	for (const {
 		id,

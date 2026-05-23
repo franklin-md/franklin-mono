@@ -17,6 +17,21 @@ const OPENROUTER_UPSTREAM_MODEL_CASES = [
 	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
 ] as const;
 
+const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
+	{
+		id: 'google/gemini-3.5-flash',
+		reasoning: true,
+		contextWindow: 1_048_576,
+		maxTokens: 65_536,
+	},
+	{
+		id: 'qwen/qwen3.7-max',
+		reasoning: true,
+		contextWindow: 1_000_000,
+		maxTokens: 65_536,
+	},
+] as const;
+
 describe('resolveConfig', () => {
 	it('returns the model when config is fully valid', () => {
 		const result = resolveConfig({
@@ -65,23 +80,25 @@ describe('resolveConfig', () => {
 		});
 	}
 
-	it('accepts the Franklin-local OpenRouter qwen/qwen3.7-max model override when apiKey is present', () => {
-		const result = resolveConfig({
-			provider: 'openrouter',
-			model: 'qwen/qwen3.7-max',
-			apiKey: 'sk-test-key',
-		});
+	for (const model of OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES) {
+		it(`accepts the OpenRouter ${model.id} local override when apiKey is present`, () => {
+			const result = resolveConfig({
+				provider: 'openrouter',
+				model: model.id,
+				apiKey: 'sk-test-key',
+			});
 
-		expect(result.ok).toBe(true);
-		expect(result.ok && result.model).toMatchObject({
-			provider: 'openrouter',
-			id: 'qwen/qwen3.7-max',
-			api: 'openai-completions',
-			reasoning: true,
-			contextWindow: 1_000_000,
-			maxTokens: 65_536,
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.model).toMatchObject({
+				provider: 'openrouter',
+				id: model.id,
+				api: 'openai-completions',
+				reasoning: model.reasoning,
+				contextWindow: model.contextWindow,
+				maxTokens: model.maxTokens,
+			});
 		});
-	});
+	}
 
 	it('accepts an OpenCode Go model from pi-ai when apiKey is present', () => {
 		const result = resolveConfig({
