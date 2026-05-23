@@ -1,8 +1,7 @@
 import type { Chunk } from '@franklin/mini-acp';
 import type { ConversationTurn } from '../types.js';
 
-import { endTrailingSequentialBlock } from './blocks/end.js';
-import { startBlock } from './blocks/start.js';
+import { startNewBlock } from './blocks/start.js';
 
 /**
  * Append a streaming chunk to the conversation store.
@@ -24,9 +23,7 @@ export function handleChunk(turn: ConversationTurn, chunk: Chunk): void {
 			if (last && last.kind === kind && last.endedAt === undefined) {
 				last.text += content.text;
 			} else {
-				const now = Date.now();
-				endTrailingSequentialBlock(turn, now);
-				startBlock(turn, kind, { text: content.text }, now);
+				startNewBlock(turn, kind, { text: content.text });
 			}
 			break;
 		}

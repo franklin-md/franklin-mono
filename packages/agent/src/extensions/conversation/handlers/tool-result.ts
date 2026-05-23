@@ -1,8 +1,8 @@
 import type { ToolResultEvent } from '../../../modules/core/index.js';
 import type { ConversationTurn } from '../types.js';
 
-import { endBlock, endTrailingSequentialBlock } from './blocks/end.js';
-import { startBlock } from './blocks/start.js';
+import { endBlock } from './blocks/end.js';
+import { startAndEndNewBlock } from './blocks/start.js';
 
 export function handleToolResult(
 	turn: ConversationTurn,
@@ -19,17 +19,9 @@ export function handleToolResult(
 
 	// Fallback: no matching open tool-call block. Record the result as an
 	// instantaneous toolUse — startedAt and endedAt share the same moment.
-	const now = Date.now();
-	endTrailingSequentialBlock(turn, now);
-	const block = startBlock(
-		turn,
-		'toolUse',
-		{
-			call: event.call,
-			result: event.result,
-			...('output' in event ? { output: event.output } : {}),
-		},
-		now,
-	);
-	endBlock(block, now);
+	startAndEndNewBlock(turn, 'toolUse', {
+		call: event.call,
+		result: event.result,
+		...('output' in event ? { output: event.output } : {}),
+	});
 }

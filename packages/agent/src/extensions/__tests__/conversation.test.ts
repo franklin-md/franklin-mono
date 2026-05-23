@@ -750,8 +750,8 @@ describe('conversationExtension', () => {
 		// blocks[0] (text) → blocks[1] (toolUse): handleToolCall closes the
 		// text via startNewBlock.
 		expect(blocks[0]!.endedAt).toBe(blocks[1]!.startedAt);
-		// blocks[2] (text) → blocks[3] (turnEnd): handleTurnEnd closes the
-		// text via startAndEndNewBlock.
+		// blocks[2] (text) → blocks[3] (turnEnd): handleTurnEnd closes all
+		// remaining open blocks at the turnEnd timestamp.
 		expect(blocks[2]!.endedAt).toBe(blocks[3]!.startedAt);
 		// blocks[1] (toolUse) → blocks[2] (text) is NOT contiguous: the
 		// tool-result event closes the toolUse independently of when the

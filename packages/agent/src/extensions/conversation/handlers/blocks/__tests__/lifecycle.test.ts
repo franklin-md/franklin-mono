@@ -7,7 +7,7 @@ import { handleChunk } from '../../chunk.js';
 import { handleToolCall } from '../../tool-call.js';
 import { handleToolResult } from '../../tool-result.js';
 import { handleTurnEnd } from '../../turn-end.js';
-import { endBlock, endLastBlock } from '../end.js';
+import { endBlock } from '../end.js';
 import { startAndEndNewBlock, startBlock, startNewBlock } from '../start.js';
 
 function emptyTurn(): ConversationTurn {
@@ -98,31 +98,6 @@ describe('endBlock', () => {
 	});
 });
 
-describe('endLastBlock', () => {
-	it('closes the trailing block when it is still open', () => {
-		const turn = emptyTurn();
-		startBlock(turn, 'text', { text: 'open' }, 100);
-		endLastBlock(turn, 150);
-
-		expect(turn.response.blocks[0]!.endedAt).toBe(150);
-	});
-
-	it('is a no-op on an empty turn', () => {
-		const turn = emptyTurn();
-		endLastBlock(turn, 150);
-		expect(turn.response.blocks).toHaveLength(0);
-	});
-
-	it('does not overwrite an already-closed trailing block', () => {
-		const turn = emptyTurn();
-		startBlock(turn, 'text', { text: 'closed' }, 100);
-		endLastBlock(turn, 120);
-		endLastBlock(turn, 150);
-
-		expect(turn.response.blocks[0]!.endedAt).toBe(120);
-	});
-});
-
 describe('startNewBlock', () => {
 	it('pushes onto an empty turn without closing anything', () => {
 		const turn = emptyTurn();
@@ -132,7 +107,7 @@ describe('startNewBlock', () => {
 		expect(block.endedAt).toBeUndefined();
 	});
 
-	it("closes an open trailing block at the new block's startedAt — no drift", () => {
+	it("closes an open trailing sequential block at the new block's startedAt — no drift", () => {
 		const turn = emptyTurn();
 		startBlock(turn, 'text', { text: 'a' }, 100);
 		const second = startNewBlock(turn, 'thinking', { text: 'b' });
@@ -140,10 +115,31 @@ describe('startNewBlock', () => {
 		expect(turn.response.blocks[0]!.endedAt).toBe(second.startedAt);
 	});
 
+	it('does not close an open trailing toolUse block', () => {
+		const turn = emptyTurn();
+		const first = startBlock(
+			turn,
+			'toolUse',
+			{
+				call: {
+					type: 'toolCall',
+					id: 'tc1',
+					name: 'spawn',
+					arguments: {},
+				},
+				result: undefined,
+			},
+			100,
+		);
+		startNewBlock(turn, 'text', { text: 'meanwhile' });
+
+		expect(first.endedAt).toBeUndefined();
+	});
+
 	it('does not re-close a trailing block that is already closed', () => {
 		const turn = emptyTurn();
-		startBlock(turn, 'text', { text: 'a' }, 100);
-		endLastBlock(turn, 120);
+		const first = startBlock(turn, 'text', { text: 'a' }, 100);
+		endBlock(first, 120);
 		const second = startNewBlock(turn, 'thinking', { text: 'b' });
 
 		expect(turn.response.blocks[0]!.endedAt).toBe(120);
@@ -175,11 +171,17 @@ describe('startAndEndNewBlock', () => {
 		expect(block.startedAt).toBe(block.endedAt);
 	});
 
-	it('closes the trailing open block at the same moment', () => {
+	it('closes trailing sequential content at the same moment', () => {
 		const turn = emptyTurn();
 		startBlock(turn, 'text', { text: 'open' }, 100);
-		const instant = startAndEndNewBlock(turn, 'turnEnd', {
-			stopCode: StopCode.Finished,
+		const instant = startAndEndNewBlock(turn, 'toolUse', {
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'read_file',
+				arguments: {},
+			},
+			result: undefined,
 		});
 
 		expect(turn.response.blocks[0]!.endedAt).toBe(instant.startedAt);
