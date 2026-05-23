@@ -45,7 +45,7 @@ function spawnDisplayName(args: { readonly name?: unknown }): string {
 
 function SpawnSummary({ args, block }: ToolRenderProps<SpawnArgs>) {
 	return (
-		<ToolSummary icon={Bot} label="Spawn">
+		<ToolSummary icon={Bot} label="Agent">
 			<span className="min-w-0 truncate rounded-sm bg-accent px-1.5 py-0.5 font-medium text-accent-foreground ring-1 ring-inset ring-ring/10">
 				{spawnDisplayName(args)}
 			</span>

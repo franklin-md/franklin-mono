@@ -1,7 +1,8 @@
 import type { TurnEnd } from '@franklin/mini-acp';
 import type { ConversationTurn } from '../types.js';
 
-import { startAndEndNewBlock } from './blocks/start.js';
+import { endAllOpenBlocks, endBlock } from './blocks/end.js';
+import { startBlock } from './blocks/start.js';
 
 /**
  * Handle a TurnEnd event by appending a turnEnd block.
@@ -10,14 +11,21 @@ import { startAndEndNewBlock } from './blocks/start.js';
  * the stopCode (e.g. Finished may render as nothing, while errors
  * render a banner).
  *
- * The turnEnd is instantaneous; startAndEndNewBlock closes any still-open
- * trailing block (text mid-stream, tool call awaiting result) at the same
- * moment.
+ * The turnEnd is instantaneous. It closes every still-open block at the same
+ * moment, including overlapping tool calls that never produced a result.
  */
 export function handleTurnEnd(turn: ConversationTurn, event: TurnEnd): void {
-	startAndEndNewBlock(turn, 'turnEnd', {
-		stopCode: event.stopCode,
-		stopMessage: event.stopMessage,
-		usage: event.usage,
-	});
+	const now = Date.now();
+	endAllOpenBlocks(turn, now);
+	const block = startBlock(
+		turn,
+		'turnEnd',
+		{
+			stopCode: event.stopCode,
+			stopMessage: event.stopMessage,
+			usage: event.usage,
+		},
+		now,
+	);
+	endBlock(block, now);
 }

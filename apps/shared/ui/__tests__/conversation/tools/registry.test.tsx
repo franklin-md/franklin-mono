@@ -135,7 +135,8 @@ describe('defaultToolRegistry', () => {
 					},
 				);
 
-				expect(screen.getByText('Spawn')).toBeTruthy();
+				expect(screen.getByText('Agent')).toBeTruthy();
+				expect(screen.queryByText('Spawn')).toBeNull();
 				expect(screen.getByText('Summary writer')).toBeTruthy();
 				expect(screen.getByText('7s')).toBeTruthy();
 
@@ -143,6 +144,25 @@ describe('defaultToolRegistry', () => {
 			} finally {
 				vi.useRealTimers();
 			}
+		});
+
+		it('renders spawn with a completed elapsed time', () => {
+			renderSummary(
+				spawnExtension.tools.spawn.name,
+				{
+					name: 'SpaceX Starship v3 Launch',
+					prompt: 'Track the launch',
+				},
+				{
+					startedAt: 1_000,
+					endedAt: 25_000,
+				},
+			);
+
+			expect(screen.getByText('Agent')).toBeTruthy();
+			expect(screen.queryByText('Spawn')).toBeNull();
+			expect(screen.getByText('SpaceX Starship v3 Launch')).toBeTruthy();
+			expect(screen.getByText('24s')).toBeTruthy();
 		});
 	});
 
