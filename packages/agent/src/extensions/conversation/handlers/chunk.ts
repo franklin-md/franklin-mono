@@ -1,14 +1,15 @@
 import type { Chunk } from '@franklin/mini-acp';
 import type { ConversationTurn } from '../types.js';
 
-import { startNewBlock } from './blocks/start.js';
+import { endTrailingSequentialBlock } from './blocks/end.js';
+import { startBlock } from './blocks/start.js';
 
 /**
  * Append a streaming chunk to the conversation store.
  *
  * Coalesces adjacent chunks of the same kind into a single open block.
- * When a chunk of a different kind arrives, startNewBlock closes the
- * previously-open block and pushes the new one at the same instant.
+ * When a chunk of a different kind arrives, only the trailing text/thinking
+ * block closes; open toolUse blocks stay active until their matching result.
  */
 export function handleChunk(turn: ConversationTurn, chunk: Chunk): void {
 	const { content } = chunk;
@@ -23,7 +24,9 @@ export function handleChunk(turn: ConversationTurn, chunk: Chunk): void {
 			if (last && last.kind === kind && last.endedAt === undefined) {
 				last.text += content.text;
 			} else {
-				startNewBlock(turn, kind, { text: content.text });
+				const now = Date.now();
+				endTrailingSequentialBlock(turn, now);
+				startBlock(turn, kind, { text: content.text }, now);
 			}
 			break;
 		}

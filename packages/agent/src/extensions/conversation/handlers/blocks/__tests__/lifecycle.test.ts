@@ -1,9 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 
 import { StopCode } from '@franklin/mini-acp';
 
 import type { ConversationTurn } from '../../../types.js';
+import { handleChunk } from '../../chunk.js';
+import { handleToolCall } from '../../tool-call.js';
 import { handleToolResult } from '../../tool-result.js';
+import { handleTurnEnd } from '../../turn-end.js';
 import { endBlock, endLastBlock } from '../end.js';
 import { startAndEndNewBlock, startBlock, startNewBlock } from '../start.js';
 
@@ -15,6 +18,10 @@ function emptyTurn(): ConversationTurn {
 		response: { blocks: [] },
 	};
 }
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
 
 describe('startBlock', () => {
 	it('pushes a block without touching the trailing one', () => {
@@ -176,6 +183,199 @@ describe('startAndEndNewBlock', () => {
 		});
 
 		expect(turn.response.blocks[0]!.endedAt).toBe(instant.startedAt);
+	});
+});
+
+describe('tool call lifecycle', () => {
+	it('keeps overlapping tool calls open until each matching result arrives', () => {
+		const now = vi.spyOn(Date, 'now');
+		const turn = emptyTurn();
+
+		now.mockReturnValue(100);
+		handleToolCall(turn, {
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'spawn',
+				arguments: { name: 'First', prompt: 'Do first' },
+			},
+		});
+
+		now.mockReturnValue(125);
+		handleToolCall(turn, {
+			call: {
+				type: 'toolCall',
+				id: 'tc2',
+				name: 'spawn',
+				arguments: { name: 'Second', prompt: 'Do second' },
+			},
+		});
+
+		expect(turn.response.blocks).toHaveLength(2);
+		expect(turn.response.blocks[0]).toMatchObject({
+			kind: 'toolUse',
+			startedAt: 100,
+		});
+		expect(turn.response.blocks[0]!.endedAt).toBeUndefined();
+		expect(turn.response.blocks[1]).toMatchObject({
+			kind: 'toolUse',
+			startedAt: 125,
+		});
+		expect(turn.response.blocks[1]!.endedAt).toBeUndefined();
+
+		now.mockReturnValue(500);
+		handleToolResult(turn, {
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'spawn',
+				arguments: { name: 'First', prompt: 'Do first' },
+			},
+			result: {
+				content: [{ type: 'text', text: 'first done' }],
+			},
+		});
+
+		expect(turn.response.blocks[0]!.endedAt).toBe(500);
+		expect(turn.response.blocks[1]!.endedAt).toBeUndefined();
+
+		now.mockReturnValue(900);
+		handleToolResult(turn, {
+			call: {
+				type: 'toolCall',
+				id: 'tc2',
+				name: 'spawn',
+				arguments: { name: 'Second', prompt: 'Do second' },
+			},
+			result: {
+				content: [{ type: 'text', text: 'second done' }],
+			},
+		});
+
+		expect(turn.response.blocks[1]!.endedAt).toBe(900);
+	});
+
+	it('does not close an open tool call when assistant text starts', () => {
+		const now = vi.spyOn(Date, 'now');
+		const turn = emptyTurn();
+
+		now.mockReturnValue(100);
+		handleToolCall(turn, {
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'spawn',
+				arguments: { name: 'Worker', prompt: 'Do work' },
+			},
+		});
+
+		now.mockReturnValue(250);
+		handleChunk(turn, {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'text', text: 'Meanwhile' },
+		});
+
+		expect(turn.response.blocks).toHaveLength(2);
+		expect(turn.response.blocks[0]).toMatchObject({
+			kind: 'toolUse',
+			startedAt: 100,
+		});
+		expect(turn.response.blocks[0]!.endedAt).toBeUndefined();
+		expect(turn.response.blocks[1]).toMatchObject({
+			kind: 'text',
+			text: 'Meanwhile',
+			startedAt: 250,
+		});
+		expect(turn.response.blocks[1]!.endedAt).toBeUndefined();
+	});
+
+	it('closes only the trailing sequential block when another tool call starts', () => {
+		const now = vi.spyOn(Date, 'now');
+		const turn = emptyTurn();
+
+		now.mockReturnValue(100);
+		handleToolCall(turn, {
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'spawn',
+				arguments: { name: 'Worker', prompt: 'Do work' },
+			},
+		});
+
+		now.mockReturnValue(250);
+		handleChunk(turn, {
+			type: 'chunk',
+			messageId: 'm1',
+			role: 'assistant',
+			content: { type: 'thinking', text: 'Meanwhile' },
+		});
+
+		now.mockReturnValue(300);
+		handleToolCall(turn, {
+			call: {
+				type: 'toolCall',
+				id: 'tc2',
+				name: 'spawn',
+				arguments: { name: 'Second', prompt: 'Do second' },
+			},
+		});
+
+		expect(turn.response.blocks).toHaveLength(3);
+		expect(turn.response.blocks[0]).toMatchObject({
+			kind: 'toolUse',
+			startedAt: 100,
+		});
+		expect(turn.response.blocks[0]!.endedAt).toBeUndefined();
+		expect(turn.response.blocks[1]).toMatchObject({
+			kind: 'thinking',
+			text: 'Meanwhile',
+			startedAt: 250,
+			endedAt: 300,
+		});
+		expect(turn.response.blocks[2]).toMatchObject({
+			kind: 'toolUse',
+			startedAt: 300,
+		});
+		expect(turn.response.blocks[2]!.endedAt).toBeUndefined();
+	});
+
+	it('closes unresolved tool calls when the turn ends', () => {
+		const now = vi.spyOn(Date, 'now');
+		const turn = emptyTurn();
+
+		now.mockReturnValue(100);
+		handleToolCall(turn, {
+			call: {
+				type: 'toolCall',
+				id: 'tc1',
+				name: 'spawn',
+				arguments: { name: 'First', prompt: 'Do first' },
+			},
+		});
+
+		now.mockReturnValue(125);
+		handleToolCall(turn, {
+			call: {
+				type: 'toolCall',
+				id: 'tc2',
+				name: 'spawn',
+				arguments: { name: 'Second', prompt: 'Do second' },
+			},
+		});
+
+		now.mockReturnValue(1000);
+		handleTurnEnd(turn, { type: 'turnEnd', stopCode: StopCode.Finished });
+
+		expect(turn.response.blocks[0]!.endedAt).toBe(1000);
+		expect(turn.response.blocks[1]!.endedAt).toBe(1000);
+		expect(turn.response.blocks[2]).toMatchObject({
+			kind: 'turnEnd',
+			startedAt: 1000,
+			endedAt: 1000,
+		});
 	});
 });
 

@@ -7,6 +7,7 @@ import type {
 	MiniACPClient,
 	Chunk,
 	ToolExecuteParams,
+	ToolResult,
 	Update,
 	TurnEnd,
 	Usage,
@@ -420,6 +421,93 @@ describe('conversationExtension', () => {
 			},
 			startedAt: expect.any(Number),
 			endedAt: expect.any(Number),
+		});
+	});
+
+	it('records overlapping tool calls with independent lifecycles through middleware', async () => {
+		const { middleware, stores } = await compileConversation();
+		let now = 0;
+		const dateNow = vi.spyOn(Date, 'now').mockImplementation(() => now);
+		const resolvers = new Map<string, (result: ToolResult) => void>();
+		const agent = stubAgent({
+			toolExecute: vi.fn(
+				({ call }: ToolExecuteParams) =>
+					new Promise<ToolResult>((resolve) => {
+						resolvers.set(call.id, resolve);
+					}),
+			),
+		});
+		const wrappedAgent = apply(middleware.server, agent);
+
+		const target = stubClient({
+			prompt: async function* () {
+				now = 100;
+				const first = wrappedAgent.toolExecute({
+					call: {
+						type: 'toolCall',
+						id: 'tc1',
+						name: 'spawn',
+						arguments: { name: 'First', prompt: 'Do first' },
+					},
+				});
+
+				now = 125;
+				const second = wrappedAgent.toolExecute({
+					call: {
+						type: 'toolCall',
+						id: 'tc2',
+						name: 'spawn',
+						arguments: { name: 'Second', prompt: 'Do second' },
+					},
+				});
+
+				now = 500;
+				resolvers.get('tc1')?.({
+					toolCallId: 'tc1',
+					content: [{ type: 'text', text: 'first done' }],
+				});
+				await first;
+
+				now = 900;
+				resolvers.get('tc2')?.({
+					toolCallId: 'tc2',
+					content: [{ type: 'text', text: 'second done' }],
+				});
+				await second;
+			},
+		});
+
+		try {
+			const wrapped = apply(middleware.client, target);
+			await collect(
+				wrapped.prompt({
+					role: 'user',
+					content: [{ type: 'text', text: 'fan out' }],
+				}),
+			);
+		} finally {
+			dateNow.mockRestore();
+		}
+
+		const blocks = getTurns(stores)[0]!.response.blocks;
+		expect(blocks).toHaveLength(2);
+		expect(blocks[0]).toMatchObject({
+			kind: 'toolUse',
+			call: { id: 'tc1', name: 'spawn' },
+			startedAt: 100,
+			endedAt: 500,
+			result: {
+				content: [{ type: 'text', text: 'first done' }],
+			},
+		});
+		expect(blocks[1]).toMatchObject({
+			kind: 'toolUse',
+			call: { id: 'tc2', name: 'spawn' },
+			startedAt: 125,
+			endedAt: 900,
+			result: {
+				content: [{ type: 'text', text: 'second done' }],
+			},
 		});
 	});
 

@@ -20,3 +20,32 @@ export function endLastBlock(
 	const last = blocks[blocks.length - 1];
 	if (last) endBlock(last, at);
 }
+
+export function endTrailingSequentialBlock(
+	turn: ConversationTurn,
+	at: number = Date.now(),
+): void {
+	const blocks = turn.response.blocks;
+	const last = blocks[blocks.length - 1];
+	if (last && isSequentialBlock(last)) endBlock(last, at);
+}
+
+export function endAllOpenBlocks(
+	turn: ConversationTurn,
+	at: number = Date.now(),
+): void {
+	for (const block of turn.response.blocks) {
+		endBlock(block, at);
+	}
+}
+
+function isSequentialBlock(block: AssistantBlock): boolean {
+	switch (block.kind) {
+		case 'text':
+		case 'thinking':
+			return true;
+		case 'toolUse':
+		case 'turnEnd':
+			return false;
+	}
+}
