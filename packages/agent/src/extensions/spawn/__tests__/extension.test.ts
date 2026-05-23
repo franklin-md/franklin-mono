@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	createCoreStateModule,
 	type CoreStateModule,
-} from '../../../modules/core/state-module.js';
+} from '../../../modules/core/module/state-module.js';
 import {
 	createOrchestrator,
 	type OrchestratorRuntime,

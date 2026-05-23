@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import { combineAll } from '../../modules/state/index.js';
 import { createRuntime } from '../../testing/index.js';
-import { createCoreStateModule } from '../../modules/core/state-module.js';
+import { createCoreStateModule } from '../../modules/core/module/index.js';
 import { StoreRegistry } from '../../modules/store/api/registry/index.js';
 import { createStoreStateModule } from '../../modules/store/state-module.js';
 import { conversationExtension } from '../conversation/bundle.js';

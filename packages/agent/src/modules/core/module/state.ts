@@ -1,29 +1,8 @@
-import type { MiniACPConnector } from '@franklin/mini-acp';
 import type { StateHandle } from '@franklin/extensibility';
 import { ZERO_USAGE } from '@franklin/mini-acp';
-import type { StateExtensionModule } from '../state/index.js';
-import type { CoreSignature } from './api/api.js';
-import { createCoreModule } from './module.js';
-import type { CoreRuntime } from './runtime/index.js';
 
-import type { CoreState, SessionSnapshot } from './state.js';
-import { copyToolFilter, emptyCoreState, emptyToolFilter } from './state.js';
-
-export type CoreStateModule = StateExtensionModule<
-	CoreState,
-	CoreSignature,
-	CoreRuntime
->;
-
-export function createCoreStateModule(
-	connectAgent: MiniACPConnector,
-): CoreStateModule {
-	return {
-		emptyState: emptyCoreState,
-		state: coreStateFromSession,
-		instantiate: (state) => createCoreModule(connectAgent, state.core),
-	};
-}
+import type { CoreState, SessionSnapshot } from '../state.js';
+import { copyToolFilter, emptyToolFilter } from '../state.js';
 
 type SessionRuntime = {
 	getSession(): SessionSnapshot;

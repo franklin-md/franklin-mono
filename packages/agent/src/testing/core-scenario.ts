@@ -10,7 +10,7 @@ import {
 import {
 	createCoreStateModule,
 	type CoreStateModule,
-} from '../modules/core/state-module.js';
+} from '../modules/core/module/state-module.js';
 import type { CoreRuntime } from '../modules/core/runtime/index.js';
 import type { CoreState } from '../modules/core/state.js';
 import type { InferExtension } from '../modules/state/index.js';

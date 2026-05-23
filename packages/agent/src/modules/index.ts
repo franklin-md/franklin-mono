@@ -18,10 +18,8 @@ export type {
 } from './core/api/index.js';
 export { toolSpec } from './core/api/index.js';
 export { inspectRuntime } from './core/inspect.js';
-export type { CoreModule } from './core/module.js';
-export { createCoreModule } from './core/module.js';
-export type { CoreStateModule } from './core/state-module.js';
-export { createCoreStateModule } from './core/state-module.js';
+export type { CoreModule } from './core/module/types.js';
+export { createCoreStateModule } from './core/module/index.js';
 export type {
 	CoreEvent,
 	CoreRuntime,
