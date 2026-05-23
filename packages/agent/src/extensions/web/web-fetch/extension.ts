@@ -65,7 +65,6 @@ export function webFetchExtension(options: Partial<WebFetchExtensionOptions>) {
 					};
 				}
 			},
-			render: (output) => output,
 		});
 	});
 }

@@ -4,7 +4,6 @@ import { defineExtension } from '../../../modules/state/index.js';
 import type { CoreModule } from '../../../modules/core/index.js';
 import type { EnvironmentModule } from '../../../modules/environment/index.js';
 import type { StoreModule } from '../../../modules/store/index.js';
-import type { RenderedToolOutput } from '../../../modules/core/index.js';
 import { createFileControl } from '../common/control.js';
 import { fileKey } from '../common/key.js';
 import { readFileSpec } from './tools.js';
@@ -63,17 +62,7 @@ export function readExtension() {
 						isError: true,
 					};
 				},
-				render: renderReadFileOutput,
 			});
 		},
 	);
-}
-
-function renderReadFileOutput(
-	output: string | RenderedToolOutput,
-): RenderedToolOutput {
-	if (typeof output === 'string') {
-		return { content: [{ type: 'text', text: output }] };
-	}
-	return output;
 }
