@@ -16,7 +16,11 @@ export const spawnExtension = defineExtension<
 			const child = await ctx.orchestrator.create({
 				from: ctx.details.id,
 				mode: 'child',
+				state: {
+					details: { visibility: 'hidden' },
+				},
 			});
+			child.runtime.toolRegistry.setEnabled(spawnSpec.name, false);
 			try {
 				const stream = child.runtime.prompt({
 					role: 'user',

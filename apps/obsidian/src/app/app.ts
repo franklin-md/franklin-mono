@@ -16,6 +16,7 @@ import {
 	createWebExtension,
 	environmentInfoExtension,
 	instructionsExtension,
+	spawnExtension,
 	statusExtension,
 	todoExtension,
 	webSearchProviders,
@@ -96,7 +97,7 @@ function createExtensions(): FranklinExtension[] {
 		webSearchProviders.of(createExaWebSearchProvider()),
 		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),
 		createWebExtension({}).extension,
-		// spawnExtension.extension,
+		spawnExtension.extension,
 		environmentInfoExtension.extension,
 	];
 }
