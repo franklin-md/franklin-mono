@@ -16,6 +16,21 @@ const OPENROUTER_UPSTREAM_MODEL_CASES = [
 	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
 ] as const;
 
+const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
+	{
+		id: 'google/gemini-3.5-flash',
+		name: 'Google: Gemini 3.5 Flash',
+		contextWindow: 1_048_576,
+		maxTokens: 65_536,
+		cost: {
+			input: 1.5,
+			output: 9,
+			cacheRead: 0.15,
+			cacheWrite: 0.08333333333333334,
+		},
+	},
+] as const;
+
 // Keep OpenCode Go Qwen 3.5/3.6 and MiniMax M2.7 on the OpenAI-compatible
 // path even though the OpenCode docs table lists provider SDKs such as
 // @ai-sdk/alibaba and @ai-sdk/anthropic. Pi issue #4106 reproduced 404s with
@@ -185,6 +200,29 @@ describe('resolveModel', () => {
 				api: 'openai-completions',
 				reasoning: true,
 				contextWindow,
+			});
+		});
+	}
+
+	for (const model of OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES) {
+		it(`resolves the OpenRouter ${model.id} model from local overrides`, () => {
+			const result = resolveModel({
+				provider: 'openrouter',
+				model: model.id,
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.model).toMatchObject({
+				provider: 'openrouter',
+				id: model.id,
+				name: model.name,
+				api: 'openai-completions',
+				baseUrl: 'https://openrouter.ai/api/v1',
+				reasoning: true,
+				input: ['text', 'image'],
+				contextWindow: model.contextWindow,
+				maxTokens: model.maxTokens,
+				cost: model.cost,
 			});
 		});
 	}
