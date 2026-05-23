@@ -1,6 +1,5 @@
-import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
-import type { CoreSignature } from '../../api/api.js';
 import type { AgentState } from '../../agent-state/index.js';
+import type { CoreEventRegistrations } from '../registrations/index.js';
 import { compose } from './compose.js';
 import { createPromptDecorator } from './prompt/index.js';
 import { createToolDecorator } from './tool/index.js';
@@ -14,15 +13,14 @@ import type { ProtocolDecorator } from './types.js';
  * extension hooks are deliberately grouped so the client path reads as one
  * lifecycle: sync system prompt, build user prompt, send, then observe stream.
  */
-export function createAgentDecorator<Runtime extends BaseRuntime>(
+export function createAgentDecorator(
 	agentState: AgentState,
-	registrations: RegistryView<CoreSignature, Runtime>,
-	getCtx: () => Runtime,
+	registrations: CoreEventRegistrations,
 	toolRegistry: ToolRegistry,
 ): ProtocolDecorator {
 	return compose(
 		[
-			createPromptDecorator(agentState, registrations, getCtx),
+			createPromptDecorator(agentState, registrations),
 			createToolDecorator(toolRegistry),
 			createTrackingDecorator(agentState),
 		].filter(isProtocolDecorator),

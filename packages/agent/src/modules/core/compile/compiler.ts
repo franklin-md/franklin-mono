@@ -9,6 +9,7 @@ import type { SessionSnapshot } from '../state.js';
 import { createAgentClient } from './client.js';
 import { createAgentDecorator } from './decorators/full.js';
 import { createToolRegistry } from './decorators/tool/index.js';
+import { createCoreEventRegistrations } from './registrations/index.js';
 
 export function createCoreCompiler(
 	connectAgent: MiniACPConnector,
@@ -19,6 +20,7 @@ export function createCoreCompiler(
 			registry: RegistryView<CoreSignature, ContextRuntime>,
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CoreRuntime> => {
+			const events = createCoreEventRegistrations(registry, getRuntime);
 			const toolRegistry = createToolRegistry(
 				registry,
 				getRuntime,
@@ -26,16 +28,10 @@ export function createCoreCompiler(
 			);
 			const agentState = createAgentState({
 				snapshot,
-				registrations: registry,
-				getRuntime,
+				registrations: events,
 				toolRegistry,
 			});
-			const decorator = createAgentDecorator(
-				agentState,
-				registry,
-				getRuntime,
-				toolRegistry,
-			);
+			const decorator = createAgentDecorator(agentState, events, toolRegistry);
 
 			const client = await createAgentClient({
 				connectAgent,

@@ -23,6 +23,7 @@ import {
 import type { CoreSignature } from '../modules/core/api/api.js';
 import type { AuthDependencyRuntime } from '../auth/dependency.js';
 import type { AuthManager } from '../auth/manager.js';
+import { createCoreEventRegistrations } from '../modules/core/compile/registrations/index.js';
 import { createPromptBuilder } from '../modules/core/compile/decorators/prompt/build-prompt/index.js';
 import { createPromptObserver } from '../modules/core/compile/decorators/prompt/observer/index.js';
 import {
@@ -98,8 +99,9 @@ function buildTestMiddleware<Runtime extends BaseRuntime>(
 	toolRegistry: ToolRegistry,
 	getCtx: () => Runtime,
 ): FullMiddleware {
-	const buildPrompt = createPromptBuilder(registrations, getCtx);
-	const observePrompt = createPromptObserver(registrations, getCtx);
+	const events = createCoreEventRegistrations(registrations, getCtx);
+	const buildPrompt = createPromptBuilder(events);
+	const observePrompt = createPromptObserver(events);
 	const prompt: MethodMiddleware<MiniACPClient['prompt']> = async function* (
 		message,
 		next,

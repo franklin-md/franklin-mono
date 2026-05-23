@@ -1,23 +1,16 @@
-import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type { MiniACPClient, StreamEvent } from '@franklin/mini-acp';
-import type { CoreSignature } from '../../../../api/api.js';
-import { bindRegisteredEventHandlers } from '../../../registrations/index.js';
+import type { CoreEventRegistrations } from '../../../registrations/index.js';
 
-export function createPromptObserver<Runtime extends BaseRuntime>(
-	registrations: RegistryView<CoreSignature, Runtime>,
-	getRuntime: () => Runtime,
+export function createPromptObserver(
+	registrations: CoreEventRegistrations,
 ): (
 	stream: ReturnType<MiniACPClient['prompt']>,
 ) => AsyncGenerator<StreamEvent> {
 	const observers = {
-		turnStart: bindRegisteredEventHandlers(
-			registrations,
-			'turnStart',
-			getRuntime,
-		),
-		chunk: bindRegisteredEventHandlers(registrations, 'chunk', getRuntime),
-		update: bindRegisteredEventHandlers(registrations, 'update', getRuntime),
-		turnEnd: bindRegisteredEventHandlers(registrations, 'turnEnd', getRuntime),
+		turnStart: registrations.handlersFor('turnStart'),
+		chunk: registrations.handlersFor('chunk'),
+		update: registrations.handlersFor('update'),
+		turnEnd: registrations.handlersFor('turnEnd'),
 	};
 
 	return async function* observePromptStream(stream) {

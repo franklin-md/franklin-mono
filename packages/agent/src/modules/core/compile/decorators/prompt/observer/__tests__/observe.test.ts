@@ -6,6 +6,7 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../../__tests__/registry.js';
+import { createCoreEventRegistrations } from '../../../../registrations/index.js';
 
 const runtime = createTestRuntime();
 
@@ -35,8 +36,7 @@ async function* stream(events: readonly StreamEvent[]) {
 describe('agent stream observers', () => {
 	it('passes stream events through when no observers are registered', async () => {
 		const observePrompt = createPromptObserver(
-			createCoreRegistry(),
-			() => runtime,
+			createCoreEventRegistrations(createCoreRegistry(), () => runtime),
 		);
 		const returned: StreamEvent[] = [];
 
@@ -55,7 +55,9 @@ describe('agent stream observers', () => {
 			api.on('update', (event) => observed.push(event));
 			api.on('turnEnd', (event) => observed.push(event));
 		});
-		const observePrompt = createPromptObserver(registrations, () => runtime);
+		const observePrompt = createPromptObserver(
+			createCoreEventRegistrations(registrations, () => runtime),
+		);
 
 		const returned: StreamEvent[] = [];
 		for await (const event of observePrompt(stream(streamEvents))) {
@@ -72,7 +74,9 @@ describe('agent stream observers', () => {
 			api.on('chunk', () => calls.push('first'));
 			api.on('chunk', () => calls.push('second'));
 		});
-		const observePrompt = createPromptObserver(registrations, () => runtime);
+		const observePrompt = createPromptObserver(
+			createCoreEventRegistrations(registrations, () => runtime),
+		);
 
 		for await (const _event of observePrompt(stream(streamEvents))) {
 			// Drain the stream so observer callbacks run.

@@ -19,7 +19,7 @@ import {
 	emptyToolFilter,
 	type ToolFilter,
 } from '../../../state.js';
-import { bindRegisteredEventHandlers } from '../../registrations/events.js';
+import { createCoreEventRegistrations } from '../../registrations/events.js';
 import { executeRegisteredToolCall } from './registered.js';
 import { errorExecutionResult, fallbackExecutionResult } from './result.js';
 import { serializeTool } from './serialize.js';
@@ -118,17 +118,15 @@ export function createToolRegistry<Runtime extends BaseRuntime>(
 	getRuntime: () => Runtime,
 	toolFilter: ToolFilter = emptyToolFilter(),
 ): ToolRegistry {
+	const events = createCoreEventRegistrations(registrations, getRuntime);
+
 	return new ToolRegistry({
 		tools: registrations
 			.argsFor('registerTool')
 			.map((registration) => normalizeTool(registration, getRuntime)),
 		observers: {
-			toolCall: createObserver(
-				bindRegisteredEventHandlers(registrations, 'toolCall', getRuntime),
-			),
-			toolResult: createObserver(
-				bindRegisteredEventHandlers(registrations, 'toolResult', getRuntime),
-			),
+			toolCall: createObserver(events.handlersFor('toolCall')),
+			toolResult: createObserver(events.handlersFor('toolResult')),
 		},
 		toolFilter,
 	});
