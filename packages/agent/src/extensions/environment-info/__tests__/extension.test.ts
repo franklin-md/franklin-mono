@@ -12,7 +12,7 @@ import type { CoreSignature } from '../../../modules/core/api/api.js';
 import {
 	buildSystemPromptAssembler,
 	type SystemPromptAssembler,
-} from '../../../modules/core/agent-state/system-prompt/assembler/index.js';
+} from '../../../modules/core/context-manager/system-prompt/assembler/index.js';
 import { createCoreRegistry as createBoundCoreRegistry } from '../../../modules/core/registrations/index.js';
 import type { CoreRuntime } from '../../../modules/core/runtime/index.js';
 import type {

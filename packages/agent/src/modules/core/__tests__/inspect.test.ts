@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Context } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
-import { createAgentState } from '../agent-state/index.js';
-import { attachAgentState } from '../runtime/agent-state.js';
+import { createContextManager } from '../context-manager/index.js';
+import { attachContextManager } from '../runtime/context-manager.js';
 import type { CoreRuntime } from '../runtime/index.js';
 import { emptySessionSnapshot } from '../state.js';
 import {
@@ -14,15 +14,15 @@ import { createToolRegistry } from '../tools/index.js';
 function stubRuntime(context: Context): CoreRuntime {
 	const getRuntime = createTestRuntime;
 	const registrations = createCoreRegistry(undefined, getRuntime);
-	const agentState = createAgentState({
+	const contextManager = createContextManager({
 		snapshot: emptySessionSnapshot(),
 		registrations,
 		toolRegistry: createToolRegistry(registrations),
 	});
-	agentState.contextLedger.apply(context);
-	return attachAgentState(
+	contextManager.contextLedger.apply(context);
+	return attachContextManager(
 		{
-			getSession: () => agentState.getSnapshot(),
+			getSession: () => contextManager.getSnapshot(),
 			dispose: async () => {},
 			prompt: () => {
 				throw new Error('not used');
@@ -30,7 +30,7 @@ function stubRuntime(context: Context): CoreRuntime {
 			cancel: async () => {},
 			setLLMConfig: async () => {},
 		} as unknown as CoreRuntime,
-		agentState,
+		contextManager,
 	);
 }
 

@@ -7,14 +7,14 @@ import type {
 } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { createPromptDecorator } from '../decorator.js';
-import { createAgentState } from '../../../../agent-state/index.js';
+import { createContextManager } from '../../../../context-manager/index.js';
 import { emptySessionSnapshot } from '../../../../state.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
 import { createToolRegistry } from '../../../../tools/index.js';
-import type { AgentState } from '../../../../agent-state/index.js';
+import type { ContextManager } from '../../../../context-manager/index.js';
 
 const runtime = createTestRuntime();
 
@@ -39,22 +39,25 @@ function text(message: UserMessage): string {
 		.join('');
 }
 
-function createTestAgentState(
+function createTestContextManager(
 	registrations = createCoreRegistry(),
-): AgentState {
-	return createAgentState({
+): ContextManager {
+	return createContextManager({
 		snapshot: emptySessionSnapshot(),
 		registrations,
 		toolRegistry: createToolRegistry(registrations),
 	});
 }
 
-function stubClient(calls: string[], agentState?: AgentState): MiniACPClient {
+function stubClient(
+	calls: string[],
+	contextManager?: ContextManager,
+): MiniACPClient {
 	return {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async (patch: ContextPatch) => {
 			calls.push(`setContext:${patch.systemPrompt ?? ''}`);
-			agentState?.contextLedger.apply(patch);
+			contextManager?.contextLedger.apply(patch);
 		}),
 		prompt: vi.fn(async function* (message: UserMessage) {
 			calls.push(`client.prompt:${text(message)}`);
@@ -67,7 +70,7 @@ function stubClient(calls: string[], agentState?: AgentState): MiniACPClient {
 describe('createPromptDecorator', () => {
 	it('returns a pass-through decorator when no prompt-time handlers are registered', async () => {
 		const decorator = createPromptDecorator(
-			createTestAgentState(),
+			createTestContextManager(),
 			createCoreRegistry(undefined, () => runtime),
 		);
 		const calls: string[] = [];
@@ -101,10 +104,10 @@ describe('createPromptDecorator', () => {
 			},
 			() => runtime,
 		);
-		const agentState = createTestAgentState(registrations);
-		const decorator = createPromptDecorator(agentState, registrations);
+		const contextManager = createTestContextManager(registrations);
+		const decorator = createPromptDecorator(contextManager, registrations);
 
-		const base = stubClient(calls, agentState);
+		const base = stubClient(calls, contextManager);
 		const client = await decorator.client(base);
 		const returned: StreamEvent[] = [];
 		for await (const event of client.prompt(userMessage)) returned.push(event);
@@ -134,10 +137,10 @@ describe('createPromptDecorator', () => {
 			},
 			() => runtime,
 		);
-		const agentState = createTestAgentState(registrations);
-		const decorator = createPromptDecorator(agentState, registrations);
+		const contextManager = createTestContextManager(registrations);
+		const decorator = createPromptDecorator(contextManager, registrations);
 
-		const base = stubClient(calls, agentState);
+		const base = stubClient(calls, contextManager);
 		const client = await decorator.client(base);
 		for await (const _event of client.prompt(userMessage)) {
 			// Drain the stream so the prompt flow runs.
@@ -158,7 +161,7 @@ describe('createPromptDecorator', () => {
 
 	it('leaves the server side unchanged', async () => {
 		const decorator = createPromptDecorator(
-			createTestAgentState(),
+			createTestContextManager(),
 			createCoreRegistry(
 				(api) => {
 					api.on('prompt', () => {});

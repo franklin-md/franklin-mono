@@ -4,22 +4,22 @@ import {
 	trackClient,
 	trackUsage,
 } from '@franklin/mini-acp/session';
-import type { AgentState } from '../../../agent-state/index.js';
+import type { ContextManager } from '../../../context-manager/index.js';
 import type { ProtocolDecorator } from '../types.js';
 
 export function createTrackingDecorator(
-	agentState: AgentState,
+	contextManager: ContextManager,
 ): ProtocolDecorator {
 	return {
 		name: 'tracking',
 		async server(s) {
-			return trackAgent(agentState.contextLedger, s);
+			return trackAgent(contextManager.contextLedger, s);
 		},
 		async client(c) {
 			const usageTracked = decorateTurn(c, (turn) =>
-				trackUsage(agentState.usageTracker, turn),
+				trackUsage(contextManager.usageTracker, turn),
 			);
-			return trackClient(agentState.contextLedger, usageTracked);
+			return trackClient(contextManager.contextLedger, usageTracked);
 		},
 	};
 }

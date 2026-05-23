@@ -2,7 +2,7 @@ import type { MiniACPAgent, MiniACPClient, Usage } from '@franklin/mini-acp';
 import { StopCode, ZERO_USAGE } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { createTrackingDecorator } from '../decorator.js';
-import { createAgentState } from '../../../../agent-state/index.js';
+import { createContextManager } from '../../../../context-manager/index.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
@@ -14,10 +14,10 @@ const turnUsage = {
 	cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 } satisfies Usage;
 
-function createTestAgentState() {
+function createTestContextManager() {
 	const getRuntime = createTestRuntime;
 	const registrations = createCoreRegistry(undefined, getRuntime);
-	return createAgentState({
+	return createContextManager({
 		snapshot: {
 			messages: [],
 			llmConfig: {},
@@ -31,8 +31,8 @@ function createTestAgentState() {
 
 describe('createTrackingDecorator', () => {
 	it('tracks tool calls and tool results on the server side', async () => {
-		const agentState = createTestAgentState();
-		const decorator = createTrackingDecorator(agentState);
+		const contextManager = createTestContextManager();
+		const decorator = createTrackingDecorator(contextManager);
 		const toolExecute: MiniACPAgent['toolExecute'] = async ({ call }) => ({
 			toolCallId: call.id,
 			content: [{ type: 'text', text: 'ok' }],
@@ -51,7 +51,7 @@ describe('createTrackingDecorator', () => {
 			},
 		});
 
-		expect(agentState.getAgentContext().messages).toEqual([
+		expect(contextManager.getAgentContext().messages).toEqual([
 			{
 				role: 'assistant',
 				content: [
@@ -72,8 +72,8 @@ describe('createTrackingDecorator', () => {
 	});
 
 	it('tracks client context, messages, and usage in one wrapper', async () => {
-		const agentState = createTestAgentState();
-		const decorator = createTrackingDecorator(agentState);
+		const contextManager = createTestContextManager();
+		const decorator = createTrackingDecorator(contextManager);
 		const client: MiniACPClient = {
 			initialize: vi.fn(async () => {}),
 			setContext: vi.fn(async () => {}),
@@ -104,11 +104,11 @@ describe('createTrackingDecorator', () => {
 			// Drain the stream so tracking callbacks run.
 		}
 
-		expect(agentState.getAgentContext().systemPrompt).toBe('rules');
-		expect(agentState.getAgentContext().messages).toEqual([
+		expect(contextManager.getAgentContext().systemPrompt).toBe('rules');
+		expect(contextManager.getAgentContext().messages).toEqual([
 			{ role: 'user', content: [{ type: 'text', text: 'hi' }] },
 			{ role: 'assistant', content: [{ type: 'text', text: 'hello' }] },
 		]);
-		expect(agentState.getSnapshot().usage).toEqual(turnUsage);
+		expect(contextManager.getSnapshot().usage).toEqual(turnUsage);
 	});
 });

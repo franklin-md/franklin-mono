@@ -6,7 +6,7 @@ import type {
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { createAgentState } from '../create.js';
+import { createContextManager } from '../create.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
@@ -48,17 +48,17 @@ type CreateStateInput = {
 };
 
 function createState(input: CreateStateInput) {
-	return createAgentState({
+	return createContextManager({
 		snapshot: input.snapshot,
 		registrations: input.registrations,
 		toolRegistry: createToolRegistry(input.registrations),
 	});
 }
 
-describe('createAgentState', () => {
+describe('createContextManager', () => {
 	it('syncs registered system prompt changes through the context ledger', async () => {
 		const client = stubClient();
-		const agentState = createState({
+		const contextManager = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(
 				(api) => {
@@ -70,8 +70,8 @@ describe('createAgentState', () => {
 			),
 		});
 
-		await agentState.contextLedger.sync(client);
-		await agentState.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({
 			systemPrompt: 'system',
@@ -83,13 +83,13 @@ describe('createAgentState', () => {
 
 	it('does not treat absent handlers as a request to clear acknowledged context', async () => {
 		const client = stubClient();
-		const agentState = createState({
+		const contextManager = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(),
 		});
-		agentState.contextLedger.apply({ systemPrompt: 'external' });
+		contextManager.contextLedger.apply({ systemPrompt: 'external' });
 
-		await agentState.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({
 			systemPrompt: 'external',
@@ -105,7 +105,7 @@ describe('createAgentState', () => {
 			.mockRejectedValueOnce(new Error('transient failure'))
 			.mockResolvedValueOnce(undefined);
 		const client = stubClient(setContext);
-		const agentState = createState({
+		const contextManager = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(
 				(api) => {
@@ -117,10 +117,10 @@ describe('createAgentState', () => {
 			),
 		});
 
-		await expect(agentState.contextLedger.sync(client)).rejects.toThrow(
+		await expect(contextManager.contextLedger.sync(client)).rejects.toThrow(
 			'transient failure',
 		);
-		await agentState.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenNthCalledWith(1, {
 			systemPrompt: 'retryable',
@@ -138,7 +138,7 @@ describe('createAgentState', () => {
 
 	it('keeps hydrated session context pending until context sync succeeds', async () => {
 		const client = stubClient();
-		const agentState = createState({
+		const contextManager = createState({
 			snapshot: {
 				messages: [userMessage],
 				llmConfig: { provider: 'test-provider', model: 'test-model' },
@@ -165,18 +165,18 @@ describe('createAgentState', () => {
 			),
 		});
 
-		expect(agentState.getAgentContext()).toEqual({
+		expect(contextManager.getAgentContext()).toEqual({
 			systemPrompt: '',
 			messages: [],
 			tools: [],
 			config: {},
 		});
-		expect(agentState.getSnapshot()).toMatchObject({
+		expect(contextManager.getSnapshot()).toMatchObject({
 			messages: [userMessage],
 			llmConfig: { model: 'test-model' },
 		});
 
-		await agentState.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledWith({
 			systemPrompt: 'system',
@@ -189,12 +189,12 @@ describe('createAgentState', () => {
 			],
 			config: { provider: 'test-provider', model: 'test-model' },
 		});
-		expect(agentState.getAgentContext()).toMatchObject({
+		expect(contextManager.getAgentContext()).toMatchObject({
 			systemPrompt: 'system',
 			messages: [userMessage],
 			config: { provider: 'test-provider', model: 'test-model' },
 		});
-		expect(agentState.getAgentContext().tools).toHaveLength(1);
+		expect(contextManager.getAgentContext().tools).toHaveLength(1);
 	});
 
 	it('retries the same desired context after setContext fails', async () => {
@@ -203,7 +203,7 @@ describe('createAgentState', () => {
 			.mockRejectedValueOnce(new Error('transient failure'))
 			.mockResolvedValueOnce(undefined);
 		const client = stubClient(setContext);
-		const agentState = createState({
+		const contextManager = createState({
 			snapshot: {
 				messages: [userMessage],
 				llmConfig: { model: 'test-model' },
@@ -220,17 +220,17 @@ describe('createAgentState', () => {
 			),
 		});
 
-		await expect(agentState.contextLedger.sync(client)).rejects.toThrow(
+		await expect(contextManager.contextLedger.sync(client)).rejects.toThrow(
 			'transient failure',
 		);
-		expect(agentState.getAgentContext()).toEqual({
+		expect(contextManager.getAgentContext()).toEqual({
 			systemPrompt: '',
 			messages: [],
 			tools: [],
 			config: {},
 		});
 
-		await agentState.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledTimes(2);
 		expect(client.setContext).toHaveBeenNthCalledWith(1, {
@@ -245,12 +245,12 @@ describe('createAgentState', () => {
 			tools: [],
 			config: { model: 'test-model' },
 		});
-		expect(agentState.getAgentContext().systemPrompt).toBe('retryable');
+		expect(contextManager.getAgentContext().systemPrompt).toBe('retryable');
 	});
 
 	it('does not resend messages that were already tracked through the prompt stream', async () => {
 		const client = stubClient();
-		const agentState = createState({
+		const contextManager = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(),
 		});
@@ -259,10 +259,10 @@ describe('createAgentState', () => {
 			content: [{ type: 'text' as const, text: 'done' }],
 		};
 
-		await agentState.contextLedger.sync(client);
-		agentState.contextLedger.append(userMessage);
-		agentState.contextLedger.append(assistantMessage);
-		await agentState.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
+		contextManager.contextLedger.append(userMessage);
+		contextManager.contextLedger.append(assistantMessage);
+		await contextManager.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({
 			systemPrompt: '',
@@ -270,7 +270,7 @@ describe('createAgentState', () => {
 			tools: [],
 			config: {},
 		});
-		expect(agentState.getSnapshot().messages).toEqual([
+		expect(contextManager.getSnapshot().messages).toEqual([
 			userMessage,
 			assistantMessage,
 		]);
@@ -278,7 +278,7 @@ describe('createAgentState', () => {
 
 	it('does not send a context patch when desired context already matches', async () => {
 		const client = stubClient();
-		const agentState = createState({
+		const contextManager = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(
 				(api) => {
@@ -290,8 +290,8 @@ describe('createAgentState', () => {
 			),
 		});
 
-		await agentState.contextLedger.sync(client);
-		await agentState.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({
 			systemPrompt: 'stable',
@@ -304,7 +304,7 @@ describe('createAgentState', () => {
 	it('sends only the changed system prompt after initial context sync', async () => {
 		let promptText = 'v1';
 		const client = stubClient();
-		const agentState = createState({
+		const contextManager = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(
 				(api) => {
@@ -316,9 +316,9 @@ describe('createAgentState', () => {
 			),
 		});
 
-		await agentState.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
 		promptText = 'v2';
-		await agentState.contextLedger.sync(client);
+		await contextManager.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenNthCalledWith(1, {
 			systemPrompt: 'v1',

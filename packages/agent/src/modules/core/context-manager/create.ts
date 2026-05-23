@@ -6,15 +6,17 @@ import {
 	type ToolDefinitionProvider,
 } from './context-ledger.js';
 import { createSystemPromptBuilder } from './system-prompt/index.js';
-import type { AgentState } from './types.js';
+import type { ContextManager } from './types.js';
 
-type CreateAgentStateInput = {
+type CreateContextManagerInput = {
 	readonly snapshot: SessionSnapshot;
 	readonly registrations: CoreRegistry;
 	readonly toolRegistry: ToolDefinitionProvider;
 };
 
-export function createAgentState(input: CreateAgentStateInput): AgentState {
+export function createContextManager(
+	input: CreateContextManagerInput,
+): ContextManager {
 	const usage = new UsageTracker();
 	usage.add(input.snapshot.usage);
 	const systemPrompt = createSystemPromptBuilder({
