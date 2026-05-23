@@ -45,7 +45,6 @@ export function readPDFExtension({
 					: freeConverter;
 				return readPDF(pdfConverter, args, ctx);
 			},
-			render: (output) => output,
 		});
 	});
 }

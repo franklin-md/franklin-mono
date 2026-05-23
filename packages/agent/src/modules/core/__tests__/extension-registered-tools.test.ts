@@ -288,7 +288,6 @@ describe('core extension registered tools', () => {
 							content: [{ type: 'text' as const, text: 'bad input' }],
 							isError: true,
 						}),
-						render: (output) => output,
 					});
 				},
 			],

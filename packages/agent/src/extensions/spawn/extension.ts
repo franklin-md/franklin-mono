@@ -1,9 +1,6 @@
 import { collect } from '@franklin/mini-acp';
 import { defineExtension } from '../../modules/state/index.js';
-import type {
-	CoreModule,
-	RenderedToolOutput,
-} from '../../modules/core/index.js';
+import type { CoreModule } from '../../modules/core/index.js';
 import type { OrchestratorModule } from '../../modules/orchestrator/index.js';
 import { spawnSpec } from './tools.js';
 import { formatResult } from './format.js';
@@ -31,15 +28,5 @@ export const spawnExtension = defineExtension<
 				await child.runtime.orchestrator.remove(child.details.id);
 			}
 		},
-		render: renderSpawnOutput,
 	});
 });
-
-function renderSpawnOutput(
-	output: string | RenderedToolOutput,
-): RenderedToolOutput {
-	if (typeof output === 'string') {
-		return { content: [{ type: 'text', text: output }] };
-	}
-	return output;
-}
