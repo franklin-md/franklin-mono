@@ -3,11 +3,11 @@ import type { JsonObject, JsonValue } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { toolSpec } from '../../../../api/tool-spec.js';
+import { toolSpec } from '../../api/tool-spec.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
-} from '../../__tests__/registry.js';
+} from '../../compile/decorators/__tests__/registry.js';
 import { createToolRegistry } from '../registry.js';
 
 const runtime = createTestRuntime();

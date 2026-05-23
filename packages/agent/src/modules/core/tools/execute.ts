@@ -2,15 +2,15 @@ import type { ToolCall } from '@franklin/mini-acp';
 import type { JsonObject } from '@franklin/lib';
 import { z } from 'zod';
 
-import type { AnyRegisteredTool } from '../../registrations/tools.js';
+import type { BoundTool } from '../registrations/tools.js';
 import {
 	errorExecutionResult,
 	registeredExecutionResult,
 	type ToolExecutionResult,
 } from './result.js';
 
-export async function executeRegisteredToolCall(
-	tool: AnyRegisteredTool,
+export async function executeBoundToolCall(
+	tool: BoundTool,
 	call: ToolCall,
 	args: JsonObject,
 ): Promise<ToolExecutionResult> {

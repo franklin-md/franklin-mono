@@ -1,6 +1,6 @@
 import type { Simplify } from '@franklin/lib';
 import type { Context } from '@franklin/mini-acp';
-import { getAgentState } from './runtime/agent-state.js';
+import { getContextManager } from './runtime/context-manager.js';
 import type { CoreRuntime } from './runtime/index.js';
 
 type InspectDump = Simplify<{ core: Context }>;
@@ -14,7 +14,7 @@ export async function inspectRuntime(
 	runtime: CoreRuntime,
 ): Promise<InspectDump> {
 	return {
-		core: redactInspectContext(getAgentState(runtime).getAgentContext()),
+		core: redactInspectContext(getContextManager(runtime).getAgentContext()),
 	};
 }
 

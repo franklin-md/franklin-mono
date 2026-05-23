@@ -1,6 +1,6 @@
 import type { UserContent, UserMessage } from '@franklin/mini-acp';
 import type { Prompt, PromptHandler } from '../../../../api/prompt.js';
-import type { CoreRegistry } from '../../../registrations/index.js';
+import type { CoreRegistry } from '../../../../registrations/index.js';
 
 export function createPromptBuilder(
 	registrations: CoreRegistry,

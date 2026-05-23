@@ -5,7 +5,7 @@ import {
 	type WithRuntime,
 } from '@franklin/extensibility';
 
-import type { CoreEventHandlerMap, CoreSignature } from '../../api/api.js';
+import type { CoreEventHandlerMap, CoreSignature } from '../api/api.js';
 
 function registeredEventHandlers<
 	Runtime extends BaseRuntime,

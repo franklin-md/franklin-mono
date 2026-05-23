@@ -57,16 +57,16 @@ Decorator layers intercept Mini-ACP flow in ordered concerns:
 
 Each layer wraps the typed Mini-ACP client/server pair after connect, not the raw transport stream. Some layers use method middleware internally, but the public core module shape is the ordered decorator stack.
 
-### Agent State
+### Context Manager
 
-The core runtime keeps an internal `AgentState` as the live context ledger. It
+The core runtime keeps an internal `ContextManager` as the live context ledger. It
 is responsible for distinguishing the Mini-ACP `Context` that has
 actually been sent and acknowledged from the context core wants to send before
 the next prompt. A hydrated `SessionSnapshot` seeds that next desired context;
 it is not treated as already sent, because a restored Mini-ACP agent begins with
 an empty context until `setContext` succeeds.
 
-`AgentState` also owns accumulated usage and the registration-built system
+`ContextManager` also owns accumulated usage and the registration-built system
 prompt builder, so prompt decorators can compare freshly assembled prompt state
 against the tracked Mini-ACP context before sending a patch. Decorators record
 acknowledged `setContext` changes, prompt messages, assistant updates, tool

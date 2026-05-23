@@ -1,20 +1,22 @@
 import { UsageTracker } from '@franklin/mini-acp/session';
-import type { CoreRegistry } from '../compile/registrations/index.js';
+import type { CoreRegistry } from '../registrations/index.js';
 import type { SessionSnapshot } from '../state.js';
 import {
 	ContextLedger,
 	type ToolDefinitionProvider,
 } from './context-ledger.js';
 import { createSystemPromptBuilder } from './system-prompt/index.js';
-import type { AgentState } from './types.js';
+import type { ContextManager } from './types.js';
 
-type CreateAgentStateInput = {
+type CreateContextManagerInput = {
 	readonly snapshot: SessionSnapshot;
 	readonly registrations: CoreRegistry;
 	readonly toolRegistry: ToolDefinitionProvider;
 };
 
-export function createAgentState(input: CreateAgentStateInput): AgentState {
+export function createContextManager(
+	input: CreateContextManagerInput,
+): ContextManager {
 	const usage = new UsageTracker();
 	usage.add(input.snapshot.usage);
 	const systemPrompt = createSystemPromptBuilder({

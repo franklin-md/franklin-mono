@@ -4,12 +4,12 @@ import type { RegistryView } from '@franklin/extensibility';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { CoreSignature } from '../api/api.js';
 import { type CoreRuntime, createCoreRuntime } from '../runtime/index.js';
-import { createAgentState } from '../agent-state/index.js';
+import { createContextManager } from '../context-manager/index.js';
 import type { SessionSnapshot } from '../state.js';
 import { createAgentClient } from './client.js';
 import { createAgentDecorator } from './decorators/full.js';
-import { createToolRegistry } from './decorators/tool/index.js';
-import { createCoreRegistry } from './registrations/index.js';
+import { createCoreRegistry } from '../registrations/index.js';
+import { createToolRegistry } from '../tools/index.js';
 
 export function createCoreCompiler(
 	connectAgent: MiniACPConnector,
@@ -25,13 +25,13 @@ export function createCoreCompiler(
 				registrations,
 				snapshot.toolFilter,
 			);
-			const agentState = createAgentState({
+			const contextManager = createContextManager({
 				snapshot,
 				registrations,
 				toolRegistry,
 			});
 			const decorator = createAgentDecorator(
-				agentState,
+				contextManager,
 				registrations,
 				toolRegistry,
 			);
@@ -43,7 +43,7 @@ export function createCoreCompiler(
 
 			return createCoreRuntime({
 				client,
-				agentState,
+				contextManager,
 				toolRegistry,
 			});
 		},

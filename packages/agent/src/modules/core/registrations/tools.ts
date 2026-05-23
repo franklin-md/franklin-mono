@@ -6,12 +6,12 @@ import type {
 } from '@franklin/extensibility';
 import type { z } from 'zod';
 
-import type { MaybePromise } from '../../../../utils/maybe-promise.js';
-import type { CoreSignature } from '../../api/api.js';
+import type { MaybePromise } from '../../../utils/maybe-promise.js';
+import type { CoreSignature } from '../api/api.js';
 import {
 	defaultToolRenderOutput,
 	type RenderedToolOutput,
-} from '../../api/tool.js';
+} from '../api/tool.js';
 
 type RegisterToolArgs<Runtime extends BaseRuntime> = EffectValueForName<
 	CoreSignature,
@@ -19,27 +19,25 @@ type RegisterToolArgs<Runtime extends BaseRuntime> = EffectValueForName<
 	'registerTool'
 >;
 
-export interface RegisteredTool<
+export interface BoundTool<
 	TInput = unknown,
 	TOutput extends JsonValue = JsonValue,
 > {
 	name: string;
 	description: string;
 	schema: z.ZodType<TInput>;
-	run: (params: TInput) => MaybePromise<RegisteredToolResult<TOutput>>;
+	run: (params: TInput) => MaybePromise<BoundToolResult<TOutput>>;
 }
 
-export type RegisteredToolResult<TOutput extends JsonValue = JsonValue> = {
+export type BoundToolResult<TOutput extends JsonValue = JsonValue> = {
 	readonly output: TOutput;
 	readonly rendered: RenderedToolOutput;
 };
 
-export type AnyRegisteredTool = RegisteredTool;
-
-export function registeredTools<Runtime extends BaseRuntime>(
+export function bindTools<Runtime extends BaseRuntime>(
 	registrations: RegistryView<CoreSignature, Runtime>,
 	getRuntime: () => Runtime,
-): AnyRegisteredTool[] {
+): BoundTool[] {
 	return registrations
 		.argsFor('registerTool')
 		.map((registration) => normalizeTool(registration, getRuntime));
@@ -48,7 +46,7 @@ export function registeredTools<Runtime extends BaseRuntime>(
 function normalizeTool<Runtime extends BaseRuntime>(
 	registration: RegisterToolArgs<Runtime>,
 	getRuntime: () => Runtime,
-): AnyRegisteredTool {
+): BoundTool {
 	const [spec, handlers] = registration;
 	return {
 		name: spec.name,

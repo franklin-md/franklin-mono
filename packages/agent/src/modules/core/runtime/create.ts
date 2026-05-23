@@ -1,7 +1,7 @@
 import { createObserver } from '@franklin/lib';
-import type { AgentState } from '../agent-state/index.js';
+import type { ContextManager } from '../context-manager/index.js';
 import type { ToolFilter } from '../state.js';
-import { attachAgentState } from './agent-state.js';
+import { attachContextManager } from './context-manager.js';
 import { createClientRuntime } from './from-client.js';
 import type {
 	AgentClient,
@@ -17,13 +17,13 @@ type ToolRegistryState = {
 
 type CreateCoreRuntimeInput = {
 	readonly client: AgentClient;
-	readonly agentState: AgentState;
+	readonly contextManager: ContextManager;
 	readonly toolRegistry: ToolRegistryState;
 };
 
 export function createCoreRuntime({
 	client,
-	agentState,
+	contextManager,
 	toolRegistry,
 }: CreateCoreRuntimeInput): CoreRuntime {
 	const observer = createObserver<[CoreEvent]>();
@@ -35,7 +35,7 @@ export function createCoreRuntime({
 			observer.subscribe(listener),
 	};
 
-	return attachAgentState(
+	return attachContextManager(
 		{
 			...createClientRuntime({
 				client,
@@ -45,9 +45,9 @@ export function createCoreRuntime({
 				},
 			}),
 			toolRegistry: createRuntimeToolRegistry(toolRegistry, notify),
-			getSession: () => agentState.getSnapshot(),
+			getSession: () => contextManager.getSnapshot(),
 		},
-		agentState,
+		contextManager,
 	);
 }
 

@@ -1,7 +1,7 @@
 import type { MiniACPAgent } from '@franklin/mini-acp';
 import { apply, passThrough, type Middleware } from '@franklin/lib/middleware';
+import type { ToolRegistry } from '../../../tools/index.js';
 import type { ProtocolDecorator } from '../types.js';
-import type { ToolRegistry } from './registry.js';
 
 type ServerMiddleware = Middleware<MiniACPAgent>;
 

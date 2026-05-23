@@ -12,8 +12,8 @@ import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
 import type { CoreSignature } from '../../../../modules/core/api/api.js';
 import type { ToolResultEvent } from '../../../../modules/core/api/handlers.js';
-import { buildSystemPromptAssembler } from '../../../../modules/core/agent-state/system-prompt/assembler/index.js';
-import { createCoreRegistry as createBoundCoreRegistry } from '../../../../modules/core/compile/registrations/index.js';
+import { buildSystemPromptAssembler } from '../../../../modules/core/context-manager/system-prompt/assembler/index.js';
+import { createCoreRegistry as createBoundCoreRegistry } from '../../../../modules/core/registrations/index.js';
 import type { CoreRuntime } from '../../../../modules/core/runtime/index.js';
 import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import {

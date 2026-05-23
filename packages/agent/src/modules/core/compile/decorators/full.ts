@@ -1,9 +1,9 @@
-import type { AgentState } from '../../agent-state/index.js';
-import type { CoreRegistry } from '../registrations/index.js';
+import type { ContextManager } from '../../context-manager/index.js';
+import type { CoreRegistry } from '../../registrations/index.js';
+import type { ToolRegistry } from '../../tools/index.js';
 import { compose } from './compose.js';
 import { createPromptDecorator } from './prompt/index.js';
 import { createToolDecorator } from './tool/index.js';
-import type { ToolRegistry } from './tool/registry.js';
 import { createTrackingDecorator } from './tracking/index.js';
 import type { ProtocolDecorator } from './types.js';
 
@@ -14,15 +14,15 @@ import type { ProtocolDecorator } from './types.js';
  * lifecycle: sync system prompt, build user prompt, send, then observe stream.
  */
 export function createAgentDecorator(
-	agentState: AgentState,
+	contextManager: ContextManager,
 	registrations: CoreRegistry,
 	toolRegistry: ToolRegistry,
 ): ProtocolDecorator {
 	return compose(
 		[
-			createPromptDecorator(agentState, registrations),
+			createPromptDecorator(contextManager, registrations),
 			createToolDecorator(toolRegistry),
-			createTrackingDecorator(agentState),
+			createTrackingDecorator(contextManager),
 		].filter(isProtocolDecorator),
 	);
 }
