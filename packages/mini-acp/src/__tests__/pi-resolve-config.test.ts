@@ -65,6 +65,24 @@ describe('resolveConfig', () => {
 		});
 	}
 
+	it('accepts the Franklin-local OpenRouter qwen/qwen3.7-max model override when apiKey is present', () => {
+		const result = resolveConfig({
+			provider: 'openrouter',
+			model: 'qwen/qwen3.7-max',
+			apiKey: 'sk-test-key',
+		});
+
+		expect(result.ok).toBe(true);
+		expect(result.ok && result.model).toMatchObject({
+			provider: 'openrouter',
+			id: 'qwen/qwen3.7-max',
+			api: 'openai-completions',
+			reasoning: true,
+			contextWindow: 1_000_000,
+			maxTokens: 65_536,
+		});
+	});
+
 	it('accepts an OpenCode Go model from pi-ai when apiKey is present', () => {
 		const result = resolveConfig({
 			provider: 'opencode-go',
