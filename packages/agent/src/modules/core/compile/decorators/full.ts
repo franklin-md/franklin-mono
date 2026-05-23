@@ -1,5 +1,5 @@
 import type { AgentState } from '../../agent-state/index.js';
-import type { CoreEventRegistrations } from '../registrations/index.js';
+import type { CoreRegistry } from '../registrations/index.js';
 import { compose } from './compose.js';
 import { createPromptDecorator } from './prompt/index.js';
 import { createToolDecorator } from './tool/index.js';
@@ -15,7 +15,7 @@ import type { ProtocolDecorator } from './types.js';
  */
 export function createAgentDecorator(
 	agentState: AgentState,
-	registrations: CoreEventRegistrations,
+	registrations: CoreRegistry,
 	toolRegistry: ToolRegistry,
 ): ProtocolDecorator {
 	return compose(

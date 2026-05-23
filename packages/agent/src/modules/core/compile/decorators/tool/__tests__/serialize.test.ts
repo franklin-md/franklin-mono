@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import type { RegisteredTool } from '../types.js';
+import type { RegisteredTool } from '../../../registrations/tools.js';
 import { serializeTool, toToolInputSchema } from '../serialize.js';
 
 function registeredTool(

@@ -7,8 +7,10 @@ import {
 	type MockMiniACP,
 	type MockMiniACPRecording,
 } from '@franklin/mini-acp/mock';
-import { createCoreStateModule } from '../modules/core/module.js';
-import type { CoreStateModule } from '../modules/core/module.js';
+import {
+	createCoreStateModule,
+	type CoreStateModule,
+} from '../modules/core/module/state-module.js';
 import type { CoreRuntime } from '../modules/core/runtime/index.js';
 import type { CoreState } from '../modules/core/state.js';
 import type { InferExtension } from '../modules/state/index.js';

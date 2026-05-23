@@ -14,13 +14,15 @@ import {
 	type MockMiniACP,
 } from '@franklin/mini-acp/mock';
 import { describe, expect, it } from 'vitest';
-import { createCoreStateModule } from '../../../modules/core/module.js';
+import {
+	createCoreStateModule,
+	type CoreStateModule,
+} from '../../../modules/core/module/state-module.js';
 import {
 	createOrchestrator,
 	type OrchestratorRuntime,
 	type RuntimeEntry,
 } from '../../../modules/orchestrator/index.js';
-import type { CoreStateModule } from '../../../modules/core/module.js';
 import { spawnExtension } from '../index.js';
 import type { RuntimeVisibility } from '../../../modules/orchestrator/internal/details/index.js';
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildSystemPromptAssembler } from '../assembler/index.js';
-import type { SystemPromptHandler } from '../../../../../api/system-prompt.js';
+import type { SystemPromptHandler } from '../../../api/system-prompt.js';
 
 describe('buildSystemPromptAssembler', () => {
 	it('returns an empty prompt when no handlers are registered', async () => {

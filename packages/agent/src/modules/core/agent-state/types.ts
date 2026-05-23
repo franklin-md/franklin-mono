@@ -3,10 +3,6 @@ import type { UsageTracker } from '@franklin/mini-acp/session';
 import type { SessionSnapshot } from '../state.js';
 import type { ContextLedger } from './context-ledger.js';
 
-export interface SystemPromptBuilder {
-	build(): Promise<string | undefined>;
-}
-
 /**
  * Internal core context ledger.
  *

@@ -11,9 +11,9 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../compile/decorators/__tests__/registry.js';
-import { createCoreEventRegistrations } from '../../compile/registrations/index.js';
 import { createToolRegistry } from '../../compile/decorators/tool/index.js';
 import { emptyToolFilter, type SessionSnapshot } from '../../state.js';
+import type { CoreRegistry } from '../../compile/registrations/index.js';
 
 const runtime = createTestRuntime();
 
@@ -44,18 +44,14 @@ function stubClient(
 
 type CreateStateInput = {
 	readonly snapshot: SessionSnapshot;
-	readonly registrations: ReturnType<typeof createCoreRegistry>;
-	readonly getRuntime: () => typeof runtime;
+	readonly registrations: CoreRegistry;
 };
 
 function createState(input: CreateStateInput) {
 	return createAgentState({
 		snapshot: input.snapshot,
-		registrations: createCoreEventRegistrations(
-			input.registrations,
-			input.getRuntime,
-		),
-		toolRegistry: createToolRegistry(input.registrations, input.getRuntime),
+		registrations: input.registrations,
+		toolRegistry: createToolRegistry(input.registrations),
 	});
 }
 
@@ -64,12 +60,14 @@ describe('createAgentState', () => {
 		const client = stubClient();
 		const agentState = createState({
 			snapshot: emptySnapshot(),
-			registrations: createCoreRegistry((api) => {
-				api.on('systemPrompt', (systemPrompt) => {
-					systemPrompt.setPart('system');
-				});
-			}),
-			getRuntime: () => runtime,
+			registrations: createCoreRegistry(
+				(api) => {
+					api.on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart('system');
+					});
+				},
+				() => runtime,
+			),
 		});
 
 		await agentState.contextLedger.sync(client);
@@ -88,7 +86,6 @@ describe('createAgentState', () => {
 		const agentState = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(),
-			getRuntime: () => runtime,
 		});
 		agentState.contextLedger.apply({ systemPrompt: 'external' });
 
@@ -110,12 +107,14 @@ describe('createAgentState', () => {
 		const client = stubClient(setContext);
 		const agentState = createState({
 			snapshot: emptySnapshot(),
-			registrations: createCoreRegistry((api) => {
-				api.on('systemPrompt', (systemPrompt) => {
-					systemPrompt.setPart('retryable');
-				});
-			}),
-			getRuntime: () => runtime,
+			registrations: createCoreRegistry(
+				(api) => {
+					api.on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart('retryable');
+					});
+				},
+				() => runtime,
+			),
 		});
 
 		await expect(agentState.contextLedger.sync(client)).rejects.toThrow(
@@ -146,22 +145,24 @@ describe('createAgentState', () => {
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),
 			},
-			registrations: createCoreRegistry((api) => {
-				api.on('systemPrompt', (systemPrompt) => {
-					systemPrompt.setPart('system');
-				});
-				api.registerTool(
-					{
-						name: 'lookup',
-						description: 'Lookup a value',
-						schema: z.object({ query: z.string() }),
-					},
-					{
-						execute: () => 'ok',
-					},
-				);
-			}),
-			getRuntime: () => runtime,
+			registrations: createCoreRegistry(
+				(api) => {
+					api.on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart('system');
+					});
+					api.registerTool(
+						{
+							name: 'lookup',
+							description: 'Lookup a value',
+							schema: z.object({ query: z.string() }),
+						},
+						{
+							execute: () => 'ok',
+						},
+					);
+				},
+				() => runtime,
+			),
 		});
 
 		expect(agentState.getAgentContext()).toEqual({
@@ -209,12 +210,14 @@ describe('createAgentState', () => {
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),
 			},
-			registrations: createCoreRegistry((api) => {
-				api.on('systemPrompt', (systemPrompt) => {
-					systemPrompt.setPart('retryable');
-				});
-			}),
-			getRuntime: () => runtime,
+			registrations: createCoreRegistry(
+				(api) => {
+					api.on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart('retryable');
+					});
+				},
+				() => runtime,
+			),
 		});
 
 		await expect(agentState.contextLedger.sync(client)).rejects.toThrow(
@@ -250,7 +253,6 @@ describe('createAgentState', () => {
 		const agentState = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(),
-			getRuntime: () => runtime,
 		});
 		const assistantMessage = {
 			role: 'assistant' as const,
@@ -278,12 +280,14 @@ describe('createAgentState', () => {
 		const client = stubClient();
 		const agentState = createState({
 			snapshot: emptySnapshot(),
-			registrations: createCoreRegistry((api) => {
-				api.on('systemPrompt', (systemPrompt) => {
-					systemPrompt.setPart('stable');
-				});
-			}),
-			getRuntime: () => runtime,
+			registrations: createCoreRegistry(
+				(api) => {
+					api.on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart('stable');
+					});
+				},
+				() => runtime,
+			),
 		});
 
 		await agentState.contextLedger.sync(client);
@@ -302,12 +306,14 @@ describe('createAgentState', () => {
 		const client = stubClient();
 		const agentState = createState({
 			snapshot: emptySnapshot(),
-			registrations: createCoreRegistry((api) => {
-				api.on('systemPrompt', (systemPrompt) => {
-					systemPrompt.setPart(promptText);
-				});
-			}),
-			getRuntime: () => runtime,
+			registrations: createCoreRegistry(
+				(api) => {
+					api.on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart(promptText);
+					});
+				},
+				() => runtime,
+			),
 		});
 
 		await agentState.contextLedger.sync(client);

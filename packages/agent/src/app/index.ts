@@ -6,7 +6,7 @@ import type { AbsolutePath, RestoreResult } from '@franklin/lib';
 import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
 import { withAuth } from '../auth/with-auth.js';
 import type { AuthManager } from '../auth/manager.js';
-import { createCoreStateModule } from '../modules/core/module.js';
+import { createCoreStateModule } from '../modules/core/module/index.js';
 import { createEnvironmentModule } from '../modules/environment/module.js';
 import {
 	createOrchestrator,

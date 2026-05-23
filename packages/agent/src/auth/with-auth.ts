@@ -2,8 +2,8 @@ import type {
 	CoreRuntime,
 	CoreSignature,
 	CoreState,
-	CoreStateModule,
 } from '../modules/core/index.js';
+import type { CoreStateModule } from '../modules/core/module/state-module.js';
 import { applyStep } from '@franklin/extensibility';
 import { liftCompilerTransform as liftStateCompilerTransform } from '../modules/state/index.js';
 import type { AuthManager } from './manager.js';
