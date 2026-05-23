@@ -8,17 +8,14 @@ import type {
 	Usage,
 } from '@franklin/mini-acp';
 import { ContextTracker } from '@franklin/mini-acp/session';
-import {
-	copyToolFilter,
-	type SessionSnapshot,
-	type ToolFilter,
-} from '../state.js';
+import type { SessionSnapshot, ToolFilter } from '../state.js';
 import type { SystemPromptBuilder } from './types.js';
 
 type LLMConfigSnapshot = SessionSnapshot['llmConfig'];
 
 export interface ToolDefinitionProvider {
 	definitions(): readonly ToolDefinition[];
+	filter(): ToolFilter;
 }
 
 type ContextLedgerInput = {
@@ -32,14 +29,12 @@ export class ContextLedger extends ContextTracker {
 	private readonly target = new ContextTracker();
 	private readonly systemPrompt: SystemPromptBuilder;
 	private readonly toolRegistry: ToolDefinitionProvider;
-	private readonly toolFilter: ToolFilter;
 	private hasSentContext = false;
 
 	constructor({ snapshot, systemPrompt, toolRegistry }: ContextLedgerInput) {
 		super();
 		this.systemPrompt = systemPrompt;
 		this.toolRegistry = toolRegistry;
-		this.toolFilter = copyToolFilter(snapshot.toolFilter);
 		this.target.apply(
 			contextFromSnapshot(snapshot, toolRegistry.definitions()),
 		);
@@ -73,7 +68,7 @@ export class ContextLedger extends ContextTracker {
 			context.messages,
 			pickLLMConfig(context.config),
 			usage,
-			this.toolFilter,
+			this.toolRegistry.filter(),
 		);
 	}
 
@@ -249,7 +244,7 @@ function sessionSnapshot(
 		messages: [...messages],
 		llmConfig,
 		usage: snapshotUsage(usage),
-		toolFilter: copyToolFilter(toolFilter),
+		toolFilter,
 	};
 }
 

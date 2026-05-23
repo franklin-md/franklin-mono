@@ -20,7 +20,11 @@ export { toolSpec } from './core/api/index.js';
 export { inspectRuntime } from './core/inspect.js';
 export type { CoreModule, CoreStateModule } from './core/module.js';
 export { createCoreModule, createCoreStateModule } from './core/module.js';
-export type { CoreEvent, CoreRuntime } from './core/runtime/index.js';
+export type {
+	CoreEvent,
+	CoreRuntime,
+	RuntimeToolRegistry,
+} from './core/runtime/index.js';
 export type { CoreState, SessionSnapshot, ToolFilter } from './core/state.js';
 export { emptyCoreState, emptySessionSnapshot } from './core/state.js';
 

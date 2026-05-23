@@ -19,7 +19,11 @@ export function createCoreCompiler(
 			registry: RegistryView<CoreSignature, ContextRuntime>,
 			getRuntime: () => ContextRuntime & Pick<ContextRuntime, never>,
 		): Promise<CoreRuntime> => {
-			const toolRegistry = createToolRegistry(registry, getRuntime);
+			const toolRegistry = createToolRegistry(
+				registry,
+				getRuntime,
+				snapshot.toolFilter,
+			);
 			const agentState = createAgentState({
 				snapshot,
 				registrations: registry,
@@ -41,6 +45,7 @@ export function createCoreCompiler(
 			return createCoreRuntime({
 				client,
 				agentState,
+				toolRegistry,
 			});
 		},
 	};
