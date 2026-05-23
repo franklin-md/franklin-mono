@@ -22,6 +22,7 @@ import {
 } from '../../../modules/orchestrator/index.js';
 import type { CoreStateModule } from '../../../modules/core/module.js';
 import { spawnExtension } from '../index.js';
+import type { RuntimeVisibility } from '../../../modules/orchestrator/internal/details/index.js';
 
 type SpawnRuntime = OrchestratorRuntime<CoreStateModule>;
 
@@ -29,6 +30,11 @@ type SpawnScenario = {
 	readonly mock: MockMiniACP;
 	readonly root: RuntimeEntry<SpawnRuntime>;
 	dispose(): Promise<void>;
+};
+
+type PromptDetails = {
+	readonly id: string;
+	readonly visibility: RuntimeVisibility;
 };
 
 function userMessage(text: string): UserMessage {
@@ -59,12 +65,20 @@ function createIds(...ids: string[]): () => string {
 
 async function createSpawnScenario(
 	options: CreateMockMiniACPOptions,
+	observedPrompts: PromptDetails[] = [],
 ): Promise<SpawnScenario> {
 	const mock = createMockMiniACP(options);
 	const module = createCoreStateModule(mock.connector);
 	const orchestrator = createOrchestrator({
 		modules: [module] as const,
-		extensions: [spawnExtension.extension],
+		extensions: [
+			spawnExtension.extension,
+			(api) => {
+				api.on('prompt', (_prompt, ctx) => {
+					observedPrompts.push(ctx.details);
+				});
+			},
+		],
 		createId: createIds('root', 'child'),
 	});
 	const root = await orchestrator.create();
@@ -79,18 +93,22 @@ async function createSpawnScenario(
 }
 
 describe('spawnExtension', () => {
-	it('prompts a child agent and returns the child response as the tool result', async () => {
-		const scenario = await createSpawnScenario({
-			turns: [
-				turn([
-					toolCalls([
-						{ name: 'spawn', arguments: { prompt: 'write the summary' } },
+	it('prompts a hidden child agent without recursive spawn and returns its response as the tool result', async () => {
+		const promptDetails: PromptDetails[] = [];
+		const scenario = await createSpawnScenario(
+			{
+				turns: [
+					turn([
+						toolCalls([
+							{ name: 'spawn', arguments: { prompt: 'write the summary' } },
+						]),
+						turnEnd(),
 					]),
-					turnEnd(),
-				]),
-				turn([text('summary from child'), turnEnd()]),
-			],
-		});
+					turn([text('summary from child'), turnEnd()]),
+				],
+			},
+			promptDetails,
+		);
 
 		try {
 			await collect(scenario.root.runtime.prompt(userMessage('parent task')));
@@ -103,6 +121,14 @@ describe('spawnExtension', () => {
 				'parent task',
 				'write the summary',
 			]);
+			expect(promptDetails).toEqual([
+				{ id: 'root', visibility: 'visible' },
+				{ id: 'child', visibility: 'hidden' },
+			]);
+			expect(calls.setContext[0]?.tools?.map((tool) => tool.name)).toEqual([
+				'spawn',
+			]);
+			expect(calls.setContext[1]?.tools?.map((tool) => tool.name)).toEqual([]);
 			expect(
 				scenario.root.runtime.orchestrator
 					.list()
