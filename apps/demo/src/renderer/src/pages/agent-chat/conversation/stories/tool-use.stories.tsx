@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
 	EXA_WEB_SEARCH_PROVIDER_ID,
+	spawnExtension,
 	type ToolUseBlock as ToolUseBlockData,
 } from '@franklin/agent';
 import type { JsonObject, JsonValue } from '@franklin/lib';
@@ -131,6 +132,20 @@ const webSearchBlock = toolBlock(
 	},
 );
 
+const spawnBlock = toolBlock(spawnExtension.tools.spawn.name, {
+	name: 'Test runner',
+	prompt: 'Run the focused test suite and summarize failures.',
+});
+
+const spawnCompleteBlock = toolBlock(
+	spawnExtension.tools.spawn.name,
+	{
+		name: 'Docs auditor',
+		prompt: 'Check the README and report outdated setup notes.',
+	},
+	{ result: 'No outdated setup notes found.' },
+);
+
 const unknownBlock = toolBlock('some_custom_tool', {
 	query: 'hello',
 });
@@ -197,6 +212,14 @@ export const WebFetchInvalidUrl: Story = {
 
 export const WebSearch: Story = {
 	args: { block: webSearchBlock, status: 'success' },
+};
+
+export const SpawnAgent: Story = {
+	args: { block: spawnBlock, status: 'in-progress' },
+};
+
+export const SpawnAgentComplete: Story = {
+	args: { block: spawnCompleteBlock, status: 'success' },
 };
 
 export const UnknownTool: Story = {

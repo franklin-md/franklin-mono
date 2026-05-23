@@ -95,6 +95,32 @@ async function createSpawnScenario(
 }
 
 describe('spawnExtension', () => {
+	it('requires a display name alongside the child prompt', () => {
+		expect(
+			spawnExtension.tools.spawn.schema.safeParse({
+				name: 'Summary writer',
+				prompt: 'write the summary',
+			}).success,
+		).toBe(true);
+		expect(
+			spawnExtension.tools.spawn.schema.safeParse({
+				prompt: 'write the summary',
+			}).success,
+		).toBe(false);
+		expect(
+			spawnExtension.tools.spawn.schema.safeParse({
+				name: '',
+				prompt: 'write the summary',
+			}).success,
+		).toBe(false);
+		expect(
+			spawnExtension.tools.spawn.schema.safeParse({
+				name: '   ',
+				prompt: 'write the summary',
+			}).success,
+		).toBe(false);
+	});
+
 	it('prompts a hidden child agent without recursive spawn and returns its response as the tool result', async () => {
 		const promptDetails: PromptDetails[] = [];
 		const scenario = await createSpawnScenario(
@@ -102,7 +128,13 @@ describe('spawnExtension', () => {
 				turns: [
 					turn([
 						toolCalls([
-							{ name: 'spawn', arguments: { prompt: 'write the summary' } },
+							{
+								name: 'spawn',
+								arguments: {
+									name: 'Summary writer',
+									prompt: 'write the summary',
+								},
+							},
 						]),
 						turnEnd(),
 					]),
@@ -146,7 +178,15 @@ describe('spawnExtension', () => {
 		const scenario = await createSpawnScenario({
 			turns: [
 				turn([
-					toolCalls([{ name: 'spawn', arguments: { prompt: 'try work' } }]),
+					toolCalls([
+						{
+							name: 'spawn',
+							arguments: {
+								name: 'Worker',
+								prompt: 'try work',
+							},
+						},
+					]),
 					turnEnd(),
 				]),
 				turn([

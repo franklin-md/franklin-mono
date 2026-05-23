@@ -74,4 +74,4 @@ export const setChatTitleDescription =
 	'Set the short display title for the current chat.';
 
 export const spawnDescription =
-	'Spawn a child agent to perform a task. The child runs to completion and returns its final response.';
+	'Spawn a child agent to perform a task. Provide a short task-derived name for display; the child runs to completion and returns its final response.';
