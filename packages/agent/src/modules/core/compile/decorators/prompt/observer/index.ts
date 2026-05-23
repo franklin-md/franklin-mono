@@ -1,11 +1,9 @@
-import type { MiniACPClient, StreamEvent } from '@franklin/mini-acp';
+import type { StreamEvent } from '@franklin/mini-acp';
 import type { CoreEventRegistrations } from '../../../registrations/index.js';
 
 export function createPromptObserver(
 	registrations: CoreEventRegistrations,
-): (
-	stream: ReturnType<MiniACPClient['prompt']>,
-) => AsyncGenerator<StreamEvent> {
+): (stream: AsyncIterable<StreamEvent>) => AsyncGenerator<StreamEvent> {
 	const observers = {
 		turnStart: registrations.handlersFor('turnStart'),
 		chunk: registrations.handlersFor('chunk'),

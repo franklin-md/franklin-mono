@@ -33,9 +33,12 @@ function emptySnapshot(): SessionSnapshot {
 
 function stubClient(
 	setContext: (patch: ContextPatch) => Promise<void> = async () => {},
-): Pick<MiniACPClient, 'setContext'> {
+): MiniACPClient {
 	return {
+		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(setContext),
+		async *prompt() {},
+		cancel: vi.fn(async () => {}),
 	};
 }
 

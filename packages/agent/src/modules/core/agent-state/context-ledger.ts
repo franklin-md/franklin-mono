@@ -72,7 +72,7 @@ export class ContextLedger extends ContextTracker {
 		);
 	}
 
-	async sync(client: Pick<MiniACPClient, 'setContext'>): Promise<void> {
+	async sync(client: MiniACPClient): Promise<void> {
 		const next = await this.targetContext();
 		const patch = this.hasSentContext
 			? diffContext(this.acknowledged.get(), next)
