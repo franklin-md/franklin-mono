@@ -9,11 +9,7 @@ export type RenderedToolOutput = {
 	isError?: boolean;
 };
 
-export type DefaultRenderableToolOutput = JsonValue | RenderedToolOutput;
-
-export function defaultToolRenderOutput(
-	value: DefaultRenderableToolOutput,
-): RenderedToolOutput {
+export function defaultToolRenderOutput(value: JsonValue): RenderedToolOutput {
 	if (isRenderedToolOutput(value)) {
 		return value;
 	}

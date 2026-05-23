@@ -3,7 +3,6 @@ export type {
 	CoreAPI,
 	CoreEventHandlers,
 	CoreSignature,
-	DefaultRenderableToolOutput,
 	Prompt,
 	PromptHandler,
 	SetPartOptions,

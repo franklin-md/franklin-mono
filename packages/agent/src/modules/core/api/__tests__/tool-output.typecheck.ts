@@ -2,16 +2,12 @@ import type { JsonValue } from '@franklin/lib';
 import { z } from 'zod';
 
 import type { ToolResultEvent } from '../handlers.js';
-import type {
-	DefaultRenderableToolOutput,
-	RenderedToolOutput,
-} from '../tool.js';
+import type { RenderedToolOutput } from '../tool.js';
 import type { ToolOutputOf, ToolSpec } from '../tool-spec.js';
 import { defaultToolRenderOutput } from '../tool.js';
 import { toolSpec } from '../tool-spec.js';
 
 type ExpectJson<T extends JsonValue> = T;
-type ExpectDefaultRenderable<T extends DefaultRenderableToolOutput> = T;
 
 const _defaultSpec = toolSpec(
 	'default_output',
@@ -21,9 +17,7 @@ const _defaultSpec = toolSpec(
 type _DefaultOutput = ExpectJson<ToolOutputOf<typeof _defaultSpec>>;
 
 type _StructuredOutput = ExpectJson<{ count: number; labels: string[] }>;
-type _RenderedOutput = ExpectDefaultRenderable<RenderedToolOutput>;
-type _JsonOutput = ExpectDefaultRenderable<{ count: number }>;
-type _StringOutput = ExpectDefaultRenderable<string>;
+type _RenderedOutput = ExpectJson<RenderedToolOutput>;
 
 const _resultEvent = {
 	call: {
@@ -48,5 +42,3 @@ defaultToolRenderOutput(new Date());
 void _defaultSpec;
 void _resultEvent;
 void (null as unknown as _RenderedOutput);
-void (null as unknown as _JsonOutput);
-void (null as unknown as _StringOutput);
