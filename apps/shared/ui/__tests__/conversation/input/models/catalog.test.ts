@@ -80,4 +80,21 @@ describe('MODEL_CATALOG', () => {
 			costOutput: 3.48,
 		});
 	});
+
+	it('keeps Gemini Flash metadata aligned to the OpenRouter catalog', () => {
+		const group = MODEL_CATALOG.find(
+			(providerGroup) => providerGroup.provider === 'openrouter',
+		);
+		const geminiFlash = group?.models.find(
+			(model) => model.id === 'google/gemini-3.5-flash',
+		);
+
+		expect(geminiFlash).toMatchObject({
+			name: 'Gemini 3.5 Flash',
+			reasoning: true,
+			contextWindow: 1_048_576,
+			costInput: 1.5,
+			costOutput: 9,
+		});
+	});
 });

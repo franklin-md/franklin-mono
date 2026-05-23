@@ -66,7 +66,7 @@ describe('ModelIcon', () => {
 		['openrouter', 'deepseek/deepseek-v4-flash', Icons.DeepSeek],
 		['openrouter', 'deepseek/deepseek-v4-pro', Icons.DeepSeek],
 		['openrouter', 'x-ai/grok-4.20', Icons.XAI],
-		['openrouter', 'google/gemini-3-flash-preview', Icons.Gemini],
+		['openrouter', 'google/gemini-3.5-flash', Icons.Gemini],
 		['openrouter', 'google/gemini-3.1-flash-lite-preview', Icons.Gemini],
 		['openrouter', 'google/gemini-3.1-pro-preview-customtools', Icons.Gemini],
 		['openrouter', 'xiaomi/mimo-v2.5-pro', Icons.Xiaomi],

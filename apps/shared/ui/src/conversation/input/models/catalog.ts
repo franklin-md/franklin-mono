@@ -202,17 +202,12 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 			costIn: 2,
 			costOut: 6,
 		}),
-		model(
-			'openrouter',
-			'google/gemini-3-flash-preview',
-			'Gemini 3 Flash Preview',
-			{
-				reasoning: true,
-				ctx: 1_048_576,
-				costIn: 0.5,
-				costOut: 3,
-			},
-		),
+		model('openrouter', 'google/gemini-3.5-flash', 'Gemini 3.5 Flash', {
+			reasoning: true,
+			ctx: 1_048_576,
+			costIn: 1.5,
+			costOut: 9,
+		}),
 		model(
 			'openrouter',
 			'google/gemini-3.1-flash-lite-preview',
