@@ -20,7 +20,14 @@ const OPENROUTER_UPSTREAM_MODEL_CASES = [
 const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
 	{
 		id: 'google/gemini-3.5-flash',
+		reasoning: true,
 		contextWindow: 1_048_576,
+		maxTokens: 65_536,
+	},
+	{
+		id: 'qwen/qwen3.7-max',
+		reasoning: true,
+		contextWindow: 1_000_000,
 		maxTokens: 65_536,
 	},
 ] as const;
@@ -86,6 +93,7 @@ describe('resolveConfig', () => {
 				provider: 'openrouter',
 				id: model.id,
 				api: 'openai-completions',
+				reasoning: model.reasoning,
 				contextWindow: model.contextWindow,
 				maxTokens: model.maxTokens,
 			});

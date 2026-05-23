@@ -63,6 +63,7 @@ describe('ModelIcon', () => {
 		['opencode-go', 'minimax-m2.7', Icons.MiniMax],
 		['openrouter', 'z-ai/glm-5.1', Icons.ZAI],
 		['openrouter', 'qwen/qwen3.6-plus', Icons.Qwen],
+		['openrouter', 'qwen/qwen3.7-max', Icons.Qwen],
 		['openrouter', 'deepseek/deepseek-v4-flash', Icons.DeepSeek],
 		['openrouter', 'deepseek/deepseek-v4-pro', Icons.DeepSeek],
 		['openrouter', 'x-ai/grok-4.20', Icons.XAI],

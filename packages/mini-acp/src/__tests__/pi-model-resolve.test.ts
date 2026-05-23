@@ -20,6 +20,7 @@ const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
 	{
 		id: 'google/gemini-3.5-flash',
 		name: 'Google: Gemini 3.5 Flash',
+		input: ['text', 'image'],
 		contextWindow: 1_048_576,
 		maxTokens: 65_536,
 		cost: {
@@ -27,6 +28,19 @@ const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
 			output: 9,
 			cacheRead: 0.15,
 			cacheWrite: 0.08333333333333334,
+		},
+	},
+	{
+		id: 'qwen/qwen3.7-max',
+		name: 'Qwen: Qwen3.7 Max',
+		input: ['text'],
+		contextWindow: 1_000_000,
+		maxTokens: 65_536,
+		cost: {
+			input: 2.5,
+			output: 7.5,
+			cacheRead: 0,
+			cacheWrite: 3.125,
 		},
 	},
 ] as const;
@@ -219,7 +233,7 @@ describe('resolveModel', () => {
 				api: 'openai-completions',
 				baseUrl: 'https://openrouter.ai/api/v1',
 				reasoning: true,
-				input: ['text', 'image'],
+				input: model.input,
 				contextWindow: model.contextWindow,
 				maxTokens: model.maxTokens,
 				cost: model.cost,

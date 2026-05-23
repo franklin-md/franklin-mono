@@ -184,6 +184,12 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 			costIn: 0.325,
 			costOut: 1.95,
 		}),
+		model('openrouter', 'qwen/qwen3.7-max', 'Qwen3.7 Max', {
+			reasoning: true,
+			ctx: 1_000_000,
+			costIn: 2.5,
+			costOut: 7.5,
+		}),
 		model('openrouter', 'deepseek/deepseek-v4-flash', 'DeepSeek V4 Flash', {
 			reasoning: true,
 			ctx: 1_048_576,

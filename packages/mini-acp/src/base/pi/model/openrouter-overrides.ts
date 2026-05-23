@@ -22,6 +22,23 @@ const OPENROUTER_MODEL_OVERRIDES = {
 		contextWindow: 1_048_576,
 		maxTokens: 65_536,
 	},
+	'qwen/qwen3.7-max': {
+		id: 'qwen/qwen3.7-max',
+		name: 'Qwen: Qwen3.7 Max',
+		api: 'openai-completions',
+		provider: 'openrouter',
+		baseUrl: 'https://openrouter.ai/api/v1',
+		reasoning: true,
+		input: ['text'],
+		cost: {
+			input: 2.5,
+			output: 7.5,
+			cacheRead: 0,
+			cacheWrite: 3.125,
+		},
+		contextWindow: 1_000_000,
+		maxTokens: 65_536,
+	},
 } as const satisfies Record<string, Model<'openai-completions'>>;
 
 export function getOpenRouterModelOverride(
