@@ -8,12 +8,14 @@ import {
 	DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
 	EXA_WEB_SEARCH_PROVIDER_ID,
 	filesystemExtension,
+	spawnExtension,
 	todoExtension,
 	type ToolUseBlock,
 } from '@franklin/agent';
 import type { JsonObject, JsonValue } from '@franklin/lib';
+import type { ToolStatus } from '@franklin/react';
 import { resolveToolRenderer } from '@franklin/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
 	defaultToolRenderers,
@@ -23,7 +25,11 @@ import {
 function createBlock(
 	name: string,
 	args: JsonObject,
-	output?: JsonValue,
+	options?: {
+		readonly endedAt?: number;
+		readonly output?: JsonValue;
+		readonly startedAt?: number;
+	},
 ): ToolUseBlock {
 	const block: ToolUseBlock = {
 		kind: 'toolUse',
@@ -33,25 +39,35 @@ function createBlock(
 			name,
 			arguments: args,
 		},
-		startedAt: 0,
+		startedAt: options?.startedAt ?? 0,
+		endedAt: options?.endedAt,
 	};
 
-	if (output === undefined) {
+	if (options?.output === undefined) {
 		return block;
 	}
 
-	return { ...block, output };
+	return { ...block, output: options.output };
 }
 
-function renderSummary(name: string, args: JsonObject, output?: JsonValue) {
+function renderSummary(
+	name: string,
+	args: JsonObject,
+	options?: {
+		readonly endedAt?: number;
+		readonly output?: JsonValue;
+		readonly startedAt?: number;
+		readonly status?: ToolStatus;
+	},
+) {
 	const entry = resolveToolRenderer(defaultToolRegistry, name);
 	if (entry == null) {
 		throw new Error(`Expected renderer for ${name}`);
 	}
 	return render(
 		entry.summary({
-			block: createBlock(name, args, output),
-			status: 'success',
+			block: createBlock(name, args, options),
+			status: options?.status ?? 'success',
 			args,
 		}),
 	);
@@ -102,6 +118,34 @@ describe('defaultToolRegistry', () => {
 		});
 	});
 
+	describe('agent tools', () => {
+		it('renders spawn with a named child and running elapsed time', () => {
+			vi.useFakeTimers();
+			try {
+				vi.setSystemTime(11_000);
+				const view = renderSummary(
+					spawnExtension.tools.spawn.name,
+					{
+						name: 'Summary writer',
+						prompt: 'write the summary',
+					},
+					{
+						startedAt: 4_000,
+						status: 'in-progress',
+					},
+				);
+
+				expect(screen.getByText('Spawn')).toBeTruthy();
+				expect(screen.getByText('Summary writer')).toBeTruthy();
+				expect(screen.getByText('7s')).toBeTruthy();
+
+				view.unmount();
+			} finally {
+				vi.useRealTimers();
+			}
+		});
+	});
+
 	describe('web tools', () => {
 		it('renders with hostname and path', () => {
 			renderSummary(createWebExtension({}).tools.fetchUrl.name, {
@@ -126,10 +170,12 @@ describe('defaultToolRegistry', () => {
 				createWebExtension({}).tools.searchWeb.name,
 				{ query: 'example query' },
 				{
-					kind: 'success',
-					provider: { id: EXA_WEB_SEARCH_PROVIDER_ID, name: 'Exa' },
-					query: 'example query',
-					results: [],
+					output: {
+						kind: 'success',
+						provider: { id: EXA_WEB_SEARCH_PROVIDER_ID, name: 'Exa' },
+						query: 'example query',
+						results: [],
+					},
 				},
 			);
 			expect(screen.getByText('Search')).toBeTruthy();
@@ -141,10 +187,12 @@ describe('defaultToolRegistry', () => {
 				createWebExtension({}).tools.searchWeb.name,
 				{ query: 'example query' },
 				{
-					kind: 'error',
-					query: 'example query',
-					message: 'No web search providers configured',
-					failures: [],
+					output: {
+						kind: 'error',
+						query: 'example query',
+						message: 'No web search providers configured',
+						failures: [],
+					},
 				},
 			);
 			expect(container.textContent).toContain('Search');
@@ -156,10 +204,12 @@ describe('defaultToolRegistry', () => {
 				createWebExtension({}).tools.searchWeb.name,
 				{ query: 'example query' },
 				{
-					kind: 'success',
-					provider: { id: EXA_WEB_SEARCH_PROVIDER_ID, name: 'Exa' },
-					query: 'example query',
-					results: [],
+					output: {
+						kind: 'success',
+						provider: { id: EXA_WEB_SEARCH_PROVIDER_ID, name: 'Exa' },
+						query: 'example query',
+						results: [],
+					},
 				},
 			);
 
@@ -173,13 +223,15 @@ describe('defaultToolRegistry', () => {
 				createWebExtension({}).tools.searchWeb.name,
 				{ query: 'example query' },
 				{
-					kind: 'success',
-					provider: {
-						id: DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
-						name: 'DuckDuckGo',
+					output: {
+						kind: 'success',
+						provider: {
+							id: DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
+							name: 'DuckDuckGo',
+						},
+						query: 'example query',
+						results: [],
 					},
-					query: 'example query',
-					results: [],
 				},
 			);
 
