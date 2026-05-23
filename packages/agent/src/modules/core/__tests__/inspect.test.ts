@@ -9,6 +9,7 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../compile/decorators/__tests__/registry.js';
+import { createCoreEventRegistrations } from '../compile/registrations/index.js';
 import { createToolRegistry } from '../compile/decorators/tool/index.js';
 
 function stubRuntime(context: Context): CoreRuntime {
@@ -16,8 +17,7 @@ function stubRuntime(context: Context): CoreRuntime {
 	const getRuntime = createTestRuntime;
 	const agentState = createAgentState({
 		snapshot: emptySessionSnapshot(),
-		registrations,
-		getRuntime,
+		registrations: createCoreEventRegistrations(registrations, getRuntime),
 		toolRegistry: createToolRegistry(registrations, getRuntime),
 	});
 	agentState.contextLedger.apply(context);

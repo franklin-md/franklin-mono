@@ -1,18 +1,11 @@
-import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import type { UserContent, UserMessage } from '@franklin/mini-acp';
-import type { CoreSignature } from '../../../../api/api.js';
 import type { Prompt, PromptHandler } from '../../../../api/prompt.js';
-import { bindRegisteredEventHandlers } from '../../../registrations/index.js';
+import type { CoreEventRegistrations } from '../../../registrations/index.js';
 
-export function createPromptBuilder<Runtime extends BaseRuntime>(
-	registrations: RegistryView<CoreSignature, Runtime>,
-	getRuntime: () => Runtime,
+export function createPromptBuilder(
+	registrations: CoreEventRegistrations,
 ): (message: UserMessage) => Promise<UserMessage> {
-	const handlers = bindRegisteredEventHandlers(
-		registrations,
-		'prompt',
-		getRuntime,
-	);
+	const handlers = registrations.handlersFor('prompt');
 
 	return (message) => buildPrompt(message, handlers);
 }

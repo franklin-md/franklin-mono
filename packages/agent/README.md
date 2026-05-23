@@ -77,10 +77,10 @@ The public runtime exposes `getSession()` as a safe projection to
 state-module layer uses the same projection for persistence, fork, and
 child-session creation. `SessionSnapshot` intentionally remains narrower than
 `Context`: it keeps model-visible messages, non-secret LLM config, and usage,
-while system prompt text, registered tool schemas, and API keys stay
-runtime-only. Future persisted state may become a richer superset of what
-Mini-ACP receives, including compaction points or other checkpoints projected
-into the next Mini-ACP context.
+plus the session-local tool filter, while system prompt text, registered tool
+schemas, and API keys stay runtime-only. Future persisted state may become a
+richer superset of what Mini-ACP receives, including compaction points or other
+checkpoints projected into the next Mini-ACP context.
 
 ### Extensions
 

@@ -8,13 +8,14 @@ import type {
 	Usage,
 } from '@franklin/mini-acp';
 import { ContextTracker } from '@franklin/mini-acp/session';
-import type { SessionSnapshot } from '../state.js';
+import type { SessionSnapshot, ToolFilter } from '../state.js';
 import type { SystemPromptBuilder } from './types.js';
 
 type LLMConfigSnapshot = SessionSnapshot['llmConfig'];
 
 export interface ToolDefinitionProvider {
 	definitions(): readonly ToolDefinition[];
+	filter(): ToolFilter;
 }
 
 type ContextLedgerInput = {
@@ -67,10 +68,11 @@ export class ContextLedger extends ContextTracker {
 			context.messages,
 			pickLLMConfig(context.config),
 			usage,
+			this.toolRegistry.filter(),
 		);
 	}
 
-	async sync(client: Pick<MiniACPClient, 'setContext'>): Promise<void> {
+	async sync(client: MiniACPClient): Promise<void> {
 		const next = await this.targetContext();
 		const patch = this.hasSentContext
 			? diffContext(this.acknowledged.get(), next)
@@ -236,11 +238,13 @@ function sessionSnapshot(
 	messages: readonly Message[],
 	llmConfig: LLMConfigSnapshot,
 	usage: Usage,
+	toolFilter: ToolFilter,
 ): SessionSnapshot {
 	return {
 		messages: [...messages],
 		llmConfig,
 		usage: snapshotUsage(usage),
+		toolFilter,
 	};
 }
 

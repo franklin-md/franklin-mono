@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import type { Message } from '@franklin/mini-acp';
-import type { SessionSnapshot } from '../../../modules/core/state.js';
+import {
+	emptyToolFilter,
+	type SessionSnapshot,
+	type ToolFilter,
+} from '../../../modules/core/state.js';
 
 const ThinkingLevelV1 = z.enum([
 	'off',
@@ -34,6 +38,10 @@ const UsageBreakdownV1 = z.object({
 	total: z.number(),
 });
 
+const ToolFilterV1 = z.object({
+	disabled: z.array(z.string()),
+}) satisfies z.ZodType<ToolFilter>;
+
 export const CoreSessionV1 = z.object({
 	messages: z.array(MessageV1),
 	llmConfig: z.object({
@@ -45,4 +53,7 @@ export const CoreSessionV1 = z.object({
 		tokens: UsageBreakdownV1,
 		cost: UsageBreakdownV1,
 	}),
+	toolFilter: ToolFilterV1.optional().transform(
+		(value) => value ?? emptyToolFilter(),
+	),
 }) satisfies z.ZodType<SessionSnapshot>;

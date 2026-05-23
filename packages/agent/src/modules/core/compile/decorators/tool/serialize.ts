@@ -1,5 +1,4 @@
 import type { ToolDefinition } from '@franklin/mini-acp';
-import type { BaseRuntime } from '@franklin/extensibility';
 import type { JsonObject } from '@franklin/lib';
 import { z } from 'zod';
 
@@ -16,9 +15,7 @@ export function toToolInputSchema(schema: z.ZodType): JsonObject {
 	return jsonSchema as JsonObject;
 }
 
-export function serializeTool<Runtime extends BaseRuntime>(
-	tool: AnyRegisteredTool<Runtime>,
-): ToolDefinition {
+export function serializeTool(tool: AnyRegisteredTool): ToolDefinition {
 	return {
 		name: tool.name,
 		description: tool.description,

@@ -48,6 +48,7 @@ async function makeRuntime(
 				messages: [],
 				llmConfig,
 				usage: ZERO_USAGE,
+				toolFilter: { disabled: [] },
 			},
 		},
 		[],

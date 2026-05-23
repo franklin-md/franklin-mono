@@ -11,8 +11,9 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../compile/decorators/__tests__/registry.js';
+import { createCoreEventRegistrations } from '../../compile/registrations/index.js';
 import { createToolRegistry } from '../../compile/decorators/tool/index.js';
-import type { SessionSnapshot } from '../../state.js';
+import { emptyToolFilter, type SessionSnapshot } from '../../state.js';
 
 const runtime = createTestRuntime();
 
@@ -26,25 +27,34 @@ function emptySnapshot(): SessionSnapshot {
 		messages: [],
 		llmConfig: {},
 		usage: ZERO_USAGE,
+		toolFilter: emptyToolFilter(),
 	};
 }
 
 function stubClient(
 	setContext: (patch: ContextPatch) => Promise<void> = async () => {},
-): Pick<MiniACPClient, 'setContext'> {
+): MiniACPClient {
 	return {
+		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(setContext),
+		async *prompt() {},
+		cancel: vi.fn(async () => {}),
 	};
 }
 
-type CreateStateInput = Omit<
-	Parameters<typeof createAgentState>[0],
-	'toolRegistry'
->;
+type CreateStateInput = {
+	readonly snapshot: SessionSnapshot;
+	readonly registrations: ReturnType<typeof createCoreRegistry>;
+	readonly getRuntime: () => typeof runtime;
+};
 
 function createState(input: CreateStateInput) {
 	return createAgentState({
-		...input,
+		snapshot: input.snapshot,
+		registrations: createCoreEventRegistrations(
+			input.registrations,
+			input.getRuntime,
+		),
 		toolRegistry: createToolRegistry(input.registrations, input.getRuntime),
 	});
 }
@@ -134,6 +144,7 @@ describe('createAgentState', () => {
 				messages: [userMessage],
 				llmConfig: { provider: 'test-provider', model: 'test-model' },
 				usage: ZERO_USAGE,
+				toolFilter: emptyToolFilter(),
 			},
 			registrations: createCoreRegistry((api) => {
 				api.on('systemPrompt', (systemPrompt) => {
@@ -196,6 +207,7 @@ describe('createAgentState', () => {
 				messages: [userMessage],
 				llmConfig: { model: 'test-model' },
 				usage: ZERO_USAGE,
+				toolFilter: emptyToolFilter(),
 			},
 			registrations: createCoreRegistry((api) => {
 				api.on('systemPrompt', (systemPrompt) => {

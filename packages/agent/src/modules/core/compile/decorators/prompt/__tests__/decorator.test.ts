@@ -13,6 +13,7 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
+import { createCoreEventRegistrations } from '../../../registrations/index.js';
 import { createToolRegistry } from '../../tool/index.js';
 import type { AgentState } from '../../../../agent-state/index.js';
 
@@ -45,8 +46,7 @@ function createTestAgentState(
 	const getRuntime = () => runtime;
 	return createAgentState({
 		snapshot: emptySessionSnapshot(),
-		registrations,
-		getRuntime,
+		registrations: createCoreEventRegistrations(registrations, getRuntime),
 		toolRegistry: createToolRegistry(registrations, getRuntime),
 	});
 }
@@ -70,8 +70,7 @@ describe('createPromptDecorator', () => {
 	it('returns a pass-through decorator when no prompt-time handlers are registered', async () => {
 		const decorator = createPromptDecorator(
 			createTestAgentState(),
-			createCoreRegistry(),
-			() => runtime,
+			createCoreEventRegistrations(createCoreRegistry(), () => runtime),
 		);
 		const calls: string[] = [];
 		const base = stubClient(calls);
@@ -104,8 +103,7 @@ describe('createPromptDecorator', () => {
 		const agentState = createTestAgentState(registrations);
 		const decorator = createPromptDecorator(
 			agentState,
-			registrations,
-			() => runtime,
+			createCoreEventRegistrations(registrations, () => runtime),
 		);
 
 		const base = stubClient(calls, agentState);
@@ -138,8 +136,7 @@ describe('createPromptDecorator', () => {
 		const agentState = createTestAgentState(registrations);
 		const decorator = createPromptDecorator(
 			agentState,
-			registrations,
-			() => runtime,
+			createCoreEventRegistrations(registrations, () => runtime),
 		);
 
 		const base = stubClient(calls, agentState);
@@ -164,10 +161,12 @@ describe('createPromptDecorator', () => {
 	it('leaves the server side unchanged', async () => {
 		const decorator = createPromptDecorator(
 			createTestAgentState(),
-			createCoreRegistry((api) => {
-				api.on('prompt', () => {});
-			}),
-			() => runtime,
+			createCoreEventRegistrations(
+				createCoreRegistry((api) => {
+					api.on('prompt', () => {});
+				}),
+				() => runtime,
+			),
 		);
 		const server = { toolExecute: vi.fn() } as unknown as MiniACPAgent;
 

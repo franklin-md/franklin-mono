@@ -7,6 +7,7 @@ import {
 	createCoreRegistry,
 	createTestRuntime,
 } from '../../__tests__/registry.js';
+import { createCoreEventRegistrations } from '../../../registrations/index.js';
 import { createToolRegistry } from '../../tool/index.js';
 
 const turnUsage = {
@@ -22,9 +23,9 @@ function createTestAgentState() {
 			messages: [],
 			llmConfig: {},
 			usage: ZERO_USAGE,
+			toolFilter: { disabled: [] },
 		},
-		registrations,
-		getRuntime,
+		registrations: createCoreEventRegistrations(registrations, getRuntime),
 		toolRegistry: createToolRegistry(registrations, getRuntime),
 	});
 }

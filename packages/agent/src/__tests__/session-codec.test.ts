@@ -25,6 +25,7 @@ function session(): FranklinSession {
 				reasoning: 'medium',
 			},
 			usage: ZERO_USAGE,
+			toolFilter: { disabled: ['set_chat_title'] },
 		},
 		store: {
 			todos: 'store-1',
@@ -79,6 +80,30 @@ describe('session codec', () => {
 			value: {
 				...v1,
 				details: { visibility: 'visible' },
+			},
+		});
+	});
+
+	it('hydrates older core sessions with all tools enabled', () => {
+		const value = session();
+		const { toolFilter: _toolFilter, ...core } = value.core;
+
+		expect(
+			franklinSessionCodec.decode({
+				version: SESSION_FILE_VERSION,
+				data: {
+					...value,
+					core,
+				},
+			}),
+		).toEqual({
+			ok: true,
+			value: {
+				...value,
+				core: {
+					...core,
+					toolFilter: { disabled: [] },
+				},
 			},
 		});
 	});

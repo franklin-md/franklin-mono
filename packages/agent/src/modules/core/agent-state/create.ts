@@ -1,6 +1,5 @@
-import type { BaseRuntime, RegistryView } from '@franklin/extensibility';
 import { UsageTracker } from '@franklin/mini-acp/session';
-import type { CoreSignature } from '../api/api.js';
+import type { CoreEventRegistrations } from '../compile/registrations/index.js';
 import type { SessionSnapshot } from '../state.js';
 import {
 	ContextLedger,
@@ -9,21 +8,17 @@ import {
 import { createSystemPromptBuilder } from './system-prompt.js';
 import type { AgentState } from './types.js';
 
-type CreateAgentStateInput<Runtime extends BaseRuntime> = {
+type CreateAgentStateInput = {
 	readonly snapshot: SessionSnapshot;
-	readonly registrations: RegistryView<CoreSignature, Runtime>;
-	readonly getRuntime: () => Runtime;
+	readonly registrations: CoreEventRegistrations;
 	readonly toolRegistry: ToolDefinitionProvider;
 };
 
-export function createAgentState<Runtime extends BaseRuntime>(
-	input: CreateAgentStateInput<Runtime>,
-): AgentState {
+export function createAgentState(input: CreateAgentStateInput): AgentState {
 	const usage = new UsageTracker();
 	usage.add(input.snapshot.usage);
 	const systemPrompt = createSystemPromptBuilder({
 		registrations: input.registrations,
-		getRuntime: input.getRuntime,
 	});
 	const contextLedger = new ContextLedger({
 		snapshot: input.snapshot,

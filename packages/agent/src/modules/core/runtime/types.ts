@@ -6,12 +6,19 @@ import type {
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { SessionSnapshot } from '../state.js';
 
+export type RuntimeToolRegistry = {
+	setEnabled(name: string, enabled: boolean): void;
+};
+
 export type CoreEvent =
 	| {
 			readonly type: 'llm-config-changed';
 	  }
 	| {
 			readonly type: 'turn-settled';
+	  }
+	| {
+			readonly type: 'tool-registry-changed';
 	  };
 
 export type CoreRuntime = BaseRuntime &
@@ -20,6 +27,7 @@ export type CoreRuntime = BaseRuntime &
 		readonly coreEvents: {
 			subscribe(listener: (event: CoreEvent) => void): () => void;
 		};
+		readonly toolRegistry: RuntimeToolRegistry;
 		getSession(): SessionSnapshot;
 	};
 

@@ -13,7 +13,10 @@ function registeredTool(
 		name,
 		description,
 		schema,
-		execute: () => '',
+		run: () => ({
+			output: '',
+			rendered: { content: [{ type: 'text', text: '' }] },
+		}),
 	};
 }
 

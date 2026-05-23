@@ -61,6 +61,7 @@ describe('core runtime protocol state', () => {
 						provider: 'seed-provider',
 					},
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: [] },
 				},
 			},
 			extensions: [
@@ -127,6 +128,151 @@ describe('core runtime protocol state', () => {
 		}
 	});
 
+	it('emits tool registry changes and stores the filter without immediately syncing context', async () => {
+		const scenario = await createCoreScenario({
+			extensions: [
+				(api) => {
+					api.registerTool(
+						toolSpec('toggle_tool', 'Toggle tool', z.object({})),
+						{
+							execute: async () => 'ok',
+						},
+					);
+				},
+			],
+		});
+		const events: CoreEvent[] = [];
+		const unsubscribe = scenario.runtime.coreEvents.subscribe((event) => {
+			events.push(event);
+		});
+
+		try {
+			scenario.runtime.toolRegistry.setEnabled('toggle_tool', true);
+			scenario.runtime.toolRegistry.setEnabled('toggle_tool', false);
+			scenario.runtime.toolRegistry.setEnabled('toggle_tool', false);
+
+			expect(events).toEqual([{ type: 'tool-registry-changed' }]);
+			expect(scenario.mock.calls().setContext).toEqual([]);
+			expect(scenario.runtime.getSession().toolFilter).toEqual({
+				disabled: ['toggle_tool'],
+			});
+			await expect(scenario.state()).resolves.toMatchObject({
+				core: {
+					toolFilter: { disabled: ['toggle_tool'] },
+				},
+			});
+
+			scenario.runtime.toolRegistry.setEnabled('toggle_tool', true);
+			scenario.runtime.toolRegistry.setEnabled('toggle_tool', true);
+
+			expect(events).toEqual([
+				{ type: 'tool-registry-changed' },
+				{ type: 'tool-registry-changed' },
+			]);
+			expect(scenario.mock.calls().setContext).toEqual([]);
+			expect(scenario.runtime.getSession().toolFilter).toEqual({
+				disabled: [],
+			});
+		} finally {
+			unsubscribe();
+			await scenario.dispose();
+		}
+	});
+
+	it('syncs tool filter changes through the next prompt context patch', async () => {
+		const scenario = await createCoreScenario({
+			turns: [assistantTurn, assistantTurn],
+			extensions: [
+				(api) => {
+					api.registerTool(
+						toolSpec('stable_tool', 'Stable tool', z.object({})),
+						{
+							execute: async () => 'ok',
+						},
+					);
+				},
+			],
+		});
+
+		try {
+			await scenario.collectPrompt('first');
+
+			scenario.runtime.toolRegistry.setEnabled('stable_tool', false);
+			expect(scenario.mock.calls().setContext).toEqual([
+				{
+					systemPrompt: '',
+					messages: [],
+					tools: [
+						expect.objectContaining({
+							name: 'stable_tool',
+							description: 'Stable tool',
+						}),
+					],
+					config: {},
+				},
+			]);
+
+			await scenario.collectPrompt('second');
+
+			expect(scenario.mock.calls().setContext).toEqual([
+				{
+					systemPrompt: '',
+					messages: [],
+					tools: [
+						expect.objectContaining({
+							name: 'stable_tool',
+							description: 'Stable tool',
+						}),
+					],
+					config: {},
+				},
+				{
+					tools: [],
+				},
+			]);
+		} finally {
+			await scenario.dispose();
+		}
+	});
+
+	it('hydrates disabled tools into the runtime registry before the first context sync', async () => {
+		const scenario = await createCoreScenario({
+			state: {
+				core: {
+					messages: [],
+					llmConfig: {},
+					usage: ZERO_USAGE,
+					toolFilter: { disabled: ['seed_tool'] },
+				},
+			},
+			extensions: [
+				(api) => {
+					api.registerTool(toolSpec('seed_tool', 'Seed tool', z.object({})), {
+						execute: async () => 'ok',
+					});
+				},
+			],
+		});
+
+		try {
+			await scenario.collectPrompt('first');
+
+			expect(scenario.mock.calls().setContext).toEqual([
+				{
+					systemPrompt: '',
+					messages: [],
+					tools: [],
+					config: {},
+				},
+			]);
+			expect(scenario.runtime.getSession().toolFilter).toEqual({
+				disabled: ['seed_tool'],
+			});
+		} finally {
+			await scenario.dispose();
+		}
+	});
+
 	it('does not resend llm config from prompt sync after a config update is acknowledged', async () => {
 		const scenario = await createCoreScenario();
 
@@ -170,6 +316,7 @@ describe('core runtime protocol state', () => {
 					messages: [seedMessage],
 					llmConfig: { model: 'seed-model' },
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: [] },
 				},
 			},
 		});
@@ -293,6 +440,7 @@ describe('core runtime protocol state', () => {
 						provider: 'seed-provider',
 					},
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: [] },
 				},
 			},
 		});
@@ -337,6 +485,7 @@ describe('core runtime protocol state', () => {
 						provider: 'seed-provider',
 					},
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: [] },
 				},
 			},
 		});
@@ -369,6 +518,7 @@ describe('core runtime protocol state', () => {
 					messages: [],
 					llmConfig: { model: 'test' },
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: ['set_chat_title'] },
 				},
 			},
 		});
@@ -383,6 +533,10 @@ describe('core runtime protocol state', () => {
 			expect(forked.core.messages).not.toBe(state.core.messages);
 			expect(forked.core.llmConfig.model).toBe('test');
 			expect(forked.core.usage).toEqual(ZERO_USAGE);
+			expect(forked.core.toolFilter).toEqual(state.core.toolFilter);
+			expect(forked.core.toolFilter.disabled).not.toBe(
+				state.core.toolFilter.disabled,
+			);
 			expect(state.core.usage).toEqual(turnUsage);
 		} finally {
 			await scenario.dispose();
@@ -403,6 +557,7 @@ describe('core runtime protocol state', () => {
 					],
 					llmConfig: { model: 'test' },
 					usage: ZERO_USAGE,
+					toolFilter: { disabled: ['set_chat_title'] },
 				},
 			},
 		});
@@ -414,6 +569,7 @@ describe('core runtime protocol state', () => {
 			expect(child.core.messages).toEqual([]);
 			expect(child.core.llmConfig.model).toBe('test');
 			expect(child.core.usage).toEqual(ZERO_USAGE);
+			expect(child.core.toolFilter).toEqual({ disabled: [] });
 		} finally {
 			await scenario.dispose();
 		}
@@ -432,6 +588,7 @@ describe('core runtime protocol state', () => {
 					messages: [],
 					llmConfig: {},
 					usage: seededUsage,
+					toolFilter: { disabled: [] },
 				},
 			},
 		});
@@ -459,6 +616,7 @@ describe('core runtime protocol state', () => {
 					messages: [],
 					llmConfig: {},
 					usage: usage(50, 20),
+					toolFilter: { disabled: [] },
 				},
 			},
 		});
@@ -466,9 +624,11 @@ describe('core runtime protocol state', () => {
 		try {
 			const first = await scenario.state();
 			first.core.usage.tokens.input = 999;
+			first.core.toolFilter.disabled.push('mutated');
 
 			const second = await scenario.state();
 			expect(second.core.usage.tokens.input).toBe(50);
+			expect(second.core.toolFilter.disabled).toEqual([]);
 		} finally {
 			await scenario.dispose();
 		}
