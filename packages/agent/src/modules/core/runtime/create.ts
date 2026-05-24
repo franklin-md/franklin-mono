@@ -1,14 +1,8 @@
 import { createObserver } from '@franklin/lib';
+import type { Context, MiniACPClientHandle } from '@franklin/mini-acp';
 import type { ContextManager } from '../context-manager/index.js';
 import type { ToolFilter } from '../state.js';
-import { attachContextManager } from './context-manager.js';
-import { createClientRuntime } from './from-client.js';
-import type {
-	AgentClient,
-	CoreEvent,
-	CoreRuntime,
-	RuntimeToolRegistry,
-} from './types.js';
+import type { CoreEvent, CoreRuntime, ToolRegistry } from './types.js';
 
 type ToolRegistryState = {
 	setEnabled(name: string, enabled: boolean): void;
@@ -16,10 +10,21 @@ type ToolRegistryState = {
 };
 
 type CreateCoreRuntimeInput = {
-	readonly client: AgentClient;
+	readonly client: MiniACPClientHandle;
 	readonly contextManager: ContextManager;
 	readonly toolRegistry: ToolRegistryState;
 };
+
+async function* notifyAfter<T>(
+	stream: AsyncIterable<T>,
+	notify: () => void,
+): AsyncIterable<T> {
+	try {
+		yield* stream;
+	} finally {
+		notify();
+	}
+}
 
 export function createCoreRuntime({
 	client,
@@ -35,26 +40,35 @@ export function createCoreRuntime({
 			observer.subscribe(listener),
 	};
 
-	return attachContextManager(
-		{
-			...createClientRuntime({
-				client,
-				events: {
-					coreEvents,
-					notify,
-				},
-			}),
-			toolRegistry: createRuntimeToolRegistry(toolRegistry, notify),
-			getSession: () => contextManager.getSnapshot(),
+	return {
+		async setLLMConfig(config) {
+			await client.setContext({ config });
+			notify({ type: 'llm-config-changed' });
 		},
-		contextManager,
-	);
+		prompt(message) {
+			return notifyAfter(client.prompt(message), () =>
+				notify({ type: 'turn-settled' }),
+			);
+		},
+		cancel: client.cancel.bind(client),
+		async dispose() {
+			await client.dispose();
+		},
+		coreEvents,
+		toolRegistry: createToolRegistryRuntime(toolRegistry, notify),
+		getSession: () => contextManager.getSnapshot(),
+		async inspect() {
+			return {
+				core: redactInspectContext(contextManager.getAgentContext()),
+			};
+		},
+	};
 }
 
-function createRuntimeToolRegistry(
+function createToolRegistryRuntime(
 	toolRegistry: ToolRegistryState,
 	notify: (event: CoreEvent) => void,
-): RuntimeToolRegistry {
+): ToolRegistry {
 	return {
 		setEnabled(name, enabled) {
 			const before = toolRegistry.filter();
@@ -67,4 +81,9 @@ function createRuntimeToolRegistry(
 
 function sameToolFilter(left: ToolFilter, right: ToolFilter): boolean {
 	return JSON.stringify(left.disabled) === JSON.stringify(right.disabled);
+}
+
+function redactInspectContext(context: Context): Context {
+	const { apiKey: _apiKey, ...config } = context.config;
+	return { ...context, config };
 }

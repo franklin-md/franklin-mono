@@ -84,9 +84,11 @@ state-module layer uses the same projection for persistence, fork, and
 child-session creation. `SessionSnapshot` intentionally remains narrower than
 `Context`: it keeps model-visible messages, non-secret LLM config, and usage,
 plus the session-local tool filter, while system prompt text, registered tool
-schemas, and API keys stay runtime-only. Future persisted state may become a
-richer superset of what Mini-ACP receives, including compaction points or other
-checkpoints projected into the next Mini-ACP context.
+schemas, and API keys stay runtime-only. Runtime inspect uses a separate
+redacted `inspect()` projection for debug UI so callers never need hidden access
+to the `ContextManager`. Future persisted state may become a richer superset of
+what Mini-ACP receives, including compaction points or other checkpoints
+projected into the next Mini-ACP context.
 
 ### Extensions
 

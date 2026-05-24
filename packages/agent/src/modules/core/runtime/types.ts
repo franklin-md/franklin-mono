@@ -1,13 +1,18 @@
 import type {
+	Context,
 	LLMConfig,
-	MiniACPClient,
-	MiniACPClientHandle,
+	StreamEvent,
+	UserMessage,
 } from '@franklin/mini-acp';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { SessionSnapshot } from '../state.js';
 
-export type RuntimeToolRegistry = {
+export type ToolRegistry = {
 	setEnabled(name: string, enabled: boolean): void;
+};
+
+export type CoreInspectDump = {
+	readonly core: Context;
 };
 
 export type CoreEvent =
@@ -21,14 +26,25 @@ export type CoreEvent =
 			readonly type: 'tool-registry-changed';
 	  };
 
-export type CoreRuntime = BaseRuntime &
-	Pick<MiniACPClient, 'prompt' | 'cancel'> & {
-		setLLMConfig(config: Partial<LLMConfig>): Promise<void>;
-		readonly coreEvents: {
-			subscribe(listener: (event: CoreEvent) => void): () => void;
-		};
-		readonly toolRegistry: RuntimeToolRegistry;
-		getSession(): SessionSnapshot;
+export type CoreRuntime = BaseRuntime & {
+	// Mini-ACP turn controls exposed to app/runtime consumers.
+	prompt(message: UserMessage): AsyncIterable<StreamEvent>;
+	cancel(): Promise<void>;
+
+	// Runtime-owned LLM configuration patching. Auth decorators may wrap this.
+	setLLMConfig(config: Partial<LLMConfig>): Promise<void>;
+
+	// Runtime event stream used by persistence and UI hooks.
+	readonly coreEvents: {
+		subscribe(listener: (event: CoreEvent) => void): () => void;
 	};
 
-export type AgentClient = MiniACPClientHandle;
+	// User-facing tool enable/disable controls.
+	readonly toolRegistry: ToolRegistry;
+
+	// Durable session projection for persistence/fork/child state.
+	getSession(): SessionSnapshot;
+
+	// Debug projection for inspect UI. Implementations must redact secrets.
+	inspect(): Promise<CoreInspectDump>;
+};

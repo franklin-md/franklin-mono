@@ -1,7 +1,7 @@
 export type {
-	AgentClient,
 	CoreEvent,
+	CoreInspectDump,
 	CoreRuntime,
-	RuntimeToolRegistry,
+	ToolRegistry,
 } from './types.js';
 export { createCoreRuntime } from './create.js';

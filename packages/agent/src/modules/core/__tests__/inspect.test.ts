@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Context } from '@franklin/mini-acp';
+import type { Context, MiniACPClientHandle } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
 import { createContextManager } from '../context-manager/index.js';
-import { attachContextManager } from '../runtime/context-manager.js';
-import type { CoreRuntime } from '../runtime/index.js';
+import { createCoreRuntime, type CoreRuntime } from '../runtime/index.js';
 import { emptySessionSnapshot } from '../state.js';
 import {
 	createCoreRegistry,
@@ -11,27 +10,31 @@ import {
 } from '../compile/decorators/__tests__/registry.js';
 import { createToolRegistry } from '../tools/index.js';
 
+function stubClient(): MiniACPClientHandle {
+	return {
+		initialize: async () => {},
+		setContext: async () => {},
+		async *prompt() {},
+		cancel: async () => {},
+		dispose: async () => {},
+	};
+}
+
 function stubRuntime(context: Context): CoreRuntime {
 	const getRuntime = createTestRuntime;
 	const registrations = createCoreRegistry(undefined, getRuntime);
+	const toolRegistry = createToolRegistry(registrations);
 	const contextManager = createContextManager({
 		snapshot: emptySessionSnapshot(),
 		registrations,
-		toolRegistry: createToolRegistry(registrations),
+		toolRegistry,
 	});
 	contextManager.contextRecorder.apply(context);
-	return attachContextManager(
-		{
-			getSession: () => contextManager.getSnapshot(),
-			dispose: async () => {},
-			prompt: () => {
-				throw new Error('not used');
-			},
-			cancel: async () => {},
-			setLLMConfig: async () => {},
-		} as unknown as CoreRuntime,
+	return createCoreRuntime({
+		client: stubClient(),
 		contextManager,
-	);
+		toolRegistry,
+	});
 }
 
 describe('inspectRuntime', () => {
