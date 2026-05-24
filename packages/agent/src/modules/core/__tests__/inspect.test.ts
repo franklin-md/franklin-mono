@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Context, MiniACPClientHandle } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
-import { createContextManager } from '../context-manager/index.js';
+import { createAgentController } from '../controller/index.js';
 import { createCoreRuntime, type CoreRuntime } from '../runtime/index.js';
 import { emptySessionSnapshot } from '../state.js';
-import {
-	createCoreRegistry,
-	createTestRuntime,
-} from '../compile/decorators/__tests__/registry.js';
+import { createCoreRegistry, createTestRuntime } from './registry.js';
 import { createToolRegistry } from '../tools/index.js';
 
 function stubClient(): MiniACPClientHandle {
@@ -20,20 +17,20 @@ function stubClient(): MiniACPClientHandle {
 	};
 }
 
-function stubRuntime(context: Context): CoreRuntime {
+async function stubRuntime(context: Context): Promise<CoreRuntime> {
 	const getRuntime = createTestRuntime;
 	const registrations = createCoreRegistry(undefined, getRuntime);
 	const toolRegistry = createToolRegistry(registrations.tools);
-	const contextManager = createContextManager({
+	const controller = createAgentController({
 		snapshot: emptySessionSnapshot(),
 		registrations,
 		toolRegistry,
 	});
-	contextManager.contextRecorder.apply(context);
+	const client = controller.bind(stubClient());
+	await client.setContext(context);
 	return createCoreRuntime({
-		client: stubClient(),
-		contextManager,
-		toolRegistry,
+		client,
+		controller,
 	});
 }
 
@@ -52,7 +49,7 @@ describe('inspectRuntime', () => {
 			config: { model: 'test-model', provider: 'test-provider' },
 		};
 
-		const dump = await inspectRuntime(stubRuntime(context));
+		const dump = await inspectRuntime(await stubRuntime(context));
 
 		expect(dump.core).toEqual(context);
 	});
@@ -70,7 +67,7 @@ describe('inspectRuntime', () => {
 			},
 		};
 
-		const dump = await inspectRuntime(stubRuntime(context));
+		const dump = await inspectRuntime(await stubRuntime(context));
 
 		expect(dump.core.config).toEqual({
 			model: 'test-model',
@@ -88,7 +85,7 @@ describe('inspectRuntime', () => {
 			config: {},
 		};
 
-		await expect(inspectRuntime(stubRuntime(context))).resolves.toEqual({
+		await expect(inspectRuntime(await stubRuntime(context))).resolves.toEqual({
 			core: context,
 		});
 	});

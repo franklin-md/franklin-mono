@@ -5,7 +5,7 @@ import { z } from 'zod';
 import {
 	createCoreRegistry,
 	createTestRuntime,
-} from '../../../compile/decorators/__tests__/registry.js';
+} from '../../../__tests__/registry.js';
 import { emptyToolFilter } from '../../../state.js';
 import { createToolRegistry } from '../../../tools/index.js';
 import { createSessionDraft } from '../index.js';

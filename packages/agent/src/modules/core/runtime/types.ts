@@ -1,18 +1,10 @@
-import type {
-	Context,
-	LLMConfig,
-	StreamEvent,
-	UserMessage,
-} from '@franklin/mini-acp';
+import type { LLMConfig, StreamEvent, UserMessage } from '@franklin/mini-acp';
 import type { BaseRuntime } from '@franklin/extensibility';
+import type { CoreInspectDump } from '../inspect-dump.js';
 import type { SessionSnapshot } from '../state.js';
 
 export type ToolRegistry = {
 	setEnabled(name: string, enabled: boolean): void;
-};
-
-export type CoreInspectDump = {
-	readonly core: Context;
 };
 
 export type CoreEvent =
@@ -31,7 +23,7 @@ export type CoreRuntime = BaseRuntime & {
 	prompt(message: UserMessage): AsyncIterable<StreamEvent>;
 	cancel(): Promise<void>;
 
-	// Runtime-owned LLM configuration patching. Auth decorators may wrap this.
+	// Runtime-owned LLM configuration patching. Auth layers may wrap this.
 	setLLMConfig(config: Partial<LLMConfig>): Promise<void>;
 
 	// Runtime event stream used by persistence and UI hooks.

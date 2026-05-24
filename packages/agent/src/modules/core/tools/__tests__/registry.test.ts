@@ -7,7 +7,7 @@ import { toolSpec } from '../../api/tool-spec.js';
 import {
 	createCoreRegistry,
 	createTestRuntime,
-} from '../../compile/decorators/__tests__/registry.js';
+} from '../../__tests__/registry.js';
 import { createToolRegistry } from '../registry.js';
 
 const runtime = createTestRuntime();

@@ -32,8 +32,10 @@ import {
 	createCoreRegistry as createBoundCoreRegistry,
 	type CoreRegistry,
 } from '../modules/core/registrations/index.js';
-import { createPromptBuilder } from '../modules/core/compile/decorators/prompt/build-prompt/index.js';
-import { createPromptObserver } from '../modules/core/compile/decorators/prompt/observer/index.js';
+import {
+	createPromptBuilder,
+	createPromptObservers,
+} from '../modules/core/controller/prompt.js';
 import {
 	createToolRegistry,
 	type ToolRegistry,
@@ -112,12 +114,15 @@ function buildTestMiddleware(
 	toolRegistry: ToolRegistry,
 ): FullMiddleware {
 	const buildPrompt = createPromptBuilder(registrations);
-	const observePrompt = createPromptObserver(registrations);
+	const observePrompt = createPromptObservers(registrations);
 	const prompt: MethodMiddleware<MiniACPClient['prompt']> = async function* (
 		message,
 		next,
 	) {
-		yield* observePrompt(next(await buildPrompt(message)));
+		for await (const event of next(await buildPrompt(message))) {
+			observePrompt(event);
+			yield event;
+		}
 	};
 
 	const client: ClientMiddleware = {

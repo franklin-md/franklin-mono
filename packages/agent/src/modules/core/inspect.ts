@@ -1,4 +1,5 @@
-import type { CoreInspectDump, CoreRuntime } from './runtime/index.js';
+import type { CoreInspectDump } from './inspect-dump.js';
+import type { CoreRuntime } from './runtime/index.js';
 
 /**
  * Compatibility wrapper for runtime inspection. Redaction lives on the runtime

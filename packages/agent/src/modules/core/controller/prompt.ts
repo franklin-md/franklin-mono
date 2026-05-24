@@ -1,6 +1,6 @@
-import type { UserContent, UserMessage } from '@franklin/mini-acp';
-import type { Prompt, PromptHandler } from '../../../../api/prompt.js';
-import type { CoreRegistry } from '../../../../registrations/index.js';
+import type { StreamEvent, UserContent, UserMessage } from '@franklin/mini-acp';
+import type { Prompt, PromptHandler } from '../api/prompt.js';
+import type { CoreRegistry } from '../registrations/index.js';
 
 export function createPromptBuilder(
 	registrations: CoreRegistry,
@@ -8,6 +8,24 @@ export function createPromptBuilder(
 	const handlers = registrations.handlersFor('prompt');
 
 	return (message) => buildPrompt(message, handlers);
+}
+
+export function createPromptObservers(
+	registrations: CoreRegistry,
+): (event: StreamEvent) => void {
+	const observers = {
+		turnStart: registrations.handlersFor('turnStart'),
+		chunk: registrations.handlersFor('chunk'),
+		update: registrations.handlersFor('update'),
+		turnEnd: registrations.handlersFor('turnEnd'),
+	};
+
+	return (event) => {
+		const fns = observers[event.type];
+		for (const fn of fns) {
+			(fn as (e: typeof event) => void)(event);
+		}
+	};
 }
 
 async function buildPrompt(

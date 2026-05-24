@@ -6,11 +6,11 @@ import {
 	type API,
 	type BaseRuntime,
 } from '@franklin/extensibility';
-import type { CoreSignature } from '../../../api/api.js';
+import type { CoreSignature } from '../api/api.js';
 import {
 	createCoreRegistry as createBoundCoreRegistry,
 	type CoreRegistry,
-} from '../../../registrations/index.js';
+} from '../registrations/index.js';
 
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,

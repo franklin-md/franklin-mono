@@ -23,7 +23,6 @@ type ContextLedgerState = {
 	readonly sent: ContextTracker;
 	sentRevisions: Partial<ContextRevisions>;
 	hasSentInitialContext: boolean;
-	sendingPatch: ContextPatch | undefined;
 };
 
 type CreateContextLedgerInput = {
@@ -43,7 +42,6 @@ export class ContextLedger {
 			sent: new ContextTracker(),
 			sentRevisions: {},
 			hasSentInitialContext: false,
-			sendingPatch: undefined,
 		});
 
 		return {
@@ -64,15 +62,7 @@ export class ContextLedger {
 		const patch = this.planPatch(commit.context, commit.revisions);
 		if (isEmptyPatch(patch)) return;
 
-		this.state.sendingPatch = patch;
-		try {
-			await client.setContext(patch);
-		} finally {
-			if (this.state.sendingPatch === patch) {
-				this.state.sendingPatch = undefined;
-			}
-		}
-
+		await client.setContext(patch);
 		this.recordSent(patch, commit.revisions, true);
 	}
 
@@ -88,8 +78,6 @@ export class ContextLedger {
 	}
 
 	private recordPatch(patch: ContextPatch): void {
-		if (this.state.sendingPatch === patch) return;
-
 		this.state.draft.apply(patch);
 		this.recordSent(patch, this.currentDraftRevisions(), false);
 	}
