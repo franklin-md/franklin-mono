@@ -7,15 +7,11 @@
  * - `cache` — whether this fragment belongs in the cache-stable bucket.
  * - `pinned` — set once a handler calls setPart with `{ once: true }`; the
  *   assembler then skips that handler on subsequent assembles.
- * - `runCount` — how many times a content factory has been invoked for
- *   this slot over the life of the session. String setPart calls do not
- *   advance it. Useful for tests and runtime introspection.
  */
 export interface Slot {
 	content: string | undefined;
 	cache: boolean;
 	pinned: boolean;
-	runCount: number;
 }
 
 export interface SystemPromptAssembler {

@@ -14,3 +14,7 @@ export type ContextRevisions = Record<ContextField, string>;
 export function fieldsInPatch(patch: ContextPatch): ContextField[] {
 	return contextFields.filter((field) => patch[field] !== undefined);
 }
+
+export function isEmptyPatch(patch: ContextPatch): boolean {
+	return fieldsInPatch(patch).length === 0;
+}

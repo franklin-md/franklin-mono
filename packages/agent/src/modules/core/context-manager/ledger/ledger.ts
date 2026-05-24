@@ -11,11 +11,12 @@ import {
 import {
 	contextFields,
 	fieldsInPatch,
+	isEmptyPatch,
 	type ContextField,
 	type ContextRevisions,
 } from '../fields.js';
 import type { SessionDraft } from '../draft/index.js';
-import { contextToPatch, copyContext, copyContextPatch } from './copy.js';
+import { copyContext, copyContextPatch } from '../copy.js';
 
 type ContextLedgerState = {
 	readonly draft: SessionDraft;
@@ -61,7 +62,7 @@ export class ContextLedger {
 	async sync(client: MiniACPClient): Promise<void> {
 		const commit = await this.state.draft.commit();
 		const patch = this.planPatch(commit.context, commit.revisions);
-		if (this.isEmptyPatch(patch)) return;
+		if (isEmptyPatch(patch)) return;
 
 		this.state.sendingPatch = patch;
 		try {
@@ -104,7 +105,7 @@ export class ContextLedger {
 		revisions: ContextRevisions,
 	): ContextPatch {
 		if (!this.state.hasSentInitialContext) {
-			return contextToPatch(context);
+			return copyContext(context);
 		}
 
 		const patch: ContextPatch = {};
@@ -138,15 +139,6 @@ export class ContextLedger {
 			tools: this.state.draft.revision('tools'),
 			config: this.state.draft.revision('config'),
 		};
-	}
-
-	private isEmptyPatch(patch: ContextPatch): boolean {
-		return (
-			patch.systemPrompt === undefined &&
-			patch.messages === undefined &&
-			patch.tools === undefined &&
-			patch.config === undefined
-		);
 	}
 
 	private patchField(

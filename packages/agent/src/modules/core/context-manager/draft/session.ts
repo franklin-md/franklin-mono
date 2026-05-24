@@ -2,13 +2,12 @@ import type { Context, ContextPatch, Message } from '@franklin/mini-acp';
 import { ContextTracker } from '@franklin/mini-acp/session';
 import type { SessionSnapshot } from '../../state.js';
 import {
-	contextFields,
 	fieldsInPatch,
 	type ContextField,
 	type ContextRevisions,
 } from '../fields.js';
+import { copyContext } from '../copy.js';
 import { DraftContext } from './context.js';
-import { copyContext } from './copy.js';
 import type { SessionCommit, SessionDrafter } from './types.js';
 
 export class SessionDraft {
@@ -37,11 +36,6 @@ export class SessionDraft {
 	append(message: Message): void {
 		this.tracker.append(message);
 		this.bump('messages');
-	}
-
-	reset(): void {
-		this.tracker.reset();
-		this.bumpFields(contextFields);
 	}
 
 	get(): Context {

@@ -9,7 +9,6 @@ export function createSlot(): Slot {
 		content: undefined,
 		cache: false,
 		pinned: false,
-		runCount: 0,
 	};
 }
 
@@ -36,7 +35,7 @@ export function applySetPart(
 /**
  * Resolve pending setPart content into the slot. Strings are written
  * directly; factories are invoked (awaited if they return a Promise) and
- * their result is stored. Factory invocations advance `runCount`.
+ * their result is stored.
  */
 export async function resolveSlotContent(
 	slot: Slot,
@@ -44,7 +43,6 @@ export async function resolveSlotContent(
 ): Promise<void> {
 	if (typeof content === 'function') {
 		slot.content = await content();
-		slot.runCount += 1;
 	} else {
 		slot.content = content;
 	}

@@ -1,6 +1,6 @@
 import type { Context, ToolDefinition } from '@franklin/mini-acp';
+import { copyContext } from '../copy.js';
 import type { ContextField, ContextRevisions } from '../fields.js';
-import { copyContext } from './copy.js';
 import type { SessionCommit } from './types.js';
 
 export class DraftContext {

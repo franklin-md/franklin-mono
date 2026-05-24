@@ -9,15 +9,6 @@ export function copyContext(context: Context): Context {
 	};
 }
 
-export function contextToPatch(context: Context): ContextPatch {
-	return {
-		systemPrompt: context.systemPrompt,
-		messages: [...context.messages],
-		tools: [...context.tools],
-		config: { ...context.config },
-	};
-}
-
 export function copyContextPatch(patch: ContextPatch): ContextPatch {
 	const copy: ContextPatch = {};
 	if (patch.systemPrompt !== undefined) copy.systemPrompt = patch.systemPrompt;
