@@ -1,6 +1,6 @@
 import { truncate } from '@franklin/lib';
 
-import type { Usage } from '../../types/usage.js';
+import type { Usage } from '../types/usage.js';
 
 import {
 	ANSI_DIM,

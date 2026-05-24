@@ -1,7 +1,7 @@
-import type { MuAgent, MuClient } from './protocol/types.js';
+import type { MuAgent, MuClient } from '../protocol/types.js';
 
-import { debugAgent } from './protocol/debug/agent.js';
-import { debugClient } from './protocol/debug/client.js';
+import { debugAgent } from './agent.js';
+import { debugClient } from './client.js';
 
 /**
  * Decorates a Mini-ACP client or agent with minimal, colored protocol logging.

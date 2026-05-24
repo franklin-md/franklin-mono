@@ -1,6 +1,6 @@
-import type { UserMessage } from '../../types/message.js';
-import type { StreamEvent } from '../../types/stream.js';
-import type { MuClient } from '../types.js';
+import type { MuClient } from '../protocol/types.js';
+import type { UserMessage } from '../types/message.js';
+import type { StreamEvent } from '../types/stream.js';
 
 import {
 	renderCancel,

@@ -337,6 +337,104 @@ describe('ContextTracker.append', () => {
 });
 
 // ---------------------------------------------------------------------------
+// get snapshots
+// ---------------------------------------------------------------------------
+
+describe('ContextTracker.get', () => {
+	it('returns a snapshot whose top-level collections cannot mutate tracker state', () => {
+		const tracker = seededTracker({
+			provider: 'openrouter',
+			model: 'openrouter/free',
+		});
+		tracker.apply({
+			messages: [
+				{
+					role: 'user',
+					content: [{ type: 'text', text: 'seed' }],
+				},
+			],
+			tools: [
+				{
+					name: 'read',
+					description: 'Read a file',
+					inputSchema: { type: 'object' },
+				},
+			],
+		});
+
+		const snapshot = tracker.get();
+		snapshot.messages.push({
+			role: 'user',
+			content: [{ type: 'text', text: 'mutated' }],
+		});
+		snapshot.tools.length = 0;
+		snapshot.config.model = 'mutated-model';
+
+		const current = tracker.get();
+		expect(current.messages).toHaveLength(1);
+		expect(current.tools).toHaveLength(1);
+		expect(current.config.model).toBe('openrouter/free');
+	});
+
+	it('returns a snapshot whose nested message and tool values cannot mutate tracker state', () => {
+		const tracker = seededTracker();
+		tracker.apply({
+			messages: [
+				{
+					role: 'assistant',
+					content: [
+						{
+							type: 'toolCall',
+							id: 'call-1',
+							name: 'read',
+							arguments: { path: 'a.ts' },
+						},
+					],
+				},
+			],
+			tools: [
+				{
+					name: 'read',
+					description: 'Read a file',
+					inputSchema: {
+						type: 'object',
+						properties: { path: { type: 'string' } },
+					},
+				},
+			],
+		});
+
+		const snapshot = tracker.get();
+		const toolCall = snapshot.messages[0]!.content[0]!;
+		if (toolCall.type !== 'toolCall') throw new Error('expected tool call');
+		toolCall.name = 'mutated';
+		(toolCall.arguments as { path: string }).path = 'b.ts';
+		snapshot.tools[0]!.description = 'Mutated';
+		(
+			snapshot.tools[0]!.inputSchema as {
+				properties: { path: { type: string } };
+			}
+		).properties.path.type = 'number';
+
+		const current = tracker.get();
+		const currentToolCall = current.messages[0]!.content[0]!;
+		if (currentToolCall.type !== 'toolCall') {
+			throw new Error('expected current tool call');
+		}
+		expect(currentToolCall.name).toBe('read');
+		expect(currentToolCall.arguments).toEqual({ path: 'a.ts' });
+		expect(current.tools[0]).toEqual({
+			name: 'read',
+			description: 'Read a file',
+			inputSchema: {
+				type: 'object',
+				properties: { path: { type: 'string' } },
+			},
+		});
+	});
+});
+
+// ---------------------------------------------------------------------------
 // onChange
 // ---------------------------------------------------------------------------
 

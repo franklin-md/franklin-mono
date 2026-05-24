@@ -20,8 +20,8 @@
 			"import": "./dist/session.js"
 		},
 		"./debug": {
-			"types": "./dist/debug.d.ts",
-			"import": "./dist/debug.js"
+			"types": "./dist/debug/index.d.ts",
+			"import": "./dist/debug/index.js"
 		},
 		"./mock": {
 			"types": "./dist/mock/index.d.ts",

@@ -69,7 +69,7 @@ export function createMockMiniACP(
 				currentTurn = trackTurn(
 					tracker,
 					createMockPromptClient({
-						context: snapshotContext(tracker.get()),
+						context: tracker.get(),
 						server: trackedServer,
 						dequeueTurn,
 						recording,
@@ -118,15 +118,6 @@ export function createMockMiniACP(
 			messageId = 0;
 			toolCallId = 0;
 		},
-	};
-}
-
-function snapshotContext(context: Context): Context {
-	return {
-		systemPrompt: context.systemPrompt,
-		messages: [...context.messages],
-		tools: [...context.tools],
-		config: { ...context.config },
 	};
 }
 

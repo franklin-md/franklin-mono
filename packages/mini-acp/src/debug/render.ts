@@ -1,6 +1,6 @@
-import { StopCode, stopCategory } from '../../types/stop-code.js';
-import type { StreamEvent } from '../../types/stream.js';
-import type { ToolExecuteParams, ToolResult } from '../../types/tool.js';
+import { StopCode, stopCategory } from '../types/stop-code.js';
+import type { StreamEvent } from '../types/stream.js';
+import type { ToolExecuteParams, ToolResult } from '../types/tool.js';
 
 import {
 	ANSI_BLUE,

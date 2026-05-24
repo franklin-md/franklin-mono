@@ -1,4 +1,4 @@
-import type { MuClient } from '../types.js';
+import type { MuClient } from '../protocol/types.js';
 
 import { renderInitialize, renderSetContext, renderThrown } from './render.js';
 import { logLines } from './style.js';

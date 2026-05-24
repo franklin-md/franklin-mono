@@ -3,8 +3,9 @@ import { Agent as PiCoreAgent } from '@earendil-works/pi-agent-core';
 import type {
 	AgentEvent,
 	AgentLoopTurnUpdate,
+	StreamFn,
 } from '@earendil-works/pi-agent-core';
-import type { StreamFn } from '@earendil-works/pi-agent-core';
+import type { Model } from '@earendil-works/pi-ai';
 
 import { ContextTracker } from '../../protocol/context-tracker.js';
 import { trackAgent } from '../../protocol/tracking.js';
@@ -30,185 +31,189 @@ export function createPiAgent(
 	server: MuAgent,
 	options: CreatePiAgentOptions = {},
 ): MuClient {
-	const { streamFn } = options;
-	const tracker = new ContextTracker();
-	const trackedServer = trackAgent(tracker, server);
-	let piAgent: PiCoreAgent | null = null;
-	let activePrompt = false;
-	let pendingTurnContext: ContextPatch | undefined;
-
-	function createPiTools(tools: ToolDefinition[]) {
-		const handler = trackedServer.toolExecute.bind(trackedServer);
-		return tools.map((def) => bridgeTool(def, handler));
-	}
-
-	return {
-		async initialize() {},
-
-		async setContext(context: ContextPatch) {
-			if (!activePrompt) {
-				tracker.apply(context);
-				return;
-			}
-
-			if (context.tools !== undefined) {
-				tracker.apply({ tools: context.tools });
-			}
-
-			const deferred = turnDeferredContext(context);
-			if (deferred) {
-				pendingTurnContext = mergeContextPatch(pendingTurnContext, deferred);
-			}
-		},
-
-		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
-			if (activePrompt) {
-				throw new Error('Mini-ACP prompt already in progress');
-			}
-
-			activePrompt = true;
-			const initialContext = snapshotContext(tracker.get());
-			tracker.append(message);
-
-			try {
-				for await (const event of promptPiAgent({
-					context: initialContext,
-					message,
-					createPiTools,
-					getLiveTools: () => tracker.get().tools,
-					setActiveAgent: (agent) => {
-						piAgent = agent;
-					},
-					streamFn,
-				})) {
-					if (event.type === 'update') {
-						tracker.append(event.message);
-					}
-					yield event;
-				}
-			} finally {
-				piAgent = null;
-				activePrompt = false;
-				if (pendingTurnContext) {
-					const deferred = pendingTurnContext;
-					pendingTurnContext = undefined;
-					tracker.apply(deferred);
-				}
-			}
-		},
-
-		async cancel(): Promise<void> {
-			piAgent?.abort();
-		},
-	};
+	return new PiMuAgent(server, options);
 }
 
-type PromptPiAgentInput = {
-	readonly context: Context;
-	readonly message: UserMessage;
-	readonly createPiTools: (
-		tools: ToolDefinition[],
-	) => ReturnType<typeof bridgeTool>[];
-	readonly getLiveTools: () => ToolDefinition[];
-	readonly setActiveAgent: (agent: PiCoreAgent) => void;
-	readonly streamFn?: StreamFn;
-};
+class PiMuAgent implements MuClient {
+	private readonly context = new ContextTracker();
+	private readonly trackedServer: MuAgent;
+	private readonly streamFn?: StreamFn;
 
-async function* promptPiAgent(
-	input: PromptPiAgentInput,
-): AsyncGenerator<StreamEvent> {
-	const resolved = resolveConfig(input.context.config);
-	if (!resolved.ok) {
-		yield { type: 'turnStart' };
-		yield resolved.turnEnd;
-		return;
+	private activeAgent: PiCoreAgent | null = null;
+	private activePrompt = false;
+	private pendingTurnPatch: ContextPatch | undefined;
+
+	constructor(server: MuAgent, options: CreatePiAgentOptions) {
+		this.trackedServer = trackAgent(this.context, server);
+		this.streamFn = options.streamFn;
 	}
 
-	const agentRef: { current?: PiCoreAgent } = {};
-	const prepareNextTurn = (): AgentLoopTurnUpdate | undefined => {
-		const current = agentRef.current;
+	async initialize(): Promise<void> {}
+
+	async setContext(patch: ContextPatch): Promise<void> {
+		if (!this.activePrompt) {
+			this.context.apply(patch);
+			return;
+		}
+
+		if (patch.tools !== undefined) {
+			this.context.apply({ tools: patch.tools });
+		}
+
+		const deferred = activeTurnDeferredPatch(patch);
+		if (deferred) {
+			this.pendingTurnPatch = mergeContextPatch(
+				this.pendingTurnPatch,
+				deferred,
+			);
+		}
+	}
+
+	async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
+		if (this.activePrompt) {
+			throw new Error('Mini-ACP prompt already in progress');
+		}
+
+		this.activePrompt = true;
+		const initialContext = this.context.get();
+		this.context.append(message);
+
+		try {
+			for await (const event of this.promptWithContext(
+				initialContext,
+				message,
+			)) {
+				if (event.type === 'update') {
+					this.context.append(event.message);
+				}
+				yield event;
+			}
+		} finally {
+			this.finishPrompt();
+		}
+	}
+
+	async cancel(): Promise<void> {
+		this.activeAgent?.abort();
+	}
+
+	private async *promptWithContext(
+		context: Context,
+		message: UserMessage,
+	): AsyncGenerator<StreamEvent> {
+		const resolved = resolveConfig(context.config);
+		if (!resolved.ok) {
+			yield { type: 'turnStart' };
+			yield resolved.turnEnd;
+			return;
+		}
+
+		const agent = this.createAgent(context, resolved.model);
+		this.activeAgent = agent;
+		yield* this.streamAgentPrompt(agent, message);
+	}
+
+	private createAgent(context: Context, model: Model<string>): PiCoreAgent {
+		const agentRef: { current?: PiCoreAgent } = {};
+		const agent = new PiCoreAgent({
+			initialState: {
+				systemPrompt: context.systemPrompt,
+				model,
+				thinkingLevel: context.config.reasoning ?? 'off',
+				tools: this.createPiTools(context.tools),
+				messages: context.messages.map(toPiMessage),
+			},
+			getApiKey: (_: string) => {
+				return context.config.apiKey;
+			},
+			prepareNextTurn: () => this.prepareNextTurn(agentRef.current),
+			streamFn: this.streamFn,
+		});
+		agentRef.current = agent;
+		return agent;
+	}
+
+	private prepareNextTurn(
+		current: PiCoreAgent | undefined,
+	): AgentLoopTurnUpdate | undefined {
 		if (!current) return undefined;
 		return {
 			context: {
 				systemPrompt: current.state.systemPrompt,
 				messages: [...current.state.messages],
-				tools: input.createPiTools(input.getLiveTools()),
+				tools: this.createPiTools(this.context.get().tools),
 			},
 		};
-	};
+	}
 
-	const agent = new PiCoreAgent({
-		initialState: {
-			systemPrompt: input.context.systemPrompt,
-			model: resolved.model,
-			thinkingLevel: input.context.config.reasoning ?? 'off',
-			tools: input.createPiTools(input.context.tools),
-			messages: input.context.messages.map(toPiMessage),
-		},
-		getApiKey: (_: string) => {
-			return input.context.config.apiKey;
-		},
-		prepareNextTurn,
-		streamFn: input.streamFn,
-	});
-	agentRef.current = agent;
-	input.setActiveAgent(agent);
+	private async *streamAgentPrompt(
+		agent: PiCoreAgent,
+		message: UserMessage,
+	): AsyncGenerator<StreamEvent> {
+		let currentMessageId = crypto.randomUUID();
+		const { readable, writable } = createMemoryStream<StreamEvent>();
+		const writer = writable.getWriter();
 
-	let currentMessageId = crypto.randomUUID();
-	const { readable, writable } = createMemoryStream<StreamEvent>();
-	const writer = writable.getWriter();
-
-	const unsub = agent.subscribe((event: AgentEvent) => {
-		if (event.type === 'message_start') {
-			currentMessageId = crypto.randomUUID();
-		}
-		const streamEvent = fromAgentEvent(event, currentMessageId);
-		if (streamEvent) {
-			void writer.write(streamEvent);
-		}
-	});
-
-	const piMessage = toPiUserMessage(input.message);
-	agent
-		.prompt(piMessage)
-		.then(() => {
-			void writer.close();
-		})
-		.catch(() => {
-			void writer.write({
-				type: 'turnEnd',
-				stopCode: StopCode.LlmError,
-				stopMessage: 'An error occurred while prompting the agent',
-			});
-			void writer.close();
+		const unsub = agent.subscribe((event: AgentEvent) => {
+			if (event.type === 'message_start') {
+				currentMessageId = crypto.randomUUID();
+			}
+			const streamEvent = fromAgentEvent(event, currentMessageId);
+			if (streamEvent) {
+				void writer.write(streamEvent);
+			}
 		});
 
-	try {
-		yield* readable;
-	} finally {
-		unsub();
+		const piMessage = toPiUserMessage(message);
+		agent
+			.prompt(piMessage)
+			.then(() => {
+				void writer.close();
+			})
+			.catch(() => {
+				void writer.write({
+					type: 'turnEnd',
+					stopCode: StopCode.LlmError,
+					stopMessage: 'An error occurred while prompting the agent',
+				});
+				void writer.close();
+			});
+
+		try {
+			yield* readable;
+		} finally {
+			unsub();
+		}
+	}
+
+	private createPiTools(tools: ToolDefinition[]) {
+		const handler = this.trackedServer.toolExecute.bind(this.trackedServer);
+		return tools.map((def) => bridgeTool(def, handler));
+	}
+
+	private finishPrompt(): void {
+		this.activeAgent = null;
+		this.activePrompt = false;
+		if (!this.pendingTurnPatch) return;
+
+		const patch = this.pendingTurnPatch;
+		this.pendingTurnPatch = undefined;
+		this.context.apply(patch);
 	}
 }
 
-function snapshotContext(context: Context): Context {
-	return {
-		systemPrompt: context.systemPrompt,
-		messages: [...context.messages],
-		tools: [...context.tools],
-		config: { ...context.config },
-	};
-}
-
-function turnDeferredContext(context: ContextPatch): ContextPatch | undefined {
+function activeTurnDeferredPatch(
+	patch: ContextPatch,
+): ContextPatch | undefined {
 	const deferred: ContextPatch = {};
-	if (context.systemPrompt !== undefined) {
-		deferred.systemPrompt = context.systemPrompt;
+	if (patch.systemPrompt !== undefined) {
+		deferred.systemPrompt = patch.systemPrompt;
 	}
-	if (context.messages !== undefined) {
-		deferred.messages = context.messages;
+	if (patch.messages !== undefined) {
+		deferred.messages = patch.messages;
 	}
-	if (context.config !== undefined) {
-		deferred.config = context.config;
+	if (patch.config !== undefined) {
+		deferred.config = patch.config;
 	}
 	return hasContextPatch(deferred) ? deferred : undefined;
 }
@@ -233,11 +238,11 @@ function mergeContextPatch(
 	return merged;
 }
 
-function hasContextPatch(context: ContextPatch): boolean {
+function hasContextPatch(patch: ContextPatch): boolean {
 	return (
-		context.systemPrompt !== undefined ||
-		context.messages !== undefined ||
-		context.tools !== undefined ||
-		context.config !== undefined
+		patch.systemPrompt !== undefined ||
+		patch.messages !== undefined ||
+		patch.tools !== undefined ||
+		patch.config !== undefined
 	);
 }
