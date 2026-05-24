@@ -1,37 +1,37 @@
 import { describe, expect, it } from 'vitest';
-import type { Context } from '@franklin/mini-acp';
+import type { Context, MiniACPClientHandle } from '@franklin/mini-acp';
 import { inspectRuntime } from '../inspect.js';
-import { createContextManager } from '../context-manager/index.js';
-import { attachContextManager } from '../runtime/context-manager.js';
-import type { CoreRuntime } from '../runtime/index.js';
+import { createAgentController } from '../controller/index.js';
+import { createCoreRuntime, type CoreRuntime } from '../runtime/index.js';
 import { emptySessionSnapshot } from '../state.js';
-import {
-	createCoreRegistry,
-	createTestRuntime,
-} from '../compile/decorators/__tests__/registry.js';
+import { createCoreRegistry, createTestRuntime } from './registry.js';
 import { createToolRegistry } from '../tools/index.js';
 
-function stubRuntime(context: Context): CoreRuntime {
+function stubClient(): MiniACPClientHandle {
+	return {
+		initialize: async () => {},
+		setContext: async () => {},
+		async *prompt() {},
+		cancel: async () => {},
+		dispose: async () => {},
+	};
+}
+
+async function stubRuntime(context: Context): Promise<CoreRuntime> {
 	const getRuntime = createTestRuntime;
 	const registrations = createCoreRegistry(undefined, getRuntime);
-	const contextManager = createContextManager({
+	const toolRegistry = createToolRegistry(registrations.tools);
+	const controller = createAgentController({
 		snapshot: emptySessionSnapshot(),
 		registrations,
-		toolRegistry: createToolRegistry(registrations),
+		toolRegistry,
 	});
-	contextManager.contextLedger.apply(context);
-	return attachContextManager(
-		{
-			getSession: () => contextManager.getSnapshot(),
-			dispose: async () => {},
-			prompt: () => {
-				throw new Error('not used');
-			},
-			cancel: async () => {},
-			setLLMConfig: async () => {},
-		} as unknown as CoreRuntime,
-		contextManager,
-	);
+	const client = controller.bind(stubClient());
+	await client.setContext(context);
+	return createCoreRuntime({
+		client,
+		controller,
+	});
 }
 
 describe('inspectRuntime', () => {
@@ -49,7 +49,7 @@ describe('inspectRuntime', () => {
 			config: { model: 'test-model', provider: 'test-provider' },
 		};
 
-		const dump = await inspectRuntime(stubRuntime(context));
+		const dump = await inspectRuntime(await stubRuntime(context));
 
 		expect(dump.core).toEqual(context);
 	});
@@ -67,7 +67,7 @@ describe('inspectRuntime', () => {
 			},
 		};
 
-		const dump = await inspectRuntime(stubRuntime(context));
+		const dump = await inspectRuntime(await stubRuntime(context));
 
 		expect(dump.core.config).toEqual({
 			model: 'test-model',
@@ -85,7 +85,7 @@ describe('inspectRuntime', () => {
 			config: {},
 		};
 
-		await expect(inspectRuntime(stubRuntime(context))).resolves.toEqual({
+		await expect(inspectRuntime(await stubRuntime(context))).resolves.toEqual({
 			core: context,
 		});
 	});

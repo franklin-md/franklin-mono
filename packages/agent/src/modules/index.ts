@@ -22,8 +22,9 @@ export type { CoreModule } from './core/module/types.js';
 export { createCoreStateModule } from './core/module/index.js';
 export type {
 	CoreEvent,
+	CoreInspectDump,
 	CoreRuntime,
-	RuntimeToolRegistry,
+	ToolRegistry,
 } from './core/runtime/index.js';
 export type { CoreState, SessionSnapshot, ToolFilter } from './core/state.js';
 export { emptyCoreState, emptySessionSnapshot } from './core/state.js';

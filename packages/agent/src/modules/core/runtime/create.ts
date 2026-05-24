@@ -1,30 +1,16 @@
 import { createObserver } from '@franklin/lib';
-import type { ContextManager } from '../context-manager/index.js';
-import type { ToolFilter } from '../state.js';
-import { attachContextManager } from './context-manager.js';
-import { createClientRuntime } from './from-client.js';
-import type {
-	AgentClient,
-	CoreEvent,
-	CoreRuntime,
-	RuntimeToolRegistry,
-} from './types.js';
-
-type ToolRegistryState = {
-	setEnabled(name: string, enabled: boolean): void;
-	filter(): ToolFilter;
-};
+import type { MiniACPClientHandle } from '@franklin/mini-acp';
+import type { AgentController } from '../controller/index.js';
+import type { CoreEvent, CoreRuntime, ToolRegistry } from './types.js';
 
 type CreateCoreRuntimeInput = {
-	readonly client: AgentClient;
-	readonly contextManager: ContextManager;
-	readonly toolRegistry: ToolRegistryState;
+	readonly client: MiniACPClientHandle;
+	readonly controller: AgentController;
 };
 
 export function createCoreRuntime({
 	client,
-	contextManager,
-	toolRegistry,
+	controller,
 }: CreateCoreRuntimeInput): CoreRuntime {
 	const observer = createObserver<[CoreEvent]>();
 	const notify = (event: CoreEvent) => {
@@ -35,36 +21,40 @@ export function createCoreRuntime({
 			observer.subscribe(listener),
 	};
 
-	return attachContextManager(
-		{
-			...createClientRuntime({
-				client,
-				events: {
-					coreEvents,
-					notify,
-				},
-			}),
-			toolRegistry: createRuntimeToolRegistry(toolRegistry, notify),
-			getSession: () => contextManager.getSnapshot(),
-		},
-		contextManager,
-	);
-}
-
-function createRuntimeToolRegistry(
-	toolRegistry: ToolRegistryState,
-	notify: (event: CoreEvent) => void,
-): RuntimeToolRegistry {
 	return {
-		setEnabled(name, enabled) {
-			const before = toolRegistry.filter();
-			toolRegistry.setEnabled(name, enabled);
-			if (sameToolFilter(before, toolRegistry.filter())) return;
-			notify({ type: 'tool-registry-changed' });
+		async setLLMConfig(config) {
+			await client.setContext({ config });
+			notify({ type: 'llm-config-changed' });
+		},
+		async *prompt(message) {
+			try {
+				yield* client.prompt(message);
+			} finally {
+				notify({ type: 'turn-settled' });
+			}
+		},
+		cancel: client.cancel.bind(client),
+		async dispose() {
+			await client.dispose();
+		},
+
+		coreEvents,
+		toolRegistry: createToolRegistryRuntime(controller, notify),
+		getSession: () => controller.getSession(),
+		async inspect() {
+			return controller.inspect();
 		},
 	};
 }
 
-function sameToolFilter(left: ToolFilter, right: ToolFilter): boolean {
-	return JSON.stringify(left.disabled) === JSON.stringify(right.disabled);
+function createToolRegistryRuntime(
+	controller: Pick<AgentController, 'setToolEnabled'>,
+	notify: (event: CoreEvent) => void,
+): ToolRegistry {
+	return {
+		setEnabled(name, enabled) {
+			if (!controller.setToolEnabled(name, enabled)) return;
+			notify({ type: 'tool-registry-changed' });
+		},
+	};
 }

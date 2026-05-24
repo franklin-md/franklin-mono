@@ -4,13 +4,14 @@ import type {
 	MiniACPClient,
 	ToolDefinition,
 } from '@franklin/mini-acp';
+import { createObserver } from '@franklin/lib';
+import type { Observer } from '@franklin/lib';
 import { createExtensionPoint } from '@franklin/extensibility';
 import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
 import { combineRuntimes } from '@franklin/extensibility';
 import { combineExtensionPoints } from '@franklin/extensibility';
-import type { BaseRuntime } from '@franklin/extensibility';
 import type { Extension } from '@franklin/extensibility';
 import {
 	createConfigurationModule,
@@ -20,19 +21,25 @@ import {
 	type InferSignature as InferModuleSignature,
 } from '@franklin/extensibility/module';
 import type { CoreSignature } from '../modules/core/api/api.js';
+import type {
+	ToolCallEvent,
+	ToolResultEvent,
+} from '../modules/core/api/handlers.js';
 import type { AuthDependencyRuntime } from '../auth/dependency.js';
 import type { AuthManager } from '../auth/manager.js';
 import {
 	createCoreRegistry as createBoundCoreRegistry,
 	type CoreRegistry,
 } from '../modules/core/registrations/index.js';
-import { createPromptBuilder } from '../modules/core/compile/decorators/prompt/build-prompt/index.js';
-import { createPromptObserver } from '../modules/core/compile/decorators/prompt/observer/index.js';
-import { buildToolServerMiddleware } from '../modules/core/compile/decorators/tool/index.js';
+import {
+	createPromptBuilder,
+	createPromptObservers,
+} from '../modules/core/controller/prompt.js';
 import {
 	createToolRegistry,
 	type ToolRegistry,
 } from '../modules/core/tools/index.js';
+import { fallbackExecutionResult } from '../modules/core/tools/result.js';
 import {
 	passThrough,
 	type MethodMiddleware,
@@ -82,6 +89,11 @@ type ClientMiddleware = Middleware<MiniACPClient>;
 
 type ServerMiddleware = Middleware<MiniACPAgent>;
 
+type ToolObservers = {
+	readonly toolCall: Observer<[ToolCallEvent]>;
+	readonly toolResult: Observer<[ToolResultEvent]>;
+};
+
 type FullMiddleware = {
 	readonly client: ClientMiddleware;
 	readonly server: ServerMiddleware;
@@ -101,12 +113,15 @@ function buildTestMiddleware(
 	toolRegistry: ToolRegistry,
 ): FullMiddleware {
 	const buildPrompt = createPromptBuilder(registrations);
-	const observePrompt = createPromptObserver(registrations);
+	const observePrompt = createPromptObservers(registrations);
 	const prompt: MethodMiddleware<MiniACPClient['prompt']> = async function* (
 		message,
 		next,
 	) {
-		yield* observePrompt(next(await buildPrompt(message)));
+		for await (const event of next(await buildPrompt(message))) {
+			observePrompt(event);
+			yield event;
+		}
 	};
 
 	const client: ClientMiddleware = {
@@ -115,40 +130,42 @@ function buildTestMiddleware(
 		prompt,
 		cancel: passThrough(),
 	};
+	const toolObservers = createToolObservers(registrations);
+	const server: ServerMiddleware = {
+		toolExecute: hasToolMiddleware(registrations, toolObservers)
+			? async (params, next) => {
+					toolObservers.toolCall.notify(params);
+					const execution =
+						(await toolRegistry.dispatch(params.call)) ??
+						fallbackExecutionResult(await next(params), params.call);
+					toolObservers.toolResult.notify(execution.event);
+					return execution.modelOutput;
+				}
+			: passThrough<MiniACPAgent['toolExecute']>(),
+	};
 
 	return {
 		client,
-		server: buildToolServerMiddleware(toolRegistry),
+		server,
 	};
 }
 
-/**
- * Build middleware from a Core-only extension without spinning up a
- * transport. Handlers receive `undefined` as their ctx — tests that
- * touch runtime should use `compileCoreWithStore` / `compileCoreWithEnv`
- * instead.
- *
- * `systemPrompt` handlers registered by the extension are not fired —
- * they belong to the transport path (`createCoreRuntime`) which these
- * helpers deliberately skip. The registrar's `on('systemPrompt', ...)`
- * accepts them silently; tests that need systemPrompt behaviour must
- * use a full runtime.
- */
-export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
-	ext: Extension<API<CoreSignature, Ctx>>,
-	getCtx: () => Ctx = (() => undefined) as unknown as () => Ctx,
-): { middleware: FullMiddleware; tools: ToolDefinition[] } {
-	const { registry, writer } = createRegistry<CoreSignature, Ctx>();
-	const api = createApi<CoreSignature, Ctx>(coreExtensionPoint, writer);
-	ext(api);
-	const registrations = createBoundCoreRegistry(
-		createRegistryView(registry),
-		getCtx,
+function createToolObservers(registrations: CoreRegistry): ToolObservers {
+	return {
+		toolCall: createObserver(registrations.handlersFor('toolCall')),
+		toolResult: createObserver(registrations.handlersFor('toolResult')),
+	};
+}
+
+function hasToolMiddleware(
+	registrations: CoreRegistry,
+	observers: ToolObservers,
+): boolean {
+	return (
+		registrations.tools.length > 0 ||
+		observers.toolCall.listenerCount > 0 ||
+		observers.toolResult.listenerCount > 0
 	);
-	const toolRegistry = createToolRegistry(registrations);
-	const middleware = buildTestMiddleware(registrations, toolRegistry);
-	const tools = toolRegistry.definitions();
-	return { middleware, tools };
 }
 
 /**
@@ -201,7 +218,7 @@ export async function compileCoreWithStore(
 		createRegistryView(coreRegistry),
 		getCtx,
 	);
-	const toolRegistry = createToolRegistry(registrations);
+	const toolRegistry = createToolRegistry(registrations.tools);
 	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, stores: cell.stores, tools };
@@ -278,7 +295,7 @@ export async function compileCoreWithStoreAndEnv(
 	);
 
 	const registrations = createBoundCoreRegistry(registryView as never, getCtx);
-	const toolRegistry = createToolRegistry(registrations);
+	const toolRegistry = createToolRegistry(registrations.tools);
 	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };
@@ -347,7 +364,7 @@ export async function compileCoreWithStoreEnvAndAuth(
 		createRegistryView(coreRegistry),
 		getCtx,
 	);
-	const toolRegistry = createToolRegistry(registrations);
+	const toolRegistry = createToolRegistry(registrations.tools);
 	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };
@@ -408,7 +425,7 @@ export async function compileCoreWithEnv(
 	cell.ctx = combineRuntimes(environment, configuration);
 
 	const registrations = createBoundCoreRegistry(registryView as never, getCtx);
-	const toolRegistry = createToolRegistry(registrations);
+	const toolRegistry = createToolRegistry(registrations.tools);
 	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };

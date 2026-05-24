@@ -1,43 +1,21 @@
-import { createObserver } from '@franklin/lib';
-import type { Observer } from '@franklin/lib';
-import type { MethodMiddleware } from '@franklin/lib/middleware';
-import type {
-	MiniACPAgent,
-	ToolDefinition,
-	ToolExecuteParams,
-	ToolResult,
-} from '@franklin/mini-acp';
+import type { ToolCall, ToolDefinition } from '@franklin/mini-acp';
 
-import type { ToolCallEvent, ToolResultEvent } from '../api/handlers.js';
 import { copyToolFilter, emptyToolFilter, type ToolFilter } from '../state.js';
-import type { CoreRegistry } from '../registrations/index.js';
 import type { BoundTool } from '../registrations/tools.js';
 import { executeBoundToolCall } from './execute.js';
-import { errorExecutionResult, fallbackExecutionResult } from './result.js';
+import { errorExecutionResult, type ToolExecutionResult } from './result.js';
 import { serializeTool } from './serialize.js';
-
-type ToolObservers = {
-	readonly toolCall: Observer<[ToolCallEvent]>;
-	readonly toolResult: Observer<[ToolResultEvent]>;
-};
 
 export class ToolRegistry {
 	private readonly tools: readonly BoundTool[];
-	private readonly observers: ToolObservers;
 	private readonly disabled: Set<string>;
 
 	constructor(input: {
 		readonly tools: readonly BoundTool[];
-		readonly observers: ToolObservers;
 		readonly toolFilter: ToolFilter;
 	}) {
 		this.tools = input.tools;
-		this.observers = input.observers;
 		this.disabled = new Set(input.toolFilter.disabled);
-	}
-
-	hasRegistrations(): boolean {
-		return this.tools.length > 0 || this.hasObservers();
 	}
 
 	definitions(): ToolDefinition[] {
@@ -53,40 +31,17 @@ export class ToolRegistry {
 			this.disabled.delete(name);
 			return;
 		}
+		if (this.disabled.has(name)) return;
 		this.disabled.add(name);
 	}
 
-	createHandler(): MethodMiddleware<MiniACPAgent['toolExecute']> {
-		return (params, next) => this.dispatch(params, next);
-	}
-
-	async dispatch(
-		params: ToolExecuteParams,
-		next: MiniACPAgent['toolExecute'],
-	): Promise<ToolResult> {
-		this.observers.toolCall.notify(params);
-
-		const tool = this.toolFor(params.call.name);
-		const execution =
-			tool && this.enabled(tool)
-				? await executeBoundToolCall(tool, params.call, params.call.arguments)
-				: tool
-					? errorExecutionResult(
-							params.call,
-							`Tool "${params.call.name}" is disabled.`,
-						)
-					: fallbackExecutionResult(await next(params), params.call);
-
-		this.observers.toolResult.notify(execution.event);
-
-		return execution.modelOutput;
-	}
-
-	private hasObservers(): boolean {
-		return (
-			this.observers.toolCall.listenerCount > 0 ||
-			this.observers.toolResult.listenerCount > 0
-		);
+	async dispatch(call: ToolCall): Promise<ToolExecutionResult | undefined> {
+		const tool = this.toolFor(call.name);
+		if (!tool) return undefined;
+		if (!this.enabled(tool)) {
+			return errorExecutionResult(call, `Tool "${call.name}" is disabled.`);
+		}
+		return executeBoundToolCall(tool, call, call.arguments);
 	}
 
 	private toolFor(name: string): BoundTool | undefined {
@@ -100,15 +55,11 @@ export class ToolRegistry {
 }
 
 export function createToolRegistry(
-	registrations: CoreRegistry,
+	tools: readonly BoundTool[],
 	toolFilter: ToolFilter = emptyToolFilter(),
 ): ToolRegistry {
 	return new ToolRegistry({
-		tools: registrations.tools,
-		observers: {
-			toolCall: createObserver(registrations.handlersFor('toolCall')),
-			toolResult: createObserver(registrations.handlersFor('toolResult')),
-		},
+		tools,
 		toolFilter,
 	});
 }

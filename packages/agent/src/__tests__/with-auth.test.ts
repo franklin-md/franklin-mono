@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import type { CoreRuntime, CoreState } from '../modules/core/index.js';
 import { createCoreStateModule } from '../modules/core/index.js';
 import { createRuntime } from '../testing/index.js';
-import { getContextManager } from '../modules/core/runtime/context-manager.js';
 import {
+	type Context,
 	StopCode,
 	type MiniACPConnector,
 	ZERO_USAGE,
@@ -80,6 +80,46 @@ function createMockConnector(): MiniACPConnector {
 			dispose: vi.fn(async () => {}),
 		};
 	};
+}
+
+function createRecordingConnector(): {
+	readonly connector: MiniACPConnector;
+	context(): Context | undefined;
+} {
+	let latestContext: Context | undefined;
+	const connector: MiniACPConnector = (server) => {
+		const client = createSessionAdapter((context) => {
+			latestContext = context;
+			return {
+				async *prompt() {
+					yield {
+						type: 'turnEnd' as const,
+						stopCode: StopCode.Finished,
+					};
+				},
+				async cancel() {},
+			};
+		}, server);
+
+		return {
+			...client,
+			dispose: vi.fn(async () => {}),
+		};
+	};
+
+	return {
+		connector,
+		context: () => latestContext,
+	};
+}
+
+async function promptOnce(runtime: CoreRuntime): Promise<void> {
+	for await (const _event of runtime.prompt({
+		role: 'user',
+		content: [{ type: 'text', text: 'hi' }],
+	})) {
+		// Drain the prompt stream so the mock adapter captures its current context.
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -294,8 +334,8 @@ describe('withAuth', () => {
 	});
 
 	it('clears apiKey when no stored key exists for the new provider', async () => {
-		const connector = createMockConnector();
-		const base = createCoreStateModule(connector);
+		const connector = createRecordingConnector();
+		const base = createCoreStateModule(connector.connector);
 		const auth = mockAuthManager({ anthropic: 'sk-anthropic' });
 
 		const decorated = withAuth(base, auth);
@@ -323,9 +363,8 @@ describe('withAuth', () => {
 		expect(auth.getApiKey).toHaveBeenCalledWith('openrouter');
 
 		expect(runtime.getSession().llmConfig.provider).toBe('openrouter');
-		expect(
-			getContextManager(runtime).getAgentContext().config.apiKey,
-		).toBeUndefined();
+		await promptOnce(runtime);
+		expect(connector.context()?.config.apiKey).toBeUndefined();
 	});
 
 	it('still applies provider/model when auth resolution throws (FRA-246)', async () => {
@@ -333,8 +372,8 @@ describe('withAuth', () => {
 		// synchronously. Before the fix, this blocked originalSetLLMConfig and
 		// the runtime silently kept the old provider/model, so subsequent
 		// reasoning toggles re-rendered the stale tracker and the UI reverted.
-		const connector = createMockConnector();
-		const base = createCoreStateModule(connector);
+		const connector = createRecordingConnector();
+		const base = createCoreStateModule(connector.connector);
 		const auth = mockAuthManager({ 'openai-codex': 'sk-openai' });
 		(auth as { getApiKey: AuthManager['getApiKey'] }).getApiKey = vi.fn(
 			async (provider: string) => {
@@ -366,9 +405,8 @@ describe('withAuth', () => {
 
 		expect(runtime.getSession().llmConfig.provider).toBe('anthropic');
 		expect(runtime.getSession().llmConfig.model).toBe('claude-sonnet-4-6');
-		expect(
-			getContextManager(runtime).getAgentContext().config.apiKey,
-		).toBeUndefined();
+		await promptOnce(runtime);
+		expect(connector.context()?.config.apiKey).toBeUndefined();
 	});
 });
 

@@ -1,6 +1,11 @@
 import type { Context, ContextPatch } from '../types/context.js';
 import type { Message } from '../types/message.js';
 
+export interface ContextRecorder {
+	apply(partial: ContextPatch): void;
+	append(message: Message): void;
+}
+
 // ---------------------------------------------------------------------------
 // Pure context mutation functions — work on both mutable Context and Immer Draft<Context>
 // ---------------------------------------------------------------------------
@@ -47,7 +52,7 @@ function createEmptyContext(): Context {
  * (client side) to keep context in sync with the actual conversation
  * state (user messages from prompt, response messages from update).
  */
-export class ContextTracker {
+export class ContextTracker implements ContextRecorder {
 	private context: Context = createEmptyContext();
 
 	onChange?: () => void;

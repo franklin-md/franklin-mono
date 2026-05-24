@@ -10,6 +10,7 @@ export { debugMiniACP } from './debug.js';
 export { createSessionAdapter } from './adapter.js';
 
 export { ContextTracker } from './context-tracker.js';
+export type { ContextRecorder } from './context-tracker.js';
 export { UsageTracker, ZERO_USAGE } from './usage-tracker.js';
 
 export {

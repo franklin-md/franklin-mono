@@ -26,18 +26,21 @@ There are three kinds of handles in the system:
                                                        │
                                                MiniACPClientHandle
                                                        │
-                                              ┌────────▼────────┐
+                                               ┌────────▼────────┐
                                               │   Extensions /   │
-                                              │ Decorator Layers  │
+                                              │ Agent Controller  │
                                               └─────────────────┘
 ```
 
 1. **Provision** an environment — prepare the place where agents will run
 2. **Spawn** an agent in that environment — start the process, get back a transport
 3. **Connect** to the agent via the connector — wire up typed Mini-ACP commands and reverse RPC handlers
-  -  **Extend** handling and events via decorator layers — intercept Mini-ACP flow to add behavior
+  -  **Control** Mini-ACP session policy through the core agent controller — context sync, prompt shaping, tool execution, observation, and protocol recording
 
-The caller is responsible for calling `initialize()` and `setContext()` through the client handle. Spawn creates the process and returns the wire; it does not perform Mini-ACP handshaking.
+Spawn creates the process and returns the wire; it does not perform Mini-ACP
+handshaking. Core connection initializes the bound client once, while context
+sync is deferred until the next prompt or an explicit runtime `setLLMConfig()`
+call.
 
 ### Connect
 
@@ -45,32 +48,48 @@ The caller is responsible for calling `initialize()` and `setContext()` through 
 
 The separation between transport and connection is important: transports are composable and bridgeable across process boundaries, while connections are bound endpoints. By keeping the JSON-RPC binding in `@franklin/mini-acp/rpc`, different application frameworks (Electron, web, CLI) can bridge the transport across whatever boundary they need and expose only a functional connector to the extension runtime.
 
-### Decorator Layers
+### Agent Controller
 
-Decorator layers intercept Mini-ACP flow in ordered concerns:
+Core compiles extension registrations into an internal `AgentController`. The
+controller owns the application-side Mini-ACP session policy above the raw
+connector:
 
-- **Prompt** — handles application behavior around `prompt` calls.
-- **Observer** — observes streaming events emitted during a prompt.
-- **Tool** — exposes application tool handlers to the agent.
-- **System prompt** — contributes system-prompt text before the agent sees the prompt.
-- **Tracking** — records prompt and usage information.
+- **Prompt** — syncs context before a turn, builds the model-visible user
+  prompt from prompt handlers, forwards the prompt, observes stream events, and
+  records the final prompt plus assistant updates.
+- **Tool** — exposes registered application tool handlers to the agent, falls
+  back for unknown tools, notifies tool observers, and records tool calls and
+  results.
+- **Context** — keeps desired session state separate from the last successfully
+  sent Mini-ACP context so retries and patch-only updates are explicit.
+- **Usage** — accumulates turn usage from `turnEnd` events for the runtime
+  session projection.
 
-Each layer wraps the typed Mini-ACP client/server pair after connect, not the raw transport stream. Some layers use method middleware internally, but the public core module shape is the ordered decorator stack.
+The controller exposes the reverse-RPC server passed to the connector and binds
+the connected `MiniACPClientHandle` into the handle consumed by `CoreRuntime`.
+`CoreRuntime` remains the public facade for prompt, cancel, LLM config, tool
+enablement, session projection, inspect, and lifecycle events.
 
-### Context Manager
+### Context State
 
-The core runtime keeps an internal `ContextManager` as the live context ledger. It
-is responsible for distinguishing the Mini-ACP `Context` that has
-actually been sent and acknowledged from the context core wants to send before
-the next prompt. A hydrated `SessionSnapshot` seeds that next desired context;
-it is not treated as already sent, because a restored Mini-ACP agent begins with
-an empty context until `setContext` succeeds.
+The core controller keeps internal context state that splits desired session
+state from the last successfully sent Mini-ACP context. A `SessionDraft` is
+constructed from a hydrated `SessionSnapshot` and stores the durable session
+base: messages, non-secret LLM config, and the session-local tool filter.
+Runtime-only contributions such as the registration-built system prompt and live
+tool definitions are attached as drafters. `commit()` runs those drafters
+against a scratch context, records field revisions, and returns the Mini-ACP
+`Context` core wants before the next prompt.
 
-`ContextManager` also owns accumulated usage and the registration-built system
-prompt builder, so prompt decorators can compare freshly assembled prompt state
-against the tracked Mini-ACP context before sending a patch. Decorators record
-acknowledged `setContext` changes, prompt messages, assistant updates, tool
-results, and turn usage into this internal state object.
+A restored Mini-ACP agent still starts with an empty context, so the first prompt
+sync sends a full committed context even when the draft came from a persisted
+snapshot. Later syncs derive patches from field revisions that have not been
+successfully sent rather than deep-comparing full context objects. For now, a
+resolved `setContext` call is treated as success; if Mini-ACP later grows a
+separate acknowledgement or retry policy, that policy should live at the send
+boundary rather than inside `SessionDraft`. The controller records successful
+`setContext` changes, prompt messages, assistant updates, tool results, and turn
+usage into this internal state.
 
 The public runtime exposes `getSession()` as a safe projection to
 `SessionSnapshot` for consumers that need the dehydrated session view. The
@@ -78,9 +97,11 @@ state-module layer uses the same projection for persistence, fork, and
 child-session creation. `SessionSnapshot` intentionally remains narrower than
 `Context`: it keeps model-visible messages, non-secret LLM config, and usage,
 plus the session-local tool filter, while system prompt text, registered tool
-schemas, and API keys stay runtime-only. Future persisted state may become a
-richer superset of what Mini-ACP receives, including compaction points or other
-checkpoints projected into the next Mini-ACP context.
+schemas, and API keys stay runtime-only. Runtime inspect uses a separate
+redacted `inspect()` projection for debug UI so callers never need hidden access
+to internal context state. Future persisted state may become a richer superset of
+what Mini-ACP receives, including compaction points or other checkpoints
+projected into the next Mini-ACP context.
 
 ### Extensions
 

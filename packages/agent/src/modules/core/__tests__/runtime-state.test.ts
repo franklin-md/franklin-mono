@@ -397,6 +397,19 @@ describe('core runtime protocol state', () => {
 		}
 	});
 
+	it('forwards cancel to the connected Mini-ACP client', async () => {
+		const scenario = await createCoreScenario();
+
+		try {
+			await scenario.runtime.cancel();
+
+			expect(scenario.mock.calls().cancels).toBe(1);
+			expect(scenario.mock.calls().setContext).toEqual([]);
+		} finally {
+			await scenario.dispose();
+		}
+	});
+
 	it('streams events from the agent', async () => {
 		const scenario = await createCoreScenario({ turns: [assistantTurn] });
 

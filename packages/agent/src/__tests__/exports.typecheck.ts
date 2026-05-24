@@ -76,8 +76,10 @@ import type { ToolDefinition as _RootToolDefinition } from '../index.js';
 import type { AnyToolDefinition as _RootAnyToolDefinition } from '../index.js';
 // @ts-expect-error Mini-ACP tool definitions are not re-exported through Agent core.
 import type { SerializedToolDefinition as _RootSerializedToolDefinition } from '../index.js';
-// @ts-expect-error core agent state/session internals are not public API.
-import type { ContextManager as _RootContextManager } from '../index.js';
+// @ts-expect-error core controller constructor is not public API.
+import { createAgentController as _RootCreateAgentController } from '../index.js';
+// @ts-expect-error core controller type is not public API.
+import type { AgentController as _RootAgentController } from '../index.js';
 // @ts-expect-error core runtime session internals are not public API.
 import type { Session as _RootSession } from '../index.js';
 // @ts-expect-error MaybePromise is an internal utility, not public Agent API.
@@ -183,5 +185,6 @@ void _RootCreateCoreCompiler;
 void _RootSerializeTool;
 void _RootToToolInputSchema;
 void _RootResolveToolOutput;
+void _RootCreateAgentController;
 void _RootDefaultWebFetchOptions;
 void _RootDefaultWebSearchOptions;

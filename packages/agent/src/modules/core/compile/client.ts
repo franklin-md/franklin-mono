@@ -1,16 +1,12 @@
-import type { MiniACPConnector } from '@franklin/mini-acp';
-import type { AgentClient } from '../runtime/types.js';
-import { connect } from './connect.js';
-import type { ProtocolDecorator } from './decorators/types.js';
+import type { MiniACPClientHandle, MiniACPConnector } from '@franklin/mini-acp';
+import type { AgentController } from '../controller/index.js';
 
 export async function createAgentClient(input: {
 	readonly connectAgent: MiniACPConnector;
-	readonly decorator: ProtocolDecorator;
-}): Promise<AgentClient> {
-	const client = await connect({
-		decorator: input.decorator,
-		connectAgent: input.connectAgent,
-	});
+	readonly controller: AgentController;
+}): Promise<MiniACPClientHandle> {
+	const connectedClient = await input.connectAgent(input.controller.server);
+	const client = input.controller.bind(connectedClient);
 	await client.initialize();
 	return client;
 }
