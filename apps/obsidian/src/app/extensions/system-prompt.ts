@@ -1,5 +1,5 @@
 import type { FranklinAPI, FranklinExtension } from '@franklin/agent';
-import { filesystemExtension, type SetPartOptions } from '@franklin/agent';
+import { filesystemBundle, type SetPartOptions } from '@franklin/agent';
 import { oxfordJoin } from '@franklin/lib';
 
 // We take inspiration from: https://www.dbreunig.com/2026/04/04/how-claude-code-builds-a-system-prompt.html
@@ -22,9 +22,9 @@ const obsidianFlavouredMarkdown = `Obsidian uses its own markdown flavour conven
 
 const filesystemToolNames = oxfordJoin(
 	[
-		filesystemExtension.tools.readFile.name,
-		filesystemExtension.tools.writeFile.name,
-		filesystemExtension.tools.editFile.name,
+		filesystemBundle.tools.readFile.name,
+		filesystemBundle.tools.writeFile.name,
+		filesystemBundle.tools.editFile.name,
 	].map((name) => `\`${name}\``),
 );
 

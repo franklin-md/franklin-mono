@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
 import { fileKey } from '../common/key.js';
-import { filesystemExtension } from '../index.js';
+import * as filesystemExports from '../index.js';
+import { filesystemBundle, filesystemExtension } from '../index.js';
 
 function mockEnvironment(): ReconfigurableEnvironment {
 	return {
@@ -44,17 +45,25 @@ function mockEnvironment(): ReconfigurableEnvironment {
 	};
 }
 
-describe('filesystemExtension', () => {
+describe('filesystemBundle', () => {
+	it('keeps the filesystem index surface limited to the bundle and extension', () => {
+		expect(Object.keys(filesystemExports).sort()).toEqual([
+			'filesystemBundle',
+			'filesystemExtension',
+		]);
+	});
+
 	it('exposes the shared file store and all filesystem tools', async () => {
-		expect(filesystemExtension.keys.file).toBe(fileKey);
-		expect(filesystemExtension.tools.readFile.name).toBe('read_file');
-		expect(filesystemExtension.tools.writeFile.name).toBe('write_file');
-		expect(filesystemExtension.tools.editFile.name).toBe('edit_file');
-		expect(filesystemExtension.tools.glob.name).toBe('glob');
-		expect(filesystemExtension.tools.grep.name).toBe('grep');
+		expect(filesystemBundle.keys.file).toBe(fileKey);
+		expect(filesystemBundle.tools.readFile.name).toBe('read_file');
+		expect(filesystemBundle.tools.writeFile.name).toBe('write_file');
+		expect(filesystemBundle.tools.editFile.name).toBe('edit_file');
+		expect(filesystemBundle.tools.glob.name).toBe('glob');
+		expect(filesystemBundle.tools.grep.name).toBe('grep');
+		expect(filesystemExtension).toBe(filesystemBundle.extension);
 
 		const compiled = await compileCoreWithStoreAndEnv(
-			filesystemExtension.extension,
+			filesystemExtension,
 			mockEnvironment(),
 		);
 

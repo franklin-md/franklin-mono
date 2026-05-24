@@ -1,4 +1,4 @@
-import { filesystemExtension } from '@franklin/agent';
+import { filesystemBundle } from '@franklin/agent';
 import {
 	createToolRendererRegistry,
 	type ToolRendererEntry,
@@ -10,13 +10,13 @@ import { FilePlus, FileText, Pencil } from 'lucide-react';
 import { ObsidianFileBadge } from './obsidian-file-badge.js';
 
 const obsidianFileToolRenderers = [
-	toolEntry(filesystemExtension.tools.readFile, FileText, 'Read', (args) => (
+	toolEntry(filesystemBundle.tools.readFile, FileText, 'Read', (args) => (
 		<ObsidianFileBadge path={args.path} />
 	)),
-	toolEntry(filesystemExtension.tools.writeFile, FilePlus, 'Write', (args) => (
+	toolEntry(filesystemBundle.tools.writeFile, FilePlus, 'Write', (args) => (
 		<ObsidianFileBadge path={args.path} />
 	)),
-	toolEntry(filesystemExtension.tools.editFile, Pencil, 'Edit', (args) => (
+	toolEntry(filesystemBundle.tools.editFile, Pencil, 'Edit', (args) => (
 		<ObsidianFileBadge path={args.path} />
 	)),
 ] satisfies ToolRendererRegistryEntries;
