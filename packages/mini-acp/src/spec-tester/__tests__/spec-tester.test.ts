@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createSessionAdapter } from '../../protocol/adapter.js';
-import type { TurnClient } from '../../base/types.js';
-import type { MuAgent } from '../../protocol/types.js';
+import type { MuAgent, MuClient } from '../../protocol/types.js';
 import type { StreamEvent } from '../../types/stream.js';
 import { StopCode } from '../../types/stop-code.js';
 import type { AgentFactory, TranscriptEntry } from '../types.js';
@@ -25,16 +24,16 @@ import {
 
 /** Create a factory for a mock agent using createSessionAdapter. */
 function createMockFactory(
-	createTurnClient: (remote: MuAgent) => TurnClient,
+	createPromptClient: (remote: MuAgent) => Pick<MuClient, 'prompt' | 'cancel'>,
 ): AgentFactory {
 	return (server) =>
 		createSessionAdapter(
-			(_context, trackedServer) => createTurnClient(trackedServer),
+			(_context, trackedServer) => createPromptClient(trackedServer),
 			server,
 		);
 }
 
-const noopTurn = (_remote: MuAgent): TurnClient => ({
+const noopTurn = (_remote: MuAgent): Pick<MuClient, 'prompt' | 'cancel'> => ({
 	async *prompt(): AsyncGenerator<StreamEvent> {
 		yield { type: 'turnStart' };
 		yield { type: 'turnEnd', stopCode: StopCode.Finished };
@@ -42,7 +41,9 @@ const noopTurn = (_remote: MuAgent): TurnClient => ({
 	async cancel() {},
 });
 
-const toolCallingTurn = (remote: MuAgent): TurnClient => ({
+const toolCallingTurn = (
+	remote: MuAgent,
+): Pick<MuClient, 'prompt' | 'cancel'> => ({
 	async *prompt(): AsyncGenerator<StreamEvent> {
 		yield { type: 'turnStart' };
 		const result = await remote.toolExecute({
@@ -309,7 +310,7 @@ describe('tool spec helpers', () => {
 				],
 			},
 			createMockFactory(
-				(remote: MuAgent): TurnClient => ({
+				(remote: MuAgent): Pick<MuClient, 'prompt' | 'cancel'> => ({
 					async *prompt(): AsyncGenerator<StreamEvent> {
 						yield { type: 'turnStart' };
 						await remote.toolExecute({

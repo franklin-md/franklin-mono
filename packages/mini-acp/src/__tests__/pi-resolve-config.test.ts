@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { resolveConfig } from '../base/pi/resolve-config.js';
+import { resolveConfig } from '../backend/pi/resolve-config.js';
 import { StopCode } from '../types/stop-code.js';
 import {
 	OPENROUTER_APP_CATEGORY,
 	OPENROUTER_APP_TITLE,
-} from '../base/pi/model/headers.js';
-import { OPENROUTER_APP_URL } from '../base/pi/model/headers.js';
+} from '../backend/pi/model/headers.js';
+import { OPENROUTER_APP_URL } from '../backend/pi/model/headers.js';
 
 const OPENROUTER_UPSTREAM_MODEL_CASES = [
 	{ id: 'z-ai/glm-5.1', contextWindow: 202_800 },

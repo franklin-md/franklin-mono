@@ -1,4 +1,4 @@
-import { createPiAgent } from '../base/pi/agent.js';
+import { createPiAgent } from '../backend/pi/agent.js';
 import type { MiniACPAgent } from '../protocol/index.js';
 import { confirmSpec } from '../spec-tester/confirm.js';
 import { allFixtureExpectations } from '../spec-tester/fixtures/index.js';

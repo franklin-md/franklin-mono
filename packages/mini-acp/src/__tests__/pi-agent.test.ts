@@ -9,11 +9,11 @@ const adapterInputs = vi.hoisted(
 );
 const createPiAdapterMock = vi.hoisted(() => vi.fn());
 
-vi.mock('../base/pi/adapter.js', () => ({
+vi.mock('../backend/pi/adapter.js', () => ({
 	createPiAdapter: createPiAdapterMock,
 }));
 
-import { createPiAgent } from '../base/pi/agent.js';
+import { createPiAgent } from '../backend/pi/agent.js';
 
 describe('createPiAgent', () => {
 	beforeEach(() => {

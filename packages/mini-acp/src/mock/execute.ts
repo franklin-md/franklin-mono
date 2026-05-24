@@ -1,6 +1,6 @@
 import { wait } from '@franklin/lib';
 
-import type { TurnServer } from '../base/types.js';
+import type { MuAgent } from '../protocol/types.js';
 import type { Context } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import { StopCode } from '../types/stop-code.js';
@@ -21,7 +21,7 @@ export type MockTurnExecutionInput = {
 	readonly descriptor: MockTurnDescriptor;
 	readonly context: Context;
 	readonly prompt: UserMessage;
-	readonly server: TurnServer;
+	readonly server: MuAgent;
 	readonly recording: MutableMockMiniACPRecording;
 	readonly nextMessageId: () => string;
 	readonly nextToolCallId: () => string;

@@ -1,7 +1,6 @@
 // ---------------------------------------------------------------------------
-// Pi Adapter — wraps pi-agent-core's Agent as a TurnClient
+// Pi Adapter — wraps pi-agent-core's Agent behind Mini-ACP prompt/cancel.
 //
-// Takes a TurnServer (for reverse RPC tool execution) and returns a TurnClient.
 // Tool calls from the pi agent loop are routed through server.toolExecute().
 // ---------------------------------------------------------------------------
 
@@ -9,11 +8,11 @@ import { Agent as PiCoreAgent } from '@earendil-works/pi-agent-core';
 import type { AgentEvent } from '@earendil-works/pi-agent-core';
 import type { StreamFn } from '@earendil-works/pi-agent-core';
 
-import type { TurnClient, TurnServer } from '../types.js';
 import type { UserMessage } from '../../types/message.js';
 import type { Context } from '../../types/context.js';
 import type { StreamEvent } from '../../types/stream.js';
 import { StopCode } from '../../types/stop-code.js';
+import type { MuAgent, MuClient } from '../../protocol/types.js';
 
 import {
 	bridgeTool,
@@ -29,15 +28,17 @@ import { resolveConfig } from './resolve-config.js';
 // ---------------------------------------------------------------------------
 
 export interface PiAdapterOptions {
-	/** TurnServer for reverse RPC (tool execution) */
-	server: TurnServer;
+	/** Server for reverse RPC tool execution. */
+	server: MuAgent;
 	/** Agent context (system prompt, messages, tools, config) */
 	context: Context;
 	/** Custom stream function — inject for testing without real LLM calls */
 	streamFn?: StreamFn;
 }
 
-export function createPiAdapter(options: PiAdapterOptions): TurnClient {
+export function createPiAdapter(
+	options: PiAdapterOptions,
+): Pick<MuClient, 'prompt' | 'cancel'> {
 	const { server, context, streamFn } = options;
 
 	let piAgent: PiCoreAgent | null = null;
@@ -55,7 +56,8 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 
 			// Bridge tool definitions to pi AgentTools that call server.toolExecute
 			const handler = server.toolExecute.bind(server);
-			const piTools = context.tools.map((def) => bridgeTool(def, handler));
+			const createPiTools = () =>
+				context.tools.map((def) => bridgeTool(def, handler));
 
 			// Convert model-visible messages to pi-ai format
 			const piMessages = context.messages.map(toPiMessage);
@@ -66,7 +68,7 @@ export function createPiAdapter(options: PiAdapterOptions): TurnClient {
 					systemPrompt: context.systemPrompt,
 					model: resolved.model,
 					thinkingLevel: context.config.reasoning ?? 'off',
-					tools: piTools,
+					tools: createPiTools(),
 					messages: piMessages,
 				},
 				getApiKey: (_: string) => {

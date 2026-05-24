@@ -1,18 +1,17 @@
 // ---------------------------------------------------------------------------
-// Session adapter — wraps a TurnClient as a full MiniACPClient with
+// Session adapter — wraps prompt/cancel implementation as a full MiniACPClient with
 // session management (initialize, setContext, context tracking).
 // ---------------------------------------------------------------------------
 
-import type { TurnClient, TurnServer } from '../base/types.js';
 import type { StreamEvent } from '../types/stream.js';
-import type { MuClient } from './types.js';
+import type { MuAgent, MuClient } from './types.js';
 import { ContextTracker } from './context-tracker.js';
 import type { Context, ContextPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import { trackAgent, trackTurn } from './tracking.js';
 
 /**
- * Wraps a lazily-created TurnClient as a full MiniACPClient.
+ * Wraps a lazily-created prompt/cancel implementation as a full MiniACPClient.
  *
  * The adapter manages context tracking and agent lifecycle:
  * - `initialize()` acknowledges session start
@@ -22,20 +21,21 @@ import { trackAgent, trackTurn } from './tracking.js';
  *
  */
 export function createSessionAdapter(
-	createTurnClient: (context: Context, server: TurnServer) => TurnClient,
-	server: TurnServer,
+	createPromptClient: (
+		context: Context,
+		server: MuAgent,
+	) => Pick<MuClient, 'prompt' | 'cancel'>,
+	server: MuAgent,
 ): MuClient {
 	const tracker = new ContextTracker();
-	let currentTurn: TurnClient | null = null;
+	let currentTurn: Pick<MuClient, 'prompt' | 'cancel'> | null = null;
 	const trackedServer = trackAgent(tracker, server);
 
 	return {
 		async initialize() {},
 
 		async setContext(context: ContextPatch) {
-			// TODO: We should reject a setContext if there is a turn in progress.
 			tracker.apply(context);
-			// Invalidate agent so next prompt uses new context
 			currentTurn = null;
 		},
 
@@ -44,7 +44,7 @@ export function createSessionAdapter(
 			// TODO: Turn this into a testable spec point.
 			currentTurn = trackTurn(
 				tracker,
-				createTurnClient(tracker.get(), trackedServer),
+				createPromptClient(tracker.get(), trackedServer),
 			);
 			yield* currentTurn.prompt(message);
 			currentTurn = null;

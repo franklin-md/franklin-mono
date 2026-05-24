@@ -20,7 +20,7 @@ vi.mock('@earendil-works/pi-agent-core', () => ({
 	},
 }));
 
-import { createPiAdapter } from '../base/pi/adapter.js';
+import { createPiAdapter } from '../backend/pi/adapter.js';
 
 describe('createPiAdapter', () => {
 	beforeEach(() => {

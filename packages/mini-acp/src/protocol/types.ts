@@ -1,14 +1,19 @@
-import type { TurnClient, TurnServer } from '../base/types.js';
 import type { ContextPatch } from '../types/context.js';
+import type { UserMessage } from '../types/message.js';
+import type { StreamEvent } from '../types/stream.js';
+import type { ToolExecuteHandler } from '../types/tool.js';
 
 // Agent side (client calls agent)
-export interface MuClient extends TurnClient {
-	// Session management
+export interface MuClient {
 	initialize(): Promise<void>;
 	setContext(context: ContextPatch): Promise<void>;
+	prompt(message: UserMessage): AsyncIterable<StreamEvent>;
+	cancel(): Promise<void>;
 }
 
-export type MuAgent = TurnServer;
+export interface MuAgent {
+	toolExecute: ToolExecuteHandler;
+}
 
 export type MiniACPClientHandle = MuClient & { dispose(): Promise<void> };
 

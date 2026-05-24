@@ -1,4 +1,3 @@
-import type { TurnClient } from '../base/types.js';
 import { createSessionAdapter } from '../protocol/adapter.js';
 import { ContextTracker } from '../protocol/context-tracker.js';
 import { trackAgent, trackClient } from '../protocol/tracking.js';
@@ -7,6 +6,7 @@ import type {
 	MiniACPClientHandle,
 	MiniACPConnector,
 } from '../protocol/index.js';
+import type { MuClient } from '../protocol/types.js';
 import type { Context } from '../types/context.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { MockTurnDescriptor } from './descriptor/index.js';
@@ -57,7 +57,7 @@ export function createMockMiniACP(
 		const trackedServer = trackAgent(tracker, server);
 		const client = createSessionAdapter(
 			(context, turnServer) =>
-				createMockTurnClient({
+				createMockPromptClient({
 					context,
 					server: turnServer,
 					dequeueTurn,
@@ -120,7 +120,7 @@ export function createMockMiniACP(
 	};
 }
 
-type CreateMockTurnClientInput = {
+type CreateMockPromptClientInput = {
 	readonly context: Context;
 	readonly server: MiniACPAgent;
 	readonly dequeueTurn: () => MockTurnDescriptor;
@@ -129,7 +129,9 @@ type CreateMockTurnClientInput = {
 	readonly nextToolCallId: () => string;
 };
 
-function createMockTurnClient(input: CreateMockTurnClientInput): TurnClient {
+function createMockPromptClient(
+	input: CreateMockPromptClientInput,
+): Pick<MuClient, 'prompt' | 'cancel'> {
 	return {
 		async *prompt(message): AsyncGenerator<StreamEvent> {
 			yield* executeMockTurn({

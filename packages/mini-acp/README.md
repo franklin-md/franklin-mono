@@ -163,7 +163,6 @@ and preserves the current `messages`. Sending `{ messages: [...] }` replaces
 only the message list. Similarly, `{ config: { reasoning: 'high' } }` updates
 only `reasoning` and preserves the current `model`, `provider`, and `apiKey`.
 
-
 ### Phase 3: Prompt
 
 A turn begins when the client sends `prompt` with a `UserMessage`. The agent responds with a stream of events and terminates the stream when the turn is complete.
