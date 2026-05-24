@@ -1,6 +1,5 @@
-import { createSessionAdapter } from '../protocol/adapter.js';
 import { ContextTracker } from '../protocol/context-tracker.js';
-import { trackAgent, trackClient } from '../protocol/tracking.js';
+import { trackAgent, trackTurn } from '../protocol/tracking.js';
 import type {
 	MiniACPAgent,
 	MiniACPClientHandle,
@@ -55,36 +54,38 @@ export function createMockMiniACP(
 
 	function connector(server: MiniACPAgent): MiniACPClientHandle {
 		const trackedServer = trackAgent(tracker, server);
-		const client = createSessionAdapter(
-			(context, turnServer) =>
-				createMockPromptClient({
-					context,
-					server: turnServer,
-					dequeueTurn,
-					recording,
-					nextMessageId,
-					nextToolCallId,
-				}),
-			trackedServer,
-		);
-		const trackedClient = trackClient(tracker, client);
+		let currentTurn: Pick<MuClient, 'prompt' | 'cancel'> | null = null;
 
 		return {
 			async initialize() {
 				recording.initialize += 1;
-				return trackedClient.initialize();
 			},
 			async setContext(context) {
 				recording.setContext.push(context);
-				return trackedClient.setContext(context);
+				tracker.apply(context);
 			},
-			prompt(message) {
+			async *prompt(message) {
 				recording.prompts.push(message);
-				return trackedClient.prompt(message);
+				currentTurn = trackTurn(
+					tracker,
+					createMockPromptClient({
+						context: snapshotContext(tracker.get()),
+						server: trackedServer,
+						dequeueTurn,
+						recording,
+						nextMessageId,
+						nextToolCallId,
+					}),
+				);
+				try {
+					yield* currentTurn.prompt(message);
+				} finally {
+					currentTurn = null;
+				}
 			},
 			async cancel() {
 				recording.cancels += 1;
-				return trackedClient.cancel();
+				await currentTurn?.cancel();
 			},
 			async dispose() {
 				recording.disposes += 1;
@@ -117,6 +118,15 @@ export function createMockMiniACP(
 			messageId = 0;
 			toolCallId = 0;
 		},
+	};
+}
+
+function snapshotContext(context: Context): Context {
+	return {
+		systemPrompt: context.systemPrompt,
+		messages: [...context.messages],
+		tools: [...context.tools],
+		config: { ...context.config },
 	};
 }
 

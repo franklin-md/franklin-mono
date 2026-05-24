@@ -48,9 +48,9 @@ function createEmptyContext(): Context {
 /**
  * Tracks the evolving Context on the agent side.
  *
- * Used by both the session adapter (agent side) and context extension
- * (client side) to keep context in sync with the actual conversation
- * state (user messages from prompt, response messages from update).
+ * Used by agent implementations and client-side context extensions to keep
+ * context in sync with the actual conversation state (user messages from
+ * prompt, response messages from update).
  */
 export class ContextTracker implements ContextRecorder {
 	private context: Context = createEmptyContext();

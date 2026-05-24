@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createSessionAdapter } from '../../protocol/adapter.js';
+import { ContextTracker } from '../../protocol/context-tracker.js';
+import { trackAgent, trackTurn } from '../../protocol/tracking.js';
 import type { MuAgent, MuClient } from '../../protocol/types.js';
 import type { StreamEvent } from '../../types/stream.js';
 import { StopCode } from '../../types/stop-code.js';
@@ -22,15 +23,32 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Create a factory for a mock agent using createSessionAdapter. */
 function createMockFactory(
 	createPromptClient: (remote: MuAgent) => Pick<MuClient, 'prompt' | 'cancel'>,
 ): AgentFactory {
-	return (server) =>
-		createSessionAdapter(
-			(_context, trackedServer) => createPromptClient(trackedServer),
-			server,
-		);
+	return (server) => {
+		const tracker = new ContextTracker();
+		const trackedServer = trackAgent(tracker, server);
+		let currentTurn: Pick<MuClient, 'prompt' | 'cancel'> | null = null;
+
+		return {
+			async initialize() {},
+			async setContext(context) {
+				tracker.apply(context);
+			},
+			async *prompt(message): AsyncGenerator<StreamEvent> {
+				currentTurn = trackTurn(tracker, createPromptClient(trackedServer));
+				try {
+					yield* currentTurn.prompt(message);
+				} finally {
+					currentTurn = null;
+				}
+			},
+			async cancel() {
+				await currentTurn?.cancel();
+			},
+		};
+	};
 }
 
 const noopTurn = (_remote: MuAgent): Pick<MuClient, 'prompt' | 'cancel'> => ({

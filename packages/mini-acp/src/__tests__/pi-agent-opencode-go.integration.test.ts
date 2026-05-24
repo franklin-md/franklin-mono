@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Pi Adapter integration test — real LLM calls via OpenCode Go
+// Pi Agent integration test — real LLM calls via OpenCode Go
 //
 // Requires OPENCODE_GO_API_KEY in env or in .env resolved from Vitest's cwd.
 // Skips when no key is available.
@@ -10,7 +10,7 @@
 
 import { describeIfKey } from './utils/describe-if-key.js';
 import { createValidLLMConfig } from './utils/llm-config.js';
-import { itCompletesSimpleTextPrompt } from './utils/pi-adapter-integration.js';
+import { itCompletesSimpleTextPrompt } from './utils/pi-agent-integration.js';
 
 const OPENCODE_GO_CASES = [
 	{
@@ -25,7 +25,7 @@ const OPENCODE_GO_CASES = [
 
 describeIfKey(
 	'OPENCODE_GO_API_KEY',
-	'Pi Adapter — integration (OpenCode Go)',
+	'Pi Agent — integration (OpenCode Go)',
 	(apiKey) => {
 		for (const { name, model } of OPENCODE_GO_CASES) {
 			itCompletesSimpleTextPrompt({
