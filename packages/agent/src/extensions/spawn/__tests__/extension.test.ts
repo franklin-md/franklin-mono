@@ -89,7 +89,9 @@ async function createSpawnScenario(
 		mock,
 		root,
 		async dispose() {
-			await root.runtime.orchestrator.remove(root.details.id);
+			for (const entry of root.runtime.orchestrator.list()) {
+				await root.runtime.orchestrator.remove(entry.details.id);
+			}
 		},
 	};
 }
@@ -164,11 +166,15 @@ describe('spawnExtension', () => {
 			]);
 			expect(calls.setContext[1]?.tools?.map((tool) => tool.name)).toEqual([]);
 			expect(
-				scenario.root.runtime.orchestrator
-					.list()
-					.map((entry) => entry.details.id),
-			).toEqual(['root']);
-			expect(calls.disposes).toBe(1);
+				scenario.root.runtime.orchestrator.list().map((entry) => ({
+					id: entry.details.id,
+					visibility: entry.details.visibility,
+				})),
+			).toEqual([
+				{ id: 'root', visibility: 'visible' },
+				{ id: 'child', visibility: 'hidden' },
+			]);
+			expect(calls.disposes).toBe(0);
 		} finally {
 			await scenario.dispose();
 		}
@@ -205,10 +211,14 @@ describe('spawnExtension', () => {
 			expect(result?.isError).toBe(true);
 			expect(resultText(result)).toBe('child failed');
 			expect(
-				scenario.root.runtime.orchestrator
-					.list()
-					.map((entry) => entry.details.id),
-			).toEqual(['root']);
+				scenario.root.runtime.orchestrator.list().map((entry) => ({
+					id: entry.details.id,
+					visibility: entry.details.visibility,
+				})),
+			).toEqual([
+				{ id: 'root', visibility: 'visible' },
+				{ id: 'child', visibility: 'hidden' },
+			]);
 		} finally {
 			await scenario.dispose();
 		}

@@ -25,16 +25,12 @@ export const spawnExtension = defineExtension<
 			// state inheritance. Keep the recursive-spawn guard local until child tool
 			// policy has a first-class creation helper.
 			child.runtime.toolRegistry.setEnabled(spawnSpec.name, false);
-			try {
-				const stream = child.runtime.prompt({
-					role: 'user',
-					content: [{ type: 'text', text: prompt }],
-				});
-				const { messages, turnEnd } = await collect(stream);
-				return formatResult(messages, turnEnd);
-			} finally {
-				await child.runtime.orchestrator.remove(child.details.id);
-			}
+			const stream = child.runtime.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: prompt }],
+			});
+			const { messages, turnEnd } = await collect(stream);
+			return formatResult(messages, turnEnd);
 		},
 	});
 });
