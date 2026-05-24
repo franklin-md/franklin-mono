@@ -5,8 +5,6 @@ export type {
 	MiniACPConnector,
 } from './types.js';
 
-export { debugMiniACP } from './debug.js';
-
 export { createSessionAdapter } from './adapter.js';
 
 export { ContextTracker } from './context-tracker.js';
