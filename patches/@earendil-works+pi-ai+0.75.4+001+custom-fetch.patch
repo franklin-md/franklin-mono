@@ -1,26 +1,26 @@
 diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js b/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js
-index 3f0cc9a..f830481 100644
+index 7406574..f56d0de 100644
 --- a/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js
 +++ b/node_modules/@earendil-works/pi-ai/dist/providers/anthropic.js
-@@ -310,7 +310,7 @@ export const streamAnthropic = (model, context, options) => {
-                         hasImages,
-                     });
+@@ -317,7 +317,7 @@ export const streamAnthropic = (model, context, options) => {
                  }
--                const created = createClient(model, apiKey, options?.interleavedThinking ?? true, shouldUseFineGrainedToolStreamingBeta(model, context), options?.headers, copilotDynamicHeaders);
-+                const created = createClient(model, apiKey, options?.interleavedThinking ?? true, shouldUseFineGrainedToolStreamingBeta(model, context), options?.headers, copilotDynamicHeaders, options?.fetch);
+                 const cacheRetention = options?.cacheRetention ?? resolveCacheRetention();
+                 const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
+-                const created = createClient(model, apiKey, options?.interleavedThinking ?? true, shouldUseFineGrainedToolStreamingBeta(model, context), options?.headers, copilotDynamicHeaders, cacheSessionId);
++                const created = createClient(model, apiKey, options?.interleavedThinking ?? true, shouldUseFineGrainedToolStreamingBeta(model, context), options?.headers, copilotDynamicHeaders, cacheSessionId, options?.fetch);
                  client = created.client;
                  isOAuth = created.isOAuthToken;
              }
-@@ -582,7 +582,7 @@ export const streamSimpleAnthropic = (model, context, options) => {
+@@ -591,7 +591,7 @@ export const streamSimpleAnthropic = (model, context, options) => {
  function isOAuthToken(apiKey) {
      return apiKey.includes("sk-ant-oat");
  }
--function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStreamingBeta, optionsHeaders, dynamicHeaders) {
-+function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStreamingBeta, optionsHeaders, dynamicHeaders, fetch) {
+-function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStreamingBeta, optionsHeaders, dynamicHeaders, sessionId) {
++function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStreamingBeta, optionsHeaders, dynamicHeaders, sessionId, fetch) {
      // Adaptive thinking models (Opus 4.6, Sonnet 4.6) have interleaved thinking built-in.
      // The beta header is deprecated on Opus 4.6 and redundant on Sonnet 4.6, so skip it.
      const needsInterleavedBeta = interleavedThinking && !supportsAdaptiveThinking(model.id);
-@@ -598,6 +598,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
+@@ -607,6 +607,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
              apiKey: null,
              authToken: null,
              baseURL: resolveCloudflareBaseUrl(model),
@@ -28,7 +28,7 @@ index 3f0cc9a..f830481 100644
              dangerouslyAllowBrowser: true,
              defaultHeaders: mergeHeaders({
                  accept: "application/json",
-@@ -616,6 +617,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
+@@ -625,6 +626,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
              apiKey: null,
              authToken: apiKey,
              baseURL: model.baseUrl,
@@ -36,7 +36,7 @@ index 3f0cc9a..f830481 100644
              dangerouslyAllowBrowser: true,
              defaultHeaders: mergeHeaders({
                  accept: "application/json",
-@@ -631,6 +633,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
+@@ -640,6 +642,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
              apiKey: null,
              authToken: apiKey,
              baseURL: model.baseUrl,
@@ -44,23 +44,35 @@ index 3f0cc9a..f830481 100644
              dangerouslyAllowBrowser: true,
              defaultHeaders: mergeHeaders({
                  accept: "application/json",
-@@ -646,6 +649,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
-     const client = new Anthropic({
+@@ -657,6 +660,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
          apiKey,
+         authToken: null,
          baseURL: model.baseUrl,
 +        fetch,
          dangerouslyAllowBrowser: true,
          defaultHeaders: mergeHeaders({
              accept: "application/json",
+diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/azure-openai-responses.js b/node_modules/@earendil-works/pi-ai/dist/providers/azure-openai-responses.js
+index b459932..d8e0832 100644
+--- a/node_modules/@earendil-works/pi-ai/dist/providers/azure-openai-responses.js
++++ b/node_modules/@earendil-works/pi-ai/dist/providers/azure-openai-responses.js
+@@ -181,6 +181,7 @@ function createClient(model, apiKey, options) {
+     return new AzureOpenAI({
+         apiKey,
+         apiVersion,
++        fetch: options?.fetch,
+         dangerouslyAllowBrowser: true,
+         defaultHeaders: headers,
+         baseURL: baseUrl,
 diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js b/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js
-index 0bebea1..979a069 100644
+index 622375a..8459b58 100644
 --- a/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js
 +++ b/node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js
-@@ -136,12 +136,13 @@ export const streamOpenAICodexResponses = (model, context, options) => {
+@@ -145,12 +145,13 @@ export const streamOpenAICodexResponses = (model, context, options) => {
              // Fetch with retry logic for rate limits and transient errors
              let response;
              let lastError;
-+            const fetchFn = options?.fetch ?? globalThis.fetch;
++            const fetchFn = options?.fetch ?? fetch;
              for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
                  if (options?.signal?.aborted) {
                      throw new Error("Request was aborted");
@@ -72,10 +84,10 @@ index 0bebea1..979a069 100644
                          headers: sseHeaders,
                          body: bodyJson,
 diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/openai-completions.js b/node_modules/@earendil-works/pi-ai/dist/providers/openai-completions.js
-index 3ec63be..9ce8d85 100644
+index 933e8a0..71b9a5b 100644
 --- a/node_modules/@earendil-works/pi-ai/dist/providers/openai-completions.js
 +++ b/node_modules/@earendil-works/pi-ai/dist/providers/openai-completions.js
-@@ -73,7 +73,7 @@ export const streamOpenAICompletions = (model, context, options) => {
+@@ -74,7 +74,7 @@ export const streamOpenAICompletions = (model, context, options) => {
              const compat = getCompat(model);
              const cacheRetention = resolveCacheRetention(options?.cacheRetention);
              const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
@@ -84,7 +96,7 @@ index 3ec63be..9ce8d85 100644
              let params = buildParams(model, context, options, compat, cacheRetention);
              const nextParams = await options?.onPayload?.(params, model);
              if (nextParams !== undefined) {
-@@ -340,7 +340,7 @@ export const streamSimpleOpenAICompletions = (model, context, options) => {
+@@ -349,7 +349,7 @@ export const streamSimpleOpenAICompletions = (model, context, options) => {
          toolChoice,
      });
  };
@@ -93,7 +105,37 @@ index 3ec63be..9ce8d85 100644
      if (!apiKey) {
          if (!process.env.OPENAI_API_KEY) {
              throw new Error("OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass it as an argument.");
-@@ -375,6 +375,7 @@ function createClient(model, context, apiKey, optionsHeaders, sessionId, compat
+@@ -384,6 +384,7 @@ function createClient(model, context, apiKey, optionsHeaders, sessionId, compat
+     return new OpenAI({
+         apiKey,
+         baseURL: isCloudflareProvider(model.provider) ? resolveCloudflareBaseUrl(model) : model.baseUrl,
++        fetch,
+         dangerouslyAllowBrowser: true,
+         defaultHeaders,
+     });
+diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/openai-responses.js b/node_modules/@earendil-works/pi-ai/dist/providers/openai-responses.js
+index 396b4af..4ab1272 100644
+--- a/node_modules/@earendil-works/pi-ai/dist/providers/openai-responses.js
++++ b/node_modules/@earendil-works/pi-ai/dist/providers/openai-responses.js
+@@ -76,7 +76,7 @@ export const streamOpenAIResponses = (model, context, options) => {
+             const apiKey = options?.apiKey || getEnvApiKey(model.provider) || "";
+             const cacheRetention = resolveCacheRetention(options?.cacheRetention);
+             const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
+-            const client = createClient(model, context, apiKey, options?.headers, cacheSessionId);
++            const client = createClient(model, context, apiKey, options?.headers, cacheSessionId, options?.fetch);
+             let params = buildParams(model, context, options);
+             const nextParams = await options?.onPayload?.(params, model);
+             if (nextParams !== undefined) {
+@@ -130,7 +130,7 @@ export const streamSimpleOpenAIResponses = (model, context, options) => {
+         reasoningEffort,
+     });
+ };
+-function createClient(model, context, apiKey, optionsHeaders, sessionId) {
++function createClient(model, context, apiKey, optionsHeaders, sessionId, fetch) {
+     if (!apiKey) {
+         if (!process.env.OPENAI_API_KEY) {
+             throw new Error("OpenAI API key is required. Set OPENAI_API_KEY environment variable or pass it as an argument.");
+@@ -167,6 +167,7 @@ function createClient(model, context, apiKey, optionsHeaders, sessionId) {
      return new OpenAI({
          apiKey,
          baseURL: isCloudflareProvider(model.provider) ? resolveCloudflareBaseUrl(model) : model.baseUrl,
@@ -102,22 +144,22 @@ index 3ec63be..9ce8d85 100644
          defaultHeaders,
      });
 diff --git a/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js b/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js
-index 64c0447..04a916d 100644
+index a29c252..fba4ecf 100644
 --- a/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js
 +++ b/node_modules/@earendil-works/pi-ai/dist/providers/simple-options.js
-@@ -3,6 +3,7 @@ export function buildBaseOptions(model, options, apiKey) {
+@@ -3,6 +3,7 @@ export function buildBaseOptions(_model, options, apiKey) {
          temperature: options?.temperature,
-         maxTokens: options?.maxTokens ?? (model.maxTokens > 0 ? Math.min(model.maxTokens, 32000) : undefined),
+         maxTokens: options?.maxTokens,
          signal: options?.signal,
 +        fetch: options?.fetch,
          apiKey: apiKey || options?.apiKey,
          transport: options?.transport,
          cacheRetention: options?.cacheRetention,
 diff --git a/node_modules/@earendil-works/pi-ai/dist/types.d.ts b/node_modules/@earendil-works/pi-ai/dist/types.d.ts
-index 65b4bce..f7b4581 100644
+index 7958e7f..518de1c 100644
 --- a/node_modules/@earendil-works/pi-ai/dist/types.d.ts
 +++ b/node_modules/@earendil-works/pi-ai/dist/types.d.ts
-@@ -25,6 +25,7 @@ export interface StreamOptions {
+@@ -29,6 +29,7 @@ export interface StreamOptions {
      temperature?: number;
      maxTokens?: number;
      signal?: AbortSignal;
