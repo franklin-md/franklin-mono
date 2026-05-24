@@ -45,7 +45,7 @@ describe('SessionDraft', () => {
 				toolFilter: emptyToolFilter(),
 			},
 			registrations,
-			toolRegistry: createToolRegistry(registrations),
+			toolRegistry: createToolRegistry(registrations.tools),
 		});
 
 		const commit = await draft.commit();
@@ -95,7 +95,7 @@ describe('SessionDraft', () => {
 				toolFilter: emptyToolFilter(),
 			},
 			registrations,
-			toolRegistry: createToolRegistry(registrations),
+			toolRegistry: createToolRegistry(registrations.tools),
 		});
 
 		await draft.commit();
@@ -106,5 +106,61 @@ describe('SessionDraft', () => {
 			tools: [],
 			config: {},
 		});
+	});
+
+	it('derives the tools revision from enabled definitions sorted by name', async () => {
+		const registrations = createCoreRegistry(
+			(api) => {
+				api.registerTool(
+					{
+						name: 'zeta',
+						description: 'Last alphabetically',
+						schema: z.object({}),
+					},
+					{
+						execute: () => 'ok',
+					},
+				);
+				api.registerTool(
+					{
+						name: 'alpha',
+						description: 'First alphabetically',
+						schema: z.object({}),
+					},
+					{
+						execute: () => 'ok',
+					},
+				);
+			},
+			() => runtime,
+		);
+		const toolRegistry = createToolRegistry(registrations.tools);
+		const draft = createSessionDraft({
+			snapshot: {
+				messages: [],
+				llmConfig: {},
+				usage: ZERO_USAGE,
+				toolFilter: emptyToolFilter(),
+			},
+			registrations,
+			toolRegistry,
+		});
+
+		const initial = await draft.commit();
+		toolRegistry.setEnabled('alpha', false);
+		const updated = await draft.commit();
+
+		expect(initial.context.tools.map((tool) => tool.name)).toEqual([
+			'alpha',
+			'zeta',
+		]);
+		expect(initial.revisions.tools).toBe(
+			`tools:${JSON.stringify(initial.context.tools)}`,
+		);
+		expect(updated.context.tools.map((tool) => tool.name)).toEqual(['zeta']);
+		expect(updated.revisions.tools).toBe(
+			`tools:${JSON.stringify(updated.context.tools)}`,
+		);
+		expect(updated.revisions.tools).not.toBe(initial.revisions.tools);
 	});
 });

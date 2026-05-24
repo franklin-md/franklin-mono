@@ -4,6 +4,8 @@ import type {
 	MiniACPClient,
 	ToolDefinition,
 } from '@franklin/mini-acp';
+import { createObserver } from '@franklin/lib';
+import type { Observer } from '@franklin/lib';
 import { createExtensionPoint } from '@franklin/extensibility';
 import { createApi } from '@franklin/extensibility';
 import { createRegistryView } from '@franklin/extensibility';
@@ -20,6 +22,10 @@ import {
 	type InferSignature as InferModuleSignature,
 } from '@franklin/extensibility/module';
 import type { CoreSignature } from '../modules/core/api/api.js';
+import type {
+	ToolCallEvent,
+	ToolResultEvent,
+} from '../modules/core/api/handlers.js';
 import type { AuthDependencyRuntime } from '../auth/dependency.js';
 import type { AuthManager } from '../auth/manager.js';
 import {
@@ -32,6 +38,7 @@ import {
 	createToolRegistry,
 	type ToolRegistry,
 } from '../modules/core/tools/index.js';
+import { fallbackExecutionResult } from '../modules/core/tools/result.js';
 import {
 	passThrough,
 	type MethodMiddleware,
@@ -81,6 +88,11 @@ type ClientMiddleware = Middleware<MiniACPClient>;
 
 type ServerMiddleware = Middleware<MiniACPAgent>;
 
+type ToolObservers = {
+	readonly toolCall: Observer<[ToolCallEvent]>;
+	readonly toolResult: Observer<[ToolResultEvent]>;
+};
+
 type FullMiddleware = {
 	readonly client: ClientMiddleware;
 	readonly server: ServerMiddleware;
@@ -114,9 +126,17 @@ function buildTestMiddleware(
 		prompt,
 		cancel: passThrough(),
 	};
+	const toolObservers = createToolObservers(registrations);
 	const server: ServerMiddleware = {
-		toolExecute: toolRegistry.hasRegistrations()
-			? (params, next) => toolRegistry.dispatch(params, next)
+		toolExecute: hasToolMiddleware(registrations, toolObservers)
+			? async (params, next) => {
+					toolObservers.toolCall.notify(params);
+					const execution =
+						(await toolRegistry.dispatch(params.call)) ??
+						fallbackExecutionResult(await next(params), params.call);
+					toolObservers.toolResult.notify(execution.event);
+					return execution.modelOutput;
+				}
 			: passThrough<MiniACPAgent['toolExecute']>(),
 	};
 
@@ -124,6 +144,24 @@ function buildTestMiddleware(
 		client,
 		server,
 	};
+}
+
+function createToolObservers(registrations: CoreRegistry): ToolObservers {
+	return {
+		toolCall: createObserver(registrations.handlersFor('toolCall')),
+		toolResult: createObserver(registrations.handlersFor('toolResult')),
+	};
+}
+
+function hasToolMiddleware(
+	registrations: CoreRegistry,
+	observers: ToolObservers,
+): boolean {
+	return (
+		registrations.tools.length > 0 ||
+		observers.toolCall.listenerCount > 0 ||
+		observers.toolResult.listenerCount > 0
+	);
 }
 
 /**
@@ -149,7 +187,7 @@ export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
 		createRegistryView(registry),
 		getCtx,
 	);
-	const toolRegistry = createToolRegistry(registrations);
+	const toolRegistry = createToolRegistry(registrations.tools);
 	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, tools };
@@ -205,7 +243,7 @@ export async function compileCoreWithStore(
 		createRegistryView(coreRegistry),
 		getCtx,
 	);
-	const toolRegistry = createToolRegistry(registrations);
+	const toolRegistry = createToolRegistry(registrations.tools);
 	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, stores: cell.stores, tools };
@@ -282,7 +320,7 @@ export async function compileCoreWithStoreAndEnv(
 	);
 
 	const registrations = createBoundCoreRegistry(registryView as never, getCtx);
-	const toolRegistry = createToolRegistry(registrations);
+	const toolRegistry = createToolRegistry(registrations.tools);
 	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };
@@ -351,7 +389,7 @@ export async function compileCoreWithStoreEnvAndAuth(
 		createRegistryView(coreRegistry),
 		getCtx,
 	);
-	const toolRegistry = createToolRegistry(registrations);
+	const toolRegistry = createToolRegistry(registrations.tools);
 	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };
@@ -412,7 +450,7 @@ export async function compileCoreWithEnv(
 	cell.ctx = combineRuntimes(environment, configuration);
 
 	const registrations = createBoundCoreRegistry(registryView as never, getCtx);
-	const toolRegistry = createToolRegistry(registrations);
+	const toolRegistry = createToolRegistry(registrations.tools);
 	const middleware = buildTestMiddleware(registrations, toolRegistry);
 	const tools = toolRegistry.definitions();
 	return { middleware, ctx: cell.ctx, tools };

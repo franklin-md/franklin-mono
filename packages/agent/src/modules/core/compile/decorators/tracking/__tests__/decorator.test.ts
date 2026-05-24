@@ -25,7 +25,7 @@ function createTestContextManager() {
 			toolFilter: { disabled: [] },
 		},
 		registrations,
-		toolRegistry: createToolRegistry(registrations),
+		toolRegistry: createToolRegistry(registrations.tools),
 	});
 }
 

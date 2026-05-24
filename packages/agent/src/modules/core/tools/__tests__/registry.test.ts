@@ -1,4 +1,4 @@
-import type { ToolExecuteParams } from '@franklin/mini-acp';
+import type { ToolCall } from '@franklin/mini-acp';
 import type { JsonObject, JsonValue } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -12,14 +12,12 @@ import { createToolRegistry } from '../registry.js';
 
 const runtime = createTestRuntime();
 
-function toolCall(name: string, args: JsonObject = {}): ToolExecuteParams {
+function toolCall(name: string, args: JsonObject = {}): ToolCall {
 	return {
-		call: {
-			type: 'toolCall',
-			id: 'call-1',
-			name,
-			arguments: args,
-		},
+		type: 'toolCall',
+		id: 'call-1',
+		name,
+		arguments: args,
 	};
 }
 
@@ -39,7 +37,7 @@ describe('ToolRegistry', () => {
 			() => runtime,
 		);
 
-		const registry = createToolRegistry(registrations);
+		const registry = createToolRegistry(registrations.tools);
 
 		expect(registry.definitions()).toMatchObject([
 			{
@@ -75,7 +73,7 @@ describe('ToolRegistry', () => {
 			() => runtime,
 		);
 
-		const registry = createToolRegistry(registrations, {
+		const registry = createToolRegistry(registrations.tools, {
 			disabled: ['search'],
 		});
 
@@ -88,35 +86,9 @@ describe('ToolRegistry', () => {
 		expect(registry.filter()).toEqual({ disabled: ['read'] });
 	});
 
-	it('advances its revision only when the enabled filter changes', () => {
-		const registrations = createCoreRegistry(
-			(api) => {
-				api.registerTool(toolSpec('search', 'Search', z.object({})), {
-					execute: async () => 'ok',
-				});
-			},
-			() => runtime,
-		);
-		const registry = createToolRegistry(registrations);
-
-		expect(registry.revision()).toBe(0);
-
-		registry.setEnabled('search', true);
-		expect(registry.revision()).toBe(0);
-
-		registry.setEnabled('search', false);
-		expect(registry.revision()).toBe(1);
-
-		registry.setEnabled('search', false);
-		expect(registry.revision()).toBe(1);
-
-		registry.setEnabled('search', true);
-		expect(registry.revision()).toBe(2);
-	});
-
 	it('returns a copy of its filter', () => {
 		const registrations = createCoreRegistry();
-		const registry = createToolRegistry(registrations, {
+		const registry = createToolRegistry(registrations.tools, {
 			disabled: ['search'],
 		});
 
@@ -125,7 +97,7 @@ describe('ToolRegistry', () => {
 		expect(registry.filter()).toEqual({ disabled: ['search'] });
 	});
 
-	it('dispatches registered tools before the fallback handler', async () => {
+	it('executes registered tools', async () => {
 		const execute = vi.fn(async ({ input }: { input: string }) =>
 			input.toUpperCase(),
 		);
@@ -138,20 +110,16 @@ describe('ToolRegistry', () => {
 			},
 			() => runtime,
 		);
-		const registry = createToolRegistry(registrations);
-		const fallback = vi.fn(async ({ call }: ToolExecuteParams) => ({
-			toolCallId: call.id,
-			content: [{ type: 'text' as const, text: 'fallback' }],
-		}));
+		const registry = createToolRegistry(registrations.tools);
 
 		const result = await registry.dispatch(
 			toolCall('upper', { input: 'hello' }),
-			fallback,
 		);
 
 		expect(execute).toHaveBeenCalledWith({ input: 'hello' }, runtime);
-		expect(fallback).not.toHaveBeenCalled();
-		expect(result.content).toEqual([{ type: 'text', text: 'HELLO' }]);
+		expect(result?.modelOutput.content).toEqual([
+			{ type: 'text', text: 'HELLO' },
+		]);
 	});
 
 	it('binds one runtime value across execute and render for a tool call', async () => {
@@ -171,24 +139,21 @@ describe('ToolRegistry', () => {
 				{ execute, render },
 			);
 		}, getRuntime);
-		const registry = createToolRegistry(registrations);
-		const fallback = vi.fn(async ({ call }: ToolExecuteParams) => ({
-			toolCallId: call.id,
-			content: [{ type: 'text' as const, text: 'fallback' }],
-		}));
+		const registry = createToolRegistry(registrations.tools);
 
 		const result = await registry.dispatch(
 			toolCall('upper', { input: 'hello' }),
-			fallback,
 		);
 
 		expect(getRuntime).toHaveBeenCalledOnce();
 		expect(execute).toHaveBeenCalledWith({ input: 'hello' }, runtime);
 		expect(render).toHaveBeenCalledWith('HELLO', { input: 'hello' }, runtime);
-		expect(result.content).toEqual([{ type: 'text', text: 'rendered:HELLO' }]);
+		expect(result?.modelOutput.content).toEqual([
+			{ type: 'text', text: 'rendered:HELLO' },
+		]);
 	});
 
-	it('rejects disabled registered tool calls before the fallback handler', async () => {
+	it('rejects disabled registered tool calls', async () => {
 		const execute = vi.fn(async () => 'unexpected');
 		const registrations = createCoreRegistry(
 			(api) => {
@@ -198,19 +163,14 @@ describe('ToolRegistry', () => {
 			},
 			() => runtime,
 		);
-		const registry = createToolRegistry(registrations, {
+		const registry = createToolRegistry(registrations.tools, {
 			disabled: ['disabled_tool'],
 		});
-		const fallback = vi.fn(async ({ call }: ToolExecuteParams) => ({
-			toolCallId: call.id,
-			content: [{ type: 'text' as const, text: 'fallback' }],
-		}));
 
-		const result = await registry.dispatch(toolCall('disabled_tool'), fallback);
+		const result = await registry.dispatch(toolCall('disabled_tool'));
 
 		expect(execute).not.toHaveBeenCalled();
-		expect(fallback).not.toHaveBeenCalled();
-		expect(result).toEqual({
+		expect(result?.modelOutput).toEqual({
 			toolCallId: 'call-1',
 			content: [
 				{
@@ -222,7 +182,7 @@ describe('ToolRegistry', () => {
 		});
 	});
 
-	it('preserves fallback dispatch for unknown tools', async () => {
+	it('returns undefined for unknown tools', async () => {
 		const registrations = createCoreRegistry(
 			(api) => {
 				api.registerTool(
@@ -234,17 +194,12 @@ describe('ToolRegistry', () => {
 			},
 			() => runtime,
 		);
-		const registry = createToolRegistry(registrations, {
+		const registry = createToolRegistry(registrations.tools, {
 			disabled: ['registered_tool'],
 		});
-		const fallback = vi.fn(async ({ call }: ToolExecuteParams) => ({
-			toolCallId: call.id,
-			content: [{ type: 'text' as const, text: 'fallback' }],
-		}));
 
-		const result = await registry.dispatch(toolCall('external_tool'), fallback);
+		const result = await registry.dispatch(toolCall('external_tool'));
 
-		expect(fallback).toHaveBeenCalledOnce();
-		expect(result.content).toEqual([{ type: 'text', text: 'fallback' }]);
+		expect(result).toBeUndefined();
 	});
 });

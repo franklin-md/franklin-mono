@@ -22,7 +22,7 @@ export function createCoreCompiler(
 		): Promise<CoreRuntime> => {
 			const registrations = createCoreRegistry(registry, getRuntime);
 			const toolRegistry = createToolRegistry(
-				registrations,
+				registrations.tools,
 				snapshot.toolFilter,
 			);
 			const contextManager = createContextManager({

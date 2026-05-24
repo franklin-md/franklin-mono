@@ -45,7 +45,7 @@ function createTestContextManager(
 	return createContextManager({
 		snapshot: emptySessionSnapshot(),
 		registrations,
-		toolRegistry: createToolRegistry(registrations),
+		toolRegistry: createToolRegistry(registrations.tools),
 	});
 }
 

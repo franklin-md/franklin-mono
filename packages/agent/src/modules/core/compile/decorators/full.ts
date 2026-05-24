@@ -21,7 +21,7 @@ export function createAgentDecorator(
 	return compose(
 		[
 			createPromptDecorator(contextManager, registrations),
-			createToolDecorator(toolRegistry),
+			createToolDecorator(toolRegistry, registrations),
 			createTrackingDecorator(contextManager),
 		].filter(isProtocolDecorator),
 	);

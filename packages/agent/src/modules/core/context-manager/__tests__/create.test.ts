@@ -51,7 +51,7 @@ function createState(input: CreateStateInput) {
 	return createContextManager({
 		snapshot: input.snapshot,
 		registrations: input.registrations,
-		toolRegistry: createToolRegistry(input.registrations),
+		toolRegistry: createToolRegistry(input.registrations.tools),
 	});
 }
 

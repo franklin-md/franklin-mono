@@ -23,7 +23,7 @@ function stubClient(): MiniACPClientHandle {
 function stubRuntime(context: Context): CoreRuntime {
 	const getRuntime = createTestRuntime;
 	const registrations = createCoreRegistry(undefined, getRuntime);
-	const toolRegistry = createToolRegistry(registrations);
+	const toolRegistry = createToolRegistry(registrations.tools);
 	const contextManager = createContextManager({
 		snapshot: emptySessionSnapshot(),
 		registrations,
