@@ -38,9 +38,6 @@ export function createContextManager(
 		contextLedger,
 		usageTracker: usage,
 		getAgentContext: () => contextLedger.get(),
-		add(delta) {
-			usage.add(delta);
-		},
 		getSnapshot() {
 			return contextLedger.getSnapshot(usage.get());
 		},

@@ -1,4 +1,4 @@
-import type { Context, Usage } from '@franklin/mini-acp';
+import type { Context } from '@franklin/mini-acp';
 import type { UsageTracker } from '@franklin/mini-acp/session';
 import type { SessionSnapshot } from '../state.js';
 import type { ContextLedger } from './context-ledger.js';
@@ -17,9 +17,9 @@ import type { ContextLedger } from './context-ledger.js';
  * Mini-ACP `Context` before a prompt.
  */
 export interface ContextManager {
+	// Currently just used for the inspect => May not be the right shape.
 	getAgentContext(): Context;
 	getSnapshot(): SessionSnapshot;
 	readonly contextLedger: ContextLedger;
 	readonly usageTracker: UsageTracker;
-	add(delta: Usage): void;
 }
