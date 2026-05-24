@@ -116,6 +116,27 @@ describe('useAgentList', () => {
 		).toEqual(['agent-1', 'agent-2']);
 	});
 
+	it('can include hidden restored sessions when requested', async () => {
+		const agents = makeMockAgents();
+		agents.sessions.push(
+			createEntry('agent-1'),
+			createEntry('hidden-child', 'hidden'),
+		);
+		const wrapper = makeWrapper(agents);
+
+		const { result } = renderHook(
+			() => useAgentList({ includeHiddenSessions: true }),
+			{ wrapper },
+		);
+
+		await waitFor(() => {
+			expect(result.current.activeSessionId).toBe('hidden-child');
+		});
+		expect(
+			result.current.sessions.map((session) => session.details.id),
+		).toEqual(['agent-1', 'hidden-child']);
+	});
+
 	it('auto-selects the last restored session when there is no active selection', async () => {
 		const agents = makeMockAgents();
 		agents.sessions.push(createEntry('agent-1'), createEntry('agent-2'));
@@ -195,6 +216,34 @@ describe('useAgentList', () => {
 		expect(
 			result.current.sessions.map((session) => session.details.id),
 		).toEqual(['agent-1']);
+	});
+
+	it('selects hidden sessions created through the controller when hidden sessions are included', async () => {
+		const agents = makeMockAgents();
+		agents.sessions.push(createEntry('seed-agent'));
+		const wrapper = makeWrapper(agents);
+
+		const { result } = renderHook(
+			() => useAgentList({ includeHiddenSessions: true }),
+			{ wrapper },
+		);
+
+		await waitFor(() => {
+			expect(result.current.activeSessionId).toBe('seed-agent');
+		});
+
+		let created: RuntimeEntry<FranklinRuntime> | undefined;
+		await act(async () => {
+			created = await result.current.create({
+				state: { details: { visibility: 'hidden' } },
+			});
+		});
+
+		expect(created?.details.visibility).toBe('hidden');
+		expect(result.current.activeSessionId).toBe(created?.details.id);
+		expect(
+			result.current.sessions.map((session) => session.details.id),
+		).toEqual(['seed-agent', created?.details.id]);
 	});
 
 	it('deleting the active session selects the previous session in the list', async () => {

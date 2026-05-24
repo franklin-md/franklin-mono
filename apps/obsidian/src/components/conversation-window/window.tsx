@@ -11,7 +11,9 @@ export function ConversationWindow({
 	getCreateInput,
 }: ConversationWindowProps) {
 	return (
-		<AgentsProvider>
+		<AgentsProvider
+			includeHiddenSessions={process.env.NODE_ENV === 'development'}
+		>
 			<div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background text-foreground">
 				<AgentTabs getCreateInput={getCreateInput} />
 				<ActiveAgent />

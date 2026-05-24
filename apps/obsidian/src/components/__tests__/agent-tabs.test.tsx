@@ -35,6 +35,7 @@ vi.mock('../conversation.js', () => ({
 
 afterEach(() => {
 	cleanup();
+	vi.unstubAllEnvs();
 });
 
 type Listener<T> = (value: T) => void;
@@ -240,6 +241,30 @@ describe('Obsidian agent tabs', () => {
 		expect(screen.getByRole('tab', { name: 'New chat 1' })).toBeTruthy();
 		expect(screen.getByRole('tab', { name: 'New chat 2' })).toBeTruthy();
 		expect(screen.queryByRole('tab', { name: 'New chat 3' })).toBeNull();
+	});
+
+	it('renders invisible compact tabs in development', () => {
+		vi.stubEnv('NODE_ENV', 'development');
+
+		renderApp([
+			createSession('session-a', 'idle'),
+			createSession('session-hidden', 'idle', undefined, 'hidden'),
+			createSession('session-c', 'idle'),
+		]);
+
+		expect(getSessionTab('session-a')).toBeTruthy();
+		const hiddenTab = screen.getByTestId('agent-tab-session-hidden');
+		expect(hiddenTab).toBeTruthy();
+		expect(hiddenTab.getAttribute('data-visibility')).toBe('hidden');
+		expect(hiddenTab.className).toContain('text-amber');
+		expect(within(hiddenTab).getByText('New chat').className).not.toContain(
+			'text-muted-foreground',
+		);
+		expect(
+			screen.getByRole('tab', { name: 'Invisible agent: New chat 2' }),
+		).toBeTruthy();
+		expect(getSessionTab('session-c')).toBeTruthy();
+		expect(screen.getByRole('tab', { name: 'New chat 3' })).toBeTruthy();
 	});
 
 	it('uses chat titles for named sessions and muted new-chat labels as the fallback', async () => {

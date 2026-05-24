@@ -29,6 +29,8 @@ export {
 	useAgents,
 	type AgentCreate,
 	type AgentCreateInput,
+	type AgentListOptions,
+	type AgentsProviderProps,
 	type AgentsControl,
 } from './agent/agents-context.js';
 export {
