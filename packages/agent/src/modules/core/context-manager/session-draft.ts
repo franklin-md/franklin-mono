@@ -13,7 +13,7 @@ import {
 	fieldsInPatch,
 	type ContextField,
 	type ContextRevisions,
-} from './context-fields.js';
+} from './fields.js';
 
 export type SessionDrafter = (
 	context: SessionDraftContext,
@@ -58,7 +58,7 @@ export class SessionDraft {
 	}
 
 	get(): Context {
-		return this.tracker.get();
+		return copyContext(this.tracker.get());
 	}
 
 	revision(field: ContextField): string {
@@ -142,19 +142,19 @@ function revisionStamp(field: ContextField, revision: number): string {
 	return `draft:${field}:${revision}`;
 }
 
+export function pickLLMConfig(cfg: LLMConfig): SessionSnapshot['llmConfig'] {
+	return {
+		model: cfg.model,
+		provider: cfg.provider,
+		reasoning: cfg.reasoning,
+	};
+}
+
 function copyContext(context: Context): Context {
 	return {
 		systemPrompt: context.systemPrompt,
 		messages: [...context.messages],
 		tools: [...context.tools],
 		config: { ...context.config },
-	};
-}
-
-export function pickLLMConfig(cfg: LLMConfig): SessionSnapshot['llmConfig'] {
-	return {
-		model: cfg.model,
-		provider: cfg.provider,
-		reasoning: cfg.reasoning,
 	};
 }

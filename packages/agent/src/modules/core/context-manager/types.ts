@@ -1,7 +1,7 @@
 import type { Context } from '@franklin/mini-acp';
-import type { UsageTracker } from '@franklin/mini-acp/session';
+import type { ContextRecorder, UsageTracker } from '@franklin/mini-acp/session';
 import type { SessionSnapshot } from '../state.js';
-import type { ContextLedger } from './context-ledger.js';
+import type { ContextLedger } from './ledger/index.js';
 
 /**
  * Internal core context ledger.
@@ -21,5 +21,6 @@ export interface ContextManager {
 	getAgentContext(): Context;
 	getSnapshot(): SessionSnapshot;
 	readonly contextLedger: ContextLedger;
+	readonly contextRecorder: ContextRecorder;
 	readonly usageTracker: UsageTracker;
 }

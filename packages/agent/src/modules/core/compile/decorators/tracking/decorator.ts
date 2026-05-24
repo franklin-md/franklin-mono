@@ -13,13 +13,13 @@ export function createTrackingDecorator(
 	return {
 		name: 'tracking',
 		async server(s) {
-			return trackAgent(contextManager.contextLedger, s);
+			return trackAgent(contextManager.contextRecorder, s);
 		},
 		async client(c) {
 			const usageTracked = decorateTurn(c, (turn) =>
 				trackUsage(contextManager.usageTracker, turn),
 			);
-			return trackClient(contextManager.contextLedger, usageTracked);
+			return trackClient(contextManager.contextRecorder, usageTracked);
 		},
 	};
 }

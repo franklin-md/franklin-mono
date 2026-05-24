@@ -81,13 +81,61 @@ describe('createContextManager', () => {
 		});
 	});
 
+	it('exposes draft state through the ledger and keeps runtime-only context out of the draft', async () => {
+		const client = stubClient();
+		const contextManager = createState({
+			snapshot: emptySnapshot(),
+			registrations: createCoreRegistry(
+				(api) => {
+					api.on('systemPrompt', (systemPrompt) => {
+						systemPrompt.setPart('system');
+					});
+					api.registerTool(
+						{
+							name: 'lookup',
+							description: 'Lookup a value',
+							schema: z.object({ query: z.string() }),
+						},
+						{
+							execute: () => 'ok',
+						},
+					);
+				},
+				() => runtime,
+			),
+		});
+
+		await contextManager.contextLedger.sync(client);
+
+		expect(contextManager.contextLedger.getDraft()).toEqual({
+			systemPrompt: '',
+			messages: [],
+			tools: [],
+			config: {},
+		});
+		expect(contextManager.getAgentContext().systemPrompt).toBe('system');
+		expect(contextManager.getAgentContext().tools).toHaveLength(1);
+	});
+
+	it('keeps snapshot projection on the context manager instead of the ledger', () => {
+		const contextManager = createState({
+			snapshot: emptySnapshot(),
+			registrations: createCoreRegistry(),
+		});
+
+		expect(contextManager.getSnapshot()).toEqual(emptySnapshot());
+		expect(contextManager.contextLedger).not.toHaveProperty('getSnapshot');
+		expect(contextManager.contextLedger).not.toHaveProperty('apply');
+		expect(contextManager.contextLedger).not.toHaveProperty('append');
+	});
+
 	it('does not treat absent handlers as a request to clear sent context', async () => {
 		const client = stubClient();
 		const contextManager = createState({
 			snapshot: emptySnapshot(),
 			registrations: createCoreRegistry(),
 		});
-		contextManager.contextLedger.apply({ systemPrompt: 'external' });
+		contextManager.contextRecorder.apply({ systemPrompt: 'external' });
 
 		await contextManager.contextLedger.sync(client);
 
@@ -260,8 +308,8 @@ describe('createContextManager', () => {
 		};
 
 		await contextManager.contextLedger.sync(client);
-		contextManager.contextLedger.append(userMessage);
-		contextManager.contextLedger.append(assistantMessage);
+		contextManager.contextRecorder.append(userMessage);
+		contextManager.contextRecorder.append(assistantMessage);
 		await contextManager.contextLedger.sync(client);
 
 		expect(client.setContext).toHaveBeenCalledExactlyOnceWith({

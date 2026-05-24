@@ -19,7 +19,7 @@ function stubRuntime(context: Context): CoreRuntime {
 		registrations,
 		toolRegistry: createToolRegistry(registrations),
 	});
-	contextManager.contextLedger.apply(context);
+	contextManager.contextRecorder.apply(context);
 	return attachContextManager(
 		{
 			getSession: () => contextManager.getSnapshot(),
