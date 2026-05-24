@@ -12,7 +12,6 @@ import { createRegistryView } from '@franklin/extensibility';
 import { createRegistry } from '@franklin/extensibility';
 import { combineRuntimes } from '@franklin/extensibility';
 import { combineExtensionPoints } from '@franklin/extensibility';
-import type { BaseRuntime } from '@franklin/extensibility';
 import type { Extension } from '@franklin/extensibility';
 import {
 	createConfigurationModule,
@@ -167,35 +166,6 @@ function hasToolMiddleware(
 		observers.toolCall.listenerCount > 0 ||
 		observers.toolResult.listenerCount > 0
 	);
-}
-
-/**
- * Build middleware from a Core-only extension without spinning up a
- * transport. Handlers receive `undefined` as their ctx — tests that
- * touch runtime should use `compileCoreWithStore` / `compileCoreWithEnv`
- * instead.
- *
- * `systemPrompt` handlers registered by the extension are not fired —
- * they belong to the transport path (`createCoreRuntime`) which these
- * helpers deliberately skip. The registrar's `on('systemPrompt', ...)`
- * accepts them silently; tests that need systemPrompt behaviour must
- * use a full runtime.
- */
-export function compileCoreExt<Ctx extends BaseRuntime = BaseRuntime>(
-	ext: Extension<API<CoreSignature, Ctx>>,
-	getCtx: () => Ctx = (() => undefined) as unknown as () => Ctx,
-): { middleware: FullMiddleware; tools: ToolDefinition[] } {
-	const { registry, writer } = createRegistry<CoreSignature, Ctx>();
-	const api = createApi<CoreSignature, Ctx>(coreExtensionPoint, writer);
-	ext(api);
-	const registrations = createBoundCoreRegistry(
-		createRegistryView(registry),
-		getCtx,
-	);
-	const toolRegistry = createToolRegistry(registrations.tools);
-	const middleware = buildTestMiddleware(registrations, toolRegistry);
-	const tools = toolRegistry.definitions();
-	return { middleware, tools };
 }
 
 /**
