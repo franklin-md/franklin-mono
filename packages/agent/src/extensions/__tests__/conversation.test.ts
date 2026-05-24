@@ -7,7 +7,6 @@ import type {
 	MiniACPClient,
 	Chunk,
 	ToolExecuteParams,
-	ToolResult,
 	Update,
 	TurnEnd,
 	Usage,
@@ -424,20 +423,30 @@ describe('conversationExtension', () => {
 		});
 	});
 
-	it('records overlapping tool calls with independent lifecycles through middleware', async () => {
-		const { middleware, stores } = await compileConversation();
+	it('records overlapping registered tool calls with independent lifecycles', async () => {
+		type Output = { text: string };
+		const spec = toolSpec<'spawn', { name: string; prompt: string }, Output>(
+			'spawn',
+			'Spawns work',
+			z.object({ name: z.string(), prompt: z.string() }),
+		);
+		const resolvers = new Map<string, (output: Output) => void>();
+		const conversation = conversationExtension();
+		const { middleware, stores } = await compileCoreWithStore((api) => {
+			conversation(api);
+			api.registerTool(spec, {
+				execute: ({ name }) =>
+					new Promise<Output>((resolve) => {
+						resolvers.set(name, resolve);
+					}),
+				render: ({ text }) => ({
+					content: [{ type: 'text', text }],
+				}),
+			});
+		});
 		let now = 0;
 		const dateNow = vi.spyOn(Date, 'now').mockImplementation(() => now);
-		const resolvers = new Map<string, (result: ToolResult) => void>();
-		const agent = stubAgent({
-			toolExecute: vi.fn(
-				({ call }: ToolExecuteParams) =>
-					new Promise<ToolResult>((resolve) => {
-						resolvers.set(call.id, resolve);
-					}),
-			),
-		});
-		const wrappedAgent = apply(middleware.server, agent);
+		const wrappedAgent = apply(middleware.server, stubAgent());
 
 		const target = stubClient({
 			prompt: async function* () {
@@ -462,17 +471,11 @@ describe('conversationExtension', () => {
 				});
 
 				now = 500;
-				resolvers.get('tc1')?.({
-					toolCallId: 'tc1',
-					content: [{ type: 'text', text: 'first done' }],
-				});
+				resolvers.get('First')?.({ text: 'first done' });
 				await first;
 
 				now = 900;
-				resolvers.get('tc2')?.({
-					toolCallId: 'tc2',
-					content: [{ type: 'text', text: 'second done' }],
-				});
+				resolvers.get('Second')?.({ text: 'second done' });
 				await second;
 			},
 		});
