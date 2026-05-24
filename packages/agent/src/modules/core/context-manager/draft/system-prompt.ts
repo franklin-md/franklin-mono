@@ -1,6 +1,5 @@
-import type { ToolRegistry } from '../tools/index.js';
-import type { SystemPromptBuilder } from './system-prompt/index.js';
-import type { SessionDrafter } from './session-draft.js';
+import type { SystemPromptBuilder } from '../system-prompt/index.js';
+import type { SessionDrafter } from './types.js';
 
 export function createSystemPromptDrafter(
 	builder: SystemPromptBuilder,
@@ -16,13 +15,5 @@ export function createSystemPromptDrafter(
 			revision += 1;
 		}
 		context.setSystemPrompt(systemPrompt, `system-prompt:${revision}`);
-	};
-}
-
-export function createToolDefinitionDrafter(
-	tools: ToolRegistry,
-): SessionDrafter {
-	return (context) => {
-		context.setTools(tools.definitions(), `tools:${tools.revision()}`);
 	};
 }

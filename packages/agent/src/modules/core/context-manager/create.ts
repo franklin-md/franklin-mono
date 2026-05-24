@@ -1,15 +1,10 @@
 import { UsageTracker } from '@franklin/mini-acp/session';
-import type { Usage } from '@franklin/mini-acp';
+import type { LLMConfig, Usage } from '@franklin/mini-acp';
 import type { CoreRegistry } from '../registrations/index.js';
 import type { SessionSnapshot } from '../state.js';
 import type { ToolRegistry } from '../tools/index.js';
+import { createSessionDraft } from './draft/index.js';
 import { createContextLedger } from './ledger/index.js';
-import {
-	createSystemPromptDrafter,
-	createToolDefinitionDrafter,
-} from './drafters.js';
-import { pickLLMConfig, SessionDraft } from './session-draft.js';
-import { createSystemPromptBuilder } from './system-prompt/index.js';
 import type { ContextManager } from './types.js';
 
 type CreateContextManagerInput = {
@@ -23,12 +18,7 @@ export function createContextManager(
 ): ContextManager {
 	const usage = new UsageTracker();
 	usage.add(input.snapshot.usage);
-	const systemPrompt = createSystemPromptBuilder({
-		registrations: input.registrations,
-	});
-	const draft = SessionDraft.fromSnapshot(input.snapshot);
-	draft.addDrafter(createSystemPromptDrafter(systemPrompt));
-	draft.addDrafter(createToolDefinitionDrafter(input.toolRegistry));
+	const draft = createSessionDraft(input);
 	const contextLedger = createContextLedger({ draft });
 
 	return {
@@ -54,5 +44,13 @@ function snapshotUsage(usage: Usage): Usage {
 	return {
 		tokens: { ...usage.tokens },
 		cost: { ...usage.cost },
+	};
+}
+
+function pickLLMConfig(cfg: LLMConfig): SessionSnapshot['llmConfig'] {
+	return {
+		model: cfg.model,
+		provider: cfg.provider,
+		reasoning: cfg.reasoning,
 	};
 }

@@ -14,7 +14,7 @@ import {
 	type ContextField,
 	type ContextRevisions,
 } from '../fields.js';
-import type { SessionDraft } from '../session-draft.js';
+import type { SessionDraft } from '../draft/index.js';
 import { contextToPatch, copyContext, copyContextPatch } from './copy.js';
 
 type ContextLedgerState = {

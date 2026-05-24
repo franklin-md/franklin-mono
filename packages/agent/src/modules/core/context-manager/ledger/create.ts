@@ -1,4 +1,4 @@
-import type { SessionDraft } from '../session-draft.js';
+import type { SessionDraft } from '../draft/index.js';
 import { ContextLedger } from './ledger.js';
 
 type CreateContextLedgerInput = {

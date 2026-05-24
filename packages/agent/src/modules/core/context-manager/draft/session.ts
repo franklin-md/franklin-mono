@@ -1,28 +1,15 @@
-import type {
-	Context,
-	ContextPatch,
-	LLMConfig,
-	Message,
-	ToolDefinition,
-} from '@franklin/mini-acp';
+import type { Context, ContextPatch, Message } from '@franklin/mini-acp';
 import { ContextTracker } from '@franklin/mini-acp/session';
-import type { MaybePromise } from '../../../utils/maybe-promise.js';
-import type { SessionSnapshot } from '../state.js';
+import type { SessionSnapshot } from '../../state.js';
 import {
 	contextFields,
 	fieldsInPatch,
 	type ContextField,
 	type ContextRevisions,
-} from './fields.js';
-
-export type SessionDrafter = (
-	context: SessionDraftContext,
-) => MaybePromise<void>;
-
-export type SessionCommit = {
-	readonly context: Context;
-	readonly revisions: ContextRevisions;
-};
+} from '../fields.js';
+import { DraftContext } from './context.js';
+import { copyContext } from './copy.js';
+import type { SessionCommit, SessionDrafter } from './types.js';
 
 export class SessionDraft {
 	private readonly tracker = new ContextTracker();
@@ -66,7 +53,7 @@ export class SessionDraft {
 	}
 
 	async commit(): Promise<SessionCommit> {
-		const context = new SessionDraftContext(
+		const context = new DraftContext(
 			copyContext(this.tracker.get()),
 			currentRevisions(this.revisions),
 		);
@@ -86,35 +73,6 @@ export class SessionDraft {
 		for (const field of fields) {
 			this.bump(field);
 		}
-	}
-}
-
-export class SessionDraftContext {
-	constructor(
-		private readonly context: Context,
-		private readonly revisions: ContextRevisions,
-	) {}
-
-	setSystemPrompt(systemPrompt: string, revision: string): void {
-		this.context.systemPrompt = systemPrompt;
-		this.setRevision('systemPrompt', revision);
-	}
-
-	setTools(tools: readonly ToolDefinition[], revision: string): void {
-		this.context.tools = [...tools];
-		this.setRevision('tools', revision);
-	}
-
-	commit(): SessionCommit {
-		return {
-			context: copyContext(this.context),
-			revisions: { ...this.revisions },
-		};
-	}
-
-	private setRevision(field: ContextField, revision: string): void {
-		if (this.revisions[field] === revision) return;
-		this.revisions[field] = revision;
 	}
 }
 
@@ -140,21 +98,4 @@ function currentRevisions(
 
 function revisionStamp(field: ContextField, revision: number): string {
 	return `draft:${field}:${revision}`;
-}
-
-export function pickLLMConfig(cfg: LLMConfig): SessionSnapshot['llmConfig'] {
-	return {
-		model: cfg.model,
-		provider: cfg.provider,
-		reasoning: cfg.reasoning,
-	};
-}
-
-function copyContext(context: Context): Context {
-	return {
-		systemPrompt: context.systemPrompt,
-		messages: [...context.messages],
-		tools: [...context.tools],
-		config: { ...context.config },
-	};
 }
