@@ -7,8 +7,8 @@ import { startNewBlock } from './blocks/start.js';
  * Append a streaming chunk to the conversation store.
  *
  * Coalesces adjacent chunks of the same kind into a single open block.
- * When a chunk of a different kind arrives, startNewBlock closes the
- * previously-open block and pushes the new one at the same instant.
+ * When a chunk of a different kind arrives, only the trailing text/thinking
+ * block closes; open toolUse blocks stay active until their matching result.
  */
 export function handleChunk(turn: ConversationTurn, chunk: Chunk): void {
 	const { content } = chunk;
