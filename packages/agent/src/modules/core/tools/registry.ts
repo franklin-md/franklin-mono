@@ -1,6 +1,5 @@
 import { createObserver } from '@franklin/lib';
 import type { Observer } from '@franklin/lib';
-import type { MethodMiddleware } from '@franklin/lib/middleware';
 import type {
 	MiniACPAgent,
 	ToolDefinition,
@@ -61,10 +60,6 @@ export class ToolRegistry {
 		if (this.disabled.has(name)) return;
 		this.disabled.add(name);
 		this.version += 1;
-	}
-
-	createHandler(): MethodMiddleware<MiniACPAgent['toolExecute']> {
-		return (params, next) => this.dispatch(params, next);
 	}
 
 	async dispatch(

@@ -28,7 +28,6 @@ import {
 } from '../modules/core/registrations/index.js';
 import { createPromptBuilder } from '../modules/core/compile/decorators/prompt/build-prompt/index.js';
 import { createPromptObserver } from '../modules/core/compile/decorators/prompt/observer/index.js';
-import { buildToolServerMiddleware } from '../modules/core/compile/decorators/tool/index.js';
 import {
 	createToolRegistry,
 	type ToolRegistry,
@@ -115,10 +114,15 @@ function buildTestMiddleware(
 		prompt,
 		cancel: passThrough(),
 	};
+	const server: ServerMiddleware = {
+		toolExecute: toolRegistry.hasRegistrations()
+			? (params, next) => toolRegistry.dispatch(params, next)
+			: passThrough<MiniACPAgent['toolExecute']>(),
+	};
 
 	return {
 		client,
-		server: buildToolServerMiddleware(toolRegistry),
+		server,
 	};
 }
 

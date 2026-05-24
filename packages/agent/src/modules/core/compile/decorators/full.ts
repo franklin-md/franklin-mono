@@ -3,7 +3,7 @@ import type { CoreRegistry } from '../../registrations/index.js';
 import type { ToolRegistry } from '../../tools/index.js';
 import { compose } from './compose.js';
 import { createPromptDecorator } from './prompt/index.js';
-import { createToolDecorator } from './tool/index.js';
+import { createToolDecorator } from './tool.js';
 import { createTrackingDecorator } from './tracking/index.js';
 import type { ProtocolDecorator } from './types.js';
 

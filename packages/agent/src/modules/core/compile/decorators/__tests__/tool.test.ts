@@ -6,13 +6,10 @@ import type {
 import type { JsonObject } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { createToolDecorator } from '../decorator.js';
-import { createToolRegistry } from '../../../../tools/index.js';
-import {
-	createCoreRegistry,
-	createTestRuntime,
-} from '../../__tests__/registry.js';
-import { toolSpec } from '../../../../api/tool-spec.js';
+import { createToolDecorator } from '../tool.js';
+import { createToolRegistry } from '../../../tools/index.js';
+import { createCoreRegistry, createTestRuntime } from './registry.js';
+import { toolSpec } from '../../../api/tool-spec.js';
 
 const runtime = createTestRuntime();
 
