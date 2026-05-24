@@ -6,7 +6,7 @@ import {
 	TextSearch,
 } from 'lucide-react';
 
-import { filesystemExtension } from '@franklin/agent';
+import { filesystemBundle } from '@franklin/agent';
 import type { ToolRendererRegistryEntries } from '@franklin/react';
 
 import { FileBadge } from '../../../components/file-icon/badge.js';
@@ -14,17 +14,17 @@ import { ToolSummaryDetail } from '../summary.js';
 import { toolEntry } from '../entry.js';
 
 export const fileToolRenderers = [
-	toolEntry(filesystemExtension.tools.readFile, FileText, 'Read', (args) => (
+	toolEntry(filesystemBundle.tools.readFile, FileText, 'Read', (args) => (
 		<FileBadge path={args.path} />
 	)),
-	toolEntry(filesystemExtension.tools.writeFile, FilePlus, 'Write', (args) => (
+	toolEntry(filesystemBundle.tools.writeFile, FilePlus, 'Write', (args) => (
 		<FileBadge path={args.path} />
 	)),
-	toolEntry(filesystemExtension.tools.editFile, Pencil, 'Edit', (args) => (
+	toolEntry(filesystemBundle.tools.editFile, Pencil, 'Edit', (args) => (
 		<FileBadge path={args.path} />
 	)),
 	toolEntry(
-		filesystemExtension.tools.glob,
+		filesystemBundle.tools.glob,
 		FolderSearch,
 		'Search files',
 		(args) => (
@@ -33,7 +33,7 @@ export const fileToolRenderers = [
 			</ToolSummaryDetail>
 		),
 	),
-	toolEntry(filesystemExtension.tools.grep, TextSearch, 'Grep', (args) => (
+	toolEntry(filesystemBundle.tools.grep, TextSearch, 'Grep', (args) => (
 		<ToolSummaryDetail>{args.pattern}</ToolSummaryDetail>
 	)),
 ] satisfies ToolRendererRegistryEntries;

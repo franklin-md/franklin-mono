@@ -7,7 +7,7 @@ import {
 	createWebExtension,
 	DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
 	EXA_WEB_SEARCH_PROVIDER_ID,
-	filesystemExtension,
+	filesystemBundle,
 	spawnExtension,
 	todoExtension,
 	type ToolUseBlock,
@@ -76,7 +76,7 @@ function renderSummary(
 describe('defaultToolRegistry', () => {
 	describe('file tools', () => {
 		it('renders read with file badge', () => {
-			renderSummary(filesystemExtension.tools.readFile.name, {
+			renderSummary(filesystemBundle.tools.readFile.name, {
 				path: 'src/conversation/tool-use.tsx',
 			});
 			expect(screen.getByText('Read')).toBeTruthy();
@@ -84,7 +84,7 @@ describe('defaultToolRegistry', () => {
 		});
 
 		it('renders write with file badge', () => {
-			renderSummary(filesystemExtension.tools.writeFile.name, {
+			renderSummary(filesystemBundle.tools.writeFile.name, {
 				path: 'src/new-file.ts',
 				content: '',
 			});
@@ -93,7 +93,7 @@ describe('defaultToolRegistry', () => {
 		});
 
 		it('renders edit with file badge', () => {
-			renderSummary(filesystemExtension.tools.editFile.name, {
+			renderSummary(filesystemBundle.tools.editFile.name, {
 				path: 'src/index.ts',
 			});
 			expect(screen.getByText('Edit')).toBeTruthy();
@@ -101,7 +101,7 @@ describe('defaultToolRegistry', () => {
 		});
 
 		it('renders glob with pattern detail', () => {
-			renderSummary(filesystemExtension.tools.glob.name, {
+			renderSummary(filesystemBundle.tools.glob.name, {
 				pattern: '**/*.tsx',
 			});
 			expect(screen.getByText('Search files')).toBeTruthy();

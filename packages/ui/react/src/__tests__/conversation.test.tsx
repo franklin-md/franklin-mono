@@ -1,7 +1,7 @@
 import { describe, it, expect, expectTypeOf, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import {
-	filesystemExtension,
+	filesystemBundle,
 	type ConversationTurn,
 	type TextBlock,
 	type ThinkingBlock,
@@ -30,8 +30,8 @@ import type {
 	ToolStatus,
 } from '../conversation/tools/types.js';
 
-const readFileSpec = filesystemExtension.tools.readFile;
-const grepSpec = filesystemExtension.tools.grep;
+const readFileSpec = filesystemBundle.tools.readFile;
+const grepSpec = filesystemBundle.tools.grep;
 
 // ---------------------------------------------------------------------------
 // computeToolStatus

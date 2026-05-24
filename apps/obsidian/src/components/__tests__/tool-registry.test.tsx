@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { filesystemExtension, type ToolUseBlock } from '@franklin/agent';
+import { filesystemBundle, type ToolUseBlock } from '@franklin/agent';
 import type { JsonObject } from '@franklin/lib';
 import { resolveToolRenderer } from '@franklin/react';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -39,7 +39,7 @@ function renderSummary(name: string, args: JsonObject) {
 
 describe('obsidianToolRegistry', () => {
 	it('uses the later Obsidian file renderer override for wikilink paths', () => {
-		renderSummary(filesystemExtension.tools.readFile.name, {
+		renderSummary(filesystemBundle.tools.readFile.name, {
 			path: '[[MEMORY]]',
 		});
 

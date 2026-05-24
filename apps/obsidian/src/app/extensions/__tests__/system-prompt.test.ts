@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { FranklinAPI } from '@franklin/agent';
 import {
-	filesystemExtension,
+	filesystemBundle,
 	type SystemPromptContent,
 	type SystemPromptHandler,
 	type CoreSignature,
@@ -20,9 +20,9 @@ import { obsidianSystemPromptExtension } from '../system-prompt.js';
 
 const wikilinkPathToolNames = oxfordJoin(
 	[
-		filesystemExtension.tools.readFile.name,
-		filesystemExtension.tools.writeFile.name,
-		filesystemExtension.tools.editFile.name,
+		filesystemBundle.tools.readFile.name,
+		filesystemBundle.tools.writeFile.name,
+		filesystemBundle.tools.editFile.name,
 	].map((name) => `\`${name}\``),
 );
 

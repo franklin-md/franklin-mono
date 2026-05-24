@@ -26,10 +26,7 @@ export { createStatusControl, statusExtension } from './status/index.js';
 export type { StatusControl, StatusState } from './status/index.js';
 
 // Filesystem
-export {
-	createFilesystemExtension,
-	filesystemExtension,
-} from './filesystem/index.js';
+export { filesystemBundle, filesystemExtension } from './filesystem/index.js';
 
 // PDF
 export {

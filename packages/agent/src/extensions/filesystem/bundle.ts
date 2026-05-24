@@ -12,7 +12,7 @@ import { readFileSpec } from './read/tools.js';
 import { writeExtension } from './write/extension.js';
 import { writeFileSpec } from './write/tools.js';
 
-export function createFilesystemExtension() {
+function createFilesystemBundle() {
 	return createBundle({
 		extension: reduceExtensions(
 			editExtension(),
@@ -32,4 +32,5 @@ export function createFilesystemExtension() {
 	});
 }
 
-export const filesystemExtension = createFilesystemExtension();
+export const filesystemBundle = createFilesystemBundle();
+export const filesystemExtension = filesystemBundle.extension;
