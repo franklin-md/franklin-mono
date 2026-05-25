@@ -11,6 +11,7 @@ import type { StreamFn } from '@earendil-works/pi-agent-core';
 
 import { createPiAgent } from '../backend/pi/agent.js';
 import type { MiniACPAgent, MiniACPClient } from '../protocol/index.js';
+import type { ContextPatch } from '../types/context.js';
 import { StopCode } from '../types/stop-code.js';
 import type { ToolDefinition } from '../types/tool.js';
 import { collect } from '../utils/collect.js';
@@ -179,8 +180,9 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 		expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
 	});
 
-	it('defers system prompt, messages, and config changes until the next Mini-ACP prompt', async () => {
+	it('rejects non-tool context changes during an active Mini-ACP prompt', async () => {
 		const clientRef: { current?: MiniACPClient } = {};
+		const rejectedPatches: string[] = [];
 		const toolExecutions: string[] = [];
 		const observations: Array<{
 			model: string;
@@ -228,22 +230,43 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 				}
 				const client = clientRef.current;
 				if (!client) throw new Error('client not initialized');
-				await client.setContext({
-					systemPrompt: 'deferred system',
+				const expectRejected = async (
+					name: string,
+					patch: ContextPatch,
+				): Promise<void> => {
+					try {
+						await client.setContext(patch);
+					} catch (error) {
+						rejectedPatches.push(
+							`${name}: ${error instanceof Error ? error.message : String(error)}`,
+						);
+						return;
+					}
+					throw new Error(`${name} setContext unexpectedly succeeded`);
+				};
+				await expectRejected('systemPrompt', {
+					systemPrompt: 'rejected system',
+				});
+				await expectRejected('messages', {
 					messages: [
 						{
 							role: 'user',
-							content: [{ type: 'text', text: 'deferred history' }],
+							content: [{ type: 'text', text: 'rejected history' }],
 						},
 					],
-					tools: [openVaultTool, getMoneyTool],
+				});
+				await expectRejected('config', {
 					config: {
-						provider: 'openai-codex',
-						model: 'gpt-5.4-mini',
-						apiKey: 'deferred-key',
-						reasoning: 'high',
+						apiKey: 'rejected-key',
 					},
 				});
+				await expectRejected('mixed tools config', {
+					tools: [openVaultTool, getMoneyTool],
+					config: {
+						apiKey: 'rejected-key',
+					},
+				});
+				await client.setContext({ tools: [openVaultTool, getMoneyTool] });
 				return {
 					toolCallId: call.id,
 					content: [{ type: 'text', text: 'vault opened' }],
@@ -285,6 +308,12 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 		);
 
 		expect(toolExecutions).toEqual(['open_vault']);
+		expect(rejectedPatches).toEqual([
+			expect.stringMatching(/^systemPrompt: .*only accepts tools/),
+			expect.stringMatching(/^messages: .*only accepts tools/),
+			expect.stringMatching(/^config: .*only accepts tools/),
+			expect.stringMatching(/^mixed tools config: .*only accepts tools/),
+		]);
 		expect(observations).toHaveLength(3);
 		expect(observations[0]).toMatchObject({
 			model: 'openrouter/free',
@@ -302,17 +331,17 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 			systemPrompt: 'initial system',
 			toolNames: ['open_vault', 'get_money'],
 		});
-		expect(observations[1]?.userTexts).not.toContain('deferred history');
+		expect(observations[1]?.userTexts).not.toContain('rejected history');
 		expect(observations[2]).toMatchObject({
-			model: 'gpt-5.4-mini',
-			reasoning: 'high',
-			systemPrompt: 'deferred system',
+			model: 'openrouter/free',
+			reasoning: 'low',
+			systemPrompt: 'initial system',
 			toolNames: ['open_vault', 'get_money'],
 		});
 		expect(observations[2]?.userTexts).toEqual(
-			expect.arrayContaining(['deferred history', 'second prompt']),
+			expect.arrayContaining(['seed history', 'first prompt', 'second prompt']),
 		);
-		expect(observations[2]?.userTexts).not.toContain('first prompt');
+		expect(observations[2]?.userTexts).not.toContain('rejected history');
 	});
 
 	it('keeps assistant updates in context for the next Mini-ACP prompt', async () => {

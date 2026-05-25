@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ToolExecuteParams } from '../types/tool.js';
 
-const agentInstances: Array<{
+type MockPiAgent = {
 	subscribe: ReturnType<typeof vi.fn>;
 	prompt: ReturnType<typeof vi.fn>;
 	abort: ReturnType<typeof vi.fn>;
@@ -10,20 +10,31 @@ const agentInstances: Array<{
 		systemPrompt: string;
 		messages: unknown[];
 		tools: unknown[];
+		model?: { id: string };
+		thinkingLevel?: string;
 	};
-}> = [];
+};
+
+const agentInstances: MockPiAgent[] = [];
 const agentConstructor = vi.fn();
-let promptImplementation: () => Promise<void> = async () => {};
+let promptImplementation: (
+	agent: MockPiAgent,
+	message: unknown,
+) => Promise<void> = async () => {};
 
 vi.mock('@earendil-works/pi-agent-core', () => ({
 	Agent: class {
 		readonly subscribe = vi.fn(() => () => {});
-		readonly prompt = vi.fn(() => promptImplementation());
+		readonly prompt = vi.fn(
+			(message: unknown): Promise<void> => promptImplementation(this, message),
+		);
 		readonly abort = vi.fn();
 		readonly state: {
 			systemPrompt: string;
 			messages: unknown[];
 			tools: unknown[];
+			model?: { id: string };
+			thinkingLevel?: string;
 		};
 
 		constructor(options: {
@@ -31,12 +42,16 @@ vi.mock('@earendil-works/pi-agent-core', () => ({
 				systemPrompt?: string;
 				messages?: unknown[];
 				tools?: unknown[];
+				model?: { id: string };
+				thinkingLevel?: string;
 			};
 		}) {
 			this.state = {
 				systemPrompt: options.initialState?.systemPrompt ?? '',
 				messages: options.initialState?.messages ?? [],
 				tools: options.initialState?.tools ?? [],
+				model: options.initialState?.model,
+				thinkingLevel: options.initialState?.thinkingLevel,
 			};
 			agentConstructor(options);
 			agentInstances.push(this);
@@ -67,7 +82,7 @@ describe('createPiAgent', () => {
 		expect(client.cancel).toEqual(expect.any(Function));
 	});
 
-	it('creates Pi core agents with the current context and options', async () => {
+	it('creates one Pi core agent and applies current context before prompting', async () => {
 		const streamFn = vi.fn();
 		const server = {
 			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
@@ -99,6 +114,8 @@ describe('createPiAgent', () => {
 			},
 		});
 
+		expect(agentConstructor).toHaveBeenCalledOnce();
+
 		for await (const _event of client.prompt({
 			role: 'user',
 			content: [{ type: 'text', text: 'hello' }],
@@ -109,17 +126,20 @@ describe('createPiAgent', () => {
 		expect(agentConstructor).toHaveBeenCalledOnce();
 		const [options] = agentConstructor.mock.calls[0] ?? [];
 		expect(options).toMatchObject({
-			initialState: {
-				systemPrompt: 'system prompt',
-				tools: [expect.objectContaining({ name: 'echo' })],
-				messages: [
-					expect.objectContaining({
-						role: 'user',
-						content: [{ type: 'text', text: 'seed' }],
-					}),
-				],
-			},
+			initialState: {},
 			streamFn,
+		});
+		expect(agentInstances[0]?.state).toMatchObject({
+			systemPrompt: 'system prompt',
+			model: expect.objectContaining({ id: 'gpt-5.4' }),
+			thinkingLevel: 'off',
+			tools: [expect.objectContaining({ name: 'echo' })],
+			messages: [
+				expect.objectContaining({
+					role: 'user',
+					content: [{ type: 'text', text: 'seed' }],
+				}),
+			],
 		});
 		const getApiKey = (
 			options as { getApiKey?: (provider: string) => string | undefined }
@@ -129,6 +149,64 @@ describe('createPiAgent', () => {
 		expect((options as { prepareNextTurn?: unknown }).prepareNextTurn).toEqual(
 			expect.any(Function),
 		);
+	});
+
+	it('reuses the same Pi core agent across prompts', async () => {
+		promptImplementation = async (agent, message) => {
+			agent.state.messages.push(message);
+			agent.state.messages.push({
+				role: 'assistant',
+				content: [
+					{ type: 'text', text: `reply-${agent.state.messages.length}` },
+				],
+			});
+		};
+		const client = createPiAgent({
+			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
+				toolCallId: call.id,
+				content: [],
+			})),
+		});
+		await client.setContext({
+			config: {
+				provider: 'openai-codex',
+				model: 'gpt-5.4',
+				apiKey: 'oauth-token',
+			},
+		});
+
+		for await (const _event of client.prompt({
+			role: 'user',
+			content: [{ type: 'text', text: 'first' }],
+		})) {
+			// The mocked Pi core agent emits no stream events.
+		}
+		for await (const _event of client.prompt({
+			role: 'user',
+			content: [{ type: 'text', text: 'second' }],
+		})) {
+			// The mocked Pi core agent emits no stream events.
+		}
+
+		expect(agentConstructor).toHaveBeenCalledOnce();
+		expect(agentInstances[0]?.state.messages).toEqual([
+			expect.objectContaining({
+				role: 'user',
+				content: [{ type: 'text', text: 'first' }],
+			}),
+			expect.objectContaining({
+				role: 'assistant',
+				content: [{ type: 'text', text: 'reply-1' }],
+			}),
+			expect.objectContaining({
+				role: 'user',
+				content: [{ type: 'text', text: 'second' }],
+			}),
+			expect.objectContaining({
+				role: 'assistant',
+				content: [{ type: 'text', text: 'reply-3' }],
+			}),
+		]);
 	});
 
 	it('cancels the active Pi core agent', async () => {

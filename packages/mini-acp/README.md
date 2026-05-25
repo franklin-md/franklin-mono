@@ -171,14 +171,15 @@ refresh points. An implementation that acknowledges `setContext` in the
 `Turning` state must document which parts of the patch can affect the active
 turn and which parts are deferred.
 
-The built-in Pi implementation accepts `setContext` during `Turning` with these
-field-level effects:
+The built-in Pi implementation accepts `setContext` during `Turning` only when
+the patch contains `tools` and no other fields:
 
 - `tools` replaces the live tool list immediately and is visible at the next Pi
   loop boundary, before the next LLM call in the same Mini-ACP `prompt`.
-- `systemPrompt`, `messages`, and `config` are acknowledged but deferred until
-  the active Mini-ACP `prompt` terminates. They first affect the next Mini-ACP
-  `prompt`.
+- `systemPrompt`, `messages`, and `config` are rejected while a prompt is
+  active, including patches that also include `tools`. This avoids applying
+  prompt, history, model, or API-key changes to a transcript that is already
+  mid-turn.
 
 ### Phase 3: Prompt
 
