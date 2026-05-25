@@ -209,6 +209,55 @@ describe('createPiAgent', () => {
 		]);
 	});
 
+	it('keeps context guarded after the consumer closes the stream before Pi settles', async () => {
+		let resolvePrompt: (() => void) | undefined;
+		promptImplementation = async (agent) => {
+			type AgentStartListener = (event: { type: 'agent_start' }) => void;
+			const calls = agent.subscribe.mock.calls as Array<[AgentStartListener]>;
+			const listener = calls[0]?.[0];
+			if (!listener) throw new Error('expected Pi agent subscription');
+			listener({ type: 'agent_start' });
+			return new Promise<void>((resolve) => {
+				resolvePrompt = resolve;
+			});
+		};
+		const client = createPiAgent({
+			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
+				toolCallId: call.id,
+				content: [],
+			})),
+		});
+		await client.setContext({
+			config: {
+				provider: 'openai-codex',
+				model: 'gpt-5.4',
+				apiKey: 'oauth-token',
+			},
+		});
+
+		const iterator = client
+			.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'hello' }],
+			})
+			[Symbol.asyncIterator]();
+
+		try {
+			await expect(iterator.next()).resolves.toEqual({
+				done: false,
+				value: { type: 'turnStart' },
+			});
+			await iterator.return?.();
+
+			await expect(
+				client.setContext({ systemPrompt: 'unsafe mid-run change' }),
+			).rejects.toThrow('only accepts tools');
+		} finally {
+			resolvePrompt?.();
+			await iterator.return?.();
+		}
+	});
+
 	it('cancels the active Pi core agent', async () => {
 		let resolvePrompt: (() => void) | undefined;
 		promptImplementation = () =>

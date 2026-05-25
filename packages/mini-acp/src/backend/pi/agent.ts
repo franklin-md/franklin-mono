@@ -64,23 +64,23 @@ class PiMuAgent implements MuClient {
 
 		this.activePrompt = true;
 
-		try {
-			// Resolve lazily at prompt time so bad config still emits a clean
-			// turnStart -> turnEnd stream instead of throwing from setContext.
-			const resolved = resolveConfig(this.config);
-			if (!resolved.ok) {
+		// Resolve lazily at prompt time so bad config still emits a clean
+		// turnStart -> turnEnd stream instead of throwing from setContext.
+		const resolved = resolveConfig(this.config);
+		if (!resolved.ok) {
+			try {
 				yield { type: 'turnStart' };
 				yield resolved.turnEnd;
-				return;
+			} finally {
+				this.activePrompt = false;
 			}
-
-			this.agent.state.model = resolved.model;
-			this.agent.state.thinkingLevel = this.config.reasoning ?? 'off';
-
-			yield* this.streamAgentPrompt(message);
-		} finally {
-			this.activePrompt = false;
+			return;
 		}
+
+		this.agent.state.model = resolved.model;
+		this.agent.state.thinkingLevel = this.config.reasoning ?? 'off';
+
+		yield* this.streamAgentPrompt(message);
 	}
 
 	async cancel(): Promise<void> {
@@ -116,6 +116,9 @@ class PiMuAgent implements MuClient {
 		let currentMessageId = crypto.randomUUID();
 		const { readable, writable } = createMemoryStream<StreamEvent>();
 		const writer = writable.getWriter();
+		const safeWrite = async (event: StreamEvent) => {
+			writer.write(event).catch(() => {});
+		};
 
 		const unsub = this.agent.subscribe((event: AgentEvent) => {
 			// Each new LLM message gets a fresh messageId so chunks and their
@@ -125,32 +128,37 @@ class PiMuAgent implements MuClient {
 			}
 			const streamEvent = fromAgentEvent(event, currentMessageId);
 			if (streamEvent) {
-				void writer.write(streamEvent);
+				void safeWrite(streamEvent);
 			}
 		});
 
 		const piMessage = toPiUserMessage(message);
 		// Drive the Pi loop until it settles, including any tool-call follow-ups.
-		this.agent
+		void this.agent
 			.prompt(piMessage)
-			.then(() => {
-				void writer.close();
-			})
-			.catch(() => {
+			.catch(async () => {
 				// Keep the Mini-ACP stream well-formed if Pi rejects outside its
 				// normal error event path.
-				void writer.write({
+				await safeWrite({
 					type: 'turnEnd',
 					stopCode: StopCode.LlmError,
 					stopMessage: 'An error occurred while prompting the agent',
 				});
-				void writer.close();
+			})
+			.catch(() => {
+				// If the consumer already closed the Mini-ACP stream, the fallback
+				// event cannot be delivered. Pi settlement still owns activePrompt.
+			})
+			.finally(async () => {
+				this.activePrompt = false;
+				await writer.close().catch(() => {});
 			});
 
 		try {
 			yield* readable;
 		} finally {
 			unsub();
+			this.agent.abort();
 		}
 	}
 
