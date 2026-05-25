@@ -20,8 +20,8 @@
 			"import": "./dist/session.js"
 		},
 		"./debug": {
-			"types": "./dist/debug.d.ts",
-			"import": "./dist/debug.js"
+			"types": "./dist/debug/index.d.ts",
+			"import": "./dist/debug/index.js"
 		},
 		"./mock": {
 			"types": "./dist/mock/index.d.ts",
@@ -40,10 +40,9 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
+		"@earendil-works/pi-agent-core": "0.75.4",
+		"@earendil-works/pi-ai": "0.75.4",
 		"@franklin/lib": "0.0.0",
-		"@earendil-works/pi-agent-core": "0.74.0",
-		"@earendil-works/pi-ai": "0.74.0",
-		"dotenv": "17.3.1",
-		"pi-agents": "0.1.0"
+		"dotenv": "17.3.1"
 	}
 }

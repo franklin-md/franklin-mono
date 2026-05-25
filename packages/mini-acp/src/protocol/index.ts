@@ -1,13 +1,10 @@
 export type {
 	MuClient as MiniACPClient,
 	MuAgent as MiniACPAgent,
+	MuTurn as MiniACPTurn,
 	MiniACPClientHandle,
 	MiniACPConnector,
 } from './types.js';
-
-export { debugMiniACP } from './debug.js';
-
-export { createSessionAdapter } from './adapter.js';
 
 export { ContextTracker } from './context-tracker.js';
 export type { ContextRecorder } from './context-tracker.js';

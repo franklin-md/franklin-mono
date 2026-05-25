@@ -19,7 +19,7 @@ const entries = [
 	['@franklin/lib/proxy', 'packages/lib/src/proxy/index.ts'],
 	['@franklin/lib/middleware', 'packages/lib/src/middleware/index.ts'],
 	['@franklin/lib', 'packages/lib/src/index.ts'],
-	['@franklin/mini-acp/debug', 'packages/mini-acp/src/debug.ts'],
+	['@franklin/mini-acp/debug', 'packages/mini-acp/src/debug/index.ts'],
 	['@franklin/mini-acp/mock', 'packages/mini-acp/src/mock/index.ts'],
 	['@franklin/mini-acp/rpc', 'packages/mini-acp/src/rpc/index.ts'],
 	['@franklin/mini-acp/session', 'packages/mini-acp/src/session.ts'],

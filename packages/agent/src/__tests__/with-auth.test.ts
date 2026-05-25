@@ -4,11 +4,10 @@ import { createCoreStateModule } from '../modules/core/index.js';
 import { createRuntime } from '../testing/index.js';
 import {
 	type Context,
-	StopCode,
 	type MiniACPConnector,
 	ZERO_USAGE,
 } from '@franklin/mini-acp';
-import { createSessionAdapter } from '@franklin/mini-acp/session';
+import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
 import {
 	authenticateAgent,
 	reconnectAgent,
@@ -61,55 +60,18 @@ function mockCoreRuntime(): CoreRuntime {
 }
 
 function createMockConnector(): MiniACPConnector {
-	return (server) => {
-		const client = createSessionAdapter(
-			(_ctx) => ({
-				async *prompt() {
-					yield {
-						type: 'turnEnd' as const,
-						stopCode: StopCode.Finished,
-					};
-				},
-				async cancel() {},
-			}),
-			server,
-		);
-
-		return {
-			...client,
-			dispose: vi.fn(async () => {}),
-		};
-	};
+	return createMockMiniACP({ defaultTurn: finishedTurn() }).connector;
 }
 
 function createRecordingConnector(): {
 	readonly connector: MiniACPConnector;
 	context(): Context | undefined;
 } {
-	let latestContext: Context | undefined;
-	const connector: MiniACPConnector = (server) => {
-		const client = createSessionAdapter((context) => {
-			latestContext = context;
-			return {
-				async *prompt() {
-					yield {
-						type: 'turnEnd' as const,
-						stopCode: StopCode.Finished,
-					};
-				},
-				async cancel() {},
-			};
-		}, server);
-
-		return {
-			...client,
-			dispose: vi.fn(async () => {}),
-		};
-	};
+	const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
 
 	return {
-		connector,
-		context: () => latestContext,
+		connector: mock.connector,
+		context: () => mock.context(),
 	};
 }
 

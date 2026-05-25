@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { createSessionAdapter } from '../../protocol/adapter.js';
-import type { TurnClient } from '../../base/types.js';
-import type { MuAgent } from '../../protocol/types.js';
+import { ContextTracker } from '../../protocol/context-tracker.js';
+import { trackAgent, trackTurn } from '../../protocol/tracking.js';
+import type { MuAgent, MuTurn } from '../../protocol/types.js';
 import type { StreamEvent } from '../../types/stream.js';
 import { StopCode } from '../../types/stop-code.js';
 import type { AgentFactory, TranscriptEntry } from '../types.js';
@@ -23,18 +23,35 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Create a factory for a mock agent using createSessionAdapter. */
 function createMockFactory(
-	createTurnClient: (remote: MuAgent) => TurnClient,
+	createPromptClient: (remote: MuAgent) => MuTurn,
 ): AgentFactory {
-	return (server) =>
-		createSessionAdapter(
-			(_context, trackedServer) => createTurnClient(trackedServer),
-			server,
-		);
+	return (server) => {
+		const tracker = new ContextTracker();
+		const trackedServer = trackAgent(tracker, server);
+		let currentTurn: MuTurn | null = null;
+
+		return {
+			async initialize() {},
+			async setContext(context) {
+				tracker.apply(context);
+			},
+			async *prompt(message): AsyncGenerator<StreamEvent> {
+				currentTurn = trackTurn(tracker, createPromptClient(trackedServer));
+				try {
+					yield* currentTurn.prompt(message);
+				} finally {
+					currentTurn = null;
+				}
+			},
+			async cancel() {
+				await currentTurn?.cancel();
+			},
+		};
+	};
 }
 
-const noopTurn = (_remote: MuAgent): TurnClient => ({
+const noopTurn = (_remote: MuAgent): MuTurn => ({
 	async *prompt(): AsyncGenerator<StreamEvent> {
 		yield { type: 'turnStart' };
 		yield { type: 'turnEnd', stopCode: StopCode.Finished };
@@ -42,7 +59,7 @@ const noopTurn = (_remote: MuAgent): TurnClient => ({
 	async cancel() {},
 });
 
-const toolCallingTurn = (remote: MuAgent): TurnClient => ({
+const toolCallingTurn = (remote: MuAgent): MuTurn => ({
 	async *prompt(): AsyncGenerator<StreamEvent> {
 		yield { type: 'turnStart' };
 		const result = await remote.toolExecute({
@@ -309,7 +326,7 @@ describe('tool spec helpers', () => {
 				],
 			},
 			createMockFactory(
-				(remote: MuAgent): TurnClient => ({
+				(remote: MuAgent): MuTurn => ({
 					async *prompt(): AsyncGenerator<StreamEvent> {
 						yield { type: 'turnStart' };
 						await remote.toolExecute({

@@ -42,12 +42,16 @@ export { StopCode, stopCategory } from './types/index.js';
 export { collect, type CollectResult } from './utils/collect.js';
 
 // Built-in agent implementation
-export { createPiAgent, type CreatePiAgentOptions } from './base/index.js';
+export {
+	createPiAgent,
+	type CreatePiAgentOptions,
+} from './backend/pi/agent.js';
 
 // Session protocol (Mini ACP)
 export type {
 	MiniACPClient,
 	MiniACPAgent,
+	MiniACPTurn,
 	MiniACPClientHandle,
 	MiniACPConnector,
 } from './protocol/index.js';

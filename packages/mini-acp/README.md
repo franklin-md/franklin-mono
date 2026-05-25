@@ -8,8 +8,8 @@ This is a bi-directional protocol where both parties engage at different times a
 
 The package root exports the functional Mini-ACP surface: client/agent types,
 protocol data types, stop-code helpers, stream collection helpers, usage
-defaults, and the default Pi agent factory. Session adapters and tracking
-helpers live under `@franklin/mini-acp/session`; protocol logging lives under
+defaults, and the default Pi agent factory. Context and usage tracking helpers
+live under `@franklin/mini-acp/session`; protocol logging lives under
 `@franklin/mini-acp/debug`. JSON-RPC transport binding helpers live under
 `@franklin/mini-acp/rpc` so data-protocol plumbing does not become part of the
 default protocol API. Scripted test helpers live under
@@ -77,7 +77,7 @@ Transitions:
 - `prompt` transitions from `Ready` to `Turning`. A new `prompt` MUST NOT be sent while a turn is active.
 - `TurnEnd` or stream termination transitions from `Turning` back to `Ready`.
 - `cancel` MAY be sent during `Turning`. See [Cancellation](#cancellation).
-- `setContext` during `Turning` is currently #unspecified.
+- `setContext` during `Turning` is implementation-specific. Implementations that accept it MUST document when each context field takes effect.
 
 ### Phase 1: Initialization
 
@@ -163,6 +163,23 @@ and preserves the current `messages`. Sending `{ messages: [...] }` replaces
 only the message list. Similarly, `{ config: { reasoning: 'high' } }` updates
 only `reasoning` and preserves the current `model`, `provider`, and `apiKey`.
 
+#### `setContext` During an Active Turn
+
+The protocol intentionally leaves mid-turn `setContext` timing
+implementation-specific because different agent loops have different safe
+refresh points. An implementation that acknowledges `setContext` in the
+`Turning` state must document which parts of the patch can affect the active
+turn and which parts are deferred.
+
+The built-in Pi implementation accepts `setContext` during `Turning` only when
+the patch contains `tools` and no other fields:
+
+- `tools` replaces the live tool list immediately and is visible at the next Pi
+  loop boundary, before the next LLM call in the same Mini-ACP `prompt`.
+- `systemPrompt`, `messages`, and `config` are rejected while a prompt is
+  active, including patches that also include `tools`. This avoids applying
+  prompt, history, model, or API-key changes to a transcript that is already
+  mid-turn.
 
 ### Phase 3: Prompt
 
@@ -370,6 +387,7 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 | `context-prompt-fields-top-level`    | `setContext` prompt fields are top-level `systemPrompt` and `messages` fields; nested `history` is not part of the protocol           | MUST  |
 | `context-tools-replaces-wholesale`   | When `tools` is present in a patch, it replaces the current tool list wholesale (including when set to `[]`, which clears all tools)     | MUST  |
 | `context-config-merges-by-property`  | When `config` is present in a patch, each subfield replaces only when set; omitted subfields are preserved                               | MUST  |
+| `context-during-turn-documented`     | Implementations that accept `setContext` during `Turning` must document field-level effect timing                                      | MUST  |
 
 ### Turn Lifecycle
 
@@ -454,8 +472,7 @@ Forking a session is creating a new agent connection and calling `setContext` wi
 
 ## Potential Problems and Todos
 - [ ] Is it expensive to send the full message head on fork?
-- [ ] Mid turn notification / context changing
-  - [ ] May need to relax tool response type
+- [x] Mid-turn `setContext` timing is implementation-specific and documented for Pi
 - [x] Error semantics spelled out (StopCode integer enum with categories; see Tool Error Semantics)
 - [ ] Spell out authentication model, but feels like apikey can really be enough
 - [ ] 

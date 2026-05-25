@@ -1,4 +1,4 @@
-import type { MuAgent, MuClient } from '../types.js';
+import type { MuAgent, MuClient } from '../protocol/types.js';
 
 import { debugAgent } from './agent.js';
 import { debugClient } from './client.js';

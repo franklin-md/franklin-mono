@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
 	OPENROUTER_APP_TITLE,
 	OPENROUTER_APP_URL,
-} from '../base/pi/model/headers.js';
-import { resolveModel } from '../base/pi/model/resolve.js';
+} from '../backend/pi/model/headers.js';
+import { resolveModel } from '../backend/pi/model/resolve.js';
 import { StopCode } from '../types/stop-code.js';
 
 const OPENROUTER_UPSTREAM_MODEL_CASES = [
-	{ id: 'z-ai/glm-5.1', contextWindow: 202_752 },
+	{ id: 'z-ai/glm-5.1', contextWindow: 202_800 },
 	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_576 },
 	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_048_576 },
 	{ id: 'moonshotai/kimi-k2.6', contextWindow: 262_144 },

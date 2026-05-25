@@ -19,8 +19,10 @@ export interface ContextRecorder {
 function applySetContext(context: Context, partial: ContextPatch): void {
 	if (partial.systemPrompt !== undefined)
 		context.systemPrompt = partial.systemPrompt;
-	if (partial.messages !== undefined) context.messages = [...partial.messages];
-	if (partial.tools !== undefined) context.tools = [...partial.tools];
+	if (partial.messages !== undefined)
+		context.messages = structuredClone(partial.messages);
+	if (partial.tools !== undefined)
+		context.tools = structuredClone(partial.tools);
 	if (partial.config !== undefined)
 		context.config = { ...context.config, ...partial.config };
 }
@@ -29,7 +31,7 @@ function applySetContext(context: Context, partial: ContextPatch): void {
  * Append a message to the context's model-visible messages.
  */
 function appendMessage(context: Context, message: Message): void {
-	context.messages.push(message);
+	context.messages.push(structuredClone(message));
 }
 
 function createEmptyContext(): Context {
@@ -48,9 +50,9 @@ function createEmptyContext(): Context {
 /**
  * Tracks the evolving Context on the agent side.
  *
- * Used by both the session adapter (agent side) and context extension
- * (client side) to keep context in sync with the actual conversation
- * state (user messages from prompt, response messages from update).
+ * Used by agent implementations and client-side context extensions to keep
+ * context in sync with the actual conversation state (user messages from
+ * prompt, response messages from update).
  */
 export class ContextTracker implements ContextRecorder {
 	private context: Context = createEmptyContext();
@@ -73,6 +75,15 @@ export class ContextTracker implements ContextRecorder {
 	}
 
 	get(): Context {
-		return this.context;
+		return cloneContext(this.context);
 	}
+}
+
+function cloneContext(context: Context): Context {
+	return {
+		systemPrompt: context.systemPrompt,
+		messages: structuredClone(context.messages),
+		tools: structuredClone(context.tools),
+		config: { ...context.config },
+	};
 }

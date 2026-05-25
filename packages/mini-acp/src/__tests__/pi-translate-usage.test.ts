@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Usage as PiUsage } from '@earendil-works/pi-ai';
 
-import { fromPiUsage } from '../base/pi/translate/usage.js';
+import { fromPiUsage } from '../backend/pi/translate/usage.js';
 
 describe('fromPiUsage', () => {
 	it('translates non-zero pi-ai usage into nested tokens/cost buckets', () => {

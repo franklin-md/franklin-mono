@@ -7,8 +7,7 @@ import {
 } from '../protocol/tracking.js';
 import { ContextTracker } from '../protocol/context-tracker.js';
 import { UsageTracker, ZERO_USAGE } from '../protocol/usage-tracker.js';
-import type { MuAgent, MuClient } from '../protocol/types.js';
-import type { TurnClient } from '../base/types.js';
+import type { MuAgent, MuClient, MuTurn } from '../protocol/types.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { ToolExecuteParams } from '../types/tool.js';
 import type { Usage } from '../types/usage.js';
@@ -37,7 +36,7 @@ function mockAgent(): MuAgent {
 	};
 }
 
-function mockTurn(events: StreamEvent[]): TurnClient {
+function mockTurn(events: StreamEvent[]): MuTurn {
 	return {
 		async *prompt(): AsyncGenerator<StreamEvent> {
 			for (const e of events) yield e;

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { createPiAgent } from '../../base/pi/agent.js';
+import { createPiAgent } from '../../backend/pi/agent.js';
 import type { MiniACPAgent } from '../../protocol/index.js';
 import { initialize } from '../../spec-tester/actions/initialize.js';
 import { prompt } from '../../spec-tester/actions/prompt.js';

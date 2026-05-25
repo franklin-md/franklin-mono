@@ -1,40 +1,22 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
 	createCoreStateModule,
 	type CoreRuntime,
 } from '../modules/core/index.js';
 import { createRuntime } from '../testing/index.js';
+import { type MiniACPConnector, ZERO_USAGE } from '@franklin/mini-acp';
 import {
-	StopCode,
-	type MiniACPConnector,
-	type Update,
-	ZERO_USAGE,
-} from '@franklin/mini-acp';
-import { createSessionAdapter } from '@franklin/mini-acp/session';
+	createMockMiniACP,
+	text,
+	turn,
+	turnEnd,
+} from '@franklin/mini-acp/mock';
 import { getLLMConfig } from '../settings/llm-config.js';
 
 function createMockConnector(): MiniACPConnector {
-	return (server) => {
-		const client = createSessionAdapter(
-			(_ctx) => ({
-				async *prompt() {
-					yield {
-						type: 'update' as const,
-						messageId: 'm1',
-						message: {
-							role: 'assistant' as const,
-							content: [{ type: 'text' as const, text: 'hi' }],
-						},
-					} satisfies Update;
-					yield { type: 'turnEnd' as const, stopCode: StopCode.Finished };
-				},
-				async cancel() {},
-			}),
-			server,
-		);
-
-		return { ...client, dispose: vi.fn(async () => {}) };
-	};
+	return createMockMiniACP({
+		defaultTurn: turn([text('hi'), turnEnd()]),
+	}).connector;
 }
 
 async function makeRuntime(

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { AgentEvent } from '@earendil-works/pi-agent-core';
 
-import { narrowPiStopCode } from '../base/pi/translate/error.js';
-import { fromAgentEvent } from '../base/pi/translate/events.js';
+import { narrowPiStopCode } from '../backend/pi/translate/error.js';
+import { fromAgentEvent } from '../backend/pi/translate/events.js';
 import { StopCode } from '../types/stop-code.js';
 
 const emptyUsage = {

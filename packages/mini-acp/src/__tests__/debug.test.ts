@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { debugMiniACP } from '../protocol/debug.js';
+import { debugMiniACP } from '../debug/index.js';
 import type { MuAgent, MuClient } from '../protocol/types.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { ToolExecuteParams } from '../types/tool.js';

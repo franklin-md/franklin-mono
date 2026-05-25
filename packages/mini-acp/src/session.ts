@@ -1,6 +1,6 @@
-export { createSessionAdapter } from './protocol/adapter.js';
 export { ContextTracker } from './protocol/context-tracker.js';
 export type { ContextRecorder } from './protocol/context-tracker.js';
+export type { MuTurn as MiniACPTurn } from './protocol/types.js';
 export {
 	decorateTurn,
 	trackAgent,

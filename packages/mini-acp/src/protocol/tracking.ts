@@ -3,20 +3,19 @@
 // into shared trackers.
 //
 // trackAgent   — wraps MuAgent    (toolExecute: tool call + result → ContextRecorder)
-// trackTurn    — wraps TurnClient (prompt: user message + assistant updates → ContextRecorder)
+// trackTurn    — wraps prompt/cancel behavior (prompt + updates → ContextRecorder)
 // trackClient  — wraps MuClient   (trackTurn + setContext → ContextRecorder)
-// trackUsage   — wraps TurnClient (turnEnd usage → UsageTracker)
-// decorateTurn — lift a TurnClient transform to a MuClient transform
+// trackUsage   — wraps prompt/cancel behavior (turnEnd usage → UsageTracker)
+// decorateTurn — lift a prompt/cancel transform to a MuClient transform
 // ---------------------------------------------------------------------------
 
-import type { TurnClient } from '../base/types.js';
-import type { MuClient, MuAgent } from './types.js';
+import type { MuClient, MuAgent, MuTurn } from './types.js';
 import type { ContextRecorder } from './context-tracker.js';
 import type { UsageTracker } from './usage-tracker.js';
 import type { StreamEvent } from '../types/stream.js';
 
 /**
- * Lift a TurnClient transform to a MuClient transform.
+ * Lift a prompt/cancel transform to a MuClient transform.
  *
  * `initialize` and `setContext` pass through to the original client;
  * `prompt` and `cancel` come from the transformed turn. Useful when a
@@ -24,7 +23,7 @@ import type { StreamEvent } from '../types/stream.js';
  */
 export function decorateTurn(
 	client: MuClient,
-	transform: (turn: TurnClient) => TurnClient,
+	transform: (turn: MuTurn) => MuTurn,
 ): MuClient {
 	const tracked = transform(client);
 	return {
@@ -54,13 +53,10 @@ export function trackAgent(tracker: ContextRecorder, agent: MuAgent): MuAgent {
 }
 
 /**
- * Decorates a TurnClient to record user messages and assistant
+ * Decorates prompt/cancel behavior to record user messages and assistant
  * updates in the tracker.
  */
-export function trackTurn(
-	tracker: ContextRecorder,
-	turn: TurnClient,
-): TurnClient {
+export function trackTurn(tracker: ContextRecorder, turn: MuTurn): MuTurn {
 	return {
 		async *prompt(message): AsyncGenerator<StreamEvent> {
 			tracker.append(message);
@@ -95,13 +91,10 @@ export function trackClient(
 }
 
 /**
- * Decorates a TurnClient to record turn usage into the tracker.
+ * Decorates prompt/cancel behavior to record turn usage into the tracker.
  * No-op for turnEnd events without a `usage` field (pre-LLM errors).
  */
-export function trackUsage(
-	tracker: UsageTracker,
-	turn: TurnClient,
-): TurnClient {
+export function trackUsage(tracker: UsageTracker, turn: MuTurn): MuTurn {
 	return {
 		async *prompt(message): AsyncGenerator<StreamEvent> {
 			for await (const event of turn.prompt(message)) {

@@ -1,4 +1,4 @@
-import type { MuAgent } from '../types.js';
+import type { MuAgent } from '../protocol/types.js';
 
 import { renderThrown, renderToolExecute, renderToolResult } from './render.js';
 import { logLines } from './style.js';

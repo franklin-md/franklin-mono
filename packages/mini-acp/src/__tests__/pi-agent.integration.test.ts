@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Pi Adapter integration test — real LLM call via OpenRouter
+// Pi Agent integration test — real LLM call via OpenRouter
 //
 // Requires OPENROUTER_API_KEY in env or in .env resolved from Vitest's cwd.
 // Skips when no key is available.
@@ -13,7 +13,7 @@ import { createValidLLMConfig } from './utils/llm-config.js';
 import {
 	itCompletesLookupCapitalToolCall,
 	itCompletesSimpleTextPrompt,
-} from './utils/pi-adapter-integration.js';
+} from './utils/pi-agent-integration.js';
 
 // ---------------------------------------------------------------------------
 // Integration tests
@@ -21,7 +21,7 @@ import {
 
 describeIfKey(
 	'OPENROUTER_API_KEY',
-	'Pi Adapter — integration (OpenRouter, z-ai/glm-5)',
+	'Pi Agent — integration (OpenRouter, z-ai/glm-5)',
 	(apiKey) => {
 		const config = createValidLLMConfig(apiKey, { model: 'z-ai/glm-5' });
 
