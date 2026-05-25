@@ -43,7 +43,6 @@
 		"@earendil-works/pi-agent-core": "0.75.4",
 		"@earendil-works/pi-ai": "0.75.4",
 		"@franklin/lib": "0.0.0",
-		"dotenv": "17.3.1",
-		"pi-agents": "0.1.0"
+		"dotenv": "17.3.1"
 	}
 }
