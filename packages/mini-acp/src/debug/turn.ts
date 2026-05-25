@@ -1,4 +1,4 @@
-import type { MuClient } from '../protocol/types.js';
+import type { MuTurn } from '../protocol/types.js';
 import type { UserMessage } from '../types/message.js';
 import type { StreamEvent } from '../types/stream.js';
 
@@ -10,10 +10,7 @@ import {
 } from './render.js';
 import { logLines } from './style.js';
 
-export function debugTurn(
-	turn: Pick<MuClient, 'prompt' | 'cancel'>,
-	label: string,
-): Pick<MuClient, 'prompt' | 'cancel'> {
+export function debugTurn(turn: MuTurn, label: string): MuTurn {
 	return {
 		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
 			logLines(label, renderPrompt(message));

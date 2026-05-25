@@ -9,7 +9,7 @@
 // decorateTurn — lift a prompt/cancel transform to a MuClient transform
 // ---------------------------------------------------------------------------
 
-import type { MuClient, MuAgent } from './types.js';
+import type { MuClient, MuAgent, MuTurn } from './types.js';
 import type { ContextRecorder } from './context-tracker.js';
 import type { UsageTracker } from './usage-tracker.js';
 import type { StreamEvent } from '../types/stream.js';
@@ -23,9 +23,7 @@ import type { StreamEvent } from '../types/stream.js';
  */
 export function decorateTurn(
 	client: MuClient,
-	transform: (
-		turn: Pick<MuClient, 'prompt' | 'cancel'>,
-	) => Pick<MuClient, 'prompt' | 'cancel'>,
+	transform: (turn: MuTurn) => MuTurn,
 ): MuClient {
 	const tracked = transform(client);
 	return {
@@ -58,10 +56,7 @@ export function trackAgent(tracker: ContextRecorder, agent: MuAgent): MuAgent {
  * Decorates prompt/cancel behavior to record user messages and assistant
  * updates in the tracker.
  */
-export function trackTurn(
-	tracker: ContextRecorder,
-	turn: Pick<MuClient, 'prompt' | 'cancel'>,
-): Pick<MuClient, 'prompt' | 'cancel'> {
+export function trackTurn(tracker: ContextRecorder, turn: MuTurn): MuTurn {
 	return {
 		async *prompt(message): AsyncGenerator<StreamEvent> {
 			tracker.append(message);
@@ -99,10 +94,7 @@ export function trackClient(
  * Decorates prompt/cancel behavior to record turn usage into the tracker.
  * No-op for turnEnd events without a `usage` field (pre-LLM errors).
  */
-export function trackUsage(
-	tracker: UsageTracker,
-	turn: Pick<MuClient, 'prompt' | 'cancel'>,
-): Pick<MuClient, 'prompt' | 'cancel'> {
+export function trackUsage(tracker: UsageTracker, turn: MuTurn): MuTurn {
 	return {
 		async *prompt(message): AsyncGenerator<StreamEvent> {
 			for await (const event of turn.prompt(message)) {

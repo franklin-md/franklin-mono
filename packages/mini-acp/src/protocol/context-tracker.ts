@@ -1,8 +1,5 @@
 import type { Context, ContextPatch } from '../types/context.js';
 import type { Message } from '../types/message.js';
-import type { ToolDefinition } from '../types/tool.js';
-
-type MessageContent = Message['content'][number];
 
 export interface ContextRecorder {
 	apply(partial: ContextPatch): void;
@@ -23,9 +20,9 @@ function applySetContext(context: Context, partial: ContextPatch): void {
 	if (partial.systemPrompt !== undefined)
 		context.systemPrompt = partial.systemPrompt;
 	if (partial.messages !== undefined)
-		context.messages = partial.messages.map(copyMessage);
+		context.messages = structuredClone(partial.messages);
 	if (partial.tools !== undefined)
-		context.tools = partial.tools.map(copyToolDefinition);
+		context.tools = structuredClone(partial.tools);
 	if (partial.config !== undefined)
 		context.config = { ...context.config, ...partial.config };
 }
@@ -34,7 +31,7 @@ function applySetContext(context: Context, partial: ContextPatch): void {
  * Append a message to the context's model-visible messages.
  */
 function appendMessage(context: Context, message: Message): void {
-	context.messages.push(copyMessage(message));
+	context.messages.push(structuredClone(message));
 }
 
 function createEmptyContext(): Context {
@@ -78,70 +75,15 @@ export class ContextTracker implements ContextRecorder {
 	}
 
 	get(): Context {
-		return copyContext(this.context);
+		return cloneContext(this.context);
 	}
 }
 
-function copyContext(context: Context): Context {
+function cloneContext(context: Context): Context {
 	return {
 		systemPrompt: context.systemPrompt,
-		messages: context.messages.map(copyMessage),
-		tools: context.tools.map(copyToolDefinition),
+		messages: structuredClone(context.messages),
+		tools: structuredClone(context.tools),
 		config: { ...context.config },
 	};
-}
-
-function copyMessage(message: Message): Message {
-	switch (message.role) {
-		case 'user':
-			return {
-				role: 'user',
-				content: message.content.map(copyContent),
-			};
-		case 'assistant':
-			return {
-				role: 'assistant',
-				content: message.content.map(copyContent),
-			};
-		case 'toolResult':
-			return {
-				role: 'toolResult',
-				toolCallId: message.toolCallId,
-				content: message.content.map(copyContent),
-			};
-	}
-}
-
-function copyContent<T extends MessageContent>(content: T): T {
-	switch (content.type) {
-		case 'text':
-			return { type: 'text', text: content.text } as T;
-		case 'thinking':
-			return { type: 'thinking', text: content.text } as T;
-		case 'image':
-			return {
-				type: 'image',
-				data: content.data,
-				mimeType: content.mimeType,
-			} as T;
-		case 'toolCall':
-			return {
-				type: 'toolCall',
-				id: content.id,
-				name: content.name,
-				arguments: copyJson(content.arguments),
-			} as T;
-	}
-}
-
-function copyToolDefinition(tool: ToolDefinition): ToolDefinition {
-	return {
-		name: tool.name,
-		description: tool.description,
-		inputSchema: copyJson(tool.inputSchema),
-	};
-}
-
-function copyJson<T>(value: T): T {
-	return JSON.parse(JSON.stringify(value)) as T;
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ContextTracker } from '../../protocol/context-tracker.js';
 import { trackAgent, trackTurn } from '../../protocol/tracking.js';
-import type { MuAgent, MuClient } from '../../protocol/types.js';
+import type { MuAgent, MuTurn } from '../../protocol/types.js';
 import type { StreamEvent } from '../../types/stream.js';
 import { StopCode } from '../../types/stop-code.js';
 import type { AgentFactory, TranscriptEntry } from '../types.js';
@@ -24,12 +24,12 @@ import {
 // ---------------------------------------------------------------------------
 
 function createMockFactory(
-	createPromptClient: (remote: MuAgent) => Pick<MuClient, 'prompt' | 'cancel'>,
+	createPromptClient: (remote: MuAgent) => MuTurn,
 ): AgentFactory {
 	return (server) => {
 		const tracker = new ContextTracker();
 		const trackedServer = trackAgent(tracker, server);
-		let currentTurn: Pick<MuClient, 'prompt' | 'cancel'> | null = null;
+		let currentTurn: MuTurn | null = null;
 
 		return {
 			async initialize() {},
@@ -51,7 +51,7 @@ function createMockFactory(
 	};
 }
 
-const noopTurn = (_remote: MuAgent): Pick<MuClient, 'prompt' | 'cancel'> => ({
+const noopTurn = (_remote: MuAgent): MuTurn => ({
 	async *prompt(): AsyncGenerator<StreamEvent> {
 		yield { type: 'turnStart' };
 		yield { type: 'turnEnd', stopCode: StopCode.Finished };
@@ -59,9 +59,7 @@ const noopTurn = (_remote: MuAgent): Pick<MuClient, 'prompt' | 'cancel'> => ({
 	async cancel() {},
 });
 
-const toolCallingTurn = (
-	remote: MuAgent,
-): Pick<MuClient, 'prompt' | 'cancel'> => ({
+const toolCallingTurn = (remote: MuAgent): MuTurn => ({
 	async *prompt(): AsyncGenerator<StreamEvent> {
 		yield { type: 'turnStart' };
 		const result = await remote.toolExecute({
@@ -328,7 +326,7 @@ describe('tool spec helpers', () => {
 				],
 			},
 			createMockFactory(
-				(remote: MuAgent): Pick<MuClient, 'prompt' | 'cancel'> => ({
+				(remote: MuAgent): MuTurn => ({
 					async *prompt(): AsyncGenerator<StreamEvent> {
 						yield { type: 'turnStart' };
 						await remote.toolExecute({

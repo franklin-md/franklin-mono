@@ -51,6 +51,7 @@ export {
 export type {
 	MiniACPClient,
 	MiniACPAgent,
+	MiniACPTurn,
 	MiniACPClientHandle,
 	MiniACPConnector,
 } from './protocol/index.js';

@@ -1,6 +1,7 @@
 export type {
 	MuClient as MiniACPClient,
 	MuAgent as MiniACPAgent,
+	MuTurn as MiniACPTurn,
 	MiniACPClientHandle,
 	MiniACPConnector,
 } from './types.js';

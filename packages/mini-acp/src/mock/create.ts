@@ -5,7 +5,7 @@ import type {
 	MiniACPClientHandle,
 	MiniACPConnector,
 } from '../protocol/index.js';
-import type { MuClient } from '../protocol/types.js';
+import type { MuTurn } from '../protocol/types.js';
 import type { Context } from '../types/context.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { MockTurnDescriptor } from './descriptor/index.js';
@@ -54,7 +54,7 @@ export function createMockMiniACP(
 
 	function connector(server: MiniACPAgent): MiniACPClientHandle {
 		const trackedServer = trackAgent(tracker, server);
-		let currentTurn: Pick<MuClient, 'prompt' | 'cancel'> | null = null;
+		let currentTurn: MuTurn | null = null;
 
 		return {
 			async initialize() {
@@ -130,9 +130,7 @@ type CreateMockPromptClientInput = {
 	readonly nextToolCallId: () => string;
 };
 
-function createMockPromptClient(
-	input: CreateMockPromptClientInput,
-): Pick<MuClient, 'prompt' | 'cancel'> {
+function createMockPromptClient(input: CreateMockPromptClientInput): MuTurn {
 	return {
 		async *prompt(message): AsyncGenerator<StreamEvent> {
 			yield* executeMockTurn({
