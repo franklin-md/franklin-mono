@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { createToolUseBlock } from '@franklin/react';
 
 import {
 	emptyConversation,
@@ -7,8 +8,13 @@ import {
 	singleTurnSequence,
 	thinkingStreamingTurnSequence,
 	thinkingTurnSequence,
+	toolStateConversation,
 } from '../fixtures.js';
+import { ToolCardChrome } from '../../src/conversation/tools/chrome.js';
+import { defaultToolRegistry } from '../../src/conversation/tools/registry/index.js';
 import { ConversationView } from '../../src/conversation/view.js';
+
+const ToolUse = createToolUseBlock(defaultToolRegistry, ToolCardChrome);
 
 const meta = {
 	title: 'Conversation/ConversationView',
@@ -28,6 +34,13 @@ export const SingleTurn: Story = {
 
 export const MultiTurn: Story = {
 	args: { turns: multiTurn },
+};
+
+export const ToolStates: Story = {
+	args: {
+		turns: toolStateConversation,
+		components: { ToolUse },
+	},
 };
 
 export const WithThinking: Story = {
