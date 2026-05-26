@@ -8,6 +8,7 @@ import {
 	DUCK_DUCK_GO_WEB_SEARCH_PROVIDER_ID,
 	EXA_WEB_SEARCH_PROVIDER_ID,
 	filesystemBundle,
+	readPDFSpec,
 	spawnExtension,
 	todoExtension,
 	type ToolUseBlock,
@@ -106,6 +107,28 @@ describe('defaultToolRegistry', () => {
 			});
 			expect(screen.getByText('Search files')).toBeTruthy();
 			expect(screen.getByText('**/*.tsx')).toBeTruthy();
+		});
+	});
+
+	describe('pdf tools', () => {
+		it('renders read PDF with a file badge instead of the fallback tool name', () => {
+			renderSummary(readPDFSpec.name, {
+				path: 'docs/source-paper.pdf',
+			});
+
+			expect(screen.getByText('Read PDF')).toBeTruthy();
+			expect(screen.getByText('source-paper.pdf')).toBeTruthy();
+			expect(screen.queryByText(readPDFSpec.name)).toBeNull();
+		});
+
+		it('renders read PDF page ranges', () => {
+			renderSummary(readPDFSpec.name, {
+				path: 'docs/source-paper.pdf',
+				start_page: 3,
+				end_page: 7,
+			});
+
+			expect(screen.getByText('pages 3-7')).toBeTruthy();
 		});
 	});
 
