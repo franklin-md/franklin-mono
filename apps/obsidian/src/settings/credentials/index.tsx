@@ -13,6 +13,7 @@ const MISTRAL_API_KEYS_URL = 'https://console.mistral.ai/api-keys';
 export function CredentialsSettings() {
 	return (
 		<>
+			<ChatGPTLoginField />
 			<ProviderApiKeyField
 				provider={OPENROUTER_PROVIDER}
 				name="OpenRouter"
@@ -37,7 +38,6 @@ export function CredentialsSettings() {
 				linkLabel="Mistral API keys"
 				placeholder="Mistral API key"
 			/>
-			<ChatGPTLoginField />
 		</>
 	);
 }

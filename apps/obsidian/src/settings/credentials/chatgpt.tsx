@@ -1,5 +1,5 @@
 import { useAuthEntries, useOAuthLogin } from '@franklin/react';
-import { Button, OpenAICodexLoginButton } from '@franklin/ui';
+import { Button, OpenAICodexLoginButton, ProviderIcon } from '@franklin/ui';
 
 import { SettingControl } from '../../components/obsidian-native/setting/control.js';
 import { SettingDescription } from '../../components/obsidian-native/setting/description.js';
@@ -19,7 +19,18 @@ export function ChatGPTLoginField() {
 	return (
 		<SettingItem>
 			<SettingInfo>
-				<SettingName>ChatGPT</SettingName>
+				<SettingName>
+					<span className="inline-flex items-center gap-2">
+						<ProviderIcon
+							aria-hidden="true"
+							className="shrink-0"
+							focusable="false"
+							provider={OPENAI_CODEX_PROVIDER}
+							size={16}
+						/>
+						ChatGPT
+					</span>
+				</SettingName>
 				<SettingDescription>
 					{signedIn
 						? 'Signed in to ChatGPT.'
