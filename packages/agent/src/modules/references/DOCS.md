@@ -10,6 +10,7 @@ The v1 contract is intentionally small:
 - `runtime.references.toContext(reference)` resolves one reference into `ReferenceContext`.
 - `Reference.locator` is a string interpreted by the selected provider.
 - `Reference.selector` is a string interpreted by the selected provider.
+- Selector codec helpers provide compact `key=value;key=value` syntax for providers that want shared parsing without shared selector semantics.
 - `ReferenceContext` only contains Mini-ACP user content.
 - The runtime returns model-visible unavailable text when a handler is missing or fails.
 - Built-in provider extensions cover text documents, filesystem files, and a placeholder PDF response.

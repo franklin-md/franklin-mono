@@ -4,6 +4,7 @@ import type {
 	ReferenceHandler,
 } from '../../modules/references/api/index.js';
 import type { ReferencesModule } from '../../modules/references/module.js';
+import { ParsedSelector } from '../../modules/references/selectors/index.js';
 
 export type PdfReferenceSelector = {
 	readonly pages?: PdfPageRange;
@@ -52,30 +53,12 @@ function pageSuffix(selector: string | undefined): string {
 export function parsePdfReferenceSelector(
 	selector: string | undefined,
 ): PdfReferenceSelector {
-	if (!selector) return {};
 	// PDF selector examples:
 	// - page=10 selects one page
 	// - pages=10-12 selects an inclusive page range
-	for (const part of selector.split(';')) {
-		const [key, value] = part.split('=', 2);
-		if (key !== 'page' && key !== 'pages') continue;
-		const pages = parsePageRange(value);
-		return pages ? { pages } : {};
-	}
-	return {};
-}
-
-function parsePageRange(value: string | undefined): PdfPageRange | undefined {
-	if (!value) return undefined;
-	const [startRaw, endRaw] = value.split('-', 2);
-	const start = parsePageNumber(startRaw);
-	const end = endRaw ? parsePageNumber(endRaw) : start;
-	if (!start || !end || start > end) return undefined;
-	return { start, end };
-}
-
-function parsePageNumber(value: string | undefined): number | undefined {
-	if (!value) return undefined;
-	const page = Number(value);
-	return Number.isInteger(page) && page > 0 ? page : undefined;
+	const parsed = ParsedSelector.parse(selector);
+	const pages =
+		parsed.integerRange('pages', { min: 1 }) ??
+		parsed.integerRange('page', { min: 1 });
+	return pages ? { pages } : {};
 }
