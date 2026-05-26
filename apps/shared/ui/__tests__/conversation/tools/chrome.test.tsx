@@ -70,6 +70,27 @@ describe('ToolCardChrome', () => {
 		expect(button.className).toContain('hover:bg-transparent');
 		expect(button.className).toContain('hover:text-current');
 	});
+
+	it('applies a text-only shimmer treatment while a tool is in progress', () => {
+		renderChrome({
+			status: 'in-progress',
+			expanded: <div>Details</div>,
+		});
+
+		const button = screen.getByRole('button', { name: 'Readsrc/index.ts' });
+		const row = button.parentElement;
+
+		expect(row?.dataset.status).toBe('in-progress');
+		expect(row?.getAttribute('aria-busy')).toBe('true');
+		expect(row?.className).not.toContain('franklin-tool-row-shimmer');
+		const summaryWrapper = button.querySelector('.franklin-tool-shimmer');
+
+		expect(summaryWrapper).toBe(button.firstElementChild);
+		expect(summaryWrapper?.querySelector('.franklin-tool-shimmer')).toBeNull();
+		expect(button.querySelector('.franklin-tool-shimmer-text')).toBeNull();
+		expect(button.className).toContain('bg-transparent');
+		expect(button.className).toContain('text-current');
+	});
 });
 
 describe('ToolSummaryDetail', () => {

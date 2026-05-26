@@ -178,6 +178,18 @@ const assistantToolStatesResponse: AssistantTurn = {
 			kind: 'toolUse',
 			call: {
 				type: 'toolCall',
+				id: 'tool-pending-long-bash',
+				name: 'bash',
+				arguments: {
+					cmd: 'npm run test -w @franklin/ui -- __tests__/conversation/tools/chrome.test.tsx __tests__/conversation/tools/registry.test.tsx --reporter=verbose --runInBand --bail=1',
+				},
+			},
+			startedAt: tick(),
+		},
+		{
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
 				id: 'tool-pending-spawn',
 				name: 'spawn',
 				arguments: {

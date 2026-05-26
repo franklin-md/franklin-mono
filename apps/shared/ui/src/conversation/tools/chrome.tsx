@@ -15,11 +15,13 @@ export function ToolCardChrome({
 }: ResolvedToolRender) {
 	const [open, setOpen] = useState(false);
 	const hasExpanded = expanded != null;
+	const isInProgress = status === 'in-progress';
 
 	return (
 		<div className="text-xs">
 			<div
 				data-status={status}
+				aria-busy={isInProgress || undefined}
 				className={cn(
 					'rounded-md text-muted-foreground transition-colors',
 					status === 'error' && 'text-destructive',
@@ -41,7 +43,12 @@ export function ToolCardChrome({
 						disabled={!hasExpanded}
 						aria-expanded={hasExpanded ? open : undefined}
 					>
-						<span className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
+						<span
+							className={cn(
+								'flex min-w-0 flex-1 items-center gap-1.5 text-left',
+								isInProgress && 'franklin-tool-shimmer',
+							)}
+						>
 							{summary}
 						</span>
 						{hasExpanded && (

@@ -1,0 +1,57 @@
+/*
+ * Text-only progress treatment for tool summaries.
+ *
+ * This was largely vibe coded while tuning the tool-row rendering, so keep the
+ * requirements explicit:
+ * - The effect is enabled only by the top-level summary wrapper owned by
+ *   ToolCardChrome.
+ * - Tool renderers should not add shimmer-specific classes or need to know the
+ *   effect exists.
+ * - It must not paint a row background; only foreground text should shimmer.
+ * - The wave moves left to right.
+ * - One animation loop moves by exactly one repeated period, so the wave starts
+ *   and ends at the same phase.
+ * - The period repeats across very long or truncated tool summaries, so perceived
+ *   speed does not depend on text width.
+ * - Reduced-motion users get normal readable text with no animation.
+ */
+
+.franklin-tool-shimmer {
+	--franklin-tool-shimmer-period: 18rem;
+	--franklin-tool-shimmer-crest: 1.25rem;
+	--franklin-tool-shimmer-highlight: color-mix(
+		in oklab,
+		var(--foreground) 82%,
+		currentColor
+	);
+
+	background-image: linear-gradient(
+		90deg,
+		currentColor 0,
+		currentColor calc(50% - var(--franklin-tool-shimmer-crest)),
+		var(--franklin-tool-shimmer-highlight) 50%,
+		currentColor calc(50% + var(--franklin-tool-shimmer-crest)),
+		currentColor 100%
+	);
+	background-position: 0 center;
+	background-repeat: repeat-x;
+	background-size: var(--franklin-tool-shimmer-period) 100%;
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	animation: franklin-tool-shimmer 2.2s linear infinite;
+}
+
+@keyframes franklin-tool-shimmer {
+	to {
+		background-position: var(--franklin-tool-shimmer-period) center;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.franklin-tool-shimmer {
+		background-image: none;
+		-webkit-text-fill-color: currentColor;
+		animation: none;
+	}
+}
