@@ -36,7 +36,7 @@ export function ToolSummaryDetail({
 	className?: string;
 }) {
 	return (
-		<span className={cn('truncate text-muted-foreground/50', className)}>
+		<span className={cn('truncate text-current opacity-50', className)}>
 			{children}
 		</span>
 	);
