@@ -1,8 +1,13 @@
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const stylesheet = readFileSync('src/styles/utilities/shimmer.css', 'utf8');
+const stylesheetPath = '../../src/styles/utilities/shimmer.css';
+const stylesheet = readFileSync(
+	fileURLToPath(new URL(stylesheetPath, import.meta.url)),
+	'utf8',
+);
 
 describe('shimmer styles', () => {
 	it('keeps shimmer context separate from text fill opt-in', () => {
