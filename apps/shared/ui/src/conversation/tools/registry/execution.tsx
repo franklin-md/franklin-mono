@@ -7,7 +7,7 @@ import { toolEntry } from '../entry.js';
 import { ToolSummaryDetail } from '../summary.js';
 
 export const executionToolRenderers = [
-	toolEntry(bashExtension.tools.bash, Terminal, undefined, (args) => (
+	toolEntry(bashExtension.tools.bash, Terminal, 'Run', (args) => (
 		<ToolSummaryDetail>$ {args.cmd}</ToolSummaryDetail>
 	)),
 ] satisfies ToolRendererRegistryEntries;

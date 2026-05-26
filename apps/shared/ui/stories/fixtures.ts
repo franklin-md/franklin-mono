@@ -178,6 +178,18 @@ const assistantToolStatesResponse: AssistantTurn = {
 			kind: 'toolUse',
 			call: {
 				type: 'toolCall',
+				id: 'tool-pending-fetch-root',
+				name: 'fetch_url',
+				arguments: {
+					url: 'https://github.com',
+				},
+			},
+			startedAt: tick(),
+		},
+		{
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
 				id: 'tool-pending-long-bash',
 				name: 'bash',
 				arguments: {
