@@ -10,6 +10,7 @@ import type { EnvironmentModule } from './modules/environment/module.js';
 import type { StoreStateModule } from './modules/store/state-module.js';
 import type { FranklinSession } from './app/session/index.js';
 import type { AuthDependencyModule } from './auth/dependency.js';
+import type { ReferencesModule } from './references/index.js';
 
 export type { FranklinSession } from './app/session/index.js';
 
@@ -17,6 +18,7 @@ export type FranklinModules = readonly [
 	CoreStateModule,
 	StoreStateModule,
 	EnvironmentModule,
+	ReferencesModule,
 	AuthDependencyModule,
 	ConfigurationModule,
 ];

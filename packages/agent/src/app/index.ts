@@ -22,6 +22,7 @@ import type {
 	FranklinModules,
 	FranklinRuntime,
 } from '../types.js';
+import { createReferencesModule } from '../references/index.js';
 import {
 	createSessionPersistence,
 	type FranklinSession,
@@ -79,6 +80,7 @@ export class FranklinApp {
 			withAuth(createCoreStateModule(connectAgent), this.auth),
 			createStoreStateModule(storage.stores),
 			createEnvironmentModule(platform.environment),
+			createReferencesModule(),
 			createDependencyModule('auth', this.auth),
 			createConfigurationModule(),
 		];
