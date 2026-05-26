@@ -15,13 +15,13 @@ import { toolEntry } from '../entry.js';
 
 export const fileToolRenderers = [
 	toolEntry(filesystemBundle.tools.readFile, FileText, 'Read', (args) => (
-		<FileBadge path={args.path} />
+		<FileBadge path={args.path} className="shimmerable" />
 	)),
 	toolEntry(filesystemBundle.tools.writeFile, FilePlus, 'Write', (args) => (
-		<FileBadge path={args.path} />
+		<FileBadge path={args.path} className="shimmerable" />
 	)),
 	toolEntry(filesystemBundle.tools.editFile, Pencil, 'Edit', (args) => (
-		<FileBadge path={args.path} />
+		<FileBadge path={args.path} className="shimmerable" />
 	)),
 	toolEntry(
 		filesystemBundle.tools.glob,

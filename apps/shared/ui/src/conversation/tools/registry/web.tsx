@@ -1,4 +1,4 @@
-import { Globe } from 'lucide-react';
+import { Eye, Globe } from 'lucide-react';
 
 import {
 	createWebExtension,
@@ -32,21 +32,24 @@ export const webToolRenderers = [
 			const { hostname, path } = displayUrl(args.url);
 
 			return (
-				<>
-					<Favicon hostname={hostname} />
-					<span className="shrink-0">{hostname}</span>
-					{path && <ToolSummaryDetail>{path}</ToolSummaryDetail>}
-				</>
+				<ToolSummary icon={Eye} label="Read">
+					<span className="ml-2 flex min-w-0 items-center gap-1.5 text-current/70">
+						<Favicon hostname={hostname} />
+						<span className="shrink-0 shimmerable">{hostname}</span>
+						{path && (
+							<ToolSummaryDetail className="opacity-75">
+								{path}
+							</ToolSummaryDetail>
+						)}
+					</span>
+				</ToolSummary>
 			);
 		},
 	}),
 	createToolRenderer(webExtension.tools.searchWeb, {
 		summary: ({ args, block }) => {
-			if (block.output == null) {
-				return null;
-			}
-
-			const Icon = getSearchProviderIcon(block.output);
+			const Icon =
+				block.output == null ? Globe : getSearchProviderIcon(block.output);
 
 			return (
 				<ToolSummary icon={Icon} label="Search">

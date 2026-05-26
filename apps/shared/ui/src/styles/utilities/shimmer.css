@@ -1,0 +1,50 @@
+/*
+ * Text-only shimmer treatment.
+ *
+ * Requirements:
+ * - `.shimmer` owns the shared parameters for a subtree.
+ * - `.shimmerable` opts a text node into clipped shimmer fill.
+ * - The wave moves left to right and repeats by exactly one period per loop.
+ * - Fixed background positioning keeps subscribed text nodes phase-aligned.
+ * - Nested surfaces such as badges keep normal readable text unless they opt in.
+ * - Reduced-motion users get normal readable text with no animation.
+ */
+
+.shimmer {
+	--shimmer-period: 18rem;
+	--shimmer-crest: 1.25rem;
+	--shimmer-highlight: color-mix(in oklab, var(--foreground) 82%, currentColor);
+}
+
+.shimmer .shimmerable {
+	background-image: linear-gradient(
+		90deg,
+		currentColor 0,
+		currentColor calc(50% - var(--shimmer-crest)),
+		var(--shimmer-highlight) 50%,
+		currentColor calc(50% + var(--shimmer-crest)),
+		currentColor 100%
+	);
+	background-position: 0 center;
+	background-repeat: repeat-x;
+	background-size: var(--shimmer-period) 100%;
+	background-attachment: fixed;
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	animation: shimmer 2.2s linear infinite;
+}
+
+@keyframes shimmer {
+	to {
+		background-position: var(--shimmer-period) center;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.shimmer .shimmerable {
+		background-image: none;
+		animation: none;
+		-webkit-text-fill-color: currentColor;
+	}
+}

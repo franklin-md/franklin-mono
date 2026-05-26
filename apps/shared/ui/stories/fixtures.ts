@@ -103,6 +103,118 @@ const assistantToolResponse: AssistantTurn = {
 	],
 };
 
+const assistantToolStatesResponse: AssistantTurn = {
+	blocks: [
+		{
+			kind: 'text',
+			text: 'Here is a dense pass across the tool row states.',
+			startedAt: tick(),
+			endedAt: tick(500),
+		},
+		{
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tool-success-read',
+				name: 'read_file',
+				arguments: {
+					path: 'apps/shared/ui/src/conversation/tools/chrome.tsx',
+				},
+			},
+			result: {
+				content: [{ type: 'text', text: 'Read 58 lines.' }],
+			},
+			startedAt: tick(),
+			endedAt: tick(800),
+		},
+		{
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tool-success-grep',
+				name: 'grep',
+				arguments: {
+					pattern: 'ToolCardChrome',
+					path: 'apps/shared/ui/src',
+				},
+			},
+			result: {
+				content: [{ type: 'text', text: 'Found 4 matches.' }],
+			},
+			startedAt: tick(),
+			endedAt: tick(900),
+		},
+		{
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tool-error-write',
+				name: 'write_file',
+				arguments: {
+					path: 'apps/shared/ui/src/conversation/tools/status-icon.tsx',
+					content: '',
+				},
+			},
+			result: {
+				content: [{ type: 'text', text: 'Permission denied.' }],
+				isError: true,
+			},
+			startedAt: tick(),
+			endedAt: tick(700),
+		},
+		{
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tool-pending-bash',
+				name: 'bash',
+				arguments: {
+					cmd: 'npm run test -w @franklin/ui',
+				},
+			},
+			startedAt: tick(),
+		},
+		{
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tool-pending-fetch-root',
+				name: 'fetch_url',
+				arguments: {
+					url: 'https://github.com',
+				},
+			},
+			startedAt: tick(),
+		},
+		{
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tool-pending-long-bash',
+				name: 'bash',
+				arguments: {
+					cmd: 'npm run test -w @franklin/ui -- __tests__/conversation/tools/chrome.test.tsx __tests__/conversation/tools/registry.test.tsx --reporter=verbose --runInBand --bail=1',
+				},
+			},
+			startedAt: tick(),
+		},
+		{
+			kind: 'toolUse',
+			call: {
+				type: 'toolCall',
+				id: 'tool-pending-spawn',
+				name: 'spawn',
+				arguments: {
+					name: 'Visual audit',
+					prompt:
+						'Compare the success, error, and pending tool row treatments.',
+				},
+			},
+			startedAt: tick(),
+		},
+	],
+};
+
 const assistantMarkdownResponse: AssistantTurn = {
 	blocks: [
 		{
@@ -180,6 +292,23 @@ export const multiTurn: ConversationTurn[] = [
 			content: [{ type: 'text', text: 'Summarize the implementation plan.' }],
 		},
 		response: assistantThinkingResponse,
+	},
+];
+
+export const toolStateConversation: ConversationTurn[] = [
+	{
+		id: 'turn-tool-states',
+		timestamp: Date.now() - 15_000,
+		prompt: {
+			role: 'user',
+			content: [
+				{
+					type: 'text',
+					text: 'Show the current tool row styling across all statuses.',
+				},
+			],
+		},
+		response: assistantToolStatesResponse,
 	},
 ];
 

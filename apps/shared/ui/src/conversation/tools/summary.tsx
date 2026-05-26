@@ -21,7 +21,9 @@ export function ToolSummary({
 		<>
 			<Icon className="h-3 w-3 shrink-0" />
 			{label != null && (
-				<span className={cn('shrink-0', labelClassName)}>{label}</span>
+				<span className={cn('shrink-0 shimmerable', labelClassName)}>
+					{label}
+				</span>
 			)}
 			{children}
 		</>
@@ -36,7 +38,9 @@ export function ToolSummaryDetail({
 	className?: string;
 }) {
 	return (
-		<span className={cn('truncate text-muted-foreground/50', className)}>
+		<span
+			className={cn('truncate text-current opacity-50 shimmerable', className)}
+		>
 			{children}
 		</span>
 	);

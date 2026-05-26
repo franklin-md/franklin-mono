@@ -137,6 +137,7 @@ describe('defaultToolRegistry', () => {
 			renderSummary(bashExtension.tools.bash.name, {
 				cmd: 'npm test',
 			});
+			expect(screen.getByText('Run')).toBeTruthy();
 			expect(screen.getByText('$ npm test')).toBeTruthy();
 		});
 	});
@@ -191,25 +192,30 @@ describe('defaultToolRegistry', () => {
 
 	describe('web tools', () => {
 		it('renders with hostname and path', () => {
-			renderSummary(createWebExtension({}).tools.fetchUrl.name, {
-				url: 'https://example.com/docs/getting-started',
-			});
-			expect(screen.getByText('example.com')).toBeTruthy();
-			expect(screen.getByText('/docs/getting-started')).toBeTruthy();
+			const { container } = renderSummary(
+				createWebExtension({}).tools.fetchUrl.name,
+				{
+					url: 'https://example.com/docs/getting-started',
+				},
+			);
+			expect(container.textContent).toContain('Read');
+			expect(container.textContent).toContain('example.com');
+			expect(container.textContent).toContain('/docs/getting-started');
 		});
 
-		it('does not render search before output resolves', () => {
+		it('renders search before output resolves', () => {
 			const { container } = renderSummary(
 				createWebExtension({}).tools.searchWeb.name,
 				{ query: 'example query' },
 			);
 
-			expect(container.textContent).toBe('');
-			expect(container.querySelector('svg')).toBeNull();
+			expect(container.textContent).toContain('Search');
+			expect(container.textContent).toContain('example query');
+			expect(container.querySelector('svg')).toBeTruthy();
 		});
 
 		it('renders search with query text from raw output', () => {
-			renderSummary(
+			const { container } = renderSummary(
 				createWebExtension({}).tools.searchWeb.name,
 				{ query: 'example query' },
 				{
@@ -221,8 +227,8 @@ describe('defaultToolRegistry', () => {
 					},
 				},
 			);
-			expect(screen.getByText('Search')).toBeTruthy();
-			expect(screen.getByText('example query')).toBeTruthy();
+			expect(container.textContent).toContain('Search');
+			expect(container.textContent).toContain('example query');
 		});
 
 		it('renders search with query text from error output', () => {
