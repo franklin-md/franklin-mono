@@ -2,7 +2,11 @@ import { decode } from '@franklin/lib';
 import { fileTypeFromBuffer } from 'file-type';
 import type { AbsolutePath } from '@franklin/lib';
 import type { EnvironmentRuntime } from '@franklin/extensions';
-import type { ReferenceHandler, ReferenceHandlerRuntime } from './api/index.js';
+import type {
+	ReferenceHandler,
+	ReferenceHandlerRuntime,
+} from '../api/index.js';
+import { referenceUnavailable } from './unavailable.js';
 
 type FilesystemFileLocator = {
 	readonly path: string;
@@ -71,12 +75,4 @@ function isFilesystemFileLocator(
 
 function isPdfPath(path: AbsolutePath): boolean {
 	return path.toLowerCase().endsWith('.pdf');
-}
-
-function referenceUnavailable(message: string) {
-	return {
-		content: [
-			{ type: 'text' as const, text: `Reference unavailable: ${message}` },
-		],
-	};
 }

@@ -8,12 +8,19 @@ import {
 import {
 	buildStateExtensionModule,
 	createEnvironmentModule,
+	defineExtension,
 	type EnvironmentConfig,
+	type EnvironmentModule,
 	type ReconfigurableEnvironment,
 } from '@franklin/extensions';
 import { createRuntime } from '@franklin/extensions/testing';
 import { createReferencesModule } from '../module.js';
-import { referencesExtension } from '../index.js';
+import type { ReferencesModule } from '../module.js';
+import {
+	filesystemFileReferenceHandler,
+	pdfDocumentReferenceHandler,
+	textDocumentReferenceHandler,
+} from '../handlers/index.js';
 
 const defaultConfig: EnvironmentConfig = {
 	fsConfig: {
@@ -43,12 +50,16 @@ async function createReferenceRuntime(filesystem = new MemoryFilesystem()) {
 		createEnvironmentModule(async () => createEnvironment(filesystem)),
 	]);
 	const runtime = await createRuntime(module, { env: defaultConfig }, [
-		referencesExtension(),
+		defineExtension<[ReferencesModule, EnvironmentModule]>((api) => {
+			api.registerReferenceHandler(textDocumentReferenceHandler);
+			api.registerReferenceHandler(pdfDocumentReferenceHandler);
+			api.registerReferenceHandler(filesystemFileReferenceHandler);
+		}),
 	]);
 	return { runtime, filesystem };
 }
 
-describe('referencesExtension', () => {
+describe('built-in reference handlers', () => {
 	it('materializes text.document references as model text', async () => {
 		const { runtime } = await createReferenceRuntime();
 
@@ -63,7 +74,7 @@ describe('referencesExtension', () => {
 		]);
 	});
 
-	it('delegates filesystem text files to text.document', async () => {
+	it('materializes filesystem text files through text.document', async () => {
 		const filesystem = new MemoryFilesystem();
 		filesystem.seed('/project/note.txt' as AbsolutePath, 'from disk');
 		const { runtime } = await createReferenceRuntime(filesystem);
@@ -79,7 +90,7 @@ describe('referencesExtension', () => {
 		]);
 	});
 
-	it('delegates filesystem PDF files to the PDF placeholder handler', async () => {
+	it('materializes filesystem PDF files through the PDF placeholder handler', async () => {
 		const filesystem = new MemoryFilesystem();
 		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
 		const { runtime } = await createReferenceRuntime(filesystem);

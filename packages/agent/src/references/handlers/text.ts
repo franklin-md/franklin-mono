@@ -1,4 +1,5 @@
-import type { Reference, ReferenceHandler } from './api/index.js';
+import type { Reference, ReferenceHandler } from '../api/index.js';
+import { referenceUnavailable } from './unavailable.js';
 
 type TextDocumentLocator = {
 	readonly text: string;
@@ -43,12 +44,4 @@ function referenceLabel(reference: Reference): string {
 		return reference.locator.uri;
 	}
 	return reference.type;
-}
-
-function referenceUnavailable(message: string) {
-	return {
-		content: [
-			{ type: 'text' as const, text: `Reference unavailable: ${message}` },
-		],
-	};
 }

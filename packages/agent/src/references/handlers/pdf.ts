@@ -1,4 +1,5 @@
-import type { Reference, ReferenceHandler } from './api/index.js';
+import type { Reference, ReferenceHandler } from '../api/index.js';
+import { referenceUnavailable } from './unavailable.js';
 
 type PdfDocumentLocator = {
 	readonly path?: string;
@@ -66,12 +67,4 @@ function referenceLabel(reference: Reference): string {
 function pageSuffix(selector: unknown): string {
 	if (!isPageSelector(selector)) return '';
 	return ` page ${selector.page}`;
-}
-
-function referenceUnavailable(message: string) {
-	return {
-		content: [
-			{ type: 'text' as const, text: `Reference unavailable: ${message}` },
-		],
-	};
 }

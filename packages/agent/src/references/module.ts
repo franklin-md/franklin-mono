@@ -11,13 +11,13 @@ export type ReferencesModule = ExtensionModule<
 	ReferencesRuntime
 >;
 
-const referencesExtensionPoint = createExtensionPoint<ReferencesSignature>({
+const referenceExtensionPoint = createExtensionPoint<ReferencesSignature>({
 	registerReferenceHandler: true,
 });
 
 export function createReferencesModule(): ReferencesModule {
 	return {
-		extensionPoint: referencesExtensionPoint,
+		extensionPoint: referenceExtensionPoint,
 		compiler: createReferencesCompiler(),
 	};
 }

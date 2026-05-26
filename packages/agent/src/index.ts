@@ -49,6 +49,5 @@ export {
 	pdfDocumentReferenceHandler,
 	referenceContextsToContent,
 	referenceContextToContent,
-	referencesExtension,
 	textDocumentReferenceHandler,
 } from './references/index.js';
