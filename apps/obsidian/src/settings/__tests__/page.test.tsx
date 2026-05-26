@@ -95,12 +95,21 @@ describe('SettingsPage', () => {
 		expect(input.value).toBe('mis-existing');
 	});
 
-	it('renders provider logos beside API key settings', () => {
+	it('renders provider logos beside credential settings', () => {
 		const auth = createAuthStub();
 		const { container } = renderPage(auth);
 
 		expect(container.querySelectorAll('.setting-item-name svg')).toHaveLength(
-			3,
+			4,
+		);
+	});
+
+	it('renders ChatGPT as the first credential setting', () => {
+		const auth = createAuthStub();
+		const { container } = renderPage(auth);
+
+		expect(container.querySelector('.setting-item-name')?.textContent).toBe(
+			'ChatGPT',
 		);
 	});
 

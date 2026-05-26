@@ -3,13 +3,13 @@ import {
 	useAuthManager,
 	useOpenExternal,
 } from '@franklin/react';
-import { Input, ProviderIcon } from '@franklin/ui';
+import { Input } from '@franklin/ui';
 
 import { SettingControl } from '../../components/obsidian-native/setting/control.js';
 import { SettingDescription } from '../../components/obsidian-native/setting/description.js';
 import { SettingInfo } from '../../components/obsidian-native/setting/info.js';
 import { SettingItem } from '../../components/obsidian-native/setting/item.js';
-import { SettingName } from '../../components/obsidian-native/setting/name.js';
+import { ProviderName } from './provider-name.js';
 
 type ProviderApiKeyFieldProps = {
 	provider: string;
@@ -38,18 +38,7 @@ export function ProviderApiKeyField({
 	return (
 		<SettingItem>
 			<SettingInfo>
-				<SettingName>
-					<span className="inline-flex items-center gap-2">
-						<ProviderIcon
-							aria-hidden="true"
-							className="shrink-0"
-							focusable="false"
-							provider={provider}
-							size={16}
-						/>
-						{label}
-					</span>
-				</SettingName>
+				<ProviderName provider={provider}>{label}</ProviderName>
 				<SettingDescription>
 					{description}{' '}
 					<a

@@ -5,7 +5,7 @@ import { SettingControl } from '../../components/obsidian-native/setting/control
 import { SettingDescription } from '../../components/obsidian-native/setting/description.js';
 import { SettingInfo } from '../../components/obsidian-native/setting/info.js';
 import { SettingItem } from '../../components/obsidian-native/setting/item.js';
-import { SettingName } from '../../components/obsidian-native/setting/name.js';
+import { ProviderName } from './provider-name.js';
 
 const OPENAI_CODEX_PROVIDER = 'openai-codex';
 
@@ -19,7 +19,7 @@ export function ChatGPTLoginField() {
 	return (
 		<SettingItem>
 			<SettingInfo>
-				<SettingName>ChatGPT</SettingName>
+				<ProviderName provider={OPENAI_CODEX_PROVIDER}>ChatGPT</ProviderName>
 				<SettingDescription>
 					{signedIn
 						? 'Signed in to ChatGPT.'
