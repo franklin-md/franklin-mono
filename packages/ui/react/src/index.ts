@@ -73,6 +73,12 @@ export {
 	type UseTriggerOnChange,
 	type UseTriggerOnChangeOptions,
 } from './utils/use-trigger-on-change.js';
+export { FuseFileCollection } from './file-search/index.js';
+export type {
+	FileCollection,
+	FileReferenceItem,
+	FileSearchOptions,
+} from './file-search/index.js';
 export { PromptProvider, usePrompt } from './prompt/context.js';
 export type { PromptContextValue } from './prompt/context.js';
 export { Prompt } from './prompt/prompt.js';
