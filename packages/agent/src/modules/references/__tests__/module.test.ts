@@ -15,7 +15,7 @@ describe('createReferencesModule', () => {
 					type: 'text.document',
 					toContext(reference) {
 						return {
-							content: [{ type: 'text', text: String(reference.locator) }],
+							content: [{ type: 'text', text: reference.locator }],
 						};
 					},
 				});
@@ -43,7 +43,7 @@ describe('createReferencesModule', () => {
 		await expect(
 			runtime.references.toContext({
 				type: 'missing.reference',
-				locator: { id: 'x' },
+				locator: 'x',
 			}),
 		).resolves.toEqual({
 			content: [
@@ -112,7 +112,7 @@ describe('createReferencesModule', () => {
 		await expect(
 			runtime.references.toContext({
 				type: 'failing.document',
-				locator: { id: 'x' },
+				locator: 'x',
 			}),
 		).resolves.toEqual({
 			content: [

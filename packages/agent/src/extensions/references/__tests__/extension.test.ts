@@ -60,7 +60,7 @@ describe('built-in reference extensions', () => {
 
 		const context = await runtime.references.toContext({
 			type: 'text.document',
-			locator: { text: 'hello', uri: 'memory://note' },
+			locator: 'hello',
 			label: 'Note',
 		});
 
@@ -76,7 +76,7 @@ describe('built-in reference extensions', () => {
 
 		const context = await runtime.references.toContext({
 			type: 'filesystem.file',
-			locator: { path: '/project/note.txt' },
+			locator: '/project/note.txt',
 			label: 'Disk note',
 		});
 
@@ -92,7 +92,7 @@ describe('built-in reference extensions', () => {
 
 		const context = await runtime.references.toContext({
 			type: 'filesystem.file',
-			locator: { path: '/project/paper.pdf' },
+			locator: '/project/paper.pdf',
 			selector: { page: 10 },
 			label: 'Paper',
 		});
@@ -105,18 +105,20 @@ describe('built-in reference extensions', () => {
 		]);
 	});
 
-	it('returns unavailable content for invalid filesystem locators', async () => {
-		const { runtime } = await createReferenceRuntime();
+	it('returns unavailable content for directories', async () => {
+		const filesystem = new MemoryFilesystem();
+		await filesystem.mkdir('/project/notes' as AbsolutePath);
+		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
 			type: 'filesystem.file',
-			locator: { id: 'not-a-path' },
+			locator: '/project/notes',
 		});
 
 		expect(context.content).toEqual([
 			{
 				type: 'text',
-				text: 'Reference unavailable: filesystem.file references require a locator with string path',
+				text: 'Reference unavailable: Reference path is not a file: /project/notes',
 			},
 		]);
 	});

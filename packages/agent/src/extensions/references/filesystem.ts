@@ -13,24 +13,14 @@ import type {
 import type { ReferencesModule } from '../../modules/references/module.js';
 import { referenceUnavailable } from './unavailable.js';
 
-type FilesystemFileLocator = {
-	readonly path: string;
-};
-
 type FilesystemHandlerRuntime = ReferenceHandlerRuntime & EnvironmentRuntime;
 
 const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime> =
 	{
 		type: 'filesystem.file',
 		async toContext(reference, ctx) {
-			if (!isFilesystemFileLocator(reference.locator)) {
-				return referenceUnavailable(
-					'filesystem.file references require a locator with string path',
-				);
-			}
-
 			const fs = ctx.environment.filesystem;
-			const path = await fs.resolve(reference.locator.path);
+			const path = await fs.resolve(reference.locator);
 			const stat = await fs.stat(path);
 			if (!stat.isFile) {
 				return referenceUnavailable(`Reference path is not a file: ${path}`);
@@ -41,7 +31,7 @@ const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime>
 			if (fileType?.mime === 'application/pdf' || isPdfPath(path)) {
 				return ctx.references.toContext({
 					type: 'pdf.document',
-					locator: { path },
+					locator: path,
 					...(reference.selector ? { selector: reference.selector } : {}),
 					...(reference.label ? { label: reference.label } : {}),
 				});
@@ -50,7 +40,7 @@ const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime>
 			if (!fileType) {
 				return ctx.references.toContext({
 					type: 'text.document',
-					locator: { text: decode(bytes), uri: path },
+					locator: decode(bytes),
 					...(reference.selector ? { selector: reference.selector } : {}),
 					...(reference.label ? { label: reference.label } : {}),
 				});
@@ -72,17 +62,6 @@ export const filesystemFileReferenceExtension = defineExtension<
 >((api) => {
 	api.registerReferenceHandler(filesystemFileReferenceHandler);
 });
-
-function isFilesystemFileLocator(
-	locator: unknown,
-): locator is FilesystemFileLocator {
-	return (
-		typeof locator === 'object' &&
-		locator !== null &&
-		'path' in locator &&
-		typeof locator.path === 'string'
-	);
-}
 
 function isPdfPath(path: AbsolutePath): boolean {
 	return path.toLowerCase().endsWith('.pdf');

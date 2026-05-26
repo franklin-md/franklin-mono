@@ -4,12 +4,6 @@ import type {
 	ReferenceHandler,
 } from '../../modules/references/api/index.js';
 import type { ReferencesModule } from '../../modules/references/module.js';
-import { referenceUnavailable } from './unavailable.js';
-
-type PdfDocumentLocator = {
-	readonly path?: string;
-	readonly uri?: string;
-};
 
 type PageSelector = {
 	readonly page: number;
@@ -18,12 +12,6 @@ type PageSelector = {
 const pdfDocumentReferenceHandler: ReferenceHandler = {
 	type: 'pdf.document',
 	toContext(reference) {
-		if (!isPdfDocumentLocator(reference.locator)) {
-			return referenceUnavailable(
-				'pdf.document references require a locator with path or uri',
-			);
-		}
-
 		const label = referenceLabel(reference);
 		const page = pageSuffix(reference.selector);
 		return {
@@ -43,15 +31,6 @@ export const pdfDocumentReferenceExtension = defineExtension<
 	api.registerReferenceHandler(pdfDocumentReferenceHandler);
 });
 
-function isPdfDocumentLocator(locator: unknown): locator is PdfDocumentLocator {
-	return (
-		typeof locator === 'object' &&
-		locator !== null &&
-		(('path' in locator && typeof locator.path === 'string') ||
-			('uri' in locator && typeof locator.uri === 'string'))
-	);
-}
-
 function isPageSelector(selector: unknown): selector is PageSelector {
 	const page =
 		typeof selector === 'object' && selector !== null && 'page' in selector
@@ -69,10 +48,7 @@ function isPageSelector(selector: unknown): selector is PageSelector {
 
 function referenceLabel(reference: Reference): string {
 	if (reference.label) return reference.label;
-	if (isPdfDocumentLocator(reference.locator)) {
-		return reference.locator.path ?? reference.locator.uri ?? reference.type;
-	}
-	return reference.type;
+	return reference.locator;
 }
 
 function pageSuffix(selector: unknown): string {

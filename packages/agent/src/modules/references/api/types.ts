@@ -5,7 +5,7 @@ type MaybePromise<T> = T | Promise<T>;
 
 export type Reference = {
 	readonly type: string;
-	readonly locator: unknown;
+	readonly locator: string;
 	readonly selector?: unknown;
 	readonly label?: string;
 };
