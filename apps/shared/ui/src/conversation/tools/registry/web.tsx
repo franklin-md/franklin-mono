@@ -33,9 +33,15 @@ export const webToolRenderers = [
 
 			return (
 				<ToolSummary icon={Eye} label="Read">
-					<Favicon hostname={hostname} />
-					<span className="shrink-0 shimmerable">{hostname}</span>
-					{path && <ToolSummaryDetail>{path}</ToolSummaryDetail>}
+					<span className="ml-2 flex min-w-0 items-center gap-1.5 text-current/70">
+						<Favicon hostname={hostname} />
+						<span className="shrink-0 shimmerable">{hostname}</span>
+						{path && (
+							<ToolSummaryDetail className="opacity-75">
+								{path}
+							</ToolSummaryDetail>
+						)}
+					</span>
 				</ToolSummary>
 			);
 		},
