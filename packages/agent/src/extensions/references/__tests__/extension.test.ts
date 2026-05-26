@@ -93,7 +93,7 @@ describe('built-in reference extensions', () => {
 		const context = await runtime.references.toContext({
 			type: 'filesystem.file',
 			locator: '/project/paper.pdf',
-			selector: { page: 10 },
+			selector: 'page=10',
 			label: 'Paper',
 		});
 
@@ -101,6 +101,26 @@ describe('built-in reference extensions', () => {
 			{
 				type: 'text',
 				text: 'PDF reference unavailable: Paper page 10. PDF extraction is not implemented in v1.',
+			},
+		]);
+	});
+
+	it('passes PDF page ranges through the PDF placeholder handler', async () => {
+		const filesystem = new MemoryFilesystem();
+		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
+		const { runtime } = await createReferenceRuntime(filesystem);
+
+		const context = await runtime.references.toContext({
+			type: 'filesystem.file',
+			locator: '/project/paper.pdf',
+			selector: 'pages=10-12',
+			label: 'Paper',
+		});
+
+		expect(context.content).toEqual([
+			{
+				type: 'text',
+				text: 'PDF reference unavailable: Paper pages 10-12. PDF extraction is not implemented in v1.',
 			},
 		]);
 	});

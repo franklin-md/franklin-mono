@@ -9,7 +9,7 @@ The v1 contract is intentionally small:
 - Extensions register `ReferenceHandler` implementations by reference `type`.
 - `runtime.references.toContext(reference)` resolves one reference into `ReferenceContext`.
 - `Reference.locator` is a string interpreted by the selected provider.
-- `Reference.selector` remains provider-shaped while the selector model is unresolved.
+- `Reference.selector` is a string interpreted by the selected provider.
 - `ReferenceContext` only contains Mini-ACP user content.
 - The runtime returns model-visible unavailable text when a handler is missing or fails.
 - Built-in provider extensions cover text documents, filesystem files, and a placeholder PDF response.
