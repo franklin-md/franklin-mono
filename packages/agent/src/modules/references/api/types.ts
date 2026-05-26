@@ -1,5 +1,6 @@
 import type { UserContent } from '@franklin/mini-acp';
 import type { BaseRuntime } from '@franklin/extensibility';
+import type { ReferencesEngine } from '../engine.js';
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -14,12 +15,8 @@ export type ReferenceContext = {
 	readonly content: UserContent[];
 };
 
-export type ReferenceEngine = {
-	toContext(reference: Reference): Promise<ReferenceContext>;
-};
-
 export type ReferenceHandlerRuntime = BaseRuntime & {
-	readonly references: ReferenceEngine;
+	readonly references: ReferencesEngine;
 };
 
 export type ReferenceHandler<

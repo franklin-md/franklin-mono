@@ -1,15 +1,16 @@
-import type { Reference, ReferenceContext } from '../api/index.js';
-import type { ReferenceRegistry, ReferencesRuntime } from './types.js';
+import type { Reference, ReferenceContext } from './api/types.js';
 
-type CreateReferencesRuntimeInput = {
-	readonly handlers: ReferenceRegistry;
+export type RegisteredReferenceHandler = {
+	toContext(reference: Reference): Promise<ReferenceContext>;
 };
 
-export function createReferencesRuntime({
-	handlers,
-}: CreateReferencesRuntimeInput): ReferencesRuntime {
-	const toContext = async (reference: Reference): Promise<ReferenceContext> => {
-		const handler = handlers.get(reference.type);
+export type ReferenceRegistry = ReadonlyMap<string, RegisteredReferenceHandler>;
+
+export class ReferencesEngine {
+	constructor(private readonly handlers: ReferenceRegistry) {}
+
+	async toContext(reference: Reference): Promise<ReferenceContext> {
+		const handler = this.handlers.get(reference.type);
 		if (!handler) {
 			return referenceUnavailable(
 				`No reference handler registered for "${reference.type}"`,
@@ -23,12 +24,7 @@ export function createReferencesRuntime({
 				`Handler for "${reference.type}" failed: ${errorMessage(err)}`,
 			);
 		}
-	};
-
-	return {
-		references: { toContext },
-		async dispose(): Promise<void> {},
-	};
+	}
 }
 
 function normalizeContext(context: ReferenceContext): ReferenceContext {

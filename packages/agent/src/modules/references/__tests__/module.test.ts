@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { compile } from '@franklin/extensibility';
 import { createReferencesModule } from '../module.js';
 import { referenceContextsToContent } from '../index.js';
+import { ReferencesEngine } from '../engine.js';
 
 describe('createReferencesModule', () => {
 	it('resolves one reference through a registered handler', async () => {
@@ -22,6 +23,7 @@ describe('createReferencesModule', () => {
 			},
 		);
 
+		expect(runtime.references).toBeInstanceOf(ReferencesEngine);
 		await expect(
 			runtime.references.toContext({
 				type: 'text.document',

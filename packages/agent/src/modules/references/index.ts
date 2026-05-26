@@ -1,12 +1,12 @@
 export type {
 	Reference,
 	ReferenceContext,
-	ReferenceEngine,
 	ReferenceHandler,
 	ReferenceHandlerRuntime,
 	ReferencesAPI,
 	ReferencesSignature,
 } from './api/index.js';
+export type { ReferencesEngine } from './engine.js';
 export {
 	referenceContextsToContent,
 	referenceContextToContent,

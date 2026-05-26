@@ -27,7 +27,7 @@ Filesystem references currently call `ctx.references.toContext(...)` to reuse th
 
 Future delegation support should decide:
 
-- whether `ReferenceEngine` should expose an explicit `delegate(...)` method;
+- whether `ReferencesEngine` should expose an explicit `delegate(...)` method;
 - whether delegation should carry `from` and `to` reference edges;
 - how to detect cycles and enforce depth limits;
 - whether cycle and depth failures should produce model-visible content, structured diagnostics, or both.

@@ -113,10 +113,10 @@ export { emptyEnvironmentState } from './environment/state.js';
 export type {
 	Reference,
 	ReferenceContext,
-	ReferenceEngine,
 	ReferenceHandler,
 	ReferenceHandlerRuntime,
 	ReferencesAPI,
+	ReferencesEngine,
 	ReferencesModule,
 	ReferencesSignature,
 } from './references/index.js';

@@ -8,12 +8,12 @@ import type {
 	ReferenceHandlerRuntime,
 	ReferencesSignature,
 } from '../api/index.js';
-import { createReferencesRuntime } from './runtime.js';
-import type {
-	ReferenceRegistry,
-	ReferencesRuntime,
-	RegisteredReferenceHandler,
-} from './types.js';
+import {
+	ReferencesEngine,
+	type ReferenceRegistry,
+	type RegisteredReferenceHandler,
+} from '../engine.js';
+import type { ReferencesRuntime } from './types.js';
 
 export function createReferencesCompiler(): Compiler<
 	ReferencesSignature,
@@ -24,9 +24,12 @@ export function createReferencesCompiler(): Compiler<
 			registry: RegistryView<ReferencesSignature, Runtime>,
 			getRuntime: () => Runtime,
 		): Promise<ReferencesRuntime> {
-			return createReferencesRuntime({
-				handlers: createHandlerRegistry(registry, getRuntime),
-			});
+			return {
+				references: new ReferencesEngine(
+					createHandlerRegistry(registry, getRuntime),
+				),
+				async dispose(): Promise<void> {},
+			};
 		},
 	};
 }
