@@ -5,9 +5,13 @@ import type { ReactNode } from 'react';
 import type { ToolUseBlock } from '@franklin/agent';
 import type { ToolStatus } from '@franklin/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { Bot } from 'lucide-react';
 
 import { ToolCardChrome } from '../../../src/conversation/tools/chrome.js';
-import { ToolSummaryDetail } from '../../../src/conversation/tools/summary.js';
+import {
+	ToolSummary,
+	ToolSummaryDetail,
+} from '../../../src/conversation/tools/summary.js';
 
 const block: ToolUseBlock = {
 	kind: 'toolUse',
@@ -22,9 +26,11 @@ const block: ToolUseBlock = {
 
 function renderChrome({
 	expanded,
+	summary,
 	status = 'success',
 }: {
 	expanded?: ReactNode;
+	summary?: ReactNode;
 	status?: ToolStatus;
 } = {}) {
 	return render(
@@ -32,10 +38,12 @@ function renderChrome({
 			block={block}
 			status={status}
 			summary={
-				<>
-					<span>Read</span>
-					<ToolSummaryDetail>src/index.ts</ToolSummaryDetail>
-				</>
+				summary ?? (
+					<>
+						<span>Read</span>
+						<ToolSummaryDetail>src/index.ts</ToolSummaryDetail>
+					</>
+				)
 			}
 			expanded={expanded}
 		/>,
@@ -73,7 +81,7 @@ describe('ToolCardChrome', () => {
 		expect(screen.getByText('Details')).toBeTruthy();
 	});
 
-	it('applies a text-only shimmer treatment while a tool is in progress', () => {
+	it('applies a shared shimmer context while a tool is in progress', () => {
 		renderChrome({
 			status: 'in-progress',
 			expanded: <div>Details</div>,
@@ -81,9 +89,29 @@ describe('ToolCardChrome', () => {
 
 		const button = screen.getByRole('button', { name: 'Readsrc/index.ts' });
 		const busyRegion = screen.getByText('Read').closest('[aria-busy="true"]');
-		const shimmer = button.querySelector('.franklin-tool-shimmer');
+		const shimmer = button.querySelector('.shimmer');
 
 		expect(busyRegion).toBeTruthy();
 		expect(shimmer?.textContent).toBe('Readsrc/index.ts');
+	});
+
+	it('shimmers plain text without forcing nested badges to subscribe', () => {
+		renderChrome({
+			status: 'in-progress',
+			summary: (
+				<ToolSummary icon={Bot} label="Agent">
+					<span className="rounded-sm bg-accent text-accent-foreground">
+						Visual audit
+					</span>
+				</ToolSummary>
+			),
+		});
+
+		const label = screen.getByText('Agent');
+		const badge = screen.getByText('Visual audit');
+
+		expect(label.className).toContain('shimmerable');
+		expect(badge.closest('.shimmer')).toBeTruthy();
+		expect(badge.className).not.toContain('shimmerable');
 	});
 });

@@ -4,6 +4,6 @@
  * Composes the prose/content rules with the external markdown renderer styles.
  */
 
-@import './tool-text-shimmer.css';
+@import './shimmer.css';
 @import './prose-content.css';
 @import './markdown.css';

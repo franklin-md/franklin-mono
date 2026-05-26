@@ -46,7 +46,7 @@ export function ToolCardChrome({
 						<span
 							className={cn(
 								'flex min-w-0 flex-1 items-center gap-1.5 text-left',
-								isInProgress && 'franklin-tool-shimmer',
+								isInProgress && 'shimmer',
 							)}
 						>
 							{summary}
