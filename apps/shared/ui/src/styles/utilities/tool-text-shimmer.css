@@ -1,8 +1,7 @@
 /*
  * Text-only progress treatment for tool summaries.
  *
- * This was largely vibe coded while tuning the tool-row rendering, so keep the
- * requirements explicit:
+ * Requirements:
  * - The effect is enabled only by the top-level summary wrapper owned by
  *   ToolCardChrome.
  * - Tool renderers should not add shimmer-specific classes or need to know the
