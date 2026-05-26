@@ -1,5 +1,6 @@
 {
 	"useTabs": true,
+	"proseWrap": "never",
 	"singleQuote": true,
 	"semi": true,
 	"trailingComma": "all"

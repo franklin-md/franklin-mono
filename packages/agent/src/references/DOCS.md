@@ -86,3 +86,11 @@ The current filesystem handler assumes files without detected magic bytes are te
     - `references.toContext` for programatic injection of context into prompt (for example to implement a "current context" bar that keeps track of what is being viewed in the app + what has changed since last send"
   - Challenges:
     - How do communicate in the readTool the set of provider specifici `selectors`?
+- Does `Reference` system even need to be a `Module`? Could it not use the `ConfigurationModule` system?
+  - Observations:
+    - In both cases, **extending behaviour requires leveraging the extension mechanism**, either thorugh `api.registerReferenceProvider` or using a `ConfigurationProvider.of`
+  - Pros for seperate module:
+    - The policy graph may actually be quite simple and universal. For example, there might only really be `download`, `convert`, `select` and `render` phases, so giving overly expressive control over this graph may be overkill.
+  - Pros for configuration:
+    - Can reuse a powerful policy graph system (i.e. questions on delegation etc can use `.compute` or `.of` in application extensions to construct the complete policy)
+    - Simplifies the boilerplate of constructing primitives (no compiler etc)
