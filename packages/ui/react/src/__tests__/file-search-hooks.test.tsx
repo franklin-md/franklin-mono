@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
 	FileCollectionProvider,
@@ -75,6 +75,30 @@ describe('useFileSearch', () => {
 		rerender({ query: 'react' });
 
 		expect(paths(result.current)).toEqual(['notes/react.md']);
+	});
+
+	it('debounces query changes when configured', () => {
+		vi.useFakeTimers();
+		const collection = new FuseFileCollection([
+			{ path: 'notes/fuse.md' },
+			{ path: 'notes/react.md' },
+		]);
+		const { result, rerender } = renderHook(
+			({ query }) => useFileSearch(collection, query, { debounceMs: 50 }),
+			{ initialProps: { query: 'fuse' } },
+		);
+
+		expect(paths(result.current)).toEqual(['notes/fuse.md']);
+
+		rerender({ query: 'react' });
+		expect(paths(result.current)).toEqual(['notes/fuse.md']);
+
+		act(() => {
+			vi.advanceTimersByTime(50);
+		});
+
+		expect(paths(result.current)).toEqual(['notes/react.md']);
+		vi.useRealTimers();
 	});
 
 	it('updates when search options change without a collection event', () => {

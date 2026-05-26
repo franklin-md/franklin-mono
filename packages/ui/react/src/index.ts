@@ -8,6 +8,7 @@ export {
 	useThrottledStoreValue,
 	type UseThrottledStoreValueOptions,
 } from './utils/use-throttled-store-value.js';
+export { useDebouncedValue } from './utils/use-debounced-value.js';
 export { useStableExternalStore } from './utils/use-stable-external-store.js';
 export {
 	useObservedState,
