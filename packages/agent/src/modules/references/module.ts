@@ -1,10 +1,8 @@
-import {
-	createExtensionPoint,
-	type ExtensionModule,
-} from '@franklin/extensions';
+import { createExtensionPoint } from '@franklin/extensibility';
+import type { ExtensionModule } from '@franklin/extensibility/module';
 import type { ReferencesSignature } from './api/index.js';
 import { createReferencesCompiler } from './compile/index.js';
-import type { ReferencesRuntime } from './runtime.js';
+import type { ReferencesRuntime } from './compile/index.js';
 
 export type ReferencesModule = ExtensionModule<
 	ReferencesSignature,

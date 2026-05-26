@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compile } from '@franklin/extensions';
+import { compile } from '@franklin/extensibility';
 import { createReferencesModule } from '../module.js';
 import { referenceContextsToContent } from '../index.js';
 

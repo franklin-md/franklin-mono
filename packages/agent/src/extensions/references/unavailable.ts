@@ -1,4 +1,4 @@
-import type { ReferenceContext } from '../api/index.js';
+import type { ReferenceContext } from '../../modules/references/api/index.js';
 
 export function referenceUnavailable(message: string): ReferenceContext {
 	return {

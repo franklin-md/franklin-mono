@@ -1,11 +1,16 @@
 import { decode } from '@franklin/lib';
 import { fileTypeFromBuffer } from 'file-type';
 import type { AbsolutePath } from '@franklin/lib';
-import type { EnvironmentRuntime } from '@franklin/extensions';
+import type {
+	EnvironmentModule,
+	EnvironmentRuntime,
+} from '../../modules/environment/index.js';
+import { defineExtension } from '../../modules/state/index.js';
 import type {
 	ReferenceHandler,
 	ReferenceHandlerRuntime,
-} from '../api/index.js';
+} from '../../modules/references/api/index.js';
+import type { ReferencesModule } from '../../modules/references/module.js';
 import { referenceUnavailable } from './unavailable.js';
 
 type FilesystemFileLocator = {
@@ -14,7 +19,7 @@ type FilesystemFileLocator = {
 
 type FilesystemHandlerRuntime = ReferenceHandlerRuntime & EnvironmentRuntime;
 
-export const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime> =
+const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime> =
 	{
 		type: 'filesystem.file',
 		async toContext(reference, ctx) {
@@ -61,6 +66,12 @@ export const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerR
 			};
 		},
 	};
+
+export const filesystemFileReferenceExtension = defineExtension<
+	[ReferencesModule, EnvironmentModule]
+>((api) => {
+	api.registerReferenceHandler(filesystemFileReferenceHandler);
+});
 
 function isFilesystemFileLocator(
 	locator: unknown,

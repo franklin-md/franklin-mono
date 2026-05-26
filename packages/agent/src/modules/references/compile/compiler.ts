@@ -1,19 +1,19 @@
-import type { BaseRuntime, Compiler, RegistryView } from '@franklin/extensions';
 import type {
-	Reference,
-	ReferenceContext,
+	BaseRuntime,
+	Compiler,
+	RegistryView,
+} from '@franklin/extensibility';
+import type {
 	ReferenceHandler,
 	ReferenceHandlerRuntime,
 	ReferencesSignature,
 } from '../api/index.js';
-import { createReferencesRuntime, type ReferencesRuntime } from '../runtime.js';
-
-type HandlerRegistry = Map<
-	string,
-	{
-		toContext(reference: Reference): Promise<ReferenceContext>;
-	}
->;
+import { createReferencesRuntime } from './runtime.js';
+import type {
+	ReferenceRegistry,
+	ReferencesRuntime,
+	RegisteredReferenceHandler,
+} from './types.js';
 
 export function createReferencesCompiler(): Compiler<
 	ReferencesSignature,
@@ -34,8 +34,8 @@ export function createReferencesCompiler(): Compiler<
 function createHandlerRegistry<Runtime extends BaseRuntime>(
 	registry: RegistryView<ReferencesSignature, Runtime>,
 	getRuntime: () => Runtime,
-): HandlerRegistry {
-	const handlers: HandlerRegistry = new Map();
+): ReferenceRegistry {
+	const handlers = new Map<string, RegisteredReferenceHandler>();
 	for (const [handler] of registry.argsFor('registerReferenceHandler')) {
 		const typedHandler = handler as ReferenceHandler<
 			Runtime & ReferenceHandlerRuntime

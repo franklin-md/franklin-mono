@@ -30,24 +30,3 @@ export type { AuthStore } from './auth/store.js';
 export { type Platform, type OperatingSystem } from './platform.js';
 export * from './extensions/index.js';
 export * from './modules/index.js';
-export type {
-	Reference,
-	ReferenceContext,
-	ReferenceEngine,
-	ReferenceHandler,
-	ReferenceHandlerRuntime,
-	ReferencesAPI,
-	ReferencesModule,
-	ReferencesRuntime,
-	ReferencesSignature,
-} from './references/index.js';
-export {
-	createReferencesCompiler,
-	createReferencesModule,
-	createReferencesRuntime,
-	filesystemFileReferenceHandler,
-	pdfDocumentReferenceHandler,
-	referenceContextsToContent,
-	referenceContextToContent,
-	textDocumentReferenceHandler,
-} from './references/index.js';

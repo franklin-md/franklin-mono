@@ -11,13 +11,5 @@ export {
 	referenceContextsToContent,
 	referenceContextToContent,
 } from './context.js';
-export { createReferencesCompiler } from './compile/index.js';
 export type { ReferencesModule } from './module.js';
 export { createReferencesModule } from './module.js';
-export type { ReferencesRuntime } from './runtime.js';
-export { createReferencesRuntime } from './runtime.js';
-export {
-	filesystemFileReferenceHandler,
-	pdfDocumentReferenceHandler,
-	textDocumentReferenceHandler,
-} from './handlers/index.js';

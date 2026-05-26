@@ -22,7 +22,7 @@ import type {
 	FranklinModules,
 	FranklinRuntime,
 } from '../types.js';
-import { createReferencesModule } from '../references/index.js';
+import { createReferencesModule } from '../modules/references/index.js';
 import {
 	createSessionPersistence,
 	type FranklinSession,

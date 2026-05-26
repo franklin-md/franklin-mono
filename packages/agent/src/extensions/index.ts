@@ -34,6 +34,13 @@ export {
 	type ReadPDFExtensionOptions,
 } from './pdf/index.js';
 
+// References
+export {
+	filesystemFileReferenceExtension,
+	pdfDocumentReferenceExtension,
+	textDocumentReferenceExtension,
+} from './references/index.js';
+
 // Terminal
 export { bashExtension } from './terminal/index.js';
 

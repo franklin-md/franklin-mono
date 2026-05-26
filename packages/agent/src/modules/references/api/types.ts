@@ -1,5 +1,5 @@
 import type { UserContent } from '@franklin/mini-acp';
-import type { BaseRuntime } from '@franklin/extensions';
+import type { BaseRuntime } from '@franklin/extensibility';
 
 type MaybePromise<T> = T | Promise<T>;
 

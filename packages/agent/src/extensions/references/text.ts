@@ -1,4 +1,9 @@
-import type { Reference, ReferenceHandler } from '../api/index.js';
+import { defineExtension } from '../../modules/state/index.js';
+import type {
+	Reference,
+	ReferenceHandler,
+} from '../../modules/references/api/index.js';
+import type { ReferencesModule } from '../../modules/references/module.js';
 import { referenceUnavailable } from './unavailable.js';
 
 type TextDocumentLocator = {
@@ -6,7 +11,7 @@ type TextDocumentLocator = {
 	readonly uri?: string;
 };
 
-export const textDocumentReferenceHandler: ReferenceHandler = {
+const textDocumentReferenceHandler: ReferenceHandler = {
 	type: 'text.document',
 	toContext(reference) {
 		if (!isTextDocumentLocator(reference.locator)) {
@@ -25,6 +30,12 @@ export const textDocumentReferenceHandler: ReferenceHandler = {
 		};
 	},
 };
+
+export const textDocumentReferenceExtension = defineExtension<
+	[ReferencesModule]
+>((api) => {
+	api.registerReferenceHandler(textDocumentReferenceHandler);
+});
 
 function isTextDocumentLocator(
 	locator: unknown,

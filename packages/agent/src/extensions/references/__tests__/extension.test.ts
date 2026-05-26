@@ -8,19 +8,16 @@ import {
 import {
 	buildStateExtensionModule,
 	createEnvironmentModule,
-	defineExtension,
 	type EnvironmentConfig,
-	type EnvironmentModule,
 	type ReconfigurableEnvironment,
-} from '@franklin/extensions';
-import { createRuntime } from '@franklin/extensions/testing';
-import { createReferencesModule } from '../module.js';
-import type { ReferencesModule } from '../module.js';
+} from '../../../modules/index.js';
+import { createRuntime } from '../../../testing/index.js';
+import { createReferencesModule } from '../../../modules/references/module.js';
 import {
-	filesystemFileReferenceHandler,
-	pdfDocumentReferenceHandler,
-	textDocumentReferenceHandler,
-} from '../handlers/index.js';
+	filesystemFileReferenceExtension,
+	pdfDocumentReferenceExtension,
+	textDocumentReferenceExtension,
+} from '../index.js';
 
 const defaultConfig: EnvironmentConfig = {
 	fsConfig: {
@@ -50,16 +47,14 @@ async function createReferenceRuntime(filesystem = new MemoryFilesystem()) {
 		createEnvironmentModule(async () => createEnvironment(filesystem)),
 	]);
 	const runtime = await createRuntime(module, { env: defaultConfig }, [
-		defineExtension<[ReferencesModule, EnvironmentModule]>((api) => {
-			api.registerReferenceHandler(textDocumentReferenceHandler);
-			api.registerReferenceHandler(pdfDocumentReferenceHandler);
-			api.registerReferenceHandler(filesystemFileReferenceHandler);
-		}),
+		textDocumentReferenceExtension,
+		pdfDocumentReferenceExtension,
+		filesystemFileReferenceExtension,
 	]);
 	return { runtime, filesystem };
 }
 
-describe('built-in reference handlers', () => {
+describe('built-in reference extensions', () => {
 	it('materializes text.document references as model text', async () => {
 		const { runtime } = await createReferenceRuntime();
 

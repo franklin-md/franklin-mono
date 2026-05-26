@@ -1,4 +1,9 @@
-import type { Reference, ReferenceHandler } from '../api/index.js';
+import { defineExtension } from '../../modules/state/index.js';
+import type {
+	Reference,
+	ReferenceHandler,
+} from '../../modules/references/api/index.js';
+import type { ReferencesModule } from '../../modules/references/module.js';
 import { referenceUnavailable } from './unavailable.js';
 
 type PdfDocumentLocator = {
@@ -10,7 +15,7 @@ type PageSelector = {
 	readonly page: number;
 };
 
-export const pdfDocumentReferenceHandler: ReferenceHandler = {
+const pdfDocumentReferenceHandler: ReferenceHandler = {
 	type: 'pdf.document',
 	toContext(reference) {
 		if (!isPdfDocumentLocator(reference.locator)) {
@@ -31,6 +36,12 @@ export const pdfDocumentReferenceHandler: ReferenceHandler = {
 		};
 	},
 };
+
+export const pdfDocumentReferenceExtension = defineExtension<
+	[ReferencesModule]
+>((api) => {
+	api.registerReferenceHandler(pdfDocumentReferenceHandler);
+});
 
 function isPdfDocumentLocator(locator: unknown): locator is PdfDocumentLocator {
 	return (

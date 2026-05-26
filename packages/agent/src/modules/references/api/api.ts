@@ -1,4 +1,4 @@
-import type { BaseRuntime, Signature } from '@franklin/extensions';
+import type { BaseRuntime, Signature } from '@franklin/extensibility';
 import type { ReferenceHandler, ReferenceHandlerRuntime } from './types.js';
 
 export type ReferencesAPI<Runtime extends ReferenceHandlerRuntime> = {

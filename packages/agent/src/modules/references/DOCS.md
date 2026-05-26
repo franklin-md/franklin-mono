@@ -10,7 +10,7 @@ The v1 contract is intentionally small:
 - `runtime.references.toContext(reference)` resolves one reference into `ReferenceContext`.
 - `ReferenceContext` only contains Mini-ACP user content.
 - The runtime returns model-visible unavailable text when a handler is missing or fails.
-- Built-in handlers cover text documents, filesystem files, and a placeholder PDF response.
+- Built-in provider extensions cover text documents, filesystem files, and a placeholder PDF response.
 
 This gives callers a minimal way to inject app-owned context into a prompt without changing the Mini-ACP prompt protocol.
 
@@ -20,7 +20,7 @@ The following concerns are important, but deliberately out of the first implemen
 
 ### Delegation, Cycles, and Depth
 
-Filesystem references currently call `ctx.references.toContext(...)` to reuse the text and PDF handlers. That is enough for v1, but it does not model delegation as first-class behavior.
+Filesystem references currently call `ctx.references.toContext(...)` to reuse the text and PDF provider extensions. That is enough for v1, but it does not model delegation as first-class behavior.
 
 Future delegation support should decide:
 
@@ -76,7 +76,7 @@ This policy probably belongs between reference resolution and final content cons
 
 ### Built-In Handler Limits
 
-The current filesystem handler assumes files without detected magic bytes are text and routes PDFs to a placeholder PDF handler. Real PDF extraction, EPUB handling, notebooks, spreadsheets, and other document formats are explicitly out of scope for v1.
+The current filesystem provider assumes files without detected magic bytes are text and routes PDFs to a placeholder PDF provider. Real PDF extraction, EPUB handling, notebooks, spreadsheets, and other document formats are explicitly out of scope for v1.
 
 ## Open Questions
 

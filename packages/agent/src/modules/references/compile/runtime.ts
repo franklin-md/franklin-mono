@@ -1,20 +1,8 @@
-import type { BaseRuntime } from '@franklin/extensions';
-import type {
-	Reference,
-	ReferenceContext,
-	ReferenceEngine,
-} from './api/index.js';
-
-type BoundReferenceHandler = {
-	toContext(reference: Reference): Promise<ReferenceContext>;
-};
-
-export type ReferencesRuntime = BaseRuntime & {
-	readonly references: ReferenceEngine;
-};
+import type { Reference, ReferenceContext } from '../api/index.js';
+import type { ReferenceRegistry, ReferencesRuntime } from './types.js';
 
 type CreateReferencesRuntimeInput = {
-	readonly handlers: ReadonlyMap<string, BoundReferenceHandler>;
+	readonly handlers: ReferenceRegistry;
 };
 
 export function createReferencesRuntime({
@@ -40,9 +28,6 @@ export function createReferencesRuntime({
 	return {
 		references: { toContext },
 		async dispose(): Promise<void> {},
-		subscribe(): () => void {
-			return () => {};
-		},
 	};
 }
 
