@@ -88,6 +88,11 @@ export {
 } from './components/file-icon/badge.js';
 export { StatusDot, type StatusDotProps } from './components/status-dot.js';
 export {
+	StatusIcon,
+	type StatusIconProps,
+	type StatusIconStatus,
+} from './components/status-icon.js';
+export {
 	StatusIndicator,
 	type StatusIndicatorProps,
 } from './components/status-indicator.js';
@@ -136,7 +141,6 @@ export {
 export { UserBubble } from './conversation/turn/user-bubble.js';
 export { CopyButton } from './conversation/turn/copy-button.js';
 export { ToolCardChrome } from './conversation/tools/chrome.js';
-export { StatusIcon } from './conversation/tools/status-icon.js';
 export {
 	ToolSummary,
 	ToolSummaryDetail,
