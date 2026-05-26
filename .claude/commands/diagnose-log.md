@@ -112,5 +112,4 @@ Group findings by severity (CRITICAL first, then WARNING, then INFO). Within eac
 
 If no issues are found at a given severity level, omit that section.
 
-Be specific and cite message indices (e.g., "message [3]") when referencing specific parts of the conversation.
-For CRITICAL/WARNING findings, fold the subagent investigation into the final text instead of appending raw subagent transcripts.
+Be specific and cite message indices (e.g., "message [3]") when referencing specific parts of the conversation. For CRITICAL/WARNING findings, fold the subagent investigation into the final text instead of appending raw subagent transcripts.
