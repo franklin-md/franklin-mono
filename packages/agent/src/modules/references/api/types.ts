@@ -12,7 +12,7 @@ export type Reference = {
 	 * locator should be treated as a filesystem file, text document, PDF, URL,
 	 * or another provider-specific resource shape.
 	 */
-	readonly type: string;
+	readonly type?: string;
 	/**
 	 * Stable origin identity for the referenced resource.
 	 *

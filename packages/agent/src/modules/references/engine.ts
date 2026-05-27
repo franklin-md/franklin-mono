@@ -34,7 +34,7 @@ export class ReferencesEngine {
 				matches = handler.test(reference);
 			} catch (err) {
 				return referenceUnavailable(
-					`Reference handler test for "${reference.type}" failed: ${errorMessage(err)}`,
+					`Reference handler test for "${referenceName(reference)}" failed: ${errorMessage(err)}`,
 				);
 			}
 			if (!matches) continue;
@@ -47,13 +47,13 @@ export class ReferencesEngine {
 				);
 			} catch (err) {
 				return referenceUnavailable(
-					`Reference handler for "${reference.type}" failed: ${errorMessage(err)}`,
+					`Reference handler for "${referenceName(reference)}" failed: ${errorMessage(err)}`,
 				);
 			}
 		}
 
 		return referenceUnavailable(
-			`No reference handler matched "${reference.type}"`,
+			`No reference handler matched "${referenceName(reference)}"`,
 		);
 	}
 }
@@ -74,4 +74,8 @@ function referenceUnavailable(message: string): ReferenceContext {
 
 function errorMessage(err: unknown): string {
 	return err instanceof Error ? err.message : String(err);
+}
+
+function referenceName(reference: Reference): string {
+	return reference.type ?? reference.locator;
 }

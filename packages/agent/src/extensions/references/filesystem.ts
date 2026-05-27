@@ -1,5 +1,6 @@
 import { fileTypeFromBuffer } from 'file-type';
 import type { AbsolutePath } from '@franklin/lib';
+import type { CoreModule } from '../../modules/core/index.js';
 import type {
 	EnvironmentModule,
 	EnvironmentRuntime,
@@ -11,13 +12,17 @@ import type {
 } from '../../modules/references/api/index.js';
 import type { ReferencesModule } from '../../modules/references/module.js';
 
+export const FILESYSTEM_FILE_REFERENCE_TYPE = 'file';
+
 type FilesystemHandlerRuntime = ReferenceHandlerRuntime & EnvironmentRuntime;
 
 const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime> =
 	{
 		test(reference) {
 			return (
-				reference.type === 'filesystem.file' && reference.data === undefined
+				(reference.type === undefined ||
+					reference.type === FILESYSTEM_FILE_REFERENCE_TYPE) &&
+				reference.data === undefined
 			);
 		},
 		async toContext(reference, delegate, runtime) {
@@ -53,9 +58,15 @@ const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime>
 	};
 
 export const filesystemFileReferenceExtension = defineExtension<
-	[ReferencesModule, EnvironmentModule]
+	[ReferencesModule, EnvironmentModule, CoreModule]
 >((api) => {
 	api.registerReferenceHandler(filesystemFileReferenceHandler);
+	api.on('systemPrompt', (prompt) => {
+		prompt.setPart(
+			'Reading filesystem paths is supported. Locators are file paths resolved by the active environment; selectors are handled by the resolved content provider.',
+			{ once: true },
+		);
+	});
 });
 
 function isPdfPath(path: AbsolutePath): boolean {

@@ -11,13 +11,17 @@ import {
 	conversationTitleExtension,
 	createDuckDuckGoWebSearchProvider,
 	createExaWebSearchProvider,
-	createReadPDFExtension,
+	createPDFDocumentReferenceExtension,
 	createWebExtension,
 	environmentInfoExtension,
-	filesystemExtension,
+	filesystemBundle,
+	filesystemFileReferenceExtension,
+	imageDocumentReferenceExtension,
 	instructionsExtension,
+	referenceReadExtension,
 	spawnExtension,
 	statusExtension,
+	textDocumentReferenceExtension,
 	todoExtension,
 	webSearchProviders,
 } from '@franklin/agent';
@@ -62,7 +66,7 @@ export async function createFranklinApp(
 	);
 
 	const app = new FranklinApp({
-		extensions: createExtensions(),
+		extensions: createObsidianExtensions(),
 		platform,
 		appDir,
 		auth,
@@ -82,7 +86,23 @@ export async function createFranklinApp(
 	};
 }
 
-function createExtensions(): FranklinExtension[] {
+export function createObsidianExtensions(): FranklinExtension[] {
+	const filesystemTools = [
+		filesystemBundle.extensions.editFile,
+		referenceReadExtension,
+		filesystemBundle.extensions.writeFile,
+		filesystemBundle.extensions.glob,
+		filesystemBundle.extensions.grep,
+	];
+	const referenceProviders = [
+		filesystemFileReferenceExtension,
+		createPDFDocumentReferenceExtension({
+			renderScreenshots: renderObsidianPDFScreenshots,
+		}),
+		imageDocumentReferenceExtension,
+		textDocumentReferenceExtension,
+	];
+
 	return [
 		conversationExtension.extension,
 		conversationTitleExtension.extension,
@@ -90,10 +110,8 @@ function createExtensions(): FranklinExtension[] {
 		statusExtension.extension,
 		priority.highest(obsidianSystemPromptExtension),
 		instructionsExtension.extension,
-		filesystemExtension,
-		createReadPDFExtension({
-			renderScreenshots: renderObsidianPDFScreenshots,
-		}).extension,
+		...filesystemTools,
+		...referenceProviders,
 		webSearchProviders.of(createExaWebSearchProvider()),
 		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),
 		createWebExtension({}).extension,

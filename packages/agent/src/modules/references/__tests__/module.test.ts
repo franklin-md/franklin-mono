@@ -14,7 +14,7 @@ describe('createReferencesModule', () => {
 			(api) => {
 				api.registerReferenceHandler({
 					test(reference) {
-						return reference.type === 'text.document';
+						return reference.type === 'text';
 					},
 					toContext(reference) {
 						return {
@@ -28,7 +28,7 @@ describe('createReferencesModule', () => {
 		expect(runtime.references).toBeInstanceOf(ReferencesEngine);
 		await expect(
 			runtime.references.toContext({
-				type: 'text.document',
+				type: 'text',
 				locator: 'hello',
 			}),
 		).resolves.toEqual({
@@ -73,7 +73,7 @@ describe('createReferencesModule', () => {
 					},
 					toContext(reference, delegate) {
 						return delegate({
-							type: 'text.document',
+							type: 'text',
 							locator: 'expanded',
 							...(reference.label ? { label: reference.label } : {}),
 						});
@@ -81,7 +81,7 @@ describe('createReferencesModule', () => {
 				});
 				api.registerReferenceHandler({
 					test(reference) {
-						return reference.type === 'text.document';
+						return reference.type === 'text';
 					},
 					toContext() {
 						return {
@@ -145,18 +145,18 @@ describe('createReferencesModule', () => {
 			(api) => {
 				api.registerReferenceHandler({
 					test(reference) {
-						return reference.type === 'text.document';
+						return reference.type === 'text';
 					},
 					toContext(_reference, delegate) {
 						return delegate({
-							type: 'text.document',
+							type: 'text',
 							locator: 'delegated',
 						});
 					},
 				});
 				api.registerReferenceHandler({
 					test(reference) {
-						return reference.type === 'text.document';
+						return reference.type === 'text';
 					},
 					toContext(reference) {
 						return {
@@ -169,7 +169,7 @@ describe('createReferencesModule', () => {
 
 		await expect(
 			runtime.references.toContext({
-				type: 'text.document',
+				type: 'text',
 				locator: 'start',
 			}),
 		).resolves.toEqual({

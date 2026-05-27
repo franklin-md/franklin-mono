@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createDependencyModule } from '@franklin/extensibility/module';
+import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
 import {
 	FILESYSTEM_ALLOW_ALL,
 	MemoryFilesystem,
@@ -10,6 +11,7 @@ import {
 } from '@franklin/lib';
 import {
 	buildStateExtensionModule,
+	createCoreStateModule,
 	createEnvironmentModule,
 	type EnvironmentConfig,
 	type ReconfigurableEnvironment,
@@ -17,7 +19,10 @@ import {
 import { createRuntime } from '../../../testing/index.js';
 import { createReferencesModule } from '../../../modules/references/module.js';
 import type { PDFConverter } from '../../pdf/types.js';
+import type { AuthManager } from '../../../auth/manager.js';
 import {
+	FILESYSTEM_FILE_REFERENCE_TYPE,
+	TEXT_REFERENCE_TYPE,
 	createPDFDocumentReferenceExtension,
 	filesystemFileReferenceExtension,
 	textDocumentReferenceExtension,
@@ -47,6 +52,12 @@ const defaultConfig: EnvironmentConfig = {
 	netConfig: { allowedDomains: [], deniedDomains: [] },
 };
 
+function mockAuthManager(): AuthManager {
+	return {
+		getApiKey: vi.fn(async () => undefined),
+	} as unknown as AuthManager;
+}
+
 function createEnvironment(filesystem: Filesystem): ReconfigurableEnvironment {
 	return {
 		filesystem,
@@ -63,30 +74,35 @@ async function createReferenceRuntime(
 	filesystem: Filesystem = new MemoryFilesystem(),
 ) {
 	const module = buildStateExtensionModule([
+		createCoreStateModule(
+			createMockMiniACP({ defaultTurn: finishedTurn() }).connector,
+		),
 		createReferencesModule(),
 		createEnvironmentModule(async () => createEnvironment(filesystem)),
-		createDependencyModule('auth', {
-			getApiKey: vi.fn(async () => undefined),
-		}),
+		createDependencyModule('auth', mockAuthManager()),
 	]);
 	pdfMocks.freeConvertPDF.mockResolvedValue({
 		markdown: 'converted pdf',
 		screenshots: [],
 	});
-	const runtime = await createRuntime(module, { env: defaultConfig }, [
-		filesystemFileReferenceExtension,
-		createPDFDocumentReferenceExtension({ renderScreenshots: vi.fn() }),
-		textDocumentReferenceExtension,
-	]);
+	const runtime = await createRuntime(
+		module,
+		{ ...module.emptyState(), env: defaultConfig },
+		[
+			filesystemFileReferenceExtension,
+			createPDFDocumentReferenceExtension({ renderScreenshots: vi.fn() }),
+			textDocumentReferenceExtension,
+		],
+	);
 	return { runtime, filesystem };
 }
 
 describe('built-in reference extensions', () => {
-	it('materializes text.document references as model text', async () => {
+	it('materializes text references as model text', async () => {
 		const { runtime } = await createReferenceRuntime();
 
 		const context = await runtime.references.toContext({
-			type: 'text.document',
+			type: TEXT_REFERENCE_TYPE,
 			locator: 'hello',
 			label: 'Note',
 		});
@@ -96,13 +112,26 @@ describe('built-in reference extensions', () => {
 		]);
 	});
 
-	it('materializes filesystem text files through text.document', async () => {
+	it('materializes filesystem text files through text', async () => {
 		const filesystem = new MemoryFilesystem();
 		filesystem.seed('/project/note.txt' as AbsolutePath, 'from disk');
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: 'filesystem.file',
+			type: FILESYSTEM_FILE_REFERENCE_TYPE,
+			locator: '/project/note.txt',
+			label: 'Disk note',
+		});
+
+		expect(context.content).toEqual([{ type: 'text', text: 'from disk' }]);
+	});
+
+	it('allows untyped file references to enter the filesystem provider chain', async () => {
+		const filesystem = new MemoryFilesystem();
+		filesystem.seed('/project/note.txt' as AbsolutePath, 'from disk');
+		const { runtime } = await createReferenceRuntime(filesystem);
+
+		const context = await runtime.references.toContext({
 			locator: '/project/note.txt',
 			label: 'Disk note',
 		});
@@ -116,7 +145,7 @@ describe('built-in reference extensions', () => {
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: 'filesystem.file',
+			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/paper.pdf',
 			selector: 'page=10',
 			label: 'Paper',
@@ -136,7 +165,7 @@ describe('built-in reference extensions', () => {
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: 'filesystem.file',
+			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/paper.pdf',
 			selector: 'pages=10-12',
 			label: 'Paper',
@@ -162,7 +191,7 @@ describe('built-in reference extensions', () => {
 		);
 
 		const context = await runtime.references.toContext({
-			type: 'filesystem.file',
+			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: 'paper.pdf',
 		});
 
@@ -180,7 +209,7 @@ describe('built-in reference extensions', () => {
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: 'filesystem.file',
+			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/notes',
 		});
 

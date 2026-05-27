@@ -1,14 +1,20 @@
 import { base64 } from '@franklin/lib';
+import type { CoreModule } from '../../modules/core/index.js';
 import type { ReferenceHandler } from '../../modules/references/api/index.js';
+import type { ReferencesModule } from '../../modules/references/module.js';
+import { defineExtension } from '../../modules/state/index.js';
 import { isSupportedImageType } from '../filesystem/common/supported.js';
-import { referenceHandlerExtension } from './handler.js';
+import { hasBytesData } from './data.js';
+
+export const IMAGE_REFERENCE_TYPE = 'image';
 
 const imageDocumentReferenceHandler: ReferenceHandler = {
 	test(reference) {
 		return (
-			reference.data?.type === 'bytes' &&
-			reference.data.mime !== undefined &&
-			isSupportedImageType(reference.data.mime)
+			reference.type === IMAGE_REFERENCE_TYPE ||
+			(hasBytesData(reference) &&
+				reference.data.mime !== undefined &&
+				isSupportedImageType(reference.data.mime))
 		);
 	},
 	toContext(reference) {
@@ -36,6 +42,14 @@ const imageDocumentReferenceHandler: ReferenceHandler = {
 	},
 };
 
-export const imageDocumentReferenceExtension = referenceHandlerExtension(
-	imageDocumentReferenceHandler,
-);
+export const imageDocumentReferenceExtension = defineExtension<
+	[ReferencesModule, CoreModule]
+>((api) => {
+	api.registerReferenceHandler(imageDocumentReferenceHandler);
+	api.on('systemPrompt', (prompt) => {
+		prompt.setPart(
+			'Reading images is supported.\nSupported selectors: none currently.',
+			{ once: true },
+		);
+	});
+});

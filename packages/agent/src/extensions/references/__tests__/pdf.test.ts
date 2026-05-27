@@ -6,10 +6,12 @@ import {
 	type Filesystem,
 } from '@franklin/lib';
 import { createDependencyModule } from '@franklin/extensibility/module';
+import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { AuthManager } from '../../../auth/manager.js';
 import {
 	buildStateExtensionModule,
+	createCoreStateModule,
 	createEnvironmentModule,
 	createReferencesModule,
 	type EnvironmentConfig,
@@ -18,6 +20,7 @@ import {
 import { createRuntime } from '../../../testing/index.js';
 import type { PDFConverter, RenderPDFScreenshots } from '../../pdf/types.js';
 import {
+	FILESYSTEM_FILE_REFERENCE_TYPE,
 	createPDFDocumentReferenceExtension,
 	filesystemFileReferenceExtension,
 } from '../index.js';
@@ -78,18 +81,30 @@ async function createReferenceRuntime(input: {
 	readonly renderScreenshots?: RenderPDFScreenshots;
 }) {
 	const auth = input.auth ?? mockAuthManager();
+	const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
 	const module = buildStateExtensionModule([
+		createCoreStateModule(mock.connector),
 		createEnvironmentModule(async () => createEnvironment(input.filesystem)),
 		createReferencesModule(),
 		createDependencyModule('auth', auth),
 	]);
-	const runtime = await createRuntime(module, { env: defaultConfig }, [
-		filesystemFileReferenceExtension,
-		createPDFDocumentReferenceExtension({
-			renderScreenshots: input.renderScreenshots ?? vi.fn(async () => []),
-		}),
-	]);
-	return { runtime, auth };
+	const runtime = await createRuntime(
+		module,
+		{ ...module.emptyState(), env: defaultConfig },
+		[
+			filesystemFileReferenceExtension,
+			createPDFDocumentReferenceExtension({
+				renderScreenshots: input.renderScreenshots ?? vi.fn(async () => []),
+			}),
+		],
+	);
+	return { runtime, auth, mock };
+}
+
+async function drain(iterable: AsyncIterable<unknown>): Promise<void> {
+	for await (const _event of iterable) {
+		// Drain the mock prompt so the runtime sends system prompt context.
+	}
 }
 
 describe('parsePdfReferenceSelector', () => {
@@ -145,7 +160,7 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: 'filesystem.file',
+				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 				selector: 'pages=2-4',
 				label: 'Paper',
@@ -177,7 +192,7 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: 'filesystem.file',
+				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 			});
 
@@ -190,6 +205,28 @@ describe('createPDFDocumentReferenceExtension', () => {
 			});
 			expect(pdfMocks.freeConvertPDF).not.toHaveBeenCalled();
 			expect(context.content).toEqual([{ type: 'text', text: 'mistral pdf' }]);
+		} finally {
+			await runtime.dispose();
+		}
+	});
+
+	it('advertises the PDF selector format in the system prompt', async () => {
+		const filesystem = new MemoryFilesystem();
+		const { runtime, mock } = await createReferenceRuntime({
+			filesystem,
+		});
+
+		try {
+			await drain(
+				runtime.prompt({
+					role: 'user',
+					content: [{ type: 'text', text: 'sync prompt' }],
+				}),
+			);
+
+			expect(mock.context().systemPrompt).toContain(
+				'Reading PDFs is supported.\nSupported selectors:\n- page=N\n- pages=N-M',
+			);
 		} finally {
 			await runtime.dispose();
 		}

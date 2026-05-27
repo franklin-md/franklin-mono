@@ -2,6 +2,7 @@ import type {
 	AuthDependencyModule,
 	AuthDependencyRuntime,
 } from '../../auth/dependency.js';
+import type { CoreModule } from '../../modules/core/index.js';
 import { defineExtension } from '../../modules/state/index.js';
 import type {
 	Reference,
@@ -13,6 +14,9 @@ import { ParsedSelector } from '../../modules/references/selectors/index.js';
 import { convertPDF } from '../pdf/convert.js';
 import { createPDFConverterResolver } from '../pdf/resolve-converter.js';
 import type { ReadPDFExtensionOptions, PDFPageRange } from '../pdf/types.js';
+import { hasBytesData } from './data.js';
+
+export const PDF_REFERENCE_TYPE = 'pdf';
 
 export type PdfReferenceSelector = {
 	readonly pages?: PdfPageRange;
@@ -32,12 +36,12 @@ export function createPDFDocumentReferenceExtension({
 	const pdfDocumentReferenceHandler: ReferenceHandler<PDFReferenceRuntime> = {
 		test(reference) {
 			return (
-				reference.type === 'pdf.document' ||
+				reference.type === PDF_REFERENCE_TYPE ||
 				reference.data?.mime === 'application/pdf'
 			);
 		},
 		async toContext(reference, _delegate, runtime) {
-			if (reference.data?.type !== 'bytes') {
+			if (!hasBytesData(reference)) {
 				const label = referenceLabel(reference);
 				const page = pageSuffix(reference.selector);
 				return {
@@ -60,9 +64,17 @@ export function createPDFDocumentReferenceExtension({
 		},
 	};
 
-	return defineExtension<[ReferencesModule, AuthDependencyModule]>((api) => {
-		api.registerReferenceHandler(pdfDocumentReferenceHandler);
-	});
+	return defineExtension<[ReferencesModule, AuthDependencyModule, CoreModule]>(
+		(api) => {
+			api.registerReferenceHandler(pdfDocumentReferenceHandler);
+			api.on('systemPrompt', (prompt) => {
+				prompt.setPart(
+					'Reading PDFs is supported.\nSupported selectors:\n- page=N\n- pages=N-M',
+					{ once: true },
+				);
+			});
+		},
+	);
 }
 
 function referenceLabel(reference: Reference): string {
