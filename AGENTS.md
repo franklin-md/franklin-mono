@@ -99,6 +99,7 @@ Franklin is an extension runtime for minimal agent loops.
 ### UI
 
 - **Ring over border** — prefer `ring` (or `ring-1`, `ring-inset`) over `border` for component outlines. Borders change element size and push layout; ring is an inset outline with no layout impact.
+- **Host-specific styling** — do not solve host-specific component color issues by adding or changing shadcn semantic tokens, and do not add `data-*` attributes purely as CSS selector hooks. Prefer correcting the shared component's existing semantic token use when the default is wrong.
 
 ### Project Notes
 
