@@ -16,6 +16,7 @@ The v1 contract is intentionally small:
 - `Reference.label` is an optional display alias and not part of reference identity.
 - The internal pipeline reference may carry `data` produced by an earlier handler. The first data shape is bytes plus optional MIME metadata.
 - Selector codec helpers provide compact `key=value;key=value` syntax for providers that want shared parsing without shared selector semantics.
+- `referenceHandlerExtension(...)` wraps one or more reference-only handlers as a `[ReferencesModule]` extension. Handlers that need extra module runtime, such as filesystem access, should use `defineExtension(...)` directly.
 - `ReferenceContext` only contains Mini-ACP user content.
 - The runtime returns model-visible unavailable text when a handler is missing or fails.
 - Built-in provider extensions cover text documents, filesystem files, and a placeholder PDF response.

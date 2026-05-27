@@ -1,10 +1,9 @@
-import { defineExtension } from '../../modules/state/index.js';
 import type {
 	Reference,
 	ReferenceHandler,
 } from '../../modules/references/api/index.js';
-import type { ReferencesModule } from '../../modules/references/module.js';
 import { ParsedSelector } from '../../modules/references/selectors/index.js';
+import { referenceHandlerExtension } from './handler.js';
 
 export type PdfReferenceSelector = {
 	readonly pages?: PdfPageRange;
@@ -36,11 +35,9 @@ const pdfDocumentReferenceHandler: ReferenceHandler = {
 	},
 };
 
-export const pdfDocumentReferenceExtension = defineExtension<
-	[ReferencesModule]
->((api) => {
-	api.registerReferenceHandler(pdfDocumentReferenceHandler);
-});
+export const pdfDocumentReferenceExtension = referenceHandlerExtension(
+	pdfDocumentReferenceHandler,
+);
 
 function referenceLabel(reference: Reference): string {
 	if (reference.label) return reference.label;

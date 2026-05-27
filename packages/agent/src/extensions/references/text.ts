@@ -1,11 +1,10 @@
 import { decode } from '@franklin/lib';
-import { defineExtension } from '../../modules/state/index.js';
 import type {
 	Reference,
 	ReferenceHandler,
 	ResolvedReference,
 } from '../../modules/references/api/index.js';
-import type { ReferencesModule } from '../../modules/references/module.js';
+import { referenceHandlerExtension } from './handler.js';
 
 const textDocumentReferenceHandler: ReferenceHandler = {
 	test(reference) {
@@ -30,11 +29,9 @@ const textDocumentReferenceHandler: ReferenceHandler = {
 	},
 };
 
-export const textDocumentReferenceExtension = defineExtension<
-	[ReferencesModule]
->((api) => {
-	api.registerReferenceHandler(textDocumentReferenceHandler);
-});
+export const textDocumentReferenceExtension = referenceHandlerExtension(
+	textDocumentReferenceHandler,
+);
 
 function referenceLabel(reference: Reference): string {
 	if (reference.label) return reference.label;
