@@ -13,7 +13,9 @@ describe('createReferencesModule', () => {
 			system.compiler,
 			(api) => {
 				api.registerReferenceHandler({
-					type: 'text.document',
+					test(reference) {
+						return reference.type === 'text.document';
+					},
 					toContext(reference) {
 						return {
 							content: [{ type: 'text', text: reference.locator }],
@@ -51,7 +53,7 @@ describe('createReferencesModule', () => {
 			content: [
 				{
 					type: 'text',
-					text: 'Reference unavailable: No reference handler registered for "missing.reference"',
+					text: 'Reference unavailable: No reference handler matched "missing.reference"',
 				},
 			],
 		});
@@ -65,17 +67,21 @@ describe('createReferencesModule', () => {
 			system.compiler,
 			(api) => {
 				api.registerReferenceHandler({
-					type: 'alias.document',
-					toContext(reference, ctx) {
-						void reference;
-						return ctx.references.toContext({
+					test(reference) {
+						return reference.type === 'alias.document';
+					},
+					toContext(reference, delegate) {
+						return delegate({
 							type: 'text.document',
 							locator: 'expanded',
+							...(reference.label ? { label: reference.label } : {}),
 						});
 					},
 				});
 				api.registerReferenceHandler({
-					type: 'text.document',
+					test(reference) {
+						return reference.type === 'text.document';
+					},
 					toContext() {
 						return {
 							content: [{ type: 'text', text: 'expanded' }],
@@ -103,7 +109,9 @@ describe('createReferencesModule', () => {
 			system.compiler,
 			(api) => {
 				api.registerReferenceHandler({
-					type: 'failing.document',
+					test(reference) {
+						return reference.type === 'failing.document';
+					},
 					toContext() {
 						throw new Error('boom');
 					},
@@ -120,29 +128,51 @@ describe('createReferencesModule', () => {
 			content: [
 				{
 					type: 'text',
-					text: 'Reference unavailable: Handler for "failing.document" failed: boom',
+					text: 'Reference unavailable: Reference handler for "failing.document" failed: boom',
 				},
 			],
 		});
 	});
 
-	it('rejects duplicate handlers for one reference type', async () => {
+	it('continues delegation after the current handler', async () => {
 		const system = createReferencesModule();
 
-		await expect(
-			compile(system.extensionPoint, system.compiler, (api) => {
+		const runtime = await compile(
+			system.extensionPoint,
+			system.compiler,
+			(api) => {
 				api.registerReferenceHandler({
-					type: 'text.document',
-					toContext: () => ({ content: [] }),
+					test(reference) {
+						return reference.type === 'text.document';
+					},
+					toContext(_reference, delegate) {
+						return delegate({
+							type: 'text.document',
+							locator: 'delegated',
+						});
+					},
 				});
 				api.registerReferenceHandler({
-					type: 'text.document',
-					toContext: () => ({ content: [] }),
+					test(reference) {
+						return reference.type === 'text.document';
+					},
+					toContext(reference) {
+						return {
+							content: [{ type: 'text', text: reference.locator }],
+						};
+					},
 				});
-			}),
-		).rejects.toThrow(
-			'Reference handler "text.document" registered more than once',
+			},
 		);
+
+		await expect(
+			runtime.references.toContext({
+				type: 'text.document',
+				locator: 'start',
+			}),
+		).resolves.toEqual({
+			content: [{ type: 'text', text: 'delegated' }],
+		});
 	});
 
 	it('projects reference contexts into prompt content', () => {

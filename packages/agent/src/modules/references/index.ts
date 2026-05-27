@@ -1,8 +1,12 @@
 export type {
 	Reference,
 	ReferenceContext,
+	ReferenceDelegate,
+	ReferenceHandlerCallback,
 	ReferenceHandler,
 	ReferenceHandlerRuntime,
+	ResolvedData,
+	ResolvedReference,
 	ReferencesAPI,
 	ReferencesSignature,
 } from './api/index.js';

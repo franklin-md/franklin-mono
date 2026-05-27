@@ -6,16 +6,19 @@ The reference module is the first application-side context materialization surfa
 
 The v1 contract is intentionally small:
 
-- Extensions register `ReferenceHandler` implementations by reference `type`.
-- `runtime.references.toContext(reference)` resolves one reference into `ReferenceContext`.
+- Extensions register ordered `ReferenceHandler` implementations.
+- Each handler provides a cheap `test(reference)` predicate. The engine calls handlers in registration order and uses the first match.
+- `runtime.references.toContext(reference)` starts a private pipeline with the request `Reference`.
+- Inside a handler, `delegate(reference)` continues resolution after the current handler. This keeps delegation monotonic rather than re-entering the global resolver from the beginning.
 - `Reference.locator` is a string interpreted by the selected provider.
 - `Reference.selector` is a string interpreted by the selected provider.
+- The internal pipeline reference may carry `data` produced by an earlier handler. The first data shape is bytes plus optional MIME metadata.
 - Selector codec helpers provide compact `key=value;key=value` syntax for providers that want shared parsing without shared selector semantics.
 - `ReferenceContext` only contains Mini-ACP user content.
 - The runtime returns model-visible unavailable text when a handler is missing or fails.
 - Built-in provider extensions cover text documents, filesystem files, and a placeholder PDF response.
 
-This gives callers a minimal way to inject app-owned context into a prompt without changing the Mini-ACP prompt protocol.
+This gives callers a minimal way to materialize app-owned context without changing the Mini-ACP prompt protocol. It is not yet the final prompt-inclusion policy for when and how that content should enter a model turn.
 
 ## Deferred Design
 
@@ -23,63 +26,16 @@ The following concerns are important, but deliberately out of the first implemen
 
 ### Delegation, Cycles, and Depth
 
-Filesystem references currently call `ctx.references.toContext(...)` to reuse the text and PDF provider extensions. That is enough for v1, but it does not model delegation as first-class behavior.
+Filesystem references currently read bytes, attach them to the private pipeline reference, and call `delegate(...)` to let later handlers decide whether they can render those bytes as text, PDF, or another source type. That is enough for v1, but it only models ordered monotonic delegation.
 
 Future delegation support should decide:
 
-- whether `ReferencesEngine` should expose an explicit `delegate(...)` method;
-- whether delegation should carry `from` and `to` reference edges;
-- how to detect cycles and enforce depth limits;
+- whether delegation should carry explicit `from` and `to` reference edges;
+- whether the current ordered-chain algorithm is sufficient for all provider composition;
+- how to enforce fanout, depth, and output limits;
 - whether cycle and depth failures should produce model-visible content, structured diagnostics, or both.
 
-One possible implementation is a resolver stack that records the current reference chain and rejects repeated keys. That was intentionally left out until there is a real caller for recursive reference graphs.
-
-### Provenance
-
-The v1 context type does not report where output came from after materialization.
-
-Future provenance support should likely preserve:
-
-- the original submitted reference;
-- the handler that resolved it;
-- any delegated references;
-- source metadata such as URI, version, fingerprint, or selector.
-
-That data should be kept distinct from model-visible content so transcript and debug rendering can show what happened without forcing every detail into the prompt.
-
-### Diagnostics
-
-The v1 runtime turns missing handlers and thrown handler errors into plain text content. That keeps the first implementation simple and prevents bad references from failing the whole prompt path.
-
-Future diagnostics should define a structured error surface for:
-
-- invalid locators or selectors;
-- missing or denied resources;
-- unsupported media types;
-- materialization limits;
-- stale bindings;
-- handler failures.
-
-Diagnostics may need separate handling for user-visible UI, transcript/debug views, and model-visible fallback content.
-
-### Materialization Policy
-
-Handlers currently decide directly how to turn a source into Mini-ACP content. That is simple, but it will not be enough for larger files, binary formats, provider-specific selectors, or model-specific capabilities.
-
-Future materialization policy should decide when to:
-
-- inline text;
-- attach images or other supported media;
-- summarize or truncate;
-- expose a tool-readable pointer;
-- reject or defer a source;
-- cache extracted content.
-
-This policy probably belongs between reference resolution and final content construction, not inside every provider.
-
-### Built-In Handler Limits
-
-The current filesystem provider assumes files without detected magic bytes are text and routes PDFs to a placeholder PDF provider. Real PDF extraction, EPUB handling, notebooks, spreadsheets, and other document formats are explicitly out of scope for v1.
+The current ordered-chain algorithm prevents circular recursion structurally because `delegate(...)` resumes after the current handler. A future resolver stack may still be useful for provenance, fanout accounting, and diagnostics.
 
 ## Open Questions
 
@@ -97,3 +53,49 @@ The current filesystem provider assumes files without detected magic bytes are t
   - Pros for configuration:
     - Can reuse a powerful policy graph system (i.e. questions on delegation etc can use `.compute` or `.of` in application extensions to construct the complete policy)
     - Simplifies the boilerplate of constructing primitives (no compiler etc)
+- **How should resolution be split from materialization**? In short, the current policy as of May 26 is that the ReferenceProvider is in charge of both "how to turn the resource into something bufferred data (conversion, download, etc)" and also "how to turn that data into a format the agent can use". These may in fact be two seperate tasks. The question is whether there is significant room of expansion on the latter. My suspicion is that context can either be **complete** ("here it is") or **deferred** ("please manually read this if you want as it's probably very large and the user hasn't said explicitly you should read this").
+  - Cases where maybe this 2 policy system is not enough:
+    - **Token aware materialization**: whether you go complete or deferred depends on your context budget.
+  - I would say that we should make the **ReferenceEngine** responsible for the materialization. However, given there so far there are only really 2 scenarios where we would use the Reference Engine:
+    - 1. A `read_x` tool => complete
+    - 2. A context bar - "what the user currently sees or has attached" => if they want deferred explicitly, you don't actually need to **materialize**. Hence, I actually think **we SHOULD materialize in the Context Engine by default**!
+  - Current working answer:
+    - Materialization is a runtime policy concern, not just a parser or converter concern.
+    - Providers should resolve identity, access, and source facts: what resource is this, can Franklin access it, what type/size/version is it, and what source handle or bytes are available?
+    - The `ReferencesEngine` should own orchestration policy: how much of a resolved reference may enter the model turn, based on runtime options such as token budget, byte limits, source type, user intent, and whether deferred/tool-based access is allowed.
+    - Materializers are the execution pieces of that policy. For example, text materialization can inline a bounded range with a truncation note; PDF materialization can use a requested page range or fall back to a pointer; directory materialization can provide a shallow listing rather than recursive content.
+    - In the current v1 branch, provider handlers and `toContext` collapse resolution, conversion, materialization, and rendering into one eager shortcut. That is acceptable as a spike, but docs should not describe it as the settled prompt-inclusion architecture.
+    - `read_x` tools should be understood as explicit, user/model-requested materialization, not necessarily complete-resource materialization. A `read_file` or `read_pdf` call can still be bounded by lines, pages, byte limits, or other selectors.
+    - A small v1 can implement materialization directly in `ReferencesEngine` options and provider handlers. A separate materializer registry only becomes necessary once reuse pressure appears, such as PDF materialization shared across filesystem files, Obsidian attachments, URLs, and MCP resources.
+  - Still don't have an answer to: "**who is in charge of ensuring a massive piece of text is not injected into the context window**"
+- **What is the preferred algorithm for delegation**?
+  - Reason you want delegation:
+    - A provider may do **part of the work**. For example, a web-fetching provider may donwload the resource, then a pdf provider can convert it.
+  - Challenges:
+    - **Your strategy for delegating must not assume too much about it's destination**:
+      - Because the providers are introduced by independently authored extensions, that means the extension that wants to delegate does not have a particular provider in mind.
+  - Solution ideas:
+    - **Test Method**: Cheap predicate for determining if a provider applies, and you always go linearly through the list (so delegate means continue from here)
+  - Current implementation:
+    - `ReferenceHandler.test(reference)` decides whether a handler applies to the current request/data reference.
+    - `ReferenceHandler.toContext(reference, delegate, runtime)` receives `delegate(reference)`, which continues after the current handler.
+    - The public `Reference` remains the request shape: what the user asked for. Intermediate material is carried as `data` on the private resolved reference instead of being stuffed into `Reference.locator`.
+- **Supporting of caching**:
+  - Idea:
+    - Have a `ReferenceCache` interface that can be added to the ReferenceEngine on construction.
+    - May be used via `getCache() -> ReferenceCache | undefined` inside a provider
+    - Includes way to add essentially a `locator X selector` -> `bytes` map.
+    - Concrete caches can include:
+      - `InMemoryReferenceCache` (for testing)
+      - `FolderBackedCache` (simple)
+      - `MongoDBReferenceCache` (if performance is an issue)
+  - Use cases:
+    - Mechanism for downloading from a url
+    - Mechanism for saving results like PDF pages.
+  - Observations:
+    - The provider is still in charge of how the bytes are interpretted (good).
+    - We need to pass bytes between delegated steps, but those bytes should not go in `Reference.locator`.
+  - Current implementation:
+    - The public `Reference` remains the request shape.
+    - Intermediate bytes are carried in the private pipeline reference as `data`.
+    - A cache can later own persisted data or derived artifacts, but cache-key design is still open.

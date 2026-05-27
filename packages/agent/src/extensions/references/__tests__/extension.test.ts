@@ -47,9 +47,9 @@ async function createReferenceRuntime(filesystem = new MemoryFilesystem()) {
 		createEnvironmentModule(async () => createEnvironment(filesystem)),
 	]);
 	const runtime = await createRuntime(module, { env: defaultConfig }, [
-		textDocumentReferenceExtension,
-		pdfDocumentReferenceExtension,
 		filesystemFileReferenceExtension,
+		pdfDocumentReferenceExtension,
+		textDocumentReferenceExtension,
 	]);
 	return { runtime, filesystem };
 }
