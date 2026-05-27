@@ -1,12 +1,12 @@
 import { extractLinks, extractText } from 'unpdf';
-import { isPDFPageInRange } from './page-range.js';
+import { isPDFPageInRange } from '../page-range.js';
 import type {
 	PDFConvertOptions,
 	PDFConverter,
 	PDFInput,
 	PDFPageRange,
 	RenderPDFScreenshots,
-} from './types.js';
+} from '../types.js';
 
 interface FreePDFConverterOptions {
 	readonly renderScreenshots: RenderPDFScreenshots;

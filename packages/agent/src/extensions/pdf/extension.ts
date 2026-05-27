@@ -8,11 +8,9 @@ import { defineExtension } from '../../modules/state/index.js';
 import type { AuthDependencyModule } from '../../auth/dependency.js';
 import type { CoreModule } from '../../modules/core/index.js';
 import type { EnvironmentModule } from '../../modules/environment/index.js';
-import type { StoreModule } from '../../modules/store/index.js';
 import { isPDF } from '../filesystem/common/supported.js';
 import { convertPDF } from './convert.js';
-import { FreePDFConverter } from './free.js';
-import { MistralPDFConverter } from './mistral.js';
+import { createPDFConverterResolver } from './resolve-converter.js';
 import { readPDFSpec } from './tools.js';
 import type {
 	PDFConverter,
@@ -20,11 +18,8 @@ import type {
 	ReadPDFExtensionOptions,
 } from './types.js';
 
-const MISTRAL_PROVIDER = 'mistral';
-
 type ReadPDFModules = [
 	CoreModule,
-	StoreModule,
 	EnvironmentModule,
 	// TODO: Is this the right Dependency? Do we maybe want something like SettingsModule?
 	// Or what about ConfigurationModule, and you just sync settings as a configuraiton overide?
@@ -36,15 +31,12 @@ type ReadPDFCtx = ReduceRuntimes<ModuleRuntimes<ReadPDFModules>>;
 export function readPDFExtension({
 	renderScreenshots,
 }: ReadPDFExtensionOptions): ExtensionForModules<ReadPDFModules> {
-	const freeConverter = new FreePDFConverter({ renderScreenshots });
+	const resolvePDFConverter = createPDFConverterResolver({ renderScreenshots });
 
 	return defineExtension<ReadPDFModules>((api) => {
 		api.registerTool(readPDFSpec, {
 			execute: async (args, ctx) => {
-				const apiKey = await ctx.auth.getApiKey(MISTRAL_PROVIDER);
-				const pdfConverter = apiKey
-					? new MistralPDFConverter({ apiKey, renderScreenshots })
-					: freeConverter;
+				const pdfConverter = await resolvePDFConverter(ctx);
 				return readPDF(pdfConverter, args, ctx);
 			},
 		});

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, type MockedFunction } from 'vitest';
 import { extractLinks, extractText } from 'unpdf';
 
-import { FreePDFConverter } from '../free.js';
+import { FreePDFConverter } from '../providers/free.js';
 
 vi.mock('unpdf', () => ({
 	extractLinks: vi.fn(),

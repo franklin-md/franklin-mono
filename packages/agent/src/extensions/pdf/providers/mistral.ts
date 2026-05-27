@@ -7,7 +7,7 @@ import type {
 	PDFInput,
 	PDFPageRange,
 	RenderPDFScreenshots,
-} from './types.js';
+} from '../types.js';
 
 interface MistralFileUploadResponse {
 	readonly id: string;
