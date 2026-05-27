@@ -1,29 +1,60 @@
-import type { Reference, ReferenceContext } from './api/types.js';
+import type {
+	Reference,
+	ReferenceContext,
+	ReferenceDelegate,
+	ResolvedReference,
+} from './api/types.js';
 
 export type RegisteredReferenceHandler = {
-	toContext(reference: Reference): Promise<ReferenceContext>;
+	test(reference: ResolvedReference): boolean;
+	toContext(
+		reference: ResolvedReference,
+		delegate: ReferenceDelegate,
+	): Promise<ReferenceContext>;
 };
 
-export type ReferenceRegistry = ReadonlyMap<string, RegisteredReferenceHandler>;
+export type ReferenceRegistry = readonly RegisteredReferenceHandler[];
 
 export class ReferencesEngine {
 	constructor(private readonly handlers: ReferenceRegistry) {}
 
 	async toContext(reference: Reference): Promise<ReferenceContext> {
-		const handler = this.handlers.get(reference.type);
-		if (!handler) {
-			return referenceUnavailable(
-				`No reference handler registered for "${reference.type}"`,
-			);
+		return this.resolve(reference, 0);
+	}
+
+	private async resolve(
+		reference: ResolvedReference,
+		startIndex: number,
+	): Promise<ReferenceContext> {
+		for (let index = startIndex; index < this.handlers.length; index += 1) {
+			const handler = this.handlers[index];
+			if (!handler) continue;
+			let matches: boolean;
+			try {
+				matches = handler.test(reference);
+			} catch (err) {
+				return referenceUnavailable(
+					`Reference handler test for "${reference.type}" failed: ${errorMessage(err)}`,
+				);
+			}
+			if (!matches) continue;
+
+			try {
+				return normalizeContext(
+					await handler.toContext(reference, (nextReference) =>
+						this.resolve(nextReference, index + 1),
+					),
+				);
+			} catch (err) {
+				return referenceUnavailable(
+					`Reference handler for "${reference.type}" failed: ${errorMessage(err)}`,
+				);
+			}
 		}
 
-		try {
-			return normalizeContext(await handler.toContext(reference));
-		} catch (err) {
-			return referenceUnavailable(
-				`Handler for "${reference.type}" failed: ${errorMessage(err)}`,
-			);
-		}
+		return referenceUnavailable(
+			`No reference handler matched "${reference.type}"`,
+		);
 	}
 }
 

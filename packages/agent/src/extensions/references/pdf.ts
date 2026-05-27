@@ -16,7 +16,12 @@ export type PdfPageRange = {
 };
 
 const pdfDocumentReferenceHandler: ReferenceHandler = {
-	type: 'pdf.document',
+	test(reference) {
+		return (
+			reference.type === 'pdf.document' ||
+			reference.data?.mime === 'application/pdf'
+		);
+	},
 	toContext(reference) {
 		const label = referenceLabel(reference);
 		const page = pageSuffix(reference.selector);

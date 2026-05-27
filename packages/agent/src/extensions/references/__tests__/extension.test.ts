@@ -3,7 +3,9 @@ import {
 	FILESYSTEM_ALLOW_ALL,
 	MemoryFilesystem,
 	MemoryOsInfo,
+	createFolderScopedFilesystem,
 	type AbsolutePath,
+	type Filesystem,
 } from '@franklin/lib';
 import {
 	buildStateExtensionModule,
@@ -27,9 +29,7 @@ const defaultConfig: EnvironmentConfig = {
 	netConfig: { allowedDomains: [], deniedDomains: [] },
 };
 
-function createEnvironment(
-	filesystem: MemoryFilesystem,
-): ReconfigurableEnvironment {
+function createEnvironment(filesystem: Filesystem): ReconfigurableEnvironment {
 	return {
 		filesystem,
 		process: { exec: vi.fn() },
@@ -41,7 +41,9 @@ function createEnvironment(
 	};
 }
 
-async function createReferenceRuntime(filesystem = new MemoryFilesystem()) {
+async function createReferenceRuntime(
+	filesystem: Filesystem = new MemoryFilesystem(),
+) {
 	const module = buildStateExtensionModule([
 		createReferencesModule(),
 		createEnvironmentModule(async () => createEnvironment(filesystem)),
@@ -121,6 +123,26 @@ describe('built-in reference extensions', () => {
 			{
 				type: 'text',
 				text: 'PDF reference unavailable: Paper pages 10-12. PDF extraction is not implemented in v1.',
+			},
+		]);
+	});
+
+	it('keeps the original locator when delegating filesystem data', async () => {
+		const filesystem = new MemoryFilesystem();
+		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
+		const { runtime } = await createReferenceRuntime(
+			createFolderScopedFilesystem('/project' as AbsolutePath, filesystem),
+		);
+
+		const context = await runtime.references.toContext({
+			type: 'filesystem.file',
+			locator: 'paper.pdf',
+		});
+
+		expect(context.content).toEqual([
+			{
+				type: 'text',
+				text: 'PDF reference unavailable: paper.pdf. PDF extraction is not implemented in v1.',
 			},
 		]);
 	});
