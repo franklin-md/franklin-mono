@@ -10,8 +10,10 @@ The v1 contract is intentionally small:
 - Each handler provides a cheap `test(reference)` predicate. The engine calls handlers in registration order and uses the first match.
 - `runtime.references.toContext(reference)` starts a private pipeline with the request `Reference`.
 - Inside a handler, `delegate(reference)` continues resolution after the current handler. This keeps delegation monotonic rather than re-entering the global resolver from the beginning.
-- `Reference.locator` is a string interpreted by the selected provider.
-- `Reference.selector` is a string interpreted by the selected provider.
+- `Reference.type` is a provider-owned kind or intended consumption mode, not a MIME type.
+- `Reference.locator` is a stable origin identity string interpreted by the selected provider.
+- `Reference.selector` is a provider-local selection string.
+- `Reference.label` is an optional display alias and not part of reference identity.
 - The internal pipeline reference may carry `data` produced by an earlier handler. The first data shape is bytes plus optional MIME metadata.
 - Selector codec helpers provide compact `key=value;key=value` syntax for providers that want shared parsing without shared selector semantics.
 - `ReferenceContext` only contains Mini-ACP user content.
@@ -19,6 +21,18 @@ The v1 contract is intentionally small:
 - Built-in provider extensions cover text documents, filesystem files, and a placeholder PDF response.
 
 This gives callers a minimal way to materialize app-owned context without changing the Mini-ACP prompt protocol. It is not yet the final prompt-inclusion policy for when and how that content should enter a model turn.
+
+## Reference Identity
+
+`Reference` is the public request shape: what a caller or capture layer says the user referred to. `ResolvedReference` is the internal provider-facing shape used while the ordered handler chain runs.
+
+- `type` names the provider-owned reference kind or requested interpretation. It can overlap with file type names when that is useful, but it is not a MIME type and should not be inferred only from bytes.
+- `locator` is the stable origin identity. A filesystem provider can resolve it to an absolute path, and a future URL provider can download or cache it, but those implementation artifacts should not replace the locator while delegating.
+- `selector` is interpreted by the handler that consumes it. Shared selector helpers only provide syntax; they do not make all providers share selector semantics.
+- `label` is a display alias for rendered context and UI. It should not participate in resolution, cache identity, or equality decisions.
+- `data` is intermediate resolved material, currently bytes plus optional MIME metadata. It exists so a loader can delegate to a renderer without stuffing bytes, cache handles, or derived artifacts into `locator`.
+
+Future cache keys should be explicit. They may include `type`, `locator`, `selector`, provider/version metadata, and transformation details, but should not depend on `label`.
 
 ## Deferred Design
 
