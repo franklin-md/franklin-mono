@@ -16,7 +16,7 @@ export function TextareaGroup({
 	return (
 		<div
 			className={cn(
-				'flex flex-col gap-3 overflow-hidden rounded-xl bg-muted shadow-sm ring-1 ring-inset ring-ring/70 transition-colors focus-within:ring-ring dark:bg-white/[0.08]',
+				'flex flex-col gap-3 overflow-hidden rounded-xl bg-muted shadow-sm ring-1 ring-inset ring-input transition-colors focus-within:ring-input dark:bg-white/[0.08]',
 				className,
 			)}
 		>
