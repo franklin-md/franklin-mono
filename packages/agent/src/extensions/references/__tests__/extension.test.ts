@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { createDependencyModule } from '@franklin/extensibility/module';
 import {
 	FILESYSTEM_ALLOW_ALL,
 	MemoryFilesystem,
@@ -15,11 +16,28 @@ import {
 } from '../../../modules/index.js';
 import { createRuntime } from '../../../testing/index.js';
 import { createReferencesModule } from '../../../modules/references/module.js';
+import type { PDFConverter } from '../../pdf/types.js';
 import {
+	createPDFDocumentReferenceExtension,
 	filesystemFileReferenceExtension,
-	pdfDocumentReferenceExtension,
 	textDocumentReferenceExtension,
 } from '../index.js';
+
+const pdfMocks = vi.hoisted(() => ({
+	freeConstructor: vi.fn(),
+	freeConvertPDF: vi.fn<PDFConverter['convertPDF']>(),
+}));
+
+vi.mock('../../pdf/providers/free.js', () => ({
+	FreePDFConverter: vi.fn(function (options) {
+		pdfMocks.freeConstructor(options);
+		return { convertPDF: pdfMocks.freeConvertPDF };
+	}),
+}));
+
+vi.mock('../../pdf/providers/mistral.js', () => ({
+	MistralPDFConverter: vi.fn(),
+}));
 
 const defaultConfig: EnvironmentConfig = {
 	fsConfig: {
@@ -47,10 +65,17 @@ async function createReferenceRuntime(
 	const module = buildStateExtensionModule([
 		createReferencesModule(),
 		createEnvironmentModule(async () => createEnvironment(filesystem)),
+		createDependencyModule('auth', {
+			getApiKey: vi.fn(async () => undefined),
+		}),
 	]);
+	pdfMocks.freeConvertPDF.mockResolvedValue({
+		markdown: 'converted pdf',
+		screenshots: [],
+	});
 	const runtime = await createRuntime(module, { env: defaultConfig }, [
 		filesystemFileReferenceExtension,
-		pdfDocumentReferenceExtension,
+		createPDFDocumentReferenceExtension({ renderScreenshots: vi.fn() }),
 		textDocumentReferenceExtension,
 	]);
 	return { runtime, filesystem };
@@ -82,12 +107,10 @@ describe('built-in reference extensions', () => {
 			label: 'Disk note',
 		});
 
-		expect(context.content).toEqual([
-			{ type: 'text', text: 'Reference: Disk note\n\nfrom disk' },
-		]);
+		expect(context.content).toEqual([{ type: 'text', text: 'from disk' }]);
 	});
 
-	it('materializes filesystem PDF files through the PDF placeholder handler', async () => {
+	it('materializes filesystem PDF files through the PDF reference handler', async () => {
 		const filesystem = new MemoryFilesystem();
 		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
 		const { runtime } = await createReferenceRuntime(filesystem);
@@ -102,12 +125,12 @@ describe('built-in reference extensions', () => {
 		expect(context.content).toEqual([
 			{
 				type: 'text',
-				text: 'PDF reference unavailable: Paper page 10. PDF extraction is not implemented in v1.',
+				text: 'converted pdf',
 			},
 		]);
 	});
 
-	it('passes PDF page ranges through the PDF placeholder handler', async () => {
+	it('passes PDF page ranges through the PDF reference handler', async () => {
 		const filesystem = new MemoryFilesystem();
 		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
 		const { runtime } = await createReferenceRuntime(filesystem);
@@ -122,9 +145,13 @@ describe('built-in reference extensions', () => {
 		expect(context.content).toEqual([
 			{
 				type: 'text',
-				text: 'PDF reference unavailable: Paper pages 10-12. PDF extraction is not implemented in v1.',
+				text: 'converted pdf',
 			},
 		]);
+		expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(
+			expect.any(Uint8Array),
+			{ pages: { startPage: 10, endPage: 12 } },
+		);
 	});
 
 	it('keeps the original locator when delegating filesystem data', async () => {
@@ -142,7 +169,7 @@ describe('built-in reference extensions', () => {
 		expect(context.content).toEqual([
 			{
 				type: 'text',
-				text: 'PDF reference unavailable: paper.pdf. PDF extraction is not implemented in v1.',
+				text: 'converted pdf',
 			},
 		]);
 	});
@@ -163,5 +190,6 @@ describe('built-in reference extensions', () => {
 				text: 'Reference unavailable: Reference path is not a file: /project/notes',
 			},
 		]);
+		expect(context.isError).toBe(true);
 	});
 });

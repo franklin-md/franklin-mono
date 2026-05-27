@@ -37,8 +37,9 @@ export {
 // References
 export {
 	filesystemFileReferenceExtension,
-	pdfDocumentReferenceExtension,
+	createPDFDocumentReferenceExtension,
 	referenceHandlerExtension,
+	imageDocumentReferenceExtension,
 	textDocumentReferenceExtension,
 } from './references/index.js';
 

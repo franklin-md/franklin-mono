@@ -56,6 +56,7 @@ describe('createReferencesModule', () => {
 					text: 'Reference unavailable: No reference handler matched "missing.reference"',
 				},
 			],
+			isError: true,
 		});
 	});
 
@@ -131,6 +132,7 @@ describe('createReferencesModule', () => {
 					text: 'Reference unavailable: Reference handler for "failing.document" failed: boom',
 				},
 			],
+			isError: true,
 		});
 	});
 

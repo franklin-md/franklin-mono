@@ -35,6 +35,7 @@ export type Reference = {
 
 export type ReferenceContext = {
 	readonly content: UserContent[];
+	readonly isError?: boolean;
 };
 
 export type ResolvedData = {

@@ -61,12 +61,14 @@ export class ReferencesEngine {
 function normalizeContext(context: ReferenceContext): ReferenceContext {
 	return {
 		content: context.content,
+		...(context.isError ? { isError: context.isError } : {}),
 	};
 }
 
 function referenceUnavailable(message: string): ReferenceContext {
 	return {
 		content: [{ type: 'text', text: `Reference unavailable: ${message}` }],
+		isError: true,
 	};
 }
 

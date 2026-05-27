@@ -1,5 +1,96 @@
-import { describe, expect, it } from 'vitest';
+import {
+	FILESYSTEM_ALLOW_ALL,
+	MemoryFilesystem,
+	MemoryOsInfo,
+	type AbsolutePath,
+	type Filesystem,
+} from '@franklin/lib';
+import { createDependencyModule } from '@franklin/extensibility/module';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import type { AuthManager } from '../../../auth/manager.js';
+import {
+	buildStateExtensionModule,
+	createEnvironmentModule,
+	createReferencesModule,
+	type EnvironmentConfig,
+	type ReconfigurableEnvironment,
+} from '../../../modules/index.js';
+import { createRuntime } from '../../../testing/index.js';
+import type { PDFConverter, RenderPDFScreenshots } from '../../pdf/types.js';
+import {
+	createPDFDocumentReferenceExtension,
+	filesystemFileReferenceExtension,
+} from '../index.js';
 import { parsePdfReferenceSelector } from '../pdf.js';
+
+const pdfMocks = vi.hoisted(() => ({
+	freeConstructor: vi.fn(),
+	freeConvertPDF: vi.fn<PDFConverter['convertPDF']>(),
+	mistralConstructor: vi.fn(),
+	mistralConvertPDF: vi.fn<PDFConverter['convertPDF']>(),
+}));
+
+vi.mock('../../pdf/providers/free.js', () => ({
+	FreePDFConverter: vi.fn(function (options) {
+		pdfMocks.freeConstructor(options);
+		return { convertPDF: pdfMocks.freeConvertPDF };
+	}),
+}));
+
+vi.mock('../../pdf/providers/mistral.js', () => ({
+	MistralPDFConverter: vi.fn(function (options) {
+		pdfMocks.mistralConstructor(options);
+		return { convertPDF: pdfMocks.mistralConvertPDF };
+	}),
+}));
+
+const defaultConfig: EnvironmentConfig = {
+	fsConfig: {
+		cwd: '/project' as AbsolutePath,
+		permissions: FILESYSTEM_ALLOW_ALL,
+	},
+	netConfig: { allowedDomains: [], deniedDomains: [] },
+};
+
+function createEnvironment(filesystem: Filesystem): ReconfigurableEnvironment {
+	return {
+		filesystem,
+		process: { exec: vi.fn() },
+		web: { fetch: vi.fn() },
+		osInfo: new MemoryOsInfo(),
+		config: vi.fn(async () => defaultConfig),
+		reconfigure: vi.fn(async () => {}),
+		dispose: vi.fn(async () => {}),
+	};
+}
+
+function mockAuthManager(apiKey?: string): AuthManager & {
+	getApiKey: ReturnType<typeof vi.fn>;
+} {
+	return {
+		getApiKey: vi.fn(async () => apiKey),
+	} as unknown as AuthManager & { getApiKey: ReturnType<typeof vi.fn> };
+}
+
+async function createReferenceRuntime(input: {
+	readonly filesystem: Filesystem;
+	readonly auth?: AuthManager;
+	readonly renderScreenshots?: RenderPDFScreenshots;
+}) {
+	const auth = input.auth ?? mockAuthManager();
+	const module = buildStateExtensionModule([
+		createEnvironmentModule(async () => createEnvironment(input.filesystem)),
+		createReferencesModule(),
+		createDependencyModule('auth', auth),
+	]);
+	const runtime = await createRuntime(module, { env: defaultConfig }, [
+		filesystemFileReferenceExtension,
+		createPDFDocumentReferenceExtension({
+			renderScreenshots: input.renderScreenshots ?? vi.fn(async () => []),
+		}),
+	]);
+	return { runtime, auth };
+}
 
 describe('parsePdfReferenceSelector', () => {
 	it('parses a single page selector', () => {
@@ -22,5 +113,85 @@ describe('parsePdfReferenceSelector', () => {
 		expect(parsePdfReferenceSelector('pages=12-10')).toEqual({});
 		expect(parsePdfReferenceSelector('pages=0-10')).toEqual({});
 		expect(parsePdfReferenceSelector('page=10.5')).toEqual({});
+	});
+});
+
+describe('createPDFDocumentReferenceExtension', () => {
+	beforeEach(() => {
+		pdfMocks.freeConstructor.mockClear();
+		pdfMocks.freeConvertPDF.mockReset();
+		pdfMocks.mistralConstructor.mockClear();
+		pdfMocks.mistralConvertPDF.mockReset();
+		pdfMocks.freeConvertPDF.mockResolvedValue({
+			markdown: 'free pdf',
+			screenshots: [],
+		});
+		pdfMocks.mistralConvertPDF.mockResolvedValue({
+			markdown: 'mistral pdf',
+			screenshots: [],
+		});
+	});
+
+	it('converts delegated filesystem PDFs with page range selectors', async () => {
+		const filesystem = new MemoryFilesystem();
+		const pdf = new TextEncoder().encode('%PDF-1.7\n');
+		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
+		const renderScreenshots = vi.fn(async () => []);
+		const { runtime, auth } = await createReferenceRuntime({
+			filesystem,
+			auth: mockAuthManager(),
+			renderScreenshots,
+		});
+
+		try {
+			const context = await runtime.references.toContext({
+				type: 'filesystem.file',
+				locator: '/project/paper.pdf',
+				selector: 'pages=2-4',
+				label: 'Paper',
+			});
+
+			expect(auth.getApiKey).toHaveBeenCalledWith('mistral');
+			expect(pdfMocks.freeConstructor).toHaveBeenCalledWith({
+				renderScreenshots,
+			});
+			expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(pdf, {
+				pages: { startPage: 2, endPage: 4 },
+			});
+			expect(context.content).toEqual([{ type: 'text', text: 'free pdf' }]);
+		} finally {
+			await runtime.dispose();
+		}
+	});
+
+	it('uses Mistral when the runtime has a Mistral API key', async () => {
+		const filesystem = new MemoryFilesystem();
+		const pdf = new TextEncoder().encode('%PDF-1.7\n');
+		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
+		const renderScreenshots = vi.fn(async () => []);
+		const { runtime } = await createReferenceRuntime({
+			filesystem,
+			auth: mockAuthManager('mis-key'),
+			renderScreenshots,
+		});
+
+		try {
+			const context = await runtime.references.toContext({
+				type: 'filesystem.file',
+				locator: '/project/paper.pdf',
+			});
+
+			expect(pdfMocks.mistralConstructor).toHaveBeenCalledWith({
+				apiKey: 'mis-key',
+				renderScreenshots,
+			});
+			expect(pdfMocks.mistralConvertPDF).toHaveBeenCalledWith(pdf, {
+				pages: undefined,
+			});
+			expect(pdfMocks.freeConvertPDF).not.toHaveBeenCalled();
+			expect(context.content).toEqual([{ type: 'text', text: 'mistral pdf' }]);
+		} finally {
+			await runtime.dispose();
+		}
 	});
 });

@@ -32,6 +32,7 @@ const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime>
 							text: `Reference unavailable: Reference path is not a file: ${path}`,
 						},
 					],
+					isError: true,
 				};
 			}
 
@@ -39,7 +40,7 @@ const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime>
 			const fileType = await fileTypeFromBuffer(bytes);
 			const mime =
 				fileType?.mime ?? (isPdfPath(path) ? 'application/pdf' : undefined);
-			return delegate({
+			const context = await delegate({
 				...reference,
 				data: {
 					type: 'bytes',
@@ -47,6 +48,7 @@ const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime>
 					...(mime ? { mime } : {}),
 				},
 			});
+			return context;
 		},
 	};
 
