@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react';
-
 import { FileBadge } from '../../components/file-icon/badge.js';
 import type { MarkdownExtensions } from '../turn/markdown.js';
 
@@ -9,19 +7,14 @@ import {
 	remarkFileReferences,
 } from './remark.js';
 
-function FileReferenceElement({
-	children: _children,
-	node: _node,
-	path,
-}: Record<string, unknown> & { children?: ReactNode }) {
-	const filePath = typeof path === 'string' ? path : undefined;
-	if (!filePath) {
-		return null;
-	}
+interface FileReferenceElementProps {
+	readonly path: string;
+}
 
+function FileReferenceElement({ path }: FileReferenceElementProps) {
 	return (
 		<FileBadge
-			path={filePath}
+			path={path}
 			className="mx-0.5 max-w-full py-0 align-baseline text-[0.8125rem]"
 		/>
 	);
