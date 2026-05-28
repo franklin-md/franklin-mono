@@ -96,12 +96,15 @@ We are actively working towards making filesystem permissions **configurable** a
 - Project instructions via `CLAUDE.md`
 - Per-turn token tracking
 - Forking last turn into a new conversation
+- `@`-style mention system
+- Sub-Agents
+- PDF Support
+- Image Support
 
 ## Roadmap
 Below is a list (in approximate priority) of what we are building:
 - Support for additional subscriptions and API providers such as Anthropic and Grok
 - Greater parity with popular coding agents like Claude Code, including:
-  - Sub-Agents
   - Terminal
   - MCP
   - AGENTS.md
@@ -109,9 +112,6 @@ Below is a list (in approximate priority) of what we are building:
   - Context Compaction
   - Branching at any point in conversation
   - Conversation rewind
-- `@`-style mention system
-- PDF Support
-- Image Support
 - Integrations with popular platforms like:
   - Twitter/X  
 - Conversation Organization:
