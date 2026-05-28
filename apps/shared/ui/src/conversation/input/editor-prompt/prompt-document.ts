@@ -16,8 +16,10 @@ function parsePromptLine(line: string): JSONContent[] | undefined {
 	return splitFileReferenceSegments(line)
 		.map((segment) => {
 			switch (segment.type) {
+				// Requires Mention extension
 				case 'reference':
 					return createMentionNodeContent({ path: segment.token.path });
+				// Requires Text extension
 				case 'text':
 					return createTextContent(segment.text);
 			}
@@ -29,9 +31,11 @@ export function createPromptDocument(value: string): JSONContent {
 	const lines = value.split('\n');
 
 	return {
+		// Requires Document extension
 		type: 'doc',
 		content: lines.map((line) => {
 			const content = parsePromptLine(line);
+			// Requires Paragraph extension
 			return content ? { type: 'paragraph', content } : { type: 'paragraph' };
 		}),
 	};

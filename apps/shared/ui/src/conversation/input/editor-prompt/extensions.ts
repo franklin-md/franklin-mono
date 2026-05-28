@@ -15,13 +15,10 @@ export function createPromptEditorExtensions({
 	menuController,
 }: CreatePromptEditorExtensionsOptions) {
 	return [
-		// Minimal schema plus editing behavior for a string-backed prompt:
-		// paragraphs model newline-separated prompt text, hard breaks preserve
-		// Shift+Enter line breaks, history keeps local undo/redo, and the mention
-		// extension owns file-reference atoms and suggestion UI.
 		Document,
 		Paragraph,
 		Text,
+		// Shift + Enter does not submit/send
 		HardBreak.configure({ keepMarks: false }),
 		UndoRedo,
 
