@@ -14,6 +14,7 @@ import {
 import { useMentionItems } from './mention/search.js';
 import { createPromptDocument, getPromptText } from './prompt-document.js';
 
+// TODO: Can we avoid adding a className to the editor? Instead, could we just mount the old AutoGrowTextarea?
 const editorClassName = cn(
 	'min-h-12 max-h-60 overflow-y-auto bg-transparent px-4 pt-4 pb-0 text-sm leading-6 text-foreground outline-none',
 	'whitespace-pre-wrap break-words focus-visible:outline-none',
