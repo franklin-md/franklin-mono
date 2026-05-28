@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
 	createMenuController,
+	type ActiveMentionSuggestionState,
 	type MentionSuggestionState,
 	inactiveMentionSuggestion,
 } from '../../../../../src/conversation/input/editor-prompt/mention/menu-controller.js';
@@ -58,7 +59,7 @@ function createItems(): readonly TestItem[] {
 
 function expectActiveSuggestion(
 	suggestion: MentionSuggestionState,
-): asserts suggestion is Extract<MentionSuggestionState, { active: true }> {
+): asserts suggestion is ActiveMentionSuggestionState {
 	expect(suggestion.active).toBe(true);
 }
 
@@ -117,6 +118,17 @@ describe('createMenuController', () => {
 		harness.controller.handleKeyDown(tab);
 		expect(tab.preventDefault).toHaveBeenCalledTimes(1);
 		expect(harness.command).toHaveBeenLastCalledWith({ path: 'alpha.md' });
+	});
+
+	it('publishes a command that commits an item and exits', () => {
+		const harness = createHarness();
+
+		harness.show();
+		expectActiveSuggestion(harness.suggestion);
+		harness.suggestion.command({ path: 'alpha.md' });
+
+		expect(harness.command).toHaveBeenCalledWith({ path: 'alpha.md' });
+		expect(harness.suggestion).toEqual(inactiveMentionSuggestion);
 	});
 
 	it('consumes Enter and Tab while active even when there are no items', () => {

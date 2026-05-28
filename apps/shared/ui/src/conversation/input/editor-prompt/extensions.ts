@@ -15,11 +15,13 @@ export function createPromptEditorExtensions({
 	menuController,
 }: CreatePromptEditorExtensionsOptions) {
 	return [
+		// TODO: I need a comment as to why each of these is necessary
 		Document,
 		Paragraph,
 		Text,
 		HardBreak.configure({ keepMarks: false }),
 		UndoRedo,
+
 		createMentionExtension({
 			menuController,
 		}),

@@ -33,7 +33,9 @@ function replaceSuggestionWithMention(
 		.chain()
 		.focus()
 		.insertContentAt(range, [
+			// Replace with Token
 			createMentionNodeContent({ path }),
+			// And add a space!
 			{ type: 'text', text: ' ' },
 		])
 		.run();
@@ -72,8 +74,12 @@ export function createMentionExtension(options: CreateMentionExtensionOptions) {
 			allowSpaces: true,
 			allowedPrefixes: [' ', '\n'],
 			command: ({ editor, range, props }) => {
+				// Called once the suggestion is `committed`
 				replaceSuggestionWithMention(editor, range, props);
 			},
+			// The lifecycle methods used internally by the Mention extension.
+			// On these events, we modify the menu controller state.
+			// TODO: Are both onUpdate and onStart needed?
 			render: () => {
 				return {
 					onStart: (props) => {

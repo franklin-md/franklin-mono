@@ -1,15 +1,20 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { FileReferenceItem } from '@franklin/react';
 
+type ShowMenuOptions = {
+	readonly query: string;
+	readonly clientRect: (() => DOMRect | null) | null | undefined;
+	readonly command: (item: FileReferenceItem) => void;
+};
+
+export interface ActiveMentionSuggestionState extends ShowMenuOptions {
+	readonly active: true;
+	readonly highlightedIndex: number;
+}
+
 export type MentionSuggestionState =
 	| { readonly active: false }
-	| {
-			readonly active: true;
-			readonly query: string;
-			readonly clientRect: (() => DOMRect | null) | null | undefined;
-			readonly highlightedIndex: number;
-			readonly command: (item: FileReferenceItem) => void;
-	  };
+	| ActiveMentionSuggestionState;
 
 export const inactiveMentionSuggestion: MentionSuggestionState = {
 	active: false,
@@ -19,14 +24,6 @@ export interface MenuKeyEvent {
 	readonly key: string;
 	preventDefault(): void;
 }
-
-interface ActiveMenu {
-	readonly query: string;
-	readonly clientRect: (() => DOMRect | null) | null | undefined;
-	readonly command: (item: FileReferenceItem) => void;
-}
-
-type ShowMenuOptions = ActiveMenu;
 
 interface CreateMenuControllerOptions {
 	readonly getItems: () => readonly FileReferenceItem[];
@@ -58,7 +55,7 @@ export function createMenuController({
 	getItems,
 	setSuggestionState,
 }: CreateMenuControllerOptions): MenuController {
-	let activeMenu: ActiveMenu | undefined;
+	let activeMenu: ShowMenuOptions | undefined;
 	let highlightedIndex = 0;
 
 	const publish = () => {

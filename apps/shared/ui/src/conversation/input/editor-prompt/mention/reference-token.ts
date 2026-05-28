@@ -1,3 +1,7 @@
+// TODO: When the ReferenceEngine is complete, we will move this logic there.
+// A ReferenceToken = the embedding of a Reference in a string.
+// The `.prompt` algorithm should therefore use a string -> UserContent algorithm that merges the 2.
+
 const REFERENCE_PATTERN = /@\{([^}\n]+)\}/g;
 
 export const REFERENCE_TOKEN_TRIGGER = '@';
@@ -5,6 +9,7 @@ export const REFERENCE_TOKEN_TRIGGER = '@';
 export interface ReferenceTokenMatch {
 	readonly index: number;
 	readonly text: string;
+	// TODO: This becomes = Reference in stead of path
 	readonly path: string;
 }
 
