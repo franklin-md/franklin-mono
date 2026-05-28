@@ -18,9 +18,24 @@ function createKeyEvent(key: string) {
 	};
 }
 
+function createAnchorRect(): DOMRect {
+	return {
+		x: 10,
+		y: 20,
+		width: 0,
+		height: 8,
+		top: 20,
+		right: 10,
+		bottom: 28,
+		left: 10,
+		toJSON: () => ({}),
+	} as DOMRect;
+}
+
 function createHarness(initialItems: readonly TestItem[] = createItems()) {
 	let items = initialItems;
 	let suggestion: MentionSuggestionState = inactiveMentionSuggestion;
+	const anchorRect = createAnchorRect();
 	const suggestionStates: MentionSuggestionState[] = [];
 	const command = vi.fn();
 	const controller = createMenuController({
@@ -34,13 +49,14 @@ function createHarness(initialItems: readonly TestItem[] = createItems()) {
 	function show(query = 'a') {
 		controller.show({
 			query,
-			clientRect: null,
+			anchorRect,
 			command,
 		});
 	}
 
 	return {
 		command,
+		anchorRect,
 		controller,
 		get suggestion() {
 			return suggestion;
@@ -82,6 +98,7 @@ describe('createMenuController', () => {
 
 		expectActiveSuggestion(harness.suggestion);
 		expect(harness.suggestion.query).toBe('b');
+		expect(harness.suggestion.anchorRect).toBe(harness.anchorRect);
 		expect(harness.suggestion.highlightedIndex).toBe(0);
 	});
 

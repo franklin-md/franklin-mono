@@ -47,7 +47,7 @@ function showSuggestionMenu(
 ): void {
 	options.menuController.show({
 		query: props.query,
-		clientRect: props.clientRect,
+		anchorRect: props.clientRect?.() ?? undefined,
 		command: (item) => props.command(createMentionAttrs(item)),
 	});
 }

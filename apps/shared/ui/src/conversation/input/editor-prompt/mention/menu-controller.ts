@@ -3,7 +3,7 @@ import type { FileReferenceItem } from '@franklin/react';
 
 type ShowMenuOptions = {
 	readonly query: string;
-	readonly clientRect: (() => DOMRect | null) | null | undefined;
+	readonly anchorRect: DOMRect | undefined;
 	readonly command: (item: FileReferenceItem) => void;
 };
 
@@ -67,7 +67,7 @@ export function createMenuController({
 		setSuggestionState({
 			active: true,
 			query: activeMenu.query,
-			clientRect: activeMenu.clientRect,
+			anchorRect: activeMenu.anchorRect,
 			highlightedIndex,
 			command: commitItem,
 		});

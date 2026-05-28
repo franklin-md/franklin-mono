@@ -1,16 +1,23 @@
-import { createPortal } from 'react-dom';
+import type { RefObject } from 'react';
 
 import type { FileReferenceItem } from '@franklin/react';
 
 import { FileBadge } from '../../../../components/file-icon/badge.js';
 import { cn } from '../../../../lib/cn.js';
-import { usePortalContainer } from '../../../../lib/portal-container.js';
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandItem,
+	CommandList,
+} from '../../../../primitives/command.js';
+import {
+	Popover,
+	PopoverAnchor,
+	PopoverContent,
+} from '../../../../primitives/popover.js';
 
 import type { MentionSuggestionState } from './menu-controller.js';
-
-const MENU_WIDTH = 320;
-const MENU_GUTTER = 8;
-const MENU_OFFSET = 6;
 
 interface MentionMenuProps {
 	readonly suggestion: MentionSuggestionState;
@@ -18,31 +25,8 @@ interface MentionMenuProps {
 	readonly onHighlight: (index: number) => void;
 }
 
-function getFallbackContainer(): HTMLElement | undefined {
-	return typeof document === 'undefined' ? undefined : document.body;
-}
-
-function getViewportWidth(): number {
-	if (typeof document !== 'undefined') {
-		return document.documentElement.clientWidth;
-	}
-	return MENU_WIDTH + MENU_GUTTER * 2;
-}
-
-export function getMentionMenuStyle(
-	rect: DOMRect,
-	viewportWidth = getViewportWidth(),
-): React.CSSProperties {
-	const width = Math.min(MENU_WIDTH, viewportWidth - MENU_GUTTER * 2);
-	const maxLeft = Math.max(MENU_GUTTER, viewportWidth - width - MENU_GUTTER);
-	const left = Math.min(Math.max(rect.left, MENU_GUTTER), maxLeft);
-
-	return {
-		position: 'fixed',
-		top: rect.bottom + MENU_OFFSET,
-		left,
-		width,
-	};
+interface VirtualAnchor {
+	readonly getBoundingClientRect: () => DOMRect;
 }
 
 export function MentionMenu({
@@ -50,54 +34,61 @@ export function MentionMenu({
 	items,
 	onHighlight,
 }: MentionMenuProps) {
-	const portalContainer = usePortalContainer() ?? getFallbackContainer();
-
-	if (!suggestion.active || !portalContainer) {
+	if (!suggestion.active || !suggestion.anchorRect) {
 		return null;
 	}
 
-	const rect = suggestion.clientRect?.();
-	if (!rect) {
-		return null;
-	}
+	const anchorRect = suggestion.anchorRect;
+	const anchorRef: RefObject<VirtualAnchor> = {
+		current: {
+			getBoundingClientRect: () => anchorRect,
+		},
+	};
+	const highlightedItem = items[suggestion.highlightedIndex];
 
-	return createPortal(
-		<div
-			className="z-50 overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-lg ring-1 ring-inset ring-ring/70"
-			style={getMentionMenuStyle(rect)}
-			role="listbox"
-			aria-label="File mentions"
-			onMouseDown={(event) => {
-				event.preventDefault();
-			}}
-		>
-			{items.length === 0 ? (
-				<div className="px-3 py-2 text-sm text-muted-foreground">
-					No files found
-				</div>
-			) : (
-				<div className="max-h-72 overflow-y-auto p-1">
-					{items.map((item, index) => (
-						<button
-							key={item.path}
-							type="button"
-							role="option"
-							aria-selected={index === suggestion.highlightedIndex}
-							className={cn(
-								'flex w-full min-w-0 items-center rounded-md px-2 py-1.5 text-left text-sm outline-none transition-colors',
-								index === suggestion.highlightedIndex
-									? 'bg-accent text-accent-foreground'
-									: 'text-popover-foreground hover:bg-accent/70 hover:text-accent-foreground',
-							)}
-							onMouseEnter={() => onHighlight(index)}
-							onClick={() => suggestion.command(item)}
-						>
-							<FileBadge path={item.path} className="max-w-full" />
-						</button>
-					))}
-				</div>
-			)}
-		</div>,
-		portalContainer,
+	return (
+		<Popover open>
+			<PopoverAnchor virtualRef={anchorRef} />
+			<PopoverContent
+				align="start"
+				className="w-80 p-0"
+				collisionPadding={8}
+				onCloseAutoFocus={(event) => event.preventDefault()}
+				onMouseDown={(event) => event.preventDefault()}
+				onOpenAutoFocus={(event) => event.preventDefault()}
+				side="top"
+				sideOffset={6}
+			>
+				<Command
+					shouldFilter={false}
+					value={highlightedItem?.path ?? ''}
+					className="rounded-lg"
+				>
+					<CommandList className="max-h-72">
+						{items.length === 0 ? (
+							<CommandEmpty>No files found</CommandEmpty>
+						) : (
+							<CommandGroup>
+								{items.map((item, index) => (
+									<CommandItem
+										key={item.path}
+										value={item.path}
+										onMouseEnter={() => onHighlight(index)}
+										onSelect={() => suggestion.command(item)}
+										className={cn(
+											'min-w-0',
+											index === suggestion.highlightedIndex &&
+												'bg-accent text-accent-foreground',
+										)}
+									>
+										<FileBadge path={item.path} className="max-w-full" />
+									</CommandItem>
+								))}
+							</CommandGroup>
+						)}
+					</CommandList>
+				</Command>
+			</PopoverContent>
+		</Popover>
 	);
 }
