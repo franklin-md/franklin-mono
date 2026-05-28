@@ -20,6 +20,19 @@ describe('file reference tokens', () => {
 		]);
 	});
 
+	it.fails('TODO: round-trips paths containing a closing brace', () => {
+		const path = 'notes/a}b.md';
+		const token = formatFileReferenceToken(path);
+
+		expect(findFileReferenceTokens(token)).toEqual([
+			{
+				index: 0,
+				text: token,
+				path,
+			},
+		]);
+	});
+
 	it('splits text around canonical file reference tokens', () => {
 		expect(
 			splitFileReferenceSegments('Read @{notes/a.md} then @{b.md}'),

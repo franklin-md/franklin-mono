@@ -1,6 +1,10 @@
 // String tokens are the bridge from prompt text to structured references until
 // the ReferenceEngine can convert user content directly.
 
+// Known limitation: the current string format uses an unescaped `}` as the
+// closing delimiter, so paths containing `}` cannot round-trip. That is accepted
+// for the current file-mention slice; token encoding belongs with the eventual
+// ReferenceEngine boundary.
 const FILE_REFERENCE_PATTERN = /@\{([^}\n]+)\}/g;
 
 export const FILE_REFERENCE_TOKEN_TRIGGER = '@';
