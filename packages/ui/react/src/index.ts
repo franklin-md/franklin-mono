@@ -8,6 +8,7 @@ export {
 	useThrottledStoreValue,
 	type UseThrottledStoreValueOptions,
 } from './utils/use-throttled-store-value.js';
+export { useDebouncedValue } from './utils/use-debounced-value.js';
 export { useStableExternalStore } from './utils/use-stable-external-store.js';
 export {
 	useObservedState,
@@ -73,6 +74,18 @@ export {
 	type UseTriggerOnChange,
 	type UseTriggerOnChangeOptions,
 } from './utils/use-trigger-on-change.js';
+export {
+	FileCollectionProvider,
+	FuseFileCollection,
+	useFileCollection,
+	useFileSearch,
+} from './file-search/index.js';
+export type {
+	FileCollection,
+	FileReferenceItem,
+	FileSearchOptions,
+	UseFileSearchOptions,
+} from './file-search/index.js';
 export { PromptProvider, usePrompt } from './prompt/context.js';
 export type { PromptContextValue } from './prompt/context.js';
 export { Prompt } from './prompt/prompt.js';

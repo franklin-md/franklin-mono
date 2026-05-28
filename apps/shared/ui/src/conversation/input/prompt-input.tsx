@@ -2,17 +2,13 @@ import { Children, type ReactNode } from 'react';
 
 import { CornerDownLeft, Square } from 'lucide-react';
 
-import {
-	PromptAgentControl,
-	PromptControls,
-	PromptText,
-} from '@franklin/react';
+import { PromptAgentControl, PromptControls } from '@franklin/react';
 
-import { AutoGrowTextarea } from '../../components/auto-grow-textarea.js';
 import { Button } from '../../primitives/button.js';
 import { TextareaGroup } from '../../components/textarea-group.js';
 
 import { ModelSelector } from './model-selector/selector.js';
+import { EditorPromptText } from './editor-prompt/editor.js';
 import { ThinkingToggle } from './thinking-toggle.js';
 
 export interface PromptInputProps {
@@ -23,16 +19,7 @@ export function PromptInput({ additionalControls }: PromptInputProps) {
 	return (
 		<div className="px-4 pb-4 pt-2">
 			<TextareaGroup
-				textarea={
-					<PromptText>
-						<AutoGrowTextarea
-							className="flex-1 bg-transparent px-4 pt-4 pb-0 text-sm leading-6 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0"
-							minLines={2}
-							maxLines={10}
-							placeholder="Type a message..."
-						/>
-					</PromptText>
-				}
+				textarea={<EditorPromptText />}
 				buttonBar={
 					<PromptControls>
 						<div className="flex w-full items-center justify-between gap-3">

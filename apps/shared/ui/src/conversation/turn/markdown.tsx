@@ -6,6 +6,7 @@ import {
 } from 'streamdown';
 import { code } from '@streamdown/code';
 import { createMathPlugin } from '@streamdown/math';
+import type { ComponentType } from 'react';
 
 import { chromeComponents } from './text/chrome/components.js';
 
@@ -23,12 +24,15 @@ export interface MarkdownExtensions {
 	remarkPlugins?: StreamdownProps['remarkPlugins'];
 }
 
-export interface CustomMarkdownElement {
-	allowedAttributes?: string[];
-	component: NonNullable<Components[string]>;
+export interface CustomMarkdownElement<Props extends object = object> {
+	allowedAttributes?: readonly string[];
+	component: ComponentType<Props>;
 }
 
-export type CustomMarkdownElements = Record<string, CustomMarkdownElement>;
+export type CustomMarkdownElements = Record<
+	string,
+	CustomMarkdownElement<never>
+>;
 
 export interface MarkdownProps extends MarkdownExtensions {
 	text: string;
@@ -77,7 +81,7 @@ function resolveCustomElements(
 	const allowedTags: Record<string, string[]> = {};
 
 	for (const [tagName, element] of Object.entries(customElements)) {
-		components[tagName] = element.component;
+		components[tagName] = element.component as NonNullable<Components[string]>;
 		allowedTags[tagName] = [...(element.allowedAttributes ?? [])];
 	}
 

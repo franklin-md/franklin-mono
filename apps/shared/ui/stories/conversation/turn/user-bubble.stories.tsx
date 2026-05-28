@@ -29,6 +29,20 @@ export const LongMessage: Story = {
 	},
 };
 
+export const WithMarkdownAndFileReference: Story = {
+	args: {
+		message: {
+			role: 'user',
+			content: [
+				{
+					type: 'text',
+					text: 'Read ~~the old draft~~ @{notes/deep work.md} and compare it with @{src/conversation/turn/user-bubble.tsx}.',
+				},
+			],
+		},
+	},
+};
+
 export const MultipleTextBlocks: Story = {
 	args: {
 		message: {
