@@ -18,7 +18,6 @@ const DEFAULT_FUSE_OPTIONS = {
 	],
 	threshold: 0.35,
 	ignoreLocation: true,
-	includeScore: true,
 } satisfies IFuseOptions<FuseDocument>;
 
 function getPathName(path: string): string {

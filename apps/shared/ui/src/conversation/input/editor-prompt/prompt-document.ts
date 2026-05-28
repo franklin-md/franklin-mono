@@ -1,36 +1,28 @@
 import type { Editor, JSONContent } from '@tiptap/core';
 
+import { splitFileReferenceSegments } from '../../file-reference/token.js';
+
 import {
 	createMentionNodeContent,
 	MENTION_NODE_NAME,
 	mentionTextSerializer,
 } from './mention/node.js';
-import { findReferenceTokens } from './mention/reference-token.js';
 
 function createTextContent(text: string): JSONContent | undefined {
 	return text.length > 0 ? { type: 'text', text } : undefined;
 }
 
 function parsePromptLine(line: string): JSONContent[] | undefined {
-	const content: JSONContent[] = [];
-	let lastIndex = 0;
-
-	for (const token of findReferenceTokens(line)) {
-		const before = createTextContent(line.slice(lastIndex, token.index));
-		if (before) {
-			content.push(before);
-		}
-
-		content.push(createMentionNodeContent({ path: token.path }));
-		lastIndex = token.index + token.text.length;
-	}
-
-	const rest = createTextContent(line.slice(lastIndex));
-	if (rest) {
-		content.push(rest);
-	}
-
-	return content.length > 0 ? content : undefined;
+	return splitFileReferenceSegments(line)
+		.map((segment) => {
+			switch (segment.type) {
+				case 'reference':
+					return createMentionNodeContent({ path: segment.token.path });
+				case 'text':
+					return createTextContent(segment.text);
+			}
+		})
+		.filter(Boolean) as JSONContent[];
 }
 
 export function createPromptDocument(value: string): JSONContent {

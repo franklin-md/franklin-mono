@@ -1,5 +1,8 @@
 import type { UserMessage } from '@franklin/mini-acp';
 
+import { fileReferenceMarkdown } from '../file-reference/markdown.js';
+import { Markdown } from './markdown.js';
+
 export function UserBubble({ message }: { message: UserMessage }) {
 	const text = message.content
 		.filter((b): b is { type: 'text'; text: string } => b.type === 'text')
@@ -8,7 +11,11 @@ export function UserBubble({ message }: { message: UserMessage }) {
 
 	return (
 		<div className="min-w-0 break-words rounded-lg bg-muted px-3 py-2 text-sm ring-1 ring-inset ring-ring">
-			{text}
+			<Markdown
+				text={text}
+				className="prose-content"
+				{...fileReferenceMarkdown}
+			/>
 		</div>
 	);
 }

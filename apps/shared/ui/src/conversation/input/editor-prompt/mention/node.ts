@@ -3,11 +3,11 @@ import type { MentionNodeAttrs } from '@tiptap/extension-mention';
 import type { FileReferenceItem } from '@franklin/react';
 
 import {
-	REFERENCE_TOKEN_TRIGGER,
-	formatReferenceToken,
-} from './reference-token.js';
+	FILE_REFERENCE_TOKEN_TRIGGER,
+	formatFileReferenceToken,
+} from '../../../file-reference/token.js';
 
-export const MENTION_TRIGGER = REFERENCE_TOKEN_TRIGGER;
+export const MENTION_TRIGGER = FILE_REFERENCE_TOKEN_TRIGGER;
 export const MENTION_NODE_NAME = 'mention';
 
 export function getMentionPath(
@@ -40,7 +40,12 @@ export function createMentionNodeContent(item: FileReferenceItem): JSONContent {
 	};
 }
 
-export const mentionTextSerializer: TextSerializer = ({ node }) => {
-	const path = getMentionPath(node.attrs);
-	return path.length > 0 ? formatReferenceToken(path) : '';
-};
+export function formatMentionText(
+	attrs: Partial<Pick<MentionNodeAttrs, 'id' | 'label'>>,
+): string {
+	const path = getMentionPath(attrs);
+	return path.length > 0 ? formatFileReferenceToken(path) : '';
+}
+
+export const mentionTextSerializer: TextSerializer = ({ node }) =>
+	formatMentionText(node.attrs);
