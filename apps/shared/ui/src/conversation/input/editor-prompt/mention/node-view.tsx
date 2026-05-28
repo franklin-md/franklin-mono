@@ -1,12 +1,12 @@
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 
-import { FileBadge } from '../../../components/file-icon/badge.js';
-import { cn } from '../../../lib/cn.js';
+import { FileBadge } from '../../../../components/file-icon/badge.js';
+import { cn } from '../../../../lib/cn.js';
 
-import { getFileMentionPath } from './file-mention-node.js';
+import { getMentionPath } from './node.js';
 
-export function FileMentionNodeView({ node }: NodeViewProps) {
-	const path = getFileMentionPath(node.attrs);
+export function MentionNodeView({ node }: NodeViewProps) {
+	const path = getMentionPath(node.attrs);
 
 	return (
 		<NodeViewWrapper

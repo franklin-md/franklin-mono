@@ -2,18 +2,18 @@ import { createPortal } from 'react-dom';
 
 import type { FileReferenceItem } from '@franklin/react';
 
-import { FileBadge } from '../../../components/file-icon/badge.js';
-import { cn } from '../../../lib/cn.js';
-import { usePortalContainer } from '../../../lib/portal-container.js';
+import { FileBadge } from '../../../../components/file-icon/badge.js';
+import { cn } from '../../../../lib/cn.js';
+import { usePortalContainer } from '../../../../lib/portal-container.js';
 
-import type { FileMentionSuggestionState } from './file-mention-menu-controller.js';
+import type { MentionSuggestionState } from './menu-controller.js';
 
 const MENU_WIDTH = 320;
 const MENU_GUTTER = 8;
 const MENU_OFFSET = 6;
 
-interface FileMentionMenuProps {
-	readonly suggestion: FileMentionSuggestionState;
+interface MentionMenuProps {
+	readonly suggestion: MentionSuggestionState;
 	readonly items: readonly FileReferenceItem[];
 	readonly onHighlight: (index: number) => void;
 }
@@ -29,7 +29,7 @@ function getViewportWidth(): number {
 	return MENU_WIDTH + MENU_GUTTER * 2;
 }
 
-export function getFileMentionMenuStyle(
+export function getMentionMenuStyle(
 	rect: DOMRect,
 	viewportWidth = getViewportWidth(),
 ): React.CSSProperties {
@@ -45,11 +45,11 @@ export function getFileMentionMenuStyle(
 	};
 }
 
-export function FileMentionMenu({
+export function MentionMenu({
 	suggestion,
 	items,
 	onHighlight,
-}: FileMentionMenuProps) {
+}: MentionMenuProps) {
 	const portalContainer = usePortalContainer() ?? getFallbackContainer();
 
 	if (!suggestion.active || !portalContainer) {
@@ -64,7 +64,7 @@ export function FileMentionMenu({
 	return createPortal(
 		<div
 			className="z-50 overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-lg ring-1 ring-inset ring-ring/70"
-			style={getFileMentionMenuStyle(rect)}
+			style={getMentionMenuStyle(rect)}
 			role="listbox"
 			aria-label="File mentions"
 			onMouseDown={(event) => {

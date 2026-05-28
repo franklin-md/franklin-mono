@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { FileReferenceItem } from '@franklin/react';
 
-export type FileMentionSuggestionState =
+export type MentionSuggestionState =
 	| { readonly active: false }
 	| {
 			readonly active: true;
@@ -11,35 +11,33 @@ export type FileMentionSuggestionState =
 			readonly command: (item: FileReferenceItem) => void;
 	  };
 
-export const inactiveFileMentionSuggestion: FileMentionSuggestionState = {
+export const inactiveMentionSuggestion: MentionSuggestionState = {
 	active: false,
 };
 
-export interface FileMentionMenuKeyEvent {
+export interface MenuKeyEvent {
 	readonly key: string;
 	preventDefault(): void;
 }
 
-interface ActiveFileMentionMenu {
+interface ActiveMenu {
 	readonly query: string;
 	readonly clientRect: (() => DOMRect | null) | null | undefined;
 	readonly command: (item: FileReferenceItem) => void;
 }
 
-type ShowFileMentionMenuOptions = ActiveFileMentionMenu;
+type ShowMenuOptions = ActiveMenu;
 
-interface CreateFileMentionMenuControllerOptions {
+interface CreateMenuControllerOptions {
 	readonly getItems: () => readonly FileReferenceItem[];
-	readonly setSuggestionState: Dispatch<
-		SetStateAction<FileMentionSuggestionState>
-	>;
+	readonly setSuggestionState: Dispatch<SetStateAction<MentionSuggestionState>>;
 }
 
-export interface FileMentionMenuController {
-	readonly show: (options: ShowFileMentionMenuOptions) => void;
+export interface MenuController {
+	readonly show: (options: ShowMenuOptions) => void;
 	readonly exit: () => void;
 	readonly highlight: (index: number) => void;
-	readonly handleKeyDown: (event: FileMentionMenuKeyEvent) => boolean;
+	readonly handleKeyDown: (event: MenuKeyEvent) => boolean;
 }
 
 function clampIndex(index: number, length: number): number {
@@ -56,16 +54,16 @@ function wrapIndex(index: number, length: number): number {
 	return (index + length) % length;
 }
 
-export function createFileMentionMenuController({
+export function createMenuController({
 	getItems,
 	setSuggestionState,
-}: CreateFileMentionMenuControllerOptions): FileMentionMenuController {
-	let activeMenu: ActiveFileMentionMenu | undefined;
+}: CreateMenuControllerOptions): MenuController {
+	let activeMenu: ActiveMenu | undefined;
 	let highlightedIndex = 0;
 
 	const publish = () => {
 		if (!activeMenu) {
-			setSuggestionState(inactiveFileMentionSuggestion);
+			setSuggestionState(inactiveMentionSuggestion);
 			return;
 		}
 
@@ -81,7 +79,7 @@ export function createFileMentionMenuController({
 	const exit = () => {
 		activeMenu = undefined;
 		highlightedIndex = 0;
-		setSuggestionState(inactiveFileMentionSuggestion);
+		setSuggestionState(inactiveMentionSuggestion);
 	};
 
 	const commitItem = (item: FileReferenceItem) => {

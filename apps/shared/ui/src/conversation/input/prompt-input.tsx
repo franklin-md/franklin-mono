@@ -8,7 +8,7 @@ import { Button } from '../../primitives/button.js';
 import { TextareaGroup } from '../../components/textarea-group.js';
 
 import { ModelSelector } from './model-selector/selector.js';
-import { TiptapPromptText } from './tiptap-prompt/editor.js';
+import { EditorPromptText } from './editor-prompt/editor.js';
 import { ThinkingToggle } from './thinking-toggle.js';
 
 export interface PromptInputProps {
@@ -19,7 +19,7 @@ export function PromptInput({ additionalControls }: PromptInputProps) {
 	return (
 		<div className="px-4 pb-4 pt-2">
 			<TextareaGroup
-				textarea={<TiptapPromptText />}
+				textarea={<EditorPromptText />}
 				buttonBar={
 					<PromptControls>
 						<div className="flex w-full items-center justify-between gap-3">

@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-	createFileMentionMenuController,
-	type FileMentionSuggestionState,
-	inactiveFileMentionSuggestion,
-} from '../../../../src/conversation/input/tiptap-prompt/file-mention-menu-controller.js';
+	createMenuController,
+	type MentionSuggestionState,
+	inactiveMentionSuggestion,
+} from '../../../../../src/conversation/input/editor-prompt/mention/menu-controller.js';
 
 type TestItem = {
 	readonly path: string;
@@ -19,10 +19,10 @@ function createKeyEvent(key: string) {
 
 function createHarness(initialItems: readonly TestItem[] = createItems()) {
 	let items = initialItems;
-	let suggestion: FileMentionSuggestionState = inactiveFileMentionSuggestion;
-	const suggestionStates: FileMentionSuggestionState[] = [];
+	let suggestion: MentionSuggestionState = inactiveMentionSuggestion;
+	const suggestionStates: MentionSuggestionState[] = [];
 	const command = vi.fn();
-	const controller = createFileMentionMenuController({
+	const controller = createMenuController({
 		getItems: () => items,
 		setSuggestionState: (next) => {
 			suggestion = typeof next === 'function' ? next(suggestion) : next;
@@ -57,12 +57,12 @@ function createItems(): readonly TestItem[] {
 }
 
 function expectActiveSuggestion(
-	suggestion: FileMentionSuggestionState,
-): asserts suggestion is Extract<FileMentionSuggestionState, { active: true }> {
+	suggestion: MentionSuggestionState,
+): asserts suggestion is Extract<MentionSuggestionState, { active: true }> {
 	expect(suggestion.active).toBe(true);
 }
 
-describe('createFileMentionMenuController', () => {
+describe('createMenuController', () => {
 	it('starts with the first item highlighted when shown', () => {
 		const harness = createHarness();
 
