@@ -133,6 +133,9 @@ export class ObsidianFileCollection implements FileCollection {
 		const addedPaths = difference(nextPaths, this.indexedPaths);
 		this.indexedPaths = nextPaths;
 
+		// Full-snapshot reconciliation keeps folder rename/delete handling simple.
+		// If large vaults make this path hot, prefer a measured rebuild threshold
+		// over adding a more complex incremental index model preemptively.
 		if (removedPaths.length > 0) {
 			this.collection.remove(removedPaths);
 		}
