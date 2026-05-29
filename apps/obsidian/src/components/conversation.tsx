@@ -9,6 +9,7 @@ import {
 	PromptFooter,
 	PromptFooterControlGroup,
 	PromptFooterControls,
+	PromptHeader,
 	SharedPromptAgentControl,
 	ThinkingToggle,
 	ToolCardChrome,
@@ -19,6 +20,7 @@ import {
 	ObsidianText,
 	ObsidianThinking,
 } from './conversation-window/blocks.js';
+import { ViewingContextHeader } from './conversation-window/viewing-context-header.js';
 import { obsidianToolRegistry } from './tool-registry.js';
 
 const ToolUse = createToolUseBlock(obsidianToolRegistry, ToolCardChrome);
@@ -36,6 +38,9 @@ export function ConversationPanel() {
 			/>
 			<Prompt>
 				<PromptContainer>
+					<PromptHeader>
+						<ViewingContextHeader />
+					</PromptHeader>
 					<PromptEditor />
 					<PromptFooter>
 						<PromptFooterControls>

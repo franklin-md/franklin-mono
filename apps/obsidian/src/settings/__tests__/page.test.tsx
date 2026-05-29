@@ -148,13 +148,27 @@ describe('SettingsPage', () => {
 		);
 	});
 
+	it('renders settings under native setting group headings', () => {
+		const auth = createAuthStub();
+		const { container } = renderPage(auth);
+
+		const headings = Array.from(
+			container.querySelectorAll('.setting-item-heading .setting-item-name'),
+			(element) => element.textContent,
+		);
+
+		expect(headings).toEqual(['Credentials', 'Viewing context']);
+	});
+
 	it('renders ChatGPT as the first credential setting', () => {
 		const auth = createAuthStub();
 		const { container } = renderPage(auth);
 
-		expect(container.querySelector('.setting-item-name')?.textContent).toBe(
-			'ChatGPT',
-		);
+		expect(
+			container.querySelector(
+				'.setting-item:not(.setting-item-heading) .setting-item-name',
+			)?.textContent,
+		).toBe('ChatGPT');
 	});
 
 	it('links to OpenRouter API key settings', () => {

@@ -11,7 +11,7 @@ export function PromptContainer({
 }: PromptContainerProps) {
 	return (
 		<div className={cn('px-4 pb-4 pt-2', className)} {...props}>
-			<div className="flex flex-col gap-3 overflow-hidden rounded-xl bg-muted shadow-sm ring-1 ring-inset ring-input transition-colors focus-within:ring-input dark:bg-white/[0.08]">
+			<div className="flex flex-col gap-2 overflow-hidden rounded-xl bg-muted shadow-sm ring-1 ring-inset ring-input transition-colors focus-within:ring-input dark:bg-white/[0.08]">
 				{children}
 			</div>
 		</div>
