@@ -16,7 +16,11 @@ export function createPromptEditorExtensions({
 }: CreatePromptEditorExtensionsOptions) {
 	return [
 		Document,
-		Paragraph,
+		Paragraph.configure({
+			HTMLAttributes: {
+				class: 'm-0 min-h-6',
+			},
+		}),
 		Text,
 		// Shift + Enter does not submit/send
 		HardBreak.configure({ keepMarks: false }),

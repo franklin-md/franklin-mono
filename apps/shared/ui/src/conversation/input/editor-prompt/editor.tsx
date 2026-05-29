@@ -4,6 +4,13 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import { usePrompt } from '@franklin/react';
 
 import { cn } from '../../../lib/cn.js';
+import {
+	ScrollBar,
+	ScrollCorner,
+	ScrollRoot,
+	ScrollViewport,
+} from '../../../primitives/scroll-area.js';
+import { textInputSurfaceClassName } from '../../../primitives/textarea.js';
 
 import { createPromptEditorExtensions } from './extensions.js';
 import { MentionMenu } from './mention/menu.js';
@@ -14,12 +21,9 @@ import {
 import { useMentionItems } from './mention/search.js';
 import { createPromptDocument, getPromptText } from './prompt-document.js';
 
-// TODO: Can we avoid adding a className to the editor? Instead, could we just mount the old AutoGrowTextarea?
 const editorClassName = cn(
-	'min-h-12 max-h-60 overflow-y-auto bg-transparent px-4 pt-4 pb-0 text-sm leading-6 text-foreground outline-none',
-	'whitespace-pre-wrap break-words focus-visible:outline-none',
-	'[&_p]:m-0 [&_p]:min-h-6',
-	'[&_.mention-node]:rounded-md [&_.mention-node]:bg-background/85 [&_.mention-node]:ring-1 [&_.mention-node]:ring-inset [&_.mention-node]:ring-ring/60',
+	textInputSurfaceClassName,
+	'min-h-12 px-4 pt-4 pb-0 leading-6 outline-none',
 );
 
 export function EditorPromptText() {
@@ -99,7 +103,15 @@ export function EditorPromptText() {
 					Type a message...
 				</div>
 			) : null}
-			<EditorContent editor={editor} />
+			<ScrollRoot className="min-h-12 max-h-60 w-full rounded-[inherit]">
+				<ScrollViewport className="h-auto max-h-60">
+					<div className="w-full pr-4">
+						<EditorContent editor={editor} />
+					</div>
+				</ScrollViewport>
+				<ScrollBar />
+				<ScrollCorner />
+			</ScrollRoot>
 			<MentionMenu
 				suggestion={suggestion}
 				items={mentionItems}
