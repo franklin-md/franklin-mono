@@ -1,17 +1,23 @@
-export interface FileReferenceItem {
+export interface FileIndexItem<TMetadata = unknown> {
 	readonly path: string;
+	readonly metadata: TMetadata;
 }
 
 export interface FileSearchOptions {
 	readonly limit?: number;
 }
 
-export interface FileCollection {
+export type FileIndexSortFn<TMetadata = unknown> = (
+	left: FileIndexItem<TMetadata>,
+	right: FileIndexItem<TMetadata>,
+) => number;
+
+export interface FileIndex<TMetadata = unknown> {
 	search(
 		query: string,
 		options?: FileSearchOptions,
-	): readonly FileReferenceItem[];
-	upsert(items: readonly FileReferenceItem[]): void;
+	): readonly FileIndexItem<TMetadata>[];
+	upsert(items: readonly FileIndexItem<TMetadata>[]): void;
 	remove(paths: readonly string[]): void;
 	subscribe(listener: () => void): () => void;
 }

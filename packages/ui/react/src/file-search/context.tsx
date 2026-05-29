@@ -1,28 +1,28 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-import { FuseFileCollection } from './fuse-file-collection.js';
-import type { FileCollection } from './types.js';
+import { FuseFileIndex } from './fuse-file-index.js';
+import type { FileIndex } from './types.js';
 
-const FileCollectionContext = createContext<FileCollection | undefined>(
-	undefined,
-);
+const FileIndexContext = createContext<FileIndex | undefined>(undefined);
 
-export function FileCollectionProvider({
-	collection,
-	children,
-}: {
-	readonly collection: FileCollection;
+interface FileIndexProviderProps {
+	readonly fileIndex: FileIndex;
 	readonly children: ReactNode;
-}) {
+}
+
+export function FileIndexProvider({
+	fileIndex,
+	children,
+}: FileIndexProviderProps) {
 	return (
-		<FileCollectionContext.Provider value={collection}>
+		<FileIndexContext.Provider value={fileIndex}>
 			{children}
-		</FileCollectionContext.Provider>
+		</FileIndexContext.Provider>
 	);
 }
 
-export function useFileCollection(): FileCollection {
-	const provided = useContext(FileCollectionContext);
-	const [fallback] = useState<FileCollection>(() => new FuseFileCollection());
+export function useFileIndex(): FileIndex {
+	const provided = useContext(FileIndexContext);
+	const [fallback] = useState<FileIndex>(() => new FuseFileIndex());
 	return provided ?? fallback;
 }

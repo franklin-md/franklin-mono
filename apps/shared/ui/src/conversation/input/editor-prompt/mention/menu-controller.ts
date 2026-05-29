@@ -1,10 +1,10 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { FileReferenceItem } from '@franklin/react';
+import type { FileIndexItem } from '@franklin/react';
 
 type ShowMenuOptions = {
 	readonly query: string;
 	readonly anchorRect: DOMRect | undefined;
-	readonly command: (item: FileReferenceItem) => void;
+	readonly command: (item: FileIndexItem) => void;
 };
 
 export interface ActiveMentionSuggestionState extends ShowMenuOptions {
@@ -26,7 +26,7 @@ export interface MenuKeyEvent {
 }
 
 interface CreateMenuControllerOptions {
-	readonly getItems: () => readonly FileReferenceItem[];
+	readonly getItems: () => readonly FileIndexItem[];
 	readonly setSuggestionState: Dispatch<SetStateAction<MentionSuggestionState>>;
 }
 
@@ -79,7 +79,7 @@ export function createMenuController({
 		setSuggestionState(inactiveMentionSuggestion);
 	};
 
-	const commitItem = (item: FileReferenceItem) => {
+	const commitItem = (item: FileIndexItem) => {
 		if (!activeMenu) {
 			return;
 		}

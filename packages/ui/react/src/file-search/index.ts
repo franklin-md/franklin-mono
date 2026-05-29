@@ -1,8 +1,9 @@
-export { FileCollectionProvider, useFileCollection } from './context.js';
-export { FuseFileCollection } from './fuse-file-collection.js';
+export { FileIndexProvider, useFileIndex } from './context.js';
+export { FuseFileIndex } from './fuse-file-index.js';
 export type {
-	FileCollection,
-	FileReferenceItem,
+	FileIndex,
+	FileIndexItem,
+	FileIndexSortFn,
 	FileSearchOptions,
 } from './types.js';
 export { useFileSearch } from './use-file-search.js';

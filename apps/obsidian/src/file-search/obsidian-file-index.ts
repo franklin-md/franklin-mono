@@ -1,25 +1,35 @@
 import {
-	FuseFileCollection,
-	type FileCollection,
-	type FileReferenceItem,
+	FuseFileIndex,
+	type FileIndex,
+	type FileIndexItem,
+	type FileIndexSortFn,
 	type FileSearchOptions,
 } from '@franklin/react';
-import type { App, EventRef, TAbstractFile, Vault } from 'obsidian';
+import type { App, EventRef, TAbstractFile, TFile, Vault } from 'obsidian';
 
-function createPathSet(vault: Vault): Set<string> {
-	return new Set(vault.getFiles().map((file) => file.path));
+export interface ObsidianFileMetadata {
+	readonly mtime: number;
 }
 
-function toItems(paths: Iterable<string>): FileReferenceItem[] {
-	return Array.from(paths, (path) => ({ path }));
+type ObsidianFileIndexItem = FileIndexItem<ObsidianFileMetadata>;
+
+const sortByMtime: FileIndexSortFn<ObsidianFileMetadata> = (left, right) =>
+	right.metadata.mtime - left.metadata.mtime;
+
+function createItem(file: TFile): ObsidianFileIndexItem {
+	return { path: file.path, metadata: { mtime: file.stat.mtime } };
+}
+
+function createItemMap(vault: Vault): Map<string, ObsidianFileIndexItem> {
+	return new Map(vault.getFiles().map((file) => [file.path, createItem(file)]));
 }
 
 function difference(
-	source: ReadonlySet<string>,
-	against: ReadonlySet<string>,
+	source: ReadonlyMap<string, ObsidianFileIndexItem>,
+	against: ReadonlyMap<string, ObsidianFileIndexItem>,
 ): string[] {
 	const paths: string[] = [];
-	for (const path of source) {
+	for (const path of source.keys()) {
 		if (!against.has(path)) {
 			paths.push(path);
 		}
@@ -27,26 +37,41 @@ function difference(
 	return paths;
 }
 
-export interface ObsidianFileCollectionOptions {
+function changedItems(
+	source: ReadonlyMap<string, ObsidianFileIndexItem>,
+	against: ReadonlyMap<string, ObsidianFileIndexItem>,
+): ObsidianFileIndexItem[] {
+	const items: ObsidianFileIndexItem[] = [];
+	for (const [path, item] of source) {
+		if (against.get(path)?.metadata.mtime !== item.metadata.mtime) {
+			items.push(item);
+		}
+	}
+	return items;
+}
+
+export interface ObsidianFileIndexOptions {
 	readonly debounceMs?: number;
 }
 
 const DEFAULT_RECONCILE_DEBOUNCE_MS = 500;
 
-export class ObsidianFileCollection implements FileCollection {
-	private readonly collection: FileCollection;
+export class ObsidianFileIndex implements FileIndex<ObsidianFileMetadata> {
+	private readonly fileIndex: FileIndex<ObsidianFileMetadata>;
 	private readonly debounceMs: number;
 	private readonly eventRefs: EventRef[] = [];
 	private readonly vault: Vault;
 	private disposed = false;
-	private indexedPaths: Set<string>;
+	private indexedItems: Map<string, ObsidianFileIndexItem>;
 	private reconcileTimer: ReturnType<Window['setTimeout']> | undefined;
 
-	constructor(app: App, options: ObsidianFileCollectionOptions = {}) {
+	constructor(app: App, options: ObsidianFileIndexOptions = {}) {
 		this.vault = app.vault;
 		this.debounceMs = options.debounceMs ?? DEFAULT_RECONCILE_DEBOUNCE_MS;
-		this.indexedPaths = createPathSet(this.vault);
-		this.collection = new FuseFileCollection(toItems(this.indexedPaths));
+		this.indexedItems = createItemMap(this.vault);
+		this.fileIndex = new FuseFileIndex(Array.from(this.indexedItems.values()), {
+			sortFn: sortByMtime,
+		});
 
 		app.workspace.onLayoutReady(() => {
 			this.registerVaultEvents();
@@ -56,26 +81,26 @@ export class ObsidianFileCollection implements FileCollection {
 	search(
 		query: string,
 		options?: FileSearchOptions,
-	): readonly FileReferenceItem[] {
-		return this.collection.search(query, options);
+	): readonly ObsidianFileIndexItem[] {
+		return this.fileIndex.search(query, options);
 	}
 
-	upsert(items: readonly FileReferenceItem[]): void {
+	upsert(items: readonly ObsidianFileIndexItem[]): void {
 		for (const item of items) {
-			this.indexedPaths.add(item.path);
+			this.indexedItems.set(item.path, item);
 		}
-		this.collection.upsert(items);
+		this.fileIndex.upsert(items);
 	}
 
 	remove(paths: readonly string[]): void {
 		for (const path of paths) {
-			this.indexedPaths.delete(path);
+			this.indexedItems.delete(path);
 		}
-		this.collection.remove(paths);
+		this.fileIndex.remove(paths);
 	}
 
 	subscribe(listener: () => void): () => void {
-		return this.collection.subscribe(listener);
+		return this.fileIndex.subscribe(listener);
 	}
 
 	dispose(): void {
@@ -99,6 +124,7 @@ export class ObsidianFileCollection implements FileCollection {
 		this.eventRefs.push(
 			this.vault.on('create', this.scheduleReconcile),
 			this.vault.on('delete', this.scheduleReconcile),
+			this.vault.on('modify', this.scheduleReconcile),
 			this.vault.on('rename', this.scheduleReconcile),
 		);
 	}
@@ -128,19 +154,19 @@ export class ObsidianFileCollection implements FileCollection {
 			return;
 		}
 
-		const nextPaths = createPathSet(this.vault);
-		const removedPaths = difference(this.indexedPaths, nextPaths);
-		const addedPaths = difference(nextPaths, this.indexedPaths);
-		this.indexedPaths = nextPaths;
+		const nextItems = createItemMap(this.vault);
+		const removedPaths = difference(this.indexedItems, nextItems);
+		const changed = changedItems(nextItems, this.indexedItems);
+		this.indexedItems = nextItems;
 
 		// Full-snapshot reconciliation keeps folder rename/delete handling simple.
 		// If large vaults make this path hot, prefer a measured rebuild threshold
 		// over adding a more complex incremental index model preemptively.
 		if (removedPaths.length > 0) {
-			this.collection.remove(removedPaths);
+			this.fileIndex.remove(removedPaths);
 		}
-		if (addedPaths.length > 0) {
-			this.collection.upsert(toItems(addedPaths));
+		if (changed.length > 0) {
+			this.fileIndex.upsert(changed);
 		}
 	};
 }
