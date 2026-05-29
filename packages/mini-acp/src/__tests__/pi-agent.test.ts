@@ -209,6 +209,93 @@ describe('createPiAgent', () => {
 		]);
 	});
 
+	it('restores tool result names from the tracked Mini-ACP transcript', async () => {
+		const client = createPiAgent({
+			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
+				toolCallId: call.id,
+				content: [],
+			})),
+		});
+
+		await client.setContext({
+			messages: [
+				{
+					role: 'assistant',
+					content: [
+						{
+							type: 'toolCall',
+							id: 'call_read_file',
+							name: 'read_file',
+							arguments: { path: '[[MEMORY]]' },
+						},
+					],
+				},
+				{
+					role: 'assistant',
+					content: [
+						{
+							type: 'toolCall',
+							id: 'call_grep',
+							name: 'grep',
+							arguments: { pattern: 'blog' },
+						},
+					],
+				},
+				{
+					role: 'toolResult',
+					toolCallId: 'call_read_file',
+					content: [{ type: 'text', text: 'memory contents' }],
+				},
+				{
+					role: 'toolResult',
+					toolCallId: 'call_grep',
+					content: [{ type: 'text', text: 'grep results' }],
+				},
+				{
+					role: 'user',
+					content: [{ type: 'text', text: 'continue' }],
+				},
+			],
+		});
+
+		expect(agentInstances[0]?.state.messages).toEqual([
+			expect.objectContaining({
+				role: 'assistant',
+				content: [
+					expect.objectContaining({
+						type: 'toolCall',
+						id: 'call_read_file',
+						name: 'read_file',
+					}),
+				],
+			}),
+			expect.objectContaining({
+				role: 'assistant',
+				content: [
+					expect.objectContaining({
+						type: 'toolCall',
+						id: 'call_grep',
+						name: 'grep',
+					}),
+				],
+			}),
+			expect.objectContaining({
+				role: 'toolResult',
+				toolCallId: 'call_read_file',
+				toolName: 'read_file',
+			}),
+			expect.objectContaining({
+				role: 'toolResult',
+				toolCallId: 'call_grep',
+				toolName: 'grep',
+			}),
+			expect.objectContaining({
+				role: 'user',
+				content: [{ type: 'text', text: 'continue' }],
+			}),
+		]);
+	});
+
 	it('keeps context guarded after the consumer closes the stream before Pi settles', async () => {
 		let resolvePrompt: (() => void) | undefined;
 		promptImplementation = async (agent) => {
