@@ -54,6 +54,15 @@ export type {
 	TextReferenceSelector,
 } from './references/index.js';
 
+// Mention
+export {
+	MENTION_TRIGGER,
+	formatReferenceMention,
+	parseReferenceMention,
+	splitMentionSegments,
+} from './mention/index.js';
+export type { MentionSegment } from './mention/index.js';
+
 // Terminal
 export { bashExtension } from './terminal/index.js';
 

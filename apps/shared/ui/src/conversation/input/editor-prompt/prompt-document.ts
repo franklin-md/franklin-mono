@@ -1,6 +1,5 @@
 import type { Editor, JSONContent } from '@tiptap/core';
-
-import { splitFileReferenceSegments } from '../../file-reference/token.js';
+import { splitMentionSegments } from '@franklin/agent';
 
 import {
 	createMentionNodeContent,
@@ -13,12 +12,12 @@ function createTextContent(text: string): JSONContent | undefined {
 }
 
 function parsePromptLine(line: string): JSONContent[] | undefined {
-	return splitFileReferenceSegments(line)
+	return splitMentionSegments(line)
 		.map((segment) => {
 			switch (segment.type) {
 				// Requires Mention extension
 				case 'reference':
-					return createMentionNodeContent({ path: segment.token.path });
+					return createMentionNodeContent(segment.reference);
 				// Requires Text extension
 				case 'text':
 					return createTextContent(segment.text);

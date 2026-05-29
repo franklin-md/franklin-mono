@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { formatReferenceMention } from '@franklin/agent';
 import {
 	FileCollectionProvider,
 	FuseFileCollection,
@@ -137,7 +138,13 @@ type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
 
 export const StoredFileReference: Story = {
-	args: { initialInput: 'Read @{notes/daily/2026-05-28.md}' },
+	args: {
+		initialInput: `Read ${formatReferenceMention({
+			type: 'file',
+			locator: 'notes/daily/2026-05-28.md',
+			label: 'notes/daily/2026-05-28.md',
+		})}`,
+	},
 	play: async ({ canvasElement }) => {
 		await waitFor(async () => {
 			await expect(

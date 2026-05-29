@@ -7,9 +7,9 @@ import type { SuggestionProps } from '@tiptap/suggestion';
 import {
 	createMentionAttrs,
 	createMentionNodeContent,
-	MENTION_TRIGGER,
 	formatMentionText,
-	getMentionPath,
+	getMentionReference,
+	MENTION_TRIGGER,
 } from './node.js';
 import { MentionNodeView } from './node-view.js';
 import type { MenuController } from './menu-controller.js';
@@ -27,14 +27,15 @@ function replaceSuggestionWithMention(
 	range: Range,
 	attrs: MentionNodeAttrs,
 ): void {
-	const path = getMentionPath(attrs);
+	const reference = getMentionReference(attrs);
+	if (!reference) return;
 
 	editor
 		.chain()
 		.focus()
 		.insertContentAt(range, [
 			// Replace with Token
-			createMentionNodeContent({ path }),
+			createMentionNodeContent(reference),
 			// And add a space!
 			{ type: 'text', text: ' ' },
 		])
