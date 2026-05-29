@@ -12,7 +12,6 @@ describe('file mention node helpers', () => {
 	it('builds attrs and node content from one factory path', () => {
 		const item = { path: 'notes/deep work.md' };
 		const reference = {
-			type: 'file',
 			locator: 'notes/deep work.md',
 			label: 'notes/deep work.md',
 		};
@@ -33,8 +32,7 @@ describe('file mention node helpers', () => {
 	it('does not create mention node content for non-file references', () => {
 		expect(
 			createFileReferenceMentionNodeContent({
-				type: 'text',
-				locator: 'inline context',
+				locator: 'linear://issue/FRA-123',
 				label: 'Inline Context',
 			}),
 		).toBeUndefined();

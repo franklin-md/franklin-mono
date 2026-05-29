@@ -19,8 +19,6 @@ import { createPDFConverterResolver } from '../pdf/resolve-converter.js';
 import type { ReadPDFExtensionOptions, PDFPageRange } from '../pdf/types.js';
 import { hasBytesData } from './data.js';
 
-export const PDF_REFERENCE_TYPE = 'pdf';
-
 export type PdfReferenceSelector = {
 	readonly pages?: PdfPageRange;
 };
@@ -43,10 +41,7 @@ export function createPDFDocumentReferenceExtension({
 	const resolvePDFConverter = createPDFConverterResolver({ renderScreenshots });
 	const pdfDocumentReferenceHandler: ReferenceHandler<PDFReferenceRuntime> = {
 		test(reference) {
-			return (
-				reference.type === PDF_REFERENCE_TYPE ||
-				reference.data?.mime === 'application/pdf'
-			);
+			return reference.data?.mime === 'application/pdf';
 		},
 		async toContext(reference, _delegate, runtime) {
 			if (!hasBytesData(reference)) {

@@ -1,7 +1,6 @@
 import type { JSONContent, TextSerializer } from '@tiptap/core';
 import type { MentionNodeAttrs } from '@tiptap/extension-mention';
 import {
-	FILESYSTEM_FILE_REFERENCE_TYPE,
 	MENTION_TRIGGER,
 	formatReferenceMention,
 	parseReferenceMention,
@@ -57,7 +56,6 @@ export const mentionTextSerializer: TextSerializer = ({ node }) =>
 
 function createFileReference(item: FileReferenceItem): Reference {
 	return {
-		type: FILESYSTEM_FILE_REFERENCE_TYPE,
 		locator: item.path,
 		label: item.path,
 	};

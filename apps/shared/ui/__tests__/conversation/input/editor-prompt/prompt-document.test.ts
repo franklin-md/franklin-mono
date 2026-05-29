@@ -16,7 +16,6 @@ import {
 describe('createPromptDocument', () => {
 	it('parses canonical file reference tokens into mention nodes', () => {
 		const reference = {
-			type: 'file',
 			locator: 'notes/deep work.md',
 			label: 'notes/deep work.md',
 		};
@@ -49,8 +48,7 @@ describe('createPromptDocument', () => {
 
 	it('preserves non-file reference tokens as text', () => {
 		const reference = {
-			type: 'text',
-			locator: 'inline context',
+			locator: 'linear://issue/FRA-123',
 			label: 'Inline Context',
 		};
 		const mention = formatReferenceMention(reference);
@@ -73,7 +71,6 @@ describe('createPromptDocument', () => {
 describe('getPromptText', () => {
 	it('serializes mention nodes back to canonical file reference tokens', () => {
 		const reference = {
-			type: 'file',
 			locator: 'notes/deep work.md',
 			label: 'notes/deep work.md',
 		};

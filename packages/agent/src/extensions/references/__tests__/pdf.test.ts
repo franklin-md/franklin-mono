@@ -20,7 +20,6 @@ import {
 import { createRuntime } from '../../../testing/index.js';
 import type { PDFConverter, RenderPDFScreenshots } from '../../pdf/types.js';
 import {
-	FILESYSTEM_FILE_REFERENCE_TYPE,
 	createPDFDocumentReferenceExtension,
 	filesystemFileReferenceExtension,
 } from '../index.js';
@@ -160,7 +159,6 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 				selector: 'pages=2-4',
 				label: 'Paper',
@@ -190,7 +188,6 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 			});
 
@@ -217,7 +214,6 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 				selector: 'pages=2-15',
 			});
@@ -244,7 +240,6 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 				selector: 'pages=12-10',
 			});
@@ -274,7 +269,6 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 			});
 

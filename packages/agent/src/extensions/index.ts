@@ -37,10 +37,6 @@ export {
 
 // References
 export {
-	FILESYSTEM_FILE_REFERENCE_TYPE,
-	IMAGE_REFERENCE_TYPE,
-	PDF_REFERENCE_TYPE,
-	TEXT_REFERENCE_TYPE,
 	filesystemFileReferenceExtension,
 	createPDFDocumentReferenceExtension,
 	referenceHandlerExtension,

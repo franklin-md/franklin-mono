@@ -2,7 +2,7 @@
 
 ### **Problem Statement**:
 
-> How do create a Reference -> Agent Context system that is extensible in the types and handling of resources?
+> How do create a Reference -> Agent Context system that is extensible in the handling of resources?
 
 Once created, this is useful because it allows for:
 
@@ -12,6 +12,7 @@ Once created, this is useful because it allows for:
 ### **Design**:
 
 - `Reference` stores `locator` (where the resource is) and `selector` (what parts of the resource)
+- A reference's context identity is `locator + selector`. `label` is display metadata for UI and rendered provenance, so it must not affect cache keys, deduplication, or whether two references point at the same context.
 - `ReferenceHandler` specifies:
   - `test`: Whether it can process this particular `Reference`
   - `toContext`: How it converts `Resource` into the agent context (i.e. `UserContent`)

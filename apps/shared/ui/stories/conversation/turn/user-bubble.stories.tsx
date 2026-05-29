@@ -39,11 +39,9 @@ export const WithMarkdownAndFileReference: Story = {
 				{
 					type: 'text',
 					text: `Read ~~the old draft~~ ${formatReferenceMention({
-						type: 'file',
 						locator: 'notes/deep work.md',
 						label: 'notes/deep work.md',
 					})} and compare it with ${formatReferenceMention({
-						type: 'file',
 						locator: 'src/conversation/turn/user-bubble.tsx',
 						label: 'src/conversation/turn/user-bubble.tsx',
 					})}.`,

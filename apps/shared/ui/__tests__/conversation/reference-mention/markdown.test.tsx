@@ -22,7 +22,6 @@ describe('referenceMentionMarkdown', () => {
 
 	it('renders canonical file reference tokens as file badges', () => {
 		const mention = formatReferenceMention({
-			type: 'file',
 			locator: 'notes/deep work.md',
 			label: 'notes/deep work.md',
 		});
@@ -38,7 +37,6 @@ describe('referenceMentionMarkdown', () => {
 
 	it('passes reference payloads to rendered custom elements', () => {
 		const reference = {
-			type: 'file',
 			locator: 'notes/deep work.md',
 			label: 'Deep Work',
 		};
@@ -64,8 +62,7 @@ describe('referenceMentionMarkdown', () => {
 
 	it('preserves non-file reference mentions as text', () => {
 		const mention = formatReferenceMention({
-			type: 'text',
-			locator: 'inline context',
+			locator: 'linear://issue/FRA-123',
 			label: 'Inline Context',
 		});
 		const { container } = render(
@@ -78,7 +75,6 @@ describe('referenceMentionMarkdown', () => {
 
 	it('preserves normal markdown parsing around file references', () => {
 		const mention = formatReferenceMention({
-			type: 'file',
 			locator: 'notes/deep work.md',
 			label: 'notes/deep work.md',
 		});

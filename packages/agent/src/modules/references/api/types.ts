@@ -6,14 +6,6 @@ type MaybePromise<T> = T | Promise<T>;
 
 export type Reference = {
 	/**
-	 * Provider-owned reference kind or intended consumption mode.
-	 *
-	 * This is not a MIME type. It lets capture/binding code say whether a
-	 * locator should be treated as a filesystem file, text document, PDF, URL,
-	 * or another provider-specific resource shape.
-	 */
-	readonly type?: string;
-	/**
 	 * Stable origin identity for the referenced resource.
 	 *
 	 * Providers may resolve this to local paths, downloaded bytes, or cached

@@ -21,8 +21,6 @@ import { createReferencesModule } from '../../../modules/references/module.js';
 import type { PDFConverter } from '../../pdf/types.js';
 import type { AuthManager } from '../../../auth/manager.js';
 import {
-	FILESYSTEM_FILE_REFERENCE_TYPE,
-	TEXT_REFERENCE_TYPE,
 	createPDFDocumentReferenceExtension,
 	filesystemFileReferenceExtension,
 	textDocumentReferenceExtension,
@@ -98,27 +96,12 @@ async function createReferenceRuntime(
 }
 
 describe('built-in reference extensions', () => {
-	it('materializes text references as model text', async () => {
-		const { runtime } = await createReferenceRuntime();
-
-		const context = await runtime.references.toContext({
-			type: TEXT_REFERENCE_TYPE,
-			locator: 'hello',
-			label: 'Note',
-		});
-
-		expect(context.content).toEqual([
-			{ type: 'text', text: 'Reference: Note\n\nhello' },
-		]);
-	});
-
 	it('materializes filesystem text files through text', async () => {
 		const filesystem = new MemoryFilesystem();
 		filesystem.seed('/project/note.txt' as AbsolutePath, 'from disk');
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/note.txt',
 			label: 'Disk note',
 		});
@@ -149,7 +132,6 @@ describe('built-in reference extensions', () => {
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/paper.pdf',
 			selector: 'page=10',
 			label: 'Paper',
@@ -173,7 +155,6 @@ describe('built-in reference extensions', () => {
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/paper.pdf',
 			selector: 'pages=10-12',
 			label: 'Paper',
@@ -203,7 +184,6 @@ describe('built-in reference extensions', () => {
 		);
 
 		const context = await runtime.references.toContext({
-			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: 'paper.pdf',
 		});
 
@@ -225,7 +205,6 @@ describe('built-in reference extensions', () => {
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/notes',
 		});
 

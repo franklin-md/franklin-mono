@@ -28,7 +28,6 @@ describe('UserBubble', () => {
 
 	it('renders canonical file reference tokens as file badges', () => {
 		const mention = formatReferenceMention({
-			type: 'file',
 			locator: 'notes/deep work.md',
 			label: 'notes/deep work.md',
 		});

@@ -140,7 +140,6 @@ export const Empty: Story = {};
 export const StoredFileReference: Story = {
 	args: {
 		initialInput: `Read ${formatReferenceMention({
-			type: 'file',
 			locator: 'notes/daily/2026-05-28.md',
 			label: 'notes/daily/2026-05-28.md',
 		})}`,

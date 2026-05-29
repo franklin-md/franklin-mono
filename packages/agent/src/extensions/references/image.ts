@@ -6,15 +6,12 @@ import { defineExtension } from '../../modules/state/index.js';
 import { isSupportedImageType } from '../filesystem/common/supported.js';
 import { hasBytesData } from './data.js';
 
-export const IMAGE_REFERENCE_TYPE = 'image';
-
 const imageDocumentReferenceHandler: ReferenceHandler = {
 	test(reference) {
 		return (
-			reference.type === IMAGE_REFERENCE_TYPE ||
-			(hasBytesData(reference) &&
-				reference.data.mime !== undefined &&
-				isSupportedImageType(reference.data.mime))
+			hasBytesData(reference) &&
+			reference.data.mime !== undefined &&
+			isSupportedImageType(reference.data.mime)
 		);
 	},
 	toContext(reference) {
