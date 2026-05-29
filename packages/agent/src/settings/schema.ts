@@ -15,11 +15,16 @@ const ThinkingLevel = z.enum([
 	'xhigh',
 ]);
 
+// TODO: App-specific settings should move out of @franklin/agent. The agent
+// package currently owns this schema because FranklinApp owns persistence, but
+// host defaults such as Obsidian viewing-context behavior should eventually live
+// in app-owned configuration.
 // Defaults live inside the schema so minor evolution (adding an optional
 // field, dropping a retired one) stays a non-event: zod fills missing
 // fields during decode, unknown fields drop silently. Version bumps are
 // reserved for structural changes that need a real migration.
 const AppSettingsV1 = z.object({
+	shareViewedReferencesByDefault: z.boolean().default(true),
 	defaultLLMConfig: z
 		.object({
 			provider: z.string().default('openai-codex'),

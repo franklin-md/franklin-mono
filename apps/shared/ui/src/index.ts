@@ -45,7 +45,9 @@ export {
 	DialogTitle,
 	DialogTrigger,
 } from './primitives/dialog.js';
+export { Checkbox } from './primitives/checkbox.js';
 export { Input } from './primitives/input.js';
+export { Label, labelVariants } from './primitives/label.js';
 export {
 	Popover,
 	PopoverContent,
