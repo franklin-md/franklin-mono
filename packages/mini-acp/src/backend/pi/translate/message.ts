@@ -87,11 +87,14 @@ function toPiAssistantMessage(msg: AssistantMessage): PiAssistantMessage {
 	};
 }
 
-function toPiToolResultMessage(msg: ToolResultMessage): PiToolResultMessage {
+function toPiToolResultMessage(
+	msg: ToolResultMessage,
+	toolName = '',
+): PiToolResultMessage {
 	return {
 		role: 'toolResult',
 		toolCallId: msg.toolCallId,
-		toolName: '',
+		toolName,
 		content: msg.content.map(toPiToolResultContent),
 		isError: false,
 		timestamp: Date.now(),
@@ -107,4 +110,28 @@ export function toPiMessage(msg: Message): PiMessage {
 		case 'toolResult':
 			return toPiToolResultMessage(msg);
 	}
+}
+
+export function toPiMessages(messages: Message[]): PiMessage[] {
+	const toolNames = collectToolNames(messages);
+	return messages.map((message) => {
+		if (message.role !== 'toolResult') return toPiMessage(message);
+		return toPiToolResultMessage(
+			message,
+			toolNames.get(message.toolCallId) ?? '',
+		);
+	});
+}
+
+function collectToolNames(messages: Message[]): Map<string, string> {
+	const toolNames = new Map<string, string>();
+	for (const message of messages) {
+		if (message.role !== 'assistant') continue;
+		for (const content of message.content) {
+			if (content.type === 'toolCall') {
+				toolNames.set(content.id, content.name);
+			}
+		}
+	}
+	return toolNames;
 }

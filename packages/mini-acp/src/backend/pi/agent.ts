@@ -16,9 +16,9 @@ import { resolveConfig } from './resolve-config.js';
 import {
 	bridgeTool,
 	fromAgentEvent,
-	toPiMessage,
 	toPiUserMessage,
 } from './translate/index.js';
+import { toPiMessages } from './translate/message.js';
 
 export type CreatePiAgentOptions = {
 	/** Custom stream function, injected by tests to avoid real provider calls. */
@@ -172,7 +172,7 @@ class PiMuAgent implements MuClient {
 			this.agent.state.systemPrompt = patch.systemPrompt;
 		}
 		if (patch.messages !== undefined) {
-			this.agent.state.messages = patch.messages.map(toPiMessage);
+			this.agent.state.messages = toPiMessages(patch.messages);
 		}
 		if (patch.tools !== undefined) {
 			this.agent.state.tools = this.createPiTools(patch.tools);
