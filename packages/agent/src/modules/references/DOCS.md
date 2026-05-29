@@ -52,6 +52,7 @@ Once created, this is useful because it allows for:
 
 - **Materialization result shape**:
   - TODO(FRA-343): Define a richer pipeline result than `ReferenceContext` before tightening `read_file` edit authorization. The final materialized view needs to distinguish actual resource content from diagnostic guidance such as "no lines selected" so read tools can decide whether the view is non-empty and edit-authorizing.
+    - This should also revisit whether the pipeline should collapse `test` and `toContext` into a decline-capable `toContext` chain. Returning "not handled" from `toContext` would keep path/resource probing next to materialization and remove duplicated invariants between `test` predicates and handler bodies.
   - TODO(FRA-345): Revisit rendered provenance. Forcing providers to prepend labels such as `Reference: ...` may be the wrong layer; provenance may belong in structured metadata that the final materializer/tool renderer chooses to include.
 
 ## Open Questions

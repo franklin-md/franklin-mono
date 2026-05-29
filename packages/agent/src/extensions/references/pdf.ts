@@ -17,7 +17,7 @@ import {
 import { convertPDF } from '../pdf/convert.js';
 import { createPDFConverterResolver } from '../pdf/resolve-converter.js';
 import type { ReadPDFExtensionOptions, PDFPageRange } from '../pdf/types.js';
-import { hasBytesData } from './data.js';
+import { assertBytesData } from './data.js';
 
 export type PdfReferenceSelector = {
 	readonly pages?: PdfPageRange;
@@ -44,19 +44,7 @@ export function createPDFDocumentReferenceExtension({
 			return reference.data?.mime === 'application/pdf';
 		},
 		async toContext(reference, _delegate, runtime) {
-			if (!hasBytesData(reference)) {
-				const label = referenceLabel(reference);
-				const page = pageSuffix(reference.selector);
-				return {
-					content: [
-						{
-							type: 'text',
-							text: `PDF reference unavailable: ${label}${page}. PDF bytes are required for extraction.`,
-						},
-					],
-					isError: true,
-				};
-			}
+			assertBytesData(reference);
 
 			const selection = selectPDFPages(reference.selector);
 			if (selection.issue) {
@@ -112,13 +100,6 @@ function formatReferenceText(
 ): string {
 	const header = `Reference: ${referenceLabel(reference)}`;
 	return note ? `${header}\n\n${note}` : header;
-}
-
-function pageSuffix(selector: string | undefined): string {
-	const pages = parsePdfReferenceSelector(selector).pages;
-	if (!pages) return '';
-	if (pages.start === pages.end) return ` page ${pages.start}`;
-	return ` pages ${pages.start}-${pages.end}`;
 }
 
 export function parsePdfReferenceSelector(

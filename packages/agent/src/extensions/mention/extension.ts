@@ -4,7 +4,7 @@ import type {
 	Reference,
 	ReferencesModule,
 } from '../../modules/references/index.js';
-import { referenceIdentityKey } from '../../modules/references/index.js';
+import { referenceKey } from '../../modules/references/index.js';
 import { defineExtension } from '../../modules/state/index.js';
 import { splitMentionSegments } from './embedding.js';
 
@@ -29,7 +29,7 @@ function uniquePromptReferences(content: readonly UserContent[]): Reference[] {
 		if (block.type !== 'text') continue;
 		for (const segment of splitMentionSegments(block.text)) {
 			if (segment.type !== 'reference') continue;
-			const key = referenceIdentityKey(segment.reference);
+			const key = referenceKey(segment.reference);
 			if (!references.has(key)) {
 				references.set(key, segment.reference);
 			}

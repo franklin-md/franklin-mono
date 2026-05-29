@@ -51,7 +51,7 @@ describe('createReferencesModule', () => {
 			content: [
 				{
 					type: 'text',
-					text: 'Reference unavailable: No reference handler matched "missing.reference"',
+					text: 'Reference unavailable: No reference handler matched "l17:missing.reference|u0:"',
 				},
 			],
 			isError: true,
@@ -124,7 +124,7 @@ describe('createReferencesModule', () => {
 			content: [
 				{
 					type: 'text',
-					text: 'Reference unavailable: Reference handler for "failing.document" failed: boom',
+					text: 'Reference unavailable: Reference handler for "l16:failing.document|u0:" failed: boom',
 				},
 			],
 			isError: true,
