@@ -1,9 +1,13 @@
-import { splitFileReferenceSegments } from './token.js';
+import {
+	formatReferenceMention,
+	splitMentionSegments,
+	type Reference,
+} from '@franklin/agent';
 
 // TODO: This has an annoying amount of similarity with another remark plugin in this repo, we might look to create utilities out of their overlap
 
 export const FILE_REFERENCE_ELEMENT_NAME = 'file-reference';
-export const FILE_REFERENCE_PATH_ATTRIBUTE = 'path';
+export const FILE_REFERENCE_ATTRIBUTE = 'reference';
 
 interface ParentNode {
 	children: MarkdownNode[];
@@ -40,31 +44,35 @@ function createTextNode(value: string): TextNode {
 	return { type: 'text', value };
 }
 
-function createFileReferenceNode(path: string): MarkdownNode {
+function createFileReferenceNode(reference: Reference): MarkdownNode {
+	const text = reference.label ?? reference.locator;
 	return {
 		type: 'customElement',
 		data: {
 			hName: FILE_REFERENCE_ELEMENT_NAME,
 			hProperties: {
-				[FILE_REFERENCE_PATH_ATTRIBUTE]: path,
+				[FILE_REFERENCE_ATTRIBUTE]: formatReferenceMention(reference),
 			},
 		},
-		children: [{ type: 'text', value: path }],
+		children: [{ type: 'text', value: text }],
 	};
 }
 
 function splitFileReferenceTextNode(node: TextNode): MarkdownNode[] {
-	const segments = splitFileReferenceSegments(node.value);
+	const segments = splitMentionSegments(node.value);
 	const hasReference = segments.some((segment) => segment.type === 'reference');
 	if (!hasReference) {
 		return [node];
 	}
 
-	return segments.map((segment) =>
-		segment.type === 'text'
-			? createTextNode(segment.text)
-			: createFileReferenceNode(segment.token.path),
-	);
+	return segments.map((segment) => {
+		switch (segment.type) {
+			case 'text':
+				return createTextNode(segment.text);
+			case 'reference':
+				return createFileReferenceNode(segment.reference);
+		}
+	});
 }
 
 function transformNode(node: unknown): void {

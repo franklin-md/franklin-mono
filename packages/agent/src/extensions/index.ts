@@ -58,6 +58,7 @@ export type {
 export {
 	MENTION_TRIGGER,
 	formatReferenceMention,
+	mentionExtension,
 	parseReferenceMention,
 	splitMentionSegments,
 } from './mention/index.js';
