@@ -35,6 +35,25 @@ export {
 	type ReadPDFExtensionOptions,
 } from './pdf/index.js';
 
+// References
+export {
+	FILESYSTEM_FILE_REFERENCE_TYPE,
+	IMAGE_REFERENCE_TYPE,
+	PDF_REFERENCE_TYPE,
+	TEXT_REFERENCE_TYPE,
+	filesystemFileReferenceExtension,
+	createPDFDocumentReferenceExtension,
+	referenceHandlerExtension,
+	imageDocumentReferenceExtension,
+	referenceReadExtension,
+	referenceReadFileSpec,
+	textDocumentReferenceExtension,
+} from './references/index.js';
+export type {
+	TextLineRange,
+	TextReferenceSelector,
+} from './references/index.js';
+
 // Terminal
 export { bashExtension } from './terminal/index.js';
 

@@ -26,14 +26,14 @@ vi.mock('file-type', () => ({
 	})),
 }));
 
-vi.mock('../free.js', () => ({
+vi.mock('../providers/free.js', () => ({
 	FreePDFConverter: vi.fn(function (options) {
 		pdfMocks.freeConstructor(options);
 		return { convertPDF: pdfMocks.freeConvertPDF };
 	}),
 }));
 
-vi.mock('../mistral.js', () => ({
+vi.mock('../providers/mistral.js', () => ({
 	MistralPDFConverter: vi.fn(function (options) {
 		pdfMocks.mistralConstructor(options);
 		return { convertPDF: pdfMocks.mistralConvertPDF };

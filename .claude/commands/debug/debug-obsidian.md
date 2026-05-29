@@ -9,9 +9,7 @@ Read [debug.md](./debug.md) first. This file is only the Obsidian-specific adden
 
 ## Live App Workflow
 
-If debugging a live Obsidian desktop plugin, prefer the official `obsidian` CLI
-over manual Electron DevTools. It connects to the running app and is suitable
-for agent-driven debugging.
+If debugging a live Obsidian desktop plugin, prefer the official `obsidian` CLI over manual Electron DevTools. It connects to the running app and is suitable for agent-driven debugging.
 
 Verified useful commands:
 

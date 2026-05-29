@@ -294,8 +294,7 @@ Added in this branch. Informational — verify this is intentional or create a t
 + export function createSession(config: SessionConfig, opts?: SessionOpts): Session
 ```
 
-Called by 4 files: `app/main.ts:12`, `test/session.test.ts:8`, ...
-New optional parameter — non-breaking but consumers should be aware.
+Called by 4 files: `app/main.ts:12`, `test/session.test.ts:8`, ... New optional parameter — non-breaking but consumers should be aware.
 
 ```
 

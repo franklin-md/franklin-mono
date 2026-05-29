@@ -50,7 +50,7 @@ function mockEnvironment(file: Uint8Array): ReconfigurableEnvironment {
 }
 
 describe('readExtension', () => {
-	it('asks callers to use read_pdf for PDF files', async () => {
+	it('reports PDFs as unsupported', async () => {
 		const pdf = new TextEncoder().encode('%PDF-1.7\n');
 		const env = mockEnvironment(pdf);
 		const compiled = await compileCoreWithStoreAndEnv((api) => {
@@ -78,7 +78,7 @@ describe('readExtension', () => {
 			content: [
 				{
 					type: 'text',
-					text: 'PDF files must be read with the read_pdf tool.',
+					text: 'PDF files are not supported by this reader.',
 				},
 			],
 			isError: true,

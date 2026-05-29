@@ -34,14 +34,14 @@ Execute the next step in the current plan. The plan lives in the conversation—
 
 **Choose test granularity based on the change:**
 
-| Change Scope            | Test Approach                                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------------------------ |
-| Small/isolated change   | Unit test(s) covering the specific behavior                                                            |
-| Bug fix                 | Test that reproduces the bug first                                                                     |
-| New utility/function    | Unit tests with edge cases                                                                             |
-| New API endpoint        | Integration test hitting the endpoint                                                                  |
+| Change Scope | Test Approach |
+| --- | --- |
+| Small/isolated change | Unit test(s) covering the specific behavior |
+| Bug fix | Test that reproduces the bug first |
+| New utility/function | Unit tests with edge cases |
+| New API endpoint | Integration test hitting the endpoint |
 | Component in a workflow | **Check existing integration tests**—add coverage for new properties/behaviors rather than duplicating |
-| Cross-component change  | Extend existing integration tests where possible                                                       |
+| Cross-component change | Extend existing integration tests where possible |
 
 **Key insight:** For components that participate in larger workflows, don't just write isolated unit tests—find the existing integration tests and see if there's a new property or behavior that should be verified there.
 
@@ -126,9 +126,9 @@ If you write implementation code before the test, delete it and start over.
 
 ## When Stuck
 
-| Problem                      | Solution                                                            |
-| ---------------------------- | ------------------------------------------------------------------- |
+| Problem | Solution |
+| --- | --- |
 | Can't figure out how to test | Describe the desired API first, write the assertion, work backwards |
-| Test too complicated         | The design is too complicated—simplify the interface                |
-| Need to mock everything      | Code is too coupled—consider dependency injection                   |
-| Existing code has no tests   | Add tests for the existing behavior before changing it              |
+| Test too complicated | The design is too complicated—simplify the interface |
+| Need to mock everything | Code is too coupled—consider dependency injection |
+| Existing code has no tests | Add tests for the existing behavior before changing it |
