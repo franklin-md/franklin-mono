@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import type { FileReferenceItem } from '@franklin/react';
+import type { FileIndexItem } from '@franklin/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 
@@ -10,9 +10,9 @@ import {
 	type MentionSuggestionState,
 } from '../../../src/conversation/input/editor-prompt/mention/menu-controller.js';
 
-const items: FileReferenceItem[] = [
-	{ path: 'notes/alpha.md' },
-	{ path: 'notes/beta.md' },
+const items: FileIndexItem[] = [
+	{ path: 'notes/alpha.md', metadata: undefined },
+	{ path: 'notes/beta.md', metadata: undefined },
 ];
 
 function createAnchorRect(): DOMRect {

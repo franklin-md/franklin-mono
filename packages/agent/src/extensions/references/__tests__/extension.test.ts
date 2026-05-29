@@ -106,9 +106,10 @@ describe('built-in reference extensions', () => {
 			label: 'Disk note',
 		});
 
-		expect(context.content).toEqual([
-			{ type: 'text', text: 'Reference: Disk note\n\nfrom disk' },
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference: Disk note\n\nfrom disk',
+		});
 	});
 
 	it('allows untyped file references to enter the filesystem provider chain', async () => {
@@ -121,9 +122,10 @@ describe('built-in reference extensions', () => {
 			label: 'Disk note',
 		});
 
-		expect(context.content).toEqual([
-			{ type: 'text', text: 'Reference: Disk note\n\nfrom disk' },
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference: Disk note\n\nfrom disk',
+		});
 	});
 
 	it('materializes filesystem PDF files through the PDF reference handler', async () => {
@@ -137,16 +139,10 @@ describe('built-in reference extensions', () => {
 			label: 'Paper',
 		});
 
-		expect(context.content).toEqual([
-			{
-				type: 'text',
-				text: 'Reference: Paper',
-			},
-			{
-				type: 'text',
-				text: 'converted pdf',
-			},
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference: Paper\n\nconverted pdf',
+		});
 	});
 
 	it('passes PDF page ranges through the PDF reference handler', async () => {
@@ -160,16 +156,10 @@ describe('built-in reference extensions', () => {
 			label: 'Paper',
 		});
 
-		expect(context.content).toEqual([
-			{
-				type: 'text',
-				text: 'Reference: Paper',
-			},
-			{
-				type: 'text',
-				text: 'converted pdf',
-			},
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference: Paper\n\nconverted pdf',
+		});
 		expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(
 			expect.any(Uint8Array),
 			{ pages: { startPage: 10, endPage: 12 } },
@@ -187,16 +177,10 @@ describe('built-in reference extensions', () => {
 			locator: 'paper.pdf',
 		});
 
-		expect(context.content).toEqual([
-			{
-				type: 'text',
-				text: 'Reference: paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
-			},
-			{
-				type: 'text',
-				text: 'converted pdf',
-			},
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference: paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.\n\nconverted pdf',
+		});
 	});
 
 	it('returns unavailable content for directories', async () => {
@@ -208,12 +192,10 @@ describe('built-in reference extensions', () => {
 			locator: '/project/notes',
 		});
 
-		expect(context.content).toEqual([
-			{
-				type: 'text',
-				text: 'Reference unavailable: Reference path is not a file: /project/notes',
-			},
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference unavailable: Reference path is not a file: /project/notes',
+		});
 		expect(context.isError).toBe(true);
 	});
 });

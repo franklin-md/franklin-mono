@@ -68,7 +68,7 @@ function normalizeContext(context: ReferenceContext): ReferenceContext {
 
 function referenceUnavailable(message: string): ReferenceContext {
 	return {
-		content: [{ type: 'text', text: `Reference unavailable: ${message}` }],
+		content: { type: 'text', text: `Reference unavailable: ${message}` },
 		isError: true,
 	};
 }

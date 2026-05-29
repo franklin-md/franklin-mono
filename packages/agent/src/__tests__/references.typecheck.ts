@@ -6,7 +6,7 @@ const _referenceOnlyExtension = referenceHandlerExtension({
 		return reference.locator === 'text';
 	},
 	toContext() {
-		return { content: [] };
+		return { content: { type: 'text', text: 'context' } };
 	},
 });
 void _referenceOnlyExtension;
@@ -18,7 +18,7 @@ _api.registerReferenceHandler({
 	},
 	toContext(_reference, delegate) {
 		void delegate({ locator: 'nested' });
-		return { content: [] };
+		return { content: { type: 'text', text: 'context' } };
 	},
 });
 

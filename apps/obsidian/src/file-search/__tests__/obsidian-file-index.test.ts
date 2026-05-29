@@ -9,7 +9,7 @@ import type {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { makeFile } from '../../platform/filesystem/test-helpers.js';
-import { ObsidianFileCollection } from '../collection.js';
+import { ObsidianFileIndex } from '../obsidian-file-index.js';
 
 type VaultEventName = 'create' | 'delete' | 'rename';
 
@@ -36,11 +36,11 @@ function makeFolder(path: string): TFolder {
 }
 
 function pathsForQuery(app: App, query: string): string[] {
-	const collection = new ObsidianFileCollection(app);
+	const fileIndex = new ObsidianFileIndex(app);
 	try {
-		return collection.search(query).map((item) => item.path);
+		return fileIndex.search(query).map((item) => item.path);
 	} finally {
-		collection.dispose();
+		fileIndex.dispose();
 	}
 }
 
@@ -127,7 +127,7 @@ afterEach(() => {
 	vi.useRealTimers();
 });
 
-describe('ObsidianFileCollection', () => {
+describe('ObsidianFileIndex', () => {
 	it('snapshots all vault files, not only Markdown files', () => {
 		installActiveWindow();
 		const { app } = createMockObsidianApp([
@@ -148,14 +148,14 @@ describe('ObsidianFileCollection', () => {
 			{ layoutReady: false },
 		);
 
-		const collection = new ObsidianFileCollection(app);
+		const fileIndex = new ObsidianFileIndex(app);
 
 		expect(vault.on).not.toHaveBeenCalled();
 
 		emitLayoutReady();
 
 		expect(vault.on).toHaveBeenCalledTimes(3);
-		collection.dispose();
+		fileIndex.dispose();
 	});
 
 	it('coalesces startup create event floods without notifying for unchanged paths', () => {
@@ -163,9 +163,9 @@ describe('ObsidianFileCollection', () => {
 		vi.useFakeTimers();
 		const notesFile = makeFile('notes/today.md');
 		const { app, emitCreate } = createMockObsidianApp([notesFile]);
-		const collection = new ObsidianFileCollection(app);
+		const fileIndex = new ObsidianFileIndex(app);
 		const listener = vi.fn();
-		collection.subscribe(listener);
+		fileIndex.subscribe(listener);
 
 		emitCreate(notesFile);
 		emitCreate(notesFile);
@@ -177,7 +177,7 @@ describe('ObsidianFileCollection', () => {
 		vi.advanceTimersByTime(1);
 
 		expect(listener).not.toHaveBeenCalled();
-		expect(collection.search('today').map((item) => item.path)).toEqual([
+		expect(fileIndex.search('today').map((item) => item.path)).toEqual([
 			'notes/today.md',
 		]);
 	});
@@ -188,16 +188,16 @@ describe('ObsidianFileCollection', () => {
 		const notesFile = makeFile('notes/today.md');
 		const diagramFile = makeFile('assets/diagram.png');
 		const { app, emitCreate, setFiles } = createMockObsidianApp([notesFile]);
-		const collection = new ObsidianFileCollection(app);
+		const fileIndex = new ObsidianFileIndex(app);
 
 		setFiles([notesFile, diagramFile]);
 		emitCreate(diagramFile);
 
-		expect(collection.search('diagram')).toEqual([]);
+		expect(fileIndex.search('diagram')).toEqual([]);
 
 		vi.advanceTimersByTime(500);
 
-		expect(collection.search('diagram').map((item) => item.path)).toEqual([
+		expect(fileIndex.search('diagram').map((item) => item.path)).toEqual([
 			'assets/diagram.png',
 		]);
 	});
@@ -211,19 +211,19 @@ describe('ObsidianFileCollection', () => {
 			notesFile,
 			diagramFile,
 		]);
-		const collection = new ObsidianFileCollection(app);
+		const fileIndex = new ObsidianFileIndex(app);
 
 		setFiles([diagramFile]);
 		emitDelete(notesFile);
 
-		expect(collection.search('today').map((item) => item.path)).toEqual([
+		expect(fileIndex.search('today').map((item) => item.path)).toEqual([
 			'notes/today.md',
 		]);
 
 		vi.advanceTimersByTime(500);
 
-		expect(collection.search('today')).toEqual([]);
-		expect(collection.search('diagram').map((item) => item.path)).toEqual([
+		expect(fileIndex.search('today')).toEqual([]);
+		expect(fileIndex.search('diagram').map((item) => item.path)).toEqual([
 			'assets/diagram.png',
 		]);
 	});
@@ -234,19 +234,19 @@ describe('ObsidianFileCollection', () => {
 		const oldFile = makeFile('notes/draft.md');
 		const renamedFile = makeFile('notes/final.md');
 		const { app, emitRename, setFiles } = createMockObsidianApp([oldFile]);
-		const collection = new ObsidianFileCollection(app);
+		const fileIndex = new ObsidianFileIndex(app);
 
 		setFiles([renamedFile]);
 		emitRename(renamedFile, 'notes/draft.md');
 
-		expect(collection.search('draft').map((item) => item.path)).toEqual([
+		expect(fileIndex.search('draft').map((item) => item.path)).toEqual([
 			'notes/draft.md',
 		]);
 
 		vi.advanceTimersByTime(500);
 
-		expect(collection.search('draft')).toEqual([]);
-		expect(collection.search('final').map((item) => item.path)).toEqual([
+		expect(fileIndex.search('draft')).toEqual([]);
+		expect(fileIndex.search('final').map((item) => item.path)).toEqual([
 			'notes/final.md',
 		]);
 	});
@@ -260,14 +260,14 @@ describe('ObsidianFileCollection', () => {
 			notesFile,
 			diagramFile,
 		]);
-		const collection = new ObsidianFileCollection(app);
+		const fileIndex = new ObsidianFileIndex(app);
 
 		setFiles([diagramFile]);
 		emitDelete(makeFolder('notes'));
 		vi.advanceTimersByTime(500);
 
-		expect(collection.search('today')).toEqual([]);
-		expect(collection.search('diagram').map((item) => item.path)).toEqual([
+		expect(fileIndex.search('today')).toEqual([]);
+		expect(fileIndex.search('diagram').map((item) => item.path)).toEqual([
 			'assets/diagram.png',
 		]);
 	});
@@ -280,7 +280,7 @@ describe('ObsidianFileCollection', () => {
 		const { app, emitCreate, setFiles, vault } = createMockObsidianApp([
 			notesFile,
 		]);
-		const collection = new ObsidianFileCollection(app);
+		const fileIndex = new ObsidianFileIndex(app);
 
 		setFiles([notesFile, diagramFile]);
 		emitCreate(diagramFile);
@@ -288,12 +288,12 @@ describe('ObsidianFileCollection', () => {
 		emitCreate(diagramFile);
 		vi.advanceTimersByTime(499);
 
-		expect(collection.search('diagram')).toEqual([]);
+		expect(fileIndex.search('diagram')).toEqual([]);
 
 		vi.advanceTimersByTime(1);
 
 		expect(vault.getFiles).toHaveBeenCalledTimes(2);
-		expect(collection.search('diagram').map((item) => item.path)).toEqual([
+		expect(fileIndex.search('diagram').map((item) => item.path)).toEqual([
 			'assets/diagram.png',
 		]);
 	});
@@ -306,14 +306,14 @@ describe('ObsidianFileCollection', () => {
 		const { app, emitCreate, setFiles, vault } = createMockObsidianApp([
 			notesFile,
 		]);
-		const collection = new ObsidianFileCollection(app);
+		const fileIndex = new ObsidianFileIndex(app);
 
 		setFiles([notesFile, diagramFile]);
 		emitCreate(diagramFile);
-		collection.dispose();
+		fileIndex.dispose();
 		vi.advanceTimersByTime(500);
 
 		expect(vault.offref).toHaveBeenCalledTimes(3);
-		expect(collection.search('diagram')).toEqual([]);
+		expect(fileIndex.search('diagram')).toEqual([]);
 	});
 });

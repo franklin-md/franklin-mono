@@ -40,12 +40,10 @@ const textDocumentReferenceHandler: ReferenceHandler = {
 			selectTextLines(text, reference.selector),
 		);
 		return {
-			content: [
-				{
-					type: 'text',
-					text: formatReferenceText(reference, selectedText),
-				},
-			],
+			content: {
+				type: 'text',
+				text: formatReferenceText(reference, selectedText),
+			},
 		};
 	},
 };

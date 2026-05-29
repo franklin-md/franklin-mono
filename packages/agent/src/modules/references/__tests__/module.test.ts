@@ -18,7 +18,7 @@ describe('createReferencesModule', () => {
 					},
 					toContext(reference) {
 						return {
-							content: [{ type: 'text', text: reference.locator }],
+							content: { type: 'text', text: reference.locator },
 						};
 					},
 				});
@@ -31,7 +31,7 @@ describe('createReferencesModule', () => {
 				locator: 'hello',
 			}),
 		).resolves.toEqual({
-			content: [{ type: 'text', text: 'hello' }],
+			content: { type: 'text', text: 'hello' },
 		});
 	});
 
@@ -48,12 +48,10 @@ describe('createReferencesModule', () => {
 				locator: 'missing.reference',
 			}),
 		).resolves.toEqual({
-			content: [
-				{
-					type: 'text',
-					text: 'Reference unavailable: No reference handler matched "l17:missing.reference|u0:"',
-				},
-			],
+			content: {
+				type: 'text',
+				text: 'Reference unavailable: No reference handler matched "l17:missing.reference|u0:"',
+			},
 			isError: true,
 		});
 	});
@@ -82,7 +80,7 @@ describe('createReferencesModule', () => {
 					},
 					toContext() {
 						return {
-							content: [{ type: 'text', text: 'expanded' }],
+							content: { type: 'text', text: 'expanded' },
 						};
 					},
 				});
@@ -94,7 +92,7 @@ describe('createReferencesModule', () => {
 		});
 
 		expect(context).toEqual({
-			content: [{ type: 'text', text: 'expanded' }],
+			content: { type: 'text', text: 'expanded' },
 		});
 	});
 
@@ -121,12 +119,10 @@ describe('createReferencesModule', () => {
 				locator: 'failing.document',
 			}),
 		).resolves.toEqual({
-			content: [
-				{
-					type: 'text',
-					text: 'Reference unavailable: Reference handler for "l16:failing.document|u0:" failed: boom',
-				},
-			],
+			content: {
+				type: 'text',
+				text: 'Reference unavailable: Reference handler for "l16:failing.document|u0:" failed: boom',
+			},
 			isError: true,
 		});
 	});
@@ -154,7 +150,7 @@ describe('createReferencesModule', () => {
 					},
 					toContext(reference) {
 						return {
-							content: [{ type: 'text', text: reference.locator }],
+							content: { type: 'text', text: reference.locator },
 						};
 					},
 				});
@@ -166,15 +162,15 @@ describe('createReferencesModule', () => {
 				locator: 'start',
 			}),
 		).resolves.toEqual({
-			content: [{ type: 'text', text: 'delegated' }],
+			content: { type: 'text', text: 'delegated' },
 		});
 	});
 
 	it('projects reference contexts into prompt content', () => {
 		expect(
 			referenceContextsToContent([
-				{ content: [{ type: 'text', text: 'first' }] },
-				{ content: [{ type: 'text', text: 'second' }] },
+				{ content: { type: 'text', text: 'first' } },
+				{ content: { type: 'text', text: 'second' } },
 			]),
 		).toEqual([
 			{ type: 'text', text: 'first' },

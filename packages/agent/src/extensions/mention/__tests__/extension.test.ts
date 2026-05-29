@@ -29,12 +29,10 @@ async function createMentionRuntime() {
 		createReferencesModule(),
 	]);
 	const materialize = vi.fn((reference: Reference) => ({
-		content: [
-			{
-				type: 'text' as const,
-				text: `Materialized: ${reference.locator}`,
-			},
-		],
+		content: {
+			type: 'text' as const,
+			text: `Materialized: ${reference.locator}`,
+		},
 	}));
 	const runtime = await createRuntime(module, module.emptyState(), [
 		referenceHandlerExtension({
@@ -85,6 +83,39 @@ describe('mentionExtension', () => {
 		}
 
 		expect(materialize).toHaveBeenCalledTimes(1);
+	});
+
+	it('appends one user content block per unique reference', async () => {
+		const first = {
+			locator: 'notes/first.md',
+			label: 'First',
+		};
+		const second = {
+			locator: 'notes/second.md',
+			label: 'Second',
+		};
+		const { mock, runtime } = await createMentionRuntime();
+
+		try {
+			await collectEvents(
+				runtime.prompt(
+					userPrompt(
+						`${formatReferenceMention(first)} ${formatReferenceMention(second)}`,
+					),
+				),
+			);
+		} finally {
+			await runtime.dispose();
+		}
+
+		expect(mock.calls().prompts[0]?.content).toEqual([
+			{
+				type: 'text',
+				text: `${formatReferenceMention(first)} ${formatReferenceMention(second)}`,
+			},
+			{ type: 'text', text: 'Materialized: notes/first.md' },
+			{ type: 'text', text: 'Materialized: notes/second.md' },
+		]);
 	});
 
 	it('deduplicates references by identity instead of label', async () => {

@@ -1,3 +1,4 @@
+import type { UserContent } from '@franklin/mini-acp';
 import type {
 	AuthDependencyModule,
 	AuthDependencyRuntime,
@@ -49,12 +50,10 @@ export function createPDFDocumentReferenceExtension({
 			const selection = selectPDFPages(reference.selector);
 			if (selection.issue) {
 				return {
-					content: [
-						{
-							type: 'text',
-							text: formatReferenceText(reference, selection.issue),
-						},
-					],
+					content: {
+						type: 'text',
+						text: formatReferenceText(reference, selection.issue),
+					},
 				};
 			}
 
@@ -63,15 +62,18 @@ export function createPDFDocumentReferenceExtension({
 				converter,
 				pages: toPDFPageRange(selection.pages),
 			});
-			if (converted.isError) return converted;
+			if (converted.isError) {
+				return {
+					content: firstPDFContent(converted.content),
+					isError: true,
+				};
+			}
 			return {
-				content: [
-					{
-						type: 'text',
-						text: formatReferenceText(reference, selection.note),
-					},
-					...converted.content,
-				],
+				content: formatPDFReferenceContent(
+					reference,
+					selection.note,
+					converted.content,
+				),
 			};
 		},
 	};
@@ -100,6 +102,38 @@ function formatReferenceText(
 ): string {
 	const header = `Reference: ${referenceLabel(reference)}`;
 	return note ? `${header}\n\n${note}` : header;
+}
+
+function formatPDFReferenceContent(
+	reference: Reference,
+	note: string | undefined,
+	content: readonly UserContent[],
+): UserContent {
+	return {
+		type: 'text',
+		text: [
+			formatReferenceText(reference, note),
+			...content.map(formatPDFContent),
+		].join('\n\n'),
+	};
+}
+
+function formatPDFContent(content: UserContent): string {
+	switch (content.type) {
+		case 'text':
+			return content.text;
+		case 'image':
+			return `[Image content: ${content.mimeType}]`;
+	}
+}
+
+function firstPDFContent(content: readonly UserContent[]): UserContent {
+	return (
+		content[0] ?? {
+			type: 'text',
+			text: 'PDF processing failed.',
+		}
+	);
 }
 
 export function parsePdfReferenceSelector(

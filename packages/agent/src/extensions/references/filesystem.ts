@@ -26,12 +26,10 @@ const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime>
 			const stat = await fs.stat(path);
 			if (!stat.isFile) {
 				return {
-					content: [
-						{
-							type: 'text',
-							text: `Reference unavailable: Reference path is not a file: ${path}`,
-						},
-					],
+					content: {
+						type: 'text',
+						text: `Reference unavailable: Reference path is not a file: ${path}`,
+					},
 					isError: true,
 				};
 			}

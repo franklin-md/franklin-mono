@@ -18,23 +18,19 @@ const imageDocumentReferenceHandler: ReferenceHandler = {
 		const data = reference.data;
 		if (data?.type !== 'bytes' || data.mime === undefined) {
 			return {
-				content: [
-					{
-						type: 'text',
-						text: 'Reference unavailable: Image bytes are required.',
-					},
-				],
+				content: {
+					type: 'text',
+					text: 'Reference unavailable: Image bytes are required.',
+				},
 				isError: true,
 			};
 		}
 		return {
-			content: [
-				{
-					type: 'image',
-					data: base64(data.bytes),
-					mimeType: data.mime,
-				},
-			],
+			content: {
+				type: 'image',
+				data: base64(data.bytes),
+				mimeType: data.mime,
+			},
 		};
 	},
 };

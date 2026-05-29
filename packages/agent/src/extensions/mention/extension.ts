@@ -12,11 +12,12 @@ export const mentionExtension = defineExtension<[CoreModule, ReferencesModule]>(
 	(api) => {
 		api.on('prompt', async (prompt, ctx) => {
 			const references = uniquePromptReferences(prompt.request.content);
+			const content: UserContent[] = [];
 			for (const reference of references) {
-				const context = await ctx.references.toContext(reference);
-				for (const content of context.content) {
-					prompt.appendContent(content);
-				}
+				content.push((await ctx.references.toContext(reference)).content);
+			}
+			if (content.length > 0) {
+				prompt.editContent((current) => [...current, ...content]);
 			}
 		});
 	},
