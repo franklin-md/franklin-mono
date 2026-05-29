@@ -1,8 +1,16 @@
-import { createToolUseBlock } from '@franklin/react';
+import { createToolUseBlock, Prompt } from '@franklin/react';
 import {
 	ConversationOnboardingPlaceholder,
+	ConversationTranscript,
 	InspectDumpButton,
-	ConversationPanel as SharedConversationPanel,
+	ModelSelector,
+	PromptContainer,
+	PromptEditor,
+	PromptFooter,
+	PromptFooterControlGroup,
+	PromptFooterControls,
+	SharedPromptAgentControl,
+	ThinkingToggle,
 	ToolCardChrome,
 } from '@franklin/ui';
 import { Notice } from 'obsidian';
@@ -17,23 +25,38 @@ const ToolUse = createToolUseBlock(obsidianToolRegistry, ToolCardChrome);
 
 export function ConversationPanel() {
 	return (
-		<SharedConversationPanel
-			components={{
-				Text: ObsidianText,
-				Thinking: ObsidianThinking,
-				ToolUse,
-				EmptyPlaceholder: ConversationOnboardingPlaceholder,
-			}}
-			additionalControls={
-				process.env.NODE_ENV === 'development'
-					? [
-							<InspectDumpButton
-								key="debug"
-								onCopied={() => new Notice('Inspect dump copied to clipboard')}
-							/>,
-						]
-					: undefined
-			}
-		/>
+		<div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+			<ConversationTranscript
+				components={{
+					Text: ObsidianText,
+					Thinking: ObsidianThinking,
+					ToolUse,
+					EmptyPlaceholder: ConversationOnboardingPlaceholder,
+				}}
+			/>
+			<Prompt>
+				<PromptContainer>
+					<PromptEditor />
+					<PromptFooter>
+						<PromptFooterControls>
+							<PromptFooterControlGroup>
+								<ModelSelector />
+								<ThinkingToggle />
+								{process.env.NODE_ENV === 'development' ? (
+									<InspectDumpButton
+										onCopied={() =>
+											new Notice('Inspect dump copied to clipboard')
+										}
+									/>
+								) : null}
+							</PromptFooterControlGroup>
+							<PromptFooterControlGroup>
+								<SharedPromptAgentControl />
+							</PromptFooterControlGroup>
+						</PromptFooterControls>
+					</PromptFooter>
+				</PromptContainer>
+			</Prompt>
+		</div>
 	);
 }

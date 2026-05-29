@@ -15,7 +15,7 @@ There are two parts to consuming `@franklin/ui` correctly:
 Import components from the package root:
 
 ```tsx
-import { Button, ConversationPanel, Tabs } from '@franklin/ui';
+import { Button, ConversationTranscript, Tabs } from '@franklin/ui';
 ```
 
 ### Tailwind Setup

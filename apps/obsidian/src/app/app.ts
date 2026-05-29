@@ -23,6 +23,7 @@ import {
 	statusExtension,
 	textDocumentReferenceExtension,
 	todoExtension,
+	viewingContextExtension,
 	webSearchProviders,
 } from '@franklin/agent';
 import type { AbsolutePath } from '@franklin/lib';
@@ -108,6 +109,7 @@ export function createObsidianExtensions(): FranklinExtension[] {
 		conversationTitleExtension.extension,
 		todoExtension.extension,
 		statusExtension.extension,
+		viewingContextExtension.extension,
 		priority.highest(obsidianSystemPromptExtension),
 		instructionsExtension.extension,
 		...filesystemTools,

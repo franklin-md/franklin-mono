@@ -8,8 +8,8 @@ import {
 } from '@franklin/react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 
-import { TextareaGroup } from '../../../src/components/textarea-group.js';
-import { EditorPromptText } from '../../../src/conversation/input/editor-prompt/editor.js';
+import { PromptContainer } from '../../../src/conversation/input/prompt-container.js';
+import { PromptEditor } from '../../../src/conversation/input/prompt-editor.js';
 
 function EditorPromptStoryHarness({
 	children,
@@ -86,7 +86,9 @@ interface EditorPromptStoryProps {
 function EditorPromptFrame() {
 	return (
 		<div className="w-[560px]">
-			<TextareaGroup textarea={<EditorPromptText />} buttonBar={<div />} />
+			<PromptContainer>
+				<PromptEditor />
+			</PromptContainer>
 		</div>
 	);
 }

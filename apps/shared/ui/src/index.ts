@@ -107,10 +107,6 @@ export {
 	type IconEntry,
 } from './components/file-icon/branding.js';
 export { FileIcon, type FileIconProps } from './components/file-icon/icon.js';
-export {
-	TextareaGroup,
-	type TextareaGroupProps,
-} from './components/textarea-group.js';
 export { AgentTabs } from './agent-tabs/tabs.js';
 export {
 	ForkButton,
@@ -119,15 +115,34 @@ export {
 
 // conversation
 export {
-	ConversationPanel,
-	type ConversationPanelProps,
-} from './conversation/panel.js';
-export {
 	ConversationView,
 	type ConversationViewProps,
 } from './conversation/view.js';
+export {
+	ConversationTranscript,
+	type ConversationTranscriptProps,
+} from './conversation/transcript.js';
 export { ConversationOnboardingPlaceholder } from './onboarding/conversation-placeholder.js';
-export { PromptInput } from './conversation/input/prompt-input.js';
+export {
+	PromptContainer,
+	type PromptContainerProps,
+} from './conversation/input/prompt-container.js';
+export {
+	PromptHeader,
+	type PromptHeaderProps,
+} from './conversation/input/prompt-header.js';
+export { PromptEditor } from './conversation/input/prompt-editor.js';
+export {
+	PromptFooter,
+	type PromptFooterProps,
+} from './conversation/input/prompt-footer.js';
+export {
+	PromptFooterControlGroup,
+	PromptFooterControls,
+	type PromptFooterControlGroupProps,
+	type PromptFooterControlsProps,
+} from './conversation/input/prompt-footer-controls.js';
+export { SharedPromptAgentControl } from './conversation/input/shared-prompt-agent-control.js';
 export { ThinkingToggle } from './conversation/input/thinking-toggle.js';
 export { ModelSelector } from './conversation/input/model-selector/selector.js';
 export {
