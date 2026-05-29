@@ -1,82 +1,56 @@
 # Reference System
 
-## Current Scope
+### **Problem Statement**:
 
-The reference module is the first application-side context materialization surface in `@franklin/agent`.
+> How do create a Reference -> Agent Context system that is extensible in the types and handling of resources?
 
-The v1 contract is intentionally small:
+Once created, this is useful because it allows for:
 
-- Extensions register ordered `ReferenceHandler` implementations.
-- Each handler provides a cheap `test(reference)` predicate. The engine calls handlers in registration order and uses the first match.
-- `runtime.references.toContext(reference)` starts a private pipeline with the request `Reference`.
-- Inside a handler, `delegate(reference)` continues resolution after the current handler. This keeps delegation monotonic rather than re-entering the global resolver from the beginning.
-- `Reference.type` is an optional provider-owned kind or intended consumption hint, not a MIME type.
-- `Reference.locator` is a stable origin identity string interpreted by the selected provider.
-- `Reference.selector` is a provider-local selection string.
-- `Reference.label` is an optional display alias and not part of reference identity.
-- The internal pipeline reference may carry `data` produced by an earlier handler. The first data shape is bytes plus optional MIME metadata.
-- Selector codec helpers provide compact `key=value;key=value` syntax for providers that want shared parsing without shared selector semantics.
-- `referenceHandlerExtension(...)` wraps one or more reference-only handlers as a `[ReferencesModule]` extension. Handlers that need extra module runtime, such as filesystem access, should use `defineExtension(...)` directly.
-- `ReferenceContext` contains Mini-ACP user content plus optional error state.
-- The runtime returns model-visible unavailable text with error state when a handler is missing or fails.
-- Built-in provider extensions cover text documents, image bytes, filesystem files, and PDF conversion.
-- `referenceReadExtension` registers the `read_file` tool backed by `runtime.references.toContext(...)`.
-- Provider extensions register system-prompt fragments that describe supported reading and selector syntax when they contribute model-visible read behavior.
+- Creating valuable predefined strategies for consuming and passing context to an agent. Terminal alone might neither be aware of existing services (like a Mistral PDF Converter), nor know how to cache the results to save on cost.
+- Supporting reference-based context syncing with an agent. For example, your application may want the agent to see all the files (in Obsidian's case) or tickets (in Linear's case) that you have open. You only need to keep track of these as references, and then pass to the ReferenceEngine to materialize for you.
 
-This gives callers a minimal way to materialize app-owned context without changing the Mini-ACP prompt protocol. It is not yet the final prompt-inclusion policy for when and how that content should enter a model turn.
+### **Design**:
 
-## Reference Identity
+- `Reference` stores `locator` (where the resource is) and `selector` (what parts of the resource)
+- `ReferenceHandler` specifies:
+  - `test`: Whether it can process this particular `Reference`
+  - `toContext`: How it converts `Resource` into the agent context (i.e. `UserContent`)
+- The `ReferenceEngine` keeps track of a list of registered `ReferenceHandler`s (added through the extension api).
+  - Calling `toContext(Reference)` involves:
+    - Finding the **first `ReferenceHandler` that matches**
+    - Executing it, and potentially continuing down the chain if `delegate` was called.
 
-`Reference` is the public request shape: what a caller or capture layer says the user referred to. `ResolvedReference` is the internal provider-facing shape used while the ordered handler chain runs.
+#### Best Practices Defining Reference Handlers:
 
-- `type` names the provider-owned reference kind or requested interpretation when the caller has one. It can overlap with file type names when that is useful, but it is not a MIME type and should not be inferred only from bytes. Callers may omit it when the ordered provider chain should decide from the locator and later delegated data.
-- `locator` is the stable origin identity. A filesystem provider can resolve it to an absolute path, and a future URL provider can download or cache it, but those implementation artifacts should not replace the locator while delegating.
-- `selector` is interpreted by the handler that consumes it. Shared selector helpers only provide syntax; they do not make all providers share selector semantics.
-- `label` is a display alias for rendered context and UI. It should not participate in resolution, cache identity, or equality decisions.
-- `data` is intermediate resolved material, currently bytes plus optional MIME metadata. It exists so a loader can delegate to a renderer without stuffing bytes, cache handles, or derived artifacts into `locator`.
-- `ReferenceContext.isError` lets tool consumers preserve failure semantics when reference materialization cannot complete.
+- **Materialization should be bound**:
+  - There should be a per document specific policy for how much of it can be materialized in one go. For example, 'at most 10 pages' for pdf
+  - It should have selectors that allow for a **complete pagination of resource**. This means that you can continiously make progress reading an infinite document. The smallest unit of selection must also be allowed (so that you dont get a case where it becomes impossible to read even a single page)
+    - Pages is sufficient for PDFs, but chapters alone are not (as PDF metadata may not be complete )
+    - Lines is sufficient for text
+  - **If you exceed the bounds, a suggestion on how to correct should be materialized**
+  - **Choosing to partially materialize is allowed** (i.e. to display the first n lines before truncating)
+- **Selector interpretation should be sensible and permissive, but not wasteful**:
+  - For example, asking for pages 1-10 of a 7 page pdf should return the first 7.
+  - ASking for pages 12-10 should return no pages (as opposed to ALL pages)
+- **Adding provenance to materialization is preferred**
+  - For example, the name of the file that was read at the top of the Content Block
 
-Future cache keys should be explicit. They may include `type`, `locator`, `selector`, provider/version metadata, and transformation details, but should not depend on `label`.
+### **Noteworthy Use Cases:**
 
-## Explicit Reads
+- An extensible version of `read_file` that calls the reference engine as opposed to trying to resolve contents of a predetermined set of filetypes.
 
-The reference-backed `read_file` tool is the first consumer that treats reference materialization as an explicit agent read.
+---
 
-- The tool schema is intentionally separate from the old filesystem `read_file` schema. It accepts only `path` and optional `selector`.
-- The tool calls `runtime.references.toContext(...)` with the path as the locator and selector passed through unchanged. It does not force a filesystem-specific reference type.
-- The filesystem provider can claim untyped path references, load bytes, and delegate to text, image, PDF, or future handlers.
-- The read tool owns `last_read` updates after successful materialization. Direct reference materialization does not authorize later `edit_file` calls.
-- This keeps edit-safety policy in the tool layer while keeping file loading and file-type rendering in the reference handler chain.
-- Text selectors currently support `lines=N-M` or `offset=N;limit=N`; PDF selectors support `page=N` or `pages=N-M`; image reads currently do not support selector fields.
-- Obsidian composes `referenceReadExtension` with the filesystem edit/write/search tools and the filesystem/PDF/image/text reference providers. It no longer exposes the old separate `read_pdf` tool.
-- Do not compose `referenceReadExtension` with `filesystemBundle.extensions.readFile`; they both register `read_file`.
+## Todos:
 
-## Deferred Design
+- **Unchanged context tracking**:
+  - If materialized text is being sent, you might inspect it and avoid sending it if it is alrady within the context window
+    - This could actually be a `priority.lowest` that acts as a firewall (and therefore does not mix within materialization)
 
-The following concerns are important, but deliberately out of the first implementation.
-
-### Delegation, Cycles, and Depth
-
-Filesystem references currently read bytes, attach them to the private pipeline reference, and call `delegate(...)` to let later handlers decide whether they can render those bytes as text, PDF, or another source type. That is enough for v1, but it only models ordered monotonic delegation.
-
-Future delegation support should decide:
-
-- whether delegation should carry explicit `from` and `to` reference edges;
-- whether the current ordered-chain algorithm is sufficient for all provider composition;
-- how to enforce fanout, depth, and output limits;
-- whether cycle and depth failures should produce model-visible content, structured diagnostics, or both.
-
-The current ordered-chain algorithm prevents circular recursion structurally because `delegate(...)` resumes after the current handler. A future resolver stack may still be useful for provenance, fanout accounting, and diagnostics.
+- **Instead of using `delegate`, we could just use suitable return objects**
 
 ## Open Questions
 
-- The `read_file` tool has a very similar initial algorithm to the filesystem reference handler. The first reference-backed implementation now lives in `referenceReadExtension`, and Obsidian composes it with reference providers instead of the old filesystem read plus separate `read_pdf` tool.
-  - For example, instead of needing `PDFRead` and `EPUBRead` tools added, you could just introduce new providers that extend both:
-    - `read_tool` and `readExtension`
-    - `references.toContext` for programatic injection of context into prompt (for example to implement a "current context" bar that keeps track of what is being viewed in the app + what has changed since last send"
-  - Challenges:
-    - How do we communicate in the read tool the set of provider-specific `selectors`?
-      - Current answer: provider extensions register system-prompt fragments for their selector syntax. This is simple, but it is still prompt-only; there is no structured selector capability registry yet.
 - Does `Reference` system even need to be a `Module`? Could it not use the `ConfigurationModule` system?
   - Observations:
     - In both cases, **extending behaviour requires leveraging the extension mechanism**, either thorugh `api.registerReferenceProvider` or using a `ConfigurationProvider.of`
@@ -131,3 +105,13 @@ The current ordered-chain algorithm prevents circular recursion structurally bec
     - The public `Reference` remains the request shape.
     - Intermediate bytes are carried in the private pipeline reference as `data`.
     - A cache can later own persisted data or derived artifacts, but cache-key design is still open.
+
+## Old Questions:
+
+- The `read_file` tool has a very similar initial algorithm to the filesystem reference handler. The first reference-backed implementation now lives in `referenceReadExtension`, and Obsidian composes it with reference providers instead of the old filesystem read plus separate `read_pdf` tool.
+  - For example, instead of needing `PDFRead` and `EPUBRead` tools added, you could just introduce new providers that extend both:
+    - `read_tool` and `readExtension`
+    - `references.toContext` for programatic injection of context into prompt (for example to implement a "current context" bar that keeps track of what is being viewed in the app + what has changed since last send"
+  - Challenges:
+    - How do we communicate in the read tool the set of provider-specific `selectors`?
+      - Current answer: provider extensions register system-prompt fragments for their selector syntax. This is simple, but it is still prompt-only; there is no structured selector capability registry yet.
