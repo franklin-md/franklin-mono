@@ -72,6 +72,7 @@ export {
 	SelectTrigger,
 	SelectValue,
 } from './primitives/select.js';
+export { Switch, type SwitchProps } from './primitives/switch.js';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './primitives/tabs.js';
 export {
 	textInputSurfaceClassName,

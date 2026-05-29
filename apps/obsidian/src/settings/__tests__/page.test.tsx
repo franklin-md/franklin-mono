@@ -157,7 +157,7 @@ describe('SettingsPage', () => {
 			(element) => element.textContent,
 		);
 
-		expect(headings).toEqual(['Credentials', 'Viewing context']);
+		expect(headings).toEqual(['Credentials', 'Agent settings']);
 	});
 
 	it('renders ChatGPT as the first credential setting', () => {
@@ -307,7 +307,7 @@ describe('SettingsPage', () => {
 		const auth = createAuthStub();
 		renderPage(auth);
 
-		const input = screen.getByRole('checkbox', {
+		const input = screen.getByRole('switch', {
 			name: 'Share open notes with agent',
 		});
 		expect(input.getAttribute('aria-checked')).toBe('true');
@@ -317,7 +317,7 @@ describe('SettingsPage', () => {
 		const auth = createAuthStub();
 		const { settings } = renderPage(auth);
 
-		const input = screen.getByRole('checkbox', {
+		const input = screen.getByRole('switch', {
 			name: 'Share open notes with agent',
 		});
 		fireEvent.click(input);

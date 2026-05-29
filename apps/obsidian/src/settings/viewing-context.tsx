@@ -1,7 +1,7 @@
 import { useId } from 'react';
 
 import { useSettings } from '@franklin/react';
-import { Checkbox, Label } from '@franklin/ui';
+import { Label, Switch } from '@franklin/ui';
 
 import { SettingControl } from '../components/obsidian-native/setting/control.js';
 import { SettingDescription } from '../components/obsidian-native/setting/description.js';
@@ -25,11 +25,10 @@ export function ViewingContextSettings() {
 				</SettingDescription>
 			</SettingInfo>
 			<SettingControl>
-				<Checkbox
+				<Switch
 					id={inputId}
 					checked={checked}
-					onCheckedChange={(nextChecked) => {
-						const shareViewedReferencesByDefault = nextChecked === true;
+					onCheckedChange={(shareViewedReferencesByDefault) => {
 						settings.set((draft) => {
 							draft.shareViewedReferencesByDefault =
 								shareViewedReferencesByDefault;
