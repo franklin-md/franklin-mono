@@ -71,7 +71,10 @@ export {
 	SelectValue,
 } from './primitives/select.js';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './primitives/tabs.js';
-export { textareaClassName } from './primitives/textarea.js';
+export {
+	textInputSurfaceClassName,
+	textareaClassName,
+} from './primitives/textarea.js';
 
 // components (derived, application-specific)
 export { AutoGrowTextarea } from './components/auto-grow-textarea.js';
