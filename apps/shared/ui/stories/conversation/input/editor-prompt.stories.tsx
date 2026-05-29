@@ -83,14 +83,47 @@ interface EditorPromptStoryProps {
 	readonly initialInput?: string;
 }
 
+function EditorPromptFrame() {
+	return (
+		<div className="w-[560px]">
+			<TextareaGroup textarea={<EditorPromptText />} buttonBar={<div />} />
+		</div>
+	);
+}
+
 function EditorPromptStory({ initialInput }: EditorPromptStoryProps) {
 	return (
 		<EditorPromptStoryHarness initialInput={initialInput}>
-			<div className="w-[560px]">
-				<TextareaGroup textarea={<EditorPromptText />} buttonBar={<div />} />
-			</div>
+			<EditorPromptFrame />
 		</EditorPromptStoryHarness>
 	);
+}
+
+function getPromptEditor(frame: HTMLElement): HTMLElement {
+	const editor = frame.querySelector('[aria-label="Message"]');
+	if (!(editor instanceof HTMLElement)) {
+		throw new Error('Expected the prompt editor to render');
+	}
+	return editor;
+}
+
+function getPromptParagraph(frame: HTMLElement): HTMLElement {
+	const paragraph = frame.querySelector('.ProseMirror p');
+	if (!(paragraph instanceof HTMLElement)) {
+		throw new Error('Expected the prompt editor paragraph to render');
+	}
+	return paragraph;
+}
+
+function getPromptLineMetrics(frame: HTMLElement) {
+	const editor = getPromptEditor(frame);
+	const paragraph = getPromptParagraph(frame);
+
+	return {
+		editorHeight: editor.getBoundingClientRect().height,
+		lineHeight: getComputedStyle(paragraph).lineHeight,
+		paragraphHeight: paragraph.getBoundingClientRect().height,
+	};
 }
 
 const meta = {
@@ -113,6 +146,43 @@ export const StoredFileReference: Story = {
 				),
 			).not.toBeNull();
 		});
+	},
+};
+
+export const FileReferenceKeepsSingleLineHeight: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const documentBody = within(canvasElement.ownerDocument.body);
+		const editor = canvas.getByLabelText('Message');
+
+		await userEvent.click(editor);
+		await userEvent.type(editor, 'Read ');
+
+		const plainMetrics = getPromptLineMetrics(canvasElement);
+
+		await userEvent.type(editor, '@');
+		await documentBody.findByRole('option', { name: /2026-05-28\.md/ });
+		await userEvent.type(editor, '{tab}');
+
+		await waitFor(async () => {
+			await expect(
+				canvasElement.querySelector(
+					'[data-file-path="notes/daily/2026-05-28.md"]',
+				),
+			).not.toBeNull();
+		});
+
+		const fileReferenceMetrics = getPromptLineMetrics(canvasElement);
+		const paragraphDelta = Math.abs(
+			fileReferenceMetrics.paragraphHeight - plainMetrics.paragraphHeight,
+		);
+		const editorDelta = Math.abs(
+			fileReferenceMetrics.editorHeight - plainMetrics.editorHeight,
+		);
+
+		await expect(fileReferenceMetrics.lineHeight).toBe(plainMetrics.lineHeight);
+		await expect(paragraphDelta).toBeLessThanOrEqual(1);
+		await expect(editorDelta).toBeLessThanOrEqual(1);
 	},
 };
 
