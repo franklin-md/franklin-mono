@@ -20,25 +20,6 @@ const config: StorybookConfig = {
 	framework: getAbsolutePath('@storybook/react-vite'),
 	viteFinal: async (config) => {
 		const { default: tailwindcss } = await import('@tailwindcss/vite');
-		const existingAlias = config.resolve?.alias;
-		const alias = Array.isArray(existingAlias)
-			? [
-					...existingAlias,
-					{
-						find: '@franklin/transport',
-						replacement: '@franklin/transport/core',
-					},
-				]
-			: [
-					...Object.entries(existingAlias ?? {}).map(([find, replacement]) => ({
-						find,
-						replacement,
-					})),
-					{
-						find: '@franklin/transport',
-						replacement: '@franklin/transport/core',
-					},
-				];
 		config.plugins = [
 			...(config.plugins ?? []),
 			tsconfigPaths({ root: workspaceRoot }),
@@ -46,7 +27,6 @@ const config: StorybookConfig = {
 		];
 		config.resolve = {
 			...config.resolve,
-			alias,
 			dedupe: [
 				...new Set([...(config.resolve?.dedupe ?? []), 'react', 'react-dom']),
 			],
