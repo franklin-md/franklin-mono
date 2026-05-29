@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import { formatReferenceMention } from '@franklin/agent';
 
-import { createMentionNodeContent } from '../../../../src/conversation/input/editor-prompt/mention/node.js';
+import { createFileReferenceMentionNodeContent } from '../../../../src/conversation/input/editor-prompt/mention/node.js';
 import {
 	createPromptDocument,
 	getPromptText,
@@ -46,6 +46,28 @@ describe('createPromptDocument', () => {
 			],
 		});
 	});
+
+	it('preserves non-file reference tokens as text', () => {
+		const reference = {
+			type: 'text',
+			locator: 'inline context',
+			label: 'Inline Context',
+		};
+		const mention = formatReferenceMention(reference);
+
+		expect(createPromptDocument(`Read ${mention}`)).toEqual({
+			type: 'doc',
+			content: [
+				{
+					type: 'paragraph',
+					content: [
+						{ type: 'text', text: 'Read ' },
+						{ type: 'text', text: mention },
+					],
+				},
+			],
+		});
+	});
 });
 
 describe('getPromptText', () => {
@@ -64,7 +86,7 @@ describe('getPromptText', () => {
 						type: 'paragraph',
 						content: [
 							{ type: 'text', text: 'Read ' },
-							createMentionNodeContent(reference),
+							createFileReferenceMentionNodeContent(reference)!,
 						],
 					},
 				],

@@ -1,8 +1,9 @@
 import type { Editor, JSONContent } from '@tiptap/core';
-import { splitMentionSegments } from '@franklin/agent';
+import { formatReferenceMention, splitMentionSegments } from '@franklin/agent';
+import { isFileReference } from '../../reference-mention/support.js';
 
 import {
-	createMentionNodeContent,
+	createFileReferenceMentionNodeContent,
 	MENTION_NODE_NAME,
 	mentionTextSerializer,
 } from './mention/node.js';
@@ -17,7 +18,13 @@ function parsePromptLine(line: string): JSONContent[] | undefined {
 			switch (segment.type) {
 				// Requires Mention extension
 				case 'reference':
-					return createMentionNodeContent(segment.reference);
+					if (isFileReference(segment.reference)) {
+						return createFileReferenceMentionNodeContent(segment.reference);
+					}
+					// The editor mention node currently renders filesystem references
+					// only. Preserve unsupported reference mentions as canonical text
+					// until there is a generic reference badge.
+					return createTextContent(formatReferenceMention(segment.reference));
 				// Requires Text extension
 				case 'text':
 					return createTextContent(segment.text);

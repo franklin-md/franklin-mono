@@ -1,20 +1,27 @@
 import { parseReferenceMention } from '@franklin/agent';
 import { FileBadge } from '../../components/file-icon/badge.js';
+import { isFileReference } from '../reference-mention/support.js';
 import type { MarkdownExtensions } from '../turn/markdown.js';
 
 import {
-	FILE_REFERENCE_ATTRIBUTE,
-	FILE_REFERENCE_ELEMENT_NAME,
-	remarkFileReferences,
+	REFERENCE_MENTION_ATTRIBUTE,
+	REFERENCE_MENTION_ELEMENT_NAME,
+	remarkReferenceMentions,
 } from './remark.js';
 
-interface FileReferenceElementProps {
+interface ReferenceMentionElementProps {
 	readonly reference: string;
 }
 
-function FileReferenceElement({ reference }: FileReferenceElementProps) {
+function ReferenceMentionElement({ reference }: ReferenceMentionElementProps) {
 	const parsed = parseReferenceMention(reference);
-	if (!parsed) return null;
+	if (!parsed || !isFileReference(parsed)) {
+		// The shared UI mention renderer only supports filesystem references today.
+		// Unsupported references should be left as text by the remark plugin; this
+		// guard keeps hand-authored custom elements from rendering misleading file
+		// badges.
+		return null;
+	}
 
 	return (
 		<FileBadge
@@ -24,12 +31,12 @@ function FileReferenceElement({ reference }: FileReferenceElementProps) {
 	);
 }
 
-export const fileReferenceMarkdown: MarkdownExtensions = {
-	remarkPlugins: [remarkFileReferences],
+export const referenceMentionMarkdown: MarkdownExtensions = {
+	remarkPlugins: [remarkReferenceMentions],
 	customElements: {
-		[FILE_REFERENCE_ELEMENT_NAME]: {
-			allowedAttributes: [FILE_REFERENCE_ATTRIBUTE],
-			component: FileReferenceElement,
+		[REFERENCE_MENTION_ELEMENT_NAME]: {
+			allowedAttributes: [REFERENCE_MENTION_ATTRIBUTE],
+			component: ReferenceMentionElement,
 		},
 	},
 };

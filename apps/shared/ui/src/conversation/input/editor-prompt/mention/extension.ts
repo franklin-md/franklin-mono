@@ -5,8 +5,8 @@ import { ReactNodeViewRenderer } from '@tiptap/react';
 import type { SuggestionProps } from '@tiptap/suggestion';
 
 import {
-	createMentionAttrs,
-	createMentionNodeContent,
+	createFileReferenceMentionAttrs,
+	createFileReferenceMentionNodeContent,
 	formatMentionText,
 	getMentionReference,
 	MENTION_TRIGGER,
@@ -29,13 +29,15 @@ function replaceSuggestionWithMention(
 ): void {
 	const reference = getMentionReference(attrs);
 	if (!reference) return;
+	const content = createFileReferenceMentionNodeContent(reference);
+	if (!content) return;
 
 	editor
 		.chain()
 		.focus()
 		.insertContentAt(range, [
 			// Replace with Token
-			createMentionNodeContent(reference),
+			content,
 			// And add a space!
 			{ type: 'text', text: ' ' },
 		])
@@ -49,7 +51,7 @@ function showSuggestionMenu(
 	options.menuController.show({
 		query: props.query,
 		anchorRect: props.clientRect?.() ?? undefined,
-		command: (item) => props.command(createMentionAttrs(item)),
+		command: (item) => props.command(createFileReferenceMentionAttrs(item)),
 	});
 }
 

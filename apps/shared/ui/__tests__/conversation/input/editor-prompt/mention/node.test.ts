@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { formatReferenceMention } from '@franklin/agent';
 
 import {
-	createMentionAttrs,
-	createMentionNodeContent,
+	createFileReferenceMentionAttrs,
+	createFileReferenceMentionNodeContent,
 	getMentionReference,
 } from '../../../../../src/conversation/input/editor-prompt/mention/node.js';
 
@@ -16,17 +16,27 @@ describe('file mention node helpers', () => {
 			locator: 'notes/deep work.md',
 			label: 'notes/deep work.md',
 		};
-		const attrs = createMentionAttrs(item);
+		const attrs = createFileReferenceMentionAttrs(item);
 
 		expect(attrs).toEqual({
 			id: formatReferenceMention(reference),
 			label: 'notes/deep work.md',
 			mentionSuggestionChar: '@',
 		});
-		expect(createMentionNodeContent(reference)).toEqual({
+		expect(createFileReferenceMentionNodeContent(reference)).toEqual({
 			type: 'mention',
 			attrs,
 		});
 		expect(getMentionReference(attrs)).toEqual(reference);
+	});
+
+	it('does not create mention node content for non-file references', () => {
+		expect(
+			createFileReferenceMentionNodeContent({
+				type: 'text',
+				locator: 'inline context',
+				label: 'Inline Context',
+			}),
+		).toBeUndefined();
 	});
 });
