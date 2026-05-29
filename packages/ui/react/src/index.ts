@@ -75,14 +75,14 @@ export {
 	type UseTriggerOnChangeOptions,
 } from './utils/use-trigger-on-change.js';
 export {
-	FileCollectionProvider,
-	FuseFileCollection,
-	useFileCollection,
+	FileIndexProvider,
+	FuseFileIndex,
+	useFileIndex,
 	useFileSearch,
 } from './file-search/index.js';
 export type {
-	FileCollection,
-	FileReferenceItem,
+	FileIndex,
+	FileIndexItem,
 	FileSearchOptions,
 	UseFileSearchOptions,
 } from './file-search/index.js';

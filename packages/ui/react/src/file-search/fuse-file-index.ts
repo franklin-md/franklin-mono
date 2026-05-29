@@ -1,13 +1,9 @@
 import { createObserver } from '@franklin/lib';
 import Fuse, { type IFuseOptions } from 'fuse.js';
 
-import type {
-	FileCollection,
-	FileReferenceItem,
-	FileSearchOptions,
-} from './types.js';
+import type { FileIndex, FileIndexItem, FileSearchOptions } from './types.js';
 
-interface FuseDocument extends FileReferenceItem {
+interface FuseDocument<TMetadata> extends FileIndexItem<TMetadata> {
 	readonly name: string;
 }
 
@@ -18,42 +14,48 @@ const DEFAULT_FUSE_OPTIONS = {
 	],
 	threshold: 0.35,
 	ignoreLocation: true,
-} satisfies IFuseOptions<FuseDocument>;
+} satisfies IFuseOptions<FuseDocument<unknown>>;
 
 function getPathName(path: string): string {
 	const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '');
 	return normalized.split('/').at(-1) ?? normalized;
 }
 
-function createDocument(item: FileReferenceItem): FuseDocument {
+function createDocument<TMetadata>(
+	item: FileIndexItem<TMetadata>,
+): FuseDocument<TMetadata> {
 	return {
 		...item,
 		name: getPathName(item.path),
 	};
 }
 
-function toReferenceItem(item: FileReferenceItem): FileReferenceItem {
-	return { path: item.path };
+function toIndexItem<TMetadata>(
+	item: FileIndexItem<TMetadata>,
+): FileIndexItem<TMetadata> {
+	return { path: item.path, metadata: item.metadata };
 }
 
-export class FuseFileCollection implements FileCollection {
+export class FuseFileIndex<
+	TMetadata = unknown,
+> implements FileIndex<TMetadata> {
 	private readonly observer = createObserver();
-	private readonly fuse: Fuse<FuseDocument>;
+	private readonly fuse: Fuse<FuseDocument<TMetadata>>;
 
-	constructor(items: readonly FileReferenceItem[] = []) {
+	constructor(items: readonly FileIndexItem<TMetadata>[] = []) {
 		this.fuse = new Fuse(items.map(createDocument), DEFAULT_FUSE_OPTIONS);
 	}
 
 	search(
 		query: string,
 		options: FileSearchOptions = {},
-	): readonly FileReferenceItem[] {
+	): readonly FileIndexItem<TMetadata>[] {
 		return this.fuse
 			.search(query, { limit: options.limit })
-			.map((result) => toReferenceItem(result.item));
+			.map((result) => toIndexItem(result.item));
 	}
 
-	upsert(items: readonly FileReferenceItem[]): void {
+	upsert(items: readonly FileIndexItem<TMetadata>[]): void {
 		if (items.length === 0) return;
 
 		for (const item of items) {
@@ -78,7 +80,7 @@ export class FuseFileCollection implements FileCollection {
 
 	private notify(): void {
 		// Mutation notifications are intentionally coarse: callers may be notified
-		// even when an upsert/remove batch leaves the Fuse collection unchanged.
+		// even when an upsert/remove batch leaves the Fuse index unchanged.
 		this.observer.notify();
 	}
 }

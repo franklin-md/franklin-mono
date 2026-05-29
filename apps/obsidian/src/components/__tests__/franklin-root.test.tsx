@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type { FranklinApp } from '@franklin/agent';
-import { useFileCollection } from '@franklin/react';
+import { useFileIndex } from '@franklin/react';
 import { cleanup, render, screen } from '@testing-library/react';
 import type { App, EventRef, TFile, Vault } from 'obsidian';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -36,8 +36,8 @@ function createMockApp(vault: Vault): App {
 }
 
 function FileSearchProbe() {
-	const collection = useFileCollection();
-	const paths = collection.search('diagram').map((item) => item.path);
+	const fileIndex = useFileIndex();
+	const paths = fileIndex.search('diagram').map((item) => item.path);
 
 	return <div data-testid="file-search-result">{paths.join(',')}</div>;
 }
@@ -56,7 +56,7 @@ function renderRoot(vault: Vault) {
 }
 
 describe('FranklinRoot', () => {
-	it('provides an Obsidian-backed file collection to children', () => {
+	it('provides an Obsidian-backed file index to children', () => {
 		const { vault } = createMockVault([
 			makeFile('notes/today.md'),
 			makeFile('assets/diagram.png'),
@@ -69,7 +69,7 @@ describe('FranklinRoot', () => {
 		);
 	});
 
-	it('disposes the Obsidian file collection on unmount', () => {
+	it('disposes the Obsidian file index on unmount', () => {
 		const { offref, vault } = createMockVault([makeFile('notes/today.md')]);
 		const { unmount } = renderRoot(vault);
 

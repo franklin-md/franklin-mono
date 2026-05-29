@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 
-import type { FileReferenceItem } from '@franklin/react';
+import type { FileIndexItem } from '@franklin/react';
 
 import { FileBadge } from '../../../../components/file-icon/badge.js';
 import { cn } from '../../../../lib/cn.js';
@@ -21,7 +21,7 @@ import type { MentionSuggestionState } from './menu-controller.js';
 
 interface MentionMenuProps {
 	readonly suggestion: MentionSuggestionState;
-	readonly items: readonly FileReferenceItem[];
+	readonly items: readonly FileIndexItem[];
 	readonly onHighlight: (index: number) => void;
 }
 
