@@ -15,11 +15,7 @@ export function formatViewingContext(
 }
 
 function formatViewedReference(reference: ViewedReference): string {
-	if ('path' in reference) {
-		return `path: ${reference.path}`;
-	}
-
-	return `reference: ${formatReference(reference.reference)}`;
+	return formatReference(reference);
 }
 
 function formatReference(reference: Reference): string {

@@ -125,7 +125,7 @@ const _statusState: StatusState = _statusValue;
 const _todos: Todo[] = _todoValue;
 const _title: ConversationTitle = _titleValue;
 const _viewingContext: ViewingContextState = _viewingContextValue;
-const _viewedReference: ViewedReference = { path: 'notes/current.md' };
+const _viewedReference: ViewedReference = { locator: 'notes/current.md' };
 const _webOptions: WebExtensionOptions = { fetch: {}, search: {} };
 const _webFetchOptions: WebFetchExtensionOptions = {
 	timeoutMs: 1,

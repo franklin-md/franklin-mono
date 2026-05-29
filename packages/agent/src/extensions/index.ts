@@ -25,6 +25,13 @@ export type { Todo, TodoControl } from './todo/index.js';
 export { createStatusControl, statusExtension } from './status/index.js';
 export type { StatusControl, StatusState } from './status/index.js';
 
+// Viewing context
+export { viewingContextExtension } from './viewing-context/index.js';
+export type {
+	ViewedReference,
+	ViewingContextState,
+} from './viewing-context/index.js';
+
 // Filesystem
 export { filesystemBundle, filesystemExtension } from './filesystem/index.js';
 
