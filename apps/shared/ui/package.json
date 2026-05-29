@@ -15,6 +15,7 @@
 		"build": "tsc -b tsconfig.build.json",
 		"typecheck": "tsc -b tsconfig.build.json --pretty false",
 		"test": "vitest run --passWithNoTests",
+		"test:browser": "vitest run --config vitest.browser.config.ts --project=storybook",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build"
 	},
@@ -62,13 +63,18 @@
 	},
 	"devDependencies": {
 		"@storybook/addon-docs": "10.3.3",
+		"@storybook/addon-vitest": "10.3.3",
 		"@storybook/react-vite": "10.3.3",
 		"@tailwindcss/vite": "4.2.2",
 		"@testing-library/react": "15.0.7",
 		"@types/react": "18.3.28",
 		"@types/react-dom": "18.3.7",
+		"@vitest/browser": "4.1.2",
+		"@vitest/browser-playwright": "4.1.2",
 		"jsdom": "28.1.0",
+		"playwright": "1.60.0",
 		"storybook": "10.3.3",
-		"tailwindcss": "4.2.2"
+		"tailwindcss": "4.2.2",
+		"vite-tsconfig-paths": "6.1.1"
 	}
 }

@@ -13,6 +13,7 @@ import {
 import { textInputSurfaceClassName } from '../../../primitives/textarea.js';
 
 import { createPromptEditorExtensions } from './extensions.js';
+import { handlePromptEditorKeyDown } from './key-down.js';
 import { MentionMenu } from './mention/menu.js';
 import {
 	createMenuController,
@@ -55,21 +56,16 @@ export function EditorPromptText() {
 				'aria-label': 'Message',
 				class: editorClassName,
 			},
-			handleKeyDown: (_view: unknown, event: KeyboardEvent) => {
-				if (event.key === 'Enter' && !event.shiftKey && !sending) {
-					event.preventDefault();
-					send();
-					return true;
-				}
-				if (event.key === 'Escape' && sending) {
-					event.preventDefault();
-					cancel();
-					return true;
-				}
-				return false;
-			},
+			handleKeyDown: (_view: unknown, event: KeyboardEvent) =>
+				handlePromptEditorKeyDown({
+					menuController,
+					event,
+					sending,
+					send,
+					cancel,
+				}),
 		}),
-		[cancel, send, sending],
+		[cancel, menuController, send, sending],
 	);
 
 	const editor = useEditor(
