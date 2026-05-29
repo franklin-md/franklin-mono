@@ -42,7 +42,10 @@ export function todoExtension() {
 			const store = ctx.getStore(todoKey);
 			const formatted = formatTodos(store.get());
 			if (formatted) {
-				prompt.prependContent({ type: 'text', text: formatted });
+				prompt.editContent((content) => [
+					{ type: 'text', text: formatted },
+					...content,
+				]);
 			}
 		});
 	});

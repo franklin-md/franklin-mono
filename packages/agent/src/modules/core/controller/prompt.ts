@@ -42,26 +42,43 @@ async function buildPrompt(
 }
 
 function createPrompt(message: UserMessage): Prompt {
-	const prepended: UserContent[] = [];
-	const appended: UserContent[] = [];
+	let content: readonly UserContent[] = message.content;
+	let edited = false;
 
 	return {
 		request: message,
-		prependContent(content) {
-			prepended.push(content);
+		appendContent(text) {
+			content = editHeadTextContent(content, (current) => current + text);
+			edited = true;
 		},
-		appendContent(content) {
-			appended.push(content);
+		editContent(edit) {
+			content = [...edit([...content])];
+			edited = true;
 		},
 		asPrompt() {
-			if (prepended.length === 0 && appended.length === 0) {
+			if (!edited) {
 				return message;
 			}
 
 			return {
 				...message,
-				content: [...prepended, ...message.content, ...appended],
+				content: [...content],
 			};
 		},
 	};
+}
+
+function editHeadTextContent(
+	content: readonly UserContent[],
+	edit: (text: string) => string,
+): UserContent[] {
+	const headTextIndex = content.findIndex((item) => item.type === 'text');
+	if (headTextIndex === -1) {
+		return [{ type: 'text', text: edit('') }, ...content];
+	}
+
+	return content.map((item, index) => {
+		if (index !== headTextIndex || item.type !== 'text') return item;
+		return { ...item, text: edit(item.text) };
+	});
 }
