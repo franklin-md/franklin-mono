@@ -3,6 +3,7 @@ import type {
 	SelectorFields,
 	SelectorIntegerOptions,
 	SelectorIntegerRange,
+	SelectorIntegerRangeParseResult,
 } from './types.js';
 
 export class ParsedSelector {
@@ -59,15 +60,23 @@ export class ParsedSelector {
 	): SelectorIntegerRange | undefined {
 		const value = this.string(key);
 		if (value === undefined) return undefined;
-		const parts = value.split('-');
-		if (parts.length > 2) return undefined;
-		const start = parseSelectorInteger(parts[0], options);
-		const end =
-			parts.length === 2 ? parseSelectorInteger(parts[1], options) : start;
-		if (start === undefined || end === undefined || start > end)
-			return undefined;
-		return { start, end };
+		const parsed = parseSelectorIntegerRangeValue(value, options);
+		return parsed.ok ? parsed.range : undefined;
 	}
+}
+
+export function parseSelectorIntegerRangeValue(
+	value: string,
+	options: SelectorIntegerOptions = {},
+): SelectorIntegerRangeParseResult {
+	const parts = value.split('-');
+	if (parts.length > 2) return { ok: false };
+	const start = parseSelectorInteger(parts[0], options);
+	const end =
+		parts.length === 2 ? parseSelectorInteger(parts[1], options) : start;
+	if (start === undefined || end === undefined) return { ok: false };
+	if (start > end) return { ok: false, reversed: { start, end } };
+	return { ok: true, range: { start, end } };
 }
 
 function formatSelectorValue(

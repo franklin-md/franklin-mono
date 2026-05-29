@@ -15,3 +15,13 @@ export type SelectorIntegerOptions = {
 	readonly min?: number;
 	readonly max?: number;
 };
+
+export type SelectorIntegerRangeParseResult =
+	| {
+			readonly ok: true;
+			readonly range: SelectorIntegerRange;
+	  }
+	| {
+			readonly ok: false;
+			readonly reversed?: SelectorIntegerRange;
+	  };

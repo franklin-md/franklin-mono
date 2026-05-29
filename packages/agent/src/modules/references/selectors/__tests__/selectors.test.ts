@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ParsedSelector } from '../index.js';
+import { ParsedSelector, parseSelectorIntegerRangeValue } from '../index.js';
 
 describe('selector codec', () => {
 	it('stringifies selector fields in a stable compact format', () => {
@@ -46,5 +46,12 @@ describe('selector codec', () => {
 		expect(
 			ParsedSelector.parse('pages=0-10').integerRange('pages', { min: 1 }),
 		).toBeUndefined();
+	});
+
+	it('reports reversed raw ranges for provider correction messages', () => {
+		expect(parseSelectorIntegerRangeValue('12-10', { min: 1 })).toEqual({
+			ok: false,
+			reversed: { start: 12, end: 10 },
+		});
 	});
 });

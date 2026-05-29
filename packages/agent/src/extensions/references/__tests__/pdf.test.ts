@@ -179,6 +179,85 @@ describe('createPDFDocumentReferenceExtension', () => {
 		}
 	});
 
+	it('defaults PDF materialization to the first ten pages with continuation guidance', async () => {
+		const filesystem = new MemoryFilesystem();
+		const pdf = new TextEncoder().encode('%PDF-1.7\n');
+		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
+		const { runtime } = await createReferenceRuntime({ filesystem });
+
+		try {
+			const context = await runtime.references.toContext({
+				type: FILESYSTEM_FILE_REFERENCE_TYPE,
+				locator: '/project/paper.pdf',
+			});
+
+			expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(pdf, {
+				pages: { startPage: 1, endPage: 10 },
+			});
+			expect(context.content).toEqual([
+				{
+					type: 'text',
+					text: 'PDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
+				},
+				{ type: 'text', text: 'free pdf' },
+			]);
+		} finally {
+			await runtime.dispose();
+		}
+	});
+
+	it('clamps oversized PDF ranges and suggests the continuation range', async () => {
+		const filesystem = new MemoryFilesystem();
+		const pdf = new TextEncoder().encode('%PDF-1.7\n');
+		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
+		const { runtime } = await createReferenceRuntime({ filesystem });
+
+		try {
+			const context = await runtime.references.toContext({
+				type: FILESYSTEM_FILE_REFERENCE_TYPE,
+				locator: '/project/paper.pdf',
+				selector: 'pages=2-15',
+			});
+
+			expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(pdf, {
+				pages: { startPage: 2, endPage: 11 },
+			});
+			expect(context.content).toEqual([
+				{
+					type: 'text',
+					text: 'PDF materialization limited: requested pages 2-15, showing pages 2-11. Continue with selector "pages=12-15".',
+				},
+				{ type: 'text', text: 'free pdf' },
+			]);
+		} finally {
+			await runtime.dispose();
+		}
+	});
+
+	it('does not convert the whole PDF for reversed page ranges', async () => {
+		const filesystem = new MemoryFilesystem();
+		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
+		const { runtime } = await createReferenceRuntime({ filesystem });
+
+		try {
+			const context = await runtime.references.toContext({
+				type: FILESYSTEM_FILE_REFERENCE_TYPE,
+				locator: '/project/paper.pdf',
+				selector: 'pages=12-10',
+			});
+
+			expect(pdfMocks.freeConvertPDF).not.toHaveBeenCalled();
+			expect(context.content).toEqual([
+				{
+					type: 'text',
+					text: 'No PDF pages selected: selector "pages=12-10" starts after it ends. Use pages=10-12 to read that range.',
+				},
+			]);
+		} finally {
+			await runtime.dispose();
+		}
+	});
+
 	it('uses Mistral when the runtime has a Mistral API key', async () => {
 		const filesystem = new MemoryFilesystem();
 		const pdf = new TextEncoder().encode('%PDF-1.7\n');
@@ -201,10 +280,16 @@ describe('createPDFDocumentReferenceExtension', () => {
 				renderScreenshots,
 			});
 			expect(pdfMocks.mistralConvertPDF).toHaveBeenCalledWith(pdf, {
-				pages: undefined,
+				pages: { startPage: 1, endPage: 10 },
 			});
 			expect(pdfMocks.freeConvertPDF).not.toHaveBeenCalled();
-			expect(context.content).toEqual([{ type: 'text', text: 'mistral pdf' }]);
+			expect(context.content).toEqual([
+				{
+					type: 'text',
+					text: 'PDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
+				},
+				{ type: 'text', text: 'mistral pdf' },
+			]);
 		} finally {
 			await runtime.dispose();
 		}

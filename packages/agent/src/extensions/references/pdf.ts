@@ -10,7 +10,10 @@ import type {
 	ReferenceHandlerRuntime,
 } from '../../modules/references/api/index.js';
 import type { ReferencesModule } from '../../modules/references/module.js';
-import { ParsedSelector } from '../../modules/references/selectors/index.js';
+import {
+	ParsedSelector,
+	parseSelectorIntegerRangeValue,
+} from '../../modules/references/selectors/index.js';
 import { convertPDF } from '../pdf/convert.js';
 import { createPDFConverterResolver } from '../pdf/resolve-converter.js';
 import type { ReadPDFExtensionOptions, PDFPageRange } from '../pdf/types.js';
@@ -26,6 +29,11 @@ export type PdfPageRange = {
 	readonly start: number;
 	readonly end: number;
 };
+
+// PDF conversion can invoke OCR and screenshot rendering, so page count is the
+// cost boundary. Ten pages is enough for section-level reading while keeping
+// pagination predictable with pages=N-M.
+const PDF_MATERIALIZATION_PAGE_LIMIT = 10;
 
 type PDFReferenceRuntime = ReferenceHandlerRuntime & AuthDependencyRuntime;
 
@@ -55,12 +63,27 @@ export function createPDFDocumentReferenceExtension({
 				};
 			}
 
+			const selection = selectPDFPages(reference.selector);
+			if (selection.issue) {
+				return {
+					content: [{ type: 'text', text: selection.issue }],
+				};
+			}
+
 			const converter = await resolvePDFConverter(runtime);
 			const converted = await convertPDF(reference.data.bytes, {
 				converter,
-				pages: toPDFPageRange(reference.selector),
+				pages: toPDFPageRange(selection.pages),
 			});
-			return { content: converted.content };
+			if (converted.isError) return converted;
+			return {
+				content: [
+					...(selection.note
+						? [{ type: 'text' as const, text: selection.note }]
+						: []),
+					...converted.content,
+				],
+			};
 		},
 	};
 
@@ -83,8 +106,7 @@ function referenceLabel(reference: Reference): string {
 }
 
 function pageSuffix(selector: string | undefined): string {
-	const pdfSelector = parsePdfReferenceSelector(selector);
-	const pages = pdfSelector.pages;
+	const pages = parsePdfReferenceSelector(selector).pages;
 	if (!pages) return '';
 	if (pages.start === pages.end) return ` page ${pages.start}`;
 	return ` pages ${pages.start}-${pages.end}`;
@@ -103,10 +125,68 @@ export function parsePdfReferenceSelector(
 	return pages ? { pages } : {};
 }
 
-function toPDFPageRange(
-	selector: string | undefined,
-): PDFPageRange | undefined {
-	const pages = parsePdfReferenceSelector(selector).pages;
-	if (!pages) return undefined;
+function toPDFPageRange(pages: PdfPageRange): PDFPageRange {
 	return { startPage: pages.start, endPage: pages.end };
+}
+
+type PDFPageSelection = {
+	readonly pages: PdfPageRange;
+	readonly note?: string;
+	readonly issue?: string;
+};
+
+function selectPDFPages(selector: string | undefined): PDFPageSelection {
+	const parsed = ParsedSelector.parse(selector);
+	const rawPages = parsed.string('pages');
+	if (rawPages !== undefined) {
+		return boundPDFPages('pages', rawPages);
+	}
+
+	const rawPage = parsed.string('page');
+	if (rawPage !== undefined) {
+		return boundPDFPages('page', rawPage);
+	}
+
+	return {
+		pages: { start: 1, end: PDF_MATERIALIZATION_PAGE_LIMIT },
+		note: `PDF materialization limited: showing up to pages 1-${PDF_MATERIALIZATION_PAGE_LIMIT}. Continue with selector "pages=${
+			PDF_MATERIALIZATION_PAGE_LIMIT + 1
+		}-${PDF_MATERIALIZATION_PAGE_LIMIT * 2}" if needed.`,
+	};
+}
+
+function boundPDFPages(
+	field: 'page' | 'pages',
+	value: string,
+): PDFPageSelection {
+	const parsedRange = parseSelectorIntegerRangeValue(value, { min: 1 });
+	if (!parsedRange.ok) {
+		const reversed = parsedRange.reversed;
+		if (reversed) {
+			return {
+				pages: { start: 1, end: PDF_MATERIALIZATION_PAGE_LIMIT },
+				issue: `No PDF pages selected: selector "${field}=${value}" starts after it ends. Use pages=${reversed.end}-${reversed.start} to read that range.`,
+			};
+		}
+		return {
+			pages: { start: 1, end: PDF_MATERIALIZATION_PAGE_LIMIT },
+			issue: `No PDF pages selected: selector "${field}=${value}" is invalid. Use pages=N-M to read a bounded range.`,
+		};
+	}
+
+	const range = parsedRange.range;
+	const boundedEnd = Math.min(
+		range.end,
+		range.start + PDF_MATERIALIZATION_PAGE_LIMIT - 1,
+	);
+	if (boundedEnd === range.end) {
+		return { pages: range };
+	}
+
+	return {
+		pages: { start: range.start, end: boundedEnd },
+		note: `PDF materialization limited: requested pages ${range.start}-${range.end}, showing pages ${range.start}-${boundedEnd}. Continue with selector "pages=${
+			boundedEnd + 1
+		}-${range.end}".`,
+	};
 }

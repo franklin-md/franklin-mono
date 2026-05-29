@@ -198,6 +198,10 @@ describe('built-in reference extensions', () => {
 		expect(context.content).toEqual([
 			{
 				type: 'text',
+				text: 'PDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
+			},
+			{
+				type: 'text',
 				text: 'converted pdf',
 			},
 		]);

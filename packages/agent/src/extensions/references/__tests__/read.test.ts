@@ -81,7 +81,134 @@ async function drain(iterable: AsyncIterable<unknown>): Promise<void> {
 	}
 }
 
+type MockMiniACP = ReturnType<typeof createMockMiniACP>;
+
+function firstToolResultText(mock: MockMiniACP): string {
+	const content = mock.calls().toolResults[0]?.content[0];
+	expect(content?.type).toBe('text');
+	if (content?.type !== 'text') {
+		throw new Error('Expected first tool result content to be text.');
+	}
+	return content.text;
+}
+
 describe('referenceReadExtension', () => {
+	it('limits default filesystem text materialization and suggests the next range', async () => {
+		const filesystem = new MemoryFilesystem();
+		const lines = Array.from(
+			{ length: 2002 },
+			(_, index) => `line ${index + 1}`,
+		);
+		filesystem.seed('/project/large.md' as AbsolutePath, lines.join('\n'));
+		const { runtime, mock } = await createReferenceReadRuntime(
+			filesystem,
+			turn([
+				toolCalls([
+					{
+						name: 'read_file',
+						arguments: { path: '/project/large.md' },
+					},
+				]),
+				turnEnd(),
+			]),
+		);
+
+		try {
+			await drain(
+				runtime.prompt({
+					role: 'user',
+					content: [{ type: 'text', text: 'read note' }],
+				}),
+			);
+
+			const text = firstToolResultText(mock);
+			expect(text).toContain('line 1');
+			expect(text).toContain('line 2000');
+			expect(text).not.toContain('\nline 2001\n');
+			expect(text).toContain('Continue with selector "lines=2001-2002"');
+		} finally {
+			await runtime.dispose();
+		}
+	});
+
+	it('clamps oversized text selectors and suggests the continuation range', async () => {
+		const filesystem = new MemoryFilesystem();
+		const lines = Array.from(
+			{ length: 2500 },
+			(_, index) => `line ${index + 1}`,
+		);
+		filesystem.seed('/project/large.md' as AbsolutePath, lines.join('\n'));
+		const { runtime, mock } = await createReferenceReadRuntime(
+			filesystem,
+			turn([
+				toolCalls([
+					{
+						name: 'read_file',
+						arguments: {
+							path: '/project/large.md',
+							selector: 'lines=100-2300',
+						},
+					},
+				]),
+				turnEnd(),
+			]),
+		);
+
+		try {
+			await drain(
+				runtime.prompt({
+					role: 'user',
+					content: [{ type: 'text', text: 'read note' }],
+				}),
+			);
+
+			const text = firstToolResultText(mock);
+			expect(text).toContain('line 100');
+			expect(text).toContain('line 2099');
+			expect(text).not.toContain('\nline 2100\n');
+			expect(text).toContain('Continue with selector "lines=2100-2300"');
+		} finally {
+			await runtime.dispose();
+		}
+	});
+
+	it('does not fall back to the whole text file for reversed line ranges', async () => {
+		const filesystem = new MemoryFilesystem();
+		const lines = Array.from({ length: 20 }, (_, index) => `line ${index + 1}`);
+		filesystem.seed('/project/large.md' as AbsolutePath, lines.join('\n'));
+		const { runtime, mock } = await createReferenceReadRuntime(
+			filesystem,
+			turn([
+				toolCalls([
+					{
+						name: 'read_file',
+						arguments: {
+							path: '/project/large.md',
+							selector: 'lines=12-10',
+						},
+					},
+				]),
+				turnEnd(),
+			]),
+		);
+
+		try {
+			await drain(
+				runtime.prompt({
+					role: 'user',
+					content: [{ type: 'text', text: 'read note' }],
+				}),
+			);
+
+			const text = firstToolResultText(mock);
+			expect(text).toContain('No text lines selected');
+			expect(text).toContain('Use lines=10-12');
+			expect(text).not.toContain('line 1');
+		} finally {
+			await runtime.dispose();
+		}
+	});
+
 	it('reads filesystem text through references and records the file as read', async () => {
 		const filesystem = new MemoryFilesystem();
 		filesystem.seed('/project/note.md' as AbsolutePath, 'alpha\nbeta\ngamma');
