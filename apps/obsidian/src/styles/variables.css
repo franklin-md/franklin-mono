@@ -29,7 +29,7 @@
 	--muted: var(--background-secondary);
 	--muted-foreground: var(--text-muted);
 
-	--accent: var(--background-primary-alt);
+	--accent: var(--background-modifier-hover);
 	--accent-foreground: var(--text-normal);
 
 	/* ── Interactive / primary ──────────────────────────────── */
