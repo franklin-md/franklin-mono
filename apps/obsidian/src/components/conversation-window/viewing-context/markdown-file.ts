@@ -6,8 +6,8 @@ export type ViewedMarkdownFile = {
 	};
 };
 
-
-// TODO: we should start accounting for more than just viewed markdown files, but also PDFs (along with pages) and websites.
+// TODO(FRA-349): Account for more than viewed Markdown files, including PDFs
+// with page context and websites.
 export function toViewedMarkdownFile(
 	value: unknown,
 ): ViewedMarkdownFile | null {

@@ -21,16 +21,16 @@ export function syncWorkspaceViewingContext({
 	viewingContext,
 	now = Date.now,
 }: SyncWorkspaceViewingContextOptions): WorkspaceViewingContextSync {
-    // Stores `lastViewed` information so it may be attached to references
+	// Stores `lastViewed` information so it may be attached to references
 	const openedAtByPath = new Map<string, number>();
 	let disposed = false;
 
 	const sync = () => {
 		if (disposed) return;
 
-        // TODO: Arguably the collect should be without opened
-        // Then another method attaches opened information
-        // Lastly, another method is in charge of ordering.
+		// TODO: Arguably the collect should be without opened
+		// Then another method attaches opened information
+		// Lastly, another method is in charge of ordering.
 		const references = collectViewedReferences(workspace, openedAtByPath);
 		viewingContext.set((draft) => {
 			draft.references = references;
@@ -54,6 +54,7 @@ export function syncWorkspaceViewingContext({
 	];
 
 	workspace.onLayoutReady(sync);
+	sync();
 
 	return {
 		sync,

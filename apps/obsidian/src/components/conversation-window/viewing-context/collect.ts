@@ -10,8 +10,7 @@ export function collectViewedReferences(
 	workspace: Workspace,
 	openedAtByPath: ReadonlyMap<string, number>,
 ): ViewedReference[] {
-
-    // Go through all open resources
+	// Go through all open resources
 	const filesByPath = new Map<string, ViewedMarkdownFile>();
 	const activePath = toViewedMarkdownFile(workspace.getActiveFile())?.path;
 
@@ -22,7 +21,7 @@ export function collectViewedReferences(
 		filesByPath.set(file.path, file);
 	});
 
-    // Turn to a ViewedReference
+	// Turn to a ViewedReference
 	return Array.from(filesByPath.values())
 		.map((file): ViewedReference => {
 			const openedAt = openedAtByPath.get(file.path);

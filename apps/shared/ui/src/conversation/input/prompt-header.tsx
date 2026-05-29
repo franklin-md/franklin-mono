@@ -12,7 +12,7 @@ export function PromptHeader({
 	if (children == null) return null;
 
 	return (
-		<div className={cn('px-4 pt-3', className)} {...props}>
+		<div className={cn('px-4 pt-4', className)} {...props}>
 			{children}
 		</div>
 	);
