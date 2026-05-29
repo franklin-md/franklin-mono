@@ -90,20 +90,33 @@ function encodeReference(reference: Reference): string {
 function decodeReference(encoded: string): Reference | undefined {
 	try {
 		const value = JSON.parse(decodeURIComponent(encoded));
-		return isReference(value) ? value : undefined;
+		return toReference(value);
 	} catch {
 		return undefined;
 	}
 }
 
-function isReference(value: unknown): value is Reference {
-	return (
-		typeof value === 'object' &&
-		value !== null &&
-		'locator' in value &&
-		typeof value.locator === 'string' &&
-		(!('type' in value) || typeof value.type === 'string') &&
-		(!('selector' in value) || typeof value.selector === 'string') &&
-		(!('label' in value) || typeof value.label === 'string')
-	);
+function toReference(value: unknown): Reference | undefined {
+	if (!isRecord(value)) {
+		return undefined;
+	}
+
+	const { locator, selector, label } = value;
+	if (
+		typeof locator !== 'string' ||
+		(selector !== undefined && typeof selector !== 'string') ||
+		(label !== undefined && typeof label !== 'string')
+	) {
+		return undefined;
+	}
+
+	return {
+		locator,
+		...(selector !== undefined ? { selector } : {}),
+		...(label !== undefined ? { label } : {}),
+	};
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null;
 }

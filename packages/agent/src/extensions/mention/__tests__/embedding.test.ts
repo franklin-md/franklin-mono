@@ -9,7 +9,6 @@ import {
 describe('reference mention embedding', () => {
 	it('formats and parses reference mentions', () => {
 		const reference = {
-			type: 'file',
 			locator: 'notes/deep work.md',
 			selector: 'lines=1-5',
 			label: 'Deep work',
@@ -20,9 +19,31 @@ describe('reference mention embedding', () => {
 		expect(parseReferenceMention(mention)).toEqual(reference);
 	});
 
+	it('parses reference mentions into the public reference shape', () => {
+		const mention = `@{reference:${encodeURIComponent(
+			JSON.stringify({
+				type: 'file',
+				locator: 'notes/deep work.md',
+				selector: 'lines=1-5',
+				label: 'Deep work',
+				data: {
+					type: 'bytes',
+					bytes: [1, 2, 3],
+				},
+				extra: 'ignored',
+			}),
+		)}}`;
+
+		expect(parseReferenceMention(mention)).toEqual({
+			locator: 'notes/deep work.md',
+			selector: 'lines=1-5',
+			label: 'Deep work',
+		});
+	});
+
 	it('splits text into sequenced text and reference segments', () => {
-		const first = { type: 'file', locator: 'notes/a.md' };
-		const second = { type: 'file', locator: 'b.md', label: 'B' };
+		const first = { locator: 'notes/a.md' };
+		const second = { locator: 'b.md', label: 'B' };
 
 		expect(
 			splitMentionSegments(

@@ -18,6 +18,10 @@ function userPrompt(text: string) {
 	};
 }
 
+function encodedReferenceMention(value: unknown): string {
+	return `@{reference:${encodeURIComponent(JSON.stringify(value))}}`;
+}
+
 async function createMentionRuntime() {
 	const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
 	const module = buildStateExtensionModule([
@@ -46,7 +50,6 @@ async function createMentionRuntime() {
 describe('mentionExtension', () => {
 	it('appends materialized reference content to prompts with embedded references', async () => {
 		const reference = {
-			type: 'file',
 			locator: 'notes/deep work.md',
 			label: 'notes/deep work.md',
 		};
@@ -69,7 +72,6 @@ describe('mentionExtension', () => {
 
 	it('deduplicates repeated references within a prompt', async () => {
 		const reference = {
-			type: 'file',
 			locator: 'notes/deep work.md',
 			label: 'notes/deep work.md',
 		};
@@ -87,7 +89,35 @@ describe('mentionExtension', () => {
 
 	it('deduplicates references by identity instead of label', async () => {
 		const first = {
-			type: 'file',
+			locator: 'notes/deep work.md',
+			selector: 'lines=1-5',
+			label: 'Deep Work',
+		};
+		const second = {
+			locator: 'notes/deep work.md',
+			selector: 'lines=1-5',
+			label: 'Deep Work Copy',
+		};
+		const { runtime, materialize } = await createMentionRuntime();
+
+		try {
+			await collectEvents(
+				runtime.prompt(
+					userPrompt(
+						`${formatReferenceMention(first)}\n${formatReferenceMention(second)}`,
+					),
+				),
+			);
+		} finally {
+			await runtime.dispose();
+		}
+
+		expect(materialize).toHaveBeenCalledTimes(1);
+		expect(materialize).toHaveBeenCalledWith(first);
+	});
+
+	it('deduplicates references that only differ by legacy type metadata', async () => {
+		const first = {
 			locator: 'notes/deep work.md',
 			selector: 'lines=1-5',
 			label: 'Deep Work',
@@ -104,7 +134,7 @@ describe('mentionExtension', () => {
 			await collectEvents(
 				runtime.prompt(
 					userPrompt(
-						`${formatReferenceMention(first)}\n${formatReferenceMention(second)}`,
+						`${encodedReferenceMention(first)}\n${encodedReferenceMention(second)}`,
 					),
 				),
 			);
