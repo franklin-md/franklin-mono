@@ -21,7 +21,7 @@ import type {
 type ReadPDFModules = [
 	CoreModule,
 	EnvironmentModule,
-	// TODO: Is this the right Dependency? Do we maybe want something like SettingsModule?
+	// TODO(FRA-348): Is this the right Dependency? Do we maybe want something like SettingsModule?
 	// Or what about ConfigurationModule, and you just sync settings as a configuraiton overide?
 	AuthDependencyModule,
 ];

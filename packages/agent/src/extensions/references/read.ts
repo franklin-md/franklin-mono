@@ -40,6 +40,10 @@ export const referenceReadExtension = defineExtension<
 
 			if (!context.isError) {
 				const file = createFileControl(ctx.getStore(fileKey));
+				// TODO(FRA-344): Record the read hash from the exact bytes materialized by the
+				// reference pipeline. Calling markFileRead without content re-reads the
+				// path, so a file that changes between materialization and hash recording
+				// can authorize edit_file against content the model never saw.
 				await file.markFileRead(ctx.environment.filesystem, path);
 			}
 

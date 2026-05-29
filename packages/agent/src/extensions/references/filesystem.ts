@@ -43,7 +43,7 @@ const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime>
 
 			const bytes = await fs.readFile(path);
 			const fileType = await fileTypeFromBuffer(bytes);
-			// TODO: I would prefer a more robost bytes + path -> mime converter.
+			// TODO(FRA-347): I would prefer a more robust bytes + path -> mime converter.
 			const mime =
 				fileType?.mime ?? (isPdfPath(path) ? 'application/pdf' : undefined);
 			const context = await delegate({

@@ -49,6 +49,10 @@ Once created, this is useful because it allows for:
 
 - **Instead of using `delegate`, we could just use suitable return objects**
 
+- **Materialization result shape**:
+  - TODO(FRA-343): Define a richer pipeline result than `ReferenceContext` before tightening `read_file` edit authorization. The final materialized view needs to distinguish actual resource content from diagnostic guidance such as "no lines selected" so read tools can decide whether the view is non-empty and edit-authorizing.
+  - TODO(FRA-345): Revisit rendered provenance. Forcing providers to prepend labels such as `Reference: ...` may be the wrong layer; provenance may belong in structured metadata that the final materializer/tool renderer chooses to include.
+
 ## Open Questions
 
 - Does `Reference` system even need to be a `Module`? Could it not use the `ConfigurationModule` system?

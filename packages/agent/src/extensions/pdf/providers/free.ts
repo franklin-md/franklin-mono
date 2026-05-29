@@ -23,6 +23,9 @@ export class FreePDFConverter implements PDFConverter {
 		pdf: Uint8Array,
 		options: PDFConvertOptions = {},
 	): Promise<PDFInput> {
+		// TODO(FRA-346): Page selection should happen before conversion by slicing the
+		// source bytes into a smaller PDF. This fallback still extracts full-document
+		// text/links and only filters returned page text afterward.
 		const [text, links, screenshots] = await Promise.all([
 			extractText(new Uint8Array(pdf), { mergePages: false }),
 			extractLinks(new Uint8Array(pdf)),
