@@ -1,12 +1,7 @@
 import { createObserver } from '@franklin/lib';
-import Fuse, { type FuseSortFunctionArg, type IFuseOptions } from 'fuse.js';
+import Fuse, { type IFuseOptions } from 'fuse.js';
 
-import type {
-	FileIndex,
-	FileIndexItem,
-	FileIndexSortFn,
-	FileSearchOptions,
-} from './types.js';
+import type { FileIndex, FileIndexItem, FileSearchOptions } from './types.js';
 
 interface FuseDocument<TMetadata> extends FileIndexItem<TMetadata> {
 	readonly name: string;
@@ -19,12 +14,7 @@ const DEFAULT_FUSE_OPTIONS = {
 	],
 	threshold: 0.35,
 	ignoreLocation: true,
-	includeScore: true,
 } satisfies IFuseOptions<FuseDocument<unknown>>;
-
-export interface FuseFileIndexOptions<TMetadata = unknown> {
-	readonly sortFn?: FileIndexSortFn<TMetadata>;
-}
 
 function getPathName(path: string): string {
 	const normalized = path.replace(/\\/g, '/').replace(/\/+$/, '');
@@ -46,84 +36,23 @@ function toIndexItem<TMetadata>(
 	return { path: item.path, metadata: item.metadata };
 }
 
-function compareSearchResults<TMetadata>(
-	documents: readonly FuseDocument<TMetadata>[],
-	sortFn: FileIndexSortFn<TMetadata> | undefined,
-	left: FuseSortFunctionArg,
-	right: FuseSortFunctionArg,
-): number {
-	const scoreDifference = left.score - right.score;
-	if (scoreDifference !== 0) {
-		return scoreDifference;
-	}
-
-	const leftItem = documents[left.idx];
-	const rightItem = documents[right.idx];
-	if (sortFn && leftItem && rightItem) {
-		const sortDifference = sortFn(leftItem, rightItem);
-		if (sortDifference !== 0) {
-			return sortDifference;
-		}
-	}
-
-	return left.idx - right.idx;
-}
-
-function compareEmptyQueryItems<TMetadata>(
-	sortFn: FileIndexSortFn<TMetadata> | undefined,
-	left: { readonly index: number; readonly item: FuseDocument<TMetadata> },
-	right: { readonly index: number; readonly item: FuseDocument<TMetadata> },
-): number {
-	if (sortFn) {
-		const sortDifference = sortFn(left.item, right.item);
-		if (sortDifference !== 0) {
-			return sortDifference;
-		}
-	}
-
-	return left.index - right.index;
-}
-
 export class FuseFileIndex<
 	TMetadata = unknown,
 > implements FileIndex<TMetadata> {
 	private readonly observer = createObserver();
-	private readonly documents: FuseDocument<TMetadata>[];
 	private readonly fuse: Fuse<FuseDocument<TMetadata>>;
-	private readonly sortFn: FileIndexSortFn<TMetadata> | undefined;
 
-	constructor(
-		items: readonly FileIndexItem<TMetadata>[] = [],
-		options: FuseFileIndexOptions<TMetadata> = {},
-	) {
-		this.documents = items.map(createDocument);
-		this.sortFn = options.sortFn;
-		this.fuse = new Fuse(this.documents, {
-			...DEFAULT_FUSE_OPTIONS,
-			sortFn: (left, right) =>
-				compareSearchResults(this.documents, this.sortFn, left, right),
-		});
+	constructor(items: readonly FileIndexItem<TMetadata>[] = []) {
+		this.fuse = new Fuse(items.map(createDocument), DEFAULT_FUSE_OPTIONS);
 	}
 
 	search(
 		query: string,
 		options: FileSearchOptions = {},
 	): readonly FileIndexItem<TMetadata>[] {
-		if (!query.trim()) {
-			const results = this.documents
-				.map((item, index) => ({ item, index }))
-				.sort((left, right) =>
-					compareEmptyQueryItems(this.sortFn, left, right),
-				);
-			const limited =
-				options.limit === undefined ? results : results.slice(0, options.limit);
-			return limited.map((result) => toIndexItem(result.item));
-		}
-
-		const results = this.fuse.search(query);
-		const limited =
-			options.limit === undefined ? results : results.slice(0, options.limit);
-		return limited.map((result) => toIndexItem(result.item));
+		return this.fuse
+			.search(query, { limit: options.limit })
+			.map((result) => toIndexItem(result.item));
 	}
 
 	upsert(items: readonly FileIndexItem<TMetadata>[]): void {

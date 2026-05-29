@@ -2,22 +2,16 @@ import {
 	FuseFileIndex,
 	type FileIndex,
 	type FileIndexItem,
-	type FileIndexSortFn,
 	type FileSearchOptions,
 } from '@franklin/react';
 import type { App, EventRef, TAbstractFile, TFile, Vault } from 'obsidian';
 
-export interface ObsidianFileMetadata {
-	readonly mtime: number;
-}
-
-type ObsidianFileIndexItem = FileIndexItem<ObsidianFileMetadata>;
-
-const sortByMtime: FileIndexSortFn<ObsidianFileMetadata> = (left, right) =>
-	right.metadata.mtime - left.metadata.mtime;
+type ObsidianFileIndexItem = FileIndexItem<undefined>;
 
 function createItem(file: TFile): ObsidianFileIndexItem {
-	return { path: file.path, metadata: { mtime: file.stat.mtime } };
+	// TODO: Add mtime metadata here once the Fuse-backed index has an explicit,
+	// measured sorting strategy for recency tie-breaks.
+	return { path: file.path, metadata: undefined };
 }
 
 function createItemMap(vault: Vault): Map<string, ObsidianFileIndexItem> {
@@ -37,13 +31,13 @@ function difference(
 	return paths;
 }
 
-function changedItems(
+function addedItems(
 	source: ReadonlyMap<string, ObsidianFileIndexItem>,
 	against: ReadonlyMap<string, ObsidianFileIndexItem>,
 ): ObsidianFileIndexItem[] {
 	const items: ObsidianFileIndexItem[] = [];
 	for (const [path, item] of source) {
-		if (against.get(path)?.metadata.mtime !== item.metadata.mtime) {
+		if (!against.has(path)) {
 			items.push(item);
 		}
 	}
@@ -56,8 +50,8 @@ export interface ObsidianFileIndexOptions {
 
 const DEFAULT_RECONCILE_DEBOUNCE_MS = 500;
 
-export class ObsidianFileIndex implements FileIndex<ObsidianFileMetadata> {
-	private readonly fileIndex: FileIndex<ObsidianFileMetadata>;
+export class ObsidianFileIndex implements FileIndex<undefined> {
+	private readonly fileIndex: FileIndex<undefined>;
 	private readonly debounceMs: number;
 	private readonly eventRefs: EventRef[] = [];
 	private readonly vault: Vault;
@@ -69,9 +63,7 @@ export class ObsidianFileIndex implements FileIndex<ObsidianFileMetadata> {
 		this.vault = app.vault;
 		this.debounceMs = options.debounceMs ?? DEFAULT_RECONCILE_DEBOUNCE_MS;
 		this.indexedItems = createItemMap(this.vault);
-		this.fileIndex = new FuseFileIndex(Array.from(this.indexedItems.values()), {
-			sortFn: sortByMtime,
-		});
+		this.fileIndex = new FuseFileIndex(Array.from(this.indexedItems.values()));
 
 		app.workspace.onLayoutReady(() => {
 			this.registerVaultEvents();
@@ -124,7 +116,6 @@ export class ObsidianFileIndex implements FileIndex<ObsidianFileMetadata> {
 		this.eventRefs.push(
 			this.vault.on('create', this.scheduleReconcile),
 			this.vault.on('delete', this.scheduleReconcile),
-			this.vault.on('modify', this.scheduleReconcile),
 			this.vault.on('rename', this.scheduleReconcile),
 		);
 	}
@@ -156,7 +147,7 @@ export class ObsidianFileIndex implements FileIndex<ObsidianFileMetadata> {
 
 		const nextItems = createItemMap(this.vault);
 		const removedPaths = difference(this.indexedItems, nextItems);
-		const changed = changedItems(nextItems, this.indexedItems);
+		const added = addedItems(nextItems, this.indexedItems);
 		this.indexedItems = nextItems;
 
 		// Full-snapshot reconciliation keeps folder rename/delete handling simple.
@@ -165,8 +156,8 @@ export class ObsidianFileIndex implements FileIndex<ObsidianFileMetadata> {
 		if (removedPaths.length > 0) {
 			this.fileIndex.remove(removedPaths);
 		}
-		if (changed.length > 0) {
-			this.fileIndex.upsert(changed);
+		if (added.length > 0) {
+			this.fileIndex.upsert(added);
 		}
 	};
 }

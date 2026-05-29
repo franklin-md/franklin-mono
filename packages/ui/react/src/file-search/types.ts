@@ -7,11 +7,6 @@ export interface FileSearchOptions {
 	readonly limit?: number;
 }
 
-export type FileIndexSortFn<TMetadata = unknown> = (
-	left: FileIndexItem<TMetadata>,
-	right: FileIndexItem<TMetadata>,
-) => number;
-
 export interface FileIndex<TMetadata = unknown> {
 	search(
 		query: string,

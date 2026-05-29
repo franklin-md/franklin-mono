@@ -83,7 +83,6 @@ export {
 export type {
 	FileIndex,
 	FileIndexItem,
-	FileIndexSortFn,
 	FileSearchOptions,
 	UseFileSearchOptions,
 } from './file-search/index.js';

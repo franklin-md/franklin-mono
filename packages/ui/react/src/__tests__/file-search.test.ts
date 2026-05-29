@@ -1,25 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { FuseFileIndex } from '../file-search/fuse-file-index.js';
-import type { FileIndexItem, FileIndexSortFn } from '../file-search/types.js';
-
-interface TestMetadata {
-	readonly mtime: number;
-}
+import type { FileIndexItem } from '../file-search/types.js';
 
 function item(path: string): FileIndexItem<undefined> {
 	return { path, metadata: undefined };
 }
-
-function itemWithMtime(
-	path: string,
-	mtime: number,
-): FileIndexItem<TestMetadata> {
-	return { path, metadata: { mtime } };
-}
-
-const sortByMtime: FileIndexSortFn<TestMetadata> = (left, right) =>
-	right.metadata.mtime - left.metadata.mtime;
 
 function paths(items: readonly FileIndexItem[]): string[] {
 	return items.map((item) => item.path);
@@ -46,69 +32,6 @@ describe('FuseFileIndex', () => {
 		]);
 
 		expect(paths(fileIndex.search('', { limit: 2 }))).toEqual(['a.md', 'b.md']);
-	});
-
-	it('orders empty-query results with the configured sort function', () => {
-		const fileIndex = new FuseFileIndex(
-			[
-				itemWithMtime('old.md', 10),
-				itemWithMtime('new.md', 20),
-				itemWithMtime('older.md', 5),
-			],
-			{ sortFn: sortByMtime },
-		);
-
-		expect(paths(fileIndex.search('', { limit: 2 }))).toEqual([
-			'new.md',
-			'old.md',
-		]);
-	});
-
-	it('uses the configured sort function as a tie-breaker for equivalent fuzzy matches', () => {
-		const fileIndex = new FuseFileIndex(
-			[
-				itemWithMtime('old/draft.md', 10),
-				itemWithMtime('new/draft.md', 20),
-				itemWithMtime('older/draft.md', 5),
-			],
-			{ sortFn: sortByMtime },
-		);
-
-		expect(paths(fileIndex.search('draft'))).toEqual([
-			'new/draft.md',
-			'old/draft.md',
-			'older/draft.md',
-		]);
-	});
-
-	it('applies configured tie-breaks before limiting results', () => {
-		const fileIndex = new FuseFileIndex(
-			[
-				itemWithMtime('old/draft.md', 10),
-				itemWithMtime('older/draft.md', 5),
-				itemWithMtime('new/draft.md', 20),
-			],
-			{ sortFn: sortByMtime },
-		);
-
-		expect(paths(fileIndex.search('draft', { limit: 1 }))).toEqual([
-			'new/draft.md',
-		]);
-	});
-
-	it('keeps stronger fuzzy matches ahead of newer weaker matches', () => {
-		const fileIndex = new FuseFileIndex(
-			[
-				itemWithMtime('notes/tomorrow.md', 10),
-				itemWithMtime('notes/today.md', 20),
-			],
-			{ sortFn: sortByMtime },
-		);
-
-		expect(paths(fileIndex.search('tom'))).toEqual([
-			'notes/tomorrow.md',
-			'notes/today.md',
-		]);
 	});
 
 	it('upserts by path without duplicating existing items', () => {

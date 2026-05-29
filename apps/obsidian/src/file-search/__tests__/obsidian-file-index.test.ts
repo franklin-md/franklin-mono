@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { makeFile } from '../../platform/filesystem/test-helpers.js';
 import { ObsidianFileIndex } from '../obsidian-file-index.js';
 
-type VaultEventName = 'create' | 'delete' | 'modify' | 'rename';
+type VaultEventName = 'create' | 'delete' | 'rename';
 
 interface MockEventRef extends EventRef {
 	readonly name: VaultEventName;
@@ -33,12 +33,6 @@ function makeFolder(path: string): TFolder {
 		parent: null,
 		isRoot: () => path === '',
 	} as TFolder;
-}
-
-function makeFileWithMtime(path: string, mtime: number): TFile {
-	const file = makeFile(path);
-	file.stat.mtime = mtime;
-	return file;
 }
 
 function pathsForQuery(app: App, query: string): string[] {
@@ -111,12 +105,6 @@ function createMockObsidianApp(
 		}
 	}
 
-	function emitModify(file: TAbstractFile): void {
-		for (const eventRef of eventRefs.filter((ref) => ref.name === 'modify')) {
-			eventRef.callback(file);
-		}
-	}
-
 	function emitRename(file: TAbstractFile, oldPath: string): void {
 		for (const eventRef of eventRefs.filter((ref) => ref.name === 'rename')) {
 			eventRef.callback(file, oldPath);
@@ -128,7 +116,6 @@ function createMockObsidianApp(
 		emitCreate,
 		emitDelete,
 		emitLayoutReady,
-		emitModify,
 		emitRename,
 		eventRefs,
 		setFiles,
@@ -167,7 +154,7 @@ describe('ObsidianFileIndex', () => {
 
 		emitLayoutReady();
 
-		expect(vault.on).toHaveBeenCalledTimes(4);
+		expect(vault.on).toHaveBeenCalledTimes(3);
 		fileIndex.dispose();
 	});
 
@@ -264,47 +251,6 @@ describe('ObsidianFileIndex', () => {
 		]);
 	});
 
-	it('uses modified file times to order equivalent fuzzy matches', () => {
-		installActiveWindow();
-		const { app } = createMockObsidianApp([
-			makeFileWithMtime('old/draft.md', 10),
-			makeFileWithMtime('new/draft.md', 20),
-		]);
-
-		expect(pathsForQuery(app, 'draft')).toEqual([
-			'new/draft.md',
-			'old/draft.md',
-		]);
-	});
-
-	it('updates modified file times after the event burst settles', () => {
-		installActiveWindow();
-		vi.useFakeTimers();
-		const oldDraft = makeFileWithMtime('old/draft.md', 10);
-		const newDraft = makeFileWithMtime('new/draft.md', 20);
-		const updatedOldDraft = makeFileWithMtime('old/draft.md', 30);
-		const { app, emitModify, setFiles } = createMockObsidianApp([
-			oldDraft,
-			newDraft,
-		]);
-		const fileIndex = new ObsidianFileIndex(app);
-
-		setFiles([updatedOldDraft, newDraft]);
-		emitModify(updatedOldDraft);
-
-		expect(fileIndex.search('draft').map((item) => item.path)).toEqual([
-			'new/draft.md',
-			'old/draft.md',
-		]);
-
-		vi.advanceTimersByTime(500);
-
-		expect(fileIndex.search('draft').map((item) => item.path)).toEqual([
-			'old/draft.md',
-			'new/draft.md',
-		]);
-	});
-
 	it('reconciles folder events from the next full vault snapshot', () => {
 		installActiveWindow();
 		vi.useFakeTimers();
@@ -367,7 +313,7 @@ describe('ObsidianFileIndex', () => {
 		fileIndex.dispose();
 		vi.advanceTimersByTime(500);
 
-		expect(vault.offref).toHaveBeenCalledTimes(4);
+		expect(vault.offref).toHaveBeenCalledTimes(3);
 		expect(fileIndex.search('diagram')).toEqual([]);
 	});
 });

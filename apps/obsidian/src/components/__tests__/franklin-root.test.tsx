@@ -75,6 +75,6 @@ describe('FranklinRoot', () => {
 
 		unmount();
 
-		expect(offref).toHaveBeenCalledTimes(4);
+		expect(offref).toHaveBeenCalledTimes(3);
 	});
 });
