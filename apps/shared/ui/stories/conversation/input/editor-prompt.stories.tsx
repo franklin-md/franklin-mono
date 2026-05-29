@@ -9,7 +9,7 @@ import {
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 
 import { PromptContainer } from '../../../src/conversation/input/prompt-container.js';
-import { PromptEditor } from '../../../src/conversation/input/prompt-editor.js';
+import { PromptEditor } from '../../../src/conversation/input/editor-prompt/editor.js';
 
 function EditorPromptStoryHarness({
 	children,
@@ -129,7 +129,7 @@ function getPromptLineMetrics(frame: HTMLElement) {
 }
 
 const meta = {
-	title: 'Conversation/Input/EditorPromptText',
+	title: 'Conversation/Input/PromptEditor',
 	component: EditorPromptStory,
 } satisfies Meta<typeof EditorPromptStory>;
 

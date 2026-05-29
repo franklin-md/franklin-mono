@@ -27,7 +27,7 @@ const editorClassName = cn(
 	'min-h-12 px-4 pt-4 pb-0 leading-6 outline-none',
 );
 
-export function EditorPromptText() {
+export function PromptEditor() {
 	const { input, setInput, send, cancel, sending } = usePrompt();
 	const [suggestion, setSuggestion] = useState(inactiveMentionSuggestion);
 	const mentionItems = useMentionItems(suggestion);

@@ -131,7 +131,7 @@ export {
 	PromptHeader,
 	type PromptHeaderProps,
 } from './conversation/input/prompt-header.js';
-export { PromptEditor } from './conversation/input/prompt-editor.js';
+export { PromptEditor } from './conversation/input/editor-prompt/editor.js';
 export {
 	PromptFooter,
 	type PromptFooterProps,
