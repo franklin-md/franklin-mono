@@ -4,8 +4,9 @@ import type {
 	Reference,
 	ReferencesModule,
 } from '../../modules/references/index.js';
+import { referenceIdentityKey } from '../../modules/references/index.js';
 import { defineExtension } from '../../modules/state/index.js';
-import { formatReferenceMention, splitMentionSegments } from './embedding.js';
+import { splitMentionSegments } from './embedding.js';
 
 export const mentionExtension = defineExtension<[CoreModule, ReferencesModule]>(
 	(api) => {
@@ -28,10 +29,10 @@ function uniquePromptReferences(content: readonly UserContent[]): Reference[] {
 		if (block.type !== 'text') continue;
 		for (const segment of splitMentionSegments(block.text)) {
 			if (segment.type !== 'reference') continue;
-			references.set(
-				formatReferenceMention(segment.reference),
-				segment.reference,
-			);
+			const key = referenceIdentityKey(segment.reference);
+			if (!references.has(key)) {
+				references.set(key, segment.reference);
+			}
 		}
 	}
 

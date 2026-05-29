@@ -85,6 +85,37 @@ describe('mentionExtension', () => {
 		expect(materialize).toHaveBeenCalledTimes(1);
 	});
 
+	it('deduplicates references by identity instead of label', async () => {
+		const first = {
+			type: 'file',
+			locator: 'notes/deep work.md',
+			selector: 'lines=1-5',
+			label: 'Deep Work',
+		};
+		const second = {
+			type: 'file',
+			locator: 'notes/deep work.md',
+			selector: 'lines=1-5',
+			label: 'Deep Work Copy',
+		};
+		const { runtime, materialize } = await createMentionRuntime();
+
+		try {
+			await collectEvents(
+				runtime.prompt(
+					userPrompt(
+						`${formatReferenceMention(first)}\n${formatReferenceMention(second)}`,
+					),
+				),
+			);
+		} finally {
+			await runtime.dispose();
+		}
+
+		expect(materialize).toHaveBeenCalledTimes(1);
+		expect(materialize).toHaveBeenCalledWith(first);
+	});
+
 	it('leaves prompts without embedded references unchanged', async () => {
 		const { mock, runtime, materialize } = await createMentionRuntime();
 

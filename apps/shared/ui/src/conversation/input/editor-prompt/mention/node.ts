@@ -1,6 +1,7 @@
 import type { JSONContent, TextSerializer } from '@tiptap/core';
 import type { MentionNodeAttrs } from '@tiptap/extension-mention';
 import {
+	FILESYSTEM_FILE_REFERENCE_TYPE,
 	MENTION_TRIGGER,
 	formatReferenceMention,
 	parseReferenceMention,
@@ -25,12 +26,7 @@ export function getMentionReference(
 export function createFileReferenceMentionAttrs(
 	item: FileReferenceItem,
 ): MentionNodeAttrs {
-	const reference = createFileReference(item);
-	return {
-		id: formatReferenceMention(reference),
-		label: reference.label,
-		mentionSuggestionChar: MENTION_TRIGGER,
-	};
+	return createReferenceMentionAttrs(createFileReference(item));
 }
 
 export function createFileReferenceMentionNodeContent(
@@ -45,11 +41,7 @@ export function createFileReferenceMentionNodeContent(
 
 	return {
 		type: MENTION_NODE_NAME,
-		attrs: {
-			id: formatReferenceMention(reference),
-			label: reference.label ?? reference.locator,
-			mentionSuggestionChar: MENTION_TRIGGER,
-		},
+		attrs: createReferenceMentionAttrs(reference),
 	};
 }
 
@@ -65,8 +57,16 @@ export const mentionTextSerializer: TextSerializer = ({ node }) =>
 
 function createFileReference(item: FileReferenceItem): Reference {
 	return {
-		type: 'file',
+		type: FILESYSTEM_FILE_REFERENCE_TYPE,
 		locator: item.path,
 		label: item.path,
+	};
+}
+
+function createReferenceMentionAttrs(reference: Reference): MentionNodeAttrs {
+	return {
+		id: formatReferenceMention(reference),
+		label: reference.label ?? reference.locator,
+		mentionSuggestionChar: MENTION_TRIGGER,
 	};
 }

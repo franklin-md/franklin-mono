@@ -5,12 +5,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { formatReferenceMention } from '@franklin/agent';
 
-import { referenceMentionMarkdown } from '../../../src/conversation/file-reference/markdown.js';
+import { referenceMentionMarkdown } from '../../../src/conversation/reference-mention/markdown.js';
 import {
 	REFERENCE_MENTION_ATTRIBUTE,
 	REFERENCE_MENTION_ELEMENT_NAME,
 	remarkReferenceMentions,
-} from '../../../src/conversation/file-reference/remark.js';
+} from '../../../src/conversation/reference-mention/remark.js';
 import { Markdown } from '../../../src/conversation/turn/markdown.js';
 
 function CapturedReference({ reference }: { readonly reference: string }) {

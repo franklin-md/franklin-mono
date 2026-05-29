@@ -1,7 +1,7 @@
 import { parseReferenceMention } from '@franklin/agent';
 import { FileBadge } from '../../components/file-icon/badge.js';
-import { isFileReference } from '../reference-mention/support.js';
 import type { MarkdownExtensions } from '../turn/markdown.js';
+import { isFileReference } from './support.js';
 
 import {
 	REFERENCE_MENTION_ATTRIBUTE,

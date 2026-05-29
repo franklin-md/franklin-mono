@@ -3,7 +3,7 @@ import {
 	splitMentionSegments,
 	type Reference,
 } from '@franklin/agent';
-import { isFileReference } from '../reference-mention/support.js';
+import { isFileReference } from './support.js';
 
 // TODO: This has an annoying amount of similarity with another remark plugin in this repo, we might look to create utilities out of their overlap
 

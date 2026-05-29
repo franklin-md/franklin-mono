@@ -1,6 +1,6 @@
 import type { UserMessage } from '@franklin/mini-acp';
 
-import { referenceMentionMarkdown } from '../file-reference/markdown.js';
+import { referenceMentionMarkdown } from '../reference-mention/markdown.js';
 import { Markdown } from './markdown.js';
 
 export function UserBubble({ message }: { message: UserMessage }) {
