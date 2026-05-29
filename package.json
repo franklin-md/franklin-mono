@@ -19,6 +19,7 @@
 		"lint:fix": "npm run lint -- --fix",
 		"typecheck": "npm run typecheck --workspaces --if-present",
 		"test": "vitest run",
+		"test:browser": "npm run test:browser --workspaces --if-present",
 		"test:watch": "vitest",
 		"test:changed": "vitest run --changed",
 		"check": "npm run format:check && npm run lint && npm run build",
