@@ -4,6 +4,7 @@ import type {
 	ReferenceDelegate,
 	ResolvedReference,
 } from './api/types.js';
+import { referenceKey } from './api/key.js';
 
 export type RegisteredReferenceHandler = {
 	test(reference: ResolvedReference): boolean;
@@ -34,7 +35,7 @@ export class ReferencesEngine {
 				matches = handler.test(reference);
 			} catch (err) {
 				return referenceUnavailable(
-					`Reference handler test for "${referenceName(reference)}" failed: ${errorMessage(err)}`,
+					`Reference handler test for "${referenceKey(reference)}" failed: ${errorMessage(err)}`,
 				);
 			}
 			if (!matches) continue;
@@ -47,13 +48,13 @@ export class ReferencesEngine {
 				);
 			} catch (err) {
 				return referenceUnavailable(
-					`Reference handler for "${referenceName(reference)}" failed: ${errorMessage(err)}`,
+					`Reference handler for "${referenceKey(reference)}" failed: ${errorMessage(err)}`,
 				);
 			}
 		}
 
 		return referenceUnavailable(
-			`No reference handler matched "${referenceName(reference)}"`,
+			`No reference handler matched "${referenceKey(reference)}"`,
 		);
 	}
 }
@@ -67,15 +68,11 @@ function normalizeContext(context: ReferenceContext): ReferenceContext {
 
 function referenceUnavailable(message: string): ReferenceContext {
 	return {
-		content: [{ type: 'text', text: `Reference unavailable: ${message}` }],
+		content: { type: 'text', text: `Reference unavailable: ${message}` },
 		isError: true,
 	};
 }
 
 function errorMessage(err: unknown): string {
 	return err instanceof Error ? err.message : String(err);
-}
-
-function referenceName(reference: Reference): string {
-	return reference.type ?? reference.locator;
 }

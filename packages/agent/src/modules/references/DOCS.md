@@ -2,7 +2,7 @@
 
 ### **Problem Statement**:
 
-> How do create a Reference -> Agent Context system that is extensible in the types and handling of resources?
+> How do create a Reference -> Agent Context system that is extensible in the handling of resources?
 
 Once created, this is useful because it allows for:
 
@@ -12,6 +12,7 @@ Once created, this is useful because it allows for:
 ### **Design**:
 
 - `Reference` stores `locator` (where the resource is) and `selector` (what parts of the resource)
+- A reference's context identity is `locator + selector`. `label` is display metadata for UI and rendered provenance, so it must not affect cache keys, deduplication, or whether two references point at the same context.
 - `ReferenceHandler` specifies:
   - `test`: Whether it can process this particular `Reference`
   - `toContext`: How it converts `Resource` into the agent context (i.e. `UserContent`)
@@ -51,6 +52,7 @@ Once created, this is useful because it allows for:
 
 - **Materialization result shape**:
   - TODO(FRA-343): Define a richer pipeline result than `ReferenceContext` before tightening `read_file` edit authorization. The final materialized view needs to distinguish actual resource content from diagnostic guidance such as "no lines selected" so read tools can decide whether the view is non-empty and edit-authorizing.
+    - This should also revisit whether the pipeline should collapse `test` and `toContext` into a decline-capable `toContext` chain. Returning "not handled" from `toContext` would keep path/resource probing next to materialization and remove duplicated invariants between `test` predicates and handler bodies.
   - TODO(FRA-345): Revisit rendered provenance. Forcing providers to prepend labels such as `Reference: ...` may be the wrong layer; provenance may belong in structured metadata that the final materializer/tool renderer chooses to include.
 
 ## Open Questions

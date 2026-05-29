@@ -9,3 +9,4 @@ export type {
 	ResolvedReference,
 } from './types.js';
 export type { ReferencesAPI, ReferencesSignature } from './api.js';
+export { referenceKey } from './key.js';

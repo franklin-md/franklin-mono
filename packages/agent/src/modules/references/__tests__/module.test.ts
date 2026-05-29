@@ -14,11 +14,11 @@ describe('createReferencesModule', () => {
 			(api) => {
 				api.registerReferenceHandler({
 					test(reference) {
-						return reference.type === 'text';
+						return reference.locator === 'hello';
 					},
 					toContext(reference) {
 						return {
-							content: [{ type: 'text', text: reference.locator }],
+							content: { type: 'text', text: reference.locator },
 						};
 					},
 				});
@@ -28,15 +28,14 @@ describe('createReferencesModule', () => {
 		expect(runtime.references).toBeInstanceOf(ReferencesEngine);
 		await expect(
 			runtime.references.toContext({
-				type: 'text',
 				locator: 'hello',
 			}),
 		).resolves.toEqual({
-			content: [{ type: 'text', text: 'hello' }],
+			content: { type: 'text', text: 'hello' },
 		});
 	});
 
-	it('returns unavailable content for unknown reference types', async () => {
+	it('returns unavailable content for unknown references', async () => {
 		const system = createReferencesModule();
 		const runtime = await compile(
 			system.extensionPoint,
@@ -46,16 +45,13 @@ describe('createReferencesModule', () => {
 
 		await expect(
 			runtime.references.toContext({
-				type: 'missing.reference',
-				locator: 'x',
+				locator: 'missing.reference',
 			}),
 		).resolves.toEqual({
-			content: [
-				{
-					type: 'text',
-					text: 'Reference unavailable: No reference handler matched "missing.reference"',
-				},
-			],
+			content: {
+				type: 'text',
+				text: 'Reference unavailable: No reference handler matched "l17:missing.reference|u0:"',
+			},
 			isError: true,
 		});
 	});
@@ -69,11 +65,10 @@ describe('createReferencesModule', () => {
 			(api) => {
 				api.registerReferenceHandler({
 					test(reference) {
-						return reference.type === 'alias.document';
+						return reference.locator === 'alias';
 					},
 					toContext(reference, delegate) {
 						return delegate({
-							type: 'text',
 							locator: 'expanded',
 							...(reference.label ? { label: reference.label } : {}),
 						});
@@ -81,11 +76,11 @@ describe('createReferencesModule', () => {
 				});
 				api.registerReferenceHandler({
 					test(reference) {
-						return reference.type === 'text';
+						return reference.locator === 'expanded';
 					},
 					toContext() {
 						return {
-							content: [{ type: 'text', text: 'expanded' }],
+							content: { type: 'text', text: 'expanded' },
 						};
 					},
 				});
@@ -93,12 +88,11 @@ describe('createReferencesModule', () => {
 		);
 
 		const context = await runtime.references.toContext({
-			type: 'alias.document',
 			locator: 'alias',
 		});
 
 		expect(context).toEqual({
-			content: [{ type: 'text', text: 'expanded' }],
+			content: { type: 'text', text: 'expanded' },
 		});
 	});
 
@@ -111,7 +105,7 @@ describe('createReferencesModule', () => {
 			(api) => {
 				api.registerReferenceHandler({
 					test(reference) {
-						return reference.type === 'failing.document';
+						return reference.locator === 'failing.document';
 					},
 					toContext() {
 						throw new Error('boom');
@@ -122,16 +116,13 @@ describe('createReferencesModule', () => {
 
 		await expect(
 			runtime.references.toContext({
-				type: 'failing.document',
-				locator: 'x',
+				locator: 'failing.document',
 			}),
 		).resolves.toEqual({
-			content: [
-				{
-					type: 'text',
-					text: 'Reference unavailable: Reference handler for "failing.document" failed: boom',
-				},
-			],
+			content: {
+				type: 'text',
+				text: 'Reference unavailable: Reference handler for "l16:failing.document|u0:" failed: boom',
+			},
 			isError: true,
 		});
 	});
@@ -145,22 +136,21 @@ describe('createReferencesModule', () => {
 			(api) => {
 				api.registerReferenceHandler({
 					test(reference) {
-						return reference.type === 'text';
+						return reference.locator === 'start';
 					},
 					toContext(_reference, delegate) {
 						return delegate({
-							type: 'text',
 							locator: 'delegated',
 						});
 					},
 				});
 				api.registerReferenceHandler({
 					test(reference) {
-						return reference.type === 'text';
+						return reference.locator === 'delegated';
 					},
 					toContext(reference) {
 						return {
-							content: [{ type: 'text', text: reference.locator }],
+							content: { type: 'text', text: reference.locator },
 						};
 					},
 				});
@@ -169,19 +159,18 @@ describe('createReferencesModule', () => {
 
 		await expect(
 			runtime.references.toContext({
-				type: 'text',
 				locator: 'start',
 			}),
 		).resolves.toEqual({
-			content: [{ type: 'text', text: 'delegated' }],
+			content: { type: 'text', text: 'delegated' },
 		});
 	});
 
 	it('projects reference contexts into prompt content', () => {
 		expect(
 			referenceContextsToContent([
-				{ content: [{ type: 'text', text: 'first' }] },
-				{ content: [{ type: 'text', text: 'second' }] },
+				{ content: { type: 'text', text: 'first' } },
+				{ content: { type: 'text', text: 'second' } },
 			]),
 		).toEqual([
 			{ type: 'text', text: 'first' },

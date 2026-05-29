@@ -4,11 +4,11 @@ import type { ReferenceContext } from './api/index.js';
 export function referenceContextToContent(
 	context: ReferenceContext,
 ): UserContent[] {
-	return [...context.content];
+	return [context.content];
 }
 
 export function referenceContextsToContent(
 	contexts: readonly ReferenceContext[],
 ): UserContent[] {
-	return contexts.flatMap(referenceContextToContent);
+	return contexts.map((context) => context.content);
 }

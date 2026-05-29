@@ -20,7 +20,6 @@ import {
 import { createRuntime } from '../../../testing/index.js';
 import type { PDFConverter, RenderPDFScreenshots } from '../../pdf/types.js';
 import {
-	FILESYSTEM_FILE_REFERENCE_TYPE,
 	createPDFDocumentReferenceExtension,
 	filesystemFileReferenceExtension,
 } from '../index.js';
@@ -160,7 +159,6 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 				selector: 'pages=2-4',
 				label: 'Paper',
@@ -173,10 +171,10 @@ describe('createPDFDocumentReferenceExtension', () => {
 			expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(pdf, {
 				pages: { startPage: 2, endPage: 4 },
 			});
-			expect(context.content).toEqual([
-				{ type: 'text', text: 'Reference: Paper' },
-				{ type: 'text', text: 'free pdf' },
-			]);
+			expect(context.content).toEqual({
+				type: 'text',
+				text: 'Reference: Paper\n\nfree pdf',
+			});
 		} finally {
 			await runtime.dispose();
 		}
@@ -190,20 +188,16 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 			});
 
 			expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(pdf, {
 				pages: { startPage: 1, endPage: 10 },
 			});
-			expect(context.content).toEqual([
-				{
-					type: 'text',
-					text: 'Reference: /project/paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
-				},
-				{ type: 'text', text: 'free pdf' },
-			]);
+			expect(context.content).toEqual({
+				type: 'text',
+				text: 'Reference: /project/paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.\n\nfree pdf',
+			});
 		} finally {
 			await runtime.dispose();
 		}
@@ -217,7 +211,6 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 				selector: 'pages=2-15',
 			});
@@ -225,13 +218,10 @@ describe('createPDFDocumentReferenceExtension', () => {
 			expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(pdf, {
 				pages: { startPage: 2, endPage: 11 },
 			});
-			expect(context.content).toEqual([
-				{
-					type: 'text',
-					text: 'Reference: /project/paper.pdf\n\nPDF materialization limited: requested pages 2-15, showing pages 2-11. Continue with selector "pages=12-15".',
-				},
-				{ type: 'text', text: 'free pdf' },
-			]);
+			expect(context.content).toEqual({
+				type: 'text',
+				text: 'Reference: /project/paper.pdf\n\nPDF materialization limited: requested pages 2-15, showing pages 2-11. Continue with selector "pages=12-15".\n\nfree pdf',
+			});
 		} finally {
 			await runtime.dispose();
 		}
@@ -244,18 +234,15 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 				selector: 'pages=12-10',
 			});
 
 			expect(pdfMocks.freeConvertPDF).not.toHaveBeenCalled();
-			expect(context.content).toEqual([
-				{
-					type: 'text',
-					text: 'Reference: /project/paper.pdf\n\nNo PDF pages selected: selector "pages=12-10" starts after it ends. Use pages=10-12 to read that range.',
-				},
-			]);
+			expect(context.content).toEqual({
+				type: 'text',
+				text: 'Reference: /project/paper.pdf\n\nNo PDF pages selected: selector "pages=12-10" starts after it ends. Use pages=10-12 to read that range.',
+			});
 		} finally {
 			await runtime.dispose();
 		}
@@ -274,7 +261,6 @@ describe('createPDFDocumentReferenceExtension', () => {
 
 		try {
 			const context = await runtime.references.toContext({
-				type: FILESYSTEM_FILE_REFERENCE_TYPE,
 				locator: '/project/paper.pdf',
 			});
 
@@ -286,13 +272,10 @@ describe('createPDFDocumentReferenceExtension', () => {
 				pages: { startPage: 1, endPage: 10 },
 			});
 			expect(pdfMocks.freeConvertPDF).not.toHaveBeenCalled();
-			expect(context.content).toEqual([
-				{
-					type: 'text',
-					text: 'Reference: /project/paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
-				},
-				{ type: 'text', text: 'mistral pdf' },
-			]);
+			expect(context.content).toEqual({
+				type: 'text',
+				text: 'Reference: /project/paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.\n\nmistral pdf',
+			});
 		} finally {
 			await runtime.dispose();
 		}

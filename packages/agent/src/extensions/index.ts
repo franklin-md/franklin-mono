@@ -37,10 +37,6 @@ export {
 
 // References
 export {
-	FILESYSTEM_FILE_REFERENCE_TYPE,
-	IMAGE_REFERENCE_TYPE,
-	PDF_REFERENCE_TYPE,
-	TEXT_REFERENCE_TYPE,
 	filesystemFileReferenceExtension,
 	createPDFDocumentReferenceExtension,
 	referenceHandlerExtension,
@@ -53,6 +49,16 @@ export type {
 	TextLineRange,
 	TextReferenceSelector,
 } from './references/index.js';
+
+// Mention
+export {
+	MENTION_TRIGGER,
+	formatReferenceMention,
+	mentionExtension,
+	parseReferenceMention,
+	splitMentionSegments,
+} from './mention/index.js';
+export type { MentionSegment } from './mention/index.js';
 
 // Terminal
 export { bashExtension } from './terminal/index.js';

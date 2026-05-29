@@ -48,7 +48,7 @@ export const referenceReadExtension = defineExtension<
 			}
 
 			return {
-				content: context.content,
+				content: [context.content],
 				...(context.isError ? { isError: true } : {}),
 			};
 		},

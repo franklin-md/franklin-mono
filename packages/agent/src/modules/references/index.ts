@@ -10,6 +10,7 @@ export type {
 	ReferencesAPI,
 	ReferencesSignature,
 } from './api/index.js';
+export { referenceKey } from './api/index.js';
 export type { ReferencesEngine } from './engine.js';
 export {
 	referenceContextsToContent,

@@ -1,3 +1,4 @@
+import type { UserContent } from '@franklin/mini-acp';
 import type {
 	AuthDependencyModule,
 	AuthDependencyRuntime,
@@ -17,9 +18,7 @@ import {
 import { convertPDF } from '../pdf/convert.js';
 import { createPDFConverterResolver } from '../pdf/resolve-converter.js';
 import type { ReadPDFExtensionOptions, PDFPageRange } from '../pdf/types.js';
-import { hasBytesData } from './data.js';
-
-export const PDF_REFERENCE_TYPE = 'pdf';
+import { assertBytesData } from './data.js';
 
 export type PdfReferenceSelector = {
 	readonly pages?: PdfPageRange;
@@ -43,35 +42,18 @@ export function createPDFDocumentReferenceExtension({
 	const resolvePDFConverter = createPDFConverterResolver({ renderScreenshots });
 	const pdfDocumentReferenceHandler: ReferenceHandler<PDFReferenceRuntime> = {
 		test(reference) {
-			return (
-				reference.type === PDF_REFERENCE_TYPE ||
-				reference.data?.mime === 'application/pdf'
-			);
+			return reference.data?.mime === 'application/pdf';
 		},
 		async toContext(reference, _delegate, runtime) {
-			if (!hasBytesData(reference)) {
-				const label = referenceLabel(reference);
-				const page = pageSuffix(reference.selector);
-				return {
-					content: [
-						{
-							type: 'text',
-							text: `PDF reference unavailable: ${label}${page}. PDF bytes are required for extraction.`,
-						},
-					],
-					isError: true,
-				};
-			}
+			assertBytesData(reference);
 
 			const selection = selectPDFPages(reference.selector);
 			if (selection.issue) {
 				return {
-					content: [
-						{
-							type: 'text',
-							text: formatReferenceText(reference, selection.issue),
-						},
-					],
+					content: {
+						type: 'text',
+						text: formatReferenceText(reference, selection.issue),
+					},
 				};
 			}
 
@@ -80,15 +62,18 @@ export function createPDFDocumentReferenceExtension({
 				converter,
 				pages: toPDFPageRange(selection.pages),
 			});
-			if (converted.isError) return converted;
+			if (converted.isError) {
+				return {
+					content: firstPDFContent(converted.content),
+					isError: true,
+				};
+			}
 			return {
-				content: [
-					{
-						type: 'text',
-						text: formatReferenceText(reference, selection.note),
-					},
-					...converted.content,
-				],
+				content: formatPDFReferenceContent(
+					reference,
+					selection.note,
+					converted.content,
+				),
 			};
 		},
 	};
@@ -119,11 +104,36 @@ function formatReferenceText(
 	return note ? `${header}\n\n${note}` : header;
 }
 
-function pageSuffix(selector: string | undefined): string {
-	const pages = parsePdfReferenceSelector(selector).pages;
-	if (!pages) return '';
-	if (pages.start === pages.end) return ` page ${pages.start}`;
-	return ` pages ${pages.start}-${pages.end}`;
+function formatPDFReferenceContent(
+	reference: Reference,
+	note: string | undefined,
+	content: readonly UserContent[],
+): UserContent {
+	return {
+		type: 'text',
+		text: [
+			formatReferenceText(reference, note),
+			...content.map(formatPDFContent),
+		].join('\n\n'),
+	};
+}
+
+function formatPDFContent(content: UserContent): string {
+	switch (content.type) {
+		case 'text':
+			return content.text;
+		case 'image':
+			return `[Image content: ${content.mimeType}]`;
+	}
+}
+
+function firstPDFContent(content: readonly UserContent[]): UserContent {
+	return (
+		content[0] ?? {
+			type: 'text',
+			text: 'PDF processing failed.',
+		}
+	);
 }
 
 export function parsePdfReferenceSelector(

@@ -1,15 +1,12 @@
-import {
-	TEXT_REFERENCE_TYPE,
-	referenceHandlerExtension,
-} from '../extensions/index.js';
+import { referenceHandlerExtension } from '../extensions/index.js';
 import type { FranklinAPI, FranklinRuntime } from '../types.js';
 
 const _referenceOnlyExtension = referenceHandlerExtension({
 	test(reference) {
-		return reference.type === TEXT_REFERENCE_TYPE;
+		return reference.locator === 'text';
 	},
 	toContext() {
-		return { content: [] };
+		return { content: { type: 'text', text: 'context' } };
 	},
 });
 void _referenceOnlyExtension;
@@ -17,11 +14,11 @@ void _referenceOnlyExtension;
 const _api = null as unknown as FranklinAPI;
 _api.registerReferenceHandler({
 	test(reference) {
-		return reference.type === TEXT_REFERENCE_TYPE;
+		return reference.locator === 'text';
 	},
 	toContext(_reference, delegate) {
-		void delegate({ type: TEXT_REFERENCE_TYPE, locator: 'nested' });
-		return { content: [] };
+		void delegate({ locator: 'nested' });
+		return { content: { type: 'text', text: 'context' } };
 	},
 });
 

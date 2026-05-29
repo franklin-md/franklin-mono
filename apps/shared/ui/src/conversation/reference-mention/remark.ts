@@ -1,9 +1,14 @@
-import { splitFileReferenceSegments } from './token.js';
+import {
+	formatReferenceMention,
+	splitMentionSegments,
+	type Reference,
+} from '@franklin/agent';
+import { isFileReference } from './support.js';
 
 // TODO: This has an annoying amount of similarity with another remark plugin in this repo, we might look to create utilities out of their overlap
 
-export const FILE_REFERENCE_ELEMENT_NAME = 'file-reference';
-export const FILE_REFERENCE_PATH_ATTRIBUTE = 'path';
+export const REFERENCE_MENTION_ELEMENT_NAME = 'reference-mention';
+export const REFERENCE_MENTION_ATTRIBUTE = 'reference';
 
 interface ParentNode {
 	children: MarkdownNode[];
@@ -40,31 +45,41 @@ function createTextNode(value: string): TextNode {
 	return { type: 'text', value };
 }
 
-function createFileReferenceNode(path: string): MarkdownNode {
+function createReferenceMentionNode(reference: Reference): MarkdownNode {
+	const text = reference.label ?? reference.locator;
 	return {
 		type: 'customElement',
 		data: {
-			hName: FILE_REFERENCE_ELEMENT_NAME,
+			hName: REFERENCE_MENTION_ELEMENT_NAME,
 			hProperties: {
-				[FILE_REFERENCE_PATH_ATTRIBUTE]: path,
+				[REFERENCE_MENTION_ATTRIBUTE]: formatReferenceMention(reference),
 			},
 		},
-		children: [{ type: 'text', value: path }],
+		children: [{ type: 'text', value: text }],
 	};
 }
 
-function splitFileReferenceTextNode(node: TextNode): MarkdownNode[] {
-	const segments = splitFileReferenceSegments(node.value);
+function splitReferenceMentionTextNode(node: TextNode): MarkdownNode[] {
+	const segments = splitMentionSegments(node.value);
 	const hasReference = segments.some((segment) => segment.type === 'reference');
 	if (!hasReference) {
 		return [node];
 	}
 
-	return segments.map((segment) =>
-		segment.type === 'text'
-			? createTextNode(segment.text)
-			: createFileReferenceNode(segment.token.path),
-	);
+	return segments.map((segment) => {
+		switch (segment.type) {
+			case 'text':
+				return createTextNode(segment.text);
+			case 'reference':
+				if (isFileReference(segment.reference)) {
+					return createReferenceMentionNode(segment.reference);
+				}
+				// The shared UI mention renderer only supports filesystem references
+				// today. Keep unsupported references visible as canonical text until
+				// there is a generic reference badge.
+				return createTextNode(formatReferenceMention(segment.reference));
+		}
+	});
 }
 
 function transformNode(node: unknown): void {
@@ -74,7 +89,7 @@ function transformNode(node: unknown): void {
 
 	node.children = node.children.flatMap((child) => {
 		if (isTextNode(child)) {
-			return splitFileReferenceTextNode(child);
+			return splitReferenceMentionTextNode(child);
 		}
 
 		transformNode(child);
@@ -82,7 +97,7 @@ function transformNode(node: unknown): void {
 	});
 }
 
-export function remarkFileReferences() {
+export function remarkReferenceMentions() {
 	return function transform(tree: unknown) {
 		transformNode(tree);
 	};

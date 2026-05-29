@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
+import { formatReferenceMention } from '@franklin/agent';
+
 import { userTextPrompt } from '../../fixtures.js';
 import { UserBubble } from '../../../src/conversation/turn/user-bubble.js';
 
@@ -36,7 +38,13 @@ export const WithMarkdownAndFileReference: Story = {
 			content: [
 				{
 					type: 'text',
-					text: 'Read ~~the old draft~~ @{notes/deep work.md} and compare it with @{src/conversation/turn/user-bubble.tsx}.',
+					text: `Read ~~the old draft~~ ${formatReferenceMention({
+						locator: 'notes/deep work.md',
+						label: 'notes/deep work.md',
+					})} and compare it with ${formatReferenceMention({
+						locator: 'src/conversation/turn/user-bubble.tsx',
+						label: 'src/conversation/turn/user-bubble.tsx',
+					})}.`,
 				},
 			],
 		},
