@@ -123,7 +123,9 @@ describe('built-in reference extensions', () => {
 			label: 'Disk note',
 		});
 
-		expect(context.content).toEqual([{ type: 'text', text: 'from disk' }]);
+		expect(context.content).toEqual([
+			{ type: 'text', text: 'Reference: Disk note\n\nfrom disk' },
+		]);
 	});
 
 	it('allows untyped file references to enter the filesystem provider chain', async () => {
@@ -136,7 +138,9 @@ describe('built-in reference extensions', () => {
 			label: 'Disk note',
 		});
 
-		expect(context.content).toEqual([{ type: 'text', text: 'from disk' }]);
+		expect(context.content).toEqual([
+			{ type: 'text', text: 'Reference: Disk note\n\nfrom disk' },
+		]);
 	});
 
 	it('materializes filesystem PDF files through the PDF reference handler', async () => {
@@ -152,6 +156,10 @@ describe('built-in reference extensions', () => {
 		});
 
 		expect(context.content).toEqual([
+			{
+				type: 'text',
+				text: 'Reference: Paper',
+			},
 			{
 				type: 'text',
 				text: 'converted pdf',
@@ -172,6 +180,10 @@ describe('built-in reference extensions', () => {
 		});
 
 		expect(context.content).toEqual([
+			{
+				type: 'text',
+				text: 'Reference: Paper',
+			},
 			{
 				type: 'text',
 				text: 'converted pdf',
@@ -198,7 +210,7 @@ describe('built-in reference extensions', () => {
 		expect(context.content).toEqual([
 			{
 				type: 'text',
-				text: 'PDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
+				text: 'Reference: paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
 			},
 			{
 				type: 'text',

@@ -122,6 +122,7 @@ describe('referenceReadExtension', () => {
 			);
 
 			const text = firstToolResultText(mock);
+			expect(text).toContain('Reference: /project/large.md');
 			expect(text).toContain('line 1');
 			expect(text).toContain('line 2000');
 			expect(text).not.toContain('\nline 2001\n');
@@ -163,6 +164,7 @@ describe('referenceReadExtension', () => {
 			);
 
 			const text = firstToolResultText(mock);
+			expect(text).toContain('Reference: /project/large.md');
 			expect(text).toContain('line 100');
 			expect(text).toContain('line 2099');
 			expect(text).not.toContain('\nline 2100\n');
@@ -201,6 +203,7 @@ describe('referenceReadExtension', () => {
 			);
 
 			const text = firstToolResultText(mock);
+			expect(text).toContain('Reference: /project/large.md');
 			expect(text).toContain('No text lines selected');
 			expect(text).toContain('Use lines=10-12');
 			expect(text).not.toContain('line 1');
@@ -241,7 +244,7 @@ describe('referenceReadExtension', () => {
 					content: [
 						{
 							type: 'text',
-							text: 'beta\ngamma',
+							text: 'Reference: /project/note.md\n\nbeta\ngamma',
 						},
 					],
 				},
@@ -360,7 +363,7 @@ describe('referenceReadExtension', () => {
 					content: [
 						{
 							type: 'text',
-							text: 'one\ntwo\nthree',
+							text: 'Reference: /project/note.md\n\none\ntwo\nthree',
 						},
 					],
 				},

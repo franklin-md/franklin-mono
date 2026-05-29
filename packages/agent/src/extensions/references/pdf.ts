@@ -66,7 +66,12 @@ export function createPDFDocumentReferenceExtension({
 			const selection = selectPDFPages(reference.selector);
 			if (selection.issue) {
 				return {
-					content: [{ type: 'text', text: selection.issue }],
+					content: [
+						{
+							type: 'text',
+							text: formatReferenceText(reference, selection.issue),
+						},
+					],
 				};
 			}
 
@@ -78,9 +83,10 @@ export function createPDFDocumentReferenceExtension({
 			if (converted.isError) return converted;
 			return {
 				content: [
-					...(selection.note
-						? [{ type: 'text' as const, text: selection.note }]
-						: []),
+					{
+						type: 'text',
+						text: formatReferenceText(reference, selection.note),
+					},
 					...converted.content,
 				],
 			};
@@ -103,6 +109,14 @@ export function createPDFDocumentReferenceExtension({
 function referenceLabel(reference: Reference): string {
 	if (reference.label) return reference.label;
 	return reference.locator;
+}
+
+function formatReferenceText(
+	reference: Reference,
+	note: string | undefined,
+): string {
+	const header = `Reference: ${referenceLabel(reference)}`;
+	return note ? `${header}\n\n${note}` : header;
 }
 
 function pageSuffix(selector: string | undefined): string {

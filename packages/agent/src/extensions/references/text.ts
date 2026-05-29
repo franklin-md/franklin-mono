@@ -39,28 +39,16 @@ const textDocumentReferenceHandler: ReferenceHandler = {
 		);
 	},
 	toContext(reference) {
-		const data = reference.data;
-		const text = hasBytesData(reference)
-			? decode(reference.data.bytes)
-			: reference.locator;
+		const hasData = hasBytesData(reference);
+		const text = hasData ? decode(reference.data.bytes) : reference.locator;
 		const selectedText = formatTextSelection(
 			selectTextLines(text, reference.selector),
 		);
-		if (data?.type === 'bytes') {
-			return {
-				content: [
-					{
-						type: 'text',
-						text: selectedText,
-					},
-				],
-			};
-		}
 		return {
 			content: [
 				{
 					type: 'text',
-					text: `Reference: ${referenceLabel(reference)}\n\n${selectedText}`,
+					text: formatReferenceText(reference, selectedText),
 				},
 			],
 		};
@@ -82,6 +70,19 @@ export const textDocumentReferenceExtension = defineExtension<
 function referenceLabel(reference: Reference): string {
 	if (reference.label) return reference.label;
 	return reference.type ?? TEXT_REFERENCE_TYPE;
+}
+
+function materializedReferenceLabel(reference: ResolvedReference): string {
+	if (reference.label) return reference.label;
+	if (hasBytesData(reference)) return reference.locator;
+	return referenceLabel(reference);
+}
+
+function formatReferenceText(
+	reference: ResolvedReference,
+	text: string,
+): string {
+	return `Reference: ${materializedReferenceLabel(reference)}\n\n${text}`;
 }
 
 function isTextData(reference: ResolvedReference): boolean {

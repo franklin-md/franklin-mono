@@ -173,7 +173,10 @@ describe('createPDFDocumentReferenceExtension', () => {
 			expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(pdf, {
 				pages: { startPage: 2, endPage: 4 },
 			});
-			expect(context.content).toEqual([{ type: 'text', text: 'free pdf' }]);
+			expect(context.content).toEqual([
+				{ type: 'text', text: 'Reference: Paper' },
+				{ type: 'text', text: 'free pdf' },
+			]);
 		} finally {
 			await runtime.dispose();
 		}
@@ -197,7 +200,7 @@ describe('createPDFDocumentReferenceExtension', () => {
 			expect(context.content).toEqual([
 				{
 					type: 'text',
-					text: 'PDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
+					text: 'Reference: /project/paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
 				},
 				{ type: 'text', text: 'free pdf' },
 			]);
@@ -225,7 +228,7 @@ describe('createPDFDocumentReferenceExtension', () => {
 			expect(context.content).toEqual([
 				{
 					type: 'text',
-					text: 'PDF materialization limited: requested pages 2-15, showing pages 2-11. Continue with selector "pages=12-15".',
+					text: 'Reference: /project/paper.pdf\n\nPDF materialization limited: requested pages 2-15, showing pages 2-11. Continue with selector "pages=12-15".',
 				},
 				{ type: 'text', text: 'free pdf' },
 			]);
@@ -250,7 +253,7 @@ describe('createPDFDocumentReferenceExtension', () => {
 			expect(context.content).toEqual([
 				{
 					type: 'text',
-					text: 'No PDF pages selected: selector "pages=12-10" starts after it ends. Use pages=10-12 to read that range.',
+					text: 'Reference: /project/paper.pdf\n\nNo PDF pages selected: selector "pages=12-10" starts after it ends. Use pages=10-12 to read that range.',
 				},
 			]);
 		} finally {
@@ -286,7 +289,7 @@ describe('createPDFDocumentReferenceExtension', () => {
 			expect(context.content).toEqual([
 				{
 					type: 'text',
-					text: 'PDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
+					text: 'Reference: /project/paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
 				},
 				{ type: 'text', text: 'mistral pdf' },
 			]);
