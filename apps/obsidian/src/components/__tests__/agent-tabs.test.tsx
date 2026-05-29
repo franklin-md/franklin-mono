@@ -33,6 +33,12 @@ vi.mock('../conversation.js', () => ({
 	},
 }));
 
+vi.mock('../conversation-window/viewing-context/sync.js', () => ({
+	ViewingContextSync() {
+		return null;
+	},
+}));
+
 afterEach(() => {
 	cleanup();
 });
