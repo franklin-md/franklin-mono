@@ -4,9 +4,9 @@
   </a>
 </p>
 <p align="center">
-  <a href="https://discord.gg/KRFy6ECMnf"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>
-<a href="https://github.com/franklin-md/franklin-mono/actions/workflows/release-obsidian.yml">
-  <img alt="Release Obsidian Plugin" src="https://github.com/franklin-md/franklin-mono/actions/workflows/release-obsidian.yml/badge.svg?branch=main" /></a>
+  <a href="https://discord.gg/KRFy6ECMnf"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>&nbsp;&nbsp;
+  <a href="https://github.com/franklin-md/franklin-mono/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/franklin-md/franklin-mono?style=flat-square&label=release" /></a>&nbsp;&nbsp;
+  <a href="https://community.obsidian.md/plugins/franklin"><img alt="Obsidian downloads" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2FHEAD%2Fcommunity-plugin-stats.json&query=%24%5B%22franklin%22%5D.downloads&label=downloads&style=flat-square&logo=obsidian&logoColor=white" /></a>
 </p>
 
 # Franklin
