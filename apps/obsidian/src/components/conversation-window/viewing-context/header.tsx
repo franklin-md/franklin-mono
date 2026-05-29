@@ -7,11 +7,7 @@ import {
 import { useAgentState } from '@franklin/react';
 import { Button, cn } from '@franklin/ui';
 
-import { useObsidianViewingContextSync } from './viewing-context-sync.js';
-
 export function ViewingContextHeader() {
-	useObsidianViewingContextSync();
-
 	const viewingContext = useAgentState(
 		viewingContextExtension.keys.viewingContext,
 	);

@@ -1,6 +1,7 @@
 import { AgentProvider, useAgents } from '@franklin/react';
 
 import { ConversationPanel } from '../conversation.js';
+import { ViewingContextSync } from './viewing-context/sync.js';
 
 export function ActiveAgent() {
 	const { sessions, activeSession } = useAgents();
@@ -19,6 +20,7 @@ export function ActiveAgent() {
 
 	return (
 		<AgentProvider key={activeSession.details.id} agent={activeSession.runtime}>
+			<ViewingContextSync />
 			<ConversationPanel />
 		</AgentProvider>
 	);
