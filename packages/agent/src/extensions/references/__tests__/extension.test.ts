@@ -21,8 +21,6 @@ import { createReferencesModule } from '../../../modules/references/module.js';
 import type { PDFConverter } from '../../pdf/types.js';
 import type { AuthManager } from '../../../auth/manager.js';
 import {
-	FILESYSTEM_FILE_REFERENCE_TYPE,
-	TEXT_REFERENCE_TYPE,
 	createPDFDocumentReferenceExtension,
 	filesystemFileReferenceExtension,
 	textDocumentReferenceExtension,
@@ -98,34 +96,20 @@ async function createReferenceRuntime(
 }
 
 describe('built-in reference extensions', () => {
-	it('materializes text references as model text', async () => {
-		const { runtime } = await createReferenceRuntime();
-
-		const context = await runtime.references.toContext({
-			type: TEXT_REFERENCE_TYPE,
-			locator: 'hello',
-			label: 'Note',
-		});
-
-		expect(context.content).toEqual([
-			{ type: 'text', text: 'Reference: Note\n\nhello' },
-		]);
-	});
-
 	it('materializes filesystem text files through text', async () => {
 		const filesystem = new MemoryFilesystem();
 		filesystem.seed('/project/note.txt' as AbsolutePath, 'from disk');
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/note.txt',
 			label: 'Disk note',
 		});
 
-		expect(context.content).toEqual([
-			{ type: 'text', text: 'Reference: Disk note\n\nfrom disk' },
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference: Disk note\n\nfrom disk',
+		});
 	});
 
 	it('allows untyped file references to enter the filesystem provider chain', async () => {
@@ -138,9 +122,10 @@ describe('built-in reference extensions', () => {
 			label: 'Disk note',
 		});
 
-		expect(context.content).toEqual([
-			{ type: 'text', text: 'Reference: Disk note\n\nfrom disk' },
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference: Disk note\n\nfrom disk',
+		});
 	});
 
 	it('materializes filesystem PDF files through the PDF reference handler', async () => {
@@ -149,22 +134,15 @@ describe('built-in reference extensions', () => {
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/paper.pdf',
 			selector: 'page=10',
 			label: 'Paper',
 		});
 
-		expect(context.content).toEqual([
-			{
-				type: 'text',
-				text: 'Reference: Paper',
-			},
-			{
-				type: 'text',
-				text: 'converted pdf',
-			},
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference: Paper\n\nconverted pdf',
+		});
 	});
 
 	it('passes PDF page ranges through the PDF reference handler', async () => {
@@ -173,22 +151,15 @@ describe('built-in reference extensions', () => {
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/paper.pdf',
 			selector: 'pages=10-12',
 			label: 'Paper',
 		});
 
-		expect(context.content).toEqual([
-			{
-				type: 'text',
-				text: 'Reference: Paper',
-			},
-			{
-				type: 'text',
-				text: 'converted pdf',
-			},
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference: Paper\n\nconverted pdf',
+		});
 		expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(
 			expect.any(Uint8Array),
 			{ pages: { startPage: 10, endPage: 12 } },
@@ -203,20 +174,13 @@ describe('built-in reference extensions', () => {
 		);
 
 		const context = await runtime.references.toContext({
-			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: 'paper.pdf',
 		});
 
-		expect(context.content).toEqual([
-			{
-				type: 'text',
-				text: 'Reference: paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.',
-			},
-			{
-				type: 'text',
-				text: 'converted pdf',
-			},
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference: paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.\n\nconverted pdf',
+		});
 	});
 
 	it('returns unavailable content for directories', async () => {
@@ -225,16 +189,13 @@ describe('built-in reference extensions', () => {
 		const { runtime } = await createReferenceRuntime(filesystem);
 
 		const context = await runtime.references.toContext({
-			type: FILESYSTEM_FILE_REFERENCE_TYPE,
 			locator: '/project/notes',
 		});
 
-		expect(context.content).toEqual([
-			{
-				type: 'text',
-				text: 'Reference unavailable: Reference path is not a file: /project/notes',
-			},
-		]);
+		expect(context.content).toEqual({
+			type: 'text',
+			text: 'Reference unavailable: Reference path is not a file: /project/notes',
+		});
 		expect(context.isError).toBe(true);
 	});
 });

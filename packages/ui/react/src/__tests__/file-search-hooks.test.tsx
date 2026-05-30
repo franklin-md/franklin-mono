@@ -4,34 +4,36 @@ import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-	FileCollectionProvider,
-	FuseFileCollection,
-	useFileCollection,
+	FileIndexProvider,
+	FuseFileIndex,
+	useFileIndex,
 	useFileSearch,
 } from '../file-search/index.js';
-import type { FileReferenceItem } from '../file-search/types.js';
+import type { FileIndexItem } from '../file-search/types.js';
 import type { ReactNode } from 'react';
 
-function paths(items: readonly FileReferenceItem[]): string[] {
+function paths(items: readonly FileIndexItem[]): string[] {
 	return items.map((item) => item.path);
 }
 
-describe('useFileCollection', () => {
-	it('returns the nearest provided collection', () => {
-		const collection = new FuseFileCollection([{ path: 'notes/today.md' }]);
+function item(path: string): FileIndexItem<undefined> {
+	return { path, metadata: undefined };
+}
+
+describe('useFileIndex', () => {
+	it('returns the nearest provided index', () => {
+		const fileIndex = new FuseFileIndex([item('notes/today.md')]);
 		const wrapper = ({ children }: { children: ReactNode }) => (
-			<FileCollectionProvider collection={collection}>
-				{children}
-			</FileCollectionProvider>
+			<FileIndexProvider fileIndex={fileIndex}>{children}</FileIndexProvider>
 		);
 
-		const { result } = renderHook(() => useFileCollection(), { wrapper });
+		const { result } = renderHook(() => useFileIndex(), { wrapper });
 
-		expect(result.current).toBe(collection);
+		expect(result.current).toBe(fileIndex);
 	});
 
-	it('creates a stable fallback collection outside a provider', () => {
-		const { result, rerender } = renderHook(() => useFileCollection());
+	it('creates a stable fallback index outside a provider', () => {
+		const { result, rerender } = renderHook(() => useFileIndex());
 		const first = result.current;
 
 		rerender();
@@ -41,17 +43,17 @@ describe('useFileCollection', () => {
 });
 
 describe('useFileSearch', () => {
-	it('searches and updates when the collection changes', () => {
-		const collection = new FuseFileCollection([
-			{ path: 'notes/research/fuse.md' },
-			{ path: 'notes/today.md' },
+	it('searches and updates when the index changes', () => {
+		const fileIndex = new FuseFileIndex([
+			item('notes/research/fuse.md'),
+			item('notes/today.md'),
 		]);
-		const { result } = renderHook(() => useFileSearch(collection, 'fuse'));
+		const { result } = renderHook(() => useFileSearch(fileIndex, 'fuse'));
 
 		expect(paths(result.current)).toEqual(['notes/research/fuse.md']);
 
 		act(() => {
-			collection.upsert([{ path: 'notes/fuse-later.md' }]);
+			fileIndex.upsert([item('notes/fuse-later.md')]);
 		});
 
 		expect(paths(result.current)).toEqual([
@@ -60,13 +62,13 @@ describe('useFileSearch', () => {
 		]);
 	});
 
-	it('updates when the query changes without a collection event', () => {
-		const collection = new FuseFileCollection([
-			{ path: 'notes/fuse.md' },
-			{ path: 'notes/react.md' },
+	it('updates when the query changes without an index event', () => {
+		const fileIndex = new FuseFileIndex([
+			item('notes/fuse.md'),
+			item('notes/react.md'),
 		]);
 		const { result, rerender } = renderHook(
-			({ query }) => useFileSearch(collection, query),
+			({ query }) => useFileSearch(fileIndex, query),
 			{ initialProps: { query: 'fuse' } },
 		);
 
@@ -79,12 +81,12 @@ describe('useFileSearch', () => {
 
 	it('debounces query changes when configured', () => {
 		vi.useFakeTimers();
-		const collection = new FuseFileCollection([
-			{ path: 'notes/fuse.md' },
-			{ path: 'notes/react.md' },
+		const fileIndex = new FuseFileIndex([
+			item('notes/fuse.md'),
+			item('notes/react.md'),
 		]);
 		const { result, rerender } = renderHook(
-			({ query }) => useFileSearch(collection, query, { debounceMs: 50 }),
+			({ query }) => useFileSearch(fileIndex, query, { debounceMs: 50 }),
 			{ initialProps: { query: 'fuse' } },
 		);
 
@@ -101,13 +103,13 @@ describe('useFileSearch', () => {
 		vi.useRealTimers();
 	});
 
-	it('updates when search options change without a collection event', () => {
-		const collection = new FuseFileCollection([
-			{ path: 'notes/fuse.md' },
-			{ path: 'notes/react.md' },
+	it('updates when search options change without an index event', () => {
+		const fileIndex = new FuseFileIndex([
+			item('notes/fuse.md'),
+			item('notes/react.md'),
 		]);
 		const { result, rerender } = renderHook(
-			({ limit }) => useFileSearch(collection, 'notes', { limit }),
+			({ limit }) => useFileSearch(fileIndex, 'notes', { limit }),
 			{ initialProps: { limit: 1 } },
 		);
 

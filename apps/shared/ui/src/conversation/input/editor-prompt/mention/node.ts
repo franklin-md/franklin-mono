@@ -1,51 +1,72 @@
 import type { JSONContent, TextSerializer } from '@tiptap/core';
 import type { MentionNodeAttrs } from '@tiptap/extension-mention';
-import type { FileReferenceItem } from '@franklin/react';
-
+import type { FileIndexItem } from '@franklin/react';
 import {
-	FILE_REFERENCE_TOKEN_TRIGGER,
-	formatFileReferenceToken,
-} from '../../../file-reference/token.js';
+	MENTION_TRIGGER,
+	formatReferenceMention,
+	parseReferenceMention,
+	type Reference,
+} from '@franklin/agent';
+import { isFileReference } from '../../../reference-mention/support.js';
 
-export const MENTION_TRIGGER = FILE_REFERENCE_TOKEN_TRIGGER;
+type FilePathItem = Pick<FileIndexItem, 'path'>;
+
+export { MENTION_TRIGGER };
 export const MENTION_NODE_NAME = 'mention';
 
-export function getMentionPath(
+export function getMentionReference(
 	attrs: Partial<Pick<MentionNodeAttrs, 'id' | 'label'>>,
-): string {
+): Reference | undefined {
 	const id = attrs.id;
-	const label = attrs.label;
-
 	if (typeof id === 'string' && id.length > 0) {
-		return id;
+		return parseReferenceMention(id);
 	}
-	if (typeof label === 'string' && label.length > 0) {
-		return label;
-	}
-	return '';
+	return undefined;
 }
 
-export function createMentionAttrs(item: FileReferenceItem): MentionNodeAttrs {
-	return {
-		id: item.path,
-		label: item.path,
-		mentionSuggestionChar: MENTION_TRIGGER,
-	};
+export function createFileReferenceMentionAttrs(
+	item: FilePathItem,
+): MentionNodeAttrs {
+	return createReferenceMentionAttrs(createFileReference(item));
 }
 
-export function createMentionNodeContent(item: FileReferenceItem): JSONContent {
+export function createFileReferenceMentionNodeContent(
+	reference: Reference,
+): JSONContent | undefined {
+	if (!isFileReference(reference)) {
+		// The editor mention node currently renders filesystem references only.
+		// Preserve unsupported references as text at parser call sites until there
+		// is a generic reference badge.
+		return undefined;
+	}
+
 	return {
 		type: MENTION_NODE_NAME,
-		attrs: createMentionAttrs(item),
+		attrs: createReferenceMentionAttrs(reference),
 	};
 }
 
 export function formatMentionText(
 	attrs: Partial<Pick<MentionNodeAttrs, 'id' | 'label'>>,
 ): string {
-	const path = getMentionPath(attrs);
-	return path.length > 0 ? formatFileReferenceToken(path) : '';
+	const reference = getMentionReference(attrs);
+	return reference ? formatReferenceMention(reference) : '';
 }
 
 export const mentionTextSerializer: TextSerializer = ({ node }) =>
 	formatMentionText(node.attrs);
+
+function createFileReference(item: FilePathItem): Reference {
+	return {
+		locator: item.path,
+		label: item.path,
+	};
+}
+
+function createReferenceMentionAttrs(reference: Reference): MentionNodeAttrs {
+	return {
+		id: formatReferenceMention(reference),
+		label: reference.label ?? reference.locator,
+		mentionSuggestionChar: MENTION_TRIGGER,
+	};
+}

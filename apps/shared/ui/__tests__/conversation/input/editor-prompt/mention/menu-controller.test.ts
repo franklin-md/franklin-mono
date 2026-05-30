@@ -6,10 +6,13 @@ import {
 	type MentionSuggestionState,
 	inactiveMentionSuggestion,
 } from '../../../../../src/conversation/input/editor-prompt/mention/menu-controller.js';
+import type { FileIndexItem } from '@franklin/react';
 
-type TestItem = {
-	readonly path: string;
-};
+type TestItem = FileIndexItem<undefined>;
+
+function item(path: string): TestItem {
+	return { path, metadata: undefined };
+}
 
 function createKeyEvent(key: string) {
 	return {
@@ -70,7 +73,7 @@ function createHarness(initialItems: readonly TestItem[] = createItems()) {
 }
 
 function createItems(): readonly TestItem[] {
-	return [{ path: 'alpha.md' }, { path: 'beta.md' }];
+	return [item('alpha.md'), item('beta.md')];
 }
 
 function expectActiveSuggestion(
@@ -128,13 +131,13 @@ describe('createMenuController', () => {
 		harness.controller.highlight(1);
 		harness.controller.handleKeyDown(enter);
 		expect(enter.preventDefault).toHaveBeenCalledTimes(1);
-		expect(harness.command).toHaveBeenCalledWith({ path: 'beta.md' });
+		expect(harness.command).toHaveBeenCalledWith(item('beta.md'));
 
 		harness.show();
 		harness.controller.highlight(0);
 		harness.controller.handleKeyDown(tab);
 		expect(tab.preventDefault).toHaveBeenCalledTimes(1);
-		expect(harness.command).toHaveBeenLastCalledWith({ path: 'alpha.md' });
+		expect(harness.command).toHaveBeenLastCalledWith(item('alpha.md'));
 	});
 
 	it('publishes a command that commits an item and exits', () => {
@@ -142,9 +145,9 @@ describe('createMenuController', () => {
 
 		harness.show();
 		expectActiveSuggestion(harness.suggestion);
-		harness.suggestion.command({ path: 'alpha.md' });
+		harness.suggestion.command(item('alpha.md'));
 
-		expect(harness.command).toHaveBeenCalledWith({ path: 'alpha.md' });
+		expect(harness.command).toHaveBeenCalledWith(item('alpha.md'));
 		expect(harness.suggestion).toEqual(inactiveMentionSuggestion);
 	});
 
@@ -167,10 +170,10 @@ describe('createMenuController', () => {
 		const handleKeyDown = harness.controller.handleKeyDown;
 
 		harness.show();
-		harness.setItems([{ path: 'latest.md' }]);
+		harness.setItems([item('latest.md')]);
 		handleKeyDown(createKeyEvent('Enter'));
 
-		expect(harness.command).toHaveBeenCalledWith({ path: 'latest.md' });
+		expect(harness.command).toHaveBeenCalledWith(item('latest.md'));
 	});
 
 	it('ignores handled menu keys when inactive', () => {

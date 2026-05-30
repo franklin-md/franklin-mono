@@ -6,38 +6,31 @@ import { defineExtension } from '../../modules/state/index.js';
 import { isSupportedImageType } from '../filesystem/common/supported.js';
 import { hasBytesData } from './data.js';
 
-export const IMAGE_REFERENCE_TYPE = 'image';
-
 const imageDocumentReferenceHandler: ReferenceHandler = {
 	test(reference) {
 		return (
-			reference.type === IMAGE_REFERENCE_TYPE ||
-			(hasBytesData(reference) &&
-				reference.data.mime !== undefined &&
-				isSupportedImageType(reference.data.mime))
+			hasBytesData(reference) &&
+			reference.data.mime !== undefined &&
+			isSupportedImageType(reference.data.mime)
 		);
 	},
 	toContext(reference) {
 		const data = reference.data;
 		if (data?.type !== 'bytes' || data.mime === undefined) {
 			return {
-				content: [
-					{
-						type: 'text',
-						text: 'Reference unavailable: Image bytes are required.',
-					},
-				],
+				content: {
+					type: 'text',
+					text: 'Reference unavailable: Image bytes are required.',
+				},
 				isError: true,
 			};
 		}
 		return {
-			content: [
-				{
-					type: 'image',
-					data: base64(data.bytes),
-					mimeType: data.mime,
-				},
-			],
+			content: {
+				type: 'image',
+				data: base64(data.bytes),
+				mimeType: data.mime,
+			},
 		};
 	},
 };

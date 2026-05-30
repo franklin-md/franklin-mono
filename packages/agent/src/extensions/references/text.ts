@@ -11,9 +11,7 @@ import {
 	parseSelectorIntegerRangeValue,
 } from '../../modules/references/selectors/index.js';
 import { defineExtension } from '../../modules/state/index.js';
-import { hasBytesData } from './data.js';
-
-export const TEXT_REFERENCE_TYPE = 'text';
+import { assertBytesData, hasBytesData } from './data.js';
 
 export type TextReferenceSelector = {
 	readonly lines?: TextLineRange;
@@ -33,24 +31,19 @@ const TEXT_MATERIALIZATION_LINE_LIMIT = 2_000;
 
 const textDocumentReferenceHandler: ReferenceHandler = {
 	test(reference) {
-		return (
-			reference.type === TEXT_REFERENCE_TYPE ||
-			(hasBytesData(reference) && isTextData(reference))
-		);
+		return hasBytesData(reference) && isTextData(reference);
 	},
 	toContext(reference) {
-		const hasData = hasBytesData(reference);
-		const text = hasData ? decode(reference.data.bytes) : reference.locator;
+		assertBytesData(reference);
+		const text = decode(reference.data.bytes);
 		const selectedText = formatTextSelection(
 			selectTextLines(text, reference.selector),
 		);
 		return {
-			content: [
-				{
-					type: 'text',
-					text: formatReferenceText(reference, selectedText),
-				},
-			],
+			content: {
+				type: 'text',
+				text: formatReferenceText(reference, selectedText),
+			},
 		};
 	},
 };
@@ -69,7 +62,7 @@ export const textDocumentReferenceExtension = defineExtension<
 
 function referenceLabel(reference: Reference): string {
 	if (reference.label) return reference.label;
-	return reference.type ?? TEXT_REFERENCE_TYPE;
+	return reference.locator;
 }
 
 function materializedReferenceLabel(reference: ResolvedReference): string {

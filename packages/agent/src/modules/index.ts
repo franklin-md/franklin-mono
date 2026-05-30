@@ -126,6 +126,7 @@ export type {
 } from './references/index.js';
 export {
 	createReferencesModule,
+	referenceKey,
 	referenceContextsToContent,
 	referenceContextToContent,
 } from './references/index.js';

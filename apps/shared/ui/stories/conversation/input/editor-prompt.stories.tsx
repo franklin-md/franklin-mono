@@ -1,15 +1,20 @@
 import { useMemo, useState, type ReactNode } from 'react';
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { formatReferenceMention } from '@franklin/agent';
 import {
-	FileCollectionProvider,
-	FuseFileCollection,
+	FileIndexProvider,
+	FuseFileIndex,
 	PromptProvider,
 } from '@franklin/react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 
 import { PromptContainer } from '../../../src/conversation/input/prompt-container.js';
 import { PromptEditor } from '../../../src/conversation/input/editor-prompt/editor.js';
+
+function item(path: string) {
+	return { path, metadata: undefined };
+}
 
 function EditorPromptStoryHarness({
 	children,
@@ -23,13 +28,13 @@ function EditorPromptStoryHarness({
 	const [firstSendCount, setFirstSendCount] = useState(0);
 	const [secondSendCount, setSecondSendCount] = useState(0);
 	const [sendMode, setSendMode] = useState<'first' | 'second'>('first');
-	const collection = useMemo(
+	const fileIndex = useMemo(
 		() =>
-			new FuseFileCollection([
-				{ path: 'notes/daily/2026-05-28.md' },
-				{ path: 'notes/research/headless-mentions.md' },
-				{ path: 'apps/shared/ui/src/conversation/input/prompt-input.tsx' },
-				{ path: 'packages/ui/react/src/file-search/fuse-file-collection.ts' },
+			new FuseFileIndex([
+				item('notes/daily/2026-05-28.md'),
+				item('notes/research/headless-mentions.md'),
+				item('apps/shared/ui/src/conversation/input/prompt-input.tsx'),
+				item('packages/ui/react/src/file-search/fuse-file-index.ts'),
 			]),
 		[],
 	);
@@ -52,7 +57,7 @@ function EditorPromptStoryHarness({
 				cancel: () => undefined,
 			}}
 		>
-			<FileCollectionProvider collection={collection}>
+			<FileIndexProvider fileIndex={fileIndex}>
 				{children}
 				<button
 					type="button"
@@ -74,7 +79,7 @@ function EditorPromptStoryHarness({
 				<output data-testid="second-send-count" hidden>
 					{secondSendCount}
 				</output>
-			</FileCollectionProvider>
+			</FileIndexProvider>
 		</PromptProvider>
 	);
 }
@@ -139,7 +144,12 @@ type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
 
 export const StoredFileReference: Story = {
-	args: { initialInput: 'Read @{notes/daily/2026-05-28.md}' },
+	args: {
+		initialInput: `Read ${formatReferenceMention({
+			locator: 'notes/daily/2026-05-28.md',
+			label: 'notes/daily/2026-05-28.md',
+		})}`,
+	},
 	play: async ({ canvasElement }) => {
 		await waitFor(async () => {
 			await expect(
