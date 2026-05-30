@@ -55,14 +55,12 @@ Franklin helps you investigate, synthesize, and cite information.
 - [License](#license)
 
 ## Getting Started
-> Franklin is not yet accepted on the Obsidian plugin marketplace. These are the instructions to try it out right now.
 
-1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin.
-2. Add this project as a 'beta plugin' by pasting this link in: 'https://github.com/franklin-md/franklin-mono', ensuring you enable Franklin.
-3. Go to the Franklin settings page and authenticate with a model provider in settings or from the model selector.
-4. Use the sidebar button or command to open Franklin up
-5. Start talking with Franklin to read, search, or edit notes in your vault.
-6. Review proposed file changes before accepting them.
+1. Install and enable Franklin in the Obsidian plugin store.
+2. Go to the Franklin settings page and authenticate with a model provider in settings or from the model selector.
+3. Use the sidebar button or command to open Franklin up
+4. Start talking with Franklin to read, search, or edit notes in your vault.
+5. Review proposed file changes before accepting them.
   
 Franklin is currently in **early release**. Join the [Discord](https://discord.gg/KRFy6ECMnf) to follow and support development!
 
