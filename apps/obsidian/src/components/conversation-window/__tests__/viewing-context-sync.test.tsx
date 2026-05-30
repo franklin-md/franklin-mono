@@ -222,12 +222,10 @@ describe('collectViewedReferences', () => {
 
 		expect(collectViewedReferences(workspace.workspace, new Map())).toEqual([
 			expect.objectContaining({
-				type: 'file',
 				locator: 'notes/active.md',
 				modifiedAt: 10,
 			}),
 			expect.objectContaining({
-				type: 'file',
 				locator: 'notes/edited.md',
 				modifiedAt: 30,
 			}),
@@ -293,7 +291,6 @@ describe('syncWorkspaceViewingContext', () => {
 		expect(workspace.eventRefs).toHaveLength(3);
 		expect(viewingContext.get().references).toEqual([
 			expect.objectContaining({
-				type: 'file',
 				locator: 'notes/current.md',
 				modifiedAt: 10,
 			}),
@@ -364,7 +361,6 @@ describe('ViewingContextSync', () => {
 			enabled: false,
 			references: [
 				expect.objectContaining({
-					type: 'file',
 					locator: 'notes/private.md',
 				}),
 			],
@@ -407,8 +403,8 @@ describe('ViewingContextHeader', () => {
 			viewingContext: createViewingContextStore({
 				enabled: true,
 				references: [
-					{ type: 'file', locator: 'notes/first.md' },
-					{ type: 'file', locator: 'notes/second.md' },
+					{ locator: 'notes/first.md' },
+					{ locator: 'notes/second.md' },
 				],
 			}),
 		});
@@ -423,7 +419,7 @@ describe('ViewingContextHeader', () => {
 	it('toggles sharing for the active agent while preserving references', () => {
 		const viewingContext = createViewingContextStore({
 			enabled: true,
-			references: [{ type: 'file', locator: 'notes/current.md' }],
+			references: [{ locator: 'notes/current.md' }],
 		});
 
 		renderViewingContextHeader({
@@ -438,7 +434,6 @@ describe('ViewingContextHeader', () => {
 			enabled: false,
 			references: [
 				expect.objectContaining({
-					type: 'file',
 					locator: 'notes/current.md',
 				}),
 			],

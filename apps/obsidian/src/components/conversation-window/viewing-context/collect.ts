@@ -26,7 +26,6 @@ export function collectViewedReferences(
 		.map((file): ViewedReference => {
 			const openedAt = openedAtByPath.get(file.path);
 			const reference: ViewedReference = {
-				type: 'file',
 				locator: file.path,
 				modifiedAt: file.stat.mtime,
 			};

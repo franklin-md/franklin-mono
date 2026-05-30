@@ -1,4 +1,3 @@
-import type { Reference } from '../../modules/references/index.js';
 import type { ViewedReference } from './types.js';
 
 export function formatViewingContext(
@@ -15,16 +14,12 @@ export function formatViewingContext(
 }
 
 function formatViewedReference(reference: ViewedReference): string {
-	return formatReference(reference);
-}
-
-function formatReference(reference: Reference): string {
 	const parts = [`locator=${reference.locator}`];
-	if (reference.type !== undefined) {
-		parts.unshift(`type=${reference.type}`);
-	}
 	if (reference.selector !== undefined) {
 		parts.push(`selector=${reference.selector}`);
+	}
+	if (reference.label !== undefined) {
+		parts.push(`label=${reference.label}`);
 	}
 	return parts.join('; ');
 }

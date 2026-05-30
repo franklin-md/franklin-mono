@@ -62,12 +62,12 @@ describe('viewingContextExtension', () => {
 
 			store.set((draft) => {
 				draft.enabled = false;
-				draft.references = [{ type: 'file', locator: 'notes/current.md' }];
+				draft.references = [{ locator: 'notes/current.md' }];
 			});
 
 			expect(store.get()).toEqual({
 				enabled: false,
-				references: [{ type: 'file', locator: 'notes/current.md' }],
+				references: [{ locator: 'notes/current.md' }],
 			});
 		} finally {
 			await runtime.dispose();
@@ -83,9 +83,8 @@ describe('viewingContextExtension', () => {
 			);
 			store.set((draft) => {
 				draft.references = [
-					{ type: 'file', locator: 'notes/current.md' },
+					{ locator: 'notes/current.md' },
 					{
-						type: 'file',
 						locator: 'papers/context.pdf',
 						selector: 'pages=1-2',
 					},
@@ -103,16 +102,18 @@ describe('viewingContextExtension', () => {
 			if (!prompt) throw new Error('Expected a prompt');
 			expect(prompt.content[0]).toEqual({
 				type: 'text',
-				text: 'What should I do next?',
-			});
-			expect(viewingContextPromptContent(prompt)).toBe(
-				[
+				text: [
+					'What should I do next?',
+					'',
 					'<viewing_context>',
 					'The user is currently viewing these resources:',
-					'- type=file; locator=notes/current.md',
-					'- type=file; locator=papers/context.pdf; selector=pages=1-2',
+					'- locator=notes/current.md',
+					'- locator=papers/context.pdf; selector=pages=1-2',
 					'</viewing_context>',
 				].join('\n'),
+			});
+			expect(viewingContextPromptContent(prompt)).toContain(
+				'<viewing_context>',
 			);
 			expect(mock.context().systemPrompt).toContain(
 				'resources the user is currently viewing',
@@ -130,7 +131,7 @@ describe('viewingContextExtension', () => {
 				viewingContextExtension.keys.viewingContext,
 			);
 			store.set((draft) => {
-				draft.references = [{ type: 'file', locator: 'notes/current.md' }];
+				draft.references = [{ locator: 'notes/current.md' }];
 				draft.enabled = false;
 			});
 

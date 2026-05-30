@@ -28,7 +28,7 @@ export function viewingContextExtension() {
 			const formatted = formatViewingContext(state.references);
 			if (formatted === undefined) return;
 
-			prompt.appendContent({ type: 'text', text: formatted });
+			prompt.appendContent(`\n\n${formatted}`);
 		});
 	});
 }
