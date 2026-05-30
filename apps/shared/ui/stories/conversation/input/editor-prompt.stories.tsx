@@ -9,8 +9,8 @@ import {
 } from '@franklin/react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 
-import { TextareaGroup } from '../../../src/components/textarea-group.js';
-import { EditorPromptText } from '../../../src/conversation/input/editor-prompt/editor.js';
+import { PromptContainer } from '../../../src/conversation/input/prompt-container.js';
+import { PromptEditor } from '../../../src/conversation/input/editor-prompt/editor.js';
 
 function item(path: string) {
 	return { path, metadata: undefined };
@@ -91,7 +91,9 @@ interface EditorPromptStoryProps {
 function EditorPromptFrame() {
 	return (
 		<div className="w-[560px]">
-			<TextareaGroup textarea={<EditorPromptText />} buttonBar={<div />} />
+			<PromptContainer>
+				<PromptEditor />
+			</PromptContainer>
 		</div>
 	);
 }
@@ -132,7 +134,7 @@ function getPromptLineMetrics(frame: HTMLElement) {
 }
 
 const meta = {
-	title: 'Conversation/Input/EditorPromptText',
+	title: 'Conversation/Input/PromptEditor',
 	component: EditorPromptStory,
 } satisfies Meta<typeof EditorPromptStory>;
 

@@ -15,7 +15,7 @@ import {
 const TEST_APP_DIR = '/test/app' as AbsolutePath;
 const SETTINGS_PATH = joinAbsolute(TEST_APP_DIR, DEFAULT_SETTINGS_FILE);
 
-function mockFilesystem(stored?: AppSettings): Filesystem {
+function mockFilesystem(stored?: unknown): Filesystem {
 	return {
 		readFile: vi.fn(async () => {
 			if (stored === undefined) throw new Error('ENOENT');
@@ -54,6 +54,7 @@ describe('createSettings', () => {
 describe('settings.restore', () => {
 	it('hydrates the store from disk', async () => {
 		const stored: AppSettings = {
+			shareViewedReferencesByDefault: false,
 			defaultLLMConfig: {
 				provider: 'anthropic',
 				model: 'claude-sonnet-4-5',
@@ -82,6 +83,7 @@ describe('settings.restore', () => {
 		await store.restore();
 
 		expect(store.get()).toEqual({
+			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {
 				provider: 'anthropic',
 				model: 'claude-sonnet-4-5',
@@ -118,13 +120,13 @@ describe('settings persistence', () => {
 		const fs = mockFilesystem();
 		const store = createSettings(fs, TEST_APP_DIR);
 
-		store.set(() => ({
-			defaultLLMConfig: {
+		store.set((draft) => {
+			draft.defaultLLMConfig = {
 				provider: 'openai',
 				model: 'gpt-4o',
 				reasoning: 'medium',
-			},
-		}));
+			};
+		});
 
 		// persist is triggered asynchronously via the store subscription
 		await vi.waitFor(() => {
@@ -139,13 +141,13 @@ describe('settings persistence', () => {
 		const fs = mockFilesystem();
 		const store = createSettings(fs, TEST_APP_DIR);
 
-		store.set(() => ({
-			defaultLLMConfig: {
+		store.set((draft) => {
+			draft.defaultLLMConfig = {
 				provider: 'anthropic',
 				model: 'claude-sonnet-4-5',
 				reasoning: 'medium',
-			},
-		}));
+			};
+		});
 		vi.mocked(fs.writeFile).mockClear();
 
 		await store.persist();
@@ -167,13 +169,13 @@ describe('settings store reactivity', () => {
 		const listener = vi.fn();
 		store.subscribe(listener);
 
-		store.set(() => ({
-			defaultLLMConfig: {
+		store.set((draft) => {
+			draft.defaultLLMConfig = {
 				provider: 'anthropic',
 				model: 'claude-sonnet-4-5',
 				reasoning: 'medium',
-			},
-		}));
+			};
+		});
 
 		expect(listener).toHaveBeenCalledTimes(1);
 		expect(listener).toHaveBeenCalledWith(

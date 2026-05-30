@@ -24,10 +24,17 @@ import { createPromptDocument, getPromptText } from './prompt-document.js';
 
 const editorClassName = cn(
 	textInputSurfaceClassName,
-	'min-h-12 px-4 pt-4 pb-0 leading-6 outline-none',
+	'min-h-12 px-4 pt-2 pb-0 leading-6 outline-none',
+	// TipTap's Placeholder extension provides classes/data attributes, but
+	// still requires CSS to render the placeholder text.
+	'[&_.is-editor-empty:first-child::before]:pointer-events-none',
+	'[&_.is-editor-empty:first-child::before]:float-left',
+	'[&_.is-editor-empty:first-child::before]:h-0',
+	'[&_.is-editor-empty:first-child::before]:text-muted-foreground',
+	'[&_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]',
 );
 
-export function EditorPromptText() {
+export function PromptEditor() {
 	const { input, setInput, send, cancel, sending } = usePrompt();
 	const [suggestion, setSuggestion] = useState(inactiveMentionSuggestion);
 	const mentionItems = useMentionItems(suggestion);
@@ -94,11 +101,6 @@ export function EditorPromptText() {
 
 	return (
 		<div className="relative flex-1">
-			{input.length === 0 ? (
-				<div className="pointer-events-none absolute left-4 top-4 text-sm leading-6 text-muted-foreground">
-					Type a message...
-				</div>
-			) : null}
 			<ScrollRoot className="min-h-12 max-h-60 w-full rounded-[inherit]">
 				<ScrollViewport className="h-auto max-h-60">
 					<div className="w-full pr-4">

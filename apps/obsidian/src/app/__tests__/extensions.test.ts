@@ -17,6 +17,7 @@ import {
 	createEnvironmentModule,
 	createReferencesModule,
 	createStoreStateModule,
+	viewingContextExtension,
 	type EnvironmentConfig,
 	type ReconfigurableEnvironment,
 } from '@franklin/agent';
@@ -89,6 +90,12 @@ describe('createObsidianExtensions', () => {
 			expect(names).toContain('glob');
 			expect(names).toContain('grep');
 			expect(names).not.toContain('read_pdf');
+			expect(
+				runtime.getStore(viewingContextExtension.keys.viewingContext).get(),
+			).toEqual({
+				enabled: true,
+				references: [],
+			});
 		} finally {
 			await runtime.dispose();
 		}

@@ -12,6 +12,7 @@ import { DEFAULT_APP_SETTINGS, appSettingsCodec } from '../settings/schema.js';
 describe('AppSettings schema', () => {
 	it('DEFAULT_APP_SETTINGS pins the expected shape (regression lock)', () => {
 		expect(DEFAULT_APP_SETTINGS).toEqual({
+			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {
 				provider: 'openai-codex',
 				model: 'gpt-5.4',
@@ -33,6 +34,7 @@ describe('AppSettings schema', () => {
 		expect(result).toMatchObject({
 			ok: true,
 			value: {
+				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'anthropic',
 					model: 'gpt-5.4',
@@ -53,6 +55,7 @@ describe('AppSettings schema', () => {
 		expect(result).toEqual({
 			ok: true,
 			value: {
+				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'openai',
 					model: 'gpt-5.4',
@@ -72,6 +75,7 @@ describe('AppSettings schema', () => {
 		expect(result).toEqual({
 			ok: true,
 			value: {
+				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'openai',
 					model: 'gpt-5.4',

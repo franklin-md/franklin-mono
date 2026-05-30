@@ -6,6 +6,8 @@ import type {
 	StoreKey,
 	StoreValueType,
 	Todo,
+	ViewedReference,
+	ViewingContextState,
 	WebExtensionOptions,
 	WebFetchExtensionOptions,
 	WebSearchExtensionOptions,
@@ -27,6 +29,7 @@ import {
 	storeKey,
 	todoExtension,
 	toolSpec,
+	viewingContextExtension,
 	webFetchExtension,
 	webSearchExtension,
 	webSearchProviders,
@@ -103,18 +106,26 @@ const _statusKey: StoreKey<'status', StatusState> = statusExtension.keys.status;
 const _todoKey: StoreKey<'todo', Todo[]> = todoExtension.keys.todo;
 const _titleKey: StoreKey<'conversationTitle', ConversationTitle> =
 	conversationTitleExtension.keys.title;
+const _viewingContextKey: StoreKey<'viewingContext', ViewingContextState> =
+	viewingContextExtension.keys.viewingContext;
 
 type _StatusValue = StoreValueType<typeof statusExtension.keys.status>;
 type _TodoValue = StoreValueType<typeof todoExtension.keys.todo>;
 type _TitleValue = StoreValueType<typeof conversationTitleExtension.keys.title>;
+type _ViewingContextValue = StoreValueType<
+	typeof viewingContextExtension.keys.viewingContext
+>;
 
 const _statusValue = null as unknown as _StatusValue;
 const _todoValue = null as unknown as _TodoValue;
 const _titleValue = null as unknown as _TitleValue;
+const _viewingContextValue = null as unknown as _ViewingContextValue;
 
 const _statusState: StatusState = _statusValue;
 const _todos: Todo[] = _todoValue;
 const _title: ConversationTitle = _titleValue;
+const _viewingContext: ViewingContextState = _viewingContextValue;
+const _viewedReference: ViewedReference = { locator: 'notes/current.md' };
 const _webOptions: WebExtensionOptions = { fetch: {}, search: {} };
 const _webFetchOptions: WebFetchExtensionOptions = {
 	timeoutMs: 1,
@@ -149,9 +160,12 @@ const _webSearchRequest = null as unknown as WebSearchProviderRequest;
 void _statusKey;
 void _todoKey;
 void _titleKey;
+void _viewingContextKey;
 void _statusState;
 void _todos;
 void _title;
+void _viewingContext;
+void _viewedReference;
 void _webOptions;
 void _webFetchOptions;
 void _webSearchOptions;
@@ -173,6 +187,7 @@ void webFetchExtension;
 void webSearchExtension;
 void webSearchProviders;
 void webSearchToolExtension;
+void viewingContextExtension;
 
 void _RootCoreState;
 void _RootEnvironmentState;

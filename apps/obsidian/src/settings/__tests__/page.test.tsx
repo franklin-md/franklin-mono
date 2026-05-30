@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 
-import type { AuthEntries, FranklinApp } from '@franklin/agent';
+import type {
+	AppSettings,
+	AuthEntries,
+	FranklinApp,
+	SettingsStore,
+} from '@franklin/agent';
 import { bindHostAction, openExternalAction } from '@franklin/react';
 import { ApplicationProvider } from '@franklin/ui';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -22,6 +27,8 @@ type AuthStub = {
 	cancel: () => Promise<void>;
 };
 
+type SettingsStub = Pick<SettingsStore, 'get' | 'set' | 'subscribe'>;
+
 function createAuthStub(initial: AuthEntries = {}): AuthStub {
 	let entries = initial;
 	return {
@@ -40,10 +47,46 @@ function createAuthStub(initial: AuthEntries = {}): AuthStub {
 	};
 }
 
-function renderPage(auth: AuthStub) {
+function createSettingsStub(
+	initial: AppSettings = {
+		shareViewedReferencesByDefault: true,
+		defaultLLMConfig: {
+			provider: 'openai-codex',
+			model: 'gpt-5.4',
+			reasoning: 'medium',
+		},
+	},
+): SettingsStub {
+	let value = initial;
+	const listeners = new Set<(value: AppSettings) => void>();
+	const settings: SettingsStub = {
+		get: () => value,
+		set: vi.fn((recipe: Parameters<SettingsStore['set']>[0]) => {
+			const draft: AppSettings = {
+				...value,
+				defaultLLMConfig: { ...value.defaultLLMConfig },
+			};
+			recipe(draft);
+			value = draft;
+			for (const listener of listeners) {
+				listener(value);
+			}
+		}),
+		subscribe: vi.fn((listener: (value: AppSettings) => void) => {
+			listeners.add(listener);
+			return () => {
+				listeners.delete(listener);
+			};
+		}),
+	};
+	return settings;
+}
+
+function renderPage(auth: AuthStub, settings = createSettingsStub()) {
 	const openExternal = vi.fn(async () => {});
 	const app = {
 		auth,
+		settings,
 	} as unknown as FranklinApp;
 
 	return {
@@ -56,6 +99,7 @@ function renderPage(auth: AuthStub) {
 			</ApplicationProvider>,
 		),
 		openExternal,
+		settings,
 	};
 }
 
@@ -104,13 +148,27 @@ describe('SettingsPage', () => {
 		);
 	});
 
+	it('renders settings under native setting group headings', () => {
+		const auth = createAuthStub();
+		const { container } = renderPage(auth);
+
+		const headings = Array.from(
+			container.querySelectorAll('.setting-item-heading .setting-item-name'),
+			(element) => element.textContent,
+		);
+
+		expect(headings).toEqual(['Credentials', 'Agent settings']);
+	});
+
 	it('renders ChatGPT as the first credential setting', () => {
 		const auth = createAuthStub();
 		const { container } = renderPage(auth);
 
-		expect(container.querySelector('.setting-item-name')?.textContent).toBe(
-			'ChatGPT',
-		);
+		expect(
+			container.querySelector(
+				'.setting-item:not(.setting-item-heading) .setting-item-name',
+			)?.textContent,
+		).toBe('ChatGPT');
 	});
 
 	it('links to OpenRouter API key settings', () => {
@@ -243,5 +301,28 @@ describe('SettingsPage', () => {
 		renderPage(auth);
 
 		expect(screen.getByRole('button', { name: /chatgpt/i })).toBeTruthy();
+	});
+
+	it('shares open notes with agents by default', () => {
+		const auth = createAuthStub();
+		renderPage(auth);
+
+		const input = screen.getByRole('switch', {
+			name: 'Share open notes with agent',
+		});
+		expect(input.getAttribute('aria-checked')).toBe('true');
+	});
+
+	it('writes the open notes sharing default into settings on change', () => {
+		const auth = createAuthStub();
+		const { settings } = renderPage(auth);
+
+		const input = screen.getByRole('switch', {
+			name: 'Share open notes with agent',
+		});
+		fireEvent.click(input);
+
+		expect(settings.set).toHaveBeenCalledOnce();
+		expect(settings.get().shareViewedReferencesByDefault).toBe(false);
 	});
 });

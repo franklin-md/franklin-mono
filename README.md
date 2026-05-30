@@ -96,10 +96,11 @@ We are actively working towards making filesystem permissions **configurable** a
 - Project instructions via `CLAUDE.md`
 - Per-turn token tracking
 - Forking last turn into a new conversation
-- `@`-style mention system
 - Sub-Agents
 - PDF Support
 - Image Support
+- `@`-style mention system
+- Auto-shares "what you see"
 
 ## Roadmap
 Below is a list (in approximate priority) of what we are building:
