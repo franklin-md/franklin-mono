@@ -4,9 +4,9 @@
   </a>
 </p>
 <p align="center">
-  <a href="https://discord.gg/KRFy6ECMnf"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>
-<a href="https://github.com/franklin-md/franklin-mono/actions/workflows/release-obsidian.yml">
-  <img alt="Release Obsidian Plugin" src="https://github.com/franklin-md/franklin-mono/actions/workflows/release-obsidian.yml/badge.svg?branch=main" /></a>
+  <a href="https://discord.gg/KRFy6ECMnf"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>&nbsp;&nbsp;
+  <a href="https://github.com/franklin-md/franklin-mono/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/franklin-md/franklin-mono?style=flat-square&label=release" /></a>&nbsp;&nbsp;
+  <a href="https://community.obsidian.md/plugins/franklin"><img alt="Obsidian downloads" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2FHEAD%2Fcommunity-plugin-stats.json&query=%24%5B%22franklin%22%5D.downloads&label=downloads&style=flat-square&logo=obsidian&logoColor=white" /></a>
 </p>
 
 # Franklin
@@ -55,14 +55,12 @@ Franklin helps you investigate, synthesize, and cite information.
 - [License](#license)
 
 ## Getting Started
-> Franklin is not yet accepted on the Obsidian plugin marketplace. These are the instructions to try it out right now.
 
-1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin.
-2. Add this project as a 'beta plugin' by pasting this link in: 'https://github.com/franklin-md/franklin-mono', ensuring you enable Franklin.
-3. Go to the Franklin settings page and authenticate with a model provider in settings or from the model selector.
-4. Use the sidebar button or command to open Franklin up
-5. Start talking with Franklin to read, search, or edit notes in your vault.
-6. Review proposed file changes before accepting them.
+1. Install and enable Franklin in the Obsidian plugin store.
+2. Go to the Franklin settings page and authenticate with a model provider in settings or from the model selector.
+3. Use the sidebar button or command to open Franklin up
+4. Start talking with Franklin to read, search, or edit notes in your vault.
+5. Review proposed file changes before accepting them.
   
 Franklin is currently in **early release**. Join the [Discord](https://discord.gg/KRFy6ECMnf) to follow and support development!
 
@@ -96,12 +94,16 @@ We are actively working towards making filesystem permissions **configurable** a
 - Project instructions via `CLAUDE.md`
 - Per-turn token tracking
 - Forking last turn into a new conversation
+- Sub-Agents
+- PDF Support
+- Image Support
+- `@`-style mention system
+- Auto-shares "what you see"
 
 ## Roadmap
 Below is a list (in approximate priority) of what we are building:
 - Support for additional subscriptions and API providers such as Anthropic and Grok
 - Greater parity with popular coding agents like Claude Code, including:
-  - Sub-Agents
   - Terminal
   - MCP
   - AGENTS.md
@@ -109,9 +111,6 @@ Below is a list (in approximate priority) of what we are building:
   - Context Compaction
   - Branching at any point in conversation
   - Conversation rewind
-- `@`-style mention system
-- PDF Support
-- Image Support
 - Integrations with popular platforms like:
   - Twitter/X  
 - Conversation Organization:

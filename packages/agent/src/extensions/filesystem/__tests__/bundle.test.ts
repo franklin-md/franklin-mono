@@ -1,5 +1,6 @@
 import { MemoryOsInfo, type AbsolutePath } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
+import { reduceExtensions } from '@franklin/extensibility';
 import { compileCoreWithStoreAndEnv } from '../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
 import { fileKey } from '../common/key.js';
@@ -60,6 +61,11 @@ describe('filesystemBundle', () => {
 		expect(filesystemBundle.tools.editFile.name).toBe('edit_file');
 		expect(filesystemBundle.tools.glob.name).toBe('glob');
 		expect(filesystemBundle.tools.grep.name).toBe('grep');
+		expect(filesystemBundle.extensions.readFile).toBeDefined();
+		expect(filesystemBundle.extensions.writeFile).toBeDefined();
+		expect(filesystemBundle.extensions.editFile).toBeDefined();
+		expect(filesystemBundle.extensions.glob).toBeDefined();
+		expect(filesystemBundle.extensions.grep).toBeDefined();
 		expect(filesystemExtension).toBe(filesystemBundle.extension);
 
 		const compiled = await compileCoreWithStoreAndEnv(
@@ -76,6 +82,26 @@ describe('filesystemBundle', () => {
 				'glob',
 				'grep',
 			]),
+		);
+	});
+
+	it('allows callers to compose filesystem tools without read_file', async () => {
+		const extension = reduceExtensions(
+			filesystemBundle.extensions.writeFile,
+			filesystemBundle.extensions.editFile,
+			filesystemBundle.extensions.glob,
+			filesystemBundle.extensions.grep,
+		);
+
+		const compiled = await compileCoreWithStoreAndEnv(
+			extension,
+			mockEnvironment(),
+		);
+
+		const names = compiled.tools.map((tool) => tool.name);
+		expect(names).not.toContain('read_file');
+		expect(names).toEqual(
+			expect.arrayContaining(['write_file', 'edit_file', 'glob', 'grep']),
 		);
 	});
 });

@@ -7,7 +7,8 @@ import { ObsidianWikilink } from './wikilinks/link.js';
 import { remendObsidianWikilinks } from './wikilinks/remend-wikilinks.js';
 import { remarkObsidianWikilinks } from './wikilinks/remark-wikilinks.js';
 
-const MARKDOWN_CLASS = 'markdown-rendered';
+const MARKDOWN_CLASS =
+	'markdown-rendered [font-size:calc(var(--font-text-size)*0.9)]';
 const markdown = {
 	customElements: {
 		'obsidian-wikilink': {

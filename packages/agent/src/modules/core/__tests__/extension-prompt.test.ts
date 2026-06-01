@@ -30,7 +30,7 @@ describe('core extension prompt handlers', () => {
 			extensions: [
 				(api) => {
 					api.on('prompt', (prompt) => {
-						prompt.appendContent({ type: 'text', text: ' [injected]' });
+						prompt.appendContent(' [injected]');
 					});
 				},
 			],
@@ -39,7 +39,7 @@ describe('core extension prompt handlers', () => {
 
 		expect(
 			textContent(calls.prompts[0]).map((content) => content.text),
-		).toEqual(['hello', ' [injected]']);
+		).toEqual(['hello [injected]']);
 	});
 
 	it('composes multiple prompt handlers against the original request', async () => {
@@ -52,12 +52,12 @@ describe('core extension prompt handlers', () => {
 					api.on('prompt', (prompt) => {
 						callsSeen.push('first');
 						inputsSeen.push(textContent(prompt.request)[0]?.text ?? '');
-						prompt.prependContent({ type: 'text', text: 'first' });
+						prompt.appendContent(' first');
 					});
 					api.on('prompt', (prompt) => {
 						callsSeen.push('second');
 						inputsSeen.push(textContent(prompt.request)[0]?.text ?? '');
-						prompt.prependContent({ type: 'text', text: 'second' });
+						prompt.appendContent(' second');
 					});
 				},
 			],
@@ -68,7 +68,97 @@ describe('core extension prompt handlers', () => {
 		expect(inputsSeen).toEqual(['original', 'original']);
 		expect(
 			textContent(result.calls.prompts[0]).map((content) => content.text),
-		).toEqual(['first', 'second', 'original']);
+		).toEqual(['original first second']);
+	});
+
+	it('edits the current prompt content structurally', async () => {
+		const { calls } = await runCoreScenario({
+			extensions: [
+				(api) => {
+					api.on('prompt', (prompt) => {
+						prompt.editContent((content) =>
+							content.flatMap((item) =>
+								item.type === 'text' && item.text === 'remove' ? [] : [item],
+							),
+						);
+					});
+				},
+			],
+			prompt: {
+				role: 'user',
+				content: [
+					{ type: 'text', text: 'keep' },
+					{ type: 'text', text: 'remove' },
+					{ type: 'text', text: 'also keep' },
+				],
+			},
+		});
+
+		expect(
+			textContent(calls.prompts[0]).map((content) => content.text),
+		).toEqual(['keep', 'also keep']);
+	});
+
+	it('lets editContent add blocks while appendContent only touches the first text block', async () => {
+		const image = {
+			type: 'image' as const,
+			data: 'base64',
+			mimeType: 'image/png',
+		};
+
+		const { calls } = await runCoreScenario({
+			extensions: [
+				(api) => {
+					api.on('prompt', (prompt) => {
+						prompt.editContent((content) => [
+							...content,
+							{ type: 'text', text: 'tail' },
+						]);
+						prompt.appendContent(' after');
+					});
+				},
+			],
+			prompt: {
+				role: 'user',
+				content: [{ type: 'text', text: 'head' }, image],
+			},
+		});
+
+		expect(calls.prompts[0]?.content).toEqual([
+			{ type: 'text', text: 'head after' },
+			image,
+			{ type: 'text', text: 'tail' },
+		]);
+	});
+
+	it('lets editContent insert blocks before the submitted content', async () => {
+		const image = {
+			type: 'image' as const,
+			data: 'base64',
+			mimeType: 'image/png',
+		};
+
+		const { calls } = await runCoreScenario({
+			extensions: [
+				(api) => {
+					api.on('prompt', (prompt) => {
+						prompt.editContent((content) => [
+							{ type: 'text', text: 'before' },
+							...content,
+						]);
+					});
+				},
+			],
+			prompt: {
+				role: 'user',
+				content: [image],
+			},
+		});
+
+		expect(calls.prompts[0]?.content).toEqual([
+			{ type: 'text', text: 'before' },
+			image,
+		]);
 	});
 
 	it('passes the original prompt through when a handler only observes it', async () => {
@@ -91,6 +181,48 @@ describe('core extension prompt handlers', () => {
 		expect(
 			textContent(calls.prompts[0]).map((content) => content.text),
 		).toEqual(['hello']);
+	});
+
+	it('keeps request as the original prompt after content edits', async () => {
+		let observed: Readonly<UserMessage> | undefined;
+
+		const { calls } = await runCoreScenario({
+			extensions: [
+				(api) => {
+					api.on('prompt', (prompt) => {
+						prompt.editContent(() => [{ type: 'text', text: 'edited' }]);
+						observed = prompt.request;
+					});
+				},
+			],
+			prompt: 'original',
+		});
+
+		expect(textContent(observed).map((content) => content.text)).toEqual([
+			'original',
+		]);
+		expect(
+			textContent(calls.prompts[0]).map((content) => content.text),
+		).toEqual(['edited']);
+	});
+
+	it('copies content returned by editContent before sending the prompt', async () => {
+		const returned = [{ type: 'text' as const, text: 'stable' }];
+
+		const { calls } = await runCoreScenario({
+			extensions: [
+				(api) => {
+					api.on('prompt', (prompt) => {
+						prompt.editContent(() => returned);
+						returned.push({ type: 'text', text: 'late mutation' });
+					});
+				},
+			],
+		});
+
+		expect(
+			textContent(calls.prompts[0]).map((content) => content.text),
+		).toEqual(['stable']);
 	});
 });
 
@@ -265,7 +397,7 @@ describe('core extension system prompt handlers', () => {
 						systemPrompt.setPart('system');
 					});
 					api.on('prompt', (prompt) => {
-						prompt.appendContent({ type: 'text', text: ' [injected]' });
+						prompt.appendContent(' [injected]');
 					});
 				},
 			],
@@ -275,7 +407,7 @@ describe('core extension system prompt handlers', () => {
 		expect(context.systemPrompt).toBe('system');
 		expect(
 			textContent(calls.prompts[0]).map((content) => content.text),
-		).toEqual(['hello', ' [injected]']);
+		).toEqual(['hello [injected]']);
 	});
 
 	it('updates a changed system prompt with a context patch instead of resending messages', async () => {

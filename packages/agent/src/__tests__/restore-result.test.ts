@@ -73,6 +73,7 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 		const result = await storage.restore();
 		expect(result.issues).toEqual([]);
 		expect(storage.settings.get()).toEqual({
+			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {
 				provider: 'anthropic',
 				model: 'claude-sonnet-4-5',

@@ -111,6 +111,11 @@ The generic extension-point, compiler, runtime, and stateless module algebra liv
 
 Extensions intercept the ACP flow to augment the agent's behavior from the application side. They cross the boundary between the environment (where the agent runs) and the application (where the user, UI, and app logic live). This is what makes Franklin more than an ACP client library.
 
+The base application runtime also includes the references module. References are
+resolved on the application side before prompt submission, so context providers
+can materialize files or other app-owned resources without changing the
+Mini-ACP prompt protocol.
+
 The mechanism for cross-boundary interaction is **Local MCP**: the application defines tool handlers that are exposed to the agent as MCP servers. The agent invokes tools using the MCP protocol it already speaks; the call crosses from the agent's environment into the application, where the handler executes and returns a result. No custom RPC — just protocol the agent already understands.
 
 Tool handlers return the application-owned execution result. When that raw

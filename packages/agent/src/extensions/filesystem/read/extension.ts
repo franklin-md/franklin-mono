@@ -45,7 +45,7 @@ export function readExtension() {
 							content: [
 								{
 									type: 'text' as const,
-									text: 'PDF files must be read with the read_pdf tool.',
+									text: 'PDF files are not supported by this reader.',
 								},
 							],
 							isError: true,

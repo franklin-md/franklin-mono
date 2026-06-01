@@ -62,7 +62,7 @@ describe('core extension stream observers', () => {
 			extensions: [
 				(api) => {
 					api.on('prompt', (prompt) => {
-						prompt.appendContent({ type: 'text', text: ' [injected]' });
+						prompt.appendContent(' [injected]');
 					});
 					api.on('chunk', (event) => {
 						observedChunks.push(event);
@@ -71,7 +71,7 @@ describe('core extension stream observers', () => {
 			],
 		});
 
-		expect(calls.prompts[0]?.content).toHaveLength(2);
+		expect(calls.prompts[0]?.content).toHaveLength(1);
 		expect(observedChunks).toEqual(chunks(events));
 	});
 });

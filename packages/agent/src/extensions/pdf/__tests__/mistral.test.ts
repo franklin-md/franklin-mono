@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { MistralPDFConverter, formatOCRMarkdown } from '../mistral.js';
+import {
+	MistralPDFConverter,
+	formatOCRMarkdown,
+} from '../providers/mistral.js';
 import { PDF_SCREENSHOT_DPI } from '../types.js';
 
 describe('MistralPDFConverter', () => {

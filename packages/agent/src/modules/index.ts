@@ -109,6 +109,28 @@ export type {
 export type { EnvironmentState } from './environment/state.js';
 export { emptyEnvironmentState } from './environment/state.js';
 
+// References
+export type {
+	Reference,
+	ReferenceContext,
+	ReferenceDelegate,
+	ReferenceHandlerCallback,
+	ReferenceHandler,
+	ReferenceHandlerRuntime,
+	ReferencesAPI,
+	ReferencesEngine,
+	ReferencesModule,
+	ReferencesSignature,
+	ResolvedData,
+	ResolvedReference,
+} from './references/index.js';
+export {
+	createReferencesModule,
+	referenceKey,
+	referenceContextsToContent,
+	referenceContextToContent,
+} from './references/index.js';
+
 // Store
 export type {
 	ForkMode,

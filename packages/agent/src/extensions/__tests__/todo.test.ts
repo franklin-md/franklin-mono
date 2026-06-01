@@ -162,6 +162,7 @@ describe('todoExtension', () => {
 		const params = received[0] as {
 			content: { type: string; text: string }[];
 		};
+		expect(params.content).toHaveLength(2);
 		expect(params.content[0]?.text).toContain('<todos>');
 		expect(params.content[0]?.text).toContain('Buy milk');
 		expect(params.content[1]?.text).toBe('hello');

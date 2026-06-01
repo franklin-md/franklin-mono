@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
+import { formatReferenceMention } from '@franklin/agent';
+
 import { userTextPrompt } from '../../fixtures.js';
 import { UserBubble } from '../../../src/conversation/turn/user-bubble.js';
 
@@ -23,6 +25,26 @@ export const LongMessage: Story = {
 				{
 					type: 'text',
 					text: 'This is a much longer message that demonstrates wrapping within the bubble, including enough content to hit the component width constraints and show the default spacing.',
+				},
+			],
+		},
+	},
+};
+
+export const WithMarkdownAndFileReference: Story = {
+	args: {
+		message: {
+			role: 'user',
+			content: [
+				{
+					type: 'text',
+					text: `Read ~~the old draft~~ ${formatReferenceMention({
+						locator: 'notes/deep work.md',
+						label: 'notes/deep work.md',
+					})} and compare it with ${formatReferenceMention({
+						locator: 'src/conversation/turn/user-bubble.tsx',
+						label: 'src/conversation/turn/user-bubble.tsx',
+					})}.`,
 				},
 			],
 		},

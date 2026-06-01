@@ -73,6 +73,25 @@ function customElementPlugin() {
 	};
 }
 
+function typedCustomElementPlugin() {
+	return function transform(tree: unknown) {
+		if (!isParentNode(tree)) return;
+
+		tree.children = [
+			{
+				type: 'customElement',
+				data: {
+					hName: 'test-element',
+					hProperties: {
+						path: 'notes/deep work.md',
+					},
+				},
+				children: [],
+			},
+		];
+	};
+}
+
 function remendHello(text: string) {
 	return text.replace('hello', 'remended');
 }
@@ -97,6 +116,10 @@ function TestElement({
 
 function getString(value: unknown) {
 	return typeof value === 'string' ? value : undefined;
+}
+
+function TypedElement({ path }: { readonly path: string }) {
+	return <span data-path={path} data-rendered-typed="" />;
 }
 
 describe('Markdown', () => {
@@ -183,6 +206,25 @@ describe('Markdown', () => {
 		expect(customElement?.textContent).toBe('Custom body');
 		expect(customElement?.getAttribute('data-value')).toBe('preserved');
 		expect(customElement?.getAttribute('data-blocked')).toBeNull();
+	});
+
+	it('accepts typed custom element components', () => {
+		const { container } = render(
+			<Markdown
+				text="hello"
+				customElements={{
+					'test-element': {
+						allowedAttributes: ['path'],
+						component: TypedElement,
+					},
+				}}
+				remarkPlugins={[typedCustomElementPlugin]}
+			/>,
+		);
+
+		const customElement = container.querySelector('[data-rendered-typed]');
+		expect(customElement).not.toBeNull();
+		expect(customElement?.getAttribute('data-path')).toBe('notes/deep work.md');
 	});
 
 	it('does not render custom component mappings for undeclared custom elements', () => {
