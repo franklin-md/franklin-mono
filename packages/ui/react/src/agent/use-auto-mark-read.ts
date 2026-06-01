@@ -1,6 +1,6 @@
 import { useLayoutEffect } from 'react';
 
-import { createStatusControl, statusExtension } from '@franklin/agent';
+import { createStatusControl, statusExtension } from '@franklin/agent/mobile';
 
 import { useAgentControl } from './use-agent-control.js';
 import { useAgentState } from './use-agent-state.js';

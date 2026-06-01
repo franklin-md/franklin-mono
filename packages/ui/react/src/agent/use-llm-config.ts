@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-import { getLLMConfig } from '@franklin/agent';
+import { getLLMConfig } from '@franklin/agent/mobile';
 import type { LLMConfig } from '@franklin/mini-acp';
 
 import { useObservedState } from '../utils/use-observed-state.js';

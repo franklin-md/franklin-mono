@@ -2,7 +2,7 @@ import {
 	conversationExtension,
 	type ConversationTurn,
 	type Store,
-} from '@franklin/agent';
+} from '@franklin/agent/mobile';
 
 import { useAgent } from '../agent/agent-context.js';
 import { useStore } from '../utils/use-store.js';
