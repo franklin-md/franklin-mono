@@ -19,13 +19,6 @@ const pdfMocks = vi.hoisted(() => ({
 	mistralConvertPDF: vi.fn<PDFConverter['convertPDF']>(),
 }));
 
-vi.mock('file-type', () => ({
-	fileTypeFromBuffer: vi.fn(async () => ({
-		ext: 'pdf',
-		mime: 'application/pdf',
-	})),
-}));
-
 vi.mock('../providers/free.js', () => ({
 	FreePDFConverter: vi.fn(function (options) {
 		pdfMocks.freeConstructor(options);

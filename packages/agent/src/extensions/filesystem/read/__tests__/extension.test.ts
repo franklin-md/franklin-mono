@@ -10,13 +10,6 @@ import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
 import { editExtension } from '../../edit/extension.js';
 import { readExtension } from '../extension.js';
 
-vi.mock('file-type', () => ({
-	fileTypeFromBuffer: vi.fn(async () => ({
-		ext: 'pdf',
-		mime: 'application/pdf',
-	})),
-}));
-
 function mockEnvironment(file: Uint8Array): ReconfigurableEnvironment {
 	return {
 		filesystem: {
