@@ -1,4 +1,3 @@
-import { fileTypeFromBuffer } from 'file-type';
 import type { ReduceRuntimes } from '@franklin/extensibility';
 import type {
 	ExtensionForModules,
@@ -8,7 +7,7 @@ import { defineExtension } from '../../modules/state/index.js';
 import type { AuthDependencyModule } from '../../auth/dependency.js';
 import type { CoreModule } from '../../modules/core/index.js';
 import type { EnvironmentModule } from '../../modules/environment/index.js';
-import { isPDF } from '../filesystem/common/supported.js';
+import { detectFileType, isPDF } from '../filesystem/common/supported.js';
 import { convertPDF } from './convert.js';
 import { createPDFConverterResolver } from './resolve-converter.js';
 import { readPDFSpec } from './tools.js';
@@ -59,7 +58,7 @@ async function readPDF(
 	const bytes = await fs.readFile(absPath);
 	// TODO: Consider tracking which PDF pages were read if that becomes useful context for future prompts.
 
-	const ft = await fileTypeFromBuffer(bytes);
+	const ft = detectFileType(bytes);
 	if (!ft || !isPDF(ft.mime)) {
 		return {
 			content: [

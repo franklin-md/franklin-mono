@@ -1,4 +1,3 @@
-import { fileTypeFromBuffer } from 'file-type';
 import type { AbsolutePath } from '@franklin/lib';
 import type { CoreModule } from '../../modules/core/index.js';
 import type {
@@ -12,6 +11,7 @@ import type {
 	ReferenceHandlerRuntime,
 } from '../../modules/references/api/index.js';
 import type { ReferencesModule } from '../../modules/references/module.js';
+import { detectFileType } from '../filesystem/common/supported.js';
 
 type FilesystemHandlerRuntime = ReferenceHandlerRuntime & EnvironmentRuntime;
 
@@ -35,8 +35,10 @@ const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime>
 			}
 
 			const bytes = await fs.readFile(path);
-			const fileType = await fileTypeFromBuffer(bytes);
+			const fileType = detectFileType(bytes);
 			// TODO(FRA-347): I would prefer a more robust bytes + path -> mime converter.
+			// SVG stays MIME-classified for reference-backed reads until this path has
+			// an explicit SVG materialization policy.
 			const mime =
 				fileType?.mime ?? (isPdfPath(path) ? 'application/pdf' : undefined);
 			const context = await delegate({
