@@ -24,7 +24,7 @@ export function readExtension() {
 					await file.markFileRead(fs, path, bytes);
 
 					const ft = detectFileType(bytes);
-					if (!ft) {
+					if (!ft || isReadableTextMime(ft.mime)) {
 						// If there are no magic bytes at the beginning, assume text.
 						const lines = decode(bytes).split('\n');
 						const start = (offset ?? 1) - 1;
@@ -68,4 +68,9 @@ export function readExtension() {
 			});
 		},
 	);
+}
+
+function isReadableTextMime(mime: string): boolean {
+	const normalized = mime.toLowerCase();
+	return normalized.startsWith('text/') || normalized === 'image/svg+xml';
 }
