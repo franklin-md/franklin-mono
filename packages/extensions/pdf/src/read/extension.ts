@@ -12,8 +12,8 @@ import { createPDFConverterResolver } from '../resolve-converter.js';
 import { readPDFSpec } from './tools.js';
 import type {
 	PDFConverter,
+	PDFExtensionOptions,
 	PDFPageRange,
-	ReadPDFExtensionOptions,
 } from '../types.js';
 
 type ReadPDFModules = [
@@ -28,7 +28,7 @@ type ReadPDFCtx = ReduceRuntimes<ModuleRuntimes<ReadPDFModules>>;
 
 export function createReadPDFToolExtension({
 	renderScreenshots,
-}: ReadPDFExtensionOptions): ExtensionForModules<ReadPDFModules> {
+}: PDFExtensionOptions): ExtensionForModules<ReadPDFModules> {
 	const resolvePDFConverter = createPDFConverterResolver({ renderScreenshots });
 
 	return defineExtension<ReadPDFModules>((api) => {

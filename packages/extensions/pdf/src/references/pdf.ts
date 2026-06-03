@@ -15,7 +15,7 @@ import {
 } from '@franklin/agent';
 import { convertPDF } from '../convert.js';
 import { createPDFConverterResolver } from '../resolve-converter.js';
-import type { ReadPDFExtensionOptions, PDFPageRange } from '../types.js';
+import type { PDFExtensionOptions, PDFPageRange } from '../types.js';
 
 export type PDFReferenceSelector = {
 	readonly pages?: PDFReferencePageRange;
@@ -36,7 +36,7 @@ type PDFReferenceContent = ReferenceContext['content'];
 
 export function createPDFDocumentReferenceExtension({
 	renderScreenshots,
-}: ReadPDFExtensionOptions) {
+}: PDFExtensionOptions) {
 	const resolvePDFConverter = createPDFConverterResolver({ renderScreenshots });
 	const pdfDocumentReferenceHandler: ReferenceHandler<PDFReferenceRuntime> = {
 		test(reference) {
