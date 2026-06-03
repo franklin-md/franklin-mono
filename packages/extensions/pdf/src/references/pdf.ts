@@ -2,22 +2,20 @@ import type { UserContent } from '@franklin/mini-acp';
 import type {
 	AuthDependencyModule,
 	AuthDependencyRuntime,
-} from '../../auth/dependency.js';
-import type { CoreModule } from '../../modules/core/index.js';
-import { defineExtension } from '../../modules/state/index.js';
-import type {
+	CoreModule,
 	Reference,
 	ReferenceHandler,
 	ReferenceHandlerRuntime,
-} from '../../modules/references/api/index.js';
-import type { ReferencesModule } from '../../modules/references/module.js';
+	ReferencesModule,
+} from '@franklin/agent';
 import {
+	defineExtension,
 	ParsedSelector,
 	parseSelectorIntegerRangeValue,
-} from '../../modules/references/selectors/index.js';
-import { convertPDF } from '../pdf/convert.js';
-import { createPDFConverterResolver } from '../pdf/resolve-converter.js';
-import type { ReadPDFExtensionOptions, PDFPageRange } from '../pdf/types.js';
+} from '@franklin/agent';
+import { convertPDF } from '../convert.js';
+import { createPDFConverterResolver } from '../resolve-converter.js';
+import type { ReadPDFExtensionOptions, PDFPageRange } from '../types.js';
 import { assertBytesData } from './data.js';
 
 export type PdfReferenceSelector = {

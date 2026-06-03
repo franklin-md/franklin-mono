@@ -1,5 +1,4 @@
-import { createBundle } from '../../modules/bundle/index.js';
-import type { ExtensionBundle } from '../../modules/bundle/index.js';
+import { createBundle, type ExtensionBundle } from '@franklin/agent';
 import { readPDFExtension } from './extension.js';
 import { readPDFSpec } from './tools.js';
 import type { ReadPDFExtensionOptions } from './types.js';

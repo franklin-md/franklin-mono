@@ -1,4 +1,4 @@
-import type { RenderedToolOutput } from '../../modules/core/api/tool.js';
+import type { RenderedToolOutput } from '@franklin/agent';
 import {
 	PDF_SCREENSHOT_MIME_TYPE,
 	type PDFConverter,
