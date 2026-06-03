@@ -6,7 +6,7 @@ export function createToolDefinitionDrafter(
 	tools: ToolRegistry,
 ): SessionDrafter {
 	return (context) => {
-		const definitions = tools.definitions().toSorted(compareToolDefinitions);
+		const definitions = [...tools.definitions()].sort(compareToolDefinitions);
 		// Revision identity assumes registered tool names are unique. Duplicate
 		// names still need an explicit policy at the registry boundary.
 		context.setTools(definitions, `tools:${JSON.stringify(definitions)}`);
