@@ -22,8 +22,8 @@ import {
 import { createRuntime } from '@franklin/agent/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { readPDFExtension } from '../extension.js';
-import type { PDFConverter, RenderPDFScreenshots } from '../types.js';
+import { createReadPDFToolExtension } from '../extension.js';
+import type { PDFConverter, RenderPDFScreenshots } from '../../types.js';
 
 const pdfMocks = vi.hoisted(() => ({
 	freeConstructor: vi.fn(),
@@ -32,14 +32,14 @@ const pdfMocks = vi.hoisted(() => ({
 	mistralConvertPDF: vi.fn<PDFConverter['convertPDF']>(),
 }));
 
-vi.mock('../providers/free.js', () => ({
+vi.mock('../../providers/free.js', () => ({
 	FreePDFConverter: vi.fn(function (options) {
 		pdfMocks.freeConstructor(options);
 		return { convertPDF: pdfMocks.freeConvertPDF };
 	}),
 }));
 
-vi.mock('../providers/mistral.js', () => ({
+vi.mock('../../providers/mistral.js', () => ({
 	MistralPDFConverter: vi.fn(function (options) {
 		pdfMocks.mistralConstructor(options);
 		return { convertPDF: pdfMocks.mistralConvertPDF };
@@ -112,7 +112,7 @@ async function executeReadPDF(input: {
 	const runtime = await createRuntime(
 		module,
 		{ ...module.emptyState(), env: defaultConfig },
-		[readPDFExtension({ renderScreenshots })],
+		[createReadPDFToolExtension({ renderScreenshots })],
 	);
 
 	try {
@@ -128,7 +128,7 @@ async function executeReadPDF(input: {
 	}
 }
 
-describe('readPDFExtension', () => {
+describe('createReadPDFToolExtension', () => {
 	beforeEach(() => {
 		pdfMocks.freeConstructor.mockClear();
 		pdfMocks.freeConvertPDF.mockReset();

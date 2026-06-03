@@ -1,9 +1,9 @@
-import type { UserContent } from '@franklin/mini-acp';
 import type {
 	AuthDependencyModule,
 	AuthDependencyRuntime,
 	CoreModule,
 	Reference,
+	ReferenceContext,
 	ReferenceHandler,
 	ReferenceHandlerRuntime,
 	ReferencesModule,
@@ -16,13 +16,12 @@ import {
 import { convertPDF } from '../convert.js';
 import { createPDFConverterResolver } from '../resolve-converter.js';
 import type { ReadPDFExtensionOptions, PDFPageRange } from '../types.js';
-import { assertBytesData } from './data.js';
 
-export type PdfReferenceSelector = {
-	readonly pages?: PdfPageRange;
+export type PDFReferenceSelector = {
+	readonly pages?: PDFReferencePageRange;
 };
 
-export type PdfPageRange = {
+export type PDFReferencePageRange = {
 	readonly start: number;
 	readonly end: number;
 };
@@ -33,6 +32,7 @@ export type PdfPageRange = {
 const PDF_MATERIALIZATION_PAGE_LIMIT = 10;
 
 type PDFReferenceRuntime = ReferenceHandlerRuntime & AuthDependencyRuntime;
+type PDFReferenceContent = ReferenceContext['content'];
 
 export function createPDFDocumentReferenceExtension({
 	renderScreenshots,
@@ -43,7 +43,19 @@ export function createPDFDocumentReferenceExtension({
 			return reference.data?.mime === 'application/pdf';
 		},
 		async toContext(reference, _delegate, runtime) {
-			assertBytesData(reference);
+			const data = reference.data;
+			if (!data) {
+				return {
+					content: {
+						type: 'text',
+						text: formatReferenceText(
+							reference,
+							'PDF bytes were not materialized before reference handling.',
+						),
+					},
+					isError: true,
+				};
+			}
 
 			const selection = selectPDFPages(reference.selector);
 			if (selection.issue) {
@@ -56,7 +68,7 @@ export function createPDFDocumentReferenceExtension({
 			}
 
 			const converter = await resolvePDFConverter(runtime);
-			const converted = await convertPDF(reference.data.bytes, {
+			const converted = await convertPDF(data.bytes, {
 				converter,
 				pages: toPDFPageRange(selection.pages),
 			});
@@ -105,8 +117,8 @@ function formatReferenceText(
 function formatPDFReferenceContent(
 	reference: Reference,
 	note: string | undefined,
-	content: readonly UserContent[],
-): UserContent {
+	content: readonly PDFReferenceContent[],
+): PDFReferenceContent {
 	return {
 		type: 'text',
 		text: [
@@ -116,7 +128,7 @@ function formatPDFReferenceContent(
 	};
 }
 
-function formatPDFContent(content: UserContent): string {
+function formatPDFContent(content: PDFReferenceContent): string {
 	switch (content.type) {
 		case 'text':
 			return content.text;
@@ -125,7 +137,9 @@ function formatPDFContent(content: UserContent): string {
 	}
 }
 
-function firstPDFContent(content: readonly UserContent[]): UserContent {
+function firstPDFContent(
+	content: readonly PDFReferenceContent[],
+): PDFReferenceContent {
 	return (
 		content[0] ?? {
 			type: 'text',
@@ -134,9 +148,9 @@ function firstPDFContent(content: readonly UserContent[]): UserContent {
 	);
 }
 
-export function parsePdfReferenceSelector(
+export function parsePDFReferenceSelector(
 	selector: string | undefined,
-): PdfReferenceSelector {
+): PDFReferenceSelector {
 	// PDF selector examples:
 	// - page=10 selects one page
 	// - pages=10-12 selects an inclusive page range
@@ -147,12 +161,12 @@ export function parsePdfReferenceSelector(
 	return pages ? { pages } : {};
 }
 
-function toPDFPageRange(pages: PdfPageRange): PDFPageRange {
+function toPDFPageRange(pages: PDFReferencePageRange): PDFPageRange {
 	return { startPage: pages.start, endPage: pages.end };
 }
 
 type PDFPageSelection = {
-	readonly pages: PdfPageRange;
+	readonly pages: PDFReferencePageRange;
 	readonly note?: string;
 	readonly issue?: string;
 };

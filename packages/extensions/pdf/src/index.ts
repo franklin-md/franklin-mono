@@ -1,5 +1,5 @@
-export { createReadPDFExtension } from './bundle.js';
-export { readPDFSpec } from './tools.js';
+export { createReadPDFToolExtension } from './read/extension.js';
+export { readPDFSpec } from './read/tools.js';
 export { createPDFDocumentReferenceExtension } from './references/pdf.js';
 export type {
 	PDFPageRange,
@@ -8,4 +8,7 @@ export type {
 	RenderPDFScreenshots,
 	RenderPDFScreenshotsOptions,
 } from './types.js';
-export type { PdfPageRange, PdfReferenceSelector } from './references/pdf.js';
+export type {
+	PDFReferencePageRange,
+	PDFReferenceSelector,
+} from './references/pdf.js';
