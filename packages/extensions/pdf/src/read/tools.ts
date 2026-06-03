@@ -1,7 +1,14 @@
 import { z } from 'zod';
-import { toolSpec, type ToolSpec } from '../../modules/core/api/tool-spec.js';
-import type { RenderedToolOutput } from '../../modules/core/api/tool.js';
-import { readPDFDescription } from '../system_prompts.js';
+import {
+	toolSpec,
+	type RenderedToolOutput,
+	type ToolSpec,
+} from '@franklin/agent';
+
+const readPDFDescription = `Used to read PDF files on the available filesystem.
+Returns extracted PDF text and page screenshots that the model can inspect.
+Use the optional start_page and end_page arguments to limit processing to the pages you need.
+This tool can only read PDF files, not directories.`;
 
 const pageNumberSchema = z
 	.number()

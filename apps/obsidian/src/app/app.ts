@@ -11,7 +11,6 @@ import {
 	conversationTitleExtension,
 	createDuckDuckGoWebSearchProvider,
 	createExaWebSearchProvider,
-	createPDFDocumentReferenceExtension,
 	createWebExtension,
 	environmentInfoExtension,
 	filesystemBundle,
@@ -27,6 +26,7 @@ import {
 	viewingContextExtension,
 	webSearchProviders,
 } from '@franklin/agent';
+import { createPDFDocumentReferenceExtension } from '@franklin/extension-pdf';
 import type { AbsolutePath } from '@franklin/lib';
 import { toAbsolutePath } from '@franklin/lib';
 import type { Plugin } from 'obsidian';

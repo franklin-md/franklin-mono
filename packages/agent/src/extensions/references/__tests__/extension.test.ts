@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDependencyModule } from '@franklin/extensibility/module';
 import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
 import {
 	FILESYSTEM_ALLOW_ALL,
@@ -18,29 +17,10 @@ import {
 } from '../../../modules/index.js';
 import { createRuntime } from '../../../testing/index.js';
 import { createReferencesModule } from '../../../modules/references/module.js';
-import type { PDFConverter } from '../../pdf/types.js';
-import type { AuthManager } from '../../../auth/manager.js';
 import {
-	createPDFDocumentReferenceExtension,
 	filesystemFileReferenceExtension,
 	textDocumentReferenceExtension,
 } from '../index.js';
-
-const pdfMocks = vi.hoisted(() => ({
-	freeConstructor: vi.fn(),
-	freeConvertPDF: vi.fn<PDFConverter['convertPDF']>(),
-}));
-
-vi.mock('../../pdf/providers/free.js', () => ({
-	FreePDFConverter: vi.fn(function (options) {
-		pdfMocks.freeConstructor(options);
-		return { convertPDF: pdfMocks.freeConvertPDF };
-	}),
-}));
-
-vi.mock('../../pdf/providers/mistral.js', () => ({
-	MistralPDFConverter: vi.fn(),
-}));
 
 const defaultConfig: EnvironmentConfig = {
 	fsConfig: {
@@ -49,12 +29,6 @@ const defaultConfig: EnvironmentConfig = {
 	},
 	netConfig: { allowedDomains: [], deniedDomains: [] },
 };
-
-function mockAuthManager(): AuthManager {
-	return {
-		getApiKey: vi.fn(async () => undefined),
-	} as unknown as AuthManager;
-}
 
 function createEnvironment(filesystem: Filesystem): ReconfigurableEnvironment {
 	return {
@@ -77,20 +51,11 @@ async function createReferenceRuntime(
 		),
 		createReferencesModule(),
 		createEnvironmentModule(async () => createEnvironment(filesystem)),
-		createDependencyModule('auth', mockAuthManager()),
 	]);
-	pdfMocks.freeConvertPDF.mockResolvedValue({
-		markdown: 'converted pdf',
-		screenshots: [],
-	});
 	const runtime = await createRuntime(
 		module,
 		{ ...module.emptyState(), env: defaultConfig },
-		[
-			filesystemFileReferenceExtension,
-			createPDFDocumentReferenceExtension({ renderScreenshots: vi.fn() }),
-			textDocumentReferenceExtension,
-		],
+		[filesystemFileReferenceExtension, textDocumentReferenceExtension],
 	);
 	return { runtime, filesystem };
 }
@@ -128,58 +93,20 @@ describe('built-in reference extensions', () => {
 		});
 	});
 
-	it('materializes filesystem PDF files through the PDF reference handler', async () => {
-		const filesystem = new MemoryFilesystem();
-		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
-		const { runtime } = await createReferenceRuntime(filesystem);
-
-		const context = await runtime.references.toContext({
-			locator: '/project/paper.pdf',
-			selector: 'page=10',
-			label: 'Paper',
-		});
-
-		expect(context.content).toEqual({
-			type: 'text',
-			text: 'Reference: Paper\n\nconverted pdf',
-		});
-	});
-
-	it('passes PDF page ranges through the PDF reference handler', async () => {
-		const filesystem = new MemoryFilesystem();
-		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
-		const { runtime } = await createReferenceRuntime(filesystem);
-
-		const context = await runtime.references.toContext({
-			locator: '/project/paper.pdf',
-			selector: 'pages=10-12',
-			label: 'Paper',
-		});
-
-		expect(context.content).toEqual({
-			type: 'text',
-			text: 'Reference: Paper\n\nconverted pdf',
-		});
-		expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(
-			expect.any(Uint8Array),
-			{ pages: { startPage: 10, endPage: 12 } },
-		);
-	});
-
 	it('keeps the original locator when delegating filesystem data', async () => {
 		const filesystem = new MemoryFilesystem();
-		filesystem.seed('/project/paper.pdf' as AbsolutePath, '%PDF-1.7\n');
+		filesystem.seed('/project/note.txt' as AbsolutePath, 'from scoped disk');
 		const { runtime } = await createReferenceRuntime(
 			createFolderScopedFilesystem('/project' as AbsolutePath, filesystem),
 		);
 
 		const context = await runtime.references.toContext({
-			locator: 'paper.pdf',
+			locator: 'note.txt',
 		});
 
 		expect(context.content).toEqual({
 			type: 'text',
-			text: 'Reference: paper.pdf\n\nPDF materialization limited: showing up to pages 1-10. Continue with selector "pages=11-20" if needed.\n\nconverted pdf',
+			text: 'Reference: note.txt\n\nfrom scoped disk',
 		});
 	});
 

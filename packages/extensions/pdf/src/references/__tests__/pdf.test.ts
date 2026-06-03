@@ -8,22 +8,19 @@ import {
 import { createDependencyModule } from '@franklin/extensibility/module';
 import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import type { AuthManager } from '../../../auth/manager.js';
 import {
 	buildStateExtensionModule,
 	createCoreStateModule,
 	createEnvironmentModule,
 	createReferencesModule,
+	filesystemFileReferenceExtension,
+	type AuthManager,
 	type EnvironmentConfig,
 	type ReconfigurableEnvironment,
-} from '../../../modules/index.js';
-import { createRuntime } from '../../../testing/index.js';
-import type { PDFConverter, RenderPDFScreenshots } from '../../pdf/types.js';
-import {
-	createPDFDocumentReferenceExtension,
-	filesystemFileReferenceExtension,
-} from '../index.js';
-import { parsePdfReferenceSelector } from '../pdf.js';
+} from '@franklin/agent';
+import { createRuntime } from '@franklin/agent/testing';
+import type { PDFConverter, RenderPDFScreenshots } from '../../types.js';
+import { createPDFDocumentReferenceExtension } from '../pdf.js';
 
 const pdfMocks = vi.hoisted(() => ({
 	freeConstructor: vi.fn(),
@@ -32,14 +29,14 @@ const pdfMocks = vi.hoisted(() => ({
 	mistralConvertPDF: vi.fn<PDFConverter['convertPDF']>(),
 }));
 
-vi.mock('../../pdf/providers/free.js', () => ({
+vi.mock('../../providers/free.js', () => ({
 	FreePDFConverter: vi.fn(function (options) {
 		pdfMocks.freeConstructor(options);
 		return { convertPDF: pdfMocks.freeConvertPDF };
 	}),
 }));
 
-vi.mock('../../pdf/providers/mistral.js', () => ({
+vi.mock('../../providers/mistral.js', () => ({
 	MistralPDFConverter: vi.fn(function (options) {
 		pdfMocks.mistralConstructor(options);
 		return { convertPDF: pdfMocks.mistralConvertPDF };
@@ -105,30 +102,6 @@ async function drain(iterable: AsyncIterable<unknown>): Promise<void> {
 		// Drain the mock prompt so the runtime sends system prompt context.
 	}
 }
-
-describe('parsePdfReferenceSelector', () => {
-	it('parses a single page selector', () => {
-		expect(parsePdfReferenceSelector('page=10')).toEqual({
-			pages: { start: 10, end: 10 },
-		});
-	});
-
-	it('parses a page range selector', () => {
-		expect(parsePdfReferenceSelector('pages=10-12')).toEqual({
-			pages: { start: 10, end: 12 },
-		});
-	});
-
-	it('ignores unsupported selector fields', () => {
-		expect(parsePdfReferenceSelector('section=intro')).toEqual({});
-	});
-
-	it('ignores invalid page ranges', () => {
-		expect(parsePdfReferenceSelector('pages=12-10')).toEqual({});
-		expect(parsePdfReferenceSelector('pages=0-10')).toEqual({});
-		expect(parsePdfReferenceSelector('page=10.5')).toEqual({});
-	});
-});
 
 describe('createPDFDocumentReferenceExtension', () => {
 	beforeEach(() => {

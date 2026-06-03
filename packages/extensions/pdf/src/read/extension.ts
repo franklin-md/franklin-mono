@@ -1,21 +1,20 @@
 import type { ReduceRuntimes } from '@franklin/extensibility';
 import type {
+	AuthDependencyModule,
+	CoreModule,
+	EnvironmentModule,
 	ExtensionForModules,
 	ModuleRuntimes,
-} from '../../modules/state/index.js';
-import { defineExtension } from '../../modules/state/index.js';
-import type { AuthDependencyModule } from '../../auth/dependency.js';
-import type { CoreModule } from '../../modules/core/index.js';
-import type { EnvironmentModule } from '../../modules/environment/index.js';
-import { detectFileType, isPDF } from '../filesystem/common/supported.js';
-import { convertPDF } from './convert.js';
-import { createPDFConverterResolver } from './resolve-converter.js';
+} from '@franklin/agent';
+import { defineExtension } from '@franklin/agent';
+import { convertPDF } from '../convert.js';
+import { createPDFConverterResolver } from '../resolve-converter.js';
 import { readPDFSpec } from './tools.js';
 import type {
 	PDFConverter,
+	PDFExtensionOptions,
 	PDFPageRange,
-	ReadPDFExtensionOptions,
-} from './types.js';
+} from '../types.js';
 
 type ReadPDFModules = [
 	CoreModule,
@@ -27,9 +26,9 @@ type ReadPDFModules = [
 
 type ReadPDFCtx = ReduceRuntimes<ModuleRuntimes<ReadPDFModules>>;
 
-export function readPDFExtension({
+export function createReadPDFToolExtension({
 	renderScreenshots,
-}: ReadPDFExtensionOptions): ExtensionForModules<ReadPDFModules> {
+}: PDFExtensionOptions): ExtensionForModules<ReadPDFModules> {
 	const resolvePDFConverter = createPDFConverterResolver({ renderScreenshots });
 
 	return defineExtension<ReadPDFModules>((api) => {
@@ -58,15 +57,12 @@ async function readPDF(
 	const bytes = await fs.readFile(absPath);
 	// TODO: Consider tracking which PDF pages were read if that becomes useful context for future prompts.
 
-	const ft = detectFileType(bytes);
-	if (!ft || !isPDF(ft.mime)) {
+	if (!hasPDFHeader(bytes)) {
 		return {
 			content: [
 				{
 					type: 'text' as const,
-					text: ft
-						? `Unsupported file format for read_pdf: ${ft.mime}`
-						: 'Unsupported file format for read_pdf: use read_file instead',
+					text: 'Unsupported file format for read_pdf: use read_file instead',
 				},
 			],
 			isError: true,
@@ -87,4 +83,14 @@ function toPDFPageRange(
 		return undefined;
 	}
 	return { startPage: startPage ?? 1, endPage };
+}
+
+function hasPDFHeader(bytes: Uint8Array): boolean {
+	return (
+		bytes[0] === 0x25 &&
+		bytes[1] === 0x50 &&
+		bytes[2] === 0x44 &&
+		bytes[3] === 0x46 &&
+		bytes[4] === 0x2d
+	);
 }

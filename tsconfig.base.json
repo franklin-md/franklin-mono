@@ -22,6 +22,7 @@
 			"@franklin/lib/middleware": ["packages/lib/src/middleware/index.ts"],
 			"@franklin/agent": ["packages/agent/src/index.ts"],
 			"@franklin/agent/testing": ["packages/agent/src/testing/index.ts"],
+			"@franklin/extension-pdf": ["packages/extensions/pdf/src/index.ts"],
 			"@franklin/extensibility": ["packages/extensibility/src/index.ts"],
 			"@franklin/extensibility/authoring": [
 				"packages/extensibility/src/authoring.ts"

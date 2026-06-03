@@ -1,4 +1,4 @@
-import type { AuthDependencyRuntime } from '../../auth/dependency.js';
+import type { AuthDependencyRuntime } from '@franklin/agent';
 import { FreePDFConverter } from './providers/free.js';
 import { MistralPDFConverter } from './providers/mistral.js';
 import type { PDFConverter, RenderPDFScreenshots } from './types.js';

@@ -6,11 +6,6 @@ PDF files are not supported by this reader.
 The supported image file types are JPEG, PNG, GIF, and WebP.
 This tool can only read files, not directories.`;
 
-export const readPDFDescription = `Used to read PDF files on the available filesystem.
-Returns extracted PDF text and page screenshots that the model can inspect.
-Use the optional start_page and end_page arguments to limit processing to the pages you need.
-This tool can only read PDF files, not directories.`;
-
 export const writeFileDescription = `Writes a file to the local filesystem.
 This tool will overwrite the existing file if there is one at the provided path.
 Prefer the Edit tool for modifying existing files, if the tool exists – it only sends the diff.
