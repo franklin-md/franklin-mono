@@ -9,7 +9,6 @@ import { ToolSummary } from '../summary.js';
 import { agentToolRenderers } from './agents.js';
 import { executionToolRenderers } from './execution.js';
 import { fileToolRenderers } from './files.js';
-import { pdfToolRenderers } from './pdf.js';
 import { todoToolRenderers } from './todos.js';
 import { webToolRenderers } from './web.js';
 
@@ -22,7 +21,6 @@ export const defaultToolRenderers = [
 	...executionToolRenderers,
 	...agentToolRenderers,
 	...webToolRenderers,
-	...pdfToolRenderers,
 	...todoToolRenderers,
 	['*', fallbackEntry],
 ] satisfies ToolRendererRegistryEntries;

@@ -6,6 +6,7 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const entries = [
 	['@franklin/agent/testing', 'packages/agent/src/testing/index.ts'],
 	['@franklin/agent', 'packages/agent/src/index.ts'],
+	['@franklin/extension-pdf', 'packages/extensions/pdf/src/index.ts'],
 	['@franklin/extensibility', 'packages/extensibility/src/index.ts'],
 	['@franklin/electron/main', 'packages/electron/src/main/index.ts'],
 	['@franklin/electron/preload', 'packages/electron/src/preload/index.ts'],

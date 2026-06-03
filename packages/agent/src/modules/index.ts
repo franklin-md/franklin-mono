@@ -35,6 +35,10 @@ export type {
 	AuthDependencyRuntime,
 } from '../auth/dependency.js';
 
+// Bundle
+export { createBundle } from './bundle/index.js';
+export type { ExtensionBundle } from './bundle/index.js';
+
 // State modules
 export {
 	buildStateExtensionModule,
@@ -126,9 +130,18 @@ export type {
 } from './references/index.js';
 export {
 	createReferencesModule,
+	ParsedSelector,
+	parseSelectorIntegerRangeValue,
 	referenceKey,
 	referenceContextsToContent,
 	referenceContextToContent,
+} from './references/index.js';
+export type {
+	SelectorFieldValue,
+	SelectorFields,
+	SelectorIntegerOptions,
+	SelectorIntegerRange,
+	SelectorIntegerRangeParseResult,
 } from './references/index.js';
 
 // Store

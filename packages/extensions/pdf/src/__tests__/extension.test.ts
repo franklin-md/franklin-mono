@@ -1,16 +1,29 @@
+import { createDependencyModule } from '@franklin/extensibility/module';
 import {
 	FILESYSTEM_ALLOW_ALL,
 	MemoryOsInfo,
+	type JsonObject,
 	type AbsolutePath,
 } from '@franklin/lib';
+import {
+	createMockMiniACP,
+	toolCalls,
+	turn,
+	turnEnd,
+} from '@franklin/mini-acp/mock';
+import {
+	buildStateExtensionModule,
+	createCoreStateModule,
+	createEnvironmentModule,
+	type AuthManager,
+	type EnvironmentConfig,
+	type ReconfigurableEnvironment,
+} from '@franklin/agent';
+import { createRuntime } from '@franklin/agent/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AuthManager } from '../../../auth/manager.js';
-import type { ReconfigurableEnvironment } from '../../../modules/environment/api/types.js';
-import { compileCoreWithStoreEnvAndAuth } from '../../../testing/compile-ext.js';
-import { editExtension } from '../../filesystem/edit/extension.js';
 import { readPDFExtension } from '../extension.js';
-import type { PDFConverter } from '../types.js';
+import type { PDFConverter, RenderPDFScreenshots } from '../types.js';
 
 const pdfMocks = vi.hoisted(() => ({
 	freeConstructor: vi.fn(),
@@ -33,6 +46,14 @@ vi.mock('../providers/mistral.js', () => ({
 	}),
 }));
 
+const defaultConfig: EnvironmentConfig = {
+	fsConfig: {
+		cwd: '/tmp' as AbsolutePath,
+		permissions: FILESYSTEM_ALLOW_ALL,
+	},
+	netConfig: { allowedDomains: [], deniedDomains: [] },
+};
+
 function mockEnvironment(file: Uint8Array): ReconfigurableEnvironment {
 	return {
 		filesystem: {
@@ -53,13 +74,7 @@ function mockEnvironment(file: Uint8Array): ReconfigurableEnvironment {
 		process: { exec: vi.fn() },
 		web: { fetch: vi.fn() },
 		osInfo: new MemoryOsInfo(),
-		config: vi.fn(async () => ({
-			fsConfig: {
-				cwd: '/tmp' as AbsolutePath,
-				permissions: FILESYSTEM_ALLOW_ALL,
-			},
-			netConfig: { allowedDomains: [], deniedDomains: [] },
-		})),
+		config: vi.fn(async () => defaultConfig),
 		reconfigure: vi.fn(async () => {}),
 		dispose: vi.fn(async () => {}),
 	};
@@ -71,6 +86,46 @@ function mockAuthManager(apiKey?: string): AuthManager & {
 	return {
 		getApiKey: vi.fn(async () => apiKey),
 	} as unknown as AuthManager & { getApiKey: ReturnType<typeof vi.fn> };
+}
+
+async function executeReadPDF(input: {
+	readonly file: Uint8Array;
+	readonly auth?: AuthManager;
+	readonly args: JsonObject;
+	readonly renderScreenshots?: RenderPDFScreenshots;
+}) {
+	const auth = input.auth ?? mockAuthManager();
+	const renderScreenshots = input.renderScreenshots ?? vi.fn(async () => []);
+	const mock = createMockMiniACP({
+		turns: [
+			turn([
+				toolCalls([{ name: 'read_pdf', arguments: input.args }]),
+				turnEnd(),
+			]),
+		],
+	});
+	const module = buildStateExtensionModule([
+		createCoreStateModule(mock.connector),
+		createEnvironmentModule(async () => mockEnvironment(input.file)),
+		createDependencyModule('auth', auth),
+	]);
+	const runtime = await createRuntime(
+		module,
+		{ ...module.emptyState(), env: defaultConfig },
+		[readPDFExtension({ renderScreenshots })],
+	);
+
+	try {
+		for await (const _event of runtime.prompt({
+			role: 'user',
+			content: [{ type: 'text', text: 'read pdf' }],
+		})) {
+			// Drain the mock turn so its tool call executes.
+		}
+		return { result: mock.calls().toolResults[0], auth, renderScreenshots };
+	} finally {
+		await runtime.dispose();
+	}
 }
 
 describe('readPDFExtension', () => {
@@ -91,37 +146,23 @@ describe('readPDFExtension', () => {
 
 	it('routes PDFs through the PDF converter with page ranges', async () => {
 		const pdf = new TextEncoder().encode('%PDF-1.7\n');
-		const env = mockEnvironment(pdf);
 		const auth = mockAuthManager();
 		const renderScreenshots = vi.fn(async () => []);
 		pdfMocks.freeConvertPDF.mockResolvedValue({
 			markdown: 'converted pdf',
 			screenshots: [],
 		});
-		const compiled = await compileCoreWithStoreEnvAndAuth(
-			(api) => {
-				editExtension()(api);
-				readPDFExtension({ renderScreenshots })(api);
-			},
-			env,
-			auth,
-		);
 
-		const result = await compiled.middleware.server.toolExecute(
-			{
-				call: {
-					type: 'toolCall',
-					id: 'read-1',
-					name: 'read_pdf',
-					arguments: {
-						path: 'document.pdf',
-						start_page: 2,
-						end_page: 4,
-					},
-				},
+		const { result } = await executeReadPDF({
+			file: pdf,
+			auth,
+			renderScreenshots,
+			args: {
+				path: 'document.pdf',
+				start_page: 2,
+				end_page: 4,
 			},
-			vi.fn(),
-		);
+		});
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('mistral');
 		expect(pdfMocks.freeConstructor).toHaveBeenCalledWith({
@@ -131,37 +172,19 @@ describe('readPDFExtension', () => {
 			pages: { startPage: 2, endPage: 4 },
 		});
 		expect(pdfMocks.mistralConstructor).not.toHaveBeenCalled();
-		expect(result.content).toEqual([{ type: 'text', text: 'converted pdf' }]);
+		expect(result?.content).toEqual([{ type: 'text', text: 'converted pdf' }]);
 	});
 
 	it('defaults missing page range boundaries', async () => {
 		const pdf = new TextEncoder().encode('%PDF-1.7\n');
-		const env = mockEnvironment(pdf);
-		const auth = mockAuthManager();
-		const renderScreenshots = vi.fn(async () => []);
-		const compiled = await compileCoreWithStoreEnvAndAuth(
-			(api) => {
-				editExtension()(api);
-				readPDFExtension({ renderScreenshots })(api);
-			},
-			env,
-			auth,
-		);
 
-		await compiled.middleware.server.toolExecute(
-			{
-				call: {
-					type: 'toolCall',
-					id: 'read-1',
-					name: 'read_pdf',
-					arguments: {
-						path: 'document.pdf',
-						end_page: 4,
-					},
-				},
+		await executeReadPDF({
+			file: pdf,
+			args: {
+				path: 'document.pdf',
+				end_page: 4,
 			},
-			vi.fn(),
-		);
+		});
 
 		expect(pdfMocks.freeConvertPDF).toHaveBeenCalledWith(pdf, {
 			pages: { startPage: 1, endPage: 4 },
@@ -170,29 +193,15 @@ describe('readPDFExtension', () => {
 
 	it('selects Mistral from the runtime auth dependency', async () => {
 		const pdf = new TextEncoder().encode('%PDF-1.7\n');
-		const env = mockEnvironment(pdf);
 		const auth = mockAuthManager('mis-key');
 		const renderScreenshots = vi.fn(async () => []);
-		const compiled = await compileCoreWithStoreEnvAndAuth(
-			(api) => {
-				editExtension()(api);
-				readPDFExtension({ renderScreenshots })(api);
-			},
-			env,
-			auth,
-		);
 
-		const result = await compiled.middleware.server.toolExecute(
-			{
-				call: {
-					type: 'toolCall',
-					id: 'read-1',
-					name: 'read_pdf',
-					arguments: { path: 'document.pdf' },
-				},
-			},
-			vi.fn(),
-		);
+		const { result } = await executeReadPDF({
+			file: pdf,
+			auth,
+			renderScreenshots,
+			args: { path: 'document.pdf' },
+		});
 
 		expect(auth.getApiKey).toHaveBeenCalledWith('mistral');
 		expect(pdfMocks.mistralConstructor).toHaveBeenCalledWith({
@@ -203,6 +212,6 @@ describe('readPDFExtension', () => {
 			pages: undefined,
 		});
 		expect(pdfMocks.freeConvertPDF).not.toHaveBeenCalled();
-		expect(result.content).toEqual([{ type: 'text', text: 'mistral' }]);
+		expect(result?.content).toEqual([{ type: 'text', text: 'mistral' }]);
 	});
 });

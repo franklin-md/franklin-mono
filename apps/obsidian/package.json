@@ -20,6 +20,7 @@
 	"dependencies": {
 		"@franklin/agent": "0.0.0",
 		"@franklin/extensibility": "0.0.0",
+		"@franklin/extension-pdf": "0.0.0",
 		"@franklin/lib": "0.0.0",
 		"@franklin/node": "0.0.0",
 		"@franklin/react": "0.0.0",

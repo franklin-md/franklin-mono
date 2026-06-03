@@ -35,17 +35,9 @@ export type {
 // Filesystem
 export { filesystemBundle, filesystemExtension } from './filesystem/index.js';
 
-// PDF
-export {
-	createReadPDFExtension,
-	readPDFSpec,
-	type ReadPDFExtensionOptions,
-} from './pdf/index.js';
-
 // References
 export {
 	filesystemFileReferenceExtension,
-	createPDFDocumentReferenceExtension,
 	referenceHandlerExtension,
 	imageDocumentReferenceExtension,
 	referenceReadExtension,
