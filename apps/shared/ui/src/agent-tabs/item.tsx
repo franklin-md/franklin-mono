@@ -6,7 +6,7 @@ import {
 	useConversationTitle,
 	useMiddleButtonEffect,
 } from '@franklin/react';
-import { X } from 'lucide-react';
+import { EyeOff, X } from 'lucide-react';
 
 import { cn } from '../lib/cn.js';
 import { Button } from '../primitives/button.js';
@@ -16,6 +16,7 @@ import { StatusIndicator } from '../components/status-indicator.js';
 type AgentTabsItemProps = {
 	sessionId: string;
 	position: number;
+	isHidden: boolean;
 	isActive: boolean;
 	onSelect: () => void;
 	onRemove: () => void;
@@ -24,6 +25,7 @@ type AgentTabsItemProps = {
 export function AgentTabsItem({
 	sessionId,
 	position,
+	isHidden,
 	isActive,
 	onSelect,
 	onRemove,
@@ -34,7 +36,10 @@ export function AgentTabsItem({
 	const trimmedTitle = title.trim();
 	const hasTitle = trimmedTitle.length > 0;
 	const displayLabel = hasTitle ? trimmedTitle : 'New chat';
-	const accessibleLabel = hasTitle ? displayLabel : `New chat ${position}`;
+	const baseAccessibleLabel = hasTitle ? displayLabel : `New chat ${position}`;
+	const accessibleLabel = isHidden
+		? `Invisible agent: ${baseAccessibleLabel}`
+		: baseAccessibleLabel;
 	const control = useAgentControl(
 		statusExtension.keys.status,
 		createStatusControl,
@@ -46,16 +51,27 @@ export function AgentTabsItem({
 	return (
 		<div
 			data-testid={`agent-tab-${sessionId}`}
+			data-visibility={isHidden ? 'hidden' : 'visible'}
 			className={cn(
 				'group flex min-w-0 items-center gap-px pr-px transition-colors',
-				isActive
-					? 'border-b-2 border-foreground'
-					: 'text-muted-foreground/60 hover:text-muted-foreground',
+				isHidden &&
+					'text-amber-700/75 hover:text-amber-700 dark:text-amber-300/75 dark:hover:text-amber-300',
+				isActive &&
+					(isHidden
+						? 'border-b-2 border-amber-500'
+						: 'border-b-2 border-foreground'),
+				!isActive &&
+					!isHidden &&
+					'text-muted-foreground/60 hover:text-muted-foreground',
 			)}
 		>
 			<TabsTrigger
 				value={sessionId}
-				className="h-7 max-w-44 gap-1 rounded-sm px-1.5 text-xs data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none"
+				className={cn(
+					'h-7 max-w-44 gap-1 rounded-sm px-1.5 text-xs data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:shadow-none',
+					isHidden &&
+						'text-amber-700/75 data-[state=active]:text-amber-700 dark:text-amber-300/75 dark:data-[state=active]:text-amber-300',
+				)}
 				title={accessibleLabel}
 				aria-label={accessibleLabel}
 				onClick={() => {
@@ -71,10 +87,11 @@ export function AgentTabsItem({
 				>
 					<StatusIndicator status={status} />
 				</span>
+				{isHidden && <EyeOff aria-hidden="true" className="h-3 w-3 shrink-0" />}
 				<span
 					className={cn(
 						'min-w-0 truncate',
-						!hasTitle && 'text-muted-foreground',
+						!hasTitle && !isHidden && 'text-muted-foreground',
 					)}
 				>
 					{displayLabel}
