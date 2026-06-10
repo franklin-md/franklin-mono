@@ -9,19 +9,39 @@ import { liftCompilerTransform as liftStateCompilerTransform } from '../modules/
 import type { AuthManager } from './manager.js';
 
 /**
+ * Resolve the stored API key for `provider`, best-effort.
+ *
+ * Auth resolution must never block runtime construction or config
+ * writes: credential refresh can fail (e.g. provider OAuth refresh
+ * throwing `refresh_token_reused`). On failure this resolves to
+ * `undefined` — a missing apiKey surfaces at prompt time via
+ * StopCode.AuthKeyNotSpecified, where the user can re-authenticate.
+ */
+async function resolveApiKey(
+	auth: AuthManager,
+	provider: string,
+): Promise<string | undefined> {
+	try {
+		return await auth.getApiKey(provider);
+	} catch {
+		return undefined;
+	}
+}
+
+/**
  * Push the stored credentials for `provider` into the runtime.
  *
  * Fetches the API key from the auth manager and calls `setLLMConfig`
- * with the resolved `{ provider, apiKey }`. If no key is stored,
- * `apiKey` is passed through as `undefined` — this is how revocation
- * propagates to the runtime.
+ * with the resolved `{ provider, apiKey }`. If no key is stored (or
+ * credential refresh fails), `apiKey` is passed through as
+ * `undefined` — this is how revocation propagates to the runtime.
  */
 export async function authenticateAgent(
 	runtime: CoreRuntime,
 	provider: string,
 	auth: AuthManager,
 ): Promise<void> {
-	const apiKey = await auth.getApiKey(provider);
+	const apiKey = await resolveApiKey(auth, provider);
 	await runtime.setLLMConfig({ provider, apiKey });
 }
 
@@ -54,19 +74,13 @@ function createAuthCompilerTransform(auth: AuthManager) {
 					nextProvider !== undefined && nextProvider !== currentProvider;
 
 				if (providerChanged && !('apiKey' in config)) {
-					// Auth resolution is best-effort: setContext must not be blocked
-					// by credential refresh failures (e.g. provider OAuth refresh
-					// throwing). A missing apiKey surfaces at prompt time via
-					// StopCode.AuthKeyNotSpecified. We must still write
-					// `apiKey: undefined` explicitly so the previous provider's key
-					// does not survive config-merge on provider switch.
-					let apiKey: string | undefined;
-					try {
-						apiKey = await auth.getApiKey(nextProvider);
-					} catch {
-						// swallow; proceed without apiKey
-					}
-					config = { ...config, apiKey };
+					// We must still write `apiKey: undefined` explicitly on
+					// resolution failure so the previous provider's key does not
+					// survive config-merge on provider switch.
+					config = {
+						...config,
+						apiKey: await resolveApiKey(auth, nextProvider),
+					};
 				}
 				return originalSetLLMConfig(config);
 			};

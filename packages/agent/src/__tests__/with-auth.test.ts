@@ -329,6 +329,41 @@ describe('withAuth', () => {
 		expect(connector.context()?.config.apiKey).toBeUndefined();
 	});
 
+	it('still builds the runtime when initial auth resolution throws', async () => {
+		// Simulates an OAuth refresh failure (e.g. openai-codex refresh_token_reused)
+		// at build time. The compile-step initial login must be best-effort like
+		// the setLLMConfig wrapper — a failed credential refresh must not prevent
+		// the runtime from being created at all.
+		const connector = createRecordingConnector();
+		const base = createCoreStateModule(connector.connector);
+		const auth = mockAuthManager({});
+		(auth as { getApiKey: AuthManager['getApiKey'] }).getApiKey = vi.fn(
+			async () => {
+				throw new Error(
+					'OpenAI Codex token request failed (401): refresh_token_reused',
+				);
+			},
+		);
+
+		const decorated = withAuth(base, auth);
+		const runtime = await createRuntime(
+			decorated,
+			{
+				core: {
+					messages: [],
+					llmConfig: { provider: 'openai-codex', model: 'gpt-5.4' },
+					usage: ZERO_USAGE,
+					toolFilter: { disabled: [] },
+				},
+			},
+			[],
+		);
+
+		expect(runtime.getSession().llmConfig.provider).toBe('openai-codex');
+		await promptOnce(runtime);
+		expect(connector.context()?.config.apiKey).toBeUndefined();
+	});
+
 	it('still applies provider/model when auth resolution throws (FRA-246)', async () => {
 		// Simulates Anthropic OAuth token refresh failure: getApiKey rejects
 		// synchronously. Before the fix, this blocked originalSetLLMConfig and
