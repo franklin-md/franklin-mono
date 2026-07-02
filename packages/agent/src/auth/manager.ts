@@ -17,6 +17,12 @@ interface ActiveFlow {
 	promise: Promise<unknown>;
 }
 
+function createAbortError(): Error {
+	const error = new Error('Aborted');
+	error.name = 'AbortError';
+	return error;
+}
+
 export class AuthManager {
 	private readonly observer = createObserver<[string, AuthEntry | undefined]>();
 	private readonly oauthClient: OAuthClient;
@@ -90,7 +96,7 @@ export class AuthManager {
 		const active = this.activeFlows.get(provider);
 		if (!active) return;
 		this.activeFlows.delete(provider);
-		active.controller.abort();
+		active.controller.abort(createAbortError());
 		// Wait for the engine's finally (listener.dispose) to run so the port
 		// is free before the next loginOAuth tries to bind.
 		await active.promise.catch(() => {});

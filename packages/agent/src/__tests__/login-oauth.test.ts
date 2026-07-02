@@ -97,9 +97,10 @@ const TEST_APP_DIR = '/test/app' as AbsolutePath;
 
 function waitForAbort(signal: AbortSignal): Promise<OAuthCredentials> {
 	return new Promise((_resolve, reject) => {
-		signal.addEventListener('abort', () =>
-			reject(new DOMException('Aborted', 'AbortError')),
-		);
+		signal.addEventListener('abort', () => {
+			const reason: unknown = signal.reason;
+			reject(reason instanceof Error ? reason : new Error('Aborted'));
+		});
 	});
 }
 
@@ -141,7 +142,7 @@ describe('AuthManager.loginOAuth', () => {
 });
 
 describe('AuthManager.cancel', () => {
-	it('aborts a pending flow so the engine releases the port', async () => {
+	it('aborts a pending flow without requiring DOMException', async () => {
 		const filesystem = createFilesystem();
 		const client = stubClient((_id, _callbacks, signal) =>
 			waitForAbort(signal),
@@ -155,7 +156,12 @@ describe('AuthManager.cancel', () => {
 		const loginPromise = auth.loginOAuth('anthropic', { onAuth: vi.fn() });
 		await Promise.resolve();
 
-		await auth.cancel('anthropic');
+		vi.stubGlobal('DOMException', undefined);
+		try {
+			await auth.cancel('anthropic');
+		} finally {
+			vi.unstubAllGlobals();
+		}
 
 		await expect(loginPromise).rejects.toThrow(/abort/i);
 		expect(auth.entries()).toEqual({});
