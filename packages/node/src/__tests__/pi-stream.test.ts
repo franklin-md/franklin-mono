@@ -5,9 +5,11 @@ const { streamSimple, streamSimpleOpenAICompletions } = vi.hoisted(() => ({
 	streamSimpleOpenAICompletions: vi.fn(),
 }));
 
-vi.mock('@earendil-works/pi-ai', () => ({ streamSimple }));
-vi.mock('@earendil-works/pi-ai/openai-completions', () => ({
-	streamSimpleOpenAICompletions,
+vi.mock('@earendil-works/pi-ai/compat', () => ({
+	streamSimple,
+}));
+vi.mock('@earendil-works/pi-ai/api/openai-completions', () => ({
+	streamSimple: streamSimpleOpenAICompletions,
 }));
 
 import { createPiStreamFn } from '../platform/pi-stream.js';

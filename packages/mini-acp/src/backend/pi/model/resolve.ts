@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-deprecated -- Temporary pi-ai compat migration. */
 import {
 	getModels,
 	getProviders,
 	type KnownProvider,
 	type Model,
-} from '@earendil-works/pi-ai';
+} from '@earendil-works/pi-ai/compat';
 
 import type { LLMConfig } from '../../../types/context.js';
 import { StopCode } from '../../../types/stop-code.js';

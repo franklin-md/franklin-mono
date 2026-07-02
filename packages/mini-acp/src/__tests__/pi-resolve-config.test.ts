@@ -8,7 +8,7 @@ import {
 import { OPENROUTER_APP_URL } from '../backend/pi/model/headers.js';
 
 const OPENROUTER_UPSTREAM_MODEL_CASES = [
-	{ id: 'z-ai/glm-5.1', contextWindow: 202_800 },
+	{ id: 'z-ai/glm-5.1', contextWindow: 202_752 },
 	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_576 },
 	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_048_576 },
 	{ id: 'moonshotai/kimi-k2.6', contextWindow: 262_144 },

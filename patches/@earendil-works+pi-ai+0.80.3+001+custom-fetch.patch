@@ -1,0 +1,163 @@
+diff --git a/node_modules/@earendil-works/pi-ai/dist/api/anthropic-messages.js b/node_modules/@earendil-works/pi-ai/dist/api/anthropic-messages.js
+index 514e35f..319c33d 100644
+--- a/node_modules/@earendil-works/pi-ai/dist/api/anthropic-messages.js
++++ b/node_modules/@earendil-works/pi-ai/dist/api/anthropic-messages.js
+@@ -336,7 +336,7 @@ export const stream = (model, context, options) => {
+                 }
+                 const cacheRetention = resolveCacheRetention(options?.cacheRetention, options?.env);
+                 const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
+-                const created = createClient(model, apiKey, options?.interleavedThinking ?? true, shouldUseFineGrainedToolStreamingBeta(model, context), options?.headers, copilotDynamicHeaders, cacheSessionId);
++                const created = createClient(model, apiKey, options?.interleavedThinking ?? true, shouldUseFineGrainedToolStreamingBeta(model, context), options?.headers, copilotDynamicHeaders, cacheSessionId, options?.fetch);
+                 client = created.client;
+                 isOAuth = created.isOAuthToken;
+             }
+@@ -609,7 +609,7 @@ export const streamSimple = (model, context, options) => {
+ function isOAuthToken(apiKey) {
+     return apiKey.includes("sk-ant-oat");
+ }
+-function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStreamingBeta, optionsHeaders, dynamicHeaders, sessionId) {
++function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStreamingBeta, optionsHeaders, dynamicHeaders, sessionId, fetch) {
+     // Adaptive thinking models have interleaved thinking built in, so skip the beta header.
+     const needsInterleavedBeta = interleavedThinking && model.compat?.forceAdaptiveThinking !== true;
+     const betaFeatures = [];
+@@ -622,6 +622,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
+     // Copilot: Bearer auth, selective betas.
+     if (model.provider === "github-copilot") {
+         const client = new Anthropic({
++            fetch,
+             apiKey: null,
+             authToken: apiKey ?? null,
+             baseURL: model.baseUrl,
+@@ -637,6 +638,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
+     // OAuth: Bearer auth, Claude Code identity headers
+     if (apiKey && isOAuthToken(apiKey)) {
+         const client = new Anthropic({
++            fetch,
+             apiKey: null,
+             authToken: apiKey,
+             baseURL: model.baseUrl,
+@@ -659,6 +661,7 @@ function createClient(model, apiKey, interleavedThinking, useFineGrainedToolStre
+         ...(betaFeatures.length > 0 ? { "anthropic-beta": betaFeatures.join(",") } : {}),
+     }, sessionAffinityHeaders, model.headers, optionsHeaders);
+     const client = new Anthropic({
++        fetch,
+         apiKey: apiKey ?? null,
+         authToken: null,
+         baseURL: model.baseUrl,
+diff --git a/node_modules/@earendil-works/pi-ai/dist/api/azure-openai-responses.js b/node_modules/@earendil-works/pi-ai/dist/api/azure-openai-responses.js
+index a175d79..c5e8720 100644
+--- a/node_modules/@earendil-works/pi-ai/dist/api/azure-openai-responses.js
++++ b/node_modules/@earendil-works/pi-ai/dist/api/azure-openai-responses.js
+@@ -172,6 +172,7 @@ function createClient(model, apiKey, options) {
+     }
+     const { baseUrl, apiVersion } = resolveAzureConfig(model, options);
+     return new AzureOpenAI({
++        fetch: options?.fetch,
+         apiKey,
+         apiVersion,
+         dangerouslyAllowBrowser: true,
+diff --git a/node_modules/@earendil-works/pi-ai/dist/api/openai-codex-responses.js b/node_modules/@earendil-works/pi-ai/dist/api/openai-codex-responses.js
+index 5cb56d8..84de9b5 100644
+--- a/node_modules/@earendil-works/pi-ai/dist/api/openai-codex-responses.js
++++ b/node_modules/@earendil-works/pi-ai/dist/api/openai-codex-responses.js
+@@ -202,6 +202,7 @@ export const stream = (model, context, options) => {
+             // Fetch with retry logic for rate limits and transient errors
+             let response;
+             let lastError;
++            const fetchFn = options?.fetch ?? fetch;
+             const maxRetries = options?.maxRetries ?? DEFAULT_MAX_RETRIES;
+             for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                 if (options?.signal?.aborted) {
+@@ -211,7 +212,7 @@ export const stream = (model, context, options) => {
+                     const headerTimeoutSignal = httpTimeoutMs !== undefined && httpTimeoutMs > 0 ? AbortSignal.timeout(httpTimeoutMs) : undefined;
+                     const combinedSignal = combineAbortSignals([options?.signal, headerTimeoutSignal]);
+                     try {
+-                        response = await fetch(resolveCodexUrl(model.baseUrl), {
++                        response = await fetchFn(resolveCodexUrl(model.baseUrl), {
+                             method: "POST",
+                             headers: sseHeaders,
+                             body: bodyJson,
+diff --git a/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js b/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js
+index 307d626..4fa2347 100644
+--- a/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js
++++ b/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js
+@@ -102,7 +102,7 @@ export const stream = (model, context, options) => {
+             const compat = getCompat(model);
+             const cacheRetention = resolveCacheRetention(options?.cacheRetention, options?.env);
+             const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
+-            const client = createClient(model, context, apiKey, options?.headers, cacheSessionId, compat);
++            const client = createClient(model, context, apiKey, options?.headers, cacheSessionId, compat, options?.fetch);
+             let params = buildParams(model, context, options, compat, cacheRetention);
+             const nextParams = await options?.onPayload?.(params, model);
+             if (nextParams !== undefined) {
+@@ -394,7 +394,7 @@ export const streamSimple = (model, context, options) => {
+         toolChoice,
+     });
+ };
+-function createClient(model, context, apiKey, optionsHeaders, sessionId, compat = getCompat(model)) {
++function createClient(model, context, apiKey, optionsHeaders, sessionId, compat = getCompat(model), fetch) {
+     const headers = { ...model.headers };
+     if (model.provider === "github-copilot") {
+         const hasImages = hasCopilotVisionInput(context.messages);
+@@ -414,6 +414,7 @@ function createClient(model, context, apiKey, optionsHeaders, sessionId, compat
+         Object.assign(headers, optionsHeaders);
+     }
+     return new OpenAI({
++        fetch,
+         apiKey,
+         baseURL: model.baseUrl,
+         dangerouslyAllowBrowser: true,
+diff --git a/node_modules/@earendil-works/pi-ai/dist/api/openai-responses.js b/node_modules/@earendil-works/pi-ai/dist/api/openai-responses.js
+index ee60ef3..7161a15 100644
+--- a/node_modules/@earendil-works/pi-ai/dist/api/openai-responses.js
++++ b/node_modules/@earendil-works/pi-ai/dist/api/openai-responses.js
+@@ -81,7 +81,7 @@ export const stream = (model, context, options) => {
+             const apiKey = getClientApiKey(model.provider, options?.apiKey, options?.headers);
+             const cacheRetention = resolveCacheRetention(options?.cacheRetention, options?.env);
+             const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
+-            const client = createClient(model, context, apiKey, options?.headers, cacheSessionId);
++            const client = createClient(model, context, apiKey, options?.headers, cacheSessionId, options?.fetch);
+             let params = buildParams(model, context, options);
+             const nextParams = await options?.onPayload?.(params, model);
+             if (nextParams !== undefined) {
+@@ -132,7 +132,7 @@ export const streamSimple = (model, context, options) => {
+         reasoningEffort,
+     });
+ };
+-function createClient(model, context, apiKey, optionsHeaders, sessionId) {
++function createClient(model, context, apiKey, optionsHeaders, sessionId, fetch) {
+     const compat = getCompat(model);
+     const headers = { ...model.headers };
+     if (model.provider === "github-copilot") {
+@@ -154,6 +154,7 @@ function createClient(model, context, apiKey, optionsHeaders, sessionId) {
+         Object.assign(headers, optionsHeaders);
+     }
+     return new OpenAI({
++        fetch,
+         apiKey,
+         baseURL: model.baseUrl,
+         dangerouslyAllowBrowser: true,
+diff --git a/node_modules/@earendil-works/pi-ai/dist/api/simple-options.js b/node_modules/@earendil-works/pi-ai/dist/api/simple-options.js
+index cc1c66f..bed2256 100644
+--- a/node_modules/@earendil-works/pi-ai/dist/api/simple-options.js
++++ b/node_modules/@earendil-works/pi-ai/dist/api/simple-options.js
+@@ -12,6 +12,7 @@ export function buildBaseOptions(model, context, options, apiKey) {
+         temperature: options?.temperature,
+         maxTokens: clampMaxTokensToContext(model, context, options?.maxTokens ?? model.maxTokens),
+         signal: options?.signal,
++        fetch: options?.fetch,
+         apiKey: apiKey || options?.apiKey,
+         transport: options?.transport,
+         cacheRetention: options?.cacheRetention,
+diff --git a/node_modules/@earendil-works/pi-ai/dist/types.d.ts b/node_modules/@earendil-works/pi-ai/dist/types.d.ts
+index bdbadd7..1660549 100644
+--- a/node_modules/@earendil-works/pi-ai/dist/types.d.ts
++++ b/node_modules/@earendil-works/pi-ai/dist/types.d.ts
+@@ -45,6 +45,7 @@ export interface StreamOptions {
+     temperature?: number;
+     maxTokens?: number;
+     signal?: AbortSignal;
++    fetch?: typeof globalThis.fetch;
+     apiKey?: string;
+     /**
+      * Preferred transport for providers that support multiple transports.

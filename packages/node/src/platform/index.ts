@@ -9,7 +9,8 @@ import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { nodePlatformFetch } from './fetch.js';
 import { nodeHttpFetch } from './http/fetch.js';
-import { getProviders } from '@earendil-works/pi-ai';
+/* eslint-disable @typescript-eslint/no-deprecated -- Temporary pi-ai compat migration. */
+import { getProviders } from '@earendil-works/pi-ai/compat';
 import type { AbsolutePath } from '@franklin/lib';
 import os from 'node:os';
 import { withAnthropicProtected } from './anthropic/protected.js';

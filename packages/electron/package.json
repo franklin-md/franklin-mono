@@ -31,7 +31,7 @@
 	},
 	"dependencies": {
 		"@agentclientprotocol/sdk": "0.16.1",
-		"@earendil-works/pi-ai": "0.75.4",
+		"@earendil-works/pi-ai": "0.80.3",
 		"@franklin/agent": "0.0.0",
 		"@franklin/lib": "0.0.0",
 		"@franklin/mini-acp": "0.0.0"

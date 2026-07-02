@@ -7,7 +7,7 @@ import { resolveModel } from '../backend/pi/model/resolve.js';
 import { StopCode } from '../types/stop-code.js';
 
 const OPENROUTER_UPSTREAM_MODEL_CASES = [
-	{ id: 'z-ai/glm-5.1', contextWindow: 202_800 },
+	{ id: 'z-ai/glm-5.1', contextWindow: 202_752 },
 	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_576 },
 	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_048_576 },
 	{ id: 'moonshotai/kimi-k2.6', contextWindow: 262_144 },
@@ -96,13 +96,13 @@ const OPENCODE_GO_UPSTREAM_MODEL_CASES = [
 		id: 'qwen3.6-plus',
 		api: 'openai-completions',
 		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 262_144,
+		contextWindow: 1_000_000,
 	},
 	{
-		id: 'qwen3.5-plus',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 262_144,
+		id: 'qwen3.7-plus',
+		api: 'anthropic-messages',
+		baseUrl: 'https://opencode.ai/zen/go',
+		contextWindow: 1_000_000,
 	},
 	{
 		id: 'minimax-m2.7',

@@ -1,7 +1,7 @@
 import type { StreamFn } from '@earendil-works/pi-agent-core';
 import type { SimpleStreamOptions } from '@earendil-works/pi-ai';
-import { streamSimple } from '@earendil-works/pi-ai';
-import { streamSimpleOpenAICompletions } from '@earendil-works/pi-ai/openai-completions';
+import { streamSimple as streamSimpleOpenAICompletions } from '@earendil-works/pi-ai/api/openai-completions';
+import { streamSimple } from '@earendil-works/pi-ai/compat';
 
 type PiStreamOptions = {
 	fetch: typeof globalThis.fetch;

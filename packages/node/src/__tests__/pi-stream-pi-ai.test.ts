@@ -1,4 +1,4 @@
-import { getModel } from '@earendil-works/pi-ai';
+import { getBuiltinModel as getModel } from '@earendil-works/pi-ai/providers/all';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createPiStreamFn } from '../platform/pi-stream.js';
