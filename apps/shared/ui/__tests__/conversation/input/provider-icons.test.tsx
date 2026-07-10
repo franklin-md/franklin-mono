@@ -57,7 +57,7 @@ describe('ModelIcon', () => {
 		['opencode-go', 'mimo-v2.5-pro', Icons.Xiaomi],
 		['opencode-go', 'mimo-v2.5', Icons.Xiaomi],
 		['opencode-go', 'kimi-k2.6', Icons.Kimi],
-		['opencode-go', 'glm-5.1', Icons.ZAI],
+		['opencode-go', 'glm-5.2', Icons.ZAI],
 		['opencode-go', 'qwen3.6-plus', Icons.Qwen],
 		['opencode-go', 'qwen3.5-plus', Icons.Qwen],
 		['opencode-go', 'minimax-m2.7', Icons.MiniMax],

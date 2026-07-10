@@ -140,7 +140,7 @@ const OPENCODE_GO_PROVIDER_GROUP: ProviderGroup = {
 			costIn: 0.95,
 			costOut: 4,
 		}),
-		model('opencode-go', 'glm-5.1', 'GLM-5.1', {
+		model('opencode-go', 'glm-5.2', 'GLM-5.2', {
 			reasoning: true,
 			ctx: 202_752,
 			costIn: 1.4,
