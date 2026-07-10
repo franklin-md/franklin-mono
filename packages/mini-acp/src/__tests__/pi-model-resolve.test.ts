@@ -16,7 +16,47 @@ const OPENROUTER_UPSTREAM_MODEL_CASES = [
 	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
 ] as const;
 
+const OPENAI_CODEX_LOCAL_OVERRIDE_MODEL_CASES = [
+	{
+		id: 'gpt-5.6-sol',
+		name: 'GPT-5.6 Sol',
+		contextWindow: 372_000,
+		maxTokens: 128_000,
+		cost: {
+			input: 5,
+			output: 30,
+			cacheRead: 0.5,
+			cacheWrite: 6.25,
+		},
+	},
+	{
+		id: 'gpt-5.6-terra',
+		name: 'GPT-5.6 Terra',
+		contextWindow: 372_000,
+		maxTokens: 128_000,
+		cost: {
+			input: 2.5,
+			output: 15,
+			cacheRead: 0.25,
+			cacheWrite: 3.125,
+		},
+	},
+] as const;
+
 const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
+	{
+		id: 'x-ai/grok-4.5',
+		name: 'xAI: Grok 4.5',
+		input: ['text', 'image'],
+		contextWindow: 500_000,
+		maxTokens: 4_096,
+		cost: {
+			input: 2,
+			output: 6,
+			cacheRead: 0.5,
+			cacheWrite: 0,
+		},
+	},
 	{
 		id: 'google/gemini-3.5-flash',
 		name: 'Google: Gemini 3.5 Flash',
@@ -113,6 +153,30 @@ const OPENCODE_GO_UPSTREAM_MODEL_CASES = [
 ] as const;
 
 describe('resolveModel', () => {
+	for (const model of OPENAI_CODEX_LOCAL_OVERRIDE_MODEL_CASES) {
+		it(`resolves the OpenAI Codex ${model.id} model from local overrides`, () => {
+			const result = resolveModel({
+				provider: 'openai-codex',
+				model: model.id,
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.model).toMatchObject({
+				provider: 'openai-codex',
+				id: model.id,
+				name: model.name,
+				api: 'openai-codex-responses',
+				baseUrl: 'https://chatgpt.com/backend-api',
+				reasoning: true,
+				thinkingLevelMap: { minimal: 'low', xhigh: 'xhigh' },
+				input: ['text', 'image'],
+				contextWindow: model.contextWindow,
+				maxTokens: model.maxTokens,
+				cost: model.cost,
+			});
+		});
+	}
+
 	it('resolves the OpenAI Codex gpt-5.5 model from pi-ai', () => {
 		const result = resolveModel({
 			provider: 'openai-codex',

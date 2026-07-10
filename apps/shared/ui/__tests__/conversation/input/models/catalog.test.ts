@@ -11,28 +11,30 @@ describe('MODEL_CATALOG', () => {
 		]);
 	});
 
-	it('surfaces GPT-5.5 as the leading OpenAI Codex model', () => {
+	it('surfaces GPT-5.6 Sol as the leading OpenAI Codex model', () => {
 		const openAICodex = MODEL_CATALOG.find(
 			(group) => group.provider === 'openai-codex',
 		);
 
 		expect(openAICodex?.models[0]).toMatchObject({
 			provider: 'openai-codex',
-			id: 'gpt-5.5',
-			name: 'GPT-5.5',
+			id: 'gpt-5.6-sol',
+			name: 'GPT-5.6 Sol',
 			reasoning: true,
-			contextWindow: 272_000,
+			contextWindow: 372_000,
 			costInput: 5,
 			costOutput: 30,
 		});
 	});
 
-	it('limits OpenAI Codex to the first three OAuth models', () => {
+	it('limits OpenAI Codex to the curated OAuth models', () => {
 		const openAICodex = MODEL_CATALOG.find(
 			(group) => group.provider === 'openai-codex',
 		);
 
 		expect(openAICodex?.models.map((model) => model.id)).toEqual([
+			'gpt-5.6-sol',
+			'gpt-5.6-terra',
 			'gpt-5.5',
 			'gpt-5.4',
 			'gpt-5.4-mini',
@@ -113,6 +115,22 @@ describe('MODEL_CATALOG', () => {
 			contextWindow: 1_000_000,
 			costInput: 2.5,
 			costOutput: 7.5,
+		});
+	});
+
+	it('includes Grok 4.5 in the OpenRouter catalog', () => {
+		const group = MODEL_CATALOG.find(
+			(providerGroup) => providerGroup.provider === 'openrouter',
+		);
+		const grok = group?.models.find((model) => model.id === 'x-ai/grok-4.5');
+
+		expect(grok).toMatchObject({
+			provider: 'openrouter',
+			name: 'Grok 4.5',
+			reasoning: true,
+			contextWindow: 500_000,
+			costInput: 2,
+			costOutput: 6,
 		});
 	});
 });
