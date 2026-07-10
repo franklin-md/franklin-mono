@@ -87,12 +87,6 @@ const OPENCODE_GO_UPSTREAM_MODEL_CASES = [
 		contextWindow: 262_144,
 	},
 	{
-		id: 'glm-5.1',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 202_752,
-	},
-	{
 		id: 'qwen3.6-plus',
 		api: 'openai-completions',
 		baseUrl: 'https://opencode.ai/zen/go/v1',
@@ -109,6 +103,24 @@ const OPENCODE_GO_UPSTREAM_MODEL_CASES = [
 		api: 'openai-completions',
 		baseUrl: 'https://opencode.ai/zen/go/v1',
 		contextWindow: 204_800,
+	},
+] as const;
+
+// GLM-5.2 is not yet in the bundled pi-ai opencode-go catalog, so it is served
+// from the Franklin-local override escape hatch rather than upstream.
+const OPENCODE_GO_LOCAL_OVERRIDE_MODEL_CASES = [
+	{
+		id: 'glm-5.2',
+		name: 'GLM-5.2',
+		input: ['text'],
+		contextWindow: 202_752,
+		maxTokens: 32_768,
+		cost: {
+			input: 1.4,
+			output: 4.4,
+			cacheRead: 0.26,
+			cacheWrite: 0,
+		},
 	},
 ] as const;
 
@@ -261,6 +273,29 @@ describe('resolveModel', () => {
 				baseUrl,
 				reasoning: true,
 				contextWindow,
+			});
+		});
+	}
+
+	for (const model of OPENCODE_GO_LOCAL_OVERRIDE_MODEL_CASES) {
+		it(`resolves the OpenCode Go ${model.id} model from local overrides`, () => {
+			const result = resolveModel({
+				provider: 'opencode-go',
+				model: model.id,
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.model).toMatchObject({
+				provider: 'opencode-go',
+				id: model.id,
+				name: model.name,
+				api: 'openai-completions',
+				baseUrl: 'https://opencode.ai/zen/go/v1',
+				reasoning: true,
+				input: model.input,
+				contextWindow: model.contextWindow,
+				maxTokens: model.maxTokens,
+				cost: model.cost,
 			});
 		});
 	}

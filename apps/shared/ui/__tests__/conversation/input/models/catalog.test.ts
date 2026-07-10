@@ -54,7 +54,7 @@ describe('MODEL_CATALOG', () => {
 			'mimo-v2.5-pro',
 			'mimo-v2.5',
 			'kimi-k2.6',
-			'glm-5.1',
+			'glm-5.2',
 			'qwen3.6-plus',
 			'qwen3.5-plus',
 			'minimax-m2.7',
