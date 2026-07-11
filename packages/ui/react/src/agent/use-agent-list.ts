@@ -9,11 +9,13 @@ import type {
 
 import { useHarness } from './harness-context.js';
 import {
+	type AgentListOptions,
 	isVisibleSession,
-	useVisibleSessions,
-} from './use-visible-sessions.js';
+	useAgentListSessions,
+} from './use-agent-list-sessions.js';
 import { useCollectionNavigator } from '../utils/use-collection-navigator.js';
 
+export type { AgentListOptions };
 export type AgentCreateInput = OrchestratorCreateInput<FranklinState>;
 export type AgentCreate = (
 	input?: AgentCreateInput,
@@ -41,9 +43,11 @@ function getSessionKey(session: RuntimeEntry<FranklinRuntime>): string {
  * Fallback on delete: selects the previous agent in the list, or the
  * first if the deleted agent was first, or clears if none remain.
  */
-export function useAgentList(): AgentsControl {
+export function useAgentList({
+	includeHiddenSessions = false,
+}: AgentListOptions = {}): AgentsControl {
 	const manager = useHarness().agents;
-	const sessions = useVisibleSessions();
+	const sessions = useAgentListSessions({ includeHiddenSessions });
 	const {
 		currentItem: activeSession,
 		currentKey,
@@ -59,12 +63,12 @@ export function useAgentList(): AgentsControl {
 	const create = useCallback(
 		async (input?: AgentCreateInput) => {
 			const session = await manager.create(input);
-			if (isVisibleSession(session)) {
+			if (includeHiddenSessions || isVisibleSession(session)) {
 				navigateToKey(session.details.id);
 			}
 			return session;
 		},
-		[manager, navigateToKey],
+		[includeHiddenSessions, manager, navigateToKey],
 	);
 
 	return {

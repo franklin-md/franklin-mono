@@ -38,6 +38,7 @@ export function AgentTabs({
 								<AgentTabsItem
 									sessionId={session.details.id}
 									position={index + 1}
+									isHidden={session.details.visibility === 'hidden'}
 									isActive={session.details.id === activeSessionId}
 									onSelect={() => select(session.details.id)}
 									onRemove={() => remove(session.details.id)}
