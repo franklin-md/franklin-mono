@@ -12,6 +12,7 @@ const OPENROUTER_MODEL_OVERRIDES = {
 		provider: 'openrouter',
 		baseUrl: 'https://openrouter.ai/api/v1',
 		reasoning: true,
+		thinkingLevelMap: { off: null, minimal: 'low' },
 		input: ['text', 'image'],
 		cost: {
 			input: 2,

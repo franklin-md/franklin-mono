@@ -41,6 +41,18 @@ const OPENAI_CODEX_LOCAL_OVERRIDE_MODEL_CASES = [
 			cacheWrite: 3.125,
 		},
 	},
+	{
+		id: 'gpt-5.6-luna',
+		name: 'GPT-5.6 Luna',
+		contextWindow: 372_000,
+		maxTokens: 128_000,
+		cost: {
+			input: 1,
+			output: 6,
+			cacheRead: 0.1,
+			cacheWrite: 1.25,
+		},
+	},
 ] as const;
 
 const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
@@ -48,6 +60,7 @@ const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
 		id: 'x-ai/grok-4.5',
 		name: 'xAI: Grok 4.5',
 		input: ['text', 'image'],
+		thinkingLevelMap: { off: null, minimal: 'low' },
 		contextWindow: 500_000,
 		maxTokens: 4_096,
 		cost: {
@@ -297,6 +310,9 @@ describe('resolveModel', () => {
 				api: 'openai-completions',
 				baseUrl: 'https://openrouter.ai/api/v1',
 				reasoning: true,
+				...('thinkingLevelMap' in model
+					? { thinkingLevelMap: model.thinkingLevelMap }
+					: {}),
 				input: model.input,
 				contextWindow: model.contextWindow,
 				maxTokens: model.maxTokens,
