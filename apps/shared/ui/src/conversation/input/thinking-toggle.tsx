@@ -4,57 +4,55 @@ import { useThinkingLevel } from '@franklin/react';
 import { cn } from '../../lib/cn.js';
 
 // ---------------------------------------------------------------------------
-// Level metadata — drives label, color, and dot count
+// Level metadata — drives label, color, and bar count
 // ---------------------------------------------------------------------------
 
 type LevelMeta = {
 	label: string;
 	color: string;
-	dotColor: string;
-	dots: number;
+	barCount: number;
 };
 
 const LEVEL_META: Partial<Record<ThinkingLevel, LevelMeta>> = {
 	off: {
 		label: 'Off',
-		color: 'text-muted-foreground/40',
-		dotColor: 'bg-muted-foreground/40',
-		dots: 0,
+		color: 'text-muted-foreground',
+		barCount: 0,
+	},
+	minimal: {
+		label: 'Min',
+		color: 'text-muted-foreground',
+		barCount: 1,
 	},
 	low: {
-		label: 'L',
+		label: 'Low',
 		color: 'text-muted-foreground',
-		dotColor: 'bg-muted-foreground',
-		dots: 1,
+		barCount: 1,
 	},
 	medium: {
-		label: 'M',
+		label: 'Med',
 		color: 'text-foreground/70',
-		dotColor: 'bg-foreground/70',
-		dots: 2,
+		barCount: 2,
 	},
 	high: {
-		label: 'H',
+		label: 'High',
 		color: 'text-foreground',
-		dotColor: 'bg-foreground',
-		dots: 3,
+		barCount: 3,
 	},
 	xhigh: {
-		label: 'XH',
+		label: 'XHigh',
 		color: 'text-primary',
-		dotColor: 'bg-primary',
-		dots: 4,
+		barCount: 4,
 	},
 };
 
 const DEFAULT_META: LevelMeta = {
 	label: '?',
 	color: 'text-muted-foreground',
-	dotColor: 'bg-muted-foreground',
-	dots: 0,
+	barCount: 0,
 };
 
-const DOT_COUNT = 4;
+const BAR_HEIGHT_CLASSES = ['h-1', 'h-2', 'h-3', 'h-4'] as const;
 
 // ---------------------------------------------------------------------------
 // ThinkingToggle
@@ -65,28 +63,35 @@ export function ThinkingToggle() {
 	const meta = LEVEL_META[level] ?? DEFAULT_META;
 
 	return (
+		// Keep `w-[72px]` fixed: labels vary by level, but the control must not resize.
 		<button
 			type="button"
 			data-testid="thinking-toggle"
 			className={cn(
-				'inline-flex h-8 w-14 flex-col items-center justify-center gap-0.5 rounded-md text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground',
+				'inline-flex h-6 w-[72px] items-center justify-start gap-1 rounded-md bg-transparent px-1.5 text-xs font-medium ring-1 ring-inset ring-transparent transition-colors hover:bg-accent hover:text-accent-foreground hover:ring-ring/10',
 				meta.color,
 			)}
 			onClick={() => void cycleLevel()}
+			aria-label={`Thinking level: ${meta.label}`}
 			title={`Thinking: ${level}`}
 		>
-			<span className="leading-none">{meta.label}</span>
-			<span className="flex gap-0.5">
-				{Array.from({ length: DOT_COUNT }, (_, i) => (
+			<span
+				className="flex h-4 w-[18px] shrink-0 items-end gap-0.5"
+				aria-hidden="true"
+			>
+				{BAR_HEIGHT_CLASSES.map((heightClass, i) => (
 					<span
 						key={i}
+						data-testid="thinking-toggle-bar"
 						className={cn(
-							'h-1 w-1 rounded-full',
-							i < meta.dots ? meta.dotColor : 'bg-muted-foreground/20',
+							'w-[3px] rounded-sm bg-current transition-opacity',
+							heightClass,
+							i < meta.barCount ? 'opacity-100' : 'opacity-25',
 						)}
 					/>
 				))}
 			</span>
+			<span className="flex-1 whitespace-nowrap text-center">{meta.label}</span>
 		</button>
 	);
 }
