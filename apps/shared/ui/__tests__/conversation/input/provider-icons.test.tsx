@@ -49,6 +49,9 @@ describe('ProviderIcon', () => {
 
 describe('ModelIcon', () => {
 	const catalogModelIcons = [
+		['openai-codex', 'gpt-5.6-sol', Icons.OpenAI],
+		['openai-codex', 'gpt-5.6-terra', Icons.OpenAI],
+		['openai-codex', 'gpt-5.6-luna', Icons.OpenAI],
 		['openai-codex', 'gpt-5.5', Icons.OpenAI],
 		['openai-codex', 'gpt-5.4', Icons.OpenAI],
 		['openai-codex', 'gpt-5.4-mini', Icons.OpenAI],
@@ -66,6 +69,7 @@ describe('ModelIcon', () => {
 		['openrouter', 'qwen/qwen3.7-max', Icons.Qwen],
 		['openrouter', 'deepseek/deepseek-v4-flash', Icons.DeepSeek],
 		['openrouter', 'deepseek/deepseek-v4-pro', Icons.DeepSeek],
+		['openrouter', 'x-ai/grok-4.5', Icons.XAI],
 		['openrouter', 'x-ai/grok-4.20', Icons.XAI],
 		['openrouter', 'google/gemini-3.5-flash', Icons.Gemini],
 		['openrouter', 'google/gemini-3.1-flash-lite-preview', Icons.Gemini],

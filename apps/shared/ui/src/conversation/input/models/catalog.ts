@@ -84,6 +84,24 @@ const OPENAI_CODEX_PROVIDER_GROUP: ProviderGroup = {
 	displayName: 'OpenAI Codex',
 	access: 'sub',
 	models: [
+		model('openai-codex', 'gpt-5.6-sol', 'GPT-5.6 Sol', {
+			reasoning: true,
+			ctx: 372_000,
+			costIn: 5,
+			costOut: 30,
+		}),
+		model('openai-codex', 'gpt-5.6-terra', 'GPT-5.6 Terra', {
+			reasoning: true,
+			ctx: 372_000,
+			costIn: 2.5,
+			costOut: 15,
+		}),
+		model('openai-codex', 'gpt-5.6-luna', 'GPT-5.6 Luna', {
+			reasoning: true,
+			ctx: 372_000,
+			costIn: 1,
+			costOut: 6,
+		}),
 		model('openai-codex', 'gpt-5.5', 'GPT-5.5', {
 			reasoning: true,
 			ctx: 272_000,
@@ -201,6 +219,12 @@ const OPENROUTER_PROVIDER_GROUP: ProviderGroup = {
 			ctx: 1_048_576,
 			costIn: 0.435,
 			costOut: 0.87,
+		}),
+		model('openrouter', 'x-ai/grok-4.5', 'Grok 4.5', {
+			reasoning: true,
+			ctx: 500_000,
+			costIn: 2,
+			costOut: 6,
 		}),
 		model('openrouter', 'x-ai/grok-4.20', 'Grok 4.20', {
 			reasoning: true,

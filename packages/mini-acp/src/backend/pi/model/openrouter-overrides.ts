@@ -3,6 +3,26 @@ import type { Model } from '@earendil-works/pi-ai';
 // Keep this Franklin-local escape hatch even when empty: it lets us add or
 // correct model metadata without waiting for a new pi-ai package release.
 const OPENROUTER_MODEL_OVERRIDES = {
+	// OpenRouter model API metadata (2026-07-10):
+	// https://openrouter.ai/api/v1/models
+	'x-ai/grok-4.5': {
+		id: 'x-ai/grok-4.5',
+		name: 'xAI: Grok 4.5',
+		api: 'openai-completions',
+		provider: 'openrouter',
+		baseUrl: 'https://openrouter.ai/api/v1',
+		reasoning: true,
+		thinkingLevelMap: { off: null, minimal: 'low' },
+		input: ['text', 'image'],
+		cost: {
+			input: 2,
+			output: 6,
+			cacheRead: 0.5,
+			cacheWrite: 0,
+		},
+		contextWindow: 500_000,
+		maxTokens: 4_096,
+	},
 	// OpenRouter model API metadata (2026-05-23):
 	// https://openrouter.ai/api/v1/models
 	'google/gemini-3.5-flash': {
