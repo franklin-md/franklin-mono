@@ -79,4 +79,42 @@ describe('createPiStreamFn', () => {
 			fetch,
 		});
 	});
+
+	it.each([
+		'openai-completions',
+		'openai-responses',
+		'anthropic-messages',
+	] as const)('adds the required OpenCode session header for %s', (api) => {
+		const fetch = vi.fn<typeof globalThis.fetch>();
+		const result = {};
+		const expectedStream =
+			api === 'openai-completions'
+				? streamSimpleOpenAICompletions
+				: streamSimple;
+		expectedStream.mockReturnValue(result);
+		const streamFn = createPiStreamFn({ fetch });
+		const model = { id: 'go-model', provider: 'opencode-go', api };
+		const context = { messages: [] };
+		const options = {
+			apiKey: 'token',
+			sessionId: 'session-123',
+			headers: { 'x-existing': 'preserved' },
+		};
+
+		expect(
+			streamFn(
+				model as Parameters<typeof streamFn>[0],
+				context as Parameters<typeof streamFn>[1],
+				options as Parameters<typeof streamFn>[2],
+			),
+		).toBe(result);
+		expect(expectedStream).toHaveBeenCalledWith(model, context, {
+			...options,
+			fetch,
+			headers: {
+				'x-existing': 'preserved',
+				'x-opencode-session': 'session-123',
+			},
+		});
+	});
 });

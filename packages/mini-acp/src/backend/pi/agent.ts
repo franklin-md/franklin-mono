@@ -92,6 +92,7 @@ class PiMuAgent implements MuClient {
 	private createAgent(streamFn: StreamFn | undefined): PiCoreAgent {
 		return new PiCoreAgent({
 			initialState: {},
+			sessionId: crypto.randomUUID(),
 			getApiKey: (_: string) => {
 				return this.config.apiKey;
 			},
