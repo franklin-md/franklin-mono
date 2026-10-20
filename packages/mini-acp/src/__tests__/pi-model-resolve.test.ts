@@ -18,20 +18,35 @@ const OPENROUTER_UPSTREAM_MODEL_CASES = [
 
 const OPENAI_CODEX_LOCAL_OVERRIDE_MODEL_CASES = [
 	{
-		id: 'gpt-5.6-sol',
-		name: 'GPT-5.6 Sol',
-		contextWindow: 372_000,
+		id: 'gpt-6-astra',
+		name: 'GPT-6-Astra',
+		thinkingLevelMap: { off: null, minimal: 'low', xhigh: 'xhigh' },
+		contextWindow: 272_000,
 		maxTokens: 128_000,
 		cost: {
-			input: 5,
-			output: 30,
-			cacheRead: 0.5,
-			cacheWrite: 6.25,
+			input: 10,
+			output: 50,
+			cacheRead: 1,
+			cacheWrite: 12.5,
+		},
+	},
+	{
+		id: 'gpt-6.1-sol',
+		name: 'GPT-6.1-Sol',
+		thinkingLevelMap: { off: null, minimal: 'low', xhigh: 'xhigh' },
+		contextWindow: 272_000,
+		maxTokens: 128_000,
+		cost: {
+			input: 2,
+			output: 10,
+			cacheRead: 0.1,
+			cacheWrite: 2.5,
 		},
 	},
 	{
 		id: 'gpt-5.6-terra',
 		name: 'GPT-5.6 Terra',
+		thinkingLevelMap: { minimal: 'low', xhigh: 'xhigh' },
 		contextWindow: 372_000,
 		maxTokens: 128_000,
 		cost: {
@@ -44,6 +59,7 @@ const OPENAI_CODEX_LOCAL_OVERRIDE_MODEL_CASES = [
 	{
 		id: 'gpt-5.6-luna',
 		name: 'GPT-5.6 Luna',
+		thinkingLevelMap: { minimal: 'low', xhigh: 'xhigh' },
 		contextWindow: 372_000,
 		maxTokens: 128_000,
 		cost: {
@@ -98,80 +114,199 @@ const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
 	},
 ] as const;
 
-// Keep OpenCode Go Qwen 3.5/3.6 and MiniMax M2.7 on the OpenAI-compatible
-// path even though the OpenCode docs table lists provider SDKs such as
-// @ai-sdk/alibaba and @ai-sdk/anthropic. Pi issue #4106 reproduced 404s with
-// the non-/v1 metadata, PR #4110 fixed these models to openai-completions, and
-// v0.73.0 release notes call out that generated metadata fix.
-// Sources:
-// - https://dev.opencode.ai/docs/go/
-// - https://github.com/earendil-works/pi/issues/4106
-// - https://github.com/earendil-works/pi/pull/4110
-// - https://github.com/earendil-works/pi/releases/tag/v0.73.0
-const OPENCODE_GO_UPSTREAM_MODEL_CASES = [
+const OPENCODE_GO_MODEL_CASES = [
 	{
-		id: 'deepseek-v4-pro',
-		api: 'openai-completions',
+		id: 'grok-4.6',
+		name: 'Grok 4.6',
+		api: 'openai-responses',
 		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 1_000_000,
+		input: ['text', 'image'],
+		contextWindow: 500_000,
+		maxTokens: 500_000,
+		cost: { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
 	},
 	{
-		id: 'deepseek-v4-flash',
-		api: 'openai-completions',
+		id: 'gpt-5.6-luna',
+		name: 'GPT 5.6 Luna',
+		api: 'openai-responses',
 		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 1_000_000,
+		input: ['text', 'image'],
+		contextWindow: 1_050_000,
+		maxTokens: 128_000,
+		cost: {
+			input: 0.2,
+			output: 1.2,
+			cacheRead: 0.02,
+			cacheWrite: 0.25,
+		},
 	},
 	{
-		id: 'mimo-v2.5-pro',
+		id: 'glm-5.3',
+		name: 'GLM-5.3',
 		api: 'openai-completions',
 		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text'],
+		contextWindow: 1_000_000,
+		maxTokens: 131_072,
+		cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
+	},
+	{
+		id: 'glm-5.3-flash',
+		name: 'GLM-5.3-Flash',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text', 'image'],
+		contextWindow: 1_000_000,
+		maxTokens: 131_072,
+		cost: { input: 0.15, output: 0.5, cacheRead: 0.03, cacheWrite: 0 },
+	},
+	{
+		id: 'kimi-k3',
+		name: 'Kimi K3',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text', 'image'],
 		contextWindow: 1_048_576,
+		maxTokens: 131_072,
+		cost: { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 0 },
+	},
+	{
+		id: 'kimi-k2.7-code',
+		name: 'Kimi K2.7 Code',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text', 'image'],
+		contextWindow: 262_144,
+		maxTokens: 262_144,
+		cost: { input: 0.95, output: 4, cacheRead: 0.19, cacheWrite: 0 },
+	},
+	{
+		id: 'longcat-2.0',
+		name: 'LongCat-2.0',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text'],
+		contextWindow: 1_000_000,
+		maxTokens: 131_072,
+		cost: { input: 0.3, output: 1.2, cacheRead: 0.006, cacheWrite: 0 },
 	},
 	{
 		id: 'mimo-v2.5',
+		name: 'MiMo V2.5',
 		api: 'openai-completions',
 		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text', 'image'],
 		contextWindow: 1_000_000,
-	},
-	{
-		id: 'kimi-k2.6',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 262_144,
-	},
-	{
-		id: 'qwen3.6-plus',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 262_144,
-	},
-	{
-		id: 'qwen3.5-plus',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 262_144,
-	},
-	{
-		id: 'minimax-m2.7',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 204_800,
-	},
-] as const;
-
-// GLM-5.2 is not yet in the bundled pi-ai opencode-go catalog, so it is served
-// from the Franklin-local override escape hatch rather than upstream.
-const OPENCODE_GO_LOCAL_OVERRIDE_MODEL_CASES = [
-	{
-		id: 'glm-5.2',
-		name: 'GLM-5.2',
-		input: ['text'],
-		contextWindow: 202_752,
-		maxTokens: 32_768,
+		maxTokens: 128_000,
 		cost: {
-			input: 1.4,
-			output: 4.4,
-			cacheRead: 0.26,
+			input: 0.14,
+			output: 0.28,
+			cacheRead: 0.0028,
+			cacheWrite: 0,
+		},
+	},
+	{
+		id: 'mimo-v2.5-pro',
+		name: 'MiMo V2.5 Pro',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text'],
+		contextWindow: 1_048_576,
+		maxTokens: 128_000,
+		cost: {
+			input: 0.435,
+			output: 0.87,
+			cacheRead: 0.003625,
+			cacheWrite: 0,
+		},
+	},
+	{
+		id: 'minimax-m3',
+		name: 'MiniMax M3',
+		api: 'anthropic-messages',
+		baseUrl: 'https://opencode.ai/zen/go',
+		input: ['text', 'image'],
+		contextWindow: 1_000_000,
+		maxTokens: 131_072,
+		cost: { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0 },
+	},
+	{
+		id: 'muse-spark-1.3-contributor',
+		name: 'Muse Spark 1.3 Contributor',
+		api: 'openai-responses',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text', 'image'],
+		contextWindow: 1_048_576,
+		maxTokens: 131_072,
+		cost: { input: 0.1, output: 0.2, cacheRead: 0.002, cacheWrite: 0 },
+	},
+	{
+		id: 'qwen3.8-flash',
+		name: 'Qwen3.8 Flash',
+		api: 'anthropic-messages',
+		baseUrl: 'https://opencode.ai/zen/go',
+		input: ['text', 'image'],
+		contextWindow: 1_000_000,
+		maxTokens: 131_072,
+		cost: {
+			input: 0.15,
+			output: 0.47,
+			cacheRead: 0.016,
+			cacheWrite: 0.2,
+		},
+	},
+	{
+		id: 'qwen3.8-max',
+		name: 'Qwen3.8 Max',
+		api: 'anthropic-messages',
+		baseUrl: 'https://opencode.ai/zen/go',
+		input: ['text', 'image'],
+		contextWindow: 1_000_000,
+		maxTokens: 131_072,
+		cost: { input: 2, output: 6, cacheRead: 0.25, cacheWrite: 2.5 },
+	},
+	{
+		id: 'deepseek-v4-pro',
+		name: 'DeepSeek V4 Pro',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text'],
+		contextWindow: 1_000_000,
+		maxTokens: 384_000,
+		cost: { input: 0.66, output: 1.98, cacheRead: 0.022, cacheWrite: 0 },
+	},
+	{
+		id: 'deepseek-flash',
+		name: 'DeepSeek V4.1 Flash',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text', 'image'],
+		contextWindow: 1_000_000,
+		maxTokens: 384_000,
+		cost: { input: 0.15, output: 0.6, cacheRead: 0.003, cacheWrite: 0 },
+	},
+	{
+		id: 'deepseek-v4-flash-vision-exp',
+		name: 'DeepSeek V4 Flash Vision Exp',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text', 'image'],
+		contextWindow: 1_000_000,
+		maxTokens: 384_000,
+		cost: { input: 0.15, output: 0.6, cacheRead: 0.003, cacheWrite: 0 },
+	},
+	{
+		id: 'hy4-preview',
+		name: 'Hy4 Preview',
+		api: 'openai-completions',
+		baseUrl: 'https://opencode.ai/zen/go/v1',
+		input: ['text'],
+		contextWindow: 1_024_000,
+		maxTokens: 64_000,
+		cost: {
+			input: 0.834,
+			output: 2.501,
+			cacheRead: 0.042,
 			cacheWrite: 0,
 		},
 	},
@@ -193,7 +328,7 @@ describe('resolveModel', () => {
 				api: 'openai-codex-responses',
 				baseUrl: 'https://chatgpt.com/backend-api',
 				reasoning: true,
-				thinkingLevelMap: { minimal: 'low', xhigh: 'xhigh' },
+				thinkingLevelMap: model.thinkingLevelMap,
 				input: ['text', 'image'],
 				contextWindow: model.contextWindow,
 				maxTokens: model.maxTokens,
@@ -249,7 +384,12 @@ describe('resolveModel', () => {
 		});
 	});
 
-	for (const model of ['gpt-5.3-codex', 'gpt-5.3-codex-spark']) {
+	for (const model of [
+		'gpt-6-sol',
+		'gpt-5.6-sol',
+		'gpt-5.3-codex',
+		'gpt-5.3-codex-spark',
+	]) {
 		it(`rejects OpenAI Codex model outside the OAuth allowlist: ${model}`, () => {
 			const result = resolveModel({
 				provider: 'openai-codex',
@@ -333,32 +473,8 @@ describe('resolveModel', () => {
 		});
 	}
 
-	for (const {
-		id,
-		api,
-		baseUrl,
-		contextWindow,
-	} of OPENCODE_GO_UPSTREAM_MODEL_CASES) {
-		it(`resolves the OpenCode Go ${id} model from pi-ai`, () => {
-			const result = resolveModel({
-				provider: 'opencode-go',
-				model: id,
-			});
-
-			expect(result.ok).toBe(true);
-			expect(result.ok && result.model).toMatchObject({
-				provider: 'opencode-go',
-				id,
-				api,
-				baseUrl,
-				reasoning: true,
-				contextWindow,
-			});
-		});
-	}
-
-	for (const model of OPENCODE_GO_LOCAL_OVERRIDE_MODEL_CASES) {
-		it(`resolves the OpenCode Go ${model.id} model from local overrides`, () => {
+	for (const model of OPENCODE_GO_MODEL_CASES) {
+		it(`resolves the curated OpenCode Go ${model.id} model`, () => {
 			const result = resolveModel({
 				provider: 'opencode-go',
 				model: model.id,
@@ -369,8 +485,8 @@ describe('resolveModel', () => {
 				provider: 'opencode-go',
 				id: model.id,
 				name: model.name,
-				api: 'openai-completions',
-				baseUrl: 'https://opencode.ai/zen/go/v1',
+				api: model.api,
+				baseUrl: model.baseUrl,
 				reasoning: true,
 				input: model.input,
 				contextWindow: model.contextWindow,
