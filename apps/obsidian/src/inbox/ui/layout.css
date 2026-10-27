@@ -49,25 +49,6 @@
 .study-preview h3 {
 	margin: 0;
 }
-.study-workspace {
-	display: grid;
-	grid-template-columns: minmax(320px, 1fr) minmax(350px, 480px);
-	max-width: 1280px;
-	height: calc(100vh - 32px);
-	min-height: 560px;
-	margin: 0 auto;
-	border-radius: 8px;
-	overflow: hidden;
-	box-shadow: 0 0 0 1px var(--study-stroke);
-}
-.study-standalone {
-	margin: 0 auto;
-	height: calc(100vh - 32px);
-	min-height: 480px;
-	border-radius: 8px;
-	overflow: hidden;
-	box-shadow: 0 0 0 1px var(--study-stroke);
-}
 .study-inbox {
 	min-width: 0;
 	min-height: 0;

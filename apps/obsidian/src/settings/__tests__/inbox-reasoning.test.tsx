@@ -22,6 +22,9 @@ vi.mock('../credentials/index.js', () => ({ CredentialsSettings: () => null }));
 vi.mock('../viewing-context.js', () => ({
 	ViewingContextSettings: () => null,
 }));
+vi.mock('../document-downloads.js', () => ({
+	DocumentDownloadSettings: () => null,
+}));
 
 afterEach(() => {
 	cleanup();

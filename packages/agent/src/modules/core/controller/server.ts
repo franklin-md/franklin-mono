@@ -28,6 +28,7 @@ export function createControllerServer({
 
 	return {
 		toolExecute: async (params) => {
+			await session.waitForUpdate(params.afterMessageId);
 			session.recordMessage({
 				role: 'assistant',
 				content: [params.call],

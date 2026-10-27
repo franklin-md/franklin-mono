@@ -1,20 +1,10 @@
 import {
-	buildStateExtensionModule,
-	createCoreStateModule,
-	createEnvironmentModule,
-	createReferencesModule,
-	createStoreStateModule,
-	StoreRegistry,
+	documentDownloadPolicy,
+	type FranklinExtension,
 } from '@franklin/agent';
-import { compile, reduceExtensions } from '@franklin/extensibility';
-import {
-	createConfigurationModule,
-	createDependencyModule,
-} from '@franklin/extensibility/module';
 import { StopCode } from '@franklin/mini-acp';
 import type { ModelSelection } from '../controller/types.js';
 import type { InboxRunnerOptions } from './types.js';
-import { inboxResearchExtension } from './research.js';
 import type { ResearchRecorder } from '../capture/evidence/recorder.js';
 
 type Request = {
@@ -22,54 +12,52 @@ type Request = {
 	signal: AbortSignal;
 	timeout: number;
 	prompt: string;
-	extension: (signal: AbortSignal) => ReturnType<typeof inboxResearchExtension>;
-	writable?: boolean;
+	extensions: (signal: AbortSignal) => readonly FranklinExtension[];
 	evidence?: ResearchRecorder;
 };
 
 export async function runInboxRuntime(
-	{ connect, auth, environment, config, vaultName }: InboxRunnerOptions,
+	{ createAgent, auth, config }: InboxRunnerOptions,
 	request: Request,
 ): Promise<void> {
-	// Each attempt owns an in-memory registry and environment; it never enters
-	// the persisted chat/session collection. Only the dedicated evidence observer
-	// retains research text; configuration and model reasoning are never recorded.
-	const module = buildStateExtensionModule([
-		createCoreStateModule(connect),
-		createEnvironmentModule(environment),
-		createStoreStateModule(new StoreRegistry()),
-		createReferencesModule(),
-		createDependencyModule('auth', auth),
-		createConfigurationModule(),
-	]);
-	const state = module.emptyState();
-	state.env = structuredClone(config);
 	const question = request.selection;
-	const signal = AbortSignal.any([
-		request.signal,
-		AbortSignal.timeout(request.timeout),
-	]);
-	signal.throwIfAborted();
-	state.core.llmConfig = {
-		provider: question.provider,
-		model: question.model,
-		reasoning: question.reasoning,
-	};
-	const simple = module.instantiate(state);
-	const runtime = await compile(
-		simple.extensionPoint,
-		simple.compiler,
-		reduceExtensions(
-			inboxResearchExtension({ vaultName, writable: request.writable }),
-			request.extension(signal),
-			...(request.evidence ? [request.evidence.extension] : []),
-		),
-	);
+	request.signal.throwIfAborted();
+	// Completion tools capture this signal during construction. Forward the
+	// deadline resolved from the new runtime into the same captured signal.
+	const deadlineController = new AbortController();
+	const signal = AbortSignal.any([request.signal, deadlineController.signal]);
+	// The app factory gives each attempt its own environment and in-memory stores,
+	// outside the persisted chat collection. Only the evidence observer saves research.
+	const runtime = await createAgent({
+		state: {
+			env: structuredClone(config),
+			core: {
+				llmConfig: {
+					provider: question.provider,
+					model: question.model,
+					reasoning: question.reasoning,
+				},
+			},
+		},
+		extensions: request.extensions(signal),
+	});
+	let deadline: AbortSignal | undefined;
+	const expire = () => deadlineController.abort(deadline?.reason);
 	const cancel = () => {
 		void runtime.cancel().catch(() => {});
 	};
-	signal.addEventListener('abort', cancel, { once: true });
 	try {
+		// A question's former two-minute ceiling could cancel a healthy download
+		// before its configured limit. Allow one full download plus two minutes
+		// of reasoning; retain the longer existing allowance for action runs.
+		const { totalTimeoutMs } = runtime.getConfig(documentDownloadPolicy);
+		const timeout = Math.min(
+			2_147_483_647,
+			Math.max(request.timeout, totalTimeoutMs + 120_000),
+		);
+		deadline = AbortSignal.timeout(timeout);
+		deadline.addEventListener('abort', expire, { once: true });
+		signal.addEventListener('abort', cancel, { once: true });
 		signal.throwIfAborted();
 		const apiKey = await auth.getApiKey(question.provider);
 		signal.throwIfAborted();
@@ -79,7 +67,6 @@ export async function runInboxRuntime(
 			);
 		request.evidence?.setSecret(apiKey);
 		await request.evidence?.save();
-		await runtime.setLLMConfig({ apiKey });
 		signal.throwIfAborted();
 		for await (const event of runtime.prompt({
 			role: 'user',
@@ -98,6 +85,7 @@ export async function runInboxRuntime(
 		}
 		signal.throwIfAborted();
 	} finally {
+		deadline?.removeEventListener('abort', expire);
 		signal.removeEventListener('abort', cancel);
 		await runtime.dispose();
 	}

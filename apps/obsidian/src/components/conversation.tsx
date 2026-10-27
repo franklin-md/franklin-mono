@@ -1,4 +1,4 @@
-import { createToolUseBlock, Prompt } from '@franklin/react';
+import { Prompt } from '@franklin/react';
 import {
 	ConversationOnboardingPlaceholder,
 	ConversationTranscript,
@@ -12,7 +12,6 @@ import {
 	PromptHeader,
 	SharedPromptAgentControl,
 	ThinkingToggle,
-	ToolCardChrome,
 } from '@franklin/ui';
 import { Notice } from 'obsidian';
 
@@ -23,16 +22,14 @@ import {
 import { ViewingContextHeader } from './conversation-window/viewing-context/header.js';
 import { obsidianToolRegistry } from './tool-registry.js';
 
-const ToolUse = createToolUseBlock(obsidianToolRegistry, ToolCardChrome);
-
 export function ConversationPanel() {
 	return (
 		<div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 			<ConversationTranscript
+				toolRegistry={obsidianToolRegistry}
 				components={{
 					Text: ObsidianText,
 					Thinking: ObsidianThinking,
-					ToolUse,
 					EmptyPlaceholder: ConversationOnboardingPlaceholder,
 				}}
 			/>

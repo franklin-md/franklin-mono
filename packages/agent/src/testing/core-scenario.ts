@@ -117,7 +117,7 @@ export async function runCoreScenario(
 export function emptyCoreScenarioState(): CoreState {
 	return {
 		core: {
-			messages: [],
+			entries: [],
 			llmConfig: {},
 			usage: ZERO_USAGE,
 			toolFilter: { disabled: [] },

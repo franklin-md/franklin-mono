@@ -1,6 +1,6 @@
 # Personal study inbox
 
-The Obsidian plugin now includes a functional study inbox alongside the existing chat. Storybook still supplies an isolated visual demo with simulated answers. Both render the same feed, composer, and question components.
+The Obsidian plugin includes a functional study inbox alongside the existing chat.
 
 ## Use
 
@@ -74,8 +74,7 @@ proposals first to avoid duplicating partial work. Leave export to
 Mochi for my review.
 ```
 
-This uses the vault's prompt files as guidance. It does not invoke or modify the scheduled flashcard automation. **Obsidian → Inbox actions → Sidebar / Settings** in Storybook demonstrates the configured controls with a simulated run and in-memory storage.
-
+This uses the vault's prompt files as guidance. It does not invoke or modify the scheduled flashcard automation.
 
 ## Flashcard training capture
 

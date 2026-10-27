@@ -5,6 +5,7 @@ import { logLines } from './style.js';
 
 export function debugAgent(agent: MuAgent, label: string): MuAgent {
 	return {
+		...agent,
 		async toolExecute(params: Parameters<MuAgent['toolExecute']>[0]) {
 			logLines(label, renderToolExecute(params));
 

@@ -110,7 +110,8 @@ Once created, this is useful because it allows for:
   - Current implementation:
     - The public `Reference` remains the request shape.
     - Intermediate bytes are carried in the private pipeline reference as `data`.
-    - A cache can later own persisted data or derived artifacts, but cache-key design is still open.
+    - HTTP source caching is now an optional host-owned dependency of `createHTTPReferenceExtension`. The host shares one cache across agents; `@franklin/node` provides a bounded disk implementation. Source keys exclude selectors/labels and include the normalized URL, captured network permissions and download limits. This keeps different page selections on the same download without crossing access-policy boundaries.
+    - Derived artifact caching remains open. It would need content-version and converter-version identity in addition to the selected pages; the existing `referenceKey` alone is not sufficient.
 
 ## Old Questions:
 

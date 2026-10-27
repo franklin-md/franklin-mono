@@ -115,6 +115,8 @@ export {
 } from './agent-selector/fork-button.js';
 
 // conversation
+export { ActivityDisclosure } from './conversation/activity/disclosure.js';
+export type { ActivityDisclosureProps } from './conversation/activity/types.js';
 export {
 	ConversationView,
 	type ConversationViewProps,

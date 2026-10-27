@@ -2,6 +2,7 @@ import type { ContextPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
 import type { StreamEvent } from '../types/stream.js';
 import type { ToolExecuteHandler } from '../types/tool.js';
+import type { PrepareContextParams } from '../types/prepare-context.js';
 
 export interface MuTurn {
 	prompt(message: UserMessage): AsyncIterable<StreamEvent>;
@@ -16,6 +17,7 @@ export interface MuClient extends MuTurn {
 
 export interface MuAgent {
 	toolExecute: ToolExecuteHandler;
+	prepareContext?(params: PrepareContextParams): Promise<void>;
 }
 
 export type MiniACPClientHandle = MuClient & { dispose(): Promise<void> };

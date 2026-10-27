@@ -38,6 +38,7 @@ export { filesystemBundle, filesystemExtension } from './filesystem/index.js';
 // References
 export {
 	filesystemFileReferenceExtension,
+	createHTTPReferenceExtension,
 	referenceHandlerExtension,
 	imageDocumentReferenceExtension,
 	referenceReadExtension,
@@ -45,6 +46,7 @@ export {
 	textDocumentReferenceExtension,
 } from './references/index.js';
 export type {
+	HTTPReferenceCache,
 	TextLineRange,
 	TextReferenceSelector,
 } from './references/index.js';

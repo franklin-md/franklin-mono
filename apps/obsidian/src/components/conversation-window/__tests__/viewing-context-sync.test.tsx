@@ -115,6 +115,7 @@ function createSettingsStore(
 	shareViewedReferencesByDefault = true,
 ): SettingsStore {
 	return createStore<AppSettings>({
+		documentDownloads: { idleTimeoutMs: 60_000, totalTimeoutMs: 900_000 },
 		shareViewedReferencesByDefault,
 		defaultLLMConfig: {
 			provider: 'openai-codex',

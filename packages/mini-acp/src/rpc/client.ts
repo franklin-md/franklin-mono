@@ -8,9 +8,20 @@ import {
 export function bindMiniACPRpcClient(
 	duplex: MiniACPRpcProtocol,
 ): ClientBinding {
-	return bindJsonRpcClient({
+	const connection = bindJsonRpcClient({
 		duplex,
 		server: miniACPRpcServerDescriptor,
 		client: miniACPRpcClientDescriptor,
 	});
+	return {
+		...connection,
+		bind(server) {
+			return connection.bind({
+				...server,
+				prepareContext: async (params) => {
+					await server.prepareContext?.(params);
+				},
+			});
+		},
+	};
 }

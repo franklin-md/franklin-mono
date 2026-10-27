@@ -5,23 +5,14 @@ import {
 	type AbsolutePath,
 	type Filesystem,
 } from '@franklin/lib';
-import {
-	createConfigurationModule,
-	createDependencyModule,
-} from '@franklin/extensibility/module';
 import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
 import {
-	StoreRegistry,
-	buildStateExtensionModule,
-	createCoreStateModule,
-	createEnvironmentModule,
-	createReferencesModule,
-	createStoreStateModule,
+	createFranklinAgents,
 	viewingContextExtension,
+	type AuthManager,
 	type EnvironmentConfig,
 	type ReconfigurableEnvironment,
 } from '@franklin/agent';
-import { createRuntime } from '@franklin/agent/testing';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createObsidianExtensions } from '../app.js';
@@ -55,25 +46,17 @@ async function drain(iterable: AsyncIterable<unknown>): Promise<void> {
 describe('createObsidianExtensions', () => {
 	it('uses reference-backed read_file without exposing read_pdf', async () => {
 		const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
-		const module = buildStateExtensionModule([
-			createCoreStateModule(mock.connector),
-			createStoreStateModule(new StoreRegistry()),
-			createEnvironmentModule(async () =>
-				createEnvironment(new MemoryFilesystem()),
-			),
-			createReferencesModule(),
-			createDependencyModule('auth', {
+		const agents = createFranklinAgents({
+			connect: mock.connector,
+			environment: async () => createEnvironment(new MemoryFilesystem()),
+			auth: {
 				getApiKey: vi.fn(async () => undefined),
 				entries: vi.fn(() => ({})),
 				onAuthChange: vi.fn(() => () => {}),
-			}),
-			createConfigurationModule(),
-		]);
-		const runtime = await createRuntime(
-			module,
-			module.emptyState(),
-			createObsidianExtensions() as never,
-		);
+			} as unknown as AuthManager,
+			extensions: createObsidianExtensions(),
+		});
+		const { runtime } = await agents.create({ state: { env: defaultConfig } });
 
 		try {
 			await drain(
@@ -89,6 +72,7 @@ describe('createObsidianExtensions', () => {
 			expect(names).toContain('write_file');
 			expect(names).toContain('glob');
 			expect(names).toContain('grep');
+			expect(names).toContain('bash');
 			expect(names).not.toContain('read_pdf');
 			expect(
 				runtime.getStore(viewingContextExtension.keys.viewingContext).get(),

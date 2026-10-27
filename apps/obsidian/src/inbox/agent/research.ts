@@ -8,35 +8,26 @@ import {
 	webSearchProviders,
 } from '@franklin/agent';
 import type {
-	AuthDependencyModule,
-	ExtensionForModules,
-	ReferencesModule,
+	FranklinExtension,
 	CoreModule,
 	EnvironmentModule,
 	StoreModule,
+	HTTPReferenceCache,
 } from '@franklin/agent';
-import { reduceExtensions } from '@franklin/extensibility';
-import type { ConfigurationModule } from '@franklin/extensibility/module';
 import { createObsidianReferenceExtensions } from '../../app/extensions/references.js';
 
-type Options = { vaultName: string; writable?: boolean };
+type Options = {
+	vaultName: string;
+	writable?: boolean;
+	referenceCache?: HTTPReferenceCache;
+};
 
-type ResearchExtension = ExtensionForModules<
-	[
-		CoreModule,
-		EnvironmentModule,
-		StoreModule,
-		ReferencesModule,
-		AuthDependencyModule,
-		ConfigurationModule,
-	]
->;
-
-export function inboxResearchExtension({
+export function createInboxResearchExtensions({
 	vaultName,
 	writable = false,
-}: Options): ResearchExtension {
-	const extensions: ResearchExtension[] = [
+	referenceCache,
+}: Options): FranklinExtension[] {
+	return [
 		defineExtension<[CoreModule, EnvironmentModule, StoreModule]>((api) => {
 			// Reference-backed reads record file hashes. Register their existing key
 			// without adding edit_file just to obtain its initializer. The runner's
@@ -52,7 +43,7 @@ export function inboxResearchExtension({
 				});
 			});
 		}),
-		...createObsidianReferenceExtensions(),
+		...createObsidianReferenceExtensions(referenceCache),
 		referenceReadExtension,
 		filesystemBundle.extensions.glob,
 		filesystemBundle.extensions.grep,
@@ -60,5 +51,4 @@ export function inboxResearchExtension({
 		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),
 		createWebExtension({}).extension,
 	];
-	return reduceExtensions(...extensions);
 }

@@ -6,19 +6,21 @@ import type {
 } from '../../modules/environment/index.js';
 import { defineExtension } from '../../modules/state/index.js';
 import type {
-	Reference,
 	ReferenceHandler,
 	ReferenceHandlerRuntime,
 } from '../../modules/references/api/index.js';
 import type { ReferencesModule } from '../../modules/references/module.js';
 import { detectFileType } from '../filesystem/common/supported.js';
+import { isFilesystemLocator } from './locator.js';
 
 type FilesystemHandlerRuntime = ReferenceHandlerRuntime & EnvironmentRuntime;
 
 const filesystemFileReferenceHandler: ReferenceHandler<FilesystemHandlerRuntime> =
 	{
 		test(reference) {
-			return reference.data === undefined && isFilesystemReference(reference);
+			return (
+				reference.data === undefined && isFilesystemLocator(reference.locator)
+			);
 		},
 		async toContext(reference, delegate, runtime) {
 			const fs = runtime.environment.filesystem;
@@ -67,12 +69,4 @@ export const filesystemFileReferenceExtension = defineExtension<
 
 function isPdfPath(path: AbsolutePath): boolean {
 	return path.toLowerCase().endsWith('.pdf');
-}
-
-function isFilesystemReference(reference: Reference): boolean {
-	return !hasLocatorScheme(reference.locator);
-}
-
-function hasLocatorScheme(locator: string): boolean {
-	return /^[A-Za-z][A-Za-z0-9+.-]*:/.test(locator);
 }

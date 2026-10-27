@@ -50,7 +50,10 @@ const run: InboxActionRun = {
 	},
 	ancestors: [],
 };
-const auth = { getApiKey: async () => 'private-key' } as unknown as AuthManager;
+const auth = {
+	getApiKey: async () => 'private-key',
+	onAuthChange: () => () => {},
+} as unknown as AuthManager;
 
 describe('action runtime', () => {
 	it('reads a workflow prompt and edits files through real tools, using the saved answer and selected model', async () => {
@@ -94,11 +97,9 @@ describe('action runtime', () => {
 				turnEnd(),
 			],
 		});
-		const result = await createInboxActionRunner({
-			...environment,
-			auth,
-			connect: mock.connector,
-		})({ run, signal: new AbortController().signal });
+		const result = await createInboxActionRunner(
+			environment.runnerOptions(mock.connector, auth),
+		)({ run, signal: new AbortController().signal });
 		expect(result).toBe('Added one proposal to Inbox.md.');
 		expect(
 			new TextDecoder().decode(
@@ -150,17 +151,18 @@ describe('action runtime', () => {
 			],
 		});
 		await expect(
-			createInboxActionRunner({ ...setup, auth, connect: mock.connector })({
+			createInboxActionRunner(setup.runnerOptions(mock.connector, auth))({
 				run,
 				signal: new AbortController().signal,
 			}),
 		).rejects.toThrow('design prompt could not be found');
 		await expect(
-			createInboxActionRunner({
-				...setup,
-				auth,
-				connect: createMockMiniACP({ defaultTurn: finishedTurn() }).connector,
-			})({ run, signal: new AbortController().signal }),
+			createInboxActionRunner(
+				setup.runnerOptions(
+					createMockMiniACP({ defaultTurn: finishedTurn() }).connector,
+					auth,
+				),
+			)({ run, signal: new AbortController().signal }),
 		).rejects.toThrow('without completing');
 	});
 
@@ -178,11 +180,9 @@ describe('action runtime', () => {
 			],
 		});
 		const abort = new AbortController();
-		const result = createInboxActionRunner({
-			...createInboxTestEnvironment(),
-			auth,
-			connect: mock.connector,
-		})({ run, signal: abort.signal }).catch((error: unknown) => error);
+		const result = createInboxActionRunner(
+			createInboxTestEnvironment().runnerOptions(mock.connector, auth),
+		)({ run, signal: abort.signal }).catch((error: unknown) => error);
 		await vi.waitFor(() => expect(mock.calls().prompts).toHaveLength(1));
 		abort.abort();
 		expect(await result).toBeInstanceOf(Error);
@@ -202,11 +202,9 @@ describe('action runtime', () => {
 			],
 		});
 		await expect(
-			createInboxActionRunner({
-				...createInboxTestEnvironment(),
-				auth,
-				connect: failed.connector,
-			})({ run, signal: new AbortController().signal }),
+			createInboxActionRunner(
+				createInboxTestEnvironment().runnerOptions(failed.connector, auth),
+			)({ run, signal: new AbortController().signal }),
 		).rejects.toThrow('Invalid key');
 	});
 });

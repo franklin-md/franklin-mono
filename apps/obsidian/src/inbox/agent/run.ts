@@ -3,6 +3,7 @@ import type { InboxRunnerOptions } from './types.js';
 import { inboxAnswerExtension } from './extension.js';
 import { questionPrompt } from './prompt.js';
 import { runInboxRuntime } from './runtime.js';
+import { createInboxResearchExtensions } from './research.js';
 import { ResearchRecorder } from '../capture/evidence/recorder.js';
 
 export function createInboxRunner(options: InboxRunnerOptions) {
@@ -18,7 +19,11 @@ export function createInboxRunner(options: InboxRunnerOptions) {
 				timeout: 120_000,
 				prompt,
 				evidence,
-				extension: (signal) =>
+				extensions: (signal) => [
+					...createInboxResearchExtensions({
+						vaultName: options.vaultName,
+						referenceCache: options.referenceCache,
+					}),
 					inboxAnswerExtension({
 						answerInstructions: request.question.answerInstructions,
 						submit: async (answer, title) => {
@@ -27,6 +32,8 @@ export function createInboxRunner(options: InboxRunnerOptions) {
 							await request.submit(answer, title);
 						},
 					}),
+					...(evidence ? [evidence.extension] : []),
+				],
 			});
 		} finally {
 			await evidence?.interrupt();

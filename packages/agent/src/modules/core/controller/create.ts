@@ -1,4 +1,4 @@
-import type { Context } from '@franklin/mini-acp';
+import type { Context, MiniACPClientHandle } from '@franklin/mini-acp';
 import type { CoreRegistry } from '../registrations/index.js';
 import type { SessionSnapshot, ToolFilter } from '../state.js';
 import type { ToolRegistry } from '../tools/index.js';
@@ -6,17 +6,20 @@ import type { AgentController } from './types.js';
 import { bindAgentClient } from './client.js';
 import { createControllerServer } from './server.js';
 import { createAgentSession } from './session.js';
+import type { Summarize } from '../compaction/types.js';
 
 type CreateAgentControllerInput = {
 	readonly snapshot: SessionSnapshot;
 	readonly registrations: CoreRegistry;
 	readonly toolRegistry: ToolRegistry;
+	readonly summarize?: Summarize;
 };
 
 export function createAgentController(
 	input: CreateAgentControllerInput,
 ): AgentController {
 	const session = createAgentSession(input);
+	let connectedClient: MiniACPClientHandle | undefined;
 	const server = createControllerServer({
 		registrations: input.registrations,
 		session,
@@ -24,13 +27,24 @@ export function createAgentController(
 	});
 
 	return {
-		server,
+		server: {
+			...server,
+			async prepareContext(params) {
+				if (!connectedClient) throw new Error('Agent is not connected');
+				await session.prepareContext(params, connectedClient);
+			},
+		},
 		bind(client) {
+			connectedClient = client;
 			return bindAgentClient({
 				client,
 				registrations: input.registrations,
 				session,
 			});
+		},
+		compact() {
+			if (!connectedClient) throw new Error('Agent is not connected');
+			return session.compact(connectedClient);
 		},
 		setToolEnabled(name, enabled) {
 			const before = input.toolRegistry.filter();

@@ -24,7 +24,6 @@ type Props = {
 	renderActions?: (question: StudyQuestion) => ReactNode;
 	actionActivity?: { running: number; queued: number };
 	notice?: ReactNode;
-	caption?: string;
 };
 
 export function InboxContent({
@@ -45,7 +44,6 @@ export function InboxContent({
 	renderActions,
 	actionActivity,
 	notice,
-	caption,
 }: Props) {
 	const [optionsOpen, setOptionsOpen] = useState(false);
 	const running = questions.filter((q) => q.state.kind === 'running').length;
@@ -160,7 +158,6 @@ export function InboxContent({
 				renderAnswer={renderAnswer}
 				renderActions={renderActions}
 			/>
-			{caption && <footer className="study-preview-caption">{caption}</footer>}
 		</main>
 	);
 }

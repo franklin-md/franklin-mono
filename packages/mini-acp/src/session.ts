@@ -9,3 +9,5 @@ export {
 	trackUsage,
 } from './protocol/tracking.js';
 export { UsageTracker } from './protocol/usage-tracker.js';
+export { estimateMessageTokens } from './tokens/message.js';
+export { estimateContextTokens } from './tokens/context.js';

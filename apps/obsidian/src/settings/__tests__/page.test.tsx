@@ -49,6 +49,7 @@ function createAuthStub(initial: AuthEntries = {}): AuthStub {
 
 function createSettingsStub(
 	initial: AppSettings = {
+		documentDownloads: { idleTimeoutMs: 60_000, totalTimeoutMs: 900_000 },
 		shareViewedReferencesByDefault: true,
 		defaultLLMConfig: {
 			provider: 'openai-codex',
@@ -108,6 +109,30 @@ function renderPage(
 }
 
 describe('SettingsPage', () => {
+	it('edits document download timing and rejects invalid input without changing saved values', () => {
+		const { settings } = renderPage(createAuthStub());
+		const idle = screen.getByLabelText<HTMLInputElement>(
+			'Download inactivity timeout (seconds)',
+		);
+		const total = screen.getByLabelText<HTMLInputElement>(
+			'Maximum download duration (minutes)',
+		);
+		expect(idle.value).toBe('60');
+		expect(total.value).toBe('15');
+		fireEvent.change(idle, { target: { value: '120' } });
+		fireEvent.blur(idle);
+		fireEvent.change(total, { target: { value: '20' } });
+		fireEvent.blur(total);
+		expect(settings.get().documentDownloads).toEqual({
+			idleTimeoutMs: 120_000,
+			totalTimeoutMs: 1_200_000,
+		});
+		fireEvent.change(idle, { target: { value: '0' } });
+		fireEvent.blur(idle);
+		expect(screen.getByRole('alert')).toBeTruthy();
+		expect(settings.get().documentDownloads.idleTimeoutMs).toBe(120_000);
+	});
+
 	it('offers the selection capture shortcut in the study inbox settings', () => {
 		const configure = vi.fn();
 		renderPage(createAuthStub(), createSettingsStub(), configure);
@@ -169,7 +194,11 @@ describe('SettingsPage', () => {
 			(element) => element.textContent,
 		);
 
-		expect(headings).toEqual(['Credentials', 'Agent settings']);
+		expect(headings).toEqual([
+			'Credentials',
+			'Agent settings',
+			'Document downloads',
+		]);
 	});
 
 	it('renders ChatGPT as the first credential setting', () => {

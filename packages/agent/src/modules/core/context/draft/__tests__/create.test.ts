@@ -1,3 +1,4 @@
+import { createMessageEntries } from '../../../history/create.js';
 import type { UserMessage } from '@franklin/mini-acp';
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import { describe, expect, it } from 'vitest';
@@ -39,7 +40,7 @@ describe('SessionDraft', () => {
 		);
 		const draft = createSessionDraft({
 			snapshot: {
-				messages: [userMessage],
+				entries: createMessageEntries([userMessage], 'test'),
 				llmConfig: { model: 'test-model' },
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),
@@ -89,7 +90,7 @@ describe('SessionDraft', () => {
 		);
 		const draft = createSessionDraft({
 			snapshot: {
-				messages: [],
+				entries: [],
 				llmConfig: {},
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),
@@ -137,7 +138,7 @@ describe('SessionDraft', () => {
 		const toolRegistry = createToolRegistry(registrations.tools);
 		const draft = createSessionDraft({
 			snapshot: {
-				messages: [],
+				entries: [],
 				llmConfig: {},
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),

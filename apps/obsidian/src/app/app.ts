@@ -1,5 +1,6 @@
 import { AuthManager, createAuthStore, FranklinApp } from '@franklin/agent';
-import type { FranklinExtension } from '@franklin/agent';
+import type { FranklinExtension, HTTPReferenceCache } from '@franklin/agent';
+import { createHTTPReferenceCache } from '@franklin/node';
 import {
 	bindHostAction,
 	openExternalAction,
@@ -7,6 +8,7 @@ import {
 } from '@franklin/react';
 import { priority } from '@franklin/extensibility';
 import {
+	bashExtension,
 	conversationExtension,
 	conversationTitleExtension,
 	createDuckDuckGoWebSearchProvider,
@@ -27,7 +29,6 @@ import type { AbsolutePath } from '@franklin/lib';
 import { joinAbsolute, toAbsolutePath } from '@franklin/lib';
 import { Notice } from 'obsidian';
 import type { Plugin } from 'obsidian';
-import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
 import { InboxController } from '../inbox/controller/controller.js';
 import { createInboxActionRunner } from '../inbox/actions/run.js';
 import { createInboxRunner } from '../inbox/agent/run.js';
@@ -75,8 +76,13 @@ export async function createFranklinApp(
 		authStore ?? createAuthStore(platform.os.filesystem, appDir),
 	);
 
+	// Cache ownership outlives individual chat and inbox agents. Keep disposable
+	// source bytes separate from session state and the durable research evidence.
+	const referenceCache = createHTTPReferenceCache(
+		joinAbsolute(appDir, 'cache', 'references'),
+	);
 	const app = new FranklinApp({
-		extensions: createObsidianExtensions(),
+		extensions: createObsidianExtensions(referenceCache),
 		platform,
 		appDir,
 		auth,
@@ -98,10 +104,10 @@ export async function createFranklinApp(
 		}),
 	);
 	const runnerOptions = {
+		referenceCache,
 		evidence,
-		connect: createMiniACPRpcConnector(platform.spawn),
+		createAgent: app.createAgent.bind(app),
 		auth,
-		environment: platform.environment,
 		vaultName: plugin.app.vault.getName(),
 		config: {
 			fsConfig: {
@@ -145,7 +151,9 @@ export async function createFranklinApp(
 	};
 }
 
-export function createObsidianExtensions(): FranklinExtension[] {
+export function createObsidianExtensions(
+	referenceCache?: HTTPReferenceCache,
+): FranklinExtension[] {
 	const filesystemTools = [
 		filesystemBundle.extensions.editFile,
 		referenceReadExtension,
@@ -163,7 +171,8 @@ export function createObsidianExtensions(): FranklinExtension[] {
 		priority.highest(obsidianSystemPromptExtension),
 		instructionsExtension.extension,
 		...filesystemTools,
-		...createObsidianReferenceExtensions(),
+		bashExtension.extension,
+		...createObsidianReferenceExtensions(referenceCache),
 		mentionExtension,
 		webSearchProviders.of(createExaWebSearchProvider()),
 		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),

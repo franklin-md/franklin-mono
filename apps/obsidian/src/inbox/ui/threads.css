@@ -77,11 +77,3 @@
 	font-size: 11px;
 	padding: 29px 0 5px;
 }
-.study-preview-caption {
-	flex-shrink: 0;
-	font-size: 11px;
-	text-align: center;
-	padding: 9px 12px;
-	color: var(--text-faint);
-	box-shadow: 0 -1px 0 color-mix(in srgb, var(--study-stroke) 55%, transparent);
-}

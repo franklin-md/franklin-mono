@@ -5,6 +5,7 @@ import {
 	type SessionSnapshot,
 	type ToolFilter,
 } from '../../../modules/core/state.js';
+import { projectEntries } from '../../../modules/core/history/project.js';
 
 const ThinkingLevelV1 = z.enum([
 	'off',
@@ -56,4 +57,31 @@ export const CoreSessionV1 = z.object({
 	toolFilter: ToolFilterV1.optional().transform(
 		(value) => value ?? emptyToolFilter(),
 	),
+});
+
+export const CoreSessionV2 = CoreSessionV1.omit({ messages: true }).extend({
+	entries: z
+		.array(
+			z.discriminatedUnion('type', [
+				z.object({
+					type: z.literal('message'),
+					id: z.string().min(1),
+					message: MessageV1,
+				}),
+				z.object({
+					type: z.literal('compaction'),
+					id: z.string().min(1),
+					summary: z.string().trim().min(1),
+					firstKeptEntryId: z.string().min(1).nullable(),
+				}),
+			]),
+		)
+		.refine((entries) => {
+			try {
+				projectEntries(entries);
+				return true;
+			} catch {
+				return false;
+			}
+		}, 'Invalid session history'),
 }) satisfies z.ZodType<SessionSnapshot>;

@@ -12,6 +12,7 @@ import type { UserMessage } from '../../types/message.js';
 import { StopCode } from '../../types/stop-code.js';
 import type { StreamEvent } from '../../types/stream.js';
 import type { ToolDefinition } from '../../types/tool.js';
+import { estimateContextTokens } from '../../tokens/context.js';
 import { resolveConfig } from './resolve-config.js';
 import {
 	bridgeTool,
@@ -19,6 +20,9 @@ import {
 	toPiUserMessage,
 } from './translate/index.js';
 import { toPiMessages } from './translate/message.js';
+import { fromPiMessage } from './translate/message.js';
+import { fromPiUsage } from './translate/usage.js';
+import { UsageTracker } from '../../protocol/usage-tracker.js';
 
 export type CreatePiAgentOptions = {
 	/** Custom stream function, injected by tests to avoid real provider calls. */
@@ -38,6 +42,9 @@ class PiMuAgent implements MuClient {
 
 	private config: LLMConfig = {};
 	private activePrompt = false;
+	private preparingContext = false;
+	private lastUpdateId: string | undefined;
+	private toolDefinitions: ToolDefinition[] = [];
 
 	constructor(server: MuAgent, options: CreatePiAgentOptions) {
 		this.server = server;
@@ -63,6 +70,7 @@ class PiMuAgent implements MuClient {
 		}
 
 		this.activePrompt = true;
+		this.lastUpdateId = undefined;
 
 		// Resolve lazily at prompt time so bad config still emits a clean
 		// turnStart -> turnEnd stream instead of throwing from setContext.
@@ -97,6 +105,32 @@ class PiMuAgent implements MuClient {
 				return this.config.apiKey;
 			},
 			prepareNextTurn: () => this.prepareNextTurn(),
+			transformContext: async (messages, signal) => {
+				if (!this.server.prepareContext) return messages;
+				signal?.throwIfAborted();
+				this.preparingContext = true;
+				try {
+					await this.server.prepareContext({
+						contextWindow: this.agent.state.model.contextWindow,
+						contextTokens: estimateContextTokens({
+							systemPrompt: this.agent.state.systemPrompt,
+							messages: messages.flatMap((message) =>
+								message.role === 'user' ||
+								message.role === 'assistant' ||
+								message.role === 'toolResult'
+									? [fromPiMessage(message)]
+									: [],
+							),
+							tools: this.toolDefinitions,
+						}),
+						...(this.lastUpdateId ? { afterMessageId: this.lastUpdateId } : {}),
+					});
+					signal?.throwIfAborted();
+					return [...this.agent.state.messages];
+				} finally {
+					this.preparingContext = false;
+				}
+			},
 			streamFn,
 		});
 	}
@@ -115,6 +149,7 @@ class PiMuAgent implements MuClient {
 		message: UserMessage,
 	): AsyncGenerator<StreamEvent> {
 		let currentMessageId = crypto.randomUUID();
+		const usage = new UsageTracker();
 		const { readable, writable } = createMemoryStream<StreamEvent>();
 		const writer = writable.getWriter();
 		const safeWrite = async (event: StreamEvent) => {
@@ -122,6 +157,8 @@ class PiMuAgent implements MuClient {
 		};
 
 		const unsub = this.agent.subscribe((event: AgentEvent) => {
+			if (event.type === 'message_end' && event.message.role === 'assistant')
+				usage.add(fromPiUsage(event.message.usage));
 			// Each new LLM message gets a fresh messageId so chunks and their
 			// corresponding update share a stable Mini-ACP id.
 			if (event.type === 'message_start') {
@@ -129,6 +166,9 @@ class PiMuAgent implements MuClient {
 			}
 			const streamEvent = fromAgentEvent(event, currentMessageId);
 			if (streamEvent) {
+				if (streamEvent.type === 'turnEnd') streamEvent.usage = usage.get();
+				if (streamEvent.type === 'update')
+					this.lastUpdateId = streamEvent.messageId;
 				void safeWrite(streamEvent);
 			}
 		});
@@ -164,7 +204,12 @@ class PiMuAgent implements MuClient {
 	}
 
 	private createPiTools(tools: ToolDefinition[]) {
-		const handler = this.server.toolExecute.bind(this.server);
+		this.toolDefinitions = structuredClone(tools);
+		const handler: MuAgent['toolExecute'] = (params) =>
+			this.server.toolExecute({
+				...params,
+				...(this.lastUpdateId ? { afterMessageId: this.lastUpdateId } : {}),
+			});
 		return tools.map((def) => bridgeTool(def, handler));
 	}
 
@@ -184,6 +229,16 @@ class PiMuAgent implements MuClient {
 	}
 
 	private applyActiveContext(patch: ContextPatch): void {
+		if (
+			this.preparingContext &&
+			patch.messages !== undefined &&
+			patch.systemPrompt === undefined &&
+			patch.tools === undefined &&
+			patch.config === undefined
+		) {
+			this.agent.state.messages = toPiMessages(patch.messages);
+			return;
+		}
 		if (!isToolsOnlyPatch(patch)) {
 			throw new Error(
 				'Pi setContext during an active prompt only accepts tools',

@@ -7,9 +7,16 @@ import {
 import type { Fetch } from '@franklin/lib';
 import {
 	configureFilesystem,
+	createFranklinAgents,
 	createReconfigurableEnvironment,
 } from '@franklin/agent';
-import type { EnvironmentConfig, EnvironmentFactory } from '@franklin/agent';
+import type {
+	AuthManager,
+	EnvironmentConfig,
+	EnvironmentFactory,
+} from '@franklin/agent';
+import type { MiniACPConnector } from '@franklin/mini-acp';
+import type { InboxRunnerOptions } from './types.js';
 
 type Options = { fetch?: Fetch };
 
@@ -39,5 +46,26 @@ export function createInboxTestEnvironment({ fetch }: Options = {}) {
 					}),
 			}),
 		});
-	return { filesystem, config, environment, vaultName: 'Study' };
+	return {
+		filesystem,
+		runnerOptions(
+			connect: MiniACPConnector,
+			auth: AuthManager,
+		): InboxRunnerOptions {
+			return {
+				auth,
+				config,
+				vaultName: 'Study',
+				createAgent: async ({ extensions, state }) => {
+					const { runtime } = await createFranklinAgents({
+						connect,
+						auth,
+						environment,
+						extensions,
+					}).create({ state });
+					return runtime;
+				},
+			};
+		},
+	};
 }

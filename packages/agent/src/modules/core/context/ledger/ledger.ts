@@ -66,6 +66,14 @@ export class ContextLedger {
 		this.recordSent(patch, commit.revisions, true);
 	}
 
+	async syncMessages(client: MiniACPClient): Promise<void> {
+		const revisions = this.currentDraftRevisions();
+		if (this.state.sentRevisions.messages === revisions.messages) return;
+		const patch = { messages: this.state.draft.get().messages };
+		await client.setContext(patch);
+		this.recordSent(patch, revisions, false);
+	}
+
 	private createRecorder(): ContextRecorder {
 		return {
 			apply: (patch) => this.recordPatch(patch),
@@ -83,9 +91,13 @@ export class ContextLedger {
 	}
 
 	private recordMessage(message: Message): void {
+		const wasSynced =
+			this.state.sentRevisions.messages ===
+			this.state.draft.revision('messages');
 		this.state.draft.append(message);
 		this.state.sent.append(message);
-		this.state.sentRevisions.messages = this.state.draft.revision('messages');
+		if (wasSynced)
+			this.state.sentRevisions.messages = this.state.draft.revision('messages');
 	}
 
 	private planPatch(

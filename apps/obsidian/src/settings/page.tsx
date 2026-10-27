@@ -7,6 +7,7 @@ import { ViewingContextSettings } from './viewing-context.js';
 import type { InboxController } from '../inbox/controller/controller.js';
 import { InboxActionSettings } from './inbox-actions/settings.js';
 import { CaptureSettings } from '../inbox/capture/settings.js';
+import { DocumentDownloadSettings } from './document-downloads.js';
 
 type Props = { onConfigureInboxShortcut?: () => void; inbox?: InboxController };
 
@@ -37,6 +38,9 @@ export function SettingsPage({ onConfigureInboxShortcut, inbox }: Props) {
 			</SettingGroup>
 			<SettingGroup title="Agent settings">
 				<ViewingContextSettings />
+			</SettingGroup>
+			<SettingGroup title="Document downloads">
+				<DocumentDownloadSettings />
 			</SettingGroup>
 		</>
 	);

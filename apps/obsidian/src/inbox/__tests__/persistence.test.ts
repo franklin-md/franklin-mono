@@ -50,13 +50,12 @@ describe('inbox disk persistence and runtime integration', () => {
 				turnEnd(),
 			],
 		});
-		const run = createInboxRunner({
-			...createInboxTestEnvironment(),
-			connect: mock.connector,
-			auth: {
+		const run = createInboxRunner(
+			createInboxTestEnvironment().runnerOptions(mock.connector, {
 				getApiKey: async () => 'private-test-key',
-			} as unknown as AuthManager,
-		});
+				onAuthChange: () => () => {},
+			} as unknown as AuthManager),
+		);
 		const inbox = await InboxController.create({
 			defaults,
 			persistence: persister,

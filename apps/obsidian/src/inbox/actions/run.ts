@@ -5,10 +5,10 @@ import {
 	toolSpec,
 } from '@franklin/agent';
 import type { CoreModule } from '@franklin/agent';
-import { reduceExtensions } from '@franklin/extensibility';
 import { z } from 'zod';
 import { questionPrompt } from '../agent/prompt.js';
 import { runInboxRuntime } from '../agent/runtime.js';
+import { createInboxResearchExtensions } from '../agent/research.js';
 import type { InboxRunnerOptions } from '../agent/types.js';
 import type { ActionRequest } from './types.js';
 
@@ -60,14 +60,17 @@ export function createInboxActionRunner(options: InboxRunnerOptions) {
 				`Answer to the current question:\n${run.question.state.kind === 'answered' ? run.question.state.answer : ''}`,
 				`Configured action: ${run.action.name}\n${run.action.prompt}`,
 			].join('\n\n'),
-			writable: true,
-			extension: (executionSignal) =>
-				reduceExtensions(
-					filesystemBundle.extensions.editFile,
-					filesystemBundle.extensions.writeFile,
-					bashExtension.extension,
-					completion(executionSignal),
-				),
+			extensions: (executionSignal) => [
+				...createInboxResearchExtensions({
+					vaultName: options.vaultName,
+					writable: true,
+					referenceCache: options.referenceCache,
+				}),
+				filesystemBundle.extensions.editFile,
+				filesystemBundle.extensions.writeFile,
+				bashExtension.extension,
+				completion(executionSignal),
+			],
 		});
 		if (!result.summary)
 			throw new Error('The agent finished without completing the action');

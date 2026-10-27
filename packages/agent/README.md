@@ -75,7 +75,7 @@ enablement, session projection, inspect, and lifecycle events.
 The core controller keeps internal context state that splits desired session
 state from the last successfully sent Mini-ACP context. A `SessionDraft` is
 constructed from a hydrated `SessionSnapshot` and stores the durable session
-base: messages, non-secret LLM config, and the session-local tool filter.
+base: typed history entries, non-secret LLM config, and the session-local tool filter.
 Runtime-only contributions such as the registration-built system prompt and live
 tool definitions are attached as drafters. `commit()` runs those drafters
 against a scratch context, records field revisions, and returns the Mini-ACP
@@ -95,15 +95,63 @@ The public runtime exposes `getSession()` as a safe projection to
 `SessionSnapshot` for consumers that need the dehydrated session view. The
 state-module layer uses the same projection for persistence, fork, and
 child-session creation. `SessionSnapshot` intentionally remains narrower than
-`Context`: it keeps model-visible messages, non-secret LLM config, and usage,
+`Context`: it keeps history entries, non-secret LLM config, and usage,
 plus the session-local tool filter, while system prompt text, registered tool
 schemas, and API keys stay runtime-only. Runtime inspect uses a separate
 redacted `inspect()` projection for debug UI so callers never need hidden access
-to internal context state. Future persisted state may become a richer superset of
-what Mini-ACP receives, including compaction points or other checkpoints
-projected into the next Mini-ACP context.
+to internal context state.
+
+### Compaction
+
+History contains message entries and compaction entries, each with a stable ID.
+A compaction stores its summary and the first retained message ID. Projection
+replaces the preceding prefix with a summary message while preserving the raw
+entries. Repeated compaction summarizes the previous summary plus the newly
+discarded prefix. Forks copy history and reset usage; children start with empty
+history. Version 3 session files migrate earlier message arrays automatically.
+
+Core automatically checks context before each provider request, including requests
+inside a tool loop. It reserves 16,384 tokens (a quarter of the window for smaller
+models), and retains up to 20,000 recent tokens, reduced to a third of the available
+budget for smaller models. Cuts preserve tool-call/result groups. The assembled
+user prompt, system prompt and tool schemas participate in the estimate.
+
+`runtime.compact()` requests manual compaction and returns whether a checkpoint
+was appended. Summary generation uses an isolated connection with tools disabled,
+without extension prompt/stream hooks or recursive compaction. Large transcripts
+are summarized in bounded chunks, carrying the summary forward. Thinking and
+image payloads are omitted from summaries; original entries retain them.
+Summary usage contributes to session totals.
+
+Cancellation, generation failure, stale history and summaries that do not reduce
+context cannot append a checkpoint. A failed context synchronization leaves the
+checkpoint pending for retry. Automatic preparation fails clearly when the
+remaining context still exceeds its budget; it does not retry provider overflows.
+Persistence retains its existing debounced snapshot behavior. Compaction reduces
+model context, not retained disk history.
+
+See [Pi's compaction design](https://pi.dev/docs/latest/compaction) for the retained
+boundary pattern and [Mini-ACP context preparation](../mini-acp/README.md#context-preparation-agent--application)
+for the inference checkpoint contract.
 
 ### Extensions
+
+`FranklinApp` uses the shared [`createFranklinAgents`](src/app/agents/factory.ts)
+factory for agent construction, including environment, stores, references and
+authentication. `app.agents.create()` uses the app's configured extensions and
+participates in chat persistence. For an independent task, supply its extension
+list to `app.createAgent()`:
+
+```ts
+const runtime = await app.createAgent({
+  extensions: [...researchExtensions, answerExtension],
+  state: { core: { llmConfig: selection }, env: environmentConfig },
+});
+```
+
+Each independent agent has its own in-memory store registry and environment. It
+does not enter `app.agents` or save session/store files. The caller owns its
+lifetime and must call `await runtime.dispose()` in a `finally` block.
 
 Extensions are the way the application interacts with both the agent and the environment. From an extension developer's perspective, the primary concern is: **how should the application handle the agent's tool requests?**
 
@@ -136,3 +184,55 @@ Where PiMono provides a general orchestration framework with fine-grained hooks,
 The split is:
 - **Environment + Spawn + Connect** = the ACP runtime layer (how you create and talk to agents)
 - **Extensions + Local MCP** = the orchestration layer (how the application shapes agent behavior)
+
+### HTTP document references
+
+Hosts can register `createHTTPReferenceExtension()` before their PDF/image/text
+materializers to read public document URLs through `read_file`. HTTP resolution
+uses the environment's web permissions on each redirect, then delegates bytes
+and the original selector to the existing document handler. Remote reads do not
+enter the filesystem edit-authorization store. HTML pages use `fetch_url`.
+
+Document downloads default to 60 seconds of inactivity, 15 minutes total,
+64 MiB and five redirects. `documentDownloadPolicy` supplies the two timing
+limits through the Configuration API. Hosts can contribute a partial override
+with `documentDownloadPolicy.of({ idleTimeoutMs, totalTimeoutMs })`, or read live
+settings with `.compute(...)`. `FranklinApp` contributes its saved
+`settings.documentDownloads` at lowest priority for both chat and independent
+agents. The HTTP handler reads and validates a fresh policy at the start of
+each download; running transfers retain their original limits. Hosts may still
+override `maxBytes` and `maxRedirects` on `createHTTPReferenceExtension`.
+
+Page selection bounds returned PDF content independently of the download limit.
+`WebFetchRequest.idleTimeoutMs` crosses IPC as a number. Node transports enforce
+it from connection setup, reset it when headers or nonempty body chunks arrive,
+and abort stalled streams with received/expected byte counts when available.
+`WebFetchRequest.deadline` is
+an absolute Unix timestamp in milliseconds, preserved across redirects and IPC;
+Node transports abort connection setup and body reads when it expires.
+`maxResponseBytes` is enforced while streaming, rejecting oversized responses
+rather than returning partial document bytes.
+
+Hosts may pass an optional `HTTPReferenceCache` as `cache` to
+`createHTTPReferenceExtension({ cache })`. The host owns its lifetime and shares
+it across agents. Cache keys exclude page/line selectors and display labels, and
+include the normalized URL, network policy and download limits. Downloads still
+use the environment's permissions, with a captured policy checked on every
+redirect; changed policies cannot reuse another policy's cached bytes or pending
+request. Parsing, selectors and source attribution run normally on cached bytes.
+
+`@franklin/node` provides `createHTTPReferenceCache(directory, options)` with a
+24-hour maximum lifetime and a 512 MiB disk budget, configurable with `ttlMs` and
+`maxBytes`. It stores complete successful downloads in atomic binary files,
+combines concurrent loads, and evicts least recently used entries. Shorter server
+freshness limits apply. Responses requiring validation, prohibiting storage,
+setting cookies or declaring `Vary` are not retained. Expired or corrupt entries
+are downloaded again; cache storage failures do not fail successful reads.
+`cache.clear()` removes stored entries and prevents pending older downloads from
+repopulating them. This source cache does not retain extracted PDF text, OCR or
+screenshots, and does not implement conditional revalidation or download resume.
+
+Node shell commands share the process-global sandbox only while their effective
+configurations match. Different configurations queue until running commands close.
+Proxy decisions reuse Franklin's web network policy, including its empty-allowlist
+semantics, and commands receive the existing OS temporary directory as `TMPDIR`.

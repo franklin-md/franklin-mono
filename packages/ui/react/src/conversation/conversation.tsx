@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { ConversationTurn } from '@franklin/agent';
 
 import type { ConversationComponents } from './types.js';
-import { BlockDispatch } from './block-dispatch.js';
+import { ConversationResponse } from './response.js';
 import { getConversationRenderTurns } from './turn-info/get-turns.js';
 import type { ConversationRenderTurn } from './turn-info/types.js';
 
@@ -40,9 +40,7 @@ export function Conversation({ turns, components, now }: ConversationProps) {
 				<Turn key={turn.id} turn={turn}>
 					<UserMessage turn={turn} />
 					<AssistantMessage turn={turn}>
-						{turn.response.blocks.map((block, i) => (
-							<BlockDispatch key={i} block={block} components={components} />
-						))}
+						<ConversationResponse turn={turn} components={components} />
 					</AssistantMessage>
 					{turn.phase === 'in-progress' && Waiting ? (
 						<Waiting turn={turn} />

@@ -101,10 +101,11 @@ describe('original research evidence', () => {
 		});
 		const input = request();
 		await createInboxRunner({
-			...environment,
+			...environment.runnerOptions(mock.connector, {
+				getApiKey: async () => secret,
+				onAuthChange: () => () => {},
+			} as unknown as AuthManager),
 			evidence,
-			connect: mock.connector,
-			auth: { getApiKey: async () => secret } as unknown as AuthManager,
 		})(input);
 		const saved = await evidence.load('q', 'q-accepted');
 		expect(saved).toMatchObject({
@@ -166,10 +167,11 @@ describe('original research evidence', () => {
 			]),
 		});
 		await createInboxRunner({
-			...environment,
+			...environment.runnerOptions(mock.connector, {
+				getApiKey: async () => 'key',
+				onAuthChange: () => () => {},
+			} as unknown as AuthManager),
 			evidence,
-			connect: mock.connector,
-			auth: { getApiKey: async () => 'key' } as unknown as AuthManager,
 		})(input);
 		const accepted = { ...input.question, state: answeredQuestion().state };
 		const pinned = await pinResearch(accepted, [parent], evidence);

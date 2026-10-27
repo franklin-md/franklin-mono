@@ -167,9 +167,14 @@ For full correctness, Storybook should eventually implement or load Obsidian's o
 ## Notes
 
 - The plugin renders a Franklin conversation window inside an Obsidian view, with compact agent tabs for switching sessions.
+- Conversation activity is collapsed by default while running and after completion. One current action slides into view as tools change; completed turns show a thinking/tool-count and duration summary. Expand it to inspect the full sequence. Answers and turn errors stay visible. The shared `@franklin/ui` activity disclosure supports other hosts and respects reduced-motion preferences.
+- Chat and inbox share Franklin's agent factory and Obsidian platform bindings. Chat supplies its conversational extensions; inbox questions and actions supply their own research and completion extensions through `FranklinApp.createAgent()`. Inbox agents use independent in-memory stores and are disposed after each attempt; chat sessions retain their existing persistence.
 - Franklin application state is stored in the plugin directory itself (`<plugin-dir>/`).
 - Agent filesystem reads deny `.env` files and the vault's Obsidian config directory.
 - Agent filesystem writes are limited to the vault root and the OS temp directory, with the vault's Obsidian config directory denied again.
 - This package uses React, Tailwind, and Obsidian APIs.
+- `read_file` accepts public HTTP/HTTPS PDF URLs with `selector: "pages=N-M"`. **Franklin settings → Document downloads** controls the inactivity timeout (default 60 seconds) and maximum total duration (default 15 minutes). Changes are saved and apply to the next download in existing chat and inbox agents; running transfers retain their initial limits. Downloads are capped at 64 MiB and PDF output at ten pages per read. HTML pages use `fetch_url`.
+- Inbox questions allow the configured maximum download duration plus two minutes for other work, so their overall attempt limit does not stop a healthy first download after two minutes. Action runs retain their longer allowance when it exceeds this budget.
+- Chat, inbox questions and actions share a program-managed download cache in `<plugin-dir>/cache/references/`. Complete source documents are reused for up to 24 hours across page selections and plugin restarts, subject to server cache headers. The cache evicts least recently used entries above 512 MiB. PDF extraction/OCR still runs for each read.
 - `styles.css` is generated from `src/styles/globals.css`.
 - `dist/` is generated output and should not be edited by hand.

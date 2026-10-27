@@ -54,6 +54,7 @@ describe('createSettings', () => {
 describe('settings.restore', () => {
 	it('hydrates the store from disk', async () => {
 		const stored: AppSettings = {
+			...DEFAULT_APP_SETTINGS,
 			shareViewedReferencesByDefault: false,
 			defaultLLMConfig: {
 				provider: 'anthropic',
@@ -83,6 +84,7 @@ describe('settings.restore', () => {
 		await store.restore();
 
 		expect(store.get()).toEqual({
+			...DEFAULT_APP_SETTINGS,
 			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {
 				provider: 'anthropic',

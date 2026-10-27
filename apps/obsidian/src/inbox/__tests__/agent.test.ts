@@ -42,9 +42,55 @@ function request(): AnswerRequest {
 }
 const auth = {
 	getApiKey: vi.fn(async () => 'test-key'),
+	onAuthChange: () => () => {},
 } as unknown as AuthManager;
 
 describe('inbox Franklin runtime', () => {
+	it('allows a question to finish beyond two minutes within its document download allowance', async () => {
+		vi.useFakeTimers();
+		vi.spyOn(AbortSignal, 'timeout').mockImplementation((milliseconds) => {
+			const controller = new AbortController();
+			setTimeout(
+				() => controller.abort(new Error('Request timed out')),
+				milliseconds,
+			);
+			return controller.signal;
+		});
+		try {
+			const mock = createMockMiniACP({
+				defaultTurn: [
+					delay(130_000),
+					toolCalls([
+						{
+							name: 'return_answer',
+							arguments: {
+								title: 'Why recheck?',
+								answer: 'Finished after downloading.',
+							},
+						},
+					]),
+					turnEnd(),
+				],
+			});
+			const input = request();
+			const finished = createInboxRunner(
+				createInboxTestEnvironment().runnerOptions(mock.connector, auth),
+			)(input).then(
+				() => undefined,
+				(error: unknown) => error,
+			);
+			await vi.advanceTimersByTimeAsync(130_001);
+			expect(await finished).toBeUndefined();
+			expect(input.submit).toHaveBeenCalledWith(
+				'Finished after downloading.',
+				'Why recheck?',
+			);
+		} finally {
+			vi.restoreAllMocks();
+			vi.useRealTimers();
+		}
+	});
+
 	it('supplies research tools, study context and auth, and routes tool results to its question', async () => {
 		const mock = createMockMiniACP({
 			defaultTurn: turn([
@@ -60,11 +106,9 @@ describe('inbox Franklin runtime', () => {
 				turnEnd(),
 			]),
 		});
-		const run = createInboxRunner({
-			...createInboxTestEnvironment(),
-			connect: mock.connector,
-			auth,
-		});
+		const run = createInboxRunner(
+			createInboxTestEnvironment().runnerOptions(mock.connector, auth),
+		);
 		const input = request();
 		input.question.answerInstructions =
 			'Derive the mechanism step by step.\nUse a C example.';
@@ -107,21 +151,21 @@ describe('inbox Franklin runtime', () => {
 			]),
 		});
 		await expect(
-			createInboxRunner({
-				...createInboxTestEnvironment(),
-				connect: mock.connector,
-				auth,
-			})(request()),
+			createInboxRunner(
+				createInboxTestEnvironment().runnerOptions(mock.connector, auth),
+			)(request()),
 		).rejects.toThrow('Invalid key');
 		const missing = {
 			getApiKey: vi.fn(async () => undefined),
+			onAuthChange: () => () => {},
 		} as unknown as AuthManager;
 		await expect(
-			createInboxRunner({
-				...createInboxTestEnvironment(),
-				connect: createMockMiniACP({ defaultTurn: finishedTurn() }).connector,
-				auth: missing,
-			})(request()),
+			createInboxRunner(
+				createInboxTestEnvironment().runnerOptions(
+					createMockMiniACP({ defaultTurn: finishedTurn() }).connector,
+					missing,
+				),
+			)(request()),
 		).rejects.toThrow('Sign in or add a key');
 	});
 	it('never publishes after cancellation during runtime creation', async () => {
@@ -130,11 +174,38 @@ describe('inbox Franklin runtime', () => {
 		abort.abort();
 		const connect = vi.fn(createMockMiniACP().connector);
 		await expect(
-			createInboxRunner({ ...createInboxTestEnvironment(), connect, auth })(
-				input,
-			),
+			createInboxRunner(
+				createInboxTestEnvironment().runnerOptions(connect, auth),
+			)(input),
 		).rejects.toThrow();
 		expect(connect).not.toHaveBeenCalled();
+		expect(input.submit).not.toHaveBeenCalled();
+	});
+	it('disposes an agent when cancellation happens while its factory is completing', async () => {
+		const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
+		const options = createInboxTestEnvironment().runnerOptions(
+			mock.connector,
+			auth,
+		);
+		const created = Promise.withResolvers<undefined>();
+		const release = Promise.withResolvers<undefined>();
+		const abort = new AbortController();
+		const input = { ...request(), signal: abort.signal };
+		const running = createInboxRunner({
+			...options,
+			createAgent: async (input) => {
+				const runtime = await options.createAgent(input);
+				created.resolve(undefined);
+				await release.promise;
+				return runtime;
+			},
+		})(input).catch((error: unknown) => error);
+		await created.promise;
+		abort.abort();
+		release.resolve(undefined);
+		expect(await running).toBeInstanceOf(Error);
+		expect(mock.calls().prompts).toEqual([]);
+		expect(mock.calls().disposes).toBe(1);
 		expect(input.submit).not.toHaveBeenCalled();
 	});
 	it('cancels an in-flight agent and rejects its late answer', async () => {
@@ -152,11 +223,9 @@ describe('inbox Franklin runtime', () => {
 		});
 		const abort = new AbortController();
 		const input = { ...request(), signal: abort.signal };
-		const running = createInboxRunner({
-			...createInboxTestEnvironment(),
-			connect: mock.connector,
-			auth,
-		})(input);
+		const running = createInboxRunner(
+			createInboxTestEnvironment().runnerOptions(mock.connector, auth),
+		)(input);
 		const rejected = running.then(
 			() => undefined,
 			(error: unknown) => error,
@@ -181,11 +250,9 @@ describe('inbox Franklin runtime', () => {
 			],
 		});
 		const input = request();
-		await createInboxRunner({
-			...createInboxTestEnvironment(),
-			connect: mock.connector,
-			auth,
-		})(input);
+		await createInboxRunner(
+			createInboxTestEnvironment().runnerOptions(mock.connector, auth),
+		)(input);
 		expect(input.submit).not.toHaveBeenCalled();
 		expect(mock.calls().toolResults[0]?.isError).toBe(true);
 	});
@@ -261,7 +328,7 @@ describe('inbox research execution', () => {
 			outline: ['Lecture 3', '[[System Call]] Mechanism', 'Same entry point'],
 			quote: '- [ ] What defines this entry point?',
 		};
-		await createInboxRunner({ ...setup, connect: mock.connector, auth })(input);
+		await createInboxRunner(setup.runnerOptions(mock.connector, auth))(input);
 		expect(mock.calls().toolResults).toHaveLength(4);
 		expect(mock.calls().toolResults.every((result) => !result.isError)).toBe(
 			true,
@@ -302,11 +369,9 @@ describe('question header submission', () => {
 				],
 			});
 			const input = request();
-			await createInboxRunner({
-				...createInboxTestEnvironment(),
-				connect: mock.connector,
-				auth,
-			})(input);
+			await createInboxRunner(
+				createInboxTestEnvironment().runnerOptions(mock.connector, auth),
+			)(input);
 			expect(input.submit).not.toHaveBeenCalled();
 			expect(mock.calls().toolResults[0]?.isError).toBe(true);
 		},
