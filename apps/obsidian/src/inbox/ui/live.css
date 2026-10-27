@@ -1,0 +1,39 @@
+.franklin.franklin-inbox-view {
+	padding: 0;
+	overflow: hidden;
+}
+.study-live {
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	overflow: hidden;
+}
+.study-save-error {
+	margin: 0 20px 12px;
+	padding: 10px;
+	color: var(--study-error);
+	background: var(--background-secondary);
+	border-radius: 6px;
+	font-size: 12px;
+}
+.study-save-error button {
+	display: block;
+	margin-top: 6px;
+	text-decoration: underline;
+}
+.study-auth-settings {
+	margin-bottom: 16px;
+}
+.study-open-source {
+	margin-top: 8px;
+}
+.study-live .study-answer .prose-content {
+	font-size: inherit;
+	line-height: inherit;
+}
+.study-live .study-answer p {
+	white-space: normal;
+}
+.study-live .study-answer p + p {
+	margin-top: 8px;
+}

@@ -1,0 +1,89 @@
+.study-preview .study-record-button {
+	--study-record-color: var(--study-error);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 7px;
+	height: 28px;
+	padding: 0 10px;
+	border: 0;
+	border-radius: 6px;
+	box-shadow: inset 0 0 0 1px
+		color-mix(in srgb, var(--study-record-color) 40%, transparent);
+	background: color-mix(in srgb, var(--study-record-color) 5%, transparent);
+	color: var(--study-record-color);
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1;
+	white-space: nowrap;
+	transition:
+		background 150ms ease,
+		box-shadow 150ms ease,
+		opacity 150ms ease;
+}
+.study-record-button::before {
+	content: '';
+	width: 7px;
+	height: 7px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background: currentColor;
+}
+.study-preview .study-record-button:not(:disabled):hover {
+	background: color-mix(in srgb, var(--study-record-color) 12%, transparent);
+	box-shadow: inset 0 0 0 1px
+		color-mix(in srgb, var(--study-record-color) 70%, transparent);
+}
+.study-preview .study-record-button:focus-visible {
+	outline: 2px solid var(--study-record-color);
+	outline-offset: 3px;
+}
+.study-preview .study-record-button:disabled {
+	opacity: 0.45;
+}
+.study-preview .study-record-button-recording {
+	background: color-mix(in srgb, var(--study-record-color) 12%, transparent);
+	box-shadow: inset 0 0 0 1px
+		color-mix(in srgb, var(--study-record-color) 60%, transparent);
+}
+.study-record-button-recording::before {
+	border-radius: 1px;
+	animation: study-record-pulse 1.8s ease-in-out infinite;
+}
+@keyframes study-record-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.4;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.study-record-button-recording::before {
+		animation: none;
+	}
+}
+
+.study-capture-panel {
+	flex-shrink: 0;
+	max-height: 45%;
+	overflow-y: auto;
+	margin: 0 20px 12px;
+	padding: 12px;
+	background: var(--background-secondary);
+	box-shadow: inset 0 0 0 1px var(--study-stroke);
+	border-radius: 8px;
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+.study-capture-panel p,
+.study-capture-panel button {
+	margin-top: 6px;
+}
+.study-capture-panel button {
+	display: block;
+}
+.study-capture-error {
+	color: var(--study-error);
+}

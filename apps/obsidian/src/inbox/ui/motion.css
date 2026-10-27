@@ -1,0 +1,61 @@
+@keyframes study-arrive {
+	from {
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+@keyframes study-reveal {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+@keyframes study-spin {
+	to {
+		rotate: 360deg;
+	}
+}
+@keyframes study-breathe {
+	0%,
+	100% {
+		opacity: 0.25;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+.study-question {
+	animation: study-arrive 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.study-reveal {
+	animation: study-reveal 220ms ease-out both;
+}
+.study-spin {
+	animation: study-spin 1.4s linear infinite;
+}
+.study-dots i {
+	animation: study-breathe 1.3s ease-in-out infinite;
+}
+.study-dots i:nth-child(2) {
+	animation-delay: 160ms;
+}
+.study-dots i:nth-child(3) {
+	animation-delay: 320ms;
+}
+@media (prefers-reduced-motion: reduce) {
+	.study-preview *,
+	.study-preview *::before,
+	.study-preview *::after {
+		animation: none !important;
+		transition: none !important;
+		scroll-behavior: auto !important;
+	}
+}

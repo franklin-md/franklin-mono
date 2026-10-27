@@ -82,7 +82,11 @@ function createSettingsStub(
 	return settings;
 }
 
-function renderPage(auth: AuthStub, settings = createSettingsStub()) {
+function renderPage(
+	auth: AuthStub,
+	settings = createSettingsStub(),
+	onConfigureInboxShortcut?: () => void,
+) {
 	const openExternal = vi.fn(async () => {});
 	const app = {
 		auth,
@@ -95,7 +99,7 @@ function renderPage(auth: AuthStub, settings = createSettingsStub()) {
 				harness={app}
 				hostActionBindings={[bindHostAction(openExternalAction, openExternal)]}
 			>
-				<SettingsPage />
+				<SettingsPage onConfigureInboxShortcut={onConfigureInboxShortcut} />
 			</ApplicationProvider>,
 		),
 		openExternal,
@@ -104,6 +108,14 @@ function renderPage(auth: AuthStub, settings = createSettingsStub()) {
 }
 
 describe('SettingsPage', () => {
+	it('offers the selection capture shortcut in the study inbox settings', () => {
+		const configure = vi.fn();
+		renderPage(createAuthStub(), createSettingsStub(), configure);
+		expect(screen.getByText('Study inbox')).toBeTruthy();
+		fireEvent.click(screen.getByRole('button', { name: 'Configure shortcut' }));
+		expect(configure).toHaveBeenCalledOnce();
+	});
+
 	it('seeds the OpenRouter input from the existing auth entry', () => {
 		const auth = createAuthStub({
 			openrouter: { apiKey: { type: 'apiKey', key: 'sk-or-existing' } },
