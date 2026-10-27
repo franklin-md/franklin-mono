@@ -1,5 +1,6 @@
 import { AuthManager, createAuthStore, FranklinApp } from '@franklin/agent';
-import type { FranklinExtension } from '@franklin/agent';
+import type { FranklinExtension, HTTPReferenceCache } from '@franklin/agent';
+import { createHTTPReferenceCache } from '@franklin/node';
 import {
 	bindHostAction,
 	openExternalAction,
@@ -7,6 +8,7 @@ import {
 } from '@franklin/react';
 import { priority } from '@franklin/extensibility';
 import {
+	bashExtension,
 	conversationExtension,
 	conversationTitleExtension,
 	createDuckDuckGoWebSearchProvider,
@@ -14,22 +16,27 @@ import {
 	createWebExtension,
 	environmentInfoExtension,
 	filesystemBundle,
-	filesystemFileReferenceExtension,
-	imageDocumentReferenceExtension,
 	instructionsExtension,
 	mentionExtension,
 	referenceReadExtension,
 	spawnExtension,
 	statusExtension,
-	textDocumentReferenceExtension,
 	todoExtension,
 	viewingContextExtension,
 	webSearchProviders,
 } from '@franklin/agent';
-import { createPDFDocumentReferenceExtension } from '@franklin/extension-pdf';
 import type { AbsolutePath } from '@franklin/lib';
-import { toAbsolutePath } from '@franklin/lib';
+import { joinAbsolute, toAbsolutePath } from '@franklin/lib';
+import { Notice } from 'obsidian';
 import type { Plugin } from 'obsidian';
+import { InboxController } from '../inbox/controller/controller.js';
+import { createInboxActionRunner } from '../inbox/actions/run.js';
+import { createInboxRunner } from '../inbox/agent/run.js';
+import { createInboxPersistence } from '../inbox/host/persistence.js';
+import { errorMessage } from '../inbox/controller/error.js';
+import { CaptureController } from '../inbox/capture/controller.js';
+import { createCaptureOptions } from '../inbox/capture/host.js';
+import { createEvidenceRepository } from '../inbox/capture/evidence/repository.js';
 
 import { createObsidianPlatform } from '../platform/index.js';
 import {
@@ -38,11 +45,13 @@ import {
 } from '../utils/obsidian/path.js';
 import type { ObsidianDiffClient } from '../diff/client.js';
 import { resolveAuthStore } from './auth/resolve.js';
-import { renderObsidianPDFScreenshots } from './extensions/pdf/screenshots.js';
+import { createObsidianReferenceExtensions } from './extensions/references.js';
+import { createDefaultObsidianFilesystemPermissions } from '../platform/filesystem/permissions.js';
 import { obsidianSystemPromptExtension } from './extensions/system-prompt.js';
 
 interface ObsidianAppResult {
 	app: FranklinApp;
+	inbox: InboxController;
 	hostActionBindings: readonly HostActionBinding[];
 	vaultRoot: AbsolutePath;
 	dispose(): void;
@@ -67,42 +76,90 @@ export async function createFranklinApp(
 		authStore ?? createAuthStore(platform.os.filesystem, appDir),
 	);
 
+	// Cache ownership outlives individual chat and inbox agents. Keep disposable
+	// source bytes separate from session state and the durable research evidence.
+	const referenceCache = createHTTPReferenceCache(
+		joinAbsolute(appDir, 'cache', 'references'),
+	);
 	const app = new FranklinApp({
-		extensions: createObsidianExtensions(),
+		extensions: createObsidianExtensions(referenceCache),
 		platform,
 		appDir,
 		auth,
 	});
 
 	await app.start();
+	const evidence = createEvidenceRepository(
+		joinAbsolute(appDir, 'inbox-research'),
+	);
+	const capture = await CaptureController.create(
+		createCaptureOptions({
+			appDir,
+			vaultRoot,
+			configDir: plugin.app.vault.configDir,
+			evidence,
+			notify: (message) => {
+				new Notice(message);
+			},
+		}),
+	);
+	const runnerOptions = {
+		referenceCache,
+		evidence,
+		createAgent: app.createAgent.bind(app),
+		auth,
+		vaultName: plugin.app.vault.getName(),
+		config: {
+			fsConfig: {
+				cwd: vaultRoot,
+				permissions: createDefaultObsidianFilesystemPermissions(
+					vaultRoot,
+					plugin.app.vault.configDir,
+				),
+			},
+			netConfig: { allowedDomains: [], deniedDomains: [] },
+		},
+	};
+	const inbox = await InboxController.create({
+		capture,
+		defaults: app.settings.get().defaultLLMConfig,
+		persistence: createInboxPersistence({
+			filesystem: platform.os.filesystem,
+			path: joinAbsolute(appDir, 'inbox.json'),
+		}),
+		run: createInboxRunner(runnerOptions),
+		runAction: createInboxActionRunner(runnerOptions),
+		onActionComplete: (name, summary) => {
+			new Notice(`${name} ${summary}`);
+		},
+	});
 
 	return {
 		app,
+		inbox,
 		hostActionBindings: [
 			bindHostAction(openExternalAction, (url) =>
 				platform.os.openExternal(url),
 			),
 		],
 		vaultRoot,
-		dispose: () => undefined,
+		dispose: () => {
+			void inbox.dispose().catch((error: unknown) => {
+				new Notice(`Inbox shutdown: ${errorMessage(error)}`);
+			});
+		},
 	};
 }
 
-export function createObsidianExtensions(): FranklinExtension[] {
+export function createObsidianExtensions(
+	referenceCache?: HTTPReferenceCache,
+): FranklinExtension[] {
 	const filesystemTools = [
 		filesystemBundle.extensions.editFile,
 		referenceReadExtension,
 		filesystemBundle.extensions.writeFile,
 		filesystemBundle.extensions.glob,
 		filesystemBundle.extensions.grep,
-	];
-	const referenceProviders = [
-		filesystemFileReferenceExtension,
-		createPDFDocumentReferenceExtension({
-			renderScreenshots: renderObsidianPDFScreenshots,
-		}),
-		imageDocumentReferenceExtension,
-		textDocumentReferenceExtension,
 	];
 
 	return [
@@ -114,7 +171,8 @@ export function createObsidianExtensions(): FranklinExtension[] {
 		priority.highest(obsidianSystemPromptExtension),
 		instructionsExtension.extension,
 		...filesystemTools,
-		...referenceProviders,
+		bashExtension.extension,
+		...createObsidianReferenceExtensions(referenceCache),
 		mentionExtension,
 		webSearchProviders.of(createExaWebSearchProvider()),
 		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),

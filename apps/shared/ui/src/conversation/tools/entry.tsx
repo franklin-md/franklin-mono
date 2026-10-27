@@ -10,6 +10,7 @@ export function iconEntry<T = Record<string, unknown>>(
 	children?: (args: T) => ReactNode,
 ): ToolRendererEntry<T> {
 	return {
+		icon: () => Icon,
 		summary: ({ args }) => (
 			<ToolSummary icon={Icon} label={label}>
 				{children?.(args)}

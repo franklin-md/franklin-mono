@@ -84,11 +84,17 @@ const OPENAI_CODEX_PROVIDER_GROUP: ProviderGroup = {
 	displayName: 'OpenAI Codex',
 	access: 'sub',
 	models: [
-		model('openai-codex', 'gpt-5.6-sol', 'GPT-5.6 Sol', {
+		model('openai-codex', 'gpt-6-astra', 'GPT-6-Astra', {
 			reasoning: true,
-			ctx: 372_000,
-			costIn: 5,
-			costOut: 30,
+			ctx: 272_000,
+			costIn: 10,
+			costOut: 50,
+		}),
+		model('openai-codex', 'gpt-6.1-sol', 'GPT-6.1-Sol', {
+			reasoning: true,
+			ctx: 272_000,
+			costIn: 2,
+			costOut: 10,
 		}),
 		model('openai-codex', 'gpt-5.6-terra', 'GPT-5.6 Terra', {
 			reasoning: true,
@@ -127,14 +133,53 @@ const OPENCODE_GO_PROVIDER_GROUP: ProviderGroup = {
 	provider: 'opencode-go',
 	displayName: 'OpenCode Go',
 	access: 'api',
+	// The selector currently displays one price per token direction, so these are
+	// OpenCode Go's documented base prices (and DeepSeek's off-peak prices).
+	// https://dev.opencode.ai/docs/go/#usage-limits
 	models: [
-		model('opencode-go', 'deepseek-v4-pro', 'DeepSeek V4 Pro', {
+		model('opencode-go', 'grok-4.6', 'Grok 4.6', {
+			reasoning: true,
+			ctx: 500_000,
+			costIn: 2,
+			costOut: 6,
+		}),
+		model('opencode-go', 'gpt-5.6-luna', 'GPT 5.6 Luna', {
+			reasoning: true,
+			ctx: 1_050_000,
+			costIn: 0.2,
+			costOut: 1.2,
+		}),
+		model('opencode-go', 'glm-5.3', 'GLM-5.3', {
 			reasoning: true,
 			ctx: 1_000_000,
-			costIn: 1.74,
-			costOut: 3.48,
+			costIn: 1.4,
+			costOut: 4.4,
 		}),
-		model('opencode-go', 'deepseek-v4-flash', 'DeepSeek V4 Flash', {
+		model('opencode-go', 'glm-5.3-flash', 'GLM-5.3-Flash', {
+			reasoning: true,
+			ctx: 1_000_000,
+			costIn: 0.15,
+			costOut: 0.5,
+		}),
+		model('opencode-go', 'kimi-k3', 'Kimi K3', {
+			reasoning: true,
+			ctx: 1_048_576,
+			costIn: 3,
+			costOut: 15,
+		}),
+		model('opencode-go', 'kimi-k2.7-code', 'Kimi K2.7 Code', {
+			reasoning: true,
+			ctx: 262_144,
+			costIn: 0.95,
+			costOut: 4,
+		}),
+		model('opencode-go', 'longcat-2.0', 'LongCat-2.0', {
+			reasoning: true,
+			ctx: 1_000_000,
+			costIn: 0.3,
+			costOut: 1.2,
+		}),
+		model('opencode-go', 'mimo-v2.5', 'MiMo V2.5', {
 			reasoning: true,
 			ctx: 1_000_000,
 			costIn: 0.14,
@@ -143,44 +188,66 @@ const OPENCODE_GO_PROVIDER_GROUP: ProviderGroup = {
 		model('opencode-go', 'mimo-v2.5-pro', 'MiMo V2.5 Pro', {
 			reasoning: true,
 			ctx: 1_048_576,
-			costIn: 1,
-			costOut: 3,
+			costIn: 0.435,
+			costOut: 0.87,
 		}),
-		model('opencode-go', 'mimo-v2.5', 'MiMo V2.5', {
+		model('opencode-go', 'minimax-m3', 'MiniMax M3', {
 			reasoning: true,
 			ctx: 1_000_000,
-			costIn: 0.4,
-			costOut: 2,
-		}),
-		model('opencode-go', 'kimi-k2.6', 'Kimi K2.6', {
-			reasoning: true,
-			ctx: 262_144,
-			costIn: 0.95,
-			costOut: 4,
-		}),
-		model('opencode-go', 'glm-5.2', 'GLM-5.2', {
-			reasoning: true,
-			ctx: 202_752,
-			costIn: 1.4,
-			costOut: 4.4,
-		}),
-		model('opencode-go', 'qwen3.6-plus', 'Qwen3.6 Plus', {
-			reasoning: true,
-			ctx: 262_144,
-			costIn: 0.5,
-			costOut: 3,
-		}),
-		model('opencode-go', 'qwen3.5-plus', 'Qwen3.5 Plus', {
-			reasoning: true,
-			ctx: 262_144,
-			costIn: 0.2,
-			costOut: 1.2,
-		}),
-		model('opencode-go', 'minimax-m2.7', 'MiniMax M2.7', {
-			reasoning: true,
-			ctx: 204_800,
 			costIn: 0.3,
 			costOut: 1.2,
+		}),
+		model(
+			'opencode-go',
+			'muse-spark-1.3-contributor',
+			'Muse Spark 1.3 Contributor',
+			{
+				reasoning: true,
+				ctx: 1_048_576,
+				costIn: 0.1,
+				costOut: 0.2,
+			},
+		),
+		model('opencode-go', 'qwen3.8-flash', 'Qwen3.8 Flash', {
+			reasoning: true,
+			ctx: 1_000_000,
+			costIn: 0.15,
+			costOut: 0.47,
+		}),
+		model('opencode-go', 'qwen3.8-max', 'Qwen3.8 Max', {
+			reasoning: true,
+			ctx: 1_000_000,
+			costIn: 2,
+			costOut: 6,
+		}),
+		model('opencode-go', 'deepseek-v4-pro', 'DeepSeek V4 Pro', {
+			reasoning: true,
+			ctx: 1_000_000,
+			costIn: 0.66,
+			costOut: 1.98,
+		}),
+		model('opencode-go', 'deepseek-flash', 'DeepSeek V4.1 Flash', {
+			reasoning: true,
+			ctx: 1_000_000,
+			costIn: 0.15,
+			costOut: 0.6,
+		}),
+		model(
+			'opencode-go',
+			'deepseek-v4-flash-vision-exp',
+			'DeepSeek V4 Flash Vision Exp',
+			{
+				reasoning: true,
+				ctx: 1_000_000,
+				costIn: 0.15,
+				costOut: 0.6,
+			},
+		),
+		model('opencode-go', 'hy4-preview', 'Hy4 Preview', {
+			reasoning: true,
+			ctx: 1_024_000,
+			costIn: 0.834,
+			costOut: 2.501,
 		}),
 	],
 };

@@ -34,6 +34,13 @@ export function createCoreRuntime({
 			}
 		},
 		cancel: client.cancel.bind(client),
+		async compact() {
+			try {
+				return await controller.compact();
+			} finally {
+				notify({ type: 'compaction-settled' });
+			}
+		},
 		async dispose() {
 			await client.dispose();
 		},

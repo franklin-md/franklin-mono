@@ -1,0 +1,18 @@
+@import './layout.css';
+@import './questions.css';
+@import './threads.css';
+
+@container (max-width: 380px) {
+	.study-header {
+		padding: 22px 17px 0;
+	}
+	.study-feed {
+		padding-inline: 17px;
+	}
+	.study-key-hint {
+		display: none;
+	}
+	.study-style-label {
+		display: none;
+	}
+}

@@ -181,6 +181,40 @@ the patch contains `tools` and no other fields:
   prompt, history, model, or API-key changes to a transcript that is already
   mid-turn.
 
+The exception is the awaited `prepareContext` callback below: while that callback
+is pending, Pi also accepts a messages-only `setContext` patch. Its acknowledgement
+means the replacement was applied before the next provider request.
+
+#### Context Preparation (Agent → Application)
+
+Before each provider request, including tool-loop continuations, Pi calls the
+optional application handler:
+
+```ts
+prepareContext({
+  contextTokens: number, // estimate of system prompt, messages, images and tools
+  contextWindow: number, // resolved model's context limit
+  afterMessageId?: string,
+}): Promise<void>
+```
+
+The agent pauses until this callback settles. The application may compact its
+history, then send a messages-only `setContext` patch and await acknowledgement.
+The callback itself carries no compaction policy or persisted history. A rejected
+callback ends the current prompt with an error; cancellation still uses `cancel`.
+JSON-RPC bindings supply a no-op for applications that omit the handler.
+
+`afterMessageId` identifies the latest assistant update emitted before the
+callback. Applications must record that update before preparing context, since
+reverse RPC can arrive before the stream consumer processes earlier updates.
+`toolExecute` may carry the same optional field; record that update before
+recording or executing the tool call. Tool batches finish before context
+preparation for the next provider request.
+
+Token estimates use text length and a fixed image allowance, rather than a
+provider tokenizer. They are budgeting estimates, not an overflow guarantee.
+`turnEnd.usage` in Pi includes all provider requests in that prompt's tool loop.
+
 ### Phase 3: Prompt
 
 A turn begins when the client sends `prompt` with a `UserMessage`. The agent responds with a stream of events and terminates the stream when the turn is complete.

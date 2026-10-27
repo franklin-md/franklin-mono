@@ -7,6 +7,7 @@ import { defineExtension } from '../../modules/state/index.js';
 import type { StoreModule } from '../../modules/store/index.js';
 import { createFileControl } from '../filesystem/common/control.js';
 import { fileKey } from '../filesystem/common/key.js';
+import { isFilesystemLocator } from './locator.js';
 
 const referenceReadFileDescription = 'Used to read content from a path.';
 
@@ -38,7 +39,8 @@ export const referenceReadExtension = defineExtension<
 				selector,
 			});
 
-			if (!context.isError) {
+			// Reading a remote reference does not authorize editing a local file.
+			if (!context.isError && isFilesystemLocator(path)) {
 				const file = createFileControl(ctx.getStore(fileKey));
 				// TODO(FRA-344): Record the read hash from the exact bytes materialized by the
 				// reference pipeline. Calling markFileRead without content re-reads the

@@ -75,7 +75,7 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 		const stream = streamFn(
 			getModel('opencode-go', 'deepseek-v4-flash'),
 			{ messages: [] },
-			{ apiKey: 'opencode-go-test' },
+			{ apiKey: 'opencode-go-test', sessionId: 'session-123' },
 		);
 
 		void stream;
@@ -87,6 +87,8 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 			'https://opencode.ai/zen/go/v1/chat/completions',
 			expect.objectContaining({ method: 'POST' }),
 		);
+		const headers = new Headers(customFetch.mock.calls[0]?.[1]?.headers);
+		expect(headers.get('x-opencode-session')).toBe('session-123');
 		expect(globalFetch).not.toHaveBeenCalled();
 	});
 

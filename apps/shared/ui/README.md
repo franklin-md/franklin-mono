@@ -109,6 +109,27 @@ shared prose/code styles without the third-party markdown layer. These utility
 files do not scan `@franklin/ui`; `franklin-core.css` is the shared entry point
 that owns package `@source` scanning.
 
+## Conversation Activity
+
+Conversation views collapse intermediate activity by default. The current action
+slides into one row while running; completed turns show thinking/tool counts and
+elapsed time. Expand the row to inspect the original sequence. Trailing answer
+text and turn errors remain visible. Explicitly opened activity stays open as
+the turn progresses. Motion respects `prefers-reduced-motion`.
+Completed summaries include up to three distinct icons from visible tool calls,
+using the registry's optional `icon` renderer and a generic tool icon as fallback.
+
+Pass `toolRegistry` to `ConversationView` or `ConversationTranscript` to share
+host-specific tool summaries between the activity row and its expanded details.
+The headless `ConversationComponents.Activity` slot can replace the grouping UI.
+Text before the last thinking/tool block is treated as progress; trailing text
+is treated as the answer because the protocol does not distinguish the two.
+
+`ActivityDisclosure` is also exported for other workflows. It accepts `summary`,
+an optional `summaryPrefix`, `current: { id, content }`, `running`, `errors`, `meta`, and children
+for the expanded details. Keep the current action's ID stable while its content
+streams; change it when a new action starts to trigger the vertical transition.
+
 ## Minimal Consumer Checklist
 
 - Import components from `@franklin/ui`.

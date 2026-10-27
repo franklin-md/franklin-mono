@@ -1,12 +1,13 @@
-import type { LLMConfig, Message, Usage } from '@franklin/mini-acp';
+import type { LLMConfig, Usage } from '@franklin/mini-acp';
 import { ZERO_USAGE } from '@franklin/mini-acp';
+import type { SessionEntry } from './history/types.js';
 
 export type ToolFilter = {
 	disabled: string[];
 };
 
 export type SessionSnapshot = {
-	messages: Message[];
+	entries: SessionEntry[];
 	llmConfig: Omit<LLMConfig, 'apiKey'>;
 	usage: Usage;
 	toolFilter: ToolFilter;
@@ -18,7 +19,7 @@ export type CoreState = {
 
 export function emptySessionSnapshot(): SessionSnapshot {
 	return {
-		messages: [],
+		entries: [],
 		llmConfig: {},
 		usage: ZERO_USAGE,
 		toolFilter: emptyToolFilter(),

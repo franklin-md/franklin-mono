@@ -115,6 +115,8 @@ export {
 } from './agent-selector/fork-button.js';
 
 // conversation
+export { ActivityDisclosure } from './conversation/activity/disclosure.js';
+export type { ActivityDisclosureProps } from './conversation/activity/types.js';
 export {
 	ConversationView,
 	type ConversationViewProps,
@@ -193,3 +195,5 @@ export { isOAuthFlowRunning } from './auth/login-button/flow.js';
 export { AgentSidebar } from './sidebar/agent-sidebar.js';
 export { AgentSidebarItem } from './sidebar/agent-sidebar-item.js';
 export { SidebarItem } from './sidebar/sidebar-item.js';
+
+export { MODEL_CATALOG } from './conversation/input/models/catalog.js';

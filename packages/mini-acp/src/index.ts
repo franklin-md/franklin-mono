@@ -57,3 +57,4 @@ export type {
 } from './protocol/index.js';
 
 export { ZERO_USAGE } from './protocol/index.js';
+export type { PrepareContextParams } from './types/prepare-context.js';

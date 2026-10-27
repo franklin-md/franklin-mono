@@ -12,14 +12,18 @@ import { DiffExplorerController } from './diff/explorer.js';
 import { clearPortalRoot } from './renderer/portal.js';
 import { openPluginSettings } from './settings/open.js';
 import { FranklinSettingTab } from './settings/tab.js';
+import { registerInbox } from './inbox/host/register.js';
+import type { InboxController } from './inbox/controller/controller.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
 
 export default class FranklinPlugin extends Plugin {
 	private diffClient!: ObsidianDiffClient;
 	private diffController!: DiffController;
 	private diffExplorerController!: DiffExplorerController;
+	private unloading = false;
 	private disposeFranklinApp: (() => void) | null = null;
 	franklinApp: FranklinApp | null = null;
+	inbox: InboxController | null = null;
 	hostActionBindings: readonly HostActionBinding[] = [];
 
 	async onload() {
@@ -46,14 +50,27 @@ export default class FranklinPlugin extends Plugin {
 
 				return {
 					app,
+					inbox: result.inbox,
 					getCreateInput,
 					hostActionBindings: result.hostActionBindings,
 					disposeFranklinApp: () => result.dispose(),
 				};
 			})
 			.then(
-				({ app, getCreateInput, hostActionBindings, disposeFranklinApp }) => {
+				({
+					app,
+					inbox,
+					getCreateInput,
+					hostActionBindings,
+					disposeFranklinApp,
+				}) => {
+					if (this.unloading) {
+						disposeFranklinApp();
+						return;
+					}
+					registerInbox({ plugin: this, app, inbox, hostActionBindings });
 					this.franklinApp = app;
+					this.inbox = inbox;
 					this.hostActionBindings = hostActionBindings;
 					this.disposeFranklinApp = disposeFranklinApp;
 
@@ -98,11 +115,13 @@ export default class FranklinPlugin extends Plugin {
 	}
 
 	onunload() {
+		this.unloading = true;
 		this.diffExplorerController.onunload();
 		this.diffController.onunload();
 		this.disposeFranklinApp?.();
 		clearPortalRoot(activeDocument);
 		this.franklinApp = null;
+		this.inbox = null;
 		this.hostActionBindings = [];
 		this.disposeFranklinApp = null;
 	}

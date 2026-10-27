@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Codec } from '@franklin/lib';
 import { versioned, zodCodec } from '@franklin/lib';
+import { documentDownloadPolicySchema } from '../extensions/references/download-policy/schema.js';
 
 // ---------------------------------------------------------------------------
 // Version 1 — initial schema
@@ -22,6 +23,7 @@ const ThinkingLevel = z.enum([
 // fields during decode, unknown fields drop silently. Version bumps are
 // reserved for structural changes that need a real migration.
 const AppSettingsV1 = z.object({
+	documentDownloads: documentDownloadPolicySchema.prefault({}),
 	shareViewedReferencesByDefault: z.boolean().default(true),
 	defaultLLMConfig: z
 		.object({

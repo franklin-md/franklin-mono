@@ -22,5 +22,10 @@
 @import './theme.css';
 @import './code-theme.css';
 @import './diff.css';
+@import '../inbox/ui/styles.css';
+@import '../inbox/ui/motion.css';
+@import '../inbox/ui/live.css';
+@import '../inbox/capture/styles.css';
+@import '../settings/inbox-actions/styles.css';
 
 @source "../**/*.{ts,tsx}";

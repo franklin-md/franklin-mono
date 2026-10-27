@@ -30,7 +30,9 @@ const MODEL_ICON_PREFIXES: {
 	{ prefixes: ['minimax/', 'minimax-'], Icon: Icons.MiniMax },
 	{ prefixes: ['mimo-', 'xiaomi/mimo'], Icon: Icons.Xiaomi },
 	{ prefixes: ['qwen/', 'qwen'], Icon: Icons.Qwen },
-	{ prefixes: ['x-ai/'], Icon: Icons.XAI },
+	{ prefixes: ['x-ai/', 'grok-'], Icon: Icons.XAI },
+	{ prefixes: ['muse-'], Icon: Icons.Meta },
+	{ prefixes: ['longcat-', 'hy'], Icon: Icons.OpenCode },
 ];
 
 function resolveModelIconComponent(model: CatalogModel): IconComponent | null {
