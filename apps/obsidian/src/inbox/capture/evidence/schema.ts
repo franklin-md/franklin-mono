@@ -29,4 +29,14 @@ export const evidenceSchema = z.object({
 		}),
 	),
 	omittedEvents: z.number().int().nonnegative(),
+	agentEvents: z
+		.array(
+			z.object({
+				type: z.string(),
+				at: z.number().int(),
+				data: text,
+			}),
+		)
+		.optional(),
+	omittedAgentEvents: z.number().int().nonnegative().optional(),
 });

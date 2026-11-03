@@ -6,6 +6,8 @@ import { restoreInbox } from './restore.js';
 import { ancestorsOf } from './lineage.js';
 import { errorMessage } from './error.js';
 import { InboxActions } from '../actions/controller.js';
+import { answerDetailSchema } from '../answer/schema.js';
+import { createDebugDump } from '../debug/dump.js';
 import type {
 	InboxControllerOptions,
 	InboxDocument,
@@ -101,6 +103,17 @@ export class InboxController {
 		});
 		await this.persist();
 		this.pump();
+	}
+
+	async debug(id: string): Promise<string> {
+		const questions = this.store.get().questions;
+		const question = questions.find((item) => item.id === id);
+		if (!question) throw new Error('Question is no longer in the inbox');
+		return createDebugDump(
+			question,
+			ancestorsOf(question, questions),
+			this.options.evidence,
+		);
 	}
 
 	async retry(id: string): Promise<void> {
@@ -241,7 +254,7 @@ export class InboxController {
 				question,
 				ancestors: ancestorsOf(question, this.store.get().questions),
 				signal,
-				submit: async (answer, title) => {
+				submit: async (answer, title, details) => {
 					const current = this.store
 						.get()
 						.questions.find((item) => item.id === id);
@@ -253,6 +266,9 @@ export class InboxController {
 					)
 						throw new Error('Question attempt is no longer accepting answers');
 					if (!answer.trim()) throw new Error('Answer must not be empty');
+					const sections = details?.map((detail) =>
+						answerDetailSchema.parse(detail),
+					);
 					this.store.set((draft) => {
 						const q = draft.questions.find((item) => item.id === id);
 						if (q) {
@@ -260,6 +276,7 @@ export class InboxController {
 								kind: 'answered',
 								answer: answer.trim(),
 								...(title?.trim() ? { title: title.trim() } : {}),
+								...(sections ? { details: sections } : {}),
 							};
 							q.updatedAt = Date.now();
 						}

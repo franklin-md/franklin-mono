@@ -122,6 +122,7 @@ export async function createFranklinApp(
 	};
 	const inbox = await InboxController.create({
 		capture,
+		evidence,
 		defaults: app.settings.get().defaultLLMConfig,
 		persistence: createInboxPersistence({
 			filesystem: platform.os.filesystem,

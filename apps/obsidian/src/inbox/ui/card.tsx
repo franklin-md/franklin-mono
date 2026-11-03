@@ -13,6 +13,7 @@ import type { ReactNode } from 'react';
 import { useId, useState } from 'react';
 
 import { Composer } from './composer.js';
+import { QuestionAnswer } from './answer.js';
 import { questionTitle } from '../title.js';
 import type { StudyQuestion, QuestionSource } from '../types.js';
 
@@ -35,6 +36,10 @@ const timeFormat = new Intl.DateTimeFormat(undefined, {
 	hour: 'numeric',
 	minute: '2-digit',
 });
+
+function hasTextSelection(element: HTMLElement): boolean {
+	return element.ownerDocument.getSelection()?.isCollapsed === false;
+}
 
 export function QuestionCard({
 	question,
@@ -76,18 +81,27 @@ export function QuestionCard({
 			className={`study-question study-question-${state.kind}${focused ? ' study-question-focused' : ''}`}
 			onClick={(event) => {
 				// A selection drag must stay a selection, and controls own their clicks.
-				if (
-					event.currentTarget.ownerDocument.getSelection()?.isCollapsed ===
-					false
-				)
+				if (hasTextSelection(event.currentTarget)) {
+					if (
+						event.target instanceof Element &&
+						event.target.closest('summary')
+					)
+						event.preventDefault();
 					return;
+				}
 				if (
 					event.target instanceof Element &&
-					event.target.closest(
-						'button, a, input, textarea, select, pre, summary',
-					)
+					event.target.closest('button, a, input, textarea, select, pre')
 				)
 					return;
+				// Disclosure interaction activates its card without toggling it off.
+				if (
+					event.target instanceof Element &&
+					event.target.closest('summary, .study-answer-details')
+				) {
+					onFocus(question.id);
+					return;
+				}
 				onFocus(focused ? undefined : question.id);
 			}}
 			aria-labelledby={titleId}
@@ -97,6 +111,7 @@ export function QuestionCard({
 					type="button"
 					className="study-parent"
 					onClick={(event) => {
+						if (hasTextSelection(event.currentTarget)) return;
 						onFocus(parent.id);
 						event.currentTarget.ownerDocument
 							.getElementById(`question-${parent.id}`)
@@ -139,7 +154,10 @@ export function QuestionCard({
 					aria-expanded={focused}
 					aria-controls={answerId}
 					disabled={state.kind !== 'answered'}
-					onClick={() => onFocus(focused ? undefined : question.id)}
+					onClick={(event) => {
+						if (!hasTextSelection(event.currentTarget))
+							onFocus(focused ? undefined : question.id);
+					}}
 				>
 					<span>{title}</span>
 					{state.kind === 'answered' && (
@@ -158,11 +176,11 @@ export function QuestionCard({
 			)}
 			<div id={answerId}>
 				{state.kind === 'answered' && (
-					<div
-						className={`study-answer ${focused ? 'study-answer-expanded' : ''}`}
-					>
-						{renderAnswer ? renderAnswer(state.answer) : <p>{state.answer}</p>}
-					</div>
+					<QuestionAnswer
+						answer={state}
+						expanded={focused}
+						renderAnswer={renderAnswer}
+					/>
 				)}
 				{active && (
 					<div className="study-pending" role="status">
@@ -216,7 +234,7 @@ export function QuestionCard({
 				</>
 			)}
 			<div className="study-question-footer">
-				{state.kind === 'answered' && actions}
+				{actions}
 				{state.kind === 'failed' && (
 					<button
 						type="button"

@@ -66,6 +66,19 @@ describe('functional inbox UI', () => {
 		});
 		fireEvent.click(screen.getByRole('button', { name: 'Add question' }));
 		await screen.findByText('Answer from the runtime.');
+		const writeText = vi.fn(async (_text: string) => {});
+		vi.stubGlobal('navigator', { clipboard: { writeText } });
+		fireEvent.click(screen.getByRole('button', { name: 'Copy agent events' }));
+		await screen.findByRole('button', { name: 'Agent events copied' });
+		const debug = writeText.mock.calls[0]?.[0];
+		if (!debug) throw new Error('Expected a debug dump from the inbox');
+		expect(JSON.parse(debug)).toMatchObject({
+			question: {
+				text: 'Why does it sleep?',
+				state: { kind: 'answered', answer: 'Answer from the runtime.' },
+			},
+		});
+		expect(screen.queryByRole('textbox', { name: /Follow up on:/ })).toBeNull();
 		expect(saved?.questions[0]?.text).toBe('Why does it sleep?');
 		expect(saved?.questions[0]?.source?.quote).toBe('Captured context');
 		fireEvent.click(screen.getByRole('button', { name: 'Why does it sleep?' }));

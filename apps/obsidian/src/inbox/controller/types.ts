@@ -1,6 +1,8 @@
 import type { SingleFilePersister } from '@franklin/lib';
 import type { StudyQuestion } from '../types.js';
+import type { AnswerDetail } from '../answer/types.js';
 import type { CaptureController } from '../capture/controller.js';
+import type { EvidenceRepository } from '../capture/evidence/types.js';
 import type {
 	ActionRequest,
 	InboxAction,
@@ -34,7 +36,11 @@ export type AnswerRequest = {
 	question: InboxQuestion;
 	ancestors: InboxQuestion[];
 	signal: AbortSignal;
-	submit: (answer: string, title?: string) => Promise<void>;
+	submit: (
+		answer: string,
+		title?: string,
+		details?: AnswerDetail[],
+	) => Promise<void>;
 };
 export type InboxControllerOptions = {
 	persistence: SingleFilePersister<InboxDocument>;
@@ -43,4 +49,5 @@ export type InboxControllerOptions = {
 	runAction?: (request: ActionRequest) => Promise<string>;
 	onActionComplete?: (name: string, summary: string) => void;
 	capture?: CaptureController;
+	evidence?: EvidenceRepository;
 };

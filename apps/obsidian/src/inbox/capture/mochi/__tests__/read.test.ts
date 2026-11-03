@@ -88,7 +88,7 @@ describe.skipIf(!hasSqlite)('read-only Mochi capture', () => {
 			'end',
 		]);
 		expect(snapshot.cards.map((card) => card.id)).toEqual(['start']);
-		expect(snapshot.captureVersion).toBe(4);
+		expect(snapshot.captureVersion).toBe(5);
 		expect((await readMochiCards(path, 100, 200)).cards).toEqual([]);
 	});
 	it('fails rather than losing a tracked draft whose saved timestamp cannot be interpreted', async () => {

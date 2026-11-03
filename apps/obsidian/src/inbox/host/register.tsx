@@ -78,16 +78,15 @@ export function registerInbox({
 		id: 'selection-to-study-inbox',
 		name: 'Add selection to study inbox',
 		editorCheckCallback: (checking, editor, view) => {
-			if (!editor.getSelection().trim() || !view.file) return false;
+			const source = captureSelection({ editor, view });
+			if (!source) return false;
 			if (!checking) {
-				const source = captureSelection({ editor, view });
-				if (source)
-					void inbox
-						.add(selectionQuestion(source.quote), undefined, source)
-						.then(() => {
-							new Notice('Question added to study inbox');
-						})
-						.catch(report);
+				void inbox
+					.add(selectionQuestion(source.quote), undefined, source)
+					.then(() => {
+						new Notice('Question added to study inbox');
+					})
+					.catch(report);
 			}
 			return true;
 		},

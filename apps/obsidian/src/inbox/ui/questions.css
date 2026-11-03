@@ -8,7 +8,7 @@
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	margin: 0 0 4px;
+	margin: 0 0 16px;
 	font-size: 11px;
 	color: var(--text-faint);
 }
@@ -26,46 +26,36 @@
 .study-day-questions {
 	display: flex;
 	flex-direction: column;
-	gap: 0;
+	gap: 28px;
 }
 .study-question-branch {
 	min-width: 0;
 }
 .study-question {
 	min-width: 0;
-	padding: 16px 12px 13px;
-	margin-inline: -12px;
-	border-radius: 7px;
+	padding: 16px 17px;
+	border-radius: 14px;
 	position: relative;
-	background: var(--background-primary);
+	background: color-mix(
+		in srgb,
+		var(--text-normal) 6%,
+		var(--background-primary)
+	);
+	box-shadow: inset 0 0 0 1px
+		color-mix(in srgb, var(--text-normal) 18%, transparent);
 	scroll-margin-block: 15px;
 }
-.study-question::before {
-	content: '';
-	position: absolute;
-	left: 0;
-	top: 21px;
-	width: 2px;
-	height: 14px;
-	border-radius: 2px;
-	background: var(--study-stroke);
-}
-.study-question-answered::before {
-	background: var(--study-success);
-}
-.study-question-failed::before {
-	background: var(--study-error);
-}
-.study-question-running::before {
-	background: var(--interactive-accent);
+.study-question-focused {
+	background: color-mix(
+		in srgb,
+		var(--interactive-accent) 9%,
+		var(--background-primary)
+	);
+	box-shadow: inset 0 0 0 2px
+		color-mix(in srgb, var(--interactive-accent) 65%, transparent);
 }
 .study-question-focused .study-answer {
 	color: var(--text-normal);
-}
-.study-day-questions > .study-question-branch + .study-question-branch {
-	box-shadow: inset 0 1px 0 var(--study-stroke);
-	padding-top: 1px;
-	margin-top: 4px;
 }
 .study-question-meta {
 	display: flex;
@@ -133,6 +123,13 @@
 	min-width: 0;
 	overflow-wrap: anywhere;
 }
+.study-question-title,
+.study-parent,
+.study-answer-detail > summary,
+.study-original > summary {
+	user-select: text;
+	-webkit-user-select: text;
+}
 .study-question-title > svg {
 	margin-top: 4px;
 	color: var(--text-faint);
@@ -159,6 +156,26 @@
 	display: block;
 	-webkit-line-clamp: unset;
 	max-height: none;
+}
+.study-answer-details {
+	display: grid;
+	gap: 6px;
+	margin-top: 10px;
+}
+.study-answer-detail > summary {
+	cursor: pointer;
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1.6;
+	overflow-wrap: anywhere;
+}
+.study-answer-detail > summary:hover,
+.study-answer-detail[open] > summary {
+	color: var(--text-normal);
+}
+.study-answer-detail-content {
+	padding-left: 16px;
+	color: var(--text-normal);
 }
 .study-source {
 	display: flex;

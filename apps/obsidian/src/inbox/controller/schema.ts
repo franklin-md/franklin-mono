@@ -137,4 +137,6 @@ export const inboxCodec = versioned()
 			ancestors: run.ancestors.map(migrateAnswerInstructions),
 		})),
 	}))
+	// Older plugins must reject the new format rather than strip folded content.
+	.version(4, zodCodec(document), (previous) => previous)
 	.build();

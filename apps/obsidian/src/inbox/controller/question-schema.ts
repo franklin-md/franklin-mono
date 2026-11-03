@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { answerDetailSchema } from '../answer/schema.js';
 
 const position = z.object({
 	line: z.number().int().nonnegative(),
@@ -28,6 +29,7 @@ const state = z.discriminatedUnion('kind', [
 		kind: z.literal('answered'),
 		answer: z.string().trim().min(1),
 		title: z.string().trim().min(1).optional(),
+		details: z.array(answerDetailSchema).optional(),
 	}),
 	z.object({ kind: z.literal('failed'), error: z.string() }),
 ]);

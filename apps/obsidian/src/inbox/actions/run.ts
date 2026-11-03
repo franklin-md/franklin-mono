@@ -11,6 +11,7 @@ import { runInboxRuntime } from '../agent/runtime.js';
 import { createInboxResearchExtensions } from '../agent/research.js';
 import type { InboxRunnerOptions } from '../agent/types.js';
 import type { ActionRequest } from './types.js';
+import { formatAnswer } from '../answer/format.js';
 
 const finishAction = toolSpec(
 	'finish_action',
@@ -57,7 +58,7 @@ export function createInboxActionRunner(options: InboxRunnerOptions) {
 			prompt: [
 				`Action run ID (reuse on retry): ${run.id}`,
 				questionPrompt(run),
-				`Answer to the current question:\n${run.question.state.kind === 'answered' ? run.question.state.answer : ''}`,
+				`Answer to the current question:\n${run.question.state.kind === 'answered' ? formatAnswer(run.question.state) : ''}`,
 				`Configured action: ${run.action.name}\n${run.action.prompt}`,
 			].join('\n\n'),
 			extensions: (executionSignal) => [

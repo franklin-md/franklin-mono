@@ -26,10 +26,10 @@ export function createInboxRunner(options: InboxRunnerOptions) {
 					}),
 					inboxAnswerExtension({
 						answerInstructions: request.question.answerInstructions,
-						submit: async (answer, title) => {
+						submit: async (answer, title, details) => {
 							signal.throwIfAborted();
 							await evidence?.accept();
-							await request.submit(answer, title);
+							await request.submit(answer, title, details);
 						},
 					}),
 					...(evidence ? [evidence.extension] : []),

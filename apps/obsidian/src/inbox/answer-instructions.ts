@@ -1,2 +1,2 @@
 export const DEFAULT_ANSWER_INSTRUCTIONS =
-	'Give a focused explanation with a small example when useful.';
+	'Answer the current question at the smallest useful scope. Prefer short, direct sentences or compact fragments. A single word is valid when sufficient. Keep essential conditions and uncertainty visible. Put useful supporting mechanisms, evidence and examples in optional details; omit them when the direct answer suffices. Do not repeat the answer or introduce adjacent topics. Use concise Markdown and source links next to supported claims. No introductions, closing summaries or unsolicited offers.';

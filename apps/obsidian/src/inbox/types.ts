@@ -1,3 +1,5 @@
+import type { AnswerDetail } from './answer/types.js';
+
 export type SourcePosition = { line: number; ch: number };
 
 export type SourceLocation = {
@@ -23,6 +25,7 @@ export type AnsweredQuestion = {
 	kind: 'answered';
 	answer: string;
 	title?: string;
+	details?: AnswerDetail[];
 };
 export type FailedQuestion = { kind: 'failed'; error: string };
 export type QuestionState =

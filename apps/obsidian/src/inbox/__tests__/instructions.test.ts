@@ -8,6 +8,9 @@ import { DEFAULT_ANSWER_INSTRUCTIONS } from '../answer-instructions.js';
 import { InboxController } from '../controller/controller.js';
 import { inboxCodec } from '../controller/schema.js';
 
+const legacyDefaultInstructions =
+	'Give a focused explanation with a small example when useful.';
+
 function legacyData(terse: boolean) {
 	const base = {
 		provider: 'test',
@@ -74,13 +77,13 @@ describe('saved inbox answer instructions', () => {
 				expect(value.preferences.answerInstructions).toBe(
 					terse
 						? value.questions[0]!.answerInstructions
-						: DEFAULT_ANSWER_INSTRUCTIONS,
+						: legacyDefaultInstructions,
 				);
 				expect(value.questions[0]?.answerInstructions).toBe(
 					'Prefer 1–3 short sentences or a few short bullets. No introductions, restatements, or closing offers. Use more words when correctness requires them.',
 				);
 				expect(value.questions[1]?.answerInstructions).toBe(
-					DEFAULT_ANSWER_INSTRUCTIONS,
+					legacyDefaultInstructions,
 				);
 				expect(value.questions[0]?.state).toEqual(data.questions[0]?.state);
 				expect(value.actions).toEqual(version === 2 ? data.actions : []);
@@ -94,13 +97,13 @@ describe('saved inbox answer instructions', () => {
 						? [
 								{
 									instructions: value.questions[0]?.answerInstructions,
-									ancestors: [DEFAULT_ANSWER_INSTRUCTIONS],
+									ancestors: [legacyDefaultInstructions],
 								},
 							]
 						: [],
 				);
 				const encoded = inboxCodec.encode(value);
-				expect(encoded).toMatchObject({ version: 3 });
+				expect(encoded).toMatchObject({ version: 4 });
 				expect(JSON.stringify(encoded)).not.toContain('"terse"');
 				data.questions[1] = { ...data.questions[1]!, rootId: 'missing-root' };
 				expect(inboxCodec.decode({ version, data }).ok).toBe(false);

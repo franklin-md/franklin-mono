@@ -65,7 +65,8 @@ describe('inbox Franklin runtime', () => {
 							name: 'return_answer',
 							arguments: {
 								title: 'Why recheck?',
-								answer: 'Finished after downloading.',
+								details: [],
+								shortAnswer: 'Finished after downloading.',
 							},
 						},
 					]),
@@ -84,6 +85,7 @@ describe('inbox Franklin runtime', () => {
 			expect(input.submit).toHaveBeenCalledWith(
 				'Finished after downloading.',
 				'Why recheck?',
+				[],
 			);
 		} finally {
 			vi.restoreAllMocks();
@@ -99,7 +101,8 @@ describe('inbox Franklin runtime', () => {
 						name: 'return_answer',
 						arguments: {
 							title: 'Why recheck?',
-							answer: 'The condition can change.',
+							details: [],
+							shortAnswer: 'The condition can change.',
 						},
 					},
 				]),
@@ -116,6 +119,7 @@ describe('inbox Franklin runtime', () => {
 		expect(input.submit).toHaveBeenCalledWith(
 			'The condition can change.',
 			'Why recheck?',
+			[],
 		);
 		const context = mock.context();
 		expect(context.tools.map((t) => t.name).sort()).toEqual(
@@ -215,7 +219,11 @@ describe('inbox Franklin runtime', () => {
 				toolCalls([
 					{
 						name: 'return_answer',
-						arguments: { title: 'Why recheck?', answer: 'late' },
+						arguments: {
+							title: 'Why recheck?',
+							details: [],
+							shortAnswer: 'late',
+						},
 					},
 				]),
 				turnEnd(),
@@ -243,7 +251,11 @@ describe('inbox Franklin runtime', () => {
 				toolCalls([
 					{
 						name: 'return_answer',
-						arguments: { title: 'Why recheck?', answer: '   ' },
+						arguments: {
+							title: 'Why recheck?',
+							details: [],
+							shortAnswer: '   ',
+						},
 					},
 				]),
 				turnEnd(),
@@ -312,7 +324,8 @@ describe('inbox research execution', () => {
 						name: 'return_answer',
 						arguments: {
 							title: 'What defines this entry point?',
-							answer:
+							details: [],
+							shortAnswer:
 								'The supervisor trap vector comes from `stvec`. [Specification](https://riscv.org/spec)',
 						},
 					},
@@ -343,6 +356,7 @@ describe('inbox research execution', () => {
 		expect(input.submit).toHaveBeenCalledWith(
 			expect.stringContaining('`stvec`'),
 			'What defines this entry point?',
+			[],
 		);
 		expect(mock.context().systemPrompt).toContain('parent list items');
 		expect(JSON.stringify(mock.calls().prompts)).toContain('Same entry point');
@@ -361,7 +375,8 @@ describe('question header submission', () => {
 							name: 'return_answer',
 							arguments: {
 								...(title === undefined ? {} : { title }),
-								answer: 'An otherwise valid answer.',
+								details: [],
+								shortAnswer: 'An otherwise valid answer.',
 							},
 						},
 					]),
@@ -376,4 +391,71 @@ describe('question header submission', () => {
 			expect(mock.calls().toolResults[0]?.isError).toBe(true);
 		},
 	);
+});
+
+describe('structured answer submission', () => {
+	it('accepts a one-word answer and routes all sections through the tool', async () => {
+		const details = [
+			{
+				title: ' Why? ',
+				content: ' The operation may already have succeeded. ',
+			},
+			{
+				title: 'Example',
+				content: 'A payment succeeds but its response is lost.',
+			},
+		];
+		const mock = createMockMiniACP({
+			defaultTurn: [
+				toolCalls([
+					{
+						name: 'return_answer',
+						arguments: {
+							title: 'Is retrying safe?',
+							shortAnswer: ' No. ',
+							details,
+						},
+					},
+				]),
+				turnEnd(),
+			],
+		});
+		const input = request();
+		await createInboxRunner(
+			createInboxTestEnvironment().runnerOptions(mock.connector, auth),
+		)(input);
+		expect(input.submit).toHaveBeenCalledWith('No.', 'Is retrying safe?', [
+			{ title: 'Why?', content: 'The operation may already have succeeded.' },
+			details[1],
+		]);
+		expect(mock.calls().toolResults[0]?.isError).toBeFalsy();
+	});
+
+	it.each([
+		[{ title: ' ', content: 'Valid content' }],
+		[{ title: 'Valid title', content: ' ' }],
+		[{ title: 'Valid title' }],
+	])('rejects invalid sections before publishing (%j)', async (details) => {
+		const mock = createMockMiniACP({
+			defaultTurn: [
+				toolCalls([
+					{
+						name: 'return_answer',
+						arguments: {
+							title: 'Is retrying safe?',
+							shortAnswer: 'No.',
+							details,
+						},
+					},
+				]),
+				turnEnd(),
+			],
+		});
+		const input = request();
+		await createInboxRunner(
+			createInboxTestEnvironment().runnerOptions(mock.connector, auth),
+		)(input);
+		expect(input.submit).not.toHaveBeenCalled();
+		expect(mock.calls().toolResults[0]?.isError).toBe(true);
+	});
 });

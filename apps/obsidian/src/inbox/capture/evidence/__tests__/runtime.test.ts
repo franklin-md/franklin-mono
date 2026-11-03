@@ -6,6 +6,8 @@ import { toAbsolutePath } from '@franklin/lib';
 import {
 	createMockMiniACP,
 	toolCalls,
+	thinking,
+	text as assistantText,
 	turn,
 	turnEnd,
 } from '@franklin/mini-acp/mock';
@@ -77,6 +79,8 @@ describe('original research evidence', () => {
 		);
 		const mock = createMockMiniACP({
 			defaultTurn: turn([
+				thinking('Private reasoning should not appear in a debug dump.'),
+				assistantText('Checking the original specification.'),
 				toolCalls([{ name: 'read_file', arguments: { path: 'Source.md' } }]),
 				toolCalls([
 					{
@@ -92,7 +96,8 @@ describe('original research evidence', () => {
 						name: 'return_answer',
 						arguments: {
 							title: 'Question q?',
-							answer: 'Answer from the original research.',
+							details: [],
+							shortAnswer: 'Answer from the original research.',
 						},
 					},
 				]),
@@ -119,6 +124,21 @@ describe('original research evidence', () => {
 			'fetch_url',
 		]);
 		expect(saved?.systemPrompt?.text).toContain('personal study inbox');
+		expect(saved?.agentEvents?.map((event) => event.type)).toContain('turnEnd');
+		expect(
+			saved?.agentEvents?.find(
+				(event) =>
+					event.type === 'toolCall' &&
+					event.data.text.includes('return_answer'),
+			),
+		).toBeTruthy();
+		expect(
+			saved?.agentEvents?.find(
+				(event) =>
+					event.type === 'toolResult' &&
+					event.data.text.includes('return_answer'),
+			),
+		).toBeTruthy();
 		const text = await readFile(
 			join(directory, (await readdir(directory))[0]!),
 			'utf8',
@@ -130,6 +150,8 @@ describe('original research evidence', () => {
 		expect(text).not.toContain(secret);
 		expect(text).not.toContain('apiKey');
 		expect(text).not.toContain('"reasoning":[');
+		expect(text).not.toContain('Private reasoning should not appear');
+		expect(text).toContain('Checking the original specification.');
 		expect(input.submit).toHaveBeenCalledOnce();
 	});
 
@@ -160,7 +182,11 @@ describe('original research evidence', () => {
 				toolCalls([
 					{
 						name: 'return_answer',
-						arguments: { title: 'Question q?', answer: 'Accepted answer.' },
+						arguments: {
+							title: 'Question q?',
+							details: [],
+							shortAnswer: 'Accepted answer.',
+						},
 					},
 				]),
 				turnEnd(),
@@ -181,6 +207,8 @@ describe('original research evidence', () => {
 		]);
 		expect(pinned[0]?.status).toBe('partial');
 		expect(pinned[0]?.events[0]?.result?.omittedCharacters).toBeGreaterThan(0);
+		expect(pinned[0]).not.toHaveProperty('agentEvents');
+		expect(pinned[0]).not.toHaveProperty('omittedAgentEvents');
 		expect(pinned[1]?.status).toBe('missing');
 		expect(
 			(await pinResearch(accepted, [answeredQuestion('sibling')], evidence))[0]

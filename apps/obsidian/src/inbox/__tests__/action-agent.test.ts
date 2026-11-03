@@ -46,6 +46,13 @@ const run: InboxActionRun = {
 		state: {
 			kind: 'answered',
 			answer: 'The condition may change before the process runs.',
+			details: [
+				{
+					title: 'Scheduling example',
+					content:
+						'Another process can consume the resource before this one resumes.',
+				},
+			],
 		},
 	},
 	ancestors: [],
@@ -131,6 +138,12 @@ describe('action runtime', () => {
 			run.question.state.kind === 'answered' ? run.question.state.answer : '',
 		);
 		expect(JSON.stringify(mock.calls().prompts)).toContain('action-run');
+		expect(JSON.stringify(mock.calls().prompts)).toContain(
+			'Scheduling example',
+		);
+		expect(JSON.stringify(mock.calls().prompts)).toContain(
+			'Another process can consume the resource before this one resumes.',
+		);
 		expect(mock.calls().disposes).toBe(1);
 	});
 

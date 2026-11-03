@@ -44,7 +44,13 @@ export async function pinResearch(
 						evidence.status = 'partial';
 						evidence.missing.push('Research has no accepted-answer checkpoint');
 					}
-					return evidence;
+					// The diagnostic timeline shares storage, not the training evidence contract.
+					const {
+						agentEvents: _agentEvents,
+						omittedAgentEvents: _omittedAgentEvents,
+						...research
+					} = evidence;
+					return research;
 				}
 			} catch {
 				// A damaged or unreadable sidecar is not the same as no research. The

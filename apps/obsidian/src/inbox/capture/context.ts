@@ -1,5 +1,6 @@
 import type { InboxQuestion } from '../controller/types.js';
 import type { CaptureEpisode } from './types.js';
+import { formatAnswer } from '../answer/format.js';
 
 export function episodeContext(episode: CaptureEpisode): string {
 	return (
@@ -25,7 +26,7 @@ function renderQuestion(question: InboxQuestion, label: string): string {
 	return [
 		`## ${label}\n\n${question.text}`,
 		`Question ID: ${question.id}\nAttempt ID: ${question.attemptId}\nModel: ${question.provider}/${question.model}`,
-		`### Answer\n\n${question.state.kind === 'answered' ? question.state.answer : '(Not answered)'}`,
+		`### Answer\n\n${question.state.kind === 'answered' ? formatAnswer(question.state) : '(Not answered)'}`,
 		`### Answer instructions\n\n${question.answerInstructions}`,
 		source
 			? `### Captured source: ${source.location?.path ?? source.note}\n\n${[source.heading, ...(source.outline ?? [])].filter(Boolean).join(' → ')}\n\n${source.quote}\n\nNearby text:\n\n${source.location?.context ?? '(Unavailable)'}`

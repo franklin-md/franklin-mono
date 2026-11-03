@@ -7,6 +7,7 @@ import { QuestionActions } from './actions.js';
 import { ancestorsOf } from '../controller/lineage.js';
 import { RecordButton } from '../capture/record-button.js';
 import { CaptureStatus } from '../capture/status.js';
+import { DebugButton } from '../debug/button.js';
 import './styles.css';
 import './motion.css';
 import './live.css';
@@ -70,43 +71,51 @@ export function InboxPanel({
 				}}
 				renderActions={(question) => (
 					<>
-						{capture && captureSnapshot && (
-							<RecordButton
-								snapshot={captureSnapshot}
-								questionId={question.id}
-								onStop={() => {
-									void capture.stop().catch(onError);
+						{question.state.kind === 'answered' &&
+							capture &&
+							captureSnapshot && (
+								<RecordButton
+									snapshot={captureSnapshot}
+									questionId={question.id}
+									onStop={() => {
+										void capture.stop().catch(onError);
+									}}
+									onRecord={() => {
+										const fullQuestion = snapshot.questions.find(
+											(item) => item.id === question.id,
+										);
+										if (fullQuestion)
+											void capture
+												.start(
+													fullQuestion,
+													ancestorsOf(fullQuestion, snapshot.questions),
+												)
+												.catch(onError);
+									}}
+								/>
+							)}
+						{question.state.kind === 'answered' && (
+							<QuestionActions
+								actions={snapshot.actions}
+								runs={snapshot.actionRuns.filter(
+									(run) => run.question.id === question.id,
+								)}
+								onRun={(actionId) => {
+									void controller.actions
+										.start(question.id, actionId)
+										.catch(onError);
 								}}
-								onRecord={() => {
-									const fullQuestion = snapshot.questions.find(
-										(item) => item.id === question.id,
-									);
-									if (fullQuestion)
-										void capture
-											.start(
-												fullQuestion,
-												ancestorsOf(fullQuestion, snapshot.questions),
-											)
-											.catch(onError);
+								onRetry={(id) => {
+									void controller.actions.retry(id).catch(onError);
+								}}
+								onDismiss={(id) => {
+									void controller.actions.dismiss(id).catch(onError);
 								}}
 							/>
 						)}
-						<QuestionActions
-							actions={snapshot.actions}
-							runs={snapshot.actionRuns.filter(
-								(run) => run.question.id === question.id,
-							)}
-							onRun={(actionId) => {
-								void controller.actions
-									.start(question.id, actionId)
-									.catch(onError);
-							}}
-							onRetry={(id) => {
-								void controller.actions.retry(id).catch(onError);
-							}}
-							onDismiss={(id) => {
-								void controller.actions.dismiss(id).catch(onError);
-							}}
+						<DebugButton
+							load={() => controller.debug(question.id)}
+							onError={onError}
 						/>
 					</>
 				)}

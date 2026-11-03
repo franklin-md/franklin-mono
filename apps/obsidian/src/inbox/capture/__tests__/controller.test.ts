@@ -72,6 +72,26 @@ describe('durable flashcard episodes', () => {
 		vi.spyOn(Date, 'now').mockReturnValue(1000);
 		const question = answeredQuestion();
 		const parent = answeredQuestion('parent');
+		question.state = {
+			kind: 'answered',
+			answer: 'No.',
+			details: [
+				{
+					title: 'Why not?',
+					content: 'The remote effect may already have happened.',
+				},
+			],
+		};
+		parent.state = {
+			kind: 'answered',
+			answer: 'Parent answer.',
+			details: [
+				{
+					title: 'Parent mechanism',
+					content: 'A lost response leaves an unknown outcome.',
+				},
+			],
+		};
 		question.parentId = parent.id;
 		question.rootId = parent.id;
 		await Promise.all([
@@ -106,7 +126,7 @@ describe('durable flashcard episodes', () => {
 			),
 		);
 		expect(saved).toMatchObject({
-			captureVersion: 4,
+			captureVersion: 5,
 			phase: 'complete',
 			cardIds: ['one', 'two'],
 			question: { attemptId: 'q-accepted' },
@@ -116,6 +136,17 @@ describe('durable flashcard episodes', () => {
 			'two',
 		]);
 		expect(saved.context).toContain('Original source context');
+		expect(saved.context).toContain('### Why not?');
+		expect(saved.context).toContain(
+			'The remote effect may already have happened.',
+		);
+		expect(saved.context).toContain(
+			'A lost response leaves an unknown outcome.',
+		);
+		expect(saved).toMatchObject({
+			question: { state: { details: question.state.details } },
+			ancestors: [{ state: { details: parent.state.details } }],
+		});
 		expect(saved.research).toHaveLength(2);
 		expect(await readdir(join(root, original.folder))).toEqual([
 			`${original.id}.json`,

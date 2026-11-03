@@ -16,6 +16,7 @@ function editor() {
 		getSelection: () => 'Check the condition again.',
 		getCursor: (side: string) =>
 			side === 'from' ? { line: 2, ch: 0 } : { line: 2, ch: 26 },
+		getLine: (line: number) => content.split('\n')[line] ?? '',
 		getValue: () => content,
 		posToOffset: () => 18,
 		offsetToPos: (offset: number) => ({ line: 2, ch: offset - 18 }),
@@ -43,36 +44,82 @@ describe('Obsidian inbox commands and source navigation', () => {
 		});
 		expect(captured?.location?.id).toBeTruthy();
 	});
-	it('adds selected text through an editor command without changing the source note', async () => {
-		const commands: Command[] = [];
-		const add = vi.fn(async () => 'q');
-		const plugin = {
-			addCommand: (command: Command) => commands.push(command),
-			registerView: vi.fn(),
-			addRibbonIcon: vi.fn(),
-		} as unknown as Plugin;
-		registerInbox({
-			plugin,
-			app: {} as FranklinApp,
-			inbox: { add } as unknown as InboxController,
-			hostActionBindings: [],
-		});
-		const capture = commands.find(
-			(command) => command.id === 'selection-to-study-inbox',
-		)!;
-		expect(capture.editorCheckCallback?.(true, editor(), view)).toBe(true);
-		expect(add).not.toHaveBeenCalled();
-		capture.editorCheckCallback?.(false, editor(), view);
-		await vi.waitFor(() =>
-			expect(add).toHaveBeenCalledWith(
-				'Check the condition again.',
-				undefined,
-				expect.objectContaining({ quote: 'Check the condition again.' }),
-			),
+	it.each(['Check the condition again.', '', 'C', 'Ch', 'Che', ' the '])(
+		'adds the whole row for selection "%s" without changing the source note',
+		async (selection) => {
+			const commands: Command[] = [];
+			const add = vi.fn(async () => 'q');
+			const plugin = {
+				addCommand: (command: Command) => commands.push(command),
+				registerView: vi.fn(),
+				addRibbonIcon: vi.fn(),
+			} as unknown as Plugin;
+			registerInbox({
+				plugin,
+				app: {} as FranklinApp,
+				inbox: { add } as unknown as InboxController,
+				hostActionBindings: [],
+			});
+			const capture = commands.find(
+				(command) => command.id === 'selection-to-study-inbox',
+			)!;
+			const e = editor();
+			vi.spyOn(e, 'getSelection').mockReturnValue(selection);
+			const start = selection ? e.getLine(2).indexOf(selection) : 7;
+			vi.spyOn(e, 'getCursor').mockImplementation((side) => ({
+				line: 2,
+				ch: side === 'from' ? start : start + selection.length,
+			}));
+			expect(capture.editorCheckCallback?.(true, e, view)).toBe(true);
+			expect(add).not.toHaveBeenCalled();
+			expect(e.setSelection).not.toHaveBeenCalled();
+			capture.editorCheckCallback?.(false, e, view);
+			await vi.waitFor(() =>
+				expect(add).toHaveBeenCalledWith(
+					'Check the condition again.',
+					undefined,
+					expect.objectContaining({
+						quote: 'Check the condition again.',
+						location: expect.objectContaining({
+							from: { line: 2, ch: 0 },
+							to: { line: 2, ch: 26 },
+						}),
+					}),
+				),
+			);
+			const empty = editor();
+			vi.spyOn(empty, 'getSelection').mockReturnValue('');
+			vi.spyOn(empty, 'getLine').mockReturnValue(' \t ');
+			expect(capture.editorCheckCallback?.(true, empty, view)).toBe(false);
+			expect(capture.editorCheckCallback?.(false, empty, view)).toBe(false);
+			expect(
+				capture.editorCheckCallback?.(true, e, { ...view, file: null }),
+			).toBe(false);
+			expect(add).toHaveBeenCalledOnce();
+			expect(e.setSelection).not.toHaveBeenCalled();
+		},
+	);
+	it.each([
+		{
+			quote: 'Chec',
+			from: { line: 2, ch: 0 },
+			to: { line: 2, ch: 4 },
+		},
+		{
+			quote: 'again.\nMore',
+			from: { line: 2, ch: 20 },
+			to: { line: 3, ch: 4 },
+		},
+	])('preserves the exact longer selection "$quote"', ({ quote, from, to }) => {
+		const e = editor();
+		vi.spyOn(e, 'getSelection').mockReturnValue(quote);
+		vi.spyOn(e, 'getCursor').mockImplementation((side) =>
+			side === 'from' ? from : to,
 		);
-		const empty = editor();
-		vi.spyOn(empty, 'getSelection').mockReturnValue('');
-		expect(capture.editorCheckCallback?.(true, empty, view)).toBe(false);
+		expect(captureSelection({ editor: e, view })).toMatchObject({
+			quote,
+			location: { from, to },
+		});
 	});
 	it('selects an unchanged quote, and re-finds it after edits instead of silently selecting unrelated text', async () => {
 		const e = editor();

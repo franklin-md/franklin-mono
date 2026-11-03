@@ -43,7 +43,13 @@ describe('inbox disk persistence and runtime integration', () => {
 						name: 'return_answer',
 						arguments: {
 							title: 'Why recheck the condition?',
-							answer: 'Recheck under the lock.',
+							details: [
+								{
+									title: 'Why',
+									content: 'Another process may consume the condition first.',
+								},
+							],
+							shortAnswer: 'Recheck under the lock.',
 						},
 					},
 				]),
@@ -68,6 +74,7 @@ describe('inbox disk persistence and runtime integration', () => {
 		await inbox.dispose();
 		const data = await readFile(path, 'utf8');
 		expect(data).toContain('Recheck under the lock.');
+		expect(data).toContain('Another process may consume the condition first.');
 		expect(data).toContain('Why recheck the condition?');
 		expect(data).not.toContain('private-test-key');
 		expect(data).not.toContain('systemPrompt');
@@ -81,6 +88,12 @@ describe('inbox disk persistence and runtime integration', () => {
 		expect(restored.state.get().questions[0]?.state).toEqual({
 			kind: 'answered',
 			answer: 'Recheck under the lock.',
+			details: [
+				{
+					title: 'Why',
+					content: 'Another process may consume the condition first.',
+				},
+			],
 			title: 'Why recheck the condition?',
 		});
 		await restored.remove(id);
@@ -88,6 +101,9 @@ describe('inbox disk persistence and runtime integration', () => {
 		const after = await readFile(path, 'utf8');
 		expect(after).not.toContain('Why recheck?');
 		expect(after).not.toContain('Recheck under the lock.');
+		expect(after).not.toContain(
+			'Another process may consume the condition first.',
+		);
 		expect(after).not.toContain('Why recheck the condition?');
 	});
 	it('leaves malformed files untouched', async () => {

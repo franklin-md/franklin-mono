@@ -113,7 +113,7 @@ describe('recording completion recovery', () => {
 		]);
 		expect(restored.state.get().completed).toHaveLength(1);
 		expect(JSON.parse(await readFile(destination, 'utf8'))).toMatchObject({
-			captureVersion: 4,
+			captureVersion: 5,
 			id: pending.id,
 			phase: 'complete',
 		});

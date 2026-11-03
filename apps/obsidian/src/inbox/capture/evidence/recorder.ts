@@ -3,6 +3,7 @@ import type { CoreModule } from '@franklin/agent';
 import type { AnswerRequest } from '../../controller/types.js';
 import type { EvidenceRepository, ResearchEvidence } from './types.js';
 import { redactEvidence } from './redact.js';
+import { visibleContent } from './visible-content.js';
 
 const researchTools = new Set([
 	'read_file',
@@ -17,7 +18,10 @@ const MAX_FIELD = 64_000;
 
 export class ResearchRecorder {
 	private readonly evidence: ResearchEvidence;
-	private remaining = MAX_CHARACTERS;
+	private readonly remaining = {
+		research: MAX_CHARACTERS,
+		agent: MAX_CHARACTERS,
+	};
 	private secrets: string[] = [];
 	private writes = Promise.resolve();
 	private sealed = false;
@@ -37,13 +41,31 @@ export class ResearchRecorder {
 			prompt: this.bound(prompt),
 			events: [],
 			omittedEvents: 0,
+			agentEvents: [],
+			omittedAgentEvents: 0,
 		};
 	}
 
 	readonly extension = defineExtension<[CoreModule]>((api) => {
+		api.on('turnStart', (event) => this.recordAgentEvent(event.type, event));
+		// Complete updates retain the useful message without duplicating streaming chunks.
+		api.on('update', (event) =>
+			this.recordAgentEvent(event.type, {
+				...event,
+				message: {
+					...event.message,
+					content: visibleContent(event.message.content),
+				},
+			}),
+		);
+		api.on('turnEnd', (event) => this.recordAgentEvent(event.type, event));
 		api.on('toolCall', ({ call }) => {
+			this.recordAgentEvent('toolCall', call);
 			if (this.sealed || !researchTools.has(call.name)) return;
-			if (this.evidence.events.length >= MAX_EVENTS || this.remaining <= 0) {
+			if (
+				this.evidence.events.length >= MAX_EVENTS ||
+				this.remaining.research <= 0
+			) {
 				this.evidence.omittedEvents++;
 				return;
 			}
@@ -56,6 +78,10 @@ export class ResearchRecorder {
 			this.checkpoint();
 		});
 		api.on('toolResult', ({ call, result }) => {
+			this.recordAgentEvent('toolResult', {
+				call,
+				result: { ...result, content: visibleContent(result.content) },
+			});
 			if (this.sealed) return;
 			const event = this.evidence.events.find(
 				(event) => event.callId === call.id,
@@ -124,7 +150,8 @@ export class ResearchRecorder {
 	}
 
 	async interrupt(): Promise<void> {
-		if (this.sealed) return;
+		// Flush the terminal events emitted after return_answer sealed the research.
+		if (this.sealed) return this.save();
 		this.sealed = true;
 		this.evidence.status = 'partial';
 		this.evidence.missing.push('Attempt ended without an accepted answer');
@@ -135,11 +162,29 @@ export class ResearchRecorder {
 		void this.save().catch(() => {});
 	}
 
-	private bound(value: string): ResearchEvidence['prompt'] {
+	private recordAgentEvent(type: string, value: unknown): void {
+		const events = (this.evidence.agentEvents ??= []);
+		if (events.length >= MAX_EVENTS || this.remaining.agent <= 0) {
+			this.evidence.omittedAgentEvents =
+				(this.evidence.omittedAgentEvents ?? 0) + 1;
+			return;
+		}
+		events.push({
+			type,
+			at: Date.now(),
+			data: this.bound(JSON.stringify(value), 'agent'),
+		});
+		this.checkpoint();
+	}
+
+	private bound(
+		value: string,
+		kind: 'research' | 'agent' = 'research',
+	): ResearchEvidence['prompt'] {
 		const clean = redactEvidence(value, this.secrets);
-		const limit = Math.min(MAX_FIELD, this.remaining);
+		const limit = Math.min(MAX_FIELD, this.remaining[kind]);
 		const text = clean.slice(0, limit);
-		this.remaining -= text.length;
+		this.remaining[kind] -= text.length;
 		return {
 			text,
 			omittedCharacters: clean.length - text.length,
