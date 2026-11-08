@@ -24,13 +24,11 @@ import type { ReferencesModule } from '../../modules/references/module.js';
 import { defineExtension } from '../../modules/state/index.js';
 import { normalizeContentType } from '../web/utils.js';
 import { detectFileType } from '../filesystem/common/supported.js';
-import type { HTTPReferenceCache } from './cache.js';
 import { documentDownloadPolicy } from './download-policy/configuration.js';
 
 type Options = {
 	maxBytes: number;
 	maxRedirects: number;
-	cache: HTTPReferenceCache;
 };
 type HTTPRuntime = ReferenceHandlerRuntime &
 	EnvironmentRuntime &
@@ -39,7 +37,7 @@ type HTTPRuntime = ReferenceHandlerRuntime &
 export function createHTTPReferenceExtension(options: Partial<Options> = {}) {
 	// Download limits are independent of page limits: reading ten pages still
 	// requires the source PDF bytes. Bound transfer time and memory before parsing.
-	const { maxBytes = 64 * 1024 * 1024, maxRedirects = 5, cache } = options;
+	const { maxBytes = 64 * 1024 * 1024, maxRedirects = 5 } = options;
 	const handler: ReferenceHandler<HTTPRuntime> = {
 		test: (reference) =>
 			reference.data === undefined && /^https?:/i.test(reference.locator),
@@ -60,31 +58,12 @@ export function createHTTPReferenceExtension(options: Partial<Options> = {}) {
 				.with(withRedirect(maxRedirects))
 				.with(withTimeout(totalTimeoutMs))
 				.build();
-			const load = async () => {
-				const response = await fetch({
-					url,
-					method: 'GET',
-					maxResponseBytes: maxBytes,
-					idleTimeoutMs,
-				});
-				validateDocument(response, maxBytes);
-				return response;
-			};
-			// Source identity excludes selectors and labels: all page ranges share bytes.
-			// Partition by access policy and download limits so neither cached bytes nor
-			// a concurrent loader can bypass another agent's redirect/permission checks.
-			// Every redirect is also checked against the captured policy during download.
-			const key = JSON.stringify([
-				'http-reference-v2',
+			const response = await fetch({
 				url,
-				[...permissions.allowedDomains].sort(),
-				[...permissions.deniedDomains].sort(),
-				maxBytes,
-				maxRedirects,
+				method: 'GET',
+				maxResponseBytes: maxBytes,
 				idleTimeoutMs,
-				totalTimeoutMs,
-			]);
-			const response = cache ? await cache.getOrLoad(key, load) : await load();
+			});
 			const mime = validateDocument(response, maxBytes);
 			// HTTP resolves bytes; existing document handlers own parsing and selectors.
 			// Keep the original locator across redirects so extracted pages cite their source.

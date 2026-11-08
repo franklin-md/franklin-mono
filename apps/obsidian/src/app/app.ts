@@ -1,6 +1,5 @@
 import { AuthManager, createAuthStore, FranklinApp } from '@franklin/agent';
-import type { FranklinExtension, HTTPReferenceCache } from '@franklin/agent';
-import { createHTTPReferenceCache } from '@franklin/node';
+import type { FranklinExtension } from '@franklin/agent';
 import {
 	bindHostAction,
 	openExternalAction,
@@ -76,13 +75,8 @@ export async function createFranklinApp(
 		authStore ?? createAuthStore(platform.os.filesystem, appDir),
 	);
 
-	// Cache ownership outlives individual chat and inbox agents. Keep disposable
-	// source bytes separate from session state and the durable research evidence.
-	const referenceCache = createHTTPReferenceCache(
-		joinAbsolute(appDir, 'cache', 'references'),
-	);
 	const app = new FranklinApp({
-		extensions: createObsidianExtensions(referenceCache),
+		extensions: createObsidianExtensions(),
 		platform,
 		appDir,
 		auth,
@@ -104,7 +98,6 @@ export async function createFranklinApp(
 		}),
 	);
 	const runnerOptions = {
-		referenceCache,
 		evidence,
 		createAgent: app.createAgent.bind(app),
 		auth,
@@ -152,9 +145,7 @@ export async function createFranklinApp(
 	};
 }
 
-export function createObsidianExtensions(
-	referenceCache?: HTTPReferenceCache,
-): FranklinExtension[] {
+export function createObsidianExtensions(): FranklinExtension[] {
 	const filesystemTools = [
 		filesystemBundle.extensions.editFile,
 		referenceReadExtension,
@@ -173,7 +164,7 @@ export function createObsidianExtensions(
 		instructionsExtension.extension,
 		...filesystemTools,
 		bashExtension.extension,
-		...createObsidianReferenceExtensions(referenceCache),
+		...createObsidianReferenceExtensions(),
 		mentionExtension,
 		webSearchProviders.of(createExaWebSearchProvider()),
 		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),

@@ -1,8 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { createHTTPReferenceCache } from '@franklin/node';
 import {
 	FILESYSTEM_ALLOW_ALL,
 	MemoryFilesystem,
@@ -37,9 +33,7 @@ vi.mock('../pdf/screenshots.js', () => ({
 }));
 
 describe('Obsidian remote PDFs', () => {
-	it('shares downloaded PDFs between chat and inbox while reading each requested page range', async () => {
-		const directory = await mkdtemp(join(tmpdir(), 'franklin-obsidian-cache-'));
-		const referenceCache = createHTTPReferenceCache(directory);
+	it('reads requested PDF pages in chat and inbox with a fresh download for each read', async () => {
 		const config: EnvironmentConfig = {
 			fsConfig: {
 				cwd: '/vault' as AbsolutePath,
@@ -88,7 +82,7 @@ describe('Obsidian remote PDFs', () => {
 			environment: async () => environment,
 			auth,
 			extensions: [
-				...createObsidianReferenceExtensions(referenceCache),
+				...createObsidianReferenceExtensions(),
 				filesystemBundle.extensions.editFile,
 				referenceReadExtension,
 			],
@@ -100,7 +94,6 @@ describe('Obsidian remote PDFs', () => {
 			auth,
 			extensions: createInboxResearchExtensions({
 				vaultName: 'Study',
-				referenceCache,
 			}),
 		});
 		const { runtime: inboxRuntime } = await inboxAgents.create({
@@ -140,11 +133,10 @@ describe('Obsidian remote PDFs', () => {
 			expect(nextPage.content).not.toMatchObject({
 				text: expect.stringContaining('Selected chapter'),
 			});
-			expect(environment.web.fetch).toHaveBeenCalledTimes(1);
+			expect(environment.web.fetch).toHaveBeenCalledTimes(2);
 		} finally {
 			await runtime.dispose();
 			await inboxRuntime.dispose();
-			await rm(directory, { recursive: true, force: true });
 		}
 	});
 });

@@ -213,24 +213,8 @@ Node transports abort connection setup and body reads when it expires.
 `maxResponseBytes` is enforced while streaming, rejecting oversized responses
 rather than returning partial document bytes.
 
-Hosts may pass an optional `HTTPReferenceCache` as `cache` to
-`createHTTPReferenceExtension({ cache })`. The host owns its lifetime and shares
-it across agents. Cache keys exclude page/line selectors and display labels, and
-include the normalized URL, network policy and download limits. Downloads still
-use the environment's permissions, with a captured policy checked on every
-redirect; changed policies cannot reuse another policy's cached bytes or pending
-request. Parsing, selectors and source attribution run normally on cached bytes.
-
-`@franklin/node` provides `createHTTPReferenceCache(directory, options)` with a
-24-hour maximum lifetime and a 512 MiB disk budget, configurable with `ttlMs` and
-`maxBytes`. It stores complete successful downloads in atomic binary files,
-combines concurrent loads, and evicts least recently used entries. Shorter server
-freshness limits apply. Responses requiring validation, prohibiting storage,
-setting cookies or declaring `Vary` are not retained. Expired or corrupt entries
-are downloaded again; cache storage failures do not fail successful reads.
-`cache.clear()` removes stored entries and prevents pending older downloads from
-repopulating them. This source cache does not retain extracted PDF text, OCR or
-screenshots, and does not implement conditional revalidation or download resume.
+Each read downloads the complete source document again. Page selectors bound
+returned content, rather than the source download.
 
 Node shell commands share the process-global sandbox only while their effective
 configurations match. Different configurations queue until running commands close.

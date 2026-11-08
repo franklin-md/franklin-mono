@@ -28,7 +28,6 @@ import { createRuntime } from '../../../testing/index.js';
 import { StoreRegistry } from '../../../modules/store/api/registry/index.js';
 import { editExtension } from '../../filesystem/edit/extension.js';
 import { fileKey } from '../../filesystem/common/key.js';
-import type { HTTPReferenceCache } from '../cache.js';
 import {
 	createHTTPReferenceExtension,
 	referenceHandlerExtension,
@@ -53,13 +52,6 @@ function response(body = bytes, mime = 'application/pdf') {
 		statusText: 'OK',
 		headers: { 'content-type': mime },
 		body,
-	};
-}
-
-function createCacheMock() {
-	return {
-		getOrLoad: vi.fn<HTTPReferenceCache['getOrLoad']>(async () => response()),
-		clear: vi.fn(),
 	};
 }
 
@@ -152,57 +144,20 @@ describe('HTTP references', () => {
 		}
 	});
 
-	it('uses cached source bytes for different selectors while preserving each requested view', async () => {
-		const fetch = vi.fn<Fetch>();
-		const cache = createCacheMock();
-		const { runtime } = await setup(fetch, { cache });
+	it('checks current permissions before each download', async () => {
+		const fetch = vi.fn<Fetch>().mockResolvedValue(response());
+		const { runtime, config } = await setup(fetch);
 		try {
-			const first = await runtime.references.toContext({
-				locator: url,
-				selector: 'pages=1-2',
-			});
-			const second = await runtime.references.toContext({
-				locator: `${url}#page=3`,
-				selector: 'pages=3-4',
-			});
-			expect(first.isError).not.toBe(true);
-			expect(second.isError).not.toBe(true);
-			expect(first.content).toMatchObject({
-				text: expect.stringContaining('pages=1-2'),
-			});
-			expect(second.content).toMatchObject({
-				text: expect.stringContaining('pages=3-4'),
-			});
-			expect(fetch).not.toHaveBeenCalled();
-			expect(cache.getOrLoad.mock.calls[0]?.[0]).toBe(
-				cache.getOrLoad.mock.calls[1]?.[0],
-			);
-			await runtime.references.toContext({ locator: `${url}?edition=2` });
-			expect(cache.getOrLoad.mock.calls[2]?.[0]).not.toBe(
-				cache.getOrLoad.mock.calls[0]?.[0],
-			);
-		} finally {
-			await runtime.dispose();
-		}
-	});
-
-	it('checks current permissions before consulting a cache and partitions changed policies', async () => {
-		const cache = createCacheMock();
-		const { runtime, config } = await setup(vi.fn<Fetch>(), { cache });
-		try {
-			await runtime.references.toContext({ locator: url });
-			config.netConfig.deniedDomains.push('redirect.example');
-			await runtime.references.toContext({ locator: url });
-			expect(cache.getOrLoad.mock.calls[0]?.[0]).not.toBe(
-				cache.getOrLoad.mock.calls[1]?.[0],
-			);
+			expect(
+				(await runtime.references.toContext({ locator: url })).isError,
+			).not.toBe(true);
 			config.netConfig.deniedDomains.push('example.com');
 			const denied = await runtime.references.toContext({ locator: url });
 			expect(denied.isError).toBe(true);
 			expect(denied.content).toMatchObject({
 				text: expect.stringContaining('Network access denied'),
 			});
-			expect(cache.getOrLoad).toHaveBeenCalledTimes(2);
+			expect(fetch).toHaveBeenCalledTimes(1);
 		} finally {
 			await runtime.dispose();
 		}

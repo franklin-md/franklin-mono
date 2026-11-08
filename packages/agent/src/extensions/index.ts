@@ -46,7 +46,6 @@ export {
 	textDocumentReferenceExtension,
 } from './references/index.js';
 export type {
-	HTTPReferenceCache,
 	TextLineRange,
 	TextReferenceSelector,
 } from './references/index.js';

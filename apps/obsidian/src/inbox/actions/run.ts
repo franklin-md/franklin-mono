@@ -65,7 +65,6 @@ export function createInboxActionRunner(options: InboxRunnerOptions) {
 				...createInboxResearchExtensions({
 					vaultName: options.vaultName,
 					writable: true,
-					referenceCache: options.referenceCache,
 				}),
 				filesystemBundle.extensions.editFile,
 				filesystemBundle.extensions.writeFile,

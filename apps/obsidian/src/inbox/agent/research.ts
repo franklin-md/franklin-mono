@@ -12,20 +12,17 @@ import type {
 	CoreModule,
 	EnvironmentModule,
 	StoreModule,
-	HTTPReferenceCache,
 } from '@franklin/agent';
 import { createObsidianReferenceExtensions } from '../../app/extensions/references.js';
 
 type Options = {
 	vaultName: string;
 	writable?: boolean;
-	referenceCache?: HTTPReferenceCache;
 };
 
 export function createInboxResearchExtensions({
 	vaultName,
 	writable = false,
-	referenceCache,
 }: Options): FranklinExtension[] {
 	return [
 		defineExtension<[CoreModule, EnvironmentModule, StoreModule]>((api) => {
@@ -43,7 +40,7 @@ export function createInboxResearchExtensions({
 				});
 			});
 		}),
-		...createObsidianReferenceExtensions(referenceCache),
+		...createObsidianReferenceExtensions(),
 		referenceReadExtension,
 		filesystemBundle.extensions.glob,
 		filesystemBundle.extensions.grep,

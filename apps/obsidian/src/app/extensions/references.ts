@@ -3,15 +3,14 @@ import {
 	createHTTPReferenceExtension,
 	imageDocumentReferenceExtension,
 	textDocumentReferenceExtension,
-	type HTTPReferenceCache,
 } from '@franklin/agent';
 import { createPDFDocumentReferenceExtension } from '@franklin/extension-pdf';
 import { renderObsidianPDFScreenshots } from './pdf/screenshots.js';
 
-export function createObsidianReferenceExtensions(cache?: HTTPReferenceCache) {
+export function createObsidianReferenceExtensions() {
 	return [
 		filesystemFileReferenceExtension,
-		createHTTPReferenceExtension({ cache }),
+		createHTTPReferenceExtension(),
 		createPDFDocumentReferenceExtension({
 			renderScreenshots: renderObsidianPDFScreenshots,
 		}),

@@ -22,7 +22,6 @@ export function createInboxRunner(options: InboxRunnerOptions) {
 				extensions: (signal) => [
 					...createInboxResearchExtensions({
 						vaultName: options.vaultName,
-						referenceCache: options.referenceCache,
 					}),
 					inboxAnswerExtension({
 						answerInstructions: request.question.answerInstructions,

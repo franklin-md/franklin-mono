@@ -11,6 +11,5 @@ export {
 export { nodeHttpFetch } from './platform/http/fetch.js';
 export { withAnthropicProtected } from './platform/anthropic/protected.js';
 export { createConfigureProcess } from './platform/configure-process.js';
-export { createHTTPReferenceCache } from './reference-cache/factory.js';
 
 // TODO: just export createApp
