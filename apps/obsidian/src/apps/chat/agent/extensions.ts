@@ -1,4 +1,3 @@
-import type { MCPConnections } from '@franklin/extension-mcp';
 import type { FranklinExtension } from '@franklin/agent';
 import { priority } from '@franklin/extensibility';
 import {
@@ -16,16 +15,13 @@ import {
 	spawnExtension,
 	statusExtension,
 	todoExtension,
-	tableExtension,
 	viewingContextExtension,
 	webSearchProviders,
 } from '@franklin/agent';
 import { createObsidianReferenceExtensions } from '../../../shared/agent/references.js';
 import { obsidianSystemPromptExtension } from './system-prompt.js';
 
-export function createChatExtensions(
-	connections?: MCPConnections,
-): FranklinExtension[] {
+export function createChatExtensions(): FranklinExtension[] {
 	const filesystemTools = [
 		filesystemBundle.extensions.editFile,
 		referenceReadExtension,
@@ -43,16 +39,11 @@ export function createChatExtensions(
 		priority.highest(obsidianSystemPromptExtension),
 		instructionsExtension.extension,
 		...filesystemTools,
-		tableExtension(),
-		...(connections ? [connections.extension()] : []),
 		bashExtension.extension,
 		...createObsidianReferenceExtensions(),
 		mentionExtension,
-		webSearchProviders.compute([], () =>
-			connections?.hasExaPreset()
-				? [createDuckDuckGoWebSearchProvider()]
-				: [createExaWebSearchProvider(), createDuckDuckGoWebSearchProvider()],
-		),
+		webSearchProviders.of(createExaWebSearchProvider()),
+		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),
 		createWebExtension({}).extension,
 		spawnExtension.extension,
 		environmentInfoExtension.extension,

@@ -15,7 +15,6 @@ import {
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
-	registerToolSource: true,
 });
 
 export function createTestRuntime(): BaseRuntime {

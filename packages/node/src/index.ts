@@ -13,5 +13,3 @@ export { withAnthropicProtected } from './platform/anthropic/protected.js';
 export { createConfigureProcess } from './platform/configure-process.js';
 
 // TODO: just export createApp
-
-export { createMCPFetch } from './mcp/fetch.js';

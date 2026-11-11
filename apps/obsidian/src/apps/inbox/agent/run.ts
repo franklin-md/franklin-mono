@@ -12,7 +12,6 @@ export function createInboxRunner(options: InboxRunnerOptions) {
 		const evidence = options.evidence
 			? new ResearchRecorder(request, prompt, options.evidence)
 			: undefined;
-		evidence?.addResearchTools(options.connections?.researchToolNames() ?? []);
 		try {
 			await runInboxRuntime(options, {
 				selection: request.question,
@@ -23,7 +22,6 @@ export function createInboxRunner(options: InboxRunnerOptions) {
 				extensions: (signal) => [
 					...createInboxResearchExtensions({
 						vaultName: options.vaultName,
-						connections: options.connections,
 					}),
 					inboxAnswerExtension({
 						answerInstructions: request.question.answerInstructions,

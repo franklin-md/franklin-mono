@@ -2,7 +2,7 @@ import { defineExtension } from '../../../modules/state/index.js';
 import type { CoreModule } from '../../../modules/core/index.js';
 import type { EnvironmentModule } from '../../../modules/environment/index.js';
 import type { StoreModule } from '../../../modules/store/index.js';
-import { writeFile } from './run.js';
+import { createFileControl } from '../common/control.js';
 import { fileKey } from '../common/key.js';
 import { writeFileSpec } from './tools.js';
 
@@ -11,12 +11,11 @@ export function writeExtension() {
 		(api) => {
 			api.registerTool(writeFileSpec, {
 				execute: async ({ path, content }, ctx) => {
-					await writeFile({
-						filesystem: ctx.environment.filesystem,
-						store: ctx.getStore(fileKey),
-						path,
-						content,
-					});
+					const fs = ctx.environment.filesystem;
+					const file = createFileControl(ctx.getStore(fileKey));
+					const absPath = await fs.resolve(path);
+					await fs.writeFile(absPath, content);
+					await file.markFileRead(fs, path, content);
 					return 'ok';
 				},
 			});

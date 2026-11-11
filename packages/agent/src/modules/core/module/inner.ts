@@ -9,7 +9,6 @@ import type { CoreModule } from './types.js';
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
-	registerToolSource: true,
 });
 
 export function createCoreModule(

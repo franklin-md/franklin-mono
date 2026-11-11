@@ -1,4 +1,3 @@
-import type { MCPConnections } from '@franklin/extension-mcp';
 import {
 	createDuckDuckGoWebSearchProvider,
 	createExaWebSearchProvider,
@@ -19,13 +18,11 @@ import { createObsidianReferenceExtensions } from '../../../shared/agent/referen
 type Options = {
 	vaultName: string;
 	writable?: boolean;
-	connections?: MCPConnections;
 };
 
 export function createInboxResearchExtensions({
 	vaultName,
 	writable = false,
-	connections,
 }: Options): FranklinExtension[] {
 	return [
 		defineExtension<[CoreModule, EnvironmentModule, StoreModule]>((api) => {
@@ -43,18 +40,12 @@ export function createInboxResearchExtensions({
 				});
 			});
 		}),
-		...(connections
-			? [connections.extension(writable ? 'chat' : 'research')]
-			: []),
 		...createObsidianReferenceExtensions(),
 		referenceReadExtension,
 		filesystemBundle.extensions.glob,
 		filesystemBundle.extensions.grep,
-		webSearchProviders.compute([], () =>
-			connections?.hasExaPreset()
-				? [createDuckDuckGoWebSearchProvider()]
-				: [createExaWebSearchProvider(), createDuckDuckGoWebSearchProvider()],
-		),
+		webSearchProviders.of(createExaWebSearchProvider()),
+		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),
 		createWebExtension({}).extension,
 	];
 }

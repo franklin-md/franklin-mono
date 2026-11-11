@@ -11,4 +11,3 @@ export {
 	type CoreScenarioInput,
 	type CoreScenarioResult,
 } from './core-scenario.js';
-export { createMemoryEnvironment } from './memory-environment.js';

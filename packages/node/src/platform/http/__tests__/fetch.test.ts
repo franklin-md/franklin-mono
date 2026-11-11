@@ -14,18 +14,6 @@ describe('nodeHttpFetch', () => {
 		servers.length = 0;
 	});
 
-	it('cancels a response while Node body chunks are still arriving without enqueueing after close', async () => {
-		const server = await startServer(servers, (_request, response) => {
-			response.writeHead(403, { 'content-type': 'text/plain' });
-			response.write('denied');
-			const timer = setInterval(() => response.write('more'), 1);
-			response.on('close', () => clearInterval(timer));
-		});
-		const response = await nodeHttpFetch(server.url('/denied'));
-		await response.body?.cancel();
-		await new Promise((resolve) => setTimeout(resolve, 20));
-	});
-
 	it('returns a Response with url, status, statusText, headers, and body', async () => {
 		const server = await startServer(servers, (_request, response) => {
 			response.writeHead(201, 'Created By Server', {

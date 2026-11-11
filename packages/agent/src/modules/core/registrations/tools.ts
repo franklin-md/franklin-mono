@@ -4,10 +4,7 @@ import type {
 	EffectValueForName,
 	RegistryView,
 } from '@franklin/extensibility';
-import { z } from 'zod';
-import type { JsonObject } from '@franklin/lib';
-import type { ToolInvocation } from '../api/tool.js';
-import { toToolInputSchema } from '../tools/serialize.js';
+import type { z } from 'zod';
 
 import type { MaybePromise } from '../../../utils/maybe-promise.js';
 import type { CoreSignature } from '../api/api.js';
@@ -28,12 +25,8 @@ export interface BoundTool<
 > {
 	name: string;
 	description: string;
-	inputSchema: JsonObject;
-	parse: (params: unknown) => TInput;
-	run: (
-		params: TInput,
-		invocation?: ToolInvocation,
-	) => MaybePromise<BoundToolResult<TOutput>>;
+	schema: z.ZodType<TInput>;
+	run: (params: TInput) => MaybePromise<BoundToolResult<TOutput>>;
 }
 
 export type BoundToolResult<TOutput extends JsonValue = JsonValue> = {
@@ -58,20 +51,10 @@ function normalizeTool<Runtime extends BaseRuntime>(
 	return {
 		name: spec.name,
 		description: spec.description,
-		inputSchema: toToolInputSchema(spec.schema),
-		parse(params) {
-			const result = spec.schema.safeParse(params);
-			if (!result.success)
-				throw new Error(
-					`Invalid arguments for tool "${spec.name}":\n${z.prettifyError(result.error)}`,
-				);
-			return result.data;
-		},
-		async run(params, invocation) {
+		schema: spec.schema,
+		async run(params) {
 			const runtime = getRuntime();
-			const output = invocation
-				? await handlers.execute(params, runtime, invocation)
-				: await handlers.execute(params, runtime);
+			const output = await handlers.execute(params, runtime);
 			const rendered = handlers.render
 				? await handlers.render(output, params, runtime)
 				: defaultToolRenderOutput(output);

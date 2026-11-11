@@ -1,5 +1,3 @@
-import { MCPConnections } from '@franklin/extension-mcp';
-import { createMCPFetch } from '@franklin/node';
 import { AuthManager, createAuthStore, FranklinApp } from '@franklin/agent';
 import type { OrchestratorCreateInput, FranklinState } from '@franklin/agent';
 import {
@@ -27,7 +25,6 @@ import { resolveAuthStore } from '../shared/obsidian/auth/resolve.js';
 
 interface PluginRuntime {
 	app: FranklinApp;
-	connections: MCPConnections;
 	inbox: InboxController;
 	directives: DirectiveRegistry;
 	hostActionBindings: readonly HostActionBinding[];
@@ -54,15 +51,8 @@ export async function bootstrapPlugin(
 		authStore ?? createAuthStore(platform.os.filesystem, appDir),
 	);
 
-	const connections: MCPConnections = new MCPConnections({
-		getServers: () => app.settings.get().mcpServers,
-		getCredential: (id) => auth.getApiKey(id),
-		subscribeConfiguration: (listener) => app.settings.subscribe(listener),
-		subscribeCredentials: (listener) => auth.onAuthChange((id) => listener(id)),
-		createFetch: createMCPFetch,
-	});
 	const app: FranklinApp = new FranklinApp({
-		extensions: createChatExtensions(connections),
+		extensions: createChatExtensions(),
 		platform,
 		appDir,
 		auth,
@@ -79,7 +69,6 @@ export async function bootstrapPlugin(
 	const inbox = await startInbox({
 		plugin,
 		app,
-		connections,
 		filesystem: platform.os.filesystem,
 		appDir,
 		vaultRoot,
@@ -91,7 +80,6 @@ export async function bootstrapPlugin(
 
 	return {
 		app,
-		connections,
 		inbox,
 		directives,
 		hostActionBindings: [
@@ -101,7 +89,6 @@ export async function bootstrapPlugin(
 		],
 		getCreateInput,
 		dispose: () => {
-			void connections.dispose();
 			void inbox
 				.dispose()
 				.catch((error: unknown) => {

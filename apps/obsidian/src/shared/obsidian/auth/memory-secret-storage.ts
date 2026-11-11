@@ -8,11 +8,6 @@ export class MemorySecretStorage implements ObsidianSecretStorage {
 	}
 
 	setSecret(id: string, secret: string): void {
-		if (!/^[a-z0-9-]{1,64}$/.test(id)) {
-			throw new Error(
-				'Secret ID is invalid. Use only lowercase letters, numbers and dashes. 64 characters max.',
-			);
-		}
 		this.map.set(id, secret);
 	}
 

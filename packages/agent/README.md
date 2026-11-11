@@ -164,7 +164,7 @@ resolved on the application side before prompt submission, so context providers
 can materialize files or other app-owned resources without changing the
 Mini-ACP prompt protocol.
 
-Application tools are registered as Mini-ACP tool definitions and execute through the application's reverse-RPC tool handler. Optional remote MCP connections bridge discovered tools into this same registry through `registerToolSource`; MCP transport remains application-owned. See [`@franklin/extension-mcp`](../extensions/mcp/README.md).
+The mechanism for cross-boundary interaction is **Local MCP**: the application defines tool handlers that are exposed to the agent as MCP servers. The agent invokes tools using the MCP protocol it already speaks; the call crosses from the agent's environment into the application, where the handler executes and returns a result. No custom RPC — just protocol the agent already understands.
 
 Tool handlers return the application-owned execution result. When that raw
 value should differ from the model-visible response, the tool registration can
@@ -183,7 +183,7 @@ Where PiMono provides a general orchestration framework with fine-grained hooks,
 
 The split is:
 - **Environment + Spawn + Connect** = the ACP runtime layer (how you create and talk to agents)
-- **Extensions + application-side tools** = the orchestration layer (how the application shapes agent behavior)
+- **Extensions + Local MCP** = the orchestration layer (how the application shapes agent behavior)
 
 ### HTTP document references
 
@@ -220,18 +220,3 @@ Node shell commands share the process-global sandbox only while their effective
 configurations match. Different configurations queue until running commands close.
 Proxy decisions reuse Franklin's web network policy, including its empty-allowlist
 semantics, and commands receive the existing OS temporary directory as `TMPDIR`.
-
-### Dynamic tools and research tables
-
-`registerToolSource(runtime => source)` installs agent-owned tools that prepare
-before prompt context synchronization and dispose with the agent. Sources supply
-raw JSON Schema definitions and normal tool execution/rendering behavior; existing
-Zod `toolSpec` registrations keep their API. Tool execution also receives an optional
-third invocation argument with `signal` and `toolCallId`. Handlers must observe the
-signal to support cancellation.
-
-`tableExtension()` adds `write_table` alongside the filesystem editing extensions
-that own seen-file bookkeeping. It validates typed rows and source URLs, renders
-Markdown or CSV deterministically, writes through the environment filesystem and
-verifies the result. Companion exports can require the primary dataset hash. See
-[Exa research and vault tables](../../docs/mcp.md) for limits and recovery behavior.

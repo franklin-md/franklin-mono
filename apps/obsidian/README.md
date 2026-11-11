@@ -124,7 +124,7 @@ Franklin settings has four tabs:
 | General | Open-note context sharing and document download limits |
 | Inbox | Reasoning, answer instructions, selection shortcut and reusable actions |
 | Flashcards | Capture collection folder and Mochi database path |
-| Connections | Provider accounts/API keys and Exa/remote MCP research tools |
+| Connections | Provider accounts/API keys |
 
 The tab bar stays visible while scrolling and scrolls horizontally in narrow windows.
 Tabs support keyboard navigation. Switching tabs preserves unfinished form edits;
@@ -256,11 +256,3 @@ For full correctness, Storybook should eventually implement or load Obsidian's o
 - Inbox questions allow the configured maximum download duration plus two minutes for other work, so their overall attempt limit does not stop a healthy first download after two minutes. Action runs retain their longer allowance when it exceeds this budget.
 - `styles.css` is generated from `src/styles/globals.css`.
 - `dist/` is generated output and should not be edited by hand.
-
-## Exa connections and research tables
-
-**Franklin settings → Connections → Add Exa** saves an API key through the existing
-credential backend and exposes selected Exa tools to chat. Ordinary Inbox questions
-receive only the selected Exa search/fetch tools and retain read-only local access.
-Chat and explicitly triggered Inbox actions can use `write_table` to create native
-Markdown tables with optional CSV export. See [setup, examples and recovery](../../docs/mcp.md).

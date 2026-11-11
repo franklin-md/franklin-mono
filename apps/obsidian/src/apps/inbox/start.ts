@@ -1,5 +1,4 @@
 import type { FranklinApp } from '@franklin/agent';
-import type { MCPConnections } from '@franklin/extension-mcp';
 import type { AbsolutePath, Filesystem } from '@franklin/lib';
 import { joinAbsolute } from '@franklin/lib';
 import { Notice } from 'obsidian';
@@ -17,7 +16,6 @@ import { createEvidenceRepository } from './evidence/repository.js';
 type Options = {
 	plugin: Plugin;
 	app: FranklinApp;
-	connections: MCPConnections;
 	filesystem: Filesystem;
 	appDir: AbsolutePath;
 	vaultRoot: AbsolutePath;
@@ -27,7 +25,6 @@ type Options = {
 export async function startInbox({
 	plugin,
 	app,
-	connections,
 	filesystem,
 	appDir,
 	vaultRoot,
@@ -48,7 +45,6 @@ export async function startInbox({
 	);
 	const runnerOptions = {
 		evidence,
-		connections,
 		createAgent: app.createAgent.bind(app),
 		auth: app.auth,
 		vaultName: plugin.app.vault.getName(),

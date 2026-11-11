@@ -2,8 +2,6 @@ import { useState, type ReactNode } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@franklin/ui';
 import type { SettingsSection } from '../../shared/obsidian/settings/types.js';
 import { CaptureSettings } from '../../apps/inbox/capture/settings.js';
-import type { MCPConnections } from '@franklin/extension-mcp';
-import { ConnectionSettings } from './connections/settings.js';
 import { SettingGroup } from '../../shared/ui/setting/group.js';
 import { CredentialsSettings } from './credentials/index.js';
 import type { InboxController } from '../../apps/inbox/controller/controller.js';
@@ -18,7 +16,6 @@ type Props = {
 	onSectionChange?: (section: SettingsSection) => void;
 	onConfigureInboxShortcut?: () => void;
 	inbox?: InboxController;
-	connections?: MCPConnections;
 	quickEdit?: QuickEditPreferences;
 	onConfigureQuickEditShortcut?: () => void;
 };
@@ -28,7 +25,6 @@ export function SettingsPage({
 	onSectionChange,
 	onConfigureInboxShortcut,
 	inbox,
-	connections,
 	quickEdit,
 	onConfigureQuickEditShortcut,
 }: Props) {
@@ -79,11 +75,6 @@ export function SettingsPage({
 					<SettingGroup title="Accounts">
 						<CredentialsSettings />
 					</SettingGroup>
-					{connections && (
-						<SettingGroup title="Research tools">
-							<ConnectionSettings connections={connections} />
-						</SettingGroup>
-					)}
 				</>
 			),
 		},

@@ -5,7 +5,6 @@
 		{ "path": "./packages/extensibility" },
 		{ "path": "./packages/agent" },
 		{ "path": "./packages/extensions/pdf" },
-		{ "path": "./packages/extensions/mcp" },
 		{ "path": "./packages/mini-acp" },
 		{ "path": "./packages/node" },
 		{ "path": "./packages/electron" },

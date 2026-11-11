@@ -24,7 +24,6 @@ export function createCoreCompiler(
 			const toolRegistry = createToolRegistry(
 				registrations.tools,
 				snapshot.toolFilter,
-				registrations.toolSources,
 			);
 			const controller = createAgentController({
 				snapshot,

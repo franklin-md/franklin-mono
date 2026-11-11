@@ -7,7 +7,8 @@ export function createToolDefinitionDrafter(
 ): SessionDrafter {
 	return (context) => {
 		const definitions = [...tools.definitions()].sort(compareToolDefinitions);
-		// The registry rejects duplicate names before publishing this snapshot.
+		// Revision identity assumes registered tool names are unique. Duplicate
+		// names still need an explicit policy at the registry boundary.
 		context.setTools(definitions, `tools:${JSON.stringify(definitions)}`);
 	};
 }

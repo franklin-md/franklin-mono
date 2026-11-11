@@ -74,15 +74,9 @@ function stringifyToolOutput(value: JsonValue): string {
 	return JSON.stringify(value);
 }
 
-export type ToolInvocation = {
-	readonly signal: AbortSignal;
-	readonly toolCallId: string;
-};
-
 export type ToolCallExecute<S extends ToolSpec, Ctx extends BaseRuntime> = (
 	params: ToolArgsOf<S>,
 	ctx: Ctx,
-	invocation?: ToolInvocation,
 ) => MaybePromise<ToolOutputOf<S>>;
 
 export type ToolCallRender<S extends ToolSpec, Ctx extends BaseRuntime> = (

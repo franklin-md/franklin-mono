@@ -43,7 +43,6 @@ export class FranklinSettingTab extends PluginSettingTab {
 						this.section = section;
 					}}
 					inbox={this.plugin.inbox ?? undefined}
-					connections={this.plugin.connections ?? undefined}
 					quickEdit={this.plugin.quickEditPreferences ?? undefined}
 					onConfigureQuickEditShortcut={() => openQuickEditHotkeys(this.plugin)}
 					onConfigureInboxShortcut={() => openInboxHotkeys(this.plugin.app)}

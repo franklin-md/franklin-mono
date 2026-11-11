@@ -1,6 +1,6 @@
 import type { ToolCall } from '@franklin/mini-acp';
 import type { JsonObject } from '@franklin/lib';
-import type { ToolInvocation } from '../api/tool.js';
+import { z } from 'zod';
 
 import type { BoundTool } from '../registrations/tools.js';
 import {
@@ -13,12 +13,19 @@ export async function executeBoundToolCall(
 	tool: BoundTool,
 	call: ToolCall,
 	args: JsonObject,
-	invocation?: ToolInvocation,
 ): Promise<ToolExecutionResult> {
 	try {
-		invocation?.signal.throwIfAborted();
-		const parsedArgs = tool.parse(args);
-		const { output, rendered } = await tool.run(parsedArgs, invocation);
+		const parsedArgs = tool.schema.safeParse(args);
+		if (!parsedArgs.success) {
+			return errorExecutionResult(
+				call,
+				`Invalid arguments for tool "${tool.name}":\n${z.prettifyError(
+					parsedArgs.error,
+				)}`,
+			);
+		}
+
+		const { output, rendered } = await tool.run(parsedArgs.data);
 		return registeredExecutionResult(call, rendered, output);
 	} catch (error) {
 		return errorExecutionResult(call, formatToolError(error));

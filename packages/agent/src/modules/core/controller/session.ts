@@ -25,7 +25,6 @@ export type AgentSession = {
 	begin(): void;
 	end(): void;
 	cancel(): void;
-	signal(): AbortSignal;
 	waitForUpdate(id?: string): Promise<void>;
 	prepareContext(
 		params: PrepareContextParams,
@@ -71,7 +70,6 @@ export function createAgentSession(
 		begin: () => operation.begin(),
 		end: () => operation.end(),
 		cancel: () => operation.cancel(),
-		signal: () => operation.signal(),
 		waitForUpdate: operation.waitForUpdate.bind(operation),
 		async prepareContext(params, client) {
 			await operation.waitForUpdate(params.afterMessageId);

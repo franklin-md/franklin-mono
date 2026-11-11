@@ -12,7 +12,6 @@ import { DEFAULT_APP_SETTINGS, appSettingsCodec } from '../settings/schema.js';
 describe('AppSettings schema', () => {
 	it('DEFAULT_APP_SETTINGS pins the expected shape (regression lock)', () => {
 		expect(DEFAULT_APP_SETTINGS).toEqual({
-			mcpServers: [],
 			documentDownloads: { idleTimeoutMs: 60_000, totalTimeoutMs: 900_000 },
 			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {

@@ -22,7 +22,6 @@ export class ResearchRecorder {
 		research: MAX_CHARACTERS,
 		agent: MAX_CHARACTERS,
 	};
-	private readonly researchToolNames = new Set(researchTools);
 	private secrets: string[] = [];
 	private writes = Promise.resolve();
 	private sealed = false;
@@ -63,7 +62,7 @@ export class ResearchRecorder {
 		api.on('turnEnd', (event) => this.recordAgentEvent(event.type, event));
 		api.on('toolCall', ({ call }) => {
 			this.recordAgentEvent('toolCall', call);
-			if (this.sealed || !this.researchToolNames.has(call.name)) return;
+			if (this.sealed || !researchTools.has(call.name)) return;
 			if (
 				this.evidence.events.length >= MAX_EVENTS ||
 				this.remaining.research <= 0
@@ -107,10 +106,6 @@ export class ResearchRecorder {
 			this.checkpoint();
 		});
 	});
-
-	addResearchTools(names: readonly string[]): void {
-		for (const name of names) this.researchToolNames.add(name);
-	}
 
 	setSecret(secret: string): void {
 		this.secrets.push(secret);
