@@ -1,3 +1,4 @@
+import type { MCPConnections } from '@franklin/extension-mcp';
 import type { FranklinApp } from '@franklin/agent';
 import type { HostActionBinding } from '@franklin/react';
 import { Notice, Plugin } from 'obsidian';
@@ -23,6 +24,7 @@ export default class FranklinPlugin extends Plugin {
 	private unloading = false;
 	private disposeFranklinApp: (() => void) | null = null;
 	franklinApp: FranklinApp | null = null;
+	connections: MCPConnections | null = null;
 	inbox: InboxController | null = null;
 	hostActionBindings: readonly HostActionBinding[] = [];
 
@@ -50,6 +52,7 @@ export default class FranklinPlugin extends Plugin {
 
 				return {
 					app,
+					connections: result.connections,
 					inbox: result.inbox,
 					getCreateInput,
 					hostActionBindings: result.hostActionBindings,
@@ -59,6 +62,7 @@ export default class FranklinPlugin extends Plugin {
 			.then(
 				({
 					app,
+					connections,
 					inbox,
 					getCreateInput,
 					hostActionBindings,
@@ -70,6 +74,7 @@ export default class FranklinPlugin extends Plugin {
 					}
 					registerInbox({ plugin: this, app, inbox, hostActionBindings });
 					this.franklinApp = app;
+					this.connections = connections;
 					this.inbox = inbox;
 					this.hostActionBindings = hostActionBindings;
 					this.disposeFranklinApp = disposeFranklinApp;
@@ -121,6 +126,7 @@ export default class FranklinPlugin extends Plugin {
 		this.disposeFranklinApp?.();
 		clearPortalRoot(activeDocument);
 		this.franklinApp = null;
+		this.connections = null;
 		this.inbox = null;
 		this.hostActionBindings = [];
 		this.disposeFranklinApp = null;

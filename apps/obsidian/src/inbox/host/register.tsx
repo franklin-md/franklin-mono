@@ -1,6 +1,6 @@
 import { Notice } from 'obsidian';
 import type { Plugin } from 'obsidian';
-import type { HostActionBinding } from '@franklin/react';
+import { AuthActionProvider, type HostActionBinding } from '@franklin/react';
 import type { FranklinApp } from '@franklin/agent';
 import { ApplicationProvider } from '@franklin/ui';
 import type { InboxController } from '../controller/controller.js';
@@ -47,19 +47,26 @@ export function registerInbox({
 						harness={app}
 						hostActionBindings={hostActionBindings}
 					>
-						<InboxPanel
-							controller={inbox}
-							captureContext={(question) =>
-								captureCurrentNote(plugin.app, question)
-							}
-							onOpenSource={(source) => {
-								void openQuestionSource(plugin.app, source).catch(report);
+						<AuthActionProvider
+							handlers={{
+								requestApiKey: () =>
+									openPluginSettings(plugin.app, plugin.manifest.id),
 							}}
-							onSettings={() =>
-								openPluginSettings(plugin.app, plugin.manifest.id)
-							}
-							onError={report}
-						/>
+						>
+							<InboxPanel
+								controller={inbox}
+								captureContext={(question) =>
+									captureCurrentNote(plugin.app, question)
+								}
+								onOpenSource={(source) => {
+									void openQuestionSource(plugin.app, source).catch(report);
+								}}
+								onSettings={() =>
+									openPluginSettings(plugin.app, plugin.manifest.id)
+								}
+								onError={report}
+							/>
+						</AuthActionProvider>
 					</ApplicationProvider>
 				),
 			}),

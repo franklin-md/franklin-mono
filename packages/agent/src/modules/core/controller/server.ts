@@ -35,7 +35,10 @@ export function createControllerServer({
 			});
 			observers.toolCall.notify(params);
 			const execution =
-				(await toolRegistry.dispatch(params.call)) ??
+				(await toolRegistry.dispatch(params.call, {
+					signal: session.signal(),
+					toolCallId: params.call.id,
+				})) ??
 				fallbackExecutionResult(
 					await fallbackServer.toolExecute(params),
 					params.call,

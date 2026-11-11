@@ -8,8 +8,8 @@ import type {
 } from 'obsidian';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { makeFile } from '../../platform/filesystem/test-helpers.js';
-import { ObsidianFileIndex } from '../obsidian-file-index.js';
+import { makeFile } from '../test-helpers.js';
+import { ObsidianFileIndex } from '../file-index.js';
 
 type VaultEventName = 'create' | 'delete' | 'rename';
 

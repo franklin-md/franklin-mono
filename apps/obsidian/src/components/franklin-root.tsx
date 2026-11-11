@@ -5,7 +5,7 @@ import { ApplicationProvider } from '@franklin/ui';
 import type { App as ObsidianApp } from 'obsidian';
 import { useEffect, useMemo, type ReactNode } from 'react';
 
-import { ObsidianFileIndex } from '../file-search/obsidian-file-index.js';
+import { ObsidianFileIndex } from '../platform/filesystem/file-index.js';
 import { ObsidianAppProvider } from './obsidian-app-context.js';
 
 type Props = {

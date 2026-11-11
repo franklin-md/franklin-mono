@@ -19,6 +19,6 @@ export function serializeTool(tool: BoundTool): ToolDefinition {
 	return {
 		name: tool.name,
 		description: tool.description,
-		inputSchema: toToolInputSchema(tool.schema),
+		inputSchema: tool.inputSchema,
 	};
 }

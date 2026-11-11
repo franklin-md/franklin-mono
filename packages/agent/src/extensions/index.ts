@@ -97,3 +97,6 @@ export type {
 
 // Environment info
 export { environmentInfoExtension } from './environment-info/index.js';
+
+// Research tables
+export { tableExtension } from './table/extension.js';

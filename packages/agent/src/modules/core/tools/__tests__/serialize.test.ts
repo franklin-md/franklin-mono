@@ -12,7 +12,8 @@ function boundTool(
 	return {
 		name,
 		description,
-		schema,
+		inputSchema: toToolInputSchema(schema),
+		parse: (args) => schema.parse(args),
 		run: () => ({
 			output: '',
 			rendered: { content: [{ type: 'text', text: '' }] },

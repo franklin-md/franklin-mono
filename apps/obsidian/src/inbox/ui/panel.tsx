@@ -1,5 +1,12 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
-import { MODEL_CATALOG, Markdown } from '@franklin/ui';
+import {
+	Button,
+	Markdown,
+	ModelPicker,
+	PromptFooterControlGroup,
+	ThinkingControl,
+} from '@franklin/ui';
+import { questionSchema } from '../controller/question-schema.js';
 import type { InboxController } from '../controller/controller.js';
 import type { QuestionSource } from '../types.js';
 import { InboxContent } from './content.js';
@@ -42,18 +49,6 @@ export function InboxPanel({
 		container.current?.querySelector('.study-feed')?.scrollTo({ top: 0 });
 	}, [newest]);
 	const { preferences } = snapshot;
-	const models = MODEL_CATALOG.flatMap((group) =>
-		group.models.map((model) => ({
-			id: JSON.stringify([group.provider, model.id]),
-			label: `${model.name} · ${group.displayName}`,
-		})),
-	);
-	const selection = JSON.stringify([preferences.provider, preferences.model]);
-	if (!models.some((model) => model.id === selection))
-		models.unshift({
-			id: selection,
-			label: `${preferences.model} · ${preferences.provider}`,
-		});
 	const configure = (patch: Parameters<InboxController['configure']>[0]) => {
 		void controller.configure(patch).catch(onError);
 	};
@@ -119,16 +114,32 @@ export function InboxPanel({
 						/>
 					</>
 				)}
-				models={models}
-				model={selection}
-				answerInstructions={preferences.answerInstructions}
+				composerControls={
+					<PromptFooterControlGroup className="min-w-0 flex-wrap gap-1">
+						<ModelPicker
+							provider={preferences.provider}
+							model={preferences.model}
+							label="Model for new questions"
+							onSelect={(provider, model) => configure({ provider, model })}
+						/>
+						<ThinkingControl
+							level={preferences.reasoning}
+							levels={questionSchema.shape.reasoning.options}
+							onChange={(reasoning) => configure({ reasoning })}
+						/>
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							className="study-style-label h-auto px-2 py-1 text-xs text-muted-foreground"
+							title={preferences.answerInstructions}
+							onClick={onSettings}
+						>
+							Answer instructions
+						</Button>
+					</PromptFooterControlGroup>
+				}
 				concurrency={preferences.concurrency}
-				setModel={(value) => {
-					const model = MODEL_CATALOG.flatMap((group) => group.models).find(
-						(item) => JSON.stringify([item.provider, item.id]) === value,
-					);
-					if (model) configure({ provider: model.provider, model: model.id });
-				}}
 				setConcurrency={(concurrency) => configure({ concurrency })}
 				onAdd={async (text) => {
 					await controller.add(text, undefined, await captureContext?.(text));

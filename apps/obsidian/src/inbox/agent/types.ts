@@ -1,3 +1,4 @@
+import type { MCPConnections } from '@franklin/extension-mcp';
 import type {
 	AuthManager,
 	EnvironmentConfig,
@@ -11,4 +12,5 @@ export type InboxRunnerOptions = {
 	config: EnvironmentConfig;
 	vaultName: string;
 	evidence?: EvidenceRepository;
+	connections?: MCPConnections;
 };

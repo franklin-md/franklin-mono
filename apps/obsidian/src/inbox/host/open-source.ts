@@ -1,6 +1,7 @@
 import type { App, MarkdownView } from 'obsidian';
 import { Notice } from 'obsidian';
 import type { QuestionSource } from '../types.js';
+import { findSourcePassage } from './find-passage.js';
 
 export async function openQuestionSource(
 	app: App,
@@ -19,29 +20,16 @@ export async function openQuestionSource(
 	await leaf.openFile(file);
 	if (leaf.view.getViewType() !== 'markdown') return;
 	const editor = (leaf.view as MarkdownView).editor;
-	const content = editor.getValue();
-	const original = source.location
-		? editor.posToOffset(source.location.from)
-		: -1;
-	let start =
-		content.slice(original, original + source.quote.length) === source.quote
-			? original
-			: content.indexOf(source.quote);
-	if (start < 0) {
+	const passage = findSourcePassage(editor.getValue(), source);
+	if (!passage) {
+		if (!source.quote.trim()) return;
 		new Notice(
 			'The source text has changed. Showing the note; the original quote is preserved in the inbox.',
 		);
 		return;
 	}
-	if (start !== original && content.indexOf(source.quote, start + 1) !== -1) {
-		new Notice(
-			'This quote appears more than once. Showing the note; use the captured heading to locate it.',
-		);
-		return;
-	}
-	start = Math.max(0, start);
-	const from = editor.offsetToPos(start);
-	const to = editor.offsetToPos(start + source.quote.length);
+	const from = editor.offsetToPos(passage.start);
+	const to = editor.offsetToPos(passage.end);
 	editor.setSelection(from, to);
 	editor.scrollIntoView({ from, to }, true);
 	editor.focus();

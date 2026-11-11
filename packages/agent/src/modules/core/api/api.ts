@@ -1,3 +1,4 @@
+import type { ToolSource } from './tool-source.js';
 import type { ToolHandlers } from './tool.js';
 import type { ToolSpec } from './tool-spec.js';
 import type { PromptHandler } from './prompt.js';
@@ -56,6 +57,7 @@ export interface CoreAPI<R extends BaseRuntime> {
 	on(event: 'toolResult', handler: CoreEventHandlers<R>['toolResult']): void;
 
 	registerTool<S extends ToolSpec>(spec: S, handlers: ToolHandlers<S, R>): void;
+	registerToolSource(factory: (runtime: R) => ToolSource): void;
 }
 
 /**

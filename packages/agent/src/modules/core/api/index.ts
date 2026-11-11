@@ -16,3 +16,6 @@ export type {
 export type { RenderedToolOutput } from './tool.js';
 export type { ToolSpec, ToolArgsOf, ToolOutputOf } from './tool-spec.js';
 export { toolSpec } from './tool-spec.js';
+
+export type { ToolInvocation } from './tool.js';
+export type { ToolSource, ToolSourceTool } from './tool-source.js';

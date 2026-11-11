@@ -2,9 +2,9 @@ import { createConfiguration } from '@franklin/extensibility/module';
 import type { WebSearchProvider } from './provider.js';
 
 export const webSearchProviders = createConfiguration<
-	WebSearchProvider,
+	WebSearchProvider | readonly WebSearchProvider[],
 	readonly WebSearchProvider[]
 >({
 	name: 'webSearchProviders',
-	combine: (providers) => providers,
+	combine: (providers) => providers.flat(),
 });

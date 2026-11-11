@@ -49,6 +49,7 @@ function createAuthStub(initial: AuthEntries = {}): AuthStub {
 
 function createSettingsStub(
 	initial: AppSettings = {
+		mcpServers: [],
 		documentDownloads: { idleTimeoutMs: 60_000, totalTimeoutMs: 900_000 },
 		shareViewedReferencesByDefault: true,
 		defaultLLMConfig: {

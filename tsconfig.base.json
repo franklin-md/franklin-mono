@@ -43,7 +43,8 @@
 			],
 			"@franklin/react": ["packages/ui/react/src/index.ts"],
 			"@franklin/react/browser": ["packages/ui/react/src/browser.ts"],
-			"@franklin/ui": ["apps/shared/ui/src/index.ts"]
+			"@franklin/ui": ["apps/shared/ui/src/index.ts"],
+			"@franklin/extension-mcp": ["packages/extensions/mcp/src/index.ts"]
 		}
 	}
 }

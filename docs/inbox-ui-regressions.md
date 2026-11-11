@@ -41,7 +41,7 @@ Test/source links below are relative to this repository. Historical artifacts in
 | I05 | Detail sections start closed, open independently, and retain their individual state while card focus switches or collapses. Multiple sections may remain open even though only one question's composer is focused. | [answer tests][answer-tests], [answer UI][answer-ui]; browser history for focus switching. This is not a single-open accordion. |
 | I06 | Native drag selection/copy works for answer text, question titles, parent labels, detail headings/content, and original-question summaries/text, including running/disabled titles. Selection must not toggle a card or disclosure or navigate to a parent. | User, Oct 22/30; [panel tests][panel-tests], [answer tests][answer-tests], [question styles][question-css]; browser history covers real pointer dragging and disabled titles. |
 | I07 | Links, source controls, Retry/Delete, actions, recording, Debug, and editor interaction retain their own behavior without accidentally toggling card focus. Code blocks can be interacted with without toggling the card. | [card][card], [panel tests][panel-tests], [answer tests][answer-tests]; Debug browser history. **Contenteditable and portaled controls need explicit coverage if introduced.** |
-| I08 | Parent navigation focuses and reveals the correct parent in the feed. Source disclosure can show the captured quote independently and offers navigation to the original passage. | [card][card], [feed][feed], [host tests][host-tests]. Parent scroll/focus needs a browser assertion. |
+| I08 | Parent navigation focuses and reveals the correct parent in the feed. The entire source row (note name, heading, arrow icon and empty space) opens its original passage without expanding the quote or toggling card focus. A separate Captured quote disclosure shows the saved text independently. Source-name text can be selected and copied without navigating. Follow-ups inherit source navigation. | User, Nov 11; [card][card], [feed][feed], [source UI tests][source-ui-tests], [source navigation tests][source-navigation-tests]. Parent scroll/focus needs a browser assertion. |
 | I09 | Keyboard-operable controls retain accessible names, expanded state, and discoverable focus. Delete remains reachable by keyboard and on devices without hover. | Source: [card][card], [layout styles][layout-css], [question styles][question-css]. Do not carry Reader-specific label-removal decisions into inbox. |
 
 ## 3. Composing and configuration
@@ -69,7 +69,7 @@ Test/source links below are relative to this repository. Historical artifacts in
 | A05 | Follow-ups, actions, and flashcard recordings receive the **entire** answer, including every unopened detail, with only the chosen ancestor chain and its source. Disclosure visibility never controls the context sent to an agent. | [answer tests][answer-tests], [controller tests][controller-tests], [action-agent tests][action-agent-tests], [capture tests][capture-tests]. |
 | A06 | Typed/pasted questions capture the most recently active Markdown note even when inbox has focus, using unsaved editor content. A pasted task retains heading and parent-list context; standalone questions still work with no note. | User, Oct 22: decontextualized nested task failed. [host tests][host-tests], [agent tests][agent-tests]. Sharing an editor must not replace this with chat viewing-context or mention behavior. |
 | A07 | The selection command submits the whole current row for a cursor or selection of at most three non-whitespace characters; larger selections submit selected text. Blank rows are ignored. The exact source quote is preserved separately from cleaned question text. | User, Oct 30; [host tests][host-tests], [capture source][capture-source]. |
-| A08 | Open source returns to the exact passage, re-finding a unique quote after edits. Missing/changed/ambiguous source is reported instead of silently selecting unrelated text. Follow-ups retain source lineage. | [host tests][host-tests], [controller tests][controller-tests]. |
+| A08 | Open source always opens an existing source file. It locates the exact quote, otherwise a unique line starting with the quote's first nonblank line ignoring whitespace, otherwise the line with the longest common subsequence of the quote ignoring whitespace. Duplicate exact matches and equal subsequence scores prefer the saved line. Exact selections retain their range; fallback matches select the whole line. Empty quotes or no shared characters leave the file open without a selection. Missing files are reported, and the captured quote is preserved. Follow-ups retain source lineage. | User, Nov 8; [source navigation tests][source-navigation-tests], [host tests][host-tests], [controller tests][controller-tests]. |
 
 ## 5. Actions, diagnostics, recording, and recovery
 
@@ -130,6 +130,20 @@ Run the existing inbox/settings suites before and after the refactor, plus affec
 - This document passes Prettier with the normal docs ignore overridden; all local reference links resolve and all 48 requirement IDs are unique.
 - Logs are in `.context/inbox-regressions/`. No browser checks, plugin installation/reload, or new regression tests were performed in this documentation pass. Passing the existing suite does not close the coverage gaps above.
 
+## Refactor verification on 2026-11-03
+
+The baseline above was committed as `dcf2de70f` before implementation. The refactor extracts controlled `ModelPicker` and `ThinkingControl` components from their chat bindings, shares `PromptSurface` and `PromptSubmitButton`, and uses the existing `AutoGrowTextarea` for inbox. Inbox retains its own submission lifecycle, all six reasoning levels, and compact follow-ups. No rich editor or mention behavior is required by this implementation.
+
+New executable guards:
+
+- [Composer regressions](../apps/obsidian/src/inbox/__tests__/composer.test.tsx): C01/C02/V05 keyboard and IME behavior, failed-submit text retention/retry, pending-submit protection, blank text, and simple follow-up controls. The repeated-submit test initially exposed a real race; a synchronous pending guard now prevents it.
+- [Controlled model picker](../apps/shared/ui/__tests__/conversation/input/model-picker.test.tsx): C04 unknown saved models, external selection updates, searchable choices, and owner callbacks without an active agent.
+- [Controlled thinking level](../apps/shared/ui/__tests__/conversation/input/thinking-control.test.tsx): C06 Minimal and the caller-supplied level cycle.
+
+Browser checks use the actual `InboxPanel`/controller, shared chat pickers, generated plugin CSS, and `app.css` extracted from the installed Obsidian application. They passed in light/dark themes at 280/320/380/740px and cover V01–V07's layout cases; I01–I07's focus, native title/summary drag selection, independent details, drafts and Escape cases; picker Escape; L05 Debug copying; and C01/C02/C04/C06/S01 submission/configuration cases. Expanded code initially widened a grid track at 280px; a bounded track now keeps code scrolling within the detail. Historical test gaps outside these scenarios remain relevant.
+
+The broader inbox/settings/shared UI/React hook suite passed **581 tests across 86 files**, with one pre-existing skipped file containing two TODO tests. Source build, lint, formatting and the production bundle passed. Browser script, results and screenshots are under `.context/inbox-refactor/`; these local artifacts support this verification but are not a portable CI browser suite. The plugin was bundled, not installed or reloaded.
+
 ## Historical request trail
 
 - **2026-10-22, initial inbox iteration** (`01a16322-3534-7ff3-b51e-e77a2f9aecaa`): fast background answers, day grouping/top insertion, concurrent independent agents, status/retry, neutral input styling, selectable output, one focused card, simple follow-ups, source context, readable question headers and no title overflow. Original user messages were inspected for this compilation.
@@ -159,6 +173,8 @@ Run the existing inbox/settings suites before and after the refactor, plus affec
 [panel-tests]: ../apps/obsidian/src/inbox/__tests__/panel.test.tsx
 [answer-tests]: ../apps/obsidian/src/inbox/__tests__/answers.test.tsx
 [host-tests]: ../apps/obsidian/src/inbox/__tests__/host.test.ts
+[source-ui-tests]: ../apps/obsidian/src/inbox/ui/__tests__/source.test.tsx
+[source-navigation-tests]: ../apps/obsidian/src/inbox/host/__tests__/open-source.test.ts
 [controller-tests]: ../apps/obsidian/src/inbox/__tests__/controller.test.ts
 [instruction-tests]: ../apps/obsidian/src/inbox/__tests__/instructions.test.ts
 [agent-tests]: ../apps/obsidian/src/inbox/__tests__/agent.test.ts

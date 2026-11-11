@@ -1,3 +1,5 @@
+import { MCPConnections } from '@franklin/extension-mcp';
+import { createMCPFetch } from '@franklin/node';
 import { AuthManager, createAuthStore, FranklinApp } from '@franklin/agent';
 import type { FranklinExtension } from '@franklin/agent';
 import {
@@ -21,6 +23,7 @@ import {
 	spawnExtension,
 	statusExtension,
 	todoExtension,
+	tableExtension,
 	viewingContextExtension,
 	webSearchProviders,
 } from '@franklin/agent';
@@ -50,6 +53,7 @@ import { obsidianSystemPromptExtension } from './extensions/system-prompt.js';
 
 interface ObsidianAppResult {
 	app: FranklinApp;
+	connections: MCPConnections;
 	inbox: InboxController;
 	hostActionBindings: readonly HostActionBinding[];
 	vaultRoot: AbsolutePath;
@@ -75,8 +79,15 @@ export async function createFranklinApp(
 		authStore ?? createAuthStore(platform.os.filesystem, appDir),
 	);
 
-	const app = new FranklinApp({
-		extensions: createObsidianExtensions(),
+	const connections: MCPConnections = new MCPConnections({
+		getServers: () => app.settings.get().mcpServers,
+		getCredential: (id) => auth.getApiKey(id),
+		subscribeConfiguration: (listener) => app.settings.subscribe(listener),
+		subscribeCredentials: (listener) => auth.onAuthChange((id) => listener(id)),
+		createFetch: createMCPFetch,
+	});
+	const app: FranklinApp = new FranklinApp({
+		extensions: createObsidianExtensions(connections),
 		platform,
 		appDir,
 		auth,
@@ -99,6 +110,7 @@ export async function createFranklinApp(
 	);
 	const runnerOptions = {
 		evidence,
+		connections,
 		createAgent: app.createAgent.bind(app),
 		auth,
 		vaultName: plugin.app.vault.getName(),
@@ -130,6 +142,7 @@ export async function createFranklinApp(
 
 	return {
 		app,
+		connections,
 		inbox,
 		hostActionBindings: [
 			bindHostAction(openExternalAction, (url) =>
@@ -138,6 +151,7 @@ export async function createFranklinApp(
 		],
 		vaultRoot,
 		dispose: () => {
+			void connections.dispose();
 			void inbox.dispose().catch((error: unknown) => {
 				new Notice(`Inbox shutdown: ${errorMessage(error)}`);
 			});
@@ -145,7 +159,9 @@ export async function createFranklinApp(
 	};
 }
 
-export function createObsidianExtensions(): FranklinExtension[] {
+export function createObsidianExtensions(
+	connections?: MCPConnections,
+): FranklinExtension[] {
 	const filesystemTools = [
 		filesystemBundle.extensions.editFile,
 		referenceReadExtension,
@@ -163,11 +179,16 @@ export function createObsidianExtensions(): FranklinExtension[] {
 		priority.highest(obsidianSystemPromptExtension),
 		instructionsExtension.extension,
 		...filesystemTools,
+		tableExtension(),
+		...(connections ? [connections.extension()] : []),
 		bashExtension.extension,
 		...createObsidianReferenceExtensions(),
 		mentionExtension,
-		webSearchProviders.of(createExaWebSearchProvider()),
-		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),
+		webSearchProviders.compute([], () =>
+			connections?.hasExaPreset()
+				? [createDuckDuckGoWebSearchProvider()]
+				: [createExaWebSearchProvider(), createDuckDuckGoWebSearchProvider()],
+		),
 		createWebExtension({}).extension,
 		spawnExtension.extension,
 		environmentInfoExtension.extension,

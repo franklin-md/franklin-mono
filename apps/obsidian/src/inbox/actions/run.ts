@@ -3,6 +3,7 @@ import {
 	defineExtension,
 	filesystemBundle,
 	toolSpec,
+	tableExtension,
 } from '@franklin/agent';
 import type { CoreModule } from '@franklin/agent';
 import { z } from 'zod';
@@ -64,10 +65,12 @@ export function createInboxActionRunner(options: InboxRunnerOptions) {
 			extensions: (executionSignal) => [
 				...createInboxResearchExtensions({
 					vaultName: options.vaultName,
+					connections: options.connections,
 					writable: true,
 				}),
 				filesystemBundle.extensions.editFile,
 				filesystemBundle.extensions.writeFile,
+				tableExtension(),
 				bashExtension.extension,
 				completion(executionSignal),
 			],

@@ -34,3 +34,6 @@ export type { AuthStore } from './auth/store.js';
 export { type Platform, type OperatingSystem } from './platform.js';
 export * from './extensions/index.js';
 export * from './modules/index.js';
+
+export type { MCPServerConfig } from './settings/mcp/types.js';
+export { mcpServerSchema, mcpServersSchema } from './settings/mcp/schema.js';

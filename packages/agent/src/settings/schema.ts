@@ -1,3 +1,4 @@
+import { mcpServersSchema } from './mcp/schema.js';
 import { z } from 'zod';
 import type { Codec } from '@franklin/lib';
 import { versioned, zodCodec } from '@franklin/lib';
@@ -23,6 +24,7 @@ const ThinkingLevel = z.enum([
 // fields during decode, unknown fields drop silently. Version bumps are
 // reserved for structural changes that need a real migration.
 const AppSettingsV1 = z.object({
+	mcpServers: mcpServersSchema.default([]),
 	documentDownloads: documentDownloadPolicySchema.prefault({}),
 	shareViewedReferencesByDefault: z.boolean().default(true),
 	defaultLLMConfig: z

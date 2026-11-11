@@ -26,7 +26,10 @@ type _CoreRegistryKeys = Expect<
 >;
 
 type _CoreEffectNames = Expect<
-	Equal<EffectName<CoreSignature, BaseRuntime>, 'on' | 'registerTool'>
+	Equal<
+		EffectName<CoreSignature, BaseRuntime>,
+		'on' | 'registerTool' | 'registerToolSource'
+	>
 >;
 
 type _CoreRegistryOnEntries = Expect<

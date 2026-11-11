@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 const entries = [
+	['@franklin/extension-mcp', 'packages/extensions/mcp/src/index.ts'],
 	['@franklin/agent/testing', 'packages/agent/src/testing/index.ts'],
 	['@franklin/agent', 'packages/agent/src/index.ts'],
 	['@franklin/extension-pdf', 'packages/extensions/pdf/src/index.ts'],

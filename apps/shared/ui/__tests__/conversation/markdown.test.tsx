@@ -301,6 +301,71 @@ describe('Markdown', () => {
 		expect(container.querySelector('img')).toBeNull();
 	});
 
+	it('preserves Obsidian note links without web-link decoration', () => {
+		const href = 'obsidian://open?vault=Obsidian&file=Thread%20Coarsening.md';
+		const { container, getByRole } = render(
+			<Markdown text={`In [your coarsening example](${href}), reuse A.`} />,
+		);
+
+		const link = getByRole('link', { name: 'your coarsening example' });
+		expect(link.getAttribute('href')).toBe(href);
+		expect(link.getAttribute('target')).toBeNull();
+		expect(link.getAttribute('rel')).toBeNull();
+		expect(link.querySelector('img')).toBeNull();
+		expect(container.textContent).not.toContain('[blocked]');
+	});
+
+	it('preserves Obsidian links alongside declared custom elements', () => {
+		const href = 'obsidian://open?vault=Obsidian&file=Notes%2FExample.md';
+		const { container, getByRole } = render(
+			<Markdown
+				text={`<test-element data-value="preserved" data-blocked="stripped">Custom body</test-element>\n\n[Note](${href})`}
+				customElements={{
+					'test-element': {
+						allowedAttributes: ['dataValue'],
+						component: TestElement,
+					},
+				}}
+			/>,
+		);
+
+		expect(getByRole('link', { name: 'Note' }).getAttribute('href')).toBe(href);
+		const customElement = container.querySelector('[data-rendered-custom]');
+		expect(customElement?.getAttribute('data-value')).toBe('preserved');
+		expect(customElement?.getAttribute('data-blocked')).toBeNull();
+	});
+
+	it.each([
+		'javascript:alert%281%29',
+		'data:text/html,unsafe',
+		'file:///etc/passwd',
+		'vbscript:msgbox%281%29',
+		'unknown-app://open',
+	])('blocks unsafe or unsupported link URLs: %s', (href) => {
+		const { container } = render(
+			<Markdown text={`[Unsafe](${href}) <a href="${href}">Unsafe HTML</a>`} />,
+		);
+
+		expect(container.querySelector('a')).toBeNull();
+		expect(container.textContent).toContain('Unsafe [blocked]');
+		expect(container.textContent).toContain('Unsafe HTML [blocked]');
+	});
+
+	it('keeps scripts and event handlers out of rendered HTML', () => {
+		const { container, getByRole } = render(
+			<Markdown
+				text={
+					'<script>alert(1)</script>\n\n<a href="obsidian://open?vault=Obsidian&file=Example.md" onclick="alert(1)">Note</a>'
+				}
+			/>,
+		);
+
+		expect(
+			getByRole('link', { name: 'Note' }).getAttribute('onclick'),
+		).toBeNull();
+		expect(container.querySelector('script')).toBeNull();
+	});
+
 	it('does not wrap block image markdown in a paragraph', () => {
 		const { container } = render(
 			<Markdown text="![alt text](https://example.com/image.png)" />,

@@ -1,5 +1,6 @@
 import type { MiniACPClientHandle } from '@franklin/mini-acp';
 import type { CoreRegistry } from '../registrations/index.js';
+import type { ToolRegistry } from '../tools/index.js';
 import type { AgentSession } from './session.js';
 import { createPromptBuilder, createPromptObservers } from './prompt.js';
 
@@ -7,12 +8,14 @@ type BindAgentClientInput = {
 	readonly client: MiniACPClientHandle;
 	readonly registrations: CoreRegistry;
 	readonly session: AgentSession;
+	readonly toolRegistry: ToolRegistry;
 };
 
 export function bindAgentClient({
 	client,
 	registrations,
 	session,
+	toolRegistry,
 }: BindAgentClientInput): MiniACPClientHandle {
 	const buildPrompt = createPromptBuilder(registrations);
 	const notifyPromptObservers = createPromptObservers(registrations);
@@ -26,6 +29,7 @@ export function bindAgentClient({
 		async *prompt(message) {
 			session.begin();
 			try {
+				await toolRegistry.prepare(session.signal());
 				await session.sync(client);
 				const fullPrompt = await buildPrompt(message);
 				session.recordMessage(fullPrompt);
@@ -46,15 +50,15 @@ export function bindAgentClient({
 		},
 		async cancel() {
 			session.cancel();
-			// Future cancellation policy belongs here: the controller is the one place
-			// that sees both Mini-ACP turn cancellation and app-side tool execution, so
-			// any safe termination of in-flight tools should be coordinated from this
-			// boundary.
 			await client.cancel();
 		},
 		async dispose() {
 			session.cancel();
-			await client.dispose();
+			try {
+				await toolRegistry.dispose();
+			} finally {
+				await client.dispose();
+			}
 		},
 	};
 }

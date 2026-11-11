@@ -29,28 +29,6 @@
 .study-followup {
 	margin-top: 13px;
 }
-.study-composer-compact {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	align-items: center;
-	gap: 8px;
-	padding: 8px 10px;
-	border-radius: 8px;
-}
-.study-composer-compact textarea {
-	min-width: 0;
-	min-height: 24px;
-	font-size: 12px;
-}
-.study-composer-compact .study-composer-bottom {
-	margin-top: 0;
-}
-.study-composer-compact .study-composer-bottom > span {
-	display: none;
-}
-.study-composer-compact .study-error {
-	grid-column: 1 / -1;
-}
 .study-empty {
 	padding: 60px 10px;
 	text-align: center;

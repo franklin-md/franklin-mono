@@ -75,9 +75,11 @@ Use the inbox ribbon icon or **Franklin: Open study inbox**. Select a model and 
 
 Choose **Franklin settings → Study inbox → Reasoning level** to set Off, Minimal, Low, Medium, High or Extra high. Changes save immediately and apply to new questions, follow-ups and inbox actions. Retries keep their original level.
 
+The inbox composer reuses chat's prompt surface, send button, searchable model picker and reasoning control. Its expanding textarea and compact follow-up field keep inbox-specific drafts and submission behavior. The main composer also offers the reasoning control; model and reasoning changes stay independent of chat. See the [UI regression requirements](../../docs/inbox-ui-regressions.md) for the behavior preserved during component reuse.
+
 Opening or closing a detail section selects its question and keeps it selected. Question titles and section headings can be selected and copied. Each question also has a **Debug** button that copies a JSON report for diagnosis: its current attempt, source/ancestor context, instructions, answer or error, saved research, and available agent events. Future attempts retain a bounded timeline of turn boundaries, complete message updates and tool calls/results. Credentials are redacted; reasoning content, binary bodies and streaming chunks are omitted. Older questions report unavailable events explicitly.
 
-Run **Franklin: Add selection to study inbox** in a Markdown note to submit it immediately. With just a cursor or a selection of up to three non-whitespace characters, it sends the entire current row; longer selections send only the selected text. Blank rows are ignored. Use Franklin settings → Study inbox → Configure shortcut to open the native hotkey editor, then assign keys such as Cmd/Ctrl+Shift+I. Source quotes remain attached to follow-ups and can reopen the original passage.
+Run **Franklin: Add selection to study inbox** in a Markdown note to submit it immediately. With just a cursor or a selection of up to three non-whitespace characters, it sends the entire current row; longer selections send only the selected text. Blank rows are ignored. Use Franklin settings → Study inbox → Configure shortcut to open the native hotkey editor, then assign keys such as Cmd/Ctrl+Shift+I. Source quotes remain attached to follow-ups. Click anywhere on the source row, marked with a small arrow icon, to open its note at the original passage. **Captured quote** independently shows the saved text without navigating or changing card focus. Source names can still be selected and copied. Navigation first finds the exact text, then a unique line starting with the quote's first nonblank line ignoring whitespace, then the line with the longest common subsequence of the quote ignoring whitespace. Equal matches prefer the saved line. The note still opens when no passage matches.
 
 Configure reusable name/prompt actions in **Franklin settings → Inbox actions**. Answered questions show an action button; each action runs with the question, answer and source context, and can read workflow prompts, edit files and run commands. Only one run per action/question can be outstanding. Success removes the temporary run; failures offer Retry/Dismiss. See the [inbox guide](../../docs/inbox-prototype.md#configurable-actions) for a 🃏 flashcard configuration.
 
@@ -179,3 +181,11 @@ For full correctness, Storybook should eventually implement or load Obsidian's o
 - Inbox questions allow the configured maximum download duration plus two minutes for other work, so their overall attempt limit does not stop a healthy first download after two minutes. Action runs retain their longer allowance when it exceeds this budget.
 - `styles.css` is generated from `src/styles/globals.css`.
 - `dist/` is generated output and should not be edited by hand.
+
+## Exa connections and research tables
+
+**Franklin settings → Connections → Add Exa** saves an API key through the existing
+credential backend and exposes selected Exa tools to chat. Ordinary Inbox questions
+receive only the selected Exa search/fetch tools and retain read-only local access.
+Chat and explicitly triggered Inbox actions can use `write_table` to create native
+Markdown tables with optional CSV export. See [setup, examples and recovery](../../docs/mcp.md).

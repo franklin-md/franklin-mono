@@ -15,6 +15,9 @@ export type {
 	ToolOutputOf,
 	ToolResultEvent,
 	ToolSpec,
+	ToolInvocation,
+	ToolSource,
+	ToolSourceTool,
 } from './core/api/index.js';
 export { toolSpec } from './core/api/index.js';
 export { inspectRuntime } from './core/inspect.js';

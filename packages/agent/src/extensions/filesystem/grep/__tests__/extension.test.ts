@@ -26,6 +26,7 @@ import { grepExtension } from '../extension.js';
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
+	registerToolSource: true,
 });
 
 function mockEnvironment(

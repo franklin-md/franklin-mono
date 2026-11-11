@@ -16,6 +16,7 @@
 		{ "path": "../../packages/lib" },
 		{ "path": "../../packages/agent" },
 		{ "path": "../../packages/extensions/pdf" },
+		{ "path": "../../packages/extensions/mcp" },
 		{ "path": "../../packages/node" },
 		{ "path": "../../packages/ui/react" },
 		{ "path": "../shared/ui" }

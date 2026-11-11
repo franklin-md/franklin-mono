@@ -1,6 +1,7 @@
-import { Check, ChevronDown, Inbox, SlidersHorizontal } from 'lucide-react';
+import { Check, Inbox, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { Button, IconButton } from '@franklin/ui';
 import type { StudyQuestion, QuestionSource } from '../types.js';
 import { Composer } from './composer.js';
 import { QuestionFeed } from './feed.js';
@@ -8,11 +9,8 @@ import { selectionQuestion } from '../selection-question.js';
 
 type Props = {
 	questions: StudyQuestion[];
-	models: { id: string; label: string }[];
-	model: string;
-	answerInstructions: string;
+	composerControls: ReactNode;
 	concurrency: number;
-	setModel: (value: string) => void;
 	setConcurrency: (value: number) => void;
 	onAdd: (text: string) => void | Promise<void>;
 	onFollowUp: (text: string, parentId: string) => void | Promise<void>;
@@ -28,11 +26,8 @@ type Props = {
 
 export function InboxContent({
 	questions,
-	models,
-	model,
-	answerInstructions,
+	composerControls,
 	concurrency,
-	setModel,
 	setConcurrency,
 	onAdd,
 	onFollowUp,
@@ -58,26 +53,26 @@ export function InboxContent({
 						<h1>Inbox</h1>
 						<span className="study-total">{questions.length}</span>
 					</div>
-					<button
+					<IconButton
+						icon={SlidersHorizontal}
 						type="button"
-						className="study-icon-button"
 						aria-label="Inbox options"
 						aria-expanded={optionsOpen}
 						onClick={() => setOptionsOpen(!optionsOpen)}
-					>
-						<SlidersHorizontal size={16} />
-					</button>
+					/>
 				</div>
 				{optionsOpen && (
 					<div className="study-options study-reveal">
 						{onSettings && (
-							<button
+							<Button
+								variant="ghost"
+								size="sm"
 								type="button"
-								className="study-text-button study-auth-settings"
+								className="mb-4"
 								onClick={onSettings}
 							>
 								Settings and shortcuts
-							</button>
+							</Button>
 						)}
 						<label>
 							<span>
@@ -99,32 +94,11 @@ export function InboxContent({
 					</div>
 				)}
 				<div className="study-compose-area">
-					<Composer onSubmit={(text) => onAdd(selectionQuestion(text))} />
-					<div className="study-toolbar">
-						<label className="study-model-select">
-							<select
-								aria-label="Model for new questions"
-								value={model}
-								onChange={(event) => setModel(event.target.value)}
-							>
-								{models.map((model) => (
-									<option key={model.id} value={model.id}>
-										{model.label}
-									</option>
-								))}
-							</select>
-							<ChevronDown size={11} />
-						</label>
-						{onSettings && (
-							<button
-								type="button"
-								className="study-style-label"
-								title={answerInstructions}
-								onClick={onSettings}
-							>
-								Answer instructions
-							</button>
-						)}
+					<Composer
+						controls={composerControls}
+						onSubmit={(text) => onAdd(selectionQuestion(text))}
+					/>
+					<div className="mt-2 flex justify-end">
 						<span className="study-activity" role="status">
 							{actionActivity &&
 								actionActivity.running + actionActivity.queued > 0 && (

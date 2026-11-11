@@ -1,3 +1,5 @@
+import type { MCPConnections } from '@franklin/extension-mcp';
+import { ConnectionSettings } from './connections/settings.js';
 import { SettingGroup } from '../components/obsidian-native/setting/group.js';
 import { CredentialsSettings } from './credentials/index.js';
 import { InboxShortcutSetting } from './inbox-shortcut.js';
@@ -9,9 +11,17 @@ import { InboxActionSettings } from './inbox-actions/settings.js';
 import { CaptureSettings } from '../inbox/capture/settings.js';
 import { DocumentDownloadSettings } from './document-downloads.js';
 
-type Props = { onConfigureInboxShortcut?: () => void; inbox?: InboxController };
+type Props = {
+	onConfigureInboxShortcut?: () => void;
+	inbox?: InboxController;
+	connections?: MCPConnections;
+};
 
-export function SettingsPage({ onConfigureInboxShortcut, inbox }: Props) {
+export function SettingsPage({
+	onConfigureInboxShortcut,
+	inbox,
+	connections,
+}: Props) {
 	return (
 		<>
 			{(onConfigureInboxShortcut || inbox) && (
@@ -31,6 +41,11 @@ export function SettingsPage({ onConfigureInboxShortcut, inbox }: Props) {
 			{inbox?.capture && (
 				<SettingGroup title="Flashcard capture">
 					<CaptureSettings controller={inbox.capture} />
+				</SettingGroup>
+			)}
+			{connections && (
+				<SettingGroup title="Connections">
+					<ConnectionSettings connections={connections} />
 				</SettingGroup>
 			)}
 			<SettingGroup title="Credentials">

@@ -30,6 +30,10 @@ export class AuthManager {
 		this.oauthClient = oauthClient ?? createBuiltInOAuthClient(platform.os.net);
 	}
 
+	async persist(): Promise<void> {
+		await this.store.persist();
+	}
+
 	async restore(): Promise<RestoreResult> {
 		return this.store.restore();
 	}

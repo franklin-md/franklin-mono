@@ -40,6 +40,7 @@ export function createAgentController(
 				client,
 				registrations: input.registrations,
 				session,
+				toolRegistry: input.toolRegistry,
 			});
 		},
 		compact() {

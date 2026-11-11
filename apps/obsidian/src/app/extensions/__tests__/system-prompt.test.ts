@@ -29,6 +29,7 @@ const wikilinkPathToolNames = oxfordJoin(
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
+	registerToolSource: true,
 });
 
 async function renderSystemPrompt(): Promise<string> {

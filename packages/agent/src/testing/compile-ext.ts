@@ -102,6 +102,7 @@ type FullMiddleware = {
 const coreExtensionPoint = createExtensionPoint<CoreSignature>({
 	on: true,
 	registerTool: true,
+	registerToolSource: true,
 });
 
 const storeExtensionPoint = createExtensionPoint<StoreSignature>({

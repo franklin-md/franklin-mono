@@ -1,4 +1,5 @@
 import {
+	ArrowUpRight,
 	Check,
 	ChevronDown,
 	FileText,
@@ -10,6 +11,7 @@ import {
 	TriangleAlert,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { IconButton } from '@franklin/ui';
 import { useId, useState } from 'react';
 
 import { Composer } from './composer.js';
@@ -59,6 +61,10 @@ export function QuestionCard({
 	const titleId = useId();
 	const answerId = useId();
 	const sourceId = useId();
+	const sourceHref =
+		source?.location && onOpenSource
+			? `obsidian://open?file=${encodeURIComponent(source.location.path)}`
+			: undefined;
 	const { state } = question;
 	const title = questionTitle(question);
 	const active = state.kind === 'running' || state.kind === 'queued';
@@ -133,9 +139,10 @@ export function QuestionCard({
 				<time dateTime={new Date(question.createdAt).toISOString()}>
 					{timeFormat.format(question.createdAt)}
 				</time>
-				<button
+				<IconButton
+					icon={Trash2}
 					type="button"
-					className="study-icon-button study-delete"
+					className="study-delete"
 					aria-label={`Delete question: ${title}`}
 					title={
 						childCount
@@ -143,9 +150,7 @@ export function QuestionCard({
 							: 'Delete question'
 					}
 					onClick={() => onDelete(question.id)}
-				>
-					<Trash2 size={13} />
-				</button>
+				/>
 			</div>
 			<h3 id={titleId}>
 				<button
@@ -203,33 +208,64 @@ export function QuestionCard({
 				)}
 			</div>
 			{source && (
-				<button
-					type="button"
-					className="study-source"
-					aria-expanded={sourceOpen}
-					aria-controls={sourceId}
-					onClick={() => setSourceOpen(!sourceOpen)}
-				>
-					<FileText size={12} />
-					<span>{source.note}</span>
-					{source.heading && (
-						<span className="study-source-heading">/ {source.heading}</span>
-					)}
-				</button>
-			)}
-			{source && sourceOpen && (
 				<>
-					<blockquote className="study-source-quote study-reveal" id={sourceId}>
-						{source.quote}
-					</blockquote>
-					{onOpenSource && source.location && (
-						<button
-							type="button"
-							className="study-text-button study-open-source"
-							onClick={() => onOpenSource(source)}
+					<a
+						className="study-source"
+						href={sourceHref}
+						draggable={false}
+						aria-label={
+							sourceHref ? `Open source note: ${source.note}` : undefined
+						}
+						title={
+							sourceHref
+								? 'Open source note at the original passage'
+								: undefined
+						}
+						onClick={(event) => {
+							if (!sourceHref) return;
+							event.preventDefault();
+							if (!hasTextSelection(event.currentTarget))
+								onOpenSource?.(source);
+						}}
+					>
+						<FileText size={12} />
+						<span>{source.note}</span>
+						{source.heading && (
+							<span className="study-source-heading">/ {source.heading}</span>
+						)}
+						{sourceHref && (
+							<ArrowUpRight
+								className="study-source-arrow"
+								size={12}
+								aria-hidden="true"
+							/>
+						)}
+					</a>
+					{source.quote.trim() && (
+						<div
+							className="study-source-details"
+							onClick={(event) => event.stopPropagation()}
 						>
-							Open source note
-						</button>
+							<button
+								type="button"
+								className="study-source-toggle"
+								aria-expanded={sourceOpen}
+								aria-controls={sourceId}
+								onClick={() => setSourceOpen(!sourceOpen)}
+							>
+								<ChevronDown
+									size={10}
+									className={sourceOpen ? 'study-chevron-open' : undefined}
+									aria-hidden="true"
+								/>
+								Captured quote
+							</button>
+							{sourceOpen && (
+								<blockquote className="study-source-quote" id={sourceId}>
+									{source.quote}
+								</blockquote>
+							)}
+						</div>
 					)}
 				</>
 			)}

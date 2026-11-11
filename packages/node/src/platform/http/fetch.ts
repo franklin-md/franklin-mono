@@ -1,4 +1,5 @@
-import { Readable } from 'node:stream';
+import type { Readable } from 'node:stream';
+import { toWebBody } from './stream.js';
 import nodeFetch from 'node-fetch';
 
 import { createFetchResponse } from './response.js';
@@ -37,10 +38,7 @@ export const nodeHttpFetch: typeof fetch = async (input, init) => {
 	const method = (mergedInit?.method ?? 'GET').toUpperCase();
 	const hasBody =
 		!NULL_BODY_METHODS.has(method) && !NULL_BODY_STATUSES.has(r.status);
-	const body =
-		hasBody && r.body
-			? (Readable.toWeb(r.body) as ReadableStream<Uint8Array<ArrayBuffer>>)
-			: null;
+	const body = hasBody && r.body ? toWebBody(r.body as Readable) : null;
 
 	return createFetchResponse(body, {
 		url: r.url,

@@ -130,6 +130,25 @@ an optional `summaryPrefix`, `current: { id, content }`, `running`, `errors`, `m
 for the expanded details. Keep the current action's ID stable while its content
 streams; change it when a new action starts to trigger the vertical transition.
 
+## Shared prompt controls
+
+`PromptSurface`, `PromptFooter`, `PromptFooterControls`, and
+`PromptSubmitButton` compose the same prompt appearance around host-owned
+input and submission behavior. `PromptContainer` adds chat's outer spacing;
+`PromptSurface` can also style an existing form with `asChild`.
+
+`ModelPicker` accepts `provider`, `model`, and `onSelect(provider, model)`;
+it does not read or change an active agent. Provider authentication actions
+still use the application harness and `AuthActionProvider` supplied by the
+host. `ThinkingControl` accepts `level`, `levels`, and `onChange(level)`, so a
+host can preserve its own supported reasoning levels.
+
+`ModelSelector` and `ThinkingToggle` bind those controls to chat's existing
+hooks. Other workflows can supply their own state and callbacks. For example,
+Obsidian's inbox uses its persisted preferences and all six reasoning levels,
+while its composers use `AutoGrowTextarea` and queue submissions independently
+of chat. Reusing the prompt surface does not require TipTap or mentions.
+
 ## Minimal Consumer Checklist
 
 - Import components from `@franklin/ui`.

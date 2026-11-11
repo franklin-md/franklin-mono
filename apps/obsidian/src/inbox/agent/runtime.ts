@@ -17,7 +17,7 @@ type Request = {
 };
 
 export async function runInboxRuntime(
-	{ createAgent, auth, config }: InboxRunnerOptions,
+	{ createAgent, auth, config, connections }: InboxRunnerOptions,
 	request: Request,
 ): Promise<void> {
 	const question = request.selection;
@@ -41,6 +41,17 @@ export async function runInboxRuntime(
 		},
 		extensions: request.extensions(signal),
 	});
+	const registerMCPSecrets = () => {
+		if (!connections || !request.evidence) return;
+		for (const [id, entry] of Object.entries(auth.entries()))
+			if (id.startsWith('mcp-') && entry.apiKey?.key)
+				request.evidence.setSecret(entry.apiKey.key);
+	};
+	registerMCPSecrets();
+	const unsubscribeSecrets =
+		connections && request.evidence
+			? auth.onAuthChange(registerMCPSecrets)
+			: () => {};
 	let deadline: AbortSignal | undefined;
 	const expire = () => deadlineController.abort(deadline?.reason);
 	const cancel = () => {
@@ -85,6 +96,7 @@ export async function runInboxRuntime(
 		}
 		signal.throwIfAborted();
 	} finally {
+		unsubscribeSecrets();
 		deadline?.removeEventListener('abort', expire);
 		signal.removeEventListener('abort', cancel);
 		await runtime.dispose();

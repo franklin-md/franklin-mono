@@ -31,6 +31,7 @@ export class FranklinSettingTab extends PluginSettingTab {
 			>
 				<SettingsPage
 					inbox={this.plugin.inbox ?? undefined}
+					connections={this.plugin.connections ?? undefined}
 					onConfigureInboxShortcut={() => openInboxHotkeys(this.plugin.app)}
 				/>
 			</ApplicationProvider>,
