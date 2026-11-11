@@ -130,6 +130,10 @@ an optional `summaryPrefix`, `current: { id, content }`, `running`, `errors`, `m
 for the expanded details. Keep the current action's ID stable while its content
 streams; change it when a new action starts to trigger the vertical transition.
 
+## Outlined controls
+
+`Button`'s `outline` variant uses an inset ring with the existing input token. This keeps the outline visible without changing the control's layout size. Consumers can use the variant directly instead of combining border removal and ring overrides.
+
 ## Shared prompt controls
 
 `PromptSurface`, `PromptFooter`, `PromptFooterControls`, and

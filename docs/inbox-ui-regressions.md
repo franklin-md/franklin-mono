@@ -4,7 +4,7 @@ Discovered 2026-11-03, before sharing more UI components with chat. Baseline: `A
 
 The refactor may change appearance and component structure. It must preserve the outcomes below, especially fixes requested after actual use. Reusing a component does not authorize adopting all of chat's behavior. Mentions are optional for inbox; its queue, source capture, drafts, and preferences remain its own.
 
-This is a discovered baseline, not a claim that every historical issue has automated coverage or that the installed plugin currently matches the checkout. No UI implementation changes accompany this document.
+This is a discovered baseline, not a claim that every historical issue has automated coverage or that the installed plugin currently matches the checkout. The initial compilation made no UI implementation changes; subsequent refactors and verification are recorded below.
 
 ## Evidence and coverage
 
@@ -19,14 +19,14 @@ Test/source links below are relative to this repository. Historical artifacts in
 
 | ID | Requirement / acceptance scenario | Evidence and existing coverage |
 | --- | --- | --- |
-| V01 | Independent questions remain visibly distinct. A thin divider alone was insufficient; the accepted card/bubble treatment gives each question a clear boundary in both themes. The exact radius, color, or border thickness may change. | User, Oct 30: weak hierarchy, accepted design B. Source: [question styles][question-css]. Browser history: `.context/inbox-hierarchy/`. |
-| V02 | Replies visually belong to their parent: the parent-to-reply gap and sibling reply gaps are smaller than the gap to the next independent thread. Nested replies remain distinguishable without consuming all sidebar width. | User, Oct 30: replies looked as close to the next question as to their parent. Source: [thread styles][thread-css], [feed][feed]. Geometry/visual check needed. |
-| V03 | The focused question is readily identifiable, while queued, answering, answered, and failed states remain distinguishable through labels/icons and appropriate visual treatment. Failed questions expose Retry. | User, Oct 22; Source: [card][card], [question styles][question-css]. |
-| V04 | Inputs retain the restrained, neutral chat-like appearance. Do not reintroduce the disliked hover/active textbox treatment or distracting focus animation. Keyboard focus must still be discoverable. | User, Oct 22: “Active/on hover effect for textbox i hate. Keep it like the original chat.” Source: [layout styles][layout-css]. Browser review required. |
-| V05 | The follow-up composer is compact: its send button stays to the right of the input on the same row. Errors can appear beneath it. Do not add a model picker, model label, or the full main-composer toolbar to each follow-up. | User, Oct 22: “Get rid of model”; send “on right (not new line)”; keep it tighter. Source: [composer][composer], [thread styles][thread-css]. Browser history verified 280/380/740px in light/dark. |
+| V01 | Independent questions remain visibly distinct. A thin divider alone was insufficient; the accepted card/bubble treatment gives each question a clear boundary in both themes. The exact radius, color, or border thickness may change. | User, Oct 30: weak hierarchy, accepted design B. Source: [card styling][card]. Browser history: `.context/inbox-hierarchy/`. |
+| V02 | Replies visually belong to their parent: the parent-to-reply gap and sibling reply gaps are smaller than the gap to the next independent thread. Nested replies remain distinguishable without consuming all sidebar width. | User, Oct 30: replies looked as close to the next question as to their parent. Source: [reply layout][feed], [feed][feed]. Geometry/visual check needed. |
+| V03 | The focused question is readily identifiable, while queued, answering, answered, and failed states remain distinguishable through labels/icons and appropriate visual treatment. Failed questions expose Retry. | User, Oct 22; Source: [card][card], [card styling][card]. |
+| V04 | Inputs retain the restrained, neutral chat-like appearance. Do not reintroduce the disliked hover/active textbox treatment or distracting focus animation. Keyboard focus must still be discoverable. | User, Oct 22: “Active/on hover effect for textbox i hate. Keep it like the original chat.” Source: [composer][composer]. Browser review required. |
+| V05 | The follow-up composer is compact: its send button stays to the right of the input on the same row. Errors can appear beneath it. Do not add a model picker, model label, or the full main-composer toolbar to each follow-up. | User, Oct 22: “Get rid of model”; send “on right (not new line)”; keep it tighter. Source: [composer][composer], [reply layout][feed]. Browser history verified 280/380/740px in light/dark. |
 | V06 | Send and action buttons have a visible outline and readable icons/text in both themes. Preserve the requested affordance; the project prefers an inset ring to a layout-changing border. | User, Oct 22: button “really needs a border.” Source: [composer][composer], [actions][actions]. |
-| V07 | Long titles wrap inside narrow cards instead of overflowing or being reduced to an unreadable single line. Long detail headings, action names, errors, source labels, and nested content do not force page-level horizontal overflow. | User, Oct 22: title overflow. Source: [question styles][question-css], [thread styles][thread-css]. Browser history includes 320px checks; full-content matrix still needed. |
-| V08 | The main question entry stays at the top; the feed scrolls independently. New root questions appear at the top, grouped by local calendar day. Replies remain with their root and in creation order. | User, Oct 22; Source: [content][content], [panel][panel], [feed][feed], [layout styles][layout-css]. |
+| V07 | Long titles wrap inside narrow cards instead of overflowing or being reduced to an unreadable single line. Long detail headings, action names, errors, source labels, and nested content do not force page-level horizontal overflow. | User, Oct 22: title overflow. Source: [card styling][card], [reply layout][feed]. Browser history includes 320px checks; full-content matrix still needed. |
+| V08 | The main question entry stays at the top; the feed scrolls independently. New root questions appear at the top, grouped by local calendar day. Replies remain with their root and in creation order. | User, Oct 22; Source: [content][content], [panel][panel], [feed][feed], [Inbox layout][content]. |
 | V09 | Insertions/reflow feel natural and preserve understandable ordering. Reduced-motion preference suppresses animations/transitions. Exact timing is not a requirement. | User, Oct 22: natural queue animations. Source: [motion CSS][motion-css], [feed motion][feed-motion]. Browser check needed. |
 | V10 | Empty state, question count, running/queued/answered status, and action activity remain available without overwhelming the primary question/answer hierarchy. | Source: [content][content], [feed][feed]. These are current affordances, not a mandate to retain exact wording or placement. |
 
@@ -39,10 +39,10 @@ Test/source links below are relative to this repository. Historical artifacts in
 | I03 | Draft follow-ups survive collapse/reopen and switching between questions. Each draft belongs to its question. UI updates and replacing input primitives must not reset it. | [panel tests][panel-tests]. Current preservation relies on keeping the composer mounted. **Reload/close-pane draft persistence is not established.** |
 | I04 | Opening a detail section, closing it, or clicking its ordinary content selects its containing question. Repeating those interactions keeps that question selected; it does not toggle the whole card off. Keyboard disclosure activation follows the same rule. | User, Oct 30; [answer tests][answer-tests]; browser history `.context/inbox-hierarchy/click-debug-browser.mjs`. |
 | I05 | Detail sections start closed, open independently, and retain their individual state while card focus switches or collapses. Multiple sections may remain open even though only one question's composer is focused. | [answer tests][answer-tests], [answer UI][answer-ui]; browser history for focus switching. This is not a single-open accordion. |
-| I06 | Native drag selection/copy works for answer text, question titles, parent labels, detail headings/content, and original-question summaries/text, including running/disabled titles. Selection must not toggle a card or disclosure or navigate to a parent. | User, Oct 22/30; [panel tests][panel-tests], [answer tests][answer-tests], [question styles][question-css]; browser history covers real pointer dragging and disabled titles. |
+| I06 | Native drag selection/copy works for answer text, question titles, parent labels, detail headings/content, and original-question summaries/text, including running/disabled titles. Selection must not toggle a card or disclosure or navigate to a parent. | User, Oct 22/30; [panel tests][panel-tests], [answer tests][answer-tests], [card styling][card]; browser history covers real pointer dragging and disabled titles. |
 | I07 | Links, source controls, Retry/Delete, actions, recording, Debug, and editor interaction retain their own behavior without accidentally toggling card focus. Code blocks can be interacted with without toggling the card. | [card][card], [panel tests][panel-tests], [answer tests][answer-tests]; Debug browser history. **Contenteditable and portaled controls need explicit coverage if introduced.** |
 | I08 | Parent navigation focuses and reveals the correct parent in the feed. The entire source row (note name, heading, arrow icon and empty space) opens its original passage without expanding the quote or toggling card focus. A separate Captured quote disclosure shows the saved text independently. Source-name text can be selected and copied without navigating. Follow-ups inherit source navigation. | User, Nov 11; [card][card], [feed][feed], [source UI tests][source-ui-tests], [source navigation tests][source-navigation-tests]. Parent scroll/focus needs a browser assertion. |
-| I09 | Keyboard-operable controls retain accessible names, expanded state, and discoverable focus. Delete remains reachable by keyboard and on devices without hover. | Source: [card][card], [layout styles][layout-css], [question styles][question-css]. Do not carry Reader-specific label-removal decisions into inbox. |
+| I09 | Keyboard-operable controls retain accessible names, expanded state, and discoverable focus. Delete remains reachable by keyboard and on devices without hover. | Source: [card][card], [Inbox layout][content], [card styling][card]. Do not carry Reader-specific label-removal decisions into inbox. |
 
 ## 3. Composing and configuration
 
@@ -123,7 +123,7 @@ Run the existing inbox/settings suites before and after the refactor, plus affec
 - **230 tests passed across 34 files:** inbox, settings, shared conversation input/picker authentication, and React prompt/model/reasoning hooks. Command:
 
   ```sh
-  NODE_OPTIONS=--experimental-sqlite npx vitest run apps/obsidian/src/inbox apps/obsidian/src/settings apps/shared/ui/__tests__/conversation/input apps/shared/ui/__tests__/conversation/model-selector-auth-action.test.tsx packages/ui/react/src/__tests__/prompt.test.tsx packages/ui/react/src/__tests__/use-model-selection.test.tsx packages/ui/react/src/__tests__/use-thinking-level.test.tsx
+  NODE_OPTIONS=--experimental-sqlite npx vitest run apps/obsidian/src/apps/inbox apps/obsidian/src/plugin/settings apps/shared/ui/__tests__/conversation/input apps/shared/ui/__tests__/conversation/model-selector-auth-action.test.tsx packages/ui/react/src/__tests__/prompt.test.tsx packages/ui/react/src/__tests__/use-model-selection.test.tsx packages/ui/react/src/__tests__/use-thinking-level.test.tsx
   ```
 
 - `npm run build` and `npm run lint -- --ignore-pattern '.context/**'` passed.
@@ -136,13 +136,44 @@ The baseline above was committed as `dcf2de70f` before implementation. The refac
 
 New executable guards:
 
-- [Composer regressions](../apps/obsidian/src/inbox/__tests__/composer.test.tsx): C01/C02/V05 keyboard and IME behavior, failed-submit text retention/retry, pending-submit protection, blank text, and simple follow-up controls. The repeated-submit test initially exposed a real race; a synchronous pending guard now prevents it.
+- [Composer regressions](../apps/obsidian/src/apps/inbox/__tests__/composer.test.tsx): C01/C02/V05 keyboard and IME behavior, failed-submit text retention/retry, pending-submit protection, blank text, and simple follow-up controls. The repeated-submit test initially exposed a real race; a synchronous pending guard now prevents it.
 - [Controlled model picker](../apps/shared/ui/__tests__/conversation/input/model-picker.test.tsx): C04 unknown saved models, external selection updates, searchable choices, and owner callbacks without an active agent.
 - [Controlled thinking level](../apps/shared/ui/__tests__/conversation/input/thinking-control.test.tsx): C06 Minimal and the caller-supplied level cycle.
 
 Browser checks use the actual `InboxPanel`/controller, shared chat pickers, generated plugin CSS, and `app.css` extracted from the installed Obsidian application. They passed in light/dark themes at 280/320/380/740px and cover V01–V07's layout cases; I01–I07's focus, native title/summary drag selection, independent details, drafts and Escape cases; picker Escape; L05 Debug copying; and C01/C02/C04/C06/S01 submission/configuration cases. Expanded code initially widened a grid track at 280px; a bounded track now keeps code scrolling within the detail. Historical test gaps outside these scenarios remain relevant.
 
 The broader inbox/settings/shared UI/React hook suite passed **581 tests across 86 files**, with one pre-existing skipped file containing two TODO tests. Source build, lint, formatting and the production bundle passed. Browser script, results and screenshots are under `.context/inbox-refactor/`; these local artifacts support this verification but are not a portable CI browser suite. The plugin was bundled, not installed or reloaded.
+
+## Design-system styling verification on 2026-11-11
+
+Checkpoint: `4acd6022`, committed before this refactor. Inbox layout, cards, source rows, replies and empty states now use Tailwind utilities and Franklin's existing theme bridge. Controls use the shared Button, IconButton, Badge, StatusDot and controlled Select, alongside the existing prompt/model/reasoning components. Shared outline buttons use inset rings instead of borders; no new public API or dependency was added.
+
+Native question-title/parent controls retain selectable text, including disabled titles. Native detail disclosures stay mounted and independent, as do follow-up drafts. `.study-feed` and `.study-answer-details` remain behavioral hooks; a surviving `study-*` class does not imply a custom style rule. The detail grid retains a bounded track through `grid-cols-1` (`minmax(0, 1fr)`). Feed reflow still uses the existing motion hook; insertion/reveal/spinner/recording animations use the existing utility bundle.
+
+Error and recording text use Obsidian's existing `--text-error`. The host bridge's `--destructive` represents a background fill, so it is not substituted for a text color. The bridge and shadcn semantic tokens are unchanged.
+
+Measured scope: Inbox UI and recording/capture stylesheets, excluding action settings. The checkpoint used `src/inbox/`; the current tree uses `src/apps/inbox/` after a concurrent source reorganization.
+
+| Metric | Checkpoint | Refactored |
+| --- | --: | --: |
+| Handwritten CSS lines (including comments and blank lines) | 746 | 23 |
+| CSS declarations | 411 | 6 |
+| `!important` declarations | 12 | 3 |
+| Production plugin stylesheet bytes | 114,064 | 103,984 |
+
+The 23 remaining lines handle Obsidian's view-container padding/overflow, scoped box sizing because the host omits Tailwind preflight, and reduced-motion suppression across nested shared controls. The three remaining `!important` declarations implement that reduced-motion preference. No styling was relocated into a new stylesheet or theme.
+
+Validation:
+
+- Baseline: **230 tests across 37 files**, plus the existing browser matrix, passed before implementation.
+- Refactored before the source reorganization: **608 tests across 88 files** passed. The final run against the moved Inbox/settings, shared UI and React hooks passed **606 tests across 87 files**; one pre-existing skipped file and two TODO tests remain. The final run used `--maxWorkers=3 --testTimeout=30000` after concurrent repository checks caused default-timeout failures; no tests were changed.
+- `npm run build`, formatting checks, production bundling, and lint passed. Full lint passed before the reorganization, and affected-file lint passed afterward. Full lint excludes existing `.context` scratch artifacts and required `NODE_OPTIONS=--max-old-space-size=8192` after the default heap was exhausted.
+- Browser checks used the actual InboxPanel/controller, shared chat controls, generated plugin CSS, and the previously extracted Obsidian host stylesheet. Both themes passed at 280/320/380/740px for card/form overflow, bounded code, long action names/errors, card outlines, tighter reply spacing, and inline follow-up/send geometry.
+- Interaction checks cover native title/summary selection, disabled-title dragging, independent details, retained drafts, Escape, keyboard submission and failed-save retention, picker independence, concurrency persistence/focus restoration, source-row/quote independence, Debug, recording switch/recovery after deletion, keyboard/touch Delete visibility, legacy preview clamping, request states, root insertion scrolling, and motion preferences.
+
+The self-initiated code-clean review found no remaining issues; its scoped review patch and report are saved with the validation artifacts.
+
+Browser fixtures, scripts, results and screenshots are under `.context/inbox-css-refactor/`; validation logs use `.context/inbox-css-*.log`. The bundle-size result includes the concurrent normalization of Inbox typography onto standard text utilities. These local checks do not constitute a portable CI browser suite. The production bundle was generated; the plugin was not installed or reloaded. Validation was repeated after the concurrent source reorganization, preserving its moved files and this styling refactor.
 
 ## Historical request trail
 
@@ -153,45 +184,41 @@ The broader inbox/settings/shared UI/React hook suite passed **581 tests across 
 
 [guide]: inbox-prototype.md
 [capture-handoff]: flashcard-training-capture-handoff.md
-[panel]: ../apps/obsidian/src/inbox/ui/panel.tsx
-[content]: ../apps/obsidian/src/inbox/ui/content.tsx
-[card]: ../apps/obsidian/src/inbox/ui/card.tsx
-[feed]: ../apps/obsidian/src/inbox/ui/feed.tsx
-[composer]: ../apps/obsidian/src/inbox/ui/composer.tsx
-[actions]: ../apps/obsidian/src/inbox/ui/actions.tsx
-[answer-ui]: ../apps/obsidian/src/inbox/ui/answer.tsx
-[question-css]: ../apps/obsidian/src/inbox/ui/questions.css
-[thread-css]: ../apps/obsidian/src/inbox/ui/threads.css
-[layout-css]: ../apps/obsidian/src/inbox/ui/layout.css
-[motion-css]: ../apps/obsidian/src/inbox/ui/motion.css
-[feed-motion]: ../apps/obsidian/src/inbox/ui/use-feed-motion.ts
-[controller]: ../apps/obsidian/src/inbox/controller/controller.ts
-[capture-source]: ../apps/obsidian/src/inbox/host/capture.ts
-[answer-instructions]: ../apps/obsidian/src/inbox/answer-instructions.ts
-[reasoning-setting]: ../apps/obsidian/src/settings/inbox-reasoning.tsx
-[debug-button]: ../apps/obsidian/src/inbox/debug/button.tsx
-[panel-tests]: ../apps/obsidian/src/inbox/__tests__/panel.test.tsx
-[answer-tests]: ../apps/obsidian/src/inbox/__tests__/answers.test.tsx
-[host-tests]: ../apps/obsidian/src/inbox/__tests__/host.test.ts
-[source-ui-tests]: ../apps/obsidian/src/inbox/ui/__tests__/source.test.tsx
-[source-navigation-tests]: ../apps/obsidian/src/inbox/host/__tests__/open-source.test.ts
-[controller-tests]: ../apps/obsidian/src/inbox/__tests__/controller.test.ts
-[instruction-tests]: ../apps/obsidian/src/inbox/__tests__/instructions.test.ts
-[agent-tests]: ../apps/obsidian/src/inbox/__tests__/agent.test.ts
-[persistence-tests]: ../apps/obsidian/src/inbox/__tests__/persistence.test.ts
-[action-tests]: ../apps/obsidian/src/inbox/__tests__/actions.test.ts
-[action-agent-tests]: ../apps/obsidian/src/inbox/__tests__/action-agent.test.ts
-[action-ui-tests]: ../apps/obsidian/src/inbox/__tests__/action-panel.test.tsx
-[debug-tests]: ../apps/obsidian/src/inbox/__tests__/debug.test.tsx
-[capture-tests]: ../apps/obsidian/src/inbox/capture/__tests__/controller.test.ts
-[capture-ui-tests]: ../apps/obsidian/src/inbox/capture/__tests__/panel.test.tsx
-[capture-lifecycle-tests]: ../apps/obsidian/src/inbox/capture/__tests__/lifecycle.test.ts
-[capture-persistence-tests]: ../apps/obsidian/src/inbox/capture/__tests__/persistence.test.ts
-[evidence-tests]: ../apps/obsidian/src/inbox/capture/evidence/__tests__/runtime.test.ts
-[settings-tests]: ../apps/obsidian/src/settings/__tests__/
-[reasoning-tests]: ../apps/obsidian/src/settings/__tests__/inbox-reasoning.test.tsx
-[instruction-setting-tests]: ../apps/obsidian/src/settings/__tests__/inbox-instructions.test.tsx
-[action-setting-tests]: ../apps/obsidian/src/settings/__tests__/inbox-actions.test.tsx
+[panel]: ../apps/obsidian/src/apps/inbox/ui/panel.tsx
+[content]: ../apps/obsidian/src/apps/inbox/ui/content.tsx
+[card]: ../apps/obsidian/src/apps/inbox/ui/card.tsx
+[feed]: ../apps/obsidian/src/apps/inbox/ui/feed.tsx
+[composer]: ../apps/obsidian/src/apps/inbox/ui/composer.tsx
+[actions]: ../apps/obsidian/src/apps/inbox/ui/actions.tsx
+[answer-ui]: ../apps/obsidian/src/apps/inbox/ui/answer.tsx
+[feed-motion]: ../apps/obsidian/src/apps/inbox/ui/use-feed-motion.ts
+[controller]: ../apps/obsidian/src/apps/inbox/controller/controller.ts
+[capture-source]: ../apps/obsidian/src/apps/inbox/host/capture.ts
+[answer-instructions]: ../apps/obsidian/src/apps/inbox/answer-instructions.ts
+[reasoning-setting]: ../apps/obsidian/src/apps/inbox/settings/reasoning.tsx
+[debug-button]: ../apps/obsidian/src/apps/inbox/debug/button.tsx
+[panel-tests]: ../apps/obsidian/src/apps/inbox/__tests__/panel.test.tsx
+[answer-tests]: ../apps/obsidian/src/apps/inbox/__tests__/answers.test.tsx
+[host-tests]: ../apps/obsidian/src/apps/inbox/__tests__/host.test.ts
+[source-ui-tests]: ../apps/obsidian/src/apps/inbox/ui/__tests__/source.test.tsx
+[source-navigation-tests]: ../apps/obsidian/src/apps/inbox/host/__tests__/open-source.test.ts
+[controller-tests]: ../apps/obsidian/src/apps/inbox/__tests__/controller.test.ts
+[instruction-tests]: ../apps/obsidian/src/apps/inbox/__tests__/instructions.test.ts
+[agent-tests]: ../apps/obsidian/src/apps/inbox/__tests__/agent.test.ts
+[persistence-tests]: ../apps/obsidian/src/apps/inbox/__tests__/persistence.test.ts
+[action-tests]: ../apps/obsidian/src/apps/inbox/__tests__/actions.test.ts
+[action-agent-tests]: ../apps/obsidian/src/apps/inbox/__tests__/action-agent.test.ts
+[action-ui-tests]: ../apps/obsidian/src/apps/inbox/__tests__/action-panel.test.tsx
+[debug-tests]: ../apps/obsidian/src/apps/inbox/__tests__/debug.test.tsx
+[capture-tests]: ../apps/obsidian/src/apps/inbox/capture/__tests__/controller.test.ts
+[capture-ui-tests]: ../apps/obsidian/src/apps/inbox/capture/__tests__/panel.test.tsx
+[capture-lifecycle-tests]: ../apps/obsidian/src/apps/inbox/capture/__tests__/lifecycle.test.ts
+[capture-persistence-tests]: ../apps/obsidian/src/apps/inbox/capture/__tests__/persistence.test.ts
+[evidence-tests]: ../apps/obsidian/src/apps/inbox/evidence/__tests__/runtime.test.ts
+[settings-tests]: ../apps/obsidian/src/plugin/settings/__tests__/
+[reasoning-tests]: ../apps/obsidian/src/apps/inbox/settings/__tests__/reasoning.test.tsx
+[instruction-setting-tests]: ../apps/obsidian/src/apps/inbox/settings/__tests__/instructions.test.tsx
+[action-setting-tests]: ../apps/obsidian/src/apps/inbox/settings/actions/__tests__/settings.test.tsx
 [model-hook-tests]: ../packages/ui/react/src/__tests__/use-model-selection.test.tsx
 [thinking-hook-tests]: ../packages/ui/react/src/__tests__/use-thinking-level.test.tsx
 [prompt-tests]: ../packages/ui/react/src/__tests__/prompt.test.tsx

@@ -1,8 +1,54 @@
 # Obsidian Plugin
 
-This package contains the Obsidian Franklin agent window.
+This package contains the Franklin Obsidian plugin and its Chat and Study inbox apps.
 
-It depends on Franklin workspace packages for shared UI, agent runtime, and platform bindings. The plugin currently registers a view and wires Obsidian filesystem/platform integration inside the plugin runtime.
+It depends on Franklin workspace packages for shared UI, agent runtime, and platform bindings. The plugin assembles app lifecycles and shared Obsidian filesystem/platform integration.
+
+## Source organization
+
+```text
+src/
+  main.ts                  Obsidian plugin entry point and lifecycle
+  plugin/
+    bootstrap.ts           Shared service creation and app startup
+    settings/              Global settings and composition of app sections
+  apps/
+    chat/                  Chat registration, view, agent configuration, UI and settings
+    inbox/                 Inbox registration, queue, agents, UI and settings
+      evidence/            Question research and diagnostics shared within Inbox
+      capture/             Flashcard recording and Mochi integration
+  shared/
+    obsidian/              Filesystem, paths, auth storage, wikilinks and host settings API
+    agent/                 Obsidian platform factory and reference/PDF capabilities
+    ui/                    React mounting, portals, host context and setting primitives
+    diff/                  Editor and explorer integration for reviewing agent writes
+  styles/                  Global theme bridge, reset and stylesheet entry point
+  mocks/                   Obsidian test and Storybook mocks
+  dev/                     Development instrumentation
+```
+
+The plugin assembly imports apps and shared capabilities. Apps may import shared
+code and Franklin packages; shared code must not depend on app internals. Keep
+app-specific state, settings, styles, tests and stories beside their owner. Move
+code into shared when another app uses the same capability. Cross-host UI and
+runtime implementations continue to belong in the existing workspace packages.
+
+Apps register through ordinary functions. The plugin assembles their settings
+sections and owns their lifetime; unmounting a pane only disposes its UI. Inbox
+work and flashcard recording therefore survive closing the Inbox pane. Chat keeps
+its persisted session collection, while Inbox creates independent agents through
+`FranklinApp.createAgent()`. See the [agent lifecycle contract](../../packages/agent/README.md#extensions).
+
+Source reorganization does not move saved data: chat sessions, `inbox.json`,
+`capture.json`, `inbox-research/` and `diff-cache.json` retain their existing paths
+inside the plugin directory. Capture remains an Inbox feature and research
+records remain specific to Inbox questions.
+
+Inbox component styling uses Tailwind classes. Its small `ui/styles.css` owns
+host-container and reduced-motion rules; `styles/globals.css` imports that file,
+Inbox action settings styles and shared diff styles. Tailwind scans all of `src/`,
+including each app. Feature tests live in their existing `__tests__` folders and
+Storybook discovers colocated `*.stories.tsx` files recursively.
 
 ## Requirements
 
@@ -76,6 +122,8 @@ Use the inbox ribbon icon or **Franklin: Open study inbox**. Select a model and 
 Choose **Franklin settings → Study inbox → Reasoning level** to set Off, Minimal, Low, Medium, High or Extra high. Changes save immediately and apply to new questions, follow-ups and inbox actions. Retries keep their original level.
 
 The inbox composer reuses chat's prompt surface, send button, searchable model picker and reasoning control. Its expanding textarea and compact follow-up field keep inbox-specific drafts and submission behavior. The main composer also offers the reasoning control; model and reasoning changes stay independent of chat. See the [UI regression requirements](../../docs/inbox-ui-regressions.md) for the behavior preserved during component reuse.
+
+Inbox layout and state styling use Tailwind and Franklin's shared Button, IconButton, Badge, StatusDot and Select components. Appearance follows the existing Obsidian-to-Franklin theme bridge. The only Inbox CSS handles host view containment, box sizing without preflight, and reduced motion; see the [styling verification](../../docs/inbox-ui-regressions.md#design-system-styling-verification-on-2026-11-11) for measurements and regression coverage.
 
 Opening or closing a detail section selects its question and keeps it selected. Question titles and section headings can be selected and copied. Each question also has a **Debug** button that copies a JSON report for diagnosis: its current attempt, source/ancestor context, instructions, answer or error, saved research, and available agent events. Future attempts retain a bounded timeline of turn boundaries, complete message updates and tool calls/results. Credentials are redacted; reasoning content, binary bodies and streaming chunks are omitted. Older questions report unavailable events explicitly.
 

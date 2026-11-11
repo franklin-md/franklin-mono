@@ -20,7 +20,7 @@ The branch name predates the inbox work. The worktree contains substantial uncom
 
 Read `AGENTS.md`, `apps/obsidian/README.md`, and `docs/inbox-prototype.md` first. Useful entry points:
 
-- `apps/obsidian/src/inbox/types.ts`: question IDs, original text, source snapshots, answer, model and parent lineage.
+- `apps/obsidian/src/apps/inbox/types.ts`: question IDs, original text, source snapshots, answer, model and parent lineage.
 - `inbox/ui/card.tsx`, `inbox/ui/actions.tsx`: existing question/action UI (paths relative to `apps/obsidian/src/`).
 - `inbox/actions/`: configurable name/prompt actions; these currently launch agent jobs. A recording toggle is deterministic host behavior, so do not force it into an LLM prompt to perform timestamp/database operations. Reuse the UI/controller patterns where appropriate.
 - `inbox/controller/`: state, schema, migration, lineage and persistence coordination.
@@ -45,7 +45,7 @@ Agreed storage layout, updated after implementation:
 <collection-folder>/<episode-id>.json
 ```
 
-Each episode is one JSON file containing `captureVersion: 4`, question/attempt IDs, UTC recording window, draft baseline/provenance, automatic completion time/mode, context, research records, captured cards, and unfiltered snapshot history. Increment the capture version whenever the capturing technique changes; the source comment in `apps/obsidian/src/inbox/capture/version.ts` records this rule. Recovery-journal and evidence schema versions are independent.
+Each episode is one JSON file containing `captureVersion: 4`, question/attempt IDs, UTC recording window, draft baseline/provenance, automatic completion time/mode, context, research records, captured cards, and unfiltered snapshot history. Increment the capture version whenever the capturing technique changes; the source comment in `apps/obsidian/src/apps/inbox/capture/version.ts` records this rule. Recovery-journal and evidence schema versions are independent.
 
 Preserve raw evidence separately from the final card set within this file. Include snapshot time, source provenance and missing/truncated context status. Template-based cards may have empty `content`; capture `fields` and enough template information to interpret them. Retain attachment references and mark unavailable assets rather than silently losing meaning.
 
