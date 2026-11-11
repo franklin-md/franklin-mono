@@ -141,17 +141,67 @@ streams; change it when a new action starts to trigger the vertical transition.
 input and submission behavior. `PromptContainer` adds chat's outer spacing;
 `PromptSurface` can also style an existing form with `asChild`.
 
-`ModelPicker` accepts `provider`, `model`, and `onSelect(provider, model)`;
-it does not read or change an active agent. Provider authentication actions
-still use the application harness and `AuthActionProvider` supplied by the
-host. `ThinkingControl` accepts `level`, `levels`, and `onChange(level)`, so a
-host can preserve its own supported reasoning levels.
+`ModelPicker` is a prebuilt recipe with caller-owned model and optional effort
+state. It does not read or change an active agent:
 
-`ModelSelector` and `ThinkingToggle` bind those controls to chat's existing
-hooks. Other workflows can supply their own state and callbacks. For example,
-Obsidian's inbox uses its persisted preferences and all six reasoning levels,
-while its composers use `AutoGrowTextarea` and queue submissions independently
-of chat. Reusing the prompt surface does not require TipTap or mentions.
+```tsx
+<ModelPicker
+  provider={provider}
+  model={model}
+  onSelect={onSelectModel}
+  effort={{ level, levels, onChange: onChangeReasoning }}
+/>
+```
+
+Omit `effort` for a model-only picker. The effort row stays below the scrolling
+model list and is not filtered by search. It opens choices in the same popover;
+choosing one or pressing Back returns to models. Escape returns from effort to
+models first, then closes the popover. Focus returns to the effort row or the
+picker trigger respectively. Each caller supplies its available levels; the UI
+does not infer model capabilities or change reasoning when selecting a model.
+
+For custom compositions, import these parts from `@franklin/ui`:
+
+```tsx
+<ModelPickerRoot
+  catalog={catalog}
+  provider={provider}
+  model={model}
+  onSelect={onSelectModel}
+>
+  <ModelPickerTrigger />
+  <ModelPickerContent>
+    <ModelPickerModels>
+      <ModelPickerSearch />
+      <ModelPickerList renderProviderAction={renderProviderAction} />
+    </ModelPickerModels>
+    <ModelPickerFooter>
+      <ModelPickerEffort level={level} levels={levels} onChange={onChangeReasoning} />
+    </ModelPickerFooter>
+  </ModelPickerContent>
+</ModelPickerRoot>
+```
+
+Remove `ModelPickerSearch` for an unfiltered list, or remove the footer for no
+effort control. Add other React controls to the footer as needed. The trigger
+supports `asChild` for a custom button. Models absent from the catalog retain
+their saved identity in the default trigger. The parts use the existing
+[Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover) and
+[cmdk](https://github.com/pacocoursey/cmdk) implementations for popup and command
+navigation; `@franklin/react` remains the headless hooks layer.
+
+The parts need no agent or application harness. `ModelPickerList` renders no
+authentication controls unless `renderProviderAction` is supplied. The prebuilt
+recipe defaults to `MODEL_CATALOG` and Franklin's authentication shortcuts, which
+use the host's harness and `AuthActionProvider`. Override `catalog` and
+`renderProviderAction` on the recipe for another host, or use `() => null` to
+omit authentication controls.
+
+`ModelSelector` binds the recipe to chat's existing model and thinking hooks.
+Inbox supplies its persisted preferences and all six reasoning levels, and
+queues submissions independently of chat. Standalone `ThinkingControl` and
+`ThinkingToggle` remain available for other compositions. Reusing the prompt
+surface does not require TipTap or mentions.
 
 ## Minimal Consumer Checklist
 

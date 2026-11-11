@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModelPicker } from '../../../src/conversation/input/model-selector/picker.js';
 
@@ -26,6 +32,98 @@ afterEach(() => {
 });
 
 describe('controlled model picker', () => {
+	it('can remove effort while its view is open without losing the model list', () => {
+		const props = { provider: 'custom', model: 'saved', onSelect: vi.fn() };
+		const { rerender } = render(
+			<ModelPicker
+				{...props}
+				effort={{ level: 'low', levels: ['low', 'high'], onChange: vi.fn() }}
+			/>,
+		);
+		fireEvent.click(screen.getByRole('button'));
+		fireEvent.click(screen.getByRole('button', { name: 'Effort: Low' }));
+		rerender(<ModelPicker {...props} />);
+		expect(screen.getByRole('combobox')).toBeTruthy();
+		expect(screen.queryByRole('button', { name: /^Effort:/ })).toBeNull();
+	});
+	it('omits effort when it is not supplied', () => {
+		render(<ModelPicker provider="custom" model="saved" onSelect={vi.fn()} />);
+		fireEvent.click(screen.getByRole('button'));
+		expect(screen.queryByRole('button', { name: /^Effort:/ })).toBeNull();
+	});
+
+	it('keeps effort outside model filtering and reports only the chosen effort to its owner', async () => {
+		const onChange = vi.fn();
+		const onSelect = vi.fn();
+		const props = {
+			provider: 'custom',
+			model: 'saved',
+			onSelect,
+			effort: {
+				level: 'high' as const,
+				levels: ['off', 'minimal', 'low', 'medium', 'high', 'xhigh'] as const,
+				onChange,
+			},
+		};
+		const { rerender } = render(<ModelPicker {...props} />);
+		fireEvent.click(screen.getByRole('button'));
+		fireEvent.change(screen.getByPlaceholderText('Search models...'), {
+			target: { value: 'no-such-model' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Effort: High' }));
+		expect(screen.getByRole('listbox', { name: 'Effort levels' })).toBeTruthy();
+		expect(screen.getAllByRole('option')).toHaveLength(6);
+		fireEvent.click(screen.getByRole('option', { name: 'Minimal' }));
+		expect(onChange).toHaveBeenCalledExactlyOnceWith('minimal');
+		expect(onSelect).not.toHaveBeenCalled();
+		expect(screen.getByRole('button', { name: 'Effort: High' })).toBeTruthy();
+		rerender(
+			<ModelPicker {...props} effort={{ ...props.effort, level: 'minimal' }} />,
+		);
+		expect(
+			screen.getByRole('button', { name: 'Effort: Minimal' }),
+		).toBeTruthy();
+	});
+
+	it('uses Back or Escape to return from effort, then Escape closes and restores trigger focus', async () => {
+		render(
+			<ModelPicker
+				provider="custom"
+				model="saved"
+				label="Choose model"
+				onSelect={vi.fn()}
+				effort={{
+					level: 'medium',
+					levels: ['low', 'medium', 'high'],
+					onChange: vi.fn(),
+				}}
+			/>,
+		);
+		const trigger = screen.getByRole('button', { name: 'Choose model' });
+		fireEvent.click(trigger);
+		fireEvent.click(screen.getByRole('button', { name: 'Effort: Medium' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Back to models' }));
+		expect(document.activeElement).toBe(
+			screen.getByRole('button', { name: 'Effort: Medium' }),
+		);
+		fireEvent.click(screen.getByRole('button', { name: 'Effort: Medium' }));
+		fireEvent.keyDown(document.activeElement ?? document.body, {
+			key: 'Escape',
+		});
+		await waitFor(() =>
+			expect(
+				screen.queryByRole('button', { name: 'Back to models' }),
+			).toBeNull(),
+		);
+		expect(document.activeElement).toBe(
+			screen.getByRole('button', { name: 'Effort: Medium' }),
+		);
+		fireEvent.keyDown(document.activeElement ?? document.body, {
+			key: 'Escape',
+		});
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+		await waitFor(() => expect(document.activeElement).toBe(trigger));
+	});
 	it('C04: preserves a saved model outside the catalog and reflects external changes', () => {
 		const select = vi.fn();
 		const { rerender } = render(

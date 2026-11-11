@@ -4,7 +4,6 @@ import {
 	Markdown,
 	ModelPicker,
 	PromptFooterControlGroup,
-	ThinkingControl,
 } from '@franklin/ui';
 import { questionSchema } from '../controller/question-schema.js';
 import type { InboxController } from '../controller/controller.js';
@@ -122,11 +121,11 @@ export function InboxPanel({
 							model={preferences.model}
 							label="Model for new questions"
 							onSelect={(provider, model) => configure({ provider, model })}
-						/>
-						<ThinkingControl
-							level={preferences.reasoning}
-							levels={questionSchema.shape.reasoning.options}
-							onChange={(reasoning) => configure({ reasoning })}
+							effort={{
+								level: preferences.reasoning,
+								levels: questionSchema.shape.reasoning.options,
+								onChange: (reasoning) => configure({ reasoning }),
+							}}
 						/>
 						<Button
 							type="button"

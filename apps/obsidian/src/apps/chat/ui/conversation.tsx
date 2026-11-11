@@ -11,7 +11,6 @@ import {
 	PromptFooterControls,
 	PromptHeader,
 	SharedPromptAgentControl,
-	ThinkingToggle,
 } from '@franklin/ui';
 import { Notice } from 'obsidian';
 
@@ -40,7 +39,6 @@ export function ConversationPanel() {
 						<PromptFooterControls>
 							<PromptFooterControlGroup>
 								<ModelSelector />
-								<ThinkingToggle />
 								{process.env.NODE_ENV === 'development' ? (
 									<InspectDumpButton
 										onCopied={() =>

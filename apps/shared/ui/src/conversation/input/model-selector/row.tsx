@@ -4,18 +4,17 @@ import { cn } from '../../../lib/cn.js';
 import type { CatalogModel } from '../models/catalog.js';
 import { ModelIcon } from '../provider-icons.js';
 
-export function ModelRow({
-	model,
-	selected,
-	onSelect,
-}: {
+type Props = {
 	model: CatalogModel;
 	selected: boolean;
 	onSelect: () => void;
-}) {
+};
+
+export function ModelRow({ model, selected, onSelect }: Props) {
 	return (
 		<CommandItem
 			value={`${model.provider}/${model.id}`}
+			keywords={[model.name]}
 			onSelect={onSelect}
 			className={cn('gap-2', selected && 'bg-accent')}
 		>
