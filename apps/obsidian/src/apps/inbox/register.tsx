@@ -6,6 +6,7 @@ import type { FranklinApp } from '@franklin/agent';
 import type { DirectiveRegistry } from '../../shared/directives/registry.js';
 import { InboxQuestionDirectives } from './directive/controller.js';
 import { submitInboxSelection } from './directive/submit.js';
+import { InboxCaptureChooser } from './quick-capture/host.js';
 import type { QuestionNavigation } from './ui/navigation.js';
 import { ApplicationProvider } from '@franklin/ui';
 import type { InboxController } from './controller/controller.js';
@@ -63,6 +64,12 @@ export function registerInbox({
 			void activate(id).catch(report);
 		},
 		onError: report,
+	});
+	const captureChooser = new InboxCaptureChooser({
+		app: plugin.app, inbox, definition: questionDirectives.definition, onError: report,
+		onSuccess: (action) => {
+			new Notice(action === 'quick-add' ? 'Question added to study inbox' : 'Thought dump added to study inbox');
+		},
 	});
 	plugin.registerView(
 		INBOX_VIEW_TYPE,
@@ -133,5 +140,21 @@ export function registerInbox({
 			return true;
 		},
 	});
-	return () => questionDirectives.dispose();
+	plugin.addCommand({
+		id: 'open-inbox-capture-chooser',
+		name: 'Open Inbox capture chooser',
+		editorCheckCallback: (checking, editor, view) => {
+			const source = captureSelection({ editor, view });
+			if (!captureChooser.isOpen && (!source || !stripDirectives(source.quote).trim())) return false;
+			if (!checking) {
+				try { captureChooser.open(editor, view); }
+				catch (error) { report(error); }
+			}
+			return true;
+		},
+	});
+	return async () => {
+		await captureChooser.dispose();
+		await questionDirectives.dispose();
+	};
 }

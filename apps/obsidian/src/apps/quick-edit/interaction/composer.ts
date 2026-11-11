@@ -137,6 +137,7 @@ export class QuickEditInteraction {
 		const draft = findQuickEditDraft(source, id);
 		const original = view.state.selection.main;
 		const text = draft ? '' : instance.state.get().prompt + draftEnd(id);
+		const changes = view.state.changes(text ? { from: token.to, to: token.to, insert: text } : []);
 		changeQuickEdit(
 			view,
 			text ? [{ from: token.to, to: token.to, text }] : [],
@@ -145,7 +146,7 @@ export class QuickEditInteraction {
 					id,
 					fresh: instance.state.get().status === 'ready',
 					pending: false,
-					original: { anchor: original.anchor, head: original.head },
+					original: { anchor: changes.mapPos(original.anchor, 1), head: changes.mapPos(original.head, 1) },
 				}),
 			],
 			EditorSelection.single(
