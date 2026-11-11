@@ -34,6 +34,4 @@ export type ModelPickerContextValue = {
 	catalog: readonly ProviderGroup[];
 	selectedEntry: CatalogModel | undefined;
 	select: (model: CatalogModel) => void;
-	view: 'models' | 'effort';
-	setView: (view: 'models' | 'effort') => void;
 };

@@ -32,7 +32,7 @@ afterEach(() => {
 });
 
 describe('controlled model picker', () => {
-	it('can remove effort while its view is open without losing the model list', () => {
+	it('can remove inline effort while the picker is open without losing the model list', () => {
 		const props = { provider: 'custom', model: 'saved', onSelect: vi.fn() };
 		const { rerender } = render(
 			<ModelPicker
@@ -41,51 +41,86 @@ describe('controlled model picker', () => {
 			/>,
 		);
 		fireEvent.click(screen.getByRole('button'));
-		fireEvent.click(screen.getByRole('button', { name: 'Effort: Low' }));
+		expect(screen.getByRole('radiogroup', { name: 'Effort' })).toBeTruthy();
 		rerender(<ModelPicker {...props} />);
 		expect(screen.getByRole('combobox')).toBeTruthy();
-		expect(screen.queryByRole('button', { name: /^Effort:/ })).toBeNull();
-	});
-	it('omits effort when it is not supplied', () => {
-		render(<ModelPicker provider="custom" model="saved" onSelect={vi.fn()} />);
-		fireEvent.click(screen.getByRole('button'));
-		expect(screen.queryByRole('button', { name: /^Effort:/ })).toBeNull();
+		expect(screen.queryByRole('radiogroup')).toBeNull();
 	});
 
-	it('keeps effort outside model filtering and reports only the chosen effort to its owner', async () => {
+	it('omits effort and its trigger summary when it is not supplied', () => {
+		render(<ModelPicker provider="custom" model="saved" onSelect={vi.fn()} />);
+		expect(screen.getByRole('button').textContent).toBe('saved');
+		fireEvent.click(screen.getByRole('button'));
+		expect(screen.queryByRole('radiogroup')).toBeNull();
+	});
+
+	it('keeps inline effort outside filtering and reports only the chosen effort to its owner', () => {
 		const onChange = vi.fn();
 		const onSelect = vi.fn();
-		const props = {
-			provider: 'custom',
-			model: 'saved',
-			onSelect,
-			effort: {
-				level: 'high' as const,
-				levels: ['off', 'minimal', 'low', 'medium', 'high', 'xhigh'] as const,
-				onChange,
-			},
-		};
-		const { rerender } = render(<ModelPicker {...props} />);
+		const levels = [
+			'off',
+			'minimal',
+			'low',
+			'medium',
+			'high',
+			'xhigh',
+		] as const;
+		const props = { provider: 'custom', model: 'saved', onSelect };
+		const { rerender } = render(
+			<ModelPicker {...props} effort={{ level: 'high', levels, onChange }} />,
+		);
 		fireEvent.click(screen.getByRole('button'));
 		fireEvent.change(screen.getByPlaceholderText('Search models...'), {
 			target: { value: 'no-such-model' },
 		});
-		fireEvent.click(screen.getByRole('button', { name: 'Effort: High' }));
-		expect(screen.getByRole('listbox', { name: 'Effort levels' })).toBeTruthy();
-		expect(screen.getAllByRole('option')).toHaveLength(6);
-		fireEvent.click(screen.getByRole('option', { name: 'Minimal' }));
+		expect(screen.getAllByRole('radio')).toHaveLength(6);
+		expect(
+			screen.getByRole<HTMLInputElement>('radio', { name: 'High' }).checked,
+		).toBe(true);
+		fireEvent.click(screen.getByRole('radio', { name: 'Minimal' }));
 		expect(onChange).toHaveBeenCalledExactlyOnceWith('minimal');
 		expect(onSelect).not.toHaveBeenCalled();
-		expect(screen.getByRole('button', { name: 'Effort: High' })).toBeTruthy();
+		expect(
+			screen.getByRole<HTMLInputElement>('radio', { name: 'High' }).checked,
+		).toBe(true);
+		expect(screen.getByRole<HTMLInputElement>('combobox').value).toBe(
+			'no-such-model',
+		);
+		expect(screen.queryByRole('button', { name: 'Back to models' })).toBeNull();
 		rerender(
-			<ModelPicker {...props} effort={{ ...props.effort, level: 'minimal' }} />,
+			<ModelPicker
+				{...props}
+				effort={{ level: 'minimal', levels, onChange }}
+			/>,
 		);
 		expect(
-			screen.getByRole('button', { name: 'Effort: Minimal' }),
-		).toBeTruthy();
+			screen.getByRole<HTMLInputElement>('radio', { name: 'Minimal' }).checked,
+		).toBe(true);
+		expect(onChange).toHaveBeenCalledTimes(1);
 	});
 
-	it('uses Back or Escape to return from effort, then Escape closes and restores trigger focus', async () => {
+	it('shows the compact current effort beside the model name and reflects external updates', () => {
+		const props = {
+			provider: 'openai-codex',
+			model: 'gpt-6.1-sol',
+			onSelect: vi.fn(),
+		};
+		const levels = ['medium', 'xhigh'] as const;
+		const onChange = vi.fn();
+		const { rerender } = render(
+			<ModelPicker {...props} effort={{ level: 'medium', levels, onChange }} />,
+		);
+		expect(screen.getByRole('button').textContent).toContain('GPT-6.1-Sol');
+		expect(screen.getByRole('button').textContent).toContain('Med');
+		rerender(
+			<ModelPicker {...props} effort={{ level: 'xhigh', levels, onChange }} />,
+		);
+		expect(screen.getByRole('button').textContent).toContain('XHigh');
+		expect(screen.getByRole('button').title).toContain('Extra high');
+		expect(onChange).not.toHaveBeenCalled();
+	});
+
+	it('closes on Escape from an effort choice and restores trigger focus', async () => {
 		render(
 			<ModelPicker
 				provider="custom"
@@ -101,26 +136,9 @@ describe('controlled model picker', () => {
 		);
 		const trigger = screen.getByRole('button', { name: 'Choose model' });
 		fireEvent.click(trigger);
-		fireEvent.click(screen.getByRole('button', { name: 'Effort: Medium' }));
-		fireEvent.click(screen.getByRole('button', { name: 'Back to models' }));
-		expect(document.activeElement).toBe(
-			screen.getByRole('button', { name: 'Effort: Medium' }),
-		);
-		fireEvent.click(screen.getByRole('button', { name: 'Effort: Medium' }));
-		fireEvent.keyDown(document.activeElement ?? document.body, {
-			key: 'Escape',
-		});
-		await waitFor(() =>
-			expect(
-				screen.queryByRole('button', { name: 'Back to models' }),
-			).toBeNull(),
-		);
-		expect(document.activeElement).toBe(
-			screen.getByRole('button', { name: 'Effort: Medium' }),
-		);
-		fireEvent.keyDown(document.activeElement ?? document.body, {
-			key: 'Escape',
-		});
+		const selected = screen.getByRole('radio', { name: 'Medium' });
+		selected.focus();
+		fireEvent.keyDown(selected, { key: 'Escape' });
 		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 		await waitFor(() => expect(document.activeElement).toBe(trigger));
 	});

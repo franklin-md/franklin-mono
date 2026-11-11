@@ -30,7 +30,7 @@ export function ModelPicker({
 			model={model}
 			onSelect={onSelect}
 		>
-			<ModelPickerTrigger aria-label={label} />
+			<ModelPickerTrigger aria-label={label} effort={effort?.level} />
 			<ModelPickerContent>
 				<ModelPickerModels>
 					<ModelPickerSearch />

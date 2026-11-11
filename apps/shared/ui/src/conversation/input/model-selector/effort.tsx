@@ -1,12 +1,5 @@
-import { ArrowLeft, Check, ChevronRight } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef } from 'react';
-import { Button } from '../../../primitives/button.js';
-import {
-	Command,
-	CommandItem,
-	CommandList,
-} from '../../../primitives/command.js';
-import { useModelPicker } from './context.js';
+import { useId, useLayoutEffect, useRef } from 'react';
+import { cn } from '../../../lib/cn.js';
 import { EFFORT_LABELS } from './effort-labels.js';
 import type { ModelPickerEffortProps } from './types.js';
 
@@ -15,72 +8,57 @@ export function ModelPickerEffort({
 	levels,
 	onChange,
 }: ModelPickerEffortProps) {
-	const { view, setView } = useModelPicker();
-	const trigger = useRef<HTMLButtonElement>(null);
+	const id = useId();
+	const selected = useRef<HTMLLabelElement>(null);
 	const choices = useRef<HTMLDivElement>(null);
-	const previousView = useRef(view);
 	useLayoutEffect(() => {
-		if (view === 'effort') choices.current?.focus();
-		else if (previousView.current === 'effort') trigger.current?.focus();
-		previousView.current = view;
-	}, [view]);
-	// Removing this optional section while its view is open must reveal models.
-	useEffect(() => () => setView('models'), [setView]);
-
-	if (view === 'effort')
-		return (
-			<>
-				<Button
-					type="button"
-					variant="ghost"
-					size="sm"
-					className="mb-1 w-full justify-start gap-2"
-					onClick={() => setView('models')}
-				>
-					<ArrowLeft className="h-3.5 w-3.5" /> Back to models
-				</Button>
-				<Command defaultValue={level} loop aria-label="Effort levels">
-					<CommandList ref={choices} label="Effort levels">
-						{levels.map((choice) => (
-							<CommandItem
-								key={choice}
-								value={choice}
-								onSelect={() => {
-									onChange(choice);
-									setView('models');
-								}}
-							>
-								<span>{EFFORT_LABELS[choice]}</span>
-								{choice === level && (
-									<Check aria-hidden="true" className="ml-auto h-3.5 w-3.5" />
-								)}
-							</CommandItem>
-						))}
-					</CommandList>
-				</Command>
-			</>
-		);
+		const revealSelection = () => {
+			selected.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+		};
+		// Radix can constrain the popover width after its initial layout. Observe
+		// that final width (and pane resizes) so a saved selection stays visible.
+		const observer = new ResizeObserver(revealSelection);
+		if (choices.current) observer.observe(choices.current);
+		revealSelection();
+		return () => observer.disconnect();
+	}, [level, levels]);
 
 	return (
-		<Button
-			ref={trigger}
-			type="button"
-			variant="ghost"
-			size="sm"
-			className="w-full justify-between gap-2 px-2 text-sm"
-			aria-label={`Effort: ${EFFORT_LABELS[level]}`}
-			aria-haspopup="listbox"
-			disabled={levels.length === 0}
-			onClick={() => setView('effort')}
-		>
-			<span>Effort</span>
-			<span className="ml-auto truncate text-muted-foreground">
-				{EFFORT_LABELS[level]}
+		<div className="flex min-w-0 items-center gap-3 px-2 py-1">
+			<span id={id} className="shrink-0 text-xs text-muted-foreground">
+				Effort
 			</span>
-			<ChevronRight
-				aria-hidden="true"
-				className="h-3.5 w-3.5 text-muted-foreground"
-			/>
-		</Button>
+			<div
+				ref={choices}
+				role="radiogroup"
+				aria-labelledby={id}
+				className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none]"
+			>
+				{levels.map((choice) => (
+					<label
+						key={choice}
+						ref={choice === level ? selected : undefined}
+						className={cn(
+							'relative shrink-0 cursor-pointer select-none rounded-md px-1.5 py-1 text-xs font-medium transition-colors has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-inset has-[:focus-visible]:ring-ring',
+							choice === level
+								? 'bg-muted text-foreground'
+								: 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+						)}
+						title={EFFORT_LABELS[choice].label}
+					>
+						<input
+							type="radio"
+							name={id}
+							value={choice}
+							checked={choice === level}
+							aria-label={EFFORT_LABELS[choice].label}
+							className="sr-only"
+							onChange={() => onChange(choice)}
+						/>
+						{EFFORT_LABELS[choice].shortLabel}
+					</label>
+				))}
+			</div>
+		</div>
 	);
 }

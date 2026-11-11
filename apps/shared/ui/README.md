@@ -154,11 +154,18 @@ state. It does not read or change an active agent:
 ```
 
 Omit `effort` for a model-only picker. The effort row stays below the scrolling
-model list and is not filtered by search. It opens choices in the same popover;
-choosing one or pressing Back returns to models. Escape returns from effort to
-models first, then closes the popover. Focus returns to the effort row or the
-picker trigger respectively. Each caller supplies its available levels; the UI
-does not infer model capabilities or change reasoning when selecting a model.
+model list and is not filtered by search. Its inline radio choices use a pill to
+mark the current level; selecting one keeps the picker open. Native radio-group
+keyboard navigation supports arrow keys and Space. Choices scroll horizontally
+when needed, revealing the selected level on reopen or external changes. Escape
+closes the popover and returns focus to the trigger. Each caller supplies its
+available levels; the UI does not infer model capabilities or change reasoning
+when selecting a model.
+
+The default trigger shows the model followed by the compact effort label in
+smaller, muted text. The model name truncates before the effort label. Its tooltip
+and accessible description retain the full level name. Omitting `effort` removes
+both the inline selector and the trigger's effort summary.
 
 For custom compositions, import these parts from `@franklin/ui`:
 
@@ -169,7 +176,7 @@ For custom compositions, import these parts from `@franklin/ui`:
   model={model}
   onSelect={onSelectModel}
 >
-  <ModelPickerTrigger />
+  <ModelPickerTrigger effort={level} />
   <ModelPickerContent>
     <ModelPickerModels>
       <ModelPickerSearch />
