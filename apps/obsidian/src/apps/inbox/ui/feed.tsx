@@ -1,6 +1,10 @@
 import { Inbox } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import type { QuestionNavigation } from './navigation.js';
+import type { InboxGroup } from '../hierarchy/types.js';
+import { inboxNodes } from '../hierarchy/nodes.js';
+import { QuestionGroup } from './group.js';
 
 import { QuestionCard } from './card.js';
 import type { StudyQuestion, QuestionSource } from '../types.js';
@@ -8,6 +12,9 @@ import { useFeedMotion } from './use-feed-motion.js';
 
 type Props = {
 	questions: StudyQuestion[];
+	groups?: InboxGroup[];
+	onFoldGroup?: (id: string, folded: boolean) => void;
+	navigation?: QuestionNavigation;
 	onFollowUp: (text: string, parentId: string) => void | Promise<void>;
 	onOpenSource?: (source: QuestionSource) => void;
 	renderAnswer?: (answer: string) => ReactNode;
@@ -30,26 +37,63 @@ function dayLabel(timestamp: number) {
 	return dayFormat.format(date);
 }
 
-export function QuestionFeed({ questions, renderActions, ...actions }: Props) {
+export function QuestionFeed({
+	questions,
+	groups,
+	onFoldGroup,
+	renderActions,
+	navigation,
+	...actions
+}: Props) {
 	const [focusedId, setFocusedId] = useState<string>();
 	const container = useRef<HTMLDivElement>(null);
 	useFeedMotion(container);
-	const roots = questions
-		.filter((question) => !question.parentId)
-		.sort((a, b) => b.createdAt - a.createdAt);
-	const days = Map.groupBy(roots, (question) =>
-		new Date(question.createdAt).toDateString(),
+	useLayoutEffect(() => {
+		if (!navigation) return;
+		const card = [
+			...(container.current?.querySelectorAll<HTMLElement>('article') ?? []),
+		].find((element) => element.id === `question-${navigation.questionId}`);
+		if (!card) return;
+		// Source-pill navigation must reveal every folded ancestor before moving focus.
+		for (
+			let ancestor = card.parentElement;
+			ancestor && ancestor !== container.current;
+			ancestor = ancestor.parentElement
+		) {
+			if (ancestor.tagName === 'DETAILS')
+				(ancestor as HTMLDetailsElement).open = true;
+		}
+		setFocusedId(navigation.questionId);
+		card.scrollIntoView({ block: 'nearest' });
+		card
+			.querySelector<HTMLButtonElement>('.study-question-title')
+			?.focus({ preventScroll: true });
+	}, [navigation]);
+	const nodes = inboxNodes({ questions, groups });
+	const roots = nodes
+		.filter((node) => !node.parentId)
+		.sort((a, b) => (b.order ?? b.createdAt) - (a.order ?? a.createdAt));
+	const days = Map.groupBy(roots, (node) =>
+		new Date(node.createdAt).toDateString(),
 	);
 
-	function renderQuestion(
-		question: StudyQuestion,
+	function renderNode(
+		node: StudyQuestion | InboxGroup,
 		source?: QuestionSource,
 		parent?: StudyQuestion,
 	) {
-		const children = questions
-			.filter((child) => child.parentId === question.id)
-			.sort((a, b) => a.createdAt - b.createdAt);
-		const origin = question.source ?? source;
+		const children = nodes
+			.filter((child) => child.parentId === node.id)
+			.sort((a, b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt));
+		const origin = node.source ?? source;
+		if (!('state' in node)) {
+			return (
+				<QuestionGroup key={node.id} group={node} onFold={onFoldGroup}>
+					{children.map((child) => renderNode(child, origin, parent))}
+				</QuestionGroup>
+			);
+		}
+		const question = node;
 		return (
 			<div className="min-w-0" key={question.id}>
 				<QuestionCard
@@ -65,7 +109,7 @@ export function QuestionFeed({ questions, renderActions, ...actions }: Props) {
 				{/* Keep replies closer than independent threads, with shallow nested indentation. */}
 				{children.length > 0 && (
 					<div className="study-children ml-px flex min-w-0 flex-col gap-3 pt-2 pl-4 shadow-[-1px_0_0_var(--border)] [&_.study-children]:pl-2">
-						{children.map((child) => renderQuestion(child, origin, question))}
+						{children.map((child) => renderNode(child, origin, question))}
 					</div>
 				)}
 			</div>
@@ -116,7 +160,7 @@ export function QuestionFeed({ questions, renderActions, ...actions }: Props) {
 							<span>{items.length}</span>
 						</div>
 						<div className="flex flex-col gap-7">
-							{items.map((question) => renderQuestion(question))}
+							{items.map((question) => renderNode(question))}
 						</div>
 					</section>
 				);

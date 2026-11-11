@@ -1,4 +1,5 @@
 import type { InboxQuestion } from '../controller/types.js';
+import type { InboxGroup } from '../hierarchy/types.js';
 import type {
 	EvidenceRepository,
 	ResearchEvidence,
@@ -10,9 +11,10 @@ export async function createDebugDump(
 	question: InboxQuestion,
 	ancestors: InboxQuestion[],
 	repository?: EvidenceRepository,
+	groups?: InboxGroup[],
 ): Promise<string> {
 	// Pin the visible attempt before awaiting disk; a retry must not change its identity.
-	const context = structuredClone({ question, ancestors });
+	const context = structuredClone({ question, ancestors, groups });
 	const unavailable: string[] = [];
 	let research: ResearchEvidence | undefined;
 	try {

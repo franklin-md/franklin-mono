@@ -1,6 +1,7 @@
 import { createStore } from '@franklin/agent';
 import type { ReadonlyStore, Store } from '@franklin/agent';
 import type { InboxQuestion } from '../controller/types.js';
+import type { InboxGroup } from '../hierarchy/types.js';
 import { errorMessage } from '../controller/error.js';
 import { collectCards } from './collect.js';
 import { pinResearch } from './pin-research.js';
@@ -45,7 +46,11 @@ export class CaptureController {
 		return controller;
 	}
 
-	start(question: InboxQuestion, ancestors: InboxQuestion[]): Promise<void> {
+	start(
+		question: InboxQuestion,
+		ancestors: InboxQuestion[],
+		groups?: InboxGroup[],
+	): Promise<void> {
 		// Reserve the operation before yielding: repeated clicks share one ID/window.
 		const startedAt = Date.now();
 		return this.work('start:' + question.id, async () => {
@@ -60,7 +65,7 @@ export class CaptureController {
 			if (question.state.kind !== 'answered')
 				throw new Error('Record an answered question');
 			this.options.validateSettings(current.settings);
-			const pinned = structuredClone({ question, ancestors });
+			const pinned = structuredClone({ question, ancestors, groups });
 			const draftBaseline = {
 				cardIds: await this.options.readDraftIds(current.settings.databasePath),
 				capturedAt: Date.now(),
@@ -70,6 +75,7 @@ export class CaptureController {
 				pinned.question,
 				pinned.ancestors,
 				this.options.evidence,
+				pinned.groups,
 			);
 			// The switch click is both the old exclusive end and the new start.
 			// Finish durably before replacing pending, so a failed save loses neither

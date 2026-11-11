@@ -14,13 +14,21 @@ import {
 	StatusDot,
 } from '@franklin/ui';
 import type { StudyQuestion, QuestionSource } from '../types.js';
+import type { InboxPreferences } from '../controller/types.js';
 import { Composer } from './composer.js';
 import { QuestionFeed } from './feed.js';
+import type { QuestionNavigation } from './navigation.js';
 import { selectionQuestion } from '../selection-question.js';
+import type { InboxGroup } from '../hierarchy/types.js';
 
 type Props = {
 	questions: StudyQuestion[];
+	groups?: InboxGroup[];
+	onFoldGroup?: (id: string, folded: boolean) => void;
+	navigation?: QuestionNavigation;
 	composerControls: ReactNode;
+	mode?: InboxPreferences['mode'];
+	onThoughtDump?: (text: string) => void | Promise<void>;
 	concurrency: number;
 	setConcurrency: (value: number) => void;
 	onAdd: (text: string) => void | Promise<void>;
@@ -37,7 +45,12 @@ type Props = {
 
 export function InboxContent({
 	questions,
+	groups,
+	onFoldGroup,
+	navigation,
 	composerControls,
+	mode = 'question',
+	onThoughtDump,
 	concurrency,
 	setConcurrency,
 	onAdd,
@@ -123,8 +136,18 @@ export function InboxContent({
 				)}
 				<div className="mb-6">
 					<Composer
+						label={mode === 'thought-dump' ? 'Thought dump' : 'Ask a question'}
+						placeholder={
+							mode === 'thought-dump'
+								? 'Dump your thoughts and questions…'
+								: 'Ask a question…'
+						}
 						controls={composerControls}
-						onSubmit={(text) => onAdd(selectionQuestion(text))}
+						onSubmit={(text) =>
+							mode === 'thought-dump' && onThoughtDump
+								? onThoughtDump(text)
+								: onAdd(selectionQuestion(text))
+						}
 					/>
 					<div className="mt-2 flex justify-end">
 						<span
@@ -156,6 +179,9 @@ export function InboxContent({
 			{notice}
 			<QuestionFeed
 				questions={questions}
+				groups={groups}
+				onFoldGroup={onFoldGroup}
+				navigation={navigation}
 				onFollowUp={onFollowUp}
 				onDelete={onDelete}
 				onRetry={onRetry}

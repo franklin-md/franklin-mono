@@ -35,6 +35,7 @@ const state = z.discriminatedUnion('kind', [
 ]);
 export const questionSchema = z.object({
 	id: z.string().min(1),
+	order: z.number().int().nonnegative().optional(),
 	parentId: z.string().optional(),
 	rootId: z.string().min(1),
 	attemptId: z.string().min(1),

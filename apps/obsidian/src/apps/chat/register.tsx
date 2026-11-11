@@ -19,7 +19,7 @@ export function registerChat({
 	hostActionBindings,
 }: Options): void {
 	const requestApiKey = () => {
-		openPluginSettings(plugin.app, plugin.manifest.id);
+		openPluginSettings(plugin.app, plugin.manifest.id, 'connections');
 	};
 
 	plugin.registerView(VIEW_TYPE, (leaf) => {

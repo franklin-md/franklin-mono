@@ -1,4 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
+import type { ReadonlyStore } from '@franklin/agent';
+import type { QuestionNavigation } from './navigation.js';
 import {
 	Button,
 	Markdown,
@@ -8,9 +10,12 @@ import {
 import { questionSchema } from '../controller/question-schema.js';
 import type { InboxController } from '../controller/controller.js';
 import type { QuestionSource } from '../types.js';
+import { ModeControl } from './mode.js';
+import { ThoughtDumpStatus } from './thought-dumps.js';
 import { InboxContent } from './content.js';
 import { QuestionActions } from './actions.js';
-import { ancestorsOf } from '../controller/lineage.js';
+import { branchContext } from '../hierarchy/context.js';
+import { inboxNodes } from '../hierarchy/nodes.js';
 import { RecordButton } from '../capture/record-button.js';
 import { CaptureStatus } from '../capture/status.js';
 import { DebugButton } from '../debug/button.js';
@@ -18,6 +23,7 @@ import './styles.css';
 
 type Props = {
 	controller: InboxController;
+	navigation?: ReadonlyStore<QuestionNavigation | null>;
 	onOpenSource: (source: QuestionSource) => void;
 	captureContext?: (question: string) => Promise<QuestionSource | undefined>;
 	onSettings: () => void;
@@ -26,6 +32,7 @@ type Props = {
 
 export function InboxPanel({
 	controller,
+	navigation,
 	captureContext,
 	onOpenSource,
 	onSettings,
@@ -35,16 +42,24 @@ export function InboxPanel({
 	const snapshot = useSyncExternalStore(subscribe, () =>
 		controller.state.get(),
 	);
+	const navigationRequest = useSyncExternalStore(
+		(notify) => navigation?.subscribe(notify) ?? (() => {}),
+		() => navigation?.get() ?? undefined,
+	);
 	const capture = controller.capture;
 	const captureSnapshot = useSyncExternalStore(
 		(notify) => capture?.state.subscribe(notify) ?? (() => {}),
 		() => capture?.state.get(),
 	);
 	const container = useRef<HTMLDivElement>(null);
-	const newest = snapshot.questions.filter((q) => !q.parentId).at(0)?.id;
+	const newest = inboxNodes(snapshot)
+		.filter((node) => !node.parentId)
+		.sort((a, b) => (b.order ?? b.createdAt) - (a.order ?? a.createdAt))
+		.at(0)?.id;
 	useEffect(() => {
-		container.current?.querySelector('.study-feed')?.scrollTo({ top: 0 });
-	}, [newest]);
+		if (!navigationRequest)
+			container.current?.querySelector('.study-feed')?.scrollTo({ top: 0 });
+	}, [newest, navigationRequest]);
 	const { preferences } = snapshot;
 	const configure = (patch: Parameters<InboxController['configure']>[0]) => {
 		void controller.configure(patch).catch(onError);
@@ -56,6 +71,20 @@ export function InboxPanel({
 		>
 			<InboxContent
 				questions={snapshot.questions}
+				groups={snapshot.groups}
+				onFoldGroup={(id, folded) => {
+					void controller.groups.fold(id, folded).catch(onError);
+				}}
+				navigation={navigationRequest}
+				mode={preferences.mode}
+				onThoughtDump={async (text) => {
+					const preferences = { ...controller.state.get().preferences };
+					await controller.thoughtDumps.add(
+						text,
+						await captureContext?.(text),
+						preferences,
+					);
+				}}
 				actionActivity={{
 					running: snapshot.actionRuns.filter(
 						(run) => run.state.kind === 'running',
@@ -79,13 +108,12 @@ export function InboxPanel({
 										const fullQuestion = snapshot.questions.find(
 											(item) => item.id === question.id,
 										);
-										if (fullQuestion)
+										if (fullQuestion) {
+											const context = branchContext(fullQuestion, snapshot);
 											void capture
-												.start(
-													fullQuestion,
-													ancestorsOf(fullQuestion, snapshot.questions),
-												)
+												.start(fullQuestion, context.ancestors, context.groups)
 												.catch(onError);
+										}
 									}}
 								/>
 							)}
@@ -127,16 +155,10 @@ export function InboxPanel({
 								onChange: (reasoning) => configure({ reasoning }),
 							}}
 						/>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							className="hidden h-auto px-2 py-1 text-xs text-muted-foreground @min-[380px]:inline-flex"
-							title={preferences.answerInstructions}
-							onClick={onSettings}
-						>
-							Answer instructions
-						</Button>
+						<ModeControl
+							mode={preferences.mode}
+							onChange={(mode) => configure({ mode })}
+						/>
 					</PromptFooterControlGroup>
 				}
 				concurrency={preferences.concurrency}
@@ -162,7 +184,16 @@ export function InboxPanel({
 					/>
 				)}
 				notice={
-					<>
+					<div className="max-h-[30%] shrink-0 overflow-y-auto">
+						<ThoughtDumpStatus
+							dumps={snapshot.thoughtDumps ?? []}
+							onRetry={(id) => {
+								void controller.thoughtDumps.retry(id).catch(onError);
+							}}
+							onDismiss={(id) => {
+								void controller.thoughtDumps.dismiss(id).catch(onError);
+							}}
+						/>
 						{capture && captureSnapshot && (
 							<CaptureStatus
 								controller={capture}
@@ -189,7 +220,7 @@ export function InboxPanel({
 								</Button>
 							</div>
 						) : undefined}
-					</>
+					</div>
 				}
 			/>
 		</div>

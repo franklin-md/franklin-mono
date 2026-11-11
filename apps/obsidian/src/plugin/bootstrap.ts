@@ -7,7 +7,9 @@ import {
 	openExternalAction,
 	type HostActionBinding,
 } from '@franklin/react';
-import { toAbsolutePath } from '@franklin/lib';
+import { joinAbsolute, toAbsolutePath } from '@franklin/lib';
+import { DirectiveRegistry } from '../shared/directives/registry.js';
+import { createDirectivePersistence } from '../shared/directives/storage/persistence.js';
 import { Notice } from 'obsidian';
 import type { Plugin } from 'obsidian';
 import type { InboxController } from '../apps/inbox/controller/controller.js';
@@ -27,6 +29,7 @@ interface PluginRuntime {
 	app: FranklinApp;
 	connections: MCPConnections;
 	inbox: InboxController;
+	directives: DirectiveRegistry;
 	hostActionBindings: readonly HostActionBinding[];
 	getCreateInput: () => OrchestratorCreateInput<FranklinState>;
 	dispose: () => void;
@@ -65,6 +68,13 @@ export async function bootstrapPlugin(
 		auth,
 	});
 
+	const directives = await DirectiveRegistry.create({
+		app: plugin.app,
+		persistence: createDirectivePersistence({
+			filesystem: platform.os.filesystem,
+			path: joinAbsolute(appDir, 'directives.json'),
+		}),
+	});
 	await app.start();
 	const inbox = await startInbox({
 		plugin,
@@ -74,6 +84,7 @@ export async function bootstrapPlugin(
 		appDir,
 		vaultRoot,
 	});
+
 	const getCreateInput = () =>
 		createObsidianSessionInput(app, vaultRoot, plugin.app.vault.configDir);
 	if (app.agents.list().length === 0) await app.agents.create(getCreateInput());
@@ -82,6 +93,7 @@ export async function bootstrapPlugin(
 		app,
 		connections,
 		inbox,
+		directives,
 		hostActionBindings: [
 			bindHostAction(openExternalAction, (url) =>
 				platform.os.openExternal(url),
@@ -90,9 +102,15 @@ export async function bootstrapPlugin(
 		getCreateInput,
 		dispose: () => {
 			void connections.dispose();
-			void inbox.dispose().catch((error: unknown) => {
-				new Notice(`Inbox shutdown: ${errorMessage(error)}`);
-			});
+			void inbox
+				.dispose()
+				.catch((error: unknown) => {
+					new Notice(`Inbox shutdown: ${errorMessage(error)}`);
+				})
+				.finally(() => directives.dispose())
+				.catch((error: unknown) => {
+					new Notice(`Directive shutdown: ${errorMessage(error)}`);
+				});
 		},
 	};
 }

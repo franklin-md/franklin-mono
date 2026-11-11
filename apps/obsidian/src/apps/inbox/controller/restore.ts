@@ -14,6 +14,7 @@ export async function restoreInbox({
 		);
 	const initial = restored.value ?? {
 		questions: [],
+		groups: [],
 		actions: [],
 		actionRuns: [],
 		preferences: {
@@ -22,6 +23,9 @@ export async function restoreInbox({
 			concurrency: 3,
 		},
 	};
+	for (const dump of initial.thoughtDumps ?? []) {
+		if (dump.state.kind === 'running') dump.state = interruptedState();
+	}
 	for (const question of initial.questions) {
 		if (question.state.kind === 'running') {
 			question.state = interruptedState();

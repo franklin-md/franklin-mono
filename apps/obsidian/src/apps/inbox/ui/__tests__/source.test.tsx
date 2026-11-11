@@ -1,8 +1,21 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	within,
+} from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { answeredQuestion } from '../../capture/__tests__/question.js';
 import { QuestionFeed } from '../feed.js';
+
+beforeEach(() => {
+	vi.stubGlobal(
+		'matchMedia',
+		vi.fn(() => ({ matches: true })),
+	);
+});
 
 afterEach(() => {
 	document.getSelection()?.removeAllRanges();
@@ -11,13 +24,9 @@ afterEach(() => {
 });
 
 describe('Inbox source row links', () => {
-	it('opens the source from the note name, heading and row without expanding the quote or focusing the card', () => {
+	it('shows the source only when selected and opens it from the note name, heading and row without collapsing the card', () => {
 		const question = answeredQuestion();
 		const onOpenSource = vi.fn();
-		vi.stubGlobal(
-			'matchMedia',
-			vi.fn(() => ({ matches: true })),
-		);
 		render(
 			<QuestionFeed
 				questions={[question]}
@@ -27,6 +36,9 @@ describe('Inbox source row links', () => {
 				onOpenSource={onOpenSource}
 			/>,
 		);
+		expect(screen.queryByRole('link')).toBeNull();
+		const title = screen.getByRole('button', { name: question.text });
+		fireEvent.click(title);
 		const link = screen.getByRole('link', { name: 'Open source note: Source' });
 		expect(link.textContent).not.toContain('->');
 		expect(link.getAttribute('href')).toBe('obsidian://open?file=Source.md');
@@ -35,27 +47,14 @@ describe('Inbox source row links', () => {
 		fireEvent.click(screen.getByText('/ Mechanism'));
 		fireEvent.click(link);
 		expect(onOpenSource).toHaveBeenCalledTimes(3);
-		expect(screen.queryByRole('textbox')).toBeNull();
-		const disclosure = screen.getByRole('button', { name: 'Captured quote' });
-		expect(disclosure.getAttribute('aria-expanded')).toBe('false');
-		fireEvent.click(disclosure);
-		expect(screen.getByText('Original quote')).toBeTruthy();
-		expect(disclosure.getAttribute('aria-expanded')).toBe('true');
-		expect(screen.queryByRole('textbox')).toBeNull();
-		expect(onOpenSource).toHaveBeenCalledTimes(3);
-		expect(screen.getAllByRole('link')).toHaveLength(1);
-		fireEvent.click(link);
-		expect(onOpenSource).toHaveBeenCalledTimes(4);
-		expect(disclosure.getAttribute('aria-expanded')).toBe('true');
+		expect(title.getAttribute('aria-expanded')).toBe('true');
+		expect(screen.queryByText('Captured quote')).toBeNull();
+		expect(screen.queryByText('Original quote')).toBeNull();
 	});
 
-	it('preserves the focused question and quote disclosure while navigating', () => {
+	it('preserves the focused question and follow-up draft while navigating', () => {
 		const question = answeredQuestion();
 		const onOpenSource = vi.fn();
-		vi.stubGlobal(
-			'matchMedia',
-			vi.fn(() => ({ matches: true })),
-		);
 		render(
 			<QuestionFeed
 				questions={[question]}
@@ -68,24 +67,16 @@ describe('Inbox source row links', () => {
 		fireEvent.click(screen.getByRole('button', { name: question.text }));
 		const draft = screen.getByRole<HTMLTextAreaElement>('textbox');
 		fireEvent.change(draft, { target: { value: 'Keep this draft' } });
-		const disclosure = screen.getByRole('button', { name: 'Captured quote' });
-		fireEvent.click(disclosure);
-		fireEvent.click(screen.getByText('Original quote'));
 		fireEvent.click(screen.getByText('Source'));
 		expect(onOpenSource).toHaveBeenCalledExactlyOnceWith(question.source);
 		expect(screen.getByRole<HTMLTextAreaElement>('textbox').value).toBe(
 			'Keep this draft',
 		);
-		expect(disclosure.getAttribute('aria-expanded')).toBe('true');
 	});
 
-	it('allows source-name text selection without navigating or focusing the card', () => {
+	it('allows source-name text selection without navigating or collapsing the card', () => {
 		const question = answeredQuestion();
 		const onOpenSource = vi.fn();
-		vi.stubGlobal(
-			'matchMedia',
-			vi.fn(() => ({ matches: true })),
-		);
 		render(
 			<QuestionFeed
 				questions={[question]}
@@ -95,18 +86,15 @@ describe('Inbox source row links', () => {
 				onOpenSource={onOpenSource}
 			/>,
 		);
+		const title = screen.getByRole('button', { name: question.text });
+		fireEvent.click(title);
 		const name = screen.getByText('Source');
 		const range = document.createRange();
 		range.selectNodeContents(name);
 		document.getSelection()?.addRange(range);
 		fireEvent.click(name);
 		expect(onOpenSource).not.toHaveBeenCalled();
-		expect(screen.queryByRole('textbox')).toBeNull();
-		expect(
-			screen
-				.getByRole('button', { name: 'Captured quote' })
-				.getAttribute('aria-expanded'),
-		).toBe('false');
+		expect(title.getAttribute('aria-expanded')).toBe('true');
 	});
 
 	it('keeps the whole source row available on follow-ups that inherit the original source', () => {
@@ -117,10 +105,6 @@ describe('Inbox source row links', () => {
 			source: undefined,
 		};
 		const onOpenSource = vi.fn();
-		vi.stubGlobal(
-			'matchMedia',
-			vi.fn(() => ({ matches: true })),
-		);
 		render(
 			<QuestionFeed
 				questions={[root, child]}
@@ -130,14 +114,12 @@ describe('Inbox source row links', () => {
 				onOpenSource={onOpenSource}
 			/>,
 		);
-		const links = screen.getAllByRole('link', {
-			name: 'Open source note: Source',
-		});
-		const childLink = links[1];
-		if (!childLink) throw new Error('Expected the inherited source link');
-		fireEvent.click(childLink);
+		const card = screen.getByRole('article', { name: child.text });
+		fireEvent.click(within(card).getByRole('button', { name: child.text }));
+		const link = screen.getByRole('link', { name: 'Open source note: Source' });
+		expect(card.contains(link)).toBe(true);
+		fireEvent.click(link);
 		expect(onOpenSource).toHaveBeenCalledExactlyOnceWith(root.source);
-		expect(screen.queryByRole('textbox')).toBeNull();
 	});
 
 	it.each(['location', 'callback'])(
@@ -146,10 +128,6 @@ describe('Inbox source row links', () => {
 			const question = answeredQuestion();
 			if (missing === 'location' && question.source)
 				delete question.source.location;
-			vi.stubGlobal(
-				'matchMedia',
-				vi.fn(() => ({ matches: true })),
-			);
 			render(
 				<QuestionFeed
 					questions={[question]}
@@ -159,10 +137,10 @@ describe('Inbox source row links', () => {
 					onOpenSource={missing === 'callback' ? undefined : vi.fn()}
 				/>,
 			);
+			fireEvent.click(screen.getByRole('button', { name: question.text }));
 			expect(screen.queryByRole('link')).toBeNull();
-			fireEvent.click(screen.getByText('Captured quote'));
-			expect(screen.getByText('Original quote')).toBeTruthy();
-			expect(screen.queryByRole('textbox')).toBeNull();
+			expect(screen.getByText('Source')).toBeTruthy();
+			expect(screen.queryByText('Original quote')).toBeNull();
 		},
 	);
 });

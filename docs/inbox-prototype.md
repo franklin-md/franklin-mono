@@ -9,9 +9,31 @@ The Obsidian plugin includes a functional study inbox alongside the existing cha
 3. Select a model. The model list reuses Franklin's catalog, and the inbox keeps its own default. Sign in or add the provider's key in Franklin settings; inbox options link there.
 4. Type a question and press Enter. Shift+Enter adds a line. Up to four independent agents can work concurrently; the default is three.
 5. Select text in a Markdown note and run **Franklin: Add selection to study inbox**. The selection becomes the question; passages are explained briefly. Use Franklin settings → Study inbox → Configure shortcut to open the command in Obsidian’s hotkey editor (for example, assign Cmd/Ctrl+Shift+I). No default binding overrides existing shortcuts.
-6. Click a question to focus it: its full answer and a simple follow-up field appear together. Only one question is focused; clicking another collapses the previous one, and Escape clears focus. Draft follow-ups survive switching questions. Answer text remains selectable. Click anywhere on the source row, marked with a small arrow icon, to return to the original passage. Use **Captured quote** to show the saved text independently. Source names can be selected and copied without navigating. Parent labels navigate within the feed.
+6. Click a question to focus it: its footer reveals original wording, source info, action buttons and a simple follow-up field. Its header and answer remain visible when the footer is hidden; legacy answers still expand from their preview on focus. Only one question is focused; clicking another collapses the previous one, and Escape clears focus. Draft follow-ups survive switching questions. Answer text remains selectable. Select a question, then click anywhere on its footer source row, marked with a small arrow icon, to return to the original passage. Captured quotes are retained for navigation and agent context but are not rendered in the card. Source names can be selected and copied without navigating. Parent labels navigate within the feed.
 
-Root questions are newest first, grouped by local calendar day. Follow-ups remain with their root and preserve their parent, source, model, and timestamps. New follow-ups use the current inbox model and response preference. Retry retains the failed question's original configuration.
+Root groups and questions are newest first, grouped by local calendar day. Follow-ups remain with their root and preserve their parent, source, model, and timestamps. New follow-ups use the current inbox model and response preference. Retry retains the failed question's original configuration.
+
+## Groups and children
+
+Groups have an optional title and shared context. Either a group or an answered question can contain groups and questions. Group headers fold their entire subtree; their direct children stay unindented and close together. Children of questions retain the existing shallow indentation. Folding preserves follow-up drafts and answer disclosures, does not cancel work, and persists across reloads. Source-pill navigation opens folded ancestor groups before focusing its question. Untitled groups display “Group” as their fold label.
+
+Relationships are programmatic; this slice adds no relationship editor:
+
+```ts
+const group = await inbox.groups.add({ title: 'Virtual memory', context: 'Explore address spaces.' });
+const question = await inbox.addChild(group, { kind: 'question', text: 'Why virtual addresses?' });
+// Once answered, questions can also receive question or group children.
+await inbox.addChild(question, { kind: 'group', title: 'Details' });
+await inbox.groups.fold(group, true);
+```
+
+`inbox.add(text, parentId?, source?)` also accepts a group parent. Missing parents and unanswered question parents are rejected. `inbox.remove(id)` removes the node and all question/group descendants, cancels their work and outstanding actions, and removes any associated extraction status. Existing questions keep their IDs, source, answers, attempts and parent relationships. A separate ordering value resolves equal creation timestamps across both node kinds.
+
+Each successful thought-dump extraction atomically saves one untitled group, its original text as group context, and the extracted sibling questions. Dismissing extraction status leaves that group and its original text intact. Existing ungrouped batches remain unchanged because their question associations were not recorded.
+
+Follow-ups continue to create fresh agents. The prompt contains ancestor group context, ancestor question/answer pairs (including details), the captured source, and the current question. Sibling answers are excluded. Actions, diagnostics, research evidence and flashcard captures retain the same group context; groups are not treated as researched question attempts. Inbox storage is version 6, migrating versions 1–5. Capture format is version 6; existing capture journals remain readable.
+
+Ancestor-body collapse and hover-driven navigation are deferred. The current change only folds whole groups.
 
 ## Execution and extensions
 
@@ -37,7 +59,7 @@ Writes are serialized and use a temporary file in the same directory followed by
 
 Queued work resumes on startup. Interrupted running work becomes failed with an explicit retry, avoiding automatic duplicate requests. Completed answers survive restarts. Deleting a question cancels active work and removes it and its descendants from the rewritten document; late results cannot recreate them. No pre-existing chat sessions, stores, or vault notes are deleted.
 
-Source snapshots retain an exact quote, file path, heading and parent-list breadcrumbs, selection range, nearby text, capture time, and source ID. Navigation always opens an existing source file. It first checks the old position and searches for the exact quote, then finds a unique line starting with the quote's first nonblank line ignoring whitespace, then selects the line with the longest common subsequence of the quote ignoring whitespace. Equal matches prefer the saved line. Exact matches preserve the selection; fallback matches select their whole line. Empty quotes or no shared characters leave the note open without a selection. Missing notes are reported, and the captured quote remains available. File renames are not tracked automatically yet.
+Source snapshots retain an exact quote, file path, heading and parent-list breadcrumbs, selection range, nearby text, capture time, and source ID. Navigation always opens an existing source file. It first checks the old position and searches for the exact quote, then finds a unique line starting with the quote's first nonblank line ignoring whitespace, then selects the line with the longest common subsequence of the quote ignoring whitespace. Equal matches prefer the saved line. Exact matches preserve the selection; fallback matches select their whole line. Empty quotes or no shared characters leave the note open without a selection. Missing notes are reported, and the captured quote remains stored for agent context and diagnostics. File renames are not tracked automatically yet.
 
 ## Validation and remaining scope
 
@@ -47,7 +69,7 @@ PDF selection, sync, an always-on service, automatic compaction, and harness mig
 
 ## Configurable actions
 
-In **Franklin settings → Inbox actions**, add a name (including an emoji) and a prompt. Each answered question displays those actions beneath its answer, including when collapsed. An action receives that question's answer, captured source and ancestor branch. Like ordinary follow-ups, this reconstructs the saved branch context rather than retaining the original model transcript.
+In **Franklin settings → Inbox actions**, add a name (including an emoji) and a prompt. Each selected answered question displays those actions in its footer beneath its answer. The footer is hidden when the question is not selected. An action receives that question's answer, captured source and ancestor branch. Like ordinary follow-ups, this reconstructs the saved branch context rather than retaining the original model transcript.
 
 Actions use the model currently selected in the inbox and share its concurrency limit. Their runtime adds `edit_file`, `write_file` and `bash` to the existing research tools. It reads the workflow prompt files named in your action and applies the requested edits directly. An action has up to two hours to finish; ordinary questions retain their two-minute deadline. The `finish_action` tool reports either verified success or a failure reason.
 
@@ -55,7 +77,7 @@ There is at most one outstanding run for each action/question pair. Duplicate cl
 
 Successful runs disappear after their completion checkpoint is saved, and Obsidian displays a brief result notice. The original question and action definition remain. Completed checkpoints are cleaned on restart without rerunning them. Queued actions resume; interrupted actions require explicit retry. As direct file edits can precede a failure or interruption, prompts should inspect existing output before repeating changes. The app prevents duplicate concurrent runs; arbitrary external effects are not transactional.
 
-All definitions and outstanding runs live alongside questions in version 4 of `inbox.json`. Version 3 data migrates without rewriting existing answers or instruction snapshots; optional detail sections are retained in new answers and nested action snapshots. Older plugin versions reject the new document rather than silently stripping details. Version 1 data migrates with empty action lists. Versions 1 and 2 migrate their terse/full preferences and every saved question snapshot to the equivalent editable instruction text, including question and ancestor snapshots in outstanding action runs. No credentials or model transcripts are added to the document.
+All definitions and outstanding runs live alongside questions in version 6 of `inbox.json`. Version 3 data migrates without rewriting existing answers or instruction snapshots; optional detail sections are retained in new answers and nested action snapshots. Older plugin versions reject the new document rather than silently stripping details. Version 1 data migrates with empty action lists. Versions 1 and 2 migrate their terse/full preferences and every saved question snapshot to the equivalent editable instruction text, including question and ancestor snapshots in outstanding action runs. No credentials or model transcripts are added to the document.
 
 For a flashcard action, use **🃏** as its name and a prompt such as:
 
@@ -102,7 +124,7 @@ Tool evidence is bounded to 256 calls, 64,000 characters per text field, and 1,0
 
 A completed nonempty episode is one file: `<collection-folder>/<episode-id>.json`. It contains:
 
-- `captureVersion`: currently `5`, identifying the capture technique used to assemble the episode. Increment `CAPTURE_VERSION` in `capture/version.ts` whenever research collection, card matching/decoding, retained evidence, or the episode format changes. The source comment records this requirement. Version 5 retains structured answer details in pinned question/ancestor snapshots and the readable context. This version is separate from the internal recovery journal and evidence schema versions. Fresh card snapshots also record their capture version, distinguishing them from legacy snapshots retained during recovery.
+- `captureVersion`: currently `6`, identifying the capture technique used to assemble the episode. Increment `CAPTURE_VERSION` in `capture/version.ts` whenever research collection, card matching/decoding, retained evidence, or the episode format changes. The source comment records this requirement. Version 6 retains ancestor groups as well as structured answer details in pinned snapshots and the readable context. This version is separate from the internal recovery journal and evidence schema versions. Fresh card snapshots also record their capture version, distinguishing them from legacy snapshots retained during recovery.
 - `draftBaseline`: the open draft IDs, actual baseline capture time, and source (`record-start` or an explicitly annotated `manual-recovery`). Old recordings may have no baseline.
 - Identities, pinned question/ancestor snapshots, UTC recording window, `completedAt`, `completionMode: "automatic"`, captured/candidate IDs and final `phase: "complete"`.
 - `context`: readable Markdown for the original question, answer, source/ancestor context, answer instructions and completeness.

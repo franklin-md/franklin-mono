@@ -11,6 +11,14 @@ import { ApplicationProvider } from '@franklin/ui';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { SettingsSection } from '../../../shared/obsidian/settings/types.js';
+import { InboxController } from '../../../apps/inbox/controller/controller.js';
+import { inboxCodec } from '../../../apps/inbox/controller/schema.js';
+import {
+	createSingleFilePersister,
+	MemoryFilesystem,
+	toAbsolutePath,
+} from '@franklin/lib';
 import { SettingsPage } from '../page.js';
 
 afterEach(() => {
@@ -88,6 +96,8 @@ function renderPage(
 	auth: AuthStub,
 	settings = createSettingsStub(),
 	onConfigureInboxShortcut?: () => void,
+	initialSection: SettingsSection = 'connections',
+	inbox?: InboxController,
 ) {
 	const openExternal = vi.fn(async () => {});
 	const app = {
@@ -101,7 +111,11 @@ function renderPage(
 				harness={app}
 				hostActionBindings={[bindHostAction(openExternalAction, openExternal)]}
 			>
-				<SettingsPage onConfigureInboxShortcut={onConfigureInboxShortcut} />
+				<SettingsPage
+					initialSection={initialSection}
+					inbox={inbox}
+					onConfigureInboxShortcut={onConfigureInboxShortcut}
+				/>
 			</ApplicationProvider>,
 		),
 		openExternal,
@@ -110,8 +124,70 @@ function renderPage(
 }
 
 describe('SettingsPage', () => {
+	it('shows one panel at a time and retains unfinished instructions and action drafts across tabs', async () => {
+		const inbox = await InboxController.create({
+			defaults: { provider: 'test', model: 'test', reasoning: 'off' },
+			persistence: createSingleFilePersister(
+				new MemoryFilesystem(),
+				toAbsolutePath('/inbox.json'),
+				inboxCodec,
+			),
+			run: vi.fn(),
+		});
+		renderPage(createAuthStub(), undefined, undefined, 'general', inbox);
+		expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+			'General',
+			'Inbox',
+			'Flashcards',
+			'Connections',
+		]);
+		expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+		const select = (name: string) =>
+			fireEvent.mouseDown(screen.getByRole('tab', { name }), {
+				button: 0,
+				ctrlKey: false,
+			});
+		select('Inbox');
+		fireEvent.change(
+			screen.getByRole('textbox', { name: 'Answer instructions' }),
+			{ target: { value: 'Unfinished instructions' } },
+		);
+		fireEvent.click(screen.getByRole('button', { name: 'Add action' }));
+		fireEvent.change(screen.getByRole('textbox', { name: 'Action prompt' }), {
+			target: { value: 'Unfinished action' },
+		});
+		select('Connections');
+		expect(
+			screen.queryByRole('textbox', { name: 'Answer instructions' }),
+		).toBeNull();
+		expect(
+			screen
+				.getByLabelText('Answer instructions')
+				.closest('[role="tabpanel"]')
+				?.hasAttribute('hidden'),
+		).toBe(true);
+		select('Inbox');
+		expect(
+			screen.getByRole<HTMLTextAreaElement>('textbox', {
+				name: 'Answer instructions',
+			}).value,
+		).toBe('Unfinished instructions');
+		expect(
+			screen.getByRole<HTMLTextAreaElement>('textbox', {
+				name: 'Action prompt',
+			}).value,
+		).toBe('Unfinished action');
+		expect(inbox.state.get().actions).toEqual([]);
+		await inbox.dispose();
+	});
+
 	it('edits document download timing and rejects invalid input without changing saved values', () => {
-		const { settings } = renderPage(createAuthStub());
+		const { settings } = renderPage(
+			createAuthStub(),
+			undefined,
+			undefined,
+			'general',
+		);
 		const idle = screen.getByLabelText<HTMLInputElement>(
 			'Download inactivity timeout (seconds)',
 		);
@@ -136,7 +212,7 @@ describe('SettingsPage', () => {
 
 	it('offers the selection capture shortcut in the study inbox settings', () => {
 		const configure = vi.fn();
-		renderPage(createAuthStub(), createSettingsStub(), configure);
+		renderPage(createAuthStub(), createSettingsStub(), configure, 'inbox');
 		expect(screen.getByText('Study inbox')).toBeTruthy();
 		fireEvent.click(screen.getByRole('button', { name: 'Configure shortcut' }));
 		expect(configure).toHaveBeenCalledOnce();
@@ -195,21 +271,19 @@ describe('SettingsPage', () => {
 			(element) => element.textContent,
 		);
 
-		expect(headings).toEqual([
-			'Credentials',
-			'Agent settings',
-			'Document downloads',
-		]);
+		expect(headings).toEqual(['Context', 'Document downloads', 'Accounts']);
 	});
 
 	it('renders ChatGPT as the first credential setting', () => {
 		const auth = createAuthStub();
-		const { container } = renderPage(auth);
+		renderPage(auth);
 
 		expect(
-			container.querySelector(
-				'.setting-item:not(.setting-item-heading) .setting-item-name',
-			)?.textContent,
+			screen
+				.getByRole('tabpanel')
+				.querySelector(
+					'.setting-item:not(.setting-item-heading) .setting-item-name',
+				)?.textContent,
 		).toBe('ChatGPT');
 	});
 
@@ -347,7 +421,7 @@ describe('SettingsPage', () => {
 
 	it('shares open notes with agents by default', () => {
 		const auth = createAuthStub();
-		renderPage(auth);
+		renderPage(auth, undefined, undefined, 'general');
 
 		const input = screen.getByRole('switch', {
 			name: 'Share open notes with agent',
@@ -357,7 +431,7 @@ describe('SettingsPage', () => {
 
 	it('writes the open notes sharing default into settings on change', () => {
 		const auth = createAuthStub();
-		const { settings } = renderPage(auth);
+		const { settings } = renderPage(auth, undefined, undefined, 'general');
 
 		const input = screen.getByRole('switch', {
 			name: 'Share open notes with agent',

@@ -1,10 +1,18 @@
+import { ThoughtDumps } from '../modes/controller.js';
+import { createQuestion } from './create-question.js';
 import { interruptedState } from './interrupted.js';
 import { createStore } from '@franklin/agent';
 import type { ReadonlyStore, Store } from '@franklin/agent';
 import type { QuestionSource } from '../types.js';
 import { restoreInbox } from './restore.js';
-import { ancestorsOf } from './lineage.js';
+import { branchContext } from '../hierarchy/context.js';
+import { InboxGroups } from '../hierarchy/controller.js';
+import { childParent } from '../hierarchy/parent.js';
+import { inboxNodes } from '../hierarchy/nodes.js';
+import { nextNodeOrder } from '../hierarchy/order.js';
+import type { NewChild } from '../hierarchy/types.js';
 import { errorMessage } from './error.js';
+import { QuestionSaveError } from './save-error.js';
 import { InboxActions } from '../actions/controller.js';
 import { answerDetailSchema } from '../answer/schema.js';
 import { createDebugDump } from '../debug/dump.js';
@@ -18,25 +26,40 @@ import type {
 export class InboxController {
 	readonly state: ReadonlyStore<InboxSnapshot>;
 	readonly actions: InboxActions;
+	readonly thoughtDumps: ThoughtDumps;
+	readonly groups: InboxGroups;
 	get capture() {
 		return this.options.capture;
 	}
 	private readonly store: Store<InboxSnapshot>;
 	private readonly active = new Map<string, AbortController>();
 	private writes = Promise.resolve();
+	private saved: InboxDocument;
+	private readonly savedListeners = new Set<
+		(document: InboxDocument) => void
+	>();
 	private closed = false;
 
 	private constructor(
 		private readonly options: InboxControllerOptions,
 		initial: InboxDocument,
 	) {
+		this.saved = initial;
 		this.store = createStore(initial);
 		this.state = this.store;
-		this.actions = new InboxActions({
+		const operations = {
 			store: this.store,
 			assertOpen: () => this.assertOpen(),
 			persist: () => this.persist(),
 			pump: () => this.pump(),
+		};
+		this.groups = new InboxGroups(operations);
+		this.thoughtDumps = new ThoughtDumps({
+			...operations,
+			split: options.split,
+		});
+		this.actions = new InboxActions({
+			...operations,
 			run: options.runAction,
 			onComplete: options.onActionComplete,
 		});
@@ -52,6 +75,14 @@ export class InboxController {
 		return controller;
 	}
 
+	// Consumers that edit notes must observe committed snapshots. state also contains
+	// optimistic changes, including deletions that can still fail to reach disk.
+	subscribeSaved(listener: (document: InboxDocument) => void): () => void {
+		this.savedListeners.add(listener);
+		listener(this.saved);
+		return () => this.savedListeners.delete(listener);
+	}
+
 	async add(
 		text: string,
 		parentId?: string,
@@ -59,34 +90,29 @@ export class InboxController {
 	): Promise<string> {
 		this.assertOpen();
 		if (!text.trim()) throw new Error('Enter a question');
-		const { preferences, questions } = this.store.get();
-		const parent = parentId
-			? questions.find((q) => q.id === parentId)
-			: undefined;
-		if (parentId && parent?.state.kind !== 'answered')
-			throw new Error('Follow up on an answered question');
-		const id = crypto.randomUUID();
-		const now = Date.now();
+		const { preferences } = this.store.get();
+		const parent = childParent(this.store.get(), parentId);
+		const question = createQuestion({ text, preferences, source, parent });
+		question.order = nextNodeOrder(this.store.get());
+		const id = question.id;
 		this.store.set((draft) => {
-			draft.questions.unshift({
-				id,
-				rootId: parent?.rootId ?? id,
-				parentId,
-				text: text.trim(),
-				createdAt: now,
-				updatedAt: now,
-				attemptId: crypto.randomUUID(),
-				model: preferences.model,
-				provider: preferences.provider,
-				reasoning: preferences.reasoning,
-				answerInstructions: preferences.answerInstructions,
-				source: source ?? parent?.source,
-				state: { kind: 'queued' },
-			});
+			draft.questions.unshift(question);
 		});
-		await this.persist();
+		try {
+			await this.persist();
+		} catch (error) {
+			// Retain the optimistic question's identity so capture can retry its save
+			// and attach the pill without queueing a second question.
+			throw new QuestionSaveError(id, error);
+		}
 		this.pump();
 		return id;
+	}
+
+	async addChild(parentId: string, input: NewChild): Promise<string> {
+		return input.kind === 'group'
+			? this.groups.add(input, parentId)
+			: this.add(input.text, parentId, input.source);
 	}
 
 	async configure(patch: Partial<InboxPreferences>): Promise<void> {
@@ -109,11 +135,8 @@ export class InboxController {
 		const questions = this.store.get().questions;
 		const question = questions.find((item) => item.id === id);
 		if (!question) throw new Error('Question is no longer in the inbox');
-		return createDebugDump(
-			question,
-			ancestorsOf(question, questions),
-			this.options.evidence,
-		);
+		const { ancestors, groups } = branchContext(question, this.store.get());
+		return createDebugDump(question, ancestors, this.options.evidence, groups);
 	}
 
 	async retry(id: string): Promise<void> {
@@ -138,7 +161,7 @@ export class InboxController {
 		let count: number;
 		do {
 			count = deleted.size;
-			for (const q of this.store.get().questions) {
+			for (const q of inboxNodes(this.store.get())) {
 				if (q.parentId && deleted.has(q.parentId)) deleted.add(q.id);
 			}
 		} while (count !== deleted.size);
@@ -148,6 +171,10 @@ export class InboxController {
 			.map((run) => run.id);
 		this.store.set((draft) => {
 			draft.questions = draft.questions.filter((q) => !deleted.has(q.id));
+			draft.groups = draft.groups?.filter((group) => !deleted.has(group.id));
+			draft.thoughtDumps = draft.thoughtDumps?.filter(
+				(dump) => !dump.groupId || !deleted.has(dump.groupId),
+			);
 			draft.actionRuns = draft.actionRuns.filter(
 				(run) => !deleted.has(run.question.id),
 			);
@@ -171,6 +198,9 @@ export class InboxController {
 			for (const q of draft.questions) {
 				if (q.state.kind === 'running') q.state = interruptedState();
 			}
+			for (const dump of draft.thoughtDumps ?? []) {
+				if (dump.state.kind === 'running') dump.state = interruptedState();
+			}
 			for (const run of draft.actionRuns) {
 				if (run.state.kind === 'running') run.state = interruptedState();
 			}
@@ -186,15 +216,27 @@ export class InboxController {
 	}
 
 	private async persist(): Promise<void> {
-		const { questions, preferences, actions, actionRuns } = this.store.get();
-		const write = this.writes.then(() =>
-			this.options.persistence.save({
-				questions,
-				preferences,
-				actions,
-				actionRuns,
-			}),
-		);
+		const {
+			questions,
+			preferences,
+			actions,
+			actionRuns,
+			thoughtDumps,
+			groups,
+		} = this.store.get();
+		const document = {
+			questions,
+			preferences,
+			actions,
+			actionRuns,
+			thoughtDumps,
+			groups,
+		};
+		const write = this.writes.then(async () => {
+			await this.options.persistence.save(document);
+			this.saved = document;
+			for (const listener of this.savedListeners) listener(document);
+		});
 		this.writes = write.catch(() => {});
 		try {
 			await write;
@@ -211,12 +253,16 @@ export class InboxController {
 
 	private pump(): void {
 		if (this.closed || this.store.get().storageError) return;
-		const { questions, actionRuns } = this.store.get();
+		const { questions, actionRuns, thoughtDumps } = this.store.get();
 		const queue = [
 			...[...questions]
 				.reverse()
 				.map((question) => ({ ...question, type: 'question' as const })),
 			...actionRuns.map((run) => ({ ...run, type: 'action' as const })),
+			...(thoughtDumps ?? []).map((dump) => ({
+				...dump,
+				type: 'dump' as const,
+			})),
 		].sort((a, b) => a.createdAt - b.createdAt);
 		for (const item of queue) {
 			if (this.active.size >= this.store.get().preferences.concurrency) break;
@@ -225,9 +271,11 @@ export class InboxController {
 			// Reserve the slot before the first await; submission does not release it.
 			this.active.set(item.id, abort);
 			const execute =
-				item.type === 'action'
-					? this.actions.execute(item.id, item.attemptId, abort.signal)
-					: this.execute(item.id, item.attemptId, abort.signal);
+				item.type === 'dump'
+					? this.thoughtDumps.execute(item.id, abort.signal)
+					: item.type === 'action'
+						? this.actions.execute(item.id, item.attemptId, abort.signal)
+						: this.execute(item.id, item.attemptId, abort.signal);
 			void execute.finally(() => {
 				this.active.delete(item.id);
 				this.pump();
@@ -252,7 +300,7 @@ export class InboxController {
 			if (!question || signal.aborted || this.closed) return;
 			await this.options.run({
 				question,
-				ancestors: ancestorsOf(question, this.store.get().questions),
+				...branchContext(question, this.store.get()),
 				signal,
 				submit: async (answer, title, details) => {
 					const current = this.store

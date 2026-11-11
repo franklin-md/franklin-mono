@@ -36,6 +36,7 @@ export type QuestionState =
 
 export type StudyQuestion = {
 	id: string;
+	order?: number;
 	parentId?: string;
 	text: string;
 	createdAt: number;

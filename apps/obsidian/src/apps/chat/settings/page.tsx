@@ -3,7 +3,7 @@ import { ViewingContextSettings } from './viewing-context.js';
 
 export function ChatSettings() {
 	return (
-		<SettingGroup title="Agent settings">
+		<SettingGroup title="Context">
 			<ViewingContextSettings />
 		</SettingGroup>
 	);

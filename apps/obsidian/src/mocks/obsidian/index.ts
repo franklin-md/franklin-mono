@@ -7,6 +7,18 @@ export class ItemView {
 	constructor(readonly leaf: unknown) {}
 }
 
+export class MarkdownRenderChild {
+	constructor(readonly containerEl: HTMLElement) {}
+	onload(): void {}
+	onunload(): void {}
+	load(): void {
+		this.onload();
+	}
+	unload(): void {
+		this.onunload();
+	}
+}
+
 export class Plugin {
 	app = {
 		vault: {},

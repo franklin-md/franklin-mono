@@ -163,9 +163,9 @@ available levels; the UI does not infer model capabilities or change reasoning
 when selecting a model.
 
 The default trigger shows the model followed by the compact effort label in
-smaller, muted text. The model name truncates before the effort label. Its tooltip
-and accessible description retain the full level name. Omitting `effort` removes
-both the inline selector and the trigger's effort summary.
+muted text at the same font size. The model name truncates before the effort label.
+Its tooltip and accessible description retain the full level name. Omitting
+`effort` removes both the inline selector and the trigger's effort summary.
 
 For custom compositions, import these parts from `@franklin/ui`:
 

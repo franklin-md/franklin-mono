@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import type { ComponentProps, ReactElement } from 'react';
+import type { SettingsPage } from '../page.js';
 import type { FranklinApp } from '@franklin/agent';
 import type FranklinPlugin from '../../../main.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -52,6 +54,25 @@ describe('FranklinSettingTab', () => {
 		tab.display();
 
 		expect(sharedMounter.mount).toHaveBeenCalledTimes(2);
+	});
+
+	it('remembers user navigation on reopen and lets an explicit destination override it', () => {
+		const tab = createTab();
+		const page = () => {
+			const root = vi.mocked(sharedMounter.mount).mock
+				.lastCall?.[1] as ReactElement<{
+				children: ReactElement<ComponentProps<typeof SettingsPage>>;
+			}>;
+			return root.props.children.props;
+		};
+		tab.display();
+		expect(page().initialSection).toBe('general');
+		page().onSectionChange?.('flashcards');
+		tab.hide();
+		tab.display();
+		expect(page().initialSection).toBe('flashcards');
+		tab.selectSection('connections');
+		expect(page().initialSection).toBe('connections');
 	});
 
 	it('unmounts the React settings root on hide', () => {

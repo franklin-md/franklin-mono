@@ -1,5 +1,5 @@
 import type { Store } from '@franklin/agent';
-import { ancestorsOf } from '../controller/lineage.js';
+import { branchContext } from '../hierarchy/context.js';
 import { errorMessage } from '../controller/error.js';
 import type {
 	InboxControllerOptions,
@@ -70,7 +70,7 @@ export class InboxActions {
 				attemptId: crypto.randomUUID(),
 				action: structuredClone(action),
 				question: structuredClone(question),
-				ancestors: structuredClone(ancestorsOf(question, snapshot.questions)),
+				...structuredClone(branchContext(question, snapshot)),
 				provider,
 				model,
 				reasoning,

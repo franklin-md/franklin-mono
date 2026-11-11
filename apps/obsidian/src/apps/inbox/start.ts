@@ -7,6 +7,7 @@ import type { Plugin } from 'obsidian';
 import { createDefaultObsidianFilesystemPermissions } from '../../shared/obsidian/filesystem/permissions.js';
 import { InboxController } from './controller/controller.js';
 import { createInboxActionRunner } from './actions/run.js';
+import { createSplitter } from './modes/run.js';
 import { createInboxRunner } from './agent/run.js';
 import { createInboxPersistence } from './storage/persistence.js';
 import { CaptureController } from './capture/controller.js';
@@ -71,6 +72,7 @@ export async function startInbox({
 			path: joinAbsolute(appDir, 'inbox.json'),
 		}),
 		run: createInboxRunner(runnerOptions),
+		split: createSplitter(runnerOptions),
 		runAction: createInboxActionRunner(runnerOptions),
 		onActionComplete: (name, summary) => {
 			new Notice(`${name} ${summary}`);

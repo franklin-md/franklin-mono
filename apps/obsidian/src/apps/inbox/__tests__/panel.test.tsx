@@ -66,6 +66,8 @@ describe('functional inbox UI', () => {
 		});
 		fireEvent.click(screen.getByRole('button', { name: 'Add question' }));
 		await screen.findByText('Answer from the runtime.');
+		expect(screen.queryByRole('textbox', { name: /Follow up on:/ })).toBeNull();
+		fireEvent.click(screen.getByRole('button', { name: 'Why does it sleep?' }));
 		const writeText = vi.fn(async (_text: string) => {});
 		vi.stubGlobal('navigator', { clipboard: { writeText } });
 		fireEvent.click(screen.getByRole('button', { name: 'Copy agent events' }));
@@ -78,10 +80,9 @@ describe('functional inbox UI', () => {
 				state: { kind: 'answered', answer: 'Answer from the runtime.' },
 			},
 		});
-		expect(screen.queryByRole('textbox', { name: /Follow up on:/ })).toBeNull();
+		expect(screen.getByRole('textbox', { name: /Follow up on:/ })).toBeTruthy();
 		expect(saved?.questions[0]?.text).toBe('Why does it sleep?');
 		expect(saved?.questions[0]?.source?.quote).toBe('Captured context');
-		fireEvent.click(screen.getByRole('button', { name: 'Why does it sleep?' }));
 		fireEvent.change(screen.getByRole('textbox', { name: /Follow up on:/ }), {
 			target: { value: 'What if it wakes?' },
 		});
@@ -223,11 +224,11 @@ describe('question headers', () => {
 		const header = screen.getByRole('button', { name: title });
 		expect(header.querySelector('span')?.textContent).toBe(title);
 		expect(
-			container.querySelector<HTMLDetailsElement>('.study-original')?.hidden,
+			container.querySelector('.study-original')?.closest('footer')?.hidden,
 		).toBe(true);
 		fireEvent.click(header);
 		expect(
-			container.querySelector<HTMLDetailsElement>('.study-original')?.hidden,
+			container.querySelector('.study-original')?.closest('footer')?.hidden,
 		).toBe(false);
 		expect(container.querySelector('.study-original p')?.textContent).toBe(
 			original,

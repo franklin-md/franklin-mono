@@ -126,7 +126,7 @@ describe('durable flashcard episodes', () => {
 			),
 		);
 		expect(saved).toMatchObject({
-			captureVersion: 5,
+			captureVersion: 6,
 			phase: 'complete',
 			cardIds: ['one', 'two'],
 			question: { attemptId: 'q-accepted' },

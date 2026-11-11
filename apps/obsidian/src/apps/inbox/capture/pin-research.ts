@@ -5,15 +5,19 @@ import type {
 	ResearchEvidence,
 } from '../evidence/types.js';
 import { redactEvidence } from '../evidence/redact.js';
+import { branchContext } from '../hierarchy/context.js';
+import type { InboxGroup } from '../hierarchy/types.js';
 
 export async function pinResearch(
 	question: InboxQuestion,
 	ancestors: InboxQuestion[],
 	repository: EvidenceRepository,
+	groups?: InboxGroup[],
 ): Promise<ResearchEvidence[]> {
 	return Promise.all(
 		[question, ...ancestors].map(async (item, index) => {
-			const branch = index === 0 ? ancestors : ancestors.slice(0, index - 1);
+			const context = contextFor(item, index);
+			const branch = context.ancestors;
 			try {
 				const evidence = await repository.load(item.id, item.attemptId);
 				if (
@@ -22,6 +26,11 @@ export async function pinResearch(
 					evidence.question.attemptId === item.attemptId
 				) {
 					if (
+						questionPrompt({
+							question: item,
+							ancestors: branch,
+							groups: evidence.groups,
+						}) !== questionPrompt({ question: item, ...context }) ||
 						evidence.question.parentId !== item.parentId ||
 						evidence.question.rootId !== item.rootId ||
 						evidence.ancestors.length !== branch.length ||
@@ -72,18 +81,24 @@ export async function pinResearch(
 		}),
 	);
 
+	function contextFor(item: InboxQuestion, index: number) {
+		return groups?.length
+			? branchContext(item, { questions: [question, ...ancestors], groups })
+			: { ancestors: index === 0 ? ancestors : ancestors.slice(0, index - 1) };
+	}
+
 	function missing(
 		item: InboxQuestion,
 		index: number,
 		reason: string,
 	): ResearchEvidence {
-		const branch = index === 0 ? ancestors : ancestors.slice(0, index - 1);
-		const prompt = questionPrompt({ question: item, ancestors: branch });
+		const context = contextFor(item, index);
+		const prompt = questionPrompt({ question: item, ...context });
 		const clean = redactEvidence(prompt);
 		return {
 			version: 1,
 			question: structuredClone(item),
-			ancestors: structuredClone(branch),
+			...structuredClone(context),
 			startedAt: item.createdAt,
 			status: 'missing',
 			missing: [

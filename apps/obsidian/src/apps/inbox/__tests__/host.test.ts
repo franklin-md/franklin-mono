@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import type { App, Command, Editor, MarkdownFileInfo, Plugin } from 'obsidian';
 import type { FranklinApp } from '@franklin/agent';
@@ -8,6 +9,9 @@ import { captureOutline } from '../host/outline.js';
 import { selectionQuestion } from '../selection-question.js';
 import { openQuestionSource } from '../host/open-source.js';
 import { registerInbox } from '../register.js';
+import { DirectiveRegistry } from '../../../shared/directives/registry.js';
+import { createDirectiveTestPersistence } from '../../../shared/directives/testing/persistence.js';
+import { createDirectiveTestEditor } from '../../../shared/directives/testing/editor.js';
 
 const content =
 	'# Sleep\n## Locking\nCheck the condition again.\nMore context.';
@@ -45,7 +49,7 @@ describe('Obsidian inbox commands and source navigation', () => {
 		expect(captured?.location?.id).toBeTruthy();
 	});
 	it.each(['Check the condition again.', '', 'C', 'Ch', 'Che', ' the '])(
-		'adds the whole row for selection "%s" without changing the source note',
+		'adds the whole row for selection "%s" and appends an Inbox pill to the source line',
 		async (selection) => {
 			const commands: Command[] = [];
 			const add = vi.fn(async () => 'q');
@@ -54,16 +58,27 @@ describe('Obsidian inbox commands and source navigation', () => {
 				registerView: vi.fn(),
 				addRibbonIcon: vi.fn(),
 			} as unknown as Plugin;
-			registerInbox({
+			const directives = await DirectiveRegistry.create({
+				app: {} as App,
+				persistence: createDirectiveTestPersistence(),
+			});
+			const dispose = registerInbox({
 				plugin,
 				app: {} as FranklinApp,
-				inbox: { add } as unknown as InboxController,
+				inbox: {
+					add,
+					state: { get: () => ({ questions: [{ id: 'q' }] }) },
+					subscribeSaved: () => () => {},
+				} as unknown as InboxController,
+				directives,
 				hostActionBindings: [],
 			});
 			const capture = commands.find(
 				(command) => command.id === 'selection-to-study-inbox',
 			)!;
-			const e = editor();
+			const target = createDirectiveTestEditor(content);
+			const e = target.editor;
+			vi.spyOn(e, 'setSelection');
 			vi.spyOn(e, 'getSelection').mockReturnValue(selection);
 			const start = selection ? e.getLine(2).indexOf(selection) : 7;
 			vi.spyOn(e, 'getCursor').mockImplementation((side) => ({
@@ -87,6 +102,12 @@ describe('Obsidian inbox commands and source navigation', () => {
 					}),
 				),
 			);
+			await vi.waitFor(() =>
+				expect(e.getValue()).toContain(':::franklin:inbox-question:'),
+			);
+			expect(e.getValue()).toMatch(
+				/^# Sleep\n## Locking\nCheck the condition again\. :::franklin:inbox-question:/,
+			);
 			const empty = editor();
 			vi.spyOn(empty, 'getSelection').mockReturnValue('');
 			vi.spyOn(empty, 'getLine').mockReturnValue(' \t ');
@@ -97,6 +118,9 @@ describe('Obsidian inbox commands and source navigation', () => {
 			).toBe(false);
 			expect(add).toHaveBeenCalledOnce();
 			expect(e.setSelection).not.toHaveBeenCalled();
+			await dispose();
+			await directives.dispose();
+			target.destroy();
 		},
 	);
 	it.each([

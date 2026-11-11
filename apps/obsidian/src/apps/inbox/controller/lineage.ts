@@ -1,17 +1,15 @@
-import type { InboxQuestion } from './types.js';
-
-export function ancestorsOf(
-	question: InboxQuestion,
-	questions: InboxQuestion[],
-): InboxQuestion[] {
-	const chain: InboxQuestion[] = [];
-	const visited = new Set([question.id]);
-	let id = question.parentId;
+export function ancestorsOf<T extends { id: string; parentId?: string }>(
+	node: T,
+	nodes: T[],
+): T[] {
+	const chain: T[] = [];
+	const visited = new Set([node.id]);
+	let id = node.parentId;
 	while (id) {
-		if (visited.has(id)) throw new Error('Question lineage contains a cycle');
+		if (visited.has(id)) throw new Error('Inbox lineage contains a cycle');
 		visited.add(id);
-		const parent = questions.find((item) => item.id === id);
-		if (!parent) throw new Error('Parent question is missing');
+		const parent = nodes.find((item) => item.id === id);
+		if (!parent) throw new Error('Parent node is missing');
 		chain.unshift(parent);
 		id = parent.parentId;
 	}

@@ -12,7 +12,11 @@ import { DiffExplorerController } from './shared/diff/explorer.js';
 import { clearPortalRoot } from './shared/ui/portal.js';
 import { FranklinSettingTab } from './plugin/settings/tab.js';
 import { registerInbox } from './apps/inbox/register.js';
+import { createDirectiveExtension } from './shared/directives/live-preview/extension.js';
+import { createDirectivePostProcessor } from './shared/directives/reading/processor.js';
 import type { InboxController } from './apps/inbox/controller/controller.js';
+import { registerQuickEdit } from './apps/quick-edit/register.js';
+import type { QuickEditPreferences } from './apps/quick-edit/settings/store.js';
 
 export default class FranklinPlugin extends Plugin {
 	private diffClient!: ObsidianDiffClient;
@@ -23,6 +27,7 @@ export default class FranklinPlugin extends Plugin {
 	franklinApp: FranklinApp | null = null;
 	connections: MCPConnections | null = null;
 	inbox: InboxController | null = null;
+	quickEditPreferences: QuickEditPreferences | null = null;
 	hostActionBindings: readonly HostActionBinding[] = [];
 
 	async onload() {
@@ -39,24 +44,51 @@ export default class FranklinPlugin extends Plugin {
 
 		bootstrapPlugin(this, this.diffClient)
 			.then(
-				({
+				async ({
 					app,
 					connections,
 					inbox,
+					directives,
 					getCreateInput,
 					hostActionBindings,
 					dispose: disposeFranklinApp,
 				}) => {
-					if (this.unloading) {
+					if (this.isUnloading()) {
 						disposeFranklinApp();
 						return;
 					}
-					registerInbox({ plugin: this, app, inbox, hostActionBindings });
+					this.registerEditorExtension(createDirectiveExtension(directives));
+					this.registerMarkdownPostProcessor(
+						createDirectivePostProcessor(directives),
+					);
+					const disposeInbox = registerInbox({
+						plugin: this,
+						app,
+						inbox,
+						directives,
+						hostActionBindings,
+					});
+					const quickEdit = await registerQuickEdit({
+						plugin: this,
+						franklin: app,
+						registry: directives,
+						diff: this.diffClient,
+					});
+					if (this.isUnloading()) {
+						await Promise.all([quickEdit.dispose(), disposeInbox()]);
+						disposeFranklinApp();
+						return;
+					}
 					this.franklinApp = app;
 					this.connections = connections;
 					this.inbox = inbox;
+					this.quickEditPreferences = quickEdit.preferences;
 					this.hostActionBindings = hostActionBindings;
-					this.disposeFranklinApp = disposeFranklinApp;
+					this.disposeFranklinApp = () => {
+						void Promise.all([quickEdit.dispose(), disposeInbox()]).finally(
+							disposeFranklinApp,
+						);
+					};
 
 					this.addSettingTab(new FranklinSettingTab(this));
 
@@ -76,6 +108,10 @@ export default class FranklinPlugin extends Plugin {
 			});
 	}
 
+	private isUnloading(): boolean {
+		return this.unloading;
+	}
+
 	onunload() {
 		this.unloading = true;
 		this.diffExplorerController.onunload();
@@ -85,6 +121,7 @@ export default class FranklinPlugin extends Plugin {
 		this.franklinApp = null;
 		this.connections = null;
 		this.inbox = null;
+		this.quickEditPreferences = null;
 		this.hostActionBindings = [];
 		this.disposeFranklinApp = null;
 	}

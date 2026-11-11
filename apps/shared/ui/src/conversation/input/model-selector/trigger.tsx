@@ -29,7 +29,7 @@ export function ModelPickerTrigger({
 				variant="ghost"
 				size="sm"
 				className={cn(
-					'h-auto min-w-0 gap-1.5 px-2 py-1 text-xs text-muted-foreground',
+					'h-auto min-w-0 gap-1.5 px-2 py-1 text-[length:calc(var(--text-xs)-1px)] text-muted-foreground',
 					className,
 				)}
 				{...props}
@@ -43,7 +43,7 @@ export function ModelPickerTrigger({
 							{selectedEntry?.name ?? (model || 'Select model')}
 						</span>
 						{effortLabel && (
-							<span className="inline-flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
+							<span className="inline-flex shrink-0 items-center gap-1 text-muted-foreground">
 								<span aria-hidden="true">·</span>
 								{effortLabel.shortLabel}
 							</span>

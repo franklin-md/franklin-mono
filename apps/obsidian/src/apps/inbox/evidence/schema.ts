@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { questionSchema } from '../controller/question-schema.js';
+import { groupSchema } from '../hierarchy/schema.js';
 
 const text = z.object({
 	text: z.string(),
@@ -11,6 +12,7 @@ export const evidenceSchema = z.object({
 	version: z.literal(1),
 	question: questionSchema,
 	ancestors: z.array(questionSchema),
+	groups: z.array(groupSchema).optional(),
 	startedAt: z.number().int(),
 	acceptedAt: z.number().int().optional(),
 	status: z.enum(['collecting', 'complete', 'partial', 'missing']),

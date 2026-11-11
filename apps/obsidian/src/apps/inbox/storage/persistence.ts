@@ -6,7 +6,7 @@ import type {
 import { createSingleFilePersister } from '@franklin/lib';
 import { inboxCodec } from '../controller/schema.js';
 import type { InboxDocument } from '../controller/types.js';
-import { writeAtomic } from './write.js';
+import { writeAtomic } from '../../../shared/persistence/write.js';
 
 type Options = { filesystem: Filesystem; path: AbsolutePath };
 

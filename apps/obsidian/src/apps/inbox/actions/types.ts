@@ -1,4 +1,5 @@
 import type { InboxQuestion, ModelSelection } from '../controller/types.js';
+import type { BranchContext } from '../hierarchy/types.js';
 
 export type InboxAction = {
 	id: string;
@@ -16,15 +17,15 @@ export type ActionState =
 	| FailedAction
 	| SucceededAction;
 
-export type InboxActionRun = ModelSelection & {
-	id: string;
-	attemptId: string;
-	action: InboxAction;
-	question: InboxQuestion;
-	ancestors: InboxQuestion[];
-	createdAt: number;
-	state: ActionState;
-};
+export type InboxActionRun = ModelSelection &
+	BranchContext & {
+		id: string;
+		attemptId: string;
+		action: InboxAction;
+		question: InboxQuestion;
+		createdAt: number;
+		state: ActionState;
+	};
 
 export type ActionRequest = {
 	run: InboxActionRun;

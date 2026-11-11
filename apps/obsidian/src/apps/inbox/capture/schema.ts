@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { questionSchema } from '../controller/question-schema.js';
+import { groupSchema } from '../hierarchy/schema.js';
 import { evidenceSchema } from '../evidence/schema.js';
 import { mochiSnapshotSchema } from './mochi/schema.js';
 
@@ -14,6 +15,7 @@ const episode = z
 		databasePath: z.string().min(1),
 		question: questionSchema,
 		ancestors: z.array(questionSchema),
+		groups: z.array(groupSchema).optional(),
 		startedAt: z.number().int().nonnegative(),
 		draftBaseline: z
 			.object({

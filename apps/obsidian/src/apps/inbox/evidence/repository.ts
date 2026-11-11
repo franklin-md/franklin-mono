@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { writeAtomic } from '../storage/write.js';
+import { writeAtomic } from '../../../shared/persistence/write.js';
 import { evidenceSchema } from './schema.js';
 import type { EvidenceRepository } from './types.js';
 

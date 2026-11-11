@@ -64,7 +64,7 @@ describe('automatic recording completion', () => {
 			await readFile(join(root, first.folder, `${first.id}.json`), 'utf8'),
 		);
 		expect(saved).toMatchObject({
-			captureVersion: 5,
+			captureVersion: 6,
 			startedAt: 1000,
 			endedAt: 2000,
 			completedAt: 2000,

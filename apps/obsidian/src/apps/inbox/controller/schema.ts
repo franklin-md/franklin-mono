@@ -1,3 +1,6 @@
+import { groupSchema } from '../hierarchy/schema.js';
+import { validateHierarchy } from '../hierarchy/validate.js';
+import { thoughtDumpSchema } from '../modes/schema.js';
 import { versioned, zodCodec } from '@franklin/lib';
 import { z } from 'zod';
 import type { InboxDocument } from './types.js';
@@ -10,6 +13,7 @@ const preferences = z.object({
 	reasoning: question.shape.reasoning,
 	answerInstructions: z.string(),
 	concurrency: z.number().int().min(1).max(4),
+	mode: z.enum(['question', 'thought-dump']).optional(),
 });
 const legacyQuestion = question
 	.omit({ answerInstructions: true })
@@ -40,6 +44,7 @@ const actionRun = z.object({
 		'Action question must be answered',
 	),
 	ancestors: z.array(question),
+	groups: z.array(groupSchema).optional(),
 	provider: z.string().min(1),
 	model: z.string().min(1),
 	reasoning: question.shape.reasoning,
@@ -66,13 +71,14 @@ const actionDocument = legacyDocument.extend({
 		}),
 	),
 });
-const document: z.ZodType<InboxDocument> = z
-	.object({
-		questions: z.array(question),
-		preferences,
-		actions: z.array(action),
-		actionRuns: z.array(actionRun),
-	})
+const documentShape = z.object({
+	questions: z.array(question),
+	thoughtDumps: z.array(thoughtDumpSchema).optional(),
+	preferences,
+	actions: z.array(action),
+	actionRuns: z.array(actionRun),
+});
+const document: z.ZodType<InboxDocument> = documentShape
 	.superRefine(({ questions }, ctx) => {
 		const byId = new Map(questions.map((q) => [q.id, q]));
 		if (byId.size !== questions.length)
@@ -93,9 +99,10 @@ const document: z.ZodType<InboxDocument> = z
 				ctx.addIssue({ code: 'custom', message: 'Invalid root question' });
 		}
 	})
-	.superRefine(({ actions, actionRuns, questions }, ctx) => {
+	.superRefine(({ actions, actionRuns, questions, thoughtDumps }, ctx) => {
 		const ids = [
 			...questions.map((q) => q.id),
+			...(thoughtDumps ?? []).map((dump) => dump.id),
 			...actionRuns.map((run) => run.id),
 		];
 		if (
@@ -118,6 +125,10 @@ const document: z.ZodType<InboxDocument> = z
 		}
 	});
 
+const groupedDocument: z.ZodType<InboxDocument> = documentShape
+	.extend({ groups: z.array(groupSchema).default([]) })
+	.superRefine(validateHierarchy);
+
 export const inboxCodec = versioned()
 	.version(1, zodCodec(legacyDocument))
 	.version(2, zodCodec(actionDocument), (previous) => ({
@@ -139,4 +150,11 @@ export const inboxCodec = versioned()
 	}))
 	// Older plugins must reject the new format rather than strip folded content.
 	.version(4, zodCodec(document), (previous) => previous)
+	// Persist extraction jobs alongside their resulting batch; older plugins must reject this format.
+	.version(5, zodCodec(document), (previous) => previous)
+	// Group parents are not readable by older plugins; keep their question-only validators frozen.
+	.version(6, zodCodec(groupedDocument), (previous) => ({
+		...previous,
+		groups: [],
+	}))
 	.build();

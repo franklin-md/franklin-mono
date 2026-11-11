@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe('question action controls', () => {
-	it('runs on a collapsed answered card, shows failure/retry, and restores the button after successful cleanup', async () => {
+	it('runs on a selected answered card, shows failure/retry, and restores the button after successful cleanup', async () => {
 		HTMLElement.prototype.scrollTo = vi.fn();
 		vi.stubGlobal(
 			'matchMedia',
@@ -66,6 +66,8 @@ describe('question action controls', () => {
 			await inbox.add('Why recheck?');
 		});
 		await screen.findByText('The condition may change.');
+		expect(screen.queryByRole('button', { name: 'Run 🃏' })).toBeNull();
+		fireEvent.click(screen.getByRole('button', { name: 'Why recheck?' }));
 		await act(async () => {
 			fireEvent.click(screen.getByRole('button', { name: 'Run 🃏' }));
 		});

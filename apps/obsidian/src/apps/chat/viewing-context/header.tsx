@@ -23,7 +23,7 @@ export function ViewingContextHeader() {
 				type="button"
 				variant="ghost"
 				className={cn(
-					'h-8 min-w-0 max-w-full gap-1.5 rounded-md px-2.5 text-xs font-medium shadow-none ring-1 ring-inset transition-colors',
+					'h-8 min-w-0 max-w-full gap-1.5 rounded-md px-2.5 text-[length:calc(var(--text-xs)-1px)] font-medium shadow-none ring-1 ring-inset transition-colors',
 					state.enabled
 						? 'bg-primary/10 text-primary ring-primary/35 hover:bg-primary/15 hover:text-primary'
 						: 'bg-background/50 text-muted-foreground ring-input/60 hover:bg-accent hover:text-accent-foreground',

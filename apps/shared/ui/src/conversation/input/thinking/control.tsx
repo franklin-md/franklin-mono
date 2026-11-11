@@ -79,7 +79,7 @@ export function ThinkingControl({ level, levels, onChange }: Props) {
 			type="button"
 			data-testid="thinking-toggle"
 			className={cn(
-				'inline-flex h-8 w-14 flex-col items-center justify-center gap-0.5 rounded-md text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground',
+				'inline-flex h-8 w-14 flex-col items-center justify-center gap-0.5 rounded-md text-[length:calc(var(--text-xs)-1px)] font-medium transition-colors hover:bg-accent hover:text-accent-foreground',
 				meta.color,
 			)}
 			onClick={() => {

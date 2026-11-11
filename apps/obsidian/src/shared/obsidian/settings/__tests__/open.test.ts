@@ -35,6 +35,19 @@ describe('openPluginSettings', () => {
 		expect(noticeMock).not.toHaveBeenCalled();
 	});
 
+	it('selects an explicit section after opening the plugin settings', () => {
+		const selectSection = vi.fn();
+		const openTabById = vi.fn();
+		const app = {
+			setting: { open: vi.fn(), openTabById, activeTab: { selectSection } },
+		} as unknown as App;
+		openPluginSettings(app, 'franklin', 'inbox');
+		expect(selectSection).toHaveBeenCalledWith('inbox');
+		expect(openTabById.mock.invocationCallOrder[0]).toBeLessThan(
+			selectSection.mock.invocationCallOrder[0]!,
+		);
+	});
+
 	it('shows a fallback notice when the settings API is unavailable', () => {
 		openPluginSettings({} as unknown as App, 'franklin');
 

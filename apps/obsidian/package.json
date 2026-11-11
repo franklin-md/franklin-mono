@@ -26,6 +26,7 @@
 		"@franklin/node": "0.0.0",
 		"@franklin/react": "0.0.0",
 		"@franklin/ui": "0.0.0",
+		"@lezer/markdown": "1.8.1",
 		"lucide-react": "0.511.0",
 		"react": "18.3.1",
 		"react-dom": "18.3.1",

@@ -1,7 +1,7 @@
 import { mkdir, readFile, realpath } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { isAbsolute, join, relative, resolve } from 'node:path';
-import { writeAtomic } from '../storage/write.js';
+import { writeAtomic } from '../../../shared/persistence/write.js';
 import type { EvidenceRepository } from '../evidence/types.js';
 import { captureSchema } from './schema.js';
 import { episodeContext } from './context.js';

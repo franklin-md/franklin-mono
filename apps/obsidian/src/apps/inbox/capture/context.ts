@@ -8,6 +8,10 @@ export function episodeContext(episode: CaptureEpisode): string {
 			`# Learning episode ${episode.id}`,
 			`Recorded: ${new Date(episode.startedAt).toISOString()} to ${episode.endedAt === undefined ? 'recording' : new Date(episode.endedAt).toISOString()}`,
 			'This is the context pinned at Record. Source notes were not reread after card authoring.',
+			...(episode.groups ?? []).map(
+				(group) =>
+					`## Group: ${group.title ?? 'Untitled'}\n\n${group.context ?? ''}`,
+			),
 			...episode.ancestors.map((question) =>
 				renderQuestion(question, 'Ancestor'),
 			),

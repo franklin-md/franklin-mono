@@ -36,6 +36,7 @@ export class ResearchRecorder {
 			version: 1,
 			question: structuredClone(request.question),
 			ancestors: structuredClone(request.ancestors),
+			groups: structuredClone(request.groups),
 			startedAt: Date.now(),
 			status: 'collecting',
 			missing: [],

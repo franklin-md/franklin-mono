@@ -71,6 +71,9 @@ describe('capture inbox controls', () => {
 				onError={onError}
 			/>,
 		);
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Another study question?' }),
+		);
 		await act(async () => {
 			fireEvent.click(
 				within(
@@ -80,6 +83,7 @@ describe('capture inbox controls', () => {
 		});
 		expect(screen.getByText('Recording Mochi cards')).toBeTruthy();
 		await vi.waitFor(() => expect(capture.state.get().busy).toBe(false));
+		fireEvent.click(screen.getByRole('button', { name: 'A study question?' }));
 		expect(
 			screen.getByRole('button', { name: 'Record' }).hasAttribute('disabled'),
 		).toBe(false);
