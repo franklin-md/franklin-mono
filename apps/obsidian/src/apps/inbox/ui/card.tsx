@@ -1,6 +1,5 @@
 import {
 	ArrowUpRight,
-	Check,
 	ChevronDown,
 	FileText,
 	GitBranch,
@@ -34,11 +33,6 @@ type Props = {
 	onRetry: (id: string) => void;
 };
 
-const timeFormat = new Intl.DateTimeFormat(undefined, {
-	hour: 'numeric',
-	minute: '2-digit',
-});
-
 function hasTextSelection(element: HTMLElement): boolean {
 	return element.ownerDocument.getSelection()?.isCollapsed === false;
 }
@@ -68,18 +62,17 @@ export function QuestionCard({
 	const { state } = question;
 	const title = questionTitle(question);
 	const active = state.kind === 'running' || state.kind === 'queued';
-	const label = {
-		answered: 'Answered',
+	const status = {
 		failed: 'Failed',
 		running: 'Answering',
 		queued: 'Queued',
-	}[state.kind];
-	const StatusIcon = {
-		answered: Check,
+	};
+	const icons = {
 		failed: TriangleAlert,
 		running: LoaderCircle,
 		queued: MessageCircle,
-	}[state.kind];
+	};
+	const StatusIcon = state.kind !== 'answered' ? icons[state.kind] : undefined;
 
 	return (
 		<article
@@ -115,10 +108,20 @@ export function QuestionCard({
 			}}
 			aria-labelledby={titleId}
 		>
+			<IconButton
+				icon={Trash2}
+				type="button"
+				className="absolute top-3 right-3 size-6 opacity-0 group-hover/question:opacity-100 group-focus-within/question:opacity-100 hover:text-[var(--text-error)] [@media(hover:none)]:opacity-100"
+				aria-label={`Delete question: ${title}`}
+				title={
+					childCount ? 'Delete question and its follow-ups' : 'Delete question'
+				}
+				onClick={() => onDelete(question.id)}
+			/>
 			{parent && (
 				<button
 					type="button"
-					className="mb-2 flex h-auto w-full min-w-0 cursor-pointer select-text items-center gap-1.5 text-left text-xs text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+					className="mb-2 flex h-auto w-full min-w-0 cursor-pointer select-text items-center gap-1.5 pr-6 text-left text-xs text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
 					onClick={(event) => {
 						if (hasTextSelection(event.currentTarget)) return;
 						onFocus(parent.id);
@@ -133,50 +136,33 @@ export function QuestionCard({
 					</span>
 				</button>
 			)}
-			<div className="mb-1 flex h-5 items-center gap-2 text-xs">
-				<span
-					className={cn(
-						'inline-flex items-center gap-1.5 text-muted-foreground',
-						state.kind === 'failed' && 'text-[var(--text-error)]',
-						state.kind === 'running' && 'text-primary',
-					)}
-				>
-					<StatusIcon
-						size={12}
+			{state.kind !== 'answered' && StatusIcon && (
+				<div className="mb-1 flex h-5 items-center gap-2 pr-6 text-xs">
+					<span
 						className={cn(
-							state.kind === 'running' &&
-								'animate-spin motion-reduce:animate-none',
-							state.kind === 'answered' && 'text-emerald-500',
+							'inline-flex items-center gap-1.5 text-muted-foreground',
+							state.kind === 'failed' && 'text-[var(--text-error)]',
+							state.kind === 'running' && 'text-primary',
 						)}
-					/>
-					{label}
-				</span>
-				<time
-					className="ml-auto text-muted-foreground"
-					dateTime={new Date(question.createdAt).toISOString()}
-				>
-					{timeFormat.format(question.createdAt)}
-				</time>
-				<IconButton
-					icon={Trash2}
-					type="button"
-					className="-mr-1 size-6 opacity-0 group-hover/question:opacity-100 group-focus-within/question:opacity-100 hover:text-[var(--text-error)] [@media(hover:none)]:opacity-100"
-					aria-label={`Delete question: ${title}`}
-					title={
-						childCount
-							? 'Delete question and its follow-ups'
-							: 'Delete question'
-					}
-					onClick={() => onDelete(question.id)}
-				/>
-			</div>
+					>
+						<StatusIcon
+							size={12}
+							className={cn(
+								state.kind === 'running' &&
+									'animate-spin motion-reduce:animate-none',
+							)}
+						/>
+						{status[state.kind]}
+					</span>
+				</div>
+			)}
 			<h3
 				id={titleId}
-				className="m-0 min-w-0 text-sm leading-normal font-semibold tracking-tight"
+				className="m-0 min-w-0 pr-6 text-base leading-normal font-semibold tracking-tight"
 			>
 				<button
 					type="button"
-					className="study-question-title flex h-auto w-full min-w-0 max-w-full cursor-pointer select-text items-start justify-between gap-2.5 whitespace-normal text-left text-sm leading-normal font-semibold tracking-tight text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring disabled:cursor-default"
+					className="study-question-title flex h-auto w-full min-w-0 max-w-full cursor-pointer select-text items-start justify-between gap-2.5 whitespace-normal text-left text-base leading-normal font-semibold tracking-tight text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring disabled:cursor-default"
 					aria-expanded={focused}
 					aria-controls={answerId}
 					disabled={state.kind !== 'answered'}
@@ -205,7 +191,7 @@ export function QuestionCard({
 					<summary className="w-fit cursor-pointer select-text">
 						Original question
 					</summary>
-					<p className="mt-1.5 mb-0 whitespace-pre-wrap leading-relaxed wrap-anywhere">
+					<p className="mt-1.5 mb-0 text-base whitespace-pre-wrap leading-relaxed wrap-anywhere">
 						{question.text}
 					</p>
 				</details>
