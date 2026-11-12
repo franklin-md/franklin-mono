@@ -37,17 +37,16 @@ export class EmptyPrompt extends WidgetType {
 
 	coordsAt(dom: HTMLElement, pos: number) {
 		const box = dom.getBoundingClientRect();
-		// The empty input has no glyph to anchor its caret. Centre it in the box
-		// with equal clearance that scales with the inherited text height. The
-		// far side of the hidden marker keeps the surrounding text's full caret.
+		// Match surrounding text height so handing off to the host caret on
+		// typing does not resize it. Only the horizontal position is special:
+		// centred inside the empty input, at the box edge outside the marker.
 		// https://codemirror.net/docs/ref/#view.WidgetType.coordsAt
-		const inset = pos === 0 ? box.height * 0.1 : 0;
 		const x = pos === 0 ? (box.left + box.right) / 2 : box.right;
 		return {
 			left: x,
 			right: x,
-			top: box.top + inset,
-			bottom: box.bottom - inset,
+			top: box.top,
+			bottom: box.bottom,
 		};
 	}
 }

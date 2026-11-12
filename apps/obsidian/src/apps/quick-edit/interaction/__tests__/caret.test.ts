@@ -25,7 +25,7 @@ afterEach(async () => {
 	document.body.replaceChildren();
 });
 
-async function setup() {
+async function setup(height = 20) {
 	vi.spyOn(document, 'hasFocus').mockReturnValue(true);
 	Object.defineProperty(Range.prototype, 'getClientRects', {
 		configurable: true,
@@ -38,13 +38,13 @@ async function setup() {
 			'.cm-content, .cm-line': { caretColor: 'rgb(200, 200, 200)' },
 		}),
 	);
-	// jsdom has no layout. Verify cursor lifecycle here; actual widget inset,
+	// jsdom has no layout. Verify cursor lifecycle here; actual text metrics,
 	// native-caret suppression and Vim compatibility also need a browser check.
 	vi.spyOn(h.cm, 'coordsAtPos').mockImplementation((_position, side) => ({
 		left: side === -1 ? 30 : 42,
 		right: side === -1 ? 30 : 42,
 		top: 5,
-		bottom: 25,
+		bottom: 5 + height,
 	}));
 	h.cm.dispatch({ selection: { anchor: 7 } });
 	return h;
@@ -135,21 +135,37 @@ it('uses the host caret when opening a selected nonempty request', async () => {
 	);
 });
 
-it('keeps the empty caret inside after deleting the last character with backward association', async () => {
-	const target = await setup();
-	await target.interaction.begin(target.editor, target.info);
-	const position = target.cm.state.selection.main.head;
-	target.type('x');
-	// Native Backspace can leave negative association on the same transaction
-	// that empties the query, so it is still associated with the preceding control.
-	target.cm.dispatch({
-		changes: { from: position, to: position + 1, insert: '' },
-		selection: EditorSelection.create([EditorSelection.cursor(position, -1)]),
-	});
-	await vi.waitFor(() => {
-		const caret = target.cm.dom.querySelector<HTMLElement>(
-			'.franklin-quick-edit-caret',
+it.each([18, 24.5, 35])(
+	'restores the same %spx caret height after typing and Backspace with backward association',
+	async (height) => {
+		const target = await setup(height);
+		await target.interaction.begin(target.editor, target.info);
+		await vi.waitFor(() => {
+			const caret = target.cm.dom.querySelector<HTMLElement>(
+				'.franklin-quick-edit-caret',
+			);
+			expect(caret?.style.height).toBe(`${height}px`);
+		});
+		const position = target.cm.state.selection.main.head;
+		target.type('x');
+		await vi.waitFor(() =>
+			expect(
+				target.cm.dom.querySelector('.franklin-quick-edit-caret'),
+			).toBeNull(),
 		);
-		expect(caret?.style.left).toBe('42px');
-	});
-});
+		// Native Backspace can leave negative association on the same transaction
+		// that empties the query, so it is still associated with the preceding control.
+		target.cm.dispatch({
+			changes: { from: position, to: position + 1, insert: '' },
+			selection: EditorSelection.create([EditorSelection.cursor(position, -1)]),
+		});
+		await vi.waitFor(() => {
+			const caret = target.cm.dom.querySelector<HTMLElement>(
+				'.franklin-quick-edit-caret',
+			);
+			expect(caret?.style.left).toBe('42px');
+			expect(caret?.style.top).toBe('5px');
+			expect(caret?.style.height).toBe(`${height}px`);
+		});
+	},
+);

@@ -15,11 +15,12 @@ surrounding note, where typing stays outside the highlight.
 
 The focused empty prompt draws its caret through a CodeMirror layer, including
 in Vim insert mode where the browser's native caret otherwise appears before the
-uneditable placeholder. Its visible stroke is centred in the empty box with equal
-top and bottom clearance that scales with the note font. The box retains the same
-text alignment as a nonempty prompt. The layer temporarily replaces the host caret
-only at that empty insertion point. Typing, moving outside, blurring or cancelling returns
-caret rendering to the host; no placeholder characters are added to the note.
+uneditable placeholder. Its visible stroke is centred horizontally in the empty box
+and uses the surrounding text's full height, so typing and deleting the last
+character do not change caret height. The box retains the same text alignment as a
+nonempty prompt. The layer temporarily replaces the host caret only at that empty
+insertion point. Typing, moving outside, blurring or cancelling returns caret
+rendering to the host; no placeholder characters are added to the note.
 
 - Prompts show just the query, without a leading label.
 - Enter submits a nonempty request; Shift+Enter inserts a newline. IME composition
