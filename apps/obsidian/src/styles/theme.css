@@ -11,4 +11,23 @@
 	/* ── Fonts — use Obsidian's theme fonts ───────────────── */
 	--font-sans: var(--font-interface);
 	--font-mono: var(--font-monospace);
+
+	/* Reading and UI text share the host's text-size preference. Keep sm at
+	 * chat's existing 90% size; larger steps retain Tailwind's proportions.
+	 * Inline bindings resolve the host variable where each utility is used.
+	 * See: https://docs.obsidian.md/Reference/CSS+variables/Foundation/Typography
+	 */
+	--text-xs: calc(var(--font-text-size) * 0.8);
+	--text-sm: calc(var(--font-text-size) * 0.9);
+	--text-base: var(--font-text-size);
+	--text-lg: calc(var(--font-text-size) * 1.125);
+	--text-xl: calc(var(--font-text-size) * 1.25);
+	--text-2xl: calc(var(--font-text-size) * 1.5);
+	--text-3xl: calc(var(--font-text-size) * 1.875);
+	--text-4xl: calc(var(--font-text-size) * 2.25);
+	--text-5xl: calc(var(--font-text-size) * 3);
+	--text-6xl: calc(var(--font-text-size) * 3.75);
+	--text-7xl: calc(var(--font-text-size) * 4.5);
+	--text-8xl: calc(var(--font-text-size) * 6);
+	--text-9xl: calc(var(--font-text-size) * 8);
 }

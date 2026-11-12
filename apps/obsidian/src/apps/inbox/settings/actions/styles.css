@@ -1,0 +1,30 @@
+.franklin-action-settings {
+	display: grid;
+	gap: 16px;
+	padding-block: 12px;
+}
+.franklin-action-settings > p {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+.franklin-action-settings > button {
+	justify-self: start;
+}
+.franklin-action-editor {
+	display: grid;
+	gap: 8px;
+	padding: 12px;
+	border-radius: 8px;
+	box-shadow: inset 0 0 0 1px var(--background-modifier-border);
+}
+.franklin-action-editor textarea {
+	resize: vertical;
+}
+.franklin-action-editor-controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.franklin-action-settings [role='alert'] {
+	color: var(--text-error);
+}

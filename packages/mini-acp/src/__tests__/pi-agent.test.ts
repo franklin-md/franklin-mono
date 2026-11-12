@@ -127,6 +127,7 @@ describe('createPiAgent', () => {
 		const [options] = agentConstructor.mock.calls[0] ?? [];
 		expect(options).toMatchObject({
 			initialState: {},
+			sessionId: expect.any(String),
 			streamFn,
 		});
 		expect(agentInstances[0]?.state).toMatchObject({

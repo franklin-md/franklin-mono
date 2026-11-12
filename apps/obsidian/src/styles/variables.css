@@ -13,6 +13,12 @@
  */
 
 .franklin {
+	/* Obsidian's undocumented switch disables aria-label hover tooltips while
+	 * preserving screen-reader labels. Inherits throughout Franklin's UI.
+	 * See: https://forum.obsidian.md/t/106641/3
+	 */
+	--no-tooltip: true;
+
 	/* ── Backgrounds ────────────────────────────────────────── */
 	--background: var(--background-primary);
 	--foreground: var(--text-normal);

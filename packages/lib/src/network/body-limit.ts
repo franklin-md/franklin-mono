@@ -1,47 +1,46 @@
 const DEFAULT_MAX_BYTES = 1024 * 1024 * 1024; // 1 GB
 
 /**
- * Stream-reads a WHATWG body with a hard byte cap, cancelling the reader once
- * the cap is reached. Used by platform transports to avoid allocating
- * pathologically large responses.
+ * Stream-reads a WHATWG body with a hard byte cap. Reject rather than returning
+ * truncated bytes: a partial PDF or JSON document must not look like a success.
+ * Optional progress reports the consumed byte count; empty chunks do not count.
  */
 export async function readBodyWithLimit(
 	body: ReadableStream<Uint8Array> | null,
 	maxBytes: number = DEFAULT_MAX_BYTES,
+	onProgress?: (receivedBytes: number) => void,
 ): Promise<Uint8Array> {
 	if (!body) {
 		return new Uint8Array();
+	}
+	if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) {
+		await body.cancel();
+		throw new RangeError('Response byte limit must be a positive safe integer');
 	}
 
 	const reader = body.getReader();
 	const chunks: Uint8Array[] = [];
 	let total = 0;
-	let truncated = false;
+	try {
+		for (;;) {
+			const { value, done } = await reader.read();
+			if (done) break;
 
-	for (;;) {
-		const { value, done } = await reader.read();
-		if (done) break;
-
-		if (total + value.byteLength > maxBytes) {
-			const remaining = maxBytes - total;
-			if (remaining > 0) {
-				chunks.push(value.slice(0, remaining));
-				total += remaining;
+			if (total + value.byteLength > maxBytes) {
+				try {
+					await reader.cancel();
+				} catch {
+					/* The transport also aborts failed reads. */
+				}
+				throw new Error(`Response exceeds ${maxBytes} bytes`);
 			}
-			truncated = true;
-			break;
-		}
 
-		total += value.byteLength;
-		chunks.push(value);
-	}
-
-	if (truncated) {
-		try {
-			await reader.cancel();
-		} catch {
-			// Ignore cancellation errors from partially-consumed streams.
+			total += value.byteLength;
+			if (value.byteLength > 0) onProgress?.(total);
+			chunks.push(value);
 		}
+	} finally {
+		reader.releaseLock();
 	}
 
 	const out = new Uint8Array(total);

@@ -1,0 +1,221 @@
+import { useEffect, useRef, useSyncExternalStore } from 'react';
+import type { ReadonlyStore } from '@franklin/agent';
+import type { QuestionNavigation } from './navigation.js';
+import {
+	Button,
+	Markdown,
+	ModelPicker,
+	PromptFooterControlGroup,
+} from '@franklin/ui';
+import { questionSchema } from '../controller/question-schema.js';
+import type { InboxController } from '../controller/controller.js';
+import type { QuestionSource } from '../types.js';
+import { ModeControl } from './mode.js';
+import { InboxContent } from './content.js';
+import { QuestionActions } from './actions.js';
+import { branchContext } from '../hierarchy/context.js';
+import { inboxNodes } from '../hierarchy/nodes.js';
+import { RecordButton } from '../capture/record-button.js';
+import { CaptureStatus } from '../capture/status.js';
+import { DebugButton } from '../debug/button.js';
+import './styles.css';
+
+type Props = {
+	controller: InboxController;
+	navigation?: ReadonlyStore<QuestionNavigation | null>;
+	onOpenSource: (source: QuestionSource) => void;
+	captureContext?: (question: string) => Promise<QuestionSource | undefined>;
+	onSettings: () => void;
+	onError: (error: unknown) => void;
+};
+
+export function InboxPanel({
+	controller,
+	navigation,
+	captureContext,
+	onOpenSource,
+	onSettings,
+	onError,
+}: Props) {
+	const subscribe = (notify: () => void) => controller.state.subscribe(notify);
+	const snapshot = useSyncExternalStore(subscribe, () =>
+		controller.state.get(),
+	);
+	const navigationRequest = useSyncExternalStore(
+		(notify) => navigation?.subscribe(notify) ?? (() => {}),
+		() => navigation?.get() ?? undefined,
+	);
+	const capture = controller.capture;
+	const captureSnapshot = useSyncExternalStore(
+		(notify) => capture?.state.subscribe(notify) ?? (() => {}),
+		() => capture?.state.get(),
+	);
+	const container = useRef<HTMLDivElement>(null);
+	const newest = [
+		...inboxNodes(snapshot).filter((node) => !node.parentId),
+		...(snapshot.thoughtDumps ?? [])
+			.filter((dump) => dump.state.kind !== 'succeeded')
+			.map((dump) => ({ ...dump, order: dump.createdAt })),
+	]
+		.sort((a, b) => (b.order ?? b.createdAt) - (a.order ?? a.createdAt))
+		.at(0)?.id;
+	useEffect(() => {
+		if (!navigationRequest)
+			container.current?.querySelector('.study-feed')?.scrollTo({ top: 0 });
+	}, [newest, navigationRequest]);
+	const { preferences } = snapshot;
+	const configure = (patch: Parameters<InboxController['configure']>[0]) => {
+		void controller.configure(patch).catch(onError);
+	};
+	return (
+		<div
+			className="h-full min-h-0 w-full overflow-hidden text-left font-sans text-sm leading-normal text-foreground"
+			ref={container}
+		>
+			<InboxContent
+				questions={snapshot.questions}
+				groups={snapshot.groups}
+				onFoldGroup={(id, folded) => {
+					void controller.groups.fold(id, folded).catch(onError);
+				}}
+				navigation={navigationRequest}
+				mode={preferences.mode}
+				onThoughtDump={async (text) => {
+					const preferences = { ...controller.state.get().preferences };
+					await controller.thoughtDumps.add(
+						text,
+						await captureContext?.(text),
+						preferences,
+					);
+				}}
+				thoughtDumps={snapshot.thoughtDumps}
+				onRetryExtraction={(id) => {
+					void controller.thoughtDumps.retry(id).catch(onError);
+				}}
+				onDismissExtraction={(id) => {
+					void controller.thoughtDumps.dismiss(id).catch(onError);
+				}}
+				renderActions={(question) => (
+					<>
+						{question.state.kind === 'answered' &&
+							capture &&
+							captureSnapshot && (
+								<RecordButton
+									snapshot={captureSnapshot}
+									questionId={question.id}
+									onStop={() => {
+										void capture.stop().catch(onError);
+									}}
+									onRecord={() => {
+										const fullQuestion = snapshot.questions.find(
+											(item) => item.id === question.id,
+										);
+										if (fullQuestion) {
+											const context = branchContext(fullQuestion, snapshot);
+											void capture
+												.start(fullQuestion, context.ancestors, context.groups)
+												.catch(onError);
+										}
+									}}
+								/>
+							)}
+						{question.state.kind === 'answered' && (
+							<QuestionActions
+								actions={snapshot.actions}
+								runs={snapshot.actionRuns.filter(
+									(run) => run.question.id === question.id,
+								)}
+								onRun={(actionId) => {
+									void controller.actions
+										.start(question.id, actionId)
+										.catch(onError);
+								}}
+								onRetry={(id) => {
+									void controller.actions.retry(id).catch(onError);
+								}}
+								onDismiss={(id) => {
+									void controller.actions.dismiss(id).catch(onError);
+								}}
+							/>
+						)}
+						<DebugButton
+							load={() => controller.debug(question.id)}
+							onError={onError}
+						/>
+					</>
+				)}
+				composerControls={
+					<PromptFooterControlGroup className="min-w-0 flex-wrap gap-1">
+						<ModelPicker
+							provider={preferences.provider}
+							model={preferences.model}
+							label="Model for new questions"
+							onSelect={(provider, model) => configure({ provider, model })}
+							effort={{
+								level: preferences.reasoning,
+								levels: questionSchema.shape.reasoning.options,
+								onChange: (reasoning) => configure({ reasoning }),
+							}}
+						/>
+						<ModeControl
+							mode={preferences.mode}
+							onChange={(mode) => configure({ mode })}
+						/>
+					</PromptFooterControlGroup>
+				}
+				concurrency={preferences.concurrency}
+				setConcurrency={(concurrency) => configure({ concurrency })}
+				onAdd={async (text) => {
+					await controller.add(text, undefined, await captureContext?.(text));
+				}}
+				onFollowUp={async (text, id) => {
+					await controller.add(text, id);
+				}}
+				onDelete={(id) => {
+					void controller.remove(id).catch(onError);
+				}}
+				onRetry={(id) => {
+					void controller.retry(id).catch(onError);
+				}}
+				onOpenSource={onOpenSource}
+				onSettings={onSettings}
+				renderAnswer={(answer) => (
+					<Markdown
+						text={answer}
+						className="prose-content text-inherit leading-[inherit]"
+					/>
+				)}
+				footer={
+					<div className="max-h-[30%] shrink-0 overflow-y-auto">
+						{capture && captureSnapshot && (
+							<CaptureStatus
+								controller={capture}
+								snapshot={captureSnapshot}
+								onError={onError}
+							/>
+						)}
+						{snapshot.storageError ? (
+							<div
+								className="mx-4 mb-3 shrink-0 rounded-md bg-muted p-3 text-xs wrap-anywhere text-[var(--text-error)] @min-[380px]:mx-6"
+								role="alert"
+							>
+								{snapshot.storageError}
+								<Button
+									type="button"
+									variant="link"
+									size="sm"
+									className="mt-1 block h-auto px-0 text-xs"
+									onClick={() => {
+										void controller.retrySave().catch(onError);
+									}}
+								>
+									Retry save
+								</Button>
+							</div>
+						) : undefined}
+					</div>
+				}
+			/>
+		</div>
+	);
+}

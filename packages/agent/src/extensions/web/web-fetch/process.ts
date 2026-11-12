@@ -38,19 +38,11 @@ export function processWebResponse(
 		return extractPlainText(response, options);
 	}
 
-	if (type === 'application/pdf') {
+	if (type === 'application/pdf' || startsWithAscii(response.body, PDF_MAGIC)) {
 		return {
 			kind: 'pdf',
-			content: 'PDF parsing is not implemented yet for fetch_url.',
-			isError: true,
-			truncated: false,
-		};
-	}
-
-	if (startsWithAscii(response.body, PDF_MAGIC)) {
-		return {
-			kind: 'pdf',
-			content: 'PDF parsing is not implemented yet for fetch_url.',
+			content:
+				'This response is a PDF. If read_file supports HTTP document URLs in this environment, read this URL with selector "pages=N-M".',
 			isError: true,
 			truncated: false,
 		};

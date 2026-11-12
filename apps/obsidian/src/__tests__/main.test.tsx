@@ -4,7 +4,7 @@ import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import FranklinPlugin from '../main.js';
-import { PortalProvider } from '../renderer/portal.js';
+import { PortalProvider } from '../shared/ui/portal.js';
 
 type UnloadController = {
 	onunload: ReturnType<typeof vi.fn>;

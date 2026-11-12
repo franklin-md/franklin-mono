@@ -90,7 +90,10 @@ export function matchesDomain(pattern: string, host: string): boolean {
 export function matchesUrlPattern(pattern: string, url: URL): boolean {
 	const normalizedPattern = pattern.trim().toLowerCase();
 	const hostname = normalizeHost(url.hostname);
-	if (matchesDomain(normalizedPattern, hostname)) {
+	if (
+		matchesDomain(normalizedPattern, hostname) ||
+		normalizedPattern === formatHostPatternTarget(hostname, '')
+	) {
 		return true;
 	}
 
@@ -98,7 +101,12 @@ export function matchesUrlPattern(pattern: string, url: URL): boolean {
 		return true;
 	}
 
-	const exactHost = formatHostPatternTarget(hostname, url.port);
+	// URL removes explicit default ports. Keep endpoint rules such as
+	// example.com:443 consistent with proxy callbacks that always supply a port.
+	const port =
+		url.port ||
+		(url.protocol === 'https:' ? '443' : url.protocol === 'http:' ? '80' : '');
+	const exactHost = formatHostPatternTarget(hostname, port);
 	return normalizedPattern === exactHost;
 }
 

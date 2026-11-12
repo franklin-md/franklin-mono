@@ -2,24 +2,30 @@ import type { FranklinApp } from '@franklin/agent';
 import type { HostActionBinding } from '@franklin/react';
 import { Notice, Plugin } from 'obsidian';
 
-import { createObsidianSessionInput } from './app/agent.js';
-import { createFranklinApp } from './app/app.js';
-import { createFranklinViewContent } from './components/franklin-view-content.js';
+import { bootstrapPlugin } from './plugin/bootstrap.js';
+import { registerChat } from './apps/chat/register.js';
 import { registerReactScan } from './dev/react-scan.js';
-import { ObsidianDiffClient } from './diff/client.js';
-import { DiffController } from './diff/controller.js';
-import { DiffExplorerController } from './diff/explorer.js';
-import { clearPortalRoot } from './renderer/portal.js';
-import { openPluginSettings } from './settings/open.js';
-import { FranklinSettingTab } from './settings/tab.js';
-import { FranklinView, VIEW_TYPE } from './view.js';
+import { ObsidianDiffClient } from './shared/diff/client.js';
+import { DiffController } from './shared/diff/controller.js';
+import { DiffExplorerController } from './shared/diff/explorer.js';
+import { clearPortalRoot } from './shared/ui/portal.js';
+import { FranklinSettingTab } from './plugin/settings/tab.js';
+import { registerInbox } from './apps/inbox/register.js';
+import { createDirectiveExtension } from './shared/directives/live-preview/extension.js';
+import { createDirectivePostProcessor } from './shared/directives/reading/processor.js';
+import type { InboxController } from './apps/inbox/controller/controller.js';
+import { registerQuickEdit } from './apps/quick-edit/register.js';
+import type { QuickEditPreferences } from './apps/quick-edit/settings/store.js';
 
 export default class FranklinPlugin extends Plugin {
 	private diffClient!: ObsidianDiffClient;
 	private diffController!: DiffController;
 	private diffExplorerController!: DiffExplorerController;
+	private unloading = false;
 	private disposeFranklinApp: (() => void) | null = null;
 	franklinApp: FranklinApp | null = null;
+	inbox: InboxController | null = null;
+	quickEditPreferences: QuickEditPreferences | null = null;
 	hostActionBindings: readonly HostActionBinding[] = [];
 
 	async onload() {
@@ -34,58 +40,64 @@ export default class FranklinPlugin extends Plugin {
 		this.diffController.onload();
 		this.diffExplorerController.onload();
 
-		createFranklinApp(this, this.diffClient)
-			.then(async (result) => {
-				const { app, vaultRoot } = result;
-				const getCreateInput = () =>
-					createObsidianSessionInput(app, vaultRoot, this.app.vault.configDir);
-
-				if (app.agents.list().length === 0) {
-					await app.agents.create(getCreateInput());
-				}
-
-				return {
-					app,
-					getCreateInput,
-					hostActionBindings: result.hostActionBindings,
-					disposeFranklinApp: () => result.dispose(),
-				};
-			})
+		bootstrapPlugin(this, this.diffClient)
 			.then(
-				({ app, getCreateInput, hostActionBindings, disposeFranklinApp }) => {
+				async ({
+					app,
+					inbox,
+					directives,
+					getCreateInput,
+					hostActionBindings,
+					dispose: disposeFranklinApp,
+				}) => {
+					if (this.isUnloading()) {
+						disposeFranklinApp();
+						return;
+					}
+					this.registerEditorExtension(createDirectiveExtension(directives));
+					this.registerMarkdownPostProcessor(
+						createDirectivePostProcessor(directives),
+					);
+					const disposeInbox = registerInbox({
+						plugin: this,
+						app,
+						inbox,
+						directives,
+						hostActionBindings,
+					});
+					const quickEdit = await registerQuickEdit({
+						plugin: this,
+						franklin: app,
+						registry: directives,
+						diff: this.diffClient,
+					}).catch((error: unknown) => {
+						new Notice(`Quick edit unavailable: ${String(error)}`);
+						return undefined;
+					});
+					if (this.isUnloading()) {
+						await Promise.all([quickEdit?.dispose(), disposeInbox()]);
+						disposeFranklinApp();
+						return;
+					}
 					this.franklinApp = app;
+					this.inbox = inbox;
+					this.quickEditPreferences = quickEdit?.preferences ?? null;
 					this.hostActionBindings = hostActionBindings;
-					this.disposeFranklinApp = disposeFranklinApp;
+					this.disposeFranklinApp = () => {
+						void Promise.all([quickEdit?.dispose(), disposeInbox()])
+							.catch((error: unknown) => {
+								new Notice(`Franklin shutdown: ${String(error)}`);
+							})
+							.finally(disposeFranklinApp);
+					};
 
 					this.addSettingTab(new FranklinSettingTab(this));
 
-					const requestApiKey = () => {
-						openPluginSettings(this.app, this.manifest.id);
-					};
-
-					this.registerView(VIEW_TYPE, (leaf) => {
-						return new FranklinView(leaf, {
-							renderContent: () =>
-								createFranklinViewContent({
-									app,
-									getCreateInput,
-									hostActionBindings,
-									obsidianApp: this.app,
-									requestApiKey,
-								}),
-						});
-					});
-
-					this.addRibbonIcon('bot', 'Open Franklin', () => {
-						void this.activateView();
-					});
-
-					this.addCommand({
-						id: 'open-chat-window',
-						name: 'Open chat window',
-						callback: () => {
-							void this.activateView();
-						},
+					registerChat({
+						plugin: this,
+						app,
+						getCreateInput,
+						hostActionBindings,
 					});
 				},
 			)
@@ -97,29 +109,20 @@ export default class FranklinPlugin extends Plugin {
 			});
 	}
 
+	private isUnloading(): boolean {
+		return this.unloading;
+	}
+
 	onunload() {
+		this.unloading = true;
 		this.diffExplorerController.onunload();
 		this.diffController.onunload();
 		this.disposeFranklinApp?.();
 		clearPortalRoot(activeDocument);
 		this.franklinApp = null;
+		this.inbox = null;
+		this.quickEditPreferences = null;
 		this.hostActionBindings = [];
 		this.disposeFranklinApp = null;
-	}
-
-	private async activateView() {
-		const { workspace } = this.app;
-		const existing = workspace.getLeavesOfType(VIEW_TYPE);
-		const first = existing[0];
-		if (first) {
-			await workspace.revealLeaf(first);
-			return;
-		}
-
-		const leaf = workspace.getRightLeaf(false);
-		if (leaf) {
-			await leaf.setViewState({ type: VIEW_TYPE, active: true });
-			await workspace.revealLeaf(leaf);
-		}
 	}
 }

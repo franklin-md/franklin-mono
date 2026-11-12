@@ -29,3 +29,10 @@ owns the last successfully sent Mini-ACP context and computes full initial syncs
 or smaller follow-up patches from field revisions. The `AgentController` owns
 when those pieces are used: sync before prompt, record acknowledged direct
 context changes, and project session/inspect state for the runtime.
+
+The draft owns typed history and derives model-visible messages from its
+compaction boundaries. During Mini-ACP's awaited `prepareContext` callback,
+compaction can replace the message head through the ledger's acknowledged
+messages-only sync. The callback waits for the preceding streamed update before
+reading history. Prompts and manual compaction share one operation guard, and
+cancellation aborts both an update wait and any isolated summary request.

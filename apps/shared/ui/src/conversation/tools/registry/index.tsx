@@ -13,6 +13,7 @@ import { todoToolRenderers } from './todos.js';
 import { webToolRenderers } from './web.js';
 
 const fallbackEntry: ToolRendererEntry = {
+	icon: () => Wrench,
 	summary: ({ block }) => <ToolSummary icon={Wrench} label={block.call.name} />,
 };
 

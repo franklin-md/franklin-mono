@@ -6,6 +6,7 @@ import { createStorage } from '../storage/create-storage.js';
 import { DEFAULT_SETTINGS_FILE } from '../storage/settings.js';
 import type { FranklinSession } from '../types.js';
 import { franklinSessionCodec } from '../app/session/codecs/index.js';
+import { DEFAULT_APP_SETTINGS } from '../settings/schema.js';
 
 const APP_DIR = '/test/app' as AbsolutePath;
 
@@ -73,6 +74,7 @@ describe('Storage.restore aggregates issues without halting startup', () => {
 		const result = await storage.restore();
 		expect(result.issues).toEqual([]);
 		expect(storage.settings.get()).toEqual({
+			...DEFAULT_APP_SETTINGS,
 			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {
 				provider: 'anthropic',

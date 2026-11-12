@@ -21,6 +21,8 @@
 /* @import '@franklin/ui/styles/franklin-theme.css'; */
 @import './theme.css';
 @import './code-theme.css';
-@import './diff.css';
+@import '../shared/diff/styles.css';
+@import '../apps/inbox/ui/styles.css';
+@import '../apps/inbox/settings/actions/styles.css';
 
 @source "../**/*.{ts,tsx}";
