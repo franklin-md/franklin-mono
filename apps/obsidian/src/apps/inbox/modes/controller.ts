@@ -8,7 +8,7 @@ import { createQuestion } from '../controller/create-question.js';
 import { createGroup } from '../hierarchy/create.js';
 import { nextNodeOrder } from '../hierarchy/order.js';
 import { errorMessage } from '../controller/error.js';
-import { parseQuestions } from './questions.js';
+import { parseExtraction } from './parse-extraction.js';
 
 type Options = {
 	store: Store<InboxSnapshot>;
@@ -89,14 +89,20 @@ export class ThoughtDumps {
 			const dump = store.get().thoughtDumps?.find((item) => item.id === id);
 			if (!dump || signal.aborted) return;
 			if (!split) throw new Error('Question extraction is unavailable');
-			const questions = parseQuestions(await split({ dump, signal }));
+			const { title, questions } = parseExtraction(
+				await split({ dump, signal }),
+			);
 			signal.throwIfAborted();
 			// Commit the questions and completion marker together. A failed write can be
 			// retried without extracting again or appending a second batch.
 			store.set((draft) => {
 				const current = draft.thoughtDumps?.find((item) => item.id === id);
 				if (current?.state.kind !== 'running') return;
-				const group = createGroup({ context: dump.text, source: dump.source });
+				const group = createGroup({
+					title,
+					context: dump.text,
+					source: dump.source,
+				});
 				const order = nextNodeOrder(draft);
 				group.order = order;
 				(draft.groups ??= []).unshift(group);

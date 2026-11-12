@@ -43,7 +43,8 @@ export function QuestionInfo({ question, source, onOpenSource }: Props) {
 					onClick={(event) => {
 						if (!sourceHref) return;
 						event.preventDefault();
-						if (!hasTextSelection(event.currentTarget)) onOpenSource?.(source);
+						if (!hasTextSelection(event.currentTarget, event.detail))
+							onOpenSource?.(source);
 					}}
 				>
 					<FileText size={12} />

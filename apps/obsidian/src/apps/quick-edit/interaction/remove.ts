@@ -5,34 +5,36 @@ import { findMarkdownEditor } from '../../../shared/obsidian/markdown/editor.js'
 import { findDirectiveRanges } from '../../../shared/directives/scribe/find.js';
 import type { QuickEditState } from '../types.js';
 import { quickEditView } from './editor.js';
-import { changeQuickEdit } from './change.js';
+import { quickEditChange } from './change.js';
 import { editMetadataBaseline } from './baseline.js';
-import { findQuickEditDraft } from './draft.js';
+import { findQuickEditDraft } from './draft/find.js';
 import { setQuickEditComposer } from './state.js';
 
-export async function dismissQuickEdit(
+export async function removeQuickEdit(
 	instance: DirectiveInstance<QuickEditState>,
 	diff: DiffClient,
 ): Promise<void> {
 	const { app } = instance.registry;
 	const { path, status } = instance.state.get();
 	if (status === 'running')
-		throw new Error('Stop the quick edit before dismissing it');
+		throw new Error('Stop the quick edit before removing its control');
 	const plan = (source: string) => {
 		const matches = findDirectiveRanges(source, instance);
-		if (matches.length !== 1)
+		if (matches.length > 1)
 			throw new Error('Expected exactly one quick edit in its original note');
 		const token = matches[0];
-		if (!token) throw new Error('Quick edit no longer exists');
+		if (!token) return [];
 		const draft = findQuickEditDraft(source, instance.id);
 		return [{ from: token.from, to: draft?.to ?? token.to, text: '' }];
 	};
 	const editor = findMarkdownEditor(app, path);
 	const view = editor && quickEditView(editor);
 	if (view) {
-		changeQuickEdit(view, plan(view.state.doc.toString()), [
-			setQuickEditComposer.of(null),
-		]);
+		view.dispatch(
+			quickEditChange(view.state, plan(view.state.doc.toString()), [
+				setQuickEditComposer.of(null),
+			]),
+		);
 		return;
 	}
 	const entry = await diff.getEntry(path);

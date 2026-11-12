@@ -44,7 +44,7 @@ export function AgentSidebar() {
 				<Button
 					variant="ghost"
 					size="sm"
-					className="rounded-full bg-background/70 px-2.5 text-[11px] text-muted-foreground hover:bg-background hover:text-foreground"
+					className="bg-background/70 px-2.5 text-[11px] text-muted-foreground hover:bg-background hover:text-foreground"
 					onClick={handleCreate}
 				>
 					+ Agent

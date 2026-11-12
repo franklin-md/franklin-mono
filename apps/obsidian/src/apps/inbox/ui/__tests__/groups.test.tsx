@@ -72,7 +72,9 @@ it('folds the entire group and retains drafts and disclosures', async () => {
 		'Keep my draft',
 	);
 	expect(detail.open).toBe(true);
-	expect(screen.getByText('Original dump')).toBeTruthy();
+	expect(screen.queryByText('Original dump')).toBeNull();
+	expect(screen.queryByText('Group context')).toBeNull();
+	expect(summary.querySelector('[aria-label="2 questions"]')).toBeTruthy();
 });
 
 it('reveals folded ancestors before navigating to a question, including repeated requests', async () => {
@@ -147,7 +149,8 @@ it('renders siblings in creation order across node kinds when timestamps tie', (
 		[...container.querySelectorAll('article, summary')]
 			.filter(
 				(element) =>
-					element.matches('article') || element.textContent === 'Middle',
+					element.matches('article') ||
+					element.textContent.startsWith('Middle'),
 			)
 			.map((element) =>
 				element.textContent.includes('Question first?')
@@ -158,3 +161,100 @@ it('renders siblings in creation order across node kinds when timestamps tie', (
 			),
 	).toEqual(['first', 'middle', 'last']);
 });
+
+it('gives older untitled groups a saved AI heading without exposing or changing their context', () => {
+	const group: InboxGroup = {
+		kind: 'group',
+		id: 'old',
+		rootId: 'old',
+		createdAt: 1,
+		folded: false,
+		context: 'Long original thought dump that should stay out of the feed',
+	};
+	const question = {
+		...answeredQuestion('old-question'),
+		parentId: group.id,
+		state: {
+			kind: 'answered' as const,
+			title: 'How do hardware timers work?',
+			answer: 'A saved answer',
+		},
+	};
+	const props = {
+		questions: [question],
+		groups: [group],
+		onFollowUp: vi.fn(),
+		onDelete: vi.fn(),
+		onRetry: vi.fn(),
+	};
+	const { container, rerender } = render(<QuestionFeed {...props} />);
+	const summary = container.querySelector('.study-group > summary');
+	expect(summary?.textContent).toContain('How do hardware timers work?');
+	expect(summary?.querySelector('[aria-label="1 question"]')).toBeTruthy();
+	expect(
+		screen.queryByText(
+			'Long original thought dump that should stay out of the feed',
+		),
+	).toBeNull();
+	expect(group.title).toBeUndefined();
+	rerender(
+		<QuestionFeed
+			{...props}
+			groups={[{ ...group, title: 'Timer virtualization' }]}
+		/>,
+	);
+	expect(summary?.textContent).toContain('Timer virtualization');
+	expect(summary?.textContent).not.toContain('How do hardware timers work?');
+});
+
+it.each([false, true])(
+	'deletes a group from its header without toggling it (folded: %s)',
+	async (folded) => {
+		const group: InboxGroup = {
+			kind: 'group',
+			id: 'group',
+			rootId: 'group',
+			createdAt: 1,
+			folded,
+			title: 'Virtual memory',
+		};
+		const nested = {
+			...group,
+			id: 'nested',
+			parentId: group.id,
+			title: 'Address spaces',
+		};
+		const onDelete = vi.fn();
+		const onFoldGroup = vi.fn();
+		render(
+			<QuestionFeed
+				questions={[]}
+				groups={[group, nested]}
+				onFollowUp={vi.fn()}
+				onRetry={vi.fn()}
+				onDelete={onDelete}
+				onFoldGroup={onFoldGroup}
+			/>,
+		);
+		const summary = screen.getByText('Virtual memory').closest('summary');
+		if (!summary) throw new Error('Expected the group header');
+		const disclosure = summary.parentElement as HTMLDetailsElement;
+		await waitFor(() => expect(disclosure.open).toBe(!folded));
+		const button = screen.getByRole('button', {
+			name: 'Delete group: Virtual memory',
+		});
+		fireEvent.click(button);
+		expect(onDelete).toHaveBeenCalledExactlyOnceWith(group.id);
+		expect(disclosure.open).toBe(!folded);
+		expect(onFoldGroup).not.toHaveBeenCalled();
+		if (!folded) {
+			onDelete.mockClear();
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Delete group: Address spaces' }),
+			);
+			expect(onDelete).toHaveBeenCalledExactlyOnceWith(nested.id);
+			expect(disclosure.open).toBe(true);
+			expect(onFoldGroup).not.toHaveBeenCalled();
+		}
+	},
+);

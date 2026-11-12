@@ -5,6 +5,7 @@ import type { InboxController } from '../controller/controller.js';
 import type { InboxQuestionDirectiveState } from './types.js';
 import { AnswerPreview } from './preview.js';
 import { questionTitle } from '../title.js';
+import { DirectivePill } from '../../../shared/directives/render/pill.js';
 
 type Props = {
 	state: InboxQuestionDirectiveState;
@@ -39,37 +40,38 @@ export function InboxQuestionPill({ state, inbox, onOpen, onError }: Props) {
 				? TriangleAlert
 				: Inbox;
 	const pill = (
-		<Button
-			type="button"
-			variant="ghost"
-			size="sm"
-			disabled={!question}
-			aria-label={`${label} in Inbox`}
-			title={
-				question?.state.kind === 'failed'
-					? question.state.error
-					: kind === 'answered'
-						? undefined
-						: question?.text
-			}
+		<DirectivePill
+			asChild
 			className={cn(
-				'mx-1 inline-flex h-auto gap-1 rounded-full px-2 py-0.5 align-middle text-xs leading-none ring-1 ring-inset ring-border',
+				'mx-1 ring-1 ring-inset ring-border',
 				kind === 'answered' &&
 					'bg-primary/15 text-primary ring-primary/50 hover:bg-primary/25 hover:text-primary',
 				kind === 'failed' && 'text-[var(--text-error)]',
 			)}
-			onClick={() => onOpen(state.questionId)}
 		>
-			<Icon
-				size={12}
-				aria-hidden="true"
-				className={cn(
-					'shrink-0',
-					kind === 'running' && 'animate-spin motion-reduce:animate-none',
-				)}
-			/>
-			<span aria-live="polite">{label}</span>
-		</Button>
+			<Button
+				type="button"
+				variant="ghost"
+				disabled={!question}
+				aria-label={`${label} in Inbox`}
+				title={
+					question?.state.kind === 'failed'
+						? question.state.error
+						: kind === 'answered'
+							? undefined
+							: question?.text
+				}
+				onClick={() => onOpen(state.questionId)}
+			>
+				<Icon
+					aria-hidden="true"
+					className={cn(
+						kind === 'running' && 'animate-spin motion-reduce:animate-none',
+					)}
+				/>
+				<span aria-live="polite">{label}</span>
+			</Button>
+		</DirectivePill>
 	);
 	return question?.state.kind === 'answered' ? (
 		<AnswerPreview

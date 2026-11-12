@@ -11,7 +11,6 @@ import { questionSchema } from '../controller/question-schema.js';
 import type { InboxController } from '../controller/controller.js';
 import type { QuestionSource } from '../types.js';
 import { ModeControl } from './mode.js';
-import { ThoughtDumpStatus } from './thought-dumps.js';
 import { InboxContent } from './content.js';
 import { QuestionActions } from './actions.js';
 import { branchContext } from '../hierarchy/context.js';
@@ -52,8 +51,12 @@ export function InboxPanel({
 		() => capture?.state.get(),
 	);
 	const container = useRef<HTMLDivElement>(null);
-	const newest = inboxNodes(snapshot)
-		.filter((node) => !node.parentId)
+	const newest = [
+		...inboxNodes(snapshot).filter((node) => !node.parentId),
+		...(snapshot.thoughtDumps ?? [])
+			.filter((dump) => dump.state.kind !== 'succeeded')
+			.map((dump) => ({ ...dump, order: dump.createdAt })),
+	]
 		.sort((a, b) => (b.order ?? b.createdAt) - (a.order ?? a.createdAt))
 		.at(0)?.id;
 	useEffect(() => {
@@ -85,13 +88,12 @@ export function InboxPanel({
 						preferences,
 					);
 				}}
-				actionActivity={{
-					running: snapshot.actionRuns.filter(
-						(run) => run.state.kind === 'running',
-					).length,
-					queued: snapshot.actionRuns.filter(
-						(run) => run.state.kind === 'queued',
-					).length,
+				thoughtDumps={snapshot.thoughtDumps}
+				onRetryExtraction={(id) => {
+					void controller.thoughtDumps.retry(id).catch(onError);
+				}}
+				onDismissExtraction={(id) => {
+					void controller.thoughtDumps.dismiss(id).catch(onError);
 				}}
 				renderActions={(question) => (
 					<>
@@ -183,17 +185,8 @@ export function InboxPanel({
 						className="prose-content text-inherit leading-[inherit]"
 					/>
 				)}
-				notice={
+				footer={
 					<div className="max-h-[30%] shrink-0 overflow-y-auto">
-						<ThoughtDumpStatus
-							dumps={snapshot.thoughtDumps ?? []}
-							onRetry={(id) => {
-								void controller.thoughtDumps.retry(id).catch(onError);
-							}}
-							onDismiss={(id) => {
-								void controller.thoughtDumps.dismiss(id).catch(onError);
-							}}
-						/>
 						{capture && captureSnapshot && (
 							<CaptureStatus
 								controller={capture}

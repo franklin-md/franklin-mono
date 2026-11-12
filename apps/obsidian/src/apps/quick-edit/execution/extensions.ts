@@ -6,7 +6,9 @@ import {
 import type { CoreModule } from '@franklin/agent';
 import { finishQuickEdit } from './completion.js';
 
-export function quickEditExtensions(finish: (result: { success: boolean; summary: string }) => void) {
+export function quickEditExtensions(
+	finish: (result: { success: boolean; summary: string }) => void,
+) {
 	const editing = defineExtension<[CoreModule]>((api) => {
 		api.on('systemPrompt', (prompt) => {
 			prompt.setPart(
@@ -19,7 +21,12 @@ export function quickEditExtensions(finish: (result: { success: boolean; summary
 				].join('\n\n'),
 			);
 		});
-		api.registerTool(finishQuickEdit, { execute: (result) => { finish(result); return 'Result recorded. End the turn now.'; } });
+		api.registerTool(finishQuickEdit, {
+			execute: (result) => {
+				finish(result);
+				return 'Result recorded. End the turn now.';
+			},
+		});
 	});
 	return [
 		instructionsExtension.extension,

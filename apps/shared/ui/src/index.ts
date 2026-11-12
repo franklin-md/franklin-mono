@@ -50,6 +50,7 @@ export { Input } from './primitives/input.js';
 export { Label, labelVariants } from './primitives/label.js';
 export {
 	Popover,
+	PopoverAnchor,
 	PopoverContent,
 	PopoverTrigger,
 } from './primitives/popover.js';
@@ -75,9 +76,25 @@ export {
 export { Switch, type SwitchProps } from './primitives/switch.js';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './primitives/tabs.js';
 export {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from './primitives/tooltip.js';
+export {
 	textInputSurfaceClassName,
 	textareaClassName,
 } from './primitives/textarea.js';
+
+// Compact interactive popovers
+export { CompactPopover } from './compact-popover/popover.js';
+export { IconActionGroup } from './compact-popover/actions.js';
+export type {
+	FloatingAnchor,
+	IconAction,
+	CompactPopoverProps,
+	IconActionGroupProps,
+} from './compact-popover/types.js';
 
 // components (derived, application-specific)
 export { AutoGrowTextarea } from './components/auto-grow-textarea.js';

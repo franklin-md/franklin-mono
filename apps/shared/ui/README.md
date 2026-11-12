@@ -210,6 +210,28 @@ queues submissions independently of chat. Standalone `ThinkingControl` and
 `ThinkingToggle` remain available for other compositions. Reusing the prompt
 surface does not require TipTap or mentions.
 
+## Compact interactive popovers
+
+`CompactPopover` positions arbitrary React children above a virtual anchor. It
+owns compact styling, initial focus and dismissal; the caller handles `onClose`
+and restores focus when requested. Positioning tracks opening animations.
+
+```tsx
+<CompactPopover anchor={anchor} label="Edit tools" onClose={close}>
+  <IconActionGroup label="Presets" actions={actions} onAction={runPreset} />
+  <textarea aria-label="Custom prompt" />
+</CompactPopover>
+```
+
+Each action has an `id`, `label`, `icon`, optional `description`, and optional
+`colorClassName` / `selectedClassName`. Arrow keys, Home/End, Enter and Space work
+within the icon group. Inputs and adjacent pickers retain their own keys. Callers
+own pending/error state and can disable the group and supply `busyId` while saving.
+Tooltips provide descriptive labels; interactive content stays in the popover.
+
+The components build on the existing [Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover)
+and [Tooltip](https://www.radix-ui.com/primitives/docs/components/tooltip) primitives.
+
 ## Minimal Consumer Checklist
 
 - Import components from `@franklin/ui`.

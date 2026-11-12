@@ -18,7 +18,7 @@ export const AuthButton = forwardRef<HTMLButtonElement, AuthButtonProps>(
 				ref={ref}
 				variant="outline"
 				size="sm"
-				className={cn('gap-1.5 rounded-full', className)}
+				className={cn('gap-1.5', className)}
 				{...rest}
 			>
 				<PersonIcon />

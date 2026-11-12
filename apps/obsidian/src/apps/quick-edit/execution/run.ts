@@ -1,9 +1,7 @@
 import type { FranklinApp } from '@franklin/agent';
 import { StopCode } from '@franklin/mini-acp';
-import { joinAbsolute, toAbsolutePath } from '@franklin/lib';
 import type { App } from 'obsidian';
-import { getVaultAbsolutePath } from '../../../shared/obsidian/path.js';
-import { createDefaultObsidianFilesystemPermissions } from '../../../shared/obsidian/filesystem/permissions.js';
+import { quickEditEnvironment } from './config.js';
 import type { QuickEditRunner } from '../types.js';
 import { quickEditExtensions } from './extensions.js';
 import { quickEditPrompt } from './prompt.js';
@@ -14,11 +12,6 @@ export function createQuickEditRunner(
 ): QuickEditRunner {
 	return async (request) => {
 		request.signal.throwIfAborted();
-		const root = toAbsolutePath(getVaultAbsolutePath(app.vault));
-		const permissions = createDefaultObsidianFilesystemPermissions(
-			root,
-			app.vault.configDir,
-		);
 		const { provider, model, reasoning } = request.settings;
 		const key = await franklin.auth.getApiKey(provider);
 		if (!key)
@@ -35,16 +28,7 @@ export function createQuickEditRunner(
 			}),
 			state: {
 				core: { llmConfig: { provider, model, reasoning } },
-				env: {
-					fsConfig: {
-						cwd: root,
-						permissions: {
-							...permissions,
-							allowWrite: [joinAbsolute(root, request.state.path).slice(1)],
-						},
-					},
-					netConfig: { allowedDomains: [], deniedDomains: [] },
-				},
+				env: quickEditEnvironment(app, request.state.path),
 			},
 		});
 		const signal = AbortSignal.any([
@@ -66,7 +50,10 @@ export function createQuickEditRunner(
 					throw new Error(event.stopMessage ?? 'Quick edit could not finish');
 			}
 			signal.throwIfAborted();
-			if (!completion.value) throw new Error('The agent finished without reporting a verified edit result');
+			if (!completion.value)
+				throw new Error(
+					'The agent finished without reporting a verified edit result',
+				);
 			if (!completion.value.success) throw new Error(completion.value.summary);
 		} finally {
 			signal.removeEventListener('abort', cancel);

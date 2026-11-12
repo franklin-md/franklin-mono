@@ -14,17 +14,33 @@ type Options = {
 	definition: DirectiveDefinition<InboxQuestionDirectiveState>;
 };
 
-export function captureInboxSelection({ editor, view, inbox, definition }: Options): InboxSelection | undefined {
+export function captureInboxSelection({
+	editor,
+	view,
+	inbox,
+	definition,
+}: Options): InboxSelection | undefined {
 	const source = captureSelection({ editor, view });
 	if (!source?.location) return;
 	const quote = stripDirectives(source.quote).trim();
 	if (!quote) return;
 	const end = source.location.to;
 	// A selection ending at the next line's column zero belongs to the preceding line.
-	const line = end.line > source.location.from.line && end.ch === 0 ? end.line - 1 : end.line;
+	const line =
+		end.line > source.location.from.line && end.ch === 0
+			? end.line - 1
+			: end.line;
 	return new InboxSelection({
-		inbox, definition,
+		inbox,
+		definition,
 		target: captureDirectiveTarget(editor, view, line),
-		source: { ...source, quote, location: { ...source.location, context: stripDirectives(source.location.context) } },
+		source: {
+			...source,
+			quote,
+			location: {
+				...source.location,
+				context: stripDirectives(source.location.context),
+			},
+		},
 	});
 }

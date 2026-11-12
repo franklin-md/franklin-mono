@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { ModeControl } from '../../ui/mode.js';
 import { InboxContent } from '../../ui/content.js';
 import type { InboxPreferences } from '../../controller/types.js';
-import { ThoughtDumpStatus } from '../../ui/thought-dumps.js';
+import type { ThoughtDump } from '../types.js';
 
 afterEach(() => {
 	cleanup();
@@ -61,29 +61,60 @@ describe('composer modes', () => {
 		});
 		expect(add).toHaveBeenCalledExactlyOnceWith('One question');
 	});
-	it('shows the original dump and offers retry for failed extraction', () => {
+	it('keeps extraction progress and retry in the feed and hides completed notices', () => {
+		vi.stubGlobal('matchMedia', () => ({ matches: true }));
 		const retry = vi.fn();
-		render(
-			<ThoughtDumpStatus
-				dumps={[
-					{
-						id: 'd',
-						text: 'My original thoughts',
-						createdAt: 1,
-						model: 'test',
-						provider: 'test',
-						reasoning: 'low',
-						answerInstructions: '',
-						state: { kind: 'failed', error: 'No questions found' },
-					},
+		const dismiss = vi.fn();
+		const dump: ThoughtDump = {
+			id: 'd',
+			text: 'My original thoughts',
+			createdAt: 1,
+			model: 'test',
+			provider: 'test',
+			reasoning: 'low',
+			answerInstructions: '',
+			state: { kind: 'running' },
+		};
+		const props = {
+			questions: [],
+			composerControls: null,
+			concurrency: 1,
+			setConcurrency: vi.fn(),
+			onAdd: vi.fn(),
+			onFollowUp: vi.fn(),
+			onDelete: vi.fn(),
+			onRetry: vi.fn(),
+			onRetryExtraction: retry,
+			onDismissExtraction: dismiss,
+		};
+		const { container, rerender } = render(
+			<InboxContent {...props} thoughtDumps={[dump]} />,
+		);
+		expect(screen.getByRole('status').closest('.study-feed')).toBeTruthy();
+		expect(screen.queryByText('No questions yet')).toBeNull();
+		expect(container.querySelector('.study-header [role="status"]')).toBeNull();
+		rerender(
+			<InboxContent
+				{...props}
+				thoughtDumps={[
+					{ ...dump, state: { kind: 'failed', error: 'No questions found' } },
 				]}
-				onRetry={retry}
-				onDismiss={vi.fn()}
 			/>,
 		);
-		expect(screen.getByRole('alert').textContent).toBe('No questions found');
-		expect(screen.getByText('My original thoughts')).toBeTruthy();
+		expect(screen.getByRole('alert').closest('.study-feed')).toBeTruthy();
 		fireEvent.click(screen.getByRole('button', { name: 'Retry extraction' }));
 		expect(retry).toHaveBeenCalledWith('d');
+		fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+		expect(dismiss).toHaveBeenCalledWith('d');
+		rerender(
+			<InboxContent
+				{...props}
+				thoughtDumps={[{ ...dump, state: { kind: 'succeeded', count: 2 } }]}
+			/>,
+		);
+		expect(screen.queryByRole('status')).toBeNull();
+		expect(screen.queryByText('My original thoughts')).toBeNull();
+		expect(screen.queryByText('Added 2 questions')).toBeNull();
+		expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull();
 	});
 });

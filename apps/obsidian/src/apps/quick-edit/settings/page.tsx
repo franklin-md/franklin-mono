@@ -4,16 +4,19 @@ import { SettingGroup } from '../../../shared/ui/setting/group.js';
 import { quickEditError } from '../error.js';
 import type { QuickEditPreferences } from './store.js';
 import type { QuickEditSettings } from '../types.js';
+import { PresetSettings } from './presets/list.js';
 import { quickEditSettingsSchema } from './schema.js';
 
 type Props = {
 	preferences: QuickEditPreferences;
-	onConfigureShortcut: () => void;
+	onConfigureShortcut?: () => void;
+	active?: boolean;
 };
 
 export function QuickEditSettingsPanel({
 	preferences,
 	onConfigureShortcut,
+	active = true,
 }: Props) {
 	const id = useId();
 	const settings = useSyncExternalStore(
@@ -42,18 +45,24 @@ export function QuickEditSettingsPanel({
 			<div className="grid gap-3 py-3">
 				<div className="flex flex-wrap items-center gap-3">
 					<span>Model and reasoning</span>
-					<fieldset disabled={pending}>
-						<ModelPicker
-							label="Quick edit model"
-							provider={settings.provider}
-							model={settings.model}
-							onSelect={(provider, model) => void save({ provider, model })}
-							effort={{
-								level: settings.reasoning,
-								levels: quickEditSettingsSchema.shape.reasoning.options,
-								onChange: (reasoning) => void save({ reasoning }),
-							}}
-						/>
+					<fieldset
+						disabled={pending}
+						aria-label="Quick edit model and reasoning"
+						className="m-0 min-w-0 border-0 p-0"
+					>
+						{active && (
+							<ModelPicker
+								label="Quick edit model"
+								provider={settings.provider}
+								model={settings.model}
+								onSelect={(provider, model) => void save({ provider, model })}
+								effort={{
+									level: settings.reasoning,
+									levels: quickEditSettingsSchema.shape.reasoning.options,
+									onChange: (reasoning) => void save({ reasoning }),
+								}}
+							/>
+						)}
 					</fieldset>
 				</div>
 				<form
@@ -82,16 +91,19 @@ export function QuickEditSettingsPanel({
 						</Button>
 					</div>
 				</form>
-				<div>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={onConfigureShortcut}
-					>
-						Configure quick edit shortcut
-					</Button>
-				</div>
+				<PresetSettings preferences={preferences} />
+				{onConfigureShortcut && (
+					<div>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={onConfigureShortcut}
+						>
+							Configure quick edit shortcut
+						</Button>
+					</div>
+				)}
 				{error && (
 					<p role="alert" className="text-destructive">
 						{error}

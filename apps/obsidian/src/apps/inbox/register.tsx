@@ -66,9 +66,16 @@ export function registerInbox({
 		onError: report,
 	});
 	const captureChooser = new InboxCaptureChooser({
-		app: plugin.app, inbox, definition: questionDirectives.definition, onError: report,
+		app: plugin.app,
+		inbox,
+		definition: questionDirectives.definition,
+		onError: report,
 		onSuccess: (action) => {
-			new Notice(action === 'quick-add' ? 'Question added to study inbox' : 'Thought dump added to study inbox');
+			new Notice(
+				action === 'quick-add'
+					? 'Question added to study inbox'
+					: 'Thought dump added to study inbox',
+			);
 		},
 	});
 	plugin.registerView(
@@ -142,13 +149,20 @@ export function registerInbox({
 	});
 	plugin.addCommand({
 		id: 'open-inbox-capture-chooser',
-		name: 'Open Inbox capture chooser',
+		name: 'Open inbox capture chooser',
 		editorCheckCallback: (checking, editor, view) => {
 			const source = captureSelection({ editor, view });
-			if (!captureChooser.isOpen && (!source || !stripDirectives(source.quote).trim())) return false;
+			if (
+				!captureChooser.isOpen &&
+				(!source || !stripDirectives(source.quote).trim())
+			)
+				return false;
 			if (!checking) {
-				try { captureChooser.open(editor, view); }
-				catch (error) { report(error); }
+				try {
+					captureChooser.open(editor, view);
+				} catch (error) {
+					report(error);
+				}
 			}
 			return true;
 		},

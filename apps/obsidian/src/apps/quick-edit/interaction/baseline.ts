@@ -26,11 +26,17 @@ export function editMetadataBaseline(
 	// the live note would silently accept unrelated agent changes.
 	// https://codemirror.net/docs/ref/#state.ChangeSet
 	const mapping = ChangeSet.of(changes, source.length);
-	const mapped = edits.map(({ from, to, text }) => ({
-		from: mapping.mapPos(from, -1),
-		to: mapping.mapPos(to, 1),
-		insert: text,
-	}));
+	const mapped = edits.map(({ from, to, text }) => {
+		const start = mapping.mapPos(from, 1);
+		// An insertion stays an insertion even inside an agent replacement. For a
+		// deletion, exclude adjacent baseline-only text at both range boundaries.
+		const end = from === to ? start : mapping.mapPos(to, -1);
+		if (end < start)
+			throw new Error(
+				'Could not map quick edit controls into the review baseline',
+			);
+		return { from: start, to: end, insert: text };
+	});
 	return ChangeSet.of(mapped, baseline.length)
 		.apply(Text.of(baseline.split('\n')))
 		.toString();

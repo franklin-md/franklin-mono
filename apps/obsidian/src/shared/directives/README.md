@@ -9,7 +9,7 @@ persisted question ID.
 
 - `DirectiveRegistry.create({ app, persistence })` restores instances before use.
 - `registry.registerDirective<T>(name, Renderer)` defines a named directive.
-  The renderer receives `{ state: T, update }` and must produce inline-compatible
+  The renderer receives `{ id, state: T, update }` and must produce inline-compatible
   React content. Registration does not start jobs.
 - `definition.create(state)` persists JSON-compatible state and returns an instance
   with `id`, `text`, reactive `state`, and `update(recipe)`.
@@ -57,6 +57,13 @@ Source mode remains ordinary text. `createDirectivePostProcessor(registry)`
 supplies Reading mode rendering with Markdown-section lifecycle cleanup.
 Neither adapter registers itself with the plugin. Both use the same React host
 and preserve visible token text for unknown or failed renderers.
+
+Pill renderers use `DirectivePill` from `render/pill.tsx` for shared typography,
+padding, nonwrapping labels and font-relative icons. It renders a span by default;
+`asChild` applies those styles to an existing button and forwards its ref. Keep
+status colours and actions in the renderer. Nested actions must fit within one
+text line so running states do not enlarge the pill. `DirectiveComponent` owns
+line alignment; editable prompts retain their separate layout.
 
 Copied tokens share one instance state. Reading mode conservatively preserves
 literal text when Markdown escaping makes source and rendered references ambiguous.

@@ -1,4 +1,4 @@
-import { Check, Inbox, SlidersHorizontal } from 'lucide-react';
+import { Inbox, SlidersHorizontal } from 'lucide-react';
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
@@ -11,7 +11,6 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	StatusDot,
 } from '@franklin/ui';
 import type { StudyQuestion, QuestionSource } from '../types.js';
 import type { InboxPreferences } from '../controller/types.js';
@@ -20,10 +19,14 @@ import { QuestionFeed } from './feed.js';
 import type { QuestionNavigation } from './navigation.js';
 import { selectionQuestion } from '../selection-question.js';
 import type { InboxGroup } from '../hierarchy/types.js';
+import type { ThoughtDump } from '../modes/types.js';
 
 type Props = {
 	questions: StudyQuestion[];
 	groups?: InboxGroup[];
+	thoughtDumps?: ThoughtDump[];
+	onRetryExtraction?: (id: string) => void;
+	onDismissExtraction?: (id: string) => void;
 	onFoldGroup?: (id: string, folded: boolean) => void;
 	navigation?: QuestionNavigation;
 	composerControls: ReactNode;
@@ -39,13 +42,15 @@ type Props = {
 	onSettings?: () => void;
 	renderAnswer?: (answer: string) => ReactNode;
 	renderActions?: (question: StudyQuestion) => ReactNode;
-	actionActivity?: { running: number; queued: number };
-	notice?: ReactNode;
+	footer?: ReactNode;
 };
 
 export function InboxContent({
 	questions,
 	groups,
+	thoughtDumps,
+	onRetryExtraction,
+	onDismissExtraction,
 	onFoldGroup,
 	navigation,
 	composerControls,
@@ -61,14 +66,10 @@ export function InboxContent({
 	onSettings,
 	renderAnswer,
 	renderActions,
-	actionActivity,
-	notice,
+	footer,
 }: Props) {
 	const [optionsOpen, setOptionsOpen] = useState(false);
 	const concurrencyId = useId();
-	const running = questions.filter((q) => q.state.kind === 'running').length;
-	const queued = questions.filter((q) => q.state.kind === 'queued').length;
-	const answered = questions.filter((q) => q.state.kind === 'answered').length;
 	return (
 		<main className="study-inbox @container flex h-full min-h-0 min-w-0 flex-col bg-background">
 			<header className="study-header relative z-1 shrink-0 px-4 pt-6 @min-[380px]:px-6">
@@ -149,37 +150,14 @@ export function InboxContent({
 								: onAdd(selectionQuestion(text))
 						}
 					/>
-					<div className="mt-2 flex justify-end">
-						<span
-							className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground"
-							role="status"
-						>
-							{actionActivity &&
-								actionActivity.running + actionActivity.queued > 0 && (
-									<span>
-										{actionActivity.running} actions · {actionActivity.queued}{' '}
-										queued ·{' '}
-									</span>
-								)}
-							{running > 0 ? (
-								<>
-									<StatusDot className="size-1.5" />
-									{running} answering{queued > 0 && ` · ${queued} queued`}
-								</>
-							) : (
-								<>
-									<Check size={11} />
-									{answered} answered
-								</>
-							)}
-						</span>
-					</div>
 				</div>
 			</header>
-			{notice}
 			<QuestionFeed
 				questions={questions}
 				groups={groups}
+				thoughtDumps={thoughtDumps}
+				onRetryExtraction={onRetryExtraction}
+				onDismissExtraction={onDismissExtraction}
 				onFoldGroup={onFoldGroup}
 				navigation={navigation}
 				onFollowUp={onFollowUp}
@@ -189,6 +167,7 @@ export function InboxContent({
 				renderAnswer={renderAnswer}
 				renderActions={renderActions}
 			/>
+			{footer}
 		</main>
 	);
 }

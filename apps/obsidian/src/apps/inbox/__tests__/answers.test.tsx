@@ -111,7 +111,7 @@ describe('structured inbox answers', () => {
 			range.selectNodeContents(text);
 			selection.removeAllRanges();
 			selection.addRange(range);
-			fireEvent.click(text);
+			fireEvent.click(text, { detail: 1 });
 			expect(screen.queryByRole('textbox')).toBeNull();
 		}
 		selection.removeAllRanges();

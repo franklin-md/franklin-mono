@@ -19,12 +19,14 @@ afterEach(async () => {
 });
 
 function capture() {
-	return captureInboxSelection({
+	const selection = captureInboxSelection({
 		editor: target.editor,
 		view: target.info,
 		inbox: scenario.inbox,
 		definition: scenario.service.definition,
-	})!;
+	});
+	if (!selection) throw new Error('Expected a captured selection');
+	return selection;
 }
 
 it('freezes source text before focus moves and follows the original line through edits', async () => {
@@ -50,10 +52,10 @@ it('retries saving the same question after its first save fails', async () => {
 		new Error('disk full'),
 	);
 	await expect(selection.submit()).rejects.toThrow('disk full');
-	const id = scenario.inbox.state.get().questions[0]!.id;
+	const id = scenario.inbox.state.get().questions[0]?.id;
 	await selection.submit();
 	expect(scenario.inbox.state.get().questions).toHaveLength(1);
-	expect(scenario.inbox.state.get().questions[0]!.id).toBe(id);
+	expect(scenario.inbox.state.get().questions[0]?.id).toBe(id);
 	expect(scenario.service.definition.instances()).toHaveLength(1);
 	selection.dispose();
 });

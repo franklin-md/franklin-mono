@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { AuthActionProvider } from '@franklin/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@franklin/ui';
 import type { SettingsSection } from '../../shared/obsidian/settings/types.js';
 import { CaptureSettings } from '../../apps/inbox/capture/settings.js';
@@ -35,16 +36,33 @@ export function SettingsPage({
 			content: (
 				<>
 					<ChatSettings />
-					{quickEdit && (
-						<QuickEditSettingsPanel
-							preferences={quickEdit}
-							onConfigureShortcut={onConfigureQuickEditShortcut ?? (() => {})}
-						/>
-					)}
 					<SettingGroup title="Document downloads">
 						<DocumentDownloadSettings />
 					</SettingGroup>
 				</>
+			),
+		},
+		'quick-edit': {
+			label: 'Quick edit',
+			content: quickEdit ? (
+				<AuthActionProvider
+					handlers={{
+						requestApiKey: () => {
+							setSection('connections');
+							onSectionChange?.('connections');
+						},
+					}}
+				>
+					<QuickEditSettingsPanel
+						preferences={quickEdit}
+						active={section === 'quick-edit'}
+						onConfigureShortcut={onConfigureQuickEditShortcut}
+					/>
+				</AuthActionProvider>
+			) : (
+				<p className="py-4 text-sm text-muted-foreground">
+					Quick edit is unavailable.
+				</p>
 			),
 		},
 		inbox: {

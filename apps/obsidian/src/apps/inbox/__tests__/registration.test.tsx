@@ -89,7 +89,7 @@ it('renders a newly registered Inbox before navigation and after reopening its p
 	const chooser = commands.find(
 		(command) => command.id === 'open-inbox-capture-chooser',
 	);
-	expect(chooser?.name).toBe('Open Inbox capture chooser');
+	expect(chooser?.name).toBe('Open inbox capture chooser');
 	expect(chooser?.hotkeys).toBeUndefined();
 	const view = creator({} as WorkspaceLeaf) as InboxView;
 	view.contentEl.onWindowMigrated = () => () => {};

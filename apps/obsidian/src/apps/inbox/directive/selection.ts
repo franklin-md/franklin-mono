@@ -25,8 +25,12 @@ export class InboxSelection {
 	private disposed = false;
 
 	constructor(private readonly options: Options) {}
-	get source() { return this.options.source; }
-	get target() { return this.options.target; }
+	get source() {
+		return this.options.source;
+	}
+	get target() {
+		return this.options.target;
+	}
 
 	submit(): Promise<void> {
 		if (this.disposed) return Promise.reject(new Error('Capture is closed'));
@@ -34,7 +38,9 @@ export class InboxSelection {
 		if (this.pending) return this.pending;
 		const pending = this.run();
 		this.pending = pending;
-		const clear = () => { this.pending = undefined; };
+		const clear = () => {
+			this.pending = undefined;
+		};
 		void pending.then(clear, clear);
 		return pending;
 	}
@@ -45,35 +51,59 @@ export class InboxSelection {
 	}
 
 	private async run(): Promise<void> {
-		const { inbox, definition, source, target } = this.options;
+		const { inbox, definition, target } = this.options;
 		try {
 			if (!this.questionId) {
-				try {
-					this.questionId = await inbox.add(selectionQuestion(source.quote), undefined, source);
-				} catch (error) {
-					if (error instanceof QuestionSaveError) {
-						this.questionId = error.questionId;
-						this.needsSave = true;
-					}
-					throw error;
-				}
+				await this.addQuestion();
 			} else if (this.needsSave) {
 				this.assertQuestion();
 				await inbox.retrySave();
 				this.needsSave = false;
 			}
-			this.assertQuestion();
-			this.instance ??= await definition.create({ questionId: this.questionId });
+			const questionId = this.assertQuestion();
+			this.instance ??= await definition.create({
+				questionId,
+			});
 			this.assertQuestion();
 			await new DirectiveScribe(this.instance).write(target);
 			this.done = true;
 		} catch (error) {
-			throw new Error(`Could not finish adding the Inbox question pill: ${errorMessage(error)}`, { cause: error });
+			const status =
+				this.questionId && !this.needsSave
+					? 'Question saved; could not insert its Inbox pill'
+					: 'Could not finish adding the Inbox question pill';
+			throw new Error(`${status}: ${errorMessage(error)}`, { cause: error });
 		}
 	}
 
-	private assertQuestion(): void {
-		if (!this.options.inbox.state.get().questions.some((question) => question.id === this.questionId))
-			throw new Error('The question was deleted before its pill could be inserted');
+	private async addQuestion(): Promise<void> {
+		const { inbox, source } = this.options;
+		try {
+			this.questionId = await inbox.add(
+				selectionQuestion(source.quote),
+				undefined,
+				source,
+			);
+		} catch (error) {
+			if (error instanceof QuestionSaveError) {
+				this.questionId = error.questionId;
+				this.needsSave = true;
+			}
+			throw error;
+		}
+	}
+
+	private assertQuestion(): string {
+		const questionId = this.questionId;
+		if (
+			!questionId ||
+			!this.options.inbox.state
+				.get()
+				.questions.some((question) => question.id === questionId)
+		)
+			throw new Error(
+				'The question was deleted before its pill could be inserted',
+			);
+		return questionId;
 	}
 }

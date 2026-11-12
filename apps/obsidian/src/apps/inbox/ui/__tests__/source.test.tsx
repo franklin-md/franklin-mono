@@ -92,7 +92,7 @@ describe('Inbox source row links', () => {
 		const range = document.createRange();
 		range.selectNodeContents(name);
 		document.getSelection()?.addRange(range);
-		fireEvent.click(name);
+		fireEvent.click(name, { detail: 1 });
 		expect(onOpenSource).not.toHaveBeenCalled();
 		expect(title.getAttribute('aria-expanded')).toBe('true');
 	});

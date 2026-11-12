@@ -13,7 +13,13 @@ export function DirectiveComponent({ registry, reference }: Props) {
 	const text = formatDirective(reference.name, reference.id);
 	return Renderer ? (
 		<DirectiveBoundary key={reference.id} fallback={text}>
-			<Renderer id={reference.id} />
+			{/* Own line alignment here so current and future directives share the
+			    same default in Live Preview and Reading mode. Keep this inside the
+			    boundary so unknown or failed renderers remain ordinary inline text.
+			    https://developer.mozilla.org/en-US/docs/Web/CSS/vertical-align */}
+			<span className="inline-flex items-center align-middle">
+				<Renderer id={reference.id} />
+			</span>
 		</DirectiveBoundary>
 	) : (
 		text

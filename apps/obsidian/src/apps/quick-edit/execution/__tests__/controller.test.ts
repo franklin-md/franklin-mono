@@ -28,13 +28,14 @@ async function setup(run = vi.fn(async () => {})) {
 			model: 'test',
 			reasoning: 'low',
 			instructions: 'Preserve outlines.',
+			presets: [],
 		}),
 	});
 	return { controller, instance, disk, run, definition };
 }
 
 describe('quick edit execution', () => {
-	it('saves the request, executes once and retains a completed pill', async () => {
+	it('records completion while the interaction owns editor cleanup', async () => {
 		const h = await setup();
 		await h.controller.execute(h.instance.id, 'add a bullet below');
 		expect(h.run).toHaveBeenCalledExactlyOnceWith(
@@ -45,6 +46,7 @@ describe('quick edit execution', () => {
 				}),
 				settings: expect.objectContaining({
 					instructions: 'Preserve outlines.',
+					presets: [],
 				}),
 			}),
 		);

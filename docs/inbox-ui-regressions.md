@@ -28,7 +28,7 @@ Test/source links below are relative to this repository. Historical artifacts in
 | V07 | Long titles wrap inside narrow cards instead of overflowing or being reduced to an unreadable single line. Long detail headings, action names, errors, source labels, and nested content do not force page-level horizontal overflow. | User, Oct 22: title overflow. Source: [card styling][card], [reply layout][feed]. Browser history includes 320px checks; full-content matrix still needed. |
 | V08 | The main question entry stays at the top; the feed scrolls independently. New root questions appear at the top, grouped by local calendar day. Replies remain with their root and in creation order. | User, Oct 22; Source: [content][content], [panel][panel], [feed][feed], [Inbox layout][content]. |
 | V09 | Insertions/reflow feel natural and preserve understandable ordering. Reduced-motion preference suppresses animations/transitions. Exact timing is not a requirement. | User, Oct 22: natural queue animations. Source: [motion CSS][motion-css], [feed motion][feed-motion]. Browser check needed. |
-| V10 | Empty state, question count, running/queued/answered status, and action activity remain available without overwhelming the primary question/answer hierarchy. | Source: [content][content], [feed][feed]. These are current affordances, not a mandate to retain exact wording or placement. |
+| V10 | Empty state and question count remain available. Progress and errors appear beside their question, action or extraction; aggregate activity and completed extraction notifications are omitted from the header. | Source: [content][content], [feed][feed]. These are current affordances, not a mandate to retain exact wording or placement. |
 
 ## 2. Card focus, selection, and disclosure interaction
 
@@ -189,13 +189,15 @@ Local browser artifacts are under `.context/inbox-card-sections/`. The productio
 
 ## Groups and children contract
 
-- Groups have optional titles and a native fold header. Untitled groups use “Group” as the fold label. Direct group children have no added indentation; children of questions keep shallow indentation. Siblings remain closer than independent trees.
+- Groups have a native fold header, connected outline and descendant question count. Thought dumps receive a short AI-generated topic title during extraction. Older untitled groups reuse their first question’s saved heading or cleaned wording; empty untitled groups use “Untitled”. Long headings clamp visually to two lines with the full title available on hover. Direct group children have no added indentation; children of questions keep shallow indentation. Siblings remain closer than independent trees.
+- Selection guards only suppress pointer activation when the selected range overlaps the clicked title/control. Keyboard and assistive-technology activation remain available even while that title is selected; selecting other text must not block a title or detail disclosure.
+- Group headers expose a delete button on header hover, keyboard focus and touch. It deletes that group’s subtree without folding it or toggling an ancestor. Question and group disclosure chevrons precede their title text; right-side delete controls have separate space.
 - Folding hides the whole subtree while leaving question components mounted, drafts and disclosures retained, and queued/running work alive. Fold state persists. Nested group folds remain independent.
 - Navigation from an inline source pill reveals every folded ancestor before selecting, scrolling and focusing the requested question; repeated navigation still works.
-- Thought dumps produce sibling questions under one group. Dismissing extraction status retains the original text as group context. Context follows the ancestor branch and excludes sibling answers.
+- Thought dumps produce sibling questions under one group. The original dump remains hidden group context: no “Group context” disclosure is rendered. Extraction progress/failures live in the feed with Retry/Dismiss for failures; completed notifications are absent. Save/recording recovery controls appear below the feed. Context follows the ancestor branch and excludes sibling answers.
 - Relationships are created through controller operations. Automatic ancestor-body collapse and hover navigation remain deferred.
 
-Coverage: [hierarchy/controller tests](../apps/obsidian/src/apps/inbox/hierarchy/__tests__/controller.test.ts), [group disclosure tests](../apps/obsidian/src/apps/inbox/ui/__tests__/groups.test.tsx), [group capture test](../apps/obsidian/src/apps/inbox/hierarchy/__tests__/capture.test.ts), and thought-dump queue tests. Browser geometry and theme checks are recorded under `.context/inbox-groups/`.
+Coverage: [hierarchy/controller tests](../apps/obsidian/src/apps/inbox/hierarchy/__tests__/controller.test.ts), [group disclosure tests](../apps/obsidian/src/apps/inbox/ui/__tests__/groups.test.tsx), [group capture test](../apps/obsidian/src/apps/inbox/hierarchy/__tests__/capture.test.ts), and thought-dump queue tests. Browser geometry and theme checks are recorded under `.context/inbox-groups/`; the title/readability follow-up is recorded under `.context/inbox-readability/`.
 
 ## Historical request trail
 

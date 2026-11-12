@@ -4,6 +4,7 @@ import type {
 	InboxDocument,
 	InboxControllerOptions,
 } from '../../controller/types.js';
+import type { Extraction } from '../types.js';
 import { inboxCodec } from '../../controller/schema.js';
 
 const defaults = {
@@ -36,10 +37,10 @@ async function setup(split: InboxControllerOptions['split']) {
 
 describe('thought dump queue', () => {
 	it('extracts in the background, snapshots settings and creates grouped independent questions once', async () => {
-		let finish!: (questions: string[]) => void;
+		let finish!: (extraction: Extraction) => void;
 		const split = vi.fn(
 			() =>
-				new Promise<string[]>((resolve) => {
+				new Promise<Extraction>((resolve) => {
 					finish = resolve;
 				}),
 		);
@@ -51,7 +52,10 @@ describe('thought dump queue', () => {
 			model: 'changed',
 			answerInstructions: 'Changed',
 		});
-		finish(['Why use pages?', 'How big are pages?', 'Why use pages?']);
+		finish({
+			title: 'Memory paging',
+			questions: ['Why use pages?', 'How big are pages?', 'Why use pages?'],
+		});
 		await vi.waitFor(() =>
 			expect(h.inbox.state.get().thoughtDumps?.[0]?.state).toEqual({
 				kind: 'succeeded',
@@ -66,6 +70,7 @@ describe('thought dump queue', () => {
 			expect(q.rootId).toBe(q.parentId);
 		}
 		expect(h.inbox.state.get().groups).toHaveLength(1);
+		expect(h.inbox.state.get().groups?.[0]?.title).toBe('Memory paging');
 		expect(h.inbox.state.get().groups?.[0]?.context).toBe(
 			'Why pages? How big?',
 		);
@@ -80,6 +85,7 @@ describe('thought dump queue', () => {
 			h.inbox.state.get().thoughtDumps![0]!.id,
 		);
 		expect(h.inbox.state.get().groups).toHaveLength(1);
+		expect(h.inbox.state.get().groups?.[0]?.title).toBe('Memory paging');
 		expect(h.inbox.state.get().groups?.[0]?.context).toBe(
 			'Why pages? How big?',
 		);
@@ -88,8 +94,11 @@ describe('thought dump queue', () => {
 	it('retains empty/failed extraction and retries with the original settings', async () => {
 		const split = vi
 			.fn<NonNullable<InboxControllerOptions['split']>>()
-			.mockResolvedValueOnce([])
-			.mockResolvedValueOnce(['Why pages?']);
+			.mockResolvedValueOnce({ title: 'Memory paging', questions: [] })
+			.mockResolvedValueOnce({
+				title: 'Memory paging',
+				questions: ['Why pages?'],
+			});
 		const h = await setup(split);
 		await h.inbox.thoughtDumps.add('Why pages?');
 		await vi.waitFor(() =>
@@ -105,7 +114,10 @@ describe('thought dump queue', () => {
 		await h.inbox.dispose();
 	});
 	it('retains the batch after a failed completion save without extracting or enqueueing twice', async () => {
-		const split = vi.fn(async () => ['Why pages?']);
+		const split = vi.fn(async () => ({
+			title: 'Memory paging',
+			questions: ['Why pages?'],
+		}));
 		const h = await setup(split);
 		h.save.mockImplementation(async (value) => {
 			if (value.thoughtDumps?.[0]?.state.kind === 'succeeded')
@@ -116,6 +128,7 @@ describe('thought dump queue', () => {
 			expect(h.inbox.state.get().storageError).toContain('disk full'),
 		);
 		expect(h.inbox.state.get().groups).toHaveLength(1);
+		expect(h.inbox.state.get().groups?.[0]?.title).toBe('Memory paging');
 		expect(h.inbox.state.get().questions).toHaveLength(1);
 		expect(h.run).not.toHaveBeenCalled();
 		h.save.mockResolvedValue(undefined);
@@ -124,10 +137,14 @@ describe('thought dump queue', () => {
 		expect(split).toHaveBeenCalledTimes(1);
 		expect(h.inbox.state.get().questions).toHaveLength(1);
 		expect(h.inbox.state.get().groups).toHaveLength(1);
+		expect(h.inbox.state.get().groups?.[0]?.title).toBe('Memory paging');
 		await h.inbox.dispose();
 	});
 	it('rejects an initial save failure without leaving a second job for composer retry', async () => {
-		const split = vi.fn(async () => ['Why?']);
+		const split = vi.fn(async () => ({
+			title: 'Memory paging',
+			questions: ['Why?'],
+		}));
 		const h = await setup(split);
 		h.save.mockRejectedValueOnce(new Error('disk full'));
 		await expect(h.inbox.thoughtDumps.add('Why?')).rejects.toThrow('disk full');
@@ -137,22 +154,22 @@ describe('thought dump queue', () => {
 		await h.inbox.dispose();
 	});
 	it('interrupts extraction on shutdown, ignores late output and allows retry after restart', async () => {
-		let finish!: (questions: string[]) => void;
+		let finish!: (extraction: Extraction) => void;
 		const h = await setup(
 			() =>
-				new Promise<string[]>((resolve) => {
+				new Promise<Extraction>((resolve) => {
 					finish = resolve;
 				}),
 		);
 		await h.inbox.thoughtDumps.add('Why?');
 		await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
 		await h.inbox.dispose();
-		finish(['Late question']);
+		finish({ title: 'Memory paging', questions: ['Late question'] });
 		await new Promise((resolve) => setTimeout(resolve, 0));
 		expect(h.inbox.state.get().questions).toEqual([]);
 		const restored = await InboxController.create({
 			...h.options,
-			split: async () => ['Why?'],
+			split: async () => ({ title: 'Memory paging', questions: ['Why?'] }),
 		});
 		expect(restored.state.get().thoughtDumps?.[0]?.state.kind).toBe('failed');
 		await restored.thoughtDumps.retry(

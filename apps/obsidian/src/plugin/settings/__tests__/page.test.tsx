@@ -20,6 +20,8 @@ import {
 	toAbsolutePath,
 } from '@franklin/lib';
 import { SettingsPage } from '../page.js';
+import { QuickEditPreferences } from '../../../apps/quick-edit/settings/store.js';
+import { quickEditSettingsCodec } from '../../../apps/quick-edit/settings/codec.js';
 
 afterEach(() => {
 	cleanup();
@@ -97,6 +99,7 @@ function renderPage(
 	onConfigureInboxShortcut?: () => void,
 	initialSection: SettingsSection = 'connections',
 	inbox?: InboxController,
+	quickEdit?: QuickEditPreferences,
 ) {
 	const openExternal = vi.fn(async () => {});
 	const app = {
@@ -113,6 +116,7 @@ function renderPage(
 				<SettingsPage
 					initialSection={initialSection}
 					inbox={inbox}
+					quickEdit={quickEdit}
 					onConfigureInboxShortcut={onConfigureInboxShortcut}
 				/>
 			</ApplicationProvider>,
@@ -123,6 +127,53 @@ function renderPage(
 }
 
 describe('SettingsPage', () => {
+	it('keeps Quick edit in its own tab and preserves its draft across navigation', async () => {
+		const preferences = await QuickEditPreferences.create(
+			createSingleFilePersister(
+				new MemoryFilesystem(),
+				toAbsolutePath('/quick-edit.json'),
+				quickEditSettingsCodec,
+			),
+			{
+				provider: 'test',
+				model: 'test',
+				reasoning: 'off',
+				instructions: 'Keep outlines.',
+			},
+		);
+		renderPage(
+			createAuthStub(),
+			undefined,
+			undefined,
+			'general',
+			undefined,
+			preferences,
+		);
+		expect(
+			screen.queryByRole('textbox', { name: 'Editing instructions' }),
+		).toBeNull();
+		const select = (name: string) =>
+			fireEvent.mouseDown(screen.getByRole('tab', { name }), {
+				button: 0,
+				ctrlKey: false,
+			});
+		select('Quick edit');
+		fireEvent.change(
+			screen.getByRole('textbox', { name: 'Editing instructions' }),
+			{ target: { value: 'Unfinished edit rules' } },
+		);
+		select('General');
+		expect(
+			screen.queryByRole('textbox', { name: 'Editing instructions' }),
+		).toBeNull();
+		select('Quick edit');
+		expect(
+			screen.getByRole<HTMLTextAreaElement>('textbox', {
+				name: 'Editing instructions',
+			}).value,
+		).toBe('Unfinished edit rules');
+		await preferences.dispose();
+	});
 	it('shows one panel at a time and retains unfinished instructions and action drafts across tabs', async () => {
 		const inbox = await InboxController.create({
 			defaults: { provider: 'test', model: 'test', reasoning: 'off' },
@@ -136,6 +187,7 @@ describe('SettingsPage', () => {
 		renderPage(createAuthStub(), undefined, undefined, 'general', inbox);
 		expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
 			'General',
+			'Quick edit',
 			'Inbox',
 			'Flashcards',
 			'Connections',

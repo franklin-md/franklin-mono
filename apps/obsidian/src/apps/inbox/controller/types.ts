@@ -1,4 +1,4 @@
-import type { ThoughtDump, SplitRequest } from '../modes/types.js';
+import type { Extraction, ThoughtDump, SplitRequest } from '../modes/types.js';
 import type { SingleFilePersister } from '@franklin/lib';
 import type { StudyQuestion } from '../types.js';
 import type { AnswerDetail } from '../answer/types.js';
@@ -50,7 +50,7 @@ export type InboxControllerOptions = {
 	persistence: SingleFilePersister<InboxDocument>;
 	defaults: ModelSelection;
 	run: (request: AnswerRequest) => Promise<void>;
-	split?: (request: SplitRequest) => Promise<string[]>;
+	split?: (request: SplitRequest) => Promise<Extraction>;
 	runAction?: (request: ActionRequest) => Promise<string>;
 	onActionComplete?: (name: string, summary: string) => void;
 	capture?: CaptureController;

@@ -4,7 +4,10 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import type { QuestionNavigation } from './navigation.js';
 import type { InboxGroup } from '../hierarchy/types.js';
 import { inboxNodes } from '../hierarchy/nodes.js';
+import { groupSummary } from '../hierarchy/summary.js';
 import { QuestionGroup } from './group.js';
+import { ExtractionProgress } from './extraction.js';
+import type { ThoughtDump } from '../modes/types.js';
 
 import { QuestionCard } from './card.js';
 import type { StudyQuestion, QuestionSource } from '../types.js';
@@ -13,6 +16,9 @@ import { useFeedMotion } from './use-feed-motion.js';
 type Props = {
 	questions: StudyQuestion[];
 	groups?: InboxGroup[];
+	thoughtDumps?: ThoughtDump[];
+	onRetryExtraction?: (id: string) => void;
+	onDismissExtraction?: (id: string) => void;
 	onFoldGroup?: (id: string, folded: boolean) => void;
 	navigation?: QuestionNavigation;
 	onFollowUp: (text: string, parentId: string) => void | Promise<void>;
@@ -40,6 +46,9 @@ function dayLabel(timestamp: number) {
 export function QuestionFeed({
 	questions,
 	groups,
+	thoughtDumps,
+	onRetryExtraction,
+	onDismissExtraction,
 	onFoldGroup,
 	renderActions,
 	navigation,
@@ -69,12 +78,27 @@ export function QuestionFeed({
 			.querySelector<HTMLButtonElement>('.study-question-title')
 			?.focus({ preventScroll: true });
 	}, [navigation]);
-	const nodes = inboxNodes({ questions, groups });
-	const roots = nodes
-		.filter((node) => !node.parentId)
-		.sort((a, b) => (b.order ?? b.createdAt) - (a.order ?? a.createdAt));
-	const days = Map.groupBy(roots, (node) =>
-		new Date(node.createdAt).toDateString(),
+	const nodes = inboxNodes({ questions, groups }).sort(
+		(a, b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt),
+	);
+	const childrenByParent = Map.groupBy(nodes, (node) => node.parentId);
+	const roots = childrenByParent.get(undefined) ?? [];
+	const entries = [
+		...roots.map((node) => ({
+			kind: 'node' as const,
+			value: node,
+			order: node.order ?? node.createdAt,
+		})),
+		...(thoughtDumps ?? [])
+			.filter((dump) => dump.state.kind !== 'succeeded')
+			.map((dump) => ({
+				kind: 'extraction' as const,
+				value: dump,
+				order: dump.createdAt,
+			})),
+	].sort((a, b) => b.order - a.order);
+	const days = Map.groupBy(entries, ({ value }) =>
+		new Date(value.createdAt).toDateString(),
 	);
 
 	function renderNode(
@@ -82,13 +106,17 @@ export function QuestionFeed({
 		source?: QuestionSource,
 		parent?: StudyQuestion,
 	) {
-		const children = nodes
-			.filter((child) => child.parentId === node.id)
-			.sort((a, b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt));
+		const children = childrenByParent.get(node.id) ?? [];
 		const origin = node.source ?? source;
 		if (!('state' in node)) {
 			return (
-				<QuestionGroup key={node.id} group={node} onFold={onFoldGroup}>
+				<QuestionGroup
+					key={node.id}
+					group={node}
+					{...groupSummary(node, childrenByParent)}
+					onFold={onFoldGroup}
+					onDelete={actions.onDelete}
+				>
 					{children.map((child) => renderNode(child, origin, parent))}
 				</QuestionGroup>
 			);
@@ -127,7 +155,7 @@ export function QuestionFeed({
 				}
 			}}
 		>
-			{roots.length === 0 && (
+			{entries.length === 0 && (
 				<div className="px-2 py-16 text-center text-muted-foreground">
 					<Inbox
 						size={30}
@@ -149,23 +177,34 @@ export function QuestionFeed({
 					<section
 						className="mt-1 not-first:mt-6"
 						key={day}
-						aria-label={dayLabel(first.createdAt)}
+						aria-label={dayLabel(first.value.createdAt)}
 					>
 						<div className="mb-4 flex items-center gap-2.5 text-xs text-muted-foreground">
 							<h2 className="m-0 text-xs font-semibold">
-								{dayLabel(first.createdAt)}
+								{dayLabel(first.value.createdAt)}
 							</h2>
-							<span>{dayFormat.format(first.createdAt)}</span>
+							<span>{dayFormat.format(first.value.createdAt)}</span>
 							<span className="h-px flex-1 bg-border" />
 							<span>{items.length}</span>
 						</div>
 						<div className="flex flex-col gap-7">
-							{items.map((question) => renderNode(question))}
+							{items.map((item) =>
+								item.kind === 'node' ? (
+									renderNode(item.value)
+								) : (
+									<ExtractionProgress
+										key={item.value.id}
+										dump={item.value}
+										onRetry={onRetryExtraction}
+										onDismiss={onDismissExtraction}
+									/>
+								),
+							)}
 						</div>
 					</section>
 				);
 			})}
-			{roots.length > 0 && (
+			{entries.length > 0 && (
 				<p className="mt-0 mb-0 pt-7 pb-1 text-center text-xs text-muted-foreground">
 					End of inbox
 				</p>

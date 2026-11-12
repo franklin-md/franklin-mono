@@ -1,5 +1,5 @@
 import {
-	ChevronDown,
+	ChevronRight,
 	GitBranch,
 	LoaderCircle,
 	MessageCircle,
@@ -62,7 +62,7 @@ export function QuestionHeader({
 					type="button"
 					className="mb-2 flex h-auto w-full min-w-0 cursor-pointer select-text items-center gap-1.5 pr-6 text-left text-xs text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
 					onClick={(event) => {
-						if (hasTextSelection(event.currentTarget)) return;
+						if (hasTextSelection(event.currentTarget, event.detail)) return;
 						onFocus(parent.id);
 						event.currentTarget.ownerDocument
 							.getElementById(`question-${parent.id}`)
@@ -101,22 +101,23 @@ export function QuestionHeader({
 			>
 				<button
 					type="button"
-					className="study-question-title flex h-auto w-full min-w-0 max-w-full cursor-pointer select-text items-start justify-between gap-2.5 whitespace-normal text-left text-base leading-normal font-semibold tracking-tight text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+					className="study-question-title flex h-auto w-full min-w-0 max-w-full cursor-pointer select-text items-start gap-2 whitespace-normal text-left text-base leading-normal font-semibold tracking-tight text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
 					aria-expanded={focused}
 					aria-controls={footerId}
 					onClick={(event) => {
-						if (!hasTextSelection(event.currentTarget))
+						if (!hasTextSelection(event.currentTarget, event.detail))
 							onFocus(focused ? undefined : question.id);
 					}}
 				>
-					<span className="min-w-0 flex-1 wrap-anywhere">{title}</span>
-					<ChevronDown
+					<ChevronRight
 						size={15}
+						aria-hidden="true"
 						className={cn(
-							'mt-1 text-muted-foreground transition-transform',
-							focused && 'rotate-180',
+							'mt-1 shrink-0 text-muted-foreground transition-transform',
+							focused && 'rotate-90',
 						)}
 					/>
+					<span className="min-w-0 flex-1 wrap-anywhere">{title}</span>
 				</button>
 			</h3>
 		</header>

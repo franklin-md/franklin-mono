@@ -17,4 +17,14 @@ describe('quick edit review bookkeeping', () => {
 			]),
 		).toBe('old [edit]words');
 	});
+	it('does not replace baseline text when inserting a control inside a changed word', () => {
+		const edits = [{ from: 1, to: 1, text: '[control]' }];
+		const baseline = editMetadataBaseline('new words', 'old words', edits);
+		expect(baseline.replace('[control]', '')).toBe('old words');
+		expect(
+			editMetadataBaseline('n[control]ew words', baseline, [
+				{ from: 1, to: 10, text: '' },
+			]),
+		).toBe('old words');
+	});
 });

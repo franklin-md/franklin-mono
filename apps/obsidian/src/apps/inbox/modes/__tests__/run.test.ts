@@ -3,6 +3,7 @@ import { createMockMiniACP, toolCalls, turnEnd } from '@franklin/mini-acp/mock';
 import type { AuthManager } from '@franklin/agent';
 import { createInboxTestEnvironment } from '../../agent/test-environment.js';
 import { createSplitter } from '../run.js';
+import { parseExtraction } from '../parse-extraction.js';
 import type { ThoughtDump } from '../types.js';
 
 const auth = {
@@ -28,6 +29,7 @@ describe('extraction runtime', () => {
 					{
 						name: 'return_questions',
 						arguments: {
+							title: 'Memory paging',
 							questions: ['What are memory pages?', 'Why use memory pages?'],
 						},
 					},
@@ -38,7 +40,10 @@ describe('extraction runtime', () => {
 		const result = await createSplitter(
 			createInboxTestEnvironment().runnerOptions(mock.connector, auth),
 		)({ dump, signal: new AbortController().signal });
-		expect(result).toEqual(['What are memory pages?', 'Why use memory pages?']);
+		expect(result).toEqual({
+			title: 'Memory paging',
+			questions: ['What are memory pages?', 'Why use memory pages?'],
+		});
 		expect(mock.calls().disposes).toBe(1);
 		expect(mock.context().systemPrompt).toContain(
 			'Do not invent a research agenda',
@@ -54,7 +59,10 @@ describe('extraction runtime', () => {
 					...(questions
 						? [
 								toolCalls([
-									{ name: 'return_questions', arguments: { questions } },
+									{
+										name: 'return_questions',
+										arguments: { title: 'Memory paging', questions },
+									},
 								]),
 							]
 						: []),
@@ -70,3 +78,12 @@ describe('extraction runtime', () => {
 		},
 	);
 });
+
+it.each(['', '  ', 'Line one\nLine two', 'x'.repeat(101)])(
+	'rejects unusable extraction titles (%s)',
+	(title) => {
+		expect(() =>
+			parseExtraction({ title, questions: ['Why pages?'] }),
+		).toThrow();
+	},
+);

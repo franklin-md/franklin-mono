@@ -1,11 +1,14 @@
-import { parseDirectives } from '../../../shared/directives/syntax/parse.js';
+import { parseDirectives } from '../../../../shared/directives/syntax/parse.js';
+import type { DirectiveToken } from '../../../../shared/directives/syntax/types.js';
 
-export function draftEnd(id: string): string {
-	return `<!--franklin-quick-edit-end:${id}-->`;
-}
+import { draftEnd } from './end.js';
 
-export function findQuickEditDraft(source: string, id: string) {
-	const matches = parseDirectives(source).filter(
+export function findQuickEditDraft(
+	source: string,
+	id: string,
+	tokens: readonly DirectiveToken[] = parseDirectives(source),
+) {
+	const matches = tokens.filter(
 		(token) => token.name === 'quick-edit' && token.id === id,
 	);
 	if (matches.length !== 1) return undefined;

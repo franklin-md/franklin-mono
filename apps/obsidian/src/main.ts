@@ -70,20 +70,25 @@ export default class FranklinPlugin extends Plugin {
 						franklin: app,
 						registry: directives,
 						diff: this.diffClient,
+					}).catch((error: unknown) => {
+						new Notice(`Quick edit unavailable: ${String(error)}`);
+						return undefined;
 					});
 					if (this.isUnloading()) {
-						await Promise.all([quickEdit.dispose(), disposeInbox()]);
+						await Promise.all([quickEdit?.dispose(), disposeInbox()]);
 						disposeFranklinApp();
 						return;
 					}
 					this.franklinApp = app;
 					this.inbox = inbox;
-					this.quickEditPreferences = quickEdit.preferences;
+					this.quickEditPreferences = quickEdit?.preferences ?? null;
 					this.hostActionBindings = hostActionBindings;
 					this.disposeFranklinApp = () => {
-						void Promise.all([quickEdit.dispose(), disposeInbox()]).finally(
-							disposeFranklinApp,
-						);
+						void Promise.all([quickEdit?.dispose(), disposeInbox()])
+							.catch((error: unknown) => {
+								new Notice(`Franklin shutdown: ${String(error)}`);
+							})
+							.finally(disposeFranklinApp);
 					};
 
 					this.addSettingTab(new FranklinSettingTab(this));

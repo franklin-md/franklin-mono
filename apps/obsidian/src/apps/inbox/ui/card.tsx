@@ -49,12 +49,12 @@ export function QuestionCard({
 			)}
 			onClick={(event) => {
 				// A selection drag must stay a selection, and controls own their clicks.
-				if (hasTextSelection(event.currentTarget)) {
-					if (
-						event.target instanceof Element &&
-						event.target.closest('summary')
-					)
-						event.preventDefault();
+				const summary =
+					event.target instanceof Element
+						? event.target.closest('summary')
+						: null;
+				if (hasTextSelection(summary ?? event.currentTarget, event.detail)) {
+					if (summary) event.preventDefault();
 					return;
 				}
 				if (

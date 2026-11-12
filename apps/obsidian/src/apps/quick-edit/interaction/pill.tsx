@@ -1,72 +1,45 @@
-import { Check, LoaderCircle, Pencil, Square } from 'lucide-react';
+import { LoaderCircle, Square } from 'lucide-react';
 import { Button } from '@franklin/ui';
 import type { QuickEditState } from '../types.js';
+import { DirectivePill } from '../../../shared/directives/render/pill.js';
 
 type Props = {
 	state: QuickEditState;
-	edit: () => void;
-	dismiss: () => void;
+	composing?: boolean;
 	stop: () => void;
 };
 
-export function QuickEditPill({ state, edit, dismiss, stop }: Props) {
+export function QuickEditPill({ state, composing = false, stop }: Props) {
+	if (composing || state.status === 'ready' || state.status === 'done')
+		return null;
 	const running = state.status === 'running';
-	const label =
-		state.status === 'done'
-			? 'Edit complete'
-			: state.status === 'ready'
-				? 'Edit'
-				: state.status === 'running'
-					? 'Editing'
-					: state.status === 'stopped'
-						? 'Stopped'
-						: 'Edit failed';
+	const label = {
+		running: 'Editing',
+		stopped: 'Stopped',
+		failed: 'Edit failed',
+	}[state.status];
 	return (
-		<span
-			className="inline-flex items-center gap-0.5 rounded-full bg-muted px-1 align-baseline text-xs text-muted-foreground ring-1 ring-inset ring-border"
+		<DirectivePill
+			className="franklin-quick-edit-marker bg-primary/20 text-foreground ring-1 ring-inset ring-primary/60"
 			title={state.error || state.prompt || 'Request an edit'}
 		>
 			{running ? (
 				<>
-					<LoaderCircle size={12} className="animate-spin" aria-hidden="true" />
+					<LoaderCircle className="animate-spin" aria-hidden="true" />
 					<span role="status">{label}</span>
 					<Button
 						type="button"
 						variant="ghost"
-						size="sm"
-						className="h-6 w-6 rounded-full p-0"
+						className="size-[1em] min-h-0 shrink-0 p-0 text-[length:inherit] leading-none"
 						aria-label="Stop quick edit"
 						onClick={stop}
 					>
-						<Square size={12} aria-hidden="true" />
+						<Square aria-hidden="true" />
 					</Button>
 				</>
 			) : (
-				<>
-					{state.status !== 'done' && <span className="px-1">{label}</span>}
-					<Button
-						type="button"
-						variant="ghost"
-						size="sm"
-						className="h-6 w-6 rounded-full p-0"
-						aria-label="Dismiss quick edit"
-						title="Dismiss request; changes remain in file review"
-						onClick={dismiss}
-					>
-						<Check size={12} aria-hidden="true" />
-					</Button>
-					<Button
-						type="button"
-						variant="ghost"
-						size="sm"
-						className="h-6 w-6 rounded-full p-0"
-						aria-label="Amend quick edit"
-						onClick={edit}
-					>
-						<Pencil size={12} aria-hidden="true" />
-					</Button>
-				</>
+				<span role="status">{label}</span>
 			)}
-		</span>
+		</DirectivePill>
 	);
 }
