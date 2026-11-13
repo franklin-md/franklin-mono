@@ -15,6 +15,10 @@
 			"types": "./dist/rpc/index.d.ts",
 			"import": "./dist/rpc/index.js"
 		},
+		"./models": {
+			"types": "./dist/models.d.ts",
+			"import": "./dist/models.js"
+		},
 		"./session": {
 			"types": "./dist/session.d.ts",
 			"import": "./dist/session.js"

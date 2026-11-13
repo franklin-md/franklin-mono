@@ -30,8 +30,8 @@ function openAICodexModel({
 	};
 }
 
-// Keep this Franklin-local escape hatch even when empty: it lets us add or
-// correct model metadata without waiting for a new pi-ai package release.
+// These definitions are the reviewed Codex set and override Pi metadata.
+// Adding a definition enables that ID without waiting for a Pi package release.
 const OPENAI_CODEX_MODEL_OVERRIDES = {
 	// Preserve saved sessions and picker entries removed from Pi's newer catalog.
 	// Metadata matches pi-ai 0.75.4; these remain catalog estimates.
@@ -114,6 +114,7 @@ const OPENAI_CODEX_MODEL_OVERRIDES = {
 export function getOpenAICodexModelOverride(
 	modelId: string,
 ): Model<'openai-codex-responses'> | undefined {
+	if (!Object.hasOwn(OPENAI_CODEX_MODEL_OVERRIDES, modelId)) return undefined;
 	return OPENAI_CODEX_MODEL_OVERRIDES[
 		modelId as keyof typeof OPENAI_CODEX_MODEL_OVERRIDES
 	];

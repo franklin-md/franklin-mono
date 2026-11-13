@@ -211,6 +211,13 @@ use the host's harness and `AuthActionProvider`. Override `catalog` and
 `renderProviderAction` on the recipe for another host, or use `() => null` to
 omit authentication controls.
 
+`MODEL_CATALOG` curates IDs, friendly labels, ordering and access groups. Its
+reasoning, context and price estimates come from the same local
+`@franklin/mini-acp/models` resolver used for requests. Unresolved curated entries
+are omitted; saved IDs and caller-supplied catalogs retain their existing behavior.
+A direct data-only import of this catalog now includes Pi's bundled registry;
+the full picker already depends on the SDK.
+
 `ModelSelector` binds the recipe to chat's existing model and thinking hooks.
 Inbox supplies its persisted preferences and all six reasoning levels, and
 queues submissions independently of chat. Standalone `ThinkingControl` and

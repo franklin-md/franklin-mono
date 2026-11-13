@@ -32,6 +32,40 @@ afterEach(() => {
 });
 
 describe('controlled model picker', () => {
+	it('accepts caller-supplied models absent from the request catalog', async () => {
+		const onSelect = vi.fn();
+		render(
+			<ModelPicker
+				provider="private"
+				model="my-model"
+				onSelect={onSelect}
+				catalog={[
+					{
+						provider: 'private',
+						displayName: 'Private models',
+						access: 'api',
+						models: [
+							{
+								id: 'my-model',
+								provider: 'private',
+								name: 'My model',
+								reasoning: false,
+								contextWindow: 8192,
+								costInput: 0,
+								costOutput: 0,
+							},
+						],
+					},
+				]}
+			/>,
+		);
+		expect(screen.getByRole('button').textContent).toBe('My model');
+		fireEvent.click(screen.getByRole('button'));
+		expect(screen.getAllByRole('option')).toHaveLength(1);
+		fireEvent.click(await screen.findByRole('option', { name: 'My model' }));
+		expect(onSelect).toHaveBeenCalledExactlyOnceWith('private', 'my-model');
+	});
+
 	it('can remove inline effort while the picker is open without losing the model list', () => {
 		const props = { provider: 'custom', model: 'saved', onSelect: vi.fn() };
 		const { rerender } = render(

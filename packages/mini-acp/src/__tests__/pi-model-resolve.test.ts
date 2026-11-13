@@ -337,7 +337,7 @@ describe('resolveModel', () => {
 		});
 	}
 
-	it('resolves the OpenAI Codex gpt-5.5 model from pi-ai', () => {
+	it('resolves the OpenAI Codex gpt-5.5 model from local overrides', () => {
 		const result = resolveModel({
 			provider: 'openai-codex',
 			model: 'gpt-5.5',
@@ -361,7 +361,7 @@ describe('resolveModel', () => {
 		});
 	});
 
-	it('resolves the OpenAI Codex gpt-5.4-mini model from pi-ai', () => {
+	it('resolves the OpenAI Codex gpt-5.4-mini model from local overrides', () => {
 		const result = resolveModel({
 			provider: 'openai-codex',
 			model: 'gpt-5.4-mini',
@@ -389,8 +389,11 @@ describe('resolveModel', () => {
 		'gpt-5.6-sol',
 		'gpt-5.3-codex',
 		'gpt-5.3-codex-spark',
+		'constructor',
+		'toString',
+		'__proto__',
 	]) {
-		it(`rejects OpenAI Codex model outside the OAuth allowlist: ${model}`, () => {
+		it(`rejects OpenAI Codex model outside the reviewed OAuth set: ${model}`, () => {
 			const result = resolveModel({
 				provider: 'openai-codex',
 				model,

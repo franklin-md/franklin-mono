@@ -15,6 +15,12 @@ live under `@franklin/mini-acp/session`; protocol logging lives under
 default protocol API. Scripted test helpers live under
 `@franklin/mini-acp/mock`.
 
+`@franklin/mini-acp/models` exposes the built-in Pi backend's `resolveModel`.
+It resolves Franklin overrides before Pi's bundled catalog, without network or
+authentication. The UI uses it for curated picker metadata; it is not a
+provider-discovery protocol. Codex resolution accepts only reviewed local
+definitions, so an upstream catalog addition does not automatically enable it.
+
 At a glance:
 - **Agents have state but there is no session persistence on the agent's side**:
   - Throughout the protocol, the agent's `Context` changes as it keeps track of:

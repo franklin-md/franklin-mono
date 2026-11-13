@@ -1,8 +1,52 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import * as models from '@franklin/mini-acp/models';
 
 import { MODEL_CATALOG } from '../../../../src/conversation/input/models/catalog.js';
 
 describe('MODEL_CATALOG', () => {
+	it.each(MODEL_CATALOG.flatMap((group) => group.models))(
+		'uses request metadata for $provider/$id',
+		(entry) => {
+			const resolved = models.resolveModel({
+				provider: entry.provider,
+				model: entry.id,
+			});
+			expect(resolved.ok).toBe(true);
+			if (!resolved.ok) return;
+			expect(entry).toMatchObject({
+				reasoning: resolved.model.reasoning,
+				contextWindow: resolved.model.contextWindow,
+				costInput: resolved.model.cost.input,
+				costOutput: resolved.model.cost.output,
+			});
+		},
+	);
+
+	it('keeps the remaining choices usable when a curated model disappears', async () => {
+		vi.doMock('@franklin/mini-acp/models', () => ({
+			resolveModel: (config: Parameters<typeof models.resolveModel>[0]) =>
+				models.resolveModel(
+					config.model === 'gpt-6-astra'
+						? { ...config, model: 'missing-model' }
+						: config,
+				),
+		}));
+		vi.resetModules();
+		try {
+			const { MODEL_CATALOG: catalog } =
+				await import('../../../../src/conversation/input/models/catalog.js');
+			expect(catalog[0]?.models.map((entry) => entry.id)).toEqual(
+				MODEL_CATALOG[0]?.models
+					.filter((entry) => entry.id !== 'gpt-6-astra')
+					.map((entry) => entry.id),
+			);
+			expect(catalog.slice(1)).toEqual(MODEL_CATALOG.slice(1));
+		} finally {
+			vi.doUnmock('@franklin/mini-acp/models');
+			vi.resetModules();
+		}
+	});
+
 	it('surfaces supported provider groups in the selector catalog', () => {
 		expect(MODEL_CATALOG.map((group) => group.provider)).toEqual([
 			'openai-codex',
