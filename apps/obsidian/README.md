@@ -52,7 +52,7 @@ Storybook discovers colocated `*.stories.tsx` files recursively.
 
 ## Requirements
 
-- Node 22+
+- Node 22.19+
 - Obsidian desktop if you want to load the plugin inside Obsidian
 
 ## Install Dependencies

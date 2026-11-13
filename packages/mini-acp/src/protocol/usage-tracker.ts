@@ -26,6 +26,16 @@ export const ZERO_USAGE: Usage = Object.freeze({
 // ---------------------------------------------------------------------------
 
 function mergeUsage(a: Usage, b: Usage): Usage {
+	const hasProvenance =
+		a.cost.totalFromProvider !== undefined ||
+		b.cost.totalFromProvider !== undefined;
+	// Empty session seeds must not turn provider-reported totals into estimates.
+	// Any nonempty estimated/legacy contribution makes the combined total estimated.
+	const totalFromProvider =
+		((a.tokens.total === 0 && a.cost.total === 0) ||
+			a.cost.totalFromProvider === true) &&
+		((b.tokens.total === 0 && b.cost.total === 0) ||
+			b.cost.totalFromProvider === true);
 	return {
 		tokens: {
 			input: a.tokens.input + b.tokens.input,
@@ -40,6 +50,7 @@ function mergeUsage(a: Usage, b: Usage): Usage {
 			cacheRead: a.cost.cacheRead + b.cost.cacheRead,
 			cacheWrite: a.cost.cacheWrite + b.cost.cacheWrite,
 			total: a.cost.total + b.cost.total,
+			...(hasProvenance ? { totalFromProvider } : {}),
 		},
 	};
 }

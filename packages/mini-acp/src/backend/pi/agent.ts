@@ -1,4 +1,6 @@
 import { createMemoryStream } from '@franklin/lib/transport';
+import { streamSimple } from '@earendil-works/pi-ai/compat';
+import type { Message as PiMessage } from '@earendil-works/pi-ai';
 import { Agent as PiCoreAgent } from '@earendil-works/pi-agent-core';
 import type {
 	AgentEvent,
@@ -131,14 +133,13 @@ class PiMuAgent implements MuClient {
 					this.preparingContext = false;
 				}
 			},
-			streamFn,
+			streamFn: streamFn ?? streamSimple,
 		});
 	}
 
 	private prepareNextTurn(): AgentLoopTurnUpdate {
 		return {
 			context: {
-				systemPrompt: this.agent.state.systemPrompt,
 				messages: [...this.agent.state.messages],
 				tools: [...this.agent.state.tools],
 			},
@@ -213,12 +214,31 @@ class PiMuAgent implements MuClient {
 		return tools.map((def) => bridgeTool(def, handler));
 	}
 
+	private replaceMessages(
+		messages: PiMessage[],
+		systemPrompt = this.agent.state.systemPrompt,
+	): void {
+		// Pi 1.x stores instructions in the transcript; retain them when Franklin
+		// replaces history during restore or compaction. Mini-ACP keeps them separate.
+		// https://github.com/earendil-works/pi/blob/v1.5.2/packages/agent/src/types.ts
+		this.agent.state.messages = systemPrompt
+			? [
+					{ role: 'system', content: systemPrompt, timestamp: Date.now() },
+					...messages,
+				]
+			: messages;
+	}
+
 	private applyIdleContext(patch: ContextPatch): void {
-		if (patch.systemPrompt !== undefined) {
-			this.agent.state.systemPrompt = patch.systemPrompt;
-		}
-		if (patch.messages !== undefined) {
-			this.agent.state.messages = toPiMessages(patch.messages);
+		if (patch.systemPrompt !== undefined || patch.messages !== undefined) {
+			this.replaceMessages(
+				patch.messages === undefined
+					? this.agent.state.messages.filter(
+							(message) => message.role !== 'system',
+						)
+					: toPiMessages(patch.messages),
+				patch.systemPrompt ?? this.agent.state.systemPrompt,
+			);
 		}
 		if (patch.tools !== undefined) {
 			this.agent.state.tools = this.createPiTools(patch.tools);
@@ -236,7 +256,7 @@ class PiMuAgent implements MuClient {
 			patch.tools === undefined &&
 			patch.config === undefined
 		) {
-			this.agent.state.messages = toPiMessages(patch.messages);
+			this.replaceMessages(toPiMessages(patch.messages));
 			return;
 		}
 		if (!isToolsOnlyPatch(patch)) {

@@ -10,7 +10,7 @@
 		"apps/shared/*"
 	],
 	"engines": {
-		"node": ">=22",
+		"node": ">=22.19.0",
 		"npm": ">=11.10.0"
 	},
 	"scripts": {
@@ -27,7 +27,6 @@
 		"release:obsidian": "node ./scripts/obsidian-release/cli.mjs",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"postinstall": "patch-package",
 		"prepare": "husky"
 	},
 	"devDependencies": {
@@ -41,7 +40,6 @@
 		"eslint-plugin-storybook": "10.3.3",
 		"globals": "17.4.0",
 		"husky": "9.1.7",
-		"patch-package": "8.0.1",
 		"prettier": "3.8.1",
 		"tsx": "4.21.0",
 		"typescript": "5.9.3",
@@ -68,7 +66,7 @@
 	"devEngines": {
 		"runtime": {
 			"name": "node",
-			"version": ">=22",
+			"version": ">=22.19.0",
 			"onFail": "error"
 		},
 		"packageManager": {

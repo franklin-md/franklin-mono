@@ -1,3 +1,4 @@
+import { getCurrentSystemPrompt } from '@earendil-works/pi-ai';
 import { describe, expect, it } from 'vitest';
 import type { Context as PiContext } from '@earendil-works/pi-ai';
 import { createPiTestResponse as response } from '../../../../testing/pi-response.js';
@@ -38,7 +39,9 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 					return response(model, [
 						{
 							type: 'text',
-							text: context.systemPrompt?.startsWith('Summarize')
+							text: getCurrentSystemPrompt(context.messages).startsWith(
+								'Summarize',
+							)
 								? 'Remember the original task.'
 								: 'done',
 						},
@@ -63,7 +66,7 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 			expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
 			expect(
 				requests.filter((request) =>
-					request.systemPrompt?.startsWith('Summarize'),
+					getCurrentSystemPrompt(request.messages).startsWith('Summarize'),
 				),
 			).toHaveLength(5);
 			const main = requests.at(-1)!;
@@ -128,7 +131,9 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 		const connector = createPiTestConnector(
 			{
 				streamFn: (model, context) => {
-					if (context.systemPrompt?.startsWith('Summarize')) {
+					if (
+						getCurrentSystemPrompt(context.messages).startsWith('Summarize')
+					) {
 						summaries += 1;
 						summaryInputs.push(JSON.stringify(context.messages));
 						return response(model, [

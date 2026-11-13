@@ -76,6 +76,17 @@ describe('session codec', () => {
 		});
 	});
 
+	it('preserves provider-reported cost provenance on restore', () => {
+		const value = session();
+		value.core.usage = {
+			...ZERO_USAGE,
+			cost: { ...ZERO_USAGE.cost, total: 0.0142, totalFromProvider: true },
+		};
+		expect(
+			franklinSessionCodec.decode(franklinSessionCodec.encode(value)),
+		).toEqual({ ok: true, value });
+	});
+
 	it('migrates v1 sessions with default visible details', () => {
 		const { details: _details, ...v1 } = session();
 		const { entries, ...core } = v1.core;

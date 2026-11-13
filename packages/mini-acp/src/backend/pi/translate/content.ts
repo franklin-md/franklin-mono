@@ -90,7 +90,7 @@ export function toPiAssistantContent(
 				type: 'toolCall',
 				id: c.id,
 				name: c.name,
-				arguments: c.arguments as Record<string, unknown>,
+				arguments: c.arguments,
 			};
 	}
 }

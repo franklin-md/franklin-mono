@@ -69,4 +69,31 @@ describe('UsageTracker', () => {
 		expect(total.cost.cacheWrite).toBeCloseTo(0.00005, 10);
 		expect(total.cost.total).toBeCloseTo(0.0049, 10);
 	});
+	it('keeps reported totals across multiple calls and zero session seeds', () => {
+		const tracker = new UsageTracker();
+		tracker.add(structuredClone(ZERO_USAGE));
+		const billed = {
+			...ZERO_USAGE,
+			cost: { ...ZERO_USAGE.cost, total: 0.12, totalFromProvider: true },
+		};
+		tracker.add(billed);
+		tracker.add(billed);
+		expect(tracker.get().cost).toMatchObject({
+			total: 0.24,
+			totalFromProvider: true,
+		});
+	});
+
+	it('marks a mixed billed and estimated total as estimated', () => {
+		const tracker = new UsageTracker();
+		tracker.add({
+			...ZERO_USAGE,
+			cost: { ...ZERO_USAGE.cost, total: 0.12, totalFromProvider: true },
+		});
+		tracker.add({ ...ZERO_USAGE, cost: { ...ZERO_USAGE.cost, total: 0.03 } });
+		expect(tracker.get().cost).toMatchObject({
+			total: 0.15,
+			totalFromProvider: false,
+		});
+	});
 });

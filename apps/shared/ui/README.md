@@ -130,6 +130,12 @@ an optional `summaryPrefix`, `current: { id, content }`, `running`, `errors`, `m
 for the expanded details. Keep the current action's ID stable while its content
 streams; change it when a new action starts to trigger the vertical transition.
 
+Completed chat footers show elapsed time and total model cost in USD, including
+model calls made during tool continuations. Provider-reported totals have no
+prefix; catalog estimates use `~`. Hover or focus elapsed time for token counts.
+Unknown pricing shows **Cost unavailable**; an explicitly reported zero remains
+visible as `$0.0000`. Positive costs below the display precision show `<$0.0001`.
+
 ## Outlined controls
 
 `Button`'s `outline` variant uses an inset ring with the existing input token. This keeps the outline visible without changing the control's layout size. Consumers can use the variant directly instead of combining border removal and ring overrides.

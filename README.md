@@ -23,7 +23,7 @@ See [the working inbox guide and architecture](docs/inbox-prototype.md).
 
 ## Development
 
-Requires Node 22+ and npm 11.10+.
+Requires Node 22.19+ and npm 11.10+.
 
 ```bash
 npm run build

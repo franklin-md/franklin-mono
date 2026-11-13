@@ -150,6 +150,30 @@ describe('TurnFooter', () => {
 		expect(writeText).toHaveBeenLastCalledWith('reply last');
 	});
 
+	it.each([
+		[0.0142, true, '$0.0142'],
+		[0.0142, false, '~$0.0142'],
+		[0, true, '$0.0000'],
+		[0, undefined, 'Cost unavailable'],
+		[0.000001, true, '<$0.0001'],
+	] as const)(
+		'shows cost %s with provenance %s as %s',
+		(total, totalFromProvider, label) => {
+			const turn = finishedTurn('last', 12_000);
+			const end = turn.response.blocks.find(
+				(block) => block.kind === 'turnEnd',
+			);
+			if (!end?.usage) throw new Error('Expected usage');
+			Object.assign(end.usage.cost, { total, totalFromProvider });
+			render(
+				<MockAgentsDecorator activeSessionId="active-session">
+					<ConversationView turns={[turn]} />
+				</MockAgentsDecorator>,
+			);
+			expect(screen.getByText(label)).toBeTruthy();
+		},
+	);
+
 	it('opens a details tooltip on focus and shows token usage', () => {
 		render(
 			<MockAgentsDecorator activeSessionId="active-session">
@@ -178,7 +202,7 @@ describe('TurnFooter', () => {
 		fireEvent.focus(trigger);
 
 		const tooltip = screen.getByRole('tooltip');
-		expect(within(tooltip).getByText('Usage details unavailble')).toBeTruthy();
+		expect(within(tooltip).getByText('Usage details unavailable')).toBeTruthy();
 		expect(within(tooltip).queryByText('Input')).toBeNull();
 	});
 });

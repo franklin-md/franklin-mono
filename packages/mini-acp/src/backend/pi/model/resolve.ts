@@ -1,9 +1,8 @@
 import {
-	getModels,
-	getProviders,
-	type KnownProvider,
-	type Model,
-} from '@earendil-works/pi-ai';
+	getBuiltinModels,
+	getBuiltinProviders,
+} from '@earendil-works/pi-ai/providers/all';
+import type { KnownProvider, Model } from '@earendil-works/pi-ai';
 
 import type { LLMConfig } from '../../../types/context.js';
 import { StopCode } from '../../../types/stop-code.js';
@@ -21,7 +20,7 @@ function fail(stopCode: StopCode, stopMessage: string): ResolveFailure {
 }
 
 function isKnownProvider(provider: string): provider is KnownProvider {
-	return getProviders().includes(provider as KnownProvider);
+	return getBuiltinProviders().includes(provider as KnownProvider);
 }
 
 function findModel(
@@ -37,7 +36,9 @@ function findModel(
 		return override;
 	}
 
-	return getModels(provider).find((candidate) => candidate.id === modelId);
+	return getBuiltinModels(provider).find(
+		(candidate) => candidate.id === modelId,
+	);
 }
 
 export function resolveModel(config: LLMConfig): ResolveResult {

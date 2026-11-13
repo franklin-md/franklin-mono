@@ -131,11 +131,11 @@ describe('createPiAgent', () => {
 			streamFn,
 		});
 		expect(agentInstances[0]?.state).toMatchObject({
-			systemPrompt: 'system prompt',
 			model: expect.objectContaining({ id: 'gpt-5.4' }),
 			thinkingLevel: 'off',
 			tools: [expect.objectContaining({ name: 'echo' })],
 			messages: [
+				expect.objectContaining({ role: 'system', content: 'system prompt' }),
 				expect.objectContaining({
 					role: 'user',
 					content: [{ type: 'text', text: 'seed' }],

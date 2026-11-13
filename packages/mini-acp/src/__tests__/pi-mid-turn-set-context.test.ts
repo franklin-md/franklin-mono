@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
 	createAssistantMessageEventStream,
+	getCurrentTools,
+	getCurrentSystemPrompt,
 	type AssistantMessage,
 	type Message as PiMessage,
 	type Model,
@@ -50,7 +52,10 @@ function assistantMessage(
 		api: model.api,
 		provider: model.provider,
 		model: model.id,
-		usage: ZERO_PI_USAGE,
+		usage: {
+			...ZERO_PI_USAGE,
+			cost: { ...ZERO_PI_USAGE.cost, total: 0.01, totalFromProvider: true },
+		},
 		stopReason,
 		timestamp: Date.now(),
 	};
@@ -99,7 +104,9 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 		const toolsSeenByLlm: string[][] = [];
 
 		const streamFn: StreamFn = (model, context) => {
-			const toolNames = (context.tools ?? []).map((tool) => tool.name);
+			const toolNames = getCurrentTools(context.messages).map(
+				(tool) => tool.name,
+			);
 			toolsSeenByLlm.push(toolNames);
 
 			if (toolsSeenByLlm.length === 1) {
@@ -178,6 +185,8 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 			content: [{ type: 'text', text: 'retrieved $100 from the vault' }],
 		});
 		expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
+		expect(result.turnEnd?.usage?.cost.total).toBeCloseTo(0.03);
+		expect(result.turnEnd?.usage?.cost.totalFromProvider).toBe(true);
 	});
 
 	it('rejects non-tool context changes during an active Mini-ACP prompt', async () => {
@@ -196,8 +205,8 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 			observations.push({
 				model: model.id,
 				reasoning: options?.reasoning,
-				systemPrompt: context.systemPrompt,
-				toolNames: (context.tools ?? []).map((tool) => tool.name),
+				systemPrompt: getCurrentSystemPrompt(context.messages),
+				toolNames: getCurrentTools(context.messages).map((tool) => tool.name),
 				userTexts: piUserTexts(context.messages),
 			});
 

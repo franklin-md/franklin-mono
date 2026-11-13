@@ -1,7 +1,6 @@
 import type { StreamFn } from '@earendil-works/pi-agent-core';
 import type { SimpleStreamOptions } from '@earendil-works/pi-ai';
-import { streamSimple } from '@earendil-works/pi-ai';
-import { streamSimpleOpenAICompletions } from '@earendil-works/pi-ai/openai-completions';
+import { streamSimple } from '@earendil-works/pi-ai/compat';
 
 type PiStreamOptions = {
 	fetch: typeof globalThis.fetch;
@@ -26,14 +25,6 @@ export function createPiStreamFn(options: PiStreamOptions): StreamFn {
 					}
 				: baseOptions;
 
-		if (model.api !== 'openai-completions') {
-			return streamSimple(model, context, resolvedOptions);
-		}
-
-		return streamSimpleOpenAICompletions(
-			model as Parameters<typeof streamSimpleOpenAICompletions>[0],
-			context,
-			resolvedOptions,
-		);
+		return streamSimple(model, context, resolvedOptions);
 	};
 }

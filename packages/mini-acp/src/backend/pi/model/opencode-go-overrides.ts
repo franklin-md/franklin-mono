@@ -36,7 +36,7 @@ function openCodeGoCompatibility(
 				sendSessionAffinityHeaders: true,
 			};
 		case 'openai-responses':
-			return { sendSessionIdHeader: true };
+			return { sessionAffinityFormat: 'openai' };
 	}
 }
 
