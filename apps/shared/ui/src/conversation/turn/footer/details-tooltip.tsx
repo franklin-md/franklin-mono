@@ -65,7 +65,6 @@ export function TurnDetailsTooltip({ turn }: TurnDetailsTooltipProps) {
 					</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
-			<span aria-hidden>·</span>
 			<TurnCost usage={usage} />
 		</div>
 	);

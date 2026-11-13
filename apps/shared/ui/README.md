@@ -130,11 +130,12 @@ an optional `summaryPrefix`, `current: { id, content }`, `running`, `errors`, `m
 for the expanded details. Keep the current action's ID stable while its content
 streams; change it when a new action starts to trigger the vertical transition.
 
-Completed chat footers show elapsed time and total model cost in USD, including
-model calls made during tool continuations. Provider-reported totals have no
-prefix; catalog estimates use `~`. Hover or focus elapsed time for token counts.
-Unknown pricing shows **Cost unavailable**; an explicitly reported zero remains
-visible as `$0.0000`. Positive costs below the display precision show `<$0.0001`.
+Completed chat footers show elapsed time and total model cost in US cents,
+including model calls made during tool continuations. Costs use at most one
+decimal place (for example, `1.4¢` or `2¢`); values below 0.1 cents, including an
+explicitly reported zero, show `<0.1¢`. Provider-reported totals have no prefix;
+catalog estimates use `~`. Unknown costs and their separator are hidden.
+Hover or focus elapsed time for token counts.
 
 ## Outlined controls
 

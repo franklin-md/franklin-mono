@@ -4,6 +4,10 @@ interface TurnCostProps {
 	usage: Usage | undefined;
 }
 
+const centsFormatter = new Intl.NumberFormat('en-US', {
+	maximumFractionDigits: 1,
+});
+
 export function TurnCost({ usage }: TurnCostProps) {
 	const cost = usage?.cost;
 	if (
@@ -12,21 +16,22 @@ export function TurnCost({ usage }: TurnCostProps) {
 		cost.total < 0 ||
 		(cost.total === 0 && !cost.totalFromProvider)
 	) {
-		return <span>Cost unavailable</span>;
+		return null;
 	}
-	const amount =
-		cost.total > 0 && cost.total < 0.0001
-			? '<$0.0001'
-			: `$${cost.total.toFixed(4)}`;
+	const cents = cost.total * 100;
+	const amount = cents < 0.1 ? '<0.1¢' : `${centsFormatter.format(cents)}¢`;
 	return (
-		<span
-			title={
-				cost.totalFromProvider
-					? 'Provider-reported cost (USD)'
-					: 'Estimated cost (USD)'
-			}
-		>
-			{cost.totalFromProvider ? amount : `~${amount}`}
-		</span>
+		<>
+			<span aria-hidden>·</span>
+			<span
+				title={
+					cost.totalFromProvider
+						? 'Provider-reported cost (US cents)'
+						: 'Estimated cost (US cents)'
+				}
+			>
+				{cost.totalFromProvider ? amount : `~${amount}`}
+			</span>
+		</>
 	);
 }
