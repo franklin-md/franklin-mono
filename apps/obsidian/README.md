@@ -137,8 +137,11 @@ chat or Inbox opens Connections.
 Run **Franklin: Quick edit** in Live Preview to type a request at the cursor with a
 highlighted background. Enter runs it, Shift+Enter adds a newline, and Escape
 cancels. The agent reads the note and uses the normal edit tools; cursor location
-and selection guide the work without fixing its edit range. Completed requests
-leave dismiss/amend controls, while changes use file-level review. Configure its
+and selection guide the work without fixing its edit range. Successful completion
+removes the directive and ends the request, while content changes use file-level
+review. Undo-restored completed directives stay inactive; later edits start a new
+request. Failed or stopped requests retain recovery, with their saved explanation
+available on hover and keyboard focus. Configure its
 model, reasoning, editing instructions and shortcut in **General → Quick edit**.
 See [interaction, persistence and execution details](src/apps/quick-edit/README.md).
 

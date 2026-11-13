@@ -25,10 +25,7 @@ describe('quick edit preferences', () => {
 		const storage = createSingleFilePersister(fs, path, quickEditSettingsCodec);
 		const settings = await QuickEditPreferences.create(storage, defaults);
 		expect(settings.state.get().presets.map((preset) => preset.name)).toEqual([
-			'Expand',
-			'Add example',
-			'Condense',
-			'Outline',
+			'Link',
 		]);
 		const presets = [
 			{
@@ -65,7 +62,7 @@ describe('quick edit preferences', () => {
 		await settings.configure({ model: 'second' });
 		expect(
 			JSON.parse(new TextDecoder().decode(await fs.readFile(path))),
-		).toEqual({ version: 2, data: { ...current, model: 'second' } });
+		).toEqual({ version: 3, data: { ...current, model: 'second' } });
 	});
 	it('persists independent model, reasoning and instruction settings across reloads', async () => {
 		const storage = createSingleFilePersister(

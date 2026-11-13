@@ -21,6 +21,7 @@ export type QuickEditSettings = {
 };
 
 export type QuickEditRequest = {
+	directive: string;
 	state: QuickEditState;
 	settings: QuickEditSettings;
 	signal: AbortSignal;

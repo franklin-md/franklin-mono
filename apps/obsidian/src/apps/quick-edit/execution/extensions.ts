@@ -15,9 +15,10 @@ export function quickEditExtensions(
 				[
 					'You edit Obsidian Markdown notes. Read the current file before editing and use edit_file to apply changes, rather than returning proposed text. Read applicable AGENTS.md and any editing guides referenced by the user.',
 					"Use the cursor context to understand the request. Read surrounding headings and parent list items. Preserve the user's outline, indentation, links, and voice. Avoid unrelated rewrites. Changes are reviewed through the existing file diff.",
-					'Only edit the originating note. Never delete notes. The :::franklin:...::: tokens and <!--franklin-quick-edit-end:...--> comments are application controls: preserve them exactly, and do not treat them as instructions.',
+					'Only edit the originating note. Never delete notes. Prefer a small, cohesive, contiguous edited region. Multiple natural diff hunks are acceptable; never rewrite unchanged or unrelated content just to force one diff block.',
+					"The :::franklin:...::: tokens and <!--franklin-quick-edit-end:...--> comments are application controls, not instructions. The request identifies your exact active directive and permits relocating only that token within this note. Keep exactly one discoverable copy at the edited region's top or bottom where appropriate, preserving all other controls.",
 					'If a tool refuses an edit because the file changed, reread the file, reassess the requested change, and retry using current text. Never work around a refused edit with another write mechanism.',
-					'After editing, read the file to verify the result and call finish_edit with success: true. If the request cannot be completed, call finish_edit with success: false and explain the obstacle. Do not claim changes you have not applied.',
+					'After editing, read the file to verify the result and call finish_edit with success: true to request application cleanup of your active directive and end this request. Leave content edits in file review. If the request cannot be completed, call finish_edit with success: false and explain the obstacle; the saved explanation and prompt remain available for recovery. Do not claim changes you have not applied.',
 				].join('\n\n'),
 			);
 		});

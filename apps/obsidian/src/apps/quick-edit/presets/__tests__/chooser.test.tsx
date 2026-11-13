@@ -70,10 +70,10 @@ it('keeps the opening selection and resolved prompt, runs once and returns focus
 	h.cm.dispatch({ selection: { anchor: h.cm.state.doc.length } });
 	await act(async () => chooser.open(h.editor, h.info));
 	expect(screen.getAllByRole('dialog')).toHaveLength(1);
-	const expand = screen.getByRole('button', { name: 'Expand' });
+	const link = screen.getByRole('button', { name: 'Link' });
 	await act(async () => {
-		fireEvent.click(expand);
-		fireEvent.click(expand);
+		fireEvent.click(link);
+		fireEvent.click(link);
 	});
 	await vi.waitFor(() => expect(h.run).toHaveBeenCalledOnce());
 	expect(h.run.mock.calls[0]?.[0].state).toMatchObject({
@@ -83,10 +83,24 @@ it('keeps the opening selection and resolved prompt, runs once and returns focus
 	await vi.waitFor(() => expect(h.disk).toBe('selected passage\nother row'));
 	expect(screen.queryByRole('dialog')).toBeNull();
 });
+it('passes the current row to Link without replacing note content', async () => {
+	h.cm.dispatch({ selection: { anchor: h.cm.state.doc.length } });
+	await act(async () => chooser.open(h.editor, h.info));
+	await act(async () =>
+		fireEvent.click(screen.getByRole('button', { name: 'Link' })),
+	);
+	await vi.waitFor(() => expect(h.run).toHaveBeenCalledOnce());
+	expect(h.run.mock.calls[0]?.[0].state).toMatchObject({
+		line: 1,
+		selection: 'other row',
+		prompt: createDefaultPresets()[0]?.prompt,
+	});
+	await vi.waitFor(() => expect(h.disk).toBe('selected passage\nother row'));
+});
 it('cancels without running and invalidates captures when the note changes', async () => {
 	await act(async () => chooser.open(h.editor, h.info));
 	await act(async () =>
-		fireEvent.keyDown(screen.getByRole('button', { name: 'Expand' }), {
+		fireEvent.keyDown(screen.getByRole('button', { name: 'Link' }), {
 			key: 'Escape',
 		}),
 	);

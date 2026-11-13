@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
+import postcss from 'postcss';
+import type { Declaration } from 'postcss';
 import { describe, expect, it, beforeAll } from 'vitest';
 
 const root = resolve(import.meta.dirname, '../..');
@@ -26,6 +28,17 @@ function buildBundle(args: string[] = []): BundleOutput {
 		hasMain: existsSync(resolve(dist, 'main.js')),
 		hasManifest: existsSync(resolve(dist, 'manifest.json')),
 	};
+}
+
+function readDeclaration(css: string, selector: string, property: string) {
+	let found: Declaration | undefined;
+	postcss.parse(css).walkRules(selector, (rule) => {
+		rule.walkDecls(property, (declaration) => {
+			found = declaration;
+		});
+	});
+	if (!found) throw new Error(`Missing ${property} in ${selector}`);
+	return found;
 }
 
 describe('obsidian bundle', () => {
@@ -65,6 +78,55 @@ describe('obsidian bundle', () => {
 		// The PostCSS prefix plugin wraps selectors with .franklin
 		expect(devBundle.css).toContain('.franklin');
 	});
+
+	it.each(['dev', 'prod'] as const)(
+		'%s styles retain Franklin transitions and reduced-motion overrides under host suppression',
+		(mode) => {
+			const { css } = mode === 'dev' ? devBundle : prodBundle;
+			for (const [selector, property] of [
+				['.franklin .transition-\\[max-height\\]', 'transition-property'],
+				['.franklin .duration-200', 'transition-duration'],
+				['.franklin .ease-out', 'transition-timing-function'],
+				['.franklin .motion-reduce\\:transition-none', 'transition-property'],
+			] as const) {
+				expect(readDeclaration(css, selector, property).important).toBe(true);
+			}
+			expect(
+				readDeclaration(
+					css,
+					'.franklin .transition-\\[max-height\\]',
+					'transition-property',
+				).value,
+			).toBe('max-height');
+			expect(
+				parseFloat(
+					readDeclaration(css, '.franklin .duration-200', 'transition-duration')
+						.value,
+				) * 1000,
+			).toBe(200);
+			expect(
+				readDeclaration(
+					css,
+					'.franklin .motion-reduce\\:transition-none',
+					'transition-property',
+				).value,
+			).toBe('none');
+		},
+	);
+
+	it.each(['dev', 'prod'] as const)(
+		'%s styles leave global editor transitions and non-transition properties unchanged',
+		(mode) => {
+			const { css } = mode === 'dev' ? devBundle : prodBundle;
+			expect(
+				readDeclaration(css, '.diff-plugin-header-btn', 'transition').important,
+			).toBeFalsy();
+			expect(
+				readDeclaration(css, '.franklin .max-h-\\[3lh\\]', 'max-height')
+					.important,
+			).toBeFalsy();
+		},
+	);
 
 	it('leaves diff editor selectors unscoped so they apply in Markdown views', () => {
 		expect(devBundle.js).toContain('".diff-plugin-added-line"');

@@ -66,6 +66,10 @@ export function filterQuickEditTransaction(
 				(candidate && from < candidate.to && to > candidate.promptTo),
 		);
 		if (!removesControl) continue;
+		// Submitted controls can move in an agent write or disappear in file
+		// review. Only keyboard deletion owns their atomic UI removal; rewriting
+		// a whole incoming transaction as token deletion drops its content edits.
+		if (!candidate && !transaction.isUserEvent('delete')) continue;
 		const instance = definition.get(token.id);
 		const change =
 			(instance ? cancelQuickEdit(state, instance) : null) ??

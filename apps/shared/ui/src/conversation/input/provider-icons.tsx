@@ -20,7 +20,7 @@ const MODEL_ICON_PREFIXES: {
 	prefixes: readonly string[];
 	Icon: IconComponent;
 }[] = [
-	{ prefixes: ['claude-'], Icon: Icons.Claude },
+	{ prefixes: ['claude-', 'anthropic/claude-'], Icon: Icons.Claude },
 	{ prefixes: ['gpt-'], Icon: Icons.OpenAI },
 	{ prefixes: ['deepseek/', 'deepseek-'], Icon: Icons.DeepSeek },
 	{ prefixes: ['z-ai/', 'glm-'], Icon: Icons.ZAI },

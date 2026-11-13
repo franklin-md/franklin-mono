@@ -13,6 +13,7 @@ import { configureFilesystem } from '@franklin/agent';
 import type { QuickEditRequest } from '../../types.js';
 
 const request = (): QuickEditRequest => ({
+	directive: ':::franklin:quick-edit:11111111-1111-4111-8111-111111111111:::',
 	state: {
 		path: 'Note.md',
 		line: 0,
@@ -33,6 +34,9 @@ const request = (): QuickEditRequest => ({
 
 describe('quick edit agent', () => {
 	it('uses real read/edit tools to edit below the cursor, verifies and disposes', async () => {
+		const input = request();
+		const before = `- parent\n  - existing\n${input.directive}`;
+		const after = `${input.directive}\n- parent\n  - existing\n  - added`;
 		const mock = createMockMiniACP({
 			defaultTurn: [
 				toolCalls([{ name: 'read_file', arguments: { path: 'Note.md' } }]),
@@ -41,8 +45,8 @@ describe('quick edit agent', () => {
 						name: 'edit_file',
 						arguments: {
 							path: 'Note.md',
-							old_text: '  - existing',
-							new_text: '  - existing\n  - added',
+							old_text: before,
+							new_text: after,
 						},
 					},
 				]),
@@ -60,14 +64,14 @@ describe('quick edit agent', () => {
 		await h.filesystem.mkdir(toAbsolutePath('/vault'), { recursive: true });
 		await h.filesystem.writeFile(
 			toAbsolutePath('/vault/Note.md'),
-			'# Heading\n- parent\n  - existing',
+			'# Heading\n' + before,
 		);
-		await createQuickEditRunner(h.app, h.franklin)(request());
+		await createQuickEditRunner(h.app, h.franklin)(input);
 		expect(
 			new TextDecoder().decode(
 				await h.filesystem.readFile(toAbsolutePath('/vault/Note.md')),
 			),
-		).toBe('# Heading\n- parent\n  - existing\n  - added');
+		).toBe('# Heading\n' + after);
 		expect(mock.calls().toolResults.every((result) => !result.isError)).toBe(
 			true,
 		);
@@ -77,6 +81,17 @@ describe('quick edit agent', () => {
 		expect(JSON.stringify(mock.calls().prompts)).toContain(
 			'Keep my nested outline.',
 		);
+		expect(JSON.stringify(mock.calls().prompts)).toContain(input.directive);
+		expect(mock.context().systemPrompt).toContain(
+			'Multiple natural diff hunks',
+		);
+		expect(mock.context().systemPrompt).toContain(
+			'permits relocating only that token',
+		);
+		expect(
+			mock.context().tools.find((tool) => tool.name === 'finish_edit')
+				?.description,
+		).toContain('explicitly requests application deletion');
 		expect(h.dispose).toHaveBeenCalledOnce();
 	});
 

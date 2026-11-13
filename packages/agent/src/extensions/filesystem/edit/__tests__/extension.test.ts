@@ -10,6 +10,7 @@ import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import { fileKey } from '../../common/key.js';
 import { editExtension } from '../extension.js';
+import { readExtension } from '../../read/extension.js';
 
 function mockEnvironment(
 	files: Record<string, string> = {},
@@ -62,15 +63,26 @@ function compileEdit(env: ReconfigurableEnvironment) {
 	return compileCoreWithStoreAndEnv(editExtension(), env);
 }
 
+function compileReadAndEdit(env: ReconfigurableEnvironment) {
+	return compileCoreWithStoreAndEnv((api) => {
+		editExtension()(api);
+		readExtension()(api);
+	}, env);
+}
+
 type Compiled = Awaited<ReturnType<typeof compileEdit>>;
 
-async function executeTool(compiled: Compiled, args: JsonObject) {
+async function executeTool(
+	compiled: Compiled,
+	args: JsonObject,
+	name = 'edit_file',
+) {
 	return compiled.middleware.server.toolExecute(
 		{
 			call: {
 				type: 'toolCall',
 				id: 'c1',
-				name: 'edit_file',
+				name,
 				arguments: args,
 			},
 		},
@@ -97,6 +109,248 @@ function getResultText(result: {
 }
 
 describe('editExtension', () => {
+	it.each<[string, string, string, string, string | RegExp, boolean?]>([
+		[
+			'preserves unrelated typing at the same target line numbers',
+			'above\ntarget\nbelow',
+			'user above\ntarget\nuser below',
+			'target',
+			'user above\nreplacement\nuser below',
+		],
+		[
+			'preserves added lines below the target',
+			'above\ntarget\nbelow',
+			'above\ntarget\nadded\nbelow',
+			'target',
+			'above\nreplacement\nadded\nbelow',
+		],
+		[
+			'uses the saved target when another occurrence appears elsewhere',
+			'above\ntarget\nbelow',
+			'above\ntarget\ntarget',
+			'target',
+			'above\nreplacement\ntarget',
+		],
+		[
+			'handles multiline matches and earlier line-length changes',
+			'a\npre target\nnext tail\nz',
+			'longer a\npre target\nnext tail\nuser z',
+			'target\nnext',
+			'longer a\npre replacement tail\nuser z',
+		],
+		[
+			'excludes the next line when a match ends at a newline',
+			'a\ntarget\nb',
+			'longer a\ntarget\nuser b',
+			'target\n',
+			'longer a\nreplacementuser b',
+		],
+		[
+			'includes the previous line when a match starts at its newline',
+			'a\npre\ntarget\nb',
+			'longer a\npre\ntarget\nuser b',
+			'\ntarget',
+			'longer a\nprereplacement\nuser b',
+		],
+		[
+			'preserves BOM and CRLF after unrelated typing',
+			'\uFEFFa\r\ntarget\r\nb',
+			'\uFEFFlonger a\r\ntarget\r\nuser b',
+			'target\r\n',
+			'\uFEFFlonger a\r\nreplacementuser b',
+		],
+		[
+			'preserves unrelated mixed line endings in the current document',
+			'a\r\ntarget\r\nb',
+			'a\r\ntarget\r\nuser\nb',
+			'target',
+			'a\r\nreplacement\r\nuser\nb',
+		],
+		[
+			'counts empty lines above the target',
+			'a\n\ntarget\nb',
+			'longer a\n\ntarget\nuser b',
+			'target',
+			'longer a\n\nreplacement\nuser b',
+		],
+		[
+			'guards the whole target line when old_text still matches',
+			'a\npre target tail\nb',
+			'a\npre target USER\nb',
+			'target',
+			/Reread/,
+		],
+		[
+			'rejects changed target text',
+			'a\ntarget\nb',
+			'a\nuser target\nb',
+			'target',
+			/Reread/,
+		],
+		[
+			'guards the full last line of a multiline match',
+			'a\npre target\nnext tail\nz',
+			'a\npre target\nnext USER\nz',
+			'target\nnext',
+			/Reread/,
+		],
+		[
+			'rejects inserted lines above instead of remapping',
+			'a\ntarget\nb',
+			'added\na\ntarget\nb',
+			'target',
+			/Reread/,
+		],
+		[
+			'rejects deleted lines above instead of remapping',
+			'a\ntarget\nb',
+			'target\nb',
+			'target',
+			/Reread/,
+		],
+		[
+			'rejects a lookalike elsewhere after target deletion',
+			'a\ntarget\nb',
+			'a\nremoved\ntarget',
+			'target',
+			/Reread/,
+		],
+		[
+			'requires old_text to be unique in the snapshot',
+			'target\ntarget\nb',
+			'changed\ntarget\nb',
+			'target',
+			/unique/,
+		],
+		[
+			'requires old_text to exist in the snapshot',
+			'a\noriginal\nb',
+			'a\ntarget\nb',
+			'target',
+			/Could not find/,
+		],
+		[
+			'rejects stale fuzzy edits',
+			'a\nit\u2019s here\nb',
+			'user a\nit\u2019s here\nb',
+			"it's here",
+			/Reread/,
+		],
+		[
+			'rejects stale replace_all',
+			'a\ntarget\nb',
+			'user a\ntarget\nb',
+			'target',
+			/Reread/,
+			true,
+		],
+		[
+			'keeps unsupported reads hash-only',
+			'%PDF-1.7\ntarget\nb',
+			'%PDF-1.7\ntarget\nuser b',
+			'target',
+			/without a text snapshot/,
+		],
+		[
+			'keeps NUL-containing reads hash-only',
+			'a\0\ntarget\nb',
+			'a\0\ntarget\nuser b',
+			'target',
+			/without a text snapshot/,
+		],
+		[
+			'guards an unterminated target line',
+			'a\ntarget',
+			'a\ntarget user',
+			'target',
+			/Reread/,
+		],
+	])(
+		'%s',
+		async (_name, snapshot, current, old_text, expected, replace_all) => {
+			const env = mockEnvironment({ 'test.txt': snapshot });
+			const compiled = await compileReadAndEdit(env);
+			await executeTool(compiled, { path: 'test.txt' }, 'read_file');
+			await env.filesystem.writeFile('test.txt' as AbsolutePath, current);
+			vi.mocked(env.filesystem.writeFile).mockClear();
+
+			const result = await executeTool(compiled, {
+				path: 'test.txt',
+				old_text,
+				new_text: 'replacement',
+				...(replace_all ? { replace_all } : {}),
+			});
+
+			expect(result.isError).toBe(
+				typeof expected === 'string' ? undefined : true,
+			);
+			expect(getResultText(result)).toMatch(
+				typeof expected === 'string' ? /Successfully edited/ : expected,
+			);
+			expect(env.filesystem.writeFile).toHaveBeenCalledTimes(
+				typeof expected === 'string' ? 1 : 0,
+			);
+			expect(
+				new TextDecoder('utf-8', { ignoreBOM: true }).decode(
+					await env.filesystem.readFile('test.txt' as AbsolutePath),
+				),
+			).toBe(typeof expected === 'string' ? expected : current);
+		},
+	);
+
+	it('refreshes the snapshot after each edit, including its new line numbers', async () => {
+		const env = mockEnvironment({ 'test.txt': 'above\ntarget\nbelow' });
+		const compiled = await compileReadAndEdit(env);
+		const read = await executeTool(
+			compiled,
+			{ path: 'test.txt', offset: 2, limit: 1 },
+			'read_file',
+		);
+		expect(getResultText(read)).toBe('target');
+		await env.filesystem.writeFile(
+			'test.txt' as AbsolutePath,
+			'user above\ntarget\nbelow',
+		);
+		const first = await executeTool(compiled, {
+			path: 'test.txt',
+			old_text: 'target',
+			new_text: 'first\nsecond',
+		});
+		expect(first.isError).toBeUndefined();
+		await env.filesystem.writeFile(
+			'test.txt' as AbsolutePath,
+			'user above\nfirst\nsecond\nuser below',
+		);
+		const second = await executeTool(compiled, {
+			path: 'test.txt',
+			old_text: 'second',
+			new_text: 'final',
+		});
+		expect(second.isError).toBeUndefined();
+		expect(
+			new TextDecoder().decode(
+				await env.filesystem.readFile('test.txt' as AbsolutePath),
+			),
+		).toBe('user above\nfirst\nfinal\nuser below');
+	});
+
+	it.each([false, true])(
+		'requires a reread with a changed hash-only record: %s',
+		async (legacy) => {
+			const env = mockEnvironment({ 'test.txt': 'user above\ntarget' });
+			const compiled = await compileEdit(env);
+			if (legacy) simulateRead(compiled, 'test.txt', 'above\ntarget');
+			const result = await executeTool(compiled, {
+				path: 'test.txt',
+				old_text: 'target',
+				new_text: 'replacement',
+			});
+			expect(result.isError).toBe(true);
+			expect(getResultText(result)).toMatch(legacy ? /Reread/ : /never read/);
+			expect(env.filesystem.writeFile).not.toHaveBeenCalled();
+		},
+	);
+
 	it('registers the edit_file tool', async () => {
 		const env = mockEnvironment();
 		const compiled = await compileEdit(env);
@@ -105,7 +359,7 @@ describe('editExtension', () => {
 		expect(compiled.tools[0]!.name).toBe('edit_file');
 	});
 
-	it('performs a successful edit', async () => {
+	it('accepts an unchanged hash-only record from an older session', async () => {
 		const env = mockEnvironment({
 			'test.txt': 'hello world',
 		});

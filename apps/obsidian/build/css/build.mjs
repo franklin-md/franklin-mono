@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import postcss from 'postcss';
 import tailwindcss from '@tailwindcss/postcss';
 import { franklinPrefix } from './prefix.mjs';
+import { franklinTransitions } from './transitions.mjs';
 
 /**
  * Creates a CSS builder (PostCSS + Tailwind). Returns `{ build, watch }`.
@@ -15,6 +16,7 @@ export function createCssBuilder({ srcDir, distDir, isWatch, isProd }) {
 	const processor = postcss([
 		tailwindcss({ optimize: isProd || !isWatch }),
 		franklinPrefix(),
+		franklinTransitions(),
 	]);
 
 	async function build() {

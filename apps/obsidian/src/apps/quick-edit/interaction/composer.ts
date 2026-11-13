@@ -9,6 +9,7 @@ import { parseDirectives } from '../../../shared/directives/syntax/parse.js';
 import { findDirectiveRanges } from '../../../shared/directives/scribe/find.js';
 import type { QuickEditState } from '../types.js';
 import type { QuickEditController } from '../execution/controller.js';
+import { assertUnfinishedQuickEdit } from '../execution/unfinished.js';
 import { quickEditError } from '../error.js';
 import { quickEditChange } from './change.js';
 import { cancelQuickEdit } from './cancel.js';
@@ -112,6 +113,7 @@ export class QuickEditInteraction {
 		this.assertIdle();
 		const instance = this.options.definition.get(id);
 		if (!instance) throw new Error('Quick edit no longer exists');
+		assertUnfinishedQuickEdit(instance.state.get());
 		const { app } = this.options;
 		const path = instance.state.get().path;
 		const file = app.vault.getFileByPath(path);
@@ -129,7 +131,7 @@ export class QuickEditInteraction {
 		}
 		if (!note)
 			throw new Error(
-				'Open the original note in Live Preview to amend this request',
+				'Open the original note in Live Preview to retry this request',
 			);
 		const view = quickEditView(note.editor);
 		if (!view?.state.field(editorLivePreviewField, false))
@@ -143,7 +145,7 @@ export class QuickEditInteraction {
 		const token = tokens[0];
 		if (tokens.length !== 1 || !token)
 			throw new Error(
-				'Remove copied directives from the original note before amending',
+				'Remove copied directives from the original note before retrying',
 			);
 		const draft = findQuickEditDraft(source, id);
 		const original = view.state.selection.main;
@@ -210,6 +212,7 @@ export class QuickEditInteraction {
 		if (!prompt) return;
 		const instance = this.options.definition.get(composer.id);
 		if (!instance) throw new Error('Quick edit no longer exists');
+		assertUnfinishedQuickEdit(instance.state.get());
 		const line = view.state.doc.lineAt(draft.from).number - 1;
 		this.submitting = true;
 		view.dispatch({

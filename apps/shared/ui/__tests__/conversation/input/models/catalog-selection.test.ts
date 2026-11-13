@@ -54,6 +54,8 @@ it('preserves all reviewed choices, labels, order and access groups', () => {
 			displayName: 'OpenRouter',
 			access: 'api',
 			models: [
+				['anthropic/claude-fable-5.2', 'Claude Fable 5.2'],
+				['anthropic/claude-opus-5.5', 'Claude Opus 5.5'],
 				['z-ai/glm-5.1', 'GLM 5.1'],
 				['qwen/qwen3.6-plus', 'Qwen3.6 Plus'],
 				['qwen/qwen3.7-max', 'Qwen3.7 Max'],
@@ -61,6 +63,10 @@ it('preserves all reviewed choices, labels, order and access groups', () => {
 				['deepseek/deepseek-v4-pro', 'DeepSeek V4 Pro'],
 				['x-ai/grok-4.5', 'Grok 4.5'],
 				['x-ai/grok-4.20', 'Grok 4.20'],
+				['google/gemini-4-argon', 'Gemini 4 Argon'],
+				['google/gemini-4-carbon', 'Gemini 4 Carbon'],
+				['google/gemini-4-hydrogen', 'Gemini 4 Hydrogen'],
+				['google/gemini-3.8-flash', 'Gemini 3.8 Flash'],
 				['google/gemini-3.5-flash', 'Gemini 3.5 Flash'],
 				[
 					'google/gemini-3.1-flash-lite-preview',

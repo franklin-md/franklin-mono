@@ -36,7 +36,8 @@ rendering to the host; no placeholder characters are added to the note.
   the existing file accept/reject flow.
 - Failed and stopped requests retain a status and their prompt. Invoke **Quick edit**
   at the control to retry, or delete it. Cancellation can leave partial agent
-  changes for file review.
+  changes for file review. Hover or keyboard-focus the status to read the saved
+  explanation, including agent-reported noncompletion and runtime errors.
 
 ## Presets
 
@@ -44,12 +45,23 @@ Run **Franklin: Quick edit presets** to open a compact icon chooser above the
 caret. It has no default shortcut. Arrow keys select an action; Enter, Space or
 click runs it immediately. Escape dismisses the chooser and restores editor focus.
 
-The initial presets are **Expand**, **Add example**, **Condense** and **Outline**.
+The initial preset is **Link**, shown with a chain icon. It searches existing vault
+notes for a meaningful match to the selected passage or current row, considering
+parent bullets and the surrounding discussion. A stronger group or whole-note
+match can broaden the scope. It reads candidates before inserting at most one
+verified `[[Note]]`, with a qualified path when needed, beside the matching passage.
+It preserves existing prose and outline, avoids self-links and duplicates, and
+never creates a destination note. If no convincing unambiguous match remains,
+substantive note content stays unchanged and the retained request explains why.
+
 In **Franklin settings → Quick edit → Presets**, add, edit, delete or reorder
 presets and choose their name, prompt, icon and color. Icons use a curated Lucide
 catalog; colors use saved palette keys mapped to complete Tailwind classes.
-Preferences use storage version 2, migrating existing model and instruction
-settings and seeding the initial presets. An intentionally empty list stays empty.
+Preferences use storage version 3. Migration replaces unchanged Expand, Add
+example, Condense and Outline starters with Link while preserving customized
+entries and their relative order. Custom-only and intentionally empty lists remain
+unchanged. Later saves use version 3; older plugin versions cannot load that saved
+version.
 
 Unlike the freeform command, presets leave selected note text in place. The
 selection, or current row when nothing is selected, supplies context separately
@@ -63,18 +75,30 @@ ordinary React children, including inputs and pickers. Only focused icon buttons
 own action navigation keys. The shared Obsidian editor-popover host owns caret
 tracking, host-window lifetime and focus restoration; apps own submission state.
 
-## Deferred completion controls
+## Completion contract
 
-The original design left a split pill after execution: a tick dismissed the request,
-while a pencil reopened it for editing and another run. Those controls had a separate
-lifecycle from the file's accept/reject controls. Dismissing a request did not resolve
-its changes, and accepting or rejecting file changes did not resolve its request.
-That made the final action ambiguous and the amend flow awkward after review.
+Each agent receives the exact active directive token for its saved request. It may
+move that token within the originating note as part of a cohesive edit, keeping
+exactly one copy discoverable. Other directives and closing comments are outside
+that permission. Prefer a small contiguous edit, placing the active directive at
+the edited region's top or bottom where appropriate. Unchanged lines may still
+produce several natural diff hunks; do not rewrite them to force one review block.
 
-The completion pill and its edit-again/dismiss buttons have been removed for now.
-Success cleans up the directive and leaves file review as the final decision.
-Reconsider the split pill only with a clear shared lifecycle for request completion,
-amendment and file review.
+After verifying its content edits, `finish_edit({ success: true, summary })`
+explicitly requests application cleanup of the active directive. Cleanup removes
+a standalone request row or request-only bullet without leaving empty scaffolding;
+outline children retain their content and relative nesting when their empty parent
+is removed. Inline prose stays intact. The application preserves pending content
+differences rather than accepting changes during cleanup. `success: false` retains
+the prompt and the agent's explanation for recovery, including an expected inability
+to complete the request; it does not imply a runtime crash.
+
+Success ends the request. There are no completion, follow-up edit, amend, reopen,
+edit-again, split-pill or dismiss controls; later edits are new Quick Edit requests.
+Ordinary Undo may restore completed directive text, which stays inactive and never
+automatically runs or reopens. Undoing document text does not undo execution status.
+Undo/Redo and file accept/reject keep their existing roles, without custom history
+rewriting or guaranteed per-request review grouping.
 
 The cursor is context, not a replacement boundary. Each independent agent reads
 the current note, follows the configured instructions and vault guides,
@@ -100,12 +124,16 @@ unfinished drafts recoverable without saving plugin state on every keystroke.
 Source mode shows the ordinary Markdown source; Reading mode shows stored request
 status controls. Open the original note in Live Preview to compose or retry requests.
 
-Submission saves the prompt before removing its temporary source envelope, then
-flushes the note through `TextFileView.save()` before running tools. Saving locks
+Submission saves the prompt before removing the query text and closing comment,
+leaving the active directive for the agent. It then flushes the note through
+`TextFileView.save()` before running tools. Saving locks
 the request range, while edits elsewhere remain possible. The executor permits
 one active run and requires one globally discoverable reference in its original
-note. Discovery failures or duplicate references prevent execution. Restoring an
-interrupted run changes it to Stopped; mounting a widget never executes a request.
+note, checking again before successful completion so relocation cannot introduce
+missing or ambiguous controls. Discovery failures or duplicate references prevent
+execution or completion. Restoring an interrupted run changes it to Stopped;
+mounting a widget never executes a request. Saved failures retain their diagnostic
+after reload, and completed requests remain inactive.
 
 UI-only document changes are also mapped into the existing file review baseline.
 This prevents creating, typing or removing a request from introducing additional

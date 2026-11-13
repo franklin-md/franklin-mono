@@ -38,7 +38,7 @@ it('adds, customizes, reorders and deletes saved presets', async () => {
 	fireEvent.change(form.getByLabelText('Prompt'), {
 		target: { value: 'Explain this point.' },
 	});
-	fireEvent.change(form.getByLabelText('Icon'), { target: { value: 'flask' } });
+	fireEvent.change(form.getByLabelText('Icon'), { target: { value: 'link' } });
 	fireEvent.change(form.getByLabelText('Color'), {
 		target: { value: 'green' },
 	});
@@ -47,7 +47,7 @@ it('adds, customizes, reorders and deletes saved presets', async () => {
 		expect(preferences.state.get().presets.at(-1)).toMatchObject({
 			name: 'Explain',
 			prompt: 'Explain this point.',
-			icon: 'flask',
+			icon: 'link',
 			color: 'green',
 		}),
 	);
@@ -69,7 +69,7 @@ it('adds, customizes, reorders and deletes saved presets', async () => {
 		screen.getByRole('button', { name: 'Delete Explain clearly' }),
 	);
 	await vi.waitFor(() =>
-		expect(preferences.state.get().presets).toHaveLength(4),
+		expect(preferences.state.get().presets).toHaveLength(1),
 	);
 	expect(
 		(

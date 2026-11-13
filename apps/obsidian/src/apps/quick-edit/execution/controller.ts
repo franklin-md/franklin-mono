@@ -7,6 +7,7 @@ import type {
 	QuickEditState,
 } from '../types.js';
 import { quickEditError } from '../error.js';
+import { assertUnfinishedQuickEdit } from './unfinished.js';
 
 type Options = {
 	definition: DirectiveDefinition<QuickEditState>;
@@ -42,6 +43,7 @@ export class QuickEditController {
 		if (!prompt.trim()) return;
 		const instance = this.options.definition.get(id);
 		if (!instance) throw new Error('Quick edit no longer exists');
+		assertUnfinishedQuickEdit(instance.state.get());
 		const active = { abort: new AbortController(), promise: Promise.resolve() };
 		this.active = active;
 		active.promise = this.perform(
@@ -76,21 +78,16 @@ export class QuickEditController {
 			state.error = '';
 		});
 		try {
-			const found = await new DirectiveScribe(instance).find();
-			if (
-				found.failures.length ||
-				found.locations.length !== 1 ||
-				found.locations[0]?.path !== instance.state.get().path
-			)
-				throw new Error(
-					'Quick edit needs exactly one directive in its original note. Remove copied references or resolve unreadable notes, then retry.',
-				);
+			await this.assertUnique(instance);
 			signal.throwIfAborted();
 			await this.options.run({
+				directive: instance.text,
 				state: structuredClone(instance.state.get()),
 				settings,
 				signal,
 			});
+			signal.throwIfAborted();
+			await this.assertUnique(instance);
 			signal.throwIfAborted();
 			await instance.update((state) => {
 				state.status = 'done';
@@ -103,5 +100,19 @@ export class QuickEditController {
 					: quickEditError(error);
 			});
 		}
+	}
+
+	private async assertUnique(
+		instance: DirectiveInstance<QuickEditState>,
+	): Promise<void> {
+		const found = await new DirectiveScribe(instance).find();
+		if (
+			found.failures.length ||
+			found.locations.length !== 1 ||
+			found.locations[0]?.path !== instance.state.get().path
+		)
+			throw new Error(
+				'Quick edit needs exactly one directive in its original note. Restore a missing control, remove copied references or resolve unreadable notes, then retry.',
+			);
 	}
 }

@@ -136,6 +136,13 @@ for the inference checkpoint contract.
 
 ### Extensions
 
+`edit_file` retains the latest full UTF-8 text snapshot per read path in its
+private file record, increasing stored session data by the retained text size.
+Exact single-target edits preserve unrelated changes when the full target lines
+remain unchanged at the same line numbers; shifted or changed target lines
+require a reread. Fuzzy edits, `replace_all`, and legacy or binary hash-only
+records still require an unchanged file. Validation and writing are not atomic.
+
 `FranklinApp` uses the shared [`createFranklinAgents`](src/app/agents/factory.ts)
 factory for agent construction, including environment, stores, references and
 authentication. `app.agents.create()` uses the app's configured extensions and

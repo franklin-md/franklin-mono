@@ -32,6 +32,30 @@ afterEach(() => {
 });
 
 describe('controlled model picker', () => {
+	it.each([
+		['fable', 'Claude Fable 5.2', 'anthropic/claude-fable-5.2'],
+		['opus', 'Claude Opus 5.5', 'anthropic/claude-opus-5.5'],
+		['argon', 'Gemini 4 Argon', 'google/gemini-4-argon'],
+		['carbon', 'Gemini 4 Carbon', 'google/gemini-4-carbon'],
+		['hydrogen', 'Gemini 4 Hydrogen', 'google/gemini-4-hydrogen'],
+		['3.8 flash', 'Gemini 3.8 Flash', 'google/gemini-3.8-flash'],
+	])(
+		'searches for %s and selects its OpenRouter model',
+		async (search, name, id) => {
+			const onSelect = vi.fn();
+			render(
+				<ModelPicker provider="custom" model="saved" onSelect={onSelect} />,
+			);
+			fireEvent.click(screen.getByRole('button'));
+			fireEvent.change(screen.getByPlaceholderText('Search models...'), {
+				target: { value: search },
+			});
+			fireEvent.click(await screen.findByRole('option', { name }));
+			expect(onSelect).toHaveBeenCalledExactlyOnceWith('openrouter', id);
+			expect(screen.queryByRole('dialog')).toBeNull();
+		},
+	);
+
 	it('accepts caller-supplied models absent from the request catalog', async () => {
 		const onSelect = vi.fn();
 		render(

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { clampThinkingLevel } from '@earendil-works/pi-ai';
 import {
 	OPENROUTER_APP_TITLE,
 	OPENROUTER_APP_URL,
@@ -72,6 +73,70 @@ const OPENAI_CODEX_LOCAL_OVERRIDE_MODEL_CASES = [
 ] as const;
 
 const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
+	{
+		id: 'anthropic/claude-fable-5.2',
+		name: 'Anthropic: Claude Fable 5.2',
+		input: ['text', 'image'],
+		thinkingLevelMap: { off: null, minimal: null, xhigh: 'max' },
+		contextWindow: 1_000_000,
+		maxTokens: 128_000,
+		cost: { input: 8, output: 40, cacheRead: 0.2, cacheWrite: 10 },
+	},
+	{
+		id: 'anthropic/claude-opus-5.5',
+		name: 'Anthropic: Claude Opus 5.5',
+		input: ['text', 'image'],
+		thinkingLevelMap: { off: null, minimal: null, xhigh: 'max' },
+		contextWindow: 1_000_000,
+		maxTokens: 128_000,
+		cost: { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5 },
+	},
+	{
+		id: 'google/gemini-4-argon',
+		name: 'Google: Gemini 4 Argon',
+		input: ['text', 'image'],
+		thinkingLevelMap: { off: null, minimal: null },
+		contextWindow: 1_048_576,
+		maxTokens: 943_718,
+		cost: { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0.1875 },
+	},
+	{
+		id: 'google/gemini-4-carbon',
+		name: 'Google: Gemini 4 Carbon',
+		input: ['text', 'image'],
+		thinkingLevelMap: { off: null, minimal: null },
+		contextWindow: 1_048_576,
+		maxTokens: 943_718,
+		cost: { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0.1875 },
+	},
+	{
+		id: 'google/gemini-4-hydrogen',
+		name: 'Google: Gemini 4 Hydrogen',
+		input: ['text', 'image'],
+		thinkingLevelMap: { off: null, minimal: null, xhigh: 'xhigh' },
+		contextWindow: 1_048_576,
+		maxTokens: 943_718,
+		cost: {
+			input: 1.5,
+			output: 7.5,
+			cacheRead: 0.075,
+			cacheWrite: 0.0833333333333333,
+		},
+	},
+	{
+		id: 'google/gemini-3.8-flash',
+		name: 'Google: Gemini 3.8 Flash',
+		input: ['text', 'image'],
+		thinkingLevelMap: { off: null, minimal: null },
+		contextWindow: 1_048_576,
+		maxTokens: 65_536,
+		cost: {
+			input: 0.825,
+			output: 4.125,
+			cacheRead: 0.0825,
+			cacheWrite: 0.0416666666666667,
+		},
+	},
 	{
 		id: 'x-ai/grok-4.5',
 		name: 'xAI: Grok 4.5',
@@ -313,6 +378,28 @@ const OPENCODE_GO_MODEL_CASES = [
 ] as const;
 
 describe('resolveModel', () => {
+	it.each([
+		['anthropic/claude-fable-5.2', 'max'],
+		['anthropic/claude-opus-5.5', 'max'],
+		['google/gemini-4-argon', 'high'],
+		['google/gemini-4-carbon', 'high'],
+		['google/gemini-4-hydrogen', 'xhigh'],
+		['google/gemini-3.8-flash', 'high'],
+	])('clamps saved effort to supported levels for %s', (id, highestEffort) => {
+		const result = resolveModel({ provider: 'openrouter', model: id });
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+
+		const model = result.model;
+		expect(clampThinkingLevel(model, 'off')).toBe('low');
+		expect(clampThinkingLevel(model, 'minimal')).toBe('low');
+		expect(clampThinkingLevel(model, 'medium')).toBe('medium');
+		const highestLevel = clampThinkingLevel(model, 'xhigh');
+		expect(model.thinkingLevelMap?.[highestLevel] ?? highestLevel).toBe(
+			highestEffort,
+		);
+	});
+
 	for (const model of OPENAI_CODEX_LOCAL_OVERRIDE_MODEL_CASES) {
 		it(`resolves the OpenAI Codex ${model.id} model from local overrides`, () => {
 			const result = resolveModel({

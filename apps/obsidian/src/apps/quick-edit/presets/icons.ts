@@ -7,9 +7,11 @@ import {
 	Pencil,
 	MessageCircle,
 	Languages,
+	Link,
 } from 'lucide-react';
 
 export const presetIcons = {
+	link: { label: 'Link', icon: Link },
 	expand: { label: 'Expand', icon: Expand },
 	flask: { label: 'Example', icon: FlaskConical },
 	scissors: { label: 'Scissors', icon: Scissors },
