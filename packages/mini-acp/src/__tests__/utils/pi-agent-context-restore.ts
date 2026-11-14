@@ -189,7 +189,11 @@ function createToolServer(): MiniACPAgent {
 async function runFirstTurn(
 	scenario: LiveContextRestoreScenario,
 ): Promise<void> {
-	const first = await collect(scenario.client.prompt(firstPrompt));
+	let first = await collect(scenario.client.prompt(firstPrompt));
+	while (first.stepEnd) {
+		const next = await collect(scenario.client.continue());
+		first = { ...next, messages: [...first.messages, ...next.messages] };
+	}
 	expectFinished(first);
 	expect(expectAssistantText(first)).toMatch(firstTurnPattern);
 	expect(

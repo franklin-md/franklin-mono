@@ -12,6 +12,7 @@ function stubClient(): MiniACPClientHandle {
 		initialize: async () => {},
 		setContext: async () => {},
 		async *prompt() {},
+		async *continue() {},
 		cancel: async () => {},
 		dispose: async () => {},
 	};

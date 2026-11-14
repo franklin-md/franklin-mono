@@ -1,17 +1,21 @@
 import { createMemoryStream } from '@franklin/lib/transport';
-import { Agent as PiCoreAgent } from '@earendil-works/pi-agent-core';
+import {
+	runAgentLoop,
+	runAgentLoopContinue,
+} from '@earendil-works/pi-agent-core';
 import type {
+	AgentContext,
 	AgentEvent,
-	AgentLoopTurnUpdate,
+	AgentLoopConfig,
 	StreamFn,
 } from '@earendil-works/pi-agent-core';
+import type { AssistantMessage } from '@earendil-works/pi-ai';
 
 import type { MuAgent, MuClient } from '../../protocol/types.js';
+import { UsageTracker, ZERO_USAGE } from '../../protocol/usage-tracker.js';
 import type { ContextPatch, LLMConfig } from '../../types/context.js';
 import type { UserMessage } from '../../types/message.js';
-import { StopCode } from '../../types/stop-code.js';
-import type { StreamEvent } from '../../types/stream.js';
-import type { ToolDefinition } from '../../types/tool.js';
+import type { StepEnd, StreamEvent, TurnEnd } from '../../types/stream.js';
 import { resolveConfig } from './resolve-config.js';
 import {
 	bridgeTool,
@@ -19,6 +23,8 @@ import {
 	toPiUserMessage,
 } from './translate/index.js';
 import { toPiMessages } from './translate/message.js';
+import { fromPiUsage } from './translate/usage.js';
+import { stepTerminal } from './terminal.js';
 
 export type CreatePiAgentOptions = {
 	/** Custom stream function, injected by tests to avoid real provider calls. */
@@ -33,171 +39,192 @@ export function createPiAgent(
 }
 
 class PiMuAgent implements MuClient {
-	private readonly server: MuAgent;
-	private readonly agent: PiCoreAgent;
-
+	private readonly context: AgentContext = {
+		systemPrompt: '',
+		messages: [],
+		tools: [],
+	};
 	private config: LLMConfig = {};
-	private activePrompt = false;
+	private activeRun: AbortController | undefined;
+	private pending = false;
+	private cancelled = false;
+	private usage = new UsageTracker();
 
-	constructor(server: MuAgent, options: CreatePiAgentOptions) {
-		this.server = server;
-		this.agent = this.createAgent(options.streamFn);
-	}
+	constructor(
+		private readonly server: MuAgent,
+		private readonly options: CreatePiAgentOptions,
+	) {}
 
 	async initialize(): Promise<void> {}
 
 	async setContext(patch: ContextPatch): Promise<void> {
-		if (this.activePrompt) {
-			// Pi can refresh tools between internal LLM turns, but prompt/history
-			// changes mid-run would fork the active transcript.
-			this.applyActiveContext(patch);
-			return;
+		if (
+			this.activeRun &&
+			(patch.systemPrompt !== undefined ||
+				patch.messages !== undefined ||
+				patch.config !== undefined)
+		) {
+			throw new Error(
+				'Pi setContext during an active drive only accepts tools',
+			);
 		}
-
-		this.applyIdleContext(patch);
-	}
-
-	async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
-		if (this.activePrompt) {
-			throw new Error('Mini-ACP prompt already in progress');
-		}
-
-		this.activePrompt = true;
-
-		// Resolve lazily at prompt time so bad config still emits a clean
-		// turnStart -> turnEnd stream instead of throwing from setContext.
-		const resolved = resolveConfig(this.config);
-		if (!resolved.ok) {
-			try {
-				yield { type: 'turnStart' };
-				yield resolved.turnEnd;
-			} finally {
-				this.activePrompt = false;
-			}
-			return;
-		}
-
-		this.agent.state.model = resolved.model;
-		this.agent.state.thinkingLevel = this.config.reasoning ?? 'off';
-
-		yield* this.streamAgentPrompt(message);
-	}
-
-	async cancel(): Promise<void> {
-		// pi-agent-core is responsible for settling the active prompt and emitting
-		// an aborted stop reason after abort().
-		this.agent.abort();
-	}
-
-	private createAgent(streamFn: StreamFn | undefined): PiCoreAgent {
-		return new PiCoreAgent({
-			initialState: {},
-			getApiKey: (_: string) => {
-				return this.config.apiKey;
-			},
-			prepareNextTurn: () => this.prepareNextTurn(),
-			streamFn,
-		});
-	}
-
-	private prepareNextTurn(): AgentLoopTurnUpdate {
-		return {
-			context: {
-				systemPrompt: this.agent.state.systemPrompt,
-				messages: [...this.agent.state.messages],
-				tools: [...this.agent.state.tools],
-			},
-		};
-	}
-
-	private async *streamAgentPrompt(
-		message: UserMessage,
-	): AsyncGenerator<StreamEvent> {
-		let currentMessageId = crypto.randomUUID();
-		const { readable, writable } = createMemoryStream<StreamEvent>();
-		const writer = writable.getWriter();
-		const safeWrite = async (event: StreamEvent) => {
-			writer.write(event).catch(() => {});
-		};
-
-		const unsub = this.agent.subscribe((event: AgentEvent) => {
-			// Each new LLM message gets a fresh messageId so chunks and their
-			// corresponding update share a stable Mini-ACP id.
-			if (event.type === 'message_start') {
-				currentMessageId = crypto.randomUUID();
-			}
-			const streamEvent = fromAgentEvent(event, currentMessageId);
-			if (streamEvent) {
-				void safeWrite(streamEvent);
-			}
-		});
-
-		const piMessage = toPiUserMessage(message);
-		// Drive the Pi loop until it settles, including any tool-call follow-ups.
-		void this.agent
-			.prompt(piMessage)
-			.catch(async () => {
-				// Keep the Mini-ACP stream well-formed if Pi rejects outside its
-				// normal error event path.
-				await safeWrite({
-					type: 'turnEnd',
-					stopCode: StopCode.LlmError,
-					stopMessage: 'An error occurred while prompting the agent',
-				});
-			})
-			.catch(() => {
-				// If the consumer already closed the Mini-ACP stream, the fallback
-				// event cannot be delivered. Pi settlement still owns activePrompt.
-			})
-			.finally(async () => {
-				this.activePrompt = false;
-				await writer.close().catch(() => {});
-			});
-
-		try {
-			yield* readable;
-		} finally {
-			unsub();
-			this.agent.abort();
-		}
-	}
-
-	private createPiTools(tools: ToolDefinition[]) {
-		const handler = this.server.toolExecute.bind(this.server);
-		return tools.map((def) => bridgeTool(def, handler));
-	}
-
-	private applyIdleContext(patch: ContextPatch): void {
 		if (patch.systemPrompt !== undefined) {
-			this.agent.state.systemPrompt = patch.systemPrompt;
+			this.context.systemPrompt = patch.systemPrompt;
 		}
 		if (patch.messages !== undefined) {
-			this.agent.state.messages = toPiMessages(patch.messages);
+			this.context.messages = toPiMessages(patch.messages);
 		}
 		if (patch.tools !== undefined) {
-			this.agent.state.tools = this.createPiTools(patch.tools);
+			const handler = this.server.toolExecute.bind(this.server);
+			this.context.tools = patch.tools.map((def) => bridgeTool(def, handler));
 		}
 		if (patch.config !== undefined) {
 			this.config = { ...this.config, ...patch.config };
 		}
 	}
 
-	private applyActiveContext(patch: ContextPatch): void {
-		if (!isToolsOnlyPatch(patch)) {
+	prompt(message: UserMessage): AsyncIterable<StreamEvent> {
+		return this.drive(message);
+	}
+
+	continue(): AsyncIterable<StreamEvent> {
+		return this.drive();
+	}
+
+	async cancel(): Promise<void> {
+		if (!this.pending) return;
+		this.cancelled = true;
+		this.activeRun?.abort();
+	}
+
+	private async *drive(message?: UserMessage): AsyncGenerator<StreamEvent> {
+		if (this.activeRun) throw new Error('Mini-ACP drive already in progress');
+		if (message && this.pending) {
 			throw new Error(
-				'Pi setContext during an active prompt only accepts tools',
+				'Mini-ACP turn paused; continue or cancel it before prompt',
 			);
 		}
-		if (patch.tools !== undefined) {
-			this.agent.state.tools = this.createPiTools(patch.tools);
+		if (!message && !this.pending) return;
+		if (message) {
+			this.pending = true;
+			this.cancelled = false;
+			this.usage = new UsageTracker();
+		}
+
+		const run = new AbortController();
+		this.activeRun = run;
+		const lifecycle = { settled: false };
+		let currentMessageId = crypto.randomUUID();
+		let response: AssistantMessage | undefined;
+		const { readable, writable } = createMemoryStream<StreamEvent>();
+		const writer = writable.getWriter();
+		const write = (event: StreamEvent) => writer.write(event).catch(() => {});
+
+		const emit = async (event: AgentEvent) => {
+			// Each new LLM message gets a fresh messageId so chunks and their
+			// corresponding update share a stable Mini-ACP id.
+			if (event.type === 'message_start')
+				currentMessageId = crypto.randomUUID();
+			if (event.type === 'message_end') {
+				this.context.messages.push(event.message);
+				if (event.message.role === 'assistant') response = event.message;
+			}
+			const translated = fromAgentEvent(event, currentMessageId);
+			if (translated) await write(translated);
+		};
+
+		const execute = async (): Promise<StepEnd | TurnEnd> => {
+			if (message) await write({ type: 'turnStart' });
+			if (this.cancelled) {
+				return stepTerminal(
+					undefined,
+					ZERO_USAGE,
+					this.usage.get(),
+					true,
+					undefined,
+				);
+			}
+
+			// Resolve lazily so bad config still ends the drive cleanly rather than
+			// throwing from setContext. Previous steps' usage survives such failures.
+			const resolved = resolveConfig(this.config);
+			if (!resolved.ok) {
+				return {
+					...resolved.turnEnd,
+					stepUsage: ZERO_USAGE,
+					usage: this.usage.get(),
+				};
+			}
+			const config: AgentLoopConfig = {
+				model: resolved.model,
+				reasoning:
+					this.config.reasoning === 'off' ? undefined : this.config.reasoning,
+				apiKey: this.config.apiKey,
+				convertToLlm: (messages) =>
+					messages.filter(
+						(m) =>
+							m.role === 'user' ||
+							m.role === 'assistant' ||
+							m.role === 'toolResult',
+					),
+				// Pi 0.75.4's public Agent does not forward this option. Use the public
+				// runners: Pi still owns streaming, validation and the complete tool batch.
+				// https://github.com/earendil-works/pi-mono/blob/v0.75.4/packages/agent/src/agent-loop.ts
+				shouldStopAfterTurn: () => true,
+			};
+			// Isolate Pi's mutable transcript from our event-recorded context. Tool
+			// refreshes during a drive take effect on the following explicit drive.
+			const context = { ...this.context, messages: [...this.context.messages] };
+			let failure: unknown;
+			try {
+				if (message) {
+					await runAgentLoop(
+						[toPiUserMessage(message)],
+						context,
+						config,
+						emit,
+						run.signal,
+						this.options.streamFn,
+					);
+				} else {
+					await runAgentLoopContinue(
+						context,
+						config,
+						emit,
+						run.signal,
+						this.options.streamFn,
+					);
+				}
+			} catch (error) {
+				// Unexpected runner failures are real errors, never a stepping mechanism.
+				failure = error;
+			}
+			const stepUsage = response ? fromPiUsage(response.usage) : ZERO_USAGE;
+			this.usage.add(stepUsage);
+			return stepTerminal(
+				response,
+				stepUsage,
+				this.usage.get(),
+				run.signal.aborted,
+				failure,
+			);
+		};
+
+		void execute().then(async (terminal) => {
+			this.pending = terminal.type === 'stepEnd';
+			// Pi's agent_end precedes settlement. Publish the idle guarantee only
+			// after the runner has returned and adapter state is ready for reentry.
+			this.activeRun = undefined;
+			lifecycle.settled = true;
+			await write(terminal);
+			await writer.close().catch(() => {});
+		});
+
+		try {
+			yield* readable;
+		} finally {
+			// Never abort a later drive started by a consumer at this terminal.
+			if (!lifecycle.settled) run.abort();
 		}
 	}
-}
-
-function isToolsOnlyPatch(patch: ContextPatch): boolean {
-	return (
-		patch.systemPrompt === undefined &&
-		patch.messages === undefined &&
-		patch.config === undefined
-	);
 }

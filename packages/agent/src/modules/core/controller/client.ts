@@ -1,6 +1,7 @@
 import type { MiniACPClientHandle } from '@franklin/mini-acp';
 import type { CoreRegistry } from '../registrations/index.js';
 import type { AgentSession } from './session.js';
+import type { AgentClient } from './types.js';
 import { createPromptBuilder, createPromptObservers } from './prompt.js';
 
 type BindAgentClientInput = {
@@ -13,30 +14,64 @@ export function bindAgentClient({
 	client,
 	registrations,
 	session,
-}: BindAgentClientInput): MiniACPClientHandle {
+}: BindAgentClientInput): AgentClient {
 	const buildPrompt = createPromptBuilder(registrations);
 	const notifyPromptObservers = createPromptObservers(registrations);
+	let active: object | undefined;
 
 	return {
-		...client,
+		initialize: client.initialize.bind(client),
 		async setContext(context) {
 			await client.setContext(context);
 			session.recordContext(context);
 		},
 		async *prompt(message) {
-			await session.sync(client);
-			const fullPrompt = await buildPrompt(message);
-			session.recordMessage(fullPrompt);
+			if (active) throw new Error('Franklin prompt already in progress');
+			const run = {};
+			active = run;
+			let paused = false;
+			try {
+				await session.sync(client);
+				const fullPrompt = await buildPrompt(message);
+				session.recordMessage(fullPrompt);
 
-			for await (const event of client.prompt(fullPrompt)) {
-				if (event.type === 'turnEnd' && event.usage) {
-					session.addUsage(event.usage);
+				let stream = client.prompt(fullPrompt);
+				for (;;) {
+					paused = false;
+					for await (const event of stream) {
+						if (event.type === 'stepEnd' || event.type === 'turnEnd') {
+							session.addUsage(event.stepUsage);
+						}
+						if (event.type === 'stepEnd') {
+							paused = true;
+							continue;
+						}
+						if (event.type === 'update') {
+							session.recordMessage(event.message);
+						}
+						if (event.type === 'turnEnd') {
+							paused = false;
+							active = undefined;
+						}
+						notifyPromptObservers(event);
+						yield event;
+					}
+					if (!paused) return;
+					// The terminal guarantees idle. Ordinary synchronization here picks up
+					// dynamic prompts/tools without a reverse-RPC acknowledgement barrier.
+					await session.sync(client);
+					stream = client.continue();
+					paused = false;
 				}
-				if (event.type === 'update') {
-					session.recordMessage(event.message);
+			} finally {
+				if (paused) {
+					// A failed idle sync must not strand the raw client in a paused turn.
+					await client.cancel();
+					for await (const _event of client.continue()) {
+						/* drain cancellation */
+					}
 				}
-				notifyPromptObservers(event);
-				yield event;
+				if (active === run) active = undefined;
 			}
 		},
 		async cancel() {

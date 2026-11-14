@@ -15,6 +15,7 @@ function createClient(): MiniACPClientHandle {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async (_context: ContextPatch) => {}),
 		async *prompt() {},
+		continue: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 		dispose: vi.fn(async () => {}),
 	};

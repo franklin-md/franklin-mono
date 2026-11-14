@@ -1,2 +1,2 @@
 export { createAgentController } from './create.js';
-export type { AgentController } from './types.js';
+export type { AgentController, AgentClient, TurnStreamEvent } from './types.js';

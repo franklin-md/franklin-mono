@@ -5,11 +5,11 @@
 // IDs match the Spec Table in README.md.
 // ---------------------------------------------------------------------------
 
-import type { Expectation } from './types.js';
+import type { Expectation, TranscriptEntry } from './types.js';
 import { sends, receives } from './assertions/filters.js';
 import { match } from './assertions/match.js';
 import { initCompletedIndex } from './assertions/init.js';
-import { isTurnActiveAt, turns } from './assertions/turn-state.js';
+import { isTurnActiveAt, turns, steps } from './assertions/turn-state.js';
 import { StopCode, VALID_STOP_CODES } from '../types/stop-code.js';
 
 // ---------------------------------------------------------------------------
@@ -123,19 +123,17 @@ const turnEndsWithTurnEnd: Expectation = {
 
 const noOverlappingPrompts: Expectation = {
 	id: 'no-overlapping-prompts',
-	description: 'prompt must not be sent while a turn is active',
+	description: 'prompt and continue must not overlap an active drive',
 	test: (t) => {
-		const prompts = sends(t, 'prompt');
-		if (prompts.length < 2) return 'skip';
-		let active = false;
-		for (const e of t) {
-			if (match(e, 'send', 'prompt')) {
-				if (active) return 'fail';
-				active = true;
-			}
-			if (match(e, 'receive', 'turnEnd')) {
-				active = false;
-			}
+		const drives = steps(t);
+		for (const [index, step] of drives.entries()) {
+			const stream = step.filter(isStepEvent);
+			if (step[0]?.method === 'continue' && stream.length === 0) continue;
+			if (
+				index < drives.length - 1 &&
+				!stream.some((e) => e.method === 'stepEnd' || e.method === 'turnEnd')
+			)
+				return 'fail';
 		}
 		return 'pass';
 	},
@@ -158,20 +156,85 @@ const promptAfterInit: Expectation = {
 
 const turnEndIsTerminal: Expectation = {
 	id: 'turn-end-is-terminal',
-	description: 'No stream events (chunk, update) after turnEnd within a turn',
+	description: 'No stream or tool events after a terminal within a drive',
 	test: (t) => {
-		const allTurns = turns(t);
-		if (allTurns.length === 0) return 'skip';
-		for (const turn of allTurns) {
-			const turnEndIdx = turn.findIndex((e) => match(e, 'receive', 'turnEnd'));
-			if (turnEndIdx === -1) continue;
-			const afterTurnEnd = turn.slice(turnEndIdx + 1);
+		for (const step of steps(t)) {
+			let ended = false;
+			for (const e of step) {
+				if (e.direction !== 'receive' || e.method === 'setContext') continue;
+				if (ended) return 'fail';
+				ended = e.method === 'stepEnd' || e.method === 'turnEnd';
+			}
+		}
+		return 'pass';
+	},
+};
+
+const oneTerminalPerStep: Expectation = {
+	id: 'one-terminal-per-step',
+	description: 'Every executed drive has exactly one stepEnd or turnEnd',
+	test: (t) => {
+		for (const step of steps(t)) {
+			const events = step.filter(isStepEvent);
+			if (step[0]?.method === 'continue' && events.length === 0) continue;
 			if (
-				afterTurnEnd.some(
-					(e) => match(e, 'receive', 'chunk') || match(e, 'receive', 'update'),
-				)
+				events.filter((e) => e.method === 'stepEnd' || e.method === 'turnEnd')
+					.length !== 1
 			)
 				return 'fail';
+		}
+		return 'pass';
+	},
+};
+
+function isStepEvent(entry: TranscriptEntry): boolean {
+	return (
+		entry.direction === 'receive' &&
+		(entry.method === 'turnStart' ||
+			entry.method === 'chunk' ||
+			entry.method === 'update' ||
+			entry.method === 'toolExecute' ||
+			entry.method === 'stepEnd' ||
+			entry.method === 'turnEnd')
+	);
+}
+
+const continueAfterStepEnd: Expectation = {
+	id: 'continue-after-step-end',
+	description:
+		'Continuation executes only after stepEnd; after turnEnd it is empty',
+	test: (t) => {
+		let paused = false;
+		for (const step of steps(t)) {
+			if (step[0]?.method === 'continue' && paused && !step.some(isStepEvent))
+				return 'fail';
+			if (
+				step[0]?.method === 'continue' &&
+				!paused &&
+				step.some((e) => e.direction === 'receive' && e.method !== 'setContext')
+			)
+				return 'fail';
+			if (step.some((e) => match(e, 'receive', 'stepEnd'))) paused = true;
+			if (step.some((e) => match(e, 'receive', 'turnEnd'))) paused = false;
+		}
+		return 'pass';
+	},
+};
+
+const terminalUsagePresent: Expectation = {
+	id: 'terminal-usage-present',
+	description:
+		'Both terminals report stepUsage; turnEnd also reports cumulative usage',
+	test: (t) => {
+		for (const entry of t) {
+			if (
+				match(entry, 'receive', 'stepEnd') ||
+				match(entry, 'receive', 'turnEnd')
+			) {
+				if (!Object.hasOwn(entry.params, 'stepUsage')) return 'fail';
+				if (entry.method === 'turnEnd' && !Object.hasOwn(entry.params, 'usage'))
+					return 'fail';
+			}
 		}
 		return 'pass';
 	},
@@ -393,7 +456,11 @@ const toolResultIdMatches: Expectation = {
 			const exIdx = t.indexOf(ex);
 			const result = t
 				.slice(exIdx + 1)
-				.find((e) => match(e, 'send', 'toolResult'));
+				.find(
+					(e) =>
+						match(e, 'send', 'toolResult') &&
+						e.params.toolCallId === ex.params.call.id,
+				);
 			if (!result) return 'fail';
 			if (!match(result, 'send', 'toolResult')) return 'fail';
 			if (result.params.toolCallId !== ex.params.call.id) return 'fail';
@@ -411,6 +478,24 @@ const toolExecuteDuringTurn: Expectation = {
 		for (const ex of executes) {
 			const idx = t.indexOf(ex);
 			if (!isTurnActiveAt(t, idx)) return 'fail';
+		}
+		return 'pass';
+	},
+};
+
+const toolBatchBeforeTerminal: Expectation = {
+	id: 'tool-batch-before-terminal',
+	description: 'Every started tool has returned before a step terminal',
+	test: (t) => {
+		const pending = new Set<string>();
+		for (const e of t) {
+			if (match(e, 'receive', 'toolExecute')) pending.add(e.params.call.id);
+			if (match(e, 'send', 'toolResult')) pending.delete(e.params.toolCallId);
+			if (
+				(match(e, 'receive', 'stepEnd') || match(e, 'receive', 'turnEnd')) &&
+				pending.size > 0
+			)
+				return 'fail';
 		}
 		return 'pass';
 	},
@@ -501,7 +586,7 @@ const toolResultContentTypes: Expectation = {
 
 const cancelDuringActiveTurn: Expectation = {
 	id: 'cancel-during-active-turn',
-	description: 'cancel must only be sent during an active turn',
+	description: 'cancel may be sent during execution or at a paused boundary',
 	test: (t) => {
 		const cancels = sends(t, 'cancel');
 		if (cancels.length === 0) return 'skip';
@@ -516,7 +601,7 @@ const cancelDuringActiveTurn: Expectation = {
 const cancelStopCode: Expectation = {
 	id: 'cancel-stop-code',
 	description:
-		'After cancel, the turn should end with stopCode: Cancelled (101)',
+		'After cancel, the turn should end with stopCode: Cancelled (1001)',
 	test: (t) => {
 		const cancels = sends(t, 'cancel');
 		if (cancels.length === 0) return 'skip';
@@ -556,6 +641,9 @@ export const specPoints: Expectation[] = [
 	turnEndIsTerminal,
 	// Stream Events
 	oneTurnEndPerTurn,
+	oneTerminalPerStep,
+	continueAfterStepEnd,
+	terminalUsagePresent,
 	stopCodeValid,
 	chunkHasMessageId,
 	updateHasMessageId,
@@ -566,6 +654,7 @@ export const specPoints: Expectation[] = [
 	// Tool Execution
 	toolResultFollowsExecute,
 	toolResultIdMatches,
+	toolBatchBeforeTerminal,
 	toolExecuteDuringTurn,
 	toolNameInContext,
 	// Message Content

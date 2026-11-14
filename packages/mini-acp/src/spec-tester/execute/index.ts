@@ -25,6 +25,9 @@ export async function execute(
 			case 'prompt':
 				context.prompt(action.message);
 				break;
+			case 'continue':
+				context.continueTurn();
+				break;
 			case 'cancel':
 				context.cancel();
 				break;

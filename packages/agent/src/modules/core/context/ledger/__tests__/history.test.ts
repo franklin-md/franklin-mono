@@ -32,6 +32,7 @@ describe('history synchronization', () => {
 			initialize: async () => {},
 			setContext,
 			async *prompt() {},
+			async *continue() {},
 			cancel: async () => {},
 		};
 		await ledger.sync(client);

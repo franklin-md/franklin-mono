@@ -2,6 +2,7 @@ import type { JsonObject } from '@franklin/lib';
 import type { Context } from '../../types/context.js';
 import type { UserMessage } from '../../types/message.js';
 import type { StopCode } from '../../types/stop-code.js';
+import type { Usage } from '../../types/usage.js';
 import type { TurnEnd } from '../../types/stream.js';
 import type { ToolCall, ToolResult } from '../../types/tool.js';
 
@@ -44,6 +45,7 @@ export type ToolCallRequestDescriptor = {
 export type ToolCallsDescriptor = {
 	readonly type: 'toolCalls';
 	readonly calls: readonly ToolCallRequestDescriptor[];
+	readonly stepUsage?: Usage;
 };
 
 export type DelayDescriptor = {

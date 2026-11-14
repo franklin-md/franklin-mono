@@ -93,7 +93,7 @@ function piAssistantTexts(messages: PiMessage[]): string[] {
 }
 
 describe('Pi setContext during an active Mini-ACP turn', () => {
-	it('makes tools registered by one tool call available to the next Pi LLM call', async () => {
+	it('makes tools registered during a drive available after explicit continue', async () => {
 		const clientRef: { current?: MiniACPClient } = {};
 		const toolExecutions: string[] = [];
 		const toolsSeenByLlm: string[][] = [];
@@ -163,12 +163,17 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 			},
 		});
 
-		const result = await collect(
+		const first = await collect(
 			client.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'Open the vault and get the money.' }],
 			}),
 		);
+
+		expect(first.stepEnd).toBeDefined();
+		expect(toolsSeenByLlm).toHaveLength(1);
+		await collect(client.continue());
+		const result = await collect(client.continue());
 
 		expect(toolsSeenByLlm[0]).toEqual(['open_vault']);
 		expect(toolsSeenByLlm[1]).toEqual(['open_vault', 'get_money']);
@@ -300,6 +305,7 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 				content: [{ type: 'text', text: 'first prompt' }],
 			}),
 		);
+		await collect(client.continue());
 		await collect(
 			client.prompt({
 				role: 'user',

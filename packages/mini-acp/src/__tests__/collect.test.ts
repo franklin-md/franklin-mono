@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ZERO_USAGE } from '../protocol/usage-tracker.js';
 import { collect } from '../utils/collect.js';
 import { StopCode } from '../types/stop-code.js';
 import type { StreamEvent } from '../types/stream.js';
@@ -33,7 +34,12 @@ describe('collect', () => {
 					content: [{ type: 'text', text: 'two' }],
 				},
 			},
-			{ type: 'turnEnd', stopCode: StopCode.Finished },
+			{
+				type: 'turnEnd',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
+				stopCode: StopCode.Finished,
+			},
 		];
 
 		const result = await collect(stream(events));
@@ -50,6 +56,8 @@ describe('collect', () => {
 		]);
 		expect(result.turnEnd).toEqual({
 			type: 'turnEnd',
+			stepUsage: ZERO_USAGE,
+			usage: ZERO_USAGE,
 			stopCode: StopCode.Finished,
 		});
 	});

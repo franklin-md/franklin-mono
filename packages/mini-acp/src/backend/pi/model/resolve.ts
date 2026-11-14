@@ -13,7 +13,11 @@ import { isOpenAICodexModelId } from './openai-codex-models.js';
 import { getModelOverride } from './overrides.js';
 
 export type ResolveSuccess = { ok: true; model: Model<string> };
-export type ResolveFailure = { ok: false; turnEnd: TurnEnd };
+// The adapter adds per-step and cumulative usage after execution has settled.
+export type ResolveFailure = {
+	ok: false;
+	turnEnd: Omit<TurnEnd, 'stepUsage' | 'usage'>;
+};
 export type ResolveResult = ResolveSuccess | ResolveFailure;
 
 function fail(stopCode: StopCode, stopMessage: string): ResolveFailure {

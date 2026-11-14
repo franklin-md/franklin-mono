@@ -118,8 +118,14 @@ describe('FranklinApp.start', () => {
 						patches.push(patch);
 					},
 					async *prompt() {
-						yield { type: 'turnEnd', stopCode: StopCode.Finished };
+						yield {
+							type: 'turnEnd',
+							stopCode: StopCode.Finished,
+							stepUsage: ZERO_USAGE,
+							usage: ZERO_USAGE,
+						};
 					},
+					async *continue() {},
 					cancel: async () => {},
 				});
 				return a;

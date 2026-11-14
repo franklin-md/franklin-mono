@@ -119,7 +119,7 @@ function buildTestMiddleware(
 		next,
 	) {
 		for await (const event of next(await buildPrompt(message))) {
-			observePrompt(event);
+			if (event.type !== 'stepEnd') observePrompt(event);
 			yield event;
 		}
 	};
@@ -128,6 +128,12 @@ function buildTestMiddleware(
 		initialize: passThrough(),
 		setContext: passThrough(),
 		prompt,
+		continue: async function* (_params, next) {
+			for await (const event of next(undefined)) {
+				if (event.type !== 'stepEnd') observePrompt(event);
+				yield event;
+			}
+		},
 		cancel: passThrough(),
 	};
 	const toolObservers = createToolObservers(registrations);

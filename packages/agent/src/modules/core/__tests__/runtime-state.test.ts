@@ -426,7 +426,12 @@ describe('core runtime protocol state', () => {
 						content: [{ type: 'text', text: 'hello' }],
 					},
 				},
-				{ type: 'turnEnd', stopCode: StopCode.Finished },
+				{
+					type: 'turnEnd',
+					stopCode: StopCode.Finished,
+					stepUsage: ZERO_USAGE,
+					usage: ZERO_USAGE,
+				},
 			]);
 		} finally {
 			await scenario.dispose();
