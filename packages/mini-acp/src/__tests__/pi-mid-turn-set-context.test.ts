@@ -151,7 +151,9 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 			'',
 		]);
 		expect(
-			observations.every(({ userTexts }) => userTexts.includes('restored history')),
+			observations.every(({ userTexts }) =>
+				userTexts.includes('restored history'),
+			),
 		).toBe(true);
 	});
 

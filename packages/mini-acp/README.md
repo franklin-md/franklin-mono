@@ -258,7 +258,7 @@ made (e.g. config-resolution failures). Adapters that do reach the provider
 SHOULD populate it.
 
 **`Usage`** — token counts and cost for a completed turn. The two buckets
-share the same field names so a consumer can iterate either symmetrically:
+share numeric component field names; cost also carries billing provenance:
 ```
 Usage {
   tokens: {
