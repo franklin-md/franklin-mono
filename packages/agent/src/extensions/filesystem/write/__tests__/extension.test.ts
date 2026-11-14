@@ -91,14 +91,18 @@ function getResultText(result: {
 }
 
 describe('writeExtension', () => {
-	it('allows editing a file after writing it without a prior read', async () => {
+	it('preserves unrelated typing after writing a file without a prior read', async () => {
 		const env = mockEnvironment({});
 		const compiled = await compileWriteAndEdit(env);
 
 		await executeTool(compiled, 'write_file', {
 			path: 'new.txt',
-			content: 'hello world',
+			content: 'hello world\nbelow',
 		});
+		await env.filesystem.writeFile(
+			'new.txt' as AbsolutePath,
+			'hello world\nuser below',
+		);
 
 		const editResult = await executeTool(compiled, 'edit_file', {
 			path: 'new.txt',
@@ -110,7 +114,7 @@ describe('writeExtension', () => {
 		expect(getResultText(editResult)).toContain('new.txt');
 		expect(env.filesystem.writeFile).toHaveBeenLastCalledWith(
 			'new.txt',
-			'goodbye world',
+			'goodbye world\nuser below',
 		);
 	});
 

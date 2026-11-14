@@ -56,8 +56,11 @@ export function editExtension() {
 						throw new Error(message);
 					}
 
-					if (fileRecord !== hash) {
-						const message = `File has changed since last read. Refusing to edit.`;
+					const changed =
+						(typeof fileRecord === 'string' ? fileRecord : fileRecord.hash) !==
+						hash;
+					if (changed && (typeof fileRecord === 'string' || replace_all)) {
+						const message = `File has changed since last read. Reread ${path} before editing without a text snapshot or using replace_all.`;
 						console.error(`[edit_file] ${message} (path: ${path})`);
 						throw new Error(message);
 					}
@@ -81,39 +84,56 @@ export function editExtension() {
 						replaced = normalized.split(normalizedOld).join(normalizedNew);
 					} else {
 						// 3b. Find unique match
-						const match = findUnique(normalized, normalizedOld);
+						const snapshot =
+							typeof fileRecord === 'string'
+								? normalized
+								: normalizeToLF(fileRecord.text);
+						const match = findUnique(snapshot, normalizedOld);
 
 						if (!match.found) {
 							if (match.ambiguous) {
-								const message = `Found multiple occurrences of the text in ${path}. The text must be unique. Please provide more surrounding context to make it unique.`;
+								const message = `Found multiple occurrences of the text in the last read of ${path}. The text must be unique. Please provide more surrounding context to make it unique.`;
 								console.error(`[edit_file] ${message}`);
 								throw new Error(message);
 							}
-							const message = `Could not find the specified text in ${path}. The old_text must match exactly including all whitespace and newlines.`;
+							const message = `Could not find the specified text in the last read of ${path}. The old_text must match exactly including all whitespace and newlines.`;
 							console.error(`[edit_file] ${message}`);
 							throw new Error(message);
 						}
 
+						const target = changed
+							? match.fuzzy
+								? undefined
+								: currentMatchRange(snapshot, text, match.index, match.length)
+							: match;
+						if (target === undefined) {
+							throw new Error(
+								`Target lines have changed or shifted since last read, or the edit requires fuzzy matching. Reread ${path} before retrying.`,
+							);
+						}
 						replaced = applyReplacement(
-							match.content,
-							match.index,
-							match.length,
-							normalizedNew,
+							changed ? text : match.content,
+							target.index,
+							target.length,
+							changed
+								? restoreLineEndings(normalizedNew, ending)
+								: normalizedNew,
 						);
 					}
 
 					// 4. Verify change
-					if (normalized === replaced) {
+					if ((changed ? text : normalized) === replaced) {
 						const message = `No changes made to ${path}. The replacement produced identical content.`;
 						console.error(`[edit_file] ${message}`);
 						throw new Error(message);
 					}
 
 					// 5. Restore encoding + write
-					const final = bom + restoreLineEndings(replaced, ending);
+					const final =
+						bom + (changed ? replaced : restoreLineEndings(replaced, ending));
 					await env.filesystem.writeFile(absPath, final);
 
-					// 6. Refresh the read hash so consecutive edits don't require a re-read
+					// 6. Refresh the snapshot so consecutive edits don't require a re-read
 
 					// TODO: race conditions between agents.
 					await file.markFileRead(env.filesystem, path, final);
@@ -123,4 +143,41 @@ export function editExtension() {
 			});
 		},
 	);
+}
+
+function currentMatchRange(
+	snapshot: string,
+	current: string,
+	index: number,
+	length: number,
+): { index: number; length: number } | undefined {
+	if (length === 0) return undefined;
+	// Keep newline terminators: a match ending at a newline touches that line,
+	// not the next one. Compare whole lines, never search/remap the current text.
+	const savedLines = snapshot.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+	const currentLines = current.match(/[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$/g) ?? [];
+	const first = snapshot.slice(0, index).split('\n').length - 1;
+	const last = snapshot.slice(0, index + length - 1).split('\n').length - 1;
+	if (
+		savedLines
+			.slice(first, last + 1)
+			.some(
+				(line, offset) =>
+					line !== normalizeToLF(currentLines[first + offset] ?? ''),
+			)
+	) {
+		return undefined;
+	}
+	// Recompute offsets from current line lengths, retaining its raw line endings.
+	const start =
+		currentLines.slice(0, first).join('').length +
+		index -
+		savedLines.slice(0, first).join('').length;
+	const endLine = snapshot.slice(0, index + length).split('\n').length - 1;
+	const end =
+		currentLines.slice(0, endLine).join('').length +
+		index +
+		length -
+		savedLines.slice(0, endLine).join('').length;
+	return { index: start, length: end - start };
 }
