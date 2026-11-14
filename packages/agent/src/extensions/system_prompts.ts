@@ -16,8 +16,10 @@ The old_text must match exactly (including whitespace and newlines).
 Use this for precise, surgical edits. 
 For new files or complete rewrites, use write_file instead. 
 Set replace_all to true to replace every occurrence; otherwise the text must appear exactly once. 
-This tool will return an error if you are trying to edit a file 
-that has changed since the last time you have read it.`;
+Read the file before editing. Exact single-target edits can preserve unrelated changes
+when the full target lines are unchanged at the same line numbers as your last read.
+If target lines changed or shifted, reread before retrying. Fuzzy edits and replace_all
+require the file to be unchanged since your last read.`;
 
 export const globDescription = `Fast file pattern matching tool that returns paths of files matching a glob pattern.
 Use this to find files by name or extension (e.g. "**/*.ts", "src/**/*.test.js", "package.json").

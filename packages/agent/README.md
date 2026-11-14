@@ -105,6 +105,13 @@ projected into the next Mini-ACP context.
 
 ### Extensions
 
+`edit_file` retains the latest full UTF-8 text snapshot per read path in its
+private file record, increasing stored session data by the retained text size.
+Exact single-target edits preserve unrelated changes when the full target lines
+remain unchanged at the same line numbers; shifted or changed target lines
+require a reread. Fuzzy edits, `replace_all`, and legacy or binary hash-only
+records still require an unchanged file. Validation and writing are not atomic.
+
 Extensions are the way the application interacts with both the agent and the environment. From an extension developer's perspective, the primary concern is: **how should the application handle the agent's tool requests?**
 
 The generic extension-point, compiler, runtime, and stateless module algebra lives in `@franklin/extensibility`. This package owns the state-module layer and the agent-specific modules built on top of that kernel: core Mini-ACP wiring, environment access, stores, orchestration, and the built-in extensions.
