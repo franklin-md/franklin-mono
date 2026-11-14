@@ -18,5 +18,6 @@ export type AgentController = {
 	bind(client: MiniACPClientHandle): AgentClient;
 	setToolEnabled(name: string, enabled: boolean): boolean;
 	getSession(): SessionSnapshot;
+	compact(): Promise<boolean>;
 	inspect(): CoreInspectDump;
 };

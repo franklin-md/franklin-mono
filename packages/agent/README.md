@@ -154,6 +154,31 @@ inherit config, and reset usage/tool policy. Projection scans the log on restore
 and checkpoint append; checkpoints reduce model context, not storage or snapshot
 copy costs. No Mini-ACP protocol, adapter or execution-loop changes are involved.
 
+### Compaction
+
+Franklin core checks the projected context before a fresh prompt and at the
+idle `stepEnd` boundary before `continue()`. Compaction summarizes the entire
+visible prefix, appends a summary checkpoint, and uses ordinary context sync.
+The pending user message is included in budgeting but is appended only after
+preparation, so a fresh prompt is not duplicated or lost behind its summary.
+No Mini-ACP callback, acknowledgement method, or protocol change is required.
+
+Budgeting currently uses the existing conservative 8,192-token planning window
+and a 6,144-token trigger; this is not the selected model's reported capacity.
+Estimates include system instructions, tool schemas, messages and fixed image
+allowances. Large instruction/tool/prompt payloads that still exceed the budget
+fail before the next inference. Model-specific app-owned budgets remain a
+limitation; these estimates do not guarantee provider token limits.
+
+`runtime.compact()` requests manual compaction while no prompt is active and
+returns whether a checkpoint was appended. Empty history and an already-current
+checkpoint return false. Summary generation uses an isolated connection with no
+tools or extension hooks and bounded transcript chunks. Cancellation, failed or
+stale summaries cannot append a checkpoint. A failed sync leaves an appended
+checkpoint pending for retry. Successful summary usage contributes to session
+totals; failed multi-chunk summaries currently omit partial usage. Persistence
+retains its existing debounced behavior and raw disk history.
+
 ### Extensions
 
 Extensions are the way the application interacts with both the agent and the environment. From an extension developer's perspective, the primary concern is: **how should the application handle the agent's tool requests?**

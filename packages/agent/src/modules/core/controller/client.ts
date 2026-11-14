@@ -27,12 +27,14 @@ export function bindAgentClient({
 		},
 		async *prompt(message) {
 			if (active) throw new Error('Franklin prompt already in progress');
+			session.begin();
 			const run = {};
 			active = run;
 			let paused = false;
 			try {
 				await session.sync(client);
 				const fullPrompt = await buildPrompt(message);
+				await session.prepare(client, fullPrompt);
 				session.recordMessage(fullPrompt);
 
 				let stream = client.prompt(fullPrompt);
@@ -51,6 +53,7 @@ export function bindAgentClient({
 						}
 						if (event.type === 'turnEnd') {
 							paused = false;
+							session.end();
 							active = undefined;
 						}
 						notifyPromptObservers(event);
@@ -60,27 +63,38 @@ export function bindAgentClient({
 					// The terminal guarantees idle. Ordinary synchronization here picks up
 					// dynamic prompts/tools without a reverse-RPC acknowledgement barrier.
 					await session.sync(client);
+					await session.prepare(client);
 					stream = client.continue();
 					paused = false;
 				}
 			} finally {
-				if (paused) {
-					// A failed idle sync must not strand the raw client in a paused turn.
-					await client.cancel();
-					for await (const _event of client.continue()) {
-						/* drain cancellation */
+				try {
+					if (paused) {
+						// Failed idle preparation must not strand the raw paused turn.
+						await client.cancel();
+						for await (const _event of client.continue()) {
+							/* drain cancellation */
+						}
+					}
+				} finally {
+					if (active === run) {
+						session.end();
+						active = undefined;
 					}
 				}
-				if (active === run) active = undefined;
 			}
 		},
 		async cancel() {
+			session.cancel();
 			// Future cancellation policy belongs here: the controller is the one place
 			// that sees both Mini-ACP turn cancellation and app-side tool execution, so
 			// any safe termination of in-flight tools should be coordinated from this
 			// boundary.
 			await client.cancel();
 		},
-		dispose: client.dispose.bind(client),
+		async dispose() {
+			session.cancel();
+			await client.dispose();
+		},
 	};
 }
