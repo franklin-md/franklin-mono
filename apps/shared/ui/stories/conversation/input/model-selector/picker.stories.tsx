@@ -55,9 +55,13 @@ export const ModelOnly: Story = {
 		const body = within(canvasElement.ownerDocument.body);
 		await userEvent.click(canvas.getByRole('button'));
 		await userEvent.type(body.getByRole('combobox'), 'GPT-5.6 Terra');
-		await userEvent.click(await body.findByRole('option', { name: 'GPT-5.6 Terra' }));
+		await userEvent.click(
+			await body.findByRole('option', { name: 'GPT-5.6 Terra' }),
+		);
 		await expect(canvas.getByRole('button')).toHaveTextContent('GPT-5.6 Terra');
-		await expect(body.queryByRole('dialog')).not.toBeInTheDocument();
+		await waitFor(() =>
+			expect(body.queryByRole('dialog')).not.toBeInTheDocument(),
+		);
 		await expect(body.queryByRole('radiogroup')).not.toBeInTheDocument();
 	},
 };
@@ -78,7 +82,9 @@ export const WithEffort: Story = {
 		await expect(trigger).toHaveTextContent('High');
 		await expect(body.getByRole('combobox')).toHaveValue('no-such-model');
 		await userEvent.keyboard('{Escape}');
-		await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
+		await waitFor(() =>
+			expect(body.queryByRole('dialog')).not.toBeInTheDocument(),
+		);
 		await waitFor(() => expect(trigger).toHaveFocus());
 	},
 };
@@ -111,7 +117,11 @@ export const CustomTriggerWithoutSearch: Story = {
 		await userEvent.click(canvas.getByRole('button'));
 		await expect(body.queryByRole('combobox')).not.toBeInTheDocument();
 		await userEvent.keyboard('{ArrowDown}{Enter}');
-		await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
-		await expect(canvas.getByRole('button')).not.toHaveTextContent('saved-model');
+		await waitFor(() =>
+			expect(body.queryByRole('dialog')).not.toBeInTheDocument(),
+		);
+		await expect(canvas.getByRole('button')).not.toHaveTextContent(
+			'saved-model',
+		);
 	},
 };

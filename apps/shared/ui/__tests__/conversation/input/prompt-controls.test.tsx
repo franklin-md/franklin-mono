@@ -10,7 +10,12 @@ describe('host-owned prompt submission', () => {
 		const submit = vi.fn();
 		const { container } = render(
 			<PromptSurface asChild>
-				<form onSubmit={(event) => { event.preventDefault(); submit(); }}>
+				<form
+					onSubmit={(event) => {
+						event.preventDefault();
+						submit();
+					}}
+				>
 					<textarea aria-label="Prompt" />
 					<PromptSubmitButton type="submit" />
 				</form>

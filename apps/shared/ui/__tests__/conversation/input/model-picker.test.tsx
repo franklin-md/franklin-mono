@@ -39,7 +39,9 @@ describe('controlled model picker', () => {
 		'searches for %s and selects its OpenRouter model',
 		async (search, name, id) => {
 			const onSelect = vi.fn();
-			render(<ModelPicker provider="custom" model="saved" onSelect={onSelect} />);
+			render(
+				<ModelPicker provider="custom" model="saved" onSelect={onSelect} />,
+			);
 			fireEvent.click(screen.getByRole('button'));
 			fireEvent.change(screen.getByPlaceholderText('Search models...'), {
 				target: { value: search },
