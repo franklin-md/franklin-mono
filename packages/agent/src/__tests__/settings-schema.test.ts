@@ -17,6 +17,7 @@ describe('AppSettings schema', () => {
 
 	it('DEFAULT_APP_SETTINGS pins the expected shape (regression lock)', () => {
 		expect(DEFAULT_APP_SETTINGS).toEqual({
+			documentDownloads: { idleTimeoutMs: 60_000, totalTimeoutMs: 900_000 },
 			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {
 				provider: 'openai-codex',
@@ -39,6 +40,7 @@ describe('AppSettings schema', () => {
 		expect(result).toMatchObject({
 			ok: true,
 			value: {
+				documentDownloads: DEFAULT_APP_SETTINGS.documentDownloads,
 				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'anthropic',
@@ -60,6 +62,7 @@ describe('AppSettings schema', () => {
 		expect(result).toEqual({
 			ok: true,
 			value: {
+				documentDownloads: DEFAULT_APP_SETTINGS.documentDownloads,
 				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'openai',
@@ -80,6 +83,7 @@ describe('AppSettings schema', () => {
 		expect(result).toEqual({
 			ok: true,
 			value: {
+				documentDownloads: DEFAULT_APP_SETTINGS.documentDownloads,
 				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'openai',
@@ -129,4 +133,18 @@ describe('AppSettings schema', () => {
 			issue: { kind: 'schema-mismatch', version: 1 },
 		});
 	});
+	it('hydrates a partial document policy without changing existing values', () => {
+		expect(appSettingsCodec.decode({ version: 1, data: {
+			documentDownloads: { idleTimeoutMs: 120_000 },
+		} })).toMatchObject({ ok: true, value: {
+			documentDownloads: { idleTimeoutMs: 120_000, totalTimeoutMs: 900_000 },
+		} });
+	});
+
+	it.each([0, -1, 1.5, 2_147_483_648])('rejects invalid document timing %s', (duration) => {
+		expect(appSettingsCodec.decode({ version: 1, data: {
+			documentDownloads: { totalTimeoutMs: duration },
+		} })).toMatchObject({ ok: false, issue: { kind: 'schema-mismatch' } });
+	});
+
 });
