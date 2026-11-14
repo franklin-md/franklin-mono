@@ -5,7 +5,7 @@ import {
 	type SessionSnapshot,
 	type ToolFilter,
 } from '../../../modules/core/state.js';
-import { projectEntries } from '../../../modules/core/history/project.js';
+import { validateEntries } from '../../../modules/core/history/validate.js';
 
 const ThinkingLevelV1 = z.enum([
 	'off',
@@ -72,13 +72,12 @@ export const CoreSessionV2 = CoreSessionV1.omit({ messages: true }).extend({
 					type: z.literal('compaction'),
 					id: z.string().min(1),
 					summary: z.string(),
-					firstKeptEntryId: z.string().min(1).nullable(),
 				}),
 			]),
 		)
 		.refine((entries) => {
 			try {
-				projectEntries(entries);
+				validateEntries(entries);
 				return true;
 			} catch {
 				return false;

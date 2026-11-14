@@ -142,13 +142,12 @@ describe('session codec', () => {
 		});
 	});
 
-	it('rejects a persisted compaction pointing outside the retained history', () => {
+	it('rejects a persisted checkpoint reusing a message ID', () => {
 		const value = session();
 		value.core.entries.push({
 			type: 'compaction',
-			id: 'checkpoint',
+			id: 'test-0',
 			summary: 'summary',
-			firstKeptEntryId: 'missing',
 		});
 		expect(
 			franklinSessionCodec.decode({
@@ -165,7 +164,6 @@ describe('session codec', () => {
 				type: 'compaction',
 				id: 'first',
 				summary: '  original summary\n',
-				firstKeptEntryId: null,
 			},
 			...createMessageEntries(
 				[{ role: 'assistant', content: [{ type: 'text', text: 'after' }] }],
@@ -175,7 +173,6 @@ describe('session codec', () => {
 				type: 'compaction',
 				id: 'second',
 				summary: 'replacement summary',
-				firstKeptEntryId: 'after-0',
 			},
 		);
 		const encoded: unknown = JSON.parse(
@@ -184,61 +181,31 @@ describe('session codec', () => {
 		expect(franklinSessionCodec.decode(encoded)).toEqual({ ok: true, value });
 	});
 
-	it.each([
-		'duplicate',
-		'empty-id',
-		'empty-summary',
-		'resurrection',
-		'synthetic-boundary',
-		'future-boundary',
-	])('rejects invalid v3 history: %s', (kind) => {
-		const value = session();
-		const first = value.core.entries[0]!;
-		switch (kind) {
-			case 'duplicate':
-				value.core.entries.push(first);
-				break;
-			case 'empty-id':
-				value.core.entries.push({ ...first, id: '' });
-				break;
-			case 'empty-summary':
-				value.core.entries.push({
-					type: 'compaction',
-					id: 'fence',
-					summary: '  ',
-					firstKeptEntryId: null,
-				});
-				break;
-			case 'resurrection':
-			case 'synthetic-boundary':
-				value.core.entries.push(
-					{
+	it.each(['duplicate', 'empty-id', 'empty-summary'])(
+		'rejects invalid v3 history: %s',
+		(kind) => {
+			const value = session();
+			const first = value.core.entries[0]!;
+			switch (kind) {
+				case 'duplicate':
+					value.core.entries.push(first);
+					break;
+				case 'empty-id':
+					value.core.entries.push({ ...first, id: '' });
+					break;
+				case 'empty-summary':
+					value.core.entries.push({
 						type: 'compaction',
-						id: 'first',
-						summary: 'summary',
-						firstKeptEntryId: null,
-					},
-					{
-						type: 'compaction',
-						id: 'second',
-						summary: 'summary',
-						firstKeptEntryId: kind === 'resurrection' ? first.id : 'first',
-					},
-				);
-				break;
-			case 'future-boundary':
-				value.core.entries.unshift({
-					type: 'compaction',
-					id: 'fence',
-					summary: 'summary',
-					firstKeptEntryId: first.id,
-				});
-				break;
-		}
-		expect(
-			franklinSessionCodec.decode({ version: 3, data: value }),
-		).toMatchObject({ ok: false, issue: { kind: 'schema-mismatch' } });
-	});
+						id: 'fence',
+						summary: '  ',
+					});
+					break;
+			}
+			expect(
+				franklinSessionCodec.decode({ version: 3, data: value }),
+			).toMatchObject({ ok: false, issue: { kind: 'schema-mismatch' } });
+		},
+	);
 
 	it.each([1, 2])(
 		'migrates all v%i message roles deterministically and roundtrips v3',

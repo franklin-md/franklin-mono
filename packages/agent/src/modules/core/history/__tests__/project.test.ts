@@ -10,8 +10,8 @@ function message(id: string): MessageEntry {
 	};
 }
 
-function fence(id: string, firstKeptEntryId: string | null): CompactionEntry {
-	return { type: 'compaction', id, summary: `summary ${id}`, firstKeptEntryId };
+function fence(id: string): CompactionEntry {
+	return { type: 'compaction', id, summary: `summary ${id}` };
 }
 
 describe('session history projection', () => {
@@ -21,16 +21,11 @@ describe('session history projection', () => {
 		expect(projectEntries(entries)).toEqual(entries);
 	});
 
-	it('replaces the prefix with a summary and retains messages around the fence', () => {
-		const entries = [
-			message('a'),
-			message('b'),
-			fence('first', 'b'),
-			message('c'),
-		];
+	it('hides every preceding message and accumulates messages after the fence', () => {
+		const entries = [message('a'), message('b'), fence('first'), message('c')];
 		const original = structuredClone(entries);
 		const projected = projectEntries(entries);
-		expect(projected.map((entry) => entry.id)).toEqual(['first', 'b', 'c']);
+		expect(projected.map((entry) => entry.id)).toEqual(['first', 'c']);
 		expect(projected[0]?.message).toEqual({
 			role: 'user',
 			content: [{ type: 'text', text: 'Conversation summary:\nsummary first' }],
@@ -43,65 +38,51 @@ describe('session history projection', () => {
 			message('a'),
 			message('b'),
 			message('c'),
-			fence('first', 'b'),
+			fence('first'),
 			message('d'),
-			fence('second', 'c'),
+			fence('second'),
 			message('e'),
 		];
 		const original = structuredClone(entries);
 		expect(projectEntries(entries).map((entry) => entry.id)).toEqual([
 			'second',
-			'c',
-			'd',
 			'e',
 		]);
 		expect(entries).toEqual(original);
 	});
 
-	it('can retain none, including after an earlier fence', () => {
+	it('can start with a checkpoint and replace it with a consecutive checkpoint', () => {
 		expect(
-			projectEntries([
-				message('a'),
-				fence('first', null),
-				message('b'),
-				fence('second', null),
-				message('c'),
-			]).map((entry) => entry.id),
+			projectEntries([fence('first'), fence('second'), message('c')]).map(
+				(entry) => entry.id,
+			),
 		).toEqual(['second', 'c']);
 	});
 
-	it.each(['missing', 'future', 'first', 'a'])(
-		'rejects unavailable or synthetic boundary %s',
-		(boundary) => {
-			expect(() =>
-				projectEntries([
-					message('a'),
-					message('b'),
-					fence('first', 'b'),
-					fence('second', boundary),
-					message('future'),
-				]),
-			).toThrow('boundary');
-		},
-	);
+	it('leaves only the summary when the last entry is a checkpoint', () => {
+		expect(
+			projectEntries([message('a'), fence('first')]).map((entry) => entry.id),
+		).toEqual(['first']);
+	});
 
 	it.each([
 		[message('a'), message('a')],
-		[message('a'), fence('a', null)],
-		[message('a'), fence('first', null), message('a')],
+		[message('a'), fence('a')],
+		[message('a'), fence('first'), message('a')],
 		[message('')],
-		[fence('', null)],
+		[fence('')],
+		[message('  ')],
 	])('rejects invalid or reused entry IDs', (...entries: SessionEntry[]) => {
 		expect(() => projectEntries(entries)).toThrow(/id/i);
 	});
 
 	it('rejects empty summaries', () => {
 		expect(() =>
-			projectEntries([{ ...fence('first', null), summary: '  ' }]),
+			projectEntries([{ ...fence('first'), summary: '  ' }]),
 		).toThrow('summary');
 	});
 
-	it('keeps tool exchanges whole and rejects boundaries inside them', () => {
+	it('hides completed tool exchanges with the rest of the prefix', () => {
 		const call: MessageEntry = {
 			type: 'message',
 			id: 'call',
@@ -121,30 +102,12 @@ describe('session history projection', () => {
 				content: [{ type: 'text', text: 'found' }],
 			},
 		};
-		const entries = [message('a'), call, result, message('b')];
-		expect(
-			projectEntries([...entries, fence('first', 'call')]).map(
-				(entry) => entry.id,
-			),
-		).toEqual(['first', 'call', 'result', 'b']);
-		expect(
-			projectEntries([...entries, fence('first', 'b')]).map(
-				(entry) => entry.id,
-			),
-		).toEqual(['first', 'b']);
-		expect(() =>
-			projectEntries([...entries, fence('first', 'result')]),
-		).toThrow('boundary');
-		expect(() =>
-			projectEntries([
-				call,
-				message('interleaved'),
-				result,
-				fence('first', 'interleaved'),
-			]),
-		).toThrow('boundary');
-		expect(() => projectEntries([call, fence('first', null)])).toThrow(
-			'boundary',
-		);
+		const entries = [message('a'), call, result, fence('first'), message('b')];
+		const original = structuredClone(entries);
+		expect(projectEntries(entries).map((entry) => entry.id)).toEqual([
+			'first',
+			'b',
+		]);
+		expect(entries).toEqual(original);
 	});
 });

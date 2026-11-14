@@ -22,13 +22,11 @@ describe('durable draft history', () => {
 			type: 'compaction',
 			id: 'first',
 			summary: 'old summary',
-			firstKeptEntryId: 'seed-1',
 		});
 		draft.appendCheckpoint({
 			type: 'compaction',
 			id: 'second',
 			summary: 'new summary',
-			firstKeptEntryId: 'seed-1',
 		});
 		const entries = draft.getEntries();
 		await draft.commit();
@@ -39,7 +37,6 @@ describe('durable draft history', () => {
 				role: 'user',
 				content: [{ type: 'text', text: 'Conversation summary:\nnew summary' }],
 			},
-			{ role: 'user', content: [{ type: 'text', text: 'retained' }] },
 		]);
 	});
 
@@ -51,11 +48,10 @@ describe('durable draft history', () => {
 		expect(() =>
 			draft.appendCheckpoint({
 				type: 'compaction',
-				id: 'bad',
+				id: 'seed-0',
 				summary: 'summary',
-				firstKeptEntryId: 'missing',
 			}),
-		).toThrow('boundary');
+		).toThrow('id');
 		expect(draft.getEntries()).toEqual(original);
 		expect(draft.get()).toEqual(context);
 		expect(draft.revision('messages')).toBe(revision);
@@ -81,7 +77,6 @@ describe('durable draft history', () => {
 			type: 'compaction' as const,
 			id: 'fence',
 			summary: 'summary',
-			firstKeptEntryId: null,
 		};
 		draft.appendCheckpoint(checkpoint);
 		checkpoint.summary = 'mutated';
@@ -107,7 +102,6 @@ describe('durable draft history', () => {
 			type: 'compaction',
 			id: 'fence',
 			summary: 'summary',
-			firstKeptEntryId: 'seed-1',
 		});
 		const entries = draft.getEntries();
 		draft.apply({

@@ -165,7 +165,6 @@ describe('FranklinApp.start', () => {
 					type: 'compaction',
 					id: 'checkpoint',
 					summary: 'summary',
-					firstKeptEntryId: 'legacy-1',
 				});
 			const { entries: _entries, ...core } = value.core;
 			const { details: _details, ...legacy } = value;

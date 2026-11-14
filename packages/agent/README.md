@@ -106,21 +106,19 @@ to internal context state.
 **Compatibility change:** `SessionSnapshot.messages: Message[]` is replaced by
 `SessionSnapshot.entries: SessionEntry[]`, including the value returned by
 `runtime.getSession()`. Each `message` entry has a stable ID and its original
-Mini-ACP message. A `compaction` checkpoint has its own ID, a summary, and
-`firstKeptEntryId`: the first original message retained from the current
-projection, or `null` to retain none of the preceding messages. Checkpoints do
-not delete messages or earlier checkpoints from the durable history.
+Mini-ACP message. A `compaction` checkpoint has its own ID and a summary. It hides
+everything before it from the model, including any earlier summary. Checkpoints
+do not delete messages or earlier checkpoints from the durable history.
 
 The pure [history projector](src/modules/core/history/project.ts) reduces entries
-in order. Each checkpoint replaces the entire preceding summary and hidden
-prefix; only its retained suffix and subsequent messages remain visible. It
-rejects duplicate/empty IDs, empty summaries, missing or future boundaries,
-boundaries into an earlier summary or already hidden history, and boundaries
-that split tool calls from their results. Summaries appear as user messages
-prefixed with `Conversation summary:`; their IDs are synthetic projection IDs
-and cannot be used as retained-message boundaries. A later summary must cover
-the whole prefix it replaces, including the previous summary. Summary generation
-and policy are outside this package's history foundation.
+in order with two transitions: a message appends to the visible list; a
+checkpoint replaces that list with its summary. Messages after the checkpoint
+then accumulate normally. Validation checks unique, nonempty IDs and nonblank
+summaries separately from these transitions. Summaries appear as user messages
+prefixed with `Conversation summary:`. A later summary must cover the whole prefix
+it replaces, including the previous summary. There is no retained-tail boundary.
+Summary generation and choosing when to append a checkpoint are outside this
+package's history foundation.
 
 Hydration projects entries into the existing Mini-ACP context. Ordinary context
 synchronization records successful sends only in the sent-context tracker; it

@@ -33,7 +33,6 @@ describe('history synchronization', () => {
 			type: 'compaction' as const,
 			id: 'fence',
 			summary: 'summary',
-			firstKeptEntryId: 'seed-1',
 		};
 		draft.appendCheckpoint(checkpoint);
 		const apply = vi.spyOn(draft, 'apply');
@@ -69,7 +68,6 @@ describe('history synchronization', () => {
 						{ type: 'text', text: 'Conversation summary:\nnew summary' },
 					],
 				},
-				entries[1]?.message,
 				response,
 			],
 		});

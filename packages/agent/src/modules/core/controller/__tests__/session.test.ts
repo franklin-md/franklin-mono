@@ -64,7 +64,6 @@ describe('createAgentSession', () => {
 				type: 'compaction' as const,
 				id: 'fence',
 				summary: 'summary',
-				firstKeptEntryId: null,
 			},
 			...createMessageEntries([userMessage], 'retained'),
 		];
