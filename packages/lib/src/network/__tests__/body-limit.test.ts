@@ -46,10 +46,15 @@ describe('readBodyWithLimit', () => {
 		expect(stream.locked).toBe(false);
 	});
 
-	it.each([0, -1, 1.5, Infinity, NaN])('rejects invalid byte cap %s and cancels the body', async (limit) => {
-		const cancel = vi.fn();
-		const stream = new ReadableStream<Uint8Array>({ cancel });
-		await expect(readBodyWithLimit(stream, limit)).rejects.toThrow(RangeError);
-		expect(cancel).toHaveBeenCalledOnce();
-	});
+	it.each([0, -1, 1.5, Infinity, NaN])(
+		'rejects invalid byte cap %s and cancels the body',
+		async (limit) => {
+			const cancel = vi.fn();
+			const stream = new ReadableStream<Uint8Array>({ cancel });
+			await expect(readBodyWithLimit(stream, limit)).rejects.toThrow(
+				RangeError,
+			);
+			expect(cancel).toHaveBeenCalledOnce();
+		},
+	);
 });
