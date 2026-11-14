@@ -17,7 +17,6 @@ import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import { bindMiniACPRpcAgent } from '@franklin/mini-acp/rpc';
 import { emptySessionSnapshot } from '../modules/core/state.js';
 import { emptyEnvironmentState } from '../modules/environment/state.js';
-import { createMessageEntries } from '../modules/core/history/create.js';
 import { projectEntries } from '../modules/core/history/project.js';
 import { franklinSessionCodec } from '../app/session/codecs/index.js';
 import type { FranklinSession } from '../types.js';
@@ -144,7 +143,10 @@ describe('FranklinApp.start', () => {
 					content: [{ type: 'text' as const, text: 'retained' }],
 				},
 			];
-			const entries: SessionEntry[] = createMessageEntries(messages, 'legacy');
+			const entries: SessionEntry[] = messages.map((message) => ({
+				type: 'message' as const,
+				message,
+			}));
 			const value: FranklinSession = {
 				...emptyEnvironmentState(),
 				store: {},
@@ -163,7 +165,6 @@ describe('FranklinApp.start', () => {
 			if (version === 3)
 				entries.push({
 					type: 'compaction',
-					id: 'checkpoint',
 					summary: 'summary',
 				});
 			const { entries: _entries, ...core } = value.core;
@@ -199,9 +200,7 @@ describe('FranklinApp.start', () => {
 				})) {
 					/* drain stub */
 				}
-				expect(patches[0]?.messages).toEqual(
-					projectEntries(entries).map((entry) => entry.message),
-				);
+				expect(patches[0]?.messages).toEqual(projectEntries(entries));
 				const state = await app.agents.getState('root');
 				expect(state?.core.entries.slice(0, entries.length)).toEqual(entries);
 				expect(state?.core.usage).toEqual(value.core.usage);

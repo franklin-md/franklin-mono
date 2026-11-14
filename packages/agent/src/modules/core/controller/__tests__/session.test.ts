@@ -1,4 +1,3 @@
-import { createMessageEntries } from '../../history/create.js';
 import type {
 	ContextPatch,
 	MiniACPClient,
@@ -59,13 +58,12 @@ function createState(input: CreateStateInput) {
 describe('createAgentSession', () => {
 	it('rehydrates and retries only the projected context while snapshots keep raw entries', async () => {
 		const entries = [
-			...createMessageEntries([userMessage], 'old'),
+			{ type: 'message' as const, message: userMessage },
 			{
 				type: 'compaction' as const,
-				id: 'fence',
 				summary: 'summary',
 			},
-			...createMessageEntries([userMessage], 'retained'),
+			{ type: 'message' as const, message: userMessage },
 		];
 		const session = createState({
 			snapshot: { ...emptySnapshot(), entries },
@@ -224,7 +222,7 @@ describe('createAgentSession', () => {
 		const client = stubClient();
 		const session = createState({
 			snapshot: {
-				entries: createMessageEntries([userMessage], 'test'),
+				entries: [{ type: 'message' as const, message: userMessage }],
 				llmConfig: { provider: 'test-provider', model: 'test-model' },
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),
@@ -256,7 +254,7 @@ describe('createAgentSession', () => {
 			config: {},
 		});
 		expect(session.getSnapshot()).toMatchObject({
-			entries: createMessageEntries([userMessage], 'test'),
+			entries: [{ type: 'message' as const, message: userMessage }],
 			llmConfig: { model: 'test-model' },
 		});
 
@@ -289,7 +287,7 @@ describe('createAgentSession', () => {
 		const client = stubClient(setContext);
 		const session = createState({
 			snapshot: {
-				entries: createMessageEntries([userMessage], 'test'),
+				entries: [{ type: 'message' as const, message: userMessage }],
 				llmConfig: { model: 'test-model' },
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),

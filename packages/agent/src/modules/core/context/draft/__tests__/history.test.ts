@@ -1,31 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { createMessageEntries } from '../../../history/create.js';
 import { emptySessionSnapshot } from '../../../state.js';
 import { SessionDraft } from '../session.js';
+import type { MessageEntry } from '../../../history/types.js';
 
 function seededDraft() {
-	const entries = createMessageEntries(
-		[
-			{ role: 'user', content: [{ type: 'text', text: 'old' }] },
-			{ role: 'user', content: [{ type: 'text', text: 'retained' }] },
-		],
-		'seed',
-	);
+	const entries: MessageEntry[] = [
+		{
+			type: 'message' as const,
+			message: { role: 'user', content: [{ type: 'text', text: 'old' }] },
+		},
+		{
+			type: 'message' as const,
+			message: { role: 'user', content: [{ type: 'text', text: 'retained' }] },
+		},
+	];
 	return SessionDraft.fromSnapshot({ ...emptySessionSnapshot(), entries });
 }
 
 describe('durable draft history', () => {
-	it('appends checkpoints without changing raw messages or stable IDs', async () => {
+	it('appends checkpoints without changing raw messages', async () => {
 		const draft = seededDraft();
 		const original = draft.getEntries();
 		draft.appendCheckpoint({
 			type: 'compaction',
-			id: 'first',
 			summary: 'old summary',
 		});
 		draft.appendCheckpoint({
 			type: 'compaction',
-			id: 'second',
 			summary: 'new summary',
 		});
 		const entries = draft.getEntries();
@@ -48,10 +49,9 @@ describe('durable draft history', () => {
 		expect(() =>
 			draft.appendCheckpoint({
 				type: 'compaction',
-				id: 'seed-0',
-				summary: 'summary',
+				summary: '  ',
 			}),
-		).toThrow('id');
+		).toThrow('summary');
 		expect(draft.getEntries()).toEqual(original);
 		expect(draft.get()).toEqual(context);
 		expect(draft.revision('messages')).toBe(revision);
@@ -60,10 +60,15 @@ describe('durable draft history', () => {
 	it('owns copies of snapshot, append, checkpoint and returned history data', () => {
 		const snapshot = {
 			...emptySessionSnapshot(),
-			entries: createMessageEntries(
-				[{ role: 'user', content: [{ type: 'text', text: 'original' }] }],
-				'seed',
-			),
+			entries: [
+				{
+					type: 'message' as const,
+					message: {
+						role: 'user' as const,
+						content: [{ type: 'text' as const, text: 'original' }],
+					},
+				},
+			],
 		};
 		const draft = SessionDraft.fromSnapshot(snapshot);
 		snapshot.entries[0]!.message.content.length = 0;
@@ -75,7 +80,6 @@ describe('durable draft history', () => {
 		message.content.length = 0;
 		const checkpoint = {
 			type: 'compaction' as const,
-			id: 'fence',
 			summary: 'summary',
 		};
 		draft.appendCheckpoint(checkpoint);
@@ -85,14 +89,12 @@ describe('durable draft history', () => {
 		draft.get().messages.length = 0;
 		expect(draft.getEntries()).toMatchObject([
 			{
-				id: 'seed-0',
 				message: { content: [{ type: 'text', text: 'original' }] },
 			},
 			{
-				id: expect.any(String),
 				message: { content: [{ type: 'text', text: 'answer' }] },
 			},
-			{ id: 'fence', summary: 'summary' },
+			{ type: 'compaction', summary: 'summary' },
 		]);
 	});
 
@@ -100,7 +102,6 @@ describe('durable draft history', () => {
 		const draft = seededDraft();
 		draft.appendCheckpoint({
 			type: 'compaction',
-			id: 'fence',
 			summary: 'summary',
 		});
 		const entries = draft.getEntries();
@@ -118,9 +119,8 @@ describe('durable draft history', () => {
 		];
 		draft.apply({ messages });
 		expect(draft.getEntries()).toEqual([
-			{ type: 'message', id: expect.any(String), message: messages[0] },
+			{ type: 'message', message: messages[0] },
 		]);
-		expect(draft.getEntries()[0]?.id).not.toBe('seed-0');
 		expect(draft.get().config.model).toBe('new-model');
 		draft.apply({ messages: [] });
 		expect(draft.getEntries()).toEqual([]);

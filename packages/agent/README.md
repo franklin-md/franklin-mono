@@ -105,18 +105,19 @@ to internal context state.
 
 **Compatibility change:** `SessionSnapshot.messages: Message[]` is replaced by
 `SessionSnapshot.entries: SessionEntry[]`, including the value returned by
-`runtime.getSession()`. Each `message` entry has a stable ID and its original
-Mini-ACP message. A `compaction` checkpoint has its own ID and a summary. It hides
-everything before it from the model, including any earlier summary. Checkpoints
-do not delete messages or earlier checkpoints from the durable history.
+`runtime.getSession()`. Each `message` entry wraps its original Mini-ACP message.
+A `compaction` checkpoint contains a summary. It hides everything before it from
+the model, including any earlier summary. Checkpoints do not delete messages or
+earlier checkpoints from the durable history.
 
 The pure [history projector](src/modules/core/history/project.ts) reduces entries
 in order with two transitions: a message appends to the visible list; a
 checkpoint replaces that list with its summary. Messages after the checkpoint
-then accumulate normally. Validation checks unique, nonempty IDs and nonblank
-summaries separately from these transitions. Summaries appear as user messages
-prefixed with `Conversation summary:`. A later summary must cover the whole prefix
-it replaces, including the previous summary. There is no retained-tail boundary.
+then accumulate normally. Entries are ordered by their position in the log and
+have no IDs. Projection returns Mini-ACP messages directly. Validation checks
+nonblank summaries separately from these transitions. Summaries appear as user
+messages prefixed with `Conversation summary:`. A later summary must cover the
+whole prefix it replaces, including the previous summary. There is no retained-tail boundary.
 Summary generation and choosing when to append a checkpoint are outside this
 package's history foundation.
 
@@ -128,7 +129,7 @@ the last successfully sent model context, with secrets redacted.
 
 An **explicit `messages` patch** through the bound client's `setContext` (or the
 internal `SessionDraft.apply`) is a deliberate context reset: it replaces the
-durable log with newly identified message entries and removes earlier messages
+durable log with new message entries and removes earlier messages
 and checkpoints. An empty array clears the log. Config, system-prompt and tool
 patches preserve the log. This retains baseline explicit replacement semantics;
 it is not a synchronization or compaction API. Callers must not feed projected
@@ -136,11 +137,11 @@ messages into this reset path. Preserving discarded history across explicit
 resets would require a separately designed reset event.
 
 The [session codec](src/app/session/codecs/session.ts) writes version 3 and
-migrates v1/v2 flat messages to entries with deterministic `legacy-<index>` IDs.
+migrates v1/v2 flat messages by wrapping each message as a typed entry.
 V1 defaults to visible details; v2 retains visibility. Both retain config, usage,
 stores, environment and the existing tool-filter defaults. V3 roundtrips original
-messages, IDs and checkpoint text. Forks deep-copy the entire log and inherit
-config/tool policy while resetting usage. Children start with empty history,
+messages, entry order and checkpoint text. Forks deep-copy the entire log and
+inherit config/tool policy while resetting usage. Children start with empty history,
 inherit config, and reset usage/tool policy. Projection scans the log on restore
 and checkpoint append; checkpoints reduce model context, not storage or snapshot
 copy costs. No Mini-ACP protocol, adapter or execution-loop changes are involved.

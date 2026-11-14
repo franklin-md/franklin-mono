@@ -6,7 +6,6 @@ import { CoreSessionV1, CoreSessionV2 } from './core.js';
 import { DetailsSessionV2 } from './details.js';
 import { EnvironmentSessionV1 } from './environment.js';
 import { StoreSessionV1 } from './store.js';
-import { createMessageEntries } from '../../../modules/core/history/create.js';
 
 export const SESSION_FILE_VERSION = 3;
 
@@ -34,7 +33,13 @@ export const franklinSessionCodec: Codec<FranklinSession> = versioned()
 		const { messages, ...core } = prev.core;
 		return {
 			...prev,
-			core: { ...core, entries: createMessageEntries(messages, 'legacy') },
+			core: {
+				...core,
+				entries: messages.map((message) => ({
+					type: 'message' as const,
+					message: structuredClone(message),
+				})),
+			},
 		};
 	})
 	.build();

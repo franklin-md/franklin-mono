@@ -65,12 +65,10 @@ export const CoreSessionV2 = CoreSessionV1.omit({ messages: true }).extend({
 			z.discriminatedUnion('type', [
 				z.object({
 					type: z.literal('message'),
-					id: z.string().min(1),
 					message: MessageV1,
 				}),
 				z.object({
 					type: z.literal('compaction'),
-					id: z.string().min(1),
 					summary: z.string(),
 				}),
 			]),

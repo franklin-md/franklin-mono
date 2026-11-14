@@ -38,8 +38,8 @@ internal `appendCheckpoint` operation use the pure
 [history projector](../history/project.ts). Its visible state accumulates each
 message and resets to the summary on each checkpoint. Everything before that
 checkpoint is hidden, including previous summaries; the durable entries stay
-intact. IDs and summaries are validated separately before changing either
-collection. Stable IDs survive commits, snapshots, persistence and forks.
+intact. Entries use log order and carry no IDs; projection returns Mini-ACP
+messages directly. Summaries are validated before changing either collection.
 
 `ContextLedger.sync` sends the committed projection directly to the connected
 Mini-ACP client and acknowledges only its sent-context tracker. It never calls

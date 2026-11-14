@@ -1,4 +1,3 @@
-import { createMessageEntries } from '../modules/core/history/create.js';
 import { describe, expect, it } from 'vitest';
 import type { AbsolutePath } from '@franklin/lib';
 import { ZERO_USAGE } from '@franklin/mini-acp';
@@ -14,15 +13,15 @@ function session(): FranklinSession {
 			visibility: 'hidden',
 		},
 		core: {
-			entries: createMessageEntries(
-				[
-					{
+			entries: [
+				{
+					type: 'message' as const,
+					message: {
 						role: 'user',
 						content: [{ type: 'text', text: 'hello' }],
 					},
-				],
-				'test',
-			),
+				},
+			],
 			llmConfig: {
 				provider: 'openai-codex',
 				model: 'gpt-5.4',
@@ -92,7 +91,13 @@ describe('session codec', () => {
 			ok: true,
 			value: {
 				...v1,
-				core: { ...core, entries: createMessageEntries(messages, 'legacy') },
+				core: {
+					...core,
+					entries: messages.map((message) => ({
+						type: 'message' as const,
+						message,
+					})),
+				},
 				details: { visibility: 'visible' },
 			},
 		});
@@ -137,41 +142,33 @@ describe('session codec', () => {
 			ok: true,
 			value: {
 				...value,
-				core: { ...core, entries: createMessageEntries(messages, 'legacy') },
+				core: {
+					...core,
+					entries: messages.map((message) => ({
+						type: 'message' as const,
+						message,
+					})),
+				},
 			},
 		});
 	});
 
-	it('rejects a persisted checkpoint reusing a message ID', () => {
-		const value = session();
-		value.core.entries.push({
-			type: 'compaction',
-			id: 'test-0',
-			summary: 'summary',
-		});
-		expect(
-			franklinSessionCodec.decode({
-				version: SESSION_FILE_VERSION,
-				data: value,
-			}),
-		).toMatchObject({ ok: false, issue: { kind: 'schema-mismatch' } });
-	});
-
-	it('roundtrips repeated checkpoints and every raw message with stable IDs', () => {
+	it('roundtrips repeated checkpoints and every raw message', () => {
 		const value = session();
 		value.core.entries.push(
 			{
 				type: 'compaction',
-				id: 'first',
 				summary: '  original summary\n',
 			},
-			...createMessageEntries(
-				[{ role: 'assistant', content: [{ type: 'text', text: 'after' }] }],
-				'after',
-			),
+			{
+				type: 'message' as const,
+				message: {
+					role: 'assistant',
+					content: [{ type: 'text', text: 'after' }],
+				},
+			},
 			{
 				type: 'compaction',
-				id: 'second',
 				summary: 'replacement summary',
 			},
 		);
@@ -181,34 +178,19 @@ describe('session codec', () => {
 		expect(franklinSessionCodec.decode(encoded)).toEqual({ ok: true, value });
 	});
 
-	it.each(['duplicate', 'empty-id', 'empty-summary'])(
-		'rejects invalid v3 history: %s',
-		(kind) => {
-			const value = session();
-			const first = value.core.entries[0]!;
-			switch (kind) {
-				case 'duplicate':
-					value.core.entries.push(first);
-					break;
-				case 'empty-id':
-					value.core.entries.push({ ...first, id: '' });
-					break;
-				case 'empty-summary':
-					value.core.entries.push({
-						type: 'compaction',
-						id: 'fence',
-						summary: '  ',
-					});
-					break;
-			}
-			expect(
-				franklinSessionCodec.decode({ version: 3, data: value }),
-			).toMatchObject({ ok: false, issue: { kind: 'schema-mismatch' } });
-		},
-	);
+	it('rejects a persisted blank checkpoint summary', () => {
+		const value = session();
+		value.core.entries.push({ type: 'compaction', summary: '  ' });
+		expect(
+			franklinSessionCodec.decode({
+				version: SESSION_FILE_VERSION,
+				data: value,
+			}),
+		).toMatchObject({ ok: false, issue: { kind: 'schema-mismatch' } });
+	});
 
 	it.each([1, 2])(
-		'migrates all v%i message roles deterministically and roundtrips v3',
+		'migrates all v%i message roles and roundtrips v3',
 		(version) => {
 			const value = session();
 			const messages = [
@@ -248,7 +230,10 @@ describe('session codec', () => {
 				core: {
 					...core,
 					toolFilter: { disabled: [] },
-					entries: createMessageEntries(messages, 'legacy'),
+					entries: messages.map((message) => ({
+						type: 'message' as const,
+						message,
+					})),
 				},
 			};
 			const migrated = franklinSessionCodec.decode(raw);
@@ -260,6 +245,9 @@ describe('session codec', () => {
 					franklinSessionCodec.encode(migrated.value),
 				),
 			).toEqual(migrated);
+			const original = structuredClone(migrated.value);
+			messages[0]!.content.length = 0;
+			expect(migrated.value).toEqual(original);
 		},
 	);
 

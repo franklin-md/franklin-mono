@@ -1,25 +1,18 @@
-import type { MessageEntry, SessionEntry } from './types.js';
+import type { Message } from '@franklin/mini-acp';
+import type { SessionEntry } from './types.js';
 import { createSummaryMessage } from './summary.js';
 import { validateEntries } from './validate.js';
 
-export function projectEntries(
-	entries: readonly SessionEntry[],
-): MessageEntry[] {
+export function projectEntries(entries: readonly SessionEntry[]): Message[] {
 	validateEntries(entries);
-	let visible: MessageEntry[] = [];
+	let visible: Message[] = [];
 	for (const entry of entries) {
 		switch (entry.type) {
 			case 'message':
-				visible.push(entry);
+				visible.push(entry.message);
 				break;
 			case 'compaction':
-				visible = [
-					{
-						type: 'message',
-						id: entry.id,
-						message: createSummaryMessage(entry.summary),
-					},
-				];
+				visible = [createSummaryMessage(entry.summary)];
 				break;
 		}
 	}

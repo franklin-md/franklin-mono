@@ -3,7 +3,6 @@ import { ContextTracker } from '@franklin/mini-acp/session';
 import type { SessionSnapshot } from '../../state.js';
 import type { CompactionEntry, SessionEntry } from '../../history/types.js';
 import { projectEntries } from '../../history/project.js';
-import { createMessageEntries } from '../../history/create.js';
 import {
 	fieldsInPatch,
 	type ContextField,
@@ -23,7 +22,7 @@ export class SessionDraft {
 		const draft = new SessionDraft();
 		draft.entries = structuredClone(snapshot.entries);
 		draft.tracker.apply({
-			messages: projectEntries(draft.entries).map((entry) => entry.message),
+			messages: projectEntries(draft.entries),
 			config: snapshot.llmConfig,
 		});
 		return draft;
@@ -38,14 +37,17 @@ export class SessionDraft {
 		// semantics. Ordinary ledger synchronization must never call apply(): its
 		// projected messages are only recorded in the sent-context tracker.
 		if (patch.messages !== undefined) {
-			this.entries = createMessageEntries(patch.messages);
+			this.entries = structuredClone(patch.messages).map((message) => ({
+				type: 'message',
+				message,
+			}));
 		}
 		this.tracker.apply(patch);
 		this.bumpFields(fieldsInPatch(patch));
 	}
 
 	append(message: Message): void {
-		this.entries.push(...createMessageEntries([message]));
+		this.entries.push({ type: 'message', message: structuredClone(message) });
 		this.tracker.append(message);
 		this.bump('messages');
 	}
@@ -58,7 +60,7 @@ export class SessionDraft {
 		const entries = [...this.entries, structuredClone(entry)];
 		// Validate the complete reduction before changing either durable history or
 		// desired context, so a rejected checkpoint leaves both intact.
-		const messages = projectEntries(entries).map((item) => item.message);
+		const messages = projectEntries(entries);
 		this.tracker.apply({ messages });
 		this.entries = entries;
 		this.bump('messages');

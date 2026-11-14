@@ -1,4 +1,3 @@
-import { createMessageEntries } from '../history/create.js';
 import { StopCode, ZERO_USAGE, type Usage } from '@franklin/mini-acp';
 import { text, turn, turnEnd } from '@franklin/mini-acp/mock';
 import { describe, expect, it } from 'vitest';
@@ -56,7 +55,7 @@ describe('core runtime protocol state', () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
-					entries: createMessageEntries([seedMessage], 'test'),
+					entries: [{ type: 'message' as const, message: seedMessage }],
 					llmConfig: {
 						model: 'seed-model',
 						provider: 'seed-provider',
@@ -314,7 +313,7 @@ describe('core runtime protocol state', () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
-					entries: createMessageEntries([seedMessage], 'test'),
+					entries: [{ type: 'message' as const, message: seedMessage }],
 					llmConfig: { model: 'seed-model' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
@@ -566,15 +565,15 @@ describe('core runtime protocol state', () => {
 			turns: [turn([text('hello'), turnEnd({ usage: turnUsage })])],
 			state: {
 				core: {
-					entries: createMessageEntries(
-						[
-							{
+					entries: [
+						{
+							type: 'message' as const,
+							message: {
 								role: 'user',
 								content: [{ type: 'text', text: 'seed' }],
 							},
-						],
-						'test',
-					),
+						},
+					],
 					llmConfig: { model: 'test' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: ['set_chat_title'] },

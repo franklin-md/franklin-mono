@@ -1,19 +1,25 @@
 import type { MiniACPClient } from '@franklin/mini-acp';
 import { describe, expect, it, vi } from 'vitest';
-import { createMessageEntries } from '../../../history/create.js';
 import { emptySessionSnapshot } from '../../../state.js';
 import { SessionDraft } from '../../draft/session.js';
 import { createContextLedger } from '../create.js';
+import type { MessageEntry } from '../../../history/types.js';
 
 describe('history synchronization', () => {
 	it('retries a failed projection without replacing durable entries, even after an append', async () => {
-		const entries = createMessageEntries(
-			[
-				{ role: 'user', content: [{ type: 'text', text: 'old' }] },
-				{ role: 'user', content: [{ type: 'text', text: 'retained' }] },
-			],
-			'seed',
-		);
+		const entries: MessageEntry[] = [
+			{
+				type: 'message' as const,
+				message: { role: 'user', content: [{ type: 'text', text: 'old' }] },
+			},
+			{
+				type: 'message' as const,
+				message: {
+					role: 'user',
+					content: [{ type: 'text', text: 'retained' }],
+				},
+			},
+		];
 		const draft = SessionDraft.fromSnapshot({
 			...emptySessionSnapshot(),
 			entries,
@@ -31,7 +37,6 @@ describe('history synchronization', () => {
 		await ledger.sync(client);
 		const checkpoint = {
 			type: 'compaction' as const,
-			id: 'fence',
 			summary: 'summary',
 		};
 		draft.appendCheckpoint(checkpoint);
@@ -49,7 +54,6 @@ describe('history synchronization', () => {
 
 		draft.appendCheckpoint({
 			...checkpoint,
-			id: 'second',
 			summary: 'new summary',
 		});
 		setContext.mockRejectedValueOnce(new Error('connection failed'));
