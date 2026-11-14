@@ -13,6 +13,17 @@ function okResponse(): WebFetchResponse {
 }
 
 describe('withTimeout', () => {
+	it('preserves an earlier deadline supplied by the caller', async () => {
+		const deadline = Date.now() + 1000;
+		const next = vi.fn<Fetch>().mockResolvedValue(okResponse());
+		await withTimeout(5000)(next)({
+			url: 'https://example.com/',
+			method: 'GET',
+			deadline,
+		});
+		expect(next).toHaveBeenCalledWith(expect.objectContaining({ deadline }));
+	});
+
 	it('returns the response when next resolves before the deadline', async () => {
 		const next = vi.fn<Fetch>().mockResolvedValue(okResponse());
 		const fetch = withTimeout(5000)(next);
