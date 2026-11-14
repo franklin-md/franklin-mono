@@ -20,7 +20,7 @@ const MODEL_ICON_PREFIXES: {
 	prefixes: readonly string[];
 	Icon: IconComponent;
 }[] = [
-	{ prefixes: ['claude-'], Icon: Icons.Claude },
+	{ prefixes: ['claude-', 'anthropic/claude-'], Icon: Icons.Claude },
 	{ prefixes: ['gpt-'], Icon: Icons.OpenAI },
 	{ prefixes: ['deepseek/', 'deepseek-'], Icon: Icons.DeepSeek },
 	{ prefixes: ['z-ai/', 'glm-'], Icon: Icons.ZAI },
@@ -30,7 +30,9 @@ const MODEL_ICON_PREFIXES: {
 	{ prefixes: ['minimax/', 'minimax-'], Icon: Icons.MiniMax },
 	{ prefixes: ['mimo-', 'xiaomi/mimo'], Icon: Icons.Xiaomi },
 	{ prefixes: ['qwen/', 'qwen'], Icon: Icons.Qwen },
-	{ prefixes: ['x-ai/'], Icon: Icons.XAI },
+	{ prefixes: ['x-ai/', 'grok-'], Icon: Icons.XAI },
+	{ prefixes: ['muse-'], Icon: Icons.Meta },
+	{ prefixes: ['longcat-', 'hy'], Icon: Icons.OpenCode },
 ];
 
 function resolveModelIconComponent(model: CatalogModel): IconComponent | null {

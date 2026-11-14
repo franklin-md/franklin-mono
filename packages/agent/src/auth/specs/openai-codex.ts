@@ -4,7 +4,7 @@ import { postOAuthTokenRequest } from './token-request.js';
 import type { AuthorizationCodePkceSpec } from './types.js';
 
 // Values sourced from @earendil-works/pi-ai:
-// node_modules/@earendil-works/pi-ai/dist/utils/oauth/openai-codex.js
+// https://github.com/earendil-works/pi/blob/v1.5.2/packages/ai/src/auth/oauth/openai-codex.ts
 //
 // We reuse pi-ai's registered OAuth client, so every field below must match
 // pi-ai's exact request shape — including `originator` and the exact

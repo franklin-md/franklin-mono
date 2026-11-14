@@ -1,4 +1,6 @@
 import { createMemoryStream } from '@franklin/lib/transport';
+import { streamSimple } from '@earendil-works/pi-ai/compat';
+import type { Message as PiMessage } from '@earendil-works/pi-ai';
 import { Agent as PiCoreAgent } from '@earendil-works/pi-agent-core';
 import type {
 	AgentEvent,
@@ -19,6 +21,8 @@ import {
 	toPiUserMessage,
 } from './translate/index.js';
 import { toPiMessages } from './translate/message.js';
+import { fromPiUsage } from './translate/usage.js';
+import { UsageTracker } from '../../protocol/usage-tracker.js';
 
 export type CreatePiAgentOptions = {
 	/** Custom stream function, injected by tests to avoid real provider calls. */
@@ -92,18 +96,18 @@ class PiMuAgent implements MuClient {
 	private createAgent(streamFn: StreamFn | undefined): PiCoreAgent {
 		return new PiCoreAgent({
 			initialState: {},
+			sessionId: crypto.randomUUID(),
 			getApiKey: (_: string) => {
 				return this.config.apiKey;
 			},
 			prepareNextTurn: () => this.prepareNextTurn(),
-			streamFn,
+			streamFn: streamFn ?? streamSimple,
 		});
 	}
 
 	private prepareNextTurn(): AgentLoopTurnUpdate {
 		return {
 			context: {
-				systemPrompt: this.agent.state.systemPrompt,
 				messages: [...this.agent.state.messages],
 				tools: [...this.agent.state.tools],
 			},
@@ -114,6 +118,7 @@ class PiMuAgent implements MuClient {
 		message: UserMessage,
 	): AsyncGenerator<StreamEvent> {
 		let currentMessageId = crypto.randomUUID();
+		const usage = new UsageTracker();
 		const { readable, writable } = createMemoryStream<StreamEvent>();
 		const writer = writable.getWriter();
 		const safeWrite = async (event: StreamEvent) => {
@@ -121,6 +126,8 @@ class PiMuAgent implements MuClient {
 		};
 
 		const unsub = this.agent.subscribe((event: AgentEvent) => {
+			if (event.type === 'message_end' && event.message.role === 'assistant')
+				usage.add(fromPiUsage(event.message.usage));
 			// Each new LLM message gets a fresh messageId so chunks and their
 			// corresponding update share a stable Mini-ACP id.
 			if (event.type === 'message_start') {
@@ -128,6 +135,7 @@ class PiMuAgent implements MuClient {
 			}
 			const streamEvent = fromAgentEvent(event, currentMessageId);
 			if (streamEvent) {
+				if (streamEvent.type === 'turnEnd') streamEvent.usage = usage.get();
 				void safeWrite(streamEvent);
 			}
 		});
@@ -167,12 +175,31 @@ class PiMuAgent implements MuClient {
 		return tools.map((def) => bridgeTool(def, handler));
 	}
 
+	private replaceMessages(
+		messages: PiMessage[],
+		systemPrompt = this.agent.state.systemPrompt,
+	): void {
+		// Pi 1.x stores instructions in the transcript; retain them when Franklin
+		// replaces history during restore. Mini-ACP keeps instructions separate.
+		// https://github.com/earendil-works/pi/blob/v1.5.2/packages/agent/src/types.ts
+		this.agent.state.messages = systemPrompt
+			? [
+					{ role: 'system', content: systemPrompt, timestamp: Date.now() },
+					...messages,
+				]
+			: messages;
+	}
+
 	private applyIdleContext(patch: ContextPatch): void {
-		if (patch.systemPrompt !== undefined) {
-			this.agent.state.systemPrompt = patch.systemPrompt;
-		}
-		if (patch.messages !== undefined) {
-			this.agent.state.messages = toPiMessages(patch.messages);
+		if (patch.systemPrompt !== undefined || patch.messages !== undefined) {
+			this.replaceMessages(
+				patch.messages === undefined
+					? this.agent.state.messages.filter(
+							(message) => message.role !== 'system',
+						)
+					: toPiMessages(patch.messages),
+				patch.systemPrompt ?? this.agent.state.systemPrompt,
+			);
 		}
 		if (patch.tools !== undefined) {
 			this.agent.state.tools = this.createPiTools(patch.tools);

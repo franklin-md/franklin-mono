@@ -15,6 +15,12 @@ live under `@franklin/mini-acp/session`; protocol logging lives under
 default protocol API. Scripted test helpers live under
 `@franklin/mini-acp/mock`.
 
+`@franklin/mini-acp/models` exposes the built-in Pi backend's `resolveModel`.
+It resolves Franklin overrides before Pi's bundled catalog, without network or
+authentication. The UI uses it for curated picker metadata; it is not a
+provider-discovery protocol. Codex resolution accepts only reviewed local
+definitions, so an upstream catalog addition does not automatically enable it.
+
 At a glance:
 - **Agents have state but there is no session persistence on the agent's side**:
   - Throughout the protocol, the agent's `Context` changes as it keeps track of:
@@ -267,10 +273,17 @@ Usage {
     output:     number   // USD cost for output tokens
     cacheRead:  number   // USD cost for cache reads
     cacheWrite: number   // USD cost for cache writes
-    total:      number   // Sum of all four
+    total:      number   // Best available total in USD
+    totalFromProvider?: boolean // True only when every call supplied billing
   }
 }
 ```
+
+The Pi adapter sums usage across all provider calls in a prompt's tool loop.
+Missing or false `cost.totalFromProvider` means a catalog estimate. Cost components
+remain estimates even when the total is provider-reported and may not sum to it.
+Legacy zero estimates mean pricing is unavailable; an explicitly reported zero
+is a known zero charge.
 
 Token counts are raw integers. `cost.*` values are in USD and are supplied
 by the provider adapter; when pricing is unknown, the adapter reports 0.

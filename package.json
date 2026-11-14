@@ -10,7 +10,7 @@
 		"apps/shared/*"
 	],
 	"engines": {
-		"node": ">=22",
+		"node": ">=22.19.0",
 		"npm": ">=11.10.0"
 	},
 	"scripts": {
@@ -68,7 +68,7 @@
 	"devEngines": {
 		"runtime": {
 			"name": "node",
-			"version": ">=22",
+			"version": ">=22.19.0",
 			"onFail": "error"
 		},
 		"packageManager": {

@@ -28,7 +28,9 @@ import {
 // pi-ai → mini-acp
 // ---------------------------------------------------------------------------
 
-export function fromPiMessage(msg: PiMessage): Message {
+export function fromPiMessage(
+	msg: Exclude<PiMessage, { role: 'system' }>,
+): Message {
 	switch (msg.role) {
 		case 'user': {
 			const content =
