@@ -1,15 +1,17 @@
 import { useMemo, type ReactNode } from 'react';
 
-import type { ConversationTurn, ToolUseBlock } from '@franklin/agent';
+import type { ConversationTurn } from '@franklin/agent';
 import {
 	Conversation,
 	createTurnEndBlock,
+	createToolUseBlock,
 	useAutoFollow,
 	useFirstMountEffect,
 	useTriggerOnChange,
 	type ConversationRenderTurn,
 	type ConversationComponents,
-	type ToolStatus,
+	type ConversationActivityProps,
+	type ToolRendererRegistry,
 } from '@franklin/react';
 
 import {
@@ -26,6 +28,9 @@ import { TurnFooter } from './turn/footer/index.js';
 import { defaultRegistry } from './turn/turn-end/registry.js';
 import { UserBubble } from './turn/user-bubble.js';
 import { Waiting } from './turn/waiting.js';
+import { ConversationActivity } from './activity/conversation.js';
+import { ToolCardChrome } from './tools/chrome.js';
+import { defaultToolRegistry } from './tools/registry/index.js';
 
 const TurnEnd = createTurnEndBlock(defaultRegistry);
 
@@ -41,43 +46,50 @@ const UserMessage = ({ turn }: { turn: ConversationRenderTurn }) => (
 	<UserBubble message={turn.prompt} />
 );
 
-const DefaultToolUse = ({
-	block,
-}: {
-	block: ToolUseBlock;
-	status: ToolStatus;
-}) => <div className="text-xs text-muted-foreground">{block.call.name}</div>;
+const ActivityWaiting = ({ turn }: { turn: ConversationRenderTurn }) =>
+	turn.response.blocks.some(
+		(block) => block.kind === 'thinking' || block.kind === 'toolUse',
+	) ? null : (
+		<Waiting turn={turn} />
+	);
 
-const defaultComponents: ConversationComponents = {
+const defaultComponents = {
 	Text: TextBlock,
 	Thinking: ThinkingBlock,
-	ToolUse: DefaultToolUse,
 	TurnEnd,
 	UserMessage,
 	Turn: TurnChrome,
 	AssistantMessage: AssistantChrome,
-	Waiting,
+	Waiting: ActivityWaiting,
 	Footer: TurnFooter,
 	EmptyPlaceholder: DefaultEmptyConversationPlaceholder,
-};
+} satisfies Partial<ConversationComponents>;
 
 export interface ConversationViewProps {
 	turns: ConversationTurn[];
 	components?: Partial<ConversationComponents>;
+	toolRegistry?: ToolRendererRegistry;
 }
 
 export function ConversationView({
 	turns,
 	components: componentOverrides,
+	toolRegistry = defaultToolRegistry,
 }: ConversationViewProps) {
 	const autoFollow = useAutoFollow<HTMLDivElement>();
+	const toolComponents = useMemo(
+		() => ({
+			ToolUse: createToolUseBlock(toolRegistry, ToolCardChrome),
+			Activity: (props: ConversationActivityProps) => (
+				<ConversationActivity {...props} registry={toolRegistry} />
+			),
+		}),
+		[toolRegistry],
+	);
 
 	const components = useMemo<ConversationComponents>(
-		() =>
-			componentOverrides
-				? { ...defaultComponents, ...componentOverrides }
-				: defaultComponents,
-		[componentOverrides],
+		() => ({ ...defaultComponents, ...toolComponents, ...componentOverrides }),
+		[componentOverrides, toolComponents],
 	);
 
 	// Behaviour: Go to bottom on mount (i.e. switch to this tab)

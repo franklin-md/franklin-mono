@@ -1,4 +1,5 @@
 import {
+	defaultRehypePlugins,
 	defaultRemarkPlugins,
 	Streamdown,
 	type Components,
@@ -7,6 +8,7 @@ import {
 import { code } from '@streamdown/code';
 import { createMathPlugin } from '@streamdown/math';
 import type { ComponentType } from 'react';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 
 import { chromeComponents } from './text/chrome/components.js';
 
@@ -16,6 +18,22 @@ const math = createMathPlugin({
 
 const plugins = { code, math };
 const baseRemarkPlugins = Object.values(defaultRemarkPlugins);
+
+// Note links must survive sanitization before rehype-harden checks their URLs.
+// Preserve Streamdown's tel: and code-metadata extensions to GitHub's schema.
+// See https://streamdown.ai/docs/security
+const sanitizeSchema = {
+	...defaultSchema,
+	protocols: {
+		...defaultSchema.protocols,
+		href: [...(defaultSchema.protocols?.href ?? []), 'tel', 'obsidian'],
+	},
+	attributes: {
+		...defaultSchema.attributes,
+		code: [...(defaultSchema.attributes?.code ?? []), 'metastring'],
+	},
+};
+const baseRehypePlugins = createRehypePlugins();
 
 export interface MarkdownExtensions {
 	components?: Components;
@@ -54,6 +72,11 @@ export function Markdown({
 			<Streamdown
 				mode="streaming"
 				plugins={plugins}
+				rehypePlugins={
+					custom.allowedTags
+						? createRehypePlugins(custom.allowedTags)
+						: baseRehypePlugins
+				}
 				remarkPlugins={
 					remarkPlugins ? [...baseRemarkPlugins, ...remarkPlugins] : undefined
 				}
@@ -62,7 +85,6 @@ export function Markdown({
 					...components,
 					...custom.components,
 				}}
-				allowedTags={custom.allowedTags}
 				controls={false}
 				remend={remend}
 			>
@@ -70,6 +92,23 @@ export function Markdown({
 			</Streamdown>
 		</div>
 	);
+}
+
+function createRehypePlugins(allowedTags: Record<string, string[]> = {}) {
+	// Streamdown's allowedTags only extends its default plugin array. Once we
+	// supply a sanitizer, we must merge the host's declared elements ourselves.
+	const schema = {
+		...sanitizeSchema,
+		tagNames: [...(sanitizeSchema.tagNames ?? []), ...Object.keys(allowedTags)],
+		attributes: { ...sanitizeSchema.attributes, ...allowedTags },
+	};
+	return Object.values({
+		...defaultRehypePlugins,
+		sanitize: [rehypeSanitize, schema] satisfies [
+			typeof rehypeSanitize,
+			typeof schema,
+		],
+	});
 }
 
 function resolveCustomElements(
