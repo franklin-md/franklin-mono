@@ -1,3 +1,4 @@
+import { createMessageEntries } from '../../history/create.js';
 import type {
 	ContextPatch,
 	MiniACPClient,
@@ -24,7 +25,7 @@ const userMessage: UserMessage = {
 
 function emptySnapshot(): SessionSnapshot {
 	return {
-		messages: [],
+		entries: [],
 		llmConfig: {},
 		usage: ZERO_USAGE,
 		toolFilter: emptyToolFilter(),
@@ -56,6 +57,44 @@ function createState(input: CreateStateInput) {
 }
 
 describe('createAgentSession', () => {
+	it('rehydrates and retries only the projected context while snapshots keep raw entries', async () => {
+		const entries = [
+			...createMessageEntries([userMessage], 'old'),
+			{
+				type: 'compaction' as const,
+				id: 'fence',
+				summary: 'summary',
+				firstKeptEntryId: null,
+			},
+			...createMessageEntries([userMessage], 'retained'),
+		];
+		const session = createState({
+			snapshot: { ...emptySnapshot(), entries },
+			registrations: createCoreRegistry(),
+		});
+		const setContext = vi
+			.fn<MiniACPClient['setContext']>()
+			.mockRejectedValueOnce(new Error('failed'))
+			.mockResolvedValue(undefined);
+		const client = stubClient(setContext);
+		await expect(session.sync(client)).rejects.toThrow('failed');
+		expect(session.getSnapshot().entries).toEqual(entries);
+		await session.sync(client);
+		await session.sync(client);
+		expect(setContext).toHaveBeenCalledTimes(2);
+		expect(setContext.mock.calls[1]).toEqual(setContext.mock.calls[0]);
+		expect(session.getSentContext().messages).toEqual([
+			{
+				role: 'user',
+				content: [{ type: 'text', text: 'Conversation summary:\nsummary' }],
+			},
+			userMessage,
+		]);
+		expect(session.getSnapshot().entries).toEqual(entries);
+		const snapshot = session.getSnapshot();
+		snapshot.entries.length = 0;
+		expect(session.getSnapshot().entries).toEqual(entries);
+	});
 	it('syncs registered system prompt changes through the context ledger', async () => {
 		const client = stubClient();
 		const session = createState({
@@ -108,7 +147,7 @@ describe('createAgentSession', () => {
 		await session.sync(client);
 
 		expect(session.getSnapshot()).toEqual({
-			messages: [],
+			entries: [],
 			llmConfig: {},
 			usage: ZERO_USAGE,
 			toolFilter: { disabled: [] },
@@ -186,7 +225,7 @@ describe('createAgentSession', () => {
 		const client = stubClient();
 		const session = createState({
 			snapshot: {
-				messages: [userMessage],
+				entries: createMessageEntries([userMessage], 'test'),
 				llmConfig: { provider: 'test-provider', model: 'test-model' },
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),
@@ -218,7 +257,7 @@ describe('createAgentSession', () => {
 			config: {},
 		});
 		expect(session.getSnapshot()).toMatchObject({
-			messages: [userMessage],
+			entries: createMessageEntries([userMessage], 'test'),
 			llmConfig: { model: 'test-model' },
 		});
 
@@ -251,7 +290,7 @@ describe('createAgentSession', () => {
 		const client = stubClient(setContext);
 		const session = createState({
 			snapshot: {
-				messages: [userMessage],
+				entries: createMessageEntries([userMessage], 'test'),
 				llmConfig: { model: 'test-model' },
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),
@@ -314,10 +353,13 @@ describe('createAgentSession', () => {
 			tools: [],
 			config: {},
 		});
-		expect(session.getSnapshot().messages).toEqual([
-			userMessage,
-			assistantMessage,
-		]);
+		expect(
+			session
+				.getSnapshot()
+				.entries.flatMap((entry) =>
+					entry.type === 'message' ? [entry.message] : [],
+				),
+		).toEqual([userMessage, assistantMessage]);
 	});
 
 	it('does not send a context patch when desired context already matches', async () => {

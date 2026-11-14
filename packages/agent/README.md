@@ -75,7 +75,7 @@ enablement, session projection, inspect, and lifecycle events.
 The core controller keeps internal context state that splits desired session
 state from the last successfully sent Mini-ACP context. A `SessionDraft` is
 constructed from a hydrated `SessionSnapshot` and stores the durable session
-base: messages, non-secret LLM config, and the session-local tool filter.
+base: typed history entries, non-secret LLM config, and the session-local tool filter.
 Runtime-only contributions such as the registration-built system prompt and live
 tool definitions are attached as drafters. `commit()` runs those drafters
 against a scratch context, records field revisions, and returns the Mini-ACP
@@ -94,14 +94,58 @@ usage into this internal state.
 The public runtime exposes `getSession()` as a safe projection to
 `SessionSnapshot` for consumers that need the dehydrated session view. The
 state-module layer uses the same projection for persistence, fork, and
-child-session creation. `SessionSnapshot` intentionally remains narrower than
-`Context`: it keeps model-visible messages, non-secret LLM config, and usage,
+child-session creation. `SessionSnapshot` is distinct from
+`Context`: it keeps durable history entries, non-secret LLM config, and usage,
 plus the session-local tool filter, while system prompt text, registered tool
 schemas, and API keys stay runtime-only. Runtime inspect uses a separate
 redacted `inspect()` projection for debug UI so callers never need hidden access
-to internal context state. Future persisted state may become a richer superset of
-what Mini-ACP receives, including compaction points or other checkpoints
-projected into the next Mini-ACP context.
+to internal context state.
+
+### Durable History and Projection
+
+**Compatibility change:** `SessionSnapshot.messages: Message[]` is replaced by
+`SessionSnapshot.entries: SessionEntry[]`, including the value returned by
+`runtime.getSession()`. Each `message` entry has a stable ID and its original
+Mini-ACP message. A `compaction` checkpoint has its own ID, a summary, and
+`firstKeptEntryId`: the first original message retained from the current
+projection, or `null` to retain none of the preceding messages. Checkpoints do
+not delete messages or earlier checkpoints from the durable history.
+
+The pure [history projector](src/modules/core/history/project.ts) reduces entries
+in order. Each checkpoint replaces the entire preceding summary and hidden
+prefix; only its retained suffix and subsequent messages remain visible. It
+rejects duplicate/empty IDs, empty summaries, missing or future boundaries,
+boundaries into an earlier summary or already hidden history, and boundaries
+that split tool calls from their results. Summaries appear as user messages
+prefixed with `Conversation summary:`; their IDs are synthetic projection IDs
+and cannot be used as retained-message boundaries. A later summary must cover
+the whole prefix it replaces, including the previous summary. Summary generation
+and policy are outside this package's history foundation.
+
+Hydration projects entries into the existing Mini-ACP context. Ordinary context
+synchronization records successful sends only in the sent-context tracker; it
+never writes that projection back into durable history. Failed sends leave the
+same entries and pending projection available for retry. Inspect still reports
+the last successfully sent model context, with secrets redacted.
+
+An **explicit `messages` patch** through the bound client's `setContext` (or the
+internal `SessionDraft.apply`) is a deliberate context reset: it replaces the
+durable log with newly identified message entries and removes earlier messages
+and checkpoints. An empty array clears the log. Config, system-prompt and tool
+patches preserve the log. This retains baseline explicit replacement semantics;
+it is not a synchronization or compaction API. Callers must not feed projected
+messages into this reset path. Preserving discarded history across explicit
+resets would require a separately designed reset event.
+
+The [session codec](src/app/session/codecs/session.ts) writes version 3 and
+migrates v1/v2 flat messages to entries with deterministic `legacy-<index>` IDs.
+V1 defaults to visible details; v2 retains visibility. Both retain config, usage,
+stores, environment and the existing tool-filter defaults. V3 roundtrips original
+messages, IDs and checkpoint text. Forks deep-copy the entire log and inherit
+config/tool policy while resetting usage. Children start with empty history,
+inherit config, and reset usage/tool policy. Projection scans the log on restore
+and checkpoint append; checkpoints reduce model context, not storage or snapshot
+copy costs. No Mini-ACP protocol, adapter or execution-loop changes are involved.
 
 ### Extensions
 
