@@ -136,3 +136,39 @@ Where PiMono provides a general orchestration framework with fine-grained hooks,
 The split is:
 - **Environment + Spawn + Connect** = the ACP runtime layer (how you create and talk to agents)
 - **Extensions + Local MCP** = the orchestration layer (how the application shapes agent behavior)
+
+### HTTP document references
+
+
+Hosts can register `createHTTPReferenceExtension()` before their PDF/image/text
+materializers to read public document URLs through `read_file`. HTTP resolution
+uses the environment's web permissions on each redirect, then delegates bytes
+and the original selector to the existing document handler. Remote reads do not
+enter the filesystem edit-authorization store. HTML pages use `fetch_url`.
+
+Document downloads default to 60 seconds of inactivity, 15 minutes total,
+64 MiB and five redirects. `documentDownloadPolicy` supplies the two timing
+limits through the Configuration API. Hosts can contribute a partial override
+with `documentDownloadPolicy.of({ idleTimeoutMs, totalTimeoutMs })`, or read live
+settings with `.compute(...)`. `FranklinApp` contributes its saved
+`settings.documentDownloads` at lowest priority for chat agents. The HTTP handler reads and validates a fresh policy at the start of
+each download; running transfers retain their original limits. Hosts may still
+override `maxBytes` and `maxRedirects` on `createHTTPReferenceExtension`.
+
+Page selection bounds returned PDF content independently of the download limit.
+`WebFetchRequest.idleTimeoutMs` crosses IPC as a number. Node transports enforce
+it from connection setup, reset it when headers or nonempty body chunks arrive,
+and abort stalled streams with received/expected byte counts when available.
+`WebFetchRequest.deadline` is
+an absolute Unix timestamp in milliseconds, preserved across redirects and IPC;
+Node transports abort connection setup and body reads when it expires.
+`maxResponseBytes` is enforced while streaming, rejecting oversized responses
+rather than returning partial document bytes.
+
+Each read downloads the complete source document again. Page selectors bound
+returned content, rather than the source download.
+
+Node shell commands share the process-global sandbox only while their effective
+configurations match. Different configurations queue until running commands close.
+Proxy decisions reuse Franklin's web network policy, including its empty-allowlist
+semantics, and commands receive the existing OS temporary directory as `TMPDIR`.

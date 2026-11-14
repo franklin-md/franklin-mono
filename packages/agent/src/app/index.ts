@@ -3,6 +3,8 @@ import {
 	createDependencyModule,
 } from '@franklin/extensibility/module';
 import type { AbsolutePath, RestoreResult } from '@franklin/lib';
+import { priority } from '@franklin/extensibility';
+import { documentDownloadPolicy } from '../extensions/references/download-policy/configuration.js';
 import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
 import { withAuth } from '../auth/with-auth.js';
 import type { AuthManager } from '../auth/manager.js';
@@ -73,7 +75,16 @@ export class FranklinApp {
 		this.auth = opts.auth;
 		this.settings = storage.settings;
 		this.restoreStorage = () => storage.restore();
-		const extensions = [...opts.extensions];
+		const extensions = [
+			...opts.extensions,
+			// Read saved limits at download time so existing agents see settings edits.
+			priority.lowest(
+				documentDownloadPolicy.compute(
+					[],
+					() => this.settings.get().documentDownloads,
+				),
+			),
+		];
 
 		const connectAgent = createMiniACPRpcConnector(platform.spawn);
 		const baseModules: FranklinModules = [

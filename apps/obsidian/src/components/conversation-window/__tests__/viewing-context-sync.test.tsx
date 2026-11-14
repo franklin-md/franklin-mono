@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { documentDownloadPolicySchema } from '@franklin/agent';
 import type {
 	AppSettings,
 	FranklinApp,
@@ -115,6 +116,7 @@ function createSettingsStore(
 	shareViewedReferencesByDefault = true,
 ): SettingsStore {
 	return createStore<AppSettings>({
+		documentDownloads: documentDownloadPolicySchema.parse({}),
 		shareViewedReferencesByDefault,
 		defaultLLMConfig: {
 			provider: 'openai-codex',
