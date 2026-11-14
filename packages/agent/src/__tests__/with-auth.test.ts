@@ -124,7 +124,7 @@ describe('reconnectAgent', () => {
 		const auth = mockAuthManager({ anthropic: 'sk-test-123' });
 		const state: CoreState = {
 			core: {
-				messages: [],
+				entries: [],
 				llmConfig: { provider: 'anthropic' },
 				usage: ZERO_USAGE,
 				toolFilter: { disabled: [] },
@@ -144,7 +144,7 @@ describe('reconnectAgent', () => {
 		const auth = mockAuthManager({ anthropic: 'sk-test-123' });
 		const state: CoreState = {
 			core: {
-				messages: [],
+				entries: [],
 				llmConfig: {},
 				usage: ZERO_USAGE,
 				toolFilter: { disabled: [] },
@@ -183,7 +183,7 @@ describe('withAuth', () => {
 			decorated,
 			{
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: { provider: 'anthropic' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
@@ -212,7 +212,7 @@ describe('withAuth', () => {
 			decorated,
 			{
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: { provider: 'anthropic' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
@@ -243,7 +243,7 @@ describe('withAuth', () => {
 			decorated,
 			{
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: { provider: 'anthropic' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
@@ -276,7 +276,7 @@ describe('withAuth', () => {
 			decorated,
 			{
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: { provider: 'anthropic' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
@@ -305,7 +305,7 @@ describe('withAuth', () => {
 			decorated,
 			{
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: { provider: 'anthropic' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
@@ -350,7 +350,7 @@ describe('withAuth', () => {
 			decorated,
 			{
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: { provider: 'openai-codex', model: 'gpt-5.4' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
@@ -386,7 +386,7 @@ describe('withAuth', () => {
 			decorated,
 			{
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: { provider: 'openai-codex', model: 'gpt-5.4' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
@@ -423,7 +423,7 @@ describe('withAuth live sync', () => {
 			decorated,
 			{
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: { provider },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
