@@ -31,11 +31,21 @@ export type Update = {
 	message: Message;
 };
 
+// Idle boundary after one response and its complete tool batch. No more
+// inference occurs until the client calls continue().
+export type StepEnd = {
+	type: 'stepEnd';
+	stepUsage?: Usage;
+};
+
 export type TurnEnd = {
 	type: 'turnEnd';
 	stopCode: StopCode;
 	stopMessage?: string;
+	/** Usage for this drive only; zero when cancelled at a paused boundary. */
+	stepUsage?: Usage;
+	/** Cumulative usage since prompt(), including all continued steps. */
 	usage?: Usage;
 };
 
-export type StreamEvent = TurnStart | Chunk | Update | TurnEnd;
+export type StreamEvent = TurnStart | Chunk | Update | StepEnd | TurnEnd;

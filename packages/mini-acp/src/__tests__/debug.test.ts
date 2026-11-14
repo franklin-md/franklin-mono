@@ -25,6 +25,7 @@ function mockClient(events: StreamEvent[] = []): MuClient {
 	return {
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(async () => {}),
+		continue: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 		async *prompt(): AsyncGenerator<StreamEvent> {
 			for (const event of events) yield event;

@@ -38,6 +38,7 @@ function stubClient(
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(setContext),
 		async *prompt() {},
+		continue: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 	};
 }

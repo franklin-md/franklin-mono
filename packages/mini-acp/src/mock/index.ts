@@ -21,3 +21,5 @@ export {
 export type { CreateMockMiniACPOptions, MockMiniACP } from './create.js';
 export { createMockMiniACP } from './create.js';
 export type { MockMiniACPRecording } from './recording.js';
+
+export { createScriptedProvider } from './provider.js';

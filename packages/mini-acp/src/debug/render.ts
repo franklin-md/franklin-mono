@@ -43,6 +43,10 @@ export function renderPrompt(message: unknown): string[] {
 	];
 }
 
+export function renderContinue(): string[] {
+	return [bold('continue')];
+}
+
 export function renderCancel(): string[] {
 	return [bold('cancel')];
 }
@@ -55,6 +59,13 @@ export function renderStreamEvent(event: StreamEvent): string[] {
 			return [];
 		case 'update':
 			return renderUpdateMessage(event.message);
+		case 'stepEnd':
+			return [
+				indent(2, bold('stepEnd')),
+				...(event.stepUsage
+					? summarizeUsage(event.stepUsage).map((line) => indent(3, line))
+					: []),
+			];
 		case 'turnEnd': {
 			const lines = [
 				indent(2, summarizeTurnEnd(event.stopCode, event.stopMessage)),

@@ -43,6 +43,7 @@ describe('createMiniACPRpcConnector', () => {
 			initialize,
 			setContext: vi.fn(async () => {}),
 			prompt: vi.fn(async function* () {}),
+			continue: vi.fn(async function* () {}),
 			cancel: vi.fn(async () => {}),
 		});
 		const spawnSpy = vi.fn(spawn);
@@ -101,6 +102,7 @@ describe('createMiniACPRpcConnector', () => {
 					};
 					yield { type: 'turnEnd', stopCode: StopCode.Finished };
 				},
+				continue: vi.fn(async function* () {}),
 				cancel: vi.fn(async () => {}),
 			});
 			return clientSide;
@@ -152,6 +154,7 @@ describe('createMiniACPRpcConnector', () => {
 			initialize: vi.fn(async () => {}),
 			setContext: vi.fn(async () => {}),
 			prompt: vi.fn(async function* () {}),
+			continue: vi.fn(async function* () {}),
 			cancel: vi.fn(async () => {}),
 		});
 		const connect = createMiniACPRpcConnector(spawn);

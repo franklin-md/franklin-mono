@@ -41,6 +41,7 @@ function mockTurn(events: StreamEvent[]): MuTurn {
 		async *prompt(): AsyncGenerator<StreamEvent> {
 			for (const e of events) yield e;
 		},
+		continue: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 	};
 }
@@ -195,6 +196,7 @@ describe('trackClient', () => {
 		const tracker = seededTracker();
 		const inner: MuClient = {
 			initialize: vi.fn(async () => {}),
+			continue: vi.fn(async function* () {}),
 			cancel: vi.fn(async () => {}),
 			setContext: vi.fn(async () => {}),
 			async *prompt(): AsyncGenerator<StreamEvent> {},
@@ -214,6 +216,7 @@ describe('trackClient', () => {
 		const tracker = seededTracker();
 		const inner: MuClient = {
 			initialize: vi.fn(async () => {}),
+			continue: vi.fn(async function* () {}),
 			cancel: vi.fn(async () => {}),
 			setContext: vi.fn(async () => {
 				throw new Error('setContext failed');
@@ -236,6 +239,7 @@ describe('trackClient', () => {
 		const tracker = seededTracker();
 		const inner: MuClient = {
 			initialize: vi.fn(async () => {}),
+			continue: vi.fn(async function* () {}),
 			cancel: vi.fn(async () => {}),
 			setContext: vi.fn(async () => {}),
 			async *prompt(): AsyncGenerator<StreamEvent> {
@@ -268,6 +272,7 @@ describe('trackClient', () => {
 		const tracker = seededTracker();
 		const inner: MuClient = {
 			initialize: vi.fn(async () => {}),
+			continue: vi.fn(async function* () {}),
 			cancel: vi.fn(async () => {}),
 			setContext: vi.fn(async () => {}),
 			async *prompt(): AsyncGenerator<StreamEvent> {},

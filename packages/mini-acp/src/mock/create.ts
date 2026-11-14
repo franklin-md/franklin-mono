@@ -1,13 +1,15 @@
 import { ContextTracker } from '../protocol/context-tracker.js';
-import { trackAgent, trackTurn } from '../protocol/tracking.js';
+import { trackAgent } from '../protocol/tracking.js';
 import type {
 	MiniACPAgent,
 	MiniACPClientHandle,
 	MiniACPConnector,
 } from '../protocol/index.js';
-import type { MuTurn } from '../protocol/types.js';
 import type { Context } from '../types/context.js';
 import type { StreamEvent } from '../types/stream.js';
+import type { UserMessage } from '../types/message.js';
+import { StopCode } from '../types/stop-code.js';
+import { UsageTracker, ZERO_USAGE } from '../protocol/usage-tracker.js';
 import type { MockTurnDescriptor } from './descriptor/index.js';
 import { executeMockTurn } from './execute.js';
 import {
@@ -54,41 +56,116 @@ export function createMockMiniACP(
 
 	function connector(server: MiniACPAgent): MiniACPClientHandle {
 		const trackedServer = trackAgent(tracker, server);
-		let currentTurn: MuTurn | null = null;
+		let current: AsyncGenerator<StreamEvent> | undefined;
+		let active = false;
+		let cancelled = false;
+		let usage = new UsageTracker();
+		let hasUsage = false;
+
+		async function* drive(message?: UserMessage): AsyncGenerator<StreamEvent> {
+			if (active) throw new Error('Mini-ACP drive already in progress');
+			if (message && current)
+				throw new Error(
+					'Mini-ACP turn paused; continue or cancel it before prompt',
+				);
+			if (!message && !current) return;
+			active = true;
+			let terminal = false;
+			try {
+				if (message) {
+					recording.prompts.push(message);
+					const descriptor = dequeueTurn();
+					tracker.append(message);
+					cancelled = false;
+					usage = new UsageTracker();
+					hasUsage = false;
+					current = executeMockTurn({
+						descriptor,
+						get context() {
+							return tracker.get();
+						},
+						prompt: message,
+						server: trackedServer,
+						recording,
+						nextMessageId,
+						nextToolCallId,
+					});
+				} else {
+					recording.continues += 1;
+				}
+				while (current) {
+					const result = cancelled ? undefined : await current.next();
+					const received = result && !result.done ? result.value : undefined;
+					const delta =
+						received &&
+						(received.type === 'stepEnd' || received.type === 'turnEnd')
+							? (received.stepUsage ??
+								(received.type === 'turnEnd' ? received.usage : undefined))
+							: undefined;
+					if (delta) {
+						usage.add(delta);
+						hasUsage = true;
+					}
+					let event: StreamEvent;
+					if (cancelled) {
+						event = {
+							type: 'turnEnd',
+							stopCode: StopCode.Cancelled,
+							stepUsage: delta ?? ZERO_USAGE,
+							usage: usage.get(),
+						};
+					} else if (received) {
+						event = received;
+					} else {
+						throw new Error('Mock turn descriptor must include turnEnd().');
+					}
+					if (event.type === 'update') tracker.append(event.message);
+					if (event.type === 'stepEnd' || event.type === 'turnEnd') {
+						if (event.type === 'turnEnd') {
+							if (hasUsage)
+								event = {
+									...event,
+									stepUsage: delta ?? ZERO_USAGE,
+									usage: usage.get(),
+								};
+							if (!cancelled) await current.next();
+							await current.return(undefined);
+							current = undefined;
+						}
+						terminal = true;
+						active = false;
+						yield event;
+						return;
+					}
+					yield event;
+				}
+			} finally {
+				// State is released before a terminal is delivered; an older drive's
+				// generator cleanup must not change a reentrant drive's busy state.
+				if (!terminal) active = false;
+			}
+		}
 
 		return {
 			async initialize() {
 				recording.initialize += 1;
 			},
 			async setContext(context) {
+				if (active) throw new Error('Mock setContext requires an idle drive');
 				recording.setContext.push(context);
 				tracker.apply(context);
 			},
-			async *prompt(message) {
-				recording.prompts.push(message);
-				currentTurn = trackTurn(
-					tracker,
-					createMockPromptClient({
-						context: tracker.get(),
-						server: trackedServer,
-						dequeueTurn,
-						recording,
-						nextMessageId,
-						nextToolCallId,
-					}),
-				);
-				try {
-					yield* currentTurn.prompt(message);
-				} finally {
-					currentTurn = null;
-				}
-			},
+			prompt: (message) => drive(message),
+			continue: () => drive(),
 			async cancel() {
 				recording.cancels += 1;
-				await currentTurn?.cancel();
+				cancelled = current !== undefined;
 			},
 			async dispose() {
 				recording.disposes += 1;
+				cancelled = true;
+				await current?.return(undefined);
+				current = undefined;
 			},
 		};
 	}
@@ -118,31 +195,5 @@ export function createMockMiniACP(
 			messageId = 0;
 			toolCallId = 0;
 		},
-	};
-}
-
-type CreateMockPromptClientInput = {
-	readonly context: Context;
-	readonly server: MiniACPAgent;
-	readonly dequeueTurn: () => MockTurnDescriptor;
-	readonly recording: ReturnType<typeof createRecording>;
-	readonly nextMessageId: () => string;
-	readonly nextToolCallId: () => string;
-};
-
-function createMockPromptClient(input: CreateMockPromptClientInput): MuTurn {
-	return {
-		async *prompt(message): AsyncGenerator<StreamEvent> {
-			yield* executeMockTurn({
-				descriptor: input.dequeueTurn(),
-				context: input.context,
-				prompt: message,
-				server: input.server,
-				recording: input.recording,
-				nextMessageId: input.nextMessageId,
-				nextToolCallId: input.nextToolCallId,
-			});
-		},
-		async cancel() {},
 	};
 }

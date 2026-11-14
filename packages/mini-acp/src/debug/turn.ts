@@ -4,6 +4,7 @@ import type { StreamEvent } from '../types/stream.js';
 
 import {
 	renderCancel,
+	renderContinue,
 	renderPrompt,
 	renderStreamEvent,
 	renderThrown,
@@ -22,6 +23,18 @@ export function debugTurn(turn: MuTurn, label: string): MuTurn {
 				}
 			} catch (error) {
 				logLines(label, renderThrown('prompt', error, 2));
+				throw error;
+			}
+		},
+		async *continue(): AsyncGenerator<StreamEvent> {
+			logLines(label, renderContinue());
+			try {
+				for await (const event of turn.continue()) {
+					logLines(label, renderStreamEvent(event));
+					yield event;
+				}
+			} catch (error) {
+				logLines(label, renderThrown('continue', error, 2));
 				throw error;
 			}
 		},

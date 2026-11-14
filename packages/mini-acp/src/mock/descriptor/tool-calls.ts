@@ -5,6 +5,7 @@ import type {
 
 export function toolCalls(
 	calls: readonly ToolCallRequestDescriptor[],
+	options: Pick<ToolCallsDescriptor, 'stepUsage'> = {},
 ): ToolCallsDescriptor {
-	return { type: 'toolCalls', calls };
+	return { type: 'toolCalls', calls, ...options };
 }

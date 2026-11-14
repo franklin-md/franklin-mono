@@ -71,6 +71,11 @@ export async function* executeMockTurn(
 				break;
 			case 'toolCalls':
 				await executeToolCalls(step);
+				if (step.calls.length > 0)
+					yield {
+						type: 'stepEnd',
+						...(step.stepUsage ? { stepUsage: step.stepUsage } : {}),
+					};
 				break;
 			case 'delay':
 				await wait(step.ms);

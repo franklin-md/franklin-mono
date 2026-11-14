@@ -44,6 +44,9 @@ function createMockFactory(
 					currentTurn = null;
 				}
 			},
+			async *continue() {
+				if (currentTurn) yield* currentTurn.continue();
+			},
 			async cancel() {
 				await currentTurn?.cancel();
 			},
@@ -56,6 +59,7 @@ const noopTurn = (_remote: MuAgent): MuTurn => ({
 		yield { type: 'turnStart' };
 		yield { type: 'turnEnd', stopCode: StopCode.Finished };
 	},
+	async *continue() {},
 	async cancel() {},
 });
 
@@ -85,6 +89,7 @@ const toolCallingTurn = (remote: MuAgent): MuTurn => ({
 		};
 		yield { type: 'turnEnd', stopCode: StopCode.Finished };
 	},
+	async *continue() {},
 	async cancel() {},
 });
 
@@ -339,6 +344,7 @@ describe('tool spec helpers', () => {
 						});
 						yield { type: 'turnEnd', stopCode: StopCode.Finished };
 					},
+					async *continue() {},
 					async cancel() {},
 				}),
 			),

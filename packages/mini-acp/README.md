@@ -19,7 +19,7 @@ At a glance:
 - **Agents have state but there is no session persistence on the agent's side**:
   - Throughout the protocol, the agent's `Context` changes as it keeps track of:
     - **Explicit Changes through `setContext`**, as would be expected from applications that implement sessions through `fork` and `resume` semantics over model-visible messages, and from applications wishing to change the current `LLMConfig`
-    - **Implicit Changes during `prompt`**, in which the context grows with new user messages, assistant messages, and tool invocations.
+    - **Implicit Changes during `prompt` and `continue`**, in which the context grows with the prompted user message, assistant messages, and tool invocations. Continuation never adds a user message.
   - **The Context is empty at the start of the protocol**
 - **Externalized Tool Execution**
   - All tool requests must be sent to the application to handle.
@@ -36,7 +36,7 @@ Below, we explain the reasons why Mini-ACP was developed, including mention of p
 
 ### Minimal Agent
 - [ ] The domains of definition (the SDK for implementing apps that talk with agents looks like an ACP-compliant agent, but the entire state and behaviour is within the developer's control and can be programmatically queried and mutated)
-  - [ ] Why session persistence is not an agent responsibility: Because the agent receives its full context via `setContext`, it is a pure function of `(Context, UserMessage) → Stream`. Any process can restore a session by replaying the context — no agent-side state machine, no lock-in to a particular storage model. The application owns persistence, and the agent is none the wiser.
+  - [ ] Why session persistence is not an agent responsibility: Because the agent receives its full context via `setContext`, it is a pure function of `(Context, prompt | continue) → Step Stream`. Any process can restore a session by replaying the context — no agent-side state machine, no lock-in to a particular storage model. The application owns persistence, and the agent is none the wiser.
   - [ ] Why tool execution is better served in application code: The agent holds only tool schemas, never implementations. When it needs a tool, it calls back to the application via reverse RPC (`toolExecute`). This means: the application controls what the agent can do; tools have access to platform resources (filesystem, network, UI) that an isolated agent process cannot; new tools can be added without restarting or redeploying the agent; and different sessions can wire different tool implementations to the same agent.
     - [ ] Developments in common coding agent workflows should not require a change to the protocol. For example, file editing, todo tracking, agent spawning, and filesystem search are all implemented as application-side extensions that register tools and observe the stream — none required new protocol methods or message types.
     - [ ] Makes no assumption on capabilities of agent environment (the application advertises its own capabilities), unlike the contract of `clientCapabilities` in ACP:
@@ -54,30 +54,42 @@ Below, we explain the reasons why Mini-ACP was developed, including mention of p
 ### State Machine
 
 ```
-[Uninitialized]
-    │ initialize()
-    ▼
-[Initialized]
-    │ setContext()
-    ▼
-[Ready] ◄──────────────────────┐
-    │ prompt()                  │
-    ▼                           │
-[Turning] ── stream events ──► │
-    │   ▲                       │
-    │   └─ toolExecute ◄──►    │
-    │      (reverse RPC)        │
-    │                           │
-    │ TurnEnd / cancel          │
-    └───────────────────────────┘
+[Uninitialized] -- initialize() --> [Initialized] -- setContext() --> [Ready]
+                                                                       |
+                                                                 prompt(user)
+                                                                       v
+[Ready] <---------------- turnEnd ------------------------------- [Executing]
+                                                                       |
+                                                                    stepEnd
+                                                                       v
+                                                                   [Paused]
+                                                                       |
+                                                                   continue()
+                                                                       |
+                                                                       +--> [Executing]
 ```
 
-Transitions:
-- `setContext` MAY be called any number of times in the `Ready` state.
-- `prompt` transitions from `Ready` to `Turning`. A new `prompt` MUST NOT be sent while a turn is active.
-- `TurnEnd` or stream termination transitions from `Turning` back to `Ready`.
-- `cancel` MAY be sent during `Turning`. See [Cancellation](#cancellation).
-- `setContext` during `Turning` is implementation-specific. Implementations that accept it MUST document when each context field takes effect.
+- `prompt(userMessage)` starts a logical user turn and executes exactly one
+  model response (reasoning/text plus tool calls) and its entire tool batch.
+- `continue()` executes one further iteration using the existing context,
+  without synthesizing or appending a user message. A response using tool
+  results belongs to this following iteration.
+- Each executed drive has exactly one terminal: `stepEnd` when more execution
+  is needed, or `turnEnd` when finished, failed or cancelled. There is no
+  `stepEnd` followed by `turnEnd` in the same drive. Classification uses the
+  response and completed batch; it never requires another provider request.
+- Both terminals guarantee **idle**: all execution, tool work and adapter state
+  have settled before the event is published. A client receiving a terminal
+  can immediately call `setContext`, or `continue` when paused, without waiting
+  for stream closure. Pi's `agent_end` alone is not this guarantee.
+- The barrier is the idle period after `stepEnd` and before the next client
+  `continue`. Clients may apply ordinary `setContext` patches there. There is
+  no reverse acknowledgement or context-preparation callback.
+- `prompt` and `continue` during execution are rejected as busy. At a paused
+  boundary, a new `prompt` is rejected: finish with `continue`, or cancel and
+  drain the cancelled turn with `continue` before starting another prompt.
+- `continue` after `turnEnd` (or before any prompt) is an empty stream, with no
+  provider request or new message. `setContext` does not reopen a finished turn.
 
 ### Phase 1: Initialization
 
@@ -136,7 +148,7 @@ ToolDefinition {
 ```
 
 **`LLMConfig`** — model configuration. Individual fields are optional so that
-`setContext` can fill them in incrementally; a turn will fail at prompt time
+`setContext` can fill them in incrementally; a drive will fail at execution time
 if required fields (provider, model, apiKey) are still unset.
 ```
 LLMConfig {
@@ -163,33 +175,33 @@ and preserves the current `messages`. Sending `{ messages: [...] }` replaces
 only the message list. Similarly, `{ config: { reasoning: 'high' } }` updates
 only `reasoning` and preserves the current `model`, `provider`, and `apiKey`.
 
-#### `setContext` During an Active Turn
+#### `setContext` During Execution
 
-The protocol intentionally leaves mid-turn `setContext` timing
-implementation-specific because different agent loops have different safe
-refresh points. An implementation that acknowledges `setContext` in the
-`Turning` state must document which parts of the patch can affect the active
-turn and which parts are deferred.
+All context fields can be changed while idle, including the paused boundary.
+While executing, the built-in Pi adapter accepts tools-only patches. They
+replace the adapter's tool list for the **next explicit drive**, without
+changing the executing batch. Patches containing `systemPrompt`, `messages` or
+`config` are rejected while executing, even if they also contain `tools`.
 
-The built-in Pi implementation accepts `setContext` during `Turning` only when
-the patch contains `tools` and no other fields:
+### Phase 3: Prompt and Continue
 
-- `tools` replaces the live tool list immediately and is visible at the next Pi
-  loop boundary, before the next LLM call in the same Mini-ACP `prompt`.
-- `systemPrompt`, `messages`, and `config` are rejected while a prompt is
-  active, including patches that also include `tools`. This avoids applying
-  prompt, history, model, or API-key changes to a transcript that is already
-  mid-turn.
-
-### Phase 3: Prompt
-
-A turn begins when the client sends `prompt` with a `UserMessage`. The agent responds with a stream of events and terminates the stream when the turn is complete.
+A logical turn begins with `prompt(UserMessage)`. Each drive returns a stream
+for one response and tool batch:
 
 ```
-Client ──── prompt({ message: UserMessage }) ────► Agent
-Client ◄──── StreamEvent* ──────────────────────── Agent
-Client ◄──── (stream terminal response) ────────── Agent
+Client -- prompt(UserMessage) --> Agent
+Client <-- turnStart, chunk*, update*, stepEnd | turnEnd -- Agent
+
+// Only if stepEnd was received:
+Client -- setContext(patch) --> Agent  // optional, ordinary idle synchronization
+Client -- continue() ------> Agent
+Client <-- chunk*, update*, stepEnd | turnEnd -- Agent
 ```
+
+`turnStart` occurs once, at the start of `prompt`. Continuation streams do not
+emit it. Every nonempty drive ends with one terminal and then closes; no events
+or tool executions from that drive can follow its terminal. Empty no-op
+continuations have no terminal because they execute no step.
 
 #### Messages
 
@@ -209,7 +221,7 @@ Content block types:
 
 #### Stream Events
 
-The prompt stream emits a sequence of `StreamEvent` values. There are four event types:
+Prompt and continuation streams emit `StreamEvent` values. There are five event types:
 
 **`TurnStart`** — signals the turn has begun. This is always the first event emitted after a `prompt`:
 ```
@@ -237,19 +249,35 @@ Update {
 }
 ```
 
+**`StepEnd`** — the response and its tool batch have settled; another iteration
+is needed. The client decides when to continue:
+```
+StepEnd {
+  type:       "stepEnd"
+  stepUsage?: Usage       // This drive only
+}
+```
+
 **`TurnEnd`** — signals the turn is complete:
 ```
 TurnEnd {
   type:         "turnEnd"
   stopCode:     StopCode      // Integer code indicating why the turn ended
   stopMessage?: string        // Optional human-readable detail
-  usage?:       Usage         // Token counts and cost for the turn (see below)
+  stepUsage?:   Usage         // This drive only
+  usage?:       Usage         // Cumulative usage for the logical turn
 }
 ```
 
-`usage` is optional because some turns terminate before any LLM call is
-made (e.g. config-resolution failures). Adapters that do reach the provider
-SHOULD populate it.
+`stepUsage` is the delta for this drive, on either terminal. `turnEnd.usage`
+is the sum of all steps since `prompt`, including the final step. To accumulate
+session usage at each idle boundary, add only `stepUsage`; alternatively, add
+only the final `turnEnd.usage` once. Never add both. Tracking helpers use step
+deltas, with a fallback to `usage` for legacy unstepped turn streams.
+
+Usage fields are optional when unavailable. The built-in Pi adapter reports
+zero step usage for pre-provider failures and paused cancellation, retaining
+any previous steps in cumulative usage. A new prompt resets turn usage.
 
 **`Usage`** — token counts and cost for a completed turn. The two buckets
 share the same field names so a consumer can iterate either symmetrically:
@@ -311,17 +339,19 @@ ToolResult {
 }
 ```
 
-A single `prompt` call may trigger multiple tool executions. The agent's internal LLM loop continues after each tool result — cycling through `(LLM call → tool call → tool result → LLM call)` — until the LLM produces a final response or a stop condition is reached. The entire sequence is part of a single prompt turn, but tool calls/results flow through reverse RPC rather than the prompt stream.
+A response may request multiple tools. The whole associated batch settles
+before `stepEnd`; the adapter does not request a model response using those
+results until `continue`. Tool calls/results flow through reverse RPC rather
+than the drive's stream.
 
 ##### Tool Error Semantics
 
-There are two ways a tool execution can fail, and they have different protocol-level consequences:
-
-1. **In-band error** (`isError: true` on `ToolResult`): The tool ran and produced an error result. The agent loop **continues** — the LLM sees the error content and decides how to proceed (retry, ask the user, or give up). This is the preferred mechanism for signalling tool failures.
-
-2. **Thrown exception** (JSON-RPC error response): The `toolExecute` handler itself throws. This propagates as a protocol-level failure and typically **ends the turn** with `stopReason: "refusal"`.
-
-Client-side `toolExecute` implementations SHOULD catch their own exceptions and return a `ToolResult` with `isError: true` and descriptive content, rather than allowing exceptions to propagate. Exceptions as results preserve agent control flow; exceptions as exceptions alter it.
+An in-band `isError: true` result lets the following iteration inspect the
+failure. The built-in Pi loop also converts thrown tool-handler exceptions to
+error tool results. Tool failures do not themselves require another provider
+request to classify the step: a normally completed tool batch pauses with
+`stepEnd`, then the client may continue. Clients SHOULD return descriptive
+in-band errors instead of throwing across the protocol.
 
 #### Turn End
 
@@ -343,26 +373,47 @@ The turn ends when the agent emits a `TurnEnd` event and closes the stream. The 
 
 Codes are grouped by range: 1xxx = `finished` (the turn completed), 2xxx = `llm_error` (the turn could not complete). Sub-ranges (21xx, 22xx, 23xx) group related error types. The category is derived from the code, never stored separately.
 
-After `TurnEnd`, the agent's context has been implicitly updated with all messages produced during the turn (the user message, assistant messages, tool calls, and tool results).
+After each terminal, the agent's context includes all messages produced so far (the user message, assistant messages, tool calls and tool results). A client may keep a turn paused indefinitely; it must drive or cancel/drain the turn to obtain `turnEnd`.
 
 #### Cancellation
 
-The client MAY send a `cancel` notification at any time during an active turn:
+`cancel()` is a notification and may be sent while executing or paused. While
+executing, it requests abort; the active stream emits a single
+`turnEnd(Cancelled)` after the provider and any in-flight tools settle. The
+reverse tool protocol does not carry an abort signal, so cancellation waits
+for already-running application tools. Cancellation never manufactures a clean
+step boundary or starts follow-up inference.
 
-```
-Client ──── cancel({}) ────► Agent (notification, no response)
-```
+At the paused boundary, `cancel` marks the logical turn cancelled. The already
+closed step stream stays closed. The next `continue` emits only
+`turnEnd(Cancelled)`, with zero step usage and cumulative turn usage, without a
+provider request. The client must drain that continuation before a new prompt.
+After completion, cancellation is a no-op, and further continuations are empty.
 
-The agent SHOULD attempt to stop the current turn. However, the protocol makes no guarantees about the timeliness or completeness of cancellation. Specifically:
-
-- In-flight tool executions MAY or MAY NOT complete before the turn ends.
-- The agent SHOULD eventually emit a `TurnEnd` with `stopCode: Cancelled (1001)`, but the timing is #unspecified.
-- The client MUST NOT assume the stream has ended until the stream is actually terminated (i.e., the terminal response is received).
+The Pi adapter uses the pinned 0.75.4 public `runAgentLoop` /
+`runAgentLoopContinue` exports and `shouldStopAfterTurn: () => true`. The adapter
+awaits runner settlement before publishing either terminal; it does not forward
+Pi's earlier `agent_end`. See the [Pi public loop source](https://github.com/earendil-works/pi-mono/blob/v0.75.4/packages/agent/src/agent-loop.ts).
 
 #### Shutdown
 
-There is no explicit shutdown phase in the protocol. Session teardown is delegated to the underlying transport. Closing the transport connection implicitly terminates any active turn and releases resources on both sides.
+There is no explicit shutdown phase in the protocol. Session teardown is
+delegated to the underlying transport. Closing it releases transport resources;
+already-running application tools still follow their application's lifecycle.
 
+## Scripted Mocks
+
+`createMockMiniACP` preserves a descriptor across explicit drives. A nonempty
+`toolCalls([...])` batch pauses with `stepEnd`; subsequent descriptor actions
+run only on `continue`. `derive` receives the current context, including idle
+patches, and the original prompt. `toolCalls(calls, { stepUsage })` supplies the
+batch's usage delta; `turnEnd({ usage })` supplies the final step delta, which
+the mock exposes as `stepUsage` and includes in cumulative `turnEnd.usage`.
+`createScriptedProvider` supplies a Pi-compatible streaming test fixture with
+recorded requests and fixed responses; it never falls through to a real provider.
+
+Mocks reject active drives, support paused cancellation and return empty streams
+on continuation after completion. Recordings count executed `continues`.
 
 ## Spec Table
 
@@ -387,22 +438,24 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 | `context-prompt-fields-top-level`    | `setContext` prompt fields are top-level `systemPrompt` and `messages` fields; nested `history` is not part of the protocol           | MUST  |
 | `context-tools-replaces-wholesale`   | When `tools` is present in a patch, it replaces the current tool list wholesale (including when set to `[]`, which clears all tools)     | MUST  |
 | `context-config-merges-by-property`  | When `config` is present in a patch, each subfield replaces only when set; omitted subfields are preserved                               | MUST  |
-| `context-during-turn-documented`     | Implementations that accept `setContext` during `Turning` must document field-level effect timing                                      | MUST  |
+| `context-during-turn-documented`     | Implementations that accept `setContext` during execution must document field-level effect timing                                      | MUST  |
 
 ### Turn Lifecycle
 
 | ID                            | Description                                                        | Level |
 | ----------------------------- | ------------------------------------------------------------------ | ----- |
 | `turn-starts-with-turn-start` | The first stream event after every `prompt` must be a `turnStart`  | MUST  |
-| `turn-ends-with-turn-end`     | Every `prompt` must eventually be followed by a `turnEnd`          | MUST  |
-| `no-overlapping-prompts`      | `prompt` must not be sent while a turn is active                   | MUST  |
+| `turn-ends-with-turn-end`     | Every turn driven to completion must end with `turnEnd`          | MUST  |
+| `no-overlapping-prompts`      | `prompt` and `continue` must not overlap an executing drive                   | MUST  |
 | `prompt-after-init`           | `prompt` must not be sent before `initialize` completes            | MUST  |
-| `turn-end-is-terminal`        | No stream events (`chunk`, `update`) after `turnEnd` within a turn | MUST  |
+| `turn-end-is-terminal`        | No stream or tool events after either terminal within a drive | MUST  |
 
 ### Stream Events
 
 | ID                              | Description                                                                          | Level |
 | ------------------------------- | ------------------------------------------------------------------------------------ | ----- |
+| `one-terminal-per-step`       | Every executed drive has exactly one `stepEnd` or `turnEnd`                         | MUST  |
+| `continue-after-step-end`      | Continuation runs after `stepEnd`; after `turnEnd` it is empty                       | MUST  |
 | `one-turn-end-per-turn`         | Every turn has exactly one `turnEnd`                                                 | MUST  |
 | `stop-code-valid`               | `turnEnd.stopCode` must be a valid `StopCode` enum value                             | MUST  |
 | `chunk-has-message-id`          | Every `chunk` has a `messageId` and `role`                                           | MUST  |
@@ -417,6 +470,7 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 | ID                            | Description                                                                | Level |
 | ----------------------------- | -------------------------------------------------------------------------- | ----- |
 | `tool-result-follows-execute` | Every `toolExecute` receive is followed by a `toolResult` send             | MUST  |
+| `tool-batch-before-terminal` | Every started tool has returned before either terminal                    | MUST  |
 | `tool-result-id-matches`      | `toolResult.toolCallId` must match the preceding `toolExecute`'s `call.id` | MUST  |
 | `tool-execute-during-turn`    | `toolExecute` only occurs during an active turn                            | MUST  |
 | `tool-name-in-context`        | Invoked tool name must exist in a prior `setContext` tools array           | MUST  |
@@ -433,7 +487,7 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 
 | ID                          | Description                                                           | Level  |
 | --------------------------- | --------------------------------------------------------------------- | ------ |
-| `cancel-during-active-turn` | `cancel` must only be sent during an active turn                      | MUST   |
+| `cancel-during-active-turn` | `cancel` may be sent during execution or at a paused boundary                      | MUST   |
 | `cancel-stop-code`          | After `cancel`, the turn should end with `stopCode: Cancelled (1001)` | SHOULD |
 
 
@@ -472,7 +526,7 @@ Forking a session is creating a new agent connection and calling `setContext` wi
 
 ## Potential Problems and Todos
 - [ ] Is it expensive to send the full message head on fork?
-- [x] Mid-turn `setContext` timing is implementation-specific and documented for Pi
+- [x] Execution-time `setContext` timing and explicit idle boundaries are documented for Pi
 - [x] Error semantics spelled out (StopCode integer enum with categories; see Tool Error Semantics)
 - [ ] Spell out authentication model, but feels like apikey can really be enough
 - [ ] 

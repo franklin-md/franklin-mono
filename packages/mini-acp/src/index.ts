@@ -30,6 +30,7 @@ export type {
 	TurnStart,
 	Update,
 	Chunk,
+	StepEnd,
 	TurnEnd,
 	StreamEvent,
 	// Usage
