@@ -267,10 +267,13 @@ describe('HTTP references', () => {
 	it('rejects invalid policy contributions before opening a connection', async () => {
 		const fetch = vi.fn<Fetch>().mockResolvedValue(response());
 		const { runtime } = await setup(fetch, {}, () => ({
-			idleTimeoutMs: 0, totalTimeoutMs: 900_000,
+			idleTimeoutMs: 0,
+			totalTimeoutMs: 900_000,
 		}));
 		try {
-			expect((await runtime.references.toContext({ locator: url })).isError).toBe(true);
+			expect(
+				(await runtime.references.toContext({ locator: url })).isError,
+			).toBe(true);
 			expect(fetch).not.toHaveBeenCalled();
 		} finally {
 			await runtime.dispose();
@@ -279,18 +282,23 @@ describe('HTTP references', () => {
 
 	it('keeps the same absolute deadline for every redirect and enforces the redirect cap', async () => {
 		const fetch = vi.fn<Fetch>().mockResolvedValue({
-			...response(), status: 302, headers: { location: '/again' },
+			...response(),
+			status: 302,
+			headers: { location: '/again' },
 		});
 		const { runtime } = await setup(fetch, { maxRedirects: 1 });
 		try {
 			const context = await runtime.references.toContext({ locator: url });
 			expect(context.isError).toBe(true);
-			expect(context.content).toMatchObject({ text: expect.stringContaining('Redirect limit exceeded (1)') });
+			expect(context.content).toMatchObject({
+				text: expect.stringContaining('Redirect limit exceeded (1)'),
+			});
 			expect(fetch).toHaveBeenCalledTimes(2);
-			expect(fetch.mock.calls[0]?.[0].deadline).toBe(fetch.mock.calls[1]?.[0].deadline);
+			expect(fetch.mock.calls[0]?.[0].deadline).toBe(
+				fetch.mock.calls[1]?.[0].deadline,
+			);
 		} finally {
 			await runtime.dispose();
 		}
 	});
-
 });

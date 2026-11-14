@@ -32,10 +32,12 @@ describe('sandbox runtime ownership', () => {
 	it('does not let a matching request bypass a queued incompatible policy', async () => {
 		const first = await acquireSandboxRuntime(config, firstPolicy);
 		const order: string[] = [];
-		const second = acquireSandboxRuntime(config, secondPolicy).then((release) => {
-			order.push('second');
-			return release;
-		});
+		const second = acquireSandboxRuntime(config, secondPolicy).then(
+			(release) => {
+				order.push('second');
+				return release;
+			},
+		);
 		const third = acquireSandboxRuntime(config, firstPolicy).then((release) => {
 			order.push('third');
 			return release;

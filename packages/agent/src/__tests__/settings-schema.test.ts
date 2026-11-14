@@ -111,17 +111,32 @@ describe('AppSettings schema', () => {
 		});
 	});
 	it('hydrates a partial document policy without changing existing values', () => {
-		expect(appSettingsCodec.decode({ version: 1, data: {
-			documentDownloads: { idleTimeoutMs: 120_000 },
-		} })).toMatchObject({ ok: true, value: {
-			documentDownloads: { idleTimeoutMs: 120_000, totalTimeoutMs: 900_000 },
-		} });
+		expect(
+			appSettingsCodec.decode({
+				version: 1,
+				data: {
+					documentDownloads: { idleTimeoutMs: 120_000 },
+				},
+			}),
+		).toMatchObject({
+			ok: true,
+			value: {
+				documentDownloads: { idleTimeoutMs: 120_000, totalTimeoutMs: 900_000 },
+			},
+		});
 	});
 
-	it.each([0, -1, 1.5, 2_147_483_648])('rejects invalid document timing %s', (duration) => {
-		expect(appSettingsCodec.decode({ version: 1, data: {
-			documentDownloads: { totalTimeoutMs: duration },
-		} })).toMatchObject({ ok: false, issue: { kind: 'schema-mismatch' } });
-	});
-
+	it.each([0, -1, 1.5, 2_147_483_648])(
+		'rejects invalid document timing %s',
+		(duration) => {
+			expect(
+				appSettingsCodec.decode({
+					version: 1,
+					data: {
+						documentDownloads: { totalTimeoutMs: duration },
+					},
+				}),
+			).toMatchObject({ ok: false, issue: { kind: 'schema-mismatch' } });
+		},
+	);
 });
