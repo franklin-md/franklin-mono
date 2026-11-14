@@ -1,8 +1,52 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import * as models from '@franklin/mini-acp/models';
 
 import { MODEL_CATALOG } from '../../../../src/conversation/input/models/catalog.js';
 
 describe('MODEL_CATALOG', () => {
+	it.each(MODEL_CATALOG.flatMap((group) => group.models))(
+		'uses request metadata for $provider/$id',
+		(entry) => {
+			const resolved = models.resolveModel({
+				provider: entry.provider,
+				model: entry.id,
+			});
+			expect(resolved.ok).toBe(true);
+			if (!resolved.ok) return;
+			expect(entry).toMatchObject({
+				reasoning: resolved.model.reasoning,
+				contextWindow: resolved.model.contextWindow,
+				costInput: resolved.model.cost.input,
+				costOutput: resolved.model.cost.output,
+			});
+		},
+	);
+
+	it('keeps the remaining choices usable when a curated model disappears', async () => {
+		vi.doMock('@franklin/mini-acp/models', () => ({
+			resolveModel: (config: Parameters<typeof models.resolveModel>[0]) =>
+				models.resolveModel(
+					config.model === 'gpt-6-astra'
+						? { ...config, model: 'missing-model' }
+						: config,
+				),
+		}));
+		vi.resetModules();
+		try {
+			const { MODEL_CATALOG: catalog } =
+				await import('../../../../src/conversation/input/models/catalog.js');
+			expect(catalog[0]?.models.map((entry) => entry.id)).toEqual(
+				MODEL_CATALOG[0]?.models
+					.filter((entry) => entry.id !== 'gpt-6-astra')
+					.map((entry) => entry.id),
+			);
+			expect(catalog.slice(1)).toEqual(MODEL_CATALOG.slice(1));
+		} finally {
+			vi.doUnmock('@franklin/mini-acp/models');
+			vi.resetModules();
+		}
+	});
+
 	it('surfaces supported provider groups in the selector catalog', () => {
 		expect(MODEL_CATALOG.map((group) => group.provider)).toEqual([
 			'openai-codex',
@@ -11,19 +55,35 @@ describe('MODEL_CATALOG', () => {
 		]);
 	});
 
-	it('surfaces GPT-5.6 Sol as the leading OpenAI Codex model', () => {
+	it('surfaces GPT-6-Astra as the leading OpenAI Codex model', () => {
 		const openAICodex = MODEL_CATALOG.find(
 			(group) => group.provider === 'openai-codex',
 		);
 
 		expect(openAICodex?.models[0]).toMatchObject({
 			provider: 'openai-codex',
-			id: 'gpt-5.6-sol',
-			name: 'GPT-5.6 Sol',
+			id: 'gpt-6-astra',
+			name: 'GPT-6-Astra',
 			reasoning: true,
-			contextWindow: 372_000,
-			costInput: 5,
-			costOutput: 30,
+			contextWindow: 272_000,
+			costInput: 10,
+			costOutput: 50,
+		});
+	});
+
+	it('surfaces GPT-6.1-Sol as the balanced OpenAI Codex model', () => {
+		const openAICodex = MODEL_CATALOG.find(
+			(group) => group.provider === 'openai-codex',
+		);
+
+		expect(openAICodex?.models[1]).toMatchObject({
+			provider: 'openai-codex',
+			id: 'gpt-6.1-sol',
+			name: 'GPT-6.1-Sol',
+			reasoning: true,
+			contextWindow: 272_000,
+			costInput: 2,
+			costOutput: 10,
 		});
 	});
 
@@ -33,7 +93,8 @@ describe('MODEL_CATALOG', () => {
 		);
 
 		expect(openAICodex?.models.map((model) => model.id)).toEqual([
-			'gpt-5.6-sol',
+			'gpt-6-astra',
+			'gpt-6.1-sol',
 			'gpt-5.6-terra',
 			'gpt-5.6-luna',
 			'gpt-5.5',
@@ -52,15 +113,23 @@ describe('MODEL_CATALOG', () => {
 			access: 'api',
 		});
 		expect(group?.models.map((model) => model.id)).toEqual([
-			'deepseek-v4-pro',
-			'deepseek-v4-flash',
-			'mimo-v2.5-pro',
+			'grok-4.6',
+			'gpt-5.6-luna',
+			'glm-5.3',
+			'glm-5.3-flash',
+			'kimi-k3',
+			'kimi-k2.7-code',
+			'longcat-2.0',
 			'mimo-v2.5',
-			'kimi-k2.6',
-			'glm-5.2',
-			'qwen3.6-plus',
-			'qwen3.5-plus',
-			'minimax-m2.7',
+			'mimo-v2.5-pro',
+			'minimax-m3',
+			'muse-spark-1.3-contributor',
+			'qwen3.8-flash',
+			'qwen3.8-max',
+			'deepseek-v4-pro',
+			'deepseek-flash',
+			'deepseek-v4-flash-vision-exp',
+			'hy4-preview',
 		]);
 		expect(
 			group?.models.every((model) => model.provider === 'opencode-go'),
@@ -79,8 +148,8 @@ describe('MODEL_CATALOG', () => {
 			name: 'DeepSeek V4 Pro',
 			reasoning: true,
 			contextWindow: 1_000_000,
-			costInput: 1.74,
-			costOutput: 3.48,
+			costInput: 0.66,
+			costOutput: 1.98,
 		});
 	});
 

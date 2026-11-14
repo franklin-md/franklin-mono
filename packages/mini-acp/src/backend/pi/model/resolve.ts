@@ -1,15 +1,13 @@
 import {
-	getModels,
-	getProviders,
-	type KnownProvider,
-	type Model,
-} from '@earendil-works/pi-ai';
+	getBuiltinModels,
+	getBuiltinProviders,
+} from '@earendil-works/pi-ai/providers/all';
+import type { KnownProvider, Model } from '@earendil-works/pi-ai';
 
 import type { LLMConfig } from '../../../types/context.js';
 import { StopCode } from '../../../types/stop-code.js';
 import type { TurnEnd } from '../../../types/stream.js';
 import { withOpenRouterHeaders } from './headers.js';
-import { isOpenAICodexModelId } from './openai-codex-models.js';
 import { getModelOverride } from './overrides.js';
 
 export type ResolveSuccess = { ok: true; model: Model<string> };
@@ -21,23 +19,23 @@ function fail(stopCode: StopCode, stopMessage: string): ResolveFailure {
 }
 
 function isKnownProvider(provider: string): provider is KnownProvider {
-	return getProviders().includes(provider as KnownProvider);
+	return getBuiltinProviders().includes(provider as KnownProvider);
 }
 
 function findModel(
 	provider: KnownProvider,
 	modelId: string,
 ): Model<string> | undefined {
-	if (provider === 'openai-codex' && !isOpenAICodexModelId(modelId)) {
-		return undefined;
-	}
-
 	const override = getModelOverride(provider, modelId);
 	if (override) {
 		return override;
 	}
+	// Local definitions are also the reviewed Codex set; reject other upstream IDs.
+	if (provider === 'openai-codex') return undefined;
 
-	return getModels(provider).find((candidate) => candidate.id === modelId);
+	return getBuiltinModels(provider).find(
+		(candidate) => candidate.id === modelId,
+	);
 }
 
 export function resolveModel(config: LLMConfig): ResolveResult {

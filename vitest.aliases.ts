@@ -22,6 +22,7 @@ const entries = [
 	['@franklin/lib', 'packages/lib/src/index.ts'],
 	['@franklin/mini-acp/debug', 'packages/mini-acp/src/debug/index.ts'],
 	['@franklin/mini-acp/mock', 'packages/mini-acp/src/mock/index.ts'],
+	['@franklin/mini-acp/models', 'packages/mini-acp/src/models.ts'],
 	['@franklin/mini-acp/rpc', 'packages/mini-acp/src/rpc/index.ts'],
 	['@franklin/mini-acp/session', 'packages/mini-acp/src/session.ts'],
 	['@franklin/mini-acp', 'packages/mini-acp/src/index.ts'],
