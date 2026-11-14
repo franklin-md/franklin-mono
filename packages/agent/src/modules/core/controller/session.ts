@@ -51,12 +51,12 @@ export function createAgentSession(
 		},
 		getSentContext: ledger.getSentContext,
 		getSnapshot() {
-			const draft = ledger.ledger.getDraft();
+			const context = ledger.ledger.getDraft();
 			return {
 				// Snapshot callers receive copies of draft-owned collections so they
 				// cannot mutate the live session draft.
-				messages: [...draft.messages],
-				llmConfig: pickLLMConfig(draft.config),
+				entries: draft.getEntries(),
+				llmConfig: pickLLMConfig(context.config),
 				usage: snapshotUsage(usage.get()),
 				toolFilter: input.toolRegistry.filter(),
 			};

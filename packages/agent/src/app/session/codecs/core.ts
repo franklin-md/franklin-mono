@@ -5,6 +5,7 @@ import {
 	type SessionSnapshot,
 	type ToolFilter,
 } from '../../../modules/core/state.js';
+import { validateEntries } from '../../../modules/core/history/validate.js';
 
 const ThinkingLevelV1 = z.enum([
 	'off',
@@ -56,4 +57,28 @@ export const CoreSessionV1 = z.object({
 	toolFilter: ToolFilterV1.optional().transform(
 		(value) => value ?? emptyToolFilter(),
 	),
+});
+
+export const CoreSessionV2 = CoreSessionV1.omit({ messages: true }).extend({
+	entries: z
+		.array(
+			z.discriminatedUnion('type', [
+				z.object({
+					type: z.literal('message'),
+					message: MessageV1,
+				}),
+				z.object({
+					type: z.literal('compaction'),
+					summary: z.string(),
+				}),
+			]),
+		)
+		.refine((entries) => {
+			try {
+				validateEntries(entries);
+				return true;
+			} catch {
+				return false;
+			}
+		}, 'Invalid session history'),
 }) satisfies z.ZodType<SessionSnapshot>;

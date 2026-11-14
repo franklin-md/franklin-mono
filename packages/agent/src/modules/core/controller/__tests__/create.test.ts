@@ -25,7 +25,7 @@ function createController() {
 	const registrations = createCoreRegistry();
 	return createAgentController({
 		snapshot: {
-			messages: [],
+			entries: [],
 			llmConfig: {},
 			usage: ZERO_USAGE,
 			toolFilter: { disabled: [] },

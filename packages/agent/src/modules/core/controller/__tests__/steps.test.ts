@@ -83,7 +83,12 @@ describe('controller drives one logical runtime turn', () => {
 				usage: { tokens: { total: 20 } },
 			});
 			expect(
-				scenario.runtime.getSession().messages.filter((m) => m.role === 'user'),
+				scenario.runtime
+					.getSession()
+					.entries.filter(
+						(entry) =>
+							entry.type === 'message' && entry.message.role === 'user',
+					),
 			).toHaveLength(1);
 		} finally {
 			await scenario.dispose();
