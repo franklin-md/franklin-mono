@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import type {
+	AssistantBlock,
 	TextBlock,
 	ThinkingBlock,
 	ToolUseBlock,
@@ -8,6 +9,12 @@ import type {
 
 import type { ConversationRenderTurn } from './turn-info/types.js';
 import type { ToolStatus } from './tools/types.js';
+
+export type ConversationActivityProps = {
+	turn: ConversationRenderTurn;
+	blocks: AssistantBlock[];
+	children: ReactNode;
+};
 
 export type ConversationComponents = {
 	Text: ComponentType<{ block: TextBlock }>;
@@ -20,6 +27,7 @@ export type ConversationComponents = {
 		turn: ConversationRenderTurn;
 		children: ReactNode;
 	}>;
+	Activity?: ComponentType<ConversationActivityProps>;
 	Waiting?: ComponentType<{ turn: ConversationRenderTurn }>;
 	Footer?: ComponentType<{ turn: ConversationRenderTurn }>;
 	EmptyPlaceholder?: ComponentType;

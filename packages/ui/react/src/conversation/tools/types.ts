@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ElementType, ReactNode } from 'react';
 import type { JsonValue } from '@franklin/lib';
 import type {
 	ToolArgsOf,
@@ -22,6 +22,9 @@ export type ToolRendererEntry<
 	TArgs = unknown,
 	TOutput extends JsonValue = JsonValue,
 > = {
+	icon?(
+		props: ToolRenderProps<TArgs, TOutput>,
+	): ElementType<{ className?: string }>;
 	summary(props: ToolRenderProps<TArgs, TOutput>): ReactNode;
 	expanded?(props: ToolRenderProps<TArgs, TOutput>): ReactNode;
 };
