@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// AgentEvent → StreamEvent translation
+// AgentEvent → content events. The adapter owns Mini-ACP lifecycle events.
 // ---------------------------------------------------------------------------
 
 import type {
@@ -9,7 +9,7 @@ import type {
 import type { AgentEvent } from '@earendil-works/pi-agent-core';
 
 import { fromPiMessage } from './message.js';
-import type { StreamEvent } from '../../../types/stream.js';
+import type { Chunk, Update } from '../../../types/stream.js';
 // ---------------------------------------------------------------------------
 // AgentEvent → StreamEvent
 // ---------------------------------------------------------------------------
@@ -17,10 +17,9 @@ import type { StreamEvent } from '../../../types/stream.js';
 export function fromAgentEvent(
 	event: AgentEvent,
 	messageId: string,
-): StreamEvent | null {
+): Chunk | Update | null {
 	switch (event.type) {
 		case 'agent_start':
-			return { type: 'turnStart' };
 		case 'turn_start':
 		case 'turn_end': // turn_end in Pi is just one trip round the agent loop.
 		case 'message_start':
@@ -71,7 +70,7 @@ export function fromAgentEvent(
 function fromAssistantMessageEvent(
 	event: AssistantMessageEvent,
 	messageId: string,
-): StreamEvent | null {
+): Chunk | null {
 	switch (event.type) {
 		case 'text_delta':
 			return {

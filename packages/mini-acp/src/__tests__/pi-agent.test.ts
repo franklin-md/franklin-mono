@@ -49,7 +49,7 @@ describe('Pi explicit drives', () => {
 		await client.setContext({ config, tools: [tool] });
 		const first = await collect(client.prompt(prompt));
 		expect(provider.requests).toHaveLength(1);
-		expect(first.stepEnd?.stepUsage?.tokens.total).toBe(16);
+		expect(first.stepEnd?.stepUsage.tokens.total).toBe(16);
 		expect(first.turnEnd).toBeUndefined();
 		expect(first.messages[0]?.content).toEqual([
 			{ type: 'thinking', text: 'reasoning' },
@@ -79,7 +79,7 @@ describe('Pi explicit drives', () => {
 		});
 		expect(provider.requests).toHaveLength(3);
 		const next = await collect(client.prompt(prompt));
-		expect(next.turnEnd?.usage?.tokens.total).toBe(16);
+		expect(next.turnEnd?.usage.tokens.total).toBe(16);
 		expect(
 			provider.requests[3]?.messages.filter((m) => m.role === 'user'),
 		).toHaveLength(2);

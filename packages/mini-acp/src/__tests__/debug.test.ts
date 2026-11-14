@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { collectEvents } from './utils/collect-events.js';
+import { ZERO_USAGE } from '../protocol/usage-tracker.js';
 
 import { debugMiniACP } from '../debug/index.js';
 import type { MuAgent, MuClient } from '../protocol/types.js';
@@ -15,11 +17,16 @@ const ANSI_YELLOW = '\x1b[33m';
 const ANSI_CYAN = '\x1b[36m';
 const ANSI_RESET = '\x1b[0m';
 
-async function drain(iter: AsyncIterable<StreamEvent>): Promise<StreamEvent[]> {
-	const out: StreamEvent[] = [];
-	for await (const event of iter) out.push(event);
-	return out;
-}
+const zeroUsageLog = [
+	[
+		`[mini]       ${ANSI_BOLD}tokens${ANSI_RESET} in=0 out=0 cacheR=0 cacheW=0 total=0`,
+	],
+	[
+		`[mini]       ${ANSI_BOLD}cost${ANSI_RESET}   in=$0.0000 out=$0.0000 cacheR=$0.0000 cacheW=$0.0000 total=$0.0000`,
+	],
+];
+
+afterEach(() => vi.restoreAllMocks());
 
 function mockClient(events: StreamEvent[] = []): MuClient {
 	return {
@@ -43,11 +50,37 @@ function mockAgent(): MuAgent {
 }
 
 describe('debugMiniACP', () => {
+	it.each(['prompt', 'continue'] as const)(
+		'logs synchronous %s errors and rethrows',
+		async (operation) => {
+			const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+			const error = new Error('open failed');
+			const inner = mockClient();
+			inner[operation] = () => {
+				throw error;
+			};
+			const debugged = debugMiniACP(inner, 'mini');
+			const stream =
+				operation === 'prompt'
+					? debugged.prompt({ role: 'user', content: [] })
+					: debugged.continue();
+			await expect(collectEvents(stream)).rejects.toBe(error);
+			expect(spy).toHaveBeenCalledWith(
+				`[mini]     ${ANSI_RED}${ANSI_BOLD}${operation} error${ANSI_RESET}${ANSI_RED} open failed${ANSI_RESET}`,
+			);
+		},
+	);
+
 	it('decorates MuClient methods without changing behavior', async () => {
 		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 		const inner = mockClient([
 			{ type: 'turnStart' },
-			{ type: 'turnEnd', stopCode: StopCode.Finished },
+			{
+				type: 'turnEnd',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
+				stopCode: StopCode.Finished,
+			},
 		]);
 		const debugged = debugMiniACP(inner, 'mini');
 
@@ -57,7 +90,7 @@ describe('debugMiniACP', () => {
 			messages: [],
 			tools: [],
 		});
-		const events = await drain(
+		const events = await collectEvents(
 			debugged.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'hello' }],
@@ -70,7 +103,12 @@ describe('debugMiniACP', () => {
 		expect(inner.cancel).toHaveBeenCalledOnce();
 		expect(events).toEqual([
 			{ type: 'turnStart' },
-			{ type: 'turnEnd', stopCode: StopCode.Finished },
+			{
+				type: 'turnEnd',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
+				stopCode: StopCode.Finished,
+			},
 		]);
 
 		expect(spy.mock.calls).toEqual([
@@ -86,10 +124,9 @@ describe('debugMiniACP', () => {
 			[
 				`[mini]     ${ANSI_BOLD}turnEnd${ANSI_RESET} ${ANSI_GREEN}Finished (1000)${ANSI_RESET}`,
 			],
+			...zeroUsageLog,
 			[`[mini] ${ANSI_BOLD}cancel${ANSI_RESET}`],
 		]);
-
-		spy.mockRestore();
 	});
 
 	it('suppresses chunk events and logs formatted updates', async () => {
@@ -115,13 +152,15 @@ describe('debugMiniACP', () => {
 			},
 			{
 				type: 'turnEnd',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
 				stopCode: StopCode.ProviderError,
 				stopMessage: 'provider exploded',
 			},
 		]);
 		const debugged = debugMiniACP(inner, 'mini');
 
-		const yielded = await drain(
+		const yielded = await collectEvents(
 			debugged.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'hi' }],
@@ -142,9 +181,8 @@ describe('debugMiniACP', () => {
 			[
 				`[mini]     ${ANSI_BOLD}turnEnd${ANSI_RESET} ${ANSI_RED}ProviderError (2200)${ANSI_RESET}: provider exploded`,
 			],
+			...zeroUsageLog,
 		]);
-
-		spy.mockRestore();
 	});
 
 	it('decorates MuAgent tool execution and preserves results', async () => {
@@ -173,8 +211,6 @@ describe('debugMiniACP', () => {
 				`[mini]     ${ANSI_CYAN}${ANSI_BOLD}toolResult${ANSI_RESET}${ANSI_CYAN} lookup_capital result${ANSI_RESET}`,
 			],
 		]);
-
-		spy.mockRestore();
 	});
 
 	it('logs in-band tool errors in red', async () => {
@@ -205,8 +241,6 @@ describe('debugMiniACP', () => {
 				`[mini]     ${ANSI_RED}${ANSI_BOLD}toolError${ANSI_RESET}${ANSI_RED} write_file permission denied${ANSI_RESET}`,
 			],
 		]);
-
-		spy.mockRestore();
 	});
 
 	it('logs thrown tool execution errors and rethrows', async () => {
@@ -237,15 +271,13 @@ describe('debugMiniACP', () => {
 				`[mini]     ${ANSI_RED}${ANSI_BOLD}toolExecute explode error${ANSI_RESET}${ANSI_RED} boom${ANSI_RESET}`,
 			],
 		]);
-
-		spy.mockRestore();
 	});
 
 	it('uses the default label', async () => {
 		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 		const debugged = debugMiniACP(mockClient([{ type: 'turnStart' }]));
 
-		await drain(
+		await collectEvents(
 			debugged.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'hello' }],
@@ -263,39 +295,39 @@ describe('debugMiniACP', () => {
 		expect(spy).toHaveBeenCalledWith(
 			`[debug]     ${ANSI_BOLD}turnStart${ANSI_RESET}`,
 		);
-
-		spy.mockRestore();
 	});
 
 	it('renders usage below turnEnd when present', async () => {
 		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+		const usage = {
+			tokens: {
+				input: 1234,
+				output: 567,
+				cacheRead: 890,
+				cacheWrite: 0,
+				total: 2691,
+			},
+			cost: {
+				input: 0.01234,
+				output: 0.0456,
+				cacheRead: 0.0001,
+				cacheWrite: 0,
+				total: 0.05804,
+			},
+		};
 		const debugged = debugMiniACP(
 			mockClient([
 				{
 					type: 'turnEnd',
+					stepUsage: usage,
 					stopCode: StopCode.Finished,
-					usage: {
-						tokens: {
-							input: 1234,
-							output: 567,
-							cacheRead: 890,
-							cacheWrite: 0,
-							total: 2691,
-						},
-						cost: {
-							input: 0.01234,
-							output: 0.0456,
-							cacheRead: 0.0001,
-							cacheWrite: 0,
-							total: 0.05804,
-						},
-					},
+					usage,
 				},
 			]),
 			'mini',
 		);
 
-		await drain(
+		await collectEvents(
 			debugged.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'hi' }],
@@ -311,18 +343,23 @@ describe('debugMiniACP', () => {
 		expect(spy).toHaveBeenCalledWith(
 			`[mini]       ${ANSI_BOLD}cost${ANSI_RESET}   in=$0.0123 out=$0.0456 cacheR=$0.0001 cacheW=$0.0000 total=$0.0580`,
 		);
-
-		spy.mockRestore();
 	});
 
 	it('colors cancelled turnEnd in blue', async () => {
 		const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 		const debugged = debugMiniACP(
-			mockClient([{ type: 'turnEnd', stopCode: StopCode.Cancelled }]),
+			mockClient([
+				{
+					type: 'turnEnd',
+					stepUsage: ZERO_USAGE,
+					usage: ZERO_USAGE,
+					stopCode: StopCode.Cancelled,
+				},
+			]),
 			'mini',
 		);
 
-		await drain(
+		await collectEvents(
 			debugged.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'hello' }],
@@ -332,7 +369,5 @@ describe('debugMiniACP', () => {
 		expect(spy).toHaveBeenCalledWith(
 			`[mini]     ${ANSI_BOLD}turnEnd${ANSI_RESET} ${ANSI_BLUE}Cancelled (1001)${ANSI_RESET}`,
 		);
-
-		spy.mockRestore();
 	});
 });

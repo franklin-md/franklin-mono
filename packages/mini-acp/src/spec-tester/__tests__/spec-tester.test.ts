@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ZERO_USAGE } from '../../protocol/usage-tracker.js';
 
 import { ContextTracker } from '../../protocol/context-tracker.js';
 import { trackAgent, trackTurn } from '../../protocol/tracking.js';
@@ -57,7 +58,12 @@ function createMockFactory(
 const noopTurn = (_remote: MuAgent): MuTurn => ({
 	async *prompt(): AsyncGenerator<StreamEvent> {
 		yield { type: 'turnStart' };
-		yield { type: 'turnEnd', stopCode: StopCode.Finished };
+		yield {
+			type: 'turnEnd',
+			stepUsage: ZERO_USAGE,
+			usage: ZERO_USAGE,
+			stopCode: StopCode.Finished,
+		};
 	},
 	async *continue() {},
 	async cancel() {},
@@ -87,7 +93,12 @@ const toolCallingTurn = (remote: MuAgent): MuTurn => ({
 				],
 			},
 		};
-		yield { type: 'turnEnd', stopCode: StopCode.Finished };
+		yield {
+			type: 'turnEnd',
+			stepUsage: ZERO_USAGE,
+			usage: ZERO_USAGE,
+			stopCode: StopCode.Finished,
+		};
 	},
 	async *continue() {},
 	async cancel() {},
@@ -342,7 +353,12 @@ describe('tool spec helpers', () => {
 								arguments: {},
 							},
 						});
-						yield { type: 'turnEnd', stopCode: StopCode.Finished };
+						yield {
+							type: 'turnEnd',
+							stepUsage: ZERO_USAGE,
+							usage: ZERO_USAGE,
+							stopCode: StopCode.Finished,
+						};
 					},
 					async *continue() {},
 					async cancel() {},

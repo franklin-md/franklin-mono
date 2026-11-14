@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ZERO_USAGE } from '../../protocol/usage-tracker.js';
 import {
 	execute,
 	initialize,
@@ -139,11 +140,20 @@ describe('explicit step executable spec', () => {
 				method: 'turnStart',
 				params: { type: 'turnStart' },
 			},
-			{ direction: 'receive', method: 'stepEnd', params: { type: 'stepEnd' } },
+			{
+				direction: 'receive',
+				method: 'stepEnd',
+				params: { type: 'stepEnd', stepUsage: ZERO_USAGE },
+			},
 			{
 				direction: 'receive',
 				method: 'turnEnd',
-				params: { type: 'turnEnd', stopCode: 1000 },
+				params: {
+					type: 'turnEnd',
+					stepUsage: ZERO_USAGE,
+					usage: ZERO_USAGE,
+					stopCode: 1000,
+				},
 			},
 		];
 		expect(
@@ -153,6 +163,41 @@ describe('explicit step executable spec', () => {
 		).toBe('fail');
 		expect(
 			specPoints.find((p) => p.id === 'turn-end-is-terminal')?.test(transcript),
+		).toBe('fail');
+	});
+
+	it.each(['stepEnd', 'turnEnd'] as const)(
+		'rejects missing stepUsage on %s',
+		(type) => {
+			const params =
+				type === 'stepEnd'
+					? { type, stepUsage: ZERO_USAGE }
+					: { type, stopCode: 1000, stepUsage: ZERO_USAGE, usage: ZERO_USAGE };
+			Reflect.deleteProperty(params, 'stepUsage');
+			const transcript: Transcript =
+				params.type === 'stepEnd'
+					? [{ direction: 'receive', method: 'stepEnd', params }]
+					: [{ direction: 'receive', method: 'turnEnd', params }];
+			expect(
+				specPoints
+					.find((p) => p.id === 'terminal-usage-present')
+					?.test(transcript),
+			).toBe('fail');
+		},
+	);
+
+	it('rejects turnEnd without cumulative usage', () => {
+		const params = {
+			type: 'turnEnd' as const,
+			stopCode: 1000,
+			stepUsage: ZERO_USAGE,
+			usage: ZERO_USAGE,
+		};
+		Reflect.deleteProperty(params, 'usage');
+		expect(
+			specPoints
+				.find((p) => p.id === 'terminal-usage-present')
+				?.test([{ direction: 'receive', method: 'turnEnd', params }]),
 		).toBe('fail');
 	});
 });

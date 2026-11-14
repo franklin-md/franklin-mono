@@ -1,18 +1,12 @@
 import { createDuplexPair, type JsonRpcMessage } from '@franklin/lib/transport';
 import { describe, expect, it, vi } from 'vitest';
+import { collectEvents } from '../../__tests__/utils/collect-events.js';
+import { ZERO_USAGE } from '../../protocol/usage-tracker.js';
 import { StopCode } from '../../types/index.js';
-import type { StreamEvent, ToolExecuteParams } from '../../types/index.js';
+import type { ToolExecuteParams } from '../../types/index.js';
 import { bindMiniACPRpcAgent, createMiniACPRpcConnector } from '../index.js';
 import type { MuClient } from '../../protocol/types.js';
 import type { MiniACPRpcProtocol } from '../types.js';
-
-async function collect(
-	iter: AsyncIterable<StreamEvent>,
-): Promise<StreamEvent[]> {
-	const items: StreamEvent[] = [];
-	for await (const item of iter) items.push(item);
-	return items;
-}
 
 function createTransportFactory(agent: MuClient) {
 	const dispose = vi.fn(async () => {});
@@ -100,7 +94,12 @@ describe('createMiniACPRpcConnector', () => {
 							content: result.content,
 						},
 					};
-					yield { type: 'turnEnd', stopCode: StopCode.Finished };
+					yield {
+						type: 'turnEnd',
+						stepUsage: ZERO_USAGE,
+						usage: ZERO_USAGE,
+						stopCode: StopCode.Finished,
+					};
 				},
 				continue: vi.fn(async function* () {}),
 				cancel: vi.fn(async () => {}),
@@ -119,7 +118,7 @@ describe('createMiniACPRpcConnector', () => {
 		});
 
 		const client = await connect({ toolExecute });
-		const events = await collect(
+		const events = await collectEvents(
 			client.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'run tool' }],
@@ -143,7 +142,12 @@ describe('createMiniACPRpcConnector', () => {
 					content: [{ type: 'text', text: 'hello' }],
 				},
 			},
-			{ type: 'turnEnd', stopCode: StopCode.Finished },
+			{
+				type: 'turnEnd',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
+				stopCode: StopCode.Finished,
+			},
 		]);
 
 		await client.dispose();

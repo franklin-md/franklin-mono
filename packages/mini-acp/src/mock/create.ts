@@ -60,7 +60,6 @@ export function createMockMiniACP(
 		let active = false;
 		let cancelled = false;
 		let usage = new UsageTracker();
-		let hasUsage = false;
 
 		async function* drive(message?: UserMessage): AsyncGenerator<StreamEvent> {
 			if (active) throw new Error('Mini-ACP drive already in progress');
@@ -78,7 +77,6 @@ export function createMockMiniACP(
 					tracker.append(message);
 					cancelled = false;
 					usage = new UsageTracker();
-					hasUsage = false;
 					current = executeMockTurn({
 						descriptor,
 						get context() {
@@ -96,22 +94,17 @@ export function createMockMiniACP(
 				while (current) {
 					const result = cancelled ? undefined : await current.next();
 					const received = result && !result.done ? result.value : undefined;
-					const delta =
-						received &&
-						(received.type === 'stepEnd' || received.type === 'turnEnd')
-							? (received.stepUsage ??
-								(received.type === 'turnEnd' ? received.usage : undefined))
-							: undefined;
-					if (delta) {
-						usage.add(delta);
-						hasUsage = true;
+					let stepUsage = ZERO_USAGE;
+					if (received?.type === 'stepEnd' || received?.type === 'turnEnd') {
+						stepUsage = received.stepUsage;
+						usage.add(stepUsage);
 					}
 					let event: StreamEvent;
 					if (cancelled) {
 						event = {
 							type: 'turnEnd',
 							stopCode: StopCode.Cancelled,
-							stepUsage: delta ?? ZERO_USAGE,
+							stepUsage,
 							usage: usage.get(),
 						};
 					} else if (received) {
@@ -122,12 +115,7 @@ export function createMockMiniACP(
 					if (event.type === 'update') tracker.append(event.message);
 					if (event.type === 'stepEnd' || event.type === 'turnEnd') {
 						if (event.type === 'turnEnd') {
-							if (hasUsage)
-								event = {
-									...event,
-									stepUsage: delta ?? ZERO_USAGE,
-									usage: usage.get(),
-								};
+							event = { ...event, usage: usage.get() };
 							if (!cancelled) await current.next();
 							await current.return(undefined);
 							current = undefined;

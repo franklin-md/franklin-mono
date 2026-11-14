@@ -130,8 +130,7 @@ class PiMuAgent implements MuClient {
 				if (event.message.role === 'assistant') response = event.message;
 			}
 			const translated = fromAgentEvent(event, currentMessageId);
-			if (translated && translated.type !== 'turnStart')
-				await write(translated);
+			if (translated) await write(translated);
 		};
 
 		const execute = async (): Promise<StepEnd | TurnEnd> => {

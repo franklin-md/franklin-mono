@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { collectEvents } from './utils/collect-events.js';
 import {
 	trackAgent,
 	trackTurn,
@@ -44,12 +45,6 @@ function mockTurn(events: StreamEvent[]): MuTurn {
 		continue: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 	};
-}
-
-async function drain(iter: AsyncIterable<StreamEvent>): Promise<StreamEvent[]> {
-	const out: StreamEvent[] = [];
-	for await (const e of iter) out.push(e);
-	return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -134,11 +129,16 @@ describe('trackTurn', () => {
 					content: [{ type: 'text', text: 'hello' }],
 				},
 			},
-			{ type: 'turnEnd', stopCode: StopCode.Finished },
+			{
+				type: 'turnEnd',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
+				stopCode: StopCode.Finished,
+			},
 		]);
 		const tracked = trackTurn(tracker, inner);
 
-		await drain(
+		await collectEvents(
 			tracked.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'hi' }],
@@ -163,11 +163,16 @@ describe('trackTurn', () => {
 					content: [{ type: 'text', text: 'hi' }],
 				},
 			},
-			{ type: 'turnEnd', stopCode: StopCode.Finished },
+			{
+				type: 'turnEnd',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
+				stopCode: StopCode.Finished,
+			},
 		];
 		const tracked = trackTurn(tracker, mockTurn(events));
 
-		const yielded = await drain(
+		const yielded = await collectEvents(
 			tracked.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'test' }],
@@ -255,7 +260,7 @@ describe('trackClient', () => {
 		};
 		const tracked = trackClient(tracker, inner);
 
-		await drain(
+		await collectEvents(
 			tracked.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'hello' }],
@@ -314,11 +319,11 @@ describe('trackUsage', () => {
 		const usage = usageOf(10, 5);
 		const inner = mockTurn([
 			{ type: 'turnStart' },
-			{ type: 'turnEnd', stopCode: StopCode.Finished, usage },
+			{ type: 'turnEnd', stepUsage: usage, stopCode: StopCode.Finished, usage },
 		]);
 		const tracked = trackUsage(tracker, inner);
 
-		await drain(
+		await collectEvents(
 			tracked.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'hi' }],
@@ -333,19 +338,29 @@ describe('trackUsage', () => {
 		const first = usageOf(10, 5);
 		const second = usageOf(3, 7);
 		const turnOne = mockTurn([
-			{ type: 'turnEnd', stopCode: StopCode.Finished, usage: first },
+			{
+				type: 'turnEnd',
+				stepUsage: first,
+				stopCode: StopCode.Finished,
+				usage: first,
+			},
 		]);
 		const turnTwo = mockTurn([
-			{ type: 'turnEnd', stopCode: StopCode.Finished, usage: second },
+			{
+				type: 'turnEnd',
+				stepUsage: second,
+				stopCode: StopCode.Finished,
+				usage: second,
+			},
 		]);
 
-		await drain(
+		await collectEvents(
 			trackUsage(tracker, turnOne).prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'a' }],
 			}),
 		);
-		await drain(
+		await collectEvents(
 			trackUsage(tracker, turnTwo).prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'b' }],
@@ -361,15 +376,20 @@ describe('trackUsage', () => {
 		});
 	});
 
-	it('leaves tracker unchanged when turnEnd has no usage', async () => {
+	it('leaves tracker unchanged when turnEnd reports zero usage', async () => {
 		const tracker = new UsageTracker();
 		const inner = mockTurn([
 			{ type: 'turnStart' },
-			{ type: 'turnEnd', stopCode: StopCode.ProviderNotFound },
+			{
+				type: 'turnEnd',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
+				stopCode: StopCode.ProviderNotFound,
+			},
 		]);
 		const tracked = trackUsage(tracker, inner);
 
-		await drain(
+		await collectEvents(
 			tracked.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'hi' }],
@@ -393,13 +413,14 @@ describe('trackUsage', () => {
 			},
 			{
 				type: 'turnEnd',
+				stepUsage: usageOf(1, 2),
 				stopCode: StopCode.Finished,
 				usage: usageOf(1, 2),
 			},
 		];
 		const tracked = trackUsage(tracker, mockTurn(events));
 
-		const yielded = await drain(
+		const yielded = await collectEvents(
 			tracked.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'test' }],

@@ -35,7 +35,7 @@ export type Update = {
 // inference occurs until the client calls continue().
 export type StepEnd = {
 	type: 'stepEnd';
-	stepUsage?: Usage;
+	stepUsage: Usage;
 };
 
 export type TurnEnd = {
@@ -43,9 +43,9 @@ export type TurnEnd = {
 	stopCode: StopCode;
 	stopMessage?: string;
 	/** Usage for this drive only; zero when cancelled at a paused boundary. */
-	stepUsage?: Usage;
+	stepUsage: Usage;
 	/** Cumulative usage since prompt(), including all continued steps. */
-	usage?: Usage;
+	usage: Usage;
 };
 
 export type StreamEvent = TurnStart | Chunk | Update | StepEnd | TurnEnd;

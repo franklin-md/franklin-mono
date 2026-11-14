@@ -1,4 +1,5 @@
 import { wait } from '@franklin/lib';
+import { ZERO_USAGE } from '../protocol/usage-tracker.js';
 
 import type { MuAgent } from '../protocol/types.js';
 import type { Context } from '../types/context.js';
@@ -74,7 +75,7 @@ export async function* executeMockTurn(
 				if (step.calls.length > 0)
 					yield {
 						type: 'stepEnd',
-						...(step.stepUsage ? { stepUsage: step.stepUsage } : {}),
+						stepUsage: step.stepUsage ?? ZERO_USAGE,
 					};
 				break;
 			case 'delay':
@@ -173,6 +174,7 @@ function toTurnEnd(step: TurnEndDescriptor): StreamEvent {
 		...(step.stopMessage === undefined
 			? {}
 			: { stopMessage: step.stopMessage }),
-		...(step.usage === undefined ? {} : { usage: step.usage }),
+		stepUsage: step.usage ?? ZERO_USAGE,
+		usage: step.usage ?? ZERO_USAGE,
 	};
 }

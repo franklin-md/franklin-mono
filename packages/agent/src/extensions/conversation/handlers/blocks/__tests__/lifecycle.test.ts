@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 
-import { StopCode } from '@franklin/mini-acp';
+import { StopCode, ZERO_USAGE } from '@franklin/mini-acp';
 
 import type { ConversationTurn } from '../../../types.js';
 import { handleChunk } from '../../chunk.js';
@@ -369,7 +369,12 @@ describe('tool call lifecycle', () => {
 		});
 
 		now.mockReturnValue(1000);
-		handleTurnEnd(turn, { type: 'turnEnd', stopCode: StopCode.Finished });
+		handleTurnEnd(turn, {
+			type: 'turnEnd',
+			stepUsage: ZERO_USAGE,
+			usage: ZERO_USAGE,
+			stopCode: StopCode.Finished,
+		});
 
 		expect(turn.response.blocks[0]!.endedAt).toBe(1000);
 		expect(turn.response.blocks[1]!.endedAt).toBe(1000);

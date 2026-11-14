@@ -37,6 +37,10 @@ describe('narrowPiStopCode', () => {
 });
 
 describe('fromAgentEvent', () => {
+	it('leaves turnStart ownership to the adapter', () => {
+		expect(fromAgentEvent({ type: 'agent_start' }, 'msg-1')).toBeNull();
+	});
+
 	it('does not forward Pi agent_end as an idle terminal', () => {
 		const event: AgentEvent = { type: 'agent_end', messages: [] };
 		expect(fromAgentEvent(event, 'msg-1')).toBeNull();

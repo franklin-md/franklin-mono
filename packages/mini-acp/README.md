@@ -85,9 +85,10 @@ Below, we explain the reasons why Mini-ACP was developed, including mention of p
 - The barrier is the idle period after `stepEnd` and before the next client
   `continue`. Clients may apply ordinary `setContext` patches there. There is
   no reverse acknowledgement or context-preparation callback.
-- `prompt` and `continue` during execution are rejected as busy. At a paused
-  boundary, a new `prompt` is rejected: finish with `continue`, or cancel and
-  drain the cancelled turn with `continue` before starting another prompt.
+- At most one `prompt` or `continue` stream executes at a time; overlapping
+  drives are rejected as busy. At a paused boundary, a new `prompt` is rejected:
+  finish with `continue`, or cancel and drain the cancelled turn with `continue`
+  before starting another prompt.
 - `continue` after `turnEnd` (or before any prompt) is an empty stream, with no
   provider request or new message. `setContext` does not reopen a finished turn.
 
@@ -203,6 +204,12 @@ emit it. Every nonempty drive ends with one terminal and then closes; no events
 or tool executions from that drive can follow its terminal. Empty no-op
 continuations have no terminal because they execute no step.
 
+Each call returns a separate step stream. To record the whole logical turn,
+consume `prompt()` and every subsequent `continue()` stream, together with the
+reverse-RPC tool calls and results. The `prompt()` stream alone ends at its
+first terminal. Franklin's core controller combines these streams internally,
+so its `runtime.prompt()` consumers still receive one logical turn.
+
 #### Messages
 
 Three message roles exist, each constrained to specific content types:
@@ -254,7 +261,7 @@ is needed. The client decides when to continue:
 ```
 StepEnd {
   type:       "stepEnd"
-  stepUsage?: Usage       // This drive only
+  stepUsage: Usage       // This drive only
 }
 ```
 
@@ -264,20 +271,21 @@ TurnEnd {
   type:         "turnEnd"
   stopCode:     StopCode      // Integer code indicating why the turn ended
   stopMessage?: string        // Optional human-readable detail
-  stepUsage?:   Usage         // This drive only
-  usage?:       Usage         // Cumulative usage for the logical turn
+  stepUsage:    Usage         // This drive only, including the final step
+  usage:        Usage         // Cumulative usage for the logical turn
 }
 ```
 
 `stepUsage` is the delta for this drive, on either terminal. `turnEnd.usage`
 is the sum of all steps since `prompt`, including the final step. To accumulate
 session usage at each idle boundary, add only `stepUsage`; alternatively, add
-only the final `turnEnd.usage` once. Never add both. Tracking helpers use step
-deltas, with a fallback to `usage` for legacy unstepped turn streams.
+only the final `turnEnd.usage` once. Never add both. Tracking helpers accumulate
+the required `stepUsage` on either terminal, without a cumulative-usage fallback.
 
-Usage fields are optional when unavailable. The built-in Pi adapter reports
-zero step usage for pre-provider failures and paused cancellation, retaining
-any previous steps in cumulative usage. A new prompt resets turn usage.
+Both terminals MUST include `stepUsage`, and `turnEnd` MUST also include `usage`.
+Pre-provider failures and paused cancellation report zero step usage, retaining
+any previous steps in cumulative usage. A new prompt resets turn usage;
+replacing context messages does not reset usage.
 
 **`Usage`** — token counts and cost for a completed turn. The two buckets
 share the same field names so a consumer can iterate either symmetrically:
@@ -309,8 +317,11 @@ TurnStart { "turnStart" }
 Chunk { "chunk", messageId: "m1", role: "assistant", content: { type: "text", text: "Hello" } }
 Chunk { "chunk", messageId: "m1", role: "assistant", content: { type: "text", text: " world" } }
 Update { "update", messageId: "m1", message: { role: "assistant", content: [{ type: "text", text: "Hello world" }] } }
-TurnEnd { "turnEnd", stopCode: 1000, usage: { tokens: { input: 12, output: 2, cacheRead: 0, cacheWrite: 0, total: 14 }, cost: { input: 0.000036, output: 0.00003, cacheRead: 0, cacheWrite: 0, total: 0.000066 } } }
+TurnEnd { "turnEnd", stopCode: 1000, stepUsage: responseUsage, usage: responseUsage }
 ```
+
+Here `responseUsage` contains 12 input tokens, 2 output tokens, no cache usage,
+and a total cost of USD 0.000066. With only one step, step and turn usage match.
 
 The `Update` message text `"Hello world"` is exactly the concatenation of the two chunk deltas `"Hello"` + `" world"`. Every chunk's `messageId` (`"m1"`) matches the update's `messageId`, and no chunks for `"m1"` appear after the update.
 
@@ -390,6 +401,20 @@ closed step stream stays closed. The next `continue` emits only
 provider request. The client must drain that continuation before a new prompt.
 After completion, cancellation is a no-op, and further continuations are empty.
 
+The paused cancellation sequence is:
+
+```text
+prompt(user) → … → stepEnd       // This step stream ends
+cancel()                        // Mark the paused turn cancelled
+continue() → turnEnd(Cancelled)  // No provider request or new user message
+continue() → (empty)
+```
+
+Receiving `stepEnd` does not complete the logical turn. After cancellation at
+that boundary, the client MUST consume the next `continue()` stream to receive
+the cancelled `turnEnd`; `cancel()` does not emit another terminal on the
+previous step's stream.
+
 The Pi adapter uses the pinned 0.75.4 public `runAgentLoop` /
 `runAgentLoopContinue` exports and `shouldStopAfterTurn: () => true`. The adapter
 awaits runner settlement before publishing either terminal; it does not forward
@@ -409,8 +434,8 @@ run only on `continue`. `derive` receives the current context, including idle
 patches, and the original prompt. `toolCalls(calls, { stepUsage })` supplies the
 batch's usage delta; `turnEnd({ usage })` supplies the final step delta, which
 the mock exposes as `stepUsage` and includes in cumulative `turnEnd.usage`.
-`createScriptedProvider` supplies a Pi-compatible streaming test fixture with
-recorded requests and fixed responses; it never falls through to a real provider.
+An internal Pi-compatible streaming test fixture supplies recorded requests and
+fixed responses for adapter tests; it never falls through to a real provider.
 
 Mocks reject active drives, support paused cancellation and return empty streams
 on continuation after completion. Recordings count executed `continues`.
@@ -456,6 +481,7 @@ Each row is a testable assertion over a protocol transcript. IDs are semantic so
 | ------------------------------- | ------------------------------------------------------------------------------------ | ----- |
 | `one-terminal-per-step`       | Every executed drive has exactly one `stepEnd` or `turnEnd`                         | MUST  |
 | `continue-after-step-end`      | Continuation runs after `stepEnd`; after `turnEnd` it is empty                       | MUST  |
+| `terminal-usage-present`       | Both terminals report `stepUsage`; `turnEnd` also reports cumulative `usage`       | MUST  |
 | `one-turn-end-per-turn`         | Every turn has exactly one `turnEnd`                                                 | MUST  |
 | `stop-code-valid`               | `turnEnd.stopCode` must be a valid `StopCode` enum value                             | MUST  |
 | `chunk-has-message-id`          | Every `chunk` has a `messageId` and `role`                                           | MUST  |

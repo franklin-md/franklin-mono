@@ -62,18 +62,14 @@ export function renderStreamEvent(event: StreamEvent): string[] {
 		case 'stepEnd':
 			return [
 				indent(2, bold('stepEnd')),
-				...(event.stepUsage
-					? summarizeUsage(event.stepUsage).map((line) => indent(3, line))
-					: []),
+				...summarizeUsage(event.stepUsage).map((line) => indent(3, line)),
 			];
 		case 'turnEnd': {
 			const lines = [
 				indent(2, summarizeTurnEnd(event.stopCode, event.stopMessage)),
 			];
-			if (event.usage !== undefined) {
-				for (const usageLine of summarizeUsage(event.usage)) {
-					lines.push(indent(3, usageLine));
-				}
+			for (const usageLine of summarizeUsage(event.usage)) {
+				lines.push(indent(3, usageLine));
 			}
 			return lines;
 		}

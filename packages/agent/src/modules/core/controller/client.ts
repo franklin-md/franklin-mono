@@ -40,10 +40,7 @@ export function bindAgentClient({
 					paused = false;
 					for await (const event of stream) {
 						if (event.type === 'stepEnd' || event.type === 'turnEnd') {
-							const usage =
-								event.stepUsage ??
-								(event.type === 'turnEnd' ? event.usage : undefined);
-							if (usage) session.addUsage(usage);
+							session.addUsage(event.stepUsage);
 						}
 						if (event.type === 'stepEnd') {
 							paused = true;

@@ -221,6 +221,25 @@ const continueAfterStepEnd: Expectation = {
 	},
 };
 
+const terminalUsagePresent: Expectation = {
+	id: 'terminal-usage-present',
+	description:
+		'Both terminals report stepUsage; turnEnd also reports cumulative usage',
+	test: (t) => {
+		for (const entry of t) {
+			if (
+				match(entry, 'receive', 'stepEnd') ||
+				match(entry, 'receive', 'turnEnd')
+			) {
+				if (!Object.hasOwn(entry.params, 'stepUsage')) return 'fail';
+				if (entry.method === 'turnEnd' && !Object.hasOwn(entry.params, 'usage'))
+					return 'fail';
+			}
+		}
+		return 'pass';
+	},
+};
+
 const turnStartsWithTurnStart: Expectation = {
 	id: 'turn-starts-with-turn-start',
 	description: 'The first stream event after every prompt must be a turnStart',
@@ -567,7 +586,7 @@ const toolResultContentTypes: Expectation = {
 
 const cancelDuringActiveTurn: Expectation = {
 	id: 'cancel-during-active-turn',
-	description: 'cancel must only be sent during an active turn',
+	description: 'cancel may be sent during execution or at a paused boundary',
 	test: (t) => {
 		const cancels = sends(t, 'cancel');
 		if (cancels.length === 0) return 'skip';
@@ -582,7 +601,7 @@ const cancelDuringActiveTurn: Expectation = {
 const cancelStopCode: Expectation = {
 	id: 'cancel-stop-code',
 	description:
-		'After cancel, the turn should end with stopCode: Cancelled (101)',
+		'After cancel, the turn should end with stopCode: Cancelled (1001)',
 	test: (t) => {
 		const cancels = sends(t, 'cancel');
 		if (cancels.length === 0) return 'skip';
@@ -624,6 +643,7 @@ export const specPoints: Expectation[] = [
 	oneTurnEndPerTurn,
 	oneTerminalPerStep,
 	continueAfterStepEnd,
+	terminalUsagePresent,
 	stopCodeValid,
 	chunkHasMessageId,
 	updateHasMessageId,

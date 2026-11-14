@@ -4,7 +4,7 @@ import {
 } from '@earendil-works/pi-ai';
 import type { StreamFn } from '@earendil-works/pi-agent-core';
 
-/** Stub only: an exhausted script fails instead of falling through to a provider. */
+/** Pi-loop test fixture; an exhausted script fails without reaching a provider. */
 export function createScriptedProvider(
 	responses: readonly Partial<AssistantMessage>[],
 ) {

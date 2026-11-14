@@ -97,7 +97,6 @@ export function trackClient(
 
 /**
  * Decorates prompt/continue/cancel behavior to record per-step usage into the tracker.
- * Legacy unstepped turns may supply only cumulative `usage` at turnEnd.
  */
 export function trackUsage(tracker: UsageTracker, turn: MuTurn): MuTurn {
 	async function* record(
@@ -105,10 +104,7 @@ export function trackUsage(tracker: UsageTracker, turn: MuTurn): MuTurn {
 	): AsyncGenerator<StreamEvent> {
 		for await (const event of stream) {
 			if (event.type === 'stepEnd' || event.type === 'turnEnd') {
-				const usage =
-					event.stepUsage ??
-					(event.type === 'turnEnd' ? event.usage : undefined);
-				if (usage) tracker.add(usage);
+				tracker.add(event.stepUsage);
 			}
 			yield event;
 		}
