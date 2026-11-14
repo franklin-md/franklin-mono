@@ -27,7 +27,7 @@ async function makeRuntime(
 		system,
 		{
 			core: {
-				messages: [],
+				entries: [],
 				llmConfig,
 				usage: ZERO_USAGE,
 				toolFilter: { disabled: [] },

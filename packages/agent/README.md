@@ -75,7 +75,7 @@ enablement, session projection, inspect, and lifecycle events.
 The core controller keeps internal context state that splits desired session
 state from the last successfully sent Mini-ACP context. A `SessionDraft` is
 constructed from a hydrated `SessionSnapshot` and stores the durable session
-base: messages, non-secret LLM config, and the session-local tool filter.
+base: typed history entries, non-secret LLM config, and the session-local tool filter.
 Runtime-only contributions such as the registration-built system prompt and live
 tool definitions are attached as drafters. `commit()` runs those drafters
 against a scratch context, records field revisions, and returns the Mini-ACP
@@ -95,13 +95,44 @@ The public runtime exposes `getSession()` as a safe projection to
 `SessionSnapshot` for consumers that need the dehydrated session view. The
 state-module layer uses the same projection for persistence, fork, and
 child-session creation. `SessionSnapshot` intentionally remains narrower than
-`Context`: it keeps model-visible messages, non-secret LLM config, and usage,
+`Context`: it keeps history entries, non-secret LLM config, and usage,
 plus the session-local tool filter, while system prompt text, registered tool
 schemas, and API keys stay runtime-only. Runtime inspect uses a separate
 redacted `inspect()` projection for debug UI so callers never need hidden access
-to internal context state. Future persisted state may become a richer superset of
-what Mini-ACP receives, including compaction points or other checkpoints
-projected into the next Mini-ACP context.
+to internal context state.
+
+### Compaction
+
+History contains message entries and compaction entries, each with a stable ID.
+A compaction stores its summary and the first retained message ID. Projection
+replaces the preceding prefix with a summary message while preserving the raw
+entries. Repeated compaction summarizes the previous summary plus the newly
+discarded prefix. Forks copy history and reset usage; children start with empty
+history. Version 3 session files migrate earlier message arrays automatically.
+
+Core automatically checks context before each provider request, including requests
+inside a tool loop. It reserves 16,384 tokens (a quarter of the window for smaller
+models), and retains up to 20,000 recent tokens, reduced to a third of the available
+budget for smaller models. Cuts preserve tool-call/result groups. The assembled
+user prompt, system prompt and tool schemas participate in the estimate.
+
+`runtime.compact()` requests manual compaction and returns whether a checkpoint
+was appended. Summary generation uses an isolated connection with tools disabled,
+without extension prompt/stream hooks or recursive compaction. Large transcripts
+are summarized in bounded chunks, carrying the summary forward. Thinking and
+image payloads are omitted from summaries; original entries retain them.
+Summary usage contributes to session totals.
+
+Cancellation, generation failure, stale history and summaries that do not reduce
+context cannot append a checkpoint. A failed context synchronization leaves the
+checkpoint pending for retry. Automatic preparation fails clearly when the
+remaining context still exceeds its budget; it does not retry provider overflows.
+Persistence retains its existing debounced snapshot behavior. Compaction reduces
+model context, not retained disk history.
+
+See [Pi's compaction design](https://pi.dev/docs/latest/compaction) for the retained
+boundary pattern and [Mini-ACP context preparation](../mini-acp/README.md#context-preparation-agent--application)
+for the inference checkpoint contract.
 
 ### Extensions
 

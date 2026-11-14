@@ -10,4 +10,5 @@ export const miniACPRpcServerDescriptor = namespace<MuClient>({
 
 export const miniACPRpcClientDescriptor = namespace<MuAgent>({
 	toolExecute: method(),
+	prepareContext: method(),
 });

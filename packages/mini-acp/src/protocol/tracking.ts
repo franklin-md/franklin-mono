@@ -39,6 +39,7 @@ export function decorateTurn(
  */
 export function trackAgent(tracker: ContextRecorder, agent: MuAgent): MuAgent {
 	return {
+		...agent,
 		toolExecute: async (params) => {
 			tracker.append({ role: 'assistant', content: [params.call] });
 			const result = await agent.toolExecute(params);

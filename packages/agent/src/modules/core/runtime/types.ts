@@ -16,12 +16,14 @@ export type CoreEvent =
 	  }
 	| {
 			readonly type: 'tool-registry-changed';
-	  };
+	  }
+	| { readonly type: 'compaction-settled' };
 
 export type CoreRuntime = BaseRuntime & {
 	// Mini-ACP turn controls exposed to app/runtime consumers.
 	prompt(message: UserMessage): AsyncIterable<StreamEvent>;
 	cancel(): Promise<void>;
+	compact(): Promise<boolean>;
 
 	// Runtime-owned LLM configuration patching. Auth layers may wrap this.
 	setLLMConfig(config: Partial<LLMConfig>): Promise<void>;

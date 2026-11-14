@@ -9,6 +9,7 @@ import type { SessionSnapshot } from '../state.js';
 import { createAgentClient } from './client.js';
 import { createCoreRegistry } from '../registrations/index.js';
 import { createToolRegistry } from '../tools/index.js';
+import { createSummarizer } from '../compaction/summarize.js';
 
 export function createCoreCompiler(
 	connectAgent: MiniACPConnector,
@@ -28,6 +29,7 @@ export function createCoreCompiler(
 				snapshot,
 				registrations,
 				toolRegistry,
+				summarize: createSummarizer(connectAgent),
 			});
 
 			const client = await createAgentClient({

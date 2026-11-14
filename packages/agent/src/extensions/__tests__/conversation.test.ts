@@ -36,7 +36,9 @@ function stubClient(overrides: StubOverrides = {}): MiniACPClient {
 }
 
 type AgentStubOverrides = {
-	[K in keyof MiniACPAgent]?: (...args: Parameters<MiniACPAgent[K]>) => any;
+	[K in keyof MiniACPAgent]?: (
+		...args: Parameters<NonNullable<MiniACPAgent[K]>>
+	) => any;
 };
 
 function stubAgent(overrides: AgentStubOverrides = {}): MiniACPAgent {
