@@ -105,6 +105,23 @@ projected into the next Mini-ACP context.
 
 ### Extensions
 
+`FranklinApp` uses the shared [`createFranklinAgents`](src/app/agents/factory.ts)
+factory for agent construction, including environment, stores, references and
+authentication. `app.agents.create()` uses the app's configured extensions and
+participates in chat persistence. For an independent task, supply its extension
+list to `app.createAgent()`:
+
+```ts
+const runtime = await app.createAgent({
+  extensions: [...researchExtensions, answerExtension],
+  state: { core: { llmConfig: selection }, env: environmentConfig },
+});
+```
+
+Each independent agent has its own in-memory store registry and environment. It
+does not enter `app.agents` or save session/store files. The caller owns its
+lifetime and must call `await runtime.dispose()` in a `finally` block.
+
 Extensions are the way the application interacts with both the agent and the environment. From an extension developer's perspective, the primary concern is: **how should the application handle the agent's tool requests?**
 
 The generic extension-point, compiler, runtime, and stateless module algebra lives in `@franklin/extensibility`. This package owns the state-module layer and the agent-specific modules built on top of that kernel: core Mini-ACP wiring, environment access, stores, orchestration, and the built-in extensions.
