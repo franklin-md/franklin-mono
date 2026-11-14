@@ -294,7 +294,7 @@ any previous steps in cumulative usage. A new prompt resets turn usage;
 replacing context messages does not reset usage.
 
 **`Usage`** — token counts and cost for a completed turn. The two buckets
-share the same field names so a consumer can iterate either symmetrically:
+share numeric component field names; cost also carries billing provenance:
 ```
 Usage {
   tokens: {
