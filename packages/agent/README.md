@@ -55,20 +55,28 @@ controller owns the application-side Mini-ACP session policy above the raw
 connector:
 
 - **Prompt** — syncs context before a turn, builds the model-visible user
-  prompt from prompt handlers, forwards the prompt, observes stream events, and
-  records the final prompt plus assistant updates.
+  prompt from prompt handlers, drives one Mini-ACP prompt followed by explicit
+  continuations, observes stream events, and records the final prompt plus
+  assistant updates.
 - **Tool** — exposes registered application tool handlers to the agent, falls
   back for unknown tools, notifies tool observers, and records tool calls and
   results.
 - **Context** — keeps desired session state separate from the last successfully
   sent Mini-ACP context so retries and patch-only updates are explicit.
-- **Usage** — accumulates turn usage from `turnEnd` events for the runtime
-  session projection.
+- **Usage** — accumulates each terminal's `stepUsage` once for the runtime
+  session projection, keeping cumulative `turnEnd.usage` for turn observers.
 
 The controller exposes the reverse-RPC server passed to the connector and binds
 the connected `MiniACPClientHandle` into the handle consumed by `CoreRuntime`.
 `CoreRuntime` remains the public facade for prompt, cancel, LLM config, tool
 enablement, session projection, inspect, and lifecycle events.
+
+The controller consumes `stepEnd` internally, synchronizes ordinary context at
+the guaranteed idle boundary, then calls `continue`. `runtime.prompt()` and its
+observers still see one logical user turn with one `turnStart` and one
+`turnEnd`; no UI step lifecycle or persistence format is added. Cancellation
+requested during boundary synchronization is drained by the next continuation
+without another provider request.
 
 ### Context State
 

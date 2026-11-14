@@ -2,6 +2,8 @@ import type { Fixture } from '../types.js';
 import { initialize } from '../actions/initialize.js';
 import { setContext } from '../actions/set-context.js';
 import { prompt } from '../actions/prompt.js';
+import { continueTurn } from '../actions/continue.js';
+import { waitFor } from '../actions/wait-for.js';
 import { VALID_LLM_CONFIG_PLACEHOLDER } from '../../__tests__/utils/llm-config.js';
 import { echoTool } from './tools/echo.js';
 
@@ -14,5 +16,7 @@ export const toolCall: Fixture = {
 			config: VALID_LLM_CONFIG_PLACEHOLDER,
 		}),
 		prompt('Greet the world'),
+		waitFor((e) => e.method === 'stepEnd'),
+		continueTurn(),
 	],
 };
