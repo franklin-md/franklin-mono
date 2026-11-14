@@ -38,9 +38,7 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 					return response(model, [
 						{
 							type: 'text',
-							text: context.systemPrompt?.startsWith(
-								'Summarize',
-							)
+							text: context.systemPrompt?.startsWith('Summarize')
 								? 'Remember the original task.'
 								: 'done',
 						},
@@ -130,9 +128,7 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 		const connector = createPiTestConnector(
 			{
 				streamFn: (model, context) => {
-					if (
-						context.systemPrompt?.startsWith('Summarize')
-					) {
+					if (context.systemPrompt?.startsWith('Summarize')) {
 						summaries += 1;
 						summaryInputs.push(JSON.stringify(context.messages));
 						return response(model, [

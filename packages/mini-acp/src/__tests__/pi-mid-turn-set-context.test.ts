@@ -95,36 +95,65 @@ function piAssistantTexts(messages: PiMessage[]): string[] {
 describe('Pi setContext during an active Mini-ACP turn', () => {
 	it('awaits context preparation and applies its messages-only replacement before inference', async () => {
 		let started = () => {};
-		const preparing = new Promise<void>((resolve) => { started = resolve; });
-		let release = () => {};
-		const ready = new Promise<void>((resolve) => { release = resolve; });
-		const requests: string[][] = [];
-		let client: MiniACPClient;
-		client = createPiAgent({
-			toolExecute: async ({ call }) => ({ toolCallId: call.id, content: [] }),
-			prepareContext: async (params) => {
-				expect(params.contextTokens).toBeGreaterThan(1000);
-				expect(params.contextWindow).toBeGreaterThan(0);
-				expect(params.afterMessageId).toBeUndefined();
-				started();
-				await ready;
-				await client.setContext({ messages: [{ role: 'user', content: [{ type: 'text', text: 'compacted' }] }] });
-				await expect(client.setContext({ messages: [], config: { model: 'another' } })).rejects.toThrow('only accepts tools');
-			},
-		}, {
-			streamFn: (model, context) => {
-				requests.push(piUserTexts(context.messages));
-				expect(context.systemPrompt).toBe('keep instructions');
-				return streamDone(assistantMessage(model, [{ type: 'text', text: 'done' }], 'stop'), 'stop');
-			},
+		const preparing = new Promise<void>((resolve) => {
+			started = resolve;
 		});
+		let release = () => {};
+		const ready = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const requests: string[][] = [];
+		const client: MiniACPClient = createPiAgent(
+			{
+				toolExecute: async ({ call }) => ({ toolCallId: call.id, content: [] }),
+				prepareContext: async (params) => {
+					expect(params.contextTokens).toBeGreaterThan(1000);
+					expect(params.contextWindow).toBeGreaterThan(0);
+					expect(params.afterMessageId).toBeUndefined();
+					started();
+					await ready;
+					await client.setContext({
+						messages: [
+							{ role: 'user', content: [{ type: 'text', text: 'compacted' }] },
+						],
+					});
+					await expect(
+						client.setContext({ messages: [], config: { model: 'another' } }),
+					).rejects.toThrow('only accepts tools');
+				},
+			},
+			{
+				streamFn: (model, context) => {
+					requests.push(piUserTexts(context.messages));
+					expect(context.systemPrompt).toBe('keep instructions');
+					return streamDone(
+						assistantMessage(model, [{ type: 'text', text: 'done' }], 'stop'),
+						'stop',
+					);
+				},
+			},
+		);
 		await client.initialize();
 		await client.setContext({
 			systemPrompt: 'keep instructions',
-			messages: [{ role: 'user', content: [{ type: 'text', text: 'old '.repeat(2000) }] }],
-			config: { provider: 'openrouter', model: 'openrouter/free', apiKey: 'test-only' },
+			messages: [
+				{
+					role: 'user',
+					content: [{ type: 'text', text: 'old '.repeat(2000) }],
+				},
+			],
+			config: {
+				provider: 'openrouter',
+				model: 'openrouter/free',
+				apiKey: 'test-only',
+			},
 		});
-		const pending = collect(client.prompt({ role: 'user', content: [{ type: 'text', text: 'continue' }] }));
+		const pending = collect(
+			client.prompt({
+				role: 'user',
+				content: [{ type: 'text', text: 'continue' }],
+			}),
+		);
 		await preparing;
 		expect(requests).toEqual([]);
 		release();
