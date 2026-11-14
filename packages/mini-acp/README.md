@@ -439,6 +439,9 @@ fixed responses for adapter tests; it never falls through to a real provider.
 
 Mocks reject active drives, support paused cancellation and return empty streams
 on continuation after completion. Recordings count executed `continues`.
+When cancelled while streaming text or thinking, the mock emits an authoritative
+`update` for the chunks already delivered before its cancelled `turnEnd`, and
+skips subsequent descriptor actions.
 
 ## Spec Table
 

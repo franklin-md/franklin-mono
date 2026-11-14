@@ -3,6 +3,10 @@ import {
 	createMockMiniACP,
 	toolCalls,
 	text,
+	textChunkStream,
+	textChunks,
+	thinkingChunkStream,
+	derive,
 	turnEnd,
 	turn,
 } from '../mock/index.js';
@@ -19,6 +23,7 @@ import { collect } from '../utils/collect.js';
 import { collectEvents } from './utils/collect-events.js';
 import type { Usage } from '../types/usage.js';
 import { StopCode } from '../types/stop-code.js';
+import type { StreamEvent } from '../types/stream.js';
 
 const prompt = {
 	role: 'user' as const,
@@ -30,6 +35,140 @@ const usage: Usage = {
 };
 
 describe('stepped helpers and scripted mocks', () => {
+	it('cancels before the first chunk without creating an empty update', async () => {
+		const mock = createMockMiniACP({
+			turns: [turn([textChunkStream('abc'), turnEnd()])],
+		});
+		const client = await mock.connector({
+			toolExecute: async ({ call }) => ({ toolCallId: call.id, content: [] }),
+		});
+		try {
+			const execution = collectEvents(client.prompt(prompt));
+			await client.cancel();
+			expect((await execution).map((event) => event.type)).toEqual([
+				'turnStart',
+				'turnEnd',
+			]);
+			expect(mock.context().messages).toEqual([prompt]);
+		} finally {
+			await client.dispose();
+		}
+	});
+
+	it('finalizes delivered text when cancelled while awaiting another chunk', async () => {
+		vi.useFakeTimers();
+		const mock = createMockMiniACP({
+			turns: [
+				turn([
+					textChunks([{ text: 'a' }, { text: 'bc', delayMs: 100 }]),
+					turnEnd(),
+				]),
+			],
+		});
+		const client = await mock.connector({
+			toolExecute: async ({ call }) => ({ toolCallId: call.id, content: [] }),
+		});
+		try {
+			const iterator = client.prompt(prompt)[Symbol.asyncIterator]();
+			await iterator.next();
+			expect(await iterator.next()).toMatchObject({
+				value: { type: 'chunk', content: { text: 'a' } },
+			});
+			const pending = iterator.next();
+			await vi.advanceTimersByTimeAsync(0);
+			expect(vi.getTimerCount()).toBe(1);
+			await client.cancel();
+			await vi.runOnlyPendingTimersAsync();
+			expect(await pending).toMatchObject({
+				value: {
+					type: 'update',
+					message: {
+						role: 'assistant',
+						content: [{ type: 'text', text: 'a' }],
+					},
+				},
+			});
+			expect(await iterator.next()).toMatchObject({
+				value: { type: 'turnEnd', stopCode: StopCode.Cancelled },
+			});
+			expect(await iterator.next()).toMatchObject({ done: true });
+		} finally {
+			await client.dispose();
+			vi.useRealTimers();
+		}
+	});
+
+	it.each([
+		{ type: 'text', stream: textChunkStream, chunks: 1 },
+		{ type: 'text', stream: textChunkStream, chunks: 3 },
+		{ type: 'thinking', stream: thinkingChunkStream, chunks: 1 },
+		{ type: 'thinking', stream: thinkingChunkStream, chunks: 3 },
+	])(
+		'finalizes $type when cancelled after $chunks chunks',
+		async ({ type, stream, chunks }) => {
+			const later = vi.fn(() => [text('must not run')]);
+			const mock = createMockMiniACP({
+				turns: [
+					turn([
+						stream('abc'),
+						derive(later),
+						toolCalls([{ name: 'echo' }]),
+						turnEnd({ usage }),
+					]),
+				],
+			});
+			const context = new ContextTracker();
+			const inner = await mock.connector({
+				toolExecute: async ({ call }) => ({ toolCallId: call.id, content: [] }),
+			});
+			const client = trackClient(context, inner);
+			const events: StreamEvent[] = [];
+			async function* cancelAfterChunks() {
+				let seen = 0;
+				for await (const event of client.prompt(prompt)) {
+					events.push(event);
+					if (event.type === 'chunk' && ++seen === chunks)
+						await client.cancel();
+					if (event.type === 'turnEnd')
+						await client.setContext({ systemPrompt: 'idle' });
+					yield event;
+				}
+			}
+			try {
+				const result = await collect(cancelAfterChunks());
+				expect(events.map((event) => event.type)).toEqual([
+					'turnStart',
+					...Array.from({ length: chunks }, () => 'chunk'),
+					'update',
+					'turnEnd',
+				]);
+				expect(events.find((event) => event.type === 'update')?.messageId).toBe(
+					events.find((event) => event.type === 'chunk')?.messageId,
+				);
+				expect(result.messages).toEqual([
+					{
+						role: 'assistant',
+						content: [{ type, text: 'abc'.slice(0, chunks) }],
+					},
+				]);
+				expect(result.turnEnd).toEqual({
+					type: 'turnEnd',
+					stopCode: StopCode.Cancelled,
+					stepUsage: ZERO_USAGE,
+					usage: ZERO_USAGE,
+				});
+				expect(result.stepEnd).toBeUndefined();
+				expect(context.get().messages).toEqual([prompt, ...result.messages]);
+				expect(context.get()).toEqual(mock.context());
+				expect(later).not.toHaveBeenCalled();
+				expect(mock.calls().toolCalls).toEqual([]);
+				expect(await collectEvents(client.continue())).toEqual([]);
+			} finally {
+				await inner.dispose();
+			}
+		},
+	);
+
 	it('tracks continuation context and usage once through all wrappers, including no-op continue', async () => {
 		const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 		const context = new ContextTracker();
@@ -68,7 +207,7 @@ describe('stepped helpers and scripted mocks', () => {
 			await client.setContext({ systemPrompt: 'after' });
 			const last = await collect(client.continue());
 			expect(last.turnEnd?.stepUsage).toEqual(usage);
-			expect(last.turnEnd?.usage?.tokens.total).toBe(32);
+			expect(last.turnEnd?.usage.tokens.total).toBe(32);
 			expect(totals.get().tokens.total).toBe(32);
 			expect(totals.get().cost.total).toBe(20);
 			expect(context.get().messages.filter((m) => m.role === 'user')).toEqual([

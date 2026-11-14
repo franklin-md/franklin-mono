@@ -17,10 +17,12 @@ import type {
 	TurnEndDescriptor,
 } from './descriptor/index.js';
 import type { MutableMockMiniACPRecording } from './recording.js';
+import { joinChunks } from './descriptor/chunks.js';
 
 export type MockTurnExecutionInput = {
 	readonly descriptor: MockTurnDescriptor;
 	readonly context: Context;
+	readonly isCancelled: () => boolean;
 	readonly prompt: UserMessage;
 	readonly server: MuAgent;
 	readonly recording: MutableMockMiniACPRecording;
@@ -42,7 +44,7 @@ export async function* executeMockTurn(
 		yield event;
 	}
 
-	if (!ended) {
+	if (!ended && !input.isCancelled()) {
 		throw new Error('Mock turn descriptor must include turnEnd().');
 	}
 
@@ -50,6 +52,7 @@ export async function* executeMockTurn(
 		steps: MockTurnDescriptor,
 	): AsyncGenerator<StreamEvent> {
 		for (const step of steps) {
+			if (input.isCancelled()) return;
 			yield* executeStep(step);
 		}
 	}
@@ -103,10 +106,14 @@ export async function* executeMockTurn(
 	): AsyncGenerator<StreamEvent> {
 		const messageId = input.nextMessageId();
 		const startedAt = Date.now();
+		const emittedChunks: TextChunkDescriptor[] = [];
 
 		if (step.chunks) {
 			for (const chunk of step.chunks) {
+				if (input.isCancelled()) break;
 				await waitForChunk(chunk, startedAt, step.chunkDelayMode ?? 'relative');
+				if (input.isCancelled()) break;
+				emittedChunks.push(chunk);
 				yield {
 					type: 'chunk',
 					messageId,
@@ -116,12 +123,20 @@ export async function* executeMockTurn(
 			}
 		}
 
+		// Finish already-delivered chunks before the driver publishes cancellation;
+		// later descriptor actions must not run just to obtain their final update.
+		if (input.isCancelled() && emittedChunks.length === 0) return;
 		yield {
 			type: 'update',
 			messageId,
 			message: {
 				role: 'assistant',
-				content: [{ type: contentType, text: step.text }],
+				content: [
+					{
+						type: contentType,
+						text: input.isCancelled() ? joinChunks(emittedChunks) : step.text,
+					},
+				],
 			},
 		};
 	}

@@ -19,20 +19,20 @@ import {
 	turnEnd,
 	turn,
 } from '../../mock/index.js';
-import type { AgentFactory, Fixture, Transcript } from '../types.js';
+import type { AgentFactory, Fixture, Transcript, ToolSpec } from '../types.js';
 
 const config = {
 	provider: 'openrouter',
 	model: 'openrouter/free',
 	apiKey: 'stub-key',
 };
-const tool = {
+const tool: ToolSpec = {
 	definition: {
 		name: 'echo',
 		description: 'Echo',
 		inputSchema: { type: 'object' },
 	},
-	handler: () => ({ toolCallId: 'c1', content: [] }),
+	handler: (call) => ({ toolCallId: call.id, content: [] }),
 };
 const fixture: Fixture = {
 	name: 'explicit stepping',
@@ -77,31 +77,7 @@ describe('explicit step executable spec', () => {
 								turn([toolCalls([{ name: 'echo' }]), text('done'), turnEnd()]),
 							],
 						}).connector;
-			const transcript = await execute(
-				{
-					...fixture,
-					actions: fixture.actions.map((action) =>
-						action.type === 'setContext' && action.context.tools
-							? {
-									...action,
-									context: {
-										...action.context,
-										tools: [
-											{
-												...tool,
-												handler: (call) => ({
-													toolCallId: call.id,
-													content: [],
-												}),
-											},
-										],
-									},
-								}
-							: action,
-					),
-				},
-				factory,
-			);
+			const transcript = await execute(fixture, factory);
 			expectConforms(transcript);
 			expect(transcript.filter((e) => e.method === 'stepEnd')).toHaveLength(1);
 			expect(transcript.filter((e) => e.method === 'turnEnd')).toHaveLength(1);

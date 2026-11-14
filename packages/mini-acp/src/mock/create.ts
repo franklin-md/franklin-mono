@@ -82,6 +82,7 @@ export function createMockMiniACP(
 						get context() {
 							return tracker.get();
 						},
+						isCancelled: () => cancelled,
 						prompt: message,
 						server: trackedServer,
 						recording,
@@ -92,15 +93,20 @@ export function createMockMiniACP(
 					recording.continues += 1;
 				}
 				while (current) {
-					const result = cancelled ? undefined : await current.next();
-					const received = result && !result.done ? result.value : undefined;
+					const result = await current.next();
+					const received = result.done ? undefined : result.value;
 					let stepUsage = ZERO_USAGE;
 					if (received?.type === 'stepEnd' || received?.type === 'turnEnd') {
 						stepUsage = received.stepUsage;
 						usage.add(stepUsage);
 					}
 					let event: StreamEvent;
-					if (cancelled) {
+					if (
+						cancelled &&
+						(!received ||
+							received.type === 'stepEnd' ||
+							received.type === 'turnEnd')
+					) {
 						event = {
 							type: 'turnEnd',
 							stopCode: StopCode.Cancelled,
