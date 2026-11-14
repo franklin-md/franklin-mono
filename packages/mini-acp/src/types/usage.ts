@@ -6,8 +6,8 @@
 // (Anthropic-style); providers that do not expose a cache distinction
 // report 0 for both. `tokens.total` is the sum of all four.
 //
-// `cost.*` is the same breakdown in USD, supplied by the provider adapter;
-// when pricing is unknown, fields are 0.
+// Cost components are catalog estimates in USD. The total may instead be
+// provider-reported billing and need not equal their sum. Unknown prices are 0.
 // ---------------------------------------------------------------------------
 
 export type Usage = {
@@ -24,5 +24,7 @@ export type Usage = {
 		cacheRead: number;
 		cacheWrite: number;
 		total: number;
+		/** True only when every contributing call supplied its billed total. */
+		totalFromProvider?: boolean;
 	};
 };

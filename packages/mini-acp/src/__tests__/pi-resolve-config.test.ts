@@ -8,13 +8,13 @@ import {
 import { OPENROUTER_APP_URL } from '../backend/pi/model/headers.js';
 
 const OPENROUTER_UPSTREAM_MODEL_CASES = [
-	{ id: 'z-ai/glm-5.1', contextWindow: 202_800 },
-	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_576 },
-	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_048_576 },
+	{ id: 'z-ai/glm-5.1', contextWindow: 202_752 },
+	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_575 },
+	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_024_000 },
 	{ id: 'moonshotai/kimi-k2.6', contextWindow: 262_144 },
 	{ id: 'x-ai/grok-4.20', contextWindow: 2_000_000 },
 	{ id: 'qwen/qwen3.6-plus', contextWindow: 1_000_000 },
-	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
+	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 262_144 },
 ] as const;
 
 const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [

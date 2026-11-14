@@ -1,5 +1,7 @@
 import {
 	createAssistantMessageEventStream,
+	getCurrentSystemPrompt,
+	getCurrentTools,
 	type AssistantMessage,
 } from '@earendil-works/pi-ai';
 import type { StreamFn } from '@earendil-works/pi-agent-core';
@@ -19,8 +21,8 @@ export function createScriptedProvider(
 		const script = responses[requests.length];
 		requests.push({
 			messages: structuredClone(context.messages),
-			systemPrompt: context.systemPrompt,
-			tools: (context.tools ?? []).map((tool) => tool.name),
+			systemPrompt: getCurrentSystemPrompt(context.messages),
+			tools: getCurrentTools(context.messages).map((tool) => tool.name),
 			apiKey: options?.apiKey,
 			model: model.id,
 		});

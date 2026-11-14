@@ -9,6 +9,7 @@ import type {
 	AgentLoopConfig,
 	StreamFn,
 } from '@earendil-works/pi-agent-core';
+import { streamSimple } from '@earendil-works/pi-ai/compat';
 import type { AssistantMessage } from '@earendil-works/pi-ai';
 
 import type { MuAgent, MuClient } from '../../protocol/types.js';
@@ -40,10 +41,11 @@ export function createPiAgent(
 
 class PiMuAgent implements MuClient {
 	private readonly context: AgentContext = {
-		systemPrompt: '',
 		messages: [],
 		tools: [],
 	};
+	private systemPrompt = '';
+	private readonly sessionId = crypto.randomUUID();
 	private config: LLMConfig = {};
 	private activeRun: AbortController | undefined;
 	private pending = false;
@@ -68,11 +70,24 @@ class PiMuAgent implements MuClient {
 				'Pi setContext during an active drive only accepts tools',
 			);
 		}
-		if (patch.systemPrompt !== undefined) {
-			this.context.systemPrompt = patch.systemPrompt;
-		}
-		if (patch.messages !== undefined) {
-			this.context.messages = toPiMessages(patch.messages);
+		if (patch.systemPrompt !== undefined || patch.messages !== undefined) {
+			this.systemPrompt = patch.systemPrompt ?? this.systemPrompt;
+			const messages =
+				patch.messages === undefined
+					? this.context.messages.filter((message) => message.role !== 'system')
+					: toPiMessages(patch.messages);
+			// Pi 1.x carries instructions in its transcript; Mini-ACP patches them
+			// independently from history, including explicit clearing.
+			this.context.messages = this.systemPrompt
+				? [
+						{
+							role: 'system',
+							content: this.systemPrompt,
+							timestamp: Date.now(),
+						},
+						...messages,
+					]
+				: messages;
 		}
 		if (patch.tools !== undefined) {
 			const handler = this.server.toolExecute.bind(this.server);
@@ -160,17 +175,18 @@ class PiMuAgent implements MuClient {
 				reasoning:
 					this.config.reasoning === 'off' ? undefined : this.config.reasoning,
 				apiKey: this.config.apiKey,
+				sessionId: this.sessionId,
 				convertToLlm: (messages) =>
 					messages.filter(
 						(m) =>
+							m.role === 'system' ||
 							m.role === 'user' ||
 							m.role === 'assistant' ||
 							m.role === 'toolResult',
 					),
-				// Pi 0.75.4's public Agent does not forward this option. Use the public
-				// runners: Pi still owns streaming, validation and the complete tool batch.
-				// https://github.com/earendil-works/pi-mono/blob/v0.75.4/packages/agent/src/agent-loop.ts
-				shouldStopAfterTurn: () => true,
+				// End after the complete tool batch so the client owns continuation.
+				// https://github.com/earendil-works/pi/blob/v1.5.2/packages/agent/src/agent-loop.ts
+				finishTurn: () => ({ action: 'end' }),
 			};
 			// Isolate Pi's mutable transcript from our event-recorded context. Tool
 			// refreshes during a drive take effect on the following explicit drive.
@@ -184,7 +200,7 @@ class PiMuAgent implements MuClient {
 						config,
 						emit,
 						run.signal,
-						this.options.streamFn,
+						this.options.streamFn ?? streamSimple,
 					);
 				} else {
 					await runAgentLoopContinue(
@@ -192,7 +208,7 @@ class PiMuAgent implements MuClient {
 						config,
 						emit,
 						run.signal,
-						this.options.streamFn,
+						this.options.streamFn ?? streamSimple,
 					);
 				}
 			} catch (error) {
