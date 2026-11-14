@@ -1,8 +1,8 @@
+import type { ReactNode } from 'react';
 import { CommandGroup } from '../../../primitives/command.js';
 
 import type { CatalogModel, ProviderGroup } from '../models/catalog.js';
 import { ProviderIcon } from '../provider-icons.js';
-import { ProviderAuthAction } from './auth-shortcut/index.js';
 import { ModelRow } from './row.js';
 
 type Props = {
@@ -10,6 +10,7 @@ type Props = {
 	selectedModel: string;
 	selectedProvider: string;
 	onSelect: (model: CatalogModel) => void;
+	action?: ReactNode;
 };
 
 export function ProviderSection({
@@ -17,6 +18,7 @@ export function ProviderSection({
 	selectedModel,
 	selectedProvider,
 	onSelect,
+	action,
 }: Props) {
 	return (
 		<CommandGroup>
@@ -26,11 +28,7 @@ export function ProviderSection({
 					className="h-3.5 w-3.5 text-muted-foreground"
 				/>
 				<span>{group.displayName}</span>
-				<ProviderAuthAction
-					access={group.access}
-					displayName={group.displayName}
-					provider={group.provider}
-				/>
+				{action}
 			</div>
 
 			{group.models.map((model) => (

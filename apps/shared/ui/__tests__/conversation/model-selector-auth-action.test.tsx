@@ -27,6 +27,7 @@ import { DefaultAuthActionProvider } from '../../src/auth/default-action-provide
 import { Command } from '../../src/primitives/command.js';
 import { ProviderAuthAction } from '../../src/conversation/input/model-selector/auth-shortcut/index.js';
 import { ProviderSection } from '../../src/conversation/input/model-selector/section.js';
+import { ModelPicker } from '../../src/conversation/input/model-selector/picker.js';
 
 function renderWithAuth(ui: ReactElement, opts?: { entries?: AuthEntries }) {
 	const auth = createAuthMock(opts?.entries ?? {});
@@ -116,14 +117,40 @@ function createAuthMock(initialEntries: AuthEntries) {
 
 afterEach(() => {
 	cleanup();
+	vi.unstubAllGlobals();
 });
 
 describe('ProviderAuthAction', () => {
 	beforeEach(() => {
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				observe() {}
+				unobserve() {}
+				disconnect() {}
+			},
+		);
 		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
 			configurable: true,
 			value: vi.fn(),
 		});
+	});
+
+	it('keeps the prebuilt picker auth shortcuts connected without an active agent', () => {
+		const onSelect = vi.fn();
+		renderWithAuth(
+			<ModelPicker provider="custom" model="saved" onSelect={onSelect} />,
+		);
+		fireEvent.click(screen.getByRole('button', { name: 'saved' }));
+		expect(
+			screen.getByRole('button', { name: 'Sign in to OpenAI Codex' }),
+		).toBeTruthy();
+		expect(
+			screen
+				.getByRole('button', { name: 'Add API key for OpenRouter' })
+				.closest('[aria-hidden="true"]'),
+		).toBeNull();
+		expect(onSelect).not.toHaveBeenCalled();
 	});
 
 	it('renders signed-in providers as non-button status', () => {
@@ -235,6 +262,13 @@ describe('ProviderAuthAction', () => {
 					selectedModel="z-ai/glm-5.1"
 					selectedProvider="openrouter"
 					onSelect={vi.fn()}
+					action={
+						<ProviderAuthAction
+							access="api"
+							displayName="OpenRouter"
+							provider="openrouter"
+						/>
+					}
 				/>
 			</Command>,
 		);
