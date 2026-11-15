@@ -78,6 +78,26 @@ observers still see one logical user turn with one `turnStart` and one
 requested during boundary synchronization is drained by the next continuation
 without another provider request.
 
+Runtime terminal codes extend the numeric Mini-ACP code space in
+`@franklin/agent`: 10,000–19,999 is reserved for runtime outcomes, beginning
+with `RuntimeStopCode.CompactionFailure = 10_000`. `AgentStopCode` accepts
+both protocol and runtime codes; `AgentTurnEnd`, stream observers, conversation
+blocks and renderers use that wider type. `agentStopCategory()` classifies
+runtime failures as `runtime_error`. Use `collectPrompt()` to collect runtime
+streams; Mini-ACP's `collect()` continues to collect protocol streams.
+
+The controller owns one active operation and its cancellation signal, shared
+with summarization. A preparation failure emits one public
+`turnEnd(CompactionFailure)`; user cancellation emits `turnEnd(Cancelled)`.
+Before initial inference there is no raw turn to cancel, so this terminal can
+occur without a preceding protocol `turnStart`. At a paused boundary the
+controller cancels and drains the raw turn before publishing its own terminal.
+Previously recorded step usage is retained and the drained cancellation is not
+counted again. The operation is released before terminal observers run so a
+new prompt can start immediately. Session state owns context/history/usage,
+without a separate active-operation lifecycle. Manual compaction's existing
+promise API is retained; its extended lifecycle contract remains deferred.
+
 ### Context State
 
 The core controller keeps internal context state that splits desired session
@@ -153,6 +173,38 @@ inherit config/tool policy while resetting usage. Children start with empty hist
 inherit config, and reset usage/tool policy. Projection scans the log on restore
 and checkpoint append; checkpoints reduce model context, not storage or snapshot
 copy costs. No Mini-ACP protocol, adapter or execution-loop changes are involved.
+
+### Compaction
+
+Franklin core checks the projected context before a fresh prompt and at the
+idle `stepEnd` boundary before `continue()`. Compaction summarizes the entire
+visible prefix, appends a summary checkpoint, and uses ordinary context sync.
+The pending user message is included in budgeting but is appended only after
+preparation, so a fresh prompt is not duplicated or lost behind its summary.
+No Mini-ACP callback, acknowledgement method, or protocol change is required.
+
+Budgeting currently uses the existing conservative 8,192-token planning window
+and a 6,144-token trigger; this is not the selected model's reported capacity.
+Estimates include system instructions, tool schemas, messages and fixed image
+allowances. Large instruction/tool/prompt payloads that still exceed the budget
+fail before the next inference. Model-specific app-owned budgets remain a
+limitation; these estimates do not guarantee provider token limits.
+
+`runtime.compact()` requests manual compaction while no prompt is active and
+returns whether a checkpoint was appended. Empty history and an already-current
+checkpoint return false. Summary generation uses an isolated connection with no
+tools or extension hooks. The chunked summarizer serializes the projected messages
+into bounded transcript chunks. Each request summarizes only its new chunk, using
+all prior chunk summaries as context; the final checkpoint concatenates those
+summaries without rewriting them. A total character budget is divided across
+chunks so accumulated summaries remain bounded. These are heuristic limits, not
+provider tokenizer guarantees. Transcript serialization omits thinking and replaces
+images with placeholders; its different system/tool/message prefix does not reuse
+the original conversation cache. Cancellation, failed or
+stale summaries cannot append a checkpoint. A failed sync leaves an appended
+checkpoint pending for retry. Successful summary usage contributes to session
+totals; failed multi-chunk summaries currently omit partial usage. Persistence
+retains its existing debounced behavior and raw disk history.
 
 ### Extensions
 

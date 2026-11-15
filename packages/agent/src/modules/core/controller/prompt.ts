@@ -1,5 +1,5 @@
 import type { UserContent, UserMessage } from '@franklin/mini-acp';
-import type { TurnStreamEvent } from './types.js';
+import type { TurnStreamEvent } from '../turn/types.js';
 import type { Prompt, PromptHandler } from '../api/prompt.js';
 import type { CoreRegistry } from '../registrations/index.js';
 

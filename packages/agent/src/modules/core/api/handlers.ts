@@ -2,10 +2,10 @@ import type {
 	TurnStart,
 	Chunk,
 	Update,
-	TurnEnd,
 	ToolCall,
 	ToolExecuteParams,
 } from '@franklin/mini-acp';
+import type { AgentTurnEnd } from '../turn/types.js';
 import type { JsonValue } from '@franklin/lib';
 import type { RenderedToolOutput } from './tool.js';
 
@@ -19,7 +19,7 @@ export type StreamObserverParamsMap = {
 	turnStart: TurnStart;
 	chunk: Chunk;
 	update: Update;
-	turnEnd: TurnEnd;
+	turnEnd: AgentTurnEnd;
 };
 
 export type StreamObserverHandler<K extends StreamObserverEvent> = (
