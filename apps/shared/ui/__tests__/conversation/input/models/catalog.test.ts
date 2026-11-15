@@ -97,9 +97,6 @@ describe('MODEL_CATALOG', () => {
 			'gpt-6.1-sol',
 			'gpt-5.6-terra',
 			'gpt-5.6-luna',
-			'gpt-5.5',
-			'gpt-5.4',
-			'gpt-5.4-mini',
 		]);
 	});
 
@@ -188,15 +185,15 @@ describe('MODEL_CATALOG', () => {
 		});
 	});
 
-	it('includes Grok 4.5 in the OpenRouter catalog', () => {
+	it('includes Grok 4.7 in the OpenRouter catalog', () => {
 		const group = MODEL_CATALOG.find(
 			(providerGroup) => providerGroup.provider === 'openrouter',
 		);
-		const grok = group?.models.find((model) => model.id === 'x-ai/grok-4.5');
+		const grok = group?.models.find((model) => model.id === 'x-ai/grok-4.7');
 
 		expect(grok).toMatchObject({
 			provider: 'openrouter',
-			name: 'Grok 4.5',
+			name: 'Grok 4.7',
 			reasoning: true,
 			contextWindow: 500_000,
 			costInput: 2,

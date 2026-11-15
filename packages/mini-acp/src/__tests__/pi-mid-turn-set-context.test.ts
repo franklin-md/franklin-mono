@@ -250,7 +250,6 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 		});
 		expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
 		expect(result.turnEnd?.usage?.cost.total).toBeCloseTo(0.03);
-		expect(result.turnEnd?.usage?.cost.totalFromProvider).toBe(true);
 	});
 
 	it('rejects non-tool context changes during an active Mini-ACP prompt', async () => {

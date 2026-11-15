@@ -33,26 +33,6 @@ function openAICodexModel({
 // These definitions are the reviewed Codex set and override Pi metadata.
 // Adding a definition enables that ID without waiting for a Pi package release.
 const OPENAI_CODEX_MODEL_OVERRIDES = {
-	// Preserve saved sessions and picker entries removed from Pi's newer catalog.
-	// Metadata matches pi-ai 0.75.4; these remain catalog estimates.
-	'gpt-5.4': openAICodexModel({
-		id: 'gpt-5.4',
-		name: 'GPT-5.4',
-		contextWindow: 272_000,
-		cost: { input: 2.5, output: 15, cacheRead: 0.25, cacheWrite: 0 },
-	}),
-	'gpt-5.4-mini': openAICodexModel({
-		id: 'gpt-5.4-mini',
-		name: 'GPT-5.4 mini',
-		contextWindow: 272_000,
-		cost: { input: 0.75, output: 4.5, cacheRead: 0.075, cacheWrite: 0 },
-	}),
-	'gpt-5.5': openAICodexModel({
-		id: 'gpt-5.5',
-		name: 'GPT-5.5',
-		contextWindow: 272_000,
-		cost: { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 0 },
-	}),
 	// GPT-6 metadata (2026-09-29) combines the Codex CLI 0.159.0 catalog's
 	// 272K subscription-backend context with the public API pricing and output cap.
 	// https://learn.chatgpt.com/docs/changelog

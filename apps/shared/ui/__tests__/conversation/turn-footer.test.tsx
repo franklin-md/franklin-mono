@@ -48,7 +48,7 @@ function finishedTurn(id: string, elapsedMs: number): ConversationTurn {
 							output: 0,
 							cacheRead: 0,
 							cacheWrite: 0,
-							total: 0,
+							total: undefined,
 						},
 					},
 				},
@@ -151,56 +151,58 @@ describe('TurnFooter', () => {
 	});
 
 	it.each([
-		[0.0142, true, '1.4¢'],
-		[0.0142, false, '~1.4¢'],
-		[0.0149, true, '1.5¢'],
-		[0.01, true, '1¢'],
-		[0.01999, true, '2¢'],
-		[0.001, true, '0.1¢'],
-		[0.0009999, true, '<0.1¢'],
-		[0, true, '<0.1¢'],
-		[0.000001, true, '<0.1¢'],
-		[0.000001, false, '~<0.1¢'],
+		[0.0142, '1.4¢'],
+		[0.0149, '1.5¢'],
+		[0.01, '1¢'],
+		[0.01999, '2¢'],
+		[0.001, '0.1¢'],
+		[0.0009999, '< 0.1¢'],
+		[0, '0¢'],
+		[0.000001, '< 0.1¢'],
 	] as const)(
-		'shows cost %s with provenance %s as %s',
-		(total, totalFromProvider, label) => {
+		'shows available cost %s as %s beside turn details',
+		(total, label) => {
 			const turn = finishedTurn('last', 12_000);
 			const end = turn.response.blocks.find(
 				(block) => block.kind === 'turnEnd',
 			);
 			if (!end?.usage) throw new Error('Expected usage');
-			Object.assign(end.usage.cost, { total, totalFromProvider });
+			end.usage.cost.total = total;
 			render(
 				<MockAgentsDecorator activeSessionId="active-session">
 					<ConversationView turns={[turn]} />
 				</MockAgentsDecorator>,
 			);
-			expect(screen.getByText(label)).toBeTruthy();
+			const cost = screen.getByText(label);
+			const trigger = screen.getByRole('button', { name: 'Turn details' });
+			expect(trigger.textContent).toBe('Ran for 12s');
+			expect(cost.previousElementSibling?.textContent).toBe('·');
+			expect(cost.parentElement).toBe(trigger.parentElement);
+			fireEvent.focus(trigger);
+			expect(within(screen.getByRole('tooltip')).queryByText(label)).toBeNull();
 		},
 	);
 
-	it.each([
-		[0, undefined],
-		[0, false],
-		[-1, true],
-		[NaN, true],
-		[Infinity, true],
-	] as const)(
-		'hides unavailable cost %s with provenance %s and its separator',
-		(total, totalFromProvider) => {
+	it.each([undefined, -1, NaN, Infinity])(
+		'hides unavailable cost %s and its separator',
+		(total) => {
 			const turn = finishedTurn('last', 12_000);
 			const end = turn.response.blocks.find(
 				(block) => block.kind === 'turnEnd',
 			);
 			if (!end?.usage) throw new Error('Expected usage');
-			Object.assign(end.usage.cost, { total, totalFromProvider });
+			end.usage.cost.total = total;
 			render(
 				<MockAgentsDecorator activeSessionId="active-session">
 					<ConversationView turns={[turn]} />
 				</MockAgentsDecorator>,
 			);
 			const trigger = screen.getByRole('button', { name: 'Turn details' });
-			expect(trigger.parentElement?.textContent).toBe('Ran for 12s');
+			expect(screen.queryByTitle('Turn cost (US cents)')).toBeNull();
+			// Only the separator before the action buttons remains.
+			expect(
+				trigger.parentElement?.querySelectorAll('span[aria-hidden]'),
+			).toHaveLength(1);
 		},
 	);
 
@@ -212,7 +214,7 @@ describe('TurnFooter', () => {
 		);
 
 		const trigger = screen.getByRole('button', { name: 'Turn details' });
-		expect(trigger.parentElement?.textContent).toBe('Ran for 2m 7s');
+		expect(trigger.textContent).toBe('Ran for 2m 7s');
 		fireEvent.focus(trigger);
 
 		expect(screen.getAllByText('Input').length).toBeGreaterThan(0);
@@ -230,7 +232,7 @@ describe('TurnFooter', () => {
 		);
 
 		const trigger = screen.getByRole('button', { name: 'Turn details' });
-		expect(trigger.parentElement?.textContent).toBe('Ran for 2m 7s');
+		expect(trigger.textContent).toBe('Ran for 2m 7s');
 		fireEvent.focus(trigger);
 
 		const tooltip = screen.getByRole('tooltip');

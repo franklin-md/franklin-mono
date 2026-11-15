@@ -379,6 +379,24 @@ const OPENCODE_GO_MODEL_CASES = [
 
 describe('resolveModel', () => {
 	it.each([
+		['z-ai/glm-5.3-prime', 'low', 'high', 'max'],
+		['deepseek/deepseek-v4.1-flash-1017', 'off', 'high', 'max'],
+		['deepseek/deepseek-v4-pro-0813', 'off', 'high', 'max'],
+		['x-ai/grok-4.7', 'low', 'medium', 'xhigh'],
+	] as const)(
+		'resolves current OpenRouter model %s with supported effort',
+		(id, lowest, medium, highest) => {
+			const result = resolveModel({ provider: 'openrouter', model: id });
+			expect(result.ok).toBe(true);
+			if (!result.ok) return;
+			expect(result.model.contextWindow).toBeGreaterThanOrEqual(500_000);
+			expect(clampThinkingLevel(result.model, 'off')).toBe(lowest);
+			expect(clampThinkingLevel(result.model, 'medium')).toBe(medium);
+			const level = clampThinkingLevel(result.model, 'xhigh');
+			expect(result.model.thinkingLevelMap?.[level] ?? level).toBe(highest);
+		},
+	);
+	it.each([
 		['anthropic/claude-fable-5.2', 'max'],
 		['anthropic/claude-opus-5.5', 'max'],
 		['google/gemini-4-argon', 'high'],
@@ -424,54 +442,10 @@ describe('resolveModel', () => {
 		});
 	}
 
-	it('resolves the OpenAI Codex gpt-5.5 model from local overrides', () => {
-		const result = resolveModel({
-			provider: 'openai-codex',
-			model: 'gpt-5.5',
-		});
-
-		expect(result.ok).toBe(true);
-		expect(result.ok && result.model).toMatchObject({
-			provider: 'openai-codex',
-			id: 'gpt-5.5',
-			api: 'openai-codex-responses',
-			reasoning: true,
-			thinkingLevelMap: { xhigh: 'xhigh' },
-			contextWindow: 272_000,
-			maxTokens: 128_000,
-			cost: {
-				input: 5,
-				output: 30,
-				cacheRead: 0.5,
-				cacheWrite: 0,
-			},
-		});
-	});
-
-	it('resolves the OpenAI Codex gpt-5.4-mini model from local overrides', () => {
-		const result = resolveModel({
-			provider: 'openai-codex',
-			model: 'gpt-5.4-mini',
-		});
-
-		expect(result.ok).toBe(true);
-		expect(result.ok && result.model).toMatchObject({
-			provider: 'openai-codex',
-			id: 'gpt-5.4-mini',
-			api: 'openai-codex-responses',
-			reasoning: true,
-			contextWindow: 272_000,
-			maxTokens: 128_000,
-			cost: {
-				input: 0.75,
-				output: 4.5,
-				cacheRead: 0.075,
-				cacheWrite: 0,
-			},
-		});
-	});
-
 	for (const model of [
+		'gpt-5.5',
+		'gpt-5.4',
+		'gpt-5.4-mini',
 		'gpt-6-sol',
 		'gpt-5.6-sol',
 		'gpt-5.3-codex',

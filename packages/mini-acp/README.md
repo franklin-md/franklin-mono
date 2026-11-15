@@ -294,7 +294,7 @@ any previous steps in cumulative usage. A new prompt resets turn usage;
 replacing context messages does not reset usage.
 
 **`Usage`** — token counts and cost for a completed turn. The two buckets
-share numeric component field names; cost also carries billing provenance:
+share numeric component field names; cost has an optional best available total:
 ```
 Usage {
   tokens: {
@@ -309,20 +309,21 @@ Usage {
     output:     number   // USD cost for output tokens
     cacheRead:  number   // USD cost for cache reads
     cacheWrite: number   // USD cost for cache writes
-    total:      number   // Best available total in USD
-    totalFromProvider?: boolean // True only when every call supplied billing
+    total?:     number   // Best available total in USD
   }
 }
 ```
 
 The Pi adapter sums usage across all provider calls in a prompt's tool loop.
-Missing or false `cost.totalFromProvider` means a catalog estimate. Cost components
-remain estimates even when the total is provider-reported and may not sum to it.
-Legacy zero estimates mean pricing is unavailable; an explicitly reported zero
-is a known zero charge.
+`cost.total` uses provider-reported billing when available, otherwise a catalog
+estimate. We intentionally don't distinguish these sources in the protocol or
+footer, including for historical totals. The component costs remain catalog
+estimates and may not sum to the total. Empty accumulators start at zero;
+an unknown contribution makes the aggregate total unknown.
 
 Token counts are raw integers. `cost.*` values are in USD and are supplied
-by the provider adapter; when pricing is unknown, the adapter reports 0.
+by the provider adapter; unknown catalog prices are 0. An absent total means
+the cost is unavailable.
 
 A typical stream for a simple text response:
 ```

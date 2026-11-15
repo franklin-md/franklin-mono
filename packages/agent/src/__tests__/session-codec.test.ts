@@ -52,6 +52,21 @@ function session(): FranklinSession {
 }
 
 describe('session codec', () => {
+	it.each([undefined, 0, 0.0142])(
+		'round-trips available total %s through JSON',
+		(total) => {
+			const value = session();
+			value.core.usage = {
+				...ZERO_USAGE,
+				cost: { ...ZERO_USAGE.cost, total },
+			};
+			const encoded: unknown = JSON.parse(
+				JSON.stringify(franklinSessionCodec.encode(value)),
+			);
+			expect(franklinSessionCodec.decode(encoded)).toEqual({ ok: true, value });
+		},
+	);
+
 	it('encodes sessions as a versioned envelope', () => {
 		const value = session();
 

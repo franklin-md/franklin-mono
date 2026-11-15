@@ -52,7 +52,7 @@ export const CoreSessionV1 = z.object({
 	}),
 	usage: z.object({
 		tokens: UsageBreakdownV1,
-		cost: UsageBreakdownV1,
+		cost: UsageBreakdownV1.extend({ total: z.number().optional() }),
 	}),
 	toolFilter: ToolFilterV1.optional().transform(
 		(value) => value ?? emptyToolFilter(),

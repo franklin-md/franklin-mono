@@ -34,6 +34,84 @@ const GEMINI_THINKING_LEVEL_MAP = { off: null, minimal: null } as const;
 // Keep this Franklin-local escape hatch even when empty: it lets us add or
 // correct model metadata without waiting for a new pi-ai package release.
 const OPENROUTER_MODEL_OVERRIDES = {
+	// Latest general-purpose GLM, DeepSeek and Grok releases, checked 2026-11-15.
+	// Prices are routing estimates; billed totals come from response usage.
+	// https://openrouter.ai/api/v1/models
+	'z-ai/glm-5.3-prime': openRouterModel({
+		id: 'z-ai/glm-5.3-prime',
+		name: 'Z.ai: GLM 5.3 Prime',
+		thinkingLevelMap: {
+			off: null,
+			minimal: null,
+			medium: null,
+			xhigh: 'max',
+		},
+		input: ['text'],
+		cost: {
+			input: 2.8,
+			output: 8.8,
+			cacheRead: 0.56,
+			cacheWrite: 0,
+		},
+		contextWindow: 1_000_000,
+		maxTokens: 131_072,
+	}),
+	'deepseek/deepseek-v4.1-flash-1017': openRouterModel({
+		id: 'deepseek/deepseek-v4.1-flash-1017',
+		name: 'DeepSeek: DeepSeek V4.1 Flash 1017',
+		thinkingLevelMap: {
+			off: 'none',
+			minimal: null,
+			medium: null,
+			xhigh: 'max',
+		},
+		input: ['text', 'image'],
+		cost: {
+			input: 0.02,
+			output: 0.108,
+			cacheRead: 0.007,
+			cacheWrite: 0,
+		},
+		contextWindow: 1_048_576,
+		maxTokens: 384_000,
+	}),
+	'deepseek/deepseek-v4-pro-0813': openRouterModel({
+		id: 'deepseek/deepseek-v4-pro-0813',
+		name: 'DeepSeek: DeepSeek V4 Pro 0813',
+		thinkingLevelMap: {
+			off: 'none',
+			minimal: null,
+			medium: null,
+			xhigh: 'max',
+		},
+		input: ['text'],
+		cost: {
+			input: 0.111,
+			output: 4.44,
+			cacheRead: 0.097,
+			cacheWrite: 0,
+		},
+		contextWindow: 1_048_576,
+		maxTokens: 943_718,
+	}),
+	'x-ai/grok-4.7': openRouterModel({
+		id: 'x-ai/grok-4.7',
+		name: 'SpaceXAI: Grok 4.7',
+		thinkingLevelMap: {
+			off: null,
+			minimal: null,
+			xhigh: 'xhigh',
+		},
+		input: ['text', 'image'],
+		cost: {
+			input: 2,
+			output: 6,
+			cacheRead: 0.5,
+			cacheWrite: 0,
+		},
+		contextWindow: 500_000,
+		maxTokens: 450_000,
+	}),
 	// OpenRouter model API metadata (2026-11-13), including current promotional
 	// Gemini prices. The selector resolves these same estimates directly.
 	// https://openrouter.ai/api/v1/models

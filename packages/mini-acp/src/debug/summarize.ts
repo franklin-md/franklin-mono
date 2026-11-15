@@ -137,8 +137,8 @@ export function summarizeUsage(usage: Usage): string[] {
 	];
 }
 
-function formatCost(value: number): string {
-	return `$${value.toFixed(4)}`;
+function formatCost(value: number | undefined): string {
+	return value === undefined ? 'unknown' : `$${value.toFixed(4)}`;
 }
 
 export function summarizeJson(value: unknown): string {

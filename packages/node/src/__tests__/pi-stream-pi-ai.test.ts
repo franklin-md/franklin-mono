@@ -85,7 +85,6 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 			);
 			expect(result.turnEnd?.stopCode).toBe(1000);
 			expect(result.turnEnd?.usage?.cost.total).toBeCloseTo(expectedCost);
-			expect(result.turnEnd?.usage?.cost.totalFromProvider).toBe(true);
 			expect(customFetch).toHaveBeenCalledOnce();
 			expect(globalFetch).not.toHaveBeenCalled();
 		},
