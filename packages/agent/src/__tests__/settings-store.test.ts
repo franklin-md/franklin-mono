@@ -54,7 +54,6 @@ describe('createSettings', () => {
 describe('settings.restore', () => {
 	it('hydrates the store from disk', async () => {
 		const stored: AppSettings = {
-			documentDownloads: DEFAULT_APP_SETTINGS.documentDownloads,
 			shareViewedReferencesByDefault: false,
 			defaultLLMConfig: {
 				provider: 'anthropic',
@@ -84,7 +83,6 @@ describe('settings.restore', () => {
 		await store.restore();
 
 		expect(store.get()).toEqual({
-			documentDownloads: DEFAULT_APP_SETTINGS.documentDownloads,
 			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {
 				provider: 'anthropic',

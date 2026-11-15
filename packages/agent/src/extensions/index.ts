@@ -38,7 +38,6 @@ export { filesystemBundle, filesystemExtension } from './filesystem/index.js';
 // References
 export {
 	filesystemFileReferenceExtension,
-	createHTTPReferenceExtension,
 	referenceHandlerExtension,
 	imageDocumentReferenceExtension,
 	referenceReadExtension,

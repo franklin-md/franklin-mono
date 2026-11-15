@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 
-import { documentDownloadPolicySchema } from '@franklin/agent';
 import type {
 	AppSettings,
 	AuthEntries,
@@ -50,7 +49,6 @@ function createAuthStub(initial: AuthEntries = {}): AuthStub {
 
 function createSettingsStub(
 	initial: AppSettings = {
-		documentDownloads: documentDownloadPolicySchema.parse({}),
 		shareViewedReferencesByDefault: true,
 		defaultLLMConfig: {
 			provider: 'openai-codex',
