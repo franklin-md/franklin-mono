@@ -1,20 +1,17 @@
-export function createSessionOperation() {
+export function createControllerOperation() {
 	let active: AbortController | undefined;
 	return {
 		begin() {
 			if (active) throw new Error('Session operation already in progress');
 			active = new AbortController();
+			return active;
 		},
-		end() {
-			active?.abort();
-			active = undefined;
+		end(run: AbortController) {
+			// An observer may start another prompt before the previous generator exits.
+			if (active === run) active = undefined;
 		},
 		cancel() {
 			active?.abort();
-		},
-		signal() {
-			if (!active) throw new Error('No active session operation');
-			return active.signal;
 		},
 	};
 }

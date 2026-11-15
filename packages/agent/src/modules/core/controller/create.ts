@@ -6,6 +6,7 @@ import type { AgentController } from './types.js';
 import { bindAgentClient } from './client.js';
 import { createControllerServer } from './server.js';
 import { createAgentSession } from './session.js';
+import { createControllerOperation } from './operation.js';
 import type { Summarize } from '../compaction/types.js';
 
 type CreateAgentControllerInput = {
@@ -19,6 +20,7 @@ export function createAgentController(
 	input: CreateAgentControllerInput,
 ): AgentController {
 	const session = createAgentSession(input);
+	const operation = createControllerOperation();
 	let connectedClient: MiniACPClientHandle | undefined;
 	const server = createControllerServer({
 		registrations: input.registrations,
@@ -34,11 +36,17 @@ export function createAgentController(
 				client,
 				registrations: input.registrations,
 				session,
+				operation,
 			});
 		},
-		compact() {
+		async compact() {
 			if (!connectedClient) throw new Error('Agent is not connected');
-			return session.compact(connectedClient);
+			const run = operation.begin();
+			try {
+				return await session.compact(connectedClient, run.signal);
+			} finally {
+				operation.end(run);
+			}
 		},
 		setToolEnabled(name, enabled) {
 			const before = input.toolRegistry.filter();

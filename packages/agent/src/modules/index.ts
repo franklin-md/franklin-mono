@@ -29,6 +29,16 @@ export type {
 export type { CoreState, SessionSnapshot, ToolFilter } from './core/state.js';
 export { emptyCoreState, emptySessionSnapshot } from './core/state.js';
 
+export { RuntimeStopCode } from './core/turn/runtime-stop-code.js';
+export { agentStopCategory } from './core/turn/stop-category.js';
+export { collectPrompt } from './core/turn/collect.js';
+export type {
+	AgentStopCode,
+	AgentStopCategory,
+	AgentTurnEnd,
+	TurnStreamEvent,
+} from './core/turn/types.js';
+
 // Auth dependency
 export type {
 	AuthDependencyModule,

@@ -13,7 +13,6 @@ import type { SessionSnapshot } from '../state.js';
 import type { ToolRegistry } from '../tools/index.js';
 import { createSessionDraft } from '../context/draft/index.js';
 import { createContextLedger } from '../context/ledger/index.js';
-import { createSessionOperation } from './operation.js';
 import { runCompaction } from '../compaction/run.js';
 import { estimateContextTokens } from '../compaction/tokens/context.js';
 import type { Summarize } from '../compaction/types.js';
@@ -24,11 +23,12 @@ const CONTEXT_WINDOW = 8192;
 const CONTEXT_LIMIT = CONTEXT_WINDOW - Math.floor(CONTEXT_WINDOW / 4);
 
 export type AgentSession = {
-	begin(): void;
-	end(): void;
-	cancel(): void;
-	prepare(client: MiniACPClient, incoming?: UserMessage): Promise<void>;
-	compact(client: MiniACPClient): Promise<boolean>;
+	prepare(
+		client: MiniACPClient,
+		signal: AbortSignal,
+		incoming?: UserMessage,
+	): Promise<void>;
+	compact(client: MiniACPClient, signal: AbortSignal): Promise<boolean>;
 	sync(client: MiniACPClient): Promise<void>;
 	recordContext(context: ContextPatch): void;
 	recordMessage(message: Message): void;
@@ -51,17 +51,17 @@ export function createAgentSession(
 	usage.add(input.snapshot.usage);
 	const draft = createSessionDraft(input);
 	const ledger = createContextLedger({ draft });
-	const operation = createSessionOperation();
-	const compact = async (client: MiniACPClient) => {
+	const compact = async (client: MiniACPClient, signal: AbortSignal) => {
 		if (!input.summarize) throw new Error('Compaction is unavailable');
 		const changed = await runCompaction({
 			draft,
 			summarize: input.summarize,
 			contextWindow: CONTEXT_WINDOW,
-			signal: operation.signal(),
+			signal,
 			addUsage: (value) => usage.add(value),
 		});
 		await ledger.ledger.sync(client);
+		signal.throwIfAborted();
 		return changed;
 	};
 	const estimate = (incoming?: UserMessage) =>
@@ -71,27 +71,14 @@ export function createAgentSession(
 		});
 
 	return {
-		begin: () => operation.begin(),
-		end: () => operation.end(),
-		cancel: () => operation.cancel(),
-		async prepare(client, incoming) {
-			// The paused raw client already holds cancellation. Let continue() drain
-			// its terminal without starting summary work or another provider request.
-			if (!incoming && operation.signal().aborted) return;
-			operation.signal().throwIfAborted();
+		async prepare(client, signal, incoming) {
+			signal.throwIfAborted();
 			if (!input.summarize || estimate(incoming) <= CONTEXT_LIMIT) return;
-			await compact(client);
+			await compact(client, signal);
 			if (estimate(incoming) > CONTEXT_LIMIT)
 				throw new Error('Context is too large after compaction');
 		},
-		async compact(client) {
-			operation.begin();
-			try {
-				return await compact(client);
-			} finally {
-				operation.end();
-			}
-		},
+		compact,
 		sync(client) {
 			return ledger.ledger.sync(client);
 		},

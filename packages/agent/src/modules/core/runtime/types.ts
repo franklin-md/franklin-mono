@@ -1,5 +1,5 @@
 import type { LLMConfig, UserMessage } from '@franklin/mini-acp';
-import type { TurnStreamEvent } from '../controller/index.js';
+import type { TurnStreamEvent } from '../turn/types.js';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { CoreInspectDump } from '../inspect-dump.js';
 import type { SessionSnapshot } from '../state.js';

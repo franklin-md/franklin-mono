@@ -1,15 +1,16 @@
-import type { Chunk, StreamEvent } from '@franklin/mini-acp';
+import type { TurnStreamEvent } from '../turn/types.js';
+import type { Chunk } from '@franklin/mini-acp';
 import { textChunkStream, turn, turnEnd } from '@franklin/mini-acp/mock';
 import { describe, expect, it } from 'vitest';
 import { runCoreScenario } from '../../../testing/index.js';
 
-function chunks(events: readonly StreamEvent[]): Chunk[] {
+function chunks(events: readonly TurnStreamEvent[]): Chunk[] {
 	return events.filter((event): event is Chunk => event.type === 'chunk');
 }
 
 describe('core extension stream observers', () => {
 	it('observes the same stream events that are returned to the caller', async () => {
-		const observed: StreamEvent[] = [];
+		const observed: TurnStreamEvent[] = [];
 
 		const { events } = await runCoreScenario({
 			turns: [turn([textChunkStream('ok'), turnEnd()])],

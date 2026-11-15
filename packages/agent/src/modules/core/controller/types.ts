@@ -1,13 +1,12 @@
 import type {
 	MiniACPAgent,
 	MiniACPClientHandle,
-	StreamEvent,
 	UserMessage,
 } from '@franklin/mini-acp';
 import type { CoreInspectDump } from '../inspect-dump.js';
 import type { SessionSnapshot } from '../state.js';
 
-export type TurnStreamEvent = Exclude<StreamEvent, { type: 'stepEnd' }>;
+import type { TurnStreamEvent } from '../turn/types.js';
 
 export type AgentClient = Omit<MiniACPClientHandle, 'prompt' | 'continue'> & {
 	prompt(message: UserMessage): AsyncIterable<TurnStreamEvent>;

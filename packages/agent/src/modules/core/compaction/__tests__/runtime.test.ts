@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Context as PiContext } from '@earendil-works/pi-ai';
 import { createPiTestResponse as response } from '../../../../testing/pi-response.js';
-import {
-	collect,
-	StopCode,
-	ZERO_USAGE,
-	type Message,
-} from '@franklin/mini-acp';
+import { StopCode, ZERO_USAGE, type Message } from '@franklin/mini-acp';
+import { collectPrompt } from '../../turn/collect.js';
 import { z } from 'zod';
 import { createPiTestConnector } from '../../../../testing/pi-connector.js';
 import { createRuntime } from '../../../../testing/create-runtime.js';
@@ -56,7 +52,7 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 		const runtime = await createRuntime(module, state, []);
 		await runtime.setLLMConfig(config);
 		try {
-			const result = await collect(runtime.prompt(prompt));
+			const result = await collectPrompt(runtime.prompt(prompt));
 			expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
 			expect(
 				requests.filter((request) =>
@@ -84,7 +80,7 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 			const restored = await createRuntime(module, fork, []);
 			try {
 				await restored.setLLMConfig(config);
-				await collect(restored.prompt(prompt));
+				await collectPrompt(restored.prompt(prompt));
 				expect(JSON.stringify(requests.at(-1)?.messages)).toContain(
 					'Remember the original task.',
 				);
@@ -171,7 +167,7 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 		);
 		await runtime.setLLMConfig(config);
 		try {
-			const result = await collect(runtime.prompt(prompt));
+			const result = await collectPrompt(runtime.prompt(prompt));
 			expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
 			expect(calls).toBe(3);
 			expect(summaries).toBeGreaterThan(0);
