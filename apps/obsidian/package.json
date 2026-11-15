@@ -27,6 +27,7 @@
 		"@franklin/react": "0.0.0",
 		"@franklin/ui": "0.0.0",
 		"@lezer/markdown": "1.8.1",
+		"immer": "10.2.0",
 		"@radix-ui/react-slot": "1.2.4",
 		"class-variance-authority": "0.7.1",
 		"lucide-react": "0.511.0",

@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import type { ComponentPropsWithoutRef } from 'react';
 import { PopoverContent } from '../../../primitives/popover.js';
+import { focusCommand } from '../../../primitives/focus-command.js';
 import { cn } from '../../../lib/cn.js';
 
 type Props = ComponentPropsWithoutRef<typeof PopoverContent>;
@@ -24,14 +25,8 @@ export function ModelPickerContent({
 			onOpenAutoFocus={(event) => {
 				onOpenAutoFocus?.(event);
 				if (event.defaultPrevented) return;
-				// With no search input, focus the listbox so cmdk's existing
-				// Arrow/Enter handling works without a second navigation system.
-				const target =
-					content.current?.querySelector<HTMLElement>('[cmdk-input]') ??
-					content.current?.querySelector<HTMLElement>('[cmdk-list]');
-				if (target) {
+				if (focusCommand(content.current)) {
 					event.preventDefault();
-					target.focus();
 				}
 			}}
 		/>

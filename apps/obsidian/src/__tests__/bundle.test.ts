@@ -151,6 +151,24 @@ describe('obsidian bundle', () => {
 		expect(devBundle.css).toContain('user-select:text');
 	});
 
+	it('ships Inbox host sizing and reduced-motion styles', () => {
+		for (const bundle of [devBundle, prodBundle]) {
+			const viewRule = bundle.css.match(
+				/\.franklin\.franklin-inbox-view\s*\{([^}]*)\}/,
+			)?.[1];
+			expect(viewRule).toMatch(/padding:\s*0/);
+			expect(bundle.css).toContain('.study-inbox');
+			expect(
+				/@media[^{}]*prefers-reduced-motion:\s*reduce[^{}]*\{[^{}]*\.franklin \.study-inbox/.test(
+					bundle.css,
+				),
+			).toBe(true);
+			expect(bundle.css).not.toContain(
+				'.franklin .franklin.franklin-inbox-view',
+			);
+		}
+	});
+
 	it('produces dist/manifest.json', () => {
 		expect(devBundle.hasManifest).toBe(true);
 	});
@@ -164,6 +182,11 @@ describe('obsidian bundle', () => {
 
 		// Externals that Obsidian provides should still be require() calls
 		expect(devBundle.js).toMatch(/require\(["']obsidian["']\)/);
+	});
+
+	it('bundles the Markdown parser that Obsidian does not provide', () => {
+		for (const bundle of [devBundle, prodBundle])
+			expect(bundle.js).not.toMatch(/require\(["']@lezer\/markdown["']\)/);
 	});
 
 	it('includes React Scan in dev bundles only', () => {

@@ -1,7 +1,9 @@
+import { resolveTurnEndRenderer } from '../conversation/turn-end/registry.js';
 import { describe, it, expect, expectTypeOf, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import {
 	filesystemBundle,
+	RuntimeStopCode,
 	type ConversationTurn,
 	type TextBlock,
 	type ThinkingBlock,
@@ -767,5 +769,35 @@ describe('createToolUseBlock', () => {
 		const props = captured[0] as ResolvedToolRender;
 		expect(props.summary).toBe('summary:read');
 		expect(props.status).toBe('success');
+	});
+});
+
+describe('runtime turn-end rendering', () => {
+	it('resolves exact runtime codes, runtime categories and the default error renderer', () => {
+		const exact = () => null;
+		const category = () => null;
+		const fallback = () => null;
+		expect(
+			resolveTurnEndRenderer(
+				{
+					byCode: { [RuntimeStopCode.CompactionFailure]: exact },
+					byCategory: { runtime_error: category },
+					default: fallback,
+				},
+				RuntimeStopCode.CompactionFailure,
+			),
+		).toBe(exact);
+		expect(
+			resolveTurnEndRenderer(
+				{ byCategory: { runtime_error: category }, default: fallback },
+				RuntimeStopCode.CompactionFailure,
+			),
+		).toBe(category);
+		expect(
+			resolveTurnEndRenderer(
+				{ default: fallback },
+				RuntimeStopCode.CompactionFailure,
+			),
+		).toBe(fallback);
 	});
 });

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { THINKING_LEVELS } from '@franklin/mini-acp';
 import type { ThinkingLevel } from '@franklin/mini-acp';
 import {
@@ -17,7 +18,7 @@ const meta = {
 	component: ModelPicker,
 	args: {
 		provider: 'openai-codex',
-		model: 'gpt-6.1-sol',
+		model: 'gpt-6.2-sol',
 		onSelect: () => {},
 		renderProviderAction: () => null,
 	},
@@ -48,10 +49,44 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const ModelOnly: Story = {};
+export const ModelOnly: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(canvasElement.ownerDocument.body);
+		await userEvent.click(canvas.getByRole('button'));
+		await waitFor(() => expect(body.getByRole('combobox')).toHaveFocus());
+		await userEvent.type(body.getByRole('combobox'), 'GPT-5.6 Terra');
+		await userEvent.click(
+			await body.findByRole('option', { name: 'GPT-5.6 Terra' }),
+		);
+		await expect(canvas.getByRole('button')).toHaveTextContent('GPT-5.6 Terra');
+		await waitFor(() =>
+			expect(body.queryByRole('dialog')).not.toBeInTheDocument(),
+		);
+		await expect(body.queryByRole('radiogroup')).not.toBeInTheDocument();
+	},
+};
 export const WithEffort: Story = {
 	args: {
 		effort: { level: 'medium', levels: THINKING_LEVELS, onChange: () => {} },
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(canvasElement.ownerDocument.body);
+		const trigger = canvas.getByRole('button');
+		await userEvent.click(trigger);
+		await userEvent.type(body.getByRole('combobox'), 'no-such-model');
+		const selected = body.getByRole('radio', { name: 'Medium' });
+		await userEvent.click(selected);
+		await userEvent.keyboard('{ArrowRight}');
+		await expect(body.getByRole('radio', { name: 'High' })).toBeChecked();
+		await expect(trigger).toHaveTextContent('High');
+		await expect(body.getByRole('combobox')).toHaveValue('no-such-model');
+		await userEvent.keyboard('{Escape}');
+		await waitFor(() =>
+			expect(body.queryByRole('dialog')).not.toBeInTheDocument(),
+		);
+		await waitFor(() => expect(trigger).toHaveFocus());
 	},
 };
 export const CustomTriggerWithoutSearch: Story = {
@@ -75,6 +110,20 @@ export const CustomTriggerWithoutSearch: Story = {
 					</ModelPickerModels>
 				</ModelPickerContent>
 			</ModelPickerRoot>
+		);
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(canvasElement.ownerDocument.body);
+		await userEvent.click(canvas.getByRole('button'));
+		await expect(body.queryByRole('combobox')).not.toBeInTheDocument();
+		await waitFor(() => expect(body.getByRole('listbox')).toHaveFocus());
+		await userEvent.keyboard('{ArrowDown}{Enter}');
+		await waitFor(() =>
+			expect(body.queryByRole('dialog')).not.toBeInTheDocument(),
+		);
+		await expect(canvas.getByRole('button')).not.toHaveTextContent(
+			'saved-model',
 		);
 	},
 };

@@ -1,21 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { quote } from 'shell-quote';
 import type {
-	SandboxAskCallback,
+	SandboxManager,
 	SandboxRuntimeConfig,
+	SandboxAskCallback,
 } from '@anthropic-ai/sandbox-runtime';
 import type { EnvironmentConfig } from '@franklin/agent';
 import { FILESYSTEM_ALLOW_ALL, toAbsolutePath } from '@franklin/lib';
-import { SandboxedProcess } from '../sandboxed-process.js';
+import type { SandboxedProcess as SandboxedProcessType } from '../sandboxed-process.js';
+let SandboxedProcess: typeof SandboxedProcessType;
 
 const sandbox = vi.hoisted(() => ({
 	live: false,
-	config: undefined as SandboxRuntimeConfig | undefined,
 	ask: undefined as SandboxAskCallback | undefined,
-	initialize: vi.fn(),
-	reset: vi.fn(),
-	wrapWithSandbox: vi.fn(),
-	cleanupAfterCommand: vi.fn(),
+	initialize: vi.fn<typeof SandboxManager.initialize>(),
+	reset: vi.fn<typeof SandboxManager.reset>(),
+	wrapWithSandbox: vi.fn<typeof SandboxManager.wrapWithSandbox>(),
+	cleanupAfterCommand: vi.fn<typeof SandboxManager.cleanupAfterCommand>(),
 }));
 
 vi.mock('@anthropic-ai/sandbox-runtime', () => ({ SandboxManager: sandbox }));
@@ -31,27 +32,28 @@ function createProcess(allowedDomains: string[] = []) {
 	return new SandboxedProcess(toAbsolutePath(process.cwd()), config);
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+	vi.resetModules();
+	({ SandboxedProcess } = await import('../sandboxed-process.js'));
+	sandbox.live = false;
+	sandbox.ask = undefined;
 	sandbox.initialize.mockImplementation(
-		async (config: SandboxRuntimeConfig, ask?: SandboxAskCallback) => {
+		async (_config: SandboxRuntimeConfig, ask?: SandboxAskCallback) => {
+			if (sandbox.live) return;
 			sandbox.live = true;
-			sandbox.config = config;
 			sandbox.ask = ask;
 		},
 	);
 	sandbox.reset.mockImplementation(async () => {
 		sandbox.live = false;
+		sandbox.ask = undefined;
 	});
 	sandbox.wrapWithSandbox.mockImplementation(async (command: string) => {
 		if (!sandbox.live) throw new Error('Sandbox proxy unavailable');
-		const allowed =
-			sandbox.config?.network.allowedDomains.includes('example.com') ||
-			(await sandbox.ask?.({ host: 'example.com', port: 443 }));
+		const allowed = await sandbox.ask?.({ host: 'example.com', port: 443 });
 		return quote([
 			'env',
 			'TMPDIR=/missing franklin temp',
-			'NO_PROXY=localhost,127.0.0.1',
-			'no_proxy=localhost,127.0.0.1',
 			`FRANKLIN_TEST_ALLOWED=${allowed ? 'yes' : 'no'}`,
 			'/bin/sh',
 			'-c',
@@ -65,16 +67,8 @@ afterEach(() => {
 });
 
 describe('SandboxedProcess', () => {
-	it('routes explicitly allowed loopback destinations through the policy proxy', async () => {
-		const proc = createProcess(['127.0.0.1:51702']);
-		const result = await proc.exec({
-			file: '/bin/sh',
-			args: ['-c', 'test -z "$NO_PROXY" && test -z "$no_proxy"'],
-		});
-		expect(result.exit_code).toBe(0);
-	});
-	it('allows public networking with Franklin’s empty allowlist on repeated commands', async () => {
-		const proc = createProcess();
+	it('reuses the configured runtime for sequential commands', async () => {
+		const proc = createProcess(['example.com']);
 		await proc.initialize();
 		for (let i = 0; i < 2; i++) {
 			const result = await proc.exec({
@@ -83,6 +77,8 @@ describe('SandboxedProcess', () => {
 			});
 			expect(result.stdout).toBe('yes');
 		}
+		expect(sandbox.initialize).toHaveBeenCalledOnce();
+		expect(sandbox.reset).not.toHaveBeenCalled();
 	});
 
 	it('keeps the proxy alive until overlapping commands have completed', async () => {
@@ -96,7 +92,7 @@ describe('SandboxedProcess', () => {
 		expect((await fast).stdout).toBe('fast');
 		expect(sandbox.live).toBe(true);
 		expect((await slow).stdout).toBe('slow');
-		expect(sandbox.live).toBe(false);
+		expect(sandbox.live).toBe(true);
 	});
 
 	it('waits before switching the policy used by another command', async () => {
@@ -116,6 +112,71 @@ describe('SandboxedProcess', () => {
 		expect((await waiting).stdout).toBe('no');
 	});
 
+	it('validates initial and updated policies without changing the last valid config', async () => {
+		expect(() => createProcess(['example.com:443'])).toThrow('Invalid network');
+		const proc = createProcess(['*']);
+		await expect(
+			proc.setNetworkConfig({
+				allowedDomains: [],
+				deniedDomains: ['https://example.com'],
+			}),
+		).rejects.toThrow('Invalid network');
+		expect(proc.getNetworkConfig()).toEqual({
+			allowedDomains: ['*'],
+			deniedDomains: [],
+		});
+	});
+
+	it('reconfigures future commands without changing the active policy', async () => {
+		const proc = createProcess(['*']);
+		let release!: () => void;
+		const barrier = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const prepare = sandbox.wrapWithSandbox.getMockImplementation()!;
+		sandbox.wrapWithSandbox.mockImplementationOnce(async (command: string) => {
+			await barrier;
+			return prepare(command);
+		});
+		const running = proc.exec({ file: 'true' });
+		await vi.waitFor(() =>
+			expect(sandbox.wrapWithSandbox).toHaveBeenCalledOnce(),
+		);
+		const ask = sandbox.ask!;
+		await proc.setNetworkConfig({ allowedDomains: [], deniedDomains: [] });
+		const waiting = proc.exec({
+			file: '/bin/sh',
+			args: ['-c', 'printf %s "$FRANKLIN_TEST_ALLOWED"'],
+		});
+		expect(await ask({ host: 'localhost', port: 443 })).toBe(true);
+		release();
+		await running;
+		expect((await waiting).stdout).toBe('no');
+		expect(await ask({ host: 'localhost', port: 443 })).toBe(false);
+		expect(sandbox.initialize).toHaveBeenCalledOnce();
+	});
+
+	it('clears proxy bypass variables and keeps native domain lists empty', async () => {
+		const proc = createProcess(['*']);
+		const result = await proc.exec({
+			file: '/bin/sh',
+			args: [
+				'-c',
+				'printf "%s:%s:%s" "$NO_PROXY" "$no_proxy" "$FRANKLIN_TEST_ALLOWED"',
+			],
+			env: { NO_PROXY: '*', no_proxy: 'localhost' },
+		});
+		expect(result.stdout).toBe('::yes');
+		expect(sandbox.initialize.mock.calls[0]![0].network).toEqual({
+			allowedDomains: [],
+			deniedDomains: [],
+		});
+		expect(sandbox.wrapWithSandbox.mock.calls[0]![2]?.network).toEqual({
+			allowedDomains: [],
+			deniedDomains: [],
+		});
+	});
+
 	it('restores a usable TMPDIR after SRT overrides the outer environment', async () => {
 		const proc = createProcess();
 		await proc.initialize();
@@ -133,7 +194,8 @@ describe('SandboxedProcess', () => {
 		await expect(
 			proc.exec({ file: '/bin/sh', args: ['-c', 'true'] }),
 		).rejects.toThrow('wrap failed');
-		expect(sandbox.live).toBe(false);
+		expect(sandbox.cleanupAfterCommand).not.toHaveBeenCalled();
+		expect(sandbox.live).toBe(true);
 		expect(
 			(await proc.exec({ file: '/bin/sh', args: ['-c', 'printf recovered'] }))
 				.stdout,
@@ -149,14 +211,14 @@ describe('SandboxedProcess', () => {
 				args: ['-c', 'true'],
 			}),
 		).rejects.toThrow();
-		expect(sandbox.live).toBe(false);
+		expect(sandbox.live).toBe(true);
 		const timed = await proc.exec({
 			file: '/bin/sh',
 			args: ['-c', 'exec sleep 0.1'],
 			timeout: 10,
 		});
 		expect(timed.exit_code).not.toBe(0);
-		expect(sandbox.live).toBe(false);
+		expect(sandbox.live).toBe(true);
 		expect(
 			(await proc.exec({ file: '/bin/sh', args: ['-c', 'printf recovered'] }))
 				.stdout,
@@ -168,8 +230,6 @@ describe('SandboxedProcess', () => {
 		sandbox.initialize.mockRejectedValueOnce(
 			new Error('initialization failed'),
 		);
-		// Both calls validate TMPDIR asynchronously before acquiring the runtime;
-		// either may reach initialization first under concurrent filesystem work.
 		const command = { file: '/bin/sh', args: ['-c', 'printf recovered'] };
 		const results = await Promise.allSettled([
 			proc.exec(command),
@@ -187,5 +247,42 @@ describe('SandboxedProcess', () => {
 				},
 			]),
 		);
+	});
+	it('resets after cleanup failure before reconfiguring the next command', async () => {
+		const proc = createProcess(['*']);
+		sandbox.cleanupAfterCommand.mockImplementationOnce(() => {
+			throw new Error('cleanup failed');
+		});
+		await expect(
+			proc.exec({ file: '/bin/sh', args: ['-c', 'true'] }),
+		).rejects.toThrow('cleanup failed');
+		await proc.setNetworkConfig({ allowedDomains: [], deniedDomains: [] });
+		expect(
+			(
+				await proc.exec({
+					file: '/bin/sh',
+					args: ['-c', 'printf %s "$FRANKLIN_TEST_ALLOWED"'],
+				})
+			).stdout,
+		).toBe('no');
+		expect(sandbox.reset).toHaveBeenCalledOnce();
+		expect(sandbox.initialize).toHaveBeenCalledTimes(2);
+	});
+	it('preserves command and cleanup errors together and resets the runtime', async () => {
+		const proc = createProcess();
+		const cleanupError = new Error('cleanup failed');
+		sandbox.cleanupAfterCommand.mockImplementationOnce(() => {
+			throw cleanupError;
+		});
+		await expect(
+			proc.exec({ file: 'true', cwd: '/missing-franklin-directory' }),
+		).rejects.toMatchObject({
+			errors: [expect.objectContaining({ code: 'ENOENT' }), cleanupError],
+		});
+		expect(
+			(await proc.exec({ file: '/bin/sh', args: ['-c', 'printf recovered'] }))
+				.stdout,
+		).toBe('recovered');
+		expect(sandbox.reset).toHaveBeenCalledOnce();
 	});
 });

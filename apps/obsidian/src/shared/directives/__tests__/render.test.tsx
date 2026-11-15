@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { act } from '@testing-library/react';
-import type { App } from 'obsidian';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DirectiveRegistry } from '../registry.js';
-import { createDirectiveTestPersistence } from '../testing/persistence.js';
+import {
+	createDirectiveTestPersistence,
+	createDirectiveTestRegistry,
+} from '../testing/registry.js';
 import { mountDirective } from '../render/mount.js';
 import { clearPortalRoot } from '../../ui/portal.js';
 
@@ -14,10 +15,7 @@ afterEach(() => {
 
 describe('directive rendering', () => {
 	it('keeps a failing renderer readable without breaking the note', async () => {
-		const registry = await DirectiveRegistry.create({
-			app: {} as App,
-			persistence: createDirectiveTestPersistence(),
-		});
+		const registry = await createDirectiveTestRegistry();
 		const instance = await registry
 			.registerDirective('broken', () => {
 				throw new Error('bad renderer');
@@ -47,10 +45,7 @@ describe('directive rendering', () => {
 	});
 
 	it('updates every mounted copy and cleans up subscriptions on removal', async () => {
-		const registry = await DirectiveRegistry.create({
-			app: {} as App,
-			persistence: createDirectiveTestPersistence(),
-		});
+		const registry = await createDirectiveTestRegistry();
 		const definition = registry.registerDirective<{ count: number }>(
 			'counter',
 			({ state }) => <span>Count {state.count}</span>,
@@ -90,17 +85,11 @@ describe('directive rendering', () => {
 
 	it('leaves unknown references readable and resolves them when a renderer registers', async () => {
 		const storage = createDirectiveTestPersistence();
-		const original = await DirectiveRegistry.create({
-			app: {} as App,
-			persistence: storage,
-		});
+		const original = await createDirectiveTestRegistry(undefined, storage);
 		const instance = await original
 			.registerDirective('counter', () => null)
 			.create({});
-		const registry = await DirectiveRegistry.create({
-			app: {} as App,
-			persistence: storage,
-		});
+		const registry = await createDirectiveTestRegistry(undefined, storage);
 		const host = document.createElement('span');
 		host.onWindowMigrated = vi.fn(() => vi.fn());
 		document.body.append(host);

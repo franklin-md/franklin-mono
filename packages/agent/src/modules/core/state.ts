@@ -7,6 +7,7 @@ export type ToolFilter = {
 };
 
 export type SessionSnapshot = {
+	// Durable originals and checkpoints; Mini-ACP receives their projection.
 	entries: SessionEntry[];
 	llmConfig: Omit<LLMConfig, 'apiKey'>;
 	usage: Usage;

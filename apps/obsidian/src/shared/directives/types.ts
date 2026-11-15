@@ -15,5 +15,5 @@ export type DirectiveDefinition<T> = {
 	get: (id: string) => DirectiveInstance<T> | undefined;
 };
 
-type RegisteredDirectiveProps = { id: string };
+type RegisteredDirectiveProps = { id: string; state: unknown };
 export type RegisteredDirective = ComponentType<RegisteredDirectiveProps>;

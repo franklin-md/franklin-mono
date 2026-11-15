@@ -1,105 +1,56 @@
 import { describe, expect, it } from 'vitest';
-import { assertAllowed, type NetworkPermissions } from '@franklin/lib';
+import type { NetworkPermissions } from '@franklin/lib';
 import { createSandboxNetworkPolicy } from '../network.js';
 
-const cases = [
-	{ host: '::1', port: 80, allowed: ['[::1]'], denied: [], expected: true },
-	{ host: 'example.com', port: 443, allowed: [], denied: [], expected: true },
-	{
-		host: 'example.com',
-		port: 443,
-		allowed: [],
-		denied: ['example.com'],
-		expected: false,
-	},
-	{
-		host: 'example.com',
-		port: 443,
-		allowed: ['example.com:443'],
-		denied: [],
-		expected: true,
-	},
-	{
-		host: 'example.com',
-		port: 80,
-		allowed: ['example.com:443'],
-		denied: [],
-		expected: false,
-	},
-	{
-		host: 'docs.example.com',
-		port: 443,
-		allowed: ['example.com'],
-		denied: [],
-		expected: true,
-	},
-	{
-		host: 'example.com',
-		port: 443,
-		allowed: ['*.example.com'],
-		denied: [],
-		expected: true,
-	},
-	{
-		host: 'other.example',
-		port: 443,
-		allowed: ['example.com'],
-		denied: [],
-		expected: false,
-	},
-	{ host: 'localhost', port: 11434, allowed: [], denied: [], expected: false },
-	{
-		host: 'localhost',
-		port: 11434,
-		allowed: ['localhost:11434'],
-		denied: [],
-		expected: true,
-	},
-	{
-		host: 'localhost',
-		port: 9229,
-		allowed: ['localhost'],
-		denied: ['localhost:9229'],
-		expected: false,
-	},
-	{
-		host: '192.168.1.10',
-		port: 443,
-		allowed: ['192.168.1.10'],
-		denied: [],
-		expected: false,
-	},
-	{
-		host: '::1',
-		port: 11434,
-		allowed: ['[::1]:11434'],
-		denied: [],
-		expected: true,
-	},
-];
+const restricted: NetworkPermissions = {
+	allowedDomains: ['example.com', '*.example.com', '[::1]'],
+	deniedDomains: ['blocked.example.com'],
+};
 
-describe('sandbox network policy', () => {
-	it.each(cases)(
-		'agrees with web policy for $host:$port ($expected)',
-		async ({ host, port, allowed, denied, expected }) => {
-			const permissions: NetworkPermissions = {
-				allowedDomains: allowed,
-				deniedDomains: denied,
-			};
-			const hostname = host.includes(':') ? `[${host}]` : host;
-			const url = new URL(
-				`${port === 443 ? 'https' : 'http'}://${hostname}:${port}`,
-			);
-			let allowedByWeb = true;
-			try {
-				assertAllowed(url, permissions);
-			} catch {
-				allowedByWeb = false;
-			}
-			expect(allowedByWeb).toBe(expected);
-			expect(
-				await createSandboxNetworkPolicy(permissions)({ host, port }),
-			).toBe(expected);
-		},
-	);
+describe('sandbox network callback', () => {
+	it.each([
+		['example.com', 443, true],
+		['api.example.com', 443, true],
+		['api.example.com', 8443, true],
+		['example.com', 8443, true],
+		['blocked.example.com', 8443, false],
+		['::1', 8080, true],
+		['[0:0:0:0:0:0:0:1]', 8080, true],
+		['::1', 8081, true],
+		['example.com', undefined, true],
+		['example.com@evil.com', 443, false],
+		['example.com/else', 443, false],
+	])('decides %s:%s', async (host, port, allowed) => {
+		expect(
+			await createSandboxNetworkPolicy(() => restricted)({ host, port }),
+		).toBe(allowed);
+	});
+	it('denies empty lists and allows public and private hosts with a wildcard', async () => {
+		expect(
+			await createSandboxNetworkPolicy(() => ({
+				allowedDomains: [],
+				deniedDomains: [],
+			}))({ host: 'example.com', port: 443 }),
+		).toBe(false);
+		const ask = createSandboxNetworkPolicy(() => ({
+			allowedDomains: ['*'],
+			deniedDomains: ['example.com'],
+		}));
+		expect(await ask({ host: 'other.example.com', port: 443 })).toBe(true);
+		for (const host of [
+			'localhost',
+			'127.1',
+			'192.168.0.1',
+			'::ffff:192.168.0.1',
+		])
+			expect(await ask({ host, port: 443 })).toBe(true);
+		for (const host of [
+			'example.com.',
+			'',
+			'example.com@evil.com',
+			'example.com/path',
+		]) {
+			expect(await ask({ host, port: 443 })).toBe(false);
+		}
+	});
 });

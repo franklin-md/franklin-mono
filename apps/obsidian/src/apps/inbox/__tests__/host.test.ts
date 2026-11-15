@@ -10,8 +10,8 @@ import { selectionQuestion } from '../selection-question.js';
 import { openQuestionSource } from '../host/open-source.js';
 import { registerInbox } from '../register.js';
 import { DirectiveRegistry } from '../../../shared/directives/registry.js';
-import { createDirectiveTestPersistence } from '../../../shared/directives/testing/persistence.js';
-import { createDirectiveTestEditor } from '../../../shared/directives/testing/editor.js';
+import { createDirectiveTestPersistence } from '../../../shared/directives/testing/registry.js';
+import { createTestEditor } from '../../../shared/obsidian/editor/testing/editor.js';
 
 const content =
 	'# Sleep\n## Locking\nCheck the condition again.\nMore context.';
@@ -76,7 +76,7 @@ describe('Obsidian inbox commands and source navigation', () => {
 			const capture = commands.find(
 				(command) => command.id === 'selection-to-study-inbox',
 			)!;
-			const target = createDirectiveTestEditor(content);
+			const target = createTestEditor(content);
 			const e = target.editor;
 			vi.spyOn(e, 'setSelection');
 			vi.spyOn(e, 'getSelection').mockReturnValue(selection);

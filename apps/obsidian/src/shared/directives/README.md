@@ -1,9 +1,9 @@
 # Inline directives
 
 Shared Obsidian infrastructure for `:::franklin:<name>:<uuid>:::` references.
-Plugin bootstrap restores the registry and registers Live Preview and Reading mode
-adapters. Inbox is the first consumer, rendering a question status pill from a
-persisted question ID.
+After Chat starts, the plugin restores the registry and registers Live Preview
+and Reading mode adapters. This extraction provides infrastructure only; consumers register their
+own named renderers and own any execution associated with their state.
 
 ## API
 
@@ -19,12 +19,10 @@ persisted question ID.
   including those restored from disk.
 - `instance.update(recipe)` uses Franklin's store recipe convention. Updates are
   serialized and become visible after a successful save. Failed saves reject and
-  leave the previous state available.
-- `new DirectiveScribe(instance).write()` inserts at the current primary cursor,
-  advances the cursor past the token, and returns the note path.
+  leave the previous state available. Subscriber errors are reported separately.
 - `captureDirectiveTarget(editor, view, line)` tracks the end of the original line
   through CM6 transactions while saves are pending. Pass it to `scribe.write(target)`
-  to append with spacing while preserving the current selection, then dispose the
+  to append with spacing and return the note path, then dispose the
   target. Deleted lines, closed editors and literal Markdown regions reject insertion.
 - `scribe.replace(markdown)` replaces all matching references in Markdown notes.
   Its receipt contains `replacements`, `filesChanged`, and per-file `failures`.
@@ -34,22 +32,19 @@ persisted question ID.
   UTF-16 character offsets (`from` inclusive, `to` exclusive), not durable anchors.
   Check `failures` before assuming the results establish uniqueness. Each note is
   searched once regardless of how many panes show it.
-- `scribe.replaceOne(path, markdown)` replaces exactly one matching reference in
-  that note. Missing notes, zero matches and multiple matches produce a failure
-  receipt without modifying the note. Uniqueness is checked again against current
-  contents during replacement. Copies in other notes are untouched.
 - `registry.dispose()` rejects new mutations, drains accepted saves, and releases
   renderer registrations and subscribers.
 
 ## Persistence and rendering
 
-`createDirectivePersistence({ filesystem, path })` uses the existing single-file
+`createDirectivePersistence({ path })` uses the existing single-file
 persister with an atomic file replacement. Supply `<plugin-dir>/directives.json`.
-Unreadable or unsupported documents reject restoration without overwriting them.
+Unreadable or unsupported documents stay intact. Chat and settings remain available.
+After a plugin reload, restoration waits for previously accepted saves.
 State remains stored after text deletion/replacement so copied references and
 editor undo can still resolve it. Instance garbage collection remains deferred.
-Inbox owns question execution and removes references after saved deletion, retrying
-failed note cleanup on subsequent Inbox saves or startup.
+Consumers own execution and reference cleanup, including retrying failed note
+edits after a saved deletion. Restoring an instance does not start application jobs.
 
 `createDirectiveExtension(registry)` supplies Live Preview replacement widgets
 and [CodeMirror atomic ranges](https://codemirror.net/docs/ref/#view.EditorView%5EatomicRanges).
@@ -58,15 +53,8 @@ supplies Reading mode rendering with Markdown-section lifecycle cleanup.
 Neither adapter registers itself with the plugin. Both use the same React host
 and preserve visible token text for unknown or failed renderers.
 
-Pill renderers use `DirectivePill` from `render/pill.tsx` for shared typography,
-padding, nonwrapping labels and font-relative icons. It renders a span by default;
-`asChild` applies those styles to an existing button and forwards its ref. Keep
-status colours and actions in the renderer. Nested actions must fit within one
-text line so running states do not enlarge the pill. `DirectiveComponent` owns
-line alignment; editable prompts retain their separate layout.
-
-Copied tokens share one instance state. Reading mode conservatively preserves
-literal text when Markdown escaping makes source and rendered references ambiguous.
+Copied tokens share one instance state. Reading mode leaves tokens as text when
+section source is unavailable or escaping makes their identity ambiguous.
 
 Open documents are updated through editor transactions; closed notes use
 [`Vault.process`](https://docs.obsidian.md/Plugins/Vault). Replacement is performed

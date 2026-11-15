@@ -5,7 +5,7 @@ import type {
 	Message,
 	MiniACPClient,
 	Usage,
-	PrepareContextParams,
+	UserMessage,
 } from '@franklin/mini-acp';
 import { UsageTracker } from '@franklin/mini-acp/session';
 import type { CoreRegistry } from '../registrations/index.js';
@@ -13,25 +13,23 @@ import type { SessionSnapshot } from '../state.js';
 import type { ToolRegistry } from '../tools/index.js';
 import { createSessionDraft } from '../context/draft/index.js';
 import { createContextLedger } from '../context/ledger/index.js';
-import { estimateContextTokens } from '@franklin/mini-acp/session';
-import { createSessionOperation } from './operation.js';
 import { runCompaction } from '../compaction/run.js';
+import { compactionBudget } from '../compaction/budget.js';
+import { estimateContextTokens } from '../compaction/tokens/context.js';
 import type { Summarize } from '../compaction/types.js';
 
 export type AgentSession = {
+	prepare(
+		client: MiniACPClient,
+		signal: AbortSignal,
+		incoming?: UserMessage,
+	): Promise<void>;
+	compact(client: MiniACPClient, signal: AbortSignal): Promise<boolean>;
 	sync(client: MiniACPClient): Promise<void>;
 	recordContext(context: ContextPatch): void;
-	recordMessage(message: Message, messageId?: string): void;
-	begin(): void;
-	end(): void;
-	cancel(): void;
-	waitForUpdate(id?: string): Promise<void>;
-	prepareContext(
-		params: PrepareContextParams,
-		client: MiniACPClient,
-	): Promise<void>;
-	compact(client: MiniACPClient): Promise<boolean>;
+	recordMessage(message: Message): void;
 	addUsage(usage: Usage): void;
+	getContextTokens(): number;
 	getSentContext(): Context;
 	getSnapshot(): SessionSnapshot;
 };
@@ -50,64 +48,57 @@ export function createAgentSession(
 	usage.add(input.snapshot.usage);
 	const draft = createSessionDraft(input);
 	const ledger = createContextLedger({ draft });
-	const operation = createSessionOperation();
-	let contextWindow = 8192;
-	const compact = async (client: MiniACPClient, keepRecentTokens: number) => {
+	const compact = async (
+		client: MiniACPClient,
+		signal: AbortSignal,
+		window = compactionBudget(draft.get().config).contextWindow,
+	) => {
 		if (!input.summarize) throw new Error('Compaction is unavailable');
 		const changed = await runCompaction({
 			draft,
 			summarize: input.summarize,
-			keepRecentTokens,
-			contextWindow,
-			signal: operation.signal(),
+			contextWindow: window,
+			signal,
 			addUsage: (value) => usage.add(value),
 		});
-		await ledger.ledger.syncMessages(client);
+		await ledger.ledger.sync(client);
+		signal.throwIfAborted();
 		return changed;
 	};
+	const estimate = (incoming?: UserMessage) =>
+		estimateContextTokens({
+			...ledger.getSentContext(),
+			messages: [...draft.get().messages, ...(incoming ? [incoming] : [])],
+		});
 
 	return {
-		begin: () => operation.begin(),
-		end: () => operation.end(),
-		cancel: () => operation.cancel(),
-		waitForUpdate: operation.waitForUpdate.bind(operation),
-		async prepareContext(params, client) {
-			await operation.waitForUpdate(params.afterMessageId);
-			operation.signal().throwIfAborted();
-			contextWindow = params.contextWindow;
+		async prepare(client, signal, incoming) {
+			signal.throwIfAborted();
 			if (!input.summarize) return;
-			const limit =
-				contextWindow - Math.min(16_384, Math.floor(contextWindow / 4));
-			if (params.contextTokens <= limit) return;
-			await compact(client, Math.min(20_000, Math.floor(limit / 3)));
-			const context = {
-				...ledger.getSentContext(),
-				messages: draft.get().messages,
-			};
-			if (estimateContextTokens(context) > limit)
+			// Resolve from the current config at every boundary so model changes
+			// affect both the trigger and the summarizer's chunk budget together.
+			const { contextWindow: window, trigger: limit } = compactionBudget(
+				draft.get().config,
+			);
+			if (estimate(incoming) <= limit) return;
+			await compact(client, signal, window);
+			if (estimate(incoming) > limit)
 				throw new Error('Context is too large after compaction');
 		},
-		async compact(client) {
-			operation.begin();
-			try {
-				return await compact(client, 20_000);
-			} finally {
-				operation.end();
-			}
-		},
+		compact,
 		sync(client) {
 			return ledger.ledger.sync(client);
 		},
 		recordContext(context) {
 			ledger.recorder.apply(context);
 		},
-		recordMessage(message, messageId) {
+		recordMessage(message) {
 			ledger.recorder.append(message);
-			if (messageId) operation.recordUpdate(messageId);
 		},
 		addUsage(turnUsage) {
 			usage.add(turnUsage);
 		},
+		getContextTokens: estimate,
 		getSentContext: ledger.getSentContext,
 		getSnapshot() {
 			const context = ledger.ledger.getDraft();

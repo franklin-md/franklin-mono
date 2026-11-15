@@ -1,4 +1,5 @@
 import { createMounter } from '../mount.js';
+import type { EventRef } from 'obsidian';
 import { createEditorAnchor } from './anchor.js';
 import type { EditorPopoverOptions, EditorPopoverSession } from './types.js';
 
@@ -22,7 +23,7 @@ export function mountEditorPopover({
 	let panel: HTMLDivElement | null = null;
 	let closed = false;
 	const file = info.file;
-	const cleanup: (() => void)[] = [() => anchor.dispose()];
+	const cleanup: (() => void)[] = [anchor.dispose];
 	const session: EditorPopoverSession = {
 		anchor,
 		contentRef: (element) => {
@@ -38,13 +39,16 @@ export function mountEditorPopover({
 		close: (restoreFocus) => {
 			if (closed) return;
 			closed = true;
-			for (const dispose of cleanup) dispose();
-			onClose();
 			// Radix can dismiss during an effect. Unmount after its commit finishes.
 			win.queueMicrotask(() => {
-				mounter.unmount();
-				host.remove();
+				try {
+					mounter.unmount();
+				} finally {
+					host.remove();
+				}
 			});
+			for (const dispose of cleanup) dispose();
+			onClose();
 			if (
 				restoreFocus &&
 				anchor.contextElement.isConnected &&
@@ -64,12 +68,13 @@ export function mountEditorPopover({
 	};
 	try {
 		doc.body.append(host);
-		const refs = [
-			app.workspace.on('editor-change', check),
-			app.workspace.on('active-leaf-change', check),
-			app.workspace.on('file-open', check),
-		];
-		for (const ref of refs) cleanup.push(() => app.workspace.offref(ref));
+		const track = (ref: EventRef) => {
+			// Track each registration immediately so a later failure releases it.
+			cleanup.push(() => app.workspace.offref(ref));
+		};
+		track(app.workspace.on('editor-change', check));
+		track(app.workspace.on('active-leaf-change', check));
+		track(app.workspace.on('file-open', check));
 		cleanup.push(
 			anchor.contextElement.onWindowMigrated(() => session.close(false)),
 		);

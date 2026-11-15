@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { Expand, Scissors } from 'lucide-react';
 import { CompactPopover } from '../popover.js';
@@ -51,8 +57,9 @@ it('composes icons, a textarea and a picker without intercepting their navigatio
 	expect(document.activeElement).toBe(expand);
 	fireEvent.keyDown(expand, { key: 'ArrowRight' });
 	const condense = screen.getByRole('button', { name: 'Condense' });
-	expect(document.activeElement).toBe(condense);
-	fireEvent.keyDown(condense, { key: 'Enter' });
+	await waitFor(() => expect(document.activeElement).toBe(condense));
+	expect(fireEvent.keyDown(condense, { key: 'Enter' })).toBe(true);
+	fireEvent.click(condense);
 	expect(onAction).toHaveBeenCalledExactlyOnceWith('condense');
 	const input = screen.getByRole('textbox', { name: 'Request' });
 	input.focus();

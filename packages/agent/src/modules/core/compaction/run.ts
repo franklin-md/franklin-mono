@@ -1,15 +1,13 @@
-import { estimateMessageTokens } from '@franklin/mini-acp/session';
+import { estimateMessageTokens } from './tokens/message.js';
 import type { Usage } from '@franklin/mini-acp';
 import type { SessionDraft } from '../context/draft/session.js';
 import { projectEntries } from '../history/project.js';
-import { prepareCompaction } from './prepare.js';
 import type { Summarize } from './types.js';
 import { createSummaryMessage } from '../history/summary.js';
 
 type RunCompactionInput = {
 	readonly draft: SessionDraft;
 	readonly summarize: Summarize;
-	readonly keepRecentTokens: number;
 	readonly contextWindow: number;
 	readonly signal: AbortSignal;
 	readonly addUsage: (usage: Usage) => void;
@@ -20,15 +18,16 @@ export async function runCompaction(
 ): Promise<boolean> {
 	const { draft, summarize, signal } = input;
 	signal.throwIfAborted();
-	const prepared = prepareCompaction(
-		projectEntries(draft.getEntries()),
-		input.keepRecentTokens,
-	);
-	if (!prepared) return false;
+	const entries = draft.getEntries();
+	if (entries.length === 0 || entries.at(-1)?.type === 'compaction')
+		return false;
+	// A merged history checkpoint replaces the entire projected prefix. The
+	// complete tool batch has settled before the controller invokes this.
+	const messages = projectEntries(entries);
 	const revision = draft.revision('messages');
 	const configRevision = draft.revision('config');
 	const result = await summarize({
-		messages: prepared.messages,
+		messages,
 		config: draft.get().config,
 		contextWindow: input.contextWindow,
 		signal,
@@ -45,18 +44,13 @@ export async function runCompaction(
 	if (
 		!summary ||
 		summaryTokens >=
-			prepared.messages.reduce(
+			messages.reduce(
 				(tokens, message) => tokens + estimateMessageTokens(message),
 				0,
 			)
 	) {
 		throw new Error('Compaction did not reduce context');
 	}
-	draft.compact({
-		type: 'compaction',
-		id: crypto.randomUUID(),
-		summary,
-		firstKeptEntryId: prepared.firstKeptEntryId,
-	});
+	draft.appendCheckpoint({ type: 'compaction', summary });
 	return true;
 }

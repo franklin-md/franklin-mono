@@ -67,10 +67,14 @@ export class InboxController {
 
 	static async create(
 		options: InboxControllerOptions,
+		signal?: AbortSignal,
 	): Promise<InboxController> {
+		signal?.throwIfAborted();
 		const initial = await restoreInbox(options);
+		signal?.throwIfAborted();
 		const controller = new InboxController(options, initial);
 		await controller.persist();
+		signal?.throwIfAborted();
 		controller.pump();
 		return controller;
 	}
@@ -205,10 +209,13 @@ export class InboxController {
 				if (run.state.kind === 'running') run.state = interruptedState();
 			}
 		});
-		await this.persist();
 		// Runtime cancellation/disposal happens in the runner's finally. The plugin
 		// need not keep a pane mounted to own an active question.
-		await this.options.capture?.dispose();
+		try {
+			await this.persist();
+		} finally {
+			await this.options.capture?.dispose();
+		}
 	}
 
 	private assertOpen() {

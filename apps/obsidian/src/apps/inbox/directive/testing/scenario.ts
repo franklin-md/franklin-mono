@@ -9,7 +9,7 @@ import type {
 	InboxDocument,
 } from '../../controller/types.js';
 import { DirectiveRegistry } from '../../../../shared/directives/registry.js';
-import { createDirectiveTestPersistence } from '../../../../shared/directives/testing/persistence.js';
+import { createDirectiveTestPersistence } from '../../../../shared/directives/testing/registry.js';
 import { InboxQuestionDirectives } from '../controller.js';
 
 type Scenario = {

@@ -1,12 +1,13 @@
-import { createMessageEntries } from '../modules/core/history/create.js';
 import { describe, expect, it } from 'vitest';
 import type { AbsolutePath } from '@franklin/lib';
+import { DEFAULT_NETWORK_CONFIG } from '../modules/environment/api/defaults.js';
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import type { FranklinSession } from '../types.js';
 import {
 	franklinSessionCodec,
 	SESSION_FILE_VERSION,
 } from '../app/session/codecs/index.js';
+import { projectEntries } from '../modules/core/history/project.js';
 
 function session(): FranklinSession {
 	return {
@@ -14,15 +15,15 @@ function session(): FranklinSession {
 			visibility: 'hidden',
 		},
 		core: {
-			entries: createMessageEntries(
-				[
-					{
+			entries: [
+				{
+					type: 'message' as const,
+					message: {
 						role: 'user',
 						content: [{ type: 'text', text: 'hello' }],
 					},
-				],
-				'test',
-			),
+				},
+			],
 			llmConfig: {
 				provider: 'openai-codex',
 				model: 'gpt-5.4',
@@ -44,15 +45,120 @@ function session(): FranklinSession {
 					denyWrite: ['node_modules/**'],
 				},
 			},
-			netConfig: {
-				allowedDomains: ['example.com'],
-				deniedDomains: ['localhost:9222'],
-			},
+			// History migration fixtures use the app default; custom network policies
+			// are covered separately in the network codec tests.
+			netConfig: structuredClone(DEFAULT_NETWORK_CONFIG),
 		},
 	};
 }
 
+function legacyEnvironment(env: FranklinSession['env']) {
+	return { ...env, netConfig: { allowedDomains: [], deniedDomains: [] } };
+}
+
 describe('session codec', () => {
+	it('migrates legacy v3 checkpoints without losing retained messages or raw history', () => {
+		const value = session();
+		const messages = ['old', 'retained', 'new'].map((text) => ({
+			role: 'user' as const,
+			content: [{ type: 'text' as const, text }],
+		}));
+		const entries = [
+			{ type: 'message', id: 'a', message: messages[0] },
+			{ type: 'message', id: 'b', message: messages[1] },
+			{ type: 'compaction', id: 'c', summary: 'first', firstKeptEntryId: 'b' },
+			{ type: 'message', id: 'd', message: messages[2] },
+			{ type: 'compaction', id: 'e', summary: 'second', firstKeptEntryId: 'b' },
+		];
+		const raw = {
+			version: 3,
+			data: { ...value, core: { ...value.core, entries } },
+		};
+		const original = structuredClone(raw);
+		const decoded = franklinSessionCodec.decode(raw);
+		expect(decoded.ok).toBe(true);
+		if (!decoded.ok) throw new Error('Legacy migration failed');
+		expect(projectEntries(decoded.value.core.entries)).toEqual([
+			{
+				role: 'user',
+				content: [{ type: 'text', text: 'Conversation summary:\nsecond' }],
+			},
+			...messages.slice(1),
+		]);
+		for (const message of messages) {
+			expect(decoded.value.core.entries).toContainEqual({
+				type: 'message',
+				message,
+			});
+		}
+		expect(
+			decoded.value.core.entries.filter((entry) => entry.type === 'compaction'),
+		).toEqual([
+			{ type: 'compaction', summary: 'first' },
+			{ type: 'compaction', summary: 'second' },
+		]);
+		expect(raw).toEqual(original);
+		expect(
+			franklinSessionCodec.decode(franklinSessionCodec.encode(decoded.value)),
+		).toEqual(decoded);
+	});
+
+	it.each(['missing', 'a'])(
+		'rejects legacy v3 invalid boundaries and duplicate IDs (%s)',
+		(id) => {
+			const value = session();
+			const raw = {
+				version: 3,
+				data: {
+					...value,
+					core: {
+						...value.core,
+						entries: [
+							{ ...value.core.entries[0], id: 'a' },
+							{
+								type: 'compaction',
+								id,
+								summary: 'summary',
+								firstKeptEntryId: id === 'a' ? 'a' : 'missing',
+							},
+						],
+					},
+				},
+			};
+			expect(franklinSessionCodec.decode(raw)).toMatchObject({
+				ok: false,
+				issue: { kind: 'schema-mismatch' },
+			});
+		},
+	);
+
+	it.each([undefined, 0, 0.0142])(
+		'round-trips available total %s through JSON',
+		(total) => {
+			const value = session();
+			value.core.usage = {
+				...ZERO_USAGE,
+				cost: { ...ZERO_USAGE.cost, total },
+			};
+			const encoded: unknown = JSON.parse(
+				JSON.stringify(franklinSessionCodec.encode(value)),
+			);
+			expect(franklinSessionCodec.decode(encoded)).toEqual({ ok: true, value });
+		},
+	);
+
+	it.each(['xhigh', 'max'] as const)(
+		'round-trips %s reasoning without rewriting it',
+		(reasoning) => {
+			const value = session();
+			value.core.llmConfig.reasoning = reasoning;
+			const encoded: unknown = JSON.parse(
+				JSON.stringify(franklinSessionCodec.encode(value)),
+			);
+			expect(franklinSessionCodec.decode(encoded)).toEqual({ ok: true, value });
+		},
+	);
+
 	it('encodes sessions as a versioned envelope', () => {
 		const value = session();
 
@@ -76,17 +182,6 @@ describe('session codec', () => {
 		});
 	});
 
-	it('preserves provider-reported cost provenance on restore', () => {
-		const value = session();
-		value.core.usage = {
-			...ZERO_USAGE,
-			cost: { ...ZERO_USAGE.cost, total: 0.0142, totalFromProvider: true },
-		};
-		expect(
-			franklinSessionCodec.decode(franklinSessionCodec.encode(value)),
-		).toEqual({ ok: true, value });
-	});
-
 	it('migrates v1 sessions with default visible details', () => {
 		const { details: _details, ...v1 } = session();
 		const { entries, ...core } = v1.core;
@@ -97,13 +192,23 @@ describe('session codec', () => {
 		expect(
 			franklinSessionCodec.decode({
 				version: 1,
-				data: { ...v1, core: { ...core, messages } },
+				data: {
+					...v1,
+					env: legacyEnvironment(v1.env),
+					core: { ...core, messages },
+				},
 			}),
 		).toEqual({
 			ok: true,
 			value: {
 				...v1,
-				core: { ...core, entries: createMessageEntries(messages, 'legacy') },
+				core: {
+					...core,
+					entries: messages.map((message) => ({
+						type: 'message' as const,
+						message,
+					})),
+				},
 				details: { visibility: 'visible' },
 			},
 		});
@@ -142,25 +247,55 @@ describe('session codec', () => {
 		expect(
 			franklinSessionCodec.decode({
 				version: 2,
-				data: { ...value, core: { ...core, messages } },
+				data: {
+					...value,
+					env: legacyEnvironment(value.env),
+					core: { ...core, messages },
+				},
 			}),
 		).toEqual({
 			ok: true,
 			value: {
 				...value,
-				core: { ...core, entries: createMessageEntries(messages, 'legacy') },
+				core: {
+					...core,
+					entries: messages.map((message) => ({
+						type: 'message' as const,
+						message,
+					})),
+				},
 			},
 		});
 	});
 
-	it('rejects a persisted compaction pointing outside the retained history', () => {
+	it('roundtrips repeated checkpoints and every raw message', () => {
 		const value = session();
-		value.core.entries.push({
-			type: 'compaction',
-			id: 'checkpoint',
-			summary: 'summary',
-			firstKeptEntryId: 'missing',
-		});
+		value.core.entries.push(
+			{
+				type: 'compaction',
+				summary: '  original summary\n',
+			},
+			{
+				type: 'message' as const,
+				message: {
+					role: 'assistant',
+					content: [{ type: 'text', text: 'after' }],
+				},
+			},
+			{
+				type: 'compaction',
+				summary: 'replacement summary',
+			},
+		);
+		const encoded: unknown = JSON.parse(
+			JSON.stringify(franklinSessionCodec.encode(value)),
+		);
+		expect(franklinSessionCodec.decode(encoded)).toEqual({ ok: true, value });
+	});
+
+	it('rejects a persisted blank checkpoint summary', () => {
+		const value = session();
+		value.core.entries.push({ type: 'compaction', summary: '  ' });
 		expect(
 			franklinSessionCodec.decode({
 				version: SESSION_FILE_VERSION,
@@ -168,6 +303,69 @@ describe('session codec', () => {
 			}),
 		).toMatchObject({ ok: false, issue: { kind: 'schema-mismatch' } });
 	});
+
+	it.each([1, 2])(
+		'migrates all v%i message roles and roundtrips the current version',
+		(version) => {
+			const value = session();
+			const messages = [
+				{
+					role: 'user' as const,
+					content: [{ type: 'text' as const, text: 'question' }],
+				},
+				{
+					role: 'assistant' as const,
+					content: [
+						{
+							type: 'toolCall' as const,
+							id: 'call',
+							name: 'lookup',
+							arguments: {},
+						},
+					],
+				},
+				{
+					role: 'toolResult' as const,
+					toolCallId: 'call',
+					content: [{ type: 'text' as const, text: 'result' }],
+				},
+			];
+			const { entries: _entries, toolFilter: _filter, ...core } = value.core;
+			const { details: _details, ...legacy } = value;
+			const raw = {
+				version,
+				data: {
+					...(version === 1 ? legacy : value),
+					env: legacyEnvironment(value.env),
+					core: { ...core, messages },
+				},
+			};
+			const expected = {
+				...value,
+				details: version === 1 ? { visibility: 'visible' } : value.details,
+				core: {
+					...core,
+					toolFilter: { disabled: [] },
+					entries: messages.map((message) => ({
+						type: 'message' as const,
+						message,
+					})),
+				},
+			};
+			const migrated = franklinSessionCodec.decode(raw);
+			expect(migrated).toEqual({ ok: true, value: expected });
+			expect(franklinSessionCodec.decode(raw)).toEqual(migrated);
+			if (!migrated.ok) throw new Error('Migration failed');
+			expect(
+				franklinSessionCodec.decode(
+					franklinSessionCodec.encode(migrated.value),
+				),
+			).toEqual(migrated);
+			const original = structuredClone(migrated.value);
+			messages[0]!.content.length = 0;
+			expect(migrated.value).toEqual(original);
+		},
+	);
 
 	it('rejects missing session roots', () => {
 		expect(

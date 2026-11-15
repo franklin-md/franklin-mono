@@ -5,7 +5,21 @@ import { ThinkingControl } from '../../../src/conversation/input/thinking/contro
 afterEach(cleanup);
 
 describe('controlled thinking level', () => {
-	it('C06: includes Minimal when supplied by inbox and only updates its owner', () => {
+	it('renders max reasoning and cycles back to the first supplied level', () => {
+		const onChange = vi.fn();
+		render(
+			<ThinkingControl
+				level="max"
+				levels={['off', 'xhigh', 'max']}
+				onChange={onChange}
+			/>,
+		);
+		expect(screen.getByRole('button').textContent).toContain('Max');
+		fireEvent.click(screen.getByRole('button'));
+		expect(onChange).toHaveBeenCalledWith('off');
+	});
+
+	it('includes Minimal when supplied by the caller and only updates its owner', () => {
 		const onChange = vi.fn();
 		const levels = [
 			'off',

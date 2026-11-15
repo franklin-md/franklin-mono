@@ -1,4 +1,3 @@
-import { createMessageEntries } from '../../../history/create.js';
 import type { UserMessage } from '@franklin/mini-acp';
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import { describe, expect, it } from 'vitest';
@@ -40,7 +39,7 @@ describe('SessionDraft', () => {
 		);
 		const draft = createSessionDraft({
 			snapshot: {
-				entries: createMessageEntries([userMessage], 'test'),
+				entries: [{ type: 'message' as const, message: userMessage }],
 				llmConfig: { model: 'test-model' },
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),

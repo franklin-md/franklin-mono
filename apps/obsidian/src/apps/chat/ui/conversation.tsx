@@ -15,6 +15,7 @@ import {
 import { Notice } from 'obsidian';
 
 import { ObsidianText, ObsidianThinking } from './blocks.js';
+import { ObsidianUserMessage } from './user-message.js';
 import { ViewingContextHeader } from '../viewing-context/header.js';
 import { obsidianToolRegistry } from './tool-registry.js';
 
@@ -24,6 +25,7 @@ export function ConversationPanel() {
 			<ConversationTranscript
 				toolRegistry={obsidianToolRegistry}
 				components={{
+					UserMessage: ObsidianUserMessage,
 					Text: ObsidianText,
 					Thinking: ObsidianThinking,
 					EmptyPlaceholder: ConversationOnboardingPlaceholder,

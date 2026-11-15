@@ -5,7 +5,6 @@ import { editorLivePreviewField } from 'obsidian';
 import type { DirectiveRegistry } from '../registry.js';
 import { parseDirectives } from '../syntax/parse.js';
 import { DirectiveWidget } from './widget.js';
-import { directiveAnchors } from '../scribe/anchors.js';
 
 export function createDirectiveExtension(
 	registry: DirectiveRegistry,
@@ -22,35 +21,32 @@ export function createDirectiveExtension(
 		);
 	}
 
-	return [
-		directiveAnchors.field,
-		ViewPlugin.fromClass(
-			class {
-				decorations: DecorationSet;
+	return ViewPlugin.fromClass(
+		class {
+			decorations: DecorationSet;
 
-				constructor(view: EditorView) {
-					this.decorations = build(view);
-				}
+			constructor(view: EditorView) {
+				this.decorations = build(view);
+			}
 
-				update(update: ViewUpdate) {
-					if (
-						update.docChanged ||
-						update.startState.field(editorLivePreviewField, false) !==
-							update.state.field(editorLivePreviewField, false)
-					)
-						this.decorations = build(update.view);
-				}
-			},
-			{
-				decorations: (value) => value.decorations,
-				// CodeMirror's movement and deletion commands use the same source ranges
-				// as replacement decorations. Source mode deliberately stays ordinary text.
-				// https://codemirror.net/docs/ref/#view.EditorView^atomicRanges
-				provide: (plugin) =>
-					EditorView.atomicRanges.of(
-						(view) => view.plugin(plugin)?.decorations ?? Decoration.none,
-					),
-			},
-		),
-	];
+			update(update: ViewUpdate) {
+				if (
+					update.docChanged ||
+					update.startState.field(editorLivePreviewField, false) !==
+						update.state.field(editorLivePreviewField, false)
+				)
+					this.decorations = build(update.view);
+			}
+		},
+		{
+			decorations: (value) => value.decorations,
+			// CodeMirror's movement and deletion commands use the same source ranges
+			// as replacement decorations. Source mode deliberately stays ordinary text.
+			// https://codemirror.net/docs/ref/#view.EditorView^atomicRanges
+			provide: (plugin) =>
+				EditorView.atomicRanges.of(
+					(view) => view.plugin(plugin)?.decorations ?? Decoration.none,
+				),
+		},
+	);
 }

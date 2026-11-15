@@ -2,14 +2,14 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { captureInboxSelection } from '../capture.js';
 import { createInboxDirectiveScenario } from '../testing/scenario.js';
-import { createDirectiveTestEditor } from '../../../../shared/directives/testing/editor.js';
+import { createTestEditor } from '../../../../shared/obsidian/editor/testing/editor.js';
 
 let scenario: Awaited<ReturnType<typeof createInboxDirectiveScenario>>;
-let target: ReturnType<typeof createDirectiveTestEditor>;
+let target: ReturnType<typeof createTestEditor>;
 
 beforeEach(async () => {
 	scenario = await createInboxDirectiveScenario();
-	target = createDirectiveTestEditor('Why does this work?\nAnother question');
+	target = createTestEditor('Why does this work?\nAnother question');
 });
 afterEach(async () => {
 	await scenario.service.dispose();

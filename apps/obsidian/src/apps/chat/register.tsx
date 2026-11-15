@@ -1,9 +1,11 @@
 import type { FranklinApp } from '@franklin/agent';
 import type { AgentCreateInput, HostActionBinding } from '@franklin/react';
 import type { Plugin } from 'obsidian';
+
+import { activateView } from '../../shared/obsidian/activate-view.js';
+import { openPluginSettings } from '../../shared/obsidian/settings/open.js';
 import { createFranklinViewContent } from './ui/content.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
-import { openPluginSettings } from '../../shared/obsidian/settings/open.js';
 
 type Options = {
 	plugin: Plugin;
@@ -35,30 +37,14 @@ export function registerChat({
 		});
 	});
 
-	plugin.addRibbonIcon('bot', 'Open Franklin', () => {
-		void activate();
-	});
+	const activate = () => {
+		void activateView(plugin.app.workspace, VIEW_TYPE);
+	};
+	plugin.addRibbonIcon('bot', 'Open Franklin', activate);
 
 	plugin.addCommand({
 		id: 'open-chat-window',
 		name: 'Open chat window',
-		callback: () => {
-			void activate();
-		},
+		callback: activate,
 	});
-	async function activate() {
-		const { workspace } = plugin.app;
-		const existing = workspace.getLeavesOfType(VIEW_TYPE);
-		const first = existing[0];
-		if (first) {
-			await workspace.revealLeaf(first);
-			return;
-		}
-
-		const leaf = workspace.getRightLeaf(false);
-		if (leaf) {
-			await leaf.setViewState({ type: VIEW_TYPE, active: true });
-			await workspace.revealLeaf(leaf);
-		}
-	}
 }

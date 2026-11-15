@@ -14,15 +14,19 @@ import {
 	type MockMiniACP,
 } from '@franklin/mini-acp/mock';
 import { bindMiniACPRpcAgent } from '@franklin/mini-acp/rpc';
+import {
+	collectEvents,
+	createFranklinAgents,
+	defaultUserPrompt,
+} from '@franklin/agent/testing';
 import { FranklinApp } from '../../index.js';
 import { AuthManager } from '../../../auth/manager.js';
 import { createAuthStore } from '../../../auth/store.js';
 import { createReconfigurableEnvironment } from '../../../modules/environment/api/index.js';
 import { storeKey } from '../../../modules/store/api/index.js';
 import { toolSpec } from '../../../modules/core/api/index.js';
-import type { FranklinExtension, FranklinRuntime } from '../../../types.js';
+import type { FranklinExtension } from '../../../types.js';
 import type { Platform } from '../../../platform.js';
-import { documentDownloadPolicy } from '../../../extensions/references/download-policy/configuration.js';
 
 const appDir = toAbsolutePath('/app');
 const valueKey = storeKey<'value', string>('value');
@@ -46,50 +50,70 @@ function extension(name: string): FranklinExtension {
 	};
 }
 
-async function prompt(runtime: FranklinRuntime): Promise<void> {
-	for await (const _event of runtime.prompt({
-		role: 'user',
-		content: [{ type: 'text', text: 'hello' }],
-	})) {
-		// Drain the stream through the real RPC binding.
-	}
+function createHarness() {
+	const filesystem = new MemoryFilesystem();
+	const mocks: MockMiniACP[] = [];
+	const environmentDispose = vi.fn(async () => {});
+	const os = {
+		filesystem,
+		osInfo: new MemoryOsInfo(),
+		process: { exec: vi.fn() },
+		net: { fetch: vi.fn(), listenLoopback: vi.fn() },
+		openExternal: vi.fn(),
+	};
+	const platform: Platform = {
+		os,
+		ai: { getApiKeyProviders: async () => ['test'] },
+		spawn: async () => {
+			const { a, b } = createDuplexPair<JsonRpcMessage>();
+			const binding = bindMiniACPRpcAgent(b);
+			const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
+			binding.bind(await mock.connector(binding.remote));
+			mocks.push(mock);
+			return a;
+		},
+		environment: async (config) => {
+			const environment = await createReconfigurableEnvironment({
+				config,
+				osInfo: os.osInfo,
+				configureFilesystem: async () => filesystem,
+				configureProcess: async () => os.process,
+				configureWeb: async () => ({ fetch: os.net.fetch }),
+			});
+			return { ...environment, dispose: environmentDispose };
+		},
+	};
+	const auth = new AuthManager(platform, createAuthStore(filesystem, appDir));
+	return { filesystem, mocks, environmentDispose, platform, auth };
 }
 
 describe('Franklin agent factory', () => {
+	it('creates an in-memory collection without an app and accepts default state', async () => {
+		const { filesystem, platform, auth, environmentDispose } = createHarness();
+		const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
+		const agents = createFranklinAgents({
+			connect: mock.connector,
+			environment: platform.environment,
+			auth,
+			extensions: [],
+		});
+		const entry = await agents.create();
+		try {
+			expect(agents.list()).toEqual([entry]);
+			expect(entry.runtime.auth).toBe(auth);
+			expect(entry.runtime.getSession().entries).toEqual([]);
+			expect(await filesystem.exists(appDir)).toBe(false);
+		} finally {
+			await agents.remove(entry.details.id);
+		}
+		expect(agents.list()).toEqual([]);
+		expect(environmentDispose).toHaveBeenCalledTimes(1);
+		expect(mock.calls().disposes).toBe(1);
+	});
+
 	it('isolates per-agent extensions and stores from persisted chat, restores chat, and releases temporary agents', async () => {
-		const filesystem = new MemoryFilesystem();
-		const mocks: MockMiniACP[] = [];
-		const environmentDispose = vi.fn(async () => {});
-		const os = {
-			filesystem,
-			osInfo: new MemoryOsInfo(),
-			process: { exec: vi.fn() },
-			net: { fetch: vi.fn(), listenLoopback: vi.fn() },
-			openExternal: vi.fn(),
-		};
-		const platform: Platform = {
-			os,
-			ai: { getApiKeyProviders: async () => ['test'] },
-			spawn: async () => {
-				const { a, b } = createDuplexPair<JsonRpcMessage>();
-				const binding = bindMiniACPRpcAgent(b);
-				const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
-				binding.bind(await mock.connector(binding.remote));
-				mocks.push(mock);
-				return a;
-			},
-			environment: async (config) => {
-				const environment = await createReconfigurableEnvironment({
-					config,
-					osInfo: os.osInfo,
-					configureFilesystem: async () => filesystem,
-					configureProcess: async () => os.process,
-					configureWeb: async () => ({ fetch: os.net.fetch }),
-				});
-				return { ...environment, dispose: environmentDispose };
-			},
-		};
-		const auth = new AuthManager(platform, createAuthStore(filesystem, appDir));
+		const { filesystem, mocks, environmentDispose, platform, auth } =
+			createHarness();
 		const app = new FranklinApp({
 			platform,
 			auth,
@@ -112,16 +136,22 @@ describe('Franklin agent factory', () => {
 		expect(second.getStore(valueKey).get()).toBe('empty');
 		expect(chat.runtime.getStore(valueKey).get()).toBe('saved chat');
 		expect(app.agents.list()).toEqual([chat]);
-		app.settings.set((settings) => {
-			settings.documentDownloads.idleTimeoutMs = 120_000;
+		expect(first.environment).not.toBe(second.environment);
+		expect(first.environment).not.toBe(chat.runtime.environment);
+		expect(first.auth).toBe(auth);
+		expect(second.auth).toBe(auth);
+		expect(await first.environment.config()).toEqual(state.env);
+		await first.environment.reconfigure({
+			fsConfig: { ...state.env.fsConfig, cwd: toAbsolutePath('/task') },
 		});
-		for (const runtime of [chat.runtime, first, second])
-			expect(runtime.getConfig(documentDownloadPolicy)).toEqual({
-				idleTimeoutMs: 120_000,
-				totalTimeoutMs: 900_000,
-			});
+		expect(await second.environment.config()).toEqual(state.env);
+		expect(await chat.runtime.environment.config()).toEqual(state.env);
 
-		await Promise.all([chat.runtime, first, second].map(prompt));
+		await Promise.all(
+			[chat.runtime, first, second].map((runtime) =>
+				collectEvents(runtime.prompt(defaultUserPrompt())),
+			),
+		);
 		expect(
 			mocks.map((mock) => mock.context().tools.map((tool) => tool.name)),
 		).toEqual([['chat_tool'], ['answer_tool'], ['action_tool']]);
@@ -143,6 +173,15 @@ describe('Franklin agent factory', () => {
 			),
 		);
 		expect(saved).not.toContain('secret');
+
+		auth.setApiKeyEntry('test', { type: 'apiKey', key: 'refreshed' });
+		await vi.waitFor(() => {
+			expect(mocks.map((mock) => mock.context().config.apiKey)).toEqual([
+				'refreshed',
+				'refreshed',
+				'refreshed',
+			]);
+		});
 
 		await Promise.all([first.dispose(), second.dispose()]);
 		expect(environmentDispose).toHaveBeenCalledTimes(2);

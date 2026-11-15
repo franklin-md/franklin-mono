@@ -98,7 +98,66 @@ function piAssistantTexts(messages: PiMessage[]): string[] {
 }
 
 describe('Pi setContext during an active Mini-ACP turn', () => {
-	it('makes tools registered by one tool call available to the next Pi LLM call', async () => {
+	it('retains system instructions when replacing history and can replace or clear them', async () => {
+		const observations: Array<{
+			systemPrompt: string;
+			userTexts: string[];
+		}> = [];
+		const streamFn: StreamFn = (model, context) => {
+			observations.push({
+				systemPrompt: getCurrentSystemPrompt(context.messages),
+				userTexts: piUserTexts(context.messages),
+			});
+			return streamDone(
+				assistantMessage(model, [{ type: 'text', text: 'done' }], 'stop'),
+				'stop',
+			);
+		};
+		const client = createPiAgent(
+			{
+				toolExecute: async ({ call }) => ({ toolCallId: call.id, content: [] }),
+			},
+			{ streamFn },
+		);
+		await client.setContext({
+			systemPrompt: 'initial instructions',
+			config: {
+				provider: 'openrouter',
+				model: 'openrouter/free',
+				apiKey: 'test-only',
+			},
+		});
+		await client.setContext({
+			messages: [
+				{
+					role: 'user',
+					content: [{ type: 'text', text: 'restored history' }],
+				},
+			],
+		});
+		const prompt = {
+			role: 'user' as const,
+			content: [{ type: 'text' as const, text: 'hello' }],
+		};
+		await collect(client.prompt(prompt));
+		await client.setContext({ systemPrompt: 'replacement instructions' });
+		await collect(client.prompt(prompt));
+		await client.setContext({ systemPrompt: '' });
+		await collect(client.prompt(prompt));
+
+		expect(observations.map(({ systemPrompt }) => systemPrompt)).toEqual([
+			'initial instructions',
+			'replacement instructions',
+			'',
+		]);
+		expect(
+			observations.every(({ userTexts }) =>
+				userTexts.includes('restored history'),
+			),
+		).toBe(true);
+	});
+
+	it('makes tools registered during a drive available after explicit continue', async () => {
 		const clientRef: { current?: MiniACPClient } = {};
 		const toolExecutions: string[] = [];
 		const toolsSeenByLlm: string[][] = [];
@@ -170,12 +229,17 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 			},
 		});
 
-		const result = await collect(
+		const first = await collect(
 			client.prompt({
 				role: 'user',
 				content: [{ type: 'text', text: 'Open the vault and get the money.' }],
 			}),
 		);
+
+		expect(first.stepEnd).toBeDefined();
+		expect(toolsSeenByLlm).toHaveLength(1);
+		await collect(client.continue());
+		const result = await collect(client.continue());
 
 		expect(toolsSeenByLlm[0]).toEqual(['open_vault']);
 		expect(toolsSeenByLlm[1]).toEqual(['open_vault', 'get_money']);
@@ -185,8 +249,7 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 			content: [{ type: 'text', text: 'retrieved $100 from the vault' }],
 		});
 		expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
-		expect(result.turnEnd?.usage?.cost.total).toBeCloseTo(0.03);
-		expect(result.turnEnd?.usage?.cost.totalFromProvider).toBe(true);
+		expect(result.turnEnd?.usage.cost.total).toBeCloseTo(0.03);
 	});
 
 	it('rejects non-tool context changes during an active Mini-ACP prompt', async () => {
@@ -309,6 +372,7 @@ describe('Pi setContext during an active Mini-ACP turn', () => {
 				content: [{ type: 'text', text: 'first prompt' }],
 			}),
 		);
+		await collect(client.continue());
 		await collect(
 			client.prompt({
 				role: 'user',

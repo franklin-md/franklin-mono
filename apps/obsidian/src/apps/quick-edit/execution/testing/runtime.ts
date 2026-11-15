@@ -1,7 +1,8 @@
-import { MemoryFilesystem, MemoryOsInfo } from '@franklin/lib';
+import { posix } from 'node:path';
+import { MemoryFilesystem, MemoryOsInfo, toAbsolutePath } from '@franklin/lib';
+import { createFranklinAgents } from '@franklin/agent/testing';
 import {
 	configureFilesystem,
-	createFranklinAgents,
 	createReconfigurableEnvironment,
 } from '@franklin/agent';
 import type {
@@ -16,6 +17,11 @@ import { vi } from 'vitest';
 
 export function createQuickEditTestRuntime(connect: MiniACPConnector) {
 	const filesystem = new MemoryFilesystem();
+	// File control can resolve an already absolute path. Match the Node backing
+	// filesystem, where an absolute segment overrides the vault base.
+	vi.spyOn(filesystem, 'resolve').mockImplementation(async (...paths) =>
+		toAbsolutePath(posix.resolve(...paths)),
+	);
 	const auth = {
 		getApiKey: async () => 'test-key',
 		entries: () => ({}),

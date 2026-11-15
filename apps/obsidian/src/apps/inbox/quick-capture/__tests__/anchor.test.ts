@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest';
 import { createEditorAnchor } from '../../../../shared/ui/editor-popover/anchor.js';
-import { createDirectiveTestEditor } from '../../../../shared/directives/testing/editor.js';
+import { createTestEditor } from '../../../../shared/obsidian/editor/testing/editor.js';
 import { captureDirectiveTarget } from '../../../../shared/directives/scribe/target.js';
 
 afterEach(() => {
@@ -9,7 +9,7 @@ afterEach(() => {
 });
 
 it('anchors above the invocation caret and follows document edits independently of the pill insertion point', () => {
-	const editor = createDirectiveTestEditor('before after');
+	const editor = createTestEditor('before after');
 	document.body.append(editor.cm.dom);
 	editor.cm.dispatch({ selection: { anchor: 3 } });
 	const target = captureDirectiveTarget(editor.editor, editor.info, 0);

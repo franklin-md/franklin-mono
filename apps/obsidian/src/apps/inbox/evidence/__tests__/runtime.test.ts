@@ -199,6 +199,7 @@ describe('original research evidence', () => {
 			} as unknown as AuthManager),
 			evidence,
 		})(input);
+		expect(input.submit).toHaveBeenCalledOnce();
 		const accepted = { ...input.question, state: answeredQuestion().state };
 		const pinned = await pinResearch(accepted, [parent], evidence);
 		expect(pinned.map((entry) => entry.question.id)).toEqual(['q', 'parent']);

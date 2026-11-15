@@ -1,3 +1,4 @@
+import type { ThinkingLevel } from '@franklin/mini-acp';
 import type { Extraction, ThoughtDump, SplitRequest } from '../modes/types.js';
 import type { SingleFilePersister } from '@franklin/lib';
 import type { StudyQuestion } from '../types.js';
@@ -14,7 +15,7 @@ import type {
 export type ModelSelection = {
 	provider: string;
 	model: string;
-	reasoning: 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+	reasoning: ThinkingLevel;
 };
 export type InboxQuestion = StudyQuestion & {
 	provider: string;

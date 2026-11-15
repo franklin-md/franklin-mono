@@ -2,15 +2,15 @@
 import type { App } from 'obsidian';
 import { describe, expect, it, vi } from 'vitest';
 import { DirectiveRegistry } from '../../../../shared/directives/registry.js';
-import { createDirectiveTestPersistence } from '../../../../shared/directives/testing/persistence.js';
-import { createDirectiveTestEditor } from '../../../../shared/directives/testing/editor.js';
+import { createDirectiveTestPersistence } from '../../../../shared/directives/testing/registry.js';
+import { createTestEditor } from '../../../../shared/obsidian/editor/testing/editor.js';
 import type { InboxController } from '../../controller/controller.js';
 import { submitInboxSelection } from '../submit.js';
 import type { InboxQuestionDirectiveState } from '../types.js';
 
 describe('submitting a source question', () => {
 	it('keeps the original source and appends to its last selected line after asynchronous saves and edits', async () => {
-		const target = createDirectiveTestEditor('one\ntwo\nthree');
+		const target = createTestEditor('one\ntwo\nthree');
 		target.cm.dispatch({ selection: { anchor: 1, head: 7 } });
 		const registry = await DirectiveRegistry.create({
 			app: {} as App,
@@ -64,7 +64,7 @@ describe('submitting a source question', () => {
 			() => null,
 		);
 		const previous = await definition.create({ questionId: 'previous' });
-		const target = createDirectiveTestEditor(`Why? ${previous.text}`);
+		const target = createTestEditor(`Why? ${previous.text}`);
 		const add = vi.fn(
 			async (_text: string, _parent?: string, _source?: unknown) => 'next',
 		);
@@ -96,7 +96,7 @@ describe('submitting a source question', () => {
 			'inbox-question',
 			() => null,
 		);
-		const target = createDirectiveTestEditor('Question');
+		const target = createTestEditor('Question');
 		try {
 			await expect(
 				submitInboxSelection({

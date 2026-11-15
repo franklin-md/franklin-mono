@@ -1,92 +1,113 @@
 import { describe, expect, it } from 'vitest';
-import type { SessionEntry } from '../types.js';
+import type { CompactionEntry, MessageEntry } from '../types.js';
 import { projectEntries } from '../project.js';
 
-const message = (id: string): SessionEntry => ({
-	type: 'message',
-	id,
-	message: { role: 'user', content: [{ type: 'text', text: id }] },
-});
+function message(text: string): MessageEntry {
+	return {
+		type: 'message',
+		message: { role: 'user', content: [{ type: 'text', text }] },
+	};
+}
+
+function fence(summary: string): CompactionEntry {
+	return { type: 'compaction', summary };
+}
 
 describe('session history projection', () => {
-	it('keeps the retained messages on both sides of the latest compaction', () => {
-		const entries: SessionEntry[] = [
+	it('projects an empty log and an unfenced log without changing messages', () => {
+		const entries = [message('a'), message('b')];
+		expect(projectEntries([])).toEqual([]);
+		expect(projectEntries(entries)).toEqual(
+			entries.map((entry) => entry.message),
+		);
+	});
+
+	it('hides every preceding message and accumulates messages after the fence', () => {
+		const entries = [message('a'), message('b'), fence('first'), message('c')];
+		const original = structuredClone(entries);
+		expect(projectEntries(entries)).toEqual([
+			message('Conversation summary:\nfirst').message,
+			message('c').message,
+		]);
+		expect(entries).toEqual(original);
+	});
+
+	it('replaces earlier summaries atomically across repeated fences', () => {
+		const entries = [
 			message('a'),
 			message('b'),
+			fence('first'),
 			message('c'),
-			{
-				type: 'compaction',
-				id: 'first',
-				summary: 'old summary',
-				firstKeptEntryId: 'b',
-			},
+			fence('second'),
 			message('d'),
-			{
-				type: 'compaction',
-				id: 'second',
-				summary: 'new summary',
-				firstKeptEntryId: 'c',
-			},
-			message('e'),
 		];
-		expect(projectEntries(entries).map((entry) => entry.id)).toEqual([
-			'second',
-			'c',
-			'd',
-			'e',
+		const original = structuredClone(entries);
+		expect(projectEntries(entries)).toEqual([
+			message('Conversation summary:\nsecond').message,
+			message('d').message,
 		]);
-		expect(projectEntries(entries)[0]?.message.content).toEqual([
-			{ type: 'text', text: 'Conversation summary:\nnew summary' },
-		]);
-		expect(entries).toHaveLength(7);
+		expect(entries).toEqual(original);
 	});
 
-	it('can retain none of the preceding messages', () => {
+	it('can start with a checkpoint and replace it with a consecutive checkpoint', () => {
 		expect(
-			projectEntries([
-				message('a'),
-				{
-					type: 'compaction',
-					id: 'compact',
-					summary: 'summary',
-					firstKeptEntryId: null,
-				},
-				message('b'),
-			]).map((entry) => entry.id),
-		).toEqual(['compact', 'b']);
+			projectEntries([fence('first'), fence('second'), message('c')]),
+		).toEqual([
+			message('Conversation summary:\nsecond').message,
+			message('c').message,
+		]);
 	});
 
-	it('rejects a missing retained boundary rather than silently dropping history', () => {
-		expect(() =>
-			projectEntries([
-				{
-					type: 'compaction',
-					id: 'compact',
-					summary: 'summary',
-					firstKeptEntryId: 'missing',
-				},
-			]),
-		).toThrow('boundary');
+	it('leaves only the summary when the last entry is a checkpoint', () => {
+		expect(projectEntries([message('a'), fence('first')])).toEqual([
+			message('Conversation summary:\nfirst').message,
+		]);
 	});
 
-	it('rejects a boundary that would resurrect previously compacted messages', () => {
-		expect(() =>
-			projectEntries([
-				message('a'),
-				message('b'),
-				{
-					type: 'compaction',
-					id: 'first',
-					summary: 'summary',
-					firstKeptEntryId: 'b',
-				},
-				{
-					type: 'compaction',
-					id: 'second',
-					summary: 'summary',
-					firstKeptEntryId: 'a',
-				},
-			]),
-		).toThrow('boundary');
+	it('accepts repeated identical entries in log order without assigning identities', () => {
+		const repeated = message('same');
+		expect(projectEntries([repeated, repeated])).toEqual([
+			repeated.message,
+			repeated.message,
+		]);
+		expect(projectEntries([fence('same'), fence('same'), repeated])).toEqual([
+			message('Conversation summary:\nsame').message,
+			repeated.message,
+		]);
+	});
+
+	it('rejects empty summaries', () => {
+		expect(() => projectEntries([fence('  ')])).toThrow('summary');
+	});
+
+	it('preserves tool-call identifiers inside messages while hiding completed exchanges', () => {
+		const call: MessageEntry = {
+			type: 'message',
+			message: {
+				role: 'assistant',
+				content: [
+					{ type: 'toolCall', id: 'tool', name: 'lookup', arguments: {} },
+				],
+			},
+		};
+		const result: MessageEntry = {
+			type: 'message',
+			message: {
+				role: 'toolResult',
+				toolCallId: 'tool',
+				content: [{ type: 'text', text: 'found' }],
+			},
+		};
+		expect(projectEntries([call, result])).toEqual([
+			call.message,
+			result.message,
+		]);
+		const entries = [call, result, fence('first'), message('b')];
+		const original = structuredClone(entries);
+		expect(projectEntries(entries)).toEqual([
+			message('Conversation summary:\nfirst').message,
+			message('b').message,
+		]);
+		expect(entries).toEqual(original);
 	});
 });

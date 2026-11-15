@@ -129,7 +129,7 @@ it('migrates v5 without rewriting question branches and rejects invalid mixed hi
 	const child = await h.inbox.groups.add({}, group);
 	await h.inbox.add('Question', child);
 	const document = (await h.persistence.load()).value!;
-	expect(inboxCodec.encode(document)).toMatchObject({ version: 6 });
+	expect(inboxCodec.encode(document)).toMatchObject({ version: 8 });
 	const old = {
 		...document,
 		groups: undefined,

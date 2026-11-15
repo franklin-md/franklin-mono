@@ -3,7 +3,7 @@ import { ZERO_USAGE } from '@franklin/mini-acp';
 import { createSessionDraft } from '../../context/draft/index.js';
 import { createCoreRegistry } from '../../__tests__/registry.js';
 import { createToolRegistry } from '../../tools/index.js';
-import { createMessageEntries } from '../../history/create.js';
+import { createMessageEntries } from '../../../../testing/session-entries.js';
 import { projectEntries } from '../../history/project.js';
 import { emptySessionSnapshot } from '../../state.js';
 import { runCompaction } from '../run.js';
@@ -41,7 +41,6 @@ function setup() {
 				summarize,
 				addUsage,
 				signal: abort.signal,
-				keepRecentTokens: 10,
 				contextWindow: 8192,
 			}),
 	};
@@ -53,7 +52,7 @@ describe('compaction commit', () => {
 		const before = test.draft.getEntries();
 		await expect(test.run()).resolves.toBe(true);
 		expect(test.draft.getEntries().slice(0, before.length)).toEqual(before);
-		expect(projectEntries(test.draft.getEntries())).toHaveLength(2);
+		expect(projectEntries(test.draft.getEntries())).toHaveLength(1);
 		expect(test.addUsage).toHaveBeenCalledExactlyOnceWith(ZERO_USAGE);
 	});
 
@@ -71,7 +70,7 @@ describe('compaction commit', () => {
 		await test.run();
 		const input = test.summarize.mock.calls[1]![0];
 		expect(JSON.stringify(input.messages)).toContain('A short summary');
-		expect(JSON.stringify(input.messages)).toContain('recent');
+		expect(JSON.stringify(input.messages)).toContain('newest');
 		expect(JSON.stringify(input.messages)).not.toContain(
 			'old context old context',
 		);

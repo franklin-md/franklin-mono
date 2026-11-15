@@ -1,23 +1,14 @@
 import { createSingleFilePersister } from '@franklin/lib';
-import type {
-	AbsolutePath,
-	Filesystem,
-	SingleFilePersister,
-} from '@franklin/lib';
+import type { AbsolutePath, Filesystem } from '@franklin/lib';
+import { createNodeFilesystem } from '@franklin/node';
 import { writeAtomic } from '../../persistence/write.js';
 import { directiveCodec } from './codec.js';
-import type { DirectiveDocument } from './types.js';
 
-type Options = { filesystem: Filesystem; path: AbsolutePath };
+type Options = { path: AbsolutePath; filesystem?: Filesystem };
 
 export function createDirectivePersistence({
-	filesystem,
 	path,
-}: Options): SingleFilePersister<DirectiveDocument> {
-	const persister = createSingleFilePersister(filesystem, path, directiveCodec);
-	return {
-		...persister,
-		save: (document) =>
-			writeAtomic(path, JSON.stringify(directiveCodec.encode(document))),
-	};
+	filesystem = { ...createNodeFilesystem(), writeFile: writeAtomic },
+}: Options) {
+	return createSingleFilePersister(filesystem, path, directiveCodec);
 }

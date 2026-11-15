@@ -8,6 +8,10 @@ export class ItemView {
 }
 
 export class MarkdownRenderChild {
+	private readonly cleanup: (() => void)[] = [];
+	register(dispose: () => void): void {
+		this.cleanup.push(dispose);
+	}
 	constructor(readonly containerEl: HTMLElement) {}
 	onload(): void {}
 	onunload(): void {}
@@ -16,6 +20,7 @@ export class MarkdownRenderChild {
 	}
 	unload(): void {
 		this.onunload();
+		for (const dispose of this.cleanup.splice(0)) dispose();
 	}
 }
 
@@ -33,6 +38,10 @@ export class Plugin {
 	addSettingTab(): void {}
 
 	registerView(): void {}
+
+	registerEditorExtension(): void {}
+
+	registerMarkdownPostProcessor(): void {}
 }
 
 export class PluginSettingTab {

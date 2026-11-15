@@ -5,10 +5,10 @@ export const miniACPRpcServerDescriptor = namespace<MuClient>({
 	initialize: method(),
 	setContext: method(),
 	prompt: event(),
+	continue: event(),
 	cancel: notification(),
 });
 
 export const miniACPRpcClientDescriptor = namespace<MuAgent>({
 	toolExecute: method(),
-	prepareContext: method(),
 });

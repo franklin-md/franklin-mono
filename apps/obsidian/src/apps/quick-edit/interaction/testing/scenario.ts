@@ -8,9 +8,11 @@ import type { DirectiveRegistry } from '../../../../shared/directives/registry.j
 import type { DiffClient } from '../../../../shared/diff/client.js';
 import type { DirectiveDefinition } from '../../../../shared/directives/types.js';
 import { vi } from 'vitest';
-import { createDirectiveTestEditor } from '../../../../shared/directives/testing/editor.js';
-import { createDirectiveTestRegistry } from '../../../../shared/directives/testing/registry.js';
-import { createDirectiveTestPersistence } from '../../../../shared/directives/testing/persistence.js';
+import { createTestEditor } from '../../../../shared/obsidian/editor/testing/editor.js';
+import {
+	createDirectiveTestPersistence,
+	createDirectiveTestRegistry,
+} from '../../../../shared/directives/testing/registry.js';
 import { diffField } from '../../../../shared/diff/cm/diff-field.js';
 import { diffInverted } from '../../../../shared/diff/cm/inverted.js';
 import { QuickEditController } from '../../execution/controller.js';
@@ -22,7 +24,7 @@ import type {
 import { QuickEditInteraction } from '../composer.js';
 import { quickEditExtension } from '../extension.js';
 
-type Scenario = ReturnType<typeof createDirectiveTestEditor> & {
+type Scenario = ReturnType<typeof createTestEditor> & {
 	app: App;
 	registry: DirectiveRegistry;
 	definition: DirectiveDefinition<QuickEditState>;
@@ -42,7 +44,7 @@ export async function createQuickEditScenario(
 	runner?: QuickEditRunner,
 	hostExtensions: Extension = [],
 ): Promise<Scenario> {
-	const target = createDirectiveTestEditor(source);
+	const target = createTestEditor(source);
 	Object.assign(target.info.file ?? {}, { extension: 'md' });
 	target.cm.dom.ownerDocument.body.append(target.cm.dom);
 	let disk = source;

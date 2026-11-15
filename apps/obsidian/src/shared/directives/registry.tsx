@@ -1,20 +1,23 @@
-import { createStore } from '@franklin/agent';
+import { freeze, produce } from 'immer';
 import type { Store } from '@franklin/agent';
-import type { JsonValue, SingleFilePersister } from '@franklin/lib';
+import type { SingleFilePersister } from '@franklin/lib';
 import type { App } from 'obsidian';
-import { useSyncExternalStore } from 'react';
 import type { ComponentType } from 'react';
 import { DirectiveInstance } from './instance.js';
-import { copyDirectiveState } from './storage/state.js';
-import type { DirectiveDocument } from './storage/types.js';
+import { parseDirectiveState } from './storage/state.js';
+import { directiveName } from './storage/codec.js';
+import type { DirectiveDocument, DirectiveState } from './storage/codec.js';
 import type {
 	DirectiveDefinition,
 	DirectiveProps,
 	RegisteredDirective,
 } from './types.js';
 
+// Obsidian keeps the App when reloading a plugin, but evaluates its bundle again.
+// A shared symbol lets the next bundle wait for writes accepted before unload.
+const drainingWrites = Symbol.for('franklin.directives.drainingWrites');
 type Options = {
-	app: App;
+	app: App & { [drainingWrites]?: Promise<void> };
 	persistence: SingleFilePersister<DirectiveDocument>;
 };
 
@@ -22,19 +25,19 @@ export class DirectiveRegistry {
 	readonly app: App;
 	private readonly definitions = new Map<string, RegisteredDirective>();
 	private readonly listeners = new Set<() => void>();
-	private readonly store;
 	private writes = Promise.resolve();
 	private closed = false;
+	private closing?: Promise<void>;
 
 	private constructor(
 		private readonly options: Options,
-		document: DirectiveDocument,
+		private document: DirectiveDocument,
 	) {
 		this.app = options.app;
-		this.store = createStore(document);
 	}
 
 	static async create(options: Options): Promise<DirectiveRegistry> {
+		await options.app[drainingWrites];
 		const restored = await options.persistence.load();
 		if (restored.issues.length > 0)
 			throw new Error(
@@ -42,7 +45,7 @@ export class DirectiveRegistry {
 			);
 		return new DirectiveRegistry(
 			options,
-			restored.value ?? { version: 1, instances: {} },
+			freeze(restored.value ?? { version: 1, instances: {} }, true),
 		);
 	}
 
@@ -51,7 +54,7 @@ export class DirectiveRegistry {
 		Renderer: ComponentType<DirectiveProps<T>>,
 	): DirectiveDefinition<T> {
 		this.assertOpen();
-		if (!/^[a-z][a-z0-9-]*$/.test(name))
+		if (!directiveName.safeParse(name).success)
 			throw new Error('Invalid directive name');
 		if (this.definitions.has(name))
 			throw new Error(`Directive already registered: ${name}`);
@@ -65,43 +68,40 @@ export class DirectiveRegistry {
 			return instance;
 		};
 		const get = (id: string) =>
-			this.store.get().instances[id]?.name === name ? handle(id) : undefined;
+			this.document.instances[id]?.name === name ? handle(id) : undefined;
 		const definition: DirectiveDefinition<T> = {
 			name,
 			get,
 			instances: () =>
-				Object.entries(this.store.get().instances)
+				Object.entries(this.document.instances)
 					.filter(([, record]) => record.name === name)
 					.map(([id]) => handle(id)),
 			create: async (state) => {
 				const id = crypto.randomUUID();
-				const value = copyDirectiveState(state);
-				await this.commit((draft) => {
-					draft.instances[id] = { name, state: value };
-				});
+				const snapshot = parseDirectiveState(state);
+				await this.save(name, id, () => snapshot);
 				return handle(id);
 			},
 		};
-		this.definitions.set(name, function Registered({ id }) {
-			const instance = handle(id);
-			const state = useSyncExternalStore(
-				(notify) => instance.state.subscribe(notify),
-				() => instance.state.get(),
-			);
-			return <Renderer id={id} state={state} update={instance.update} />;
-		});
+		this.definitions.set(name, ({ id, state }) => (
+			<Renderer id={id} state={state as T} update={handle(id).update} />
+		));
 		this.notify();
 		return definition;
 	}
 
-	getRenderer(name: string, id: string): RegisteredDirective | undefined {
-		if (this.closed || this.store.get().instances[id]?.name !== name)
-			return undefined;
+	getRecord(name: string, id: string) {
+		const record = this.document.instances[id];
+		if (!this.closed && record?.name === name && this.definitions.has(name))
+			return record;
+	}
+
+	getRenderer(name: string) {
 		return this.definitions.get(name);
 	}
 
-	getState(name: string, id: string): JsonValue {
-		const record = this.store.get().instances[id];
+	getState(name: string, id: string): DirectiveState {
+		const record = this.document.instances[id];
 		if (record?.name !== name)
 			throw new Error(`Unknown directive instance: ${id}`);
 		return record.state;
@@ -112,13 +112,9 @@ export class DirectiveRegistry {
 		id: string,
 		recipe: Parameters<Store<T>['set']>[0],
 	): Promise<void> {
-		return this.commit((draft) => {
-			const record = draft.instances[id];
-			if (record?.name !== name)
-				throw new Error(`Unknown directive instance: ${id}`);
-			const state = createStore(record.state as T);
-			state.set(recipe);
-			record.state = copyDirectiveState(state.get());
+		return this.save(name, id, () => {
+			const current = this.getState(name, id) as T;
+			return parseDirectiveState(produce<T, T>(current, recipe));
 		});
 	}
 
@@ -127,7 +123,17 @@ export class DirectiveRegistry {
 		return () => this.listeners.delete(listener);
 	};
 
-	async dispose(): Promise<void> {
+	dispose(after?: Promise<void>): Promise<void> {
+		if (this.closing) return this.closing;
+		// Quick Edit can still save its stopped state while its runner shuts down.
+		// Publish the barrier now so a reload cannot read before that save drains.
+		this.closing = this.close(after);
+		this.options.app[drainingWrites] = this.closing;
+		return this.closing;
+	}
+
+	private async close(after?: Promise<void>): Promise<void> {
+		if (after) await after;
 		this.closed = true;
 		await this.writes;
 		this.definitions.clear();
@@ -135,16 +141,23 @@ export class DirectiveRegistry {
 		this.listeners.clear();
 	}
 
-	private commit(
-		recipe: Parameters<Store<DirectiveDocument>['set']>[0],
+	private save(
+		name: string,
+		id: string,
+		nextState: () => DirectiveState,
 	): Promise<void> {
 		if (this.closed)
 			return Promise.reject(new Error('Directive registry is closed'));
 		const write = this.writes.then(async () => {
-			const next = createStore(this.store.get());
-			next.set(recipe);
-			await this.options.persistence.save(next.get());
-			this.store.set(() => next.get());
+			const next: DirectiveDocument = {
+				...this.document,
+				instances: {
+					...this.document.instances,
+					[id]: { name, state: nextState() },
+				},
+			};
+			await this.options.persistence.save(next);
+			this.document = freeze(next, true);
 			this.notify();
 		});
 		this.writes = write.catch(() => {});
@@ -156,6 +169,12 @@ export class DirectiveRegistry {
 	}
 
 	private notify(): void {
-		for (const listener of this.listeners) listener();
+		for (const listener of this.listeners) {
+			try {
+				listener();
+			} catch (error) {
+				console.error('Franklin directive subscriber failed', error);
+			}
+		}
 	}
 }

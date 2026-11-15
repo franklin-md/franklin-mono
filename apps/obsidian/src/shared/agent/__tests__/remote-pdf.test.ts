@@ -5,8 +5,8 @@ import {
 	MemoryOsInfo,
 	type AbsolutePath,
 } from '@franklin/lib';
+import { createFranklinAgents } from '@franklin/agent/testing';
 import {
-	createFranklinAgents,
 	filesystemBundle,
 	referenceReadExtension,
 	type AuthManager,

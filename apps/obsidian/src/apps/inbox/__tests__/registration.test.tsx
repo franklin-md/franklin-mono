@@ -20,7 +20,7 @@ import { inboxCodec } from '../controller/schema.js';
 import { registerInbox } from '../register.js';
 import type { InboxView } from '../host/view.js';
 import { DirectiveRegistry } from '../../../shared/directives/registry.js';
-import { createDirectiveTestPersistence } from '../../../shared/directives/testing/persistence.js';
+import { createDirectiveTestPersistence } from '../../../shared/directives/testing/registry.js';
 import { clearPortalRoot } from '../../../shared/ui/portal.js';
 
 type ProviderProps = { children: ReactNode };

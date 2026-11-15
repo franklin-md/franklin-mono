@@ -11,25 +11,11 @@ import {
 
 export function createPiTestConnector(
 	options: CreatePiAgentOptions,
-	contextWindow: number,
 ): MiniACPConnector {
 	return createMiniACPRpcConnector(() => {
 		const { a, b } = createDuplexPair<JsonRpcMessage>();
 		const connection = bindMiniACPRpcAgent(b);
-		connection.bind(
-			createPiAgent(
-				{
-					...connection.remote,
-					prepareContext: async (params) => {
-						await connection.remote.prepareContext?.({
-							...params,
-							contextWindow,
-						});
-					},
-				},
-				options,
-			),
-		);
+		connection.bind(createPiAgent(connection.remote, options));
 		return a;
 	});
 }

@@ -1,8 +1,9 @@
-import type { StreamEvent, Message, TurnEnd } from '../types/index.js';
+import type { StreamEvent, Message, StepEnd, TurnEnd } from '../types/index.js';
 
 export type CollectResult = {
 	messages: Message[];
 	turnEnd: TurnEnd | undefined;
+	stepEnd: StepEnd | undefined;
 };
 
 export async function collect(
@@ -10,6 +11,7 @@ export async function collect(
 ): Promise<CollectResult> {
 	const messages: Message[] = [];
 	let turnEnd: TurnEnd | undefined;
+	let stepEnd: StepEnd | undefined;
 
 	for await (const event of stream) {
 		switch (event.type) {
@@ -19,11 +21,14 @@ export async function collect(
 			case 'turnEnd':
 				turnEnd = event;
 				break;
+			case 'stepEnd':
+				stepEnd = event;
+				break;
 			case 'turnStart':
 			case 'chunk':
 				break;
 		}
 	}
 
-	return { messages, turnEnd };
+	return { messages, turnEnd, stepEnd };
 }

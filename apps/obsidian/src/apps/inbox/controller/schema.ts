@@ -129,6 +129,24 @@ const groupedDocument: z.ZodType<InboxDocument> = documentShape
 	.extend({ groups: z.array(groupSchema).default([]) })
 	.superRefine(validateHierarchy);
 
+// Released Inbox base (#312) used version 7 for a flat question queue.
+// Decode it separately so v6 Madrid data keeps its group and action records.
+const baseDocument: z.ZodType<InboxDocument> = z
+	.strictObject({
+		questions: z.array(question),
+		preferences: preferences.extend({ mode: z.literal('question').optional() }),
+		groups: z.array(z.never()).optional(),
+		actions: z.array(z.never()).optional(),
+		actionRuns: z.array(z.never()).optional(),
+		thoughtDumps: z.array(z.never()).optional(),
+	})
+	.transform(({ questions, preferences }) => ({
+		questions,
+		preferences,
+		actions: [],
+		actionRuns: [],
+	}));
+
 export const inboxCodec = versioned()
 	.version(1, zodCodec(legacyDocument))
 	.version(2, zodCodec(actionDocument), (previous) => ({
@@ -157,4 +175,6 @@ export const inboxCodec = versioned()
 		...previous,
 		groups: [],
 	}))
+	.version(7, zodCodec(baseDocument), (previous) => previous)
+	.version(8, zodCodec(groupedDocument), (previous) => previous)
 	.build();

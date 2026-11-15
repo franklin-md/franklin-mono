@@ -5,13 +5,9 @@ import {
 	openExternalAction,
 	type HostActionBinding,
 } from '@franklin/react';
-import { joinAbsolute, toAbsolutePath } from '@franklin/lib';
-import { DirectiveRegistry } from '../shared/directives/registry.js';
-import { createDirectivePersistence } from '../shared/directives/storage/persistence.js';
-import { Notice } from 'obsidian';
+import { toAbsolutePath } from '@franklin/lib';
 import type { Plugin } from 'obsidian';
-import type { InboxController } from '../apps/inbox/controller/controller.js';
-import { errorMessage } from '../apps/inbox/controller/error.js';
+import type { InboxLifetime } from '../apps/inbox/lifetime.js';
 import { startInbox } from '../apps/inbox/start.js';
 import { createChatExtensions } from '../apps/chat/agent/extensions.js';
 import { createObsidianSessionInput } from '../apps/chat/agent/session.js';
@@ -25,8 +21,7 @@ import { resolveAuthStore } from '../shared/obsidian/auth/resolve.js';
 
 interface PluginRuntime {
 	app: FranklinApp;
-	inbox: InboxController;
-	directives: DirectiveRegistry;
+	startInbox: () => InboxLifetime;
 	hostActionBindings: readonly HostActionBinding[];
 	getCreateInput: () => OrchestratorCreateInput<FranklinState>;
 	dispose: () => void;
@@ -58,21 +53,7 @@ export async function bootstrapPlugin(
 		auth,
 	});
 
-	const directives = await DirectiveRegistry.create({
-		app: plugin.app,
-		persistence: createDirectivePersistence({
-			filesystem: platform.os.filesystem,
-			path: joinAbsolute(appDir, 'directives.json'),
-		}),
-	});
 	await app.start();
-	const inbox = await startInbox({
-		plugin,
-		app,
-		filesystem: platform.os.filesystem,
-		appDir,
-		vaultRoot,
-	});
 
 	const getCreateInput = () =>
 		createObsidianSessionInput(app, vaultRoot, plugin.app.vault.configDir);
@@ -80,24 +61,21 @@ export async function bootstrapPlugin(
 
 	return {
 		app,
-		inbox,
-		directives,
+		startInbox: () =>
+			startInbox({
+				plugin,
+				app,
+				filesystem: platform.os.filesystem,
+				appDir,
+				vaultRoot,
+			}),
 		hostActionBindings: [
 			bindHostAction(openExternalAction, (url) =>
 				platform.os.openExternal(url),
 			),
 		],
 		getCreateInput,
-		dispose: () => {
-			void inbox
-				.dispose()
-				.catch((error: unknown) => {
-					new Notice(`Inbox shutdown: ${errorMessage(error)}`);
-				})
-				.finally(() => directives.dispose())
-				.catch((error: unknown) => {
-					new Notice(`Directive shutdown: ${errorMessage(error)}`);
-				});
-		},
+		// Removing app agents here would also remove their saved Chat sessions.
+		dispose: () => undefined,
 	};
 }

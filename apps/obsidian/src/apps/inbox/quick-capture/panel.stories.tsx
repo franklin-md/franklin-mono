@@ -4,7 +4,7 @@ import { EditorView } from '@codemirror/view';
 import { StateEffect } from '@codemirror/state';
 import { expect, within } from 'storybook/test';
 import { Button, PortalContainerProvider } from '@franklin/ui';
-import { createDirectiveTestEditor } from '../../../shared/directives/testing/editor.js';
+import { createTestEditor } from '../../../shared/obsidian/editor/testing/editor.js';
 import { captureDirectiveTarget } from '../../../shared/directives/scribe/target.js';
 import type { DirectiveWriteTarget } from '../../../shared/directives/scribe/types.js';
 import { createEditorAnchor } from '../../../shared/ui/editor-popover/anchor.js';
@@ -19,14 +19,12 @@ type Popup = {
 function CaptureDemo({ fail = false, narrow = false, nearTop = false }: Props) {
 	const [container, setContainer] = useState<HTMLDivElement | null>(null);
 	const [editorHost, setEditorHost] = useState<HTMLDivElement | null>(null);
-	const editor = useRef<ReturnType<typeof createDirectiveTestEditor> | null>(
-		null,
-	);
+	const editor = useRef<ReturnType<typeof createTestEditor> | null>(null);
 	const [popup, setPopup] = useState<Popup>();
 	const [result, setResult] = useState('');
 	useEffect(() => {
 		if (!editorHost) return;
-		const current = createDirectiveTestEditor(
+		const current = createTestEditor(
 			[
 				'- Parent topic',
 				'  - Why do we recheck the condition after waking? This long outline item wraps in narrow panes.',

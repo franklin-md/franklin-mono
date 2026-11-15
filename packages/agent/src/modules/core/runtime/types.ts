@@ -1,4 +1,5 @@
-import type { LLMConfig, StreamEvent, UserMessage } from '@franklin/mini-acp';
+import type { LLMConfig, UserMessage } from '@franklin/mini-acp';
+import type { TurnStreamEvent } from '../turn/types.js';
 import type { BaseRuntime } from '@franklin/extensibility';
 import type { CoreInspectDump } from '../inspect-dump.js';
 import type { SessionSnapshot } from '../state.js';
@@ -21,7 +22,7 @@ export type CoreEvent =
 
 export type CoreRuntime = BaseRuntime & {
 	// Mini-ACP turn controls exposed to app/runtime consumers.
-	prompt(message: UserMessage): AsyncIterable<StreamEvent>;
+	prompt(message: UserMessage): AsyncIterable<TurnStreamEvent>;
 	cancel(): Promise<void>;
 	compact(): Promise<boolean>;
 

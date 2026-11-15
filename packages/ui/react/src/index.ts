@@ -100,10 +100,8 @@ export type { PromptAgentControlProps } from './prompt/agent-control.js';
 // Conversation — headless turn/block rendering
 // ---------------------------------------------------------------------------
 export { Conversation } from './conversation/conversation.js';
-export type {
-	ConversationComponents,
-	ConversationActivityProps,
-} from './conversation/types.js';
+export type { ConversationComponents } from './conversation/types.js';
+export type { ConversationActivityProps } from './conversation/activity.js';
 export {
 	useConversationTurns,
 	useThrottledConversationTurns,

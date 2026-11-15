@@ -1,3 +1,4 @@
+import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { z } from 'zod';
 import type { Message } from '@franklin/mini-acp';
 import {
@@ -5,16 +6,10 @@ import {
 	type SessionSnapshot,
 	type ToolFilter,
 } from '../../../modules/core/state.js';
-import { projectEntries } from '../../../modules/core/history/project.js';
+import { validateEntries } from '../../../modules/core/history/validate.js';
+import { migrateLegacyHistory } from './legacy-history.js';
 
-const ThinkingLevelV1 = z.enum([
-	'off',
-	'minimal',
-	'low',
-	'medium',
-	'high',
-	'xhigh',
-]);
+const ThinkingLevelV1 = z.enum(THINKING_LEVELS);
 
 const MessageV1 = z.custom<Message>((value) => {
 	if (value === null || typeof value !== 'object') return false;
@@ -52,9 +47,7 @@ export const CoreSessionV1 = z.object({
 	}),
 	usage: z.object({
 		tokens: UsageBreakdownV1,
-		cost: UsageBreakdownV1.extend({
-			totalFromProvider: z.boolean().optional(),
-		}),
+		cost: UsageBreakdownV1.extend({ total: z.number().optional() }),
 	}),
 	toolFilter: ToolFilterV1.optional().transform(
 		(value) => value ?? emptyToolFilter(),
@@ -63,24 +56,34 @@ export const CoreSessionV1 = z.object({
 
 export const CoreSessionV2 = CoreSessionV1.omit({ messages: true }).extend({
 	entries: z
-		.array(
-			z.discriminatedUnion('type', [
-				z.object({
-					type: z.literal('message'),
-					id: z.string().min(1),
-					message: MessageV1,
-				}),
-				z.object({
-					type: z.literal('compaction'),
-					id: z.string().min(1),
-					summary: z.string().trim().min(1),
-					firstKeptEntryId: z.string().min(1).nullable(),
-				}),
-			]),
+		.preprocess(
+			(raw, context) => {
+				try {
+					return migrateLegacyHistory(raw);
+				} catch {
+					context.addIssue({
+						code: 'custom',
+						message: 'Invalid legacy session history',
+					});
+					return z.NEVER;
+				}
+			},
+			z.array(
+				z.discriminatedUnion('type', [
+					z.object({
+						type: z.literal('message'),
+						message: MessageV1,
+					}),
+					z.object({
+						type: z.literal('compaction'),
+						summary: z.string(),
+					}),
+				]),
+			),
 		)
 		.refine((entries) => {
 			try {
-				projectEntries(entries);
+				validateEntries(entries);
 				return true;
 			} catch {
 				return false;

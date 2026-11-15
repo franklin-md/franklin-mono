@@ -9,4 +9,5 @@ export const EFFORT_LABELS: Record<ThinkingLevel, EffortLabel> = {
 	medium: { label: 'Medium', shortLabel: 'Med' },
 	high: { label: 'High', shortLabel: 'High' },
 	xhigh: { label: 'Extra high', shortLabel: 'XHigh' },
+	max: { label: 'Max', shortLabel: 'Max' },
 };

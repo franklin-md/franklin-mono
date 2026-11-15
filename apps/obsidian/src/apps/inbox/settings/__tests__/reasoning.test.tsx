@@ -69,6 +69,7 @@ describe('study inbox reasoning setting', () => {
 			'medium',
 			'high',
 			'xhigh',
+			'max',
 		]);
 		await select('high');
 		expect((await persistence.load()).value?.preferences.reasoning).toBe(

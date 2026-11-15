@@ -20,7 +20,7 @@ export function createJsBuilder({ srcDir, distDir, isProd }) {
 		'obsidian',
 		'electron',
 		'@codemirror/*',
-		// Obsidian exposes these shared parser modules, but not @lezer/markdown.
+		// Obsidian provides the shared parser runtime, but not the Markdown parser.
 		'@lezer/common',
 		'@lezer/lr',
 		'@lezer/highlight',

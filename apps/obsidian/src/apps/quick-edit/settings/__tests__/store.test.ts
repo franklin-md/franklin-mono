@@ -18,6 +18,18 @@ const defaults: QuickEditSettings = {
 };
 
 describe('quick edit preferences', () => {
+	it('preserves max reasoning when preferences reload', async () => {
+		const storage = createSingleFilePersister(
+			new MemoryFilesystem(),
+			toAbsolutePath('/quick-edit.json'),
+			quickEditSettingsCodec,
+		);
+		const settings = await QuickEditPreferences.create(storage, defaults);
+		await settings.configure({ reasoning: 'max' });
+		const restored = await QuickEditPreferences.create(storage, defaults);
+		expect(restored.state.get().reasoning).toBe('max');
+	});
+
 	it('seeds old settings with presets and preserves customized order, icons and colors after reload', async () => {
 		const fs = new MemoryFilesystem();
 		const path = toAbsolutePath('/quick-edit.json');

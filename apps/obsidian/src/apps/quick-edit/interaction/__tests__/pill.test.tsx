@@ -3,8 +3,10 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QuickEditPill } from '../pill.js';
 import type { QuickEditState } from '../../types.js';
-import { createDirectiveTestRegistry } from '../../../../shared/directives/testing/registry.js';
-import { createDirectiveTestPersistence } from '../../../../shared/directives/testing/persistence.js';
+import {
+	createDirectiveTestPersistence,
+	createDirectiveTestRegistry,
+} from '../../../../shared/directives/testing/registry.js';
 
 afterEach(cleanup);
 const state: QuickEditState = {

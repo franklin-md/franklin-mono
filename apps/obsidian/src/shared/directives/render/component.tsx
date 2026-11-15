@@ -7,9 +7,10 @@ import { DirectiveBoundary } from './boundary.js';
 type Props = { registry: DirectiveRegistry; reference: DirectiveReference };
 
 export function DirectiveComponent({ registry, reference }: Props) {
-	const Renderer = useSyncExternalStore(registry.subscribe, () =>
-		registry.getRenderer(reference.name, reference.id),
+	const record = useSyncExternalStore(registry.subscribe, () =>
+		registry.getRecord(reference.name, reference.id),
 	);
+	const Renderer = record && registry.getRenderer(record.name);
 	const text = formatDirective(reference.name, reference.id);
 	return Renderer ? (
 		<DirectiveBoundary key={reference.id} fallback={text}>
@@ -18,7 +19,7 @@ export function DirectiveComponent({ registry, reference }: Props) {
 			    boundary so unknown or failed renderers remain ordinary inline text.
 			    https://developer.mozilla.org/en-US/docs/Web/CSS/vertical-align */}
 			<span className="inline-flex items-center align-middle">
-				<Renderer id={reference.id} />
+				<Renderer id={reference.id} state={record.state} />
 			</span>
 		</DirectiveBoundary>
 	) : (

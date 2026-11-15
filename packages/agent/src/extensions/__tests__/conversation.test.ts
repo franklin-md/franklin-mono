@@ -11,7 +11,7 @@ import type {
 	TurnEnd,
 	Usage,
 } from '@franklin/mini-acp';
-import { StopCode } from '@franklin/mini-acp';
+import { StopCode, ZERO_USAGE } from '@franklin/mini-acp';
 import type { StoreRuntime } from '../../modules/store/runtime.js';
 import { compileCoreWithStore } from '../../testing/compile-ext.js';
 import { toolSpec } from '../../modules/core/index.js';
@@ -549,6 +549,8 @@ describe('conversationExtension', () => {
 
 		const turnEnd: TurnEnd = {
 			type: 'turnEnd',
+			stepUsage: ZERO_USAGE,
+			usage: ZERO_USAGE,
 			stopCode: StopCode.Finished,
 		};
 
@@ -572,6 +574,7 @@ describe('conversationExtension', () => {
 			kind: 'turnEnd',
 			stopCode: StopCode.Finished,
 			stopMessage: undefined,
+			usage: ZERO_USAGE,
 			startedAt: expect.any(Number),
 			endedAt: expect.any(Number),
 		});
@@ -593,6 +596,7 @@ describe('conversationExtension', () => {
 
 		const turnEnd: TurnEnd = {
 			type: 'turnEnd',
+			stepUsage: usage,
 			stopCode: StopCode.Finished,
 			usage,
 		};
@@ -628,6 +632,8 @@ describe('conversationExtension', () => {
 
 		const turnEnd: TurnEnd = {
 			type: 'turnEnd',
+			stepUsage: ZERO_USAGE,
+			usage: ZERO_USAGE,
 			stopCode: StopCode.LlmError,
 			stopMessage: 'Missing API key',
 		};
@@ -652,6 +658,7 @@ describe('conversationExtension', () => {
 			kind: 'turnEnd',
 			stopCode: StopCode.LlmError,
 			stopMessage: 'Missing API key',
+			usage: ZERO_USAGE,
 			startedAt: expect.any(Number),
 			endedAt: expect.any(Number),
 		});
@@ -694,6 +701,8 @@ describe('conversationExtension', () => {
 
 				yield {
 					type: 'turnEnd',
+					stepUsage: ZERO_USAGE,
+					usage: ZERO_USAGE,
 					stopCode: StopCode.Finished,
 				} satisfies TurnEnd;
 			},
@@ -745,6 +754,7 @@ describe('conversationExtension', () => {
 			kind: 'turnEnd',
 			stopCode: StopCode.Finished,
 			stopMessage: undefined,
+			usage: ZERO_USAGE,
 			startedAt: expect.any(Number),
 			endedAt: expect.any(Number),
 		});

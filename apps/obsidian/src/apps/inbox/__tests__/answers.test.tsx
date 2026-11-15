@@ -219,7 +219,7 @@ describe('structured inbox answers', () => {
 			title: 'Is retrying safe?',
 		});
 		expect(inboxCodec.encode(restored.state.get())).toMatchObject({
-			version: 6,
+			version: 8,
 		});
 		await restored.dispose();
 	});

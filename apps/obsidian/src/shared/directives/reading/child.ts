@@ -4,8 +4,6 @@ import type { DirectiveReference } from '../syntax/types.js';
 import { mountDirective } from '../render/mount.js';
 
 export class DirectiveRenderChild extends MarkdownRenderChild {
-	private dispose?: () => void;
-
 	constructor(
 		host: HTMLElement,
 		private readonly registry: DirectiveRegistry,
@@ -15,15 +13,8 @@ export class DirectiveRenderChild extends MarkdownRenderChild {
 	}
 
 	onload(): void {
-		this.dispose = mountDirective(
-			this.containerEl,
-			this.registry,
-			this.reference,
+		this.register(
+			mountDirective(this.containerEl, this.registry, this.reference),
 		);
-	}
-
-	onunload(): void {
-		this.dispose?.();
-		this.dispose = undefined;
 	}
 }

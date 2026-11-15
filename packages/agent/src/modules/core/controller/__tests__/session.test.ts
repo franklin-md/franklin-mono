@@ -1,4 +1,3 @@
-import { createMessageEntries } from '../../history/create.js';
 import type {
 	ContextPatch,
 	MiniACPClient,
@@ -39,6 +38,7 @@ function stubClient(
 		initialize: vi.fn(async () => {}),
 		setContext: vi.fn(setContext),
 		async *prompt() {},
+		continue: vi.fn(async function* () {}),
 		cancel: vi.fn(async () => {}),
 	};
 }
@@ -57,46 +57,41 @@ function createState(input: CreateStateInput) {
 }
 
 describe('createAgentSession', () => {
-	it('retries the compacted context after synchronization fails without regenerating its summary', async () => {
-		const registrations = createCoreRegistry();
-		const summarize = vi.fn(async () => ({
-			summary: 'short summary',
-			usage: ZERO_USAGE,
-		}));
-		const session = createAgentSession({
-			snapshot: {
-				...emptySnapshot(),
-				entries: createMessageEntries(
-					[
-						{
-							role: 'user',
-							content: [{ type: 'text', text: 'x'.repeat(90_000) }],
-						},
-						userMessage,
-					],
-					'test',
-				),
+	it('rehydrates and retries only the projected context while snapshots keep raw entries', async () => {
+		const entries = [
+			{ type: 'message' as const, message: userMessage },
+			{
+				type: 'compaction' as const,
+				summary: 'summary',
 			},
-			registrations,
-			toolRegistry: createToolRegistry(registrations.tools),
-			summarize,
+			{ type: 'message' as const, message: userMessage },
+		];
+		const session = createState({
+			snapshot: { ...emptySnapshot(), entries },
+			registrations: createCoreRegistry(),
 		});
 		const setContext = vi
 			.fn<MiniACPClient['setContext']>()
-			.mockRejectedValueOnce(new Error('connection failed'))
+			.mockRejectedValueOnce(new Error('failed'))
 			.mockResolvedValue(undefined);
 		const client = stubClient(setContext);
-		await expect(session.compact(client)).rejects.toThrow('connection failed');
-		const entries = session.getSnapshot().entries;
-		await session.sync(client);
+		await expect(session.sync(client)).rejects.toThrow('failed');
 		expect(session.getSnapshot().entries).toEqual(entries);
-		expect(entries.filter((entry) => entry.type === 'compaction')).toHaveLength(
-			1,
-		);
-		expect(summarize).toHaveBeenCalledOnce();
-		expect(setContext.mock.calls[1]?.[0].messages).toEqual(
-			setContext.mock.calls[0]?.[0].messages,
-		);
+		await session.sync(client);
+		await session.sync(client);
+		expect(setContext).toHaveBeenCalledTimes(2);
+		expect(setContext.mock.calls[1]).toEqual(setContext.mock.calls[0]);
+		expect(session.getSentContext().messages).toEqual([
+			{
+				role: 'user',
+				content: [{ type: 'text', text: 'Conversation summary:\nsummary' }],
+			},
+			userMessage,
+		]);
+		expect(session.getSnapshot().entries).toEqual(entries);
+		const snapshot = session.getSnapshot();
+		snapshot.entries.length = 0;
+		expect(session.getSnapshot().entries).toEqual(entries);
 	});
 	it('syncs registered system prompt changes through the context ledger', async () => {
 		const client = stubClient();
@@ -228,7 +223,7 @@ describe('createAgentSession', () => {
 		const client = stubClient();
 		const session = createState({
 			snapshot: {
-				entries: createMessageEntries([userMessage], 'test'),
+				entries: [{ type: 'message' as const, message: userMessage }],
 				llmConfig: { provider: 'test-provider', model: 'test-model' },
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),
@@ -260,7 +255,7 @@ describe('createAgentSession', () => {
 			config: {},
 		});
 		expect(session.getSnapshot()).toMatchObject({
-			entries: createMessageEntries([userMessage], 'test'),
+			entries: [{ type: 'message' as const, message: userMessage }],
 			llmConfig: { model: 'test-model' },
 		});
 
@@ -293,7 +288,7 @@ describe('createAgentSession', () => {
 		const client = stubClient(setContext);
 		const session = createState({
 			snapshot: {
-				entries: createMessageEntries([userMessage], 'test'),
+				entries: [{ type: 'message' as const, message: userMessage }],
 				llmConfig: { model: 'test-model' },
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),

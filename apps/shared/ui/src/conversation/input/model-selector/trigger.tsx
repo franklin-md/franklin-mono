@@ -29,7 +29,7 @@ export function ModelPickerTrigger({
 				variant="ghost"
 				size="sm"
 				className={cn(
-					'h-auto min-w-0 gap-1.5 px-2 py-1 text-[length:calc(var(--text-xs)-1px)] text-muted-foreground',
+					'h-auto min-w-0 gap-1.5 px-2 py-1 text-xs text-muted-foreground',
 					className,
 				)}
 				{...props}

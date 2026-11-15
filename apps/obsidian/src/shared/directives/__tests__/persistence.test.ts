@@ -1,7 +1,6 @@
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createNodeFilesystem } from '@franklin/node';
 import { toAbsolutePath } from '@franklin/lib';
 import { describe, expect, it } from 'vitest';
 import { createDirectivePersistence } from '../storage/persistence.js';
@@ -12,10 +11,7 @@ describe('directive disk persistence', () => {
 		const directory = await mkdtemp(join(tmpdir(), 'franklin-directives-'));
 		try {
 			const path = toAbsolutePath(join(directory, 'directives.json'));
-			const persistence = createDirectivePersistence({
-				filesystem: createNodeFilesystem(),
-				path,
-			});
+			const persistence = createDirectivePersistence({ path });
 			const registry = await createDirectiveTestRegistry(
 				undefined,
 				persistence,

@@ -6,7 +6,6 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '../../../primitives/tooltip.js';
-import { TurnCost } from './cost.js';
 import { TurnRuntime } from '../runtime.js';
 
 export interface TurnDetailsTooltipProps {
@@ -23,49 +22,46 @@ export function TurnDetailsTooltip({ turn }: TurnDetailsTooltipProps) {
 	)?.usage;
 
 	return (
-		<div className="inline-flex flex-wrap items-center gap-x-2">
-			<TooltipProvider delayDuration={0}>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<button
-							type="button"
-							aria-label="Turn details"
-							className="inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-						>
-							<TurnRuntime turn={turn} />
-						</button>
-					</TooltipTrigger>
-					<TooltipContent className="min-w-56 p-3">
-						{usage ? (
-							<div className="space-y-2 text-xs">
-								<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-									<span className="text-muted-foreground">Input</span>
-									<span className="text-right font-mono tabular-nums">
-										{formatCount(usage.tokens.input)}
-									</span>
-									<span className="text-muted-foreground">Output</span>
-									<span className="text-right font-mono tabular-nums">
-										{formatCount(usage.tokens.output)}
-									</span>
-									<span className="text-muted-foreground">Cache read</span>
-									<span className="text-right font-mono tabular-nums">
-										{formatCount(usage.tokens.cacheRead)}
-									</span>
-									<span className="text-muted-foreground">Cache write</span>
-									<span className="text-right font-mono tabular-nums">
-										{formatCount(usage.tokens.cacheWrite)}
-									</span>
-								</div>
+		<TooltipProvider delayDuration={0}>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<button
+						type="button"
+						aria-label="Turn details"
+						className="inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+					>
+						<TurnRuntime turn={turn} />
+					</button>
+				</TooltipTrigger>
+				<TooltipContent className="min-w-56 p-3">
+					{usage ? (
+						<div className="space-y-2 text-xs">
+							<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+								<span className="text-muted-foreground">Input</span>
+								<span className="text-right font-mono tabular-nums">
+									{formatCount(usage.tokens.input)}
+								</span>
+								<span className="text-muted-foreground">Output</span>
+								<span className="text-right font-mono tabular-nums">
+									{formatCount(usage.tokens.output)}
+								</span>
+								<span className="text-muted-foreground">Cache read</span>
+								<span className="text-right font-mono tabular-nums">
+									{formatCount(usage.tokens.cacheRead)}
+								</span>
+								<span className="text-muted-foreground">Cache write</span>
+								<span className="text-right font-mono tabular-nums">
+									{formatCount(usage.tokens.cacheWrite)}
+								</span>
 							</div>
-						) : (
-							<p className="text-xs text-muted-foreground">
-								Usage details unavailable
-							</p>
-						)}
-					</TooltipContent>
-				</Tooltip>
-			</TooltipProvider>
-			<TurnCost usage={usage} />
-		</div>
+						</div>
+					) : (
+						<p className="text-xs text-muted-foreground">
+							Usage details unavailable
+						</p>
+					)}
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
 	);
 }

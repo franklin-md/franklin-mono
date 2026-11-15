@@ -12,6 +12,7 @@ import { createInboxPersistence } from './storage/persistence.js';
 import { CaptureController } from './capture/controller.js';
 import { createCaptureOptions } from './capture/host.js';
 import { createEvidenceRepository } from './evidence/repository.js';
+import { openInbox } from './lifetime.js';
 
 type Options = {
 	plugin: Plugin;
@@ -22,13 +23,18 @@ type Options = {
 };
 
 // This lifetime belongs to the plugin: closing the pane must not stop its queue.
-export async function startInbox({
-	plugin,
-	app,
-	filesystem,
-	appDir,
-	vaultRoot,
-}: Options): Promise<InboxController> {
+export function startInbox(options: Options) {
+	const path = joinAbsolute(options.appDir, 'inbox.json');
+	return openInbox(options.plugin.app, path, (signal) =>
+		createInbox(options, path, signal),
+	);
+}
+
+async function createInbox(
+	{ plugin, app, filesystem, appDir, vaultRoot }: Options,
+	path: AbsolutePath,
+	signal: AbortSignal,
+): Promise<InboxController> {
 	const evidence = createEvidenceRepository(
 		joinAbsolute(appDir, 'inbox-research'),
 	);
@@ -59,21 +65,27 @@ export async function startInbox({
 			netConfig: { allowedDomains: [], deniedDomains: [] },
 		},
 	};
-	const inbox = await InboxController.create({
-		capture,
-		evidence,
-		defaults: app.settings.get().defaultLLMConfig,
-		persistence: createInboxPersistence({
-			filesystem,
-			path: joinAbsolute(appDir, 'inbox.json'),
-		}),
-		run: createInboxRunner(runnerOptions),
-		split: createSplitter(runnerOptions),
-		runAction: createInboxActionRunner(runnerOptions),
-		onActionComplete: (name, summary) => {
-			new Notice(`${name} ${summary}`);
-		},
-	});
-
-	return inbox;
+	try {
+		return await InboxController.create(
+			{
+				capture,
+				evidence,
+				defaults: app.settings.get().defaultLLMConfig,
+				persistence: createInboxPersistence({
+					filesystem,
+					path,
+				}),
+				run: createInboxRunner(runnerOptions),
+				split: createSplitter(runnerOptions),
+				runAction: createInboxActionRunner(runnerOptions),
+				onActionComplete: (name, summary) => {
+					new Notice(`${name} ${summary}`);
+				},
+			},
+			signal,
+		);
+	} catch (error) {
+		await capture.dispose();
+		throw error;
+	}
 }

@@ -62,16 +62,10 @@ export class ContextLedger {
 		const patch = this.planPatch(commit.context, commit.revisions);
 		if (isEmptyPatch(patch)) return;
 
+		// Synchronization acknowledges only the sent projection. Applying this
+		// patch back to the draft would reset its durable message/fence history.
 		await client.setContext(patch);
 		this.recordSent(patch, commit.revisions, true);
-	}
-
-	async syncMessages(client: MiniACPClient): Promise<void> {
-		const revisions = this.currentDraftRevisions();
-		if (this.state.sentRevisions.messages === revisions.messages) return;
-		const patch = { messages: this.state.draft.get().messages };
-		await client.setContext(patch);
-		this.recordSent(patch, revisions, false);
 	}
 
 	private createRecorder(): ContextRecorder {
@@ -96,8 +90,10 @@ export class ContextLedger {
 			this.state.draft.revision('messages');
 		this.state.draft.append(message);
 		this.state.sent.append(message);
-		if (wasSynced)
+		// Appending after a failed sync must not acknowledge an unsent prefix.
+		if (wasSynced) {
 			this.state.sentRevisions.messages = this.state.draft.revision('messages');
+		}
 	}
 
 	private planPatch(

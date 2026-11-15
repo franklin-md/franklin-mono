@@ -1,36 +1,20 @@
-import type { MessageEntry, SessionEntry } from './types.js';
+import type { Message } from '@franklin/mini-acp';
+import type { SessionEntry } from './types.js';
 import { createSummaryMessage } from './summary.js';
+import { validateEntries } from './validate.js';
 
-export function projectEntries(
-	entries: readonly SessionEntry[],
-): MessageEntry[] {
-	let visible: MessageEntry[] = [];
-	const ids = new Set<string>();
-	const summaries = new Set<string>();
+export function projectEntries(entries: readonly SessionEntry[]): Message[] {
+	validateEntries(entries);
+	let visible: Message[] = [];
 	for (const entry of entries) {
-		if (ids.has(entry.id)) throw new Error('Duplicate session entry id');
-		ids.add(entry.id);
-		if (entry.type === 'message') {
-			visible.push(entry);
-			continue;
+		switch (entry.type) {
+			case 'message':
+				visible.push(entry.message);
+				break;
+			case 'compaction':
+				visible = [createSummaryMessage(entry.summary)];
+				break;
 		}
-		const start =
-			entry.firstKeptEntryId === null
-				? visible.length
-				: visible.findIndex(
-						(item) =>
-							item.id === entry.firstKeptEntryId && !summaries.has(item.id),
-					);
-		if (start < 0) throw new Error('Invalid compaction boundary');
-		summaries.add(entry.id);
-		visible = [
-			{
-				type: 'message',
-				id: entry.id,
-				message: createSummaryMessage(entry.summary),
-			},
-			...visible.slice(start),
-		];
 	}
 	return visible;
 }

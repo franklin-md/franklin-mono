@@ -1,7 +1,5 @@
 import type { AbsolutePath, RestoreResult } from '@franklin/lib';
 import { createMiniACPRpcConnector } from '@franklin/mini-acp/rpc';
-import { priority } from '@franklin/extensibility';
-import { documentDownloadPolicy } from '../extensions/references/download-policy/configuration.js';
 import type { AuthManager } from '../auth/manager.js';
 import type { Orchestrator } from '../modules/orchestrator/index.js';
 import type { StoreRegistry } from '../modules/store/api/registry/index.js';
@@ -75,17 +73,7 @@ export class FranklinApp {
 				connect: connectAgent,
 				environment: platform.environment,
 				auth: this.auth,
-				extensions: [
-					...extensions,
-					// Resolve saved settings at tool-call time, including for independent
-					// inbox agents. Existing agents see edits without rebuilding runtimes.
-					priority.lowest(
-						documentDownloadPolicy.compute(
-							[],
-							() => this.settings.get().documentDownloads,
-						),
-					),
-				],
+				extensions,
 				stores,
 			});
 		this.agents = this.createAgents(opts.extensions, storage.stores);

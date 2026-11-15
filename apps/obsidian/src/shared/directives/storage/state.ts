@@ -1,13 +1,11 @@
-import type { JsonValue } from '@franklin/lib';
-import { z } from 'zod';
+import { directiveState } from './codec.js';
 
-export function copyDirectiveState(value: unknown): JsonValue {
+export function parseDirectiveState(value: unknown) {
 	try {
-		// Check cycles before recursive validation; z.json also rejects lossy JSON
-		// values such as dates, undefined fields, functions, and non-finite numbers.
-		const encoded = JSON.stringify(value);
-		z.json().parse(value);
-		return JSON.parse(encoded) as JsonValue;
+		// Reject cycles before Zod walks the object. Its parsed value is a detached
+		// snapshot, so the caller can keep editing the original during the save.
+		JSON.stringify(value);
+		return directiveState.parse(value);
 	} catch {
 		throw new Error('Directive state must be JSON-serializable');
 	}

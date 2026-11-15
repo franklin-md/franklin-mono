@@ -12,10 +12,9 @@
 	--font-sans: var(--font-interface);
 	--font-mono: var(--font-monospace);
 
-	/* Reading and UI text share the host's text-size preference. Keep sm at
-	 * chat's existing 90% size; larger steps retain Tailwind's proportions.
-	 * Inline bindings resolve the host variable where each utility is used.
-	 * See: https://docs.obsidian.md/Reference/CSS+variables/Foundation/Typography
+	/* Resolve sizes where each utility is used so Obsidian text-size changes
+	 * apply to views and pop-outs. Keep sm at Chat's existing 90% size.
+	 * https://docs.obsidian.md/Reference/CSS+variables/Foundation/Typography
 	 */
 	--text-xs: calc(var(--font-text-size) * 0.8);
 	--text-sm: calc(var(--font-text-size) * 0.9);

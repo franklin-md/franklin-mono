@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDirectiveTestRegistry } from '../../../../shared/directives/testing/registry.js';
+import {
+	createDirectiveTestPersistence,
+	createDirectiveTestRegistry,
+} from '../../../../shared/directives/testing/registry.js';
 import { createMarkdownTestApp } from '../../../../shared/obsidian/markdown/testing/app.js';
 import { QuickEditController } from '../controller.js';
 import type { QuickEditState } from '../../types.js';
-import { createDirectiveTestPersistence } from '../../../../shared/directives/testing/persistence.js';
 
 async function setup(run = vi.fn(async () => {})) {
 	const { app, disk } = createMarkdownTestApp({

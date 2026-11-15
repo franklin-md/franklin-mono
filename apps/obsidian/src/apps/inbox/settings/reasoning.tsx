@@ -19,6 +19,7 @@ const labels = {
 	medium: 'Medium',
 	high: 'High',
 	xhigh: 'Extra high',
+	max: 'Max',
 } satisfies Record<ModelSelection['reasoning'], string>;
 
 export function InboxReasoningSetting({ inbox }: Props) {

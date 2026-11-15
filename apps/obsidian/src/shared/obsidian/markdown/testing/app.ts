@@ -1,12 +1,7 @@
-import { EditorSelection, EditorState } from '@codemirror/state';
-import type {
-	App,
-	Editor,
-	EditorPosition,
-	EditorTransaction,
-	TFile,
-} from 'obsidian';
+import { EditorState } from '@codemirror/state';
+import type { App, Editor, TFile } from 'obsidian';
 import { vi } from 'vitest';
+import { createTestBuffer } from '../../editor/testing/buffer.js';
 
 export function createMarkdownTestApp(notes: Record<string, string>) {
 	const disk = new Map(Object.entries(notes));
@@ -50,43 +45,12 @@ export function createMarkdownTestApp(notes: Record<string, string>) {
 
 	function open(path: string, source = read(path)) {
 		let state = EditorState.create({ doc: source });
-		const offset = (position: EditorPosition) =>
-			state.doc.line(position.line + 1).from + position.ch;
-		const position = (offset: number) => {
-			const line = state.doc.lineAt(offset);
-			return { line: line.number - 1, ch: offset - line.from };
-		};
-		const editor = {
-			getValue: () => state.doc.toString(),
-			offsetToPos: position,
-			getCursor: () => position(state.selection.main.head),
-			setSelection: (from: EditorPosition, to = from) => {
-				state = state.update({
-					selection: { anchor: offset(from), head: offset(to) },
-				}).state;
+		const editor = createTestBuffer(
+			() => state,
+			(transaction) => {
+				state = state.update(transaction).state;
 			},
-			transaction: vi.fn(({ changes, selections }: EditorTransaction) => {
-				state = state.update({
-					changes: changes?.map((change) => ({
-						from: offset(change.from),
-						to: change.to ? offset(change.to) : undefined,
-						insert: change.text,
-					})),
-					selection: selections
-						? EditorSelection.create(
-								selections.map((selection) =>
-									EditorSelection.range(
-										offset(selection.from),
-										selection.to
-											? offset(selection.to)
-											: offset(selection.from),
-									),
-								),
-							)
-						: undefined,
-				}).state;
-			}),
-		} as unknown as Editor;
+		) as unknown as Editor;
 		editors.set(path, editor);
 		return editor;
 	}

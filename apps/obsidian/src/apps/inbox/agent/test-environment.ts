@@ -5,9 +5,9 @@ import {
 	toAbsolutePath,
 } from '@franklin/lib';
 import type { Fetch } from '@franklin/lib';
+import { createFranklinAgents } from '@franklin/agent/testing';
 import {
 	configureFilesystem,
-	createFranklinAgents,
 	createReconfigurableEnvironment,
 } from '@franklin/agent';
 import type {

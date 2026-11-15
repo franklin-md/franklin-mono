@@ -1,3 +1,4 @@
+import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { z } from 'zod';
 import { answerDetailSchema } from '../answer/schema.js';
 
@@ -21,7 +22,7 @@ const source = z.object({
 		})
 		.optional(),
 });
-const reasoning = z.enum(['off', 'minimal', 'low', 'medium', 'high', 'xhigh']);
+const reasoning = z.enum(THINKING_LEVELS);
 const state = z.discriminatedUnion('kind', [
 	z.object({ kind: z.literal('queued') }),
 	z.object({ kind: z.literal('running') }),

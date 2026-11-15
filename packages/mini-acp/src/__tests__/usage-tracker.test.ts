@@ -69,31 +69,38 @@ describe('UsageTracker', () => {
 		expect(total.cost.cacheWrite).toBeCloseTo(0.00005, 10);
 		expect(total.cost.total).toBeCloseTo(0.0049, 10);
 	});
-	it('keeps reported totals across multiple calls and zero session seeds', () => {
+	it('keeps available totals across multiple calls and zero session seeds', () => {
 		const tracker = new UsageTracker();
 		tracker.add(structuredClone(ZERO_USAGE));
-		const billed = {
+		const available = {
 			...ZERO_USAGE,
-			cost: { ...ZERO_USAGE.cost, total: 0.12, totalFromProvider: true },
+			cost: { ...ZERO_USAGE.cost, total: 0.12 },
 		};
-		tracker.add(billed);
-		tracker.add(billed);
+		tracker.add(available);
+		tracker.add(available);
 		expect(tracker.get().cost).toMatchObject({
 			total: 0.24,
-			totalFromProvider: true,
 		});
 	});
 
-	it('marks a mixed billed and estimated total as estimated', () => {
-		const tracker = new UsageTracker();
-		tracker.add({
-			...ZERO_USAGE,
-			cost: { ...ZERO_USAGE.cost, total: 0.12, totalFromProvider: true },
-		});
-		tracker.add({ ...ZERO_USAGE, cost: { ...ZERO_USAGE.cost, total: 0.03 } });
-		expect(tracker.get().cost).toMatchObject({
-			total: 0.15,
-			totalFromProvider: false,
-		});
-	});
+	it.each([true, false])(
+		'keeps the total unknown when a call has no total (unknown first: %s)',
+		(unknownFirst) => {
+			const tracker = new UsageTracker();
+			const available = {
+				...ZERO_USAGE,
+				cost: { ...ZERO_USAGE.cost, total: 0.12 },
+			};
+			const unknown = {
+				...ZERO_USAGE,
+				cost: { ...ZERO_USAGE.cost, total: undefined },
+			};
+			for (const usage of unknownFirst
+				? [unknown, available]
+				: [available, unknown])
+				tracker.add(usage);
+			tracker.add(available);
+			expect(tracker.get().cost.total).toBeUndefined();
+		},
+	);
 });

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render } from '@testing-library/react';
+import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import type { ReactNode } from 'react';
 
@@ -68,6 +68,7 @@ describe('ThinkingToggle – consistent dimensions', () => {
 		'medium',
 		'high',
 		'xhigh',
+		'max',
 	];
 
 	it('renders the same width and height classes for every level', () => {
@@ -98,7 +99,23 @@ describe('ThinkingToggle – consistent dimensions', () => {
 			const dots = container.querySelectorAll(
 				'[data-testid="thinking-toggle"] .rounded-full',
 			);
-			expect(dots.length, `level "${level}" dot count`).toBe(4);
+			expect(dots.length, `level "${level}" dot count`).toBe(5);
 		}
 	});
+});
+
+it('displays Max and cycles back to Off', async () => {
+	const { container } = render(
+		<Wrapper reasoning="max">
+			<ThinkingToggle />
+		</Wrapper>,
+	);
+	const button = container.querySelector('button');
+	if (!button) throw new Error('Expected thinking toggle');
+	await waitFor(() => expect(button.textContent).toBe('Max'));
+	expect(button.title).toBe('Thinking: max');
+	await act(async () => {
+		fireEvent.click(button);
+	});
+	expect(button.textContent).toBe('Off');
 });

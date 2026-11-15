@@ -1,9 +1,13 @@
 import type { ReactNode } from 'react';
 import type { App, Editor, MarkdownFileInfo } from 'obsidian';
-import type { FloatingAnchor } from '@franklin/ui';
+
+export type EditorPopoverAnchor = {
+	contextElement: HTMLElement;
+	getBoundingClientRect: () => DOMRect;
+};
 
 export type EditorPopoverSession = {
-	anchor: FloatingAnchor;
+	anchor: EditorPopoverAnchor;
 	focus: () => void;
 	close: (restoreFocus: boolean) => void;
 	contentRef: (element: HTMLDivElement | null) => void;

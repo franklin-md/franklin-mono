@@ -6,8 +6,8 @@ import {
 	type Filesystem,
 } from '@franklin/lib';
 import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
+import { createFranklinAgents } from '@franklin/agent/testing';
 import {
-	createFranklinAgents,
 	viewingContextExtension,
 	type AuthManager,
 	type EnvironmentConfig,

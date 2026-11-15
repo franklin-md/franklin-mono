@@ -8,12 +8,11 @@ import {
 	undo,
 	redo,
 } from '@codemirror/commands';
+import { useEffect } from 'react';
 import { act } from '@testing-library/react';
 import { editorLivePreviewField } from 'obsidian';
-import type { App } from 'obsidian';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DirectiveRegistry } from '../registry.js';
-import { createDirectiveTestPersistence } from '../testing/persistence.js';
+import { createDirectiveTestRegistry } from '../testing/registry.js';
 import { createDirectiveExtension } from '../live-preview/extension.js';
 import { clearPortalRoot } from '../../ui/portal.js';
 
@@ -35,10 +34,7 @@ afterEach(() => {
 
 describe('Live Preview directives', () => {
 	it('keeps Source mode as ordinary editable text', async () => {
-		const registry = await DirectiveRegistry.create({
-			app: {} as App,
-			persistence: createDirectiveTestPersistence(),
-		});
+		const registry = await createDirectiveTestRegistry();
 		const instance = await registry
 			.registerDirective('counter', () => <span>widget</span>)
 			.create({});
@@ -63,11 +59,55 @@ describe('Live Preview directives', () => {
 		});
 	});
 
-	it('deletes an entire inline instance from either boundary and restores it through undo', async () => {
-		const registry = await DirectiveRegistry.create({
-			app: {} as App,
-			persistence: createDirectiveTestPersistence(),
+	it('unmounts reused widget DOM after replacing a token with identical text', async () => {
+		const registry = await createDirectiveTestRegistry();
+		const unmounted = vi.fn();
+		const instance = await registry
+			.registerDirective('test', function TestWidget() {
+				useEffect(
+					() => () => {
+						unmounted();
+					},
+					[],
+				);
+				return <span>Mounted</span>;
+			})
+			.create({});
+		let view!: EditorView;
+		await act(async () => {
+			view = new EditorView({
+				state: EditorState.create({
+					doc: 'a' + instance.text + 'b',
+					extensions: [
+						editorLivePreviewField.init(() => true),
+						createDirectiveExtension(registry),
+					],
+				}),
+			});
+			const host = view.dom.querySelector<HTMLElement>('.franklin');
+			if (!host) throw new Error('Missing widget');
+			host.onWindowMigrated = vi.fn(() => () => {});
 		});
+		try {
+			expect(view.dom.textContent).toContain('Mounted');
+			await act(async () => {
+				view.dispatch({
+					changes: {
+						from: 1,
+						to: 1 + instance.text.length,
+						insert: instance.text,
+					},
+				});
+			});
+			expect(unmounted).not.toHaveBeenCalled();
+		} finally {
+			await act(async () => view.destroy());
+		}
+		expect(unmounted).toHaveBeenCalledOnce();
+	});
+
+	it('deletes an entire inline instance from either boundary and restores it through undo', async () => {
+		const registry = await createDirectiveTestRegistry();
 		const instance = await registry
 			.registerDirective<{
 				count: number;

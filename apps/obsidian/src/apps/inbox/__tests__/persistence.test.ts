@@ -63,7 +63,7 @@ describe('inbox disk persistence and runtime integration', () => {
 			} as unknown as AuthManager),
 		);
 		const inbox = await InboxController.create({
-			defaults,
+			defaults: { ...defaults, reasoning: 'max' },
 			persistence: persister,
 			run,
 		});
@@ -85,6 +85,8 @@ describe('inbox disk persistence and runtime integration', () => {
 			persistence: persister,
 			run: vi.fn(),
 		});
+		expect(restored.state.get().preferences.reasoning).toBe('max');
+		expect(restored.state.get().questions[0]?.reasoning).toBe('max');
 		expect(restored.state.get().questions[0]?.state).toEqual({
 			kind: 'answered',
 			answer: 'Recheck under the lock.',
@@ -117,5 +119,46 @@ describe('inbox disk persistence and runtime integration', () => {
 			}),
 		).rejects.toThrow('preserved');
 		expect(await readFile(path, 'utf8')).toBe('incomplete json');
+	});
+
+	it('upgrades the standalone Inbox version 7 file without dropping saved answers', async () => {
+		const { path, persister } = await storage();
+		const preferences = {
+			...defaults,
+			answerInstructions: 'Saved',
+			concurrency: 3,
+		};
+		const question = {
+			id: 'question',
+			rootId: 'question',
+			attemptId: 'attempt',
+			text: 'Why recheck?',
+			createdAt: 1,
+			updatedAt: 2,
+			...defaults,
+			answerInstructions: 'Original',
+			state: { kind: 'answered', answer: 'Another process may consume it.' },
+		};
+		await writeFile(
+			path,
+			JSON.stringify({
+				version: 7,
+				data: { questions: [question], preferences },
+			}),
+		);
+		const inbox = await InboxController.create({
+			defaults,
+			persistence: persister,
+			run: vi.fn(),
+		});
+		expect(inbox.state.get()).toMatchObject({
+			questions: [question],
+			preferences,
+			groups: [],
+			actions: [],
+			actionRuns: [],
+		});
+		expect(await readFile(path, 'utf8')).toContain('"version":8');
+		await inbox.dispose();
 	});
 });

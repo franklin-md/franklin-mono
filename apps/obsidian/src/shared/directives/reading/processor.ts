@@ -1,5 +1,7 @@
 import type { MarkdownPostProcessor } from 'obsidian';
 import type { DirectiveRegistry } from '../registry.js';
+import { scanDirectives } from '../syntax/scan.js';
+import type { DirectiveToken } from '../syntax/types.js';
 import { parseDirectives } from '../syntax/parse.js';
 import { formatDirective } from '../syntax/format.js';
 import { DirectiveRenderChild } from './child.js';
@@ -12,46 +14,41 @@ export function createDirectivePostProcessor(
 		const document = element.ownerDocument;
 		const filter = document.defaultView?.NodeFilter;
 		if (!filter) return;
-		const nodes: Text[] = [];
+		const section = context.getSectionInfo(element);
+		if (!section) return;
+		const candidates: { node: Text; tokens: DirectiveToken[] }[] = [];
 		const walker = document.createTreeWalker(element, filter.SHOW_TEXT);
 		while (walker.nextNode()) {
 			const node = walker.currentNode as Text;
-			if (!node.parentElement?.closest('code, pre, script, style, .franklin'))
-				nodes.push(node);
+			if (node.parentElement?.closest('code, pre, script, style, .franklin'))
+				continue;
+			const tokens = scanDirectives(node.data);
+			if (tokens.length) candidates.push({ node, tokens });
 		}
-		const section = context.getSectionInfo(element);
-		const candidates = nodes.map((node) => ({
-			node,
-			tokens: parseDirectives(node.data),
-		}));
+		if (!candidates.length) return;
 		const rendered = countDirectives(
 			candidates.flatMap(({ tokens }) => tokens),
 		);
-		let allowed: Map<string, number> | undefined;
-		if (section) {
-			const lines = section.text.split('\n');
-			const from = lines
-				.slice(0, section.lineStart)
-				.reduce((offset, line) => offset + line.length + 1, 0);
-			const to = lines
-				.slice(0, section.lineEnd + 1)
-				.reduce((offset, line) => offset + line.length + 1, 0);
-			allowed = countDirectives(
-				parseDirectives(section.text).filter(
-					(token) => token.from >= from && token.to <= to,
-				),
-			);
-		}
+		const lines = section.text.split('\n');
+		const lineOffset = (line: number) =>
+			lines
+				.slice(0, line)
+				.reduce((offset, text) => offset + text.length + 1, 0);
+		const from = lineOffset(section.lineStart);
+		const to = lineOffset(section.lineEnd + 1);
+		const allowed = countDirectives(
+			parseDirectives(section.text).filter(
+				(token) => token.from >= from && token.to <= to,
+			),
+		);
 		for (const { node, tokens } of candidates) {
 			// Markdown removes escaping. If source and DOM counts disagree, an
 			// escaped example may be indistinguishable from a real reference. Keep
 			// those tokens readable instead of mounting a widget over the wrong text.
-			const matches = tokens.filter(
-				({ name, id }) =>
-					!allowed ||
-					allowed.get(formatDirective(name, id)) ===
-						rendered.get(formatDirective(name, id)),
-			);
+			const matches = tokens.filter(({ name, id }) => {
+				const key = formatDirective(name, id);
+				return allowed.get(key) === rendered.get(key);
+			});
 			if (matches.length === 0) continue;
 			const fragment = document.createDocumentFragment();
 			let offset = 0;

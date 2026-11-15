@@ -67,14 +67,14 @@ describe('quick edit agent', () => {
 			'# Heading\n' + before,
 		);
 		await createQuickEditRunner(h.app, h.franklin)(input);
+		expect(mock.calls().toolResults.filter((result) => result.isError)).toEqual(
+			[],
+		);
 		expect(
 			new TextDecoder().decode(
 				await h.filesystem.readFile(toAbsolutePath('/vault/Note.md')),
 			),
 		).toBe('# Heading\n' + after);
-		expect(mock.calls().toolResults.every((result) => !result.isError)).toBe(
-			true,
-		);
 		expect(mock.context().config.model).toBe('edit-model');
 		for (const name of ['bash', 'write_file'])
 			expect(mock.context().tools.map((tool) => tool.name)).not.toContain(name);

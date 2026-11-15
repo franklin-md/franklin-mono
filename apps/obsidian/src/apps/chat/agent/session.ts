@@ -3,6 +3,7 @@ import type {
 	FranklinState,
 	OrchestratorCreateInput,
 } from '@franklin/agent';
+import { DEFAULT_NETWORK_CONFIG } from '@franklin/agent';
 import type { AbsolutePath } from '@franklin/lib';
 
 import { createDefaultObsidianFilesystemPermissions } from '../../../shared/obsidian/filesystem/permissions.js';
@@ -25,10 +26,7 @@ export function createObsidianSessionInput(
 						configDir,
 					),
 				},
-				netConfig: {
-					allowedDomains: [],
-					deniedDomains: [],
-				},
+				netConfig: structuredClone(DEFAULT_NETWORK_CONFIG),
 			},
 		},
 	};

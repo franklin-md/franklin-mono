@@ -1,3 +1,4 @@
+import { DEFAULT_NETWORK_CONFIG } from '@franklin/agent';
 import { useCallback } from 'react';
 
 import { AgentList, useAgents, useSettings } from '@franklin/react';
@@ -31,7 +32,7 @@ export function AgentSidebar() {
 							denyWrite: [],
 						},
 					},
-					netConfig: { allowedDomains: [], deniedDomains: [] },
+					netConfig: structuredClone(DEFAULT_NETWORK_CONFIG),
 				},
 			},
 		});

@@ -3,6 +3,12 @@
 Shared host operations for existing vault Markdown notes. Paths are vault-relative;
 missing notes and non-Markdown files reject rather than creating files.
 
+`Editor.getValue()` includes unsaved edits in the live buffer. `Vault.read()`
+reads the saved file, and `Vault.cachedRead()` can reuse cached file content.
+Checking the editor first keeps reads and edits current while a save is pending.
+See Obsidian's [Editor guide](https://docs.obsidian.md/Plugins/Editor/Editor) and
+[Vault guide](https://docs.obsidian.md/Plugins/Vault).
+
 - `readMarkdown(app, path)` returns the live editing buffer when available, otherwise
   `Vault.read`. It checks again for an opened buffer after the disk read completes.
 - `editMarkdown(app, path, plan)` receives a synchronous planner returning
@@ -23,16 +29,13 @@ There is no cross-note transaction and no request-level diff ownership.
 
 ## Caller audit
 
-Directive replacement uses this operation for both replacing all copies and
-replacing a unique reference within one note. Other plugin write paths have
-different contracts:
+Directive replacement uses this operation to replace all copies. Other plugin
+write paths have different contracts.
 
-- Directive insertion uses an explicit live editor target and places the cursor
-  after the inserted token. It remains a direct editor transaction.
+- Directive insertion appends at a tracked line in the live editor and lets the editor
+  map the current selection through the transaction.
 - Diff acceptance/rejection updates CodeMirror diff state and baseline effects,
   including undo integration. It remains in the diff controller.
 - The filesystem adapter accepts binary data, supports file creation, and feeds
   agent write notifications. It remains a filesystem operation.
-- Inbox current-note capture chooses the most recent pane and captures its
-  selection; its read path retains those pane-specific semantics.
 - Persistence writes plugin JSON documents outside the note-editing flow.

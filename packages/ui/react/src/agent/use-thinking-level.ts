@@ -15,6 +15,7 @@ const TOGGLE_LEVELS: readonly ThinkingLevel[] = [
 	'medium',
 	'high',
 	'xhigh',
+	'max',
 ] as const;
 
 export type UseThinkingLevel = {

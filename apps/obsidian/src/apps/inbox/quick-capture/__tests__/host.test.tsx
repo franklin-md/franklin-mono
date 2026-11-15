@@ -4,12 +4,12 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { App } from 'obsidian';
 import { InboxCaptureChooser } from '../host.js';
 import { createInboxDirectiveScenario } from '../../directive/testing/scenario.js';
-import { createDirectiveTestEditor } from '../../../../shared/directives/testing/editor.js';
+import { createTestEditor } from '../../../../shared/obsidian/editor/testing/editor.js';
 import { clearPortalRoot } from '../../../../shared/ui/portal.js';
 import type { CaptureAction } from '../types.js';
 
 let scenario: Awaited<ReturnType<typeof createInboxDirectiveScenario>>;
-let target: ReturnType<typeof createDirectiveTestEditor>;
+let target: ReturnType<typeof createTestEditor>;
 let chooser: InboxCaptureChooser;
 let focus = vi.fn<() => void>();
 let onSuccess = vi.fn<(action: CaptureAction) => void>();
@@ -33,9 +33,7 @@ beforeEach(async () => {
 		},
 	);
 	scenario = await createInboxDirectiveScenario();
-	target = createDirectiveTestEditor(
-		'Original thoughts and questions?\nDifferent text',
-	);
+	target = createTestEditor('Original thoughts and questions?\nDifferent text');
 	document.body.append(target.cm.dom);
 	vi.spyOn(target.cm, 'coordsAtPos').mockReturnValue({
 		left: 40,

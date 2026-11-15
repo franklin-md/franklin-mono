@@ -1,4 +1,3 @@
-import { createMessageEntries } from '../history/create.js';
 import { StopCode, ZERO_USAGE, type Usage } from '@franklin/mini-acp';
 import { text, turn, turnEnd } from '@franklin/mini-acp/mock';
 import { describe, expect, it } from 'vitest';
@@ -56,7 +55,7 @@ describe('core runtime protocol state', () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
-					entries: createMessageEntries([seedMessage], 'test'),
+					entries: [{ type: 'message' as const, message: seedMessage }],
 					llmConfig: {
 						model: 'seed-model',
 						provider: 'seed-provider',
@@ -314,7 +313,7 @@ describe('core runtime protocol state', () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
-					entries: createMessageEntries([seedMessage], 'test'),
+					entries: [{ type: 'message' as const, message: seedMessage }],
 					llmConfig: { model: 'seed-model' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
@@ -427,7 +426,12 @@ describe('core runtime protocol state', () => {
 						content: [{ type: 'text', text: 'hello' }],
 					},
 				},
-				{ type: 'turnEnd', stopCode: StopCode.Finished },
+				{
+					type: 'turnEnd',
+					stopCode: StopCode.Finished,
+					stepUsage: ZERO_USAGE,
+					usage: ZERO_USAGE,
+				},
 			]);
 		} finally {
 			await scenario.dispose();
@@ -479,16 +483,11 @@ describe('core runtime protocol state', () => {
 			await scenario.collectPrompt('hi');
 
 			const state = await scenario.state();
-			expect(
-				state.core.entries.flatMap((entry) =>
-					entry.type === 'message' ? [entry.message] : [],
-				),
-			).toContainEqual(defaultUserPrompt());
-			expect(
-				state.core.entries.flatMap((entry) =>
-					entry.type === 'message' ? [entry.message] : [],
-				),
-			).toContainEqual({
+			const messages = state.core.entries.flatMap((entry) =>
+				entry.type === 'message' ? [entry.message] : [],
+			);
+			expect(messages).toContainEqual(defaultUserPrompt());
+			expect(messages).toContainEqual({
 				role: 'assistant',
 				content: [{ type: 'text', text: 'hello' }],
 			});
@@ -571,15 +570,15 @@ describe('core runtime protocol state', () => {
 			turns: [turn([text('hello'), turnEnd({ usage: turnUsage })])],
 			state: {
 				core: {
-					entries: createMessageEntries(
-						[
-							{
+					entries: [
+						{
+							type: 'message' as const,
+							message: {
 								role: 'user',
 								content: [{ type: 'text', text: 'seed' }],
 							},
-						],
-						'test',
-					),
+						},
+					],
 					llmConfig: { model: 'test' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: ['set_chat_title'] },

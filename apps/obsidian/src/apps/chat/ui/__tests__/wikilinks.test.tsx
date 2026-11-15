@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 
 import type { TextBlock } from '@franklin/agent';
+import { formatReferenceMention } from '@franklin/agent';
+import { getConversationRenderTurn } from '@franklin/react';
+import { Markdown } from '@franklin/ui';
 import {
 	cleanup,
 	fireEvent,
@@ -13,7 +16,8 @@ import { Keymap } from 'obsidian';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ObsidianAppProvider } from '../../../../shared/ui/obsidian-app-context.js';
-import { ObsidianText } from '../blocks.js';
+import { ObsidianText, ObsidianThinking } from '../blocks.js';
+import { ObsidianUserMessage } from '../user-message.js';
 import { ObsidianWikilink } from '../wikilinks/link.js';
 
 afterEach(() => {
@@ -54,8 +58,122 @@ function renderText(text: string, app: App = createMockApp().app) {
 	};
 
 	const content = <ObsidianText block={block} />;
-	render(<ObsidianAppProvider value={app}>{content}</ObsidianAppProvider>);
+	return render(
+		<ObsidianAppProvider value={app}>{content}</ObsidianAppProvider>,
+	);
 }
+
+describe('Obsidian conversation Markdown', () => {
+	it('preserves note URLs without web-link decoration', () => {
+		const href = 'obsidian://open?vault=Obsidian&file=Thread%20Coarsening.md';
+		const { container } = renderText(
+			`In [your coarsening example](${href}), reuse A.`,
+		);
+
+		const link = screen.getByRole('link', { name: 'your coarsening example' });
+		expect(link.getAttribute('href')).toBe(href);
+		expect(link.getAttribute('target')).toBeNull();
+		expect(link.getAttribute('rel')).toBeNull();
+		expect(link.querySelector('img')).toBeNull();
+		expect(container.textContent).not.toContain('[blocked]');
+	});
+
+	it('preserves note URLs alongside declared wikilinks', () => {
+		const href = 'obsidian://open?vault=Obsidian&file=Notes%2FExample.md';
+		renderText(`See [[MEMORY]] and [Note](${href})`);
+
+		expect(screen.getByRole('button', { name: '[[MEMORY]]' })).toBeTruthy();
+		expect(
+			screen.getByRole('link', { name: 'Note' }).getAttribute('href'),
+		).toBe(href);
+	});
+
+	it('preserves note URLs in expanded thinking blocks', () => {
+		const href = 'obsidian://open?vault=Obsidian&file=Example.md';
+		render(
+			<ObsidianThinking
+				block={{ kind: 'thinking', text: `[Note](${href})`, startedAt: 0 }}
+			/>,
+		);
+
+		expect(
+			screen.getByRole('link', { name: 'Note' }).getAttribute('href'),
+		).toBe(href);
+	});
+
+	it('preserves note URLs and file references in user messages', () => {
+		const href = 'obsidian://open?vault=Obsidian&file=Example.md';
+		const mention = formatReferenceMention({ locator: 'notes/deep work.md' });
+		const turn = getConversationRenderTurn(
+			{
+				id: 'turn-1',
+				timestamp: 0,
+				prompt: {
+					role: 'user',
+					content: [{ type: 'text', text: `[Note](${href}) ${mention}` }],
+				},
+				response: { blocks: [] },
+			},
+			0,
+			true,
+			0,
+		);
+		render(<ObsidianUserMessage turn={turn} />);
+
+		expect(
+			screen.getByRole('link', { name: 'Note' }).getAttribute('href'),
+		).toBe(href);
+		expect(screen.getByText('deep work.md')).toBeTruthy();
+		expect(screen.queryByText(mention)).toBeNull();
+	});
+
+	it('keeps the host protocol policy out of unconfigured shared Markdown', () => {
+		const href = 'obsidian://open?vault=Obsidian&file=Example.md';
+		renderText(`[Host note](${href})`);
+		const { container } = render(<Markdown text={`[Shared note](${href})`} />);
+
+		expect(screen.getByRole('link', { name: 'Host note' })).toBeTruthy();
+		expect(container.querySelector('a')).toBeNull();
+		expect(container.textContent).toContain('Shared note [blocked]');
+	});
+
+	it('preserves default telephone links', () => {
+		renderText('[Call](tel:+442012345678)');
+
+		expect(
+			screen.getByRole('link', { name: 'Call' }).getAttribute('href'),
+		).toBe('tel:+442012345678');
+	});
+
+	it.each([
+		'javascript:alert%281%29',
+		'data:text/html,unsafe',
+		'file:///etc/passwd',
+		'vbscript:msgbox%281%29',
+		'unknown-app://open',
+	])('blocks unsafe or unsupported URLs: %s', (href) => {
+		const { container } = renderText(
+			`[Unsafe](${href}) <a href="${href}">Unsafe HTML</a>`,
+		);
+
+		expect(container.querySelector('a')).toBeNull();
+		expect(container.textContent).toContain('Unsafe [blocked]');
+		expect(container.textContent).toContain('Unsafe HTML [blocked]');
+	});
+
+	it('strips scripts, event handlers and undeclared wikilink attributes', () => {
+		const { container } = renderText(
+			'<script>alert(1)</script>\n\n<a href="obsidian://open?vault=Obsidian&file=Example.md" onclick="alert(1)">Note</a>\n\n<obsidian-wikilink linktext="MEMORY" onclick="alert(1)" data-blocked="stripped">Memory</obsidian-wikilink>',
+		);
+
+		expect(
+			screen.getByRole('link', { name: 'Note' }).getAttribute('onclick'),
+		).toBeNull();
+		expect(screen.getByRole('button', { name: '[[Memory]]' })).toBeTruthy();
+		expect(container.querySelector('script')).toBeNull();
+		expect(container.querySelector('[onclick], [data-blocked]')).toBeNull();
+	});
+});
 
 describe('Obsidian conversation wikilinks', () => {
 	it('renders bare wikilinks as marker links', () => {

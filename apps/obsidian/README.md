@@ -22,6 +22,7 @@ src/
     agent/                 Obsidian platform factory and reference/PDF capabilities
     ui/                    React mounting, portals, host context and setting primitives
     diff/                  Editor and explorer integration for reviewing agent writes
+    directives/            Persisted inline directives and editor/render adapters
   styles/                  Global theme bridge, reset and stylesheet entry point
   mocks/                   Obsidian test and Storybook mocks
   dev/                     Development instrumentation
@@ -32,6 +33,12 @@ code and Franklin packages; shared code must not depend on app internals. Keep
 app-specific state, settings, styles, tests and stories beside their owner. Move
 code into shared when another app uses the same capability. Cross-host UI and
 runtime implementations continue to belong in the existing workspace packages.
+
+The editor primitives provide [live-buffer Markdown operations](src/shared/obsidian/markdown/README.md), [persistent directive state](src/shared/directives/README.md), and [editor popover lifecycle](src/shared/ui/editor-popover/README.md). Chat and settings remain available if directives cannot be restored.
+
+The plugin guards asynchronous startup against unload, including unload before
+initialization finishes. It keeps persisted sessions during cleanup; the SDK has
+no application-wide shutdown method.
 
 Apps register through ordinary functions. The plugin assembles their settings
 sections and owns their lifetime; unmounting a pane only disposes its UI. Inbox
@@ -117,11 +124,12 @@ Then in Obsidian:
 
 ## Settings
 
-Franklin settings has four tabs:
+Franklin settings has five tabs:
 
 | Tab | Settings |
 | --- | --- |
-| General | Open-note context sharing, Quick edit and document download limits |
+| General | Open-note context sharing and document download limits |
+| Quick edit | Editing model, reasoning, instructions and shortcut |
 | Inbox | Reasoning, answer instructions, selection shortcut and reusable actions |
 | Flashcards | Capture collection folder and Mochi database path |
 | Connections | Provider accounts/API keys |
@@ -142,7 +150,7 @@ removes the directive and ends the request, while content changes use file-level
 review. Undo-restored completed directives stay inactive; later edits start a new
 request. Failed or stopped requests retain recovery, with their saved explanation
 available on hover and keyboard focus. Configure its
-model, reasoning, editing instructions and shortcut in **General → Quick edit**.
+model, reasoning, editing instructions and shortcut in **Quick edit**.
 See [interaction, persistence and execution details](src/apps/quick-edit/README.md).
 
 ## Study inbox

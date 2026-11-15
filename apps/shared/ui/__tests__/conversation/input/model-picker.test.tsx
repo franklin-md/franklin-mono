@@ -33,12 +33,8 @@ afterEach(() => {
 
 describe('controlled model picker', () => {
 	it.each([
-		['fable', 'Claude Fable 5.2', 'anthropic/claude-fable-5.2'],
-		['opus', 'Claude Opus 5.5', 'anthropic/claude-opus-5.5'],
-		['argon', 'Gemini 4 Argon', 'google/gemini-4-argon'],
-		['carbon', 'Gemini 4 Carbon', 'google/gemini-4-carbon'],
-		['hydrogen', 'Gemini 4 Hydrogen', 'google/gemini-4-hydrogen'],
-		['3.8 flash', 'Gemini 3.8 Flash', 'google/gemini-3.8-flash'],
+		['gemini', 'Gemini 3.5 Flash', 'google/gemini-3.5-flash'],
+		['glm', 'GLM 5.3 Prime', 'z-ai/glm-5.3-prime'],
 	])(
 		'searches for %s and selects its OpenRouter model',
 		async (search, name, id) => {
@@ -122,6 +118,7 @@ describe('controlled model picker', () => {
 			'medium',
 			'high',
 			'xhigh',
+			'max',
 		] as const;
 		const props = { provider: 'custom', model: 'saved', onSelect };
 		const { rerender } = render(
@@ -131,7 +128,8 @@ describe('controlled model picker', () => {
 		fireEvent.change(screen.getByPlaceholderText('Search models...'), {
 			target: { value: 'no-such-model' },
 		});
-		expect(screen.getAllByRole('radio')).toHaveLength(6);
+		expect(screen.getAllByRole('radio')).toHaveLength(7);
+		expect(screen.getByRole('radio', { name: 'Max' })).toBeTruthy();
 		expect(
 			screen.getByRole<HTMLInputElement>('radio', { name: 'High' }).checked,
 		).toBe(true);
@@ -160,7 +158,7 @@ describe('controlled model picker', () => {
 	it('shows the compact current effort beside the model name and reflects external updates', () => {
 		const props = {
 			provider: 'openai-codex',
-			model: 'gpt-6.1-sol',
+			model: 'gpt-6.2-sol',
 			onSelect: vi.fn(),
 		};
 		const levels = ['medium', 'xhigh'] as const;
@@ -168,7 +166,7 @@ describe('controlled model picker', () => {
 		const { rerender } = render(
 			<ModelPicker {...props} effort={{ level: 'medium', levels, onChange }} />,
 		);
-		expect(screen.getByRole('button').textContent).toContain('GPT-6.1-Sol');
+		expect(screen.getByRole('button').textContent).toContain('GPT-6.2-Sol');
 		expect(screen.getByRole('button').textContent).toContain('Med');
 		rerender(
 			<ModelPicker {...props} effort={{ level: 'xhigh', levels, onChange }} />,
@@ -200,7 +198,7 @@ describe('controlled model picker', () => {
 		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 		await waitFor(() => expect(document.activeElement).toBe(trigger));
 	});
-	it('C04: preserves a saved model outside the catalog and reflects external changes', () => {
+	it('preserves a saved model outside the catalog and reflects external changes', () => {
 		const select = vi.fn();
 		const { rerender } = render(
 			<ModelPicker
@@ -216,32 +214,32 @@ describe('controlled model picker', () => {
 		rerender(
 			<ModelPicker
 				provider="openai-codex"
-				model="gpt-6.1-sol"
+				model="gpt-6.2-sol"
 				onSelect={select}
 			/>,
 		);
-		expect(screen.getByRole('button').textContent).toContain('GPT-6.1-Sol');
+		expect(screen.getByRole('button').textContent).toContain('GPT-6.2-Sol');
 		expect(select).not.toHaveBeenCalled();
 	});
 
-	it('C04: searches catalog choices and sends the selected provider/model to its owner', async () => {
+	it('searches catalog choices and sends the selected provider/model to its owner', async () => {
 		const select = vi.fn();
 		render(
 			<ModelPicker
 				provider="custom"
 				model="saved-model"
 				onSelect={select}
-				label="Inbox model"
+				label="Choose model"
 			/>,
 		);
-		fireEvent.click(screen.getByRole('button', { name: 'Inbox model' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Choose model' }));
 		fireEvent.change(screen.getByPlaceholderText('Search models...'), {
-			target: { value: 'gpt-6.1-sol' },
+			target: { value: 'gpt-6.2-sol' },
 		});
-		fireEvent.click(await screen.findByRole('option', { name: 'GPT-6.1-Sol' }));
+		fireEvent.click(await screen.findByRole('option', { name: 'GPT-6.2-Sol' }));
 		expect(select).toHaveBeenCalledExactlyOnceWith(
 			'openai-codex',
-			'gpt-6.1-sol',
+			'gpt-6.2-sol',
 		);
 		expect(screen.queryByPlaceholderText('Search models...')).toBeNull();
 	});

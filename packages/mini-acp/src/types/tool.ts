@@ -24,7 +24,6 @@ export type ToolResult = {
 
 export type ToolExecuteParams = {
 	call: ToolCall;
-	afterMessageId?: string;
 };
 export type ToolExecuteHandler = (
 	params: ToolExecuteParams,

@@ -1,74 +1,131 @@
 import { getCurrentSystemPrompt } from '@earendil-works/pi-ai';
 import { describe, expect, it } from 'vitest';
-import type { Context as PiContext } from '@earendil-works/pi-ai';
+import type { TranscriptContext as PiContext } from '@earendil-works/pi-ai';
 import { createPiTestResponse as response } from '../../../../testing/pi-response.js';
-import {
-	collect,
-	StopCode,
-	ZERO_USAGE,
-	type Message,
-} from '@franklin/mini-acp';
+import { StopCode, ZERO_USAGE, type Message } from '@franklin/mini-acp';
+import { collectPrompt } from '../../turn/collect.js';
 import { z } from 'zod';
 import { createPiTestConnector } from '../../../../testing/pi-connector.js';
 import { createRuntime } from '../../../../testing/create-runtime.js';
 import { createCoreStateModule } from '../../module/index.js';
 import { emptyCoreState } from '../../state.js';
-import { createMessageEntries } from '../../history/create.js';
+import { createMessageEntries } from '../../../../testing/session-entries.js';
 import { franklinSessionCodec } from '../../../../app/session/codecs/index.js';
+import { estimateContextTokens } from '../tokens/context.js';
 
 const prompt = {
 	role: 'user',
 	content: [{ type: 'text', text: 'Continue the task' }],
 } satisfies Message;
 const config = {
-	provider: 'openai-codex',
-	model: 'gpt-5.4',
+	// The pinned catalog gives GPT-4 an 8,192-token window. Keep lifecycle
+	// fixtures small while still reaching the selected model's real threshold.
+	provider: 'openai',
+	model: 'gpt-4',
 	apiKey: 'test-only',
 };
 
 describe('compaction through the real Pi loop and RPC transport', () => {
+	it('keeps roughly 9K tokens of research on a large-window model across idle and fresh-prompt boundaries', async () => {
+		let calls = 0;
+		let summaries = 0;
+		const tools = ['search', 'fetch', 'fetch'];
+		const connector = createPiTestConnector({
+			streamFn: (model, context) => {
+				if (getCurrentSystemPrompt(context.messages).startsWith('Summarize')) {
+					summaries += 1;
+					return response(model, [{ type: 'text', text: 'Research summary.' }]);
+				}
+				const name = tools[calls++];
+				return name
+					? response(
+							model,
+							[{ type: 'toolCall', id: `call-${calls}`, name, arguments: {} }],
+							'toolUse',
+						)
+					: response(model, [{ type: 'text', text: 'Research complete.' }]);
+			},
+		});
+		const runtime = await createRuntime(
+			createCoreStateModule(connector),
+			emptyCoreState(),
+			[
+				(api) => {
+					for (const name of ['search', 'fetch']) {
+						api.registerTool(
+							{ name, description: name, schema: z.object({}) },
+							{ execute: () => 'x'.repeat(name === 'search' ? 1000 : 17_000) },
+						);
+					}
+				},
+			],
+		);
+		await runtime.setLLMConfig({
+			provider: 'openai-codex',
+			model: 'gpt-6-astra',
+			apiKey: 'test-only',
+		});
+		try {
+			const result = await collectPrompt(runtime.prompt(prompt));
+			expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
+			expect(summaries).toBe(0);
+			const inspected = await runtime.inspect();
+			const tokens = estimateContextTokens(inspected.core);
+			expect(inspected.contextTokens).toBe(tokens);
+			expect(tokens).toBeGreaterThan(8700);
+			expect(tokens).toBeLessThan(9500);
+			const next = await collectPrompt(runtime.prompt(prompt));
+			expect(next.turnEnd?.stopCode).toBe(StopCode.Finished);
+			expect(summaries).toBe(0);
+			expect(
+				runtime
+					.getSession()
+					.entries.some((entry) => entry.type === 'compaction'),
+			).toBe(false);
+		} finally {
+			await runtime.dispose();
+		}
+	});
+
 	it('compacts before inference, keeps history, restores and forks the compacted context', async () => {
 		const requests: PiContext[] = [];
-		const connector = createPiTestConnector(
-			{
-				streamFn: (model, context) => {
-					requests.push({
-						...context,
-						messages: structuredClone(context.messages),
-					});
-					return response(model, [
-						{
-							type: 'text',
-							text: getCurrentSystemPrompt(context.messages).startsWith(
-								'Summarize',
-							)
-								? 'Remember the original task.'
-								: 'done',
-						},
-					]);
-				},
+		const connector = createPiTestConnector({
+			streamFn: (model, context) => {
+				requests.push({
+					...context,
+					messages: structuredClone(context.messages),
+				});
+				return response(model, [
+					{
+						type: 'text',
+						text: getCurrentSystemPrompt(context.messages).startsWith(
+							'Summarize',
+						)
+							? 'Remember the original task.'
+							: 'done',
+					},
+				]);
 			},
-			2048,
-		);
+		});
 		const module = createCoreStateModule(connector);
 		const state = emptyCoreState();
 		state.core.entries = createMessageEntries([
 			{
 				role: 'user',
-				content: [{ type: 'text', text: 'original '.repeat(1600) }],
+				content: [{ type: 'text', text: 'original '.repeat(4000) }],
 			},
 			{ role: 'assistant', content: [{ type: 'text', text: 'accepted' }] },
 		]);
 		const runtime = await createRuntime(module, state, []);
 		await runtime.setLLMConfig(config);
 		try {
-			const result = await collect(runtime.prompt(prompt));
+			const result = await collectPrompt(runtime.prompt(prompt));
 			expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
 			expect(
 				requests.filter((request) =>
 					getCurrentSystemPrompt(request.messages).startsWith('Summarize'),
 				),
-			).toHaveLength(5);
+			).not.toHaveLength(0);
 			const main = requests.at(-1)!;
 			expect(JSON.stringify(main.messages)).toContain(
 				'Remember the original task.',
@@ -81,7 +138,7 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 				snapshot.entries.filter((entry) => entry.type === 'compaction'),
 			).toHaveLength(1);
 			expect(snapshot.llmConfig).not.toHaveProperty('apiKey');
-			expect(snapshot.usage.tokens.total).toBe(90);
+			expect(snapshot.usage.tokens.total).toBe(requests.length * 15);
 			const fork = await module.state(runtime).fork();
 			expect(fork.core.entries).toEqual(snapshot.entries);
 			expect(fork.core.usage).toEqual(ZERO_USAGE);
@@ -90,14 +147,14 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 			const restored = await createRuntime(module, fork, []);
 			try {
 				await restored.setLLMConfig(config);
-				await collect(restored.prompt(prompt));
+				await collectPrompt(restored.prompt(prompt));
 				expect(JSON.stringify(requests.at(-1)?.messages)).toContain(
 					'Remember the original task.',
 				);
 			} finally {
 				await restored.dispose();
 			}
-			// The app codec round-trip preserves the checkpoint, including its boundary.
+			// The app codec round-trip preserves the complete-prefix checkpoint.
 			const session = {
 				core: snapshot,
 				details: { visibility: 'visible' as const },
@@ -123,47 +180,42 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 		}
 	});
 
-	it('compacts inside a tool loop after recording assistant updates and preserves the latest tool exchange', async () => {
+	it('compacts inside a tool loop after recording assistant updates and summarizes the completed tool exchange', async () => {
 		let calls = 0;
 		let summaries = 0;
 		const mainRequests: PiContext[] = [];
 		const summaryInputs: string[] = [];
-		const connector = createPiTestConnector(
-			{
-				streamFn: (model, context) => {
-					if (
-						getCurrentSystemPrompt(context.messages).startsWith('Summarize')
-					) {
-						summaries += 1;
-						summaryInputs.push(JSON.stringify(context.messages));
-						return response(model, [
-							{ type: 'text', text: 'The earlier lookup succeeded.' },
-						]);
-					}
-					mainRequests.push({
-						...context,
-						messages: structuredClone(context.messages),
-					});
-					calls += 1;
-					return calls <= 2
-						? response(
-								model,
-								[
-									{ type: 'text', text: 'intermediate progress' },
-									{
-										type: 'toolCall',
-										id: `call-${calls}`,
-										name: 'lookup',
-										arguments: {},
-									},
-								],
-								'toolUse',
-							)
-						: response(model, [{ type: 'text', text: 'done' }]);
-				},
+		const connector = createPiTestConnector({
+			streamFn: (model, context) => {
+				if (getCurrentSystemPrompt(context.messages).startsWith('Summarize')) {
+					summaries += 1;
+					summaryInputs.push(JSON.stringify(context.messages));
+					return response(model, [
+						{ type: 'text', text: 'The earlier lookup succeeded.' },
+					]);
+				}
+				mainRequests.push({
+					...context,
+					messages: structuredClone(context.messages),
+				});
+				calls += 1;
+				return calls <= 2
+					? response(
+							model,
+							[
+								{ type: 'text', text: 'intermediate progress' },
+								{
+									type: 'toolCall',
+									id: `call-${calls}`,
+									name: 'lookup',
+									arguments: {},
+								},
+							],
+							'toolUse',
+						)
+					: response(model, [{ type: 'text', text: 'done' }]);
 			},
-			2048,
-		);
+		});
 		const runtime = await createRuntime(
 			createCoreStateModule(connector),
 			emptyCoreState(),
@@ -175,14 +227,14 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 							description: 'Look up information',
 							schema: z.object({}),
 						},
-						{ execute: () => 'result '.repeat(500) },
+						{ execute: () => 'result '.repeat(4000) },
 					);
 				},
 			],
 		);
 		await runtime.setLLMConfig(config);
 		try {
-			const result = await collect(runtime.prompt(prompt));
+			const result = await collectPrompt(runtime.prompt(prompt));
 			expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
 			expect(calls).toBe(3);
 			expect(summaries).toBeGreaterThan(0);
@@ -199,7 +251,7 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 					(message) =>
 						message.role === 'toolResult' && message.toolCallId === 'call-2',
 				),
-			).toBe(true);
+			).toBe(false);
 			expect(
 				last.messages.some(
 					(message) =>
@@ -222,13 +274,10 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 	});
 
 	it('exposes manual compaction and emits a persistence notification', async () => {
-		const connector = createPiTestConnector(
-			{
-				streamFn: (model) =>
-					response(model, [{ type: 'text', text: 'A compact summary.' }]),
-			},
-			8192,
-		);
+		const connector = createPiTestConnector({
+			streamFn: (model) =>
+				response(model, [{ type: 'text', text: 'A compact summary.' }]),
+		});
 		const state = emptyCoreState();
 		state.core.entries = createMessageEntries([
 			{ role: 'user', content: [{ type: 'text', text: 'x'.repeat(90_000) }] },

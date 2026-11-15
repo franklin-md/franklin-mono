@@ -26,7 +26,7 @@ import { TextBlock } from './turn/text/text.js';
 import { ThinkingBlock } from './turn/thinking.js';
 import { TurnFooter } from './turn/footer/index.js';
 import { defaultRegistry } from './turn/turn-end/registry.js';
-import { UserBubble } from './turn/user-bubble.js';
+import { UserBubble } from './turn/user-bubble/index.js';
 import { Waiting } from './turn/waiting.js';
 import { ConversationActivity } from './activity/conversation.js';
 import { ToolCardChrome } from './tools/chrome.js';
@@ -65,6 +65,26 @@ const defaultComponents = {
 	EmptyPlaceholder: DefaultEmptyConversationPlaceholder,
 } satisfies Partial<ConversationComponents>;
 
+function useConversationComponents(
+	toolRegistry: ToolRendererRegistry,
+	componentOverrides?: Partial<ConversationComponents>,
+): ConversationComponents {
+	const toolComponents = useMemo(
+		() => ({
+			ToolUse: createToolUseBlock(toolRegistry, ToolCardChrome),
+			Activity: (props: ConversationActivityProps) => (
+				<ConversationActivity {...props} registry={toolRegistry} />
+			),
+		}),
+		[toolRegistry],
+	);
+
+	return useMemo(
+		() => ({ ...defaultComponents, ...toolComponents, ...componentOverrides }),
+		[componentOverrides, toolComponents],
+	);
+}
+
 export interface ConversationViewProps {
 	turns: ConversationTurn[];
 	components?: Partial<ConversationComponents>;
@@ -77,19 +97,9 @@ export function ConversationView({
 	toolRegistry = defaultToolRegistry,
 }: ConversationViewProps) {
 	const autoFollow = useAutoFollow<HTMLDivElement>();
-	const toolComponents = useMemo(
-		() => ({
-			ToolUse: createToolUseBlock(toolRegistry, ToolCardChrome),
-			Activity: (props: ConversationActivityProps) => (
-				<ConversationActivity {...props} registry={toolRegistry} />
-			),
-		}),
-		[toolRegistry],
-	);
-
-	const components = useMemo<ConversationComponents>(
-		() => ({ ...defaultComponents, ...toolComponents, ...componentOverrides }),
-		[componentOverrides, toolComponents],
+	const components = useConversationComponents(
+		toolRegistry,
+		componentOverrides,
 	);
 
 	// Behaviour: Go to bottom on mount (i.e. switch to this tab)

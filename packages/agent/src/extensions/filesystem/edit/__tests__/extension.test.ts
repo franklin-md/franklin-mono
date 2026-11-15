@@ -95,7 +95,7 @@ function simulateRead(compiled: Compiled, path: string, content: string) {
 	const fileHash = sha256Hex(bytes);
 	const store = compiled.ctx.getStore(fileKey);
 	store.set((draft) => {
-		draft[path] = fileHash;
+		draft[path] = { hash: fileHash };
 	});
 }
 

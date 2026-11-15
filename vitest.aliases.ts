@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 const entries = [
-	['@franklin/agent/testing', 'packages/agent/src/testing/index.ts'],
+	['@franklin/agent/testing', 'packages/agent/src/testing.ts'],
 	['@franklin/agent', 'packages/agent/src/index.ts'],
 	['@franklin/extension-pdf', 'packages/extensions/pdf/src/index.ts'],
 	['@franklin/extensibility', 'packages/extensibility/src/index.ts'],
@@ -21,8 +21,8 @@ const entries = [
 	['@franklin/lib/middleware', 'packages/lib/src/middleware/index.ts'],
 	['@franklin/lib', 'packages/lib/src/index.ts'],
 	['@franklin/mini-acp/debug', 'packages/mini-acp/src/debug/index.ts'],
-	['@franklin/mini-acp/models', 'packages/mini-acp/src/models.ts'],
 	['@franklin/mini-acp/mock', 'packages/mini-acp/src/mock/index.ts'],
+	['@franklin/mini-acp/models', 'packages/mini-acp/src/models.ts'],
 	['@franklin/mini-acp/rpc', 'packages/mini-acp/src/rpc/index.ts'],
 	['@franklin/mini-acp/session', 'packages/mini-acp/src/session.ts'],
 	['@franklin/mini-acp', 'packages/mini-acp/src/index.ts'],

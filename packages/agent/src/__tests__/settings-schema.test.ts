@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { resolveModel } from '@franklin/mini-acp/models';
 
 import { DEFAULT_APP_SETTINGS, appSettingsCodec } from '../settings/schema.js';
 
@@ -10,13 +11,17 @@ import { DEFAULT_APP_SETTINGS, appSettingsCodec } from '../settings/schema.js';
  * unknown fields drop silently, only real type errors surface as issues.
  */
 describe('AppSettings schema', () => {
+	it('resolves the default model through the request catalog', () => {
+		expect(resolveModel(DEFAULT_APP_SETTINGS.defaultLLMConfig).ok).toBe(true);
+	});
+
 	it('DEFAULT_APP_SETTINGS pins the expected shape (regression lock)', () => {
 		expect(DEFAULT_APP_SETTINGS).toEqual({
 			documentDownloads: { idleTimeoutMs: 60_000, totalTimeoutMs: 900_000 },
 			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {
 				provider: 'openai-codex',
-				model: 'gpt-5.4',
+				model: 'gpt-6.2-sol',
 				reasoning: 'medium',
 			},
 		});
@@ -25,6 +30,28 @@ describe('AppSettings schema', () => {
 	it('empty persisted data hydrates to DEFAULT_APP_SETTINGS', () => {
 		const result = appSettingsCodec.decode({ version: 1, data: {} });
 		expect(result).toEqual({ ok: true, value: DEFAULT_APP_SETTINGS });
+	});
+
+	it.each([
+		['openai-codex', 'gpt-6.1-sol', 'gpt-6.2-sol'],
+		['openai-codex', 'gpt-6-astra', 'gpt-6.2-astra'],
+		['openai-codex', 'gpt-5.6-luna', 'gpt-5.6-luna'],
+		['openai', 'gpt-6.1-sol', 'gpt-6.1-sol'],
+	])('decodes the saved default %s/%s as %s', (provider, model, upgraded) => {
+		const result = appSettingsCodec.decode({
+			version: 1,
+			data: {
+				shareViewedReferencesByDefault: false,
+				defaultLLMConfig: { provider, model, reasoning: 'max' },
+			},
+		});
+		expect(result).toEqual({
+			ok: true,
+			value: {
+				shareViewedReferencesByDefault: false,
+				defaultLLMConfig: { provider, model: upgraded, reasoning: 'max' },
+			},
+		});
 	});
 
 	it('partial data: custom provider preserved, other fields defaulted', () => {
@@ -39,7 +66,7 @@ describe('AppSettings schema', () => {
 				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'anthropic',
-					model: 'gpt-5.4',
+					model: 'gpt-6.1-sol',
 					reasoning: 'medium',
 				},
 			},
@@ -61,7 +88,7 @@ describe('AppSettings schema', () => {
 				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'openai',
-					model: 'gpt-5.4',
+					model: 'gpt-6.1-sol',
 					reasoning: 'medium',
 				},
 			},
@@ -82,12 +109,30 @@ describe('AppSettings schema', () => {
 				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'openai',
-					model: 'gpt-5.4',
+					model: 'gpt-6.1-sol',
 					reasoning: 'medium',
 				},
 			},
 		});
 	});
+
+	it.each(['xhigh', 'max'] as const)(
+		'round-trips %s reasoning without rewriting it',
+		(reasoning) => {
+			const value = {
+				...DEFAULT_APP_SETTINGS,
+				defaultLLMConfig: {
+					...DEFAULT_APP_SETTINGS.defaultLLMConfig,
+					reasoning,
+				},
+			};
+			expect(
+				appSettingsCodec.decode(
+					JSON.parse(JSON.stringify(appSettingsCodec.encode(value))),
+				),
+			).toEqual({ ok: true, value });
+		},
+	);
 
 	it('real type mismatch still surfaces as schema-mismatch', () => {
 		const result = appSettingsCodec.decode({

@@ -88,12 +88,9 @@ export {
 
 // Compact interactive popovers
 export { CompactPopover } from './compact-popover/popover.js';
-export { IconActionGroup } from './compact-popover/actions.js';
 export type {
 	FloatingAnchor,
-	IconAction,
 	CompactPopoverProps,
-	IconActionGroupProps,
 } from './compact-popover/types.js';
 
 // components (derived, application-specific)
@@ -103,6 +100,11 @@ export {
 	type InspectDumpButtonProps,
 } from './components/inspect-dump-button.js';
 export { IconButton, type IconButtonProps } from './components/icon-button.js';
+export { IconActionGroup } from './compact-popover/actions.js';
+export type {
+	IconAction,
+	IconActionGroupProps,
+} from './compact-popover/action-types.js';
 export { DeleteButton } from './components/delete-button.js';
 export { Favicon, type FaviconProps } from './components/favicon.js';
 export {
@@ -196,7 +198,7 @@ export {
 	type MarkdownExtensions,
 	type MarkdownProps,
 } from './conversation/turn/markdown.js';
-export { UserBubble } from './conversation/turn/user-bubble.js';
+export { UserBubble } from './conversation/turn/user-bubble/index.js';
 export { CopyButton } from './conversation/turn/copy-button.js';
 export { ToolCardChrome } from './conversation/tools/chrome.js';
 export {
