@@ -34,7 +34,7 @@ describe('MODEL_CATALOG', () => {
 		vi.doMock('@franklin/mini-acp/models', () => ({
 			resolveModel: (config: Parameters<typeof models.resolveModel>[0]) =>
 				models.resolveModel(
-					config.model === 'gpt-6-astra'
+					config.model === 'gpt-6.2-astra'
 						? { ...config, model: 'missing-model' }
 						: config,
 				),
@@ -45,7 +45,7 @@ describe('MODEL_CATALOG', () => {
 				await import('../../../../src/conversation/input/models/catalog.js');
 			expect(catalog[0]?.models.map((entry) => entry.id)).toEqual(
 				MODEL_CATALOG[0]?.models
-					.filter((entry) => entry.id !== 'gpt-6-astra')
+					.filter((entry) => entry.id !== 'gpt-6.2-astra')
 					.map((entry) => entry.id),
 			);
 			expect(catalog.slice(1)).toEqual(MODEL_CATALOG.slice(1));
@@ -63,31 +63,31 @@ describe('MODEL_CATALOG', () => {
 		]);
 	});
 
-	it('surfaces GPT-6-Astra as the leading OpenAI Codex model', () => {
+	it('surfaces GPT-6.2-Astra as the leading OpenAI Codex model', () => {
 		const openAICodex = MODEL_CATALOG.find(
 			(group) => group.provider === 'openai-codex',
 		);
 
 		expect(openAICodex?.models[0]).toMatchObject({
 			provider: 'openai-codex',
-			id: 'gpt-6-astra',
-			name: 'GPT-6-Astra',
+			id: 'gpt-6.2-astra',
+			name: 'GPT-6.2-Astra',
 			reasoning: true,
 			contextWindow: 272_000,
-			costInput: 10,
-			costOutput: 50,
+			costInput: 8,
+			costOutput: 40,
 		});
 	});
 
-	it('surfaces GPT-6.1-Sol as the balanced OpenAI Codex model', () => {
+	it('surfaces GPT-6.2-Sol as the balanced OpenAI Codex model', () => {
 		const openAICodex = MODEL_CATALOG.find(
 			(group) => group.provider === 'openai-codex',
 		);
 
 		expect(openAICodex?.models[1]).toMatchObject({
 			provider: 'openai-codex',
-			id: 'gpt-6.1-sol',
-			name: 'GPT-6.1-Sol',
+			id: 'gpt-6.2-sol',
+			name: 'GPT-6.2-Sol',
 			reasoning: true,
 			contextWindow: 500_000,
 			costInput: 2,
@@ -101,8 +101,8 @@ describe('MODEL_CATALOG', () => {
 		);
 
 		expect(openAICodex?.models.map((model) => model.id)).toEqual([
-			'gpt-6-astra',
-			'gpt-6.1-sol',
+			'gpt-6.2-astra',
+			'gpt-6.2-sol',
 			'gpt-5.6-terra',
 			'gpt-5.6-luna',
 		]);

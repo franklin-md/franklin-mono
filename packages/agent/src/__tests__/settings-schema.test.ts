@@ -20,7 +20,7 @@ describe('AppSettings schema', () => {
 			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {
 				provider: 'openai-codex',
-				model: 'gpt-6.1-sol',
+				model: 'gpt-6.2-sol',
 				reasoning: 'medium',
 			},
 		});
@@ -29,6 +29,28 @@ describe('AppSettings schema', () => {
 	it('empty persisted data hydrates to DEFAULT_APP_SETTINGS', () => {
 		const result = appSettingsCodec.decode({ version: 1, data: {} });
 		expect(result).toEqual({ ok: true, value: DEFAULT_APP_SETTINGS });
+	});
+
+	it.each([
+		['openai-codex', 'gpt-6.1-sol', 'gpt-6.2-sol'],
+		['openai-codex', 'gpt-6-astra', 'gpt-6.2-astra'],
+		['openai-codex', 'gpt-5.6-luna', 'gpt-5.6-luna'],
+		['openai', 'gpt-6.1-sol', 'gpt-6.1-sol'],
+	])('decodes the saved default %s/%s as %s', (provider, model, upgraded) => {
+		const result = appSettingsCodec.decode({
+			version: 1,
+			data: {
+				shareViewedReferencesByDefault: false,
+				defaultLLMConfig: { provider, model, reasoning: 'max' },
+			},
+		});
+		expect(result).toEqual({
+			ok: true,
+			value: {
+				shareViewedReferencesByDefault: false,
+				defaultLLMConfig: { provider, model: upgraded, reasoning: 'max' },
+			},
+		});
 	});
 
 	it('partial data: custom provider preserved, other fields defaulted', () => {

@@ -175,6 +175,8 @@ describe('resolveModel', () => {
 	}
 
 	it.each([
+		['openai-codex', 'gpt-6.2-astra', 'openai-codex-responses'],
+		['openai-codex', 'gpt-6.2-sol', 'openai-codex-responses'],
 		['openrouter', 'google/gemini-4-carbon', 'openai-completions'],
 		['openrouter', 'google/gemini-4-hydrogen', 'openai-completions'],
 		['opencode-go', 'grok-4.6', 'openai-responses'],

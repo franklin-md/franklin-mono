@@ -158,7 +158,7 @@ describe('controlled model picker', () => {
 	it('shows the compact current effort beside the model name and reflects external updates', () => {
 		const props = {
 			provider: 'openai-codex',
-			model: 'gpt-6.1-sol',
+			model: 'gpt-6.2-sol',
 			onSelect: vi.fn(),
 		};
 		const levels = ['medium', 'xhigh'] as const;
@@ -166,7 +166,7 @@ describe('controlled model picker', () => {
 		const { rerender } = render(
 			<ModelPicker {...props} effort={{ level: 'medium', levels, onChange }} />,
 		);
-		expect(screen.getByRole('button').textContent).toContain('GPT-6.1-Sol');
+		expect(screen.getByRole('button').textContent).toContain('GPT-6.2-Sol');
 		expect(screen.getByRole('button').textContent).toContain('Med');
 		rerender(
 			<ModelPicker {...props} effort={{ level: 'xhigh', levels, onChange }} />,
@@ -214,11 +214,11 @@ describe('controlled model picker', () => {
 		rerender(
 			<ModelPicker
 				provider="openai-codex"
-				model="gpt-6.1-sol"
+				model="gpt-6.2-sol"
 				onSelect={select}
 			/>,
 		);
-		expect(screen.getByRole('button').textContent).toContain('GPT-6.1-Sol');
+		expect(screen.getByRole('button').textContent).toContain('GPT-6.2-Sol');
 		expect(select).not.toHaveBeenCalled();
 	});
 
@@ -234,12 +234,12 @@ describe('controlled model picker', () => {
 		);
 		fireEvent.click(screen.getByRole('button', { name: 'Choose model' }));
 		fireEvent.change(screen.getByPlaceholderText('Search models...'), {
-			target: { value: 'gpt-6.1-sol' },
+			target: { value: 'gpt-6.2-sol' },
 		});
-		fireEvent.click(await screen.findByRole('option', { name: 'GPT-6.1-Sol' }));
+		fireEvent.click(await screen.findByRole('option', { name: 'GPT-6.2-Sol' }));
 		expect(select).toHaveBeenCalledExactlyOnceWith(
 			'openai-codex',
-			'gpt-6.1-sol',
+			'gpt-6.2-sol',
 		);
 		expect(screen.queryByPlaceholderText('Search models...')).toBeNull();
 	});

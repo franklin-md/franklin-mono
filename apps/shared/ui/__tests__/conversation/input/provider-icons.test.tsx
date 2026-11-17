@@ -49,8 +49,8 @@ describe('ProviderIcon', () => {
 
 describe('ModelIcon', () => {
 	const catalogModelIcons = [
-		['openai-codex', 'gpt-6-astra', Icons.OpenAI],
-		['openai-codex', 'gpt-6.1-sol', Icons.OpenAI],
+		['openai-codex', 'gpt-6.2-astra', Icons.OpenAI],
+		['openai-codex', 'gpt-6.2-sol', Icons.OpenAI],
 		['openai-codex', 'gpt-5.6-terra', Icons.OpenAI],
 		['openai-codex', 'gpt-5.6-luna', Icons.OpenAI],
 		['opencode-go', 'grok-4.6', Icons.XAI],

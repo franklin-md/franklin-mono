@@ -155,9 +155,14 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 		expect(globalFetch).not.toHaveBeenCalled();
 	});
 
-	it.each(['xhigh', 'max'] as const)(
-		'preserves %s reasoning through Mini-ACP and the Codex request',
-		async (reasoning) => {
+	it.each([
+		['gpt-6.2-sol', 'xhigh'],
+		['gpt-6.2-sol', 'max'],
+		['gpt-6.2-astra', 'xhigh'],
+		['gpt-6.2-astra', 'max'],
+	] as const)(
+		'sends %s with %s reasoning through Mini-ACP and the Codex request',
+		async (model, reasoning) => {
 			const customFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
 				new Response(
 					'data: {"type":"response.completed","response":{"status":"completed"}}\n\n',
@@ -184,7 +189,7 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 			await client.setContext({
 				config: {
 					provider: 'openai-codex',
-					model: 'gpt-6.1-sol',
+					model,
 					apiKey: createCodexToken(),
 					reasoning,
 				},
@@ -217,6 +222,7 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 					? request.body
 					: zstdDecompressSync(request.body).toString();
 			expect(JSON.parse(body)).toMatchObject({
+				model,
 				reasoning: {
 					effort: reasoning,
 					summary: 'auto',

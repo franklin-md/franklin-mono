@@ -9,6 +9,11 @@ import { versioned, zodCodec } from '@franklin/lib';
 
 const ThinkingLevel = z.enum(THINKING_LEVELS);
 
+const CODEX_DEFAULT_MODEL_UPGRADES = new Map([
+	['gpt-6-astra', 'gpt-6.2-astra'],
+	['gpt-6.1-sol', 'gpt-6.2-sol'],
+]);
+
 // TODO(FRA-350): Move app-specific settings out of @franklin/agent. The agent
 // package currently owns this schema because FranklinApp owns persistence.
 // Defaults live inside the schema so minor evolution (adding an optional
@@ -20,10 +25,22 @@ const AppSettingsV1 = z.object({
 	defaultLLMConfig: z
 		.object({
 			provider: z.string().default('openai-codex'),
-			model: z.string().default('gpt-6.1-sol'),
+			model: z.string().optional(),
 			reasoning: ThinkingLevel.default('medium'),
 		})
-		.prefault({}),
+		.prefault({})
+		.transform((config) => {
+			if (config.provider !== 'openai-codex') {
+				// Preserve the existing fallback when a different provider was saved
+				// without a model. Pi's OpenAI API catalog still resolves this ID.
+				return { ...config, model: config.model ?? 'gpt-6.1-sol' };
+			}
+			const model = config.model ?? 'gpt-6.2-sol';
+			return {
+				...config,
+				model: CODEX_DEFAULT_MODEL_UPGRADES.get(model) ?? model,
+			};
+		}),
 });
 
 // ---------------------------------------------------------------------------
