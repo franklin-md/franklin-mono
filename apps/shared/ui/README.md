@@ -109,6 +109,114 @@ shared prose/code styles without the third-party markdown layer. These utility
 files do not scan `@franklin/ui`; `franklin-core.css` is the shared entry point
 that owns package `@source` scanning.
 
+## Outlined controls
+
+`Button`'s `outline` variant uses an inset ring with the existing input token. This keeps the outline visible without changing the control's layout size. Consumers can use the variant directly instead of combining border removal and ring overrides.
+
+## Icon action groups
+
+`IconActionGroup` renders a toolbar of icon buttons:
+
+```tsx
+<IconActionGroup label="Presets" actions={actions} onAction={runPreset} />
+```
+
+Each action has an `id`, `label`, `icon`, optional `description`, and optional `colorClassName` / `selectedClassName`. Arrow keys, Home/End, Enter and Space work within the icon group. Inputs and adjacent pickers retain their own keys. Callers own pending/error state and can disable the group and supply `busyId` while saving. Tooltips provide descriptive labels; interactive content stays in the popover.
+
+The component composes the existing [Tooltip](https://www.radix-ui.com/primitives/docs/components/tooltip) with [Radix Roving Focus](https://github.com/radix-ui/primitives/tree/main/packages/react/roving-focus). Roving Focus owns the tab stop and wrapping navigation; both arrow-key pairs navigate the horizontal group. Enter and Space use native button activation.
+
+The group does not intercept window-level keyboard events. Hosts must isolate editor hotkeys at their integration boundary. Popover wrappers must let Tab and Shift+Tab reach the controls so roving focus can move out of the group.
+
+## Shared prompt controls
+
+`PromptSurface`, `PromptFooter`, `PromptFooterControls`, and `PromptSubmitButton` compose the same prompt appearance around host-owned input and submission behavior. `PromptContainer` adds chat's outer spacing; `PromptSurface` can also style an existing form with `asChild`.
+
+`ModelPicker` is a prebuilt recipe with caller-owned model and optional effort state. It does not read or change an active agent:
+
+```tsx
+<ModelPicker
+	provider={provider}
+	model={model}
+	onSelect={onSelectModel}
+	effort={{ level, levels, onChange: onChangeReasoning }}
+/>
+```
+
+Omit `effort` for a model-only picker. The effort row stays below the scrolling model list and is not filtered by search. Its inline radio choices use a pill to mark the current level; selecting one keeps the picker open. Native radio-group keyboard navigation supports arrow keys and Space. Choices scroll horizontally when needed, revealing the selected level on reopen or external changes. Escape closes the popover and returns focus to the trigger. Each caller supplies its available levels; the UI does not infer model capabilities or change reasoning when selecting a model.
+
+The default trigger shows the model followed by the compact effort label in muted text at the same font size. The model name truncates before the effort label. Its tooltip and accessible description retain the full level name. Omitting `effort` removes both the inline selector and the trigger's effort summary.
+
+For custom compositions, import these parts from `@franklin/ui`:
+
+```tsx
+<ModelPickerRoot
+	catalog={catalog}
+	provider={provider}
+	model={model}
+	onSelect={onSelectModel}
+>
+	<ModelPickerTrigger effort={level} />
+	<ModelPickerContent>
+		<ModelPickerModels>
+			<ModelPickerSearch />
+			<ModelPickerList renderProviderAction={renderProviderAction} />
+		</ModelPickerModels>
+		<ModelPickerFooter>
+			<ModelPickerEffort
+				level={level}
+				levels={levels}
+				onChange={onChangeReasoning}
+			/>
+		</ModelPickerFooter>
+	</ModelPickerContent>
+</ModelPickerRoot>
+```
+
+Remove `ModelPickerSearch` for an unfiltered list, or remove the footer for no effort control. Add other React controls to the footer as needed. The trigger supports `asChild` for a custom button. Models absent from the catalog retain their saved identity in the default trigger. The parts use the existing [Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover) and [cmdk](https://github.com/pacocoursey/cmdk) implementations for popup and command navigation; `@franklin/react` remains the headless hooks layer.
+
+The parts need no agent or application harness. `ModelPickerList` renders no authentication controls unless `renderProviderAction` is supplied. The prebuilt recipe defaults to `MODEL_CATALOG` and Franklin's authentication shortcuts, which use the host's harness and `AuthActionProvider`. Override `catalog` and `renderProviderAction` on the recipe for another host, or use `() => null` to omit authentication controls.
+
+`MODEL_CATALOG` keeps the existing curated model metadata and catalog shape. `ModelSelector` binds the recipe to chat's existing model and thinking hooks. Standalone `ThinkingControl` and `ThinkingToggle` remain available for other compositions. Reusing the prompt surface does not require TipTap or mentions.
+
+## Composing a compact popover
+
+Use the existing popover parts with caller-owned open state:
+
+```tsx
+<Popover open={open} onOpenChange={setOpen}>
+	<PopoverTrigger asChild>
+		<Button>Open tools</Button>
+	</PopoverTrigger>
+	<PopoverContent
+		aria-label="Edit tools"
+		side="top"
+		align="center"
+		sideOffset={6}
+		collisionPadding={8}
+		className="w-max max-w-[calc(100vw-1rem)] max-h-[var(--radix-popover-content-available-height)] overflow-auto p-1"
+	>
+		<button type="button" onClick={edit}>Edit</button>
+		<textarea aria-label="Custom prompt" />
+	</PopoverContent>
+</Popover>
+```
+
+`w-max` sizes the surface to its contents and `p-1` provides compact spacing.
+The width limit leaves an 8px margin on each side, matching `collisionPadding`.
+The available-height limit and scrolling keep larger contents accessible.
+Colors, typography, radius, shadow and animations use the regular popover defaults.
+
+[Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover)
+handles initial focus, Tab navigation, dismissal and returning focus to the
+trigger after Escape. Clicking an outside control dismisses without taking
+focus back from that control. No custom focus query, window keyboard listener
+or continuous positioning override is needed for this composition.
+
+For a virtual anchor, use the existing `PopoverAnchor virtualRef` API. An
+editor-launched popup may need to intercept host commands or restore focus to
+an editor instead of a trigger. Those policies belong with the host integration,
+using the existing content events and ref; they are not part of compact styling.
+
 ## Minimal Consumer Checklist
 
 - Import components from `@franklin/ui`.
