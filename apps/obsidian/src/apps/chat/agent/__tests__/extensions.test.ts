@@ -24,7 +24,7 @@ import {
 import { createRuntime } from '@franklin/agent/testing';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createObsidianExtensions } from '../../../../plugin/bootstrap.js';
+import { createChatExtensions } from '../extensions.js';
 
 const defaultConfig: EnvironmentConfig = {
 	fsConfig: {
@@ -52,7 +52,7 @@ async function drain(iterable: AsyncIterable<unknown>): Promise<void> {
 	}
 }
 
-describe('createObsidianExtensions', () => {
+describe('createChatExtensions', () => {
 	it('uses reference-backed read_file without exposing read_pdf', async () => {
 		const mock = createMockMiniACP({ defaultTurn: finishedTurn() });
 		const module = buildStateExtensionModule([
@@ -72,7 +72,7 @@ describe('createObsidianExtensions', () => {
 		const runtime = await createRuntime(
 			module,
 			module.emptyState(),
-			createObsidianExtensions() as never,
+			createChatExtensions() as never,
 		);
 
 		try {

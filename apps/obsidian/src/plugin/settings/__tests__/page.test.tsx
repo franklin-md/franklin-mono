@@ -8,6 +8,7 @@ import type {
 } from '@franklin/agent';
 import { bindHostAction, openExternalAction } from '@franklin/react';
 import { ApplicationProvider } from '@franklin/ui';
+import type { ComponentProps } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -25,6 +26,7 @@ type AuthStub = {
 	getOAuthProviders: () => { id: string; name: string }[];
 	onAuthChange: () => () => void;
 	cancel: () => Promise<void>;
+	loginOAuth: ReturnType<typeof vi.fn>;
 };
 
 type SettingsStub = Pick<SettingsStore, 'get' | 'set' | 'subscribe'>;
@@ -44,6 +46,7 @@ function createAuthStub(initial: AuthEntries = {}): AuthStub {
 		getOAuthProviders: () => [{ id: 'openai-codex', name: 'ChatGPT' }],
 		onAuthChange: () => () => {},
 		cancel: async () => {},
+		loginOAuth: vi.fn(async () => {}),
 	};
 }
 
@@ -82,7 +85,13 @@ function createSettingsStub(
 	return settings;
 }
 
-function renderPage(auth: AuthStub, settings = createSettingsStub()) {
+function renderPage(
+	auth: AuthStub,
+	settings = createSettingsStub(),
+	props: ComponentProps<typeof SettingsPage> = {
+		initialSection: 'connections',
+	},
+) {
 	const openExternal = vi.fn(async () => {});
 	const app = {
 		auth,
@@ -95,7 +104,7 @@ function renderPage(auth: AuthStub, settings = createSettingsStub()) {
 				harness={app}
 				hostActionBindings={[bindHostAction(openExternalAction, openExternal)]}
 			>
-				<SettingsPage />
+				<SettingsPage {...props} />
 			</ApplicationProvider>,
 		),
 		openExternal,
@@ -157,7 +166,7 @@ describe('SettingsPage', () => {
 			(element) => element.textContent,
 		);
 
-		expect(headings).toEqual(['Credentials', 'Agent settings']);
+		expect(headings).toEqual(['Agent settings', 'Credentials']);
 	});
 
 	it('renders ChatGPT as the first credential setting', () => {
@@ -166,7 +175,8 @@ describe('SettingsPage', () => {
 
 		expect(
 			container.querySelector(
-				'.setting-item:not(.setting-item-heading) .setting-item-name',
+				'[role="tabpanel"][data-state="active"] ' +
+					'.setting-item:not(.setting-item-heading) .setting-item-name',
 			)?.textContent,
 		).toBe('ChatGPT');
 	});
@@ -305,7 +315,7 @@ describe('SettingsPage', () => {
 
 	it('shares open notes with agents by default', () => {
 		const auth = createAuthStub();
-		renderPage(auth);
+		renderPage(auth, undefined, { initialSection: 'general' });
 
 		const input = screen.getByRole('switch', {
 			name: 'Share open notes with agent',
@@ -315,7 +325,9 @@ describe('SettingsPage', () => {
 
 	it('writes the open notes sharing default into settings on change', () => {
 		const auth = createAuthStub();
-		const { settings } = renderPage(auth);
+		const { settings } = renderPage(auth, undefined, {
+			initialSection: 'general',
+		});
 
 		const input = screen.getByRole('switch', {
 			name: 'Share open notes with agent',
@@ -324,5 +336,49 @@ describe('SettingsPage', () => {
 
 		expect(settings.set).toHaveBeenCalledOnce();
 		expect(settings.get().shareViewedReferencesByDefault).toBe(false);
+	});
+
+	it('defaults to General and hides credentials from the accessibility tree', () => {
+		renderPage(createAuthStub(), undefined, {});
+
+		expect(
+			screen
+				.getByRole('tab', { name: 'General' })
+				.getAttribute('aria-selected'),
+		).toBe('true');
+		expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+			'General',
+			'Connections',
+		]);
+		expect(
+			screen.getByRole('switch', { name: 'Share open notes with agent' }),
+		).toBeTruthy();
+		expect(screen.queryByRole('button', { name: /chatgpt/i })).toBeNull();
+	});
+
+	it('keeps OAuth feedback when switching sections and reports navigation', async () => {
+		const auth = createAuthStub();
+		auth.loginOAuth.mockRejectedValue(new Error('Login needs another attempt'));
+		const onSectionChange = vi.fn();
+		renderPage(auth, undefined, {
+			initialSection: 'connections',
+			onSectionChange,
+		});
+		fireEvent.click(screen.getByRole('button', { name: /chatgpt/i }));
+		await screen.findByText(/Login needs another attempt/);
+
+		fireEvent.mouseDown(screen.getByRole('tab', { name: 'General' }), {
+			button: 0,
+			ctrlKey: false,
+		});
+		expect(screen.queryByRole('button', { name: /chatgpt/i })).toBeNull();
+		fireEvent.mouseDown(screen.getByRole('tab', { name: 'Connections' }), {
+			button: 0,
+			ctrlKey: false,
+		});
+
+		expect(screen.getByText(/Login needs another attempt/)).toBeTruthy();
+		expect(screen.queryByRole('switch')).toBeNull();
+		expect(onSectionChange.mock.calls).toEqual([['general'], ['connections']]);
 	});
 });

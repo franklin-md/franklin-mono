@@ -42,4 +42,38 @@ describe('openPluginSettings', () => {
 			'Open Franklin settings from Obsidian settings.',
 		);
 	});
+
+	it('selects Connections after opening the plugin tab', () => {
+		const selectSection = vi.fn();
+		const setting = {
+			open: vi.fn(),
+			openTabById: vi.fn(() => {
+				setting.activeTab = { selectSection };
+			}),
+			activeTab: undefined as unknown,
+		};
+
+		openPluginSettings(
+			{ setting } as unknown as App,
+			'franklin',
+			'connections',
+		);
+
+		expect(setting.openTabById).toHaveBeenCalledWith('franklin');
+		expect(selectSection).toHaveBeenCalledWith('connections');
+	});
+
+	it('preserves the selected section when no destination is requested', () => {
+		const selectSection = vi.fn();
+		const setting = {
+			open: vi.fn(),
+			openTabById: vi.fn(),
+			activeTab: { selectSection },
+		};
+
+		openPluginSettings({ setting } as unknown as App, 'franklin');
+
+		expect(setting.open).toHaveBeenCalledOnce();
+		expect(selectSection).not.toHaveBeenCalled();
+	});
 });
