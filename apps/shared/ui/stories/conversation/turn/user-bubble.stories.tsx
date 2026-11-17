@@ -4,7 +4,7 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { formatReferenceMention } from '@franklin/agent';
 
 import { userTextPrompt } from '../../fixtures.js';
-import { UserBubble } from '../../../src/conversation/turn/user-bubble.js';
+import { UserBubble } from '../../../src/conversation/turn/user-bubble/index.js';
 
 const meta = {
 	title: 'Conversation/UserBubble',
@@ -144,8 +144,8 @@ export const WithMarkdownAndFileReference: Story = {
 						locator: 'notes/deep work.md',
 						label: 'notes/deep work.md',
 					})} and compare it with ${formatReferenceMention({
-						locator: 'src/conversation/turn/user-bubble.tsx',
-						label: 'src/conversation/turn/user-bubble.tsx',
+						locator: 'src/conversation/turn/user-bubble/index.tsx',
+						label: 'src/conversation/turn/user-bubble/index.tsx',
 					})}.`,
 				},
 			],

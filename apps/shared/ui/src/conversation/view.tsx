@@ -26,7 +26,7 @@ import { TextBlock } from './turn/text/text.js';
 import { ThinkingBlock } from './turn/thinking.js';
 import { TurnFooter } from './turn/footer/index.js';
 import { defaultRegistry } from './turn/turn-end/registry.js';
-import { UserBubble } from './turn/user-bubble.js';
+import { UserBubble } from './turn/user-bubble/index.js';
 import { Waiting } from './turn/waiting.js';
 import { ConversationActivity } from './activity/conversation.js';
 import { ToolCardChrome } from './tools/chrome.js';
