@@ -113,6 +113,18 @@ that owns package `@source` scanning.
 
 `Button`'s `outline` variant uses an inset ring with the existing input token. This keeps the outline visible without changing the control's layout size. Consumers can use the variant directly instead of combining border removal and ring overrides.
 
+## Icon action groups
+
+`IconActionGroup` renders a toolbar of icon buttons:
+
+```tsx
+<IconActionGroup label="Presets" actions={actions} onAction={runPreset} />
+```
+
+Each action has an `id`, `label`, `icon`, optional `description`, and optional `colorClassName` / `selectedClassName`. Arrow keys, Home/End, Enter and Space work within the icon group. Inputs and adjacent pickers retain their own keys. Callers own pending/error state and can disable the group and supply `busyId` while saving. Tooltips provide descriptive labels; interactive content stays in the popover.
+
+The component builds on the existing [Tooltip](https://www.radix-ui.com/primitives/docs/components/tooltip) primitive.
+
 ## Shared prompt controls
 
 `PromptSurface`, `PromptFooter`, `PromptFooterControls`, and `PromptSubmitButton` compose the same prompt appearance around host-owned input and submission behavior. `PromptContainer` adds chat's outer spacing; `PromptSurface` can also style an existing form with `asChild`.

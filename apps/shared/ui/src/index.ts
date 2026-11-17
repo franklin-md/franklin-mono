@@ -93,6 +93,11 @@ export {
 	type InspectDumpButtonProps,
 } from './components/inspect-dump-button.js';
 export { IconButton, type IconButtonProps } from './components/icon-button.js';
+export { IconActionGroup } from './compact-popover/actions.js';
+export type {
+	IconAction,
+	IconActionGroupProps,
+} from './compact-popover/action-types.js';
 export { DeleteButton } from './components/delete-button.js';
 export { Favicon, type FaviconProps } from './components/favicon.js';
 export {
