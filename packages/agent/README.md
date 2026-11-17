@@ -248,3 +248,12 @@ Where PiMono provides a general orchestration framework with fine-grained hooks,
 The split is:
 - **Environment + Spawn + Connect** = the ACP runtime layer (how you create and talk to agents)
 - **Extensions + Local MCP** = the orchestration layer (how the application shapes agent behavior)
+
+### Sandboxed commands
+
+Node shell commands share one scheduler per loaded sandbox manager. Commands with
+matching shared settings may overlap with different filesystem lists. Incompatible
+requests queue until active commands close and finish cleanup. The manager stays
+warm between commands. Commands receive the existing OS temporary directory as
+`TMPDIR`. See the [runtime notes](../node/src/platform/anthropic/README.md) for
+admission policy, deferred cancellation and process-lifetime limits.
