@@ -6,6 +6,16 @@ It depends on Franklin workspace packages for shared UI, agent runtime, and
 platform bindings. The plugin currently registers a view and wires Obsidian
 filesystem/platform integration inside the plugin runtime.
 
+## Source Layout
+
+- `src/main.ts` owns the Obsidian plugin lifecycle and Chat registration.
+- `src/plugin/` contains runtime construction and global settings/credentials.
+- `src/apps/chat/` contains Chat sessions, UI, viewing context, and Chat settings.
+- `src/shared/obsidian/` contains filesystem, path, auth, wikilink, and settings-opening helpers.
+- `src/shared/agent/` contains the Obsidian platform adapter and PDF screenshot renderer.
+- `src/shared/ui/` contains React mounting, portals, host context, and Obsidian setting primitives.
+- `src/shared/diff/` contains the existing diff review controllers, editor integration, and styles.
+
 ## Requirements
 
 - Node 22+

@@ -2,17 +2,17 @@ import type { FranklinApp } from '@franklin/agent';
 import type { HostActionBinding } from '@franklin/react';
 import { Notice, Plugin } from 'obsidian';
 
-import { createObsidianSessionInput } from './app/agent.js';
-import { createFranklinApp } from './app/app.js';
-import { createFranklinViewContent } from './components/franklin-view-content.js';
+import { createObsidianSessionInput } from './apps/chat/agent/session.js';
+import { createFranklinApp } from './plugin/bootstrap.js';
+import { createFranklinViewContent } from './apps/chat/ui/content.js';
 import { registerReactScan } from './dev/react-scan.js';
-import { ObsidianDiffClient } from './diff/client.js';
-import { DiffController } from './diff/controller.js';
-import { DiffExplorerController } from './diff/explorer.js';
-import { clearPortalRoot } from './renderer/portal.js';
-import { openPluginSettings } from './settings/open.js';
-import { FranklinSettingTab } from './settings/tab.js';
-import { FranklinView, VIEW_TYPE } from './view.js';
+import { ObsidianDiffClient } from './shared/diff/client.js';
+import { DiffController } from './shared/diff/controller.js';
+import { DiffExplorerController } from './shared/diff/explorer.js';
+import { clearPortalRoot } from './shared/ui/portal.js';
+import { openPluginSettings } from './shared/obsidian/settings/open.js';
+import { FranklinSettingTab } from './plugin/settings/tab.js';
+import { FranklinView, VIEW_TYPE } from './apps/chat/view.js';
 
 export default class FranklinPlugin extends Plugin {
 	private diffClient!: ObsidianDiffClient;
