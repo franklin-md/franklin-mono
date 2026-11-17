@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { formatReferenceMention } from '@franklin/agent';
 import type { UserMessage } from '@franklin/mini-acp';
 
-import { UserBubble } from '../../src/conversation/turn/user-bubble.js';
+import { UserBubble } from '../../src/conversation/turn/user-bubble/index.js';
 
 function createUserMessage(text: string): UserMessage {
 	return {

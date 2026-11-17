@@ -90,6 +90,10 @@ Franklin is an extension runtime for minimal agent loops.
 - **Pure React helpers** - Do not turn deterministic calculations into hooks. Keep pure helpers outside components and hooks, using module-level functions or a separate file when the logic is reused or deserves tests; hooks should own React state, refs, effects, and lifecycle wiring.
 - **Factory-extract on the 2nd occurrence** — when the same construction literal repeats (especially `err instanceof Error ? err.message : String(err)` or any shared default-field object), extract the factory immediately rather than noting it for later. One source of truth for shape and coercion.
 - **React props** — prefer named `Props`/options types for component prop objects; avoid anonymous object types in component signatures.
+- **React component structure** — When a component has related parts, colocate them in a feature folder with `index.tsx` as the entry component. Split distinct rendered regions, such as content and footer, into named subcomponents so the parent reads as composition.
+- **React event handlers** — Extract branching or otherwise complex event logic into named functions. Keep JSX event props focused on wiring those handlers; simple one-line callbacks are fine.
+- **React state and lifecycle** — Keep simple state in its owning component. Move complex effect, ref, observer and cleanup mechanics into focused hooks. Do not introduce a custom hook solely to bundle a boolean and simple handlers.
+- **Reuse and necessity** — Search existing UI primitives, hooks and helpers before adding new ones. Justify custom measurement and interaction mechanics against the required behavior; prefer CSS for height limits and scrolling when measurement is unnecessary.
 - **Comments** - Avoid introducing lots of method or class docstrings. We should maintain the docstrings for exported package code, but want to avoid introducing potentially stale comments on library code. However, existing comments within implementation bodies (like todos) are very important to preserve across edits, and any potential resolutions should be flagged.
 
 ### Testing Principles
