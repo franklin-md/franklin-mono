@@ -14,6 +14,10 @@ const _snapshot = {
 } satisfies StoreSnapshot;
 
 const _json: JsonValue = _snapshot;
+const _versionedSnapshot: JsonValue = {
+	..._snapshot,
+	schemaVersion: 2,
+} satisfies StoreSnapshot;
 
 const _dateValue = {
 	ref: 'store-ref',
@@ -24,4 +28,5 @@ const _dateValue = {
 
 void (null as unknown as _StoreSnapshotIsJson);
 void _json;
+void _versionedSnapshot;
 void _dateValue;

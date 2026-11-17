@@ -70,6 +70,8 @@ export type {
 	Codec,
 	DecodeIssue,
 	DecodeResult,
+	VersionedCodec,
+	VersionedEnvelope,
 } from './persistence/codec/types.js';
 export type {
 	JsonArray,

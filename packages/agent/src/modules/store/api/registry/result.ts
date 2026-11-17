@@ -43,6 +43,7 @@ export class StoreResult {
 						const newEntry = this.registry.create(
 							entry.sharing,
 							entry.store.get() as JsonValue,
+							entry.codec,
 						);
 						newMapping[name] = newEntry.ref;
 					}

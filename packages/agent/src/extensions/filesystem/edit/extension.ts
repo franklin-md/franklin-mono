@@ -2,6 +2,7 @@ import { defineExtension } from '../../../modules/state/index.js';
 import type { CoreModule } from '../../../modules/core/index.js';
 import type { EnvironmentModule } from '../../../modules/environment/index.js';
 import type { StoreModule } from '../../../modules/store/index.js';
+import { fileRecordCodec } from '../common/codec.js';
 import { createFileControl } from '../common/control.js';
 import { fileKey } from '../common/key.js';
 import { decode } from '../common/text/encoding.js';
@@ -31,7 +32,7 @@ export function editExtension() {
 	return defineExtension<[CoreModule, StoreModule, EnvironmentModule]>(
 		(api) => {
 			// The store is private to ONE agent; it keeps track of the agent's "seen" files.
-			api.registerStore(fileKey, {}, 'private');
+			api.registerStore(fileKey, {}, 'private', fileRecordCodec);
 			api.registerTool(editFileSpec, {
 				execute: async ({ path, old_text, new_text, replace_all }, ctx) => {
 					const env = ctx.environment;
