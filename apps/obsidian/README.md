@@ -17,6 +17,7 @@ filesystem/platform integration inside the plugin runtime.
 - `src/shared/diff/` contains the existing diff review controllers, editor integration, and styles.
 - [`src/shared/directives/`](src/shared/directives/README.md) contains persisted inline directives, Live Preview/Reading adapters, and reference discovery/replacement.
 - [`src/shared/obsidian/markdown/`](src/shared/obsidian/markdown/README.md) contains current-content note reads and editor/disk editing operations.
+- [`src/shared/ui/editor-popover/`](src/shared/ui/editor-popover/README.md) contains editor anchoring, focus, and popup lifecycle helpers composed with the shared popover controls.
 
 Plugin startup restores `<plugin-dir>/directives.json` before registering the
 directive adapters. Unload rejects new registry writes and drains accepted saves.
