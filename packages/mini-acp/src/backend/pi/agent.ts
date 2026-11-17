@@ -176,14 +176,7 @@ class PiMuAgent implements MuClient {
 					this.config.reasoning === 'off' ? undefined : this.config.reasoning,
 				apiKey: this.config.apiKey,
 				sessionId: this.sessionId,
-				convertToLlm: (messages) =>
-					messages.filter(
-						(m) =>
-							m.role === 'system' ||
-							m.role === 'user' ||
-							m.role === 'assistant' ||
-							m.role === 'toolResult',
-					),
+				convertToLlm: (messages) => messages,
 				// End after the complete tool batch so the client owns continuation.
 				// https://github.com/earendil-works/pi/blob/v1.5.2/packages/agent/src/agent-loop.ts
 				finishTurn: () => ({ action: 'end' }),
