@@ -102,7 +102,7 @@ export function renderEnvironmentPermissions(
 			fields.filesystem.denyWrite,
 		),
 		'Network:',
-		'- Bare domains match exactly; *.example.com matches strict subdomains. Optional :port restricts a rule; IPv6 must be bracketed.',
+		'- Bare domains match exactly; *.example.com matches strict subdomains. Allowed hosts cover all ports; IPv6 rules must be bracketed.',
 		'- Domains: deniedDomains always wins; allowedDomains is deny-by-default, including when empty.',
 		fields.network.allowPublicHosts
 			? '- Public hosts may also be accessed via allowPublicHosts; private and loopback hosts require an explicit allow. Denies still win.'

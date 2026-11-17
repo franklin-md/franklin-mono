@@ -9,22 +9,21 @@ vi.mock('@anthropic-ai/sandbox-runtime', () => ({
 }));
 
 const restricted: NetworkPermissions = {
-	allowedDomains: ['example.com:443', '*.example.com:8443', '[::1]:8080'],
-	deniedDomains: ['blocked.example.com:8443'],
+	allowedDomains: ['example.com', '*.example.com', '[::1]'],
+	deniedDomains: ['blocked.example.com'],
 };
 
 describe('sandbox network callback', () => {
 	it.each([
 		['example.com', 443, true],
-		['api.example.com', 443, false],
+		['api.example.com', 443, true],
 		['api.example.com', 8443, true],
-		['example.com', 8443, false],
+		['example.com', 8443, true],
 		['blocked.example.com', 8443, false],
 		['::1', 8080, true],
 		['[0:0:0:0:0:0:0:1]', 8080, true],
-		['::1', 8081, false],
-		['example.com', undefined, false],
-		['example.com', 0, false],
+		['::1', 8081, true],
+		['example.com', undefined, true],
 		['example.com@evil.com', 443, false],
 		['example.com/else', 443, false],
 	])('decides %s:%s', async (host, port, allowed) => {
@@ -74,7 +73,7 @@ describe('sandbox network callback', () => {
 		const call = vi.mocked(SandboxManager.initialize).mock.calls.at(-1)!;
 		expect(call[0].network).toEqual({ allowedDomains: [], deniedDomains: [] });
 		expect(await call[1]!({ host: 'example.com', port: 443 })).toBe(true);
-		expect(await call[1]!({ host: 'example.com', port: 80 })).toBe(false);
+		expect(await call[1]!({ host: 'example.com', port: 80 })).toBe(true);
 		await proc.setNetworkConfig({ allowedDomains: [], deniedDomains: [] });
 		expect(
 			await call[1]!({

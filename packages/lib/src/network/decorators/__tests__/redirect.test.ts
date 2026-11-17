@@ -124,7 +124,7 @@ describe('withRedirect + withPolicy composition', () => {
 			.mockResolvedValueOnce(okResponse());
 		const fetch = withRedirect(5)(
 			withPolicy({
-				allowedDomains: ['example.com', 'localhost:11434'],
+				allowedDomains: ['example.com', 'localhost'],
 				deniedDomains: [],
 			})(transport),
 		);

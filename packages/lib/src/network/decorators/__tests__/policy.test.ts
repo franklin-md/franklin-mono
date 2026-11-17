@@ -66,18 +66,16 @@ describe('withPolicy', () => {
 		).resolves.toMatchObject({ status: 200 });
 	});
 
-	it('supports exact host-port allowlist entries for loopback', async () => {
+	it('allows every destination port when a host is allowed', async () => {
 		const next = vi.fn<Fetch>().mockResolvedValue(okResponse());
-		const fetch = withPolicy(
-			createConfig({ allowedDomains: ['localhost:11434'] }),
-		)(next);
-
-		await expect(
-			fetch({ url: 'http://localhost:11434/api/tags', method: 'GET' }),
-		).resolves.toMatchObject({ status: 200 });
-		await expect(
-			fetch({ url: 'http://localhost:11435/api/tags', method: 'GET' }),
-		).rejects.toThrow('Network access denied for host "localhost"');
+		const fetch = withPolicy(createConfig({ allowedDomains: ['localhost'] }))(
+			next,
+		);
+		for (const port of [80, 443, 11434, 9229]) {
+			await expect(
+				fetch({ url: `http://localhost:${port}/`, method: 'GET' }),
+			).resolves.toMatchObject({ status: 200 });
+		}
 	});
 
 	it('allows explicitly named private destinations like native shell rules', async () => {
@@ -92,12 +90,12 @@ describe('withPolicy', () => {
 		expect(next).toHaveBeenCalledOnce();
 	});
 
-	it('blocks denied loopback debug ports even when the host is allowlisted', async () => {
+	it('blocks denied loopback hosts even when allowlisted', async () => {
 		const next = vi.fn<Fetch>();
 		const fetch = withPolicy(
 			createConfig({
 				allowedDomains: ['localhost', '127.0.0.1', '[::1]'],
-				deniedDomains: ['localhost:9229', '127.0.0.1:9229', '[::1]:9229'],
+				deniedDomains: ['localhost', '127.0.0.1', '[::1]'],
 			}),
 		)(next);
 
@@ -109,7 +107,7 @@ describe('withPolicy', () => {
 		).rejects.toThrow('Network access denied for host "127.0.0.1"');
 		await expect(
 			fetch({ url: 'http://[::1]:9229/json/version', method: 'GET' }),
-		).rejects.toThrow('Network access denied for host "::1"');
+		).rejects.toThrow('Network access denied for host "[::1]"');
 		expect(next).not.toHaveBeenCalled();
 	});
 });
@@ -126,13 +124,8 @@ describe('native network rule semantics', () => {
 		[['example.com'], ['*.example.com'], 'https://example.com', true],
 		[['*.example.com'], ['*.example.com'], 'https://api.example.com', false],
 		[['example.com'], ['*'], 'https://example.com', false],
-		[['example.com'], ['*:443'], 'https://example.com', false],
-		[['example.com:443'], [], 'https://example.com', true],
-		[['example.com:80'], [], 'http://example.com', true],
-		[['*.example.com:8443'], [], 'https://a.example.com:8443', true],
-		[['*.example.com:8443'], [], 'https://a.example.com', false],
-		[['[::1]:80'], [], 'http://[0:0:0:0:0:0:0:1]', true],
-		[['[::1]:443'], [], 'https://[::1]:444', false],
+		[['[::1]'], [], 'http://[0:0:0:0:0:0:0:1]:8080', true],
+		[['example.com'], [], 'https://example.com:8443', true],
 	])(
 		'evaluates allow=%j deny=%j url=%s',
 		async (allowedDomains, deniedDomains, url, allowed) => {
@@ -152,6 +145,10 @@ describe('native network rule semantics', () => {
 		'',
 		'*.com',
 		'::1',
+		'example.com:443',
+		'localhost:8080',
+		'[::1]:80',
+		'*.example.com:443',
 		'example.com:0',
 		'example.com:65536',
 		'https://example.com',
@@ -164,6 +161,11 @@ describe('native network rule semantics', () => {
 
 	it.each([
 		'http://localhost',
+		'http://10.0.0.1',
+		'http://172.16.0.1',
+		'http://100.64.0.1',
+		'http://169.254.169.254',
+		'http://[fd00::1]',
 		'http://127.1',
 		'http://192.168.1.1',
 		'http://[fe90::1]',
@@ -182,7 +184,7 @@ describe('native network rule semantics', () => {
 
 	it('supports explicit public fallback with deny precedence and private opt-in', async () => {
 		const fetch = withPolicy({
-			allowedDomains: ['localhost:8080'],
+			allowedDomains: ['localhost'],
 			deniedDomains: ['blocked.example.com'],
 			allowPublicHosts: true,
 		})(vi.fn<Fetch>().mockResolvedValue(okResponse()));
@@ -200,3 +202,13 @@ describe('native network rule semantics', () => {
 		).rejects.toThrow('Network access denied');
 	});
 });
+
+// Port rules are rejected in both lists, rather than silently dropping a denial.
+it.each(['example.com:443', '[::1]:80', '*:443'])(
+	'rejects port deny %s',
+	(entry) => {
+		expect(() =>
+			withPolicy({ allowedDomains: [], deniedDomains: [entry] }),
+		).toThrow('Invalid network');
+	},
+);

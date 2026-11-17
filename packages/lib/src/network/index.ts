@@ -11,7 +11,7 @@ export type { FetchDecorator } from './decorators/types.js';
 export type { FetchBuilder } from './decorators/builder.js';
 export { decorate } from './decorators/builder.js';
 export { withOnlyHTTP } from './decorators/only-http.js';
-export { withPolicy, assertAllowed } from './decorators/policy.js';
+export { withPolicy } from './decorators/policy.js';
 export { withUserAgent } from './decorators/user-agent.js';
 export { withTimeout } from './decorators/timeout.js';
 export { withRedirect } from './decorators/redirect.js';
@@ -21,3 +21,5 @@ export { getHeader, setHeader } from './headers.js';
 export { readBodyWithLimit } from './body-limit.js';
 
 export { validateNetworkPermissions } from './validate.js';
+export { networkAllowed } from './allowed.js';
+export { normalizeUrl } from './normalize-url.js';

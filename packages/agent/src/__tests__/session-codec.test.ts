@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AbsolutePath } from '@franklin/lib';
+import { DEFAULT_NETWORK_CONFIG } from '../modules/environment/api/defaults.js';
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import type { FranklinSession } from '../types.js';
 import {
@@ -43,10 +44,9 @@ function session(): FranklinSession {
 					denyWrite: ['node_modules/**'],
 				},
 			},
-			netConfig: {
-				allowedDomains: ['example.com', '*.example.com'],
-				deniedDomains: ['localhost:9222'],
-			},
+			// History migration fixtures use the app default; custom network policies
+			// are covered separately in the network codec tests.
+			netConfig: structuredClone(DEFAULT_NETWORK_CONFIG),
 		},
 	};
 }

@@ -4,7 +4,6 @@ import { versioned, zodCodec } from '@franklin/lib';
 import type { FranklinSession } from '../types.js';
 import { CoreSessionV1, CoreSessionV2 } from './core.js';
 import { DetailsSessionV2 } from './details.js';
-import { migrateNetworkPermissions } from './migrate-network.js';
 import { EnvironmentSessionV1, EnvironmentSessionV2 } from './environment.js';
 import { StoreSessionV1 } from './store.js';
 
@@ -51,7 +50,12 @@ export const franklinSessionCodec: Codec<FranklinSession> = versioned()
 		...prev,
 		env: {
 			...prev.env,
-			netConfig: migrateNetworkPermissions(prev.env.netConfig),
+			// Freeze the v4 policy: future app defaults must not change old restores.
+			netConfig: {
+				allowedDomains: [],
+				deniedDomains: [],
+				allowPublicHosts: true,
+			},
 		},
 	}))
 	.build();

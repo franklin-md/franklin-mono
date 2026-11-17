@@ -12,7 +12,7 @@ describe('renderEnvironmentPermissions', () => {
 			},
 			network: {
 				allowedDomains: ['example.com'],
-				deniedDomains: ['localhost:9229'],
+				deniedDomains: ['localhost'],
 			},
 		});
 
@@ -31,11 +31,11 @@ describe('renderEnvironmentPermissions', () => {
 				'- allowWrite: project/**',
 				'- denyWrite: project/.git/**',
 				'Network:',
-				'- Bare domains match exactly; *.example.com matches strict subdomains. Optional :port restricts a rule; IPv6 must be bracketed.',
+				'- Bare domains match exactly; *.example.com matches strict subdomains. Allowed hosts cover all ports; IPv6 rules must be bracketed.',
 				'- Domains: deniedDomains always wins; allowedDomains is deny-by-default, including when empty.',
 				'- Only allowedDomains matches may be accessed, including private or loopback services explicitly named there.',
 				'- allowedDomains: example.com',
-				'- deniedDomains: localhost:9229',
+				'- deniedDomains: localhost',
 			].join('\n'),
 		);
 	});

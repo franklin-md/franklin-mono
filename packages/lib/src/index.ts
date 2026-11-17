@@ -40,7 +40,8 @@ export {
 	decorate,
 	withOnlyHTTP,
 	withPolicy,
-	assertAllowed,
+	networkAllowed,
+	normalizeUrl,
 	withUserAgent,
 	getHeader,
 	setHeader,
@@ -106,15 +107,6 @@ export type {
 	ValidateCompositionTuple,
 } from './typing/compose.js';
 export { reduceNonEmpty } from './utils/reduce-non-empty.js';
-export {
-	normalizeUrl,
-	isPrivateHost,
-	isLoopbackHost,
-	parseIPv4,
-	normalizeHost,
-	matchesDomain,
-	matchesUrlPattern,
-} from './network/utils.js';
 export { validateNetworkPermissions } from './network/validate.js';
 export type { Simplify } from './typing/simplify.js';
 export type {

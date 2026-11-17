@@ -78,11 +78,9 @@ export class SandboxedProcess implements Process {
 		this._network = structuredClone(config.netConfig);
 
 		this._config = {
-			// SRT 0.0.46 lacks port-aware rules (added upstream by 0.0.83).
-			// Empty native lists consult the supported callback for every destination,
-			// so neither host allows nor host denies can bypass our port decisions.
-			// Keep this compatibility wiring until the parent-owned runtime upgrade.
-			// https://github.com/anthropics/sandbox-runtime/blob/main/src/sandbox/domain-pattern.ts
+			// Empty native lists delegate to the shared host-policy evaluator,
+			// including its explicit public fallback, so fetch and shell agree.
+			// https://github.com/anthropics/sandbox-runtime#programmatic-usage
 			network: { allowedDomains: [], deniedDomains: [] },
 			filesystem: {
 				denyRead: [...config.fsConfig.permissions.denyRead],
