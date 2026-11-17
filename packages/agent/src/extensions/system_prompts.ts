@@ -16,6 +16,8 @@ The old_text must match exactly (including whitespace and newlines).
 Use this for precise, surgical edits. 
 For new files or complete rewrites, use write_file instead. 
 Set replace_all to true to replace every occurrence; otherwise the text must appear exactly once. 
+Run read_file and edit_file for the same file sequentially: wait for either call
+to finish before starting the other. Never run them together in a parallel tool batch.
 Read the content you intend to change before editing. Files may change after your read
 because of the user, another agent, or an external process. Prefer attempting an edit
 from your existing read when you expect the target lines to be unchanged; an unnecessary

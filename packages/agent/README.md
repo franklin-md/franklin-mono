@@ -115,6 +115,16 @@ whole-file or inclusive line-range freshness checks against the current bytes.
 Legacy hash strings migrate to hash-only snapshot objects on first file-control
 access. Validation and writing are not atomic.
 
+Freshness checks are advisory and assume the agent follows the tool prompt's
+instruction to run `read_file` and `edit_file` sequentially for the same file.
+Known limitation: if those calls overlap within one agent, `read_file` can update
+that agent's private last-read record after `edit_file` has captured its matching
+snapshot. The freshness check can then validate the newer stored snapshot while
+the edit uses the older captured text, potentially overwriting user changes.
+Private stores isolate agents from each other; they do not serialize calls within
+one agent. This overlap is an accepted limitation; sequencing is prompted, not
+enforced by the runtime.
+
 Extensions are the way the application interacts with both the agent and the environment. From an extension developer's perspective, the primary concern is: **how should the application handle the agent's tool requests?**
 
 The generic extension-point, compiler, runtime, and stateless module algebra lives in `@franklin/extensibility`. This package owns the state-module layer and the agent-specific modules built on top of that kernel: core Mini-ACP wiring, environment access, stores, orchestration, and the built-in extensions.
