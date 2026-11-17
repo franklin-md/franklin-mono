@@ -1,3 +1,4 @@
+import { getCurrentSystemPrompt } from '@earendil-works/pi-ai';
 import { z } from 'zod';
 import type { MiniACPConnector } from '@franklin/mini-acp';
 import { RuntimeStopCode } from '../../turn/runtime-stop-code.js';
@@ -74,12 +75,14 @@ describe('compaction failures through Pi and RPC', () => {
 						return createPiTestResponse(model, [
 							{
 								type: 'text',
-								text: context.systemPrompt?.startsWith('Summarize')
+								text: getCurrentSystemPrompt(context.messages).startsWith(
+									'Summarize',
+								)
 									? 'Summary.'
 									: 'done',
 							},
 						]);
-					if (!context.systemPrompt?.startsWith('Summarize'))
+					if (!getCurrentSystemPrompt(context.messages).startsWith('Summarize'))
 						return createPiTestResponse(
 							model,
 							[
@@ -186,7 +189,7 @@ describe('compaction failures through Pi and RPC', () => {
 		let summaries = 0;
 		const connector = createPiTestConnector({
 			streamFn: (model, context) => {
-				if (context.systemPrompt?.startsWith('Summarize')) {
+				if (getCurrentSystemPrompt(context.messages).startsWith('Summarize')) {
 					if (++summaries === 1) throw new Error('summary failed');
 					return createPiTestResponse(model, [
 						{ type: 'text', text: 'Lookup completed.' },

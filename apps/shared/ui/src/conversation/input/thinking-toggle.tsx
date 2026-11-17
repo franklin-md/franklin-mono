@@ -45,6 +45,12 @@ const LEVEL_META: Partial<Record<ThinkingLevel, LevelMeta>> = {
 		dotColor: 'bg-primary',
 		dots: 4,
 	},
+	max: {
+		label: 'Max',
+		color: 'text-primary',
+		dotColor: 'bg-primary',
+		dots: 5,
+	},
 };
 
 const DEFAULT_META: LevelMeta = {
@@ -54,7 +60,7 @@ const DEFAULT_META: LevelMeta = {
 	dots: 0,
 };
 
-const DOT_COUNT = 4;
+const DOT_COUNT = 5;
 
 // ---------------------------------------------------------------------------
 // ThinkingToggle

@@ -39,7 +39,11 @@ function mergeUsage(a: Usage, b: Usage): Usage {
 			output: a.cost.output + b.cost.output,
 			cacheRead: a.cost.cacheRead + b.cost.cacheRead,
 			cacheWrite: a.cost.cacheWrite + b.cost.cacheWrite,
-			total: a.cost.total + b.cost.total,
+			// An unknown contribution makes the combined total unknown, not zero.
+			total:
+				a.cost.total === undefined || b.cost.total === undefined
+					? undefined
+					: a.cost.total + b.cost.total,
 		},
 	};
 }

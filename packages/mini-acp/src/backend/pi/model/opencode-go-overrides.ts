@@ -1,34 +1,39 @@
-import type { Model } from '@earendil-works/pi-ai';
+import { getBuiltinModel } from '@earendil-works/pi-ai/providers/all';
+import type { Api, Model } from '@earendil-works/pi-ai';
 
-// Keep this Franklin-local escape hatch even when empty: it lets us add or
-// correct model metadata without waiting for a new pi-ai package release.
+const grok = getBuiltinModel('opencode-go', 'grok-4.7');
+const deepSeekFlash = getBuiltinModel('opencode-go', 'deepseek-v4.1-flash');
+
+// Pi 1.5.2 omits these reviewed IDs. Reuse its transport, compatibility and
+// reasoning metadata for the same provider/API family. Preserve the older
+// Grok version's reviewed prices and limits rather than copying 4.7's tiers.
+// Context sizes remain catalog estimates; endpoint/account limits may differ.
+// https://opencode.ai/docs/go/
+// https://models.dev/api.json
 const OPENCODE_GO_MODEL_OVERRIDES = {
-	// GLM-5.2 is not yet in the bundled pi-ai opencode-go catalog (which tops
-	// out at glm-5.1). Mirror the upstream glm-5.1 metadata until a pi-ai
-	// release ships GLM-5.2 with its own published figures.
-	// Source: https://opencode.ai/zen/go/v1
-	'glm-5.2': {
-		id: 'glm-5.2',
-		name: 'GLM-5.2',
-		api: 'openai-completions',
-		provider: 'opencode-go',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		reasoning: true,
-		input: ['text'],
-		cost: {
-			input: 1.4,
-			output: 4.4,
-			cacheRead: 0.26,
-			cacheWrite: 0,
-		},
-		contextWindow: 202_752,
-		maxTokens: 32_768,
+	'grok-4.6': {
+		...grok,
+		id: 'grok-4.6',
+		name: 'Grok 4.6',
+		cost: { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
+		contextWindow: 500_000,
+		maxTokens: 500_000,
 	},
-} as const satisfies Record<string, Model<'openai-completions'>>;
+	'deepseek-flash': {
+		...deepSeekFlash,
+		id: 'deepseek-flash',
+	},
+	'deepseek-v4-flash-vision-exp': {
+		...deepSeekFlash,
+		id: 'deepseek-v4-flash-vision-exp',
+		name: 'DeepSeek V4 Flash Vision Exp',
+	},
+} satisfies Record<string, Model<Api>>;
 
 export function getOpenCodeGoModelOverride(
 	modelId: string,
-): Model<'openai-completions'> | undefined {
+): Model<Api> | undefined {
+	if (!Object.hasOwn(OPENCODE_GO_MODEL_OVERRIDES, modelId)) return undefined;
 	return OPENCODE_GO_MODEL_OVERRIDES[
 		modelId as keyof typeof OPENCODE_GO_MODEL_OVERRIDES
 	];

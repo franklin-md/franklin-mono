@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Context as PiContext } from '@earendil-works/pi-ai';
+import {
+	getCurrentSystemPrompt,
+	getCurrentTools,
+	type TranscriptContext as PiContext,
+} from '@earendil-works/pi-ai';
 import { createPiTestConnector } from '../../../../../../testing/pi-connector.js';
 import { createPiTestResponse } from '../../../../../../testing/pi-response.js';
 import { createChunkedSummarizer } from '../create.js';
@@ -7,7 +11,7 @@ import { createChunks } from '../chunks.js';
 
 const config = {
 	provider: 'openai-codex',
-	model: 'gpt-5.4',
+	model: 'gpt-6.1-sol',
 	apiKey: 'test-only',
 };
 const messages = [
@@ -38,18 +42,26 @@ describe('chunked summarizer', () => {
 		expect(result.summary).toBe('Summary 1\n\nSummary 2\n\nSummary 3');
 		expect(result.usage.tokens.total).toBe(45);
 		expect(requests).toHaveLength(3);
-		expect(requests.every((request) => request.messages.length === 1)).toBe(
-			true,
-		);
-		expect(JSON.stringify(requests[0]!.messages)).not.toContain(
-			'Prior summaries',
-		);
+		expect(
+			requests.every(
+				(request) =>
+					request.messages.filter((message) => message.role === 'user')
+						.length === 1,
+			),
+		).toBe(true);
+		expect(
+			JSON.stringify(
+				requests[0]!.messages.filter((message) => message.role === 'user'),
+			),
+		).not.toContain('Prior summaries');
 		expect(JSON.stringify(requests[1]!.messages)).toContain('Summary 1');
 		expect(JSON.stringify(requests[2]!.messages)).toContain(
 			'Summary 1\\n\\nSummary 2',
 		);
-		expect(requests[0]!.systemPrompt).toContain('summarize only the new chunk');
-		expect(requests[0]!.tools ?? []).toEqual([]);
+		expect(getCurrentSystemPrompt(requests[0]!.messages)).toContain(
+			'summarize only the new chunk',
+		);
+		expect(getCurrentTools(requests[0]!.messages)).toEqual([]);
 	});
 
 	it('covers the entire transcript and budgets the combined summaries including separators', () => {

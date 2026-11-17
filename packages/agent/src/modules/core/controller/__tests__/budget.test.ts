@@ -15,13 +15,18 @@ import { createAgentSession } from '../session.js';
 import { fallbackServer } from '../fallback.js';
 
 const small = { provider: 'openai', model: 'gpt-4' };
-const large = { provider: 'openai-codex', model: 'gpt-5.5' };
-const larger = { provider: 'openai-codex', model: 'gpt-5.6-sol' };
+const large = { provider: 'openai-codex', model: 'gpt-6-astra' };
+const larger = { provider: 'openai-codex', model: 'gpt-6.1-sol' };
 // Pin both reserve branches against the existing catalog, including a local override.
 const budgets = [
 	{ config: small, contextWindow: 8192, limit: 6144 },
 	{ config: large, contextWindow: 272_000, limit: 255_616 },
-	{ config: larger, contextWindow: 372_000, limit: 355_616 },
+	{ config: larger, contextWindow: 500_000, limit: 483_616 },
+	{
+		config: { provider: 'opencode-go', model: 'grok-4.6' },
+		contextWindow: 500_000,
+		limit: 483_616,
+	},
 ];
 
 async function setup(config: LLMConfig, tokens: number) {
