@@ -35,7 +35,6 @@ Session files now write version 4. Versions 1–3 migrate once at the codec boun
 - Host-only bare domains and `*.domain` become both root and strict-subdomain entries, in **both** allow and deny lists. Host:port entries stay exact.
 - Legacy universal allow entries (`*` or empty string) become public fallback plus explicit loopback entries. Universal denies become `*`.
 - Legacy unbracketed IPv6 becomes bracketed. Non-loopback private-literal allows, which the legacy web guard ignored, are removed rather than gaining access.
-- Legacy `localhost` / `*.localhost` becomes exact `localhost`: native validation rejects the single-label wildcard, so arbitrary localhost subdomains must now be explicitly listed. A legacy deny of that tree also removes explicit allows underneath it to preserve deny precedence.
 - Legacy wildcard-with-port entries never matched; they are removed rather than activated.
 - Invalid/unrepresentable patterns fail schema validation rather than being silently discarded or granted public access. Original persisted files are not rewritten until the normal save path runs.
 
