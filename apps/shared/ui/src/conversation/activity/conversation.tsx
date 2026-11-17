@@ -6,7 +6,7 @@ import {
 } from '@franklin/react';
 
 import { ActivityDisclosure } from './disclosure.js';
-import { getActivityModel } from './model.js';
+import { getActivityHeader } from './header.js';
 import { Waiting } from '../turn/waiting.js';
 
 type Props = ConversationActivityProps & { registry: ToolRendererRegistry };
@@ -22,9 +22,9 @@ export function ConversationActivity({
 	registry,
 	children,
 }: Props) {
-	const model = getActivityModel(blocks, registry);
+	const header = getActivityHeader(blocks, registry);
 	const running = turn.phase === 'in-progress';
-	if (!model.current) {
+	if (!header.current) {
 		return (
 			<>
 				{children}
@@ -35,14 +35,14 @@ export function ConversationActivity({
 	const writing = turn.response.blocks.at(-1)?.kind === 'text';
 	const current = writing
 		? { id: 'writing', content: 'Writing response…' }
-		: model.current;
+		: header.current;
 
 	return (
 		<ActivityDisclosure
-			summary={model.summary}
+			summary={header.summary}
 			summaryPrefix={
-				model.icons.length > 0 &&
-				model.icons.map(({ id, name, Icon }) => (
+				header.icons.length > 0 &&
+				header.icons.map(({ id, name, Icon }) => (
 					<span key={id} title={name} className="inline-flex size-3">
 						<Icon className="size-3" />
 					</span>
@@ -50,7 +50,7 @@ export function ConversationActivity({
 			}
 			current={current}
 			running={running}
-			errors={model.errors}
+			errors={header.errors}
 			meta={
 				running ? (
 					<RunningDuration startedAt={turn.timestamp} />
