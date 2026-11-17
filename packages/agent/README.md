@@ -175,7 +175,7 @@ and checkpoint append; checkpoints reduce model context, not storage or snapshot
 copy costs. No Mini-ACP protocol, adapter or execution-loop changes are involved.
 
 Version 4 migrates the known SDK and Obsidian/sidebar network defaults to explicit
-public access. Custom legacy network policies require explicit reconfiguration.
+unrestricted network access (`allowedDomains: ['*']`). Custom legacy network policies require explicit reconfiguration.
 See [network rule semantics and compatibility](../lib/src/network/README.md).
 
 ### Compaction

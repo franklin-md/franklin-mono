@@ -27,7 +27,7 @@ export function isPrivateHost(host: string): boolean {
 		);
 	}
 	// URL renders IPv4-mapped IPv6 as two hex groups. Classify the embedded
-	// address too, so ::ffff:192.168.1.1 cannot enter the public fallback.
+	// address too, so ::ffff:192.168.1.1 is recognized as private.
 	const mapped = /^::ffff:([a-f0-9]+):([a-f0-9]+)$/.exec(host);
 	if (mapped?.[1] && mapped[2]) {
 		const high = parseInt(mapped[1], 16);

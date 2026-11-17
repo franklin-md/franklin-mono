@@ -104,9 +104,7 @@ export function renderEnvironmentPermissions(
 		'Network:',
 		'- Bare domains match exactly; *.example.com matches strict subdomains. Allowed hosts cover all ports; IPv6 rules must be bracketed.',
 		'- Domains: deniedDomains always wins; allowedDomains is deny-by-default, including when empty.',
-		fields.network.allowPublicHosts
-			? '- Public hosts may also be accessed via allowPublicHosts; private and loopback hosts require an explicit allow. Denies still win.'
-			: '- Only allowedDomains matches may be accessed, including private or loopback services explicitly named there.',
+		'- A * rule matches every host, including private and loopback destinations. Denies still win.',
 		`- allowedDomains: ${formatPatterns(fields.network.allowedDomains)}`,
 		`- deniedDomains: ${formatPatterns(fields.network.deniedDomains)}`,
 	].join('\n');

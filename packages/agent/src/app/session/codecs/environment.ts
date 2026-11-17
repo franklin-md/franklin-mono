@@ -17,8 +17,8 @@ const NetworkPermissionsV1 = z.object({
 	deniedDomains: z.array(z.string()),
 });
 
-// Frozen pre-v4 SDK default. Obsidian/sidebar used empty lists. Both denied
-// local access already, so removing these port rules preserves their behavior.
+// Frozen pre-v4 SDK default. Obsidian/sidebar used empty lists. These known
+// defaults adopt v4's intentionally unrestricted network default on restore.
 const legacyDeniedPorts = new Set(
 	['localhost', '127.0.0.1', '[::1]'].flatMap((host) =>
 		[5005, 5678, 9222, 9229].map((port) => `${host}:${port}`),
@@ -41,9 +41,7 @@ export const EnvironmentSessionV1 = z.object({
 });
 
 export const EnvironmentSessionV2 = EnvironmentSessionV1.extend({
-	netConfig: NetworkPermissionsV1.extend({
-		allowPublicHosts: z.boolean().optional(),
-	}).refine((config) => {
+	netConfig: NetworkPermissionsV1.refine((config) => {
 		try {
 			validateNetworkPermissions(config);
 			return true;

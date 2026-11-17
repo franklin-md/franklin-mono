@@ -79,7 +79,7 @@ export class SandboxedProcess implements Process {
 
 		this._config = {
 			// Empty native lists delegate to the shared host-policy evaluator,
-			// including its explicit public fallback, so fetch and shell agree.
+			// including Franklin's allow-all wildcard, so fetch and shell agree.
 			// https://github.com/anthropics/sandbox-runtime#programmatic-usage
 			network: { allowedDomains: [], deniedDomains: [] },
 			filesystem: {

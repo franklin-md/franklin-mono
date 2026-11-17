@@ -31,7 +31,7 @@ describe('sandbox network callback', () => {
 			await createSandboxNetworkPolicy(() => restricted)({ host, port }),
 		).toBe(allowed);
 	});
-	it('denies empty lists and supports an explicit public-only fallback', async () => {
+	it('denies empty lists and allows public and private hosts with a wildcard', async () => {
 		expect(
 			await createSandboxNetworkPolicy(() => ({
 				allowedDomains: [],
@@ -39,26 +39,32 @@ describe('sandbox network callback', () => {
 			}))({ host: 'example.com', port: 443 }),
 		).toBe(false);
 		const ask = createSandboxNetworkPolicy(() => ({
-			allowedDomains: [],
+			allowedDomains: ['*'],
 			deniedDomains: ['example.com'],
-			allowPublicHosts: true,
 		}));
 		expect(await ask({ host: 'other.example.com', port: 443 })).toBe(true);
 		for (const host of [
-			'example.com.',
 			'localhost',
 			'127.1',
 			'192.168.0.1',
 			'::ffff:192.168.0.1',
 		])
+			expect(await ask({ host, port: 443 })).toBe(true);
+		for (const host of [
+			'example.com.',
+			'',
+			'example.com@evil.com',
+			'example.com/path',
+		]) {
 			expect(await ask({ host, port: 443 })).toBe(false);
+		}
 	});
 	it('revokes access through the first callback retained by an initialized manager', async () => {
 		// Real SRT returns early after its first initialize. Later callbacks are
 		// discarded; retaining the first one reproduces that boundary here.
 		vi.mocked(SandboxManager.initialize).mockClear();
 		const proc = new SandboxedProcess('/app' as AbsolutePath, {
-			netConfig: restricted,
+			netConfig: { allowedDomains: ['*'], deniedDomains: [] },
 			fsConfig: {
 				cwd: '/tmp' as AbsolutePath,
 				permissions: {
@@ -73,7 +79,7 @@ describe('sandbox network callback', () => {
 		const call = vi.mocked(SandboxManager.initialize).mock.calls.at(-1)!;
 		expect(call[0].network).toEqual({ allowedDomains: [], deniedDomains: [] });
 		expect(await call[1]!({ host: 'example.com', port: 443 })).toBe(true);
-		expect(await call[1]!({ host: 'example.com', port: 80 })).toBe(true);
+		expect(await call[1]!({ host: 'localhost', port: 80 })).toBe(true);
 		await proc.setNetworkConfig({ allowedDomains: [], deniedDomains: [] });
 		expect(
 			await call[1]!({
@@ -81,6 +87,7 @@ describe('sandbox network callback', () => {
 				port: 443,
 			}),
 		).toBe(false);
+		expect(await call[1]!({ host: 'localhost', port: 80 })).toBe(false);
 		expect(proc.getNetworkConfig()).toEqual({
 			allowedDomains: [],
 			deniedDomains: [],

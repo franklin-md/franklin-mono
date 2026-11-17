@@ -96,16 +96,15 @@ describe('withRedirect', () => {
 });
 
 describe('withRedirect + withPolicy composition', () => {
-	it('denies redirects from public hosts to loopback unless explicitly allowlisted', async () => {
+	it('denies a redirect to an explicitly denied loopback host despite wildcard allow', async () => {
 		const transport = vi.fn<Fetch>();
 		transport.mockResolvedValueOnce(
 			redirectResponse('http://localhost:11434/api/tags'),
 		);
 		const fetch = withRedirect(5)(
 			withPolicy({
-				allowPublicHosts: true,
-				allowedDomains: [],
-				deniedDomains: [],
+				allowedDomains: ['*'],
+				deniedDomains: ['localhost'],
 			})(transport),
 		);
 
@@ -115,7 +114,7 @@ describe('withRedirect + withPolicy composition', () => {
 		expect(transport).toHaveBeenCalledOnce();
 	});
 
-	it('allows redirects to loopback when the target is explicitly allowlisted', async () => {
+	it('allows redirects to loopback under wildcard access', async () => {
 		const transport = vi.fn<Fetch>();
 		transport
 			.mockResolvedValueOnce(
@@ -124,7 +123,7 @@ describe('withRedirect + withPolicy composition', () => {
 			.mockResolvedValueOnce(okResponse());
 		const fetch = withRedirect(5)(
 			withPolicy({
-				allowedDomains: ['example.com', 'localhost'],
+				allowedDomains: ['*'],
 				deniedDomains: [],
 			})(transport),
 		);

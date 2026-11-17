@@ -33,7 +33,7 @@ describe('renderEnvironmentPermissions', () => {
 				'Network:',
 				'- Bare domains match exactly; *.example.com matches strict subdomains. Allowed hosts cover all ports; IPv6 rules must be bracketed.',
 				'- Domains: deniedDomains always wins; allowedDomains is deny-by-default, including when empty.',
-				'- Only allowedDomains matches may be accessed, including private or loopback services explicitly named there.',
+				'- A * rule matches every host, including private and loopback destinations. Denies still win.',
 				'- allowedDomains: example.com',
 				'- deniedDomains: localhost',
 			].join('\n'),
@@ -65,7 +65,7 @@ describe('renderEnvironmentPermissions', () => {
 			'- With this config, no paths may be written because writes are denied by default.',
 		);
 		expect(rendered).toContain(
-			'- Only allowedDomains matches may be accessed, including private or loopback services explicitly named there.',
+			'- A * rule matches every host, including private and loopback destinations. Denies still win.',
 		);
 	});
 });

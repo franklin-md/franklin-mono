@@ -46,12 +46,11 @@ describe('persisted network defaults', () => {
 		for (const deniedDomains of [[], debugDenies.reverse()]) {
 			const session = decode({ allowedDomains: [], deniedDomains }, version);
 			expect(session.env.netConfig).toEqual({
-				allowedDomains: [],
+				allowedDomains: ['*'],
 				deniedDomains: [],
-				allowPublicHosts: true,
 			});
 			expect(networkAllowed('example.com', session.env.netConfig)).toBe(true);
-			expect(networkAllowed('localhost', session.env.netConfig)).toBe(false);
+			expect(networkAllowed('localhost', session.env.netConfig)).toBe(true);
 			expect(
 				franklinSessionCodec.decode(franklinSessionCodec.encode(session)),
 			).toEqual({ ok: true, value: session });
@@ -78,10 +77,10 @@ describe('persisted network defaults', () => {
 		expect(netConfig).toEqual(original);
 	});
 
-	it('roundtrips new closed, public and custom policies without migration', () => {
+	it('roundtrips new closed, unrestricted and custom policies without migration', () => {
 		for (const config of [
 			{ allowedDomains: [], deniedDomains: [] },
-			{ allowedDomains: [], deniedDomains: [], allowPublicHosts: true },
+			{ allowedDomains: ['*'], deniedDomains: [] },
 			{
 				allowedDomains: ['example.com', '*.example.com'],
 				deniedDomains: ['localhost'],

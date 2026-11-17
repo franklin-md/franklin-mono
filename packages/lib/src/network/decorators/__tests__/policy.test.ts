@@ -112,9 +112,15 @@ describe('withPolicy', () => {
 	});
 });
 
-describe('native network rule semantics', () => {
+describe('host network rule semantics', () => {
 	it.each([
 		[[], [], 'https://example.com', false],
+		[['*'], [], 'https://example.com', true],
+		[['*'], ['*'], 'https://example.com', false],
+		[['*'], ['*'], 'http://localhost:8080', false],
+		[['*'], ['localhost'], 'http://localhost:8080', false],
+		[['*'], ['127.0.0.1'], 'http://127.1:8080', false],
+		[['*'], ['[::1]'], 'http://[0:0:0:0:0:0:0:1]:8080', false],
 		[['example.com'], [], 'https://example.com', true],
 		[['example.com'], [], 'https://api.example.com', false],
 		[['*.example.com'], [], 'https://example.com', false],
@@ -141,7 +147,6 @@ describe('native network rule semantics', () => {
 	);
 
 	it.each([
-		'*',
 		'',
 		'*.com',
 		'::1',
@@ -171,22 +176,20 @@ describe('native network rule semantics', () => {
 		'http://[fe90::1]',
 		'http://[::ffff:192.168.1.1]',
 		'http://service.localhost',
-	])('public fallback does not grant %s', async (url) => {
+	])('wildcard allows private and loopback destination %s', async (url) => {
 		const fetch = withPolicy({
-			allowedDomains: [],
+			allowedDomains: ['*'],
 			deniedDomains: [],
-			allowPublicHosts: true,
-		})(vi.fn<Fetch>());
-		await expect(fetch({ url, method: 'GET' })).rejects.toThrow(
-			'Network access denied',
-		);
+		})(vi.fn<Fetch>().mockResolvedValue(okResponse()));
+		await expect(fetch({ url, method: 'GET' })).resolves.toMatchObject({
+			status: 200,
+		});
 	});
 
-	it('supports explicit public fallback with deny precedence and private opt-in', async () => {
+	it('supports wildcard access with deny precedence', async () => {
 		const fetch = withPolicy({
-			allowedDomains: ['localhost'],
+			allowedDomains: ['*'],
 			deniedDomains: ['blocked.example.com'],
-			allowPublicHosts: true,
 		})(vi.fn<Fetch>().mockResolvedValue(okResponse()));
 		for (const url of [
 			'https://example.com',

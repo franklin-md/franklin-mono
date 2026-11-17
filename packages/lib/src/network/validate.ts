@@ -8,7 +8,7 @@ export function validateNetworkPermissions(
 ): void {
 	for (const list of ['allowedDomains', 'deniedDomains'] as const) {
 		for (const entry of permissions[list]) {
-			if (list === 'deniedDomains' && entry === '*') continue;
+			if (entry === '*') continue;
 			if (!validDomain(entry)) {
 				throw new Error(
 					`Invalid network ${list} entry: ${JSON.stringify(entry)}`,

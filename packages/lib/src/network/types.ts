@@ -1,7 +1,5 @@
 export interface NetworkPermissions {
-	/** Explicit fallback for public hosts only; private/loopback need an allow rule. */
-	allowPublicHosts?: boolean;
-	/** Empty denies by default. Bare domains are exact; *.domain matches strict subdomains. */
+	/** Empty denies; * allows every host, including private/loopback. Bare domains are exact. */
 	allowedDomains: string[];
 	deniedDomains: string[];
 }
