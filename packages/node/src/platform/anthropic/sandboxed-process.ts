@@ -7,6 +7,8 @@ import { once } from 'events';
 import { delimiter } from 'path';
 import { quote as quoteArgv } from 'shell-quote';
 import type { AbsolutePath, Process, ProcessInput } from '@franklin/lib';
+import { validateNetworkPermissions } from '@franklin/lib';
+import { createSandboxNetworkPolicy } from './network.js';
 import { joinAbsolute } from '@franklin/lib';
 import type { NetworkPermissions } from '@franklin/lib';
 import type { FilesystemConfig, EnvironmentConfig } from '@franklin/agent';
@@ -16,6 +18,7 @@ export class SandboxedProcess implements Process {
 	private _app_dir: AbsolutePath;
 	private _config: SandboxRuntimeConfig;
 	private _paths: string[];
+	private _network: NetworkPermissions;
 
 	private getPathsFromEnv() {
 		return (process.env.PATH ?? '')
@@ -24,12 +27,16 @@ export class SandboxedProcess implements Process {
 	}
 
 	async setNetworkConfig(config: NetworkPermissions) {
-		this._config.network = { ...config };
-		await SandboxManager.initialize(this._config);
+		validateNetworkPermissions(config);
+		this._network = structuredClone(config);
+		await SandboxManager.initialize(
+			this._config,
+			createSandboxNetworkPolicy(() => this._network),
+		);
 	}
 
 	getNetworkConfig() {
-		return this._config.network as NetworkPermissions;
+		return structuredClone(this._network);
 	}
 
 	private _denyWritePaths(): string[] {
@@ -56,7 +63,10 @@ export class SandboxedProcess implements Process {
 				...this._denyWritePaths(),
 			];
 		}
-		await SandboxManager.initialize(this._config);
+		await SandboxManager.initialize(
+			this._config,
+			createSandboxNetworkPolicy(() => this._network),
+		);
 	}
 
 	constructor(app_dir: AbsolutePath, config: EnvironmentConfig) {
@@ -64,9 +74,14 @@ export class SandboxedProcess implements Process {
 		this._app_dir = app_dir;
 		// Paths to executables
 		this._paths = this.getPathsFromEnv();
+		validateNetworkPermissions(config.netConfig);
+		this._network = structuredClone(config.netConfig);
 
 		this._config = {
-			network: { ...config.netConfig },
+			// Empty native lists delegate to the shared host-policy evaluator,
+			// including Franklin's allow-all wildcard, so fetch and shell agree.
+			// https://github.com/anthropics/sandbox-runtime#programmatic-usage
+			network: { allowedDomains: [], deniedDomains: [] },
 			filesystem: {
 				denyRead: [...config.fsConfig.permissions.denyRead],
 				allowRead: [...config.fsConfig.permissions.allowRead, ...this._paths],
@@ -80,7 +95,10 @@ export class SandboxedProcess implements Process {
 	}
 	async initialize() {
 		// Initialize the sandbox (starts proxy servers, etc.)
-		await SandboxManager.initialize(this._config);
+		await SandboxManager.initialize(
+			this._config,
+			createSandboxNetworkPolicy(() => this._network),
+		);
 	}
 
 	async exec({ file, args, cwd, env, timeout }: ProcessInput) {
@@ -89,7 +107,13 @@ export class SandboxedProcess implements Process {
 		// must ultimately be run through `shell: true`. We POSIX-quote the argv
 		// here so the shell reassembles the exact argv we were given — callers
 		// never have to shell-escape themselves.
-		const shellCmd = quoteArgv([file, ...(args ?? [])]);
+		const shellCmd = quoteArgv([
+			'env',
+			'NO_PROXY=',
+			'no_proxy=',
+			file,
+			...(args ?? []),
+		]);
 		const sandboxedCommand = await SandboxManager.wrapWithSandbox(
 			shellCmd,
 			undefined,

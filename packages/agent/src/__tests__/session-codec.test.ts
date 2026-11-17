@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AbsolutePath } from '@franklin/lib';
+import { DEFAULT_NETWORK_CONFIG } from '../modules/environment/api/defaults.js';
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import type { FranklinSession } from '../types.js';
 import {
@@ -43,12 +44,15 @@ function session(): FranklinSession {
 					denyWrite: ['node_modules/**'],
 				},
 			},
-			netConfig: {
-				allowedDomains: ['example.com'],
-				deniedDomains: ['localhost:9222'],
-			},
+			// History migration fixtures use the app default; custom network policies
+			// are covered separately in the network codec tests.
+			netConfig: structuredClone(DEFAULT_NETWORK_CONFIG),
 		},
 	};
+}
+
+function legacyEnvironment(env: FranklinSession['env']) {
+	return { ...env, netConfig: { allowedDomains: [], deniedDomains: [] } };
 }
 
 describe('session codec', () => {
@@ -112,7 +116,11 @@ describe('session codec', () => {
 		expect(
 			franklinSessionCodec.decode({
 				version: 1,
-				data: { ...v1, core: { ...core, messages } },
+				data: {
+					...v1,
+					env: legacyEnvironment(v1.env),
+					core: { ...core, messages },
+				},
 			}),
 		).toEqual({
 			ok: true,
@@ -163,7 +171,11 @@ describe('session codec', () => {
 		expect(
 			franklinSessionCodec.decode({
 				version: 2,
-				data: { ...value, core: { ...core, messages } },
+				data: {
+					...value,
+					env: legacyEnvironment(value.env),
+					core: { ...core, messages },
+				},
 			}),
 		).toEqual({
 			ok: true,
@@ -217,7 +229,7 @@ describe('session codec', () => {
 	});
 
 	it.each([1, 2])(
-		'migrates all v%i message roles and roundtrips v3',
+		'migrates all v%i message roles and roundtrips the current version',
 		(version) => {
 			const value = session();
 			const messages = [
@@ -248,6 +260,7 @@ describe('session codec', () => {
 				version,
 				data: {
 					...(version === 1 ? legacy : value),
+					env: legacyEnvironment(value.env),
 					core: { ...core, messages },
 				},
 			};

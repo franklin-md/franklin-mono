@@ -1,4 +1,5 @@
 export interface NetworkPermissions {
+	/** Empty denies; * allows every host, including private/loopback. Bare domains are exact. */
 	allowedDomains: string[];
 	deniedDomains: string[];
 }
