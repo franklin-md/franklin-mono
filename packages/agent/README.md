@@ -110,7 +110,10 @@ private file record, increasing stored session data by the retained text size.
 Exact single-target edits preserve unrelated changes when the full target lines
 remain unchanged at the same line numbers; shifted or changed target lines
 require a reread. Fuzzy edits, `replace_all`, and legacy or binary hash-only
-records still require an unchanged file. Validation and writing are not atomic.
+records still require an unchanged file. File control owns snapshot recording and
+whole-file or inclusive line-range freshness checks against the current bytes.
+Legacy hash strings migrate to hash-only snapshot objects on first file-control
+access. Validation and writing are not atomic.
 
 Extensions are the way the application interacts with both the agent and the environment. From an extension developer's perspective, the primary concern is: **how should the application handle the agent's tool requests?**
 

@@ -81,7 +81,7 @@ describe('readExtension', () => {
 		async (_name, bytes) => {
 			const { compiled, env } = await executeReadFile(bytes, 'file');
 			expect(compiled.ctx.getStore(fileKey).get()).toEqual({
-				file: sha256Hex(bytes),
+				file: { hash: sha256Hex(bytes) },
 			});
 			vi.mocked(env.filesystem.readFile).mockResolvedValue(
 				new TextEncoder().encode('user above\ntarget'),
