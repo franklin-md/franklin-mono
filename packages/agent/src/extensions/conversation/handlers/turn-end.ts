@@ -1,4 +1,4 @@
-import type { TurnEnd } from '@franklin/mini-acp';
+import type { AgentTurnEnd } from '../../../modules/core/turn/types.js';
 import type { ConversationTurn } from '../types.js';
 
 import { endAllOpenBlocks, endBlock } from './blocks/end.js';
@@ -14,7 +14,10 @@ import { startBlock } from './blocks/start.js';
  * The turnEnd is instantaneous. It closes every still-open block at the same
  * moment, including overlapping tool calls that never produced a result.
  */
-export function handleTurnEnd(turn: ConversationTurn, event: TurnEnd): void {
+export function handleTurnEnd(
+	turn: ConversationTurn,
+	event: AgentTurnEnd,
+): void {
 	const now = Date.now();
 	endAllOpenBlocks(turn, now);
 	const block = startBlock(

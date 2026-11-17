@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all';
+import { clampThinkingLevel } from '@earendil-works/pi-ai';
 import {
 	OPENROUTER_APP_TITLE,
 	OPENROUTER_APP_URL,
@@ -7,250 +9,115 @@ import { resolveModel } from '../backend/pi/model/resolve.js';
 import { StopCode } from '../types/stop-code.js';
 
 const OPENROUTER_UPSTREAM_MODEL_CASES = [
-	{ id: 'z-ai/glm-5.1', contextWindow: 202_800 },
-	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_576 },
-	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_048_576 },
+	{ id: 'z-ai/glm-5.1', contextWindow: 202_752 },
+	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_575 },
+	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_024_000 },
 	{ id: 'moonshotai/kimi-k2.6', contextWindow: 262_144 },
 	{ id: 'x-ai/grok-4.20', contextWindow: 2_000_000 },
 	{ id: 'qwen/qwen3.6-plus', contextWindow: 1_000_000 },
-	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
+	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 262_144 },
 ] as const;
 
-const OPENAI_CODEX_LOCAL_OVERRIDE_MODEL_CASES = [
-	{
-		id: 'gpt-5.6-sol',
-		name: 'GPT-5.6 Sol',
-		contextWindow: 372_000,
-		maxTokens: 128_000,
-		cost: {
-			input: 5,
-			output: 30,
-			cacheRead: 0.5,
-			cacheWrite: 6.25,
-		},
-	},
-	{
-		id: 'gpt-5.6-terra',
-		name: 'GPT-5.6 Terra',
-		contextWindow: 372_000,
-		maxTokens: 128_000,
-		cost: {
-			input: 2.5,
-			output: 15,
-			cacheRead: 0.25,
-			cacheWrite: 3.125,
-		},
-	},
-	{
-		id: 'gpt-5.6-luna',
-		name: 'GPT-5.6 Luna',
-		contextWindow: 372_000,
-		maxTokens: 128_000,
-		cost: {
-			input: 1,
-			output: 6,
-			cacheRead: 0.1,
-			cacheWrite: 1.25,
-		},
-	},
-] as const;
-
-const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
-	{
-		id: 'x-ai/grok-4.5',
-		name: 'xAI: Grok 4.5',
-		input: ['text', 'image'],
-		thinkingLevelMap: { off: null, minimal: 'low' },
-		contextWindow: 500_000,
-		maxTokens: 4_096,
-		cost: {
-			input: 2,
-			output: 6,
-			cacheRead: 0.5,
-			cacheWrite: 0,
-		},
-	},
-	{
-		id: 'google/gemini-3.5-flash',
-		name: 'Google: Gemini 3.5 Flash',
-		input: ['text', 'image'],
-		contextWindow: 1_048_576,
-		maxTokens: 65_536,
-		cost: {
-			input: 1.5,
-			output: 9,
-			cacheRead: 0.15,
-			cacheWrite: 0.08333333333333334,
-		},
-	},
-	{
-		id: 'qwen/qwen3.7-max',
-		name: 'Qwen: Qwen3.7 Max',
-		input: ['text'],
-		contextWindow: 1_000_000,
-		maxTokens: 65_536,
-		cost: {
-			input: 2.5,
-			output: 7.5,
-			cacheRead: 0,
-			cacheWrite: 3.125,
-		},
-	},
-] as const;
-
-// Keep OpenCode Go Qwen 3.5/3.6 and MiniMax M2.7 on the OpenAI-compatible
-// path even though the OpenCode docs table lists provider SDKs such as
-// @ai-sdk/alibaba and @ai-sdk/anthropic. Pi issue #4106 reproduced 404s with
-// the non-/v1 metadata, PR #4110 fixed these models to openai-completions, and
-// v0.73.0 release notes call out that generated metadata fix.
-// Sources:
-// - https://dev.opencode.ai/docs/go/
-// - https://github.com/earendil-works/pi/issues/4106
-// - https://github.com/earendil-works/pi/pull/4110
-// - https://github.com/earendil-works/pi/releases/tag/v0.73.0
-const OPENCODE_GO_UPSTREAM_MODEL_CASES = [
-	{
-		id: 'deepseek-v4-pro',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 1_000_000,
-	},
-	{
-		id: 'deepseek-v4-flash',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 1_000_000,
-	},
-	{
-		id: 'mimo-v2.5-pro',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 1_048_576,
-	},
-	{
-		id: 'mimo-v2.5',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 1_000_000,
-	},
-	{
-		id: 'kimi-k2.6',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 262_144,
-	},
-	{
-		id: 'qwen3.6-plus',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 262_144,
-	},
-	{
-		id: 'qwen3.5-plus',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 262_144,
-	},
-	{
-		id: 'minimax-m2.7',
-		api: 'openai-completions',
-		baseUrl: 'https://opencode.ai/zen/go/v1',
-		contextWindow: 204_800,
-	},
-] as const;
-
-// GLM-5.2 is not yet in the bundled pi-ai opencode-go catalog, so it is served
-// from the Franklin-local override escape hatch rather than upstream.
-const OPENCODE_GO_LOCAL_OVERRIDE_MODEL_CASES = [
-	{
-		id: 'glm-5.2',
-		name: 'GLM-5.2',
-		input: ['text'],
-		contextWindow: 202_752,
-		maxTokens: 32_768,
-		cost: {
-			input: 1.4,
-			output: 4.4,
-			cacheRead: 0.26,
-			cacheWrite: 0,
-		},
-	},
+const UPSTREAM_MODEL_CASES = [
+	['openai-codex', 'gpt-6-astra'],
+	['openai-codex', 'gpt-6.1-sol'],
+	['openai-codex', 'gpt-5.6-terra'],
+	['openai-codex', 'gpt-5.6-luna'],
+	['openrouter', 'anthropic/claude-fable-5.2'],
+	['openrouter', 'anthropic/claude-opus-5.5'],
+	['openrouter', 'google/gemini-4-argon'],
+	['openrouter', 'google/gemini-3.8-flash'],
+	['openrouter', 'x-ai/grok-4.5'],
+	['openrouter', 'google/gemini-3.5-flash'],
+	['openrouter', 'qwen/qwen3.7-max'],
+	['opencode-go', 'gpt-5.6-luna'],
+	['opencode-go', 'glm-5.3'],
+	['opencode-go', 'glm-5.3-flash'],
+	['opencode-go', 'kimi-k3'],
+	['opencode-go', 'kimi-k2.7-code'],
+	['opencode-go', 'longcat-2.0'],
+	['opencode-go', 'mimo-v2.5'],
+	['opencode-go', 'mimo-v2.5-pro'],
+	['opencode-go', 'minimax-m3'],
+	['opencode-go', 'muse-spark-1.3-contributor'],
+	['opencode-go', 'qwen3.8-flash'],
+	['opencode-go', 'qwen3.8-max'],
+	['opencode-go', 'deepseek-v4-pro'],
+	['opencode-go', 'hy4-preview'],
+	['openrouter', 'z-ai/glm-5.3-prime'],
+	['openrouter', 'deepseek/deepseek-v4.1-flash-1017'],
+	['openrouter', 'deepseek/deepseek-v4-pro-0813'],
+	['openrouter', 'x-ai/grok-4.7'],
 ] as const;
 
 describe('resolveModel', () => {
-	for (const model of OPENAI_CODEX_LOCAL_OVERRIDE_MODEL_CASES) {
-		it(`resolves the OpenAI Codex ${model.id} model from local overrides`, () => {
-			const result = resolveModel({
-				provider: 'openai-codex',
-				model: model.id,
-			});
+	it.each(UPSTREAM_MODEL_CASES)(
+		'preserves upstream metadata for %s/%s',
+		(provider, id) => {
+			const builtin = getBuiltinModels(provider).find(
+				(model) => model.id === id,
+			);
+			const resolved = resolveModel({ provider, model: id });
+			expect(builtin).toBeDefined();
+			if (!resolved.ok) throw new Error('Model resolution failed');
+			const { headers: _headers, ...model } = resolved.model;
+			expect(model).toEqual(builtin);
+		},
+	);
 
+	it.each([
+		['z-ai/glm-5.3-prime', 'low', 'high', 'max'],
+		['deepseek/deepseek-v4.1-flash-1017', 'off', 'high', 'max'],
+		['deepseek/deepseek-v4-pro-0813', 'off', 'high', 'max'],
+		['x-ai/grok-4.7', 'low', 'medium', 'xhigh'],
+	] as const)(
+		'resolves current OpenRouter model %s with supported effort',
+		(id, lowest, medium, highest) => {
+			const result = resolveModel({ provider: 'openrouter', model: id });
 			expect(result.ok).toBe(true);
-			expect(result.ok && result.model).toMatchObject({
-				provider: 'openai-codex',
-				id: model.id,
-				name: model.name,
-				api: 'openai-codex-responses',
-				baseUrl: 'https://chatgpt.com/backend-api',
-				reasoning: true,
-				thinkingLevelMap: { minimal: 'low', xhigh: 'xhigh' },
-				input: ['text', 'image'],
-				contextWindow: model.contextWindow,
-				maxTokens: model.maxTokens,
-				cost: model.cost,
-			});
-		});
-	}
-
-	it('resolves the OpenAI Codex gpt-5.5 model from pi-ai', () => {
-		const result = resolveModel({
-			provider: 'openai-codex',
-			model: 'gpt-5.5',
-		});
-
+			if (!result.ok) return;
+			expect(result.model.contextWindow).toBeGreaterThanOrEqual(500_000);
+			expect(clampThinkingLevel(result.model, 'off')).toBe(lowest);
+			expect(clampThinkingLevel(result.model, 'medium')).toBe(medium);
+			const level = clampThinkingLevel(result.model, 'xhigh');
+			expect(result.model.thinkingLevelMap?.[level] ?? level).toBe(highest);
+		},
+	);
+	it.each([
+		['anthropic/claude-fable-5.2', 'xhigh'],
+		['anthropic/claude-opus-5.5', 'xhigh'],
+		['google/gemini-4-argon', 'high'],
+		['google/gemini-4-carbon', 'high'],
+		['google/gemini-4-hydrogen', 'xhigh'],
+		['google/gemini-3.8-flash', 'high'],
+	])('clamps saved effort to supported levels for %s', (id, highestEffort) => {
+		const result = resolveModel({ provider: 'openrouter', model: id });
 		expect(result.ok).toBe(true);
-		expect(result.ok && result.model).toMatchObject({
-			provider: 'openai-codex',
-			id: 'gpt-5.5',
-			api: 'openai-codex-responses',
-			reasoning: true,
-			thinkingLevelMap: { xhigh: 'xhigh' },
-			contextWindow: 272_000,
-			maxTokens: 128_000,
-			cost: {
-				input: 5,
-				output: 30,
-				cacheRead: 0.5,
-				cacheWrite: 0,
-			},
-		});
+		if (!result.ok) return;
+
+		const model = result.model;
+		expect(clampThinkingLevel(model, 'off')).toBe('low');
+		expect(clampThinkingLevel(model, 'minimal')).toBe('low');
+		expect(clampThinkingLevel(model, 'medium')).toBe('medium');
+		const highestLevel = clampThinkingLevel(model, 'xhigh');
+		expect(model.thinkingLevelMap?.[highestLevel] ?? highestLevel).toBe(
+			highestEffort,
+		);
 	});
 
-	it('resolves the OpenAI Codex gpt-5.4-mini model from pi-ai', () => {
-		const result = resolveModel({
-			provider: 'openai-codex',
-			model: 'gpt-5.4-mini',
-		});
-
-		expect(result.ok).toBe(true);
-		expect(result.ok && result.model).toMatchObject({
-			provider: 'openai-codex',
-			id: 'gpt-5.4-mini',
-			api: 'openai-codex-responses',
-			reasoning: true,
-			contextWindow: 272_000,
-			maxTokens: 128_000,
-			cost: {
-				input: 0.75,
-				output: 4.5,
-				cacheRead: 0.075,
-				cacheWrite: 0,
-			},
-		});
-	});
-
-	for (const model of ['gpt-5.3-codex', 'gpt-5.3-codex-spark']) {
-		it(`rejects OpenAI Codex model outside the OAuth allowlist: ${model}`, () => {
+	for (const model of [
+		'gpt-5.5',
+		'gpt-5.4',
+		'gpt-5.4-mini',
+		'gpt-6-sol',
+		'gpt-5.6-sol',
+		'gpt-5.3-codex',
+		'gpt-5.3-codex-spark',
+		'constructor',
+		'toString',
+		'__proto__',
+	]) {
+		it(`rejects OpenAI Codex model outside the reviewed OAuth set: ${model}`, () => {
 			const result = resolveModel({
 				provider: 'openai-codex',
 				model,
@@ -307,78 +174,36 @@ describe('resolveModel', () => {
 		});
 	}
 
-	for (const model of OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES) {
-		it(`resolves the OpenRouter ${model.id} model from local overrides`, () => {
-			const result = resolveModel({
-				provider: 'openrouter',
-				model: model.id,
-			});
-
-			expect(result.ok).toBe(true);
-			expect(result.ok && result.model).toMatchObject({
-				provider: 'openrouter',
-				id: model.id,
-				name: model.name,
-				api: 'openai-completions',
-				baseUrl: 'https://openrouter.ai/api/v1',
-				reasoning: true,
-				...('thinkingLevelMap' in model
-					? { thinkingLevelMap: model.thinkingLevelMap }
-					: {}),
-				input: model.input,
-				contextWindow: model.contextWindow,
-				maxTokens: model.maxTokens,
-				cost: model.cost,
-			});
+	it.each([
+		['openrouter', 'google/gemini-4-carbon', 'openai-completions'],
+		['openrouter', 'google/gemini-4-hydrogen', 'openai-completions'],
+		['opencode-go', 'grok-4.6', 'openai-responses'],
+		['opencode-go', 'deepseek-flash', 'openai-completions'],
+		['opencode-go', 'deepseek-v4-flash-vision-exp', 'openai-completions'],
+	] as const)('keeps missing model %s/%s available', (provider, id, api) => {
+		expect(getBuiltinModels(provider).some((model) => model.id === id)).toBe(
+			false,
+		);
+		const result = resolveModel({ provider, model: id });
+		expect(result.ok && result.model).toMatchObject({
+			provider,
+			id,
+			api,
+			reasoning: true,
 		});
-	}
+	});
 
-	for (const {
-		id,
-		api,
-		baseUrl,
-		contextWindow,
-	} of OPENCODE_GO_UPSTREAM_MODEL_CASES) {
-		it(`resolves the OpenCode Go ${id} model from pi-ai`, () => {
-			const result = resolveModel({
-				provider: 'opencode-go',
-				model: id,
-			});
-
-			expect(result.ok).toBe(true);
-			expect(result.ok && result.model).toMatchObject({
-				provider: 'opencode-go',
-				id,
-				api,
-				baseUrl,
-				reasoning: true,
-				contextWindow,
-			});
-		});
-	}
-
-	for (const model of OPENCODE_GO_LOCAL_OVERRIDE_MODEL_CASES) {
-		it(`resolves the OpenCode Go ${model.id} model from local overrides`, () => {
-			const result = resolveModel({
-				provider: 'opencode-go',
-				model: model.id,
-			});
-
-			expect(result.ok).toBe(true);
-			expect(result.ok && result.model).toMatchObject({
-				provider: 'opencode-go',
-				id: model.id,
-				name: model.name,
-				api: 'openai-completions',
-				baseUrl: 'https://opencode.ai/zen/go/v1',
-				reasoning: true,
-				input: model.input,
-				contextWindow: model.contextWindow,
-				maxTokens: model.maxTokens,
-				cost: model.cost,
-			});
-		});
-	}
+	it.each(['openrouter', 'opencode-go'] as const)(
+		'rejects prototype keys on %s',
+		(provider) => {
+			for (const model of ['constructor', 'toString', '__proto__']) {
+				const result = resolveModel({ provider, model });
+				expect(!result.ok && result.turnEnd.stopCode).toBe(
+					StopCode.ModelNotFound,
+				);
+			}
+		},
+	);
 
 	it('returns ProviderNotSpecified when provider is omitted', () => {
 		const result = resolveModel({ model: 'openrouter/free' });

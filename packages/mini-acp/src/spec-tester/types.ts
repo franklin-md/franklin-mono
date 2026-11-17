@@ -7,7 +7,13 @@
 
 import type { ContextPatch } from '../types/context.js';
 import type { UserMessage } from '../types/message.js';
-import type { Chunk, TurnStart, Update, TurnEnd } from '../types/stream.js';
+import type {
+	Chunk,
+	TurnStart,
+	Update,
+	StepEnd,
+	TurnEnd,
+} from '../types/stream.js';
 import type { ToolCall, ToolDefinition, ToolResult } from '../types/tool.js';
 import type { MiniACPAgent, MiniACPClient } from '../protocol/index.js';
 
@@ -19,11 +25,13 @@ export type TranscriptEntry =
 	| { direction: 'send'; method: 'initialize'; params: Record<string, never> }
 	| { direction: 'send'; method: 'setContext'; params: ContextPatch }
 	| { direction: 'send'; method: 'prompt'; params: UserMessage }
+	| { direction: 'send'; method: 'continue'; params: Record<string, never> }
 	| { direction: 'send'; method: 'cancel'; params: Record<string, never> }
 	| { direction: 'send'; method: 'toolResult'; params: ToolResult }
 	| { direction: 'receive'; method: 'turnStart'; params: TurnStart }
 	| { direction: 'receive'; method: 'chunk'; params: Chunk }
 	| { direction: 'receive'; method: 'update'; params: Update }
+	| { direction: 'receive'; method: 'stepEnd'; params: StepEnd }
 	| { direction: 'receive'; method: 'turnEnd'; params: TurnEnd }
 	| {
 			direction: 'receive';
@@ -72,6 +80,7 @@ export type Action =
 	| { type: 'initialize' }
 	| { type: 'setContext'; context: SetContextPayload }
 	| { type: 'prompt'; message: UserMessage }
+	| { type: 'continue' }
 	| { type: 'cancel' }
 	| {
 			type: 'waitFor';

@@ -57,7 +57,7 @@ export function TurnDetailsTooltip({ turn }: TurnDetailsTooltipProps) {
 						</div>
 					) : (
 						<p className="text-xs text-muted-foreground">
-							Usage details unavailble
+							Usage details unavailable
 						</p>
 					)}
 				</TooltipContent>

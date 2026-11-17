@@ -34,7 +34,7 @@ afterEach(() => {
 describe('controlled model picker', () => {
 	it.each([
 		['gemini', 'Gemini 3.5 Flash', 'google/gemini-3.5-flash'],
-		['glm', 'GLM 5.1', 'z-ai/glm-5.1'],
+		['glm', 'GLM 5.3 Prime', 'z-ai/glm-5.3-prime'],
 	])(
 		'searches for %s and selects its OpenRouter model',
 		async (search, name, id) => {
@@ -118,6 +118,7 @@ describe('controlled model picker', () => {
 			'medium',
 			'high',
 			'xhigh',
+			'max',
 		] as const;
 		const props = { provider: 'custom', model: 'saved', onSelect };
 		const { rerender } = render(
@@ -127,7 +128,8 @@ describe('controlled model picker', () => {
 		fireEvent.change(screen.getByPlaceholderText('Search models...'), {
 			target: { value: 'no-such-model' },
 		});
-		expect(screen.getAllByRole('radio')).toHaveLength(6);
+		expect(screen.getAllByRole('radio')).toHaveLength(7);
+		expect(screen.getByRole('radio', { name: 'Max' })).toBeTruthy();
 		expect(
 			screen.getByRole<HTMLInputElement>('radio', { name: 'High' }).checked,
 		).toBe(true);
@@ -156,7 +158,7 @@ describe('controlled model picker', () => {
 	it('shows the compact current effort beside the model name and reflects external updates', () => {
 		const props = {
 			provider: 'openai-codex',
-			model: 'gpt-5.6-sol',
+			model: 'gpt-6.1-sol',
 			onSelect: vi.fn(),
 		};
 		const levels = ['medium', 'xhigh'] as const;
@@ -164,7 +166,7 @@ describe('controlled model picker', () => {
 		const { rerender } = render(
 			<ModelPicker {...props} effort={{ level: 'medium', levels, onChange }} />,
 		);
-		expect(screen.getByRole('button').textContent).toContain('GPT-5.6 Sol');
+		expect(screen.getByRole('button').textContent).toContain('GPT-6.1-Sol');
 		expect(screen.getByRole('button').textContent).toContain('Med');
 		rerender(
 			<ModelPicker {...props} effort={{ level: 'xhigh', levels, onChange }} />,
@@ -212,11 +214,11 @@ describe('controlled model picker', () => {
 		rerender(
 			<ModelPicker
 				provider="openai-codex"
-				model="gpt-5.6-sol"
+				model="gpt-6.1-sol"
 				onSelect={select}
 			/>,
 		);
-		expect(screen.getByRole('button').textContent).toContain('GPT-5.6 Sol');
+		expect(screen.getByRole('button').textContent).toContain('GPT-6.1-Sol');
 		expect(select).not.toHaveBeenCalled();
 	});
 
@@ -232,12 +234,12 @@ describe('controlled model picker', () => {
 		);
 		fireEvent.click(screen.getByRole('button', { name: 'Choose model' }));
 		fireEvent.change(screen.getByPlaceholderText('Search models...'), {
-			target: { value: 'gpt-5.6-sol' },
+			target: { value: 'gpt-6.1-sol' },
 		});
-		fireEvent.click(await screen.findByRole('option', { name: 'GPT-5.6 Sol' }));
+		fireEvent.click(await screen.findByRole('option', { name: 'GPT-6.1-Sol' }));
 		expect(select).toHaveBeenCalledExactlyOnceWith(
 			'openai-codex',
-			'gpt-5.6-sol',
+			'gpt-6.1-sol',
 		);
 		expect(screen.queryByPlaceholderText('Search models...')).toBeNull();
 	});

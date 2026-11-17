@@ -18,7 +18,7 @@ const meta = {
 	component: ModelPicker,
 	args: {
 		provider: 'openai-codex',
-		model: 'gpt-5.6-sol',
+		model: 'gpt-6.1-sol',
 		onSelect: () => {},
 		renderProviderAction: () => null,
 	},

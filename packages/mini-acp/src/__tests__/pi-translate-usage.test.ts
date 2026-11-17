@@ -5,6 +5,28 @@ import type { Usage as PiUsage } from '@earendil-works/pi-ai';
 import { fromPiUsage } from '../backend/pi/translate/usage.js';
 
 describe('fromPiUsage', () => {
+	it.each([true, false, undefined])(
+		'keeps the best available total without provenance (provider-reported: %s)',
+		(totalFromProvider) => {
+			const result = fromPiUsage({
+				input: 10,
+				output: 5,
+				cacheRead: 0,
+				cacheWrite: 0,
+				totalTokens: 15,
+				cost: {
+					input: 0.1,
+					output: 0.2,
+					cacheRead: 0,
+					cacheWrite: 0,
+					total: 0.0142,
+					totalFromProvider,
+				},
+			});
+			expect(result.cost.total).toBe(0.0142);
+			expect(result.cost).not.toHaveProperty('totalFromProvider');
+		},
+	);
 	it('translates non-zero pi-ai usage into nested tokens/cost buckets', () => {
 		const piUsage: PiUsage = {
 			input: 120,
@@ -39,7 +61,7 @@ describe('fromPiUsage', () => {
 		});
 	});
 
-	it('preserves zeroes when the provider reports none', () => {
+	it('preserves zero cost when Pi supplies no reported total', () => {
 		const piUsage: PiUsage = {
 			input: 0,
 			output: 0,
@@ -51,7 +73,13 @@ describe('fromPiUsage', () => {
 
 		expect(fromPiUsage(piUsage)).toEqual({
 			tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+			cost: {
+				input: 0,
+				output: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
+				total: 0,
+			},
 		});
 	});
 });

@@ -11,6 +11,9 @@ export function narrowPiStopCode(
 			return StopCode.Finished;
 		case 'length':
 			return StopCode.MaxTokens;
+		case 'pending':
+		case 'deferred':
+			return StopCode.LlmError;
 		case 'error':
 			return narrowPiErrorStopCode(errorMessage);
 		case 'aborted':

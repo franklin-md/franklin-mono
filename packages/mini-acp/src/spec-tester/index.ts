@@ -18,6 +18,7 @@ export { allFixtureExpectations } from './fixtures/index.js';
 export { initialize } from './actions/initialize.js';
 export { setContext } from './actions/set-context.js';
 export { prompt } from './actions/prompt.js';
+export { continueTurn } from './actions/continue.js';
 export { cancel } from './actions/cancel.js';
 export { waitFor } from './actions/wait-for.js';
 // Pre-built fixtures

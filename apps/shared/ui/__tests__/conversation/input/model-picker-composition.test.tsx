@@ -75,14 +75,14 @@ describe('model picker composition without a harness or agent', () => {
 			expect(screen.queryByRole('button', { name: /OpenCode/ })).toBeNull();
 			if (search)
 				fireEvent.change(screen.getByRole('combobox'), {
-					target: { value: 'GPT-5.6 Sol' },
+					target: { value: 'GPT-6.1-Sol' },
 				});
 			fireEvent.click(
-				await screen.findByRole('option', { name: 'GPT-5.6 Sol' }),
+				await screen.findByRole('option', { name: 'GPT-6.1-Sol' }),
 			);
 			expect(onSelect).toHaveBeenCalledExactlyOnceWith(
 				'openai-codex',
-				'gpt-5.6-sol',
+				'gpt-6.1-sol',
 			);
 			expect(screen.queryByRole('dialog')).toBeNull();
 		},

@@ -1,9 +1,9 @@
 import type { MuTurn } from '../protocol/types.js';
-import type { UserMessage } from '../types/message.js';
 import type { StreamEvent } from '../types/stream.js';
 
 import {
 	renderCancel,
+	renderContinue,
 	renderPrompt,
 	renderStreamEvent,
 	renderThrown,
@@ -11,20 +11,26 @@ import {
 import { logLines } from './style.js';
 
 export function debugTurn(turn: MuTurn, label: string): MuTurn {
-	return {
-		async *prompt(message: UserMessage): AsyncGenerator<StreamEvent> {
-			logLines(label, renderPrompt(message));
-
-			try {
-				for await (const event of turn.prompt(message)) {
-					logLines(label, renderStreamEvent(event));
-					yield event;
-				}
-			} catch (error) {
-				logLines(label, renderThrown('prompt', error, 2));
-				throw error;
+	async function* record(
+		operation: 'prompt' | 'continue',
+		opening: string[],
+		open: () => AsyncIterable<StreamEvent>,
+	): AsyncGenerator<StreamEvent> {
+		logLines(label, opening);
+		try {
+			for await (const event of open()) {
+				logLines(label, renderStreamEvent(event));
+				yield event;
 			}
-		},
+		} catch (error) {
+			logLines(label, renderThrown(operation, error, 2));
+			throw error;
+		}
+	}
+	return {
+		prompt: (message) =>
+			record('prompt', renderPrompt(message), () => turn.prompt(message)),
+		continue: () => record('continue', renderContinue(), () => turn.continue()),
 		async cancel() {
 			logLines(label, renderCancel());
 

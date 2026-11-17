@@ -5,6 +5,7 @@ export const miniACPRpcServerDescriptor = namespace<MuClient>({
 	initialize: method(),
 	setContext: method(),
 	prompt: event(),
+	continue: event(),
 	cancel: notification(),
 });
 

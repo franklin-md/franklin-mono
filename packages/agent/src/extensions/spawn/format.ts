@@ -1,11 +1,13 @@
-import { type Message, type TurnEnd, stopCategory } from '@franklin/mini-acp';
+import type { Message } from '@franklin/mini-acp';
+import type { AgentTurnEnd } from '../../modules/core/turn/types.js';
+import { agentStopCategory } from '../../modules/core/turn/stop-category.js';
 import type { RenderedToolOutput } from '../../modules/core/index.js';
 
 export function formatResult(
 	messages: Message[],
-	turnEnd: TurnEnd | undefined,
+	turnEnd: AgentTurnEnd | undefined,
 ): string | RenderedToolOutput {
-	if (turnEnd && stopCategory(turnEnd.stopCode) !== 'finished') {
+	if (turnEnd && agentStopCategory(turnEnd.stopCode) !== 'finished') {
 		return {
 			content: [
 				{

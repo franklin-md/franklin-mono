@@ -12,6 +12,7 @@ function stubClient(): MiniACPClientHandle {
 		initialize: async () => {},
 		setContext: async () => {},
 		async *prompt() {},
+		async *continue() {},
 		cancel: async () => {},
 		dispose: async () => {},
 	};
@@ -77,7 +78,7 @@ describe('inspectRuntime', () => {
 		expect('apiKey' in dump.core.config).toBe(false);
 	});
 
-	it('returns only the core inspection payload', async () => {
+	it('returns core context and its token estimate', async () => {
 		const context: Context = {
 			systemPrompt: '',
 			messages: [],
@@ -87,6 +88,7 @@ describe('inspectRuntime', () => {
 
 		await expect(inspectRuntime(await stubRuntime(context))).resolves.toEqual({
 			core: context,
+			contextTokens: 1,
 		});
 	});
 });

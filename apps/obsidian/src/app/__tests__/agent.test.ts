@@ -35,7 +35,7 @@ describe('createObsidianSessionInput', () => {
 						),
 					},
 					netConfig: {
-						allowedDomains: [],
+						allowedDomains: ['*'],
 						deniedDomains: [],
 					},
 				},
