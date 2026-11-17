@@ -15,6 +15,15 @@ filesystem/platform integration inside the plugin runtime.
 - `src/shared/agent/` contains the Obsidian platform adapter and PDF screenshot renderer.
 - `src/shared/ui/` contains React mounting, portals, host context, and Obsidian setting primitives.
 - `src/shared/diff/` contains the existing diff review controllers, editor integration, and styles.
+- [`src/shared/directives/`](src/shared/directives/README.md) contains persisted inline directives, Live Preview/Reading adapters, and reference discovery/replacement.
+- [`src/shared/obsidian/markdown/`](src/shared/obsidian/markdown/README.md) contains current-content note reads and editor/disk editing operations.
+- [`src/shared/ui/editor-popover/`](src/shared/ui/editor-popover/README.md) contains editor anchoring, focus, and popup lifecycle helpers composed with the shared popover controls.
+
+Chat and settings start independently of directive restoration. An unreadable
+`<plugin-dir>/directives.json` disables the directive adapters and raises a notice.
+On reload, restoration waits for saves accepted before unload.
+This infrastructure does not register app-specific directives or run jobs;
+unknown references remain readable text. Instance garbage collection is deferred.
 
 ## Settings
 

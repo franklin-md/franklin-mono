@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { FranklinApp } from '@franklin/agent';
+import * as obsidian from 'obsidian';
 import type { App, PluginManifest } from 'obsidian';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -30,7 +34,13 @@ vi.mock('../shared/diff/explorer.js', () => ({
 	},
 }));
 
+import { editorAnchors } from '../shared/obsidian/editor/anchors.js';
 import FranklinPlugin from '../main.js';
+import * as paths from '../shared/obsidian/path.js';
+import { DirectiveRegistry } from '../shared/directives/registry.js';
+import { createDirectiveTestRegistry } from '../shared/directives/testing/registry.js';
+
+let pluginDir: string;
 
 function createPlugin() {
 	const plugin = new FranklinPlugin({} as App, {} as PluginManifest);
@@ -38,7 +48,20 @@ function createPlugin() {
 	const addSettingTab = vi.spyOn(plugin, 'addSettingTab');
 	const addCommand = vi.spyOn(plugin, 'addCommand');
 	const addRibbonIcon = vi.spyOn(plugin, 'addRibbonIcon');
-	return { plugin, registerView, addSettingTab, addCommand, addRibbonIcon };
+	const registerEditorExtension = vi.spyOn(plugin, 'registerEditorExtension');
+	const registerMarkdownPostProcessor = vi.spyOn(
+		plugin,
+		'registerMarkdownPostProcessor',
+	);
+	return {
+		plugin,
+		registerView,
+		addSettingTab,
+		addCommand,
+		addRibbonIcon,
+		registerEditorExtension,
+		registerMarkdownPostProcessor,
+	};
 }
 
 function createRuntime() {
@@ -50,14 +73,17 @@ function createRuntime() {
 	};
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+	pluginDir = await mkdtemp(join(tmpdir(), 'franklin-startup-'));
+	vi.spyOn(paths, 'getPluginAbsolutePath').mockReturnValue(pluginDir);
 	vi.stubGlobal('activeDocument', document);
 	startup.create.mockReset();
 	startup.scan.mockReset().mockResolvedValue(undefined);
 	startup.unload.mockClear();
 });
 
-afterEach(() => {
+afterEach(async () => {
+	await rm(pluginDir, { recursive: true, force: true });
 	vi.restoreAllMocks();
 	vi.unstubAllGlobals();
 });
@@ -71,8 +97,15 @@ describe('FranklinPlugin startup', () => {
 				finishStartup = resolve;
 			}),
 		);
-		const { plugin, registerView, addSettingTab, addCommand, addRibbonIcon } =
-			createPlugin();
+		const {
+			plugin,
+			registerView,
+			addSettingTab,
+			addCommand,
+			addRibbonIcon,
+			registerEditorExtension,
+			registerMarkdownPostProcessor,
+		} = createPlugin();
 		const loading = plugin.onload();
 		await vi.waitFor(() => expect(startup.create).toHaveBeenCalledOnce());
 
@@ -85,6 +118,8 @@ describe('FranklinPlugin startup', () => {
 		expect(addSettingTab).not.toHaveBeenCalled();
 		expect(addCommand).not.toHaveBeenCalled();
 		expect(addRibbonIcon).not.toHaveBeenCalled();
+		expect(registerEditorExtension).not.toHaveBeenCalled();
+		expect(registerMarkdownPostProcessor).not.toHaveBeenCalled();
 		expect(plugin.franklinApp).toBeNull();
 	});
 
@@ -106,21 +141,81 @@ describe('FranklinPlugin startup', () => {
 		expect(registerView).not.toHaveBeenCalled();
 	});
 
-	it('registers baseline Chat and invokes its cleanup hook on unload', async () => {
+	it('keeps Chat, settings and editor anchors available when directive storage is unreadable', async () => {
+		const path = join(pluginDir, 'directives.json');
+		await writeFile(path, '{broken');
+		startup.create.mockResolvedValue(createRuntime());
+		const {
+			plugin,
+			registerView,
+			addSettingTab,
+			registerEditorExtension,
+			registerMarkdownPostProcessor,
+		} = createPlugin();
+		const notice = vi.spyOn(obsidian, 'Notice');
+		await plugin.onload();
+		await vi.waitFor(() =>
+			expect(notice).toHaveBeenCalledWith(
+				expect.stringContaining('directives failed to load'),
+			),
+		);
+		expect(registerView).toHaveBeenCalledOnce();
+		expect(addSettingTab).toHaveBeenCalledOnce();
+		expect(registerEditorExtension).toHaveBeenCalledWith(editorAnchors);
+		expect(registerMarkdownPostProcessor).not.toHaveBeenCalled();
+		expect(await readFile(path, 'utf8')).toBe('{broken');
+		plugin.onunload();
+	});
+
+	it('disposes a registry that finishes restoring after unload', async () => {
+		const registry = await createDirectiveTestRegistry();
+		const dispose = vi.spyOn(registry, 'dispose');
+		let finish!: (registry: DirectiveRegistry) => void;
+		const restore = vi.spyOn(DirectiveRegistry, 'create').mockReturnValue(
+			new Promise((resolve) => {
+				finish = resolve;
+			}),
+		);
+		startup.create.mockResolvedValue(createRuntime());
+		const { plugin, registerMarkdownPostProcessor } = createPlugin();
+		await plugin.onload();
+		await vi.waitFor(() => expect(restore).toHaveBeenCalledOnce());
+		plugin.onunload();
+		finish(registry);
+		await vi.waitFor(() => expect(dispose).toHaveBeenCalledOnce());
+		expect(registerMarkdownPostProcessor).not.toHaveBeenCalled();
+	});
+
+	it('registers Chat and directive adapters and invokes cleanup on unload', async () => {
 		const runtime = createRuntime();
+		const dispose = vi.spyOn(DirectiveRegistry.prototype, 'dispose');
 		startup.create.mockResolvedValue(runtime);
-		const { plugin, registerView, addSettingTab, addCommand } = createPlugin();
+		const {
+			plugin,
+			registerView,
+			addSettingTab,
+			addCommand,
+			registerEditorExtension,
+			registerMarkdownPostProcessor,
+		} = createPlugin();
 
 		await plugin.onload();
-		await vi.waitFor(() => expect(registerView).toHaveBeenCalledOnce());
+		await vi.waitFor(() =>
+			expect(registerMarkdownPostProcessor).toHaveBeenCalledOnce(),
+		);
+		expect(registerView).toHaveBeenCalledOnce();
 
 		expect(addSettingTab).toHaveBeenCalledOnce();
+		expect(registerEditorExtension).toHaveBeenCalledTimes(2);
+		expect(registerEditorExtension).toHaveBeenCalledWith(editorAnchors);
+		expect(registerMarkdownPostProcessor).toHaveBeenCalledOnce();
 		expect(addCommand).toHaveBeenCalledWith(
 			expect.objectContaining({ id: 'open-chat-window' }),
 		);
 		expect(plugin.franklinApp).toBe(runtime.app);
 		plugin.onunload();
 		expect(runtime.dispose).toHaveBeenCalledOnce();
+		expect(dispose).toHaveBeenCalledOnce();
 		expect(startup.unload).toHaveBeenCalledTimes(2);
 	});
 });

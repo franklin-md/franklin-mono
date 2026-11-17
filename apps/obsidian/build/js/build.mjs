@@ -20,7 +20,10 @@ export function createJsBuilder({ srcDir, distDir, isProd }) {
 		'obsidian',
 		'electron',
 		'@codemirror/*',
-		'@lezer/*',
+		// Obsidian provides the shared parser runtime, but not the Markdown parser.
+		'@lezer/common',
+		'@lezer/lr',
+		'@lezer/highlight',
 		...(isProd ? ['react-scan'] : []),
 	];
 	const options = {
