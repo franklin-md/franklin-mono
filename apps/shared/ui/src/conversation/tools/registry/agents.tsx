@@ -58,6 +58,7 @@ function SpawnSummary({ args, block }: ToolRenderProps<SpawnArgs>) {
 
 export const agentToolRenderers = [
 	createToolRenderer(spawnExtension.tools.spawn, {
+		icon: () => Bot,
 		summary: (props) => <SpawnSummary {...props} />,
 	}),
 ] satisfies ToolRendererRegistryEntries;
