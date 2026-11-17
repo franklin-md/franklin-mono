@@ -225,6 +225,26 @@ retains its existing debounced behavior and raw disk history.
 
 ### Extensions
 
+`edit_file` retains the latest full UTF-8 text snapshot per read path in its
+private file record, increasing stored session data by the retained text size.
+Exact single-target edits preserve unrelated changes when the full target lines
+remain unchanged at the same line numbers; shifted or changed target lines
+require a reread. Fuzzy edits, `replace_all`, and legacy or binary hash-only
+records still require an unchanged file. File control owns snapshot recording and
+whole-file or inclusive line-range freshness checks against the current bytes.
+Legacy hash strings migrate to hash-only snapshot objects on first file-control
+access. Validation and writing are not atomic.
+
+Freshness checks are advisory and assume the agent follows the tool prompt's
+instruction to run `read_file` and `edit_file` sequentially for the same file.
+Known limitation: if those calls overlap within one agent, `read_file` can update
+that agent's private last-read record after `edit_file` has captured its matching
+snapshot. The freshness check can then validate the newer stored snapshot while
+the edit uses the older captured text, potentially overwriting user changes.
+Private stores isolate agents from each other; they do not serialize calls within
+one agent. This overlap is an accepted limitation; sequencing is prompted, not
+enforced by the runtime.
+
 `FranklinApp` uses an [internal factory](src/app/agents/factory.ts)
 for agent construction, including environment, stores, references and
 authentication. `app.agents.create()` uses the app's configured extensions and

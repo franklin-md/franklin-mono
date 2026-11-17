@@ -16,8 +16,17 @@ The old_text must match exactly (including whitespace and newlines).
 Use this for precise, surgical edits. 
 For new files or complete rewrites, use write_file instead. 
 Set replace_all to true to replace every occurrence; otherwise the text must appear exactly once. 
-This tool will return an error if you are trying to edit a file 
-that has changed since the last time you have read it.`;
+Run read_file and edit_file for the same file sequentially: wait for either call
+to finish before starting the other. Never run them together in a parallel tool batch.
+Read the content you intend to change before editing. Files may change after your read
+because of the user, another agent, or an external process. Prefer attempting an edit
+from your existing read when you expect the target lines to be unchanged; an unnecessary
+reread is not required. Exact single-target edits can proceed when the complete affected
+lines still match your read at the same line numbers, even if other parts changed.
+If freshness checks reject the edit, reread the relevant content and reconsider the
+change before retrying. When a file is being actively edited, prefer a fresh read
+immediately before editing. Fuzzy edits and replace_all require the whole file to be
+unchanged since your last read.`;
 
 export const globDescription = `Fast file pattern matching tool that returns paths of files matching a glob pattern.
 Use this to find files by name or extension (e.g. "**/*.ts", "src/**/*.test.js", "package.json").
