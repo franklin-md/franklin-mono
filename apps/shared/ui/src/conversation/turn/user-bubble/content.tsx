@@ -2,10 +2,11 @@ import type { FocusEventHandler, RefObject } from 'react';
 
 import { cn } from '../../../lib/cn.js';
 import { referenceMentionMarkdown } from '../../reference-mention/markdown.js';
-import { Markdown } from '../markdown.js';
+import { Markdown, type MarkdownProps } from '../markdown.js';
 
 interface UserBubbleContentProps {
 	text: string;
+	markdown?: Omit<MarkdownProps, 'text'>;
 	contentId: string;
 	contentRef: RefObject<HTMLDivElement>;
 	expanded: boolean;
@@ -14,6 +15,7 @@ interface UserBubbleContentProps {
 
 export function UserBubbleContent({
 	text,
+	markdown,
 	contentId,
 	contentRef,
 	expanded,
@@ -34,8 +36,16 @@ export function UserBubbleContent({
 		>
 			<Markdown
 				text={text}
-				className="prose-content"
 				{...referenceMentionMarkdown}
+				{...markdown}
+				remarkPlugins={[
+					...(referenceMentionMarkdown.remarkPlugins ?? []),
+					...(markdown?.remarkPlugins ?? []),
+				]}
+				customElements={{
+					...referenceMentionMarkdown.customElements,
+					...markdown?.customElements,
+				}}
 			/>
 		</div>
 	);

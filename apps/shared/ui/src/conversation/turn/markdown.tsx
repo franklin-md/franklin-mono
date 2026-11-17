@@ -8,8 +8,10 @@ import {
 import { code } from '@streamdown/code';
 import { createMathPlugin } from '@streamdown/math';
 import type { ComponentType } from 'react';
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import type rehypeSanitize from 'rehype-sanitize';
+import type { Options as SanitizeSchema } from 'rehype-sanitize';
 
+import { extendSanitizerSchema } from './sanitizer-schema.js';
 import { chromeComponents } from './text/chrome/components.js';
 
 const math = createMathPlugin({
@@ -18,28 +20,22 @@ const math = createMathPlugin({
 
 const plugins = { code, math };
 const baseRemarkPlugins = Object.values(defaultRemarkPlugins);
-
-// Note links must survive sanitization before rehype-harden checks their URLs.
-// Preserve Streamdown's tel: and code-metadata extensions to GitHub's schema.
-// See https://streamdown.ai/docs/security
-const sanitizeSchema = {
-	...defaultSchema,
-	protocols: {
-		...defaultSchema.protocols,
-		href: [...(defaultSchema.protocols?.href ?? []), 'tel', 'obsidian'],
-	},
-	attributes: {
-		...defaultSchema.attributes,
-		code: [...(defaultSchema.attributes?.code ?? []), 'metastring'],
-	},
-};
-const baseRehypePlugins = createRehypePlugins();
+// Use Streamdown's configured schema so telephone links and code metadata
+// remain supported without duplicating its defaults here.
+const [sanitizePlugin, baseSanitizeSchema] = defaultRehypePlugins.sanitize as [
+	typeof rehypeSanitize,
+	SanitizeSchema,
+];
 
 export interface MarkdownExtensions {
 	components?: Components;
 	customElements?: CustomMarkdownElements;
 	remend?: StreamdownProps['remend'];
 	remarkPlugins?: StreamdownProps['remarkPlugins'];
+	/** Additional plugins appended to the configured default rehype pipeline. */
+	rehypePlugins?: StreamdownProps['rehypePlugins'];
+	/** Additive extensions to the default sanitizer's allowlists. */
+	sanitize?: Pick<SanitizeSchema, 'tagNames' | 'attributes' | 'protocols'>;
 }
 
 export interface CustomMarkdownElement<Props extends object = object> {
@@ -64,19 +60,28 @@ export function Markdown({
 	customElements,
 	remend,
 	remarkPlugins,
+	rehypePlugins,
+	sanitize,
 }: MarkdownProps) {
 	const custom = resolveCustomElements(customElements);
+	const schema = extendSanitizerSchema(baseSanitizeSchema, sanitize, {
+		tagNames: Object.keys(custom.allowedTags ?? {}),
+		attributes: custom.allowedTags,
+	});
+	const configuredRehypePlugins: typeof defaultRehypePlugins = {
+		...defaultRehypePlugins,
+		sanitize: [sanitizePlugin, schema],
+	};
 
 	return (
 		<div className={className}>
 			<Streamdown
 				mode="streaming"
 				plugins={plugins}
-				rehypePlugins={
-					custom.allowedTags
-						? createRehypePlugins(custom.allowedTags)
-						: baseRehypePlugins
-				}
+				rehypePlugins={[
+					...Object.values(configuredRehypePlugins),
+					...(rehypePlugins ?? []),
+				]}
 				remarkPlugins={
 					remarkPlugins ? [...baseRemarkPlugins, ...remarkPlugins] : undefined
 				}
@@ -85,6 +90,7 @@ export function Markdown({
 					...components,
 					...custom.components,
 				}}
+				allowedTags={custom.allowedTags}
 				controls={false}
 				remend={remend}
 			>
@@ -92,23 +98,6 @@ export function Markdown({
 			</Streamdown>
 		</div>
 	);
-}
-
-function createRehypePlugins(allowedTags: Record<string, string[]> = {}) {
-	// Streamdown's allowedTags only extends its default plugin array. Once we
-	// supply a sanitizer, we must merge the host's declared elements ourselves.
-	const schema = {
-		...sanitizeSchema,
-		tagNames: [...(sanitizeSchema.tagNames ?? []), ...Object.keys(allowedTags)],
-		attributes: { ...sanitizeSchema.attributes, ...allowedTags },
-	};
-	return Object.values({
-		...defaultRehypePlugins,
-		sanitize: [rehypeSanitize, schema] satisfies [
-			typeof rehypeSanitize,
-			typeof schema,
-		],
-	});
 }
 
 function resolveCustomElements(

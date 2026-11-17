@@ -48,6 +48,27 @@ type Story = StoryObj<typeof meta>;
 
 export const MarkdownText: Story = {};
 
+export const NoteUrlsAndWikilinks: Story = {
+	args: {
+		text: 'See [[Daily Note]] or [open the note](obsidian://open?vault=Obsidian&file=Daily%20Note.md).',
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const link = canvas.getByRole('link', { name: 'open the note' });
+
+		await expect(
+			canvas.getByRole('button', { name: '[[Daily Note]]' }),
+		).toBeVisible();
+		await expect(link).toHaveAttribute(
+			'href',
+			'obsidian://open?vault=Obsidian&file=Daily%20Note.md',
+		);
+		await expect(link).not.toHaveAttribute('target');
+		await expect(link).not.toHaveAttribute('rel');
+		await expect(link.querySelector('img')).toBeNull();
+	},
+};
+
 export const LinkThemeAndTypography: Story = {
 	args: {
 		text: wikilinkMarkdown,

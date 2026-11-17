@@ -187,6 +187,43 @@ describe('Markdown', () => {
 		expect(container.querySelector('del')?.textContent).toBe('markdown');
 	});
 
+	it('applies additional rehype plugins while preserving default HTML sanitization', () => {
+		const { container } = render(
+			<Markdown
+				text={'<script>alert(1)</script>\n\n<strong>hello</strong>'}
+				rehypePlugins={[replaceHelloPlugin]}
+			/>,
+		);
+
+		expect(container.textContent).toBe('changed');
+		expect(container.querySelector('script')).toBeNull();
+	});
+
+	it('preserves declared custom elements when the host configures sanitization', () => {
+		const { container, getByRole } = render(
+			<Markdown
+				text={
+					'<test-element data-value="preserved" data-blocked="stripped">Custom body</test-element>\n\n[Open](example-app://open)'
+				}
+				customElements={{
+					'test-element': {
+						allowedAttributes: ['dataValue'],
+						component: TestElement,
+					},
+				}}
+				sanitize={{ protocols: { href: ['example-app'] } }}
+			/>,
+		);
+
+		expect(getByRole('link', { name: 'Open' }).getAttribute('href')).toBe(
+			'example-app://open',
+		);
+		const customElement = container.querySelector('[data-rendered-custom]');
+		expect(customElement?.textContent).toBe('Custom body');
+		expect(customElement?.getAttribute('data-value')).toBe('preserved');
+		expect(customElement?.getAttribute('data-blocked')).toBeNull();
+	});
+
 	it('renders declared custom elements with their allowed attributes', () => {
 		const { container } = render(
 			<Markdown
@@ -301,39 +338,37 @@ describe('Markdown', () => {
 		expect(container.querySelector('img')).toBeNull();
 	});
 
-	it('preserves Obsidian note links without web-link decoration', () => {
-		const href = 'obsidian://open?vault=Obsidian&file=Thread%20Coarsening.md';
-		const { container, getByRole } = render(
-			<Markdown text={`In [your coarsening example](${href}), reuse A.`} />,
-		);
+	it.each([
+		{ name: 'defaults', sanitize: undefined },
+		{
+			name: 'extended protocols',
+			sanitize: { protocols: { href: ['example-app'] } },
+		},
+	])(
+		'preserves telephone links and code metadata with $name',
+		({ sanitize }) => {
+			const { container, getByRole } = render(
+				<Markdown
+					sanitize={sanitize}
+					text={
+						'[Call](tel:+442012345678)\n\n```text title="Example"\nhello\n```'
+					}
+					components={{
+						code: ({ children, node }) => (
+							<code data-meta={node?.properties.metastring}>{children}</code>
+						),
+					}}
+				/>,
+			);
 
-		const link = getByRole('link', { name: 'your coarsening example' });
-		expect(link.getAttribute('href')).toBe(href);
-		expect(link.getAttribute('target')).toBeNull();
-		expect(link.getAttribute('rel')).toBeNull();
-		expect(link.querySelector('img')).toBeNull();
-		expect(container.textContent).not.toContain('[blocked]');
-	});
-
-	it('preserves Obsidian links alongside declared custom elements', () => {
-		const href = 'obsidian://open?vault=Obsidian&file=Notes%2FExample.md';
-		const { container, getByRole } = render(
-			<Markdown
-				text={`<test-element data-value="preserved" data-blocked="stripped">Custom body</test-element>\n\n[Note](${href})`}
-				customElements={{
-					'test-element': {
-						allowedAttributes: ['dataValue'],
-						component: TestElement,
-					},
-				}}
-			/>,
-		);
-
-		expect(getByRole('link', { name: 'Note' }).getAttribute('href')).toBe(href);
-		const customElement = container.querySelector('[data-rendered-custom]');
-		expect(customElement?.getAttribute('data-value')).toBe('preserved');
-		expect(customElement?.getAttribute('data-blocked')).toBeNull();
-	});
+			expect(getByRole('link', { name: 'Call' }).getAttribute('href')).toBe(
+				'tel:+442012345678',
+			);
+			expect(container.querySelector('code')?.getAttribute('data-meta')).toBe(
+				'title="Example"',
+			);
+		},
+	);
 
 	it.each([
 		'javascript:alert%281%29',
@@ -341,6 +376,7 @@ describe('Markdown', () => {
 		'file:///etc/passwd',
 		'vbscript:msgbox%281%29',
 		'unknown-app://open',
+		'example-app://open',
 	])('blocks unsafe or unsupported link URLs: %s', (href) => {
 		const { container } = render(
 			<Markdown text={`[Unsafe](${href}) <a href="${href}">Unsafe HTML</a>`} />,
@@ -355,7 +391,7 @@ describe('Markdown', () => {
 		const { container, getByRole } = render(
 			<Markdown
 				text={
-					'<script>alert(1)</script>\n\n<a href="obsidian://open?vault=Obsidian&file=Example.md" onclick="alert(1)">Note</a>'
+					'<script>alert(1)</script>\n\n<a href="https://example.com" onclick="alert(1)">Note</a>'
 				}
 			/>,
 		);

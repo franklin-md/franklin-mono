@@ -20,6 +20,7 @@ import {
 	ObsidianText,
 	ObsidianThinking,
 } from './conversation-window/blocks.js';
+import { ObsidianUserMessage } from './conversation-window/user-message.js';
 import { ViewingContextHeader } from './conversation-window/viewing-context/header.js';
 import { obsidianToolRegistry } from './tool-registry.js';
 
@@ -30,6 +31,7 @@ export function ConversationPanel() {
 		<div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 			<ConversationTranscript
 				components={{
+					UserMessage: ObsidianUserMessage,
 					Text: ObsidianText,
 					Thinking: ObsidianThinking,
 					ToolUse,

@@ -2,15 +2,17 @@ import { useId, useState } from 'react';
 import type { MouseEvent } from 'react';
 
 import { cn } from '../../../lib/cn.js';
+import type { MarkdownProps } from '../markdown.js';
 import { UserBubbleContent } from './content.js';
 import { UserBubbleFooter } from './footer.js';
 import { useContentOverflow } from './use-overflow.js';
 
 interface ExpandableBubbleProps {
 	text: string;
+	markdown?: Omit<MarkdownProps, 'text'>;
 }
 
-export function ExpandableBubble({ text }: ExpandableBubbleProps) {
+export function ExpandableBubble({ text, markdown }: ExpandableBubbleProps) {
 	const [expanded, setExpanded] = useState(false);
 	const { canExpand, contentRef } = useContentOverflow(text);
 	const contentId = useId();
@@ -38,6 +40,7 @@ export function ExpandableBubble({ text }: ExpandableBubbleProps) {
 		>
 			<UserBubbleContent
 				text={text}
+				markdown={markdown}
 				contentId={contentId}
 				contentRef={contentRef}
 				expanded={expanded}

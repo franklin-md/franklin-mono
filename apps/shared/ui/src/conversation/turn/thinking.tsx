@@ -8,14 +8,19 @@ import { Button } from '../../primitives/button.js';
 import { RowDetailInset } from '../row-detail-inset.js';
 import { RowInset } from '../row-inset.js';
 
-import { Markdown } from './markdown.js';
+import { Markdown, type MarkdownProps } from './markdown.js';
 
 export interface ThinkingBlockProps {
 	block: ThinkingBlockData;
 	className?: string;
+	markdown?: Omit<MarkdownProps, 'text'>;
 }
 
-export function ThinkingBlock({ block, className }: ThinkingBlockProps) {
+export function ThinkingBlock({
+	block,
+	className,
+	markdown,
+}: ThinkingBlockProps) {
 	const streaming = block.endedAt === undefined;
 	const [expanded, setExpanded] = useState(streaming);
 
@@ -44,7 +49,7 @@ export function ThinkingBlock({ block, className }: ThinkingBlockProps) {
 			</RowInset>
 			{expanded && (
 				<RowDetailInset className="text-sm text-muted-foreground/80 italic">
-					<Markdown text={block.text} className={className} />
+					<Markdown text={block.text} className={className} {...markdown} />
 				</RowDetailInset>
 			)}
 		</div>
