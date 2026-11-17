@@ -8,16 +8,16 @@ import {
 import { OPENROUTER_APP_URL } from '../backend/pi/model/headers.js';
 
 const OPENROUTER_UPSTREAM_MODEL_CASES = [
-	{ id: 'z-ai/glm-5.1', contextWindow: 202_800 },
-	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_576 },
-	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_048_576 },
+	{ id: 'z-ai/glm-5.1', contextWindow: 202_752 },
+	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_575 },
+	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_024_000 },
 	{ id: 'moonshotai/kimi-k2.6', contextWindow: 262_144 },
 	{ id: 'x-ai/grok-4.20', contextWindow: 2_000_000 },
 	{ id: 'qwen/qwen3.6-plus', contextWindow: 1_000_000 },
-	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 1_048_576 },
+	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 262_144 },
 ] as const;
 
-const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
+const OPENROUTER_ADDITIONAL_MODEL_CASES = [
 	{
 		id: 'google/gemini-3.5-flash',
 		reasoning: true,
@@ -28,7 +28,7 @@ const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
 		id: 'qwen/qwen3.7-max',
 		reasoning: true,
 		contextWindow: 1_000_000,
-		maxTokens: 65_536,
+		maxTokens: 131_072,
 	},
 ] as const;
 
@@ -80,8 +80,8 @@ describe('resolveConfig', () => {
 		});
 	}
 
-	for (const model of OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES) {
-		it(`accepts the OpenRouter ${model.id} local override when apiKey is present`, () => {
+	for (const model of OPENROUTER_ADDITIONAL_MODEL_CASES) {
+		it(`accepts the OpenRouter ${model.id} model when apiKey is present`, () => {
 			const result = resolveConfig({
 				provider: 'openrouter',
 				model: model.id,

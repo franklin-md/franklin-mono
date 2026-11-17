@@ -3,6 +3,8 @@ import { createPiAgent } from '../../backend/pi/agent.js';
 import type { MiniACPAgent } from '../../protocol/index.js';
 import { initialize } from '../../spec-tester/actions/initialize.js';
 import { prompt } from '../../spec-tester/actions/prompt.js';
+import { continueTurn } from '../../spec-tester/actions/continue.js';
+import { waitFor } from '../../spec-tester/actions/wait-for.js';
 import { setContext } from '../../spec-tester/actions/set-context.js';
 import { execute } from '../../spec-tester/execute/index.js';
 import type { Fixture, ToolSpec } from '../../spec-tester/types.js';
@@ -106,6 +108,8 @@ export function itCompletesLookupCapitalToolCall(
 					prompt(
 						'What is the capital of France? Use the lookup_capital tool to find out.',
 					),
+					waitFor((e) => e.method === 'stepEnd'),
+					continueTurn(),
 				],
 			};
 

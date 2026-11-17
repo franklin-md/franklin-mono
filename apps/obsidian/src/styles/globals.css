@@ -21,6 +21,6 @@
 /* @import '@franklin/ui/styles/franklin-theme.css'; */
 @import './theme.css';
 @import './code-theme.css';
-@import './diff.css';
+@import '../shared/diff/styles.css';
 
 @source "../**/*.{ts,tsx}";

@@ -1,0 +1,90 @@
+/*
+ * Host-level diff styles.
+ *
+ * CodeMirror editor styling for diff decorations lives with the extension in
+ * `src/shared/diff/cm/theme.ts`. This file is kept for Obsidian UI that sits outside
+ * the editor view.
+ */
+
+.diff-plugin-header-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-right: 6px;
+	padding-right: 6px;
+	border-right: 1px solid var(--background-modifier-border);
+}
+
+.diff-plugin-header-count {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	padding: 0 4px;
+}
+
+.diff-plugin-header-btn {
+	appearance: none;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	font-family: var(--font-interface);
+	padding: 2px 10px;
+	border-radius: var(--radius-s, 4px);
+	cursor: pointer;
+	line-height: 1.2;
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease,
+		color 120ms ease;
+}
+
+.diff-plugin-header-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.diff-plugin-header-accept {
+	background: rgba(var(--color-green-rgb), 0.16);
+	border-color: rgba(var(--color-green-rgb), 0.38);
+	color: color-mix(
+		in srgb,
+		var(--text-normal) 76%,
+		rgb(var(--color-green-rgb))
+	);
+}
+
+.diff-plugin-header-accept:hover {
+	background: rgba(var(--color-green-rgb), 0.22);
+	border-color: rgba(var(--color-green-rgb), 0.5);
+	color: color-mix(
+		in srgb,
+		var(--text-normal) 70%,
+		rgb(var(--color-green-rgb))
+	);
+}
+
+.diff-plugin-header-reject {
+	background: rgba(var(--color-red-rgb), 0.12);
+	border-color: rgba(var(--color-red-rgb), 0.55);
+	color: var(--text-normal);
+}
+
+.diff-plugin-header-reject:hover {
+	background: rgba(var(--color-red-rgb), 0.22);
+}
+
+.diff-plugin-unopened-new-file {
+	position: relative;
+}
+
+.diff-plugin-unopened-new-file::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 6px;
+	width: 8px;
+	height: 8px;
+	border-radius: 999px;
+	background: var(--interactive-accent);
+	transform: translateY(-50%);
+	pointer-events: none;
+}

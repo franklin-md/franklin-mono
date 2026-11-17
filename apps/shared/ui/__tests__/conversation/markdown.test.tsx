@@ -187,6 +187,43 @@ describe('Markdown', () => {
 		expect(container.querySelector('del')?.textContent).toBe('markdown');
 	});
 
+	it('applies additional rehype plugins while preserving default HTML sanitization', () => {
+		const { container } = render(
+			<Markdown
+				text={'<script>alert(1)</script>\n\n<strong>hello</strong>'}
+				rehypePlugins={[replaceHelloPlugin]}
+			/>,
+		);
+
+		expect(container.textContent).toBe('changed');
+		expect(container.querySelector('script')).toBeNull();
+	});
+
+	it('preserves declared custom elements when the host configures sanitization', () => {
+		const { container, getByRole } = render(
+			<Markdown
+				text={
+					'<test-element data-value="preserved" data-blocked="stripped">Custom body</test-element>\n\n[Open](example-app://open)'
+				}
+				customElements={{
+					'test-element': {
+						allowedAttributes: ['dataValue'],
+						component: TestElement,
+					},
+				}}
+				sanitize={{ protocols: { href: ['example-app'] } }}
+			/>,
+		);
+
+		expect(getByRole('link', { name: 'Open' }).getAttribute('href')).toBe(
+			'example-app://open',
+		);
+		const customElement = container.querySelector('[data-rendered-custom]');
+		expect(customElement?.textContent).toBe('Custom body');
+		expect(customElement?.getAttribute('data-value')).toBe('preserved');
+		expect(customElement?.getAttribute('data-blocked')).toBeNull();
+	});
+
 	it('renders declared custom elements with their allowed attributes', () => {
 		const { container } = render(
 			<Markdown
@@ -299,6 +336,70 @@ describe('Markdown', () => {
 		expect(fragmentLink?.getAttribute('target')).toBeNull();
 		expect(fragmentLink?.getAttribute('rel')).toBeNull();
 		expect(container.querySelector('img')).toBeNull();
+	});
+
+	it.each([
+		{ name: 'defaults', sanitize: undefined },
+		{
+			name: 'extended protocols',
+			sanitize: { protocols: { href: ['example-app'] } },
+		},
+	])(
+		'preserves telephone links and code metadata with $name',
+		({ sanitize }) => {
+			const { container, getByRole } = render(
+				<Markdown
+					sanitize={sanitize}
+					text={
+						'[Call](tel:+442012345678)\n\n```text title="Example"\nhello\n```'
+					}
+					components={{
+						code: ({ children, node }) => (
+							<code data-meta={node?.properties.metastring}>{children}</code>
+						),
+					}}
+				/>,
+			);
+
+			expect(getByRole('link', { name: 'Call' }).getAttribute('href')).toBe(
+				'tel:+442012345678',
+			);
+			expect(container.querySelector('code')?.getAttribute('data-meta')).toBe(
+				'title="Example"',
+			);
+		},
+	);
+
+	it.each([
+		'javascript:alert%281%29',
+		'data:text/html,unsafe',
+		'file:///etc/passwd',
+		'vbscript:msgbox%281%29',
+		'unknown-app://open',
+		'example-app://open',
+	])('blocks unsafe or unsupported link URLs: %s', (href) => {
+		const { container } = render(
+			<Markdown text={`[Unsafe](${href}) <a href="${href}">Unsafe HTML</a>`} />,
+		);
+
+		expect(container.querySelector('a')).toBeNull();
+		expect(container.textContent).toContain('Unsafe [blocked]');
+		expect(container.textContent).toContain('Unsafe HTML [blocked]');
+	});
+
+	it('keeps scripts and event handlers out of rendered HTML', () => {
+		const { container, getByRole } = render(
+			<Markdown
+				text={
+					'<script>alert(1)</script>\n\n<a href="https://example.com" onclick="alert(1)">Note</a>'
+				}
+			/>,
+		);
+
+		expect(
+			getByRole('link', { name: 'Note' }).getAttribute('onclick'),
+		).toBeNull();
+		expect(container.querySelector('script')).toBeNull();
 	});
 
 	it('does not wrap block image markdown in a paragraph', () => {

@@ -1,9 +1,5 @@
-import type {
-	UserMessage,
-	ToolCallContent,
-	StopCode,
-	Usage,
-} from '@franklin/mini-acp';
+import type { UserMessage, ToolCallContent, Usage } from '@franklin/mini-acp';
+import type { AgentStopCode } from '../../modules/core/turn/types.js';
 import type { JsonValue } from '@franklin/lib';
 import type { RenderedToolOutput } from '../../modules/core/index.js';
 
@@ -26,7 +22,7 @@ export type ToolUseBlock<TOutput extends JsonValue = JsonValue> = {
 } & BlockMetadata;
 export type TurnEndBlock = {
 	kind: 'turnEnd';
-	stopCode: StopCode;
+	stopCode: AgentStopCode;
 	stopMessage?: string;
 	usage?: Usage;
 } & BlockMetadata;

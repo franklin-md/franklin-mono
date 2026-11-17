@@ -1,4 +1,4 @@
-import type { Model } from '@earendil-works/pi-ai';
+import type { Api, Model } from '@earendil-works/pi-ai';
 import { setHeader } from '@franklin/lib';
 
 import type { LLMConfig } from '../../../types/context.js';
@@ -11,8 +11,8 @@ export const OPENROUTER_APP_CATEGORY = ['personal-agent', 'general-chat'];
 
 export function withOpenRouterHeaders(
 	config: LLMConfig,
-	model: Model<string>,
-): Model<string> {
+	model: Model<Api>,
+): Model<Api> {
 	if (config.provider !== 'openrouter') {
 		return model;
 	}

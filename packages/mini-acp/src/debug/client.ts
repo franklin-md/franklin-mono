@@ -29,6 +29,7 @@ export function debugClient(client: MuClient, label: string): MuClient {
 			}
 		},
 		prompt: debuggedTurn.prompt.bind(debuggedTurn),
+		continue: debuggedTurn.continue.bind(debuggedTurn),
 		cancel: debuggedTurn.cancel.bind(debuggedTurn),
 	};
 }

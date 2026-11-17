@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { collectEvents } from '../../__tests__/utils/collect-events.js';
+import { ZERO_USAGE } from '../../protocol/usage-tracker.js';
 
 import type { MiniACPAgent } from '../../protocol/index.js';
 import type { UserMessage } from '../../types/message.js';
@@ -29,12 +31,6 @@ function noopServer(): MiniACPAgent {
 	return {
 		toolExecute: vi.fn(toolExecute),
 	};
-}
-
-async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
-	const items: T[] = [];
-	for await (const item of iter) items.push(item);
-	return items;
 }
 
 describe('mock descriptor factories', () => {
@@ -84,7 +80,7 @@ describe('createMockMiniACP', () => {
 		await client.initialize();
 		await client.setContext({ systemPrompt: 'system' });
 
-		const events = await collect(client.prompt(userMessage));
+		const events = await collectEvents(client.prompt(userMessage));
 
 		expect(events).toEqual([
 			{ type: 'turnStart' },
@@ -96,7 +92,12 @@ describe('createMockMiniACP', () => {
 					content: [{ type: 'text', text: 'hello' }],
 				},
 			},
-			{ type: 'turnEnd', stopCode: StopCode.Finished },
+			{
+				type: 'turnEnd',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
+				stopCode: StopCode.Finished,
+			},
 		]);
 		expect(mock.context().messages).toEqual([
 			userMessage,
@@ -118,7 +119,7 @@ describe('createMockMiniACP', () => {
 		await client.initialize();
 		await client.setContext({});
 
-		const events = await collect(client.prompt(userMessage));
+		const events = await collectEvents(client.prompt(userMessage));
 		const chunks = events.filter(
 			(event): event is Extract<StreamEvent, { type: 'chunk' }> =>
 				event.type === 'chunk',
@@ -172,7 +173,7 @@ describe('createMockMiniACP', () => {
 
 		await client.initialize();
 		await client.setContext({});
-		await collect(client.prompt(userMessage));
+		await collectEvents(client.prompt(userMessage));
 
 		expect(server.toolExecute).toHaveBeenCalledWith({
 			call: {
@@ -211,7 +212,7 @@ describe('createMockMiniACP', () => {
 
 		await client.initialize();
 		await client.setContext({});
-		await collect(client.prompt(userMessage));
+		await collectEvents(client.prompt(userMessage));
 
 		expect(mock.calls().toolCallPhases).toEqual([[]]);
 		expect(mock.calls().toolCalls).toEqual([]);
@@ -224,7 +225,7 @@ describe('createMockMiniACP', () => {
 		await client.initialize();
 		await client.setContext({});
 
-		await expect(collect(client.prompt(userMessage))).rejects.toThrow(
+		await expect(collectEvents(client.prompt(userMessage))).rejects.toThrow(
 			'No mock turn descriptor scheduled for prompt.',
 		);
 	});
@@ -238,7 +239,7 @@ describe('createMockMiniACP', () => {
 		await client.initialize();
 		await client.setContext({});
 
-		await expect(collect(client.prompt(userMessage))).rejects.toThrow(
+		await expect(collectEvents(client.prompt(userMessage))).rejects.toThrow(
 			'Mock turn descriptor must not include steps after turnEnd().',
 		);
 	});
@@ -250,12 +251,17 @@ describe('createMockMiniACP', () => {
 		await client.initialize();
 		await client.setContext({});
 
-		const first = await collect(client.prompt(userMessage));
-		const second = await collect(client.prompt(userMessage));
+		const first = await collectEvents(client.prompt(userMessage));
+		const second = await collectEvents(client.prompt(userMessage));
 
 		expect(first).toEqual([
 			{ type: 'turnStart' },
-			{ type: 'turnEnd', stopCode: StopCode.Finished },
+			{
+				type: 'turnEnd',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
+				stopCode: StopCode.Finished,
+			},
 		]);
 		expect(second).toEqual(first);
 	});

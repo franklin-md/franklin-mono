@@ -1,19 +1,22 @@
 import {
-	getModels,
-	getProviders,
-	type KnownProvider,
-	type Model,
-} from '@earendil-works/pi-ai';
+	getBuiltinModels,
+	getBuiltinProviders,
+} from '@earendil-works/pi-ai/providers/all';
+import type { Api, KnownProvider, Model } from '@earendil-works/pi-ai';
 
 import type { LLMConfig } from '../../../types/context.js';
 import { StopCode } from '../../../types/stop-code.js';
 import type { TurnEnd } from '../../../types/stream.js';
 import { withOpenRouterHeaders } from './headers.js';
-import { isOpenAICodexModelId } from './openai-codex-models.js';
 import { getModelOverride } from './overrides.js';
+import { isOpenAICodexModelId } from './openai-codex-models.js';
 
-export type ResolveSuccess = { ok: true; model: Model<string> };
-export type ResolveFailure = { ok: false; turnEnd: TurnEnd };
+export type ResolveSuccess = { ok: true; model: Model<Api> };
+// The adapter adds per-step and cumulative usage after execution has settled.
+export type ResolveFailure = {
+	ok: false;
+	turnEnd: Omit<TurnEnd, 'stepUsage' | 'usage'>;
+};
 export type ResolveResult = ResolveSuccess | ResolveFailure;
 
 function fail(stopCode: StopCode, stopMessage: string): ResolveFailure {
@@ -21,23 +24,23 @@ function fail(stopCode: StopCode, stopMessage: string): ResolveFailure {
 }
 
 function isKnownProvider(provider: string): provider is KnownProvider {
-	return getProviders().includes(provider as KnownProvider);
+	return getBuiltinProviders().includes(provider as KnownProvider);
 }
 
 function findModel(
 	provider: KnownProvider,
 	modelId: string,
-): Model<string> | undefined {
+): Model<Api> | undefined {
 	if (provider === 'openai-codex' && !isOpenAICodexModelId(modelId)) {
 		return undefined;
 	}
-
-	const override = getModelOverride(provider, modelId);
-	if (override) {
-		return override;
-	}
-
-	return getModels(provider).find((candidate) => candidate.id === modelId);
+	// Catalog context sizes are estimates: endpoint, account and deployment limits
+	// can differ from these values. Keep Pi metadata intact unless a correction
+	// has a documented source. https://github.com/earendil-works/pi/tree/v1.5.2/packages/ai/src/providers
+	return (
+		getBuiltinModels(provider).find((candidate) => candidate.id === modelId) ??
+		getModelOverride(provider, modelId)
+	);
 }
 
 export function resolveModel(config: LLMConfig): ResolveResult {

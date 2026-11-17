@@ -24,7 +24,9 @@ export function coreStateFromSession(
 
 function fork(snapshot: SessionSnapshot): SessionSnapshot {
 	return {
-		messages: [...snapshot.messages],
+		// getSession() already returns caller-owned history. This extra deep copy
+		// is redundant; reuse snapshot.entries when simplifying fork preparation.
+		entries: structuredClone(snapshot.entries),
 		llmConfig: { ...snapshot.llmConfig },
 		usage: ZERO_USAGE,
 		toolFilter: copyToolFilter(snapshot.toolFilter),
@@ -33,7 +35,7 @@ function fork(snapshot: SessionSnapshot): SessionSnapshot {
 
 function child(snapshot: SessionSnapshot): SessionSnapshot {
 	return {
-		messages: [],
+		entries: [],
 		llmConfig: { ...snapshot.llmConfig },
 		usage: ZERO_USAGE,
 		// Forks preserve caller policy; child sessions usually reset runtime-local

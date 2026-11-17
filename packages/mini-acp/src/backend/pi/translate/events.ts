@@ -1,18 +1,15 @@
 // ---------------------------------------------------------------------------
-// AgentEvent → StreamEvent translation
+// AgentEvent → content events. The adapter owns Mini-ACP lifecycle events.
 // ---------------------------------------------------------------------------
 
 import type {
 	Message as PiMessage,
-	AssistantMessage as PiAssistantMessage,
 	AssistantMessageEvent,
 } from '@earendil-works/pi-ai';
 import type { AgentEvent } from '@earendil-works/pi-agent-core';
 
 import { fromPiMessage } from './message.js';
-import { narrowPiStopCode } from './error.js';
-import { fromPiUsage } from './usage.js';
-import type { StreamEvent } from 'packages/mini-acp/src/types/stream.js';
+import type { Chunk, Update } from '../../../types/stream.js';
 // ---------------------------------------------------------------------------
 // AgentEvent → StreamEvent
 // ---------------------------------------------------------------------------
@@ -20,30 +17,18 @@ import type { StreamEvent } from 'packages/mini-acp/src/types/stream.js';
 export function fromAgentEvent(
 	event: AgentEvent,
 	messageId: string,
-): StreamEvent | null {
+): Chunk | Update | null {
 	switch (event.type) {
 		case 'agent_start':
-			return { type: 'turnStart' };
 		case 'turn_start':
 		case 'turn_end': // turn_end in Pi is just one trip round the agent loop.
 		case 'message_start':
 			return null;
 
-		case 'agent_end': {
-			// agent_end in Pi represents the end of one full turn of the agent
-			// The last message sent will be a `turn_end` message with reasons
-			const turnEnd = event.messages.at(-1) as PiAssistantMessage;
-			const stopMessage = sanitizeStopMessage(turnEnd.errorMessage);
-			const stopCode = narrowPiStopCode(turnEnd.stopReason, stopMessage);
-			if (stopCode === null)
-				throw new Error('stopCode should never be null at agent_end');
-			return {
-				type: 'turnEnd',
-				stopCode,
-				stopMessage,
-				usage: fromPiUsage(turnEnd.usage),
-			};
-		}
+		// Pi emits agent_end before run settlement. Only the adapter can publish
+		// the Mini-ACP terminal after the low-level run promise has resolved.
+		case 'agent_end':
+			return null;
 		// Streaming deltas → chunks
 		case 'message_update':
 			return fromAssistantMessageEvent(event.assistantMessageEvent, messageId);
@@ -78,18 +63,6 @@ export function fromAgentEvent(
 }
 
 // ---------------------------------------------------------------------------
-// Error message sanitization
-// ---------------------------------------------------------------------------
-
-// pi-agent-core may naively stringify non-Error thrown values, producing
-// '[object Object]' for opaque objects. Replace with a generic fallback.
-function sanitizeStopMessage(msg: string | undefined): string | undefined {
-	if (!msg) return msg;
-	if (msg === '[object Object]') return 'unknown error';
-	return msg;
-}
-
-// ---------------------------------------------------------------------------
 // AssistantMessageEvent → StreamEvent (chunk extraction)
 // ---------------------------------------------------------------------------
 
@@ -97,7 +70,7 @@ function sanitizeStopMessage(msg: string | undefined): string | undefined {
 function fromAssistantMessageEvent(
 	event: AssistantMessageEvent,
 	messageId: string,
-): StreamEvent | null {
+): Chunk | null {
 	switch (event.type) {
 		case 'text_delta':
 			return {

@@ -36,6 +36,7 @@ export type {
 	TurnStart,
 	Update,
 	Chunk,
+	StepEnd,
 	TurnEnd,
 	StreamEvent,
 } from './stream.js';

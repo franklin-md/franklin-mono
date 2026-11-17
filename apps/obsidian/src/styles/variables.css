@@ -13,6 +13,12 @@
  */
 
 .franklin {
+	/* Obsidian's undocumented host switch suppresses aria-label hover tooltips
+	 * without removing accessible labels. Applies to view and portal roots.
+	 * https://forum.obsidian.md/t/106641/3
+	 */
+	--no-tooltip: true;
+
 	/* ── Backgrounds ────────────────────────────────────────── */
 	--background: var(--background-primary);
 	--foreground: var(--text-normal);

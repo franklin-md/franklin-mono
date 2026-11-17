@@ -1,0 +1,20 @@
+.activity-current {
+	animation: activity-slide-up 180ms ease-out;
+}
+
+@keyframes activity-slide-up {
+	from {
+		opacity: 0;
+		transform: translateY(100%);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.activity-current {
+		animation: none;
+	}
+}
