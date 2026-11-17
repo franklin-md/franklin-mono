@@ -4,8 +4,8 @@ import { getModelContextWindow } from '../../../../index.js';
 describe('getModelContextWindow', () => {
 	it.each([
 		{ provider: 'openai', model: 'gpt-4', window: 8192 },
-		{ provider: 'openai-codex', model: 'gpt-6-astra', window: 272_000 },
-		{ provider: 'openai-codex', model: 'gpt-6.1-sol', window: 500_000 },
+		{ provider: 'openai-codex', model: 'gpt-6.2-astra', window: 272_000 },
+		{ provider: 'openai-codex', model: 'gpt-6.2-sol', window: 500_000 },
 		{ provider: 'opencode-go', model: 'glm-5.2', window: 1_000_000 },
 		{ provider: 'opencode-go', model: 'grok-4.6', window: 500_000 },
 		{ provider: 'openrouter', model: 'x-ai/grok-4.5', window: 500_000 },
