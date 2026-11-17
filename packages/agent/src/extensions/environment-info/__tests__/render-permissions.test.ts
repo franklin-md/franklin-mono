@@ -12,7 +12,7 @@ describe('renderEnvironmentPermissions', () => {
 			},
 			network: {
 				allowedDomains: ['example.com'],
-				deniedDomains: ['localhost:9229'],
+				deniedDomains: ['localhost'],
 			},
 		});
 
@@ -31,12 +31,11 @@ describe('renderEnvironmentPermissions', () => {
 				'- allowWrite: project/**',
 				'- denyWrite: project/.git/**',
 				'Network:',
-				'- Patterns match domains, including subdomains, or exact host:port targets.',
-				'- Loopback hosts require an explicit allow; private and link-local hosts are blocked.',
-				'- Domains: deniedDomains always blocks matching URL hosts; allowedDomains limits access when non-empty.',
-				'- With this config, only allowedDomains matches may be accessed, except deniedDomains matches. Loopback requires an explicit allow, and private or link-local hosts are blocked.',
+				'- Bare domains match exactly; *.example.com matches strict subdomains. Allowed hosts cover all ports; IPv6 rules must be bracketed.',
+				'- Domains: deniedDomains always wins; allowedDomains is deny-by-default, including when empty.',
+				'- A * rule matches every host, including private and loopback destinations. Denies still win.',
 				'- allowedDomains: example.com',
-				'- deniedDomains: localhost:9229',
+				'- deniedDomains: localhost',
 			].join('\n'),
 		);
 	});
@@ -66,7 +65,7 @@ describe('renderEnvironmentPermissions', () => {
 			'- With this config, no paths may be written because writes are denied by default.',
 		);
 		expect(rendered).toContain(
-			'- With this config, public hosts may be accessed. Loopback still requires an explicit allow, and private or link-local hosts are blocked.',
+			'- A * rule matches every host, including private and loopback destinations. Denies still win.',
 		);
 	});
 });

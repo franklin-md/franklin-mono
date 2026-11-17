@@ -14,10 +14,7 @@ export function emptyEnvironmentState(): EnvironmentState {
 				cwd: '/' as AbsolutePath,
 				permissions: FILESYSTEM_DENY_ALL,
 			},
-			netConfig: {
-				allowedDomains: [...DEFAULT_NETWORK_CONFIG.allowedDomains],
-				deniedDomains: [...DEFAULT_NETWORK_CONFIG.deniedDomains],
-			},
+			netConfig: structuredClone(DEFAULT_NETWORK_CONFIG),
 		},
 	};
 }

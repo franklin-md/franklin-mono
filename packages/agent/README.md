@@ -164,15 +164,19 @@ it is not a synchronization or compaction API. Callers must not feed projected
 messages into this reset path. Preserving discarded history across explicit
 resets would require a separately designed reset event.
 
-The [session codec](src/app/session/codecs/session.ts) writes version 3 and
+The [session codec](src/app/session/codecs/session.ts) writes version 4 and
 migrates v1/v2 flat messages by wrapping each message as a typed entry.
 V1 defaults to visible details; v2 retains visibility. Both retain config, usage,
-stores, environment and the existing tool-filter defaults. V3 roundtrips original
-messages, entry order and checkpoint text. Forks deep-copy the entire log and
+stores, environment and the existing tool-filter defaults. V3 introduced roundtrips
+of original messages, entry order and checkpoint text. Forks deep-copy the entire log and
 inherit config/tool policy while resetting usage. Children start with empty history,
 inherit config, and reset usage/tool policy. Projection scans the log on restore
 and checkpoint append; checkpoints reduce model context, not storage or snapshot
 copy costs. No Mini-ACP protocol, adapter or execution-loop changes are involved.
+
+Version 4 resets all older network policies, including custom rules, to unrestricted
+network access (`allowedDomains: ['*']`, `deniedDomains: []`).
+See [network rule semantics and compatibility](../lib/src/network/README.md).
 
 `inspect().contextTokens` estimates the current projected context: system
 instructions, tool schemas and every visible message, including tool results.
@@ -252,3 +256,12 @@ Where PiMono provides a general orchestration framework with fine-grained hooks,
 The split is:
 - **Environment + Spawn + Connect** = the ACP runtime layer (how you create and talk to agents)
 - **Extensions + Local MCP** = the orchestration layer (how the application shapes agent behavior)
+
+### Sandboxed commands
+
+Node shell commands share one scheduler per loaded sandbox manager. Commands with
+matching shared settings may overlap with different filesystem lists. Incompatible
+requests queue until active commands close and finish cleanup. The manager stays
+warm between commands. Commands receive the existing OS temporary directory as
+`TMPDIR`. See the [runtime notes](../node/src/platform/anthropic/README.md) for
+admission policy, deferred cancellation and process-lifetime limits.

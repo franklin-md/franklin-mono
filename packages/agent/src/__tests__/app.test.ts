@@ -105,7 +105,7 @@ describe('FranklinApp.start', () => {
 	});
 
 	it.each([1, 2, 3])(
-		'restores v%i history through app.agents and persists v3 without projecting away the log',
+		'restores v%i history through app.agents and persists the current version without projecting away the log',
 		async (version) => {
 			const filesystem = new MemoryFilesystem();
 			const platform = createPlatform(filesystem);
@@ -175,13 +175,15 @@ describe('FranklinApp.start', () => {
 				});
 			const { entries: _entries, ...core } = value.core;
 			const { details: _details, ...legacy } = value;
-			const raw =
-				version === 3
-					? value
-					: {
-							...(version === 1 ? legacy : value),
-							core: { ...core, messages },
-						};
+			const raw = {
+				...(version === 1 ? legacy : value),
+				env: {
+					...value.env,
+					// Persist the historical default, independently of today's default.
+					netConfig: { allowedDomains: [], deniedDomains: [] },
+				},
+				core: version === 3 ? value.core : { ...core, messages },
+			};
 			const path = joinAbsolute(APP_DIR, 'sessions', 'root.json');
 			filesystem.seedDir(joinAbsolute(APP_DIR, 'sessions'));
 			filesystem.seed(path, JSON.stringify({ version, data: raw }));
@@ -208,6 +210,7 @@ describe('FranklinApp.start', () => {
 				}
 				expect(patches[0]?.messages).toEqual(projectEntries(entries));
 				const state = await app.agents.getState('root');
+				expect(state?.env.netConfig).toEqual(value.env.netConfig);
 				expect(state?.core.entries.slice(0, entries.length)).toEqual(entries);
 				expect(state?.core.usage).toEqual(value.core.usage);
 				const fork = await root.runtime.orchestrator.create({
