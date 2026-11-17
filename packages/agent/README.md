@@ -178,6 +178,14 @@ Version 4 resets all older network policies, including custom rules, to unrestri
 network access (`allowedDomains: ['*']`, `deniedDomains: []`).
 See [network rule semantics and compatibility](../lib/src/network/README.md).
 
+`inspect().contextTokens` estimates the current projected context: system
+instructions, tool schemas and every visible message, including tool results.
+Compaction and restore use the existing message projection, so hidden history is
+excluded and the summary is counted normally. Pending prompts are added when
+checking the next request. `getSession().usage` separately retains reported
+lifetime usage across compactions. No token measurements or fingerprints are
+stored on history entries; more precise usage-based accounting is deferred.
+
 ### Compaction
 
 Franklin core checks the projected context before a fresh prompt and at the
@@ -191,7 +199,7 @@ Budgeting resolves the current provider/model's context window from Mini-ACP's
 existing Pi resolver, including Franklin-local metadata overrides. Compaction
 triggers above `window - min(16384, floor(window / 4))`, reserving at most 16,384
 tokens. The window is resolved at every boundary so model changes take effect
-on the next check. Configs outside the built-in catalog retain an 8,192-token
+on the next check. Configs outside the built-in catalog use a 32,768-token
 planning fallback. Automatic and manual summaries use the same resolved window
 for chunk budgeting.
 Estimates include system instructions, tool schemas, messages and fixed image

@@ -57,6 +57,7 @@ export function createAgentController(
 		inspect() {
 			return {
 				core: redactInspectContext(session.getSentContext()),
+				contextTokens: session.getContextTokens(),
 			};
 		},
 	};

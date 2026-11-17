@@ -8,18 +8,15 @@ import type {
 	UserMessage,
 } from '@franklin/mini-acp';
 import { UsageTracker } from '@franklin/mini-acp/session';
-import { getModelContextWindow } from '@franklin/mini-acp';
 import type { CoreRegistry } from '../registrations/index.js';
 import type { SessionSnapshot } from '../state.js';
 import type { ToolRegistry } from '../tools/index.js';
 import { createSessionDraft } from '../context/draft/index.js';
 import { createContextLedger } from '../context/ledger/index.js';
 import { runCompaction } from '../compaction/run.js';
+import { compactionBudget } from '../compaction/budget.js';
 import { estimateContextTokens } from '../compaction/tokens/context.js';
 import type { Summarize } from '../compaction/types.js';
-
-// Preserve the planning fallback for configs outside the built-in catalog.
-const FALLBACK_CONTEXT_WINDOW = 8192;
 
 export type AgentSession = {
 	prepare(
@@ -32,6 +29,7 @@ export type AgentSession = {
 	recordContext(context: ContextPatch): void;
 	recordMessage(message: Message): void;
 	addUsage(usage: Usage): void;
+	getContextTokens(): number;
 	getSentContext(): Context;
 	getSnapshot(): SessionSnapshot;
 };
@@ -50,12 +48,10 @@ export function createAgentSession(
 	usage.add(input.snapshot.usage);
 	const draft = createSessionDraft(input);
 	const ledger = createContextLedger({ draft });
-	const contextWindow = () =>
-		getModelContextWindow(draft.get().config) ?? FALLBACK_CONTEXT_WINDOW;
 	const compact = async (
 		client: MiniACPClient,
 		signal: AbortSignal,
-		window = contextWindow(),
+		window = compactionBudget(draft.get().config).contextWindow,
 	) => {
 		if (!input.summarize) throw new Error('Compaction is unavailable');
 		const changed = await runCompaction({
@@ -81,8 +77,9 @@ export function createAgentSession(
 			if (!input.summarize) return;
 			// Resolve from the current config at every boundary so model changes
 			// affect both the trigger and the summarizer's chunk budget together.
-			const window = contextWindow();
-			const limit = window - Math.min(16_384, Math.floor(window / 4));
+			const { contextWindow: window, trigger: limit } = compactionBudget(
+				draft.get().config,
+			);
 			if (estimate(incoming) <= limit) return;
 			await compact(client, signal, window);
 			if (estimate(incoming) > limit)
@@ -101,6 +98,7 @@ export function createAgentSession(
 		addUsage(turnUsage) {
 			usage.add(turnUsage);
 		},
+		getContextTokens: estimate,
 		getSentContext: ledger.getSentContext,
 		getSnapshot() {
 			const context = ledger.ledger.getDraft();
