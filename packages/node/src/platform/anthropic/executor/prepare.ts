@@ -7,6 +7,7 @@ import { constants } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { quote as quoteArgv } from 'shell-quote';
 import type { ProcessInput } from '@franklin/lib';
+import { nativeConfig } from '../native-config.js';
 
 export async function prepare(
 	input: ProcessInput,
@@ -23,11 +24,18 @@ export async function prepare(
 	// SRT overrides the outer TMPDIR with /tmp/claude, which may not exist.
 	// Rebind the existing OS temp directory inside the sandbox; its configured
 	// filesystem policy still decides whether the command may write there.
+	// Clear inherited proxy bypass lists so clients consult the policy proxy.
 	const shellCmd = quoteArgv([
 		'env',
 		`TMPDIR=${tempDirectory}`,
+		'NO_PROXY=',
+		'no_proxy=',
 		file,
 		...(args ?? []),
 	]);
-	return SandboxManager.wrapWithSandbox(shellCmd, undefined, config);
+	return SandboxManager.wrapWithSandbox(
+		shellCmd,
+		undefined,
+		nativeConfig(config),
+	);
 }

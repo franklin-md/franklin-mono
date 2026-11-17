@@ -4,7 +4,7 @@ import { access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { tmpdir } from 'node:os';
 import type { AbsolutePath, Process, ProcessInput } from '@franklin/lib';
-import { joinAbsolute } from '@franklin/lib';
+import { joinAbsolute, validateNetworkPermissions } from '@franklin/lib';
 import type { NetworkPermissions } from '@franklin/lib';
 import type { FilesystemConfig, EnvironmentConfig } from '@franklin/agent';
 import { sandboxScheduler } from './runtime.js';
@@ -22,6 +22,7 @@ export class SandboxedProcess implements Process {
 	}
 
 	async setNetworkConfig(config: NetworkPermissions) {
+		validateNetworkPermissions(config);
 		this._config.network = structuredClone(config);
 	}
 
@@ -56,6 +57,7 @@ export class SandboxedProcess implements Process {
 	}
 
 	constructor(app_dir: AbsolutePath, config: EnvironmentConfig) {
+		validateNetworkPermissions(config.netConfig);
 		this._cwd = config.fsConfig.cwd;
 		this._app_dir = app_dir;
 		// Paths to executables

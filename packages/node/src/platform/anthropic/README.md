@@ -59,13 +59,13 @@ A failed switch first attempts `reset()`. Successful recovery rejects that switc
 
 ### Compatibility and fairness
 
-The four filesystem lists are per-command overrides and do not affect compatibility. Tasks require an explicit `allowRead` list, preventing fallback to an earlier command's manager-level list. `SandboxedProcess` already supplies it; the scheduler does not fill in missing configuration. Every other setting participates in structural comparison, including `filesystem.allowGitConfig`; list ordering is conservatively significant. No network rule semantics are changed here.
+The four filesystem lists are per-command overrides and do not affect compatibility. Tasks require an explicit `allowRead` list, preventing fallback to an earlier command's manager-level list. `SandboxedProcess` already supplies it; the scheduler does not fill in missing configuration. Every other setting participates in structural comparison, including `filesystem.allowGitConfig`; list ordering is conservatively significant. Franklin network rules remain in each request snapshot and participate in compatibility; conversion to native SRT config happens only at the runtime boundary.
 
 Admission follows queue order: compatible commands may overlap, but the oldest incompatible request immediately closes admission until active work drains. Later compatible requests cannot bypass it. This prevents queue bypassing, not unbounded execution time; a running command must still complete before the policy can switch.
 
 TODO **franklin-c58** defers the `admissionWindowMs` optimization until measurements justify bounded bypassing. The scheduler stores no enqueue timestamps and uses no admission timers. A future cutoff can be checked on arrivals/completions without a timer merely to enforce admission.
 
-When drained, native domain-list changes use `updateConfig`; other shared changes reset and initialize. Compatible idle commands reuse the warm manager. Normal command completion keeps it warm; cleanup failure requires recovery before reuse. The warm manager is owned by the loaded module, not by individual agents; no explicit host-unload/shutdown API is wired in this slice. Upstream registers process-exit cleanup.
+When drained, Franklin domain-list changes replace the active policy read by a stable callback; other shared changes reset and initialize. Both initialization and command preparation pass empty native domain lists so SRT delegates host decisions to that callback. Compatible idle commands reuse the warm manager. Normal command completion keeps it warm; cleanup failure requires recovery before reuse. The warm manager is owned by the loaded module, not by individual agents; no explicit host-unload/shutdown API is wired in this slice. Upstream registers process-exit cleanup.
 
 ### Deferred cancellation and lifetime limits
 
@@ -73,7 +73,7 @@ TODO **franklin-frc** tracks queued cancellation, scheduler deadlines and shutdo
 
 Execution waits for the child's `close` event even when an `error` event occurs first, then runs `cleanupAfterCommand()` before releasing its active slot. This covers the direct child and its stdio lifetime; it does **not** prove that detached descendants or their connections are gone. Full process-tree termination and connection draining remain unsupported. Avoid interpreting the scheduler as isolation for detached/background workloads.
 
-Network semantics are owned by [PR #301][network-pr]. Its compatibility adapter keeps native lists empty and evaluates Franklin permissions through a callback. The native-list `updateConfig` path described above does not, by itself, update that callback's policy. Integration must bind a stable callback to the active policy, or recreate it when acquiring a new policy, without retaining an earlier agent's permissions. This note does not change that PR or choose the integration.
+Network decisions use the shared Franklin [host-policy evaluator](../../../../lib/src/network/README.md), introduced in [PR #301][network-pr]. `SandboxedProcess` validates policies at construction and configuration updates; each command snapshots its policy when submitted. Changing an agent's configured permissions affects future submissions, not active or already queued commands. The stable callback in `runtime.ts` reads the active snapshot, switched only after draining. Reset clears the callback's policy to deny all until the next initialization. Executor preparation clears `NO_PROXY` and `no_proxy` inside the command so inherited bypass lists do not skip the proxy. Empty Franklin lists deny all hosts; `*` allows public and private hosts, with deny rules taking precedence.
 
 ## Measured switching cost
 

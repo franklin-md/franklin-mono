@@ -1,35 +1,34 @@
-import {
-	SandboxManager,
-	type SandboxRuntimeConfig,
-} from '@anthropic-ai/sandbox-runtime';
+import { SandboxManager } from '@anthropic-ai/sandbox-runtime';
+import type { NetworkPermissions } from '@franklin/lib';
 import { SandboxScheduler } from './scheduler/index.js';
 import { requiresSwitch } from './requires-switch.js';
+import { nativeConfig } from './native-config.js';
+import { createSandboxNetworkPolicy } from './network.js';
 
-function infrastructureConfig(config: SandboxRuntimeConfig) {
-	return {
-		...config,
-		network: { ...config.network, allowedDomains: [], deniedDomains: [] },
-	};
+const denyAll: NetworkPermissions = { allowedDomains: [], deniedDomains: [] };
+let activePolicy = denyAll;
+const ask = createSandboxNetworkPolicy(() => activePolicy);
+
+async function reset() {
+	activePolicy = denyAll;
+	await SandboxManager.reset();
 }
 
 // One scheduler owns the one loaded SRT manager. Constructing a scheduler per
 // agent would create independent queues racing over the same shared proxies.
 export const sandboxScheduler = new SandboxScheduler({
-	reset: () => SandboxManager.reset(),
+	reset,
 	async switchConfig(previous, next) {
-		if (
-			!requiresSwitch(
-				previous && infrastructureConfig(previous),
-				infrastructureConfig(next),
-			)
-		) {
-			// Native lists are read live; captured proxy settings require restart.
-			// PR #301's callback adapter will also need its active policy switched here.
-			// See ./README.md#what-can-vary-per-command.
-			SandboxManager.updateConfig(next);
+		const native = nativeConfig(next);
+		if (!requiresSwitch(previous && nativeConfig(previous), native)) {
+			// The scheduler has drained active commands. SRT retains the callback;
+			// changing its policy here keeps the proxies warm without leaking access
+			// between commands. See ./README.md#what-can-vary-per-command.
+			activePolicy = next.network;
 			return;
 		}
-		if (previous) await SandboxManager.reset();
-		await SandboxManager.initialize(next);
+		if (previous) await reset();
+		activePolicy = next.network;
+		await SandboxManager.initialize(native, ask);
 	},
 });
