@@ -26,3 +26,16 @@ Open notes use one editor transaction, allowing the host to map the selection an
 retain ordinary undo history. A note shown in multiple panes is edited once. A
 buffer opened while a read or update is pending takes precedence over disk.
 There is no cross-note transaction and no request-level diff ownership.
+
+## Caller audit
+
+Directive replacement uses this operation to replace all copies. Other plugin
+write paths have different contracts.
+
+- Directive insertion appends at a tracked line in the live editor and lets the editor
+  map the current selection through the transaction.
+- Diff acceptance/rejection updates CodeMirror diff state and baseline effects,
+  including undo integration. It remains in the diff controller.
+- The filesystem adapter accepts binary data, supports file creation, and feeds
+  agent write notifications. It remains a filesystem operation.
+- Persistence writes plugin JSON documents outside the note-editing flow.

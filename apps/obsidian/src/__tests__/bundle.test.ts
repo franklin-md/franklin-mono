@@ -104,6 +104,11 @@ describe('obsidian bundle', () => {
 		expect(devBundle.js).toMatch(/require\(["']obsidian["']\)/);
 	});
 
+	it('bundles the Markdown parser that Obsidian does not provide', () => {
+		for (const bundle of [devBundle, prodBundle])
+			expect(bundle.js).not.toMatch(/require\(["']@lezer\/markdown["']\)/);
+	});
+
 	it('includes React Scan in dev bundles only', () => {
 		expect(devBundle.js).toContain('ReactScanInternals');
 		expect(prodBundle.js).not.toContain('ReactScanInternals');

@@ -1,8 +1,7 @@
 import { parser } from '@lezer/markdown';
+import { scanDirectives } from './scan.js';
 import type { DirectiveToken } from './types.js';
 
-const DIRECTIVE_PATTERN =
-	/:::franklin:([a-z][a-z0-9-]*):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}):::/g;
 const FRONTMATTER_PATTERN =
 	/^(?:\uFEFF)?---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)(?:\r?\n|$)/;
 const LITERAL_NODES = new Set([
@@ -16,7 +15,7 @@ const LITERAL_NODES = new Set([
 ]);
 
 export function parseDirectives(source: string): DirectiveToken[] {
-	const matches = [...source.matchAll(DIRECTIVE_PATTERN)];
+	const matches = scanDirectives(source);
 	if (matches.length === 0) return [];
 	const tree = parser.parse(source);
 	const frontmatterEnd = FRONTMATTER_PATTERN.exec(source)?.[0].length ?? 0;
@@ -33,12 +32,5 @@ export function parseDirectives(source: string): DirectiveToken[] {
 		return false;
 	}
 
-	const tokens: DirectiveToken[] = [];
-	for (const match of matches) {
-		const [text, name, id] = match;
-		const from = match.index;
-		if (name && id && !isLiteral(from))
-			tokens.push({ name, id, from, to: from + text.length });
-	}
-	return tokens;
+	return matches.filter(({ from }) => !isLiteral(from));
 }

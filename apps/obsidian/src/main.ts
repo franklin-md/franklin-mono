@@ -10,6 +10,9 @@ import { DiffController } from './shared/diff/controller.js';
 import { DiffExplorerController } from './shared/diff/explorer.js';
 import { clearPortalRoot } from './shared/ui/portal.js';
 import { FranklinSettingTab } from './plugin/settings/tab.js';
+import { editorAnchors } from './shared/obsidian/editor/anchors.js';
+import { createDirectiveExtension } from './shared/directives/live-preview/extension.js';
+import { createDirectivePostProcessor } from './shared/directives/reading/processor.js';
 
 export default class FranklinPlugin extends Plugin {
 	private diffController: DiffController | null = null;
@@ -31,7 +34,7 @@ export default class FranklinPlugin extends Plugin {
 
 		bootstrapPlugin(this, diffClient)
 			.then((runtime) => {
-				const { app, getCreateInput, hostActionBindings } = runtime;
+				const { app, directives, getCreateInput, hostActionBindings } = runtime;
 				// Startup may finish after Obsidian has unloaded this instance.
 				if (this.unloading) {
 					runtime.dispose();
@@ -40,6 +43,11 @@ export default class FranklinPlugin extends Plugin {
 				this.franklinApp = app;
 				this.hostActionBindings = hostActionBindings;
 				this.disposeFranklinApp = () => runtime.dispose();
+				this.registerEditorExtension(editorAnchors);
+				this.registerEditorExtension(createDirectiveExtension(directives));
+				this.registerMarkdownPostProcessor(
+					createDirectivePostProcessor(directives),
+				);
 
 				this.addSettingTab(new FranklinSettingTab(this));
 

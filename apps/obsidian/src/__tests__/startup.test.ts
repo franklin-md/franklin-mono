@@ -30,7 +30,9 @@ vi.mock('../shared/diff/explorer.js', () => ({
 	},
 }));
 
+import { editorAnchors } from '../shared/obsidian/editor/anchors.js';
 import FranklinPlugin from '../main.js';
+import type { DirectiveRegistry } from '../shared/directives/registry.js';
 
 function createPlugin() {
 	const plugin = new FranklinPlugin({} as App, {} as PluginManifest);
@@ -38,12 +40,26 @@ function createPlugin() {
 	const addSettingTab = vi.spyOn(plugin, 'addSettingTab');
 	const addCommand = vi.spyOn(plugin, 'addCommand');
 	const addRibbonIcon = vi.spyOn(plugin, 'addRibbonIcon');
-	return { plugin, registerView, addSettingTab, addCommand, addRibbonIcon };
+	const registerEditorExtension = vi.spyOn(plugin, 'registerEditorExtension');
+	const registerMarkdownPostProcessor = vi.spyOn(
+		plugin,
+		'registerMarkdownPostProcessor',
+	);
+	return {
+		plugin,
+		registerView,
+		addSettingTab,
+		addCommand,
+		addRibbonIcon,
+		registerEditorExtension,
+		registerMarkdownPostProcessor,
+	};
 }
 
 function createRuntime() {
 	return {
 		app: {} as FranklinApp,
+		directives: {} as DirectiveRegistry,
 		getCreateInput: vi.fn(),
 		hostActionBindings: [],
 		dispose: vi.fn(),
@@ -71,8 +87,15 @@ describe('FranklinPlugin startup', () => {
 				finishStartup = resolve;
 			}),
 		);
-		const { plugin, registerView, addSettingTab, addCommand, addRibbonIcon } =
-			createPlugin();
+		const {
+			plugin,
+			registerView,
+			addSettingTab,
+			addCommand,
+			addRibbonIcon,
+			registerEditorExtension,
+			registerMarkdownPostProcessor,
+		} = createPlugin();
 		const loading = plugin.onload();
 		await vi.waitFor(() => expect(startup.create).toHaveBeenCalledOnce());
 
@@ -85,6 +108,8 @@ describe('FranklinPlugin startup', () => {
 		expect(addSettingTab).not.toHaveBeenCalled();
 		expect(addCommand).not.toHaveBeenCalled();
 		expect(addRibbonIcon).not.toHaveBeenCalled();
+		expect(registerEditorExtension).not.toHaveBeenCalled();
+		expect(registerMarkdownPostProcessor).not.toHaveBeenCalled();
 		expect(plugin.franklinApp).toBeNull();
 	});
 
@@ -106,15 +131,25 @@ describe('FranklinPlugin startup', () => {
 		expect(registerView).not.toHaveBeenCalled();
 	});
 
-	it('registers baseline Chat and invokes its cleanup hook on unload', async () => {
+	it('registers Chat and directive adapters and invokes cleanup on unload', async () => {
 		const runtime = createRuntime();
 		startup.create.mockResolvedValue(runtime);
-		const { plugin, registerView, addSettingTab, addCommand } = createPlugin();
+		const {
+			plugin,
+			registerView,
+			addSettingTab,
+			addCommand,
+			registerEditorExtension,
+			registerMarkdownPostProcessor,
+		} = createPlugin();
 
 		await plugin.onload();
 		await vi.waitFor(() => expect(registerView).toHaveBeenCalledOnce());
 
 		expect(addSettingTab).toHaveBeenCalledOnce();
+		expect(registerEditorExtension).toHaveBeenCalledTimes(2);
+		expect(registerEditorExtension).toHaveBeenCalledWith(editorAnchors);
+		expect(registerMarkdownPostProcessor).toHaveBeenCalledOnce();
 		expect(addCommand).toHaveBeenCalledWith(
 			expect.objectContaining({ id: 'open-chat-window' }),
 		);
