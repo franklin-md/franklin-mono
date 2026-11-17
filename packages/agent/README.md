@@ -105,8 +105,8 @@ projected into the next Mini-ACP context.
 
 ### Extensions
 
-`FranklinApp` uses the shared [`createFranklinAgents`](src/app/agents/factory.ts)
-factory for agent construction, including environment, stores, references and
+`FranklinApp` uses an [internal factory](src/app/agents/factory.ts)
+for agent construction, including environment, stores, references and
 authentication. `app.agents.create()` uses the app's configured extensions and
 participates in chat persistence. For an independent task, supply its extension
 list to `app.createAgent()`:
@@ -121,6 +121,15 @@ const runtime = await app.createAgent({
 Each independent agent has its own in-memory store registry and environment. It
 does not enter `app.agents` or save session/store files. The caller owns its
 lifetime and must call `await runtime.dispose()` in a `finally` block.
+
+Tests that inject a Mini-ACP connector and environment directly can import the
+collection factory from the testing entry point:
+
+```ts
+import { createFranklinAgents } from '@franklin/agent/testing';
+```
+
+The collection factory is exposed only through this testing entry point.
 
 Extensions are the way the application interacts with both the agent and the environment. From an extension developer's perspective, the primary concern is: **how should the application handle the agent's tool requests?**
 

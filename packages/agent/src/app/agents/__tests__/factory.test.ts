@@ -14,7 +14,11 @@ import {
 	type MockMiniACP,
 } from '@franklin/mini-acp/mock';
 import { bindMiniACPRpcAgent } from '@franklin/mini-acp/rpc';
-import { createFranklinAgents } from '../../../index.js';
+import {
+	collectEvents,
+	createFranklinAgents,
+	defaultUserPrompt,
+} from '@franklin/agent/testing';
 import { FranklinApp } from '../../index.js';
 import { AuthManager } from '../../../auth/manager.js';
 import { createAuthStore } from '../../../auth/store.js';
@@ -23,7 +27,6 @@ import { storeKey } from '../../../modules/store/api/index.js';
 import { toolSpec } from '../../../modules/core/api/index.js';
 import type { FranklinExtension } from '../../../types.js';
 import type { Platform } from '../../../platform.js';
-import { collectEvents, defaultUserPrompt } from '../../../testing/index.js';
 
 const appDir = toAbsolutePath('/app');
 const valueKey = storeKey<'value', string>('value');

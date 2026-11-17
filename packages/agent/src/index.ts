@@ -25,7 +25,6 @@ export type {
 } from './types.js';
 
 export { FranklinApp } from './app/index.js';
-export { createFranklinAgents } from './app/agents/factory.js';
 export type { AuthStore } from './auth/store.js';
 
 export { type Platform, type OperatingSystem } from './platform.js';

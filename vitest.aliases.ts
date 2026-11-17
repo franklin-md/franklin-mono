@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 const entries = [
-	['@franklin/agent/testing', 'packages/agent/src/testing/index.ts'],
+	['@franklin/agent/testing', 'packages/agent/src/testing.ts'],
 	['@franklin/agent', 'packages/agent/src/index.ts'],
 	['@franklin/extension-pdf', 'packages/extensions/pdf/src/index.ts'],
 	['@franklin/extensibility', 'packages/extensibility/src/index.ts'],
