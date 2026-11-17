@@ -1,11 +1,18 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ComponentProps } from 'react';
+import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { PromptSurface } from '../../../src/conversation/input/prompt-surface.js';
 import { PromptSubmitButton } from '../../../src/conversation/input/prompt-submit-button.js';
 
 afterEach(cleanup);
 
 describe('host-owned prompt submission', () => {
+	it('excludes slotted composition from its fixed-content button contract', () => {
+		expectTypeOf<
+			ComponentProps<typeof PromptSubmitButton>
+		>().not.toHaveProperty('asChild');
+	});
+
 	it('styles a form without adding a wrapper and delegates explicit submission', () => {
 		const submit = vi.fn();
 		const { container } = render(

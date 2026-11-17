@@ -3,7 +3,7 @@ import { Button } from '../../primitives/button.js';
 import type { ButtonProps } from '../../primitives/button.js';
 import { cn } from '../../lib/cn.js';
 
-type Props = Omit<ButtonProps, 'children'> & { compact?: boolean };
+type Props = Omit<ButtonProps, 'children' | 'asChild'> & { compact?: boolean };
 
 export function PromptSubmitButton({
 	compact = false,
