@@ -38,6 +38,7 @@ const config: StorybookConfig = {
 					...(config.optimizeDeps?.include ?? []),
 					'react/jsx-dev-runtime',
 					'react/jsx-runtime',
+					'@radix-ui/react-roving-focus',
 				]),
 			],
 		};
