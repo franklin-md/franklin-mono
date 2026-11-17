@@ -164,6 +164,19 @@ The parts need no agent or application harness. `ModelPickerList` renders no aut
 
 `MODEL_CATALOG` keeps the existing curated model metadata and catalog shape. `ModelSelector` binds the recipe to chat's existing model and thinking hooks. Standalone `ThinkingControl` and `ThinkingToggle` remain available for other compositions. Reusing the prompt surface does not require TipTap or mentions.
 
+## Compact interactive popovers
+
+`CompactPopover` positions arbitrary React children above a virtual anchor. It owns compact styling, initial focus and dismissal; the caller handles `onClose` and restores focus when requested. Positioning tracks opening animations.
+
+```tsx
+<CompactPopover anchor={anchor} label="Edit tools" onClose={close}>
+	<button type="button" onClick={edit}>Edit</button>
+	<textarea aria-label="Custom prompt" />
+</CompactPopover>
+```
+
+The component builds on the existing [Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover) primitive.
+
 ## Minimal Consumer Checklist
 
 - Import components from `@franklin/ui`.
