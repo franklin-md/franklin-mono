@@ -7,7 +7,7 @@ import {
 } from 'streamdown';
 import { code } from '@streamdown/code';
 import { createMathPlugin } from '@streamdown/math';
-import type { ComponentType } from 'react';
+import { useMemo, type ComponentType } from 'react';
 import type rehypeSanitize from 'rehype-sanitize';
 import type { Options as SanitizeSchema } from 'rehype-sanitize';
 
@@ -63,28 +63,36 @@ export function Markdown({
 	rehypePlugins,
 	sanitize,
 }: MarkdownProps) {
-	const custom = resolveCustomElements(customElements);
-	const schema = extendSanitizerSchema(baseSanitizeSchema, sanitize, {
-		tagNames: Object.keys(custom.allowedTags ?? {}),
-		attributes: custom.allowedTags,
-	});
-	const configuredRehypePlugins: typeof defaultRehypePlugins = {
-		...defaultRehypePlugins,
-		sanitize: [sanitizePlugin, schema],
-	};
+	const custom = useMemo(
+		() => resolveCustomElements(customElements),
+		[customElements],
+	);
+	// Streamdown memoizes completed blocks by plugin identity. Keep the parsing
+	// configuration stable while only the streamed text changes.
+	const configuredRehypePlugins = useMemo(() => {
+		const schema = extendSanitizerSchema(baseSanitizeSchema, sanitize, {
+			tagNames: Object.keys(custom.allowedTags ?? {}),
+			attributes: custom.allowedTags,
+		});
+		const configuredPlugins: typeof defaultRehypePlugins = {
+			...defaultRehypePlugins,
+			sanitize: [sanitizePlugin, schema],
+		};
+		return [...Object.values(configuredPlugins), ...(rehypePlugins ?? [])];
+	}, [custom.allowedTags, rehypePlugins, sanitize]);
+	const configuredRemarkPlugins = useMemo(
+		() =>
+			remarkPlugins ? [...baseRemarkPlugins, ...remarkPlugins] : undefined,
+		[remarkPlugins],
+	);
 
 	return (
 		<div className={className}>
 			<Streamdown
 				mode="streaming"
 				plugins={plugins}
-				rehypePlugins={[
-					...Object.values(configuredRehypePlugins),
-					...(rehypePlugins ?? []),
-				]}
-				remarkPlugins={
-					remarkPlugins ? [...baseRemarkPlugins, ...remarkPlugins] : undefined
-				}
+				rehypePlugins={configuredRehypePlugins}
+				remarkPlugins={configuredRemarkPlugins}
 				components={{
 					...chromeComponents,
 					...components,
