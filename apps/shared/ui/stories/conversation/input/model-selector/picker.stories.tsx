@@ -3,15 +3,7 @@ import { useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { THINKING_LEVELS } from '@franklin/mini-acp';
 import type { ThinkingLevel } from '@franklin/mini-acp';
-import {
-	MODEL_CATALOG,
-	ModelPicker,
-	ModelPickerRoot,
-	ModelPickerTrigger,
-	ModelPickerContent,
-	ModelPickerModels,
-	ModelPickerList,
-} from '../../../../src/index.js';
+import { ModelPicker } from '../../../../src/index.js';
 
 const meta = {
 	title: 'Conversation/ModelPicker',
@@ -86,42 +78,5 @@ export const WithEffort: Story = {
 			expect(body.queryByRole('dialog')).not.toBeInTheDocument(),
 		);
 		await waitFor(() => expect(trigger).toHaveFocus());
-	},
-};
-export const CustomTriggerWithoutSearch: Story = {
-	render: function Render() {
-		const [selection, setSelection] = useState({
-			provider: 'custom',
-			model: 'saved-model',
-		});
-		return (
-			<ModelPickerRoot
-				catalog={MODEL_CATALOG.slice(0, 1)}
-				{...selection}
-				onSelect={(provider, model) => setSelection({ provider, model })}
-			>
-				<ModelPickerTrigger asChild>
-					<button>Model: {selection.model}</button>
-				</ModelPickerTrigger>
-				<ModelPickerContent>
-					<ModelPickerModels>
-						<ModelPickerList />
-					</ModelPickerModels>
-				</ModelPickerContent>
-			</ModelPickerRoot>
-		);
-	},
-	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement);
-		const body = within(canvasElement.ownerDocument.body);
-		await userEvent.click(canvas.getByRole('button'));
-		await expect(body.queryByRole('combobox')).not.toBeInTheDocument();
-		await userEvent.keyboard('{ArrowDown}{Enter}');
-		await waitFor(() =>
-			expect(body.queryByRole('dialog')).not.toBeInTheDocument(),
-		);
-		await expect(canvas.getByRole('button')).not.toHaveTextContent(
-			'saved-model',
-		);
 	},
 };

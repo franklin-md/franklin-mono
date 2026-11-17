@@ -158,26 +158,11 @@ For custom compositions, import these parts from `@franklin/ui`:
 </ModelPickerRoot>
 ```
 
-Remove `ModelPickerSearch` for an unfiltered list, or remove the footer for no effort control. Add other React controls to the footer as needed. The trigger supports `asChild` for a custom button. Models absent from the catalog retain their saved identity in the default trigger. The parts use the existing [Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover) and [cmdk](https://github.com/pacocoursey/cmdk) implementations for popup and command navigation; `@franklin/react` remains the headless hooks layer.
+Remove the footer for no effort control. Add other React controls to the footer as needed. The trigger supports `asChild` for a custom button. Models absent from the catalog retain their saved identity in the default trigger. The parts use the existing [Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover) and [cmdk](https://github.com/pacocoursey/cmdk) implementations for popup and command navigation; `@franklin/react` remains the headless hooks layer.
 
 The parts need no agent or application harness. `ModelPickerList` renders no authentication controls unless `renderProviderAction` is supplied. The prebuilt recipe defaults to `MODEL_CATALOG` and Franklin's authentication shortcuts, which use the host's harness and `AuthActionProvider`. Override `catalog` and `renderProviderAction` on the recipe for another host, or use `() => null` to omit authentication controls.
 
 `MODEL_CATALOG` keeps the existing curated model metadata and catalog shape. `ModelSelector` binds the recipe to chat's existing model and thinking hooks. Standalone `ThinkingControl` and `ThinkingToggle` remain available for other compositions. Reusing the prompt surface does not require TipTap or mentions.
-
-## Compact interactive popovers
-
-`CompactPopover` positions arbitrary React children above a virtual anchor. It owns compact styling, initial focus and dismissal; the caller handles `onClose` and restores focus when requested. Positioning tracks opening animations.
-
-```tsx
-<CompactPopover anchor={anchor} label="Edit tools" onClose={close}>
-	<IconActionGroup label="Presets" actions={actions} onAction={runPreset} />
-	<textarea aria-label="Custom prompt" />
-</CompactPopover>
-```
-
-Each action has an `id`, `label`, `icon`, optional `description`, and optional `colorClassName` / `selectedClassName`. Arrow keys, Home/End, Enter and Space work within the icon group. Inputs and adjacent pickers retain their own keys. Callers own pending/error state and can disable the group and supply `busyId` while saving. Tooltips provide descriptive labels; interactive content stays in the popover.
-
-The components build on the existing [Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover) and [Tooltip](https://www.radix-ui.com/primitives/docs/components/tooltip) primitives.
 
 ## Minimal Consumer Checklist
 

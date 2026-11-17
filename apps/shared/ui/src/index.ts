@@ -86,16 +86,6 @@ export {
 	textareaClassName,
 } from './primitives/textarea.js';
 
-// Compact interactive popovers
-export { CompactPopover } from './compact-popover/popover.js';
-export { IconActionGroup } from './compact-popover/actions.js';
-export type {
-	FloatingAnchor,
-	IconAction,
-	CompactPopoverProps,
-	IconActionGroupProps,
-} from './compact-popover/types.js';
-
 // components (derived, application-specific)
 export { AutoGrowTextarea } from './components/auto-grow-textarea.js';
 export {
