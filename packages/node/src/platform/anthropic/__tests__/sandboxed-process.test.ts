@@ -3,13 +3,15 @@ import { quote } from 'shell-quote';
 import type { SandboxRuntimeConfig } from '@anthropic-ai/sandbox-runtime';
 import type { EnvironmentConfig } from '@franklin/agent';
 import { FILESYSTEM_ALLOW_ALL, toAbsolutePath } from '@franklin/lib';
-import { SandboxedProcess } from '../sandboxed-process.js';
+import type { SandboxedProcess as SandboxedProcessType } from '../sandboxed-process.js';
+let SandboxedProcess: typeof SandboxedProcessType;
 
 const sandbox = vi.hoisted(() => ({
 	live: false,
 	config: undefined as SandboxRuntimeConfig | undefined,
 	initialize: vi.fn(),
 	reset: vi.fn(),
+	updateConfig: vi.fn(),
 	wrapWithSandbox: vi.fn(),
 	cleanupAfterCommand: vi.fn(),
 }));
@@ -27,7 +29,14 @@ function createProcess(allowedDomains: string[] = []) {
 	return new SandboxedProcess(toAbsolutePath(process.cwd()), config);
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+	vi.resetModules();
+	({ SandboxedProcess } = await import('../sandboxed-process.js'));
+	sandbox.live = false;
+	sandbox.config = undefined;
+	sandbox.updateConfig.mockImplementation((config: SandboxRuntimeConfig) => {
+		sandbox.config = config;
+	});
 	sandbox.initialize.mockImplementation(
 		async (config: SandboxRuntimeConfig) => {
 			sandbox.live = true;
@@ -57,7 +66,7 @@ afterEach(() => {
 });
 
 describe('SandboxedProcess', () => {
-	it('reinitializes the configured runtime for sequential commands', async () => {
+	it('reuses the configured runtime for sequential commands', async () => {
 		const proc = createProcess(['example.com']);
 		await proc.initialize();
 		for (let i = 0; i < 2; i++) {
@@ -67,6 +76,8 @@ describe('SandboxedProcess', () => {
 			});
 			expect(result.stdout).toBe('yes');
 		}
+		expect(sandbox.initialize).toHaveBeenCalledOnce();
+		expect(sandbox.reset).not.toHaveBeenCalled();
 	});
 
 	it('keeps the proxy alive until overlapping commands have completed', async () => {
@@ -80,7 +91,7 @@ describe('SandboxedProcess', () => {
 		expect((await fast).stdout).toBe('fast');
 		expect(sandbox.live).toBe(true);
 		expect((await slow).stdout).toBe('slow');
-		expect(sandbox.live).toBe(false);
+		expect(sandbox.live).toBe(true);
 	});
 
 	it('waits before switching the policy used by another command', async () => {
@@ -117,7 +128,7 @@ describe('SandboxedProcess', () => {
 		await expect(
 			proc.exec({ file: '/bin/sh', args: ['-c', 'true'] }),
 		).rejects.toThrow('wrap failed');
-		expect(sandbox.live).toBe(false);
+		expect(sandbox.live).toBe(true);
 		expect(
 			(await proc.exec({ file: '/bin/sh', args: ['-c', 'printf recovered'] }))
 				.stdout,
@@ -133,14 +144,14 @@ describe('SandboxedProcess', () => {
 				args: ['-c', 'true'],
 			}),
 		).rejects.toThrow();
-		expect(sandbox.live).toBe(false);
+		expect(sandbox.live).toBe(true);
 		const timed = await proc.exec({
 			file: '/bin/sh',
 			args: ['-c', 'exec sleep 0.1'],
 			timeout: 10,
 		});
 		expect(timed.exit_code).not.toBe(0);
-		expect(sandbox.live).toBe(false);
+		expect(sandbox.live).toBe(true);
 		expect(
 			(await proc.exec({ file: '/bin/sh', args: ['-c', 'printf recovered'] }))
 				.stdout,
@@ -152,8 +163,6 @@ describe('SandboxedProcess', () => {
 		sandbox.initialize.mockRejectedValueOnce(
 			new Error('initialization failed'),
 		);
-		// Both calls validate TMPDIR asynchronously before acquiring the runtime;
-		// either may reach initialization first under concurrent filesystem work.
 		const command = { file: '/bin/sh', args: ['-c', 'printf recovered'] };
 		const results = await Promise.allSettled([
 			proc.exec(command),
@@ -171,5 +180,18 @@ describe('SandboxedProcess', () => {
 				},
 			]),
 		);
+	});
+	it('settles cleanup failures and admits the next command', async () => {
+		const proc = createProcess();
+		sandbox.cleanupAfterCommand.mockImplementationOnce(() => {
+			throw new Error('cleanup failed');
+		});
+		await expect(
+			proc.exec({ file: '/bin/sh', args: ['-c', 'true'] }),
+		).rejects.toThrow('cleanup failed');
+		expect(
+			(await proc.exec({ file: '/bin/sh', args: ['-c', 'printf recovered'] }))
+				.stdout,
+		).toBe('recovered');
 	});
 });

@@ -1,6 +1,6 @@
 # Anthropic runtime notes
 
-Observed on 2026-11-17 against the installed `@anthropic-ai/sandbox-runtime@0.0.46`. These notes describe the macOS/Linux implementation and constraints for a future command linearizer; they do not implement that design. Recheck these assumptions when upgrading the dependency.
+Observed on 2026-11-17 against the installed `@anthropic-ai/sandbox-runtime@0.0.46`. These notes describe the macOS/Linux runtime and the shared command scheduler. Recheck these assumptions when upgrading the dependency.
 
 ## Scope and lifetime
 
@@ -40,25 +40,37 @@ Sources: [wrapping, filtering and config updates][manager], [filesystem and netw
 
 `cleanupAfterCommand()` performs lightweight per-command cleanup (a no-op on macOS in 0.0.46). `reset()` stops shared proxy/bridge infrastructure; it is not cleanup scoped to one command. Resetting while another command uses the manager can break that command. Resetting between sequential commands requires initialization before the next command.
 
-The current [coordinator](./runtime.ts) is deliberately conservative:
+The [scheduler](./scheduler/index.ts) owns execution from submission through command cleanup. `SandboxedProcess.exec()` submits `{ input, config }` to `schedule()` and receives the command-result promise. Arguments, environment overrides, working directory and configuration are snapshotted before queueing. All process wrappers share the scheduler in [runtime.ts](./runtime.ts), matching SRT's module scope. That module supplies the scheduler's switch/reset dependencies; command execution calls [`execute(input, config)`](./execute.ts) directly with the queued snapshot.
 
-- It compares the entire serialized configuration, including filesystem lists.
-- Compatible requests share the runtime, unless an earlier incompatible request is waiting; later requests cannot jump ahead of that request.
-- Incompatible requests wait until all active commands release their ownership.
-- The last release resets the manager, even when the next command would use the same configuration. There is no idle, warm manager cache.
-- [Command execution](./sandboxed-process.ts) snapshots configuration before acquisition and releases ownership in `finally` after completion or failure. Its timeout starts at child spawning, excluding queue and setup time.
+### Queue and states
 
-Consequently, the current whole-config equality check serializes some commands that upstream could run together with different filesystem profiles. This is an implementation choice, not an OS restriction.
+Every request enters an explicit queue, then `pump()` makes all currently possible progress. Arrival, command completion and switch completion trigger pumping; there are no admission timers or polling.
 
-## Constraints for the linearizer discussion
+| State | Admission and transition |
+| --- | --- |
+| Idle | No commands running; retain the installed config. Start the oldest request if compatible, otherwise enter Switching. |
+| Switching | No commands running; requests remain queued until initialization/update/restart finishes. Success returns to Idle and pumps. |
+| Running | Admit compatible requests. Each active request retains ownership through execution and command cleanup. |
+| Draining | Admit nothing; when the last active request finishes, return to Idle and immediately select the oldest queued request. |
+| Failed | Configuration switching and recovery both failed. Reject queued and future requests; do not execute with uncertain sandbox state. |
 
-These are design inputs, not a selected scheduling algorithm:
+A failed switch first attempts `reset()`. Successful recovery rejects that switch's initiating request and retries the remaining queue from an uninitialized Idle state. Execution failures, including command-cleanup errors, reject their own request and release its active slot.
 
-1. Preserve each request's configuration snapshot. Establish a clear point at which it acquires the shared policy before wrapping and spawning.
-2. Distinguish per-command filesystem settings from shared policy/infrastructure settings when deciding which commands may overlap.
-3. Finish or terminate all users of the old shared policy before switching it. A child's `close` event alone does not prove that detached descendants or their connections are gone; define the supported process lifetime explicitly.
-4. Define cancellation and deadlines for queued, starting and running requests, and define whether shutdown drains or terminates them.
-5. Consider warm reuse and `updateConfig` before reset/reinitialization. Batching compatible requests also needs a fairness bound; measure before adding it.
+### Compatibility and fairness
+
+The four filesystem lists are per-command overrides and do not affect compatibility. Tasks require an explicit `allowRead` list, preventing fallback to an earlier command's manager-level list. `SandboxedProcess` already supplies it; the scheduler does not fill in missing configuration. Every other setting participates in structural comparison, including `filesystem.allowGitConfig`; list ordering is conservatively significant. No network rule semantics are changed here.
+
+Admission follows queue order: compatible commands may overlap, but the oldest incompatible request immediately closes admission until active work drains. Later compatible requests cannot bypass it. This prevents queue bypassing, not unbounded execution time; a running command must still complete before the policy can switch.
+
+TODO **franklin-c58** defers the `admissionWindowMs` optimization until measurements justify bounded bypassing. The scheduler stores no enqueue timestamps and uses no admission timers. A future cutoff can be checked on arrivals/completions without a timer merely to enforce admission.
+
+When drained, native domain-list changes use `updateConfig`; other shared changes reset and initialize. Compatible idle commands reuse the warm manager. Per-command completion never resets it. The warm manager is owned by the loaded module, not by individual agents; no explicit host-unload/shutdown API is wired in this slice. Upstream registers process-exit cleanup.
+
+### Deferred cancellation and lifetime limits
+
+TODO **franklin-frc** tracks queued cancellation, scheduler deadlines and shutdown semantics. This scheduler has no cancellation API or queue deadline. Existing `ProcessInput.timeout` still starts at child spawning, excluding queue and setup time. Rejecting a caller promise must never be used as evidence that sandbox ownership has ended.
+
+Execution waits for the child's `close` event even when an `error` event occurs first, then runs `cleanupAfterCommand()` before releasing its active slot. This covers the direct child and its stdio lifetime; it does **not** prove that detached descendants or their connections are gone. Full process-tree termination and connection draining remain unsupported. Avoid interpreting the scheduler as isolation for detached/background workloads.
 
 Network semantics are owned by [PR #301][network-pr]. Its compatibility adapter keeps native lists empty and evaluates Franklin permissions through a callback. The native-list `updateConfig` path described above does not, by itself, update that callback's policy. Integration must bind a stable callback to the active policy, or recreate it when acquiring a new policy, without retaining an earlier agent's permissions. This note does not change that PR or choose the integration.
 

@@ -251,6 +251,9 @@ The split is:
 
 ### Sandboxed commands
 
-Node shell commands share the process-global sandbox only while their effective
-configurations match. Different configurations queue until running commands close.
-Commands receive the existing OS temporary directory as `TMPDIR`.
+Node shell commands share one scheduler per loaded sandbox manager. Commands with
+matching shared settings may overlap with different filesystem lists. Incompatible
+requests queue until active commands close and finish cleanup. The manager stays
+warm between commands. Commands receive the existing OS temporary directory as
+`TMPDIR`. See the [runtime notes](../node/src/platform/anthropic/README.md) for
+admission policy, deferred cancellation and process-lifetime limits.

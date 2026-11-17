@@ -1,58 +1,84 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { SandboxRuntimeConfig } from '@anthropic-ai/sandbox-runtime';
-import { acquireSandboxRuntime } from '../runtime.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SandboxTask } from '../scheduler/types.js';
 
 const sandbox = vi.hoisted(() => ({
 	initialize: vi.fn(async () => {}),
 	reset: vi.fn(async () => {}),
+	updateConfig: vi.fn(),
+}));
+const execution = vi.hoisted(() => ({
+	execute: vi.fn(async () => ({
+		exit_code: 0,
+		stdout: '',
+		stderr: '',
+	})),
 }));
 vi.mock('@anthropic-ai/sandbox-runtime', () => ({ SandboxManager: sandbox }));
+vi.mock('../execute.js', () => execution);
 
-const config: SandboxRuntimeConfig = {
-	network: { allowedDomains: [], deniedDomains: [] },
-	filesystem: { allowWrite: [], denyWrite: [], denyRead: [] },
-};
-const firstConfig = {
-	...config,
-	network: { allowedDomains: ['first.example'], deniedDomains: [] },
-};
-const secondConfig = {
-	...config,
-	network: { allowedDomains: ['second.example'], deniedDomains: [] },
-};
+function task(domain: string): SandboxTask {
+	return {
+		input: { file: 'true' },
+		config: {
+			network: { allowedDomains: [domain], deniedDomains: [] },
+			filesystem: {
+				allowRead: [],
+				allowWrite: [],
+				denyWrite: [],
+				denyRead: [],
+			},
+		},
+	};
+}
 
-afterEach(() => vi.clearAllMocks());
+beforeEach(() => {
+	vi.resetModules();
+	vi.clearAllMocks();
+});
 
-describe('sandbox runtime ownership', () => {
-	it('shares compatible configurations until the final owner releases', async () => {
-		const first = await acquireSandboxRuntime(firstConfig);
-		const second = await acquireSandboxRuntime(firstConfig);
+describe('Anthropic runtime adapter', () => {
+	it('updates native lists between commands without resetting the manager', async () => {
+		const { sandboxScheduler } = await import('../runtime.js');
+		await sandboxScheduler.schedule(task('a.example'));
+		await sandboxScheduler.schedule(task('b.example'));
 		expect(sandbox.initialize).toHaveBeenCalledOnce();
-		await first();
-		await first();
+		expect(sandbox.updateConfig).toHaveBeenCalledWith(
+			expect.objectContaining({
+				network: { allowedDomains: ['b.example'], deniedDomains: [] },
+			}),
+		);
 		expect(sandbox.reset).not.toHaveBeenCalled();
-		await second();
-		expect(sandbox.reset).toHaveBeenCalledOnce();
 	});
 
-	it('does not let a matching request bypass a queued incompatible policy', async () => {
-		const first = await acquireSandboxRuntime(firstConfig);
-		const order: string[] = [];
-		const second = acquireSandboxRuntime(secondConfig).then((release) => {
-			order.push('second');
-			return release;
+	it('restarts captured infrastructure settings before executing', async () => {
+		const { sandboxScheduler } = await import('../runtime.js');
+		await sandboxScheduler.schedule(task('a.example'));
+		const changed = task('a.example');
+		changed.config.network.parentProxy = { http: 'http://localhost:8888' };
+		await sandboxScheduler.schedule(changed);
+		expect(sandbox.reset).toHaveBeenCalledOnce();
+		expect(sandbox.initialize).toHaveBeenCalledTimes(2);
+		expect(sandbox.updateConfig).not.toHaveBeenCalled();
+		expect(sandbox.reset.mock.invocationCallOrder[0]).toBeLessThan(
+			sandbox.initialize.mock.invocationCallOrder[1]!,
+		);
+		expect(sandbox.initialize.mock.invocationCallOrder[1]).toBeLessThan(
+			execution.execute.mock.invocationCallOrder[1]!,
+		);
+	});
+
+	it('recovers an update failure before admitting another request', async () => {
+		const { sandboxScheduler } = await import('../runtime.js');
+		await sandboxScheduler.schedule(task('a.example'));
+		sandbox.updateConfig.mockImplementationOnce(() => {
+			throw new Error('update failed');
 		});
-		const third = acquireSandboxRuntime(firstConfig).then((release) => {
-			order.push('third');
-			return release;
-		});
-		await first();
-		const releaseSecond = await second;
-		expect(order).toEqual(['second']);
-		await releaseSecond();
-		const releaseThird = await third;
-		expect(order).toEqual(['second', 'third']);
-		await releaseThird();
-		expect(sandbox.reset).toHaveBeenCalledTimes(3);
+		await expect(sandboxScheduler.schedule(task('b.example'))).rejects.toThrow(
+			'update failed',
+		);
+		await sandboxScheduler.schedule(task('c.example'));
+		expect(sandbox.reset).toHaveBeenCalledOnce();
+		expect(sandbox.initialize).toHaveBeenCalledTimes(2);
+		expect(execution.execute).toHaveBeenCalledTimes(2);
 	});
 });
