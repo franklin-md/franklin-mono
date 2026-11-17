@@ -28,6 +28,7 @@ const searchProviderIcons: Record<string, ToolSummaryIcon> = {
 
 export const webToolRenderers = [
 	createToolRenderer(webExtension.tools.fetchUrl, {
+		icon: () => Eye,
 		summary: ({ args }) => {
 			const { hostname, path } = displayUrl(args.url);
 
@@ -47,9 +48,9 @@ export const webToolRenderers = [
 		},
 	}),
 	createToolRenderer(webExtension.tools.searchWeb, {
+		icon: ({ block }) => getSearchProviderIcon(block.output),
 		summary: ({ args, block }) => {
-			const Icon =
-				block.output == null ? Globe : getSearchProviderIcon(block.output);
+			const Icon = getSearchProviderIcon(block.output);
 
 			return (
 				<ToolSummary icon={Icon} label="Search">
@@ -60,8 +61,8 @@ export const webToolRenderers = [
 	}),
 ] satisfies ToolRendererRegistryEntries;
 
-function getSearchProviderIcon(output: WebSearchOutput): ToolSummaryIcon {
-	if (output.kind !== 'success') {
+function getSearchProviderIcon(output?: WebSearchOutput): ToolSummaryIcon {
+	if (output?.kind !== 'success') {
 		return Globe;
 	}
 

@@ -189,7 +189,7 @@ export {
 	type MarkdownExtensions,
 	type MarkdownProps,
 } from './conversation/turn/markdown.js';
-export { UserBubble } from './conversation/turn/user-bubble.js';
+export { UserBubble } from './conversation/turn/user-bubble/index.js';
 export { CopyButton } from './conversation/turn/copy-button.js';
 export { ToolCardChrome } from './conversation/tools/chrome.js';
 export {
