@@ -11,7 +11,11 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
 	optimizeDeps: {
-		include: ['react/jsx-dev-runtime', 'react/jsx-runtime'],
+		include: [
+			'react/jsx-dev-runtime',
+			'react/jsx-runtime',
+			'@radix-ui/react-roving-focus',
+		],
 	},
 	resolve: {
 		alias: franklinVitestAliases(),

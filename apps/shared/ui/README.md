@@ -113,6 +113,20 @@ that owns package `@source` scanning.
 
 `Button`'s `outline` variant uses an inset ring with the existing input token. This keeps the outline visible without changing the control's layout size. Consumers can use the variant directly instead of combining border removal and ring overrides.
 
+## Icon action groups
+
+`IconActionGroup` renders a toolbar of icon buttons:
+
+```tsx
+<IconActionGroup label="Presets" actions={actions} onAction={runPreset} />
+```
+
+Each action has an `id`, `label`, `icon`, optional `description`, and optional `colorClassName` / `selectedClassName`. Arrow keys, Home/End, Enter and Space work within the icon group. Inputs and adjacent pickers retain their own keys. Callers own pending/error state and can disable the group and supply `busyId` while saving. Tooltips provide descriptive labels; interactive content stays in the popover.
+
+The component composes the existing [Tooltip](https://www.radix-ui.com/primitives/docs/components/tooltip) with [Radix Roving Focus](https://github.com/radix-ui/primitives/tree/main/packages/react/roving-focus). Roving Focus owns the tab stop and wrapping navigation; both arrow-key pairs navigate the horizontal group. Enter and Space use native button activation.
+
+The group does not intercept window-level keyboard events. Hosts must isolate editor hotkeys at their integration boundary. Popover wrappers must let Tab and Shift+Tab reach the controls so roving focus can move out of the group.
+
 ## Shared prompt controls
 
 `PromptSurface`, `PromptFooter`, `PromptFooterControls`, and `PromptSubmitButton` compose the same prompt appearance around host-owned input and submission behavior. `PromptContainer` adds chat's outer spacing; `PromptSurface` can also style an existing form with `asChild`.
