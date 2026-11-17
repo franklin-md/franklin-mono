@@ -58,6 +58,30 @@ async function setup(config: LLMConfig, tokens: number) {
 }
 
 describe('selected-model compaction budgets', () => {
+	it('recomputes context estimates after compaction and restore, independently of lifetime usage', async () => {
+		const test = await setup(small, 1000);
+		test.session.addUsage({
+			...ZERO_USAGE,
+			tokens: { ...ZERO_USAGE.tokens, input: 50_000, total: 50_000 },
+		});
+		expect(test.session.getContextTokens()).toBe(1000);
+		await test.session.compact(test.client, test.signal);
+		const compactedTokens = test.session.getContextTokens();
+		expect(compactedTokens).toBeLessThan(1000);
+		expect(compactedTokens).toBe(
+			estimateContextTokens(test.session.getSentContext()),
+		);
+		const registrations = createCoreRegistry();
+		const restored = createAgentSession({
+			snapshot: test.session.getSnapshot(),
+			registrations,
+			toolRegistry: createToolRegistry(registrations.tools),
+		});
+		await restored.sync(test.client);
+		expect(restored.getContextTokens()).toBe(compactedTokens);
+		expect(restored.getSnapshot().usage.tokens.total).toBe(50_000);
+	});
+
 	for (const { config, contextWindow, limit } of budgets) {
 		it.each([-1, 0, 1])(
 			`${config.model} compacts only above its ${limit}-token threshold (offset %i)`,
@@ -126,12 +150,12 @@ describe('selected-model compaction budgets', () => {
 		expect(test.summarize).not.toHaveBeenCalled();
 	});
 
-	it('preserves the fallback budget for configs outside the built-in catalog', async () => {
-		const test = await setup({ provider: 'custom', model: 'custom' }, 7000);
+	it('uses the raised fallback budget for configs outside the built-in catalog', async () => {
+		const test = await setup({ provider: 'custom', model: 'custom' }, 25000);
 		await test.session.prepare(test.client, test.signal);
 		expect(test.summarize).toHaveBeenCalledExactlyOnceWith(
 			expect.objectContaining({
-				contextWindow: 8192,
+				contextWindow: 32768,
 			}),
 		);
 	});

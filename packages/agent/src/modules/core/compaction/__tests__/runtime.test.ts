@@ -69,7 +69,9 @@ describe('compaction through the real Pi loop and RPC transport', () => {
 			const result = await collectPrompt(runtime.prompt(prompt));
 			expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
 			expect(summaries).toBe(0);
-			const tokens = estimateContextTokens((await runtime.inspect()).core);
+			const inspected = await runtime.inspect();
+			const tokens = estimateContextTokens(inspected.core);
+			expect(inspected.contextTokens).toBe(tokens);
 			expect(tokens).toBeGreaterThan(8700);
 			expect(tokens).toBeLessThan(9500);
 			const next = await collectPrompt(runtime.prompt(prompt));
