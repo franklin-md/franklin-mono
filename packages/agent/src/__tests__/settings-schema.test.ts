@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { resolveModel } from '@franklin/mini-acp/models';
 
 import { DEFAULT_APP_SETTINGS, appSettingsCodec } from '../settings/schema.js';
 
@@ -10,12 +11,16 @@ import { DEFAULT_APP_SETTINGS, appSettingsCodec } from '../settings/schema.js';
  * unknown fields drop silently, only real type errors surface as issues.
  */
 describe('AppSettings schema', () => {
+	it('resolves the default model through the request catalog', () => {
+		expect(resolveModel(DEFAULT_APP_SETTINGS.defaultLLMConfig).ok).toBe(true);
+	});
+
 	it('DEFAULT_APP_SETTINGS pins the expected shape (regression lock)', () => {
 		expect(DEFAULT_APP_SETTINGS).toEqual({
 			shareViewedReferencesByDefault: true,
 			defaultLLMConfig: {
 				provider: 'openai-codex',
-				model: 'gpt-5.4',
+				model: 'gpt-6.1-sol',
 				reasoning: 'medium',
 			},
 		});
@@ -37,7 +42,7 @@ describe('AppSettings schema', () => {
 				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'anthropic',
-					model: 'gpt-5.4',
+					model: 'gpt-6.1-sol',
 					reasoning: 'medium',
 				},
 			},
@@ -58,7 +63,7 @@ describe('AppSettings schema', () => {
 				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'openai',
-					model: 'gpt-5.4',
+					model: 'gpt-6.1-sol',
 					reasoning: 'medium',
 				},
 			},
@@ -78,7 +83,7 @@ describe('AppSettings schema', () => {
 				shareViewedReferencesByDefault: true,
 				defaultLLMConfig: {
 					provider: 'openai',
-					model: 'gpt-5.4',
+					model: 'gpt-6.1-sol',
 					reasoning: 'medium',
 				},
 			},

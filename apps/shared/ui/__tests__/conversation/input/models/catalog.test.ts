@@ -1,9 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as models from '@franklin/mini-acp/models';
+import { DEFAULT_APP_SETTINGS } from '../../../../../../../packages/agent/src/settings/schema.js';
 
 import { MODEL_CATALOG } from '../../../../src/conversation/input/models/catalog.js';
 
 describe('MODEL_CATALOG', () => {
+	it('keeps the default provider/model in the picker catalog used by Obsidian', () => {
+		const config = DEFAULT_APP_SETTINGS.defaultLLMConfig;
+		expect(MODEL_CATALOG.flatMap((group) => group.models)).toContainEqual(
+			expect.objectContaining({ provider: config.provider, id: config.model }),
+		);
+	});
+
 	it.each(MODEL_CATALOG.flatMap((group) => group.models))(
 		'uses request metadata for $provider/$id',
 		(entry) => {

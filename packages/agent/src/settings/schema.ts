@@ -20,7 +20,7 @@ const AppSettingsV1 = z.object({
 	defaultLLMConfig: z
 		.object({
 			provider: z.string().default('openai-codex'),
-			model: z.string().default('gpt-5.4'),
+			model: z.string().default('gpt-6.1-sol'),
 			reasoning: ThinkingLevel.default('medium'),
 		})
 		.prefault({}),
