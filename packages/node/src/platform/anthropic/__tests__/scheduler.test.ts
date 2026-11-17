@@ -1,12 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProcessOutput } from '@franklin/lib';
+import type { ExecutionResult } from '../executor/types.js';
 import { SandboxScheduler } from '../scheduler/index.js';
 import type { SandboxTask } from '../scheduler/types.js';
-import { execute } from '../execute.js';
+import { execute } from '../executor/index.js';
 
-vi.mock('../execute.js', () => ({ execute: vi.fn() }));
+vi.mock('../executor/index.js', () => ({ execute: vi.fn() }));
 
-const output: ProcessOutput = { exit_code: 0, stdout: 'done', stderr: '' };
+const commandOutput: ProcessOutput = {
+	exit_code: 0,
+	stdout: 'done',
+	stderr: '',
+};
+const output: ExecutionResult = {
+	outcome: { status: 'fulfilled', value: commandOutput },
+	runtime: 'reusable',
+};
 function deferred<T>() {
 	let resolve!: (value: T) => void;
 	let reject!: (error: unknown) => void;
@@ -31,9 +40,9 @@ function task(name: string, domain = 'a.example'): SandboxTask {
 	};
 }
 function setup() {
-	const work = new Map<string, ReturnType<typeof deferred<ProcessOutput>>>();
+	const work = new Map<string, ReturnType<typeof deferred<ExecutionResult>>>();
 	const execution = vi.mocked(execute).mockImplementation((input) => {
-		const completion = deferred<ProcessOutput>();
+		const completion = deferred<ExecutionResult>();
 		work.set(input.file, completion);
 		return completion.promise;
 	});
@@ -191,7 +200,10 @@ describe('sandbox scheduler', () => {
 		const outcome = Promise.allSettled([first]);
 		await flush();
 		const next = runtime.scheduler.schedule(task('next', 'b.example'));
-		runtime.work.get('first')!.reject(new Error('execution failed'));
+		runtime.work.get('first')!.resolve({
+			outcome: { status: 'rejected', reason: new Error('execution failed') },
+			runtime: 'reusable',
+		});
 		expect(await outcome).toMatchObject([
 			{ status: 'rejected', reason: { message: 'execution failed' } },
 		]);
@@ -199,6 +211,87 @@ describe('sandbox scheduler', () => {
 		expect(started(runtime)).toEqual(['first', 'next']);
 		runtime.work.get('next')!.resolve(output);
 		await next;
+	});
+
+	it.each([false, true])(
+		'drains before recovery and blocks admission until reset completes (policy waiting: %s)',
+		async (policyWaiting) => {
+			const runtime = setup();
+			const reset = deferred<undefined>();
+			runtime.reset.mockReturnValueOnce(reset.promise);
+			const first = runtime.scheduler.schedule(task('first'));
+			const firstOutcome = Promise.allSettled([first]);
+			const active = runtime.scheduler.schedule(task('active'));
+			await flush();
+			const waiting = policyWaiting
+				? runtime.scheduler.schedule(task('waiting', 'b.example'))
+				: undefined;
+			runtime.work.get('first')!.resolve({
+				outcome: { status: 'rejected', reason: new Error('cleanup failed') },
+				runtime: 'needs-reset',
+			});
+			expect(await firstOutcome).toMatchObject([
+				{ status: 'rejected', reason: { message: 'cleanup failed' } },
+			]);
+			const late = runtime.scheduler.schedule(task('late'));
+			await flush();
+			expect(started(runtime)).toEqual(['first', 'active']);
+			expect(runtime.reset).not.toHaveBeenCalled();
+			runtime.work.get('active')!.resolve(output);
+			await active;
+			await flush();
+			expect(runtime.reset).toHaveBeenCalledOnce();
+			const duringReset = runtime.scheduler.schedule(task('during-reset'));
+			await flush();
+			expect(started(runtime)).toEqual(['first', 'active']);
+			reset.resolve(undefined);
+			await flush();
+			expect(runtime.switchConfig).toHaveBeenNthCalledWith(
+				2,
+				undefined,
+				task('next', policyWaiting ? 'b.example' : 'a.example').config,
+			);
+			expect(started(runtime)).toEqual(
+				policyWaiting
+					? ['first', 'active', 'waiting']
+					: ['first', 'active', 'late', 'during-reset'],
+			);
+			if (waiting) {
+				runtime.work.get('waiting')!.resolve(output);
+				await waiting;
+				await flush();
+			}
+			expect(started(runtime).slice(-2)).toEqual(['late', 'during-reset']);
+			runtime.work.get('late')!.resolve(output);
+			runtime.work.get('during-reset')!.resolve(output);
+			await Promise.all([late, duringReset]);
+		},
+	);
+
+	it('rejects queued and future work if recovery after cleanup failure fails', async () => {
+		const runtime = setup();
+		runtime.reset.mockRejectedValueOnce(new Error('reset failed'));
+		const first = runtime.scheduler.schedule(task('first'));
+		await flush();
+		const waiting = runtime.scheduler.schedule(task('waiting', 'b.example'));
+		const results = Promise.allSettled([first, waiting]);
+		runtime.work.get('first')!.resolve({
+			outcome: { status: 'rejected', reason: new Error('cleanup failed') },
+			runtime: 'needs-reset',
+		});
+		expect(await results).toMatchObject([
+			{ status: 'rejected', reason: { message: 'cleanup failed' } },
+			{
+				status: 'rejected',
+				reason: {
+					errors: [{ message: 'cleanup failed' }, { message: 'reset failed' }],
+				},
+			},
+		]);
+		await expect(runtime.scheduler.schedule(task('future'))).rejects.toThrow(
+			'recovery failed',
+		);
+		expect(started(runtime)).toEqual(['first']);
 	});
 
 	it('recovers a failed switch before trying the next queued request', async () => {

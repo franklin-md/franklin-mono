@@ -1,6 +1,7 @@
 import type { ProcessOutput } from '@franklin/lib';
 import type { SandboxRuntimeConfig } from '@anthropic-ai/sandbox-runtime';
-import { execute } from '../execute.js';
+import * as executor from '../executor/index.js';
+import type { ExecutionResult } from '../executor/types.js';
 import { RequestQueue } from './queue.js';
 import { selectAdmission } from './policy.js';
 import type {
@@ -40,6 +41,7 @@ export class SandboxScheduler {
 			switch (this.state.kind) {
 				case 'failed':
 				case 'switching':
+				case 'recovering':
 				case 'draining':
 					return;
 				case 'idle':
@@ -51,7 +53,11 @@ export class SandboxScheduler {
 					if (!next_request) return;
 					if (requires_switch) {
 						if (this.state.kind === 'running') {
-							this.state = { ...this.state, kind: 'draining' };
+							this.state = {
+								...this.state,
+								kind: 'draining',
+								reason: { kind: 'policy-change' },
+							};
 							return;
 						}
 						const previous = this.state.config;
@@ -80,40 +86,66 @@ export class SandboxScheduler {
 			await this.runtime.switchConfig(previous, request.config);
 			this.state = { kind: 'idle', config: request.config };
 		} catch (error) {
-			try {
-				await this.runtime.reset();
+			if (await this.recover(error)) {
 				this.queue.take(request);
-				this.state = { kind: 'idle' };
 				request.reject(error);
-			} catch (cleanupError) {
-				const failure = new AggregateError(
-					[error, cleanupError],
-					'Sandbox configuration and recovery failed',
-				);
-				this.state = { kind: 'failed', error: failure };
-				this.queue.rejectAll(failure);
 			}
 		}
 		this.pump();
 	}
 
-	private async start(request: Request, running: ActiveWork) {
+	private async recover(error: unknown): Promise<boolean> {
+		this.state = { kind: 'recovering' };
 		try {
-			const result = await execute(request.input, request.config);
-			this.finish(request, running);
-			request.resolve(result);
-		} catch (error) {
-			this.finish(request, running);
-			request.reject(error);
+			await this.runtime.reset();
+			this.state = { kind: 'idle' };
+			return true;
+		} catch (resetError) {
+			const failure = new AggregateError(
+				[error, resetError],
+				'Sandbox recovery failed',
+			);
+			this.state = { kind: 'failed', error: failure };
+			this.queue.rejectAll(failure);
+			return false;
 		}
+	}
+
+	private async start(request: Request, running: ActiveWork) {
+		const result = await executor.execute(request.input, request.config);
+		this.finish(request, running, result);
+		if (result.outcome.status === 'fulfilled')
+			request.resolve(result.outcome.value);
+		else request.reject(result.outcome.reason);
 		this.pump();
 	}
 
-	private finish(request: Request, running: ActiveWork): void {
-		// execute includes command cleanup. Settling a caller's promise alone is
-		// never evidence that its use of the shared sandbox has ended.
+	private finish(
+		request: Request,
+		running: ActiveWork,
+		result: ExecutionResult,
+	): void {
+		// Executor completion includes the child's close and command cleanup.
+		// A recovery request must survive other active commands finishing normally.
 		running.active.delete(request);
-		if (running.active.size === 0)
+		if (result.runtime === 'needs-reset') {
+			this.state = {
+				...running,
+				kind: 'draining',
+				reason: {
+					kind: 'recovery',
+					error: result.outcome.reason,
+				},
+			};
+		}
+		if (running.active.size !== 0) return;
+		if (
+			this.state.kind === 'draining' &&
+			this.state.reason.kind === 'recovery'
+		) {
+			void this.recover(this.state.reason.error).then(() => this.pump());
+		} else {
 			this.state = { kind: 'idle', config: running.config };
+		}
 	}
 }

@@ -38,7 +38,14 @@ export type ActiveWork = {
 export type IdleState = { kind: 'idle'; config?: SandboxConfig };
 export type SwitchingState = { kind: 'switching' };
 export type RunningState = { kind: 'running' } & ActiveWork;
-export type DrainingState = { kind: 'draining' } & ActiveWork;
+export type PolicyDrain = { kind: 'policy-change' };
+export type RecoveryDrain = { kind: 'recovery'; error: unknown };
+export type DrainReason = PolicyDrain | RecoveryDrain;
+export type DrainingState = {
+	kind: 'draining';
+	reason: DrainReason;
+} & ActiveWork;
+export type RecoveringState = { kind: 'recovering' };
 export type FailedState = { kind: 'failed'; error: Error };
 
 export type State =
@@ -46,4 +53,5 @@ export type State =
 	| SwitchingState
 	| RunningState
 	| DrainingState
+	| RecoveringState
 	| FailedState;

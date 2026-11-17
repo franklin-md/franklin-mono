@@ -128,6 +128,7 @@ describe('SandboxedProcess', () => {
 		await expect(
 			proc.exec({ file: '/bin/sh', args: ['-c', 'true'] }),
 		).rejects.toThrow('wrap failed');
+		expect(sandbox.cleanupAfterCommand).not.toHaveBeenCalled();
 		expect(sandbox.live).toBe(true);
 		expect(
 			(await proc.exec({ file: '/bin/sh', args: ['-c', 'printf recovered'] }))
@@ -181,7 +182,7 @@ describe('SandboxedProcess', () => {
 			]),
 		);
 	});
-	it('settles cleanup failures and admits the next command', async () => {
+	it('resets after cleanup failure before reconfiguring the next command', async () => {
 		const proc = createProcess();
 		sandbox.cleanupAfterCommand.mockImplementationOnce(() => {
 			throw new Error('cleanup failed');
@@ -193,5 +194,24 @@ describe('SandboxedProcess', () => {
 			(await proc.exec({ file: '/bin/sh', args: ['-c', 'printf recovered'] }))
 				.stdout,
 		).toBe('recovered');
+		expect(sandbox.reset).toHaveBeenCalledOnce();
+		expect(sandbox.initialize).toHaveBeenCalledTimes(2);
+	});
+	it('preserves command and cleanup errors together and resets the runtime', async () => {
+		const proc = createProcess();
+		const cleanupError = new Error('cleanup failed');
+		sandbox.cleanupAfterCommand.mockImplementationOnce(() => {
+			throw cleanupError;
+		});
+		await expect(
+			proc.exec({ file: 'true', cwd: '/missing-franklin-directory' }),
+		).rejects.toMatchObject({
+			errors: [expect.objectContaining({ code: 'ENOENT' }), cleanupError],
+		});
+		expect(
+			(await proc.exec({ file: '/bin/sh', args: ['-c', 'printf recovered'] }))
+				.stdout,
+		).toBe('recovered');
+		expect(sandbox.reset).toHaveBeenCalledOnce();
 	});
 });

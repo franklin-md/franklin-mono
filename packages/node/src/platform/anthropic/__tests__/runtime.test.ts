@@ -8,13 +8,15 @@ const sandbox = vi.hoisted(() => ({
 }));
 const execution = vi.hoisted(() => ({
 	execute: vi.fn(async () => ({
-		exit_code: 0,
-		stdout: '',
-		stderr: '',
+		outcome: {
+			status: 'fulfilled',
+			value: { exit_code: 0, stdout: '', stderr: '' },
+		},
+		runtime: 'reusable',
 	})),
 }));
 vi.mock('@anthropic-ai/sandbox-runtime', () => ({ SandboxManager: sandbox }));
-vi.mock('../execute.js', () => execution);
+vi.mock('../executor/index.js', () => execution);
 
 function task(domain: string): SandboxTask {
 	return {

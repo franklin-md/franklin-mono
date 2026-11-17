@@ -40,7 +40,7 @@ Sources: [wrapping, filtering and config updates][manager], [filesystem and netw
 
 `cleanupAfterCommand()` performs lightweight per-command cleanup (a no-op on macOS in 0.0.46). `reset()` stops shared proxy/bridge infrastructure; it is not cleanup scoped to one command. Resetting while another command uses the manager can break that command. Resetting between sequential commands requires initialization before the next command.
 
-The [scheduler](./scheduler/index.ts) owns execution from submission through command cleanup. `SandboxedProcess.exec()` submits `{ input, config }` to `schedule()` and receives the command-result promise. Arguments, environment overrides, working directory and configuration are snapshotted before queueing. All process wrappers share the scheduler in [runtime.ts](./runtime.ts), matching SRT's module scope. That module supplies the scheduler's switch/reset dependencies; command execution calls [`execute(input, config)`](./execute.ts) directly with the queued snapshot.
+The [scheduler](./scheduler/index.ts) owns execution from submission through command cleanup. `SandboxedProcess.exec()` submits `{ input, config }` to `schedule()` and receives the command-result promise. Arguments, environment overrides, working directory and configuration are snapshotted before queueing. All process wrappers share the scheduler in [runtime.ts](./runtime.ts), matching SRT's module scope. That module supplies the scheduler's switch/reset dependencies; the [Executor](./executor/index.ts) owns command preparation, execution and cleanup. The scheduler calls `executor.execute(input, config)` with the queued snapshot and receives `{ outcome, runtime }`. Command results/errors are separate from whether the runtime is `reusable` or `needs-reset`.
 
 ### Queue and states
 
@@ -51,10 +51,11 @@ Every request enters an explicit queue, then `pump()` makes all currently possib
 | Idle | No commands running; retain the installed config. Start the oldest request if compatible, otherwise enter Switching. |
 | Switching | No commands running; requests remain queued until initialization/update/restart finishes. Success returns to Idle and pumps. |
 | Running | Admit compatible requests. Each active request retains ownership through execution and command cleanup. |
-| Draining | Admit nothing; when the last active request finishes, return to Idle and immediately select the oldest queued request. |
-| Failed | Configuration switching and recovery both failed. Reject queued and future requests; do not execute with uncertain sandbox state. |
+| Draining | Admit nothing. For a policy change, return to Idle when active work finishes. For recovery, enter Recovering after active work finishes. |
+| Recovering | Admit nothing while resetting the shared manager. Success returns to Idle with no config; failure enters Failed. |
+| Failed | Recovery reset failed. Reject queued and future requests; do not execute with uncertain sandbox state. |
 
-A failed switch first attempts `reset()`. Successful recovery rejects that switch's initiating request and retries the remaining queue from an uninitialized Idle state. Execution failures, including command-cleanup errors, reject their own request and release its active slot.
+A failed switch first attempts `reset()`. Successful recovery rejects that switch's initiating request and retries the remaining queue from an uninitialized Idle state. Preparation failures reject the request without command cleanup: SRT already rolls back failed preparation, so extra cleanup could remove another Linux command's deny-path protection. After successful preparation, execution waits for child close and attempts cleanup even if spawning or execution fails. A command error with successful cleanup leaves the runtime reusable. Cleanup failure returns `needs-reset`; admission stops until all active commands finish and recovery resets the manager. A successful reset clears the stored config, forcing reinitialization before the next command. Combined execution/cleanup errors are preserved in an `AggregateError`.
 
 ### Compatibility and fairness
 
@@ -64,7 +65,7 @@ Admission follows queue order: compatible commands may overlap, but the oldest i
 
 TODO **franklin-c58** defers the `admissionWindowMs` optimization until measurements justify bounded bypassing. The scheduler stores no enqueue timestamps and uses no admission timers. A future cutoff can be checked on arrivals/completions without a timer merely to enforce admission.
 
-When drained, native domain-list changes use `updateConfig`; other shared changes reset and initialize. Compatible idle commands reuse the warm manager. Per-command completion never resets it. The warm manager is owned by the loaded module, not by individual agents; no explicit host-unload/shutdown API is wired in this slice. Upstream registers process-exit cleanup.
+When drained, native domain-list changes use `updateConfig`; other shared changes reset and initialize. Compatible idle commands reuse the warm manager. Normal command completion keeps it warm; cleanup failure requires recovery before reuse. The warm manager is owned by the loaded module, not by individual agents; no explicit host-unload/shutdown API is wired in this slice. Upstream registers process-exit cleanup.
 
 ### Deferred cancellation and lifetime limits
 
