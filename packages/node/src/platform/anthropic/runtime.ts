@@ -5,30 +5,36 @@ import { requiresSwitch } from './requires-switch.js';
 import { nativeConfig } from './native-config.js';
 import { createSandboxNetworkPolicy } from './network.js';
 
-const denyAll: NetworkPermissions = { allowedDomains: [], deniedDomains: [] };
-let activePolicy = denyAll;
-const ask = createSandboxNetworkPolicy(() => activePolicy);
+function createScheduler(): SandboxScheduler {
+	const denyAll: NetworkPermissions = { allowedDomains: [], deniedDomains: [] };
+	let activePolicy = denyAll;
+	const networkPolicy = createSandboxNetworkPolicy(() => activePolicy);
 
-async function reset() {
-	activePolicy = denyAll;
-	await SandboxManager.reset();
+	async function reset() {
+		activePolicy = denyAll;
+		await SandboxManager.reset();
+	}
+
+	return new SandboxScheduler({
+		reset,
+		async switchConfig(previous, next) {
+			const nextNativeConfig = nativeConfig(next);
+			const restart = requiresSwitch(
+				previous && nativeConfig(previous),
+				nextNativeConfig,
+			);
+			if (restart && previous) await reset();
+
+			// The scheduler has drained active commands. Policy-only changes can
+			// reuse SRT's retained callback and keep its proxies running.
+			activePolicy = next.network;
+			if (restart)
+				await SandboxManager.initialize(nextNativeConfig, networkPolicy);
+		},
+	});
 }
 
-// One scheduler owns the one loaded SRT manager. Constructing a scheduler per
-// agent would create independent queues racing over the same shared proxies.
-export const sandboxScheduler = new SandboxScheduler({
-	reset,
-	async switchConfig(previous, next) {
-		const native = nativeConfig(next);
-		if (!requiresSwitch(previous && nativeConfig(previous), native)) {
-			// The scheduler has drained active commands. SRT retains the callback;
-			// changing its policy here keeps the proxies warm without leaking access
-			// between commands. See ./README.md#what-can-vary-per-command.
-			activePolicy = next.network;
-			return;
-		}
-		if (previous) await reset();
-		activePolicy = next.network;
-		await SandboxManager.initialize(native, ask);
-	},
-});
+// SRT's SandboxManager is shared by every importer of that module. All Franklin
+// process wrappers must therefore share this scheduler and its private policy.
+// Creating a scheduler per agent would let independent queues race over SRT.
+export const sharedSandboxScheduler = createScheduler();

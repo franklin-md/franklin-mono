@@ -7,7 +7,7 @@ import type { AbsolutePath, Process, ProcessInput } from '@franklin/lib';
 import { joinAbsolute, validateNetworkPermissions } from '@franklin/lib';
 import type { NetworkPermissions } from '@franklin/lib';
 import type { FilesystemConfig, EnvironmentConfig } from '@franklin/agent';
-import { sandboxScheduler } from './runtime.js';
+import { sharedSandboxScheduler } from './runtime.js';
 
 export class SandboxedProcess implements Process {
 	private _cwd: string;
@@ -83,7 +83,7 @@ export class SandboxedProcess implements Process {
 	}
 
 	exec(input: ProcessInput) {
-		return sandboxScheduler.schedule({
+		return sharedSandboxScheduler.schedule({
 			input: { ...input, cwd: input.cwd ?? this._cwd },
 			config: this._config,
 		});

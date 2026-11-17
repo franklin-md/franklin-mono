@@ -48,7 +48,7 @@ beforeEach(() => {
 
 describe('Anthropic runtime adapter', () => {
 	it('switches the retained callback only after every active command completes', async () => {
-		const { sandboxScheduler } = await import('../runtime.js');
+		const { sharedSandboxScheduler } = await import('../runtime.js');
 		let finishFirst!: (result: ExecutionResult) => void;
 		let finishSecond!: (result: ExecutionResult) => void;
 		execution.execute.mockImplementationOnce(
@@ -63,14 +63,14 @@ describe('Anthropic runtime adapter', () => {
 					finishSecond = resolve;
 				}),
 		);
-		const first = sandboxScheduler.schedule(task('*'));
-		const second = sandboxScheduler.schedule(task('*'));
+		const first = sharedSandboxScheduler.schedule(task('*'));
+		const second = sharedSandboxScheduler.schedule(task('*'));
 		await vi.waitFor(() => expect(execution.execute).toHaveBeenCalledTimes(2));
 		const [config, ask] = sandbox.initialize.mock.calls[0]!;
 		expect(config.network).toEqual({ allowedDomains: [], deniedDomains: [] });
 		expect(await ask({ host: 'localhost', port: 443 })).toBe(true);
 		const next = task('b.example');
-		const waiting = sandboxScheduler.schedule(next);
+		const waiting = sharedSandboxScheduler.schedule(next);
 		next.config.network.allowedDomains.push('localhost');
 		finishFirst(success);
 		await first;
@@ -85,11 +85,11 @@ describe('Anthropic runtime adapter', () => {
 	});
 
 	it('restarts captured infrastructure settings before executing', async () => {
-		const { sandboxScheduler } = await import('../runtime.js');
-		await sandboxScheduler.schedule(task('a.example'));
+		const { sharedSandboxScheduler } = await import('../runtime.js');
+		await sharedSandboxScheduler.schedule(task('a.example'));
 		const changed = task('a.example');
 		changed.config.network.parentProxy = { http: 'http://localhost:8888' };
-		await sandboxScheduler.schedule(changed);
+		await sharedSandboxScheduler.schedule(changed);
 		expect(sandbox.reset).toHaveBeenCalledOnce();
 		expect(sandbox.initialize).toHaveBeenCalledTimes(2);
 		expect(sandbox.initialize.mock.calls[1]![0].network).toEqual({
@@ -109,17 +109,17 @@ describe('Anthropic runtime adapter', () => {
 	});
 
 	it('reinitializes with the next policy after a failed infrastructure switch', async () => {
-		const { sandboxScheduler } = await import('../runtime.js');
-		await sandboxScheduler.schedule(task('a.example'));
+		const { sharedSandboxScheduler } = await import('../runtime.js');
+		await sharedSandboxScheduler.schedule(task('a.example'));
 		const changed = task('b.example');
 		changed.config.network.parentProxy = { http: 'http://localhost:8888' };
 		sandbox.initialize.mockRejectedValueOnce(new Error('initialize failed'));
-		await expect(sandboxScheduler.schedule(changed)).rejects.toThrow(
+		await expect(sharedSandboxScheduler.schedule(changed)).rejects.toThrow(
 			'initialize failed',
 		);
 		const retainedAsk = sandbox.initialize.mock.calls[0]![1];
 		expect(await retainedAsk({ host: 'b.example', port: 443 })).toBe(false);
-		await sandboxScheduler.schedule(task('c.example'));
+		await sharedSandboxScheduler.schedule(task('c.example'));
 		const [config, ask] = sandbox.initialize.mock.calls.at(-1)!;
 		expect(config.network).toEqual({ allowedDomains: [], deniedDomains: [] });
 		expect(await ask({ host: 'a.example', port: 443 })).toBe(false);
