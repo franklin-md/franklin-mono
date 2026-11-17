@@ -43,6 +43,7 @@ export { StopCode, stopCategory } from './types/index.js';
 export { collect, type CollectResult } from './utils/collect.js';
 
 // Built-in agent implementation
+export { getModelContextWindow } from './backend/pi/model/context-window.js';
 export {
 	createPiAgent,
 	type CreatePiAgentOptions,

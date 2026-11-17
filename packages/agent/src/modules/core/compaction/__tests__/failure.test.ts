@@ -19,8 +19,9 @@ import { emptyCoreState } from '../../state.js';
 import { createMessageEntries } from '../../../../testing/session-entries.js';
 
 const config = {
-	provider: 'openai-codex',
-	model: 'gpt-5.4',
+	// Exercise failures at the pinned GPT-4 catalog's 8,192-token capacity.
+	provider: 'openai',
+	model: 'gpt-4',
 	apiKey: 'test-only',
 };
 const prompt = {

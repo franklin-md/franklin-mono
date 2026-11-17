@@ -183,12 +183,17 @@ The pending user message is included in budgeting but is appended only after
 preparation, so a fresh prompt is not duplicated or lost behind its summary.
 No Mini-ACP callback, acknowledgement method, or protocol change is required.
 
-Budgeting currently uses the existing conservative 8,192-token planning window
-and a 6,144-token trigger; this is not the selected model's reported capacity.
+Budgeting resolves the current provider/model's context window from Mini-ACP's
+existing Pi resolver, including Franklin-local metadata overrides. Compaction
+triggers above `window - min(16384, floor(window / 4))`, reserving at most 16,384
+tokens. The window is resolved at every boundary so model changes take effect
+on the next check. Configs outside the built-in catalog retain an 8,192-token
+planning fallback. Automatic and manual summaries use the same resolved window
+for chunk budgeting.
 Estimates include system instructions, tool schemas, messages and fixed image
 allowances. Large instruction/tool/prompt payloads that still exceed the budget
-fail before the next inference. Model-specific app-owned budgets remain a
-limitation; these estimates do not guarantee provider token limits.
+fail before the next inference. These estimates do not guarantee provider token
+limits.
 
 `runtime.compact()` requests manual compaction while no prompt is active and
 returns whether a checkpoint was appended. Empty history and an already-current
