@@ -12,15 +12,21 @@ const config: SandboxRuntimeConfig = {
 	network: { allowedDomains: [], deniedDomains: [] },
 	filesystem: { allowWrite: [], denyWrite: [], denyRead: [] },
 };
-const firstPolicy = { allowedDomains: ['first.example'], deniedDomains: [] };
-const secondPolicy = { allowedDomains: ['second.example'], deniedDomains: [] };
+const firstConfig = {
+	...config,
+	network: { allowedDomains: ['first.example'], deniedDomains: [] },
+};
+const secondConfig = {
+	...config,
+	network: { allowedDomains: ['second.example'], deniedDomains: [] },
+};
 
 afterEach(() => vi.clearAllMocks());
 
 describe('sandbox runtime ownership', () => {
 	it('shares compatible configurations until the final owner releases', async () => {
-		const first = await acquireSandboxRuntime(config, firstPolicy);
-		const second = await acquireSandboxRuntime(config, firstPolicy);
+		const first = await acquireSandboxRuntime(firstConfig);
+		const second = await acquireSandboxRuntime(firstConfig);
 		expect(sandbox.initialize).toHaveBeenCalledOnce();
 		await first();
 		await first();
@@ -30,15 +36,13 @@ describe('sandbox runtime ownership', () => {
 	});
 
 	it('does not let a matching request bypass a queued incompatible policy', async () => {
-		const first = await acquireSandboxRuntime(config, firstPolicy);
+		const first = await acquireSandboxRuntime(firstConfig);
 		const order: string[] = [];
-		const second = acquireSandboxRuntime(config, secondPolicy).then(
-			(release) => {
-				order.push('second');
-				return release;
-			},
-		);
-		const third = acquireSandboxRuntime(config, firstPolicy).then((release) => {
+		const second = acquireSandboxRuntime(secondConfig).then((release) => {
+			order.push('second');
+			return release;
+		});
+		const third = acquireSandboxRuntime(firstConfig).then((release) => {
 			order.push('third');
 			return release;
 		});

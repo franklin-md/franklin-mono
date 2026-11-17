@@ -2,14 +2,11 @@ import {
 	SandboxManager,
 	type SandboxRuntimeConfig,
 } from '@anthropic-ai/sandbox-runtime';
-import type { NetworkPermissions } from '@franklin/lib';
-import { createSandboxNetworkPolicy } from './network.js';
 
 type Release = () => Promise<void>;
 type Request = {
 	key: string;
 	config: SandboxRuntimeConfig;
-	permissions: NetworkPermissions;
 	resolve: (release: Release) => void;
 	reject: (error: unknown) => void;
 };
@@ -21,13 +18,11 @@ const pending: Request[] = [];
 
 export function acquireSandboxRuntime(
 	config: SandboxRuntimeConfig,
-	permissions: NetworkPermissions,
 ): Promise<Release> {
 	return new Promise((resolve, reject) => {
 		pending.push({
-			key: JSON.stringify({ config, permissions }),
+			key: JSON.stringify(config),
 			config,
-			permissions,
 			resolve,
 			reject,
 		});
@@ -54,13 +49,7 @@ function pump(): void {
 
 async function initialize(request: Request): Promise<void> {
 	try {
-		// Franklin permits public hosts with an empty allowlist; SRT denies them.
-		// Empty native lists route all proxy decisions through our existing policy.
-		// See https://github.com/anthropic-experimental/sandbox-runtime#programmatic-usage
-		await SandboxManager.initialize(
-			request.config,
-			createSandboxNetworkPolicy(request.permissions),
-		);
+		await SandboxManager.initialize(request.config);
 		active = { key: request.key, users: 0 };
 		grant(request, active);
 	} catch (error) {

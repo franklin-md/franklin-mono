@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { quote } from 'shell-quote';
-import type {
-	SandboxAskCallback,
-	SandboxRuntimeConfig,
-} from '@anthropic-ai/sandbox-runtime';
+import type { SandboxRuntimeConfig } from '@anthropic-ai/sandbox-runtime';
 import type { EnvironmentConfig } from '@franklin/agent';
 import { FILESYSTEM_ALLOW_ALL, toAbsolutePath } from '@franklin/lib';
 import { SandboxedProcess } from '../sandboxed-process.js';
@@ -11,7 +8,6 @@ import { SandboxedProcess } from '../sandboxed-process.js';
 const sandbox = vi.hoisted(() => ({
 	live: false,
 	config: undefined as SandboxRuntimeConfig | undefined,
-	ask: undefined as SandboxAskCallback | undefined,
 	initialize: vi.fn(),
 	reset: vi.fn(),
 	wrapWithSandbox: vi.fn(),
@@ -33,10 +29,9 @@ function createProcess(allowedDomains: string[] = []) {
 
 beforeEach(() => {
 	sandbox.initialize.mockImplementation(
-		async (config: SandboxRuntimeConfig, ask?: SandboxAskCallback) => {
+		async (config: SandboxRuntimeConfig) => {
 			sandbox.live = true;
 			sandbox.config = config;
-			sandbox.ask = ask;
 		},
 	);
 	sandbox.reset.mockImplementation(async () => {
@@ -45,13 +40,10 @@ beforeEach(() => {
 	sandbox.wrapWithSandbox.mockImplementation(async (command: string) => {
 		if (!sandbox.live) throw new Error('Sandbox proxy unavailable');
 		const allowed =
-			sandbox.config?.network.allowedDomains.includes('example.com') ||
-			(await sandbox.ask?.({ host: 'example.com', port: 443 }));
+			sandbox.config?.network.allowedDomains.includes('example.com');
 		return quote([
 			'env',
 			'TMPDIR=/missing franklin temp',
-			'NO_PROXY=localhost,127.0.0.1',
-			'no_proxy=localhost,127.0.0.1',
 			`FRANKLIN_TEST_ALLOWED=${allowed ? 'yes' : 'no'}`,
 			'/bin/sh',
 			'-c',
@@ -65,16 +57,8 @@ afterEach(() => {
 });
 
 describe('SandboxedProcess', () => {
-	it('routes explicitly allowed loopback destinations through the policy proxy', async () => {
-		const proc = createProcess(['127.0.0.1:51702']);
-		const result = await proc.exec({
-			file: '/bin/sh',
-			args: ['-c', 'test -z "$NO_PROXY" && test -z "$no_proxy"'],
-		});
-		expect(result.exit_code).toBe(0);
-	});
-	it('allows public networking with Franklin’s empty allowlist on repeated commands', async () => {
-		const proc = createProcess();
+	it('reinitializes the configured runtime for sequential commands', async () => {
+		const proc = createProcess(['example.com']);
 		await proc.initialize();
 		for (let i = 0; i < 2; i++) {
 			const result = await proc.exec({

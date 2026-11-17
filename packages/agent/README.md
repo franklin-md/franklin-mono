@@ -253,5 +253,4 @@ The split is:
 
 Node shell commands share the process-global sandbox only while their effective
 configurations match. Different configurations queue until running commands close.
-Proxy decisions reuse Franklin's web network policy, including its empty-allowlist
-semantics, and commands receive the existing OS temporary directory as `TMPDIR`.
+Commands receive the existing OS temporary directory as `TMPDIR`.

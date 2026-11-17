@@ -88,12 +88,10 @@ export class SandboxedProcess implements Process {
 
 	async exec({ file, args, cwd, env, timeout }: ProcessInput) {
 		const config = structuredClone(this._config);
-		const permissions = config.network as NetworkPermissions;
-		config.network = { allowedDomains: [], deniedDomains: [] };
 		const workingDirectory = cwd ?? this._cwd;
 		const tempDirectory = tmpdir();
 		await access(tempDirectory, constants.W_OK);
-		const release = await acquireSandboxRuntime(config, permissions);
+		const release = await acquireSandboxRuntime(config);
 		try {
 			// SandboxManager.wrapWithSandbox takes a shell-string and returns a
 			// shell-string (e.g. `sandbox-exec -p <policy> /bin/sh -c "..."`), which
@@ -106,11 +104,6 @@ export class SandboxedProcess implements Process {
 			const shellCmd = quoteArgv([
 				'env',
 				`TMPDIR=${tempDirectory}`,
-				// SRT's NO_PROXY bypasses the proxy for loopback/private hosts, whose
-				// direct sockets are sandbox-blocked. Let our shared policy decide
-				// explicit loopback allowances through the proxy as it does for web tools.
-				'NO_PROXY=',
-				'no_proxy=',
 				file,
 				...(args ?? []),
 			]);
