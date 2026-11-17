@@ -1,20 +1,9 @@
-import {
-	MemoryFilesystem,
-	createMapFilePersister,
-	jsonCodec,
-	versioned,
-	type AbsolutePath,
-} from '@franklin/lib';
+import { MemoryFilesystem, type AbsolutePath } from '@franklin/lib';
 import { describe, expect, it, vi } from 'vitest';
 import { createStore } from '../../../../modules/store/api/create.js';
-import { StoreRegistry } from '../../../../modules/store/api/registry/index.js';
-import { createStoreResult } from '../../../../modules/store/api/registry/result.js';
-import type { StoreSnapshot } from '../../../../modules/store/api/registry/snapshot.js';
-import { createStoreRuntime } from '../../../../modules/store/runtime.js';
 import { sha256Hex } from '../../hash.js';
 import { createFileControl } from '../control.js';
-import { fileKey } from '../key.js';
-import type { FileRecord, FileSnapshot } from '../types.js';
+import type { FileRecord } from '../types.js';
 
 const path = '/note.md' as AbsolutePath;
 const encode = (text: string) => new TextEncoder().encode(text);
@@ -106,62 +95,5 @@ describe('file control freshness', () => {
 				endLine: 2,
 			}),
 		).toBe(true);
-	});
-});
-
-describe('file record migration', () => {
-	it('upgrades restored hash strings once, persists them, and preserves existing snapshots', async () => {
-		const fs = new MemoryFilesystem();
-		const dir = '/stores' as AbsolutePath;
-		const persister = createMapFilePersister(
-			fs,
-			dir,
-			versioned().version(1, jsonCodec<StoreSnapshot>()).build(),
-		);
-		const legacyHash = sha256Hex(encode('above\ntarget'));
-		const legacy: Record<string, string | FileSnapshot> = {
-			[path]: legacyHash,
-			'/text.md': { hash: 'text-hash', text: 'retained text' },
-			'/binary': { hash: 'binary-hash' },
-		};
-		await persister.save('file-record', {
-			ref: 'file-record',
-			sharing: 'private',
-			value: legacy,
-		});
-		const registry = new StoreRegistry(persister);
-		expect(await registry.restore()).toEqual({ issues: [] });
-		const runtime = createStoreRuntime(
-			createStoreResult(registry, { last_read: 'file-record' }),
-		);
-		const store = runtime.getStore(fileKey);
-		const file = createFileControl(store);
-		const upgraded = {
-			...legacy,
-			[path]: { hash: legacyHash },
-		};
-		expect(store.get()).toEqual(upgraded);
-		expect(
-			await file.changedSinceRead(fs, path, encode('user above\ntarget'), {
-				startLine: 2,
-				endLine: 2,
-			}),
-		).toBe(true);
-		await vi.waitFor(async () => {
-			const saved = await persister.load();
-			expect(saved.values.get('file-record')?.value).toEqual(upgraded);
-		});
-
-		const restored = new StoreRegistry(persister);
-		await restored.restore();
-		const restoredStore = createStoreRuntime(
-			createStoreResult(restored, { last_read: 'file-record' }),
-		).getStore(fileKey);
-		const listener = vi.fn();
-		restoredStore.subscribe(listener);
-		createFileControl(restoredStore);
-		createFileControl(restoredStore);
-		expect(restoredStore.get()).toEqual(upgraded);
-		expect(listener).not.toHaveBeenCalled();
 	});
 });

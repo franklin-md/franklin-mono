@@ -9,7 +9,6 @@ import { sha256Hex } from '../../hash.js';
 import { compileCoreWithStoreAndEnv } from '../../../../testing/compile-ext.js';
 import type { ReconfigurableEnvironment } from '../../../../modules/environment/api/types.js';
 import { fileKey } from '../../common/key.js';
-import type { FileSnapshot } from '../../common/types.js';
 import { editExtension } from '../extension.js';
 import { readExtension } from '../../read/extension.js';
 
@@ -94,11 +93,9 @@ async function executeTool(
 function simulateRead(compiled: Compiled, path: string, content: string) {
 	const bytes = new TextEncoder().encode(content);
 	const fileHash = sha256Hex(bytes);
-	// Seed the persisted v1 shape through the untyped store-name boundary.
-	const store =
-		compiled.ctx.getStore<Record<string, string | FileSnapshot>>(fileKey);
+	const store = compiled.ctx.getStore(fileKey);
 	store.set((draft) => {
-		draft[path] = fileHash;
+		draft[path] = { hash: fileHash };
 	});
 }
 

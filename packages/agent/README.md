@@ -232,8 +232,13 @@ remain unchanged at the same line numbers; shifted or changed target lines
 require a reread. Fuzzy edits, `replace_all`, and legacy or binary hash-only
 records still require an unchanged file. File control owns snapshot recording and
 whole-file or inclusive line-range freshness checks against the current bytes.
-Legacy hash strings migrate to hash-only snapshot objects on first file-control
-access. Validation and writing are not atomic.
+The `last_read` store uses the [file-record codec](src/extensions/filesystem/common/codec.ts).
+Unversioned hash strings and snapshot objects enter at schema version 0; migration
+wraps hashes as `{ hash }` and preserves existing text snapshots. Version 1
+validates snapshot objects. Store preparation persists upgrades before handlers
+run; file control receives the current shape. Invalid or future-version records
+reject restore without replacing the original data. Validation and file editing
+are not atomic.
 
 Freshness checks are advisory and assume the agent follows the tool prompt's
 instruction to run `read_file` and `edit_file` sequentially for the same file.

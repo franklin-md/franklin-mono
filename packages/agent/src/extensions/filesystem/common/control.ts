@@ -2,13 +2,10 @@ import { encode } from '@franklin/lib';
 import type { Filesystem } from '@franklin/lib';
 import type { Store } from '../../../modules/store/api/types.js';
 import { snapshotChanged } from './changed.js';
-import { migrateV1ToV2 } from './migrate-v1-to-v2.js';
 import { createFileSnapshot } from './snapshot.js';
 import type { FileRecord, FileSnapshot, LineRange } from './types.js';
 
 export function createFileControl(store: Store<FileRecord>) {
-	migrateV1ToV2(store);
-
 	async function getSnapshot(
 		fs: Filesystem,
 		path: string,
