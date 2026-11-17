@@ -54,6 +54,7 @@ export const ModelOnly: Story = {
 		const canvas = within(canvasElement);
 		const body = within(canvasElement.ownerDocument.body);
 		await userEvent.click(canvas.getByRole('button'));
+		await waitFor(() => expect(body.getByRole('combobox')).toHaveFocus());
 		await userEvent.type(body.getByRole('combobox'), 'GPT-5.6 Terra');
 		await userEvent.click(
 			await body.findByRole('option', { name: 'GPT-5.6 Terra' }),
@@ -116,6 +117,7 @@ export const CustomTriggerWithoutSearch: Story = {
 		const body = within(canvasElement.ownerDocument.body);
 		await userEvent.click(canvas.getByRole('button'));
 		await expect(body.queryByRole('combobox')).not.toBeInTheDocument();
+		await waitFor(() => expect(body.getByRole('listbox')).toHaveFocus());
 		await userEvent.keyboard('{ArrowDown}{Enter}');
 		await waitFor(() =>
 			expect(body.queryByRole('dialog')).not.toBeInTheDocument(),
