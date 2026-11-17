@@ -16,10 +16,13 @@ default protocol API. Scripted test helpers live under
 `@franklin/mini-acp/mock`.
 
 `@franklin/mini-acp/models` exposes the built-in Pi backend's `resolveModel`.
-It resolves Franklin overrides before Pi's bundled catalog, without network or
+It resolves Pi's bundled catalog with Franklin fallbacks, without network or
 authentication. The UI uses it for curated picker metadata; it is not a
-provider-discovery protocol. Codex resolution accepts only reviewed local
-definitions, so an upstream catalog addition does not automatically enable it.
+provider-discovery protocol. Codex resolution has a separate reviewed ID
+allowlist, so an upstream catalog addition does not automatically enable it. Metadata and reasoning mappings come
+from Pi; local definitions cover only IDs missing from the pinned catalog.
+Catalog context sizes are estimates and may differ from effective endpoint,
+account or deployment limits.
 
 At a glance:
 - **Agents have state but there is no session persistence on the agent's side**:
@@ -161,10 +164,17 @@ if required fields (provider, model, apiKey) are still unset.
 LLMConfig {
   model?:     string         // Model identifier
   provider?:  string         // Provider identifier
-  reasoning?: ThinkingLevel  // off | minimal | low | medium | high | xhigh
+  reasoning?: ThinkingLevel  // off | minimal | low | medium | high | xhigh | max
   apiKey?:    string         // Provider API key (resolved by auth layer)
 }
 ```
+
+The built-in Pi adapter uses Pi's per-model reasoning mappings and clamps
+unsupported levels. `xhigh` and `max` remain distinct when the model supports
+both. Existing saved levels retain their literal values; no historical effort
+remapping is applied. The toggle currently offers a fixed subset of levels;
+model-aware filtering is deferred under `franklin-drf`.
+See [Pi's thinking-level schema](https://github.com/earendil-works/pi/blob/v1.5.2/packages/ai/src/providers/model-schema.ts).
 
 `setContext` accepts a `ContextPatch` and applies it to the agent's current `Context`.
 Top-level fields omitted from the patch are left unchanged. When a top-level

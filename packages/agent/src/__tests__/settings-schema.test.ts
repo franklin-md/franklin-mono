@@ -85,6 +85,24 @@ describe('AppSettings schema', () => {
 		});
 	});
 
+	it.each(['xhigh', 'max'] as const)(
+		'round-trips %s reasoning without rewriting it',
+		(reasoning) => {
+			const value = {
+				...DEFAULT_APP_SETTINGS,
+				defaultLLMConfig: {
+					...DEFAULT_APP_SETTINGS.defaultLLMConfig,
+					reasoning,
+				},
+			};
+			expect(
+				appSettingsCodec.decode(
+					JSON.parse(JSON.stringify(appSettingsCodec.encode(value))),
+				),
+			).toEqual({ ok: true, value });
+		},
+	);
+
 	it('real type mismatch still surfaces as schema-mismatch', () => {
 		const result = appSettingsCodec.decode({
 			version: 1,

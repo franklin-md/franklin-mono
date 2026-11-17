@@ -118,6 +118,7 @@ describe('useThinkingLevel – initialization', () => {
 			'medium',
 			'high',
 			'xhigh',
+			'max',
 		]);
 	});
 });
@@ -170,14 +171,14 @@ describe('useThinkingLevel – cycleLevel', () => {
 		expect(result.current.level).toBe('high');
 	});
 
-	it('wraps from xhigh back to off', async () => {
-		const { runtime } = makeMockRuntime('xhigh');
+	it('wraps from max back to off', async () => {
+		const { runtime } = makeMockRuntime('max');
 		const { result } = renderHook(() => useThinkingLevel(), {
 			wrapper: agentWrapper(runtime),
 		});
 
 		await waitFor(() => {
-			expect(result.current.level).toBe('xhigh');
+			expect(result.current.level).toBe('max');
 		});
 
 		await act(async () => {
@@ -199,7 +200,7 @@ describe('useThinkingLevel – cycleLevel', () => {
 
 		const seen: ThinkingLevel[] = [result.current.level];
 
-		for (let i = 0; i < 5; i++) {
+		for (let i = 0; i < 6; i++) {
 			await act(async () => {
 				await result.current.cycleLevel();
 			});
@@ -212,6 +213,7 @@ describe('useThinkingLevel – cycleLevel', () => {
 			'medium',
 			'high',
 			'xhigh',
+			'max',
 			'off', // wraps
 		]);
 	});

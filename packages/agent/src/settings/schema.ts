@@ -1,3 +1,4 @@
+import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { z } from 'zod';
 import type { Codec } from '@franklin/lib';
 import { versioned, zodCodec } from '@franklin/lib';
@@ -6,14 +7,7 @@ import { versioned, zodCodec } from '@franklin/lib';
 // Version 1 — initial schema
 // ---------------------------------------------------------------------------
 
-const ThinkingLevel = z.enum([
-	'off',
-	'minimal',
-	'low',
-	'medium',
-	'high',
-	'xhigh',
-]);
+const ThinkingLevel = z.enum(THINKING_LEVELS);
 
 // TODO(FRA-350): Move app-specific settings out of @franklin/agent. The agent
 // package currently owns this schema because FranklinApp owns persistence.

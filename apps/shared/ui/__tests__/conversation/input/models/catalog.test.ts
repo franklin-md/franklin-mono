@@ -81,7 +81,7 @@ describe('MODEL_CATALOG', () => {
 			id: 'gpt-6.1-sol',
 			name: 'GPT-6.1-Sol',
 			reasoning: true,
-			contextWindow: 272_000,
+			contextWindow: 500_000,
 			costInput: 2,
 			costOutput: 10,
 		});
@@ -180,8 +180,8 @@ describe('MODEL_CATALOG', () => {
 			name: 'Qwen3.7 Max',
 			reasoning: true,
 			contextWindow: 1_000_000,
-			costInput: 2.5,
-			costOutput: 7.5,
+			costInput: 1.475,
+			costOutput: 4.425,
 		});
 	});
 

@@ -155,59 +155,127 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 		expect(globalFetch).not.toHaveBeenCalled();
 	});
 
-	it('preserves xhigh reasoning for the pi-ai GPT-6.1 Sol codex model', async () => {
-		const customFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
-			new Response(
-				'data: {"type":"response.completed","response":{"status":"completed"}}\n\n',
+	it.each(['xhigh', 'max'] as const)(
+		'preserves %s reasoning through Mini-ACP and the Codex request',
+		async (reasoning) => {
+			const customFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+				new Response(
+					'data: {"type":"response.completed","response":{"status":"completed"}}\n\n',
+					{
+						status: 200,
+						headers: { 'content-type': 'text/event-stream' },
+					},
+				),
+			);
+
+			const streamFn = createPiStreamFn({ fetch: customFetch });
+			const client = createPiAgent(
 				{
-					status: 200,
-					headers: { 'content-type': 'text/event-stream' },
+					toolExecute: async ({ call }) => ({
+						toolCallId: call.id,
+						content: [],
+					}),
 				},
-			),
-		);
+				{
+					streamFn: (model, context, options) =>
+						streamFn(model, context, { ...options, transport: 'sse' }),
+				},
+			);
+			await client.setContext({
+				config: {
+					provider: 'openai-codex',
+					model: 'gpt-6.1-sol',
+					apiKey: createCodexToken(),
+					reasoning,
+				},
+			});
+			await collect(
+				client.prompt({
+					role: 'user',
+					content: [{ type: 'text', text: 'hello' }],
+				}),
+			);
 
-		const streamFn = createPiStreamFn({ fetch: customFetch });
-		const stream = streamFn(
-			getModel('openai-codex', 'gpt-6.1-sol'),
-			normalizeContext({ messages: [] }),
-			{
-				apiKey: createCodexToken(),
-				reasoning: 'xhigh',
-				transport: 'sse',
-			},
-		);
+			expect(customFetch).toHaveBeenCalledExactlyOnceWith(
+				'https://chatgpt.com/backend-api/codex/responses',
+				expect.objectContaining({
+					method: 'POST',
+				}),
+			);
 
-		for await (const _event of await Promise.resolve(stream)) {
-			// Drain the stream so the request completes and assertions can inspect it.
-		}
+			const request = customFetch.mock.calls[0]?.[1];
+			if (
+				request === undefined ||
+				(typeof request.body !== 'string' &&
+					!(request.body instanceof Uint8Array))
+			) {
+				throw new Error('Expected request init');
+			}
 
-		expect(customFetch).toHaveBeenCalledExactlyOnceWith(
-			'https://chatgpt.com/backend-api/codex/responses',
-			expect.objectContaining({
-				method: 'POST',
-			}),
-		);
+			const body =
+				typeof request.body === 'string'
+					? request.body
+					: zstdDecompressSync(request.body).toString();
+			expect(JSON.parse(body)).toMatchObject({
+				reasoning: {
+					effort: reasoning,
+					summary: 'auto',
+				},
+			});
+		},
+	);
 
-		const request = customFetch.mock.calls[0]?.[1];
-		if (
-			request === undefined ||
-			(typeof request.body !== 'string' &&
-				!(request.body instanceof Uint8Array))
-		) {
-			throw new Error('Expected request init');
-		}
-
-		const body =
-			typeof request.body === 'string'
-				? request.body
-				: zstdDecompressSync(request.body).toString();
-		expect(JSON.parse(body)).toMatchObject({
-			reasoning: {
-				effort: 'xhigh',
-				summary: 'auto',
-			},
-		});
-	});
+	it.each(['xhigh', 'max'] as const)(
+		'uses Pi Claude %s effort markers through Mini-ACP',
+		async (reasoning) => {
+			const customFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+				new Response(
+					JSON.stringify({
+						type: 'error',
+						error: { type: 'authentication_error', message: 'denied' },
+					}),
+					{ status: 401, headers: { 'content-type': 'application/json' } },
+				),
+			);
+			const client = createPiAgent(
+				{
+					toolExecute: async ({ call }) => ({
+						toolCallId: call.id,
+						content: [],
+					}),
+				},
+				{
+					streamFn: createPiStreamFn({ fetch: customFetch }),
+				},
+			);
+			await client.setContext({
+				config: {
+					provider: 'openrouter',
+					model: 'anthropic/claude-fable-5.2',
+					apiKey: 'test-only',
+					reasoning,
+				},
+			});
+			await collect(
+				client.prompt({
+					role: 'user',
+					content: [{ type: 'text', text: 'hello' }],
+				}),
+			);
+			expect(customFetch).toHaveBeenCalledOnce();
+			const request = customFetch.mock.calls[0]?.[1];
+			if (typeof request?.body !== 'string')
+				throw new Error('Expected JSON request');
+			expect(JSON.parse(request.body)).toMatchObject({
+				model: 'anthropic/claude-fable-5.2',
+				thinking: { type: 'adaptive' },
+				messages: expect.arrayContaining([
+					{ role: 'system', content: [], output_config: { effort: reasoning } },
+				]),
+			});
+			expect(globalFetch).not.toHaveBeenCalled();
+		},
+	);
 
 	it('preserves the custom fetch through pi-ai simple anthropic options', async () => {
 		const customFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(

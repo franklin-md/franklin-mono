@@ -17,7 +17,7 @@ const OPENROUTER_UPSTREAM_MODEL_CASES = [
 	{ id: 'xiaomi/mimo-v2.5-pro', contextWindow: 262_144 },
 ] as const;
 
-const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
+const OPENROUTER_ADDITIONAL_MODEL_CASES = [
 	{
 		id: 'google/gemini-3.5-flash',
 		reasoning: true,
@@ -28,7 +28,7 @@ const OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES = [
 		id: 'qwen/qwen3.7-max',
 		reasoning: true,
 		contextWindow: 1_000_000,
-		maxTokens: 65_536,
+		maxTokens: 131_072,
 	},
 ] as const;
 
@@ -80,8 +80,8 @@ describe('resolveConfig', () => {
 		});
 	}
 
-	for (const model of OPENROUTER_LOCAL_OVERRIDE_MODEL_CASES) {
-		it(`accepts the OpenRouter ${model.id} local override when apiKey is present`, () => {
+	for (const model of OPENROUTER_ADDITIONAL_MODEL_CASES) {
+		it(`accepts the OpenRouter ${model.id} model when apiKey is present`, () => {
 			const result = resolveConfig({
 				provider: 'openrouter',
 				model: model.id,
