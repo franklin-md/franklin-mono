@@ -1,12 +1,18 @@
 import {
 	createAssistantMessageEventStream,
+	getCurrentSystemPrompt,
+	getCurrentTools,
 	type AssistantMessage,
 } from '@earendil-works/pi-ai';
 import type { StreamFn } from '@earendil-works/pi-agent-core';
 
 /** Pi-loop test fixture; an exhausted script fails without reaching a provider. */
 export function createScriptedProvider(
-	responses: readonly Partial<AssistantMessage>[],
+	responses: readonly Partial<
+		AssistantMessage & {
+			stopReason: Exclude<AssistantMessage['stopReason'], 'pending'>;
+		}
+	>[],
 ) {
 	const requests: Array<{
 		messages: Parameters<StreamFn>[1]['messages'];
@@ -19,14 +25,14 @@ export function createScriptedProvider(
 		const script = responses[requests.length];
 		requests.push({
 			messages: structuredClone(context.messages),
-			systemPrompt: context.systemPrompt,
-			tools: (context.tools ?? []).map((tool) => tool.name),
+			systemPrompt: getCurrentSystemPrompt(context.messages),
+			tools: getCurrentTools(context.messages).map((tool) => tool.name),
 			apiKey: options?.apiKey,
 			model: model.id,
 		});
 		if (!script) throw new Error('Unexpected provider request');
 		const stream = createAssistantMessageEventStream();
-		const message: AssistantMessage = {
+		const message = {
 			role: 'assistant',
 			api: model.api,
 			provider: model.provider,
@@ -43,7 +49,7 @@ export function createScriptedProvider(
 				cost: { input: 1, output: 2, cacheRead: 3, cacheWrite: 4, total: 10 },
 			},
 			...script,
-		};
+		} satisfies AssistantMessage;
 		queueMicrotask(() => {
 			if (message.stopReason === 'error' || message.stopReason === 'aborted') {
 				stream.push({

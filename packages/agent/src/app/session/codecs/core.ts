@@ -1,3 +1,4 @@
+import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { z } from 'zod';
 import type { Message } from '@franklin/mini-acp';
 import {
@@ -7,14 +8,7 @@ import {
 } from '../../../modules/core/state.js';
 import { validateEntries } from '../../../modules/core/history/validate.js';
 
-const ThinkingLevelV1 = z.enum([
-	'off',
-	'minimal',
-	'low',
-	'medium',
-	'high',
-	'xhigh',
-]);
+const ThinkingLevelV1 = z.enum(THINKING_LEVELS);
 
 const MessageV1 = z.custom<Message>((value) => {
 	if (value === null || typeof value !== 'object') return false;
@@ -52,7 +46,7 @@ export const CoreSessionV1 = z.object({
 	}),
 	usage: z.object({
 		tokens: UsageBreakdownV1,
-		cost: UsageBreakdownV1,
+		cost: UsageBreakdownV1.extend({ total: z.number().optional() }),
 	}),
 	toolFilter: ToolFilterV1.optional().transform(
 		(value) => value ?? emptyToolFilter(),

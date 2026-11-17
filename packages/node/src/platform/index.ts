@@ -9,7 +9,7 @@ import { spawn } from './spawn.js';
 import { createNodeFilesystem } from './filesystem.js';
 import { nodePlatformFetch } from './fetch.js';
 import { nodeHttpFetch } from './http/fetch.js';
-import { getProviders } from '@earendil-works/pi-ai';
+import { getBuiltinProviders } from '@earendil-works/pi-ai/providers/all';
 import type { AbsolutePath } from '@franklin/lib';
 import os from 'node:os';
 import { withAnthropicProtected } from './anthropic/protected.js';
@@ -31,7 +31,7 @@ export function createNodePlatform(args: Args = {}): Platform {
 
 	const llmStreamFn = createPiStreamFn({ fetch: nodeHttpFetch });
 	const ai = {
-		getApiKeyProviders: async () => getProviders(),
+		getApiKeyProviders: async () => getBuiltinProviders(),
 	};
 
 	return {

@@ -15,6 +15,15 @@ live under `@franklin/mini-acp/session`; protocol logging lives under
 default protocol API. Scripted test helpers live under
 `@franklin/mini-acp/mock`.
 
+`@franklin/mini-acp/models` exposes the built-in Pi backend's `resolveModel`.
+It resolves Pi's bundled catalog with Franklin fallbacks, without network or
+authentication. The UI uses it for curated picker metadata; it is not a
+provider-discovery protocol. Codex resolution has a separate reviewed ID
+allowlist, so an upstream catalog addition does not automatically enable it. Metadata and reasoning mappings come
+from Pi; local definitions cover only IDs missing from the pinned catalog.
+Catalog context sizes are estimates and may differ from effective endpoint,
+account or deployment limits.
+
 At a glance:
 - **Agents have state but there is no session persistence on the agent's side**:
   - Throughout the protocol, the agent's `Context` changes as it keeps track of:
@@ -155,10 +164,17 @@ if required fields (provider, model, apiKey) are still unset.
 LLMConfig {
   model?:     string         // Model identifier
   provider?:  string         // Provider identifier
-  reasoning?: ThinkingLevel  // off | minimal | low | medium | high | xhigh
+  reasoning?: ThinkingLevel  // off | minimal | low | medium | high | xhigh | max
   apiKey?:    string         // Provider API key (resolved by auth layer)
 }
 ```
+
+The built-in Pi adapter uses Pi's per-model reasoning mappings and clamps
+unsupported levels. `xhigh` and `max` remain distinct when the model supports
+both. Existing saved levels retain their literal values; no historical effort
+remapping is applied. The toggle currently offers a fixed subset of levels;
+model-aware filtering is deferred under `franklin-drf`.
+See [Pi's thinking-level schema](https://github.com/earendil-works/pi/blob/v1.5.2/packages/ai/src/providers/model-schema.ts).
 
 `setContext` accepts a `ContextPatch` and applies it to the agent's current `Context`.
 Top-level fields omitted from the patch are left unchanged. When a top-level
@@ -288,7 +304,7 @@ any previous steps in cumulative usage. A new prompt resets turn usage;
 replacing context messages does not reset usage.
 
 **`Usage`** — token counts and cost for a completed turn. The two buckets
-share the same field names so a consumer can iterate either symmetrically:
+share numeric component field names; cost has an optional best available total:
 ```
 Usage {
   tokens: {
@@ -303,13 +319,21 @@ Usage {
     output:     number   // USD cost for output tokens
     cacheRead:  number   // USD cost for cache reads
     cacheWrite: number   // USD cost for cache writes
-    total:      number   // Sum of all four
+    total?:     number   // Best available total in USD
   }
 }
 ```
 
+The Pi adapter sums usage across all provider calls in a prompt's tool loop.
+`cost.total` uses provider-reported billing when available, otherwise a catalog
+estimate. We intentionally don't distinguish these sources in the protocol or
+footer, including for historical totals. The component costs remain catalog
+estimates and may not sum to the total. Empty accumulators start at zero;
+an unknown contribution makes the aggregate total unknown.
+
 Token counts are raw integers. `cost.*` values are in USD and are supplied
-by the provider adapter; when pricing is unknown, the adapter reports 0.
+by the provider adapter; unknown catalog prices are 0. An absent total means
+the cost is unavailable.
 
 A typical stream for a simple text response:
 ```
@@ -415,10 +439,10 @@ that boundary, the client MUST consume the next `continue()` stream to receive
 the cancelled `turnEnd`; `cancel()` does not emit another terminal on the
 previous step's stream.
 
-The Pi adapter uses the pinned 0.75.4 public `runAgentLoop` /
-`runAgentLoopContinue` exports and `shouldStopAfterTurn: () => true`. The adapter
+The Pi adapter uses the pinned 1.5.2 public `runAgentLoop` /
+`runAgentLoopContinue` exports and `finishTurn: () => ({ action: 'end' })`. The adapter
 awaits runner settlement before publishing either terminal; it does not forward
-Pi's earlier `agent_end`. See the [Pi public loop source](https://github.com/earendil-works/pi-mono/blob/v0.75.4/packages/agent/src/agent-loop.ts).
+Pi's earlier `agent_end`. See the [Pi public loop source](https://github.com/earendil-works/pi/blob/v1.5.2/packages/agent/src/agent-loop.ts).
 
 #### Shutdown
 

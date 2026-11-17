@@ -69,4 +69,38 @@ describe('UsageTracker', () => {
 		expect(total.cost.cacheWrite).toBeCloseTo(0.00005, 10);
 		expect(total.cost.total).toBeCloseTo(0.0049, 10);
 	});
+	it('keeps available totals across multiple calls and zero session seeds', () => {
+		const tracker = new UsageTracker();
+		tracker.add(structuredClone(ZERO_USAGE));
+		const available = {
+			...ZERO_USAGE,
+			cost: { ...ZERO_USAGE.cost, total: 0.12 },
+		};
+		tracker.add(available);
+		tracker.add(available);
+		expect(tracker.get().cost).toMatchObject({
+			total: 0.24,
+		});
+	});
+
+	it.each([true, false])(
+		'keeps the total unknown when a call has no total (unknown first: %s)',
+		(unknownFirst) => {
+			const tracker = new UsageTracker();
+			const available = {
+				...ZERO_USAGE,
+				cost: { ...ZERO_USAGE.cost, total: 0.12 },
+			};
+			const unknown = {
+				...ZERO_USAGE,
+				cost: { ...ZERO_USAGE.cost, total: undefined },
+			};
+			for (const usage of unknownFirst
+				? [unknown, available]
+				: [available, unknown])
+				tracker.add(usage);
+			tracker.add(available);
+			expect(tracker.get().cost.total).toBeUndefined();
+		},
+	);
 });

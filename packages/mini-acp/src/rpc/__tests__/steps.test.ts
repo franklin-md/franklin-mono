@@ -154,7 +154,10 @@ describe('explicit steps over JSON-RPC', () => {
 			expect(
 				provider.requests[1]?.messages.filter((m) => m.role === 'toolResult'),
 			).toHaveLength(2);
-			expect(provider.requests[2]?.messages).toHaveLength(1);
+			expect(provider.requests[2]?.messages).toMatchObject([
+				{ role: 'system', content: 'new turn' },
+				{ role: 'user', content: prompt.content },
+			]);
 		} finally {
 			firstTool.resolve(undefined);
 			secondTool.resolve(undefined);
