@@ -107,7 +107,7 @@ describe('study inbox reasoning setting', () => {
 			).toBe('answered'),
 		);
 		const next = await inbox.add('New question');
-		const child = await inbox.add('Follow-up', original);
+		const child = await inbox.add('Follow-up', { parentId: original });
 		await vi.waitFor(() =>
 			expect(
 				inbox.state.get().questions.every((q) => q.state.kind === 'answered'),

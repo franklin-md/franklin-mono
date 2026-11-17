@@ -13,6 +13,8 @@ import type {
 	InboxSnapshot,
 } from './types.js';
 
+type AddOptions = { id?: string; parentId?: string; source?: QuestionSource };
+
 export class InboxController {
 	readonly state: ReadonlyStore<InboxSnapshot>;
 	private readonly store: Store<InboxSnapshot>;
@@ -30,34 +32,52 @@ export class InboxController {
 
 	static async create(
 		options: InboxControllerOptions,
+		signal?: AbortSignal,
 	): Promise<InboxController> {
-		const controller = new InboxController(
-			options,
-			await restoreInbox(options),
-		);
+		signal?.throwIfAborted();
+		const initial = await restoreInbox(options);
+		signal?.throwIfAborted();
+		const controller = new InboxController(options, initial);
 		await controller.persist();
+		signal?.throwIfAborted();
 		controller.pump();
 		return controller;
 	}
 
 	async add(
-		text: string,
-		parentId?: string,
-		source?: QuestionSource,
+		input: string,
+		{ id = crypto.randomUUID(), parentId, source }: AddOptions = {},
 	): Promise<string> {
 		this.assertOpen();
-		if (!text.trim()) throw new Error('Enter a question');
+		const text = input.trim();
+		if (!text) throw new Error('Enter a question');
+		if (!id.trim()) throw new Error('Question ID must not be empty');
 		const { questions, preferences } = this.store.get();
-		const parent = questions.find((question) => question.id === parentId);
-		if (parentId && parent?.state.kind !== 'answered')
-			throw new Error('Follow-ups need an answered parent question');
-		const question = createQuestion({ text, preferences, source, parent });
-		this.store.set((draft) => {
-			draft.questions.unshift(question);
-		});
+		const existing = questions.find((question) => question.id === id);
+		// Retry save may have accepted this question before the draft is resent.
+		if (existing) {
+			if (existing.text !== text || existing.parentId !== parentId)
+				throw new Error(
+					'Question ID already belongs to a different submission',
+				);
+		} else {
+			const parent = questions.find((question) => question.id === parentId);
+			if (parentId !== undefined && parent?.state.kind !== 'answered')
+				throw new Error('Follow-ups need an answered parent question');
+			const question = createQuestion({
+				id,
+				text,
+				preferences,
+				source,
+				parent,
+			});
+			this.store.set((draft) => {
+				draft.questions.unshift(question);
+			});
+		}
 		await this.persist();
 		this.pump();
-		return question.id;
+		return id;
 	}
 
 	async configure(patch: Partial<InboxPreferences>): Promise<void> {

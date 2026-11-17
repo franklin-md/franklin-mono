@@ -21,7 +21,9 @@ editing the source note.
   including their complete answer sections.
 - `inbox.json` is written by a serialized, same-directory temporary-file rename.
   The document contains questions and preferences, without transcripts or keys.
-  Failed saves remain visible and can be retried.
+  Reload waits for any previous Inbox instance to finish its writes before
+  restoring the file. Failed saves remain visible. Resending the same question,
+  including after removing checklist formatting, keeps its original ID.
 - New writes use schema version 7. Flat-question versions 1–6 migrate while
   preserving exact saved answer instructions and legacy answers. Nonempty
   groups, actions, action runs or Thought Dump records are rejected, as are

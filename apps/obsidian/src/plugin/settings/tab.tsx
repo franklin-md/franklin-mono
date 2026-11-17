@@ -1,7 +1,9 @@
+import { createStore } from '@franklin/agent';
 import { ApplicationProvider } from '@franklin/ui';
 import { PluginSettingTab } from 'obsidian';
 
 import type FranklinPlugin from '../../main.js';
+import type { InboxController } from '../../apps/inbox/controller/index.js';
 import { openInboxHotkeys } from '../../apps/inbox/host/open-hotkeys.js';
 import { createMounter, type Mounter } from '../../shared/ui/mount.js';
 import type { SettingsSection } from '../../shared/obsidian/settings/types.js';
@@ -12,6 +14,9 @@ export class FranklinSettingTab extends PluginSettingTab {
 	private section: SettingsSection = 'general';
 	private readonly plugin: FranklinPlugin;
 	private readonly mounter: Mounter = createMounter();
+	private readonly inbox = createStore<{ controller: InboxController | null }>({
+		controller: null,
+	});
 
 	constructor(plugin: FranklinPlugin) {
 		super(plugin.app, plugin);
@@ -21,6 +26,12 @@ export class FranklinSettingTab extends PluginSettingTab {
 	selectSection(section: SettingsSection): void {
 		this.section = section;
 		this.display();
+	}
+
+	setInbox(inbox: InboxController | null): void {
+		this.inbox.set((draft) => {
+			draft.controller = inbox;
+		});
 	}
 
 	display(): void {
@@ -37,7 +48,7 @@ export class FranklinSettingTab extends PluginSettingTab {
 				hostActionBindings={this.plugin.hostActionBindings}
 			>
 				<SettingsPage
-					inbox={this.plugin.inbox ?? undefined}
+					inbox={this.inbox}
 					onConfigureInboxShortcut={() => openInboxHotkeys(this.plugin.app)}
 					initialSection={this.section}
 					onSectionChange={(section) => {

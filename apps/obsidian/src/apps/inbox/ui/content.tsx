@@ -14,29 +14,29 @@ import {
 } from '@franklin/ui';
 import type { StudyQuestion, QuestionSource } from '../types.js';
 import { Composer } from './composer.js';
+import type { QuestionSubmission } from './composer.js';
 import { QuestionFeed } from './feed.js';
-import type { QuestionNavigation } from './navigation.js';
 import { selectionQuestion } from '../selection-question.js';
 
 type Props = {
 	questions: StudyQuestion[];
-	navigation?: QuestionNavigation;
 	composerControls: ReactNode;
 	concurrency: number;
 	setConcurrency: (value: number) => void;
-	onAdd: (text: string) => void | Promise<void>;
-	onFollowUp: (text: string, parentId: string) => void | Promise<void>;
+	onAdd: (submission: QuestionSubmission) => void | Promise<void>;
+	onFollowUp: (
+		submission: QuestionSubmission,
+		parentId: string,
+	) => void | Promise<void>;
 	onDelete: (id: string) => void;
 	onRetry: (id: string) => void;
 	onOpenSource?: (source: QuestionSource) => void;
 	onSettings?: () => void;
-	renderAnswer?: (answer: string) => ReactNode;
 	footer?: ReactNode;
 };
 
 export function InboxContent({
 	questions,
-	navigation,
 	composerControls,
 	concurrency,
 	setConcurrency,
@@ -46,7 +46,6 @@ export function InboxContent({
 	onRetry,
 	onOpenSource,
 	onSettings,
-	renderAnswer,
 	footer,
 }: Props) {
 	const [optionsOpen, setOptionsOpen] = useState(false);
@@ -119,18 +118,17 @@ export function InboxContent({
 				<div className="mb-6">
 					<Composer
 						controls={composerControls}
-						onSubmit={(text) => onAdd(selectionQuestion(text))}
+						normalizeText={selectionQuestion}
+						onSubmit={onAdd}
 					/>
 				</div>
 			</header>
 			<QuestionFeed
 				questions={questions}
-				navigation={navigation}
 				onFollowUp={onFollowUp}
 				onDelete={onDelete}
 				onRetry={onRetry}
 				onOpenSource={onOpenSource}
-				renderAnswer={renderAnswer}
 			/>
 			{footer}
 		</main>

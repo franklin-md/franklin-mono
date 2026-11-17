@@ -80,17 +80,15 @@ describe('Obsidian inbox commands and source navigation', () => {
 			expect(e.setSelection).not.toHaveBeenCalled();
 			capture.editorCheckCallback?.(false, e, view);
 			await vi.waitFor(() =>
-				expect(add).toHaveBeenCalledWith(
-					'Check the condition again.',
-					undefined,
-					expect.objectContaining({
+				expect(add).toHaveBeenCalledWith('Check the condition again.', {
+					source: expect.objectContaining({
 						quote: 'Check the condition again.',
 						location: expect.objectContaining({
 							from: { line: 2, ch: 0 },
 							to: { line: 2, ch: 26 },
 						}),
 					}),
-				),
+				}),
 			);
 			expect(e.getValue()).toBe(content);
 			const empty = editor();

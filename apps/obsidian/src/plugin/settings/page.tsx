@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useSyncExternalStore, type ReactNode } from 'react';
+import type { ReadonlyStore } from '@franklin/agent';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@franklin/ui';
 
 import { ChatSettings } from '../../apps/chat/settings/page.js';
@@ -9,7 +10,7 @@ import { SettingGroup } from '../../shared/ui/setting/group.js';
 import { CredentialsSettings } from './credentials/index.js';
 
 type Props = {
-	inbox?: InboxController;
+	inbox: ReadonlyStore<{ controller: InboxController | null }>;
 	onConfigureInboxShortcut?: () => void;
 	initialSection?: SettingsSection;
 	onSectionChange?: (section: SettingsSection) => void;
@@ -22,13 +23,17 @@ export function SettingsPage({
 	onSectionChange,
 }: Props) {
 	const [section, setSection] = useState(initialSection);
+	const inboxController = useSyncExternalStore(
+		(notify) => inbox.subscribe(notify),
+		() => inbox.get().controller,
+	);
 	const panels = {
 		general: { label: 'General', content: <ChatSettings /> },
 		inbox: {
 			label: 'Inbox',
-			content: (
+			content: inboxController && (
 				<InboxSettings
-					inbox={inbox}
+					inbox={inboxController}
 					onConfigureInboxShortcut={onConfigureInboxShortcut}
 				/>
 			),

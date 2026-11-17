@@ -3,10 +3,14 @@ import { Button } from '@franklin/ui';
 import { questionTitle } from '../../title.js';
 import type { StudyQuestion } from '../../types.js';
 import { Composer } from '../composer.js';
+import type { QuestionSubmission } from '../composer.js';
 
 type Props = {
 	question: StudyQuestion;
-	onFollowUp: (text: string, parentId: string) => void | Promise<void>;
+	onFollowUp: (
+		submission: QuestionSubmission,
+		parentId: string,
+	) => void | Promise<void>;
 	onRetry: (id: string) => void;
 };
 
@@ -33,9 +37,7 @@ export function QuestionControls({ question, onFollowUp, onRetry }: Props) {
 						compact
 						label={`Follow up on: ${title}`}
 						placeholder="Ask a follow-up…"
-						onSubmit={async (text) => {
-							await onFollowUp(text, question.id);
-						}}
+						onSubmit={(submission) => onFollowUp(submission, question.id)}
 					/>
 				</div>
 			)}

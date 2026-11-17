@@ -2,6 +2,7 @@ import type { InboxPreferences, InboxQuestion } from './types.js';
 import type { QuestionSource } from '../types.js';
 
 type Options = {
+	id: string;
 	text: string;
 	preferences: Omit<InboxPreferences, 'concurrency'>;
 	source?: QuestionSource;
@@ -9,18 +10,18 @@ type Options = {
 };
 
 export function createQuestion({
+	id,
 	text,
 	preferences,
 	source,
 	parent,
 }: Options): InboxQuestion {
-	const id = crypto.randomUUID();
 	const now = Date.now();
 	return {
 		id,
 		rootId: parent?.rootId ?? id,
 		parentId: parent?.id,
-		text: text.trim(),
+		text,
 		createdAt: now,
 		updatedAt: now,
 		attemptId: crypto.randomUUID(),

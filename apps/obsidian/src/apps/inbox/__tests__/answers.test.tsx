@@ -44,7 +44,6 @@ describe('structured inbox answers', () => {
 				onFollowUp={vi.fn()}
 				onDelete={vi.fn()}
 				onRetry={vi.fn()}
-				renderAnswer={(text) => <p>{text}</p>}
 			/>,
 		);
 		expect(screen.getByText('No.')).toBeTruthy();
@@ -81,19 +80,23 @@ describe('structured inbox answers', () => {
 			vi.fn(() => ({ matches: true })),
 		);
 		const question = answeredQuestion();
-		question.state = { kind: 'answered', answer: 'No.', details };
+		question.state = {
+			kind: 'answered',
+			answer: 'No.',
+			details: [
+				{
+					...firstDetail,
+					content: `${firstDetail.content} [Reference](#reference)`,
+				},
+				secondDetail,
+			],
+		};
 		render(
 			<QuestionFeed
 				questions={[question]}
 				onFollowUp={vi.fn()}
 				onDelete={vi.fn()}
 				onRetry={vi.fn()}
-				renderAnswer={(text) => (
-					<p>
-						{text}
-						<a href="#reference">Reference</a>
-					</p>
-				)}
 			/>,
 		);
 		const section = screen.getByText(firstDetail.title).closest('details');
@@ -181,7 +184,7 @@ describe('structured inbox answers', () => {
 		await vi.waitFor(() =>
 			expect(saved?.questions[0]?.state.kind).toBe('answered'),
 		);
-		await inbox.add('Why?', root);
+		await inbox.add('Why?', { parentId: root });
 		await vi.waitFor(() =>
 			expect(saved?.questions.every((q) => q.state.kind === 'answered')).toBe(
 				true,

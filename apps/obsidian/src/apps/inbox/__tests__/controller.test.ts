@@ -108,15 +108,15 @@ describe('study inbox controller', () => {
 	it('carries only the chosen ancestor branch and captured source into a follow-up, and deletes descendants', async () => {
 		const h = await harness(3);
 		const source = { note: 'Note', heading: 'Section', quote: 'source text' };
-		const root = await h.inbox.add('root', undefined, source);
+		const root = await h.inbox.add('root', { source });
 		await vi.waitFor(() => expect(h.pending).toHaveLength(1));
 		await h.pending[0]!.submit('root answer');
 		await h.finish(root);
 		await h.inbox.configure({
 			answerInstructions: 'Explain the next question in detail.',
 		});
-		const child = await h.inbox.add('child', root);
-		const sibling = await h.inbox.add('sibling', root);
+		const child = await h.inbox.add('child', { parentId: root });
+		const sibling = await h.inbox.add('sibling', { parentId: root });
 		await vi.waitFor(() => expect(h.pending).toHaveLength(3));
 		const childRequest = h.pending.find((r) => r.question.id === child)!;
 		expect(childRequest.question.answerInstructions).toBe(
@@ -127,7 +127,7 @@ describe('study inbox controller', () => {
 		);
 		await childRequest.submit('child answer');
 		await h.finish(child);
-		const grandchild = await h.inbox.add('grandchild', child);
+		const grandchild = await h.inbox.add('grandchild', { parentId: child });
 		await vi.waitFor(() => expect(h.pending).toHaveLength(4));
 		const last = h.pending.find((r) => r.question.id === grandchild)!;
 		expect(last.ancestors.map((q) => q.id)).toEqual([root, child]);
@@ -199,6 +199,34 @@ describe('study inbox controller', () => {
 			InboxController.create({ defaults, persistence: h.disk, run: vi.fn() }),
 		).rejects.toThrow('preserved');
 		expect(save).not.toHaveBeenCalled();
+	});
+
+	it('rejects blank IDs and conflicting reuse before writing', async () => {
+		const h = await harness();
+		const id = await h.inbox.add('Original question', { id: 'question-id' });
+		await vi.waitFor(() => expect(h.pending).toHaveLength(1));
+		const save = vi.mocked(h.disk.save);
+		save.mockClear();
+
+		await expect(h.inbox.add('Blank ID', { id: '' })).rejects.toThrow(
+			'Question ID must not be empty',
+		);
+		await expect(h.inbox.add('Blank ID', { id: '  ' })).rejects.toThrow(
+			'Question ID must not be empty',
+		);
+		await expect(h.inbox.add('Different text', { id })).rejects.toThrow(
+			'Question ID already belongs to a different submission',
+		);
+		await expect(
+			h.inbox.add('Original question', { id, parentId: 'other-thread' }),
+		).rejects.toThrow('Question ID already belongs to a different submission');
+		expect(save).not.toHaveBeenCalled();
+		expect(
+			h.read()?.questions.map((question) => [question.id, question.text]),
+		).toEqual([[id, 'Original question']]);
+
+		await h.inbox.dispose();
+		await h.finish(id);
 	});
 
 	it('validates versioned data, including cycles and missing lineage', async () => {

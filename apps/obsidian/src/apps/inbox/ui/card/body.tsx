@@ -1,24 +1,18 @@
 import { LoaderCircle } from 'lucide-react';
-import type { ReactNode } from 'react';
 import type { QuestionState } from '../../types.js';
 import { QuestionAnswer } from '../answer.js';
 
 type Props = {
 	state: QuestionState;
 	expanded: boolean;
-	renderAnswer?: (answer: string) => ReactNode;
 };
 
-export function QuestionBody({ state, expanded, renderAnswer }: Props) {
+export function QuestionBody({ state, expanded }: Props) {
 	const active = state.kind === 'running' || state.kind === 'queued';
 	return (
 		<div>
 			{state.kind === 'answered' && (
-				<QuestionAnswer
-					answer={state}
-					expanded={expanded}
-					renderAnswer={renderAnswer}
-				/>
+				<QuestionAnswer answer={state} expanded={expanded} />
 			)}
 			{active && (
 				<div

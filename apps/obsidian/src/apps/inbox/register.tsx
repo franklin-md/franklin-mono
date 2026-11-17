@@ -84,7 +84,7 @@ export function registerInbox({
 			if (!source) return false;
 			if (!checking) {
 				void inbox
-					.add(selectionQuestion(source.quote), undefined, source)
+					.add(selectionQuestion(source.quote), { source })
 					.then(() => {
 						new Notice('Question added to study inbox');
 					})

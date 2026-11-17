@@ -12,10 +12,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ANSWER_INSTRUCTIONS } from '../answer-instructions.js';
 import { InboxController } from '../controller/index.js';
 import { InboxPanel } from '../ui/panel.js';
-import { Composer } from '../ui/composer.js';
 import { QuestionFeed } from '../ui/feed.js';
 import type { StudyQuestion } from '../types.js';
-import type { InboxDocument } from '../controller/types.js';
+import type { AnswerRequest, InboxDocument } from '../controller/types.js';
+import { createInboxTestPersistence } from '../testing/persistence.js';
+
+const defaults = {
+	provider: 'openai-codex',
+	model: 'gpt-6.1-sol',
+	reasoning: 'low' as const,
+};
 
 afterEach(() => {
 	document.getSelection()?.removeAllRanges();
@@ -25,18 +31,13 @@ afterEach(() => {
 
 describe('functional inbox UI', () => {
 	it('renders saved questions, answers, model selection, and follow-ups through the controller', async () => {
-		HTMLElement.prototype.scrollTo = vi.fn();
 		vi.stubGlobal(
 			'matchMedia',
 			vi.fn(() => ({ matches: true })),
 		);
 		let saved: InboxDocument | undefined;
 		const controller = await InboxController.create({
-			defaults: {
-				provider: 'openai-codex',
-				model: 'gpt-6.1-sol',
-				reasoning: 'low',
-			},
+			defaults,
 			persistence: {
 				save: async (value) => {
 					saved = structuredClone(value);
@@ -87,19 +88,68 @@ describe('functional inbox UI', () => {
 		unmount();
 		await controller.dispose();
 	});
-	it('retains the typed question if saving fails', async () => {
-		const onSubmit = vi.fn(async () => {
-			throw new Error('disk full');
-		});
-		render(<Composer onSubmit={onSubmit} />);
-		const input = screen.getByRole('textbox', { name: 'Ask a question' });
-		fireEvent.change(input, { target: { value: 'Keep this question' } });
-		await act(async () => {
-			fireEvent.click(screen.getByRole('button', { name: 'Add question' }));
-		});
-		expect(screen.getByRole('alert').textContent).toBe('disk full');
-		expect((input as HTMLTextAreaElement).value).toBe('Keep this question');
-	});
+	it.each([
+		{ stripChecklist: false, retrySaveFirst: false },
+		{ stripChecklist: true, retrySaveFirst: false },
+		{ stripChecklist: true, retrySaveFirst: true },
+	])(
+		'resending launches one run (strip checklist: $stripChecklist, Retry save first: $retrySaveFirst)',
+		async ({ stripChecklist, retrySaveFirst }) => {
+			vi.stubGlobal('matchMedia', () => ({ matches: true }));
+			const { disk, read } = createInboxTestPersistence();
+			const run = vi.fn(async ({ submit }: AnswerRequest) => {
+				await submit('Recovered answer.');
+			});
+			const controller = await InboxController.create({
+				defaults,
+				persistence: disk,
+				run,
+			});
+			vi.spyOn(disk, 'save').mockRejectedValueOnce(new Error('disk full'));
+			const captureContext = vi.fn(async () => undefined);
+			const { unmount } = render(
+				<InboxPanel
+					controller={controller}
+					captureContext={captureContext}
+					onError={vi.fn()}
+					onSettings={vi.fn()}
+					onOpenSource={vi.fn()}
+				/>,
+			);
+			const input = screen.getByRole<HTMLTextAreaElement>('textbox', {
+				name: 'Ask a question',
+			});
+			const send = () =>
+				fireEvent.click(screen.getByRole('button', { name: 'Add question' }));
+			const initialDraft = '- [ ] Keep this question';
+			fireEvent.change(input, { target: { value: initialDraft } });
+			await act(async () => {
+				send();
+			});
+			const originalId = controller.state.get().questions[0]?.id;
+			expect(input.value).toBe(initialDraft);
+			expect(run).not.toHaveBeenCalled();
+			if (retrySaveFirst) {
+				fireEvent.click(screen.getByRole('button', { name: 'Retry save' }));
+				await screen.findByText('Recovered answer.');
+			}
+			if (stripChecklist)
+				fireEvent.change(input, { target: { value: 'Keep this question' } });
+			await act(async () => {
+				send();
+			});
+			await screen.findByText('Recovered answer.');
+			expect(read()?.questions.map((question) => question.id)).toEqual([
+				originalId,
+			]);
+			expect(read()?.questions[0]?.text).toBe('Keep this question');
+			expect(run).toHaveBeenCalledOnce();
+			expect(captureContext).toHaveBeenCalledOnce();
+			expect(input.value).toBe('');
+			unmount();
+			await controller.dispose();
+		},
+	);
 });
 
 describe('focused inbox question', () => {
@@ -114,7 +164,7 @@ describe('focused inbox question', () => {
 			createdAt: 1,
 			model: 'test',
 			answerInstructions: DEFAULT_ANSWER_INSTRUCTIONS,
-			state: { kind: 'answered', answer: `Answer ${id}` },
+			state: { kind: 'answered', answer: `Answer ${id}\n\n[Source](#source)` },
 		}));
 		render(
 			<QuestionFeed
@@ -122,11 +172,6 @@ describe('focused inbox question', () => {
 				onFollowUp={vi.fn()}
 				onDelete={vi.fn()}
 				onRetry={vi.fn()}
-				renderAnswer={(answer) => (
-					<p>
-						{answer} <a href="#source">Source</a>
-					</p>
-				)}
 			/>,
 		);
 		const one = screen.getByRole('article', { name: 'Question one' });

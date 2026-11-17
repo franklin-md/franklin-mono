@@ -1,17 +1,18 @@
 import { Inbox } from 'lucide-react';
-import type { KeyboardEvent, ReactNode } from 'react';
-import { useLayoutEffect, useRef, useState } from 'react';
-import type { QuestionNavigation } from './navigation.js';
+import type { KeyboardEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { QuestionSubmission } from './composer.js';
 import { QuestionCard } from './card/index.js';
 import type { StudyQuestion, QuestionSource } from '../types.js';
 import { useFeedMotion } from './use-feed-motion.js';
 
 type Props = {
 	questions: StudyQuestion[];
-	navigation?: QuestionNavigation;
-	onFollowUp: (text: string, parentId: string) => void | Promise<void>;
+	onFollowUp: (
+		submission: QuestionSubmission,
+		parentId: string,
+	) => void | Promise<void>;
 	onOpenSource?: (source: QuestionSource) => void;
-	renderAnswer?: (answer: string) => ReactNode;
 	onDelete: (id: string) => void;
 	onRetry: (id: string) => void;
 };
@@ -30,22 +31,14 @@ function dayLabel(timestamp: number) {
 	return dayFormat.format(date);
 }
 
-export function QuestionFeed({ questions, navigation, ...actions }: Props) {
+export function QuestionFeed({ questions, ...actions }: Props) {
 	const [focusedId, setFocusedId] = useState<string>();
 	const container = useRef<HTMLDivElement>(null);
 	useFeedMotion(container);
-	useLayoutEffect(() => {
-		if (!navigation) return;
-		const card = [
-			...(container.current?.querySelectorAll<HTMLElement>('article') ?? []),
-		].find((element) => element.id === `question-${navigation.questionId}`);
-		if (!card) return;
-		setFocusedId(navigation.questionId);
-		card.scrollIntoView({ block: 'nearest' });
-		card
-			.querySelector<HTMLButtonElement>('.study-question-title')
-			?.focus({ preventScroll: true });
-	}, [navigation]);
+	const newest = questions.find((question) => !question.parentId)?.id;
+	useEffect(() => {
+		if (container.current) container.current.scrollTop = 0;
+	}, [newest]);
 	const ordered = [...questions].sort(
 		(a, b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt),
 	);

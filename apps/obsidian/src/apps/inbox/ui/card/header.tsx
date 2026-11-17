@@ -107,7 +107,7 @@ export function QuestionHeader({
 			>
 				<button
 					type="button"
-					className="study-question-title flex h-auto w-full min-w-0 max-w-full cursor-pointer select-text items-start gap-2 whitespace-normal text-left text-base leading-normal font-semibold tracking-tight text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+					className="flex h-auto w-full min-w-0 max-w-full cursor-pointer select-text items-start gap-2 whitespace-normal text-left text-base leading-normal font-semibold tracking-tight text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
 					aria-expanded={focused}
 					aria-controls={footerId}
 					onClick={toggleFocus}

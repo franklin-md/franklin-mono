@@ -1,12 +1,5 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
-import type { ReadonlyStore } from '@franklin/agent';
-import {
-	Button,
-	Markdown,
-	ModelPicker,
-	PromptFooterControlGroup,
-} from '@franklin/ui';
-import type { QuestionNavigation } from './navigation.js';
+import { useSyncExternalStore } from 'react';
+import { Button, ModelPicker, PromptFooterControlGroup } from '@franklin/ui';
 import { questionSchema } from '../controller/question-schema.js';
 import type { InboxController } from '../controller/index.js';
 import type { QuestionSource } from '../types.js';
@@ -14,7 +7,6 @@ import { InboxContent } from './content.js';
 
 type Props = {
 	controller: InboxController;
-	navigation?: ReadonlyStore<QuestionNavigation | null>;
 	onOpenSource: (source: QuestionSource) => void;
 	captureContext?: (question: string) => Promise<QuestionSource | undefined>;
 	onSettings: () => void;
@@ -23,7 +15,6 @@ type Props = {
 
 export function InboxPanel({
 	controller,
-	navigation,
 	captureContext,
 	onOpenSource,
 	onSettings,
@@ -33,28 +24,14 @@ export function InboxPanel({
 		(notify) => controller.state.subscribe(notify),
 		() => controller.state.get(),
 	);
-	const navigationRequest = useSyncExternalStore(
-		(notify) => navigation?.subscribe(notify) ?? (() => {}),
-		() => navigation?.get() ?? undefined,
-	);
-	const container = useRef<HTMLDivElement>(null);
-	const newest = snapshot.questions.find((question) => !question.parentId)?.id;
-	useEffect(() => {
-		if (!navigationRequest)
-			container.current?.querySelector('.study-feed')?.scrollTo({ top: 0 });
-	}, [newest, navigationRequest]);
 	const { preferences } = snapshot;
 	const configure = (patch: Parameters<InboxController['configure']>[0]) => {
 		void controller.configure(patch).catch(onError);
 	};
 	return (
-		<div
-			className="h-full min-h-0 w-full overflow-hidden text-left font-sans text-sm leading-normal text-foreground"
-			ref={container}
-		>
+		<div className="h-full min-h-0 w-full overflow-hidden text-left font-sans text-sm leading-normal text-foreground">
 			<InboxContent
 				questions={snapshot.questions}
-				navigation={navigationRequest}
 				composerControls={
 					<PromptFooterControlGroup className="min-w-0 flex-wrap gap-1">
 						<ModelPicker
@@ -72,11 +49,15 @@ export function InboxPanel({
 				}
 				concurrency={preferences.concurrency}
 				setConcurrency={(concurrency) => configure({ concurrency })}
-				onAdd={async (text) => {
-					await controller.add(text, undefined, await captureContext?.(text));
+				onAdd={async ({ id, text }) => {
+					const isRetry = controller.state
+						.get()
+						.questions.some((q) => q.id === id);
+					const source = isRetry ? undefined : await captureContext?.(text);
+					await controller.add(text, { id, source });
 				}}
-				onFollowUp={async (text, id) => {
-					await controller.add(text, id);
+				onFollowUp={async ({ id, text }, parentId) => {
+					await controller.add(text, { id, parentId });
 				}}
 				onDelete={(id) => {
 					void controller.remove(id).catch(onError);
@@ -86,13 +67,6 @@ export function InboxPanel({
 				}}
 				onOpenSource={onOpenSource}
 				onSettings={onSettings}
-				renderAnswer={(answer) => (
-					<Markdown
-						text={answer}
-						sanitize={{ protocols: { href: ['obsidian'] } }}
-						className="prose-content text-inherit leading-[inherit]"
-					/>
-				)}
 				footer={
 					snapshot.storageError && (
 						<div

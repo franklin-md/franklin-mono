@@ -27,7 +27,10 @@ describe('inbox composer regression contract', () => {
 		await act(async () => {
 			fireEvent.keyDown(input, { key: 'Enter' });
 		});
-		expect(submit).toHaveBeenCalledExactlyOnceWith('My question');
+		expect(submit).toHaveBeenCalledExactlyOnceWith({
+			id: expect.any(String),
+			text: 'My question',
+		});
 		expect((input as HTMLTextAreaElement).value).toBe('');
 	});
 
@@ -57,7 +60,7 @@ describe('inbox composer regression contract', () => {
 		expect((input as HTMLTextAreaElement).value).toBe('');
 	});
 
-	it('C02: keeps a failed draft and permits retrying it', async () => {
+	it('C02: retries a failed draft with its original ID', async () => {
 		const submit = vi
 			.fn()
 			.mockRejectedValueOnce(new Error('disk full'))
@@ -74,6 +77,7 @@ describe('inbox composer regression contract', () => {
 			fireEvent.keyDown(input, { key: 'Enter' });
 		});
 		expect(submit).toHaveBeenCalledTimes(2);
+		expect(submit.mock.calls[1]).toEqual(submit.mock.calls[0]);
 		expect((input as HTMLTextAreaElement).value).toBe('');
 		expect(screen.queryByRole('alert')).toBeNull();
 	});

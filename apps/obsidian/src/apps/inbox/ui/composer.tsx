@@ -10,12 +10,15 @@ import {
 } from '@franklin/ui';
 import { errorMessage } from '../controller/error.js';
 
+export type QuestionSubmission = { id: string; text: string };
+
 type Props = {
 	label?: string;
 	placeholder?: string;
 	compact?: boolean;
 	controls?: ReactNode;
-	onSubmit: (text: string) => void | Promise<void>;
+	normalizeText?: (text: string) => string;
+	onSubmit: (submission: QuestionSubmission) => void | Promise<void>;
 };
 
 export function Composer({
@@ -23,20 +26,27 @@ export function Composer({
 	placeholder = 'Ask a question…',
 	compact = false,
 	controls,
+	normalizeText,
 	onSubmit,
 }: Props) {
 	const [submitting, setSubmitting] = useState(false);
 	const pending = useRef(false);
+	const submission = useRef<QuestionSubmission>();
 	const [error, setError] = useState<string>();
 	const [text, setText] = useState('');
+	const draft = normalizeText?.(text) ?? text.trim();
 	async function submit() {
-		if (!text.trim() || pending.current) return;
+		if (!draft || pending.current) return;
 		// Guard before React rerenders: Enter and a button click may arrive together.
 		pending.current = true;
 		setSubmitting(true);
 		setError(undefined);
 		try {
-			await onSubmit(text.trim());
+			if (submission.current?.text !== draft) {
+				submission.current = { id: crypto.randomUUID(), text: draft };
+			}
+			await onSubmit(submission.current);
+			submission.current = undefined;
 			setText('');
 		} catch (error) {
 			setError(errorMessage(error));
@@ -61,7 +71,7 @@ export function Composer({
 			compact={compact}
 			type="submit"
 			aria-label={compact ? 'Send follow-up' : 'Add question'}
-			disabled={!text.trim() || submitting}
+			disabled={!draft || submitting}
 		/>
 	);
 	return (

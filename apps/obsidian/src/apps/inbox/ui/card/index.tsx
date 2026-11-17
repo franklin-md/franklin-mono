@@ -1,7 +1,8 @@
-import type { MouseEvent, ReactNode } from 'react';
+import type { MouseEvent } from 'react';
 import { useId } from 'react';
 import { cn } from '@franklin/ui';
 import type { StudyQuestion, QuestionSource } from '../../types.js';
+import type { QuestionSubmission } from '../composer.js';
 import { QuestionHeader } from './header.js';
 import { QuestionBody } from './body.js';
 import { QuestionFooter } from './footer.js';
@@ -16,9 +17,11 @@ type Props = {
 	childCount: number;
 	focused: boolean;
 	onFocus: (id?: string) => void;
-	onFollowUp: (text: string, parentId: string) => void | Promise<void>;
+	onFollowUp: (
+		submission: QuestionSubmission,
+		parentId: string,
+	) => void | Promise<void>;
 	onOpenSource?: (source: QuestionSource) => void;
-	renderAnswer?: (answer: string) => ReactNode;
 	onDelete: (id: string) => void;
 	onRetry: (id: string) => void;
 };
@@ -34,7 +37,6 @@ export function QuestionCard({
 	onDelete,
 	onRetry,
 	onOpenSource,
-	renderAnswer,
 }: Props) {
 	const titleId = useId();
 	const footerId = useId();
@@ -82,11 +84,7 @@ export function QuestionCard({
 				onFocus={onFocus}
 				onDelete={onDelete}
 			/>
-			<QuestionBody
-				state={question.state}
-				expanded={focused}
-				renderAnswer={renderAnswer}
-			/>
+			<QuestionBody state={question.state} expanded={focused} />
 			<QuestionFooter
 				id={footerId}
 				focused={focused}

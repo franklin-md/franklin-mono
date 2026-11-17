@@ -1,17 +1,24 @@
-import type { ReactNode } from 'react';
-import { cn } from '@franklin/ui';
+import { Markdown, cn } from '@franklin/ui';
 import type { AnsweredQuestion } from '../types.js';
 
 type Props = {
 	answer: AnsweredQuestion;
 	expanded: boolean;
-	renderAnswer?: (text: string) => ReactNode;
 };
 
-export function QuestionAnswer({ answer, expanded, renderAnswer }: Props) {
-	const render =
-		renderAnswer ??
-		((text: string) => <p className="m-0 whitespace-pre-line">{text}</p>);
+const sanitize = { protocols: { href: ['obsidian'] } };
+
+function renderMarkdown(text: string) {
+	return (
+		<Markdown
+			text={text}
+			sanitize={sanitize}
+			className="prose-content text-inherit leading-[inherit]"
+		/>
+	);
+}
+
+export function QuestionAnswer({ answer, expanded }: Props) {
 	const showFullAnswer = expanded || answer.details !== undefined;
 	return (
 		<>
@@ -23,7 +30,7 @@ export function QuestionAnswer({ answer, expanded, renderAnswer }: Props) {
 						: 'line-clamp-3 max-h-[4.8em]',
 				)}
 			>
-				{render(answer.answer)}
+				{renderMarkdown(answer.answer)}
 			</div>
 			{!!answer.details?.length && (
 				/* A bounded grid track keeps code scrolling inside the detail at narrow widths. */
@@ -37,7 +44,7 @@ export function QuestionAnswer({ answer, expanded, renderAnswer }: Props) {
 								{detail.title}
 							</summary>
 							<div className="study-answer study-answer-expanded mt-2 pl-4 text-sm leading-relaxed text-foreground">
-								{render(detail.content)}
+								{renderMarkdown(detail.content)}
 							</div>
 						</details>
 					))}
