@@ -158,7 +158,7 @@ For custom compositions, import these parts from `@franklin/ui`:
 </ModelPickerRoot>
 ```
 
-Remove the footer for no effort control. Add other React controls to the footer as needed. The trigger supports `asChild` for a custom button. Models absent from the catalog retain their saved identity in the default trigger. The parts use the existing [Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover) and [cmdk](https://github.com/pacocoursey/cmdk) implementations for popup and command navigation; `@franklin/react` remains the headless hooks layer.
+Remove `ModelPickerSearch` for an unfiltered list, or remove the footer for no effort control. Add other React controls to the footer as needed. The trigger supports `asChild` for a custom button. Models absent from the catalog retain their saved identity in the default trigger. The parts use the existing [Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover) and [cmdk](https://github.com/pacocoursey/cmdk) implementations for popup and command navigation; `@franklin/react` remains the headless hooks layer.
 
 The parts need no agent or application harness. `ModelPickerList` renders no authentication controls unless `renderProviderAction` is supplied. The prebuilt recipe defaults to `MODEL_CATALOG` and Franklin's authentication shortcuts, which use the host's harness and `AuthActionProvider`. Override `catalog` and `renderProviderAction` on the recipe for another host, or use `() => null` to omit authentication controls.
 

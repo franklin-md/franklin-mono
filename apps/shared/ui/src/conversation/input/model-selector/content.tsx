@@ -1,12 +1,19 @@
+import { useRef } from 'react';
 import type { ComponentPropsWithoutRef } from 'react';
 import { PopoverContent } from '../../../primitives/popover.js';
 import { cn } from '../../../lib/cn.js';
 
 type Props = ComponentPropsWithoutRef<typeof PopoverContent>;
 
-export function ModelPickerContent({ className, ...props }: Props) {
+export function ModelPickerContent({
+	className,
+	onOpenAutoFocus,
+	...props
+}: Props) {
+	const content = useRef<HTMLDivElement>(null);
 	return (
 		<PopoverContent
+			ref={content}
 			side="top"
 			align="start"
 			className={cn(
@@ -14,6 +21,19 @@ export function ModelPickerContent({ className, ...props }: Props) {
 				className,
 			)}
 			{...props}
+			onOpenAutoFocus={(event) => {
+				onOpenAutoFocus?.(event);
+				if (event.defaultPrevented) return;
+				// With no search input, focus the listbox so cmdk's existing
+				// Arrow/Enter handling works without a second navigation system.
+				const target =
+					content.current?.querySelector<HTMLElement>('[cmdk-input]') ??
+					content.current?.querySelector<HTMLElement>('[cmdk-list]');
+				if (target) {
+					event.preventDefault();
+					target.focus();
+				}
+			}}
 		/>
 	);
 }
