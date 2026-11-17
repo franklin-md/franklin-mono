@@ -293,6 +293,75 @@ application handling.
 
 **Current extension API**: Extensions primarily define handlers for agent tool requests — the application-side behavior that the agent can invoke. Future iterations may expose environment mutation methods to extensions as well.
 
+### Extension stores
+
+`api.registerStore(key, initial, sharing, codec?)` registers JSON state. Keys may
+be strings or typed `StoreKey`s. Omit the fourth argument to retain unversioned
+stores: there is no schema validation or migration, and restored values take
+precedence over `initial`, even if their shape differs. Existing registrations
+and persisted values need no changes. Ordinary extension fields named `version`
+or `data` have no special meaning.
+
+Opt into schema validation and migration with the same
+[`versioned()` builder](../lib/src/persistence/codec/versioned.ts) used by
+[settings](src/settings/schema.ts):
+
+```ts
+import { storeKey } from '@franklin/agent';
+import { versioned, zodCodec } from '@franklin/lib';
+import { z } from 'zod';
+
+const counterKey = storeKey<'counter', { count: number }>('counter');
+const counterCodec = versioned()
+  .version(0, zodCodec(z.number()))
+  .version(1, zodCodec(z.object({ count: z.number() })), count => ({ count }))
+  .build();
+
+// Inside an extension:
+api.registerStore(counterKey, { count: 0 }, 'shared', counterCodec);
+```
+
+The compatibility contract is:
+
+- **Legacy values:** previously unversioned data enters the codec at version 0.
+  Declare `.version(0, legacyCodec)` followed by a migration when adopting
+  versioning for an existing store. A new store can start at version 1 without a
+  legacy step; its `initial` value already uses the current schema.
+- **Migration chains:** declare increasing, non-negative integer versions. Each
+  later `.version(n, codec, migrate)` supplies a synchronous, pure transformation
+  from the previous declared version. Labels need not be consecutive if the
+  declared migration bridges that gap. Retain every stored source version you
+  support. The codec validates the source and final shape; intermediate steps
+  are transformations, not additional validation checkpoints.
+- **Persistence:** the store snapshot's optional `schemaVersion` is separate
+  from the outer persistence-envelope version. Codec payloads must be JSON.
+  First initialization decodes a detached input, validates the result and saves
+  and flushes changed snapshots before publishing the runtime. Normal subsequent
+  updates retain debounced persistence. Successfully saved upgrades do not rerun
+  on the next restore. Validation applies to initial/restored values; `Store.set`
+  retains its existing update semantics rather than becoming a schema validator.
+- **Identity and sharing:** upgrading retains the store's UUID and live object.
+  Concurrent users await the same initialization per reference. Later users reuse
+  the ready store without decoding again. Forks retain shared instances and copy
+  private stores with their version/codec; children retain shared instances and
+  initialize fresh private stores directly at the current schema.
+- **Schema lifetime:** a live store keeps its schema until storage is restored
+  and the runtime is recreated. Adopting, removing or changing the schema version
+  of an initialized reference is rejected. Registrations sharing a reference must
+  use compatible codecs for the same version; an equivalent codec may be built
+  separately for each registration, but it does not replace the live codec.
+- **Failures:** missing source/migration steps, future versions, invalid shapes
+  and migration exceptions reject runtime creation with store name/reference and
+  error details. Session restore reports the existing `hydrate-failed` issue and
+  continues with other sessions. These failures do not replace the original
+  store value, metadata or persisted data with defaults. Write rejection also
+  prevents the live upgrade from being committed; the filesystem's existing
+  write contract does not guarantee crash-safe or atomic replacement.
+- **Downgrades:** a versioned reference requires a compatible versioned codec;
+  removing the fourth argument is rejected. Older codecs reject future versions.
+  Binaries predating this metadata cannot enforce that protection, so binary
+  rollback after adopting versioned stores is not supported.
+
 ### Relationship to PiMono
 
 Franklin's architecture can be understood as a simplified version of the [PiMono](https://github.com/nichochar/pimono) approach, narrowed to work with ACP agents specifically.

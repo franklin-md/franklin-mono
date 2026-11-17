@@ -16,3 +16,13 @@ export interface Codec<T> {
 	encode(value: T): unknown;
 	decode(raw: unknown): DecodeResult<T>;
 }
+
+export type VersionedEnvelope = {
+	version: number;
+	data: unknown;
+};
+
+/** A codec whose encoded value carries its schema version. */
+export interface VersionedCodec<T> extends Codec<T> {
+	encode(value: T): VersionedEnvelope;
+}

@@ -1,4 +1,10 @@
-import type { Codec, DecodeIssue, DecodeResult } from './types.js';
+import type {
+	Codec,
+	DecodeIssue,
+	DecodeResult,
+	VersionedCodec,
+	VersionedEnvelope,
+} from './types.js';
 
 // ---------------------------------------------------------------------------
 // Versioned codec — builder pattern chaining (version, codec, migrate) steps.
@@ -12,18 +18,13 @@ interface Step {
 	migrate?: (prev: unknown) => unknown;
 }
 
-interface Envelope {
-	version: number;
-	data: unknown;
-}
-
 export interface VersionedBuilder<Current> {
 	version<Next>(
 		n: number,
 		codec: Codec<Next>,
 		migrate: (prev: Current) => Next,
 	): VersionedBuilder<Next>;
-	build(): Codec<Current>;
+	build(): VersionedCodec<Current>;
 }
 
 export interface InitialVersionedBuilder {
@@ -54,13 +55,13 @@ function makeBuilder<Current>(steps: Step[]): VersionedBuilder<Current> {
 				},
 			]);
 		},
-		build(): Codec<Current> {
-			return new VersionedCodec<Current>(steps);
+		build(): VersionedCodec<Current> {
+			return new BaseVersionedCodec<Current>(steps);
 		},
 	};
 }
 
-class VersionedCodec<T> implements Codec<T> {
+class BaseVersionedCodec<T> implements VersionedCodec<T> {
 	private readonly sorted: Step[];
 	private readonly current: Step;
 	private readonly byVersion: Map<number, Step>;
@@ -73,7 +74,7 @@ class VersionedCodec<T> implements Codec<T> {
 		this.byVersion = new Map(this.sorted.map((s) => [s.version, s]));
 	}
 
-	encode(value: T): unknown {
+	encode(value: T): VersionedEnvelope {
 		return {
 			version: this.current.version,
 			data: this.current.codec.encode(value),
@@ -93,7 +94,7 @@ class VersionedCodec<T> implements Codec<T> {
 		return this.migrateAndValidate(decoded.value, envelope.value.version);
 	}
 
-	private parseEnvelope(raw: unknown): DecodeResult<Envelope> {
+	private parseEnvelope(raw: unknown): DecodeResult<VersionedEnvelope> {
 		if (raw === null || typeof raw !== 'object') {
 			return this.fail({
 				kind: 'envelope-invalid',
