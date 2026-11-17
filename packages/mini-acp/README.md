@@ -8,7 +8,10 @@ This is a bi-directional protocol where both parties engage at different times a
 
 The package root exports the functional Mini-ACP surface: client/agent types,
 protocol data types, stop-code helpers, stream collection helpers, usage
-defaults, and the default Pi agent factory. Context and usage tracking helpers
+defaults, and the default Pi agent factory. `getModelContextWindow(config)`
+queries that factory's existing resolver metadata without credentials, including
+Franklin-local model overrides; unresolved configs return `undefined`. This is
+a local metadata query, not a protocol method. Context and usage tracking helpers
 live under `@franklin/mini-acp/session`; protocol logging lives under
 `@franklin/mini-acp/debug`. JSON-RPC transport binding helpers live under
 `@franklin/mini-acp/rpc` so data-protocol plumbing does not become part of the

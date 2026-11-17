@@ -11,18 +11,80 @@ import { createCoreStateModule } from '../../module/index.js';
 import { emptyCoreState } from '../../state.js';
 import { createMessageEntries } from '../../../../testing/session-entries.js';
 import { franklinSessionCodec } from '../../../../app/session/codecs/index.js';
+import { estimateContextTokens } from '../tokens/context.js';
 
 const prompt = {
 	role: 'user',
 	content: [{ type: 'text', text: 'Continue the task' }],
 } satisfies Message;
 const config = {
-	provider: 'openai-codex',
-	model: 'gpt-6.1-sol',
+	// The pinned catalog gives GPT-4 an 8,192-token window. Keep lifecycle
+	// fixtures small while still reaching the selected model's real threshold.
+	provider: 'openai',
+	model: 'gpt-4',
 	apiKey: 'test-only',
 };
 
 describe('compaction through the real Pi loop and RPC transport', () => {
+	it('keeps roughly 9K tokens of research on a large-window model across idle and fresh-prompt boundaries', async () => {
+		let calls = 0;
+		let summaries = 0;
+		const tools = ['search', 'fetch', 'fetch'];
+		const connector = createPiTestConnector({
+			streamFn: (model, context) => {
+				if (getCurrentSystemPrompt(context.messages).startsWith('Summarize')) {
+					summaries += 1;
+					return response(model, [{ type: 'text', text: 'Research summary.' }]);
+				}
+				const name = tools[calls++];
+				return name
+					? response(
+							model,
+							[{ type: 'toolCall', id: `call-${calls}`, name, arguments: {} }],
+							'toolUse',
+						)
+					: response(model, [{ type: 'text', text: 'Research complete.' }]);
+			},
+		});
+		const runtime = await createRuntime(
+			createCoreStateModule(connector),
+			emptyCoreState(),
+			[
+				(api) => {
+					for (const name of ['search', 'fetch']) {
+						api.registerTool(
+							{ name, description: name, schema: z.object({}) },
+							{ execute: () => 'x'.repeat(name === 'search' ? 1000 : 17_000) },
+						);
+					}
+				},
+			],
+		);
+		await runtime.setLLMConfig({
+			provider: 'openai-codex',
+			model: 'gpt-6-astra',
+			apiKey: 'test-only',
+		});
+		try {
+			const result = await collectPrompt(runtime.prompt(prompt));
+			expect(result.turnEnd?.stopCode).toBe(StopCode.Finished);
+			expect(summaries).toBe(0);
+			const tokens = estimateContextTokens((await runtime.inspect()).core);
+			expect(tokens).toBeGreaterThan(8700);
+			expect(tokens).toBeLessThan(9500);
+			const next = await collectPrompt(runtime.prompt(prompt));
+			expect(next.turnEnd?.stopCode).toBe(StopCode.Finished);
+			expect(summaries).toBe(0);
+			expect(
+				runtime
+					.getSession()
+					.entries.some((entry) => entry.type === 'compaction'),
+			).toBe(false);
+		} finally {
+			await runtime.dispose();
+		}
+	});
+
 	it('compacts before inference, keeps history, restores and forks the compacted context', async () => {
 		const requests: PiContext[] = [];
 		const connector = createPiTestConnector({
