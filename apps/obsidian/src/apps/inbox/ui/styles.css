@@ -1,0 +1,23 @@
+/* Obsidian owns the view container and does not load Tailwind preflight. */
+.franklin.franklin-inbox-view {
+	padding: 0;
+	overflow: hidden;
+}
+
+.study-inbox,
+.study-inbox *,
+.study-inbox *::before,
+.study-inbox *::after {
+	box-sizing: border-box;
+}
+
+/* Include shared controls whose own motion styles may live outside Inbox. */
+@media (prefers-reduced-motion: reduce) {
+	.study-inbox *,
+	.study-inbox *::before,
+	.study-inbox *::after {
+		animation: none !important;
+		transition: none !important;
+		scroll-behavior: auto !important;
+	}
+}

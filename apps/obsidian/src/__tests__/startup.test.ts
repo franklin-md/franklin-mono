@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { FranklinApp } from '@franklin/agent';
 import * as obsidian from 'obsidian';
+import type { InboxController } from '../apps/inbox/controller/index.js';
 import type { App, PluginManifest } from 'obsidian';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -67,6 +68,7 @@ function createPlugin() {
 function createRuntime() {
 	return {
 		app: {} as FranklinApp,
+		inbox: null as InboxController | null,
 		getCreateInput: vi.fn(),
 		hostActionBindings: [],
 		dispose: vi.fn(),
@@ -217,5 +219,26 @@ describe('FranklinPlugin startup', () => {
 		expect(runtime.dispose).toHaveBeenCalledOnce();
 		expect(dispose).toHaveBeenCalledOnce();
 		expect(startup.unload).toHaveBeenCalledTimes(2);
+	});
+
+	it('registers Inbox alongside Chat and clears its controller on unload', async () => {
+		const runtime = createRuntime();
+		runtime.inbox = {} as InboxController;
+		startup.create.mockResolvedValue(runtime);
+		const { plugin, registerView, addCommand } = createPlugin();
+		await plugin.onload();
+		await vi.waitFor(() => expect(registerView).toHaveBeenCalledTimes(2));
+		expect(registerView.mock.calls.map(([type]) => type)).toContain(
+			'franklin-study-inbox',
+		);
+		expect(addCommand.mock.calls.map(([command]) => command.id)).toEqual([
+			'open-study-inbox',
+			'selection-to-study-inbox',
+			'open-chat-window',
+		]);
+		expect(plugin.inbox).toBe(runtime.inbox);
+		plugin.onunload();
+		expect(plugin.inbox).toBeNull();
+		expect(runtime.dispose).toHaveBeenCalledOnce();
 	});
 });

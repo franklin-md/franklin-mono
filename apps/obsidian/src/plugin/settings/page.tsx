@@ -2,22 +2,37 @@ import { useState, type ReactNode } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@franklin/ui';
 
 import { ChatSettings } from '../../apps/chat/settings/page.js';
+import type { InboxController } from '../../apps/inbox/controller/index.js';
+import { InboxSettings } from '../../apps/inbox/settings/page.js';
 import type { SettingsSection } from '../../shared/obsidian/settings/types.js';
 import { SettingGroup } from '../../shared/ui/setting/group.js';
 import { CredentialsSettings } from './credentials/index.js';
 
 type Props = {
+	inbox?: InboxController;
+	onConfigureInboxShortcut?: () => void;
 	initialSection?: SettingsSection;
 	onSectionChange?: (section: SettingsSection) => void;
 };
 
 export function SettingsPage({
+	inbox,
+	onConfigureInboxShortcut,
 	initialSection = 'general',
 	onSectionChange,
 }: Props) {
 	const [section, setSection] = useState(initialSection);
 	const panels = {
 		general: { label: 'General', content: <ChatSettings /> },
+		inbox: {
+			label: 'Inbox',
+			content: (
+				<InboxSettings
+					inbox={inbox}
+					onConfigureInboxShortcut={onConfigureInboxShortcut}
+				/>
+			),
+		},
 		connections: {
 			label: 'Connections',
 			content: (
@@ -28,14 +43,17 @@ export function SettingsPage({
 		},
 	} satisfies Record<SettingsSection, { label: string; content: ReactNode }>;
 
+	function handleSectionChange(value: string) {
+		if (value !== 'general' && value !== 'connections' && value !== 'inbox')
+			return;
+		setSection(value);
+		onSectionChange?.(value);
+	}
+
 	return (
 		<Tabs
 			value={section}
-			onValueChange={(value) => {
-				if (value !== 'general' && value !== 'connections') return;
-				setSection(value);
-				onSectionChange?.(value);
-			}}
+			onValueChange={handleSectionChange}
 			className="min-w-0"
 		>
 			<div className="sticky top-0 z-10 overflow-x-auto bg-[var(--background-primary)] py-2">

@@ -4,6 +4,8 @@ import { joinAbsolute, toAbsolutePath } from '@franklin/lib';
 import { Notice, Plugin } from 'obsidian';
 
 import { registerChat } from './apps/chat/register.js';
+import { registerInbox } from './apps/inbox/register.js';
+import type { InboxController } from './apps/inbox/controller/index.js';
 import { bootstrapPlugin } from './plugin/bootstrap.js';
 import { registerReactScan } from './dev/react-scan.js';
 import { ObsidianDiffClient } from './shared/diff/client.js';
@@ -25,6 +27,7 @@ export default class FranklinPlugin extends Plugin {
 	private directives?: DirectiveRegistry;
 	private disposeFranklinApp: (() => void) | null = null;
 	franklinApp: FranklinApp | null = null;
+	inbox: InboxController | null = null;
 	hostActionBindings: readonly HostActionBinding[] = [];
 
 	async onload() {
@@ -39,18 +42,21 @@ export default class FranklinPlugin extends Plugin {
 
 		bootstrapPlugin(this, diffClient)
 			.then((runtime) => {
-				const { app, getCreateInput, hostActionBindings } = runtime;
+				const { app, inbox, getCreateInput, hostActionBindings } = runtime;
 				// Startup may finish after Obsidian has unloaded this instance.
 				if (this.unloading) {
 					runtime.dispose();
 					return;
 				}
 				this.franklinApp = app;
+				this.inbox = inbox;
 				this.hostActionBindings = hostActionBindings;
 				this.disposeFranklinApp = () => runtime.dispose();
 				this.registerEditorExtension(editorAnchors);
 
 				this.addSettingTab(new FranklinSettingTab(this));
+				if (inbox)
+					registerInbox({ plugin: this, app, inbox, hostActionBindings });
 
 				registerChat({
 					plugin: this,
@@ -102,6 +108,7 @@ export default class FranklinPlugin extends Plugin {
 		this.disposeFranklinApp?.();
 		clearPortalRoot(activeDocument);
 		this.franklinApp = null;
+		this.inbox = null;
 		this.hostActionBindings = [];
 		this.disposeFranklinApp = null;
 	}

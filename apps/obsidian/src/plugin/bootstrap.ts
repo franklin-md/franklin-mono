@@ -6,7 +6,11 @@ import {
 	type HostActionBinding,
 } from '@franklin/react';
 import { toAbsolutePath } from '@franklin/lib';
+import { Notice } from 'obsidian';
 import type { Plugin } from 'obsidian';
+import type { InboxController } from '../apps/inbox/controller/index.js';
+import { startInbox } from '../apps/inbox/start.js';
+import { errorMessage } from '../apps/inbox/controller/error.js';
 
 import { createObsidianPlatform } from '../shared/agent/platform.js';
 import {
@@ -20,6 +24,7 @@ import { createObsidianSessionInput } from '../apps/chat/agent/session.js';
 
 interface PluginRuntime {
 	app: FranklinApp;
+	inbox: InboxController | null;
 	hostActionBindings: readonly HostActionBinding[];
 	getCreateInput: () => OrchestratorCreateInput<FranklinState>;
 	dispose: () => void;
@@ -55,17 +60,33 @@ export async function bootstrapPlugin(
 	const getCreateInput = () =>
 		createObsidianSessionInput(app, vaultRoot, plugin.app.vault.configDir);
 	if (app.agents.list().length === 0) await app.agents.create(getCreateInput());
+	const inbox = await startInbox({
+		plugin,
+		app,
+		filesystem: platform.os.filesystem,
+		appDir,
+		vaultRoot,
+	}).catch((error: unknown) => {
+		// Preserve Chat and credentials when Inbox storage needs recovery.
+		new Notice(`Study inbox unavailable: ${errorMessage(error)}`);
+		return null;
+	});
 
 	return {
 		app,
+		inbox,
 		hostActionBindings: [
 			bindHostAction(openExternalAction, (url) =>
 				platform.os.openExternal(url),
 			),
 		],
 		getCreateInput,
-		// FranklinApp has no app-wide shutdown API. Keep the existing host hook;
-		// removing agents would also delete their persisted sessions.
-		dispose: () => undefined,
+		// Inbox owns temporary agents. Removing Chat agents during plugin cleanup
+		// would also delete their persisted sessions.
+		dispose: () => {
+			void inbox?.dispose().catch((error: unknown) => {
+				new Notice(`Inbox shutdown: ${errorMessage(error)}`);
+			});
+		},
 	};
 }

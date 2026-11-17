@@ -348,6 +348,7 @@ describe('SettingsPage', () => {
 		).toBe('true');
 		expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
 			'General',
+			'Inbox',
 			'Connections',
 		]);
 		expect(

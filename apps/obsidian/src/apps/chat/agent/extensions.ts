@@ -8,21 +8,16 @@ import {
 	createWebExtension,
 	environmentInfoExtension,
 	filesystemBundle,
-	filesystemFileReferenceExtension,
-	imageDocumentReferenceExtension,
 	instructionsExtension,
 	mentionExtension,
 	referenceReadExtension,
 	spawnExtension,
 	statusExtension,
-	textDocumentReferenceExtension,
 	todoExtension,
 	viewingContextExtension,
 	webSearchProviders,
 } from '@franklin/agent';
-import { createPDFDocumentReferenceExtension } from '@franklin/extension-pdf';
-
-import { renderObsidianPDFScreenshots } from '../../../shared/agent/pdf/screenshots.js';
+import { createObsidianReferenceExtensions } from '../../../shared/agent/references.js';
 import { obsidianSystemPromptExtension } from './system-prompt.js';
 
 export function createChatExtensions(): FranklinExtension[] {
@@ -32,14 +27,6 @@ export function createChatExtensions(): FranklinExtension[] {
 		filesystemBundle.extensions.writeFile,
 		filesystemBundle.extensions.glob,
 		filesystemBundle.extensions.grep,
-	];
-	const referenceProviders = [
-		filesystemFileReferenceExtension,
-		createPDFDocumentReferenceExtension({
-			renderScreenshots: renderObsidianPDFScreenshots,
-		}),
-		imageDocumentReferenceExtension,
-		textDocumentReferenceExtension,
 	];
 
 	return [
@@ -51,7 +38,7 @@ export function createChatExtensions(): FranklinExtension[] {
 		priority.highest(obsidianSystemPromptExtension),
 		instructionsExtension.extension,
 		...filesystemTools,
-		...referenceProviders,
+		...createObsidianReferenceExtensions(),
 		mentionExtension,
 		webSearchProviders.of(createExaWebSearchProvider()),
 		webSearchProviders.of(createDuckDuckGoWebSearchProvider()),

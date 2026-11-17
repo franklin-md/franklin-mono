@@ -11,6 +11,7 @@ filesystem/platform integration inside the plugin runtime.
 - `src/main.ts` owns the Obsidian plugin lifecycle and guards asynchronous startup against unload.
 - `src/plugin/` contains runtime construction and global settings/credentials.
 - `src/apps/chat/` contains Chat registration, extensions, sessions, UI, viewing context, and Chat settings.
+- `src/apps/inbox/` contains the Study Inbox queue, persistence, note capture/navigation, structured answers and settings. See its [scope and behavior](src/apps/inbox/README.md).
 - `src/shared/obsidian/` contains filesystem, path, auth, wikilink, and settings-opening helpers.
 - `src/shared/agent/` contains the Obsidian platform adapter and PDF screenshot renderer.
 - `src/shared/ui/` contains React mounting, portals, host context, and Obsidian setting primitives.
@@ -28,12 +29,13 @@ unknown references remain readable text. Instance garbage collection is deferred
 ## Settings
 
 - **General** contains Chat defaults such as sharing open notes with new agents.
+- **Inbox** contains answer instructions, reasoning defaults and the native selection-command shortcut. The Inbox composer saves its model selection, and Inbox options control concurrency.
 - **Connections** contains the existing provider credentials and ChatGPT sign-in controls. Requests to configure credentials open this tab directly.
 - Switching sections keeps their React state, including OAuth feedback. Inactive panels are hidden from keyboard navigation and assistive technology. Closing settings unmounts the page; reopening remembers the last section for the current plugin instance.
 
 Franklin text-size utilities follow Obsidian's text-size preference. Obsidian's native aria-label hover tooltips are suppressed within Franklin views and portals; accessible labels remain intact.
 
-The startup guard prevents late host registration after unload and safely handles unloading before initialization finishes. Application-wide agent shutdown retains the SDK's existing behavior: `FranklinApp` currently has no shutdown method. No session-removal calls are used for plugin cleanup.
+The startup guard prevents late host registration after unload and safely handles unloading before initialization finishes. Inbox owns and cancels its temporary attempts independently of pane lifetime. Unreadable or unsupported Inbox storage is preserved without blocking Chat. Application-wide Chat agent shutdown retains the SDK's existing behavior: `FranklinApp` currently has no shutdown method. No session-removal calls are used for plugin cleanup.
 
 ## Requirements
 

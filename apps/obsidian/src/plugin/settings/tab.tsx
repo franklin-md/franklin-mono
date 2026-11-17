@@ -2,6 +2,7 @@ import { ApplicationProvider } from '@franklin/ui';
 import { PluginSettingTab } from 'obsidian';
 
 import type FranklinPlugin from '../../main.js';
+import { openInboxHotkeys } from '../../apps/inbox/host/open-hotkeys.js';
 import { createMounter, type Mounter } from '../../shared/ui/mount.js';
 import type { SettingsSection } from '../../shared/obsidian/settings/types.js';
 
@@ -36,6 +37,8 @@ export class FranklinSettingTab extends PluginSettingTab {
 				hostActionBindings={this.plugin.hostActionBindings}
 			>
 				<SettingsPage
+					inbox={this.plugin.inbox ?? undefined}
+					onConfigureInboxShortcut={() => openInboxHotkeys(this.plugin.app)}
 					initialSection={this.section}
 					onSectionChange={(section) => {
 						this.section = section;
