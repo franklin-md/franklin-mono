@@ -1,0 +1,52 @@
+import { useAuthEntries, useOAuthLogin } from '@franklin/react';
+import { Button, OpenAICodexLoginButton } from '@franklin/ui';
+
+import { SettingControl } from '../../../shared/ui/setting/control.js';
+import { SettingDescription } from '../../../shared/ui/setting/description.js';
+import { SettingInfo } from '../../../shared/ui/setting/info.js';
+import { SettingItem } from '../../../shared/ui/setting/item.js';
+import { ProviderName } from './provider-name.js';
+
+const OPENAI_CODEX_PROVIDER = 'openai-codex';
+
+export function ChatGPTLoginField() {
+	const { isOAuthSignedIn } = useAuthEntries();
+	const { state, pending, handleLogin, remove } = useOAuthLogin(
+		OPENAI_CODEX_PROVIDER,
+	);
+	const signedIn = isOAuthSignedIn(OPENAI_CODEX_PROVIDER);
+
+	return (
+		<SettingItem>
+			<SettingInfo>
+				<ProviderName provider={OPENAI_CODEX_PROVIDER}>ChatGPT</ProviderName>
+				<SettingDescription>
+					{signedIn
+						? 'Signed in to ChatGPT.'
+						: 'Sign in to use OpenAI Codex models.'}
+					{state.phase === 'error' && ` ${state.message}`}
+				</SettingDescription>
+			</SettingInfo>
+			<SettingControl>
+				{signedIn ? (
+					<Button
+						disabled={pending}
+						size="sm"
+						variant="outline"
+						onClick={remove}
+					>
+						Sign out
+					</Button>
+				) : (
+					<OpenAICodexLoginButton
+						providerName="Sign in with ChatGPT"
+						isLoading={pending}
+						onClick={() => {
+							void handleLogin();
+						}}
+					/>
+				)}
+			</SettingControl>
+		</SettingItem>
+	);
+}
