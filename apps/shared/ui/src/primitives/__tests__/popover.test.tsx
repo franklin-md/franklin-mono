@@ -8,11 +8,7 @@ import {
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from '../../primitives/popover.js';
+import { Popover, PopoverContent, PopoverTrigger } from '../popover.js';
 
 beforeEach(() => {
 	vi.stubGlobal(
@@ -42,16 +38,7 @@ function renderPopover(children: ReactNode) {
 				}}
 			>
 				<PopoverTrigger>Open tools</PopoverTrigger>
-				<PopoverContent
-					aria-label="Edit tools"
-					side="top"
-					align="center"
-					sideOffset={6}
-					collisionPadding={8}
-					className="w-max max-w-[calc(100vw-1rem)] max-h-[var(--radix-popover-content-available-height)] overflow-auto p-1"
-				>
-					{children}
-				</PopoverContent>
+				<PopoverContent aria-label="Edit tools">{children}</PopoverContent>
 			</Popover>
 		);
 	}
