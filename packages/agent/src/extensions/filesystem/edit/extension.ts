@@ -4,15 +4,16 @@ import type { EnvironmentModule } from '../../../modules/environment/index.js';
 import type { StoreModule } from '../../../modules/store/index.js';
 import { createFileControl } from '../common/control.js';
 import { fileKey } from '../common/key.js';
-import { sha256Hex } from '../hash.js';
-import { findUnique } from './match/find-unique.js';
-import { applyReplacement } from './replace.js';
-import { decode } from './text/encoding.js';
+import { decode } from '../common/text/encoding.js';
 import {
 	detectLineEnding,
 	normalizeToLF,
 	restoreLineEndings,
-} from './text/line-endings.js';
+} from '../common/text/line-endings.js';
+import { findUnique } from './match/find-unique.js';
+import { linesTouchedByMatch } from './match/lines-touched.js';
+import { mapMatchToCurrentText } from './match/map-to-current-text.js';
+import { applyReplacement } from './replace.js';
 import { editFileSpec } from './tools.js';
 
 /**
@@ -34,8 +35,7 @@ export function editExtension() {
 			api.registerTool(editFileSpec, {
 				execute: async ({ path, old_text, new_text, replace_all }, ctx) => {
 					const env = ctx.environment;
-					const store = ctx.getStore(fileKey);
-					const file = createFileControl(store);
+					const file = createFileControl(ctx.getStore(fileKey));
 					// 1. Read + decode
 					const absPath = await env.filesystem.resolve(path);
 					let bytes: Uint8Array;
@@ -47,19 +47,13 @@ export function editExtension() {
 						throw new Error(message);
 					}
 
-					const hash = sha256Hex(bytes);
-
-					const fileRecord = store.get()[absPath];
-					if (fileRecord === undefined) {
-						const message = 'File cannot be edited if you have never read it.';
-						console.error(`[edit_file] ${message} (path: ${path})`);
-						throw new Error(message);
-					}
-
-					const changed =
-						(typeof fileRecord === 'string' ? fileRecord : fileRecord.hash) !==
-						hash;
-					if (changed && (typeof fileRecord === 'string' || replace_all)) {
+					const saved = await file.getSnapshot(env.filesystem, absPath);
+					const changed = await file.changedSinceRead(
+						env.filesystem,
+						absPath,
+						bytes,
+					);
+					if (changed && (saved.text === undefined || replace_all)) {
 						const message = `File has changed since last read. Reread ${path} before editing without a text snapshot or using replace_all.`;
 						console.error(`[edit_file] ${message} (path: ${path})`);
 						throw new Error(message);
@@ -83,11 +77,8 @@ export function editExtension() {
 						}
 						replaced = normalized.split(normalizedOld).join(normalizedNew);
 					} else {
-						// 3b. Find unique match
-						const snapshot =
-							typeof fileRecord === 'string'
-								? normalized
-								: normalizeToLF(fileRecord.text);
+						// 3b. Find a unique match in the saved snapshot
+						const snapshot = normalizeToLF(saved.text ?? text);
 						const match = findUnique(snapshot, normalizedOld);
 
 						if (!match.found) {
@@ -101,24 +92,43 @@ export function editExtension() {
 							throw new Error(message);
 						}
 
-						const target = changed
-							? match.fuzzy
+						if (changed) {
+							const targetLines = match.fuzzy
 								? undefined
-								: currentMatchRange(snapshot, text, match.index, match.length)
-							: match;
-						if (target === undefined) {
-							throw new Error(
-								`Target lines have changed or shifted since last read, or the edit requires fuzzy matching. Reread ${path} before retrying.`,
+								: linesTouchedByMatch(snapshot, match.index, match.length);
+							if (
+								!targetLines ||
+								(await file.changedSinceRead(
+									env.filesystem,
+									absPath,
+									bytes,
+									targetLines,
+								))
+							) {
+								throw new Error(
+									`Target lines have changed or shifted since last read, or the edit requires fuzzy matching. Reread ${path} before retrying.`,
+								);
+							}
+							const target = mapMatchToCurrentText(
+								snapshot,
+								text,
+								match.index,
+								match.length,
+							);
+							replaced = applyReplacement(
+								text,
+								target.index,
+								target.length,
+								restoreLineEndings(normalizedNew, ending),
+							);
+						} else {
+							replaced = applyReplacement(
+								match.content,
+								match.index,
+								match.length,
+								normalizedNew,
 							);
 						}
-						replaced = applyReplacement(
-							changed ? text : match.content,
-							target.index,
-							target.length,
-							changed
-								? restoreLineEndings(normalizedNew, ending)
-								: normalizedNew,
-						);
 					}
 
 					// 4. Verify change
@@ -143,41 +153,4 @@ export function editExtension() {
 			});
 		},
 	);
-}
-
-function currentMatchRange(
-	snapshot: string,
-	current: string,
-	index: number,
-	length: number,
-): { index: number; length: number } | undefined {
-	if (length === 0) return undefined;
-	// Keep newline terminators: a match ending at a newline touches that line,
-	// not the next one. Compare whole lines, never search/remap the current text.
-	const savedLines = snapshot.match(/[^\n]*\n|[^\n]+$/g) ?? [];
-	const currentLines = current.match(/[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$/g) ?? [];
-	const first = snapshot.slice(0, index).split('\n').length - 1;
-	const last = snapshot.slice(0, index + length - 1).split('\n').length - 1;
-	if (
-		savedLines
-			.slice(first, last + 1)
-			.some(
-				(line, offset) =>
-					line !== normalizeToLF(currentLines[first + offset] ?? ''),
-			)
-	) {
-		return undefined;
-	}
-	// Recompute offsets from current line lengths, retaining its raw line endings.
-	const start =
-		currentLines.slice(0, first).join('').length +
-		index -
-		savedLines.slice(0, first).join('').length;
-	const endLine = snapshot.slice(0, index + length).split('\n').length - 1;
-	const end =
-		currentLines.slice(0, endLine).join('').length +
-		index +
-		length -
-		savedLines.slice(0, endLine).join('').length;
-	return { index: start, length: end - start };
 }

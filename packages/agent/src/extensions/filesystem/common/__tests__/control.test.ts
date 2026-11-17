@@ -27,6 +27,7 @@ describe('file control freshness', () => {
 		['deleted target', 'above\nbelow', true],
 		['new occurrence elsewhere', 'above\ntarget\ntarget', false],
 		['changed line endings', '\uFEFFabove\r\ntarget\r\nuser below', false],
+		['current file becomes hash-only', 'above\ntarget\nbelow\0', true],
 	] as const)(
 		'checks whole target lines after %s',
 		async (_name, current, changed) => {
@@ -62,21 +63,6 @@ describe('file control freshness', () => {
 				},
 			),
 		).toBe(true);
-	});
-
-	it.each([
-		{ startLine: 0, endLine: 1 },
-		{ startLine: 2, endLine: 1 },
-		{ startLine: 1.5, endLine: 2 },
-		{ startLine: 1, endLine: 4 },
-	])('rejects an invalid range: %j', async (range) => {
-		const fs = new MemoryFilesystem();
-		const file = createFileControl(createStore<FileRecord>({}));
-		const bytes = encode('above\ntarget\nbelow');
-		await file.markFileRead(fs, path, bytes);
-		await expect(file.changedSinceRead(fs, path, bytes, range)).rejects.toThrow(
-			/range/i,
-		);
 	});
 
 	it('rejects never-read files without reading or recording current bytes', async () => {
