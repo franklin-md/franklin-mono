@@ -25,7 +25,7 @@ Known limitation: this checks hostnames and IP literals, not resolved addresses.
 
 ## Saved sessions
 
-Session version 4 migrates only the two known v1–v3 defaults: empty lists, or empty allows with the SDK's complete localhost debug-port deny list. Both adopt the new unrestricted network default, including private access. Custom legacy policies produce a restore issue requiring explicit reconfiguration; they are not silently translated or overwritten. New policies use the rules above, with no legacy interpretation.
+Session version 4 resets every v1–v3 network policy, including custom allow/deny rules, to the unrestricted default: `allowedDomains: ['*']`, `deniedDomains: []`. Policies saved as v4 retain their configured rules without legacy interpretation.
 
 ## Runtime boundary
 

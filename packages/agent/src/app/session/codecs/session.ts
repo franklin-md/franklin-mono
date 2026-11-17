@@ -50,7 +50,8 @@ export const franklinSessionCodec: Codec<FranklinSession> = versioned()
 		...prev,
 		env: {
 			...prev.env,
-			// Freeze the v4 policy: future app defaults must not change old restores.
+			// Reset all legacy policies to the v4 default, including custom rules.
+			// Freeze it here so future app defaults do not change old restores.
 			netConfig: {
 				allowedDomains: ['*'],
 				deniedDomains: [],

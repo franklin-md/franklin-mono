@@ -38,13 +38,21 @@ function decode(netConfig: NetworkPermissions, version = 3) {
 	if (!result.ok) throw new Error(JSON.stringify(result.issue));
 	return result.value;
 }
-describe('persisted network defaults', () => {
-	it.each([1, 2, 3])('migrates only known v%i defaults', (version) => {
+describe('persisted network policy', () => {
+	it.each([1, 2, 3])('resets every v%i policy to the v4 default', (version) => {
 		const debugDenies = ['localhost', '127.0.0.1', '[::1]'].flatMap((host) =>
 			[5005, 5678, 9222, 9229].map((port) => `${host}:${port}`),
 		);
-		for (const deniedDomains of [[], debugDenies.reverse()]) {
-			const session = decode({ allowedDomains: [], deniedDomains }, version);
+		for (const config of [
+			{ allowedDomains: [], deniedDomains: [] },
+			{ allowedDomains: [], deniedDomains: debugDenies },
+			{ allowedDomains: ['example.com'], deniedDomains: [] },
+			{ allowedDomains: [], deniedDomains: ['blocked.example.com'] },
+			{ allowedDomains: [], deniedDomains: ['localhost:9229'] },
+		]) {
+			const original = structuredClone(config);
+			const session = decode(config, version);
+			expect(config).toEqual(original);
 			expect(session.env.netConfig).toEqual({
 				allowedDomains: ['*'],
 				deniedDomains: [],
@@ -55,26 +63,6 @@ describe('persisted network defaults', () => {
 				franklinSessionCodec.decode(franklinSessionCodec.encode(session)),
 			).toEqual({ ok: true, value: session });
 		}
-	});
-
-	it.each([
-		{ allowedDomains: ['example.com'], deniedDomains: [] },
-		{ allowedDomains: [], deniedDomains: ['blocked.example.com'] },
-		{ allowedDomains: [], deniedDomains: ['localhost:9229'] },
-	])('reports custom legacy policy without modifying it: %j', (netConfig) => {
-		const original = structuredClone(netConfig);
-		const result = franklinSessionCodec.decode({
-			version: 3,
-			data: data(netConfig),
-		});
-		expect(result).toMatchObject({
-			ok: false,
-			issue: { kind: 'schema-mismatch' },
-		});
-		expect(JSON.stringify(result)).toContain(
-			'requires explicit reconfiguration',
-		);
-		expect(netConfig).toEqual(original);
 	});
 
 	it('roundtrips new closed, unrestricted and custom policies without migration', () => {

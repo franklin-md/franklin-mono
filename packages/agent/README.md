@@ -174,8 +174,8 @@ inherit config, and reset usage/tool policy. Projection scans the log on restore
 and checkpoint append; checkpoints reduce model context, not storage or snapshot
 copy costs. No Mini-ACP protocol, adapter or execution-loop changes are involved.
 
-Version 4 migrates the known SDK and Obsidian/sidebar network defaults to explicit
-unrestricted network access (`allowedDomains: ['*']`). Custom legacy network policies require explicit reconfiguration.
+Version 4 resets all older network policies, including custom rules, to unrestricted
+network access (`allowedDomains: ['*']`, `deniedDomains: []`).
 See [network rule semantics and compatibility](../lib/src/network/README.md).
 
 ### Compaction

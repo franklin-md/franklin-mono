@@ -17,27 +17,12 @@ const NetworkPermissionsV1 = z.object({
 	deniedDomains: z.array(z.string()),
 });
 
-// Frozen pre-v4 SDK default. Obsidian/sidebar used empty lists. These known
-// defaults adopt v4's intentionally unrestricted network default on restore.
-const legacyDeniedPorts = new Set(
-	['localhost', '127.0.0.1', '[::1]'].flatMap((host) =>
-		[5005, 5678, 9222, 9229].map((port) => `${host}:${port}`),
-	),
-);
-
 export const EnvironmentSessionV1 = z.object({
 	fsConfig: z.object({
 		cwd: AbsolutePathV1,
 		permissions: FilesystemPermissionsV1,
 	}),
-	netConfig: NetworkPermissionsV1.refine(
-		({ allowedDomains, deniedDomains }) =>
-			allowedDomains.length === 0 &&
-			(deniedDomains.length === 0 ||
-				(new Set(deniedDomains).size === legacyDeniedPorts.size &&
-					deniedDomains.every((entry) => legacyDeniedPorts.has(entry)))),
-		'Custom legacy network policy requires explicit reconfiguration; only default policies migrate automatically',
-	),
+	netConfig: NetworkPermissionsV1,
 });
 
 export const EnvironmentSessionV2 = EnvironmentSessionV1.extend({
