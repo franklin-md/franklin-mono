@@ -1,4 +1,5 @@
-import type { StreamEvent, UserContent, UserMessage } from '@franklin/mini-acp';
+import type { UserContent, UserMessage } from '@franklin/mini-acp';
+import type { TurnStreamEvent } from '../turn/types.js';
 import type { Prompt, PromptHandler } from '../api/prompt.js';
 import type { CoreRegistry } from '../registrations/index.js';
 
@@ -12,7 +13,7 @@ export function createPromptBuilder(
 
 export function createPromptObservers(
 	registrations: CoreRegistry,
-): (event: StreamEvent) => void {
+): (event: TurnStreamEvent) => void {
 	const observers = {
 		turnStart: registrations.handlersFor('turnStart'),
 		chunk: registrations.handlersFor('chunk'),

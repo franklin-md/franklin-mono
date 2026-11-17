@@ -33,3 +33,18 @@ export function turns(t: Transcript): Transcript[] {
 	if (start !== -1) result.push(t.slice(start));
 	return result;
 }
+
+/** Slices by drive, including no-op continuations with no received events. */
+export function steps(t: Transcript): Transcript[] {
+	const result: Transcript[] = [];
+	let start = -1;
+	for (let i = 0; i < t.length; i++) {
+		const e = t[i];
+		if (e && (match(e, 'send', 'prompt') || match(e, 'send', 'continue'))) {
+			if (start !== -1) result.push(t.slice(start, i));
+			start = i;
+		}
+	}
+	if (start !== -1) result.push(t.slice(start));
+	return result;
+}

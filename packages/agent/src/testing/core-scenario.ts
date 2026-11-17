@@ -1,4 +1,5 @@
-import type { Context, UserMessage, StreamEvent } from '@franklin/mini-acp';
+import type { Context, UserMessage } from '@franklin/mini-acp';
+import type { TurnStreamEvent } from '../modules/core/turn/types.js';
 import { ZERO_USAGE } from '@franklin/mini-acp';
 import {
 	createMockMiniACP,
@@ -29,13 +30,13 @@ export type CoreScenario = {
 	readonly mock: MockMiniACP;
 	readonly module: CoreStateModule;
 	readonly runtime: CoreRuntime;
-	collectPrompt(prompt?: CoreScenarioPrompt): Promise<StreamEvent[]>;
+	collectPrompt(prompt?: CoreScenarioPrompt): Promise<TurnStreamEvent[]>;
 	state(): Promise<CoreState>;
 	dispose(): Promise<void>;
 };
 
 export type CoreScenarioResult = {
-	readonly events: StreamEvent[];
+	readonly events: TurnStreamEvent[];
 	readonly calls: MockMiniACPRecording;
 	readonly context: Context;
 	readonly state: CoreState;
@@ -117,7 +118,7 @@ export async function runCoreScenario(
 export function emptyCoreScenarioState(): CoreState {
 	return {
 		core: {
-			messages: [],
+			entries: [],
 			llmConfig: {},
 			usage: ZERO_USAGE,
 			toolFilter: { disabled: [] },

@@ -3,8 +3,9 @@
 //
 // Requires OPENCODE_GO_API_KEY in env or in .env resolved from Vitest's cwd.
 // Skips when no key is available.
-// Exercises both OpenCode Go API-compatible surfaces through Mini-ACP context:
+// Exercises every OpenCode Go API-compatible surface through Mini-ACP context:
 // - openai-completions via https://opencode.ai/zen/go/v1
+// - openai-responses via https://opencode.ai/zen/go/v1
 // - anthropic-messages via https://opencode.ai/zen/go
 // ---------------------------------------------------------------------------
 
@@ -15,11 +16,15 @@ import { itCompletesSimpleTextPrompt } from './utils/pi-agent-integration.js';
 const OPENCODE_GO_CASES = [
 	{
 		name: 'OpenAI-compatible endpoint',
-		model: 'deepseek-v4-flash',
+		model: 'glm-5.3-flash',
+	},
+	{
+		name: 'OpenAI Responses-compatible endpoint',
+		model: 'muse-spark-1.3-contributor',
 	},
 	{
 		name: 'Anthropic-compatible endpoint',
-		model: 'minimax-m2.7',
+		model: 'qwen3.8-flash',
 	},
 ] as const;
 

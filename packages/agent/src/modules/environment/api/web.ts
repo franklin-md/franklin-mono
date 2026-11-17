@@ -6,7 +6,7 @@ import { decorate, withPolicy, withUserAgent } from '@franklin/lib';
 /**
  * Composes the WebAPI that the environment exposes to extensions.
  *
- *   withPolicy             — innermost: allow/deny/loopback/SSRF checks
+ *   withPolicy             — innermost: configured network allow/deny rules
  *   withUserAgent          — outermost: default user-agent when the caller
  *                            didn't set one
  *

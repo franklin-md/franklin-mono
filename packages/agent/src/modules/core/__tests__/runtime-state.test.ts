@@ -55,7 +55,7 @@ describe('core runtime protocol state', () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
-					messages: [seedMessage],
+					entries: [{ type: 'message' as const, message: seedMessage }],
 					llmConfig: {
 						model: 'seed-model',
 						provider: 'seed-provider',
@@ -239,7 +239,7 @@ describe('core runtime protocol state', () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: {},
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: ['seed_tool'] },
@@ -313,7 +313,7 @@ describe('core runtime protocol state', () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
-					messages: [seedMessage],
+					entries: [{ type: 'message' as const, message: seedMessage }],
 					llmConfig: { model: 'seed-model' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: [] },
@@ -426,7 +426,12 @@ describe('core runtime protocol state', () => {
 						content: [{ type: 'text', text: 'hello' }],
 					},
 				},
-				{ type: 'turnEnd', stopCode: StopCode.Finished },
+				{
+					type: 'turnEnd',
+					stopCode: StopCode.Finished,
+					stepUsage: ZERO_USAGE,
+					usage: ZERO_USAGE,
+				},
 			]);
 		} finally {
 			await scenario.dispose();
@@ -447,7 +452,7 @@ describe('core runtime protocol state', () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: {
 						model: 'seed-model',
 						provider: 'seed-provider',
@@ -478,8 +483,11 @@ describe('core runtime protocol state', () => {
 			await scenario.collectPrompt('hi');
 
 			const state = await scenario.state();
-			expect(state.core.messages).toContainEqual(defaultUserPrompt());
-			expect(state.core.messages).toContainEqual({
+			const messages = state.core.entries.flatMap((entry) =>
+				entry.type === 'message' ? [entry.message] : [],
+			);
+			expect(messages).toContainEqual(defaultUserPrompt());
+			expect(messages).toContainEqual({
 				role: 'assistant',
 				content: [{ type: 'text', text: 'hello' }],
 			});
@@ -492,7 +500,7 @@ describe('core runtime protocol state', () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: {
 						model: 'seed-model',
 						provider: 'seed-provider',
@@ -528,7 +536,7 @@ describe('core runtime protocol state', () => {
 			turns: [turn([text('hello'), turnEnd({ usage: turnUsage })])],
 			state: {
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: { model: 'test' },
 					usage: ZERO_USAGE,
 					toolFilter: { disabled: ['set_chat_title'] },
@@ -542,8 +550,8 @@ describe('core runtime protocol state', () => {
 			const forked = await scenario.module.state(scenario.runtime).fork();
 			const state = await scenario.state();
 
-			expect(forked.core.messages).toEqual(state.core.messages);
-			expect(forked.core.messages).not.toBe(state.core.messages);
+			expect(forked.core.entries).toEqual(state.core.entries);
+			expect(forked.core.entries).not.toBe(state.core.entries);
 			expect(forked.core.llmConfig.model).toBe('test');
 			expect(forked.core.usage).toEqual(ZERO_USAGE);
 			expect(forked.core.toolFilter).toEqual(state.core.toolFilter);
@@ -562,10 +570,13 @@ describe('core runtime protocol state', () => {
 			turns: [turn([text('hello'), turnEnd({ usage: turnUsage })])],
 			state: {
 				core: {
-					messages: [
+					entries: [
 						{
-							role: 'user',
-							content: [{ type: 'text', text: 'seed' }],
+							type: 'message' as const,
+							message: {
+								role: 'user',
+								content: [{ type: 'text', text: 'seed' }],
+							},
 						},
 					],
 					llmConfig: { model: 'test' },
@@ -579,7 +590,7 @@ describe('core runtime protocol state', () => {
 			await scenario.collectPrompt();
 
 			const child = await scenario.module.state(scenario.runtime).child();
-			expect(child.core.messages).toEqual([]);
+			expect(child.core.entries).toEqual([]);
 			expect(child.core.llmConfig.model).toBe('test');
 			expect(child.core.usage).toEqual(ZERO_USAGE);
 			expect(child.core.toolFilter).toEqual({ disabled: [] });
@@ -598,7 +609,7 @@ describe('core runtime protocol state', () => {
 			turns: [turn([turnEnd({ usage: turnUsage })])],
 			state: {
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: {},
 					usage: seededUsage,
 					toolFilter: { disabled: [] },
@@ -626,7 +637,7 @@ describe('core runtime protocol state', () => {
 		const scenario = await createCoreScenario({
 			state: {
 				core: {
-					messages: [],
+					entries: [],
 					llmConfig: {},
 					usage: usage(50, 20),
 					toolFilter: { disabled: [] },

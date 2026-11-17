@@ -55,27 +55,55 @@ controller owns the application-side Mini-ACP session policy above the raw
 connector:
 
 - **Prompt** — syncs context before a turn, builds the model-visible user
-  prompt from prompt handlers, forwards the prompt, observes stream events, and
-  records the final prompt plus assistant updates.
+  prompt from prompt handlers, drives one Mini-ACP prompt followed by explicit
+  continuations, observes stream events, and records the final prompt plus
+  assistant updates.
 - **Tool** — exposes registered application tool handlers to the agent, falls
   back for unknown tools, notifies tool observers, and records tool calls and
   results.
 - **Context** — keeps desired session state separate from the last successfully
   sent Mini-ACP context so retries and patch-only updates are explicit.
-- **Usage** — accumulates turn usage from `turnEnd` events for the runtime
-  session projection.
+- **Usage** — accumulates each terminal's `stepUsage` once for the runtime
+  session projection, keeping cumulative `turnEnd.usage` for turn observers.
 
 The controller exposes the reverse-RPC server passed to the connector and binds
 the connected `MiniACPClientHandle` into the handle consumed by `CoreRuntime`.
 `CoreRuntime` remains the public facade for prompt, cancel, LLM config, tool
 enablement, session projection, inspect, and lifecycle events.
 
+The controller consumes `stepEnd` internally, synchronizes ordinary context at
+the guaranteed idle boundary, then calls `continue`. `runtime.prompt()` and its
+observers still see one logical user turn with one `turnStart` and one
+`turnEnd`; no UI step lifecycle or persistence format is added. Cancellation
+requested during boundary synchronization is drained by the next continuation
+without another provider request.
+
+Runtime terminal codes extend the numeric Mini-ACP code space in
+`@franklin/agent`: 10,000–19,999 is reserved for runtime outcomes, beginning
+with `RuntimeStopCode.CompactionFailure = 10_000`. `AgentStopCode` accepts
+both protocol and runtime codes; `AgentTurnEnd`, stream observers, conversation
+blocks and renderers use that wider type. `agentStopCategory()` classifies
+runtime failures as `runtime_error`. Use `collectPrompt()` to collect runtime
+streams; Mini-ACP's `collect()` continues to collect protocol streams.
+
+The controller owns one active operation and its cancellation signal, shared
+with summarization. A preparation failure emits one public
+`turnEnd(CompactionFailure)`; user cancellation emits `turnEnd(Cancelled)`.
+Before initial inference there is no raw turn to cancel, so this terminal can
+occur without a preceding protocol `turnStart`. At a paused boundary the
+controller cancels and drains the raw turn before publishing its own terminal.
+Previously recorded step usage is retained and the drained cancellation is not
+counted again. The operation is released before terminal observers run so a
+new prompt can start immediately. Session state owns context/history/usage,
+without a separate active-operation lifecycle. Manual compaction's existing
+promise API is retained; its extended lifecycle contract remains deferred.
+
 ### Context State
 
 The core controller keeps internal context state that splits desired session
 state from the last successfully sent Mini-ACP context. A `SessionDraft` is
 constructed from a hydrated `SessionSnapshot` and stores the durable session
-base: messages, non-secret LLM config, and the session-local tool filter.
+base: typed history entries, non-secret LLM config, and the session-local tool filter.
 Runtime-only contributions such as the registration-built system prompt and live
 tool definitions are attached as drafters. `commit()` runs those drafters
 against a scratch context, records field revisions, and returns the Mini-ACP
@@ -94,14 +122,106 @@ usage into this internal state.
 The public runtime exposes `getSession()` as a safe projection to
 `SessionSnapshot` for consumers that need the dehydrated session view. The
 state-module layer uses the same projection for persistence, fork, and
-child-session creation. `SessionSnapshot` intentionally remains narrower than
-`Context`: it keeps model-visible messages, non-secret LLM config, and usage,
+child-session creation. `SessionSnapshot` is distinct from
+`Context`: it keeps durable history entries, non-secret LLM config, and usage,
 plus the session-local tool filter, while system prompt text, registered tool
 schemas, and API keys stay runtime-only. Runtime inspect uses a separate
 redacted `inspect()` projection for debug UI so callers never need hidden access
-to internal context state. Future persisted state may become a richer superset of
-what Mini-ACP receives, including compaction points or other checkpoints
-projected into the next Mini-ACP context.
+to internal context state.
+
+### Durable History and Projection
+
+**Compatibility change:** `SessionSnapshot.messages: Message[]` is replaced by
+`SessionSnapshot.entries: SessionEntry[]`, including the value returned by
+`runtime.getSession()`. Each `message` entry wraps its original Mini-ACP message.
+A `compaction` checkpoint contains a summary. It hides everything before it from
+the model, including any earlier summary. Checkpoints do not delete messages or
+earlier checkpoints from the durable history.
+
+The pure [history projector](src/modules/core/history/project.ts) reduces entries
+in order with two transitions: a message appends to the visible list; a
+checkpoint replaces that list with its summary. Messages after the checkpoint
+then accumulate normally. Entries are ordered by their position in the log and
+have no IDs. Projection returns Mini-ACP messages directly. Validation checks
+nonblank summaries separately from these transitions. Summaries appear as user
+messages prefixed with `Conversation summary:`. A later summary must cover the
+whole prefix it replaces, including the previous summary. There is no retained-tail boundary.
+Summary generation and choosing when to append a checkpoint are outside this
+package's history foundation.
+
+Hydration projects entries into the existing Mini-ACP context. Ordinary context
+synchronization records successful sends only in the sent-context tracker; it
+never writes that projection back into durable history. Failed sends leave the
+same entries and pending projection available for retry. Inspect still reports
+the last successfully sent model context, with secrets redacted.
+
+An **explicit `messages` patch** through the bound client's `setContext` (or the
+internal `SessionDraft.apply`) is a deliberate context reset: it replaces the
+durable log with new message entries and removes earlier messages
+and checkpoints. An empty array clears the log. Config, system-prompt and tool
+patches preserve the log. This retains baseline explicit replacement semantics;
+it is not a synchronization or compaction API. Callers must not feed projected
+messages into this reset path. Preserving discarded history across explicit
+resets would require a separately designed reset event.
+
+The [session codec](src/app/session/codecs/session.ts) writes version 4 and
+migrates v1/v2 flat messages by wrapping each message as a typed entry.
+V1 defaults to visible details; v2 retains visibility. Both retain config, usage,
+stores, environment and the existing tool-filter defaults. V3 introduced roundtrips
+of original messages, entry order and checkpoint text. Forks deep-copy the entire log and
+inherit config/tool policy while resetting usage. Children start with empty history,
+inherit config, and reset usage/tool policy. Projection scans the log on restore
+and checkpoint append; checkpoints reduce model context, not storage or snapshot
+copy costs. No Mini-ACP protocol, adapter or execution-loop changes are involved.
+
+Version 4 resets all older network policies, including custom rules, to unrestricted
+network access (`allowedDomains: ['*']`, `deniedDomains: []`).
+See [network rule semantics and compatibility](../lib/src/network/README.md).
+
+`inspect().contextTokens` estimates the current projected context: system
+instructions, tool schemas and every visible message, including tool results.
+Compaction and restore use the existing message projection, so hidden history is
+excluded and the summary is counted normally. Pending prompts are added when
+checking the next request. `getSession().usage` separately retains reported
+lifetime usage across compactions. No token measurements or fingerprints are
+stored on history entries; more precise usage-based accounting is deferred.
+
+### Compaction
+
+Franklin core checks the projected context before a fresh prompt and at the
+idle `stepEnd` boundary before `continue()`. Compaction summarizes the entire
+visible prefix, appends a summary checkpoint, and uses ordinary context sync.
+The pending user message is included in budgeting but is appended only after
+preparation, so a fresh prompt is not duplicated or lost behind its summary.
+No Mini-ACP callback, acknowledgement method, or protocol change is required.
+
+Budgeting resolves the current provider/model's context window from Mini-ACP's
+existing Pi resolver, including Franklin-local metadata overrides. Compaction
+triggers above `window - min(16384, floor(window / 4))`, reserving at most 16,384
+tokens. The window is resolved at every boundary so model changes take effect
+on the next check. Configs outside the built-in catalog use a 32,768-token
+planning fallback. Automatic and manual summaries use the same resolved window
+for chunk budgeting.
+Estimates include system instructions, tool schemas, messages and fixed image
+allowances. Large instruction/tool/prompt payloads that still exceed the budget
+fail before the next inference. These estimates do not guarantee provider token
+limits.
+
+`runtime.compact()` requests manual compaction while no prompt is active and
+returns whether a checkpoint was appended. Empty history and an already-current
+checkpoint return false. Summary generation uses an isolated connection with no
+tools or extension hooks. The chunked summarizer serializes the projected messages
+into bounded transcript chunks. Each request summarizes only its new chunk, using
+all prior chunk summaries as context; the final checkpoint concatenates those
+summaries without rewriting them. A total character budget is divided across
+chunks so accumulated summaries remain bounded. These are heuristic limits, not
+provider tokenizer guarantees. Transcript serialization omits thinking and replaces
+images with placeholders; its different system/tool/message prefix does not reuse
+the original conversation cache. Cancellation, failed or
+stale summaries cannot append a checkpoint. A failed sync leaves an appended
+checkpoint pending for retry. Successful summary usage contributes to session
+totals; failed multi-chunk summaries currently omit partial usage. Persistence
+retains its existing debounced behavior and raw disk history.
 
 ### Extensions
 
@@ -162,3 +282,12 @@ Where PiMono provides a general orchestration framework with fine-grained hooks,
 The split is:
 - **Environment + Spawn + Connect** = the ACP runtime layer (how you create and talk to agents)
 - **Extensions + Local MCP** = the orchestration layer (how the application shapes agent behavior)
+
+### Sandboxed commands
+
+Node shell commands share one scheduler per loaded sandbox manager. Commands with
+matching shared settings may overlap with different filesystem lists. Incompatible
+requests queue until active commands close and finish cleanup. The manager stays
+warm between commands. Commands receive the existing OS temporary directory as
+`TMPDIR`. See the [runtime notes](../node/src/platform/anthropic/README.md) for
+admission policy, deferred cancellation and process-lifetime limits.

@@ -48,7 +48,7 @@ function finishedTurn(id: string, elapsedMs: number): ConversationTurn {
 							output: 0,
 							cacheRead: 0,
 							cacheWrite: 0,
-							total: 0,
+							total: undefined,
 						},
 					},
 				},
@@ -150,6 +150,62 @@ describe('TurnFooter', () => {
 		expect(writeText).toHaveBeenLastCalledWith('reply last');
 	});
 
+	it.each([
+		[0.0142, '1.4¢'],
+		[0.0149, '1.5¢'],
+		[0.01, '1¢'],
+		[0.01999, '2¢'],
+		[0.001, '0.1¢'],
+		[0.0009999, '< 0.1¢'],
+		[0, '0¢'],
+		[0.000001, '< 0.1¢'],
+	] as const)(
+		'shows available cost %s as %s beside turn details',
+		(total, label) => {
+			const turn = finishedTurn('last', 12_000);
+			const end = turn.response.blocks.find(
+				(block) => block.kind === 'turnEnd',
+			);
+			if (!end?.usage) throw new Error('Expected usage');
+			end.usage.cost.total = total;
+			render(
+				<MockAgentsDecorator activeSessionId="active-session">
+					<ConversationView turns={[turn]} />
+				</MockAgentsDecorator>,
+			);
+			const cost = screen.getByText(label);
+			const trigger = screen.getByRole('button', { name: 'Turn details' });
+			expect(trigger.textContent).toBe('Ran for 12s');
+			expect(cost.previousElementSibling?.textContent).toBe('·');
+			expect(cost.parentElement).toBe(trigger.parentElement);
+			fireEvent.focus(trigger);
+			expect(within(screen.getByRole('tooltip')).queryByText(label)).toBeNull();
+		},
+	);
+
+	it.each([undefined, -1, NaN, Infinity])(
+		'hides unavailable cost %s and its separator',
+		(total) => {
+			const turn = finishedTurn('last', 12_000);
+			const end = turn.response.blocks.find(
+				(block) => block.kind === 'turnEnd',
+			);
+			if (!end?.usage) throw new Error('Expected usage');
+			end.usage.cost.total = total;
+			render(
+				<MockAgentsDecorator activeSessionId="active-session">
+					<ConversationView turns={[turn]} />
+				</MockAgentsDecorator>,
+			);
+			const trigger = screen.getByRole('button', { name: 'Turn details' });
+			expect(screen.queryByTitle('Turn cost (US cents)')).toBeNull();
+			// Only the separator before the action buttons remains.
+			expect(
+				trigger.parentElement?.querySelectorAll('span[aria-hidden]'),
+			).toHaveLength(1);
+		},
+	);
+
 	it('opens a details tooltip on focus and shows token usage', () => {
 		render(
 			<MockAgentsDecorator activeSessionId="active-session">
@@ -158,6 +214,7 @@ describe('TurnFooter', () => {
 		);
 
 		const trigger = screen.getByRole('button', { name: 'Turn details' });
+		expect(trigger.textContent).toBe('Ran for 2m 7s');
 		fireEvent.focus(trigger);
 
 		expect(screen.getAllByText('Input').length).toBeGreaterThan(0);
@@ -167,7 +224,7 @@ describe('TurnFooter', () => {
 		expect(screen.getAllByText('18,869').length).toBeGreaterThan(0);
 	});
 
-	it('shows an unavailable message when turn usage is missing', () => {
+	it('hides cost and shows unavailable token details when turn usage is missing', () => {
 		render(
 			<MockAgentsDecorator activeSessionId="active-session">
 				<ConversationView turns={[finishedTurnWithoutUsage('last', 127_000)]} />
@@ -175,10 +232,11 @@ describe('TurnFooter', () => {
 		);
 
 		const trigger = screen.getByRole('button', { name: 'Turn details' });
+		expect(trigger.textContent).toBe('Ran for 2m 7s');
 		fireEvent.focus(trigger);
 
 		const tooltip = screen.getByRole('tooltip');
-		expect(within(tooltip).getByText('Usage details unavailble')).toBeTruthy();
+		expect(within(tooltip).getByText('Usage details unavailable')).toBeTruthy();
 		expect(within(tooltip).queryByText('Input')).toBeNull();
 	});
 });

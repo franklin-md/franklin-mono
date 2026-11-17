@@ -9,7 +9,6 @@ import {
 	PromptFooterControlGroup,
 	PromptFooterControls,
 	SharedPromptAgentControl,
-	ThinkingToggle,
 } from '@franklin/ui';
 
 import { ToolUse } from './tools/tool-use.js';
@@ -25,7 +24,6 @@ export function ConversationPanel() {
 						<PromptFooterControls>
 							<PromptFooterControlGroup>
 								<ModelSelector />
-								<ThinkingToggle />
 								{process.env.NODE_ENV === 'development' ? (
 									<InspectDumpButton />
 								) : null}

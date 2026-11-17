@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react';
-import type { TurnEndBlock } from '@franklin/agent';
-import type { StopCategory } from '@franklin/mini-acp';
-import type { StopCode } from '@franklin/mini-acp';
+import type {
+	TurnEndBlock,
+	AgentStopCategory,
+	AgentStopCode,
+} from '@franklin/agent';
 
 export type TurnEndRenderer = (block: TurnEndBlock) => ReactNode;
 
 export type TurnEndRendererRegistry = {
-	byCode?: Partial<Record<StopCode, TurnEndRenderer>>;
+	byCode?: Partial<Record<AgentStopCode, TurnEndRenderer>>;
 	byRange?: Partial<Record<number, TurnEndRenderer>>;
-	byCategory?: Partial<Record<StopCategory, TurnEndRenderer>>;
+	byCategory?: Partial<Record<AgentStopCategory, TurnEndRenderer>>;
 	default?: TurnEndRenderer;
 };

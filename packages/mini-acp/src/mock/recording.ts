@@ -9,6 +9,7 @@ export type MockMiniACPRecording = {
 	readonly toolCallPhases: readonly (readonly ToolCall[])[];
 	readonly toolCalls: readonly ToolCall[];
 	readonly toolResults: readonly ToolResult[];
+	readonly continues: number;
 	readonly cancels: number;
 	readonly disposes: number;
 };
@@ -20,6 +21,7 @@ export type MutableMockMiniACPRecording = {
 	toolCallPhases: ToolCall[][];
 	toolCalls: ToolCall[];
 	toolResults: ToolResult[];
+	continues: number;
 	cancels: number;
 	disposes: number;
 };
@@ -32,6 +34,7 @@ export function createRecording(): MutableMockMiniACPRecording {
 		toolCallPhases: [],
 		toolCalls: [],
 		toolResults: [],
+		continues: 0,
 		cancels: 0,
 		disposes: 0,
 	};
@@ -47,6 +50,7 @@ export function snapshotRecording(
 		toolCallPhases: recording.toolCallPhases.map((calls) => [...calls]),
 		toolCalls: [...recording.toolCalls],
 		toolResults: [...recording.toolResults],
+		continues: recording.continues,
 		cancels: recording.cancels,
 		disposes: recording.disposes,
 	};
@@ -59,6 +63,7 @@ export function resetRecording(recording: MutableMockMiniACPRecording): void {
 	recording.toolCallPhases = [];
 	recording.toolCalls = [];
 	recording.toolResults = [];
+	recording.continues = 0;
 	recording.cancels = 0;
 	recording.disposes = 0;
 }

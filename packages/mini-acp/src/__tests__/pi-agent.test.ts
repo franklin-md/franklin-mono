@@ -1,382 +1,220 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-import type { ToolExecuteParams } from '../types/tool.js';
-
-type MockPiAgent = {
-	subscribe: ReturnType<typeof vi.fn>;
-	prompt: ReturnType<typeof vi.fn>;
-	abort: ReturnType<typeof vi.fn>;
-	state: {
-		systemPrompt: string;
-		messages: unknown[];
-		tools: unknown[];
-		model?: { id: string };
-		thinkingLevel?: string;
-	};
-};
-
-const agentInstances: MockPiAgent[] = [];
-const agentConstructor = vi.fn();
-let promptImplementation: (
-	agent: MockPiAgent,
-	message: unknown,
-) => Promise<void> = async () => {};
-
-vi.mock('@earendil-works/pi-agent-core', () => ({
-	Agent: class {
-		readonly subscribe = vi.fn(() => () => {});
-		readonly prompt = vi.fn(
-			(message: unknown): Promise<void> => promptImplementation(this, message),
-		);
-		readonly abort = vi.fn();
-		readonly state: {
-			systemPrompt: string;
-			messages: unknown[];
-			tools: unknown[];
-			model?: { id: string };
-			thinkingLevel?: string;
-		};
-
-		constructor(options: {
-			initialState?: {
-				systemPrompt?: string;
-				messages?: unknown[];
-				tools?: unknown[];
-				model?: { id: string };
-				thinkingLevel?: string;
-			};
-		}) {
-			this.state = {
-				systemPrompt: options.initialState?.systemPrompt ?? '',
-				messages: options.initialState?.messages ?? [],
-				tools: options.initialState?.tools ?? [],
-				model: options.initialState?.model,
-				thinkingLevel: options.initialState?.thinkingLevel,
-			};
-			agentConstructor(options);
-			agentInstances.push(this);
-		}
-	},
-}));
-
+import { collectEvents } from './utils/collect-events.js';
+import { describe, expect, it } from 'vitest';
 import { createPiAgent } from '../backend/pi/agent.js';
+import { collect } from '../utils/collect.js';
+import { StopCode } from '../types/stop-code.js';
+import { createScriptedProvider } from '../mock/provider.js';
+import type { LLMConfig } from '../types/context.js';
+import type { UserMessage } from '../types/message.js';
 
-describe('createPiAgent', () => {
-	beforeEach(() => {
-		agentConstructor.mockReset();
-		agentInstances.length = 0;
-		promptImplementation = async () => {};
-	});
+const prompt: UserMessage = {
+	role: 'user',
+	content: [{ type: 'text', text: 'hello' }],
+};
+const config: LLMConfig = {
+	provider: 'openrouter',
+	model: 'openrouter/free',
+	apiKey: 'stub-key',
+};
+const tool = {
+	name: 'echo',
+	description: 'Echo',
+	inputSchema: { type: 'object' },
+};
+const call = {
+	type: 'toolCall' as const,
+	id: 'c1',
+	name: 'echo',
+	arguments: {},
+};
+const server = { toolExecute: async () => ({ toolCallId: 'c1', content: [] }) };
 
-	it('returns a Mini-ACP client', () => {
-		const client = createPiAgent({
-			toolExecute: vi.fn(async (_params: ToolExecuteParams) => ({
-				toolCallId: 'tool-1',
-				content: [],
-			})),
-		});
-
-		expect(client.initialize).toEqual(expect.any(Function));
-		expect(client.setContext).toEqual(expect.any(Function));
-		expect(client.prompt).toEqual(expect.any(Function));
-		expect(client.cancel).toEqual(expect.any(Function));
-	});
-
-	it('creates one Pi core agent and applies current context before prompting', async () => {
-		const streamFn = vi.fn();
-		const server = {
-			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
-				toolCallId: call.id,
-				content: [{ type: 'text' as const, text: 'ok' }],
-			})),
-		};
-		const client = createPiAgent(server, { streamFn });
-		const tool = {
-			name: 'echo',
-			description: 'Echo input',
-			inputSchema: { type: 'object' },
-		};
-
+describe('Pi explicit drives', () => {
+	it('makes one request per drive, retaining reasoning, tool results and exactly one user message', async () => {
+		const provider = createScriptedProvider([
+			{
+				content: [
+					{ type: 'thinking', thinking: 'reasoning' },
+					{ type: 'text', text: 'looking' },
+					call,
+				],
+				stopReason: 'toolUse',
+			},
+			{ content: [call], stopReason: 'toolUse' },
+			{},
+			{},
+		]);
+		const client = createPiAgent(server, provider);
 		await client.initialize();
-		await client.setContext({
-			systemPrompt: 'system prompt',
-			messages: [
-				{
-					role: 'user',
-					content: [{ type: 'text', text: 'seed' }],
-				},
-			],
-			tools: [tool],
-			config: {
-				provider: 'openai-codex',
-				model: 'gpt-5.4',
-				apiKey: 'oauth-token',
-			},
-		});
-
-		expect(agentConstructor).toHaveBeenCalledOnce();
-
-		for await (const _event of client.prompt({
-			role: 'user',
-			content: [{ type: 'text', text: 'hello' }],
-		})) {
-			// The mocked Pi core agent emits no stream events.
-		}
-
-		expect(agentConstructor).toHaveBeenCalledOnce();
-		const [options] = agentConstructor.mock.calls[0] ?? [];
-		expect(options).toMatchObject({
-			initialState: {},
-			streamFn,
-		});
-		expect(agentInstances[0]?.state).toMatchObject({
-			systemPrompt: 'system prompt',
-			model: expect.objectContaining({ id: 'gpt-5.4' }),
-			thinkingLevel: 'off',
-			tools: [expect.objectContaining({ name: 'echo' })],
-			messages: [
-				expect.objectContaining({
-					role: 'user',
-					content: [{ type: 'text', text: 'seed' }],
-				}),
-			],
-		});
-		const getApiKey = (
-			options as { getApiKey?: (provider: string) => string | undefined }
-		).getApiKey;
-		expect(getApiKey).toBeDefined();
-		expect(getApiKey?.('openai-codex')).toBe('oauth-token');
-		expect((options as { prepareNextTurn?: unknown }).prepareNextTurn).toEqual(
-			expect.any(Function),
-		);
-	});
-
-	it('reuses the same Pi core agent across prompts', async () => {
-		promptImplementation = async (agent, message) => {
-			agent.state.messages.push(message);
-			agent.state.messages.push({
-				role: 'assistant',
-				content: [
-					{ type: 'text', text: `reply-${agent.state.messages.length}` },
-				],
-			});
-		};
-		const client = createPiAgent({
-			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
-				toolCallId: call.id,
-				content: [],
-			})),
-		});
-		await client.setContext({
-			config: {
-				provider: 'openai-codex',
-				model: 'gpt-5.4',
-				apiKey: 'oauth-token',
-			},
-		});
-
-		for await (const _event of client.prompt({
-			role: 'user',
-			content: [{ type: 'text', text: 'first' }],
-		})) {
-			// The mocked Pi core agent emits no stream events.
-		}
-		for await (const _event of client.prompt({
-			role: 'user',
-			content: [{ type: 'text', text: 'second' }],
-		})) {
-			// The mocked Pi core agent emits no stream events.
-		}
-
-		expect(agentConstructor).toHaveBeenCalledOnce();
-		expect(agentInstances[0]?.state.messages).toEqual([
-			expect.objectContaining({
-				role: 'user',
-				content: [{ type: 'text', text: 'first' }],
-			}),
-			expect.objectContaining({
-				role: 'assistant',
-				content: [{ type: 'text', text: 'reply-1' }],
-			}),
-			expect.objectContaining({
-				role: 'user',
-				content: [{ type: 'text', text: 'second' }],
-			}),
-			expect.objectContaining({
-				role: 'assistant',
-				content: [{ type: 'text', text: 'reply-3' }],
-			}),
+		await client.setContext({ config, tools: [tool] });
+		const first = await collect(client.prompt(prompt));
+		expect(provider.requests).toHaveLength(1);
+		expect(first.stepEnd?.stepUsage.tokens.total).toBe(16);
+		expect(first.turnEnd).toBeUndefined();
+		expect(first.messages[0]?.content).toEqual([
+			{ type: 'thinking', text: 'reasoning' },
+			{ type: 'text', text: 'looking' },
 		]);
+		const second = await collect(client.continue());
+		expect(provider.requests).toHaveLength(2);
+		expect(second.stepEnd).toBeDefined();
+		const third = await collect(client.continue());
+		expect(provider.requests).toHaveLength(3);
+		expect(third.stepEnd).toBeUndefined();
+		expect(third.turnEnd).toMatchObject({
+			stopCode: StopCode.Finished,
+			stepUsage: { tokens: { total: 16 } },
+			usage: { tokens: { total: 48 }, cost: { total: 30 } },
+		});
+		expect(
+			provider.requests[2]?.messages.filter((m) => m.role === 'user'),
+		).toHaveLength(1);
+		expect(
+			provider.requests[2]?.messages.filter((m) => m.role === 'toolResult'),
+		).toHaveLength(2);
+		expect(await collect(client.continue())).toEqual({
+			messages: [],
+			stepEnd: undefined,
+			turnEnd: undefined,
+		});
+		expect(provider.requests).toHaveLength(3);
+		const next = await collect(client.prompt(prompt));
+		expect(next.turnEnd?.usage.tokens.total).toBe(16);
+		expect(
+			provider.requests[3]?.messages.filter((m) => m.role === 'user'),
+		).toHaveLength(2);
 	});
 
-	it('restores tool result names from the tracked Mini-ACP transcript', async () => {
-		const client = createPiAgent({
-			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
-				toolCallId: call.id,
-				content: [],
-			})),
-		});
+	it.each([
+		['stop', StopCode.Finished],
+		['toolUse', StopCode.Finished],
+		['length', StopCode.MaxTokens],
+		['error', StopCode.AuthKeyInvalid],
+		['aborted', StopCode.Cancelled],
+	] as const)(
+		'ends %s with one turnEnd and no stepEnd',
+		async (stopReason, stopCode) => {
+			const provider = createScriptedProvider([
+				{
+					stopReason,
+					errorMessage:
+						stopReason === 'error' ? '401 Invalid API key' : undefined,
+				},
+			]);
+			const client = createPiAgent(server, provider);
+			await client.setContext({ config });
+			const events = await collectEvents(client.prompt(prompt));
+			expect(
+				events.filter((e) => e.type === 'stepEnd' || e.type === 'turnEnd'),
+			).toEqual([expect.objectContaining({ type: 'turnEnd', stopCode })]);
+			expect(await collectEvents(client.continue())).toEqual([]);
+			expect(provider.requests).toHaveLength(1);
+		},
+	);
 
-		await client.setContext({
-			messages: [
-				{
-					role: 'assistant',
-					content: [
-						{
-							type: 'toolCall',
-							id: 'call_read_file',
-							name: 'read_file',
-							arguments: { path: '[[MEMORY]]' },
-						},
-					],
-				},
-				{
-					role: 'assistant',
-					content: [
-						{
-							type: 'toolCall',
-							id: 'call_grep',
-							name: 'grep',
-							arguments: { pattern: 'blog' },
-						},
-					],
-				},
-				{
-					role: 'toolResult',
-					toolCallId: 'call_read_file',
-					content: [{ type: 'text', text: 'memory contents' }],
-				},
-				{
-					role: 'toolResult',
-					toolCallId: 'call_grep',
-					content: [{ type: 'text', text: 'grep results' }],
-				},
-				{
-					role: 'user',
-					content: [{ type: 'text', text: 'continue' }],
-				},
-			],
-		});
+	it.each([
+		[{}, StopCode.ProviderNotSpecified],
+		[{ provider: 'unknown' }, StopCode.ProviderNotFound],
+		[{ provider: 'openrouter' }, StopCode.ModelNotSpecified],
+		[
+			{ provider: 'openrouter', model: 'no-such-model' },
+			StopCode.ModelNotFound,
+		],
+		[
+			{ provider: 'openrouter', model: 'openrouter/free' },
+			StopCode.AuthKeyNotSpecified,
+		],
+	] as const)(
+		'ends unresolved config without requesting a provider',
+		async (badConfig, stopCode) => {
+			const provider = createScriptedProvider([]);
+			const client = createPiAgent(server, provider);
+			await client.setContext({ config: badConfig });
+			const events = await collectEvents(client.prompt(prompt));
+			expect(events).toEqual([
+				{ type: 'turnStart' },
+				expect.objectContaining({ type: 'turnEnd', stopCode }),
+			]);
+			await client.setContext({ systemPrompt: 'immediately idle' });
+			expect(await collectEvents(client.continue())).toEqual([]);
+			expect(provider.requests).toHaveLength(0);
+		},
+	);
 
-		expect(agentInstances[0]?.state.messages).toEqual([
-			expect.objectContaining({
-				role: 'assistant',
-				content: [
-					expect.objectContaining({
-						type: 'toolCall',
-						id: 'call_read_file',
-						name: 'read_file',
-					}),
-				],
-			}),
-			expect.objectContaining({
-				role: 'assistant',
-				content: [
-					expect.objectContaining({
-						type: 'toolCall',
-						id: 'call_grep',
-						name: 'grep',
-					}),
-				],
-			}),
-			expect.objectContaining({
-				role: 'toolResult',
-				toolCallId: 'call_read_file',
-				toolName: 'read_file',
-			}),
-			expect.objectContaining({
-				role: 'toolResult',
-				toolCallId: 'call_grep',
-				toolName: 'grep',
-			}),
-			expect.objectContaining({
-				role: 'user',
-				content: [{ type: 'text', text: 'continue' }],
-			}),
+	it('retains previous usage when configuration fails on continue', async () => {
+		const provider = createScriptedProvider([
+			{ content: [call], stopReason: 'toolUse' },
 		]);
+		const client = createPiAgent(server, provider);
+		await client.setContext({ config, tools: [tool] });
+		await collect(client.prompt(prompt));
+		await client.setContext({ config: { apiKey: '' } });
+		const result = await collect(client.continue());
+		expect(result.turnEnd).toMatchObject({
+			stopCode: StopCode.AuthKeyNotSpecified,
+			stepUsage: { tokens: { total: 0 } },
+			usage: { tokens: { total: 16 } },
+		});
+		expect(provider.requests).toHaveLength(1);
 	});
 
-	it('keeps context guarded after the consumer closes the stream before Pi settles', async () => {
-		let resolvePrompt: (() => void) | undefined;
-		promptImplementation = async (agent) => {
-			type AgentStartListener = (event: { type: 'agent_start' }) => void;
-			const calls = agent.subscribe.mock.calls as Array<[AgentStartListener]>;
-			const listener = calls[0]?.[0];
-			if (!listener) throw new Error('expected Pi agent subscription');
-			listener({ type: 'agent_start' });
-			return new Promise<void>((resolve) => {
-				resolvePrompt = resolve;
-			});
-		};
-		const client = createPiAgent({
-			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
-				toolCallId: call.id,
-				content: [],
-			})),
-		});
-		await client.setContext({
-			config: {
-				provider: 'openai-codex',
-				model: 'gpt-5.4',
-				apiKey: 'oauth-token',
+	it('reports unexpected runner failures once and releases busy state', async () => {
+		const client = createPiAgent(server, {
+			streamFn: () => {
+				throw new Error('broken stream');
 			},
 		});
-
-		const iterator = client
-			.prompt({
-				role: 'user',
-				content: [{ type: 'text', text: 'hello' }],
-			})
-			[Symbol.asyncIterator]();
-
-		try {
-			await expect(iterator.next()).resolves.toEqual({
-				done: false,
-				value: { type: 'turnStart' },
-			});
-			await iterator.return?.();
-
-			await expect(
-				client.setContext({ systemPrompt: 'unsafe mid-run change' }),
-			).rejects.toThrow('only accepts tools');
-		} finally {
-			resolvePrompt?.();
-			await iterator.return?.();
-		}
+		await client.setContext({ config });
+		const result = await collect(client.prompt(prompt));
+		expect(result.turnEnd).toMatchObject({
+			stopCode: StopCode.LlmError,
+			stopMessage: 'broken stream',
+		});
+		await client.setContext({ systemPrompt: 'idle' });
+		expect(await collectEvents(client.continue())).toEqual([]);
 	});
 
-	it('cancels the active Pi core agent', async () => {
-		let resolvePrompt: (() => void) | undefined;
-		promptImplementation = () =>
-			new Promise<void>((resolve) => {
-				resolvePrompt = resolve;
-			});
-		const client = createPiAgent({
-			toolExecute: vi.fn(async ({ call }: ToolExecuteParams) => ({
-				toolCallId: call.id,
-				content: [],
-			})),
-		});
-		await client.setContext({
-			config: {
-				provider: 'openai-codex',
-				model: 'gpt-5.4',
-				apiKey: 'oauth-token',
-			},
-		});
-
-		const iterator = client
-			.prompt({
-				role: 'user',
-				content: [{ type: 'text', text: 'hello' }],
-			})
-			[Symbol.asyncIterator]();
-		const next = iterator.next();
-		await vi.waitFor(() => expect(agentInstances).toHaveLength(1));
+	it('rejects prompt at a paused boundary; cancellation drains on continue without inference', async () => {
+		const provider = createScriptedProvider([
+			{ content: [call], stopReason: 'toolUse' },
+			{},
+		]);
+		const client = createPiAgent(server, provider);
+		await client.setContext({ config, tools: [tool] });
+		await collect(client.prompt(prompt));
+		await expect(collect(client.prompt(prompt))).rejects.toThrow('turn paused');
 		await client.cancel();
+		const cancelled = await collect(client.continue());
+		expect(cancelled.turnEnd).toMatchObject({
+			stopCode: StopCode.Cancelled,
+			usage: { tokens: { total: 16 } },
+			stepUsage: { tokens: { total: 0 } },
+		});
+		expect(provider.requests).toHaveLength(1);
+		expect(await collectEvents(client.continue())).toEqual([]);
+		await collect(client.prompt(prompt));
+		expect(provider.requests).toHaveLength(2);
+	});
 
-		expect(agentInstances[0]?.abort).toHaveBeenCalledOnce();
-		resolvePrompt?.();
-		await next;
+	it('restores tool result names from the Mini-ACP transcript', async () => {
+		const provider = createScriptedProvider([{}]);
+		const client = createPiAgent(server, provider);
+		await client.setContext({
+			config,
+			messages: [
+				{ role: 'assistant', content: [call] },
+				{
+					role: 'toolResult',
+					toolCallId: 'c1',
+					content: [{ type: 'text', text: 'restored' }],
+				},
+			],
+		});
+		await collect(client.prompt(prompt));
+		expect(provider.requests[0]?.messages[1]).toMatchObject({
+			role: 'toolResult',
+			toolName: 'echo',
+			toolCallId: 'c1',
+		});
 	});
 });

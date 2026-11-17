@@ -101,7 +101,7 @@ describe('Franklin agent factory', () => {
 		try {
 			expect(agents.list()).toEqual([entry]);
 			expect(entry.runtime.auth).toBe(auth);
-			expect(entry.runtime.getSession().messages).toEqual([]);
+			expect(entry.runtime.getSession().entries).toEqual([]);
 			expect(await filesystem.exists(appDir)).toBe(false);
 		} finally {
 			await agents.remove(entry.details.id);
