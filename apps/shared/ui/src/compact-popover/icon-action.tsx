@@ -1,3 +1,4 @@
+import * as RovingFocusGroup from '@radix-ui/react-roving-focus';
 import { LoaderCircle } from 'lucide-react';
 import { IconButton } from '../components/icon-button.js';
 import { cn } from '../lib/cn.js';
@@ -9,38 +10,38 @@ import {
 import type { IconActionProps } from './action-types.js';
 
 export function IconAction({
-	action: { label, description, icon, colorClassName, selectedClassName },
+	action: { id, label, description, icon, colorClassName, selectedClassName },
 	busy,
 	disabled,
-	focused,
-	onFocus,
 	onClick,
 }: IconActionProps) {
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<IconButton
-					icon={busy ? LoaderCircle : icon}
-					iconClassName={cn(
-						'shrink-0',
-						busy && 'animate-spin motion-reduce:animate-none',
+				<RovingFocusGroup.Item asChild tabStopId={id} focusable={!disabled}>
+					{({ isCurrentTabStop }) => (
+						<IconButton
+							icon={busy ? LoaderCircle : icon}
+							iconClassName={cn(
+								'shrink-0',
+								busy && 'animate-spin motion-reduce:animate-none',
+							)}
+							aria-label={label}
+							aria-description={description}
+							type="button"
+							variant="ghost"
+							disabled={disabled}
+							className={cn(
+								'p-0 ring-1 ring-inset',
+								colorClassName,
+								isCurrentTabStop
+									? (selectedClassName ?? 'bg-accent ring-ring')
+									: 'ring-border',
+							)}
+							onClick={onClick}
+						/>
 					)}
-					aria-label={label}
-					aria-description={description}
-					type="button"
-					variant="ghost"
-					disabled={disabled}
-					tabIndex={focused ? 0 : -1}
-					onFocus={onFocus}
-					className={cn(
-						'p-0 ring-1 ring-inset',
-						colorClassName,
-						focused
-							? (selectedClassName ?? 'bg-accent ring-ring')
-							: 'ring-border',
-					)}
-					onClick={onClick}
-				/>
+				</RovingFocusGroup.Item>
 			</TooltipTrigger>
 			<TooltipContent
 				side="top"

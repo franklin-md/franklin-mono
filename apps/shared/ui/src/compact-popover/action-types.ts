@@ -1,4 +1,4 @@
-import type { ComponentType, RefObject } from 'react';
+import type { ComponentType } from 'react';
 
 export type IconAction = {
 	id: string;
@@ -21,13 +21,5 @@ export type IconActionProps = {
 	action: IconAction;
 	busy: boolean;
 	disabled: boolean;
-	focused: boolean;
-	onFocus: () => void;
 	onClick: () => void;
-};
-
-export type UseIconActionKeysOptions = {
-	group: RefObject<HTMLDivElement | null>;
-	getButtons: () => HTMLButtonElement[];
-	focusAtIndex: (index: number) => void;
 };
