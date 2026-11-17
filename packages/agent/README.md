@@ -164,15 +164,19 @@ it is not a synchronization or compaction API. Callers must not feed projected
 messages into this reset path. Preserving discarded history across explicit
 resets would require a separately designed reset event.
 
-The [session codec](src/app/session/codecs/session.ts) writes version 3 and
+The [session codec](src/app/session/codecs/session.ts) writes version 4 and
 migrates v1/v2 flat messages by wrapping each message as a typed entry.
 V1 defaults to visible details; v2 retains visibility. Both retain config, usage,
-stores, environment and the existing tool-filter defaults. V3 roundtrips original
-messages, entry order and checkpoint text. Forks deep-copy the entire log and
+stores, environment and the existing tool-filter defaults. V3 introduced roundtrips
+of original messages, entry order and checkpoint text. Forks deep-copy the entire log and
 inherit config/tool policy while resetting usage. Children start with empty history,
 inherit config, and reset usage/tool policy. Projection scans the log on restore
 and checkpoint append; checkpoints reduce model context, not storage or snapshot
 copy costs. No Mini-ACP protocol, adapter or execution-loop changes are involved.
+
+Version 4 also migrates legacy network rules, preserving public-open empty lists
+with an explicit fallback and expanding root/subdomain rules on both lists.
+See [network rule semantics and compatibility](../lib/src/network/README.md).
 
 ### Compaction
 

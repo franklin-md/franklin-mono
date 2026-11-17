@@ -1,3 +1,5 @@
+import { parseNetworkPattern } from './pattern.js';
+
 export function normalizeUrl(rawUrl: string): string {
 	const url = new URL(rawUrl);
 	if (!['http:', 'https:'].includes(url.protocol)) {
@@ -15,6 +17,7 @@ export function isPrivateHost(host: string): boolean {
 
 	if (
 		stripped === 'localhost' ||
+		stripped.endsWith('.localhost') ||
 		stripped === '0.0.0.0' ||
 		stripped === '::' ||
 		stripped === '::1'
@@ -36,11 +39,16 @@ export function isPrivateHost(host: string): boolean {
 		);
 	}
 
-	const lower = stripped.toLowerCase();
+	// URL canonicalization renders IPv4-mapped IPv6 as two hex groups.
+	const mapped = /^::ffff:([a-f0-9]+):([a-f0-9]+)$/.exec(stripped);
+	if (mapped?.[1] && mapped[2]) {
+		const high = parseInt(mapped[1], 16);
+		const low = parseInt(mapped[2], 16);
+		return isPrivateHost(`${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`);
+	}
 	return (
-		lower.startsWith('fe80:') || // link-local
-		lower.startsWith('fc') || // ULA
-		lower.startsWith('fd') // ULA
+		stripped.includes(':') &&
+		(/^fe[89ab]/.test(stripped) || /^f[cd]/.test(stripped))
 	);
 }
 
@@ -66,53 +74,39 @@ export function parseIPv4(
 }
 
 export function normalizeHost(host: string): string {
-	if (host.startsWith('[') && host.endsWith(']')) {
-		return host.slice(1, -1).toLowerCase();
+	try {
+		const bracketed =
+			host.includes(':') && !host.startsWith('[') ? `[${host}]` : host;
+		return new URL(`http://${bracketed}/`).hostname
+			.replace(/^\[|\]$/g, '')
+			.replace(/\.$/, '')
+			.toLowerCase();
+	} catch {
+		return host.toLowerCase();
 	}
-
-	return host.toLowerCase();
 }
 
 export function matchesDomain(pattern: string, host: string): boolean {
-	const normalized = pattern.trim().toLowerCase();
-	if (normalized === '' || normalized === '*') {
-		return true;
+	const normalized = normalizeHost(host);
+	if (pattern === '*') return true;
+	if (pattern.startsWith('*.')) {
+		return (
+			!normalized.includes(':') &&
+			parseIPv4(normalized) === null &&
+			normalized.endsWith(`.${pattern.slice(2).toLowerCase()}`)
+		);
 	}
-
-	if (normalized.startsWith('*.')) {
-		const suffix = normalized.slice(2);
-		return host === suffix || host.endsWith(`.${suffix}`);
-	}
-
-	return host === normalized || host.endsWith(`.${normalized}`);
+	return normalized === normalizeHost(pattern);
 }
 
 export function matchesUrlPattern(pattern: string, url: URL): boolean {
-	const normalizedPattern = pattern.trim().toLowerCase();
-	const hostname = normalizeHost(url.hostname);
-	if (matchesDomain(normalizedPattern, hostname)) {
-		return true;
-	}
-
-	if (normalizedPattern === '' || normalizedPattern === '*') {
-		return true;
-	}
-
-	const exactHost = formatHostPatternTarget(hostname, url.port);
-	return normalizedPattern === exactHost;
-}
-
-function formatHostPatternTarget(host: string, port: string): string {
-	if (port === '') {
-		if (host.includes(':')) {
-			return `[${host}]`;
-		}
-		return host;
-	}
-
-	if (host.includes(':')) {
-		return `[${host}]:${port}`;
-	}
-
-	return `${host}:${port}`;
+	const parsed = parseNetworkPattern(pattern);
+	if (!parsed) return false;
+	const port =
+		url.port ||
+		(url.protocol === 'https:' ? '443' : url.protocol === 'http:' ? '80' : '');
+	return (
+		(parsed.port === undefined || parsed.port === Number(port)) &&
+		matchesDomain(parsed.host, url.hostname)
+	);
 }

@@ -15,6 +15,7 @@ export function emptyEnvironmentState(): EnvironmentState {
 				permissions: FILESYSTEM_DENY_ALL,
 			},
 			netConfig: {
+				...DEFAULT_NETWORK_CONFIG,
 				allowedDomains: [...DEFAULT_NETWORK_CONFIG.allowedDomains],
 				deniedDomains: [...DEFAULT_NETWORK_CONFIG.deniedDomains],
 			},

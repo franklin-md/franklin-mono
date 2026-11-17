@@ -1,11 +1,7 @@
 import type { Fetch, NetworkPermissions } from '../types.js';
+import { validateNetworkPermissions } from '../validate.js';
 import type { FetchDecorator } from './types.js';
-import {
-	isLoopbackHost,
-	isPrivateHost,
-	matchesUrlPattern,
-	normalizeHost,
-} from '../utils.js';
+import { isPrivateHost, matchesUrlPattern, normalizeHost } from '../utils.js';
 
 /**
  * Throws if the URL's host is not allowed by the given permissions. Pure
@@ -13,6 +9,7 @@ import {
  * every hop re-invokes the check via the next() call.
  */
 export function withPolicy(permissions: NetworkPermissions): FetchDecorator {
+	validateNetworkPermissions(permissions);
 	return (next: Fetch): Fetch =>
 		async (request) => {
 			assertAllowed(new URL(request.url), permissions);
@@ -21,6 +18,7 @@ export function withPolicy(permissions: NetworkPermissions): FetchDecorator {
 }
 
 export function assertAllowed(url: URL, permissions: NetworkPermissions): void {
+	validateNetworkPermissions(permissions);
 	const host = normalizeHost(url.hostname);
 
 	const denied = permissions.deniedDomains.some((pattern) =>
@@ -30,32 +28,15 @@ export function assertAllowed(url: URL, permissions: NetworkPermissions): void {
 		throw new Error(`Network access denied for host "${host}"`);
 	}
 
-	if (isLoopbackHost(host)) {
-		const allowed = permissions.allowedDomains.some((pattern) =>
-			matchesUrlPattern(pattern, url),
-		);
-		if (!allowed) {
-			throw new Error(
-				`Network access denied for host "${host}": loopback addresses must be explicitly allowlisted`,
-			);
-		}
-		return;
-	}
-
-	// Block private/link-local addresses to prevent SSRF.
-	// Partial mitigation against domain fronting via IP literals
-	// (e.g. http://192.168.1.1/). DNS-based fronting via CDN hostnames that
-	// resolve to private IPs cannot be caught here.
-	if (isPrivateHost(host)) {
-		throw new Error(`Network access denied for host "${host}"`);
-	}
-
 	if (
-		permissions.allowedDomains.length > 0 &&
-		!permissions.allowedDomains.some((pattern) =>
+		permissions.allowedDomains.some((pattern) =>
 			matchesUrlPattern(pattern, url),
 		)
-	) {
-		throw new Error(`Network access denied for host "${host}"`);
-	}
+	)
+		return;
+
+	// This optional fallback is a host/literal check, not DNS rebinding protection.
+	// Explicit allow rules can name private services, just as native SRT rules do.
+	if (permissions.allowPublicHosts && !isPrivateHost(host)) return;
+	throw new Error(`Network access denied for host "${host}"`);
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { validateNetworkPermissions } from '@franklin/lib';
 import type { AbsolutePath } from '@franklin/lib';
 import type { EnvironmentConfig } from '../../../modules/environment/api/index.js';
 
@@ -20,4 +21,19 @@ export const EnvironmentSessionV1 = z.object({
 		allowedDomains: z.array(z.string()),
 		deniedDomains: z.array(z.string()),
 	}),
+});
+
+export const EnvironmentSessionV2 = EnvironmentSessionV1.extend({
+	netConfig: EnvironmentSessionV1.shape.netConfig
+		.extend({
+			allowPublicHosts: z.boolean().optional(),
+		})
+		.refine((config) => {
+			try {
+				validateNetworkPermissions(config);
+				return true;
+			} catch {
+				return false;
+			}
+		}, 'Invalid native network rules'),
 }) satisfies z.ZodType<EnvironmentConfig>;

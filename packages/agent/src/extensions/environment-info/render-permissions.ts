@@ -83,22 +83,6 @@ const WRITE_INTERPRETATION: AllowDenyInterpretation = {
 	},
 };
 
-const NETWORK_INTERPRETATION: AllowDenyInterpretation = {
-	rule: 'Domains: deniedDomains always blocks matching URL hosts; allowedDomains limits access when non-empty.',
-	allowLabel: 'allowedDomains',
-	denyLabel: 'deniedDomains',
-	cases: {
-		empty:
-			'With this config, public hosts may be accessed. Loopback still requires an explicit allow, and private or link-local hosts are blocked.',
-		allowOnly:
-			'With this config, only allowedDomains matches may be accessed. Loopback requires an explicit allow, and private or link-local hosts are blocked.',
-		denyOnly:
-			'With this config, public hosts may be accessed except deniedDomains matches. Loopback still requires an explicit allow, and private or link-local hosts are blocked.',
-		allowAndDeny:
-			'With this config, only allowedDomains matches may be accessed, except deniedDomains matches. Loopback requires an explicit allow, and private or link-local hosts are blocked.',
-	},
-};
-
 export function renderEnvironmentPermissions(
 	fields: EnvironmentPermissionsFields,
 ): string {
@@ -118,12 +102,12 @@ export function renderEnvironmentPermissions(
 			fields.filesystem.denyWrite,
 		),
 		'Network:',
-		'- Patterns match domains, including subdomains, or exact host:port targets.',
-		'- Loopback hosts require an explicit allow; private and link-local hosts are blocked.',
-		...renderAllowDenyPolicy(
-			NETWORK_INTERPRETATION,
-			fields.network.allowedDomains,
-			fields.network.deniedDomains,
-		),
+		'- Bare domains match exactly; *.example.com matches strict subdomains. Optional :port restricts a rule; IPv6 must be bracketed.',
+		'- Domains: deniedDomains always wins; allowedDomains is deny-by-default, including when empty.',
+		fields.network.allowPublicHosts
+			? '- Public hosts may also be accessed via allowPublicHosts; private and loopback hosts require an explicit allow. Denies still win.'
+			: '- Only allowedDomains matches may be accessed, including private or loopback services explicitly named there.',
+		`- allowedDomains: ${formatPatterns(fields.network.allowedDomains)}`,
+		`- deniedDomains: ${formatPatterns(fields.network.deniedDomains)}`,
 	].join('\n');
 }

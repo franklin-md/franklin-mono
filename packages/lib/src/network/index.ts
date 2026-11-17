@@ -19,3 +19,5 @@ export { withRetry } from './decorators/retry.js';
 export type { RetryOptions } from './decorators/retry.js';
 export { getHeader, setHeader } from './headers.js';
 export { readBodyWithLimit } from './body-limit.js';
+
+export { validateNetworkPermissions } from './validate.js';

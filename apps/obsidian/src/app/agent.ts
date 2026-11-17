@@ -26,6 +26,7 @@ export function createObsidianSessionInput(
 					),
 				},
 				netConfig: {
+					allowPublicHosts: true,
 					allowedDomains: [],
 					deniedDomains: [],
 				},

@@ -102,7 +102,11 @@ describe('withRedirect + withPolicy composition', () => {
 			redirectResponse('http://localhost:11434/api/tags'),
 		);
 		const fetch = withRedirect(5)(
-			withPolicy({ allowedDomains: [], deniedDomains: [] })(transport),
+			withPolicy({
+				allowPublicHosts: true,
+				allowedDomains: [],
+				deniedDomains: [],
+			})(transport),
 		);
 
 		await expect(

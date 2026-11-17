@@ -44,7 +44,7 @@ function session(): FranklinSession {
 				},
 			},
 			netConfig: {
-				allowedDomains: ['example.com'],
+				allowedDomains: ['example.com', '*.example.com'],
 				deniedDomains: ['localhost:9222'],
 			},
 		},
