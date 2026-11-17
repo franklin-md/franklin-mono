@@ -39,7 +39,7 @@ describe('SessionDraft', () => {
 		);
 		const draft = createSessionDraft({
 			snapshot: {
-				messages: [userMessage],
+				entries: [{ type: 'message' as const, message: userMessage }],
 				llmConfig: { model: 'test-model' },
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),
@@ -89,7 +89,7 @@ describe('SessionDraft', () => {
 		);
 		const draft = createSessionDraft({
 			snapshot: {
-				messages: [],
+				entries: [],
 				llmConfig: {},
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),
@@ -137,7 +137,7 @@ describe('SessionDraft', () => {
 		const toolRegistry = createToolRegistry(registrations.tools);
 		const draft = createSessionDraft({
 			snapshot: {
-				messages: [],
+				entries: [],
 				llmConfig: {},
 				usage: ZERO_USAGE,
 				toolFilter: emptyToolFilter(),

@@ -1,10 +1,9 @@
 import { createObserver } from '@franklin/lib';
-import type { MiniACPClientHandle } from '@franklin/mini-acp';
-import type { AgentController } from '../controller/index.js';
+import type { AgentClient, AgentController } from '../controller/index.js';
 import type { CoreEvent, CoreRuntime, ToolRegistry } from './types.js';
 
 type CreateCoreRuntimeInput = {
-	readonly client: MiniACPClientHandle;
+	readonly client: AgentClient;
 	readonly controller: AgentController;
 };
 
@@ -34,6 +33,13 @@ export function createCoreRuntime({
 			}
 		},
 		cancel: client.cancel.bind(client),
+		async compact() {
+			try {
+				return await controller.compact();
+			} finally {
+				notify({ type: 'compaction-settled' });
+			}
+		},
 		async dispose() {
 			await client.dispose();
 		},

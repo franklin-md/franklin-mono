@@ -1,4 +1,4 @@
-import { collect } from '@franklin/mini-acp';
+import { collectPrompt } from '../../modules/core/turn/collect.js';
 import { defineExtension } from '../../modules/state/index.js';
 import type { CoreModule } from '../../modules/core/index.js';
 import type { OrchestratorModule } from '../../modules/orchestrator/index.js';
@@ -30,7 +30,7 @@ export const spawnExtension = defineExtension<
 					role: 'user',
 					content: [{ type: 'text', text: prompt }],
 				});
-				const { messages, turnEnd } = await collect(stream);
+				const { messages, turnEnd } = await collectPrompt(stream);
 				return formatResult(messages, turnEnd);
 			} finally {
 				await child.runtime.orchestrator.remove(child.details.id);

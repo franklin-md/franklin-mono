@@ -1,6 +1,7 @@
+import type { TurnStreamEvent } from '../../modules/core/turn/types.js';
 import { describe, expect, it } from 'vitest';
 import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
-import type { StreamEvent, UserMessage } from '@franklin/mini-acp';
+import type { UserMessage } from '@franklin/mini-acp';
 
 import { combineAll } from '../../modules/state/index.js';
 import { createCoreStateModule } from '../../modules/core/module/index.js';
@@ -10,7 +11,7 @@ import { createRuntime } from '../../testing/index.js';
 import { viewingContextExtension } from '../viewing-context/bundle.js';
 import type { ViewingContextState } from '../viewing-context/types.js';
 
-async function drain(iterable: AsyncIterable<StreamEvent>): Promise<void> {
+async function drain(iterable: AsyncIterable<TurnStreamEvent>): Promise<void> {
 	for await (const _event of iterable) {
 		// Drain the mock prompt so the runtime sends context.
 	}

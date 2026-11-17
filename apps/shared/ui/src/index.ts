@@ -50,6 +50,7 @@ export { Input } from './primitives/input.js';
 export { Label, labelVariants } from './primitives/label.js';
 export {
 	Popover,
+	PopoverAnchor,
 	PopoverContent,
 	PopoverTrigger,
 } from './primitives/popover.js';
@@ -75,6 +76,12 @@ export {
 export { Switch, type SwitchProps } from './primitives/switch.js';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './primitives/tabs.js';
 export {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from './primitives/tooltip.js';
+export {
 	textInputSurfaceClassName,
 	textareaClassName,
 } from './primitives/textarea.js';
@@ -86,6 +93,11 @@ export {
 	type InspectDumpButtonProps,
 } from './components/inspect-dump-button.js';
 export { IconButton, type IconButtonProps } from './components/icon-button.js';
+export { IconActionGroup } from './compact-popover/actions.js';
+export type {
+	IconAction,
+	IconActionGroupProps,
+} from './compact-popover/action-types.js';
 export { DeleteButton } from './components/delete-button.js';
 export { Favicon, type FaviconProps } from './components/favicon.js';
 export {
@@ -144,7 +156,25 @@ export {
 	type PromptFooterControlsProps,
 } from './conversation/input/prompt-footer-controls.js';
 export { SharedPromptAgentControl } from './conversation/input/shared-prompt-agent-control.js';
+export { PromptSurface } from './conversation/input/prompt-surface.js';
+export { PromptSubmitButton } from './conversation/input/prompt-submit-button.js';
+export { ThinkingControl } from './conversation/input/thinking/control.js';
 export { ThinkingToggle } from './conversation/input/thinking-toggle.js';
+export { ModelPicker } from './conversation/input/model-selector/picker.js';
+export { ModelPickerRoot } from './conversation/input/model-selector/root.js';
+export { ModelPickerTrigger } from './conversation/input/model-selector/trigger.js';
+export { ModelPickerContent } from './conversation/input/model-selector/content.js';
+export { ModelPickerModels } from './conversation/input/model-selector/models.js';
+export { ModelPickerSearch } from './conversation/input/model-selector/search.js';
+export { ModelPickerList } from './conversation/input/model-selector/list.js';
+export { ModelPickerFooter } from './conversation/input/model-selector/footer.js';
+export { ModelPickerEffort } from './conversation/input/model-selector/effort.js';
+export type {
+	ModelPickerProps,
+	ModelPickerRootProps,
+	ModelPickerEffortProps,
+	ProviderActionRenderer,
+} from './conversation/input/model-selector/types.js';
 export { ModelSelector } from './conversation/input/model-selector/selector.js';
 export {
 	ProviderIcon,
@@ -193,3 +223,9 @@ export { isOAuthFlowRunning } from './auth/login-button/flow.js';
 export { AgentSidebar } from './sidebar/agent-sidebar.js';
 export { AgentSidebarItem } from './sidebar/agent-sidebar-item.js';
 export { SidebarItem } from './sidebar/sidebar-item.js';
+
+export { MODEL_CATALOG } from './conversation/input/models/catalog.js';
+export type {
+	CatalogModel,
+	ProviderGroup,
+} from './conversation/input/models/catalog.js';

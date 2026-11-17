@@ -3,10 +3,10 @@
 // into shared trackers.
 //
 // trackAgent   — wraps MuAgent    (toolExecute: tool call + result → ContextRecorder)
-// trackTurn    — wraps prompt/cancel behavior (prompt + updates → ContextRecorder)
+// trackTurn    — wraps prompt/continue/cancel behavior (prompt + updates → ContextRecorder)
 // trackClient  — wraps MuClient   (trackTurn + setContext → ContextRecorder)
-// trackUsage   — wraps prompt/cancel behavior (turnEnd usage → UsageTracker)
-// decorateTurn — lift a prompt/cancel transform to a MuClient transform
+// trackUsage   — wraps prompt/continue/cancel behavior (stepUsage deltas → UsageTracker)
+// decorateTurn — lift a prompt/continue/cancel transform to a MuClient transform
 // ---------------------------------------------------------------------------
 
 import type { MuClient, MuAgent, MuTurn } from './types.js';
@@ -15,10 +15,10 @@ import type { UsageTracker } from './usage-tracker.js';
 import type { StreamEvent } from '../types/stream.js';
 
 /**
- * Lift a prompt/cancel transform to a MuClient transform.
+ * Lift a prompt/continue/cancel transform to a MuClient transform.
  *
  * `initialize` and `setContext` pass through to the original client;
- * `prompt` and `cancel` come from the transformed turn. Useful when a
+ * `prompt`, `continue` and `cancel` come from the transformed turn. Useful when a
  * decoration only concerns the prompt stream (e.g. usage tracking).
  */
 export function decorateTurn(
@@ -30,6 +30,7 @@ export function decorateTurn(
 		initialize: client.initialize.bind(client),
 		setContext: client.setContext.bind(client),
 		prompt: tracked.prompt.bind(tracked),
+		continue: tracked.continue.bind(tracked),
 		cancel: tracked.cancel.bind(tracked),
 	};
 }
@@ -53,20 +54,24 @@ export function trackAgent(tracker: ContextRecorder, agent: MuAgent): MuAgent {
 }
 
 /**
- * Decorates prompt/cancel behavior to record user messages and assistant
+ * Decorates prompt/continue/cancel behavior to record user messages and assistant
  * updates in the tracker.
  */
 export function trackTurn(tracker: ContextRecorder, turn: MuTurn): MuTurn {
+	async function* record(
+		stream: AsyncIterable<StreamEvent>,
+	): AsyncGenerator<StreamEvent> {
+		for await (const event of stream) {
+			if (event.type === 'update') tracker.append(event.message);
+			yield event;
+		}
+	}
 	return {
-		async *prompt(message): AsyncGenerator<StreamEvent> {
+		async *prompt(message) {
 			tracker.append(message);
-			for await (const event of turn.prompt(message)) {
-				if (event.type === 'update') {
-					tracker.append(event.message);
-				}
-				yield event;
-			}
+			yield* record(turn.prompt(message));
 		},
+		continue: () => record(turn.continue()),
 		cancel: turn.cancel.bind(turn),
 	};
 }
@@ -91,19 +96,22 @@ export function trackClient(
 }
 
 /**
- * Decorates prompt/cancel behavior to record turn usage into the tracker.
- * No-op for turnEnd events without a `usage` field (pre-LLM errors).
+ * Decorates prompt/continue/cancel behavior to record per-step usage into the tracker.
  */
 export function trackUsage(tracker: UsageTracker, turn: MuTurn): MuTurn {
-	return {
-		async *prompt(message): AsyncGenerator<StreamEvent> {
-			for await (const event of turn.prompt(message)) {
-				if (event.type === 'turnEnd' && event.usage) {
-					tracker.add(event.usage);
-				}
-				yield event;
+	async function* record(
+		stream: AsyncIterable<StreamEvent>,
+	): AsyncGenerator<StreamEvent> {
+		for await (const event of stream) {
+			if (event.type === 'stepEnd' || event.type === 'turnEnd') {
+				tracker.add(event.stepUsage);
 			}
-		},
+			yield event;
+		}
+	}
+	return {
+		prompt: (message) => record(turn.prompt(message)),
+		continue: () => record(turn.continue()),
 		cancel: turn.cancel.bind(turn),
 	};
 }

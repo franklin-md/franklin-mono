@@ -1,4 +1,5 @@
-import type { StreamEvent } from '@franklin/mini-acp';
+import type { TurnStreamEvent } from '../../modules/core/turn/types.js';
+
 import { wait } from '@franklin/lib';
 import {
 	createMockMiniACP,
@@ -37,7 +38,9 @@ function pacedTurn() {
 	]);
 }
 
-async function collect(iterable: AsyncIterable<StreamEvent>): Promise<void> {
+async function collect(
+	iterable: AsyncIterable<TurnStreamEvent>,
+): Promise<void> {
 	for await (const _event of iterable) {
 		// Drain the prompt stream.
 	}

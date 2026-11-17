@@ -1,9 +1,9 @@
 import {
-	collect,
 	StopCode,
 	type ToolResult,
 	type UserMessage,
 } from '@franklin/mini-acp';
+import { collectPrompt } from '../../../modules/core/turn/collect.js';
 import {
 	createMockMiniACP,
 	text,
@@ -13,6 +13,9 @@ import {
 	type CreateMockMiniACPOptions,
 	type MockMiniACP,
 } from '@franklin/mini-acp/mock';
+import { ZERO_USAGE } from '@franklin/mini-acp';
+import { RuntimeStopCode } from '../../../modules/core/turn/runtime-stop-code.js';
+import { formatResult } from '../format.js';
 import { describe, expect, it } from 'vitest';
 import {
 	createCoreStateModule,
@@ -145,7 +148,9 @@ describe('spawnExtension', () => {
 		);
 
 		try {
-			await collect(scenario.root.runtime.prompt(userMessage('parent task')));
+			await collectPrompt(
+				scenario.root.runtime.prompt(userMessage('parent task')),
+			);
 
 			const calls = scenario.mock.calls();
 			expect(calls.toolCalls.map((call) => call.name)).toEqual(['spawn']);
@@ -199,7 +204,9 @@ describe('spawnExtension', () => {
 		});
 
 		try {
-			await collect(scenario.root.runtime.prompt(userMessage('parent task')));
+			await collectPrompt(
+				scenario.root.runtime.prompt(userMessage('parent task')),
+			);
 
 			const result = scenario.mock.calls().toolResults[0];
 			expect(result?.isError).toBe(true);
@@ -212,5 +219,23 @@ describe('spawnExtension', () => {
 		} finally {
 			await scenario.dispose();
 		}
+	});
+});
+
+it('reports a runtime failure as a child tool error even when earlier text exists', () => {
+	expect(
+		formatResult(
+			[{ role: 'assistant', content: [{ type: 'text', text: 'partial' }] }],
+			{
+				type: 'turnEnd',
+				stopCode: RuntimeStopCode.CompactionFailure,
+				stopMessage: 'Compaction failed',
+				stepUsage: ZERO_USAGE,
+				usage: ZERO_USAGE,
+			},
+		),
+	).toEqual({
+		content: [{ type: 'text', text: 'Compaction failed' }],
+		isError: true,
 	});
 });

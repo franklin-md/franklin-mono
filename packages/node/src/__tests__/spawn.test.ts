@@ -60,6 +60,7 @@ describe('spawn', () => {
 			initialize: vi.fn(async () => {}),
 			setContext: vi.fn(async () => {}),
 			prompt: vi.fn(),
+			continue: vi.fn(),
 			cancel: vi.fn(async () => {}),
 		};
 		vi.mocked(miniACP.createPiAgent).mockReturnValue(

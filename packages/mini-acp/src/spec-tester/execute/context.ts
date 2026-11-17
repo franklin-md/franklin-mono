@@ -91,6 +91,11 @@ export async function createContext(factory: AgentFactory) {
 		backgroundPromises.push(consume(client.prompt(message)));
 	}
 
+	function continueTurn(): void {
+		record({ direction: 'send', method: 'continue', params: {} });
+		backgroundPromises.push(consume(client.continue()));
+	}
+
 	function cancel(): void {
 		record({ direction: 'send', method: 'cancel', params: {} });
 		void client.cancel();
@@ -134,5 +139,14 @@ export async function createContext(factory: AgentFactory) {
 		}
 	}
 
-	return { transcript, initialize, setContext, prompt, cancel, waitFor, drain };
+	return {
+		transcript,
+		initialize,
+		setContext,
+		prompt,
+		continueTurn,
+		cancel,
+		waitFor,
+		drain,
+	};
 }
