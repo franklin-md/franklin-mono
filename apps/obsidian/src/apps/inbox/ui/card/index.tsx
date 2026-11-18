@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { useId } from 'react';
 import { cn } from '@franklin/ui';
 import type { StudyQuestion, QuestionSource } from '../../types.js';
@@ -16,6 +16,7 @@ type Props = {
 	parent?: StudyQuestion;
 	childCount: number;
 	focused: boolean;
+	actions?: ReactNode;
 	onFocus: (id?: string) => void;
 	onFollowUp: (
 		submission: QuestionSubmission,
@@ -32,6 +33,7 @@ export function QuestionCard({
 	parent,
 	childCount,
 	focused,
+	actions,
 	onFocus,
 	onFollowUp,
 	onDelete,
@@ -96,11 +98,14 @@ export function QuestionCard({
 					/>
 				}
 				controls={
-					<QuestionControls
-						question={question}
-						onFollowUp={onFollowUp}
-						onRetry={onRetry}
-					/>
+					<>
+						{actions}
+						<QuestionControls
+							question={question}
+							onFollowUp={onFollowUp}
+							onRetry={onRetry}
+						/>
+					</>
 				}
 			/>
 		</article>

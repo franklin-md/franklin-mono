@@ -226,7 +226,9 @@ describe('FranklinPlugin startup', () => {
 		);
 		expect(plugin.franklinApp).toBe(runtime.app);
 
-		runtime.inboxStartup.resolve({} as InboxController);
+		runtime.inboxStartup.resolve({
+			subscribeSaved: () => () => {},
+		} as unknown as InboxController);
 		await vi.waitFor(() => expect(registerView).toHaveBeenCalledTimes(2));
 		expect(registerView.mock.calls.map(([type]) => type)).toContain(
 			'franklin-study-inbox',
@@ -235,6 +237,7 @@ describe('FranklinPlugin startup', () => {
 			'open-chat-window',
 			'open-study-inbox',
 			'selection-to-study-inbox',
+			'open-inbox-capture-chooser',
 		]);
 		plugin.onunload();
 		expect(runtime.disposeInbox).toHaveBeenCalledOnce();

@@ -12,9 +12,12 @@ import { nextNodeOrder } from '../hierarchy/order.js';
 import { childParent } from '../hierarchy/parent.js';
 import type { NewChild } from '../hierarchy/types.js';
 import { ThoughtDumps } from '../modes/controller.js';
+import { InboxActions } from '../actions/controller.js';
 import { restoreInbox } from './restore.js';
+import { QuestionSaveError } from './save-error.js';
 import type {
 	InboxControllerOptions,
+	InboxDocument,
 	InboxPreferences,
 	InboxSnapshot,
 } from './types.js';
@@ -25,15 +28,21 @@ export class InboxController {
 	readonly state: ReadonlyStore<InboxSnapshot>;
 	readonly groups: InboxGroups;
 	readonly thoughtDumps: ThoughtDumps;
+	readonly actions: InboxActions;
 	private readonly store: Store<InboxSnapshot>;
 	private readonly active = new Map<string, AbortController>();
 	private writes = Promise.resolve();
+	private saved: InboxDocument;
+	private readonly savedListeners = new Set<
+		(document: InboxDocument) => void
+	>();
 	private closed = false;
 
 	private constructor(
 		private readonly options: InboxControllerOptions,
 		initial: InboxSnapshot,
 	) {
+		this.saved = initial;
 		this.store = createStore(initial);
 		this.state = this.store;
 		const operations = {
@@ -46,6 +55,11 @@ export class InboxController {
 		this.thoughtDumps = new ThoughtDumps({
 			...operations,
 			split: options.split,
+		});
+		this.actions = new InboxActions({
+			...operations,
+			run: options.runAction,
+			onComplete: options.onActionComplete,
 		});
 	}
 
@@ -61,6 +75,13 @@ export class InboxController {
 		signal?.throwIfAborted();
 		controller.pump();
 		return controller;
+	}
+
+	// Inline note edits must follow a durable Inbox snapshot.
+	subscribeSaved(listener: (document: InboxDocument) => void): () => void {
+		this.savedListeners.add(listener);
+		listener(this.saved);
+		return () => this.savedListeners.delete(listener);
 	}
 
 	async add(
@@ -93,7 +114,9 @@ export class InboxController {
 				draft.questions.unshift(question);
 			});
 		}
-		await this.persist();
+		await this.persist().catch((error: unknown) => {
+			throw new QuestionSaveError(id, error);
+		});
 		this.pump();
 		return id;
 	}
@@ -148,6 +171,10 @@ export class InboxController {
 				if (node.parentId && deleted.has(node.parentId)) deleted.add(node.id);
 			}
 		} while (count !== deleted.size);
+		const actionIds = this.store
+			.get()
+			.actionRuns.filter((run) => deleted.has(run.question.id))
+			.map((run) => run.id);
 		this.store.set((draft) => {
 			draft.questions = draft.questions.filter(
 				(question) => !deleted.has(question.id),
@@ -156,8 +183,11 @@ export class InboxController {
 			draft.thoughtDumps = draft.thoughtDumps?.filter(
 				(dump) => !dump.groupId || !deleted.has(dump.groupId),
 			);
+			draft.actionRuns = draft.actionRuns.filter(
+				(run) => !deleted.has(run.question.id),
+			);
 		});
-		for (const key of deleted) this.active.get(key)?.abort();
+		for (const key of [...deleted, ...actionIds]) this.active.get(key)?.abort();
 		await this.persist();
 		this.pump();
 	}
@@ -165,6 +195,7 @@ export class InboxController {
 	async retrySave(): Promise<void> {
 		this.assertOpen();
 		await this.persist();
+		await this.actions.cleanup();
 		this.pump();
 	}
 
@@ -179,6 +210,9 @@ export class InboxController {
 			for (const dump of draft.thoughtDumps ?? []) {
 				if (dump.state.kind === 'running') dump.state = interruptedState();
 			}
+			for (const run of draft.actionRuns) {
+				if (run.state.kind === 'running') run.state = interruptedState();
+			}
 		});
 		// The runner owns cancellation and runtime disposal in its finally block.
 		await this.persist();
@@ -189,11 +223,27 @@ export class InboxController {
 	}
 
 	private async persist(): Promise<void> {
-		const { questions, preferences, groups, thoughtDumps } = this.store.get();
-		const document = { questions, preferences, groups, thoughtDumps };
-		const write = this.writes.then(() =>
-			this.options.persistence.save(document),
-		);
+		const {
+			questions,
+			preferences,
+			groups,
+			thoughtDumps,
+			actions,
+			actionRuns,
+		} = this.store.get();
+		const document = {
+			questions,
+			preferences,
+			groups,
+			thoughtDumps,
+			actions,
+			actionRuns,
+		};
+		const write = this.writes.then(async () => {
+			await this.options.persistence.save(document);
+			this.saved = document;
+			for (const listener of this.savedListeners) listener(document);
+		});
 		this.writes = write.catch(() => {});
 		try {
 			await write;
@@ -210,7 +260,8 @@ export class InboxController {
 
 	private pump(): void {
 		if (this.closed || this.store.get().storageError) return;
-		const { questions, thoughtDumps, preferences } = this.store.get();
+		const { questions, thoughtDumps, preferences, actionRuns } =
+			this.store.get();
 		const queue = [
 			...[...questions]
 				.reverse()
@@ -218,6 +269,7 @@ export class InboxController {
 			...[...(thoughtDumps ?? [])]
 				.reverse()
 				.map((dump) => ({ ...dump, type: 'dump' as const })),
+			...actionRuns.map((run) => ({ ...run, type: 'action' as const })),
 		].sort((a, b) => a.createdAt - b.createdAt);
 		for (const item of queue) {
 			if (this.active.size >= preferences.concurrency) break;
@@ -228,7 +280,9 @@ export class InboxController {
 			const running =
 				item.type === 'dump'
 					? this.thoughtDumps.execute(item.id, abort.signal)
-					: this.execute(item.id, item.attemptId, abort.signal);
+					: item.type === 'action'
+						? this.actions.execute(item.id, item.attemptId, abort.signal)
+						: this.execute(item.id, item.attemptId, abort.signal);
 			void running.finally(() => {
 				this.active.delete(item.id);
 				this.pump();

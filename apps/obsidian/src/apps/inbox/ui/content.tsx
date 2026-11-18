@@ -20,11 +20,14 @@ import { selectionQuestion } from '../selection-question.js';
 import type { InboxGroup } from '../hierarchy/types.js';
 import type { ThoughtDump } from '../modes/types.js';
 import type { InboxPreferences } from '../controller/types.js';
+import type { QuestionNavigation } from './navigation.js';
 
 type Props = {
 	questions: StudyQuestion[];
 	groups?: InboxGroup[];
 	thoughtDumps?: ThoughtDump[];
+	renderActions?: (question: StudyQuestion) => ReactNode;
+	navigation?: QuestionNavigation;
 	onFoldGroup?: (id: string, folded: boolean) => void;
 	onRetryExtraction?: (id: string) => void;
 	onDismissExtraction?: (id: string) => void;
@@ -49,6 +52,8 @@ export function InboxContent({
 	questions,
 	groups,
 	thoughtDumps,
+	renderActions,
+	navigation,
 	onFoldGroup,
 	onRetryExtraction,
 	onDismissExtraction,
@@ -152,6 +157,8 @@ export function InboxContent({
 				questions={questions}
 				groups={groups}
 				thoughtDumps={thoughtDumps}
+				renderActions={renderActions}
+				navigation={navigation}
 				onFoldGroup={onFoldGroup}
 				onRetryExtraction={onRetryExtraction}
 				onDismissExtraction={onDismissExtraction}

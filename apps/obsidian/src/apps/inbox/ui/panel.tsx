@@ -1,13 +1,17 @@
 import { useSyncExternalStore } from 'react';
+import type { ReadonlyStore } from '@franklin/agent';
 import { Button, ModelPicker, PromptFooterControlGroup } from '@franklin/ui';
 import { questionSchema } from '../controller/question-schema.js';
 import type { InboxController } from '../controller/index.js';
-import type { QuestionSource } from '../types.js';
+import type { QuestionSource, StudyQuestion } from '../types.js';
 import { InboxContent } from './content.js';
 import { ModeControl } from './mode.js';
+import { QuestionActions } from './actions.js';
+import type { QuestionNavigation } from './navigation.js';
 
 type Props = {
 	controller: InboxController;
+	navigation?: ReadonlyStore<QuestionNavigation | null>;
 	onOpenSource: (source: QuestionSource) => void;
 	captureContext?: (question: string) => Promise<QuestionSource | undefined>;
 	onSettings: () => void;
@@ -16,6 +20,7 @@ type Props = {
 
 export function InboxPanel({
 	controller,
+	navigation,
 	captureContext,
 	onOpenSource,
 	onSettings,
@@ -26,6 +31,10 @@ export function InboxPanel({
 		() => controller.state.get(),
 	);
 	const { preferences } = snapshot;
+	const navigationRequest = useSyncExternalStore(
+		(notify) => navigation?.subscribe(notify) ?? (() => {}),
+		() => navigation?.get() ?? undefined,
+	);
 	const configure = (patch: Parameters<InboxController['configure']>[0]) => {
 		void controller.configure(patch).catch(onError);
 	};
@@ -38,11 +47,36 @@ export function InboxPanel({
 		);
 	}
 
+	function renderActions(question: StudyQuestion) {
+		if (question.state.kind !== 'answered') return null;
+		const runs = snapshot.actionRuns.filter(
+			(run) => run.question.id === question.id,
+		);
+		if (!snapshot.actions.length && !runs.length) return null;
+		return (
+			<QuestionActions
+				actions={snapshot.actions}
+				runs={runs}
+				onRun={(actionId) => {
+					void controller.actions.start(question.id, actionId).catch(onError);
+				}}
+				onRetry={(id) => {
+					void controller.actions.retry(id).catch(onError);
+				}}
+				onDismiss={(id) => {
+					void controller.actions.dismiss(id).catch(onError);
+				}}
+			/>
+		);
+	}
+
 	return (
 		<div className="h-full min-h-0 w-full overflow-hidden text-left font-sans text-sm leading-normal text-foreground">
 			<InboxContent
 				questions={snapshot.questions}
 				groups={snapshot.groups}
+				navigation={navigationRequest}
+				renderActions={renderActions}
 				onFoldGroup={(id, folded) => {
 					void controller.groups.fold(id, folded).catch(onError);
 				}}

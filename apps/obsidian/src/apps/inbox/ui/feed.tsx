@@ -1,6 +1,7 @@
 import { Inbox } from 'lucide-react';
-import type { KeyboardEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import type { QuestionNavigation } from './navigation.js';
 import type { QuestionSubmission } from './composer.js';
 import type { InboxGroup } from '../hierarchy/types.js';
 import { inboxNodes } from '../hierarchy/nodes.js';
@@ -17,6 +18,8 @@ type Props = {
 	questions: StudyQuestion[];
 	groups?: InboxGroup[];
 	thoughtDumps?: ThoughtDump[];
+	renderActions?: (question: StudyQuestion) => ReactNode;
+	navigation?: QuestionNavigation;
 	onRetryExtraction?: (id: string) => void;
 	onDismissExtraction?: (id: string) => void;
 	onFoldGroup?: (id: string, folded: boolean) => void;
@@ -47,6 +50,8 @@ export function QuestionFeed({
 	questions,
 	groups,
 	thoughtDumps,
+	renderActions,
+	navigation,
 	onRetryExtraction,
 	onDismissExtraction,
 	onFoldGroup,
@@ -75,9 +80,30 @@ export function QuestionFeed({
 			})),
 	].sort((a, b) => b.order - a.order);
 	const newest = entries[0]?.value.id;
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (container.current) container.current.scrollTop = 0;
 	}, [newest]);
+	useLayoutEffect(() => {
+		if (!navigation) return;
+		const card = container.current?.ownerDocument.getElementById(
+			`question-${navigation.questionId}`,
+		);
+		if (!card || !container.current?.contains(card)) return;
+		// A pill can navigate to a question inside a folded group.
+		for (
+			let ancestor = card.parentElement;
+			ancestor && ancestor !== container.current;
+			ancestor = ancestor.parentElement
+		) {
+			if (ancestor.tagName === 'DETAILS')
+				(ancestor as HTMLDetailsElement).open = true;
+		}
+		setFocusedId(navigation.questionId);
+		card.scrollIntoView({ block: 'nearest' });
+		card
+			.querySelector<HTMLButtonElement>(':scope > header h3 > button')
+			?.focus({ preventScroll: true });
+	}, [navigation]);
 	const days = Map.groupBy(entries, ({ value }) =>
 		new Date(value.createdAt).toDateString(),
 	);
@@ -117,6 +143,7 @@ export function QuestionFeed({
 					parent={parent}
 					childCount={children.length}
 					focused={focusedId === question.id}
+					actions={renderActions?.(question)}
 					onFocus={setFocusedId}
 					{...actions}
 				/>

@@ -4,6 +4,11 @@ import type { StudyQuestion } from '../types.js';
 import type { AnswerDetail } from '../answer/types.js';
 import type { BranchContext, InboxGroup } from '../hierarchy/types.js';
 import type { Extraction, SplitRequest, ThoughtDump } from '../modes/types.js';
+import type {
+	ActionRequest,
+	InboxAction,
+	InboxActionRun,
+} from '../actions/types.js';
 
 export type ModelSelection = {
 	provider: string;
@@ -28,6 +33,8 @@ export type InboxDocument = {
 	questions: InboxQuestion[];
 	groups?: InboxGroup[];
 	thoughtDumps?: ThoughtDump[];
+	actions: InboxAction[];
+	actionRuns: InboxActionRun[];
 	preferences: InboxPreferences;
 };
 
@@ -48,4 +55,6 @@ export type InboxControllerOptions = {
 	defaults: ModelSelection;
 	run: (request: AnswerRequest) => Promise<void>;
 	split?: (request: SplitRequest) => Promise<Extraction>;
+	runAction?: (request: ActionRequest) => Promise<string>;
+	onActionComplete?: (name: string, summary: string) => void;
 };

@@ -27,7 +27,7 @@ export default class FranklinPlugin extends Plugin {
 	private diffExplorerController: DiffExplorerController | null = null;
 	private unloading = false;
 	private directives?: DirectiveRegistry;
-	private disposeInbox: (() => void) | null = null;
+	private disposeInbox: (() => Promise<void>) | null = null;
 	private readonly quickEditLifetime = new AbortController();
 	private disposeQuickEdit?: () => Promise<void>;
 	franklinApp: FranklinApp | null = null;
@@ -61,9 +61,10 @@ export default class FranklinPlugin extends Plugin {
 					hostActionBindings,
 				});
 
+				const directives = this.loadDirectives();
 				return Promise.all([
-					this.loadInbox(runtime, settings),
-					this.loadQuickEdit(app, settings, diffClient),
+					this.loadInbox(runtime, settings, directives),
+					this.loadQuickEdit(app, settings, diffClient, directives),
 				]);
 			})
 			.catch((err: unknown) => {
@@ -76,21 +77,32 @@ export default class FranklinPlugin extends Plugin {
 	private async loadInbox(
 		{ app, hostActionBindings, startInbox }: PluginRuntime,
 		settings: FranklinSettingTab,
+		directives: Promise<DirectiveRegistry | undefined>,
 	) {
 		try {
 			const { ready, dispose } = startInbox();
-			this.disposeInbox = () => {
-				void dispose().catch((error: unknown) => {
-					new Notice(`Inbox shutdown: ${errorMessage(error)}`);
-				});
+			const stopInbox = async (disposeRegistration?: () => Promise<void>) => {
 				settings.setInbox(null);
+				try {
+					await Promise.all([disposeRegistration?.(), dispose()]);
+				} catch (error) {
+					new Notice(`Inbox shutdown: ${errorMessage(error)}`);
+				}
 			};
+			this.disposeInbox = stopInbox;
 			const inbox = await ready;
 			if (this.unloading) return;
-			registerInbox({ plugin: this, app, inbox, hostActionBindings });
+			const unregister = registerInbox({
+				plugin: this,
+				app,
+				inbox,
+				hostActionBindings,
+				directives,
+			});
+			this.disposeInbox = () => stopInbox(unregister);
 			settings.setInbox(inbox);
 		} catch (error) {
-			this.disposeInbox?.();
+			void this.disposeInbox?.();
 			this.disposeInbox = null;
 			if (!this.unloading)
 				new Notice(`Study inbox unavailable: ${errorMessage(error)}`);
@@ -101,8 +113,9 @@ export default class FranklinPlugin extends Plugin {
 		app: FranklinApp,
 		settings: FranklinSettingTab,
 		diff: ObsidianDiffClient,
+		directives: Promise<DirectiveRegistry | undefined>,
 	): Promise<void> {
-		const registry = await this.loadDirectives();
+		const registry = await directives;
 		const { signal } = this.quickEditLifetime;
 		if (!registry || signal.aborted) return;
 
@@ -157,12 +170,15 @@ export default class FranklinPlugin extends Plugin {
 	onunload() {
 		this.unloading = true;
 		this.quickEditLifetime.abort();
-		void this.directives?.dispose(this.disposeQuickEdit?.());
+		const drains = Promise.all([
+			this.disposeQuickEdit?.(),
+			this.disposeInbox?.(),
+		]);
+		void this.directives?.dispose(drains.then(() => {}));
 		this.disposeQuickEdit = undefined;
 		this.directives = undefined;
 		this.diffExplorerController?.onunload();
 		this.diffController?.onunload();
-		this.disposeInbox?.();
 		clearPortalRoot(activeDocument);
 		this.franklinApp = null;
 		this.hostActionBindings = [];

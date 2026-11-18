@@ -115,7 +115,7 @@ it('migrates v7 and Madrid v8 without rewriting question branches and rejects in
 	const child = await h.inbox.groups.add({}, group);
 	await h.inbox.add('Question', { parentId: child });
 	const document = (await h.persistence.load()).value!;
-	expect(inboxCodec.encode(document)).toMatchObject({ version: 9 });
+	expect(inboxCodec.encode(document)).toMatchObject({ version: 10 });
 	const old = {
 		...document,
 		groups: undefined,

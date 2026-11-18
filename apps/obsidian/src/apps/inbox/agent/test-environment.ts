@@ -1,3 +1,4 @@
+import { posix } from 'node:path';
 import {
 	FILESYSTEM_ALLOW_ALL,
 	MemoryFilesystem,
@@ -22,6 +23,9 @@ type Options = { fetch?: Fetch };
 
 export function createInboxTestEnvironment({ fetch }: Options = {}) {
 	const filesystem = new MemoryFilesystem();
+	// Match the Node filesystem when edit_file resolves an already absolute path.
+	filesystem.resolve = async (...paths) =>
+		toAbsolutePath(posix.resolve(...paths));
 	const config: EnvironmentConfig = {
 		fsConfig: {
 			cwd: toAbsolutePath('/vault'),

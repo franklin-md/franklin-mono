@@ -13,6 +13,8 @@ export async function restoreInbox({
 		);
 	const initial: InboxDocument = restored.value ?? {
 		questions: [],
+		actions: [],
+		actionRuns: [],
 		preferences: {
 			...defaults,
 			answerInstructions: DEFAULT_ANSWER_INSTRUCTIONS,
@@ -27,6 +29,13 @@ export async function restoreInbox({
 	}
 	for (const dump of initial.thoughtDumps ?? []) {
 		if (dump.state.kind === 'running') dump.state = interruptedState();
+	}
+	// A saved success may still be present if the final cleanup write failed.
+	initial.actionRuns = initial.actionRuns.filter(
+		(run) => run.state.kind !== 'succeeded',
+	);
+	for (const run of initial.actionRuns) {
+		if (run.state.kind === 'running') run.state = interruptedState();
 	}
 	return initial;
 }
