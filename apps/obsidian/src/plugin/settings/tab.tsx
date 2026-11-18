@@ -5,6 +5,8 @@ import { PluginSettingTab } from 'obsidian';
 import type FranklinPlugin from '../../main.js';
 import type { InboxController } from '../../apps/inbox/controller/index.js';
 import { openInboxHotkeys } from '../../apps/inbox/host/open-hotkeys.js';
+import { openQuickEditHotkeys } from '../../apps/quick-edit/settings/hotkeys.js';
+import type { QuickEditPreferences } from '../../apps/quick-edit/settings/store.js';
 import { createMounter, type Mounter } from '../../shared/ui/mount.js';
 import type { SettingsSection } from '../../shared/obsidian/settings/types.js';
 
@@ -16,6 +18,12 @@ export class FranklinSettingTab extends PluginSettingTab {
 	private readonly mounter: Mounter = createMounter();
 	private readonly inbox = createStore<{ controller: InboxController | null }>({
 		controller: null,
+	});
+
+	private readonly quickEdit = createStore<{
+		preferences: QuickEditPreferences | null;
+	}>({
+		preferences: null,
 	});
 
 	constructor(plugin: FranklinPlugin) {
@@ -34,6 +42,10 @@ export class FranklinSettingTab extends PluginSettingTab {
 		});
 	}
 
+	setQuickEdit(preferences: QuickEditPreferences): void {
+		this.quickEdit.set(() => ({ preferences }));
+	}
+
 	display(): void {
 		const franklinApp = this.plugin.franklinApp;
 		if (!franklinApp) {
@@ -49,6 +61,8 @@ export class FranklinSettingTab extends PluginSettingTab {
 			>
 				<SettingsPage
 					inbox={this.inbox}
+					quickEdit={this.quickEdit}
+					onConfigureQuickEditShortcut={() => openQuickEditHotkeys(this.plugin)}
 					onConfigureInboxShortcut={() => openInboxHotkeys(this.plugin.app)}
 					initialSection={this.section}
 					onSectionChange={(section) => {

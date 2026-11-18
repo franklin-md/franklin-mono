@@ -18,7 +18,14 @@ export function createTestBuffer(
 		offsetToPos,
 		getValue: () => state().doc.toString(),
 		getLine: (line: number) => state().doc.line(line + 1).text,
-		getCursor: () => offsetToPos(state().selection.main.head),
+		getSelection: () => {
+			const { from, to } = state().selection.main;
+			return state().sliceDoc(from, to);
+		},
+		getCursor: (which?: 'from' | 'to') => {
+			const range = state().selection.main;
+			return offsetToPos(which ? range[which] : range.head);
+		},
 		setSelection: (from: EditorPosition, to = from) =>
 			dispatch({
 				selection: { anchor: posToOffset(from), head: posToOffset(to) },

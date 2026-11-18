@@ -102,7 +102,10 @@ describe('directive instances', () => {
 			await persist(doc);
 		});
 		const first = previous.registerDirective('counter', Renderer).create(1);
-		const draining = previous.dispose();
+		const shutdown = first.then(async (instance) => {
+			await instance.update(() => 3);
+		});
+		const draining = previous.dispose(shutdown);
 		vi.resetModules();
 		const { DirectiveRegistry: ReloadedRegistry } =
 			await import('../registry.js');
@@ -115,7 +118,7 @@ describe('directive instances', () => {
 		]);
 		const definition = reopened.registerDirective('counter', Renderer);
 		await definition.create(2);
-		expect(definition.get(instance.id)?.state.get()).toBe(1);
+		expect(definition.get(instance.id)?.state.get()).toBe(3);
 		expect(
 			Object.keys((await storage.load()).value?.instances ?? {}),
 		).toHaveLength(2);

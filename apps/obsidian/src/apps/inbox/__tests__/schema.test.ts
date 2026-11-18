@@ -41,6 +41,12 @@ describe('Inbox base storage boundary', () => {
 				thoughtDumps: [],
 			},
 		});
-		expect(result.ok && result.value).toEqual(document);
+		expect(result.ok && result.value).toEqual({
+			...document,
+			groups: [],
+			thoughtDumps: [],
+			actions: [],
+			actionRuns: [],
+		});
 	});
 });

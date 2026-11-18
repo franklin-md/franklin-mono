@@ -3,16 +3,22 @@ import type { InboxController } from '../controller/index.js';
 import { InboxShortcutSetting } from './shortcut.js';
 import { InboxInstructionsSetting } from './instructions.js';
 import { InboxReasoningSetting } from './reasoning.js';
+import { InboxActionSettings } from './actions/settings.js';
 
 type Props = { inbox: InboxController; onConfigureInboxShortcut?: () => void };
 export function InboxSettings({ inbox, onConfigureInboxShortcut }: Props) {
 	return (
-		<SettingGroup title="Study inbox">
-			<InboxReasoningSetting inbox={inbox} />
-			<InboxInstructionsSetting inbox={inbox} />
-			{onConfigureInboxShortcut && (
-				<InboxShortcutSetting onConfigure={onConfigureInboxShortcut} />
-			)}
-		</SettingGroup>
+		<>
+			<SettingGroup title="Study inbox">
+				<InboxReasoningSetting inbox={inbox} />
+				<InboxInstructionsSetting inbox={inbox} />
+				{onConfigureInboxShortcut && (
+					<InboxShortcutSetting onConfigure={onConfigureInboxShortcut} />
+				)}
+			</SettingGroup>
+			<SettingGroup title="Inbox actions">
+				<InboxActionSettings inbox={inbox} />
+			</SettingGroup>
+		</>
 	);
 }

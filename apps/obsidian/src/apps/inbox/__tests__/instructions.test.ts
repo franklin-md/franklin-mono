@@ -71,7 +71,7 @@ describe('saved inbox answer instructions', () => {
 				);
 				expect(value.questions[0]?.state).toEqual(data.questions[0]?.state);
 				const encoded = inboxCodec.encode(value);
-				expect(encoded).toMatchObject({ version: 7 });
+				expect(encoded).toMatchObject({ version: 10 });
 				expect(JSON.stringify(encoded)).not.toContain('"terse"');
 				data.questions[1] = { ...data.questions[1]!, rootId: 'missing-root' };
 				expect(inboxCodec.decode({ version, data }).ok).toBe(false);

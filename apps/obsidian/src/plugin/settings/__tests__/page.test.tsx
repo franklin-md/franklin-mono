@@ -105,7 +105,11 @@ function renderPage(
 				harness={app}
 				hostActionBindings={[bindHostAction(openExternalAction, openExternal)]}
 			>
-				<SettingsPage inbox={createStore({ controller: null })} {...props} />
+				<SettingsPage
+					inbox={createStore({ controller: null })}
+					quickEdit={createStore({ preferences: null })}
+					{...props}
+				/>
 			</ApplicationProvider>,
 		),
 		openExternal,
@@ -350,6 +354,7 @@ describe('SettingsPage', () => {
 		expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
 			'General',
 			'Inbox',
+			'Quick edit',
 			'Connections',
 		]);
 		expect(

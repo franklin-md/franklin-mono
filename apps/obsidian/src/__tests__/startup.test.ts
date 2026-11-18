@@ -13,10 +13,14 @@ const startup = vi.hoisted(() => ({
 	create: vi.fn(),
 	scan: vi.fn(async () => {}),
 	unload: vi.fn(),
+	quickEdit: vi.fn(),
 }));
 
 vi.mock('../plugin/bootstrap.js', () => ({
 	bootstrapPlugin: startup.create,
+}));
+vi.mock('../apps/quick-edit/register.js', () => ({
+	registerQuickEdit: startup.quickEdit,
 }));
 vi.mock('../dev/react-scan.js', () => ({ registerReactScan: startup.scan }));
 vi.mock('../shared/diff/client.js', () => ({
@@ -88,6 +92,7 @@ beforeEach(async () => {
 	startup.create.mockReset();
 	startup.scan.mockReset().mockResolvedValue(undefined);
 	startup.unload.mockClear();
+	startup.quickEdit.mockReset().mockResolvedValue(undefined);
 });
 
 afterEach(async () => {
@@ -169,6 +174,7 @@ describe('FranklinPlugin startup', () => {
 		expect(registerEditorExtension).toHaveBeenCalledWith(editorAnchors);
 		expect(registerMarkdownPostProcessor).not.toHaveBeenCalled();
 		expect(await readFile(path, 'utf8')).toBe('{broken');
+		expect(startup.quickEdit).not.toHaveBeenCalled();
 		plugin.onunload();
 	});
 
@@ -220,7 +226,9 @@ describe('FranklinPlugin startup', () => {
 		);
 		expect(plugin.franklinApp).toBe(runtime.app);
 
-		runtime.inboxStartup.resolve({} as InboxController);
+		runtime.inboxStartup.resolve({
+			subscribeSaved: () => () => {},
+		} as unknown as InboxController);
 		await vi.waitFor(() => expect(registerView).toHaveBeenCalledTimes(2));
 		expect(registerView.mock.calls.map(([type]) => type)).toContain(
 			'franklin-study-inbox',
@@ -229,11 +237,30 @@ describe('FranklinPlugin startup', () => {
 			'open-chat-window',
 			'open-study-inbox',
 			'selection-to-study-inbox',
+			'open-inbox-capture-chooser',
 		]);
 		plugin.onunload();
 		expect(runtime.disposeInbox).toHaveBeenCalledOnce();
 		expect(dispose).toHaveBeenCalledOnce();
 		expect(startup.unload).toHaveBeenCalledTimes(2);
+	});
+
+	it('waits for Quick Edit startup to settle before disposing its registry', async () => {
+		const dispose = vi.fn(async () => {});
+		const startupReady = Promise.withResolvers<{ dispose: typeof dispose }>();
+		const registry = await createDirectiveTestRegistry();
+		vi.spyOn(DirectiveRegistry, 'create').mockResolvedValue(registry);
+		const registryDispose = vi.spyOn(registry, 'dispose');
+		startup.quickEdit.mockReturnValue(startupReady.promise);
+		startup.create.mockResolvedValue(createRuntime());
+		const { plugin } = createPlugin();
+		await plugin.onload();
+		await vi.waitFor(() => expect(startup.quickEdit).toHaveBeenCalledOnce());
+
+		plugin.onunload();
+		startupReady.resolve({ dispose });
+		await registryDispose.mock.results[0]?.value;
+		expect(dispose).toHaveBeenCalledOnce();
 	});
 
 	it('cancels Inbox recovery on unload and skips late registration', async () => {

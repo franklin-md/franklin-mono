@@ -27,6 +27,7 @@ export class DirectiveRegistry {
 	private readonly listeners = new Set<() => void>();
 	private writes = Promise.resolve();
 	private closed = false;
+	private closing?: Promise<void>;
 
 	private constructor(
 		private readonly options: Options,
@@ -122,10 +123,18 @@ export class DirectiveRegistry {
 		return () => this.listeners.delete(listener);
 	};
 
-	async dispose(): Promise<void> {
-		if (this.closed) return this.writes;
+	dispose(after?: Promise<void>): Promise<void> {
+		if (this.closing) return this.closing;
+		// Quick Edit can still save its stopped state while its runner shuts down.
+		// Publish the barrier now so a reload cannot read before that save drains.
+		this.closing = this.close(after);
+		this.options.app[drainingWrites] = this.closing;
+		return this.closing;
+	}
+
+	private async close(after?: Promise<void>): Promise<void> {
+		if (after) await after;
 		this.closed = true;
-		this.options.app[drainingWrites] = this.writes;
 		await this.writes;
 		this.definitions.clear();
 		this.notify();

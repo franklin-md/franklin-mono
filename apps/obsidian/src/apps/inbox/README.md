@@ -1,9 +1,9 @@
-# Study Inbox base
+# Study Inbox
 
 Inbox owns a plugin-lifetime question queue, saved preferences and answers,
 Markdown-note context, source navigation, and the answer/composer view. Closing
-the pane does not stop its queue. Selection capture adds a question without
-editing the source note.
+the pane does not stop its queue. Inline capture adds a question to the queue
+and puts a status pill beside its source selection.
 
 ## Runtime and storage
 
@@ -17,19 +17,31 @@ editing the source note.
   cancels active work; interrupted questions become retryable failures.
 - Model, reasoning and answer instructions are captured per question. New
   questions and follow-ups use current preferences; retries retain the original
-  selection and instructions. Follow-up context contains only its ancestors,
-  including their complete answer sections.
+  selection and instructions. Follow-up context comes from the ancestor
+  questions, including their complete answers, and the enclosing groups.
 - `inbox.json` is written by a serialized, same-directory temporary-file rename.
-  The document contains questions and preferences, without transcripts or keys.
+  The document contains questions, preferences, and action definitions and runs.
   Reload waits for any previous Inbox instance to finish its writes before
   restoring the file. Failed saves remain visible. Resending the same question,
   including after removing checklist formatting, keeps its original ID.
-- New writes use schema version 7. Flat-question versions 1–6 migrate while
-  preserving exact saved answer instructions and legacy answers. Nonempty
-  groups, actions, action runs or Thought Dump records are rejected, as are
-  corrupt, newer or invalid-lineage documents. Rejection preserves the original
-  file. Empty legacy collections are accepted. Inbox recovery does not block
-  Chat or credentials settings.
+- New writes use schema version 10. Flat-question versions 1–7 keep saved
+  instructions and answers. Version 8 retains saved action definitions and
+  pending runs. Version 9 adds empty action collections on migration. Inbox
+  preserves the original file if validation fails. Chat and credentials
+  settings can open while Inbox recovers.
+
+## Groups and Thought Dump
+
+Switch the Inbox composer to **Thought dump** to organize several questions from
+one passage. The extraction snapshots the model, reasoning and answer
+instructions before joining the same concurrency queue as ordinary questions.
+It saves the group and questions together. Each question then runs independently
+with its ancestor questions and group context. A failed extraction stays in the
+feed with retry and dismiss controls.
+
+Groups retain their fold state across reload. Folding keeps drafts and active
+questions intact. Deleting a group removes its descendants and cancels their
+active attempts.
 
 ## Source navigation (A08)
 
@@ -45,6 +57,21 @@ the best longest-common-subsequence line is selected, using saved-line proximity
 to break ties. Blank quotes and matches with no shared characters do not select
 unrelated text. Missing or renamed notes show a notice and retain the capture.
 
+Open **Franklin: Open inbox capture chooser** in a Markdown editor to add one
+question or send a Thought Dump from the captured selection. A saved question's
+inline pill tracks its progress, previews the answer, and opens its card in
+the Inbox. If directive storage is unavailable, **Add selection to study
+inbox** still queues the question.
+
+## Configurable actions
+
+Save a reusable name and prompt in **Franklin settings → Inbox → Inbox actions**.
+On an answered question, select its action button to start an independent agent
+with the saved answer, source context and currently selected Inbox model.
+Actions can read and edit vault files and run commands within the configured
+environment. Failed runs retain their original context and can be retried or
+dismissed. Completed effects are recorded before the run is cleared.
+
 ## Answer and composer behavior
 
 Answers contain a direct answer, an optional title, and independently collapsed
@@ -59,9 +86,7 @@ while text is selected. Shared prompt/model controls supply the compact UI.
 
 ## Scope and verification
 
-Quick Edit, groups/Thought Dump, reusable actions, research recording/debugging,
-directives/inline capture, personal capture and optional HTTP/PDF downloads have
-separate owners. Local PDF reference reading uses the existing shared host API.
+Local PDF reference reading uses the existing shared host API.
 
 Run the Obsidian tests and the SDK agent-factory tests, then the root build,
 lint and formatting checks. The Obsidian bundle tests exercise development and

@@ -15,6 +15,7 @@ export type QuestionSubmission = { id: string; text: string };
 type Props = {
 	label?: string;
 	placeholder?: string;
+	submitLabel?: string;
 	compact?: boolean;
 	controls?: ReactNode;
 	normalizeText?: (text: string) => string;
@@ -24,6 +25,7 @@ type Props = {
 export function Composer({
 	label = 'Ask a question',
 	placeholder = 'Ask a question…',
+	submitLabel,
 	compact = false,
 	controls,
 	normalizeText,
@@ -70,7 +72,7 @@ export function Composer({
 		<PromptSubmitButton
 			compact={compact}
 			type="submit"
-			aria-label={compact ? 'Send follow-up' : 'Add question'}
+			aria-label={submitLabel ?? (compact ? 'Send follow-up' : 'Add question')}
 			disabled={!draft || submitting}
 		/>
 	);

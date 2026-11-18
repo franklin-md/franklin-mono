@@ -1,13 +1,28 @@
 import { Inbox } from 'lucide-react';
-import type { KeyboardEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import type { QuestionNavigation } from './navigation.js';
 import type { QuestionSubmission } from './composer.js';
+import type { InboxGroup } from '../hierarchy/types.js';
+import { inboxNodes } from '../hierarchy/nodes.js';
+import { groupSummary } from '../hierarchy/summary.js';
+import { QuestionGroup } from './group.js';
+import { ExtractionProgress } from './extraction.js';
+import type { ThoughtDump } from '../modes/types.js';
+
 import { QuestionCard } from './card/index.js';
 import type { StudyQuestion, QuestionSource } from '../types.js';
 import { useFeedMotion } from './use-feed-motion.js';
 
 type Props = {
 	questions: StudyQuestion[];
+	groups?: InboxGroup[];
+	thoughtDumps?: ThoughtDump[];
+	renderActions?: (question: StudyQuestion) => ReactNode;
+	navigation?: QuestionNavigation;
+	onRetryExtraction?: (id: string) => void;
+	onDismissExtraction?: (id: string) => void;
+	onFoldGroup?: (id: string, folded: boolean) => void;
 	onFollowUp: (
 		submission: QuestionSubmission,
 		parentId: string,
@@ -31,21 +46,66 @@ function dayLabel(timestamp: number) {
 	return dayFormat.format(date);
 }
 
-export function QuestionFeed({ questions, ...actions }: Props) {
+export function QuestionFeed({
+	questions,
+	groups,
+	thoughtDumps,
+	renderActions,
+	navigation,
+	onRetryExtraction,
+	onDismissExtraction,
+	onFoldGroup,
+	...actions
+}: Props) {
 	const [focusedId, setFocusedId] = useState<string>();
 	const container = useRef<HTMLDivElement>(null);
 	useFeedMotion(container);
-	const newest = questions.find((question) => !question.parentId)?.id;
-	useEffect(() => {
-		if (container.current) container.current.scrollTop = 0;
-	}, [newest]);
-	const ordered = [...questions].sort(
+	const nodes = inboxNodes({ questions, groups }).sort(
 		(a, b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt),
 	);
-	const children = Map.groupBy(ordered, (question) => question.parentId);
-	const roots = [...(children.get(undefined) ?? [])].reverse();
-	const days = Map.groupBy(roots, (question) =>
-		new Date(question.createdAt).toDateString(),
+	const childrenByParent = Map.groupBy(nodes, (node) => node.parentId);
+	const roots = [...(childrenByParent.get(undefined) ?? [])].reverse();
+	const entries = [
+		...roots.map((node) => ({
+			kind: 'node' as const,
+			value: node,
+			order: node.order ?? node.createdAt,
+		})),
+		...(thoughtDumps ?? [])
+			.filter((dump) => dump.state.kind !== 'succeeded')
+			.map((dump) => ({
+				kind: 'extraction' as const,
+				value: dump,
+				order: dump.createdAt,
+			})),
+	].sort((a, b) => b.order - a.order);
+	const newest = entries[0]?.value.id;
+	useLayoutEffect(() => {
+		if (container.current) container.current.scrollTop = 0;
+	}, [newest]);
+	useLayoutEffect(() => {
+		if (!navigation) return;
+		const card = container.current?.ownerDocument.getElementById(
+			`question-${navigation.questionId}`,
+		);
+		if (!card || !container.current?.contains(card)) return;
+		// A pill can navigate to a question inside a folded group.
+		for (
+			let ancestor = card.parentElement;
+			ancestor && ancestor !== container.current;
+			ancestor = ancestor.parentElement
+		) {
+			if (ancestor.tagName === 'DETAILS')
+				(ancestor as HTMLDetailsElement).open = true;
+		}
+		setFocusedId(navigation.questionId);
+		card.scrollIntoView({ block: 'nearest' });
+		card
+			.querySelector<HTMLButtonElement>(':scope > header h3 > button')
+			?.focus({ preventScroll: true });
+	}, [navigation]);
+	const days = Map.groupBy(entries, ({ value }) =>
+		new Date(value.createdAt).toDateString(),
 	);
 
 	function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -54,27 +114,43 @@ export function QuestionFeed({ questions, ...actions }: Props) {
 		if (event.target instanceof HTMLTextAreaElement) event.target.blur();
 	}
 
-	function renderQuestion(
-		question: StudyQuestion,
+	function renderNode(
+		node: StudyQuestion | InboxGroup,
+		source?: QuestionSource,
 		parent?: StudyQuestion,
-		inheritedSource?: QuestionSource,
 	) {
-		const replies = children.get(question.id) ?? [];
-		const source = question.source ?? inheritedSource;
+		const children = childrenByParent.get(node.id) ?? [];
+		const origin = node.source ?? source;
+		if (!('state' in node)) {
+			return (
+				<QuestionGroup
+					key={node.id}
+					group={node}
+					{...groupSummary(node, childrenByParent)}
+					onFold={onFoldGroup}
+					onDelete={actions.onDelete}
+				>
+					{children.map((child) => renderNode(child, origin, parent))}
+				</QuestionGroup>
+			);
+		}
+		const question = node;
 		return (
 			<div className="min-w-0" key={question.id}>
 				<QuestionCard
 					question={question}
-					source={source}
+					source={origin}
 					parent={parent}
-					childCount={replies.length}
+					childCount={children.length}
 					focused={focusedId === question.id}
+					actions={renderActions?.(question)}
 					onFocus={setFocusedId}
 					{...actions}
 				/>
-				{replies.length > 0 && (
+				{/* Keep replies closer than independent threads, with shallow nested indentation. */}
+				{children.length > 0 && (
 					<div className="study-children ml-px flex min-w-0 flex-col gap-3 pt-2 pl-4 shadow-[-1px_0_0_var(--border)] [&_.study-children]:pl-2">
-						{replies.map((reply) => renderQuestion(reply, question, source))}
+						{children.map((child) => renderNode(child, origin, question))}
 					</div>
 				)}
 			</div>
@@ -87,7 +163,7 @@ export function QuestionFeed({ questions, ...actions }: Props) {
 			ref={container}
 			onKeyDown={handleKeyDown}
 		>
-			{roots.length === 0 && (
+			{entries.length === 0 && (
 				<div className="px-2 py-16 text-center text-muted-foreground">
 					<Inbox
 						size={30}
@@ -109,23 +185,34 @@ export function QuestionFeed({ questions, ...actions }: Props) {
 					<section
 						className="mt-1 not-first:mt-6"
 						key={day}
-						aria-label={dayLabel(first.createdAt)}
+						aria-label={dayLabel(first.value.createdAt)}
 					>
 						<div className="mb-4 flex items-center gap-2.5 text-xs text-muted-foreground">
 							<h2 className="m-0 text-xs font-semibold">
-								{dayLabel(first.createdAt)}
+								{dayLabel(first.value.createdAt)}
 							</h2>
-							<span>{dayFormat.format(first.createdAt)}</span>
+							<span>{dayFormat.format(first.value.createdAt)}</span>
 							<span className="h-px flex-1 bg-border" />
 							<span>{items.length}</span>
 						</div>
 						<div className="flex flex-col gap-7">
-							{items.map((question) => renderQuestion(question))}
+							{items.map((item) =>
+								item.kind === 'node' ? (
+									renderNode(item.value)
+								) : (
+									<ExtractionProgress
+										key={item.value.id}
+										dump={item.value}
+										onRetry={onRetryExtraction}
+										onDismiss={onDismissExtraction}
+									/>
+								),
+							)}
 						</div>
 					</section>
 				);
 			})}
-			{roots.length > 0 && (
+			{entries.length > 0 && (
 				<p className="mt-0 mb-0 pt-7 pb-1 text-center text-xs text-muted-foreground">
 					End of inbox
 				</p>
