@@ -6,6 +6,7 @@ import type {
 	FranklinApp,
 	SettingsStore,
 } from '@franklin/agent';
+import { createStore } from '@franklin/agent';
 import { bindHostAction, openExternalAction } from '@franklin/react';
 import { ApplicationProvider } from '@franklin/ui';
 import type { ComponentProps } from 'react';
@@ -88,7 +89,7 @@ function createSettingsStub(
 function renderPage(
 	auth: AuthStub,
 	settings = createSettingsStub(),
-	props: ComponentProps<typeof SettingsPage> = {
+	props: Partial<ComponentProps<typeof SettingsPage>> = {
 		initialSection: 'connections',
 	},
 ) {
@@ -104,7 +105,7 @@ function renderPage(
 				harness={app}
 				hostActionBindings={[bindHostAction(openExternalAction, openExternal)]}
 			>
-				<SettingsPage {...props} />
+				<SettingsPage inbox={createStore({ controller: null })} {...props} />
 			</ApplicationProvider>,
 		),
 		openExternal,
@@ -348,6 +349,7 @@ describe('SettingsPage', () => {
 		).toBe('true');
 		expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
 			'General',
+			'Inbox',
 			'Connections',
 		]);
 		expect(

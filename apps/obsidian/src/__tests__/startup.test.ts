@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { FranklinApp } from '@franklin/agent';
 import * as obsidian from 'obsidian';
+import type { InboxController } from '../apps/inbox/controller/index.js';
 import type { App, PluginManifest } from 'obsidian';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -65,11 +66,18 @@ function createPlugin() {
 }
 
 function createRuntime() {
+	const inboxStartup = Promise.withResolvers<InboxController>();
+	const disposeInbox = vi.fn(async () => {});
 	return {
 		app: {} as FranklinApp,
 		getCreateInput: vi.fn(),
 		hostActionBindings: [],
-		dispose: vi.fn(),
+		startInbox: vi.fn(() => ({
+			ready: inboxStartup.promise,
+			dispose: disposeInbox,
+		})),
+		inboxStartup,
+		disposeInbox,
 	};
 }
 
@@ -91,12 +99,8 @@ afterEach(async () => {
 describe('FranklinPlugin startup', () => {
 	it('does not register host resources when startup finishes after unload', async () => {
 		const runtime = createRuntime();
-		let finishStartup!: (value: typeof runtime) => void;
-		startup.create.mockReturnValue(
-			new Promise((resolve) => {
-				finishStartup = resolve;
-			}),
-		);
+		const bootstrap = Promise.withResolvers<typeof runtime>();
+		startup.create.mockReturnValue(bootstrap.promise);
 		const {
 			plugin,
 			registerView,
@@ -110,10 +114,11 @@ describe('FranklinPlugin startup', () => {
 		await vi.waitFor(() => expect(startup.create).toHaveBeenCalledOnce());
 
 		plugin.onunload();
-		finishStartup(runtime);
+		bootstrap.resolve(runtime);
+		await bootstrap.promise;
 		await loading;
-		await vi.waitFor(() => expect(runtime.dispose).toHaveBeenCalledOnce());
 
+		expect(runtime.startInbox).not.toHaveBeenCalled();
 		expect(registerView).not.toHaveBeenCalled();
 		expect(addSettingTab).not.toHaveBeenCalled();
 		expect(addCommand).not.toHaveBeenCalled();
@@ -186,7 +191,7 @@ describe('FranklinPlugin startup', () => {
 		expect(registerMarkdownPostProcessor).not.toHaveBeenCalled();
 	});
 
-	it('registers Chat and directive adapters and invokes cleanup on unload', async () => {
+	it('registers Chat, settings and directive adapters while Inbox recovery is pending', async () => {
 		const runtime = createRuntime();
 		const dispose = vi.spyOn(DirectiveRegistry.prototype, 'dispose');
 		startup.create.mockResolvedValue(runtime);
@@ -203,8 +208,9 @@ describe('FranklinPlugin startup', () => {
 		await vi.waitFor(() =>
 			expect(registerMarkdownPostProcessor).toHaveBeenCalledOnce(),
 		);
-		expect(registerView).toHaveBeenCalledOnce();
+		expect(runtime.startInbox).toHaveBeenCalledOnce();
 
+		expect(registerView).toHaveBeenCalledOnce();
 		expect(addSettingTab).toHaveBeenCalledOnce();
 		expect(registerEditorExtension).toHaveBeenCalledTimes(2);
 		expect(registerEditorExtension).toHaveBeenCalledWith(editorAnchors);
@@ -213,9 +219,51 @@ describe('FranklinPlugin startup', () => {
 			expect.objectContaining({ id: 'open-chat-window' }),
 		);
 		expect(plugin.franklinApp).toBe(runtime.app);
+
+		runtime.inboxStartup.resolve({} as InboxController);
+		await vi.waitFor(() => expect(registerView).toHaveBeenCalledTimes(2));
+		expect(registerView.mock.calls.map(([type]) => type)).toContain(
+			'franklin-study-inbox',
+		);
+		expect(addCommand.mock.calls.map(([command]) => command.id)).toEqual([
+			'open-chat-window',
+			'open-study-inbox',
+			'selection-to-study-inbox',
+		]);
 		plugin.onunload();
-		expect(runtime.dispose).toHaveBeenCalledOnce();
+		expect(runtime.disposeInbox).toHaveBeenCalledOnce();
 		expect(dispose).toHaveBeenCalledOnce();
 		expect(startup.unload).toHaveBeenCalledTimes(2);
+	});
+
+	it('cancels Inbox recovery on unload and skips late registration', async () => {
+		const runtime = createRuntime();
+		startup.create.mockResolvedValue(runtime);
+		const { plugin, registerView, addCommand } = createPlugin();
+		await plugin.onload();
+		await vi.waitFor(() => expect(runtime.startInbox).toHaveBeenCalledOnce());
+		plugin.onunload();
+		expect(runtime.disposeInbox).toHaveBeenCalledOnce();
+		runtime.inboxStartup.resolve({} as InboxController);
+		await runtime.inboxStartup.promise;
+		expect(registerView).toHaveBeenCalledOnce();
+		expect(addCommand.mock.calls.map(([command]) => command.id)).toEqual([
+			'open-chat-window',
+		]);
+	});
+
+	it('keeps Chat and settings available when Inbox recovery fails', async () => {
+		const runtime = createRuntime();
+		startup.create.mockResolvedValue(runtime);
+		const { plugin, registerView, addSettingTab } = createPlugin();
+		await plugin.onload();
+		await vi.waitFor(() => expect(runtime.startInbox).toHaveBeenCalledOnce());
+		runtime.inboxStartup.reject(new Error('Inbox data could not be restored'));
+		await vi.waitFor(() => expect(runtime.disposeInbox).toHaveBeenCalledOnce());
+
+		expect(registerView).toHaveBeenCalledOnce();
+		expect(addSettingTab).toHaveBeenCalledOnce();
+		expect(plugin.franklinApp).toBe(runtime.app);
+		plugin.onunload();
 	});
 });

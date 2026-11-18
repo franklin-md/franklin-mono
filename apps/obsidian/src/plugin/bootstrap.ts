@@ -7,6 +7,8 @@ import {
 } from '@franklin/react';
 import { toAbsolutePath } from '@franklin/lib';
 import type { Plugin } from 'obsidian';
+import type { InboxLifetime } from '../apps/inbox/lifetime.js';
+import { startInbox } from '../apps/inbox/start.js';
 
 import { createObsidianPlatform } from '../shared/agent/platform.js';
 import {
@@ -18,11 +20,11 @@ import { resolveAuthStore } from '../shared/obsidian/auth/resolve.js';
 import { createChatExtensions } from '../apps/chat/agent/extensions.js';
 import { createObsidianSessionInput } from '../apps/chat/agent/session.js';
 
-interface PluginRuntime {
+export interface PluginRuntime {
 	app: FranklinApp;
 	hostActionBindings: readonly HostActionBinding[];
 	getCreateInput: () => OrchestratorCreateInput<FranklinState>;
-	dispose: () => void;
+	startInbox: () => InboxLifetime;
 }
 
 export async function bootstrapPlugin(
@@ -55,7 +57,6 @@ export async function bootstrapPlugin(
 	const getCreateInput = () =>
 		createObsidianSessionInput(app, vaultRoot, plugin.app.vault.configDir);
 	if (app.agents.list().length === 0) await app.agents.create(getCreateInput());
-
 	return {
 		app,
 		hostActionBindings: [
@@ -64,8 +65,13 @@ export async function bootstrapPlugin(
 			),
 		],
 		getCreateInput,
-		// FranklinApp has no app-wide shutdown API. Keep the existing host hook;
-		// removing agents would also delete their persisted sessions.
-		dispose: () => undefined,
+		startInbox: () =>
+			startInbox({
+				plugin,
+				app,
+				filesystem: platform.os.filesystem,
+				appDir,
+				vaultRoot,
+			}),
 	};
 }

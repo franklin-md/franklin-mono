@@ -13,7 +13,7 @@ type UnloadController = {
 type TestFranklinPlugin = {
 	diffController: UnloadController;
 	diffExplorerController: UnloadController;
-	disposeFranklinApp: ReturnType<typeof vi.fn> | null;
+	disposeInbox: ReturnType<typeof vi.fn> | null;
 	franklinApp: unknown;
 };
 
@@ -39,10 +39,10 @@ describe('FranklinPlugin unload', () => {
 		expect(portalRoot?.isConnected).toBe(true);
 
 		const plugin = Object.create(null) as TestFranklinPlugin;
-		const disposeFranklinApp = vi.fn();
+		const disposeInbox = vi.fn();
 		plugin.diffController = { onunload: vi.fn() };
 		plugin.diffExplorerController = { onunload: vi.fn() };
-		plugin.disposeFranklinApp = disposeFranklinApp;
+		plugin.disposeInbox = disposeInbox;
 		plugin.franklinApp = {} as never;
 		const pluginPrototype = FranklinPlugin.prototype as {
 			onunload(this: TestFranklinPlugin): void;
@@ -52,8 +52,8 @@ describe('FranklinPlugin unload', () => {
 
 		expect(plugin.diffExplorerController.onunload).toHaveBeenCalledOnce();
 		expect(plugin.diffController.onunload).toHaveBeenCalledOnce();
-		expect(disposeFranklinApp).toHaveBeenCalledOnce();
-		expect(plugin.disposeFranklinApp).toBeNull();
+		expect(disposeInbox).toHaveBeenCalledOnce();
+		expect(plugin.disposeInbox).toBeNull();
 		expect(plugin.franklinApp).toBeNull();
 		expect(portalRoot?.isConnected).toBe(false);
 

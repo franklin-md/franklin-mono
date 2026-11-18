@@ -1,1 +1,1 @@
-export type SettingsSection = 'general' | 'connections';
+export type SettingsSection = 'general' | 'connections' | 'inbox';

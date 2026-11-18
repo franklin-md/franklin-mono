@@ -22,5 +22,6 @@
 @import './theme.css';
 @import './code-theme.css';
 @import '../shared/diff/styles.css';
+@import '../apps/inbox/ui/styles.css';
 
 @source "../**/*.{ts,tsx}";

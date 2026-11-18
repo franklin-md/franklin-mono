@@ -4,7 +4,10 @@ import { joinAbsolute, toAbsolutePath } from '@franklin/lib';
 import { Notice, Plugin } from 'obsidian';
 
 import { registerChat } from './apps/chat/register.js';
+import { errorMessage } from './apps/inbox/controller/error.js';
+import { registerInbox } from './apps/inbox/register.js';
 import { bootstrapPlugin } from './plugin/bootstrap.js';
+import type { PluginRuntime } from './plugin/bootstrap.js';
 import { registerReactScan } from './dev/react-scan.js';
 import { ObsidianDiffClient } from './shared/diff/client.js';
 import { DiffController } from './shared/diff/controller.js';
@@ -23,7 +26,7 @@ export default class FranklinPlugin extends Plugin {
 	private diffExplorerController: DiffExplorerController | null = null;
 	private unloading = false;
 	private directives?: DirectiveRegistry;
-	private disposeFranklinApp: (() => void) | null = null;
+	private disposeInbox: (() => void) | null = null;
 	franklinApp: FranklinApp | null = null;
 	hostActionBindings: readonly HostActionBinding[] = [];
 
@@ -39,34 +42,56 @@ export default class FranklinPlugin extends Plugin {
 
 		bootstrapPlugin(this, diffClient)
 			.then((runtime) => {
-				const { app, getCreateInput, hostActionBindings } = runtime;
 				// Startup may finish after Obsidian has unloaded this instance.
-				if (this.unloading) {
-					runtime.dispose();
-					return;
-				}
+				if (this.unloading) return;
+				const { app, getCreateInput, hostActionBindings } = runtime;
 				this.franklinApp = app;
 				this.hostActionBindings = hostActionBindings;
-				this.disposeFranklinApp = () => runtime.dispose();
 				this.registerEditorExtension(editorAnchors);
 
-				this.addSettingTab(new FranklinSettingTab(this));
-
+				const settings = new FranklinSettingTab(this);
+				this.addSettingTab(settings);
 				registerChat({
 					plugin: this,
 					app,
 					getCreateInput,
 					hostActionBindings,
 				});
-				return this.loadDirectives();
+
+				return Promise.all([
+					this.loadInbox(runtime, settings),
+					this.loadDirectives(),
+				]);
 			})
 			.catch((err: unknown) => {
 				if (this.unloading) return;
 				console.error(err);
-				new Notice(
-					`Franklin failed to load: ${err instanceof Error ? err.message : String(err)}`,
-				);
+				new Notice(`Franklin failed to load: ${errorMessage(err)}`);
 			});
+	}
+
+	private async loadInbox(
+		{ app, hostActionBindings, startInbox }: PluginRuntime,
+		settings: FranklinSettingTab,
+	) {
+		try {
+			const { ready, dispose } = startInbox();
+			this.disposeInbox = () => {
+				void dispose().catch((error: unknown) => {
+					new Notice(`Inbox shutdown: ${errorMessage(error)}`);
+				});
+				settings.setInbox(null);
+			};
+			const inbox = await ready;
+			if (this.unloading) return;
+			registerInbox({ plugin: this, app, inbox, hostActionBindings });
+			settings.setInbox(inbox);
+		} catch (error) {
+			this.disposeInbox?.();
+			this.disposeInbox = null;
+			if (!this.unloading)
+				new Notice(`Study inbox unavailable: ${errorMessage(error)}`);
+		}
 	}
 
 	private async loadDirectives(): Promise<void> {
@@ -99,10 +124,10 @@ export default class FranklinPlugin extends Plugin {
 		this.directives = undefined;
 		this.diffExplorerController?.onunload();
 		this.diffController?.onunload();
-		this.disposeFranklinApp?.();
+		this.disposeInbox?.();
 		clearPortalRoot(activeDocument);
 		this.franklinApp = null;
 		this.hostActionBindings = [];
-		this.disposeFranklinApp = null;
+		this.disposeInbox = null;
 	}
 }
