@@ -7,6 +7,23 @@ export class ItemView {
 	constructor(readonly leaf: unknown) {}
 }
 
+export class MarkdownRenderChild {
+	private readonly cleanup: (() => void)[] = [];
+	register(dispose: () => void): void {
+		this.cleanup.push(dispose);
+	}
+	constructor(readonly containerEl: HTMLElement) {}
+	onload(): void {}
+	onunload(): void {}
+	load(): void {
+		this.onload();
+	}
+	unload(): void {
+		this.onunload();
+		for (const dispose of this.cleanup.splice(0)) dispose();
+	}
+}
+
 export class Plugin {
 	app = {
 		vault: {},
@@ -21,6 +38,10 @@ export class Plugin {
 	addSettingTab(): void {}
 
 	registerView(): void {}
+
+	registerEditorExtension(): void {}
+
+	registerMarkdownPostProcessor(): void {}
 }
 
 export class PluginSettingTab {
