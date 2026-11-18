@@ -1,5 +1,6 @@
 import { useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { ReadonlyStore } from '@franklin/agent';
+import { AuthActionProvider } from '@franklin/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@franklin/ui';
 
 import { ChatSettings } from '../../apps/chat/settings/page.js';
@@ -51,11 +52,15 @@ export function SettingsPage({
 		'quick-edit': {
 			label: 'Quick edit',
 			content: quickEditPreferences && (
-				<QuickEditSettingsPanel
-					preferences={quickEditPreferences}
-					active={section === 'quick-edit'}
-					onConfigureShortcut={onConfigureQuickEditShortcut}
-				/>
+				<AuthActionProvider
+					handlers={{ requestApiKey: () => handleSectionChange('connections') }}
+				>
+					<QuickEditSettingsPanel
+						preferences={quickEditPreferences}
+						active={section === 'quick-edit'}
+						onConfigureShortcut={onConfigureQuickEditShortcut}
+					/>
+				</AuthActionProvider>
 			),
 		},
 		connections: {
