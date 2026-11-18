@@ -7,6 +7,7 @@ import { createDefaultObsidianFilesystemPermissions } from '../../shared/obsidia
 import { openInbox } from './lifetime.js';
 import type { InboxLifetime } from './lifetime.js';
 import { createInboxRunner } from './agent/run.js';
+import { createSplitter } from './modes/run.js';
 import { createInboxPersistence } from './storage/persistence.js';
 
 type Options = {
@@ -26,26 +27,28 @@ export function startInbox({
 	vaultRoot,
 }: Options): InboxLifetime {
 	const path = joinAbsolute(appDir, 'inbox.json');
+	const runnerOptions = {
+		createAgent: app.createAgent.bind(app),
+		auth: app.auth,
+		vaultName: plugin.app.vault.getName(),
+		config: {
+			fsConfig: {
+				cwd: vaultRoot,
+				permissions: createDefaultObsidianFilesystemPermissions(
+					vaultRoot,
+					plugin.app.vault.configDir,
+				),
+			},
+			netConfig: structuredClone(DEFAULT_NETWORK_CONFIG),
+		},
+	};
 	return openInbox(plugin.app, path, {
 		defaults: app.settings.get().defaultLLMConfig,
 		persistence: createInboxPersistence({
 			filesystem,
 			path,
 		}),
-		run: createInboxRunner({
-			createAgent: app.createAgent.bind(app),
-			auth: app.auth,
-			vaultName: plugin.app.vault.getName(),
-			config: {
-				fsConfig: {
-					cwd: vaultRoot,
-					permissions: createDefaultObsidianFilesystemPermissions(
-						vaultRoot,
-						plugin.app.vault.configDir,
-					),
-				},
-				netConfig: structuredClone(DEFAULT_NETWORK_CONFIG),
-			},
-		}),
+		run: createInboxRunner(runnerOptions),
+		split: createSplitter(runnerOptions),
 	});
 }

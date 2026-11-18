@@ -1,16 +1,17 @@
 import type { InboxPreferences, InboxQuestion } from './types.js';
 import type { QuestionSource } from '../types.js';
+import type { InboxNode } from '../hierarchy/types.js';
 
 type Options = {
-	id: string;
+	id?: string;
 	text: string;
 	preferences: Omit<InboxPreferences, 'concurrency'>;
 	source?: QuestionSource;
-	parent?: InboxQuestion;
+	parent?: InboxNode;
 };
 
 export function createQuestion({
-	id,
+	id = crypto.randomUUID(),
 	text,
 	preferences,
 	source,

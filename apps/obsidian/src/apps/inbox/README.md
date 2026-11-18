@@ -1,4 +1,4 @@
-# Study Inbox base
+# Study Inbox
 
 Inbox owns a plugin-lifetime question queue, saved preferences and answers,
 Markdown-note context, source navigation, and the answer/composer view. Closing
@@ -17,19 +17,31 @@ editing the source note.
   cancels active work; interrupted questions become retryable failures.
 - Model, reasoning and answer instructions are captured per question. New
   questions and follow-ups use current preferences; retries retain the original
-  selection and instructions. Follow-up context contains only its ancestors,
-  including their complete answer sections.
+  selection and instructions. Follow-up context comes from the ancestor
+  questions, including their complete answers, and the enclosing groups.
 - `inbox.json` is written by a serialized, same-directory temporary-file rename.
   The document contains questions and preferences, without transcripts or keys.
   Reload waits for any previous Inbox instance to finish its writes before
   restoring the file. Failed saves remain visible. Resending the same question,
   including after removing checklist formatting, keeps its original ID.
-- New writes use schema version 7. Flat-question versions 1–6 migrate while
-  preserving exact saved answer instructions and legacy answers. Nonempty
-  groups, actions, action runs or Thought Dump records are rejected, as are
-  corrupt, newer or invalid-lineage documents. Rejection preserves the original
-  file. Empty legacy collections are accepted. Inbox recovery does not block
-  Chat or credentials settings.
+- New writes use schema version 9. Flat-question versions 1–7 keep saved
+  instructions and answers. Madrid v8 groups and Thought Dumps migrate when
+  the Actions collections are empty. Inbox preserves the original file when
+  validation finds nonempty Actions data, corrupt records, or invalid lineage.
+  Chat and credentials settings can open while Inbox recovers.
+
+## Groups and Thought Dump
+
+Switch the Inbox composer to **Thought dump** to organize several questions from
+one passage. The extraction snapshots the model, reasoning and answer
+instructions before joining the same concurrency queue as ordinary questions.
+It saves the group and questions together. Each question then runs independently
+with its ancestor questions and group context. A failed extraction stays in the
+feed with retry and dismiss controls.
+
+Groups retain their fold state across reload. Folding keeps drafts and active
+questions intact. Deleting a group removes its descendants and cancels their
+active attempts.
 
 ## Source navigation (A08)
 
@@ -59,7 +71,7 @@ while text is selected. Shared prompt/model controls supply the compact UI.
 
 ## Scope and verification
 
-Quick Edit, groups/Thought Dump, reusable actions, research recording/debugging,
+Quick Edit, reusable actions, research recording/debugging,
 directives/inline capture, personal capture and optional HTTP/PDF downloads have
 separate owners. Local PDF reference reading uses the existing shared host API.
 

@@ -4,6 +4,7 @@ import { questionSchema } from '../controller/question-schema.js';
 import type { InboxController } from '../controller/index.js';
 import type { QuestionSource } from '../types.js';
 import { InboxContent } from './content.js';
+import { ModeControl } from './mode.js';
 
 type Props = {
 	controller: InboxController;
@@ -28,10 +29,32 @@ export function InboxPanel({
 	const configure = (patch: Parameters<InboxController['configure']>[0]) => {
 		void controller.configure(patch).catch(onError);
 	};
+	async function submitThoughtDump(text: string): Promise<void> {
+		const preferences = { ...controller.state.get().preferences };
+		await controller.thoughtDumps.add(
+			text,
+			await captureContext?.(text),
+			preferences,
+		);
+	}
+
 	return (
 		<div className="h-full min-h-0 w-full overflow-hidden text-left font-sans text-sm leading-normal text-foreground">
 			<InboxContent
 				questions={snapshot.questions}
+				groups={snapshot.groups}
+				onFoldGroup={(id, folded) => {
+					void controller.groups.fold(id, folded).catch(onError);
+				}}
+				mode={preferences.mode}
+				onThoughtDump={submitThoughtDump}
+				thoughtDumps={snapshot.thoughtDumps}
+				onRetryExtraction={(id) => {
+					void controller.thoughtDumps.retry(id).catch(onError);
+				}}
+				onDismissExtraction={(id) => {
+					void controller.thoughtDumps.dismiss(id).catch(onError);
+				}}
 				composerControls={
 					<PromptFooterControlGroup className="min-w-0 flex-wrap gap-1">
 						<ModelPicker
@@ -44,6 +67,10 @@ export function InboxPanel({
 								levels: questionSchema.shape.reasoning.options,
 								onChange: (reasoning) => configure({ reasoning }),
 							}}
+						/>
+						<ModeControl
+							mode={preferences.mode}
+							onChange={(mode) => configure({ mode })}
 						/>
 					</PromptFooterControlGroup>
 				}

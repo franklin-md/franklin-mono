@@ -121,14 +121,21 @@ describe('inbox disk persistence and runtime integration', () => {
 		expect(await readFile(path, 'utf8')).toBe('incomplete json');
 	});
 
-	it.each(['groups', 'actions', 'actionRuns', 'thoughtDumps'])(
-		'preserves the exact saved file and starts no work when it contains %s',
-		async (field) => {
+	it.each([
+		['groups', 6],
+		['actions', 6],
+		['actionRuns', 6],
+		['thoughtDumps', 6],
+		['actions', 8],
+		['actionRuns', 8],
+	])(
+		'preserves the exact saved file and starts no work when it contains %s in version %i',
+		async (field, version) => {
 			const { path, persister } = await storage();
 			const contents =
 				JSON.stringify(
 					{
-						version: 6,
+						version,
 						data: {
 							questions: [],
 							preferences: {

@@ -17,9 +17,19 @@ import { Composer } from './composer.js';
 import type { QuestionSubmission } from './composer.js';
 import { QuestionFeed } from './feed.js';
 import { selectionQuestion } from '../selection-question.js';
+import type { InboxGroup } from '../hierarchy/types.js';
+import type { ThoughtDump } from '../modes/types.js';
+import type { InboxPreferences } from '../controller/types.js';
 
 type Props = {
 	questions: StudyQuestion[];
+	groups?: InboxGroup[];
+	thoughtDumps?: ThoughtDump[];
+	onFoldGroup?: (id: string, folded: boolean) => void;
+	onRetryExtraction?: (id: string) => void;
+	onDismissExtraction?: (id: string) => void;
+	mode?: InboxPreferences['mode'];
+	onThoughtDump?: (text: string) => void | Promise<void>;
 	composerControls: ReactNode;
 	concurrency: number;
 	setConcurrency: (value: number) => void;
@@ -37,6 +47,13 @@ type Props = {
 
 export function InboxContent({
 	questions,
+	groups,
+	thoughtDumps,
+	onFoldGroup,
+	onRetryExtraction,
+	onDismissExtraction,
+	mode = 'question',
+	onThoughtDump,
 	composerControls,
 	concurrency,
 	setConcurrency,
@@ -50,6 +67,7 @@ export function InboxContent({
 }: Props) {
 	const [optionsOpen, setOptionsOpen] = useState(false);
 	const concurrencyId = useId();
+	const splitting = mode === 'thought-dump' && !!onThoughtDump;
 	return (
 		<main className="study-inbox @container flex h-full min-h-0 min-w-0 flex-col bg-background">
 			<header className="study-header relative z-1 shrink-0 px-4 pt-6 @min-[380px]:px-6">
@@ -117,14 +135,26 @@ export function InboxContent({
 				)}
 				<div className="mb-6">
 					<Composer
+						label={splitting ? 'Thought dump' : 'Ask a question'}
+						placeholder={
+							splitting
+								? 'Dump your thoughts and questions…'
+								: 'Ask a question…'
+						}
+						submitLabel={splitting ? 'Organize questions' : undefined}
 						controls={composerControls}
-						normalizeText={selectionQuestion}
-						onSubmit={onAdd}
+						normalizeText={splitting ? undefined : selectionQuestion}
+						onSubmit={splitting ? ({ text }) => onThoughtDump(text) : onAdd}
 					/>
 				</div>
 			</header>
 			<QuestionFeed
 				questions={questions}
+				groups={groups}
+				thoughtDumps={thoughtDumps}
+				onFoldGroup={onFoldGroup}
+				onRetryExtraction={onRetryExtraction}
+				onDismissExtraction={onDismissExtraction}
 				onFollowUp={onFollowUp}
 				onDelete={onDelete}
 				onRetry={onRetry}

@@ -11,7 +11,7 @@ export async function restoreInbox({
 		throw new Error(
 			'Could not restore inbox.json. The original file was preserved. Restore a backup or move the file aside before trying again.',
 		);
-	const initial = restored.value ?? {
+	const initial: InboxDocument = restored.value ?? {
 		questions: [],
 		preferences: {
 			...defaults,
@@ -24,6 +24,9 @@ export async function restoreInbox({
 			question.state = interruptedState();
 			question.updatedAt = Date.now();
 		}
+	}
+	for (const dump of initial.thoughtDumps ?? []) {
+		if (dump.state.kind === 'running') dump.state = interruptedState();
 	}
 	return initial;
 }

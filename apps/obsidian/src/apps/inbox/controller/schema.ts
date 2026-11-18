@@ -1,5 +1,8 @@
 import { versioned, zodCodec } from '@franklin/lib';
 import { z } from 'zod';
+import { groupSchema } from '../hierarchy/schema.js';
+import { validateHierarchy } from '../hierarchy/validate.js';
+import { thoughtDumpSchema } from '../modes/schema.js';
 import { questionSchema } from './question-schema.js';
 import { migrateAnswerInstructions } from './migrate-instructions.js';
 import type { InboxDocument } from './types.js';
@@ -71,6 +74,27 @@ const document: z.ZodType<InboxDocument> = z
 	.superRefine(validateLineage)
 	.transform(({ questions, preferences }) => ({ questions, preferences }));
 
+// Madrid v8 may contain Actions data. Reject a nonempty Actions collection
+// before the Inbox lifetime can overwrite the original file.
+const groupedDocument: z.ZodType<InboxDocument> = z
+	.strictObject({
+		questions: z.array(questionSchema),
+		groups: z.array(groupSchema).optional(),
+		thoughtDumps: z.array(thoughtDumpSchema).optional(),
+		preferences: preferences.extend({
+			mode: z.enum(['question', 'thought-dump']).optional(),
+		}),
+		actions: emptyCollections.actions,
+		actionRuns: emptyCollections.actionRuns,
+	})
+	.superRefine(validateHierarchy)
+	.transform(({ questions, groups, thoughtDumps, preferences }) => ({
+		questions,
+		groups,
+		thoughtDumps,
+		preferences,
+	}));
+
 export const inboxCodec = versioned()
 	.version(1, zodCodec(legacyDocument))
 	.version(2, zodCodec(legacyDocument), (previous) => previous)
@@ -84,4 +108,6 @@ export const inboxCodec = versioned()
 	// Version 7 identifies the base-only writer. Older plugins must reject it
 	// rather than assume their group/action fields exist in this document.
 	.version(7, zodCodec(document), (previous) => previous)
+	.version(8, zodCodec(groupedDocument), (previous) => previous)
+	.version(9, zodCodec(groupedDocument), (previous) => previous)
 	.build();
