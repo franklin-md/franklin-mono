@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@franklin/ui';
 import { ChatSettings } from '../../apps/chat/settings/page.js';
 import type { InboxController } from '../../apps/inbox/controller/index.js';
 import { InboxSettings } from '../../apps/inbox/settings/page.js';
+import { QuickEditSettingsPanel } from '../../apps/quick-edit/settings/page.js';
+import type { QuickEditPreferences } from '../../apps/quick-edit/settings/store.js';
 import type { SettingsSection } from '../../shared/obsidian/settings/types.js';
 import { SettingGroup } from '../../shared/ui/setting/group.js';
 import { CredentialsSettings } from './credentials/index.js';
@@ -12,6 +14,8 @@ import { CredentialsSettings } from './credentials/index.js';
 type Props = {
 	inbox: ReadonlyStore<{ controller: InboxController | null }>;
 	onConfigureInboxShortcut?: () => void;
+	quickEdit: ReadonlyStore<{ preferences: QuickEditPreferences | null }>;
+	onConfigureQuickEditShortcut?: () => void;
 	initialSection?: SettingsSection;
 	onSectionChange?: (section: SettingsSection) => void;
 };
@@ -19,6 +23,8 @@ type Props = {
 export function SettingsPage({
 	inbox,
 	onConfigureInboxShortcut,
+	quickEdit,
+	onConfigureQuickEditShortcut,
 	initialSection = 'general',
 	onSectionChange,
 }: Props) {
@@ -26,6 +32,10 @@ export function SettingsPage({
 	const inboxController = useSyncExternalStore(
 		(notify) => inbox.subscribe(notify),
 		() => inbox.get().controller,
+	);
+	const quickEditPreferences = useSyncExternalStore(
+		(notify) => quickEdit.subscribe(notify),
+		() => quickEdit.get().preferences,
 	);
 	const panels = {
 		general: { label: 'General', content: <ChatSettings /> },
@@ -35,6 +45,16 @@ export function SettingsPage({
 				<InboxSettings
 					inbox={inboxController}
 					onConfigureInboxShortcut={onConfigureInboxShortcut}
+				/>
+			),
+		},
+		'quick-edit': {
+			label: 'Quick edit',
+			content: quickEditPreferences && (
+				<QuickEditSettingsPanel
+					preferences={quickEditPreferences}
+					active={section === 'quick-edit'}
+					onConfigureShortcut={onConfigureQuickEditShortcut}
 				/>
 			),
 		},
@@ -49,7 +69,12 @@ export function SettingsPage({
 	} satisfies Record<SettingsSection, { label: string; content: ReactNode }>;
 
 	function handleSectionChange(value: string) {
-		if (value !== 'general' && value !== 'connections' && value !== 'inbox')
+		if (
+			value !== 'general' &&
+			value !== 'connections' &&
+			value !== 'inbox' &&
+			value !== 'quick-edit'
+		)
 			return;
 		setSection(value);
 		onSectionChange?.(value);

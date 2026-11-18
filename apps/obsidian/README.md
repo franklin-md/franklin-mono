@@ -23,13 +23,14 @@ filesystem/platform integration inside the plugin runtime.
 Chat and settings start independently of directive restoration. An unreadable
 `<plugin-dir>/directives.json` disables the directive adapters and raises a notice.
 On reload, restoration waits for saves accepted before unload.
-This infrastructure does not register app-specific directives or run jobs;
-unknown references remain readable text. Instance garbage collection is deferred.
+Quick Edit registers its request directives after storage loads. Unknown
+references remain readable text. Instance garbage collection is deferred.
 
 ## Settings
 
 - **General** contains Chat defaults such as sharing open notes with new agents.
 - **Inbox** contains answer instructions, reasoning defaults and the native selection-command shortcut. The Inbox composer saves its model selection, and Inbox options control concurrency.
+- **Quick edit** contains its model, instructions, presets and native shortcut settings. See [Quick Edit](src/apps/quick-edit/README.md).
 - **Connections** contains the existing provider credentials and ChatGPT sign-in controls. Requests to configure credentials open this tab directly.
 - Switching sections keeps their React state, including OAuth feedback. Inactive panels are hidden from keyboard navigation and assistive technology. Closing settings unmounts the page; reopening remembers the last section for the current plugin instance.
 

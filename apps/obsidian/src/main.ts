@@ -6,6 +6,7 @@ import { Notice, Plugin } from 'obsidian';
 import { registerChat } from './apps/chat/register.js';
 import { errorMessage } from './apps/inbox/controller/error.js';
 import { registerInbox } from './apps/inbox/register.js';
+import { registerQuickEdit } from './apps/quick-edit/register.js';
 import { bootstrapPlugin } from './plugin/bootstrap.js';
 import type { PluginRuntime } from './plugin/bootstrap.js';
 import { registerReactScan } from './dev/react-scan.js';
@@ -27,6 +28,8 @@ export default class FranklinPlugin extends Plugin {
 	private unloading = false;
 	private directives?: DirectiveRegistry;
 	private disposeInbox: (() => void) | null = null;
+	private readonly quickEditLifetime = new AbortController();
+	private disposeQuickEdit?: () => Promise<void>;
 	franklinApp: FranklinApp | null = null;
 	hostActionBindings: readonly HostActionBinding[] = [];
 
@@ -60,7 +63,7 @@ export default class FranklinPlugin extends Plugin {
 
 				return Promise.all([
 					this.loadInbox(runtime, settings),
-					this.loadDirectives(),
+					this.loadQuickEdit(app, settings, diffClient),
 				]);
 			})
 			.catch((err: unknown) => {
@@ -94,7 +97,39 @@ export default class FranklinPlugin extends Plugin {
 		}
 	}
 
-	private async loadDirectives(): Promise<void> {
+	private async loadQuickEdit(
+		app: FranklinApp,
+		settings: FranklinSettingTab,
+		diff: ObsidianDiffClient,
+	): Promise<void> {
+		const registry = await this.loadDirectives();
+		const { signal } = this.quickEditLifetime;
+		if (!registry || signal.aborted) return;
+
+		const ready = registerQuickEdit({
+			plugin: this,
+			franklin: app,
+			registry,
+			diff,
+			signal,
+		}).catch((error: unknown) => {
+			if (!signal.aborted)
+				new Notice(`Quick edit unavailable: ${errorMessage(error)}`);
+			return undefined;
+		});
+		this.disposeQuickEdit = async () => {
+			try {
+				await (await ready)?.dispose();
+			} catch (error) {
+				new Notice(`Quick edit shutdown: ${errorMessage(error)}`);
+			}
+		};
+		const quickEdit = await ready;
+		if (quickEdit && !this.unloading)
+			settings.setQuickEdit(quickEdit.preferences);
+	}
+
+	private async loadDirectives(): Promise<DirectiveRegistry | undefined> {
 		try {
 			const dir = getPluginAbsolutePath(this.app.vault, this.manifest);
 			const registry = await DirectiveRegistry.create({
@@ -112,6 +147,7 @@ export default class FranklinPlugin extends Plugin {
 			this.registerMarkdownPostProcessor(
 				createDirectivePostProcessor(registry),
 			);
+			return registry;
 		} catch (error) {
 			if (!this.unloading)
 				new Notice(`Franklin directives failed to load: ${String(error)}`);
@@ -120,7 +156,9 @@ export default class FranklinPlugin extends Plugin {
 
 	onunload() {
 		this.unloading = true;
-		void this.directives?.dispose();
+		this.quickEditLifetime.abort();
+		void this.directives?.dispose(this.disposeQuickEdit?.());
+		this.disposeQuickEdit = undefined;
 		this.directives = undefined;
 		this.diffExplorerController?.onunload();
 		this.diffController?.onunload();

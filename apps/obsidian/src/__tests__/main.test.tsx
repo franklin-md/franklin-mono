@@ -14,6 +14,7 @@ type TestFranklinPlugin = {
 	diffController: UnloadController;
 	diffExplorerController: UnloadController;
 	disposeInbox: ReturnType<typeof vi.fn> | null;
+	quickEditLifetime: AbortController;
 	franklinApp: unknown;
 };
 
@@ -43,6 +44,7 @@ describe('FranklinPlugin unload', () => {
 		plugin.diffController = { onunload: vi.fn() };
 		plugin.diffExplorerController = { onunload: vi.fn() };
 		plugin.disposeInbox = disposeInbox;
+		plugin.quickEditLifetime = new AbortController();
 		plugin.franklinApp = {} as never;
 		const pluginPrototype = FranklinPlugin.prototype as {
 			onunload(this: TestFranklinPlugin): void;
