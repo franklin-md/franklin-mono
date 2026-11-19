@@ -4,10 +4,11 @@ import { inboxAnswerExtension } from './extension.js';
 import { questionPrompt } from './prompt.js';
 import { runInboxRuntime } from './runtime.js';
 import { createInboxResearchExtensions } from './research.js';
+import { assertFinished } from '../../../shared/agent/turn-end/assert-finished.js';
 
 export function createInboxRunner(options: InboxRunnerOptions) {
 	return async (request: AnswerRequest): Promise<void> => {
-		await runInboxRuntime(options, {
+		const turnEnd = await runInboxRuntime(options, {
 			selection: request.question,
 			signal: request.signal,
 			timeout: 120_000,
@@ -25,5 +26,6 @@ export function createInboxRunner(options: InboxRunnerOptions) {
 				}),
 			],
 		});
+		assertFinished(turnEnd);
 	};
 }

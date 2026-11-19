@@ -4,6 +4,7 @@ import type { QuestionSource } from '../types.js';
 import { answerDetailSchema } from '../answer/schema.js';
 import { createQuestion } from './create-question.js';
 import { errorMessage } from './error.js';
+import { failedState } from './failed-state.js';
 import { interruptedState } from './interrupted.js';
 import { branchContext } from '../hierarchy/context.js';
 import { InboxGroups } from '../hierarchy/controller.js';
@@ -357,7 +358,7 @@ export class InboxController {
 					question?.attemptId === attemptId &&
 					question.state.kind === 'running'
 				) {
-					question.state = { kind: 'failed', error: errorMessage(error) };
+					question.state = failedState(error);
 					question.updatedAt = Date.now();
 				}
 			});

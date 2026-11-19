@@ -7,8 +7,9 @@ export type AuthActionRequest = {
 	displayName: string;
 };
 
+// Without a request, the host opens its general credential surface.
 export type AuthActionHandler = (
-	request: AuthActionRequest,
+	request?: AuthActionRequest,
 ) => Promise<void> | void;
 
 export type AuthActionHandlers = {

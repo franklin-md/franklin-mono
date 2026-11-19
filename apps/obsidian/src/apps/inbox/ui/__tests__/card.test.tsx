@@ -103,7 +103,10 @@ describe('Inbox card sections', () => {
 		});
 		expect(title.disabled).toBe(false);
 		expect(screen.queryByRole('link')).toBeNull();
-		expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+		// A failure offers Retry without selecting its card.
+		expect(!!screen.queryByRole('button', { name: 'Retry' })).toBe(
+			state.kind === 'failed',
+		);
 		fireEvent.click(title);
 		expect(
 			screen.getByRole('link', { name: 'Open source note: Source' }),

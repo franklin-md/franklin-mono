@@ -11,6 +11,8 @@ import { DirectiveRegistry } from '../../../../shared/directives/registry.js';
 import { DirectiveComponent } from '../../../../shared/directives/render/component.js';
 import { InboxQuestionDirectives } from '../controller.js';
 import { createInboxDirectiveScenario } from '../testing/scenario.js';
+import { StopCode } from '@franklin/mini-acp';
+import { TurnEndError } from '../../../../shared/agent/turn-end/error.js';
 
 afterEach(cleanup);
 
@@ -78,11 +80,32 @@ describe('Inbox question directives', () => {
 			inbox: h.inbox,
 			onOpen: h.open,
 			onError: h.error,
+			pluginId: 'franklin',
 		});
 		await vi.waitFor(() => expect(h.content).toBe(keep.text));
 		await service.dispose();
 		await h.inbox.dispose();
 		await registry.dispose();
+	});
+	it('offers connections from the pill of a question that failed to authenticate', async () => {
+		const h = await createInboxDirectiveScenario(async () => {
+			throw new TurnEndError({
+				stopCode: StopCode.AuthKeyInvalid,
+				stopMessage: 'refresh_token_reused',
+			});
+		});
+		const id = await h.inbox.add('Why?');
+		const instance = await h.service.definition.create({ questionId: id });
+		render(<DirectiveComponent registry={h.registry} reference={instance} />);
+		const pill = await screen.findByRole('button', {
+			name: 'Question failed, open in Inbox',
+		});
+		act(() => pill.focus());
+		fireEvent.click(screen.getByRole('button', { name: 'Open connections' }));
+		expect(h.settings.openTabById).toHaveBeenCalledWith('franklin');
+		await h.service.dispose();
+		await h.inbox.dispose();
+		await h.registry.dispose();
 	});
 	it('shows a failed question and follows the same instance through retry', async () => {
 		let attempts = 0;
@@ -93,8 +116,14 @@ describe('Inbox question directives', () => {
 		const id = await h.inbox.add('Retry me');
 		const instance = await h.service.definition.create({ questionId: id });
 		render(<DirectiveComponent registry={h.registry} reference={instance} />);
-		await screen.findByRole('button', { name: 'Open question in Inbox' });
-		expect(screen.getByRole('button').title).toBe('offline');
+		const pill = await screen.findByRole('button', {
+			name: 'Question failed, open in Inbox',
+		});
+		expect(pill.textContent).toBe('Failed');
+		act(() => pill.focus());
+		expect(
+			screen.getByRole('dialog', { name: 'Failure details' }).textContent,
+		).toContain('offline');
 		await act(() => h.inbox.retry(id));
 		await screen.findByRole('button', { name: 'View answer in Inbox' });
 		expect(h.service.definition.instances()).toHaveLength(1);

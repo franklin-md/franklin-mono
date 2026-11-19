@@ -7,7 +7,15 @@ import {
 	type MiniACPConnector,
 	ZERO_USAGE,
 } from '@franklin/mini-acp';
-import { createMockMiniACP, finishedTurn } from '@franklin/mini-acp/mock';
+import {
+	createMockMiniACP,
+	finishedTurn,
+	turn,
+	turnEnd,
+} from '@franklin/mini-acp/mock';
+import { StopCode } from '@franklin/mini-acp';
+import { TokenRequestError } from '../auth/specs/token-error.js';
+import type { TurnStreamEvent } from '../modules/core/index.js';
 import {
 	authenticateAgent,
 	reconnectAgent,
@@ -509,5 +517,77 @@ describe('withAuth live sync', () => {
 		await runtime.dispose();
 
 		expect(auth._listeners).toHaveLength(0);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// withAuth — missing-key turn ends
+// ---------------------------------------------------------------------------
+
+describe('withAuth missing-key turn ends', () => {
+	async function missingKeyTurnEnd(getApiKey: AuthManager['getApiKey']) {
+		const connector = createMockMiniACP({
+			defaultTurn: turn([
+				turnEnd({
+					stopCode: StopCode.AuthKeyNotSpecified,
+					stopMessage: 'Missing auth key in context.config',
+				}),
+			]),
+		}).connector;
+		const auth = mockAuthManager({});
+		(auth as { getApiKey: AuthManager['getApiKey'] }).getApiKey =
+			vi.fn(getApiKey);
+		const runtime = await createRuntime(
+			withAuth(createCoreStateModule(connector), auth),
+			{
+				core: {
+					entries: [],
+					llmConfig: { provider: 'openai-codex', model: 'gpt-5.4' },
+					usage: ZERO_USAGE,
+					toolFilter: { disabled: [] },
+				},
+			},
+			[],
+		);
+		const events: TurnStreamEvent[] = [];
+		for await (const event of runtime.prompt({
+			role: 'user',
+			content: [{ type: 'text', text: 'hi' }],
+		}))
+			events.push(event);
+		return events.find((event) => event.type === 'turnEnd');
+	}
+
+	it('reports a rejected refresh as an invalid key with its message', async () => {
+		const end = await missingKeyTurnEnd(async () => {
+			throw TokenRequestError.fromResponse(
+				'OpenAI Codex',
+				401,
+				JSON.stringify({ error: { message: 'Refresh token reused.' } }),
+			);
+		});
+		expect(end).toMatchObject({
+			stopCode: StopCode.AuthKeyInvalid,
+			stopMessage:
+				'OpenAI Codex token request failed (401): Refresh token reused.',
+		});
+	});
+
+	it('reports other resolution failures, such as an outage, as generic', async () => {
+		const end = await missingKeyTurnEnd(async () => {
+			throw new Error('fetch failed');
+		});
+		expect(end).toMatchObject({
+			stopCode: StopCode.LlmError,
+			stopMessage: 'fetch failed',
+		});
+	});
+
+	it('keeps the runtime turn end when no key is stored', async () => {
+		const end = await missingKeyTurnEnd(async () => undefined);
+		expect(end).toMatchObject({
+			stopCode: StopCode.AuthKeyNotSpecified,
+			stopMessage: 'Missing auth key in context.config',
+		});
 	});
 });

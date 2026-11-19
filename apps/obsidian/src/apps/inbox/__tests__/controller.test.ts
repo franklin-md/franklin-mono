@@ -3,6 +3,8 @@ import { InboxController } from '../controller/index.js';
 import type { AnswerRequest } from '../controller/types.js';
 import { inboxCodec } from '../controller/schema.js';
 import { createInboxTestPersistence } from '../testing/persistence.js';
+import { StopCode } from '@franklin/mini-acp';
+import { TurnEndError } from '../../../shared/agent/turn-end/error.js';
 
 const defaults = {
 	provider: 'openai-codex',
@@ -139,6 +141,40 @@ describe('study inbox controller', () => {
 		await h.finish(sibling);
 		await h.finish(grandchild);
 		await h.inbox.dispose();
+	});
+
+	it('saves the stop code of a failed turn and restores it', async () => {
+		const storage = createInboxTestPersistence();
+		const inbox = await InboxController.create({
+			persistence: storage.disk,
+			defaults,
+			run: () =>
+				Promise.reject(
+					new TurnEndError({
+						stopCode: StopCode.AuthKeyInvalid,
+						stopMessage: 'refresh_token_reused',
+					}),
+				),
+		});
+		const id = await inbox.add('question');
+		const failed = {
+			kind: 'failed',
+			error: 'refresh_token_reused',
+			stopCode: StopCode.AuthKeyInvalid,
+		};
+		await vi.waitFor(() =>
+			expect(inbox.state.get().questions[0]?.state).toEqual(failed),
+		);
+		await inbox.dispose();
+		const restored = await InboxController.create({
+			persistence: createInboxTestPersistence(storage.read()).disk,
+			defaults,
+			run: vi.fn(),
+		});
+		expect(
+			restored.state.get().questions.find((q) => q.id === id)?.state,
+		).toEqual(failed);
+		await restored.dispose();
 	});
 
 	it('restores queued work, marks running work interrupted, and keeps answered questions', async () => {

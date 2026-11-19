@@ -1,5 +1,3 @@
-import { RotateCcw } from 'lucide-react';
-import { Button } from '@franklin/ui';
 import { questionTitle } from '../../title.js';
 import type { StudyQuestion } from '../../types.js';
 import { Composer } from '../composer.js';
@@ -11,26 +9,13 @@ type Props = {
 		submission: QuestionSubmission,
 		parentId: string,
 	) => void | Promise<void>;
-	onRetry: (id: string) => void;
 };
 
-export function QuestionControls({ question, onFollowUp, onRetry }: Props) {
+export function QuestionControls({ question, onFollowUp }: Props) {
 	const { state } = question;
 	const title = questionTitle(question);
 	return (
 		<div>
-			{state.kind === 'failed' && (
-				<Button
-					type="button"
-					variant="ghost"
-					size="sm"
-					className="gap-1.5 text-[var(--text-error)]"
-					onClick={() => onRetry(question.id)}
-				>
-					<RotateCcw size={12} />
-					Retry
-				</Button>
-			)}
 			{state.kind === 'answered' && (
 				<div className="mt-3 animate-in fade-in-0 slide-in-from-top-1">
 					<Composer

@@ -1,19 +1,20 @@
 import type { FranklinApp } from '@franklin/agent';
-import type { AuthActionHandler, HostActionBinding } from '@franklin/react';
-import { AuthActionProvider, FileIndexProvider } from '@franklin/react';
+import type { HostActionBinding } from '@franklin/react';
+import { FileIndexProvider } from '@franklin/react';
 import { ApplicationProvider } from '@franklin/ui';
 import type { App as ObsidianApp } from 'obsidian';
 import { useEffect, useMemo, type ReactNode } from 'react';
 
 import { ObsidianFileIndex } from '../../../shared/obsidian/filesystem/file-index.js';
 import { ObsidianAppProvider } from '../../../shared/ui/obsidian-app-context.js';
+import { ObsidianAuthActionProvider } from '../../../shared/ui/auth-action-provider.js';
 
 type Props = {
 	app: FranklinApp;
 	children: ReactNode;
 	hostActionBindings: readonly HostActionBinding[];
 	obsidianApp: ObsidianApp;
-	requestApiKey: AuthActionHandler;
+	pluginId: string;
 };
 
 export function FranklinRoot({
@@ -21,7 +22,7 @@ export function FranklinRoot({
 	children,
 	hostActionBindings,
 	obsidianApp,
-	requestApiKey,
+	pluginId,
 }: Props) {
 	const fileIndex = useMemo(
 		() => new ObsidianFileIndex(obsidianApp),
@@ -41,9 +42,9 @@ export function FranklinRoot({
 					harness={app}
 					hostActionBindings={hostActionBindings}
 				>
-					<AuthActionProvider handlers={{ requestApiKey }}>
+					<ObsidianAuthActionProvider app={obsidianApp} pluginId={pluginId}>
 						{children}
-					</AuthActionProvider>
+					</ObsidianAuthActionProvider>
 				</ApplicationProvider>
 			</FileIndexProvider>
 		</ObsidianAppProvider>

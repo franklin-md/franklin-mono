@@ -253,8 +253,11 @@ enforced by the runtime.
 `FranklinApp` uses an [internal factory](src/app/agents/factory.ts)
 for agent construction, including environment, stores, references and
 authentication. `app.agents.create()` uses the app's configured extensions and
-participates in chat persistence. For an independent task, supply its extension
-list to `app.createAgent()`:
+participates in chat persistence. Each agent resolves its provider's key from
+the auth manager. When that fails, the prompt's `AuthKeyNotSpecified` turn end
+says why: a rejected token (HTTP 400/401) becomes `AuthKeyInvalid` with the
+provider's message, and other failures, such as an outage, become `LlmError`.
+For an independent task, supply its extension list to `app.createAgent()`:
 
 ```ts
 const runtime = await app.createAgent({

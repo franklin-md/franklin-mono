@@ -15,6 +15,14 @@ and puts a status pill beside its source selection.
   before contacting the model and holds the slot until the runner settles.
   Removing a question cancels its attempt and removes its follow-ups. Unload
   cancels active work; interrupted questions become retryable failures.
+- A failure saves its message and, when a model turn or credential check ended
+  the attempt, its stop code. Questions, actions and extractions render failures
+  through Chat's turn-end renderers with their Retry and Dismiss controls. A
+  missing key or a rejected sign-in, such as a reused OAuth refresh token,
+  offers **Open connections**; other credential failures, such as an outage,
+  show their message. Failures saved without a stop code render as generic
+  errors. A note's status pill reads **Failed**; hovering or focusing it shows
+  the same failure.
 - Model, reasoning and answer instructions are captured per question. New
   questions and follow-ups use current preferences; retries retain the original
   selection and instructions. Follow-up context comes from the ancestor

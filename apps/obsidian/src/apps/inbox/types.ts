@@ -1,3 +1,4 @@
+import type { AgentStopCode } from '@franklin/agent';
 import type { AnswerDetail } from './answer/types.js';
 
 export type SourcePosition = { line: number; ch: number };
@@ -27,12 +28,16 @@ export type AnsweredQuestion = {
 	title?: string;
 	details?: AnswerDetail[];
 };
-export type FailedQuestion = { kind: 'failed'; error: string };
+export type FailedState = {
+	kind: 'failed';
+	error: string;
+	stopCode?: AgentStopCode;
+};
 export type QuestionState =
 	| QueuedQuestion
 	| RunningQuestion
 	| AnsweredQuestion
-	| FailedQuestion;
+	| FailedState;
 
 export type StudyQuestion = {
 	id: string;

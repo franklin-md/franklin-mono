@@ -7,6 +7,7 @@ import type {
 	QuickEditState,
 } from '../types.js';
 import { quickEditError } from '../error.js';
+import { TurnEndError } from '../../../shared/agent/turn-end/error.js';
 import { assertUnfinishedQuickEdit } from './unfinished.js';
 
 type Options = {
@@ -76,6 +77,7 @@ export class QuickEditController {
 			state.prompt = prompt;
 			state.status = 'running';
 			state.error = '';
+			delete state.stopCode;
 		});
 		try {
 			await this.assertUnique(instance);
@@ -98,6 +100,8 @@ export class QuickEditController {
 				state.error = signal.aborted
 					? 'Stopped. Partial edits remain in file review.'
 					: quickEditError(error);
+				if (!signal.aborted && error instanceof TurnEndError)
+					state.stopCode = error.stopCode;
 			});
 		}
 	}

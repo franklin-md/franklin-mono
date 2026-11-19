@@ -2,10 +2,11 @@ import { Notice } from 'obsidian';
 import type { Plugin } from 'obsidian';
 import type { FranklinApp } from '@franklin/agent';
 import { createStore } from '@franklin/agent';
-import { AuthActionProvider, type HostActionBinding } from '@franklin/react';
+import type { HostActionBinding } from '@franklin/react';
 import { ApplicationProvider } from '@franklin/ui';
 import { activateView } from '../../shared/obsidian/activate-view.js';
 import { openPluginSettings } from '../../shared/obsidian/settings/open.js';
+import { ObsidianAuthActionProvider } from '../../shared/ui/auth-action-provider.js';
 import { InboxPanel } from './ui/panel.js';
 import type { InboxController } from './controller/index.js';
 import { errorMessage } from './controller/error.js';
@@ -66,15 +67,9 @@ export function registerInbox({
 						harness={app}
 						hostActionBindings={hostActionBindings}
 					>
-						<AuthActionProvider
-							handlers={{
-								requestApiKey: () =>
-									openPluginSettings(
-										plugin.app,
-										plugin.manifest.id,
-										'connections',
-									),
-							}}
+						<ObsidianAuthActionProvider
+							app={plugin.app}
+							pluginId={plugin.manifest.id}
 						>
 							<InboxPanel
 								controller={inbox}
@@ -90,7 +85,7 @@ export function registerInbox({
 								}
 								onError={report}
 							/>
-						</AuthActionProvider>
+						</ObsidianAuthActionProvider>
 					</ApplicationProvider>
 				),
 			}),
@@ -139,6 +134,7 @@ export function registerInbox({
 					void navigate(id).catch(report);
 				},
 				onError: report,
+				pluginId: plugin.manifest.id,
 			});
 			const chooser = new InboxCaptureChooser({
 				app: plugin.app,

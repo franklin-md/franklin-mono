@@ -5,7 +5,14 @@ import type {
 	AgentStopCode,
 } from '@franklin/agent';
 
-export type TurnEndRenderer = (block: TurnEndBlock) => ReactNode;
+/**
+ * Renders a turn end. `actions` are host controls, such as Retry, that the
+ * renderer places with its own controls.
+ */
+export type TurnEndRenderer = (
+	block: TurnEndBlock,
+	actions?: ReactNode,
+) => ReactNode;
 
 export type TurnEndRendererRegistry = {
 	byCode?: Partial<Record<AgentStopCode, TurnEndRenderer>>;

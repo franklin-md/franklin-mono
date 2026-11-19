@@ -1,13 +1,16 @@
 import { LoaderCircle } from 'lucide-react';
 import type { QuestionState } from '../../types.js';
 import { QuestionAnswer } from '../answer.js';
+import { FailureNotice } from '../../../../shared/ui/failure/index.js';
+import { RetryButton } from '../../../../shared/ui/failure/retry.js';
 
 type Props = {
 	state: QuestionState;
 	expanded: boolean;
+	onRetry: () => void;
 };
 
-export function QuestionBody({ state, expanded }: Props) {
+export function QuestionBody({ state, expanded, onRetry }: Props) {
 	const active = state.kind === 'running' || state.kind === 'queued';
 	return (
 		<div>
@@ -34,9 +37,13 @@ export function QuestionBody({ state, expanded }: Props) {
 				</div>
 			)}
 			{state.kind === 'failed' && (
-				<p className="mt-2 mb-0 text-xs wrap-anywhere text-[var(--text-error)]">
-					{state.error}
-				</p>
+				<div className="mt-3">
+					<FailureNotice
+						message={state.error}
+						stopCode={state.stopCode}
+						actions={<RetryButton onClick={onRetry} />}
+					/>
+				</div>
 			)}
 		</div>
 	);

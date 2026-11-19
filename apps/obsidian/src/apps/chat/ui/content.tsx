@@ -1,9 +1,5 @@
 import type { FranklinApp } from '@franklin/agent';
-import type {
-	AgentCreateInput,
-	AuthActionHandler,
-	HostActionBinding,
-} from '@franklin/react';
+import type { AgentCreateInput, HostActionBinding } from '@franklin/react';
 import type { App as ObsidianApp } from 'obsidian';
 import type { ReactNode } from 'react';
 
@@ -15,7 +11,7 @@ type Args = {
 	getCreateInput: () => AgentCreateInput;
 	hostActionBindings: readonly HostActionBinding[];
 	obsidianApp: ObsidianApp;
-	requestApiKey: AuthActionHandler;
+	pluginId: string;
 };
 
 export function createFranklinViewContent({
@@ -23,14 +19,14 @@ export function createFranklinViewContent({
 	getCreateInput,
 	hostActionBindings,
 	obsidianApp,
-	requestApiKey,
+	pluginId,
 }: Args): ReactNode {
 	return (
 		<FranklinRoot
 			app={app}
 			hostActionBindings={hostActionBindings}
 			obsidianApp={obsidianApp}
-			requestApiKey={requestApiKey}
+			pluginId={pluginId}
 		>
 			<ConversationWindow getCreateInput={getCreateInput} />
 		</FranklinRoot>

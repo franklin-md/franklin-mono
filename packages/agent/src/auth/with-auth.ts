@@ -6,7 +6,11 @@ import type {
 import type { CoreStateModule } from '../modules/core/module/state-module.js';
 import { applyStep } from '@franklin/extensibility';
 import { liftCompilerTransform as liftStateCompilerTransform } from '../modules/state/index.js';
+import { explainMissingKey } from './explain-missing-key.js';
 import type { AuthManager } from './manager.js';
+
+// The latest key-resolution failure for a runtime's provider, if any.
+type KeyFailure = { current?: unknown };
 
 /**
  * Resolve the stored API key for `provider`, best-effort.
@@ -16,14 +20,19 @@ import type { AuthManager } from './manager.js';
  * throwing `refresh_token_reused`). On failure this resolves to
  * `undefined` — a missing apiKey surfaces at prompt time via
  * StopCode.AuthKeyNotSpecified, where the user can re-authenticate.
+ * The failure is recorded so that turn end can say why.
  */
 async function resolveApiKey(
 	auth: AuthManager,
 	provider: string,
+	failure?: KeyFailure,
 ): Promise<string | undefined> {
 	try {
-		return await auth.getApiKey(provider);
-	} catch {
+		const apiKey = await auth.getApiKey(provider);
+		if (failure) failure.current = undefined;
+		return apiKey;
+	} catch (error) {
+		if (failure) failure.current = error;
 		return undefined;
 	}
 }
@@ -40,8 +49,9 @@ export async function authenticateAgent(
 	runtime: CoreRuntime,
 	provider: string,
 	auth: AuthManager,
+	failure?: KeyFailure,
 ): Promise<void> {
-	const apiKey = await resolveApiKey(auth, provider);
+	const apiKey = await resolveApiKey(auth, provider, failure);
 	await runtime.setLLMConfig({ provider, apiKey });
 }
 
@@ -53,10 +63,11 @@ export async function reconnectAgent(
 	runtime: CoreRuntime,
 	state: CoreState,
 	auth: AuthManager,
+	failure?: KeyFailure,
 ): Promise<void> {
 	const provider = state.core.llmConfig.provider;
 	if (!provider) return;
-	await authenticateAgent(runtime, provider, auth);
+	await authenticateAgent(runtime, provider, auth, failure);
 }
 
 // TODO: Can we not use the provider that has been set already during the compile step? (given that should populate?)
@@ -65,6 +76,7 @@ export async function reconnectAgent(
 function createAuthCompilerTransform(auth: AuthManager) {
 	return (state: CoreState) =>
 		applyStep<CoreSignature, CoreRuntime, CoreRuntime>(async (runtime) => {
+			const failure: KeyFailure = {};
 			// Install setLLMConfig wrapper to auto-resolve auth when provider is set.
 			const originalSetLLMConfig = runtime.setLLMConfig.bind(runtime);
 			runtime.setLLMConfig = async (config) => {
@@ -79,15 +91,20 @@ function createAuthCompilerTransform(auth: AuthManager) {
 					// survive config-merge on provider switch.
 					config = {
 						...config,
-						apiKey: await resolveApiKey(auth, nextProvider),
+						apiKey: await resolveApiKey(auth, nextProvider, failure),
 					};
 				}
 				return originalSetLLMConfig(config);
 			};
 
+			// A missing-key turn end reports the failure that left the key unset.
+			const originalPrompt = runtime.prompt.bind(runtime);
+			runtime.prompt = (message) =>
+				explainMissingKey(originalPrompt(message), () => failure.current);
+
 			// Initial login resolves credentials for the configured provider,
 			// or no-ops if none is set.
-			await reconnectAgent(runtime, state, auth);
+			await reconnectAgent(runtime, state, auth, failure);
 
 			// Live credential sync pushes new keys when this runtime's provider changes.
 			const unsubscribe = auth.onAuthChange((provider) => {
@@ -95,7 +112,7 @@ function createAuthCompilerTransform(auth: AuthManager) {
 					if (runtime.getSession().llmConfig.provider !== provider) {
 						return;
 					}
-					await authenticateAgent(runtime, provider, auth);
+					await authenticateAgent(runtime, provider, auth, failure);
 				})();
 			});
 
@@ -122,6 +139,10 @@ function createAuthCompilerTransform(auth: AuthManager) {
  * 3. **Live sync** — subscribes to credential changes and pushes new
  *    keys to the runtime when its provider's credentials change.
  *    Unsubscribes on dispose.
+ *
+ * When resolution fails, the prompt's AuthKeyNotSpecified turn end is
+ * explained: a rejected token becomes AuthKeyInvalid with the provider's
+ * message; other failures become LlmError with theirs.
  */
 export function withAuth(
 	module: CoreStateModule,

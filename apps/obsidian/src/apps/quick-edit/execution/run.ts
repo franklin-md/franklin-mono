@@ -5,6 +5,7 @@ import { quickEditEnvironment } from './config.js';
 import type { QuickEditRunner } from '../types.js';
 import { quickEditExtensions } from './extensions.js';
 import { quickEditPrompt } from './prompt.js';
+import { TurnEndError } from '../../../shared/agent/turn-end/error.js';
 
 export function createQuickEditRunner(
 	app: App,
@@ -13,12 +14,6 @@ export function createQuickEditRunner(
 	return async (request) => {
 		request.signal.throwIfAborted();
 		const { provider, model, reasoning } = request.settings;
-		const key = await franklin.auth.getApiKey(provider);
-		if (!key)
-			throw new Error(
-				`Sign in or add a key for ${provider} in Franklin settings → Connections, then retry.`,
-			);
-		request.signal.throwIfAborted();
 		const completion: { value?: { success: boolean; summary: string } } = {};
 		const runtime = await franklin.createAgent({
 			extensions: quickEditExtensions((result) => {
@@ -47,7 +42,7 @@ export function createQuickEditRunner(
 			})) {
 				signal.throwIfAborted();
 				if (event.type === 'turnEnd' && event.stopCode !== StopCode.Finished)
-					throw new Error(event.stopMessage ?? 'Quick edit could not finish');
+					throw new TurnEndError(event);
 			}
 			signal.throwIfAborted();
 			if (!completion.value)

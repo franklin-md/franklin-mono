@@ -8,6 +8,7 @@ import {
 } from '@franklin/ui';
 import type { QuickEditState } from '../types.js';
 import { DirectivePill } from '../../../shared/directives/render/pill.js';
+import { FailurePopover } from '../../../shared/ui/failure/popover.js';
 
 type Props = {
 	state: QuickEditState;
@@ -22,7 +23,7 @@ export function QuickEditPill({ state, composing = false, stop }: Props) {
 	const label = {
 		running: 'Editing',
 		stopped: 'Stopped',
-		failed: 'Edit failed',
+		failed: 'Failed',
 	}[state.status];
 	const explanation = state.error || state.prompt || 'Request an edit';
 	const pill = (
@@ -51,6 +52,12 @@ export function QuickEditPill({ state, composing = false, stop }: Props) {
 		</DirectivePill>
 	);
 	if (running) return pill;
+	if (state.status === 'failed')
+		return (
+			<FailurePopover message={state.error} stopCode={state.stopCode}>
+				{pill}
+			</FailurePopover>
+		);
 	return (
 		<TooltipProvider delayDuration={300}>
 			<Tooltip>

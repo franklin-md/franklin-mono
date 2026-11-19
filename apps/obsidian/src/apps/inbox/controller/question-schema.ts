@@ -1,6 +1,7 @@
 import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { z } from 'zod';
 import { answerDetailSchema } from '../answer/schema.js';
+import { failedStateSchema } from './failed-schema.js';
 
 const position = z.object({
 	line: z.number().int().nonnegative(),
@@ -32,7 +33,7 @@ const state = z.discriminatedUnion('kind', [
 		title: z.string().trim().min(1).optional(),
 		details: z.array(answerDetailSchema).optional(),
 	}),
-	z.object({ kind: z.literal('failed'), error: z.string() }),
+	failedStateSchema,
 ]);
 export const questionSchema = z.object({
 	id: z.string().min(1),

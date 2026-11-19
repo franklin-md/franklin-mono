@@ -143,7 +143,7 @@ describe('inbox Franklin runtime', () => {
 			],
 		});
 	});
-	it('reports credential errors and propagates provider failures', async () => {
+	it('reports an unfinished turn with its stop code', async () => {
 		const mock = createMockMiniACP({
 			defaultTurn: turn([
 				turnEnd({
@@ -156,19 +156,10 @@ describe('inbox Franklin runtime', () => {
 			createInboxRunner(
 				createInboxTestEnvironment().runnerOptions(mock.connector, auth),
 			)(request()),
-		).rejects.toThrow('Invalid key');
-		const missing = {
-			getApiKey: vi.fn(async () => undefined),
-			onAuthChange: () => () => {},
-		} as unknown as AuthManager;
-		await expect(
-			createInboxRunner(
-				createInboxTestEnvironment().runnerOptions(
-					createMockMiniACP({ defaultTurn: finishedTurn() }).connector,
-					missing,
-				),
-			)(request()),
-		).rejects.toThrow('Sign in or add a key');
+		).rejects.toMatchObject({
+			message: 'Invalid key',
+			stopCode: StopCode.AuthKeyInvalid,
+		});
 	});
 	it('never publishes after cancellation during runtime creation', async () => {
 		const abort = new AbortController();

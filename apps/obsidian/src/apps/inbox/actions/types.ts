@@ -1,5 +1,6 @@
 import type { InboxQuestion, ModelSelection } from '../controller/types.js';
 import type { BranchContext } from '../hierarchy/types.js';
+import type { FailedState } from '../types.js';
 
 export type InboxAction = {
 	id: string;
@@ -9,12 +10,11 @@ export type InboxAction = {
 
 export type QueuedAction = { kind: 'queued' };
 export type RunningAction = { kind: 'running' };
-export type FailedAction = { kind: 'failed'; error: string };
 export type SucceededAction = { kind: 'succeeded'; summary: string };
 export type ActionState =
 	| QueuedAction
 	| RunningAction
-	| FailedAction
+	| FailedState
 	| SucceededAction;
 
 export type InboxActionRun = ModelSelection &

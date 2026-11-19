@@ -37,7 +37,9 @@ rendering to the host; no placeholder characters are added to the note.
 - Failed and stopped requests retain a status and their prompt. Invoke **Quick edit**
   at the control to retry, or delete it. Cancellation can leave partial agent
   changes for file review. Hover or keyboard-focus the status to read the saved
-  explanation, including agent-reported noncompletion and runtime errors.
+  explanation, including agent-reported noncompletion and runtime errors. A failed
+  request reads **Failed** and shows its explanation through Chat's turn-end
+  renderers; a missing key or rejected sign-in also offers **Open connections**.
 
 ## Presets
 

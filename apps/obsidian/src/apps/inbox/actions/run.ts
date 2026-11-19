@@ -12,6 +12,7 @@ import { createInboxResearchExtensions } from '../agent/research.js';
 import type { InboxRunnerOptions } from '../agent/types.js';
 import type { ActionRequest } from './types.js';
 import { formatAnswer } from '../answer/format.js';
+import { assertFinished } from '../../../shared/agent/turn-end/assert-finished.js';
 
 const finishAction = toolSpec(
 	'finish_action',
@@ -51,7 +52,7 @@ export function createInboxActionRunner(options: InboxRunnerOptions) {
 					},
 				});
 			});
-		await runInboxRuntime(options, {
+		const turnEnd = await runInboxRuntime(options, {
 			selection: run,
 			signal,
 			timeout: 7_200_000,
@@ -72,6 +73,7 @@ export function createInboxActionRunner(options: InboxRunnerOptions) {
 				completion(executionSignal),
 			],
 		});
+		assertFinished(turnEnd);
 		if (!result.summary)
 			throw new Error('The agent finished without completing the action');
 		if (!result.success) throw new Error(result.summary);

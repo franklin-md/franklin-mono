@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { questionSchema } from '../controller/question-schema.js';
+import { failedStateSchema } from '../controller/failed-schema.js';
 
 export const thoughtDumpSchema = questionSchema
 	.pick({
@@ -17,7 +18,7 @@ export const thoughtDumpSchema = questionSchema
 		state: z.discriminatedUnion('kind', [
 			z.object({ kind: z.literal('queued') }),
 			z.object({ kind: z.literal('running') }),
-			z.object({ kind: z.literal('failed'), error: z.string() }),
+			failedStateSchema,
 			z.object({
 				kind: z.literal('succeeded'),
 				count: z.number().int().positive(),

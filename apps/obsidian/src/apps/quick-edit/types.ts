@@ -1,3 +1,4 @@
+import type { AgentStopCode } from '@franklin/agent';
 import type { ThinkingLevel } from '@franklin/mini-acp';
 import type { QuickEditPreset } from './presets/types.js';
 
@@ -10,6 +11,8 @@ export type QuickEditState = {
 	prompt: string;
 	status: 'ready' | 'running' | 'done' | 'failed' | 'stopped';
 	error: string;
+	// Present when a model turn or credential check ended the edit.
+	stopCode?: AgentStopCode;
 };
 
 export type QuickEditSettings = {
