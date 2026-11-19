@@ -1,9 +1,9 @@
 import { memo } from 'react';
+import type { GridCellProps } from '@franklin/react';
 import { cn } from '../../lib/cn.js';
 import type { IconOption, IconRenderer } from './types.js';
 
-type Props = {
-	id: string;
+type Props = GridCellProps & {
 	icon: IconOption;
 	active: boolean;
 	selected: boolean;
@@ -14,27 +14,24 @@ type Props = {
 // Host catalogs can hold ~1,500 icons. Memoizing keeps arrow-key moves to
 // re-rendering the two cells whose active state changed.
 export const IconCell = memo(function IconCell({
-	id,
 	icon,
 	active,
 	selected,
 	renderIcon: Icon,
 	onPick,
+	...cell
 }: Props) {
 	return (
 		<div
-			id={id}
-			role="option"
+			{...cell}
 			aria-selected={selected}
 			aria-label={icon.label}
 			title={icon.label}
 			className={cn(
-				'flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-accent',
+				'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md outline-none hover:bg-accent',
 				selected && 'bg-accent',
 				active && 'ring-1 ring-inset ring-ring',
 			)}
-			// Keep focus in the search input so typing and arrow keys continue there.
-			onMouseDown={(event) => event.preventDefault()}
 			onClick={() => onPick(icon.id)}
 		>
 			<Icon id={icon.id} className="size-4" />

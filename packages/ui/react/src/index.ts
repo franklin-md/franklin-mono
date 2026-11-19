@@ -69,6 +69,12 @@ export {
 	useMiddleButtonEffect,
 	type MiddleButtonEffect,
 } from './dom/use-middle-button-effect.js';
+export { useGridNavigation } from './dom/grid/use-grid-navigation.js';
+export type {
+	GridCellProps,
+	GridNavigation,
+	UseGridNavigationOptions,
+} from './dom/grid/types.js';
 export {
 	useTriggerOnChange,
 	type UseTriggerOnChange,
