@@ -1,37 +1,26 @@
 import { useId, useState } from 'react';
 import { Button } from '@franklin/ui';
-import type { InboxController } from '../controller/index.js';
+import type { InboxPreferences } from '../controller/types.js';
 import { DEFAULT_ANSWER_INSTRUCTIONS } from '../answer-instructions.js';
-import { errorMessage } from '../controller/error.js';
 import { SettingDescription } from '../../../shared/ui/setting/description.js';
-import { SettingError } from '../../../shared/ui/setting/error.js';
 import { SettingInfo } from '../../../shared/ui/setting/info.js';
 import { SettingItem } from '../../../shared/ui/setting/item.js';
 import { SettingName } from '../../../shared/ui/setting/name.js';
 import { SettingTextarea } from '../../../shared/ui/setting/textarea.js';
 
-type Props = { inbox: InboxController };
+type Props = {
+	initial: string;
+	pending: boolean;
+	onSave: (update: Partial<InboxPreferences>) => Promise<void>;
+};
 
-export function InboxInstructionsSetting({ inbox }: Props) {
+export function InboxInstructionsSetting({ initial, pending, onSave }: Props) {
 	const id = useId();
-	const [instructions, setInstructions] = useState(
-		() => inbox.state.get().preferences.answerInstructions,
-	);
-	const [pending, setPending] = useState(false);
-	const [error, setError] = useState<string>();
-
-	async function save(answerInstructions: string) {
-		setPending(true);
-		setError(undefined);
-		try {
-			await inbox.configure({ answerInstructions });
-		} catch (error) {
-			setError(errorMessage(error));
-		} finally {
-			setPending(false);
-		}
+	const [instructions, setInstructions] = useState(initial);
+	function reset() {
+		setInstructions(DEFAULT_ANSWER_INSTRUCTIONS);
+		void onSave({ answerInstructions: DEFAULT_ANSWER_INSTRUCTIONS });
 	}
-
 	return (
 		<SettingItem layout="stacked">
 			<SettingInfo>
@@ -45,7 +34,7 @@ export function InboxInstructionsSetting({ inbox }: Props) {
 				className="grid gap-2"
 				onSubmit={(event) => {
 					event.preventDefault();
-					void save(instructions);
+					void onSave({ answerInstructions: instructions });
 				}}
 			>
 				<SettingTextarea
@@ -64,15 +53,11 @@ export function InboxInstructionsSetting({ inbox }: Props) {
 						size="sm"
 						variant="outline"
 						disabled={pending}
-						onClick={() => {
-							setInstructions(DEFAULT_ANSWER_INSTRUCTIONS);
-							void save(DEFAULT_ANSWER_INSTRUCTIONS);
-						}}
+						onClick={reset}
 					>
 						Reset to default
 					</Button>
 				</div>
-				{error && <SettingError>{error}</SettingError>}
 			</form>
 		</SettingItem>
 	);
