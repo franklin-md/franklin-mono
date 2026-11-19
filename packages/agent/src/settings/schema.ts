@@ -1,13 +1,11 @@
-import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { z } from 'zod';
 import type { Codec } from '@franklin/lib';
 import { versioned, zodCodec } from '@franklin/lib';
+import { StoredThinkingLevel } from './thinking-level.js';
 
 // ---------------------------------------------------------------------------
 // Version 1 — initial schema
 // ---------------------------------------------------------------------------
-
-const ThinkingLevel = z.enum(THINKING_LEVELS);
 
 const CODEX_DEFAULT_MODEL_UPGRADES = new Map([
 	['gpt-6-astra', 'gpt-6.2-astra'],
@@ -26,7 +24,7 @@ const AppSettingsV1 = z.object({
 		.object({
 			provider: z.string().default('openai-codex'),
 			model: z.string().optional(),
-			reasoning: ThinkingLevel.default('medium'),
+			reasoning: StoredThinkingLevel.default('medium'),
 		})
 		.prefault({})
 		.transform((config) => {

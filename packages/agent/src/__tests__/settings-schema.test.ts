@@ -53,6 +53,20 @@ describe('AppSettings schema', () => {
 		});
 	});
 
+	it('reads the retired minimal reasoning level as low', () => {
+		const result = appSettingsCodec.decode({
+			version: 1,
+			data: {
+				defaultLLMConfig: {
+					provider: 'openai-codex',
+					model: 'gpt-6.2-sol',
+					reasoning: 'minimal',
+				},
+			},
+		});
+		expect(result.ok && result.value.defaultLLMConfig.reasoning).toBe('low');
+	});
+
 	it('partial data: custom provider preserved, other fields defaulted', () => {
 		const result = appSettingsCodec.decode({
 			version: 1,

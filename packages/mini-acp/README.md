@@ -167,16 +167,17 @@ if required fields (provider, model, apiKey) are still unset.
 LLMConfig {
   model?:     string         // Model identifier
   provider?:  string         // Provider identifier
-  reasoning?: ThinkingLevel  // off | minimal | low | medium | high | xhigh | max
+  reasoning?: ThinkingLevel  // off | low | medium | high | xhigh | max
   apiKey?:    string         // Provider API key (resolved by auth layer)
 }
 ```
 
 The built-in Pi adapter uses Pi's per-model reasoning mappings and clamps
 unsupported levels. `xhigh` and `max` remain distinct when the model supports
-both. Existing saved levels retain their literal values; no historical effort
-remapping is applied. The toggle currently offers a fixed subset of levels;
-model-aware filtering is deferred under `franklin-drf`.
+both. Existing saved levels retain their literal values, except the retired
+`minimal` level: Franklin's stored settings and sessions read it as `low`.
+Pickers offer every level; model-aware filtering is deferred under
+`franklin-drf`.
 See [Pi's thinking-level schema](https://github.com/earendil-works/pi/blob/v1.5.2/packages/ai/src/providers/model-schema.ts).
 
 `setContext` accepts a `ContextPatch` and applies it to the agent's current `Context`.

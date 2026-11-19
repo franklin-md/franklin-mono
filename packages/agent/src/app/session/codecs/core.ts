@@ -1,4 +1,3 @@
-import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { z } from 'zod';
 import type { Message } from '@franklin/mini-acp';
 import {
@@ -7,8 +6,7 @@ import {
 	type ToolFilter,
 } from '../../../modules/core/state.js';
 import { validateEntries } from '../../../modules/core/history/validate.js';
-
-const ThinkingLevelV1 = z.enum(THINKING_LEVELS);
+import { StoredThinkingLevel } from '../../../settings/thinking-level.js';
 
 const MessageV1 = z.custom<Message>((value) => {
 	if (value === null || typeof value !== 'object') return false;
@@ -42,7 +40,7 @@ export const CoreSessionV1 = z.object({
 	llmConfig: z.object({
 		provider: z.string().optional(),
 		model: z.string().optional(),
-		reasoning: ThinkingLevelV1.optional(),
+		reasoning: StoredThinkingLevel.optional(),
 	}),
 	usage: z.object({
 		tokens: UsageBreakdownV1,

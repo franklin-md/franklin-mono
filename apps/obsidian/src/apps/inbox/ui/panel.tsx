@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { ReadonlyStore } from '@franklin/agent';
+import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { Button, ModelPicker, PromptFooterControlGroup } from '@franklin/ui';
-import { questionSchema } from '../controller/question-schema.js';
 import type { InboxController } from '../controller/index.js';
 import type { QuestionSource, StudyQuestion } from '../types.js';
 import { InboxContent } from './content.js';
@@ -98,7 +98,7 @@ export function InboxPanel({
 							onSelect={(provider, model) => configure({ provider, model })}
 							effort={{
 								level: preferences.reasoning,
-								levels: questionSchema.shape.reasoning.options,
+								levels: THINKING_LEVELS,
 								onChange: (reasoning) => configure({ reasoning }),
 							}}
 						/>
