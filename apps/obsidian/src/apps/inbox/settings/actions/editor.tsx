@@ -1,8 +1,10 @@
 import { useId, useState } from 'react';
-import { Button, Input, Label } from '@franklin/ui';
+import { Button, Input } from '@franklin/ui';
 import type { InboxActions } from '../../actions/controller.js';
 import type { InboxAction } from '../../actions/types.js';
 import { errorMessage } from '../../controller/error.js';
+import { SettingName } from '../../../../shared/ui/setting/name.js';
+import { SettingTextarea } from '../../../../shared/ui/setting/textarea.js';
 
 type Props = {
 	action: InboxAction;
@@ -36,13 +38,13 @@ export function ActionEditor({
 	}
 	return (
 		<form
-			className="franklin-action-editor"
+			className="grid gap-2"
 			onSubmit={(event) => {
 				event.preventDefault();
 				void apply(() => controller.save({ id: action.id, name, prompt }));
 			}}
 		>
-			<Label htmlFor={`${id}-name`}>Action name</Label>
+			<SettingName htmlFor={`${id}-name`}>Action name</SettingName>
 			<Input
 				id={`${id}-name`}
 				value={name}
@@ -50,8 +52,8 @@ export function ActionEditor({
 				disabled={pending}
 				onChange={(event) => setName(event.target.value)}
 			/>
-			<Label htmlFor={`${id}-prompt`}>Action prompt</Label>
-			<textarea
+			<SettingName htmlFor={`${id}-prompt`}>Action prompt</SettingName>
+			<SettingTextarea
 				id={`${id}-prompt`}
 				value={prompt}
 				rows={5}
@@ -59,7 +61,7 @@ export function ActionEditor({
 				placeholder="What should this action do with the question and answer?"
 				onChange={(event) => setPrompt(event.target.value)}
 			/>
-			<div className="franklin-action-editor-controls">
+			<div className="flex flex-wrap gap-2">
 				<Button
 					type="submit"
 					size="sm"
@@ -93,7 +95,11 @@ export function ActionEditor({
 					</Button>
 				)}
 			</div>
-			{error && <p role="alert">{error}</p>}
+			{error && (
+				<p role="alert" className="text-[var(--text-error)]">
+					{error}
+				</p>
+			)}
 		</form>
 	);
 }

@@ -6,6 +6,11 @@ import type { QuickEditPreset } from '../../presets/types.js';
 import { presetIcons } from '../../presets/icons.js';
 import { presetColors } from '../../presets/colors.js';
 import { quickEditError } from '../../error.js';
+import { SettingControl } from '../../../../shared/ui/setting/control.js';
+import { SettingGroup } from '../../../../shared/ui/setting/group.js';
+import { SettingInfo } from '../../../../shared/ui/setting/info.js';
+import { SettingItem } from '../../../../shared/ui/setting/item.js';
+import { SettingName } from '../../../../shared/ui/setting/name.js';
 import { PresetEditor } from './editor.js';
 
 type Props = { preferences: QuickEditPreferences };
@@ -53,76 +58,86 @@ export function PresetSettings({ preferences }: Props) {
 		});
 	}
 	return (
-		<section aria-label="Quick edit presets" className="grid gap-2">
-			<h3 className="m-0 text-sm font-medium">Presets</h3>
-			<p className="m-0 text-sm text-muted-foreground">
-				Run a saved prompt from Franklin: Quick edit presets. Selected text or
-				the current row supplies context.
-			</p>
+		<SettingGroup
+			title="Presets"
+			description="Run a saved prompt from Franklin: Quick edit presets. Selected text or the current row supplies context."
+		>
 			{presets.map((preset, index) => {
 				const Icon = presetIcons[preset.icon].icon;
 				return (
-					<div key={preset.id} className="flex items-center gap-2">
-						<Icon
-							aria-hidden="true"
-							className={`h-4 w-4 shrink-0 ${presetColors[preset.color].colorClassName}`}
-						/>
-						<span className="min-w-0 flex-1 truncate">{preset.name}</span>
-						<IconButton
-							icon={ArrowUp}
-							aria-label={`Move ${preset.name} up`}
-							disabled={pending || index === 0}
-							onClick={() => move(preset.id, -1)}
-						/>
-						<IconButton
-							icon={ArrowDown}
-							aria-label={`Move ${preset.name} down`}
-							disabled={pending || index === presets.length - 1}
-							onClick={() => move(preset.id, 1)}
-						/>
-						<IconButton
-							icon={Pencil}
-							aria-label={`Edit ${preset.name}`}
-							disabled={pending}
-							onClick={() => setEditing(preset)}
-						/>
-						<IconButton
-							icon={Trash2}
-							aria-label={`Delete ${preset.name}`}
-							disabled={pending}
-							onClick={() => {
-								void apply((current) =>
-									current.filter((item) => item.id !== preset.id),
-								).then((saved) => {
-									if (saved && editing?.id === preset.id) setEditing(undefined);
-								});
-							}}
-						/>
-					</div>
+					<SettingItem key={preset.id} layout="list">
+						<SettingInfo>
+							<SettingName>
+								<span className="inline-flex min-w-0 items-center gap-2">
+									<Icon
+										aria-hidden="true"
+										className={`h-4 w-4 shrink-0 ${presetColors[preset.color].colorClassName}`}
+									/>
+									<span className="truncate">{preset.name}</span>
+								</span>
+							</SettingName>
+						</SettingInfo>
+						<SettingControl>
+							<IconButton
+								icon={ArrowUp}
+								aria-label={`Move ${preset.name} up`}
+								disabled={pending || index === 0}
+								onClick={() => move(preset.id, -1)}
+							/>
+							<IconButton
+								icon={ArrowDown}
+								aria-label={`Move ${preset.name} down`}
+								disabled={pending || index === presets.length - 1}
+								onClick={() => move(preset.id, 1)}
+							/>
+							<IconButton
+								icon={Pencil}
+								aria-label={`Edit ${preset.name}`}
+								disabled={pending}
+								onClick={() => setEditing(preset)}
+							/>
+							<IconButton
+								icon={Trash2}
+								aria-label={`Delete ${preset.name}`}
+								disabled={pending}
+								onClick={() => {
+									void apply((current) =>
+										current.filter((item) => item.id !== preset.id),
+									).then((saved) => {
+										if (saved && editing?.id === preset.id)
+											setEditing(undefined);
+									});
+								}}
+							/>
+						</SettingControl>
+					</SettingItem>
 				);
 			})}
-			{editing ? (
-				<PresetEditor
-					key={editing.id}
-					preset={editing}
-					pending={pending}
-					onCancel={() => setEditing(undefined)}
-					onSave={(preset) => {
-						void apply((current) =>
-							current.some((item) => item.id === preset.id)
-								? current.map((item) => (item.id === preset.id ? preset : item))
-								: [...current, preset],
-						).then((saved) => {
-							if (saved) setEditing(undefined);
-						});
-					}}
-				/>
-			) : (
-				<div>
+			<SettingItem layout="stacked">
+				{editing ? (
+					<PresetEditor
+						key={editing.id}
+						preset={editing}
+						pending={pending}
+						onCancel={() => setEditing(undefined)}
+						onSave={(preset) => {
+							void apply((current) =>
+								current.some((item) => item.id === preset.id)
+									? current.map((item) =>
+											item.id === preset.id ? preset : item,
+										)
+									: [...current, preset],
+							).then((saved) => {
+								if (saved) setEditing(undefined);
+							});
+						}}
+					/>
+				) : (
 					<Button
 						type="button"
 						variant="outline"
 						size="sm"
+						className="self-start"
 						disabled={pending}
 						onClick={() =>
 							setEditing({
@@ -136,13 +151,15 @@ export function PresetSettings({ preferences }: Props) {
 					>
 						Add preset
 					</Button>
-				</div>
-			)}
+				)}
+			</SettingItem>
 			{error && (
-				<p role="alert" className="text-destructive">
-					{error}
-				</p>
+				<SettingItem>
+					<p role="alert" className="text-[var(--text-error)]">
+						{error}
+					</p>
+				</SettingItem>
 			)}
-		</section>
+		</SettingGroup>
 	);
 }

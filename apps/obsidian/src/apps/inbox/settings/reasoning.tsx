@@ -1,5 +1,5 @@
 import { useId, useState, useSyncExternalStore } from 'react';
-import { Button, Label } from '@franklin/ui';
+import { Button } from '@franklin/ui';
 import type { InboxController } from '../controller/index.js';
 import type { ModelSelection } from '../controller/types.js';
 import { errorMessage } from '../controller/error.js';
@@ -9,6 +9,7 @@ import { SettingDescription } from '../../../shared/ui/setting/description.js';
 import { SettingInfo } from '../../../shared/ui/setting/info.js';
 import { SettingItem } from '../../../shared/ui/setting/item.js';
 import { SettingName } from '../../../shared/ui/setting/name.js';
+import { SettingSelect } from '../../../shared/ui/setting/select.js';
 
 type Props = { inbox: InboxController };
 
@@ -48,9 +49,7 @@ export function InboxReasoningSetting({ inbox }: Props) {
 	return (
 		<SettingItem>
 			<SettingInfo>
-				<SettingName>
-					<Label htmlFor={id}>Reasoning level</Label>
-				</SettingName>
+				<SettingName htmlFor={id}>Reasoning level</SettingName>
 				<SettingDescription>
 					<span id={`${id}-description`}>
 						Applies to new inbox questions and follow-ups. Retries keep their
@@ -75,7 +74,7 @@ export function InboxReasoningSetting({ inbox }: Props) {
 				)}
 			</SettingInfo>
 			<SettingControl>
-				<select
+				<SettingSelect
 					id={id}
 					aria-describedby={`${id}-description`}
 					value={reasoning}
@@ -87,7 +86,7 @@ export function InboxReasoningSetting({ inbox }: Props) {
 							{labels[value]}
 						</option>
 					))}
-				</select>
+				</SettingSelect>
 			</SettingControl>
 		</SettingItem>
 	);
