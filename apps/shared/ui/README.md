@@ -155,6 +155,32 @@ The component composes the existing [Tooltip](https://www.radix-ui.com/primitive
 
 The group does not intercept window-level keyboard events. Hosts must isolate editor hotkeys at their integration boundary. Popover wrappers must let Tab and Shift+Tab reach the controls so roving focus can move out of the group.
 
+## Icon grid and color swatches
+
+`IconGrid` and `ColorSwatches` are single-field pickers. Each is controlled through `value` and `onChange(value)` and owns no form state, so it binds to `useState`, a store or a form library field. Compose them in the caller's own popover, dropdown or inline surface:
+
+```tsx
+<PopoverContent className="flex w-max flex-col overflow-hidden">
+	<IconGrid
+		icons={icons}
+		value={icon}
+		renderIcon={HostIcon}
+		className={colorClassName}
+		onChange={(id) => {
+			setIcon(id);
+			setOpen(false);
+		}}
+	/>
+	<ColorSwatches options={colors} value={color} onChange={setColor} />
+</PopoverContent>
+```
+
+Hosts own the icon source. `icons` lists `{ id, label, keywords? }`, and `renderIcon` draws an ID with a `className`. This keeps large registries, such as Obsidian's, out of this package. `className` applies text-color utilities to the whole grid, for example to preview a separately chosen color.
+
+Every search term must match an icon's ID, label or keyword; leading matches rank first. Arrow keys move the active cell in a fixed 8-column grid while focus stays in the search input, following the [combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/). Enter or a click calls `onChange`; closing a surrounding popover is the caller's choice. Home, End and text editing stay with the input. The search input is the grid's first focusable control, so Radix Popover focuses it on open when the grid comes first.
+
+`ColorSwatches` renders native radios with arrow-key navigation. Each option supplies complete `colorClassName` text-color utilities, and swatches draw with `currentColor`. `label` names the group and defaults to "Color".
+
 ## Shared prompt controls
 
 `PromptSurface`, `PromptFooter`, `PromptFooterControls`, and `PromptSubmitButton` compose the same prompt appearance around host-owned input and submission behavior. `PromptContainer` adds chat's outer spacing; `PromptSurface` can also style an existing form with `asChild`.
