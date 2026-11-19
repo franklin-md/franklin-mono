@@ -8,7 +8,6 @@ import type { ToolDefinition } from './tool.js';
 /** Ordered list of all thinking levels, from off to maximum. */
 export const THINKING_LEVELS = [
 	'off',
-	'minimal',
 	'low',
 	'medium',
 	'high',

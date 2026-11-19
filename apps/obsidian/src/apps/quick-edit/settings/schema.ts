@@ -1,4 +1,4 @@
-import { THINKING_LEVELS } from '@franklin/mini-acp';
+import { StoredThinkingLevel } from '@franklin/agent';
 import { z } from 'zod';
 import { presetIcons } from '../presets/icons.js';
 import { presetColors } from '../presets/colors.js';
@@ -7,7 +7,7 @@ import { createDefaultPresets } from '../presets/defaults.js';
 export const quickEditSettingsSchema = z.object({
 	provider: z.string().min(1),
 	model: z.string().min(1),
-	reasoning: z.enum(THINKING_LEVELS),
+	reasoning: StoredThinkingLevel,
 	instructions: z.string(),
 	presets: z
 		.array(

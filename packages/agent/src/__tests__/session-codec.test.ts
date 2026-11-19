@@ -83,6 +83,22 @@ describe('session codec', () => {
 		},
 	);
 
+	it('reads a session saved with the retired minimal reasoning level as low', () => {
+		const value = session();
+		value.core.llmConfig.reasoning = 'low';
+		const decoded = franklinSessionCodec.decode({
+			version: SESSION_FILE_VERSION,
+			data: {
+				...value,
+				core: {
+					...value.core,
+					llmConfig: { ...value.core.llmConfig, reasoning: 'minimal' },
+				},
+			},
+		});
+		expect(decoded).toEqual({ ok: true, value });
+	});
+
 	it('encodes sessions as a versioned envelope', () => {
 		const value = session();
 

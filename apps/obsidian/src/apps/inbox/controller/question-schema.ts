@@ -1,4 +1,4 @@
-import { THINKING_LEVELS } from '@franklin/mini-acp';
+import { StoredThinkingLevel } from '@franklin/agent';
 import { z } from 'zod';
 import { answerDetailSchema } from '../answer/schema.js';
 import { failedStateSchema } from './failed-schema.js';
@@ -23,7 +23,6 @@ const source = z.object({
 		})
 		.optional(),
 });
-const reasoning = z.enum(THINKING_LEVELS);
 const state = z.discriminatedUnion('kind', [
 	z.object({ kind: z.literal('queued') }),
 	z.object({ kind: z.literal('running') }),
@@ -47,7 +46,7 @@ export const questionSchema = z.object({
 	provider: z.string().min(1),
 	model: z.string().min(1),
 	modelLabel: z.string().optional(),
-	reasoning,
+	reasoning: StoredThinkingLevel,
 	answerInstructions: z.string(),
 	source: source.optional(),
 	state,

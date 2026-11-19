@@ -1,4 +1,5 @@
 import { useId, useState, useSyncExternalStore } from 'react';
+import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { Button } from '@franklin/ui';
 import type { InboxController } from '../controller/index.js';
 import type { ModelSelection } from '../controller/types.js';
@@ -15,7 +16,6 @@ type Props = { inbox: InboxController };
 
 const labels = {
 	off: 'Off',
-	minimal: 'Minimal',
 	low: 'Low',
 	medium: 'Medium',
 	high: 'High',
@@ -81,7 +81,7 @@ export function InboxReasoningSetting({ inbox }: Props) {
 					disabled={pending}
 					onChange={(event) => void save(event.target.value)}
 				>
-					{questionSchema.shape.reasoning.options.map((value) => (
+					{THINKING_LEVELS.map((value) => (
 						<option key={value} value={value}>
 							{labels[value]}
 						</option>

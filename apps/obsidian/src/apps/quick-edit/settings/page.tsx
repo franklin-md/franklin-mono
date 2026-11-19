@@ -1,4 +1,5 @@
 import { useId, useState, useSyncExternalStore } from 'react';
+import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { Button, cn, ModelPicker } from '@franklin/ui';
 import { SettingControl } from '../../../shared/ui/setting/control.js';
 import { SettingDescription } from '../../../shared/ui/setting/description.js';
@@ -12,7 +13,6 @@ import { quickEditError } from '../error.js';
 import type { QuickEditPreferences } from './store.js';
 import type { QuickEditSettings } from '../types.js';
 import { PresetSettings } from './presets/list.js';
-import { quickEditSettingsSchema } from './schema.js';
 
 type Props = {
 	preferences: QuickEditPreferences;
@@ -70,7 +70,7 @@ export function QuickEditSettingsPanel({
 									onSelect={(provider, model) => void save({ provider, model })}
 									effort={{
 										level: settings.reasoning,
-										levels: quickEditSettingsSchema.shape.reasoning.options,
+										levels: THINKING_LEVELS,
 										onChange: (reasoning) => void save({ reasoning }),
 									}}
 								/>

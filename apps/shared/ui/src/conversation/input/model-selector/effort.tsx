@@ -10,9 +10,11 @@ export function ModelPickerEffort({
 }: ModelPickerEffortProps) {
 	const id = useId();
 
-	// Choices wrap rather than scroll: a hidden horizontal scrollbar clipped
-	// levels in narrow panes and larger host font sizes, and wrapping keeps every
-	// level visible without measuring layout.
+	// Width check (2026-11-19, Storybook, 16px root, default w-80 popover): the
+	// choices have 253px. The six THINKING_LEVELS need 235px and fit on one row;
+	// the retired Minimal level made seven (270px) and forced a wrap. Choices
+	// still wrap rather than scroll, so narrower panes keep every level visible
+	// without measuring layout.
 	return (
 		<div className="flex min-w-0 items-start gap-3 px-2 py-1">
 			<span id={id} className="shrink-0 py-1 text-xs text-muted-foreground">

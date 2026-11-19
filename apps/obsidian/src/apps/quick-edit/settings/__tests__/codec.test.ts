@@ -61,6 +61,18 @@ function decode(presets: QuickEditPreset[], version = 2) {
 	return result.value;
 }
 
+describe('Quick Edit saved reasoning', () => {
+	it('reads the retired minimal level as low in every settings version', () => {
+		for (const version of [1, 2, 3]) {
+			const result = quickEditSettingsCodec.decode({
+				version,
+				data: { ...model, reasoning: 'minimal', presets: [custom] },
+			});
+			expect(result.ok && result.value.reasoning).toBe('low');
+		}
+	});
+});
+
 describe('Link settings migration', () => {
 	it('seeds v1 settings and missing v2 presets with Link without changing other settings', () => {
 		for (const version of [1, 2]) {

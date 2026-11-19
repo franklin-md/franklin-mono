@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-import type { ThinkingLevel } from '@franklin/mini-acp';
+import { THINKING_LEVELS, type ThinkingLevel } from '@franklin/mini-acp';
 
 import { useLLMConfig } from './use-llm-config.js';
 
@@ -8,18 +8,8 @@ import { useLLMConfig } from './use-llm-config.js';
 // useThinkingLevel
 // ---------------------------------------------------------------------------
 
-/** The subset of levels exposed by the toggle UI. */
-const TOGGLE_LEVELS: readonly ThinkingLevel[] = [
-	'off',
-	'low',
-	'medium',
-	'high',
-	'xhigh',
-	'max',
-] as const;
-
 export type UseThinkingLevel = {
-	/** Ordered list of toggle-able thinking levels. */
+	/** Ordered list of thinking levels. */
 	readonly levels: readonly ThinkingLevel[];
 	/** Current thinking level. */
 	readonly level: ThinkingLevel;
@@ -47,10 +37,10 @@ export function useThinkingLevel(): UseThinkingLevel {
 	);
 
 	const cycleLevel = useCallback(() => {
-		const idx = TOGGLE_LEVELS.indexOf(level);
-		const next = TOGGLE_LEVELS[(idx + 1) % TOGGLE_LEVELS.length] ?? 'off';
+		const idx = THINKING_LEVELS.indexOf(level);
+		const next = THINKING_LEVELS[(idx + 1) % THINKING_LEVELS.length] ?? 'off';
 		return setLevel(next);
 	}, [level, setLevel]);
 
-	return { levels: TOGGLE_LEVELS, level, setLevel, cycleLevel };
+	return { levels: THINKING_LEVELS, level, setLevel, cycleLevel };
 }

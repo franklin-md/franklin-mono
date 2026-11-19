@@ -20,12 +20,6 @@ const LEVEL_META: Partial<Record<ThinkingLevel, LevelMeta>> = {
 		dotColor: 'bg-muted-foreground/40',
 		dots: 0,
 	},
-	minimal: {
-		label: 'Min',
-		color: 'text-muted-foreground',
-		dotColor: 'bg-muted-foreground',
-		dots: 1,
-	},
 	low: {
 		label: 'L',
 		color: 'text-muted-foreground',

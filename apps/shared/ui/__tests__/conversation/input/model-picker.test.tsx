@@ -111,15 +111,7 @@ describe('controlled model picker', () => {
 	it('keeps inline effort outside filtering and reports only the chosen effort to its owner', () => {
 		const onChange = vi.fn();
 		const onSelect = vi.fn();
-		const levels = [
-			'off',
-			'minimal',
-			'low',
-			'medium',
-			'high',
-			'xhigh',
-			'max',
-		] as const;
+		const levels = ['off', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
 		const props = { provider: 'custom', model: 'saved', onSelect };
 		const { rerender } = render(
 			<ModelPicker {...props} effort={{ level: 'high', levels, onChange }} />,
@@ -128,13 +120,13 @@ describe('controlled model picker', () => {
 		fireEvent.change(screen.getByPlaceholderText('Search models...'), {
 			target: { value: 'no-such-model' },
 		});
-		expect(screen.getAllByRole('radio')).toHaveLength(7);
+		expect(screen.getAllByRole('radio')).toHaveLength(6);
 		expect(screen.getByRole('radio', { name: 'Max' })).toBeTruthy();
 		expect(
 			screen.getByRole<HTMLInputElement>('radio', { name: 'High' }).checked,
 		).toBe(true);
-		fireEvent.click(screen.getByRole('radio', { name: 'Minimal' }));
-		expect(onChange).toHaveBeenCalledExactlyOnceWith('minimal');
+		fireEvent.click(screen.getByRole('radio', { name: 'Low' }));
+		expect(onChange).toHaveBeenCalledExactlyOnceWith('low');
 		expect(onSelect).not.toHaveBeenCalled();
 		expect(
 			screen.getByRole<HTMLInputElement>('radio', { name: 'High' }).checked,
@@ -144,13 +136,10 @@ describe('controlled model picker', () => {
 		);
 		expect(screen.queryByRole('button', { name: 'Back to models' })).toBeNull();
 		rerender(
-			<ModelPicker
-				{...props}
-				effort={{ level: 'minimal', levels, onChange }}
-			/>,
+			<ModelPicker {...props} effort={{ level: 'low', levels, onChange }} />,
 		);
 		expect(
-			screen.getByRole<HTMLInputElement>('radio', { name: 'Minimal' }).checked,
+			screen.getByRole<HTMLInputElement>('radio', { name: 'Low' }).checked,
 		).toBe(true);
 		expect(onChange).toHaveBeenCalledTimes(1);
 	});
