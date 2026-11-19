@@ -19,6 +19,7 @@ export function ModelPicker({
 	model,
 	onSelect,
 	label,
+	className,
 	catalog = MODEL_CATALOG,
 	renderProviderAction = renderAuthAction,
 	effort,
@@ -30,7 +31,11 @@ export function ModelPicker({
 			model={model}
 			onSelect={onSelect}
 		>
-			<ModelPickerTrigger aria-label={label} effort={effort?.level} />
+			<ModelPickerTrigger
+				aria-label={label}
+				className={className}
+				effort={effort?.level}
+			/>
 			<ModelPickerContent>
 				<ModelPickerModels>
 					<ModelPickerSearch />

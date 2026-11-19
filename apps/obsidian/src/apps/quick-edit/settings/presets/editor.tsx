@@ -1,8 +1,11 @@
 import { useId, useState } from 'react';
-import { Button, Input, Label } from '@franklin/ui';
+import { Button, Input } from '@franklin/ui';
 import type { QuickEditPreset } from '../../presets/types.js';
 import { presetIcons } from '../../presets/icons.js';
 import { presetColors } from '../../presets/colors.js';
+import { SettingName } from '../../../../shared/ui/setting/name.js';
+import { SettingSelect } from '../../../../shared/ui/setting/select.js';
+import { SettingTextarea } from '../../../../shared/ui/setting/textarea.js';
 
 type Props = {
 	preset: QuickEditPreset;
@@ -22,32 +25,31 @@ export function PresetEditor({ preset, pending, onSave, onCancel }: Props) {
 				event.preventDefault();
 				onSave(draft);
 			}}
-			className="grid gap-2 rounded-md p-3 ring-1 ring-inset ring-border"
+			className="grid gap-2"
 		>
 			<fieldset
 				disabled={pending}
 				className="m-0 grid min-w-0 gap-2 border-0 p-0"
 			>
-				<Label htmlFor={`${id}-name`}>Preset name</Label>
+				<SettingName htmlFor={`${id}-name`}>Preset name</SettingName>
 				<Input
 					id={`${id}-name`}
 					value={draft.name}
 					onChange={(event) => setDraft({ ...draft, name: event.target.value })}
 				/>
-				<Label htmlFor={`${id}-prompt`}>Prompt</Label>
-				<textarea
+				<SettingName htmlFor={`${id}-prompt`}>Prompt</SettingName>
+				<SettingTextarea
 					id={`${id}-prompt`}
 					value={draft.prompt}
 					rows={4}
-					className="w-full resize-y"
 					onChange={(event) =>
 						setDraft({ ...draft, prompt: event.target.value })
 					}
 				/>
 				<div className="flex flex-wrap items-end gap-3">
 					<div className="grid gap-1">
-						<Label htmlFor={`${id}-icon`}>Icon</Label>
-						<select
+						<SettingName htmlFor={`${id}-icon`}>Icon</SettingName>
+						<SettingSelect
 							id={`${id}-icon`}
 							value={draft.icon}
 							onChange={(event) => {
@@ -61,11 +63,11 @@ export function PresetEditor({ preset, pending, onSave, onCancel }: Props) {
 									{value.label}
 								</option>
 							))}
-						</select>
+						</SettingSelect>
 					</div>
 					<div className="grid gap-1">
-						<Label htmlFor={`${id}-color`}>Color</Label>
-						<select
+						<SettingName htmlFor={`${id}-color`}>Color</SettingName>
+						<SettingSelect
 							id={`${id}-color`}
 							value={draft.color}
 							onChange={(event) => {
@@ -82,7 +84,7 @@ export function PresetEditor({ preset, pending, onSave, onCancel }: Props) {
 									{value.label}
 								</option>
 							))}
-						</select>
+						</SettingSelect>
 					</div>
 					<Icon
 						aria-hidden="true"

@@ -15,6 +15,7 @@ export type ModelPickerProps = {
 	model: string;
 	onSelect: (provider: string, model: string) => void;
 	label?: string;
+	className?: string;
 	catalog?: readonly ProviderGroup[];
 	renderProviderAction?: ProviderActionRenderer;
 	effort?: ModelPickerEffortProps;

@@ -1,7 +1,7 @@
 import { useId } from 'react';
 
 import { useSettings } from '@franklin/react';
-import { Label, Switch } from '@franklin/ui';
+import { Switch } from '@franklin/ui';
 
 import { SettingControl } from '../../../shared/ui/setting/control.js';
 import { SettingDescription } from '../../../shared/ui/setting/description.js';
@@ -15,11 +15,9 @@ export function ViewingContextSettings() {
 	const checked = settings.get().shareViewedReferencesByDefault;
 
 	return (
-		<SettingItem>
+		<SettingItem layout="toggle">
 			<SettingInfo>
-				<SettingName>
-					<Label htmlFor={inputId}>Share open notes with agent</Label>
-				</SettingName>
+				<SettingName htmlFor={inputId}>Share open notes with agent</SettingName>
 				<SettingDescription>
 					New agents can see which Obsidian notes are open.
 				</SettingDescription>

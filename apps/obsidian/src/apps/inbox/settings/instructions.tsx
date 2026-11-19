@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { Button, Label } from '@franklin/ui';
+import { Button } from '@franklin/ui';
 import type { InboxController } from '../controller/index.js';
 import { DEFAULT_ANSWER_INSTRUCTIONS } from '../answer-instructions.js';
 import { errorMessage } from '../controller/error.js';
@@ -7,6 +7,7 @@ import { SettingDescription } from '../../../shared/ui/setting/description.js';
 import { SettingInfo } from '../../../shared/ui/setting/info.js';
 import { SettingItem } from '../../../shared/ui/setting/item.js';
 import { SettingName } from '../../../shared/ui/setting/name.js';
+import { SettingTextarea } from '../../../shared/ui/setting/textarea.js';
 
 type Props = { inbox: InboxController };
 
@@ -31,54 +32,51 @@ export function InboxInstructionsSetting({ inbox }: Props) {
 	}
 
 	return (
-		<SettingItem>
+		<SettingItem layout="stacked">
 			<SettingInfo>
-				<SettingName>
-					<Label htmlFor={id}>Answer instructions</Label>
-				</SettingName>
+				<SettingName htmlFor={id}>Answer instructions</SettingName>
 				<SettingDescription>
 					Write how the inbox should answer. Saved instructions apply to new
 					questions and follow-ups. Retries keep their original instructions.
 				</SettingDescription>
-				<form
-					className="mt-3 grid gap-2"
-					onSubmit={(event) => {
-						event.preventDefault();
-						void save(instructions);
-					}}
-				>
-					<textarea
-						className="w-full resize-y"
-						id={id}
-						value={instructions}
-						rows={5}
-						disabled={pending}
-						onChange={(event) => setInstructions(event.target.value)}
-					/>
-					<div className="flex flex-wrap gap-2">
-						<Button type="submit" size="sm" disabled={pending}>
-							Save instructions
-						</Button>
-						<Button
-							type="button"
-							size="sm"
-							variant="outline"
-							disabled={pending}
-							onClick={() => {
-								setInstructions(DEFAULT_ANSWER_INSTRUCTIONS);
-								void save(DEFAULT_ANSWER_INSTRUCTIONS);
-							}}
-						>
-							Reset to default
-						</Button>
-					</div>
-					{error && (
-						<p role="alert" className="text-[var(--text-error)]">
-							{error}
-						</p>
-					)}
-				</form>
 			</SettingInfo>
+			<form
+				className="grid gap-2"
+				onSubmit={(event) => {
+					event.preventDefault();
+					void save(instructions);
+				}}
+			>
+				<SettingTextarea
+					id={id}
+					value={instructions}
+					rows={5}
+					disabled={pending}
+					onChange={(event) => setInstructions(event.target.value)}
+				/>
+				<div className="flex flex-wrap gap-2">
+					<Button type="submit" size="sm" disabled={pending}>
+						Save instructions
+					</Button>
+					<Button
+						type="button"
+						size="sm"
+						variant="outline"
+						disabled={pending}
+						onClick={() => {
+							setInstructions(DEFAULT_ANSWER_INSTRUCTIONS);
+							void save(DEFAULT_ANSWER_INSTRUCTIONS);
+						}}
+					>
+						Reset to default
+					</Button>
+				</div>
+				{error && (
+					<p role="alert" className="text-[var(--text-error)]">
+						{error}
+					</p>
+				)}
+			</form>
 		</SettingItem>
 	);
 }

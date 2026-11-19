@@ -9,16 +9,16 @@ type Props = { inbox: InboxController; onConfigureInboxShortcut?: () => void };
 export function InboxSettings({ inbox, onConfigureInboxShortcut }: Props) {
 	return (
 		<>
-			<SettingGroup title="Study inbox">
+			<SettingGroup title="Answers">
 				<InboxReasoningSetting inbox={inbox} />
 				<InboxInstructionsSetting inbox={inbox} />
-				{onConfigureInboxShortcut && (
+			</SettingGroup>
+			<InboxActionSettings inbox={inbox} />
+			{onConfigureInboxShortcut && (
+				<SettingGroup title="Shortcut">
 					<InboxShortcutSetting onConfigure={onConfigureInboxShortcut} />
-				)}
-			</SettingGroup>
-			<SettingGroup title="Inbox actions">
-				<InboxActionSettings inbox={inbox} />
-			</SettingGroup>
+				</SettingGroup>
+			)}
 		</>
 	);
 }
