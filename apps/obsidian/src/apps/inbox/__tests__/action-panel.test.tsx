@@ -14,6 +14,7 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InboxController } from '../controller/index.js';
 import { inboxCodec } from '../controller/schema.js';
+import { testAction, upsertAction } from '../testing/action.js';
 import { InboxPanel } from '../ui/panel.js';
 
 afterEach(() => {
@@ -49,11 +50,9 @@ describe('question action controls', () => {
 			},
 			runAction,
 		});
-		await inbox.actions.save({
-			id: 'cards',
-			name: '🃏',
-			prompt: 'Create flashcards',
-		});
+		await inbox.actions.update(
+			upsertAction(testAction('cards', '🃏', 'Create flashcards')),
+		);
 		render(
 			<InboxPanel
 				controller={inbox}

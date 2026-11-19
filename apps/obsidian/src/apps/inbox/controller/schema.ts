@@ -3,10 +3,13 @@ import { validateHierarchy } from '../hierarchy/validate.js';
 import { thoughtDumpSchema } from '../modes/schema.js';
 import { versioned, zodCodec } from '@franklin/lib';
 import { z } from 'zod';
+import type { InboxActionRun } from '../actions/types.js';
+import { inboxActionSchema } from '../actions/schema.js';
 import type { InboxDocument } from './types.js';
 import { questionSchema as question } from './question-schema.js';
 import { failedStateSchema } from './failed-schema.js';
 import { migrateAnswerInstructions } from './migrate-instructions.js';
+import { migrateActionIcon } from './migrate-action-icon.js';
 
 const preferences = z.object({
 	provider: z.string().min(1),
@@ -31,7 +34,9 @@ const legacyDocument = z.strictObject({
 	actionRuns: z.array(z.never()).optional(),
 });
 
-const action = z.object({
+// Action definitions in storage versions 2-10 had no icon or color. Keep
+// these fixed so older files keep decoding after the current schema changes.
+const legacyAction = z.object({
 	id: z.string().min(1),
 	name: z
 		.string()
@@ -40,10 +45,15 @@ const action = z.object({
 		.refine((name) => !/[\r\n]/.test(name)),
 	prompt: z.string().trim().min(1),
 });
+type LegacyAction = z.infer<typeof legacyAction>;
+type LegacyDocument = Omit<InboxDocument, 'actions' | 'actionRuns'> & {
+	actions: LegacyAction[];
+	actionRuns: (Omit<InboxActionRun, 'action'> & { action: LegacyAction })[];
+};
 const actionRun = z.object({
 	id: z.string().min(1),
 	attemptId: z.string().min(1),
-	action,
+	action: legacyAction,
 	question: question.refine(
 		(q) => q.state.kind === 'answered',
 		'Action question must be answered',
@@ -65,7 +75,7 @@ const actionRun = z.object({
 	]),
 });
 const actionDocument = legacyDocument.extend({
-	actions: z.array(action).default([]),
+	actions: z.array(legacyAction).default([]),
 	actionRuns: z
 		.array(
 			actionRun.extend({
@@ -83,10 +93,10 @@ const documentShape = z.strictObject({
 	groups: z.array(z.never()).optional(),
 	thoughtDumps: z.array(thoughtDumpSchema).optional(),
 	preferences,
-	actions: z.array(action).default([]),
+	actions: z.array(legacyAction).default([]),
 	actionRuns: z.array(actionRun).default([]),
 });
-const document: z.ZodType<InboxDocument> = documentShape
+const document: z.ZodType<LegacyDocument> = documentShape
 	.superRefine(({ questions }, ctx) => {
 		const byId = new Map(questions.map((q) => [q.id, q]));
 		if (byId.size !== questions.length)
@@ -110,7 +120,7 @@ const document: z.ZodType<InboxDocument> = documentShape
 	.superRefine(validateActions);
 
 function validateActions(
-	{ actions, actionRuns, questions, thoughtDumps, groups }: InboxDocument,
+	{ actions, actionRuns, questions, thoughtDumps, groups }: LegacyDocument,
 	ctx: z.RefinementCtx,
 ) {
 	const ids = [
@@ -139,14 +149,25 @@ function validateActions(
 	}
 }
 
-const groupedDocument: z.ZodType<InboxDocument> = documentShape
+const groupedDocument: z.ZodType<LegacyDocument> = documentShape
 	.extend({ groups: z.array(groupSchema).optional() })
+	.superRefine(validateHierarchy)
+	.superRefine(validateActions);
+
+const iconDocument: z.ZodType<InboxDocument> = documentShape
+	.extend({
+		groups: z.array(groupSchema).optional(),
+		actions: z.array(inboxActionSchema).default([]),
+		actionRuns: z
+			.array(actionRun.extend({ action: inboxActionSchema }))
+			.default([]),
+	})
 	.superRefine(validateHierarchy)
 	.superRefine(validateActions);
 
 // Released Inbox base (#312) used version 7 for a flat question queue.
 // Decode it separately so v6 Madrid data keeps its group and action records.
-const baseDocument: z.ZodType<InboxDocument> = z
+const baseDocument: z.ZodType<LegacyDocument> = z
 	.strictObject({
 		questions: z.array(question),
 		preferences: preferences.extend({ mode: z.literal('question').optional() }),
@@ -195,4 +216,14 @@ export const inboxCodec = versioned()
 	// Version 9 was used by the Groups-only extraction and has no actions.
 	.version(9, zodCodec(groupedDocument), (previous) => previous)
 	.version(10, zodCodec(groupedDocument), (previous) => previous)
+	// Actions and run snapshots gain an icon and color; older plugins must
+	// reject this format rather than strip them.
+	.version(11, zodCodec(iconDocument), (previous) => ({
+		...previous,
+		actions: previous.actions.map(migrateActionIcon),
+		actionRuns: previous.actionRuns.map((run) => ({
+			...run,
+			action: migrateActionIcon(run.action),
+		})),
+	}))
 	.build();

@@ -75,7 +75,13 @@ const answered: InboxQuestion = {
 const run: InboxActionRun = {
 	id: 'run',
 	attemptId: 'a',
-	action: { id: 'flashcards', name: 'Make flashcards', prompt: 'Make cards.' },
+	action: {
+		id: 'flashcards',
+		name: 'Make flashcards',
+		prompt: 'Make cards.',
+		icon: 'lucide-layers',
+		color: 'purple',
+	},
 	question: answered,
 	ancestors: [],
 	createdAt: 1,

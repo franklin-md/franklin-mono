@@ -32,11 +32,13 @@ and puts a status pill beside its source selection.
   Reload waits for any previous Inbox instance to finish its writes before
   restoring the file. Failed saves remain visible. Resending the same question,
   including after removing checklist formatting, keeps its original ID.
-- New writes use schema version 10. Flat-question versions 1–7 keep saved
+- New writes use schema version 11. Flat-question versions 1–7 keep saved
   instructions and answers. Version 8 retains saved action definitions and
-  pending runs. Version 9 adds empty action collections on migration. Inbox
-  preserves the original file if validation fails. Chat and credentials
-  settings can open while Inbox recovers.
+  pending runs. Version 9 adds empty action collections on migration. Version
+  11 gives saved actions and pending runs an icon and color; earlier actions
+  migrate to a blue sparkles icon. Inbox preserves the original file if
+  validation fails. Chat and credentials settings can open while Inbox
+  recovers.
 
 ## Groups and Thought Dump
 
@@ -76,9 +78,12 @@ question.
 
 ## Configurable actions
 
-Save a reusable name and prompt in **Franklin settings → Inbox → Inbox actions**.
-On an answered question, select its action button to start an independent agent
-with the saved answer, source context and currently selected Inbox model.
+In **Franklin settings → Inbox → Actions**, add, edit, delete or reorder actions
+and choose their name, prompt, Obsidian icon and color. The list and editor are
+shared with Quick Edit presets (`src/shared/preset/`). On an answered question,
+select an action's button, which shows its icon, to start an independent agent
+with the saved answer, source context and the Inbox model and reasoning. Set
+those in **Franklin settings → Inbox** or the composer; both edit one preference.
 Actions can read and edit vault files and run commands within the configured
 environment. Failed runs retain their original context and can be retried or
 dismissed. Completed effects are recorded before the run is cleared.

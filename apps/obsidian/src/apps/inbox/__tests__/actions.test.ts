@@ -6,7 +6,8 @@ import {
 } from '@franklin/lib';
 import { InboxController } from '../controller/index.js';
 import { inboxCodec } from '../controller/schema.js';
-import type { ActionRequest } from '../actions/types.js';
+import type { ActionRequest, InboxAction } from '../actions/types.js';
+import { testAction, upsertAction } from '../testing/action.js';
 
 const defaults = {
 	provider: 'test',
@@ -45,11 +46,15 @@ async function setup(concurrency = 1) {
 		onActionComplete: complete,
 	});
 	await inbox.configure({ concurrency });
-	await inbox.actions.save({
-		id: 'cards',
-		name: '🃏',
-		prompt: 'Read [[Workflow Guide]] and create proposals.',
-	});
+	await inbox.actions.update(
+		upsertAction(
+			testAction(
+				'cards',
+				'🃏',
+				'Read [[Workflow Guide]] and create proposals.',
+			),
+		),
+	);
 	const question = await inbox.add('Why recheck?', {
 		source: { note: 'Sleep', heading: 'Waking', quote: 'Check again' },
 	});
@@ -74,11 +79,9 @@ describe('inbox actions', () => {
 			answer: 'Saved answer',
 		});
 		expect(run.question.source?.quote).toBe('Check again');
-		await h.inbox.actions.save({
-			id: 'cards',
-			name: 'Cards',
-			prompt: 'Changed prompt',
-		});
+		await h.inbox.actions.update(
+			upsertAction(testAction('cards', 'Cards', 'Changed prompt')),
+		);
 		await h.inbox.configure({ model: 'changed-model' });
 		expect(run.action.name).toBe('🃏');
 		expect(run.model).toBe('model');
@@ -103,11 +106,9 @@ describe('inbox actions', () => {
 		await vi.waitFor(() =>
 			expect(h.inbox.state.get().questions[0]?.state.kind).toBe('answered'),
 		);
-		await h.inbox.actions.save({
-			id: 'other',
-			name: 'Notes',
-			prompt: 'Save a note',
-		});
+		await h.inbox.actions.update(
+			upsertAction(testAction('other', 'Notes', 'Save a note')),
+		);
 		const first = await h.inbox.actions.start(child, 'cards');
 		await h.inbox.actions.start(h.question, 'cards');
 		await h.inbox.actions.start(child, 'other');
@@ -140,7 +141,9 @@ describe('inbox actions', () => {
 				error: 'No write access',
 			}),
 		);
-		await h.inbox.actions.remove('cards');
+		await h.inbox.actions.update((actions) =>
+			actions.filter((action) => action.id !== 'cards'),
+		);
 		await h.inbox.actions.retry(id);
 		await vi.waitFor(() => expect(h.requests).toHaveLength(2));
 		expect(h.requests[1]?.run.id).toBe(id);
@@ -164,11 +167,9 @@ describe('inbox actions', () => {
 		expect(h.runAction).not.toHaveBeenCalled();
 		await h.inbox.retrySave();
 		await vi.waitFor(() => expect(h.requests).toHaveLength(1));
-		await h.inbox.actions.save({
-			id: 'other',
-			name: 'Other',
-			prompt: 'Other prompt',
-		});
+		await h.inbox.actions.update(
+			upsertAction(testAction('other', 'Other', 'Other prompt')),
+		);
 		await h.inbox.actions.start(h.question, 'other');
 		const restoredRequests: ActionRequest[] = [];
 		await h.inbox.dispose();
@@ -222,7 +223,7 @@ describe('inbox actions', () => {
 		await restored.dispose();
 	});
 
-	it('migrates v1 data and rejects duplicate pairs and missing questions', async () => {
+	it('migrates v1 data, gives v10 actions an icon and color, and rejects duplicate pairs and missing questions', async () => {
 		const h = await setup();
 		const { questions, preferences } = h.inbox.state.get();
 		const migrated = inboxCodec.decode({
@@ -240,9 +241,41 @@ describe('inbox actions', () => {
 		expect(migrated.ok && migrated.value.actions).toEqual([]);
 		const id = await h.inbox.actions.start(h.question, 'cards');
 		const data = structuredClone(h.inbox.state.get());
-		const madrid = inboxCodec.decode({ version: 8, data });
-		expect(madrid.ok && madrid.value.actions).toEqual(data.actions);
-		expect(madrid.ok && madrid.value.actionRuns).toEqual(data.actionRuns);
+		const withoutIcon = ({
+			icon: _icon,
+			color: _color,
+			...action
+		}: InboxAction) => action;
+		const withDefaultIcon = (action: InboxAction) => ({
+			...action,
+			icon: 'lucide-sparkles',
+			color: 'blue',
+		});
+		const legacy = {
+			...data,
+			actions: data.actions.map(withoutIcon),
+			actionRuns: data.actionRuns.map((run) => ({
+				...run,
+				action: withoutIcon(run.action),
+			})),
+		};
+		for (const version of [8, 10]) {
+			const saved = inboxCodec.decode({ version, data: legacy });
+			expect(saved.ok && saved.value.actions).toEqual(
+				data.actions.map(withDefaultIcon),
+			);
+			expect(saved.ok && saved.value.actionRuns).toEqual(
+				data.actionRuns.map((run) => ({
+					...run,
+					action: withDefaultIcon(run.action),
+				})),
+			);
+		}
+		expect(inboxCodec.encode(data)).toMatchObject({ version: 11 });
+		expect(inboxCodec.decode(inboxCodec.encode(data))).toMatchObject({
+			ok: true,
+			value: { actions: data.actions },
+		});
 		const { actions: _actions, actionRuns: _runs, ...groupsOnly } = data;
 		const groups = inboxCodec.decode({ version: 9, data: groupsOnly });
 		expect(groups.ok && groups.value.actionRuns).toEqual([]);

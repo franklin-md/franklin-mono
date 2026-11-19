@@ -4,7 +4,7 @@ import { ancestorsOf } from '../controller/lineage.js';
 import { inboxNodes } from './nodes.js';
 
 export function validateHierarchy(
-	document: InboxDocument,
+	document: Pick<InboxDocument, 'questions' | 'groups' | 'thoughtDumps'>,
 	ctx: z.RefinementCtx,
 ): void {
 	const nodes = inboxNodes(document);

@@ -5,6 +5,8 @@ import type {
 	InboxControllerOptions,
 	InboxSnapshot,
 } from '../controller/types.js';
+import { presetListSchema } from '../../../shared/preset/list-schema.js';
+import { inboxActionSchema } from './schema.js';
 import type { InboxAction } from './types.js';
 
 type Options = {
@@ -16,34 +18,21 @@ type Options = {
 	onComplete: InboxControllerOptions['onActionComplete'];
 };
 
+const actionList = presetListSchema(inboxActionSchema);
+
 export class InboxActions {
 	constructor(private readonly options: Options) {}
 
-	async save(input: Omit<InboxAction, 'id'> & { id?: string }): Promise<void> {
+	// Applies a settings change to the latest saved definitions.
+	async update(
+		change: (current: InboxAction[]) => InboxAction[],
+	): Promise<void> {
 		const { store, assertOpen } = this.options;
 		assertOpen();
-		const action = {
-			id: input.id ?? crypto.randomUUID(),
-			name: input.name.trim(),
-			prompt: input.prompt.trim(),
-		};
-		if (!action.name || !action.prompt)
-			throw new Error('Enter an action name and prompt');
-		if (/[\r\n]/.test(action.name))
-			throw new Error('Use a single-line action name');
-		store.set((draft) => {
-			const index = draft.actions.findIndex((item) => item.id === action.id);
-			if (index < 0) draft.actions.push(action);
-			else draft.actions[index] = action;
-		});
-		await this.options.persist();
-	}
-
-	async remove(id: string): Promise<void> {
-		this.options.assertOpen();
+		const actions = actionList.parse(change(store.get().actions));
 		// Already queued runs retain their definition and can still be retried.
-		this.options.store.set((draft) => {
-			draft.actions = draft.actions.filter((action) => action.id !== id);
+		store.set((draft) => {
+			draft.actions = actions;
 		});
 		await this.options.persist();
 	}
