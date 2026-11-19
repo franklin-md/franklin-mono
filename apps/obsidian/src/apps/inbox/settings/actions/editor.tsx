@@ -3,6 +3,7 @@ import { Button, Input } from '@franklin/ui';
 import type { InboxActions } from '../../actions/controller.js';
 import type { InboxAction } from '../../actions/types.js';
 import { errorMessage } from '../../controller/error.js';
+import { SettingError } from '../../../../shared/ui/setting/error.js';
 import { SettingName } from '../../../../shared/ui/setting/name.js';
 import { SettingTextarea } from '../../../../shared/ui/setting/textarea.js';
 
@@ -69,37 +70,19 @@ export function ActionEditor({
 				>
 					Save action
 				</Button>
-				{!isNew ? (
-					<Button
-						type="button"
-						size="sm"
-						variant="outline"
-						disabled={pending}
-						onClick={() => {
-							void apply(() => controller.remove(action.id));
-						}}
-					>
-						Delete action
-					</Button>
-				) : (
-					<Button
-						type="button"
-						size="sm"
-						variant="outline"
-						disabled={pending}
-						onClick={() => {
-							void apply(() => controller.remove(action.id));
-						}}
-					>
-						Cancel
-					</Button>
-				)}
+				<Button
+					type="button"
+					size="sm"
+					variant="outline"
+					disabled={pending}
+					onClick={() => {
+						void apply(() => controller.remove(action.id));
+					}}
+				>
+					{isNew ? 'Cancel' : 'Delete action'}
+				</Button>
 			</div>
-			{error && (
-				<p role="alert" className="text-destructive">
-					{error}
-				</p>
-			)}
+			{error && <SettingError>{error}</SettingError>}
 		</form>
 	);
 }

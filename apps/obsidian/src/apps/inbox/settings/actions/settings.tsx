@@ -2,6 +2,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { Button } from '@franklin/ui';
 import type { InboxController } from '../../controller/index.js';
 import type { InboxAction } from '../../actions/types.js';
+import { SettingError } from '../../../../shared/ui/setting/error.js';
 import { SettingGroup } from '../../../../shared/ui/setting/group.js';
 import { SettingItem } from '../../../../shared/ui/setting/item.js';
 import { ActionEditor } from './editor.js';
@@ -49,9 +50,7 @@ export function InboxActionSettings({ inbox }: Props) {
 			</SettingItem>
 			{snapshot.storageError && (
 				<SettingItem layout="stacked">
-					<p role="alert" className="text-destructive">
-						{snapshot.storageError}
-					</p>
+					<SettingError>{snapshot.storageError}</SettingError>
 					<Button
 						variant="outline"
 						size="sm"
