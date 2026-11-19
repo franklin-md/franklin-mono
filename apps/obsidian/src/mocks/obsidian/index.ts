@@ -88,6 +88,30 @@ export class Setting {
 	}
 }
 
+// A small stand-in for Obsidian's icon registry; getIcon also accepts bare Lucide names.
+const mockIconIds = ['lucide-link', 'lucide-pencil', 'lucide-circle-help'];
+
+export function getIconIds(): string[] {
+	return [...mockIconIds];
+}
+
+export function getIcon(iconId: string): SVGSVGElement | null {
+	const id = iconId.startsWith('lucide-') ? iconId : `lucide-${iconId}`;
+	if (!mockIconIds.includes(id)) return null;
+	const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+	svg.classList.add('svg-icon', id);
+	return svg;
+}
+
+export function setIcon(parent: HTMLElement, iconId: string): void {
+	const current = parent.firstElementChild;
+	if (current instanceof SVGSVGElement && current.classList.contains(iconId))
+		return;
+	current?.remove();
+	const icon = getIcon(iconId);
+	if (icon) parent.append(icon);
+}
+
 export function normalizePath(path: string): string {
 	return path
 		.replace(/\\/g, '/')
