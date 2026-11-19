@@ -170,7 +170,7 @@ The group does not intercept window-level keyboard events. Hosts must isolate ed
 />
 ```
 
-Omit `effort` for a model-only picker. The effort row stays below the scrolling model list and is not filtered by search. Its inline radio choices use a pill to mark the current level; selecting one keeps the picker open. Native radio-group keyboard navigation supports arrow keys and Space. All six `THINKING_LEVELS` fit on one row at the default popover width; choices wrap onto further rows when the popover is narrower, so every level stays visible. Escape closes the popover and returns focus to the trigger. Each caller supplies its available levels; the UI does not infer model capabilities or change reasoning when selecting a model.
+Omit `effort` for a model-only picker. The effort row stays below the scrolling model list and is not filtered by search. Its inline radio choices use a pill to mark the current level; selecting one keeps the picker open. Native radio-group keyboard navigation supports arrow keys and Space. All six `THINKING_LEVELS` fit on one row at the default popover width; choices wrap onto further rows when the popover is narrower, so every level stays visible. Escape closes the popover and returns focus to the trigger. Each caller supplies its available levels; the UI does not infer model capabilities or change reasoning when selecting a model. Model-aware level filtering is deferred under `franklin-drf`.
 
 The default trigger shows the model followed by the compact effort label in muted text at the same font size. The model name truncates before the effort label. Its tooltip and accessible description retain the full level name. Omitting `effort` removes both the inline selector and the trigger's effort summary.
 
