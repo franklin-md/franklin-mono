@@ -175,6 +175,7 @@ export { ModelPickerSearch } from './conversation/input/model-selector/search.js
 export { ModelPickerList } from './conversation/input/model-selector/list.js';
 export { ModelPickerFooter } from './conversation/input/model-selector/footer.js';
 export { ModelPickerEffort } from './conversation/input/model-selector/effort.js';
+export { EFFORT_LABELS } from './conversation/input/model-selector/effort-labels.js';
 export type {
 	ModelPickerProps,
 	ModelPickerRootProps,
