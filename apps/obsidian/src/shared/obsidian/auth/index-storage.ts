@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PROVIDERS_KEY } from './key-names.js';
+import { setObsidianSecret } from './set-secret.js';
 import type { ObsidianSecretStorage } from './types.js';
 
 const providersSchema = z.array(z.string());
@@ -21,5 +22,5 @@ export function writeIndex(
 	storage: ObsidianSecretStorage,
 	providers: string[],
 ): void {
-	storage.setSecret(PROVIDERS_KEY, JSON.stringify(providers));
+	setObsidianSecret(storage, PROVIDERS_KEY, JSON.stringify(providers));
 }
