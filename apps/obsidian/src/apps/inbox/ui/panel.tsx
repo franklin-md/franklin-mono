@@ -92,12 +92,14 @@ export function InboxPanel({
 				composerControls={
 					<PromptFooterControlGroup className="min-w-0 flex-wrap gap-1">
 						<ModelPicker
-							provider={preferences.provider}
-							model={preferences.model}
+							value={{
+								provider: preferences.provider,
+								model: preferences.model,
+							}}
 							label="Model for new questions"
-							onSelect={(provider, model) => configure({ provider, model })}
+							onChange={configure}
 							effort={{
-								level: preferences.reasoning,
+								value: preferences.reasoning,
 								levels: THINKING_LEVELS,
 								onChange: (reasoning) => configure({ reasoning }),
 							}}

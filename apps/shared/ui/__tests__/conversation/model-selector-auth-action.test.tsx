@@ -137,9 +137,12 @@ describe('ProviderAuthAction', () => {
 	});
 
 	it('keeps the prebuilt picker auth shortcuts connected without an active agent', () => {
-		const onSelect = vi.fn();
+		const onChange = vi.fn();
 		renderWithAuth(
-			<ModelPicker provider="custom" model="saved" onSelect={onSelect} />,
+			<ModelPicker
+				value={{ provider: 'custom', model: 'saved' }}
+				onChange={onChange}
+			/>,
 		);
 		fireEvent.click(screen.getByRole('button', { name: 'saved' }));
 		expect(
@@ -150,7 +153,7 @@ describe('ProviderAuthAction', () => {
 				.getByRole('button', { name: 'Add API key for OpenRouter' })
 				.closest('[aria-hidden="true"]'),
 		).toBeNull();
-		expect(onSelect).not.toHaveBeenCalled();
+		expect(onChange).not.toHaveBeenCalled();
 	});
 
 	it('renders signed-in providers as non-button status', () => {

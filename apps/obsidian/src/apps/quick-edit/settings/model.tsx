@@ -37,11 +37,10 @@ export function QuickEditModelSetting({
 						<ModelPicker
 							label="Quick edit model"
 							className={cn(settingFieldClassName, 'h-8 px-3')}
-							provider={settings.provider}
-							model={settings.model}
-							onSelect={(provider, model) => void onSave({ provider, model })}
+							value={{ provider: settings.provider, model: settings.model }}
+							onChange={(value) => void onSave(value)}
 							effort={{
-								level: settings.reasoning,
+								value: settings.reasoning,
 								levels: THINKING_LEVELS,
 								onChange: (reasoning) => void onSave({ reasoning }),
 							}}
