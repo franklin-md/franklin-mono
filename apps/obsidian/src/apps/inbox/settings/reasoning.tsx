@@ -58,7 +58,7 @@ export function InboxReasoningSetting({ inbox }: Props) {
 				</SettingDescription>
 				{error && (
 					<>
-						<p role="alert" className="text-[var(--text-error)]">
+						<p role="alert" className="text-destructive">
 							{error}
 						</p>
 						<Button

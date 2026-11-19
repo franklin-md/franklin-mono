@@ -119,7 +119,7 @@ export function Composer({
 				</PromptFooter>
 				{error && (
 					<p
-						className="col-span-full m-0 px-3 pb-2 text-xs wrap-anywhere text-[var(--text-error)]"
+						className="col-span-full m-0 px-3 pb-2 text-xs wrap-anywhere text-destructive"
 						role="alert"
 					>
 						{error}

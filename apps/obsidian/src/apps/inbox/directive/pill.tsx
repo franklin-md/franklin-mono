@@ -48,7 +48,7 @@ export function InboxQuestionPill({ state, inbox, onOpen, onError }: Props) {
 				'mx-1 ring-1 ring-inset ring-border',
 				kind === 'answered' &&
 					'bg-primary/15 text-primary ring-primary/50 hover:bg-primary/25 hover:text-primary',
-				kind === 'failed' && 'text-[var(--text-error)]',
+				kind === 'failed' && 'text-destructive',
 			)}
 		>
 			<Button

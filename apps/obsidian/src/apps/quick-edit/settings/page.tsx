@@ -109,7 +109,7 @@ export function QuickEditSettingsPanel({
 				</SettingItem>
 				{error && (
 					<SettingItem>
-						<p role="alert" className="text-[var(--text-error)]">
+						<p role="alert" className="text-destructive">
 							{error}
 						</p>
 					</SettingItem>

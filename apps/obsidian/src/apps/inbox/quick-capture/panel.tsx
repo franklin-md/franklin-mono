@@ -84,7 +84,7 @@ export function CapturePanel({ anchor, onSubmit, onClose, onContent }: Props) {
 			{error && (
 				<p
 					role="alert"
-					className="m-0 max-w-64 px-3 py-2 text-xs text-[var(--text-error)] wrap-anywhere"
+					className="m-0 max-w-64 px-3 py-2 text-xs text-destructive wrap-anywhere"
 				>
 					{error}
 				</p>
