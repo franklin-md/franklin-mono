@@ -180,4 +180,29 @@ describe('createObsidianAuthStore', () => {
 
 		expect(storeB.get()).toEqual({ [PROVIDER]: OAUTH_ENTRY });
 	});
+
+	it('keeps an existing MCP credential when saving a Codex sign-in across reloads', async () => {
+		const storage = new MemorySecretStorage();
+		const provider =
+			'mcp-11111111-1111-4111-8111-111111111111-22222222-2222-4222-8222-222222222222';
+		// Seed the address used by earlier builds, independently of the current encoder.
+		storage.setSecret('franklin-providers', JSON.stringify([provider]));
+		storage.setSecret(
+			'sha256-0db02c8279eb064b79400e1e1bd4a1da2bc0ce19aeb4e02a-api-key',
+			API_ENTRY.apiKey.key,
+		);
+
+		const store = createObsidianAuthStore(storage);
+		await store.restore();
+		store.set((entries) => ({ ...entries, 'openai-codex': OAUTH_ENTRY }));
+		await store.persist();
+
+		const reloaded = createObsidianAuthStore(storage);
+		await reloaded.restore();
+		expect(reloaded.get()).toEqual({
+			[provider]: API_ENTRY,
+			'openai-codex': OAUTH_ENTRY,
+		});
+		expect(storage.listSecrets().every((id) => id.length <= 64)).toBe(true);
+	});
 });
