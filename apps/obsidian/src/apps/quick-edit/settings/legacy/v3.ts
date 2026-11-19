@@ -1,8 +1,8 @@
 import { StoredThinkingLevel } from '@franklin/agent';
 import { z } from 'zod';
 import { createDefaultPresets } from '../../presets/defaults.js';
-import { presetListSchema } from '../../presets/list-schema.js';
-import type { QuickEditPreset } from '../../presets/types.js';
+import { presetListSchema } from '../../../../shared/preset/list-schema.js';
+import type { PromptPreset } from '../../../../shared/preset/types.js';
 import { legacyIconIds } from './icons.js';
 import type { LegacyIcon } from './icons.js';
 
@@ -18,7 +18,7 @@ const legacyPresetSchema = z.object({
 });
 
 // Migrations seed current defaults, so data before version 4 can mix both shapes.
-export type LegacyPreset = z.infer<typeof legacyPresetSchema> | QuickEditPreset;
+export type LegacyPreset = z.infer<typeof legacyPresetSchema> | PromptPreset;
 
 export const legacySettingsSchema = z.object({
 	provider: z.string().min(1),

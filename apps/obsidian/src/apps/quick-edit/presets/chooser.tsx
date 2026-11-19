@@ -2,15 +2,15 @@ import { editorLivePreviewField } from 'obsidian';
 import type { App, Editor, MarkdownFileInfo } from 'obsidian';
 import { mountEditorPopover } from '../../../shared/ui/editor-popover/mount.js';
 import type { EditorPopoverSession } from '../../../shared/ui/editor-popover/types.js';
+import type { PromptPreset } from '../../../shared/preset/types.js';
 import type { QuickEditInteraction } from '../interaction/composer.js';
 import { quickEditView } from '../interaction/editor.js';
-import type { QuickEditPreset } from './types.js';
 import { PresetPanel } from './panel.js';
 
 type Options = {
 	app: App;
 	interaction: QuickEditInteraction;
-	getPresets: () => readonly QuickEditPreset[];
+	getPresets: () => readonly PromptPreset[];
 	report: (error: unknown) => void;
 };
 

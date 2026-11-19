@@ -1,6 +1,6 @@
 import type { AgentStopCode } from '@franklin/agent';
 import type { ThinkingLevel } from '@franklin/mini-acp';
-import type { QuickEditPreset } from './presets/types.js';
+import type { PromptPreset } from '../../shared/preset/types.js';
 
 export type QuickEditState = {
 	path: string;
@@ -20,7 +20,7 @@ export type QuickEditSettings = {
 	model: string;
 	reasoning: ThinkingLevel;
 	instructions: string;
-	presets: QuickEditPreset[];
+	presets: PromptPreset[];
 };
 
 export type QuickEditRequest = {

@@ -1,11 +1,11 @@
-import type { QuickEditPreset } from '../presets/types.js';
+import type { PromptPreset } from '../../../shared/preset/types.js';
 import { legacyIconIds } from './legacy/icons.js';
 import type { LegacyIcon } from './legacy/icons.js';
 import type { LegacyPreset } from './legacy/v3.js';
 
 export function migratePresetIcons(
 	presets: readonly LegacyPreset[],
-): QuickEditPreset[] {
+): PromptPreset[] {
 	return presets.map((preset) => ({
 		...preset,
 		// Seeded current defaults already use Obsidian IDs and pass through.

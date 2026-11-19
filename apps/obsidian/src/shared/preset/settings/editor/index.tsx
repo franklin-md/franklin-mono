@@ -2,18 +2,19 @@ import { useId, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useForm, useSelector } from '@tanstack/react-form';
 import { Button, ColorSwatches, Input } from '@franklin/ui';
-import { presetColors } from '../../../presets/colors.js';
-import { quickEditPresetSchema } from '../../../presets/schema.js';
-import type { QuickEditPreset } from '../../../presets/types.js';
-import { SettingName } from '../../../../../shared/ui/setting/name.js';
-import { SettingTextarea } from '../../../../../shared/ui/setting/textarea.js';
+import { SettingName } from '../../../ui/setting/name.js';
+import { SettingTextarea } from '../../../ui/setting/textarea.js';
+import { presetColors } from '../../colors.js';
+import { promptPresetSchema } from '../../schema.js';
+import type { PresetColor, PromptPreset } from '../../types.js';
 import { AppearancePopover } from './appearance.js';
 import { IconPicker } from './icon-picker.js';
 
 type Props = {
-	preset: QuickEditPreset;
+	noun: string;
+	preset: PromptPreset;
 	pending: boolean;
-	onSave: (preset: QuickEditPreset) => void;
+	onSave: (preset: PromptPreset) => void;
 	onCancel: () => void;
 };
 
@@ -22,19 +23,26 @@ const colorOptions = Object.entries(presetColors).map(([id, color]) => ({
 	...color,
 }));
 
-function isPresetColor(id: string): id is QuickEditPreset['color'] {
+function isPresetColor(id: string): id is PresetColor {
 	return Object.hasOwn(presetColors, id);
 }
 
-export function PresetEditor({ preset, pending, onSave, onCancel }: Props) {
+export function PresetEditor({
+	noun,
+	preset,
+	pending,
+	onSave,
+	onCancel,
+}: Props) {
 	const id = useId();
+	const title = noun.charAt(0).toUpperCase() + noun.slice(1);
 	const [picking, setPicking] = useState(false);
 	const form = useForm({
 		defaultValues: preset,
 		// onMount keeps Save disabled for a new, blank preset until it is valid.
 		validators: {
-			onMount: quickEditPresetSchema,
-			onChange: quickEditPresetSchema,
+			onMount: promptPresetSchema,
+			onChange: promptPresetSchema,
 		},
 		onSubmit: ({ value }) => onSave(value),
 	});
@@ -49,12 +57,12 @@ export function PresetEditor({ preset, pending, onSave, onCancel }: Props) {
 		void form.handleSubmit();
 	}
 	return (
-		<form aria-label="Edit preset" onSubmit={submit} className="grid gap-2">
+		<form aria-label={`Edit ${noun}`} onSubmit={submit} className="grid gap-2">
 			<fieldset
 				disabled={pending}
 				className="m-0 grid min-w-0 gap-2 border-0 p-0"
 			>
-				<SettingName htmlFor={`${id}-name`}>Preset name</SettingName>
+				<SettingName htmlFor={`${id}-name`}>{`${title} name`}</SettingName>
 				<div className="flex items-center gap-2">
 					<AppearancePopover
 						icon={icon}
@@ -100,7 +108,7 @@ export function PresetEditor({ preset, pending, onSave, onCancel }: Props) {
 						)}
 					</form.Field>
 				</div>
-				<SettingName htmlFor={`${id}-prompt`}>Prompt</SettingName>
+				<SettingName htmlFor={`${id}-prompt`}>{`${title} prompt`}</SettingName>
 				<form.Field name="prompt">
 					{(field) => (
 						<SettingTextarea
@@ -114,7 +122,7 @@ export function PresetEditor({ preset, pending, onSave, onCancel }: Props) {
 				</form.Field>
 				<div className="flex gap-2">
 					<Button type="submit" size="sm" disabled={!canSubmit}>
-						Save preset
+						{`Save ${noun}`}
 					</Button>
 					<Button type="button" variant="outline" size="sm" onClick={onCancel}>
 						Cancel

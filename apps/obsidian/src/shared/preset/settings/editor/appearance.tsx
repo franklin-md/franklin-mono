@@ -7,7 +7,7 @@ import {
 	PopoverTrigger,
 	cn,
 } from '@franklin/ui';
-import { ObsidianIcon } from '../../../../../shared/ui/icon/index.js';
+import { ObsidianIcon } from '../../../ui/icon/index.js';
 
 type Props = {
 	icon: string;

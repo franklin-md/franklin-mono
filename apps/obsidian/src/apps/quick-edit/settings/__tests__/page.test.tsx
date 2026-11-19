@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 describe('quick edit settings panel', () => {
-	it('saves editing instructions and reasoning through the shared model picker', async () => {
+	it('saves editing instructions, reasoning and presets', async () => {
 		vi.stubGlobal(
 			'ResizeObserver',
 			class {
@@ -102,6 +102,10 @@ describe('quick edit settings panel', () => {
 			fireEvent.click(await screen.findByRole('radio', { name: 'High' }));
 			await vi.waitFor(() =>
 				expect(preferences.state.get().reasoning).toBe('high'),
+			);
+			fireEvent.click(screen.getByRole('button', { name: 'Delete Link' }));
+			await vi.waitFor(() =>
+				expect(preferences.state.get().presets).toEqual([]),
 			);
 			rerender(panel(false));
 			expect(screen.queryByRole('radio', { name: 'High' })).toBeNull();
