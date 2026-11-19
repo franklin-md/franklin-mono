@@ -100,13 +100,18 @@ export const ComposedWithColor: Story = {
 		const result = canvas.getByRole('status');
 		await userEvent.click(canvas.getByRole('button', { name: 'Icon' }));
 		// Search is the first focusable control, so Radix focuses it on open.
-		const search = await page.findByRole('combobox', { name: 'Search icons' });
+		const search = await page.findByRole('searchbox', { name: 'Search icons' });
 		await expect(search).toHaveFocus();
 		await userEvent.click(page.getByRole('radio', { name: 'Green' }));
 		await expect(result).toHaveTextContent('Link · green');
 		await userEvent.click(search);
 		await userEvent.keyboard('flask conical');
-		await userEvent.keyboard('{Enter}');
+		// ArrowDown enters the grid; arrows then move focus between icons.
+		await userEvent.keyboard('{ArrowDown}{ArrowRight}');
+		await expect(
+			page.getByRole('gridcell', { name: 'Flask Conical Off' }),
+		).toHaveFocus();
+		await userEvent.keyboard('{ArrowLeft}{Enter}');
 		await expect(result).toHaveTextContent('FlaskConical · green');
 	},
 };
