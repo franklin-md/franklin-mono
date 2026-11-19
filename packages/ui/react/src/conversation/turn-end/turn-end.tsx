@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type { TurnEndBlock as TurnEndBlockType } from '@franklin/agent';
 
 import type { TurnEndRendererRegistry } from './types.js';
@@ -7,13 +7,15 @@ import { resolveTurnEndRenderer } from './registry.js';
 export function TurnEndBlock({
 	block,
 	registry,
+	actions,
 }: {
 	block: TurnEndBlockType;
 	registry: TurnEndRendererRegistry;
+	actions?: ReactNode;
 }) {
 	const renderer = resolveTurnEndRenderer(registry, block.stopCode);
 	if (!renderer) return null;
-	return <>{renderer(block)}</>;
+	return <>{renderer(block, actions)}</>;
 }
 
 export function createTurnEndBlock(

@@ -50,7 +50,6 @@ it('keeps repeated Inbox attempts out of the persisted chat and store collection
 		persistence: createInboxTestPersistence().disk,
 		run: createInboxRunner({
 			createAgent: app.createAgent.bind(app),
-			auth: app.auth,
 			config,
 			vaultName: 'Study',
 		}),

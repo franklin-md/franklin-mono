@@ -3,7 +3,6 @@ import type { AgentCreateInput, HostActionBinding } from '@franklin/react';
 import type { Plugin } from 'obsidian';
 
 import { activateView } from '../../shared/obsidian/activate-view.js';
-import { openPluginSettings } from '../../shared/obsidian/settings/open.js';
 import { createFranklinViewContent } from './ui/content.js';
 import { FranklinView, VIEW_TYPE } from './view.js';
 
@@ -20,10 +19,6 @@ export function registerChat({
 	getCreateInput,
 	hostActionBindings,
 }: Options): void {
-	const requestApiKey = () => {
-		openPluginSettings(plugin.app, plugin.manifest.id, 'connections');
-	};
-
 	plugin.registerView(VIEW_TYPE, (leaf) => {
 		return new FranklinView(leaf, {
 			renderContent: () =>
@@ -32,7 +27,7 @@ export function registerChat({
 					getCreateInput,
 					hostActionBindings,
 					obsidianApp: plugin.app,
-					requestApiKey,
+					pluginId: plugin.manifest.id,
 				}),
 		});
 	});

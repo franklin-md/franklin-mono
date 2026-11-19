@@ -1,5 +1,4 @@
-import type { FranklinExtension } from '@franklin/agent';
-import { StopCode } from '@franklin/mini-acp';
+import type { AgentTurnEnd, FranklinExtension } from '@franklin/agent';
 import type { ModelSelection } from '../controller/types.js';
 import type { InboxRunnerOptions } from './types.js';
 
@@ -11,10 +10,12 @@ type Request = {
 	extensions: (signal: AbortSignal) => readonly FranklinExtension[];
 };
 
+// Resolves with the turn end that settled the attempt; the agent reports
+// credential failures there too. Cancellation and deadlines reject.
 export async function runInboxRuntime(
-	{ createAgent, auth, config }: InboxRunnerOptions,
+	{ createAgent, config }: InboxRunnerOptions,
 	request: Request,
-): Promise<void> {
+): Promise<AgentTurnEnd> {
 	const question = request.selection;
 	request.signal.throwIfAborted();
 	// Completion tools capture this signal during construction. Forward the
@@ -46,24 +47,17 @@ export async function runInboxRuntime(
 		deadline.addEventListener('abort', expire, { once: true });
 		signal.addEventListener('abort', cancel, { once: true });
 		signal.throwIfAborted();
-		const apiKey = await auth.getApiKey(question.provider);
-		signal.throwIfAborted();
-		if (!apiKey)
-			throw new Error(
-				`Sign in or add a key for ${question.provider} in Franklin settings, then retry.`,
-			);
+		let turnEnd: AgentTurnEnd | undefined;
 		for await (const event of runtime.prompt({
 			role: 'user',
 			content: [{ type: 'text', text: request.prompt }],
 		})) {
 			signal.throwIfAborted();
-			if (event.type === 'turnEnd' && event.stopCode !== StopCode.Finished)
-				throw new Error(
-					event.stopMessage ??
-						`Model request failed (${event.stopCode}). Check model access and credentials, then retry.`,
-				);
+			if (event.type === 'turnEnd') turnEnd = event;
 		}
 		signal.throwIfAborted();
+		if (!turnEnd) throw new Error('The model stream ended without a turn end.');
+		return turnEnd;
 	} finally {
 		deadline?.removeEventListener('abort', expire);
 		signal.removeEventListener('abort', cancel);

@@ -59,7 +59,6 @@ export function createInboxTestEnvironment({ fetch }: Options = {}) {
 			auth: AuthManager,
 		): InboxRunnerOptions {
 			return {
-				auth,
 				config,
 				vaultName: 'Study',
 				createAgent: async ({ extensions, state }) => {

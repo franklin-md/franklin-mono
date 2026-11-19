@@ -2,6 +2,7 @@ import type { InboxController } from '../controller/index.js';
 import type { DirectiveRegistry } from '../../../shared/directives/registry.js';
 import { DirectiveScribe } from '../../../shared/directives/scribe/operations.js';
 import { InboxQuestionPill } from './pill.js';
+import { ObsidianAuthActionProvider } from '../../../shared/ui/auth-action-provider.js';
 import type { InboxQuestionDirectiveState } from './types.js';
 
 type Options = {
@@ -9,6 +10,8 @@ type Options = {
 	inbox: InboxController;
 	onOpen: (questionId: string) => void;
 	onError: (error: unknown) => void;
+	// Pills mount in the editor, outside the Inbox view's providers.
+	pluginId: string;
 };
 
 export class InboxQuestionDirectives {
@@ -18,16 +21,18 @@ export class InboxQuestionDirectives {
 	private closed = false;
 	private readonly cleaned = new Set<string>();
 
-	constructor({ registry, inbox, onOpen, onError }: Options) {
+	constructor({ registry, inbox, onOpen, onError, pluginId }: Options) {
 		this.definition = registry.registerDirective<InboxQuestionDirectiveState>(
 			'inbox-question',
 			({ state }) => (
-				<InboxQuestionPill
-					state={state}
-					inbox={inbox}
-					onOpen={onOpen}
-					onError={onError}
-				/>
+				<ObsidianAuthActionProvider app={registry.app} pluginId={pluginId}>
+					<InboxQuestionPill
+						state={state}
+						inbox={inbox}
+						onOpen={onOpen}
+						onError={onError}
+					/>
+				</ObsidianAuthActionProvider>
 			),
 		);
 		this.unsubscribe = inbox.subscribeSaved((document) => {

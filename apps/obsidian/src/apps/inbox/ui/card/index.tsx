@@ -86,7 +86,11 @@ export function QuestionCard({
 				onFocus={onFocus}
 				onDelete={onDelete}
 			/>
-			<QuestionBody state={question.state} expanded={focused} />
+			<QuestionBody
+				state={question.state}
+				expanded={focused}
+				onRetry={() => onRetry(question.id)}
+			/>
 			<QuestionFooter
 				id={footerId}
 				focused={focused}
@@ -100,11 +104,7 @@ export function QuestionCard({
 				controls={
 					<>
 						{actions}
-						<QuestionControls
-							question={question}
-							onFollowUp={onFollowUp}
-							onRetry={onRetry}
-						/>
+						<QuestionControls question={question} onFollowUp={onFollowUp} />
 					</>
 				}
 			/>

@@ -7,7 +7,7 @@ import type { QuestionSource } from '../types.js';
 import { createQuestion } from '../controller/create-question.js';
 import { createGroup } from '../hierarchy/create.js';
 import { nextNodeOrder } from '../hierarchy/order.js';
-import { errorMessage } from '../controller/error.js';
+import { failedState } from '../controller/failed-state.js';
 import { parseExtraction } from './parse-extraction.js';
 
 type Options = {
@@ -130,8 +130,7 @@ export class ThoughtDumps {
 				return;
 			store.set((draft) => {
 				const dump = draft.thoughtDumps?.find((item) => item.id === id);
-				if (dump?.state.kind === 'running')
-					dump.state = { kind: 'failed', error: errorMessage(error) };
+				if (dump?.state.kind === 'running') dump.state = failedState(error);
 			});
 			await persist().catch(() => {});
 		}

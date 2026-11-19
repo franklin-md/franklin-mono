@@ -49,15 +49,14 @@ describe('quick edit pill', () => {
 				stop={stop}
 			/>,
 		);
-		const pill = screen.getByText('Edit failed').parentElement;
+		const pill = screen.getByText('Failed').parentElement;
 		if (!pill) throw new Error('Expected failure pill');
 		fireEvent.focus(pill);
-		expect((await screen.findByRole('tooltip')).textContent).toBe(
-			'Read the file again',
-		);
-		expect(pill.getAttribute('aria-describedby')).toBe(
-			screen.getByRole('tooltip').id,
-		);
+		const details = await screen.findByRole('dialog', {
+			name: 'Failure details',
+		});
+		expect(details.textContent).toContain('Read the file again');
+		expect(pill.getAttribute('aria-expanded')).toBe('true');
 		expect(screen.queryAllByRole('button')).toHaveLength(0);
 	});
 	it.each(['hover', 'focus'])(
@@ -93,16 +92,18 @@ describe('quick edit pill', () => {
 			const saved = restoredDefinition.get(instance.id)?.state.get();
 			if (!saved) throw new Error('Expected restored failure');
 			render(<QuickEditPill state={saved} stop={vi.fn()} />);
-			const pill = screen.getByText('Edit failed').parentElement;
+			const pill = screen.getByText('Failed').parentElement;
 			if (!pill) throw new Error('Expected failure pill');
 			expect(pill.tabIndex).toBe(0);
 			expect(pill.hasAttribute('title')).toBe(false);
 			if (interaction === 'focus') fireEvent.focus(pill);
-			else fireEvent.pointerMove(pill, { pointerType: 'mouse' });
-			const tooltip = await screen.findByRole('tooltip');
-			expect(tooltip.textContent).toBe(explanation);
+			else fireEvent.pointerEnter(pill, { pointerType: 'mouse' });
+			const details = await screen.findByRole('dialog', {
+				name: 'Failure details',
+			});
+			expect(details.textContent).toContain(explanation);
 			fireEvent.keyDown(pill, { key: 'Escape' });
-			await vi.waitFor(() => expect(screen.queryByRole('tooltip')).toBeNull());
+			await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 			await restored.dispose();
 		},
 	);

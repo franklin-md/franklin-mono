@@ -7,6 +7,7 @@ import type { DirectiveRegistry } from '../../shared/directives/registry.js';
 import type { DirectiveProps } from '../../shared/directives/types.js';
 import type { DiffClient } from '../../shared/diff/client.js';
 import { getPluginAbsolutePath } from '../../shared/obsidian/path.js';
+import { ObsidianAuthActionProvider } from '../../shared/ui/auth-action-provider.js';
 import { QuickEditController } from './execution/controller.js';
 import { createQuickEditRunner } from './execution/run.js';
 import { QuickEditInteraction } from './interaction/composer.js';
@@ -63,12 +64,18 @@ export async function registerQuickEdit({
 				(notify) => interaction.composing.subscribe(notify),
 				() => interaction.composing.get() === id,
 			);
+			// Pills mount in the editor, outside any Franklin view's providers.
 			return (
-				<QuickEditPill
-					state={state}
-					composing={composing}
-					stop={() => execution.stop()}
-				/>
+				<ObsidianAuthActionProvider
+					app={plugin.app}
+					pluginId={plugin.manifest.id}
+				>
+					<QuickEditPill
+						state={state}
+						composing={composing}
+						stop={() => execution.stop()}
+					/>
+				</ObsidianAuthActionProvider>
 			);
 		},
 	);

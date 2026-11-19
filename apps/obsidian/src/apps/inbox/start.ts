@@ -31,7 +31,6 @@ export function startInbox({
 	const path = joinAbsolute(appDir, 'inbox.json');
 	const runnerOptions = {
 		createAgent: app.createAgent.bind(app),
-		auth: app.auth,
 		vaultName: plugin.app.vault.getName(),
 		config: {
 			fsConfig: {

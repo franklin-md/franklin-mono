@@ -1,6 +1,8 @@
 import { LoaderCircle } from 'lucide-react';
 import { Button } from '@franklin/ui';
 import type { InboxAction, InboxActionRun } from '../actions/types.js';
+import { FailureNotice } from '../../../shared/ui/failure/index.js';
+import { RetryButton } from '../../../shared/ui/failure/retry.js';
 
 type Props = {
 	actions: InboxAction[];
@@ -57,33 +59,29 @@ export function QuestionActions({
 							{state?.kind === 'failed' && ' Failed'}
 						</Button>
 						{run && state?.kind === 'failed' && (
-							<>
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									className="text-[var(--text-error)]"
-									aria-label={`Retry ${run.action.name}`}
-									onClick={() => onRetry(run.id)}
-								>
-									Retry
-								</Button>
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									aria-label={`Dismiss ${run.action.name}`}
-									onClick={() => onDismiss(run.id)}
-								>
-									Dismiss
-								</Button>
-								<p
-									className="m-0 basis-full text-xs wrap-anywhere text-[var(--text-error)]"
-									role="alert"
-								>
-									{state.error}
-								</p>
-							</>
+							<div className="basis-full">
+								<FailureNotice
+									message={state.error}
+									stopCode={state.stopCode}
+									actions={
+										<>
+											<RetryButton
+												aria-label={`Retry ${run.action.name}`}
+												onClick={() => onRetry(run.id)}
+											/>
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												aria-label={`Dismiss ${run.action.name}`}
+												onClick={() => onDismiss(run.id)}
+											>
+												Dismiss
+											</Button>
+										</>
+									}
+								/>
+							</div>
 						)}
 					</div>
 				);

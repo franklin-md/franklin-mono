@@ -22,6 +22,7 @@ type Scenario = {
 	service: InboxQuestionDirectives;
 	open: Mock;
 	error: Mock;
+	settings: { open: Mock; openTabById: Mock };
 	process: Mock<
 		(_file: TFile, change: (source: string) => string) => Promise<string>
 	>;
@@ -64,7 +65,9 @@ export async function createInboxDirectiveScenario(
 			return content;
 		},
 	);
+	const settings = { open: vi.fn(), openTabById: vi.fn() };
 	const app = {
+		setting: settings,
 		workspace: { iterateAllLeaves: () => {} },
 		vault: {
 			getMarkdownFiles: () => [file],
@@ -85,6 +88,7 @@ export async function createInboxDirectiveScenario(
 		inbox,
 		onOpen: open,
 		onError: error,
+		pluginId: 'franklin',
 	});
 	return {
 		inbox,
@@ -96,6 +100,7 @@ export async function createInboxDirectiveScenario(
 		service,
 		open,
 		error,
+		settings,
 		process,
 		get content() {
 			return content;

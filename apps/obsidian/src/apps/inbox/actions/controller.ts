@@ -1,6 +1,6 @@
 import type { Store } from '@franklin/agent';
 import { branchContext } from '../hierarchy/context.js';
-import { errorMessage } from '../controller/error.js';
+import { failedState } from '../controller/failed-state.js';
 import type {
 	InboxControllerOptions,
 	InboxSnapshot,
@@ -153,8 +153,7 @@ export class InboxActions {
 				const run = draft.actionRuns.find(
 					(item) => item.id === id && item.attemptId === attemptId,
 				);
-				if (run?.state.kind === 'running')
-					run.state = { kind: 'failed', error: errorMessage(error) };
+				if (run?.state.kind === 'running') run.state = failedState(error);
 			});
 			await persist().catch(() => {});
 		}

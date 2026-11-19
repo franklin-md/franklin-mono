@@ -1,6 +1,7 @@
 import type { Fetch, WebFetchResponse } from '@franklin/lib';
 
 import type { OAuthCredentials } from '../credentials.js';
+import { TokenRequestError } from './token-error.js';
 
 const EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 
@@ -75,8 +76,10 @@ function parseResponse(
 ): ParsedResponse {
 	const bodyText = new TextDecoder().decode(response.body);
 	if (response.status < 200 || response.status >= 300) {
-		throw new Error(
-			`${providerLabel} token request failed (${response.status}): ${bodyText}`,
+		throw TokenRequestError.fromResponse(
+			providerLabel,
+			response.status,
+			bodyText,
 		);
 	}
 

@@ -48,7 +48,7 @@ function renderRoot(vault: Vault) {
 			app={{} as FranklinApp}
 			hostActionBindings={[]}
 			obsidianApp={createMockApp(vault)}
-			requestApiKey={() => undefined}
+			pluginId="franklin"
 		>
 			<FileSearchProbe />
 		</FranklinRoot>,

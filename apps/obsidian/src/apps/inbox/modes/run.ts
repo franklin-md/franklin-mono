@@ -4,6 +4,7 @@ import { runInboxRuntime } from '../agent/runtime.js';
 import type { Extraction, SplitRequest } from './types.js';
 import { parseExtraction } from './parse-extraction.js';
 import { extractionSchema } from './extraction-schema.js';
+import { assertFinished } from '../../../shared/agent/turn-end/assert-finished.js';
 
 const submitQuestions = toolSpec(
 	'return_questions',
@@ -14,7 +15,7 @@ const submitQuestions = toolSpec(
 export function createSplitter(options: InboxRunnerOptions) {
 	return async ({ dump, signal }: SplitRequest): Promise<Extraction> => {
 		let result: Extraction | undefined;
-		await runInboxRuntime(options, {
+		const turnEnd = await runInboxRuntime(options, {
 			selection: dump,
 			signal,
 			timeout: 120_000,
@@ -44,6 +45,7 @@ export function createSplitter(options: InboxRunnerOptions) {
 				}),
 			],
 		});
+		assertFinished(turnEnd);
 		if (result === undefined)
 			throw new Error('The model did not return questions. Retry extraction.');
 		return parseExtraction(result);

@@ -78,7 +78,9 @@ describe('question action controls', () => {
 		await act(async () => {
 			fail(new Error('Missing prompt file'));
 		});
-		expect(screen.getByRole('alert').textContent).toBe('Missing prompt file');
+		expect(screen.getByRole('alert').textContent).toContain(
+			'Missing prompt file',
+		);
 		await act(async () => {
 			fireEvent.click(screen.getByRole('button', { name: 'Retry 🃏' }));
 		});

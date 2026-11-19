@@ -5,6 +5,7 @@ import { versioned, zodCodec } from '@franklin/lib';
 import { z } from 'zod';
 import type { InboxDocument } from './types.js';
 import { questionSchema as question } from './question-schema.js';
+import { failedStateSchema } from './failed-schema.js';
 import { migrateAnswerInstructions } from './migrate-instructions.js';
 
 const preferences = z.object({
@@ -56,7 +57,7 @@ const actionRun = z.object({
 	state: z.discriminatedUnion('kind', [
 		z.object({ kind: z.literal('queued') }),
 		z.object({ kind: z.literal('running') }),
-		z.object({ kind: z.literal('failed'), error: z.string() }),
+		failedStateSchema,
 		z.object({
 			kind: z.literal('succeeded'),
 			summary: z.string().trim().min(1),

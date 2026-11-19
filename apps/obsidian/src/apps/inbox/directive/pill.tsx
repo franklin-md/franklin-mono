@@ -6,6 +6,8 @@ import type { InboxQuestionDirectiveState } from './types.js';
 import { AnswerPreview } from './preview.js';
 import { questionTitle } from '../title.js';
 import { DirectivePill } from '../../../shared/directives/render/pill.js';
+import { FailurePopover } from '../../../shared/ui/failure/popover.js';
+import { RetryButton } from '../../../shared/ui/failure/retry.js';
 
 type Props = {
 	state: InboxQuestionDirectiveState;
@@ -31,7 +33,7 @@ export function InboxQuestionPill({ state, inbox, onOpen, onError }: Props) {
 				: kind === 'queued'
 					? 'Queued'
 					: kind === 'failed'
-						? 'Open question'
+						? 'Failed'
 						: 'Question deleted';
 	const Icon =
 		kind === 'running'
@@ -53,13 +55,13 @@ export function InboxQuestionPill({ state, inbox, onOpen, onError }: Props) {
 				type="button"
 				variant="ghost"
 				disabled={!question}
-				aria-label={`${label} in Inbox`}
+				aria-label={
+					kind === 'failed'
+						? 'Question failed, open in Inbox'
+						: `${label} in Inbox`
+				}
 				title={
-					question?.state.kind === 'failed'
-						? question.state.error
-						: kind === 'answered'
-							? undefined
-							: question?.text
+					kind === 'answered' || kind === 'failed' ? undefined : question?.text
 				}
 				onClick={() => onOpen(state.questionId)}
 			>
@@ -73,6 +75,32 @@ export function InboxQuestionPill({ state, inbox, onOpen, onError }: Props) {
 			</Button>
 		</DirectivePill>
 	);
+	if (question?.state.kind === 'failed')
+		return (
+			<FailurePopover
+				message={question.state.error}
+				stopCode={question.state.stopCode}
+				actions={
+					<>
+						<RetryButton
+							onClick={() => {
+								void inbox.retry(state.questionId).catch(onError);
+							}}
+						/>
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							onClick={() => onOpen(state.questionId)}
+						>
+							Open in Inbox
+						</Button>
+					</>
+				}
+			>
+				{pill}
+			</FailurePopover>
+		);
 	return question?.state.kind === 'answered' ? (
 		<AnswerPreview
 			answer={question.state}

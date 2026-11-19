@@ -1,11 +1,4 @@
-import {
-	ChevronRight,
-	GitBranch,
-	LoaderCircle,
-	MessageCircle,
-	Trash2,
-	TriangleAlert,
-} from 'lucide-react';
+import { ChevronRight, GitBranch, Trash2 } from 'lucide-react';
 import { IconButton, cn } from '@franklin/ui';
 import type { MouseEvent } from 'react';
 import { questionTitle } from '../../title.js';
@@ -33,19 +26,7 @@ export function QuestionHeader({
 	onFocus,
 	onDelete,
 }: Props) {
-	const { state } = question;
 	const title = questionTitle(question);
-	const status = {
-		failed: 'Failed',
-		running: 'Answering',
-		queued: 'Queued',
-	};
-	const icons = {
-		failed: TriangleAlert,
-		running: LoaderCircle,
-		queued: MessageCircle,
-	};
-	const StatusIcon = state.kind !== 'answered' ? icons[state.kind] : undefined;
 	function navigateParent(event: MouseEvent<HTMLButtonElement>) {
 		if (!parent || hasTextSelection(event.currentTarget, event.detail)) return;
 		onFocus(parent.id);
@@ -80,26 +61,6 @@ export function QuestionHeader({
 						Follow-up to {questionTitle(parent)}
 					</span>
 				</button>
-			)}
-			{state.kind !== 'answered' && StatusIcon && (
-				<div className="mb-1 flex h-5 items-center gap-2 pr-6 text-xs">
-					<span
-						className={cn(
-							'inline-flex items-center gap-1.5 text-muted-foreground',
-							state.kind === 'failed' && 'text-[var(--text-error)]',
-							state.kind === 'running' && 'text-primary',
-						)}
-					>
-						<StatusIcon
-							size={12}
-							className={cn(
-								state.kind === 'running' &&
-									'animate-spin motion-reduce:animate-none',
-							)}
-						/>
-						{status[state.kind]}
-					</span>
-				</div>
 			)}
 			<h3
 				id={titleId}

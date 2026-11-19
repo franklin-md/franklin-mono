@@ -57,6 +57,7 @@ it('renders a newly registered Inbox before navigation and after reopening its p
 	let creator: ViewCreator | undefined;
 	const commands: Command[] = [];
 	const plugin = {
+		manifest: { id: 'franklin' },
 		registerView: (_type: string, create: ViewCreator) => {
 			creator = create;
 		},

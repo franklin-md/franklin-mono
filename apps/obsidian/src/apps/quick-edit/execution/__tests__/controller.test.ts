@@ -6,6 +6,8 @@ import {
 import { createMarkdownTestApp } from '../../../../shared/obsidian/markdown/testing/app.js';
 import { QuickEditController } from '../controller.js';
 import type { QuickEditState } from '../../types.js';
+import { StopCode } from '@franklin/mini-acp';
+import { TurnEndError } from '../../../../shared/agent/turn-end/error.js';
 
 async function setup(run = vi.fn(async () => {})) {
 	const { app, disk } = createMarkdownTestApp({
@@ -110,6 +112,25 @@ describe('quick edit execution', () => {
 			'complete',
 		);
 		expect(h.run).toHaveBeenCalledTimes(2);
+	});
+
+	it('keeps the stop code of a failed turn until the next attempt', async () => {
+		const h = await setup();
+		h.run.mockRejectedValueOnce(
+			new TurnEndError({
+				stopCode: StopCode.AuthKeyNotSpecified,
+				stopMessage: 'No key',
+			}),
+		);
+		await h.controller.execute(h.instance.id, 'fix');
+		expect(h.instance.state.get()).toMatchObject({
+			status: 'failed',
+			error: 'No key',
+			stopCode: StopCode.AuthKeyNotSpecified,
+		});
+		await h.controller.execute(h.instance.id, 'fix');
+		expect(h.instance.state.get().status).toBe('done');
+		expect(h.instance.state.get()).not.toHaveProperty('stopCode');
 	});
 
 	it('refuses ambiguous references and preserves the prompt for retry', async () => {
