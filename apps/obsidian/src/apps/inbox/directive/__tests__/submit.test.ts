@@ -48,6 +48,39 @@ describe('submitting a source question', () => {
 			);
 			expect(instance.state.get()).toEqual({ questionId: 'question-id' });
 			expect(add.mock.calls[0]?.[0]).toBe('ne\ntwo');
+			// The user moved on during the save, so their cursor stays put.
+			expect(target.editor.getCursor()).toEqual({ line: 0, ch: 0 });
+		} finally {
+			target.destroy();
+			await registry.dispose();
+		}
+	});
+
+	it('places the cursor after the new pill when the selection is untouched', async () => {
+		const target = createTestEditor('one\ntwo\nthree');
+		target.cm.dispatch({ selection: { anchor: 4, head: 7 } });
+		const registry = await DirectiveRegistry.create({
+			app: {} as App,
+			persistence: createDirectiveTestPersistence(),
+		});
+		const definition = registry.registerDirective<InboxQuestionDirectiveState>(
+			'inbox-question',
+			() => null,
+		);
+		try {
+			await submitInboxSelection({
+				editor: target.editor,
+				view: target.info,
+				inbox: {
+					add: async () => 'question-id',
+					state: { get: () => ({ questions: [{ id: 'question-id' }] }) },
+				} as unknown as InboxController,
+				definition,
+			});
+			const line = target.editor.getLine(1);
+			expect(line).toBe(`two ${definition.instances()[0]!.text}`);
+			expect(target.editor.getCursor()).toEqual({ line: 1, ch: line.length });
+			expect(target.editor.getSelection()).toBe('');
 		} finally {
 			target.destroy();
 			await registry.dispose();
