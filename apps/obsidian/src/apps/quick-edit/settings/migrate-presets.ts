@@ -1,7 +1,7 @@
-import type { QuickEditPreset } from '../presets/types.js';
 import { createDefaultPresets } from '../presets/defaults.js';
+import type { LegacyPreset } from './legacy/v3.js';
 
-function shippedStarters(): QuickEditPreset[] {
+function shippedStarters(): LegacyPreset[] {
 	return [
 		{
 			id: 'expand',
@@ -38,13 +38,13 @@ function shippedStarters(): QuickEditPreset[] {
 	];
 }
 
-export function migratePresets(presets: QuickEditPreset[]): QuickEditPreset[] {
+export function migratePresets(presets: LegacyPreset[]): LegacyPreset[] {
 	// Match the complete shipped v2 entry: an ID alone does not imply ownership.
 	// Keep these historical values fixed when editable defaults change again.
 	const starters = shippedStarters();
-	const isStarter = (preset: QuickEditPreset) =>
+	const isStarter = (preset: LegacyPreset) =>
 		starters.some((starter) =>
-			(Object.keys(starter) as (keyof QuickEditPreset)[]).every(
+			(Object.keys(starter) as (keyof LegacyPreset)[]).every(
 				(key) => preset[key] === starter[key],
 			),
 		);

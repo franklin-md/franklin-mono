@@ -57,6 +57,7 @@ export function ProviderApiKeyField({
 			<SettingControl>
 				<Input
 					aria-label={label}
+					className="w-60 max-w-full"
 					type="password"
 					autoComplete="off"
 					placeholder={placeholder}

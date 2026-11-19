@@ -59,7 +59,7 @@ export function QuestionGroup({
 				<IconButton
 					icon={Trash2}
 					type="button"
-					className="-my-0.5 size-6 shrink-0 text-muted-foreground opacity-0 group-hover/group-header:opacity-100 group-focus-within/group-header:opacity-100 hover:text-[var(--text-error)] [@media(hover:none)]:opacity-100"
+					className="-my-0.5 size-6 shrink-0 text-muted-foreground opacity-0 group-hover/group-header:opacity-100 group-focus-within/group-header:opacity-100 hover:text-destructive [@media(hover:none)]:opacity-100"
 					aria-label={`Delete group: ${title}`}
 					title="Delete group and all its questions"
 					onClick={(event) => {

@@ -29,6 +29,18 @@ describe('Inbox base storage boundary', () => {
 			}
 		},
 	);
+	it('reads questions and preferences saved with the retired minimal level as low', () => {
+		const document = flatDocument();
+		const result = inboxCodec.decode({
+			version: 6,
+			data: {
+				questions: [{ ...answeredQuestion(), reasoning: 'minimal' }],
+				preferences: { ...document.preferences, reasoning: 'minimal' },
+			},
+		});
+		expect(result.ok && result.value.questions[0]?.reasoning).toBe('low');
+		expect(result.ok && result.value.preferences.reasoning).toBe('low');
+	});
 	it('accepts flat version 6 questions with empty later-feature collections', () => {
 		const document = flatDocument();
 		const result = inboxCodec.decode({

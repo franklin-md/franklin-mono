@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { ReadonlyStore } from '@franklin/agent';
+import { THINKING_LEVELS } from '@franklin/mini-acp';
 import { Button, ModelPicker, PromptFooterControlGroup } from '@franklin/ui';
-import { questionSchema } from '../controller/question-schema.js';
 import type { InboxController } from '../controller/index.js';
 import type { QuestionSource, StudyQuestion } from '../types.js';
 import { InboxContent } from './content.js';
@@ -92,13 +92,15 @@ export function InboxPanel({
 				composerControls={
 					<PromptFooterControlGroup className="min-w-0 flex-wrap gap-1">
 						<ModelPicker
-							provider={preferences.provider}
-							model={preferences.model}
+							value={{
+								provider: preferences.provider,
+								model: preferences.model,
+							}}
 							label="Model for new questions"
-							onSelect={(provider, model) => configure({ provider, model })}
+							onChange={configure}
 							effort={{
-								level: preferences.reasoning,
-								levels: questionSchema.shape.reasoning.options,
+								value: preferences.reasoning,
+								levels: THINKING_LEVELS,
 								onChange: (reasoning) => configure({ reasoning }),
 							}}
 						/>

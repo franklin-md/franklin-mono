@@ -31,6 +31,12 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
+const saved = { provider: 'custom', model: 'saved' };
+
+function checked(name: string) {
+	return screen.getByRole('radio', { name }).getAttribute('aria-checked');
+}
+
 describe('controlled model picker', () => {
 	it.each([
 		['gemini', 'Gemini 3.5 Flash', 'google/gemini-3.5-flash'],
@@ -38,27 +44,27 @@ describe('controlled model picker', () => {
 	])(
 		'searches for %s and selects its OpenRouter model',
 		async (search, name, id) => {
-			const onSelect = vi.fn();
-			render(
-				<ModelPicker provider="custom" model="saved" onSelect={onSelect} />,
-			);
+			const onChange = vi.fn();
+			render(<ModelPicker value={saved} onChange={onChange} />);
 			fireEvent.click(screen.getByRole('button'));
 			fireEvent.change(screen.getByPlaceholderText('Search models...'), {
 				target: { value: search },
 			});
 			fireEvent.click(await screen.findByRole('option', { name }));
-			expect(onSelect).toHaveBeenCalledExactlyOnceWith('openrouter', id);
+			expect(onChange).toHaveBeenCalledExactlyOnceWith({
+				provider: 'openrouter',
+				model: id,
+			});
 			expect(screen.queryByRole('dialog')).toBeNull();
 		},
 	);
 
 	it('accepts caller-supplied models absent from the request catalog', async () => {
-		const onSelect = vi.fn();
+		const onChange = vi.fn();
 		render(
 			<ModelPicker
-				provider="private"
-				model="my-model"
-				onSelect={onSelect}
+				value={{ provider: 'private', model: 'my-model' }}
+				onChange={onChange}
 				catalog={[
 					{
 						provider: 'private',
@@ -83,15 +89,26 @@ describe('controlled model picker', () => {
 		fireEvent.click(screen.getByRole('button'));
 		expect(screen.getAllByRole('option')).toHaveLength(1);
 		fireEvent.click(await screen.findByRole('option', { name: 'My model' }));
-		expect(onSelect).toHaveBeenCalledExactlyOnceWith('private', 'my-model');
+		expect(onChange).toHaveBeenCalledExactlyOnceWith({
+			provider: 'private',
+			model: 'my-model',
+		});
+	});
+
+	it('focuses search when the picker opens', async () => {
+		render(<ModelPicker value={saved} onChange={vi.fn()} />);
+		fireEvent.click(screen.getByRole('button'));
+		await waitFor(() =>
+			expect(document.activeElement).toBe(screen.getByRole('combobox')),
+		);
 	});
 
 	it('can remove inline effort while the picker is open without losing the model list', () => {
-		const props = { provider: 'custom', model: 'saved', onSelect: vi.fn() };
+		const props = { value: saved, onChange: vi.fn() };
 		const { rerender } = render(
 			<ModelPicker
 				{...props}
-				effort={{ level: 'low', levels: ['low', 'high'], onChange: vi.fn() }}
+				effort={{ value: 'low', levels: ['low', 'high'], onChange: vi.fn() }}
 			/>,
 		);
 		fireEvent.click(screen.getByRole('button'));
@@ -102,43 +119,34 @@ describe('controlled model picker', () => {
 	});
 
 	it('omits effort and its trigger summary when it is not supplied', () => {
-		render(<ModelPicker provider="custom" model="saved" onSelect={vi.fn()} />);
+		render(<ModelPicker value={saved} onChange={vi.fn()} />);
 		expect(screen.getByRole('button').textContent).toBe('saved');
 		fireEvent.click(screen.getByRole('button'));
 		expect(screen.queryByRole('radiogroup')).toBeNull();
 	});
 
 	it('keeps inline effort outside filtering and reports only the chosen effort to its owner', () => {
+		const onEffort = vi.fn();
 		const onChange = vi.fn();
-		const onSelect = vi.fn();
-		const levels = [
-			'off',
-			'minimal',
-			'low',
-			'medium',
-			'high',
-			'xhigh',
-			'max',
-		] as const;
-		const props = { provider: 'custom', model: 'saved', onSelect };
+		const levels = ['off', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
+		const props = { value: saved, onChange };
 		const { rerender } = render(
-			<ModelPicker {...props} effort={{ level: 'high', levels, onChange }} />,
+			<ModelPicker
+				{...props}
+				effort={{ value: 'high', levels, onChange: onEffort }}
+			/>,
 		);
 		fireEvent.click(screen.getByRole('button'));
 		fireEvent.change(screen.getByPlaceholderText('Search models...'), {
 			target: { value: 'no-such-model' },
 		});
-		expect(screen.getAllByRole('radio')).toHaveLength(7);
+		expect(screen.getAllByRole('radio')).toHaveLength(6);
 		expect(screen.getByRole('radio', { name: 'Max' })).toBeTruthy();
-		expect(
-			screen.getByRole<HTMLInputElement>('radio', { name: 'High' }).checked,
-		).toBe(true);
-		fireEvent.click(screen.getByRole('radio', { name: 'Minimal' }));
-		expect(onChange).toHaveBeenCalledExactlyOnceWith('minimal');
-		expect(onSelect).not.toHaveBeenCalled();
-		expect(
-			screen.getByRole<HTMLInputElement>('radio', { name: 'High' }).checked,
-		).toBe(true);
+		expect(checked('High')).toBe('true');
+		fireEvent.click(screen.getByRole('radio', { name: 'Low' }));
+		expect(onEffort).toHaveBeenCalledExactlyOnceWith('low');
+		expect(onChange).not.toHaveBeenCalled();
+		expect(checked('High')).toBe('true');
 		expect(screen.getByRole<HTMLInputElement>('combobox').value).toBe(
 			'no-such-model',
 		);
@@ -146,45 +154,47 @@ describe('controlled model picker', () => {
 		rerender(
 			<ModelPicker
 				{...props}
-				effort={{ level: 'minimal', levels, onChange }}
+				effort={{ value: 'low', levels, onChange: onEffort }}
 			/>,
 		);
-		expect(
-			screen.getByRole<HTMLInputElement>('radio', { name: 'Minimal' }).checked,
-		).toBe(true);
-		expect(onChange).toHaveBeenCalledTimes(1);
+		expect(checked('Low')).toBe('true');
+		expect(onEffort).toHaveBeenCalledTimes(1);
 	});
 
 	it('shows the compact current effort beside the model name and reflects external updates', () => {
 		const props = {
-			provider: 'openai-codex',
-			model: 'gpt-6.2-sol',
-			onSelect: vi.fn(),
+			value: { provider: 'openai-codex', model: 'gpt-6.2-sol' },
+			onChange: vi.fn(),
 		};
 		const levels = ['medium', 'xhigh'] as const;
-		const onChange = vi.fn();
+		const onEffort = vi.fn();
 		const { rerender } = render(
-			<ModelPicker {...props} effort={{ level: 'medium', levels, onChange }} />,
+			<ModelPicker
+				{...props}
+				effort={{ value: 'medium', levels, onChange: onEffort }}
+			/>,
 		);
 		expect(screen.getByRole('button').textContent).toContain('GPT-6.2-Sol');
 		expect(screen.getByRole('button').textContent).toContain('Med');
 		rerender(
-			<ModelPicker {...props} effort={{ level: 'xhigh', levels, onChange }} />,
+			<ModelPicker
+				{...props}
+				effort={{ value: 'xhigh', levels, onChange: onEffort }}
+			/>,
 		);
 		expect(screen.getByRole('button').textContent).toContain('XHigh');
 		expect(screen.getByRole('button').title).toContain('Extra high');
-		expect(onChange).not.toHaveBeenCalled();
+		expect(onEffort).not.toHaveBeenCalled();
 	});
 
 	it('closes on Escape from an effort choice and restores trigger focus', async () => {
 		render(
 			<ModelPicker
-				provider="custom"
-				model="saved"
+				value={saved}
 				label="Choose model"
-				onSelect={vi.fn()}
+				onChange={vi.fn()}
 				effort={{
-					level: 'medium',
+					value: 'medium',
 					levels: ['low', 'medium', 'high'],
 					onChange: vi.fn(),
 				}}
@@ -199,12 +209,11 @@ describe('controlled model picker', () => {
 		await waitFor(() => expect(document.activeElement).toBe(trigger));
 	});
 	it('preserves a saved model outside the catalog and reflects external changes', () => {
-		const select = vi.fn();
+		const onChange = vi.fn();
 		const { rerender } = render(
 			<ModelPicker
-				provider="custom"
-				model="my-private-model"
-				onSelect={select}
+				value={{ provider: 'custom', model: 'my-private-model' }}
+				onChange={onChange}
 			/>,
 		);
 		expect(screen.getByRole('button').textContent).toContain(
@@ -213,22 +222,20 @@ describe('controlled model picker', () => {
 		expect(screen.getByRole('button').title).toContain('custom');
 		rerender(
 			<ModelPicker
-				provider="openai-codex"
-				model="gpt-6.2-sol"
-				onSelect={select}
+				value={{ provider: 'openai-codex', model: 'gpt-6.2-sol' }}
+				onChange={onChange}
 			/>,
 		);
 		expect(screen.getByRole('button').textContent).toContain('GPT-6.2-Sol');
-		expect(select).not.toHaveBeenCalled();
+		expect(onChange).not.toHaveBeenCalled();
 	});
 
 	it('searches catalog choices and sends the selected provider/model to its owner', async () => {
-		const select = vi.fn();
+		const onChange = vi.fn();
 		render(
 			<ModelPicker
-				provider="custom"
-				model="saved-model"
-				onSelect={select}
+				value={{ provider: 'custom', model: 'saved-model' }}
+				onChange={onChange}
 				label="Choose model"
 			/>,
 		);
@@ -237,10 +244,10 @@ describe('controlled model picker', () => {
 			target: { value: 'gpt-6.2-sol' },
 		});
 		fireEvent.click(await screen.findByRole('option', { name: 'GPT-6.2-Sol' }));
-		expect(select).toHaveBeenCalledExactlyOnceWith(
-			'openai-codex',
-			'gpt-6.2-sol',
-		);
+		expect(onChange).toHaveBeenCalledExactlyOnceWith({
+			provider: 'openai-codex',
+			model: 'gpt-6.2-sol',
+		});
 		expect(screen.queryByPlaceholderText('Search models...')).toBeNull();
 	});
 });

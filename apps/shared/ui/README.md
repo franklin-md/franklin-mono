@@ -155,54 +155,77 @@ The component composes the existing [Tooltip](https://www.radix-ui.com/primitive
 
 The group does not intercept window-level keyboard events. Hosts must isolate editor hotkeys at their integration boundary. Popover wrappers must let Tab and Shift+Tab reach the controls so roving focus can move out of the group.
 
+## Icon grid and color swatches
+
+`IconGrid` and `ColorSwatches` are single-field pickers. Each is controlled through `value` and `onChange(value)` and owns no form state, so it binds to `useState`, a store or a form library field. Compose them in the caller's own popover, dropdown or inline surface:
+
+```tsx
+<PopoverContent className="flex w-max flex-col overflow-hidden">
+	<IconGrid
+		icons={icons}
+		value={icon}
+		renderIcon={HostIcon}
+		className={colorClassName}
+		onChange={(id) => {
+			setIcon(id);
+			setOpen(false);
+		}}
+	/>
+	<ColorSwatches options={colors} value={color} onChange={setColor} />
+</PopoverContent>
+```
+
+Hosts own the icon source. `icons` lists `{ id, label, keywords? }`, and `renderIcon` draws an ID with a `className`. This keeps large registries, such as Obsidian's, out of this package. `className` applies text-color utilities to the whole grid, for example to preview a separately chosen color.
+
+Every search term must match an icon's ID, label or keyword; leading matches rank first. Icons sit in rows of eight following the [grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/), using `useGridNavigation` from `@franklin/react`. The grid is one tab stop: arrow keys move focus between icons, Home and End move to the ends of the row, and Ctrl or Cmd with Home and End move to the first or last icon. ArrowDown or Tab from search enters the grid on the active icon, which starts on the current icon and moves to the first result while typing. ArrowUp from the top row returns to search. Enter in search, Enter or Space on an icon, or a click calls `onChange`; closing a surrounding popover is the caller's choice. The search input is the first focusable control, so Radix Popover focuses it on open when the grid comes first.
+
+Only rows in view render, using [TanStack Virtual](https://tanstack.com/virtual/latest), so host registries of about 2,000 icons open quickly. The active row also stays rendered, so focus survives scrolling it out of view, and moving to an icon that is not rendered scrolls its row in first. Rows carry `aria-rowindex` and the grid `aria-rowcount`, so assistive technology still hears each icon's position. The grid keeps a fixed height, as does its empty state, so a surrounding popover keeps its size, and the side Radix chose, while search narrows the results.
+
+`ColorSwatches` composes the `RadioGroup` primitive, a [Radix Radio Group](https://www.radix-ui.com/primitives/docs/components/radio-group) whose items are pills rather than shadcn's circles. The group is one tab stop, and arrow keys move and select. Each option supplies complete `colorClassName` text-color utilities, and swatches draw with `currentColor`. `label` names the group and defaults to "Color".
+
 ## Shared prompt controls
 
 `PromptSurface`, `PromptFooter`, `PromptFooterControls`, and `PromptSubmitButton` compose the same prompt appearance around host-owned input and submission behavior. `PromptContainer` adds chat's outer spacing; `PromptSurface` can also style an existing form with `asChild`.
 
-`ModelPicker` is a prebuilt recipe with caller-owned model and optional effort state. It does not read or change an active agent:
+`ModelPicker` is a prebuilt recipe for the model and effort composition that Inbox, Quick Edit and chat share. The caller owns both values; the recipe owns only its popover's open state and does not read or change an active agent:
 
 ```tsx
 <ModelPicker
-	provider={provider}
-	model={model}
-	onSelect={onSelectModel}
-	effort={{ level, levels, onChange: onChangeReasoning }}
+	value={{ provider, model }}
+	onChange={setModel}
+	effort={{ value: level, levels, onChange: setLevel }}
 />
 ```
 
-Omit `effort` for a model-only picker. The effort row stays below the scrolling model list and is not filtered by search. Its inline radio choices use a pill to mark the current level; selecting one keeps the picker open. Native radio-group keyboard navigation supports arrow keys and Space. Choices scroll horizontally when needed, revealing the selected level on reopen or external changes. Escape closes the popover and returns focus to the trigger. Each caller supplies its available levels; the UI does not infer model capabilities or change reasoning when selecting a model.
+Omit `effort` for a model-only picker. The effort row stays below the scrolling model list and is not filtered by search; selecting a level keeps the picker open, and selecting a model closes it. All six `THINKING_LEVELS` fit on one row at the default popover width; choices wrap onto further rows when the popover is narrower, so every level stays visible. Escape closes the popover and returns focus to the trigger. Each caller supplies its available levels; the UI does not infer model capabilities or change reasoning when selecting a model. Model-aware level filtering is deferred under `franklin-drf`.
 
-The default trigger shows the model followed by the compact effort label in muted text at the same font size. The model name truncates before the effort label. Its tooltip and accessible description retain the full level name. Omitting `effort` removes both the inline selector and the trigger's effort summary.
+The default trigger shows the model followed by the compact effort label in muted text at the same font size. The model name truncates before the effort label. Its tooltip and accessible description retain the full level name. Omitting `effort` removes both the inline selector and the trigger's effort summary. Models absent from the catalog retain their saved identity in the trigger.
 
-For custom compositions, import these parts from `@franklin/ui`:
+`ModelList` and `EffortChoice` are single-field pickers, like `IconGrid` and `ColorSwatches`. Each is controlled through `value` and `onChange(value)` and owns no form state. For other compositions, put them in your own popover or surface:
 
 ```tsx
-<ModelPickerRoot
-	catalog={catalog}
-	provider={provider}
-	model={model}
-	onSelect={onSelectModel}
->
-	<ModelPickerTrigger effort={level} />
-	<ModelPickerContent>
-		<ModelPickerModels>
-			<ModelPickerSearch />
-			<ModelPickerList renderProviderAction={renderProviderAction} />
-		</ModelPickerModels>
-		<ModelPickerFooter>
-			<ModelPickerEffort
-				level={level}
-				levels={levels}
-				onChange={onChangeReasoning}
-			/>
-		</ModelPickerFooter>
-	</ModelPickerContent>
-</ModelPickerRoot>
+<Popover open={open} onOpenChange={setOpen}>
+	<PopoverTrigger asChild>
+		<ModelTrigger value={model} catalog={catalog} effort={level} />
+	</PopoverTrigger>
+	<PopoverContent className="flex w-80 flex-col overflow-hidden p-0">
+		<ModelList
+			catalog={catalog}
+			value={model}
+			renderProviderAction={renderProviderAction}
+			onChange={(next) => {
+				setModel(next);
+				setOpen(false);
+			}}
+		/>
+		<EffortChoice value={level} levels={levels} onChange={setLevel} />
+	</PopoverContent>
+</Popover>
 ```
 
-Remove `ModelPickerSearch` for an unfiltered list, or remove the footer for no effort control. Add other React controls to the footer as needed. The trigger supports `asChild` for a custom button. Models absent from the catalog retain their saved identity in the default trigger. The parts use the existing [Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover) and [cmdk](https://github.com/pacocoursey/cmdk) implementations for popup and command navigation; `@franklin/react` remains the headless hooks layer.
+`ModelList`'s value is one `ModelValue`, `{ provider, model }`, even where a store keeps the two keys separately. It searches and lists models with [cmdk](https://github.com/pacocoursey/cmdk). Its search input is the first focusable control, so [Radix Popover](https://www.radix-ui.com/primitives/docs/components/popover) focuses it on open. `EffortChoice` composes the `RadioGroup` primitive like `ColorSwatches`: the group is one tab stop, and arrow keys move and select. `ModelTrigger` is a plain button that summarizes a model and optional effort level; wrap it in `PopoverTrigger asChild`, or use your own button.
 
-The parts need no agent or application harness. `ModelPickerList` renders no authentication controls unless `renderProviderAction` is supplied. The prebuilt recipe defaults to `MODEL_CATALOG` and Franklin's authentication shortcuts, which use the host's harness and `AuthActionProvider`. Override `catalog` and `renderProviderAction` on the recipe for another host, or use `() => null` to omit authentication controls.
+The field pickers need no agent or application harness, and they take the catalog explicitly. `ModelList` renders no authentication controls unless `renderProviderAction` is supplied. The prebuilt recipe defaults to `MODEL_CATALOG` and Franklin's authentication shortcuts, which use the host's harness and `AuthActionProvider`. Override `catalog` and `renderProviderAction` on the recipe for another host, or use `() => null` to omit authentication controls.
 
 `MODEL_CATALOG` curates IDs, friendly labels, ordering and access groups. Its
 reasoning, context and price estimates come from the same local

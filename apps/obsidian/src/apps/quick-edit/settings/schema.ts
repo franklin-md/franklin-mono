@@ -1,30 +1,15 @@
-import { THINKING_LEVELS } from '@franklin/mini-acp';
+import { StoredThinkingLevel } from '@franklin/agent';
 import { z } from 'zod';
-import { presetIcons } from '../presets/icons.js';
-import { presetColors } from '../presets/colors.js';
 import { createDefaultPresets } from '../presets/defaults.js';
+import { presetListSchema } from '../presets/list-schema.js';
+import { quickEditPresetSchema } from '../presets/schema.js';
 
 export const quickEditSettingsSchema = z.object({
 	provider: z.string().min(1),
 	model: z.string().min(1),
-	reasoning: z.enum(THINKING_LEVELS),
+	reasoning: StoredThinkingLevel,
 	instructions: z.string(),
-	presets: z
-		.array(
-			z.object({
-				id: z.string().min(1),
-				name: z.string().trim().min(1),
-				prompt: z.string().trim().min(1),
-				icon: z.enum(Object.keys(presetIcons) as (keyof typeof presetIcons)[]),
-				color: z.enum(
-					Object.keys(presetColors) as (keyof typeof presetColors)[],
-				),
-			}),
-		)
-		.refine(
-			(presets) =>
-				new Set(presets.map((preset) => preset.id)).size === presets.length,
-			'Preset IDs must be unique',
-		)
-		.default(createDefaultPresets),
+	presets: presetListSchema(quickEditPresetSchema).default(
+		createDefaultPresets,
+	),
 });

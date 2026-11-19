@@ -59,7 +59,6 @@ describe('study inbox reasoning setting', () => {
 		expect(input.value).toBe('medium');
 		expect(Array.from(input.options, (option) => option.value)).toEqual([
 			'off',
-			'minimal',
 			'low',
 			'medium',
 			'high',
