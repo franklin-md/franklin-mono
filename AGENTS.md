@@ -66,6 +66,11 @@ Franklin is an extension runtime for minimal agent loops.
 
 ## Workflow Conventions
 
+### Branch and Worktree Bases
+
+- Use the current `origin/main` as the base for independent Franklin branches and fresh worktrees. If the work builds on an in-flight branch, use that dependency as the base and check that it includes the upstream changes the task needs.
+- Before creating a GitButler parallel branch, compare the recorded workspace base with the intended target and update the workspace if needed. Specify the starting revision when creating a worktree. Verify branch ancestry and diff against the intended base so changes already on `main` stay out of the branch review.
+
 ### Project Management:
 
 - **Use of Linear**: We use linear to keep track of tickets.
