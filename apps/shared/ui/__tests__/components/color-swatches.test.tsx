@@ -30,9 +30,9 @@ it('selects a color from a labelled radio group', () => {
 	}
 	render(<Harness />);
 	expect(screen.getByRole('radiogroup', { name: 'Accent' })).toBeTruthy();
-	const green = screen.getByRole<HTMLInputElement>('radio', { name: 'Green' });
-	expect(green.checked).toBe(false);
+	const green = screen.getByRole('radio', { name: 'Green' });
+	expect(green.getAttribute('aria-checked')).toBe('false');
 	fireEvent.click(green);
 	expect(onChange).toHaveBeenCalledExactlyOnceWith('green');
-	expect(green.checked).toBe(true);
+	expect(green.getAttribute('aria-checked')).toBe('true');
 });

@@ -179,7 +179,7 @@ Hosts own the icon source. `icons` lists `{ id, label, keywords? }`, and `render
 
 Every search term must match an icon's ID, label or keyword; leading matches rank first. Arrow keys move the active cell in a fixed 8-column grid while focus stays in the search input, following the [combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/). Enter or a click calls `onChange`; closing a surrounding popover is the caller's choice. Home, End and text editing stay with the input. The search input is the grid's first focusable control, so Radix Popover focuses it on open when the grid comes first.
 
-`ColorSwatches` renders native radios with arrow-key navigation. Each option supplies complete `colorClassName` text-color utilities, and swatches draw with `currentColor`. `label` names the group and defaults to "Color".
+`ColorSwatches` composes the `RadioGroup` primitive, a [Radix Radio Group](https://www.radix-ui.com/primitives/docs/components/radio-group) whose items are pills rather than shadcn's circles. The group is one tab stop, and arrow keys move and select. Each option supplies complete `colorClassName` text-color utilities, and swatches draw with `currentColor`. `label` names the group and defaults to "Color".
 
 ## Shared prompt controls
 
