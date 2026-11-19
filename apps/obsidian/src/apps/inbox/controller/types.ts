@@ -1,4 +1,4 @@
-import type { ThinkingLevel } from '@franklin/mini-acp';
+import type { ModelSelection } from '../../../shared/model/selection.js';
 import type { SingleFilePersister } from '@franklin/lib';
 import type { StudyQuestion } from '../types.js';
 import type { AnswerDetail } from '../answer/types.js';
@@ -9,12 +9,6 @@ import type {
 	InboxAction,
 	InboxActionRun,
 } from '../actions/types.js';
-
-export type ModelSelection = {
-	provider: string;
-	model: string;
-	reasoning: ThinkingLevel;
-};
 
 export type InboxQuestion = StudyQuestion &
 	ModelSelection & {

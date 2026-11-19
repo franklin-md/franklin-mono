@@ -1,4 +1,5 @@
-import type { InboxQuestion, ModelSelection } from '../controller/types.js';
+import type { ModelSelection } from '../../../shared/model/selection.js';
+import type { InboxQuestion } from '../controller/types.js';
 import type { BranchContext } from '../hierarchy/types.js';
 import type { FailedState } from '../types.js';
 

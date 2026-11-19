@@ -1,5 +1,5 @@
 import type { AgentTurnEnd, FranklinExtension } from '@franklin/agent';
-import type { ModelSelection } from '../controller/types.js';
+import type { ModelSelection } from '../../../shared/model/selection.js';
 import type { InboxRunnerOptions } from './types.js';
 
 type Request = {

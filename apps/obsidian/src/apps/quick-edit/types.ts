@@ -1,5 +1,5 @@
 import type { AgentStopCode } from '@franklin/agent';
-import type { ThinkingLevel } from '@franklin/mini-acp';
+import type { ModelSelection } from '../../shared/model/selection.js';
 import type { PromptPreset } from '../../shared/preset/types.js';
 
 export type QuickEditState = {
@@ -15,10 +15,7 @@ export type QuickEditState = {
 	stopCode?: AgentStopCode;
 };
 
-export type QuickEditSettings = {
-	provider: string;
-	model: string;
-	reasoning: ThinkingLevel;
+export type QuickEditSettings = ModelSelection & {
 	instructions: string;
 	presets: PromptPreset[];
 };

@@ -1,5 +1,6 @@
 import { useState, useSyncExternalStore } from 'react';
 import { PresetList } from '../../../shared/preset/settings/list.js';
+import { ModelSetting } from '../../../shared/ui/setting/model.js';
 import { SettingError } from '../../../shared/ui/setting/error.js';
 import { SettingGroup } from '../../../shared/ui/setting/group.js';
 import { SettingItem } from '../../../shared/ui/setting/item.js';
@@ -7,7 +8,6 @@ import { quickEditError } from '../error.js';
 import type { QuickEditPreferences } from './store.js';
 import type { QuickEditSettings } from '../types.js';
 import { QuickEditInstructionsSetting } from './instructions.js';
-import { QuickEditModelSetting } from './model.js';
 import { QuickEditShortcutSetting } from './shortcut.js';
 
 type Props = {
@@ -44,11 +44,13 @@ export function QuickEditSettingsPanel({
 				title="Quick edit"
 				description="Request edits directly inside a note. Changes use the file's existing review controls."
 			>
-				<QuickEditModelSetting
-					settings={settings}
+				<ModelSetting
+					label="Quick edit model"
+					description="Used for new quick edits."
+					value={settings}
 					pending={pending}
 					active={active}
-					onSave={save}
+					onChange={(update) => void save(update)}
 				/>
 				<QuickEditInstructionsSetting
 					initial={settings.instructions}
