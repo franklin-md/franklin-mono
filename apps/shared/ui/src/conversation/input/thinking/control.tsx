@@ -13,7 +13,7 @@ type LevelMeta = {
 	dots: number;
 };
 
-const LEVEL_META: Partial<Record<ThinkingLevel, LevelMeta>> = {
+const LEVEL_META: Record<ThinkingLevel, LevelMeta> = {
 	off: {
 		label: 'Off',
 		color: 'text-muted-foreground/40',
@@ -52,13 +52,6 @@ const LEVEL_META: Partial<Record<ThinkingLevel, LevelMeta>> = {
 	},
 };
 
-const DEFAULT_META: LevelMeta = {
-	label: '?',
-	color: 'text-muted-foreground',
-	dotColor: 'bg-muted-foreground',
-	dots: 0,
-};
-
 const DOT_COUNT = 5;
 
 // ---------------------------------------------------------------------------
@@ -72,7 +65,7 @@ type Props = {
 };
 
 export function ThinkingControl({ level, levels, onChange }: Props) {
-	const meta = LEVEL_META[level] ?? DEFAULT_META;
+	const meta = LEVEL_META[level];
 
 	return (
 		<button
