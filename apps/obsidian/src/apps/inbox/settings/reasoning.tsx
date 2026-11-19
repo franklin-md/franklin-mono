@@ -1,27 +1,18 @@
 import { useId, useState, useSyncExternalStore } from 'react';
 import { THINKING_LEVELS } from '@franklin/mini-acp';
-import { Button } from '@franklin/ui';
+import { Button, EFFORT_LABELS } from '@franklin/ui';
 import type { InboxController } from '../controller/index.js';
-import type { ModelSelection } from '../controller/types.js';
 import { errorMessage } from '../controller/error.js';
 import { questionSchema } from '../controller/question-schema.js';
 import { SettingControl } from '../../../shared/ui/setting/control.js';
 import { SettingDescription } from '../../../shared/ui/setting/description.js';
+import { SettingError } from '../../../shared/ui/setting/error.js';
 import { SettingInfo } from '../../../shared/ui/setting/info.js';
 import { SettingItem } from '../../../shared/ui/setting/item.js';
 import { SettingName } from '../../../shared/ui/setting/name.js';
 import { SettingSelect } from '../../../shared/ui/setting/select.js';
 
 type Props = { inbox: InboxController };
-
-const labels = {
-	off: 'Off',
-	low: 'Low',
-	medium: 'Medium',
-	high: 'High',
-	xhigh: 'Extra high',
-	max: 'Max',
-} satisfies Record<ModelSelection['reasoning'], string>;
 
 export function InboxReasoningSetting({ inbox }: Props) {
 	const id = useId();
@@ -58,9 +49,7 @@ export function InboxReasoningSetting({ inbox }: Props) {
 				</SettingDescription>
 				{error && (
 					<>
-						<p role="alert" className="text-destructive">
-							{error}
-						</p>
+						<SettingError>{error}</SettingError>
 						<Button
 							type="button"
 							size="sm"
@@ -83,7 +72,7 @@ export function InboxReasoningSetting({ inbox }: Props) {
 				>
 					{THINKING_LEVELS.map((value) => (
 						<option key={value} value={value}>
-							{labels[value]}
+							{EFFORT_LABELS[value].label}
 						</option>
 					))}
 				</SettingSelect>

@@ -1,17 +1,13 @@
 import { useRef, useState, useSyncExternalStore } from 'react';
-import { ArrowDown, ArrowUp, Pencil, Trash2 } from 'lucide-react';
-import { Button, IconButton } from '@franklin/ui';
+import { Button } from '@franklin/ui';
 import type { QuickEditPreferences } from '../store.js';
 import type { QuickEditPreset } from '../../presets/types.js';
-import { presetIcons } from '../../presets/icons.js';
-import { presetColors } from '../../presets/colors.js';
 import { quickEditError } from '../../error.js';
-import { SettingControl } from '../../../../shared/ui/setting/control.js';
+import { SettingError } from '../../../../shared/ui/setting/error.js';
 import { SettingGroup } from '../../../../shared/ui/setting/group.js';
-import { SettingInfo } from '../../../../shared/ui/setting/info.js';
 import { SettingItem } from '../../../../shared/ui/setting/item.js';
-import { SettingName } from '../../../../shared/ui/setting/name.js';
 import { PresetEditor } from './editor.js';
+import { PresetRow } from './row.js';
 
 type Props = { preferences: QuickEditPreferences };
 
@@ -57,62 +53,39 @@ export function PresetSettings({ preferences }: Props) {
 			return next;
 		});
 	}
+	function remove(preset: QuickEditPreset) {
+		void apply((current) =>
+			current.filter((item) => item.id !== preset.id),
+		).then((saved) => {
+			if (saved && editing?.id === preset.id) setEditing(undefined);
+		});
+	}
+	function save(preset: QuickEditPreset) {
+		void apply((current) =>
+			current.some((item) => item.id === preset.id)
+				? current.map((item) => (item.id === preset.id ? preset : item))
+				: [...current, preset],
+		).then((saved) => {
+			if (saved) setEditing(undefined);
+		});
+	}
 	return (
 		<SettingGroup
 			title="Presets"
 			description="Run a saved prompt from Franklin: Quick edit presets. Selected text or the current row supplies context."
 		>
-			{presets.map((preset, index) => {
-				const Icon = presetIcons[preset.icon].icon;
-				return (
-					<SettingItem key={preset.id}>
-						<SettingInfo>
-							<SettingName>
-								<span className="inline-flex min-w-0 items-center gap-2">
-									<Icon
-										aria-hidden="true"
-										className={`h-4 w-4 shrink-0 ${presetColors[preset.color].colorClassName}`}
-									/>
-									<span className="truncate">{preset.name}</span>
-								</span>
-							</SettingName>
-						</SettingInfo>
-						<SettingControl>
-							<IconButton
-								icon={ArrowUp}
-								aria-label={`Move ${preset.name} up`}
-								disabled={pending || index === 0}
-								onClick={() => move(preset.id, -1)}
-							/>
-							<IconButton
-								icon={ArrowDown}
-								aria-label={`Move ${preset.name} down`}
-								disabled={pending || index === presets.length - 1}
-								onClick={() => move(preset.id, 1)}
-							/>
-							<IconButton
-								icon={Pencil}
-								aria-label={`Edit ${preset.name}`}
-								disabled={pending}
-								onClick={() => setEditing(preset)}
-							/>
-							<IconButton
-								icon={Trash2}
-								aria-label={`Delete ${preset.name}`}
-								disabled={pending}
-								onClick={() => {
-									void apply((current) =>
-										current.filter((item) => item.id !== preset.id),
-									).then((saved) => {
-										if (saved && editing?.id === preset.id)
-											setEditing(undefined);
-									});
-								}}
-							/>
-						</SettingControl>
-					</SettingItem>
-				);
-			})}
+			{presets.map((preset, index) => (
+				<PresetRow
+					key={preset.id}
+					preset={preset}
+					pending={pending}
+					first={index === 0}
+					last={index === presets.length - 1}
+					onMove={(offset) => move(preset.id, offset)}
+					onEdit={() => setEditing(preset)}
+					onRemove={() => remove(preset)}
+				/>
+			))}
 			<SettingItem layout="stacked">
 				{editing ? (
 					<PresetEditor
@@ -120,17 +93,7 @@ export function PresetSettings({ preferences }: Props) {
 						preset={editing}
 						pending={pending}
 						onCancel={() => setEditing(undefined)}
-						onSave={(preset) => {
-							void apply((current) =>
-								current.some((item) => item.id === preset.id)
-									? current.map((item) =>
-											item.id === preset.id ? preset : item,
-										)
-									: [...current, preset],
-							).then((saved) => {
-								if (saved) setEditing(undefined);
-							});
-						}}
+						onSave={save}
 					/>
 				) : (
 					<Button
@@ -155,9 +118,7 @@ export function PresetSettings({ preferences }: Props) {
 			</SettingItem>
 			{error && (
 				<SettingItem>
-					<p role="alert" className="text-destructive">
-						{error}
-					</p>
+					<SettingError>{error}</SettingError>
 				</SettingItem>
 			)}
 		</SettingGroup>

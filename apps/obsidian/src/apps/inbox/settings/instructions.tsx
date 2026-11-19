@@ -4,6 +4,7 @@ import type { InboxController } from '../controller/index.js';
 import { DEFAULT_ANSWER_INSTRUCTIONS } from '../answer-instructions.js';
 import { errorMessage } from '../controller/error.js';
 import { SettingDescription } from '../../../shared/ui/setting/description.js';
+import { SettingError } from '../../../shared/ui/setting/error.js';
 import { SettingInfo } from '../../../shared/ui/setting/info.js';
 import { SettingItem } from '../../../shared/ui/setting/item.js';
 import { SettingName } from '../../../shared/ui/setting/name.js';
@@ -71,11 +72,7 @@ export function InboxInstructionsSetting({ inbox }: Props) {
 						Reset to default
 					</Button>
 				</div>
-				{error && (
-					<p role="alert" className="text-destructive">
-						{error}
-					</p>
-				)}
+				{error && <SettingError>{error}</SettingError>}
 			</form>
 		</SettingItem>
 	);
