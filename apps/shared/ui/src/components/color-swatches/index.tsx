@@ -1,8 +1,8 @@
 import { useId } from 'react';
 import { cn } from '../../lib/cn.js';
+import { RadioGroup, RadioGroupItem } from '../../primitives/radio-group.js';
 import type { ColorSwatchesProps } from './types.js';
 
-// Native radios provide arrow-key navigation, like ModelPickerEffort.
 export function ColorSwatches({
 	options,
 	value,
@@ -15,39 +15,32 @@ export function ColorSwatches({
 			<span id={id} className="shrink-0 text-xs text-muted-foreground">
 				{label}
 			</span>
-			<div
-				role="radiogroup"
+			<RadioGroup
 				aria-labelledby={id}
+				value={value}
+				onValueChange={onChange}
 				className="flex min-w-0 flex-1 flex-wrap items-center gap-0.5"
 			>
 				{options.map((option) => (
-					<label
+					<RadioGroupItem
 						key={option.id}
+						value={option.id}
+						aria-label={option.label}
 						title={option.label}
+						// Tailwind emits data-* variants after focus-visible, so a plain
+						// checked ring color would hide the item's focus ring.
 						className={cn(
-							'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-inset has-[:focus-visible]:ring-ring',
-							option.id === value
-								? 'bg-muted ring-1 ring-inset ring-border'
-								: 'hover:bg-accent',
+							'size-6 data-[state=checked]:ring-1 data-[state=checked]:ring-inset data-[state=checked]:not-focus-visible:ring-border',
 							option.colorClassName,
 						)}
 					>
-						<input
-							type="radio"
-							name={id}
-							value={option.id}
-							checked={option.id === value}
-							aria-label={option.label}
-							className="sr-only"
-							onChange={() => onChange(option.id)}
-						/>
 						<span
 							aria-hidden="true"
 							className="size-3.5 rounded-full bg-current"
 						/>
-					</label>
+					</RadioGroupItem>
 				))}
-			</div>
+			</RadioGroup>
 		</div>
 	);
 }
