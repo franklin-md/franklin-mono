@@ -12,12 +12,40 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { IconGrid } from '../../src/components/icon-grid/index.js';
 import type { IconRenderer } from '../../src/components/icon-grid/types.js';
 
-// jsdom does not implement scrollIntoView.
-const scrollIntoView = vi.fn();
-HTMLElement.prototype.scrollIntoView = scrollIntoView;
-
-beforeEach(() => scrollIntoView.mockClear());
-afterEach(cleanup);
+// jsdom has no layout. Give the virtualizer a 256px viewport, 34px rows and
+// the scroll height of its sizing element, and let scrollTo move the offset it
+// reads. Browsers fire scroll events asynchronously, so the stub does too.
+const offsets = new WeakMap<Element, number>();
+beforeEach(() => {
+	vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(256);
+	vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(34);
+	vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockImplementation(
+		function (this: Element) {
+			const content = this.firstElementChild;
+			return content instanceof HTMLElement
+				? Number.parseFloat(content.style.height) || 0
+				: 0;
+		},
+	);
+	vi.spyOn(Element.prototype, 'scrollTop', 'get').mockImplementation(function (
+		this: Element,
+	) {
+		return offsets.get(this) ?? 0;
+	});
+	Element.prototype.scrollTo = function (
+		this: Element,
+		options?: ScrollToOptions | number,
+	) {
+		if (typeof options !== 'object') return;
+		offsets.set(this, options.top ?? 0);
+		setTimeout(() => this.dispatchEvent(new Event('scroll')));
+	} as Element['scrollTo'];
+});
+afterEach(() => {
+	cleanup();
+	vi.restoreAllMocks();
+	Reflect.deleteProperty(Element.prototype, 'scrollTo');
+});
 
 // Ten icons fill one 8-column row and two cells of the next.
 const icons = [
@@ -37,13 +65,13 @@ const Glyph: IconRenderer = ({ className }) => (
 	<svg aria-hidden="true" className={className} />
 );
 
-function renderGrid() {
+function renderGrid(options = icons, initial = 'link') {
 	const onChange = vi.fn();
 	function Harness() {
-		const [value, setValue] = useState('link');
+		const [value, setValue] = useState(initial);
 		return (
 			<IconGrid
-				icons={icons}
+				icons={options}
 				value={value}
 				renderIcon={Glyph}
 				className="text-green"
@@ -74,9 +102,9 @@ it('starts on the current icon, in rows of eight, and tints the grid', () => {
 	renderGrid();
 	expect(tabStops()).toEqual(['Link']);
 	expect(cell('Link').getAttribute('aria-selected')).toBe('true');
-	expect(scrollIntoView.mock.contexts.at(-1)).toBe(cell('Link'));
 	const grid = screen.getByRole('grid', { name: 'Icons' });
 	expect(grid.className).toContain('text-green');
+	expect(grid.getAttribute('aria-rowcount')).toBe('2');
 	expect(screen.getAllByRole('row').map((row) => row.children.length)).toEqual([
 		8, 2,
 	]);
@@ -144,4 +172,34 @@ it('reports when no icon matches', () => {
 	expect(screen.queryAllByRole('gridcell')).toEqual([]);
 	expect(fireEvent.keyDown(search, { key: 'Enter' })).toBe(true);
 	expect(fireEvent.keyDown(search, { key: 'ArrowDown' })).toBe(true);
+});
+
+it('renders only rows in view and keeps the active row while scrolling', async () => {
+	// 25 rows of eight; the current icon sits in the last row.
+	const many = Array.from({ length: 200 }, (_, n) => ({
+		id: `icon-${n}`,
+		label: `Icon ${n}`,
+	}));
+	renderGrid(many, 'icon-199');
+	const grid = screen.getByRole('grid', { name: 'Icons' });
+	expect(grid.getAttribute('aria-rowcount')).toBe('25');
+	// Opening scrolls to the current icon's row.
+	await vi.waitFor(() =>
+		expect(screen.queryByRole('gridcell', { name: 'Icon 0' })).toBe(null),
+	);
+	expect(tabStops()).toEqual(['Icon 199']);
+	expect(screen.getAllByRole('row').length).toBeLessThan(15);
+
+	// Ctrl+Home reaches an unrendered icon: its row scrolls in, then it focuses.
+	act(() => cell('Icon 199').focus());
+	fireEvent.keyDown(cell('Icon 199'), { key: 'Home', ctrlKey: true });
+	await vi.waitFor(() => expect(document.activeElement).toBe(cell('Icon 0')));
+	expect(tabStops()).toEqual(['Icon 0']);
+
+	// Scrolling away by hand keeps the focused, active row rendered.
+	act(() => grid.scrollTo({ top: 20 * 34 }));
+	await vi.waitFor(() =>
+		expect(screen.queryByRole('gridcell', { name: 'Icon 160' })).not.toBe(null),
+	);
+	expect(document.activeElement).toBe(cell('Icon 0'));
 });

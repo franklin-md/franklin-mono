@@ -40,6 +40,7 @@
 		"@radix-ui/react-tooltip": "1.2.8",
 		"@streamdown/code": "1.1.1",
 		"@streamdown/math": "1.0.2",
+		"@tanstack/react-virtual": "3.14.26",
 		"@tiptap/core": "3.23.6",
 		"@tiptap/extension-document": "3.23.6",
 		"@tiptap/extension-hard-break": "3.23.6",
