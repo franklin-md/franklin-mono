@@ -109,6 +109,34 @@ shared prose/code styles without the third-party markdown layer. These utility
 files do not scan `@franklin/ui`; `franklin-core.css` is the shared entry point
 that owns package `@source` scanning.
 
+## Conversation Activity
+
+Conversation views collapse intermediate activity by default. The current action
+slides into one row while running; completed turns show thinking/tool counts and
+elapsed time. Expand the row to inspect the original sequence. Trailing answer
+text and turn errors remain visible. Explicitly opened activity stays open as
+the turn progresses. Motion respects `prefers-reduced-motion`.
+Completed summaries include up to three distinct icons from visible tool calls,
+using the registry's optional `icon` renderer and a generic tool icon as fallback.
+
+Pass `toolRegistry` to `ConversationView` or `ConversationTranscript` to share
+host-specific tool summaries between the activity row and its expanded details.
+The headless `ConversationComponents.Activity` slot can replace the grouping UI.
+Text before the last thinking/tool block is treated as progress; trailing text
+is treated as the answer because the protocol does not distinguish the two.
+
+`ActivityDisclosure` is also exported for other workflows. It accepts `summary`,
+an optional `summaryPrefix`, `current: { id, content }`, `running`, `errors`, `meta`, and children
+for the expanded details. Keep the current action's ID stable while its content
+streams; change it when a new action starts to trigger the vertical transition.
+
+Completed chat footers show elapsed time and total model cost in US cents,
+including model calls made during tool continuations. Costs use at most one
+decimal place (for example, `1.4¢` or `2¢`); an explicitly reported zero shows
+`0¢` and other values below 0.1 cents show `< 0.1¢`. Totals use provider billing when
+available, otherwise catalog estimates. Unknown costs and their separator are hidden.
+Hover or focus elapsed time for token counts.
+
 ## Outlined controls
 
 `Button`'s `outline` variant uses an inset ring with the existing input token. This keeps the outline visible without changing the control's layout size. Consumers can use the variant directly instead of combining border removal and ring overrides.
@@ -176,7 +204,18 @@ Remove `ModelPickerSearch` for an unfiltered list, or remove the footer for no e
 
 The parts need no agent or application harness. `ModelPickerList` renders no authentication controls unless `renderProviderAction` is supplied. The prebuilt recipe defaults to `MODEL_CATALOG` and Franklin's authentication shortcuts, which use the host's harness and `AuthActionProvider`. Override `catalog` and `renderProviderAction` on the recipe for another host, or use `() => null` to omit authentication controls.
 
-`MODEL_CATALOG` keeps the existing curated model metadata and catalog shape. `ModelSelector` binds the recipe to chat's existing model and thinking hooks. Standalone `ThinkingControl` and `ThinkingToggle` remain available for other compositions. Reusing the prompt surface does not require TipTap or mentions.
+`MODEL_CATALOG` curates IDs, friendly labels, ordering and access groups. Its
+reasoning, context and price estimates come from the same local
+`@franklin/mini-acp/models` resolver used for requests. Unresolved curated entries
+are omitted; saved IDs and caller-supplied catalogs retain their existing behavior.
+A direct data-only import of this catalog now includes Pi's bundled registry;
+the full picker already depends on the SDK.
+
+`ModelSelector` binds the recipe to chat's existing model and thinking hooks.
+Inbox supplies its persisted preferences and all supported reasoning levels, and
+queues submissions independently of chat. Standalone `ThinkingControl` and
+`ThinkingToggle` remain available for other compositions. Reusing the prompt
+surface does not require TipTap or mentions.
 
 ## Composing a compact popover
 
