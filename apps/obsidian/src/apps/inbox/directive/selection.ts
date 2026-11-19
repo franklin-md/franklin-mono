@@ -1,6 +1,9 @@
 import type { DirectiveDefinition } from '../../../shared/directives/types.js';
 import type { DirectiveInstance } from '../../../shared/directives/instance.js';
-import type { DirectiveWriteTarget } from '../../../shared/directives/scribe/types.js';
+import type {
+	DirectiveLocation,
+	DirectiveWriteTarget,
+} from '../../../shared/directives/scribe/types.js';
 import { DirectiveScribe } from '../../../shared/directives/scribe/operations.js';
 import type { InboxController } from '../controller/index.js';
 import { errorMessage } from '../controller/error.js';
@@ -20,8 +23,7 @@ export class InboxSelection {
 	private questionId?: string;
 	private needsSave = false;
 	private instance?: DirectiveInstance<InboxQuestionDirectiveState>;
-	private pending?: Promise<void>;
-	private done = false;
+	private submission?: Promise<DirectiveLocation>;
 	private disposed = false;
 
 	constructor(private readonly options: Options) {}
@@ -32,17 +34,16 @@ export class InboxSelection {
 		return this.options.target;
 	}
 
-	submit(): Promise<void> {
+	submit(): Promise<DirectiveLocation> {
 		if (this.disposed) return Promise.reject(new Error('Capture is closed'));
-		if (this.done) return Promise.resolve();
-		if (this.pending) return this.pending;
-		const pending = this.run();
-		this.pending = pending;
-		const clear = () => {
-			this.pending = undefined;
-		};
-		void pending.then(clear, clear);
-		return pending;
+		if (this.submission) return this.submission;
+		const submission = this.run();
+		this.submission = submission;
+		// Keep a successful write so a repeat submit cannot insert a second pill.
+		void submission.catch(() => {
+			this.submission = undefined;
+		});
+		return submission;
 	}
 
 	dispose(): void {
@@ -50,7 +51,7 @@ export class InboxSelection {
 		this.target.dispose();
 	}
 
-	private async run(): Promise<void> {
+	private async run(): Promise<DirectiveLocation> {
 		const { inbox, definition, target } = this.options;
 		try {
 			if (!this.questionId) {
@@ -65,8 +66,7 @@ export class InboxSelection {
 				questionId,
 			});
 			this.assertQuestion();
-			await new DirectiveScribe(this.instance).write(target);
-			this.done = true;
+			return await new DirectiveScribe(this.instance).write(target);
 		} catch (error) {
 			const status =
 				this.questionId && !this.needsSave

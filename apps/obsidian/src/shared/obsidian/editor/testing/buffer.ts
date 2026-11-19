@@ -26,6 +26,8 @@ export function createTestBuffer(
 			const range = state().selection.main;
 			return offsetToPos(which ? range[which] : range.head);
 		},
+		setCursor: (position: EditorPosition) =>
+			dispatch({ selection: { anchor: posToOffset(position) } }),
 		setSelection: (from: EditorPosition, to = from) =>
 			dispatch({
 				selection: { anchor: posToOffset(from), head: posToOffset(to) },
