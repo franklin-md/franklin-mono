@@ -48,11 +48,15 @@ export type AnswerRequest = BranchContext & {
 		title?: string,
 		details?: AnswerDetail[],
 	) => Promise<void>;
+	onTrace?: (trace: unknown) => void;
 };
 
 export type InboxControllerOptions = {
 	persistence: SingleFilePersister<InboxDocument>;
 	defaults: ModelSelection;
+	// Development builds only: the agent inspect dump of each question's latest
+	// settled attempt, for the card inspect button. Held in memory, never saved.
+	traces?: Map<string, unknown>;
 	run: (request: AnswerRequest) => Promise<void>;
 	split?: (request: SplitRequest) => Promise<Extraction>;
 	runAction?: (request: ActionRequest) => Promise<string>;

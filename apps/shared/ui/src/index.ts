@@ -95,6 +95,10 @@ export type {
 // components (derived, application-specific)
 export { AutoGrowTextarea } from './components/auto-grow-textarea.js';
 export {
+	CopyDumpButton,
+	type CopyDumpButtonProps,
+} from './components/copy-dump-button.js';
+export {
 	InspectDumpButton,
 	type InspectDumpButtonProps,
 } from './components/inspect-dump-button.js';

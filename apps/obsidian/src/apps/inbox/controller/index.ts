@@ -25,6 +25,10 @@ import type {
 
 type AddOptions = { id?: string; parentId?: string; source?: QuestionSource };
 
+// Each trace holds a full transcript, so only the most recently settled
+// questions keep one.
+const MAX_TRACES = 20;
+
 export class InboxController {
 	readonly state: ReadonlyStore<InboxSnapshot>;
 	readonly groups: InboxGroups;
@@ -62,6 +66,10 @@ export class InboxController {
 			run: options.runAction,
 			onComplete: options.onActionComplete,
 		});
+	}
+
+	get traces(): ReadonlyMap<string, unknown> | undefined {
+		return this.options.traces;
 	}
 
 	static async create(
@@ -307,10 +315,12 @@ export class InboxController {
 				(question) => question.id === id,
 			);
 			if (!question || signal.aborted || this.closed) return;
+			const { traces } = this.options;
 			await this.options.run({
 				question,
 				...branchContext(question, snapshot),
 				signal,
+				onTrace: traces && ((trace) => keepTrace(traces, id, trace)),
 				submit: async (answer, title, details) => {
 					const current = this.store
 						.get()
@@ -364,5 +374,19 @@ export class InboxController {
 			});
 			await this.persist().catch(() => {});
 		}
+	}
+}
+
+function keepTrace(
+	traces: Map<string, unknown>,
+	questionId: string,
+	trace: unknown,
+): void {
+	// Re-inserting moves the question to the newest end of the eviction order.
+	traces.delete(questionId);
+	traces.set(questionId, trace);
+	for (const key of traces.keys()) {
+		if (traces.size <= MAX_TRACES) return;
+		traces.delete(key);
 	}
 }

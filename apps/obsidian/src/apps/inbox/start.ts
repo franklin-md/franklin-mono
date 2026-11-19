@@ -5,6 +5,7 @@ import { joinAbsolute } from '@franklin/lib';
 import type { Plugin } from 'obsidian';
 import { Notice } from 'obsidian';
 import { createDefaultObsidianFilesystemPermissions } from '../../shared/obsidian/filesystem/permissions.js';
+import { isDevBuild } from '../../dev/build.js';
 import { openInbox } from './lifetime.js';
 import type { InboxLifetime } from './lifetime.js';
 import { createInboxRunner } from './agent/run.js';
@@ -45,6 +46,7 @@ export function startInbox({
 	};
 	return openInbox(plugin.app, path, {
 		defaults: app.settings.get().defaultLLMConfig,
+		traces: isDevBuild ? new Map<string, unknown>() : undefined,
 		persistence: createInboxPersistence({
 			filesystem,
 			path,

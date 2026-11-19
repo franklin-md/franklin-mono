@@ -74,6 +74,7 @@ describe('inbox Franklin runtime', () => {
 				],
 			});
 			const input = request();
+			input.onTrace = vi.fn();
 			const finished = createInboxRunner(
 				createInboxTestEnvironment().runnerOptions(mock.connector, auth),
 			)(input).then(
@@ -85,10 +86,41 @@ describe('inbox Franklin runtime', () => {
 			expect(input.submit).not.toHaveBeenCalled();
 			expect(mock.calls().cancels).toBe(1);
 			expect(mock.calls().disposes).toBe(1);
+			expect(input.onTrace).toHaveBeenCalledOnce();
 		} finally {
 			vi.restoreAllMocks();
 			vi.useRealTimers();
 		}
+	});
+
+	it('hands the settled agent context to onTrace without the API key', async () => {
+		const mock = createMockMiniACP({
+			defaultTurn: turn([
+				toolCalls([
+					{
+						name: 'return_answer',
+						arguments: {
+							title: 'Why recheck?',
+							details: [],
+							shortAnswer: 'The condition can change.',
+						},
+					},
+				]),
+				turnEnd(),
+			]),
+		});
+		const input = request();
+		const onTrace = vi.fn();
+		input.onTrace = onTrace;
+		await createInboxRunner(
+			createInboxTestEnvironment().runnerOptions(mock.connector, auth),
+		)(input);
+		expect(onTrace).toHaveBeenCalledOnce();
+		const trace = JSON.stringify(onTrace.mock.calls[0]?.[0]);
+		expect(trace).toContain('Why recheck?');
+		expect(trace).toContain('return_answer');
+		expect(trace).toContain('The condition can change.');
+		expect(trace).not.toContain('test-key');
 	});
 
 	it('supplies research tools, study context and auth, and routes tool results to its question', async () => {
