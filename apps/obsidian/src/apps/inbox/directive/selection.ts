@@ -1,3 +1,4 @@
+import type { Editor } from 'obsidian';
 import type { DirectiveDefinition } from '../../../shared/directives/types.js';
 import type { DirectiveInstance } from '../../../shared/directives/instance.js';
 import type {
@@ -25,8 +26,11 @@ export class InboxSelection {
 	private instance?: DirectiveInstance<InboxQuestionDirectiveState>;
 	private submission?: Promise<DirectiveLocation>;
 	private disposed = false;
+	private readonly invoked: string;
 
-	constructor(private readonly options: Options) {}
+	constructor(private readonly options: Options) {
+		this.invoked = selectionKey(options.target.editor);
+	}
 	get source() {
 		return this.options.source;
 	}
@@ -66,7 +70,13 @@ export class InboxSelection {
 				questionId,
 			});
 			this.assertQuestion();
-			return await new DirectiveScribe(this.instance).write(target);
+			const { editor } = target;
+			// Saving is asynchronous and the editor may keep focus meanwhile. A
+			// moved selection or edit means the user has moved on, so leave it.
+			const untouched = selectionKey(editor) === this.invoked;
+			const location = await new DirectiveScribe(this.instance).write(target);
+			if (untouched) editor.setCursor(editor.offsetToPos(location.to));
+			return location;
 		} catch (error) {
 			const status =
 				this.questionId && !this.needsSave
@@ -104,4 +114,10 @@ export class InboxSelection {
 			);
 		return questionId;
 	}
+}
+
+function selectionKey(editor: Editor): string {
+	const from = editor.posToOffset(editor.getCursor('from'));
+	const to = editor.posToOffset(editor.getCursor('to'));
+	return `${from}:${to}`;
 }
