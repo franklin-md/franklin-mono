@@ -22,8 +22,9 @@ own named renderers and own any execution associated with their state.
   leave the previous state available. Subscriber errors are reported separately.
 - `captureDirectiveTarget(editor, view, line)` tracks the end of the original line
   through CM6 transactions while saves are pending. Pass it to `scribe.write(target)`
-  to append with spacing and return the note path, then dispose the
-  target. Deleted lines, closed editors and literal Markdown regions reject insertion.
+  to append with spacing, then dispose the target. The write leaves the cursor
+  alone and returns the inserted reference as a `{ path, from, to }` snapshot.
+  Deleted lines, closed editors and literal Markdown regions reject insertion.
 - `scribe.replace(markdown)` replaces all matching references in Markdown notes.
   Its receipt contains `replacements`, `filesChanged`, and per-file `failures`.
   Zero matches is a successful no-op. Code examples and frontmatter are excluded.

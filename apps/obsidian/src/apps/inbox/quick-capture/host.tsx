@@ -70,11 +70,17 @@ export class InboxCaptureChooser {
 			throw error;
 		}
 		const close = active.close;
+		const quickAdd = async () => {
+			const { to } = await selection.submit();
+			// The open chooser holds focus, so the user cannot have moved on.
+			// After dismissal, leave the cursor wherever they resumed editing.
+			if (!closed) editor.setCursor(editor.offsetToPos(to));
+		};
 		const submit = (action: CaptureAction): Promise<void> => {
 			running = true;
 			const task = (async () => {
 				try {
-					if (action === 'quick-add') await selection.submit();
+					if (action === 'quick-add') await quickAdd();
 					else
 						await inbox.thoughtDumps.add(
 							selection.source.quote,

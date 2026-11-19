@@ -66,10 +66,12 @@ to break ties. Blank quotes and matches with no shared characters do not select
 unrelated text. Missing or renamed notes show a notice and retain the capture.
 
 Open **Franklin: Open inbox capture chooser** in a Markdown editor to add one
-question or send a Thought Dump from the captured selection. A saved question's
-inline pill tracks its progress, previews the answer, and opens its card in
-the Inbox. If directive storage is unavailable, **Add selection to study
-inbox** still queues the question.
+question or send a Thought Dump from the captured selection. Quick add returns
+focus to the editor with the cursor after the new pill, unless the chooser was
+dismissed before Quick add finished. A saved question's inline pill tracks its
+progress, previews the answer, and opens its card in the Inbox. If directive
+storage is unavailable, **Add selection to study inbox** still queues the
+question.
 
 ## Configurable actions
 

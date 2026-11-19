@@ -114,6 +114,20 @@ it('refocuses one chooser and keeps its original capture on repeated invocation'
 	);
 });
 
+it('returns focus with the cursor after the new pill when Quick add finishes', async () => {
+	await act(async () => {
+		chooser.open(target.editor, target.info);
+	});
+	await act(async () => {
+		fireEvent.click(screen.getByRole('button', { name: /Quick add/ }));
+	});
+	const line = target.editor.getLine(0);
+	expect(line).toMatch(/:::franklin:inbox-question:[^:]+:::$/);
+	expect(target.editor.getCursor()).toEqual({ line: 0, ch: line.length });
+	expect(target.editor.getSelection()).toBe('');
+	expect(focus).toHaveBeenCalledOnce();
+});
+
 it('cancels on Escape without queueing anything and returns focus to the editor', async () => {
 	await act(async () => {
 		chooser.open(target.editor, target.info);
@@ -129,7 +143,7 @@ it('cancels on Escape without queueing anything and returns focus to the editor'
 	expect(screen.queryByRole('dialog')).toBeNull();
 });
 
-it('lets an accepted Quick add finish after dismissal and drains it before disposal', async () => {
+it('lets an accepted Quick add finish after dismissal without moving the resumed cursor, and drains it before disposal', async () => {
 	let finish!: () => void;
 	vi.spyOn(scenario.persistence, 'save').mockImplementationOnce(
 		() =>
@@ -146,6 +160,8 @@ it('lets an accepted Quick add finish after dismissal and drains it before dispo
 	await act(async () => {
 		fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
 	});
+	const resumed = { line: 1, ch: 4 };
+	target.editor.setCursor(resumed);
 	let disposed = false;
 	const disposing = chooser.dispose().then(() => {
 		disposed = true;
@@ -157,6 +173,7 @@ it('lets an accepted Quick add finish after dismissal and drains it before dispo
 	});
 	expect(scenario.inbox.state.get().questions).toHaveLength(1);
 	expect(target.editor.getValue()).toContain(':::franklin:inbox-question:');
+	expect(target.editor.getCursor()).toEqual(resumed);
 	expect(scenario.error).not.toHaveBeenCalled();
 });
 

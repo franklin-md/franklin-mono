@@ -4,6 +4,7 @@ import { readMarkdown } from '../../obsidian/markdown/read.js';
 import { findDirectiveRanges } from './find.js';
 import { directiveFailure } from './failure.js';
 import type {
+	DirectiveLocation,
 	DirectiveSearchResult,
 	DirectiveWriteTarget,
 	ReplacementResult,
@@ -12,7 +13,7 @@ import type {
 export class DirectiveScribe<T> {
 	constructor(private readonly instance: DirectiveInstance<T>) {}
 
-	async write(target: DirectiveWriteTarget): Promise<string> {
+	async write(target: DirectiveWriteTarget): Promise<DirectiveLocation> {
 		this.assertAvailable();
 		const { editor } = target;
 		const { from, path } = target.resolve();
@@ -22,16 +23,15 @@ export class DirectiveScribe<T> {
 		const offset = editor.posToOffset(from);
 		const source = editor.getValue();
 		const candidate = source.slice(0, offset) + text + source.slice(offset);
-		if (
-			!findDirectiveRanges(candidate, this.instance).some(
-				(token) => token.from === offset + prefix.length,
-			)
-		)
+		const token = findDirectiveRanges(candidate, this.instance).find(
+			(token) => token.from === offset + prefix.length,
+		);
+		if (!token)
 			throw new Error(
 				'Cannot append an inline directive inside code or another literal Markdown region',
 			);
 		editor.transaction({ changes: [{ from, text }] }, 'franklin-directive');
-		return path;
+		return { path, from: token.from, to: token.to };
 	}
 
 	async find(): Promise<DirectiveSearchResult> {
