@@ -57,13 +57,26 @@ never creates a destination note. If no convincing unambiguous match remains,
 substantive note content stays unchanged and the retained request explains why.
 
 In **Franklin settings → Quick edit → Presets**, add, edit, delete or reorder
-presets and choose their name, prompt, icon and color. Icons use a curated Lucide
-catalog; colors use saved palette keys mapped to complete Tailwind classes.
-Preferences use storage version 3. Migration replaces unchanged Expand, Add
-example, Condense and Outline starters with Link while preserving customized
-entries and their relative order. Custom-only and intentionally empty lists remain
-unchanged. Later saves use version 3; older plugin versions cannot load that saved
-version.
+presets and choose their name, prompt, icon and color. The button beside the name
+opens a picker with Obsidian's icons, including plugin icons, and its eight theme
+colors. Picking an icon closes the picker; changing the color keeps it open.
+Save stays disabled until the name and prompt are filled, and Cancel discards the
+draft. The draft uses
+[TanStack Form](https://tanstack.com/form/latest), validated with the saved preset
+schema.
+
+Presets save an Obsidian icon ID, such as `lucide-link`. An ID that Obsidian no
+longer registers, for example from a removed plugin, keeps its value and draws a
+fallback icon. Colors save Obsidian palette keys (red, orange, yellow, green, cyan,
+blue, purple, pink), mapped to complete Tailwind classes on the theme's
+`--color-*` variables.
+
+Preferences use storage version 4. The version 3 migration replaces unchanged
+Expand, Add example, Condense and Outline starters with Link while preserving
+customized entries and their relative order. Custom-only and intentionally empty
+lists remain unchanged. The version 4 migration replaces earlier icon slugs with
+their Obsidian IDs and amber with yellow, which it already drew. Later saves use
+version 4; older plugin versions cannot load that saved version.
 
 Unlike the freeform command, presets leave selected note text in place. The
 selection, or current row when nothing is selected, supplies context separately

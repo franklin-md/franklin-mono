@@ -1,8 +1,9 @@
+import { useMemo } from 'react';
 import { CompactPopover, IconActionGroup } from '@franklin/ui';
 import type { FloatingAnchor } from '@franklin/ui';
+import { bindObsidianIcon } from '../../../shared/ui/icon/bind.js';
 import type { QuickEditPreset } from './types.js';
 import { presetColors } from './colors.js';
-import { presetIcons } from './icons.js';
 
 type Props = {
 	anchor: FloatingAnchor;
@@ -19,6 +20,18 @@ export function PresetPanel({
 	onClose,
 	onContent,
 }: Props) {
+	// The chooser captures presets once per open, so icon components stay stable.
+	const actions = useMemo(
+		() =>
+			presets.map((preset) => ({
+				...presetColors[preset.color],
+				id: preset.id,
+				label: preset.name,
+				description: preset.prompt,
+				icon: bindObsidianIcon(preset.icon),
+			})),
+		[presets],
+	);
 	return (
 		<CompactPopover
 			anchor={anchor}
@@ -29,13 +42,7 @@ export function PresetPanel({
 			{presets.length ? (
 				<IconActionGroup
 					label="Edit presets"
-					actions={presets.map((preset) => ({
-						...presetColors[preset.color],
-						id: preset.id,
-						label: preset.name,
-						description: preset.prompt,
-						icon: presetIcons[preset.icon].icon,
-					}))}
+					actions={actions}
 					onAction={(id) => {
 						const preset = presets.find((preset) => preset.id === id);
 						if (preset) onSelect(preset);

@@ -44,7 +44,7 @@ describe('quick edit preferences', () => {
 				id: 'custom',
 				name: 'Explain',
 				prompt: 'Explain this.',
-				icon: 'flask' as const,
+				icon: 'lucide-flask-conical',
 				color: 'purple' as const,
 			},
 		];
@@ -74,7 +74,7 @@ describe('quick edit preferences', () => {
 		await settings.configure({ model: 'second' });
 		expect(
 			JSON.parse(new TextDecoder().decode(await fs.readFile(path))),
-		).toEqual({ version: 3, data: { ...current, model: 'second' } });
+		).toEqual({ version: 4, data: { ...current, model: 'second' } });
 	});
 	it('persists independent model, reasoning and instruction settings across reloads', async () => {
 		const storage = createSingleFilePersister(
