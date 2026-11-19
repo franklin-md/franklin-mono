@@ -7,8 +7,15 @@ import {
 	PortalContainerProvider,
 } from '@franklin/ui';
 import { PresetPanel } from './panel.js';
+import { bindObsidianIcon } from '../../../shared/ui/icon/bind.js';
 import { createDefaultPresets } from './defaults.js';
-import { presetIcons } from './icons.js';
+
+const presets = createDefaultPresets();
+const presetActions = presets.map((preset) => ({
+	id: preset.id,
+	label: preset.name,
+	icon: bindObsidianIcon(preset.icon),
+}));
 
 function PresetDemo({ mixed = false }: { mixed?: boolean }) {
 	const [container, setContainer] = useState<HTMLDivElement | null>(null);
@@ -22,7 +29,6 @@ function PresetDemo({ mixed = false }: { mixed?: boolean }) {
 			caret.current?.getBoundingClientRect() ?? new DOMRect(100, 150, 1, 20),
 	};
 	const close = () => setOpen(false);
-	const presets = createDefaultPresets();
 	return (
 		<div className="franklin" ref={setContainer}>
 			<div className="box-border w-full max-w-lg bg-background px-4 pb-6 pt-32 text-foreground">
@@ -41,11 +47,7 @@ function PresetDemo({ mixed = false }: { mixed?: boolean }) {
 								<div className="grid w-56 max-w-full gap-2 p-1">
 									<IconActionGroup
 										label="Presets"
-										actions={presets.map((preset) => ({
-											id: preset.id,
-											label: preset.name,
-											icon: presetIcons[preset.icon].icon,
-										}))}
+										actions={presetActions}
 										onAction={(id) => setResult(id)}
 									/>
 									<textarea

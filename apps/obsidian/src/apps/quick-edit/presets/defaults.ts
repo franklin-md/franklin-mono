@@ -12,7 +12,7 @@ export function createDefaultPresets(): QuickEditPreset[] {
 				'Only edit the originating note; never create or modify a destination note. Do not link to the originating note itself. Check existing links throughout the originating note, including aliases and qualified paths, and do not duplicate an already-linked destination. Do not force a weak match or guess between ambiguous destinations.',
 				'If no convincing, verified, unambiguous and not-already-linked candidate remains, make no edit to the note content. Call finish_edit with success: false and a concise summary explaining why no link was inserted. Keep that explanation out of the note. After inserting a link, reread the originating note to verify the link and preserved content, then call finish_edit with success: true.',
 			].join('\n\n'),
-			icon: 'link',
+			icon: 'lucide-link',
 			color: 'blue',
 		},
 	];

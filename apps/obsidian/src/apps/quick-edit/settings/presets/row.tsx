@@ -1,8 +1,8 @@
 import { ArrowDown, ArrowUp, Pencil, Trash2 } from 'lucide-react';
 import { IconButton } from '@franklin/ui';
 import type { QuickEditPreset } from '../../presets/types.js';
-import { presetIcons } from '../../presets/icons.js';
 import { presetColors } from '../../presets/colors.js';
+import { ObsidianIcon } from '../../../../shared/ui/icon/index.js';
 import { SettingControl } from '../../../../shared/ui/setting/control.js';
 import { SettingInfo } from '../../../../shared/ui/setting/info.js';
 import { SettingItem } from '../../../../shared/ui/setting/item.js';
@@ -27,15 +27,14 @@ export function PresetRow({
 	onEdit,
 	onRemove,
 }: Props) {
-	const Icon = presetIcons[preset.icon].icon;
 	return (
 		<SettingItem>
 			<SettingInfo>
 				<SettingName>
 					<span className="inline-flex min-w-0 items-center gap-2">
-						<Icon
-							aria-hidden="true"
-							className={`h-4 w-4 shrink-0 ${presetColors[preset.color].colorClassName}`}
+						<ObsidianIcon
+							id={preset.icon}
+							className={`h-4 w-4 ${presetColors[preset.color].colorClassName}`}
 						/>
 						<span className="truncate">{preset.name}</span>
 					</span>

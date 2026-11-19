@@ -6,7 +6,7 @@ import { quickEditError } from '../../error.js';
 import { SettingError } from '../../../../shared/ui/setting/error.js';
 import { SettingGroup } from '../../../../shared/ui/setting/group.js';
 import { SettingItem } from '../../../../shared/ui/setting/item.js';
-import { PresetEditor } from './editor.js';
+import { PresetEditor } from './editor/index.js';
 import { PresetRow } from './row.js';
 
 type Props = { preferences: QuickEditPreferences };
@@ -107,7 +107,7 @@ export function PresetSettings({ preferences }: Props) {
 								id: crypto.randomUUID(),
 								name: '',
 								prompt: '',
-								icon: 'sparkles',
+								icon: 'lucide-sparkles',
 								color: 'blue',
 							})
 						}
