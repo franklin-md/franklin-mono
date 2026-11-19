@@ -18,7 +18,11 @@ export function createPromptEditorExtensions({
 		Document,
 		Paragraph.configure({
 			HTMLAttributes: {
-				class: 'm-0 min-h-6',
+				// Radix ScrollArea sizes its content as a table, so long unbroken
+				// tokens widen the whole editor unless they can wrap at min-content
+				// size. TipTap's unlayered `.ProseMirror { word-wrap: break-word }`
+				// cannot, and it outranks a Tailwind utility on the editor root.
+				class: 'm-0 min-h-6 wrap-anywhere',
 			},
 		}),
 		Text,

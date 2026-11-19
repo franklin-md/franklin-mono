@@ -14,9 +14,10 @@ function item(path: string): TestItem {
 	return { path, metadata: undefined };
 }
 
-function createKeyEvent(key: string) {
+function createKeyEvent(key: string, shiftKey = false) {
 	return {
 		key,
+		shiftKey,
 		preventDefault: vi.fn(),
 	};
 }
@@ -41,6 +42,7 @@ function createHarness(initialItems: readonly TestItem[] = createItems()) {
 	const anchorRect = createAnchorRect();
 	const suggestionStates: MentionSuggestionState[] = [];
 	const command = vi.fn();
+	const dismiss = vi.fn();
 	const controller = createMenuController({
 		getItems: () => items,
 		setSuggestionState: (next) => {
@@ -54,11 +56,13 @@ function createHarness(initialItems: readonly TestItem[] = createItems()) {
 			query,
 			anchorRect,
 			command,
+			dismiss,
 		});
 	}
 
 	return {
 		command,
+		dismiss,
 		anchorRect,
 		controller,
 		get suggestion() {
@@ -149,6 +153,31 @@ describe('createMenuController', () => {
 
 		expect(harness.command).toHaveBeenCalledWith(item('alpha.md'));
 		expect(harness.suggestion).toEqual(inactiveMentionSuggestion);
+	});
+
+	it('publishes a dismiss callback for the active suggestion', () => {
+		const harness = createHarness();
+
+		harness.show();
+		expectActiveSuggestion(harness.suggestion);
+		harness.suggestion.dismiss();
+
+		expect(harness.dismiss).toHaveBeenCalledOnce();
+	});
+
+	it.each([
+		['items', createItems()],
+		['no items', []],
+	])('leaves Shift+Enter to the editor with %s', (_label, items) => {
+		const harness = createHarness(items);
+		const shiftEnter = createKeyEvent('Enter', true);
+
+		harness.show();
+
+		expect(harness.controller.handleKeyDown(shiftEnter)).toBe(false);
+		expect(shiftEnter.preventDefault).not.toHaveBeenCalled();
+		expect(harness.command).not.toHaveBeenCalled();
+		expectActiveSuggestion(harness.suggestion);
 	});
 
 	it('consumes Enter and Tab while active even when there are no items', () => {

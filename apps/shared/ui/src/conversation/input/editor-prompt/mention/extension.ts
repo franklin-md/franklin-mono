@@ -2,7 +2,7 @@ import type { Editor, Range } from '@tiptap/core';
 import { Mention, type MentionNodeAttrs } from '@tiptap/extension-mention';
 import { PluginKey } from '@tiptap/pm/state';
 import { ReactNodeViewRenderer } from '@tiptap/react';
-import type { SuggestionProps } from '@tiptap/suggestion';
+import { exitSuggestion, type SuggestionProps } from '@tiptap/suggestion';
 
 import {
 	createFileReferenceMentionAttrs,
@@ -52,6 +52,7 @@ function showSuggestionMenu(
 		query: props.query,
 		anchorRect: props.clientRect?.() ?? undefined,
 		command: (item) => props.command(createFileReferenceMentionAttrs(item)),
+		dismiss: () => exitSuggestion(props.editor.view, mentionPluginKey),
 	});
 }
 
