@@ -104,6 +104,17 @@ export type {
 	IconAction,
 	IconActionGroupProps,
 } from './compact-popover/action-types.js';
+export { IconGrid } from './components/icon-grid/index.js';
+export type {
+	IconGridProps,
+	IconOption,
+	IconRenderer,
+} from './components/icon-grid/types.js';
+export { ColorSwatches } from './components/color-swatches/index.js';
+export type {
+	ColorOption,
+	ColorSwatchesProps,
+} from './components/color-swatches/types.js';
 export { DeleteButton } from './components/delete-button.js';
 export { Favicon, type FaviconProps } from './components/favicon.js';
 export {
