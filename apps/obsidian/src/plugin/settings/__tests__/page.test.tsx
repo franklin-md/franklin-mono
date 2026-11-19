@@ -6,6 +6,11 @@ import type {
 	FranklinApp,
 	SettingsStore,
 } from '@franklin/agent';
+import {
+	createSingleFilePersister,
+	MemoryFilesystem,
+	toAbsolutePath,
+} from '@franklin/lib';
 import { createStore } from '@franklin/agent';
 import { bindHostAction, openExternalAction } from '@franklin/react';
 import { ApplicationProvider } from '@franklin/ui';
@@ -13,6 +18,10 @@ import type { ComponentProps } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { QuickEditPreferences } from '../../../apps/quick-edit/settings/store.js';
+import { quickEditSettingsCodec } from '../../../apps/quick-edit/settings/codec.js';
+import { InboxController } from '../../../apps/inbox/controller/index.js';
+import { createInboxTestPersistence } from '../../../apps/inbox/testing/persistence.js';
 import { SettingsPage } from '../page.js';
 
 afterEach(() => {
@@ -86,6 +95,29 @@ function createSettingsStub(
 	return settings;
 }
 
+function selectSection(name: string) {
+	fireEvent.mouseDown(screen.getByRole('tab', { name }), {
+		button: 0,
+		ctrlKey: false,
+	});
+}
+
+function createQuickEditPreferences() {
+	return QuickEditPreferences.create(
+		createSingleFilePersister(
+			new MemoryFilesystem(),
+			toAbsolutePath('/quick-edit.json'),
+			quickEditSettingsCodec,
+		),
+		{
+			provider: 'openai-codex',
+			model: 'gpt-5.4',
+			reasoning: 'medium',
+			instructions: 'Keep outlines.',
+		},
+	);
+}
+
 function renderPage(
 	auth: AuthStub,
 	settings = createSettingsStub(),
@@ -118,6 +150,127 @@ function renderPage(
 }
 
 describe('SettingsPage', () => {
+	it('opens Connections from the Quick edit model picker to add an API key', async ({
+		onTestFinished,
+	}) => {
+		const preferences = await createQuickEditPreferences();
+		onTestFinished(() => preferences.dispose());
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				observe() {}
+				unobserve() {}
+				disconnect() {}
+			},
+		);
+		const originalScroll = Object.getOwnPropertyDescriptor(
+			HTMLElement.prototype,
+			'scrollIntoView',
+		);
+		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+			configurable: true,
+			value: vi.fn(),
+		});
+		onTestFinished(() => {
+			vi.unstubAllGlobals();
+			if (originalScroll)
+				Object.defineProperty(
+					HTMLElement.prototype,
+					'scrollIntoView',
+					originalScroll,
+				);
+			else Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+		});
+		renderPage(createAuthStub(), undefined, {
+			initialSection: 'quick-edit',
+			quickEdit: createStore({ preferences }),
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Quick edit model' }));
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Add API key for OpenRouter' }),
+		);
+		expect(
+			screen
+				.getByRole('tab', { name: 'Connections' })
+				.getAttribute('aria-selected'),
+		).toBe('true');
+	});
+
+	it('keeps Quick edit in its own tab and preserves its draft across navigation', async ({
+		onTestFinished,
+	}) => {
+		const preferences = await createQuickEditPreferences();
+		onTestFinished(() => preferences.dispose());
+		renderPage(createAuthStub(), undefined, {
+			initialSection: 'general',
+			quickEdit: createStore({ preferences }),
+		});
+		expect(
+			screen.queryByRole('textbox', { name: 'Editing instructions' }),
+		).toBeNull();
+		selectSection('Quick edit');
+		fireEvent.change(
+			screen.getByRole('textbox', { name: 'Editing instructions' }),
+			{ target: { value: 'Unfinished edit rules' } },
+		);
+		selectSection('General');
+		expect(
+			screen.queryByRole('textbox', { name: 'Editing instructions' }),
+		).toBeNull();
+		selectSection('Quick edit');
+		expect(
+			screen.getByRole<HTMLTextAreaElement>('textbox', {
+				name: 'Editing instructions',
+			}).value,
+		).toBe('Unfinished edit rules');
+	});
+	it('shows one panel at a time and retains unfinished instructions and action drafts across tabs', async ({
+		onTestFinished,
+	}) => {
+		const inbox = await InboxController.create({
+			defaults: { provider: 'test', model: 'test', reasoning: 'off' },
+			persistence: createInboxTestPersistence().disk,
+			run: vi.fn(),
+		});
+		onTestFinished(() => inbox.dispose());
+		renderPage(createAuthStub(), undefined, {
+			initialSection: 'general',
+			inbox: createStore({ controller: inbox }),
+		});
+		expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+		selectSection('Inbox');
+		fireEvent.change(
+			screen.getByRole('textbox', { name: 'Answer instructions' }),
+			{ target: { value: 'Unfinished instructions' } },
+		);
+		fireEvent.click(screen.getByRole('button', { name: 'Add action' }));
+		fireEvent.change(screen.getByRole('textbox', { name: 'Action prompt' }), {
+			target: { value: 'Unfinished action' },
+		});
+		selectSection('Connections');
+		expect(
+			screen.queryByRole('textbox', { name: 'Answer instructions' }),
+		).toBeNull();
+		expect(
+			screen
+				.getByLabelText('Answer instructions')
+				.closest('[role="tabpanel"]')
+				?.hasAttribute('hidden'),
+		).toBe(true);
+		selectSection('Inbox');
+		expect(
+			screen.getByRole<HTMLTextAreaElement>('textbox', {
+				name: 'Answer instructions',
+			}).value,
+		).toBe('Unfinished instructions');
+		expect(
+			screen.getByRole<HTMLTextAreaElement>('textbox', {
+				name: 'Action prompt',
+			}).value,
+		).toBe('Unfinished action');
+		expect(inbox.state.get().actions).toEqual([]);
+	});
+
 	it('seeds the OpenRouter input from the existing auth entry', () => {
 		const auth = createAuthStub({
 			openrouter: { apiKey: { type: 'apiKey', key: 'sk-or-existing' } },
@@ -374,15 +527,9 @@ describe('SettingsPage', () => {
 		fireEvent.click(screen.getByRole('button', { name: /chatgpt/i }));
 		await screen.findByText(/Login needs another attempt/);
 
-		fireEvent.mouseDown(screen.getByRole('tab', { name: 'General' }), {
-			button: 0,
-			ctrlKey: false,
-		});
+		selectSection('General');
 		expect(screen.queryByRole('button', { name: /chatgpt/i })).toBeNull();
-		fireEvent.mouseDown(screen.getByRole('tab', { name: 'Connections' }), {
-			button: 0,
-			ctrlKey: false,
-		});
+		selectSection('Connections');
 
 		expect(screen.getByText(/Login needs another attempt/)).toBeTruthy();
 		expect(screen.queryByRole('switch')).toBeNull();
