@@ -1,13 +1,9 @@
 import { useId } from 'react';
-import { cn } from '../../../lib/cn.js';
+import { RadioGroup, RadioGroupItem } from '../../../primitives/radio-group.js';
 import { EFFORT_LABELS } from './effort-labels.js';
-import type { ModelPickerEffortProps } from './types.js';
+import type { EffortChoiceProps } from './types.js';
 
-export function ModelPickerEffort({
-	level,
-	levels,
-	onChange,
-}: ModelPickerEffortProps) {
+export function EffortChoice({ value, levels, onChange }: EffortChoiceProps) {
 	const id = useId();
 
 	// Width check (2026-11-19, Storybook, 16px root, default w-80 popover): the
@@ -20,35 +16,28 @@ export function ModelPickerEffort({
 			<span id={id} className="shrink-0 py-1 text-xs text-muted-foreground">
 				Effort
 			</span>
-			<div
-				role="radiogroup"
+			<RadioGroup
 				aria-labelledby={id}
+				value={value}
+				// Radix reports a string; map it back to one of the offered levels.
+				onValueChange={(next) => {
+					const level = levels.find((choice) => choice === next);
+					if (level) onChange(level);
+				}}
 				className="flex min-w-0 flex-1 flex-wrap items-center gap-0.5"
 			>
-				{levels.map((choice) => (
-					<label
-						key={choice}
-						className={cn(
-							'relative shrink-0 cursor-pointer select-none rounded-md px-1.5 py-1 text-xs font-medium transition-colors has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-inset has-[:focus-visible]:ring-ring',
-							choice === level
-								? 'bg-muted text-foreground'
-								: 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-						)}
-						title={EFFORT_LABELS[choice].label}
+				{levels.map((level) => (
+					<RadioGroupItem
+						key={level}
+						value={level}
+						aria-label={EFFORT_LABELS[level].label}
+						title={EFFORT_LABELS[level].label}
+						className="px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors data-[state=checked]:text-foreground data-[state=unchecked]:hover:text-accent-foreground"
 					>
-						<input
-							type="radio"
-							name={id}
-							value={choice}
-							checked={choice === level}
-							aria-label={EFFORT_LABELS[choice].label}
-							className="sr-only"
-							onChange={() => onChange(choice)}
-						/>
-						{EFFORT_LABELS[choice].shortLabel}
-					</label>
+						{EFFORT_LABELS[level].shortLabel}
+					</RadioGroupItem>
 				))}
-			</div>
+			</RadioGroup>
 		</div>
 	);
 }

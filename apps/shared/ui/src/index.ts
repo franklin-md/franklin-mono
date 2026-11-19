@@ -178,19 +178,15 @@ export { PromptSubmitButton } from './conversation/input/prompt-submit-button.js
 export { ThinkingControl } from './conversation/input/thinking/control.js';
 export { ThinkingToggle } from './conversation/input/thinking-toggle.js';
 export { ModelPicker } from './conversation/input/model-selector/picker.js';
-export { ModelPickerRoot } from './conversation/input/model-selector/root.js';
-export { ModelPickerTrigger } from './conversation/input/model-selector/trigger.js';
-export { ModelPickerContent } from './conversation/input/model-selector/content.js';
-export { ModelPickerModels } from './conversation/input/model-selector/models.js';
-export { ModelPickerSearch } from './conversation/input/model-selector/search.js';
-export { ModelPickerList } from './conversation/input/model-selector/list.js';
-export { ModelPickerFooter } from './conversation/input/model-selector/footer.js';
-export { ModelPickerEffort } from './conversation/input/model-selector/effort.js';
+export { ModelList } from './conversation/input/model-selector/list.js';
+export { ModelTrigger } from './conversation/input/model-selector/trigger.js';
+export { EffortChoice } from './conversation/input/model-selector/effort.js';
 export { EFFORT_LABELS } from './conversation/input/model-selector/effort-labels.js';
 export type {
+	ModelValue,
+	ModelListProps,
+	EffortChoiceProps,
 	ModelPickerProps,
-	ModelPickerRootProps,
-	ModelPickerEffortProps,
 	ProviderActionRenderer,
 } from './conversation/input/model-selector/types.js';
 export { ModelSelector } from './conversation/input/model-selector/selector.js';

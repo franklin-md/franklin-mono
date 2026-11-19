@@ -6,13 +6,12 @@ export function ModelSelector() {
 	const { level, levels, setLevel } = useThinkingLevel();
 	return (
 		<ModelPicker
-			provider={provider}
-			model={model}
-			onSelect={(provider, model) => {
-				void setModel(provider, model);
+			value={{ provider, model }}
+			onChange={(next) => {
+				void setModel(next.provider, next.model);
 			}}
 			effort={{
-				level,
+				value: level,
 				levels,
 				onChange: (next) => {
 					void setLevel(next);

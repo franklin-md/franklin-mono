@@ -1,38 +1,31 @@
 import type { ReactNode } from 'react';
 import type { ThinkingLevel } from '@franklin/mini-acp';
-import type { CatalogModel, ProviderGroup } from '../models/catalog.js';
+import type { ProviderGroup } from '../models/catalog.js';
 
 export type ProviderActionRenderer = (group: ProviderGroup) => ReactNode;
 
-export type ModelPickerEffortProps = {
-	level: ThinkingLevel;
+// One field: a model is identified by its provider and its ID there.
+export type ModelValue = { provider: string; model: string };
+
+export type ModelListProps = {
+	catalog: readonly ProviderGroup[];
+	value: ModelValue;
+	onChange: (value: ModelValue) => void;
+	renderProviderAction?: ProviderActionRenderer;
+};
+
+export type EffortChoiceProps = {
+	value: ThinkingLevel;
 	levels: readonly ThinkingLevel[];
 	onChange: (level: ThinkingLevel) => void;
 };
 
 export type ModelPickerProps = {
-	provider: string;
-	model: string;
-	onSelect: (provider: string, model: string) => void;
+	value: ModelValue;
+	onChange: (value: ModelValue) => void;
 	label?: string;
 	className?: string;
 	catalog?: readonly ProviderGroup[];
 	renderProviderAction?: ProviderActionRenderer;
-	effort?: ModelPickerEffortProps;
-};
-
-export type ModelPickerRootProps = {
-	provider: string;
-	model: string;
-	onSelect: (provider: string, model: string) => void;
-	catalog: readonly ProviderGroup[];
-	children: ReactNode;
-};
-
-export type ModelPickerContextValue = {
-	provider: string;
-	model: string;
-	catalog: readonly ProviderGroup[];
-	selectedEntry: CatalogModel | undefined;
-	select: (model: CatalogModel) => void;
+	effort?: EffortChoiceProps;
 };

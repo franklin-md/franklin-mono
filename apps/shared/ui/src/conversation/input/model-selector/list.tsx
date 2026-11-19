@@ -1,37 +1,42 @@
-import type { ComponentPropsWithoutRef } from 'react';
-import { CommandEmpty, CommandList } from '../../../primitives/command.js';
-import { cn } from '../../../lib/cn.js';
-import { useModelPicker } from './context.js';
+import {
+	Command,
+	CommandEmpty,
+	CommandInput,
+	CommandList,
+} from '../../../primitives/command.js';
 import { ProviderSection } from './section.js';
-import type { ProviderActionRenderer } from './types.js';
+import type { ModelListProps } from './types.js';
 
-type Props = ComponentPropsWithoutRef<typeof CommandList> & {
-	renderProviderAction?: ProviderActionRenderer;
-};
-
-export function ModelPickerList({
+// The search input comes first, so a surrounding Radix Popover focuses it on
+// open and cmdk's Arrow/Enter handling works from there.
+export function ModelList({
+	catalog,
+	value,
+	onChange,
 	renderProviderAction,
-	className,
-	...props
-}: Props) {
-	const { catalog, provider, model, select } = useModelPicker();
+}: ModelListProps) {
 	return (
-		<CommandList
-			label="Models"
-			className={cn('max-h-[360px]', className)}
-			{...props}
-		>
-			<CommandEmpty>No models found</CommandEmpty>
-			{catalog.map((group) => (
-				<ProviderSection
-					key={group.provider}
-					group={group}
-					selectedModel={model}
-					selectedProvider={provider}
-					onSelect={select}
-					action={renderProviderAction?.(group)}
-				/>
-			))}
-		</CommandList>
+		<Command className="min-h-0">
+			<CommandInput
+				aria-label="Search models"
+				placeholder="Search models..."
+				className="text-xs"
+			/>
+			<CommandList label="Models" className="max-h-[360px]">
+				<CommandEmpty>No models found</CommandEmpty>
+				{catalog.map((group) => (
+					<ProviderSection
+						key={group.provider}
+						group={group}
+						selectedModel={value.model}
+						selectedProvider={value.provider}
+						onSelect={(entry) =>
+							onChange({ provider: entry.provider, model: entry.id })
+						}
+						action={renderProviderAction?.(group)}
+					/>
+				))}
+			</CommandList>
+		</Command>
 	);
 }
