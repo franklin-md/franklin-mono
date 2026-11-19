@@ -65,7 +65,7 @@ export function PresetSettings({ preferences }: Props) {
 			{presets.map((preset, index) => {
 				const Icon = presetIcons[preset.icon].icon;
 				return (
-					<SettingItem key={preset.id} layout="list">
+					<SettingItem key={preset.id}>
 						<SettingInfo>
 							<SettingName>
 								<span className="inline-flex min-w-0 items-center gap-2">
@@ -155,7 +155,7 @@ export function PresetSettings({ preferences }: Props) {
 			</SettingItem>
 			{error && (
 				<SettingItem>
-					<p role="alert" className="text-[var(--text-error)]">
+					<p role="alert" className="text-destructive">
 						{error}
 					</p>
 				</SettingItem>

@@ -96,7 +96,7 @@ export function ActionEditor({
 				)}
 			</div>
 			{error && (
-				<p role="alert" className="text-[var(--text-error)]">
+				<p role="alert" className="text-destructive">
 					{error}
 				</p>
 			)}

@@ -43,7 +43,7 @@ export function QuestionHeader({
 			<IconButton
 				icon={Trash2}
 				type="button"
-				className="absolute top-3 right-3 size-6 opacity-0 group-hover/question:opacity-100 group-focus-within/question:opacity-100 hover:text-[var(--text-error)] [@media(hover:none)]:opacity-100"
+				className="absolute top-3 right-3 size-6 opacity-0 group-hover/question:opacity-100 group-focus-within/question:opacity-100 hover:text-destructive [@media(hover:none)]:opacity-100"
 				aria-label={`Delete question: ${title}`}
 				title={
 					childCount ? 'Delete question and its follow-ups' : 'Delete question'

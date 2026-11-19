@@ -72,7 +72,7 @@ export function InboxInstructionsSetting({ inbox }: Props) {
 					</Button>
 				</div>
 				{error && (
-					<p role="alert" className="text-[var(--text-error)]">
+					<p role="alert" className="text-destructive">
 						{error}
 					</p>
 				)}

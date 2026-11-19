@@ -49,7 +49,7 @@ export function InboxActionSettings({ inbox }: Props) {
 			</SettingItem>
 			{snapshot.storageError && (
 				<SettingItem layout="stacked">
-					<p role="alert" className="text-[var(--text-error)]">
+					<p role="alert" className="text-destructive">
 						{snapshot.storageError}
 					</p>
 					<Button
