@@ -7,6 +7,7 @@ import {
 	encodeOAuth,
 } from './schema.js';
 import type { ObsidianSecretStorage } from './types.js';
+import { setObsidianSecret } from './set-secret.js';
 
 export function readEntry(
 	storage: ObsidianSecretStorage,
@@ -27,11 +28,13 @@ export function writeEntry(
 	provider: string,
 	entry: AuthEntry,
 ): void {
-	storage.setSecret(
+	setObsidianSecret(
+		storage,
 		toApiKeyName(provider),
 		entry.apiKey ? encodeApiKey(entry.apiKey) : '',
 	);
-	storage.setSecret(
+	setObsidianSecret(
+		storage,
 		toOAuthName(provider),
 		entry.oauth ? encodeOAuth(entry.oauth) : '',
 	);
@@ -41,6 +44,6 @@ export function tombstoneEntry(
 	storage: ObsidianSecretStorage,
 	provider: string,
 ): void {
-	storage.setSecret(toApiKeyName(provider), '');
-	storage.setSecret(toOAuthName(provider), '');
+	setObsidianSecret(storage, toApiKeyName(provider), '');
+	setObsidianSecret(storage, toOAuthName(provider), '');
 }
