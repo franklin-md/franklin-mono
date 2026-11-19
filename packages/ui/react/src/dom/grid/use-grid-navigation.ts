@@ -11,28 +11,52 @@ import type {
 	UseGridNavigationOptions,
 } from './types.js';
 
-// Cells are found by role rather than registered, so each rendered cell only
-// needs the props from getCellProps. Pickers render ~1,600 cells; registration
-// or a context subscription per cell would add work to every keypress.
-const CELLS = ':scope > [role="row"] > [role="gridcell"]';
+// Cells are found by role and row index rather than registered, so each
+// rendered cell only needs the props from getCellProps. Pickers render ~2,000
+// cells; registration or a context subscription per cell would add work to
+// every keypress. Row indexes, not DOM order, locate a cell, so virtualized
+// grids can leave rows out.
+const CELLS = ':scope > [role="gridcell"]';
 
-const ROW_PROPS: GridRowProps = { role: 'row' };
+function cellAt(
+	grid: HTMLElement | null,
+	index: number,
+	columns: number,
+): HTMLElement | undefined {
+	const row = grid?.querySelector(
+		`[role="row"][aria-rowindex="${Math.floor(index / columns) + 1}"]`,
+	);
+	return row?.querySelectorAll<HTMLElement>(CELLS)[index % columns];
+}
 
-function cellsOf(grid: HTMLElement | null) {
-	return grid?.querySelectorAll<HTMLElement>(CELLS);
+function indexOfCell(target: EventTarget, columns: number): number {
+	const row = target instanceof Element ? target.parentElement : null;
+	const rowIndex = Number(row?.getAttribute('aria-rowindex'));
+	if (!row || !rowIndex) return -1;
+	const column = Array.prototype.indexOf.call(
+		row.querySelectorAll(CELLS),
+		target,
+	);
+	return column === -1 ? -1 : (rowIndex - 1) * columns + column;
 }
 
 /**
  * Roving-focus keyboard navigation for a 2-D grid, following the WAI-ARIA grid
  * pattern (https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
  *
- * Spread `getGridProps()` on the grid element, `getRowProps()` on each of its
- * row children and `getCellProps(index)` on each cell, holding `columns` cells
- * per row in index order. The active cell is the grid's single tab stop. Arrow
- * keys, Home and End (with Ctrl or Cmd for the whole grid) move focus;
- * focusing a cell by pointer also makes it active. `activeIndex` is clamped to
- * the cells, and the clamped index is returned. The active cell scrolls into
- * view when it or the cell count changes.
+ * Spread `getGridProps()` on the grid element, `getRowProps(row)` on each row
+ * and `getCellProps(index)` on each cell, holding `columns` cells per row in
+ * index order. The active cell is the grid's single tab stop. Arrow keys, Home
+ * and End (with Ctrl or Cmd for the whole grid) move focus; focusing a cell by
+ * pointer also makes it active. `activeIndex` is clamped to the cells, and the
+ * clamped index is returned. The active cell scrolls into view when it or the
+ * cell count changes.
+ *
+ * A virtualized grid may render only some rows. Keep the active row rendered
+ * and pass `scrollToIndex`, which replaces the hook's own scrolling. It
+ * receives a cell index, and the caller maps it to what its virtualizer
+ * counts. Moving to an unrendered cell scrolls to it, then focuses the cell
+ * once it renders.
  *
  * Pass your own `onKeyDown` and `onFocus` through `getGridProps` and your own
  * ref through the `ref` option. Your `onKeyDown` runs first, and the grid
@@ -45,19 +69,43 @@ export function useGridNavigation<T extends HTMLElement = HTMLDivElement>({
 	activeIndex,
 	onActiveIndexChange,
 	ref: externalRef,
+	scrollToIndex,
 }: UseGridNavigationOptions<T>): GridNavigation<T> {
 	const ref = useRef<T>(null);
 	const gridRef = useMergeRefs([ref, externalRef]);
+	const pendingFocus = useRef<number | undefined>(undefined);
 	const active = Math.min(Math.max(activeIndex, 0), Math.max(count - 1, 0));
 
 	// The count stands in for the cells: a new result set can keep the same
-	// index on a cell that is scrolled out of view.
+	// index on a cell that is scrolled out of view. Only these changes scroll,
+	// so scrolling the grid by hand is not undone on the next render.
 	useEffect(() => {
-		cellsOf(ref.current)?.[active]?.scrollIntoView({ block: 'nearest' });
+		if (scrollToIndex) scrollToIndex(active);
+		else
+			cellAt(ref.current, active, columns)?.scrollIntoView({
+				block: 'nearest',
+			});
 	}, [active, count]);
 
+	// Finishes a move to a cell that was not rendered yet.
+	useEffect(() => {
+		if (pendingFocus.current === undefined) return;
+		const cell = cellAt(ref.current, pendingFocus.current, columns);
+		if (!cell) return;
+		pendingFocus.current = undefined;
+		cell.focus();
+	});
+
 	function focusCell(index: number) {
-		cellsOf(ref.current)?.[index]?.focus();
+		const cell = cellAt(ref.current, index, columns);
+		if (cell) {
+			pendingFocus.current = undefined;
+			cell.focus();
+			return;
+		}
+		if (!scrollToIndex) return;
+		pendingFocus.current = index;
+		scrollToIndex(index);
 	}
 
 	// Moving only focuses the next cell; handleFocus reports it, so each move
@@ -70,9 +118,7 @@ export function useGridNavigation<T extends HTMLElement = HTMLDivElement>({
 	}
 
 	function handleFocus(event: FocusEvent<T>) {
-		const found = cellsOf(ref.current);
-		if (!found) return;
-		const index = Array.prototype.indexOf.call(found, event.target);
+		const index = indexOfCell(event.target, columns);
 		if (index !== -1 && index !== active) onActiveIndexChange(index);
 	}
 
@@ -80,6 +126,7 @@ export function useGridNavigation<T extends HTMLElement = HTMLDivElement>({
 		return {
 			ref: gridRef,
 			role: 'grid',
+			'aria-rowcount': Math.ceil(count / columns),
 			onKeyDown: (event) => {
 				handlers.onKeyDown?.(event);
 				if (!event.defaultPrevented) handleKeyDown(event);
@@ -91,6 +138,10 @@ export function useGridNavigation<T extends HTMLElement = HTMLDivElement>({
 		};
 	}
 
+	function getRowProps(row: number): GridRowProps {
+		return { role: 'row', 'aria-rowindex': row + 1 };
+	}
+
 	function getCellProps(index: number): GridCellProps {
 		return { role: 'gridcell', tabIndex: index === active ? 0 : -1 };
 	}
@@ -98,7 +149,7 @@ export function useGridNavigation<T extends HTMLElement = HTMLDivElement>({
 	return {
 		activeIndex: active,
 		getGridProps,
-		getRowProps: () => ROW_PROPS,
+		getRowProps,
 		getCellProps,
 		focusCell,
 	};

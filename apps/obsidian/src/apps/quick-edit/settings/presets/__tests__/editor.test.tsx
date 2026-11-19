@@ -33,8 +33,8 @@ function createPreferences() {
 	return { storage, opened: QuickEditPreferences.create(storage, defaults) };
 }
 
-// Radix positions the popover with ResizeObserver, and IconGrid scrolls its
-// active icon into view; jsdom implements neither.
+// jsdom has no layout or ResizeObserver. Radix positions the popover with
+// ResizeObserver, and IconGrid renders only the rows that fit its viewport.
 beforeEach(() => {
 	vi.stubGlobal(
 		'ResizeObserver',
@@ -44,15 +44,13 @@ beforeEach(() => {
 			disconnect() {}
 		},
 	);
-	Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-		configurable: true,
-		value: vi.fn(),
-	});
+	vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(256);
+	vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(34);
 });
 afterEach(() => {
 	cleanup();
 	vi.unstubAllGlobals();
-	Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+	vi.restoreAllMocks();
 });
 
 it('adds, customizes, reorders and deletes saved presets', async () => {

@@ -52,7 +52,7 @@ function Grid({
 	return (
 		<div {...grid.getGridProps({ onKeyDown, onFocus })} aria-label="Letters">
 			{rows.map((row, r) => (
-				<div key={r} {...grid.getRowProps()}>
+				<div key={r} {...grid.getRowProps(r)}>
 					{row.map((label, c) => (
 						<div key={label} {...grid.getCellProps(r * columns + c)}>
 							{label}
@@ -77,7 +77,11 @@ function tabStops() {
 
 it('is a single tab stop on the active cell, scrolled into view', () => {
 	render(<Grid />);
-	expect(screen.getByRole('grid', { name: 'Letters' })).toBeTruthy();
+	const grid = screen.getByRole('grid', { name: 'Letters' });
+	expect(grid.getAttribute('aria-rowcount')).toBe('3');
+	expect(
+		screen.getAllByRole('row').map((row) => row.getAttribute('aria-rowindex')),
+	).toEqual(['1', '2', '3']);
 	expect(tabStops()).toEqual(['B']);
 	expect(scrollIntoView.mock.contexts.at(-1)).toBe(cell('B'));
 });
@@ -143,4 +147,60 @@ it("runs the caller's handlers first and skips keys the caller prevents", () => 
 	expect(document.activeElement).toBe(cell('B'));
 	fireEvent.keyDown(cell('B'), { key: 'ArrowLeft' });
 	expect(document.activeElement).toBe(cell('A'));
+});
+
+// Renders only the rows in `shown`, as a virtualizer would, with the active row
+// kept rendered.
+function VirtualGrid({
+	onScrollToIndex,
+}: {
+	onScrollToIndex: (index: number) => void;
+}) {
+	const [active, setActive] = useState(0);
+	const [shown, setShown] = useState([0]);
+	const grid = useGridNavigation({
+		count: labels.length,
+		columns,
+		activeIndex: active,
+		onActiveIndexChange: setActive,
+		scrollToIndex: (index) => {
+			onScrollToIndex(index);
+			setShown([Math.floor(active / columns), Math.floor(index / columns)]);
+		},
+	});
+	const rows = [labels.slice(0, 2), labels.slice(2, 4), labels.slice(4)];
+	return (
+		<div {...grid.getGridProps()} aria-label="Letters">
+			{rows.map((row, r) =>
+				shown.includes(r) ? (
+					<div key={r} {...grid.getRowProps(r)}>
+						{row.map((label, c) => (
+							<div key={label} {...grid.getCellProps(r * columns + c)}>
+								{label}
+							</div>
+						))}
+					</div>
+				) : null,
+			)}
+		</div>
+	);
+}
+
+it('scrolls to an unrendered cell, then focuses it', () => {
+	const onScrollToIndex = vi.fn();
+	render(<VirtualGrid onScrollToIndex={onScrollToIndex} />);
+	expect(onScrollToIndex.mock.calls).toEqual([[0]]);
+	expect(screen.queryByRole('gridcell', { name: 'E' })).toBe(null);
+	act(() => cell('A').focus());
+	expect(fireEvent.keyDown(cell('A'), { key: 'End', ctrlKey: true })).toBe(
+		false,
+	);
+	expect(onScrollToIndex.mock.calls.at(-1)).toEqual([4]);
+	expect(document.activeElement).toBe(cell('E'));
+	expect(tabStops()).toEqual(['E']);
+	// A cell found by row index, not DOM order, reports its own index.
+	fireEvent.keyDown(cell('E'), { key: 'ArrowUp' });
+	expect(onScrollToIndex.mock.calls.at(-1)).toEqual([2]);
+	expect(document.activeElement).toBe(cell('C'));
+	expect(scrollIntoView).not.toHaveBeenCalled();
 });
