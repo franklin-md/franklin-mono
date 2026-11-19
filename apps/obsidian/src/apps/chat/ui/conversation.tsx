@@ -18,6 +18,7 @@ import { ObsidianText, ObsidianThinking } from './blocks.js';
 import { ObsidianUserMessage } from './user-message.js';
 import { ViewingContextHeader } from '../viewing-context/header.js';
 import { obsidianToolRegistry } from './tool-registry.js';
+import { isDevBuild } from '../../../dev/build.js';
 
 export function ConversationPanel() {
 	return (
@@ -41,13 +42,13 @@ export function ConversationPanel() {
 						<PromptFooterControls>
 							<PromptFooterControlGroup>
 								<ModelSelector />
-								{process.env.NODE_ENV === 'development' ? (
+								{isDevBuild && (
 									<InspectDumpButton
 										onCopied={() =>
 											new Notice('Inspect dump copied to clipboard')
 										}
 									/>
-								) : null}
+								)}
 							</PromptFooterControlGroup>
 							<PromptFooterControlGroup>
 								<SharedPromptAgentControl />

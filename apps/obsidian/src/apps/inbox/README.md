@@ -95,6 +95,14 @@ failed submission retains its draft. Pointer text selection and links retain
 their native behavior; keyboard title/disclosure activation remains available
 while text is selected. Shared prompt/model controls supply the compact UI.
 
+## Development diagnostics
+
+Development builds show an inspect button on each card. It copies the agent
+inspect dump of the question's latest settled attempt, the same dump Chat's
+inspect button copies: system prompt, messages with tool calls and results,
+tools, and model configuration without the API key. Dumps for the 20 most
+recently settled questions are kept in memory only and are lost on reload.
+
 ## Scope and verification
 
 Local PDF reference reading uses the existing shared host API.

@@ -1,7 +1,12 @@
 import { useSyncExternalStore } from 'react';
 import type { ReadonlyStore } from '@franklin/agent';
 import { THINKING_LEVELS } from '@franklin/mini-acp';
-import { Button, ModelPicker, PromptFooterControlGroup } from '@franklin/ui';
+import {
+	Button,
+	CopyDumpButton,
+	ModelPicker,
+	PromptFooterControlGroup,
+} from '@franklin/ui';
 import type { InboxController } from '../controller/index.js';
 import type { QuestionSource, StudyQuestion } from '../types.js';
 import { InboxContent } from './content.js';
@@ -30,6 +35,7 @@ export function InboxPanel({
 		(notify) => controller.state.subscribe(notify),
 		() => controller.state.get(),
 	);
+	const traces = controller.traces;
 	const { preferences } = snapshot;
 	const navigationRequest = useSyncExternalStore(
 		(notify) => navigation?.subscribe(notify) ?? (() => {}),
@@ -76,7 +82,17 @@ export function InboxPanel({
 				questions={snapshot.questions}
 				groups={snapshot.groups}
 				navigation={navigationRequest}
-				renderActions={renderActions}
+				renderActions={(question) => (
+					<>
+						{renderActions(question)}
+						{traces && (
+							<CopyDumpButton
+								load={() => findTrace(traces, question.id)}
+								onCopyError={onError}
+							/>
+						)}
+					</>
+				)}
 				onFoldGroup={(id, folded) => {
 					void controller.groups.fold(id, folded).catch(onError);
 				}}
@@ -154,4 +170,14 @@ export function InboxPanel({
 			/>
 		</div>
 	);
+}
+
+async function findTrace(
+	traces: ReadonlyMap<string, unknown>,
+	questionId: string,
+): Promise<unknown> {
+	const trace = traces.get(questionId);
+	if (trace === undefined)
+		throw new Error('No agent trace has been recorded for this question yet');
+	return trace;
 }

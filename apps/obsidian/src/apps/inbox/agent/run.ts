@@ -12,6 +12,7 @@ export function createInboxRunner(options: InboxRunnerOptions) {
 			selection: request.question,
 			signal: request.signal,
 			timeout: 120_000,
+			onTrace: request.onTrace,
 			prompt: questionPrompt(request),
 			extensions: (signal) => [
 				...createInboxResearchExtensions({

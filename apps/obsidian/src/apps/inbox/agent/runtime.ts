@@ -6,6 +6,8 @@ type Request = {
 	selection: ModelSelection;
 	signal: AbortSignal;
 	timeout: number;
+	// Receives the runtime's inspect dump when the attempt settles.
+	onTrace?: (trace: unknown) => void;
 	prompt: string;
 	extensions: (signal: AbortSignal) => readonly FranklinExtension[];
 };
@@ -61,6 +63,13 @@ export async function runInboxRuntime(
 	} finally {
 		deadline?.removeEventListener('abort', expire);
 		signal.removeEventListener('abort', cancel);
+		// The runtime holds the only transcript, so capture it before disposal.
+		// A failed capture must not replace the attempt's own outcome.
+		if (request.onTrace)
+			await runtime
+				.inspect()
+				.then(request.onTrace)
+				.catch(() => {});
 		await runtime.dispose();
 	}
 }
