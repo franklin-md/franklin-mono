@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@franklin/ui';
-import { errorMessage } from '../../error/message.js';
 import { SettingError } from '../../ui/setting/error.js';
 import { SettingItem } from '../../ui/setting/item.js';
+import { useRowSave } from '../../ui/setting/use-row-save.js';
 import { createPreset } from '../create.js';
 import type { PromptPreset } from '../types.js';
 import { PresetEditor } from './editor/index.js';
@@ -40,25 +40,7 @@ function upsert(presets: PromptPreset[], preset: PromptPreset) {
 // the owner's SettingGroup, which names and describes the list.
 export function PresetList({ noun, presets, onUpdate }: Props) {
 	const [editing, setEditing] = useState<PromptPreset>();
-	const [pending, setPending] = useState(false);
-	const [error, setError] = useState('');
-	const saving = useRef(false);
-	async function apply(change: Change): Promise<boolean> {
-		if (saving.current) return false;
-		saving.current = true;
-		setPending(true);
-		setError('');
-		try {
-			await onUpdate(change);
-			return true;
-		} catch (error) {
-			setError(errorMessage(error));
-			return false;
-		} finally {
-			saving.current = false;
-			setPending(false);
-		}
-	}
+	const { run: apply, pending, error } = useRowSave(onUpdate);
 	function move(id: string, offset: number) {
 		void apply((current) => swap(current, id, offset));
 	}

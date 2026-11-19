@@ -155,6 +155,10 @@ describe('inbox model and reasoning setting', () => {
 		expect(
 			screen.getAllByRole('alert').map((alert) => alert.textContent),
 		).toEqual(['Disk full']);
+		// The error belongs to the model row, not the page.
+		expect(
+			trigger().closest('.setting-item')?.contains(screen.getByRole('alert')),
+		).toBe(true);
 		expect(trigger().getAttribute('title')).toBe('test · test · Medium');
 		expect(inbox.state.get().storageError).toBeUndefined();
 		await chooseReasoning('Extra high');

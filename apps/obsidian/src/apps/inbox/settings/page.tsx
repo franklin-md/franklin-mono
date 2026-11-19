@@ -1,14 +1,11 @@
-import { useState, useSyncExternalStore } from 'react';
-import { errorMessage } from '../../../shared/error/message.js';
+import { useSyncExternalStore } from 'react';
 import { PresetList } from '../../../shared/preset/settings/list.js';
-import { SettingError } from '../../../shared/ui/setting/error.js';
 import { SettingGroup } from '../../../shared/ui/setting/group.js';
-import { SettingItem } from '../../../shared/ui/setting/item.js';
+import { InstructionsSetting } from '../../../shared/ui/setting/instructions.js';
 import { ModelSetting } from '../../../shared/ui/setting/model.js';
+import { DEFAULT_ANSWER_INSTRUCTIONS } from '../answer-instructions.js';
 import type { InboxController } from '../controller/index.js';
-import type { InboxSettings as Settings } from '../controller/types.js';
 import { InboxShortcutSetting } from './shortcut.js';
-import { InboxInstructionsSetting } from './instructions.js';
 
 type Props = {
 	inbox: InboxController;
@@ -16,49 +13,33 @@ type Props = {
 	active?: boolean;
 };
 
+// Each row saves its own change and shows its own failure.
 export function InboxSettings({
 	inbox,
 	onConfigureInboxShortcut,
 	active = true,
 }: Props) {
-	const settings = useSyncExternalStore(
-		inbox.settings.subscribe,
-		inbox.settings.get,
-	);
-	const [pending, setPending] = useState(false);
-	const [error, setError] = useState('');
-	async function configure(update: Partial<Settings>) {
-		setPending(true);
-		setError('');
-		try {
-			await inbox.settings.configure(update);
-		} catch (error) {
-			setError(errorMessage(error));
-		} finally {
-			setPending(false);
-		}
-	}
+	const { settings } = inbox;
+	const value = useSyncExternalStore(settings.subscribe, settings.get);
 	return (
 		<>
 			<SettingGroup title="Answers">
 				<ModelSetting
 					label="Inbox model"
 					description="Applies to new questions, follow-ups and actions. Retries keep their original model and reasoning."
-					value={settings}
-					pending={pending}
+					value={value}
 					active={active}
-					onChange={(update) => void configure(update)}
+					onChange={settings.configure}
 				/>
-				<InboxInstructionsSetting
-					initial={settings.answerInstructions}
-					pending={pending}
-					onSave={configure}
+				<InstructionsSetting
+					label="Answer instructions"
+					description="Write how the inbox should answer. Saved instructions apply to new questions and follow-ups. Retries keep their original instructions."
+					value={value.answerInstructions}
+					resetTo={DEFAULT_ANSWER_INSTRUCTIONS}
+					onSave={(answerInstructions) =>
+						settings.configure({ answerInstructions })
+					}
 				/>
-				{error && (
-					<SettingItem>
-						<SettingError>{error}</SettingError>
-					</SettingItem>
-				)}
 			</SettingGroup>
 			<SettingGroup
 				title="Actions"
@@ -66,9 +47,9 @@ export function InboxSettings({
 			>
 				<PresetList
 					noun="action"
-					presets={settings.actions}
+					presets={value.actions}
 					onUpdate={(change) =>
-						inbox.settings.configure((current) => ({
+						settings.configure((current) => ({
 							actions: change(current.actions),
 						}))
 					}

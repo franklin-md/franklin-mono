@@ -1,13 +1,9 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { PresetList } from '../../../shared/preset/settings/list.js';
-import { ModelSetting } from '../../../shared/ui/setting/model.js';
-import { SettingError } from '../../../shared/ui/setting/error.js';
 import { SettingGroup } from '../../../shared/ui/setting/group.js';
-import { SettingItem } from '../../../shared/ui/setting/item.js';
-import { quickEditError } from '../error.js';
+import { InstructionsSetting } from '../../../shared/ui/setting/instructions.js';
+import { ModelSetting } from '../../../shared/ui/setting/model.js';
 import type { QuickEditPreferences } from './store.js';
-import type { QuickEditSettings } from '../types.js';
-import { QuickEditInstructionsSetting } from './instructions.js';
 import { QuickEditShortcutSetting } from './shortcut.js';
 
 type Props = {
@@ -16,25 +12,13 @@ type Props = {
 	active?: boolean;
 };
 
+// Each row saves its own change and shows its own failure.
 export function QuickEditSettingsPanel({
 	preferences,
 	onConfigureShortcut,
 	active = true,
 }: Props) {
 	const settings = useSyncExternalStore(preferences.subscribe, preferences.get);
-	const [error, setError] = useState('');
-	const [pending, setPending] = useState(false);
-	async function save(update: Partial<QuickEditSettings>) {
-		setPending(true);
-		setError('');
-		try {
-			await preferences.configure(update);
-		} catch (error) {
-			setError(quickEditError(error));
-		} finally {
-			setPending(false);
-		}
-	}
 	return (
 		<>
 			<SettingGroup
@@ -45,20 +29,15 @@ export function QuickEditSettingsPanel({
 					label="Quick edit model"
 					description="Used for new quick edits."
 					value={settings}
-					pending={pending}
 					active={active}
-					onChange={(update) => void save(update)}
+					onChange={preferences.configure}
 				/>
-				<QuickEditInstructionsSetting
-					initial={settings.instructions}
-					pending={pending}
-					onSave={save}
+				<InstructionsSetting
+					label="Editing instructions"
+					description="Describe your outline and writing conventions. You can name instruction files for the agent to read."
+					value={settings.instructions}
+					onSave={(instructions) => preferences.configure({ instructions })}
 				/>
-				{error && (
-					<SettingItem>
-						<SettingError>{error}</SettingError>
-					</SettingItem>
-				)}
 			</SettingGroup>
 			<SettingGroup
 				title="Presets"
