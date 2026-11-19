@@ -21,10 +21,7 @@ export function QuickEditSettingsPanel({
 	onConfigureShortcut,
 	active = true,
 }: Props) {
-	const settings = useSyncExternalStore(
-		(notify) => preferences.state.subscribe(notify),
-		() => preferences.state.get(),
-	);
+	const settings = useSyncExternalStore(preferences.subscribe, preferences.get);
 	const [error, setError] = useState('');
 	const [pending, setPending] = useState(false);
 	async function save(update: Partial<QuickEditSettings>) {
@@ -71,9 +68,9 @@ export function QuickEditSettingsPanel({
 					noun="preset"
 					presets={settings.presets}
 					onUpdate={(change) =>
-						preferences.configure({
-							presets: change(preferences.state.get().presets),
-						})
+						preferences.configure((current) => ({
+							presets: change(current.presets),
+						}))
 					}
 				/>
 			</SettingGroup>

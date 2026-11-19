@@ -17,6 +17,7 @@ filesystem/platform integration inside the plugin runtime.
 - `src/shared/agent/` contains the Obsidian platform adapter and PDF screenshot renderer.
 - `src/shared/ui/` contains React mounting, portals, host context, Obsidian setting primitives, and `ObsidianIcon`/`listObsidianIcons` for rendering and listing Obsidian's registered icons in shared pickers.
 - `src/shared/preset/` contains the prompt preset shape, schema and settings list shared by Quick Edit presets and Inbox actions.
+- `src/shared/settings/` contains the settings file store shared by Quick Edit and Inbox: a change applies once its file is written, one at a time.
 - `src/shared/diff/` contains the existing diff review controllers, editor integration, and styles.
 - [`src/shared/directives/`](src/shared/directives/README.md) contains persisted inline directives, Live Preview/Reading adapters, and reference discovery/replacement.
 - [`src/shared/obsidian/markdown/`](src/shared/obsidian/markdown/README.md) contains current-content note reads and editor/disk editing operations.

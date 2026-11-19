@@ -13,7 +13,7 @@ import {
 	MemoryFilesystem,
 	toAbsolutePath,
 } from '@franklin/lib';
-import { QuickEditPreferences } from '../store.js';
+import { openQuickEditPreferences } from '../store.js';
 import { quickEditSettingsCodec } from '../codec.js';
 import { QuickEditSettingsPanel } from '../page.js';
 
@@ -49,7 +49,7 @@ describe('quick edit settings panel', () => {
 				getApiKeyProviders: async () => [],
 			},
 		} as unknown as FranklinApp;
-		const preferences = await QuickEditPreferences.create(
+		const preferences = await openQuickEditPreferences(
 			createSingleFilePersister(
 				new MemoryFilesystem(),
 				toAbsolutePath('/quick-edit.json'),
@@ -90,7 +90,7 @@ describe('quick edit settings panel', () => {
 				screen.getByRole('button', { name: 'Save editing instructions' }),
 			);
 			await vi.waitFor(() =>
-				expect(preferences.state.get().instructions).toBe(
+				expect(preferences.get().instructions).toBe(
 					'Read my Outline Rules.md first.',
 				),
 			);
@@ -100,13 +100,9 @@ describe('quick edit settings panel', () => {
 			expect(shortcut).toHaveBeenCalledOnce();
 			fireEvent.click(screen.getByRole('button', { name: 'Quick edit model' }));
 			fireEvent.click(await screen.findByRole('radio', { name: 'High' }));
-			await vi.waitFor(() =>
-				expect(preferences.state.get().reasoning).toBe('high'),
-			);
+			await vi.waitFor(() => expect(preferences.get().reasoning).toBe('high'));
 			fireEvent.click(screen.getByRole('button', { name: 'Delete Link' }));
-			await vi.waitFor(() =>
-				expect(preferences.state.get().presets).toEqual([]),
-			);
+			await vi.waitFor(() => expect(preferences.get().presets).toEqual([]));
 			rerender(panel(false));
 			expect(screen.queryByRole('radio', { name: 'High' })).toBeNull();
 			expect(
