@@ -370,6 +370,13 @@ The compatibility contract is:
   Binaries predating this metadata cannot enforce that protection, so binary
   rollback after adopting versioned stores is not supported.
 
+### Stored thinking levels
+
+Saved settings, sessions and app data read thinking levels through
+[`StoredThinkingLevel`](src/settings/thinking-level.ts). Current levels keep
+their literal values. The retired `minimal` level (removed 2026-11-19) reads as
+`low`, so data saved before its removal still loads without a version bump.
+
 ### Relationship to PiMono
 
 Franklin's architecture can be understood as a simplified version of the [PiMono](https://github.com/nichochar/pimono) approach, narrowed to work with ACP agents specifically.
