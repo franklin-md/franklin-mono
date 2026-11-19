@@ -1,10 +1,10 @@
 import { Button, cn } from '@franklin/ui';
-import type { InboxPreferences } from '../controller/types.js';
+import type { InboxSettings } from '../controller/types.js';
 import { inboxModes } from '../modes/presentation.js';
 
 type Props = {
-	mode: InboxPreferences['mode'];
-	onChange: (mode: NonNullable<InboxPreferences['mode']>) => void;
+	mode: InboxSettings['mode'];
+	onChange: (mode: NonNullable<InboxSettings['mode']>) => void;
 };
 
 export function ModeControl({ mode, onChange }: Props) {

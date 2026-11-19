@@ -268,7 +268,7 @@ describe('SettingsPage', () => {
 				name: 'Action prompt',
 			}).value,
 		).toBe('Unfinished action');
-		expect(inbox.state.get().actions).toEqual([]);
+		expect(inbox.settings.get().actions).toEqual([]);
 	});
 
 	it('seeds the OpenRouter input from the existing auth entry', () => {

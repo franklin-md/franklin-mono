@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useState } from 'react';
 import { ModeControl } from '../../ui/mode.js';
 import { InboxContent } from '../../ui/content.js';
-import type { InboxPreferences } from '../../controller/types.js';
+import type { InboxSettings } from '../../controller/types.js';
 import type { ThoughtDump } from '../types.js';
 
 afterEach(() => {
@@ -23,7 +23,7 @@ describe('composer modes', () => {
 		const add = vi.fn();
 		const split = vi.fn();
 		function Harness() {
-			const [mode, setMode] = useState<InboxPreferences['mode']>('question');
+			const [mode, setMode] = useState<InboxSettings['mode']>('question');
 			return (
 				<InboxContent
 					questions={[]}

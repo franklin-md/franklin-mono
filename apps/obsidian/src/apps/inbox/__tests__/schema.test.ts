@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inboxCodec } from '../controller/schema.js';
+import { inboxCodec, settingsDocumentCodec } from '../controller/schema.js';
 import { answeredQuestion } from '../testing/question.js';
 
 function flatDocument() {
@@ -31,7 +31,7 @@ describe('Inbox base storage boundary', () => {
 	);
 	it('reads questions and preferences saved with the retired minimal level as low', () => {
 		const document = flatDocument();
-		const result = inboxCodec.decode({
+		const result = settingsDocumentCodec.decode({
 			version: 6,
 			data: {
 				questions: [{ ...answeredQuestion(), reasoning: 'minimal' }],
@@ -43,7 +43,7 @@ describe('Inbox base storage boundary', () => {
 	});
 	it('accepts flat version 6 questions with empty later-feature collections', () => {
 		const document = flatDocument();
-		const result = inboxCodec.decode({
+		const result = settingsDocumentCodec.decode({
 			version: 6,
 			data: {
 				...document,

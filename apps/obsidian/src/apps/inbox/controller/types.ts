@@ -17,19 +17,21 @@ export type InboxQuestion = StudyQuestion &
 		updatedAt: number;
 	};
 
-export type InboxPreferences = ModelSelection & {
+// Saved in inbox-settings.json. Questions, thought dumps and action runs copy
+// what they need when created, so retries keep their original settings.
+export type InboxSettings = ModelSelection & {
 	answerInstructions: string;
 	concurrency: number;
 	mode?: 'question' | 'thought-dump';
+	actions: InboxAction[];
 };
 
+// Saved in inbox.json.
 export type InboxDocument = {
 	questions: InboxQuestion[];
 	groups?: InboxGroup[];
 	thoughtDumps?: ThoughtDump[];
-	actions: InboxAction[];
 	actionRuns: InboxActionRun[];
-	preferences: InboxPreferences;
 };
 
 export type InboxSnapshot = InboxDocument & { storageError?: string };
@@ -45,8 +47,13 @@ export type AnswerRequest = BranchContext & {
 	onTrace?: (trace: unknown) => void;
 };
 
+export type InboxPersistence = {
+	inbox: SingleFilePersister<InboxDocument>;
+	settings: SingleFilePersister<InboxSettings>;
+};
+
 export type InboxControllerOptions = {
-	persistence: SingleFilePersister<InboxDocument>;
+	persistence: InboxPersistence;
 	defaults: ModelSelection;
 	// Development builds only: the agent inspect dump of each question's latest
 	// settled attempt, for the card inspect button. Held in memory, never saved.

@@ -9,16 +9,16 @@ const defaults = { provider: 'test', model: 'test', reasoning: 'off' as const };
 
 it('waits to restore until the previous plugin bundle has finished writing', async () => {
 	const app = {} as App;
-	const { disk, read } = createInboxTestPersistence();
+	const { disk, readSettings } = createInboxTestPersistence();
 	const options = { defaults, persistence: disk, run: vi.fn() };
 	const original = openInbox(app, path, options);
 	const first = await original.ready;
-	await first.configure({ answerInstructions: 'Saved before reload' });
-	const load = vi.spyOn(disk, 'load');
+	await first.settings.configure({ answerInstructions: 'Saved before reload' });
+	const load = vi.spyOn(disk.inbox, 'load');
 	const saved = Promise.withResolvers<undefined>();
 	const release = Promise.withResolvers<undefined>();
-	const save = disk.save;
-	vi.spyOn(disk, 'save').mockImplementationOnce(async (document) => {
+	const save = disk.inbox.save;
+	vi.spyOn(disk.inbox, 'save').mockImplementationOnce(async (document) => {
 		saved.resolve(undefined);
 		await release.promise;
 		await save(document);
@@ -39,11 +39,11 @@ it('waits to restore until the previous plugin bundle has finished writing', asy
 	}
 
 	const current = await reloaded.ready;
-	expect(current.state.get().preferences.answerInstructions).toBe(
-		'Saved before reload',
-	);
-	await current.configure({ answerInstructions: 'Saved after reload' });
-	expect(read()?.preferences.answerInstructions).toBe('Saved after reload');
+	expect(current.settings.get().answerInstructions).toBe('Saved before reload');
+	await current.settings.configure({
+		answerInstructions: 'Saved after reload',
+	});
+	expect(readSettings()?.answerInstructions).toBe('Saved after reload');
 	await reloaded.dispose();
 });
 
@@ -51,13 +51,14 @@ it('skips writes when unloaded while the file is being restored', async () => {
 	const { disk } = createInboxTestPersistence();
 	const reading = Promise.withResolvers<undefined>();
 	const release = Promise.withResolvers<undefined>();
-	const load = disk.load;
-	vi.spyOn(disk, 'load').mockImplementationOnce(async () => {
+	const load = disk.inbox.load;
+	vi.spyOn(disk.inbox, 'load').mockImplementationOnce(async () => {
 		reading.resolve(undefined);
 		await release.promise;
 		return load();
 	});
-	const save = vi.spyOn(disk, 'save');
+	const save = vi.spyOn(disk.inbox, 'save');
+	const saveSettings = vi.spyOn(disk.settings, 'save');
 	const run = vi.fn();
 	const lifetime = openInbox({} as App, path, {
 		defaults,
@@ -71,5 +72,6 @@ it('skips writes when unloaded while the file is being restored', async () => {
 
 	await expect(lifetime.ready).rejects.toMatchObject({ name: 'AbortError' });
 	expect(save).not.toHaveBeenCalled();
+	expect(saveSettings).not.toHaveBeenCalled();
 	expect(run).not.toHaveBeenCalled();
 });

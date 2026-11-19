@@ -4,13 +4,8 @@ import type { ReactNode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { Command, Plugin, ViewCreator, WorkspaceLeaf } from 'obsidian';
 import type { FranklinApp } from '@franklin/agent';
-import {
-	MemoryFilesystem,
-	createSingleFilePersister,
-	toAbsolutePath,
-} from '@franklin/lib';
 import { InboxController } from '../controller/index.js';
-import { inboxCodec } from '../controller/schema.js';
+import { createInboxCodecPersistence } from '../testing/persistence.js';
 import { registerInbox } from '../register.js';
 import type { InboxView } from '../host/view.js';
 import { clearPortalRoot } from '../../../shared/ui/portal.js';
@@ -47,11 +42,7 @@ it('renders a newly registered Inbox before navigation and after reopening its p
 	);
 	const inbox = await InboxController.create({
 		defaults: { provider: 'test', model: 'test', reasoning: 'low' },
-		persistence: createSingleFilePersister(
-			new MemoryFilesystem(),
-			toAbsolutePath('/inbox.json'),
-			inboxCodec,
-		),
+		persistence: createInboxCodecPersistence(),
 		run: vi.fn(),
 	});
 	let creator: ViewCreator | undefined;

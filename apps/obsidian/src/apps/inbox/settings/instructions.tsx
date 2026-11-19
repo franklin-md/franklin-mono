@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { Button } from '@franklin/ui';
-import type { InboxPreferences } from '../controller/types.js';
+import type { InboxSettings } from '../controller/types.js';
 import { DEFAULT_ANSWER_INSTRUCTIONS } from '../answer-instructions.js';
 import { SettingDescription } from '../../../shared/ui/setting/description.js';
 import { SettingInfo } from '../../../shared/ui/setting/info.js';
@@ -11,7 +11,7 @@ import { SettingTextarea } from '../../../shared/ui/setting/textarea.js';
 type Props = {
 	initial: string;
 	pending: boolean;
-	onSave: (update: Partial<InboxPreferences>) => Promise<void>;
+	onSave: (update: Partial<InboxSettings>) => Promise<void>;
 };
 
 export function InboxInstructionsSetting({ initial, pending, onSave }: Props) {

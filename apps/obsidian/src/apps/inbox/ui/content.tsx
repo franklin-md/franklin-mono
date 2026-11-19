@@ -19,7 +19,7 @@ import { QuestionFeed } from './feed.js';
 import { selectionQuestion } from '../selection-question.js';
 import type { InboxGroup } from '../hierarchy/types.js';
 import type { ThoughtDump } from '../modes/types.js';
-import type { InboxPreferences } from '../controller/types.js';
+import type { InboxSettings } from '../controller/types.js';
 import type { QuestionNavigation } from './navigation.js';
 
 type Props = {
@@ -31,7 +31,7 @@ type Props = {
 	onFoldGroup?: (id: string, folded: boolean) => void;
 	onRetryExtraction?: (id: string) => void;
 	onDismissExtraction?: (id: string) => void;
-	mode?: InboxPreferences['mode'];
+	mode?: InboxSettings['mode'];
 	onThoughtDump?: (text: string) => void | Promise<void>;
 	composerControls: ReactNode;
 	concurrency: number;

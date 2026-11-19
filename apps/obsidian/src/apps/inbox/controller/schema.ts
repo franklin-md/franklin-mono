@@ -3,9 +3,9 @@ import { validateHierarchy } from '../hierarchy/validate.js';
 import { thoughtDumpSchema } from '../modes/schema.js';
 import { versioned, zodCodec } from '@franklin/lib';
 import { z } from 'zod';
-import type { InboxActionRun } from '../actions/types.js';
+import type { InboxAction, InboxActionRun } from '../actions/types.js';
 import { inboxActionSchema } from '../actions/schema.js';
-import type { InboxDocument } from './types.js';
+import type { InboxDocument, InboxSettings } from './types.js';
 import { questionSchema as question } from './question-schema.js';
 import { failedStateSchema } from './failed-schema.js';
 import { migrateAnswerInstructions } from './migrate-instructions.js';
@@ -46,7 +46,12 @@ const legacyAction = z.object({
 	prompt: z.string().trim().min(1),
 });
 type LegacyAction = z.infer<typeof legacyAction>;
-type LegacyDocument = Omit<InboxDocument, 'actions' | 'actionRuns'> & {
+// Versions 1-11 also held the Inbox settings, now in inbox-settings.json.
+type SettingsDocument = InboxDocument & {
+	preferences: Omit<InboxSettings, 'actions'>;
+	actions: InboxAction[];
+};
+type LegacyDocument = Omit<SettingsDocument, 'actions' | 'actionRuns'> & {
 	actions: LegacyAction[];
 	actionRuns: (Omit<InboxActionRun, 'action'> & { action: LegacyAction })[];
 };
@@ -119,8 +124,26 @@ const document: z.ZodType<LegacyDocument> = documentShape
 	})
 	.superRefine(validateActions);
 
-function validateActions(
-	{ actions, actionRuns, questions, thoughtDumps, groups }: LegacyDocument,
+function validateActions(document: LegacyDocument, ctx: z.RefinementCtx) {
+	const { actions } = document;
+	if (new Set(actions.map((a) => a.id)).size !== actions.length)
+		ctx.addIssue({ code: 'custom', message: 'Duplicate inbox IDs' });
+	validateRuns(document, ctx);
+}
+
+function validateRuns(
+	{
+		actionRuns,
+		questions,
+		thoughtDumps,
+		groups,
+	}: Pick<LegacyDocument, 'questions' | 'thoughtDumps' | 'groups'> & {
+		actionRuns: {
+			id: string;
+			question: { id: string };
+			action: { id: string };
+		}[];
+	},
 	ctx: z.RefinementCtx,
 ) {
 	const ids = [
@@ -129,10 +152,7 @@ function validateActions(
 		...(groups ?? []).map((group) => group.id),
 		...actionRuns.map((run) => run.id),
 	];
-	if (
-		new Set(ids).size !== ids.length ||
-		new Set(actions.map((a) => a.id)).size !== actions.length
-	)
+	if (new Set(ids).size !== ids.length)
 		ctx.addIssue({ code: 'custom', message: 'Duplicate inbox IDs' });
 	const pairs = actionRuns.map((run) =>
 		JSON.stringify([run.question.id, run.action.id]),
@@ -154,7 +174,7 @@ const groupedDocument: z.ZodType<LegacyDocument> = documentShape
 	.superRefine(validateHierarchy)
 	.superRefine(validateActions);
 
-const iconDocument: z.ZodType<InboxDocument> = documentShape
+const iconDocument: z.ZodType<SettingsDocument> = documentShape
 	.extend({
 		groups: z.array(groupSchema).optional(),
 		actions: z.array(inboxActionSchema).default([]),
@@ -164,6 +184,17 @@ const iconDocument: z.ZodType<InboxDocument> = documentShape
 	})
 	.superRefine(validateHierarchy)
 	.superRefine(validateActions);
+
+const workDocument: z.ZodType<InboxDocument> = documentShape
+	.omit({ preferences: true, actions: true })
+	.extend({
+		groups: z.array(groupSchema).optional(),
+		actionRuns: z
+			.array(actionRun.extend({ action: inboxActionSchema }))
+			.default([]),
+	})
+	.superRefine(validateHierarchy)
+	.superRefine(validateRuns);
 
 // Released Inbox base (#312) used version 7 for a flat question queue.
 // Decode it separately so v6 Madrid data keeps its group and action records.
@@ -183,7 +214,7 @@ const baseDocument: z.ZodType<LegacyDocument> = z
 		actionRuns: [],
 	}));
 
-export const inboxCodec = versioned()
+const throughVersion11 = versioned()
 	.version(1, zodCodec(legacyDocument))
 	.version(2, zodCodec(actionDocument), (previous) => ({
 		...previous,
@@ -225,5 +256,18 @@ export const inboxCodec = versioned()
 			...run,
 			action: migrateActionIcon(run.action),
 		})),
-	}))
+	}));
+
+// Reads the settings that versions 1-11 kept here, once, to seed
+// inbox-settings.json.
+export const settingsDocumentCodec = throughVersion11.build();
+
+export const inboxCodec = throughVersion11
+	// Settings moved to inbox-settings.json. Older plugins must reject this
+	// format rather than open the Inbox without its settings.
+	.version(
+		12,
+		zodCodec(workDocument),
+		({ preferences: _preferences, actions: _actions, ...work }) => work,
+	)
 	.build();

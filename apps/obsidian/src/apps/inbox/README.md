@@ -1,6 +1,6 @@
 # Study Inbox
 
-Inbox owns a plugin-lifetime question queue, saved preferences and answers,
+Inbox owns a plugin-lifetime question queue, saved settings and answers,
 Markdown-note context, source navigation, and the answer/composer view. Closing
 the pane does not stop its queue. Inline capture adds a question to the queue
 and puts a status pill beside its source selection.
@@ -24,19 +24,26 @@ and puts a status pill beside its source selection.
   errors. A note's status pill reads **Failed**; hovering or focusing it shows
   the same failure.
 - Model, reasoning and answer instructions are captured per question. New
-  questions and follow-ups use current preferences; retries retain the original
+  questions and follow-ups use the current settings; retries retain the original
   selection and instructions. Follow-up context comes from the ancestor
   questions, including their complete answers, and the enclosing groups.
-- `inbox.json` is written by a serialized, same-directory temporary-file rename.
-  The document contains questions, preferences, and action definitions and runs.
-  Reload waits for any previous Inbox instance to finish its writes before
-  restoring the file. Failed saves remain visible. Resending the same question,
-  including after removing checklist formatting, keeps its original ID.
-- New writes use schema version 11. Flat-question versions 1–7 keep saved
-  instructions and answers. Version 8 retains saved action definitions and
-  pending runs. Version 9 adds empty action collections on migration. Version
-  11 gives saved actions and pending runs an icon and color; earlier actions
-  migrate to a blue sparkles icon. Inbox preserves the original file if
+- `inbox.json` holds questions, groups, thought dumps and action runs.
+  `inbox-settings.json` beside it holds the model, reasoning, answer
+  instructions, concurrency, composer mode and action definitions. Both are
+  written by a serialized, same-directory temporary-file rename. Reload waits
+  for any previous Inbox instance to finish its writes before restoring them.
+  Failed `inbox.json` saves remain visible with **Retry save**. A settings
+  change applies only once saved; a failed one is reported where it was made.
+  Resending the same question, including after removing checklist formatting,
+  keeps its original ID.
+- New `inbox.json` writes use schema version 12. Flat-question versions 1–7
+  keep saved instructions and answers. Version 8 retains saved action
+  definitions and pending runs. Version 9 adds empty action collections on
+  migration. Version 11 gives saved actions and pending runs an icon and color;
+  earlier actions migrate to a blue sparkles icon. Version 12 moves the
+  settings to `inbox-settings.json` (version 1): the first load after upgrading
+  saves the settings an older `inbox.json` held, then rewrites it without them.
+  An existing settings file is kept. Inbox preserves the original files if
   validation fails. Chat and credentials settings can open while Inbox
   recovers.
 

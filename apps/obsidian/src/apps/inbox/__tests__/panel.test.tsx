@@ -39,11 +39,14 @@ describe('functional inbox UI', () => {
 		const controller = await InboxController.create({
 			defaults,
 			persistence: {
-				save: async (value) => {
-					saved = structuredClone(value);
+				...createInboxTestPersistence().disk,
+				inbox: {
+					save: async (value) => {
+						saved = structuredClone(value);
+					},
+					load: async () => ({ value: undefined, issues: [] }),
+					delete: async () => {},
 				},
-				load: async () => ({ value: undefined, issues: [] }),
-				delete: async () => {},
 			},
 			run: async ({ submit }) => {
 				await submit('Answer from the runtime.');
@@ -88,6 +91,45 @@ describe('functional inbox UI', () => {
 		unmount();
 		await controller.dispose();
 	});
+	it('saves the composer mode to the Inbox settings and reports a failed save', async () => {
+		vi.stubGlobal(
+			'matchMedia',
+			vi.fn(() => ({ matches: true })),
+		);
+		const { disk, read, readSettings } = createInboxTestPersistence();
+		const controller = await InboxController.create({
+			defaults,
+			persistence: disk,
+			run: vi.fn(),
+		});
+		const onError = vi.fn();
+		render(
+			<InboxPanel
+				controller={controller}
+				onError={onError}
+				onSettings={vi.fn()}
+				onOpenSource={vi.fn()}
+			/>,
+		);
+		const toggle = () =>
+			screen.getByRole('button', { name: 'Thought dump mode' });
+		const written = read();
+		await act(async () => {
+			fireEvent.click(toggle());
+		});
+		expect(readSettings()?.mode).toBe('thought-dump');
+		expect(toggle().getAttribute('aria-pressed')).toBe('true');
+		expect(read()).toBe(written);
+		vi.spyOn(disk.settings, 'save').mockRejectedValueOnce(
+			new Error('Disk full'),
+		);
+		await act(async () => {
+			fireEvent.click(toggle());
+		});
+		expect(onError).toHaveBeenCalledWith(new Error('Disk full'));
+		expect(toggle().getAttribute('aria-pressed')).toBe('true');
+		await controller.dispose();
+	});
 	it.each([
 		{ stripChecklist: false, retrySaveFirst: false },
 		{ stripChecklist: true, retrySaveFirst: false },
@@ -105,7 +147,9 @@ describe('functional inbox UI', () => {
 				persistence: disk,
 				run,
 			});
-			vi.spyOn(disk, 'save').mockRejectedValueOnce(new Error('disk full'));
+			vi.spyOn(disk.inbox, 'save').mockRejectedValueOnce(
+				new Error('disk full'),
+			);
 			const captureContext = vi.fn(async () => undefined);
 			const { unmount } = render(
 				<InboxPanel

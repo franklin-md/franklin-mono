@@ -66,7 +66,8 @@ describe('Inbox question directives', () => {
 		const gone = await h.service.definition.create({ questionId: 'deleted' });
 		h.content = keep.text + gone.text;
 		h.process.mockRejectedValueOnce(new Error('locked'));
-		await h.inbox.configure({ concurrency: 2 });
+		// Each saved Inbox snapshot starts a cleanup pass.
+		await h.inbox.retrySave();
 		await vi.waitFor(() => expect(h.error).toHaveBeenCalled());
 		expect(h.content).toContain(gone.text);
 		await h.service.dispose();

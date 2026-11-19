@@ -12,6 +12,7 @@ import { questionPrompt } from '../agent/prompt.js';
 import { InboxController } from '../controller/index.js';
 import { inboxCodec } from '../controller/schema.js';
 import { answeredQuestion } from '../testing/question.js';
+import { createInboxTestPersistence } from '../testing/persistence.js';
 import { QuestionFeed } from '../ui/feed.js';
 import type { AnswerRequest, InboxDocument } from '../controller/types.js';
 
@@ -167,13 +168,16 @@ describe('structured inbox answers', () => {
 		const options = {
 			defaults: { provider: 'test', model: 'test', reasoning: 'off' as const },
 			persistence: {
-				load: async () => ({ value: saved, issues: [] }),
-				save: async (value: InboxDocument) => {
-					const decoded = inboxCodec.decode(inboxCodec.encode(value));
-					if (!decoded.ok) throw new Error(JSON.stringify(decoded.issue));
-					saved = decoded.value;
+				...createInboxTestPersistence().disk,
+				inbox: {
+					load: async () => ({ value: saved, issues: [] }),
+					save: async (value: InboxDocument) => {
+						const decoded = inboxCodec.decode(inboxCodec.encode(value));
+						if (!decoded.ok) throw new Error(JSON.stringify(decoded.issue));
+						saved = decoded.value;
+					},
+					delete: async () => {},
 				},
-				delete: async () => {},
 			},
 			run: async ({ submit }: AnswerRequest) => {
 				await submit('No.', 'Is retrying safe?', details);
@@ -200,14 +204,18 @@ describe('structured inbox answers', () => {
 		for (const question of previous.questions) {
 			if (question.state.kind === 'answered') delete question.state.details;
 		}
-		const migrated = inboxCodec.decode({ version: 3, data: previous });
+		const { actions, ...preferences } = restored.settings.get();
+		const migrated = inboxCodec.decode({
+			version: 3,
+			data: { ...previous, preferences, actions },
+		});
 		expect(migrated.ok && migrated.value.questions[0]?.state).toEqual({
 			kind: 'answered',
 			answer: 'No.',
 			title: 'Is retrying safe?',
 		});
 		expect(inboxCodec.encode(restored.state.get())).toMatchObject({
-			version: 11,
+			version: 12,
 		});
 		await restored.dispose();
 	});

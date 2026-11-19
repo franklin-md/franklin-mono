@@ -21,7 +21,7 @@ function deferred() {
 
 async function harness(concurrency = 2) {
 	const storage = createInboxTestPersistence();
-	vi.spyOn(storage.disk, 'save');
+	vi.spyOn(storage.disk.inbox, 'save');
 	const pending: AnswerRequest[] = [];
 	const gates = new Map<string, ReturnType<typeof deferred>>();
 	const run = vi.fn(async (request: AnswerRequest) => {
@@ -35,7 +35,7 @@ async function harness(concurrency = 2) {
 		defaults,
 		run,
 	});
-	await inbox.configure({ concurrency });
+	await inbox.settings.configure({ concurrency });
 	return {
 		...storage,
 		inbox,
@@ -82,13 +82,15 @@ describe('study inbox controller', () => {
 
 	it('retries with its original model and instructions, and rejects stale/deleted submissions', async () => {
 		const h = await harness(1);
-		await h.inbox.configure({ answerInstructions: 'Original instructions' });
+		await h.inbox.settings.configure({
+			answerInstructions: 'Original instructions',
+		});
 		const id = await h.inbox.add('question');
 		await vi.waitFor(() => expect(h.pending).toHaveLength(1));
 		const old = h.pending[0]!;
 		await h.finish(id);
 		expect(h.inbox.state.get().questions[0]?.state.kind).toBe('failed');
-		await h.inbox.configure({
+		await h.inbox.settings.configure({
 			model: 'other-model',
 			answerInstructions: 'New instructions',
 		});
@@ -114,7 +116,7 @@ describe('study inbox controller', () => {
 		await vi.waitFor(() => expect(h.pending).toHaveLength(1));
 		await h.pending[0]!.submit('root answer');
 		await h.finish(root);
-		await h.inbox.configure({
+		await h.inbox.settings.configure({
 			answerInstructions: 'Explain the next question in detail.',
 		});
 		const child = await h.inbox.add('child', { parentId: root });
@@ -141,6 +143,19 @@ describe('study inbox controller', () => {
 		await h.finish(sibling);
 		await h.finish(grandchild);
 		await h.inbox.dispose();
+	});
+
+	it('starts waiting questions as soon as concurrency is raised', async () => {
+		const h = await harness(1);
+		const first = await h.inbox.add('first');
+		const second = await h.inbox.add('second');
+		await vi.waitFor(() => expect(h.pending).toHaveLength(1));
+		await h.inbox.settings.configure({ concurrency: 2 });
+		await vi.waitFor(() => expect(h.pending).toHaveLength(2));
+		expect(h.readSettings()?.concurrency).toBe(2);
+		await h.inbox.dispose();
+		await h.finish(first);
+		await h.finish(second);
 	});
 
 	it('saves the stop code of a failed turn and restores it', async () => {
@@ -211,7 +226,7 @@ describe('study inbox controller', () => {
 
 	it('does not submit a request until its running state is saved; failed saves are visible and recoverable', async () => {
 		const h = await harness(1);
-		vi.mocked(h.disk.save).mockRejectedValueOnce(new Error('disk full'));
+		vi.mocked(h.disk.inbox.save).mockRejectedValueOnce(new Error('disk full'));
 		await expect(h.inbox.add('unsaved')).rejects.toThrow('disk full');
 		expect(h.run).not.toHaveBeenCalled();
 		expect(h.inbox.state.get().storageError).toContain('disk full');
@@ -224,8 +239,9 @@ describe('study inbox controller', () => {
 
 	it('preserves unreadable storage instead of overwriting it', async () => {
 		const h = createInboxTestPersistence();
-		const save = vi.spyOn(h.disk, 'save');
-		h.disk.load = async () => ({
+		const save = vi.spyOn(h.disk.inbox, 'save');
+		const saveSettings = vi.spyOn(h.disk.settings, 'save');
+		h.disk.inbox.load = async () => ({
 			value: undefined,
 			issues: [
 				{ kind: 'corrupt-json', path: 'inbox.json', error: 'invalid' },
@@ -235,13 +251,14 @@ describe('study inbox controller', () => {
 			InboxController.create({ defaults, persistence: h.disk, run: vi.fn() }),
 		).rejects.toThrow('preserved');
 		expect(save).not.toHaveBeenCalled();
+		expect(saveSettings).not.toHaveBeenCalled();
 	});
 
 	it('rejects blank IDs and conflicting reuse before writing', async () => {
 		const h = await harness();
 		const id = await h.inbox.add('Original question', { id: 'question-id' });
 		await vi.waitFor(() => expect(h.pending).toHaveLength(1));
-		const save = vi.mocked(h.disk.save);
+		const save = vi.mocked(h.disk.inbox.save);
 		save.mockClear();
 
 		await expect(h.inbox.add('Blank ID', { id: '' })).rejects.toThrow(
