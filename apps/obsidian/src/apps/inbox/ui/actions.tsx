@@ -27,8 +27,9 @@ export function QuestionActions({
 			.filter((run) => !actions.some((action) => action.id === run.action.id))
 			.map((run) => run.action),
 	];
+	// Items join the card's action row, so they wrap alongside Record and Debug.
 	return (
-		<div className="flex min-w-0 max-w-full flex-wrap gap-2">
+		<>
 			{definitions.map((action) => {
 				const run = runs.find((run) => run.action.id === action.id);
 				const state = run?.state;
@@ -95,6 +96,6 @@ export function QuestionActions({
 					</div>
 				);
 			})}
-		</div>
+		</>
 	);
 }
