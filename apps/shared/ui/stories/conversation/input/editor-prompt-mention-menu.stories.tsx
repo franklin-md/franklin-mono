@@ -49,6 +49,7 @@ function MentionMenuStory({
 				anchorRect: createAnchorRect(),
 				highlightedIndex,
 				command: (item) => setCommittedPath(item.path),
+				dismiss: () => setOpen(false),
 			}
 		: inactiveMentionSuggestion;
 

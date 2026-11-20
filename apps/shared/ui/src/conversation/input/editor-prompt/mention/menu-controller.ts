@@ -5,6 +5,7 @@ type ShowMenuOptions = {
 	readonly query: string;
 	readonly anchorRect: DOMRect | undefined;
 	readonly command: (item: FileIndexItem) => void;
+	readonly dismiss: () => void;
 };
 
 export interface ActiveMentionSuggestionState extends ShowMenuOptions {
@@ -22,6 +23,7 @@ export const inactiveMentionSuggestion: MentionSuggestionState = {
 
 export interface MenuKeyEvent {
 	readonly key: string;
+	readonly shiftKey: boolean;
 	preventDefault(): void;
 }
 
@@ -70,6 +72,7 @@ export function createMenuController({
 			anchorRect: activeMenu.anchorRect,
 			highlightedIndex,
 			command: commitItem,
+			dismiss: activeMenu.dismiss,
 		});
 	};
 
@@ -121,7 +124,8 @@ export function createMenuController({
 		exit,
 		highlight,
 		handleKeyDown: (event) => {
-			if (!activeMenu) {
+			// Shift+Enter stays a line break, even over pasted text that matches.
+			if (!activeMenu || (event.key === 'Enter' && event.shiftKey)) {
 				return false;
 			}
 

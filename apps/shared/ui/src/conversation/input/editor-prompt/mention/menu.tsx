@@ -54,6 +54,9 @@ export function MentionMenu({
 				className="w-80 p-0"
 				collisionPadding={8}
 				onCloseAutoFocus={(event) => event.preventDefault()}
+				// Radix consumes Escape at document capture, so ProseMirror and the
+				// suggestion plugin never see it; dismiss the suggestion from here.
+				onEscapeKeyDown={suggestion.dismiss}
 				onMouseDown={(event) => event.preventDefault()}
 				onOpenAutoFocus={(event) => event.preventDefault()}
 				side="top"

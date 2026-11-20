@@ -122,6 +122,16 @@ function getPromptParagraph(frame: HTMLElement): HTMLElement {
 	return paragraph;
 }
 
+function getScrollViewport(editor: HTMLElement): HTMLElement {
+	const viewport = editor.closest('[data-radix-scroll-area-viewport]');
+	if (!(viewport instanceof HTMLElement)) {
+		throw new Error(
+			'Expected the prompt editor to render in a scroll viewport',
+		);
+	}
+	return viewport;
+}
+
 function getPromptLineMetrics(frame: HTMLElement) {
 	const editor = getPromptEditor(frame);
 	const paragraph = getPromptParagraph(frame);
@@ -251,5 +261,69 @@ export const MentionMenuEnterCommit: Story = {
 			).not.toBeNull();
 		});
 		await expect(canvas.getByTestId('send-count').textContent).toBe('0');
+	},
+};
+
+export const LongPastedTokenWraps: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const editor = canvas.getByLabelText('Message');
+
+		await userEvent.click(editor);
+		await userEvent.paste(`See ${'a1b2c3d4e5'.repeat(30)} for details`);
+		await waitFor(async () => {
+			await expect(canvas.getByTestId('prompt-input').textContent).toContain(
+				'for details',
+			);
+		});
+
+		const viewport = getScrollViewport(editor);
+		await expect(viewport.scrollWidth).toBeLessThanOrEqual(
+			viewport.clientWidth + 1,
+		);
+	},
+};
+
+export const PastedMentionTriggerKeepsShiftEnter: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const documentBody = within(canvasElement.ownerDocument.body);
+		const editor = canvas.getByLabelText('Message');
+		const pasted = 'import failed from @franklin/agent during build';
+
+		await userEvent.click(editor);
+		await userEvent.paste(pasted);
+		await documentBody.findByRole('listbox');
+		await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
+
+		await waitFor(async () => {
+			await expect(canvas.getByTestId('prompt-input').textContent).toBe(
+				`${pasted}\n`,
+			);
+		});
+		// The hard break ends the text node the suggestion matched against.
+		await expect(documentBody.queryByRole('listbox')).toBeNull();
+		await expect(canvas.getByTestId('send-count').textContent).toBe('0');
+	},
+};
+
+export const EscapeDismissesMentionMenu: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const documentBody = within(canvasElement.ownerDocument.body);
+		const editor = canvas.getByLabelText('Message');
+
+		await userEvent.click(editor);
+		await userEvent.type(editor, '@');
+		await documentBody.findByRole('option', { name: /2026-05-28\.md/ });
+		await userEvent.keyboard('{Escape}');
+
+		await waitFor(async () => {
+			await expect(documentBody.queryByRole('listbox')).toBeNull();
+		});
+		await userEvent.keyboard('{Enter}');
+
+		await expect(canvas.getByTestId('send-count').textContent).toBe('1');
+		await expect(canvasElement.querySelector('[data-file-path]')).toBeNull();
 	},
 };
