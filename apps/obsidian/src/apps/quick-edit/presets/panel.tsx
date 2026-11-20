@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
 import { CompactPopover, IconActionGroup } from '@franklin/ui';
 import type { FloatingAnchor } from '@franklin/ui';
+import { presetColors } from '../../../shared/preset/colors.js';
+import type { PromptPreset } from '../../../shared/preset/types.js';
 import { bindObsidianIcon } from '../../../shared/ui/icon/bind.js';
-import type { QuickEditPreset } from './types.js';
-import { presetColors } from './colors.js';
 
 type Props = {
 	anchor: FloatingAnchor;
-	presets: readonly QuickEditPreset[];
-	onSelect: (preset: QuickEditPreset) => void;
+	presets: readonly PromptPreset[];
+	onSelect: (preset: PromptPreset) => void;
 	onClose: (restoreFocus: boolean) => void;
 	onContent?: (element: HTMLDivElement | null) => void;
 };

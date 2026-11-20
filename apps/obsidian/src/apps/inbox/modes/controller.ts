@@ -1,8 +1,10 @@
 import type { Store } from '@franklin/agent';
 import type {
+	InboxSettings,
 	InboxSnapshot,
 	InboxControllerOptions,
 } from '../controller/types.js';
+import type { SettingsFile } from '../../../shared/settings/types.js';
 import type { QuestionSource } from '../types.js';
 import { createQuestion } from '../controller/create-question.js';
 import { createGroup } from '../hierarchy/create.js';
@@ -12,6 +14,7 @@ import { parseExtraction } from './parse-extraction.js';
 
 type Options = {
 	store: Store<InboxSnapshot>;
+	settings: SettingsFile<InboxSettings>;
 	assertOpen: () => void;
 	persist: () => Promise<void>;
 	pump: () => void;
@@ -23,7 +26,7 @@ export class ThoughtDumps {
 	async add(
 		text: string,
 		source?: QuestionSource,
-		preferences = this.options.store.get().preferences,
+		settings = this.options.settings.get(),
 	): Promise<void> {
 		const { store, assertOpen, persist, pump } = this.options;
 		assertOpen();
@@ -36,10 +39,10 @@ export class ThoughtDumps {
 				id,
 				text: text.trim(),
 				createdAt: Date.now(),
-				provider: preferences.provider,
-				model: preferences.model,
-				reasoning: preferences.reasoning,
-				answerInstructions: preferences.answerInstructions,
+				provider: settings.provider,
+				model: settings.model,
+				reasoning: settings.reasoning,
+				answerInstructions: settings.answerInstructions,
 				source,
 				state: { kind: 'queued' },
 			});
@@ -110,7 +113,7 @@ export class ThoughtDumps {
 					...questions.map((text, index) => ({
 						...createQuestion({
 							text,
-							preferences: dump,
+							settings: dump,
 							source: dump.source,
 							parent: group,
 						}),

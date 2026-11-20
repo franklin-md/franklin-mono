@@ -1,8 +1,10 @@
 import { LoaderCircle } from 'lucide-react';
-import { Button } from '@franklin/ui';
+import { Button, cn } from '@franklin/ui';
 import type { InboxAction, InboxActionRun } from '../actions/types.js';
+import { presetColors } from '../../../shared/preset/colors.js';
 import { FailureNotice } from '../../../shared/ui/failure/index.js';
 import { RetryButton } from '../../../shared/ui/failure/retry.js';
+import { ObsidianIcon } from '../../../shared/ui/icon/index.js';
 
 type Props = {
 	actions: InboxAction[];
@@ -46,6 +48,13 @@ export function QuestionActions({
 							disabled={!!run}
 							onClick={() => onRun(action.id)}
 						>
+							<ObsidianIcon
+								id={definition.icon}
+								className={cn(
+									'size-4',
+									presetColors[definition.color].colorClassName,
+								)}
+							/>
 							{definition.name}
 							{state?.kind === 'running' && (
 								<LoaderCircle

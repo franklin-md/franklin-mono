@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useSyncExternalStore } from 'react';
 import {
 	cleanup,
 	fireEvent,
@@ -7,30 +8,34 @@ import {
 	within,
 } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import {
-	createSingleFilePersister,
-	MemoryFilesystem,
-	toAbsolutePath,
-} from '@franklin/lib';
-import { QuickEditPreferences } from '../../store.js';
-import { quickEditSettingsCodec } from '../../codec.js';
-import { createDefaultPresets } from '../../../presets/defaults.js';
-import { PresetSettings } from '../list.js';
+import { createStore } from '@franklin/agent';
+import type { PromptPreset } from '../../types.js';
+import { PresetList } from '../list.js';
 
-const defaults = {
-	provider: 'test',
-	model: 'test',
-	reasoning: 'off' as const,
-	instructions: '',
+const link: PromptPreset = {
+	id: 'link',
+	name: 'Link',
+	prompt: 'Link a related note.',
+	icon: 'lucide-link',
+	color: 'blue',
 };
 
-function createPreferences() {
-	const storage = createSingleFilePersister(
-		new MemoryFilesystem(),
-		toAbsolutePath('/quick-edit.json'),
-		quickEditSettingsCodec,
-	);
-	return { storage, opened: QuickEditPreferences.create(storage, defaults) };
+// Stands in for an owner's persisted store: each update applies to its latest list.
+function createPresets(save = vi.fn(async (_presets: PromptPreset[]) => {})) {
+	const store = createStore([link]);
+	async function update(change: (current: PromptPreset[]) => PromptPreset[]) {
+		const next = change(store.get());
+		await save(next);
+		store.set(() => next);
+	}
+	function Owner() {
+		const presets = useSyncExternalStore(
+			(notify) => store.subscribe(notify),
+			() => store.get(),
+		);
+		return <PresetList noun="preset" presets={presets} onUpdate={update} />;
+	}
+	return { store, save, Owner };
 }
 
 // jsdom has no layout or ResizeObserver. Radix positions the popover with
@@ -54,9 +59,8 @@ afterEach(() => {
 });
 
 it('adds, customizes, reorders and deletes saved presets', async () => {
-	const { storage, opened } = createPreferences();
-	const preferences = await opened;
-	render(<PresetSettings preferences={preferences} />);
+	const { store, Owner } = createPresets();
+	render(<Owner />);
 	fireEvent.click(screen.getByRole('button', { name: 'Add preset' }));
 	const form = within(screen.getByRole('form', { name: 'Edit preset' }));
 	const save = form.getByRole('button', { name: 'Save preset' });
@@ -65,7 +69,7 @@ it('adds, customizes, reorders and deletes saved presets', async () => {
 		target: { value: 'Explain' },
 	});
 	expect(save).toHaveProperty('disabled', true);
-	fireEvent.change(form.getByLabelText('Prompt'), {
+	fireEvent.change(form.getByLabelText('Preset prompt'), {
 		target: { value: 'Explain this point.' },
 	});
 	await vi.waitFor(() => expect(save).toHaveProperty('disabled', false));
@@ -87,7 +91,7 @@ it('adds, customizes, reorders and deletes saved presets', async () => {
 
 	fireEvent.click(save);
 	await vi.waitFor(() =>
-		expect(preferences.state.get().presets.at(-1)).toMatchObject({
+		expect(store.get().at(-1)).toMatchObject({
 			name: 'Explain',
 			prompt: 'Explain this point.',
 			icon: 'lucide-pencil',
@@ -95,9 +99,7 @@ it('adds, customizes, reorders and deletes saved presets', async () => {
 		}),
 	);
 	fireEvent.click(screen.getByRole('button', { name: 'Move Explain up' }));
-	await vi.waitFor(() =>
-		expect(preferences.state.get().presets.at(-2)?.name).toBe('Explain'),
-	);
+	await vi.waitFor(() => expect(store.get().at(-2)?.name).toBe('Explain'));
 	fireEvent.click(screen.getByRole('button', { name: 'Edit Explain' }));
 	fireEvent.change(screen.getByLabelText('Preset name'), {
 		target: { value: 'Explain clearly' },
@@ -111,18 +113,12 @@ it('adds, customizes, reorders and deletes saved presets', async () => {
 	fireEvent.click(
 		screen.getByRole('button', { name: 'Delete Explain clearly' }),
 	);
-	await vi.waitFor(() =>
-		expect(preferences.state.get().presets).toHaveLength(1),
-	);
-	expect(
-		(await QuickEditPreferences.create(storage, defaults)).state.get().presets,
-	).toEqual(preferences.state.get().presets);
-	await preferences.dispose();
+	await vi.waitFor(() => expect(store.get()).toEqual([link]));
 });
 
 it('closes the picker on Escape and discards the draft on Cancel', async () => {
-	const preferences = await createPreferences().opened;
-	render(<PresetSettings preferences={preferences} />);
+	const { store, Owner } = createPresets();
+	render(<Owner />);
 	fireEvent.click(screen.getByRole('button', { name: 'Edit Link' }));
 	fireEvent.change(screen.getByLabelText('Preset name'), {
 		target: { value: 'Renamed' },
@@ -144,6 +140,33 @@ it('closes the picker on Escape and discards the draft on Cancel', async () => {
 	);
 	fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 	expect(screen.queryByRole('form', { name: 'Edit preset' })).toBe(null);
-	expect(preferences.state.get().presets).toEqual(createDefaultPresets());
-	await preferences.dispose();
+	expect(store.get()).toEqual([link]);
+});
+
+it('keeps a draft and its ID when saving fails, then saves it once', async () => {
+	const save = vi.fn(async (_presets: PromptPreset[]) => {});
+	const { store, Owner } = createPresets(save);
+	render(<Owner />);
+	fireEvent.click(screen.getByRole('button', { name: 'Add preset' }));
+	fireEvent.change(screen.getByLabelText('Preset name'), {
+		target: { value: 'Cards' },
+	});
+	fireEvent.change(screen.getByLabelText('Preset prompt'), {
+		target: { value: 'Keep my draft' },
+	});
+	save.mockRejectedValueOnce(new Error('Disk full'));
+	const submit = screen.getByRole('button', { name: 'Save preset' });
+	await vi.waitFor(() => expect(submit).toHaveProperty('disabled', false));
+	fireEvent.click(submit);
+	expect((await screen.findByRole('alert')).textContent).toBe('Disk full');
+	expect(screen.getByLabelText('Preset prompt')).toHaveProperty(
+		'value',
+		'Keep my draft',
+	);
+	fireEvent.click(screen.getByRole('button', { name: 'Save preset' }));
+	await vi.waitFor(() => expect(store.get()).toHaveLength(2));
+	expect(screen.queryByRole('alert')).toBe(null);
+	expect(save.mock.calls[0]?.[0].at(-1)?.id).toBe(
+		save.mock.calls[1]?.[0].at(-1)?.id,
+	);
 });

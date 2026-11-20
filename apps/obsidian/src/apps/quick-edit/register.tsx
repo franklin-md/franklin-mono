@@ -14,7 +14,7 @@ import { QuickEditInteraction } from './interaction/composer.js';
 import { QuickEditPill } from './interaction/pill.js';
 import { quickEditExtension } from './interaction/extension.js';
 import { quickEditView } from './interaction/editor.js';
-import { QuickEditPreferences } from './settings/store.js';
+import { openQuickEditPreferences } from './settings/store.js';
 import { createQuickEditPersistence } from './settings/persistence.js';
 import { QuickEditPresetChooser } from './presets/chooser.js';
 import { quickEditError } from './error.js';
@@ -38,7 +38,7 @@ export async function registerQuickEdit({
 	const report = (error: unknown) => {
 		new Notice(quickEditError(error));
 	};
-	const preferences = await QuickEditPreferences.create(
+	const preferences = await openQuickEditPreferences(
 		createQuickEditPersistence(
 			joinAbsolute(
 				toAbsolutePath(
@@ -82,7 +82,7 @@ export async function registerQuickEdit({
 	const execution = new QuickEditController({
 		definition,
 		run: createQuickEditRunner(plugin.app, franklin),
-		getSettings: () => preferences.state.get(),
+		getSettings: () => preferences.get(),
 	});
 	const interaction = new QuickEditInteraction({
 		app: plugin.app,
@@ -94,7 +94,7 @@ export async function registerQuickEdit({
 	const presets = new QuickEditPresetChooser({
 		app: plugin.app,
 		interaction,
-		getPresets: () => preferences.state.get().presets,
+		getPresets: () => preferences.get().presets,
 		report,
 	});
 	const dispose = async () => {

@@ -1,15 +1,15 @@
 import { ArrowDown, ArrowUp, Pencil, Trash2 } from 'lucide-react';
 import { IconButton } from '@franklin/ui';
-import type { QuickEditPreset } from '../../presets/types.js';
-import { presetColors } from '../../presets/colors.js';
-import { ObsidianIcon } from '../../../../shared/ui/icon/index.js';
-import { SettingControl } from '../../../../shared/ui/setting/control.js';
-import { SettingInfo } from '../../../../shared/ui/setting/info.js';
-import { SettingItem } from '../../../../shared/ui/setting/item.js';
-import { SettingName } from '../../../../shared/ui/setting/name.js';
+import { ObsidianIcon } from '../../ui/icon/index.js';
+import { SettingControl } from '../../ui/setting/control.js';
+import { SettingInfo } from '../../ui/setting/info.js';
+import { SettingItem } from '../../ui/setting/item.js';
+import { SettingName } from '../../ui/setting/name.js';
+import { presetColors } from '../colors.js';
+import type { PromptPreset } from '../types.js';
 
 type Props = {
-	preset: QuickEditPreset;
+	preset: PromptPreset;
 	pending: boolean;
 	first: boolean;
 	last: boolean;

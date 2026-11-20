@@ -1,11 +1,12 @@
-import type { InboxPreferences, InboxQuestion } from './types.js';
+import type { ModelSelection } from '../../../shared/model/selection.js';
+import type { InboxQuestion } from './types.js';
 import type { QuestionSource } from '../types.js';
 import type { InboxNode } from '../hierarchy/types.js';
 
 type Options = {
 	id?: string;
 	text: string;
-	preferences: Omit<InboxPreferences, 'concurrency'>;
+	settings: ModelSelection & { answerInstructions: string };
 	source?: QuestionSource;
 	parent?: InboxNode;
 };
@@ -13,7 +14,7 @@ type Options = {
 export function createQuestion({
 	id = crypto.randomUUID(),
 	text,
-	preferences,
+	settings,
 	source,
 	parent,
 }: Options): InboxQuestion {
@@ -26,10 +27,10 @@ export function createQuestion({
 		createdAt: now,
 		updatedAt: now,
 		attemptId: crypto.randomUUID(),
-		model: preferences.model,
-		provider: preferences.provider,
-		reasoning: preferences.reasoning,
-		answerInstructions: preferences.answerInstructions,
+		model: settings.model,
+		provider: settings.provider,
+		reasoning: settings.reasoning,
+		answerInstructions: settings.answerInstructions,
 		source: source ?? parent?.source,
 		state: { kind: 'queued' },
 	};

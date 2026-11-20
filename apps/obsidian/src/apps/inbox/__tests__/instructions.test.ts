@@ -1,12 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-	createSingleFilePersister,
-	MemoryFilesystem,
-	toAbsolutePath,
-} from '@franklin/lib';
 import { DEFAULT_ANSWER_INSTRUCTIONS } from '../answer-instructions.js';
 import { InboxController } from '../controller/index.js';
-import { inboxCodec } from '../controller/schema.js';
+import { settingsDocumentCodec } from '../controller/schema.js';
+import { createInboxCodecPersistence } from '../testing/persistence.js';
 
 const legacyDefaultInstructions =
 	'Give a focused explanation with a small example when useful.';
@@ -55,7 +51,7 @@ describe('saved inbox answer instructions', () => {
 		(version) => {
 			for (const terse of [true, false]) {
 				const data = legacyData(terse);
-				const decoded = inboxCodec.decode({ version, data });
+				const decoded = settingsDocumentCodec.decode({ version, data });
 				if (!decoded.ok) throw new Error(JSON.stringify(decoded.issue));
 				const value = decoded.value;
 				expect(value.preferences.answerInstructions).toBe(
@@ -70,42 +66,36 @@ describe('saved inbox answer instructions', () => {
 					legacyDefaultInstructions,
 				);
 				expect(value.questions[0]?.state).toEqual(data.questions[0]?.state);
-				const encoded = inboxCodec.encode(value);
-				expect(encoded).toMatchObject({ version: 10 });
+				const encoded = settingsDocumentCodec.encode(value);
+				expect(encoded).toMatchObject({ version: 11 });
 				expect(JSON.stringify(encoded)).not.toContain('"terse"');
 				data.questions[1] = { ...data.questions[1]!, rootId: 'missing-root' };
-				expect(inboxCodec.decode({ version, data }).ok).toBe(false);
+				expect(settingsDocumentCodec.decode({ version, data }).ok).toBe(false);
 			}
 		},
 	);
 
 	it('persists exact custom text and permits an empty replacement across restarts', async () => {
-		const persistence = createSingleFilePersister(
-			new MemoryFilesystem(),
-			toAbsolutePath('/inbox.json'),
-			inboxCodec,
-		);
+		const persistence = createInboxCodecPersistence();
 		const options = {
 			defaults: { provider: 'test', model: 'test', reasoning: 'off' as const },
 			persistence,
 			run: vi.fn(),
 		};
 		const inbox = await InboxController.create(options);
-		expect(inbox.state.get().preferences.answerInstructions).toBe(
+		expect(inbox.settings.get().answerInstructions).toBe(
 			DEFAULT_ANSWER_INSTRUCTIONS,
 		);
 		const answerInstructions =
 			'  Explain step by step.\nUse `swtch` as an example.  ';
-		await inbox.configure({ answerInstructions });
+		await inbox.settings.configure({ answerInstructions });
 		await inbox.dispose();
 		const restored = await InboxController.create(options);
-		expect(restored.state.get().preferences.answerInstructions).toBe(
-			answerInstructions,
+		expect(restored.settings.get().answerInstructions).toBe(answerInstructions);
+		await restored.settings.configure({ answerInstructions: '' });
+		expect((await persistence.settings.load()).value?.answerInstructions).toBe(
+			'',
 		);
-		await restored.configure({ answerInstructions: '' });
-		expect(
-			(await persistence.load()).value?.preferences.answerInstructions,
-		).toBe('');
 		await restored.dispose();
 	});
 });

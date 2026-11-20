@@ -1,13 +1,9 @@
-import { useState, useSyncExternalStore } from 'react';
-import { SettingError } from '../../../shared/ui/setting/error.js';
+import { useSyncExternalStore } from 'react';
+import { PresetList } from '../../../shared/preset/settings/list.js';
 import { SettingGroup } from '../../../shared/ui/setting/group.js';
-import { SettingItem } from '../../../shared/ui/setting/item.js';
-import { quickEditError } from '../error.js';
+import { InstructionsSetting } from '../../../shared/ui/setting/instructions.js';
+import { ModelSetting } from '../../../shared/ui/setting/model.js';
 import type { QuickEditPreferences } from './store.js';
-import type { QuickEditSettings } from '../types.js';
-import { QuickEditInstructionsSetting } from './instructions.js';
-import { QuickEditModelSetting } from './model.js';
-import { PresetSettings } from './presets/list.js';
 import { QuickEditShortcutSetting } from './shortcut.js';
 
 type Props = {
@@ -16,52 +12,47 @@ type Props = {
 	active?: boolean;
 };
 
+// Each row saves its own change and shows its own failure.
 export function QuickEditSettingsPanel({
 	preferences,
 	onConfigureShortcut,
 	active = true,
 }: Props) {
-	const settings = useSyncExternalStore(
-		(notify) => preferences.state.subscribe(notify),
-		() => preferences.state.get(),
-	);
-	const [error, setError] = useState('');
-	const [pending, setPending] = useState(false);
-	async function save(update: Partial<QuickEditSettings>) {
-		setPending(true);
-		setError('');
-		try {
-			await preferences.configure(update);
-		} catch (error) {
-			setError(quickEditError(error));
-		} finally {
-			setPending(false);
-		}
-	}
+	const settings = useSyncExternalStore(preferences.subscribe, preferences.get);
 	return (
 		<>
 			<SettingGroup
 				title="Quick edit"
 				description="Request edits directly inside a note. Changes use the file's existing review controls."
 			>
-				<QuickEditModelSetting
-					settings={settings}
-					pending={pending}
+				<ModelSetting
+					label="Quick edit model"
+					description="Used for new quick edits."
+					value={settings}
 					active={active}
-					onSave={save}
+					onChange={preferences.configure}
 				/>
-				<QuickEditInstructionsSetting
-					initial={settings.instructions}
-					pending={pending}
-					onSave={save}
+				<InstructionsSetting
+					label="Editing instructions"
+					description="Describe your outline and writing conventions. You can name instruction files for the agent to read."
+					value={settings.instructions}
+					onSave={(instructions) => preferences.configure({ instructions })}
 				/>
-				{error && (
-					<SettingItem>
-						<SettingError>{error}</SettingError>
-					</SettingItem>
-				)}
 			</SettingGroup>
-			<PresetSettings preferences={preferences} />
+			<SettingGroup
+				title="Presets"
+				description="Run a saved prompt from Franklin: Quick edit presets. Selected text or the current row supplies context."
+			>
+				<PresetList
+					noun="preset"
+					presets={settings.presets}
+					onUpdate={(change) =>
+						preferences.configure((current) => ({
+							presets: change(current.presets),
+						}))
+					}
+				/>
+			</SettingGroup>
 			{onConfigureShortcut && (
 				<SettingGroup title="Shortcut">
 					<QuickEditShortcutSetting onConfigure={onConfigureShortcut} />

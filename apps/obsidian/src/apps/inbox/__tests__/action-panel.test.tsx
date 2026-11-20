@@ -6,14 +6,10 @@ import {
 	render,
 	screen,
 } from '@testing-library/react';
-import {
-	createSingleFilePersister,
-	MemoryFilesystem,
-	toAbsolutePath,
-} from '@franklin/lib';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InboxController } from '../controller/index.js';
-import { inboxCodec } from '../controller/schema.js';
+import { testAction, upsertAction } from '../testing/action.js';
+import { createInboxCodecPersistence } from '../testing/persistence.js';
 import { InboxPanel } from '../ui/panel.js';
 
 afterEach(() => {
@@ -39,21 +35,17 @@ describe('question action controls', () => {
 		);
 		const inbox = await InboxController.create({
 			defaults: { provider: 'test', model: 'test', reasoning: 'off' },
-			persistence: createSingleFilePersister(
-				new MemoryFilesystem(),
-				toAbsolutePath('/inbox.json'),
-				inboxCodec,
-			),
+			persistence: createInboxCodecPersistence(),
 			run: async ({ submit }) => {
 				await submit('The condition may change.');
 			},
 			runAction,
 		});
-		await inbox.actions.save({
-			id: 'cards',
-			name: '🃏',
-			prompt: 'Create flashcards',
-		});
+		await inbox.settings.configure(({ actions }) => ({
+			actions: upsertAction(testAction('cards', '🃏', 'Create flashcards'))(
+				actions,
+			),
+		}));
 		render(
 			<InboxPanel
 				controller={inbox}

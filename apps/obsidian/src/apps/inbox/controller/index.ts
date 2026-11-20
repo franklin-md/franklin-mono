@@ -16,10 +16,12 @@ import { ThoughtDumps } from '../modes/controller.js';
 import { InboxActions } from '../actions/controller.js';
 import { restoreInbox } from './restore.js';
 import { QuestionSaveError } from './save-error.js';
+import { openInboxSettings } from '../settings/store.js';
+import type { SettingsFile } from '../../../shared/settings/types.js';
 import type {
 	InboxControllerOptions,
 	InboxDocument,
-	InboxPreferences,
+	InboxSettings,
 	InboxSnapshot,
 } from './types.js';
 
@@ -42,16 +44,21 @@ export class InboxController {
 		(document: InboxDocument) => void
 	>();
 	private closed = false;
+	private readonly unsubscribeSettings: () => void;
 
 	private constructor(
 		private readonly options: InboxControllerOptions,
 		initial: InboxSnapshot,
+		readonly settings: SettingsFile<InboxSettings>,
 	) {
 		this.saved = initial;
 		this.store = createStore(initial);
 		this.state = this.store;
+		// Raising concurrency starts waiting work straight away.
+		this.unsubscribeSettings = settings.subscribe(() => this.pump());
 		const operations = {
 			store: this.store,
+			settings,
 			assertOpen: () => this.assertOpen(),
 			persist: () => this.persist(),
 			pump: () => this.pump(),
@@ -79,11 +86,24 @@ export class InboxController {
 		signal?.throwIfAborted();
 		const initial = await restoreInbox(options);
 		signal?.throwIfAborted();
-		const controller = new InboxController(options, initial);
-		await controller.persist();
-		signal?.throwIfAborted();
-		controller.pump();
-		return controller;
+		const settings = await openInboxSettings(
+			options.persistence.settings,
+			options.defaults,
+		);
+		try {
+			// Settings read from an older inbox.json are saved before the write
+			// below drops them from it.
+			await settings.configure({});
+			signal?.throwIfAborted();
+			const controller = new InboxController(options, initial, settings);
+			await controller.persist();
+			signal?.throwIfAborted();
+			controller.pump();
+			return controller;
+		} catch (error) {
+			await settings.dispose();
+			throw error;
+		}
 	}
 
 	// Inline note edits must follow a durable Inbox snapshot.
@@ -114,7 +134,7 @@ export class InboxController {
 			const question = createQuestion({
 				id,
 				text,
-				preferences: snapshot.preferences,
+				settings: this.settings.get(),
 				source,
 				parent,
 			});
@@ -134,22 +154,6 @@ export class InboxController {
 		return input.kind === 'group'
 			? this.groups.add(input, parentId)
 			: this.add(input.text, { parentId, source: input.source });
-	}
-
-	async configure(patch: Partial<InboxPreferences>): Promise<void> {
-		this.assertOpen();
-		if (
-			patch.concurrency !== undefined &&
-			(!Number.isInteger(patch.concurrency) ||
-				patch.concurrency < 1 ||
-				patch.concurrency > 4)
-		)
-			throw new Error('Choose between 1 and 4 concurrent questions');
-		this.store.set((draft) => {
-			Object.assign(draft.preferences, patch);
-		});
-		await this.persist();
-		this.pump();
 	}
 
 	async retry(id: string): Promise<void> {
@@ -210,6 +214,8 @@ export class InboxController {
 
 	async dispose(): Promise<void> {
 		this.closed = true;
+		this.unsubscribeSettings();
+		await this.settings.dispose();
 		for (const abort of this.active.values()) abort.abort();
 		this.store.set((draft) => {
 			for (const question of draft.questions) {
@@ -232,24 +238,10 @@ export class InboxController {
 	}
 
 	private async persist(): Promise<void> {
-		const {
-			questions,
-			preferences,
-			groups,
-			thoughtDumps,
-			actions,
-			actionRuns,
-		} = this.store.get();
-		const document = {
-			questions,
-			preferences,
-			groups,
-			thoughtDumps,
-			actions,
-			actionRuns,
-		};
+		const { questions, groups, thoughtDumps, actionRuns } = this.store.get();
+		const document = { questions, groups, thoughtDumps, actionRuns };
 		const write = this.writes.then(async () => {
-			await this.options.persistence.save(document);
+			await this.options.persistence.inbox.save(document);
 			this.saved = document;
 			for (const listener of this.savedListeners) listener(document);
 		});
@@ -269,8 +261,8 @@ export class InboxController {
 
 	private pump(): void {
 		if (this.closed || this.store.get().storageError) return;
-		const { questions, thoughtDumps, preferences, actionRuns } =
-			this.store.get();
+		const { questions, thoughtDumps, actionRuns } = this.store.get();
+		const { concurrency } = this.settings.get();
 		const queue = [
 			...[...questions]
 				.reverse()
@@ -281,7 +273,7 @@ export class InboxController {
 			...actionRuns.map((run) => ({ ...run, type: 'action' as const })),
 		].sort((a, b) => a.createdAt - b.createdAt);
 		for (const item of queue) {
-			if (this.active.size >= preferences.concurrency) break;
+			if (this.active.size >= concurrency) break;
 			if (item.state.kind !== 'queued' || this.active.has(item.id)) continue;
 			const abort = new AbortController();
 			// Reserve the slot synchronously and hold it until the runner settles.

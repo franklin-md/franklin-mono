@@ -13,15 +13,16 @@ import { DEFAULT_ANSWER_INSTRUCTIONS } from '../answer-instructions.js';
 import { createInboxActionRunner } from '../actions/run.js';
 import type { InboxActionRun } from '../actions/types.js';
 import { createInboxTestEnvironment } from '../agent/test-environment.js';
+import { testAction } from '../testing/action.js';
 
 const run: InboxActionRun = {
 	id: 'action-run',
 	attemptId: 'attempt',
-	action: {
-		id: 'cards',
-		name: '🃏',
-		prompt: 'Read Design.md and append proposals to Inbox.md.',
-	},
+	action: testAction(
+		'cards',
+		'🃏',
+		'Read Design.md and append proposals to Inbox.md.',
+	),
 	provider: 'test',
 	model: 'action-model',
 	reasoning: 'low',

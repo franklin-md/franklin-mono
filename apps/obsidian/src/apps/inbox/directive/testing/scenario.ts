@@ -10,6 +10,7 @@ import type {
 } from '../../controller/types.js';
 import { DirectiveRegistry } from '../../../../shared/directives/registry.js';
 import { createDirectiveTestPersistence } from '../../../../shared/directives/testing/registry.js';
+import { createInboxTestPersistence } from '../../testing/persistence.js';
 import { InboxQuestionDirectives } from '../controller.js';
 
 type Scenario = {
@@ -44,7 +45,7 @@ export async function createInboxDirectiveScenario(
 	};
 	const requests: AnswerRequest[] = [];
 	const inbox = await InboxController.create({
-		persistence,
+		persistence: { ...createInboxTestPersistence().disk, inbox: persistence },
 		defaults: { provider: 'test', model: 'test', reasoning: 'low' },
 		run: async (request) => {
 			requests.push(request);

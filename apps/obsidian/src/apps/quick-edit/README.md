@@ -129,7 +129,8 @@ only. After verification it reports success or failure through `finish_edit`.
 - `execution/` owns uniqueness checks, request state, cancellation and independent
   Franklin agent lifetimes. It does not splice generated text into editor ranges.
 - `settings/` owns model, reasoning, instructions and native shortcut configuration.
-  Preferences are independent of Chat and Inbox and persist in `quick-edit.json`.
+  Preferences are independent of Chat and Inbox and persist in `quick-edit.json`
+  through the shared settings file store in `src/shared/settings/`.
 - `register.tsx` composes these parts and owns their plugin lifetime.
 
 Requests persist in the directive registry. The prompt's source envelope is

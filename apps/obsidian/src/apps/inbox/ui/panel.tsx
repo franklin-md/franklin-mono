@@ -8,6 +8,7 @@ import {
 	PromptFooterControlGroup,
 } from '@franklin/ui';
 import type { InboxController } from '../controller/index.js';
+import type { InboxSettings } from '../controller/types.js';
 import type { QuestionSource, StudyQuestion } from '../types.js';
 import { InboxContent } from './content.js';
 import { ModeControl } from './mode.js';
@@ -36,20 +37,24 @@ export function InboxPanel({
 		() => controller.state.get(),
 	);
 	const traces = controller.traces;
-	const { preferences } = snapshot;
+	const settings = useSyncExternalStore(
+		controller.settings.subscribe,
+		controller.settings.get,
+	);
 	const navigationRequest = useSyncExternalStore(
 		(notify) => navigation?.subscribe(notify) ?? (() => {}),
 		() => navigation?.get() ?? undefined,
 	);
-	const configure = (patch: Parameters<InboxController['configure']>[0]) => {
-		void controller.configure(patch).catch(onError);
+	const configure = (update: Partial<InboxSettings>) => {
+		void controller.settings.configure(update).catch(onError);
 	};
 	async function submitThoughtDump(text: string): Promise<void> {
-		const preferences = { ...controller.state.get().preferences };
+		// Extract with the settings shown when the dump was submitted.
+		const current = controller.settings.get();
 		await controller.thoughtDumps.add(
 			text,
 			await captureContext?.(text),
-			preferences,
+			current,
 		);
 	}
 
@@ -58,10 +63,10 @@ export function InboxPanel({
 		const runs = snapshot.actionRuns.filter(
 			(run) => run.question.id === question.id,
 		);
-		if (!snapshot.actions.length && !runs.length) return null;
+		if (!settings.actions.length && !runs.length) return null;
 		return (
 			<QuestionActions
-				actions={snapshot.actions}
+				actions={settings.actions}
 				runs={runs}
 				onRun={(actionId) => {
 					void controller.actions.start(question.id, actionId).catch(onError);
@@ -96,7 +101,7 @@ export function InboxPanel({
 				onFoldGroup={(id, folded) => {
 					void controller.groups.fold(id, folded).catch(onError);
 				}}
-				mode={preferences.mode}
+				mode={settings.mode}
 				onThoughtDump={submitThoughtDump}
 				thoughtDumps={snapshot.thoughtDumps}
 				onRetryExtraction={(id) => {
@@ -109,24 +114,24 @@ export function InboxPanel({
 					<PromptFooterControlGroup className="min-w-0 flex-wrap gap-1">
 						<ModelPicker
 							value={{
-								provider: preferences.provider,
-								model: preferences.model,
+								provider: settings.provider,
+								model: settings.model,
 							}}
 							label="Model for new questions"
 							onChange={configure}
 							effort={{
-								value: preferences.reasoning,
+								value: settings.reasoning,
 								levels: THINKING_LEVELS,
 								onChange: (reasoning) => configure({ reasoning }),
 							}}
 						/>
 						<ModeControl
-							mode={preferences.mode}
+							mode={settings.mode}
 							onChange={(mode) => configure({ mode })}
 						/>
 					</PromptFooterControlGroup>
 				}
-				concurrency={preferences.concurrency}
+				concurrency={settings.concurrency}
 				setConcurrency={(concurrency) => configure({ concurrency })}
 				onAdd={async ({ id, text }) => {
 					const isRetry = controller.state

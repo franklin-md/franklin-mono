@@ -1,4 +1,4 @@
-import type { ThinkingLevel } from '@franklin/mini-acp';
+import type { ModelSelection } from '../../../shared/model/selection.js';
 import type { SingleFilePersister } from '@franklin/lib';
 import type { StudyQuestion } from '../types.js';
 import type { AnswerDetail } from '../answer/types.js';
@@ -10,12 +10,6 @@ import type {
 	InboxActionRun,
 } from '../actions/types.js';
 
-export type ModelSelection = {
-	provider: string;
-	model: string;
-	reasoning: ThinkingLevel;
-};
-
 export type InboxQuestion = StudyQuestion &
 	ModelSelection & {
 		rootId: string;
@@ -23,19 +17,21 @@ export type InboxQuestion = StudyQuestion &
 		updatedAt: number;
 	};
 
-export type InboxPreferences = ModelSelection & {
+// Saved in inbox-settings.json. Questions, thought dumps and action runs copy
+// what they need when created, so retries keep their original settings.
+export type InboxSettings = ModelSelection & {
 	answerInstructions: string;
 	concurrency: number;
 	mode?: 'question' | 'thought-dump';
+	actions: InboxAction[];
 };
 
+// Saved in inbox.json.
 export type InboxDocument = {
 	questions: InboxQuestion[];
 	groups?: InboxGroup[];
 	thoughtDumps?: ThoughtDump[];
-	actions: InboxAction[];
 	actionRuns: InboxActionRun[];
-	preferences: InboxPreferences;
 };
 
 export type InboxSnapshot = InboxDocument & { storageError?: string };
@@ -51,8 +47,13 @@ export type AnswerRequest = BranchContext & {
 	onTrace?: (trace: unknown) => void;
 };
 
+export type InboxPersistence = {
+	inbox: SingleFilePersister<InboxDocument>;
+	settings: SingleFilePersister<InboxSettings>;
+};
+
 export type InboxControllerOptions = {
-	persistence: SingleFilePersister<InboxDocument>;
+	persistence: InboxPersistence;
 	defaults: ModelSelection;
 	// Development builds only: the agent inspect dump of each question's latest
 	// settled attempt, for the card inspect button. Held in memory, never saved.

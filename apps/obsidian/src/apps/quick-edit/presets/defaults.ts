@@ -1,6 +1,6 @@
-import type { QuickEditPreset } from './types.js';
+import type { PromptPreset } from '../../../shared/preset/types.js';
 
-export function createDefaultPresets(): QuickEditPreset[] {
+export function createDefaultPresets(): PromptPreset[] {
 	return [
 		{
 			id: 'link',

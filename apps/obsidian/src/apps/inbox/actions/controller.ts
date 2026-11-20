@@ -3,12 +3,14 @@ import { branchContext } from '../hierarchy/context.js';
 import { failedState } from '../controller/failed-state.js';
 import type {
 	InboxControllerOptions,
+	InboxSettings,
 	InboxSnapshot,
 } from '../controller/types.js';
-import type { InboxAction } from './types.js';
+import type { SettingsFile } from '../../../shared/settings/types.js';
 
 type Options = {
 	store: Store<InboxSnapshot>;
+	settings: SettingsFile<InboxSettings>;
 	assertOpen: () => void;
 	persist: () => Promise<void>;
 	pump: () => void;
@@ -16,53 +18,26 @@ type Options = {
 	onComplete: InboxControllerOptions['onActionComplete'];
 };
 
+// Action definitions are settings. A run copies its definition and model, so
+// queued and failed runs keep them after the settings change.
 export class InboxActions {
 	constructor(private readonly options: Options) {}
 
-	async save(input: Omit<InboxAction, 'id'> & { id?: string }): Promise<void> {
-		const { store, assertOpen } = this.options;
-		assertOpen();
-		const action = {
-			id: input.id ?? crypto.randomUUID(),
-			name: input.name.trim(),
-			prompt: input.prompt.trim(),
-		};
-		if (!action.name || !action.prompt)
-			throw new Error('Enter an action name and prompt');
-		if (/[\r\n]/.test(action.name))
-			throw new Error('Use a single-line action name');
-		store.set((draft) => {
-			const index = draft.actions.findIndex((item) => item.id === action.id);
-			if (index < 0) draft.actions.push(action);
-			else draft.actions[index] = action;
-		});
-		await this.options.persist();
-	}
-
-	async remove(id: string): Promise<void> {
-		this.options.assertOpen();
-		// Already queued runs retain their definition and can still be retried.
-		this.options.store.set((draft) => {
-			draft.actions = draft.actions.filter((action) => action.id !== id);
-		});
-		await this.options.persist();
-	}
-
 	async start(questionId: string, actionId: string): Promise<string> {
-		const { store, assertOpen, persist, pump } = this.options;
+		const { store, settings, assertOpen, persist, pump } = this.options;
 		assertOpen();
 		const snapshot = store.get();
+		const { actions, provider, model, reasoning } = settings.get();
 		const existing = snapshot.actionRuns.find(
 			(run) => run.question.id === questionId && run.action.id === actionId,
 		);
 		if (existing) return existing.id;
 		const question = snapshot.questions.find((item) => item.id === questionId);
-		const action = snapshot.actions.find((item) => item.id === actionId);
+		const action = actions.find((item) => item.id === actionId);
 		if (question?.state.kind !== 'answered')
 			throw new Error('Run actions on an answered question');
 		if (!action) throw new Error('Action no longer exists');
 		const id = crypto.randomUUID();
-		const { provider, model, reasoning } = snapshot.preferences;
 		// Reserve the pair synchronously, before persistence or model work can yield.
 		store.set((draft) => {
 			draft.actionRuns.push({

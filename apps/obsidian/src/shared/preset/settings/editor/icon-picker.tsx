@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { IconGrid } from '@franklin/ui';
-import { ObsidianIcon } from '../../../../../shared/ui/icon/index.js';
-import { listObsidianIcons } from '../../../../../shared/ui/icon/catalog.js';
+import { ObsidianIcon } from '../../../ui/icon/index.js';
+import { listObsidianIcons } from '../../../ui/icon/catalog.js';
 
 type Props = {
 	value: string;

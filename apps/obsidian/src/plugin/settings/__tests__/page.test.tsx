@@ -18,7 +18,7 @@ import type { ComponentProps } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { QuickEditPreferences } from '../../../apps/quick-edit/settings/store.js';
+import { openQuickEditPreferences } from '../../../apps/quick-edit/settings/store.js';
 import { quickEditSettingsCodec } from '../../../apps/quick-edit/settings/codec.js';
 import { InboxController } from '../../../apps/inbox/controller/index.js';
 import { createInboxTestPersistence } from '../../../apps/inbox/testing/persistence.js';
@@ -103,7 +103,7 @@ function selectSection(name: string) {
 }
 
 function createQuickEditPreferences() {
-	return QuickEditPreferences.create(
+	return openQuickEditPreferences(
 		createSingleFilePersister(
 			new MemoryFilesystem(),
 			toAbsolutePath('/quick-edit.json'),
@@ -268,7 +268,7 @@ describe('SettingsPage', () => {
 				name: 'Action prompt',
 			}).value,
 		).toBe('Unfinished action');
-		expect(inbox.state.get().actions).toEqual([]);
+		expect(inbox.settings.get().actions).toEqual([]);
 	});
 
 	it('seeds the OpenRouter input from the existing auth entry', () => {

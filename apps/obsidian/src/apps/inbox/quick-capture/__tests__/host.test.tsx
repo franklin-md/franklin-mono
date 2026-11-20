@@ -86,7 +86,7 @@ it('queues Thought dump from the opening source immediately, without changing co
 			location: expect.objectContaining({ path: 'original.md' }),
 		}),
 	);
-	expect(scenario.inbox.state.get().preferences.mode).toBeUndefined();
+	expect(scenario.inbox.settings.get().mode).toBeUndefined();
 	expect(target.editor.getValue()).not.toContain(':::franklin:');
 	expect(onSuccess).toHaveBeenCalledExactlyOnceWith('thought-dump');
 	expect(screen.queryByRole('dialog')).toBeNull();

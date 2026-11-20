@@ -1,11 +1,7 @@
-import {
-	createSingleFilePersister,
-	MemoryFilesystem,
-	toAbsolutePath,
-} from '@franklin/lib';
 import { afterEach, expect, it, vi } from 'vitest';
 import { InboxController } from '../../controller/index.js';
 import { inboxCodec } from '../../controller/schema.js';
+import { createInboxCodecPersistence } from '../../testing/persistence.js';
 import type { AnswerRequest } from '../../controller/types.js';
 import { questionPrompt } from '../../agent/prompt.js';
 
@@ -17,11 +13,7 @@ afterEach(async () => {
 
 async function setup() {
 	const requests: AnswerRequest[] = [];
-	const persistence = createSingleFilePersister(
-		new MemoryFilesystem(),
-		toAbsolutePath('/inbox.json'),
-		inboxCodec,
-	);
+	const persistence = createInboxCodecPersistence();
 	const options = {
 		persistence,
 		defaults: { provider: 'test', model: 'test', reasoning: 'off' as const },
@@ -114,10 +106,13 @@ it('migrates v7 and Madrid v8 without rewriting question branches and rejects in
 	const group = await h.inbox.groups.add({});
 	const child = await h.inbox.groups.add({}, group);
 	await h.inbox.add('Question', { parentId: child });
-	const document = (await h.persistence.load()).value!;
-	expect(inboxCodec.encode(document)).toMatchObject({ version: 10 });
+	const document = (await h.persistence.inbox.load()).value!;
+	expect(inboxCodec.encode(document)).toMatchObject({ version: 12 });
+	// Versions 7 and 8 also held the settings.
+	const { actions: _actions, ...preferences } = h.inbox.settings.get();
 	const old = {
 		...document,
+		preferences,
 		groups: undefined,
 		questions: document.questions.filter((q) => q.rootId === rootQuestion),
 	};
@@ -126,7 +121,7 @@ it('migrates v7 and Madrid v8 without rewriting question branches and rejects in
 	expect(migrated.ok && migrated.value.questions).toEqual(old.questions);
 	const madrid = inboxCodec.decode({
 		version: 8,
-		data: { ...document, actions: [], actionRuns: [] },
+		data: { ...document, preferences, actions: [], actionRuns: [] },
 	});
 	expect(madrid.ok && madrid.value.groups).toEqual(document.groups);
 	expect(madrid.ok && madrid.value.questions).toEqual(document.questions);
@@ -161,7 +156,9 @@ it('orders mixed siblings deterministically even when creation timestamps tie', 
 it('resumes queued work when folding successfully saves after an earlier storage failure', async () => {
 	const h = await setup();
 	const group = await h.inbox.groups.add();
-	vi.spyOn(h.persistence, 'save').mockRejectedValueOnce(new Error('Disk full'));
+	vi.spyOn(h.persistence.inbox, 'save').mockRejectedValueOnce(
+		new Error('Disk full'),
+	);
 	await expect(h.inbox.add('Waiting for storage')).rejects.toThrow('Disk full');
 	expect(h.requests).toHaveLength(0);
 	await h.inbox.groups.fold(group, true);

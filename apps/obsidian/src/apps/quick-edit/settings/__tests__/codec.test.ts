@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { QuickEditPreset } from '../../presets/types.js';
+import type { PromptPreset } from '../../../../shared/preset/types.js';
 import { createDefaultPresets } from '../../presets/defaults.js';
 import type { LegacyPreset } from '../legacy/v3.js';
 import { quickEditSettingsCodec } from '../codec.js';
@@ -40,7 +40,7 @@ const starters: LegacyPreset[] = [
 	},
 ];
 // The same starters after the v4 icon migration.
-const startersV4: QuickEditPreset[] = [
+const startersV4: PromptPreset[] = [
 	{ ...starters[0]!, icon: 'lucide-expand', color: 'blue' },
 	{ ...starters[1]!, icon: 'lucide-flask-conical', color: 'yellow' },
 	{ ...starters[2]!, icon: 'lucide-scissors', color: 'green' },
@@ -59,7 +59,7 @@ const custom = {
 	icon: 'pencil',
 	color: 'red',
 } as const satisfies LegacyPreset;
-const customV4: QuickEditPreset = { ...custom, icon: 'lucide-pencil' };
+const customV4: PromptPreset = { ...custom, icon: 'lucide-pencil' };
 
 function decode(presets: LegacyPreset[], version = 2) {
 	const result = quickEditSettingsCodec.decode({

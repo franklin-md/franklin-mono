@@ -6,6 +6,7 @@ import type {
 } from '../../controller/types.js';
 import type { Extraction } from '../types.js';
 import { inboxCodec } from '../../controller/schema.js';
+import { createInboxTestPersistence } from '../../testing/persistence.js';
 
 const defaults = {
 	provider: 'test',
@@ -23,12 +24,15 @@ async function setup(split: InboxControllerOptions['split']) {
 		split,
 		run,
 		persistence: {
-			save,
-			load: async () => ({
-				value: saved ? structuredClone(saved) : undefined,
-				issues: [],
-			}),
-			delete: async () => {},
+			...createInboxTestPersistence().disk,
+			inbox: {
+				save,
+				load: async () => ({
+					value: saved ? structuredClone(saved) : undefined,
+					issues: [],
+				}),
+				delete: async () => {},
+			},
 		},
 	};
 	const inbox = await InboxController.create(options);
@@ -48,7 +52,7 @@ describe('thought dump queue', () => {
 		const source = { note: 'VM', heading: 'Paging', quote: 'page tables' };
 		await h.inbox.thoughtDumps.add('Why pages? How big?', source);
 		await vi.waitFor(() => expect(split).toHaveBeenCalledTimes(1));
-		await h.inbox.configure({
+		await h.inbox.settings.configure({
 			model: 'changed',
 			answerInstructions: 'Changed',
 		});
@@ -105,7 +109,7 @@ describe('thought dump queue', () => {
 			expect(h.inbox.state.get().thoughtDumps?.[0]?.state.kind).toBe('failed'),
 		);
 		expect(h.inbox.state.get().questions).toHaveLength(0);
-		await h.inbox.configure({ model: 'changed' });
+		await h.inbox.settings.configure({ model: 'changed' });
 		await h.inbox.thoughtDumps.retry(h.inbox.state.get().thoughtDumps![0]!.id);
 		await vi.waitFor(() =>
 			expect(h.inbox.state.get().questions).toHaveLength(1),

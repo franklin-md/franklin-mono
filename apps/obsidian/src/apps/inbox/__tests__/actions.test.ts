@@ -1,12 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-	createSingleFilePersister,
-	MemoryFilesystem,
-	toAbsolutePath,
-} from '@franklin/lib';
 import { InboxController } from '../controller/index.js';
-import { inboxCodec } from '../controller/schema.js';
-import type { ActionRequest } from '../actions/types.js';
+import { inboxCodec, settingsDocumentCodec } from '../controller/schema.js';
+import type { ActionRequest, InboxAction } from '../actions/types.js';
+import { testAction, upsertAction } from '../testing/action.js';
+import { createInboxCodecPersistence } from '../testing/persistence.js';
 
 const defaults = {
 	provider: 'test',
@@ -14,14 +11,18 @@ const defaults = {
 	reasoning: 'low' as const,
 };
 
+function updateActions(
+	inbox: InboxController,
+	change: (actions: InboxAction[]) => InboxAction[],
+) {
+	return inbox.settings.configure((current) => ({
+		actions: change(current.actions),
+	}));
+}
+
 async function setup(concurrency = 1) {
-	const filesystem = new MemoryFilesystem();
-	const disk = createSingleFilePersister(
-		filesystem,
-		toAbsolutePath('/inbox.json'),
-		inboxCodec,
-	);
-	const save = vi.spyOn(disk, 'save');
+	const disk = createInboxCodecPersistence();
+	const save = vi.spyOn(disk.inbox, 'save');
 	const requests: ActionRequest[] = [];
 	const gates = new Map<
 		string,
@@ -44,12 +45,17 @@ async function setup(concurrency = 1) {
 		runAction,
 		onActionComplete: complete,
 	});
-	await inbox.configure({ concurrency });
-	await inbox.actions.save({
-		id: 'cards',
-		name: '🃏',
-		prompt: 'Read [[Workflow Guide]] and create proposals.',
-	});
+	await inbox.settings.configure({ concurrency });
+	await updateActions(
+		inbox,
+		upsertAction(
+			testAction(
+				'cards',
+				'🃏',
+				'Read [[Workflow Guide]] and create proposals.',
+			),
+		),
+	);
 	const question = await inbox.add('Why recheck?', {
 		source: { note: 'Sleep', heading: 'Waking', quote: 'Check again' },
 	});
@@ -74,21 +80,20 @@ describe('inbox actions', () => {
 			answer: 'Saved answer',
 		});
 		expect(run.question.source?.quote).toBe('Check again');
-		await h.inbox.actions.save({
-			id: 'cards',
-			name: 'Cards',
-			prompt: 'Changed prompt',
-		});
-		await h.inbox.configure({ model: 'changed-model' });
+		await updateActions(
+			h.inbox,
+			upsertAction(testAction('cards', 'Cards', 'Changed prompt')),
+		);
+		await h.inbox.settings.configure({ model: 'changed-model' });
 		expect(run.action.name).toBe('🃏');
 		expect(run.model).toBe('model');
 		h.gates.get(run.id)!.resolve('Added 2 proposals');
 		await vi.waitFor(() =>
 			expect(h.complete).toHaveBeenCalledWith('🃏', 'Added 2 proposals'),
 		);
-		expect((await h.disk.load()).value?.actionRuns).toEqual([]);
+		expect((await h.disk.inbox.load()).value?.actionRuns).toEqual([]);
 		expect(h.inbox.state.get().questions).toHaveLength(1);
-		expect(h.inbox.state.get().actions[0]?.name).toBe('Cards');
+		expect(h.inbox.settings.get().actions[0]?.name).toBe('Cards');
 		const next = await h.inbox.actions.start(h.question, 'cards');
 		expect(next).not.toBe(run.id);
 		await vi.waitFor(() => expect(h.requests).toHaveLength(2));
@@ -103,11 +108,10 @@ describe('inbox actions', () => {
 		await vi.waitFor(() =>
 			expect(h.inbox.state.get().questions[0]?.state.kind).toBe('answered'),
 		);
-		await h.inbox.actions.save({
-			id: 'other',
-			name: 'Notes',
-			prompt: 'Save a note',
-		});
+		await updateActions(
+			h.inbox,
+			upsertAction(testAction('other', 'Notes', 'Save a note')),
+		);
 		const first = await h.inbox.actions.start(child, 'cards');
 		await h.inbox.actions.start(h.question, 'cards');
 		await h.inbox.actions.start(child, 'other');
@@ -115,7 +119,7 @@ describe('inbox actions', () => {
 		await vi.waitFor(() => expect(h.requests).toHaveLength(1));
 		expect(h.requests[0]?.run.ancestors.map((q) => q.id)).toEqual([h.question]);
 		expect(h.inbox.state.get().questions[0]?.state.kind).toBe('queued');
-		await h.inbox.configure({ concurrency: 3 });
+		await h.inbox.settings.configure({ concurrency: 3 });
 		await vi.waitFor(() => expect(h.requests).toHaveLength(3));
 		await h.inbox.remove(h.question);
 		expect(h.requests.every((r) => r.signal.aborted)).toBe(true);
@@ -140,7 +144,9 @@ describe('inbox actions', () => {
 				error: 'No write access',
 			}),
 		);
-		await h.inbox.actions.remove('cards');
+		await updateActions(h.inbox, (actions) =>
+			actions.filter((action) => action.id !== 'cards'),
+		);
 		await h.inbox.actions.retry(id);
 		await vi.waitFor(() => expect(h.requests).toHaveLength(2));
 		expect(h.requests[1]?.run.id).toBe(id);
@@ -164,11 +170,10 @@ describe('inbox actions', () => {
 		expect(h.runAction).not.toHaveBeenCalled();
 		await h.inbox.retrySave();
 		await vi.waitFor(() => expect(h.requests).toHaveLength(1));
-		await h.inbox.actions.save({
-			id: 'other',
-			name: 'Other',
-			prompt: 'Other prompt',
-		});
+		await updateActions(
+			h.inbox,
+			upsertAction(testAction('other', 'Other', 'Other prompt')),
+		);
 		await h.inbox.actions.start(h.question, 'other');
 		const restoredRequests: ActionRequest[] = [];
 		await h.inbox.dispose();
@@ -209,7 +214,7 @@ describe('inbox actions', () => {
 		);
 		await h.inbox.retrySave();
 		expect(h.inbox.state.get().actionRuns).toEqual([]);
-		expect((await h.disk.load()).value?.actionRuns).toEqual([]);
+		expect((await h.disk.inbox.load()).value?.actionRuns).toEqual([]);
 		await h.inbox.dispose();
 		const restored = await InboxController.create({
 			defaults,
@@ -222,10 +227,11 @@ describe('inbox actions', () => {
 		await restored.dispose();
 	});
 
-	it('migrates v1 data and rejects duplicate pairs and missing questions', async () => {
+	it('migrates v1 data, gives v10 actions an icon and color, moves settings out in v12, and rejects duplicate pairs and missing questions', async () => {
 		const h = await setup();
-		const { questions, preferences } = h.inbox.state.get();
-		const migrated = inboxCodec.decode({
+		const { questions } = h.inbox.state.get();
+		const { actions, ...preferences } = h.inbox.settings.get();
+		const migrated = settingsDocumentCodec.decode({
 			version: 1,
 			data: {
 				questions: questions.map(
@@ -239,18 +245,58 @@ describe('inbox actions', () => {
 		});
 		expect(migrated.ok && migrated.value.actions).toEqual([]);
 		const id = await h.inbox.actions.start(h.question, 'cards');
-		const data = structuredClone(h.inbox.state.get());
-		const madrid = inboxCodec.decode({ version: 8, data });
-		expect(madrid.ok && madrid.value.actions).toEqual(data.actions);
-		expect(madrid.ok && madrid.value.actionRuns).toEqual(data.actionRuns);
+		const work = structuredClone(h.inbox.state.get());
+		const data = { ...work, preferences, actions: structuredClone(actions) };
+		const withoutIcon = ({
+			icon: _icon,
+			color: _color,
+			...action
+		}: InboxAction) => action;
+		const withDefaultIcon = (action: InboxAction) => ({
+			...action,
+			icon: 'lucide-sparkles',
+			color: 'blue',
+		});
+		const legacy = {
+			...data,
+			actions: data.actions.map(withoutIcon),
+			actionRuns: data.actionRuns.map((run) => ({
+				...run,
+				action: withoutIcon(run.action),
+			})),
+		};
+		for (const version of [8, 10]) {
+			const saved = settingsDocumentCodec.decode({ version, data: legacy });
+			expect(saved.ok && saved.value.actions).toEqual(
+				data.actions.map(withDefaultIcon),
+			);
+			expect(saved.ok && saved.value.actionRuns).toEqual(
+				data.actionRuns.map((run) => ({
+					...run,
+					action: withDefaultIcon(run.action),
+				})),
+			);
+		}
+		const version11 = settingsDocumentCodec.encode(data);
+		expect(version11).toMatchObject({ version: 11 });
+		expect(settingsDocumentCodec.decode(version11)).toMatchObject({
+			ok: true,
+			value: { preferences, actions: data.actions },
+		});
+		const current = inboxCodec.decode(version11);
+		expect(current.ok && current.value).toEqual(work);
+		expect(inboxCodec.encode(work)).toMatchObject({ version: 12 });
 		const { actions: _actions, actionRuns: _runs, ...groupsOnly } = data;
-		const groups = inboxCodec.decode({ version: 9, data: groupsOnly });
+		const groups = settingsDocumentCodec.decode({
+			version: 9,
+			data: groupsOnly,
+		});
 		expect(groups.ok && groups.value.actionRuns).toEqual([]);
-		data.actionRuns.push({ ...data.actionRuns[0]!, id: 'duplicate' });
-		expect(inboxCodec.decode(inboxCodec.encode(data)).ok).toBe(false);
-		data.actionRuns.pop();
-		data.questions = [];
-		expect(inboxCodec.decode(inboxCodec.encode(data)).ok).toBe(false);
+		work.actionRuns.push({ ...work.actionRuns[0]!, id: 'duplicate' });
+		expect(inboxCodec.decode(inboxCodec.encode(work)).ok).toBe(false);
+		work.actionRuns.pop();
+		work.questions = [];
+		expect(inboxCodec.decode(inboxCodec.encode(work)).ok).toBe(false);
 		await h.inbox.dispose();
 		h.gates.get(id)?.resolve('late');
 	});
