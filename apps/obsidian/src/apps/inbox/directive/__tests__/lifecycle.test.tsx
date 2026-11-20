@@ -6,9 +6,12 @@ import {
 	render,
 	screen,
 } from '@testing-library/react';
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DirectiveRegistry } from '../../../../shared/directives/registry.js';
 import { DirectiveComponent } from '../../../../shared/directives/render/component.js';
+import { createDirectiveRemovalExtension } from '../../../../shared/directives/removal/extension.js';
 import { InboxQuestionDirectives } from '../controller.js';
 import { createInboxDirectiveScenario } from '../testing/scenario.js';
 import { StopCode } from '@franklin/mini-acp';
@@ -38,6 +41,46 @@ describe('Inbox question directives', () => {
 		await h.service.dispose();
 		await h.inbox.dispose();
 		await h.registry.dispose();
+	});
+
+	it('deletes the question when a copy of its pill is deleted, then shows the remaining copies as deleted', async () => {
+		const h = await createInboxDirectiveScenario();
+		const id = await h.inbox.add('Why?');
+		const instance = await h.service.definition.create({ questionId: id });
+		h.content = `Elsewhere ${instance.text}`;
+		const view = new EditorView({
+			state: EditorState.create({
+				doc: `Question ${instance.text} and ${instance.text}`,
+				extensions: [createDirectiveRemovalExtension(h.registry)],
+			}),
+		});
+		const remove = vi.spyOn(h.inbox, 'remove');
+		const deletePill = () => {
+			const from = view.state.doc.toString().indexOf(instance.text);
+			view.dispatch({
+				changes: { from, to: from + instance.text.length },
+				userEvent: 'delete.backward',
+			});
+		};
+		try {
+			render(<DirectiveComponent registry={h.registry} reference={instance} />);
+			deletePill();
+			await vi.waitFor(() => expect(h.content).toBe('Elsewhere '));
+			expect(h.inbox.state.get().questions).toEqual([]);
+			expect(
+				screen.getByRole<HTMLButtonElement>('button', {
+					name: 'Question deleted in Inbox',
+				}).disabled,
+			).toBe(true);
+			deletePill();
+			expect(remove).toHaveBeenCalledOnce();
+			expect(h.error).not.toHaveBeenCalled();
+		} finally {
+			view.destroy();
+			await h.service.dispose();
+			await h.inbox.dispose();
+			await h.registry.dispose();
+		}
 	});
 
 	it('keeps note references when deletion fails to save, then cleans them after Retry save', async () => {

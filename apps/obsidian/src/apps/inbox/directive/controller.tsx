@@ -17,6 +17,7 @@ type Options = {
 export class InboxQuestionDirectives {
 	readonly definition;
 	private readonly unsubscribe: () => void;
+	private readonly unsubscribeRemoved: () => void;
 	private pending = Promise.resolve();
 	private closed = false;
 	private readonly cleaned = new Set<string>();
@@ -35,6 +36,17 @@ export class InboxQuestionDirectives {
 				</ObsidianAuthActionProvider>
 			),
 		);
+		// Removing any copy of a pill deletes its question. Later removals of
+		// other copies find no question; the cleanup below removes those copies.
+		this.unsubscribeRemoved = this.definition.onRemoved((instance) => {
+			const { questionId } = instance.state.get();
+			if (
+				inbox.state
+					.get()
+					.questions.some((question) => question.id === questionId)
+			)
+				void inbox.remove(questionId).catch(onError);
+		});
 		this.unsubscribe = inbox.subscribeSaved((document) => {
 			const questions = new Set(
 				document.questions.map((question) => question.id),
@@ -64,6 +76,7 @@ export class InboxQuestionDirectives {
 
 	async dispose(): Promise<void> {
 		this.closed = true;
+		this.unsubscribeRemoved();
 		this.unsubscribe();
 		await this.pending;
 	}

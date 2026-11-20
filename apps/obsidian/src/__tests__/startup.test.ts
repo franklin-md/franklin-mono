@@ -218,7 +218,8 @@ describe('FranklinPlugin startup', () => {
 
 		expect(registerView).toHaveBeenCalledOnce();
 		expect(addSettingTab).toHaveBeenCalledOnce();
-		expect(registerEditorExtension).toHaveBeenCalledTimes(2);
+		// Anchors, Live Preview directives and directive removal.
+		expect(registerEditorExtension).toHaveBeenCalledTimes(3);
 		expect(registerEditorExtension).toHaveBeenCalledWith(editorAnchors);
 		expect(registerMarkdownPostProcessor).toHaveBeenCalledOnce();
 		expect(addCommand).toHaveBeenCalledWith(
