@@ -21,6 +21,7 @@ import { getPluginAbsolutePath } from './shared/obsidian/path.js';
 import { editorAnchors } from './shared/obsidian/editor/anchors.js';
 import { createDirectiveExtension } from './shared/directives/live-preview/extension.js';
 import { createDirectivePostProcessor } from './shared/directives/reading/processor.js';
+import { createDirectiveRemovalExtension } from './shared/directives/removal/extension.js';
 
 export default class FranklinPlugin extends Plugin {
 	private diffController: DiffController | null = null;
@@ -157,6 +158,7 @@ export default class FranklinPlugin extends Plugin {
 			}
 			this.directives = registry;
 			this.registerEditorExtension(createDirectiveExtension(registry));
+			this.registerEditorExtension(createDirectiveRemovalExtension(registry));
 			this.registerMarkdownPostProcessor(
 				createDirectivePostProcessor(registry),
 			);
