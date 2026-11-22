@@ -89,6 +89,7 @@ export const MODEL_CATALOG: ProviderGroup[] = [
 		['google/gemini-4-argon', 'Gemini 4 Argon'],
 		['google/gemini-4-carbon', 'Gemini 4 Carbon'],
 		['google/gemini-4-hydrogen', 'Gemini 4 Hydrogen'],
+		['google/gemini-4-neon', 'Gemini 4 Neon'],
 		['google/gemini-3.8-flash', 'Gemini 3.8 Flash'],
 		['google/gemini-3.5-flash', 'Gemini 3.5 Flash'],
 		['google/gemini-3.1-flash-lite-preview', 'Gemini 3.1 Flash Lite Preview'],

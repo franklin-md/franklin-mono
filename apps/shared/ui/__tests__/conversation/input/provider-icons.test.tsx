@@ -81,6 +81,7 @@ describe('ModelIcon', () => {
 		['openrouter', 'google/gemini-4-argon', Icons.Gemini],
 		['openrouter', 'google/gemini-4-carbon', Icons.Gemini],
 		['openrouter', 'google/gemini-4-hydrogen', Icons.Gemini],
+		['openrouter', 'google/gemini-4-neon', Icons.Gemini],
 		['openrouter', 'google/gemini-3.8-flash', Icons.Gemini],
 		['openrouter', 'google/gemini-3.5-flash', Icons.Gemini],
 		['openrouter', 'google/gemini-3.1-flash-lite-preview', Icons.Gemini],
