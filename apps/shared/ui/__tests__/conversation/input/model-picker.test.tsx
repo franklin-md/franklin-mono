@@ -39,7 +39,7 @@ function checked(name: string) {
 
 describe('controlled model picker', () => {
 	it.each([
-		['gemini', 'Gemini 3.5 Flash', 'google/gemini-3.5-flash'],
+		['gemini', 'Gemini 4 Hydrogen', 'google/gemini-4-hydrogen'],
 		['glm', 'GLM 5.3 Prime', 'z-ai/glm-5.3-prime'],
 	])(
 		'searches for %s and selects its OpenRouter model',
