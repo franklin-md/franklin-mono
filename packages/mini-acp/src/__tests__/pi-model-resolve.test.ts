@@ -89,6 +89,7 @@ describe('resolveModel', () => {
 		['google/gemini-4-argon', 'high'],
 		['google/gemini-4-carbon', 'high'],
 		['google/gemini-4-hydrogen', 'xhigh'],
+		['google/gemini-4-neon', 'xhigh'],
 		['google/gemini-3.8-flash', 'high'],
 	])('clamps saved effort to supported levels for %s', (id, highestEffort) => {
 		const result = resolveModel({ provider: 'openrouter', model: id });
@@ -179,6 +180,7 @@ describe('resolveModel', () => {
 		['openai-codex', 'gpt-6.2-sol', 'openai-codex-responses'],
 		['openrouter', 'google/gemini-4-carbon', 'openai-completions'],
 		['openrouter', 'google/gemini-4-hydrogen', 'openai-completions'],
+		['openrouter', 'google/gemini-4-neon', 'openai-completions'],
 		['opencode-go', 'grok-4.6', 'openai-responses'],
 		['opencode-go', 'deepseek-flash', 'openai-completions'],
 		['opencode-go', 'deepseek-v4-flash-vision-exp', 'openai-completions'],

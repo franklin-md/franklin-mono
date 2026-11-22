@@ -158,20 +158,20 @@ describe('MODEL_CATALOG', () => {
 		});
 	});
 
-	it('keeps Gemini Flash metadata aligned to the OpenRouter catalog', () => {
+	it('keeps Gemini metadata aligned to the OpenRouter catalog', () => {
 		const group = MODEL_CATALOG.find(
 			(providerGroup) => providerGroup.provider === 'openrouter',
 		);
-		const geminiFlash = group?.models.find(
-			(model) => model.id === 'google/gemini-3.5-flash',
+		const geminiHydrogen = group?.models.find(
+			(model) => model.id === 'google/gemini-4-hydrogen',
 		);
 
-		expect(geminiFlash).toMatchObject({
-			name: 'Gemini 3.5 Flash',
+		expect(geminiHydrogen).toMatchObject({
+			name: 'Gemini 4 Hydrogen',
 			reasoning: true,
 			contextWindow: 1_048_576,
 			costInput: 1.5,
-			costOutput: 9,
+			costOutput: 7.5,
 		});
 	});
 
