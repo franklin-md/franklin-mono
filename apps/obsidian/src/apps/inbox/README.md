@@ -83,6 +83,24 @@ progress, previews the answer, and opens its card in the Inbox. If directive
 storage is unavailable, **Add selection to study inbox** still queues the
 question.
 
+### Deleting a pill
+
+Deleting a pill in the editor deletes its question and follow-ups, then removes
+the pill's other copies from notes:
+
+| Edit in the note | Question |
+| --- | --- |
+| Backspace or Delete on the pill | Deleted |
+| Deleting, typing over or pasting over a selection containing the pill | Deleted |
+| Vim deletes such as `dd`, also when followed by `p` | Deleted |
+| Cut, including cut and paste to move the pill | Kept |
+| Editing inside the pill's text in Source mode | Kept; the text stops rendering as a pill |
+| Undo, redo, sync and agent edits | Kept |
+
+Undo restores the text but not the question, so the pill reads
+**Question deleted**, as do copies pasted later. To remove a pill and keep its
+question, cut it. The rules are in [Inline directives](../../shared/directives/README.md#removal).
+
 ## Configurable actions
 
 In **Franklin settings → Inbox → Actions**, add, edit, delete or reorder actions

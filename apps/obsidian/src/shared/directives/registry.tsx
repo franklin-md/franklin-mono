@@ -1,5 +1,6 @@
 import { freeze, produce } from 'immer';
 import type { Store } from '@franklin/agent';
+import { createObserver } from '@franklin/lib';
 import type { SingleFilePersister } from '@franklin/lib';
 import type { App } from 'obsidian';
 import type { ComponentType } from 'react';
@@ -24,7 +25,8 @@ type Options = {
 export class DirectiveRegistry {
 	readonly app: App;
 	private readonly definitions = new Map<string, RegisteredDirective>();
-	private readonly listeners = new Set<() => void>();
+	private readonly removals = new Map<string, (id: string) => void>();
+	private changed = createObserver();
 	private writes = Promise.resolve();
 	private closed = false;
 	private closing?: Promise<void>;
@@ -69,6 +71,7 @@ export class DirectiveRegistry {
 		};
 		const get = (id: string) =>
 			this.document.instances[id]?.name === name ? handle(id) : undefined;
+		const removed = createObserver<[DirectiveInstance<T>]>();
 		const definition: DirectiveDefinition<T> = {
 			name,
 			get,
@@ -82,12 +85,18 @@ export class DirectiveRegistry {
 				await this.save(name, id, () => snapshot);
 				return handle(id);
 			},
+			onRemoved: (handler) => removed.subscribe(isolated(handler)),
 		};
 		this.definitions.set(name, ({ id, state }) => (
 			<Renderer id={id} state={state as T} update={handle(id).update} />
 		));
-		this.notify();
+		this.removals.set(name, (id) => removed.notify(handle(id)));
+		this.changed.notify();
 		return definition;
+	}
+
+	reportRemoved(name: string, id: string): void {
+		if (this.getRecord(name, id)) this.removals.get(name)?.(id);
 	}
 
 	getRecord(name: string, id: string) {
@@ -118,10 +127,8 @@ export class DirectiveRegistry {
 		});
 	}
 
-	subscribe = (listener: () => void): (() => void) => {
-		this.listeners.add(listener);
-		return () => this.listeners.delete(listener);
-	};
+	subscribe = (listener: () => void): (() => void) =>
+		this.changed.subscribe(isolated(listener));
 
 	dispose(after?: Promise<void>): Promise<void> {
 		if (this.closing) return this.closing;
@@ -137,8 +144,10 @@ export class DirectiveRegistry {
 		this.closed = true;
 		await this.writes;
 		this.definitions.clear();
-		this.notify();
-		this.listeners.clear();
+		this.removals.clear();
+		this.changed.notify();
+		// Release subscribers; Observer has no clear.
+		this.changed = createObserver();
 	}
 
 	private save(
@@ -158,7 +167,7 @@ export class DirectiveRegistry {
 			};
 			await this.options.persistence.save(next);
 			this.document = freeze(next, true);
-			this.notify();
+			this.changed.notify();
 		});
 		this.writes = write.catch(() => {});
 		return write;
@@ -167,14 +176,18 @@ export class DirectiveRegistry {
 	private assertOpen(): void {
 		if (this.closed) throw new Error('Directive registry is closed');
 	}
+}
 
-	private notify(): void {
-		for (const listener of this.listeners) {
-			try {
-				listener();
-			} catch (error) {
-				console.error('Franklin directive subscriber failed', error);
-			}
+// A failing subscriber is reported without skipping later subscribers or
+// failing the save or edit that notified it.
+function isolated<A extends unknown[]>(
+	listener: (...args: A) => void,
+): (...args: A) => void {
+	return (...args) => {
+		try {
+			listener(...args);
+		} catch (error) {
+			console.error('Franklin directive subscriber failed', error);
 		}
-	}
+	};
 }
