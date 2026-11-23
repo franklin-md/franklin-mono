@@ -176,7 +176,7 @@ The supported thinking levels are `THINKING_LEVELS`: `off`, `low`, `medium`,
 `high`, `xhigh` and `max`. The built-in Pi adapter uses Pi's per-model reasoning
 mappings and clamps unsupported levels. `xhigh` and `max` remain distinct when
 the model supports both.
-See [Pi's thinking-level schema](https://github.com/earendil-works/pi/blob/v1.5.2/packages/ai/src/providers/model-schema.ts).
+See [Pi's thinking-level schema](https://github.com/earendil-works/pi/blob/v1.6.0/packages/ai/src/providers/model-schema.ts).
 
 `setContext` accepts a `ContextPatch` and applies it to the agent's current `Context`.
 Top-level fields omitted from the patch are left unchanged. When a top-level
@@ -441,10 +441,10 @@ that boundary, the client MUST consume the next `continue()` stream to receive
 the cancelled `turnEnd`; `cancel()` does not emit another terminal on the
 previous step's stream.
 
-The Pi adapter uses the pinned 1.5.2 public `runAgentLoop` /
+The Pi adapter uses the pinned 1.6.0 public `runAgentLoop` /
 `runAgentLoopContinue` exports and `finishTurn: () => ({ action: 'end' })`. The adapter
 awaits runner settlement before publishing either terminal; it does not forward
-Pi's earlier `agent_end`. See the [Pi public loop source](https://github.com/earendil-works/pi/blob/v1.5.2/packages/agent/src/agent-loop.ts).
+Pi's earlier `agent_end`. See the [Pi public loop source](https://github.com/earendil-works/pi/blob/v1.6.0/packages/agent/src/agent-loop.ts).
 
 #### Shutdown
 

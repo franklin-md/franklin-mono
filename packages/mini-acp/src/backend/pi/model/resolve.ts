@@ -36,7 +36,7 @@ function findModel(
 	}
 	// Catalog context sizes are estimates: endpoint, account and deployment limits
 	// can differ from these values. Keep Pi metadata intact unless a correction
-	// has a documented source. https://github.com/earendil-works/pi/tree/v1.5.2/packages/ai/src/providers
+	// has a documented source. https://github.com/earendil-works/pi/tree/v1.6.0/packages/ai/src/providers
 	return (
 		getBuiltinModels(provider).find((candidate) => candidate.id === modelId) ??
 		getModelOverride(provider, modelId)

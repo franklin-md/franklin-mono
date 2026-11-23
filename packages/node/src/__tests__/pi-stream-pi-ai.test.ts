@@ -221,12 +221,14 @@ describe('createPiStreamFn with pi-ai simple streams', () => {
 				typeof request.body === 'string'
 					? request.body
 					: zstdDecompressSync(request.body).toString();
-			expect(JSON.parse(body)).toMatchObject({
-				model,
-				reasoning: {
-					effort: reasoning,
-					summary: 'auto',
-				},
+			// Pi 1.6.0 pins reasoning.effort and sends the requested level as a
+			// configuration_update input item, so level changes keep the cached prefix.
+			// https://github.com/earendil-works/pi/issues/12269
+			const parsed = JSON.parse(body) as { model: string; input: unknown[] };
+			expect(parsed.model).toBe(model);
+			expect(parsed.input).toContainEqual({
+				type: 'configuration_update',
+				reasoning: { effort: reasoning },
 			});
 		},
 	);

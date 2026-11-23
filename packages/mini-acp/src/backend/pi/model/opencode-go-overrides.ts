@@ -4,7 +4,7 @@ import type { Api, Model } from '@earendil-works/pi-ai';
 const grok = getBuiltinModel('opencode-go', 'grok-4.7');
 const deepSeekFlash = getBuiltinModel('opencode-go', 'deepseek-v4.1-flash');
 
-// Pi 1.5.2 omits these reviewed IDs. Reuse its transport, compatibility and
+// Pi 1.6.0 still omits these reviewed IDs. Reuse its transport, compatibility and
 // reasoning metadata for the same provider/API family. Preserve the older
 // Grok version's reviewed prices and limits rather than copying 4.7's tiers.
 // Context sizes remain catalog estimates; endpoint/account limits may differ.
