@@ -178,7 +178,7 @@ class PiMuAgent implements MuClient {
 				sessionId: this.sessionId,
 				convertToLlm: (messages) => messages,
 				// End after the complete tool batch so the client owns continuation.
-				// https://github.com/earendil-works/pi/blob/v1.5.2/packages/agent/src/agent-loop.ts
+				// https://github.com/earendil-works/pi/blob/v1.6.0/packages/agent/src/agent-loop.ts
 				finishTurn: () => ({ action: 'end' }),
 			};
 			// Isolate Pi's mutable transcript from our event-recorded context. Tool

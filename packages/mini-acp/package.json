@@ -44,8 +44,8 @@
 		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@earendil-works/pi-agent-core": "1.5.2",
-		"@earendil-works/pi-ai": "1.5.2",
+		"@earendil-works/pi-agent-core": "1.6.0",
+		"@earendil-works/pi-ai": "1.6.0",
 		"@franklin/lib": "0.0.0",
 		"dotenv": "17.3.1"
 	}

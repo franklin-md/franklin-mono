@@ -9,9 +9,9 @@ import { resolveModel } from '../backend/pi/model/resolve.js';
 import { StopCode } from '../types/stop-code.js';
 
 const OPENROUTER_UPSTREAM_MODEL_CASES = [
-	{ id: 'z-ai/glm-5.1', contextWindow: 202_752 },
-	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_575 },
-	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_024_000 },
+	{ id: 'z-ai/glm-5.1', contextWindow: 204_800 },
+	{ id: 'deepseek/deepseek-v4-flash', contextWindow: 1_048_576 },
+	{ id: 'deepseek/deepseek-v4-pro', contextWindow: 1_048_576 },
 	{ id: 'moonshotai/kimi-k2.6', contextWindow: 262_144 },
 	{ id: 'x-ai/grok-4.20', contextWindow: 2_000_000 },
 	{ id: 'qwen/qwen3.6-plus', contextWindow: 1_000_000 },
@@ -19,6 +19,8 @@ const OPENROUTER_UPSTREAM_MODEL_CASES = [
 ] as const;
 
 const UPSTREAM_MODEL_CASES = [
+	['openai-codex', 'gpt-6.2-astra'],
+	['openai-codex', 'gpt-6.2-sol'],
 	['openai-codex', 'gpt-6-astra'],
 	['openai-codex', 'gpt-6.1-sol'],
 	['openai-codex', 'gpt-5.6-terra'],
@@ -26,6 +28,9 @@ const UPSTREAM_MODEL_CASES = [
 	['openrouter', 'anthropic/claude-fable-5.2'],
 	['openrouter', 'anthropic/claude-opus-5.5'],
 	['openrouter', 'google/gemini-4-argon'],
+	['openrouter', 'google/gemini-4-carbon'],
+	['openrouter', 'google/gemini-4-hydrogen'],
+	['openrouter', 'google/gemini-4-neon'],
 	['openrouter', 'google/gemini-3.8-flash'],
 	['openrouter', 'x-ai/grok-4.5'],
 	['openrouter', 'google/gemini-3.5-flash'],
@@ -176,11 +181,6 @@ describe('resolveModel', () => {
 	}
 
 	it.each([
-		['openai-codex', 'gpt-6.2-astra', 'openai-codex-responses'],
-		['openai-codex', 'gpt-6.2-sol', 'openai-codex-responses'],
-		['openrouter', 'google/gemini-4-carbon', 'openai-completions'],
-		['openrouter', 'google/gemini-4-hydrogen', 'openai-completions'],
-		['openrouter', 'google/gemini-4-neon', 'openai-completions'],
 		['opencode-go', 'grok-4.6', 'openai-responses'],
 		['opencode-go', 'deepseek-flash', 'openai-completions'],
 		['opencode-go', 'deepseek-v4-flash-vision-exp', 'openai-completions'],
