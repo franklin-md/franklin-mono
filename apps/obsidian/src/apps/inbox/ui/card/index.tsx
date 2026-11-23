@@ -103,7 +103,10 @@ export function QuestionCard({
 				}
 				controls={
 					<>
-						{actions}
+						{/* One wrapping row for Record, actions and Debug; empty:hidden drops it when every slot renders nothing. */}
+						<div className="flex min-w-0 flex-wrap items-start gap-2 empty:hidden">
+							{actions}
+						</div>
 						<QuestionControls question={question} onFollowUp={onFollowUp} />
 					</>
 				}

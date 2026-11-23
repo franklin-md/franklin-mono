@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InboxController } from '../controller/index.js';
 import { InboxPanel } from '../ui/panel.js';
 import { createInboxTestPersistence } from '../testing/persistence.js';
+import { testAction, upsertAction } from '../testing/action.js';
 import type { AnswerRequest } from '../controller/types.js';
 
 const defaults = {
@@ -17,7 +18,10 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-async function answeredInbox(traces?: Map<string, unknown>) {
+async function answeredInbox(
+	traces?: Map<string, unknown>,
+	setup?: (controller: InboxController) => Promise<void>,
+) {
 	vi.stubGlobal('matchMedia', () => ({ matches: true }));
 	const controller = await InboxController.create({
 		defaults,
@@ -28,6 +32,7 @@ async function answeredInbox(traces?: Map<string, unknown>) {
 			onTrace?.({ core: { systemPrompt: 'Inbox research prompt' } });
 		},
 	});
+	await setup?.(controller);
 	const onError = vi.fn();
 	render(
 		<InboxPanel
@@ -57,6 +62,20 @@ describe('Inbox agent trace', () => {
 			core: { systemPrompt: 'Inbox research prompt' },
 		});
 		expect(onError).not.toHaveBeenCalled();
+		await controller.dispose();
+	});
+
+	it('keeps actions and the trace button in one wrapping row', async () => {
+		const { controller } = await answeredInbox(new Map(), async (inbox) => {
+			await inbox.settings.configure(({ actions }) => ({
+				actions: upsertAction(testAction('cards', 'Flashcard', 'Create cards'))(
+					actions,
+				),
+			}));
+		});
+		const action = screen.getByRole('button', { name: 'Run Flashcard' });
+		const trace = screen.getByRole('button', { name: 'Copy inspect dump' });
+		expect(action.parentElement?.parentElement).toBe(trace.parentElement);
 		await controller.dispose();
 	});
 
