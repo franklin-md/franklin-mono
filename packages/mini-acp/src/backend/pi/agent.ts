@@ -18,6 +18,7 @@ import type { ContextPatch, LLMConfig } from '../../types/context.js';
 import type { UserMessage } from '../../types/message.js';
 import type { StepEnd, StreamEvent, TurnEnd } from '../../types/stream.js';
 import { resolveConfig } from './resolve-config.js';
+import { requestMaxTokens } from './model/max-tokens.js';
 import {
 	bridgeTool,
 	fromAgentEvent,
@@ -175,6 +176,7 @@ class PiMuAgent implements MuClient {
 				reasoning:
 					this.config.reasoning === 'off' ? undefined : this.config.reasoning,
 				apiKey: this.config.apiKey,
+				maxTokens: requestMaxTokens(resolved.model),
 				sessionId: this.sessionId,
 				convertToLlm: (messages) => messages,
 				// End after the complete tool batch so the client owns continuation.
