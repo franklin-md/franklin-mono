@@ -196,6 +196,25 @@ describe('Pi explicit drives', () => {
 		expect(provider.requests).toHaveLength(2);
 	});
 
+	it('caps OpenRouter output so credit pre-authorization stays small', async () => {
+		const provider = createScriptedProvider([{}, {}]);
+		const client = createPiAgent(server, provider);
+		// Neon publishes a 943,718-token output limit; requesting it reserved
+		// ~$14 per turn and failed with 402 on low-balance keys.
+		await client.setContext({
+			config: { ...config, model: 'google/gemini-4-neon' },
+		});
+		await collect(client.prompt(prompt));
+		await client.setContext({
+			config: { provider: 'openai', model: 'gpt-5.5', apiKey: 'stub-key' },
+		});
+		await collect(client.prompt(prompt));
+		expect(provider.requests.map((request) => request.maxTokens)).toEqual([
+			65_536,
+			undefined,
+		]);
+	});
+
 	it('restores tool result names from the Mini-ACP transcript', async () => {
 		const provider = createScriptedProvider([{}]);
 		const client = createPiAgent(server, provider);

@@ -19,6 +19,7 @@ export function createScriptedProvider(
 		systemPrompt: string | undefined;
 		tools: string[];
 		apiKey: string | undefined;
+		maxTokens: number | undefined;
 		model: string;
 	}> = [];
 	const streamFn: StreamFn = (model, context, options) => {
@@ -28,6 +29,7 @@ export function createScriptedProvider(
 			systemPrompt: getCurrentSystemPrompt(context.messages),
 			tools: getCurrentTools(context.messages).map((tool) => tool.name),
 			apiKey: options?.apiKey,
+			maxTokens: options?.maxTokens,
 			model: model.id,
 		});
 		if (!script) throw new Error('Unexpected provider request');
